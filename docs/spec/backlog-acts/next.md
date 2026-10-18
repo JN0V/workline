@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog/depend.go, internal/backlog/order.go, internal/backlog/board.go, internal/builtin/productowner/productowner.go, internal/forge/forge.go]
 status: draft
-checked: f3b0df0d
+checked: 698042ac
 verified: agent:claude-code
 ---
 # The order, and what is next
@@ -55,7 +55,9 @@ stored:
   instead — "High · Effort Low → quick win", a value missing said, its
   priority alone while no effort is kept —, and the ready issues missing
   a value counted (`next-unestimated`): "3 of 9 ready issues have no
-  priority: they follow their number."
+  priority: they follow their number." Values visible to organization
+  members only, on a public repository, are never shown: the order kept,
+  "Values hidden" said (`values-hidden`).
 - **Stuck** (`stuck`): each issue waiting on a person for more than
   `stuck-days` (14) days, with the day it started and how long:
 

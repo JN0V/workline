@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog/backlog.go, internal/backlog/ledger.go, internal/backlog/say.go, internal/report/summary.go, internal/engine/backlog.go]
 status: draft
-checked: d38d50b1
+checked: 698042ac
 verified: agent:claude-code
 ---
 # On the issue
@@ -86,7 +86,7 @@ the issue linked to its page
 waiting on a person link the filter on the label (`forge.LabelFilter`).
 The other findings follow, a line each: on an issue, the issue linked and
 its message, no rule's name; on the backlog (`proposals-waiting`,
-`demoted`, `setting-gone`, `values-where`, `level-unknown`, `next-unestimated`,
+`demoted`, `setting-gone`, `values-where`, `level-unknown`, `next-unestimated`, `values-hidden`,
 `estimates-stuck`), "the backlog"
 and its message. The role's own
 line counts what a person will see on the issues, by issue — "issues: 2

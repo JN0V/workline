@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go]
-checked: fbf66fcf
+checked: 698042ac
 verified: agent:claude-code
 ---
 # Conformance — a case in full
@@ -137,6 +137,7 @@ saying so.
   the issues it waits on in the forge's relation, `body-contains` and
   `body-lacks` (a text its body holds, or does not, or a list of them),
   `reactions` (the reactions on its comments, by the comment's id),
+  `fields` (its values in the issue fields, exactly these, by name),
   `threads` (a merge request's comments on lines, exactly these, in the
   order posted: each `{path, line, contains, lacks, resolved}`),
   `auto-merge` (a merge request's on) and `merged` (the forge merged it);

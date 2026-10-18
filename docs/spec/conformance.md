@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go, tests/evaluation]
-checked: fbf66fcf
+checked: 698042ac
 verified: agent:claude-code
 judged: af2d6fb
 ---
@@ -104,7 +104,12 @@ What else a case can give, run and expect, and how each is checked, is in
   once a comment before it is deleted; an edit keeps a comment's author;
   `posted` counts the comments posted on an issue, each one a mail on a
   real forge; with
-  `scoped-labels: true`, the forge's labels are scoped, as GitLab's. A
+  `scoped-labels: true`, the forge's labels are scoped, as GitLab's; with
+  `issue-fields` (`{id, name, options, public}`), it keeps single-select
+  issue fields, as a GitHub organisation's, an issue's values in its
+  `fields` (`{Priority: High}`), the repository `public: true`, and
+  `fields-blind: <why>` a token that reads no value visible to members
+  only. A
   merge request's `threads` are its comments on lines, `{path, line,
   body, resolved}`: a review is posted whole, as GitHub's, on the lines
   of the repository's diff from the merge request's `base` (main) to the

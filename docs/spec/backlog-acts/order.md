@@ -1,8 +1,8 @@
 ---
 type: reference
-sources: [internal/backlog/backlog.go, internal/backlog/order.go, internal/backlog/undo.go, internal/scale/scale.go, internal/scale/detect.go, internal/builtin/productowner/productowner.go, internal/engine/backlog.go]
+sources: [internal/backlog/backlog.go, internal/backlog/order.go, internal/backlog/undo.go, internal/scale/scale.go, internal/scale/detect.go, internal/builtin/productowner/productowner.go, internal/engine/backlog.go, internal/forge/github_fields.go]
 status: draft
-checked: d38d50b1
+checked: 698042ac
 verified: agent:claude-code
 ---
 # Milestones and ordering
@@ -60,12 +60,16 @@ Each axis has a setting of the role, `priority` and `effort`
 - **Unset**, the default: the engine reads and writes workline's own
   labels above, and no effort; nothing of the forge is read for it.
 - **`auto`**: detected each run, with no agent, the first that holds — the
-  project's own family of labels, two values or more and one on an open
-  issue, tried in this order: `P0`…, `P-*`, `priority/*`, `Priority/*`,
+  forge's own single-select issue field named as the axis, `Priority` or
+  `Effort` (GitHub's, an organisation's, listed by GraphQL's
+  `repository.issueFields`: none on a user's repository); the project's
+  own family of labels, two values or more and one on an open issue,
+  tried in this order: `P0`…, `P-*`, `priority/*`, `Priority/*`,
   `priority::*` (effort: `effort1`…, `effort/*`, `effort::*`); then
   workline's own labels, one on an open issue; else the forge's words.
-- **`{in: labels, prefix: P}`**: that family; one the project lacks
-  stops the run, said (`values-where`, block).
+- **`{in: labels, prefix: P}`**, **`{in: field, name: Severity}`**: that
+  family, or that field; one the project lacks stops the run, said
+  (`values-where`, block).
 - **`names`**, under either: a label of the family no table knows mapped
   to a level, `{names: {sev-1: urgent}}`. One not mapped carries none,
   said once in the run (`level-unknown`).
@@ -93,6 +97,28 @@ job finds where the axis is kept anew and reads the issue again —; one
 found then is said, "(found when applying)". With another
 family than workline's own read, the role's texts say the label beside
 the level: "priority 1 (P0)".
+
+### In GitHub's fields
+
+- **Read and written by the option's name**, never its place: an issue's
+  values come with it (`issue_field_values`, with no API version
+  header), and are written by REST
+  (`POST …/issues/{n}/issue-field-values`, `X-GitHub-Api-Version:
+  2026-03-10`). No label is created; a label of the axis on an issue, or
+  a value in the field beside the labels read, is another place
+  (`priority-elsewhere`).
+- **Visible to organization members only, on a public repository** (or a
+  visibility not read): the values are never shown — not in the role's
+  comment, nor in its state (`priority: -1`, set by the role, value
+  hidden), nor in the job's summary (Next keeps the order and says
+  "Values hidden", `values-hidden`; no Urgent is listed apart). Such an
+  act is never proposed (`priority-hidden`, `effort-hidden`): a proposal
+  shows its value; nor watched for a person's undoing: its record would.
+- **Never read as empty**: an outsider's token reads those values as
+  none. A token not shown yet to read them — the job's own
+  (`GITHUB_TOKEN`), an App's, a person who is no member of the
+  organisation (GraphQL's `viewerIsAMember`) — writes nothing in them
+  (`priority-blind`, `effort-blind`), said where each axis is found.
 
 ### The effort, set once
 

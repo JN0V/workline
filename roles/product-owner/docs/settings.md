@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, internal/backlog/autonomy.go, internal/backlog/ledger.go, internal/sample/acts.go, internal/scale/detect.go]
-checked: a9762f04
+checked: 698042ac
 verified: agent:claude-code
 ---
 # Product owner — settings
@@ -88,13 +88,18 @@ labels, and no effort read.
 
 | Value | Reads and writes |
 |---|---|
-| `auto` | the project's own labels (`P0`…, `P-*`, `priority/*`, `priority::*`, `effort*`), else workline's own, else the forge's: `priority/urgent` to `/low` on GitHub, `priority::1` to `::4` on GitLab, created at the first act |
-| `{in: labels, prefix: P}` | that family; the run stops if the project has none |
+| `auto` | a GitHub organisation's own Priority and Effort fields; else the project's own labels (`P0`…, `P-*`, `priority/*`, `priority::*`, `effort*`), else workline's own, else the forge's: `priority/urgent` to `/low` on GitHub, `priority::1` to `::4` on GitLab, created at the first act |
+| `{in: labels, prefix: P}`, `{in: field, name: Severity}` | that family, or that field; the run stops if the project has none |
 | `names: {sev-1: urgent}`, beside either | a label no table knows, read as that level |
 
 - **Said once a run**: where each was found, and a name no table knows.
-- **One place each**: an issue holding a priority in another family gets
-  nothing written.
+- **One place each**: an issue holding a priority in another family, or
+  in a field beside the labels, gets nothing written.
+- **Fields visible to members only**, on a public repository: the values
+  are set but never shown — not in the role's comment, its state, nor the
+  job's summary — and never proposed. A token not shown to read them, the
+  job's own or an App's, writes nothing there
+  ([why](../../../docs/research/priority-and-weight.md#checked-live-2026-10-18)).
 - **Set once, only where empty**: a value a person set stays; one the
   role set and a person changed or cleared is never written again.
 - **The order** goes by the priority, then the effort, the lightest
