@@ -1,0 +1,27 @@
+case: reviewer/lens-decision-apart-asked-again-told-where
+about: "A lens writing an open point as an item of its own — `decision` and its `cause` side by side, where one kind goes, as Sonnet did on PRs #490 and #492 (#493) — is asked again told that those are no kinds but keys of a finding; the answer that then reads puts the question to a person, its other finding kept, the change reviewed whole. The intent lens is told up front that an open point is a finding holding `decision`."
+given:
+  repo: reviewed
+  setup:
+    - "sed -i 's|^\\t\\ttotal += v|\\t\\tif v == 0 {\\n\\t\\t\\tcontinue\\n\\t\\t}\\n\\t\\ttotal += v|' calc/calc.go && git commit -qam 'feat: skip the zeros in the mean' -m 'Closes #4.'"
+  forge:
+    issues:
+      - id: 4
+        title: The mean skips zeros
+        body: "## Need\n\nThe mean skips the zero values. What an empty list gives is left open.\n\n## Verification\n\nA test of Average on [0, 2, 4].\n\n## Scope\n\ncalc/calc.go\n"
+        labels: []
+        comments: []
+    merge-requests: []
+run: {role: reviewer, event: review, input: {range: main..HEAD, lenses: intent}, ai: "cmd:sh $FIXTURES/agents/lens-decision-as-its-own-item.sh"}
+expect:
+  status: pass
+  agent-calls: 2
+  summary: "1 findings on the change, 1 question for a person; lenses: intent; tokens"
+  findings:
+    - {rule: part-asked-again, message: "proposal 2 holds 2 kinds (cause, decision); each holds exactly one: cause and decision are no kind"}
+    - {rule: decision, where: "#4", message: "Question for a person: Should an empty list give 0, or an error?"}
+    - {rule: intent, where: "#4", message: "No test of the zeros"}
+  no-findings: [{rule: lens-failed}, {rule: part-unanswered}]
+  run-files:
+    out/review.json: {contains: '"complete": true'}
+    in/parts/1-intent/task.md: {contains: "is a `finding` holding `decision`"}
