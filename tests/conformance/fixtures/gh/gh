@@ -1,0 +1,62 @@
+#!/bin/sh
+# A fake gh, for the cases that run GitHub's own forge code: `gh api` on a
+# pull request (from $GH_HEAD_REF, else change, into main), a commit's
+# check runs and a merge request's comments. Each call is
+# numbered in $GH_LOG with what it sent, the annotations counted; what it
+# keeps is beside the log. Any other call is refused, and said.
+set -eu
+log=${GH_LOG:?GH_LOG names the log}
+state=$log.state
+mkdir -p "$state"
+n=$(( $(cat "$state/calls" 2>/dev/null || echo 0) + 1 ))
+echo "$n" > "$state/calls"
+[ "${1:-}" = api ] || { echo "fake gh: only api is simulated: $*" >&2; exit 1; }
+shift
+method=GET body= input= path= jq=
+while [ $# -gt 0 ]; do
+  case $1 in
+    -X) method=$2; shift 2 ;;
+    --input) input=$(cat); shift 2 ;;
+    -f) case $2 in body=*) body=${2#body=} ;; esac; shift 2 ;;
+    --jq) jq=$2; shift 2 ;;
+    --paginate) shift ;;
+    *) path=$1; shift ;;
+  esac
+done
+path=${path#repos/\{owner\}/\{repo\}/}
+annotations() { printf '%s' "$input" | grep -o '"start_line"' | wc -l | tr -d ' '; }
+case "$method $path" in
+  "GET pulls/"*)
+    echo "call $n: GET $path" >> "$log"
+    printf '{"title":"t","body":"","head":{"ref":"%s","repo":{"full_name":"o/r"}},"base":{"ref":"main","repo":{"full_name":"o/r"}}}\n' "${GH_HEAD_REF:-change}" ;;
+  "POST check-runs")
+    runs=$(( $(cat "$state/runs" 2>/dev/null || echo 0) + 1 ))
+    echo "$runs" > "$state/runs"
+    title=$(printf '%s' "$input" | sed -n 's/.*"output":{"title":"\([^"]*\)".*/\1/p')
+    echo "call $n: POST check-runs: $(annotations) annotations, title $title" >> "$log"
+    printf '{"id":%d,"html_url":"https://github.com/o/r/runs/%d"}\n' "$runs" "$runs" ;;
+  "PATCH check-runs/"*)
+    echo "call $n: PATCH $path: $(annotations) annotations" >> "$log"
+    echo '{}' ;;
+  "GET issues/"*"/comments")
+    marker=$(printf '%s' "$jq" | sed -n 's/.*contains("\(.*\)")).*/\1/p')
+    echo "call $n: GET $path" >> "$log"
+    for f in "$state"/comment-*; do
+      if [ -f "$f" ] && grep -qF -- "$marker" "$f"; then
+        printf '{"id":%s,"body":"kept"}\n' "${f##*comment-}"
+      fi
+    done ;;
+  "POST issues/"*"/comments")
+    id=$(( $(cat "$state/comments" 2>/dev/null || echo 0) + 1 ))
+    echo "$id" > "$state/comments"
+    printf '%s' "$body" > "$state/comment-$id"
+    echo "call $n: POST $path: comment $id" >> "$log"
+    printf '{"id":%d}\n' "$id" ;;
+  "PATCH issues/comments/"*)
+    printf '%s' "$body" > "$state/comment-${path#issues/comments/}"
+    echo "call $n: PATCH $path" >> "$log"
+    echo '{}' ;;
+  *)
+    echo "fake gh: $method $path is not simulated" >&2
+    exit 1 ;;
+esac

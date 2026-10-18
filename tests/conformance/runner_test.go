@@ -155,6 +155,12 @@ type applyFrom struct {
 	// Line: apply the line's result, as CI's job does (`apply --line`),
 	// the runs it lists, none when it proposed nothing.
 	Line bool `yaml:"line"`
+	// Gates: the run's printed result is what a run of the gates alone
+	// left, shown on the merge request (`apply --gates`).
+	Gates bool `yaml:"gates"`
+	// Again: after the apply, these commands (a second push), then the
+	// run and the apply again, on the head they leave.
+	Again []string `yaml:"again"`
 }
 
 // thenLine is the line run after a case's run: the event, the branch of
@@ -257,6 +263,8 @@ type forgeWant struct {
 type checkRunWant struct {
 	Commit      string           `yaml:"commit"`
 	Name        string           `yaml:"name"`
+	Title       string           `yaml:"title"` // its title, when given
+	Count       *int             `yaml:"count"` // how many annotations, when given
 	Annotations []annotationWant `yaml:"annotations"`
 	Absent      bool             `yaml:"absent"`
 }
@@ -736,7 +744,7 @@ func runCase(t *testing.T, c *caseFile) []string {
 		if len(dirs) == 0 && r.RunDir != "" {
 			dirs = []string{r.RunDir}
 		}
-		if len(dirs) == 0 && (c.Run.ApplyFrom == nil || !c.Run.ApplyFrom.Line) {
+		if len(dirs) == 0 && (c.Run.ApplyFrom == nil || !c.Run.ApplyFrom.Line && !c.Run.ApplyFrom.Gates) {
 			return []string{"the first run reported no run folder to resume"}
 		}
 		var fromArgs []string
@@ -747,6 +755,12 @@ func runCase(t *testing.T, c *caseFile) []string {
 			}
 		}
 		resumeArgs := append(append(append([]string{"apply"}, dirs...), "--json"), fromArgs...)
+		if a := c.Run.ApplyFrom; a != nil && a.Gates {
+			// What the gates' job printed, as the applying job downloads it.
+			gatesFile := filepath.Join(work, "gates.json")
+			os.WriteFile(gatesFile, stdout.Bytes(), 0o644)
+			resumeArgs = append([]string{"apply", "--gates", gatesFile, "--json"}, fromArgs...)
+		}
 		if a := c.Run.ApplyFrom; a != nil && a.Line {
 			// The line's result as the judge printed it, its runs listed
 			// where the run's code could have changed them (poisoned).
@@ -768,7 +782,7 @@ func runCase(t *testing.T, c *caseFile) []string {
 		resume.Dir = repo
 		if a := c.Run.ApplyFrom; a != nil {
 			for k, v := range a.Env {
-				resume.Env = append(slices.Clone(resume.Env), k+"="+v)
+				resume.Env = append(slices.Clone(resume.Env), k+"="+os.Expand(v, func(name string) string { return lookup(resume.Env, name) }))
 			}
 		}
 		if judgeCache != "" {
@@ -781,6 +795,46 @@ func runCase(t *testing.T, c *caseFile) []string {
 		var r2 result
 		if err := json.Unmarshal(stdout.Bytes(), &r2); err != nil {
 			return []string{fmt.Sprintf("resume printed no result: %v\n%s", err, stderr.String())}
+		}
+		if a := c.Run.ApplyFrom; a != nil && len(a.Again) > 0 {
+			// A second push: the commands, then the run and the apply
+			// again, on the head they leave.
+			if p := inRepo(repo, a.Again); len(p) > 0 {
+				return p
+			}
+			again := exec.Command(engineBin, args...)
+			again.Dir, again.Env = repo, cmd.Env
+			stdout.Reset()
+			again.Stdout, again.Stderr = &stdout, &stderr
+			_ = again.Run()
+			gatesFile := filepath.Join(work, "gates.json")
+			os.WriteFile(gatesFile, stdout.Bytes(), 0o644)
+			head, err := exec.Command("git", "-C", repo, "rev-parse", "origin/"+a.Head).Output()
+			if err != nil {
+				return []string{fmt.Sprintf("apply-from: no branch %s on origin", a.Head)}
+			}
+			if a.Base != "" {
+				if out, err := exec.Command("git", "-C", repo, "checkout", "-q", "--detach", a.Base).CombinedOutput(); err != nil {
+					return []string{fmt.Sprintf("apply-from: %s not checked out again: %s", a.Base, out)}
+				}
+			}
+			second := slices.Clone(resumeArgs)
+			for i := range second {
+				if second[i] == "--head" && i+1 < len(second) {
+					second[i+1] = strings.TrimSpace(string(head))
+				}
+			}
+			reapply := exec.Command(engineBin, second...)
+			reapply.Env, reapply.Dir = resume.Env, repo
+			stdout.Reset()
+			reapply.Stdout, reapply.Stderr = &stdout, &stderr
+			_ = reapply.Run()
+			first := r2.Findings
+			r2 = result{}
+			if err := json.Unmarshal(stdout.Bytes(), &r2); err != nil {
+				return []string{fmt.Sprintf("the second apply printed no result: %v\n%s", err, stderr.String())}
+			}
+			r2.Findings = append(first, r2.Findings...)
 		}
 		r2.AgentCalls += r.AgentCalls
 		r2.Calls = append(r.Calls, r2.Calls...)
@@ -1420,6 +1474,12 @@ func compareCheckRuns(want []checkRunWant, file, repo string) []string {
 		case last == nil:
 			p = append(p, fmt.Sprintf("forge: no check %s on %s (checks: %+v)", w.Name, w.Commit, s.Checks))
 			continue
+		}
+		if w.Title != "" && last.Title != w.Title {
+			p = append(p, fmt.Sprintf("forge: check %s on %s is titled %q, want %q", w.Name, w.Commit, last.Title, w.Title))
+		}
+		if w.Count != nil && len(last.Annotations) != *w.Count {
+			p = append(p, fmt.Sprintf("forge: check %s on %s holds %d annotations, want %d", w.Name, w.Commit, len(last.Annotations), *w.Count))
 		}
 		for _, a := range w.Annotations {
 			found := false

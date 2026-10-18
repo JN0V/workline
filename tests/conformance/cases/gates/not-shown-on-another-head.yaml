@@ -1,0 +1,30 @@
+case: gates/not-shown-on-another-head
+about: >
+  The merge request the gates' run names must have the head judged as its
+  head still: its number is that run's word, and once its branch moved on,
+  the run of the new head shows its own. Nothing is shown, and that is
+  said.
+given:
+  repo: linted
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - git checkout -q -b change
+    - |
+      sed -i 's|^\tos.Remove("c.tmp")$|&\n\tos.Remove("d.tmp")|' clean.go && git commit -qam "feat: clean d too" && git push -q origin change
+  env: {PATH: "$FIXTURES/bin:$PATH"}
+  forge: {merge-requests: [{id: 1, branch: change, labels: [], comments: []}]}
+  config:
+    routing: {events: {merge-request: ["gate:merge"]}}
+    gates: {merge: {checks: [{id: lint, run: "golangci-lint run --output.sarif.path={out}/lint.sarif", output: sarif, max: {error: 0}}]}}
+run:
+  route: merge-request
+  input: {range: main..change}
+  gates-only: true
+  then: resume
+  apply-from: {merge-request: 1, base: main, head: main, gates: true}
+expect:
+  findings: [{rule: moved-on, level: warn, where: workline gates, message: "the gates' findings are not shown"}]
+  no-findings: [{rule: gates-shown}]
+  forge:
+    check-runs: [{commit: change, name: workline gates, absent: true}, {commit: main, name: workline gates, absent: true}]
+    merge-requests: [{id: 1, comments: 0}]

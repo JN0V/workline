@@ -1035,7 +1035,7 @@ func routeCmd(args []string) int {
 	fs.Var(&summaryFiles, "summary", "also add a Markdown summary of the line to this file, for a CI job's page (repeatable; a file named .html gets HTML)")
 	verdictFile := fs.String("verdict", "", "also write the line's verdict on the head it judged (the range's end) to this file, for `workline follow --verdict` and the merge policy")
 	verdictHead := fs.String("verdict-head", "", "with --verdict: the head the verdict is for, when the commit judged is a merge result (GitLab's merged results pipelines)")
-	gatesOnly := fs.Bool("gates-only", false, "run the event's gate steps alone, each one: a CI job of their own, with no write token and no agent's (the result, --json, is what --gates-from reads)")
+	gatesOnly := fs.Bool("gates-only", false, "run the event's gate steps alone, each one: a CI job of their own, with no write token and no agent's (the result, --json, is what --gates-from and `apply --gates` read)")
 	gatesFrom := fs.String("gates-from", "", "take each gate step's verdict from this file, the result a run with --gates-only printed, rather than running it")
 	inputs := pairs{}
 	fs.Var(inputs, "input", "input name=value, given to every step (repeatable)")
@@ -1284,8 +1284,13 @@ func applyCmd(args []string) int {
 	head := fs.String("head", "", "with --from-merge-request: the commit its run judged; nothing is applied once its branch moved on")
 	repo := fs.String("repo", ".", "with --from-merge-request: this job's checkout of the base, whose settings are read")
 	forgeSpec := fs.String("forge", "", "with --from-merge-request: github, gitlab, cmd:<command> (default: the project's `forge` setting)")
+	gatesFile := fs.String("gates", "", "with --from-merge-request: show on it what its gates found the change adds, from the result `route --gates-only` printed in its own run: a check's annotations and one summary comment")
 	if code, done := parseOnly(fs, args); done {
 		return code
+	}
+	if *gatesFile != "" && *fromMR == 0 {
+		fmt.Fprintln(os.Stderr, "workline: --gates goes with --from-merge-request: its findings are shown on that merge request")
+		return 64
 	}
 	resume := engine.Resume
 	var from engine.FromMergeRequest
@@ -1301,8 +1306,20 @@ func applyCmd(args []string) int {
 		return 64
 	}
 	// What the line's documentalist found on a merge request, shown beside
-	// its lines on the head judged, a check's annotations (#412).
+	// its lines on the head judged, a check's annotations (#412); what its
+	// gates found the change adds, so too, with a summary comment (ADR-0049).
 	var noted []verdict.Finding
+	if *gatesFile != "" {
+		shown, err := showGates(from, *gatesFile)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "workline:", err)
+			return 1
+		}
+		noted = append(noted, shown...)
+	}
+	if *lineFile == "" && *gatesFile != "" && len(dirs) == 0 {
+		return nothingToApply(noted, summaryFiles, *asJSON)
+	}
 	if *lineFile != "" {
 		data, err := os.ReadFile(*lineFile)
 		var l line.Result
@@ -1314,7 +1331,7 @@ func applyCmd(args []string) int {
 			return 1
 		}
 		if *fromMR != 0 {
-			noted = engine.Annotate(from, func(read func(string) ([]byte, error)) ([]forge.Annotation, int) {
+			noted = append(engine.Annotate(from, func(read func(string) ([]byte, error)) ([]forge.Annotation, int) {
 				var found []wlreport.Item
 				for _, i := range wlreport.FromLine(&l) {
 					if i.Role == "documentalist" {
@@ -1322,23 +1339,11 @@ func applyCmd(args []string) int {
 					}
 				}
 				return wlreport.Annotations(read, found)
-			})
+			}), noted...)
 		}
 		dirs = append(dirs, l.Pending...)
 		if len(dirs) == 0 {
-			res := &engine.Result{Status: verdict.Pass, Summary: "nothing to apply: the line proposed nothing",
-				Applied: []string{}, Refused: []string{}, Findings: noted}
-			if err := wlreport.AppendSummary(summaryFiles, wlreport.Summary{Title: "apply", Status: verdict.Pass, NothingToApply: true, Findings: noted}); err != nil {
-				fmt.Fprintln(os.Stderr, "workline:", err)
-				return 1
-			}
-			if *asJSON {
-				out, _ := json.MarshalIndent(res, "", "  ")
-				fmt.Println(string(out))
-			} else {
-				report(res)
-			}
-			return 0
+			return nothingToApply(noted, summaryFiles, *asJSON)
 		}
 	}
 	if len(dirs) == 0 {
@@ -1385,6 +1390,49 @@ func applyCmd(args []string) int {
 		report(res)
 	}
 	return exitFor(res.Status)
+}
+
+// nothingToApply ends an apply the line proposed nothing to, its findings
+// said.
+func nothingToApply(noted []verdict.Finding, summaryFiles []string, asJSON bool) int {
+	res := &engine.Result{Status: verdict.Pass, Summary: "nothing to apply: the line proposed nothing",
+		Applied: []string{}, Refused: []string{}, Findings: noted}
+	if err := wlreport.AppendSummary(summaryFiles, wlreport.Summary{Title: "apply", Status: verdict.Pass, NothingToApply: true, Findings: noted}); err != nil {
+		fmt.Fprintln(os.Stderr, "workline:", err)
+		return 1
+	}
+	if asJSON {
+		out, _ := json.MarshalIndent(res, "", "  ")
+		fmt.Println(string(out))
+	} else {
+		report(res)
+	}
+	return 0
+}
+
+// showGates shows on the merge request what its gates found the change
+// adds, from the result a run of the gates alone printed in its own CI
+// run: data that run's code could have written, capped and defused. The
+// summary comment lists as many rules as the reviewer's `findings-max`
+// lets it list findings (ADR-0049).
+func showGates(from engine.FromMergeRequest, file string) ([]verdict.Finding, error) {
+	data, err := os.ReadFile(file)
+	if err != nil {
+		return nil, err
+	}
+	var r line.Result
+	if err := json.Unmarshal(data, &r); err != nil {
+		return nil, fmt.Errorf("--gates %s: %v", file, err)
+	}
+	g := wlreport.Gates(&r, from.Head)
+	entries := 10 // the reviewer's default
+	if cfg, err := role.LoadProjectConfig(from.Repo); err == nil {
+		if n, ok := cfg.Roles["reviewer"].Settings["findings-max"].(int); ok && n > 0 {
+			entries = n
+		}
+	}
+	return engine.ShowGates(from, engine.GatesToShow{Notes: g.Notes, Title: g.Title(), Summary: g.Summary(),
+		Comment: func(url string) string { return g.Comment(url, entries) }, Worth: g.Worth(), New: g.New}), nil
 }
 
 // fromMergeRequest is what `apply --from-merge-request` takes from this

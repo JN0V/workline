@@ -28,15 +28,20 @@ type Annotation struct {
 // request are annotations of.
 const FindingsCheck = "workline findings"
 
+// GatesCheck is the check the findings a merge request adds to the gates'
+// tools are annotations of (ADR-0049).
+const GatesCheck = "workline gates"
+
 // Annotator is a forge that shows findings beside a commit's lines with
 // no conversation to resolve: GitHub's check runs, the simulated forge's
 // checks. A check written again on the same head is a newer one; the
 // forge shows the latest of a name.
 type Annotator interface {
 	// Annotate writes a completed check of this name on head, neutral,
-	// holding the annotations; it returns the page that shows it. A token
-	// that may not write checks is a refusal: Refused says so.
-	Annotate(head, name, summary string, notes []Annotation) (string, error)
+	// its title and summary above the annotations; it returns the page
+	// that shows it. A token that may not write checks is a refusal:
+	// Refused says so.
+	Annotate(head, name, title, summary string, notes []Annotation) (string, error)
 }
 
 // Conversations is what a branch asks of a merge request's conversations
@@ -68,7 +73,7 @@ const annotationsPerCall = 50
 // Annotate creates the check run, completed and neutral, its first fifty
 // annotations with it, and adds the rest fifty an update. Creating one
 // needs a GitHub App's token with checks: write, the job's own included.
-func (g *github) Annotate(head, name, summary string, notes []Annotation) (string, error) {
+func (g *github) Annotate(head, name, title, summary string, notes []Annotation) (string, error) {
 	type annotation struct {
 		Path    string `json:"path"`
 		Start   int    `json:"start_line"`
@@ -82,7 +87,6 @@ func (g *github) Annotate(head, name, summary string, notes []Annotation) (strin
 		Summary     string       `json:"summary"`
 		Annotations []annotation `json:"annotations"`
 	}
-	title := fmt.Sprintf("%d %s", len(notes), map[bool]string{true: "finding", false: "findings"}[len(notes) == 1])
 	batch := func(from int) output {
 		o := output{Title: title, Summary: summary, Annotations: []annotation{}}
 		for _, n := range notes[from:min(from+annotationsPerCall, len(notes))] {
@@ -164,18 +168,20 @@ func (g *github) Conversations(branch string) (Conversations, error) {
 
 // Annotate keeps the check on head, neutral, as GitHub does; refused
 // whole when the forge refuses checks.
-func (f *Fake) Annotate(head, name, summary string, notes []Annotation) (string, error) {
+func (f *Fake) Annotate(head, name, title, summary string, notes []Annotation) (string, error) {
 	if s, err := f.load(); err != nil || s.ChecksRefused != "" {
 		if err == nil {
 			err = fmt.Errorf("%w: %s", errForbidden, s.ChecksRefused)
 		}
 		return "", err
 	}
+	url := ""
 	err := f.write(func(s *FakeState) error {
-		s.Checks = append(s.Checks, FakeCheck{Commit: head, Name: name, Conclusion: "neutral", Summary: summary, Annotations: append([]Annotation{}, notes...)})
+		s.Checks = append(s.Checks, FakeCheck{Commit: head, Name: name, Conclusion: "neutral", Title: title, Summary: summary, Annotations: append([]Annotation{}, notes...)})
+		url = fmt.Sprintf("https://forge.example/checks/%d", len(s.Checks))
 		return nil
 	})
-	return "", err
+	return url, err
 }
 
 // Conversations reads the branches the simulated forge says require them;
