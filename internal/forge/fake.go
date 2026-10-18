@@ -135,6 +135,9 @@ type FakeItem struct {
 	MergedAs string `json:"merged-as,omitempty"`
 	// Closing: who closed an issue, as Closing reads it.
 	Closing *LabelEvent `json:"closing,omitempty"`
+	// Rank: a label's, where the forge ranks them (GitLab's prioritized
+	// labels); 0 for none.
+	Rank int `json:"rank,omitempty"`
 }
 
 // FakePush is a push to a merge request's branch: the head, a revision
@@ -600,15 +603,47 @@ func (f *Fake) Milestones() ([]Milestone, error) {
 }
 
 func (f *Fake) EnsureLabel(name, color, description string) error {
+	return f.ensureRanked(name, color, description, 0)
+}
+
+// ensureRanked: a label defined with its rank, as GitLab's prioritized
+// labels, when the file says its labels are scoped; one there is left.
+func (f *Fake) ensureRanked(name, color, description string, rank int) error {
 	return f.write(func(s *FakeState) error {
 		for _, l := range s.Labels {
 			if fmt.Sprint(l.Title) == name {
 				return nil
 			}
 		}
-		s.Labels = append(s.Labels, FakeItem{ID: len(s.Labels) + 1, Title: name, Body: description, Labels: []string{}})
+		if !s.Scoped {
+			rank = 0
+		}
+		s.Labels = append(s.Labels, FakeItem{ID: len(s.Labels) + 1, Title: name, Body: description, Labels: []string{}, Rank: rank})
 		return nil
 	})
+}
+
+// projectLabels: the labels defined, and those on any issue, as a forge
+// creates one set on an issue.
+func (f *Fake) projectLabels() ([]string, error) {
+	s, err := f.load()
+	if err != nil {
+		return nil, err
+	}
+	var out []string
+	for _, l := range s.Labels {
+		if !slices.Contains(out, l.Title) {
+			out = append(out, l.Title)
+		}
+	}
+	for _, it := range s.Issues {
+		for _, l := range it.Labels {
+			if !slices.Contains(out, l) {
+				out = append(out, l)
+			}
+		}
+	}
+	return out, nil
 }
 
 func (f *Fake) SetBody(id int, body string) error {

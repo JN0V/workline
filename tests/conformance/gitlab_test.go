@@ -397,8 +397,26 @@ func (m *gitlabMock) serve(s *gitlabState, method, p string, q, form url.Values)
 		}
 		return notFound, 404
 	case p == "/labels" && method == "POST":
-		s.Labels = append(s.Labels, forge.FakeItem{ID: len(s.Labels) + 1, Title: form.Get("name"), Body: form.Get("description"), Labels: []string{}})
+		rank, _ := strconv.Atoi(form.Get("priority")) // a prioritized label's rank
+		s.Labels = append(s.Labels, forge.FakeItem{ID: len(s.Labels) + 1, Title: form.Get("name"), Body: form.Get("description"), Labels: []string{}, Rank: rank})
 		return map[string]any{"name": form.Get("name")}, 201
+	case p == "/labels" && method == "GET":
+		// The project's labels: those defined, and those set on an issue,
+		// as GitLab creates one set by name.
+		var names []string
+		for _, l := range s.Labels {
+			names = append(names, l.Title)
+		}
+		for _, it := range s.Issues {
+			names = append(names, it.Labels...)
+		}
+		out := []map[string]any{}
+		for i, n := range names {
+			if !slices.Contains(names[:i], n) {
+				out = append(out, map[string]any{"name": n})
+			}
+		}
+		return out, 200
 	}
 	return notFound, 404
 }

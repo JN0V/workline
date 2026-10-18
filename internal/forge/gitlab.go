@@ -1224,12 +1224,40 @@ func (g *gitlab) Milestones() ([]Milestone, error) {
 }
 
 func (g *gitlab) EnsureLabel(name, color, description string) error {
+	return g.ensureRanked(name, color, description, 0)
+}
+
+// ensureRanked creates a label, a prioritized one when rank is above 0:
+// GitLab's "Label priority" sort lists the lowest rank first (ADR-0040).
+// One there already is left, its rank a person's.
+func (g *gitlab) ensureRanked(name, color, description string, rank int) error {
 	_, err := g.api("projects/:id/labels/" + url.PathEscape(name))
 	if !errors.Is(err, errNotFound) {
 		return err
 	}
-	_, err = g.api("-X", "POST", "projects/:id/labels", "-f", "name="+name, "-f", "color=#"+color, "-f", "description="+description)
+	args := []string{"-X", "POST", "projects/:id/labels", "-f", "name=" + name, "-f", "color=#" + color, "-f", "description=" + description}
+	if rank > 0 {
+		args = append(args, "-f", "priority="+strconv.Itoa(rank))
+	}
+	_, err = g.api(args...)
 	return err
+}
+
+// projectLabels lists the project's labels, its groups' included, as
+// GitLab gives them by default.
+func (g *gitlab) projectLabels() ([]string, error) {
+	out, err := g.api("--paginate", "projects/:id/labels?per_page=100")
+	if err != nil {
+		return nil, err
+	}
+	all, err := pages[struct {
+		Name string `json:"name"`
+	}](out)
+	var names []string
+	for _, l := range all {
+		names = append(names, l.Name)
+	}
+	return names, err
 }
 
 func (g *gitlab) SetBody(id int, body string) error {

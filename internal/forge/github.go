@@ -304,6 +304,22 @@ func (g *github) EnsureLabel(name, color, description string) error {
 	return err
 }
 
+// projectLabels lists the repository's labels.
+func (g *github) projectLabels() ([]string, error) {
+	out, err := g.api("--paginate", "repos/{owner}/{repo}/labels?per_page=100", "--jq", ".[] | {name}")
+	if err != nil {
+		return nil, err
+	}
+	all, err := lines[struct {
+		Name string `json:"name"`
+	}](out)
+	var names []string
+	for _, l := range all {
+		names = append(names, l.Name)
+	}
+	return names, err
+}
+
 func (g *github) SetBody(id int, body string) error {
 	_, err := g.api("-X", "PATCH", fmt.Sprintf("repos/{owner}/{repo}/issues/%d", id), "-f", "body="+body)
 	return err
