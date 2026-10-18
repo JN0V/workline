@@ -226,6 +226,7 @@ func TestGitLabAnswers(t *testing.T) {
 // the merge request's head counts, a pipeline on an older head never;
 // none, the head waits, pending, never red.
 func TestGitLabCanceledPipeline(t *testing.T) {
+	quick(t) // its 500 is tried again
 	var head string
 	var pipelines []map[string]any
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

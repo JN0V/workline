@@ -1,0 +1,16 @@
+case: forge/gitlab-429-waits-retry-after
+about: "A GitLab read refused for the rate (429) is tried again once the time GitLab asks in Retry-After has passed, not sooner: the open issues refused once, 1 s asked, any call sooner refused again (#489)."
+given:
+  repo: backlog
+  engine-tags: [workline_quick]
+  forge:
+    faults:
+      - {path: /issues, status: 429, retry-after: 1, times: 1}
+    issues:
+      - {id: 20, title: "Export in JSON", body: "Add a JSON export.", labels: [workline:ready], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: none, forge: gitlab, summary: true}
+expect:
+  status: pass
+  no-findings: [{rule: forge-unreachable}]
+  summary-file:
+    - "- **next to build** (1)\n  - #20: Export in JSON"
