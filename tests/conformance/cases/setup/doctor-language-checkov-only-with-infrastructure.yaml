@@ -1,0 +1,18 @@
+case: setup/doctor-language-checkov-only-with-infrastructure
+about: "An infrastructure scanner is suggested only where infrastructure is: a plain YAML config gets yamllint and no checkov, a Terraform file gets checkov (ADR-0049, security's scanners kept to what is relevant, #204)."
+given:
+  repo: basic
+  setup:
+    - |
+      mkdir -p infra
+      printf 'port: 8080\n' > config.yaml
+      printf 'resource "null_resource" "x" {}\n' > infra/main.tf
+      git add config.yaml infra && git commit -qm 'feat: a config and its infrastructure'
+run: {doctor: true}
+expect:
+  status: pass
+  findings:
+    - {rule: language-gaps, where: yaml, level: warn, message: "lint by nothing: yamllint"}
+    - {rule: language-gaps, where: terraform, level: warn, message: "security by nothing: checkov"}
+  no-findings:
+    - {rule: language-gaps, where: yaml, message: checkov}

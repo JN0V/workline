@@ -1,0 +1,22 @@
+case: setup/doctor-language-install-flags-not-a-run
+about: "Flags between a package manager and its verb leave it an install: `sudo apt-get -y install shellcheck` and `pip --quiet install yamllint` run neither, so shell and YAML still lack their linter (ADR-0049)."
+given:
+  repo: basic
+  setup:
+    - |
+      mkdir -p .github/workflows
+      printf 'echo deploy\n' > deploy.sh
+      cat > .github/workflows/lint.yml <<'EOF'
+      jobs:
+        lint:
+          steps:
+            - run: sudo apt-get -y install shellcheck
+            - run: pip --quiet install yamllint
+      EOF
+      git add deploy.sh .github && git commit -qm 'ci: install the linters'
+run: {doctor: true}
+expect:
+  status: pass
+  findings:
+    - {rule: language-gaps, where: shell, level: warn, message: "lint by nothing: shellcheck"}
+    - {rule: language-gaps, where: yaml, level: warn, message: "lint by nothing: yamllint"}
