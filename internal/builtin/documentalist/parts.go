@@ -650,27 +650,34 @@ func readParts(runDir, repo string, names []string, plans []partPlan) (*partsVer
 			case yaml.Unmarshal(data, &c) != nil || !c.valid():
 				drop("a claim lacking what its status needs")
 				continue
-			case !quotedAt(string(doc), c.Lines, c.Quote):
+			}
+			placed, ok := placeQuote(string(doc), c.Lines, c.Quote, 1, strings.Count(string(doc), "\n")+1)
+			if !ok {
 				drop("%q is not at the doc's %s", clip(c.Quote), c.Lines)
 				continue
 			}
+			c.Lines = placed
 			if c.Source != nil {
 				src := path.Clean(strings.TrimPrefix(c.Source.Path, "./"))
-				held := false
-				for _, f := range plans[k].Files {
-					held = held || f.Path == src && f.From <= c.Source.Lines.from && c.Source.Lines.to <= f.To
+				var share *partFile
+				for i, f := range plans[k].Files {
+					if f.Path == src && f.From <= c.Source.Lines.from && c.Source.Lines.to <= f.To {
+						share = &plans[k].Files[i]
+					}
 				}
-				if _, ok := sources[src]; !ok && held {
-					sources[src], _ = showFile(repo, src)
-				}
-				if !held {
+				if share == nil {
 					drop("%s, %s, is not in its share", src, c.Source.Lines)
 					continue
 				}
-				if !quotedAt(sources[src], c.Source.Lines, c.Source.Quote) {
+				if _, ok := sources[src]; !ok {
+					sources[src], _ = showFile(repo, src)
+				}
+				placed, ok := placeQuote(sources[src], c.Source.Lines, c.Source.Quote, share.From, share.To)
+				if !ok {
 					drop("%q is not at %s, %s", clip(c.Source.Quote), src, c.Source.Lines)
 					continue
 				}
+				c.Source.Lines = placed
 				c.Source.Path = src
 				if only, line := commentOnlyAt(src, sources[src], c.Source.Lines, c.Source.Quote); only && c.Status == "supported" {
 					c.comment = fmt.Sprintf("%s:%d", src, line)
@@ -703,6 +710,63 @@ func quotedAt(content string, r lineRange, quote string) bool {
 		return false
 	}
 	return strings.Contains(strings.Join(strings.Fields(strings.Join(lines[r.from-1:r.to], " ")), " "), q)
+}
+
+// placeQuote finds a part's quote where it stands: at the lines r cites,
+// whitespace aside, or running across the line break into them from the
+// line before or out of them into the line after — a sentence often starts
+// at the end of the line before a part's range (#482: "Each" ending line
+// 22 of a quote cited at 23-24 dropped the claim saying what was wrong, 3
+// runs in 10). It returns the lines the quote stands on, r widened by one
+// line at most either way, never past lo and hi (a part's share of a
+// source). A one-line margin is safe: the quote must still read word for
+// word in the doc and hold words of the lines cited, so it names the words
+// the part read, now placed where they are; a quote wholly outside them,
+// or two lines away, is still not there. What the claim then says is
+// judged as any claim, on the lines it stands on.
+func placeQuote(content string, r lineRange, quote string, lo, hi int) (lineRange, bool) {
+	if quotedAt(content, r, quote) {
+		return r, true
+	}
+	lines := strings.Split(strings.TrimSuffix(content, "\n"), "\n")
+	if r.from < 1 || r.to > len(lines) {
+		return r, false
+	}
+	w := lineRange{max(lo, 1, r.from-1), min(hi, len(lines), r.to+1)}
+	if w.from > r.from || w.to < r.to {
+		return r, false
+	}
+	// Each line's words, as offsets in the doc's words joined by spaces.
+	at := make([][2]int, len(lines))
+	off, first := 0, true
+	for i, l := range lines {
+		at[i] = [2]int{off + 1, off + 1}
+		for k, word := range strings.Fields(l) {
+			if !first {
+				off++
+			}
+			first = false
+			if k == 0 {
+				at[i][0] = off
+			}
+			off += len(word)
+			at[i][1] = off
+		}
+	}
+	cited := [2]int{at[r.from-1][0], at[r.to-1][1]}
+	for _, s := range quoteSpans(content, w, quote) {
+		if s[0] >= cited[1] || cited[0] >= s[1] {
+			continue // wholly on the line beside: not a quote of the lines cited
+		}
+		placed := r
+		for n := w.from; n <= w.to; n++ {
+			if at[n-1][0] < s[1] && s[0] < at[n-1][1] {
+				placed.from, placed.to = min(placed.from, n), max(placed.to, n)
+			}
+		}
+		return placed, true
+	}
+	return r, false
 }
 
 // quoteSpans are where quote stands in the lines r cites, as offsets in the

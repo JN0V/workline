@@ -132,6 +132,41 @@ func TestQuotedAtIgnoresWhitespaceOnly(t *testing.T) {
 	}
 }
 
+// A quote running across the line break into the lines it cites, from the
+// line before or into the line after, is placed where it stands; one wholly
+// beside them, or two lines away, is not there (#482).
+func TestPlaceQuoteOneLineEitherSide(t *testing.T) {
+	doc := "# Sessions\n" + // 1
+		"Sessions are kept in memory. Each\n" + // 2
+		"one lasts the TTL, 24 hours by default, and is renewed\n" + // 3
+		"each time the user comes back.\n" + // 4
+		"\n" + // 5
+		"Expired sessions are dropped.\n" // 6
+	for _, tc := range []struct {
+		name   string
+		r      lineRange
+		quote  string
+		lo, hi int
+		want   lineRange
+		ok     bool
+	}{
+		{"at the lines cited", lineRange{3, 3}, "one lasts the TTL", 1, 6, lineRange{3, 3}, true},
+		{"from the line before", lineRange{3, 4}, "Each one lasts the TTL, 24 hours by default", 1, 6, lineRange{2, 4}, true},
+		{"into the line after", lineRange{3, 3}, "and is renewed each time", 1, 6, lineRange{3, 4}, true},
+		{"both sides", lineRange{3, 3}, "Each one lasts the TTL, 24 hours by default, and is renewed each time", 1, 6, lineRange{2, 4}, true},
+		{"two lines away", lineRange{4, 4}, "Each one lasts", 1, 6, lineRange{4, 4}, false},
+		{"wholly on the line before", lineRange{3, 3}, "Sessions are kept in memory.", 1, 6, lineRange{3, 3}, false},
+		{"across an empty line, two lines away", lineRange{6, 6}, "comes back. Expired", 1, 6, lineRange{6, 6}, false},
+		{"past the share", lineRange{3, 4}, "Each one lasts", 3, 6, lineRange{3, 4}, false},
+		{"not in the doc", lineRange{3, 3}, "one lasts forever", 1, 6, lineRange{3, 3}, false},
+	} {
+		got, ok := placeQuote(doc, tc.r, tc.quote, tc.lo, tc.hi)
+		if ok != tc.ok || ok && got != tc.want {
+			t.Errorf("%s: placed %v %v, want %v %v", tc.name, got, ok, tc.want, tc.ok)
+		}
+	}
+}
+
 func TestLineRangeReadsNumbersAndRanges(t *testing.T) {
 	for text, want := range map[string]lineRange{"10": {10, 10}, `"12-14"`: {12, 14}, `"3 – 5"`: {3, 5}} {
 		var r lineRange
