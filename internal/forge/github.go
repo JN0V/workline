@@ -46,6 +46,13 @@ func (g *github) Issue(id int) (*Issue, error) {
 			Login string `json:"login"`
 		} `json:"user"`
 		Association string `json:"author_association"`
+		// Its values in the organisation's issue fields (ADR-0040).
+		FieldValues []struct {
+			Name   string `json:"issue_field_name"`
+			Option *struct {
+				Name string `json:"name"`
+			} `json:"single_select_option"`
+		} `json:"issue_field_values"`
 	}
 	if err := decode(out, &v); err != nil {
 		return nil, err
@@ -54,6 +61,14 @@ func (g *github) Issue(id int) (*Issue, error) {
 		Author: v.User.Login, Insider: insider(v.Association)}
 	for _, l := range v.Labels {
 		is.Labels = append(is.Labels, l.Name)
+	}
+	for _, f := range v.FieldValues {
+		if f.Option != nil {
+			if is.Fields == nil {
+				is.Fields = map[string]string{}
+			}
+			is.Fields[f.Name] = f.Option.Name
+		}
 	}
 	return is, nil
 }
@@ -78,7 +93,7 @@ func (g *github) AllIssues() ([]Issue, error) { return g.issues("all") }
 
 func (g *github) issues(state string) ([]Issue, error) {
 	out, err := g.api("--paginate", "repos/{owner}/{repo}/issues?state="+state+"&per_page=100",
-		"--jq", ".[] | select(.pull_request == null) | {id: .number, title, body: (.body // \"\"), labels: [.labels[].name], milestone: (.milestone.title // \"\"), \"milestone-due\": ((.milestone.due_on // \"\") | .[0:10]), author: .user.login, association: .author_association, closed: (.state == \"closed\"), reason: (.state_reason // \"\"), blocked: (.issue_dependencies_summary.total_blocked_by // 0), subs: (.sub_issues_summary.total // 0), repo: .repository_url}")
+		"--jq", ".[] | select(.pull_request == null) | {id: .number, title, body: (.body // \"\"), labels: [.labels[].name], milestone: (.milestone.title // \"\"), \"milestone-due\": ((.milestone.due_on // \"\") | .[0:10]), author: .user.login, association: .author_association, closed: (.state == \"closed\"), reason: (.state_reason // \"\"), blocked: (.issue_dependencies_summary.total_blocked_by // 0), subs: (.sub_issues_summary.total // 0), repo: .repository_url, fields: ([.issue_field_values[]? | select(.single_select_option != null) | {key: .issue_field_name, value: .single_select_option.name}] | from_entries)}")
 	if err != nil {
 		return nil, err
 	}

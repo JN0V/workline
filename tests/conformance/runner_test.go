@@ -285,6 +285,7 @@ type itemWant struct {
 	BlockedBy       *[]int              `yaml:"blocked-by"` // the forge's own relation
 	Labels          *[]string           `yaml:"labels"`     // the exact set
 	Reactions       map[string][]string `yaml:"reactions"`  // on its comments, by the comment's id
+	Fields          map[string]string   `yaml:"fields"`     // its values in the issue fields, exactly these, by the field's name
 	Threads         *[]threadWant       `yaml:"threads"`    // a merge request's comments on lines, exactly these, in the order posted
 }
 
@@ -1486,6 +1487,15 @@ func compareItem(kind string, wm itemWant, got []map[string]any) []string {
 		gl, _ := found["labels"].([]any)
 		if fmt.Sprint(gl) != fmt.Sprint(*wm.Labels) {
 			p = append(p, fmt.Sprintf("forge: %s %v labels = %v, want %v", kind, wm.ID, gl, *wm.Labels))
+		}
+	}
+	if wm.Fields != nil {
+		gf, _ := found["fields"].(map[string]any)
+		if gf == nil {
+			gf = map[string]any{}
+		}
+		if fmt.Sprint(gf) != fmt.Sprint(wm.Fields) {
+			p = append(p, fmt.Sprintf("forge: %s %v fields = %v, want %v", kind, wm.ID, gf, wm.Fields))
 		}
 	}
 	if wm.Reactions != nil {

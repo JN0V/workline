@@ -26,9 +26,16 @@ type FakeState struct {
 	SubIssues    bool              `json:"sub-issues,omitempty"`   // the forge has sub-issues, as GitHub
 	Dependencies bool              `json:"dependencies,omitempty"` // the forge has a blocked-by relation, as GitHub
 	// Scoped: its labels are scoped, `key::value`, as GitLab's (ADR-0038).
-	Scoped      bool `json:"scoped-labels,omitempty"`
-	FailOnWrite int  `json:"fail-on-write,omitempty"` // the write that fails, counting from 1
-	Writes      int  `json:"writes"`
+	Scoped bool `json:"scoped-labels,omitempty"`
+	// IssueFields are its single-select issue fields, as a GitHub
+	// organisation's (ADR-0040); Public, the repository is public; Blind,
+	// why the token reads no value visible to members only, "" when it
+	// does.
+	IssueFields []Field `json:"issue-fields,omitempty"`
+	Public      bool    `json:"public,omitempty"`
+	Blind       string  `json:"fields-blind,omitempty"`
+	FailOnWrite int     `json:"fail-on-write,omitempty"` // the write that fails, counting from 1
+	Writes      int     `json:"writes"`
 	// ReviewRefused: the forge refuses every comment on a line, as a
 	// token that may not review does, with this reason (HTTP 403).
 	ReviewRefused string `json:"review-refused,omitempty"`
@@ -138,6 +145,9 @@ type FakeItem struct {
 	// Rank: a label's, where the forge ranks them (GitLab's prioritized
 	// labels); 0 for none.
 	Rank int `json:"rank,omitempty"`
+	// Fields: an issue's values in the forge's issue fields, by name
+	// (GitHub's, ADR-0040).
+	Fields map[string]string `json:"fields,omitempty"`
 }
 
 // FakePush is a push to a merge request's branch: the head, a revision
@@ -231,7 +241,7 @@ func (f *Fake) Issue(id int) (*Issue, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Issue{ID: it.ID, Title: it.Title, Body: it.Body, Labels: it.Labels, Closed: it.Closed, Author: it.Author, Insider: it.Insider}, nil
+	return &Issue{ID: it.ID, Title: it.Title, Body: it.Body, Labels: it.Labels, Closed: it.Closed, Author: it.Author, Insider: it.Insider, Fields: it.Fields}, nil
 }
 
 func (f *Fake) Issues() ([]Issue, error) {
@@ -248,7 +258,7 @@ func (f *Fake) Issues() ([]Issue, error) {
 					children = append(children, c.ID)
 				}
 			}
-			out = append(out, Issue{ID: it.ID, Title: it.Title, Body: it.Body, Labels: it.Labels, Milestone: it.Milestone, MilestoneDue: s.MilestoneDue[it.Milestone], Author: it.Author, Insider: it.Insider, BlockedBy: it.BlockedBy, Children: children})
+			out = append(out, Issue{ID: it.ID, Title: it.Title, Body: it.Body, Labels: it.Labels, Milestone: it.Milestone, MilestoneDue: s.MilestoneDue[it.Milestone], Author: it.Author, Insider: it.Insider, BlockedBy: it.BlockedBy, Children: children, Fields: it.Fields})
 		}
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
@@ -262,7 +272,7 @@ func (f *Fake) AllIssues() ([]Issue, error) {
 	}
 	var out []Issue
 	for _, it := range s.Issues {
-		out = append(out, Issue{ID: it.ID, Title: it.Title, Body: it.Body, Labels: it.Labels, Milestone: it.Milestone, MilestoneDue: s.MilestoneDue[it.Milestone], Author: it.Author, Insider: it.Insider, Closed: it.Closed, Reason: it.Reason})
+		out = append(out, Issue{ID: it.ID, Title: it.Title, Body: it.Body, Labels: it.Labels, Milestone: it.Milestone, MilestoneDue: s.MilestoneDue[it.Milestone], Author: it.Author, Insider: it.Insider, Closed: it.Closed, Reason: it.Reason, Fields: it.Fields})
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
 	return out, nil
@@ -619,6 +629,36 @@ func (f *Fake) ensureRanked(name, color, description string, rank int) error {
 			rank = 0
 		}
 		s.Labels = append(s.Labels, FakeItem{ID: len(s.Labels) + 1, Title: name, Body: description, Labels: []string{}, Rank: rank})
+		return nil
+	})
+}
+
+// issueFields: the fields the file holds, as GitHub lists an
+// organisation's for a repository.
+func (f *Fake) issueFields() (Fields, error) {
+	s, err := f.load()
+	if err != nil {
+		return Fields{}, err
+	}
+	return Fields{List: s.IssueFields, Public: s.Public, Blind: s.Blind}, nil
+}
+
+// setField: an issue's value in a field the file holds, by an option's
+// name; another is refused, as GitHub refuses it.
+func (f *Fake) setField(issue int, field Field, option string) error {
+	return f.write(func(s *FakeState) error {
+		i := slices.IndexFunc(s.IssueFields, func(x Field) bool { return x.ID == field.ID })
+		if i < 0 || !slices.Contains(s.IssueFields[i].Options, option) {
+			return fmt.Errorf("no field %d with an option %q", field.ID, option)
+		}
+		it, err := s.item(Target{Kind: "issue", ID: issue})
+		if err != nil {
+			return err
+		}
+		if it.Fields == nil {
+			it.Fields = map[string]string{}
+		}
+		it.Fields[s.IssueFields[i].Name] = option
 		return nil
 	})
 }
