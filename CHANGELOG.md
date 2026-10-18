@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.34.0](https://github.com/JN0V/workline/compare/v0.33.0...v0.34.0) (2026-10-18)
+
+
+### Features
+
+* **documentalist:** read a doc judged on its change in parts at night ([#483](https://github.com/JN0V/workline/issues/483)) ([b656b15](https://github.com/JN0V/workline/commit/b656b1537d731af436c0f44c34410f8574f04316))
+* **product-owner:** detect where priority and effort are kept ([#481](https://github.com/JN0V/workline/issues/481)) ([2f89f23](https://github.com/JN0V/workline/commit/2f89f2346b9ee2fb4ac45e741c2ff3c2180fa892))
+* **product-owner:** estimate each issue's effort, order by the grid ([#485](https://github.com/JN0V/workline/issues/485)) ([ad9285b](https://github.com/JN0V/workline/commit/ad9285b3b51d4b67e3aebc794f48c2271ea0c6da))
+* **product-owner:** keep effort in GitLab's weight ([#488](https://github.com/JN0V/workline/issues/488)) ([9d38294](https://github.com/JN0V/workline/commit/9d3829490ddeec8f768cd4961cecf4f9c153e7cc))
+* **product-owner:** keep priority and effort in GitHub's fields ([#486](https://github.com/JN0V/workline/issues/486)) ([87f362a](https://github.com/JN0V/workline/commit/87f362a4963f6dea5a07c5aa42d6f513a3e5f388))
+
 ## [0.33.0](https://github.com/JN0V/workline/compare/v0.32.0...v0.33.0) (2026-10-18)
 
 
