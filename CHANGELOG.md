@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.33.0](https://github.com/JN0V/workline/compare/v0.32.0...v0.33.0) (2026-10-18)
+
+
+### Features
+
+* **documentalist:** keep a judged record off a person's branch ([#470](https://github.com/JN0V/workline/issues/470)) ([c7e1e98](https://github.com/JN0V/workline/commit/c7e1e98a8bd1c558bb3f51a6ec97b278d3350eaf))
+
+
+### Bug Fixes
+
+* **agent:** leave a Claude Code session's variables out of a call ([#453](https://github.com/JN0V/workline/issues/453)) ([de61d38](https://github.com/JN0V/workline/commit/de61d385d4e5b64fded2a974c208c3c7038242c2))
+* **documentalist:** a quote a part judged partial is no proof ([#469](https://github.com/JN0V/workline/issues/469)) ([68cbc4b](https://github.com/JN0V/workline/commit/68cbc4b305733b5ea50610cf8e1794daf74017da))
+* **documentalist:** judge docs in parts only when gardening ([#460](https://github.com/JN0V/workline/issues/460)) ([2c53260](https://github.com/JN0V/workline/commit/2c532600b2ab17dd2c3d076603af8bb31aae956d))
+* **evaluation:** count a doc's lines as its budget does ([#457](https://github.com/JN0V/workline/issues/457)) ([1f81fa7](https://github.com/JN0V/workline/commit/1f81fa73752af995dd97178fff6a646d1d5081fa))
+* **follow:** a role's README and docs pages merge alone ([#478](https://github.com/JN0V/workline/issues/478)) ([d2253bf](https://github.com/JN0V/workline/commit/d2253bf6e73a7b50e63ea29ea5f8c228926db167))
+* **reviewer:** show the code a spec writes as code, not plain words ([#477](https://github.com/JN0V/workline/issues/477)) ([e6e52d2](https://github.com/JN0V/workline/commit/e6e52d2f94632fd84e5cbd9cf750be47c7008f8f))
+* **sample:** a squash's head says whose a checked moved was ([#468](https://github.com/JN0V/workline/issues/468)) ([cdc5a33](https://github.com/JN0V/workline/commit/cdc5a338ef936965be2fcb065a4566ffcf222795))
+
 ## [0.32.0](https://github.com/JN0V/workline/compare/v0.31.0...v0.32.0) (2026-10-17)
 
 
