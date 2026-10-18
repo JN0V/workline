@@ -1,6 +1,6 @@
 ---
 sources: [roles/documentalist/role.yaml, internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/kept.go, routing.default.yaml]
-checked: 6ca89245
+checked: 9a5b81df
 judged: f70db89
 verified: agent:claude-code
 ---
@@ -87,6 +87,7 @@ Under `roles: {documentalist: {settings: …}}` in `.workline/config.yaml`
 | `whole-chars` | `20000` | characters of sources a doc may take to be judged whole; 25000 at most, its task fitting the context budget |
 | `judge-in-parts` | `true` | when gardening, judge a doc too large in parts ([ADR-0009](../../docs/adr/0009-docs-far-behind-are-judged-in-parts.md)), and one a merge request judged on its change alone; a merge request leaves it for the next gardening; `false`: such docs go to a person |
 | `parts-max`, `parts-max-per-run` | `8`, `16` | parts a doc, parts a run: what bounds a night's tokens in parts |
+| `parts-move-checked` | `false` | `true`: a doc judged in parts, nothing found wrong, every line it states supported, gets its `checked` moved ([more](docs/parts.md#checked-moved-after-parts-if-the-project-says-so)) |
 | `sample` | unset | `{judge, at-least, after, ai-max-tokens, panel}` for `workline sample` ([ci.md](../../docs/ci.md#the-weekly-sample)) |
 
 ## Outputs
@@ -150,7 +151,8 @@ comment. Gardening only regenerates derived blocks.
   levels; [those on the docs alone](docs/checks-docs.md);
   [cascades](docs/cascades.md): how they are cut, what holds a release,
   the docs the code never rewrites.
-- [The agent's tasks](docs/tasks.md): suspect docs judged whole or in parts;
+- [The agent's tasks](docs/tasks.md): suspect docs judged whole, or
+  [in parts](docs/parts.md);
   [gardening](docs/gardening.md): its tasks, one merge request per task;
   [pages read for their reader](docs/reader.md).
 - [The judge](docs/judge.md): what `post` refuses of the agent's patches;

@@ -1,6 +1,6 @@
 ---
 sources: [internal/sample, internal/builtin/documentalist/sample.go, ci/github/workline-sample.yml, ci/gitlab/workline.gitlab-ci.yml, roles/auditor, roles/product-owner/role.yaml]
-checked: a9762f04
+checked: 9a5b81df
 judged: c9d96e2
 verified: agent:claude-code
 ---
@@ -35,6 +35,10 @@ roles:
   a person.
 - **False** only with the material's words, which the engine finds again;
   else the act is for a person.
+- **A doc whose `checked` moved after parts**
+  ([#482](https://github.com/JN0V/workline/issues/482)): its sources do
+  not fit to be read whole, so it is listed for a person, never called
+  unearned nor put back.
 - **What a product owner's act was done on**: the issue's text it read,
   found by the digest its record keeps — the body now, else the version
   GitHub's edit history keeps; for a refine, the issue as it reads now

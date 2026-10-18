@@ -1,6 +1,6 @@
 # ADR-0009: A doc far behind sources too large for one task is judged in parts
 
-- **Status:** accepted (2026-09-30, on the measures below); amended 2026-10-14 (on by default), 2026-10-17 (a conflict is on the same words; only when gardening; a partial quote is no proof), 2026-10-18 (a doc judged on its change alone)
+- **Status:** accepted (2026-09-30, on the measures below); amended 2026-10-14 (on by default), 2026-10-17 (a conflict is on the same words; only when gardening; a partial quote is no proof), 2026-10-18 (a doc judged on its change alone; `checked` after parts, measured, off)
 - **Date:** 2026-09-29
 
 ## Context
@@ -257,3 +257,63 @@ they are now ([#462](https://github.com/JN0V/workline/issues/462)):
   `parts-max-per-run`, or turns `judge-in-parts` off.
 - **Past the caps**, a doc waits for a later night, named; one whose
   change no merge request judged is not judged on that change meanwhile.
+
+## Amendment (2026-10-18): `checked` after parts, measured, off
+
+Decided by the maintainer on
+[#482](https://github.com/JN0V/workline/issues/482), option 1: measure,
+then move `checked` when the engine sees every line stating something
+supported — no passage contradicted, partial or uncovered, no claim
+dropped, no note — adopted only if five evaluation runs in parts hold
+[ADR-0014](0014-checked-is-earned-by-what-was-read.md#4-acceptance-written-before-it-is-measured)
+step 4's bars.
+
+- **Built, behind `parts-move-checked`**, off by default. The engine
+  moves `checked`, never the fix, when:
+  - the parts found nothing wrong, in conflict or to be read together; a
+    partial another part's support settles is settled, as the merge
+    above reads it;
+  - no claim was dropped (a part's note is one), no line is uncovered,
+    no source is a doc, which no part reads;
+  - each word of every line stating something is quoted, where it
+    stands, in a part's support from the code. Headings, fences, derived
+    blocks, HTML comments and link definitions state nothing; a code
+    example does. A quote of a few words vouches for those words, so a
+    part is asked to quote a supported passage whole.
+- **Then** `checked` and `judged-in-parts` name that commit, `verified`
+  the documentalist; the doc leaves the list for a person. Otherwise the
+  finding says what kept it ("no part supports line 14").
+- **Measured** on 2026-10-18, engine 38fac2d1, Sonnet 5.5:
+  `finds-planted-defects-in-parts` with a clean control,
+  `docs/tech/defaults.md` (three lines stating something, one source,
+  one part), beside the doc with four defects planted:
+
+  | Run | Score | Tokens in / out | The control | Planted falsehoods |
+  |---|---|---|---|---|
+  | 1 | 19/19 | 29,074 / 5,668 | `checked` moved | none vouched for |
+  | 2 | 17/19 | 28,763 / 4,551 | stays: a claim dropped | none vouched for; one left, the doc unvouched |
+  | 3 | 19/19 | 29,542 / 6,038 | `checked` moved | none vouched for |
+  | 4 | 18/19 | 30,361 / 5,901 | stays: a fix asked, nothing changed | none vouched for |
+  | 5 | 19/19 | 29,700 / 5,297 | `checked` moved | none vouched for |
+
+  147,440 tokens in, the five together: 4.9k a call, as on 10-17 (24.3k
+  for five calls, one doc). Run 2's row says `+changes`: docs edited
+  while it ran, not the engine.
+- **The bars**: no `checked` over a planted falsehood, held in 5 runs of
+  5; the control ends `checked` in every run, not held: 3 of 5. So it
+  stays off.
+- **Why the control stayed**:
+  - run 2: a part's claim was dropped, its quote not at the lines it
+    cited; the finding did not say which. `claims-dropped` now names the
+    part, the quote and where it was looked for.
+  - run 4: a part found the control wanting, and the fix changed
+    nothing. Its last sentence, "A field the configuration sets is kept
+    as it is", is not exact: a field set to zero gets its default. It is
+    rewritten for the next measure.
+- **Next**: five runs again on the control rewritten, about 150k tokens;
+  on by default if the bars hold.
+- **The price, once on**: a doc fixed in parts still waits for a person;
+  a line no code can support (a link, a word about the project) keeps
+  the doc for a person; the weekly sample cannot read such a doc whole,
+  so it lists it for a person
+  ([ADR-0014, amended](0014-checked-is-earned-by-what-was-read.md#amendment-2026-10-18-checked-earned-in-parts)).
