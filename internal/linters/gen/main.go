@@ -3,8 +3,7 @@
 //
 //	go run ./gen -commit <sha> [-from <a checkout of that commit>]
 //
-// Left out: formatters, tools that read every file, deprecated linters,
-// file types told by their content.
+// Left out: formatters, tools that read every file, deprecated linters.
 package main
 
 import (
@@ -41,6 +40,7 @@ type ftype struct {
 	Shebangs   []string `json:"shebangs,omitempty"`
 	Regexes    []string `json:"regexes,omitempty"`
 	Inherit    []string `json:"inherit,omitempty"`
+	Keys       []string `json:"keys,omitempty"` // top-level YAML keys a file must hold: CloudFormation's
 }
 
 type tool struct {
@@ -235,12 +235,12 @@ func build(files map[string][]byte) (*table, error) {
 	types := map[string]bool{}
 	for _, pl := range plugins {
 		for _, f := range pl.Lint.Files {
-			if f.Name == "ALL" || len(f.RequiredYAMLKeys) > 0 || types[f.Name] {
+			if f.Name == "ALL" || types[f.Name] {
 				continue
 			}
 			types[f.Name] = true
 			t.Types = append(t.Types, ftype{Name: f.Name, Extensions: f.Extensions, Filenames: f.Filenames,
-				Shebangs: f.Shebangs, Regexes: f.Regexes, Inherit: f.Inherit})
+				Shebangs: f.Shebangs, Regexes: f.Regexes, Inherit: f.Inherit, Keys: f.RequiredYAMLKeys})
 		}
 	}
 	for i := range t.Types { // an inherited type left out is dropped

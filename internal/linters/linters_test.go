@@ -171,6 +171,36 @@ func TestInstallsAndNamesRunNothing(t *testing.T) {
 	}
 }
 
+func TestInfrastructureScannerOnlyOnInfrastructure(t *testing.T) {
+	missing := func(l Language, kind, tool string) bool {
+		for _, s := range l.Missing[kind] {
+			if s.Tool == tool {
+				return true
+			}
+		}
+		return false
+	}
+	got := read(t, map[string]string{
+		"config.yaml":      "port: 8080\n",
+		"settings.json":    `{"port": 8080}`,
+		"deploy/app.yaml":  "apiVersion: apps/v1\nkind: Deployment\n",
+		"stack.yaml":       "AWSTemplateFormatVersion: '2010-09-09'\n",
+		"chart/Chart.yaml": "apiVersion: v2\nname: app\n",
+		"infra/main.tf":    "resource \"null_resource\" \"x\" {}\n",
+	})
+	if missing(got["yaml"], Security, "checkov") || missing(got["json"], Security, "checkov") {
+		t.Errorf("a plain YAML or JSON config gets no infrastructure scanner: %+v %+v", got["yaml"].Missing, got["json"].Missing)
+	}
+	for _, name := range []string{"kubernetes", "cloudformation", "helm", "terraform"} {
+		if !missing(got[name], Security, "checkov") {
+			t.Errorf("%s: checkov is suggested: %+v", name, got[name])
+		}
+	}
+	if l := got["kubernetes"]; len(l.Files) != 1 || l.Files[0] != "deploy/app.yaml" {
+		t.Errorf("a manifest is told by apiVersion and kind: %+v", l.Files)
+	}
+}
+
 func TestGateChecksCountFirst(t *testing.T) {
 	got := read(t, map[string]string{
 		"main.go":                  "package main\n",

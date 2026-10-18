@@ -12,6 +12,7 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"path"
 	"regexp"
@@ -51,6 +52,8 @@ type fileType struct {
 	Shebangs   []string `json:"shebangs,omitempty"`
 	Regexes    []string `json:"regexes,omitempty"`
 	Inherit    []string `json:"inherit,omitempty"`
+	Keys       []string `json:"keys,omitempty"` // top-level keys a file must hold: AWSTemplateFormatVersion
+	keys       []*regexp.Regexp
 }
 
 type table struct {
@@ -85,9 +88,13 @@ var load = sync.OnceValues(func() (*known, error) {
 	k := &known{types: map[string]*fileType{}, byExt: map[string][]string{}, byName: map[string][]string{},
 		byBang: map[string][]string{}, regexes: map[string][]*regexp.Regexp{}, members: map[string]map[string]bool{},
 		group: map[string]string{}, seen: map[string][]*regexp.Regexp{}}
+	t.Types = append(t.Types, ecosystemTypes...)
 	for i := range t.Types {
 		ft := &t.Types[i]
 		k.types[ft.Name] = ft
+		for _, key := range ft.Keys { // a key at the start of a line, quoted or not: YAML's, and JSON's indented
+			ft.keys = append(ft.keys, regexp.MustCompile(`(?m)^\s*["']?`+regexp.QuoteMeta(key)+`["']?\s*:`))
+		}
 		for _, e := range ft.Extensions {
 			k.byExt[e] = append(k.byExt[e], ft.Name)
 		}
@@ -456,6 +463,24 @@ func (k *known) typesOf(repo, f string) (types []string, bang bool) {
 			}
 		}
 	}
+	// A type told by its content too (CloudFormation, a Kubernetes
+	// manifest) holds the file only when it holds the type's keys.
+	var head string
+	types = slices.DeleteFunc(types, func(t string) bool {
+		ft := k.types[t]
+		if len(ft.keys) == 0 {
+			return false
+		}
+		if head == "" {
+			head = start(repo, f, 64<<10) + "\x00" // read once
+		}
+		for _, re := range ft.keys {
+			if !re.MatchString(head) {
+				return true
+			}
+		}
+		return false
+	})
 	sort.Strings(types)
 	if len(types) > 0 || strings.Contains(base, ".") {
 		return types, false
@@ -481,17 +506,22 @@ func contains(l []string, s string) bool {
 	return false
 }
 
-// interpreter is the program a file's #! line names: env's argument for
-// `#!/usr/bin/env -S python3 -u`.
-func interpreter(repo, f string) string {
+// start is the first n bytes of a tracked file; empty when it cannot be read.
+func start(repo, f string, n int) string {
 	h, err := os.Open(path.Join(repo, f))
 	if err != nil {
 		return ""
 	}
 	defer h.Close()
-	buf := make([]byte, 256)
-	n, _ := h.Read(buf)
-	line, _, _ := strings.Cut(string(buf[:n]), "\n")
+	buf := make([]byte, n)
+	got, _ := io.ReadFull(h, buf)
+	return string(buf[:got])
+}
+
+// interpreter is the program a file's #! line names: env's argument for
+// `#!/usr/bin/env -S python3 -u`.
+func interpreter(repo, f string) string {
+	line, _, _ := strings.Cut(start(repo, f, 256), "\n")
 	rest, ok := strings.CutPrefix(line, "#!")
 	if !ok {
 		return ""
