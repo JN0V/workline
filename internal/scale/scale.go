@@ -4,9 +4,9 @@ package scale
 // counts for what its name says, never for where an option sits in a
 // list, through one table — the one place in the engine that names a
 // level, a label carrying one, or the way the role says one. Where a
-// project keeps each axis is detected later (ADR-0040, step 2): until
-// then the engine reads and writes workline's own priority labels, and
-// reads no effort.
+// project keeps each axis is detected when its settings ask (detect.go,
+// ADR-0040's step 2); unset, the engine reads and writes workline's own
+// priority labels, and reads no effort.
 
 import (
 	"fmt"
@@ -93,14 +93,16 @@ func (s Scale) Number(n, first int) int {
 	return min(n-first+1, s.Count())
 }
 
-// Label is one name of a family and the level it carries. Color and
-// About, for a label the role creates: its colour and what it says of
-// itself.
+// Label is one name of a family and the level it carries. Color, About
+// and Rank, for a label the role creates: its colour, what it says of
+// itself, and its rank where the forge ranks labels — GitLab's
+// prioritized labels, 1 listed first —, 0 for none.
 type Label struct {
 	Name  string
 	Level int
 	Color string
 	About string
+	Rank  int
 }
 
 // Describe is what a label the role creates says of itself, by the role
@@ -184,10 +186,17 @@ func (f Family) Others(l int) []string {
 // another family and Performance to none. A word no table knows carries
 // no level, and the error names it, to be said once.
 func Labels(s Scale, prefix string, labels []string) (Family, error) {
+	return named(s, prefix, labels, nil)
+}
+
+// named reads a family of labels as Labels does, a name the project's
+// settings map (Setting.Names) carrying the level they give it.
+func named(s Scale, prefix string, labels []string, names map[string]int) (Family, error) {
 	type read struct {
 		name   string
 		number int
 		word   string
+		level  int // mapped by the settings
 	}
 	var in []read
 	last, _ := utf8.DecodeLastRuneInString(prefix)
@@ -196,6 +205,10 @@ func Labels(s Scale, prefix string, labels []string) (Family, error) {
 	for _, name := range labels {
 		rest, ok := strings.CutPrefix(name, prefix)
 		if !ok || rest == "" {
+			continue
+		}
+		if l := names[name]; s.Valid(l) {
+			in = append(in, read{name: name, number: -1, level: l})
 			continue
 		}
 		if n, ok := number(rest); ok {
@@ -214,7 +227,7 @@ func Labels(s Scale, prefix string, labels []string) (Family, error) {
 	f := Family{Scale: s, Prefix: prefix}
 	var unknown []string
 	for _, r := range in {
-		l := 0
+		l := r.level
 		if r.number >= 0 {
 			l = s.Number(r.number, first)
 		} else if w, ok := s.Word(r.word); ok {
@@ -324,19 +337,34 @@ func own() Family {
 
 // Scheme is where the engine reads each axis on a project.
 type Scheme struct {
-	Priority Family
-	Effort   Family
+	Priority Source
+	Effort   Source
 }
 
-// Used is the scheme the engine reads and writes issues with: workline's
-// own priority labels; no effort, read nowhere until ADR-0040's grid.
-var Used = Scheme{Priority: Own, Effort: Family{Scale: Effort}}
+// Before is the scheme before ADR-0040's detection, a project's setting
+// unset: workline's own priority labels; no effort, read nowhere.
+var Before = Scheme{Priority: Source{Family: Own, Said: ownSaid}, Effort: Source{Family: Family{Scale: Effort}}}
+
+// Used is the scheme the engine reads and writes issues with: Before,
+// until Use sets the one detected on the project a process reads.
+var Used = Before
+
+// Use sets the scheme the engine reads and writes issues with, detected
+// on the project this process reads (Detect): a process reads one.
+func Use(s Scheme) { Used = s }
 
 // Value is a priority level as the role's texts say it: its number, 1
-// the most pressing, as workline's own labels write it; "none" for none.
+// the most pressing, as workline's own labels write it, and the label
+// that carries it when the project keeps its own ("1 (P0)"); "none" for
+// none.
 func Value(l int) string {
 	if !Priority.Valid(l) {
 		return "none"
+	}
+	if f := Used.Priority.Family; f.Prefix != Own.Prefix {
+		if label, ok := f.Label(l); ok {
+			return fmt.Sprintf("%d (%s)", l, label.Name)
+		}
 	}
 	return strconv.Itoa(l)
 }

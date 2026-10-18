@@ -1085,6 +1085,13 @@ func (p *Plan) readRecord(f forge.Backlog, role string) error {
 		p.issues[is.ID] = is
 		p.bodies = append(p.bodies, is.Body)
 	}
+	// Where the project keeps each axis, as its settings ask (ADR-0040):
+	// the values read and checked there; pre said it once.
+	scheme, _, err := Where(f, p.config, open)
+	if err != nil {
+		return err
+	}
+	scale.Use(scheme)
 	if p.ledger, err = ReadLedger(f, role, open); err != nil {
 		return err
 	}
@@ -1199,6 +1206,9 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 		case c.Do == "order" && !scale.Priority.Valid(c.Priority):
 			return "priority-level", fmt.Sprintf("a priority is a level from 1, the most pressing, to %d", scale.Priority.Count())
 		case c.Do == "order":
+			if rule, why := Placeable(scale.Used.Priority, is, c.Priority); rule != "" {
+				return rule, why
+			}
 		case c.From != "" && (c.From != is.Milestone || !Released(repo, c.From)):
 			return "not-slipped", fmt.Sprintf("#%d is not in the released milestone %q", c.Issue, c.From)
 		case c.From != "" && c.Milestone == "":

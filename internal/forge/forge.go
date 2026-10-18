@@ -6,6 +6,7 @@ package forge
 import (
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -213,6 +214,38 @@ type Backlog interface {
 func ScopedLabels(f any) bool {
 	s, ok := f.(interface{ scopedLabels() bool })
 	return ok && s.scopedLabels()
+}
+
+// ProjectLabels lists the names of f's labels — a project's, and those
+// its groups give it —, where ADR-0040's detection finds the families an
+// axis is kept in. A forge that does not list them answers the labels on
+// the open issues given.
+func ProjectLabels(f any, open []Issue) ([]string, error) {
+	if l, ok := f.(interface{ projectLabels() ([]string, error) }); ok {
+		return l.projectLabels()
+	}
+	var out []string
+	for _, is := range open {
+		for _, l := range is.Labels {
+			if !slices.Contains(out, l) {
+				out = append(out, l)
+			}
+		}
+	}
+	return out, nil
+}
+
+// EnsureRankedLabel creates a label as EnsureLabel does, ranked where the
+// forge ranks labels — GitLab's prioritized labels, its "Label priority"
+// sort listing rank 1 first (ADR-0040) —; unranked elsewhere, or for a
+// rank of 0. A label there already is left as it is.
+func EnsureRankedLabel(b Backlog, name, color, description string, rank int) error {
+	if r, ok := b.(interface {
+		ensureRanked(name, color, description string, rank int) error
+	}); ok && rank > 0 {
+		return r.ensureRanked(name, color, description, rank)
+	}
+	return b.EnsureLabel(name, color, description)
 }
 
 // LabelFilter is the address of f's open issues bearing label, a person's

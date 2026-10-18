@@ -2,8 +2,15 @@
 
 Part of [the product owner](../README.md). Proposed by
 [ADR-0040](../../../docs/adr/0040-priority-and-effort-are-the-forges-the-product-owner-estimates-them.md),
-not built: today, with `order` on, the role sets its own labels
-`workline:priority/1` to `/4` ([settings](settings.md#off-by-default)).
+built a step at a time ([status](status.md#missing-in-the-order-to-build-it)):
+
+- **Built, off by default**: the names below read, and where each value
+  is kept found when the settings ask
+  ([`priority`, `effort`](settings.md#priority-and-effort)).
+- **Not built yet**: the effort estimated, the grid, Next's cells,
+  GitHub's fields, GitLab's weight. Unset, with `order` on, the role sets
+  its own labels `workline:priority/1` to `/4`.
+
 Below, what the proposal does on real cases.
 
 - **Two values per issue**: a priority (Urgent, High, Medium, Low) and an
@@ -42,12 +49,13 @@ option sits in a list.
 
 ## Where the values were found
 
-Said once in the night's summary, for example:
+Said once in the night's summary, for example, the first two built:
 
 ```markdown
+Priority: labels priority/*, created. Effort: labels effort/*, created when first set.
+Priority: labels P0 to P3, the project's. Effort: read nowhere, its setting unset.
 Priority: GitHub's field Priority. Effort: GitHub's field Effort.
-Priority: labels priority/*, created. Effort: labels effort/*, created.
-Priority: labels P0 to P3, the project's. Effort: GitLab's weight.
+Priority: labels priority::*, created. Effort: GitLab's weight.
 ```
 
 - **Created labels** on GitHub take the fields' option names, so a

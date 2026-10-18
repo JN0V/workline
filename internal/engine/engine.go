@@ -29,6 +29,7 @@ import (
 	"github.com/JN0V/workline/internal/role"
 	"github.com/JN0V/workline/internal/rolefs"
 	"github.com/JN0V/workline/internal/routing"
+	"github.com/JN0V/workline/internal/scale"
 	"github.com/JN0V/workline/internal/verdict"
 	"go.yaml.in/yaml/v3"
 )
@@ -2063,6 +2064,8 @@ type applier struct {
 	findings     []verdict.Finding // what the applying says
 	model        string            // the model whose answer is applied, as an announcement records it
 	own          string            // the run's own trailers: its role, the agents and models that answered
+	scheme       *scale.Scheme     // where the project keeps each axis, detected at the first act writing one (ADR-0040)
+	ensured      map[string]bool   // the labels this run made sure the project has
 }
 
 func (a *applier) marker() string { return forge.Marker(fmt.Sprintf("run=%s/%d", a.runID, a.index)) }
@@ -2284,7 +2287,7 @@ func (a *applier) apply(in intent.Intention) error {
 		if d == nil || d.Mode != backlog.Act {
 			return nil
 		}
-		return order(a.forge, a.role, d.Act)
+		return a.order(d.Act)
 	case "sources":
 		// The code the issue is about, named: its state gets them, and the
 		// issue is read again, with them, at the next run.

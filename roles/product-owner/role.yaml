@@ -70,6 +70,14 @@ settings:
   # With milestone or order on: a run moves at most this share of the open
   # issues, in percent; past it, proposed (ADR-0018).
   moved-percent-max: 20
+  # Where each issue's priority and effort are kept (ADR-0040), unset: the
+  # role's own labels, workline:priority/1 to /4, and no effort. `auto`
+  # finds the project's own family of labels, else workline's, else the
+  # forge's words, created at the first act; {in: labels, prefix: P} names
+  # a family, the run stopped if the project has none; `names` maps a
+  # label no table knows to a level. Each run says where each was found.
+  # priority: auto
+  # effort: auto
   # Each kind of act: act (done, up to max a run), propose (on the issue,
   # for a person to accept), off (dropped). On by default: refine, ask,
   # ready, an evident duplicate, sources. Off, the code kept, each back by

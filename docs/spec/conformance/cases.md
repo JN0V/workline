@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go]
-checked: 9fcf6cf6
+checked: fbf66fcf
 verified: agent:claude-code
 ---
 # Conformance — a case in full
@@ -77,7 +77,8 @@ saying so.
   (`local`, `none`, `cmd:<command>`, `gitlab`), the sample's `then: apply`
   included;
 - `then: resume` — after the run, resume it with `workline apply`: the run, or
-  every run a line judged and did not apply; `then: resume-elsewhere` — the
+  every run a line judged and did not apply, after the edits to the forge
+  given in `between`, as `then: again` takes them; `then: resume-elsewhere` — the
   same with another cache and the roles built into the engine, as CI's
   second job; `then: again` — after the run, the same run once more, on
   the forge and the repository as the first left them, after a person's
@@ -141,7 +142,8 @@ saying so.
   `auto-merge` (a merge request's on) and `merged` (the forge merged it);
   `absent: true` — no item with that id. Items are listed by kind:
   `issues`, `merge-requests`, and `labels`, the labels the forge defines,
-  their order as id, by `title`; `statuses`, the last status of a name on
+  their order as id, by `title` and `rank` (a GitLab prioritized label's,
+  0 for none); `statuses`, the last status of a name on
   a commit (a revision), by `state`, `by` and a part of its
   `description`, or `absent: true`; `check-runs`, the last check of a
   name on a commit, each annotation listed held by `path`, `line`,

@@ -1,4 +1,4 @@
-# Product owner — where it stands (2026-10-17)
+# Product owner — where it stands (2026-10-18)
 
 **In one line:** refocused by
 [ADR-0038](../../../docs/adr/0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md):
@@ -90,6 +90,9 @@ in [tests/evaluation/cases/product-owner](../../../tests/evaluation/cases/produc
   `sources-a-folder`.
 - **Ordering and milestones**, by due date: `order-*`, `milestone-set`,
   `slipped-*`, `summary-next-milestones-by-due-date`.
+- **Where priority and effort are kept**, off by default
+  ([ADR-0040](../../../docs/adr/0040-priority-and-effort-are-the-forges-the-product-owner-estimates-them.md),
+  step 2): `priority-*`.
 - **A backlog file imported**, mapped item by item, judged then applied
   apart: backlog's `import-*`.
 - **One way for every role to open an issue**: backlog's `issue-*`,
@@ -135,10 +138,18 @@ in [tests/evaluation/cases/product-owner](../../../tests/evaluation/cases/produc
    No issue yet.
 2. **Priority and effort where the forge keeps them, proposed**
    ([ADR-0040](../../../docs/adr/0040-priority-and-effort-are-the-forges-the-product-owner-estimates-them.md),
-   [examples](priority-and-effort.md)): six steps, conformance first, then
-   a live try on a new jn0v-lab repository. Step 1 built: the levels read
-   by name through one table (`internal/scale`), no behaviour change, not
-   tried live. No issue yet.
+   [examples](priority-and-effort.md),
+   [#475](https://github.com/JN0V/workline/issues/475)): six steps,
+   conformance first, then a live try on a new jn0v-lab repository.
+   - **Step 1 built**: the levels read by name through one table
+     (`internal/scale`), no behaviour change.
+   - **Step 2 built, off by default**: where each axis is kept, found when
+     the settings ask (`priority`, `effort`); the forge's words created,
+     ranked on GitLab; a value in two places writes nothing. Tried on the
+     GitLab sandbox, judged and not applied (its pull request's Tried).
+     The reviewer still orders the specs it reads by workline's own
+     labels: it does not read the role's settings.
+   - **Next**: step 3, the effort and the grid.
 3. **Tries on real use**, nothing to build (no issue yet):
    - **answers on the issue**: the trial, measured (To leave beta, 2); a
      real agent's revision after a comment; an outsider's and a bot's

@@ -94,7 +94,7 @@ type runSpec struct {
 	Scope   []string          `yaml:"scope"`
 	Tamper  string            `yaml:"tamper"`
 	Then    string            `yaml:"then"`
-	Between map[string]any    `yaml:"between"` // with then: again, a person's edits to the forge before the second run
+	Between map[string]any    `yaml:"between"` // with then: again, a person's edits to the forge before the second run; with then: resume, before the apply
 	// Pushed: with then: judged-twice or applied-between, what lands on
 	// the branch after the run judged, before it is applied (#375).
 	Pushed []string `yaml:"pushed"`
@@ -271,6 +271,7 @@ type itemWant struct {
 	Base            *string             `yaml:"base"`
 	Reason          *string             `yaml:"reason"` // why it was closed
 	Milestone       *string             `yaml:"milestone"`
+	Rank            *int                `yaml:"rank"`   // a label's rank, where the forge ranks them (GitLab's prioritized labels)
 	Parent          *int                `yaml:"parent"` // the issue it is a sub-issue of, 0 for none
 	Closed          *bool               `yaml:"closed"`
 	AutoMerge       *bool               `yaml:"auto-merge"` // a merge request's auto-merge on (ADR-0042)
@@ -675,6 +676,10 @@ func runCase(t *testing.T, c *caseFile) []string {
 		r = r2
 	}
 	if c.Run.Then == "resume" || c.Run.Then == "resume-elsewhere" {
+		// A person's edits to the forge between the judge and the apply.
+		if err := editForge(forgeFile, c.Run.Between); err != nil {
+			return []string{err.Error()}
+		}
 		dirs := r.Pending
 		if len(dirs) == 0 && r.RunDir != "" {
 			dirs = []string{r.RunDir}
@@ -1433,11 +1438,14 @@ func compareItem(kind string, wm itemWant, got []map[string]any) []string {
 	if found["parent"] == nil {
 		found["parent"] = 0 // not a sub-issue
 	}
+	if found["rank"] == nil {
+		found["rank"] = 0 // a label not ranked
+	}
 	fields := []struct {
 		key  string
 		want any
 	}{{"branch", given(wm.Branch)}, {"base", given(wm.Base)}, {"title", given(wm.Title)},
-		{"reason", given(wm.Reason)}, {"milestone", given(wm.Milestone)}, {"parent", given(wm.Parent)}}
+		{"reason", given(wm.Reason)}, {"milestone", given(wm.Milestone)}, {"parent", given(wm.Parent)}, {"rank", given(wm.Rank)}}
 	for _, f := range fields {
 		if f.want != nil && fmt.Sprint(found[f.key]) != fmt.Sprint(f.want) {
 			p = append(p, fmt.Sprintf("forge: %s %v %s = %v, want %v", kind, wm.ID, f.key, found[f.key], f.want))
