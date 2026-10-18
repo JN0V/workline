@@ -1,7 +1,2 @@
 # Cases the engine does not pass yet. The suite runs them anyway and fails
 # if one starts passing while still listed here.
-setup/doctor-language-without-linter
-setup/doctor-language-vendored-skipped
-setup/doctor-language-ci-runs-linter
-setup/doctor-language-linter-needs-its-config
-setup/doctor-language-linter-with-its-config
