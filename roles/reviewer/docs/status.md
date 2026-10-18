@@ -1,4 +1,4 @@
-# Reviewer — where it stands (2026-10-17)
+# Reviewer — where it stands (2026-10-18)
 
 **In one line:** reviews code on a machine (`workline review`) and on a
 merge request (opt-in): rules first, lenses as parts, quotes found again,
@@ -148,6 +148,13 @@ its measure in
 - **A change too large for one call, in parts**, past `parts-max` no
   lens asked ([#446](https://github.com/JN0V/workline/issues/446)): `change-*`.
 - **A spec, on a machine and on the forge**: `spec-*`.
+- **The code a spec names, read as Markdown**: the functions it writes
+  as code, a fenced block's too, never a plain word; a function in a
+  file cut still shown
+  ([#425](https://github.com/JN0V/workline/issues/425)):
+  `spec-fenced-quote-names-no-prose-word`,
+  `spec-long-file-named-its-function-shown`,
+  `spec-capitalised-words-name-no-code`.
 - **Spec review on workline**, on since 2026-10-17, after the product
   owner's trial: the reviewer after it in workline's `schedule` line,
   up to 5 specs a night (`specs-per-run`); a night's cost estimated
@@ -182,11 +189,9 @@ its measure in
    the finder floor's worth, a decision for a person (no case plants
    one), one lens a push whichever lens is in turn, the cheaper push over
    five runs. No issue yet.
-2. **Spec review measured on real use**: first, the code a spec names
-   read right, not functions picked from plain words
-   ([#425](https://github.com/JN0V/workline/issues/425)); then more
-   specs, the product owner's real answer read again, on GitLab and in CI
-   (a round over two nights). No issue yet for these.
+2. **Spec review measured on real use**: more specs, the product
+   owner's real answer read again, on GitLab and in CI (a round over two
+   nights). No issue yet.
 3. **The tests lens outside the change**: untested code the change did not
    touch. Waits for the inspector's static-analysis results
    ([#202](https://github.com/JN0V/workline/issues/202)); decided then.

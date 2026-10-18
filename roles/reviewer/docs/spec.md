@@ -18,10 +18,10 @@ for code ([a run](run.md)), with lenses of its own.
 - **What it reads**:
   - the file as it reads in the working tree, or the issue's body from the
     forge, up to `spec-lines-max` (the rest cut, said: `spec-cut`);
-  - for a lens that `needs: code`, the code the spec names, at HEAD: the
-    code files it names, whole, then the functions it names (backticked,
-    called, or capitalised) the files do not hold, up to `code-lines-max`
-    lines, the rest named. None named: that lens is not asked, said.
+  - for a lens that `needs: code`, the code the spec names, at HEAD, up
+    to `code-lines-max` lines, the rest named. None named: that lens is
+    not asked, said. [The code a spec names](#the-code-a-spec-names)
+    says how it is found.
 - **The spec lenses** (`spec-lenses`, `subject: spec` in their front
   matter), together in one call, each judged by its own question:
   - **ambiguous**: words two readings would build or test differently;
@@ -44,6 +44,26 @@ for code ([a run](run.md)), with lenses of its own.
 - **No record** is kept: a spec is read whole each run. Nor a line per
   finding judged: the weekly sample draws a merge request's
   ([the code's](judge.md#every-finding-judged-kept-for-the-weekly-sample)).
+
+## The code a spec names
+
+What the `contradicted` lens is shown, and its judge when a finding
+quotes no code ([#425](https://github.com/JN0V/workline/issues/425)):
+
+- **The files it names**, whole, while they fit; past the cap
+  (`code-lines-max`, the judge's `judge-lines-max`), named as cut.
+- **Then the functions it writes as code**, read as Markdown reads it:
+  - every word in backticks;
+  - in a fenced block, a word called (`f(`) or holding a capital or an
+    underscore;
+  - in the prose, a word called, or shaped as a name (`answerItems`,
+    `load_all`).
+- **A function in a file cut** is shown all the same.
+- **Never a plain word**: a capitalised one (`Parse` opening a
+  sentence, `When`) is English as often as a name. Write a function's
+  name in backticks.
+- **Never a path, a flag or a key**: `cmd/x/main.go`, `--all` and
+  `code-lines-max` name no function.
 
 ## On the forge
 
