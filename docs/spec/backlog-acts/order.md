@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog/backlog.go, internal/backlog/order.go, internal/scale/scale.go, internal/scale/detect.go, internal/builtin/productowner/productowner.go, internal/engine/backlog.go]
 status: draft
-checked: 432aeef8
+checked: fbf66fcf
 verified: agent:claude-code
 ---
 # Milestones and ordering
@@ -77,14 +77,19 @@ words**: `priority/urgent` to `priority/low` and `effort/low` to
 `effort/high`, the names of GitHub's Priority and Effort fields'
 options; on GitLab, `priority::1` to `::4`, ranked 1 to 4 as prioritized
 labels, and `effort::low` to `::high`. All of an axis's words are
-created at the first act writing one; a family of the project's is
-never added to. The run says once where each axis was found
+created at the first act writing one. A family made only of those words
+(`priority/high` and `priority/low`) is read as them, its missing words
+created too; any other family of the project's is never added to. The
+run says once where each axis was found
 (`values-where`, info): "Priority: labels P0 to P3, the project's.
 Effort: labels effort::*, created when first set."
 
 **One place an axis**: an issue holding a value of that axis in another
 family — alone, or beside one of the family read — gets nothing written
 (`priority-elsewhere`): never two values, nor a copy. A level no label of
-a project's family carries is dropped (`priority-no-label`). With another
+a project's family carries is dropped (`priority-no-label`). Both are
+checked when the plan is decided, and again when applied — the applying
+job finds where the axis is kept anew and reads the issue again —; one
+found then is said, "(found when applying)". With another
 family than workline's own read, the role's texts say the label beside
 the level: "priority 1 (P0)".

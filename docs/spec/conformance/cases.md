@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go]
-checked: 432aeef8
+checked: fbf66fcf
 verified: agent:claude-code
 ---
 # Conformance — a case in full
@@ -77,7 +77,8 @@ saying so.
   (`local`, `none`, `cmd:<command>`, `gitlab`), the sample's `then: apply`
   included;
 - `then: resume` — after the run, resume it with `workline apply`: the run, or
-  every run a line judged and did not apply; `then: resume-elsewhere` — the
+  every run a line judged and did not apply, after the edits to the forge
+  given in `between`, as `then: again` takes them; `then: resume-elsewhere` — the
   same with another cache and the roles built into the engine, as CI's
   second job; `then: again` — after the run, the same run once more, on
   the forge and the repository as the first left them, after a person's

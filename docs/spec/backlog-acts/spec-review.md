@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog/spec.go, internal/backlog/backlog.go, internal/routing/routing.go, internal/builtin/productowner/productowner.go]
 status: draft
-checked: 432aeef8
+checked: fbf66fcf
 verified: agent:claude-code
 ---
 # A spec read before ready
