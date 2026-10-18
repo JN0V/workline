@@ -1,0 +1,33 @@
+#!/bin/sh
+# A fake golangci-lint, for the gate cases: `run --output.sarif.path=<file>`
+# reads the .go files under the folder it runs in and writes SARIF as
+# golangci-lint 2.15.0 does, every result an error, no fingerprint:
+#   errcheck  an os.Remove whose error is not checked;
+#   godot     a comment not ending in a period, when .golangci.yml names godot.
+# A line holding //nolint is skipped. Its version is 2.15.0, or what
+# .golangci-version says: a tool the project's tree pins.
+set -eu
+out=
+for a in "$@"; do
+  case $a in --output.sarif.path=*) out=${a#--output.sarif.path=} ;; esac
+done
+[ -n "$out" ] || { echo "golangci-lint (fake): no --output.sarif.path" >&2; exit 2; }
+version=2.15.0
+[ ! -f .golangci-version ] || version=$(cat .golangci-version)
+godot=0
+[ ! -f .golangci.yml ] || ! grep -q godot .golangci.yml || godot=1
+find . -name '*.go' -not -path './.git/*' | sed 's|^\./||' | LC_ALL=C sort | while read -r f; do
+  awk -v f="$f" -v godot="$godot" '
+    /\/\/[ \t]*nolint/ { next }
+    /^[ \t]*(defer[ \t]+)?os\.Remove\(/ {
+      printf "{\"ruleId\":\"errcheck\",\"level\":\"error\",\"message\":{\"text\":\"Error return value of `os.Remove` is not checked\"},\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"%s\"},\"region\":{\"startLine\":%d,\"startColumn\":%d}}}]}\n", f, NR, index($0, "os.Remove")
+    }
+    godot && /^[ \t]*\/\/ / && !/\.[ \t]*$/ {
+      printf "{\"ruleId\":\"godot\",\"level\":\"error\",\"message\":{\"text\":\"Comment should end in a period\"},\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"%s\"},\"region\":{\"startLine\":%d,\"startColumn\":%d}}}]}\n", f, NR, length($0)
+    }' "$f"
+done | awk -v v="$version" '
+  BEGIN { printf "{\"version\":\"2.1.0\",\"runs\":[{\"tool\":{\"driver\":{\"name\":\"golangci-lint\",\"version\":\"%s\"}},\"results\":[", v }
+  { printf "%s%s", (NR > 1 ? "," : ""), $0 }
+  END { print "]}]}" }' > "$out"
+grep -q '"ruleId"' "$out" && exit 1
+exit 0

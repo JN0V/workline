@@ -79,7 +79,9 @@ What else a case can give, run and expect, and how each is checked, is in
   of the fixtures as the agent: one that reads the prompt, for a case where
   each call asks something else (`FIXTURES` names the fixtures folder).
 - **Fake tools.** `fixtures/bin/` holds tools that need the network, replaying
-  an answer the real one gave: `lychee` (recorded from 0.24.2). A case puts
+  an answer the real one gave: `lychee` (recorded from 0.24.2); and
+  `golangci-lint`, for the gates' cases: SARIF as 2.15.0 writes it,
+  `errcheck` and `godot` read from the tree, `//nolint` skipped. A case puts
   them first: `env: {PATH: "$FIXTURES/bin:$PATH"}`.
 - **Unavailable agent.** `unavailable:quota` (or `auth`, `network`) fails the
   way a real agent does when a quota runs out.

@@ -1,0 +1,18 @@
+case: gates/release-counts-every-finding
+about: >
+  On a release, the gate reads the whole tree even when a range is given:
+  the debt a change did not add still counts there.
+given:
+  repo: linted
+  setup:
+    - git checkout -q -b change
+    - |
+      printf 'package main\n\n// version is the release.\nconst version = "1.0"\n' > version.go && git add version.go && git commit -qm "feat: say the version"
+  env: {PATH: "$FIXTURES/bin:$PATH"}
+  config:
+    routing: {events: {release: ["gate:release"]}}
+    gates: {release: {checks: [{id: lint, run: "golangci-lint run --output.sarif.path={out}/lint.sarif", output: sarif, max: {error: 0}}]}}
+run: {route: release, input: {range: main..HEAD}}
+expect:
+  status: block
+  findings: [{rule: over-threshold, where: lint, message: "3 error findings, at most 0 allowed"}]

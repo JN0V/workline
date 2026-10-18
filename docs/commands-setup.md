@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/hooks, internal/role/config.go]
-checked: e2580728
+checked: 2a1d3636
 verified: agent:claude-code
 ---
 # The commands that set up

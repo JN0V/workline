@@ -1,6 +1,6 @@
 ---
-sources: [internal/gate]
-checked: d30d22a
+sources: [internal/gate, internal/line, internal/linters/check.go]
+checked: 5a4a4bbd
 ---
 # Gates — v1 (draft)
 
@@ -42,12 +42,86 @@ gates:
   level counts as `warning`). Other structured outputs (k6 or benchmark JSON)
   are for a later version.
 - A check with no threshold is refused when the file is loaded. The criteria
-  are decided before the gate runs, never while reading the results.
-- `enforce` and `warn` before `block` work as in the role contract; baselines
-  with expiry dates are not built yet, there or here.
+  are decided before the gate runs, never while reading the results. So is
+  a setting the engine cannot read: a `timeout` or `base-timeout` that is
+  not a duration past zero, a `new` it does not know, an `id` given twice
+  or holding a `/` (it names the check's log and results).
+- `timeout` caps a check's run (`10m` unless set); `new`, `base-timeout`
+  and `config` say how a merge request's new findings are told (below).
+- `enforce` names a check by its id, or a rule (`suppression-added`); `warn`
+  before `block` works as in the role contract. A check `off` that did not
+  run is still said, as a warning. Baselines with expiry dates are not
+  built yet, there or here.
 - `workline doctor` counts the tool a check runs as reading its languages,
   and names the check to add for a language none reads
   ([languages](../languages.md)).
+
+## On a merge request, the findings the change adds
+
+On an event given a range (`merge-request`, `pre-push`), the thresholds
+read only the findings the change adds since the merge base of the
+range's start and `HEAD`
+([ADR-0049](../adr/0049-the-inspector-judges-the-new-findings-of-the-projects-tools.md)).
+On `schedule` and `release`, and with `workline gate`, every finding counts.
+
+```yaml
+      - id: lint
+        run: golangci-lint run --max-issues-per-linter=0 --max-same-issues=0 --output.sarif.path={out}/lint.sarif ./...
+        output: sarif
+        max: {error: 0}
+```
+
+- **Run again at the merge base**: a SARIF check runs a second time, on
+  the merge base checked out in a tree of its own, outside the repository.
+  The same command and tool, and the head's config: the files the change
+  touched that its tool reads its config from, by name
+  ([the tools' table](../languages.md#the-table-it-reads)), or that the
+  check's `config` names (`config: [pyproject.toml]`, globs).
+- **Compared one for one, never by line number**: the tool, the rule, the
+  file (a rename followed), then the tool's own `fingerprints`, else its
+  `partialFingerprints`, else the message and the text of the line, its
+  spaces left out. `workline/v1` is not read: it holds a line.
+- **Moved is not new**: a finding pushed down its file, or in a file
+  renamed. One cut to another file is new, as Semgrep and code scanning
+  count it.
+- **Day one is quiet**: the old findings are a count in the gate's
+  summary, with both runs' times: `lint 1 new, 360 before it (6.5s, then
+  7.1s at the merge base)`.
+- **Each result marked** for what posts them: the head's SARIF written
+  again under `compared/<check>/` in the gate's folder, every result's
+  `baselineState` `new` or `unchanged` (SARIF 2.1.0, 3.27.24).
+
+### Told by the tool, suppressions, errors
+
+- **Every check is given the merge base** in `WORKLINE_BASE`, an `exit`
+  check too: its command may tell the new findings itself. Where every
+  finding counts, `WORKLINE_BASE` is empty.
+- **Or the tool tells them**, `new: tool`: the SARIF check runs once, what
+  it reports counts. `golangci-lint run
+  ${WORKLINE_BASE:+--new-from-merge-base=$WORKLINE_BASE}`, Semgrep's
+  `--baseline-commit`. golangci-lint's keeps changed lines only: a
+  finding the change causes on a line it left is missed.
+- **A suppression the change adds is a finding** (`suppression-added`),
+  in a file of its language, when a check runs the tool it silences:
+  `//nolint` (golangci-lint), `# noqa` (Ruff, flake8), `eslint-disable`
+  (ESLint), `NOLINT` (clang-tidy). One only moved is not.
+- **An error, never a pass**: a merge base not known (a shallow clone), a
+  check that fails there or writes no SARIF, a run past its cap. The cap
+  is `base-timeout`; by default twice the head's run, a minute at least,
+  the check's `timeout` at most (measured in
+  [ADR-0049's plan](../adr/0049-the-inspector-judges-the-new-findings-of-the-projects-tools.md#build-plan)).
+- **A tool whose version differs** between the two runs is said
+  (`tool-version-differs`, a warning): one the project's tree pins, upgraded
+  by the change. A tool's upgrade gets a pull request of its own.
+- **A cap on findings hides some**: set the tool's to none
+  (golangci-lint's `max-issues-per-linter`, `max-same-issues`).
+
+*Not built yet*: posting them, as a check's annotations and one summary on
+GitHub, as Code Quality on GitLab; the count's trend; vendored and
+generated code skipped; CI's build reused; a monorepo's changed folders
+only. The checks run in the job that judges the line, which holds the
+agent's token when the project gives one; a job of their own, with no
+write token and no AI key, comes with the posting.
 
 ## Three outcomes, not two
 
@@ -72,11 +146,11 @@ reported as advisory. The verdict comes from the rules either way.
 ## Verdict and report
 
 A gate gives the same verdict as a role (`--json`), with the findings of every
-check, and keeps each check's output under `.git/workline/gates/`. *Not built
-yet* ([ADR-0049](../adr/0049-the-inspector-judges-the-new-findings-of-the-projects-tools.md)):
-on a merge request, the thresholds read only the findings the change adds,
-each tool rerun at the merge base; they are posted as a check's annotations
-and one summary on GitHub, as Code Quality on GitLab.
+check, and keeps each check's output under `.git/workline/gates/`: its log,
+its SARIF, and on a merge request the run at the merge base under `base/`
+and the results marked under `compared/`. A check over its thresholds names
+its first findings, file and line; no agent is ever asked, so the verdict
+and the findings are the same with an agent or none.
 
 ## Protection
 

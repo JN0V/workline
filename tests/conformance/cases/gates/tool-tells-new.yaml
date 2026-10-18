@@ -1,0 +1,18 @@
+case: gates/tool-tells-new
+about: >
+  With `new: tool`, the tool tells the new findings itself: it is given
+  the merge base, runs once, and what it reports counts.
+given:
+  repo: linted
+  setup:
+    - git checkout -q -b change
+    - |
+      echo on > head-only.txt && git add head-only.txt && git commit -qm "feat: add a file"
+  config:
+    routing: {events: {merge-request: ["gate:merge"]}}
+    gates: {merge: {checks: [{id: lint, output: sarif, max: {error: 0}, new: tool,
+      run: "test \"$WORKLINE_BASE\" = \"$(git rev-parse main)\" && test -f head-only.txt && printf '{\"runs\":[{\"results\":[]}]}' > {out}/lint.sarif"}]}}
+run: {route: merge-request, input: {range: main..HEAD}, summary: true}
+expect:
+  status: pass
+  summary-file: ["count: lint told by the tool"]

@@ -1,6 +1,6 @@
 ---
 sources: [internal/role/config.go, internal/role/role.go, cmd/workline, internal/engine/engine.go, internal/forge/gitlab.go, internal/hooks]
-checked: ef0d27cd
+checked: 2a1d3636
 judged: e343388
 verified: agent:documentalist
 reader: 0b97bbc207c5
@@ -27,7 +27,7 @@ owner), then the project's `settings`.
 | `routing.events` | `<event>: [role, gate:<name>, …]`, replacing the shipped line event by event |
 | `routing.fail-fast` | `<event>: false` runs every step of the event, the worst verdict standing, a refused proposal said, not failed; true unless set, but on `schedule` ([ADR-0037](adr/0037-the-schedule-runs-every-step.md)) |
 | `routing.handoffs`, `routing.max-handoffs` | which role may hand over to which, and how many times ([routing](spec/routing.md)) |
-| `gates.<name>` | `criteria`, `checks` (`id`, `run`, `output`, `max`, `optional`, `timeout`), `enforce` ([gates](spec/gates.md)) |
+| `gates.<name>` | `criteria`, `checks` (`id`, `run`, `output`, `max`, `optional`, `timeout`; on a merge request `new`, `base-timeout`, `config`), `enforce` ([gates](spec/gates.md)) |
 | `repos.<name>` | `url`, `branch`: other repositories docs may name ([multi-repo](spec/multi-repo.md)) |
 | `release` | `branches` (the release tool's), `tags` (`v*`) |
 | `merge` | `autonomy: cautious`: the forge merges what a person accepted; `normal`: workline's own routine work too, with no yes; `alone: [reader]`: the reader's rewordings too ([merge policy](merge-policy.md)); off unless set |

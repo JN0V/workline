@@ -1,0 +1,18 @@
+case: gates/tool-version-differs
+about: >
+  A tool the project's tree pins, upgraded by the change, runs another
+  version at the merge base: said, as a new rule's findings look new.
+given:
+  repo: linted
+  setup:
+    - git checkout -q -b change
+    - |
+      echo 2.16.0 > .golangci-version && git add .golangci-version && git commit -qm "build: take golangci-lint 2.16.0"
+  env: {PATH: "$FIXTURES/bin:$PATH"}
+  config:
+    routing: {events: {merge-request: ["gate:merge"]}}
+    gates: {merge: {checks: [{id: lint, run: "golangci-lint run --output.sarif.path={out}/lint.sarif", output: sarif, max: {error: 0}}]}}
+run: {route: merge-request, input: {range: main..HEAD}}
+expect:
+  status: pass
+  findings: [{rule: tool-version-differs, where: lint, level: warn, message: "the head ran golangci-lint 2.16.0, the merge base golangci-lint 2.15.0"}]

@@ -1,6 +1,6 @@
 # ADR-0049: The inspector judges the new findings of the project's own tools
 
-- **Status:** accepted; step 1 built ([the build plan](#build-plan))
+- **Status:** accepted; steps 1 and 2 built ([the build plan](#build-plan))
 - **Date:** 2026-10-18
 - **Decided by:** the maintainer, on 2026-10-18: the direction a panel of
   four argued (users, principles, prior art, skeptic), and the three
@@ -152,7 +152,18 @@
    with Linguist's `.gitattributes` overrides
    ([languages](../languages.md)).
 2. The engine's base-versus-head comparison on a merge request;
-   thresholds on new findings only.
+   thresholds on new findings only. Built
+   ([gates](../spec/gates.md#on-a-merge-request-the-findings-the-change-adds)):
+   - **Rerun by default**; a tool's own mode is the project's choice
+     (`new: tool`), golangci-lint's reading changed lines only.
+   - **A finding's identity holds no line**: the tool's `fingerprints`,
+     else its `partialFingerprints`, else the message and the line's
+     text. `workline/v1` holds a line: not read.
+   - **The cap, measured** on a copy of workline with golangci-lint
+     2.15.0, one unchecked error planted: 1 new, 360 before it. With
+     empty caches, 18.4 s at the head, 5.8 s at the merge base; with warm
+     ones, 6.5 s and 7.1 s. The default, twice the head's run and a
+     minute at least, leaves room for both.
 3. Posting: annotations plus a summary on GitHub, Code Quality on GitLab.
 4. `roles/inspector`: the AI's triage, and runs with no agent.
 5. A golangci-lint gate on workline itself: [#202]'s Validation.
