@@ -1,0 +1,3 @@
+- order: {issue: 9, priority: 1, why: "Rows lost hurt every report."}
+- order: {issue: 10, priority: 4, why: "A wording change, for later."}
+- order: {issue: 11, priority: 2, why: "Next after the lost rows."}

@@ -1,6 +1,7 @@
 package backlog
 
 import (
+	"fmt"
 	"os/exec"
 	"regexp"
 	"sort"
@@ -9,16 +10,88 @@ import (
 
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/scale"
+	"github.com/JN0V/workline/internal/verdict"
 )
 
 // PriorityLabels lists the levels an issue's priority labels give, read
 // by name where the project keeps them (scale.Used), in the order of its
 // labels; more than one is a person's doing.
-func PriorityLabels(is forge.Issue) []int { return scale.Used.Priority.Levels(is.Labels) }
+func PriorityLabels(is forge.Issue) []int { return scale.Used.Priority.Family.Levels(is.Labels) }
 
 // Priority is an issue's level, the most pressing of its labels; 0 when
 // it has none.
-func Priority(is forge.Issue) int { return scale.Used.Priority.First(is.Labels) }
+func Priority(is forge.Issue) int { return scale.Used.Priority.Family.First(is.Labels) }
+
+// Where reads where the project keeps each axis (ADR-0040, "Where the
+// values live"), with no agent, as its settings ask; unset, as before
+// (scale.Before), nothing read of the forge. With it, what the run says
+// once: where each axis was found, and the names of a family no table
+// knows. A setting naming a family the project lacks is an error: the
+// run stops.
+func Where(f forge.Backlog, cfg Config, open []forge.Issue) (scale.Scheme, []verdict.Finding, error) {
+	if !cfg.Detects() {
+		return scale.Before, nil, nil
+	}
+	labels, err := forge.ProjectLabels(f, open)
+	if err != nil {
+		return scale.Before, nil, err
+	}
+	var on []string
+	for _, is := range open {
+		on = append(on, is.Labels...)
+	}
+	var s scale.Scheme
+	var said []string
+	var unknown []verdict.Finding
+	for _, a := range []struct {
+		scale scale.Scale
+		set   scale.Setting
+		to    *scale.Source
+	}{{scale.Priority, cfg.Priority, &s.Priority}, {scale.Effort, cfg.Effort, &s.Effort}} {
+		src, err := scale.Detect(a.scale, a.set, labels, on, forge.ScopedLabels(f))
+		if err != nil {
+			return scale.Before, nil, err
+		}
+		*a.to = src
+		where := src.Said
+		if where == "" {
+			where = "read nowhere, its setting unset"
+		}
+		said = append(said, strings.ToUpper(a.scale.Axis[:1])+a.scale.Axis[1:]+": "+where+".")
+		if src.Unknown != nil {
+			unknown = append(unknown, verdict.Finding{Rule: "level-unknown", Level: "info",
+				Message: src.Unknown.Error() + "; a name is mapped to a level under `names` in the settings"})
+		}
+	}
+	return s, append([]verdict.Finding{{Rule: "values-where", Level: "info", Message: strings.Join(said, " ")}}, unknown...), nil
+}
+
+// Placeable says why a priority cannot be written on an issue where the
+// project keeps it (ADR-0040): the issue holds one in another place —
+// never written over, nor mirrored —, or no label of the family carries
+// the level; "" when it can.
+func Placeable(is forge.Issue, l int) (rule, why string) {
+	src := scale.Used.Priority
+	if there := src.Elsewhere(is.Labels); len(there) > 0 {
+		var here []string
+		for _, n := range is.Labels {
+			if src.Family.Of(n) > 0 {
+				here = append(here, n)
+			}
+		}
+		if len(here) > 0 {
+			return "priority-elsewhere", fmt.Sprintf("its priority is in two places, %s and %s: nothing is written on it; a person keeps one",
+				strings.Join(here, ", "), strings.Join(there, ", "))
+		}
+		return "priority-elsewhere", fmt.Sprintf("its priority is in %s, not in %s where the project keeps it: nothing is written on it, never in two places",
+			strings.Join(there, ", "), src.Family.Span())
+	}
+	if _, ok := src.Family.Label(l); !ok {
+		return "priority-no-label", fmt.Sprintf("no label of %s carries %s: a person creates one, or maps one to it under `names` in the settings",
+			src.Family.Span(), scale.Priority.Name(l))
+	}
+	return "", ""
+}
 
 // Before says an issue's place in the order, to put it back: its
 // priority and its milestone.

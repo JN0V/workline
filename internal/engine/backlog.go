@@ -150,33 +150,78 @@ func (a *applier) openIssue(title, body string, m map[string]any) error {
 	return nil
 }
 
-// order sets an issue's one priority label, the others taken off, and
-// records it in the issue's state: a priority other than the one recorded
-// is a person's (docs/spec/backlog-acts.md, "Ordering").
-func order(f forge.Forge, role string, c backlog.Proposal) error {
-	b := f.(forge.Backlog)
-	family := scale.Used.Priority
-	label, ok := family.Label(c.Priority)
-	if !ok {
-		return fmt.Errorf("#%d: no %s label carries level %d", c.Issue, family.Scale.Axis, c.Priority)
+// where is where the project keeps each axis, detected once, at the first
+// act that writes one, as the plan was decided (ADR-0040).
+func (a *applier) where() (scale.Scheme, error) {
+	if a.scheme != nil {
+		return *a.scheme, nil
 	}
-	if err := b.EnsureLabel(label.Name, label.Color, label.Describe(strings.ReplaceAll(role, "-", " "))); err != nil {
+	cfg, err := backlog.ReadConfig(a.settings)
+	if err != nil {
+		return scale.Before, err
+	}
+	s := scale.Before
+	if cfg.Detects() {
+		b := a.forge.(forge.Backlog)
+		open, err := b.Issues()
+		if err != nil {
+			return s, err
+		}
+		if s, _, err = backlog.Where(b, cfg, open); err != nil {
+			return s, err
+		}
+	}
+	a.scheme = &s
+	return s, nil
+}
+
+// order sets an issue's one priority label where the project keeps it,
+// the family's others taken off, and records it in the issue's state: a
+// priority other than the one recorded is a person's
+// (docs/spec/backlog-acts.md, "Ordering"). Workline's own label is
+// created when missing; the forge's words all at once, ranked where the
+// forge ranks labels; a project's labels are there already (ADR-0040).
+func (a *applier) order(c backlog.Proposal) error {
+	where, err := a.where()
+	if err != nil {
 		return err
 	}
+	src, f := where.Priority, a.forge
+	b := f.(forge.Backlog)
+	label, ok := src.Family.Label(c.Priority)
+	if !ok {
+		return fmt.Errorf("#%d: no %s label carries level %d", c.Issue, src.Family.Scale.Axis, c.Priority)
+	}
+	create := []scale.Label{label}
+	if src.Words {
+		create = src.Family.Labels
+	}
+	for _, l := range create {
+		if l.Color == "" || a.ensured[l.Name] {
+			continue
+		}
+		if err := forge.EnsureRankedLabel(b, l.Name, l.Color, l.Describe(strings.ReplaceAll(a.role, "-", " ")), l.Rank); err != nil {
+			return err
+		}
+		if a.ensured == nil {
+			a.ensured = map[string]bool{}
+		}
+		a.ensured[l.Name] = true
+	}
 	t := forge.Target{Kind: "issue", ID: c.Issue}
-	if err := f.Label(t, []string{label.Name}, family.Others(c.Priority)); err != nil {
+	if err := f.Label(t, []string{label.Name}, src.Family.Others(c.Priority)); err != nil {
 		return err
 	}
 	comments, err := b.Comments(t)
 	if err != nil {
 		return err
 	}
-	st, _, err := backlog.ReadState(comments, role)
+	st, _, err := backlog.ReadState(comments, a.role)
 	if err != nil {
 		return fmt.Errorf("#%d: its state comment: %w", t.ID, err)
 	}
 	st.Priority = c.Priority
-	return f.Sticky(t, backlog.FormatState(*st), backlog.StateMarker(role), false)
+	return f.Sticky(t, backlog.FormatState(*st), backlog.StateMarker(a.role), false)
 }
 
 // rename sets an issue's title and records it in its state: a title other

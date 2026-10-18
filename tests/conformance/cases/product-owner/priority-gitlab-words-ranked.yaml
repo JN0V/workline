@@ -1,0 +1,28 @@
+case: product-owner/priority-gitlab-words-ranked
+about: "On GitLab, with `priority: auto` and no family on the project, the role creates priority::1 to ::4 as prioritized labels, ranked 1 to 4, so GitLab's own Label priority sort follows the role's, and sets one (ADR-0040, step 2)."
+given:
+  repo: backlog
+  config:
+    roles:
+      product-owner:
+        settings: {moved-percent-max: 100, priority: auto, acts: {order: {mode: act}}}
+  forge:
+    members:
+      - {username: ann, access_level: 30}
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.", author: ann, labels: [bug], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 10, title: "Slow export", body: "The export is slow.", author: ann, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:order-two, forge: gitlab}
+expect:
+  status: pass
+  findings:
+    - {rule: values-where, message: "Priority: labels priority::*, created when first set."}
+  forge:
+    issues:
+      - {id: 9, labels: [bug, priority::1]}
+      - {id: 10, labels: [priority::2]}
+    labels:
+      - {id: 1, title: "priority::1", rank: 1}
+      - {id: 2, title: "priority::2", rank: 2}
+      - {id: 3, title: "priority::3", rank: 3}
+      - {id: 4, title: "priority::4", rank: 4}

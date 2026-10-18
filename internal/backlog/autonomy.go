@@ -6,6 +6,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/JN0V/workline/internal/scale"
 	"github.com/JN0V/workline/internal/work"
 )
 
@@ -76,7 +77,15 @@ type Config struct {
 	// Read is what the run read the backlog with, kept with each act it
 	// does (ADR-0046); set by the caller, from the run.
 	Read Read
+	// Priority and Effort: where the project keeps each axis, as its
+	// settings say (ADR-0040); unset, workline's own priority labels, and
+	// no effort read.
+	Priority, Effort scale.Setting
 }
+
+// Detects says whether the settings ask where the project keeps an axis:
+// the forge's labels are then read to find it (Where).
+func (c Config) Detects() bool { return c.Priority.Set() || c.Effort.Set() }
 
 // Read is what a run of the role read: the commit and each open issue's
 // body, as its pre step wrote them (ReadFile), and the agents and models
@@ -112,6 +121,13 @@ func ReadConfig(settings map[string]any) (Config, error) {
 			// (principle 12).
 			c.Gone = append(c.Gone, name)
 		}
+	}
+	var err error
+	if c.Priority, err = scale.ReadSetting(scale.Priority, settings[scale.Priority.Axis]); err != nil {
+		return c, err
+	}
+	if c.Effort, err = scale.ReadSetting(scale.Effort, settings[scale.Effort.Axis]); err != nil {
+		return c, err
 	}
 	if v, ok := settings["changed-needs"]; ok && v != nil {
 		b, isBool := v.(bool)

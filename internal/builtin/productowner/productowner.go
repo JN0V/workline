@@ -143,6 +143,20 @@ func Pre(runDir, repo string) int {
 		findings = append(findings, verdict.Finding{Rule: "setting-gone", Level: "warn",
 			Message: name + " is no longer read: " + backlog.GoneSettings[name] + "; take it off the project's settings"})
 	}
+	// Where the project keeps each axis, when its settings ask (ADR-0040):
+	// read there for the whole run, and said once. A family the setting
+	// names and the project lacks stops the run, said.
+	scheme, where, err := backlog.Where(b, cfg, open)
+	if errors.Is(err, forge.ErrUnreachable) {
+		fmt.Fprintln(os.Stderr, err)
+		return exitExternal
+	}
+	if err != nil {
+		return final(runDir, verdict.Verdict{Status: verdict.Block, Summary: "where the project keeps its priorities is not found",
+			Findings: []verdict.Finding{{Rule: "values-where", Level: "block", Message: err.Error()}}})
+	}
+	scale.Use(scheme)
+	findings = append(findings, where...)
 	judged := 0
 	tracked := trackedFiles(repo)
 	var readIDs []string // the issues read, for the plan (backlog.Decide)

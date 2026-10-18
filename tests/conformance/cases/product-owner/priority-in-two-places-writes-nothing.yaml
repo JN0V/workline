@@ -1,0 +1,35 @@
+case: product-owner/priority-in-two-places-writes-nothing
+about: "The settings name the family P0 to P3. An issue holding a priority in another family, alone or beside one of P0 to P3, gets nothing written: a value is never kept in two places, nor mirrored, and the run says why. A level no label of the family carries is not written either (ADR-0040, step 2)."
+given:
+  repo: backlog
+  config:
+    roles:
+      product-owner:
+        settings: {moved-percent-max: 100, priority: {in: labels, prefix: P}, acts: {order: {mode: act}}}
+  forge:
+    labels:
+      - {id: 1, title: P0, labels: []}
+      - {id: 2, title: P1, labels: []}
+      - {id: 3, title: P2, labels: []}
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.", labels: [priority/low], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 10, title: "Wording", body: "A word is wrong.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 11, title: "Slow export", body: "The export is slow.", labels: [P1, workline:priority/3], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\npriority: 2\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:order-three}
+expect:
+  findings:
+    - {rule: values-where, message: "Priority: labels P0 to P2, as the settings say."}
+    - {rule: priority-elsewhere, where: "#9", message: "its priority is in priority/low, not in P0 to P2 where the project keeps it"}
+    - {rule: priority-no-label, where: "#10", message: "no label of P0 to P2 carries Low"}
+    - {rule: priority-elsewhere, where: "#11", message: "its priority is in two places, P1 and workline:priority/3"}
+  no-findings:
+    - {rule: done, where: "#9"}
+    - {rule: done, where: "#10"}
+    - {rule: done, where: "#11"}
+  forge:
+    issues:
+      - {id: 9, labels: [priority/low], comment-lacks: "priority:"}
+      - {id: 10, labels: [], comment-lacks: "priority:"}
+      - {id: 11, labels: [P1, workline:priority/3], comment-contains: "priority: 2"}
+    labels:
+      - {id: 4, absent: true}

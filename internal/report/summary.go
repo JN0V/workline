@@ -199,7 +199,7 @@ var groups = []group{
 
 // plain are a backlog's findings on no one issue, said without their
 // rule's name: the message says it all.
-var plain = []string{"proposals-waiting", "demoted", "setting-gone", "plan-unread", "report-closed"}
+var plain = []string{"proposals-waiting", "demoted", "setting-gone", "plan-unread", "report-closed", "values-where", "level-unknown"}
 
 // heldBack are the reasons the engine did not do, or only proposed, an act
 // the product owner's agent wrote (internal/backlog): said in plain words,
@@ -207,7 +207,7 @@ var plain = []string{"proposals-waiting", "demoted", "setting-gone", "plan-unrea
 var heldBack = []string{"no-quote", "nothing-to-refine", "section-kept", "not-ready", "ask-empty", "already-asked",
 	"already-proposed", "asked-before", "question-left-out", "not-agreed", "not-accepted", "close-reason", "already-open", "once-a-run", "act-cap",
 	"moved-cap", "drafts-proposed", "undone-here", "outsider-evidence", "reporter-outside",
-	"spec-not-reviewed", "spec-findings-open", "priority-level", "priority-kept", "priority-same", "title-kept",
+	"spec-not-reviewed", "spec-findings-open", "priority-level", "priority-kept", "priority-same", "priority-elsewhere", "priority-no-label", "title-kept",
 	"title-same", "rename-title", "split-size", "split-title", "split-sections", "split-after", "already-split",
 	"parent-accepted-by-a-person", "depend-issue", "depend-same", "depend-cycle", "undepend-issue", "undepend-theirs",
 	"undepend-gone", "unready-not-ready", "milestone-title", "not-slipped", "exempt", "announced", "obsolete-kept",
