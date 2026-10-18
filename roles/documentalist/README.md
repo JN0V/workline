@@ -1,6 +1,6 @@
 ---
-sources: [roles/documentalist/role.yaml, internal/builtin/documentalist, routing.default.yaml]
-checked: 721c7b37
+sources: [roles/documentalist/role.yaml, internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/kept.go, routing.default.yaml]
+checked: 4a1dedce
 judged: f70db89
 verified: agent:claude-code
 ---
@@ -72,7 +72,7 @@ Under `roles: {documentalist: {settings: …}}` in `.workline/config.yaml`
 | `propagation` | code → `docs/tech/**` now; `docs/tech/**` → `docs/product/**` at the release | which cascades wait |
 | `budgets` | doc 200 lines, section 400 words, card 80–400 words, folder 2000 lines, `AGENTS.md` 200 lines | sizes reported |
 | `freshness.stale-after-days` | `180` | a doc confirmed longer ago is read again |
-| `reader` | user pages `README.md`, `docs/**` but specs; from `README.md`; paragraph 80 words, cell 30; `agent-pages: 4` | which pages a reader uses, how much they read at once ([checks](docs/checks.md)), and how many the agent reads a run ([more](docs/reader.md)) |
+| `reader` | user pages `README.md`, `docs/**` but specs; from `README.md`; paragraph 80 words, cell 30; `agent-pages: 4` | which pages a reader uses, how much they read at once ([checks](docs/checks-docs.md#docs-for-their-reader)), and how many the agent reads a run ([more](docs/reader.md)) |
 | `duplicates` | `{min-words: 40, similarity: 0.85}` | repeated passages |
 | `derive` | `{}` | named commands filling `<!-- workline:derive name -->` blocks |
 | `examples` | `{check: ""}` | a command checking the code examples a fix writes; unset, they are said unverified ([code examples](docs/examples.md)) |
@@ -93,15 +93,16 @@ Under `roles: {documentalist: {settings: …}}` in `.workline/config.yaml`
 
 - On your machine: one line at the push (`docs suspect: N`); `workline
   docs` proposes changes in the working tree, then one `docs:` commit.
-- On a merge request: one comment listing what is left for a person, edited
-  on each run; the fix committed to the branch (`Workline-Role:
-  documentalist`); from a fork, the diff in a comment. A doc found with
-  nothing to fix gets no commit: its record waits in a comment, and
-  gardening writes it on main once merged
-  ([more](docs/push.md#a-doc-found-with-nothing-to-fix-no-commit)). Its findings sit
-  beside their lines, none a conversation to resolve: on GitHub the
-  check `workline findings`, on GitLab the Code Quality report
-  ([#412](https://github.com/JN0V/workline/issues/412)).
+- On a merge request:
+  - one comment listing what is left for a person, edited on each run;
+  - the fix committed to the branch (`Workline-Role: documentalist`);
+    from a fork, the diff in a comment;
+  - a doc found with nothing to fix gets no commit: its record waits in a
+    comment, and gardening writes it on main once merged
+    ([more](docs/push.md#a-doc-found-with-nothing-to-fix-no-commit));
+  - its findings beside their lines, none a conversation to resolve: on
+    GitHub the check `workline findings`, on GitLab the Code Quality
+    report ([#412](https://github.com/JN0V/workline/issues/412)).
 - Gardening: a branch and merge request per task,
   `workline/documentalist/<task>` — `records` for the records merged merge
   requests kept —, rebuilt on `main` once `main` moved, or
@@ -146,8 +147,9 @@ comment. Gardening only regenerates derived blocks.
 ## How it works
 
 - [The checks](docs/checks.md): what `pre` finds with no AI, and their
-  levels; [cascades](docs/cascades.md): how they are cut, what holds a
-  release, the docs the code never rewrites.
+  levels; [those on the docs alone](docs/checks-docs.md);
+  [cascades](docs/cascades.md): how they are cut, what holds a release,
+  the docs the code never rewrites.
 - [The agent's tasks](docs/tasks.md): suspect docs judged whole or in parts;
   [gardening](docs/gardening.md): its tasks, one merge request per task;
   [pages read for their reader](docs/reader.md).

@@ -1,0 +1,29 @@
+case: reviewer/spec-capitalised-words-name-no-code
+about: "A spec's capitalised words, opening a sentence, a bold label or inside one, are English as often as a name (#425): none names a function, though the repository defines Average and Parse. Naming no code, the spec is not given to the contradicted lens, said; a name in backticks would be."
+given:
+  repo: reviewed
+  setup:
+    - |
+      mkdir -p docs
+      cat > docs/spec-empty.md <<'MD'
+      # Parse an empty text
+
+      ## Need
+
+      Average already returns 0 for an empty list; Parse should do the same for an empty text.
+
+      ## Validation
+
+      - **Average stays:** Given an empty list, When Average reads it, Then it returns 0.
+
+      ## Scope
+
+      The calc package.
+      MD
+run: {review: [--spec, docs/spec-empty.md], ai: "fake:review-nothing"}
+expect:
+  status: pass
+  agent-calls: 1
+  summary: "not asked: contradicted (the spec names no code the repository holds)"
+  run-files:
+    in/parts/1-lenses/task.md: {contains: "# Lenses: ambiguous, unverifiable, out-of-scope\n", not-contains: "## The code the spec names"}

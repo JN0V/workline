@@ -1,6 +1,6 @@
 ---
-sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/readertask.go, internal/builtin/documentalist/freshness.go, internal/builtin/documentalist/dedupe.go, internal/builtin/documentalist/condense.go, internal/builtin/documentalist/mergecard.go, internal/builtin/documentalist/waiting.go]
-checked: 721c7b37
+sources: [internal/builtin/documentalist/freshness.go, internal/builtin/documentalist/dedupe.go, internal/builtin/documentalist/mergecard.go, internal/builtin/documentalist/waiting.go, internal/builtin/documentalist/condense.go, internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/kept.go]
+checked: 4a1dedce
 verified: agent:claude-code
 ---
 # Documentalist — the gardening tasks
@@ -54,6 +54,25 @@ it within budget by moving whole parts into a new doc, and linking to it.
   the job stays green, and the next run asks again
   ([ADR-0037, amended](../../../docs/adr/0037-the-schedule-runs-every-step.md#amendment-2026-10-09-a-refused-proposal-is-said-not-failed)).
 
+The judge refuses a condense patch when:
+
+- it touches another existing doc;
+- a line that leaves the doc is found in no new doc, unchanged but for a
+  heading's level — moved, not rewritten (`rewritten`); a reference
+  updated in place, keeping most of its words, is fine;
+- a MUST or SHOULD is lost;
+- a new doc is not linked from the doc (`not-linked`);
+- the budget problem it was for remains (`still-over-budget`);
+- it brings a budget problem the docs did not have, or makes one bigger
+  (`patch-introduces`) — a part over its budget already, moved whole into
+  a new doc, its text word for word, is the same problem moved, not a
+  new one.
+
+A condense, split, merge-card or dedupe patch moving an existing doc's
+`checked`, or creating a doc that carries one, is refused
+(`checked-unread`): moving text gives none of its sources, so a new doc
+starts without `checked`, listed unchecked for a person.
+
 ## Merging cards
 
 With nothing else to do, a card too short to stand alone goes into
@@ -78,11 +97,7 @@ each other one moves, as written, into a card of its own that it links to.
 ## Pages read for their reader
 
 Last in each run, after the other tasks, in a round of its own: the pages
-the reader checks flagged. Per page, what a reader would miss or skip,
-each passage quoted, and a patch making it easy to read, at most
-`reader.agent-pages` (4) a run. What the engine cannot check against the
-quotes is withheld, never blocking; a page is not read again until it
-changes, even after its merge request is closed ([more](reader.md)).
+the reader checks flagged, read for their reader ([more](reader.md)).
 
 ## Records kept on merged merge requests
 
@@ -96,7 +111,8 @@ there, not committed
   closest after — GitHub's merge commit, GitLab's merge or squash commit.
 - **The record holds** when the doc and each source are, in that commit and
   now, as judged: the doc is not put before an agent, and `judged: <that
-  commit>` goes in `workline/documentalist/records`, which only records
+  commit>` (or `judged-in-parts`, as the record says) goes in
+  `workline/documentalist/records`, which only records
   when docs were read: it merges alone at `normal`
   ([the merge policy](../../../docs/merge-policy-normal.md)).
 - **Otherwise the doc is judged again**, its finding naming the file no

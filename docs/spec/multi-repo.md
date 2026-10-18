@@ -2,6 +2,7 @@
 sources: [internal/builtin/documentalist/documentalist.go]
 checked: 721c7b37
 verified: agent:claude-code
+judged-in-parts: c7e1e98
 ---
 # Several repositories — v1 (draft)
 

@@ -1,6 +1,6 @@
 ---
 sources: [internal/line, internal/routing, internal/work, routing.default.yaml]
-checked: a6228bb0
+checked: ddd794cb
 verified: agent:claude-code
 ---
 # Routing — v1 (draft)
@@ -125,7 +125,8 @@ names the retired `release-manager` is refused, saying which tool to use.
   taken on trust: a merge is the engine's only when it merges the range's
   base, or a commit of its history, and its tree is exactly what
   workline's own merge of its two parents gives; another commit only when
-  it changes doc pages alone — Markdown, never under `roles/` nor a tool's
+  it changes doc pages alone — Markdown, never a role's facet (in
+  `roles/<name>/` only its README.md and `docs/`) nor under a tool's
   folder, never a file steering agents (AGENTS.md, CLAUDE.md…); else it is
   judged as a person's (ADR-0042). `Workline-Role: committer` marks a
   person's commit whose message the committer rewrote (ADR-0046): never

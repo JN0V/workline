@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine/routine.go, internal/engine/demote.go, internal/engine/merge.go, internal/forge/merge.go]
-checked: e2580728
+checked: 2b62787e
 verified: agent:claude-code
 reader: efab3a2a0b35
 ---
@@ -24,6 +24,9 @@ merge: {autonomy: normal}   # a project's choice, never a default
     by its tree;
   - only docs of the documentalist's that agents are not told to read
     (not [AGENTS.md](../AGENTS.md), [CLAUDE.md](../CLAUDE.md), a page they link to, a prompt…);
+  - in a role's folder, only its README and `docs/` pages, never what
+    the agent is given — persona, knowledge, instruction, policy, lenses
+    ([the layout](spec/role-contract.md#layout));
   - their head's verdict passed, every agent's review whole.
 - **Four kinds, by what changed**:
   - `records`: only when docs were read (`judged`) — gardening's

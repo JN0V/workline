@@ -2,6 +2,7 @@
 sources: [internal/builtin/documentalist/documentalist.go, roles/documentalist/role.yaml]
 checked: 721c7b37
 verified: agent:claude-code
+judged-in-parts: c7e1e98
 ---
 # Documentalist — cascades and the authority
 
@@ -60,7 +61,8 @@ spec, an ADR, the architecture), the doc is not updated to match:
 
 - the documentalist opens an `issue` for the architect, titled "The code
   disagrees with <doc>", because the code may be the one that is wrong;
-- the doc is only checked again, the issue tracking the disagreement;
+- the doc is only checked again (or, if it was not given whole, only
+  `judged`), the issue tracking the disagreement;
 - a patch changing what it says is refused (`truth-doc-changed`).
 
 Every other doc follows the code.
