@@ -14,18 +14,30 @@ import (
 	"github.com/JN0V/workline/internal/verdict"
 )
 
+// On is what an issue carries where an axis may be kept: its labels, its
+// fields' values, its weight — never a parent's, GitLab's sum of its
+// parts', no effort of its own (ADR-0040).
+func On(is forge.Issue) scale.On {
+	on := scale.On{Labels: is.Labels, Fields: is.Fields, Weight: is.Weight}
+	if is.Weight != nil && len(Parts(is)) > 0 {
+		on.Weight = nil
+	}
+	return on
+}
+
 // PriorityLabels lists the levels an issue's priority gives, read by name
 // where the project keeps it (scale.Used) — its labels, or its field —;
 // more than one is a person's doing.
-func PriorityLabels(is forge.Issue) []int { return scale.Used.Priority.Read(is.Labels, is.Fields) }
+func PriorityLabels(is forge.Issue) []int { return scale.Used.Priority.Read(On(is)) }
 
 // Priority is an issue's level, the most pressing it carries; 0 when it
 // has none.
 func Priority(is forge.Issue) int { return first(PriorityLabels(is)) }
 
 // EffortLabels lists the levels an issue's effort gives, where the
-// project keeps it; none while it keeps none (ADR-0040).
-func EffortLabels(is forge.Issue) []int { return scale.Used.Effort.Read(is.Labels, is.Fields) }
+// project keeps it — its labels, its field, its GitLab weight read in
+// bands —; none while it keeps none (ADR-0040).
+func EffortLabels(is forge.Issue) []int { return scale.Used.Effort.Read(On(is)) }
 
 // Effort is an issue's effort, the lightest it carries; 0 when it has
 // none, or the project keeps none.
@@ -65,6 +77,14 @@ func Where(f forge.Backlog, cfg Config, open []forge.Issue) (scale.Scheme, []ver
 	if err != nil {
 		return scale.Before, nil, err
 	}
+	// GitLab's weight, Premium's and Ultimate's: their issues carry the
+	// key; asked only where the effort is looked for.
+	weights := false
+	if cfg.Effort.Set() {
+		if weights, err = forge.Weights(f); err != nil {
+			return scale.Before, nil, err
+		}
+	}
 	var fields []scale.Field
 	for _, x := range fs.List {
 		sf := scale.Field{ID: x.ID, Name: x.Name, Options: x.Options, Hidden: !x.Public && fs.Public}
@@ -81,7 +101,7 @@ func Where(f forge.Backlog, cfg Config, open []forge.Issue) (scale.Scheme, []ver
 		set   scale.Setting
 		to    *scale.Source
 	}{{scale.Priority, cfg.Priority, &s.Priority}, {scale.Effort, cfg.Effort, &s.Effort}} {
-		src, err := scale.Detect(a.scale, a.set, labels, on, forge.ScopedLabels(f), fields)
+		src, err := scale.Detect(a.scale, a.set, labels, on, forge.ScopedLabels(f), fields, weights)
 		if err != nil {
 			return scale.Before, nil, err
 		}
@@ -104,27 +124,28 @@ func Where(f forge.Backlog, cfg Config, open []forge.Issue) (scale.Scheme, []ver
 
 // Placeable says why a priority or an effort cannot be written on an
 // issue where the project keeps it, src (ADR-0040): a token that reads
-// none of the field's values, never read as empty; a value in another
-// place — never written over, nor mirrored —; no label of the family, nor
-// option of the field, carrying the level; "" when it can. The plan asks
-// it, and the applying job again before it writes.
+// none of the field's values, never read as empty; a parent's GitLab
+// weight, summed from its parts'; a value in another place — never
+// written over, nor mirrored —; no label of the family, nor option of the
+// field, carrying the level; "" when it can. The plan asks it, and the
+// applying job again before it writes.
 func Placeable(src scale.Source, is forge.Issue, l int) (rule, why string) {
 	axis := src.Family.Scale.Axis
-	where := src.Family.Span()
-	if src.InField() {
-		where = "the field " + src.Field.Name
-	}
+	where := src.Place()
 	if src.Field.Blind != "" {
 		return axis + "-blind", fmt.Sprintf("%s: its values are never read as empty, and nothing is written in %s", src.Field.Blind, where)
 	}
-	if there := src.Elsewhere(is.Labels, is.Fields); len(there) > 0 {
+	if parts := Parts(is); src.Weight && len(parts) > 0 {
+		return axis + "-parent", fmt.Sprintf("a parent of %s: GitLab sums its parts' weights into its own, never written", issueList(parts))
+	}
+	if there := src.Elsewhere(On(is)); len(there) > 0 {
 		var here []string
 		for _, n := range is.Labels {
-			if src.Family.Of(n) > 0 && !src.InField() {
+			if src.Family.Of(n) > 0 && !src.Native() {
 				here = append(here, n)
 			}
 		}
-		if len(src.Read(is.Labels, is.Fields)) > 0 && src.InField() {
+		if len(src.Read(On(is))) > 0 && src.Native() {
 			here = append(here, where)
 		}
 		if len(here) > 0 {
@@ -136,7 +157,7 @@ func Placeable(src scale.Source, is forge.Issue, l int) (rule, why string) {
 	}
 	if _, ok := src.Family.Label(l); !ok {
 		what := "no label of " + where
-		if src.InField() {
+		if src.Native() {
 			what = "no option of " + where
 		}
 		return axis + "-no-label", fmt.Sprintf("%s carries %s: a person creates one, or maps one to it under `names` in the settings",

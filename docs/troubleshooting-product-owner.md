@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/productowner/productowner.go]
-checked: 698042ac
+checked: fac02675
 verified: agent:claude-code
 ---
 # Troubleshooting the product owner
@@ -23,14 +23,16 @@ When the product owner pauses, or an issue gets nothing. Part of
 - `setting-gone`: `ignored-runs-max` or `weekly-sample` is no longer read;
   take it off.
 - `values-where`, blocking: the `priority` or `effort` setting names a
-  family of labels the project has none of; name one it has, or `auto`
+  family of labels the project has none of, or GitLab's weight on GitLab
+  Free; name one it has, or `auto`
   ([settings](../roles/product-owner/docs/settings.md#priority-and-effort)).
   `priority-elsewhere`: the issue holds a priority in another family; keep
   one.
 - No effort set: `effort-nowhere`, the `effort` setting is unset;
   `effort-unread`, the issue names no file, or its code did not fit the
   run's budget: name its files in its Scope. `effort-once`: the role
-  estimates each issue once; a person's change stands.
+  estimates each issue once; a person's change stands. `effort-parent`:
+  GitLab sums a parent's weight from its parts'; estimate the parts.
 - GitHub's fields visible to organization members only:
   `priority-blind`, the token is the job's own, an App's, or no member's:
   run with a member's token; `priority-hidden`, the act is set to propose,

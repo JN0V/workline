@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go]
-checked: 698042ac
+checked: fac02675
 verified: agent:claude-code
 ---
 # Conformance — a case in full
@@ -138,6 +138,7 @@ saying so.
   `body-lacks` (a text its body holds, or does not, or a list of them),
   `reactions` (the reactions on its comments, by the comment's id),
   `fields` (its values in the issue fields, exactly these, by name),
+  `weight` (its GitLab weight, -1 for none),
   `threads` (a merge request's comments on lines, exactly these, in the
   order posted: each `{path, line, contains, lacks, resolved}`),
   `auto-merge` (a merge request's on) and `merged` (the forge merged it);
