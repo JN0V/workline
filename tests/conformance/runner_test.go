@@ -139,6 +139,7 @@ type runSpec struct {
 type gatesJob struct {
 	Env   map[string]string `yaml:"env"`   // its variables; $VAR expands
 	Input map[string]string `yaml:"input"` // its inputs, over the run's
+	After []string          `yaml:"after"` // commands run in the repository once it ran, before the line
 }
 
 // applyFrom is a merge request's own run applied by a job of the base's:
@@ -675,6 +676,9 @@ func runCase(t *testing.T, c *caseFile) []string {
 			return []string{fmt.Sprintf("the gates' job printed nothing: %v", err)}
 		}
 		os.WriteFile(gatesFile, out, 0o644)
+		if p := inRepo(repo, j.After); len(p) > 0 {
+			return p
+		}
 		cmd.Args = append(cmd.Args, "--gates-from", gatesFile)
 	}
 	var stdout, stderr bytes.Buffer
