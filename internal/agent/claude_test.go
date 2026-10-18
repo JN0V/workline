@@ -132,9 +132,21 @@ func TestProposalsFromSaysWhereKeysGo(t *testing.T) {
 			"proposal 1 holds 2 kinds (decision, finding); each holds exactly one: decision is no kind, but a key of a `finding`"},
 		{"- comment: hello\n  label: {add: [bug]}\n", "proposal 1 holds 2 kinds (comment, label); each holds exactly one: write each as an item of its own"},
 		{"- note: hello\n  colour: red\n", "colour is no kind, but a key of a proposal, written under its kind, indented, as the answer's shape shows it"},
+		{"- note: hello\n  why: because\n", "why is no kind, but a key of a proposal, written under its kind"}, // a key of many kinds
+		{"- {}\n", "proposal 1 holds no kind; each holds exactly one"},
 	} {
 		if _, _, err := proposalsFrom(c.answer); err == nil || !strings.Contains(err.Error(), c.want) {
 			t.Errorf("%q: %v, want %q", c.answer, err, c.want)
 		}
+	}
+	// Only a kind the role writes is named: a role writing no finding is not
+	// told to write one.
+	answer := "- note: x\n  cause: {path: a.go, quote: x}\n"
+	if _, _, err := proposalsFrom(answer, "note", "comment"); err == nil || strings.Contains(err.Error(), "finding") ||
+		!strings.Contains(err.Error(), "cause is no kind, but a key of a proposal") {
+		t.Errorf("a role writing no finding: %v", err)
+	}
+	if _, _, err := proposalsFrom(answer, "finding", "note"); err == nil || !strings.Contains(err.Error(), "under `- finding:`") {
+		t.Errorf("a role writing findings: %v", err)
 	}
 }

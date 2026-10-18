@@ -84,7 +84,7 @@ func (c claude) Propose(req Request) (Call, error) {
 	// The answer as it came, kept for audit: what the engine reads of it
 	// may drop what it holds (claims are judged, never applied).
 	_ = os.WriteFile(filepath.Join(req.RunDir, "out", "agent-answer.txt"), []byte(answer.Result), 0o644)
-	proposals, mended, err := proposalsFrom(answer.Result)
+	proposals, mended, err := proposalsFrom(answer.Result, req.Role.Intentions...)
 	call.Mended = mended
 	if err != nil {
 		return call, fmt.Errorf("%w: %v", ErrInvalidOutput, err)
@@ -162,11 +162,12 @@ func claudeAnswer(stdout []byte, call *Call) (claudeResult, bool) {
 }
 
 // proposalsFrom extracts the YAML list from an answer, tolerating a code fence,
-// and says what Mend mended of it. The answer itself is tried first: a
+// and says what Mend mended of it; kinds, those the role writes, tell an
+// item holding several keys where they go. The answer itself is tried first: a
 // proposal may hold a code fence of its own (a doc's code block, moved by a
 // patch). Only when it does not read is it taken from between the first and
 // the last fence lines.
-func proposalsFrom(answer string) ([]byte, []string, error) {
+func proposalsFrom(answer string, kinds ...string) ([]byte, []string, error) {
 	s := strings.TrimSpace(answer)
 	if s == "[]" { // nothing to propose, said: a part whose share says nothing of the doc
 		return []byte("[]\n"), nil, nil
@@ -202,8 +203,12 @@ func proposalsFrom(answer string) ([]byte, []string, error) {
 		}
 	}
 	for i, m := range list {
-		if len(m) != 1 {
-			return nil, nil, fmt.Errorf("proposal %d holds %d kinds (%s); each holds exactly one%s", i+1, len(m), strings.Join(slices.Sorted(maps.Keys(m)), ", "), whereKeysGo(m))
+		switch len(m) {
+		case 1:
+		case 0:
+			return nil, nil, fmt.Errorf("proposal %d holds no kind; each holds exactly one", i+1)
+		default:
+			return nil, nil, fmt.Errorf("proposal %d holds %d kinds (%s); each holds exactly one%s", i+1, len(m), strings.Join(slices.Sorted(maps.Keys(m)), ", "), whereKeysGo(m, kinds))
 		}
 	}
 	return []byte(s + "\n"), mended, nil
@@ -212,10 +217,11 @@ func proposalsFrom(answer string) ([]byte, []string, error) {
 // whereKeysGo says, of an item holding several keys where one kind goes,
 // where they go. Several kinds: an item each. A key no kind is named by is
 // a key of a proposal, written under its kind, indented: the kind whose
-// shape holds them all is named. A reviewer's lens wrote a finding's
-// `decision` and `cause` as an item of their own (#490, #492) and, asked
-// again only for valid YAML, wrote them so again.
-func whereKeysGo(m map[string]any) string {
+// shape holds them all is named, among those the role writes (kinds; none
+// given, any). A reviewer's lens wrote a finding's `decision` and `cause`
+// as an item of their own (#490, #492) and, asked again only for valid
+// YAML, wrote them so again.
+func whereKeysGo(m map[string]any, kinds []string) string {
 	var keys []string
 	for k := range m {
 		if _, kind := contracts[k]; !kind {
@@ -235,11 +241,17 @@ func whereKeysGo(m map[string]any) string {
 		said += " and "
 	}
 	said += keys[len(keys)-1]
+	keyed := make([]*regexp.Regexp, len(keys))
+	for i, k := range keys {
+		keyed[i] = regexp.MustCompile(`(^|[{,;\s])` + regexp.QuoteMeta(k) + `:`)
+	}
+	if len(kinds) == 0 {
+		kinds = slices.Collect(maps.Keys(contracts))
+	}
 	var holders []string
-	for kind, shape := range contracts {
-		if !engineOnly[kind] && !slices.ContainsFunc(keys, func(k string) bool {
-			return !regexp.MustCompile(`(^|[{,;\s])` + regexp.QuoteMeta(k) + `:`).MatchString(shape)
-		}) {
+	for _, kind := range kinds {
+		shape, ok := contracts[kind]
+		if ok && !engineOnly[kind] && !slices.ContainsFunc(keyed, func(re *regexp.Regexp) bool { return !re.MatchString(shape) }) {
 			holders = append(holders, kind)
 		}
 	}
