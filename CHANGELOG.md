@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.35.0](https://github.com/JN0V/workline/compare/v0.34.0...v0.35.0) (2026-10-18)
+
+
+### Features
+
+* **doctor:** say which languages no linter reads ([#497](https://github.com/JN0V/workline/issues/497)) ([33ed774](https://github.com/JN0V/workline/commit/33ed7743df9873f3cd84a72d11f4095a3468b6a9))
+* **documentalist:** move checked when parts support every line ([#490](https://github.com/JN0V/workline/issues/490)) ([ca88174](https://github.com/JN0V/workline/commit/ca88174150b10ce95217b15b3c72ce0f6294c366))
+
+
+### Bug Fixes
+
+* **forge:** try a stalled GitLab call again ([#492](https://github.com/JN0V/workline/issues/492)) ([40a469c](https://github.com/JN0V/workline/commit/40a469c8aacc74ba70cf5811f4dcfe1f515d6f5c))
+* **reviewer:** ask a decision as a key of its finding, said again ([#494](https://github.com/JN0V/workline/issues/494)) ([f258a19](https://github.com/JN0V/workline/commit/f258a194b2750a911d141d739e57cc2873561d68))
+
 ## [0.34.0](https://github.com/JN0V/workline/compare/v0.33.0...v0.34.0) (2026-10-18)
 
 
