@@ -161,7 +161,7 @@ settings:
   parts-max-per-run: 16              # parts asked in one run; the other docs wait for the next round
   # A doc judged in parts whose parts found nothing wrong, and quote each
   # word of every line stating something in a support from the code: its
-  # `checked` moves (#482). Off by default: five evaluation runs did not
-  # hold ADR-0014 step 4's bars (the control ended `checked` in 3). Off,
-  # such a doc waits for a person.
-  parts-move-checked: false
+  # `checked` moves (#482). On since five evaluation runs held ADR-0014
+  # step 4's bars (2026-10-18: no falsehood vouched for, the control
+  # `checked` in every run). Off, such a doc waits for a person.
+  parts-move-checked: true
