@@ -94,7 +94,8 @@ in [tests/evaluation/cases/product-owner](../../../tests/evaluation/cases/produc
   ([ADR-0040](../../../docs/adr/0040-priority-and-effort-are-the-forges-the-product-owner-estimates-them.md),
   step 2): `priority-*`; the effort and the grid (step 3): `effort-*`,
   `grid-next-says-each-cell`, `estimates-stuck-said`, the reviewer's
-  `spec-read-in-the-owners-order`; GitHub's fields (step 4): `field-*`.
+  `spec-read-in-the-owners-order`; GitHub's fields (step 4): `field-*`;
+  GitLab's weight (step 5): `weight-*`.
 - **A backlog file imported**, mapped item by item, judged then applied
   apart: backlog's `import-*`.
 - **One way for every role to open an issue**: backlog's `issue-*`,
@@ -163,7 +164,13 @@ in [tests/evaluation/cases/product-owner](../../../tests/evaluation/cases/produc
      token and an App's not tried: the first needs a token with the
      `workflow` scope to add a workflow there, the second the App
      installed on jn0v-lab.
-   - **Next**: step 5, GitLab's `weight`.
+   - **Step 5 built, off by default**: GitLab's weight found for the
+     effort where the issues carry one (Premium, Ultimate), read in
+     bands, written 1, 3 or 5 and read back, never on a parent; Free
+     keeps the labels. Tried on the GitLab sandbox, Free only (its pull
+     request's Tried); Premium not tried, no project at hand. A
+     project's own bands ("another scale sets its bands") not built.
+   - **Next**: step 6, workline's labels renamed.
 3. **Tries on real use**, nothing to build (no issue yet):
    - **answers on the issue**: the trial, measured (To leave beta, 2); a
      real agent's revision after a comment; an outsider's and a bot's

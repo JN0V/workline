@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, internal/backlog/autonomy.go, internal/backlog/ledger.go, internal/sample/acts.go, internal/scale/detect.go]
-checked: 698042ac
+checked: fac02675
 verified: agent:claude-code
 ---
 # Product owner — settings
@@ -88,8 +88,8 @@ labels, and no effort read.
 
 | Value | Reads and writes |
 |---|---|
-| `auto` | a GitHub organisation's own Priority and Effort fields; else the project's own labels (`P0`…, `P-*`, `priority/*`, `priority::*`, `effort*`), else workline's own, else the forge's: `priority/urgent` to `/low` on GitHub, `priority::1` to `::4` on GitLab, created at the first act |
-| `{in: labels, prefix: P}`, `{in: field, name: Severity}` | that family, or that field; the run stops if the project has none |
+| `auto` | a GitHub organisation's own Priority and Effort fields; the effort in GitLab's weight (Premium, Ultimate); else the project's own labels (`P0`…, `P-*`, `priority/*`, `priority::*`, `effort*`), else workline's own, else the forge's: `priority/urgent` to `/low` on GitHub, `priority::1` to `::4` on GitLab, created at the first act |
+| `{in: labels, prefix: P}`, `{in: field, name: Severity}`, `{in: weight}` | that family, that field, or GitLab's weight (the effort only); the run stops if the project has none |
 | `names: {sev-1: urgent}`, beside either | a label no table knows, read as that level |
 
 - **Said once a run**: where each was found, and a name no table knows.
@@ -100,6 +100,8 @@ labels, and no effort read.
   job's summary — and never proposed. A token not shown to read them, the
   job's own or an App's, writes nothing there
   ([why](../../../docs/research/priority-and-weight.md#checked-live-2026-10-18)).
+- **GitLab's weight**: read 0–1 Low, 2–3 Medium, 4 or more High; written
+  1, 3 or 5; never on a parent, whose weight GitLab sums from its parts'.
 - **Set once, only where empty**: a value a person set stays; one the
   role set and a person changed or cleared is never written again.
 - **The order** goes by the priority, then the effort, the lightest

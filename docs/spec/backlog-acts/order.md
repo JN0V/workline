@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog/backlog.go, internal/backlog/order.go, internal/backlog/undo.go, internal/scale/scale.go, internal/scale/detect.go, internal/builtin/productowner/productowner.go, internal/engine/backlog.go, internal/forge/github_fields.go]
 status: draft
-checked: 698042ac
+checked: fac02675
 verified: agent:claude-code
 ---
 # Milestones and ordering
@@ -62,13 +62,16 @@ Each axis has a setting of the role, `priority` and `effort`
 - **`auto`**: detected each run, with no agent, the first that holds — the
   forge's own single-select issue field named as the axis, `Priority` or
   `Effort` (GitHub's, an organisation's, listed by GraphQL's
-  `repository.issueFields`: none on a user's repository); the project's
+  `repository.issueFields`: none on a user's repository); for the effort,
+  GitLab's weight, when the project's issues carry a `weight` key
+  (Premium, Ultimate; Free's carry none); the project's
   own family of labels, two values or more and one on an open issue,
   tried in this order: `P0`…, `P-*`, `priority/*`, `Priority/*`,
   `priority::*` (effort: `effort1`…, `effort/*`, `effort::*`); then
   workline's own labels, one on an open issue; else the forge's words.
-- **`{in: labels, prefix: P}`**, **`{in: field, name: Severity}`**: that
-  family, or that field; one the project lacks stops the run, said
+- **`{in: labels, prefix: P}`**, **`{in: field, name: Severity}`**,
+  **`{in: weight}`** (the effort only): that family, that field, or
+  GitLab's weight; one the project lacks stops the run, said
   (`values-where`, block).
 - **`names`**, under either: a label of the family no table knows mapped
   to a level, `{names: {sev-1: urgent}}`. One not mapped carries none,
@@ -120,6 +123,24 @@ the level: "priority 1 (P0)".
   organisation (GraphQL's `viewerIsAMember`) — writes nothing in them
   (`priority-blind`, `effort-blind`), said where each axis is found.
 
+### In GitLab's weight
+
+- **Read in bands**, the effort only: 0 or 1 Low, 2 or 3 Medium, 4 or
+  more High; no weight is no effort, read as Medium in the order. A
+  person's weight is shown to the agent as it is: "Effort: Medium (weight
+  2) (a person's: kept)".
+- **Written 1, 3 or 5** for Low, Medium and High (`PUT
+  …/issues/{iid}`, `weight`), read back from GitLab's answer: Free
+  ignores the key, so a weight not kept is an error, never a pass. No
+  label is created; an effort label on an issue, or a weight beside the
+  labels read, is another place (`effort-elsewhere`).
+- **Never on a parent**: GitLab sums a parent's weight from its parts'.
+  An issue with parts — its tasks, or a task list under "## Sub-issues"
+  — gets no weight written (`effort-parent`); the agent is told
+  "Effort: not estimated here: a parent, GitLab sums its parts'
+  weights". An epic is never an issue the role reads.
+- **Never `time_estimate`**: time, not complexity.
+
 ### The effort, set once
 
 ```yaml
@@ -141,7 +162,8 @@ the issue's order, the priority left out when it has one.
   `effort` unset (`effort-nowhere`); an issue whose code the run did not
   give the agent, all the files it names (`effort-unread`, `pre` lists
   them in `in/code-read`); a value elsewhere or a level no label carries
-  (`effort-elsewhere`, `effort-no-label`).
+  (`effort-elsewhere`, `effort-no-label`); a parent's GitLab weight
+  (`effort-parent`).
 - **Never written over**: an effort the role did not set is a person's
   (`effort-kept`); one it set is never estimated again, changed or
   cleared since included (`effort-once`). With a setting set, the same
