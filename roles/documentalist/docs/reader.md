@@ -5,7 +5,7 @@ verified: agent:claude-code
 ---
 # Documentalist — pages read for their reader
 
-[The reader checks](checks.md#docs-for-their-reader) say where a user page
+[The reader checks](checks-docs.md#docs-for-their-reader) say where a user page
 is hard to read. With an agent, gardening also has it read those pages as
 their reader would, and propose a fix
 ([ADR-0048](../../../docs/adr/0048-the-agent-reads-the-pages-the-reader-checks-flag.md)).

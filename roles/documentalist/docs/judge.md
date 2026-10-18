@@ -1,5 +1,5 @@
 ---
-sources: [internal/builtin/documentalist/judge.go, internal/builtin/documentalist/notes.go, internal/builtin/documentalist/values.go, internal/builtin/documentalist/words.go, internal/builtin/documentalist/condense.go, internal/builtin/documentalist/dedupe.go, internal/builtin/documentalist/mergecard.go, internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/cite.go, internal/builtin/documentalist/comments.go]
+sources: [internal/builtin/documentalist/notes.go, internal/builtin/documentalist/values.go, internal/builtin/documentalist/judge.go, internal/builtin/documentalist/documentalist.go]
 checked: 178672f7
 verified: agent:claude-code
 ---
@@ -45,7 +45,7 @@ A patch is refused, and the agent asked again with the reasons, when it:
 
 Places marked *withheld* below are not refused with the whole answer: the
 rest of the fix is applied without them. Condense, split, merge-card and
-dedupe tasks are judged by [their own rules](#condense-split-merge-dedupe),
+dedupe tasks are judged by their own rules ([gardening](gardening.md#condensing)),
 the reader task by [its own](reader.md#what-the-engine-checks).
 
 ## Hunks that misquote the doc
@@ -134,6 +134,10 @@ one place the engine had already named (step 4). Now:
   ([#120](https://github.com/JN0V/workline/issues/120)).
 - A doc judged in parts, once the fix is judged: the places it fixed, or
   that it changed nothing of what the parts found.
+- On a person's merge request, a doc whose patch only records `judged`:
+  its record is kept in the documentalist's comment there, nothing
+  committed for it, and the finding says so
+  ([more](push.md#a-doc-found-with-nothing-to-fix-no-commit)).
 - The gardening pull request (gardening: the scheduled run, nightly or
   weekly) lists each doc it judged with the same outcome — fixed and in
   how many places, still true, or nothing found wrong — whether `checked`
@@ -177,24 +181,3 @@ These findings are added, never refusing:
     `^1.4.1`), what a dependant accepts; a version after a history marker
     ("First available in v1.9.0", "Added in", "since", "New in version",
     "Deprecated in", `versionadded::`), which says when something came.
-
-## Condense, split, merge, dedupe
-
-A condense patch is refused when:
-
-- it touches another existing doc;
-- a line that leaves the doc is found in no new doc, unchanged but for a
-  heading's level — moved, not rewritten (`rewritten`); a reference
-  updated in place, keeping most of its words, is fine;
-- a MUST or SHOULD is lost;
-- a new doc is not linked from the doc (`not-linked`);
-- the budget problem it was for remains (`still-over-budget`);
-- it brings a budget problem the docs did not have, or makes one bigger
-  (`patch-introduces`) — a part over its budget already, moved whole into
-  a new doc, its text word for word, is the same problem moved, not a
-  new one.
-
-A condense, split, merge-card or dedupe patch moving an existing doc's
-`checked`, or creating a doc that carries one, is refused
-(`checked-unread`): moving text gives none of its sources, so a new doc
-starts without `checked`, listed unchecked for a person.
