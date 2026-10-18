@@ -1,6 +1,6 @@
 ---
 sources: [tests/evaluation]
-checked: fe27857d
+checked: 62233382
 judged: 62abc22
 verified: agent:claude-code
 ---
@@ -37,7 +37,9 @@ same commit changes, read in parts with `parts-move-checked` on. Never
 ([ADR-0009, amended](../../adr/0009-docs-far-behind-are-judged-in-parts.md#amendment-2026-10-18-checked-after-parts-measured-off):
 measured on 2026-10-18, the control ended `checked` in 3 runs of 5;
 [again](../../adr/0009-docs-far-behind-are-judged-in-parts.md#amendment-2026-10-18-checked-after-parts-measured-again-on),
-the control made exact, in 5 of 5).
+the control made exact, in 5 of 5;
+[the shipped engine](../../adr/0009-docs-far-behind-are-judged-in-parts.md#amendment-2026-10-18-the-shipped-engine-measured),
+in 5 of 5).
 
 To measure the `drifted` cases again, five runs, as ADR-0014's steps 1
 and 3 ran them (`-v` for the notes):

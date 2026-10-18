@@ -212,11 +212,10 @@ its evaluation in
    yet.
 4. **A doc read in parts, to watch**: it no longer waits for a person
    when its parts support every line (`parts-move-checked`, on). How
-   often real docs earn it; the fix's recall on the planted doc, all four
-   defects fixed in 6 runs of 10, none vouched for: a quote starting on
-   the line before its range dropped the claim, now placed (no paid run
-   since)
-   ([ADR-0009, amended](../../../docs/adr/0009-docs-far-behind-are-judged-in-parts.md#amendment-2026-10-18-checked-after-parts-measured-again-on);
+   often real docs earn it. The shipped engine, a quote placed one line
+   either side, measured: both bars and all four planted defects fixed,
+   5 runs of 5
+   ([ADR-0009, amended](../../../docs/adr/0009-docs-far-behind-are-judged-in-parts.md#amendment-2026-10-18-the-shipped-engine-measured);
    [#482](https://github.com/JN0V/workline/issues/482)).
 5. **To watch**: Sonnet citing lines a line off in long docs (now placed
    by their quote); a partial claim settled by another part; the first

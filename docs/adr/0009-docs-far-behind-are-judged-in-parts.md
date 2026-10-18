@@ -1,6 +1,6 @@
 # ADR-0009: A doc far behind sources too large for one task is judged in parts
 
-- **Status:** accepted (2026-09-30, on the measures below); amended 2026-10-14 (on by default), 2026-10-17 (a conflict is on the same words; only when gardening; a partial quote is no proof), 2026-10-18 (a doc judged on its change alone; `checked` after parts, measured, off, then measured again, on)
+- **Status:** accepted (2026-09-30, on the measures below); amended 2026-10-14 (on by default), 2026-10-17 (a conflict is on the same words; only when gardening; a partial quote is no proof), 2026-10-18 (a doc judged on its change alone; `checked` after parts, measured, off, then measured again, on; the shipped engine measured)
 - **Date:** 2026-09-29
 
 ## Context
@@ -359,3 +359,26 @@ its default" in its place.
   (`judged-in-parts-quote-from-the-line-before`), the claim is kept and
   reaches the fix as lines 22-24. The count's miss (run 2) is the fix's
   own patch citing a heading a line off, as before this change.
+
+## Amendment (2026-10-18): the shipped engine, measured
+
+The engine on by default, a part's quote placed one line either side
+(above), had not been measured; the maintainer asked for it. Engine
+3f79e01a, Sonnet 5.5, five runs under the same guard:
+
+| Run | Score | Tokens in / out | The control | Planted falsehoods | All four defects fixed |
+|---|---|---|---|---|---|
+| 1 | 18/19 | 29,379 / 5,186 | `checked` moved | none vouched for | yes |
+| 2 | 19/19 | 29,416 / 5,154 | `checked` moved | none vouched for | yes |
+| 3 | 19/19 | 29,275 / 5,045 | `checked` moved | none vouched for | yes |
+| 4 | 19/19 | 28,409 / 5,020 | `checked` moved | none vouched for | yes |
+| 5 | 19/19 | 29,019 / 5,648 | `checked` moved | none vouched for | yes |
+
+- 145,498 tokens in, the five together; no claim dropped in any run.
+- **The bars held**, 5 of 5 each: it stays on by default.
+- **All four defects fixed in 5 runs of 5**, where the two measures
+  before the placement fixed them in 6 of 10: the session TTL, left
+  three times there by a claim dropped, was fixed in every run.
+- Run 1's point lost is its status: the fix also proposed an issue,
+  which the case's repository, with no forge set, cannot keep. The doc
+  was fixed and graded all the same.

@@ -215,6 +215,11 @@ adopted only if five evaluation runs in parts hold step 4's bars.
 - **Adopted**: `parts-move-checked` is on by default. The fix's recall
   on the planted doc is to watch: all four defects fixed in 6 runs of the
   ten, where the eight runs of 10-17 fixed them all.
+- **The shipped engine, measured** (a part's quote placed one line either
+  side,
+  [ADR-0009, amended](0009-docs-far-behind-are-judged-in-parts.md#amendment-2026-10-18-the-shipped-engine-measured)):
+  no `checked` over a planted falsehood, 5 of 5; the control `checked`,
+  5 of 5; all four defects fixed, 5 of 5; 4.9k tokens a call.
 - **The weekly sample** reads a doc whole, which a doc earned in parts
   cannot be: its `judged-in-parts` at its `checked` says so, and it is
   listed for a person, never called unearned nor put back.
