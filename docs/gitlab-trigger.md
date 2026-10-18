@@ -32,10 +32,6 @@ forge.
 - **Blocks links**: the product owner's `depend` writes GitLab's
   `is_blocked_by` link; on Free, GitLab refuses it and the issue's body
   gets `Blocked by #12.` instead. Both are read back.
-- **Weights**: with its `effort` setting on, the product owner keeps an
-  issue's effort in its weight, 1, 3 or 5; on Free, in labels
-  `effort::low` to `::high`
-  ([priority and effort](../roles/product-owner/docs/priority-and-effort.md)).
 - **Project and group access tokens** on gitlab.com (every tier on a
   self-managed instance): a bot user, the right identity for workline.
   A group token can serve several projects; untried with workline.

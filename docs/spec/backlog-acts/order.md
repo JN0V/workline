@@ -62,17 +62,15 @@ Each axis has a setting of the role, `priority` and `effort`
 - **`auto`**: detected each run, with no agent, the first that holds — the
   forge's own single-select issue field named as the axis, `Priority` or
   `Effort` (GitHub's, an organisation's, listed by GraphQL's
-  `repository.issueFields`: none on a user's repository); for the effort,
-  GitLab's weight, when the project's issues carry a `weight` key
-  (Premium, Ultimate; Free's carry none); the project's
+  `repository.issueFields`: none on a user's repository); the effort's
+  GitLab weight (below); the project's
   own family of labels, two values or more and one on an open issue,
   tried in this order: `P0`…, `P-*`, `priority/*`, `Priority/*`,
   `priority::*` (effort: `effort1`…, `effort/*`, `effort::*`); then
   workline's own labels, one on an open issue; else the forge's words.
 - **`{in: labels, prefix: P}`**, **`{in: field, name: Severity}`**,
-  **`{in: weight}`** (the effort only): that family, that field, or
-  GitLab's weight; one the project lacks stops the run, said
-  (`values-where`, block).
+  **`{in: weight}`**: that family, field or weight; one the project
+  lacks stops the run, said (`values-where`, block).
 - **`names`**, under either: a label of the family no table knows mapped
   to a level, `{names: {sev-1: urgent}}`. One not mapped carries none,
   said once in the run (`level-unknown`).
@@ -125,7 +123,9 @@ the level: "priority 1 (P0)".
 
 ### In GitLab's weight
 
-- **Read in bands**, the effort only: 0 or 1 Low, 2 or 3 Medium, 4 or
+- **Found** for the effort only, when the project's issues carry a
+  `weight` key (Premium, Ultimate; Free's carry none), before any label.
+- **Read in bands**: 0 or 1 Low, 2 or 3 Medium, 4 or
   more High; no weight is no effort, read as Medium in the order. A
   person's weight is shown to the agent as it is: "Effort: Medium (weight
   2) (a person's: kept)".
