@@ -152,7 +152,7 @@ its measure in
   as code, a fenced block's too, never a plain word; a function in a
   file cut still shown
   ([#425](https://github.com/JN0V/workline/issues/425)); measured with
-  no model on the 10 specs waiting, 20k tokens less a night
+  no model on the 10 specs waiting, 113k tokens in down to 92k
   ([#477](https://github.com/JN0V/workline/pull/477)):
   `spec-fenced-quote-names-no-prose-word`,
   `spec-long-file-named-its-function-shown`,
