@@ -1,6 +1,3 @@
 # Cases the engine does not pass yet. The suite runs them anyway and fails
 # if one starts passing while still listed here.
-setup/doctor-language-python-m-pip-is-not-a-run
-setup/doctor-language-install-flags-not-a-run
-setup/doctor-language-quoted-and-flow-yaml
 setup/doctor-language-checkov-only-with-infrastructure
