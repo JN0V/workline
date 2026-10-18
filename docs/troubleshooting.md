@@ -58,6 +58,12 @@ commit you read them at. A doc that names no `sources` is never suspect:
 On a release, a doc made suspect since the last release holds it (`due`,
 `suspect`) until judged.
 
+`record-unread` (a warning): the documentalist's comment keeping the
+records of docs found with nothing to fix, or the merge requests merged,
+could not be read: the records are committed, or those docs judged again
+at night. On GitLab, give the judging job `GITLAB_TOKEN`
+([more](../roles/documentalist/docs/push.md#a-doc-found-with-nothing-to-fix-no-commit)).
+
 `shallow-clone`: the clone lacks history the documentalist needs — the
 last release, or the commit a doc's `checked` names, so whether its
 sources changed cannot be told. It holds the release, and any run whose

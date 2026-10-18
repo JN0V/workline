@@ -84,6 +84,29 @@ each passage quoted, and a patch making it easy to read, at most
 quotes is withheld, never blocking; a page is not read again until it
 changes, even after its merge request is closed ([more](reader.md)).
 
+## Records kept on merged merge requests
+
+First, in a round of its own: the docs judged on a person's merge request
+with nothing to fix, whose record was kept in the documentalist's comment
+there, not committed
+([on a merge request](push.md#a-doc-found-with-nothing-to-fix-no-commit)).
+
+- **Which merge request**: for each suspect doc, the last commit changing
+  it or a source, and the merge request the forge says became it, or the
+  closest after — GitHub's merge commit, GitLab's merge or squash commit.
+- **The record holds** when the doc and each source are, in that commit and
+  now, as judged: the doc is not put before an agent, and `judged: <that
+  commit>` goes in `workline/documentalist/records`, which only records
+  when docs were read: it merges alone at `normal`
+  ([the merge policy](../../../docs/merge-policy-normal.md)).
+- **Otherwise the doc is judged again**, its finding naming the file no
+  longer as judged.
+- **The cost**: one listing of the merge requests merged since the oldest
+  such commit, and one read of the comments of each one a doc points to
+  ([ADR-0010, amended](../../../docs/adr/0010-docs-judged-on-the-merge-request-and-by-gardening.md#amendment-2026-10-17-the-commit-a-merge-request-became-stands-for-its-record)).
+- **Never a pass by guess**: a listing or a comment unread is said
+  (`record-unread`), and the docs are judged again.
+
 ## One merge request per task
 
 Run with `--open-merge-request` (the CI templates' scheduled jobs):
@@ -105,6 +128,8 @@ Run with `--open-merge-request` (the CI templates' scheduled jobs):
   ([ADR-0013, amended 2026-10-14](../../../docs/adr/0013-what-was-judged-is-not-asked-again.md#amendment-2026-10-14-a-doc-waits-while-a-merge-request-holds-it));
 - a doc to condense or split, a card to merge, a repeated passage wait
   while their own merge request does; the next one goes;
+- `records` is proposed again only for a doc it does not hold yet: then
+  with every record that still holds;
 - a task proposed by an earlier round of the same run counts as waiting: a
   CI night judged with `--no-apply` that proposes the docs judged whole
   goes round again, and the docs put off to parts are judged the same

@@ -95,12 +95,16 @@ Under `roles: {documentalist: {settings: …}}` in `.workline/config.yaml`
   docs` proposes changes in the working tree, then one `docs:` commit.
 - On a merge request: one comment listing what is left for a person, edited
   on each run; the fix committed to the branch (`Workline-Role:
-  documentalist`); from a fork, the diff in a comment. Its findings sit
+  documentalist`); from a fork, the diff in a comment. A doc found with
+  nothing to fix gets no commit: its record waits in a comment, and
+  gardening writes it on main once merged
+  ([more](docs/push.md#a-doc-found-with-nothing-to-fix-no-commit)). Its findings sit
   beside their lines, none a conversation to resolve: on GitHub the
   check `workline findings`, on GitLab the Code Quality report
   ([#412](https://github.com/JN0V/workline/issues/412)).
 - Gardening: a branch and merge request per task,
-  `workline/documentalist/<task>`, rebuilt on `main` once `main` moved, or
+  `workline/documentalist/<task>` — `records` for the records merged merge
+  requests kept —, rebuilt on `main` once `main` moved, or
   closed, saying why, when nothing is left to merge
   ([when the base moves](docs/gardening.md#when-the-base-moves)); a
   tracking issue for docs due at the release; an issue when the code

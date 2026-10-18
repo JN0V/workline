@@ -1,7 +1,8 @@
 # ADR-0010: Docs are judged on the merge request and by gardening; the push only counts
 
 - **Status:** accepted; built 2026-10-01; amended 2026-10-02 (where the
-  merge requests go)
+  merge requests go); amended 2026-10-17 (the commit a merge request
+  became stands for its record)
 - **Date:** 2026-09-30
 - **Supersedes:** ADR-0007 on judging at the push (`d`, the docs listed in
   the question). Its range, the review per doc and the push approval stay.
@@ -90,3 +91,35 @@ with no merge request — keeps them in its clone with `forge: local`:
 gardening's merge requests are local branches there, recorded in
 `.git/workline/merge-requests/`, read with `workline issues`. The decision
 is unchanged.
+
+## Amendment (2026-10-17): the commit a merge request became stands for its record
+
+[ADR-0013, amended this day](0013-what-was-judged-is-not-asked-again.md#amendment-2026-10-17-on-a-persons-merge-request-the-record-waits-in-a-comment)
+keeps a doc's `judged` off a person's branch: in the documentalist's
+comment, while the merge request is open. "The commit that brought the
+`checked` to main now stands for it" (above) then has no commit to point
+to: the record never went through one.
+
+- **Gardening reads the records of the merge requests merged.** For each
+  doc suspect on the default branch: the last commit of its first-parent
+  history changing the doc or a source, then the merge request the forge
+  says became it, or the closest after it — GitHub's merge commit,
+  GitLab's merge or squash commit, the list the weekly sample reads.
+- **It writes `judged: <that commit>`** when the doc and each of its
+  sources have, at that commit and now, the ids the record names: in a
+  merge request of its own, `workline/documentalist/records`, which only
+  records when docs were read — the merge policy's `records` kind
+  ([ADR-0042](0042-the-engine-merges-by-the-projects-policy.md)), alone at
+  `normal`, a person's yes at `cautious`. Until it is merged, the doc is
+  not put before an agent.
+- **Otherwise the doc is judged again**, the run saying which file is no
+  longer as it was judged.
+- **What it costs**:
+  [ADR-0041](0041-workline-settles-its-own-lines-when-the-base-moves.md)
+  refused taking the record out of the doc for good, as depending on the
+  forge's squash message. Here the record leaves the doc only while the
+  merge request is open, and depends on the forge naming the commit it
+  merged as, not on a message: one listing of the merge requests merged a
+  round, and one read of the comments of each merge request a suspect doc
+  points to. A forge that names none (`local`, `cmd:`) keeps the record in
+  a commit, as before.
