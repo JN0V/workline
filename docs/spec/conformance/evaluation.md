@@ -1,6 +1,6 @@
 ---
 sources: [tests/evaluation]
-checked: da339f03
+checked: 9a5b81df
 judged: 62abc22
 verified: agent:claude-code
 ---
@@ -29,6 +29,13 @@ the local forge (`forge: local`,
 [#439](https://github.com/JN0V/workline/issues/439)). The `count-off` findings,
 reported by the engine with no agent (ADR-0014, step 2), are graded there
 too and must never be lost.
+
+Judged in parts, both sides too: `finds-planted-defects-in-parts` holds,
+beside the doc with four defects planted, a clean control on a source the
+same commit changes, read in parts with `parts-move-checked` on. Never
+`checked` over a planted falsehood, and `checked` on the control
+([ADR-0009, amended](../../adr/0009-docs-far-behind-are-judged-in-parts.md#amendment-2026-10-18-checked-after-parts-measured-off):
+measured on 2026-10-18, the control ended `checked` in 3 runs of 5).
 
 To measure the `drifted` cases again, five runs, as ADR-0014's steps 1
 and 3 ran them (`-v` for the notes):
