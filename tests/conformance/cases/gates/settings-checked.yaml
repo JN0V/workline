@@ -1,14 +1,17 @@
 case: gates/settings-checked
 about: >
   A check's settings are read before it runs: a `new` the engine does not
-  know, or a duration it cannot read or of zero, is refused, never ignored.
+  know, a duration it cannot read or of zero, an id twice or holding a /,
+  is refused, never ignored.
 given:
   repo: basic
   config: {gates: {merge: {checks: [
     {id: lint, run: "true", output: sarif, max: {error: 0}, new: sometimes},
     {id: tests, run: "true", output: exit, timeout: ten minutes},
     {id: build, run: "true", output: exit, new: rerun},
-    {id: deps, run: "true", output: sarif, max: {error: 0}, base-timeout: 0s}]}}}
+    {id: deps, run: "true", output: sarif, max: {error: 0}, base-timeout: 0s},
+    {id: build, run: "true", output: exit},
+    {id: lint/go, run: "true", output: exit}]}}}
 run: {gate: merge}
 expect:
   status: block
@@ -17,3 +20,5 @@ expect:
     - {rule: invalid-gate, where: tests, message: "timeout \"ten minutes\""}
     - {rule: invalid-gate, where: build, message: "an exit code holds no findings"}
     - {rule: invalid-gate, where: deps, message: "base-timeout \"0s\" is not a duration past zero"}
+    - {rule: invalid-gate, where: build, message: "two checks hold this id"}
+    - {rule: invalid-gate, where: lint/go, message: "an id names a file"}

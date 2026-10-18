@@ -83,10 +83,17 @@ func (g *Gate) Validate() []verdict.Finding {
 	invalid := func(c Check, msg string) {
 		bad = append(bad, verdict.Finding{Rule: "invalid-gate", Where: c.ID, Message: msg})
 	}
+	ids := map[string]bool{}
 	for _, c := range g.Checks {
+		twice := ids[c.ID]
+		ids[c.ID] = true
 		switch {
 		case c.ID == "" || c.Run == "":
 			invalid(c, "each check needs an id and a command")
+		case twice:
+			invalid(c, "two checks hold this id: it names a check's log, its results and its `enforce`")
+		case strings.ContainsAny(c.ID, `/\`) || c.ID == "." || c.ID == "..":
+			invalid(c, "an id names a file of the gate's folder: no / nor \\")
 		case c.Output != "exit" && c.Output != "sarif":
 			invalid(c, fmt.Sprintf("output %q is not supported (exit, sarif)", c.Output))
 		case c.Output == "sarif" && len(c.Max) == 0:
