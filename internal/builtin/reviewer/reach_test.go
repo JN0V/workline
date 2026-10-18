@@ -169,7 +169,7 @@ func TestNamedInReadsCodeAsMarkdown(t *testing.T) {
 		{"```\nopen to the end, parseAll(x)\n\nmore code", "parseAll", "", ""},
 		{"a ``span with ` inside`` then `next` and a ` stray\n\nquote `apart`", "span with inside next apart", "", ""},
 		{"run `workline init --review` on `code-lines-max`, in `cmd/x/main.go`, `notes.md`, `calc.go`", "workline init", "", ""},
-		{"```\nn := size-count(v) - x.Fields\nrun --verbose\n```", "count Fields", "", ""},
+		{"```\nn := size-count(v) - x.Fields\nrun --verbose\nContent-Type: text/plain\n```", "count Fields", "", ""},
 		{"`item.java(x)`, called, is no file; `cfg.go` is", "item java", "", ""},
 		{"see github.com/JN0V/workline/issues/9 and internal/x/y.go. Then call Parse", "", "Parse", "Then"},
 		{"- **Empty routing:** Given a `routing:` key, When it is read, Then it holds", "routing", "When Then", "Empty Given"},
