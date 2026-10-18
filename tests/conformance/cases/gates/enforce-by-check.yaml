@@ -1,0 +1,14 @@
+case: gates/enforce-by-check
+about: >
+  `enforce` names a check by its id: a new rule starts in warn, its
+  findings said, not blocking.
+given:
+  repo: linted
+  env: {PATH: "$FIXTURES/bin:$PATH"}
+  config:
+    gates: {merge: {checks: [{id: lint, run: "golangci-lint run --output.sarif.path={out}/lint.sarif", output: sarif, max: {error: 0}}],
+      enforce: {lint: warn}}}
+run: {gate: merge}
+expect:
+  status: pass
+  findings: [{rule: over-threshold, where: lint, level: warn}]

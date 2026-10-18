@@ -1,0 +1,19 @@
+case: gates/old-findings-do-not-block
+about: >
+  Day one is quiet: a change that adds no finding passes over the three on
+  main, which are said as a count.
+given:
+  repo: linted
+  setup:
+    - git checkout -q -b change
+    - |
+      printf 'package main\n\n// version is the release.\nconst version = "1.0"\n' > version.go && git add version.go && git commit -qm "feat: say the version"
+  env: {PATH: "$FIXTURES/bin:$PATH"}
+  config:
+    routing: {events: {merge-request: ["gate:merge"]}}
+    gates: {merge: {checks: [{id: lint, run: "golangci-lint run --output.sarif.path={out}/lint.sarif", output: sarif, max: {error: 0}}]}}
+run: {route: merge-request, input: {range: main..HEAD}, summary: true}
+expect:
+  status: pass
+  no-findings: [{rule: over-threshold, where: lint}]
+  summary-file: ["only the findings the change adds since", "count: lint 0 new, 3 before it"]

@@ -87,7 +87,7 @@ func Run(event string, base engine.Options) *Result {
 			continue
 		}
 		if g, isGate := strings.CutPrefix(name, "gate:"); isGate {
-			v := gate.Run(base.Repo, g)
+			v := runGate(base.Repo, g, event, whole["range"])
 			res.Steps = append(res.Steps, Step{Name: name, Status: v.Status, Gate: v})
 			res.Findings = append(res.Findings, v.Findings...)
 			status = v.Status
@@ -122,6 +122,18 @@ func Run(event string, base engine.Options) *Result {
 // committerRole is the step that checks every commit of a range, workline's
 // own included (beforeOwn leaves them to it).
 const committerRole = "committer"
+
+// runGate runs a gate step. Given a range, as on a merge request or before
+// a push, its thresholds read only the findings the change adds since the
+// range's base; on a schedule or a release, every finding (ADR-0049). The
+// range is the one given, workline's own commits in it too: the tree
+// checked out is what the gate's tools read.
+func runGate(repo, name, event, rng string) *verdict.Verdict {
+	if since := gitrange.Base(rng); since != "" && event != "schedule" && event != "release" {
+		return gate.RunNew(repo, name, since)
+	}
+	return gate.Run(repo, name)
+}
 
 // worst is the verdict of a line whose steps all ran: a block on the work
 // first, then a person's decision, then an outside failure, which is never

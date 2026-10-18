@@ -1,0 +1,12 @@
+case: gates/schedule-counts-every-finding
+about: On a schedule, the gate reads the whole tree, every finding counted.
+given:
+  repo: linted
+  env: {PATH: "$FIXTURES/bin:$PATH"}
+  config:
+    routing: {events: {schedule: ["gate:merge"]}}
+    gates: {merge: {checks: [{id: lint, run: "golangci-lint run --output.sarif.path={out}/lint.sarif", output: sarif, max: {error: 0}}]}}
+run: {route: schedule}
+expect:
+  status: block
+  findings: [{rule: over-threshold, where: lint, message: "3 error findings, at most 0 allowed: clean.go:7 errcheck"}]

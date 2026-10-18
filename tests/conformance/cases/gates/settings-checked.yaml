@@ -1,0 +1,17 @@
+case: gates/settings-checked
+about: >
+  A check's settings are read before it runs: a `new` the engine does not
+  know, or a duration it cannot read, is refused, never ignored.
+given:
+  repo: basic
+  config: {gates: {merge: {checks: [
+    {id: lint, run: "true", output: sarif, max: {error: 0}, new: sometimes},
+    {id: tests, run: "true", output: exit, timeout: ten minutes},
+    {id: build, run: "true", output: exit, new: rerun}]}}}
+run: {gate: merge}
+expect:
+  status: block
+  findings:
+    - {rule: invalid-gate, where: lint, message: "new \"sometimes\""}
+    - {rule: invalid-gate, where: tests, message: "timeout \"ten minutes\""}
+    - {rule: invalid-gate, where: build, message: "an exit code holds no findings"}
