@@ -252,7 +252,8 @@ they are now ([#462](https://github.com/JN0V/workline/issues/462)):
 
   Capped as both repositories set it (8 parts a round, 400k tokens a
   run), workline's night of 10-18 cost 405k before, 11 calls, and 426k
-  after, 12 calls: a run stops past its cap, the call crossing it paid.
+  after, 12 calls; DomoticsCore's 420k, 13 calls, both: a run stops past
+  its cap, the call crossing it paid.
 - **The price**: on workline, a night that asked no part now spends its
   cap, about 400k tokens in where 56k to 86k were spent, and what waits
   outlasts a night; on DomoticsCore, already at its cap with docs far
