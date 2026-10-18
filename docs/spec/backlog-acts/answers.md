@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog/ledger.go, internal/builtin/productowner/productowner.go, internal/backlog/spec.go]
 status: draft
-checked: 432aeef8
+checked: f3b0df0d
 verified: agent:claude-code
 ---
 # A person's answers

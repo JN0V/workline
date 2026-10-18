@@ -29,7 +29,9 @@ duties:
 
 # comment: the engine's state comment on each issue it takes (pre).
 # skip: an item of a file an import does not open, and why, for its map.
-intentions: [open, skip, close, keep, sources, milestone, order, refine, ready, unready, ask, split, rename, depend, undepend, comment, note]
+# effort: split by the engine from an order carrying one (ADR-0040); the
+# agent is told of it only where the project keeps an effort.
+intentions: [open, skip, close, keep, sources, milestone, order, effort, refine, ready, unready, ask, split, rename, depend, undepend, comment, note]
 
 # Without AI, nothing is judged: the issues taken get their state comment.
 without-ai: pass
@@ -81,7 +83,7 @@ settings:
   # Each kind of act: act (done, up to max a run), propose (on the issue,
   # for a person to accept), off (dropped). On by default: refine, ask,
   # ready, an evident duplicate, sources. Off, the code kept, each back by
-  # a mode here: milestone, order, split, rename, depend, close-obsolete —
+  # a mode here: milestone, order, effort, split, rename, depend, close-obsolete —
   # announced on the issue first, closed `days` later if nobody wrote and a
   # second judge agrees (ADR-0024).
   acts:
@@ -93,6 +95,7 @@ settings:
     ask: {mode: act, max: 3, rounds: 3}  # the reporter asked what is missing; again only after an answer; three rounds, revisions included, then a person
     milestone: {mode: off, max: 10}   # an issue put in a release's milestone; one that slipped moved by the engine
     order: {mode: off, max: 10}       # an issue's priority, workline:priority/1 to /4; a person's kept
+    effort: {mode: off, max: 10}      # an issue's effort, once, on code the run read; where `effort` says it is kept (ADR-0040)
     close-obsolete: {mode: off, max: 3, days: 7, exempt: [pinned, security]}  # announcements and closings together
     split: {mode: off, max: 2}        # a need too big for one issue split into 2 to 6, linked to it (ADR-0022)
     rename: {mode: off, max: 5}       # an issue's title; a person's kept
@@ -118,3 +121,4 @@ levels:
         refine: {max: 10}
         ready: {max: 10}
         ask: {max: 5}
+        effort: {max: 20}

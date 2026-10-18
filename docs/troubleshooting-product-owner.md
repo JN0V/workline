@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/productowner/productowner.go]
-checked: 7d5ad47d
+checked: f3b0df0d
 verified: agent:claude-code
 ---
 # Troubleshooting the product owner
@@ -27,6 +27,10 @@ When the product owner pauses, or an issue gets nothing. Part of
   ([settings](../roles/product-owner/docs/settings.md#priority-and-effort)).
   `priority-elsewhere`: the issue holds a priority in another family; keep
   one.
+- No effort set: `effort-nowhere`, the `effort` setting is unset;
+  `effort-unread`, the issue names no file, or its code did not fit the
+  run's budget: name its files in its Scope. `effort-once`: the role
+  estimates each issue once; a person's change stands.
 - It runs only where routed: `schedule: [documentalist, product-owner]`.
 - `autonomy: cautious` notes and proposes: see the issues bearing
   `workline:proposed`.

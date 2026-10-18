@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, internal/backlog/autonomy.go, internal/backlog/ledger.go, internal/sample/acts.go, internal/scale/detect.go]
-checked: 432aeef8
+checked: a9762f04
 verified: agent:claude-code
 ---
 # Product owner — settings
@@ -60,7 +60,8 @@ The code stays; each comes back with a mode
 | Kind | Turned on, does |
 |---|---|
 | `milestone` | puts an issue in its release's milestone; moves one that slipped |
-| `order` | sets an issue's priority, `workline:priority/1` to `/4` unless `priority` says where the project keeps it; a person's kept. Proposed: an effort too ([priority and effort](priority-and-effort.md)) |
+| `order` | sets an issue's priority, `workline:priority/1` to `/4` unless `priority` says where the project keeps it; a person's kept |
+| `effort` | sets an issue's effort, Low to High, once, where `effort` says the project keeps it, on code the run read ([below](#priority-and-effort)) |
 | `split` | splits a need too big into 2 to 6 issues ([ADR-0022](../../../docs/adr/0022-a-split-keeps-the-need-a-rename-keeps-a-persons-title.md)) |
 | `rename` | renames a vague title; a person's kept |
 | `depend` | says what an issue waits on ([ADR-0028](../../../docs/adr/0028-an-issue-names-what-it-waits-on.md)) |
@@ -94,8 +95,13 @@ labels, and no effort read.
 - **Said once a run**: where each was found, and a name no table knows.
 - **One place each**: an issue holding a priority in another family gets
   nothing written.
-- **Effort is only found and said** for now: neither the order nor an act
-  reads it yet ([status](status.md#missing-in-the-order-to-build-it)).
+- **Set once, only where empty**: a value a person set stays; one the
+  role set and a person changed or cleared is never written again.
+- **The order** goes by the priority, then the effort, the lightest
+  first; Next shows each issue's cell, "High · Effort Low → quick win".
+- **An effort** needs the `effort` act on (`max` 10 a run, 20 at
+  `enterprising`), and is estimated only on an issue whose code the run
+  read.
 
 ```yaml
 roles:
@@ -103,5 +109,5 @@ roles:
     settings:
       priority: auto
       effort: {in: labels, prefix: "effort/", names: {effort/xl: high}}
-      acts: {order: {mode: act}}
+      acts: {order: {mode: act}, effort: {mode: propose}}
 ```

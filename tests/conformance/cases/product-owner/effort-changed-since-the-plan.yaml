@@ -1,0 +1,27 @@
+case: product-owner/effort-changed-since-the-plan
+about: "The job that applies reads the issue again: a priority and an effort a person set between the judge and the apply are theirs, nothing written over them, each said (ADR-0040, step 3)."
+given:
+  repo: backlog
+  config:
+    roles:
+      product-owner:
+        settings: {moved-percent-max: 100, priority: auto, effort: auto, acts: {order: {mode: act}, effort: {mode: act}}}
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.\n\n## Scope\n\nsrc/export/csv.go", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run:
+  role: product-owner
+  event: schedule
+  ai: fake:order-effort
+  no-apply: true
+  then: resume
+  between:
+    issues:
+      - {id: 9, labels: [priority/low, effort/medium]}
+expect:
+  findings:
+    - {rule: priority-changed, where: "#9", message: "its priority changed since the run read it: a person's, kept (found when applying)"}
+    - {rule: effort-changed, where: "#9", message: "its effort changed since the run read it: a person's, kept (found when applying)"}
+  forge:
+    issues:
+      - {id: 9, labels: [priority/low, effort/medium], comment-lacks: ["priority:", "effort:"]}

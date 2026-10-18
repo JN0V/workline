@@ -1,5 +1,5 @@
 case: product-owner/priority-auto-keeps-worklines-labels
-about: "With `priority: auto`, a project whose issues carry workline's own labels, and no family of its own, keeps them: read and written there, the role's state as it was, never the forge's words beside them (ADR-0040, step 2)."
+about: "With `priority: auto`, a project whose issues carry workline's own labels, and no family of its own, keeps them: read and written there, never the forge's words beside them (ADR-0040, step 2)."
 given:
   repo: backlog
   config:
@@ -8,17 +8,19 @@ given:
         settings: {moved-percent-max: 100, priority: auto, acts: {order: {mode: act}}}
   forge:
     issues:
-      - {id: 9, title: "Rows lost", body: "Some rows are lost.", labels: [workline:priority/3], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\npriority: 3\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
       - {id: 10, title: "Slow export", body: "The export is slow.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 20, title: "Export to JSON", body: "Add a JSON export.", labels: [workline:priority/3], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\npriority: 3\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
 run: {role: product-owner, event: schedule, ai: fake:order-two}
 expect:
   findings:
     - {rule: values-where, message: "Priority: labels workline:priority/*, workline's own."}
-    - {rule: done, where: "#9", message: "Set #9's priority to 1 (was: priority 3"}
+    - {rule: done, where: "#9", message: "Set #9's priority to 1 (was: no priority"}
   forge:
     issues:
       - {id: 9, labels: [workline:priority/1], comment-contains: "priority: 1"}
       - {id: 10, labels: [workline:priority/2], comment-contains: "priority: 2"}
+      - {id: 20, labels: [workline:priority/3]}
     labels:
       - {id: 1, title: workline:priority/1}
       - {id: 2, title: workline:priority/2}

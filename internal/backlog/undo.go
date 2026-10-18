@@ -19,7 +19,7 @@ import (
 
 // undoable are the kinds of act, other than closings, the record keeps to
 // find undone.
-var undoable = []string{"rename", "order", "milestone", "ready", "split", "depend"}
+var undoable = []string{"rename", "order", "effort", "milestone", "ready", "split", "depend"}
 
 // doneMax bounds the acts the record keeps to find undone: the newest.
 const doneMax = 200
@@ -56,6 +56,8 @@ func (p *Plan) recordDone(c Proposal) {
 		d.Was, d.Set = is.Title, c.Title
 	case "order":
 		d.Was, d.Set = strconv.Itoa(Priority(is)), strconv.Itoa(c.Priority)
+	case "effort":
+		d.Was, d.Set = strconv.Itoa(Effort(is)), strconv.Itoa(c.Effort)
 	case "milestone":
 		d.Was, d.Set = is.Milestone, c.Milestone
 	case "depend":
@@ -111,8 +113,16 @@ func findUndone(f forge.Backlog, role string, open map[int]forge.Issue, done []D
 			switch now := strconv.Itoa(Priority(is)); {
 			case now == d.Was:
 				evidence = fmt.Sprintf("#%d's priority put back to %s by a person; the role had set %s", d.Issue, priorityName(d.Was), priorityName(d.Set))
+			case now != d.Set && scale.Used.Detected:
+				// Changed after the role set it: corrected, as cleared
+				// (ADR-0040), never written again there.
+				evidence = fmt.Sprintf("#%d's priority changed to %s by a person; the role had set %s", d.Issue, priorityName(now), priorityName(d.Set))
 			case now != d.Set:
 				gone = true
+			}
+		case "effort":
+			if now := strconv.Itoa(Effort(is)); now != d.Set && scale.Used.Effort.Said != "" {
+				evidence = fmt.Sprintf("#%d's effort changed to %s by a person; the role had set %s", d.Issue, effortName(now), effortName(d.Set))
 			}
 		case "milestone":
 			switch {
@@ -273,6 +283,12 @@ func splitState(f forge.Backlog, role string, id int) (*State, error) {
 func priorityName(n string) string {
 	l, _ := strconv.Atoi(n)
 	return scale.Value(l)
+}
+
+// effortName says an effort the ledger keeps as its level's number.
+func effortName(n string) string {
+	l, _ := strconv.Atoi(n)
+	return scale.EffortValue(l)
 }
 
 func milestoneName(m string) string {

@@ -41,6 +41,11 @@ var contracts = map[string]string{
 	"quote":          `- quote: {path: "src/file.go", text: "the lines that refute the finding, as they read"}  # beside a note saying no`,
 }
 
+// engineOnly are the kinds the engine makes and the agent never writes,
+// left out of the output contract: an effort is split from an order
+// (ADR-0040), the task telling how when the project keeps one.
+var engineOnly = map[string]bool{"effort": true}
+
 // BlockScalars is how a text holding code is written so that it reads: a
 // plain text starting with a backtick, or holding `: ` or ` #`, does not
 // (#138), and a block scalar takes code as it is, with no escaping. Said in
@@ -110,7 +115,9 @@ func Prompt(req Request) (system, user string, err error) {
 	}
 	b.WriteString("# Answer\n\nAnswer with YAML only, no prose and no code fence: a list of proposals, each item holding exactly one of:\n\n")
 	for _, k := range req.Role.Intentions {
-		b.WriteString(contracts[k] + "\n")
+		if !engineOnly[k] {
+			b.WriteString(contracts[k] + "\n")
+		}
 	}
 	b.WriteString("\n" + BlockScalars + "\n\nYou cannot act, only propose; anything else is refused.\n\n")
 	if policy, ok := facet(req, "policy.md"); ok {

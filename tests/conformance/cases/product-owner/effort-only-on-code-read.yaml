@@ -1,0 +1,22 @@
+case: product-owner/effort-only-on-code-read
+about: "An effort is estimated only for an issue whose code the run gave the agent: one naming no file gets its priority, and its effort is dropped, said (ADR-0040, step 3)."
+given:
+  repo: backlog
+  config:
+    roles:
+      product-owner:
+        settings: {moved-percent-max: 100, priority: auto, effort: auto, acts: {order: {mode: act}, effort: {mode: act}}}
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.\n\n## Scope\n\nsrc/export/csv.go", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 12, title: "Dark mode", body: "A dark theme for the pages.", labels: [], comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:order-effort}
+expect:
+  findings:
+    - {rule: done, where: "#9", message: "Set #9's effort to Low (effort/low)"}
+    - {rule: done, where: "#12", message: "Set #12's priority to 2"}
+    - {rule: effort-unread, where: "#12", message: "its code was not read in this run"}
+  forge:
+    issues:
+      - {id: 9, labels: [priority/urgent, effort/low]}
+      - {id: 12, labels: [priority/high], comment-lacks: "effort:"}

@@ -175,47 +175,105 @@ func (a *applier) where() (scale.Scheme, error) {
 	return s, nil
 }
 
-// order sets an issue's one priority label where the project keeps it,
-// the family's others taken off, and records it in the issue's state
-// (docs/spec/backlog-acts/order.md, "Ordering"): workline's own label
-// created when missing, the forge's words all at once and ranked, a
-// project's labels used as they are. The issue is read again first: one
-// whose priority can no longer be placed gets nothing written, said.
-func (a *applier) order(c backlog.Proposal) error {
+// splitEffort splits an order carrying an effort in two acts, each with
+// its own mode, cap and undo (ADR-0040): the order, if it sets a priority,
+// and an effort. The agent proposes one intention, `order: {issue,
+// priority, effort, why}`; an effort said by name reads as its level.
+func splitEffort(in []intent.Intention) []intent.Intention {
+	var out []intent.Intention
+	for _, i := range in {
+		m, ok := i.Value.(map[string]any)
+		e, has := m["effort"]
+		if i.Kind != "order" || !ok || !has || e == nil {
+			out = append(out, i)
+			continue
+		}
+		level := 0 // none read: refused as no level (effort-level)
+		switch v := e.(type) {
+		case int:
+			level = v
+		case float64:
+			if v == float64(int(v)) {
+				level = int(v) // 1.9 is no level, never cut to 1
+			}
+		case string:
+			if l, ok := scale.Effort.Word(v); ok {
+				level = l
+			} else {
+				level, _ = strconv.Atoi(v)
+			}
+		}
+		eff := map[string]any{"issue": m["issue"], "effort": level, "why": m["why"]}
+		for _, k := range []string{"ticked", "own", "reason"} {
+			if v, ok := m[k]; ok {
+				eff[k] = v
+			}
+		}
+		if m["priority"] != nil {
+			order := map[string]any{}
+			for k, v := range m {
+				if k != "effort" {
+					order[k] = v
+				}
+			}
+			out = append(out, intent.Intention{Kind: "order", Value: order})
+		}
+		out = append(out, intent.Intention{Kind: "effort", Value: eff})
+	}
+	return out
+}
+
+// level sets an issue's priority (order) or effort (effort) where the
+// project keeps it, one label of the family, its others taken off, and
+// records it in the issue's state (docs/spec/backlog-acts/order.md):
+// workline's own label created when missing, the forge's words all at
+// once and ranked, a project's labels used as they are. Read again
+// first: a value changed since the plan, or no longer placeable, gets
+// nothing written, said (ADR-0040).
+func (a *applier) level(c backlog.Proposal) error {
 	where, err := a.where()
 	if err != nil {
 		return err
 	}
-	src, f := where.Priority, a.forge
+	src, l := where.Priority, c.Priority
+	if c.Do == "effort" {
+		src, l = where.Effort, c.Effort
+	}
+	f := a.forge
 	b := f.(forge.Backlog)
 	is, err := f.Issue(c.Issue)
 	if err != nil {
 		return err
 	}
-	if rule, why := backlog.Placeable(src, *is, c.Priority); rule != "" {
+	axis := src.Family.Scale.Axis
+	rule, why := backlog.Placeable(src, *is, l)
+	if now := src.Family.Levels(is.Labels); rule == "" && !(len(now) == 0 && c.Had == 0) && !(len(now) == 1 && now[0] == c.Had) {
+		rule, why = axis+"-changed", fmt.Sprintf("its %s changed since the run read it: a person's, kept", axis)
+	}
+	if rule != "" {
 		a.findings = append(a.findings, verdict.Finding{Rule: rule, Level: "warn", Where: fmt.Sprintf("#%d", c.Issue),
 			Message: why + " (found when applying)"})
 		return nil
 	}
-	label, _ := src.Family.Label(c.Priority)
+	label, _ := src.Family.Label(l)
 	create := []scale.Label{label}
 	if src.Words {
 		create = src.Family.Labels
 	}
-	for _, l := range create {
-		if l.Color == "" || a.ensured[l.Name] {
+	for _, x := range create {
+		if x.Color == "" || a.ensured[x.Name] {
 			continue
 		}
-		if err := forge.EnsureRankedLabel(b, l.Name, l.Color, l.Describe(strings.ReplaceAll(a.role, "-", " ")), l.Rank); err != nil {
+		if err := forge.EnsureRankedLabel(b, x.Name, x.Color, x.Describe(strings.ReplaceAll(a.role, "-", " ")), x.Rank); err != nil {
 			return err
 		}
 		if a.ensured == nil {
 			a.ensured = map[string]bool{}
 		}
-		a.ensured[l.Name] = true
+		a.ensured[x.Name] = true
 	}
 	t := forge.Target{Kind: "issue", ID: c.Issue}
-	if err := f.Label(t, []string{label.Name}, src.Family.Others(c.Priority)); err != nil {
+	if err := f.Label(t, []string{label.Name}, src.Family.Others(l)); err != nil {
 		return err
 	}
 	comments, err := b.Comments(t)
@@ -226,7 +284,11 @@ func (a *applier) order(c backlog.Proposal) error {
 	if err != nil {
 		return fmt.Errorf("#%d: its state comment: %w", t.ID, err)
 	}
-	st.Priority = c.Priority
+	if c.Do == "effort" {
+		st.Effort = l
+	} else {
+		st.Priority = l
+	}
 	return f.Sticky(t, backlog.FormatState(*st), backlog.StateMarker(a.role), false)
 }
 
@@ -598,6 +660,15 @@ func planActs(f forge.Forge, r *role.Role, settings map[string]any, st runState,
 		}
 	}
 	cfg.Read.Model = strings.Join(st.Models, ", ")
+	// The issues whose code pre gave the agent: an effort is estimated on
+	// them only (ADR-0040).
+	if data, err := os.ReadFile(filepath.Join(runDir, "in", backlog.CodeReadFile)); err == nil && !st.Unasked {
+		for _, f := range strings.Fields(string(data)) {
+			if n, err := strconv.Atoi(f); err == nil {
+				cfg.CodeRead = append(cfg.CodeRead, n)
+			}
+		}
+	}
 	// What open issues were built on that changed, and those read again
 	// for it (ADR-0032).
 	var changes []backlog.Change

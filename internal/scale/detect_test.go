@@ -157,3 +157,50 @@ func TestDetectSetting(t *testing.T) {
 		t.Errorf("effort = %+v, %v", e, err)
 	}
 }
+
+// Next says each issue's cell of the value-vs-effort grid, its four
+// corners named, a value missing said (ADR-0040, "The order").
+func TestCells(t *testing.T) {
+	for _, c := range []struct {
+		p, e int
+		want string
+	}{
+		{2, 1, "High · Effort Low → quick win"},
+		{2, 2, "High · Effort Medium"},
+		{2, 3, "High · Effort High → big bet"},
+		{4, 1, "Low · Effort Low → fill-in"},
+		{4, 3, "Low · Effort High → time sink"},
+		{1, 0, "Urgent · effort not estimated"},
+		{0, 1, "no priority · Effort Low"},
+		{0, 0, "no priority, effort not estimated"},
+	} {
+		if got := Cell(c.p, c.e); got != c.want {
+			t.Errorf("Cell(%d, %d) = %q, want %q", c.p, c.e, got, c.want)
+		}
+	}
+	if EffortAnchor(1) != "hours" || EffortAnchor(3) != "weeks" || EffortAnchor(0) != "" || EffortValue(0) != "not estimated" {
+		t.Error("anchors and none")
+	}
+}
+
+// Past 10 values, one over 60% of them is said; ten, or a spread, is not.
+func TestStuck(t *testing.T) {
+	ten := []int{2, 2, 2, 2, 2, 2, 2, 2, 2, 2}
+	if got := Stuck(Effort, ten); got != "" {
+		t.Errorf("ten values: %q", got)
+	}
+	if got := Stuck(Effort, append(ten, 3)); got != "Medium on 10 of the 11" {
+		t.Errorf("eleven: %q", got)
+	}
+	// Exactly 60% is not over it: 9 of 15.
+	if got := Stuck(Effort, []int{2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 3, 3, 3}); got != "" {
+		t.Errorf("60%%: %q", got)
+	}
+	spread := []int{1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3}
+	if got := Stuck(Effort, spread); got != "" {
+		t.Errorf("spread: %q", got)
+	}
+	if got := Stuck(Priority, []int{1, 1, 1, 1, 1, 1, 1, 2, 3, 4, 4}); got != "Urgent on 7 of the 11" {
+		t.Errorf("too many Urgent: %q", got)
+	}
+}

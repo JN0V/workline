@@ -81,7 +81,15 @@ type Config struct {
 	// settings say (ADR-0040); unset, workline's own priority labels, and
 	// no effort read.
 	Priority, Effort scale.Setting
+	// CodeRead are the issues whose code this run gave the agent: an
+	// effort is estimated on them only (ADR-0040); set by the caller,
+	// from what pre wrote (CodeReadFile).
+	CodeRead []int
 }
+
+// CodeReadFile is where, in the run's folder, pre lists the issues whose
+// code it gave the agent.
+const CodeReadFile = "code-read"
 
 // Detects says whether the settings ask where the project keeps an axis:
 // the forge's labels are then read to find it (Where).
@@ -210,6 +218,9 @@ type KindMode struct {
 func (c Config) Modes(demoted []string) []KindMode {
 	var out []KindMode
 	for _, kind := range ActKinds {
+		if kind == "effort" && !c.Effort.Set() {
+			continue // read nowhere, said nowhere (ADR-0040)
+		}
 		s, ok := c.Acts[kind]
 		if !ok {
 			s = Setting{Mode: Propose}
@@ -228,7 +239,7 @@ func (c Config) Modes(demoted []string) []KindMode {
 
 // ActKinds are the kinds of act as the settings name them, in the order the
 // task and the report list them.
-var ActKinds = []string{"sources", "close-duplicate", "close-obsolete", "milestone", "order", "refine", "ready", "ask", "split", "depend", "rename", "open"}
+var ActKinds = []string{"sources", "close-duplicate", "close-obsolete", "milestone", "order", "effort", "refine", "ready", "ask", "split", "depend", "rename", "open"}
 
 // Say says one kind's mode in a few words: "act, 5 a run (level)".
 func (m KindMode) Say() string {
