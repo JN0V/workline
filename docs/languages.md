@@ -1,6 +1,6 @@
 ---
 sources: [internal/linters, internal/doctor/languages.go]
-checked: 9dfe0814
+checked: 2a1d3636
 ---
 # Languages and the tools that read them
 
@@ -108,6 +108,10 @@ routing:
 
 - `output: exit`: the tool's exit code decides
   ([gates](spec/gates.md#where-gates-are-declared)).
+- On a merge request over old debt, read the tool's SARIF instead
+  (`output: sarif`): only the findings the change adds count, its
+  suppressions too
+  ([new findings](spec/gates.md#on-a-merge-request-the-findings-the-change-adds)).
 - A tool reading files gets them from `git ls-files`, by extension: name
   the files told by their `#!` line too.
 - A tool run once from a folder whose config is only in subfolders

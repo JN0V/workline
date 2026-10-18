@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine/engine.go, internal/line, internal/routing, internal/verdict, routing.default.yaml]
-checked: a9762f04
+checked: 2a1d3636
 verified: agent:claude-code
 judged-in-parts: 5d66009
 judged: 71c5f05
@@ -28,7 +28,8 @@ The words the other pages use, each in a few lines. The rules behind them:
   proposal refused is said, not failed.
   `workline run-role <role> --event <event>` runs one role alone.
 - **Gate** — a step that runs your own scanners and reads their output
-  against thresholds, never asking a model (`gate:<name>` in a line).
+  against thresholds, never asking a model (`gate:<name>` in a line); on
+  a merge request, only the findings the change adds count.
 
 ## One run
 
