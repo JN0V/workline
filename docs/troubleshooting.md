@@ -1,6 +1,6 @@
 ---
 sources: [internal/doctor, internal/hooks, cmd/workline, internal/builtin/documentalist/documentalist.go, internal/builtin/productowner/productowner.go, internal/forge/local.go]
-checked: 178672f7
+checked: 432aeef8
 verified: agent:claude-code
 ---
 # Troubleshooting
@@ -100,6 +100,11 @@ waits. Give the job read access to the repository's branches.
   with that "not now", and does not bring it back.
 - `setting-gone`: `ignored-runs-max` or `weekly-sample` is no longer read;
   take it off.
+- `values-where`, blocking: the `priority` or `effort` setting names a
+  family of labels the project has none of; name one it has, or `auto`
+  ([settings](../roles/product-owner/docs/settings.md#priority-and-effort)).
+  `priority-elsewhere`: the issue holds a priority in another family; keep
+  one.
 - An issue gets nothing: the summary's "read, left incomplete" says why —
   no file found for its Scope (link or name its files, or write the Scope
   yourself), or nothing drafted (read again once it changes or someone

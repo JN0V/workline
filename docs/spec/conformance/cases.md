@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go]
-checked: 9fcf6cf6
+checked: 432aeef8
 verified: agent:claude-code
 ---
 # Conformance — a case in full
@@ -141,7 +141,8 @@ saying so.
   `auto-merge` (a merge request's on) and `merged` (the forge merged it);
   `absent: true` — no item with that id. Items are listed by kind:
   `issues`, `merge-requests`, and `labels`, the labels the forge defines,
-  their order as id, by `title`; `statuses`, the last status of a name on
+  their order as id, by `title` and `rank` (a GitLab prioritized label's,
+  0 for none); `statuses`, the last status of a name on
   a commit (a revision), by `state`, `by` and a part of its
   `description`, or `absent: true`; `check-runs`, the last check of a
   name on a commit, each annotation listed held by `path`, `line`,

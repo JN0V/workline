@@ -1,6 +1,6 @@
 ---
 sources: [internal/forge/command.go, internal/forge/forge.go, ci/forgejo]
-checked: 18109269
+checked: 432aeef8
 verified: agent:claude-code
 ---
 # A forge plugged by a command — v1 (draft)
@@ -111,7 +111,9 @@ merge request squashed, and says so (ADR-0046). Nor one reading a
 comment's reactions: the sample's count reads no 👍 nor 👎 through a
 command, every week left unanswered. Nor one reading an issue's edit
 history: a product owner's act whose issue changed since is not read
-through a command (ADR-0046).
+through a command (ADR-0046). Nor one listing the project's labels: where
+a project keeps its priorities is found from the labels on its open
+issues, and a label is created unranked (ADR-0040).
 
 ## What stays with the engine
 
