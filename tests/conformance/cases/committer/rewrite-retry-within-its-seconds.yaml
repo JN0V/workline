@@ -2,16 +2,21 @@ case: committer/rewrite-retry-within-its-seconds
 about: "ai-max-seconds holds every call of the rewrite together: a refused rewrite is asked again of a stronger model with what is left of the time, and ends with it."
 given:
   repo: basic
-  config: {roles: {committer: {settings: {rewrite: true, ai-max-seconds: 2}}}}
+  # The wait counted inside the agents' calls alone: the engine's own steps
+  # between them, which a loaded machine stretches, never end it before
+  # the stronger model is asked.
+  engine-tags: [workline_agent_time]
+  config: {roles: {committer: {settings: {rewrite: true, ai-max-seconds: 3}}}}
 run:
   role: committer
   event: commit-msg
   input: {message: "fix: AC-3"}
-  # The light model answers at once, still naming the code; the stronger
-  # one takes longer than what is left.
+  # The light model takes 1 s and still names the code. The stronger one
+  # would answer well in 2.5 s, within a fresh 3 s: it is cut at the 2 s
+  # left. A loaded machine only leaves it less.
   ai: |-
-    cmd:if [ "$WORKLINE_TIER" = light ]; then echo '- commit-message: "fix: AC-3 again"'; exit 0; fi
-    sleep 20
+    cmd:if [ "$WORKLINE_TIER" = light ]; then sleep 1; echo '- commit-message: "fix: AC-3 again"'; exit 0; fi
+    sleep 2.5
     echo '- commit-message: "fix(parser): stop crashing on an empty input file"'
 expect:
   status: block
@@ -20,4 +25,4 @@ expect:
   calls: [{agent: cmd, tier: light}, {agent: cmd, tier: standard}]
   findings:
     - {rule: internal-code, message: "AC-3"}
-    - {rule: ai-max-seconds, level: warn, message: "it allows 2"}
+    - {rule: ai-max-seconds, level: warn, message: "it allows 3"}

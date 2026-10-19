@@ -51,3 +51,23 @@ func TestRunWaitIsBounded(t *testing.T) {
 		t.Fatalf("an answer that came, unreadable, stays what it is: %v", err)
 	}
 }
+
+// The time inside the calls is counted apart, from the ask to the answer:
+// what the engine built for the cases on the wait counts
+// (workline_agent_time), the engine's own steps between calls left out.
+func TestRunWaitCountsItsCalls(t *testing.T) {
+	res := &Result{maxSeconds: 30}
+	for range 2 {
+		if _, ok := res.bounded(&role.Role{}); !ok {
+			t.Fatal("30 s allowed: the call is made")
+		}
+		time.Sleep(20 * time.Millisecond) // the call
+		res.cutShort(nil)
+	}
+	in := res.inCalls
+	time.Sleep(20 * time.Millisecond) // the engine's own step
+	res.cutShort(nil)
+	if all := time.Since(res.waitSince); in < 40*time.Millisecond || res.inCalls != in || all < in+20*time.Millisecond {
+		t.Fatalf("two calls of 20 ms, a step of 20 ms after: %v in the calls, %v since the first", res.inCalls, all)
+	}
+}
