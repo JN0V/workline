@@ -1,5 +1,2 @@
 # Cases the engine does not pass yet. The suite runs them anyway and fails
 # if one starts passing while still listed here.
-reviewer/finding-judged-once-not-judged-again
-reviewer/commits-past-five-a-push-left-for-the-next
-reviewer/commits-left-read-when-the-run-runs-again

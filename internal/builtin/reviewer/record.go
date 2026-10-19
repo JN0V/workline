@@ -46,15 +46,23 @@ type Record struct {
 // the head the review read, with the models of the lens that found it and
 // of its judge. A line each in the summary comment, for the merge
 // request's life: the weekly sample draws the reviewer's acts from them
-// (ADR-0046).
+// (ADR-0046). What it was judged on keys it too, so the same finding on
+// the same patch is not judged again, its verdict kept (ADR-0050, step 6):
+// the patch id of the merge request's change to the cause's file, and the
+// finding's own key; with the independence of a yes, the reason of a no.
+// A line written before them keys nothing: its finding is judged again.
 type Answered struct {
-	Lens   string `json:"lens"`
-	Where  string `json:"where"`
-	At     string `json:"at"`
-	Yes    bool   `json:"yes"`
-	Finder string `json:"finder"`
-	Judge  string `json:"judge"`
-	Title  string `json:"title"`
+	Lens    string `json:"lens"`
+	Where   string `json:"where"`
+	At      string `json:"at"`
+	Patch   string `json:"patch,omitempty"`
+	Finding string `json:"finding,omitempty"`
+	Level   string `json:"level,omitempty"`
+	Why     string `json:"why,omitempty"`
+	Yes     bool   `json:"yes"`
+	Finder  string `json:"finder"`
+	Judge   string `json:"judge"`
+	Title   string `json:"title"`
 }
 
 // SummaryMax is the most characters the summary comment holds: GitHub
@@ -278,7 +286,7 @@ func reread(repo string, s Settings, st state, c candidates, related []Finding, 
 	var files []File
 	if whole {
 		var err error
-		if files, err = codeFiles(repo, s, st.lensFrom(), st.Head); err != nil {
+		if files, err = codeFiles(repo, s, st.lensFrom(), st.lensTo()); err != nil {
 			return nil, err
 		}
 	}
@@ -306,8 +314,11 @@ type span struct {
 	From    string   // the newest commit reviewed, with all it holds: the base when none is, the head when every one is
 	Commits []string // the range's, newest first
 	New     int      // how many of them are not reviewed: a merge's line may lie between those that are
+	Fresh   []string // those not reviewed, parents first: what a cap on the commits a push reads counts (ADR-0050)
 	Patches []string // the patch ids of their changes
 	Unread  error    // why git gave no patch ids, when it gave none: commit ids alone tell
+	patchOf map[string]string
+	merges  map[string]bool
 }
 
 // since reads the commits base..head and the patch ids of their changes,
@@ -322,7 +333,7 @@ func (r Record) since(repo, base, head string) (span, error) {
 	if err != nil {
 		return span{}, err
 	}
-	var sp span
+	sp := span{merges: map[string]bool{}}
 	parents := map[string][]string{}
 	var single []string // the commits with one parent: those a patch id names
 	for _, l := range strings.Split(strings.TrimSpace(out), "\n") {
@@ -335,6 +346,7 @@ func (r Record) since(repo, base, head string) (span, error) {
 		if len(f) == 2 {
 			single = append(single, f[0])
 		}
+		sp.merges[f[0]] = len(f) > 2
 	}
 	patch, err := patchIDs(repo, single)
 	if err != nil {
@@ -358,8 +370,10 @@ func (r Record) since(repo, base, head string) (span, error) {
 		})
 		if !reviewed[c] {
 			sp.New++
+			sp.Fresh = append(sp.Fresh, c)
 		}
 	}
+	sp.patchOf = patch
 	sp.From = base
 	for _, c := range sp.Commits {
 		if reviewed[c] {

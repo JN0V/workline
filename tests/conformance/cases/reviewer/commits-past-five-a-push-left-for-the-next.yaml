@@ -20,7 +20,7 @@ run: {route: merge-request, warn-only: true, input: {range: main..HEAD, draft: "
 expect:
   status: pass
   calls: [{task: part, for: 1-edge-cases}]
-  findings: [{rule: commits-left, level: warn, message: "7 new commits, past the 5 the lenses that warn read a push (commits-per-push): the oldest 5 read; the 2 left"}]
+  findings: [{rule: commits-left, level: warn, message: "7 new commits change code, past the 5 the lenses that warn read a push (commits-per-push): the oldest 5 read; the 2 left"}]
   run-files:
     in/parts/1-edge-cases/task.md:
       contains: ["### calc/f1.go", "### calc/f5.go", "feat: add f5"]
