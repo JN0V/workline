@@ -17,6 +17,12 @@
 #          Claude subscription; masked), Claude judges; without it, the docs
 #          are listed for a person. GitLab gives a variable to the whole job,
 #          installs included, where GitHub gives it to one step.
+#          The reviewer's lenses that only warn are left to warn
+#          (--warn-apart, ADR-0050; the first release after v0.36.0).
+#   warn   beside judge, with the agent's token: the reviewer's lenses that
+#          only warn (--warn-only); warn:apply posts what they found, in a
+#          comment of their own. Neither fails the pipeline, nor holds the
+#          head's verdict, which workline:merge reads from judge alone.
 #   The findings show in the merge request's Code Quality report, on every tier.
 #   Each job also writes its summary (`--summary`): what ran, each step's
 #   verdict, the findings, what waits to be applied; the applying job adds
@@ -64,10 +70,12 @@ variables:
 # comment, or there is no comment yet. Read with GITLAB_TOKEN, else the
 # job's token; unread, one lens, said (roles/reviewer/docs/run.md). The
 # draft state goes on every run (`draft`): a merge request no draft whose
-# record does not say every lens read it gets them (#359).
+# record does not say every lens read it gets them (#359). The lenses that
+# warn read the ready note against their own comment (WORKLINE_STICKY).
 .workline:ready: &ready
   - |
     lenses=; last=; auth="JOB-TOKEN: $CI_JOB_TOKEN"
+    sticky="<!-- workline:sticky=${WORKLINE_STICKY:-reviewer/summary} -->"
     [ -z "${GITLAB_TOKEN:-}" ] || auth="PRIVATE-TOKEN: $GITLAB_TOKEN"
     mr="$CI_API_V4_URL/projects/$CI_PROJECT_ID/merge_requests/$CI_MERGE_REQUEST_IID"
     get() { curl -fsS --header "$auth" "$mr$1"; }
@@ -76,7 +84,7 @@ variables:
     page=0; [ "$draft" != false ] || last=more
     while [ "$last" = more ] && [ "$page" -lt 50 ]; do
       page=$((page + 1))
-      last=$(get "/notes?order_by=updated_at&sort=desc&per_page=100&page=$page" | jq -r '([.[] | select((.system and .body == "marked this merge request as **ready**") or (.body | contains("<!-- workline:sticky=reviewer/summary -->")))][0]) as $n | if $n == null then (if length == 100 then "more" else "none" end) elif $n.system then "ready" else "reviewed" end') || last=
+      last=$(get "/notes?order_by=updated_at&sort=desc&per_page=100&page=$page" | jq -r --arg sticky "$sticky" '([.[] | select((.system and .body == "marked this merge request as **ready**") or (.body | contains($sticky)))][0]) as $n | if $n == null then (if length == 100 then "more" else "none" end) elif $n.system then "ready" else "reviewed" end') || last=
     done
     case "$draft:$last" in
       false:ready|false:none) lenses="--input lenses=all"; echo "workline: the merge request is ready and not reviewed since: every lens of the reviewer, once" ;;
@@ -145,7 +153,7 @@ workline:judge:
     - *ready
     - status=0
     - >
-      workline route merge-request --ai "$ai" --no-apply --push-to-merge-request
+      workline route merge-request --ai "$ai" --no-apply --push-to-merge-request --warn-apart
       --forge gitlab --target merge-request:$CI_MERGE_REQUEST_IID --branch "$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME"
       --input range=$CI_MERGE_REQUEST_DIFF_BASE_SHA..$CI_COMMIT_SHA $lenses ${draft:+--input draft=$draft}
       --gates-from gates.json --code-quality gl-code-quality.json --summary workline-summary.md --summary workline-summary.html
@@ -181,6 +189,66 @@ workline:apply:
   artifacts:
     when: always
     expose_as: workline applied
+    paths: [workline-summary.html, workline-summary.md]
+    reports: {annotations: workline-annotations.json}
+    expire_in: 1 week
+
+# The reviewer's lenses that only warn (its `ai-findings`, ADR-0050; the
+# first release after v0.36.0): workline:judge asks the lenses that block
+# (--warn-apart), and workline:merge reads the head's verdict from it
+# alone. This job asks the others beside it, from the pipeline's start
+# (--warn-only); workline:warn:apply posts what they found, in a comment
+# of their own. Never a verdict, and neither job fails the pipeline
+# (allow_failure): a lens that fails is said in that comment. GitLab
+# merges a merge request set to merge once its pipeline succeeds: the
+# merge waits for them, never on what they find. With the agent's token
+# only; one review apart at a time per merge request.
+workline:warn:
+  extends: .workline
+  stage: test
+  needs: []
+  interruptible: true
+  resource_group: workline-warn-$CI_MERGE_REQUEST_IID
+  variables: {WORKLINE_STICKY: reviewer/warn}   # the ready note read against its own comment
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CLAUDE_CODE_OAUTH_TOKEN
+  script:
+    - *claude
+    - *ready
+    - status=0
+    - >
+      workline route merge-request --warn-only --ai "$ai" --no-apply
+      --forge gitlab --target merge-request:$CI_MERGE_REQUEST_IID --branch "$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME"
+      --input range=$CI_MERGE_REQUEST_DIFF_BASE_SHA..$CI_COMMIT_SHA $lenses ${draft:+--input draft=$draft}
+      --summary workline-summary.md --summary workline-summary.html --json > line.json || status=$?
+    - '[ "$status" != 3 ] || echo "workline: the agent could not be reached: the lenses that warn did not read this push"'
+    - '[ "$status" = 0 ] || [ "$status" = 3 ] || exit $status'
+  allow_failure: true
+  after_script: *summary
+  artifacts:
+    when: always
+    expose_as: workline lenses that warn
+    paths: [workline-summary.html, workline-summary.md, .workline-runs/, line.json]
+    reports: {annotations: workline-annotations.json}
+    expire_in: 1 day
+
+workline:warn:apply:
+  extends: .workline
+  stage: deploy
+  needs: [workline:warn]
+  interruptible: false
+  resource_group: workline-warn-$CI_MERGE_REQUEST_IID   # one review apart at a time, with workline:warn
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $WORKLINE_GITLAB_TOKEN && $CLAUDE_CODE_OAUTH_TOKEN
+      when: always
+  script:
+    - '[ -s line.json ] || { echo "workline: the lenses that warn left nothing to apply"; exit 0; }'
+    - export GITLAB_TOKEN=$WORKLINE_GITLAB_TOKEN
+    - workline apply --line line.json --summary workline-summary.md --summary workline-summary.html
+  allow_failure: true
+  after_script: *summary
+  artifacts:
+    when: always
     paths: [workline-summary.html, workline-summary.md]
     reports: {annotations: workline-annotations.json}
     expire_in: 1 week

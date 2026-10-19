@@ -32,8 +32,13 @@
 #          next push is judged once the review before it is written. A
 #          branch moved on since the head judged gets the reviewer's review
 #          of that head alone, never a fix (ADR-0044, amended).
+#          After workline-warn.yml too (ADR-0050; the first release after
+#          v0.36.0): the comment of the reviewer's lenses that warn, and
+#          their comments on lines, posted once they answered, maybe after
+#          the verdict; one at a time per pull request with that workflow's
+#          job, never waiting for judge's nor holding it.
 #   verdict with the merge policy, `merge: {autonomy: cautious}` (ADR-0042),
-#          after judge: the head's verdict kept as the status
+#          after judge alone: the head's verdict kept as the status
 #          workline/verdict, by the App; in no concurrency group, so no newer
 #          run cancels it.
 #   follow on a push to main, holds the write token and no AI key: the
@@ -54,7 +59,7 @@
 #          (docs/merge-policy.md).
 name: workline apply
 on:
-  workflow_run: {workflows: [workline], types: [completed]}
+  workflow_run: {workflows: [workline, workline warn], types: [completed]}
   push: {branches: [main]}          # your default branch: for the follow job
 permissions: {}
 
@@ -69,8 +74,9 @@ jobs:
     if: github.event_name == 'workflow_run' && github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion != 'cancelled' && github.event.workflow_run.head_repository.full_name == github.repository
     # One review at a time per pull request (#375), with workline.yml's
     # judge, neither cancelling the other: the next push's judge waits for
-    # this apply, and reads the record it writes.
-    concurrency: {group: "workline-review-${{ github.event.workflow_run.pull_requests[0].number }}", cancel-in-progress: false}
+    # this apply, and reads the record it writes. A run of workline-warn.yml
+    # with that workflow's job, its record its own comment's (ADR-0050).
+    concurrency: {group: "workline-${{ github.event.workflow_run.name == 'workline warn' && 'warn-review' || 'review' }}-${{ github.event.workflow_run.pull_requests[0].number }}", cancel-in-progress: false}
     runs-on: ubuntu-latest
     environment: workline-app
     # actions: read, the artifacts of the pull request's run; checks:
@@ -143,7 +149,8 @@ jobs:
           exit "$status"
 
   verdict:
-    if: github.event_name == 'workflow_run' && github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion != 'cancelled' && github.event.workflow_run.head_repository.full_name == github.repository
+    # judge's run alone: workline-warn.yml's gives no verdict (ADR-0050).
+    if: github.event_name == 'workflow_run' && github.event.workflow_run.name == 'workline' && github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion != 'cancelled' && github.event.workflow_run.head_repository.full_name == github.repository
     runs-on: ubuntu-latest
     environment: workline-app
     permissions: {actions: read, contents: read}
@@ -197,9 +204,10 @@ jobs:
 
   follow:
     # A push to main; with the merge policy, a pull request's run too, once
-    # its verdict is kept: never a fork's, whose run gets no secret.
+    # its verdict is kept: never a fork's, whose run gets no secret, nor
+    # workline-warn.yml's, which keeps none.
     needs: verdict
-    if: always() && (github.event_name == 'push' || (github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion != 'cancelled' && github.event.workflow_run.head_repository.full_name == github.repository))
+    if: always() && (github.event_name == 'push' || (github.event.workflow_run.name == 'workline' && github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion != 'cancelled' && github.event.workflow_run.head_repository.full_name == github.repository))
     # One at a time on a branch, with workline-merge.yml's: the first in
     # line is brought up once.
     concurrency: {group: "workline-follow-${{ github.event.workflow_run.pull_requests[0].base.ref || github.ref_name }}", cancel-in-progress: false}

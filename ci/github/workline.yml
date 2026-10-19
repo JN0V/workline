@@ -37,6 +37,10 @@
 #          It warns when the App's key is in its reach, a repository
 #          secret, not the environment's; and when no workflow applies
 #          what it proposed (docs/ci-github.md).
+#          The reviewer's lenses that only warn read apart, in
+#          workline-warn.yml (--warn-apart, ADR-0050; the first release
+#          after v0.36.0): the head's verdict waits only for what can block.
+#          It warns when no workflow reads them.
 name: workline
 on:
   # ready_for_review: a draft marked ready, read by every lens of the
@@ -153,6 +157,7 @@ jobs:
         # reviewer reads every lens once, on the whole change; one a push
         # after (ADR-0020). The draft state goes on every run: a push that
         # cancelled the run on ready leaves the next one every lens (#359).
+        # The lenses that only warn are left to workline-warn.yml.
         env:
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           HEAD_REF: ${{ github.head_ref }}
@@ -163,7 +168,7 @@ jobs:
           ai=none; [ -n "$CLAUDE_CODE_OAUTH_TOKEN" ] && ai=claude
           ready=; case "$ACTION:$DRAFT" in opened:false|ready_for_review:*) ready=1 ;; esac
           status=0
-          workline route merge-request --ai "$ai" --no-apply --push-to-merge-request \
+          workline route merge-request --ai "$ai" --no-apply --push-to-merge-request --warn-apart \
             --forge github --target merge-request:${{ github.event.pull_request.number }} --branch "$HEAD_REF" \
             --input range=${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} ${ready:+--input lenses=all} --input draft="$DRAFT" \
             --gates-from "$RUNNER_TEMP/gates/gates.json" \
@@ -171,6 +176,7 @@ jobs:
           echo "status=$status" >> "$GITHUB_OUTPUT"
           echo "proposed=$(jq '(.pending // []) | length > 0' line.json)" >> "$GITHUB_OUTPUT"
           echo "found=$(jq '[.steps[]? | select(.name | startswith("documentalist")) | .result.findings[]?] | length > 0' line.json)" >> "$GITHUB_OUTPUT"
+          echo "reviewed=$(jq '[.steps[]? | select(.name == "reviewer")] | length > 0' line.json)" >> "$GITHUB_OUTPUT"
           [ ! -s workline-summary.md ] || cat workline-summary.md
           [ ! -s workline-summary.md ] || cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"
           mkdir -p report && { [ ! -s workline-summary.md ] || cp workline-summary.md report/report.md; }
@@ -181,8 +187,15 @@ jobs:
       - name: Whether anything applies what it proposed
         if: (steps.line.outputs.proposed == 'true' || steps.line.outputs.found == 'true') && github.event.pull_request.head.repo.full_name == github.repository
         run: |
-          grep -qs 'workflows: \[workline\]' .github/workflows/*.yml ||
+          grep -qsE 'workflows: \[workline[],]' .github/workflows/*.yml ||
             echo "::warning title=workline::no workflow applies what this run proposed, nor shows the docs' findings on their lines; copy workline-apply.yml beside workline.yml (docs/ci-github.md)"
+      # The reviewer's lenses that only warn, left to workline-warn.yml:
+      # said when no workflow reads them.
+      - name: Whether anything reads the lenses that warn
+        if: steps.line.outputs.reviewed == 'true' && github.event.pull_request.head.repo.full_name == github.repository
+        run: |
+          grep -qs -- '--warn-only' .github/workflows/*.yml ||
+            echo "::warning title=workline::no workflow reads the reviewer's lenses that warn, which this run left apart; copy workline-warn.yml beside workline.yml (docs/ci-github.md)"
 
       # From a fork, this job has no right to comment: the report goes to
       # workline-fork.yml, which comments it from the repository's side.
