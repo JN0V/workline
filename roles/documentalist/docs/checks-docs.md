@@ -43,7 +43,8 @@ edited.
   - A link answered by an HTTP error is `external-link-broken`, at its
     line; one not reached (no network, a timeout) is only counted.
   - Otherwise, or without lychee, they are counted and said to be
-    unchecked (`links-not-checked`).
+    unchecked (`links-not-checked`); not on main after a merge, whose
+    issue lists problems, not the night's checks.
 
 ## Superseded decisions
 
