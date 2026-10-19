@@ -14,7 +14,9 @@
 #   gates  runs the project's gates alone (`gate:<name>` steps; the first
 #          release after v0.35.0), with no write token and no secret: their
 #          tools run the pull request's code. Their verdicts are judge's to
-#          read (ADR-0049). Install the tools they run in it.
+#          read; what they found the change adds, workline-apply.yml shows
+#          as the annotations of the check `workline gates` and one summary
+#          comment (ADR-0049). Install the tools they run in it.
 #   judge  runs the line; it can read the code and the pull request's
 #          comments, and holds no write token but
 #          code scanning's, which only uploads its findings as SARIF (free on
@@ -56,8 +58,8 @@ jobs:
   # The project's gates (`gate:<name>` steps of routing's merge-request),
   # alone: their tools run the pull request's code — a linter's config or
   # plugin, a build —, so this job holds no write token and no secret, the
-  # agent's neither (ADR-0049). judge reads their verdicts. With no gate,
-  # it ends at once.
+  # agent's neither (ADR-0049). judge reads their verdicts; workline-apply.yml
+  # shows what they found the change adds. With no gate, it ends at once.
   gates:
     runs-on: ubuntu-latest
     permissions: {contents: read}
@@ -90,7 +92,7 @@ jobs:
           echo "ran=$(jq '(.steps // []) | length > 0' gates.json)" >> "$GITHUB_OUTPUT"
           [ ! -s workline-summary.md ] || cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"
           mkdir -p report && echo "${{ github.event.pull_request.number }}" > report/number
-      # Their result, for judge.
+      # Their result, for judge, and for workline-apply.yml to show.
       - uses: actions/upload-artifact@v4
         if: "!cancelled() && steps.gates.outputs.ran == 'true'"
         with: {name: workline-gates, path: "gates.json\nreport/number", retention-days: 1}

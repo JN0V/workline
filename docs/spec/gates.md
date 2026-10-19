@@ -1,6 +1,6 @@
 ---
-sources: [internal/gate, internal/line, internal/linters/check.go, internal/report/report.go]
-checked: 8d921bfe
+sources: [internal/gate, internal/line, internal/linters/check.go, internal/report/report.go, internal/report/gates.go, internal/engine/annotate.go]
+checked: 86f1e419
 verified: agent:claude-code
 ---
 # Gates — v1 (draft)
@@ -123,8 +123,9 @@ On `schedule` and `release`, and with `workline gate`, every finding counts.
 ### Shown on the merge request
 
 - **Where the forge shows a finding beside its line**, with no
-  conversation to resolve: on GitLab, the Code Quality report. Never code
-  scanning
+  conversation to resolve: on GitHub, the annotations of the check
+  `workline gates` and one summary comment; on GitLab, the Code Quality
+  report. Never code scanning
   ([ADR-0049](../adr/0049-the-inspector-judges-the-new-findings-of-the-projects-tools.md)).
 - **The gates alone, in a job of their own** (`--gates-only`), with no
   write token and no agent's; the judging job reads their verdicts
@@ -132,9 +133,8 @@ On `schedule` and `release`, and with `workline gate`, every finding counts.
 - **Each new finding's fingerprint** holds no line number.
 - **How, and what is said**: [the new findings shown](gates-shown.md).
 
-*Not built yet*: on GitHub, the new findings as a check's annotations
-and one summary comment; a formatter's fixes applied, rather than its
-command said; the count's trend; vendored and generated code skipped; CI's build
+*Not built yet*: a formatter's fixes applied, rather than its command
+said; the count's trend; vendored and generated code skipped; CI's build
 reused; a monorepo's changed folders only. On GitLab, the agent's and the
 bot's tokens are in every job's variables: the gates' job unsets them,
 which keeps them from the tools' environment, not from whoever changes

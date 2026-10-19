@@ -1,6 +1,6 @@
 ---
 sources: [ci/github, ci/gitlab, ci/forgejo/workline-forge.sh, roles/product-owner/role.yaml, cmd/workline]
-checked: 07029f11
+checked: 86f1e419
 judged: a8574a5
 verified: agent:claude-code
 reader: 8aab3bd261d9
@@ -114,8 +114,9 @@ conversation to resolve but the reviewer's comments
 ([ADR-0047](adr/0047-findings-on-a-merge-request-open-no-conversation.md)):
 
 - **GitHub**: the documentalist's as the annotations of the check
-  `workline findings`; code scanning keeps the committer's. The gates'
-  are in their job's summary ([gates in CI](gates-in-ci.md)).
+  `workline findings`; the gates' new ones as those of `workline gates`,
+  with one summary comment ([gates in CI](gates-in-ci.md)); code scanning
+  keeps the committer's.
 - **GitLab**: the Code Quality report, a report, not a thread; the gates'
   job writes its own.
 - `workline doctor` says whether merging requires every conversation

@@ -293,8 +293,8 @@ func CodeQuality(repo string, items []Item) ([]byte, error) {
 var postedOnMergeRequest = map[string]bool{"documentalist": true, "reviewer": true}
 
 // ForCodeScanning is what of a run on event goes to code scanning: on a
-// merge request, neither the documentalist's findings nor the reviewer's,
-// which workline posts there itself, nor the gates'. Code scanning would
+// merge request, neither the documentalist's findings nor the reviewer's
+// nor the gates', which workline posts there itself. Code scanning would
 // open a conversation for each, whatever its level, that a base requiring
 // them resolved holds the merge on (#412), and is paid on a private
 // repository (ADR-0049); the committer's stay.

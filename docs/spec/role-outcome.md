@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/engine, internal/intent, internal/role, internal/agent, internal/verdict, internal/report]
 verified: agent:claude-code
-checked: 07029f11
+checked: 21c9ac40
 judged: b5899f5
 status: draft
 ---
@@ -54,9 +54,10 @@ requiring them resolved holds the merge on ([ADR-0047](../adr/0047-findings-on-a
 [ADR-0049](../adr/0049-the-inspector-judges-the-new-findings-of-the-projects-tools.md)).
 `apply --line --from-merge-request` shows the documentalist's as the
 annotations of a check (`notice`, `warning`, `failure` as `note`,
-`warning`, `error`), the reviewer's are its review. A gate's new finding
-in `--code-quality` is its tool's rule, level and fingerprint
-([gates](gates.md#shown-on-the-merge-request)). `route --verdict <file>` writes the line's verdict
+`warning`, `error`), the reviewer's are its review; `apply --gates`, the
+gates' new findings, as another check's annotations and one comment
+([gates](gates.md#shown-on-the-merge-request)). A gate's new finding in
+`--code-quality` is its tool's rule, level and fingerprint. `route --verdict <file>` writes the line's verdict
 on the head it judged — its status, each step's, the findings — which
 `follow --verdict` keeps for the merge policy (ADR-0042).
 

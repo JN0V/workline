@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/line, internal/hooks, internal/forge/gitlab.go, ci/gitlab/workline.gitlab-ci.yml, ci/github/workline.yml, ci/github/workline-gardening.yml, ci/github/workline-sample.yml, routing.default.yaml]
-checked: 8d921bfe
+checked: 86f1e419
 verified: agent:claude-code
 reader: 2de353fab113
 ---
@@ -46,8 +46,8 @@ Each event that writes runs in two jobs
   <n> --head <sha>` ([more](commands.md#workline-apply));
 - the gates run first, in a job with no write token and no AI key:
   `route <event> --gates-only --json > gates.json`, which the judge reads
-  (`--gates-from gates.json`); with `--code-quality`, what they add
-  ([gates in CI](gates-in-ci.md)).
+  (`--gates-from gates.json`) and the second job shows (`apply --gates
+  gates.json`, on GitHub; [gates in CI](gates-in-ci.md)).
 
 `$ai` below is your choice of agent: `none`, `claude`, `cmd:<command>`
 ([usage](usage.md)).

@@ -25,7 +25,7 @@ func TestGitHubAnnotateInBatches(t *testing.T) {
 	for i := 1; i <= 120; i++ {
 		notes = append(notes, Annotation{Path: "docs/a.md", Line: i, Level: "notice", Message: "m"})
 	}
-	url, err := g.Annotate("abc123", FindingsCheck, "the summary", notes)
+	url, err := g.Annotate("abc123", FindingsCheck, "120 findings", "the summary", notes)
 	calls, _ := os.ReadFile(log)
 	if err != nil || url != "https://github.com/o/r/runs/7" {
 		t.Fatalf("Annotate: %q, %v; calls:\n%s", url, err, calls)
@@ -53,7 +53,7 @@ func TestGitHubAnnotateRefused(t *testing.T) {
 	}
 	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
 	g := &github{repo: t.TempDir()}
-	_, err := g.Annotate("abc123", FindingsCheck, "s", []Annotation{{Path: "a.md", Line: 1, Level: "notice", Message: "m"}})
+	_, err := g.Annotate("abc123", FindingsCheck, "1 finding", "s", []Annotation{{Path: "a.md", Line: 1, Level: "notice", Message: "m"}})
 	if !Refused(err) || !strings.Contains(err.Error(), "Checks: read and write") {
 		t.Errorf("Annotate: %v; want a refusal naming the right", err)
 	}

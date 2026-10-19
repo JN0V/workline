@@ -1,0 +1,46 @@
+case: gates/annotations-written-fifty-a-call
+about: >
+  GitHub takes fifty annotations a call: a change adding 120 findings gets
+  the check `workline gates` created with the first fifty, then updated
+  twice, its title giving them all; the summary comment is posted once,
+  then edited on the next push. GitHub's own forge code, a fake gh.
+given:
+  repo: linted
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - git checkout -q -b change
+    - |
+      { printf 'package main\n\nimport "os"\n\nfunc many() {\n'; i=1; while [ $i -le 120 ]; do printf '\tos.Remove("f%d")\n' $i; i=$((i+1)); done; printf '}\n'; } > many.go && git add many.go && git commit -qm "feat: clean many" && git push -q origin change
+  env: {PATH: "$FIXTURES/bin:$PATH"}
+  config:
+    routing: {events: {merge-request: ["gate:merge"]}}
+    gates: {merge: {checks: [{id: lint, run: "golangci-lint run --output.sarif.path={out}/lint.sarif", output: sarif, max: {error: 0}}]}}
+run:
+  route: merge-request
+  input: {range: main..change}
+  gates-only: true
+  forge: github
+  then: resume
+  apply-from:
+    merge-request: 1
+    base: main
+    head: change
+    gates: true
+    env: {PATH: "$FIXTURES/gh:$PATH", GH_LOG: .git/gh.log}
+    again:
+      - |
+        git checkout -q change && printf '\n// Many files.\n' >> many.go && git commit -qam "docs: say what many does" && git push -q origin change
+expect:
+  findings: [{rule: gates-shown, message: "120 new findings of the gates, beside their lines, https://github.com/o/r/runs/2"}]
+  files:
+    .git/gh.log:
+      contains:
+        - "call 1: GET pulls/1"
+        - "call 2: POST check-runs: 50 annotations, title 120 new findings"
+        - "call 3: PATCH check-runs/1: 50 annotations"
+        - "call 4: PATCH check-runs/1: 20 annotations"
+        - "call 5: GET issues/1/comments"
+        - "call 6: POST issues/1/comments: comment 1"
+        - "call 8: POST check-runs: 50 annotations, title 120 new findings"
+        - "call 12: PATCH issues/comments/1"
+      lacks: ["comment 2"]

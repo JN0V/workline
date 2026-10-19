@@ -1,6 +1,6 @@
 ---
 sources: [ci/github, .github/workflows/workline-apply.yml, .github/workflows/workline.yml]
-checked: 07029f11
+checked: 21c9ac40
 judged: c7e1e98
 verified: agent:claude-code
 ---
@@ -26,7 +26,7 @@ branch's workflow
    - repository permissions **Contents**, **Pull requests**,
      **Issues** and **Checks**, read and write; with the merge policy,
      **Commit statuses** too;
-   - **Checks** writes the check `workline findings`: the documentalist's
+   - **Checks** writes the checks `workline findings` and `workline gates`: the documentalist's
      findings beside their lines, none a conversation to resolve
      ([#412](https://github.com/JN0V/workline/issues/412)). An App made
      before: Settings → Developer settings → your App → Permissions, then

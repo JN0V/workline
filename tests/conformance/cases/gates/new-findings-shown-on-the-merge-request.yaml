@@ -1,0 +1,42 @@
+case: gates/new-findings-shown-on-the-merge-request
+about: >
+  The gates run alone, as in CI's job of their own, and the job applying
+  the merge request's run shows what they found the change adds: each new
+  finding an annotation of the check `workline gates` on the head judged,
+  and one summary comment counting them by rule, the debt already there a
+  count (ADR-0049, step 3).
+given:
+  repo: linted
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - git checkout -q -b change
+    - |
+      sed -i 's|^\tos.Remove("c.tmp")$|&\n\tos.Remove("d.tmp")|' clean.go && git commit -qam "feat: clean d too" && git push -q origin change
+  env: {PATH: "$FIXTURES/bin:$PATH"}
+  forge: {merge-requests: [{id: 1, branch: change, labels: [], comments: []}]}
+  config:
+    routing: {events: {merge-request: [committer, "gate:merge"]}}
+    gates: {merge: {checks: [{id: lint, run: "golangci-lint run --output.sarif.path={out}/lint.sarif", output: sarif, max: {error: 0}}]}}
+run:
+  route: merge-request
+  input: {range: main..change}
+  gates-only: true
+  then: resume
+  apply-from: {merge-request: 1, base: main, head: change, gates: true}
+expect:
+  findings: [{rule: gates-shown, where: workline gates, message: "1 new finding of the gates, beside their lines"}]
+  forge:
+    check-runs:
+      - commit: change
+        name: workline gates
+        title: 1 new finding
+        count: 1
+        annotations: [{path: clean.go, line: 10, level: failure, contains: "Error return value of `os.Remove` is not checked"}]
+    merge-requests:
+      - id: 1
+        comments: 1
+        comment-contains:
+          - "### Gates: 1 new finding"
+          - "| `merge` | `lint` | 1 | 3 |"
+          - "**`errcheck`** (`golangci-lint`), 1 new: `clean.go:10`"
+          - "the check [workline gates](https://forge.example/checks/1)"

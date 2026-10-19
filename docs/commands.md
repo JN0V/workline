@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/engine/engine.go, internal/hooks]
-checked: 07029f11
+checked: 86f1e419
 verified: agent:claude-code
 judged: e343388
 ---
@@ -49,6 +49,10 @@ instead of running them ([gates in CI](gates-in-ci.md)).
 - With both, on GitHub: the line's documentalist findings as annotations
   of the check `workline findings` on the head judged; `checks: write`
   ([#412](https://github.com/JN0V/workline/issues/412)).
+- `--gates <file>`, with `--from-merge-request`: what the gates found the
+  change adds, from the result `route --gates-only --json` printed in
+  that run; on GitHub, the annotations of the check `workline gates` and
+  one summary comment ([gates](spec/gates.md#shown-on-the-merge-request)).
 
 ### workline gate
 

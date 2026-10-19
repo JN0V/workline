@@ -1,6 +1,6 @@
 ---
-sources: [ci/github/workline.yml, ci/gitlab/workline.gitlab-ci.yml, internal/line]
-checked: 8d921bfe
+sources: [ci/github/workline.yml, ci/github/workline-apply.yml, ci/gitlab/workline.gitlab-ci.yml, internal/report/gates.go, internal/engine/annotate.go, internal/line]
+checked: 86f1e419
 verified: agent:claude-code
 ---
 # Gates in CI
@@ -8,7 +8,8 @@ verified: agent:claude-code
 ```mermaid
 flowchart LR
   gates["<b>gates</b><br/>your tools, no token"] --> judge["<b>judge</b><br/>reads their verdicts"]
-  gates --> cq["<b>GitLab</b><br/>Code Quality"]
+  gates --> apply["<b>apply</b><br/>shows what is new"]
+  judge --> apply
 ```
 
 Your [gates](spec/gates.md) run your own linters and scanners. In CI
@@ -33,13 +34,25 @@ The templates need the first release after v0.35.0.
 
 ## On GitHub
 
-- **The gates' verdicts** are in the judge's job summary, a gate's first
-  findings named, file and line; a fork's pull request gets them in the
-  report workline-fork.yml comments.
+The job applying the run, in workline-apply.yml, shows what the gates
+found the change adds:
+
+- **Beside each line**: the annotations of the check `workline gates`,
+  on the head judged. None is a conversation to resolve. Its title gives
+  the count; past 500, the rest are counted, not written.
+- **One summary comment**, edited on each push: a row per check, its new
+  findings and those there before; a line per rule, its first places. It
+  lists as many rules as the reviewer's `findings-max` (10).
+- **Nothing new, nothing posted**: no check, no comment. A comment an
+  earlier push left says "no new finding".
+- **A formatter's check** (`fix:` set): its command is said once, rather
+  than one annotation per line.
 - **Not code scanning**: paid on private repositories, and a
   conversation per alert.
-- **Not built yet**: each new finding beside its line, a check's
-  annotations, and one summary comment.
+- **A fork's pull request**: nothing is applied; the gates' verdicts are
+  in the report workline-fork.yml comments.
+- **The branch moved on** before the apply: nothing shown, and said; the
+  next run shows its own.
 
 ## On GitLab
 

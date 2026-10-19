@@ -1,6 +1,6 @@
 ---
 sources: [internal/doctor/doctor.go, internal/doctor/conversations.go, internal/hooks/hooks.go, cmd/workline/main.go, cmd/workline/cli.go, internal/forge/local.go]
-checked: 07029f11
+checked: 86f1e419
 verified: agent:claude-code
 ---
 # Troubleshooting
@@ -101,6 +101,10 @@ goes ready, a hidden record that does not read: in
   GitHub App the permission **Checks**, read and write
   ([the App](ci-github-app.md)). The findings stay in the judge's job
   summary.
+- `gates-not-shown`, on GitHub: the check `workline gates` or the gates'
+  summary comment was refused, the same rights; the findings stay in the
+  gates' job summary. `moved-on`: the branch moved on before the apply,
+  and its next run shows its own ([gates in CI](gates-in-ci.md)).
 - A gate's `check-error` in `judge`, "the gates' job left no result": the
   job `gates` did not run it, or failed first; read its log. Copy
   `workline.yml` of this release again if it has no job `gates`.

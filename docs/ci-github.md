@@ -1,6 +1,6 @@
 ---
 sources: [ci/github, .github/workflows/workline.yml, .github/workflows/workline-apply.yml, .github/workflows/workline-gardening.yml, .github/workflows/workline-sample.yml, .github/workflows/release.yml, .github/workflows/release-please.yml, release-please-config.json, .goreleaser.yaml, cmd/workline]
-checked: 07029f11
+checked: 86f1e419
 judged: eb7fc7c
 verified: agent:claude-code
 reader: fe1505d43360
@@ -129,8 +129,9 @@ and `apply`, with the App, commits the fix to its branch,
   summary comment, said
   ([more](../roles/reviewer/docs/lines.md)).
 - `apply` writes the documentalist's findings as the annotations of the
-  check `workline findings` (`checks: write`; an App's **Checks**):
-  beside the docs' lines, none a conversation. Refused, it says so.
+  check `workline findings`, the [gates'](gates-in-ci.md) as those of
+  `workline gates` (`checks: write`; an App's **Checks**): beside their
+  lines, none a conversation; a refusal, said.
 - The product owner's issues: read when judging, write when applying —
   the gardening template gives both.
 - **The sample**: the judge is the repository variable `WORKLINE_JUDGE`,

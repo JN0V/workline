@@ -70,6 +70,7 @@ type FakeCheck struct {
 	Commit      string       `json:"commit"`
 	Name        string       `json:"name"`
 	Conclusion  string       `json:"conclusion"`
+	Title       string       `json:"title,omitempty"`
 	Summary     string       `json:"summary,omitempty"`
 	Annotations []Annotation `json:"annotations"`
 }
