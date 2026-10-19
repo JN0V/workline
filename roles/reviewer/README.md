@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/instruction.md, roles/reviewer/policy.md, roles/reviewer/lenses, internal/builtin/reviewer, internal/backlog/spec.go, routing.default.yaml]
-checked: 1359ad77
+checked: b830e2b9
 verified: agent:claude-code
 ---
 # Reviewer
@@ -52,7 +52,7 @@ file. All roles: [docs/roles.md](../../docs/roles.md).
 | Event | Fired by | Reads |
 |---|---|---|
 | `review` | `workline review`, on your machine before you push | `base..HEAD`, every lens |
-| `merge-request` | CI, opt-in: `workline init --review` adds it to the line | a draft: the rules only, no lens ([more](docs/ready.md)); every lens once, on the whole change, when it becomes ready; then the commits not reviewed yet, one lens a push |
+| `merge-request` | CI, opt-in: `workline init --review` adds it to the line | a draft: the rules only, no lens ([more](docs/ready.md)); every lens once, on the whole change, when it becomes ready; then the commits not reviewed yet, one lens a push, five commits a push for a lens that warns ([more](docs/ready.md#after-ready-only-what-is-new)) |
 | `spec` | `workline review --spec <file>` or `--issue <n>` | the spec, every spec lens |
 | `schedule` | CI gardening, opt-in: `reviewer` after `product-owner` in the `schedule` line | one issue the product owner refined, every spec lens |
 
@@ -66,8 +66,9 @@ file. All roles: [docs/roles.md](../../docs/roles.md).
   (`needs-triage`) for each verified finding outside the change.
 - **Cost**: one call for the lenses (all of them on a machine, together;
   one a push on a merge request, none on a draft), one judge call for each important
-  finding, up to three when it reads the code it needs; a spec, one
-  call. A change too large for one call: a call a part
+  finding, up to three when it reads the code it needs, none for one
+  judged before on the same patch ([judged once](docs/once.md)); a spec,
+  one call. A change too large for one call: a call a part
   ([in parts](docs/parts.md)). Capped at 300000 tokens a run
   (`ai-max-tokens`) and by the `*-max` settings below. Measured:
   [research](../../docs/research/code-review.md#the-reviewers-cost-measured).
@@ -91,7 +92,8 @@ Step by step, with every rule: [a run on code](docs/run.md).
    agent is asked.
 3. **The record**: commits already reviewed whole are not asked again,
    rebased or not, nor pushed on before their review was written; a merge
-   of the base is read for what it settled.
+   of the base is read for what it settled. After ready, the lenses that
+   warn read five new commits a push, the rest at the next.
 4. **The lenses**: correctness, edge cases, tests, intent (the issue the
    change closes), claims (what its author says), in one call; a project
    adds its own in `.workline/roles/reviewer/lenses/`.
@@ -101,7 +103,8 @@ Step by step, with every rule: [a run on code](docs/run.md).
    to an issue; a choice for a person is asked as a question.
 7. **The judge**: each important finding checked apart, reading the code
    it stands on, and more if it asks; a no quoting the code drops it
-   ([more](docs/judge.md)).
+   ([more](docs/judge.md)). One judged before on the same patch keeps its
+   verdict ([judged once](docs/once.md)).
 8. **The verdict**: rules block; findings warn until measured
    (`ai-findings`); one that blocks stands until a commit answers it
    ([more](docs/judge.md#a-block-stands-until-a-commit-answers-it)); on a
@@ -146,6 +149,7 @@ Under `roles: {reviewer: {settings: …}}` in `.workline/config.yaml`
 | `ignore` | `*.md`, `docs/**`, `LICENSE*`, `**/*.txt`, `CHANGELOG*` | not code: a change touching only these asks nobody |
 | `lenses` | `[correctness, edge-cases, tests, intent, claims]` | in this order, in turn, on a merge request; a lens with nothing to read skipped |
 | `lenses-per-push` | `1` | `--input lenses=all` asks every one, on the whole change: the templates pass it when the merge request becomes ready |
+| `commits-per-push` | `5` | after ready: new commits a lens that warns reads a push, the oldest first; the rest at the next push, said; `0`: every one ([more](docs/ready.md#after-ready-only-what-is-new)) |
 | `lenses-together` | `true` | the lenses of a run in one call; `false`: a call each |
 | `diff-alone` | `false` | `true`: one more call, given the change only |
 | `spec-lenses` | `[ambiguous, unverifiable, out-of-scope, contradicted]` | the lenses a spec is read through |

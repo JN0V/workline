@@ -7,7 +7,8 @@
   ([ADR-0042](0042-the-engine-merges-by-the-projects-policy.md));
   amended 2026-10-17: a change too large for one call read in parts
   (#446); amended 2026-10-19: the lenses that warn read apart from the
-  verdict, and no lens on a draft
+  verdict, no lens on a draft, and after ready only what is new, a
+  finding judged once
   ([ADR-0050](0050-each-act-has-its-moment-and-a-wait-budget.md))
 - **Date:** 2026-10-04
 - **Builds on:** ADR-0005 (a judge's independence), ADR-0009 (a question in
@@ -724,3 +725,39 @@ merge-request line; on in workline's own repository.
 - **Rejected**: one lens a draft push (its cost on every push); no
   line on a draft (the rules and gates are the first result); a failed
   status on a draft (a red check people learn to skip).
+
+## Amendment (2026-10-19, ADR-0050: after ready, only what is new)
+
+- **What was spent again**: after the run on ready, a push's lens read
+  only the commits not reviewed, but a finding read again — the run on
+  ready again, a review not whole read at the next push — had its judge
+  asked again, the same answer bought twice; and a push of many commits
+  was read whole by a lens that only warns
+  ([ADR-0050](0050-each-act-has-its-moment-and-a-wait-budget.md#4-what-the-table-holds-to),
+  step 6).
+- **A finding judged once** ([ADR-0013](0013-what-was-judged-is-not-asked-again.md)'s
+  rule, for the judges): its line in the comment keeps what it was judged
+  on — the patch id of the merge request's change to the cause's file,
+  and a key of the finding, its lens, quotes and symptom, the tests or
+  issues its judge reads. The same again: no judge asked, the verdict
+  kept and said; a yes keeps its independence, a no its reason. A
+  commit changing the cause's file again makes a new patch: judged
+  again. This replaces, for those, "a judge for each important finding".
+- **Five new commits a push for the lenses that warn**
+  (`commits-per-push`), after ready: those changing code counted, the
+  oldest first. The lens reads up to the fifth; those are recorded, the
+  rest left, said (`commits-left`), read first at the next push or when
+  the run runs again. The quotes are still found at the head.
+- **Never capped**: a lens that blocks, the run on ready, a machine's
+  review. What can hold the verdict is never left unread; a block stands
+  while the head still has its cause, as before.
+- **Rejected**:
+  - The newest five read, the older left: those would never be read,
+    the record holding every commit below the newest.
+  - A key on the whole change's patch id: any new commit would judge
+    every finding again, the case this saves.
+  - A key on everything the judge is shown: it names functions from the
+    finding's own words, which differ at each call; the same finding
+    would never match.
+  - A cap on a lens that blocks: a commit left unread could let a
+    blocking finding through (principle 12).

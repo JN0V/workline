@@ -104,6 +104,15 @@ its measure in
   `warn-apart-no-lens-on-a-draft`, `routing/draft-line-asks-no-agent`;
   a draft pushed, then marked ready, tried on
   [#533](https://github.com/JN0V/workline/pull/533).
+- **After ready, only what is new**: a push reads the commits no review
+  read, a merge of main nothing again; the lenses that warn five new
+  commits a push, the rest said and read next; a finding judged once
+  keeps its verdict on the same patch
+  ([ADR-0050](../../../docs/adr/0050-each-act-has-its-moment-and-a-wait-budget.md),
+  [after ready](ready.md#after-ready-only-what-is-new),
+  [judged once](once.md)): `after-ready-*`, `commits-*`,
+  `finding-judged-once-not-judged-again`,
+  `finding-judged-again-once-its-file-changes`.
 - **Lenses as parts**, answering findings only; an answer that does not
   read asked again once: `never-approves-nor-patches`,
   `lens-failed-not-clean`, `lens-answer-asked-again-once`.

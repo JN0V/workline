@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/lenses, internal/builtin/reviewer]
-checked: 1359ad77
+checked: b830e2b9
 verified: agent:claude-code
 ---
 # Reviewer — the judge, the verdict, the budget
@@ -13,7 +13,8 @@ and what a run may spend.
 Apart, for each important finding, at the best independence
 (`judge-at-least`); its level and both models said. A no drops it, said
 (`finding-judged-no`), when the lines it quotes are found again
-([below](#when-the-judge-reads)).
+([below](#when-the-judge-reads)). One judged before, the same finding on
+the same patch, keeps its verdict ([judged once](once.md)).
 
 **What it reads**: the finding, the code it stands on, and what the change
 did within 40 lines of the cause
@@ -148,8 +149,11 @@ comment hides a line for each.
 
 - **A line**: the lens, the place, the head the review read, yes (kept)
   or no (dropped), the lens's model and the judge's, the title.
+  - What it was judged on: the patch and the finding's key, a yes's
+    independence, a no's reason, so it is not judged again
+    ([judged once](once.md)). A line written before them keys nothing.
 - **No line**: a finding shown not verified, a nit, a question for a
-  person, a spec's finding.
+  person, a spec's finding, a verdict kept, not judged again.
 - **Every run's**, for the merge request's life, on GitHub and GitLab:
   each run writes the comment again, the lines before kept, its own
   added. A run that asks no lens keeps them too, and one applied after
@@ -159,7 +163,8 @@ comment hides a line for each.
 - **Within 60,000 characters**, under GitHub's 65,536: past it, the
   oldest lines go first, and the comment counts them
   (`<!-- workline:judged-lines gone=N -->`). The sample says them not
-  drawn. A line takes about 300 characters: about 200 fit.
+  drawn. A line takes about 400 characters, a no with its reason up to
+  600: about 100 to 150 fit.
 - **On a machine**: no line; the local record keeps none.
 
 ## The budget

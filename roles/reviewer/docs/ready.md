@@ -1,9 +1,9 @@
 ---
-sources: [roles/reviewer/role.yaml, internal/builtin/reviewer/reviewer.go, internal/builtin/reviewer/record.go, internal/engine/engine.go, ci/github/workline.yml, ci/gitlab/workline.gitlab-ci.yml]
-checked: 1359ad77
+sources: [roles/reviewer/role.yaml, internal/builtin/reviewer/reviewer.go, internal/builtin/reviewer/record.go, internal/builtin/reviewer/once.go, internal/engine/engine.go, ci/github/workline.yml, ci/gitlab/workline.gitlab-ci.yml]
+checked: b830e2b9
 verified: agent:claude-code
 ---
-# Reviewer — no lens on a draft, every lens once when it becomes ready
+# Reviewer — no lens on a draft, every lens once when it becomes ready, then what is new
 
 Part of [the reviewer](../README.md), on a merge request; the rest of a
 run: [a run on code](run.md).
@@ -47,7 +47,7 @@ agent, the reviewer's two runs included.
   only, and skipping them could leave nothing to read. The commits are
   recorded, one run counted, and, once every lens answered, the record
   says every lens read the change (`read=all`); the next push gets one
-  lens, in turn.
+  lens, in turn, on what is new ([below](#after-ready-only-what-is-new)).
 - **A run on ready where a lens did not answer** (unreadable after its
   retry, its budget spent): `retried=once`, and the next push asks every
   lens again, once (`every-lens-again`). Failing again, `read=all` is
@@ -71,6 +71,32 @@ agent, the reviewer's two runs included.
   on the whole change, whatever the template passed.
 - **With no agent, or one out of reach**, nothing is written: the next
   run is the run on ready again.
+
+## After ready: only what is new
+
+[ADR-0050](../../../docs/adr/0050-each-act-has-its-moment-and-a-wait-budget.md),
+step 6: the run on ready is the one full review; after it, each push's
+AI reads only what is new.
+
+- **The commits no review read yet**: the lens in turn reads those the
+  record does not hold, by commit id or patch id. A rebase, or a merge of
+  the base that settled nothing, reads nothing again
+  ([the record](run.md#13-the-range-the-rules-the-record)).
+- **The lenses that warn: five new commits a push** (`commits-per-push`),
+  those changing code counted, the oldest first.
+  - The five read are recorded; the rest are left, said
+    (`commits-left`), with their ids.
+  - They are read first at the next push, or when the run runs again on
+    the same head (re-run its job).
+  - `0`: every new commit, each push.
+- **A lens that blocks reads every new commit**, and so does the run on
+  ready: what can hold the verdict is never left unread.
+- **A finding judged once keeps its verdict**, the same finding on the
+  same patch: its judge is not asked again, said
+  ([judged once](once.md)).
+- **The head's verdict** still holds every block a review before found,
+  while the head still has its cause
+  ([a block stands](judge.md#a-block-stands-until-a-commit-answers-it)).
 
 ## What tells it ready, on each forge
 
