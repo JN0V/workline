@@ -212,9 +212,5 @@ routing:
 
 ## Not in this version
 
-The developer and tester roles, which will consume `ready` items.
-
-Which act runs at which moment, within a wait budget per moment — a
-draft, a merge queue's group, main after a merge among them — is decided
-and not built yet
-([ADR-0050](../adr/0050-each-act-has-its-moment-and-a-wait-budget.md)).
+The developer and tester roles, which will consume `ready` items. Which
+act runs at which moment, decided: [ADR-0050](../adr/0050-each-act-has-its-moment-and-a-wait-budget.md).
