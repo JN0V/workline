@@ -1,0 +1,51 @@
+# The engine built from the commit checked out, once a commit (ADR-0050,
+# step 1): the first job builds it and keeps it in Actions' cache by that
+# commit, the jobs after take it. workline's own workflows only; the
+# templates download a release. Never another engine: the cache is read by
+# its exact key, and the binary must name the commit checked out,
+# unmodified, or the job fails (docs/ci-github.md).
+name: workline engine
+description: The engine built from the commit checked out, once a commit, kept in Actions' cache by that commit.
+inputs:
+  keep:
+    description: Keep the engine built for the jobs after this one; "false" when none needs it.
+    default: "true"
+runs:
+  using: composite
+  steps:
+    - id: key
+      shell: bash
+      run: |
+        sha=$(git rev-parse HEAD)
+        echo "sha=$sha" >> "$GITHUB_OUTPUT"
+        echo "key=workline-engine-$RUNNER_OS-$RUNNER_ARCH-$sha" >> "$GITHUB_OUTPUT"
+    - id: cache
+      uses: actions/cache/restore@v4
+      with:
+        path: ${{ runner.temp }}/workline-engine
+        key: ${{ steps.key.outputs.key }}
+    - if: steps.cache.outputs.cache-hit != 'true'
+      uses: actions/setup-go@v5
+      with: {go-version-file: go.mod}
+    # Static, as the releases are: it runs on any runner image.
+    - if: steps.cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        mkdir -p "$RUNNER_TEMP/workline-engine"
+        CGO_ENABLED=0 go build -o "$RUNNER_TEMP/workline-engine/workline" ./cmd/workline
+    - name: The engine is the commit's
+      shell: bash
+      env: {SHA: "${{ steps.key.outputs.sha }}"}
+      run: |
+        bin="$RUNNER_TEMP/workline-engine"
+        if [ "${#SHA}" != 40 ] || ! grep -aqF "vcs.revision=$SHA" "$bin/workline" || ! grep -aqF "vcs.modified=false" "$bin/workline"; then
+          echo "::error title=workline::the engine is not the one built from $SHA, unmodified: nothing runs on it (go version -m names the commit a binary was built from)"
+          exit 1
+        fi
+        echo "$bin" >> "$GITHUB_PATH"
+        "$bin/workline" version
+    - if: steps.cache.outputs.cache-hit != 'true' && inputs.keep == 'true'
+      uses: actions/cache/save@v4
+      with:
+        path: ${{ runner.temp }}/workline-engine
+        key: ${{ steps.key.outputs.key }}
