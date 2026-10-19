@@ -1,5 +1,5 @@
 ---
-sources: [internal/engine/merge.go, internal/forge/merge.go, internal/forge/github_merge.go, internal/forge/gitlab_merge.go, ci/github/workline-apply.yml, ci/github/workline-merge.yml, ci/gitlab/workline.gitlab-ci.yml]
+sources: [internal/engine/merge.go, internal/engine/queue.go, internal/forge/merge.go, internal/forge/github_merge.go, internal/forge/gitlab_merge.go, ci/github/workline-apply.yml, ci/github/workline-merge.yml, ci/gitlab/workline.gitlab-ci.yml]
 checked: 5193cf0b
 verified: agent:claude-code
 ---
@@ -83,6 +83,10 @@ merge: {autonomy: cautious}   # off unless set: no auto-merge is touched
   it and cannot merge. A base that does not require it, or from any
   source, gets nothing turned on, said. On GitLab, the merge waits for
   the new head's pipeline, which holds `workline:merge`.
+- **A merge queue** tests a group's commit against the same checks:
+  `follow --merge-group` sets `workline/accepted` there as the head the
+  group ends with holds it; the queue's run checks only the gates, the
+  yes and the verdict staying the head's ([a merge queue](merge-queue.md)).
 
 ## Never without a person's yes
 
@@ -148,7 +152,8 @@ counts as workline's own, the kinds, the revert and the limits:
 ## Set up
 
 - **GitHub**: the [templates](ci-github.md) — `workline-apply.yml`'s
-  `verdict` and `follow` jobs run after `judge`, from the default branch;
+  `verdict` and `follow` jobs run after `judge`, `queue` after a merge
+  queue's group, from the default branch;
   `workline-merge.yml` runs when a label is put or taken off, or a draft
   made. Then:
   - Settings → General → "Allow auto-merge";
