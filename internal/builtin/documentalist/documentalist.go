@@ -1530,7 +1530,7 @@ func holdTheRelease(findings []verdict.Finding, suspects map[string]*suspectDoc,
 	night := os.Getenv("WORKLINE_AI_WAITS") == "night"
 	by := "by the agent, `workline docs`, or a person moving `checked`"
 	if night {
-		by = "by the agent, at night with the gardening, or a person moving `checked`"
+		by = "by the agent at night, or a person moving `checked`"
 	}
 	due := 0
 	for i := range findings {
@@ -1567,8 +1567,8 @@ func atNight(n int) verdict.Finding {
 		now = fmt.Sprintf("workline route release --target merge-request:%d --push-to-merge-request", t.ID)
 	}
 	return verdict.Finding{Rule: verdict.WaitsForNight, Level: "warn",
-		Message: fmt.Sprintf("%d %s due for the release %s judged and fixed by the agent with the next gardening, at night, in a merge request of their own (workline/documentalist/release): the release waits until it is merged. "+
-			"No agent is asked on each move of this merge request, so that a doc fix never changes its head after a person's yes. For the release sooner, run the gardening now, or, where an agent may judge: `%s`; or a person judges them, moving their `checked`.", n, docs, are, now)}
+		Message: fmt.Sprintf("%d %s due for the release %s judged and fixed by the agent at night, in a merge request of their own (workline/documentalist/release): the release waits until it is merged. "+
+			"No agent is asked on each move of this merge request, so that a doc fix never changes its head after a person's yes. For the release sooner, run the night's job now (the release's docs, or the gardening), or, where an agent may judge: `%s`; or a person judges them, moving their `checked`.", n, docs, are, now)}
 }
 
 // changedSince says whether a source of the doc, in this repository,

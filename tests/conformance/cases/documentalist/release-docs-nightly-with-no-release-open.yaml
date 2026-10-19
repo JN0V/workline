@@ -1,0 +1,14 @@
+case: documentalist/release-docs-nightly-with-no-release-open
+about: "The nightly run of the release's docs alone, with no release pull request open: no step runs, no agent is asked, and the summary says so; the release's own docs judging (`route release` with no target, before a tool tags) is not run in its place (ADR-0050, §7)."
+given:
+  repo: documented
+  setup:
+    - "git tag v1.0.0"
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+  forge: {merge-requests: [{id: 3, branch: feat/sessions, base: main, labels: [], comments: []}]}
+run: {route: release, args: [--target, merge-request:release], ai: "fake:doc-fixed", no-apply: true}
+expect:
+  status: pass
+  agent-calls: 0
+  steps: []
+  summary: "no release merge request judged"

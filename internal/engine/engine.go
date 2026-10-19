@@ -68,6 +68,11 @@ type Options struct {
 	// OpenMergeRequest, what they patch waits as an open merge request's
 	// change does, never judged again in this run (ADR-0013, amended).
 	Waiting map[string][]string
+	// FindRelease: on `release`, the release tool's merge request open
+	// into the branch checked out, found on the forge (`--target
+	// merge-request:release`), its docs due judged as at night; the
+	// release's own steps run on nothing else (ADR-0050, §7).
+	FindRelease bool
 
 	// TamperBeforeApply changes the prepared input between propose and apply.
 	// It exists only for the conformance test that proves apply notices.

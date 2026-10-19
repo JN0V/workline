@@ -13,7 +13,7 @@ expect:
   agent-calls: 0
   applied: []
   findings:
-    - {rule: suspect, where: docs/tech/auth.md, message: "since v1.0.0: the release waits until it is judged — by the agent, at night with the gardening"}
+    - {rule: suspect, where: docs/tech/auth.md, message: "since v1.0.0: the release waits until it is judged — by the agent at night"}
     - {rule: ai-waits-for-night, level: warn, message: "workline route release --target merge-request:1 --push-to-merge-request"}
   not-pushed: [release-please--branches--main]
   gone: [workline/documentalist/release]

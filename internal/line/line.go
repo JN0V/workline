@@ -146,6 +146,9 @@ func RunWith(event string, base engine.Options, gates *Gates) *Result {
 		if queue { // the gates on the merged result, whoever made its last commit
 			skip = !isGate
 		}
+		if base.FindRelease { // the found release's docs alone (ADR-0050, §7)
+			skip = isGate || !holdsRelease(base.RolesDir, name)
+		}
 		if skip || gates.Only && !isGate || warnOnly && (isGate || !apartOn(base.RolesDir, name, event)) {
 			continue
 		}
@@ -173,11 +176,13 @@ func RunWith(event string, base engine.Options, gates *Gates) *Result {
 				// At night, gardening with a forge: first the release's
 				// docs, on its merge request's head; what its fix patches
 				// waits for the gardening after it (ADR-0050, §7).
-				case event == "schedule" && base.OpenMergeRequest:
+				// The release found on the forge, its docs alone: the
+				// night's run, its own step nothing else.
+				case event == "schedule" && base.OpenMergeRequest, base.FindRelease:
 					var failed, st string
 					ran := len(res.Steps)
 					o.Waiting, failed, st = nightRelease(res, cfg, o)
-					if len(res.Steps) > ran {
+					if len(res.Steps) > ran && !base.FindRelease {
 						considered++
 					}
 					if failed != "" {
@@ -186,6 +191,9 @@ func RunWith(event string, base engine.Options, gates *Gates) *Result {
 						}
 						notPassed = append(notPassed, fmt.Sprintf("%s (%s)", failed, st))
 						res.Status = worst(res.Status, st)
+					}
+					if base.FindRelease {
+						continue
 					}
 				// `release` on a release tool's merge request, a person's
 				// run: on its head, its fix in a merge request of its own.
@@ -222,6 +230,9 @@ func RunWith(event string, base engine.Options, gates *Gates) *Result {
 	} else {
 		res.Summary = fmt.Sprintf("%s: %d steps passed", event, len(res.Steps))
 	}
+	if base.FindRelease && len(res.Steps) == 0 {
+		res.Summary = event + ": no release merge request judged: none open into this branch, or none read"
+	}
 	if gates.Only {
 		res.Summary += "; the gates alone"
 	}
@@ -238,7 +249,7 @@ func RunWith(event string, base engine.Options, gates *Gates) *Result {
 		res.Summary += "; a draft: no agent asked, the AI review waits for it to be marked ready"
 	}
 	if waits(engine.AIWaitsNight) {
-		res.Summary += "; a release: no agent asked for its docs, judged at night with the gardening"
+		res.Summary += "; a release: no agent asked for its docs, judged at night"
 	}
 	if len(res.Pending) > 0 {
 		res.Summary += fmt.Sprintf("; %d runs to apply", len(res.Pending))
