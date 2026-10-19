@@ -1,6 +1,6 @@
 ---
 sources: [ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile]
-checked: 5193cf0b
+checked: 29e55a0b
 judged: cd97f28
 verified: agent:claude-code
 reader: 9799dcaf51f3
@@ -143,7 +143,9 @@ a cron off the hour (`13 17 * * *`) was listed as due at 18:00 and ran at
 
 - `workline:gates` runs your gates alone, before `workline:judge`, and
   writes what they found the change adds as its Code Quality report;
-  install their tools in it ([gates in CI](gates-in-ci.md)).
+  install their tools in it ([gates in CI](gates-in-ci.md)). In a merge
+  train's pipeline, it is workline's only job; a merged results pipeline
+  runs them all ([a merge train](merge-queue.md#gitlab-a-merge-train)).
 - **The reviewer's lenses that only warn** read apart from the verdict:
   `workline:judge` asks those that block (`--warn-apart`; without
   `WORKLINE_GITLAB_TOKEN`, every lens, said in its log and summary);

@@ -99,6 +99,38 @@ func TestGitHubGuarded(t *testing.T) {
 	}
 }
 
+// A merge queue's group takes the yes the head queued holds (ADR-0050):
+// the App's own status on it, the newest first; one set by anyone else is
+// filtered out by the query, as GitHub's own filter would.
+func TestGitHubAcceptedOn(t *testing.T) {
+	bin := t.TempDir()
+	log := filepath.Join(bin, "calls")
+	script := "#!/bin/sh\necho \"$*\" >> " + log + "\ncase \"$*\" in\n*commits/c0ffee/statuses*) printf '%s\\n' \"$STATUSES\" ;;\n*) exit 1 ;;\nesac\n"
+	if err := os.WriteFile(filepath.Join(bin, "gh"), []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+	t.Setenv("WORKLINE_APP", "workline-app")
+	g := &github{repo: t.TempDir()}
+	for _, c := range []struct {
+		statuses string
+		yes      bool
+		why      string
+	}{
+		{`{"state":"success","description":"accepted by dana"}`, true, ""},
+		{"{\"state\":\"failure\",\"description\":\"pushed after the yes\"}\n{\"state\":\"success\",\"description\":\"accepted by dana\"}", false, "pushed after the yes"},
+		{"", false, ""},
+	} {
+		os.Remove(log)
+		t.Setenv("STATUSES", c.statuses)
+		yes, why, err := g.AcceptedOn("c0ffee")
+		calls, _ := os.ReadFile(log)
+		if err != nil || yes != c.yes || why != c.why || !strings.Contains(string(calls), `"workline/accepted" and .creator.login == "workline-app[bot]"`) {
+			t.Errorf("statuses %q: %v %q, %v; want %v %q; calls:\n%s", c.statuses, yes, why, err, c.yes, c.why, calls)
+		}
+	}
+}
+
 // GitHub turns no auto-merge on for a pull request it could merge now, a
 // check it does not require still running ("unstable status", as on
 // workline#341): it is merged at once, at the head checked.

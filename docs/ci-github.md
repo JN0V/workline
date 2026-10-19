@@ -1,6 +1,6 @@
 ---
 sources: [ci/github, .github/workflows/workline.yml, .github/workflows/workline-apply.yml, .github/workflows/workline-gardening.yml, .github/workflows/workline-sample.yml, .github/actions/engine/action.yml, .github/workflows/release.yml, .github/workflows/release-please.yml, release-please-config.json, .goreleaser.yaml, cmd/workline]
-checked: 5193cf0b
+checked: 29e55a0b
 judged: 220b6dc
 verified: agent:claude-code
 reader: fe1505d43360
@@ -66,7 +66,7 @@ write run the default branch's workflow, never a pull request's own
        into people's pull requests in conflict only on workline's lines
        ([more](../roles/documentalist/docs/follow.md));
      - with the [merge policy](merge-policy.md), `verdict` and `follow` run
-       after `judge`;
+       after `judge`, and `queue` after a merge queue's group;
      - rename `main` in its `push:` for another default branch.
    - [workline-merge.yml](../ci/github/workline-merge.yml), with the merge
      policy: `follow` on a label.
@@ -93,7 +93,8 @@ write run the default branch's workflow, never a pull request's own
    check required (workline.yml's verdict). The review is on the pull
    request ([ADR-0011](adr/0011-the-review-is-on-the-merge-request-not-the-push.md)):
    an agent never merges. With the merge policy, `workline/accepted` from
-   the App too.
+   the App too. A merge queue, on an organisation's repository: "Require
+   merge queue" beside them ([a merge queue](merge-queue.md)).
 5. **A private repository** without GitHub Advanced Security: remove the
    `upload-sarif` step of workline.yml, code scanning being paid there.
 
@@ -113,6 +114,10 @@ and `apply`, with the App, commits the fix to its branch,
   pending until it is ready; opened ready or marked ready, the reviewer
   reads every lens once, on the whole change
   ([more](../roles/reviewer/docs/ready.md)).
+- On a merge queue's group (`merge_group`), `gates` runs the gates on
+  the merged result and `judge` gives their verdict: no agent, nothing
+  applied; with the merge policy, `queue` sets the App's yes on the
+  group's commit ([a merge queue](merge-queue.md)).
 - **One `judge` per pull request at a time** (`concurrency`): a push
   cancels the run still on the head before; the newer run reviews its
   commits too, and `apply`, `verdict`, `follow` and the fork's comment skip
@@ -175,6 +180,7 @@ workline's .github/workflows/ are the templates, but for the engine:
   jobs after take it, nothing to set up nor build. Taken or built, it
   must name the commit checked out, unmodified, or the job fails. A pull
   request's runs keep theirs in its own cache, which `main`'s never read;
+- no `merge_group`: a user's repository has no merge queue;
 - a project never runs, in a commit's checks, the pin that commit ships: a
   pull request moving the templates to a version not yet tagged would
   download nothing, as on each release from v0.2.0 to v0.2.3

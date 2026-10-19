@@ -1,0 +1,7 @@
+case: cli/merge-group-needs-its-head
+about: "`follow --merge-group` sets a yes on the group's commit, which --head names: one without the other is misuse, 64."
+given: {repo: basic}
+run: {cli: [follow, --merge-group, gh-readonly-queue/main/pr-7-abc]}
+expect:
+  exit: 64
+  stderr: ["--merge-group and --head go together"]

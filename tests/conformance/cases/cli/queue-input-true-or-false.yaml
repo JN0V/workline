@@ -1,0 +1,7 @@
+case: cli/queue-input-true-or-false
+about: "The queue's input says a merge queue's or train's run, true, or not, false: any other value is misuse, 64, never a run of the whole line taken for the queue's."
+given: {repo: basic}
+run: {cli: [route, merge-request, --input, queue=yes]}
+expect:
+  exit: 64
+  stderr: ["--input queue=yes: true or false"]
