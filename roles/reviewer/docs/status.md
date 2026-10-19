@@ -112,7 +112,8 @@ its measure in
   [after ready](ready.md#after-ready-only-what-is-new),
   [judged once](once.md)): `after-ready-*`, `commits-*`,
   `finding-judged-once-not-judged-again`,
-  `finding-judged-again-once-its-file-changes`.
+  `finding-judged-again-once-its-file-changes`; a push and a merge of
+  main after ready tried on [#534](https://github.com/JN0V/workline/pull/534).
 - **Lenses as parts**, answering findings only; an answer that does not
   read asked again once: `never-approves-nor-patches`,
   `lens-failed-not-clean`, `lens-answer-asked-again-once`.
