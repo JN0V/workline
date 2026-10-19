@@ -101,7 +101,9 @@ its measure in
   [ready](ready.md)): `no-lens-on-a-draft`,
   `draft-with-no-agent-waits-for-a-person`,
   `every-lens-once-when-a-draft-no-lens-read-is-marked-ready`,
-  `warn-apart-no-lens-on-a-draft`, `routing/draft-line-asks-no-agent`.
+  `warn-apart-no-lens-on-a-draft`, `routing/draft-line-asks-no-agent`;
+  a draft pushed, then marked ready, tried on
+  [#533](https://github.com/JN0V/workline/pull/533).
 - **Lenses as parts**, answering findings only; an answer that does not
   read asked again once: `never-approves-nor-patches`,
   `lens-failed-not-clean`, `lens-answer-asked-again-once`.
@@ -216,7 +218,7 @@ its measure in
 4. **The developer's loop**: a handoff to the developer, five rounds, then
    a person. Waits for the developer role, after inspector and security
    ([#117](https://github.com/JN0V/workline/issues/117)).
-5. **Tries on real use**: a draft marked ready, a run on ready a rule
+5. **Tries on real use**: a run on ready a rule
    held, GitLab (the job token reading the notes, the next pipeline), a
    block standing on a forge, an issue outside the change written by a
    real agent, a change read in parts; every lens on ready tried on
