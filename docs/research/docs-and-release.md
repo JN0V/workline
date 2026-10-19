@@ -17,6 +17,14 @@ per document, or deduplicates.
 - The user's existing checks: `tools/forbidden-terms`, `tools/git-identity-guard`.
 - [paepckehh/omc](https://github.com/paepckehh/omc) (Go): the LLM writes the message, a human
   signs and pushes.
+- **Codes in subjects, measured** (2026-10-19, the committer with no agent,
+  the role's lists alone, over the 300 latest commits of a firmware
+  library): 116 refused. 59 for a code with a dash, all internal (BUG-41,
+  OBS-1, SEC-4, TEST-7, CI-15…, 48 codes). 14 for a code with no dash, all
+  public chip names: ESP32 (7), ESP8266 (7). Its 681 commits also hold no-dash
+  internal codes (19: R14–R26, M10–M19, C21), so the pattern stays;
+  the two chips join the role's list, and nothing else
+  ([#528](https://github.com/JN0V/workline/pull/528)).
 
 ## Release manager
 

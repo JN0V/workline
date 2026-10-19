@@ -43,7 +43,9 @@ The global hook still hands over to the hooks installed before workline.
 ## Settings
 
 Under `roles: {committer: {settings: …}}` in `.workline/config.yaml`
-([config reference](../../docs/config.md)); defaults from role.yaml:
+([config reference](../../docs/config.md)); defaults from role.yaml. The
+last three, also in [your own config](../../docs/config.md#your-own-config),
+a list there adding to the project's:
 
 | Key | Default | |
 |---|---|---|
@@ -52,11 +54,11 @@ Under `roles: {committer: {settings: …}}` in `.workline/config.yaml`
 | `types` | `feat fix docs test refactor perf build ci chore revert` | allowed types |
 | `internal-codes` | `\b[A-Z]{1,4}(-NEW)?-[0-9]+\b` | codes refused in the subject |
 | `internal-codes-maybe` | `\b[A-Za-z]{1,3}[0-9]{2,}\b` | codes with no dash, judged |
-| `internal-codes-allow` | `UTF-8`, `SHA-256`, `RFC-…`, `CVE-…`, `v1`… | standard names that look like codes |
 | `allowed-identities` | `[]` | author addresses allowed, as patterns; empty with no user list: not checked |
 | `forge-identities` | `[]` | addresses the forge commits with, written whole: allowed, never turning the check on alone |
 | `rewrite` | `false` | an agent rewrites a refused message at a commit ([below](#rewrite-the-agent-opt-in)) |
 | `ai-max-seconds` | `30` | the rewrite's time, every call together: past it, refused with the reasons |
+| `internal-codes-allow` | `UTF-8`, `SHA-256`, `RFC-…`, `v1`, the `ESP32` and `ESP8266` chips… | public names that look like codes |
 
 `enforce: {<rule>: warn}` (or `off`) beside `settings` softens one rule.
 
@@ -66,8 +68,7 @@ Under `roles: {committer: {settings: …}}` in `.workline/config.yaml`
 model, effort low, per refused message, and one more of a stronger model if
 the rewrite is refused (`promote-after: 1`), within `ai-max-seconds`.
 **Status**: [built](../../docs/adr/0036-a-roles-status-is-earned-by-written-criteria.md),
-used daily on workline itself since 2026-09;
-[where it stands](docs/status.md); tried with Claude below.
+used daily here since 2026-09 ([where it stands](docs/status.md)).
 
 ## Check (`pre`, no AI)
 
@@ -82,10 +83,11 @@ and `pre-push`, every commit of the range given as `--input range=<base>..<head>
 | `subject-length` | a subject over `subject-max` characters (72) |
 | `body-length` | a body over `body-max-lines` lines (12), not counting comments, blank lines and trailers |
 | `internal-code` | a reference that means nothing outside the project (`AC-3`) in the subject; it belongs in a trailer (`Refs: AC-3`) |
-| `possible-internal-code` | a code with no dash (`F207`), as often a public name (`ESP32`): the agent judges it |
+| `possible-internal-code` | a code with no dash (`F207`), as often a public name (`nRF52`): the agent judges it |
 
-- `internal-codes-allow` lists standard identifiers that look like an
-  internal code (`SHA-256`, `RFC-1234`); the [reviewer](../reviewer/README.md)
+- `internal-codes-allow` lists public names that look like an internal
+  code (`SHA-256`, `RFC-1234`); a refusal gives the line that lets one
+  through, yours or the project's. The [reviewer](../reviewer/README.md)
   reads the same lists in the comments a change adds.
 - `internal-codes-maybe` holds the patterns of codes with no dash. The
   agent may keep one; without AI it blocks; on commits already made, it is
@@ -151,9 +153,9 @@ An author or committer address outside the allow list blocks (`identity`).
   the hook asks no agent, even one you set. It refuses in about a second,
   with the reasons, keeps your message in the file git named, and prints
   `git commit -e -F <that file>` to take it up again. The same without AI.
-- **`rewrite: true`** turns it on: a refused message goes to the agent with
-  the findings and the staged diff. It proposes one `commit-message`, or a
-  `note` when the diff mixes unrelated changes and the commit should be split.
+- **`rewrite: true`**, the project's or yours, turns it on, unless the
+  project sets `ai: none`: the agent gets the findings and the staged diff,
+  and proposes one `commit-message`, or a `note` to split the commit.
 - **30 s at most**: the hook says which agent rewrites, and how long at
   most, before it starts. Past `ai-max-seconds`, every call and retry
   together, the message is refused with its reasons, and kept.
@@ -188,11 +190,10 @@ prints the message committed, since it is no longer the one you wrote.
 ## Tried for real
 
 - **The rewrite**, 2026-09-24: four messages of this repository the hook
-  had refused, replayed with each commit's own diff and Claude (haiku).
-  Until the instruction asked to keep the author's words, rewrites traded
-  precise words for vague ones ("specify" became "test"). After, twice in a
-  row, every rewrite kept the type, the scope and the words, and only cut;
-  one took a second attempt, the first being 73 characters.
+  had refused, replayed with their diff and Claude (haiku). Until the
+  instruction asked to keep the author's words, rewrites traded precise
+  words for vague ones ("specify" became "test"); after, twice in a row,
+  each kept the type, the scope and the words, and only cut.
 - **The hooks**, 2026-10-06: a copy of a real repository with its own
   `core.hooksPath`, no agent. doctor said `hooks-bypassed` and printed the
   line to add, or the `git config --local --unset core.hooksPath` to run;

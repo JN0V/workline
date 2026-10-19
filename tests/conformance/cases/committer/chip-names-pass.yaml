@@ -1,0 +1,7 @@
+case: committer/chip-names-pass
+about: "The ESP32 and ESP8266 chips are public names, in the role's own list: the only ones among the codes with no dash of a firmware library's 300 latest commits. Without an agent, a subject naming them passes."
+given: {repo: basic}
+run: {role: committer, event: commit-msg, input: {message: "fix(core): read the flash size on the ESP32 and the esp8266"}, ai: none}
+expect:
+  status: pass
+  no-findings: [{rule: possible-internal-code, where: subject}]

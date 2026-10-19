@@ -56,6 +56,12 @@ its evaluation in
   `hook-refuses-and-keeps-the-message`; turned on, said before it starts,
   ended past `ai-max-seconds`: `hook-says-the-rewrite-before-it-starts`,
   `rewrite-ends-past-its-seconds`, `rewrite-retry-within-its-seconds`.
+- **A person's own settings**: the rewrite and its wait, held by a
+  project's `ai: none`; names added to the project's list; any other said:
+  `person-*`.
+- **A code refused names the line that lets it through**, the person's and
+  the project's: `refusal-gives-the-allow-line`; the ESP32 and ESP8266
+  chips in the role's list: `chip-names-pass`.
 - **The agent's rewrite**, keeping the type, the scope, the trailers and
   the author's words: `agent-rewrites-message`, `rewrite-*`,
   `public-name-kept-by-the-agent`; marked by workline's two trailers,

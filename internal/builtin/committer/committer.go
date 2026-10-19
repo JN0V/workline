@@ -10,11 +10,13 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 	"unicode/utf8"
 
 	"github.com/JN0V/workline/internal/gitrange"
 	"github.com/JN0V/workline/internal/intent"
+	"github.com/JN0V/workline/internal/role"
 	"github.com/JN0V/workline/internal/verdict"
 	"go.yaml.in/yaml/v3"
 )
@@ -34,6 +36,11 @@ type Settings struct {
 	Rewrite bool `json:"rewrite"`
 	// AIMaxSeconds is how long the rewrite may take; the engine holds it.
 	AIMaxSeconds int `json:"ai-max-seconds"`
+
+	// The lists InternalCodesAllow is made of, for a refusal to give the
+	// line that lets a code through: the project's (the role's, when the
+	// project sets none), and what the person's own config adds to it.
+	projectAllow, personalAllow []string
 }
 
 // Check returns what is wrong with a commit message. An empty result means it passes.
@@ -66,20 +73,77 @@ func Check(message string, s Settings) ([]verdict.Finding, error) {
 		return nil, err
 	}
 	for _, c := range codes {
-		add("internal-code", fmt.Sprintf("%q means nothing outside the project; say what changed, and put the reference in a trailer (Refs: %s)", c, c))
+		add("internal-code", fmt.Sprintf("%q means nothing outside the project; say what changed, and put the reference in a trailer (Refs: %s). If it names something public, a standard or a record anyone can read, %s", c, c, letThrough(c, s)))
 	}
 	maybe, err := possibleCodes(subject, s)
 	if err != nil {
 		return nil, err
 	}
 	for _, c := range maybe {
-		add("possible-internal-code", fmt.Sprintf("%q may be a reference internal to the project (a ticket, a function, a requirement): if so, say what changed and put it in a trailer (Refs: %s); if it is a public name, a chip or a standard, keep it", c, c))
+		add("possible-internal-code", fmt.Sprintf("%q may be a reference internal to the project (a ticket, a function, a requirement): if so, say what changed and put it in a trailer (Refs: %s). If it is a public name, a chip or a standard, keep it and %s", c, c, letThrough(c, s)))
 	}
 	return out, nil
 }
 
+// letThrough is how a code that is a public name gets past the check: the
+// line to write in the person's own config, where a list adds to the
+// project's, and in the project's, where a list replaces the role's whole.
+func letThrough(code string, s Settings) string {
+	project := s.projectAllow
+	if project == nil {
+		project = s.InternalCodesAllow
+	}
+	return fmt.Sprintf("let it through, for you, in %s under roles.committer.settings: `internal-codes-allow: %s`; for everyone, in .workline/config.yaml under roles.committer.settings: `internal-codes-allow: %s`",
+		homeShort(role.PersonalConfig()), flowList(append(slices.Clone(s.personalAllow), code)), flowList(append(slices.Clone(project), code)))
+}
+
+// allowLists finds what InternalCodesAllow is made of, for letThrough: the
+// role's list as the project sets it, and the person's own.
+func (s *Settings) allowLists(repo string) {
+	if r, err := role.Load(os.Getenv("WORKLINE_ROLES_DIR"), "committer"); err == nil {
+		if cfg, err := role.LoadProjectConfig(repo); err == nil {
+			s.projectAllow = settingList(r.MergedSettings(cfg)["internal-codes-allow"])
+		}
+	}
+	if p, err := role.PersonalSettings("committer"); err == nil {
+		s.personalAllow = settingList(p["internal-codes-allow"])
+	}
+}
+
+// settingList is a setting's list, as strings.
+func settingList(v any) []string {
+	list, _ := v.([]any)
+	out := []string{}
+	for _, x := range list {
+		out = append(out, fmt.Sprint(x))
+	}
+	return out
+}
+
+// flowList writes a list as YAML on one line, quoting what YAML would not
+// read back as the same text.
+func flowList(items []string) string {
+	plain := regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]*$`)
+	out := make([]string, len(items))
+	for i, it := range items {
+		out[i] = it
+		if !plain.MatchString(it) {
+			out[i] = "'" + strings.ReplaceAll(it, "'", "''") + "'"
+		}
+	}
+	return "[" + strings.Join(out, ", ") + "]"
+}
+
+// homeShort writes a path under the home folder from ~, as a person types it.
+func homeShort(path string) string {
+	if home, err := os.UserHomeDir(); err == nil && home != "" && strings.HasPrefix(path, home+string(filepath.Separator)) {
+		return "~" + path[len(home):]
+	}
+	return path
+}
+
 // possibleCodes finds what looks like a code with no dash, F207: often
-// internal, as often a public name, ESP32. Which one needs judgement.
+// internal, as often a public name, nRF52. Which one needs judgement.
 func possibleCodes(subject string, s Settings) ([]string, error) {
 	codes, err := internalCodes(subject, Settings{InternalCodes: s.InternalCodesMaybe, InternalCodesAllow: s.InternalCodesAllow})
 	var out []string
@@ -178,6 +242,7 @@ func Pre(runDir, repo string) int {
 	if err != nil {
 		return fail(err)
 	}
+	s.allowLists(repo)
 	findings, err := Check(msg, s)
 	if err != nil {
 		return fail(err)
@@ -483,6 +548,7 @@ func checkRange(runDir, repo, rng string) int {
 	if err := json.Unmarshal(data, &s); err != nil {
 		return fail(err)
 	}
+	s.allowLists(repo)
 	out, err := exec.Command("git", append([]string{"-C", repo, "log", "--format=%h%x1f%B%x1e"}, gitrange.Args(rng)...)...).Output()
 	if err != nil {
 		return fail(fmt.Errorf("cannot read the commits of %s: %v", rng, err))
