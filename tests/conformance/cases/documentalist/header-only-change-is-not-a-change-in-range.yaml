@@ -1,5 +1,5 @@
 case: documentalist/header-only-change-is-not-a-change-in-range
-about: "A commit pushed that changes only a doc's header — its sources declared, its `checked` moved — does not touch what the docs following it say: a doc made suspect by an earlier commit is still left for gardening, not taken as made suspect by the push (`workline init` adopting a repository, tried on a solo repository)."
+about: "A commit of a merge request that changes only a doc's header — its sources declared, its `checked` moved — does not touch what the docs following it say: a doc made suspect by an earlier commit is still left for gardening, not taken as made suspect by its commits (`workline init` adopting a repository, tried on a solo repository)."
 given:
   repo: documented
   setup:
@@ -7,7 +7,7 @@ given:
     - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C/\" docs/tech/auth.md && git commit -qam 'docs: confirm the auth doc'"
   # The product doc follows the technical one at once, as a README follows a guide.
   config: {roles: {documentalist: {settings: {propagation: [{from: code, to: "docs/tech/**", when: now}, {from: "docs/tech/**", to: "docs/product/**", when: now}]}}}}
-run: {role: documentalist, event: pre-push, input: {range: "HEAD~1..HEAD"}, ai: "fake:doc-fixed"}
+run: {role: documentalist, event: merge-request, input: {range: "HEAD~1..HEAD"}, ai: "fake:doc-fixed"}
 expect:
   status: pass
   agent-calls: 0
