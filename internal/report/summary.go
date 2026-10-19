@@ -36,6 +36,9 @@ type Summary struct {
 	// Issues and Waiting link the issues a backlog's findings name, and the
 	// saved filter of what waits on a person (engine.Result's).
 	Issues, Waiting string
+	// Times: a line's seconds, each step's after the total; Over, what it
+	// says when its moment went over its budget (ADR-0050). Empty, nothing.
+	Times, Over string
 }
 
 // Step is one step of a line: its verdict, and the findings it made.
@@ -53,7 +56,7 @@ type stepCall struct {
 // LineSummary is the summary of a line's run: each step with its findings,
 // then the line's own (a routing that could not run).
 func LineSummary(title string, r *line.Result) Summary {
-	s := Summary{Title: title, Status: r.Status, Text: r.Summary, Pending: len(r.Pending)}
+	s := Summary{Title: title, Status: r.Status, Text: r.Summary, Pending: len(r.Pending), Times: r.Times(), Over: r.OverBudget()}
 	n := 0
 	for _, st := range r.Steps {
 		step := Step{Name: st.Name, Status: st.Status}
@@ -141,6 +144,12 @@ func (s Summary) Markdown() string {
 		s.findings(&b, "  ", st.Findings, st.ToApply)
 	}
 	s.findings(&b, "", s.Findings, s.Pending > 0)
+	if s.Times != "" {
+		b.WriteString("- **seconds**: " + s.Times + "\n")
+	}
+	if s.Over != "" {
+		b.WriteString("- **over its budget**: " + strings.Replace(s.Over, "(ADR-0050)", "([ADR-0050]("+budgets+"))", 1) + "\n")
+	}
 	for _, r := range s.Reads {
 		fmt.Fprintf(&b, "- read, %s: %s\n", r[0], r[1])
 	}
@@ -177,6 +186,9 @@ func (s Summary) Markdown() string {
 	b.WriteString("\n")
 	return b.String()
 }
+
+// budgets is where each moment's wait budget is decided.
+const budgets = "https://github.com/JN0V/workline/blob/main/docs/adr/0050-each-act-has-its-moment-and-a-wait-budget.md#1-a-wait-budget-per-moment"
 
 // A group of a backlog's findings, one line an issue under its heading
 // (ADR-0038): what was done or will be, what waits on a person.

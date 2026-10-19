@@ -201,6 +201,84 @@ func TestPushCountsTheDocs(t *testing.T) {
 	}
 }
 
+// The push says its seconds, each step's after the total, every range's
+// steps together; over its budget (5 s by default, ADR-0050), it says so
+// once, naming the step that took the most, and goes on: a budget never
+// blocks. Within it, nothing more. A push a step stops says them before
+// it stops, two branches pushed at once their steps together.
+func TestPushSaysItsSeconds(t *testing.T) {
+	for _, c := range []struct {
+		name, routing, gates, message string
+		branch, stopped               bool
+		said, unsaid                  []string
+	}{
+		{name: "within its budget", routing: "{events: {pre-push: [committer, documentalist]}, budgets: {push: 600}}",
+			said: []string{"workline: ", " s in all — committer ", " s, documentalist "}, unsaid: []string{"over its budget"}},
+		{name: "over its budget", routing: "{events: {pre-push: [\"gate:slow\"]}, budgets: {push: 1}}",
+			gates: "gates: {slow: {checks: [{id: wait, run: \"sleep 1.5\", output: exit}]}}",
+			said:  []string{" s in all — gate:slow ", "workline: over its budget: the push took ", ", over its budget of 1 s (ADR-0050); the step that took the most: gate:slow, "}},
+		{name: "stopped by a step", routing: "{events: {pre-push: [committer]}, budgets: {push: 600}}", message: "AC-3 fix the thing", stopped: true,
+			said: []string{" s in all — committer ", "s\nworkline: stopped at committer (block)\npush stopped"}},
+		{name: "two branches at once", routing: "{events: {pre-push: [committer]}, budgets: {push: 600}}", branch: true,
+			said: []string{" s in all — committer ", " s, committer "}},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			work := t.TempDir()
+			env := append(hermeticEnv(), "XDG_CONFIG_HOME="+filepath.Join(work, "config"), "GIT_CONFIG_GLOBAL="+filepath.Join(work, "gitconfig"))
+			os.WriteFile(filepath.Join(work, "gitconfig"), nil, 0o644)
+			remote, repo := filepath.Join(work, "remote.git"), filepath.Join(work, "repo")
+			if out, err := exec.Command("git", "init", "-q", "--bare", remote).CombinedOutput(); err != nil {
+				t.Fatal(string(out))
+			}
+			config := "routing: " + c.routing + "\n" + c.gates + "\n"
+			if err := build(repo, "documented", []string{
+				"mkdir -p .workline && printf '%s' '" + config + "' > .workline/config.yaml && git add .workline && git commit -qm 'chore: check before a push'",
+				"git remote add origin " + remote, "git push -q origin main",
+				"sed -i 's/3600/7200/' src/auth/token.go && git commit -qam '" + message(c.message) + "'",
+				"git checkout -qb side && echo side > side.txt && git add side.txt && git commit -qm 'feat: add a side file' && git checkout -q main",
+			}, env); err != nil {
+				t.Fatal(err)
+			}
+			run := func(args ...string) (string, error) {
+				cmd := exec.Command(args[0], args[1:]...)
+				cmd.Dir, cmd.Env = repo, env
+				cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
+				out, err := cmd.CombinedOutput()
+				return string(out), err
+			}
+			if out, err := run(engineBin, "hooks", "install", "--global"); err != nil {
+				t.Fatal(out)
+			}
+			args := []string{"git", "push", "origin", "main"}
+			if c.branch {
+				args = append(args, "side")
+			}
+			out, err := run(args...)
+			if (err != nil) != c.stopped {
+				t.Fatalf("stopped: %v, want %v:\n%s", err != nil, c.stopped, out)
+			}
+			for _, s := range c.said {
+				if !strings.Contains(out, s) {
+					t.Errorf("the push does not say %q:\n%s", s, out)
+				}
+			}
+			for _, s := range c.unsaid {
+				if strings.Contains(out, s) {
+					t.Errorf("the push says %q:\n%s", s, out)
+				}
+			}
+		})
+	}
+}
+
+// message is a commit's message: the one given, else a good one.
+func message(m string) string {
+	if m == "" {
+		return "feat(auth): keep users signed in for two hours"
+	}
+	return m
+}
+
 // On a repository pushed to main with no merge request (ADR-0010),
 // `workline docs` judges from where the docs were last judged — a ref it
 // moves, refs/workline/docs-judged — to HEAD, pushed or not. The ref moves

@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/role/config.go, internal/engine/engine.go, internal/hooks, internal/agent/claude.go, internal/agent/command.go]
-checked: 29e55a0b
+checked: b4f67a9d
 judged: b5899f5
 verified: agent:claude-code
 ---
@@ -138,10 +138,17 @@ Each in detail: [the commands](commands.md), and
     too.
   - The product owner's findings grouped, one line an issue linked to
     its page ([what it writes](../roles/product-owner/docs/outputs.md#in-the-ci-jobs-summary)).
+  - A line's seconds, after the steps
+    ([ADR-0050](adr/0050-each-act-has-its-moment-and-a-wait-budget.md#1-a-wait-budget-per-moment)):
+    `66 s in all — committer 0.5 s, documentalist 0.8 s, reviewer 64 s
+    (lenses 40 s, judges 20 s)`; a gate read from its job, `(its job)`.
+  - Over its moment's budget, one line more, naming the step that took
+    the most; never a block ([the budgets](spec/routing.md#each-steps-seconds-a-moments-budget)).
 - **`--json`**: status, summary, findings, the agent's notes, each agent
   call (agent, tier, effort, the exact model that answered, tokens in,
   cached and out, cost, seconds), and for a line its steps and pending
-  runs.
+  runs, each step's `seconds`, the line's, and its `moment`: `name`,
+  `budget`, `seconds`, `over`, `step`.
 
 ## Another agent
 

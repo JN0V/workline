@@ -1,0 +1,14 @@
+case: gates/verdict-counts-the-gates-job-s-seconds
+about: "The line judging the head reads the gates' verdicts from their job, and their seconds: the verdict waited for that job, so they count in the line's (ADR-0050). A project's 1 s for the verdict, a gate taking 1.5 s in its job: the verdict went over its budget, the gate named, its seconds said as its job's."
+given:
+  repo: basic
+  setup: ["git checkout -qb change && echo x >> README.md && git commit -qam 'docs: say x'"]
+  config:
+    routing: {events: {merge-request: ["gate:merge"]}, budgets: {verdict: 1}}
+    gates: {merge: {checks: [{id: slow, run: "sleep 1.5", output: exit}]}}
+run: {route: merge-request, input: {range: main..change}, gates-job: {}, summary: true}
+expect:
+  status: pass
+  steps: ["gate:merge"]
+  moment: {name: verdict, budget: 1, over: true, step: "gate:merge"}
+  summary-file: ["**pass** — merge-request: 1 steps passed\n", " s in all — gate:merge ", " s (its job)", "- **over its budget**: the head's verdict took ", "; the step that took the most: gate:merge, "]

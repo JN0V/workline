@@ -1,0 +1,14 @@
+case: gates/first-result-over-its-budget
+about: "The gates alone are a merge request's first result, 1 min by default (ADR-0050). A project's 1 s, a gate taking 1.5 s: their summary says each gate's seconds, then that the first result went over its budget, naming the gate. The gate's verdict stands as it is."
+given:
+  repo: basic
+  setup: ["git checkout -qb change && echo x >> README.md && git commit -qam 'docs: say x'"]
+  config:
+    routing: {events: {merge-request: ["gate:merge"]}, budgets: {first-result: 1}}
+    gates: {merge: {checks: [{id: slow, run: "sleep 1.5", output: exit}]}}
+run: {route: merge-request, gates-only: true, input: {range: main..change}, summary: true}
+expect:
+  status: pass
+  steps: ["gate:merge"]
+  moment: {name: first-result, budget: 1, over: true, step: "gate:merge"}
+  summary-file: ["- **seconds**: ", " s in all — gate:merge ", "- **over its budget**: the first result, the gates alone, took ", "; the step that took the most: gate:merge, "]

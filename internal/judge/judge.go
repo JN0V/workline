@@ -9,10 +9,12 @@ package judge
 import (
 	"errors"
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/JN0V/workline/internal/agent"
 	"github.com/JN0V/workline/internal/role"
@@ -152,8 +154,10 @@ func ask(spec string, judgeRole *role.Role, question, material string, reading b
 	if err := writeTask(dir, question, material); err != nil {
 		return Answer{}, err
 	}
+	start := time.Now()
 	call, err := ag.Propose(agent.Request{RunDir: dir, Repo: dir, Role: judgeRole})
 	call.Task = "judge"
+	call.Seconds = math.Round(time.Since(start).Seconds()*10) / 10 // what a judge took, in the run's summary (ADR-0050)
 	a := Answer{Model: call.Model, Call: call}
 	if errors.Is(err, agent.ErrInvalidOutput) {
 		// A note left unquoted is no YAML ("- note: no: …"), yet it says its verdict.
