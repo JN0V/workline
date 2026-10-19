@@ -228,6 +228,9 @@ func prepare(runDir, repo string, s Settings) int {
 	if side != "" && side != warnApart && side != warnOnly {
 		return fail(fmt.Errorf("input warn %q: %s, the verdict's run, or %s, the run apart", side, warnApart, warnOnly))
 	}
+	if side == warnOnly && !s.warns() {
+		return final(runDir, Review{Status: verdict.Pass, Summary: "every lens blocks (ai-findings): nothing reads apart from the verdict", Warn: side})
+	}
 	rng := input(runDir, "range")
 	if rng == "" {
 		rng = s.Base + "..HEAD"
@@ -489,6 +492,17 @@ func (st *state) side(s Settings) []string {
 		st.Alone, other = false, append(other, alone)
 	}
 	return other
+}
+
+// warns says whether a lens of the project only warns, or the diff-alone
+// facet, when on: what the run apart has to read at all.
+func (s Settings) warns() bool {
+	for _, l := range s.Lenses {
+		if !s.AIFindings.Blocks(l) {
+			return true
+		}
+	}
+	return s.DiffAlone && !s.AIFindings.Blocks(alone)
 }
 
 // otherSide settles a run whose push takes only the other run's lenses
