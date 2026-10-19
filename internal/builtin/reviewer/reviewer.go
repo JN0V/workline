@@ -372,7 +372,7 @@ func prepare(runDir, repo string, s Settings) int {
 	// Of the lenses this push takes, in turn or every one on ready, each
 	// run asks those of its side (ADR-0050); the other's are its to ask.
 	if other := st.side(s); len(st.Lenses) == 0 && !st.Alone {
-		return otherSide(runDir, repo, s, st, other)
+		return otherSide(runDir, repo, s, st, other, sp.New)
 	}
 	st.Together = s.LensesTogether && len(st.Lenses) > 1
 	why, err := ask(runDir, repo, s, &st, files)
@@ -495,14 +495,14 @@ func (st *state) side(s Settings) []string {
 // (ADR-0050): nobody asked here, the commits recorded and the turn moved
 // on, as the other run moves its own; on ready, every lens of this side
 // read, none being asked. The summary comment says where they read.
-func otherSide(runDir, repo string, s Settings, st state, other []string) int {
+func otherSide(runDir, repo string, s Settings, st state, other []string, fresh int) int {
 	why := fmt.Sprintf("no lens that blocks on this push: %s, which only %s, %s apart from the verdict, in %s own comment", strings.Join(other, ", "),
 		plural(len(other), "warns", "warn"), plural(len(other), "reads", "read"), plural(len(other), "its", "their"))
 	if st.Warn == warnOnly {
 		why = fmt.Sprintf("no lens that warns on this push: %s, which %s, %s it on the verdict's run", strings.Join(other, ", "),
 			plural(len(other), "blocks", "block"), plural(len(other), "reads", "read"))
 	}
-	v := review(st, nil, fmt.Sprintf("%s; the %d new %s recorded", why, len(st.Commits), plural(len(st.Commits), "commit", "commits")))
+	v := review(st, nil, fmt.Sprintf("%s; the %d new %s recorded", why, fresh, plural(fresh, "commit", "commits")))
 	v.Complete = true
 	v.Record = st.Record.add(st.Commits, st.Patches)
 	v.Record.Blocks, v.Record.Owed = st.Standing, false
