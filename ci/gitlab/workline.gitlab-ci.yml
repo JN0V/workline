@@ -330,7 +330,7 @@ workline:merge:
   image: $WORKLINE_IMAGE:$WORKLINE_VERSION
   variables: {GIT_DEPTH: 0}         # the whole history, as .workline
   rules:
-    - if: $CI_PIPELINE_SOURCE == "schedule" && $WORKLINE_GITLAB_TOKEN && $WORKLINE_TASK != "sample"
+    - if: $CI_PIPELINE_SOURCE == "schedule" && $WORKLINE_GITLAB_TOKEN && $WORKLINE_TASK != "sample" && $WORKLINE_TASK != "release-docs"
   before_script:
     - *trust
     - workline version
@@ -358,7 +358,7 @@ workline:garden:apply:
   stage: deploy
   needs: [workline:garden:judge]
   rules:                            # also when the judge failed: what passed before a step blocked is applied (#142)
-    - if: $CI_PIPELINE_SOURCE == "schedule" && $WORKLINE_GITLAB_TOKEN && $WORKLINE_TASK != "sample"
+    - if: $CI_PIPELINE_SOURCE == "schedule" && $WORKLINE_GITLAB_TOKEN && $WORKLINE_TASK != "sample" && $WORKLINE_TASK != "release-docs"
       when: always
   script:
     - git config user.name "workline"
@@ -371,6 +371,66 @@ workline:garden:apply:
     # (ADR-0034). Needs the first release after v0.24.0.
     - workline follow --gardening --base "$CI_COMMIT_REF_NAME" --forge gitlab --summary workline-summary.md --summary workline-summary.html || status=$?
     - exit $status
+  after_script: *summary
+  artifacts:
+    when: always
+    paths: [workline-summary.html, workline-summary.md]
+    reports: {annotations: workline-annotations.json}
+    expire_in: 1 week
+
+# The release merge request's docs, at night (ADR-0050; the first release
+# after v0.37.0): another pipeline schedule, every night but the
+# gardening's, which judges the release first, with the variable
+# WORKLINE_TASK=release-docs. On each
+# move of a release tool's merge request (releaser-pleaser's), no agent
+# judges its docs: they are counted and hold the release. This finds that
+# merge request, judges its docs due with the agent on its head, and
+# proposes their fix in a merge request of its own,
+# workline/documentalist/release, the bot's only when the bot alone pushed
+# to the release's branch. With none open, or no doc due, it asks no
+# agent. Play the schedule for the release sooner. A schedule's variables
+# need "Minimum role to use pipeline variables" at Maintainer, as the
+# sample's.
+.workline:release-docs:
+  image: $WORKLINE_IMAGE:$WORKLINE_VERSION
+  variables: {GIT_DEPTH: 0}         # the whole history, as .workline
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule" && $WORKLINE_GITLAB_TOKEN && $WORKLINE_TASK == "release-docs"
+  before_script:
+    - *trust
+    - workline version
+    - git checkout -q -B "$CI_COMMIT_REF_NAME"   # GitLab runs on a detached HEAD
+    - export GITLAB_TOKEN=$WORKLINE_GITLAB_TOKEN  # the open merge requests, read
+
+workline:release-docs:judge:
+  extends: .workline:release-docs
+  stage: test
+  script:
+    - *claude
+    - status=0
+    - workline route release --target merge-request:release --ai "$ai" --no-apply --forge gitlab --summary workline-summary.md --summary workline-summary.html --json > line.json || status=$?
+    - exit $status
+  allow_failure: {exit_codes: [3]}  # an agent out of reach warns: the next night judges
+  after_script: *summary
+  artifacts:
+    when: always
+    paths: [workline-summary.html, workline-summary.md, .workline-runs/, line.json]
+    reports: {annotations: workline-annotations.json}
+    expire_in: 1 day
+
+workline:release-docs:apply:
+  extends: .workline:release-docs
+  stage: deploy
+  needs: [workline:release-docs:judge]
+  rules:                            # also when the judge failed: what it proposed is applied
+    - if: $CI_PIPELINE_SOURCE == "schedule" && $WORKLINE_GITLAB_TOKEN && $WORKLINE_TASK == "release-docs"
+      when: always
+  script:
+    - git config user.name "workline"
+    - git config user.email "workline@noreply.$CI_SERVER_HOST"
+    - git remote set-url origin "https://oauth2:${WORKLINE_GITLAB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"
+    - '[ -s line.json ] || { echo "workline: the release docs judge left nothing to apply"; exit 0; }'
+    - workline apply --line line.json --summary workline-summary.md --summary workline-summary.html
   after_script: *summary
   artifacts:
     when: always
