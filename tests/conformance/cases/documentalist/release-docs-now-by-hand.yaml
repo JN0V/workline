@@ -1,0 +1,31 @@
+case: documentalist/release-docs-now-by-hand
+about: "For the release sooner than the night, a person runs `workline route release --target merge-request:<n>` where an agent may judge: the line checks out the release pull request's head for the run, its docs judged there, the fix proposed in a merge request of its own as at night, then puts the clone back where it was (ADR-0050, §7). The fix goes there with no --push-to-merge-request: patches left in a working tree put back would be lost."
+given:
+  repo: documented
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git tag v1.0.0"
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+    - "git branch release-please--branches--main && echo 'notes' > NOTES.txt && git add NOTES.txt && git commit -qm 'chore: keep notes' && git push -q origin main release-please--branches--main"
+  forge:
+    merge-requests:
+      - id: 1
+        branch: release-please--branches--main
+        base: main
+        labels: []
+        comments: []
+run: {route: release, target: {merge-request: 1}, ai: "fake:doc-fixed"}
+expect:
+  status: block
+  agent-calls: 1
+  findings:
+    - {rule: fixed-elsewhere, where: docs/tech/auth.md, message: "merge request #2"}
+  pushed:
+    workline/documentalist/release: {docs/tech/auth.md: "Access tokens last two hours.", NOTES.txt: "notes"}
+  not-pushed: [release-please--branches--main, main]
+  files:
+    docs/tech/auth.md: {contains: "Access tokens last one hour."}
+    NOTES.txt: {contains: "notes"}
+  forge:
+    merge-requests:
+      - {id: 1, comments: 1, comment-contains: "<!-- workline:doc-judged-at-release"}
+      - {id: 2, branch: workline/documentalist/release, base: main, body-contains: "for the release"}

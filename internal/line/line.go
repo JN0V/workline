@@ -13,6 +13,7 @@ import (
 
 	"github.com/JN0V/workline/internal/agent"
 	"github.com/JN0V/workline/internal/engine"
+	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/gate"
 	"github.com/JN0V/workline/internal/gitrange"
 	"github.com/JN0V/workline/internal/role"
@@ -149,7 +150,34 @@ func RunWith(event string, base engine.Options, gates *Gates) *Result {
 				delete(o.Inputs, WarnInput)
 			}
 			o.Role, o.Event = name, event
+			back := func() {}
+			if holdsRelease(base.RolesDir, name) {
+				switch {
+				// At night, gardening with a forge: first the release's
+				// docs, on its merge request's head; what its fix patches
+				// waits for the gardening after it (ADR-0050, §7).
+				case event == "schedule" && base.OpenMergeRequest:
+					o.Waiting = nightRelease(res, cfg, o, &notPassed)
+				// `release` on a release tool's merge request, a person's
+				// run: on its head, its fix in a merge request of its own.
+				case event == "release" && o.Target != nil && o.Target.Kind == "merge-request":
+					var err error
+					var branch string
+					if back, branch, err = engine.OnReleaseHead(o); err != nil {
+						res.Steps = append(res.Steps, Step{Name: name, Status: verdict.Block})
+						res.Findings = append(res.Findings, verdict.Finding{Rule: "release-head", Where: name, Message: err.Error()})
+						if stopAtFirst {
+							return stopped(res, name, verdict.Block)
+						}
+						notPassed = append(notPassed, fmt.Sprintf("%s (%s)", name, verdict.Block))
+						res.Status = worst(res.Status, verdict.Block)
+						continue
+					}
+					o.PushToMergeRequest = o.PushToMergeRequest || branch != ""
+				}
+			}
 			step, status = runRole(res, cfg, o, 0)
+			back()
 		}
 		if status == verdict.Pass {
 			continue
@@ -174,8 +202,14 @@ func RunWith(event string, base engine.Options, gates *Gates) *Result {
 			res.Summary = fmt.Sprintf("%s: nothing reads apart from the verdict", event)
 		}
 	}
-	if slices.ContainsFunc(res.Steps, func(s Step) bool { return s.Result != nil && s.Result.AIWaits != "" }) {
+	waits := func(why string) bool {
+		return slices.ContainsFunc(res.Steps, func(s Step) bool { return s.Result != nil && s.Result.AIWaits == why })
+	}
+	if waits(engine.AIWaitsReady) {
 		res.Summary += "; a draft: no agent asked, the AI review waits for it to be marked ready"
+	}
+	if waits(engine.AIWaitsNight) {
+		res.Summary += "; a release: no agent asked for its docs, judged at night with the gardening"
 	}
 	if len(res.Pending) > 0 {
 		res.Summary += fmt.Sprintf("; %d runs to apply", len(res.Pending))
@@ -289,6 +323,60 @@ func runGate(repo, name, event, rng string) (*verdict.Verdict, *gate.Added) {
 		return gate.RunNew(repo, name, since)
 	}
 	return gate.Run(repo, name), nil
+}
+
+// holdsRelease says whether the role a step names has release duties (its
+// role.yaml accepts `release`): the documentalist's hold (ADR-0017).
+func holdsRelease(rolesDir, name string) bool {
+	r, err := role.Load(rolesDir, name)
+	return err == nil && r.Accepts("release")
+}
+
+// nightRelease runs, before a role's gardening, its run on the release
+// tool's merge request open into the branch checked out, with its agent
+// (ADR-0050, §7): the docs due for the release judged on that merge
+// request's head, checked out for the run and put back after, their fix
+// proposed in a merge request of its own (ADR-0017). Its step is said
+// apart from the role's: `<role> (release #n)`. The release waiting for
+// its docs is said on its merge request, and holds nothing of the night's
+// line (a warning); anything else that did not pass counts. It returns
+// what the run left to apply, by the task its fix goes to, for the
+// gardening after it to leave alone.
+func nightRelease(res *Result, cfg *routing.Config, o engine.Options, notPassed *[]string) map[string][]string {
+	mr, said, err := engine.OpenRelease(o)
+	res.Findings = append(res.Findings, said...)
+	unread := func(err error) {
+		res.Findings = append(res.Findings, verdict.Finding{Rule: "release-unread", Level: "warn", Where: o.Role,
+			Message: "the release's merge request could not be read, nor its docs judged tonight: " + err.Error()})
+	}
+	if err != nil {
+		unread(err)
+		return nil
+	}
+	if mr == nil {
+		return nil
+	}
+	ro := o
+	ro.Event, ro.Target, ro.Branch = "release", &forge.Target{Kind: "merge-request", ID: mr.ID}, mr.Branch
+	ro.OpenMergeRequest, ro.PushToMergeRequest = false, true
+	back, _, err := engine.OnReleaseHead(ro)
+	if err != nil {
+		unread(err)
+		return nil
+	}
+	at, pending := len(res.Steps), len(res.Pending)
+	_, status := runRole(res, cfg, ro, 0)
+	back()
+	label := fmt.Sprintf("%s (release #%d)", o.Role, mr.ID)
+	res.Steps[at].Name = label
+	if status != verdict.Pass && !engine.ReleaseHeld(res.Steps[at].Result) {
+		*notPassed = append(*notPassed, fmt.Sprintf("%s (%s)", label, status))
+		res.Status = worst(res.Status, status)
+	}
+	if left := res.Pending[pending:]; len(left) > 0 {
+		return map[string][]string{"release": slices.Clone(left)}
+	}
+	return nil
 }
 
 // worst is the verdict of a line whose steps all ran: a block on the work

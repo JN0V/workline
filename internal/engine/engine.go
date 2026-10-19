@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"maps"
 	"math"
 	"os"
 	"os/exec"
@@ -61,12 +62,18 @@ type Options struct {
 	// PushToMergeRequest commits what the patches wrote to the branch of the
 	// merge request the run targets; from a fork, the diff goes in a comment.
 	PushToMergeRequest bool
+	// Waiting are runs an earlier step of the line judged for this role,
+	// by the task of the merge request their patches go to: the release's
+	// fix, judged at night before gardening (ADR-0050, §7). With
+	// OpenMergeRequest, what they patch waits as an open merge request's
+	// change does, never judged again in this run (ADR-0013, amended).
+	Waiting map[string][]string
 
 	// TamperBeforeApply changes the prepared input between propose and apply.
 	// It exists only for the conformance test that proves apply notices.
 	TamperBeforeApply bool
 
-	aiWaits string // why the agent was set aside, "ready" on a draft (DraftInput)
+	aiWaits string // why the agent was set aside: "ready" on a draft (DraftInput), "night" on a release's (AIWaitsNight)
 }
 
 // DraftInput is the input saying a merge request is a draft, `true`, or
@@ -80,6 +87,15 @@ const DraftInput = "draft"
 // AIWaitsReady is what Result.AIWaits and WORKLINE_AI_WAITS hold on a
 // draft: the agent waits for the merge request to be marked ready.
 const AIWaitsReady = "ready"
+
+// AIWaitsNight is what Result.AIWaits and WORKLINE_AI_WAITS hold on a
+// release tool's merge request, for a role holding the release: its agent
+// judges the docs due at night, with the gardening, or when a person runs
+// `workline route release --target merge-request:<n>` (ADR-0050, §7). At
+// each move, only what needs no agent runs, and still holds the release:
+// a doc fix after a person's yes would change the head they accepted
+// (ADR-0042).
+const AIWaitsNight = "night"
 
 // Result is what a run reports.
 type Result struct {
@@ -106,8 +122,9 @@ type Result struct {
 	Issues  string `json:"issues,omitempty"`
 	Waiting string `json:"waiting,omitempty"`
 	// AIWaits is why the run's agent was set aside: "ready", a merge
-	// request still a draft (DraftInput); "" when it had its agent, or
-	// none was set.
+	// request still a draft (DraftInput); "night", a release tool's merge
+	// request, its docs judged at night (AIWaitsNight); "" when it had its
+	// agent, or none was set.
 	AIWaits   string `json:"ai-waits,omitempty"`
 	maxTokens int    // the role's ai-max-tokens: what the run may spend; 0, no cap
 	// maxSeconds is the role's ai-max-seconds: how long the run may wait on
@@ -313,10 +330,11 @@ func proposedTask(runDir string) string {
 // writeWaiting writes in/waiting.yaml: for each of the role's tasks
 // waiting for review, the files its change touches — an open merge
 // request's, from where its branch left this commit to its tip; one an
-// earlier round of this run proposed, the files its patches name. A role
-// holds back what they change (ADR-0013, amended). A branch that cannot
-// be read leaves its task out, said: the role knows it by name only.
-func writeWaiting(repo, runDir, prefix string, open []string, local bool, res *Result) error {
+// earlier round of this run proposed, or an earlier step of the line by
+// task (Options.Waiting), the files its patches name. A role holds back
+// what they change (ADR-0013, amended). A branch that cannot be read
+// leaves its task out, said: the role knows it by name only.
+func writeWaiting(repo, runDir, prefix string, open []string, earlier map[string][]string, local bool, res *Result) error {
 	waiting := map[string][]string{}
 	for _, b := range open {
 		files, err := branchFiles(repo, b, local)
@@ -327,8 +345,18 @@ func writeWaiting(repo, runDir, prefix string, open []string, local bool, res *R
 		}
 		waiting[strings.TrimPrefix(b, prefix)] = files
 	}
+	type proposal struct{ dir, task string }
+	var proposals []proposal
+	for _, task := range slices.Sorted(maps.Keys(earlier)) {
+		for _, dir := range earlier[task] {
+			proposals = append(proposals, proposal{dir, task})
+		}
+	}
 	for _, dir := range res.Pending {
-		task := proposedTask(dir)
+		proposals = append(proposals, proposal{dir, proposedTask(dir)})
+	}
+	for _, p := range proposals {
+		dir, task := p.dir, p.task
 		if task == "" {
 			continue
 		}
@@ -471,7 +499,18 @@ func run(o Options, res *Result) error {
 			links(f, res) // its summary names issues: each linked to its page
 		}
 	}
+	asked := o.Event
 	branch := releaseRequest(r, &o, res)
+	// A release tool's merge request, run as the release on each move: its
+	// agent waits for the night (ADR-0050, §7); the checks needing none
+	// still hold the release. `release` on it, the night's or a person's
+	// run, keeps its agent.
+	if asked == "merge-request" && o.Event == "release" && o.AI != "" && o.AI != "none" {
+		o.AI, o.aiWaits, res.AIWaits = "none", AIWaitsNight, AIWaitsNight
+		if ag, err = agent.Parse(o.AI); err != nil {
+			return err
+		}
+	}
 	env := scriptEnv(runDir, r.Name, o)
 	if branch != "" {
 		env = append(env, "WORKLINE_RELEASE_BRANCH="+branch)
@@ -503,12 +542,12 @@ func run(o Options, res *Result) error {
 			tasks[i] = strings.TrimPrefix(b, branchPrefix(r.Name))
 		}
 		n := len(open)
-		for _, t := range res.proposed {
+		for _, t := range append(slices.Sorted(maps.Keys(o.Waiting)), res.proposed...) {
 			if !slices.Contains(tasks, t) {
 				tasks, n = append(tasks, t), n+1
 			}
 		}
-		if err := writeWaiting(o.Repo, runDir, branchPrefix(r.Name), open, forge.KeepsBranches(f), res); err != nil {
+		if err := writeWaiting(o.Repo, runDir, branchPrefix(r.Name), open, o.Waiting, forge.KeepsBranches(f), res); err != nil {
 			return err
 		}
 		env = append(env, fmt.Sprintf("WORKLINE_OPEN_MERGE_REQUESTS=%d", n),
@@ -752,6 +791,9 @@ func run(o Options, res *Result) error {
 	st := runState{Role: r.Name, RolesDir: o.RolesDir, Repo: o.Repo, Forge: o.Forge, Target: o.Target, Scope: o.Scope, Digest: digest, Targets: o.Targets,
 		OpenMergeRequest: o.OpenMergeRequest, PushToMergeRequest: o.PushToMergeRequest, Release: releaseFrom, Models: authors(res.Calls),
 		Unasked: unasked}
+	if releaseFrom != "" && asked == "release" { // the night's run, or a person's: maybe applied elsewhere
+		st.Head, _ = git(o.Repo, nil, "rev-parse", "--verify", "HEAD^{commit}")
+	}
 	if err := st.save(runDir); err != nil {
 		return err
 	}
@@ -1127,6 +1169,11 @@ type runState struct {
 	// branch, which the tool rewrites: the patches go to a merge request of
 	// their own on its base instead (ADR-0017).
 	Release string `yaml:"release,omitempty"`
+	// Head: on a release tool's merge request run on `release` (the
+	// night's, a person's), the commit judged: applied in another job, its
+	// patches apply on that commit's files, and nothing applies once the
+	// branch moved on (Resume).
+	Head string `yaml:"head,omitempty"`
 	// releaseHeld: why the release's fix is no merge request of the
 	// role's, but a comment for a person (ResumeFrom, a release branch
 	// someone else than workline's App pushed to).
@@ -1761,9 +1808,23 @@ func Resume(runDir string) *Result {
 		if err != nil {
 			return err
 		}
+		if st.Head != "" && st.Release != "" && !st.Pushed {
+			back, movedOn, err := releaseOnHead(&st, res)
+			if err != nil || movedOn {
+				res.Status = verdict.Pass
+				return err
+			}
+			defer back()
+		}
 		res.Status = verdict.Pass
 		if err := applyAll(r, r.MergedSettings(cfg), st, runDir, intents, res); err != nil {
 			return err
+		}
+		// Applied apart, as at night: the release waiting for its fix is
+		// said on its merge request, and fails nothing of this job's, nor
+		// stops the runs after it.
+		if st.Head != "" && ReleaseHeld(res) {
+			res.Status = verdict.Pass
 		}
 		for _, h := range res.Handoffs {
 			res.Findings = append(res.Findings, deferred(r.Name, h))
@@ -1775,6 +1836,44 @@ func Resume(runDir string) *Result {
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "engine-error", Message: err.Error()})
 	}
 	return res
+}
+
+// releaseOnHead readies a release's run judged on `release` — the night's,
+// a person's (ADR-0050, §7) — for applying, maybe in another job than the
+// one that judged it: the release tool's branch still at the head judged,
+// else nothing is applied, said, and the next run judges the new head;
+// that head checked out, its patches applying on the files they were
+// judged on; and whether the branch is workline's App's alone, as for a
+// merge request's own run (releaseNotOwn). back puts the clone where it was.
+func releaseOnHead(st *runState, res *Result) (back func(), movedOn bool, err error) {
+	if st.Target == nil || st.Target.Kind != "merge-request" {
+		return nil, false, errors.New("a release's run names no merge request")
+	}
+	f, err := forge.Open(st.Forge, st.Repo)
+	if err != nil {
+		return nil, false, err
+	}
+	if f == nil {
+		return nil, false, errors.New("applying a release's run needs its forge: " + forge.Missing)
+	}
+	mr, err := f.MergeRequest(st.Target.ID)
+	if err != nil {
+		return nil, false, err
+	}
+	tip, err := fetchTip(st.Repo, mr.Branch, forge.KeepsBranches(f))
+	if err != nil {
+		return nil, false, err
+	}
+	if tip != st.Head {
+		res.Findings = append(res.Findings, verdict.Finding{Rule: "moved-on", Level: "warn", Where: mr.Branch,
+			Message: fmt.Sprintf("merge request #%d's branch is at %s, not at %s, the head this run judged: nothing applied; the next run on the release judges its new head", st.Target.ID, short(tip), short(st.Head))})
+		return nil, true, nil
+	}
+	if st.releaseHeld, err = releaseNotOwn(f, mr); err != nil {
+		return nil, false, err
+	}
+	back, err = onHead(st.Repo, st.Head)
+	return back, false, err
 }
 
 // deferred says that a handoff was recorded and its role not run: applying
@@ -2660,12 +2759,14 @@ func writeInputs(runDir string, inputs map[string]string, settings map[string]an
 // tool's, by its branch (ADR-0017): that pull request is the release,
 // merged before anything is tagged. A role that has release duties is run
 // on `release`; any other is only told the branch, which the reviewer reads
-// to leave the versions the tool bumps (#384). It returns the branch, ""
+// to leave the versions the tool bumps (#384). A run on `release` given
+// such a merge request is the release's judged on it: at night, with the
+// gardening, or by a person (ADR-0050, §7). It returns the branch, ""
 // when it is not a release's. When the branch cannot be learnt, a role
 // holding the release says so and its run stays a merge request's; another
 // reads the change as any.
 func releaseRequest(r *role.Role, o *Options, res *Result) string {
-	if o.Event != "merge-request" {
+	if o.Event != "merge-request" && (o.Event != "release" || o.Target == nil || o.Target.Kind != "merge-request") {
 		return ""
 	}
 	holds := r.Accepts("release")

@@ -1,5 +1,5 @@
 case: documentalist/release-pull-request-fix-goes-to-its-own
-about: "On a release pull request run with --push-to-merge-request, the fix is not pushed onto the tool's branch, which the tool rewrites: it goes to a merge request of its own on the release's base, and the release pull request stays held until that one is merged (ADR-0017)."
+about: "On a release pull request run on `release` with --push-to-merge-request — the night's run with the gardening, or a person's (ADR-0050) —, the fix is not pushed onto the tool's branch, which the tool rewrites: it goes to a merge request of its own on the release's base, and the release pull request stays held until that one is merged (ADR-0017)."
 given:
   repo: documented
   setup:
@@ -7,7 +7,7 @@ given:
     - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin main"
     - "git checkout -qb release-please--branches--main && git push -q origin release-please--branches--main && git checkout -q --detach"
   forge: {merge-requests: [{id: 1, branch: release-please--branches--main, base: main, labels: [], comments: []}]}
-run: {role: documentalist, event: merge-request, target: {merge-request: 1}, ai: "fake:doc-fixed", push-to-merge-request: true}
+run: {role: documentalist, event: release, target: {merge-request: 1}, ai: "fake:doc-fixed", push-to-merge-request: true}
 expect:
   status: block
   applied: [patch, comment]

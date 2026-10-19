@@ -1,5 +1,5 @@
 case: documentalist/release-record-stands-for-the-rebuilt-head
-about: "On a release tool's pull request, a doc judged with nothing to fix gets its `judged` in a merge request of its own, naming the release's head, and the documentalist's comment there keeps that head and its sources' ids. Once that merge request is merged, the tool rebuilds its branch: a new head, the same version bump. The doc quotes the version the bump replaces, and its two sources are as judged: it is not judged again, no fix is proposed, and the release is no longer held (ADR-0034, amended 2026-10-19). Before, each merge moved `judged` to a head the next rebuild dropped, and a new merge request opened: workline's 0.36.0 release, #502 to #505."
+about: "On a release tool's pull request, by the run on `release` (the night's, ADR-0050), a doc judged with nothing to fix gets its `judged` in a merge request of its own, naming the release's head, and the documentalist's comment there keeps that head and its sources' ids. Once that merge request is merged, the tool rebuilds its branch: a new head, the same version bump. The doc quotes the version the bump replaces, and its two sources are as judged: it is not judged again, no fix is proposed, and the release is no longer held (ADR-0034, amended 2026-10-19). Before, each merge moved `judged` to a head the next rebuild dropped, and a new merge request opened: workline's 0.36.0 release, #502 to #505."
 given:
   repo: documented
   setup:
@@ -10,7 +10,7 @@ given:
   forge: {merge-requests: [{id: 1, branch: release-please--branches--main, base: main, labels: [], comments: []}]}
 run:
   role: documentalist
-  event: merge-request
+  event: release
   target: {merge-request: 1}
   ai: 'cmd:sh "$FIXTURES/agents/judged-only.sh"'
   push-to-merge-request: true

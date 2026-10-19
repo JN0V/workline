@@ -21,6 +21,13 @@ const (
 // review to come, never as one given.
 const WaitsForReady = "ai-waits-for-ready"
 
+// WaitsForNight is the rule of the finding the documentalist leaves on a
+// release tool's merge request whose docs due wait for its agent, which
+// judges them at night, with the gardening (ADR-0050, §7). The docs hold
+// the release meanwhile; the merge policy reads it as a release waiting
+// for its docs.
+const WaitsForNight = "ai-waits-for-night"
+
 // Finding is one thing a check noticed.
 type Finding struct {
 	Rule    string `yaml:"rule" json:"rule"`

@@ -1,0 +1,23 @@
+case: documentalist/release-pull-request-move-asks-no-agent
+about: "On each move of a release tool's pull request, the documentalist asks no agent, though one is given: its docs due are judged at night, with the gardening (ADR-0050, §7), so that a doc fix never changes the head a person accepted (ADR-0042). The checks that need no agent still hold the release while docs are due (ADR-0017, ADR-0010), and the run says when the fix comes and how to have it sooner. Before, every move asked the agent: 1.6 to 2.2 minutes, about 0.8M tokens a week on workline."
+given:
+  repo: documented
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git tag v1.0.0"
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin main"
+    - "git checkout -qb release-please--branches--main && echo '# Changelog' > CHANGELOG.md && git add CHANGELOG.md && git commit -qm 'chore(main): release 1.1.0' && git push -q origin release-please--branches--main && git checkout -q --detach"
+  forge: {merge-requests: [{id: 1, branch: release-please--branches--main, base: main, labels: [], comments: []}]}
+run: {role: documentalist, event: merge-request, target: {merge-request: 1}, input: {range: "main..HEAD"}, ai: "fake:doc-fixed", push-to-merge-request: true}
+expect:
+  status: block
+  agent-calls: 0
+  applied: []
+  findings:
+    - {rule: suspect, where: docs/tech/auth.md, message: "since v1.0.0: the release waits until it is judged — by the agent, at night with the gardening"}
+    - {rule: ai-waits-for-night, level: warn, message: "workline route release --target merge-request:1 --push-to-merge-request"}
+  not-pushed: [release-please--branches--main]
+  gone: [workline/documentalist/release]
+  forge:
+    merge-requests:
+      - {id: 1, comments: 0}
+      - {id: 2, absent: true}
