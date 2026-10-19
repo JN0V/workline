@@ -1,5 +1,5 @@
 case: reviewer/every-lens-again-once-a-draft-again
-about: "A merge request every lens read, turned back into a draft, then pushed to (`draft=true`): one lens, and the record no longer says every lens read the change (#359), so the run when it is ready again reads every lens once more, as ADR-0020 has it."
+about: "A merge request every lens read, turned back into a draft, then pushed to (`draft=true`): no agent is asked (ADR-0050), and the last review stands, its comment as it was. Only its record forgets that every lens read the change (#359), so the run when it is ready again reads every lens once more, as ADR-0020 has it, even when a push cancelled it."
 given:
   repo: reviewed
   setup:
@@ -11,14 +11,16 @@ given:
     merge-requests:
       - id: 5
         labels: []
-        comments: ["Reviewed by every lens.\n\n<!-- workline:record reviewed=@reviewed@ runs=1 read=all -->\n\n<!-- workline:sticky=reviewer/summary -->"]
+        comments: ["**workline reviewer** — reviewed by every lens.\n\n| Lens | Finding |\n|---|---|\n| correctness | `calc/calc.go:11` the count can be zero |\n\n<!-- workline:record reviewed=@reviewed@ runs=1 read=all -->\n\n<!-- workline:sticky=reviewer/summary -->"]
 run: {role: reviewer, event: merge-request, input: {range: main..HEAD, draft: "true"}, target: {merge-request: 5}, ai: "fake:review-nothing"}
 expect:
   status: pass
+  agent-calls: 0
   applied: [comment]
-  calls: [{task: part, for: 1-edge-cases}]
-  run-files:
-    in/parts/1-edge-cases/task.md: {contains: "### calc/half.go", not-contains: "### calc/calc.go"}
+  findings: [{rule: ai-waits-for-ready, level: warn}]
   forge:
     merge-requests:
-      - {id: 5, comments: 1, comment-contains: " runs=2 -->", comment-lacks: "read=all"}
+      - id: 5
+        comments: 1
+        comment-contains: ["reviewed by every lens.", "`calc/calc.go:11` the count can be zero", " runs=1 -->"]
+        comment-lacks: "read=all"

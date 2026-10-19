@@ -471,6 +471,51 @@ func localRecord(repo, side string) string {
 	return filepath.Join(strings.TrimSpace(dir), "workline", name)
 }
 
+// lastComment is the comment a side keeps its summary and record in on the
+// merge request, as the forge holds it now; "" when there is none, or it
+// cannot be read.
+func lastComment(repo, side string) string {
+	t := mergeRequest()
+	if t == nil {
+		return ""
+	}
+	f, err := forge.Open(os.Getenv("WORKLINE_FORGE"), repo)
+	if err != nil || f == nil {
+		return ""
+	}
+	b, ok := f.(forge.Backlog)
+	if !ok {
+		return ""
+	}
+	comments, err := b.Comments(*t)
+	if err != nil {
+		return ""
+	}
+	for _, c := range comments {
+		if strings.Contains(c, forge.Marker("sticky=reviewer/"+keyOf(side))) {
+			return c
+		}
+	}
+	return ""
+}
+
+// keptReview is a side's comment, text, as it stands, its record and the
+// blocks beside it replaced by rec's: what the last review said is kept,
+// only the record changes (a draft again, ADR-0050). "" when text holds no
+// record that reads.
+func keptReview(text, side string, rec Record) string {
+	loc := recordLine.FindStringIndex(text)
+	if loc == nil {
+		return ""
+	}
+	end := loc[1]
+	if m := blocksLine.FindStringIndex(text[end:]); m != nil && strings.TrimSpace(text[end:end+m[0]]) == "" {
+		end += m[1]
+	}
+	body := text[:loc[0]] + rec.String() + text[end:]
+	return strings.TrimSpace(strings.Replace(body, forge.Marker("sticky=reviewer/"+keyOf(side)), "", 1))
+}
+
 // loadRecord reads the record: from the merge request's summary comment when
 // the run is on one and may write there, else from the machine's. It says
 // where it read it, and why it could not, when it could not. The summary
