@@ -43,7 +43,7 @@ file. All roles: [docs/roles.md](../../docs/roles.md).
   ([ADR-0020](../../docs/adr/0020-the-reviewer-finds-the-engine-verifies-the-person-merges.md));
 - review docs and other files that are not code (`ignore`), nor the
   versions a release tool bumps on its own pull request
-  ([more](docs/run.md#13-the-range-the-rules-the-record));
+  ([more](docs/run.md#12-the-range-the-rules));
 - comment on the merge request for a finding outside the change: that
   becomes an issue.
 

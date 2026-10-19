@@ -81,7 +81,7 @@ AI reads only what is new.
 - **The commits no review read yet**: the lens in turn reads those the
   record does not hold, by commit id or patch id. A rebase, or a merge of
   the base that settled nothing, reads nothing again
-  ([the record](run.md#13-the-range-the-rules-the-record)).
+  ([the record](run.md#3-the-record)).
 - **The lenses that warn: five new commits a push** (`commits-per-push`),
   those changing code counted, the oldest first.
   - The five read are recorded; the rest are left, said
