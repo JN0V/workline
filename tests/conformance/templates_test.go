@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -143,7 +144,9 @@ func TestGitLabTemplateKeepsTheSummary(t *testing.T) {
 			!strings.Contains(fmt.Sprint(job["after_script"]), "artifacts/file/"+sum+".html") {
 			t.Errorf("job %s: the job's page does not link the summary (annotations)", name)
 		}
-		if strings.Contains(script, "--target merge-request") && art["expose_as"] == nil {
+		// A merge request's pipeline; not the scheduled one that finds the
+		// release's (merge-request:release), whose page is the job's.
+		if strings.Contains(script, "--target merge-request:$") && art["expose_as"] == nil {
 			t.Errorf("job %s: the merge request's page does not link the summary (expose_as)", name)
 		}
 	}
@@ -1076,6 +1079,165 @@ func TestGardeningTendsItsMergeRequests(t *testing.T) {
 	apply, follow := strings.Index(script, "workline apply"), strings.Index(script, "workline follow --gardening")
 	if apply < 0 || follow < apply || !strings.Contains(script[follow:], "|| status=$?") {
 		t.Errorf("workline:garden:apply does not run `workline follow --gardening` after applying: %s", script)
+	}
+}
+
+// The release pull request's docs are judged at night, with the gardening
+// (ADR-0050, §7): its judging job runs the schedule line with a forge that
+// lists the open merge requests and --open-merge-request, which is when
+// the line takes up the release; on GitHub, the job that applies names
+// the App, so that the release's fix is the App's pull request only when
+// the App alone pushed to the release's branch, as for a pull request's
+// own run (workline-apply.yml).
+func TestGardeningJudgesTheReleaseAtNight(t *testing.T) {
+	for _, f := range []string{"../../ci/github/workline-gardening.yml", "../../.github/workflows/workline-gardening.yml"} {
+		data, err := os.ReadFile(f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var wf struct {
+			Jobs map[string]struct {
+				Permissions map[string]string `yaml:"permissions"`
+				Steps       []struct {
+					Run string            `yaml:"run"`
+					Env map[string]string `yaml:"env"`
+				} `yaml:"steps"`
+			} `yaml:"jobs"`
+		}
+		if err := yaml.Unmarshal(data, &wf); err != nil {
+			t.Fatal(err)
+		}
+		judged, applied := false, false
+		for name, job := range wf.Jobs {
+			for _, s := range job.Steps {
+				if strings.Contains(s.Run, "workline route schedule") {
+					judged = true
+					if !strings.Contains(s.Run, "--forge github") || !strings.Contains(s.Run, "--open-merge-request") || job.Permissions["pull-requests"] != "read" {
+						t.Errorf("%s, job %s: the schedule line does not list the open pull requests (--forge github, --open-merge-request, pull-requests: read): no release is judged at night", f, name)
+					}
+				}
+				if strings.Contains(s.Run, "workline apply") {
+					applied = true
+					if !strings.Contains(s.Env["WORKLINE_APP"], "steps.app.outputs.app-slug") {
+						t.Errorf("%s, job %s: applies with no WORKLINE_APP: who pushed to the release's branch is not checked before its fix is opened as the App's", f, name)
+					}
+				}
+			}
+		}
+		if !judged || !applied {
+			t.Errorf("%s: no job runs the schedule line, or none applies it", f)
+		}
+	}
+	data, err := os.ReadFile("../../ci/gitlab/workline.gitlab-ci.yml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var top map[string]any
+	if err := yaml.Unmarshal(data, &top); err != nil {
+		t.Fatal(err)
+	}
+	garden, _ := top[".workline:garden"].(map[string]any)
+	job, _ := top["workline:garden:judge"].(map[string]any)
+	script := fmt.Sprint(job["script"])
+	if !strings.Contains(fmt.Sprint(garden["before_script"]), "export GITLAB_TOKEN=$WORKLINE_GITLAB_TOKEN") ||
+		!strings.Contains(script, "--forge gitlab") || !strings.Contains(script, "--open-merge-request") {
+		t.Errorf("workline:garden:judge does not list the open merge requests with the project's token: no release is judged at night: %s", script)
+	}
+}
+
+// The release pull request's docs are judged every night (ADR-0050, §7),
+// apart from the weekly gardening: on GitHub, a workflow of its own on a
+// schedule of six nights or more, its judge finding the release with the
+// forge's listing (--target merge-request:release), its apply naming the
+// App; on GitLab, jobs of their own on a schedule's WORKLINE_TASK, which
+// the gardening's leave.
+func TestReleaseDocsJudgedNightly(t *testing.T) {
+	data, err := os.ReadFile("../../ci/github/workline-release-docs.yml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var wf struct {
+		On struct {
+			Schedule []struct {
+				Cron string `yaml:"cron"`
+			} `yaml:"schedule"`
+		} `yaml:"on"`
+		Jobs map[string]struct {
+			Permissions map[string]string `yaml:"permissions"`
+			Steps       []struct {
+				Run string            `yaml:"run"`
+				Env map[string]string `yaml:"env"`
+			} `yaml:"steps"`
+		} `yaml:"jobs"`
+	}
+	if err := yaml.Unmarshal(data, &wf); err != nil {
+		t.Fatal(err)
+	}
+	nights := 0
+	for _, s := range wf.On.Schedule {
+		f := strings.Fields(s.Cron)
+		if len(f) != 5 {
+			t.Fatalf("cron %q: not five fields", s.Cron)
+		}
+		switch days := f[4]; {
+		case days == "*":
+			nights += 7
+		default:
+			for _, part := range strings.Split(days, ",") {
+				if a, b, ok := strings.Cut(part, "-"); ok {
+					x, _ := strconv.Atoi(a)
+					y, _ := strconv.Atoi(b)
+					nights += y - x + 1
+				} else {
+					nights++
+				}
+			}
+		}
+	}
+	if nights < 6 {
+		t.Errorf("workline-release-docs.yml: runs %d nights a week, not nightly", nights)
+	}
+	judged, applied := false, false
+	for name, job := range wf.Jobs {
+		for _, s := range job.Steps {
+			if strings.Contains(s.Run, "workline route release") {
+				judged = true
+				if !strings.Contains(s.Run, "--target merge-request:release") || !strings.Contains(s.Run, "--forge github") || job.Permissions["pull-requests"] != "read" {
+					t.Errorf("job %s: does not find the release pull request (--target merge-request:release, --forge github, pull-requests: read)", name)
+				}
+			}
+			if strings.Contains(s.Run, "workline apply") {
+				applied = true
+				if !strings.Contains(s.Env["WORKLINE_APP"], "steps.app.outputs.app-slug") {
+					t.Errorf("job %s: applies with no WORKLINE_APP", name)
+				}
+			}
+		}
+	}
+	if !judged || !applied {
+		t.Errorf("workline-release-docs.yml: no job judges the release's docs, or none applies them")
+	}
+	data, err = os.ReadFile("../../ci/gitlab/workline.gitlab-ci.yml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var top map[string]any
+	if err := yaml.Unmarshal(data, &top); err != nil {
+		t.Fatal(err)
+	}
+	rules := func(job string) string {
+		j, _ := top[job].(map[string]any)
+		return fmt.Sprint(j["rules"])
+	}
+	judge, _ := top["workline:release-docs:judge"].(map[string]any)
+	if !strings.Contains(fmt.Sprint(judge["script"]), "workline route release --target merge-request:release") ||
+		!strings.Contains(rules(".workline:release-docs"), `$WORKLINE_TASK == "release-docs"`) {
+		t.Errorf("GitLab: no job judges the release's docs on the schedule WORKLINE_TASK=release-docs")
+	}
+	for _, j := range []string{".workline:garden", "workline:garden:apply"} {
+		if !strings.Contains(rules(j), `$WORKLINE_TASK != "release-docs"`) {
+			t.Errorf("GitLab: %s runs on the release docs' schedule too: the whole gardening every night", j)
+		}
 	}
 }
 

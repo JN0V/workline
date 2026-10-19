@@ -1,5 +1,5 @@
 case: documentalist/release-fix-from-the-merge-request-run
-about: "Applying a release pull request's own CI run (#331): whether it is the release's is the applying job's settings' word, not the run's: told it is not, the fix still goes to a merge request of its own on the release's base (ADR-0017), the release branch pushed to by workline's App alone."
+about: "Applying a run on a release pull request through `apply --from-merge-request`, as for a merge request's own CI run (#331): whether it is the release's is the applying job's settings' word, not the run's: told it is not, the fix still goes to a merge request of its own on the release's base (ADR-0017), the release branch pushed to by workline's App alone."
 given:
   repo: documented
   setup:
@@ -16,7 +16,7 @@ given:
         pushes: [{head: release-please--branches--main, at: "2026-01-03T00:00:00Z", by: workline-bot}]
 run:
   role: documentalist
-  event: merge-request
+  event: release
   target: {merge-request: 1}
   ai: "fake:doc-fixed"
   push-to-merge-request: true

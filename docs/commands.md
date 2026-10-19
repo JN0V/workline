@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/engine/engine.go, internal/hooks]
-checked: b4f67a9d
+checked: 615b87f5
 verified: agent:claude-code
 judged: e343388
 ---
@@ -34,6 +34,11 @@ leaves it; `--warn-only` runs only that, never a gate nor another role,
 and writes no verdict (`--verdict` refused): what only warns, apart from
 the verdict ([apart](../roles/reviewer/docs/apart.md)). Both flags, or one
 and an `--input warn=` naming the other run, are misuse.
+A release tool's merge request: on `schedule` with a forge and
+`--open-merge-request`, its docs are judged first, on its head;
+`route release --target merge-request:<n>` does it now, its head checked
+out for the run, and `--target merge-request:release` finds the one open,
+for a nightly job ([more](../roles/documentalist/docs/push.md#a-release-tools-pull-request)).
 With `--input queue=true`, a merge queue's or train's run: the gates
 alone, on the merged result, the steps left named; `--verdict` and
 `--warn-only` refused ([a merge queue or train](merge-queue.md)).

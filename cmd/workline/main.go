@@ -1064,7 +1064,7 @@ func routeCmd(args []string) int {
 	roles := fs.String("roles", os.Getenv("WORKLINE_ROLES"), "folder holding the roles")
 	asJSON := fs.Bool("json", false, "print the result as JSON")
 	forgeSpec := fs.String("forge", "", "forge: github, gitlab, none, fake:<file> (default: the project's `forge` setting)")
-	target := fs.String("target", "", "issue:<n> or merge-request:<n>, where comments and labels go")
+	target := fs.String("target", "", "issue:<n> or merge-request:<n>, where comments and labels go; on release, merge-request:release: the release tool's merge request open into this branch, its docs judged on its head")
 	branch := fs.String("branch", "", "the branch the merge request --target names comes from, when the forge is not to be asked (default: the forge says)")
 	var scope multi
 	fs.Var(&scope, "scope", "a path pattern the task is about (repeatable)")
@@ -1124,6 +1124,15 @@ func routeCmd(args []string) int {
 		fmt.Fprintln(os.Stderr, "workline:", err)
 		return 1
 	}
+	// The release tool's merge request open into this branch, found on
+	// the forge: its docs due judged as at night (ADR-0050, §7).
+	findRelease := *target == releaseTarget
+	if findRelease {
+		if event != "release" {
+			return misuse(fs, "--target "+releaseTarget+" goes with the event release")
+		}
+		*target = ""
+	}
 	t, err := parseTarget(*target)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "workline:", err)
@@ -1133,7 +1142,8 @@ func routeCmd(args []string) int {
 		*gatesFrom, _ = filepath.Abs(*gatesFrom)
 	}
 	res := line.RunWith(event, engine.Options{Repo: abs, RolesDir: rolesDir, AI: *ai, DefaultAI: userDefaultAI(), Inputs: inputs,
-		Forge: *forgeSpec, Target: t, Branch: *branch, Scope: scope, NoApply: *noApply, OpenMergeRequest: *openMR, PushToMergeRequest: *pushMR},
+		Forge: *forgeSpec, Target: t, Branch: *branch, Scope: scope, NoApply: *noApply, OpenMergeRequest: *openMR, PushToMergeRequest: *pushMR,
+		FindRelease: findRelease},
 		&line.Gates{Only: *gatesOnly, From: *gatesFrom})
 	if err := wlreport.Write(abs, event, wlreport.FromLine(res), *sarifFile, *cqFile); err != nil {
 		fmt.Fprintln(os.Stderr, "workline:", err)
@@ -1554,6 +1564,10 @@ type multi []string
 
 func (m *multi) String() string     { return strings.Join(*m, ",") }
 func (m *multi) Set(s string) error { *m = append(*m, s); return nil }
+
+// releaseTarget names, on `route release`, the release tool's merge
+// request open into the branch checked out, which the engine finds.
+const releaseTarget = "merge-request:release"
 
 func parseTarget(s string) (*forge.Target, error) {
 	if s == "" {

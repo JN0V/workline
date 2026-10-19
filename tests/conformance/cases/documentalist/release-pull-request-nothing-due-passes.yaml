@@ -1,0 +1,16 @@
+case: documentalist/release-pull-request-nothing-due-passes
+about: "A release tool's pull request with no doc due since the last tag passes on each move, with no agent asked though one is given, and nothing said of the night: nothing waits for it (ADR-0050, §7)."
+given:
+  repo: documented
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git tag v1.0.0"
+    - "echo '// keep' >> src/main.go && git add src/main.go && git commit -qm 'chore: a file no doc describes' && git push -q origin main"
+    - "git checkout -qb release-please--branches--main && echo '# Changelog' > CHANGELOG.md && git add CHANGELOG.md && git commit -qm 'chore(main): release 1.0.1' && git push -q origin release-please--branches--main && git checkout -q --detach"
+  forge: {merge-requests: [{id: 1, branch: release-please--branches--main, base: main, labels: [], comments: []}]}
+run: {role: documentalist, event: merge-request, target: {merge-request: 1}, input: {range: "main..HEAD"}, ai: "fake:doc-fixed", push-to-merge-request: true}
+expect:
+  status: pass
+  agent-calls: 0
+  no-findings: [{rule: ai-waits-for-night}, {rule: suspect, where: docs/tech/auth.md}]
+  not-pushed: [release-please--branches--main]
+  gone: [workline/documentalist/release]

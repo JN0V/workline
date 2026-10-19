@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog/opening.go, internal/engine/engine.go, internal/engine/backlog.go]
 status: draft
-checked: d57cc5bb
+checked: 56e17f81
 judged: 8b6aecc
 verified: agent:claude-code
 ---

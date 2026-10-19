@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/setup, internal/doctor, internal/hooks]
-checked: b4f67a9d
+checked: 615b87f5
 verified: agent:claude-code
 ---
 # Quickstart

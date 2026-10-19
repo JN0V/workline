@@ -126,7 +126,10 @@ its evaluation in
 - **A release tool's pull request held as the release**, its fix on a
   merge request of its own that follows `main`, its record standing for
   the heads the tool rebuilds
-  ([#510](https://github.com/JN0V/workline/issues/510)): `release-*`; on workline,
+  ([#510](https://github.com/JN0V/workline/issues/510)), its docs judged
+  at night with the gardening, none on its moves
+  ([ADR-0050, §7](../../../docs/adr/0050-each-act-has-its-moment-and-a-wait-budget.md#7-decided-by-the-maintainer-on-2026-10-19);
+  [tried](https://github.com/JN0V/workline/pull/535)): `release-*`; on workline,
   [#258](https://github.com/JN0V/workline/pull/258) held,
   [#259](https://github.com/JN0V/workline/pull/259) merged first.
 - **Condense, split, merge a card, merge a repeated passage**:

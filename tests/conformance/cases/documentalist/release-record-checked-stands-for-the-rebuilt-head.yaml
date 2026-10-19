@@ -1,5 +1,5 @@
 case: documentalist/release-record-checked-stands-for-the-rebuilt-head
-about: "As for `judged`, a doc vouched for on a release tool's pull request gets its `checked` in a merge request of its own, naming the release's head, kept in the documentalist's comment there with its sources' ids. Once that is merged and the tool rebuilt its branch, the same version bump on the new head, which the doc quotes, makes it suspect no more: it is not judged again (ADR-0034, amended 2026-10-19)."
+about: "As for `judged`, a doc vouched for on a release tool's pull request, by the run on `release` (the night's, ADR-0050), gets its `checked` in a merge request of its own, naming the release's head, kept in the documentalist's comment there with its sources' ids. Once that is merged and the tool rebuilt its branch, the same version bump on the new head, which the doc quotes, makes it suspect no more: it is not judged again (ADR-0034, amended 2026-10-19)."
 given:
   repo: documented
   setup:
@@ -10,7 +10,7 @@ given:
   forge: {merge-requests: [{id: 1, branch: release-please--branches--main, base: main, labels: [], comments: []}]}
 run:
   role: documentalist
-  event: merge-request
+  event: release
   target: {merge-request: 1}
   ai: 'cmd:sh "$FIXTURES/agents/confirm-each-doc.sh"'
   push-to-merge-request: true

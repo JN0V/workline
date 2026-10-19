@@ -1,6 +1,6 @@
 ---
 sources: [ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile]
-checked: b4f67a9d
+checked: 78fd03ce
 judged: cd97f28
 verified: agent:claude-code
 reader: 9799dcaf51f3
@@ -91,7 +91,19 @@ change: people who may already write to the repository.
 
 Gardening is the scheduled run of the documentalist (and the product
 owner, when routed): Build → Pipeline schedules → New schedule, nightly or
-weekly, on main.
+weekly, on main. A release tool's merge request open, it first judges the
+docs due for that release, on its head; on the release's own pipelines no
+agent judges them, and they hold it
+([ADR-0050, §7](adr/0050-each-act-has-its-moment-and-a-wait-budget.md#7-decided-by-the-maintainer-on-2026-10-19)).
+
+- **The other nights**: one more schedule, every night but the
+  gardening's, with `WORKLINE_TASK` set to `release-docs`: the release's
+  docs alone; none due, no agent is asked. Play it for the release sooner.
+  Its variable needs "Minimum role to use pipeline variables" at
+  Maintainer, as the sample's.
+- Its fix is the bot's merge request only when the bot alone pushed to
+  the release's branch: run the release tool with the bot's token, else
+  the fix goes in a comment.
 
 ### 4. The weekly sample
 

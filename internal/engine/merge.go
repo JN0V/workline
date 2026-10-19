@@ -52,12 +52,14 @@ func WriteVerdict(file string, v HeadVerdict) error {
 var shortReview = []string{"not-reviewed", "lens-failed", "review-not-whole"}
 
 // held says whether a verdict blocks only for the release's own fix,
-// merged elsewhere first (ADR-0017): a release waiting for its docs.
+// merged elsewhere first (ADR-0017): a release waiting for its docs. Or,
+// its docs due waiting for the agent at night (ADR-0050, §7), for those
+// docs alone.
 func (v *HeadVerdict) held() bool {
 	n := 0
 	for _, f := range v.Findings {
 		if f.Level == "" || f.Level == "block" {
-			if f.Rule != "fixed-elsewhere" {
+			if f.Rule != "fixed-elsewhere" && !(v.atNight() && slices.Contains(heldFor, f.Rule)) {
 				return false
 			}
 			n++
@@ -65,6 +67,16 @@ func (v *HeadVerdict) held() bool {
 	}
 	return v.Status == verdict.Block && n > 0
 }
+
+// atNight says whether the head's docs due wait for the agent at night: a
+// release tool's merge request, judged on each move with no agent.
+func (v *HeadVerdict) atNight() bool {
+	return slices.ContainsFunc(v.Findings, func(f verdict.Finding) bool { return f.Rule == verdict.WaitsForNight })
+}
+
+// heldAtNight is why a release is held while its docs due wait for the
+// night: what a verdict kept on the forge says, and `follow` reads back.
+const heldAtNight = "the release waits for its docs, judged at night, then fixed in a merge request of their own"
 
 // short says why the review of a head that passed falls short, "" when it
 // does not.
@@ -124,6 +136,8 @@ const (
 // class is the verdict's class for the policy, and why.
 func (v *HeadVerdict) class() (string, string) {
 	switch {
+	case v.held() && v.atNight():
+		return verdictHeld, heldAtNight
 	case v.held():
 		return verdictHeld, "the release waits for its docs, fixed in a merge request of their own"
 	case v.Status != verdict.Pass:
@@ -797,6 +811,10 @@ func weigh(f forge.Forge, m forge.Merger, o FollowOptions, local bool, mr forge.
 	case verdictHeld:
 		if fix != "" {
 			say("waits-for-docs", "", fmt.Sprintf("accepted by %s; the release waits for its docs, %s, to merge first", by, fix))
+			return nil, nil
+		}
+		if v.why == heldAtNight && !e.behind { // no fix yet: the night's run proposes it
+			say("waits-for-docs", "", fmt.Sprintf("accepted by %s; the release waits for its docs, judged at night and fixed in a merge request of their own, which merges first", by))
 			return nil, nil
 		}
 		if e.behind {

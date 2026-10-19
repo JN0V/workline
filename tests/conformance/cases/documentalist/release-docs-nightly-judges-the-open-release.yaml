@@ -1,0 +1,31 @@
+case: documentalist/release-docs-nightly-judges-the-open-release
+about: "The templates' nightly run of the release's docs alone, apart from the weekly gardening (ADR-0050, §7): `route release --target merge-request:release` finds the release tool's pull request open into the branch, judges its docs due with the agent on its head, checked out then put back, and proposes their fix in a merge request of its own; no other step, no gardening. Judged and applied in two jobs; the release waiting for its fix fails nothing of the night's."
+given:
+  repo: documented
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git tag v1.0.0"
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin main"
+    - "git checkout -qb release-please--branches--main && git push -q origin release-please--branches--main && git checkout -q main"
+  forge:
+    merge-requests:
+      - id: 1
+        branch: release-please--branches--main
+        base: main
+        labels: []
+        comments: []
+        pushes: [{head: release-please--branches--main, at: "2026-01-03T00:00:00Z", by: workline-bot}]
+run: {route: release, args: [--target, merge-request:release], ai: "fake:doc-fixed", no-apply: true, then: resume}
+expect:
+  status: pass
+  agent-calls: 1
+  findings:
+    - {rule: fixed-elsewhere, where: docs/tech/auth.md, message: "merge request #2"}
+  pushed:
+    workline/documentalist/release: {docs/tech/auth.md: "Access tokens last two hours."}
+  not-pushed: [release-please--branches--main, main]
+  branches:
+    main: {docs/tech/auth.md: "Access tokens last one hour."}
+  forge:
+    merge-requests:
+      - {id: 1, comments: 1, comment-contains: "<!-- workline:doc-judged-at-release"}
+      - {id: 2, branch: workline/documentalist/release, base: main}

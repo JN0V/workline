@@ -1,0 +1,24 @@
+case: merge/release-waits-for-its-docs-at-night
+about: "The maintainer accepted the release pull request; its docs due wait for the documentalist's agent at night (ADR-0050, §7), with no fix opened yet: its verdict is held, not red, and the release waits for its docs, said, out of line meanwhile; nothing turned on, its label kept (ADR-0042)."
+given:
+  repo: documented
+  config: {merge: {autonomy: cautious}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb release-please--branches--main && echo '1.1.0' > version.txt && git add version.txt && git commit -qm 'chore(main): release 1.1.0' && git push -q origin release-please--branches--main && git checkout -q main"
+  forge:
+    statuses:
+      - {commit: "release-please--branches--main", name: workline/verdict, state: pending, description: "held: the release waits for its docs, judged at night, then fixed in a merge request of their own", by: workline-bot}
+    merge-requests:
+      - {id: 10, branch: release-please--branches--main, base: main, author: "workline-app[bot]", bot: true, labels: [workline:accepted], comments: [],
+         label-events: [{label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T10:00:00Z"}]}
+run: {follow: [--base, main], summary: true}
+expect:
+  status: pass
+  findings:
+    - {rule: waits-for-docs, where: "#10", message: "judged at night and fixed in a merge request of their own"}
+  no-findings: [{rule: auto-merge-on, where: "#10"}, {rule: verdict-red, where: "#10"}, {rule: updated}]
+  not-pushed: [release-please--branches--main]
+  forge:
+    merge-requests:
+      - {id: 10, auto-merge: false, labels: [workline:accepted]}

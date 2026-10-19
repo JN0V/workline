@@ -1,6 +1,6 @@
 ---
 sources: [ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile]
-checked: b4f67a9d
+checked: 78fd03ce
 judged: bf016b7
 verified: agent:claude-code
 ---
@@ -190,7 +190,7 @@ exit "$status"
 | Variable | Holds | Masked | Protected |
 |---|---|---|---|
 | `WORKLINE_GITLAB_TOKEN` | a project (or group) access token, Developer, `api` and `write_repository` ([triggers.md](triggers.md#gitlab-tokens)) | yes | only if every triggered pipeline runs on a protected branch |
-| `WORKLINE_GITLAB_READ_TOKEN` | a token with `read_api`, Reporter: gardening, the product owner, the reviewer and the weekly sample read the forge while judging; unset, `CI_JOB_TOKEN`, which reads no issue | yes | the same |
+| `WORKLINE_GITLAB_READ_TOKEN` | a token with `read_api`, Reporter: gardening, the product owner, the reviewer and the weekly sample read the forge while judging — gardening, the release's merge request it judges first; unset, `CI_JOB_TOKEN`, which reads no issue | yes | the same |
 | the agent's credentials | whichever agent you chose; for Claude, `CLAUDE_CODE_OAUTH_TOKEN` (`claude setup-token`, a Claude subscription) or `ANTHROPIC_API_KEY` | yes | the same |
 
 A merge request's source branch is rarely protected: a protected variable

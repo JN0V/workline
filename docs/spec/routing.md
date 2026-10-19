@@ -1,6 +1,6 @@
 ---
 sources: [internal/line, internal/routing, internal/work, routing.default.yaml]
-checked: b4f67a9d
+checked: 615b87f5
 verified: agent:claude-code
 ---
 # Routing — v1 (draft)
@@ -91,7 +91,8 @@ semantic-release…), and `release` runs the documentalist before it, so the
 docs due at the release gate it (ADR-0010, ADR-0017). A tool that opens a
 release pull request needs no `release` step: on `merge-request`, a role
 that runs on `release` runs as on `release` when the merge request comes
-from a release tool's branch (`release.branches`). A routing that still
+from a release tool's branch (`release.branches`), with no agent
+([below](#a-releases-docs-at-night)). A routing that still
 names the retired `release-manager` is refused, saying which tool to use.
 
 - Steps run in the listed order. The first step that ends in `block`,
@@ -192,6 +193,34 @@ judged says so too (`ai-waits-for-ready`, a warning), and the head's
 verdict is then a review to come, never a pass
 ([merge policy](../merge-policy.md)). The rules and gates run as on any
 push. With no agent set, nothing waits; `draft=false` changes nothing.
+
+### A release's docs at night
+
+[ADR-0050, §7](../adr/0050-each-act-has-its-moment-and-a-wait-budget.md#7-decided-by-the-maintainer-on-2026-10-19):
+
+- **Each move of a release tool's merge request**: a role holding the
+  release runs as with no agent (`WORKLINE_AI_WAITS=night`); what needs
+  none still holds the release. The line's summary says so, the role too
+  (`ai-waits-for-night`, a warning); the head's verdict is a release
+  waiting for its docs, never a pass.
+- **At night**: on `schedule` with a forge and `--open-merge-request`,
+  before such a role's step, the line runs it on `release` for the
+  release merge request open into the branch checked out, with its agent,
+  on that merge request's head — checked out, then put back. Its step is
+  `<role> (release #n)`; the release waiting for its docs fails nothing
+  of the night's, anything else counts. What its fix patches waits for
+  the role's own step after it (`Waiting`), never judged twice. With
+  `--ai none`, not run, said (`release-not-judged`).
+- **The other nights**: `route release --target merge-request:release`
+  runs only that step, for the release merge request it finds, the
+  templates' nightly job; none open, no step, said in the summary. The
+  target goes with `release` alone (else misuse, 64).
+- **By hand**: `route release --target merge-request:<n>` on a release
+  tool's merge request does the same, the fix to a merge request of its
+  own (`--push-to-merge-request` implied).
+- **Applied apart** (`apply`): only on the head judged, checked out
+  again; a branch moved on applies nothing (`moved-on`); the App's fix
+  only when the App alone pushed to the release branch.
 
 ### A merge queue's or train's run: the gates alone
 

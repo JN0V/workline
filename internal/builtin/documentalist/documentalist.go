@@ -1525,8 +1525,19 @@ func holdTheRelease(findings []verdict.Finding, suspects map[string]*suspectDoc,
 	if b := os.Getenv("WORKLINE_RELEASE_BRANCH"); b != "" {
 		on = " (this merge request comes from " + b + ", a release tool's branch: it is the release)"
 	}
+	// On each move of a release tool's merge request, the agent waits for
+	// the night (ADR-0050, §7): the docs due still hold the release.
+	night := os.Getenv("WORKLINE_AI_WAITS") == "night"
+	by := "by the agent, `workline docs`, or a person moving `checked`"
+	if night {
+		by = "by the agent at night, or a person moving `checked`"
+	}
+	due := 0
 	for i := range findings {
 		f := &findings[i]
+		if f.Rule == "due" && f.Level == "block" {
+			due++
+		}
 		sd := suspects[f.Where]
 		if f.Rule != "suspect" || sd == nil || held(sd.doc, sd.doc.Judged, repo) || held(sd.doc, sd.doc.JudgedInParts, repo) {
 			continue
@@ -1535,9 +1546,29 @@ func holdTheRelease(findings []verdict.Finding, suspects map[string]*suspectDoc,
 			continue
 		}
 		f.Level = "block"
-		f.Message += "\n(made suspect since " + since + ": the release waits until it is judged — by the agent, `workline docs`, or a person moving `checked`" + on + ")"
+		f.Message += "\n(made suspect since " + since + ": the release waits until it is judged — " + by + on + ")"
+		due++
+	}
+	if night && due > 0 {
+		findings = append(findings, atNight(due))
 	}
 	return findings, nil
+}
+
+// atNight says, on a release tool's merge request, that its docs due wait
+// for the agent at night (ADR-0050, §7), and how to have them sooner.
+func atNight(n int) verdict.Finding {
+	docs, are := "docs", "are"
+	if n == 1 {
+		docs, are = "doc", "is"
+	}
+	now := "workline route release --target merge-request:<n> --push-to-merge-request"
+	if t, ok := targetMergeRequest(); ok {
+		now = fmt.Sprintf("workline route release --target merge-request:%d --push-to-merge-request", t.ID)
+	}
+	return verdict.Finding{Rule: verdict.WaitsForNight, Level: "warn",
+		Message: fmt.Sprintf("%d %s due for the release %s judged and fixed by the agent at night, in a merge request of their own (workline/documentalist/release): the release waits until it is merged. "+
+			"No agent is asked on each move of this merge request, so that a doc fix never changes its head after a person's yes. For the release sooner, run the night's job now (the release's docs, or the gardening), or, where an agent may judge: `%s`; or a person judges them, moving their `checked`.", n, docs, are, now)}
 }
 
 // changedSince says whether a source of the doc, in this repository,

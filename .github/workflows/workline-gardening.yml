@@ -2,7 +2,9 @@
 # with the engine built from this checkout rather than installed — both jobs
 # check out the same commit, built once (.github/actions/engine), judge's
 # kept for apply. Claude with CLAUDE_CODE_OAUTH_TOKEN, pull
-# requests opened with the GitHub App (ADR-0006, ADR-0010).
+# requests opened with the GitHub App (ADR-0006, ADR-0010). The release
+# pull request's docs due are judged here, on its head, once a night
+# (ADR-0050); run it by hand for the release sooner.
 name: workline gardening
 on:
   # Nightly while its docs are caught up, then Mondays ("17 2 * * 1"). Off
@@ -84,6 +86,7 @@ jobs:
       - env:
           GH_TOKEN: ${{ steps.app.outputs.token || github.token }}
           APP: ${{ steps.app.outputs.app-slug }}
+          WORKLINE_APP: ${{ steps.app.outputs.app-slug }}   # the release's fix is its pull request only if it alone pushed to the release's branch
           PROPOSED: ${{ needs.judge.outputs.proposed }}
         run: |
           if [ -n "$APP" ]; then

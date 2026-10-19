@@ -1,0 +1,25 @@
+case: merge/release-verdict-at-night-kept-held
+about: "A release tool's pull request judged on a move (ADR-0050, §7): its documentalist asked no agent, its docs due hold it, said to be judged at night (`ai-waits-for-night`). The job holding the write token keeps it as a release waiting for its docs — on GitHub, the status `workline/verdict` pending —, never red: the person's yes stays, the release waits for its fix (ADR-0042)."
+given:
+  repo: documented
+  config: {merge: {autonomy: cautious}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb release-please--branches--main && echo '1.1.0' > version.txt && git add version.txt && git commit -qm 'chore(main): release 1.1.0' && git push -q origin release-please--branches--main && git checkout -q main"
+    - "sh \"$FIXTURES/verdict.sh\" release-please--branches--main block ../verdict.json '[{\"rule\": \"suspect\", \"where\": \"docs/tech/auth.md\", \"level\": \"block\", \"message\": \"made suspect since v1.0.0\"}, {\"rule\": \"ai-waits-for-night\", \"level\": \"warn\", \"message\": \"1 doc due for the release\"}]'"
+  forge:
+    merge-requests:
+      - {id: 10, branch: release-please--branches--main, base: main, author: "workline-app[bot]", bot: true, labels: [workline:accepted], comments: [],
+         label-events: [{label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T10:00:00Z"}]}
+run: {follow: [--base, main, --verdict, ../verdict.json]}
+expect:
+  status: pass
+  findings:
+    - {rule: verdict-kept, message: "held, the release waits for its docs, judged at night"}
+    - {rule: waits-for-docs, where: "#10", message: "judged at night"}
+  no-findings: [{rule: auto-merge-on}, {rule: verdict-red}]
+  forge:
+    merge-requests:
+      - {id: 10, auto-merge: false}
+    statuses:
+      - {commit: release-please--branches--main, name: workline/verdict, state: pending, by: workline-bot, description: "held: the release waits for its docs, judged at night"}
