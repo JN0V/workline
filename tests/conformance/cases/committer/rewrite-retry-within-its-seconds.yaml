@@ -1,5 +1,5 @@
 case: committer/rewrite-retry-within-its-seconds
-about: "ai-max-seconds holds every call of the rewrite together: a refused rewrite is still asked again of a stronger model, within what is left of it."
+about: "With the rewrite capped by ai-max-seconds, a refused rewrite is still asked again of a stronger model, and its answer applied."
 given:
   repo: basic
   # 30 s, the default: the wait counts from the first call, the engine's
