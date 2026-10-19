@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine/merge.go, internal/forge/merge.go, internal/forge/github_merge.go, internal/forge/gitlab_merge.go, ci/github/workline-apply.yml, ci/github/workline-merge.yml, ci/gitlab/workline.gitlab-ci.yml]
-checked: 4049d445
+checked: 5193cf0b
 verified: agent:claude-code
 ---
 # The merge policy
@@ -110,7 +110,9 @@ counts as workline's own, the kinds, the revert and the limits:
 
 ## The veto is the forge's
 
-- **Draft**: nothing is turned on; auto-merge on goes off.
+- **Draft**: nothing is turned on; auto-merge on goes off. A draft asks
+  no agent, so nothing it skips can merge
+  ([ADR-0050](adr/0050-each-act-has-its-moment-and-a-wait-budget.md#4-what-the-table-holds-to)).
 - **Auto-merge turned off by a person** stays off until the label is put
   again.
 - **The label taken off** turns auto-merge off.
@@ -125,6 +127,11 @@ counts as workline's own, the kinds, the revert and the limits:
 - **GitLab**: in hand in the merge request's pipeline, where
   `workline:merge` reads it; nothing kept elsewhere.
 - No verdict on the head yet: auto-merge waits for it.
+- **A draft's verdict** is a review to come (`waits`): the rules and
+  gates passed, the AI review waits for it to be marked ready. GitHub's
+  `workline/verdict` is pending. Marked ready, auto-merge waits for the
+  run on ready's verdict (`review-to-come`), never taking the draft's
+  for a pass ([the reviewer on a draft](../roles/reviewer/docs/ready.md)).
 - **The App's key, out of a pull request's reach**: GitHub runs a pull
   request's own copy of the workflow, which its branch can change. The key
   sits in an environment only the default branch may use; the jobs
@@ -166,7 +173,7 @@ counts as workline's own, the kinds, the revert and the limits:
 |---|---|
 | `auto-merge-on`, `merged-at-once` | accepted, its head's verdict passed; at `normal`, "with no person's yes", its kind |
 | `updated` | first in line, brought up to date |
-| `verdict-kept`, `verdict-missing` | the verdict kept; one not judged yet |
+| `verdict-kept`, `verdict-missing`, `review-to-come` | the verdict kept; one not judged yet; marked ready, the draft's verdict still on its head |
 | `verdict-red`, `review-short`, `checks-red` | out of line, why |
 | `accepted-reset` | a push after the yes: the yes and auto-merge off |
 | `vetoed`, `draft`, `auto-merge-off` | the forge's veto, or the label taken off |

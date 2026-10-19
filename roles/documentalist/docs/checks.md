@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/identifiers.go, internal/builtin/documentalist/derive.go, internal/builtin/documentalist/freshness.go, internal/builtin/documentalist/counts.go, roles/documentalist/role.yaml]
-checked: f530cda7
+checked: f3ffdc0b
 judged: f70db89
 verified: agent:claude-code
 ---
@@ -137,7 +137,8 @@ turns one off with `enforce`.
   `source-gone`, `docs-not-read`, `gardening-paused`, the reader checks,
   `too-large-to-condense`, `too-large-to-split`, `too-large-to-read`,
   `reader-claim-dropped` and `reader-patch-withheld` (gardening); for a
-  doc judged in parts, `sources-too-wide`, `uncovered`, `claims-dropped`.
+  doc judged in parts, `sources-too-wide`, `uncovered`, `claims-dropped`;
+  on a draft, `ai-waits-for-ready`.
 - **Reported, and the block regenerated**: `derived-stale` (gardening,
   `init`).
 - **Reported, left as it is**: `derive-unclosed`, a derive marker with no end before the next block's ([#302](https://github.com/JN0V/workline/issues/302)).

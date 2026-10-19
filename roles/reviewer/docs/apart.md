@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, internal/builtin/reviewer/reviewer.go, internal/builtin/reviewer/record.go, internal/line/line.go, ci/github/workline.yml, ci/github/workline-warn.yml, ci/github/workline-apply.yml, ci/gitlab/workline.gitlab-ci.yml]
-checked: 4049d445
+checked: 1359ad77
 verified: agent:claude-code
 ---
 # Reviewer — the lenses that warn, apart from the verdict
@@ -24,7 +24,8 @@ beside the verdict's, and posts once it answered.
 
 - **The lenses a push takes** are the same as in one run: one a push, in
   turn; every lens once when the merge request becomes ready
-  ([the run on ready](ready.md)).
+  ([the run on ready](ready.md)); none on a draft, in either run: the
+  templates install no agent there.
 - **The verdict's run** (`route --warn-apart`) asks, of those, the lenses
   that block — on workline itself, `ai-findings: {correctness: block}` —
   and their judges.

@@ -7,7 +7,8 @@
   ([ADR-0042](0042-the-engine-merges-by-the-projects-policy.md));
   amended 2026-10-17: a change too large for one call read in parts
   (#446); amended 2026-10-19: the lenses that warn read apart from the
-  verdict ([ADR-0050](0050-each-act-has-its-moment-and-a-wait-budget.md))
+  verdict, and no lens on a draft
+  ([ADR-0050](0050-each-act-has-its-moment-and-a-wait-budget.md))
 - **Date:** 2026-10-04
 - **Builds on:** ADR-0005 (a judge's independence), ADR-0009 (a question in
   parts), ADR-0011 (the review is on the merge request), ADR-0013 (what was
@@ -699,3 +700,27 @@ merge-request line; on in workline's own repository.
   call more a push); the run apart after the verdict, in the default
   branch's workflow (the agent's token beside the pull request's code,
   with the base's cache in reach).
+
+## Amendment (2026-10-19, ADR-0050: no lens on a draft)
+
+- **What changed**: a draft got one lens a push, its judges too
+  ([ADR-0050](0050-each-act-has-its-moment-and-a-wait-budget.md#4-what-the-table-holds-to),
+  step 5). Told `draft=true`, the engine now gives every role of the
+  line no agent: the rules still run and block; no lens, no judge.
+- **Said plainly**: `ai-waits-for-ready`, a warning, says every lens
+  reads the whole change once it is marked ready. With no agent set, the
+  review still says it waits for a person (`not-reviewed`).
+- **Ready, once, as before**: `lenses=all`, or a merge request no draft
+  whose record does not say every lens read it.
+- **A draft again**: its run asks no lens and posts nothing new; the
+  last review stands. Only its record forgets `read=all`, the comment
+  otherwise kept, so ready again reads every lens once more, as the
+  #359 amendment has it.
+- **Nothing gets through**: a draft never merges
+  ([ADR-0042](0042-the-engine-merges-by-the-projects-policy.md)), and
+  the merge policy reads a draft's verdict as a review to come
+  (`waits`, GitHub's status pending), never a pass, until the run on
+  ready gives its own.
+- **Rejected**: one lens a draft push (its cost on every push); no
+  line on a draft (the rules and gates are the first result); a failed
+  status on a draft (a red check people learn to skip).

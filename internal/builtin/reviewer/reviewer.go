@@ -297,6 +297,7 @@ func prepare(runDir, repo string, s Settings) int {
 			Message: "the patch ids of the commits' changes could not be read (" + sp.Unread.Error() + "): a commit rebased is reviewed again"})
 	}
 	start := sp.From
+	marked := rec.ReadAll || rec.Retried // what a draft's run forgets (runOnReady)
 	ready := runOnReady(runDir, &rec, recordRead)
 	if ready {
 		start = base
@@ -329,6 +330,9 @@ func prepare(runDir, repo string, s Settings) int {
 		if len(files) == 0 {
 			return recordOnly(runDir, s, st, sp.New)
 		}
+	}
+	if os.Getenv("WORKLINE_AI_WAITS") == "ready" {
+		return waitsForReady(runDir, s, st, marked)
 	}
 	if ai := os.Getenv("WORKLINE_AI"); ai == "" || ai == "none" {
 		st.Advisories = append(st.Advisories, verdict.Finding{Rule: "not-reviewed", Level: "warn",
@@ -563,6 +567,42 @@ func recordOnly(runDir string, s Settings, st state, fresh int) int {
 		fallback = append(fallback, intent.Intention{Kind: "comment", Value: summaryValue(st, summaryComment(v, 0, nil, nil))})
 	}
 	if err := intent.Write(filepath.Join(runDir, "in", "fallback.yaml"), fallback); err != nil {
+		return fail(err)
+	}
+	if err := writeJSON(filepath.Join(runDir, "in", "review.json"), v); err != nil {
+		return fail(err)
+	}
+	return 0
+}
+
+// waitsForReady settles a draft's run, its agent set aside by the engine
+// (WORKLINE_AI_WAITS, ADR-0050): the rules ran, no lens nor judge is
+// asked, and the review says it waits for ready. No review is posted, the
+// last one standing as it is; but where its record said every lens
+// read the change (marked), the record alone is written anew, without
+// it, so that ready again reads every lens once more (#359), even after a
+// cancelled run. The comment is the one the record was read from; a run
+// apart whose record a summary comment gave has none of its own to write.
+func waitsForReady(runDir string, s Settings, st state, marked bool) int {
+	why := "a draft: no lens asked; every lens reads the whole change once it is marked ready"
+	if os.Getenv("WORKLINE_FORGE") == "gitlab" {
+		why += "; GitLab starts no pipeline then: push, or run its pipeline"
+	}
+	st.Advisories = append(st.Advisories, verdict.Finding{Rule: verdict.WaitsForReady, Level: "warn", Message: why})
+	v := review(st, nil, "a draft: only the rules ran; every lens reads the whole change once it is marked ready")
+	body := ""
+	if marked && mergeRequest() != nil && s.ForgeWrites && st.Record.comment != "" {
+		if body = keptReview(st.Record.comment, st.Warn, v.Record); body == "" {
+			// Never kept in silence (principle 12): ready again would read
+			// the lens in turn, not every lens.
+			v.Findings = append(v.Findings, verdict.Finding{Rule: "record-not-written", Level: "warn",
+				Message: "the record still says every lens read the change, and could not be written anew without it: once it is ready, ask every lens (`--input lenses=all`)"})
+		}
+	}
+	if body == "" {
+		return final(runDir, v)
+	}
+	if err := intent.Write(filepath.Join(runDir, "in", "fallback.yaml"), []intent.Intention{{Kind: "comment", Value: summaryValue(st, body)}}); err != nil {
 		return fail(err)
 	}
 	if err := writeJSON(filepath.Join(runDir, "in", "review.json"), v); err != nil {

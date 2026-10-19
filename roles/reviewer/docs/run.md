@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/instruction.md, roles/reviewer/policy.md, roles/reviewer/lenses, internal/builtin/reviewer]
-checked: ef8ebda9
+checked: 1359ad77
 verified: agent:claude-code
 ---
 # Reviewer — a run on code
@@ -78,7 +78,8 @@ The lenses (`lenses/<lens>.md`, a project's own in
 intent, claims ([#126](https://github.com/JN0V/workline/issues/126)).
 Every one on a machine; on a merge request one a push, in turn
 (`lenses-per-push`), every one with `--input lenses=all`, once when it
-becomes ready ([below](#every-lens-once-when-it-becomes-ready)).
+becomes ready ([below](#every-lens-once-when-it-becomes-ready)); none
+on a draft (`--input draft=true`, [ADR-0050](../../../docs/adr/0050-each-act-has-its-moment-and-a-wait-budget.md)).
 
 - **Together** (`lenses-together`,
   [#147](https://github.com/JN0V/workline/issues/147)): the lenses of a run
@@ -197,6 +198,6 @@ lenses that only warn read apart, in a comment of their own ([apart](apart.md)).
 
 ### Every lens once when it becomes ready
 
-The run when a merge request becomes ready reads every lens once, on
-the whole change: what tells it on each forge, a run on ready cancelled,
-a draft again, the cost: [the run on ready](ready.md).
+A draft asks no lens; the run when a merge request becomes ready reads
+every lens once, on the whole change: what tells it on each forge, a
+run on ready cancelled, a draft again, the cost: [the run on ready](ready.md).

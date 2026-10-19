@@ -1,0 +1,30 @@
+case: reviewer/warn-apart-no-lens-on-a-draft
+about: "A review split (ADR-0050), the merge request every lens read, turned back into a draft and pushed to (`draft=true`): neither the verdict's run nor the run apart asks an agent. Each comment keeps the last review it holds; each record forgets that every lens read the change (#359), so ready again reads every lens of each side once more."
+given:
+  repo: reviewed
+  setup:
+    - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"
+    - "sed -i \"s/@reviewed@/$(git rev-parse HEAD)/g\" \"$FORGE_FILE\""
+    - "printf 'package calc\\n\\n// Half halves a count.\\nfunc Half(n int) int { return n / 2 }\\n' > calc/half.go && git add calc/half.go && git commit -qm 'feat: halve a count'"
+  config:
+    routing: {events: {merge-request: [reviewer]}}
+    roles: {reviewer: {settings: {ai-findings: {correctness: block}}}}
+  forge:
+    merge-requests:
+      - id: 5
+        labels: []
+        comments:
+          - "Read by the correctness lens, nothing found.\n<!-- workline:warn-apart -->\n\n<!-- workline:record reviewed=@reviewed@ runs=1 read=all -->\n\n<!-- workline:sticky=reviewer/summary -->"
+          - "Read by edge-cases, tests and claims, nothing found.\n\n<!-- workline:record reviewed=@reviewed@ runs=1 read=all -->\n\n<!-- workline:sticky=reviewer/warn -->"
+run: {route: merge-request, warn-apart: true, then: apart, input: {range: main..HEAD, draft: "true"}, target: {merge-request: 5}, ai: "cmd:sh $FIXTURES/agents/review-by-lens.sh"}
+expect:
+  status: pass
+  apart-status: pass
+  agent-calls: 0
+  findings: [{rule: ai-waits-for-ready, level: warn}]
+  forge:
+    merge-requests:
+      - id: 5
+        comments: 2
+        comment-contains: ["Read by the correctness lens, nothing found.", "Read by edge-cases, tests and claims, nothing found.", " runs=1 -->"]
+        comment-lacks: "read=all"

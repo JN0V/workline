@@ -1,0 +1,14 @@
+case: reviewer/draft-with-no-agent-waits-for-a-person
+about: "A draft in a project with no agent (`ai: none`): nothing waits for it to be ready, no agent would come then either. The review says what it says on any merge request with no agent: the change waits for a person's review (`not-reviewed`), never that the AI review waits for ready (ADR-0050)."
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
+  forge:
+    issues: []
+    merge-requests: [{id: 5, labels: [], comments: []}]
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD, draft: "true"}, target: {merge-request: 5}, ai: none}
+expect:
+  status: pass
+  agent-calls: 0
+  findings: [{rule: not-reviewed, level: warn}]
+  no-findings: [{rule: ai-waits-for-ready}]

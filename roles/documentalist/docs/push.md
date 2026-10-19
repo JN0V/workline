@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/adopt.go, internal/builtin/documentalist/byname.go, internal/builtin/documentalist/releasekept.go]
-checked: f530cda7
+checked: f3ffdc0b
 verified: agent:claude-code
 judged-in-parts: c7e1e98
 ---
@@ -171,3 +171,8 @@ comment each push:
 - the docs due later are listed apart;
 - with none left, the comment says so;
 - none is opened on a merge request that never had one.
+
+On a draft, an agent set, the engine asks it nothing
+([ADR-0050](../../../docs/adr/0050-each-act-has-its-moment-and-a-wait-budget.md)):
+the docs the change made suspect are counted, and said judged once it
+is marked ready (`ai-waits-for-ready`); no checklist asks a person to.

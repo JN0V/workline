@@ -77,6 +77,17 @@ func (v *HeadVerdict) short() string {
 	return ""
 }
 
+// waits says why the review of a head that passed is still to come, a
+// draft's (verdict.WaitsForReady), "" when it is not.
+func (v *HeadVerdict) waits() string {
+	for _, f := range v.Findings {
+		if f.Rule == verdict.WaitsForReady {
+			return "a draft: the rules and gates passed, the AI review waits for it to be marked ready"
+		}
+	}
+	return ""
+}
+
 // red says why a head's verdict did not pass.
 func (v *HeadVerdict) red() string {
 	var rules []string
@@ -106,6 +117,7 @@ const (
 	verdictPass  = "pass"
 	verdictHeld  = "held"  // a release waiting for its docs
 	verdictShort = "short" // passed, a review short of its agent
+	verdictWaits = "waits" // passed, a draft's: the AI review to come once ready
 	verdictRed   = "red"
 )
 
@@ -116,6 +128,8 @@ func (v *HeadVerdict) class() (string, string) {
 		return verdictHeld, "the release waits for its docs, fixed in a merge request of their own"
 	case v.Status != verdict.Pass:
 		return verdictRed, v.red()
+	case v.waits() != "":
+		return verdictWaits, v.waits()
 	case v.short() != "":
 		return verdictShort, v.short()
 	}
@@ -776,6 +790,9 @@ func weigh(f forge.Forge, m forge.Merger, o FollowOptions, local bool, mr forge.
 	switch v.class {
 	case "":
 		say("verdict-missing", "", fmt.Sprintf("accepted by %s; no verdict of the line on its head (%s) yet: it waits for it, the next one comes up meanwhile", by, short(tip)))
+		return e, nil
+	case verdictWaits: // marked ready, the run on ready not done yet
+		say("review-to-come", "", fmt.Sprintf("accepted by %s; its head's (%s) verdict is the draft's, %s: it waits for the run on ready, the next one comes up meanwhile", by, short(tip), v.why))
 		return e, nil
 	case verdictHeld:
 		if fix != "" {

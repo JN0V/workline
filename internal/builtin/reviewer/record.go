@@ -36,6 +36,10 @@ type Record struct {
 	// them the summary comment no longer holds. Never on a machine.
 	Judged []Answered `json:"judged,omitempty"`
 	Gone   int        `json:"judged-gone,omitempty"`
+	// comment is the side's own comment the record was read from on a
+	// merge request, whole: a draft's run keeps it as it is, its record
+	// alone written anew (ADR-0050). "" elsewhere, or with none yet.
+	comment string
 }
 
 // Answered is a finding the judge answered: kept (yes) or dropped (no), at
@@ -471,6 +475,23 @@ func localRecord(repo, side string) string {
 	return filepath.Join(strings.TrimSpace(dir), "workline", name)
 }
 
+// keptReview is a side's comment, text, as it stands, its record and the
+// blocks beside it replaced by rec's: what the last review said is kept,
+// only the record changes (a draft again, ADR-0050). "" when text holds no
+// record that reads.
+func keptReview(text, side string, rec Record) string {
+	loc := recordLine.FindStringIndex(text)
+	if loc == nil {
+		return ""
+	}
+	end := loc[1]
+	if m := blocksLine.FindStringIndex(text[end:]); m != nil && strings.TrimSpace(text[end:end+m[0]]) == "" {
+		end += m[1]
+	}
+	body := text[:loc[0]] + rec.String() + text[end:]
+	return strings.TrimSpace(strings.Replace(body, forge.Marker("sticky=reviewer/"+keyOf(side)), "", 1))
+}
+
 // loadRecord reads the record: from the merge request's summary comment when
 // the run is on one and may write there, else from the machine's. It says
 // where it read it, and why it could not, when it could not. The summary
@@ -500,6 +521,7 @@ func loadRecord(repo string, s Settings, side string) (Record, string, error) {
 		for _, c := range comments {
 			if strings.Contains(c, forge.Marker("sticky=reviewer/"+keyOf(side))) {
 				r, err := readRecord(c)
+				r.comment = c
 				return r, where, err
 			}
 		}

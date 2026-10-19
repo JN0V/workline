@@ -65,7 +65,21 @@ type Options struct {
 	// TamperBeforeApply changes the prepared input between propose and apply.
 	// It exists only for the conformance test that proves apply notices.
 	TamperBeforeApply bool
+
+	aiWaits string // why the agent was set aside, "ready" on a draft (DraftInput)
 }
+
+// DraftInput is the input saying a merge request is a draft, `true`, or
+// not, `false`: the templates pass it on every run (#359). A draft gets no
+// agent (ADR-0050): every role runs as with none, told the agent waits
+// for it to be marked ready (WORKLINE_AI_WAITS=ready), and the run says so
+// (Result.AIWaits). A draft never merges (ADR-0042): what it skips holds
+// nothing back from the run on ready.
+const DraftInput = "draft"
+
+// AIWaitsReady is what Result.AIWaits and WORKLINE_AI_WAITS hold on a
+// draft: the agent waits for the merge request to be marked ready.
+const AIWaitsReady = "ready"
 
 // Result is what a run reports.
 type Result struct {
@@ -89,8 +103,12 @@ type Result struct {
 	// job's summary (ADR-0038): the address of the forge's issues, an
 	// issue's number after it making its page; the saved filter of what
 	// waits on a person, workline:proposed.
-	Issues    string `json:"issues,omitempty"`
-	Waiting   string `json:"waiting,omitempty"`
+	Issues  string `json:"issues,omitempty"`
+	Waiting string `json:"waiting,omitempty"`
+	// AIWaits is why the run's agent was set aside: "ready", a merge
+	// request still a draft (DraftInput); "" when it had its agent, or
+	// none was set.
+	AIWaits   string `json:"ai-waits,omitempty"`
 	maxTokens int    // the role's ai-max-tokens: what the run may spend; 0, no cap
 	// maxSeconds is the role's ai-max-seconds: how long the run may wait on
 	// its agents, from the first call; 0, no cap. waitSince is that call.
@@ -426,6 +444,9 @@ func run(o Options, res *Result) error {
 	}
 	if o.AI == "" {
 		o.AI = o.DefaultAI
+	}
+	if o.Inputs[DraftInput] == "true" && o.AI != "" && o.AI != "none" {
+		o.AI, o.aiWaits, res.AIWaits = "none", AIWaitsReady, AIWaitsReady
 	}
 	ag, err := agent.Parse(o.AI)
 	if err != nil {
@@ -2694,6 +2715,9 @@ func scriptEnv(runDir, roleName string, o Options) []string {
 		"WORKLINE_BIN="+self,
 		"WORKLINE_ROLES_DIR="+o.RolesDir,
 	)
+	if o.aiWaits != "" { // the agent set aside, a draft (DraftInput)
+		env = append(env, "WORKLINE_AI_WAITS="+o.aiWaits)
+	}
 	if o.Forge != "" && o.Forge != "none" {
 		env = append(env, "WORKLINE_FORGE="+o.Forge) // what the role may write to
 	}

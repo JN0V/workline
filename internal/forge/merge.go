@@ -103,7 +103,8 @@ type Merger interface {
 	// token); nothing where it does not.
 	Accept(head string, ok bool, why string) error
 	// KeepVerdict keeps the line's verdict on a head — its class, pass,
-	// held, short or red, and why — where only this token writes it
+	// held, short, waits (a draft's, ADR-0050) or red, and why — where
+	// only this token writes it
 	// (GitHub: the status VerdictStatus); Verdict reads it back, "" when
 	// none is kept, or the forge keeps none (GitLab: the verdict is in hand
 	// in the pipeline that judged the head).
@@ -133,7 +134,7 @@ func verdictText(class, why string) string { return statusText(class + ": " + wh
 func readVerdict(text string) (class, why string) {
 	class, why, _ = strings.Cut(text, ": ")
 	switch class {
-	case "pass", "held", "short", "red":
+	case "pass", "held", "short", "waits", "red":
 		return class, why
 	}
 	return "", ""

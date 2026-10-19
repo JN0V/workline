@@ -1,6 +1,6 @@
 ---
 sources: [ci/github, ci/gitlab, ci/forgejo/workline-forge.sh, roles/product-owner/role.yaml, cmd/workline]
-checked: 4049d445
+checked: 5193cf0b
 judged: a8574a5
 verified: agent:claude-code
 reader: 8aab3bd261d9
@@ -43,6 +43,8 @@ then one that applies, with the write token and no AI key
   in a job of their own beside the judge, posting in a comment of their
   own; the head's verdict waits only for what can block
   ([apart](../roles/reviewer/docs/apart.md)).
+- **A draft asks no agent** until it is marked ready
+  ([how](../roles/reviewer/docs/ready.md)).
 
 - **A judge that fails still hands over**: the applying job runs whatever
   the judge's outcome, and the pipeline fails by the judge's. It applies

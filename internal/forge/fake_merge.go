@@ -133,9 +133,14 @@ func (f *Fake) setStatus(head, name, state, description string) error {
 	})
 }
 
-// KeepVerdict keeps the verdict as GitHub does, a status by the token.
+// KeepVerdict keeps the verdict as GitHub does, a status by the token: a
+// draft's review to come pending.
 func (f *Fake) KeepVerdict(head, class, why string) error {
-	return f.setStatus(head, VerdictStatus, map[bool]string{true: "success", false: "failure"}[class == "pass"], verdictText(class, why))
+	state := map[string]string{"pass": "success", "waits": "pending"}[class]
+	if state == "" {
+		state = "failure"
+	}
+	return f.setStatus(head, VerdictStatus, state, verdictText(class, why))
 }
 
 // Verdict reads back the verdict the token kept on head.

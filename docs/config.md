@@ -1,6 +1,6 @@
 ---
 sources: [internal/role/config.go, internal/role/role.go, cmd/workline, internal/engine/engine.go, internal/forge/gitlab.go, internal/hooks]
-checked: ef8ebda9
+checked: 5193cf0b
 judged: e343388
 verified: agent:claude-code
 reader: 0b97bbc207c5
@@ -193,6 +193,9 @@ A role's `pre` and `post` receive:
   roles);
 - `WORKLINE_FORGE` when a forge is given, `WORKLINE_TARGET`
   (`merge-request:12`) with a target too;
+- `WORKLINE_AI_WAITS=ready` on a draft (`--input draft=true`): the
+  agent set aside, `WORKLINE_AI` is `none`
+  ([ADR-0050](adr/0050-each-act-has-its-moment-and-a-wait-budget.md#4-what-the-table-holds-to));
 - `WORKLINE_OPEN_MERGE_REQUESTS`, `WORKLINE_OPEN_MERGE_REQUEST_TASKS` and
   `WORKLINE_PROPOSED_TASKS` with `--open-merge-request`, and
   `in/waiting.yaml`, the files each waiting task changes;

@@ -1,6 +1,6 @@
 ---
 sources: [ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile]
-checked: 4049d445
+checked: 5193cf0b
 judged: cd97f28
 verified: agent:claude-code
 reader: 9799dcaf51f3
@@ -198,10 +198,10 @@ a cron off the hour (`13 17 * * *`) was listed as due at 18:00 and ran at
   - the applying job posts each finding as a discussion on its line, with
     `WORKLINE_GITLAB_TOKEN`
     ([more](../roles/reviewer/docs/lines.md));
-  - marking a draft ready starts no pipeline: the next one, a push or
-    **Run pipeline**, has every lens read the whole change once
-    ([how](../roles/reviewer/docs/ready.md); not tried on
-    a GitLab yet).
+  - a draft's pipelines ask no agent; marking it ready starts no
+    pipeline: the next one, a push or **Run pipeline**, has every lens
+    read the whole change once, as the draft's summary says
+    ([how](../roles/reviewer/docs/ready.md); not tried on a GitLab yet).
 - **The documentalist** reads, with the same `GITLAB_TOKEN`, the records
   its note keeps instead of commits; else it commits them, said
   (`record-unread`, [more](../roles/documentalist/docs/push.md#a-doc-found-with-nothing-to-fix-no-commit)).

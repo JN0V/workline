@@ -72,7 +72,7 @@ its measure in
   `run-on-ready-held-by-a-rule-owes-every-lens`,
   `every-lens-owed-read-on-the-next-push`,
   `every-lens-when-the-run-on-ready-was-cancelled`,
-  `one-lens-a-push-once-every-lens-read`, `one-lens-a-push-on-a-draft`,
+  `one-lens-a-push-once-every-lens-read`,
   `every-lens-again-once-a-draft-again`,
   `record-unread-asks-one-lens-on-a-ready-merge-request`; a failed run
   on ready asks every lens again once, then says it:
@@ -95,6 +95,15 @@ its measure in
   `warn-lens-failing-changes-no-verdict`,
   `warn-only-takes-up-the-record-of-a-review-not-split`,
   `warn-only-every-lens-blocks-writes-nothing`.
+- **No lens on a draft**, the last review kept, the AI review said to
+  wait for ready
+  ([ADR-0050](../../../docs/adr/0050-each-act-has-its-moment-and-a-wait-budget.md),
+  [ready](ready.md)): `no-lens-on-a-draft`,
+  `draft-with-no-agent-waits-for-a-person`,
+  `every-lens-once-when-a-draft-no-lens-read-is-marked-ready`,
+  `warn-apart-no-lens-on-a-draft`, `routing/draft-line-asks-no-agent`;
+  a draft pushed, then marked ready, tried on
+  [#533](https://github.com/JN0V/workline/pull/533).
 - **Lenses as parts**, answering findings only; an answer that does not
   read asked again once: `never-approves-nor-patches`,
   `lens-failed-not-clean`, `lens-answer-asked-again-once`.
@@ -209,7 +218,7 @@ its measure in
 4. **The developer's loop**: a handoff to the developer, five rounds, then
    a person. Waits for the developer role, after inspector and security
    ([#117](https://github.com/JN0V/workline/issues/117)).
-5. **Tries on real use**: a draft marked ready, a run on ready a rule
+5. **Tries on real use**: a run on ready a rule
    held, GitLab (the job token reading the notes, the next pipeline), a
    block standing on a forge, an issue outside the change written by a
    real agent, a change read in parts; every lens on ready tried on

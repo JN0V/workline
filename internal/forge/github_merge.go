@@ -217,9 +217,10 @@ func (g *github) setStatus(head, name, state, description string) error {
 }
 
 // KeepVerdict keeps the verdict as the status workline/verdict: success
-// when it passed, pending for a release held for its docs, failure else.
+// when it passed, pending for a release held for its docs or a draft's
+// review to come once ready (ADR-0050), failure else.
 func (g *github) KeepVerdict(head, class, why string) error {
-	state := map[string]string{"pass": "success", "held": "pending"}[class]
+	state := map[string]string{"pass": "success", "held": "pending", "waits": "pending"}[class]
 	if state == "" {
 		state = "failure"
 	}

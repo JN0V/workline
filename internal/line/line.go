@@ -8,6 +8,7 @@ import (
 	"maps"
 	"os"
 	"os/exec"
+	"slices"
 	"strings"
 
 	"github.com/JN0V/workline/internal/agent"
@@ -173,6 +174,9 @@ func RunWith(event string, base engine.Options, gates *Gates) *Result {
 			res.Summary = fmt.Sprintf("%s: nothing reads apart from the verdict", event)
 		}
 	}
+	if slices.ContainsFunc(res.Steps, func(s Step) bool { return s.Result != nil && s.Result.AIWaits != "" }) {
+		res.Summary += "; a draft: no agent asked, the AI review waits for it to be marked ready"
+	}
 	if len(res.Pending) > 0 {
 		res.Summary += fmt.Sprintf("; %d runs to apply", len(res.Pending))
 	}
@@ -331,6 +335,9 @@ func runRole(res *Result, cfg *routing.Config, o engine.Options, depth int) (str
 		next := o
 		next.Role, next.Event, next.AI = to, "handoff", o.AI
 		next.Inputs = map[string]string{"handoff-from": o.Role, "handoff-reason": reason}
+		if d, ok := o.Inputs[engine.DraftInput]; ok { // a draft's handoff gets no agent either (ADR-0050)
+			next.Inputs[engine.DraftInput] = d
+		}
 		next.Targets = nil
 		if step, status := runRole(res, cfg, next, depth+1); status != verdict.Pass {
 			return step, status

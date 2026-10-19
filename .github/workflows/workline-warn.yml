@@ -73,14 +73,16 @@ jobs:
       - uses: ./.github/actions/engine
         if: steps.any.outputs.any == 'true'
         with: {keep: "false"}
+      # Not on a draft, which asks no agent (ADR-0050).
       - name: Claude
-        if: steps.any.outputs.any == 'true'
+        if: steps.any.outputs.any == 'true' && !github.event.pull_request.draft
         run: npm install -g @anthropic-ai/claude-code
       - name: What only warns, apart from the verdict (proposals only)
         id: line
         if: steps.any.outputs.any == 'true'
         # As workline.yml's judge: every lens once when opened or marked
-        # ready, the draft state on every run (ADR-0020, #359).
+        # ready, the draft state on every run (ADR-0020, #359); on a draft,
+        # no lens (ADR-0050).
         env:
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           HEAD_REF: ${{ github.head_ref }}

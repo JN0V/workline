@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/instruction.md, roles/reviewer/policy.md, roles/reviewer/lenses, internal/builtin/reviewer, internal/backlog/spec.go, routing.default.yaml]
-checked: ef8ebda9
+checked: 1359ad77
 verified: agent:claude-code
 ---
 # Reviewer
@@ -52,7 +52,7 @@ file. All roles: [docs/roles.md](../../docs/roles.md).
 | Event | Fired by | Reads |
 |---|---|---|
 | `review` | `workline review`, on your machine before you push | `base..HEAD`, every lens |
-| `merge-request` | CI, opt-in: `workline init --review` adds it to the line | the commits not reviewed yet, one lens a push; every lens once, on the whole change, when it becomes ready |
+| `merge-request` | CI, opt-in: `workline init --review` adds it to the line | a draft: the rules only, no lens ([more](docs/ready.md)); every lens once, on the whole change, when it becomes ready; then the commits not reviewed yet, one lens a push |
 | `spec` | `workline review --spec <file>` or `--issue <n>` | the spec, every spec lens |
 | `schedule` | CI gardening, opt-in: `reviewer` after `product-owner` in the `schedule` line | one issue the product owner refined, every spec lens |
 
@@ -65,7 +65,7 @@ file. All roles: [docs/roles.md](../../docs/roles.md).
   GitLab's Code Quality (`--sarif`, `--code-quality`), and an issue
   (`needs-triage`) for each verified finding outside the change.
 - **Cost**: one call for the lenses (all of them on a machine, together;
-  one a push on a merge request), one judge call for each important
+  one a push on a merge request, none on a draft), one judge call for each important
   finding, up to three when it reads the code it needs; a spec, one
   call. A change too large for one call: a call a part
   ([in parts](docs/parts.md)). Capped at 300000 tokens a run
