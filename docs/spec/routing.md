@@ -212,4 +212,5 @@ routing:
 
 ## Not in this version
 
-The developer and tester roles, which will consume `ready` items.
+The developer and tester roles, which will consume `ready` items. Which
+act runs at which moment, decided: [ADR-0050](../adr/0050-each-act-has-its-moment-and-a-wait-budget.md).
