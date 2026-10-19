@@ -92,7 +92,9 @@ its evaluation in
   `patch-pushed-to-the-merge-request`, `patch-as-comment-from-a-fork`,
   routing's `own-commit-*`.
 - **The push counts suspect docs**, asks nothing, reading only the docs
-  its commits touched; the others on the merge request: routing's
+  its commits touched, in 1 to 2.5 s
+  ([tried](https://github.com/JN0V/workline/pull/531)); the others on the
+  merge request: routing's
   `pre-push-line`, `push-touching-no-source-reads-no-doc`,
   `push-checks-the-docs-it-made-suspect`,
   `repository-checks-on-the-merge-request`.
