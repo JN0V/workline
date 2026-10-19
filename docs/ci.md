@@ -1,6 +1,6 @@
 ---
 sources: [ci/github, ci/gitlab, ci/forgejo/workline-forge.sh, roles/product-owner/role.yaml, cmd/workline]
-checked: ef8ebda9
+checked: 4049d445
 judged: a8574a5
 verified: agent:claude-code
 reader: 8aab3bd261d9
