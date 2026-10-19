@@ -152,8 +152,9 @@ func TestDocsSaysWhatBecameOfEachDoc(t *testing.T) {
 }
 
 // The push only counts the docs (ADR-0010): one line, how many its commits
-// made suspect and how many were before, and the command that judges them;
-// never the docs one by one with their commits, never a question.
+// made suspect, and the command that judges them; never the docs one by one
+// with their commits, never a question. The docs suspect from before are not
+// read at a push: the merge request and gardening say them (ADR-0050).
 func TestPushCountsTheDocs(t *testing.T) {
 	work := t.TempDir()
 	env := append(hermeticEnv(), "XDG_CONFIG_HOME="+filepath.Join(work, "config"), "GIT_CONFIG_GLOBAL="+filepath.Join(work, "gitconfig"))
@@ -183,11 +184,20 @@ func TestPushCountsTheDocs(t *testing.T) {
 	if err != nil {
 		t.Fatalf("the push was stopped:\n%s", out)
 	}
-	if !strings.Contains(out, "docs suspect: 1 made so by these commits, 0 before") || !strings.Contains(out, "workline docs") {
+	if !strings.Contains(out, "docs suspect: 1 made so by these commits — `workline docs` judges them") {
 		t.Errorf("the push does not count the docs in one line:\n%s", out)
 	}
 	if strings.Contains(out, "changed since it was checked") || strings.Contains(out, "feat(auth): keep users") {
 		t.Errorf("the push lists the docs and their commits:\n%s", out)
+	}
+	if out, err := run("sh", "-c", "echo 'package main' > main.go && git add main.go && git commit -qm 'feat: add an entry point'"); err != nil {
+		t.Fatal(out)
+	}
+	if out, err = run("git", "push", "origin", "main"); err != nil {
+		t.Fatalf("the push was stopped:\n%s", out)
+	}
+	if strings.Contains(out, "docs suspect") {
+		t.Errorf("a push touching no doc's source counts the docs suspect from before:\n%s", out)
 	}
 }
 

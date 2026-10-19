@@ -586,16 +586,16 @@ func hookCmd(args []string) int {
 	return 1
 }
 
-// prePushQuiet are the findings a push does not need to show: sizes and links
-// the line reports on every run, whatever is being pushed. They are counted,
-// and `workline route pre-push` shows them.
+// prePushQuiet are the findings a push does not need to show: the sizes and
+// links of the docs it touched, which the merge request says again. They
+// are counted, and `workline route pre-push` shows them. Passages written
+// twice are not looked for at a push (ADR-0050).
 var prePushQuiet = map[string]bool{
 	"doc-too-long": true, "section-too-long": true, "card-too-short": true, "card-too-long": true,
 	"folder-too-long": true, "agent-file-too-long": true, "links-not-checked": true, "nothing-tracked": true,
 	"pending":        true, // due at a later moment, the release, which says so
 	"derived-behind": true, // regenerated on the default branch after the merge (ADR-0027)
-	// About the whole repository, not what is pushed: gardening's.
-	"dead-link": true, "duplicate": true, "cites-superseded": true,
+	"dead-link":      true, "cites-superseded": true,
 }
 
 // prePush runs the project's pre-push line on the commits being pushed, with
@@ -634,9 +634,10 @@ func prePush(remote string) int {
 }
 
 // prePushLine runs the project's pre-push line on each range pushed, with no
-// agent: a push never waits on one (ADR-0007). It counts the suspect docs,
-// never lists them: they are judged on the merge request, by gardening or
-// with `workline docs` (ADR-0010).
+// agent: a push never waits on one (ADR-0007). It counts the docs the
+// commits made suspect, never lists them: they are judged on the merge
+// request, by gardening or with `workline docs` (ADR-0010). The other docs
+// are not read at a push: the merge request and gardening do (ADR-0050).
 func prePushLine(root string, refs []hooks.Ref) int {
 	if _, err := os.Stat(filepath.Join(root, ".workline", "off")); err == nil {
 		return 0
@@ -656,7 +657,7 @@ func prePushLine(root string, refs []hooks.Ref) int {
 		return 1
 	}
 	fmt.Fprintf(os.Stderr, "workline: checking the commits pushed (%s), no agent…\n", strings.Join(cfg.Events["pre-push"], ", "))
-	var suspect, before []string
+	var suspect []string
 	for _, ref := range refs {
 		rng := ref.Range
 		if rng == "" {
@@ -677,12 +678,8 @@ func prePushLine(root string, refs []hooks.Ref) int {
 		}
 		for _, f := range res.Findings {
 			if f.Rule == "suspect" { // counted, never listed: the push only counts (ADR-0010)
-				into := &suspect
-				if strings.Contains(f.Message, "left for gardening") {
-					into = &before
-				}
-				if !contains(*into, f.Where) {
-					*into = append(*into, f.Where)
+				if !contains(suspect, f.Where) {
+					suspect = append(suspect, f.Where)
 				}
 				continue
 			}
@@ -710,8 +707,8 @@ func prePushLine(root string, refs []hooks.Ref) int {
 			return 1
 		}
 	}
-	if len(suspect)+len(before) > 0 {
-		fmt.Fprintf(os.Stderr, "workline: docs suspect: %d made so by these commits, %d before — `workline docs` judges them\n", len(suspect), len(before))
+	if len(suspect) > 0 {
+		fmt.Fprintf(os.Stderr, "workline: docs suspect: %d made so by these commits — `workline docs` judges them\n", len(suspect))
 	}
 	return 0
 }

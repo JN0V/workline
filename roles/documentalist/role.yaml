@@ -3,8 +3,9 @@ name: documentalist
 mission: The docs stay true to the code, short enough to be read, and the product docs follow the technical ones.
 
 # merge-request: check what this change makes suspect, before it merges.
-# pre-push: the same on the machine, before the commits leave it: listed at
-#           the push, judged with `workline docs`, each change reviewed (ADR-0007).
+# pre-push: the same on the machine, before the commits leave it: counted at
+#           the push, judged with `workline docs`, each change reviewed (ADR-0007);
+#           no other doc read there, nor duplicates looked for (ADR-0050).
 # schedule: gardening — freshness, duplicates, budgets, across the whole repo.
 # handoff: from a project's own role, when routing allows it; no shipped role asks.
 # release: before the project's release tool tags (ADR-0017): the docs due at
