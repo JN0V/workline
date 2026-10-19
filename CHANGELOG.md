@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.37.0](https://github.com/JN0V/workline/compare/v0.36.0...v0.37.0) (2026-10-19)
+
+
+### Features
+
+* **committer:** cap the agent's rewrite at a commit to 30 s ([#528](https://github.com/JN0V/workline/issues/528)) ([f78fcf2](https://github.com/JN0V/workline/commit/f78fcf2276ef14810acd15708e02211dcb548aea))
+* **documentalist:** check at a push only the docs it made suspect ([#531](https://github.com/JN0V/workline/issues/531)) ([fc79b07](https://github.com/JN0V/workline/commit/fc79b0732b209838e540cbf6f8d92078c4002f5b))
+* **reviewer:** ask no agent on a draft, review once it is ready ([#533](https://github.com/JN0V/workline/issues/533)) ([8b1c2a9](https://github.com/JN0V/workline/commit/8b1c2a90bcda18ffdd7633aea56b10c983cbc883))
+* **reviewer:** post the lenses that only warn after the verdict ([#532](https://github.com/JN0V/workline/issues/532)) ([39fa39a](https://github.com/JN0V/workline/commit/39fa39a4230fd0bdf1670ab1ac179918e897c279))
+
 ## [0.36.0](https://github.com/JN0V/workline/compare/v0.35.0...v0.36.0) (2026-10-19)
 
 
