@@ -1,6 +1,6 @@
 ---
 sources: [internal/line, internal/routing, internal/work, routing.default.yaml]
-checked: 8d921bfe
+checked: 60fd83f5
 verified: agent:claude-code
 ---
 # Routing — v1 (draft)
@@ -153,6 +153,17 @@ agent's: `--gates-only` runs the event's gate steps alone, each one, and
 the judging job's line, given that result (`--gates-from`), reads each
 gate step's verdict there and runs none; one not there is a `check-error`
 ([gates](gates.md#shown-on-the-merge-request)).
+
+What only warns goes beside it, off the verdict's path
+([ADR-0050](../adr/0050-each-act-has-its-moment-and-a-wait-budget.md#2-an-act-over-its-budget)): with
+`--warn-apart`, each step is given the input `warn=apart`, and a role
+listing the event in role.yaml's `apart` (the reviewer, on a merge
+request) leaves what only warns — its lenses that warn; with
+`--warn-only`, the line runs only those steps, given `warn=only`, no gate
+and no other role, and writes no verdict (`--verdict` refused). Its
+proposals are applied as the judging job's, by a job of their own: the
+head's verdict is never theirs
+([apart](../../roles/reviewer/docs/apart.md)).
 
 Where the merge request's code can change its judging job (GitHub), the
 job that applies runs from the base and reads only the run's proposals

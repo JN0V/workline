@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine/merge.go, internal/forge/merge.go, internal/forge/github_merge.go, internal/forge/gitlab_merge.go, ci/github/workline-apply.yml, ci/github/workline-merge.yml, ci/gitlab/workline.gitlab-ci.yml]
-checked: 21c9ac40
+checked: 60fd83f5
 verified: agent:claude-code
 ---
 # The merge policy
@@ -34,6 +34,10 @@ merge: {autonomy: cautious}   # off unless set: no auto-merge is touched
   - the line passed on that head, every step that needs an agent answered
     by one, whole. With no agent, every review falls short: nothing is
     turned on where the reviewer runs.
+  - **The verdict's run only**: the reviewer's lenses that only warn read
+    apart, after or beside it. Their findings, and one of them failing,
+    may post after the verdict, and after the merge: read their comment
+    before you accept ([apart](../roles/reviewer/docs/apart.md)).
 - **The forge merges**: GitHub's auto-merge, GitLab's "merge when the
   pipeline succeeds", each checking its own rules. One the forge could
   merge at once is merged at once.

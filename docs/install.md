@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/setup, internal/hooks, internal/tools, internal/agent/agent.go, ci/github, ci/gitlab]
-checked: b077b410
+checked: 60fd83f5
 judged: a8574a5
 verified: agent:claude-code
 ---
@@ -148,7 +148,8 @@ What the jobs are: [ci.md](ci.md); every detail on your forge's page. In short:
 
 - **GitHub**: copy the workflows of [ci/github](../ci/github/) into
   `.github/workflows/` — [workline.yml](../ci/github/workline.yml) (each
-  pull request), [workline-apply.yml](../ci/github/workline-apply.yml)
+  pull request), [workline-warn.yml](../ci/github/workline-warn.yml) (the
+  reviewer's lenses that warn, beside it), [workline-apply.yml](../ci/github/workline-apply.yml)
   (what it proposed applied, and each push to main for `workline
   follow`), [workline-fork.yml](../ci/github/workline-fork.yml) (a
   fork's), [workline-gardening.yml](../ci/github/workline-gardening.yml),

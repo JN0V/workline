@@ -1,6 +1,6 @@
 ---
 sources: [internal/sample, internal/builtin/documentalist/sample.go, ci/github/workline-sample.yml, ci/gitlab/workline.gitlab-ci.yml, roles/auditor, roles/product-owner/role.yaml]
-checked: 07029f11
+checked: 60fd83f5
 judged: c9d96e2
 verified: agent:claude-code
 ---
@@ -13,7 +13,8 @@ docs the documentalist vouched for, read whole against their sources
 ([ADR-0014](adr/0014-checked-is-earned-by-what-was-read.md), step 4), the
 product owner's acts done alone, the findings the reviewer's judge kept
 or dropped on every run
-([a line each in its summary comment](../roles/reviewer/docs/judge.md#every-finding-judged-kept-for-the-weekly-sample)),
+([a line each in its summary comment](../roles/reviewer/docs/judge.md#every-finding-judged-kept-for-the-weekly-sample),
+and in that of its lenses that warn, [read apart](../roles/reviewer/docs/apart.md)),
 the committer's rewrites. How to schedule it: on
 [GitHub](ci-github.md), [GitLab](ci-gitlab.md#4-the-weekly-sample),
 [another forge or none](ci-other-forges.md).

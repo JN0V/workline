@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/engine/engine.go, internal/hooks]
-checked: b077b410
+checked: 60fd83f5
 verified: agent:claude-code
 judged: e343388
 ---
@@ -28,6 +28,11 @@ refused there is said as warnings, not failed
 With `--gates-only`, the event's gates alone run, each one, for a CI job
 of their own; `--gates-from <file>` reads their verdicts from its result
 instead of running them ([gates in CI](gates-in-ci.md)).
+With `--warn-apart`, a role that reads what only warns apart (role.yaml's
+`apart`: the reviewer's lenses that warn) leaves it; `--warn-only` runs
+only that, never a gate nor another role, and writes no verdict
+(`--verdict` refused): what only warns, apart from the verdict
+([apart](../roles/reviewer/docs/apart.md)).
 
 ### workline apply
 
