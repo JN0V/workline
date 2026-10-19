@@ -3,6 +3,7 @@ sources: [ci/github, .github/workflows/workline-apply.yml, .github/workflows/wor
 checked: 21c9ac40
 judged: c7e1e98
 verified: agent:claude-code
+judged-in-parts: 220b6dc
 ---
 # The GitHub App and its key
 
