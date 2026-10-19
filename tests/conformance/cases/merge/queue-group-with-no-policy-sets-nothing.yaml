@@ -7,7 +7,7 @@ given:
   forge:
     merge-requests:
       - {id: 7, branch: feat/sessions, base: main, author: dana, labels: [], comments: []}
-run: {follow: [--merge-group, gh-readonly-queue/main/pr-7-feat/sessions, --head, feat/sessions]}
+run: {follow: [--merge-group, gh-readonly-queue/main/pr-7-7f122f4acd601f5afc1a76b31fe0640ec2174b39, --head, feat/sessions]}
 expect:
   status: pass
   no-findings: [{rule: queue-accepted}, {rule: queue-not-accepted}]

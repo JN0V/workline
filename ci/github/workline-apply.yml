@@ -242,8 +242,8 @@ jobs:
           get "https://github.com/JN0V/workline/releases/download/$WORKLINE_VERSION" workline_linux_amd64.tar.gz checksums.txt workline
           echo "$bin" >> "$GITHUB_PATH"
           "$bin/workline" version
-      # The group's branch names the pull request and the head queued:
-      # GitHub's word, read by the engine.
+      # The group's branch names the pull request it ends with; the engine
+      # reads that pull request's head, and its yes there, from GitHub.
       - if: steps.policy.outputs.run == 'true'
         env:
           GH_TOKEN: ${{ steps.app.outputs.token || github.token }}
