@@ -1019,6 +1019,9 @@ func Pre(runDir, repo string) int {
 	}
 	counts := CountsOff(repo, tree, counted)
 	for _, p := range append(append(problems, gone...), counts...) {
+		if onMain && p.Rule == "links-not-checked" {
+			continue // links to other sites are the night's: main's issue lists problems, not checks left to it
+		}
 		f := verdict.Finding{Rule: p.Rule, Where: p.Where, Message: p.Message}
 		if p.Rule == "setting-missing" {
 			f.Level = "block" // a check that could not run is not a pass

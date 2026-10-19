@@ -9,7 +9,7 @@ verified: agent:claude-code
 ```mermaid
 %%{init: {"flowchart": {"wrappingWidth": 400}}}%%
 flowchart LR
-  when["<b>When</b><br/>git push: the pre-push hook<br/>each push to a merge request<br/>main after a merge<br/>gardening, nightly or weekly<br/>before your release tool tags<br/>workline init, workline docs"]
+  when["<b>When</b><br/>git push: the pre-push hook<br/>each push to a merge request<br/>after a merge<br/>gardening, nightly or weekly<br/>before your release tool tags<br/>workline init, workline docs"]
   reads["<b>Reads</b><br/>each doc's sources and checked<br/>the commits since<br/>the code they name"]
   role(["Documentalist"])
   alone["<b>Alone</b><br/>counts the docs a push made suspect<br/>on a merge request: fixes a doc<br/>or vouches for it, on its branch<br/>holds a release while docs are due"]
@@ -49,7 +49,7 @@ doc by doc), or make a push wait on an agent.
 |---|---|---|
 | `pre-push` | the global hook, when routed | counts the docs the pushed commits made suspect, reading no other doc, no agent |
 | `merge-request` | CI | judges the docs the merge request made suspect, reading no other doc; fix committed to its branch; a draft: counts them, judged once it is ready; a release tool's: counts the docs due, judged at night |
-| `main` | CI, after each merge | the whole repository's budgets, links, duplicates and counts, once, no agent, in one issue ([more](../../docs/main-after-merge.md)) |
+| `main` | CI, after each merge | the whole repository's checks, no agent, in one issue ([more](../../docs/main-after-merge.md)) |
 | `schedule` | CI, nightly or weekly (gardening) | first the docs due for an open release pull request, on its head; then every suspect or stale doc, budgets, links, reader checks; one merge request per task |
 | `release` | `workline route release`, before your release tool tags; with `--target`, a release pull request, now or each night | holds the release until the docs due are judged |
 | `init` | `workline init` | proposes each doc's `sources`, for you to review |

@@ -23,10 +23,11 @@ Nobody waits for it; nothing in it holds a merge request.
   branch's tip before it counts against their thresholds: two merge
   requests green alone, each against its own base, may break main
   together. Then the run is red, and the issue says so.
-- **The whole repository's checks**: the documentalist's budgets, links,
-  passages written twice and line counts, on every doc, no agent. No doc
-  is judged there: one suspect from before is gardening's. A merge
-  request reads only the docs its commits touched.
+- **The whole repository's checks**: the documentalist's budgets, links
+  inside the repository, passages written twice and line counts, on every
+  doc, no agent. No doc is judged there: one suspect from before, and the
+  links to other sites, are gardening's. A merge request reads only the
+  docs its commits touched.
 - **One issue**, *workline: findings on the default branch*:
   - opened when there is something to list; edited in place when what it
     lists changes; left as it is when nothing is new nor gone; never
