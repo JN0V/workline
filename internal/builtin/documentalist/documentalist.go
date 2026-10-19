@@ -288,6 +288,13 @@ func anchorFor(repo, rev, doc, checked string) anchored {
 	}
 	a := anchored{commit: checked, ok: true}
 	if _, err := git(repo, "merge-base", "--is-ancestor", checked, rev); err != nil {
+		// A head of the release merge request the tool rebuilt since, its
+		// sources as they were there: rev, nothing changed (releasekept.go).
+		if at, ok := releaseHead(repo, rev, doc, checked); ok {
+			a = anchored{commit: at, ok: true}
+			onMainSeen[key] = a
+			return a
+		}
 		out, err := git(repo, "log", "--reverse", "--format=%H", "-S"+checked, rev, "--", doc)
 		first, _, _ := strings.Cut(out, "\n")
 		a = anchored{commit: first, ok: err == nil && first != ""}
@@ -707,6 +714,14 @@ func Pre(runDir, repo string) int {
 	for _, d := range docs {
 		byPath[d.Path] = d
 	}
+	// On a release tool's merge request, the heads earlier runs recorded
+	// docs at, which the tool rebuilt since (ADR-0034, amended 2026-10-19):
+	// read before any doc is found suspect.
+	releaseFindings, err := readReleaseKept(runDir, repo, docs)
+	if err != nil {
+		return fail(err)
+	}
+	findings = append(findings, releaseFindings...)
 	suspects := map[string]*suspectDoc{}
 	var stale map[string]*suspectDoc      // docs confirmed too long ago, whose sources fit in a task
 	propagate := map[string]*suspectDoc{} // docs due now, at the moment their edge names
@@ -1840,6 +1855,24 @@ func Post(runDir, repo string) int {
 			return fail(err)
 		}
 		if keptDocs != nil {
+			if err := writeIntents(filepath.Join(runDir, "out", "intentions.yaml"), intents); err != nil {
+				return fail(err)
+			}
+		}
+	}
+	// On a release tool's merge request, the head each patch records is
+	// kept in the documentalist's comment there, for the heads the tool
+	// rebuilds once the fix is merged (ADR-0034, amended 2026-10-19).
+	releaseIn, err := readReleaseKeptInput(runDir)
+	if err != nil {
+		return fail(err)
+	}
+	if releaseIn.Keep && onReleaseMergeRequest() {
+		n := len(intents)
+		if intents, err = keepReleaseRecords(repo, releaseIn, intents, judged, judgedFix); err != nil {
+			return fail(err)
+		}
+		if len(intents) != n {
 			if err := writeIntents(filepath.Join(runDir, "out", "intentions.yaml"), intents); err != nil {
 				return fail(err)
 			}

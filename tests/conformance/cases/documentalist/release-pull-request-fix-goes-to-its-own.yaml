@@ -10,12 +10,12 @@ given:
 run: {role: documentalist, event: merge-request, target: {merge-request: 1}, ai: "fake:doc-fixed", push-to-merge-request: true}
 expect:
   status: block
-  applied: [patch]
+  applied: [patch, comment]
   findings: [{rule: fixed-elsewhere, where: docs/tech/auth.md, level: block, message: "merge request #2"}]
   pushed:
     workline/documentalist/release: {docs/tech/auth.md: "Access tokens last two hours."}
     release-please--branches--main: {docs/tech/auth.md: "Access tokens last one hour."}
   forge:
     merge-requests:
-      - {id: 1, comments: 0}
+      - {id: 1, comments: 1, comment-contains: "<!-- workline:doc-judged-at-release", comment-lacks: "git apply"}
       - {id: 2, branch: workline/documentalist/release, base: main, body-contains: "for the release (task: suspect)"}
