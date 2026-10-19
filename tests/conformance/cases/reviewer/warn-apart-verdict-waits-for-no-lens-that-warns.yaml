@@ -1,0 +1,27 @@
+case: reviewer/warn-apart-verdict-waits-for-no-lens-that-warns
+about: "Split from the run apart (ADR-0050), the verdict's run asks only the lenses that block. On a push whose turn is edge-cases, a lens that only warns, it asks no agent: the verdict is given without waiting for that lens. The commits are recorded and the turn moves on, as the run apart moves its own; the summary comment says where that lens reads."
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
+  config:
+    routing: {events: {merge-request: [reviewer]}}
+    roles: {reviewer: {settings: {ai-findings: {correctness: block}}}}
+  forge:
+    merge-requests:
+      - id: 5
+        labels: []
+        comments: ["Reviewed by the correctness lens.\n\n<!-- workline:record reviewed= runs=1 -->\n\n<!-- workline:sticky=reviewer/summary -->"]
+run: {route: merge-request, warn-apart: true, input: {range: main..HEAD}, target: {merge-request: 5}, ai: "cmd:sh $FIXTURES/agents/review-by-lens.sh"}
+expect:
+  status: pass
+  agent-calls: 0
+  steps: [reviewer]
+  forge:
+    merge-requests:
+      - id: 5
+        comments: 1
+        comment-contains:
+          - "no lens that blocks on this push: edge-cases, which only warns, reads apart from the verdict, in its own comment; the 1 new commit recorded"
+          - "The lenses that warn read apart, and post in their own comment: they never hold the verdict."
+          - "<!-- workline:warn-apart -->"
+          - " runs=2 -->"

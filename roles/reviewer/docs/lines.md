@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/reviewer/lines.go, internal/builtin/reviewer/reviewer.go, internal/forge/review.go, internal/forge/github_review.go, internal/forge/gitlab_review.go, internal/engine/review.go]
-checked: 57a78c71
+checked: ef8ebda9
 verified: agent:claude-code
 ---
 # Reviewer — each finding on its line
@@ -50,7 +50,8 @@ flowchart LR
   diffs; a line the forge does not show is known before anything is posted.
 - **The summary comment** keeps a row for each finding, its title only,
   and links to the review: the one posted, else the merge request's
-  changes, where the comments show.
+  changes, where the comments show. The lenses that warn, read apart, post
+  a review and rows of their own, in their own comment ([apart](apart.md)).
 - **Other forges** (`local`, `cmd:`) take no comment on a line: each
   finding, in full, in the summary comment.
 

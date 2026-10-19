@@ -146,6 +146,9 @@ func reviewOf(st state, lines []forge.LineComment) map[string]any {
 	for _, c := range lines {
 		comments = append(comments, map[string]any{"path": c.Path, "line": c.Line, "key": c.Key, "body": c.Body})
 	}
-	return map[string]any{"head": st.Head, "comments": comments,
-		"body": fmt.Sprintf("**workline reviewer** on %s: each finding on its line, what blocks marked. The summary comment holds the verdict; the reviewer never approves: the author fixes, a person merges.", short(st.Head))}
+	body := fmt.Sprintf("**workline reviewer** on %s: each finding on its line, what blocks marked. The summary comment holds the verdict; the reviewer never approves: the author fixes, a person merges.", short(st.Head))
+	if st.Warn == warnOnly { // the run apart (ADR-0050)
+		body = fmt.Sprintf("**workline reviewer, the lenses that warn** on %s: each finding on its line; none holds the verdict. The reviewer never approves: the author fixes, a person merges.", short(st.Head))
+	}
+	return map[string]any{"head": st.Head, "comments": comments, "body": body}
 }

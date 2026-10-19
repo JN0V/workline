@@ -1,0 +1,34 @@
+case: reviewer/warn-finding-posted-after-the-verdict
+about: "The run apart (ADR-0050) after the verdict's, on the forge it left. The push's turn is edge-cases, a lens that only warns: the verdict's run asks no agent and passes. The run apart asks that lens and has its finding judged. It posts it in a comment of its own, its record there, and the verdict stays a pass: a warn finding arriving after the verdict is shown, never holding it."
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  config:
+    routing: {events: {merge-request: [reviewer]}}
+    roles: {reviewer: {settings: {ai-findings: {correctness: block}}}}
+  forge:
+    merge-requests:
+      - id: 5
+        labels: []
+        comments:
+          - "Reviewed by the correctness lens.\n<!-- workline:warn-apart -->\n\n<!-- workline:record reviewed= runs=1 -->\n\n<!-- workline:sticky=reviewer/summary -->"
+          - "Nothing yet.\n\n<!-- workline:record reviewed= runs=1 -->\n\n<!-- workline:sticky=reviewer/warn -->"
+run: {route: merge-request, warn-apart: true, then: apart, input: {range: main..HEAD}, target: {merge-request: 5}, ai: "cmd:sh $FIXTURES/agents/review-by-lens.sh"}
+expect:
+  status: pass
+  apart-status: pass
+  calls: [{task: part, for: 1-edge-cases}, {task: judge, for: judge/01}]
+  findings: [{rule: edge-cases, level: warn, where: "calc/calc.go:11", message: "Important: One value divides by zero"}]
+  no-findings: [{rule: correctness}]
+  forge:
+    merge-requests:
+      - id: 5
+        comments: 2
+        comment-contains:
+          - "no lens that blocks on this push: edge-cases"
+          - "**workline reviewer, the lenses that warn** — 1 findings on the change; lenses: edge-cases"
+          - "They read apart from the verdict, which never waits for them"
+          - "| warns | edge-cases | `calc/calc.go:11` |"
+          - "<!-- workline:judged {\"lens\":\"edge\\u002dcases\",\"where\":\"calc/calc.go:11\""
+        threads: [{path: calc/calc.go, line: 11, contains: ["One value divides by zero"]}]

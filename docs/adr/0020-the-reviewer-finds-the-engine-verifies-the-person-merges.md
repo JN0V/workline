@@ -6,7 +6,8 @@
   project sets a merge policy, the person accepts and the forge merges
   ([ADR-0042](0042-the-engine-merges-by-the-projects-policy.md));
   amended 2026-10-17: a change too large for one call read in parts
-  (#446)
+  (#446); amended 2026-10-19: the lenses that warn read apart from the
+  verdict ([ADR-0050](0050-each-act-has-its-moment-and-a-wait-budget.md))
 - **Date:** 2026-10-04
 - **Builds on:** ADR-0005 (a judge's independence), ADR-0009 (a question in
   parts), ADR-0011 (the review is on the merge request), ADR-0013 (what was
@@ -666,3 +667,35 @@ merge-request line; on in workline's own repository.
   larger budget (the role's context, principle 3); `parts-max` drawn from
   `ai-max-tokens` (estimating calls before making them, rejected in
   #147's amendment). The diff-alone facet, off, stays one call.
+
+## Amendment (2026-10-19, ADR-0050: the lenses that warn, off the verdict's path)
+
+- **What was wrong**: on a merge request the head's verdict waited for
+  every lens a push took, and their judges, though a lens set to warn
+  (`ai-findings`, the default) can never block it
+  ([ADR-0050](0050-each-act-has-its-moment-and-a-wait-budget.md#2-an-act-over-its-budget),
+  step 3).
+- **Two runs, the same lenses**: a push still takes one lens in turn,
+  every lens once when ready. The verdict's run (`route --warn-apart`)
+  asks those that block and their judges; a run apart
+  (`route --warn-only`, role.yaml's `apart`) asks those that warn, beside
+  it, and posts once they answered. The rules block on the verdict's run
+  only; while they block, neither asks a lens.
+- **Each run its own comment and record**: the summary comment the
+  verdict's, a comment of their own the lenses that warn's. One comment
+  written by two applying jobs at once could lose a write; neither run
+  waits for the other nor loses what the other did not read. The first
+  run apart on a merge request reviewed before takes up its record.
+- **Never on the verdict**: the run apart writes none; its job fails on
+  the engine's own error only; a lens failing there is said in its
+  comment. A warn finding may post after the verdict, and after a merge
+  the policy made on it
+  ([ADR-0042](0042-the-engine-merges-by-the-projects-policy.md)).
+- **Unchanged**: a machine's `workline review`, every lens in one run; a
+  line not told either flag, as before.
+- **Rejected**: one comment with a region a run (a lost write, no
+  concurrency group holding both applying jobs without cancelling a
+  judge); each run its own turn (the lens that blocks every push: one
+  call more a push); the run apart after the verdict, in the default
+  branch's workflow (the agent's token beside the pull request's code,
+  with the base's cache in reach).

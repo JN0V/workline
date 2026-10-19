@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/instruction.md, roles/reviewer/policy.md, roles/reviewer/lenses, internal/builtin/reviewer, internal/backlog/spec.go, routing.default.yaml]
-checked: 53ef8d2f
+checked: ef8ebda9
 verified: agent:claude-code
 ---
 # Reviewer
@@ -73,7 +73,9 @@ file. All roles: [docs/roles.md](../../docs/roles.md).
   [research](../../docs/research/code-review.md#the-reviewers-cost-measured).
 - **The run when a merge request becomes ready** costs more: every lens
   on the whole change, a full review as on a machine, under the same cap
-  ([how the templates tell it](docs/ready.md)).
+  ([how the templates tell it](docs/ready.md)); the templates split it in
+  two calls, the lenses that block and those that warn, the change given
+  to each ([apart](docs/apart.md)).
 - **Without AI**: the rules alone; the change is left for a person
   (`not-reviewed`).
 - **Status**: [beta](../../docs/adr/0036-a-roles-status-is-earned-by-written-criteria.md), released in v0.9.0; [where it stands](docs/status.md); each try in its pull request
@@ -127,6 +129,11 @@ gives it. Each finding is a comment on its line, which the author answers
 or resolves there; one still open is not posted again
 ([more](docs/lines.md)). A blocked merge request still gets its comments
 ([more](docs/run.md#on-a-merge-request)).
+
+The templates read the lenses that only warn apart from the verdict, in
+a run and a comment of their own: the head's verdict waits only for the
+lenses that block, and a warn finding may post after it
+([apart](docs/apart.md)).
 
 ## Settings
 

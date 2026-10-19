@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/line, internal/hooks, internal/forge/gitlab.go, ci/gitlab/workline.gitlab-ci.yml, ci/github/workline.yml, ci/github/workline-gardening.yml, ci/github/workline-sample.yml, routing.default.yaml]
-checked: f530cda7
+checked: 4049d445
 verified: agent:claude-code
 reader: 2de353fab113
 ---
@@ -67,6 +67,17 @@ workline apply --line line.json          # second job: commits the doc fixes to 
 once, on the whole change, on a merge request no draft its record does not
 say every lens read; `--input lenses=all` asks it outright, when it becomes
 ready, as the templates do ([how](../roles/reviewer/docs/ready.md)).
+
+The templates also read the reviewer's lenses that only warn apart from
+the verdict: `--warn-apart` on the line above, and beside it a job of
+their own, its apply after it ([apart](../roles/reviewer/docs/apart.md)):
+
+```sh
+workline route merge-request --warn-only --ai "$ai" --no-apply \
+  --forge gitlab --target merge-request:<iid> --branch <source-branch> \
+  --input range=<base-sha>..<head-sha> --json > warn.json
+workline apply --line warn.json          # its second job: their comment
+```
 
 ### Gardening
 

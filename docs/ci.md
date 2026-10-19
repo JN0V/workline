@@ -1,6 +1,6 @@
 ---
 sources: [ci/github, ci/gitlab, ci/forgejo/workline-forge.sh, roles/product-owner/role.yaml, cmd/workline]
-checked: f530cda7
+checked: 4049d445
 judged: a8574a5
 verified: agent:claude-code
 reader: 8aab3bd261d9
@@ -39,6 +39,10 @@ then one that applies, with the write token and no AI key
 
 - **The gates run first, alone**, with no write token and no AI key
   ([gates in CI](gates-in-ci.md)).
+- **What only warns runs apart**: the reviewer's lenses that warn read
+  in a job of their own beside the judge, posting in a comment of their
+  own; the head's verdict waits only for what can block
+  ([apart](../roles/reviewer/docs/apart.md)).
 
 - **A judge that fails still hands over**: the applying job runs whatever
   the judge's outcome, and the pipeline fails by the judge's. It applies

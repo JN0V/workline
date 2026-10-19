@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/instruction.md, roles/reviewer/policy.md, roles/reviewer/lenses, internal/builtin/reviewer]
-checked: 53ef8d2f
+checked: ef8ebda9
 verified: agent:claude-code
 ---
 # Reviewer — a run on code
@@ -179,7 +179,8 @@ becomes ready ([below](#every-lens-once-when-it-becomes-ready)).
 line. The judging job reads the summary comment, to know what was
 reviewed: on GitHub it needs a read token (`GH_TOKEN`,
 `pull-requests: read`), which
-[ci/github/workline.yml](../../../ci/github/workline.yml) gives it.
+[ci/github/workline.yml](../../../ci/github/workline.yml) gives it. The
+lenses that only warn read apart, in a comment of their own ([apart](apart.md)).
 
 - **Each finding on its line**, in the forge's own review; the summary
   comment keeps a row for each, its title, and links to the review

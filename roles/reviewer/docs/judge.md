@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/lenses, internal/builtin/reviewer]
-checked: 53ef8d2f
+checked: ef8ebda9
 verified: agent:claude-code
 ---
 # Reviewer — the judge, the verdict, the budget
@@ -102,7 +102,8 @@ else whether the quoted code fails:
   ([below](#a-block-stands-until-a-commit-answers-it)).
 - Each finding judged leaves a hidden line in the summary comment, every
   run's, for the weekly sample
-  ([below](#every-finding-judged-kept-for-the-weekly-sample)).
+  ([below](#every-finding-judged-kept-for-the-weekly-sample)); the lenses
+  that warn, read apart, in their own comment ([apart](apart.md)).
 
 When something fails:
 

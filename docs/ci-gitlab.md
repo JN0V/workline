@@ -1,6 +1,6 @@
 ---
 sources: [ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile]
-checked: f530cda7
+checked: 4049d445
 judged: cd97f28
 verified: agent:claude-code
 reader: 9799dcaf51f3
@@ -13,18 +13,21 @@ judged-in-parts: 220b6dc
 flowchart LR
   subgraph reads["The agent, when its token is set"]
     judge["<b>Merge request</b><br/>workline:judge"]
+    warn["<b>Merge request</b><br/>workline:warn"]
     garden["<b>Schedule</b><br/>workline:garden:judge"]
     sample["<b>Schedule, WORKLINE_TASK=sample</b><br/>workline:sample:read"]
     import["<b>By hand, WORKLINE_IMPORT</b><br/>workline:import:judge"]
   end
   subgraph writes["WORKLINE_GITLAB_TOKEN, no agent installed"]
     apply["workline:apply"]
+    wapply["workline:warn:apply"]
     follow["<b>Push to the default branch</b><br/>workline:follow"]
     gapply["workline:garden:apply"]
     swrite["workline:sample:write"]
     iapply["workline:import:apply"]
   end
   judge --> apply
+  warn --> wapply
   garden --> gapply
   sample --> swrite
   import --> iapply
@@ -124,7 +127,9 @@ A push cancels the pipeline still judging the merge request's head before
 
 One review at a time: `workline:judge` waits while `workline:apply` writes
 the review before it, one resource group per merge request, then reviews
-only what is new ([#375](https://github.com/JN0V/workline/issues/375)).
+only what is new ([#375](https://github.com/JN0V/workline/issues/375));
+`workline:warn` and `workline:warn:apply` likewise, in a resource group of
+their own.
 
 Not tried on a GitLab yet.
 
@@ -139,6 +144,15 @@ a cron off the hour (`13 17 * * *`) was listed as due at 18:00 and ran at
 - `workline:gates` runs your gates alone, before `workline:judge`, and
   writes what they found the change adds as its Code Quality report;
   install their tools in it ([gates in CI](gates-in-ci.md)).
+- **The reviewer's lenses that only warn** read apart from the verdict:
+  `workline:judge` asks those that block (`--warn-apart`; without
+  `WORKLINE_GITLAB_TOKEN`, every lens, said in its log and summary);
+  `workline:warn`, from the pipeline's start, with the agent's token and
+  the bot's, asks the others (`--warn-only`), and `workline:warn:apply` posts them in
+  a comment of their own. Neither fails the pipeline (`allow_failure`);
+  `workline:merge` reads the verdict from `workline:judge` alone. GitLab
+  merges once the pipeline succeeds: the merge waits for them, never on
+  what they find ([apart](../roles/reviewer/docs/apart.md)).
 - **The whole history** (`GIT_DEPTH: 0`, over the project's "Git shallow
   clone" setting, 20 commits on a new project): the documentalist compares
   each doc's sources since its `checked`, the release looks for its last

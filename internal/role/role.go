@@ -34,6 +34,12 @@ type Role struct {
 	// that only say what that head held, never a patch nor a label (the
 	// reviewer's review). Empty: nothing applied once the branch moved on.
 	OnMovedOn []string `yaml:"on-moved-on"`
+	// Apart are the events where what the role finds that only warns can
+	// run apart from the verdict (ADR-0050): the verdict's line leaves it
+	// (`route --warn-apart`, input `warn=apart`), and a line of its own
+	// runs it alone (`route --warn-only`, input `warn=only`), its verdict
+	// never the head's. Empty: the role runs whole on the verdict's line.
+	Apart []string `yaml:"apart"`
 	// Personal are the settings a person may set for themselves, in their
 	// own config (PersonalSettings): what only changes their own wait or
 	// their own words, never what the project's line holds to.
@@ -141,6 +147,11 @@ func Load(rolesDir, name string) (*Role, error) {
 			return nil, fmt.Errorf("role %q: on-moved-on names %q: what changes the branch or the merge request applies on the head judged only", name, k)
 		}
 	}
+	for _, e := range r.Apart {
+		if !slices.Contains(r.Events, e) {
+			return nil, fmt.Errorf("role %q: apart names %q, not one of its events", name, e)
+		}
+	}
 	for _, k := range r.Personal {
 		if _, ok := r.Settings[k]; !ok {
 			return nil, fmt.Errorf("role %q: personal names %q, not one of its settings", name, k)
@@ -158,6 +169,10 @@ func (r *Role) PartAnswers() []string {
 	}
 	return []string{"claim"}
 }
+
+// ApartOn says whether what the role finds that only warns can run apart
+// from the verdict on event (Apart).
+func (r *Role) ApartOn(event string) bool { return slices.Contains(r.Apart, event) }
 
 // Accepts reports whether the role can run on event.
 func (r *Role) Accepts(event string) bool {

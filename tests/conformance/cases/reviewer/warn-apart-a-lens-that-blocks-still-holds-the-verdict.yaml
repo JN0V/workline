@@ -1,0 +1,22 @@
+case: reviewer/warn-apart-a-lens-that-blocks-still-holds-the-verdict
+about: "On ready, split from the run apart (ADR-0050), the verdict's run asks the lenses that block, here correctness, on the whole change: its verified finding blocks, as on a run not split. The lenses that warn are not asked there: the run apart asks them."
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  config:
+    routing: {events: {merge-request: [reviewer]}}
+    roles: {reviewer: {settings: {ai-findings: {correctness: block}}}}
+  forge: {merge-requests: [{id: 5, labels: [], comments: []}]}
+run: {route: merge-request, warn-apart: true, input: {range: main..HEAD, lenses: all}, target: {merge-request: 5}, ai: "cmd:sh $FIXTURES/agents/review-by-lens.sh"}
+expect:
+  status: block
+  calls: [{task: part, for: 1-correctness}, {task: judge, for: judge/01}]
+  findings: [{rule: correctness, where: "calc/calc.go:11", message: "Important: Average divides by one less than the count"}]
+  no-findings: [{rule: edge-cases}]
+  forge:
+    merge-requests:
+      - id: 5
+        comments: 1
+        comment-contains: ["| **blocks** | correctness |", "The lenses that warn read apart", " runs=1 read=all -->"]
+        comment-lacks: ["One value divides by zero"]

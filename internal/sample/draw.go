@@ -162,8 +162,13 @@ func productOwnerActs(b forge.Backlog, first, end, until string) ([]Act, *Autono
 	return out, au, nil
 }
 
-// summaryMarker marks the reviewer's one comment on a merge request.
-var summaryMarker = forge.Marker("sticky=reviewer/summary")
+// summaryMarker marks the reviewer's summary comment on a merge request;
+// warnMarker, the comment of its lenses that warn, read apart from the
+// verdict (ADR-0050), whose judged lines are drawn as the summary's.
+var (
+	summaryMarker = forge.Marker("sticky=reviewer/" + reviewer.SummaryKey)
+	warnMarker    = forge.Marker("sticky=reviewer/" + reviewer.WarnKey)
+)
 
 var (
 	// independence is what a judged finding's row says of the models:
@@ -186,6 +191,22 @@ func reviewerActs(repo string, f forge.Forge, b forge.Backlog, mrs []forge.Merge
 		comments, err := b.Comments(forge.Target{Kind: "merge-request", ID: m.ID})
 		if err != nil {
 			return nil, nil, fmt.Errorf("the comments of %s: %w", ref, err)
+		}
+		// The comment of the lenses that warn, the first holding its
+		// marker: its judged lines, always there, an engine before it
+		// having written none.
+		for _, c := range comments {
+			if !strings.Contains(c, warnMarker) {
+				continue
+			}
+			judged, gone, _ := reviewer.ReadJudged(c)
+			for _, j := range judged {
+				out = append(out, judgedAct(ref, j))
+			}
+			if gone > 0 {
+				unread = append(unread, fmt.Sprintf("%s on %s whose lines the comment of its lenses that warn no longer holds: past its size (%d characters, the oldest gone first), or not readable", plural(gone, "finding")+" judged", ref, reviewer.SummaryMax))
+			}
+			break
 		}
 		for _, c := range comments {
 			if !strings.Contains(c, summaryMarker) {

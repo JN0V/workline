@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, internal/builtin/reviewer/reviewer.go, internal/builtin/reviewer/record.go, ci/github/workline.yml, ci/gitlab/workline.gitlab-ci.yml]
-checked: 24e2cb24
+checked: 4049d445
 verified: agent:claude-code
 ---
 # Reviewer — every lens once when it becomes ready
@@ -14,7 +14,9 @@ told the merge request is no draft (`--input draft=false`) whose record
 does not say every lens read it
 ([#359](https://github.com/JN0V/workline/issues/359)). The templates pass
 `lenses=all` when it is opened ready or marked ready, and `draft` on
-every run.
+every run, to both runs: the verdict's asks every lens that blocks, the
+run apart every lens that warns, each its own record
+([apart](apart.md)).
 
 - **The whole change**, `base..head`: each commit was read by one lens
   only, and skipping them could leave nothing to read. The commits are

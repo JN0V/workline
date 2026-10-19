@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine, internal/intent, internal/role, internal/agent, roles_test.go]
-checked: 6dc52a5b
+checked: 60fd83f5
 verified: agent:claude-code
 judged: b530b72
 ---
@@ -110,6 +110,13 @@ on-moved-on: []                 # what a merge request's run still applies once 
                                 # branch moved on from the head judged: what only says
                                 # what that head held (the reviewer's review); never a
                                 # patch nor a label; none by default
+apart: []                       # events, of its own, where what the role finds that
+                                # only warns runs apart from the verdict: the verdict's
+                                # line leaves it (`route --warn-apart`, input
+                                # `warn=apart`), a line of its own runs it alone
+                                # (`--warn-only`, `warn=only`), never the head's
+                                # verdict (ADR-0050; the reviewer's lenses that warn);
+                                # none by default
 personal: []                    # settings a person may set for themselves, in their
                                 # own config (role-adapting.md, "A person's own")
 

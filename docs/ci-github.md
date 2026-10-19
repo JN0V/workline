@@ -1,6 +1,6 @@
 ---
 sources: [ci/github, .github/workflows/workline.yml, .github/workflows/workline-apply.yml, .github/workflows/workline-gardening.yml, .github/workflows/workline-sample.yml, .github/actions/engine/action.yml, .github/workflows/release.yml, .github/workflows/release-please.yml, release-please-config.json, .goreleaser.yaml, cmd/workline]
-checked: f530cda7
+checked: ef8ebda9
 judged: 220b6dc
 verified: agent:claude-code
 reader: fe1505d43360
@@ -46,10 +46,16 @@ write run the default branch's workflow, never a pull request's own
      request, its own run: no write token; it warns when no workflow
      applies what it proposed. Before it, `gates` runs your gates alone:
      add the install of their tools there ([gates in CI](gates-in-ci.md)).
+   - [workline-warn.yml](../ci/github/workline-warn.yml): `warn` beside
+     `judge`, the reviewer's lenses that only warn, apart from the
+     verdict ([apart](../roles/reviewer/docs/apart.md)); without it,
+     `judge` warns that nothing reads them; it reads only beside this
+     release's workline-apply.yml, else warns.
    - [workline-apply.yml](../ci/github/workline-apply.yml), from the
      default branch:
      - `apply` after each `judge`, the fixes committed to the pull
-       request's branch;
+       request's branch, and after each `warn`, the comment of the
+       lenses that warn;
      - `follow` on each push to `main`
        ([ADR-0034](adr/0034-the-release-fix-follows-its-base.md)): the
        documentalist's pull request for the release, when one is open, is
@@ -114,6 +120,9 @@ and `apply`, with the App, commits the fix to its branch,
 - **One review at a time**: `judge` waits while `apply` writes the review
   before it, then reviews only what is new; `apply` writes it even once
   the branch moved on ([#375](https://github.com/JN0V/workline/issues/375)).
+- **The lenses that warn, apart**: `warn`, its own run and lock, never
+  fails by what they find; `verdict` and `follow` run after `judge` alone
+  ([ADR-0050](adr/0050-each-act-has-its-moment-and-a-wait-budget.md#2-an-act-over-its-budget)).
 - `apply`, `follow` and each pair's second job hold the write token, the
   App's when there is one, and no AI key, in the environment
   `workline-app`. `follow`'s merge into a pull request runs its checks

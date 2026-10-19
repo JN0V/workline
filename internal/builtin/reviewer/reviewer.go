@@ -134,6 +134,7 @@ type state struct {
 	Waits      []string           `json:"waits,omitempty"`     // on the forge: the specs left for the next run, past specs-per-run (#433)
 	Standing   []Block            `json:"standing,omitempty"`  // the last review's findings that block, still standing (#326)
 	Read       string             `json:"read,omitempty"`      // the record as read: the apply merges the comment it finds with it (#375)
+	Warn       string             `json:"warn,omitempty"`      // apart: the verdict's run, the lenses that block; only: the run apart, those that warn (ADR-0050)
 }
 
 // candidates is what the lenses answered, its quotes checked, before the judge.
@@ -163,6 +164,7 @@ type Review struct {
 	Local     bool              `json:"local"`           // the record is kept on this machine
 	Calls     []Spent           `json:"calls,omitempty"` // what each call to an agent used
 	Reads     []JudgeRead       `json:"reads,omitempty"` // what each judge read, a round each (ADR-0045)
+	Warn      string            `json:"warn,omitempty"`  // apart: the verdict's run; only: the run apart, the lenses that warn (ADR-0050)
 }
 
 // JudgeRead is one round of reads a judge asked (ADR-0045): what it asked,
@@ -219,6 +221,20 @@ func Pre(runDir, repo string) int {
 }
 
 func prepare(runDir, repo string, s Settings) int {
+	// The verdict's run asks the lenses that block, the run apart those that
+	// warn (ADR-0050): each keeps its own record, so that neither waits for
+	// the other nor loses what the other did not read.
+	side := input(runDir, "warn")
+	if side != "" && side != warnApart && side != warnOnly {
+		return fail(fmt.Errorf("input warn %q: %s, the verdict's run, or %s, the run apart", side, warnApart, warnOnly))
+	}
+	if ev := os.Getenv("WORKLINE_EVENT"); side != "" && ev != "merge-request" {
+		// Its role.yaml's `apart`: elsewhere nothing reads what it would leave.
+		return fail(fmt.Errorf("input warn %q on %s: the lenses that warn read apart on a merge request only", side, ev))
+	}
+	if side == warnOnly && !s.warns() {
+		return final(runDir, Review{Status: verdict.Pass, Summary: "every lens blocks (ai-findings): nothing reads apart from the verdict", Warn: side})
+	}
 	rng := input(runDir, "range")
 	if rng == "" {
 		rng = s.Base + "..HEAD"
@@ -255,7 +271,13 @@ func prepare(runDir, repo string, s Settings) int {
 	if err != nil {
 		return fail(err)
 	}
-	rec, where, err := loadRecord(repo, s)
+	// The rules block on the verdict's run, which reports them; the run
+	// apart waits for them as it does, saying nothing of them again.
+	rulesHold := status(mech) == verdict.Block
+	if side == warnOnly {
+		mech = nil
+	}
+	rec, where, err := loadRecord(repo, s, side)
 	recordRead := err == nil
 	var advisories []verdict.Finding
 	if err != nil {
@@ -279,7 +301,7 @@ func prepare(runDir, repo string, s Settings) int {
 	if ready {
 		start = base
 	}
-	st := state{Head: head, From: start, Base: base, Change: change, Mechanical: mech, Commits: sp.Commits, Patches: sp.Patches, Record: rec, Every: ready, Advisories: advisories, Read: read}
+	st := state{Head: head, From: start, Base: base, Change: change, Mechanical: mech, Commits: sp.Commits, Patches: sp.Patches, Record: rec, Every: ready, Advisories: advisories, Read: read, Warn: side}
 	// What blocked the last review stands until a commit answers it (#326):
 	// a run with nothing new to read never turns it green.
 	st.Standing = standing(repo, s, st, rec.Blocks)
@@ -288,7 +310,7 @@ func prepare(runDir, repo string, s Settings) int {
 	}
 	// The rules first: what they block on is fixed before any agent is
 	// asked, and asked again after each push while it is not.
-	if status(mech) == verdict.Block {
+	if rulesHold {
 		v := review(st, nil, "the rules found what the author must fix first; the review follows once they pass")
 		v.Record.Owed = v.Record.Owed || ready
 		return held(runDir, repo, s, st, v)
@@ -353,6 +375,11 @@ func prepare(runDir, repo string, s Settings) int {
 	}
 	if len(st.Lenses) == 0 && !st.Alone {
 		return final(runDir, review(st, nil, "no lens asked can review this change: not asked: "+strings.Join(st.Skipped, ", ")))
+	}
+	// Of the lenses this push takes, in turn or every one on ready, each
+	// run asks those of its side (ADR-0050); the other's are its to ask.
+	if other := st.side(s); len(st.Lenses) == 0 && !st.Alone {
+		return otherSide(runDir, repo, s, st, other, sp.New)
 	}
 	st.Together = s.LensesTogether && len(st.Lenses) > 1
 	why, err := ask(runDir, repo, s, &st, files)
@@ -437,6 +464,78 @@ func mergedIn(repo, base, from string) (string, error) {
 	}
 	tree, _, _ := strings.Cut(string(out), "\n")
 	return strings.TrimSpace(tree), nil
+}
+
+// The runs a merge request's review is split in (input `warn`, ADR-0050):
+// the verdict's, asking the lenses that block, and the run apart, asking
+// those that warn, its summary in a comment of its own (WarnKey).
+const (
+	warnApart = "apart"
+	warnOnly  = "only"
+)
+
+// side keeps of the lenses the run takes those of its side: the lenses
+// that block (`ai-findings`) on the verdict's run, those that warn on the
+// run apart, the diff-alone facet by its own; and returns the others, the
+// other run's. A run not split keeps them all.
+func (st *state) side(s Settings) []string {
+	if st.Warn == "" {
+		return nil
+	}
+	mine := func(lens string) bool { return s.AIFindings.Blocks(lens) == (st.Warn == warnApart) }
+	var kept, other []string
+	for _, l := range st.Lenses {
+		if mine(l) {
+			kept = append(kept, l)
+		} else {
+			other = append(other, l)
+		}
+	}
+	st.Lenses = kept
+	if st.Alone && !mine(alone) {
+		st.Alone, other = false, append(other, alone)
+	}
+	return other
+}
+
+// warns says whether a lens of the project only warns, or the diff-alone
+// facet, when on: what the run apart has to read at all.
+func (s Settings) warns() bool {
+	for _, l := range s.Lenses {
+		if !s.AIFindings.Blocks(l) {
+			return true
+		}
+	}
+	return s.DiffAlone && !s.AIFindings.Blocks(alone)
+}
+
+// otherSide settles a run whose push takes only the other run's lenses
+// (ADR-0050): nobody asked here, the commits recorded and the turn moved
+// on, as the other run moves its own; on ready, every lens of this side
+// read, none being asked. The summary comment says where they read.
+func otherSide(runDir, repo string, s Settings, st state, other []string, fresh int) int {
+	why := fmt.Sprintf("no lens that blocks on this push: %s, which only %s, %s apart from the verdict, in %s own comment", strings.Join(other, ", "),
+		plural(len(other), "warns", "warn"), plural(len(other), "reads", "read"), plural(len(other), "its", "their"))
+	if st.Warn == warnOnly {
+		why = fmt.Sprintf("no lens that warns on this push: %s, which %s, %s it on the verdict's run", strings.Join(other, ", "),
+			plural(len(other), "blocks", "block"), plural(len(other), "reads", "read"))
+	}
+	v := review(st, nil, fmt.Sprintf("%s; the %d new %s recorded", why, fresh, plural(fresh, "commit", "commits")))
+	v.Complete = true
+	v.Record = st.Record.add(st.Commits, st.Patches)
+	v.Record.Blocks, v.Record.Owed = st.Standing, false
+	everyLens(st, &v, true)
+	var fallback []intent.Intention
+	if mergeRequest() != nil && s.ForgeWrites {
+		fallback = append(fallback, summaryIntention(repo, s, st, v, nil, 0))
+	}
+	if err := intent.Write(filepath.Join(runDir, "in", "fallback.yaml"), fallback); err != nil {
+		return fail(err)
+	}
+	if err := writeJSON(filepath.Join(runDir, "in", "review.json"), v); err != nil {
+		return fail(err)
+	}
+	return 0
 }
 
 // lensFrom is where the diff a lens reads starts.
@@ -1648,7 +1747,7 @@ func Post(runDir, repo string) int {
 		return fail(err)
 	}
 	if v.Complete && v.Subject != "spec" {
-		if err := saveLocal(repo, v.Record); err != nil {
+		if err := saveLocal(repo, v.Warn, v.Record); err != nil {
 			return fail(err)
 		}
 	}
@@ -1667,7 +1766,7 @@ func Post(runDir, repo string) int {
 // review starts a review from the rules' findings and the last review's
 // that still block (#326), the record keeping those.
 func review(st state, extra []verdict.Finding, summary string) Review {
-	v := Review{Subject: "code", Findings: append(append(slices.Clone(st.Mechanical), extra...), st.standingFindings()...), Record: st.Record}
+	v := Review{Subject: "code", Findings: append(append(slices.Clone(st.Mechanical), extra...), st.standingFindings()...), Record: st.Record, Warn: st.Warn}
 	v.Findings = append(v.Findings, st.Advisories...)
 	if st.Spec != nil {
 		v.Subject, v.Spec = "spec", st.Spec.Path
@@ -1910,7 +2009,7 @@ func summaryIntention(repo string, s Settings, st state, v Review, related []Fin
 // record the run read, which the apply merges with the one the comment
 // holds by then, a run applied since having written it (#375).
 func summaryValue(st state, body string) map[string]any {
-	return map[string]any{"sticky": SummaryKey, "body": body, "read": st.Read}
+	return map[string]any{"sticky": keyOf(st.Warn), "body": body, "read": st.Read}
 }
 
 // summaryComment is the one summary the merge request gets, edited on each run,
@@ -1920,7 +2019,16 @@ func summaryValue(st state, body string) map[string]any {
 // region holds: each finding in full.
 func summaryComment(v Review, issues int, short map[string]string, lines []forge.LineComment) string {
 	var b strings.Builder
-	fmt.Fprintf(&b, "**workline reviewer** — %s.\n\n", v.Summary)
+	switch v.Warn {
+	case warnOnly: // the run apart (ADR-0050)
+		fmt.Fprintf(&b, "**workline reviewer, the lenses that warn** — %s.\n\n", v.Summary)
+		b.WriteString("They read apart from the verdict, which never waits for them: what they find warns, posted here once they answered, maybe after the verdict was given.\n\n")
+	case warnApart:
+		fmt.Fprintf(&b, "**workline reviewer** — %s.\n\n", v.Summary)
+		b.WriteString("The lenses that warn read apart, and post in their own comment: they never hold the verdict.\n" + splitMark + "\n\n")
+	default:
+		fmt.Fprintf(&b, "**workline reviewer** — %s.\n\n", v.Summary)
+	}
 	if len(lines) > 0 {
 		fmt.Fprintf(&b, "%s\n%s\n%s\n\n", forge.ReviewHere,
 			forge.Unplaced(lines, "the engine that applied this run posts no comment on a line").Section(), forge.ReviewEnd)

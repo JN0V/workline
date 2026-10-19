@@ -1,4 +1,4 @@
-# Reviewer — where it stands (2026-10-18)
+# Reviewer — where it stands (2026-10-19)
 
 **In one line:** reviews code on a machine (`workline review`) and on a
 merge request (opt-in): rules first, lenses as parts, quotes found again,
@@ -86,6 +86,15 @@ its measure in
   ([#375](https://github.com/JN0V/workline/issues/375)):
   `review-applied-when-a-push-lands-before-it*`,
   `record-merged-when-two-runs-judged-before-either-applied*`.
+- **The lenses that warn read apart from the verdict**, each run its own
+  comment and record
+  ([ADR-0050](../../../docs/adr/0050-each-act-has-its-moment-and-a-wait-budget.md),
+  [apart](apart.md)): `warn-apart-verdict-waits-for-no-lens-that-warns`,
+  `warn-apart-a-lens-that-blocks-still-holds-the-verdict`,
+  `warn-finding-posted-after-the-verdict`,
+  `warn-lens-failing-changes-no-verdict`,
+  `warn-only-takes-up-the-record-of-a-review-not-split`,
+  `warn-only-every-lens-blocks-writes-nothing`.
 - **Lenses as parts**, answering findings only; an answer that does not
   read asked again once: `never-approves-nor-patches`,
   `lens-failed-not-clean`, `lens-answer-asked-again-once`.
