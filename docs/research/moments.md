@@ -142,18 +142,20 @@ deprecated since 16 September 2025, no replacement named
 ## The panel's changes, by wait removed
 
 The panel of 2026-10-19 ranked by tokens; the maintainer put the wait
-first. Inferred from the measures above, not tried.
+first. Inferred from the measures above, not tried. Ranked by the wait
+removed each time.
 
 | Change | Wait removed | Tokens saved |
 |---|---|---|
 | The engine built or fetched once a run, not in every job | ~20 s a job, ~40 s of the verdict's 101 s | none |
+| Commit: the agent's rewrite opt-in (decided 2026-10-19); one gitleaks scan for the diff and the message | a refused message: 12–78.5 s down to about 1 s; ~0.4 s every commit | a light call a refused message |
 | Lenses and triage that only warn, off the verdict's path | the AI's time on what does not block, within the line's 22 s median, 133 s max | none |
 | Push: only the docs the range made suspect; whole-repository checks on main | ~5 s, every push, in the terminal | none |
-| Commit: one gitleaks scan for the diff and the message | ~0.4 s, every commit | none |
 | Drafts with no AI | the AI's time on each draft push | a lens a draft push |
 | After ready, AI only on what is new; a finding judged once | the judges' time (#500: ten, 268k) | most of the line's |
-| The release pull request's AI once labelled | none (nobody waits) | ~0.8M a week here: 129 main moves (10-12 to 18) × 6.4k |
+| The release pull request's AI at night only, the no-AI count at each main move (decided 2026-10-19) | its AI's part of 1.6–2.2 min, when a person releases | ~0.8M a week here: 129 main moves (10-12 to 18) × 6.4k |
 | Gates in a merge queue or train, no AI | the queue's turn | none |
 
-What workline decides from this:
+What workline decides from this, the two choices it left open decided
+the same day:
 [ADR-0050](../adr/0050-each-act-has-its-moment-and-a-wait-budget.md).

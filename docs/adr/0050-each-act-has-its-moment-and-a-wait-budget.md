@@ -3,10 +3,10 @@
 - **Status:** accepted; nothing built yet ([the build plan](#build-plan))
 - **Date:** 2026-10-19
 - **Decided by:** the maintainer, on 2026-10-19: a panel's direction,
-  validated in broad lines, with one correction. The first criterion is
-  the time a developer waits at each moment: a slow hook or pipeline
-  makes a developer skip everything (`--no-verify`, a red check
-  ignored). Tokens come second.
+  validated in broad lines, corrected: first the time a developer waits
+  at each moment, as a slow hook or pipeline makes a developer skip
+  everything (`--no-verify`, a red check ignored); tokens second. The
+  same day, the two choices left open ([§7](#7-decided-by-the-maintainer-on-2026-10-19)).
 - **Builds on:** [ADR-0010], [ADR-0011] (the review is on the merge
   request), [ADR-0013] (what was judged is not asked again),
   [ADR-0017], [ADR-0020], [ADR-0042] (the engine merges on the head's
@@ -39,7 +39,7 @@ Measured on 2026-10-19 ([moments.md](../research/moments.md)):
 
 | Moment | Who waits | Budget, p90 | Today |
 |---|---|---|---|
-| Commit | the developer, in the terminal | 1 s; 30 s when the agent rewrites a refused message | 0.9 s; 12–78 s |
+| Commit | the developer, in the terminal | 1 s; 30 s when a project turns the agent's rewrite on (§7) | 0.9 s; 12–78.5 s with the rewrite |
 | Push (opt-in) | the developer, in the terminal | 5 s, no agent | 6 s |
 | First result on a merge request's push | the author | 1 min | 6–12 s; 34 s with a real linter |
 | The head's verdict, `workline/verdict` | the author, the merge policy | 3 min | 154 s |
@@ -72,9 +72,8 @@ Never silently dropped. In this order:
 4. **What is about the repository, not the change, moves** to main
    after the merge, or to the night: a warning, then an issue.
 5. **What a hook cannot do in its budget moves to the merge request**,
-   which runs it anyway. The agent's rewrite at a commit says so before
-   it starts; past 30 s the message is refused with its reasons, kept
-   for the person (principle 5).
+   which runs it anyway. A hook calls no agent by default; the rewrite
+   at a commit is opt-in (§7).
 
 ### 3. The moment table
 
@@ -86,7 +85,7 @@ verdict; *async*: posted by a job of its own. —: not run.
 | Committer: rules, gitleaks, on the range | B | B | B | — | — | — | B | — |
 | Gates: the project's tools, new findings | B | B | B | B, merged result | W, whole report, an issue; the next base | — | B | — |
 | Documentalist, no AI: docs the change made suspect | W | B | B | — | W, whole-repository budgets, an issue | — | B | — |
-| Documentalist's AI on the docs due | — | B | B, new ones | — | — | W, capped | B, once accepted (§7) | — |
+| Documentalist's AI on the docs due | — | B | B, new ones | — | — | W, capped; the release pull request's too (§7) | — | — |
 | Reviewer, a lens the project blocks on | — | B | B, new commits | — | — | — | — | — |
 | Reviewer, lenses that warn | — | W async, every lens | W async, new commits, 5 a push | — | — | W, specs | — | — |
 | Inspector's triage | — | W async | W async, new findings | — | — | — | — | — |
@@ -148,42 +147,46 @@ the team's own pipeline scans. No tokens.
   and a check on two green merge requests breaking together; the
   release pull request's count of docs due at each main move.
 - **Removed**: a patch judged twice; the engine built in every job; the
-  documentalist's AI at each main move on the release pull request;
-  whole-repository findings at each push.
+  release pull request's AI at each main move, now at night; the
+  whole-repository findings at each push; a hook's agent unasked.
 
-### 7. Left to the maintainer; the default holds meanwhile
+### 7. Decided by the maintainer on 2026-10-19
 
-- **The release pull request's AI**: once a person accepts it (the
-  panel's), or at night only. Once accepted, a fix moves the head after
-  the yes, and the release waits a run (1.6 to 2.2 min).
-- **The agent's rewrite at a commit**: on, capped at 30 s (the
-  default), or opt-in, the hook refusing in 0.9 s with the reasons.
+- **The release pull request's documentalist AI runs at night only**,
+  with the gardening. At each move of main, only the no-AI count of
+  docs due stays, and holds the release. Refused: once a person accepts
+  it, the panel's, since a doc fix would then change the head after the
+  person's yes ([ADR-0042]).
+- **The agent's rewrite at a commit is opt-in.** By default the hook
+  refuses in about 1 s and gives the reasons. A setting turns the
+  rewrite on: it says so before it starts, and past 30 s it refuses
+  with the reasons, the message kept for the person (principle 5).
+  Measured: 78.5 s in the one real hook.
 
 ## Build plan
 
-By wait removed, then tokens:
+By the wait removed each time, then tokens:
 
-1. The engine once a run, shared by the jobs: ~40 s of the verdict's 101 s.
-2. Lenses and triage that warn, off the verdict's path: up to the line's AI time.
-3. Each step's seconds in the summary; a moment over its budget said.
-4. Push in 5 s: only the docs the range made suspect; whole-repository checks on main.
-5. Commit in 1 s: one gitleaks scan; the agent's rewrite capped at 30 s.
-6. No AI on a draft.
-7. After ready, AI on what is new; a patch judged once; 5 commits a push.
-8. The release pull request's AI as §7 settles: ~0.8M tokens a week here.
-9. Main after a merge: whole-repository findings once, an issue; gates kept as the base.
-10. A merge queue's or train's run: gates only.
-11. The night: a release dry run; a release job on GitLab.
-12. SonarQube's read at these moments ([#203]).
-13. doctor's checks of §6.
+1. The engine once a run, shared by the jobs: ~40 s of the verdict's 101 s, every push.
+2. Commit: the agent's rewrite opt-in, capped at 30 s (§7); one gitleaks scan: 12–78.5 s down to about 1 s on a refused message, ~0.4 s every commit.
+3. Lenses and triage that warn, off the verdict's path: their AI time, within the line's 22 s median, 133 s at most.
+4. Push in 5 s: only the docs the range made suspect, whole-repository checks on main: ~5 s every push.
+5. No AI on a draft: the AI's time on each draft push.
+6. After ready, AI on what is new; a patch judged once; 5 commits a push: the judges' time (#500: ten).
+7. The release pull request's AI at night only (§7): its part of 1.6–2.2 min; ~0.8M tokens a week here.
+8. A merge queue's or train's run: gates only: the queue's turn.
+9. Main after a merge: whole-repository findings once, an issue; gates kept as the base: no wait, less noise.
+10. The night: a release dry run; a release job on GitLab: no wait.
+11. Each step's seconds in the summary, a moment over its budget said: no wait, it measures the rest.
+12. SonarQube's read at these moments ([#203]): adds a wait, capped at 5 minutes, beside the first result.
+13. doctor's checks of §6: no wait.
 
 ## Consequences
 
 - A developer waits seconds in the terminal, minutes on the merge
-  request; what takes longer comes as a comment.
-- The verdict ([ADR-0042]) holds what blocks, nothing that only warns.
-- Hooks stay a convenience; the merge request stays the check
-  ([ADR-0011]).
+  request; what takes longer comes as a comment. The verdict
+  ([ADR-0042]) holds what blocks, nothing that only warns.
+- Hooks stay a convenience; the merge request stays the check ([ADR-0011]).
 
 [#203]: https://github.com/JN0V/workline/issues/203
 [ADR-0010]: 0010-docs-judged-on-the-merge-request-and-by-gardening.md
