@@ -157,7 +157,19 @@ func RunWith(event string, base engine.Options, gates *Gates) *Result {
 				// docs, on its merge request's head; what its fix patches
 				// waits for the gardening after it (ADR-0050, §7).
 				case event == "schedule" && base.OpenMergeRequest:
-					o.Waiting = nightRelease(res, cfg, o, &notPassed)
+					var failed, st string
+					ran := len(res.Steps)
+					o.Waiting, failed, st = nightRelease(res, cfg, o)
+					if len(res.Steps) > ran {
+						considered++
+					}
+					if failed != "" {
+						if stopAtFirst {
+							return stopped(res, failed, st)
+						}
+						notPassed = append(notPassed, fmt.Sprintf("%s (%s)", failed, st))
+						res.Status = worst(res.Status, st)
+					}
 				// `release` on a release tool's merge request, a person's
 				// run: on its head, its fix in a merge request of its own.
 				case event == "release" && o.Target != nil && o.Target.Kind == "merge-request":
@@ -337,8 +349,9 @@ func holdsRelease(rolesDir, name string) bool {
 // on that merge request's head (ADR-0050, §7; routing.md). Its step is
 // `<role> (release #n)`; the release waiting for its docs fails nothing
 // of the night's. It returns what that run left to apply, by task, for
-// the gardening after it to leave alone.
-func nightRelease(res *Result, cfg *routing.Config, o engine.Options, notPassed *[]string) map[string][]string {
+// the gardening after it to leave alone; and the step, and its status,
+// when it did not pass for another reason.
+func nightRelease(res *Result, cfg *routing.Config, o engine.Options) (waiting map[string][]string, failed, status string) {
 	mr, said, err := engine.OpenRelease(o)
 	res.Findings = append(res.Findings, said...)
 	unread := func(err error) {
@@ -347,15 +360,15 @@ func nightRelease(res *Result, cfg *routing.Config, o engine.Options, notPassed 
 	}
 	if err != nil {
 		unread(err)
-		return nil
+		return nil, "", ""
 	}
 	if mr == nil {
-		return nil
+		return nil, "", ""
 	}
 	if o.AI == "none" { // no agent tonight: said, the release waiting for one or a person
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "release-not-judged", Level: "warn", Where: fmt.Sprintf("#%d", mr.ID),
 			Message: fmt.Sprintf("no agent tonight (--ai none): the docs due for the release, merge request #%d, are not judged; they hold it until an agent judges them — `workline route release --target merge-request:%d --push-to-merge-request` where one may — or a person moves their `checked`", mr.ID, mr.ID)})
-		return nil
+		return nil, "", ""
 	}
 	ro := o
 	ro.Event, ro.Target, ro.Branch = "release", &forge.Target{Kind: "merge-request", ID: mr.ID}, mr.Branch
@@ -363,21 +376,20 @@ func nightRelease(res *Result, cfg *routing.Config, o engine.Options, notPassed 
 	back, _, err := engine.OnReleaseHead(ro)
 	if err != nil {
 		unread(err)
-		return nil
+		return nil, "", ""
 	}
 	at, pending := len(res.Steps), len(res.Pending)
-	_, status := runRole(res, cfg, ro, 0)
+	_, status = runRole(res, cfg, ro, 0)
 	back()
 	label := fmt.Sprintf("%s (release #%d)", o.Role, mr.ID)
 	res.Steps[at].Name = label
-	if status != verdict.Pass && !engine.ReleaseHeld(res.Steps[at].Result) {
-		*notPassed = append(*notPassed, fmt.Sprintf("%s (%s)", label, status))
-		res.Status = worst(res.Status, status)
-	}
 	if left := res.Pending[pending:]; len(left) > 0 {
-		return map[string][]string{"release": slices.Clone(left)}
+		waiting = map[string][]string{"release": slices.Clone(left)}
 	}
-	return nil
+	if status != verdict.Pass && !engine.ReleaseHeld(res.Steps[at].Result) {
+		return waiting, label, status
+	}
+	return waiting, "", ""
 }
 
 // worst is the verdict of a line whose steps all ran: a block on the work
