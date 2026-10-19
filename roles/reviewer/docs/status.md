@@ -93,7 +93,8 @@ its measure in
   `warn-apart-a-lens-that-blocks-still-holds-the-verdict`,
   `warn-finding-posted-after-the-verdict`,
   `warn-lens-failing-changes-no-verdict`,
-  `warn-only-takes-up-the-record-of-a-review-not-split`.
+  `warn-only-takes-up-the-record-of-a-review-not-split`,
+  `warn-only-every-lens-blocks-writes-nothing`.
 - **Lenses as parts**, answering findings only; an answer that does not
   read asked again once: `never-approves-nor-patches`,
   `lens-failed-not-clean`, `lens-answer-asked-again-once`.

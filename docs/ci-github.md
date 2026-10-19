@@ -1,6 +1,6 @@
 ---
 sources: [ci/github, .github/workflows/workline.yml, .github/workflows/workline-apply.yml, .github/workflows/workline-gardening.yml, .github/workflows/workline-sample.yml, .github/actions/engine/action.yml, .github/workflows/release.yml, .github/workflows/release-please.yml, release-please-config.json, .goreleaser.yaml, cmd/workline]
-checked: 1447a34b
+checked: 1c0f2082
 judged: 220b6dc
 verified: agent:claude-code
 reader: fe1505d43360
@@ -49,7 +49,8 @@ write run the default branch's workflow, never a pull request's own
    - [workline-warn.yml](../ci/github/workline-warn.yml): `warn` beside
      `judge`, the reviewer's lenses that only warn, apart from the
      verdict ([apart](../roles/reviewer/docs/apart.md)); without it,
-     `judge` warns that nothing reads them.
+     `judge` warns that nothing reads them; it reads only beside this
+     release's workline-apply.yml, else warns.
    - [workline-apply.yml](../ci/github/workline-apply.yml), from the
      default branch:
      - `apply` after each `judge`, the fixes committed to the pull

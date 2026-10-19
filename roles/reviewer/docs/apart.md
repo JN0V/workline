@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, internal/builtin/reviewer/reviewer.go, internal/builtin/reviewer/record.go, internal/line/line.go, ci/github/workline.yml, ci/github/workline-warn.yml, ci/github/workline-apply.yml, ci/gitlab/workline.gitlab-ci.yml]
-checked: 1447a34b
+checked: 1c0f2082
 verified: agent:claude-code
 ---
 # Reviewer — the lenses that warn, apart from the verdict
@@ -35,7 +35,9 @@ beside the verdict's, and posts once it answered.
 - **The rules** (`bug-story`, `internal-code`) block on the verdict's
   run. While they block, the run apart asks no lens either, and says
   nothing of them again.
-- **Every lens blocking, or none**: one of the two runs asks nothing.
+- **Every lens blocking** (`ai-findings: block`): the run apart asks
+  nothing and writes nothing. **None blocking**: the verdict's run asks
+  no lens; its summary comment still holds the rules and its record.
 
 ## Two comments, two records
 
@@ -82,10 +84,13 @@ beside the verdict's, and posts once it answered.
   beside it (`--warn-only`); workline-apply.yml applies both, and keeps
   the verdict from `judge` alone
   ([CI on GitHub](../../../docs/ci-github.md)). Without workline-warn.yml,
-  `judge` warns that nothing reads them.
+  `judge` warns that nothing reads them; with an older
+  workline-apply.yml, which does not name it, `warn` warns and reads
+  nothing: unposted, its record would never move.
 - **GitLab**: `workline:warn`, from the pipeline's start, then
-  `workline:warn:apply`; neither fails the pipeline
-  ([CI on GitLab](../../../docs/ci-gitlab.md)). GitLab merges once the
-  pipeline succeeds: the merge waits for them, never on what they find.
-- **No agent**: the run apart ends at once; the lenses need one.
+  `workline:warn:apply`, with the agent's token and the bot's; neither
+  fails the pipeline ([CI on GitLab](../../../docs/ci-gitlab.md)). GitLab
+  merges once the pipeline succeeds: the merge waits for them, never on
+  what they find.
+- **No agent, or no reviewer in the line**: the run apart ends at once.
 - **On a machine**: `workline review` asks every lens in one run.
