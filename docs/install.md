@@ -108,9 +108,10 @@ git commit --allow-empty -m "AC-3 fix the thing"
 
 - **In about a second**: by default the hook asks no agent, even yours
   ([ADR-0050](adr/0050-each-act-has-its-moment-and-a-wait-budget.md)).
-- **A project that wants the rewrite** sets `rewrite: true` under
-  `roles: {committer: {settings: …}}` in `.workline/config.yaml`: the same
-  commit then goes through, rewritten, 30 s at most
+- **To have it rewritten**, set `rewrite: true` under
+  `roles: {committer: {settings: …}}`: in `.workline/config.yaml` for the
+  project, or in your own config for you (a project's `ai: none` still
+  wins). The same commit then goes through, rewritten, 30 s at most
   ([the committer](../roles/committer/README.md#rewrite-the-agent-opt-in)):
 
 ```text

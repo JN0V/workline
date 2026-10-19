@@ -16,7 +16,7 @@ trigger token or another pipeline: [gitlab-trigger.md](gitlab-trigger.md).
 
 | What | Command | Agent |
 |---|---|---|
-| each commit's message | the global `commit-msg` hook (`workline hooks install --global`) | none by default; yours, to rewrite a refused message, where the project turns it on (`rewrite: true`) |
+| each commit's message | the global `commit-msg` hook (`workline hooks install --global`) | none by default; yours, to rewrite a refused message, where the project or you turn it on (`rewrite: true`) |
 | before a push | the global `pre-push` hook, when the project routes `pre-push`; by hand: `workline route pre-push --ai none --input range=origin/main..HEAD` | never |
 | docs made suspect | `workline docs` (`--since <rev>`; `--review` with no agent) | yours |
 | a branch's code | `workline review` (`--base`, `--lenses`, `--json`) | yours |

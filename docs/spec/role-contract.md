@@ -110,6 +110,8 @@ on-moved-on: []                 # what a merge request's run still applies once 
                                 # branch moved on from the head judged: what only says
                                 # what that head held (the reviewer's review); never a
                                 # patch nor a label; none by default
+personal: []                    # settings a person may set for themselves, in their
+                                # own config (role-adapting.md, "A person's own")
 
 without-ai: block               # block | report | pass — see "No AI" (not read yet)
 

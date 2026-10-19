@@ -1,0 +1,12 @@
+case: committer/person-setting-not-theirs-is-said
+about: "A setting the role does not let a person set, in their own config, changes nothing and is said, with those they may set: the project's line holds."
+given:
+  repo: basic
+  setup:
+    - "mkdir -p \"$XDG_CONFIG_HOME/workline\" && printf 'roles: {committer: {settings: {subject-max: 200}}}\\n' > \"$XDG_CONFIG_HOME/workline/config.yaml\""
+run: {role: committer, event: commit-msg, input: {message: "fix: stop crashing on an empty input file, and say which file it was, and why it was empty"}, ai: none}
+expect:
+  status: block
+  findings:
+    - {rule: subject-length, message: "the limit is 72"}
+    - {rule: personal-setting-ignored, level: warn, message: "roles.committer.settings.subject-max, which a person cannot set for themselves: the project's stands; you may set rewrite, ai-max-seconds, internal-codes-allow"}

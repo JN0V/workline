@@ -46,6 +46,14 @@ settings over both: a project picks a level in one word and still sets
 any field on its own. The role gets beside its settings `by-level`, what
 they are with the project's left out, to say which the project changed.
 
+**A person's own.** A role may name, `personal` in its `role.yaml`, the
+settings a person sets for themselves, in their own config's
+`roles.<role>.settings`: what only changes their wait or their words (the
+committer's `rewrite`, `ai-max-seconds`, `internal-codes-allow`). They are
+laid last: a value wins over the project's, a list adds to it. Any other
+setting there changes nothing and is said (`personal-setting-ignored`); a
+config that cannot be read too (`personal-config-invalid`).
+
 If a setting a role depends on cannot be resolved, the role says so and blocks.
 A check that silently passes for lack of configuration is still believed in,
 which is worse than no check.

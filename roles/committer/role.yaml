@@ -57,9 +57,16 @@ settings:
   # GitHub's web merges (noreply@github.com). Allowed beside the lists above;
   # alone, they never turn the check on.
   forge-identities: []
-  # A refused message is rewritten by the agent only when the project turns
-  # this on (ADR-0050): by default the hook refuses in about a second, with
-  # the reasons, and keeps the message. The rewrite says so before it
-  # starts, and ends past ai-max-seconds, every call and retry together.
+  # A refused message is rewritten by the agent only when the project, or a
+  # person for themselves (personal, below), turns this on (ADR-0050): by
+  # default the hook refuses in about a second, with the reasons, and keeps
+  # the message. The rewrite says so before it starts, and ends past
+  # ai-max-seconds, every call and retry together.
   rewrite: false
   ai-max-seconds: 30
+
+# What a person may set for themselves, in their own config's
+# roles.committer.settings: the rewrite and its wait, which are theirs, and
+# the names they let through, added to the project's list. A project's
+# `ai: none` still keeps every agent away.
+personal: [rewrite, ai-max-seconds, internal-codes-allow]

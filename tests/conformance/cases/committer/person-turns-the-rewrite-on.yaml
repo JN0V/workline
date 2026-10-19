@@ -1,0 +1,14 @@
+case: committer/person-turns-the-rewrite-on
+about: "A person turns the rewrite on for themselves, in their own config's roles.committer.settings: at their commit, it wins over the project's off, and their agent rewrites the refused message."
+given:
+  repo: basic
+  setup:
+    - "mkdir -p \"$XDG_CONFIG_HOME/workline\" && printf 'ai: fake:%s\\nroles: {committer: {settings: {rewrite: true}}}\\n' \"$FIXTURES/agents/good-commit-message.yaml\" > \"$XDG_CONFIG_HOME/workline/config.yaml\""
+    - "printf 'fix: AC-3\\n' > .git/COMMIT_EDITMSG"
+  env: {WORKLINE_AI: ""}
+run: {cli: [hook, commit-msg, .git/COMMIT_EDITMSG]}
+expect:
+  exit: 0
+  stderr: ["the agent (fake) rewrites it, 30 s at most", "the commit goes on with this message instead of yours"]
+  files:
+    .git/COMMIT_EDITMSG: {contains: "fix(parser): stop crashing on an empty input file"}

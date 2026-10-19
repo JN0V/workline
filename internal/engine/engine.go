@@ -436,11 +436,12 @@ func run(o Options, res *Result) error {
 		return err
 	}
 	res.RunDir = runDir
-	if err := writeInputs(runDir, o.Inputs, r.MergedSettings(cfg)); err != nil {
+	settings := personalSettings(r, r.MergedSettings(cfg), res)
+	if err := writeInputs(runDir, o.Inputs, settings); err != nil {
 		return err
 	}
-	res.maxTokens = intSetting(r.MergedSettings(cfg), "ai-max-tokens")
-	res.maxSeconds = intSetting(r.MergedSettings(cfg), "ai-max-seconds")
+	res.maxTokens = intSetting(settings, "ai-max-tokens")
+	res.maxSeconds = intSetting(settings, "ai-max-seconds")
 	if o.Forge == "" {
 		o.Forge = cfg.Forge
 	}
@@ -557,7 +558,6 @@ func run(o Options, res *Result) error {
 	if err != nil {
 		return err
 	}
-	settings := r.MergedSettings(cfg)
 	_, taskErr := os.Stat(filepath.Join(runDir, "in", "task.md"))
 	if _, ok := r.Model.Tasks[taskKind(runDir)]; ok {
 		asked := *r // this task's needs, in place of the role's
@@ -2593,6 +2593,29 @@ func RunsDir(repo string) string {
 }
 
 // intSetting reads a whole number from the role's settings; 0 when unset.
+// personalSettings are the role's settings with what the person's own
+// config sets for it laid over, as far as the role lets a person set it
+// (role.Role.WithPersonal); what it may not set, and a config that cannot
+// be read, are said, and change nothing.
+func personalSettings(r *role.Role, merged map[string]any, res *Result) map[string]any {
+	personal, err := role.PersonalSettings(r.Name)
+	if err != nil {
+		res.Findings = append(res.Findings, verdict.Finding{Rule: "personal-config-invalid", Level: "warn", Where: role.PersonalConfig(),
+			Message: "your own config could not be read (" + err.Error() + "): the project's settings stand"})
+		return merged
+	}
+	out, refused := r.WithPersonal(merged, personal)
+	for _, k := range refused {
+		may := "none"
+		if len(r.Personal) > 0 {
+			may = strings.Join(r.Personal, ", ")
+		}
+		res.Findings = append(res.Findings, verdict.Finding{Rule: "personal-setting-ignored", Level: "warn", Where: role.PersonalConfig(),
+			Message: fmt.Sprintf("your own config sets roles.%s.settings.%s, which a person cannot set for themselves: the project's stands; you may set %s", r.Name, k, may)})
+	}
+	return out
+}
+
 func intSetting(settings map[string]any, key string) int {
 	switch v := settings[key].(type) {
 	case int:
