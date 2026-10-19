@@ -4,6 +4,7 @@ checked: 86f1e419
 judged: cd97f28
 verified: agent:claude-code
 reader: 9799dcaf51f3
+judged-in-parts: 220b6dc
 ---
 # workline on GitLab CI
 
