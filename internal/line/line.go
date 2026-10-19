@@ -339,10 +339,14 @@ func holdsRelease(rolesDir, name string) bool {
 // proposed in a merge request of its own (ADR-0017). Its step is said
 // apart from the role's: `<role> (release #n)`. The release waiting for
 // its docs is said on its merge request, and holds nothing of the night's
-// line (a warning); anything else that did not pass counts. It returns
-// what the run left to apply, by the task its fix goes to, for the
-// gardening after it to leave alone.
+// line (a warning); anything else that did not pass counts. With no agent
+// tonight (--ai none), it does not run: the release's own runs said what
+// needs none. It returns what the run left to apply, by the task its fix
+// goes to, for the gardening after it to leave alone.
 func nightRelease(res *Result, cfg *routing.Config, o engine.Options, notPassed *[]string) map[string][]string {
+	if o.AI == "none" { // no agent tonight: what needs none, the release's own runs said it
+		return nil
+	}
 	mr, said, err := engine.OpenRelease(o)
 	res.Findings = append(res.Findings, said...)
 	unread := func(err error) {
