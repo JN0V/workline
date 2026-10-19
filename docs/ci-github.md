@@ -1,6 +1,6 @@
 ---
 sources: [ci/github, .github/workflows/workline.yml, .github/workflows/workline-apply.yml, .github/workflows/workline-gardening.yml, .github/workflows/workline-sample.yml, .github/actions/engine/action.yml, .github/workflows/release.yml, .github/workflows/release-please.yml, release-please-config.json, .goreleaser.yaml, cmd/workline]
-checked: 78fd03ce
+checked: dba82333
 judged: 220b6dc
 verified: agent:claude-code
 reader: fe1505d43360
@@ -46,6 +46,9 @@ write run the default branch's workflow, never a pull request's own
      request, its own run: no write token; it warns when no workflow
      applies what it proposed. Before it, `gates` runs your gates alone:
      add the install of their tools there ([gates in CI](gates-in-ci.md)).
+     On each push to `main`, `gates` runs main's line alone, its
+     findings kept as the next base ([main after a merge](main-after-merge.md));
+     rename `main` in its `push:` for another default branch.
    - [workline-warn.yml](../ci/github/workline-warn.yml): `warn` beside
      `judge`, the reviewer's lenses that only warn, apart from the
      verdict ([apart](../roles/reviewer/docs/apart.md)); without it,
@@ -56,6 +59,7 @@ write run the default branch's workflow, never a pull request's own
      - `apply` after each `judge`, the fixes committed to the pull
        request's branch, and after each `warn`, the comment of the
        lenses that warn;
+     - `main` after main's run: what it found, in one issue;
      - `follow` on each push to `main`
        ([ADR-0034](adr/0034-the-release-fix-follows-its-base.md)): the
        documentalist's pull request for the release, when one is open, is

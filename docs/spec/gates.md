@@ -1,6 +1,6 @@
 ---
 sources: [internal/gate, internal/line, internal/linters/check.go, internal/report/report.go, internal/report/gates.go, internal/engine/annotate.go]
-checked: 615b87f5
+checked: dba82333
 verified: agent:claude-code
 ---
 # Gates — v1 (draft)
@@ -67,6 +67,8 @@ read only the findings the change adds since the merge base of the
 range's start and `HEAD`
 ([ADR-0049](../adr/0049-the-inspector-judges-the-new-findings-of-the-projects-tools.md)).
 On `schedule` and `release`, and with `workline gate`, every finding counts.
+On `main` after a merge, every finding is read and kept, and what the
+push adds since the branch's tip before it counts.
 
 ```yaml
       - id: lint
@@ -81,6 +83,15 @@ On `schedule` and `release`, and with `workline gate`, every finding counts.
   touched that its tool reads its config from, by name
   ([the tools' table](../languages.md#the-table-it-reads)), or that the
   check's `config` names (`config: [pyproject.toml]`, globs).
+- **Or read as main kept it** ([ADR-0050](../adr/0050-each-act-has-its-moment-and-a-wait-budget.md)):
+  with `--gates-kept <folder>`, main's run after a merge writes every
+  finding of each SARIF check there, by its commit (`<commit>.json`);
+  a change whose merge base it holds reads them instead of running the
+  tool there. Only for the same command, `output` and `config`, no file
+  the tool reads its config from changed by the change, and the same
+  tool: the version its SARIF names, the hash of the binary found on the
+  PATH; one naming neither runs again. Else run again, the summary
+  saying why ([main after a merge](../main-after-merge.md#the-next-base)).
 - **Compared one for one, never by line number**: the tool, the rule, the
   file (a rename followed), then the tool's own `fingerprints`, else its
   `partialFingerprints`, else the message and the text of the line, its

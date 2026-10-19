@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/hygiene.go, internal/builtin/documentalist/external.go, internal/builtin/documentalist/adr.go, internal/builtin/documentalist/unread.go, internal/builtin/documentalist/reader.go, roles/documentalist/role.yaml]
-checked: f530cda7
+checked: dba82333
 verified: agent:claude-code
 ---
 # Documentalist — the checks on the docs alone
@@ -9,10 +9,11 @@ The six checks of `pre` that read the docs alone, not the code they
 describe; no AI. The other six, and how much each finding weighs:
 [the checks](checks.md). Part of [the documentalist](../README.md).
 
-At a push, they read only the docs its commits touched or made suspect,
-and passages written twice are not looked for: the merge request and
-gardening read every doc
-([ADR-0050](../../../docs/adr/0050-each-act-has-its-moment-and-a-wait-budget.md)).
+At a push and on a merge request, they read only the docs its commits
+touched or made suspect, and passages written twice are not looked for:
+main's run after a merge and gardening read every doc
+([ADR-0050](../../../docs/adr/0050-each-act-has-its-moment-and-a-wait-budget.md),
+[main after a merge](../../../docs/main-after-merge.md)).
 
 ## Budgets
 

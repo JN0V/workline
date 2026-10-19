@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/identifiers.go, internal/builtin/documentalist/derive.go, internal/builtin/documentalist/freshness.go, internal/builtin/documentalist/counts.go, roles/documentalist/role.yaml]
-checked: 56e17f81
+checked: dba82333
 judged: f70db89
 verified: agent:claude-code
 ---
@@ -38,9 +38,10 @@ rendering shows, or in a frontmatter the doc has.
   brought them. When that is the only one bringing the name, the clone
   lacks the commit, and `shallow-clone` says so — the doc neither suspect
   nor passed.
-- **At a push, only the docs its commits touched**: one of their sources,
-  or the doc itself. The others are read on the merge request and when
-  gardening
+- **At a push and on a merge request, only the docs its commits
+  touched**: one of their sources, a merge's own change too, or the doc
+  itself. The others are read when gardening; on main after a merge, none
+  is judged
   ([ADR-0050](../../../docs/adr/0050-each-act-has-its-moment-and-a-wait-budget.md)).
 - **The chain is followed**: a suspect technical section makes the product
   docs depending on it suspect too.

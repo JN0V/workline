@@ -1,6 +1,6 @@
 ---
 sources: [internal/line, internal/routing, internal/work, routing.default.yaml]
-checked: 615b87f5
+checked: dba82333
 verified: agent:claude-code
 ---
 # Routing — v1 (draft)
@@ -78,9 +78,11 @@ routing:
     merge-request: [committer, documentalist, gate:merge]
     schedule:      [documentalist]
     release:       [gate:release, documentalist]   # before the release tool tags
+    main:          [documentalist]      # after a merge: merge-request's gates first
 
   fail-fast:                            # per event; true unless set
     schedule: false                     # every step runs, the worst verdict stands
+    main: false
 
   handoffs:                             # the only handoffs a role may ask for
     - {from: my-role, to: documentalist}  # a project's own role; none shipped asks
@@ -235,6 +237,26 @@ head's verdict and the person's yes stay the merge request's
 ([ADR-0042](../adr/0042-the-engine-merges-by-the-projects-policy.md));
 so is `--warn-only`, and any value but `true` or `false`
 ([a merge queue or train](../merge-queue.md)).
+
+### Main after a merge
+
+[ADR-0050](../adr/0050-each-act-has-its-moment-and-a-wait-budget.md#3-the-moment-table):
+`route main`, on the default branch's new tip, given the push as
+`range` ([how](../main-after-merge.md)):
+
+- **Its steps**: the gate steps of `merge-request` first, each once,
+  then those `main` lists (the documentalist, by default); every step
+  runs (`fail-fast: false`).
+- **The gates**: what the push adds since main's tip before it counts,
+  the range's start, else HEAD's first parent; with none, every finding
+  is said, none counted. Every finding is kept by HEAD's commit in the
+  folder `--gates-kept` names, the next base.
+- **No agent asked** by the shipped roles: the documentalist checks the
+  whole repository there, judging no doc. The engine's own commits are
+  checked as any other.
+- **Its result** names the event (`event`) and what it compared
+  (`main`: `before`, `head`, the commits between); `apply --main` keeps
+  it in one issue, edited only when what it lists changes.
 
 ### Each step's seconds, a moment's budget
 
