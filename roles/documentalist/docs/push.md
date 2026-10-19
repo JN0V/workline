@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/adopt.go, internal/builtin/documentalist/byname.go, internal/builtin/documentalist/releasekept.go, internal/engine/night.go]
-checked: 3f00333c
+checked: 56e17f81
 verified: agent:claude-code
 judged-in-parts: c7e1e98
 ---
@@ -109,16 +109,20 @@ commits touched.
   on each push to it, the docs due are counted with no agent and hold the
   release; one finding says so (`ai-waits-for-night`). A doc fix would
   otherwise change its head after a person's yes.
-- **The agent judges them at night**, with the gardening: on `schedule`,
-  before its own tasks, the documentalist runs on `release` for the
-  release pull request open into the branch, on that pull request's head.
-  Gardening leaves the docs that fix holds. With a weekly gardening, it
-  waits for the next one; with no agent that night, it is said
-  (`release-not-judged`), and the release waits.
-- **Sooner, by hand**: run the gardening workflow (GitHub) or play its
+- **The agent judges them every night**, on that pull request's head,
+  checked out for the run, then put back:
+  - the other nights, the templates' release docs run:
+    `workline route release --target merge-request:release` finds the
+    release pull request open into the branch. None open, or no doc due:
+    no agent is asked. GitHub: `workline-release-docs.yml`; GitLab: a
+    schedule with `WORKLINE_TASK=release-docs`;
+  - the gardening's night, before its own tasks. Gardening leaves the
+    docs that fix holds;
+  - with no agent that night, it is said (`release-not-judged`), and the
+    release waits.
+- **Sooner, by hand**: run the release docs workflow (GitHub) or play its
   schedule (GitLab); or, where an agent may judge,
-  `workline route release --target merge-request:<n> --push-to-merge-request`:
-  the head checked out for the run, then put back.
+  `workline route release --target merge-request:<n> --push-to-merge-request`.
 - **Its fix does not go onto that branch**, which the tool rewrites: it
   goes to a merge request of its own into the release's base,
   `workline/documentalist/release`. The release pull request stays held

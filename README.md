@@ -1,6 +1,6 @@
 <!-- workline
 sources: [ci/gitlab/workline.gitlab-ci.yml, ci/github/workline-fork.yml, routing.default.yaml, internal/forge/forge.go, internal/agent/agent.go, ci/github/workline-apply.yml, internal/gate, cmd/workline/cli.go, ci/github/workline.yml, ci/forgejo/workline-forge.sh, ci/github/workline-gardening.yml, ci/github/workline-sample.yml]
-checked: 620569bd
+checked: 56e17f81
 judged: 220b6dc
 verified: agent:documentalist
 reader: e375241655b6
@@ -131,14 +131,16 @@ Each role, from a hook, a script or a CI job: [triggers](docs/triggers.md).
 | When | Roles | Writes |
 |---|---|---|
 | gardening, nightly or weekly (`workline route schedule`) | documentalist, first on an open release's docs; product owner, opt-in | one merge request per task, kept on main or closed; the release's docs fix; the issues |
+| the other nights (`workline route release --target merge-request:release`) | documentalist, on an open release's docs alone | the release's docs fix |
 | the weekly sample (`workline sample`) | auditor: one in ten of every role's acts, each re-checked | one issue, a comment a week; a merge request undoing a wrong confirmation |
 | each push to main (`workline follow`) | the engine, no agent: rebuilds the documentalist's release fix on main's new tip; when set, merges main into pull requests in conflict only on workline's lines, and turns auto-merge on for what a person accepted, at `normal` for workline's own routine work too ([merge policy](docs/merge-policy.md)) | its merge request, force-pushed; a merge commit on theirs; the forge's auto-merge |
 | before your release tool tags (`workline route release`) | documentalist, on the docs due at the release | a non-zero exit holds the release |
 
 - workline cuts no releases: it runs before your release tool.
-- Templates: GitHub's [gardening](ci/github/workline-gardening.yml) and
+- Templates: GitHub's [gardening](ci/github/workline-gardening.yml),
+  [release docs](ci/github/workline-release-docs.yml) and
   [sample](ci/github/workline-sample.yml), `follow` in
-  [workline-apply.yml](ci/github/workline-apply.yml); on GitLab, two pipeline
+  [workline-apply.yml](ci/github/workline-apply.yml); on GitLab, three pipeline
   schedules and a push to the default branch, all in the same
   [template](ci/gitlab/workline.gitlab-ci.yml).
 - Each command in detail: [usage](docs/usage.md#commands).

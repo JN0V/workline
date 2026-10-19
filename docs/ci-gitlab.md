@@ -1,6 +1,6 @@
 ---
 sources: [ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile]
-checked: 620569bd
+checked: 56e17f81
 judged: cd97f28
 verified: agent:claude-code
 reader: 9799dcaf51f3
@@ -95,9 +95,13 @@ weekly, on main. A release tool's merge request open, it first judges the
 docs due for that release, on its head; on the release's own pipelines no
 agent judges them, and they hold it
 ([ADR-0050, §7](adr/0050-each-act-has-its-moment-and-a-wait-budget.md#7-decided-by-the-maintainer-on-2026-10-19)).
-Play the schedule for the release sooner. Its fix is the bot's merge
-request only when the bot alone pushed to the release's branch: run the
-release tool with the bot's token, else the fix goes in a comment.
+
+- **The other nights**: one more schedule, every night but the
+  gardening's, with `WORKLINE_TASK` set to `release-docs`: the release's
+  docs alone; none due, no agent is asked. Play it for the release sooner.
+- Its fix is the bot's merge request only when the bot alone pushed to
+  the release's branch: run the release tool with the bot's token, else
+  the fix goes in a comment.
 
 ### 4. The weekly sample
 

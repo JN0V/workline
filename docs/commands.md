@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/engine/engine.go, internal/hooks]
-checked: 620569bd
+checked: 56e17f81
 verified: agent:claude-code
 judged: e343388
 ---
@@ -37,7 +37,8 @@ and an `--input warn=` naming the other run, are misuse.
 A release tool's merge request: on `schedule` with a forge and
 `--open-merge-request`, its docs are judged first, on its head;
 `route release --target merge-request:<n>` does it now, its head checked
-out for the run ([more](../roles/documentalist/docs/push.md#a-release-tools-pull-request)).
+out for the run, and `--target merge-request:release` finds the one open,
+for a nightly job ([more](../roles/documentalist/docs/push.md#a-release-tools-pull-request)).
 With `--input queue=true`, a merge queue's or train's run: the gates
 alone, on the merged result, the steps left named; `--verdict` and
 `--warn-only` refused ([a merge queue or train](merge-queue.md)).

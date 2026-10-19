@@ -1,6 +1,6 @@
 ---
 sources: [internal/line, internal/routing, internal/work, routing.default.yaml]
-checked: 620569bd
+checked: 56e17f81
 verified: agent:claude-code
 ---
 # Routing — v1 (draft)
@@ -211,12 +211,17 @@ push. With no agent set, nothing waits; `draft=false` changes nothing.
   of the night's, anything else counts. What its fix patches waits for
   the role's own step after it (`Waiting`), never judged twice. With
   `--ai none`, not run, said (`release-not-judged`).
+- **The other nights**: `route release --target merge-request:release`
+  runs only that step, for the release merge request it finds, the
+  templates' nightly job; none open, no step, said in the summary. The
+  target goes with `release` alone (else misuse, 64).
 - **By hand**: `route release --target merge-request:<n>` on a release
   tool's merge request does the same, the fix to a merge request of its
   own (`--push-to-merge-request` implied).
 - **Applied apart** (`apply`): only on the head judged, checked out
   again; a branch moved on applies nothing (`moved-on`); the App's fix
   only when the App alone pushed to the release branch.
+
 ### A merge queue's or train's run: the gates alone
 
 [ADR-0050](../adr/0050-each-act-has-its-moment-and-a-wait-budget.md#4-what-the-table-holds-to):
