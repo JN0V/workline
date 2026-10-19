@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, internal/builtin/reviewer/reviewer.go, internal/builtin/reviewer/record.go, internal/line/line.go, ci/github/workline.yml, ci/github/workline-warn.yml, ci/github/workline-apply.yml, ci/gitlab/workline.gitlab-ci.yml]
-checked: 29e55a0b
+checked: b4f67a9d
 verified: agent:claude-code
 ---
 # Reviewer — the lenses that warn, apart from the verdict
