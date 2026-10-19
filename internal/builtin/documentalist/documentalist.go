@@ -1445,6 +1445,16 @@ doc when its reader really gained something to know.
 			return fail(err)
 		}
 	}
+	// A draft (ADR-0050): its agent set aside by the engine, the docs this
+	// change made suspect are counted, and judged once it is ready.
+	if n := len(suspects); n > 0 && os.Getenv("WORKLINE_AI_WAITS") == "ready" {
+		docs, are := "docs", "are"
+		if n == 1 {
+			docs, are = "doc", "is"
+		}
+		findings = append(findings, verdict.Finding{Rule: verdict.WaitsForReady, Level: "warn",
+			Message: fmt.Sprintf("a draft: %d %s this change made suspect %s judged once it is marked ready", n, docs, are)})
+	}
 	sort.SliceStable(findings, func(i, j int) bool { return findings[i].Where < findings[j].Where })
 	if err := writeYAML(filepath.Join(runDir, "in", "findings.yaml"), findings); err != nil {
 		return fail(err)
@@ -1996,6 +2006,8 @@ func Post(runDir, repo string) int {
 		v.Status, v.Summary, v.Final = verdict.Block, "some sources could not be judged, or some checks could not run", true
 	case len(intents) > 0:
 		v.Summary = "docs updated"
+	case len(kept) > 0 && os.Getenv("WORKLINE_AI_WAITS") == "ready":
+		v.Summary = "a draft: the docs it made suspect are judged once it is marked ready — see the findings"
 	case len(kept) > 0:
 		v.Summary = "docs to check — see the findings"
 	default:
@@ -2450,9 +2462,11 @@ func isAuthority(s Settings, path string) bool {
 // checklist is the comment that lists, on a merge request run without an
 // agent, the docs a person must read again: one comment, edited on each run.
 // A doc leaves it when its `checked` moves; with none left, the comment says
-// so, and none is opened when there never was one.
+// so, and none is opened when there never was one. Not on a draft whose
+// agent waits for it to be ready (ADR-0050): the agent judges them then,
+// no person is asked to.
 func checklist(findings []verdict.Finding) (intent.Intention, bool) {
-	if os.Getenv("WORKLINE_AI") != "none" || !strings.HasPrefix(os.Getenv("WORKLINE_TARGET"), "merge-request:") {
+	if os.Getenv("WORKLINE_AI") != "none" || os.Getenv("WORKLINE_AI_WAITS") != "" || !strings.HasPrefix(os.Getenv("WORKLINE_TARGET"), "merge-request:") {
 		return intent.Intention{}, false
 	}
 	var now, later strings.Builder
