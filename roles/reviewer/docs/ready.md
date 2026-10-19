@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, internal/builtin/reviewer/reviewer.go, internal/builtin/reviewer/record.go, internal/engine/engine.go, ci/github/workline.yml, ci/gitlab/workline.gitlab-ci.yml]
-checked: 4049d445
+checked: 1359ad77
 verified: agent:claude-code
 ---
 # Reviewer — no lens on a draft, every lens once when it becomes ready
@@ -28,7 +28,8 @@ agent, the reviewer's two runs included.
 - **What it says**: `ai-waits-for-ready`, a warning: every lens reads
   the whole change once it is marked ready. The line's summary says the
   AI review waits for ready.
-- **What it writes**: nothing; the last review, if any, stands.
+- **What it writes**: no review; the last one, if any, stands. A draft
+  again rewrites only its record ([below](#the-run-on-ready)).
 - **The verdict**: a review to come (`waits`), never a pass: GitHub's
   `workline/verdict` pending, and the merge policy waits for the run on
   ready ([merge policy](../../../docs/merge-policy.md)).
