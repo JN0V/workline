@@ -69,8 +69,27 @@ type Block struct {
 	Cause Quote  `json:"cause"`
 }
 
-// SummaryKey keys the reviewer's one comment on a merge request.
-const SummaryKey = "summary"
+// SummaryKey keys the reviewer's one comment on a merge request; WarnKey,
+// the run apart's, the lenses that warn, when the review is split
+// (ADR-0050): each run its own comment and record, written by its own
+// applying job, which no other edits at the same time.
+const (
+	SummaryKey = "summary"
+	WarnKey    = "warn"
+)
+
+// splitMark is hidden in the summary comment of a review split (ADR-0050):
+// its record is the verdict's run's alone. One without it, written by a
+// run not split, holds every lens's turn: the run apart's first record.
+const splitMark = "<!-- workline:warn-apart -->"
+
+// keyOf is the comment a run of that side keeps its summary and record in.
+func keyOf(side string) string {
+	if side == warnOnly {
+		return WarnKey
+	}
+	return SummaryKey
+}
 
 // recordLine reads a record; one an engine wrote before patch ids holds no
 // `patches=`, nor `read=all` and `retried=once` before #359, and still reads. blocksLine reads
@@ -439,13 +458,17 @@ func union(a, b []string) []string {
 }
 
 // localRecord is where a machine keeps the record: in the git directory,
-// never tracked.
-func localRecord(repo string) string {
+// never tracked; the run apart's beside it (ADR-0050).
+func localRecord(repo, side string) string {
+	name := "reviewer-record"
+	if side == warnOnly {
+		name += "-" + WarnKey
+	}
 	dir, err := git(repo, "rev-parse", "--absolute-git-dir")
 	if err != nil {
-		return filepath.Join(repo, ".git", "workline", "reviewer-record")
+		return filepath.Join(repo, ".git", "workline", name)
 	}
-	return filepath.Join(strings.TrimSpace(dir), "workline", "reviewer-record")
+	return filepath.Join(strings.TrimSpace(dir), "workline", name)
 }
 
 // loadRecord reads the record: from the merge request's summary comment when
@@ -453,9 +476,12 @@ func localRecord(repo string) string {
 // where it read it, and why it could not, when it could not. The summary
 // comment and the machine's file always hold a record: one holding none
 // was damaged, said as one that does not read (#302).
-func loadRecord(repo string, s Settings) (Record, string, error) {
+func loadRecord(repo string, s Settings, side string) (Record, string, error) {
 	if t := mergeRequest(); t != nil && s.ForgeWrites {
 		where := fmt.Sprintf("in its summary comment on merge request %d", t.ID)
+		if side == warnOnly {
+			where = fmt.Sprintf("in the comment of the lenses that warn on merge request %d", t.ID)
+		}
 		f, err := forge.Open(os.Getenv("WORKLINE_FORGE"), repo)
 		if err != nil {
 			return Record{}, where, fmt.Errorf("the forge: %v", err)
@@ -472,14 +498,27 @@ func loadRecord(repo string, s Settings) (Record, string, error) {
 			return Record{}, where, err
 		}
 		for _, c := range comments {
-			if strings.Contains(c, forge.Marker("sticky=reviewer/"+SummaryKey)) {
+			if strings.Contains(c, forge.Marker("sticky=reviewer/"+keyOf(side))) {
 				r, err := readRecord(c)
 				return r, where, err
 			}
 		}
+		// The run apart's first (ADR-0050): a summary comment a run not
+		// split wrote holds every lens's commits and turn, which it takes
+		// up; its blocks and judged lines stay there. One a split review
+		// wrote is the verdict's run's alone: it starts from the base.
+		for _, c := range comments {
+			if side == warnOnly && strings.Contains(c, forge.Marker("sticky=reviewer/"+SummaryKey)) && !strings.Contains(c, splitMark) {
+				r, err := readRecord(c)
+				if err != nil {
+					return Record{}, where, nil
+				}
+				return Record{Reviewed: r.Reviewed, Patches: r.Patches, Runs: r.Runs, Owed: r.Owed, ReadAll: r.ReadAll, Retried: r.Retried}, where, nil
+			}
+		}
 		return Record{}, where, nil
 	}
-	file := localRecord(repo)
+	file := localRecord(repo, side)
 	where := "in " + file
 	if rel, err := filepath.Rel(repo, file); err == nil && !strings.HasPrefix(rel, "..") {
 		where = "in " + rel
@@ -506,8 +545,8 @@ func readRecord(text string) (Record, error) {
 
 // saveLocal keeps the record on this machine: never the findings judged,
 // which only a merge request's summary keeps (String leaves them out).
-func saveLocal(repo string, r Record) error {
-	file := localRecord(repo)
+func saveLocal(repo, side string, r Record) error {
+	file := localRecord(repo, side)
 	if err := os.MkdirAll(filepath.Dir(file), 0o755); err != nil {
 		return err
 	}

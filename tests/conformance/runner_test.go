@@ -129,6 +129,11 @@ type runSpec struct {
 	// relative to the case's folder.
 	GatesJob  *gatesJob `yaml:"gates-job"`
 	GatesFrom string    `yaml:"gates-from"`
+	// WarnApart: the route leaves what only warns to a run apart
+	// (--warn-apart); WarnOnly: the route is that run (--warn-only). With
+	// then: apart, the run apart follows the run, on the forge it left.
+	WarnApart bool `yaml:"warn-apart"`
+	WarnOnly  bool `yaml:"warn-only"`
 	// AgainAfter: with then: again, commands run in the repository before
 	// the second run (a second push); the first run's Code Quality report
 	// is kept for code-quality-kept.
@@ -205,6 +210,7 @@ type expectSpec struct {
 	Branches    map[string]map[string]string `yaml:"branches"`      // a local branch -> path -> a text it holds there
 	Listed      []string                     `yaml:"issues-listed"` // texts `workline issues list` prints afterwards
 	Summary     string                       `yaml:"summary"`       // a text the result's summary holds
+	ApartStatus string                       `yaml:"apart-status"`  // with then: apart, the run apart's status; status is the verdict's run's
 	SummaryFile []string                     `yaml:"summary-file"`  // texts the --summary file holds, in this order; with cli, workline-summary.md
 	SummaryHTML []string                     `yaml:"summary-html"`  // texts the --summary .html file holds, in this order
 	Coverage    []map[string]string          `yaml:"coverage"`      // an import's map: its items, by lines, state, issue, words, why
@@ -611,6 +617,12 @@ func runCase(t *testing.T, c *caseFile) []string {
 		from, _ := filepath.Abs(filepath.Join("cases", filepath.Dir(c.Case), c.Run.GatesFrom))
 		args = append(args, "--gates-from", from)
 	}
+	if c.Run.WarnApart {
+		args = append(args, "--warn-apart")
+	}
+	if c.Run.WarnOnly {
+		args = append(args, "--warn-only")
+	}
 	sarifFile, cqFile := filepath.Join(work, "findings.sarif"), filepath.Join(work, "code-quality.json")
 	if c.Run.Reports {
 		args = append(args, "--sarif", sarifFile, "--code-quality", cqFile)
@@ -714,6 +726,35 @@ func runCase(t *testing.T, c *caseFile) []string {
 		r2.Calls = append(r.Calls, r2.Calls...)
 		r2.Findings = append(r.Findings, r2.Findings...)
 		r = r2
+	}
+	apartStatus := ""
+	if c.Run.Then == "apart" {
+		// The run apart from the verdict (ADR-0050), after the verdict's run
+		// and on the forge it left: the same line, --warn-only for
+		// --warn-apart. The verdict, status and summary, stays the first
+		// run's; the calls and findings are both runs'.
+		if !c.Run.WarnApart {
+			return []string{"then: apart follows a run with warn-apart: true"}
+		}
+		apartArgs := slices.Clone(args)
+		apartArgs[slices.Index(apartArgs, "--warn-apart")] = "--warn-only"
+		apart := exec.Command(engineBin, apartArgs...)
+		apart.Dir, apart.Env = repo, cmd.Env
+		stdout.Reset()
+		apart.Stdout, apart.Stderr = &stdout, &stderr
+		_ = apart.Run()
+		var r2 result
+		if err := json.Unmarshal(stdout.Bytes(), &r2); err != nil {
+			return []string{fmt.Sprintf("the run apart printed no result: %v\n%s", err, stderr.String())}
+		}
+		apartStatus = r2.Status
+		r.AgentCalls += r2.AgentCalls
+		r.Calls = append(r.Calls, r2.Calls...)
+		r.Findings = append(r.Findings, r2.Findings...)
+		r.Applied = append(r.Applied, r2.Applied...)
+	}
+	if want := c.Expect.ApartStatus; want != "" && want != apartStatus {
+		return []string{fmt.Sprintf("the run apart's status = %q, want %s (then: apart runs it)", apartStatus, want)}
 	}
 	if c.Run.Then == "judged-twice" || c.Run.Then == "applied-between" {
 		var p []string

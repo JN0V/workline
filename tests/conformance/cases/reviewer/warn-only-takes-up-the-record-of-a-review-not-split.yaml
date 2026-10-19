@@ -1,0 +1,29 @@
+case: reviewer/warn-only-takes-up-the-record-of-a-review-not-split
+about: "The run apart (ADR-0050) runs the line's roles that read apart, the reviewer alone, never the committer nor the documentalist. Its first run on a merge request reviewed before the split takes up the summary comment's record, every lens's turn, and writes its own comment, leaving the summary as it was. The turn is edge-cases, a lens that only warns: asked, judged, posted, never holding the verdict."
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  config:
+    routing: {events: {merge-request: [committer, documentalist, reviewer]}}
+    roles: {reviewer: {settings: {ai-findings: {correctness: block}}}}
+  forge:
+    merge-requests:
+      - id: 5
+        labels: []
+        comments: ["Reviewed by the correctness lens.\n\n<!-- workline:record reviewed= runs=1 -->\n\n<!-- workline:sticky=reviewer/summary -->"]
+run: {route: merge-request, warn-only: true, input: {range: main..HEAD}, target: {merge-request: 5}, ai: "cmd:sh $FIXTURES/agents/review-by-lens.sh"}
+expect:
+  status: pass
+  steps: [reviewer]
+  summary: "what only warns, apart from the verdict"
+  calls: [{task: part, for: 1-edge-cases}, {task: judge, for: judge/01}]
+  findings: [{rule: edge-cases, level: warn, where: "calc/calc.go:11", message: "Important: One value divides by zero"}]
+  forge:
+    merge-requests:
+      - id: 5
+        comments: 2
+        comment-contains:
+          - "Reviewed by the correctness lens.\n\n<!-- workline:record reviewed= runs=1 -->"
+          - "**workline reviewer, the lenses that warn** — 1 findings on the change; lenses: edge-cases"
+          - " runs=2 -->"

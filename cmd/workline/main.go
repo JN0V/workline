@@ -1040,6 +1040,8 @@ func routeCmd(args []string) int {
 	verdictHead := fs.String("verdict-head", "", "with --verdict: the head the verdict is for, when the commit judged is a merge result (GitLab's merged results pipelines)")
 	gatesOnly := fs.Bool("gates-only", false, "run the event's gate steps alone, each one: a CI job of their own, with no write token and no agent's (the result, --json, is what --gates-from and `apply --gates` read)")
 	gatesFrom := fs.String("gates-from", "", "take each gate step's verdict from this file, the result a run with --gates-only printed, rather than running it")
+	warnApart := fs.Bool("warn-apart", false, "leave what only warns to a run apart, which --warn-only makes: the reviewer's lenses that warn, on a merge request; the verdict waits only for what can block")
+	warnOnly := fs.Bool("warn-only", false, "the run apart from the verdict: only what a line with --warn-apart left, posted when done; never the head's verdict")
 	inputs := pairs{}
 	fs.Var(inputs, "input", "input name=value, given to every step (repeatable)")
 	event, code, done := parseAfter(fs, args, "an event")
@@ -1048,6 +1050,22 @@ func routeCmd(args []string) int {
 	}
 	if *gatesOnly && *gatesFrom != "" {
 		return misuse(fs, "--gates-only runs the gates, --gates-from reads them: one or the other")
+	}
+	switch {
+	case *warnApart && *warnOnly:
+		return misuse(fs, "--warn-apart leaves what only warns, --warn-only runs it alone: one or the other")
+	case *warnApart:
+		inputs[line.WarnInput] = line.WarnApart
+	case *warnOnly:
+		inputs[line.WarnInput] = line.WarnOnly
+	}
+	switch w := inputs[line.WarnInput]; {
+	case w != "" && w != line.WarnApart && w != line.WarnOnly:
+		return misuse(fs, fmt.Sprintf("--input %s=%s: %s or %s", line.WarnInput, w, line.WarnApart, line.WarnOnly))
+	case w == line.WarnOnly && (*gatesOnly || *gatesFrom != ""):
+		return misuse(fs, "--warn-only runs no gate: no --gates-only nor --gates-from")
+	case w == line.WarnOnly && *verdictFile != "":
+		return misuse(fs, "--warn-only gives no verdict: what only warns never holds the head's (--verdict goes with the line's own run)")
 	}
 	abs, _ := filepath.Abs(*repo)
 	rolesDir, err := resolveRoles(*roles)

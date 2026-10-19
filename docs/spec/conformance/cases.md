@@ -79,6 +79,13 @@ saying so.
   gives, whose result the route reads (`--gates-from`), as
   CI's judge reads the gates' job; `gates-from: <file>` — read from that
   file instead, by the case's folder;
+- `warn-apart: true` — the route leaves what only warns to a run apart
+  (`--warn-apart`); `warn-only: true` — the route is that run
+  (`--warn-only`); `then: apart` — after a run with `warn-apart`, the run
+  apart, the same line with `--warn-only`, on the forge the first left:
+  status and summary stay the first run's, the verdict; agent calls,
+  calls and findings are both runs'; `apart-status` in `expect`, the run
+  apart's status;
 - `summary: true` — also write `--summary`, Markdown and HTML, and give the
   same files to the `apply` or `sample --apply` that follows;
 - `scope` — the run's scope, as a ready work item would give it;

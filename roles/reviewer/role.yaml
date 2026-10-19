@@ -17,6 +17,11 @@ mission: A change is reviewed before it merges — what it breaks found, quoted 
 #         to specs-per-run a run (#433); ready is held while an important
 #         finding is open (#128).
 events: [review, merge-request, spec, schedule]
+# On a merge request, the lenses that only warn (`ai-findings`) can read
+# apart from the verdict (ADR-0050): the verdict's line asks the lenses
+# that block (`route --warn-apart`), a line of its own the others, posting
+# in a comment of their own (`route --warn-only`).
+apart: [merge-request]
 
 requires: [git]
 

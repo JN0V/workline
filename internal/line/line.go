@@ -112,6 +112,10 @@ func RunWith(event string, base engine.Options, gates *Gates) *Result {
 		}
 	}
 	defer func() { res.Summary += own }()
+	// The run apart from the verdict (`warn=only`, ADR-0050): only the
+	// steps whose role reads what only warns apart on the event, never a
+	// gate; its verdict is never the head's.
+	warnOnly := base.Inputs[WarnInput] == WarnOnly
 	// The gates alone: each one runs, so that each is shown.
 	stopAtFirst := cfg.StopsAtFirst(event) && !gates.Only
 	if gates.Only {
@@ -123,7 +127,7 @@ func RunWith(event string, base engine.Options, gates *Gates) *Result {
 	for _, name := range steps {
 		step, status := name, verdict.Pass
 		g, isGate := strings.CutPrefix(name, "gate:")
-		if nothingElse && name != committerRole || gates.Only && !isGate {
+		if nothingElse && name != committerRole || gates.Only && !isGate || warnOnly && (isGate || !apartOn(base.RolesDir, name, event)) {
 			continue
 		}
 		considered++
@@ -157,6 +161,12 @@ func RunWith(event string, base engine.Options, gates *Gates) *Result {
 	if gates.Only {
 		res.Summary += "; the gates alone"
 	}
+	if warnOnly {
+		res.Summary += "; what only warns, apart from the verdict"
+		if considered == 0 {
+			res.Summary = fmt.Sprintf("%s: nothing reads apart from the verdict", event)
+		}
+	}
 	if len(res.Pending) > 0 {
 		res.Summary += fmt.Sprintf("; %d runs to apply", len(res.Pending))
 	}
@@ -166,6 +176,24 @@ func RunWith(event string, base engine.Options, gates *Gates) *Result {
 // committerRole is the step that checks every commit of a range, workline's
 // own included (beforeOwn leaves them to it).
 const committerRole = "committer"
+
+// WarnInput is the input telling a role reading what only warns apart
+// from the verdict (its role.yaml's `apart`, ADR-0050) which run this is:
+// WarnApart, the verdict's, which leaves it; WarnOnly, the run apart,
+// which reads only it. Given to every step, as every input is.
+const (
+	WarnInput = "warn"
+	WarnApart = "apart"
+	WarnOnly  = "only"
+)
+
+// apartOn says whether the role a step names reads what only warns apart
+// on event; a role that does not load reads nothing apart: the verdict's
+// line, which runs it, says why.
+func apartOn(rolesDir, name, event string) bool {
+	r, err := role.Load(rolesDir, name)
+	return err == nil && r.ApartOn(event)
+}
 
 // step is a gate step: run here, or its verdict read from the job that
 // ran it. One not there is an error, never a pass: that job did not run

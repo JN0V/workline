@@ -1,0 +1,7 @@
+case: cli/warn-only-gives-no-verdict
+about: "The run apart from the verdict (ADR-0050) reads only what warns: given --verdict, a file the merge policy would keep as the head's, it is misuse, 64."
+given: {repo: basic}
+run: {cli: [route, merge-request, --warn-only, --verdict, verdict.json]}
+expect:
+  exit: 64
+  stderr: ["--warn-only gives no verdict"]
