@@ -699,8 +699,35 @@ func TestWarnApartNeverHoldsTheVerdict(t *testing.T) {
 		t.Fatal(err)
 	}
 	judge, _ := top["workline:judge"].(map[string]any)
-	if !strings.Contains(fmt.Sprint(judge["script"]), "--warn-apart") {
-		t.Errorf("workline:judge: does not leave what only warns apart (--warn-apart)")
+	// The judge leaves the lenses that warn only where workline:warn runs,
+	// the bot's token set; without it they read in the judge, said in its
+	// log and its summary: never lost in silence.
+	steps, _ := judge["script"].([]any)
+	var route string
+	var says []string
+	for _, s := range steps {
+		line := fmt.Sprint(s)
+		switch {
+		case strings.Contains(line, "workline route merge-request"):
+			route = line
+		case strings.Contains(line, "WORKLINE_GITLAB_TOKEN"):
+			says = append(says, line)
+		}
+	}
+	if !strings.Contains(route, "${WORKLINE_GITLAB_TOKEN:+--warn-apart}") || strings.Contains(strings.ReplaceAll(route, "${WORKLINE_GITLAB_TOKEN:+--warn-apart}", ""), "--warn-apart") {
+		t.Errorf("workline:judge: leaves what only warns apart whether or not workline:warn can run: %s", route)
+	}
+	for _, token := range []string{"", "bot"} {
+		dir := t.TempDir()
+		cmd := exec.Command("sh", "-ec", strings.Join(says, "\n")+"\necho \"route[${WORKLINE_GITLAB_TOKEN:+--warn-apart}]\"")
+		cmd.Dir, cmd.Env = dir, []string{"PATH=" + os.Getenv("PATH"), "WORKLINE_GITLAB_TOKEN=" + token}
+		out, err := cmd.CombinedOutput()
+		summary, _ := os.ReadFile(filepath.Join(dir, "workline-summary.md"))
+		said := strings.Contains(string(out), "WORKLINE_GITLAB_TOKEN not set") && strings.Contains(string(summary), "WORKLINE_GITLAB_TOKEN not set")
+		apart := strings.Contains(string(out), "route[--warn-apart]")
+		if err != nil || said != (token == "") || apart != (token != "") {
+			t.Errorf("workline:judge, WORKLINE_GITLAB_TOKEN %q: said in log and summary %v, left apart %v (%v)\n%s", token, said, apart, err, out)
+		}
 	}
 	warn, _ := top["workline:warn"].(map[string]any)
 	script := fmt.Sprint(warn["script"])

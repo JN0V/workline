@@ -18,7 +18,8 @@
 #          are listed for a person. GitLab gives a variable to the whole job,
 #          installs included, where GitHub gives it to one step.
 #          The reviewer's lenses that only warn are left to warn
-#          (--warn-apart, ADR-0050; the first release after v0.36.0).
+#          (--warn-apart, ADR-0050; the first release after v0.36.0) when
+#          WORKLINE_GITLAB_TOKEN is set; else they read here, said.
 #   warn   beside judge, with the agent's token: the reviewer's lenses that
 #          only warn (--warn-only); warn:apply posts what they found, in a
 #          comment of their own. Neither fails the pipeline, nor holds the
@@ -148,16 +149,21 @@ workline:judge:
   # push waits while the pipeline before it applies, then reads its
   # record and reviews only what is new.
   resource_group: workline-review-$CI_MERGE_REQUEST_IID
+  # The lenses that warn read apart only where workline:warn runs, which
+  # needs the bot's token too (ADR-0050); without it they read here, on the
+  # verdict's path, said in the log and the summary, never lost.
   script:
     - *claude
     - *ready
+    - '[ -n "${WORKLINE_GITLAB_TOKEN:-}" ] || echo "workline: warn lenses not run apart: WORKLINE_GITLAB_TOKEN not set, they read in this job, on the path of the verdict"'
     - status=0
     - >
-      workline route merge-request --ai "$ai" --no-apply --push-to-merge-request --warn-apart
+      workline route merge-request --ai "$ai" --no-apply --push-to-merge-request ${WORKLINE_GITLAB_TOKEN:+--warn-apart}
       --forge gitlab --target merge-request:$CI_MERGE_REQUEST_IID --branch "$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME"
       --input range=$CI_MERGE_REQUEST_DIFF_BASE_SHA..$CI_COMMIT_SHA $lenses ${draft:+--input draft=$draft}
       --gates-from gates.json --code-quality gl-code-quality.json --summary workline-summary.md --summary workline-summary.html
       --verdict workline-verdict.json --verdict-head "${CI_MERGE_REQUEST_SOURCE_BRANCH_SHA:-$CI_COMMIT_SHA}" --json > line.json || status=$?
+    - '[ -n "${WORKLINE_GITLAB_TOKEN:-}" ] || printf "\n- **warn lenses not run apart**: WORKLINE_GITLAB_TOKEN not set, they read in this job, on the path of the verdict\n" >> workline-summary.md'
     - exit $status
   # An agent out of reach (3) warns, not taken for the change's fault: a
   # person judges what it would have (ADR-0010).
