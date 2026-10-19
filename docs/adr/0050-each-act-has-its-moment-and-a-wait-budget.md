@@ -1,6 +1,6 @@
 # ADR-0050: Each act has its moment, and each moment a wait budget
 
-- **Status:** accepted; steps 1 to 6 built ([the build plan](#build-plan))
+- **Status:** accepted; steps 1 to 6 and 11 built ([the build plan](#build-plan))
 - **Date:** 2026-10-19
 - **Decided by:** the maintainer, on 2026-10-19: a panel's direction,
   validated in broad lines, corrected: first the time a developer waits
@@ -190,7 +190,7 @@ By the wait removed each time, then tokens:
 8. A merge queue's or train's run: gates only: the queue's turn.
 9. Main after a merge: whole-repository findings once, an issue; gates kept as the base: no wait, less noise.
 10. The night: a release dry run; a release job on GitLab: no wait.
-11. Each step's seconds in the summary, a moment over its budget said: no wait, it measures the rest.
+11. Each step's seconds in the summary, a moment over its budget said: no wait, it measures the rest. Built ([#538](https://github.com/JN0V/workline/pull/538)): a line's result and summary say each step's seconds, the agents' share of them (the reviewer's lenses, the committer's rewrite, the judges), the line's, and its moment: §1's budgets, shipped in `routing.default.yaml`, a project's own in `routing.budgets`. Over its budget, one line names the step that took the most, never a block; the hooks say it in the terminal ([routing](../spec/routing.md#each-steps-seconds-a-moments-budget)). Measured on its own pull request, opened ready: the verdict's line 30 s (committer 0.6 s, documentalist 8.1 s, reviewer 22 s, its lens 21 s), the verdict 96 s after the push; the run apart 51 s (lenses 27 s, judges 21 s). On a copy of this repository, the machine loaded (load average 30 on 8 cores), every hook over its budget, said: a commit 5.3 s, a rewrite 13 s of which the agent 3 s, a push 9.4 s, the committer 7.1 s of it.
 12. SonarQube's read at these moments ([#203]): adds a wait, capped at 5 minutes, beside the first result.
 13. doctor's checks of §6: no wait.
 
