@@ -126,15 +126,21 @@ func TestGitLabTemplateKeepsTheSummary(t *testing.T) {
 			continue
 		}
 		n++
-		if !strings.Contains(script, "--summary workline-summary.md") || !strings.Contains(script, "--summary workline-summary.html") {
-			t.Errorf("job %s: workline is not given --summary workline-summary.md and .html", name)
+		// The gates' job names its own: the judge, given its artifacts,
+		// writes workline-summary.md afresh.
+		sum := "workline-summary"
+		if strings.Contains(script, "--gates-only") {
+			sum = "gates-summary"
+		}
+		if !strings.Contains(script, "--summary "+sum+".md") || !strings.Contains(script, "--summary "+sum+".html") {
+			t.Errorf("job %s: workline is not given --summary %s.md and .html", name, sum)
 		}
 		art, _ := job["artifacts"].(map[string]any)
-		if !strings.Contains(fmt.Sprint(art["paths"]), "workline-summary.html") || fmt.Sprint(art["when"]) != "always" {
-			t.Errorf("job %s: workline-summary.md is not kept as an artifact, always: %v", name, art)
+		if !strings.Contains(fmt.Sprint(art["paths"]), sum+".html") || fmt.Sprint(art["when"]) != "always" {
+			t.Errorf("job %s: %s.md is not kept as an artifact, always: %v", name, sum, art)
 		}
 		if !strings.Contains(fmt.Sprint(art["reports"]), "annotations:workline-annotations.json") ||
-			!strings.Contains(fmt.Sprint(job["after_script"]), "artifacts/file/workline-summary.html") {
+			!strings.Contains(fmt.Sprint(job["after_script"]), "artifacts/file/"+sum+".html") {
 			t.Errorf("job %s: the job's page does not link the summary (annotations)", name)
 		}
 		if strings.Contains(script, "--target merge-request") && art["expose_as"] == nil {
@@ -247,7 +253,7 @@ func TestGitLabApplyRunsWhenTheJudgeFails(t *testing.T) {
 					t.Errorf("job %s: rule %v is not `when: always`: a failed judge would skip it", name, m)
 				}
 			}
-		case strings.Contains(script, "workline route"):
+		case strings.Contains(script, "workline route") && !strings.Contains(script, "--gates-only"):
 			judges++
 			af, _ := job["allow_failure"].(map[string]any)
 			if fmt.Sprint(af["exit_codes"]) != "[3]" {
@@ -438,7 +444,7 @@ func TestOneReviewAtATimePerMergeRequest(t *testing.T) {
 		for name, job := range wf.Jobs {
 			runs := false
 			for _, s := range job.Steps {
-				runs = runs || strings.Contains(s.Run, command)
+				runs = runs || strings.Contains(s.Run, command) && !strings.Contains(s.Run, "--gates-only")
 			}
 			if !runs {
 				continue
@@ -510,7 +516,7 @@ func TestGitHubTemplatesAskEveryLensWhenReady(t *testing.T) {
 		}
 		for name, job := range wf.Jobs {
 			for _, st := range job.Steps {
-				if !strings.Contains(st.Run, "workline route merge-request") {
+				if !strings.Contains(st.Run, "workline route merge-request") || strings.Contains(st.Run, "--gates-only") {
 					continue
 				}
 				n++
@@ -769,6 +775,7 @@ func TestMergePolicyRunsAfterTheJudgeAndOnLabels(t *testing.T) {
 		for name, job := range judged.Jobs {
 			for _, s := range job.Steps {
 				switch {
+				case strings.Contains(s.Run, "--gates-only"):
 				case strings.Contains(s.Run, "workline route merge-request"):
 					route = s.Run
 				case strings.Contains(s.Run, "workline follow"):
@@ -899,6 +906,111 @@ func TestGitHubJudgeTellsTheDocumentalistFound(t *testing.T) {
 			if got := strings.TrimSpace(string(out)); err != nil || got != c.want {
 				t.Errorf("%s, %s: %q (%v), want %s", filepath.Base(f), c.name, got, err, c.want)
 			}
+		}
+	}
+}
+
+// The gates run in a job of their own, their tools the change's code: on
+// GitHub, one holding a read token alone and no secret, the agent's
+// neither, its checkout keeping no token; the judge reads their verdicts
+// and never runs a gate (ADR-0049). On GitLab, which gives every job the
+// project's variables, the gates' job unsets the agent's token and the
+// project bot's first, and its Code Quality report is what GitLab shows.
+func TestGatesRunWithNoTokenNorAgent(t *testing.T) {
+	type step struct {
+		Uses string         `yaml:"uses"`
+		With map[string]any `yaml:"with"`
+		Env  map[string]any `yaml:"env"`
+		If   string         `yaml:"if"`
+		Run  string         `yaml:"run"`
+	}
+	type job struct {
+		Needs       any               `yaml:"needs"`
+		If          string            `yaml:"if"`
+		Permissions map[string]string `yaml:"permissions"`
+		Env         map[string]any    `yaml:"env"`
+		Steps       []step            `yaml:"steps"`
+	}
+	for _, f := range []string{"../../ci/github/workline.yml", "../../.github/workflows/workline.yml"} {
+		data, err := os.ReadFile(f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var wf struct {
+			Env  map[string]any `yaml:"env"`
+			Jobs map[string]job `yaml:"jobs"`
+		}
+		if err := yaml.Unmarshal(data, &wf); err != nil {
+			t.Fatalf("%s: %v", f, err)
+		}
+		for k, v := range wf.Env {
+			if strings.Contains(fmt.Sprint(v), "secrets.") {
+				t.Errorf("%s: the workflow's env %s gives every job a secret", f, k)
+			}
+		}
+		running := 0
+		for name, j := range wf.Jobs {
+			text, _ := yaml.Marshal(j)
+			gates := strings.Contains(string(text), "--gates-only")
+			if !gates {
+				continue
+			}
+			running++
+			if len(j.Permissions) != 1 || j.Permissions["contents"] != "read" {
+				t.Errorf("%s, job %s: runs the gates with permissions %v, want contents: read alone", f, name, j.Permissions)
+			}
+			if strings.Contains(string(text), "secrets.") {
+				t.Errorf("%s, job %s: runs the gates with a secret in reach", f, name)
+			}
+			for _, s := range j.Steps {
+				if strings.HasPrefix(s.Uses, "actions/checkout@") && fmt.Sprint(s.With["persist-credentials"]) != "false" {
+					t.Errorf("%s, job %s: its checkout keeps the token in .git/config for the gates' tools to read", f, name)
+				}
+			}
+		}
+		if running != 1 {
+			t.Errorf("%s: %d jobs run the gates alone, want one", f, running)
+		}
+		judge := wf.Jobs["judge"]
+		if fmt.Sprint(judge.Needs) != "gates" || judge.If != "!cancelled()" {
+			t.Errorf("%s: judge does not run after the gates whatever their verdict (needs %v, if %q)", f, judge.Needs, judge.If)
+		}
+		read := false
+		for _, s := range judge.Steps {
+			if strings.Contains(s.Run, "workline route merge-request") {
+				read = strings.Contains(s.Run, `--gates-from "$RUNNER_TEMP/gates/gates.json"`)
+			}
+		}
+		if !read {
+			t.Errorf("%s: judge's line runs the gates itself, beside the agent's token: no --gates-from", f)
+		}
+	}
+	data, err := os.ReadFile("../../ci/gitlab/workline.gitlab-ci.yml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var top map[string]any
+	if err := yaml.Unmarshal(data, &top); err != nil {
+		t.Fatal(err)
+	}
+	gates, _ := top["workline:gates"].(map[string]any)
+	script, _ := gates["script"].([]any)
+	if len(script) == 0 || fmt.Sprint(script[0]) != "unset CLAUDE_CODE_OAUTH_TOKEN WORKLINE_GITLAB_TOKEN GITLAB_TOKEN" {
+		t.Errorf("workline:gates: its script does not unset the agent's and the bot's tokens first: %v", script)
+	}
+	if !strings.Contains(fmt.Sprint(script), "--gates-only") || !strings.Contains(fmt.Sprint(script), "--code-quality gl-code-quality-gates.json") {
+		t.Errorf("workline:gates: does not run the gates alone into its Code Quality report: %v", script)
+	}
+	if reports, _ := gates["artifacts"].(map[string]any)["reports"].(map[string]any); fmt.Sprint(reports["codequality"]) != "gl-code-quality-gates.json" {
+		t.Errorf("workline:gates: GitLab is not given its Code Quality report: %v", reports)
+	}
+	judge, _ := top["workline:judge"].(map[string]any)
+	if !strings.Contains(fmt.Sprint(judge["script"]), "--gates-from gates.json") || fmt.Sprint(judge["needs"]) != "[workline:gates]" {
+		t.Errorf("workline:judge: does not read the gates' verdicts from their job (needs %v)", judge["needs"])
+	}
+	for _, r := range judge["rules"].([]any) {
+		if m, _ := r.(map[string]any); fmt.Sprint(m["when"]) != "always" {
+			t.Errorf("workline:judge: rule %v is not `when: always`: gates that did not pass would skip the line", m)
 		}
 	}
 }

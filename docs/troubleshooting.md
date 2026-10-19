@@ -1,6 +1,6 @@
 ---
 sources: [internal/doctor/doctor.go, internal/doctor/conversations.go, internal/hooks/hooks.go, cmd/workline/main.go, cmd/workline/cli.go, internal/forge/local.go]
-checked: 2c37f9e3
+checked: 07029f11
 verified: agent:claude-code
 ---
 # Troubleshooting
@@ -101,6 +101,9 @@ goes ready, a hidden record that does not read: in
   GitHub App the permission **Checks**, read and write
   ([the App](ci-github-app.md)). The findings stay in the judge's job
   summary.
+- A gate's `check-error` in `judge`, "the gates' job left no result": the
+  job `gates` did not run it, or failed first; read its log. Copy
+  `workline.yml` of this release again if it has no job `gates`.
 
 ## A pull request blocked, its checks green
 

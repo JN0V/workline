@@ -120,6 +120,26 @@ type runSpec struct {
 	// ApplyFrom: with then: resume, the runs applied as the base's job
 	// applies a merge request's own CI run (apply --from-merge-request).
 	ApplyFrom *applyFrom `yaml:"apply-from"`
+	// GatesOnly: the route runs the event's gates alone (--gates-only), as
+	// CI's job of their own does.
+	GatesOnly bool `yaml:"gates-only"`
+	// GatesJob: the route reads its gates' verdicts from a run of the
+	// gates alone made first, with these variables (--gates-from), as CI's
+	// judging job reads that job's; GatesFrom, from this file instead,
+	// relative to the case's folder.
+	GatesJob  *gatesJob `yaml:"gates-job"`
+	GatesFrom string    `yaml:"gates-from"`
+	// AgainAfter: with then: again, commands run in the repository before
+	// the second run (a second push); the first run's Code Quality report
+	// is kept for code-quality-kept.
+	AgainAfter []string `yaml:"again-after"`
+}
+
+// gatesJob is CI's job running the gates alone, before the line.
+type gatesJob struct {
+	Env   map[string]string `yaml:"env"`   // its variables; $VAR expands
+	Input map[string]string `yaml:"input"` // its inputs, over the run's
+	After []string          `yaml:"after"` // commands run in the repository once it ran, before the line
 }
 
 // applyFrom is a merge request's own run applied by a job of the base's:
@@ -169,6 +189,7 @@ type expectSpec struct {
 	Calls       []map[string]string          `yaml:"calls"`
 	SARIF       []map[string]any             `yaml:"sarif"`         // results, by rule, uri, line, level
 	CodeQuality []map[string]any             `yaml:"code-quality"`  // issues, by check_name, path, line, severity
+	CQKept      bool                         `yaml:"code-quality-kept"` // with again-after: each fingerprint of the first run's Code Quality report is the second's
 	LeftOut     []string                     `yaml:"left-out"`      // wheres found in neither report
 	SARIFLacks  []string                     `yaml:"sarif-lacks"`   // rules no SARIF result has
 	Notes       []string                     `yaml:"notes"`         // texts the agent's notes hold
@@ -575,6 +596,13 @@ func runCase(t *testing.T, c *caseFile) []string {
 	if c.Run.Tamper != "" {
 		args = append(args, "--test-tamper-before-apply")
 	}
+	if c.Run.GatesOnly {
+		args = append(args, "--gates-only")
+	}
+	if c.Run.GatesFrom != "" {
+		from, _ := filepath.Abs(filepath.Join("cases", filepath.Dir(c.Case), c.Run.GatesFrom))
+		args = append(args, "--gates-from", from)
+	}
 	sarifFile, cqFile := filepath.Join(work, "findings.sarif"), filepath.Join(work, "code-quality.json")
 	if c.Run.Reports {
 		args = append(args, "--sarif", sarifFile, "--code-quality", cqFile)
@@ -618,6 +646,33 @@ func runCase(t *testing.T, c *caseFile) []string {
 		out, _ := exec.Command("git", "-C", repo, "ls-remote", "origin", "refs/heads/"+b).Output()
 		before[b], _, _ = strings.Cut(string(out), "\t")
 	}
+	if j := c.Run.GatesJob; j != nil {
+		// CI's job of the gates alone, before the line: its own variables,
+		// its result the file the line reads.
+		gatesFile := filepath.Join(work, "gates.json")
+		jobArgs := append(slices.Clone(args), "--gates-only")
+		for i := 0; i+1 < len(jobArgs); i++ {
+			if k, _, ok := strings.Cut(jobArgs[i+1], "="); jobArgs[i] == "--input" && ok {
+				if v, given := j.Input[k]; given {
+					jobArgs[i+1] = k + "=" + v
+				}
+			}
+		}
+		job := exec.Command(engineBin, jobArgs...)
+		job.Dir, job.Env = repo, slices.Clone(env)
+		for k, v := range j.Env {
+			job.Env = append(job.Env, k+"="+os.Expand(v, func(name string) string { return lookup(job.Env, name) }))
+		}
+		out, err := job.Output()
+		if err != nil && len(out) == 0 {
+			return []string{fmt.Sprintf("the gates' job printed nothing: %v", err)}
+		}
+		os.WriteFile(gatesFile, out, 0o644)
+		if p := inRepo(repo, j.After); len(p) > 0 {
+			return p
+		}
+		cmd.Args = append(cmd.Args, "--gates-from", gatesFile)
+	}
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &stdout, &stderr
 	_ = cmd.Run() // the exit code mirrors the status, which is checked below
@@ -631,6 +686,12 @@ func runCase(t *testing.T, c *caseFile) []string {
 		// records, the next reads back.
 		if err := editForge(forgeFile, c.Run.Between); err != nil {
 			return []string{err.Error()}
+		}
+		if len(c.Run.AgainAfter) > 0 {
+			os.Rename(cqFile, cqFile+".first")
+			if p := inRepo(repo, c.Run.AgainAfter); len(p) > 0 {
+				return p
+			}
 		}
 		again := exec.Command(engineBin, args...)
 		again.Dir, again.Env = repo, cmd.Env
@@ -797,6 +858,9 @@ func runCase(t *testing.T, c *caseFile) []string {
 	}
 	if c.Run.Reports {
 		problems = append(problems, compareReports(c, sarifFile, cqFile)...)
+	}
+	if c.Expect.CQKept {
+		problems = append(problems, fingerprintsKept(cqFile+".first", cqFile)...)
 	}
 	if len(c.Expect.SummaryFile) > 0 {
 		problems = append(problems, compareSummaryFile(c.Expect.SummaryFile, summaryFile)...)
@@ -1689,6 +1753,55 @@ func compareReports(c *caseFile, sarifFile, cqFile string) []string {
 	for _, w := range c.Expect.LeftOut {
 		if uris[w] {
 			p = append(p, fmt.Sprintf("%s is in a report, and should be left out", w))
+		}
+	}
+	return p
+}
+
+// inRepo runs commands in the repository, as a person between two runs.
+func inRepo(repo string, commands []string) []string {
+	for _, s := range commands {
+		cmd := exec.Command("sh", "-c", s)
+		cmd.Dir, cmd.Env = repo, hermeticEnv()
+		if out, err := cmd.CombinedOutput(); err != nil {
+			return []string{fmt.Sprintf("%q failed: %v\n%s", s, err, out)}
+		}
+	}
+	return nil
+}
+
+// fingerprintsKept says which fingerprints of the first Code Quality
+// report the second lacks: a finding that only moved keeps its own.
+func fingerprintsKept(first, second string) []string {
+	read := func(file string) (map[string]bool, error) {
+		var issues []struct {
+			Fingerprint string `json:"fingerprint"`
+		}
+		data, err := os.ReadFile(file)
+		if err == nil {
+			err = json.Unmarshal(data, &issues)
+		}
+		prints := map[string]bool{}
+		for _, i := range issues {
+			prints[i.Fingerprint] = true
+		}
+		return prints, err
+	}
+	a, err := read(first)
+	if err != nil {
+		return []string{"code-quality-kept: the first report: " + err.Error()}
+	}
+	b, err := read(second)
+	if err != nil {
+		return []string{"code-quality-kept: the second report: " + err.Error()}
+	}
+	if len(a) == 0 {
+		return []string{"code-quality-kept: the first report holds no issue"}
+	}
+	var p []string
+	for f := range a {
+		if !b[f] {
+			p = append(p, fmt.Sprintf("code-quality-kept: the second report lacks the fingerprint %s", f))
 		}
 	}
 	return p

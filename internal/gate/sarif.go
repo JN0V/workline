@@ -31,6 +31,7 @@ type result struct {
 	line        int
 	fingerprint string // the tool's own, or ""
 	state       string // new or unchanged, once compared
+	posted      string // the fingerprint it is shown by (added.go)
 }
 
 // readSARIF reads the SARIF files a check wrote in out since it started,

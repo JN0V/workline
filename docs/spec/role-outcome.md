@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/engine, internal/intent, internal/role, internal/agent, internal/verdict, internal/report]
 verified: agent:claude-code
-checked: 2a1d3636
+checked: 07029f11
 judged: b5899f5
 status: draft
 ---
@@ -48,12 +48,15 @@ person), a `note` (`info`). One whose `where` names no file — a
 commit's subject, a folder, a gate's check — is left out: both formats need a
 file, and `--json` still has it, as does `--summary`, the summary a CI job's
 page shows (ADR-0035). On a merge request, `--sarif` leaves out the
-documentalist's and the reviewer's findings: code scanning would open a
-conversation for each, whatever its level, which a base requiring them
-resolved holds the merge on ([ADR-0047](../adr/0047-findings-on-a-merge-request-open-no-conversation.md)).
+documentalist's, the reviewer's and the gates' findings: code scanning
+would open a conversation for each, whatever its level, which a base
+requiring them resolved holds the merge on ([ADR-0047](../adr/0047-findings-on-a-merge-request-open-no-conversation.md),
+[ADR-0049](../adr/0049-the-inspector-judges-the-new-findings-of-the-projects-tools.md)).
 `apply --line --from-merge-request` shows the documentalist's as the
 annotations of a check (`notice`, `warning`, `failure` as `note`,
-`warning`, `error`), the reviewer's are its review. `route --verdict <file>` writes the line's verdict
+`warning`, `error`), the reviewer's are its review. A gate's new finding
+in `--code-quality` is its tool's rule, level and fingerprint
+([gates](gates.md#shown-on-the-merge-request)). `route --verdict <file>` writes the line's verdict
 on the head it judged — its status, each step's, the findings — which
 `follow --verdict` keeps for the merge policy (ADR-0042).
 

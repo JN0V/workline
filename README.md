@@ -1,8 +1,8 @@
 <!-- workline
 sources: [ci/gitlab/workline.gitlab-ci.yml, ci/github/workline-fork.yml, routing.default.yaml, internal/forge/forge.go, internal/agent/agent.go, ci/github/workline-apply.yml, internal/gate, cmd/workline/cli.go, ci/github/workline.yml, ci/forgejo/workline-forge.sh, ci/github/workline-gardening.yml, ci/github/workline-sample.yml]
-checked: 5a4a4bbd
+checked: 6ac16e6d
 judged: c7e1e98
-verified: agent:documentalist
+verified: agent:claude-code
 reader: e375241655b6
 -->
 <h1>
@@ -167,6 +167,8 @@ Each role, from a hook, a script or a CI job: [triggers](docs/triggers.md).
 - On a merge request, only the findings the change adds count, told
   against the merge base: old debt never blocks
   ([new findings](docs/spec/gates.md#on-a-merge-request-the-findings-the-change-adds)).
+- In CI, the gates run in a job with no token; on GitLab, what they add
+  is the Code Quality report ([gates in CI](docs/gates-in-ci.md)).
 
 ```yaml
 gates:
@@ -177,7 +179,8 @@ gates:
 ```
 
 - Everything else: [the gates spec](docs/spec/gates.md).
-- Not built yet: the new findings posted on the merge request
+- Not built yet: the new findings shown on a GitHub pull request, and
+  the inspector's triage of them
   ([#202](https://github.com/JN0V/workline/issues/202)); a SonarQube
   quality gate read, never rerun
   ([#203](https://github.com/JN0V/workline/issues/203)); other outputs

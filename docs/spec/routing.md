@@ -1,6 +1,6 @@
 ---
 sources: [internal/line, internal/routing, internal/work, routing.default.yaml]
-checked: 2a1d3636
+checked: 8d921bfe
 verified: agent:claude-code
 ---
 # Routing — v1 (draft)
@@ -147,6 +147,12 @@ left after it (`runs-not-applied`) and the command that resumes them. A role
 keeping a backlog decides its acts in the judging job, reading the forge
 only, and keeps that plan for the apply (docs/spec/backlog-acts.md, "On the
 issue").
+
+The gates go before, in a job of their own, with no write token and no
+agent's: `--gates-only` runs the event's gate steps alone, each one, and
+the judging job's line, given that result (`--gates-from`), reads each
+gate step's verdict there and runs none; one not there is a `check-error`
+([gates](gates.md#shown-on-the-merge-request)).
 
 Where the merge request's code can change its judging job (GitHub), the
 job that applies runs from the base and reads only the run's proposals

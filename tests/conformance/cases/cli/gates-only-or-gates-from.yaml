@@ -1,0 +1,7 @@
+case: cli/gates-only-or-gates-from
+about: "The gates run alone or are read from their run, never both at once: misuse, 64."
+given: {repo: basic}
+run: {cli: [route, merge-request, --gates-only, --gates-from, gates.json]}
+expect:
+  exit: 64
+  stderr: ["one or the other"]

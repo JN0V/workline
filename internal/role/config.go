@@ -46,7 +46,7 @@ var (
 		"gates": {any: &shape{keys: map[string]*shape{
 			"criteria": free,
 			"checks": {keys: map[string]*shape{"id": free, "run": free, "output": free, "max": free, "optional": free, "timeout": free,
-				"new": free, "base-timeout": free, "config": free}},
+				"new": free, "base-timeout": free, "config": free, "fix": free}},
 			"enforce": free,
 		}}},
 		"repos":   {any: &shape{keys: map[string]*shape{"url": free, "branch": free}}},

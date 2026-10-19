@@ -1,6 +1,7 @@
 ---
-sources: [internal/gate, internal/line, internal/linters/check.go]
-checked: 5a4a4bbd
+sources: [internal/gate, internal/line, internal/linters/check.go, internal/report/report.go]
+checked: 8d921bfe
+verified: agent:claude-code
 ---
 # Gates — v1 (draft)
 
@@ -48,6 +49,9 @@ gates:
   or holding a `/` (it names the check's log and results).
 - `timeout` caps a check's run (`10m` unless set); `new`, `base-timeout`
   and `config` say how a merge request's new findings are told (below).
+- `fix` is the command that fixes what the check finds, a formatter's
+  (`gofmt -w .`): said with its findings, which are not shown line by
+  line on a merge request (below).
 - `enforce` names a check by its id, or a rule (`suppression-added`); `warn`
   before `block` works as in the role contract. A check `off` that did not
   run is still said, as a warning. Baselines with expiry dates are not
@@ -116,12 +120,25 @@ On `schedule` and `release`, and with `workline gate`, every finding counts.
 - **A cap on findings hides some**: set the tool's to none
   (golangci-lint's `max-issues-per-linter`, `max-same-issues`).
 
-*Not built yet*: posting them, as a check's annotations and one summary on
-GitHub, as Code Quality on GitLab; the count's trend; vendored and
-generated code skipped; CI's build reused; a monorepo's changed folders
-only. The checks run in the job that judges the line, which holds the
-agent's token when the project gives one; a job of their own, with no
-write token and no AI key, comes with the posting.
+### Shown on the merge request
+
+- **Where the forge shows a finding beside its line**, with no
+  conversation to resolve: on GitLab, the Code Quality report. Never code
+  scanning
+  ([ADR-0049](../adr/0049-the-inspector-judges-the-new-findings-of-the-projects-tools.md)).
+- **The gates alone, in a job of their own** (`--gates-only`), with no
+  write token and no agent's; the judging job reads their verdicts
+  (`--gates-from`) and runs no gate.
+- **Each new finding's fingerprint** holds no line number.
+- **How, and what is said**: [the new findings shown](gates-shown.md).
+
+*Not built yet*: on GitHub, the new findings as a check's annotations
+and one summary comment; a formatter's fixes applied, rather than its
+command said; the count's trend; vendored and generated code skipped; CI's build
+reused; a monorepo's changed folders only. On GitLab, the agent's and the
+bot's tokens are in every job's variables: the gates' job unsets them,
+which keeps them from the tools' environment, not from whoever changes
+the pipeline.
 
 ## Three outcomes, not two
 

@@ -1,6 +1,6 @@
 ---
 sources: [ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile]
-checked: ef0d27cd
+checked: 07029f11
 judged: cd97f28
 verified: agent:claude-code
 reader: 9799dcaf51f3
@@ -135,6 +135,9 @@ a cron off the hour (`13 17 * * *`) was listed as due at 18:00 and ran at
 
 ## What the template does
 
+- `workline:gates` runs your gates alone, before `workline:judge`, and
+  writes what they found the change adds as its Code Quality report;
+  install their tools in it ([gates in CI](gates-in-ci.md)).
 - **The whole history** (`GIT_DEPTH: 0`, over the project's "Git shallow
   clone" setting, 20 commits on a new project): the documentalist compares
   each doc's sources since its `checked`, the release looks for its last
