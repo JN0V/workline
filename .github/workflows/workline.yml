@@ -2,10 +2,11 @@
 # thing. judge runs the engine built from the pull request's commit, as
 # gardening and the sample do: a project never runs, in the checks of a
 # commit, the pin that commit ships (ADR-0017), and a pull request moving
-# the templates' pins to a version not yet tagged stays green. What it
-# proposes is applied by workline-apply.yml, from main, with the engine
-# built from main: what a pull request changes in the engine never runs
-# with the write token.
+# the templates' pins to a version not yet tagged stays green. It is built
+# once a commit (.github/actions/engine): by gates when it has a gate,
+# judge taking it from there, else by judge. What it proposes is applied
+# by workline-apply.yml, from main, with the engine built from main: what
+# a pull request changes in the engine never runs with the write token.
 # workline on GitHub Actions — copy to .github/workflows/workline.yml, with
 # workline-apply.yml beside it.
 #
@@ -75,17 +76,10 @@ jobs:
       - name: Whether the line has a gate
         id: any
         run: if grep -qs 'gate:' .workline/config.yaml; then echo "any=true" >> "$GITHUB_OUTPUT"; else echo "no gate in .workline/config.yaml"; fi
-      # The engine built from this commit, as judge's.
-      - uses: actions/setup-go@v5
+      # The engine built from this commit, kept for judge before any gate
+      # runs: judge takes it rather than build it again.
+      - uses: ./.github/actions/engine
         if: steps.any.outputs.any == 'true'
-        with: {go-version-file: go.mod}
-      - name: workline
-        if: steps.any.outputs.any == 'true'
-        run: |
-          bin="$RUNNER_TEMP/bin"; mkdir -p "$bin"
-          go build -o "$bin/workline" ./cmd/workline
-          echo "$bin" >> "$GITHUB_PATH"
-          "$bin/workline" version
       - name: The gates alone
         id: gates
         if: steps.any.outputs.any == 'true'
@@ -132,19 +126,17 @@ jobs:
       # doc checked here names a commit the branch holds.
       - uses: actions/checkout@v4
         with: {fetch-depth: 0, ref: "${{ github.event.pull_request.head.sha }}"}
-      # The engine built from this commit, and the tools its roles use, from
-      # their releases, checksums verified.
-      - uses: actions/setup-go@v5
-        with: {go-version-file: go.mod}
-      - name: workline
+      # The engine built from this commit: the gates' job's when it built
+      # it, else built here, for no job after; and the tools its roles use,
+      # from their releases, checksums verified.
+      - uses: ./.github/actions/engine
+        with: {keep: "false"}
+      - name: gitleaks
         run: |
-          bin="$RUNNER_TEMP/bin"; mkdir -p "$bin"
-          go build -o "$bin/workline" ./cmd/workline
-          cd "$RUNNER_TEMP"
+          bin="$RUNNER_TEMP/bin"; mkdir -p "$bin"; cd "$RUNNER_TEMP"
           get() { curl -fsSLO "$1/$2" && curl -fsSL "$1/$3" | grep " $2\$" | sha256sum -c - && tar -xzf "$2" -C "$bin" "$4"; }
           get https://github.com/gitleaks/gitleaks/releases/download/v8.30.1 gitleaks_8.30.1_linux_x64.tar.gz gitleaks_8.30.1_checksums.txt gitleaks
           echo "$bin" >> "$GITHUB_PATH"
-          "$bin/workline" version
       - name: Claude, when the repository gives its token
         if: env.HAS_CLAUDE == 'true'
         run: npm install -g @anthropic-ai/claude-code

@@ -1,7 +1,8 @@
 # workline's jobs that write, on its own repository: ci/github/workline-apply.yml,
 # with the engine built from main's commit rather than installed — merged, it
 # is reviewed; what a pull request changes in the engine never runs with the
-# write token.
+# write token. It is built once a commit of main (.github/actions/engine):
+# the first job on that commit builds it, the others take it from the cache.
 #
 # They hold the write token, and the GitHub App's key, so they never run in a
 # pull request's own run, whose workflow its branch can change (ADR-0044):
@@ -106,16 +107,8 @@ jobs:
           fetch-depth: 0
           token: ${{ steps.app.outputs.token || github.token }}
       # The engine built from main's commit.
-      - uses: actions/setup-go@v5
+      - uses: ./.github/actions/engine
         if: steps.judged.outputs.number != ''
-        with: {go-version-file: go.mod}
-      - name: workline
-        if: steps.judged.outputs.number != ''
-        run: |
-          bin="$RUNNER_TEMP/bin"; mkdir -p "$bin"
-          go build -o "$bin/workline" ./cmd/workline
-          echo "$bin" >> "$GITHUB_PATH"
-          "$bin/workline" version
       # The pull request the run names must have the head judged as its
       # head still, the event's: the engine checks it, and applies nothing
       # else than that pull request's line may.
@@ -165,16 +158,8 @@ jobs:
         with:
           app-id: ${{ vars.WORKLINE_APP_ID }}
           private-key: ${{ secrets.WORKLINE_APP_PRIVATE_KEY }}
-      - uses: actions/setup-go@v5
+      - uses: ./.github/actions/engine
         if: steps.policy.outputs.run == 'true'
-        with: {go-version-file: go.mod}
-      - name: workline
-        if: steps.policy.outputs.run == 'true'
-        run: |
-          bin="$RUNNER_TEMP/bin"; mkdir -p "$bin"
-          go build -o "$bin/workline" ./cmd/workline
-          echo "$bin" >> "$GITHUB_PATH"
-          "$bin/workline" version
       # The verdict the pull request's run wrote, outside the checkout:
       # kept only for the head the event names.
       - if: steps.policy.outputs.run == 'true'
@@ -228,16 +213,8 @@ jobs:
           else
             echo "no merge policy (merge:): nothing to follow after a pull request's run"
           fi
-      - uses: actions/setup-go@v5
+      - uses: ./.github/actions/engine
         if: steps.policy.outputs.run == 'true'
-        with: {go-version-file: go.mod}
-      - name: workline
-        if: steps.policy.outputs.run == 'true'
-        run: |
-          bin="$RUNNER_TEMP/bin"; mkdir -p "$bin"
-          go build -o "$bin/workline" ./cmd/workline
-          echo "$bin" >> "$GITHUB_PATH"
-          "$bin/workline" version
       - if: steps.policy.outputs.run == 'true'
         env:
           GH_TOKEN: ${{ steps.app.outputs.token || github.token }}

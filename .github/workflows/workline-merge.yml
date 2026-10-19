@@ -1,7 +1,8 @@
 # workline's merge policy on its own repository, when a pull request's
 # label changes: ci/github/workline-merge.yml, with the engine built from
 # the default branch's commit rather than installed — merged, it is
-# reviewed. Without `merge:` in .workline/config.yaml, it stops at once.
+# reviewed —, once a commit (.github/actions/engine). Without `merge:` in
+# .workline/config.yaml, it stops at once.
 name: workline merge
 on:
   pull_request_target: {types: [labeled, unlabeled, converted_to_draft]}
@@ -33,16 +34,8 @@ jobs:
           else
             echo "no merge policy (merge:): nothing to do"
           fi
-      - uses: actions/setup-go@v5
+      - uses: ./.github/actions/engine
         if: steps.policy.outputs.run == 'true'
-        with: {go-version-file: go.mod}
-      - name: workline
-        if: steps.policy.outputs.run == 'true'
-        run: |
-          bin="$RUNNER_TEMP/bin"; mkdir -p "$bin"
-          go build -o "$bin/workline" ./cmd/workline
-          echo "$bin" >> "$GITHUB_PATH"
-          "$bin/workline" version
       - if: steps.policy.outputs.run == 'true'
         env:
           GH_TOKEN: ${{ steps.app.outputs.token || github.token }}
