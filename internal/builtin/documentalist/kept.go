@@ -225,22 +225,32 @@ func parseKept(comment string) map[string]keptRecord {
 // does not say, which anyone could have posted on a public merge request.
 // A record that does not stand for the doc as it is holds nothing.
 func keptOn(f forge.Forge, t forge.Target) (map[string]keptRecord, error) {
-	b, ok := f.(forge.Backlog)
-	if !ok {
-		return nil, fmt.Errorf("this forge cannot list a merge request's comments")
-	}
-	notes, err := b.Notes(t)
+	body, err := stickyOn(f, t, keptKey)
 	if err != nil {
 		return nil, err
 	}
-	marker := forge.Marker("sticky=documentalist/" + keptKey)
+	return parseKept(body), nil
+}
+
+// stickyOn is the last of the documentalist's comments keyed key on a merge
+// request that a bot or a person of the project wrote; "" when none.
+func stickyOn(f forge.Forge, t forge.Target, key string) (string, error) {
+	b, ok := f.(forge.Backlog)
+	if !ok {
+		return "", fmt.Errorf("this forge cannot list a merge request's comments")
+	}
+	notes, err := b.Notes(t)
+	if err != nil {
+		return "", err
+	}
+	marker := forge.Marker("sticky=documentalist/" + key)
 	body := ""
 	for _, n := range notes {
 		if strings.Contains(n.Body, marker) && (n.Bot || n.Insider) {
 			body = n.Body
 		}
 	}
-	return parseKept(body), nil
+	return body, nil
 }
 
 // keptBody is the comment keeping the records: what a person reads, then

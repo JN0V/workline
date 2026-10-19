@@ -22,5 +22,5 @@ expect:
   gone: [workline/documentalist/release]
   forge:
     merge-requests:
-      - {id: 1, comments: 1}
+      - {id: 1, comments: 2, comment-contains: "<!-- workline:doc-judged-at-release"}
       - {id: 2, absent: true}

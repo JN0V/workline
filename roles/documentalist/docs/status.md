@@ -118,7 +118,9 @@ its evaluation in
   [merge cases](../../../tests/conformance/cases/merge), routing's
   `forged-merge-is-judged`, `merge-of-another-branch-is-judged`.
 - **A release tool's pull request held as the release**, its fix on a
-  merge request of its own that follows `main`: `release-*`; on workline,
+  merge request of its own that follows `main`, its record standing for
+  the heads the tool rebuilds
+  ([#510](https://github.com/JN0V/workline/issues/510)): `release-*`; on workline,
   [#258](https://github.com/JN0V/workline/pull/258) held,
   [#259](https://github.com/JN0V/workline/pull/259) merged first.
 - **Condense, split, merge a card, merge a repeated passage**:

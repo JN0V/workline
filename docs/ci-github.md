@@ -1,8 +1,8 @@
 ---
 sources: [ci/github, .github/workflows/workline.yml, .github/workflows/workline-apply.yml, .github/workflows/workline-gardening.yml, .github/workflows/workline-sample.yml, .github/workflows/release.yml, .github/workflows/release-please.yml, release-please-config.json, .goreleaser.yaml, cmd/workline]
 checked: 86f1e419
-judged: eb7fc7c
-verified: agent:claude-code
+judged: 220b6dc
+verified: agent:documentalist
 reader: fe1505d43360
 ---
 # workline on GitHub Actions

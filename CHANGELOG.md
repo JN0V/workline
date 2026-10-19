@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.36.0](https://github.com/JN0V/workline/compare/v0.35.0...v0.36.0) (2026-10-19)
+
+
+### Features
+
+* **gate:** count only the findings a change adds ([#498](https://github.com/JN0V/workline/issues/498)) ([93660de](https://github.com/JN0V/workline/commit/93660de1c4389e58349bdc4891be39eda6b06b31))
+* **gate:** run the gates alone, their new findings in Code Quality ([#501](https://github.com/JN0V/workline/issues/501)) ([b43e873](https://github.com/JN0V/workline/commit/b43e873eaff770e377034baf0fa37ce788ed5802))
+* **gate:** show the new findings on GitHub: a check, one comment ([#500](https://github.com/JN0V/workline/issues/500)) ([1d65cca](https://github.com/JN0V/workline/commit/1d65cca9f5628f0a91eff2f970b75a7cc1de42c6))
+
+
+### Bug Fixes
+
+* **documentalist:** a release fix's record stands for rebuilt heads ([#516](https://github.com/JN0V/workline/issues/516)) ([18524e3](https://github.com/JN0V/workline/commit/18524e338a347d6ac6fd07b994398be4c59cec44))
+
 ## [0.35.0](https://github.com/JN0V/workline/compare/v0.34.0...v0.35.0) (2026-10-18)
 
 

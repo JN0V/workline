@@ -11,7 +11,7 @@ given:
 run: {role: documentalist, event: merge-request, target: {merge-request: 1}, ai: "fake:doc-fixed", push-to-merge-request: true}
 expect:
   status: block
-  applied: [patch]
+  applied: [patch, comment]
   findings: [{rule: fix-in-comment, message: "a person committed"}]
   not-pushed: [workline/documentalist/release]
   forge:

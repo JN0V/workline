@@ -25,12 +25,12 @@ run:
   apply-from: {merge-request: 1, base: main, head: release-please--branches--main, run: {release: ""}}
 expect:
   status: block
-  applied: [patch]
+  applied: [patch, comment]
   findings: [{rule: fixed-elsewhere, where: docs/tech/auth.md, level: block, message: "merge request #2"}]
   pushed:
     workline/documentalist/release: {docs/tech/auth.md: "Access tokens last two hours."}
     release-please--branches--main: {docs/tech/auth.md: "Access tokens last one hour."}
   forge:
     merge-requests:
-      - {id: 1, comments: 0}
+      - {id: 1, comments: 1, comment-contains: "<!-- workline:doc-judged-at-release", comment-lacks: "git apply"}
       - {id: 2, branch: workline/documentalist/release, base: main}
