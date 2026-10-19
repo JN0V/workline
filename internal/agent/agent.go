@@ -3,11 +3,14 @@
 package agent
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/JN0V/workline/internal/role"
 	"go.yaml.in/yaml/v3"
@@ -26,6 +29,21 @@ var ErrInvalidOutput = errors.New("agent answered without valid proposals")
 // agent was not asked. What the task held is judged by no one this run, a
 // finding for a person, never an error that stops the line.
 var ErrOverBudget = errors.New("prompt too large")
+
+// waitAfterTimeout is how long a call ended at its time still waits for a
+// child of the agent's left holding its output: the wait ends then, and the
+// call's time stays what the run allows (ADR-0050).
+const waitAfterTimeout = time.Second
+
+// settled is a call's error once the agent's process is done: an agent
+// that answered and exited, a child of its keeping the output open past
+// waitAfterTimeout, answered all the same.
+func settled(ctx context.Context, err error) error {
+	if errors.Is(err, exec.ErrWaitDelay) && ctx.Err() == nil {
+		return nil
+	}
+	return err
+}
 
 // Request is everything an agent gets for one decision.
 type Request struct {

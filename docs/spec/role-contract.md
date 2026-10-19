@@ -344,6 +344,16 @@ token), **apply** (trusted, no AI key).
    (`ai-max-tokens`, a warning): what is left waits for the next run. 0 or
    unset, no cap.
 
+   **A cap on the wait.** A role setting `ai-max-seconds` caps how long one
+   run waits on its agents, from its first call: every round, part, retry
+   and judge together ([ADR-0050](../adr/0050-each-act-has-its-moment-and-a-wait-budget.md)).
+   Each call may take what is left at most, its role's `model.timeout` when
+   shorter; the answer that crosses it is not waited for, a child of the
+   agent's still holding its output given 1 s more. Nothing more is asked,
+   and the run says so (`ai-max-seconds`, a warning); the role's post
+   judges as if the agent had not answered. 0 or unset, no cap; the
+   committer's is 30.
+
 ### When apply stops half-way
 
 Writes to git and to a forge are not transactional: a comment can be posted and

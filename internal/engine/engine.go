@@ -92,15 +92,76 @@ type Result struct {
 	Issues    string `json:"issues,omitempty"`
 	Waiting   string `json:"waiting,omitempty"`
 	maxTokens int    // the role's ai-max-tokens: what the run may spend; 0, no cap
-	proposed     []string // the merge requests' tasks earlier rounds proposed, with NoApply, not opened yet
-	then         string   // the task this round asks alone, once the others are done (in/then)
-	thenAsked    bool     // the run went round once for it: never twice
-	capped       bool     // a call was refused, the run having spent maxTokens
-	partRefused  []string // what the parts answered and may not: refused with them
+	// maxSeconds is the role's ai-max-seconds: how long the run may wait on
+	// its agents, from the first call; 0, no cap. waitSince is that call.
+	maxSeconds  int
+	waitSince   time.Time
+	timeCapped  bool     // an answer was not waited for, or a call not made, the run having waited maxSeconds
+	proposed    []string // the merge requests' tasks earlier rounds proposed, with NoApply, not opened yet
+	then        string   // the task this round asks alone, once the others are done (in/then)
+	thenAsked   bool     // the run went round once for it: never twice
+	capped      bool     // a call was refused, the run having spent maxTokens
+	partRefused []string // what the parts answered and may not: refused with them
 }
 
 // errTokensSpent refuses a call once the run has spent its ai-max-tokens.
 var errTokensSpent = errors.New("the run spent its ai-max-tokens")
+
+// errTimeSpent ends a call, or refuses one, once the run has waited its
+// ai-max-seconds on its agents.
+var errTimeSpent = errors.New("the run waited its ai-max-seconds on its agents")
+
+// timeLeft is how long the run may still wait on its agents; capped is
+// false when its role sets no ai-max-seconds.
+func (res *Result) timeLeft() (left time.Duration, capped bool) {
+	if res.maxSeconds <= 0 {
+		return 0, false
+	}
+	limit := time.Duration(res.maxSeconds) * time.Second
+	if res.waitSince.IsZero() {
+		return limit, true
+	}
+	return limit - time.Since(res.waitSince), true
+}
+
+// overTime says whether the run has waited on its agents what its role allows.
+func (res *Result) overTime() bool {
+	left, capped := res.timeLeft()
+	return capped && left <= 0
+}
+
+// bounded is a role whose one answer may take no longer than what the run
+// may still wait, its own model.timeout when that is shorter; ok is false
+// when the run may wait no more. The first call starts the run's wait.
+func (res *Result) bounded(r *role.Role) (_ *role.Role, ok bool) {
+	left, capped := res.timeLeft()
+	if !capped {
+		return r, true
+	}
+	if left < time.Millisecond { // what is left would not write as a timeout
+		res.timeCapped = true
+		return r, false
+	}
+	if res.waitSince.IsZero() {
+		res.waitSince = time.Now()
+	}
+	if own, err := r.Model.AnswerTimeout(); err == nil && own <= left {
+		return r, true
+	}
+	cut := *r
+	cut.Model.Timeout = left.Round(time.Millisecond).String()
+	return &cut, true
+}
+
+// cutShort turns an agent's failure into errTimeSpent when the run's wait
+// ran out meanwhile: the answer was not waited for, past ai-max-seconds.
+func (res *Result) cutShort(err error) error {
+	if err == nil || !errors.Is(err, agent.ErrUnavailable) || !res.overTime() {
+		return err
+	}
+	res.timeCapped = true
+	return errTimeSpent
+}
 
 // tokensSpent adds up what the run's calls used, as the agents reported it:
 // the whole input, cache included, and the output.
@@ -193,11 +254,21 @@ func Run(o Options) *Result {
 		if then, _ := os.ReadFile(filepath.Join(res.RunDir, "in", "then")); last && res.Status == verdict.Pass && !res.thenAsked && strings.TrimSpace(string(then)) != "" {
 			res.then, res.thenAsked, last = strings.TrimSpace(string(then)), true, false
 		}
-		if res.capped || !last && res.overBudget() {
+		tokens := res.capped || !last && res.overBudget()
+		seconds := res.timeCapped || !last && res.overTime()
+		if tokens {
 			// A cap is checked against what was spent, never estimated: the
 			// call that crossed it is paid. What is left waits, said.
 			res.Findings = append(res.Findings, verdict.Finding{Rule: "ai-max-tokens", Level: "warn",
 				Message: fmt.Sprintf("%d tokens spent, the run allows %d: the agent was asked nothing more; what is left waits for the next run", res.tokensSpent(), res.maxTokens)})
+		}
+		if seconds {
+			// A wait has its budget (ADR-0050): the answer that crossed it
+			// is not waited for, and nothing more is asked.
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "ai-max-seconds", Level: "warn",
+				Message: fmt.Sprintf("the run waited %.0f s on its agents, it allows %d: the answer was not waited for, and nothing more was asked; what is left waits for a person or the next run", time.Since(res.waitSince).Seconds(), res.maxSeconds)})
+		}
+		if tokens || seconds {
 			return res
 		}
 		if last {
@@ -369,6 +440,7 @@ func run(o Options, res *Result) error {
 		return err
 	}
 	res.maxTokens = intSetting(r.MergedSettings(cfg), "ai-max-tokens")
+	res.maxSeconds = intSetting(r.MergedSettings(cfg), "ai-max-seconds")
 	if o.Forge == "" {
 		o.Forge = cfg.Forge
 	}
@@ -791,9 +863,9 @@ func askParts(r *role.Role, o Options, ag agent.Agent, runDir string, tasks []st
 			// Over the context budget, this part alone: the others may fit.
 			unanswered("over-budget", err.Error())
 			continue
-		case errors.Is(err, agent.ErrUnavailable), errors.Is(err, errTokensSpent):
+		case errors.Is(err, agent.ErrUnavailable), errors.Is(err, errTokensSpent), errors.Is(err, errTimeSpent):
 			gone, goneKind = err.Error(), "unavailable"
-			if errors.Is(err, errTokensSpent) {
+			if errors.Is(err, errTokensSpent) || errors.Is(err, errTimeSpent) {
 				goneKind = "spent"
 			}
 			unanswered(goneKind, gone)
@@ -971,11 +1043,17 @@ func callAgent(ag agent.Agent, req agent.Request, task, runDir string, res *Resu
 		res.capped = true
 		return errTokensSpent
 	}
+	bounded, ok := res.bounded(req.Role)
+	if !ok {
+		return errTimeSpent
+	}
+	req.Role = bounded
 	start := time.Now()
 	call, err := ag.Propose(req)
 	if errors.Is(err, agent.ErrOverBudget) {
 		return err // refused before the call: nothing asked, nothing spent
 	}
+	err = res.cutShort(err)
 	res.AgentCalls++
 	call.Seconds = math.Round(time.Since(start).Seconds()*10) / 10
 	call.Task = task
@@ -1780,8 +1858,8 @@ func attempt(r *role.Role, o Options, ag agent.Agent, hasTask bool, tier, runDir
 		err := callAgent(ag, agent.Request{RunDir: runDir, Repo: o.Repo, Role: r, Tier: tier}, taskKind(runDir), runDir, res)
 		switch {
 		case err == nil:
-		case errors.Is(err, errTokensSpent):
-			a.askedAgent = false // not asked: no answer to refuse, none to ask again
+		case errors.Is(err, errTokensSpent), errors.Is(err, errTimeSpent):
+			a.askedAgent = false // not asked, or not waited for: no answer to refuse, none to ask again
 		case errors.Is(err, agent.ErrOverBudget):
 			// A task too large for the role's context is the role's to
 			// shrink, not a block of the line: the run goes on as without
@@ -2685,7 +2763,15 @@ func askJudge(o Options, res *Result, runDir string, v *verdict.Verdict, a *atte
 	if err != nil {
 		return err
 	}
-	ans, err := judge.Ask(spec, judgeRole, q.Question, q.Material)
+	bounded, ok := res.bounded(judgeRole)
+	if !ok {
+		a.external = true
+		v.Status, v.Summary = verdict.Block, "the judge was not asked"
+		v.Findings = append(v.Findings, verdict.Finding{Rule: "judge-unavailable", Message: "not asked: " + errTimeSpent.Error()})
+		return nil
+	}
+	ans, err := judge.Ask(spec, bounded, q.Question, q.Material)
+	err = res.cutShort(err)
 	res.Calls = append(res.Calls, ans.Call) // its tokens count too; it is not the role's agent
 	level := judge.Independence(spec, ans.Model, o.AI, authorModels)
 	who := fmt.Sprintf("independence: %s (%s → %s)", level, last, ans.Model)
@@ -2805,11 +2891,17 @@ func askQuestions(o Options, ag agent.Agent, runDir string, questions []string, 
 			res.capped = true
 			answer["error"] = "not asked: " + errTokensSpent.Error()
 		default:
+			bounded, ok := res.bounded(judgeRole)
+			if !ok {
+				answer["error"] = "not asked: " + errTimeSpent.Error()
+				break
+			}
 			ask := judge.Ask
 			if q.Reads {
 				ask = judge.AskReading
 			}
-			ans, err := ask(spec, judgeRole, q.Question, q.Material)
+			ans, err := ask(spec, bounded, q.Question, q.Material)
+			err = res.cutShort(err)
 			ans.Call.For = "judge/" + filepath.Base(filepath.Dir(file))
 			res.Calls = append(res.Calls, ans.Call) // its tokens count too; it is not the role's agent
 			res.AgentCalls++

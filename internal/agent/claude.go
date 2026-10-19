@@ -60,12 +60,12 @@ func (c claude) Propose(req Request) (Call, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), limit)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, bin, args...)
-	cmd.Dir = os.TempDir()
+	cmd.Dir, cmd.WaitDelay = os.TempDir(), waitAfterTimeout
 	cmd.Env = claudeEnv(os.Environ())
 	cmd.Stdin = strings.NewReader(user)
 	var out, errOut bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &out, &errOut
-	runErr := cmd.Run()
+	runErr := settled(ctx, cmd.Run())
 	answer, parsed := claudeAnswer(out.Bytes(), &call)
 	if runErr != nil || (parsed && answer.IsError) {
 		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
