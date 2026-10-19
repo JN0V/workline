@@ -1,6 +1,6 @@
 ---
 sources: [internal/role/config.go, internal/role/role.go, cmd/workline, internal/engine/engine.go, internal/forge/gitlab.go, internal/hooks]
-checked: edef6de7
+checked: 7041eea7
 judged: e343388
 verified: agent:claude-code
 reader: 0b97bbc207c5
@@ -83,17 +83,12 @@ change control (SLSA's source level 4, SOC 2's change management): a
 project's choice, never a default
 ([merge policy](merge-policy.md#normal-routine-work-with-no-yes)).
 
-Where the comments point:
-
-- `sample`: the least independence its judge must have
-  ([ADR-0005](adr/0005-independence-takes-the-best-level-available.md));
-- `diff-alone`: measured in
-  [#126](https://github.com/JN0V/workline/issues/126);
-- the reviewer on `schedule`, `ready` waiting on its read:
-  [#128](https://github.com/JN0V/workline/issues/128);
-- `gates`: [gates](spec/gates.md); `repos`:
-  [multi-repo](spec/multi-repo.md); `release`: how the project's release
-  tool works ([ADR-0017](adr/0017-the-release-manager.md)).
+Where the comments point: `sample`'s independence,
+[ADR-0005](adr/0005-independence-takes-the-best-level-available.md);
+`diff-alone`, [#126](https://github.com/JN0V/workline/issues/126); the
+reviewer on `schedule`, [#128](https://github.com/JN0V/workline/issues/128);
+`gates`, [gates](spec/gates.md); `repos`, [multi-repo](spec/multi-repo.md);
+`release`, [ADR-0017](adr/0017-the-release-manager.md).
 
 ### What blocks
 
