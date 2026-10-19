@@ -155,6 +155,9 @@ An author or committer address outside the allow list blocks (`identity`).
 - **30 s at most**: the hook says which agent rewrites, and how long at
   most, before it starts. Past `ai-max-seconds`, every call and retry
   together, the message is refused with its reasons, and kept.
+- **Its seconds said**: `14 s in all — committer 14 s (rewrite 13 s)`;
+  over its 30 s, [said once](../../docs/spec/routing.md#each-steps-seconds-a-moments-budget);
+  each call's in its run's `out/calls.jsonl`.
 - **`rewrite: false`**, the project's or yours, turns it off; so does a
   project's `ai: none`, and no agent at all. The hook then refuses in about
   a second, keeps your message in the file git named, and prints

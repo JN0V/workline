@@ -552,7 +552,13 @@ func hookCmd(args []string) int {
 			quiet = false
 		}
 	}
+	// A commit over its budget says so, quiet or not; its seconds go with
+	// what the hook says, a rewrite's above all (ADR-0050).
+	over := res.OverBudget()
 	if quiet {
+		if over != "" {
+			fmt.Fprintln(os.Stderr, "workline: over its budget: "+over)
+		}
 		return 0
 	}
 	for _, s := range res.Steps {
@@ -560,6 +566,12 @@ func hookCmd(args []string) int {
 			fmt.Fprintf(os.Stderr, "workline %s: ", s.Name)
 			report(s.Result)
 		}
+	}
+	if t := res.Times(); t != "" {
+		fmt.Fprintln(os.Stderr, "workline: "+t)
+	}
+	if over != "" {
+		fmt.Fprintln(os.Stderr, "workline: over its budget: "+over)
 	}
 	if res.Status == verdict.Pass {
 		// A rewrite replaced what the person wrote: show what is committed.
@@ -657,6 +669,22 @@ func prePushLine(root string, refs []hooks.Ref) int {
 		return 1
 	}
 	fmt.Fprintf(os.Stderr, "workline: checking the commits pushed (%s), no agent…\n", strings.Join(cfg.Events["pre-push"], ", "))
+	// The push's seconds, every range's steps together, and its budget
+	// (ADR-0050): said before what stops it, never a block.
+	start := time.Now()
+	var runs []*line.Result
+	times := func() {
+		if len(runs) == 0 {
+			return
+		}
+		all := line.Join(runs)
+		all.Seconds = line.Since(start)
+		line.Measure(all, cfg, "push")
+		fmt.Fprintln(os.Stderr, "workline: "+all.Times())
+		if over := all.OverBudget(); over != "" {
+			fmt.Fprintln(os.Stderr, "workline: over its budget: "+over)
+		}
+	}
 	var suspect []string
 	for _, ref := range refs {
 		rng := ref.Range
@@ -667,6 +695,7 @@ func prePushLine(root string, refs []hooks.Ref) int {
 			Repo: root, RolesDir: rolesDir, AI: "none",
 			Inputs: map[string]string{"range": rng},
 		})
+		runs = append(runs, res)
 		patched, advisory := false, 0
 		for _, s := range res.Steps {
 			if s.Result == nil {
@@ -698,15 +727,18 @@ func prePushLine(root string, refs []hooks.Ref) int {
 		}
 		switch {
 		case res.Status != verdict.Pass:
+			times()
 			fmt.Fprintf(os.Stderr, "workline: %s\npush stopped; `git push --no-verify` skips workline\n", res.Summary)
 			return 1
 		case patched:
+			times()
 			stat, _ := exec.Command("git", "-C", root, "-c", "core.quotePath=off", "diff", "--stat").Output()
 			fmt.Fprintf(os.Stderr, "workline: the documentalist updated docs in your working tree:\n%s", stat)
 			fmt.Fprintln(os.Stderr, "push stopped: review them (git diff), commit them, and push again")
 			return 1
 		}
 	}
+	times()
 	if len(suspect) > 0 {
 		fmt.Fprintf(os.Stderr, "workline: docs suspect: %d made so by these commits — `workline docs` judges them\n", len(suspect))
 	}
@@ -1107,6 +1139,12 @@ func routeCmd(args []string) int {
 		fmt.Fprintf(os.Stderr, "%s — %s\n", res.Status, res.Summary)
 		for _, s := range res.Steps {
 			fmt.Fprintf(os.Stderr, "  %-28s %s\n", s.Name, s.Status)
+		}
+		if t := res.Times(); t != "" {
+			fmt.Fprintf(os.Stderr, "  seconds: %s\n", t)
+		}
+		if over := res.OverBudget(); over != "" {
+			fmt.Fprintf(os.Stderr, "  over its budget: %s\n", over)
 		}
 		for _, f := range res.Findings {
 			where := ""

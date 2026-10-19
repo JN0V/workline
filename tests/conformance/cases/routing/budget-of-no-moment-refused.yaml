@@ -1,0 +1,10 @@
+case: routing/budget-of-no-moment-refused
+about: "A budget names a moment of ADR-0050: one it does not know, here the night, which no person waits on, is refused with the moments known; the line runs nothing."
+given:
+  repo: basic
+  config: {routing: {budgets: {night: 600}}}
+run: {route: merge-request, ai: none}
+expect:
+  status: block
+  steps: []
+  findings: [{rule: config-invalid, message: "unknown key \"night\" in routing.budgets (known: commit, commit-rewrite, first-result, push, ready-review, verdict)"}]

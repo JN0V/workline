@@ -28,6 +28,9 @@ type Config struct {
 	// stops the line (true, the default) or every step runs and the line
 	// takes the worst verdict (false: the schedule's upkeep, ADR-0037).
 	FailFast map[string]bool `yaml:"fail-fast"`
+	// Budgets: each moment's wait budget, in seconds (ADR-0050, section
+	// 1): the shipped ones, a project's laid over them moment by moment.
+	Budgets map[string]float64 `yaml:"budgets"`
 }
 
 // Load returns the shipped routing with the project's changes applied.
@@ -65,8 +68,24 @@ func Load(repo string) (*Config, error) {
 			}
 			c.FailFast[event] = stop
 		}
+		for moment, seconds := range p.Budgets {
+			if seconds <= 0 {
+				return nil, role.ConfigErrorf("routing.budgets.%s is %v: a budget is a number of seconds above 0", moment, seconds)
+			}
+			if c.Budgets == nil {
+				c.Budgets = map[string]float64{}
+			}
+			c.Budgets[moment] = seconds
+		}
 	}
 	return &c, nil
+}
+
+// Budget is the moment's wait budget, in seconds; false when it has none
+// (main after a merge, the night, the release wait for nobody).
+func (c *Config) Budget(moment string) (float64, bool) {
+	seconds, ok := c.Budgets[moment]
+	return seconds, ok && seconds > 0
 }
 
 // StopsAtFirst reports whether the first step of event that does not pass

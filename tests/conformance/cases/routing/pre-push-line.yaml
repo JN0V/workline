@@ -9,4 +9,5 @@ expect:
   status: pass
   agent-calls: 1
   steps: [committer, documentalist]
+  moment: {name: push, budget: 5}
   files: {"docs/tech/auth.md": {contains: "checked: 1a8e5a4"}}

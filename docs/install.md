@@ -103,6 +103,7 @@ Try it in any repository:
 git commit --allow-empty -m "AC-3 fix the thing"
 # workline committer: block — rewrite the commit message
 #   format subject: the subject must read `type(scope): summary`…
+# workline: 0.6 s in all — committer 0.5 s
 # commit aborted; your message is kept in .git/COMMIT_EDITMSG: to edit it and commit again, git commit -e -F .git/COMMIT_EDITMSG
 ```
 
@@ -117,6 +118,7 @@ git commit --allow-empty -m "AC-3 fix the thing"
 ```text
 workline committer: the message is refused; the agent (claude) rewrites it, 30 s at most…
 workline committer: pass — message rewritten
+workline: 14 s in all — committer 14 s (rewrite 13 s)
 workline: the commit goes on with this message instead of yours:
   │ fix: fix the thing
   │

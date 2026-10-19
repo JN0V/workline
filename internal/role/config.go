@@ -16,6 +16,10 @@ type ConfigError struct{ msg string }
 
 func (e *ConfigError) Error() string { return ".workline/config.yaml: " + e.msg }
 
+// ConfigErrorf is a ConfigError another package finds: a value it reads
+// that it cannot trust (routing's budgets).
+func ConfigErrorf(format string, a ...any) error { return &ConfigError{fmt.Sprintf(format, a...)} }
+
 // IsConfigError reports whether err, or an error it wraps, is a ConfigError.
 func IsConfigError(err error) bool {
 	var c *ConfigError
@@ -42,6 +46,9 @@ var (
 			"handoffs":     {keys: map[string]*shape{"from": free, "to": free}}, // a list: each item
 			"max-handoffs": free,
 			"fail-fast":    free,
+			// Each moment's wait budget (ADR-0050): its moments only.
+			"budgets": {keys: map[string]*shape{"commit": free, "commit-rewrite": free, "push": free,
+				"first-result": free, "verdict": free, "ready-review": free}},
 		}},
 		"gates": {any: &shape{keys: map[string]*shape{
 			"criteria": free,

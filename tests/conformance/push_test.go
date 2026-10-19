@@ -201,6 +201,65 @@ func TestPushCountsTheDocs(t *testing.T) {
 	}
 }
 
+// The push says its seconds, each step's after the total, every range's
+// steps together; over its budget (5 s by default, ADR-0050), it says so
+// once, naming the step that took the most, and goes on: a budget never
+// blocks. Within it, nothing more.
+func TestPushSaysItsSeconds(t *testing.T) {
+	for _, c := range []struct {
+		name, routing, gates string
+		said, unsaid         []string
+	}{
+		{name: "within its budget", routing: "{events: {pre-push: [committer, documentalist]}, budgets: {push: 600}}",
+			said: []string{"workline: ", " s in all — committer ", " s, documentalist "}, unsaid: []string{"over its budget"}},
+		{name: "over its budget", routing: "{events: {pre-push: [\"gate:slow\"]}, budgets: {push: 1}}",
+			gates: "gates: {slow: {checks: [{id: wait, run: \"sleep 1.5\", output: exit}]}}",
+			said:  []string{" s in all — gate:slow ", "workline: over its budget: the push took ", ", over its budget of 1 s (ADR-0050); the step that took the most: gate:slow, "}},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			work := t.TempDir()
+			env := append(hermeticEnv(), "XDG_CONFIG_HOME="+filepath.Join(work, "config"), "GIT_CONFIG_GLOBAL="+filepath.Join(work, "gitconfig"))
+			os.WriteFile(filepath.Join(work, "gitconfig"), nil, 0o644)
+			remote, repo := filepath.Join(work, "remote.git"), filepath.Join(work, "repo")
+			if out, err := exec.Command("git", "init", "-q", "--bare", remote).CombinedOutput(); err != nil {
+				t.Fatal(string(out))
+			}
+			config := "routing: " + c.routing + "\n" + c.gates + "\n"
+			if err := build(repo, "documented", []string{
+				"mkdir -p .workline && printf '%s' '" + config + "' > .workline/config.yaml && git add .workline && git commit -qm 'chore: check before a push'",
+				"git remote add origin " + remote, "git push -q origin main",
+				"sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'",
+			}, env); err != nil {
+				t.Fatal(err)
+			}
+			run := func(args ...string) (string, error) {
+				cmd := exec.Command(args[0], args[1:]...)
+				cmd.Dir, cmd.Env = repo, env
+				cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
+				out, err := cmd.CombinedOutput()
+				return string(out), err
+			}
+			if out, err := run(engineBin, "hooks", "install", "--global"); err != nil {
+				t.Fatal(out)
+			}
+			out, err := run("git", "push", "origin", "main")
+			if err != nil {
+				t.Fatalf("the push was stopped:\n%s", out)
+			}
+			for _, s := range c.said {
+				if !strings.Contains(out, s) {
+					t.Errorf("the push does not say %q:\n%s", s, out)
+				}
+			}
+			for _, s := range c.unsaid {
+				if strings.Contains(out, s) {
+					t.Errorf("the push says %q:\n%s", s, out)
+				}
+			}
+		})
+	}
+}
+
 // On a repository pushed to main with no merge request (ADR-0010),
 // `workline docs` judges from where the docs were last judged — a ref it
 // moves, refs/workline/docs-judged — to HEAD, pushed or not. The ref moves

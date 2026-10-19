@@ -13,3 +13,13 @@ fail-fast:
   schedule: false
 handoffs: []
 max-handoffs: 3
+# Each moment's wait budget, in seconds (ADR-0050): a run over it says so
+# in its summary, naming the step that took the time; it never blocks. A
+# project sets its own in `routing: budgets:`, moment by moment.
+budgets:
+  commit: 1            # the commit-msg hook
+  commit-rewrite: 30   # the same, when the agent rewrites a refused message
+  push: 5              # the pre-push hook, no agent
+  first-result: 60     # a merge request's push: the gates alone
+  verdict: 180         # the head's verdict: the line, the gates' job's seconds with it
+  ready-review: 600    # the run apart, the lenses that warn, posted when done

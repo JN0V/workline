@@ -97,26 +97,26 @@ type runSpec struct {
 	Between map[string]any    `yaml:"between"` // with then: again, a person's edits to the forge before the second run; with then: resume, before the apply
 	// Pushed: with then: judged-twice or applied-between, what lands on
 	// the branch after the run judged, before it is applied (#375).
-	Pushed []string `yaml:"pushed"`
-	Route   string            `yaml:"route"`
-	Item    int               `yaml:"item"`
-	Gate    string            `yaml:"gate"`
-	Doctor  bool              `yaml:"doctor"`
-	Init    bool              `yaml:"init"`
-	InitOpt []string          `yaml:"init-options"`  // workline init, with these options
-	Setup   []string          `yaml:"setup"`         // workline setup, with these options
-	Import  []string          `yaml:"issues-import"` // workline issues import, with these arguments
-	Review  []string          `yaml:"review"`        // workline review, with these options
-	Sample  []string          `yaml:"sample"`        // workline sample, with these options; then: apply writes what it found
-	Reports bool              `yaml:"reports"`       // also write --sarif and --code-quality
-	JobSum  bool              `yaml:"summary"`       // also write --summary, Markdown and HTML, the apply after it too
-	Forge   string            `yaml:"forge"`         // a forge spec passed as --forge (local, cmd:…), instead of the simulated one
-	Follow  []string          `yaml:"follow"`        // workline follow, with these options
+	Pushed  []string `yaml:"pushed"`
+	Route   string   `yaml:"route"`
+	Item    int      `yaml:"item"`
+	Gate    string   `yaml:"gate"`
+	Doctor  bool     `yaml:"doctor"`
+	Init    bool     `yaml:"init"`
+	InitOpt []string `yaml:"init-options"`  // workline init, with these options
+	Setup   []string `yaml:"setup"`         // workline setup, with these options
+	Import  []string `yaml:"issues-import"` // workline issues import, with these arguments
+	Review  []string `yaml:"review"`        // workline review, with these options
+	Sample  []string `yaml:"sample"`        // workline sample, with these options; then: apply writes what it found
+	Reports bool     `yaml:"reports"`       // also write --sarif and --code-quality
+	JobSum  bool     `yaml:"summary"`       // also write --summary, Markdown and HTML, the apply after it too
+	Forge   string   `yaml:"forge"`         // a forge spec passed as --forge (local, cmd:…), instead of the simulated one
+	Follow  []string `yaml:"follow"`        // workline follow, with these options
 	// ThenLine: after the run, the line on a branch of origin, checked
 	// out, as CI runs it on that branch's push: what the case expects of
 	// status, steps and calls is its; the findings are both runs'.
 	ThenLine *thenLine `yaml:"then-line"`
-	CLI     []string          `yaml:"cli"`           // workline with these arguments, as typed: its exit code, what it prints
+	CLI      []string  `yaml:"cli"` // workline with these arguments, as typed: its exit code, what it prints
 	// ApplyFrom: with then: resume, the runs applied as the base's job
 	// applies a merge request's own CI run (apply --from-merge-request).
 	ApplyFrom *applyFrom `yaml:"apply-from"`
@@ -181,43 +181,57 @@ type thenLine struct {
 
 // expectSpec is what the case expects.
 type expectSpec struct {
-	Status      string                       `yaml:"status"`
-	Findings    []findingWant                `yaml:"findings"`
-	NoFindings  []findingWant                `yaml:"no-findings"` // findings that must not be there
-	Checks      []checkWant                  `yaml:"checks"`      // the doctor's checks, ok ones too
-	AgentCalls  *int                         `yaml:"agent-calls"`
-	Applied     []string                     `yaml:"applied"`
-	Refused     []string                     `yaml:"refused"`
-	Files       map[string]fileWant          `yaml:"files"`
-	Pushed      map[string]map[string]string `yaml:"pushed"`         // branch -> path -> a text the remote's branch holds there
-	PushedMsg   map[string]string            `yaml:"pushed-message"` // branch -> a text the message of the remote branch's tip holds
-	NotPushed   []string                     `yaml:"not-pushed"`     // branches of the remote the run left where they were
-	OnTop       map[string]string            `yaml:"on-top"`         // branch -> the branch of the remote its tip holds
-	Merged      map[string]string            `yaml:"merged"`         // branch -> base: the remote branch's tip merges base's tip into its tip before the run, its first parent
-	Gone        []string                     `yaml:"gone"`           // branches of the remote absent after the run
-	Forge       *forgeWant                   `yaml:"forge"`
-	Steps       []string                     `yaml:"steps"`
-	Calls       []map[string]string          `yaml:"calls"`
-	SARIF       []map[string]any             `yaml:"sarif"`         // results, by rule, uri, line, level
-	CodeQuality []map[string]any             `yaml:"code-quality"`  // issues, by check_name, path, line, severity
-	CQKept      bool                         `yaml:"code-quality-kept"` // with again-after: each fingerprint of the first run's Code Quality report is the second's
-	LeftOut     []string                     `yaml:"left-out"`      // wheres found in neither report
-	SARIFLacks  []string                     `yaml:"sarif-lacks"`   // rules no SARIF result has
-	Notes       []string                     `yaml:"notes"`         // texts the agent's notes hold
-	RefusedKept int                          `yaml:"refused-kept"`  // refused answers kept in the run folders
-	CallsKept   int                          `yaml:"calls-kept"`    // agent calls recorded in the run folders
-	RunFiles    map[string]runFileWant       `yaml:"run-files"`     // a file of the run folder -> the texts it holds, or not
-	Branches    map[string]map[string]string `yaml:"branches"`      // a local branch -> path -> a text it holds there
-	Listed      []string                     `yaml:"issues-listed"` // texts `workline issues list` prints afterwards
-	Summary     string                       `yaml:"summary"`       // a text the result's summary holds
-	ApartStatus string                       `yaml:"apart-status"`  // with then: apart, the run apart's status; status is the verdict's run's
-	SummaryFile []string                     `yaml:"summary-file"`  // texts the --summary file holds, in this order; with cli, workline-summary.md
-	SummaryHTML []string                     `yaml:"summary-html"`  // texts the --summary .html file holds, in this order
-	Coverage    []map[string]string          `yaml:"coverage"`      // an import's map: its items, by lines, state, issue, words, why
-	NotCovered  []map[string]string          `yaml:"not-covered"`   // an import's items left with no issue nor reason
-	Exit        *int                         `yaml:"exit"`          // with cli: the exit code
-	Stdout      []string                     `yaml:"stdout"`        // with cli: texts printed on stdout
-	Stderr      []string                     `yaml:"stderr"`        // with cli: texts printed on stderr
+	Status       string                       `yaml:"status"`
+	Findings     []findingWant                `yaml:"findings"`
+	NoFindings   []findingWant                `yaml:"no-findings"` // findings that must not be there
+	Checks       []checkWant                  `yaml:"checks"`      // the doctor's checks, ok ones too
+	AgentCalls   *int                         `yaml:"agent-calls"`
+	Applied      []string                     `yaml:"applied"`
+	Refused      []string                     `yaml:"refused"`
+	Files        map[string]fileWant          `yaml:"files"`
+	Pushed       map[string]map[string]string `yaml:"pushed"`         // branch -> path -> a text the remote's branch holds there
+	PushedMsg    map[string]string            `yaml:"pushed-message"` // branch -> a text the message of the remote branch's tip holds
+	NotPushed    []string                     `yaml:"not-pushed"`     // branches of the remote the run left where they were
+	OnTop        map[string]string            `yaml:"on-top"`         // branch -> the branch of the remote its tip holds
+	Merged       map[string]string            `yaml:"merged"`         // branch -> base: the remote branch's tip merges base's tip into its tip before the run, its first parent
+	Gone         []string                     `yaml:"gone"`           // branches of the remote absent after the run
+	Forge        *forgeWant                   `yaml:"forge"`
+	Steps        []string                     `yaml:"steps"`
+	Calls        []map[string]string          `yaml:"calls"`
+	SARIF        []map[string]any             `yaml:"sarif"`             // results, by rule, uri, line, level
+	CodeQuality  []map[string]any             `yaml:"code-quality"`      // issues, by check_name, path, line, severity
+	CQKept       bool                         `yaml:"code-quality-kept"` // with again-after: each fingerprint of the first run's Code Quality report is the second's
+	LeftOut      []string                     `yaml:"left-out"`          // wheres found in neither report
+	SARIFLacks   []string                     `yaml:"sarif-lacks"`       // rules no SARIF result has
+	Notes        []string                     `yaml:"notes"`             // texts the agent's notes hold
+	RefusedKept  int                          `yaml:"refused-kept"`      // refused answers kept in the run folders
+	CallsKept    int                          `yaml:"calls-kept"`        // agent calls recorded in the run folders
+	RunFiles     map[string]runFileWant       `yaml:"run-files"`         // a file of the run folder -> the texts it holds, or not
+	Branches     map[string]map[string]string `yaml:"branches"`          // a local branch -> path -> a text it holds there
+	Listed       []string                     `yaml:"issues-listed"`     // texts `workline issues list` prints afterwards
+	Summary      string                       `yaml:"summary"`           // a text the result's summary holds
+	ApartStatus  string                       `yaml:"apart-status"`      // with then: apart, the run apart's status; status is the verdict's run's
+	SummaryFile  []string                     `yaml:"summary-file"`      // texts the --summary file holds, in this order; with cli, workline-summary.md
+	SummaryHTML  []string                     `yaml:"summary-html"`      // texts the --summary .html file holds, in this order
+	Coverage     []map[string]string          `yaml:"coverage"`          // an import's map: its items, by lines, state, issue, words, why
+	NotCovered   []map[string]string          `yaml:"not-covered"`       // an import's items left with no issue nor reason
+	Exit         *int                         `yaml:"exit"`              // with cli: the exit code
+	Stdout       []string                     `yaml:"stdout"`            // with cli: texts printed on stdout
+	Stderr       []string                     `yaml:"stderr"`            // with cli: texts printed on stderr
+	StderrLacks  []string                     `yaml:"stderr-lacks"`      // with cli: texts not printed on stderr
+	SummaryLacks []string                     `yaml:"summary-lacks"`     // texts the --summary file does not hold; with cli, workline-summary.md
+	// Moment: the wait the line's run is part of, as its result says it
+	// (ADR-0050): each field given is checked; over false, not over.
+	Moment *momentWant `yaml:"moment"`
+}
+
+// momentWant is a line's moment: its name, its budget in seconds, whether
+// it went over it, and then the step named.
+type momentWant struct {
+	Name   string   `yaml:"name"`
+	Budget *float64 `yaml:"budget"`
+	Over   *bool    `yaml:"over"`
+	Step   string   `yaml:"step"`
 }
 
 // findingWant is a finding the run reports, or must not: its rule and
@@ -364,8 +378,17 @@ type result struct {
 	Applied []string `json:"applied"`
 	Refused []string `json:"refused"`
 	Steps   []struct {
-		Name string `json:"name"`
+		Name    string   `json:"name"`
+		Seconds *float64 `json:"seconds"`
 	} `json:"steps"`
+	Seconds *float64 `json:"seconds"`
+	Moment  *struct {
+		Name    string  `json:"name"`
+		Budget  float64 `json:"budget"`
+		Seconds float64 `json:"seconds"`
+		Over    bool    `json:"over"`
+		Step    string  `json:"step"`
+	} `json:"moment"`
 }
 
 func TestConformance(t *testing.T) {
@@ -963,6 +986,7 @@ func runCase(t *testing.T, c *caseFile) []string {
 	if len(c.Expect.SummaryFile) > 0 {
 		problems = append(problems, compareSummaryFile(c.Expect.SummaryFile, summaryFile)...)
 	}
+	problems = append(problems, summaryLacks(c.Expect.SummaryLacks, summaryFile)...)
 	if len(c.Expect.SummaryHTML) > 0 {
 		problems = append(problems, compareSummaryFile(c.Expect.SummaryHTML, summaryHTML)...)
 	}
@@ -1005,9 +1029,15 @@ func runCLI(engineBin string, c *caseFile, repo string, env []string) []string {
 			p = append(p, fmt.Sprintf("stderr lacks %q:\n%s", text, stderr.String()))
 		}
 	}
+	for _, text := range c.Expect.StderrLacks {
+		if strings.Contains(stderr.String(), text) {
+			p = append(p, fmt.Sprintf("stderr holds %q:\n%s", text, stderr.String()))
+		}
+	}
 	if len(c.Expect.SummaryFile) > 0 { // the arguments name it, as CI's templates do
 		p = append(p, compareSummaryFile(c.Expect.SummaryFile, filepath.Join(repo, "workline-summary.md"))...)
 	}
+	p = append(p, summaryLacks(c.Expect.SummaryLacks, filepath.Join(repo, "workline-summary.md"))...)
 	return append(p, compareFiles(c.Expect.Files, repo)...)
 }
 
@@ -1148,6 +1178,24 @@ func compare(c *caseFile, r *result, repo string) []string {
 				if data, _ := os.ReadFile(f); strings.Contains(string(data), text) {
 					p = append(p, fmt.Sprintf("%s holds %q", name, text))
 				}
+			}
+		}
+	}
+	if m := e.Moment; m != nil {
+		switch got := r.Moment; {
+		case got == nil:
+			p = append(p, fmt.Sprintf("no moment in the result, want %+v", *m))
+		case m.Name != "" && got.Name != m.Name, m.Budget != nil && got.Budget != *m.Budget,
+			m.Over != nil && got.Over != *m.Over, m.Step != "" && got.Step != m.Step:
+			p = append(p, fmt.Sprintf("moment = %+v, want %+v (budget %v, over %v)", *got, *m, deref(m.Budget), deref(m.Over)))
+		}
+		// Every step that ran says its seconds, and the line its own.
+		if r.Seconds == nil {
+			p = append(p, "the result says no seconds")
+		}
+		for _, s := range r.Steps {
+			if s.Seconds == nil {
+				p = append(p, fmt.Sprintf("step %s says no seconds", s.Name))
 			}
 		}
 	}
@@ -1761,6 +1809,31 @@ func compareSummaryFile(want []string, file string) []string {
 		rest = rest[i+len(w):]
 	}
 	return nil
+}
+
+// summaryLacks says which texts the summary file holds that it must not.
+func summaryLacks(texts []string, file string) []string {
+	if len(texts) == 0 {
+		return nil
+	}
+	data, err := os.ReadFile(file)
+	if err != nil {
+		return []string{fmt.Sprintf("no summary file: %v", err)}
+	}
+	var p []string
+	for _, t := range texts {
+		if strings.Contains(string(data), t) {
+			p = append(p, fmt.Sprintf("the summary file holds %q:\n%s", t, data))
+		}
+	}
+	return p
+}
+
+func deref[T any](v *T) any {
+	if v == nil {
+		return nil
+	}
+	return *v
 }
 
 // compareReports checks the SARIF and Code Quality files a run wrote.
