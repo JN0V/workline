@@ -126,6 +126,12 @@ workline:gates:
   extends: .workline
   stage: test
   interruptible: true
+  # The merge base's findings, kept by main's pipeline (workline:main):
+  # read rather than run the tools there again, when kept with the same
+  # command, config and tool. Shared with the merge requests' pipelines
+  # (`unprotect`): whoever may push a branch could write one, as they can
+  # read the bot's token (below).
+  cache: {key: workline-gates-$CI_MERGE_REQUEST_DIFF_BASE_SHA, paths: [.workline-kept/], policy: pull, unprotect: true}
   script:
     - unset CLAUDE_CODE_OAUTH_TOKEN WORKLINE_GITLAB_TOKEN GITLAB_TOKEN
     - status=0
@@ -133,7 +139,7 @@ workline:gates:
     - 'if [ "${CI_MERGE_REQUEST_EVENT_TYPE:-}" = merge_train ]; then base=${CI_MERGE_REQUEST_TARGET_BRANCH_SHA:-$base}; queue="--input queue=true"; fi'
     - >
       workline route merge-request --gates-only --forge none $queue
-      --input range=$base..$CI_COMMIT_SHA
+      --input range=$base..$CI_COMMIT_SHA --gates-kept .workline-kept
       --code-quality gl-code-quality-gates.json --summary gates-summary.md --summary gates-summary.html
       --json > gates.json || status=$?
     - exit $status
@@ -424,6 +430,69 @@ workline:release-docs:apply:
     - git remote set-url origin "https://oauth2:${WORKLINE_GITLAB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"
     - '[ -s line.json ] || { echo "workline: the release docs judge left nothing to apply"; exit 0; }'
     - workline apply --line line.json --summary workline-summary.md --summary workline-summary.html
+  after_script: *summary
+  artifacts:
+    when: always
+    paths: [workline-summary.html, workline-summary.md]
+    reports: {annotations: workline-annotations.json}
+    expire_in: 1 week
+
+# Main after a merge (ADR-0050; the first release after v0.37.0): on each
+# push to the default branch, the line of `main`, once, no agent: the
+# gates of the merge requests' line, compared with the branch's tip before
+# the push, every finding kept by the commit in the cache, the next merge
+# requests' base (workline:gates reads it); then the whole repository's
+# checks. Red only for what the merge adds that the gates count: two merge
+# requests green alone, breaking the branch together. It unsets the
+# tokens, as workline:gates: their tools run the branch's code. No Code
+# Quality report: the merge requests' widget compares with this
+# pipeline's, and old findings would read as fixed.
+# workline:main:issue, with the bot's token, keeps what it found in one
+# issue: opened when there is something to list, edited only when what it
+# lists changes.
+workline:main:
+  image: $WORKLINE_IMAGE:$WORKLINE_VERSION
+  stage: test
+  variables: {GIT_DEPTH: 0}         # the whole history, as .workline
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  cache:
+    - {key: workline-gates-$CI_COMMIT_BEFORE_SHA, paths: [.workline-kept/], policy: pull, unprotect: true}
+    - {key: workline-gates-$CI_COMMIT_SHA, paths: [.workline-kept/], policy: push, unprotect: true, when: always}
+  script:
+    - unset CLAUDE_CODE_OAUTH_TOKEN WORKLINE_GITLAB_TOKEN GITLAB_TOKEN
+    - *trust
+    - workline version
+    - status=0
+    - >
+      workline route main --ai none --forge none --gates-kept .workline-kept
+      --input range=$CI_COMMIT_BEFORE_SHA..$CI_COMMIT_SHA
+      --summary workline-summary.md --summary workline-summary.html --json > main.json || status=$?
+    - find .workline-kept -type f ! -name "$CI_COMMIT_SHA.json" -delete 2>/dev/null || true
+    - exit $status
+  allow_failure: {exit_codes: [3]}  # a source repository out of reach warns, as on a merge request
+  after_script: *summary
+  artifacts:
+    when: always
+    paths: [workline-summary.html, workline-summary.md, main.json]
+    reports: {annotations: workline-annotations.json}
+    expire_in: 1 week
+
+workline:main:issue:
+  image: $WORKLINE_IMAGE:$WORKLINE_VERSION
+  stage: deploy
+  needs: [workline:main]
+  variables: {GIT_DEPTH: 0}         # the whole history, as .workline
+  rules:                            # red too: the issue says so
+    - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $WORKLINE_GITLAB_TOKEN
+      when: always
+  resource_group: workline-main-issue   # one at a time: each reads the issue the one before left
+  script:
+    - *trust
+    - workline version
+    - '[ -s main.json ] || { echo "workline: main''s run left no result: nothing to keep"; exit 0; }'
+    - export GITLAB_TOKEN=$WORKLINE_GITLAB_TOKEN
+    - workline apply --main main.json --forge gitlab --summary workline-summary.md --summary workline-summary.html
   after_script: *summary
   artifacts:
     when: always

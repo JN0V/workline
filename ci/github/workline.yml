@@ -48,6 +48,16 @@
 # asked. The pull request's head keeps its review and verdict, the
 # person's yes too (ADR-0042); nothing is applied. A merge queue is an
 # organisation's (docs/ci-github.md#a-merge-queue).
+#
+# Main after a merge (a push to the default branch, ADR-0050; the first
+# release after v0.37.0): gates runs `route main`, the gates every finding
+# and the whole repository's checks, once, no agent, no secret; red when
+# the merge adds what the gates count since main's tip before it, two pull
+# requests green alone breaking it together. Every finding of the gates
+# is kept in Actions' cache by the commit: a pull request based on it
+# reads them as its merge base's rather than run its tools there again
+# (--gates-kept), when kept with the same command, config and tool.
+# workline-apply.yml keeps what main's run found in one issue.
 name: workline
 on:
   # ready_for_review: a draft marked ready, read by every lens of the
@@ -57,12 +67,15 @@ on:
   # A merge queue's group: without it, the checks the queue requires never
   # report, and it waits until its timeout.
   merge_group: {types: [checks_requested]}
+  push: {branches: [main]}          # your default branch: main after a merge
 permissions: {}
 # One run per pull request (#359): a push cancels the run still on the
 # head before, whose commits the newer run reviews with its own. Nothing
 # of a cancelled run is uploaded after (`!cancelled()`), nor applied
-# (workline-apply.yml). A queue's group, one run of its own.
-concurrency: {group: "workline-judge-${{ github.event.pull_request.number || github.event.merge_group.head_ref }}", cancel-in-progress: true}
+# (workline-apply.yml). A queue's group, one run of its own; each commit
+# of main too, a group of its own: none cancels another, each the next
+# base.
+concurrency: {group: "workline-judge-${{ github.event.pull_request.number || github.event.merge_group.head_ref || github.sha }}", cancel-in-progress: true}
 
 env:
   WORKLINE_VERSION: v0.37.0          # a release of workline: update it to take a newer one (x-release-please-version)
@@ -76,17 +89,18 @@ jobs:
   # agent's neither (ADR-0049). judge reads their verdicts; workline-apply.yml
   # shows what they found the change adds. With no gate, it ends at once.
   # In a merge queue, on the group's commit: the pull requests ahead of it
-  # and this one, merged on the base.
+  # and this one, merged on the base. On main after a merge, the line of
+  # `main`: the gates and the whole repository's checks, once.
   gates:
     runs-on: ubuntu-latest
     permissions: {contents: read}
     outputs: {ran: "${{ steps.gates.outputs.ran }}"}
     steps:
       - uses: actions/checkout@v4
-        with: {fetch-depth: 0, ref: "${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha }}", persist-credentials: false}
+        with: {fetch-depth: 0, ref: "${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.sha }}", persist-credentials: false}
       - name: Whether the line has a gate
         id: any
-        run: if grep -qs 'gate:' .workline/config.yaml; then echo "any=true" >> "$GITHUB_OUTPUT"; else echo "no gate in .workline/config.yaml"; fi
+        run: if [ "$GITHUB_EVENT_NAME" = push ] || grep -qs 'gate:' .workline/config.yaml; then echo "any=true" >> "$GITHUB_OUTPUT"; else echo "no gate in .workline/config.yaml"; fi
       - name: workline
         if: steps.any.outputs.any == 'true'
         run: |
@@ -97,14 +111,27 @@ jobs:
           "$bin/workline" version
       # The tools your gates run: install them here, pinned, their checksums
       # verified, with `get` as above (docs/ci-github.md#gates).
+      # The findings main kept at the commit compared with: a pull request's
+      # merge base, a group's base, main's tip before the merge. Kept by
+      # main's runs only: a pull request's cache is its own.
+      - name: The base's findings, kept by main
+        id: base
+        if: steps.any.outputs.any == 'true'
+        env: {BASE: "${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before }}", HEAD: "${{ github.event.pull_request.head.sha }}"}
+        run: |
+          sha=$BASE; [ -z "$HEAD" ] || sha=$(git merge-base "$BASE" "$HEAD") || sha=$BASE
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache/restore@v4
+        if: steps.any.outputs.any == 'true'
+        with: {path: "${{ runner.temp }}/workline-kept", key: "workline-gates-${{ steps.base.outputs.sha }}"}
       - name: The gates alone
         id: gates
-        if: steps.any.outputs.any == 'true'
+        if: steps.any.outputs.any == 'true' && github.event_name != 'push'
         run: |
           status=0
           workline route merge-request --gates-only --forge none ${{ github.event_name == 'merge_group' && '--input queue=true' || '' }} \
             --input range=${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}..${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha }} \
-            --summary workline-summary.md --json > gates.json || status=$?
+            --gates-kept "$RUNNER_TEMP/workline-kept" --summary workline-summary.md --json > gates.json || status=$?
           echo "status=$status" >> "$GITHUB_OUTPUT"
           echo "ran=$(jq '(.steps // []) | length > 0' gates.json)" >> "$GITHUB_OUTPUT"
           [ ! -s workline-summary.md ] || cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"
@@ -113,13 +140,35 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: "!cancelled() && steps.gates.outputs.ran == 'true'"
         with: {name: workline-gates, path: "gates.json\nreport/number", retention-days: 1}
+      # Main after a merge: the gates compare with main's tip before it,
+      # every finding kept by this commit; the whole repository's checks
+      # follow, no agent. Red only for what the merge adds that the gates
+      # count; the rest warns, in one issue (workline-apply.yml).
+      - name: Main after a merge
+        id: main
+        if: github.event_name == 'push'
+        run: |
+          status=0
+          workline route main --ai none --forge none --gates-kept "$RUNNER_TEMP/workline-kept" \
+            --input range=${{ github.event.before }}..${{ github.sha }} --summary workline-summary.md --json > main.json || status=$?
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          [ ! -s workline-summary.md ] || cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"
+          find "$RUNNER_TEMP/workline-kept" -type f ! -name "$GITHUB_SHA.json" -delete 2>/dev/null || true
+          [ ! -s "$RUNNER_TEMP/workline-kept/$GITHUB_SHA.json" ] || echo "kept=true" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache/save@v4
+        if: "!cancelled() && steps.main.outputs.kept == 'true'"
+        with: {path: "${{ runner.temp }}/workline-kept", key: "workline-gates-${{ github.sha }}"}
+      - uses: actions/upload-artifact@v4
+        if: "!cancelled() && github.event_name == 'push'"
+        with: {name: workline-main, path: main.json, if-no-files-found: ignore, retention-days: 1}
       - name: Verdict
-        run: exit "${{ steps.gates.outputs.status || 0 }}"
+        run: exit "${{ steps.gates.outputs.status || steps.main.outputs.status || 0 }}"
 
   judge:
-    # After the gates, whatever their verdict: the line reads it.
+    # After the gates, whatever their verdict: the line reads it. Not on
+    # main, whose run is the gates' job's.
     needs: gates
-    if: '!cancelled()'
+    if: "!cancelled() && github.event_name != 'push'"
     runs-on: ubuntu-latest
     # One review at a time per pull request (#375), with workline-apply.yml's
     # apply, neither cancelling the other: a push waits while the run
