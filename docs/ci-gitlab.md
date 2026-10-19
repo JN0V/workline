@@ -1,6 +1,6 @@
 ---
 sources: [ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile]
-checked: 615b87f5
+checked: 78fd03ce
 judged: cd97f28
 verified: agent:claude-code
 reader: 9799dcaf51f3
@@ -99,6 +99,8 @@ agent judges them, and they hold it
 - **The other nights**: one more schedule, every night but the
   gardening's, with `WORKLINE_TASK` set to `release-docs`: the release's
   docs alone; none due, no agent is asked. Play it for the release sooner.
+  Its variable needs "Minimum role to use pipeline variables" at
+  Maintainer, as the sample's.
 - Its fix is the bot's merge request only when the bot alone pushed to
   the release's branch: run the release tool with the bot's token, else
   the fix goes in a comment.

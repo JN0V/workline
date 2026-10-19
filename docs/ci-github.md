@@ -1,6 +1,6 @@
 ---
 sources: [ci/github, .github/workflows/workline.yml, .github/workflows/workline-apply.yml, .github/workflows/workline-gardening.yml, .github/workflows/workline-sample.yml, .github/actions/engine/action.yml, .github/workflows/release.yml, .github/workflows/release-please.yml, release-please-config.json, .goreleaser.yaml, cmd/workline]
-checked: 615b87f5
+checked: 78fd03ce
 judged: 220b6dc
 verified: agent:claude-code
 reader: fe1505d43360
@@ -80,7 +80,8 @@ write run the default branch's workflow, never a pull request's own
      A release pull request open, it first judges that release's docs
      ([more](../roles/documentalist/docs/push.md#a-release-tools-pull-request)).
    - [workline-release-docs.yml](../ci/github/workline-release-docs.yml):
-     the release pull request's docs, the other nights; none due, no agent.
+     the release pull request's docs, every night but Monday, the
+     gardening's; none due, no agent. With a nightly gardening, not needed.
    - [workline-sample.yml](../ci/github/workline-sample.yml): the
      [weekly sample](ci.md#the-weekly-sample), from the first release
      after v0.2.1.
