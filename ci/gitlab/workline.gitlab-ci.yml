@@ -378,19 +378,12 @@ workline:garden:apply:
     reports: {annotations: workline-annotations.json}
     expire_in: 1 week
 
-# The release merge request's docs, at night (ADR-0050; the first release
-# after v0.37.0): another pipeline schedule, every night but the
-# gardening's, which judges the release first, with the variable
-# WORKLINE_TASK=release-docs. On each
-# move of a release tool's merge request (releaser-pleaser's), no agent
-# judges its docs: they are counted and hold the release. This finds that
-# merge request, judges its docs due with the agent on its head, and
-# proposes their fix in a merge request of its own,
-# workline/documentalist/release, the bot's only when the bot alone pushed
-# to the release's branch. With none open, or no doc due, it asks no
-# agent. Play the schedule for the release sooner. A schedule's variables
-# need "Minimum role to use pipeline variables" at Maintainer, as the
-# sample's.
+# The release merge request's docs, the nights the gardening does not run
+# (ADR-0050; the first release after v0.37.0): a pipeline schedule with
+# WORKLINE_TASK=release-docs. It judges the docs due of the release merge
+# request open, with the agent (none due, no agent), and opens their fix
+# in workline/documentalist/release. Play it for the release sooner.
+# Why and how: docs/ci-gitlab.md.
 .workline:release-docs:
   image: $WORKLINE_IMAGE:$WORKLINE_VERSION
   variables: {GIT_DEPTH: 0}         # the whole history, as .workline

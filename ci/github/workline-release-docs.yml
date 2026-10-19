@@ -1,27 +1,10 @@
-# workline: the release pull request's docs, at night — copy to
-# .github/workflows/workline-release-docs.yml, beside workline-gardening.yml.
-#
-# On each move of a release tool's pull request (release-please's), no agent
-# judges its docs: the documentalist counts those due and holds the release
-# (ADR-0050). This workflow judges them every night, with the agent, on
-# that pull request's head, and proposes their fix in a pull request of
-# its own, workline/documentalist/release, which the release waits for.
-# With no release pull request open, or none of its docs due, it asks no
-# agent. Run it by hand (Actions → Run workflow) for the release sooner.
-#
-# Not every night: the weekly gardening judges the release first, on its
-# own night (Mondays here). Keep the two apart if you move either; with a
-# nightly gardening, this workflow is not needed.
-#
-# Two jobs, two trust zones, as gardening's:
-#   judge  finds the release pull request and judges its docs, with the
-#          agent's token (CLAUDE_CODE_OAUTH_TOKEN), reading the forge only.
-#   apply  holds the write token and no AI key: it pushes the fix's branch
-#          and opens its pull request. With the GitHub App (variable
-#          WORKLINE_APP_ID, secret WORKLINE_APP_PRIVATE_KEY in the
-#          environment workline-app), the fix is the App's only when the
-#          App alone pushed to the release's branch.
-# Needs the first release after v0.37.0.
+# workline: the release pull request's docs, the nights the gardening does
+# not run — copy to .github/workflows/, beside workline-gardening.yml.
+# judge finds the release pull request and judges its docs due with the
+# agent; none due, no agent. apply, the App's token and no AI key, opens
+# their fix in workline/documentalist/release. Run it by hand for the
+# release sooner. With a nightly gardening, not needed. Why and how:
+# docs/ci-github.md (ADR-0050). Needs the first release after v0.37.0.
 name: workline release docs
 on:
   schedule: [{cron: "47 2 * * 0,2-6"}]   # every night but Monday, the gardening's; off the hour
