@@ -139,6 +139,14 @@ type runSpec struct {
 	// the second run (a second push); the first run's Code Quality report
 	// is kept for code-quality-kept.
 	AgainAfter []string `yaml:"again-after"`
+	// MainIssue: after the run, and after the second with then: again,
+	// what it printed kept in main's issue (apply --main), as CI's job
+	// holding the forge's token does after main's run.
+	MainIssue bool `yaml:"main-issue"`
+	// KeptOnMain: before the run, main's run after a merge on this
+	// revision, checked out then left, as CI's job on main: the gates'
+	// findings kept by commit in a folder the run reads (--gates-kept).
+	KeptOnMain string `yaml:"kept-on-main"`
 }
 
 // gatesJob is CI's job running the gates alone, before the line.
@@ -330,6 +338,7 @@ type itemWant struct {
 	BodyLacks       texts               `yaml:"body-lacks"`
 	Comments        *int                `yaml:"comments"` // how many
 	Posted          *int                `yaml:"posted"`   // comments posted, each mailing the issue's followers; an edit posts none
+	Edits           *int                `yaml:"edits"`    // times its body was rewritten, as the forge's edit history counts them
 	CommentContains texts               `yaml:"comment-contains"`
 	CommentLacks    texts               `yaml:"comment-lacks"`
 	BlockedBy       *[]int              `yaml:"blocked-by"` // the forge's own relation
@@ -691,6 +700,46 @@ func runCase(t *testing.T, c *caseFile) []string {
 		out, _ := exec.Command("git", "-C", repo, "ls-remote", "origin", "refs/heads/"+b).Output()
 		before[b], _, _ = strings.Cut(string(out), "\t")
 	}
+	if rev := c.Run.KeptOnMain; rev != "" {
+		// CI's job on main after the merge, before the merge request's
+		// run: the revision checked out, the gates' findings kept.
+		kept := filepath.Join(work, "kept")
+		back, _ := exec.Command("git", "-C", repo, "rev-parse", "--abbrev-ref", "HEAD").Output()
+		at := strings.TrimSpace(string(back))
+		if at == "HEAD" {
+			back, _ = exec.Command("git", "-C", repo, "rev-parse", "HEAD").Output()
+			at = strings.TrimSpace(string(back))
+		}
+		if out, err := exec.Command("git", "-C", repo, "checkout", "-q", "--detach", rev).CombinedOutput(); err != nil {
+			return []string{fmt.Sprintf("kept-on-main: %s not checked out: %s", rev, out)}
+		}
+		onMain := exec.Command(engineBin, "route", "main", "--repo", repo, "--roles", roles, "--json", "--ai", "none", "--forge", "none", "--gates-kept", kept)
+		onMain.Dir, onMain.Env = repo, cmd.Env
+		if out, err := onMain.Output(); len(out) == 0 {
+			return []string{fmt.Sprintf("kept-on-main: main's run printed nothing: %v", err)}
+		}
+		if out, err := exec.Command("git", "-C", repo, "checkout", "-q", at).CombinedOutput(); err != nil {
+			return []string{fmt.Sprintf("kept-on-main: %s not checked out again: %s", at, out)}
+		}
+		cmd.Args = append(cmd.Args, "--gates-kept", kept)
+	}
+	// What main's run printed, kept in its issue as CI's job holding the
+	// forge's token does (apply --main): its findings added to the run's.
+	keepMain := func(printed []byte, into *result) []string {
+		file := filepath.Join(work, "main.json")
+		os.WriteFile(file, printed, 0o644)
+		apply := exec.Command(engineBin, "apply", "--main", file, "--repo", repo, "--forge", forgeSpec, "--json")
+		apply.Dir, apply.Env = repo, cmd.Env
+		var errOut bytes.Buffer
+		apply.Stderr = &errOut
+		out, err := apply.Output()
+		var kept result
+		if json.Unmarshal(out, &kept) != nil {
+			return []string{fmt.Sprintf("apply --main printed no result: %v\n%s", err, errOut.String())}
+		}
+		into.Findings = append(into.Findings, kept.Findings...)
+		return nil
+	}
 	if j := c.Run.GatesJob; j != nil {
 		// CI's job of the gates alone, before the line: its own variables,
 		// its result the file the line reads.
@@ -725,6 +774,11 @@ func runCase(t *testing.T, c *caseFile) []string {
 	if err := json.Unmarshal(stdout.Bytes(), &r); err != nil {
 		return []string{fmt.Sprintf("engine printed no result: %v\n%s", err, stderr.String())}
 	}
+	if c.Run.MainIssue {
+		if p := keepMain(stdout.Bytes(), &r); len(p) > 0 {
+			return p
+		}
+	}
 	if c.Run.Then == "again" {
 		// The same run once more, on the forge and the repository as the
 		// first left them, after a person's edits (between): what a run
@@ -746,6 +800,11 @@ func runCase(t *testing.T, c *caseFile) []string {
 		var r2 result
 		if err := json.Unmarshal(stdout.Bytes(), &r2); err != nil {
 			return []string{fmt.Sprintf("the second run printed no result: %v\n%s", err, stderr.String())}
+		}
+		if c.Run.MainIssue {
+			if p := keepMain(stdout.Bytes(), &r2); len(p) > 0 {
+				return p
+			}
 		}
 		r2.AgentCalls += r.AgentCalls
 		r2.Calls = append(r.Calls, r2.Calls...)
@@ -1689,6 +1748,9 @@ func compareItem(kind string, wm itemWant, got []map[string]any) []string {
 	}
 	if posted, _ := found["posted"].(float64); wm.Posted != nil && int(posted) != *wm.Posted {
 		p = append(p, fmt.Sprintf("forge: %s %v posted %d comments, want %d", kind, wm.ID, int(posted), *wm.Posted))
+	}
+	if edits, _ := found["edits"].([]any); wm.Edits != nil && len(edits) != *wm.Edits {
+		p = append(p, fmt.Sprintf("forge: %s %v's body was rewritten %d times, want %d", kind, wm.ID, len(edits), *wm.Edits))
 	}
 	held := func(text string) bool {
 		for _, c := range comments {

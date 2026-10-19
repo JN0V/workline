@@ -61,6 +61,10 @@ type Result struct {
 	// event no person waits on.
 	Seconds float64 `json:"seconds"`
 	Moment  *Moment `json:"moment,omitempty"`
+	// Event: the event the line ran; Main, on main after a merge, what
+	// it compared (MainEvent).
+	Event string   `json:"event,omitempty"`
+	Main  *MainRun `json:"main,omitempty"`
 }
 
 // Gates says how a line takes its gate steps: run there, by default. In
@@ -75,9 +79,29 @@ type Gates struct {
 	// From: the file holding the result a line given Only printed; each
 	// gate step's verdict is read there, never run.
 	From string
+	// Kept: the folder of the gates' findings kept by commit (ADR-0050):
+	// on main after a merge, HEAD's are written there, the next base; on
+	// a change, its merge base's are read there, when they stand for a
+	// run, rather than running the tools again.
+	Kept string
 
 	read *Result // From, once read
 	err  error
+}
+
+// MainEvent is the line after a merge, on the default branch's new tip
+// (ADR-0050): the merge request's gates first, every finding kept as the
+// next merge requests' base, then the event's own steps, each one.
+const MainEvent = "main"
+
+// MainRun is what main's run after a merge compared: main's tip before
+// it, "" when none is known, and the head; the commits between them, as
+// `git log --first-parent --oneline` says them, for whoever reads why
+// main changed.
+type MainRun struct {
+	Before  string   `json:"before,omitempty"`
+	Head    string   `json:"head"`
+	Commits []string `json:"commits,omitempty"`
 }
 
 // Run runs event's steps. base carries what every role run shares (repository,
@@ -93,7 +117,7 @@ func Run(event string, base engine.Options) *Result { return RunWith(event, base
 // RunWith is Run, its gate steps taken as gates says.
 func RunWith(event string, base engine.Options, gates *Gates) *Result {
 	start := time.Now()
-	res := &Result{Status: verdict.Pass, Steps: []Step{}}
+	res := &Result{Status: verdict.Pass, Steps: []Step{}, Event: event}
 	cfg, err := routing.Load(base.Repo)
 	// Each step's seconds, and the moment's budget (ADR-0050): said, never
 	// a block.
@@ -115,9 +139,21 @@ func RunWith(event string, base engine.Options, gates *Gates) *Result {
 		}
 		return f
 	}
-	steps, ok := cfg.Events[event]
+	steps, ok := stepsOf(cfg, event)
 	if !ok {
 		return failed(res, "routing", fmt.Sprintf("routing names no step for event %q", event))
+	}
+	// Main after a merge: its gates compare HEAD with main's tip before
+	// the merge, whoever made it; the engine's own commits there are
+	// checked as any other.
+	gatesRange := base.Inputs["range"]
+	if event == MainEvent {
+		res.Main, gatesRange = mainRun(base.Repo, gatesRange)
+		defer func() {
+			if gates.Kept != "" && slices.ContainsFunc(res.Steps, func(s Step) bool { return strings.HasPrefix(s.Name, "gate:") && s.From == "" }) {
+				res.Summary += "; the gates' findings kept as the next base"
+			}
+		}()
 	}
 	// What the engine committed does not wake the line on itself (routing
 	// spec) — a role's fix pushed to a merge request would be judged, and
@@ -128,7 +164,7 @@ func RunWith(event string, base engine.Options, gates *Gates) *Result {
 	// The committer alone checks every commit, workline's own too:
 	// identity, subject, secrets cost no agent and are never skipped.
 	own, whole, nothingElse := "", base.Inputs, false
-	if role, rng := beforeOwn(base.Repo, base.Inputs["range"]); role != "" {
+	if role, rng := beforeOwn(base.Repo, base.Inputs["range"]); role != "" && event != MainEvent {
 		inputs := maps.Clone(base.Inputs)
 		inputs["range"] = rng
 		base.Inputs = inputs
@@ -158,8 +194,8 @@ func RunWith(event string, base engine.Options, gates *Gates) *Result {
 	// The gates alone: each one runs, so that each is shown.
 	stopAtFirst := cfg.StopsAtFirst(event) && !gates.Only
 	if gates.Only {
-		res.Range = whole["range"]
-		res.Commits, _ = commitsOf(base.Repo, whole["range"])
+		res.Range = gatesRange
+		res.Commits, _ = commitsOf(base.Repo, gatesRange)
 	}
 	var notPassed []string // with every step run: those that did not pass, and how
 	considered := 0
@@ -178,7 +214,7 @@ func RunWith(event string, base engine.Options, gates *Gates) *Result {
 		}
 		considered++
 		if isGate {
-			s := gates.step(base.Repo, g, event, whole["range"])
+			s := gates.step(base.Repo, g, event, gatesRange)
 			res.Steps = append(res.Steps, s)
 			res.Findings = append(res.Findings, s.Gate.Findings...)
 			status = s.Status
@@ -329,7 +365,7 @@ func apartOn(rolesDir, name, event string) bool {
 func (g *Gates) step(repo, name, event, rng string) Step {
 	if g.From == "" {
 		start := time.Now()
-		v, added := runGate(repo, name, event, rng)
+		v, added := runGate(repo, name, event, rng, g.Kept)
 		return Step{Name: "gate:" + name, Status: v.Status, Gate: v, New: added, Seconds: Since(start)}
 	}
 	if g.read == nil && g.err == nil {
@@ -403,11 +439,96 @@ func readResult(file string) (*Result, error) {
 // range's base, and what it adds is said; on a schedule or a release,
 // every finding (ADR-0049). The range is the one given, workline's own
 // commits in it too: the tree checked out is what the gate's tools read.
-func runGate(repo, name, event, rng string) (*verdict.Verdict, *gate.Added) {
+//
+// On main after a merge, what the merge adds since main's tip before it
+// counts, and every finding is kept, by HEAD's commit, in the folder kept
+// names: the base of the merge requests based on it. With no commit
+// before it to compare with, every finding is said, none counted but a
+// check that did not work. On a change, kept is where the merge base's
+// findings are read, when main kept them (ADR-0050).
+func runGate(repo, name, event, rng, kept string) (*verdict.Verdict, *gate.Added) {
+	if event == MainEvent {
+		since := gitrange.Base(rng)
+		v, add := gate.RunWith(repo, name, gate.Options{Since: since, Kept: kept, Keep: true})
+		if since == "" {
+			nothingCounted(v)
+		}
+		return v, add
+	}
 	if since := gitrange.Base(rng); since != "" && event != "schedule" && event != "release" {
-		return gate.RunNew(repo, name, since)
+		return gate.RunWith(repo, name, gate.Options{Since: since, Kept: kept})
 	}
 	return gate.Run(repo, name), nil
+}
+
+// nothingCounted lowers a gate's findings over its thresholds to
+// warnings, its verdict then given by what is left: a check that did not
+// work still blocks (principle 12).
+func nothingCounted(v *verdict.Verdict) {
+	v.Status = verdict.Pass
+	for i, f := range v.Findings {
+		if f.Rule == "over-threshold" {
+			v.Findings[i].Level = "warn"
+		}
+		if v.Findings[i].Level == "" {
+			v.Status = verdict.Block
+		}
+	}
+	v.Summary += "; no commit before it to compare with: every finding said, none counted"
+}
+
+// mainRun is what main's run after a merge compares: main's tip before
+// it, the range's start when it is a commit here — not the zeros a
+// forge gives a branch's first push —, else HEAD's first parent; and the
+// range the gates run on, from it to HEAD, "" when there is none before.
+func mainRun(repo, rng string) (*MainRun, string) {
+	commit := func(rev string) string {
+		out, err := exec.Command("git", "-C", repo, "rev-parse", "--verify", "-q", rev+"^{commit}").Output()
+		if err != nil {
+			return ""
+		}
+		return strings.TrimSpace(string(out))
+	}
+	m := &MainRun{Head: commit("HEAD")}
+	if b := gitrange.Base(rng); strings.Trim(b, "0") != "" {
+		m.Before = commit(b)
+	}
+	if m.Before == "" {
+		m.Before = commit("HEAD^1")
+	}
+	if m.Before == "" || m.Head == "" {
+		return m, ""
+	}
+	if out, err := exec.Command("git", "-C", repo, "log", "--first-parent", "--format=%h %s", "-n", "50", m.Before+".."+m.Head).Output(); err == nil {
+		for _, l := range strings.Split(strings.TrimSpace(string(out)), "\n") {
+			if l != "" {
+				m.Commits = append(m.Commits, l)
+			}
+		}
+	}
+	return m, m.Before + ".." + m.Head
+}
+
+// stepsOf is an event's steps. On main after a merge, the merge
+// request's gates come first, each once: their findings there are the
+// next base, and two merge requests green alone may break main together.
+func stepsOf(cfg *routing.Config, event string) ([]string, bool) {
+	steps, ok := cfg.Events[event]
+	if event != MainEvent || !ok {
+		return steps, ok
+	}
+	var out []string
+	for _, s := range cfg.Events["merge-request"] {
+		if strings.HasPrefix(s, "gate:") && !slices.Contains(out, s) {
+			out = append(out, s)
+		}
+	}
+	for _, s := range steps {
+		if !slices.Contains(out, s) {
+			out = append(out, s)
+		}
+	}
+	return out, true
 }
 
 // holdsRelease says whether the role a step names has release duties (its
