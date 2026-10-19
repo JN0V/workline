@@ -505,6 +505,81 @@ func TestOneReviewAtATimePerMergeRequest(t *testing.T) {
 	}
 }
 
+// The judge says when no workflow reads the lenses it left apart, and the
+// run apart when no workflow applies what it proposed: each check runs as
+// its workflow holds it, in a folder of workflows with and without the
+// other, and never takes its own text for the other (ADR-0050).
+func TestWarnApartSaysWhatIsMissing(t *testing.T) {
+	type workflow struct {
+		Jobs map[string]struct {
+			Steps []struct {
+				Name string `yaml:"name"`
+				Run  string `yaml:"run"`
+			} `yaml:"steps"`
+		} `yaml:"jobs"`
+	}
+	script := func(file, step string) string {
+		data, err := os.ReadFile(file)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var wf workflow
+		if err := yaml.Unmarshal(data, &wf); err != nil {
+			t.Fatalf("%s: %v", file, err)
+		}
+		for _, job := range wf.Jobs {
+			for _, s := range job.Steps {
+				if s.Name == step {
+					return s.Run
+				}
+			}
+		}
+		t.Fatalf("%s: no step %q", file, step)
+		return ""
+	}
+	warns := func(run string, files map[string]string) bool {
+		dir := t.TempDir()
+		os.MkdirAll(filepath.Join(dir, ".github", "workflows"), 0o755)
+		for name, from := range files {
+			data, err := os.ReadFile(from)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if name == "old-apply" { // an apply copied before the run apart
+				name, data = "workline-apply.yml", []byte(strings.Replace(string(data), "workflows: [workline, workline warn]", "workflows: [workline]", 1))
+			}
+			os.WriteFile(filepath.Join(dir, ".github", "workflows", name), data, 0o644)
+		}
+		cmd := exec.Command("sh", "-ec", run)
+		cmd.Dir = dir
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			t.Fatalf("%s: %v\n%s", run, err, out)
+		}
+		return strings.Contains(string(out), "::warning")
+	}
+	for _, dir := range []string{"../../ci/github/", "../../.github/workflows/"} {
+		judge := script(dir+"workline.yml", "Whether anything reads the lenses that warn")
+		if !warns(judge, map[string]string{"workline.yml": dir + "workline.yml", "workline-apply.yml": dir + "workline-apply.yml"}) {
+			t.Errorf("%sworkline.yml: no warning with no workline-warn.yml beside it", dir)
+		}
+		if warns(judge, map[string]string{"workline.yml": dir + "workline.yml", "workline-warn.yml": dir + "workline-warn.yml"}) {
+			t.Errorf("%sworkline.yml: warns with workline-warn.yml beside it", dir)
+		}
+		apart := script(dir+"workline-warn.yml", "Whether anything applies what it proposed")
+		if !warns(apart, map[string]string{"workline-warn.yml": dir + "workline-warn.yml", "old-apply": dir + "workline-apply.yml"}) {
+			t.Errorf("%sworkline-warn.yml: no warning with an apply that does not name it", dir)
+		}
+		if warns(apart, map[string]string{"workline-warn.yml": dir + "workline-warn.yml", "workline-apply.yml": dir + "workline-apply.yml"}) {
+			t.Errorf("%sworkline-warn.yml: warns with this release's apply beside it", dir)
+		}
+		applies := script(dir+"workline.yml", "Whether anything applies what it proposed")
+		if warns(applies, map[string]string{"workline.yml": dir + "workline.yml", "workline-apply.yml": dir + "workline-apply.yml"}) {
+			t.Errorf("%sworkline.yml: says nothing applies, with this release's apply beside it", dir)
+		}
+	}
+}
+
 // What only warns runs apart from the verdict, never holding it (ADR-0050):
 // the judge leaves the reviewer's lenses that warn (--warn-apart), a run of
 // their own reads them (--warn-only), writing no verdict and uploading no

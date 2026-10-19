@@ -194,7 +194,7 @@ jobs:
       - name: Whether anything reads the lenses that warn
         if: steps.line.outputs.reviewed == 'true' && github.event.pull_request.head.repo.full_name == github.repository
         run: |
-          grep -qs -- '--warn-only' .github/workflows/*.yml ||
+          grep -qs -e '--warn-onl[y]' .github/workflows/*.yml ||
             echo "::warning title=workline::no workflow reads the reviewer's lenses that warn, which this run left apart; copy workline-warn.yml beside workline.yml (docs/ci-github.md)"
 
       # From a fork, this job has no right to comment: the report goes to
