@@ -167,6 +167,17 @@ proposals are applied as the judging job's, by a job of their own: the
 head's verdict is never theirs
 ([apart](../../roles/reviewer/docs/apart.md)).
 
+A draft asks no agent
+([ADR-0050](../adr/0050-each-act-has-its-moment-and-a-wait-budget.md#4-what-the-table-holds-to)):
+given `--input draft=true`, every step, a handoff too, runs as with no
+agent, told it waits for ready (the role contract's
+`WORKLINE_AI_WAITS`). The line's summary says the AI review waits for
+the merge request to be marked ready; a role whose agent would have
+judged says so too (`ai-waits-for-ready`, a warning), and the head's
+verdict is then a review to come, never a pass
+([merge policy](../merge-policy.md)). The rules and gates run as on any
+push. With no agent set, nothing waits; `draft=false` changes nothing.
+
 Where the merge request's code can change its judging job (GitHub), the
 job that applies runs from the base and reads only the run's proposals
 (`--from-merge-request <n> --head <sha>`): refused whole, a role not on
@@ -199,8 +210,9 @@ the move to `ready`, and its check; transitions are not logged yet.*
 The reviewer (ADR-0020) is in no shipped line: a project adds it to its
 `merge-request` line, by hand or with `workline init --review`, and runs
 it on a machine before a push with `workline review`. On a merge request it
-reviews the commits not reviewed yet, one lens a push; with `--input
-lenses=all`, every lens on the whole change, commits reviewed before too.
+reviews the commits not reviewed yet, one lens a push, none on a draft;
+with `--input lenses=all`, every lens on the whole change, commits
+reviewed before too.
 The templates pass it once, when the merge request becomes ready
 (#129): the event says so on GitHub (`opened` not a draft,
 `ready_for_review`); on GitLab, where marking ready starts no pipeline,

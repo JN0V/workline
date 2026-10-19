@@ -49,7 +49,7 @@ none of them:
 |---|---|
 | `WORKLINE_TASK` | `merge-request`, `garden`, `product-owner`, `release`, `sample`, `follow` (when the default branch moved: the release fix rebuilt on it, [ADR-0034](adr/0034-the-release-fix-follows-its-base.md); people's too, when set, [ADR-0041](adr/0041-workline-settles-its-own-lines-when-the-base-moves.md)), `import` |
 | `MR_IID`, `MR_SOURCE_BRANCH`, `MR_TARGET_BRANCH`, `MR_BASE_SHA` | for `merge-request`: from the merge request (`diff_refs.base_sha`); the pipeline's `ref` is the source branch; the tool cancels the one still judging an older head first ([#359](https://github.com/JN0V/workline/issues/359)) |
-| `MR_READY`, `MR_DRAFT` | for `merge-request`: `MR_DRAFT`, `true` or `false`, each run; `MR_READY` when it becomes ready (opened not a draft, or an `update` whose `changes.draft` went false): every reviewer lens once ([how](../roles/reviewer/docs/ready.md)) |
+| `MR_READY`, `MR_DRAFT` | for `merge-request`: `MR_DRAFT`, `true` or `false`, each run, `true` asking no agent; `MR_READY` when it becomes ready (opened not a draft, or an `update` whose `changes.draft` went false), a pipeline the template never gets: every reviewer lens once ([how](../roles/reviewer/docs/ready.md)) |
 | `WORKLINE_IMPORT` | for `import`: the file moved to issues, as committed on the pipeline's `ref` |
 
 A triggered pipeline has none of the `CI_MERGE_REQUEST_*` variables: the
@@ -111,7 +111,8 @@ step=$1; ai=none; sum="--summary workline-summary.md --summary workline-summary.
 if [ "$step" = judge ]; then                      # reads the forge, writes nothing
   [ -z "${WORKLINE_GITLAB_READ_TOKEN:-}" ] || export GITLAB_TOKEN="$WORKLINE_GITLAB_READ_TOKEN"
   if [ -n "${CLAUDE_CODE_OAUTH_TOKEN:-}" ]; then   # the agent: Claude here, one choice among others
-    npm install -g --silent @anthropic-ai/claude-code && ai=claude
+    if [ "${MR_DRAFT:-}" = true ]; then ai=claude  # a draft asks none: nothing to install
+    else npm install -g --silent @anthropic-ai/claude-code && ai=claude; fi
   fi
 else                                              # writes, with no AI key
   export GITLAB_TOKEN="$WORKLINE_GITLAB_TOKEN"; unset CLAUDE_CODE_OAUTH_TOKEN ANTHROPIC_API_KEY

@@ -109,7 +109,8 @@ and `apply`, with the App, commits the fix to its branch,
   the reviewer's findings: a conversation each to resolve
   ([#412](https://github.com/JN0V/workline/issues/412)).
 - `judge` runs on a pull request opened, pushed to, reopened, and marked
-  ready (`ready_for_review`): opened ready or marked ready, the reviewer
+  ready (`ready_for_review`). A draft asks no agent, `workline/verdict`
+  pending until it is ready; opened ready or marked ready, the reviewer
   reads every lens once, on the whole change
   ([more](../roles/reviewer/docs/ready.md)).
 - **One `judge` per pull request at a time** (`concurrency`): a push

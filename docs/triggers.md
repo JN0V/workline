@@ -63,8 +63,9 @@ workline route merge-request --ai "$ai" --no-apply --push-to-merge-request \
 workline apply --line line.json          # second job: commits the doc fixes to the branch
 ```
 
-`--input draft=<true|false>`, on each run, has the reviewer read every lens
-once, on the whole change, on a merge request no draft its record does not
+`--input draft=<true|false>`, on each run: `true` asks no agent of any
+step, the AI review waiting for ready; `false` has the reviewer read every
+lens once, on the whole change, on a merge request its record does not
 say every lens read; `--input lenses=all` asks it outright, when it becomes
 ready, as the templates do ([how](../roles/reviewer/docs/ready.md)).
 

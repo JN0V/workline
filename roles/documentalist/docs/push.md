@@ -171,3 +171,8 @@ comment each push:
 - the docs due later are listed apart;
 - with none left, the comment says so;
 - none is opened on a merge request that never had one.
+
+On a draft, an agent set, the engine asks it nothing
+([ADR-0050](../../../docs/adr/0050-each-act-has-its-moment-and-a-wait-budget.md)):
+the docs the change made suspect are counted, and said judged once it
+is marked ready (`ai-waits-for-ready`); no checklist asks a person to.

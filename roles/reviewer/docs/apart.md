@@ -24,7 +24,8 @@ beside the verdict's, and posts once it answered.
 
 - **The lenses a push takes** are the same as in one run: one a push, in
   turn; every lens once when the merge request becomes ready
-  ([the run on ready](ready.md)).
+  ([the run on ready](ready.md)); none on a draft, in either run: the
+  templates install no agent there.
 - **The verdict's run** (`route --warn-apart`) asks, of those, the lenses
   that block — on workline itself, `ai-findings: {correctness: block}` —
   and their judges.

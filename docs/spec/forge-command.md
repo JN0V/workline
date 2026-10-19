@@ -93,7 +93,7 @@ comment is not posted twice. A target is `{"kind": "issue" | "merge-request",
 | `auto-merge` | `id`, `branch`, `head`, `on` | turns the forge's own auto-merge on for the merge request at `head`, or off; off when off changes nothing | `{merged}` — true when the forge merged it at once, its rules met already; an error answered: said, nothing turned on |
 | `guarded` | `base` | whether a push after a person's yes is held until `follow` takes the yes back (ADR-0042) | `{why}` — empty when held; an error answered: said, nothing turned on |
 | `accept` | `head`, `ok`, `why` | marks the head accepted or not, where the forge needs it to hold a yes on that head (GitHub's required status); one that needs none does nothing | `{}` |
-| `keep-verdict` | `head`, `class`, `why` | keeps the line's verdict on the head — `class` pass, held, short or red — where only this token writes it | `{}` |
+| `keep-verdict` | `head`, `class`, `why` | keeps the line's verdict on the head — `class` pass, held, short, waits (a draft's review to come, ADR-0050) or red — where only this token writes it | `{}` |
 | `verdict` | `head` | the verdict this token kept on the head | `{class, why}`; `{}` when none |
 
 Arguments not listed are not sent; an operation the command does not know

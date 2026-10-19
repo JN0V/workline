@@ -374,7 +374,9 @@ run from `out/run.yaml`, with the evidence of the original run, without calling
 the agent again.
 
 Scripts receive `WORKLINE_RUN_DIR`, `WORKLINE_EVENT`, `WORKLINE_AI` (the agent
-name or `none`), `WORKLINE_ROLE`, `WORKLINE_BIN` (the engine running them,
+name or `none`), `WORKLINE_AI_WAITS` (`ready` on a draft: given the input
+`draft=true`, the engine sets the agent it would give aside, `WORKLINE_AI`
+`none`, and the result says so, `ai-waits`, ADR-0050), `WORKLINE_ROLE`, `WORKLINE_BIN` (the engine running them,
 which the shipped roles call for their built-in steps), `WORKLINE_ROLES_DIR`
 (the folder the role was taken from, where its siblings are),
 `WORKLINE_FORGE` (the

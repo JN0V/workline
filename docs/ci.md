@@ -43,6 +43,9 @@ then one that applies, with the write token and no AI key
   in a job of their own beside the judge, posting in a comment of their
   own; the head's verdict waits only for what can block
   ([apart](../roles/reviewer/docs/apart.md)).
+- **A draft asks no agent**: rules and gates only, the AI review once
+  it is marked ready; a draft never merges
+  ([the reviewer on a draft](../roles/reviewer/docs/ready.md)).
 
 - **A judge that fails still hands over**: the applying job runs whatever
   the judge's outcome, and the pipeline fails by the judge's. It applies
