@@ -53,17 +53,23 @@ jobs:
       - uses: actions/checkout@v4
         if: env.HAS_CLAUDE == 'true'
         with: {fetch-depth: 0, ref: "${{ github.event.pull_request.head.sha }}"}
+      # The lenses that warn are the reviewer's: with no reviewer in the
+      # project's config, nothing reads apart, nothing is installed.
+      - name: Whether anything reads apart
+        id: any
+        if: env.HAS_CLAUDE == 'true'
+        run: if grep -qsw reviewer .workline/config.yaml; then echo "any=true" >> "$GITHUB_OUTPUT"; else echo "no reviewer in .workline/config.yaml, nothing reads apart"; fi
       # The engine built from this commit, taken from the cache when a job
       # built it first, for no job after; and the agent.
       - uses: ./.github/actions/engine
-        if: env.HAS_CLAUDE == 'true'
+        if: steps.any.outputs.any == 'true'
         with: {keep: "false"}
       - name: Claude
-        if: env.HAS_CLAUDE == 'true'
+        if: steps.any.outputs.any == 'true'
         run: npm install -g @anthropic-ai/claude-code
       - name: What only warns, apart from the verdict (proposals only)
         id: line
-        if: env.HAS_CLAUDE == 'true'
+        if: steps.any.outputs.any == 'true'
         # As workline.yml's judge: every lens once when opened or marked
         # ready, the draft state on every run (ADR-0020, #359).
         env:
@@ -97,7 +103,7 @@ jobs:
       # Never the head's verdict: what only warns fails no check. An agent
       # out of reach (3) is said; only the engine's own error fails the job.
       - name: Said
-        if: env.HAS_CLAUDE == 'true'
+        if: steps.any.outputs.any == 'true'
         env: {STATUS: "${{ steps.line.outputs.status }}"}
         run: |
           case "$STATUS" in
