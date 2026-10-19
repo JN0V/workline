@@ -180,15 +180,10 @@ func Pre(runDir, repo string) int {
 	// What the commit carries is checked before its message: no rewrite
 	// fixes a secret, so the agent is not asked. Nor is it for one in the
 	// message: the message would carry it to the agent.
-	secrets, err := Secrets(repo, "")
+	secrets, err := scan(repo, "", []Message{{Text: msg}})
 	if err != nil {
 		return fail(err)
 	}
-	said, err := MessageLeaks(repo, []Message{{Text: msg}})
-	if err != nil {
-		return fail(err)
-	}
-	secrets = append(secrets, said...)
 	who, err := Identity(repo, "", s)
 	if err != nil {
 		return fail(err)
@@ -497,11 +492,7 @@ func checkRange(runDir, repo, rng string) int {
 			findings = append(findings, x)
 		}
 	}
-	secrets, err := Secrets(repo, rng)
-	if err != nil {
-		return fail(err)
-	}
-	said, err := MessageLeaks(repo, messages)
+	secrets, err := scan(repo, rng, messages)
 	if err != nil {
 		return fail(err)
 	}
@@ -509,7 +500,7 @@ func checkRange(runDir, repo, rng string) int {
 	if err != nil {
 		return fail(err)
 	}
-	secrets = append(append(secrets, said...), who...)
+	secrets = append(secrets, who...)
 	v := verdict.Verdict{Status: verdict.Pass, Summary: "every commit message is clear"}
 	if len(findings) > 0 {
 		v = verdict.Verdict{Status: verdict.Block, Summary: "some commit messages need rewriting (git rebase -i)", Findings: findings}
