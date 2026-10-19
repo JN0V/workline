@@ -1073,6 +1073,69 @@ func TestGardeningTendsItsMergeRequests(t *testing.T) {
 	}
 }
 
+// The release pull request's docs are judged at night, with the gardening
+// (ADR-0050, §7): its judging job runs the schedule line with a forge that
+// lists the open merge requests and --open-merge-request, which is when
+// the line takes up the release; on GitHub, the job that applies names
+// the App, so that the release's fix is the App's pull request only when
+// the App alone pushed to the release's branch, as for a pull request's
+// own run (workline-apply.yml).
+func TestGardeningJudgesTheReleaseAtNight(t *testing.T) {
+	for _, f := range []string{"../../ci/github/workline-gardening.yml", "../../.github/workflows/workline-gardening.yml"} {
+		data, err := os.ReadFile(f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var wf struct {
+			Jobs map[string]struct {
+				Permissions map[string]string `yaml:"permissions"`
+				Steps       []struct {
+					Run string            `yaml:"run"`
+					Env map[string]string `yaml:"env"`
+				} `yaml:"steps"`
+			} `yaml:"jobs"`
+		}
+		if err := yaml.Unmarshal(data, &wf); err != nil {
+			t.Fatal(err)
+		}
+		judged, applied := false, false
+		for name, job := range wf.Jobs {
+			for _, s := range job.Steps {
+				if strings.Contains(s.Run, "workline route schedule") {
+					judged = true
+					if !strings.Contains(s.Run, "--forge github") || !strings.Contains(s.Run, "--open-merge-request") || job.Permissions["pull-requests"] != "read" {
+						t.Errorf("%s, job %s: the schedule line does not list the open pull requests (--forge github, --open-merge-request, pull-requests: read): no release is judged at night", f, name)
+					}
+				}
+				if strings.Contains(s.Run, "workline apply") {
+					applied = true
+					if !strings.Contains(s.Env["WORKLINE_APP"], "steps.app.outputs.app-slug") {
+						t.Errorf("%s, job %s: applies with no WORKLINE_APP: who pushed to the release's branch is not checked before its fix is opened as the App's", f, name)
+					}
+				}
+			}
+		}
+		if !judged || !applied {
+			t.Errorf("%s: no job runs the schedule line, or none applies it", f)
+		}
+	}
+	data, err := os.ReadFile("../../ci/gitlab/workline.gitlab-ci.yml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var top map[string]any
+	if err := yaml.Unmarshal(data, &top); err != nil {
+		t.Fatal(err)
+	}
+	garden, _ := top[".workline:garden"].(map[string]any)
+	job, _ := top["workline:garden:judge"].(map[string]any)
+	script := fmt.Sprint(job["script"])
+	if !strings.Contains(fmt.Sprint(garden["before_script"]), "export GITLAB_TOKEN=$WORKLINE_GITLAB_TOKEN") ||
+		!strings.Contains(script, "--forge gitlab") || !strings.Contains(script, "--open-merge-request") {
+		t.Errorf("workline:garden:judge does not list the open merge requests with the project's token: no release is judged at night: %s", script)
+	}
+}
+
 // The merge policy (ADR-0042) acts after each judge, its verdict kept by a
 // job no newer run cancels — in no concurrency group, where `follow` is in
 // one —, and when a label is put or taken off — never in the workflow

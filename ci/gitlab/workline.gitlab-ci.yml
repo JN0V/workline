@@ -306,7 +306,13 @@ workline:merge:
 # under are rebuilt on it, or closed when nothing is left to merge
 # (ADR-0034). WORKLINE_GITLAB_TOKEN also
 # needs the `write_repository` scope, to push the branch. Without AI, only
-# derived blocks are regenerated.
+# derived blocks are regenerated. A release tool's merge request open
+# (releaser-pleaser's), the documentalist first judges its docs due, on its
+# head, and proposes their fix in a merge request of its own,
+# workline/documentalist/release, opened by the project's bot only if the
+# bot alone pushed to the release's branch; on each of its pipelines, no
+# agent judges them and they hold the release (ADR-0050). Play the
+# schedule for the release sooner.
 .workline:garden:
   image: $WORKLINE_IMAGE:$WORKLINE_VERSION
   variables: {GIT_DEPTH: 0}         # the whole history, as .workline
