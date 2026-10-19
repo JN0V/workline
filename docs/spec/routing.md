@@ -236,6 +236,39 @@ head's verdict and the person's yes stay the merge request's
 so is `--warn-only`, and any value but `true` or `false`
 ([a merge queue or train](../merge-queue.md)).
 
+### Each step's seconds, a moment's budget
+
+[ADR-0050](../adr/0050-each-act-has-its-moment-and-a-wait-budget.md#1-a-wait-budget-per-moment):
+a line's result says each step's `seconds`, its own, and the `moment`
+it is part of: `name`, `budget`, `seconds`, `over`, and then the `step`
+that took the most. Its summary says them in one line after the steps,
+`66 s in all — committer 0.5 s, documentalist 0.8 s, reviewer 64 s
+(lenses 40 s, judges 20 s)`: the agents' share of a step, the
+reviewer's lenses, the committer's rewrite, the judges. A moment over
+its budget says so once more, naming that step; it never blocks.
+
+| Moment | The run | Budget |
+|---|---|---|
+| `commit` | the `commit-msg` line | 1 s |
+| `commit-rewrite` | the same, an agent asked: the committer's rewrite | 30 s |
+| `push` | the `pre-push` hook, every range pushed together | 5 s |
+| `first-result` | `merge-request --gates-only` | 1 min |
+| `verdict` | `merge-request`; the gates' job's seconds added, their verdicts read from it (`--gates-from`) | 3 min |
+| `ready-review` | `merge-request --warn-only`: the lenses that warn, posted when done | 10 min |
+| `queue` | `merge-request --input queue=true`, a merge queue's or train's run: what workline adds to it | 1 min |
+
+- Any other event has none: main, the night and the release wait for
+  nobody.
+- The line measures itself: a runner's setup and queue, and the job
+  that applies, are not in it.
+- A project sets its own in `routing.budgets`, in seconds, finite and
+  above 0; a moment not in this table is refused (`config-invalid`).
+- At a commit, the hook says the seconds with what it says already, a
+  refusal or a rewrite, and a commit over its budget even when it says
+  nothing else; at a push, each time it checks commits, a stop
+  included (a branch deleted checks none). Each agent call's seconds
+  stay in its run's `out/calls.jsonl`.
+
 ## Where state lives
 
 On a forge, the state of a work item is a label (`workline:ready`,

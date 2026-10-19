@@ -1,6 +1,6 @@
 # ADR-0050: Each act has its moment, and each moment a wait budget
 
-- **Status:** accepted; steps 1 to 8 built ([the build plan](#build-plan))
+- **Status:** accepted; steps 1 to 8, and 11, built ([the build plan](#build-plan))
 - **Date:** 2026-10-19
 - **Decided by:** the maintainer, on 2026-10-19: a panel's direction,
   validated in broad lines, corrected: first the time a developer waits
@@ -193,7 +193,7 @@ By the wait removed each time, then tokens:
 8. A merge queue's or train's run: gates only: the queue's turn. Built ([#539](https://github.com/JN0V/workline/pull/539)): given `queue=true`, the line runs its gates alone on the merged result, names the steps it left to the head's verdict, and writes no verdict ([a merge queue or train](../merge-queue.md)). On GitHub, `merge_group` runs `gates` and `judge`, the check the queue requires; with the merge policy, the App sets `workline/accepted` on the group's commit as the head of the pull request it ends with holds it. On GitLab, a merge train's pipeline runs `workline:gates` alone; a merged results pipeline stays the merge request's own, every job in it. Measured on an organisation's sandbox, two pull requests each green alone, red together: each group's run 24–25 s, the gates 8 s; the second group blocked, its pull request out of the queue. Not tried: GitLab's merge trains (Premium), the App's job (the yes set from a clone instead).
 9. Main after a merge: whole-repository findings once, an issue; gates kept as the base: no wait, less noise.
 10. The night: a release dry run; a release job on GitLab: no wait.
-11. Each step's seconds in the summary, a moment over its budget said: no wait, it measures the rest.
+11. Each step's seconds in the summary, a moment over its budget said: no wait, it measures the rest. Built ([#538](https://github.com/JN0V/workline/pull/538)): a line's result and summary say each step's seconds, the agents' share of them (the reviewer's lenses, the committer's rewrite, the judges), the line's, and its moment: §1's budgets, shipped in `routing.default.yaml`, a project's own in `routing.budgets`. Over its budget, one line names the step that took the most, never a block; the hooks say it in the terminal ([routing](../spec/routing.md#each-steps-seconds-a-moments-budget)). Measured on its own pull request, opened ready: the verdict's line 30 s (committer 0.6 s, documentalist 8.1 s, reviewer 22 s, its lens 21 s), the verdict 96 s after the push; the run apart 51 s (lenses 27 s, judges 21 s). On a copy of this repository, the machine loaded by other work (load average 13 to 30 on 8 cores): a commit 2.1 to 5.3 s, over its 1 s, said, the committer named; a rewrite by a scripted agent taking 3 s, 8.1 to 13 s in all, within its 30 s; a push of 2 commits 3.6 s, within its 5 s, and 9.4 s, over, the committer 7.1 s of it. The queue's run has its minute too (`queue`).
 12. SonarQube's read at these moments ([#203]): adds a wait, capped at 5 minutes, beside the first result.
 13. doctor's checks of §6: no wait.
 

@@ -31,4 +31,5 @@ expect:
   steps: ["gate:merge"]
   findings: [{rule: over-threshold, where: lint, message: "1 new error finding, at most 0 allowed (3 there before it"}]
   summary: "a merge queue's or train's run: the gates alone, on the merged result; not run, the head's verdict holds them: committer, documentalist, reviewer"
-  summary-file: ["a merge queue's or train's run: the gates alone, on the merged result"]
+  summary-file: ["a merge queue's or train's run: the gates alone, on the merged result", "- **seconds**: ", " s in all — gate:merge "]
+  moment: {name: queue, budget: 60}

@@ -212,14 +212,14 @@ comment of a reviewer that blocks (`artifacts: when: always`,
 ## Outputs
 
 - **stdout**: the verdict; with `--json`, status, summary, findings, each
-  agent call with its model and tokens, and for a line its steps and the
-  runs `pending` for `apply`.
+  agent call with its model and tokens, and for a line its steps, their
+  seconds, its moment and the runs `pending` for `apply`.
 - **Reports**: `--sarif <file>` (GitHub code scanning), `--code-quality
   <file>` (GitLab: `artifacts: reports: codequality`, shown on the merge
   request, every tier). The paths are yours to choose.
 - **Job summary**: `--summary <file>` (`route`, `run-role`, `apply`,
-  `sample`): the verdict, each step's verdict and findings, what was
-  applied and what waits to be, in Markdown, or HTML for a `.html` file,
+  `sample`): the verdict, each step's verdict, findings and seconds, what
+  was applied and what waits to be, in Markdown, or HTML for a `.html` file,
   added to the file ([ADR-0035](adr/0035-the-engine-writes-the-jobs-summary.md)).
   GitHub: `$GITHUB_STEP_SUMMARY`; GitLab: an artifact the job's page links
   ([ci.md](ci.md#what-a-job-shows)).

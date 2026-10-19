@@ -1,0 +1,21 @@
+case: reviewer/run-apart-says-its-lenses-seconds
+about: "The run apart, the lenses that warn, is posted when done: its moment is the review apart, 10 min by default (ADR-0050). Its summary says the reviewer's seconds, the lenses' in them; within its budget, nothing more."
+given:
+  repo: reviewed
+  setup:
+    - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"
+  config:
+    routing: {events: {merge-request: [reviewer]}}
+    roles: {reviewer: {settings: {ai-findings: {correctness: block}}}}
+  forge:
+    merge-requests:
+      - id: 5
+        labels: []
+        comments: []
+run: {route: merge-request, warn-only: true, input: {range: main..HEAD, lenses: all}, target: {merge-request: 5}, ai: "fake:review-nothing", summary: true}
+expect:
+  status: pass
+  steps: [reviewer]
+  moment: {name: ready-review, budget: 600, over: false}
+  summary-file: ["- **seconds**: ", " s in all — reviewer ", " s (lenses "]
+  summary-lacks: ["over its budget"]

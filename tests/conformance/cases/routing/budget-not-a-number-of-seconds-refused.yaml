@@ -1,0 +1,10 @@
+case: routing/budget-not-a-number-of-seconds-refused
+about: "A moment's budget is a number of seconds above 0 (ADR-0050): a project's 0 is refused, loudly, as any setting the engine cannot trust; the line runs nothing."
+given:
+  repo: basic
+  config: {routing: {budgets: {verdict: 0}}}
+run: {route: merge-request, ai: none}
+expect:
+  status: block
+  steps: []
+  findings: [{rule: config-invalid, message: "routing.budgets.verdict is 0: a budget is a number of seconds above 0"}]

@@ -1,0 +1,17 @@
+case: committer/hook-says-a-commit-over-its-budget
+about: "A commit over its budget (ADR-0050), a project's 1 s with the rewrite, the agent taking 1.5 s: the hook says it once, naming the committer and its rewrite's seconds. The commit goes on all the same."
+given:
+  repo: basic
+  setup: ["printf 'fix: AC-3\\n' > .git/COMMIT_EDITMSG"]
+  config: {routing: {budgets: {commit-rewrite: 1}}}
+  env:
+    WORKLINE_AI: "cmd:sleep 1.5; echo '- commit-message: \"fix(parser): stop crashing on an empty input file\"'"
+run: {cli: [hook, commit-msg, .git/COMMIT_EDITMSG]}
+expect:
+  exit: 0
+  stderr:
+    - "workline: over its budget: the commit, with the agent's rewrite, took "
+    - ", over its budget of 1 s (ADR-0050); the step that took the most: committer, "
+    - " s (rewrite "
+  files:
+    .git/COMMIT_EDITMSG: {contains: "fix(parser): stop crashing on an empty input file"}

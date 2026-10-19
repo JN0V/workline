@@ -104,9 +104,9 @@ In the repository:
 
 ## What a job shows
 
-Each job's summary — the verdict, each step's verdict and findings, the
-agent's calls, what was applied and what waits to be — is written by the
-engine (`--summary`,
+Each job's summary — the verdict, each step's verdict, findings and
+seconds, the agent's calls, what was applied and what waits to be — is
+written by the engine (`--summary`,
 [ADR-0035](adr/0035-the-engine-writes-the-jobs-summary.md)), for a person
 who reads neither the log nor `line.json`:
 

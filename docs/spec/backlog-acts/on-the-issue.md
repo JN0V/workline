@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog/backlog.go, internal/backlog/ledger.go, internal/backlog/say.go, internal/report/summary.go, internal/engine/backlog.go]
 status: draft
-checked: fac02675
+checked: 2a1a9d41
 verified: agent:claude-code
 ---
 # On the issue

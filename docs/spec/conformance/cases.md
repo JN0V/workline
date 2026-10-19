@@ -62,7 +62,7 @@ saying so.
 - `cli: [<argument>...]` instead of `role` — `workline` with these
   arguments, as typed, in the repository, with `given.env`: help, misuse, a
   hook (`[hook, commit-msg, .git/COMMIT_EDITMSG]`); checked by `exit`,
-  `stdout`, `stderr`, `files`, and `summary-file` for the
+  `stdout`, `stderr`, `stderr-lacks`, `files`, and `summary-file` for the
   `workline-summary.md` its arguments name;
 
 ## Run, around the role
@@ -200,7 +200,11 @@ saying so.
   fingerprint of the first run's Code Quality report in the second's.
 - `summary-file` / `summary-html` — with `summary`, texts the Markdown and
   the HTML summary must hold, in this order; with `cli`, the Markdown in
-  `workline-summary.md`.
+  `workline-summary.md`; `summary-lacks`, texts the Markdown must not hold.
+- `moment` — the line's moment
+  ([ADR-0050](../../adr/0050-each-act-has-its-moment-and-a-wait-budget.md)),
+  each field given checked: `name`, `budget` in seconds, `over`, and the
+  `step` named; every step and the line say their seconds.
 - `refused-kept` — how many refused answers the run folders keep.
 - `calls-kept` — how many agent calls the run folders record.
 - `run-files` — files of the run folder (`out/claims.yaml`), each holding a
@@ -208,4 +212,4 @@ saying so.
 - `files` — paths that must exist (`exists`, or not), or contain a text or
   each of a list of texts (`contains`), or lack them (`lacks`), afterwards.
 - `exit` / `stdout` / `stderr` — with `cli`: the exit code, and texts
-  printed on each stream.
+  printed on each stream; `stderr-lacks`, texts not printed there.
