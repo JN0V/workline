@@ -112,6 +112,14 @@ type Merger interface {
 	Verdict(head string) (class, why string, err error)
 }
 
+// QueueGuard is a forge whose merge queue tests a group's commit against
+// the checks its base requires, the yes Accept sets among them (GitHub,
+// ADR-0050). AcceptedOn reads that yes back on a head, this token's only:
+// whether it holds one, and why not when Accept said.
+type QueueGuard interface {
+	AcceptedOn(head string) (ok bool, why string, err error)
+}
+
 // The statuses workline sets on a head on GitHub, by its App's token: the
 // line's verdict, and the yes the merge policy holds (ADR-0042).
 const (

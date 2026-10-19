@@ -1,6 +1,6 @@
 ---
 sources: [internal/doctor/doctor.go, internal/doctor/conversations.go, internal/hooks/hooks.go, cmd/workline/main.go, cmd/workline/cli.go, internal/forge/local.go]
-checked: ef8ebda9
+checked: 29e55a0b
 verified: agent:claude-code
 ---
 # Troubleshooting

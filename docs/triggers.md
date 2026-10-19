@@ -69,6 +69,10 @@ lens once, on the whole change, on a merge request its record does not
 say every lens read; `--input lenses=all` asks it outright, when it becomes
 ready, as the templates do ([how](../roles/reviewer/docs/ready.md)).
 
+In a merge queue or train, the same line with `--input queue=true` and
+the merged result's range runs the gates alone, no agent, no verdict
+written ([the commands](merge-queue.md#the-commands-for-another-ci)).
+
 The templates also read the reviewer's lenses that only warn apart from
 the verdict: `--warn-apart` on the line above, and beside it a job of
 their own, its apply after it ([apart](../roles/reviewer/docs/apart.md)):

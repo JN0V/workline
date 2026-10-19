@@ -217,6 +217,19 @@ push. With no agent set, nothing waits; `draft=false` changes nothing.
 - **Applied apart** (`apply`): only on the head judged, checked out
   again; a branch moved on applies nothing (`moved-on`); the App's fix
   only when the App alone pushed to the release branch.
+### A merge queue's or train's run: the gates alone
+
+[ADR-0050](../adr/0050-each-act-has-its-moment-and-a-wait-budget.md#4-what-the-table-holds-to):
+given `--input queue=true`, the line runs the event's gate steps alone,
+on the merged result its range ends with, whoever made its last commit;
+no role runs, so no agent is asked. With `--gates-from`, it reads their
+verdicts, as on a merge request. The line's summary says it is a queue's
+or train's run, and names the steps it left, their verdict the head's;
+with no gate, that nothing was checked. A `--verdict` is refused: the
+head's verdict and the person's yes stay the merge request's
+([ADR-0042](../adr/0042-the-engine-merges-by-the-projects-policy.md));
+so is `--warn-only`, and any value but `true` or `false`
+([a merge queue or train](../merge-queue.md)).
 
 ## Where state lives
 

@@ -158,6 +158,18 @@ func (f *Fake) Accept(head string, ok bool, why string) error {
 	return f.setStatus(head, Accepted, map[bool]string{true: "success", false: "failure"}[ok], why)
 }
 
+// AcceptedOn reads back the yes the token set on head, a revision here.
+func (f *Fake) AcceptedOn(head string) (bool, string, error) {
+	st, ok, err := f.ownStatus(f.resolve(head), Accepted)
+	switch {
+	case err != nil || !ok:
+		return false, "", err
+	case st.State == "success":
+		return true, "", nil
+	}
+	return false, st.Description, nil
+}
+
 // AutoMerge turns auto-merge on, now, as workline's token's user, or off;
 // one Clean is merged at once instead. A draft is refused, as GitHub
 // refuses it.

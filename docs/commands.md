@@ -38,6 +38,9 @@ A release tool's merge request: on `schedule` with a forge and
 `--open-merge-request`, its docs are judged first, on its head;
 `route release --target merge-request:<n>` does it now, its head checked
 out for the run ([more](../roles/documentalist/docs/push.md#a-release-tools-pull-request)).
+With `--input queue=true`, a merge queue's or train's run: the gates
+alone, on the merged result, the steps left named; `--verdict` and
+`--warn-only` refused ([a merge queue or train](merge-queue.md)).
 
 ### workline apply
 
@@ -236,4 +239,7 @@ Run when the default branch moves (CI's `follow` job,
   too —, the first in line brought up to date.
 - Options: `--base` (default: the branch checked out), `--forge`,
   `--repo`, `--json`, `--summary`; `--verdict <file>`, a head's verdict
-  `route --verdict` wrote, kept first (`--verdict-only`: nothing else).
+  `route --verdict` wrote, kept first (`--verdict-only`: nothing else);
+  `--merge-group <branch> --head <commit>`, with `merge:`, the yes of the
+  head a merge queue's group ends with set on the group's commit, and
+  nothing else ([a merge queue](merge-queue.md)).
