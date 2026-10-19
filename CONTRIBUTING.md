@@ -1,6 +1,6 @@
 <!-- workline
 sources: [cmd/workline, tests/conformance/pending.txt]
-checked: edef6de7
+checked: b077b410
 judged: 010367e
 verified: agent:claude-code
 -->
