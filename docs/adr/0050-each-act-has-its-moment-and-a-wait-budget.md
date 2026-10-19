@@ -1,12 +1,14 @@
 # ADR-0050: Each act has its moment, and each moment a wait budget
 
-- **Status:** accepted; step 1 built ([the build plan](#build-plan))
+- **Status:** accepted; steps 1 and 2 built ([the build plan](#build-plan))
 - **Date:** 2026-10-19
 - **Decided by:** the maintainer, on 2026-10-19: a panel's direction,
   validated in broad lines, corrected: first the time a developer waits
   at each moment, as a slow hook or pipeline makes a developer skip
   everything (`--no-verify`, a red check ignored); tokens second. The
-  same day, the two choices left open ([§7](#7-decided-by-the-maintainer-on-2026-10-19)).
+  same day, the two choices left open ([§7](#7-decided-by-the-maintainer-on-2026-10-19)),
+  and later that day the second changed: the rewrite at a commit on by
+  default, capped at 30 s ([§7](#7-decided-by-the-maintainer-on-2026-10-19)).
 - **Builds on:** [ADR-0010], [ADR-0011] (the review is on the merge
   request), [ADR-0013] (what was judged is not asked again),
   [ADR-0017], [ADR-0020], [ADR-0042] (the engine merges on the head's
@@ -39,7 +41,7 @@ Measured on 2026-10-19 ([moments.md](../research/moments.md)):
 
 | Moment | Who waits | Budget, p90 | Today |
 |---|---|---|---|
-| Commit | the developer, in the terminal | 1 s; 30 s when a project turns the agent's rewrite on (§7) | 0.9 s; 12–78.5 s with the rewrite |
+| Commit | the developer, in the terminal | 1 s; 30 s when the agent rewrites a refused message (§7) | 0.9 s; 12–78.5 s with the rewrite |
 | Push (opt-in) | the developer, in the terminal | 5 s, no agent | 6 s |
 | First result on a merge request's push | the author | 1 min | 6–12 s; 34 s with a real linter |
 | The head's verdict, `workline/verdict` | the author, the merge policy | 3 min | 154 s |
@@ -72,8 +74,8 @@ Never silently dropped. In this order:
 4. **What is about the repository, not the change, moves** to main
    after the merge, or to the night: a warning, then an issue.
 5. **What a hook cannot do in its budget moves to the merge request**,
-   which runs it anyway. A hook calls no agent by default; the rewrite
-   at a commit is opt-in (§7).
+   which runs it anyway. A hook calls an agent only for a refused
+   message, the rewrite at a commit, capped at 30 s (§7).
 
 ### 3. The moment table
 
@@ -148,7 +150,8 @@ the team's own pipeline scans. No tokens.
   release pull request's count of docs due at each main move.
 - **Removed**: a patch judged twice; the engine built in every job; the
   release pull request's AI at each main move, now at night; the
-  whole-repository findings at each push; a hook's agent unasked.
+  whole-repository findings at each push; a hook's agent with no cap
+  on its wait.
 
 ### 7. Decided by the maintainer on 2026-10-19
 
@@ -157,18 +160,27 @@ the team's own pipeline scans. No tokens.
   docs due stays, and holds the release. Refused: once a person accepts
   it, the panel's, since a doc fix would then change the head after the
   person's yes ([ADR-0042]).
-- **The agent's rewrite at a commit is opt-in.** By default the hook
-  refuses in about 1 s and gives the reasons. A setting turns the
-  rewrite on: it says so before it starts, and past 30 s it refuses
-  with the reasons, the message kept for the person (principle 5).
-  Measured: 78.5 s in the one real hook.
+- **The agent's rewrite at a commit is on by default, capped at 30 s**
+  (changed the same day, below). The hook says so before it starts;
+  past 30 s it refuses with the reasons, the message kept for the
+  person (principle 5). `rewrite: false`, a project's or a person's,
+  turns it off: the hook then refuses in about 1 s with the reasons.
+  `ai: none` means no agent at all.
+  - **First decided: opt-in** (2026-10-19, morning), off unless a
+    setting turned it on, since the one real hook measured took 78.5 s.
+  - **Changed** (2026-10-19, afternoon), on the measure of a firmware
+    library's 300 latest commits ([#528](https://github.com/JN0V/workline/pull/528)):
+    with no rewrite, 106 of them, 35 %, would be refused, each for a
+    person to fix by hand. A bounded wait, only on a bad message, is
+    preferred to that rate; the 30 s cap keeps it within the commit's
+    budget for a rewrite (§1).
 
 ## Build plan
 
 By the wait removed each time, then tokens:
 
 1. The engine once a run, shared by the jobs: ~40 s of the verdict's 101 s, every push. Built, once a commit, in [workline's own workflows](../ci-github.md#worklines-own-workflows); the templates fetch a release.
-2. Commit: the agent's rewrite opt-in, capped at 30 s (§7); one gitleaks scan: 12–78.5 s down to about 1 s on a refused message, ~0.4 s every commit.
+2. Commit: the agent's rewrite capped at 30 s (§7; first planned opt-in); one gitleaks scan: 12–78.5 s down to at most 30 s on a refused message, about 1 s with the rewrite off; ~0.4 s every commit. Built: the committer's `rewrite`, on by default, and `ai-max-seconds`, 30, which the engine holds for every call of a run ([the role contract](../spec/role-contract.md)); a project or a person turns the rewrite off for themselves, and a project's `ai: none` keeps every agent away. The two scans run side by side rather than as one: gitleaks reads a message on its standard input, where its rules on file paths cannot apply. Measured: 0.52–0.58 s a commit, refused or not, from 0.92–1.03 s.
 3. Lenses and triage that warn, off the verdict's path: their AI time, within the line's 22 s median, 133 s at most.
 4. Push in 5 s: only the docs the range made suspect, whole-repository checks on main: ~5 s every push.
 5. No AI on a draft: the AI's time on each draft push.

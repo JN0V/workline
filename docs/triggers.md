@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/line, internal/hooks, internal/forge/gitlab.go, ci/gitlab/workline.gitlab-ci.yml, ci/github/workline.yml, ci/github/workline-gardening.yml, ci/github/workline-sample.yml, routing.default.yaml]
-checked: 86f1e419
+checked: b077b410
 verified: agent:claude-code
 reader: 2de353fab113
 ---
@@ -16,7 +16,7 @@ trigger token or another pipeline: [gitlab-trigger.md](gitlab-trigger.md).
 
 | What | Command | Agent |
 |---|---|---|
-| each commit's message | the global `commit-msg` hook (`workline hooks install --global`) | yours, to rewrite a refused message |
+| each commit's message | the global `commit-msg` hook (`workline hooks install --global`) | yours, to rewrite a refused message, 30 s at most (`rewrite: false`, the project's or yours, turns it off) |
 | before a push | the global `pre-push` hook, when the project routes `pre-push`; by hand: `workline route pre-push --ai none --input range=origin/main..HEAD` | never |
 | docs made suspect | `workline docs` (`--since <rev>`; `--review` with no agent) | yours |
 | a branch's code | `workline review` (`--base`, `--lenses`, `--json`) | yours |

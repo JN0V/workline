@@ -1,0 +1,9 @@
+case: committer/person-adds-to-the-allow-list
+about: "A person's own internal-codes-allow adds to the project's list, never replaces it: the project's ADR-0001 and the person's nRF52 both pass."
+given:
+  repo: basic
+  config: {roles: {committer: {settings: {internal-codes-allow: ['ADR-[0-9]+']}}}}
+  setup:
+    - "mkdir -p \"$XDG_CONFIG_HOME/workline\" && printf 'roles: {committer: {settings: {internal-codes-allow: [nRF52]}}}\\n' > \"$XDG_CONFIG_HOME/workline/config.yaml\""
+run: {role: committer, event: commit-msg, input: {message: "docs: follow ADR-0001 on the nRF52"}, ai: none}
+expect: {status: pass, agent-calls: 0}

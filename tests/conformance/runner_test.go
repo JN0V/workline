@@ -935,6 +935,9 @@ func runCase(t *testing.T, c *caseFile) []string {
 func runCLI(engineBin string, c *caseFile, repo string, env []string) []string {
 	cmd := exec.Command(engineBin, c.Run.CLI...)
 	cmd.Dir, cmd.Env = repo, env
+	for k, v := range c.Given.Env { // what the command is run with, as a hook is: WORKLINE_AI
+		cmd.Env = append(cmd.Env, k+"="+os.Expand(v, func(name string) string { return lookup(cmd.Env, name) }))
+	}
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &stdout, &stderr
 	err := cmd.Run()

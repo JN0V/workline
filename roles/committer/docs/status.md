@@ -1,4 +1,4 @@
-# Committer — where it stands (2026-10-14)
+# Committer — where it stands (2026-10-19)
 
 **In one line:** runs on every commit and push of workline's author, and
 on each merge request in CI; its rewrites tried with Claude on refused
@@ -50,6 +50,19 @@ its evaluation in
 - **A message's form**, an internal code in the subject:
   `internal-code-in-subject`, `code-in-trailer-passes`,
   `code-without-dash-in-subject`, `standard-*`, `one-message-per-commit`.
+- **The rewrite capped at 30 s**
+  ([ADR-0050](../../../docs/adr/0050-each-act-has-its-moment-and-a-wait-budget.md)):
+  on by default, said before it starts, ended past `ai-max-seconds`:
+  `hook-says-the-rewrite-before-it-starts`, `rewrite-ends-past-its-seconds`,
+  `rewrite-retry-within-its-seconds`; turned off, refused at once, the
+  message kept: `refused-at-once-when-turned-off`,
+  `hook-refuses-and-keeps-the-message`.
+- **A person's own settings**: the rewrite on or off and its wait, held by
+  a project's `ai: none`; names added to the project's list; any other
+  said: `person-*`.
+- **A code refused names the line that lets it through**, the person's and
+  the project's: `refusal-gives-the-allow-line`; the ESP32 and ESP8266
+  chips in the role's list: `chip-names-pass`.
 - **The agent's rewrite**, keeping the type, the scope, the trailers and
   the author's words: `agent-rewrites-message`, `rewrite-*`,
   `public-name-kept-by-the-agent`; marked by workline's two trailers,

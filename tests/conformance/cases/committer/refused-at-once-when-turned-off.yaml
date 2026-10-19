@@ -1,0 +1,10 @@
+case: committer/refused-at-once-when-turned-off
+about: "A project turns the agent's rewrite off (`rewrite: false`, ADR-0050): with an agent at hand, a refused message is refused at once, with the reasons, and no agent is asked."
+given: {repo: basic, config: {roles: {committer: {settings: {rewrite: false}}}}}
+run: {role: committer, event: commit-msg, input: {message: "fix: AC-3"}, ai: "fake:good-commit-message"}
+expect:
+  status: block
+  summary: rewrite the commit message
+  agent-calls: 0
+  applied: []
+  findings: [{rule: internal-code, message: "AC-3"}]

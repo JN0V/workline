@@ -1,6 +1,6 @@
 <!-- workline
 sources: [ci/gitlab/workline.gitlab-ci.yml, ci/github/workline-fork.yml, routing.default.yaml, internal/forge/forge.go, internal/agent/agent.go, ci/github/workline-apply.yml, internal/gate, cmd/workline/cli.go, ci/github/workline.yml, ci/forgejo/workline-forge.sh, ci/github/workline-gardening.yml, ci/github/workline-sample.yml]
-checked: 9eb2ac40
+checked: edef6de7
 judged: 220b6dc
 verified: agent:documentalist
 reader: e375241655b6
@@ -104,7 +104,7 @@ Each role, from a hook, a script or a CI job: [triggers](docs/triggers.md).
 
 | When | Roles | Agent |
 |---|---|---|
-| `git commit` (the global hook) | committer | yours, to rewrite a refused message |
+| `git commit` (the global hook) | committer | yours, to rewrite a refused message, 30 s at most |
 | `git push` (the global hook, once `workline init` routes it) | committer; documentalist, counting the docs made suspect | never |
 | `workline review` | reviewer, before you push | yours |
 | `workline review --spec <file>`, `--issue <n>` | reviewer, on a spec before it is built | yours |

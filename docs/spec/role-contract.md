@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine, internal/intent, internal/role, internal/agent, roles_test.go]
-checked: 21c9ac40
+checked: 6dc52a5b
 verified: agent:claude-code
 judged: b530b72
 ---
@@ -110,6 +110,8 @@ on-moved-on: []                 # what a merge request's run still applies once 
                                 # branch moved on from the head judged: what only says
                                 # what that head held (the reviewer's review); never a
                                 # patch nor a label; none by default
+personal: []                    # settings a person may set for themselves, in their
+                                # own config (role-adapting.md, "A person's own")
 
 without-ai: block               # block | report | pass — see "No AI" (not read yet)
 
@@ -343,6 +345,16 @@ token), **apply** (trusted, no AI key).
    is paid; the agent is asked nothing more, and the run says so
    (`ai-max-tokens`, a warning): what is left waits for the next run. 0 or
    unset, no cap.
+
+   **A cap on the wait.** A role setting `ai-max-seconds` caps how long one
+   run waits on its agents, from its first call: every round, part, retry
+   and judge together ([ADR-0050](../adr/0050-each-act-has-its-moment-and-a-wait-budget.md)).
+   Each call may take what is left at most, its role's `model.timeout` when
+   shorter; the answer that crosses it is not waited for, a child of the
+   agent's still holding its output given 1 s more. Nothing more is asked,
+   and the run says so (`ai-max-seconds`, a warning); the role's post
+   judges as if the agent had not answered. 0 or unset, no cap; the
+   committer's is 30.
 
 ### When apply stops half-way
 

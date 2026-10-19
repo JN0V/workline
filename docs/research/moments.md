@@ -148,7 +148,7 @@ removed each time.
 | Change | Wait removed | Tokens saved |
 |---|---|---|
 | The engine built or fetched once a run, not in every job | ~20 s a job, ~40 s of the verdict's 101 s | none |
-| Commit: the agent's rewrite opt-in (decided 2026-10-19); one gitleaks scan for the diff and the message | a refused message: 12–78.5 s down to about 1 s; ~0.4 s every commit | a light call a refused message |
+| Commit: the agent's rewrite opt-in (decided 2026-10-19, then changed the same day: on, capped at 30 s); one gitleaks scan for the diff and the message | a refused message: 12–78.5 s down to about 1 s opt-in, 30 s at most capped; ~0.4 s every commit | a light call a refused message, opt-in |
 | Lenses and triage that only warn, off the verdict's path | the AI's time on what does not block, within the line's 22 s median, 133 s max | none |
 | Push: only the docs the range made suspect; whole-repository checks on main | ~5 s, every push, in the terminal | none |
 | Drafts with no AI | the AI's time on each draft push | a lens a draft push |
@@ -157,5 +157,6 @@ removed each time.
 | Gates in a merge queue or train, no AI | the queue's turn | none |
 
 What workline decides from this, the two choices it left open decided
-the same day:
+the same day, the rewrite's changed once a firmware library's commits
+were measured (35 % refused with no rewrite):
 [ADR-0050](../adr/0050-each-act-has-its-moment-and-a-wait-budget.md).

@@ -579,7 +579,10 @@ func hookCmd(args []string) int {
 			fmt.Fprintf(os.Stderr, "  %s: %s\n", f.Rule, f.Message)
 		}
 	}
-	fmt.Fprintln(os.Stderr, "commit aborted; your message is kept in", msgFile)
+	// On any refusal, a rewrite cut at its cap included (ADR-0050), the
+	// person's words are kept, and the command that takes them up again
+	// is given.
+	fmt.Fprintf(os.Stderr, "commit aborted; your message is kept in %s: to edit it and commit again, git commit -e -F %s\n", args[1], args[1])
 	return 1
 }
 

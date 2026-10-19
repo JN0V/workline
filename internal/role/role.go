@@ -34,7 +34,11 @@ type Role struct {
 	// that only say what that head held, never a patch nor a label (the
 	// reviewer's review). Empty: nothing applied once the branch moved on.
 	OnMovedOn []string `yaml:"on-moved-on"`
-	Model     Model    `yaml:"model"`
+	// Personal are the settings a person may set for themselves, in their
+	// own config (PersonalSettings): what only changes their own wait or
+	// their own words, never what the project's line holds to.
+	Personal []string `yaml:"personal"`
+	Model    Model    `yaml:"model"`
 	Duties    struct {
 		Reads  []string `yaml:"reads"`
 		Writes []string `yaml:"writes"`
@@ -135,6 +139,11 @@ func Load(rolesDir, name string) (*Role, error) {
 			return nil, fmt.Errorf("role %q: on-moved-on names %q, not one of its intentions", name, k)
 		case k == "patch" || k == "label" || k == "commit-message":
 			return nil, fmt.Errorf("role %q: on-moved-on names %q: what changes the branch or the merge request applies on the head judged only", name, k)
+		}
+	}
+	for _, k := range r.Personal {
+		if _, ok := r.Settings[k]; !ok {
+			return nil, fmt.Errorf("role %q: personal names %q, not one of its settings", name, k)
 		}
 	}
 	r.Dir = dir

@@ -3,6 +3,6 @@ about: "On the commits pushed, checked without an agent, a code with no dash is 
 given:
   repo: basic
   setup:
-    - "echo x >> README.md && git commit -qam 'fix: read the ESP32 flash size'"
+    - "echo x >> README.md && git commit -qam 'fix: read the nRF52 flash size'"
 run: {role: committer, event: pre-push, input: {range: "HEAD~1..HEAD"}, ai: none}
-expect: {status: pass, findings: [{rule: possible-internal-code, message: "ESP32"}]}
+expect: {status: pass, findings: [{rule: possible-internal-code, message: "nRF52"}]}

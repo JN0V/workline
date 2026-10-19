@@ -1,0 +1,20 @@
+case: committer/rewrite-ends-past-its-seconds
+about: "A rewrite turned on ends past ai-max-seconds (30 by default, ADR-0050): the answer is not waited for, a child of the agent's still holding its output included; the message is refused with its reasons, and the cap is said."
+given:
+  repo: basic
+  config: {roles: {committer: {settings: {rewrite: true, ai-max-seconds: 1}}}}
+run:
+  role: committer
+  event: commit-msg
+  input: {message: "fix: AC-3"}
+  # It would answer well, but too late: its sleep outlives the call.
+  ai: |-
+    cmd:sleep 20
+    echo '- commit-message: "fix(parser): stop crashing on an empty input file"'
+expect:
+  status: block
+  agent-calls: 1
+  applied: []
+  findings:
+    - {rule: internal-code, message: "AC-3"}
+    - {rule: ai-max-seconds, level: warn, message: "it allows 1"}

@@ -90,8 +90,9 @@ Where workline's global hooks are installed, this repository goes through its
 own line (.workline/config.yaml):
 
 - **commit-msg** — the committer. A subject over 72 characters, or holding a
-  code like `AC-3`, is refused, then rewritten by the agent; the hook prints
-  the message it committed. Check it: write subjects that pass.
+  code like `AC-3`, is refused, then rewritten by the agent, 30 s at most
+  (ADR-0050); the hook prints the message it committed. Check it: write
+  subjects that pass.
 - **pre-push** — the committer on the commits pushed, then the documentalist,
   with no agent: it lists the docs they made suspect. The review is on the
   pull request (ADR-0011): `main` takes pull requests only, the checks

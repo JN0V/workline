@@ -1,6 +1,6 @@
 case: committer/rewrite-keeps-type-and-scope
 about: A subject refused only for its length is shortened; a rewrite that changes the author's type or scope is refused.
-given: {repo: basic}
+given: {repo: basic, config: {roles: {committer: {settings: {rewrite: true}}}}}
 run:
   role: committer
   event: commit-msg

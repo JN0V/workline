@@ -1,6 +1,6 @@
 ---
 sources: [internal/role/config.go, internal/role/role.go, cmd/workline, internal/engine/engine.go, internal/forge/gitlab.go, internal/hooks]
-checked: 86f1e419
+checked: b077b410
 judged: e343388
 verified: agent:claude-code
 reader: 0b97bbc207c5
@@ -41,7 +41,7 @@ ai: claude                  # the project's agent, one choice: none (default), c
 forge: github               # github | gitlab | local | cmd:<command> | none (default)
 roles:
   committer:
-    settings: {subject-max: 60}          # a role's settings, see its role.yaml
+    settings: {subject-max: 60, rewrite: false}  # a role's settings, see its role.yaml; rewrite: an agent rewrites a refused message, 30 s at most (on)
     enforce: {internal-code: warn}       # block (default) | warn | off, per rule
   documentalist:
     settings:
@@ -83,17 +83,12 @@ change control (SLSA's source level 4, SOC 2's change management): a
 project's choice, never a default
 ([merge policy](merge-policy.md#normal-routine-work-with-no-yes)).
 
-Where the comments point:
-
-- `sample`: the least independence its judge must have
-  ([ADR-0005](adr/0005-independence-takes-the-best-level-available.md));
-- `diff-alone`: measured in
-  [#126](https://github.com/JN0V/workline/issues/126);
-- the reviewer on `schedule`, `ready` waiting on its read:
-  [#128](https://github.com/JN0V/workline/issues/128);
-- `gates`: [gates](spec/gates.md); `repos`:
-  [multi-repo](spec/multi-repo.md); `release`: how the project's release
-  tool works ([ADR-0017](adr/0017-the-release-manager.md)).
+Where the comments point: `sample`'s independence,
+[ADR-0005](adr/0005-independence-takes-the-best-level-available.md);
+`diff-alone`, [#126](https://github.com/JN0V/workline/issues/126); the
+reviewer on `schedule`, [#128](https://github.com/JN0V/workline/issues/128);
+`gates`, [gates](spec/gates.md); `repos`, [multi-repo](spec/multi-repo.md);
+`release`, [ADR-0017](adr/0017-the-release-manager.md).
 
 ### What blocks
 
@@ -129,6 +124,7 @@ Support/workline/config.yaml`), what you want wherever you work:
 | `ai` | your agent when a project does not say (`workline setup` writes it) |
 | `approve-push` | `true`: you approve each push (off by default, [ADR-0011](adr/0011-the-review-is-on-the-merge-request-not-the-push.md)) |
 | `approve-push-via` | where you are asked, in order: `terminal`, `editor`, `dialog` |
+| `roles.<role>.settings` | what a role lets you set for yourself (`personal` in its role.yaml; the committer's `rewrite`, `ai-max-seconds`, `internal-codes-allow`): a value wins over the project's, a list adds to it; a project's `ai: none` still keeps every agent away; any other setting, or one of another kind than the role's, is said and left out |
 
 Beside it, in the same folder: `allowed-identities` (one address pattern a
 line, for the committer), `gitleaks.toml` (your forbidden terms, as gitleaks

@@ -1,6 +1,6 @@
 ---
 sources: [internal/doctor/doctor.go, internal/doctor/conversations.go, internal/hooks/hooks.go, cmd/workline/main.go, cmd/workline/cli.go, internal/forge/local.go]
-checked: 86f1e419
+checked: b077b410
 verified: agent:claude-code
 ---
 # Troubleshooting
@@ -75,6 +75,11 @@ goes ready, a hidden record that does not read: in
   (`review-not-whole`, `lens-failed`) and says what each call used. `ai-max-calls`, `parts-max-per-run`, the product owner's
   `issues-per-run` and `code-lines-max`, the reviewer's `diff-lines-max`,
   `code-lines-max` and `tests-lines-max` size each run (each role's page).
+- `ai-max-seconds` (committer): the rewrite took more than the 30 s it
+  may; the message is refused with its reasons, as with no agent.
+- `personal-setting-ignored`: your own config sets what a role does not
+  let a person set; the project's stands
+  ([your own config](config.md#your-own-config)).
 - `review-not-whole`, "past parts-max" (reviewer): the change is too
   large to read in the parts a run allows; split it, or raise
   `parts-max` ([in parts](../roles/reviewer/docs/parts.md)).

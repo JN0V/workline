@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/role/config.go, internal/engine/engine.go, internal/hooks, internal/agent/claude.go, internal/agent/command.go]
-checked: 86f1e419
+checked: b077b410
 judged: b5899f5
 verified: agent:claude-code
 ---
@@ -157,7 +157,9 @@ wrapper around your own. It runs with `sh -c`, outside the repository:
 - it may write what answered, in YAML, to the file `WORKLINE_CALL` names:
   `model`, `tokens-in`, `tokens-cached`, `tokens-out`, `cost-usd`;
 - a non-zero exit, or no answer within the role's `model.timeout`, ends
-  the run as `blocked-external`, as a used-up quota does.
+  the run as `blocked-external`, as a used-up quota does; no answer within
+  what the role's `ai-max-seconds` leaves (the committer's: 30 s) ends it
+  as if the agent had not answered, said (`ai-max-seconds`).
 
 A script of your own, or Claude Code run this way (the command the
 judge's trial used):

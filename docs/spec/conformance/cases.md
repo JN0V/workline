@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go]
-checked: 86f1e419
+checked: edef6de7
 verified: agent:claude-code
 ---
 # Conformance — a case in full
@@ -60,7 +60,8 @@ saying so.
   then runs on that branch of `origin`, checked out, as CI runs it on its
   push: status, steps and calls are the line's, the findings both runs';
 - `cli: [<argument>...]` instead of `role` — `workline` with these
-  arguments, as typed, in the repository: help, misuse; checked by `exit`,
+  arguments, as typed, in the repository, with `given.env`: help, misuse, a
+  hook (`[hook, commit-msg, .git/COMMIT_EDITMSG]`); checked by `exit`,
   `stdout`, `stderr`, `files`, and `summary-file` for the
   `workline-summary.md` its arguments name;
 
