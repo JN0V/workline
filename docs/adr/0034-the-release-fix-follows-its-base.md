@@ -1,7 +1,8 @@
 # ADR-0034: The release's own fix follows its base
 
 - **Status:** accepted; amended 2026-10-12 (gardening's merge requests
-  follow too, or are closed)
+  follow too, or are closed), 2026-10-19 (the fix's record stands for the
+  heads the tool rebuilds)
 - **Date:** 2026-10-06
 - **Builds on:** ADR-0017 (a release tool's pull request is the release;
   its fix goes to a merge request of its own), ADR-0027 (derived blocks
@@ -167,3 +168,33 @@ gardening-branch-closed-when-main-changed-its-lines-on-gitlab,
 gardening-branch-only-judged-closed, gardening-branch-only-judged-rebuilt,
 gardening-branch-a-person-committed-to-is-left,
 gardening-branch-close-refused-said, gardening-keeps-a-person-commit.
+
+## Amendment (2026-10-19): the fix's record stands for the rebuilt heads
+
+On the 0.36.0 release pull request ([#499](https://github.com/JN0V/workline/pull/499)),
+the fix only set `judged` on docs/gates-in-ci.md, to the release's head.
+Merged, release-please rebuilt its branch: a new head, the same version
+bump in three of the doc's sources. Measured from the commit the fix
+became, the bump read as a change, kept as the doc quotes the version it
+replaces: the doc was judged again, a new fix moved `judged` to the new
+head, eight in an hour ([#510](https://github.com/JN0V/workline/issues/510)).
+
+- **The documentalist's comment on the release merge request keeps** the
+  head each fix recorded a doc at (`checked` or `judged`) and the git ids
+  of the doc's sources there, as on a person's merge request
+  ([ADR-0013, amended](0013-what-was-judged-is-not-asked-again.md#amendment-2026-10-17-on-a-persons-merge-request-the-record-waits-in-a-comment)).
+  Only a comment a bot or a person of the project wrote is read.
+- **A record naming such a head stands at the new head** when the doc's
+  sources have the same ids there: nothing changed, the bump included.
+  The doc is not judged again; one not vouched for waits for a person.
+- **A source changed since**, the bump to another version included: the
+  doc is judged again, and the release waits for it (ADR-0017), as it
+  waits for the first fix.
+
+Not chosen: leaving the bump out after a record a release fix brought,
+which needs the forge's merged merge requests and takes a person's commit
+on that branch for the role's; a doc found with nothing to fix kept out
+of any merge request, its record in the comment alone: a doc vouched for
+would still be judged again.
+
+Conformance: the five documentalist/release-record-* cases.

@@ -1,6 +1,6 @@
 ---
-sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/adopt.go, internal/builtin/documentalist/byname.go]
-checked: a5e57aa5
+sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/adopt.go, internal/builtin/documentalist/byname.go, internal/builtin/documentalist/releasekept.go]
+checked: d9678755
 verified: agent:claude-code
 judged-in-parts: c7e1e98
 ---
@@ -103,6 +103,13 @@ commits touched.
   goes to a merge request of its own into the release's base,
   `workline/documentalist/release`. The release pull request stays held
   until that one is merged and the tool brings it in.
+- **Its record stands for the heads the tool rebuilds**: the
+  documentalist's comment on the release pull request keeps the head each
+  fix set `checked` or `judged` to, and the ids of the doc's sources
+  there. Once the fix is merged and the tool rebuilt its branch, a doc
+  whose sources are the same is not judged again, the same version bump
+  included; one whose source changed is
+  ([ADR-0034, amended](../../../docs/adr/0034-the-release-fix-follows-its-base.md#amendment-2026-10-19-the-fixs-record-stands-for-the-rebuilt-heads)).
 - **That merge request follows its base**, as the tool's own branch does
   ([ADR-0034](../../../docs/adr/0034-the-release-fix-follows-its-base.md)):
   on each push to the base, `workline follow` rebuilds it on the new tip —

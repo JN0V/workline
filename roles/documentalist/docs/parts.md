@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/parts.go, internal/builtin/documentalist/documentalist.go]
-checked: 62233382
+checked: d9678755
 verified: agent:claude-code
 ---
 # Documentalist — judged in parts

@@ -1,6 +1,6 @@
 ---
-sources: [internal/builtin/documentalist/documentalist.go, cmd/workline/main.go, internal/builtin/documentalist/kept.go]
-checked: 86f1e419
+sources: [internal/builtin/documentalist/documentalist.go, cmd/workline/main.go, internal/builtin/documentalist/kept.go, internal/builtin/documentalist/releasekept.go]
+checked: d9678755
 verified: agent:claude-code
 ---
 # Troubleshooting the docs
@@ -22,9 +22,10 @@ On a release, a doc made suspect since the last release holds it (`due`,
 `suspect`) until judged.
 
 `record-unread` (a warning): the documentalist's comment keeping the
-records of docs found with nothing to fix, or the merge requests merged,
-could not be read: the records are committed, or those docs judged again
-at night. On GitLab, give the judging job `GITLAB_TOKEN`
+records of docs found with nothing to fix, of the merge requests merged,
+or of the heads a release pull request's fix named, could not be read:
+the records are committed, or those docs judged again, at night or on
+the release's next head. On GitLab, give the judging job `GITLAB_TOKEN`
 ([more](../roles/documentalist/docs/push.md#a-doc-found-with-nothing-to-fix-no-commit)).
 
 `shallow-clone`: the clone lacks history the documentalist needs — the
