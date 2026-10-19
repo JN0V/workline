@@ -1,0 +1,22 @@
+case: reviewer/finding-judged-again-once-its-file-changes
+about: "A verdict is kept only for the same finding on the same patch (ADR-0050, step 6): every lens reads the whole change on ready and both findings are judged. A commit then changes calc.go again, away from the cause; marked ready again, every lens finds both again, but the merge request's change to calc.go is a new patch: each is judged again."
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  forge:
+    issues: []
+    merge-requests: [{id: 5, labels: [], comments: []}]
+run:
+  role: reviewer
+  event: merge-request
+  input: {range: main..HEAD, lenses: all}
+  target: {merge-request: 5}
+  ai: "cmd:sh $FIXTURES/agents/review-by-lens.sh"
+  then: again
+  again-after: ["sed -i 's|// Parse reads a count.|// Parse reads a count, in base ten.|' calc/calc.go && git commit -qam 'docs: say the base Parse reads'"]
+expect:
+  status: pass
+  agent-calls: 6
+  calls: [{task: part, for: 1-lenses}, {task: judge, for: judge/01}, {task: judge, for: judge/02}, {task: part, for: 1-lenses}, {task: judge, for: judge/01}, {task: judge, for: judge/02}]
+  no-findings: [{rule: correctness, where: "calc/calc.go:11", message: "not judged again"}]

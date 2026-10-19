@@ -170,10 +170,10 @@ func saidByAuthor(t string) []string {
 // testimony is what the author says of the change, for the lenses to check
 // against it: the messages of the commits not reviewed yet, whole, and the
 // merge request's title and body; the commits reviewed before named. The
-// base's commits a merge brought in are not the author's (#134). Capped at
-// limit lines.
+// base's commits a merge brought in are not the author's (#134), nor those
+// left past commits-per-push (ADR-0050). Capped at limit lines.
 func testimony(repo string, st state, mr string, limit int) (string, error) {
-	log, err := git(repo, "log", "--format=- %h %s%n%w(0,2,2)%b", st.From+".."+st.Head, "^"+st.Base)
+	log, err := git(repo, "log", "--format=- %h %s%n%w(0,2,2)%b", st.From+".."+st.lensTo(), "^"+st.Base)
 	if err != nil {
 		return "", err
 	}

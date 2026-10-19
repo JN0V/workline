@@ -1,0 +1,32 @@
+case: reviewer/after-ready-a-merge-of-main-reads-nothing-new
+about: "After the run on ready (ADR-0050, step 6), the author updates the merge request by merging main in, main having changed code, with no conflict to settle. Neither run asks an agent: the merge settled nothing of its own, and main's code was reviewed on main. Each run records the merge, its turn kept."
+given:
+  repo: reviewed
+  setup:
+    - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"
+    - "sed -i \"s/@reviewed@/$(git rev-parse HEAD)/g\" \"$FORGE_FILE\""
+    - "git checkout -q main && printf 'package calc\\n\\n// Sum adds the values.\\nfunc Sum(values []int) int { return 0 }\\n' > calc/sum.go && git add calc && git commit -qm 'feat: sum the values' && git checkout -q feature"
+    - "git merge -q --no-edit main"
+  config:
+    routing: {events: {merge-request: [reviewer]}}
+    roles: {reviewer: {settings: {ai-findings: {correctness: block}}}}
+  forge:
+    merge-requests:
+      - id: 5
+        labels: []
+        comments:
+          - "Every lens that blocks read the change.\n<!-- workline:warn-apart -->\n\n<!-- workline:record reviewed=@reviewed@ runs=1 read=all -->\n\n<!-- workline:sticky=reviewer/summary -->"
+          - "Every lens that warns read the change.\n\n<!-- workline:record reviewed=@reviewed@ runs=1 read=all -->\n\n<!-- workline:sticky=reviewer/warn -->"
+run: {route: merge-request, warn-apart: true, then: apart, input: {range: main..HEAD, draft: "false"}, target: {merge-request: 5}, ai: "fake:review-related"}
+expect:
+  status: pass
+  agent-calls: 0
+  forge:
+    merge-requests:
+      - id: 5
+        comments: 2
+        comment-contains:
+          - "**workline reviewer** — no code changed since the last review (only the base's code, merged in and reviewed there"
+          - "**workline reviewer, the lenses that warn** — no code changed since the last review (only the base's code, merged in and reviewed there"
+          # Each record: the merge recorded, the run not counted.
+          - " runs=1 read=all -->"

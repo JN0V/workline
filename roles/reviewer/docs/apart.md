@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, internal/builtin/reviewer/reviewer.go, internal/builtin/reviewer/record.go, internal/line/line.go, ci/github/workline.yml, ci/github/workline-warn.yml, ci/github/workline-apply.yml, ci/gitlab/workline.gitlab-ci.yml]
-checked: 3f00333c
+checked: b830e2b9
 verified: agent:claude-code
 ---
 # Reviewer — the lenses that warn, apart from the verdict
@@ -31,6 +31,9 @@ beside the verdict's, and posts once it answered.
   and their judges.
 - **The run apart** (`route --warn-only`) asks the others and their
   judges; the diff-alone facet goes by its own `ai-findings`.
+- **After ready, the run apart reads five new commits a push**
+  (`commits-per-push`), the rest at the next push; the verdict's run
+  reads every one ([after ready](ready.md#after-ready-only-what-is-new)).
 - **A push whose turn is the other run's lens**: nobody asked in this
   run; the commits are recorded and the turn moves on, as in the other.
 - **The rules** (`bug-story`, `internal-code`) block on the verdict's

@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/instruction.md, roles/reviewer/policy.md, roles/reviewer/lenses, internal/builtin/reviewer]
-checked: 1359ad77
+checked: dcce5a60
 verified: agent:claude-code
 ---
 # Reviewer — a run on code
@@ -16,7 +16,7 @@ flowchart LR
   quotes --> where["6. Related or not"] --> judge["7. The judge"] --> verdict["8. The verdict"]
 ```
 
-## 1–3. The range, the rules, the record
+## 1–2. The range, the rules
 
 1. **The range.** `workline review`: `base..HEAD` (`base`, `--base`); on a
    merge request, the range CI gives. A change touching only what is not
@@ -45,6 +45,9 @@ flowchart LR
    - a block over `comment-block-max` lines (`long-comment`, a warning).
 
    While a rule blocks, no agent is asked.
+
+## 3. The record
+
 3. **The record.** Commits a review answered whole are not asked again.
    - It is kept in the summary comment on a merge request,
      `.git/workline/reviewer-record` on a machine. One that does not read is said (`record-unread`, [#302](https://github.com/JN0V/workline/issues/302)): every commit reviewed again, once, as a whole review writes it anew.
@@ -65,9 +68,8 @@ flowchart LR
      a review written after another keeps its commits and lines ([#375](https://github.com/JN0V/workline/issues/375)).
    - **What blocked stands**, recorded too, until a commit answers it
      ([#326](https://github.com/JN0V/workline/issues/326), [more](judge.md#a-block-stands-until-a-commit-answers-it)).
-   - The run when a merge request becomes ready reads the whole change,
-     commits reviewed before too
-     ([below](#every-lens-once-when-it-becomes-ready)).
+   - The run on ready reads the whole change, commits reviewed before too ([below](#every-lens-once-when-it-becomes-ready));
+     after it, a lens that warns reads five new commits a push ([more](ready.md#after-ready-only-what-is-new)).
    - Why, and what git it needs:
      [ADR-0013](../../../docs/adr/0013-what-was-judged-is-not-asked-again.md#amendment-2026-10-12).
 
