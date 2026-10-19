@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/adopt.go, internal/builtin/documentalist/byname.go, internal/builtin/documentalist/releasekept.go]
-checked: a4f49660
+checked: f530cda7
 verified: agent:claude-code
 judged-in-parts: c7e1e98
 ---
@@ -19,9 +19,9 @@ moves to the commit the task gave.
   suggestion can only sit on lines the merge request changes, and a doc
   made wrong by a change of code usually has none.
 - From a fork, the fix goes in one comment, as a diff to apply.
-- Given the commits of a push or a merge request (`range`), only the docs
-  they made suspect — one of their own sources touched by those commits —
-  are judged, whole, against every source that changed. The other suspect
+- Given the commits of a merge request (`range`), only the docs they made
+  suspect — one of their own sources touched by those commits — are
+  judged, whole, against every source that changed. The other suspect
   docs are reported, left for gardening
   ([ADR-0007](../../../docs/adr/0007-docs-reviewed-after-the-code-before-the-push.md)).
 - One too large to be judged whole is left for the next gardening, which
@@ -65,6 +65,11 @@ documentalist]}}`) has those docs counted at the push, in one line, without
 an agent: a push never waits on one, nor asks
 ([ADR-0010](../../../docs/adr/0010-docs-judged-on-the-merge-request-and-by-gardening.md)).
 
+- **Only the docs the commits touched are read**: one of their sources,
+  or the doc itself; their own budgets and links are counted. The other
+  docs — suspect from before, a passage written twice, a link gone — are
+  said on the merge request and by gardening: about 5 s less a push
+  ([ADR-0050](../../../docs/adr/0050-each-act-has-its-moment-and-a-wait-budget.md)).
 - The person has them judged when they choose — `workline docs` — reviews
   each change, and those kept go in one `docs:` commit
   ([ADR-0007](../../../docs/adr/0007-docs-reviewed-after-the-code-before-the-push.md)).
