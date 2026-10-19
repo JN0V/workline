@@ -823,6 +823,91 @@ func TestGitHubTemplatesAskEveryLensWhenReady(t *testing.T) {
 	}
 }
 
+// A draft asks no agent (ADR-0050): the engine sets it aside, given the
+// draft state, so the jobs that run the merge request's line install none
+// on a draft, and still name the agent, for the engine to say the AI
+// review waits for ready.
+func TestTemplatesInstallNoAgentOnADraft(t *testing.T) {
+	for _, f := range []string{"../../ci/github/workline.yml", "../../.github/workflows/workline.yml", "../../ci/github/workline-warn.yml", "../../.github/workflows/workline-warn.yml"} {
+		data, err := os.ReadFile(f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var wf struct {
+			Jobs map[string]struct {
+				Steps []struct {
+					If  string            `yaml:"if"`
+					Env map[string]string `yaml:"env"`
+					Run string            `yaml:"run"`
+				} `yaml:"steps"`
+			} `yaml:"jobs"`
+		}
+		if err := yaml.Unmarshal(data, &wf); err != nil {
+			t.Fatalf("%s: %v", f, err)
+		}
+		installs := 0
+		for name, job := range wf.Jobs {
+			for _, st := range job.Steps {
+				if !strings.Contains(st.Run, "npm install -g @anthropic-ai/claude-code") {
+					continue
+				}
+				installs++
+				skipped := strings.Contains(st.If, "!github.event.pull_request.draft") ||
+					st.Env["DRAFT"] == "${{ github.event.pull_request.draft }}" && strings.Contains(st.Run, `[ "$DRAFT" = true ] || npm install -g @anthropic-ai/claude-code`)
+				if !skipped {
+					t.Errorf("%s, job %s: the agent is installed on a draft, which asks none", filepath.Base(f), name)
+				}
+			}
+		}
+		if installs == 0 {
+			t.Errorf("%s: no step installs the agent", filepath.Base(f))
+		}
+	}
+	data, err := os.ReadFile("../../ci/gitlab/workline.gitlab-ci.yml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var top map[string]any
+	if err := yaml.Unmarshal(data, &top); err != nil {
+		t.Fatal(err)
+	}
+	claude, _ := top[".workline:claude"].([]any)
+	dir := t.TempDir()
+	npm := "#!/bin/sh\necho installed > \"$NPM_SEEN\"\n"
+	if err := os.WriteFile(filepath.Join(dir, "npm"), []byte(npm), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	for _, c := range []struct {
+		draft, token string
+		ai           string
+		installed    bool
+	}{
+		{"true", "t", "claude", false}, {"false", "t", "claude", true}, {"", "t", "claude", true}, {"true", "", "none", false},
+	} {
+		seen := filepath.Join(dir, "seen-"+c.draft+c.token)
+		var script strings.Builder
+		for _, l := range claude {
+			fmt.Fprintln(&script, l)
+		}
+		cmd := exec.Command("sh", "-ec", script.String()+"echo \"ai[$ai]\"")
+		cmd.Env = []string{"PATH=" + dir + string(os.PathListSeparator) + os.Getenv("PATH"), "NPM_SEEN=" + seen, "draft=" + c.draft, "CLAUDE_CODE_OAUTH_TOKEN=" + c.token}
+		out, err := cmd.CombinedOutput()
+		_, statErr := os.Stat(seen)
+		if err != nil || !strings.Contains(string(out), "ai["+c.ai+"]") || (statErr == nil) != c.installed {
+			t.Errorf(".workline:claude, draft %q, token %q: %s (%v), installed %v; want ai %s, installed %v", c.draft, c.token, out, err, statErr == nil, c.ai, c.installed)
+		}
+	}
+	// The draft state is read before the agent is installed.
+	for _, job := range []string{"workline:judge", "workline:warn"} {
+		j, _ := top[job].(map[string]any)
+		script := fmt.Sprint(j["script"])
+		at, install := strings.Index(script, "lenses=;"), strings.Index(script, "npm install")
+		if at < 0 || install < 0 || at > install {
+			t.Errorf("%s: the draft state (.workline:ready) is not read before the agent is installed: %s", job, script)
+		}
+	}
+}
+
 func TestGitLabTemplateAsksEveryLensWhenReady(t *testing.T) {
 	if _, err := exec.LookPath("jq"); err != nil {
 		if os.Getenv("GITHUB_ACTIONS") != "" {
