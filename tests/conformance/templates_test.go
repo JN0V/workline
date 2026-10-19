@@ -328,6 +328,12 @@ const notCancelled = "github.event.workflow_run.conclusion != 'cancelled'"
 // run is uploaded after, applied, kept, followed or commented. The jobs that
 // write on a merge request's pipeline are never interruptible: one begun
 // goes to its end.
+// ownGroup is a concurrency group as a pull request's run reads it: a
+// merge queue's group takes one of its own (TestGitHubMergeQueueRunsTheGatesAlone).
+func ownGroup(group string) string {
+	return strings.ReplaceAll(group, " || github.event.merge_group.head_ref }}", " }}")
+}
+
 func TestOneLinePerMergeRequestAtATime(t *testing.T) {
 	type workflow struct {
 		Concurrency map[string]any `yaml:"concurrency"`
@@ -354,7 +360,7 @@ func TestOneLinePerMergeRequestAtATime(t *testing.T) {
 	for _, dir := range []string{"../../ci/github/", "../../.github/workflows/"} {
 		judges := 0
 		wf := read(dir + "workline.yml")
-		if group := fmt.Sprint(wf.Concurrency["group"]); !strings.Contains(group, "${{ github.event.pull_request.number }}") || wf.Concurrency["cancel-in-progress"] != true {
+		if group := ownGroup(fmt.Sprint(wf.Concurrency["group"])); !strings.Contains(group, "${{ github.event.pull_request.number }}") || wf.Concurrency["cancel-in-progress"] != true {
 			t.Errorf("%sworkline.yml: no concurrency group per pull request cancelling the run in progress: %v", dir, wf.Concurrency)
 		}
 		// The run apart from the verdict (ADR-0050): one per pull request
@@ -478,7 +484,7 @@ func TestOneReviewAtATimePerMergeRequest(t *testing.T) {
 				continue
 			}
 			n++
-			if group := fmt.Sprint(job.Concurrency["group"]); group != want || job.Concurrency["cancel-in-progress"] != false {
+			if group := ownGroup(fmt.Sprint(job.Concurrency["group"])); group != want || job.Concurrency["cancel-in-progress"] != false {
 				t.Errorf("%s, job %s: not in the review's lock per pull request %q, never cancelling: %v", file, name, want, job.Concurrency)
 			}
 		}
@@ -780,7 +786,7 @@ func TestGitHubTemplatesAskEveryLensWhenReady(t *testing.T) {
 		}
 		for name, job := range wf.Jobs {
 			for _, st := range job.Steps {
-				if !strings.Contains(st.Run, "workline route merge-request") || strings.Contains(st.Run, "--gates-only") {
+				if !strings.Contains(st.Run, "workline route merge-request") || strings.Contains(st.Run, "--gates-only") || strings.Contains(st.Run, "--input queue=true") {
 					continue
 				}
 				n++
@@ -1124,7 +1130,7 @@ func TestMergePolicyRunsAfterTheJudgeAndOnLabels(t *testing.T) {
 		for name, job := range judged.Jobs {
 			for _, s := range job.Steps {
 				switch {
-				case strings.Contains(s.Run, "--gates-only"):
+				case strings.Contains(s.Run, "--gates-only"), strings.Contains(s.Run, "--input queue=true"):
 				case strings.Contains(s.Run, "workline route merge-request"):
 					route = s.Run
 				case strings.Contains(s.Run, "workline follow"):
@@ -1150,6 +1156,12 @@ func TestMergePolicyRunsAfterTheJudgeAndOnLabels(t *testing.T) {
 					}
 					if !strings.Contains(s.Run, `[ "$head" = "$HEAD_SHA" ]`) {
 						t.Errorf("%sworkline-apply.yml, job %s: the verdict is kept without checking it is the event's head's", dir, name)
+					}
+				case strings.Contains(s.Run, "--merge-group"):
+					// A merge queue's group (ADR-0050): its yes set at once,
+					// the queue waiting for it, no pull request followed.
+					if job.Needs != nil || job.Concurrency != nil {
+						t.Errorf("%sworkline-apply.yml, job %s: a queue's group waits for another job (needs %v, concurrency %v)", dir, name, job.Needs, job.Concurrency)
 					}
 				case strings.Contains(s.Run, "workline follow"):
 					if fmt.Sprint(job.Needs) != "verdict" || job.Concurrency == nil {
