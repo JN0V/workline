@@ -62,6 +62,17 @@ agent, the reviewer's two runs included.
 - **A record that does not read** says nothing of it: one lens, every
   commit reviewed again. A record written before `read=all` existed: the
   next push to a merge request no draft reads every lens once.
+- **Cost**: a review of the whole change by every lens, as on a machine,
+  within the same `ai-max-tokens`
+  ([measured](../../../docs/research/code-review.md#the-reviewers-cost-measured)).
+- **Held by a rule**: the run on ready asks no lens, and its record owes
+  every lens (`owed=all`); the next run, the fix pushed, reads every lens
+  on the whole change, whatever the template passed.
+- **With no agent, or one out of reach**, nothing is written: the next
+  run is the run on ready again.
+
+## What tells it ready, on each forge
+
 - **GitHub**: the pull request `opened`, not a draft, or
   `ready_for_review`, which runs the line.
 - **GitLab**: marking a draft ready starts no pipeline
@@ -77,13 +88,5 @@ agent, the reviewer's two runs included.
     ready ([`MR_READY`](../../../docs/gitlab-trigger.md#how-the-pipeline-knows-what-to-do)).
   - Read with `GITLAB_TOKEN` when the job has one, else the job's own
     token; unread, one lens, said in the log.
-- **Cost**: a review of the whole change by every lens, as on a machine,
-  within the same `ai-max-tokens`
-  ([measured](../../../docs/research/code-review.md#the-reviewers-cost-measured)).
-- **Held by a rule**: the run on ready asks no lens, and its record owes
-  every lens (`owed=all`); the next run, the fix pushed, reads every lens
-  on the whole change, whatever the template passed.
-- **With no agent, or one out of reach**, nothing is written: the next
-  run is the run on ready again.
 - **GitLab's notes** are read page by page, the newest first, until the
   ready note or the reviewer's comment.

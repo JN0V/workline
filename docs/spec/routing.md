@@ -1,6 +1,6 @@
 ---
 sources: [internal/line, internal/routing, internal/work, routing.default.yaml]
-checked: ef8ebda9
+checked: 5193cf0b
 verified: agent:claude-code
 ---
 # Routing — v1 (draft)
@@ -167,17 +167,6 @@ proposals are applied as the judging job's, by a job of their own: the
 head's verdict is never theirs
 ([apart](../../roles/reviewer/docs/apart.md)).
 
-A draft asks no agent
-([ADR-0050](../adr/0050-each-act-has-its-moment-and-a-wait-budget.md#4-what-the-table-holds-to)):
-given `--input draft=true`, every step, a handoff too, runs as with no
-agent, told it waits for ready (the role contract's
-`WORKLINE_AI_WAITS`). The line's summary says the AI review waits for
-the merge request to be marked ready; a role whose agent would have
-judged says so too (`ai-waits-for-ready`, a warning), and the head's
-verdict is then a review to come, never a pass
-([merge policy](../merge-policy.md)). The rules and gates run as on any
-push. With no agent set, nothing waits; `draft=false` changes nothing.
-
 Where the merge request's code can change its judging job (GitHub), the
 job that applies runs from the base and reads only the run's proposals
 (`--from-merge-request <n> --head <sha>`): refused whole, a role not on
@@ -191,6 +180,18 @@ goes to a merge request of the App's only when the forge says the App
 Applying runs no role, so a handoff proposed under `--no-apply` is recorded
 and not run: both steps say so (`handoff-deferred`), with the command that runs
 it where an agent may judge.
+
+### A draft asks no agent
+
+[ADR-0050](../adr/0050-each-act-has-its-moment-and-a-wait-budget.md#4-what-the-table-holds-to):
+given `--input draft=true`, every step, a handoff too, runs as with no
+agent, told it waits for ready (the role contract's
+`WORKLINE_AI_WAITS`). The line's summary says the AI review waits for
+the merge request to be marked ready; a role whose agent would have
+judged says so too (`ai-waits-for-ready`, a warning), and the head's
+verdict is then a review to come, never a pass
+([merge policy](../merge-policy.md)). The rules and gates run as on any
+push. With no agent set, nothing waits; `draft=false` changes nothing.
 
 ## Where state lives
 
