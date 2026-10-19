@@ -1,0 +1,32 @@
+case: reviewer/finding-judged-once-not-judged-again
+about: "A finding judged once is not judged again (ADR-0050, step 6; ADR-0013): every lens reads the whole change on ready and both findings are judged. Marked ready again after a commit elsewhere, every lens reads the whole change once more and finds both again, on calc.go, whose change is the same patch: their earlier verdicts are kept and said, no judge asked."
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  forge:
+    issues: []
+    merge-requests: [{id: 5, labels: [], comments: []}]
+run:
+  role: reviewer
+  event: merge-request
+  input: {range: main..HEAD, lenses: all}
+  target: {merge-request: 5}
+  ai: "cmd:sh $FIXTURES/agents/review-by-lens.sh"
+  then: again
+  again-after: ["printf 'package calc\\n\\n// Half halves a count.\\nfunc Half(n int) int { return n / 2 }\\n' > calc/half.go && git add calc/half.go && git commit -qm 'feat: halve a count'"]
+expect:
+  status: pass
+  # The first run's lenses and two judges; the second run's lenses alone.
+  agent-calls: 4
+  calls: [{task: part, for: 1-lenses}, {task: judge, for: judge/01}, {task: judge, for: judge/02}, {task: part, for: 1-lenses}]
+  # The two findings share a line: correctness leads, edge-cases beside it, each its verdict.
+  findings:
+    - {rule: correctness, where: "calc/calc.go:11", message: "edge-cases: One value divides by zero (verified, independence: provider ( → judge-yes), judged reviewing "}
+    - {rule: correctness, where: "calc/calc.go:11", message: ": the same finding on the same patch, not judged again)) (verified, independence: provider ( → judge-yes), judged reviewing "}
+  summary: "2 findings judged before on the same patch: their verdicts kept, not judged again"
+  forge:
+    merge-requests:
+      - id: 5
+        comments: 1
+        comment-contains: [" runs=2 read=all -->", "\"patch\":\""]
