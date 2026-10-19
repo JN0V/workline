@@ -1,5 +1,5 @@
 case: documentalist/header-only-change-is-not-a-change-in-range
-about: "A commit of a merge request that changes only a doc's header — its sources declared, its `checked` moved — does not touch what the docs following it say: a doc made suspect by an earlier commit is still left for gardening, not taken as made suspect by its commits (`workline init` adopting a repository, tried on a solo repository)."
+about: "A commit of a merge request that changes only a doc's header — its sources declared, its `checked` moved — does not touch what the docs following it say: a doc made suspect by an earlier commit is not taken as made suspect by its commits, nor read there (`workline init` adopting a repository, tried on a solo repository)."
 given:
   repo: documented
   setup:
@@ -11,4 +11,4 @@ run: {role: documentalist, event: merge-request, input: {range: "HEAD~1..HEAD"},
 expect:
   status: pass
   agent-calls: 0
-  findings: [{rule: suspect, where: docs/product/sign-in.md, message: "not changed by these commits"}]
+  no-findings: [{rule: suspect, where: docs/product/sign-in.md}]
