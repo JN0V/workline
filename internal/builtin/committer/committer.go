@@ -90,11 +90,15 @@ func Check(message string, s Settings) ([]verdict.Finding, error) {
 // project's, and in the project's, where a list replaces the role's whole.
 func letThrough(code string, s Settings) string {
 	project := s.projectAllow
-	if project == nil {
-		project = s.InternalCodesAllow
+	if project == nil { // the project's could not be read: the merged list, the person's taken out
+		project = slices.DeleteFunc(slices.Clone(s.InternalCodesAllow), func(c string) bool { return slices.Contains(s.personalAllow, c) })
+	}
+	yours := homeShort(role.PersonalConfig())
+	if yours == "" {
+		yours = "your own config (workline/config.yaml in your config folder)"
 	}
 	return fmt.Sprintf("let it through, for you, in %s under roles.committer.settings: `internal-codes-allow: %s`; for everyone, in .workline/config.yaml under roles.committer.settings: `internal-codes-allow: %s`",
-		homeShort(role.PersonalConfig()), flowList(append(slices.Clone(s.personalAllow), code)), flowList(append(slices.Clone(project), code)))
+		yours, flowList(append(slices.Clone(s.personalAllow), code)), flowList(append(project, code)))
 }
 
 // allowLists finds what InternalCodesAllow is made of, for letThrough: the

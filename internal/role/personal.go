@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"slices"
 	"sort"
+	"strings"
 
 	"go.yaml.in/yaml/v3"
 )
@@ -47,11 +48,14 @@ func PersonalSettings(name string) (map[string]any, error) {
 	return c.Roles[name].Settings, nil
 }
 
+// A Refusal is a person's setting left out, and why.
+type Refusal struct{ Key, Why string }
+
 // WithPersonal lays a person's own settings over the role's merged ones,
-// only those the role lets a person set (`personal` in role.yaml): a list
-// adds to the project's, any other value takes its place. The keys a person
-// may not set are returned, sorted, and left out.
-func (r *Role) WithPersonal(merged, personal map[string]any) (map[string]any, []string) {
+// only those the role lets a person set (`personal` in role.yaml), of the
+// kind the role's are: a list adds to the project's, any other value takes
+// its place. What is left out is returned, by key, with why.
+func (r *Role) WithPersonal(merged, personal map[string]any) (map[string]any, []Refusal) {
 	if len(personal) == 0 {
 		return merged, nil
 	}
@@ -61,10 +65,18 @@ func (r *Role) WithPersonal(merged, personal map[string]any) (map[string]any, []
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
-	var refused []string
+	var refused []Refusal
 	for _, k := range keys {
 		if !slices.Contains(r.Personal, k) {
-			refused = append(refused, k)
+			may := "none"
+			if len(r.Personal) > 0 {
+				may = strings.Join(r.Personal, ", ")
+			}
+			refused = append(refused, Refusal{k, "a person cannot set it for themselves; you may set " + may})
+			continue
+		}
+		if want, got := kindOf(out[k]), kindOf(personal[k]); out[k] != nil && want != got {
+			refused = append(refused, Refusal{k, fmt.Sprintf("it is %s there, where the role's is %s", got, want)})
 			continue
 		}
 		add, isList := personal[k].([]any)
@@ -82,4 +94,21 @@ func (r *Role) WithPersonal(merged, personal map[string]any) (map[string]any, []
 		out[k] = list
 	}
 	return out, refused
+}
+
+// kindOf names a setting's kind as a person reads it.
+func kindOf(v any) string {
+	switch v.(type) {
+	case []any:
+		return "a list"
+	case map[string]any:
+		return "a map"
+	case bool:
+		return "true or false"
+	case int, int64, uint64, float64:
+		return "a number"
+	case nil:
+		return "empty"
+	}
+	return "a text"
 }

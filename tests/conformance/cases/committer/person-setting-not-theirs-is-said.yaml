@@ -9,4 +9,4 @@ expect:
   status: block
   findings:
     - {rule: subject-length, message: "the limit is 72"}
-    - {rule: personal-setting-ignored, level: warn, message: "roles.committer.settings.subject-max, which a person cannot set for themselves: the project's stands; you may set rewrite, ai-max-seconds, internal-codes-allow"}
+    - {rule: personal-setting-ignored, level: warn, message: "roles.committer.settings.subject-max, left out: a person cannot set it for themselves; you may set rewrite, ai-max-seconds, internal-codes-allow; the project's stands"}

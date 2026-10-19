@@ -51,7 +51,8 @@ settings a person sets for themselves, in their own config's
 `roles.<role>.settings`: what only changes their wait or their words (the
 committer's `rewrite`, `ai-max-seconds`, `internal-codes-allow`). They are
 laid last: a value wins over the project's, a list adds to it. Any other
-setting there changes nothing and is said (`personal-setting-ignored`); a
+setting there, or one of another kind than the role's (a text where a list
+is read), changes nothing and is said (`personal-setting-ignored`); a
 config that cannot be read too (`personal-config-invalid`).
 
 If a setting a role depends on cannot be resolved, the role says so and blocks.

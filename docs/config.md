@@ -124,7 +124,7 @@ Support/workline/config.yaml`), what you want wherever you work:
 | `ai` | your agent when a project does not say (`workline setup` writes it) |
 | `approve-push` | `true`: you approve each push (off by default, [ADR-0011](adr/0011-the-review-is-on-the-merge-request-not-the-push.md)) |
 | `approve-push-via` | where you are asked, in order: `terminal`, `editor`, `dialog` |
-| `roles.<role>.settings` | what a role lets you set for yourself (`personal` in its role.yaml; the committer's `rewrite`, `ai-max-seconds`, `internal-codes-allow`): a value wins over the project's, a list adds to it; a project's `ai: none` still keeps every agent away; any other setting is said, and left out |
+| `roles.<role>.settings` | what a role lets you set for yourself (`personal` in its role.yaml; the committer's `rewrite`, `ai-max-seconds`, `internal-codes-allow`): a value wins over the project's, a list adds to it; a project's `ai: none` still keeps every agent away; any other setting, or one of another kind than the role's, is said and left out |
 
 Beside it, in the same folder: `allowed-identities` (one address pattern a
 line, for the committer), `gitleaks.toml` (your forbidden terms, as gitleaks

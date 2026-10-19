@@ -16,11 +16,24 @@ func TestWithPersonal(t *testing.T) {
 		"rewrite": true, "subject-max": 200, "internal-codes-allow": []any{"nRF52", "UTF-8"},
 	})
 	want := map[string]any{"rewrite": true, "subject-max": 72, "internal-codes-allow": []any{"UTF-8", "ADR-[0-9]+", "nRF52"}}
-	if !reflect.DeepEqual(got, want) || !reflect.DeepEqual(refused, []string{"subject-max"}) {
+	if !reflect.DeepEqual(got, want) || len(refused) != 1 || refused[0].Key != "subject-max" {
 		t.Fatalf("got %v, refused %v", got, refused)
 	}
 	if merged["rewrite"] != false || len(merged["internal-codes-allow"].([]any)) != 2 {
 		t.Fatal("the merged settings are left as they were")
+	}
+
+	// A value of another kind than the role's would break the role that
+	// reads it: left out, said.
+	got, refused = r.WithPersonal(merged, map[string]any{"rewrite": "yes", "internal-codes-allow": "nRF52"})
+	if !reflect.DeepEqual(got, merged) || len(refused) != 2 {
+		t.Fatalf("got %v, refused %v", got, refused)
+	}
+	for _, x := range refused {
+		if x.Key == "rewrite" && x.Why != "it is a text there, where the role's is true or false" ||
+			x.Key == "internal-codes-allow" && x.Why != "it is a text there, where the role's is a list" {
+			t.Errorf("%s: %s", x.Key, x.Why)
+		}
 	}
 }
 

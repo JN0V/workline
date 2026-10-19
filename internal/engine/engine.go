@@ -2592,7 +2592,6 @@ func RunsDir(repo string) string {
 	return filepath.Join(repo, ".workline", "runs")
 }
 
-// intSetting reads a whole number from the role's settings; 0 when unset.
 // personalSettings are the role's settings with what the person's own
 // config sets for it laid over, as far as the role lets a person set it
 // (role.Role.WithPersonal); what it may not set, and a config that cannot
@@ -2605,17 +2604,14 @@ func personalSettings(r *role.Role, merged map[string]any, res *Result) map[stri
 		return merged
 	}
 	out, refused := r.WithPersonal(merged, personal)
-	for _, k := range refused {
-		may := "none"
-		if len(r.Personal) > 0 {
-			may = strings.Join(r.Personal, ", ")
-		}
+	for _, x := range refused {
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "personal-setting-ignored", Level: "warn", Where: role.PersonalConfig(),
-			Message: fmt.Sprintf("your own config sets roles.%s.settings.%s, which a person cannot set for themselves: the project's stands; you may set %s", r.Name, k, may)})
+			Message: fmt.Sprintf("your own config sets roles.%s.settings.%s, left out: %s; the project's stands", r.Name, x.Key, x.Why)})
 	}
 	return out
 }
 
+// intSetting reads a whole number from the role's settings; 0 when unset.
 func intSetting(settings map[string]any, key string) int {
 	switch v := settings[key].(type) {
 	case int:
