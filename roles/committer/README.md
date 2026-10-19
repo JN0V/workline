@@ -11,8 +11,8 @@ flowchart LR
   when["<b>When</b><br/>git commit: the commit-msg hook<br/>git push: the pre-push hook<br/>each push to a merge request, in CI"]
   reads["<b>Reads</b><br/>the message<br/>what the commit adds<br/>its author"]
   role(["Committer"])
-  alone["<b>Alone</b><br/>refuses a bad message,<br/>a secret, an author not allowed<br/>rewrite turned on: the agent<br/>rewrites a refused message"]
-  person["<b>Left to a person</b><br/>a refused message, by default<br/>a commit to split<br/>commits already made: git rebase -i"]
+  alone["<b>Alone</b><br/>refuses a bad message,<br/>a secret, an author not allowed<br/>with an agent: rewrites<br/>a refused message, 30 s at most"]
+  person["<b>Left to a person</b><br/>a refused message, with no agent<br/>or the rewrite off<br/>a commit to split<br/>commits already made: git rebase -i"]
   out["<b>Lands in</b><br/>the commit's message<br/>the verdict: terminal or CI log"]
   when --> role
   reads --> role
@@ -25,8 +25,8 @@ file. All roles: [docs/roles.md](../../docs/roles.md).
 
 **Does**: checks each commit message (format, length, internal codes), the
 secrets and forbidden terms a commit adds (gitleaks) and the author's
-identity; when the project turns it on, has an agent rewrite a refused
-message in your words.
+identity; with an agent, has it rewrite a refused message in your words,
+30 s at most.
 **Does not**: check that a commit holds one change (planned:
 [#192](https://github.com/JN0V/workline/issues/192)), split a commit, edit
 code, rewrite commits already made (on a merge request it lists them, for
@@ -56,7 +56,7 @@ a list there adding to the project's:
 | `internal-codes-maybe` | `\b[A-Za-z]{1,3}[0-9]{2,}\b` | codes with no dash, judged |
 | `allowed-identities` | `[]` | author addresses allowed, as patterns; empty with no user list: not checked |
 | `forge-identities` | `[]` | addresses the forge commits with, written whole: allowed, never turning the check on alone |
-| `rewrite` | `false` | an agent rewrites a refused message at a commit ([below](#rewrite-the-agent-opt-in)) |
+| `rewrite` | `true` | an agent rewrites a refused message at a commit ([below](#rewrite-the-agent-30-s-at-most)) |
 | `ai-max-seconds` | `30` | the rewrite's time, every call together: past it, refused with the reasons |
 | `internal-codes-allow` | `UTF-8`, `SHA-256`, `RFC-…`, `v1`, the `ESP32` and `ESP8266` chips… | public names that look like codes |
 
@@ -64,9 +64,9 @@ a list there adding to the project's:
 
 **Outputs**: the verdict on the terminal or in the job's log; `--json`,
 `--sarif`, `--code-quality` in CI. It writes nothing to a forge.
-**Cost**: no call by default. With `rewrite: true`, one call of a light
-model, effort low, per refused message, and one more of a stronger model if
-the rewrite is refused (`promote-after: 1`), within `ai-max-seconds`.
+**Cost**: no call when the message passes; one call of a light model,
+effort low, per refused message, and one more of a stronger model if the
+rewrite is refused (`promote-after: 1`), within `ai-max-seconds`.
 **Status**: [built](../../docs/adr/0036-a-roles-status-is-earned-by-written-criteria.md),
 used daily here since 2026-09 ([where it stands](docs/status.md)).
 
@@ -146,19 +146,19 @@ An author or committer address outside the allow list blocks (`identity`).
   exactly, case included, never as a pattern; alone, they never turn the
   check on.
 
-## Rewrite (the agent, opt-in)
+## Rewrite (the agent, 30 s at most)
 
-- **Off by default**
+- **On by default**, with an agent
   ([ADR-0050](../../docs/adr/0050-each-act-has-its-moment-and-a-wait-budget.md)):
-  the hook asks no agent, even one you set. It refuses in about a second,
-  with the reasons, keeps your message in the file git named, and prints
-  `git commit -e -F <that file>` to take it up again. The same without AI.
-- **`rewrite: true`**, the project's or yours, turns it on, unless the
-  project sets `ai: none`: the agent gets the findings and the staged diff,
-  and proposes one `commit-message`, or a `note` to split the commit.
+  the agent gets the findings and the staged diff, and proposes one
+  `commit-message`, or a `note` to split the commit.
 - **30 s at most**: the hook says which agent rewrites, and how long at
   most, before it starts. Past `ai-max-seconds`, every call and retry
   together, the message is refused with its reasons, and kept.
+- **`rewrite: false`**, the project's or yours, turns it off; so does a
+  project's `ai: none`, and no agent at all. The hook then refuses in about
+  a second, keeps your message in the file git named, and prints
+  `git commit -e -F <that file>` to take it up again.
 
 ## Judge (`post`, no AI)
 

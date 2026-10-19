@@ -1,7 +1,8 @@
 case: committer/hook-refuses-and-keeps-the-message
-about: "By default the commit-msg hook asks no agent, even one the person set (ADR-0050): it refuses with the reasons, keeps the message where git wrote it, and gives the command that takes it up again."
+about: "With the rewrite turned off, the commit-msg hook asks no agent, even one the person set (ADR-0050): it refuses with the reasons, keeps the message where git wrote it, and gives the command that takes it up again."
 given:
   repo: basic
+  config: {roles: {committer: {settings: {rewrite: false}}}}
   setup: ["printf 'fix: AC-3\\n' > .git/COMMIT_EDITMSG"]
   env: {WORKLINE_AI: "fake:$FIXTURES/agents/good-commit-message.yaml"}
 run: {cli: [hook, commit-msg, .git/COMMIT_EDITMSG]}

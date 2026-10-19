@@ -325,8 +325,8 @@ func build(t *testing.T, c *caseFile) (work, repo string, env []string, err erro
 	}
 	cfg := c.Given.Config
 	if c.Run.Role == "committer" {
-		// The rewrite is what the committer's cases measure: turned on
-		// (opt-in since ADR-0050) over the project's config at that commit.
+		// The rewrite is what the committer's cases measure: on (ADR-0050),
+		// whatever the project's config at that commit says.
 		if cfg == nil {
 			if data, err := os.ReadFile(filepath.Join(repo, ".workline", "config.yaml")); err == nil {
 				yaml.Unmarshal(data, &cfg)

@@ -106,13 +106,13 @@ git commit --allow-empty -m "AC-3 fix the thing"
 # commit aborted; your message is kept in .git/COMMIT_EDITMSG: to edit it and commit again, git commit -e -F .git/COMMIT_EDITMSG
 ```
 
-- **In about a second**: by default the hook asks no agent, even yours
-  ([ADR-0050](adr/0050-each-act-has-its-moment-and-a-wait-budget.md)).
-- **To have it rewritten**, set `rewrite: true` under
-  `roles: {committer: {settings: …}}`: in `.workline/config.yaml` for the
-  project, or in your own config for you (a project's `ai: none` still
-  wins). The same commit then goes through, rewritten, 30 s at most
-  ([the committer](../roles/committer/README.md#rewrite-the-agent-opt-in)):
+- **With no agent**, or `rewrite: false` under
+  `roles: {committer: {settings: …}}` (the project's
+  `.workline/config.yaml`, or your own config), it refuses in about a
+  second, as above.
+- **With an agent**, the same commit goes through, rewritten, 30 s at most
+  ([the committer](../roles/committer/README.md#rewrite-the-agent-30-s-at-most),
+  [ADR-0050](adr/0050-each-act-has-its-moment-and-a-wait-budget.md)):
 
 ```text
 workline committer: the message is refused; the agent (claude) rewrites it, 30 s at most…

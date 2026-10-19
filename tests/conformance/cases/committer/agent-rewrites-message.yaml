@@ -1,5 +1,5 @@
 case: committer/agent-rewrites-message
-about: "With the rewrite turned on and an agent, a rejected message is rewritten, and the new one passes the same checks."
-given: {repo: basic, config: {roles: {committer: {settings: {rewrite: true}}}}}
+about: "By default, with an agent, a rejected message is rewritten (ADR-0050), and the new one passes the same checks."
+given: {repo: basic}
 run: {role: committer, event: commit-msg, input: {message: "fix: AC-3"}, ai: "fake:good-commit-message"}
 expect: {status: pass, agent-calls: 1, applied: [commit-message]}

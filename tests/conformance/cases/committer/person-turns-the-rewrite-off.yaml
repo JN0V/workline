@@ -1,0 +1,14 @@
+case: committer/person-turns-the-rewrite-off
+about: "A person turns the rewrite off for themselves (`rewrite: false` in their own config): at their commit, their agent set, the hook refuses at once with the reasons and keeps the message."
+given:
+  repo: basic
+  setup:
+    - "mkdir -p \"$XDG_CONFIG_HOME/workline\" && printf 'ai: fake:%s\\nroles: {committer: {settings: {rewrite: false}}}\\n' \"$FIXTURES/agents/good-commit-message.yaml\" > \"$XDG_CONFIG_HOME/workline/config.yaml\""
+    - "printf 'fix: AC-3\\n' > .git/COMMIT_EDITMSG"
+  env: {WORKLINE_AI: ""}
+run: {cli: [hook, commit-msg, .git/COMMIT_EDITMSG]}
+expect:
+  exit: 1
+  stderr: ["workline committer: block — rewrite the commit message", "your message is kept in .git/COMMIT_EDITMSG"]
+  files:
+    .git/COMMIT_EDITMSG: {contains: "fix: AC-3"}

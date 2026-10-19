@@ -31,8 +31,9 @@ type Settings struct {
 	InternalCodesMaybe []string `json:"internal-codes-maybe"`
 	AllowedIdentities  []string `json:"allowed-identities"`
 	ForgeIdentities    []string `json:"forge-identities"`
-	// Rewrite asks the agent to rewrite a refused message at a commit;
-	// off by default, the hook refusing in about a second (ADR-0050).
+	// Rewrite asks the agent to rewrite a refused message at a commit, on
+	// by default within AIMaxSeconds; off, the hook refuses in about a
+	// second (ADR-0050).
 	Rewrite bool `json:"rewrite"`
 	// AIMaxSeconds is how long the rewrite may take; the engine holds it.
 	AIMaxSeconds int `json:"ai-max-seconds"`
@@ -294,8 +295,8 @@ func Pre(runDir, repo string) int {
 		return 10
 	}
 	if !s.Rewrite {
-		// The agent's rewrite is opt-in (ADR-0050): the person rewrites, the
-		// reasons in hand, their message kept.
+		// The agent's rewrite turned off (ADR-0050): the person rewrites,
+		// the reasons in hand, their message kept.
 		v := verdict.Verdict{Status: verdict.Block, Summary: "rewrite the commit message", Findings: append(findings, advisories...)}
 		if err := verdict.Write(filepath.Join(runDir, "out", "verdict.yaml"), &v); err != nil {
 			return fail(err)

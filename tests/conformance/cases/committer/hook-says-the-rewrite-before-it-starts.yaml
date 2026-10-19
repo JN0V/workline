@@ -1,8 +1,7 @@
 case: committer/hook-says-the-rewrite-before-it-starts
-about: "With the rewrite turned on, the hook says which agent rewrites the refused message, and for how long at most, before the agent is asked; then the message committed."
+about: "By default, the hook says which agent rewrites the refused message, and for how long at most, before the agent is asked; then the message committed."
 given:
   repo: basic
-  config: {roles: {committer: {settings: {rewrite: true}}}}
   setup: ["printf 'fix: AC-3\\n' > .git/COMMIT_EDITMSG"]
   env: {WORKLINE_AI: "fake:$FIXTURES/agents/good-commit-message.yaml"}
 run: {cli: [hook, commit-msg, .git/COMMIT_EDITMSG]}

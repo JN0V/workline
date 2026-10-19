@@ -23,7 +23,9 @@ per document, or deduplicates.
   OBS-1, SEC-4, TEST-7, CI-15…, 48 codes). 14 for a code with no dash, all
   public chip names: ESP32 (7), ESP8266 (7). Its 681 commits also hold no-dash
   internal codes (19: R14–R26, M10–M19, C21), so the pattern stays;
-  the two chips join the role's list, and nothing else
+  the two chips join the role's list, and nothing else. With them, 106 of
+  the 300 (35 %) are still refused, most for their length: the reason the
+  agent's rewrite stays on by default, capped at 30 s
   ([#528](https://github.com/JN0V/workline/pull/528)).
 
 ## Release manager
