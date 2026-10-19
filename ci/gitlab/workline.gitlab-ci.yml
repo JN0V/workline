@@ -202,7 +202,9 @@ workline:apply:
 # (allow_failure): a lens that fails is said in that comment. GitLab
 # merges a merge request set to merge once its pipeline succeeds: the
 # merge waits for them, never on what they find. With the agent's token
-# only; one review apart at a time per merge request.
+# and the bot's: unposted, their record would never move, and every
+# pipeline read them all again. One review apart at a time per merge
+# request.
 workline:warn:
   extends: .workline
   stage: test
@@ -211,7 +213,7 @@ workline:warn:
   resource_group: workline-warn-$CI_MERGE_REQUEST_IID
   variables: {WORKLINE_STICKY: reviewer/warn}   # the ready note read against its own comment
   rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CLAUDE_CODE_OAUTH_TOKEN
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CLAUDE_CODE_OAUTH_TOKEN && $WORKLINE_GITLAB_TOKEN
   script:
     - *claude
     - *ready

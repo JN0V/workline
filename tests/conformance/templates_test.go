@@ -364,6 +364,9 @@ func TestOneLinePerMergeRequestAtATime(t *testing.T) {
 			t.Errorf("%sworkline-warn.yml: no concurrency group of its own per pull request cancelling the run in progress: %v", dir, warn.Concurrency)
 		}
 		for name, job := range warn.Jobs {
+			if strings.Contains(job.If, "always()") {
+				t.Errorf("%sworkline-warn.yml, job %s: runs on always(), a cancelled run's too: %q", dir, name, job.If)
+			}
 			for _, s := range job.Steps {
 				if strings.Contains(s.If, "always()") {
 					t.Errorf("%sworkline-warn.yml, job %s: a step runs on always(), a cancelled run's too: %q", dir, name, s.If)
@@ -537,26 +540,43 @@ func TestWarnApartSaysWhatIsMissing(t *testing.T) {
 		t.Fatalf("%s: no step %q", file, step)
 		return ""
 	}
-	warns := func(run string, files map[string]string) bool {
+	// run runs a step's script in a folder holding these workflows and, with
+	// reviewer, a config routing the reviewer; it says whether the step
+	// warned, and whether it said the run apart reads (any=true).
+	run := func(script string, files map[string]string, reviewer bool) (warned, reads bool) {
 		dir := t.TempDir()
 		os.MkdirAll(filepath.Join(dir, ".github", "workflows"), 0o755)
+		os.MkdirAll(filepath.Join(dir, ".workline"), 0o755)
+		if reviewer {
+			os.WriteFile(filepath.Join(dir, ".workline", "config.yaml"), []byte("routing: {events: {merge-request: [committer, reviewer]}}\n"), 0o644)
+		}
 		for name, from := range files {
 			data, err := os.ReadFile(from)
 			if err != nil {
 				t.Fatal(err)
 			}
 			if name == "old-apply" { // an apply copied before the run apart
-				name, data = "workline-apply.yml", []byte(strings.Replace(string(data), "workflows: [workline, workline warn]", "workflows: [workline]", 1))
+				old := strings.Replace(string(data), "workflows: [workline, workline warn]", "workflows: [workline]", 1)
+				if old == string(data) {
+					t.Fatalf("%s: no `workflows: [workline, workline warn]` to make an older apply of", from)
+				}
+				name, data = "workline-apply.yml", []byte(old)
 			}
 			os.WriteFile(filepath.Join(dir, ".github", "workflows", name), data, 0o644)
 		}
-		cmd := exec.Command("sh", "-ec", run)
-		cmd.Dir = dir
+		output := filepath.Join(dir, "output")
+		cmd := exec.Command("sh", "-ec", script)
+		cmd.Dir, cmd.Env = dir, append(os.Environ(), "GITHUB_OUTPUT="+output)
 		out, err := cmd.CombinedOutput()
 		if err != nil {
-			t.Fatalf("%s: %v\n%s", run, err, out)
+			t.Fatalf("%s: %v\n%s", script, err, out)
 		}
-		return strings.Contains(string(out), "::warning")
+		said, _ := os.ReadFile(output)
+		return strings.Contains(string(out), "::warning"), strings.Contains(string(said), "any=true")
+	}
+	warns := func(script string, files map[string]string) bool {
+		warned, _ := run(script, files, true)
+		return warned
 	}
 	for _, dir := range []string{"../../ci/github/", "../../.github/workflows/"} {
 		judge := script(dir+"workline.yml", "Whether anything reads the lenses that warn")
@@ -566,12 +586,17 @@ func TestWarnApartSaysWhatIsMissing(t *testing.T) {
 		if warns(judge, map[string]string{"workline.yml": dir + "workline.yml", "workline-warn.yml": dir + "workline-warn.yml"}) {
 			t.Errorf("%sworkline.yml: warns with workline-warn.yml beside it", dir)
 		}
-		apart := script(dir+"workline-warn.yml", "Whether anything applies what it proposed")
-		if !warns(apart, map[string]string{"workline-warn.yml": dir + "workline-warn.yml", "old-apply": dir + "workline-apply.yml"}) {
-			t.Errorf("%sworkline-warn.yml: no warning with an apply that does not name it", dir)
+		// The run apart reads only where something applies what it
+		// proposes, said when nothing does; with no reviewer, nothing.
+		apart := script(dir+"workline-warn.yml", "Whether anything reads apart")
+		if warned, reads := run(apart, map[string]string{"workline-warn.yml": dir + "workline-warn.yml", "old-apply": dir + "workline-apply.yml"}, true); !warned || reads {
+			t.Errorf("%sworkline-warn.yml: with an apply that does not name it, warned %v, reads %v; want a warning, no read", dir, warned, reads)
 		}
-		if warns(apart, map[string]string{"workline-warn.yml": dir + "workline-warn.yml", "workline-apply.yml": dir + "workline-apply.yml"}) {
-			t.Errorf("%sworkline-warn.yml: warns with this release's apply beside it", dir)
+		if warned, reads := run(apart, map[string]string{"workline-warn.yml": dir + "workline-warn.yml", "workline-apply.yml": dir + "workline-apply.yml"}, true); warned || !reads {
+			t.Errorf("%sworkline-warn.yml: with this release's apply, warned %v, reads %v; want a read, no warning", dir, warned, reads)
+		}
+		if warned, reads := run(apart, map[string]string{"workline-warn.yml": dir + "workline-warn.yml", "workline-apply.yml": dir + "workline-apply.yml"}, false); warned || reads {
+			t.Errorf("%sworkline-warn.yml: with no reviewer, warned %v, reads %v; want neither", dir, warned, reads)
 		}
 		applies := script(dir+"workline.yml", "Whether anything applies what it proposed")
 		if warns(applies, map[string]string{"workline.yml": dir + "workline.yml", "workline-apply.yml": dir + "workline-apply.yml"}) {
@@ -649,7 +674,7 @@ func TestWarnApartNeverHoldsTheVerdict(t *testing.T) {
 			for _, s := range job.Steps {
 				keeps = keeps || strings.Contains(s.Run, "--verdict-only") || strings.Contains(s.Run, "workline follow")
 			}
-			if keeps && !strings.Contains(job.If, "github.event.workflow_run.name == 'workline'") && strings.Contains(job.If, "workflow_run") {
+			if keeps && !strings.Contains(job.If, "github.event.workflow_run.name == 'workline'") {
 				t.Errorf("%sworkline-apply.yml, job %s: keeps or follows a verdict after any run, the one apart's too: if %q", dir, name, job.If)
 			}
 		}

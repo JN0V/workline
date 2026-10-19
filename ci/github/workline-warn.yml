@@ -51,11 +51,20 @@ jobs:
         if: env.HAS_CLAUDE == 'true'
         with: {fetch-depth: 0, ref: "${{ github.event.pull_request.head.sha }}"}
       # The lenses that warn are the reviewer's: with no reviewer in the
-      # project's config, nothing reads apart, nothing is installed.
+      # project's config, nothing reads apart, nothing is installed. Nor
+      # when no workflow applies what they propose, said: their record would
+      # never move, and every push read them all again.
       - name: Whether anything reads apart
         id: any
         if: env.HAS_CLAUDE == 'true'
-        run: if grep -qsw reviewer .workline/config.yaml; then echo "any=true" >> "$GITHUB_OUTPUT"; else echo "no reviewer in .workline/config.yaml, nothing reads apart"; fi
+        run: |
+          if ! grep -qsw reviewer .workline/config.yaml; then
+            echo "no reviewer in .workline/config.yaml, nothing reads apart"
+          elif ! grep -qsE 'workflows: \[.*workline warn' .github/workflows/*.yml; then
+            echo "::warning title=workline::no workflow applies what the lenses that warn propose, so they do not read; copy workline-apply.yml of this release beside workline-warn.yml (docs/ci-github.md)"
+          else
+            echo "any=true" >> "$GITHUB_OUTPUT"
+          fi
       # The engine at the version pinned above, checksum verified, and the
       # agent.
       - name: workline, and Claude
@@ -90,13 +99,7 @@ jobs:
           [ ! -s workline-summary.md ] || cat workline-summary.md
           [ ! -s workline-summary.md ] || cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"
           mkdir -p report && echo "${{ github.event.pull_request.number }}" > report/number
-      # Applied by workline-apply.yml, from the default branch, once it names
-      # this workflow: said when none does.
-      - name: Whether anything applies what it proposed
-        if: steps.line.outputs.proposed == 'true'
-        run: |
-          grep -qsE 'workflows: \[.*workline warn' .github/workflows/*.yml ||
-            echo "::warning title=workline::no workflow applies what the lenses that warn proposed; copy workline-apply.yml of this release beside workline-warn.yml (docs/ci-github.md)"
+      # Applied by workline-apply.yml, from the default branch.
       - uses: actions/upload-artifact@v4
         if: steps.line.outputs.proposed == 'true'
         with: {name: workline-runs, path: "line.json\n.workline-runs\nreport/number", include-hidden-files: true}
