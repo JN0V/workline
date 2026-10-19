@@ -32,6 +32,12 @@
 #   artifact it only downloads), is linked from the job's page (Annotations)
 #   and from the merge request's (`expose_as`). `--summary` needs the first
 #   release after v0.16.0.
+#   A merge train's pipeline (`merge_train`, Premium; ADR-0050; the first
+#   release after v0.37.0) runs gates alone, on the merged result, against
+#   the target's tip, no agent asked: the head's review and verdict, and
+#   a person's yes, stay its merge request's (ADR-0042). A merged results
+#   pipeline (`merged_result`) is the merge request's own, on each push:
+#   every job runs there, as on any other.
 #   apply  holds WORKLINE_GITLAB_TOKEN (a project access token, role Developer,
 #          scopes `api` and `write_repository`: one glab command in
 #          docs/ci-gitlab.md makes and stores it; CI_JOB_TOKEN reaches no issue) and
@@ -104,6 +110,7 @@ variables:
     - *trust
     - workline version
     - git fetch --quiet origin $CI_MERGE_REQUEST_DIFF_BASE_SHA || true
+    - '[ -z "${CI_MERGE_REQUEST_TARGET_BRANCH_SHA:-}" ] || git fetch --quiet origin "$CI_MERGE_REQUEST_TARGET_BRANCH_SHA" || true'
 
 # The gates alone, before the judge. GitLab gives every job the project's
 # variables: this one unsets the agent's token and the project bot's
@@ -111,6 +118,10 @@ variables:
 # from a pipeline they change (ADR-0044); a fork's merge request runs in
 # the fork, which has neither. The judge runs after it, whatever its
 # verdict: the line reads it, and errs on a gate it does not hold.
+# In a merge train (ADR-0050), the only job of workline: the gates on the
+# merged result, the train's commit, against the target's tip; it fails
+# the train's pipeline when they block, and its summary names the steps
+# left to the head's verdict.
 workline:gates:
   extends: .workline
   stage: test
@@ -118,9 +129,11 @@ workline:gates:
   script:
     - unset CLAUDE_CODE_OAUTH_TOKEN WORKLINE_GITLAB_TOKEN GITLAB_TOKEN
     - status=0
+    - base=$CI_MERGE_REQUEST_DIFF_BASE_SHA; queue=
+    - 'if [ "${CI_MERGE_REQUEST_EVENT_TYPE:-}" = merge_train ]; then base=${CI_MERGE_REQUEST_TARGET_BRANCH_SHA:-$base}; queue="--input queue=true"; fi'
     - >
-      workline route merge-request --gates-only --forge none
-      --input range=$CI_MERGE_REQUEST_DIFF_BASE_SHA..$CI_COMMIT_SHA
+      workline route merge-request --gates-only --forge none $queue
+      --input range=$base..$CI_COMMIT_SHA
       --code-quality gl-code-quality-gates.json --summary gates-summary.md --summary gates-summary.html
       --json > gates.json || status=$?
     - exit $status
@@ -139,8 +152,8 @@ workline:judge:
   extends: .workline
   stage: test
   needs: [workline:gates]
-  rules:                            # also when the gates did not pass: the line reads their verdict
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  rules:                            # also when the gates did not pass: the line reads their verdict; never in a merge train
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_EVENT_TYPE != "merge_train"
       when: always
   # One pipeline per merge request (#359): a push cancels the one still
   # judging the head before, with GitLab's "Auto-cancel redundant
@@ -185,7 +198,7 @@ workline:apply:
   interruptible: false
   resource_group: workline-review-$CI_MERGE_REQUEST_IID   # one review at a time, with workline:judge (#375)
   rules:                            # also when the judge failed: a blocked merge request still gets the reviewer's comment (#226)
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $WORKLINE_GITLAB_TOKEN
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_EVENT_TYPE != "merge_train" && $WORKLINE_GITLAB_TOKEN
       when: always
   script:
     - export GITLAB_TOKEN=$WORKLINE_GITLAB_TOKEN
@@ -221,7 +234,7 @@ workline:warn:
   resource_group: workline-warn-$CI_MERGE_REQUEST_IID
   variables: {WORKLINE_STICKY: reviewer/warn}   # the ready note read against its own comment
   rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CLAUDE_CODE_OAUTH_TOKEN && $WORKLINE_GITLAB_TOKEN
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_EVENT_TYPE != "merge_train" && $CLAUDE_CODE_OAUTH_TOKEN && $WORKLINE_GITLAB_TOKEN
   script:
     - *ready
     - *claude
@@ -249,7 +262,7 @@ workline:warn:apply:
   interruptible: false
   resource_group: workline-warn-$CI_MERGE_REQUEST_IID   # one review apart at a time, with workline:warn
   rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $WORKLINE_GITLAB_TOKEN && $CLAUDE_CODE_OAUTH_TOKEN
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_EVENT_TYPE != "merge_train" && $WORKLINE_GITLAB_TOKEN && $CLAUDE_CODE_OAUTH_TOKEN
       when: always
   script:
     - '[ -s line.json ] || { echo "workline: the lenses that warn left nothing to apply"; exit 0; }'
@@ -278,7 +291,7 @@ workline:merge:
   variables: {GIT_DEPTH: 0}         # the whole history, as .workline
   resource_group: workline-follow   # one at a time, with workline:follow
   rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $WORKLINE_GITLAB_TOKEN && $CI_MERGE_REQUEST_SOURCE_PROJECT_ID == $CI_PROJECT_ID
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_EVENT_TYPE != "merge_train" && $WORKLINE_GITLAB_TOKEN && $CI_MERGE_REQUEST_SOURCE_PROJECT_ID == $CI_PROJECT_ID
       when: always
   script:
     - *trust

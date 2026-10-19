@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/role/config.go, internal/engine/engine.go, internal/hooks, internal/agent/claude.go, internal/agent/command.go]
-checked: e3e965d0
+checked: 29e55a0b
 judged: b5899f5
 verified: agent:claude-code
 ---
@@ -124,7 +124,7 @@ Each in detail: [the commands](commands.md), and
   branch (`release.branches`) has the merge request held as the release
   ([ADR-0017](adr/0017-the-release-manager.md)), and the versions the
   tool bumps left out of the review
-  ([more](../roles/reviewer/docs/run.md#13-the-range-the-rules-the-record)).
+  ([more](../roles/reviewer/docs/run.md#12-the-range-the-rules)).
 
 ### The job's summary
 

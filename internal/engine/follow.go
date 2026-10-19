@@ -58,6 +58,9 @@ func Follow(o FollowOptions) *Result {
 	if f == nil {
 		return fail(errors.New("follow needs a forge: " + forge.Missing))
 	}
+	if o.Group != "" {
+		return queueGroup(f, o, res)
+	}
 	if base == "" {
 		if base, err = git(repo, nil, "symbolic-ref", "-q", "--short", "HEAD"); err != nil {
 			return fail(errors.New("on no branch: give the branch the merge requests go into with --base"))

@@ -1,0 +1,12 @@
+case: merge/queue-group-on-gitlab-sets-nothing
+about: "`follow --merge-group` on a forge that keeps no yes on a merge queue's group (GitLab: a merge train waits for its pipeline, no status of workline's, ADR-0050): nothing is set, and it says so as a warning, never an error."
+given:
+  repo: documented
+  config: {merge: {autonomy: cautious}}
+  forge:
+    merge-requests: []
+run: {follow: [--merge-group, gh-readonly-queue/main/pr-7-7f122f4acd601f5afc1a76b31fe0640ec2174b39, --head, main], forge: gitlab}
+expect:
+  status: pass
+  findings: [{rule: merge-unsupported, level: warn, message: "this forge keeps no yes on a merge queue's group"}]
+  summary: "a merge queue's group: the forge keeps no yes there"

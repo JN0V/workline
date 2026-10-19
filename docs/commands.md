@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/engine/engine.go, internal/hooks]
-checked: e3e965d0
+checked: 29e55a0b
 verified: agent:claude-code
 judged: e343388
 ---
@@ -34,6 +34,9 @@ leaves it; `--warn-only` runs only that, never a gate nor another role,
 and writes no verdict (`--verdict` refused): what only warns, apart from
 the verdict ([apart](../roles/reviewer/docs/apart.md)). Both flags, or one
 and an `--input warn=` naming the other run, are misuse.
+With `--input queue=true`, a merge queue's or train's run: the gates
+alone, on the merged result, the steps left named; `--verdict` and
+`--warn-only` refused ([a merge queue or train](merge-queue.md)).
 
 ### workline apply
 
@@ -232,4 +235,7 @@ Run when the default branch moves (CI's `follow` job,
   too —, the first in line brought up to date.
 - Options: `--base` (default: the branch checked out), `--forge`,
   `--repo`, `--json`, `--summary`; `--verdict <file>`, a head's verdict
-  `route --verdict` wrote, kept first (`--verdict-only`: nothing else).
+  `route --verdict` wrote, kept first (`--verdict-only`: nothing else);
+  `--merge-group <branch> --head <commit>`, with `merge:`, the yes of the
+  head a merge queue's group ends with set on the group's commit, and
+  nothing else ([a merge queue](merge-queue.md)).

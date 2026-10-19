@@ -1,0 +1,7 @@
+case: cli/merge-group-follows-nothing-else
+about: "`follow --merge-group` sets a yes on a merge queue's group and follows nothing else: with --verdict, --gardening or --base, misuse, 64."
+given: {repo: basic}
+run: {cli: [follow, --merge-group, gh-readonly-queue/main/pr-7-abc, --head, abc, --verdict, verdict.json]}
+expect:
+  exit: 64
+  stderr: ["--merge-group follows nothing else: no --verdict, --gardening nor --base"]

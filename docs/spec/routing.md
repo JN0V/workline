@@ -1,6 +1,6 @@
 ---
 sources: [internal/line, internal/routing, internal/work, routing.default.yaml]
-checked: 5193cf0b
+checked: 29e55a0b
 verified: agent:claude-code
 ---
 # Routing — v1 (draft)
@@ -192,6 +192,20 @@ judged says so too (`ai-waits-for-ready`, a warning), and the head's
 verdict is then a review to come, never a pass
 ([merge policy](../merge-policy.md)). The rules and gates run as on any
 push. With no agent set, nothing waits; `draft=false` changes nothing.
+
+### A merge queue's or train's run: the gates alone
+
+[ADR-0050](../adr/0050-each-act-has-its-moment-and-a-wait-budget.md#4-what-the-table-holds-to):
+given `--input queue=true`, the line runs the event's gate steps alone,
+on the merged result its range ends with, whoever made its last commit;
+no role runs, so no agent is asked. With `--gates-from`, it reads their
+verdicts, as on a merge request. The line's summary says it is a queue's
+or train's run, and names the steps it left, their verdict the head's;
+with no gate, that nothing was checked. A `--verdict` is refused: the
+head's verdict and the person's yes stay the merge request's
+([ADR-0042](../adr/0042-the-engine-merges-by-the-projects-policy.md));
+so is `--warn-only`, and any value but `true` or `false`
+([a merge queue or train](../merge-queue.md)).
 
 ## Where state lives
 

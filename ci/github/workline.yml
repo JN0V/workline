@@ -41,18 +41,28 @@
 #          workline-warn.yml (--warn-apart, ADR-0050; the first release
 #          after v0.36.0): the head's verdict waits only for what can block.
 #          It warns when no workflow reads them.
+#
+# A merge queue's group (`merge_group`, ADR-0050; the first release after
+# v0.37.0): gates runs the gates on the merged result, judge only says
+# their verdict, the check the queue waits for, no agent installed nor
+# asked. The pull request's head keeps its review and verdict, the
+# person's yes too (ADR-0042); nothing is applied. A merge queue is an
+# organisation's (docs/ci-github.md#a-merge-queue).
 name: workline
 on:
   # ready_for_review: a draft marked ready, read by every lens of the
   # reviewer once, when the line runs it (ADR-0020). A draft's pushes ask
   # no agent: rules and gates only (ADR-0050).
   pull_request: {types: [opened, synchronize, reopened, ready_for_review]}
+  # A merge queue's group: without it, the checks the queue requires never
+  # report, and it waits until its timeout.
+  merge_group: {types: [checks_requested]}
 permissions: {}
 # One run per pull request (#359): a push cancels the run still on the
 # head before, whose commits the newer run reviews with its own. Nothing
 # of a cancelled run is uploaded after (`!cancelled()`), nor applied
-# (workline-apply.yml).
-concurrency: {group: "workline-judge-${{ github.event.pull_request.number }}", cancel-in-progress: true}
+# (workline-apply.yml). A queue's group, one run of its own.
+concurrency: {group: "workline-judge-${{ github.event.pull_request.number || github.event.merge_group.head_ref }}", cancel-in-progress: true}
 
 env:
   WORKLINE_VERSION: v0.37.0          # a release of workline: update it to take a newer one (x-release-please-version)
@@ -65,13 +75,15 @@ jobs:
   # plugin, a build —, so this job holds no write token and no secret, the
   # agent's neither (ADR-0049). judge reads their verdicts; workline-apply.yml
   # shows what they found the change adds. With no gate, it ends at once.
+  # In a merge queue, on the group's commit: the pull requests ahead of it
+  # and this one, merged on the base.
   gates:
     runs-on: ubuntu-latest
     permissions: {contents: read}
     outputs: {ran: "${{ steps.gates.outputs.ran }}"}
     steps:
       - uses: actions/checkout@v4
-        with: {fetch-depth: 0, ref: "${{ github.event.pull_request.head.sha }}", persist-credentials: false}
+        with: {fetch-depth: 0, ref: "${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha }}", persist-credentials: false}
       - name: Whether the line has a gate
         id: any
         run: if grep -qs 'gate:' .workline/config.yaml; then echo "any=true" >> "$GITHUB_OUTPUT"; else echo "no gate in .workline/config.yaml"; fi
@@ -90,8 +102,8 @@ jobs:
         if: steps.any.outputs.any == 'true'
         run: |
           status=0
-          workline route merge-request --gates-only --forge none \
-            --input range=${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} \
+          workline route merge-request --gates-only --forge none ${{ github.event_name == 'merge_group' && '--input queue=true' || '' }} \
+            --input range=${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}..${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha }} \
             --summary workline-summary.md --json > gates.json || status=$?
           echo "status=$status" >> "$GITHUB_OUTPUT"
           echo "ran=$(jq '(.steps // []) | length > 0' gates.json)" >> "$GITHUB_OUTPUT"
@@ -113,7 +125,7 @@ jobs:
     # apply, neither cancelling the other: a push waits while the run
     # before it is applied, then reads its record and reviews only what is
     # new.
-    concurrency: {group: "workline-review-${{ github.event.pull_request.number }}", cancel-in-progress: false}
+    concurrency: {group: "workline-review-${{ github.event.pull_request.number || github.event.merge_group.head_ref }}", cancel-in-progress: false}
     # pull-requests read: the reviewer, when the line runs it, reads its
     # summary comment, to review only the commits it has not reviewed yet.
     permissions: {contents: read, security-events: write, pull-requests: read}
@@ -130,7 +142,7 @@ jobs:
       # The branch's head, not the merge GitHub builds for a pull request: a
       # doc checked here names a commit the branch holds.
       - uses: actions/checkout@v4
-        with: {fetch-depth: 0, ref: "${{ github.event.pull_request.head.sha }}"}
+        with: {fetch-depth: 0, ref: "${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha }}"}
       # The engine at the version pinned above, and the tools its roles use,
       # from their releases, checksums verified: seconds, not a build.
       - name: workline
@@ -141,9 +153,9 @@ jobs:
           get https://github.com/gitleaks/gitleaks/releases/download/v8.30.1 gitleaks_8.30.1_linux_x64.tar.gz gitleaks_8.30.1_checksums.txt gitleaks
           echo "$bin" >> "$GITHUB_PATH"
           "$bin/workline" version
-      # A draft asks no agent (ADR-0050): nothing to install.
+      # A draft asks no agent, nor a queue's group (ADR-0050): nothing to install.
       - name: Claude, when the repository gives its token
-        if: env.HAS_CLAUDE == 'true' && !github.event.pull_request.draft
+        if: env.HAS_CLAUDE == 'true' && github.event_name == 'pull_request' && !github.event.pull_request.draft
         run: npm install -g @anthropic-ai/claude-code
       # The gates' verdicts, from their job: the line never runs a gate
       # here, and errs on one whose verdict is not there.
@@ -153,6 +165,7 @@ jobs:
 
       - name: The line for this pull request (proposals only)
         id: line
+        if: github.event_name == 'pull_request'
         # The branch tells a release tool's pull request, held as the release
         # (ADR-0017); from a fork it is anyone's text: a variable, never
         # written into the script. Opened ready, or marked ready, the
@@ -186,6 +199,21 @@ jobs:
           mkdir -p report && { [ ! -s workline-summary.md ] || cp workline-summary.md report/report.md; }
           echo "${{ github.event.pull_request.number }}" > report/number
 
+      # A merge queue's group (ADR-0050): the gates' verdicts on the merged
+      # result, read from their job, are the line's; no agent, no token,
+      # nothing proposed, no verdict kept for a head.
+      - name: The queue's run (the gates on the merged result)
+        id: queue
+        if: github.event_name == 'merge_group'
+        run: |
+          status=0
+          workline route merge-request --ai none --forge none --input queue=true \
+            --input range=${{ github.event.merge_group.base_sha }}..${{ github.event.merge_group.head_sha }} \
+            --gates-from "$RUNNER_TEMP/gates/gates.json" --summary workline-summary.md --json > line.json || status=$?
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          [ ! -s workline-summary.md ] || cat workline-summary.md
+          [ ! -s workline-summary.md ] || cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"
+
       # Applied by workline-apply.yml, from the default branch: said when
       # this branch has no workflow run after this one.
       - name: Whether anything applies what it proposed
@@ -204,7 +232,7 @@ jobs:
       # From a fork, this job has no right to comment: the report goes to
       # workline-fork.yml, which comments it from the repository's side.
       - uses: actions/upload-artifact@v4
-        if: '!cancelled() && github.event.pull_request.head.repo.full_name != github.repository'
+        if: "!cancelled() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository"
         with: {name: workline-report, path: report/}
 
       # The line's verdict on the head, for workline-apply.yml to keep (the
@@ -229,7 +257,7 @@ jobs:
       # change's fault: a person judges what it would have (ADR-0010).
       - name: Verdict
         run: |
-          status=${{ steps.line.outputs.status }}
+          status=${{ steps.line.outputs.status || steps.queue.outputs.status }}
           if [ "$status" = 3 ]; then
             echo "::warning title=workline::the agent could not be reached; the docs are listed in the summary, for a person"
             exit 0
