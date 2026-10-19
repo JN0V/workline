@@ -1,6 +1,6 @@
 ---
 sources: [ci/github, ci/gitlab, ci/forgejo/workline-forge.sh, roles/product-owner/role.yaml, cmd/workline]
-checked: 2a1a9d41
+checked: 29e55a0b
 judged: a8574a5
 verified: agent:claude-code
 reader: 8aab3bd261d9
@@ -45,6 +45,9 @@ then one that applies, with the write token and no AI key
   ([apart](../roles/reviewer/docs/apart.md)).
 - **A draft asks no agent** until it is marked ready
   ([how](../roles/reviewer/docs/ready.md)).
+- **A merge queue or train runs the gates alone** on the merged result,
+  no agent; the checks it requires report there
+  ([how](merge-queue.md)).
 
 - **A judge that fails still hands over**: the applying job runs whatever
   the judge's outcome, and the pipeline fails by the judge's. It applies

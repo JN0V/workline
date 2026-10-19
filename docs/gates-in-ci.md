@@ -1,6 +1,6 @@
 ---
 sources: [ci/github/workline.yml, ci/github/workline-apply.yml, ci/gitlab/workline.gitlab-ci.yml, internal/report/gates.go, internal/engine/annotate.go, internal/line]
-checked: 5bd7f6b2
+checked: 29e55a0b
 judged: 14c41d9
 verified: agent:documentalist
 ---
@@ -32,6 +32,9 @@ The templates need the first release after v0.35.0.
   never a pass.
 - **A gate that does not pass** fails the job `gates`, and the judge.
 - **No gate in `.workline/config.yaml`**: the job ends at once.
+- **In a merge queue or train**: the same job runs the gates on the
+  merged result; on GitHub the judge gives their verdict, on GitLab the
+  job alone runs ([how](merge-queue.md)).
 
 ## On GitHub
 

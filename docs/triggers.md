@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/line, internal/hooks, internal/forge/gitlab.go, ci/gitlab/workline.gitlab-ci.yml, ci/github/workline.yml, ci/github/workline-gardening.yml, ci/github/workline-sample.yml, routing.default.yaml]
-checked: 5bd7f6b2
+checked: 29e55a0b
 verified: agent:claude-code
 reader: 2de353fab113
 ---
@@ -68,6 +68,10 @@ step, the AI review waiting for ready; `false` has the reviewer read every
 lens once, on the whole change, on a merge request its record does not
 say every lens read; `--input lenses=all` asks it outright, when it becomes
 ready, as the templates do ([how](../roles/reviewer/docs/ready.md)).
+
+In a merge queue or train, the same line with `--input queue=true` and
+the merged result's range runs the gates alone, no agent, no verdict
+written ([the commands](merge-queue.md#the-commands-for-another-ci)).
 
 The templates also read the reviewer's lenses that only warn apart from
 the verdict: `--warn-apart` on the line above, and beside it a job of

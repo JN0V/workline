@@ -141,6 +141,19 @@ func RunWith(event string, base engine.Options, gates *Gates) *Result {
 	// steps whose role reads what only warns apart on the event, never a
 	// gate; its verdict is never the head's.
 	warnOnly := base.Inputs[WarnInput] == WarnOnly
+	// A merge queue's or train's run (`queue=true`, ADR-0050): the gates
+	// alone, on the merged result, never an agent; the steps it leaves are
+	// named, their verdict the head's, as the person's yes (ADR-0042).
+	queue := base.Inputs[QueueInput] == "true"
+	if queue {
+		var left []string
+		for _, name := range steps {
+			if !strings.HasPrefix(name, "gate:") && !slices.Contains(left, name) {
+				left = append(left, name)
+			}
+		}
+		defer func() { res.Summary += "; " + queueSaid(len(res.Steps), left) }()
+	}
 	// The gates alone: each one runs, so that each is shown.
 	stopAtFirst := cfg.StopsAtFirst(event) && !gates.Only
 	if gates.Only {
@@ -152,7 +165,11 @@ func RunWith(event string, base engine.Options, gates *Gates) *Result {
 	for _, name := range steps {
 		step, status := name, verdict.Pass
 		g, isGate := strings.CutPrefix(name, "gate:")
-		if nothingElse && name != committerRole || gates.Only && !isGate || warnOnly && (isGate || !apartOn(base.RolesDir, name, event)) {
+		skip := nothingElse && name != committerRole
+		if queue { // the gates on the merged result, whoever made its last commit
+			skip = !isGate
+		}
+		if skip || gates.Only && !isGate || warnOnly && (isGate || !apartOn(base.RolesDir, name, event)) {
 			continue
 		}
 		considered++
@@ -220,6 +237,26 @@ const (
 	WarnApart = "apart"
 	WarnOnly  = "only"
 )
+
+// QueueInput is the input saying the run is a merge queue's or train's,
+// on the merged result, `true` (ADR-0050): the line runs its gates
+// alone, no agent asked; the head's verdict and the person's yes stay
+// the merge request's (ADR-0042), so a queue's run writes none.
+const QueueInput = "queue"
+
+// queueSaid is what a queue's run says of itself: the gates it ran on
+// the merged result, else that it had none, and the steps it left to
+// the head's verdict.
+func queueSaid(gates int, left []string) string {
+	said := "a merge queue's or train's run: the gates alone, on the merged result"
+	if gates == 0 {
+		said = "a merge queue's or train's run: no gate in the line, nothing checked on the merged result"
+	}
+	if len(left) > 0 {
+		said += "; not run, the head's verdict holds them: " + strings.Join(left, ", ")
+	}
+	return said
+}
 
 // apartOn says whether the role a step names reads what only warns apart
 // on event; a role that does not load reads nothing apart: the verdict's

@@ -80,6 +80,8 @@ func followCmd(args []string) int {
 	gardening := fs.Bool("gardening", false, "also the roles' gardening merge requests: rebuilt, or closed when nothing is left to merge (run when gardening runs)")
 	verdictFile := fs.String("verdict", "", "with the project's `merge:` policy, keep first the line's verdict on a merge request's head, the file `workline route --verdict` wrote")
 	verdictOnly := fs.Bool("verdict-only", false, "with --verdict: keep the verdict, and follow nothing else (a job no newer run cancels)")
+	group := fs.String("merge-group", "", "a merge queue's group, its branch (gh-readonly-queue/<base>/pr-<n>-<head>): with the project's `merge:` policy, set on its commit (--head) the yes the head queued holds, and follow nothing else")
+	groupHead := fs.String("head", "", "with --merge-group: the group's commit")
 	asJSON := fs.Bool("json", false, "print the result as JSON")
 	var summaryFiles multi
 	fs.Var(&summaryFiles, "summary", "also add a Markdown summary to this file, for a CI job's page (repeatable; a file named .html gets HTML)")
@@ -99,9 +101,17 @@ func followCmd(args []string) int {
 	if *forgeSpec == "" {
 		*forgeSpec = cfg.Forge
 	}
-	o := engine.FollowOptions{Repo: root, Forge: *forgeSpec, Base: *base, Gardening: *gardening, Verdict: *verdictFile, VerdictOnly: *verdictOnly}
-	if o.VerdictOnly && o.Verdict == "" {
+	o := engine.FollowOptions{Repo: root, Forge: *forgeSpec, Base: *base, Gardening: *gardening, Verdict: *verdictFile, VerdictOnly: *verdictOnly,
+		Group: *group, GroupHead: *groupHead}
+	switch {
+	case o.VerdictOnly && o.Verdict == "":
 		fmt.Fprintln(os.Stderr, "workline: --verdict-only needs --verdict <file>")
+		return 64
+	case (o.Group == "") != (o.GroupHead == ""):
+		fmt.Fprintln(os.Stderr, "workline: --merge-group and --head go together: the group's branch and its commit")
+		return 64
+	case o.Group != "" && (o.Verdict != "" || o.Gardening || o.Base != ""):
+		fmt.Fprintln(os.Stderr, "workline: --merge-group follows nothing else: no --verdict, --gardening nor --base")
 		return 64
 	}
 	if cfg.Merge != nil {
@@ -1096,6 +1106,17 @@ func routeCmd(args []string) int {
 		return misuse(fs, "--warn-only runs no gate: no --gates-only nor --gates-from")
 	case w == line.WarnOnly && *verdictFile != "":
 		return misuse(fs, "--warn-only gives no verdict: what only warns never holds the head's (--verdict goes with the line's own run)")
+	}
+	// A merge queue's or train's run (ADR-0050) guards the merged result:
+	// the head's verdict and the person's yes stay the merge request's
+	// (ADR-0042), never the queue's to write.
+	switch q := inputs[line.QueueInput]; {
+	case q != "" && q != "true" && q != "false":
+		return misuse(fs, fmt.Sprintf("--input %s=%s: true or false", line.QueueInput, q))
+	case q == "true" && *verdictFile != "":
+		return misuse(fs, "a queue's run (--input queue=true) gives no verdict on the head: the head's stays its merge request's (--verdict goes with that line's run)")
+	case q == "true" && inputs[line.WarnInput] == line.WarnOnly:
+		return misuse(fs, "--warn-only reads what only warns, a queue's run (--input queue=true) only the gates: one or the other")
 	}
 	abs, _ := filepath.Abs(*repo)
 	rolesDir, err := resolveRoles(*roles)

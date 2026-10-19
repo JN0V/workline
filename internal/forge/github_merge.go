@@ -247,6 +247,19 @@ func (g *github) Accept(head string, ok bool, why string) error {
 	return g.setStatus(head, Accepted, state, why)
 }
 
+// AcceptedOn reads the status workline/accepted this token set on the
+// head: success, the yes; one anyone else set is never read.
+func (g *github) AcceptedOn(head string) (bool, string, error) {
+	state, why, err := g.ownStatus(head, Accepted)
+	switch {
+	case err != nil:
+		return false, "", err
+	case state == "success":
+		return true, "", nil
+	}
+	return false, why, nil
+}
+
 // Guarded: the base must require the status workline/accepted, which a
 // new head lacks until `follow` sets it — in a ruleset, or the branch's
 // protection —, pinned to the App (WORKLINE_APP_ID): unpinned, any token
