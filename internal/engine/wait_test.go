@@ -37,6 +37,12 @@ func TestRunWaitIsBounded(t *testing.T) {
 		t.Fatalf("an agent failing with time left failed on its own: %v", err)
 	}
 
+	res.waitSince = time.Now().Add(-20 * time.Second)
+	got, _ = res.bounded(r)
+	if limit, _ := got.Model.AnswerTimeout(); limit > 10*time.Second || limit < 9*time.Second {
+		t.Fatalf("a later call, a retry, may take what is left of the run's 30 s, not 30 s more: %v", limit)
+	}
+
 	res.waitSince = time.Now().Add(-31 * time.Second)
 	if !res.overTime() {
 		t.Fatal("31 s waited, 30 allowed: over")
@@ -49,25 +55,5 @@ func TestRunWaitIsBounded(t *testing.T) {
 	}
 	if err := res.cutShort(agent.ErrInvalidOutput); !errors.Is(err, agent.ErrInvalidOutput) {
 		t.Fatalf("an answer that came, unreadable, stays what it is: %v", err)
-	}
-}
-
-// The time inside the calls is counted apart, from the ask to the answer:
-// what the engine built for the cases on the wait counts
-// (workline_agent_time), the engine's own steps between calls left out.
-func TestRunWaitCountsItsCalls(t *testing.T) {
-	res := &Result{maxSeconds: 30}
-	for range 2 {
-		if _, ok := res.bounded(&role.Role{}); !ok {
-			t.Fatal("30 s allowed: the call is made")
-		}
-		time.Sleep(20 * time.Millisecond) // the call
-		res.cutShort(nil)
-	}
-	in := res.inCalls
-	time.Sleep(20 * time.Millisecond) // the engine's own step
-	res.cutShort(nil)
-	if all := time.Since(res.waitSince); in < 40*time.Millisecond || res.inCalls != in || all < in+20*time.Millisecond {
-		t.Fatalf("two calls of 20 ms, a step of 20 ms after: %v in the calls, %v since the first", res.inCalls, all)
 	}
 }

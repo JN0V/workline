@@ -112,12 +112,8 @@ type Result struct {
 	maxTokens int    // the role's ai-max-tokens: what the run may spend; 0, no cap
 	// maxSeconds is the role's ai-max-seconds: how long the run may wait on
 	// its agents, from the first call; 0, no cap. waitSince is that call.
-	// inCalls is the time inside the calls alone, each counted from askedAt
-	// once it is back.
 	maxSeconds  int
 	waitSince   time.Time
-	inCalls     time.Duration
-	askedAt     time.Time
 	timeCapped  bool     // an answer was not waited for, or a call not made, the run having waited maxSeconds
 	proposed    []string // the merge requests' tasks earlier rounds proposed, with NoApply, not opened yet
 	then        string   // the task this round asks alone, once the others are done (in/then)
@@ -133,12 +129,6 @@ var errTokensSpent = errors.New("the run spent its ai-max-tokens")
 // ai-max-seconds on its agents.
 var errTimeSpent = errors.New("the run waited its ai-max-seconds on its agents")
 
-// waited is how long the run has waited on its agents: from its first
-// call, the engine's own steps between calls included, as a person at a
-// hook waits them. The engine built for the cases on the wait counts the
-// calls alone (workline_agent_time).
-var waited = func(res *Result) time.Duration { return time.Since(res.waitSince) }
-
 // timeLeft is how long the run may still wait on its agents; capped is
 // false when its role sets no ai-max-seconds.
 func (res *Result) timeLeft() (left time.Duration, capped bool) {
@@ -149,7 +139,7 @@ func (res *Result) timeLeft() (left time.Duration, capped bool) {
 	if res.waitSince.IsZero() {
 		return limit, true
 	}
-	return limit - waited(res), true
+	return limit - time.Since(res.waitSince), true
 }
 
 // overTime says whether the run has waited on its agents what its role allows.
@@ -173,7 +163,6 @@ func (res *Result) bounded(r *role.Role) (_ *role.Role, ok bool) {
 	if res.waitSince.IsZero() {
 		res.waitSince = time.Now()
 	}
-	res.askedAt = time.Now()
 	if own, err := r.Model.AnswerTimeout(); err == nil && own <= left {
 		return r, true
 	}
@@ -182,14 +171,9 @@ func (res *Result) bounded(r *role.Role) (_ *role.Role, ok bool) {
 	return &cut, true
 }
 
-// cutShort, once a call is back, counts its time, and turns an agent's
-// failure into errTimeSpent when the run's wait ran out meanwhile: the
-// answer was not waited for, past ai-max-seconds.
+// cutShort turns an agent's failure into errTimeSpent when the run's wait
+// ran out meanwhile: the answer was not waited for, past ai-max-seconds.
 func (res *Result) cutShort(err error) error {
-	if !res.askedAt.IsZero() {
-		res.inCalls += time.Since(res.askedAt)
-		res.askedAt = time.Time{}
-	}
 	if err == nil || !errors.Is(err, agent.ErrUnavailable) || !res.overTime() {
 		return err
 	}
@@ -300,7 +284,7 @@ func Run(o Options) *Result {
 			// A wait has its budget (ADR-0050): the answer that crossed it
 			// is not waited for, and nothing more is asked.
 			res.Findings = append(res.Findings, verdict.Finding{Rule: "ai-max-seconds", Level: "warn",
-				Message: fmt.Sprintf("the run waited %.0f s on its agents, it allows %d: the answer was not waited for, and nothing more was asked; what is left waits for a person or the next run", waited(res).Seconds(), res.maxSeconds)})
+				Message: fmt.Sprintf("the run waited %.0f s on its agents, it allows %d: the answer was not waited for, and nothing more was asked; what is left waits for a person or the next run", time.Since(res.waitSince).Seconds(), res.maxSeconds)})
 		}
 		if tokens || seconds {
 			return res

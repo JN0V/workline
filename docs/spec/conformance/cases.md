@@ -31,10 +31,7 @@ need a new heading, written first, the shipped one still read
 ([ADR-0039](../../adr/0039-issue-sections-are-read-by-meaning-the-kind-is-the-forges.md));
 `workline_quick` gives a GitLab call 2 s, not 60, and tries it again
 10 ms after, not 2 s, so a case on a call that stalls lasts seconds
-([a call tried again](../../gitlab/calls.md)); `workline_agent_time`
-counts a run's wait (`ai-max-seconds`) inside its agents' calls alone,
-not the engine's steps between them, so a case on the wait across calls
-holds on a loaded machine ([a cap on the wait](../role-contract.md#one-run)).
+([a call tried again](../../gitlab/calls.md)).
 Such a case does not run on an engine `WORKLINE_ENGINE` names: it fails,
 saying so.
 
