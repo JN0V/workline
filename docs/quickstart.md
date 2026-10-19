@@ -7,7 +7,8 @@ verified: agent:claude-code
 
 From nothing to workline checking your commits, your docs and your
 branches, on your machine, in ten minutes. No AI is needed for any step;
-with one, refused messages are rewritten and docs fixed.
+with one, docs are fixed, and refused messages rewritten where a project
+turns that on.
 
 ## 1. Install and set up the machine
 
@@ -31,10 +32,12 @@ In any repository:
 git commit --allow-empty -m "AC-3 fix the thing"
 ```
 
-Without AI it blocks and says why; with an agent, the message is rewritten
-(`fix: fix the thing`, `Refs: AC-3`) and printed. `WORKLINE_AI=none git
-commit …` turns the agent off for one commit; an empty `.workline/off`
-file turns workline off for a repository.
+- **It blocks in about a second** and says why, your message kept; no
+  agent is asked, even yours
+  ([ADR-0050](adr/0050-each-act-has-its-moment-and-a-wait-budget.md)).
+- **A project's `rewrite: true`** (the committer's settings) has the agent
+  rewrite it, 30 s at most (`fix: fix the thing`, `Refs: AC-3`), printed.
+- An empty `.workline/off` file turns workline off for a repository.
 
 ## 3. Adopt a repository
 

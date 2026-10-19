@@ -1,0 +1,15 @@
+case: committer/hook-refuses-and-keeps-the-message
+about: "By default the commit-msg hook asks no agent, even one the person set (ADR-0050): it refuses with the reasons, keeps the message where git wrote it, and gives the command that takes it up again."
+given:
+  repo: basic
+  setup: ["printf 'fix: AC-3\\n' > .git/COMMIT_EDITMSG"]
+  env: {WORKLINE_AI: "fake:$FIXTURES/agents/good-commit-message.yaml"}
+run: {cli: [hook, commit-msg, .git/COMMIT_EDITMSG]}
+expect:
+  exit: 1
+  stderr:
+    - "workline committer: block — rewrite the commit message"
+    - "\"AC-3\" means nothing outside the project"
+    - "your message is kept in .git/COMMIT_EDITMSG: to edit it and commit again, git commit -e -F .git/COMMIT_EDITMSG"
+  files:
+    .git/COMMIT_EDITMSG: {contains: "fix: AC-3"}

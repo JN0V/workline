@@ -1,4 +1,4 @@
-# Committer — where it stands (2026-10-14)
+# Committer — where it stands (2026-10-19)
 
 **In one line:** runs on every commit and push of workline's author, and
 on each merge request in CI; its rewrites tried with Claude on refused
@@ -50,6 +50,12 @@ its evaluation in
 - **A message's form**, an internal code in the subject:
   `internal-code-in-subject`, `code-in-trailer-passes`,
   `code-without-dash-in-subject`, `standard-*`, `one-message-per-commit`.
+- **The rewrite opt-in**
+  ([ADR-0050](../../../docs/adr/0050-each-act-has-its-moment-and-a-wait-budget.md)):
+  refused at once by default, the message kept: `refused-at-once-by-default`,
+  `hook-refuses-and-keeps-the-message`; turned on, said before it starts,
+  ended past `ai-max-seconds`: `hook-says-the-rewrite-before-it-starts`,
+  `rewrite-ends-past-its-seconds`, `rewrite-retry-within-its-seconds`.
 - **The agent's rewrite**, keeping the type, the scope, the trailers and
   the author's words: `agent-rewrites-message`, `rewrite-*`,
   `public-name-kept-by-the-agent`; marked by workline's two trailers,

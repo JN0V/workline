@@ -104,7 +104,7 @@ Each role, from a hook, a script or a CI job: [triggers](docs/triggers.md).
 
 | When | Roles | Agent |
 |---|---|---|
-| `git commit` (the global hook) | committer | yours, to rewrite a refused message |
+| `git commit` (the global hook) | committer | none by default; yours, to rewrite a refused message, where the project turns it on |
 | `git push` (the global hook, once `workline init` routes it) | committer; documentalist, counting the docs made suspect | never |
 | `workline review` | reviewer, before you push | yours |
 | `workline review --spec <file>`, `--issue <n>` | reviewer, on a spec before it is built | yours |

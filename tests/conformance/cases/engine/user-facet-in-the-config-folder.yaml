@@ -2,6 +2,7 @@ case: engine/user-facet-in-the-config-folder
 about: A person's own facet is read from the folder their config.yaml is read from (Go's config folder, ~/Library/Application Support/workline on macOS), one folder for both.
 given:
   repo: basic
+  config: {roles: {committer: {settings: {rewrite: true}}}}
   setup:
     - "mkdir -p \"$XDG_CONFIG_HOME/workline/roles/committer\" && printf 'Keep the word MARK-104.\\n' > \"$XDG_CONFIG_HOME/workline/roles/committer/policy.md\""
 run:

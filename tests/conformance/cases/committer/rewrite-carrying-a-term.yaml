@@ -2,6 +2,7 @@ case: committer/rewrite-carrying-a-term
 about: A rewrite is scanned like the message it replaces; one that brings in a term of the lists is refused.
 given:
   repo: basic
+  config: {roles: {committer: {settings: {rewrite: true}}}}
   setup:
     - "printf '[extend]\\nuseDefault = true\\n[[rules]]\\nid = \"repo-term\"\\nregex = %s\\nkeywords = [\"kiwiquartz\"]\\n' \"'(?i)kiwiquartz'\" > .gitleaks.toml && echo .gitleaks.toml >> .gitignore && git add .gitignore && git commit -qm 'chore: keep the term list out'"
 run: {role: committer, event: commit-msg, input: {message: "fix: AC-3"}, ai: "fake:rewrite-carrying-a-term"}

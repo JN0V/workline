@@ -29,6 +29,11 @@ type Settings struct {
 	InternalCodesMaybe []string `json:"internal-codes-maybe"`
 	AllowedIdentities  []string `json:"allowed-identities"`
 	ForgeIdentities    []string `json:"forge-identities"`
+	// Rewrite asks the agent to rewrite a refused message at a commit;
+	// off by default, the hook refusing in about a second (ADR-0050).
+	Rewrite bool `json:"rewrite"`
+	// AIMaxSeconds is how long the rewrite may take; the engine holds it.
+	AIMaxSeconds int `json:"ai-max-seconds"`
 }
 
 // Check returns what is wrong with a commit message. An empty result means it passes.
@@ -219,8 +224,20 @@ func Pre(runDir, repo string) int {
 		}
 		return 10
 	}
+	if !s.Rewrite {
+		// The agent's rewrite is opt-in (ADR-0050): the person rewrites, the
+		// reasons in hand, their message kept.
+		v := verdict.Verdict{Status: verdict.Block, Summary: "rewrite the commit message", Findings: append(findings, advisories...)}
+		if err := verdict.Write(filepath.Join(runDir, "out", "verdict.yaml"), &v); err != nil {
+			return fail(err)
+		}
+		return 10
+	}
 	if err := writeYAML(filepath.Join(runDir, "in", "findings.yaml"), findings); err != nil {
 		return fail(err)
+	}
+	if said := rewriting(os.Getenv("WORKLINE_AI"), s.AIMaxSeconds); said != "" {
+		fmt.Fprintln(os.Stderr, said) // before the wait, not after it
 	}
 	stat, _ := exec.Command("git", "-C", repo, "-c", "core.quotePath=off", "diff", "--cached", "--stat").Output()
 	diff, _ := exec.Command("git", "-C", repo, "-c", "core.quotePath=off", "diff", "--cached", "--unified=2").Output()
@@ -516,6 +533,21 @@ func checkRange(runDir, repo, rng string) int {
 		return fail(err)
 	}
 	return 10
+}
+
+// rewriting is what the hook says before the agent rewrites a refused
+// message, while the person waits: which agent, and how long at most.
+// Nothing when no agent is asked.
+func rewriting(ai string, seconds int) string {
+	if ai == "" || ai == "none" {
+		return ""
+	}
+	name, _, _ := strings.Cut(ai, ":")
+	said := fmt.Sprintf("workline committer: the message is refused; the agent (%s) rewrites it", name)
+	if seconds > 0 {
+		said += fmt.Sprintf(", %d s at most", seconds)
+	}
+	return said + "…"
 }
 
 func inputValue(runDir, name string) string {

@@ -11,8 +11,8 @@ flowchart LR
   when["<b>When</b><br/>git commit: the commit-msg hook<br/>git push: the pre-push hook<br/>each push to a merge request, in CI"]
   reads["<b>Reads</b><br/>the message<br/>what the commit adds<br/>its author"]
   role(["Committer"])
-  alone["<b>Alone</b><br/>refuses a bad message,<br/>a secret, an author not allowed<br/>with an agent: rewrites<br/>a refused message"]
-  person["<b>Left to a person</b><br/>a refused message, with no agent<br/>a commit to split<br/>commits already made: git rebase -i"]
+  alone["<b>Alone</b><br/>refuses a bad message,<br/>a secret, an author not allowed<br/>rewrite turned on: the agent<br/>rewrites a refused message"]
+  person["<b>Left to a person</b><br/>a refused message, by default<br/>a commit to split<br/>commits already made: git rebase -i"]
   out["<b>Lands in</b><br/>the commit's message<br/>the verdict: terminal or CI log"]
   when --> role
   reads --> role
@@ -25,7 +25,8 @@ file. All roles: [docs/roles.md](../../docs/roles.md).
 
 **Does**: checks each commit message (format, length, internal codes), the
 secrets and forbidden terms a commit adds (gitleaks) and the author's
-identity; with an agent, rewrites a refused message in your words.
+identity; when the project turns it on, has an agent rewrite a refused
+message in your words.
 **Does not**: check that a commit holds one change (planned:
 [#192](https://github.com/JN0V/workline/issues/192)), split a commit, edit
 code, rewrite commits already made (on a merge request it lists them, for
@@ -36,6 +37,8 @@ code, rewrite commits already made (on a merge request it lists them, for
 | `commit-msg` | the global git hook (`workline hooks install --global`) | the message being written, what the commit adds |
 | `pre-push` | the global hook, when `.workline/config.yaml` routes it | every commit pushed |
 | `merge-request` | CI (`workline route merge-request --input range=<base>..<head>`) | every commit of the range |
+
+The global hook still hands over to the hooks installed before workline.
 
 ## Settings
 
@@ -52,14 +55,16 @@ Under `roles: {committer: {settings: …}}` in `.workline/config.yaml`
 | `internal-codes-allow` | `UTF-8`, `SHA-256`, `RFC-…`, `CVE-…`, `v1`… | standard names that look like codes |
 | `allowed-identities` | `[]` | author addresses allowed, as patterns; empty with no user list: not checked |
 | `forge-identities` | `[]` | addresses the forge commits with, written whole: allowed, never turning the check on alone |
+| `rewrite` | `false` | an agent rewrites a refused message at a commit ([below](#rewrite-the-agent-opt-in)) |
+| `ai-max-seconds` | `30` | the rewrite's time, every call together: past it, refused with the reasons |
 
 `enforce: {<rule>: warn}` (or `off`) beside `settings` softens one rule.
 
 **Outputs**: the verdict on the terminal or in the job's log; `--json`,
 `--sarif`, `--code-quality` in CI. It writes nothing to a forge.
-**Cost**: no call when the message passes; one call of a light model,
-effort low, per refused message, and one more of a stronger model if the
-rewrite is refused (`promote-after: 1`). No cap needed.
+**Cost**: no call by default. With `rewrite: true`, one call of a light
+model, effort low, per refused message, and one more of a stronger model if
+the rewrite is refused (`promote-after: 1`), within `ai-max-seconds`.
 **Status**: [built](../../docs/adr/0036-a-roles-status-is-earned-by-written-criteria.md),
 used daily on workline itself since 2026-09;
 [where it stands](docs/status.md); tried with Claude below.
@@ -99,6 +104,7 @@ Messages git writes itself (`Merge …`, `Revert "…"`, `fixup! …`, `squash! 
   strips from it (comments, the diff of `commit -v`): a `leak` there names
   its line, and the agent is not asked either, since the message would
   carry the match to it. A rewrite is scanned like the message it replaces.
+- The two scans run side by side: a commit waits for one, about 0.4 s.
 - The match is never printed. Without gitleaks, the commit goes on and the
   verdict says so (`secrets-not-checked`).
 
@@ -138,12 +144,19 @@ An author or committer address outside the allow list blocks (`identity`).
   exactly, case included, never as a pattern; alone, they never turn the
   check on.
 
-## Rewrite (the agent)
+## Rewrite (the agent, opt-in)
 
-On `commit-msg`, a refused message goes to the agent with the findings and the
-staged diff. It proposes one `commit-message`, or a `note` when the diff mixes
-unrelated changes and the commit should be split. On `merge-request`, the
-commits are already made: the verdict lists them, to fix with `git rebase -i`.
+- **Off by default**
+  ([ADR-0050](../../docs/adr/0050-each-act-has-its-moment-and-a-wait-budget.md)):
+  the hook asks no agent, even one you set. It refuses in about a second,
+  with the reasons, keeps your message in the file git named, and prints
+  `git commit -e -F <that file>` to take it up again. The same without AI.
+- **`rewrite: true`** turns it on: a refused message goes to the agent with
+  the findings and the staged diff. It proposes one `commit-message`, or a
+  `note` when the diff mixes unrelated changes and the commit should be split.
+- **30 s at most**: the hook says which agent rewrites, and how long at
+  most, before it starts. Past `ai-max-seconds`, every call and retry
+  together, the message is refused with its reasons, and kept.
 
 ## Judge (`post`, no AI)
 
@@ -172,38 +185,19 @@ prints the message committed, since it is no longer the one you wrote.
 - **Still your commit**: workline never takes a rewritten commit for one
   it made itself; the line judges it as yours.
 
-## Without AI
-
-A bad message still fails, with the findings; you rewrite it. The message is
-kept in the file git named, so nothing typed is lost.
-
-The global hook still hands over to the hooks installed before workline.
-
 ## Tried for real
 
-On 2026-09-24, on four messages of this repository the hook had refused (three
-subjects over 72 characters, one naming `ADR-0001`), replayed with each
-commit's own diff and Claude (haiku):
-
-- before the instruction asked to keep the author's words, the rewrites
-  traded precise words for vague ones: "run the project's line in the
-  templates" became "refactor templates to use line routing", "specify"
-  became "test";
-- after, twice in a row, every rewrite kept the type, the scope and the
-  author's words, and only cut ("run the project's line in templates and on
-  workline's pull requests"). One took a second attempt: the first was 73
-  characters.
-
-On 2026-10-06, a copy of a real repository (DomoticsCore) with its own
-`core.hooksPath`, no agent:
-
-- `tools/hooks/` without workline: `AC-3 fix the thing` was committed
-  unchecked; `workline doctor` said `hooks-bypassed` and printed the line to
-  add. Added, the next commit was blocked (`internal-code`, `format`).
-- `.githooks`: doctor printed `git config --local --unset core.hooksPath`;
-  unset, the machine's global hooks blocked the same commit.
-- Not tried: a hook that reads `pre-push`'s input after workline's line;
-  husky or lefthook themselves.
-
-Up to 2026-10-09, the maintainer ran it on all their commits, on workline
-and at work, and validated the role from that use.
+- **The rewrite**, 2026-09-24: four messages of this repository the hook
+  had refused, replayed with each commit's own diff and Claude (haiku).
+  Until the instruction asked to keep the author's words, rewrites traded
+  precise words for vague ones ("specify" became "test"). After, twice in a
+  row, every rewrite kept the type, the scope and the words, and only cut;
+  one took a second attempt, the first being 73 characters.
+- **The hooks**, 2026-10-06: a copy of a real repository with its own
+  `core.hooksPath`, no agent. doctor said `hooks-bypassed` and printed the
+  line to add, or the `git config --local --unset core.hooksPath` to run;
+  done, `AC-3 fix the thing` was blocked (`internal-code`, `format`). Not
+  tried: a hook reading `pre-push`'s input after workline's line; husky or
+  lefthook themselves.
+- **Daily use**: up to 2026-10-09, the maintainer ran it on all their
+  commits, and validated the role from that use.

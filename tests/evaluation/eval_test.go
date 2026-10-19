@@ -324,6 +324,16 @@ func build(t *testing.T, c *caseFile) (work, repo string, env []string, err erro
 		}
 	}
 	cfg := c.Given.Config
+	if c.Run.Role == "committer" {
+		// The rewrite is what the committer's cases measure: turned on
+		// (opt-in since ADR-0050) over the project's config at that commit.
+		if cfg == nil {
+			if data, err := os.ReadFile(filepath.Join(repo, ".workline", "config.yaml")); err == nil {
+				yaml.Unmarshal(data, &cfg)
+			}
+		}
+		cfg = withSetting(cfg, "committer", "rewrite", true)
+	}
 	if c.Review != nil {
 		// The reviewer as a review on a machine runs it, every lens in one
 		// call (#147), unless the measure sets otherwise (#360):

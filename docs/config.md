@@ -41,7 +41,7 @@ ai: claude                  # the project's agent, one choice: none (default), c
 forge: github               # github | gitlab | local | cmd:<command> | none (default)
 roles:
   committer:
-    settings: {subject-max: 60}          # a role's settings, see its role.yaml
+    settings: {subject-max: 60, rewrite: true}   # a role's settings, see its role.yaml; rewrite: an agent rewrites a refused message, 30 s at most (off)
     enforce: {internal-code: warn}       # block (default) | warn | off, per rule
   documentalist:
     settings:

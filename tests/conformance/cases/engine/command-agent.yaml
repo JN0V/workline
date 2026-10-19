@@ -1,6 +1,6 @@
 case: engine/command-agent
 about: Any command can be the agent — the prompt on its input, the tier and effort in its environment, the proposals on its output, and what answered in the file it is given.
-given: {repo: basic}
+given: {repo: basic, config: {roles: {committer: {settings: {rewrite: true}}}}}
 run:
   role: committer
   event: commit-msg
