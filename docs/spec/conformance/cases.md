@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go]
-checked: 60fd83f5
+checked: ef8ebda9
 verified: agent:claude-code
 ---
 # Conformance — a case in full
@@ -85,7 +85,7 @@ saying so.
   apart, the same line with `--warn-only`, on the forge the first left:
   status and summary stay the first run's, the verdict; agent calls,
   calls and findings are both runs'; `apart-status` in `expect`, the run
-  apart's status;
+  apart's status, `pass` when not given;
 - `summary: true` — also write `--summary`, Markdown and HTML, and give the
   same files to the `apply` or `sample --apply` that follows;
 - `scope` — the run's scope, as a ready work item would give it;
