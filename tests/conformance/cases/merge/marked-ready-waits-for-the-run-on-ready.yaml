@@ -1,0 +1,30 @@
+case: merge/marked-ready-waits-for-the-run-on-ready
+about: "Marked ready, its head's verdict still the draft's (ADR-0050): the run on ready has not given its own yet. An accepted pull request is not merged on it: no yes held on that head, auto-merge stays off, and the summary says it waits for the run on ready (ADR-0042)."
+given:
+  repo: documented
+  config: {merge: {autonomy: cautious}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb feat/sessions && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin feat/sessions && git checkout -q main"
+  forge:
+    statuses:
+      - {commit: "feat/sessions", name: workline/verdict, state: pending, description: "waits: a draft: the rules and gates passed, the AI review waits for it to be marked ready", by: workline-bot}
+    merge-requests:
+      - id: 7
+        branch: feat/sessions
+        base: main
+        author: dana
+        labels: [workline:accepted]
+        label-events: [{label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T10:00:00Z"}]
+        comments: []
+run: {follow: [--base, main], summary: true}
+expect:
+  status: pass
+  findings: [{rule: review-to-come, where: "#7", message: "verdict is the draft's, a draft: the rules and gates passed, the AI review waits for it to be marked ready: it waits for the run on ready"}]
+  no-findings: [{rule: auto-merge-on}]
+  summary-file: ["it waits for the run on ready"]
+  forge:
+    merge-requests:
+      - {id: 7, auto-merge: false, labels: [workline:accepted]}
+    statuses:
+      - {commit: feat/sessions, name: workline/accepted, absent: true}

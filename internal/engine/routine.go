@@ -454,6 +454,9 @@ func weighRoutine(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, n *
 	case "":
 		w.say("verdict-missing", "", fmt.Sprintf("workline's own %s; no verdict of the line on its head (%s) yet: it waits for it, the next one comes up meanwhile", kind, short(tip)))
 		return e, nil
+	case verdictWaits: // marked ready, the run on ready not done yet
+		w.say("review-to-come", "", fmt.Sprintf("workline's own %s; its head's (%s) verdict is the draft's, %s: it waits for the run on ready, the next one comes up meanwhile", kind, short(tip), v.why))
+		return e, nil
 	case verdictHeld, verdictRed, verdictShort:
 		// Held by the yes not given on this head (the status Accepted;
 		// GitLab, the head's pipeline red): auto-merge left as it is, for

@@ -15,6 +15,12 @@ const (
 	BlockedExternal = "blocked-external"
 )
 
+// WaitsForReady is the rule of the finding a role leaves on a draft where
+// its agent would have judged (ADR-0050): it waits for the merge request
+// to be marked ready. The merge policy reads a head holding it as a
+// review to come, never as one given.
+const WaitsForReady = "ai-waits-for-ready"
+
 // Finding is one thing a check noticed.
 type Finding struct {
 	Rule    string `yaml:"rule" json:"rule"`
