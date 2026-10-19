@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/hooks, internal/role/config.go]
-checked: b077b410
+checked: f530cda7
 verified: agent:claude-code
 ---
 # The commands that set up
@@ -108,13 +108,17 @@ routing:
 ```
 
 - A step that blocks stops the push.
-- The docs suspect are only counted, in one line — those these commits
-  made so, those before — never listed nor asked about: they are judged on
-  the merge request, by gardening, or when you run `workline docs`
+- The docs these commits made suspect are only counted, in one line,
+  never listed nor asked about: they are judged on the merge request, by
+  gardening, or when you run `workline docs`
   ([ADR-0010](adr/0010-docs-judged-on-the-merge-request-and-by-gardening.md)).
+- Only the docs the commits touched are read. The others, suspect from
+  before, and passages written twice are said on the merge request and by
+  gardening
+  ([ADR-0050](adr/0050-each-act-has-its-moment-and-a-wait-budget.md)).
 - A derived block behind the code is left as it is and only counted:
   gardening regenerates it on the default branch after the merge
   ([ADR-0027](adr/0027-derived-blocks-are-regenerated-on-the-default-branch.md)),
   so never edit one by hand.
-- Sizes and links the line reports on every run are only counted.
+- The sizes and links of the docs the commits touched are only counted.
 - `git push --no-verify` skips the hook.

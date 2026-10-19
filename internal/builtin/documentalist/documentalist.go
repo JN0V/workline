@@ -703,6 +703,11 @@ func Pre(runDir, repo string) int {
 	if os.Getenv("WORKLINE_EVENT") == "release" {
 		ranged = false
 	}
+	// At a push, only the docs its commits touched are read: one of their
+	// sources, or the doc itself. Whether the others are suspect from
+	// before, and the checks across every doc, are the merge request's and
+	// gardening's; reading them took about 5 s a push (ADR-0050).
+	atPush := ranged && os.Getenv("WORKLINE_EVENT") == "pre-push"
 	var findings []verdict.Finding
 	if len(docs) == 0 && os.Getenv("WORKLINE_EVENT") != "init" {
 		// Not an error, but never a silent "all good": say what was looked at.
@@ -729,12 +734,19 @@ func Pre(runDir, repo string) int {
 	cutHeld := false                      // one of them is the task: the run blocks
 	// A doc is suspect when one of its own sources changed since it was checked.
 	for _, d := range docs {
+		sourceTouched := docTouched(d, touched)
+		if atPush && !sourceTouched && !touched[d.Path] {
+			continue
+		}
 		for _, src := range d.Sources {
 			name, path, anchor := splitSource(src)
 			checked := d.Checked[name]
 			if checked == "" || checked == "HEAD" {
 				findings = append(findings, verdict.Finding{Rule: "unchecked", Where: d.Path,
 					Message: fmt.Sprintf("no commit recorded in `checked` for %s", src)})
+				continue
+			}
+			if atPush && !sourceTouched { // the doc itself pushed: its header said, its sources not read
 				continue
 			}
 			where, err := pl.get(name)
@@ -948,8 +960,25 @@ func Pre(runDir, repo string) int {
 		}
 	}
 
-	// Hygiene: what needs no judgement is reported by the checks themselves.
-	problems := Hygiene(tree, s.Budgets, s.Duplicates)
+	// Hygiene: what needs no judgement is reported by the checks themselves;
+	// at a push, of the docs it touched or made suspect only.
+	var problems []Problem
+	ofPush := map[string]bool{}
+	if atPush {
+		for p, yes := range touched {
+			if _, doc := tree.Docs[p]; yes && doc {
+				ofPush[p] = true
+			}
+		}
+		for _, into := range []map[string]*suspectDoc{suspects, propagate} {
+			for p := range into {
+				ofPush[p] = true
+			}
+		}
+		problems = HygieneOf(tree, s.Budgets, s.Duplicates, ofPush)
+	} else {
+		problems = Hygiene(tree, s.Budgets, s.Duplicates)
+	}
 	var gone []Problem
 	if ranged {
 		gone, err = IdentifiersRemoved(repo, rangeOf(runDir), tree.Docs)
@@ -973,7 +1002,11 @@ func Pre(runDir, repo string) int {
 		problems = append(problems, ReaderChecks(tree, s.Reader)...)
 	}
 	// Line counts off: counted by the engine, never vouched for (ADR-0014).
-	counts := CountsOff(repo, tree, docs)
+	counted := docs
+	if atPush {
+		counted = slices.DeleteFunc(slices.Clone(docs), func(d *Doc) bool { return !ofPush[d.Path] })
+	}
+	counts := CountsOff(repo, tree, counted)
 	for _, p := range append(append(problems, gone...), counts...) {
 		f := verdict.Finding{Rule: p.Rule, Where: p.Where, Message: p.Message}
 		if p.Rule == "setting-missing" {

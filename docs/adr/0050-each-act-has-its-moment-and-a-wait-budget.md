@@ -1,6 +1,6 @@
 # ADR-0050: Each act has its moment, and each moment a wait budget
 
-- **Status:** accepted; steps 1 and 2 built ([the build plan](#build-plan))
+- **Status:** accepted; steps 1, 2 and 4 built ([the build plan](#build-plan))
 - **Date:** 2026-10-19
 - **Decided by:** the maintainer, on 2026-10-19: a panel's direction,
   validated in broad lines, corrected: first the time a developer waits
@@ -182,7 +182,7 @@ By the wait removed each time, then tokens:
 1. The engine once a run, shared by the jobs: ~40 s of the verdict's 101 s, every push. Built, once a commit, in [workline's own workflows](../ci-github.md#worklines-own-workflows); the templates fetch a release.
 2. Commit: the agent's rewrite capped at 30 s (§7; first planned opt-in); one gitleaks scan: 12–78.5 s down to at most 30 s on a refused message, about 1 s with the rewrite off; ~0.4 s every commit. Built: the committer's `rewrite`, on by default, and `ai-max-seconds`, 30, which the engine holds for every call of a run ([the role contract](../spec/role-contract.md)); a project or a person turns the rewrite off for themselves, and a project's `ai: none` keeps every agent away. The two scans run side by side rather than as one: gitleaks reads a message on its standard input, where its rules on file paths cannot apply. Measured: 0.52–0.58 s a commit, refused or not, from 0.92–1.03 s.
 3. Lenses and triage that warn, off the verdict's path: their AI time, within the line's 22 s median, 133 s at most.
-4. Push in 5 s: only the docs the range made suspect, whole-repository checks on main: ~5 s every push.
+4. Push in 5 s: only the docs the range made suspect, whole-repository checks on main: ~5 s every push. Built: at a push, the documentalist reads only the docs its commits touched, by a source or themselves, with their budgets and links; no duplicates. The rest stays with the merge request and gardening until step 9. Measured: 0.8–2.4 s from 5.0–8.9 s, 1 commit or 16, here and on a firmware library.
 5. No AI on a draft: the AI's time on each draft push.
 6. After ready, AI on what is new; a patch judged once; 5 commits a push: the judges' time (#500: ten).
 7. The release pull request's AI at night only (§7): its part of 1.6–2.2 min; ~0.8M tokens a week here.

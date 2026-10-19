@@ -1,0 +1,16 @@
+case: documentalist/push-touching-no-source-reads-no-doc
+about: "At a push whose commits touch no doc nor any doc's source, no doc is read: one made suspect by an earlier commit, a passage written twice, a dead link are the repository's, said on the merge request and by gardening (ADR-0050). Reading every doc took about 5 s a push."
+given:
+  repo: documented
+  setup:
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+    - "P='A session lasts as long as its token, and a token lasts one hour unless it is refreshed. When it expires, the user is asked to sign in again, and anything they had not saved is kept in the browser until they come back to the page.' && printf '# Questions\\n\\n%s\\n\\nSee [the guide](guide.md).\\n' \"$P\" > docs/faq.md && printf '# Notes\\n\\n%s\\n' \"$P\" > docs/notes.md && git add docs && git commit -qm 'docs: answer the questions asked'"
+    - "echo 'package main' > main.go && git add main.go && git commit -qm 'feat: add an entry point'"
+run: {role: documentalist, event: pre-push, input: {range: "HEAD~1..HEAD"}, ai: none}
+expect:
+  status: pass
+  agent-calls: 0
+  no-findings:
+    - {rule: suspect, where: docs/tech/auth.md}
+    - {rule: duplicate, where: docs/faq.md}
+    - {rule: dead-link, where: docs/faq.md}

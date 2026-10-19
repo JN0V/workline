@@ -1,0 +1,15 @@
+case: documentalist/push-changing-a-doc-reads-it-not-its-sources
+about: "At a push whose commits change a doc but none of its sources, the doc's header and budgets are checked, not its sources: whether it was suspect from before is the merge request's and gardening's (ADR-0050)."
+given:
+  repo: documented
+  config: {roles: {documentalist: {settings: {budgets: {doc-lines: 4}}}}}
+  setup:
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+    - "printf '\\nTokens are signed.\\n' >> docs/tech/auth.md && printf -- '---\\nsources: [src/auth/token.go]\\n---\\n# Token notes\\n' > docs/tech/notes.md && git add docs && git commit -qm 'docs(auth): say tokens are signed'"
+run: {role: documentalist, event: pre-push, input: {range: "HEAD~1..HEAD"}, ai: none}
+expect:
+  status: pass
+  findings:
+    - {rule: unchecked, where: docs/tech/notes.md}
+    - {rule: doc-too-long, where: docs/tech/auth.md}
+  no-findings: [{rule: suspect, where: docs/tech/auth.md}]

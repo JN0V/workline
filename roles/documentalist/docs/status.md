@@ -1,4 +1,4 @@
-# Documentalist — where it stands (2026-10-18)
+# Documentalist — where it stands (2026-10-19)
 
 **In one line:** usable every day on a GitHub or GitLab repository that
 takes merge requests: docs judged on each one and gardened at night, by
@@ -91,8 +91,14 @@ its evaluation in
   branch, its own commit not judged again; a fork's as a comment:
   `patch-pushed-to-the-merge-request`, `patch-as-comment-from-a-fork`,
   routing's `own-commit-*`.
-- **The push counts suspect docs**, asks nothing: routing's
-  `pre-push-line`.
+- **The push counts suspect docs**, asks nothing, reading only the docs
+  its commits touched, in 0.8 to 2.4 s
+  ([tried](https://github.com/JN0V/workline/pull/531)); the others on the
+  merge request: routing's
+  `pre-push-line`, `push-touching-no-source-reads-no-doc`,
+  `push-checks-the-docs-it-made-suspect`,
+  `push-changing-a-doc-reads-it-not-its-sources`,
+  `repository-checks-on-the-merge-request`.
 - **Gardening at night**, one merge request a task, at most 3 waiting; not
   asked again while it is open, a doc judged in parts while any merge
   request changes it, the next doc going
