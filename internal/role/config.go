@@ -48,7 +48,7 @@ var (
 			"fail-fast":    free,
 			// Each moment's wait budget (ADR-0050): its moments only.
 			"budgets": {keys: map[string]*shape{"commit": free, "commit-rewrite": free, "push": free,
-				"first-result": free, "verdict": free, "ready-review": free}},
+				"first-result": free, "verdict": free, "ready-review": free, "queue": free}},
 		}},
 		"gates": {any: &shape{keys: map[string]*shape{
 			"criteria": free,

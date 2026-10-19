@@ -14,7 +14,7 @@ import (
 // once, naming the step that took the most of it.
 type Moment struct {
 	// Name is the moment's key in routing's budgets: commit,
-	// commit-rewrite, push, first-result, verdict, ready-review.
+	// commit-rewrite, push, first-result, verdict, ready-review, queue.
 	Name    string  `json:"name"`
 	Budget  float64 `json:"budget"`  // seconds
 	Seconds float64 `json:"seconds"` // what the line took of it here
@@ -30,13 +30,16 @@ var moments = map[string]string{
 	"first-result":   "the first result, the gates alone,",
 	"verdict":        "the head's verdict",
 	"ready-review":   "the review apart, the lenses that warn,",
+	"queue":          "the merge queue's or train's run",
 }
 
 // momentOf is the moment a run of event is part of, its key in routing's
 // budgets; "" for one no person waits on (main after a merge, the night,
 // the release). A commit whose agent rewrote its message has the
-// rewrite's budget; on a merge request, the gates alone are its first
-// result, the run apart its review posted when done, the line its verdict.
+// rewrite's budget; on a merge request, a queue's or train's run is what
+// workline adds to the queue's turn, its gates' job too; else the gates
+// alone are its first result, the run apart its review posted when done,
+// the line its verdict.
 func momentOf(event string, inputs map[string]string, gatesOnly bool, asked int) string {
 	switch {
 	case event == "commit-msg" && asked > 0:
@@ -47,6 +50,8 @@ func momentOf(event string, inputs map[string]string, gatesOnly bool, asked int)
 		return "push"
 	case event != "merge-request":
 		return ""
+	case inputs[QueueInput] == "true":
+		return "queue"
 	case gatesOnly:
 		return "first-result"
 	case inputs[WarnInput] == WarnOnly:

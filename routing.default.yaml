@@ -23,3 +23,4 @@ budgets:
   first-result: 60     # a merge request's push: the gates alone
   verdict: 180         # the head's verdict: the line, the gates' job's seconds with it
   ready-review: 600    # the run apart, the lenses that warn, posted when done
+  queue: 60            # a merge queue's or train's run: what workline adds to its turn

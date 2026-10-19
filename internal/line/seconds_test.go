@@ -90,6 +90,9 @@ func TestMomentOf(t *testing.T) {
 		{"merge-request", nil, true, 0, "first-result"},
 		{"merge-request", map[string]string{WarnInput: WarnOnly}, false, 3, "ready-review"},
 		{"merge-request", map[string]string{WarnInput: WarnApart}, false, 3, "verdict"},
+		{"merge-request", map[string]string{QueueInput: "true"}, true, 0, "queue"},
+		{"merge-request", map[string]string{QueueInput: "true"}, false, 0, "queue"},
+		{"merge-request", map[string]string{QueueInput: "false"}, false, 0, "verdict"},
 		{"schedule", nil, false, 9, ""},
 		{"release", nil, false, 1, ""},
 	} {

@@ -7,4 +7,4 @@ run: {route: merge-request, ai: none}
 expect:
   status: block
   steps: []
-  findings: [{rule: config-invalid, message: "unknown key \"night\" in routing.budgets (known: commit, commit-rewrite, first-result, push, ready-review, verdict)"}]
+  findings: [{rule: config-invalid, message: "unknown key \"night\" in routing.budgets (known: commit, commit-rewrite, first-result, push, queue, ready-review, verdict)"}]
