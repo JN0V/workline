@@ -1,0 +1,34 @@
+case: routing/queue-runs-the-gates-alone
+about: >
+  A merge queue's or train's run (`queue=true`, ADR-0050) on the merged
+  result: main moved since the branch, the queue's commit merges it in.
+  The line runs its gates alone, read from the gates' job as on a merge
+  request, and asks no agent: the committer, the documentalist and the
+  reviewer are not run, their verdict the head's, and the summary names
+  them. The finding the change adds blocks the queue.
+given:
+  repo: linted
+  setup:
+    - git checkout -q -b change
+    - |
+      sed -i 's|^\tos.Remove("c.tmp")$|&\n\tos.Remove("d.tmp")|' clean.go && git commit -qam "feat: clean d too"
+    - |
+      git checkout -q main && echo "// More to come." >> main.go && git commit -qam "docs: say more comes"
+    - |
+      git checkout -q -b queue && git merge -q --no-ff change -m "Merge pull request #1 from change"
+  config:
+    routing: {events: {merge-request: [committer, documentalist, reviewer, "gate:merge"]}}
+    gates: {merge: {checks: [{id: lint, run: "golangci-lint run --output.sarif.path={out}/lint.sarif", output: sarif, max: {error: 0}}]}}
+run:
+  route: merge-request
+  input: {range: main..queue, queue: "true"}
+  ai: "fake:review-nothing"
+  gates-job: {env: {PATH: "$FIXTURES/bin:$PATH"}}
+  summary: true
+expect:
+  status: block
+  agent-calls: 0
+  steps: ["gate:merge"]
+  findings: [{rule: over-threshold, where: lint, message: "1 new error finding, at most 0 allowed (3 there before it"}]
+  summary: "a merge queue's or train's run: the gates alone, on the merged result; not run, the head's verdict holds them: committer, documentalist, reviewer"
+  summary-file: ["a merge queue's or train's run: the gates alone, on the merged result"]

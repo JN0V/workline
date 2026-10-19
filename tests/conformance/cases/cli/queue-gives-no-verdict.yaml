@@ -1,0 +1,7 @@
+case: cli/queue-gives-no-verdict
+about: "A merge queue's or train's run (ADR-0050) guards the merged result: given --verdict, a file the merge policy would keep as the head's, it is misuse, 64. The head's verdict and the person's yes stay the merge request's (ADR-0042)."
+given: {repo: basic}
+run: {cli: [route, merge-request, --input, queue=true, --verdict, verdict.json]}
+expect:
+  exit: 64
+  stderr: ["a queue's run (--input queue=true) gives no verdict on the head"]

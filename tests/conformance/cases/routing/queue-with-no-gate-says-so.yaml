@@ -1,0 +1,16 @@
+case: routing/queue-with-no-gate-says-so
+about: >
+  A merge queue's or train's run (`queue=true`, ADR-0050) on a line with no
+  gate checks nothing on the merged result, and says so: no step runs, no
+  agent is asked, and the steps left to the head's verdict are named. The
+  check the queue waits for reports, a pass.
+given:
+  repo: basic
+  setup:
+    - "git checkout -qb feat/x && echo x > x.txt && git add x.txt && git commit -qm 'feat: add x'"
+run: {route: merge-request, input: {range: main..HEAD, queue: "true"}, ai: "fake:review-nothing"}
+expect:
+  status: pass
+  agent-calls: 0
+  steps: []
+  summary: "a merge queue's or train's run: no gate in the line, nothing checked on the merged result; not run, the head's verdict holds them: committer, documentalist"

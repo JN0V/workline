@@ -49,6 +49,11 @@ type FollowOptions struct {
 	// which no newer run cancels (GitHub's concurrency).
 	Verdict     string
 	VerdictOnly bool
+	// Group is a merge queue's group, its branch as GitHub names it
+	// (gh-readonly-queue/<base>/pr-<n>-<head>), GroupHead its commit: the
+	// yes the base requires is set on that commit as the head queued holds
+	// it, and nothing else is followed (ADR-0050, queue.go).
+	Group, GroupHead string
 }
 
 // workKeys are the keys of a doc's header workline writes, recording when

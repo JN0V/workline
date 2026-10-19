@@ -1,0 +1,30 @@
+case: merge/queue-group-takes-the-heads-yes
+about: "A merge queue's group (ADR-0050), with the merge policy: GitHub tests the group's commit against the checks the base requires, `workline/accepted` from the App among them, which no run sets there; the queue would wait until its timeout. `follow --merge-group` sets it on the group's commit as the head queued holds it: the person's yes `follow` kept there (ADR-0042), never one of the queue's own. Nothing else is followed."
+given:
+  repo: documented
+  config: {merge: {autonomy: cautious}}
+  setup:
+    - "git checkout -qb feat/sessions && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+    - "git checkout -q main && echo more >> src/auth/notes.txt && git add src/auth/notes.txt && git commit -qm 'docs: say more' && git checkout -qb queue && git merge -q --no-ff feat/sessions -m 'Merge pull request #7 from feat/sessions'"
+  forge:
+    statuses:
+      - {commit: feat/sessions, name: workline/accepted, state: success, description: "accepted by dana", by: workline-bot}
+    merge-requests:
+      - id: 7
+        branch: feat/sessions
+        base: main
+        author: dana
+        labels: [workline:accepted]
+        label-events: [{label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T10:00:00Z"}]
+        comments: []
+run: {follow: [--merge-group, gh-readonly-queue/main/pr-7-feat/sessions, --head, queue]}
+expect:
+  status: pass
+  findings: [{rule: queue-accepted, where: "#7", message: "queued, holds the yes: set on the group's commit"}]
+  no-findings: [{rule: auto-merge-on}]
+  summary: "a merge queue's group: #7's head"
+  forge:
+    merge-requests:
+      - {id: 7, auto-merge: false}
+    statuses:
+      - {commit: queue, name: workline/accepted, state: success, by: workline-bot}
