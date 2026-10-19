@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go]
-checked: 2a1a9d41
+checked: 615b87f5
 verified: agent:claude-code
 ---
 # Conformance — a case in full
@@ -70,6 +70,8 @@ saying so.
 - `route: ready` with `item` — ask routing to move a work item;
 - `target` — the issue or merge request comments and labels go on
   (`{merge-request: 1}`); `branch` — the branch that merge request comes from;
+  `args` — more options, as typed, after the run's own (`[--target,
+  merge-request:release]`, which `target` cannot say);
 - `open-merge-request: true` or `push-to-merge-request: true` — put what the
   patches write on a merge request;
 - `reports: true` — also write the findings as SARIF and Code Quality;

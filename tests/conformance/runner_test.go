@@ -84,6 +84,7 @@ type givenSpec struct {
 type runSpec struct {
 	Role    string            `yaml:"role"`
 	Target  map[string]int    `yaml:"target"`
+	Args    []string          `yaml:"args"`   // more options, as typed, after the run's own: what Target cannot say (merge-request:release)
 	Branch  string            `yaml:"branch"` // the branch the targeted merge request comes from, as --branch
 	NoApply bool              `yaml:"no-apply"`
 	OpenMR  bool              `yaml:"open-merge-request"`
@@ -646,6 +647,7 @@ func runCase(t *testing.T, c *caseFile) []string {
 	if c.Run.WarnOnly {
 		args = append(args, "--warn-only")
 	}
+	args = append(args, c.Run.Args...)
 	sarifFile, cqFile := filepath.Join(work, "findings.sarif"), filepath.Join(work, "code-quality.json")
 	if c.Run.Reports {
 		args = append(args, "--sarif", sarifFile, "--code-quality", cqFile)

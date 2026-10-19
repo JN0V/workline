@@ -1,6 +1,6 @@
 ---
-sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/adopt.go, internal/builtin/documentalist/byname.go, internal/builtin/documentalist/releasekept.go]
-checked: f3ffdc0b
+sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/adopt.go, internal/builtin/documentalist/byname.go, internal/builtin/documentalist/releasekept.go, internal/engine/night.go]
+checked: 56e17f81
 verified: agent:claude-code
 judged-in-parts: c7e1e98
 ---
@@ -104,6 +104,25 @@ documentalist does what it does at the release — every doc suspect since
 the last one and the docs due then, not only what the pull request's
 commits touched.
 
+- **No agent on its moves**
+  ([ADR-0050, §7](../../../docs/adr/0050-each-act-has-its-moment-and-a-wait-budget.md#7-decided-by-the-maintainer-on-2026-10-19)):
+  on each push to it, the docs due are counted with no agent and hold the
+  release; one finding says so (`ai-waits-for-night`). A doc fix would
+  otherwise change its head after a person's yes.
+- **The agent judges them every night**, on that pull request's head,
+  checked out for the run, then put back:
+  - the other nights, the templates' release docs run:
+    `workline route release --target merge-request:release` finds the
+    release pull request open into the branch. None open, or no doc due:
+    no agent is asked. GitHub: `workline-release-docs.yml`; GitLab: a
+    schedule with `WORKLINE_TASK=release-docs`;
+  - the gardening's night, before its own tasks. Gardening leaves the
+    docs that fix holds;
+  - with no agent that night, it is said (`release-not-judged`), and the
+    release waits.
+- **Sooner, by hand**: run the release docs workflow (GitHub) or play its
+  schedule (GitLab); or, where an agent may judge,
+  `workline route release --target merge-request:<n> --push-to-merge-request`.
 - **Its fix does not go onto that branch**, which the tool rewrites: it
   goes to a merge request of its own into the release's base,
   `workline/documentalist/release`. The release pull request stays held
@@ -124,7 +143,9 @@ commits touched.
   a person committed to it, or, asking that person, when its change no
   longer applies.
 - **A new fix judged on the release pull request** is not pushed over a
-  person's commit either: it goes in a comment there.
+  person's commit either: it goes in a comment there; nor applied once the
+  tool moved its branch since the night's run (`moved-on`): the next run
+  judges the new head.
 
 ## Adopting a repository
 
@@ -176,3 +197,5 @@ On a draft, an agent set, the engine asks it nothing
 ([ADR-0050](../../../docs/adr/0050-each-act-has-its-moment-and-a-wait-budget.md)):
 the docs the change made suspect are counted, and said judged once it
 is marked ready (`ai-waits-for-ready`); no checklist asks a person to.
+Nor on a release tool's pull request, whose docs due are judged at
+night (`ai-waits-for-night`, [above](#a-release-tools-pull-request)).

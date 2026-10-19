@@ -1,0 +1,33 @@
+case: documentalist/release-docs-fixed-at-night
+about: "At night, the gardening line first judges the docs due for the release tool's pull request open into the branch, with the agent, on that pull request's head, checked out for the run and put back after; its fix goes to the documentalist's release branch, a merge request of its own, the record kept in its comment there (ADR-0050, §7; ADR-0017; ADR-0034). The gardening after it leaves the doc that fix holds: one agent call. Judged and applied in two jobs, as the templates do; the release waiting for its fix holds nothing of the night's line."
+given:
+  repo: documented
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git tag v1.0.0"
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin main"
+    - "git checkout -qb release-please--branches--main && git push -q origin release-please--branches--main && git checkout -q main"
+  forge:
+    merge-requests:
+      - id: 1
+        branch: release-please--branches--main
+        base: main
+        labels: []
+        comments: []
+        pushes: [{head: release-please--branches--main, at: "2026-01-03T00:00:00Z", by: workline-bot}]
+run: {route: schedule, ai: "fake:doc-fixed", open-merge-request: true, no-apply: true, then: resume}
+expect:
+  status: pass
+  agent-calls: 1
+  findings:
+    - {rule: fixed-elsewhere, where: docs/tech/auth.md, message: "merge request #2"}
+  pushed:
+    workline/documentalist/release: {docs/tech/auth.md: "Access tokens last two hours."}
+  not-pushed: [release-please--branches--main, main]
+  files:
+    docs/tech/auth.md: {contains: "Access tokens last one hour."}
+  branches:
+    main: {docs/tech/auth.md: "Access tokens last one hour."}
+  forge:
+    merge-requests:
+      - {id: 1, comments: 1, comment-contains: "<!-- workline:doc-judged-at-release"}
+      - {id: 2, branch: workline/documentalist/release, base: main, body-contains: "for the release"}

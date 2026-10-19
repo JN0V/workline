@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/documentalist.go, roles/documentalist/role.yaml]
-checked: f3ffdc0b
+checked: 56e17f81
 verified: agent:claude-code
 judged-in-parts: c7e1e98
 ---
@@ -30,7 +30,9 @@ doc suspect, and so on.
 
 On `release` — or on a release tool's pull request, which is the release
 ([ADR-0017](../../../docs/adr/0017-the-release-manager.md)) — the
-documentalist runs before the release tool tags.
+documentalist runs before the release tool tags. On that pull request's
+moves it asks no agent: the agent judges at night, with the gardening
+([more](push.md#a-release-tools-pull-request)).
 
 - **A doc made suspect since the highest release tag** blocks until it is
   judged, by the agent or by a person moving `checked`.
