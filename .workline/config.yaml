@@ -79,7 +79,7 @@ routing:
   # product owner (ADR-0018) —, then the specs of up to five issues it
   # refined (specs-per-run), read by the reviewer, which holds each from
   # ready while a finding is open (#128; on since 2026-10-17).
-  events: {pre-push: [committer, documentalist], merge-request: [committer, documentalist, reviewer],
+  events: {pre-push: [committer, documentalist], merge-request: [committer, gate:try, documentalist, reviewer],
     schedule: [documentalist, product-owner, reviewer]}
 
 # The forge merges what a person accepted (ADR-0042): `workline:accepted` on
@@ -88,3 +88,13 @@ routing:
 # pull requests (records, derived blocks, docs) merge with no label; the
 # App's key is out of a pull request's run (ADR-0044).
 merge: {autonomy: normal}
+
+# A trial gate for the pull request building the engine once a commit:
+# with a gate, the gates' job builds the engine and judge takes it. Removed
+# before the merge.
+gates:
+  try:
+    checks:
+      - id: noop
+        run: "true"
+        output: exit
