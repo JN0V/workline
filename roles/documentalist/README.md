@@ -1,6 +1,6 @@
 ---
 sources: [roles/documentalist/role.yaml, internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/kept.go, routing.default.yaml]
-checked: f3ffdc0b
+checked: db19e9a0
 judged: f70db89
 verified: agent:claude-code
 ---
@@ -48,9 +48,9 @@ doc by doc), or make a push wait on an agent.
 | Event | Fired by | Does |
 |---|---|---|
 | `pre-push` | the global hook, when routed | counts the docs the pushed commits made suspect, reading no other doc, no agent |
-| `merge-request` | CI | judges the docs the merge request made suspect; fix committed to its branch; a draft: counts them, judged once it is ready |
-| `schedule` | CI, nightly or weekly (gardening) | every suspect or stale doc, budgets, links, reader checks; one merge request per task |
-| `release` | `workline route release`, before your release tool tags | holds the release until the docs due are judged |
+| `merge-request` | CI | judges the docs the merge request made suspect; fix committed to its branch; a draft: counts them, judged once it is ready; a release tool's: counts the docs due, judged at night |
+| `schedule` | CI, nightly or weekly (gardening) | first the docs due for an open release pull request, on its head; then every suspect or stale doc, budgets, links, reader checks; one merge request per task |
+| `release` | `workline route release`, before your release tool tags; with `--target`, a release pull request now | holds the release until the docs due are judged |
 | `init` | `workline init` | proposes each doc's `sources`, for you to review |
 
 `workline docs` judges, on your machine, what was made suspect since the
@@ -111,9 +111,11 @@ Under `roles: {documentalist: {settings: …}}` in `.workline/config.yaml`
   ([when the base moves](docs/gardening.md#when-the-base-moves)); a
   tracking issue for docs due at the release; an issue when the code
   disagrees with a doc it follows.
-- On a release tool's pull request: the fix on a merge request of its own,
+- On a release tool's pull request: no agent on its moves; at night, the
+  fix on a merge request of its own,
   `workline/documentalist/release`, rebuilt on `main` each time `main`
-  moves (`workline follow`, [ADR-0034](../../docs/adr/0034-the-release-fix-follows-its-base.md)), never over a person's commit.
+  moves (`workline follow`, [ADR-0034](../../docs/adr/0034-the-release-fix-follows-its-base.md)), never over a person's commit
+  ([more](docs/push.md#a-release-tools-pull-request)).
 - On a person's pull request, with `update-branches: conflicts`: a merge
   of main when it conflicts only on workline's lines, those settled; else
   named in the job's summary ([more](docs/follow.md)).

@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine, internal/intent, internal/role, internal/agent, roles_test.go]
-checked: 5193cf0b
+checked: db19e9a0
 verified: agent:claude-code
 judged: b530b72
 ---
@@ -376,7 +376,9 @@ the agent again.
 Scripts receive `WORKLINE_RUN_DIR`, `WORKLINE_EVENT`, `WORKLINE_AI` (the agent
 name or `none`), `WORKLINE_AI_WAITS` (`ready` on a draft: given the input
 `draft=true`, the engine sets the agent it would give aside, `WORKLINE_AI`
-`none`, and the result says so, `ai-waits`, ADR-0050), `WORKLINE_ROLE`, `WORKLINE_BIN` (the engine running them,
+`none`, and the result says so, `ai-waits`, ADR-0050; `night` so too, on
+a release tool's merge request run on `merge-request`, for a role that
+runs on `release`), `WORKLINE_ROLE`, `WORKLINE_BIN` (the engine running them,
 which the shipped roles call for their built-in steps), `WORKLINE_ROLES_DIR`
 (the folder the role was taken from, where its siblings are),
 `WORKLINE_FORGE` (the
@@ -400,7 +402,12 @@ tool bumps (#384). A fix judged there is not pushed onto that branch, which
 the release tool rewrites: it goes to a merge request of its own into the
 release's base, and the release waits until it is merged (`fixed-elsewhere`);
 never over a person's commit on that branch, where it goes in a comment
-instead. `workline follow` rebuilds that merge request on its base as the
+instead. Run on `merge-request`, such a role has no agent; on `release`
+given that merge request (`--target`: the night's run, a person's), it
+has, and the commit judged is kept (`head` in out/run.yaml): applied
+apart, only on it (routing.md, "A release's docs at night"). The tasks
+whose patches an earlier step of the line proposed (`Waiting`, the
+release's fix) are counted and named as an earlier round's. `workline follow` rebuilds that merge request on its base as the
 base moves (ADR-0034); with `--gardening`, after gardening applies, the
 role's other merge requests too, or closes those with nothing left to
 merge. A task's branch a person committed to is never force-pushed over

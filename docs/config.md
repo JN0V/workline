@@ -1,6 +1,6 @@
 ---
 sources: [internal/role/config.go, internal/role/role.go, cmd/workline, internal/engine/engine.go, internal/forge/gitlab.go, internal/hooks]
-checked: 5193cf0b
+checked: db19e9a0
 judged: e343388
 verified: agent:claude-code
 reader: 0b97bbc207c5
@@ -196,6 +196,9 @@ A role's `pre` and `post` receive:
 - `WORKLINE_AI_WAITS=ready` on a draft (`--input draft=true`): the
   agent set aside, `WORKLINE_AI` is `none`
   ([ADR-0050](adr/0050-each-act-has-its-moment-and-a-wait-budget.md#4-what-the-table-holds-to));
+  `WORKLINE_AI_WAITS=night` so too, on a release tool's merge request, for
+  a role that runs on `release`: its agent judges at night
+  ([§7](adr/0050-each-act-has-its-moment-and-a-wait-budget.md#7-decided-by-the-maintainer-on-2026-10-19));
 - `WORKLINE_OPEN_MERGE_REQUESTS`, `WORKLINE_OPEN_MERGE_REQUEST_TASKS` and
   `WORKLINE_PROPOSED_TASKS` with `--open-merge-request`, and
   `in/waiting.yaml`, the files each waiting task changes;

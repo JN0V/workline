@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/role/config.go, internal/engine/engine.go, internal/hooks, internal/agent/claude.go, internal/agent/command.go]
-checked: 5193cf0b
+checked: db19e9a0
 judged: b5899f5
 verified: agent:claude-code
 ---
@@ -108,7 +108,9 @@ Each in detail: [the commands](commands.md), and
   - On a release tool's merge request, which the tool rewrites, it goes to
     a merge request of its own, `workline/<role>/release`, into the
     release's base; the release waits until it is merged
-    ([ADR-0017](adr/0017-the-release-manager.md)).
+    ([ADR-0017](adr/0017-the-release-manager.md)). Judged on `release`
+    only, at night or by hand: on `merge-request`, no agent
+    ([more](../roles/documentalist/docs/push.md#a-release-tools-pull-request)).
 - **`--open-merge-request`**, with a forge: what the patches write goes on
   a branch `workline/<role>/<task>`, pushed, with a merge request opened or
   updated for it; the role is told how many of its merge requests are

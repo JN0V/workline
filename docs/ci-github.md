@@ -1,6 +1,6 @@
 ---
 sources: [ci/github, .github/workflows/workline.yml, .github/workflows/workline-apply.yml, .github/workflows/workline-gardening.yml, .github/workflows/workline-sample.yml, .github/actions/engine/action.yml, .github/workflows/release.yml, .github/workflows/release-please.yml, release-please-config.json, .goreleaser.yaml, cmd/workline]
-checked: 5193cf0b
+checked: db19e9a0
 judged: 220b6dc
 verified: agent:claude-code
 reader: fe1505d43360
@@ -77,6 +77,8 @@ write run the default branch's workflow, never a pull request's own
      `apply` runs every time, and then rebuilds on `main` the pull
      requests it opened before, or closes those with nothing left to merge
      ([ADR-0034, amended](adr/0034-the-release-fix-follows-its-base.md#amendment-2026-10-12-gardenings-merge-requests-follow-too-or-are-closed)).
+     A release pull request open, it first judges that release's docs
+     ([more](../roles/documentalist/docs/push.md#a-release-tools-pull-request)).
    - [workline-sample.yml](../ci/github/workline-sample.yml): the
      [weekly sample](ci.md#the-weekly-sample), from the first release
      after v0.2.1.
@@ -192,13 +194,12 @@ with release-please, never a tag by hand:
   `x-release-please-version` (release-please-config.json);
 - the App's token, not the job's: a pull request opened with
   `GITHUB_TOKEN` starts no workflow, so its checks would never run;
-- on that pull request, workline.yml holds it as the release: `judge`
-  passes the branch it comes from (`--branch`), and the documentalist
-  holds it on every doc made suspect since the last release; its fix goes
-  to a pull request of its own on `main`, which `follow` rebuilds at each
-  push there, as release-please does its own (`always-update`: even when
-  only hidden types, `docs` or `test`, landed, so it is never left behind
-  `main`);
+- on that pull request, `judge` passes its branch (`--branch`): the
+  documentalist holds it, with no agent, on every doc made suspect since
+  the last release; gardening judges them at night, their fix a pull
+  request of its own on `main`, which `follow` rebuilds at each push
+  there, as release-please does its own (`always-update`: never left
+  behind `main`) ([more](../roles/documentalist/docs/push.md#a-release-tools-pull-request));
 - the person merges it: that is the decision. release-please tags the
   merged commit `vX.Y.Z` and writes the release with its notes; in the
   same run, release.yml builds the binaries with GoReleaser, which uploads

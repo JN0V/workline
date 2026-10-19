@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine/merge.go, internal/forge/merge.go, internal/forge/github_merge.go, internal/forge/gitlab_merge.go, ci/github/workline-apply.yml, ci/github/workline-merge.yml, ci/gitlab/workline.gitlab-ci.yml]
-checked: 5193cf0b
+checked: db19e9a0
 verified: agent:claude-code
 ---
 # The merge policy
@@ -87,7 +87,9 @@ merge: {autonomy: cautious}   # off unless set: no auto-merge is touched
 ## Never without a person's yes
 
 - **A release pull request** merges only labelled. Held for its docs, it
-  waits for them, then is brought up to date and merges.
+  waits for them, then is brought up to date and merges. Its docs due
+  wait for the night's agent: held too, never red, its yes kept
+  ([ADR-0050, §7](adr/0050-each-act-has-its-moment-and-a-wait-budget.md#7-decided-by-the-maintainer-on-2026-10-19)).
 - **A fork's** is never brought up to date: the token cannot write to a
   fork. Its CI run is the fork's own, so the templates keep no verdict of
   it: it waits for a person.
@@ -177,7 +179,7 @@ counts as workline's own, the kinds, the revert and the limits:
 | `verdict-red`, `review-short`, `checks-red` | out of line, why |
 | `accepted-reset` | a push after the yes: the yes and auto-merge off |
 | `vetoed`, `draft`, `auto-merge-off` | the forge's veto, or the label taken off |
-| `waits-for-docs` | a release whose docs are still open |
+| `waits-for-docs` | a release whose docs are still open, or still to be judged at night |
 | `fork-behind`, `update-left` | behind, not brought up to date |
 | `label-ignored` | put by someone who may not push nor merge |
 | `merge-unguarded`, `merge-token`, `merge-unsupported` | a base, a token or a forge it cannot act with |

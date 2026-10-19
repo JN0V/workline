@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/line, internal/hooks, internal/forge/gitlab.go, ci/gitlab/workline.gitlab-ci.yml, ci/github/workline.yml, ci/github/workline-gardening.yml, ci/github/workline-sample.yml, routing.default.yaml]
-checked: 5193cf0b
+checked: db19e9a0
 verified: agent:claude-code
 reader: 2de353fab113
 ---
@@ -115,6 +115,10 @@ Before your release tool tags; a non-zero exit holds it.
   --open-merge-request --json > line.json`, then `workline apply --line
   line.json`, puts the docs' fix on a merge request of its own (untried
   this way).
+- A release tool's merge request: its own runs ask no agent; gardening
+  judges its docs at night. Sooner: `workline route release --target
+  merge-request:<n> --push-to-merge-request`, its head checked out for the
+  run ([more](../roles/documentalist/docs/push.md#a-release-tools-pull-request)).
 - On a push to the default branch: `workline follow --base <branch>
   --forge gitlab` (token, no agent) rebuilds that merge request,
   `workline/documentalist/release`, on the branch's new tip, so it stays

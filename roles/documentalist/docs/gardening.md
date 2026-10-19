@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/freshness.go, internal/builtin/documentalist/dedupe.go, internal/builtin/documentalist/mergecard.go, internal/builtin/documentalist/waiting.go, internal/builtin/documentalist/condense.go, internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/kept.go]
-checked: f3ffdc0b
+checked: db19e9a0
 verified: agent:claude-code
 ---
 # Documentalist — the gardening tasks
@@ -148,6 +148,9 @@ Run with `--open-merge-request` (the CI templates' scheduled jobs):
   ([ADR-0013, amended 2026-10-14](../../../docs/adr/0013-what-was-judged-is-not-asked-again.md#amendment-2026-10-14-a-doc-waits-while-a-merge-request-holds-it));
 - a doc to condense or split, a card to merge, a repeated passage wait
   while their own merge request does; the next one goes;
+- a doc the release's fix changes, `workline/documentalist/release`, open
+  or judged the same night before the gardening, waits too
+  ([at the release](push.md#a-release-tools-pull-request));
 - `records` is proposed again only for a doc it does not hold yet: then
   with every record that still holds;
 - a task proposed by an earlier round of the same run counts as waiting: a
