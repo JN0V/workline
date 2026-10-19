@@ -107,16 +107,12 @@ func (st state) leftSaid() string {
 	return fmt.Sprintf("; %d of the %d new commits read, %d left for the next push", st.Fresh-len(st.Left), st.Fresh, len(st.Left))
 }
 
-// sameAs is what a finding's judge stands on, as its line keeps it
-// (Answered): Patch, the patch id of the merge request's change to the
-// cause's file, base..head, the same whatever commit it sits on, so a
-// rebase or a merge of the base keeps it; the file's blob at the head when
-// the change leaves it. Finding keys the finding: its lens, its cause and
-// claim as quoted, spaces aside, its symptom, and what else its judge
-// reads that the patch does not hold: the symptom's file, the tests a
-// tests judge reads, the issues an intent judge reads. A cause quoted from
-// an issue: the whole change's patch id, the issue's text in the key.
-// Nothing when git cannot tell: the finding is judged.
+// sameAs keys what a finding's judge stands on (Answered): Patch, the
+// patch id of the change to the cause's file from st.Base, the merge base,
+// to the head (the whole change's for a cause in an issue), else the
+// file's blob; Finding, a hash of the finding's lens, quotes and symptom,
+// and what else its judge reads (roles/reviewer/docs/once.md). Nothing
+// when git cannot tell: the finding is judged.
 func sameAs(repo string, st state, s Settings, f Finding, l Lens) Answered {
 	h := sha256.New()
 	put := func(parts ...string) {
