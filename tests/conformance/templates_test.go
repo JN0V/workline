@@ -658,12 +658,23 @@ func TestWarnApartNeverHoldsTheVerdict(t *testing.T) {
 				t.Errorf("%sworkline-warn.yml: holds %q: the run apart gives no verdict, nor findings to code scanning", dir, bad)
 			}
 		}
+		reads, says := false, false
 		for name, job := range warn.Jobs {
 			for _, s := range job.Steps {
-				if strings.Contains(s.Run, "exit") && !strings.Contains(s.Run, `3) echo "::warning`) {
-					t.Errorf("%sworkline-warn.yml, job %s: a step exits by the run's status without saying an agent out of reach", dir, name)
+				reads = reads || strings.Contains(s.Run, "workline route merge-request --warn-only")
+				if !strings.Contains(s.Run, "exit") {
+					continue
+				}
+				// The run's status: 0 passes, 3 (the agent out of reach) is
+				// said, anything else is the engine's own error.
+				says = strings.Contains(s.Run, `3) echo "::warning`) && strings.Contains(s.Run, "0) ;;")
+				if !says {
+					t.Errorf("%sworkline-warn.yml, job %s: a step exits by the run's status without passing 0 and saying 3", dir, name)
 				}
 			}
+		}
+		if !reads || !says {
+			t.Errorf("%sworkline-warn.yml: no step runs the line apart (%v), or none ends the job by its status (%v)", dir, reads, says)
 		}
 		apply, _ := read(dir + "workline-apply.yml")
 		if r := apply.On.WorkflowRun; r == nil || !slices.Equal(r.Workflows, []string{"workline", "workline warn"}) {

@@ -1051,13 +1051,14 @@ func routeCmd(args []string) int {
 	if *gatesOnly && *gatesFrom != "" {
 		return misuse(fs, "--gates-only runs the gates, --gates-from reads them: one or the other")
 	}
-	switch {
+	flagged := map[bool]string{true: line.WarnApart, false: line.WarnOnly}[*warnApart]
+	switch given, told := inputs[line.WarnInput]; {
 	case *warnApart && *warnOnly:
 		return misuse(fs, "--warn-apart leaves what only warns, --warn-only runs it alone: one or the other")
-	case *warnApart:
-		inputs[line.WarnInput] = line.WarnApart
-	case *warnOnly:
-		inputs[line.WarnInput] = line.WarnOnly
+	case (*warnApart || *warnOnly) && told && given != flagged:
+		return misuse(fs, fmt.Sprintf("--warn-%s and --input %s=%s say two runs: one or the other", flagged, line.WarnInput, given))
+	case *warnApart || *warnOnly:
+		inputs[line.WarnInput] = flagged
 	}
 	switch w := inputs[line.WarnInput]; {
 	case w != "" && w != line.WarnApart && w != line.WarnOnly:

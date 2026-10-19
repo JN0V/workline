@@ -753,6 +753,9 @@ func runCase(t *testing.T, c *caseFile) []string {
 		r.Findings = append(r.Findings, r2.Findings...)
 		r.Applied = append(r.Applied, r2.Applied...)
 	}
+	if want := c.Expect.ApartStatus; c.Run.Then == "apart" && want == "" {
+		c.Expect.ApartStatus = "pass" // what only warns passes, unless a case says otherwise
+	}
 	if want := c.Expect.ApartStatus; want != "" && want != apartStatus {
 		return []string{fmt.Sprintf("the run apart's status = %q, want %s (then: apart runs it)", apartStatus, want)}
 	}

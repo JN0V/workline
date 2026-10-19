@@ -228,6 +228,10 @@ func prepare(runDir, repo string, s Settings) int {
 	if side != "" && side != warnApart && side != warnOnly {
 		return fail(fmt.Errorf("input warn %q: %s, the verdict's run, or %s, the run apart", side, warnApart, warnOnly))
 	}
+	if ev := os.Getenv("WORKLINE_EVENT"); side != "" && ev != "merge-request" {
+		// Its role.yaml's `apart`: elsewhere nothing reads what it would leave.
+		return fail(fmt.Errorf("input warn %q on %s: the lenses that warn read apart on a merge request only", side, ev))
+	}
 	if side == warnOnly && !s.warns() {
 		return final(runDir, Review{Status: verdict.Pass, Summary: "every lens blocks (ai-findings): nothing reads apart from the verdict", Warn: side})
 	}

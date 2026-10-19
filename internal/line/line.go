@@ -141,6 +141,12 @@ func RunWith(event string, base engine.Options, gates *Gates) *Result {
 			if name == committerRole {
 				o.Inputs = whole
 			}
+			// What only warns runs apart where the role reads it apart on
+			// the event; any other step runs whole, never told to leave it.
+			if _, told := o.Inputs[WarnInput]; told && !apartOn(base.RolesDir, name, event) {
+				o.Inputs = maps.Clone(o.Inputs)
+				delete(o.Inputs, WarnInput)
+			}
 			o.Role, o.Event = name, event
 			step, status = runRole(res, cfg, o, 0)
 		}

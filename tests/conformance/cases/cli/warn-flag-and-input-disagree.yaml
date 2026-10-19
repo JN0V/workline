@@ -1,0 +1,7 @@
+case: cli/warn-flag-and-input-disagree
+about: "A flag naming one run and the input warn the other (ADR-0050): misuse, 64, never the flag silently taken over what the input asked."
+given: {repo: basic}
+run: {cli: [route, merge-request, --warn-apart, --input, warn=only]}
+expect:
+  exit: 64
+  stderr: ["--warn-apart and --input warn=only say two runs: one or the other"]
