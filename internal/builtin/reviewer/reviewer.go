@@ -332,7 +332,7 @@ func prepare(runDir, repo string, s Settings) int {
 		}
 	}
 	if os.Getenv("WORKLINE_AI_WAITS") == "ready" {
-		return waitsForReady(runDir, repo, s, st, marked)
+		return waitsForReady(runDir, s, st, marked)
 	}
 	if ai := os.Getenv("WORKLINE_AI"); ai == "" || ai == "none" {
 		st.Advisories = append(st.Advisories, verdict.Finding{Rule: "not-reviewed", Level: "warn",
@@ -577,12 +577,13 @@ func recordOnly(runDir string, s Settings, st state, fresh int) int {
 
 // waitsForReady settles a draft's run, its agent set aside by the engine
 // (WORKLINE_AI_WAITS, ADR-0050): the rules ran, no lens nor judge is
-// asked, and the review says it waits for ready. Nothing is posted, the
-// last review standing as it is; but where its record said every lens
+// asked, and the review says it waits for ready. No review is posted, the
+// last one standing as it is; but where its record said every lens
 // read the change (marked), the record alone is written anew, without
 // it, so that ready again reads every lens once more (#359), even after a
-// cancelled run.
-func waitsForReady(runDir, repo string, s Settings, st state, marked bool) int {
+// cancelled run. The comment is the one the record was read from; a run
+// apart whose record a summary comment gave has none of its own to write.
+func waitsForReady(runDir string, s Settings, st state, marked bool) int {
 	why := "a draft: no lens asked; every lens reads the whole change once it is marked ready"
 	if os.Getenv("WORKLINE_FORGE") == "gitlab" {
 		why += "; GitLab starts no pipeline then: push, or run its pipeline"
@@ -590,8 +591,13 @@ func waitsForReady(runDir, repo string, s Settings, st state, marked bool) int {
 	st.Advisories = append(st.Advisories, verdict.Finding{Rule: verdict.WaitsForReady, Level: "warn", Message: why})
 	v := review(st, nil, "a draft: only the rules ran; every lens reads the whole change once it is marked ready")
 	body := ""
-	if marked && mergeRequest() != nil && s.ForgeWrites {
-		body = keptReview(lastComment(repo, st.Warn), st.Warn, v.Record)
+	if marked && mergeRequest() != nil && s.ForgeWrites && st.Record.comment != "" {
+		if body = keptReview(st.Record.comment, st.Warn, v.Record); body == "" {
+			// Never kept in silence (principle 12): ready again would read
+			// the lens in turn, not every lens.
+			v.Findings = append(v.Findings, verdict.Finding{Rule: "record-not-written", Level: "warn",
+				Message: "the record still says every lens read the change, and could not be written anew without it: once it is ready, ask every lens (`--input lenses=all`)"})
+		}
 	}
 	if body == "" {
 		return final(runDir, v)

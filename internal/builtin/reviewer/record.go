@@ -36,6 +36,10 @@ type Record struct {
 	// them the summary comment no longer holds. Never on a machine.
 	Judged []Answered `json:"judged,omitempty"`
 	Gone   int        `json:"judged-gone,omitempty"`
+	// comment is the side's own comment the record was read from on a
+	// merge request, whole: a draft's run keeps it as it is, its record
+	// alone written anew (ADR-0050). "" elsewhere, or with none yet.
+	comment string
 }
 
 // Answered is a finding the judge answered: kept (yes) or dropped (no), at
@@ -471,34 +475,6 @@ func localRecord(repo, side string) string {
 	return filepath.Join(strings.TrimSpace(dir), "workline", name)
 }
 
-// lastComment is the comment a side keeps its summary and record in on the
-// merge request, as the forge holds it now; "" when there is none, or it
-// cannot be read.
-func lastComment(repo, side string) string {
-	t := mergeRequest()
-	if t == nil {
-		return ""
-	}
-	f, err := forge.Open(os.Getenv("WORKLINE_FORGE"), repo)
-	if err != nil || f == nil {
-		return ""
-	}
-	b, ok := f.(forge.Backlog)
-	if !ok {
-		return ""
-	}
-	comments, err := b.Comments(*t)
-	if err != nil {
-		return ""
-	}
-	for _, c := range comments {
-		if strings.Contains(c, forge.Marker("sticky=reviewer/"+keyOf(side))) {
-			return c
-		}
-	}
-	return ""
-}
-
 // keptReview is a side's comment, text, as it stands, its record and the
 // blocks beside it replaced by rec's: what the last review said is kept,
 // only the record changes (a draft again, ADR-0050). "" when text holds no
@@ -545,6 +521,7 @@ func loadRecord(repo string, s Settings, side string) (Record, string, error) {
 		for _, c := range comments {
 			if strings.Contains(c, forge.Marker("sticky=reviewer/"+keyOf(side))) {
 				r, err := readRecord(c)
+				r.comment = c
 				return r, where, err
 			}
 		}
