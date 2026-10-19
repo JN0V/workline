@@ -101,7 +101,8 @@ its evaluation in
   `repository-checks-left-to-main`, `only-what-the-range-changed`.
 - **The whole repository's checks on main after a merge**, once, no
   agent, in one issue edited only when what it lists changes
-  ([main after a merge](../../../docs/main-after-merge.md)):
+  ([main after a merge](../../../docs/main-after-merge.md);
+  [tried](https://github.com/JN0V/workline/pull/544)):
   `repository-checks-on-main`, routing's `main-*`.
 - **Gardening at night**, one merge request a task, at most 3 waiting; not
   asked again while it is open, a doc judged in parts while any merge
