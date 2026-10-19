@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/JN0V/workline/internal/agent"
 	"github.com/JN0V/workline/internal/engine"
@@ -32,6 +33,9 @@ type Step struct {
 	// From: the file a gate's verdict was read from, the job that ran it
 	// having shown its findings; empty when it ran here.
 	From string `json:"from,omitempty"`
+	// Seconds: how long the step took, in tenths; a gate read from the
+	// job that ran it, that job's (ADR-0050).
+	Seconds float64 `json:"seconds"`
 }
 
 // Result is the outcome of an event on the line.
@@ -50,6 +54,12 @@ type Result struct {
 	// reading their verdicts checks it judges too.
 	Range   string `json:"range,omitempty"`
 	Commits string `json:"commits,omitempty"`
+	// Seconds: how long the line took, the gates' job's seconds added when
+	// their verdicts were read from it: the verdict waited for that job.
+	// Moment: the wait it is part of and its budget (ADR-0050); none on an
+	// event no person waits on.
+	Seconds float64 `json:"seconds"`
+	Moment  *Moment `json:"moment,omitempty"`
 }
 
 // Gates says how a line takes its gate steps: run there, by default. In
@@ -81,8 +91,22 @@ func Run(event string, base engine.Options) *Result { return RunWith(event, base
 
 // RunWith is Run, its gate steps taken as gates says.
 func RunWith(event string, base engine.Options, gates *Gates) *Result {
+	start := time.Now()
 	res := &Result{Status: verdict.Pass, Steps: []Step{}}
 	cfg, err := routing.Load(base.Repo)
+	// Each step's seconds, and the moment's budget (ADR-0050): said, never
+	// a block.
+	defer func() {
+		res.Seconds = Since(start)
+		for _, s := range res.Steps {
+			if s.From != "" {
+				res.Seconds = round(res.Seconds + s.Seconds)
+			}
+		}
+		if cfg != nil {
+			Measure(res, cfg, momentOf(event, base.Inputs, gates.Only, res.AgentCalls))
+		}
+	}()
 	if err != nil {
 		f := failed(res, "routing", err.Error())
 		if role.IsConfigError(err) {
@@ -247,8 +271,9 @@ func apartOn(rolesDir, name, event string) bool {
 // it, or ended before writing.
 func (g *Gates) step(repo, name, event, rng string) Step {
 	if g.From == "" {
+		start := time.Now()
 		v, added := runGate(repo, name, event, rng)
-		return Step{Name: "gate:" + name, Status: v.Status, Gate: v, New: added}
+		return Step{Name: "gate:" + name, Status: v.Status, Gate: v, New: added, Seconds: Since(start)}
 	}
 	if g.read == nil && g.err == nil {
 		g.read, g.err = readResult(g.From)
@@ -266,7 +291,7 @@ func (g *Gates) step(repo, name, event, rng string) Step {
 	}
 	for _, s := range g.read.Steps {
 		if s.Name == "gate:"+name && s.Gate != nil {
-			return Step{Name: s.Name, Status: s.Status, Gate: s.Gate, From: g.From}
+			return Step{Name: s.Name, Status: s.Status, Gate: s.Gate, From: g.From, Seconds: s.Seconds}
 		}
 	}
 	return not(fmt.Sprintf("the gates' job, %s, holds no verdict of it", g.From))
@@ -343,12 +368,13 @@ func worst(a, b string) string {
 // step that did not pass and its verdict, or the role and pass; a handoff
 // past max-handoffs is a block.
 func runRole(res *Result, cfg *routing.Config, o engine.Options, depth int) (string, string) {
+	start := time.Now()
 	r := engine.Run(o)
 	label := o.Role
 	if o.Event == "handoff" {
 		label += " (handoff)"
 	}
-	res.Steps = append(res.Steps, Step{Name: label, Status: r.Status, Result: r})
+	res.Steps = append(res.Steps, Step{Name: label, Status: r.Status, Result: r, Seconds: Since(start)})
 	res.Findings = append(res.Findings, r.Findings...)
 	res.AgentCalls += r.AgentCalls
 	res.Calls = append(res.Calls, r.Calls...)

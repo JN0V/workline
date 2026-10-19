@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/hooks, internal/role/config.go]
-checked: 29e55a0b
+checked: b4f67a9d
 verified: agent:claude-code
 ---
 # The commands that set up
@@ -121,4 +121,8 @@ routing:
   ([ADR-0027](adr/0027-derived-blocks-are-regenerated-on-the-default-branch.md)),
   so never edit one by hand.
 - The sizes and links of the docs the commits touched are only counted.
+- Its seconds, in one line: `1.2 s in all — committer 0.5 s,
+  documentalist 0.7 s`; over the push's 5 s, one line more names the
+  step that took the most, and the push goes on
+  ([the budgets](spec/routing.md#each-steps-seconds-a-moments-budget)).
 - `git push --no-verify` skips the hook.

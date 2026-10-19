@@ -1,7 +1,8 @@
 ---
 sources: [ci/github/workline.yml, ci/github/workline-apply.yml, ci/gitlab/workline.gitlab-ci.yml, internal/line/line.go, internal/engine/queue.go]
-checked: 29e55a0b
-verified: agent:claude-code
+checked: b4f67a9d
+judged: 83a4508
+verified: agent:documentalist
 ---
 # A merge queue or a merge train
 
@@ -31,6 +32,9 @@ merges. workline's run there guards that combination only
 - **No gate in the line**: nothing is checked, said, and the check passes.
 - **Its wait**: the gates' own time; workline's budget there is a minute
   ([ADR-0050](adr/0050-each-act-has-its-moment-and-a-wait-budget.md#1-a-wait-budget-per-moment)).
+  The summary says each gate's seconds; over that minute, one line more
+  names the gate that took the most, never a block (`queue` in
+  [the budgets](spec/routing.md#each-steps-seconds-a-moments-budget)).
 
 ## GitHub: a merge queue
 

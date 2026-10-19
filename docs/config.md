@@ -1,6 +1,6 @@
 ---
 sources: [internal/role/config.go, internal/role/role.go, cmd/workline, internal/engine/engine.go, internal/forge/gitlab.go, internal/hooks]
-checked: d57cc5bb
+checked: b4f67a9d
 judged: e343388
 verified: agent:claude-code
 reader: 0b97bbc207c5
@@ -27,6 +27,7 @@ owner), then the project's `settings`.
 | `routing.events` | `<event>: [role, gate:<name>, …]`, replacing the shipped line event by event |
 | `routing.fail-fast` | `<event>: false` runs every step of the event, the worst verdict standing, a refused proposal said, not failed; true unless set, but on `schedule` ([ADR-0037](adr/0037-the-schedule-runs-every-step.md)) |
 | `routing.handoffs`, `routing.max-handoffs` | which role may hand over to which, and how many times ([routing](spec/routing.md)) |
+| `routing.budgets` | `<moment>: <seconds>`, each moment's wait budget; over it, the summary says so, never a block ([routing](spec/routing.md#each-steps-seconds-a-moments-budget)) |
 | `gates.<name>` | `criteria`, `checks` (`id`, `run`, `output`, `max`, `optional`, `timeout`, `fix`; on a merge request `new`, `base-timeout`, `config`), `enforce` ([gates](spec/gates.md)) |
 | `repos.<name>` | `url`, `branch`: other repositories docs may name ([multi-repo](spec/multi-repo.md)) |
 | `release` | `branches` (the release tool's), `tags` (`v*`) |
@@ -65,6 +66,7 @@ routing:                    # replaces the shipped line, event by event
   handoffs: [{from: my-role, to: documentalist}]   # a role of your own (--roles); none shipped hands over
   max-handoffs: 3
   fail-fast: {schedule: false}   # every step of the schedule runs, the worst verdict stands (the default)
+  budgets: {verdict: 300}        # the head's verdict may take 5 min here (3 by default); over it, said
 gates:                      # your own checks, as a step of the line
   merge:
     checks: [{id: secrets, run: "gitleaks detect --report-format sarif --report-path {out}/secrets.sarif", output: sarif, max: {error: 0}}]

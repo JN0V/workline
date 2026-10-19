@@ -1,0 +1,11 @@
+case: committer/hook-quiet-within-its-budget
+about: "A message that passes, the commit within its budget (ADR-0050): the hook says nothing, its seconds neither."
+given:
+  repo: basic
+  setup: ["printf 'fix(parser): stop crashing on an empty input file\\n' > .git/COMMIT_EDITMSG"]
+  # A wide budget: a loaded machine's second does not make the case lie.
+  config: {routing: {budgets: {commit: 60}}}
+run: {cli: [hook, commit-msg, .git/COMMIT_EDITMSG]}
+expect:
+  exit: 0
+  stderr-lacks: ["workline", " s in all", "over its budget"]

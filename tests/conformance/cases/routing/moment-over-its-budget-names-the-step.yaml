@@ -1,0 +1,24 @@
+case: routing/moment-over-its-budget-names-the-step
+about: "A moment over its budget (ADR-0050), here a project's 1 s for a commit whose message the agent rewrites, the agent taking 1.5 s: the summary says it once, naming the step that took the most, its rewrite's seconds with it; the result says it too. It never blocks: the rewrite passes, and the line."
+given:
+  repo: basic
+  config: {routing: {budgets: {commit-rewrite: 1}}}
+run:
+  route: commit-msg
+  input: {message: "fix: AC-3"}
+  ai: |-
+    cmd:sleep 1.5
+    echo '- commit-message: "fix(parser): stop crashing on an empty input file"'
+  summary: true
+expect:
+  status: pass
+  agent-calls: 1
+  moment: {name: commit-rewrite, budget: 1, over: true, step: committer}
+  summary-file:
+    - "- **seconds**: "
+    - " s in all — committer "
+    - " s (rewrite "
+    - "- **over its budget**: the commit, with the agent's rewrite, took "
+    - ", over its budget of 1 s ([ADR-0050]("
+    - "; the step that took the most: committer, "
+    - " s (rewrite "
