@@ -2,12 +2,12 @@ case: committer/rewrite-retry-within-its-seconds
 about: "ai-max-seconds holds every call of the rewrite together: a refused rewrite is still asked again of a stronger model, within what is left of it."
 given:
   repo: basic
-  # 10 s: the wait counts from the first call, the engine's own steps
-  # included. Between the two calls, the committer's post on the first
-  # answer, a gitleaks scan, took 0.4 s on an idle machine, past 2 s on a
-  # loaded one.
-  # The cut past the cap is rewrite-ends-past-its-seconds'.
-  config: {roles: {committer: {settings: {rewrite: true, ai-max-seconds: 10}}}}
+  # 30 s, the default: the wait counts from the first call, the engine's
+  # own steps included. Between the two calls, the committer's post on the
+  # first answer, a gitleaks scan, took 0.4 s on an idle machine, 5.3 s at
+  # most on one loaded 4 times over. Both answer at once: the cap costs no
+  # time. The cut past the cap is rewrite-ends-past-its-seconds'.
+  config: {roles: {committer: {settings: {rewrite: true, ai-max-seconds: 30}}}}
 run:
   role: committer
   event: commit-msg
