@@ -332,21 +332,13 @@ func holdsRelease(rolesDir, name string) bool {
 	return err == nil && r.Accepts("release")
 }
 
-// nightRelease runs, before a role's gardening, its run on the release
-// tool's merge request open into the branch checked out, with its agent
-// (ADR-0050, §7): the docs due for the release judged on that merge
-// request's head, checked out for the run and put back after, their fix
-// proposed in a merge request of its own (ADR-0017). Its step is said
-// apart from the role's: `<role> (release #n)`. The release waiting for
-// its docs is said on its merge request, and holds nothing of the night's
-// line (a warning); anything else that did not pass counts. With no agent
-// tonight (--ai none), it does not run: the release's own runs said what
-// needs none. It returns what the run left to apply, by the task its fix
-// goes to, for the gardening after it to leave alone.
+// nightRelease runs, before a role's gardening, its run on `release` for
+// the release tool's merge request open into the branch, with its agent,
+// on that merge request's head (ADR-0050, §7; routing.md). Its step is
+// `<role> (release #n)`; the release waiting for its docs fails nothing
+// of the night's. It returns what that run left to apply, by task, for
+// the gardening after it to leave alone.
 func nightRelease(res *Result, cfg *routing.Config, o engine.Options, notPassed *[]string) map[string][]string {
-	if o.AI == "none" { // no agent tonight: what needs none, the release's own runs said it
-		return nil
-	}
 	mr, said, err := engine.OpenRelease(o)
 	res.Findings = append(res.Findings, said...)
 	unread := func(err error) {
@@ -358,6 +350,11 @@ func nightRelease(res *Result, cfg *routing.Config, o engine.Options, notPassed 
 		return nil
 	}
 	if mr == nil {
+		return nil
+	}
+	if o.AI == "none" { // no agent tonight: said, the release waiting for one or a person
+		res.Findings = append(res.Findings, verdict.Finding{Rule: "release-not-judged", Level: "warn", Where: fmt.Sprintf("#%d", mr.ID),
+			Message: fmt.Sprintf("no agent tonight (--ai none): the docs due for the release, merge request #%d, are not judged; they hold it until an agent judges them — `workline route release --target merge-request:%d --push-to-merge-request` where one may — or a person moves their `checked`", mr.ID, mr.ID)})
 		return nil
 	}
 	ro := o

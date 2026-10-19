@@ -1568,7 +1568,7 @@ func atNight(n int) verdict.Finding {
 	}
 	return verdict.Finding{Rule: verdict.WaitsForNight, Level: "warn",
 		Message: fmt.Sprintf("%d %s due for the release %s judged and fixed by the agent with the next gardening, at night, in a merge request of their own (workline/documentalist/release): the release waits until it is merged. "+
-			"No agent is asked on each move of this merge request, so that a doc fix never changes its head after a person's yes. For the release sooner, run the gardening now, or, where an agent may judge: `%s`.", n, docs, are, now)}
+			"No agent is asked on each move of this merge request, so that a doc fix never changes its head after a person's yes. For the release sooner, run the gardening now, or, where an agent may judge: `%s`; or a person judges them, moving their `checked`.", n, docs, are, now)}
 }
 
 // changedSince says whether a source of the doc, in this repository,

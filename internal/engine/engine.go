@@ -792,7 +792,9 @@ func run(o Options, res *Result) error {
 		OpenMergeRequest: o.OpenMergeRequest, PushToMergeRequest: o.PushToMergeRequest, Release: releaseFrom, Models: authors(res.Calls),
 		Unasked: unasked}
 	if releaseFrom != "" && asked == "release" { // the night's run, or a person's: maybe applied elsewhere
-		st.Head, _ = git(o.Repo, nil, "rev-parse", "--verify", "HEAD^{commit}")
+		if st.Head, err = git(o.Repo, nil, "rev-parse", "--verify", "HEAD^{commit}"); err != nil {
+			return fmt.Errorf("the release's head judged: %w", err)
+		}
 	}
 	if err := st.save(runDir); err != nil {
 		return err
@@ -1810,9 +1812,12 @@ func Resume(runDir string) *Result {
 		}
 		if st.Head != "" && st.Release != "" && !st.Pushed {
 			back, movedOn, err := releaseOnHead(&st, res)
-			if err != nil || movedOn {
-				res.Status = verdict.Pass
+			if err != nil {
 				return err
+			}
+			if movedOn {
+				res.Status = verdict.Pass
+				return nil
 			}
 			defer back()
 		}

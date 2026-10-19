@@ -1,5 +1,5 @@
 case: documentalist/release-docs-left-at-night-without-an-agent
-about: "A night with no agent (`--ai none`, no token given): the gardening line runs no step on the release pull request — nothing there needs judging but by an agent, and its own runs already hold it and say why (ADR-0050, §7). Its head is not checked out."
+about: "A night with no agent (`--ai none`, no token given): the gardening line runs no step on the release pull request — nothing there needs judging but by an agent, and its own runs already hold it — and says so, with what lets the release go: an agent's run by hand, or a person moving `checked` (ADR-0050, §7). Its head is not checked out."
 given:
   repo: documented
   setup:
@@ -11,6 +11,8 @@ run: {route: schedule, ai: none, open-merge-request: true, no-apply: true}
 expect:
   agent-calls: 0
   steps: [documentalist]
+  findings:
+    - {rule: release-not-judged, where: "#1", level: warn, message: "workline route release --target merge-request:1 --push-to-merge-request"}
   files:
     CHANGELOG.md: {exists: false}
   forge:
