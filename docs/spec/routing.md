@@ -1,6 +1,6 @@
 ---
 sources: [internal/line, internal/routing, internal/work, routing.default.yaml]
-checked: db19e9a0
+checked: 3f00333c
 verified: agent:claude-code
 ---
 # Routing — v1 (draft)
@@ -209,7 +209,8 @@ push. With no agent set, nothing waits; `draft=false` changes nothing.
   on that merge request's head — checked out, then put back. Its step is
   `<role> (release #n)`; the release waiting for its docs fails nothing
   of the night's, anything else counts. What its fix patches waits for
-  the role's own step after it (`Waiting`), never judged twice.
+  the role's own step after it (`Waiting`), never judged twice. With
+  `--ai none`, not run, said (`release-not-judged`).
 - **By hand**: `route release --target merge-request:<n>` on a release
   tool's merge request does the same, the fix to a merge request of its
   own (`--push-to-merge-request` implied).

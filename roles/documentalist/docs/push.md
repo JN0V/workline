@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/adopt.go, internal/builtin/documentalist/byname.go, internal/builtin/documentalist/releasekept.go, internal/engine/night.go]
-checked: db19e9a0
+checked: 3f00333c
 verified: agent:claude-code
 judged-in-parts: c7e1e98
 ---
@@ -113,7 +113,8 @@ commits touched.
   before its own tasks, the documentalist runs on `release` for the
   release pull request open into the branch, on that pull request's head.
   Gardening leaves the docs that fix holds. With a weekly gardening, it
-  waits for the next one.
+  waits for the next one; with no agent that night, it is said
+  (`release-not-judged`), and the release waits.
 - **Sooner, by hand**: run the gardening workflow (GitHub) or play its
   schedule (GitLab); or, where an agent may judge,
   `workline route release --target merge-request:<n> --push-to-merge-request`:
