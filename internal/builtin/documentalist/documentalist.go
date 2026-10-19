@@ -2006,7 +2006,7 @@ func Post(runDir, repo string) int {
 		v.Status, v.Summary, v.Final = verdict.Block, "some sources could not be judged, or some checks could not run", true
 	case len(intents) > 0:
 		v.Summary = "docs updated"
-	case len(kept) > 0 && os.Getenv("WORKLINE_AI_WAITS") == "ready":
+	case slices.ContainsFunc(kept, func(f verdict.Finding) bool { return f.Rule == verdict.WaitsForReady }):
 		v.Summary = "a draft: the docs it made suspect are judged once it is marked ready — see the findings"
 	case len(kept) > 0:
 		v.Summary = "docs to check — see the findings"

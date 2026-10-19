@@ -1,0 +1,15 @@
+case: documentalist/draft-with-no-suspect-doc-waits-for-nothing
+about: "A push to a draft (`draft=true`), an agent set, that makes no doc suspect (ADR-0050): nothing waits for ready. The documentalist says what it found, a doc over its budget, as on any push, never that suspect docs wait to be judged."
+given:
+  repo: documented
+  setup:
+    - "{ printf '# Notes\\n\\n'; seq 1 210; } > docs/notes.md && git add docs/notes.md && git commit -qm 'docs: keep notes'"
+  forge:
+    merge-requests: [{id: 1, labels: [], comments: []}]
+run: {role: documentalist, event: merge-request, input: {range: main..HEAD, draft: "true"}, target: {merge-request: 1}, ai: "fake:review-nothing"}
+expect:
+  status: pass
+  agent-calls: 0
+  summary: "docs to check — see the findings"
+  findings: [{rule: doc-too-long, where: docs/notes.md}]
+  no-findings: [{rule: ai-waits-for-ready}, {rule: suspect}]
