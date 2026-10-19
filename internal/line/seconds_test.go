@@ -52,6 +52,21 @@ func TestTimesAndTheBudget(t *testing.T) {
 	}
 }
 
+// Several runs of one moment, the pre-push hook's ranges, are one: their
+// steps in order, their seconds and calls added.
+func TestJoin(t *testing.T) {
+	all := Join([]*Result{
+		{Seconds: 0.6, AgentCalls: 1, Steps: []Step{{Name: "committer", Seconds: 0.5}}},
+		{Seconds: 1.2, Steps: []Step{{Name: "committer", Seconds: 0.4}, {Name: "documentalist", Seconds: 0.7}}},
+	})
+	if all.Seconds != 1.8 || all.AgentCalls != 1 || len(all.Steps) != 3 || all.Steps[2].Name != "documentalist" {
+		t.Errorf("joined: %+v", all)
+	}
+	if got, want := all.Times(), "1.8 s in all — committer 0.5 s, committer 0.4 s, documentalist 0.7 s"; got != want {
+		t.Errorf("Times() = %q, want %q", got, want)
+	}
+}
+
 // The committer's agent is its rewrite.
 func TestCommitterCallIsItsRewrite(t *testing.T) {
 	s := Step{Name: "committer", Seconds: 14.6, Result: &engine.Result{Calls: []agent.Call{{Seconds: 14.1}}}}

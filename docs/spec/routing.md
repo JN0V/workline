@@ -217,12 +217,13 @@ its budget says so once more, naming that step; it never blocks.
   nobody.
 - The line measures itself: a runner's setup and queue, and the job
   that applies, are not in it.
-- A project sets its own in `routing.budgets`, in seconds, above 0; a
-  moment not in this table is refused (`config-invalid`).
+- A project sets its own in `routing.budgets`, in seconds, finite and
+  above 0; a moment not in this table is refused (`config-invalid`).
 - At a commit, the hook says the seconds with what it says already, a
   refusal or a rewrite, and a commit over its budget even when it says
-  nothing else; at a push, always. Each agent call's seconds stay in
-  its run's `out/calls.jsonl`.
+  nothing else; at a push, each time it checks commits, a stop
+  included (a branch deleted checks none). Each agent call's seconds
+  stay in its run's `out/calls.jsonl`.
 
 ## Where state lives
 

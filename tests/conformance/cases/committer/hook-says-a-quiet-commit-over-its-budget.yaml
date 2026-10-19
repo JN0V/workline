@@ -1,0 +1,13 @@
+case: committer/hook-says-a-quiet-commit-over-its-budget
+about: "A commit that passes with nothing to say, no agent asked, over its 1 s budget (ADR-0050): here the project's commit-msg line is one gate, taking 1.5 s. The hook, quiet otherwise, says that one line, naming the gate, and the commit goes on."
+given:
+  repo: basic
+  setup: ["printf 'fix(parser): stop crashing on an empty input file\\n' > .git/COMMIT_EDITMSG"]
+  config:
+    routing: {events: {commit-msg: ["gate:slow"]}}
+    gates: {slow: {checks: [{id: wait, run: "sleep 1.5", output: exit}]}}
+run: {cli: [hook, commit-msg, .git/COMMIT_EDITMSG]}
+expect:
+  exit: 0
+  stderr: ["workline: over its budget: the commit took ", ", over its budget of 1 s (ADR-0050); the step that took the most: gate:slow, "]
+  stderr-lacks: [" s in all"]

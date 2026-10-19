@@ -4,6 +4,7 @@ package routing
 
 import (
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
 	"slices"
@@ -69,7 +70,7 @@ func Load(repo string) (*Config, error) {
 			c.FailFast[event] = stop
 		}
 		for moment, seconds := range p.Budgets {
-			if seconds <= 0 {
+			if !(seconds > 0) || math.IsInf(seconds, 1) { // NaN and infinity too: neither is ever gone over
 				return nil, role.ConfigErrorf("routing.budgets.%s is %v: a budget is a number of seconds above 0", moment, seconds)
 			}
 			if c.Budgets == nil {
