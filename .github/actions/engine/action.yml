@@ -1,15 +1,9 @@
 # The engine built from the commit checked out, once a commit (ADR-0050,
-# step 1): the first job that needs it builds it and keeps it in Actions'
-# cache, by that commit; the jobs after take it, with nothing to set up nor
-# build. workline's own workflows only, which run the engine of the commit
-# they check out (docs/ci-github.md); the templates download a release.
-#
-# Never another engine: the cache is read by its exact key, no prefix, and
-# the binary, built or taken, must name the commit checked out, unmodified
-# (Go writes it in: `go version -m`), or the job fails. A cache that cannot
-# be read is a build. A pull request's runs keep theirs in that pull
-# request's cache, which no other branch reads; the default branch's runs,
-# its own workflows alone, keep theirs where every branch reads.
+# step 1): the first job builds it and keeps it in Actions' cache by that
+# commit, the jobs after take it. workline's own workflows only; the
+# templates download a release. Never another engine: the cache is read by
+# its exact key, and the binary must name the commit checked out,
+# unmodified, or the job fails (docs/ci-github.md).
 name: workline engine
 description: The engine built from the commit checked out, once a commit, kept in Actions' cache by that commit.
 inputs:
