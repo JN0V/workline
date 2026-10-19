@@ -16,17 +16,12 @@ import (
 	"go.yaml.in/yaml/v3"
 )
 
-// Records of a release (ADR-0034, amended 2026-10-19): on a release tool's
-// merge request, the fix goes to a merge request of its own, and what its
-// patch records — `checked` or `judged` — names the release's head. The
-// tool rebuilds its branch once that fix is merged: the head is gone, a
-// new one holds the same version bump, which a source of the doc may carry.
-// Measured from the commit the fix became, that bump read as a change, and
-// the doc was judged again, its record moved to a head the next rebuild
-// dropped: workline's 0.36.0 release opened #502 to #505 so. The
-// documentalist's comment on the release merge request keeps, for each doc
-// it recorded, the head and the ids of its sources there: a record naming
-// that head, its sources as they were, stands at the new head.
+// Records of a release (ADR-0034, amended 2026-10-19): what a release fix
+// records, `checked` or `judged`, names the release's head, which the tool
+// drops when it rebuilds its branch once the fix is merged. The
+// documentalist's comment on the release merge request keeps that head and
+// the ids of the doc's sources there: a record naming it, its sources the
+// same, stands at the new head.
 
 // releaseKeptKey keys the documentalist's comment on a release merge
 // request keeping the heads it recorded docs at.
@@ -86,12 +81,18 @@ func readReleaseKept(runDir, repo string, docs []*Doc) ([]verdict.Finding, error
 	in := keptInput{}
 	var findings []verdict.Finding
 	t, _ := targetMergeRequest()
+	unread := func(err error) verdict.Finding {
+		return verdict.Finding{Rule: "record-unread", Level: "warn",
+			Message: fmt.Sprintf("the documentalist's comment on release merge request %d could not be read (%v): a doc whose fix was merged is judged again on the head the release tool rebuilt; on GitLab, give the judging job GITLAB_TOKEN (read_api)", t.ID, err)}
+	}
 	f, err := forge.Open(os.Getenv("WORKLINE_FORGE"), repo)
+	if err != nil {
+		findings = append(findings, unread(err))
+	}
 	if _, lists := f.(forge.Backlog); err == nil && lists { // a forge that lists no comment keeps none, as before
 		body, err := stickyOn(f, t, releaseKeptKey)
 		if err != nil {
-			findings = append(findings, verdict.Finding{Rule: "record-unread", Level: "warn",
-				Message: fmt.Sprintf("the documentalist's comment on release merge request %d could not be read (%v): a doc whose fix was merged is judged again on the head the release tool rebuilt; on GitLab, give the judging job GITLAB_TOKEN (read_api)", t.ID, err)})
+			findings = append(findings, unread(err))
 		} else {
 			in.Keep = true
 			records := parseReleaseKept(body)
