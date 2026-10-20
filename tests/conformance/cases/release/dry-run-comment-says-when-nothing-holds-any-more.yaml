@@ -1,0 +1,36 @@
+case: release/dry-run-comment-says-when-nothing-holds-any-more
+about: "The dry run's comment on the release merge request is one, kept in place (ADR-0050): the next night, the doc judged in between and the release tool's branch rebuilt, nothing would hold the release, and the comment is edited to say so rather than left listing what no longer holds; no second comment is posted."
+given:
+  repo: documented
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git tag v1.0.0"
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin main"
+    - "git checkout -qb release-please--branches--main && echo '# Changelog' > CHANGELOG.md && git add CHANGELOG.md && git commit -qm 'chore(main): release 1.1.0' && git push -q origin release-please--branches--main && git checkout -q main"
+  forge:
+    issues: []
+    merge-requests: [{id: 1, branch: release-please--branches--main, base: main, labels: [], comments: []}]
+run:
+  route: release
+  args: [--dry-run]
+  dry-run-posted: true
+  then: again
+  again-after:
+    - "sed -i 's/one hour/two hours/' docs/tech/auth.md && C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C/\" docs/tech/auth.md && git commit -qam 'docs: two-hour tokens'"
+    - "sed -i 's/one hour/two hours/' docs/product/sign-in.md && C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C/\" docs/product/sign-in.md && git commit -qam 'docs: stay signed in two hours' && git push -q origin main"
+    - "git checkout -q -B release-please--branches--main main && echo '# Changelog' > CHANGELOG.md && git add CHANGELOG.md && git commit -qm 'chore(main): release 1.1.0' && git push -q -f origin release-please--branches--main && git checkout -q main"
+expect:
+  status: pass
+  agent-calls: 0
+  summary: "nothing would hold the release if it were cut now"
+  findings:
+    - {rule: release-dry-run, message: "#1: what would hold the release said in its comment"}
+    - {rule: release-dry-run, message: "#1: its comment edited: nothing would hold the release any more"}
+  forge:
+    issues:
+      - {id: 1, absent: true}
+    merge-requests:
+      - id: 1
+        comments: 1
+        posted: 1
+        comment-contains: ["<!-- workline:sticky=release/dry-run -->", "nothing would hold the release if it were cut now"]
+        comment-lacks: ["`docs/tech/auth.md` `documentalist suspect`"]

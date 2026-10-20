@@ -73,6 +73,10 @@ type Options struct {
 	// merge-request:release`), its docs due judged as at night; the
 	// release's own steps run on nothing else (ADR-0050, §7).
 	FindRelease bool
+	// DryRun: on `release`, the line's dry run (`--dry-run`, ADR-0050):
+	// every step run with no agent, nothing applied, what would hold the
+	// release said, none of it blocking. The line's; a role never sees it.
+	DryRun bool
 
 	// TamperBeforeApply changes the prepared input between propose and apply.
 	// It exists only for the conformance test that proves apply notices.

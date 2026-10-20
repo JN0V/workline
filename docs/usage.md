@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/role/config.go, internal/engine/engine.go, internal/hooks, internal/agent/claude.go, internal/agent/command.go]
-checked: dba82333
+checked: a88dc872
 judged: b5899f5
 verified: agent:claude-code
 ---
@@ -29,7 +29,7 @@ Each in detail: [the commands](commands.md), and
 |---|---|
 | [`workline run-role <role> --event <event>`](commands.md#workline-run-role) | runs one role |
 | [`workline route <event>`](commands.md#workline-route) | runs the roles routing names for the event, in order |
-| [`workline apply <run-dir>...`, `--line <file>`](commands.md#workline-apply) | applies runs judged with `--no-apply`; `--main <file>`: main's findings in one issue |
+| [`workline apply <run-dir>...`, `--line <file>`](commands.md#workline-apply) | applies runs judged with `--no-apply`; `--main <file>`: main's findings in one issue; `--release-dry-run <file>`: what would hold the release |
 | [`workline review`](commands.md#workline-review) | the reviewer reads this branch, or a spec, before you push |
 | [`workline gate <name>`](commands.md#workline-gate) | runs a gate declared in `.workline/config.yaml` |
 | [`workline item ready <id>`](commands.md#workline-item-ready) | moves a work item to `ready`, once its sections are written |

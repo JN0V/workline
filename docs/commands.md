@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/engine/engine.go, internal/hooks]
-checked: dba82333
+checked: a88dc872
 verified: agent:claude-code
 judged: e343388
 ---
@@ -46,6 +46,10 @@ alone, on the merged result, the steps left named; `--verdict` and
 whole repository's checks, every step run; `--gates-kept <folder>`
 keeps the gates' findings there by commit, and on a merge request reads
 its merge base's there ([main after a merge](main-after-merge.md)).
+`route release --dry-run`: what would hold the release if it were cut
+now, on the release merge request open, else the branch's tip; every
+step, no agent, nothing applied, said as warnings
+([the release](release.md)).
 
 ### workline apply
 
@@ -74,6 +78,10 @@ its merge base's there ([main after a merge](main-after-merge.md)).
 - `--main <file>`, alone: what `route main --json` found, kept in one
   issue, edited only when what it lists changes; `--forge`, `--repo`
   ([main after a merge](main-after-merge.md)).
+- `--release-dry-run <file>`, alone: what `route release --dry-run
+  --json` found, in one comment on the release merge request it judged,
+  else in a part of main's issue; edited only when what it lists
+  changes ([the release](release.md)).
 
 ### workline gate
 

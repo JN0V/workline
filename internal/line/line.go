@@ -65,6 +65,9 @@ type Result struct {
 	// it compared (MainEvent).
 	Event string   `json:"event,omitempty"`
 	Main  *MainRun `json:"main,omitempty"`
+	// DryRun: a release's dry run, what would hold the release were it
+	// cut now (ADR-0050).
+	DryRun *DryRun `json:"dry-run,omitempty"`
 }
 
 // Gates says how a line takes its gate steps: run there, by default. In
@@ -118,6 +121,19 @@ func Run(event string, base engine.Options) *Result { return RunWith(event, base
 func RunWith(event string, base engine.Options, gates *Gates) *Result {
 	start := time.Now()
 	res := &Result{Status: verdict.Pass, Steps: []Step{}, Event: event}
+	// A release's dry run (ADR-0050): every step, no agent, nothing
+	// applied; what blocks said as what would hold the release. Registered
+	// first, it runs last, once the line said all it says.
+	if base.DryRun {
+		var dry *DryRun
+		var back func()
+		base, dry, back = dryRunOn(res, base)
+		defer func() { finishDryRun(res, dry) }()
+		defer back()
+		if dry.At != "" || dry.Unread {
+			return res
+		}
+	}
 	cfg, err := routing.Load(base.Repo)
 	// Each step's seconds, and the moment's budget (ADR-0050): said, never
 	// a block.
@@ -192,7 +208,7 @@ func RunWith(event string, base engine.Options, gates *Gates) *Result {
 		defer func() { res.Summary += "; " + queueSaid(len(res.Steps), left) }()
 	}
 	// The gates alone: each one runs, so that each is shown.
-	stopAtFirst := cfg.StopsAtFirst(event) && !gates.Only
+	stopAtFirst := cfg.StopsAtFirst(event) && !gates.Only && !base.DryRun
 	if gates.Only {
 		res.Range = gatesRange
 		res.Commits, _ = commitsOf(base.Repo, gatesRange)

@@ -1,6 +1,6 @@
 ---
 sources: [roles/documentalist/role.yaml, internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/kept.go, routing.default.yaml]
-checked: c29e9973
+checked: a88dc872
 judged: f70db89
 verified: agent:claude-code
 ---
@@ -51,7 +51,7 @@ doc by doc), or make a push wait on an agent.
 | `merge-request` | CI | judges the docs the merge request made suspect, reading no other doc; fix committed to its branch; a draft: counts them, judged once it is ready; a release tool's: counts the docs due, judged at night |
 | `main` | CI, after each merge | the whole repository's checks, no agent, in one issue ([more](../../docs/main-after-merge.md)) |
 | `schedule` | CI, nightly or weekly (gardening) | first the docs due for an open release pull request, on its head; then every suspect or stale doc, budgets, links, reader checks; one merge request per task |
-| `release` | `workline route release`, before your release tool tags; with `--target`, a release pull request, now or each night | holds the release until the docs due are judged |
+| `release` | `workline route release`, before your release tool tags, or at its tag; with `--target`, a release pull request, now or each night; `--dry-run`, each night, no agent | holds the release until the docs due are judged; the dry run says what would hold it |
 | `init` | `workline init` | proposes each doc's `sources`, for you to review |
 
 `workline docs` judges, on your machine, what was made suspect since the

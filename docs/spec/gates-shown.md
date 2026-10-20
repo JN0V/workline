@@ -1,6 +1,6 @@
 ---
 sources: [internal/gate/added.go, internal/line/line.go, internal/report/gates.go, internal/report/report.go, internal/engine/annotate.go, cmd/workline/main.go]
-checked: 1279892d
+checked: a88dc872
 verified: agent:claude-code
 ---
 # Gates — the new findings shown on a merge request

@@ -187,6 +187,11 @@ func MainIssue(r *line.Result, now string) (body string, changed, any bool) {
 	}
 	state, _ := json.Marshal(mainState{Keys: keys, Gates: gates})
 	fmt.Fprintf(&b, "\n%s%s -->\n", mainMarker, strings.ReplaceAll(string(state), "--", `-\u002d`))
+	// The night's release dry run keeps its own part (WithDryRun): left
+	// as it is, after this one.
+	if part := keptDryRun(now); part != "" {
+		b.WriteString("\n" + part + "\n")
+	}
 	return b.String(), changed, any
 }
 
