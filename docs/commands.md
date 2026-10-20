@@ -86,17 +86,13 @@ step, no agent, nothing applied, said as warnings
 ### workline gate
 
 `workline gate <name>` runs a gate declared in `.workline/config.yaml`
-([gates](spec/gates.md)); it returns 0 or 1.
+([gates](spec/gates.md)); it returns 0 or 1. Its summary says how it
+counted ([more](spec/gates.md#with-workline-gate)):
 
-- **Every finding counts** by default, those already on the branch too.
-- **`--base <rev>`**: only the findings the change adds since the merge
-  base of `<rev>` and `HEAD` count, as on a merge request
-  ([new findings](spec/gates.md#on-a-merge-request-the-findings-the-change-adds)).
-  A `<rev>` that is no commit here is an error.
-- **`--gates-kept <folder>`**, with `--base`: the merge base's findings
-  read as main's run kept them, when kept with the same command, config
-  and tool; else the tools run again there.
-- **The summary says which way it counted.**
+- **Every finding**, by default.
+- **`--base <rev>`**: only those the change adds since the merge base of
+  `<rev>` and `HEAD`; `--gates-kept <folder>`, the base's read as main
+  kept them.
 
 ## workline review
 

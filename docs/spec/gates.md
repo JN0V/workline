@@ -66,17 +66,10 @@ On an event given a range (`merge-request`, `pre-push`), the thresholds
 read only the findings the change adds since the merge base of the
 range's start and `HEAD`
 ([ADR-0049](../adr/0049-the-inspector-judges-the-new-findings-of-the-projects-tools.md)).
-On `schedule` and `release`, and with `workline gate <name>`, every finding
-counts. On `main` after a merge, every finding is read and kept, and what
-the push adds since the branch's tip before it counts.
-
-- **`workline gate <name> --base <rev>`** compares as a merge request
-  does, since the merge base of `<rev>` and `HEAD`: a CI job of its own,
-  a check by hand. A `<rev>` that is no commit here is an error, never
-  a run counting every finding.
-- **Each summary says how it counted**: `only the findings the change
-  adds since <merge base> count`, or `every finding counts, none
-  compared with a base`.
+On `schedule` and `release`, and with `workline gate <name>` given no
+`--base` ([below](#with-workline-gate)), every finding counts. On `main`
+after a merge, every finding is read and kept, and what the push adds
+since the branch's tip before it counts.
 
 ```yaml
       - id: lint
@@ -95,10 +88,8 @@ the push adds since the branch's tip before it counts.
   with `--gates-kept <folder>`, main's run after a merge writes every
   finding of each SARIF check there, by its commit (`<commit>.json`);
   a change whose merge base it holds reads them instead of running the
-  tool there, on a merge request or with `workline gate <name> --base
-  <rev> --gates-kept <folder>`. Only for the same command, `output` and
-  `config`, no file the tool reads its config from changed by the
-  change, and the same
+  tool there. Only for the same command, `output` and `config`, no file
+  the tool reads its config from changed by the change, and the same
   tool: the version its SARIF names, the hash of the binary found on the
   PATH; one naming neither runs again. Else, or none kept for that
   commit, run again, the summary saying why. The folder is filled only
@@ -142,6 +133,19 @@ the push adds since the branch's tip before it counts.
   by the change. A tool's upgrade gets a pull request of its own.
 - **A cap on findings hides some**: set the tool's to none
   (golangci-lint's `max-issues-per-linter`, `max-same-issues`).
+
+### With `workline gate`
+
+- **`workline gate <name> --base <rev>`** compares as a merge request
+  does, since the merge base of `<rev>` and `HEAD`: a CI job of its own,
+  a check by hand. With no `--base`, every finding counts.
+- **`--gates-kept <folder>`**, with `--base`: the merge base's findings
+  read as main kept them, by the rules above; else run again there.
+- **A `<rev>` that is no commit here is an error**, never a run counting
+  every finding.
+- **Each summary says how it counted**: `only the findings the change
+  adds since <merge base> count`, or `every finding counts, none
+  compared with a base`.
 
 ### Shown on the merge request
 
