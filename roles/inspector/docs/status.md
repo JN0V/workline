@@ -64,22 +64,29 @@ Cases in
 
 - **The weekly sample of the triage**: the auditor draws its acts
   ([ADR-0046](../../../docs/adr/0046-the-auditor-re-checks-every-roles-acts.md));
-  each triage keeps its head and model for it, no kind drawn yet. No
-  issue yet.
+  each triage keeps its head and model for it, no kind drawn yet:
+  [#575](https://github.com/JN0V/workline/issues/575).
 - **A recurring defect proposed as a rule**, Semgrep or ast-grep, proven
   to fail on the defect and pass on the fix
-  ([ADR-0049, section 4](../../../docs/adr/0049-the-inspector-judges-the-new-findings-of-the-projects-tools.md#4-no-ai-linting-as-a-check)).
-  No issue yet.
+  ([ADR-0049, section 4](../../../docs/adr/0049-the-inspector-judges-the-new-findings-of-the-projects-tools.md#4-no-ai-linting-as-a-check)):
+  [#576](https://github.com/JN0V/workline/issues/576).
 - **A rule's level proposed** between warn and block, from how often
   people dismiss or suppress it
-  ([ADR-0049, section 5](../../../docs/adr/0049-the-inspector-judges-the-new-findings-of-the-projects-tools.md#5-the-inspectors-judgement)).
-  No issue yet.
+  ([ADR-0049, section 5](../../../docs/adr/0049-the-inspector-judges-the-new-findings-of-the-projects-tools.md#5-the-inspectors-judgement)):
+  [#577](https://github.com/JN0V/workline/issues/577).
 - **The reviewer told what the linters cover**
-  ([ADR-0049, section 6](../../../docs/adr/0049-the-inspector-judges-the-new-findings-of-the-projects-tools.md#6-guards)).
-  No issue yet.
+  ([ADR-0049, section 6](../../../docs/adr/0049-the-inspector-judges-the-new-findings-of-the-projects-tools.md#6-guards)):
+  [#578](https://github.com/JN0V/workline/issues/578).
 - **A golangci-lint gate on workline itself**, ADR-0049's step 5, and
-  [#202](https://github.com/JN0V/workline/issues/202)'s Validation.
+  [#202](https://github.com/JN0V/workline/issues/202)'s Validation:
+  [#579](https://github.com/JN0V/workline/issues/579).
 - **Two runs judged before either is applied**: the second does not see
   the first's record, and asks its findings again; the reviewer's apply
-  merges its record for that ([#375](https://github.com/JN0V/workline/issues/375)).
-  No issue yet.
+  merges its record for that ([#375](https://github.com/JN0V/workline/issues/375)):
+  [#580](https://github.com/JN0V/workline/issues/580).
+- **SonarQube read as a gate**, ADR-0049's step 6, its findings triaged
+  as the gates' are: [#203](https://github.com/JN0V/workline/issues/203).
+- **Gates per changed folder** in a repository of several projects, each
+  folder's own config
+  ([ADR-0049, section 6](../../../docs/adr/0049-the-inspector-judges-the-new-findings-of-the-projects-tools.md#6-guards)):
+  [#553](https://github.com/JN0V/workline/issues/553), its part 2.
