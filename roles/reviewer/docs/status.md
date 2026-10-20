@@ -1,4 +1,4 @@
-# Reviewer — where it stands (2026-10-19)
+# Reviewer — where it stands (2026-10-20)
 
 **In one line:** reviews code on a machine (`workline review`) and on a
 merge request (opt-in): rules first, lenses as parts, quotes found again,
@@ -199,6 +199,9 @@ its measure in
   `spec-agent-unreachable-questions-wait`.
 - **A record that does not read is said**: `spec-record-unread-*`,
   `record-unread-reviews-every-commit-again`.
+- **The record read with GitLab's job token**, which may not list the
+  project's members: `record-read-without-the-members-on-gitlab`; tried
+  on gitlab.com ([#565](https://github.com/JN0V/workline/pull/565)).
 - **An issue outside the change**, opened the one way every role shares,
   written for a person first: the backlog's `issue-*` cases,
   `finding-cause-outside-diff-becomes-issue`.
@@ -229,7 +232,7 @@ its measure in
    a person. Waits for the developer role, after inspector and security
    ([#117](https://github.com/JN0V/workline/issues/117)).
 5. **Tries on real use**: a run on ready a rule
-   held, GitLab (the job token reading the notes, the next pipeline), a
+   held, GitLab (the next pipeline with an agent), a
    block standing on a forge, an issue outside the change written by a
    real agent, a change read in parts; every lens on ready tried on
    [#307](https://github.com/JN0V/workline/pull/307). No issue yet.
