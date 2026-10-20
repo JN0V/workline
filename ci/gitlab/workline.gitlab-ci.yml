@@ -437,19 +437,13 @@ workline:release-docs:apply:
     reports: {annotations: workline-annotations.json}
     expire_in: 1 week
 
-# Main after a merge (ADR-0050; the first release after v0.37.0): on each
-# push to the default branch, the line of `main`, once, no agent: the
-# gates of the merge requests' line, compared with the branch's tip before
-# the push, every finding kept by the commit in the cache, the next merge
-# requests' base (workline:gates reads it); then the whole repository's
-# checks. Red only for what the merge adds that the gates count: two merge
-# requests green alone, breaking the branch together. It unsets the
-# tokens, as workline:gates: their tools run the branch's code. No Code
-# Quality report: the merge requests' widget compares with this
-# pipeline's, and old findings would read as fixed.
-# workline:main:issue, with the bot's token, keeps what it found in one
-# issue: opened when there is something to list, edited only when what it
-# lists changes.
+# Main after a merge (ADR-0050; the first release after v0.37.0), each
+# push to the default branch, no token, no agent: the gates, red when the
+# push adds what they count, their findings kept in the cache by the
+# commit for workline:gates to read; then the whole repository's checks.
+# No Code Quality report: the merge requests' widget compares with it.
+# workline:main:issue keeps what it found in one issue
+# (docs/main-after-merge.md).
 workline:main:
   image: $WORKLINE_IMAGE:$WORKLINE_VERSION
   stage: test

@@ -50,14 +50,11 @@
 # organisation's (docs/ci-github.md#a-merge-queue).
 #
 # Main after a merge (a push to the default branch, ADR-0050; the first
-# release after v0.37.0): gates runs `route main`, the gates every finding
-# and the whole repository's checks, once, no agent, no secret; red when
-# the merge adds what the gates count since main's tip before it, two pull
-# requests green alone breaking it together. Every finding of the gates
-# is kept in Actions' cache by the commit: a pull request based on it
-# reads them as its merge base's rather than run its tools there again
-# (--gates-kept), when kept with the same command, config and tool.
-# workline-apply.yml keeps what main's run found in one issue.
+# release after v0.37.0): gates runs `route main`, no agent, no secret:
+# the gates, red when the merge adds what they count, and the whole
+# repository's checks. Their findings are kept in Actions' cache by the
+# commit, the next pull requests' base (--gates-kept); workline-apply.yml
+# keeps what main's run found in one issue (docs/main-after-merge.md).
 name: workline
 on:
   # ready_for_review: a draft marked ready, read by every lens of the

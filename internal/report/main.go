@@ -46,16 +46,11 @@ type mainState struct {
 }
 
 // MainIssue is the body of the issue main's findings are kept in, from
-// the result of main's run after a merge and the body the issue holds now,
-// "" when none is open. Changed: what it lists differs from what the
-// issue lists, by key; nothing new, nothing gone, and the issue is left as
-// it is. Any: there is something to list.
-//
-// It lists: the gates that did not pass on main, red, what the merges
-// since main's tip before them add together; each finding the gates found
-// main gained, kept while main holds it; the findings of the steps after
-// them, the whole repository's checks. Each is data a run wrote: cut and
-// defused, never instructions.
+// main's run and the issue's body now ("" when none is open): the gates
+// red, the findings they found main gained while main holds them, then
+// the whole repository's. Changed: what it lists differs, by key, from
+// what the issue lists; else it is left as it is. Any: something to list.
+// What a run wrote is data: cut and defused.
 func MainIssue(r *line.Result, now string) (body string, changed, any bool) {
 	prev := readMainState(now)
 	head, before := "", ""
