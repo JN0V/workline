@@ -65,7 +65,10 @@ its evaluation in
 
 - **Suspect docs from git history**, cascades cut, propagated at the
   release: `stale-docs-reported`, `suspect-*`, `range-*`,
-  `cascade-is-cut`, `release-propagates-product-docs`.
+  `cascade-is-cut`, `release-propagates-product-docs`. A release tool's
+  bump makes suspect only the docs that pin the version it replaces,
+  never one naming it as history
+  ([#346](https://github.com/JN0V/workline/issues/346)): `version-bump-*`.
 - **Hygiene without AI**: budgets, duplicates, links (lychee), identifiers
   gone, superseded decisions, derived blocks, code no doc describes,
   sources gone: `budgets-reported`, `duplicates-reported`,
