@@ -229,6 +229,12 @@ each task filled by one large doc.
   run. What is left still holds the release, said, for the next night's
   run or a person's.
 - **The clone is put back as it was** when the run ends.
+- **A doc the release's bump changed too**, one of the tool's files,
+  takes the fix three ways (`git apply --3way`): its change on the
+  base's version. Before, such a doc sent the whole fix to a comment for
+  a person ("the docs it fixes differ"), which one fix for every doc
+  would make the common case: on the 0.38.0 replay, `docs/gitlab-trigger.md`.
+  A change that does not apply on the base still goes to the comment.
 
 Not chosen:
 
@@ -241,4 +247,5 @@ Not chosen:
 
 Conformance: documentalist/release-pull-request-fixes-every-due-doc-in-one-night,
 release-pull-request-by-hand-fixes-every-due-doc,
-release-pull-request-night-stops-at-its-tokens.
+release-pull-request-night-stops-at-its-tokens,
+release-pull-request-fix-of-a-doc-the-release-bumps.

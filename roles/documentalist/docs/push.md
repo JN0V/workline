@@ -143,7 +143,8 @@ commits touched.
 - **Its fix does not go onto that branch**, which the tool rewrites: it
   goes to a merge request of its own into the release's base,
   `workline/documentalist/release`. The release pull request stays held
-  until that one is merged and the tool brings it in.
+  until that one is merged and the tool brings it in. A doc the tool
+  bumped takes the fix on the base's version, three ways.
 - **Every doc due in one run, one fix**: round after round,
   `ai-max-calls` docs a round, each round's fix kept in the clone for the
   next, until `ai-max-tokens`, `ai-max-seconds` or 20 rounds; what is left
