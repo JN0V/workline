@@ -2,6 +2,7 @@ package documentalist
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"maps"
 	"os"
@@ -233,14 +234,18 @@ func keptOn(f forge.Forge, t forge.Target) (map[string]keptRecord, error) {
 }
 
 // stickyOn is the last of the documentalist's comments keyed key on a merge
-// request that a bot or a person of the project wrote; "" when none.
+// request that a bot or a person of the project wrote; "" when none. With a
+// token that may not tell who is of the project (GitLab's job token,
+// #552), a bot's alone, said once (unknownAuthors).
 func stickyOn(f forge.Forge, t forge.Target, key string) (string, error) {
 	b, ok := f.(forge.Backlog)
 	if !ok {
 		return "", fmt.Errorf("this forge cannot list a merge request's comments")
 	}
 	notes, err := b.Notes(t)
-	if err != nil {
+	if errors.Is(err, forge.ErrAuthorsUnknown) {
+		authorsUnknown = err
+	} else if err != nil {
 		return "", err
 	}
 	marker := forge.Marker("sticky=documentalist/" + key)
@@ -251,6 +256,25 @@ func stickyOn(f forge.Forge, t forge.Target, key string) (string, error) {
 		}
 	}
 	return body, nil
+}
+
+// authorsUnknown is why the authors of the comments read could not be told
+// of the project or not; authorsSaid, that a finding said it. A run is one
+// process.
+var (
+	authorsUnknown error
+	authorsSaid    bool
+)
+
+// unknownAuthors says, once a run, that the documentalist's comments were
+// read from a bot alone: who is of the project could not be read.
+func unknownAuthors() []verdict.Finding {
+	if authorsUnknown == nil || authorsSaid {
+		return nil
+	}
+	authorsSaid = true
+	return []verdict.Finding{{Rule: "members-unread", Level: "warn",
+		Message: fmt.Sprintf("%v: the documentalist's comments are read only when a bot wrote them, a project or group access token's user; one a person's token wrote is not taken on its word, and the docs it kept are judged again. To tell a person of the project's, give the judging job GITLAB_TOKEN (read_api)", authorsUnknown)}}
 }
 
 // keptBody is the comment keeping the records: what a person reads, then
@@ -306,6 +330,7 @@ func readKept(runDir, repo string, suspects map[string]*suspectDoc) ([]verdict.F
 			}
 		}
 	}
+	findings = append(findings, unknownAuthors()...)
 	return findings, writeYAML(filepath.Join(runDir, "in", "kept.yaml"), in)
 }
 
@@ -625,7 +650,7 @@ func recordsMerged(repo string, suspects map[string]*suspectDoc) ([]fromMerged, 
 		}
 		found = append(found, fromMerged{keptRecord: r, MR: mr.ID, As: as})
 	}
-	return found, findings, nil
+	return found, append(findings, unknownAuthors()...), nil
 }
 
 // recordPatches are the patches writing, on the default branch, each

@@ -109,6 +109,7 @@ func readReleaseKept(runDir, repo string, docs []*Doc) ([]verdict.Finding, error
 			}
 		}
 	}
+	findings = append(findings, unknownAuthors()...)
 	return findings, writeYAML(filepath.Join(runDir, "in", "release-kept.yaml"), in)
 }
 
