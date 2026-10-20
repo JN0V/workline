@@ -15,7 +15,9 @@ What a role does is on its page ([roles](roles.md)).
 
 `workline run-role <role> --event <event>` runs one role: prepare,
 propose, judge, apply, again if `pre` left work for later (`in/more`), up
-to 5 rounds, then a task it asks last (`in/then`). [Options](usage.md#options-of-run-role-and-route).
+to 5 rounds, then a task it asks last (`in/then`). On a release tool's
+pull request, up to 20 rounds, one fix for them all
+([the role contract](spec/role-contract.md)). [Options](usage.md#options-of-run-role-and-route).
 
 ### workline route
 

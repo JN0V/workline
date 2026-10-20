@@ -144,6 +144,17 @@ commits touched.
   goes to a merge request of its own into the release's base,
   `workline/documentalist/release`. The release pull request stays held
   until that one is merged and the tool brings it in.
+- **Every doc due in one run, one fix**
+  ([#572](https://github.com/JN0V/workline/issues/572)): a round asks
+  `ai-max-calls` docs at most; one that leaves docs for the next keeps
+  its fix in the clone, and the run goes round. Each round asks only the
+  docs no round of the run asked, and proposes the earlier rounds' fixes
+  with its own: one commit, one merge request, its body and the comment's
+  records naming every doc.
+  - The run stops at its `ai-max-tokens` or `ai-max-seconds`, or at 20
+    rounds; what is left holds the release, said, for the next night.
+  - The clone is put back as it was
+    ([ADR-0034, amended](../../../docs/adr/0034-the-release-fix-follows-its-base.md#amendment-2026-10-20-one-fix-for-every-doc-a-run-reaches)).
 - **Its record stands for the heads the tool rebuilds**: the
   documentalist's comment on the release pull request keeps the head each
   fix set `checked` or `judged` to, and the ids of the doc's sources

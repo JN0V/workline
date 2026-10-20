@@ -2,7 +2,8 @@
 
 - **Status:** accepted; amended 2026-10-12 (gardening's merge requests
   follow too, or are closed), 2026-10-19 (the fix's record stands for the
-  heads the tool rebuilds)
+  heads the tool rebuilds), 2026-10-20 (one fix for every doc a run
+  reaches)
 - **Date:** 2026-10-06
 - **Builds on:** ADR-0017 (a release tool's pull request is the release;
   its fix goes to a merge request of its own), ADR-0027 (derived blocks
@@ -198,3 +199,46 @@ of any merge request, its record in the comment alone: a doc vouched for
 would still be judged again.
 
 Conformance: the five documentalist/release-record-* cases.
+
+## Amendment (2026-10-20): one fix for every doc a run reaches
+
+On a release tool's pull request, one run judged a single batch of the
+docs due: the docs one call can take (`ai-max-calls`, the task's size).
+Its fix went to `workline/documentalist/release`, and no next round
+followed, as none could see that fix
+([#572](https://github.com/JN0V/workline/issues/572)). The next batch
+waited until a person merged it, then for the next night. Replayed on
+the 0.38.0 release with a scripted agent
+([#567](https://github.com/JN0V/workline/pull/567)): one doc a round,
+each task filled by one large doc.
+
+- **A round that left docs for the next keeps its fix in the clone**,
+  not applied, and the run goes round, at night (`--no-apply`) as by
+  hand. The next round sees those docs fixed, does not ask again those
+  an earlier round asked, and proposes the earlier rounds' patches, as
+  judged, ahead of its own. The comment keeping the records and the merge
+  request's body carry every round's docs.
+- **One fix**: the last round's proposal, applied once or listed once
+  for the job that applies, one commit on `workline/documentalist/release`,
+  one merge request. A last round that proposed nothing leaves the round
+  before it to apply.
+- **The bound**: each round asks at most `ai-max-calls` docs, and only
+  docs no round of the run asked, so a run takes no more rounds than
+  there are docs due; it stops sooner at the run's `ai-max-tokens` or
+  `ai-max-seconds`, and at 20 rounds (`rounds-max`), five for any other
+  run. What is left still holds the release, said, for the next night's
+  run or a person's.
+- **The clone is put back as it was** when the run ends.
+
+Not chosen:
+
+- **A fix a round, stacked on the branch**: the apply job would push as
+  many times, each push the round's patches on the commit before, and
+  the merge request's body and the records comment would say the last
+  round only.
+- **Several calls in one round**, as parts are: one answer judged for
+  every batch, a refusal asking every batch again.
+
+Conformance: documentalist/release-pull-request-fixes-every-due-doc-in-one-night,
+release-pull-request-by-hand-fixes-every-due-doc,
+release-pull-request-night-stops-at-its-tokens.
