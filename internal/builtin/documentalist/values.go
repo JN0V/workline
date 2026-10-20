@@ -210,10 +210,33 @@ func saidAsNow(before, after string) bool {
 // language (`# since v1.2.0`); a range or a minimum is one in code too.
 func saidAsNowAt(lines []line, i int, at []int) bool {
 	before, after := around(lines, i, at)
-	if l := lines[i]; l.code && !maskWith(fenceStyle(l.lang), l.text)[at[0]] {
+	if l := lines[i]; l.code && !inBlockComment(lines, i, at[0]) {
 		return !versionRange.MatchString(before) && !versionLater.MatchString(after)
 	}
 	return saidAsNow(before, after)
+}
+
+// inBlockComment says whether the byte at col of lines[i], a code block's
+// line, is in a comment, by the block's language: the block read from its
+// first line, so a comment opened on a line before is one too.
+func inBlockComment(lines []line, i, col int) bool {
+	from := i
+	for from > 0 && lines[from-1].code && !isFence(lines[from-1].text) {
+		from--
+	}
+	var b strings.Builder
+	for _, l := range lines[from:i] {
+		b.WriteString(l.text + "\n")
+	}
+	offset := b.Len()
+	b.WriteString(lines[i].text)
+	return maskWith(fenceStyle(lines[i].lang), b.String())[offset+col]
+}
+
+// isFence says whether a line opens or closes a fenced code block.
+func isFence(text string) bool {
+	t := strings.TrimSpace(text)
+	return strings.HasPrefix(t, "```") || strings.HasPrefix(t, "~~~")
 }
 
 // around is the text before and after a version found at at in lines[i],

@@ -66,6 +66,9 @@ func TestSaysAsNow(t *testing.T) {
 		{"a comment by the block's language", "```go\n// Since v0.38.0, it signs.\nrun()\n```\n", "v0.38.0", false},
 		{"a comment, no language", "```\n// since v0.38.0\n```\n", "v0.38.0", false},
 		{"a range in code", "```toml\ntool = \">=0.38.0\"\n```\n", "v0.38.0", false},
+		{"a block comment over lines", "```go\n/*\n since v0.38.0\n*/\nrun()\n```\n", "v0.38.0", false},
+		{"code after a block comment closed", "```go\n/* the pin */\nconst Version = \"v0.38.0\"\n```\n", "v0.38.0", true},
+		{"a comment in a block before is not this one's", "```go\n/* open\n```\n\n```yaml\nsince: v0.38.0\n```\n", "v0.38.0", true},
 	} {
 		if got := saysAsNow(doc(c.body), c.v); got != c.want {
 			t.Errorf("%s: saysAsNow = %v, want %v", c.name, got, c.want)
