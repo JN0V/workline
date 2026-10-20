@@ -183,24 +183,12 @@
      the tools' environment only.
 4. `roles/inspector`: the AI's triage, and runs with no agent. Built
    ([#574](https://github.com/JN0V/workline/pull/574),
-   [the inspector](../../roles/inspector/README.md)):
-   - **One call a push with new findings**, each with the head's code
-     around it; each answered with why it matters, what to fix, a likely
-     false positive with why, its place in the order. Posted in a comment
-     of its own; its verdict always a pass.
-   - **Asked once**: kept by the finding's fingerprint, hidden in that
-     comment; those triaged before named for their order only.
-   - **Apart from the verdict**: the run apart reads the gates' job's
-     result (`--warn-only --gates-from`), only for the commits it judges.
-     On GitHub it waits for workline.yml's gates job; on GitLab,
-     `workline:warn` runs after `workline:gates`.
-   - **Measured** on a copy of workline, golangci-lint 2.15.0, an
-     unchecked `os.Rename` and a deferred `os.Remove` planted: one call,
-     2,275 tokens in, 439 out, 7.6 s; the defect first, the deferred
-     removal called a likely false positive, the gate's block unchanged.
-   - **Left for later steps**: a rule written from a recurring defect, a
-     rule's level from dismissals, the weekly sample of the triage
-     ([status](../../roles/inspector/docs/status.md)).
+   [the inspector](../../roles/inspector/README.md)): one call a push
+   with new findings, each kept by its fingerprint, in a comment of its
+   own, in the run apart given the gates' job's result. Measured on a
+   copy of workline, an unchecked `os.Rename` and a deferred `os.Remove`
+   planted: 2,275 tokens in, the defect first, the removal a likely false
+   positive, the gate's block unchanged.
 5. A golangci-lint gate on workline itself: [#202]'s Validation.
 6. [#203]: SonarQube read as a gate.
 
