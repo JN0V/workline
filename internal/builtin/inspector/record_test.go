@@ -8,7 +8,7 @@ import (
 func TestRecordReadsBackWhatTheCommentHides(t *testing.T) {
 	r := Record{}.with(Triaged{Fingerprint: "a1", Check: "lint", Rule: "errcheck", Where: "x.go:3", At: "abc", Matters: "it fails --> here <b>", FalsePositive: true, Why: "a -- b", Order: 2})
 	r = r.with(Triaged{Fingerprint: "b2", Check: "lint", Where: "y.go:1", At: "abc", Matters: "m"})
-	text := r.lines(nil, 1<<20)
+	text, _ := r.lines(nil, 1<<20)
 	if strings.Contains(text, "-->"+" here") || strings.Count(text, "-->") != 2 || strings.Contains(text, "false-positive") {
 		t.Fatalf("a text of the agent's ends the comment hiding it, or a dash is left: %s", text)
 	}
@@ -35,10 +35,31 @@ func TestRecordDropsTheOldestGoneFirst(t *testing.T) {
 	for _, fp := range []string{"old", "kept", "new"} {
 		r = r.with(Triaged{Fingerprint: fp, Check: "c", Where: "w", At: "h", Matters: strings.Repeat("m", 100)})
 	}
-	one := len(Record{Triaged: r.Triaged[:1]}.lines(nil, 1<<20))
-	text := r.lines(map[string]bool{"kept": true, "new": true}, 2*one+10)
-	if strings.Contains(text, `"old"`) || !strings.Contains(text, `"kept"`) || !strings.Contains(text, `"new"`) {
-		t.Fatalf("past its room, the record keeps the findings at the head and drops the oldest gone: %s", text)
+	first, _ := Record{Triaged: r.Triaged[:1]}.lines(nil, 1<<20)
+	one := len(first)
+	text, left := r.lines(map[string]bool{"kept": true, "new": true}, 2*one+10)
+	if strings.Contains(text, `"old"`) || !strings.Contains(text, `"kept"`) || !strings.Contains(text, `"new"`) || left != 0 {
+		t.Fatalf("past its room, the record keeps the findings at the head and drops the oldest gone (%d left): %s", left, text)
+	}
+	// Past its room with the findings at the head alone: the oldest of
+	// them go too, counted, asked again.
+	text, left = r.lines(map[string]bool{"old": true, "kept": true, "new": true}, one+10)
+	if left != 2 || !strings.Contains(text, `"new"`) || strings.Count(text, "workline:triaged") != 1 {
+		t.Fatalf("past its room, %d of the findings at the head left out, want the 2 oldest: %s", left, text)
+	}
+}
+
+func TestCommentStaysWithinTheForgesSize(t *testing.T) {
+	run := Run{Head: "abc"}
+	for i := range 80 {
+		fp := strings.Repeat(string(rune('a'+i%26)), 3) + string(rune('0'+i/26))
+		run.Found = append(run.Found, Found{Fingerprint: fp, Check: "lint", Path: "x.go", Line: i + 1})
+		run.Record = run.Record.with(Triaged{Fingerprint: fp, Check: "lint", Where: "x.go", At: "abc",
+			Matters: strings.Repeat("m", textMax), Fix: strings.Repeat("f", textMax), FalsePositive: true, Why: strings.Repeat("w", textMax), Order: i + 1})
+	}
+	body := comment(run, current(run))
+	if len(body) > commentMax || !strings.Contains(body, "55 more triaged, not listed here") || !strings.Contains(body, "triages not kept in this comment, past its size") {
+		t.Fatalf("a comment of %d characters, over %d, or not saying what it left out", len(body), commentMax)
 	}
 }
 

@@ -157,19 +157,25 @@ func readRecord(text string) (Record, error) {
 }
 
 // lines is the record as the comment hides it: a line each, the oldest
-// gone first past room, those of the findings at the head kept.
-func (r Record) lines(keep map[string]bool, room int) string {
+// gone first past room, those of the findings at the head kept; past it
+// still, the oldest of those too, counted: they are asked again.
+func (r Record) lines(keep map[string]bool, room int) (string, int) {
 	all := make([]string, len(r.Triaged))
 	size := 0
 	for i, t := range r.Triaged {
 		all[i] = "\n<!-- workline:triaged " + hidden(t) + " -->"
 		size += len(all[i])
 	}
-	gone := map[int]bool{}
-	for i := 0; i < len(all) && size > room; i++ {
-		if !keep[r.Triaged[i].Fingerprint] {
-			gone[i] = true
-			size -= len(all[i])
+	gone, left := map[int]bool{}, 0
+	for _, theirs := range []bool{false, true} {
+		for i := 0; i < len(all) && size > room; i++ {
+			if !gone[i] && keep[r.Triaged[i].Fingerprint] == theirs {
+				gone[i] = true
+				size -= len(all[i])
+				if theirs {
+					left++
+				}
+			}
 		}
 	}
 	var b strings.Builder
@@ -178,20 +184,24 @@ func (r Record) lines(keep map[string]bool, room int) string {
 			b.WriteString(l)
 		}
 	}
-	return b.String()
+	return b.String(), left
 }
 
 // hidden is a value as JSON on one line, safe in a comment hidden in
-// Markdown: a dash written -, and `<`, `>` escaped by the JSON
-// library, so nothing the agent wrote ends the comment hiding it.
+// Markdown: a dash written as its escape, and `<`, `>` escaped by the
+// JSON library, so nothing the agent wrote ends the comment hiding it.
 func hidden(v any) string {
 	data, _ := json.Marshal(v)
 	return strings.ReplaceAll(string(data), "-", `\u002d`)
 }
 
 // commentMax is the most characters the comment holds: GitHub takes
-// 65,536.
-const commentMax = 60000
+// 65,536. shownMax, the most triages it lists; the run's summary holds
+// them all.
+const (
+	commentMax = 60000
+	shownMax   = 25
+)
 
 // comment is the inspector's one comment on the merge request: the
 // triage of the findings at the head, in the order to fix them, and the
@@ -214,6 +224,10 @@ func comment(run Run, shown []Triaged) string {
 	}
 	b.WriteString("It reads apart from the verdict and never changes it: a finding that blocks still blocks. The gates show each finding beside its line; here, why it matters and the order to fix them.\n\n")
 	for i, t := range shown {
+		if i == shownMax {
+			fmt.Fprintf(&b, "\n%d more triaged, not listed here: the run's summary lists them all.\n", len(shown)-shownMax)
+			break
+		}
 		fmt.Fprintf(&b, "%d. **%s** at %s: ", i+1, span(t.ruleName()), span(t.Where))
 		if t.FalsePositive {
 			b.WriteString("**likely a false positive**: " + sentence(inert(t.Why)) + " ")
@@ -234,8 +248,13 @@ func comment(run Run, shown []Triaged) string {
 	for _, f := range run.Found {
 		keep[f.Fingerprint] = true
 	}
+	const note = "- %d triages not kept in this comment, past its size: asked again at the next push.\n"
 	body := strings.TrimRight(b.String(), "\n") + "\n"
-	return body + run.Record.lines(keep, commentMax-len(body))
+	record, left := run.Record.lines(keep, commentMax-len(body)-len(note)-10)
+	if left > 0 {
+		body += fmt.Sprintf(note, left)
+	}
+	return body + record
 }
 
 // task is the one part put to the agent: the findings to triage, each
@@ -369,7 +388,8 @@ func saveLocal(repo string, r Record) error {
 	if err := os.MkdirAll(filepath.Dir(file), 0o755); err != nil {
 		return err
 	}
-	return os.WriteFile(file, []byte(strings.TrimPrefix(r.lines(nil, 1<<30), "\n")+"\n"), 0o644)
+	text, _ := r.lines(nil, 1<<30)
+	return os.WriteFile(file, []byte(strings.TrimPrefix(text, "\n")+"\n"), 0o644)
 }
 
 // mergeRequest is the merge request the run is on, when a forge and a

@@ -44,7 +44,9 @@ Cases in
   ([ADR-0013](../../../docs/adr/0013-what-was-judged-is-not-asked-again.md)):
   `triaged-once-not-asked-again`; after a push, only the new finding
   asked: `new-finding-after-a-push-asked-alone`; on a machine, the
-  record kept there: `on-a-machine-after-the-gates`.
+  record kept there: `on-a-machine-after-the-gates`; past
+  `findings-max`, the rest asked at the next push:
+  `findings-past-the-cap-asked-at-the-next-push`.
 - **No agent, no call, said**: `no-agent-no-call-said`; a draft waits for
   ready: `draft-waits-for-ready`; no new finding, no call:
   `no-new-finding-no-call`.

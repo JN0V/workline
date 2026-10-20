@@ -121,6 +121,12 @@ func prepare(runDir, repo string, s Settings) int {
 	default:
 		return fail(fmt.Errorf("input warn %q: %s, the verdict's run, or %s, the run apart", side, warnApart, warnOnly))
 	}
+	// A draft asks no agent (ADR-0050): the templates give it no gates'
+	// result to wait for either.
+	if os.Getenv("WORKLINE_AI_WAITS") == "ready" {
+		return final(runDir, verdict.Pass, "a draft: the triage waits for it to be marked ready", []verdict.Finding{{Rule: "not-triaged", Level: "warn",
+			Message: "the gates' new findings not triaged: a draft, the triage waits for it to be marked ready; they stand as the gates report them"}})
+	}
 	file := input(runDir, "gates")
 	if file == "" {
 		return final(runDir, verdict.Pass, "no gate's result reached the inspector: nothing to triage", []verdict.Finding{{Rule: "gates-not-given", Level: "warn",
@@ -198,13 +204,9 @@ func prepare(runDir, repo string, s Settings) int {
 	return 0
 }
 
-// noAgent says why no agent triages, "" when one does: none given, or a
-// draft, whose AI review waits for it to be marked ready (ADR-0050).
+// noAgent says why no agent triages, "" when one does.
 func noAgent() string {
-	switch {
-	case os.Getenv("WORKLINE_AI_WAITS") == "ready":
-		return "a draft, the triage waits for it to be marked ready"
-	case os.Getenv("WORKLINE_AI") == "" || os.Getenv("WORKLINE_AI") == "none":
+	if os.Getenv("WORKLINE_AI") == "" || os.Getenv("WORKLINE_AI") == "none" {
 		return "no agent (--ai none)"
 	}
 	return ""
@@ -245,7 +247,7 @@ func answered(runDir, repo string, s Settings) int {
 	}
 	model := triageModel(runDir)
 	order := map[string]int{} // fingerprint -> the place the agent gave it
-	seen := map[string]bool{}
+	kept := map[string]bool{} // the ids whose answer was kept: one more is refused
 	refuse := func(id, why string) {
 		run.Findings = append(run.Findings, verdict.Finding{Rule: "triage-refused", Level: "warn", Where: id, Message: why})
 	}
@@ -261,16 +263,16 @@ func answered(runDir, repo string, s Settings) int {
 		case !known:
 			refuse(id, fmt.Sprintf("names %q, no finding the task gave: not read", id))
 			continue
-		case seen[id]:
+		case kept[id]:
 			refuse(id, "answered twice: the first kept")
 			continue
 		}
-		seen[id] = true
-		if n, ok := number(m["order"]); ok && n > 0 {
-			order[f.Fingerprint] = n
-		}
-		if strings.HasPrefix(id, "r") {
-			continue // triaged before: its place only
+		place, placed := number(m["order"])
+		if strings.HasPrefix(id, "r") { // triaged before: its place only
+			if placed && place > 0 {
+				order[f.Fingerprint], kept[id] = place, true
+			}
+			continue
 		}
 		t := Triaged{Fingerprint: f.Fingerprint, Gate: f.Gate, Check: f.Check, Tool: f.Tool, Rule: f.Rule, Where: f.Where(), At: run.Head, Model: model,
 			Matters: text(m["matters"]), Fix: text(m["fix"]), Why: text(m["why"])}
@@ -286,6 +288,10 @@ func answered(runDir, repo string, s Settings) int {
 		}
 		if !t.FalsePositive {
 			t.Why = ""
+		}
+		kept[id] = true
+		if placed && place > 0 {
+			order[f.Fingerprint] = place
 		}
 		run.Record = run.Record.with(t)
 	}
