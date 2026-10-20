@@ -71,3 +71,42 @@ note's author, or a Maintainer, edits a note.
 - Left: the Planner role's refusal reported as such, not only as the
   fallback; a group access token, and service accounts, untried; a
   self-managed instance untried.
+
+## Amendment (2026-10-20): comments read without the members list
+
+On a self-managed GitLab, the judging job, with only `CI_JOB_TOKEN`, read
+a merge request's notes but not `members/all` (401). Reading the
+reviewer's comment went through the members, so it failed: each push
+reviewed the whole merge request again (`record-unread`,
+[#552](https://github.com/JN0V/workline/issues/552)).
+
+- **A comment's text needs no member.** What reads a comment by its
+  marker alone, as the reviewer's record, reads the notes and never asks
+  for the members.
+- **A token that may not list the members** (401, 403) is said once a
+  run, never asked again. Who wrote each comment is kept, a bot told by
+  its name, as above; none counts as a person of the project.
+- **Trust still needs the members.** What acts on a person's word — an
+  issue's author, an answer, a label's or a reaction's author — fails
+  loud, as decided above. The documentalist's records are read from a
+  bot's comment alone, said (`members-unread`): one a person's token
+  wrote is not taken on its word.
+
+- **A bot GitLab does not name so** — a service account, an account made
+  for the line holding `WORKLINE_GITLAB_TOKEN` — is named by the project:
+  `gitlab: {bots: [<username>]}` in `.workline/config.yaml`. Its notes,
+  labels and reactions are a bot's, the members read or not. The merge
+  policy still asks GitLab who the token's user is (ADR-0042): a name
+  written in a file never lets a merge go with no person's yes.
+- **The bot's own token**: where the token in use is
+  `WORKLINE_GITLAB_TOKEN`, its user (`GET /user`, once) is a bot too, for
+  a note whose author the members cannot tell. Not otherwise: that token
+  may be a person's, the last resort above, whose word must still count.
+
+Not chosen: giving the judging job a token of its own, which a project
+then has to make and rotate; taking an unknown author for a person of
+the project; reusing the committer's `forge-identities`, which lists
+commit addresses, not usernames.
+
+Conformance: reviewer/record-read-without-the-members-on-gitlab and the
+three documentalist/judged-kept-…-without-the-members-on-gitlab cases.

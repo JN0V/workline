@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/adopt.go, internal/builtin/documentalist/byname.go, internal/builtin/documentalist/releasekept.go, internal/engine/night.go]
-checked: 35f9092d
+checked: 0ec7838f
 verified: agent:claude-code
 judged-in-parts: c7e1e98
 ---
@@ -60,7 +60,11 @@ took a commit on their branch, 41 of 42 in two weeks
     the judging job `GITLAB_TOKEN`
     ([ci-gitlab.md](../../../docs/ci-gitlab.md#what-the-template-does));
   - a doc with a source in another repository.
-- Only a comment a bot or a person of the project wrote is read.
+- Only a comment a bot or a person of the project wrote is read. A token
+  that may not list the members (GitLab's `CI_JOB_TOKEN`) reads a bot's
+  alone, a project access token's user or one named in `gitlab: {bots}`
+  ([config](../../../docs/config.md)); what a person's token kept is
+  judged again, said once (`members-unread`, [#552](https://github.com/JN0V/workline/issues/552)).
 
 ### At the push
 

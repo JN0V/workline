@@ -22,8 +22,9 @@ import (
 // gitlabMock answers the part of GitLab's REST API the engine's gitlab forge
 // calls, over the case's simulated forge file, so a case runs `--forge
 // gitlab` and is checked as any other. Its `members` give the project's
-// members and their access level, as GitLab's members/all does; what the
-// engine writes is written by "workline-bot", the token's user. GraphQL
+// members and their access level, as GitLab's members/all does, or
+// `members-refused` its refusal; what the engine writes is written by the
+// token's user, "workline-bot" or its `token-user`. GraphQL
 // refuses all: a split's children are listed in the parent's body. Its
 // issue links are GitLab Free's: is_blocked_by refused, for its license.
 // With `weights`, its issues carry Premium's `weight` key, written by a
@@ -73,7 +74,17 @@ type gitlabState struct {
 	// account's among them; a merge request's author is user 1000 + its id.
 	Bots   []string      `json:"bots,omitempty"`
 	Faults []gitlabFault `json:"faults,omitempty"`
+	// MembersRefused is the status members/all answers the token, when it
+	// may not list them: 401, as the job's own token gets (#552); asked or
+	// not, unlike a fault.
+	MembersRefused int `json:"members-refused,omitempty"`
+	// TokenUser is the token's user, who writes what the engine writes:
+	// workline-bot when not given; project_<id>_bot_… for a project
+	// access token's, a bot by its name.
+	TokenUser string `json:"token-user,omitempty"`
 }
+
+func (s *gitlabState) tokenUser() string { return cmp.Or(s.TokenUser, defaultTokenUser) }
 
 var (
 	issuePath      = regexp.MustCompile(`^/issues/(\d+)$`)
@@ -87,7 +98,7 @@ var (
 	userPath       = regexp.MustCompile(`^/api/v4/users/(\d+)$`) // outside the project's path
 )
 
-const tokenUser = "workline-bot"
+const defaultTokenUser = "workline-bot"
 
 func (m *gitlabMock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	answer, status, f := m.answer(r)
@@ -185,6 +196,7 @@ func (m *gitlabMock) unmet() []string {
 }
 
 func (m *gitlabMock) serve(s *gitlabState, method, p string, q, form url.Values) (any, int) {
+	tokenUser := s.tokenUser()
 	issue := func(id int) *forge.FakeItem {
 		for i := range s.Issues {
 			if s.Issues[i].ID == id {
@@ -216,6 +228,8 @@ func (m *gitlabMock) serve(s *gitlabState, method, p string, q, form url.Values)
 	}
 	notFound := map[string]any{"message": "404 Not Found"}
 	switch {
+	case p == "/members/all" && s.MembersRefused != 0:
+		return map[string]any{"message": fmt.Sprintf("%d %s", s.MembersRefused, http.StatusText(s.MembersRefused))}, s.MembersRefused
 	case p == "/members/all":
 		return s.Members, 200
 	case p == "/merge_requests" && method == "GET":
@@ -529,6 +543,7 @@ func (m *gitlabMock) serve(s *gitlabState, method, p string, q, form url.Values)
 // mergeRequest answers a merge request — closed by PUT state_event=close —,
 // its diffs and its discussions; its notes are notesPath's.
 func (m *gitlabMock) mergeRequest(s *gitlabState, it *forge.FakeItem, part, method string, form url.Values) (any, int) {
+	tokenUser := s.tokenUser()
 	base, head := it.Base, it.Branch
 	if base == "" {
 		base = "main"

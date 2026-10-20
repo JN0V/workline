@@ -227,7 +227,8 @@ type Backlog interface {
 	// Comments lists the comments on t, oldest first.
 	Comments(t Target) ([]string, error)
 	// Notes lists the comments on t with their authors, oldest first, as
-	// Comments does.
+	// Comments does; with ErrAuthorsUnknown, they are read, none taken for
+	// a person of the project.
 	Notes(t Target) ([]Note, error)
 	// Close closes an issue: as a duplicate of dup when dup > 0, else as
 	// completed. Closing one already closed changes nothing.
@@ -451,6 +452,14 @@ func (m MergeRequest) ByBot() bool {
 // ErrUnreachable marks a forge that did not answer: the run is blocked by
 // something outside the role.
 var ErrUnreachable = errors.New("forge unreachable")
+
+// ErrAuthorsUnknown marks comments read without knowing which authors are
+// of the project: on GitLab, a token that may not list the project's
+// members, as the job's own (#552). Notes returns the comments with it,
+// each author kept, a bot told by its name, none taken for a person of
+// the project. A caller that acts on a person's word fails on it, as
+// before; one that can do with a bot's reads them, and says so.
+var ErrAuthorsUnknown = errors.New("who is of the project could not be read")
 
 // Open returns the forge named by spec: "github", "gitlab", "local" (kept in
 // the clone), "cmd:<command>" (another forge, plugged by a command),

@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine/routine.go, internal/engine/demote.go, internal/engine/merge.go, internal/forge/merge.go]
-checked: b9e7900b
+checked: 68c17080
 verified: agent:claude-code
 reader: efab3a2a0b35
 ---

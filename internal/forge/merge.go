@@ -276,7 +276,7 @@ func (g *gitlab) closing(id int) (LabelEvent, bool, error) {
 		if s.State == "closed" {
 			e, ok = LabelEvent{Note: Note{Created: s.Created}}, true
 			if s.User != nil {
-				e.Author, e.Bot = s.User.Username, botName.MatchString(s.User.Username)
+				e.Author, e.Bot = s.User.Username, g.botNamed(s.User.Username)
 			}
 		}
 	}
