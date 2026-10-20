@@ -1,6 +1,6 @@
 ---
 sources: [ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile]
-checked: f5008630
+checked: cfcd9422
 judged: bf016b7
 verified: agent:claude-code
 ---
@@ -100,7 +100,8 @@ workline:apply:
 
 ### `ci/workline-job.sh`
 
-Any runner with the engine, git and jq. The agent is a choice: Claude
+Any runner with the engine, git and jq; `ssh-keygen` too, to sign
+commits (workline's image holds it). The agent is a choice: Claude
 here; for another, install it instead and set `ai` to a `cmd:`
 ([usage](usage.md)).
 
@@ -118,6 +119,7 @@ else                                              # writes, with no AI key
   export GITLAB_TOKEN="$WORKLINE_GITLAB_TOKEN"; unset CLAUDE_CODE_OAUTH_TOKEN ANTHROPIC_API_KEY
   git config user.name workline; git config user.email "workline@noreply.$CI_SERVER_HOST"
   if [ -n "${WORKLINE_SIGNING_KEY:-}" ]; then     # signed commits, an SSH key as a File variable
+    [ -f "$WORKLINE_SIGNING_KEY" ] || { echo "workline: WORKLINE_SIGNING_KEY is not a file: set its type to File"; exit 1; }   # the key never printed
     chmod 600 "$WORKLINE_SIGNING_KEY"; [ -z "$(tail -c 1 "$WORKLINE_SIGNING_KEY")" ] || echo >> "$WORKLINE_SIGNING_KEY"
     git config gpg.format ssh; git config user.signingkey "$WORKLINE_SIGNING_KEY"; git config commit.gpgsign true
   fi
