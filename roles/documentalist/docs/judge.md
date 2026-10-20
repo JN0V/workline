@@ -113,8 +113,12 @@ one place the engine had already named (step 4). Now:
   without it, the place left as it was;
 - the doc keeps `checked` where it was and records `judged` (its header
   put back, `judged` set), so a person reads it before moving `checked`;
-  it is not put before an agent again until a source changes
+  it is not put before an agent again until a source changes, unless one
+  is in another repository or the doc is due at a later moment (a product
+  doc, at the release)
   ([ADR-0013](../../../docs/adr/0013-what-was-judged-is-not-asked-again.md));
+  nor in a later round of a release's run
+  ([#572](https://github.com/JN0V/workline/issues/572));
 - each place withheld is a finding for a person — the refusal's rule, the
   doc and its lines, and why — in the run's verdict, the merge request's
   comment or the fix's own merge request, as other findings; the doc's
@@ -145,12 +149,13 @@ one place the engine had already named (step 4). Now:
   committed for it, and the finding says so
   ([more](push.md#a-doc-found-with-nothing-to-fix-no-commit)).
 - The fix's own merge request, gardening's (the scheduled run, nightly
-  or weekly) or a release's, lists each doc judged with the same outcome
-  — fixed and in how many places, still true, or nothing found wrong —
-  whether `checked` moved or `judged` was recorded, and, for a doc not
-  given whole, what was read and not read. A release's holds every round
-  of its run: their docs and places withheld, a later round's word on a
-  doc standing ([#572](https://github.com/JN0V/workline/issues/572)).
+  or weekly) or a release's, lists each doc judged with that outcome —
+  fixed and in how many places, still true, nothing found wrong, or left
+  as it was — whether `checked` moved or `judged` was recorded, and, for
+  a doc not given whole, what was read and not read.
+- A release's lists the docs of every round of its run and the places
+  they withheld, a later round's word on a doc standing
+  ([#572](https://github.com/JN0V/workline/issues/572)).
 
 ## Asked again
 
