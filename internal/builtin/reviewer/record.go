@@ -79,6 +79,7 @@ type Block struct {
 	Where string `json:"where"`
 	Title string `json:"title"` // its severity and title, as its row reads beside its comment on the line (#277)
 	Cause Quote  `json:"cause"`
+	Side  string `json:"side,omitempty"` // where its cause was found, onHead or onRemoved: looked for there alone (#570); none in a record before it
 }
 
 // SummaryKey keys the reviewer's one comment on a merge request; WarnKey,
@@ -252,10 +253,14 @@ func (r Record) add(commits, patches []string) Record {
 
 // standing are the blocks of the last review that still stand at the head
 // (#326), each at its line there: its lens still blocks (`ai-findings`),
-// and its cause is found again on the change, as a lens's is. A cause no
-// longer found is a commit's answer; one whose file moved is found on its
-// new path, and kept there (#358). One quoted from an issue stands until
-// its lens reads the issue again.
+// and its cause is found again on the change, as a lens's is, on the side
+// it was found on (#570): one found on the head's lines only there, never
+// on a line the change removes that holds its quote too; one found on a
+// removed line while the change still removes it. A cause no longer found
+// is a commit's answer; one whose file moved is found on its new path, and
+// kept there (#358). One quoted from an issue stands until its lens reads
+// the issue again. A block recorded before its side was is looked for on
+// both, as it was then.
 func standing(repo string, s Settings, st state, blocks []Block) []Block {
 	var out []Block
 	for _, b := range blocks {
@@ -263,7 +268,7 @@ func standing(repo string, s Settings, st state, blocks []Block) []Block {
 			continue
 		}
 		if !strings.HasPrefix(b.Cause.Path, "#") {
-			f, why := found(repo, st, b.Lens, false, map[string]any{"severity": "important", "title": b.Lens, "cause": b.Cause})
+			f, why := found(repo, st, b.Lens, false, map[string]any{"severity": "important", "title": b.Lens, "cause": b.Cause}, b.Side)
 			if why != "" || !f.Related {
 				continue
 			}

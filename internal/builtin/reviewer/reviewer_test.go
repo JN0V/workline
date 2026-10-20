@@ -126,9 +126,46 @@ func TestChangeFindsRenames(t *testing.T) {
 	}
 	head := run("rev-parse", "HEAD")
 	f, why := found(repo, state{Head: head, Change: c}, "correctness", false, map[string]any{"severity": "important", "title": "t",
-		"cause": map[string]string{"path": "calc/calc.go", "quote": "for _, v := range values[1:] {"}})
+		"cause": map[string]string{"path": "calc/calc.go", "quote": "for _, v := range values[1:] {"}}, "")
 	if why != "" || !f.Related || f.Where != "calc/sum.go:6" {
 		t.Errorf("a removed line quoted on the old path: %+v, %s", f, why)
+	}
+}
+
+// A cause is found on the side of the change it lies on, said (#570); a
+// block looked for again on its side alone: one found on the head's lines
+// is not found on a removed line holding its quote too.
+func TestFoundOnASide(t *testing.T) {
+	repo := gitRepo(t, map[string]string{"calc/mean.go": calcGo})
+	run, commit := gitSteps(t, repo)
+	base := run("rev-parse", "HEAD")
+	// Main's line rewritten, then rewritten again by a fix: the quote is
+	// on the line added first, then on main's line, removed, alone.
+	var st []state
+	for _, text := range []string{"return sum(values) / len(values) + 1", "return sum(values) / max(len(values), 1)"} {
+		head := commit("calc/mean.go", strings.Replace(calcGo, "return sum(values) / len(values)", text, 1))
+		files, _ := changedFiles(repo, base, head)
+		c, err := readChange(repo, base, head, files)
+		if err != nil {
+			t.Fatal(err)
+		}
+		st = append(st, state{Head: head, Base: base, Change: c})
+	}
+	at := func(st state, on string) (Finding, string) {
+		return found(repo, st, "correctness", false, map[string]any{"severity": "important", "title": "t",
+			"cause": map[string]string{"path": "calc/mean.go", "quote": "sum(values) / len(values)"}}, on)
+	}
+	if f, why := at(st[0], ""); why != "" || !f.Related || f.Side != onHead || f.Where != "calc/mean.go:5" {
+		t.Errorf("on the line added: %+v, %s", f, why)
+	}
+	if f, why := at(st[1], ""); why != "" || !f.Related || f.Side != onRemoved {
+		t.Errorf("a lens's, on main's line removed: %+v, %s", f, why)
+	}
+	if f, why := at(st[1], onHead); why == "" && f.Related {
+		t.Errorf("a block found at the head, its quote on a removed line only: %+v", f)
+	}
+	if f, why := at(st[1], onRemoved); why != "" || !f.Related || f.Side != onRemoved {
+		t.Errorf("a block found on a removed line, still removed: %+v, %s", f, why)
 	}
 }
 
