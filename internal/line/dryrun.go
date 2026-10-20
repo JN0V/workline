@@ -99,10 +99,17 @@ func finishDryRun(res *Result, d *DryRun) {
 		case s.Result != nil:
 			fs, said = s.Result.Findings, s.Result.Summary
 		}
+		// What the step says blocks; else what it leaves to its verdict,
+		// no level given; else the step, by its verdict.
 		n := len(d.Holds)
-		for _, f := range fs {
-			if blocks(f) {
-				d.Holds = append(d.Holds, Hold{Step: s.Name, Rule: f.Rule, Where: f.Where, Message: f.Message})
+		for _, level := range []string{verdict.Block, ""} {
+			for _, f := range fs {
+				if f.Level == level {
+					d.Holds = append(d.Holds, Hold{Step: s.Name, Rule: f.Rule, Where: f.Where, Message: f.Message})
+				}
+			}
+			if len(d.Holds) > n {
+				break
 			}
 		}
 		if len(d.Holds) == n {

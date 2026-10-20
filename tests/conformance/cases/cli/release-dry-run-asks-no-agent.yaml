@@ -1,0 +1,7 @@
+case: cli/release-dry-run-asks-no-agent
+about: "A release's dry run asks no agent and writes nothing (ADR-0050): an agent named for it is misuse, 64, never a call made in a run said to ask none."
+given: {repo: basic}
+run: {cli: [route, release, --dry-run, --ai, claude]}
+expect:
+  exit: 64
+  stderr: ["a release's dry run asks no agent"]
