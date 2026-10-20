@@ -240,6 +240,12 @@ run by hand (Build → Pipelines → Run pipeline, the variable
 
 the two jobs to add are in [gitlab/import-jobs.md](gitlab/import-jobs.md).
 
+## A project that refuses unsigned commits
+
+The push rule *Reject unsigned commits* refuses the bot's pushes too:
+give it an SSH key, the File variable `WORKLINE_SIGNING_KEY`, and the
+template signs its commits ([how](gitlab/signed-commits.md)).
+
 ## A self-managed GitLab
 
 As on gitlab.com, with what an instance of your own changes — the image,

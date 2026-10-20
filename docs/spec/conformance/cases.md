@@ -192,6 +192,9 @@ saying so.
   `origin` whose tip is a merge of another's tip into its tip before the
   run, its first parent (`{feat/sessions: main}`); `gone` — branches of
   `origin` absent after the run.
+- `signed` — a branch of `origin` whose tip carries a signature `git
+  verify-commit` accepts with the repository's config (`true`), or none
+  (`false`).
 - `branches` — a text a file holds on a local branch of the repository.
 - `issues-listed` — texts `workline issues list` prints afterwards.
 - `summary` — a text the result's summary holds.
