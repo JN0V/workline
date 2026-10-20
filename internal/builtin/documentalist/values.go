@@ -178,26 +178,106 @@ var versionRange = regexp.MustCompile(`(?:>=?|<=?|\^|~>?)\s*v?$`)
 // "default changed from `avoid` to `always` in", Sphinx's `versionadded::`
 // and MyST's `{versionadded}`, a name between or not ("prior to pip 18.0")
 // — history, not the version now: 39 of the 43 lines reported on prettier
-// (docs/research/documentalist-genericity.md).
-var versionMarker = regexp.MustCompile(`(?i)(?:^|[^a-z0-9])(?:since|until|prior\s+to|available\s+(?:in|since|from)|(?:added|new|introduced|removed)\s+in|changed\b[^.;]*?\s+in|deprecated(?:\s+(?:in|since))?|version(?:added|changed|removed))(?:\s+version|\s+[a-z][a-z0-9_-]*)?[\s:*_({}]*v?$`)
+// (docs/research/documentalist-genericity.md). The release a feature came
+// in, "from v0.38.0", "the first release after v0.37.0", "fixed in", and
+// a minimum, "at least", are history too (#346): true at every later
+// release; these, right before the version, "version" alone between
+// ("Install from tag v1.2.0", `FROM tool:v1.2.0` pin it). French:
+// "depuis", "à partir de", "avant", "après". A version in code quotes or
+// plain quotes is read the same, in prose as in a code block's comment.
+var versionMarker = regexp.MustCompile(`(?i)(?:^|[^a-z0-9])(?:(?:since|until|prior\s+to|available\s+(?:in|since|from)|(?:added|new|introduced|removed|fixed|shipped|released)\s+in|changed\b[^.;]*?\s+in|deprecated(?:\s+(?:in|since))?|version(?:added|changed|removed))(?:\s+version|\s+[a-z][a-z0-9_-]*)?|(?:from|after|before|at\s+least|minimum|depuis|à\s+partir\s+d(?:e|u)|avant|après)(?:\s+version)?)[\s:*_({}\x60"']*v?$`)
 
-// linesSaying lists the doc's body lines saying a version, outside derived
-// blocks and ranges.
+// versionLater starts the text after a version given as a minimum —
+// "1.4.1 or later", "and newer", "onwards", `1.4.1+` — which says what is
+// needed, true at every later release, not the version now (#346). A `+`
+// holding more, `v1.2.0+incompatible`, is a pin. French: "ou plus
+// récent", "ou ultérieure", "et suivantes".
+var versionLater = regexp.MustCompile(`(?i)^[*_\x60"')]*(?:\+(?:[^0-9a-z.]|$)|\s+(?:or|and)\s+(?:later|newer|above|higher|up)\b|\s+onwards?\b|\s+ou\s+(?:plus\s+récente?|ultérieure?|supérieure?)|\s+et\s+(?:suivantes?|plus)\b)`)
+
+// saidAsNow says whether a version, the text before and after it given,
+// is said as the version now — a pin, an example, a version stated — not
+// as a range, nor after a history marker, nor as a minimum: in prose as in
+// a code block's comment (`# since 1.4.1`).
+func saidAsNow(before, after string) bool {
+	return !versionRange.MatchString(before) && !versionMarker.MatchString(before) && !versionLater.MatchString(after)
+}
+
+// around is the text before and after a version found at at in lines[i],
+// a sentence wrapped across lines read whole: in prose, a version opening
+// its line follows the previous one of its paragraph ("the first release
+// after" / "v0.38.0"), one closing it is followed by the next ("v1.2.0" /
+// "or later").
+func around(lines []line, i int, at []int) (before, after string) {
+	l := lines[i]
+	before, after = l.text[:at[0]], l.text[at[1]:]
+	if l.code {
+		return before, after
+	}
+	prose := func(j int) bool {
+		return j >= 0 && j < len(lines) && !lines[j].code && lines[j].heading == 0 && strings.TrimSpace(lines[j].text) != ""
+	}
+	// Nothing but markup and the version's `v` on its side of the line.
+	if strings.Trim(before, " \t*_`\"'({v") == "" && prose(i-1) {
+		before = lines[i-1].text + " " + strings.TrimLeft(before, " \t")
+	}
+	if strings.Trim(after, " \t*_`\"')") == "" && prose(i+1) {
+		after = " " + strings.TrimLeft(lines[i+1].text, " \t")
+	}
+	return before, after
+}
+
+// linesSaying lists the doc's body lines saying a version as the version
+// now (saidAsNow), outside derived blocks.
 func linesSaying(content, v string) []int {
 	skip := derivedLines(content)
 	var out []int
-	for _, l := range scan(content) {
+	lines := scan(content)
+	for i, l := range lines {
 		if skip[l.n] {
 			continue
 		}
 		for _, at := range versionsIn(l.text) {
-			if before := l.text[:at[0]]; l.text[at[0]:at[1]] == v && !versionRange.MatchString(before) && !versionMarker.MatchString(before) {
+			if before, after := around(lines, i, at); l.text[at[0]:at[1]] == v && saidAsNow(before, after) {
 				out = append(out, l.n)
 				break
 			}
 		}
 	}
 	return out
+}
+
+// saysAsNow says whether a doc's body, outside derived blocks, says version
+// v as the version now (saidAsNow): a pin the reader installs or copies —
+// `WORKLINE_VERSION: v0.38.0`, `go install …@v0.38.0`, an image's tag —
+// never the release a feature came in, nor a minimum (#346). v is as a
+// release tool bumps it: three parts, a `v` before, maybe a pre-release
+// after; a longer number holding it (10.38.0, 0.38.0.1) is not it.
+func saysAsNow(content, v string) bool {
+	v = strings.TrimPrefix(v, "v")
+	digit := func(s string, i int) bool { return i >= 0 && i < len(s) && s[i] >= '0' && s[i] <= '9' }
+	skip := derivedLines(content)
+	lines := scan(content)
+	for n, l := range lines {
+		if skip[l.n] {
+			continue
+		}
+		for from := 0; ; {
+			i := strings.Index(l.text[from:], v)
+			if i < 0 {
+				break
+			}
+			at := []int{from + i, from + i + len(v)}
+			from = at[1]
+			t := l.text
+			if digit(t, at[0]-1) || at[0] > 0 && t[at[0]-1] == '.' || digit(t, at[1]) || at[1] < len(t) && t[at[1]] == '.' && digit(t, at[1]+1) {
+				continue
+			}
+			if before, after := around(lines, n, at); saidAsNow(before, after) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // sourceFilesOf lists the files of this repository a doc names in its

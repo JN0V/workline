@@ -27,7 +27,19 @@ rendering shows, or in a frontmatter the doc has.
 - **No change**: a commit changing only docs' headers, who checked them;
   nor, on a release tool's pull request, one only putting a version number
   in place of another, line for line — the tool's bump, which would hold
-  every release — unless the doc quotes the version replaced.
+  every release — unless the doc pins the version replaced
+  ([#346](https://github.com/JN0V/workline/issues/346)):
+  - **A pin** follows the bump, so the doc is suspect: the version said
+    as the one to use, in a code block, an install line (`@v1.2.0`), an
+    image's tag, or plain prose ("Clock **1.2.0**").
+  - **History** does not: the version right after "from", "since",
+    "after", "before", "added in", "fixed in", "at least", or before "or
+    later", "and newer", `+`, quoted or not, in prose (across a line
+    break too) or a code block's comment (`# since 1.2.0`); a range
+    (`>=1.2.0`). A word between pins it: "Install from tag v1.2.0",
+    `FROM tool:v1.2.0`.
+  - A doc the release commit bumps too says the new version: not
+    suspect.
 - **A `checked` the branch does not hold** — one of a merge request since
   squashed or rebased — stands for the commit that brought it there, as
   does a `judged` or `judged-in-parts`
