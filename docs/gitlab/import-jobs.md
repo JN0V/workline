@@ -1,15 +1,19 @@
 <!-- workline
 sources: [ci/gitlab/workline.gitlab-ci.yml, cmd/workline]
+checked: cb130c27
 -->
 # Importing a file on GitLab: the two jobs
 
 Beside the template, for a pipeline run by hand with the variable
-`WORKLINE_IMPORT` set ([how](../ci-gitlab.md#the-product-owner)):
+`WORKLINE_IMPORT` set ([how](../ci-gitlab.md#the-product-owner)). Both
+declare the environment the tokens are scoped to
+([the environment](environment.md)):
 
 ```yaml
 workline:import:judge:                     # the agent, a read token
   image: $WORKLINE_IMAGE:$WORKLINE_VERSION
   stage: test
+  environment: {name: workline, action: prepare}   # its tokens' scope (environment.md)
   rules: [{if: $WORKLINE_IMPORT}]
   variables: {AGENT: claude}               # one choice: claude, claude:<model>, cmd:<command>
   script:
@@ -20,6 +24,7 @@ workline:import:judge:                     # the agent, a read token
 workline:import:apply:                     # the write token, no agent
   image: $WORKLINE_IMAGE:$WORKLINE_VERSION
   stage: deploy
+  environment: {name: workline, action: prepare}
   needs: [workline:import:judge]
   rules: [{if: $WORKLINE_IMPORT, when: always}]
   script:

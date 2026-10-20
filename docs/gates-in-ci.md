@@ -1,6 +1,6 @@
 ---
 sources: [ci/github/workline.yml, ci/github/workline-apply.yml, ci/github/workline-warn.yml, ci/gitlab/workline.gitlab-ci.yml, internal/report/gates.go, internal/engine/annotate.go, internal/line]
-checked: 6970b95e
+checked: cb130c27
 judged: 14c41d9
 verified: agent:claude-code
 ---
@@ -24,9 +24,10 @@ The templates need the first release after v0.35.0.
   a linter's config, a plugin, a build. On GitHub the job holds a read
   token, and its checkout keeps none.
 - **Its tools are yours to install**: in the job `gates`, pinned and
-  checksum verified, before `workline route`. On GitLab, in
-  `workline:gates`'s `before_script`, or give it your image with
-  workline in it.
+  checksum verified, before `workline route`; workline's own installs
+  golangci-lint so ([workline.yml](../.github/workflows/workline.yml)).
+  On GitLab, in `workline:gates`'s `before_script`, or give it your
+  image with workline in it.
 - **The judge reads their verdicts** (`--gates-from`): the line never
   runs a gate beside the agent's token. A verdict missing is an error,
   never a pass.
@@ -76,9 +77,12 @@ found the change adds:
   no pipeline there, the widget shows nothing.
 - **Each fingerprint holds no line number**: a finding that only moves
   keeps it.
-- **The variables**: GitLab gives every job the project's. The job unsets
-  the agent's token and the project bot's before the gates run; whoever
-  may push a branch can still read them
+- **The variables**: scoped to the environment `workline`, which the job
+  does not declare, the agent's token and the project bot's never reach
+  it; `workline:base` reads the merge base's findings with the bot's,
+  and hands them over ([the environment](gitlab/environment.md)). The
+  job still unsets them, for one left to every environment. Whoever may
+  push a branch can still read them
   ([ADR-0044](adr/0044-the-apps-key-stays-with-the-default-branchs-runs.md)).
   A fork's merge request runs in the fork, which has neither.
 - **Its summary** is `gates-summary.html`, linked from its page: the

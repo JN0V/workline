@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, internal/builtin/reviewer/reviewer.go, internal/builtin/reviewer/record.go, internal/line/line.go, ci/github/workline.yml, ci/github/workline-warn.yml, ci/github/workline-apply.yml, ci/gitlab/workline.gitlab-ci.yml]
-checked: 6970b95e
+checked: cb130c27
 judged: a5cd2cf
 verified: agent:claude-code
 ---
@@ -96,8 +96,9 @@ beside the verdict's, and posts once it answered.
   nothing: unposted, its record would never move.
 - **GitLab**: `workline:warn`, after `workline:gates`, then
   `workline:warn:apply`, with the agent's token and the bot's; without
-  the bot's, the lenses that warn read in `workline:judge`, said in its
-  log and summary. Neither fails the pipeline
+  the bot's, `workline:warn` says so and stops, and the lenses that warn
+  read in `workline:judge`, said in its log and summary. Neither fails
+  the pipeline
   ([CI on GitLab](../../../docs/ci-gitlab.md)). GitLab
   merges once the pipeline succeeds: the merge waits for them, never on
   what they find.

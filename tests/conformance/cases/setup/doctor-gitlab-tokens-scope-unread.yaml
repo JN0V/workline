@@ -1,0 +1,11 @@
+case: setup/doctor-gitlab-tokens-scope-unread
+about: "On GitLab, a token that may not list the project's variables (403: only a Maintainer's may) leaves their scope unread: the doctor says it could not check, as a warning, never that the tokens are scoped (#520)."
+given:
+  repo: documented
+  forge: {merge-requests: [], variables-refused: 403}
+run: {doctor: true, forge: gitlab}
+expect:
+  status: pass
+  checks:
+    - {rule: tokens-scope-unread, level: warn, message: "could not read whether workline's tokens are scoped to the environment workline", fix: "Environments: workline"}
+  stdout-lacks: ['"rule": "tokens-scoped"', tokens-not-scoped]

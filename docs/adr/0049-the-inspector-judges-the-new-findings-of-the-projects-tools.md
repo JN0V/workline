@@ -1,6 +1,6 @@
 # ADR-0049: The inspector judges the new findings of the project's own tools
 
-- **Status:** accepted; steps 1 to 4 built ([the build plan](#build-plan))
+- **Status:** accepted; steps 1 to 5 built ([the build plan](#build-plan))
 - **Date:** 2026-10-18
 - **Decided by:** the maintainer, on 2026-10-18: the direction a panel of
   four argued (users, principles, prior art, skeptic), and the three
@@ -178,9 +178,9 @@
      agent; telling the reviewer what the linters cover is its own step.
    - **A formatter's fixes**: its command is said (`fix:`); applying them
      is left, a patch the gates' job would propose.
-   - **On GitLab**, every job holds the project's variables: the gates'
-     job unsets the agent's and the bot's tokens, which keeps them from
-     the tools' environment only.
+   - **On GitLab**, the agent's and the bot's tokens, scoped to the
+     environment `workline`, never reach the gates' job
+     ([#520](https://github.com/JN0V/workline/issues/520)).
 4. `roles/inspector`: the AI's triage, and runs with no agent. Built
    ([#574](https://github.com/JN0V/workline/pull/574),
    [the inspector](../../roles/inspector/README.md)): one call a push
@@ -189,7 +189,9 @@
    copy of workline, an unchecked `os.Rename` and a deferred `os.Remove`
    planted: 2,275 tokens in, the defect first, the removal a likely false
    positive, the gate's block unchanged.
-5. A golangci-lint gate on workline itself: [#202]'s Validation.
+5. A golangci-lint gate on workline itself: [#202]'s Validation. Built
+   ([#584](https://github.com/JN0V/workline/pull/584)), a new finding
+   blocking.
 6. [#203]: SonarQube read as a gate.
 
 ## Leaving beta

@@ -1,6 +1,6 @@
 ---
 sources: [ci/github/workline-gardening.yml, ci/github/workline-release-docs.yml, ci/gitlab/workline.gitlab-ci.yml, internal/line/dryrun.go, internal/report/dryrun.go, internal/release/release.go, cmd/workline]
-checked: a0b7c5a7
+checked: cb130c27
 ---
 # The release: a dry run each night, a check at the tag
 
@@ -53,6 +53,8 @@ were cut now.
   night between them.
 - **GitLab**: `workline:release:dry-run` and
   `workline:release:dry-run:post`, on each schedule but the sample's.
+  The dry run holds the bot's token, to read the release merge request,
+  beside your release's gates ([the environment](gitlab/environment.md)).
 - **Your release's gates**: install their tools in the dry run's job, as
   in the gates' ([gates in CI](gates-in-ci.md)).
 - **One writer of the issue at a time**: the post shares main's issue

@@ -260,12 +260,12 @@ func TestGitLabMergeTrainRunsTheGatesAlone(t *testing.T) {
 	project := map[string]any{"$CI_PIPELINE_SOURCE": "merge_request_event", "$WORKLINE_GITLAB_TOKEN": "glpat",
 		"$CLAUDE_CODE_OAUTH_TOKEN": "sk", "$CI_MERGE_REQUEST_SOURCE_PROJECT_ID": "1", "$CI_PROJECT_ID": "1",
 		"$CI_COMMIT_BRANCH": "", "$CI_DEFAULT_BRANCH": "main"}
-	every := []string{"workline:gates", "workline:judge", "workline:apply", "workline:warn", "workline:warn:apply", "workline:merge"}
+	every := []string{"workline:base", "workline:gates", "workline:judge", "workline:apply", "workline:warn", "workline:warn:apply", "workline:merge"}
 	for _, c := range []struct {
 		kind string // CI_MERGE_REQUEST_EVENT_TYPE
 		jobs []string
 	}{
-		{"merge_train", []string{"workline:gates"}},
+		{"merge_train", []string{"workline:base", "workline:gates"}}, // the gates, given their base
 		{"merged_result", every}, // the merge request's own pipeline, on each push
 		{"detached", every},
 	} {

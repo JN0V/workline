@@ -1,6 +1,6 @@
 <!-- workline
 sources: [cmd/workline, tests/conformance/pending.txt]
-checked: a0b7c5a7
+checked: 8c2caf60
 judged: 010367e
 verified: agent:claude-code
 -->
@@ -17,6 +17,7 @@ for people too. Every choice is checked against
 git clone https://github.com/JN0V/workline && cd workline
 go build -o ~/.local/bin/workline ./cmd/workline   # or anywhere on your PATH
 go test -count=1 ./...    # unit tests and the conformance suite
+golangci-lint run --new-from-merge-base=origin/main ./...   # 2.15.0, as the CI: what your change adds
 ```
 
 `-count=1` matters: the conformance suite builds the engine itself, which Go's
@@ -47,8 +48,9 @@ real cases, and costs tokens, so it runs only when asked:
   docs your commits made suspect: fix them in the same pull request.
 - **Decisions** go in [docs/adr/](docs/adr/), findings in docs/research/.
 - **Pull requests** only reach `main`, the checks green; a person reviews
-  and merges. The CI runs the committer, the documentalist and the
-  reviewer on each one.
+  and merges. The CI runs the committer, the documentalist, golangci-lint
+  and the reviewer on each one: a lint finding the change adds blocks,
+  those on `main` before it do not; the inspector triages the new ones.
 - **A try for real** is told in the pull request's description, under
   `## Tried`: what was run, where, the numbers, what was not tried
   ([ADR-0043](docs/adr/0043-a-try-is-told-in-its-pull-request.md)).

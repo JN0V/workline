@@ -10,6 +10,9 @@ inputs:
   keep:
     description: Keep the engine built for the jobs after this one; "false" when none needs it.
     default: "true"
+  go:
+    description: Leave Go set up for the steps after, the engine taken from the cache too; "true" where the gates' tools need it.
+    default: "false"
 runs:
   using: composite
   steps:
@@ -24,7 +27,9 @@ runs:
       with:
         path: ${{ runner.temp }}/workline-engine
         key: ${{ steps.key.outputs.key }}
-    - if: steps.cache.outputs.cache-hit != 'true'
+    # Go, to build the engine; and, asked for, for the tools a job runs
+    # after, the engine taken or built: a gate's golangci-lint.
+    - if: steps.cache.outputs.cache-hit != 'true' || inputs.go == 'true'
       uses: actions/setup-go@v5
       with: {go-version-file: go.mod}
     # Static, as the releases are: it runs on any runner image.

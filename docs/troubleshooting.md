@@ -1,6 +1,6 @@
 ---
-sources: [internal/doctor/doctor.go, internal/doctor/conversations.go, internal/hooks/hooks.go, cmd/workline/main.go, cmd/workline/cli.go, internal/forge/local.go]
-checked: a0b7c5a7
+sources: [internal/doctor/doctor.go, internal/doctor/conversations.go, internal/doctor/variables.go, internal/hooks/hooks.go, cmd/workline/main.go, cmd/workline/cli.go, internal/forge/local.go]
+checked: 32104a40
 verified: agent:claude-code
 ---
 # Troubleshooting
@@ -107,6 +107,12 @@ goes ready, a hidden record that does not read: in
 - GitLab: `CI_JOB_TOKEN` reaches no issue; give `GITLAB_TOKEN`
   ([ci-gitlab.md](ci-gitlab.md#gitlabcom)). A **protected** variable never reaches a merge
   request's pipeline on an unprotected branch.
+- GitLab, `tokens-not-scoped`: a token left to every environment reaches
+  the jobs running your linters; scope it to `workline`.
+  `tokens-scope-unread`: listing the variables needs a Maintainer's
+  token. A job saying `WORKLINE_GITLAB_TOKEN is not set, or not scoped`:
+  the variable is scoped elsewhere, or the template's copy is older than
+  its environment ([the environment](gitlab/environment.md)).
 - `findings-not-annotated`, on GitHub: the check `workline findings` was
   refused. Give `workline-apply.yml`'s `apply` job `checks: write`, and a
   GitHub App the permission **Checks**, read and write

@@ -1,6 +1,6 @@
 ---
 sources: [ci/github/workline.yml, ci/github/workline-apply.yml, ci/gitlab/workline.gitlab-ci.yml, internal/line/line.go, internal/engine/queue.go]
-checked: 6970b95e
+checked: cb130c27
 judged: e4550b8
 verified: agent:claude-code
 ---
@@ -66,8 +66,9 @@ merges. workline's run there guards that combination only
   [GitLab's docs](https://docs.gitlab.com/ci/pipelines/merge_trains/)).
 - **A train's pipeline** (`CI_MERGE_REQUEST_EVENT_TYPE` is
   `merge_train`): [the template](../ci/gitlab/workline.gitlab-ci.yml)
-  runs `workline:gates` alone, against the target's tip. A gate that
-  blocks fails the pipeline, and the train drops the merge request.
+  runs `workline:gates` alone, against the target's tip, after
+  `workline:base`, which reads that tip's findings main kept. A gate
+  that blocks fails the pipeline, and the train drops the merge request.
 - **A merged results pipeline** (`merged_result`) is the merge
   request's own, on each push: every job runs there, as on any other.
 - **The merge policy**: `workline:merge` runs in the merge request's own

@@ -1,6 +1,6 @@
 ---
 sources: [ci/github, .github/workflows/workline.yml, .github/workflows/workline-apply.yml, .github/workflows/workline-gardening.yml, .github/workflows/workline-sample.yml, .github/actions/engine/action.yml, .github/workflows/release.yml, .github/workflows/release-please.yml, release-please-config.json, .goreleaser.yaml, cmd/workline]
-checked: 6970b95e
+checked: 5eb4d43b
 judged: 220b6dc
 verified: agent:claude-code
 reader: fe1505d43360
@@ -181,19 +181,22 @@ engine and the agent as in workline-gardening.yml
 
 ## workline's own workflows
 
-workline's .github/workflows/ are the templates, but for the engine:
+workline's .github/workflows/ are the templates, but for a gate and the
+engine:
 
-- they build it from the commit they run on rather than run a release:
-  gardening and the sample, both jobs, from `main`; a pull request's
-  jobs, from its commit; workline-apply.yml's and workline-merge.yml's,
-  from `main`'s commit, merged and reviewed: what a pull request changes
-  in the engine never runs with the write token;
+- `gates` installs golangci-lint, pinned by its SHA-256, for
+  [the gate](../.workline/config.yaml);
+- they build the engine from the commit they run on rather than run a
+  release: gardening and the sample, both jobs, from `main`; a pull
+  request's jobs, from its commit; workline-apply.yml's and
+  workline-merge.yml's, from `main`'s commit, merged and reviewed: what a
+  pull request changes in the engine never runs with the write token;
 - once a commit ([the action](../.github/actions/engine/action.yml),
   [ADR-0050](adr/0050-each-act-has-its-moment-and-a-wait-budget.md#2-an-act-over-its-budget)):
   the first job on a commit builds it and keeps it in Actions' cache, the
-  jobs after take it, nothing to set up nor build. Taken or built, it
-  must name the commit checked out, unmodified, or the job fails. A pull
-  request's runs keep theirs in its own cache, which `main`'s never read;
+  jobs after take it, nothing to build. Taken or built, it must name the
+  commit checked out, unmodified, or the job fails. A pull request's runs
+  keep theirs in its own cache, which `main`'s never read;
 - no `merge_group`: a user's repository has no merge queue;
 - a project never runs, in a commit's checks, the pin that commit ships: a
   pull request moving the templates to a version not yet tagged would
