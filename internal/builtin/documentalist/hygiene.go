@@ -100,6 +100,7 @@ type line struct {
 	text    string // as written
 	heading int    // 1-6 for a heading, else 0
 	code    bool   // inside a fenced code block, or a fence itself
+	lang    string // the block's language, as its opening fence names it, lowercased
 }
 
 // scan splits a doc into lines, skipping its frontmatter.
@@ -107,18 +108,25 @@ func scan(content string) []line {
 	all := strings.Split(strings.TrimSuffix(content, "\n"), "\n")
 	_, start := header(content)
 	var out []line
-	fence := ""
+	fence, lang := "", ""
 	for i := start; i < len(all); i++ {
 		l := line{n: i + 1, text: all[i]}
 		t := strings.TrimSpace(all[i])
 		switch {
 		case fence != "":
-			l.code = true
+			l.code, l.lang = true, lang
 			if strings.HasPrefix(t, fence) {
 				fence = ""
 			}
 		case strings.HasPrefix(t, "```") || strings.HasPrefix(t, "~~~"):
 			l.code, fence = true, t[:3]
+			// ```yaml, ``` yaml title="x", ```{.yaml}: the first word.
+			info := strings.Fields(strings.Trim(t, "`~ \t"))
+			lang = ""
+			if len(info) > 0 {
+				lang = strings.ToLower(strings.Trim(info[0], "{}."))
+			}
+			l.lang = lang
 		default:
 			if lv := len(t) - len(strings.TrimLeft(t, "#")); lv > 0 && lv <= 6 && strings.HasPrefix(t[lv:], " ") {
 				l.heading = lv

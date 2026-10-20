@@ -202,6 +202,20 @@ func saidAsNow(before, after string) bool {
 	return !versionRange.MatchString(before) && !versionMarker.MatchString(before) && !versionLater.MatchString(after)
 }
 
+// saidAsNowAt says whether the version at at in lines[i] is said as the
+// version now (saidAsNow). In a code block, outside its comments, it is
+// code the reader copies: a pin whatever word comes before it —
+// `since: v1.2.0` is a key's value, `--from v1.2.0` a flag's (#571). The
+// history markers are read in prose and in a comment, by the block's
+// language (`# since v1.2.0`); a range or a minimum is one in code too.
+func saidAsNowAt(lines []line, i int, at []int) bool {
+	before, after := around(lines, i, at)
+	if l := lines[i]; l.code && !maskWith(fenceStyle(l.lang), l.text)[at[0]] {
+		return !versionRange.MatchString(before) && !versionLater.MatchString(after)
+	}
+	return saidAsNow(before, after)
+}
+
 // around is the text before and after a version found at at in lines[i],
 // a sentence wrapped across lines read whole: in prose, a version opening
 // its line follows the previous one of its paragraph ("the first release
@@ -237,7 +251,7 @@ func linesSaying(content, v string) []int {
 			continue
 		}
 		for _, at := range versionsIn(l.text) {
-			if before, after := around(lines, i, at); l.text[at[0]:at[1]] == v && saidAsNow(before, after) {
+			if l.text[at[0]:at[1]] == v && saidAsNowAt(lines, i, at) {
 				out = append(out, l.n)
 				break
 			}
@@ -272,7 +286,7 @@ func saysAsNow(content, v string) bool {
 			if digit(t, at[0]-1) || at[0] > 0 && t[at[0]-1] == '.' || digit(t, at[1]) || at[1] < len(t) && t[at[1]] == '.' && digit(t, at[1]+1) {
 				continue
 			}
-			if before, after := around(lines, n, at); saidAsNow(before, after) {
+			if saidAsNowAt(lines, n, at) {
 				return true
 			}
 		}

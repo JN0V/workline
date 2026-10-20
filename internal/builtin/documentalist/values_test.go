@@ -54,6 +54,18 @@ func TestSaysAsNow(t *testing.T) {
 		{"minimum version", "Minimum version 0.38.0.\n", "v0.38.0", false},
 		{"at least version", "It needs at least version v0.38.0.\n", "v0.38.0", false},
 		{"a code line is no sentence before", "```\nsigned after\nv0.38.0\n```\n", "v0.38.0", true},
+		{"a pin under a key since", "```yaml\nsince: v0.38.0\n```\n", "v0.38.0", true},
+		{"a pin under a key from", "```yaml\nfrom: v0.38.0\n```\n", "v0.38.0", true},
+		{"a pin under a key after", "```yaml\nafter: v0.38.0\n```\n", "v0.38.0", true},
+		{"a pin under a key, no language", "```\nsince: v0.38.0\n```\n", "v0.38.0", true},
+		{"a pin in a JSON example", "```json\n{\"since\": \"v0.38.0\"}\n```\n", "v0.38.0", true},
+		{"a flag's value", "```sh\ntool --since v0.38.0\n```\n", "v0.38.0", true},
+		{"a hash in a string is no comment", "```yaml\nnote: \"x # since v0.38.0\"\n```\n", "v0.38.0", true},
+		{"a pin before a comment", "```yaml\nsince: v0.38.0 # the version to pin\n```\n", "v0.38.0", true},
+		{"a comment after code, since", "```yaml\nNAME: tool # since v0.38.0\n```\n", "v0.38.0", false},
+		{"a comment by the block's language", "```go\n// Since v0.38.0, it signs.\nrun()\n```\n", "v0.38.0", false},
+		{"a comment, no language", "```\n// since v0.38.0\n```\n", "v0.38.0", false},
+		{"a range in code", "```toml\ntool = \">=0.38.0\"\n```\n", "v0.38.0", false},
 	} {
 		if got := saysAsNow(doc(c.body), c.v); got != c.want {
 			t.Errorf("%s: saysAsNow = %v, want %v", c.name, got, c.want)
