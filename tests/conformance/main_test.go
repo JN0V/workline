@@ -217,8 +217,10 @@ func TestGitLabMainAfterAMergeRunsOnce(t *testing.T) {
 	}
 	// A base written by a branch is never read: the findings come from
 	// main's own pipeline artifacts, by the default branch and its job,
-	// with the job's token; no cache holds them, which a merge request's
-	// pipeline could write (`unprotect`).
+	// workline:main; no cache holds them, which a merge request's
+	// pipeline could write (`unprotect`). workline:base reads them, and
+	// hands them to its own pipeline's job as an artifact, which no
+	// other pipeline reads.
 	const fromMain = `/jobs/artifacts/$CI_DEFAULT_BRANCH/raw/.workline-kept/$1?job=workline:main`
 	for name, v := range top {
 		j, _ := v.(map[string]any)
@@ -226,24 +228,32 @@ func TestGitLabMainAfterAMergeRunsOnce(t *testing.T) {
 			t.Errorf("%s: keeps or reads the stored base in a cache, which a branch's pipeline could write: %s", name, c)
 		}
 		paths, _ := yaml.Marshal(j["artifacts"])
-		if strings.Contains(string(paths), ".workline-kept/") != (name == "workline:main") {
+		if strings.Contains(string(paths), ".workline-kept/") != (name == "workline:main" || name == "workline:base") {
 			t.Errorf("%s: its artifacts hold the stored base, the default branch's job's alone to write: %s", name, paths)
 		}
 	}
-	// Read before the tokens are unset, in before_script: no tool has run.
-	if before := fmt.Sprint(main["before_script"]); !strings.Contains(before, fromMain) || !strings.Contains(before, "kept commits") {
-		t.Errorf("workline:main: does not carry the findings main's last pipeline kept: %v", before)
+	// Read in a job of its own, with the bot's token, else the job's: the
+	// jobs running the project's tools never hold the bot's (#520). It
+	// checks nothing out, and runs no tool.
+	base := job("workline:base")
+	if script := fmt.Sprint(base["script"]); !strings.Contains(script, fromMain) || !strings.Contains(script, `PRIVATE-TOKEN: $WORKLINE_GITLAB_TOKEN`) ||
+		!strings.Contains(script, `JOB-TOKEN: $CI_JOB_TOKEN`) || !strings.Contains(script, `kept "$base.json"`) || !strings.Contains(script, "kept commits") {
+		t.Errorf("workline:base: does not read the merge base's findings, nor main's last ones, from main's own artifacts: %v", script)
 	}
-	gates := job("workline:gates")
-	if before := fmt.Sprint(gates["before_script"]); !strings.Contains(before, fromMain) || !strings.Contains(before, `PRIVATE-TOKEN: $WORKLINE_GITLAB_TOKEN`) ||
-		!strings.Contains(before, `JOB-TOKEN: $CI_JOB_TOKEN`) || !strings.Contains(before, `kept "$base.json"`) ||
-		!strings.Contains(fmt.Sprint(gates["script"]), "--gates-kept .workline-kept") {
-		t.Errorf("workline:gates: does not read its merge base's findings from main's own artifacts: %v", before)
+	if script := fmt.Sprint(base["script"]); strings.Contains(script, "workline route") || strings.Contains(script, "golangci") ||
+		fmt.Sprint(base["variables"]) != "map[GIT_STRATEGY:none]" {
+		t.Errorf("workline:base: runs a tool, or checks out the code, beside the bot's token: %v %v", base["variables"], script)
+	}
+	if !strings.Contains(fmt.Sprint(job("workline:gates")["script"]), "--gates-kept .workline-kept") {
+		t.Errorf("workline:gates: does not read its merge base's findings as kept")
 	}
 	for _, name := range []string{"workline:gates", "workline:main"} {
-		before := fmt.Sprint(job(name)["before_script"])
-		if strings.Contains(before, "workline route") || strings.Contains(before, "golangci") {
-			t.Errorf("%s: runs a tool beside the bot's token, before it is unset: %v", name, before)
+		j := job(name)
+		if fmt.Sprint(j["needs"]) != "[map[artifacts:true job:workline:base]]" {
+			t.Errorf("%s: needs %v, not workline:base's artifact, the stored base", name, j["needs"])
+		}
+		if text := fmt.Sprint(j["before_script"], j["script"]); strings.Contains(text, "jobs/artifacts") {
+			t.Errorf("%s: reads main's artifacts itself, beside the project's tools: %v", name, text)
 		}
 	}
 	issue := job("workline:main:issue")
@@ -260,10 +270,11 @@ func TestGitLabMainAfterAMergeRunsOnce(t *testing.T) {
 }
 
 // GitLab's stored base as the template's own lines run it, a fake curl
-// serving main's last artifact: workline:main carries the commits kept
-// before it, 20 at most, its own first, a file it could not read left
-// out; workline:gates reads its merge base's alone. The bot's token reads
-// where set, else the job's; a file not served leaves none behind.
+// serving main's last artifact: workline:base reads it, and hands it on;
+// workline:main carries the commits kept before it, 20 at most, its own
+// first, a file it could not read left out; workline:gates is given its
+// merge base's alone. The bot's token reads where set, else the job's; a
+// file not served leaves none behind, and the gates' job says so.
 func TestGitLabStoredBaseCarriedAndPruned(t *testing.T) {
 	data, err := os.ReadFile("../../ci/gitlab/workline.gitlab-ci.yml")
 	if err != nil {
@@ -309,20 +320,32 @@ func TestGitLabStoredBaseCarriedAndPruned(t *testing.T) {
 		}
 	}
 	os.WriteFile(filepath.Join(store, "commits"), []byte(strings.Join(before, "\n")+"\n"), 0o644)
-	run := func(job string, env ...string) string {
+	// A pipeline's jobs, one after the other in one folder, each given
+	// the next's artifacts as GitLab does; the bot's token, scoped to the
+	// environment workline, to those that declare it alone (#520).
+	pipeline := func(bot string, jobs []string, env ...string) (string, string) {
 		dir := t.TempDir()
 		os.Remove(filepath.Join(store, "headers"))
-		cmd := exec.Command("sh", "-ec", lines(job, "before_script", "script"))
-		cmd.Dir = dir
-		cmd.Env = append([]string{"PATH=" + bin + string(os.PathListSeparator) + os.Getenv("PATH"), "STORE=" + store,
-			"CI_API_V4_URL=https://gitlab.invalid/api/v4", "CI_PROJECT_ID=1", "CI_DEFAULT_BRANCH=main", "CI_JOB_TOKEN=job",
-			"CI_COMMIT_BEFORE_SHA=c01", "CI_COMMIT_SHA=head", "CI_MERGE_REQUEST_DIFF_BASE_SHA=c02"}, env...)
-		if out, err := cmd.CombinedOutput(); err != nil {
-			t.Fatalf("%s: %v\n%s", job, err, out)
+		var log strings.Builder
+		for _, job := range jobs {
+			cmd := exec.Command("sh", "-ec", lines(job, "before_script", "script"))
+			cmd.Dir = dir
+			cmd.Env = append([]string{"PATH=" + bin + string(os.PathListSeparator) + os.Getenv("PATH"), "STORE=" + store,
+				"CI_API_V4_URL=https://gitlab.invalid/api/v4", "CI_PROJECT_ID=1", "CI_DEFAULT_BRANCH=main", "CI_JOB_TOKEN=job",
+				"CI_COMMIT_BEFORE_SHA=c01", "CI_COMMIT_SHA=head", "CI_MERGE_REQUEST_DIFF_BASE_SHA=c02"}, env...)
+			if j, _ := top[job].(map[string]any); bot != "" && fmt.Sprint(j["environment"]) == "map[action:prepare name:workline]" {
+				cmd.Env = append(cmd.Env, "WORKLINE_GITLAB_TOKEN="+bot)
+			}
+			out, err := cmd.CombinedOutput()
+			if err != nil {
+				t.Fatalf("%s: %v\n%s", job, err, out)
+			}
+			log.Write(out)
 		}
-		return dir
+		return dir, log.String()
 	}
-	dir := run("workline:main", "WORKLINE_GITLAB_TOKEN=bot")
+	headers := func() string { h, _ := os.ReadFile(filepath.Join(store, "headers")); return strings.TrimSpace(string(h)) }
+	dir, _ := pipeline("bot", []string{"workline:base", "workline:main"}, "CI_PIPELINE_SOURCE=push")
 	got, _ := os.ReadFile(filepath.Join(dir, ".workline-kept", "commits"))
 	want := append([]string{"head", "c01", "c02"}, before[3:19]...)
 	if strings.Join(strings.Fields(string(got)), ",") != strings.Join(want, ",") {
@@ -332,19 +355,32 @@ func TestGitLabStoredBaseCarriedAndPruned(t *testing.T) {
 	if len(files) != len(want) {
 		t.Errorf("workline:main leaves %d files, want one for each of the %d commits listed", len(files), len(want))
 	}
-	if headers, _ := os.ReadFile(filepath.Join(store, "headers")); strings.Contains(string(headers), "JOB-TOKEN") || !strings.Contains(string(headers), "PRIVATE-TOKEN: bot") {
-		t.Errorf("with the bot's token, read with %q", headers)
+	if h := headers(); strings.Contains(h, "JOB-TOKEN") || !strings.Contains(h, "PRIVATE-TOKEN: bot") {
+		t.Errorf("with the bot's token, read with %q", h)
 	}
-	dir = run("workline:gates")
+	pipeline("", []string{"workline:base", "workline:main"}, "CI_PIPELINE_SOURCE=push")
+	if h := headers(); strings.Contains(h, "PRIVATE-TOKEN") || !strings.Contains(h, "JOB-TOKEN: job") {
+		t.Errorf("with no bot's token, main's last findings read with %q, want the job's", h)
+	}
+	dir, _ = pipeline("bot", []string{"workline:base", "workline:gates"}, "CI_PIPELINE_SOURCE=merge_request_event")
 	files, _ = filepath.Glob(filepath.Join(dir, ".workline-kept", "*"))
 	if len(files) != 1 || filepath.Base(files[0]) != "c02.json" {
-		t.Errorf("workline:gates read %v, want its merge base's alone", files)
+		t.Errorf("workline:gates was given %v, want its merge base's alone", files)
 	}
-	if headers, _ := os.ReadFile(filepath.Join(store, "headers")); strings.TrimSpace(string(headers)) != "JOB-TOKEN: job" {
-		t.Errorf("with no bot's token, read with %q, want the job's", headers)
+	if h := headers(); h != "PRIVATE-TOKEN: bot" {
+		t.Errorf("the merge base's findings read with %q, want the bot's token", h)
 	}
-	dir = run("workline:gates", "CI_MERGE_REQUEST_DIFF_BASE_SHA=c03")
-	if files, _ = filepath.Glob(filepath.Join(dir, ".workline-kept", "*")); len(files) != 0 {
-		t.Errorf("a base not served leaves %v behind", files)
+	if _, log := pipeline("", []string{"workline:base", "workline:gates"}, "CI_PIPELINE_SOURCE=merge_request_event"); headers() != "JOB-TOKEN: job" || strings.Contains(log, "kept no findings") {
+		t.Errorf("with no bot's token, read with %q, want the job's\n%s", headers(), log)
+	}
+	dir, log := pipeline("bot", []string{"workline:base", "workline:gates"}, "CI_PIPELINE_SOURCE=merge_request_event", "CI_MERGE_REQUEST_DIFF_BASE_SHA=c03")
+	if files, _ = filepath.Glob(filepath.Join(dir, ".workline-kept", "*")); len(files) != 0 || !strings.Contains(log, "kept no findings for c03: the gates run again at the merge base") {
+		t.Errorf("a base not served leaves %v behind, or is not said\n%s", files, log)
+	}
+	// In a merge train, the target's tip is the base.
+	dir, _ = pipeline("bot", []string{"workline:base", "workline:gates"}, "CI_PIPELINE_SOURCE=merge_request_event",
+		"CI_MERGE_REQUEST_EVENT_TYPE=merge_train", "CI_MERGE_REQUEST_TARGET_BRANCH_SHA=c04")
+	if files, _ = filepath.Glob(filepath.Join(dir, ".workline-kept", "*")); len(files) != 1 || filepath.Base(files[0]) != "c04.json" {
+		t.Errorf("a merge train's gates were given %v, want the target's tip's alone", files)
 	}
 }
