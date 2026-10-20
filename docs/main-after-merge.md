@@ -1,6 +1,6 @@
 ---
 sources: [ci/github/workline.yml, ci/github/workline-apply.yml, ci/gitlab/workline.gitlab-ci.yml, internal/line/line.go, internal/gate/kept.go, internal/report/main.go, routing.default.yaml]
-checked: e8182aaa
+checked: a88dc872
 verified: agent:claude-code
 ---
 # Main after a merge
@@ -38,7 +38,11 @@ Nobody waits for it; nothing in it holds a merge request.
     repository's findings. On day one, the old debt is shown once
     ([ADR-0049](adr/0049-the-inspector-judges-the-new-findings-of-the-projects-tools.md#6-guards)),
     then only what changes;
-  - the product owner leaves it alone, as its other issues.
+  - the product owner leaves it alone, as its other issues;
+  - with no release merge request open, the night's release dry run
+    keeps a part of its own there, *The next release*: what would hold
+    it ([the release](release.md)). Each writer leaves the other's part
+    as it is.
 - **No agent, no secret** where the tools run; the issue is written by a
   job holding the issue's right, no AI key.
 

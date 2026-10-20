@@ -1,6 +1,6 @@
 ---
 sources: [ci/github, .github/workflows/workline.yml, .github/workflows/workline-apply.yml, .github/workflows/workline-gardening.yml, .github/workflows/workline-sample.yml, .github/actions/engine/action.yml, .github/workflows/release.yml, .github/workflows/release-please.yml, release-please-config.json, .goreleaser.yaml, cmd/workline]
-checked: 1279892d
+checked: a88dc872
 judged: 220b6dc
 verified: agent:claude-code
 reader: fe1505d43360
@@ -86,6 +86,9 @@ write run the default branch's workflow, never a pull request's own
    - [workline-release-docs.yml](../ci/github/workline-release-docs.yml):
      the release pull request's docs, every night but Monday, the
      gardening's; none due, no agent. With a nightly gardening, not needed.
+   - Both run **a release's dry run** too, `dry-run` then `dry-run-post`:
+     what would hold the release if it were cut now, said on the release
+     pull request, else in main's issue; no agent ([how](release.md)).
    - [workline-sample.yml](../ci/github/workline-sample.yml): the
      [weekly sample](ci.md#the-weekly-sample), from the first release
      after v0.2.1.

@@ -1,6 +1,6 @@
 ---
 sources: [internal/role/config.go, internal/role/role.go, cmd/workline, internal/engine/engine.go, internal/forge/gitlab.go, internal/hooks]
-checked: dba82333
+checked: a88dc872
 judged: e343388
 verified: agent:claude-code
 reader: 0b97bbc207c5
@@ -74,7 +74,7 @@ repos:                      # other repositories docs may depend on
   api: {url: "https://github.com/acme/api.git", branch: main}
 release:                    # how the project's release tool works
   branches: ["release/*"]   # its pull requests' branches; default: release-please's, releaser-pleaser's, release-plz's, changesets'
-  tags: "v*"                # its tags (the default); the last release is the highest version merged, prereleases left out
+  tags: "v*"                # its tags (the default); the last release is the highest version merged, prereleases left out; at a tag, the one before it
 merge: {autonomy: cautious} # the forge merges what a person labelled workline:accepted, its head's verdict passed
 ```
 

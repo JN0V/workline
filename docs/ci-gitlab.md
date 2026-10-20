@@ -1,6 +1,6 @@
 ---
 sources: [ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile]
-checked: e8182aaa
+checked: a88dc872
 judged: cd97f28
 verified: agent:claude-code
 reader: 9799dcaf51f3
@@ -18,6 +18,10 @@ flowchart LR
     sample["<b>Schedule, WORKLINE_TASK=sample</b><br/>workline:sample:read"]
     import["<b>By hand, WORKLINE_IMPORT</b><br/>workline:import:judge"]
   end
+  subgraph none["No agent, no write token"]
+    dry["<b>Schedule</b><br/>workline:release:dry-run"]
+    rel["<b>A tag</b><br/>workline:release"]
+  end
   subgraph writes["WORKLINE_GITLAB_TOKEN, no agent installed"]
     apply["workline:apply"]
     wapply["workline:warn:apply"]
@@ -25,12 +29,14 @@ flowchart LR
     gapply["workline:garden:apply"]
     swrite["workline:sample:write"]
     iapply["workline:import:apply"]
+    dpost["workline:release:dry-run:post"]
   end
   judge --> apply
   warn --> wapply
   garden --> gapply
   sample --> swrite
   import --> iapply
+  dry --> dpost
 ```
 
 What the jobs are, on every forge: [ci.md](ci.md). This page sets them up
@@ -101,6 +107,11 @@ agent judges them, and they hold it
   docs alone; none due, no agent is asked. Play it for the release sooner.
   Its variable needs "Minimum role to use pipeline variables" at
   Maintainer, as the sample's.
+- **A release's dry run**, on both schedules:
+  `workline:release:dry-run`, no agent, then
+  `workline:release:dry-run:post`, the bot's token: what would hold the
+  release if it were cut now, on the release merge request, else in
+  main's issue ([how](release.md)).
 - Its fix is the bot's merge request only when the bot alone pushed to
   the release's branch: run the release tool with the bot's token, else
   the fix goes in a comment.
@@ -144,6 +155,13 @@ only what is new ([#375](https://github.com/JN0V/workline/issues/375));
 their own.
 
 Not tried on a GitLab yet.
+
+### At a release's tag
+
+`workline:release` runs on a tag pipeline: the release's line, no
+agent, no token, red when it holds the release. Have your jobs that
+publish need it (`needs: [workline:release]`)
+([how](release.md#at-a-tag-on-gitlab)).
 
 ### When a schedule runs
 
