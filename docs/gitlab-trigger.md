@@ -1,6 +1,6 @@
 ---
 sources: [ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile]
-checked: b9e7900b
+checked: f5008630
 judged: bf016b7
 verified: agent:claude-code
 ---
@@ -117,6 +117,10 @@ if [ "$step" = judge ]; then                      # reads the forge, writes noth
 else                                              # writes, with no AI key
   export GITLAB_TOKEN="$WORKLINE_GITLAB_TOKEN"; unset CLAUDE_CODE_OAUTH_TOKEN ANTHROPIC_API_KEY
   git config user.name workline; git config user.email "workline@noreply.$CI_SERVER_HOST"
+  if [ -n "${WORKLINE_SIGNING_KEY:-}" ]; then     # signed commits, an SSH key as a File variable
+    chmod 600 "$WORKLINE_SIGNING_KEY"; [ -z "$(tail -c 1 "$WORKLINE_SIGNING_KEY")" ] || echo >> "$WORKLINE_SIGNING_KEY"
+    git config gpg.format ssh; git config user.signingkey "$WORKLINE_SIGNING_KEY"; git config commit.gpgsign true
+  fi
   git remote set-url origin "https://oauth2:$WORKLINE_GITLAB_TOKEN@$CI_SERVER_HOST/$CI_PROJECT_PATH.git"
 fi
 case "$WORKLINE_TASK" in garden|product-owner|release) git checkout -q -B "$CI_COMMIT_REF_NAME";; esac
@@ -194,6 +198,7 @@ exit "$status"
 | `WORKLINE_GITLAB_TOKEN` | a project (or group) access token, Developer, `api` and `write_repository` ([triggers.md](triggers.md#gitlab-tokens)) | yes | only if every triggered pipeline runs on a protected branch |
 | `WORKLINE_GITLAB_READ_TOKEN` | a token with `read_api`, Reporter: gardening, the product owner, the reviewer and the weekly sample read the forge while judging — gardening, the release's merge request it judges first; unset, `CI_JOB_TOKEN`, which reads no issue | yes | the same |
 | the agent's credentials | whichever agent you chose; for Claude, `CLAUDE_CODE_OAUTH_TOKEN` (`claude setup-token`, a Claude subscription) or `ANTHROPIC_API_KEY` | yes | the same |
+| `WORKLINE_SIGNING_KEY` | where the project refuses unsigned commits: the bot's SSH private key, type File ([signed commits](gitlab/signed-commits.md)) | no: GitLab masks no value of several lines | the same |
 
 A merge request's source branch is rarely protected: a protected variable
 never reaches its pipeline. The trigger token acts as the user who owns it.

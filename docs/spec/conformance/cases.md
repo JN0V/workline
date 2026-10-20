@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go]
-checked: a88dc872
+checked: c2732ae5
 verified: agent:claude-code
 ---
 # Conformance — a case in full
@@ -64,6 +64,9 @@ saying so.
   hook (`[hook, commit-msg, .git/COMMIT_EDITMSG]`); checked by `exit`,
   `stdout`, `stderr`, `stderr-lacks`, `files`, and `summary-file` for the
   `workline-summary.md` its arguments name;
+- `sh: <line>` instead of `role` — a shell line in the repository, the
+  engine first on `PATH` as `workline`: what a person types around it
+  (`workline hooks install --global && git push`), checked as `cli` is;
 
 ## Run, around the role
 
@@ -194,6 +197,9 @@ saying so.
   `origin` whose tip is a merge of another's tip into its tip before the
   run, its first parent (`{feat/sessions: main}`); `gone` — branches of
   `origin` absent after the run.
+- `signed` — a branch of `origin` whose tip carries a signature `git
+  verify-commit` accepts with the repository's config (`true`), or none
+  (`false`).
 - `branches` — a text a file holds on a local branch of the repository.
 - `issues-listed` — texts `workline issues list` prints afterwards.
 - `summary` — a text the result's summary holds.
@@ -219,5 +225,5 @@ saying so.
   text (`contains`), or not (`not-contains`), each a text or a list.
 - `files` — paths that must exist (`exists`, or not), or contain a text or
   each of a list of texts (`contains`), or lack them (`lacks`), afterwards.
-- `exit` / `stdout` / `stderr` — with `cli`: the exit code, and texts
+- `exit` / `stdout` / `stderr` — with `cli` or `sh`: the exit code, and texts
   printed on each stream; `stderr-lacks`, texts not printed there.

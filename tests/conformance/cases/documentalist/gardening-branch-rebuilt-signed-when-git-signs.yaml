@@ -1,0 +1,20 @@
+case: documentalist/gardening-branch-rebuilt-signed-when-git-signs
+about: "A project whose forge refuses unsigned commits gives the bot a key, git set to sign with it (`commit.gpgsign`, `gpg.format: ssh`, `user.signingkey`): the gardening merge request rebuilt on main's new tip is pushed signed with that key, as `git commit` would sign it, its message and change the same (#549)."
+given:
+  repo: documented
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb workline/documentalist/suspect && sed -i 's/^checked: .*/&\\njudged: 1a8e5a4/; s/one hour/two hours/' docs/tech/auth.md && git commit -qam 'docs: bring the docs in line with the code' -m 'Workline-Role: documentalist' && git push -q origin workline/documentalist/suspect && git checkout -q main"
+    - "sed -i 's/3600/7200/' src/auth/token.go && sed -i 's/^checked: .*/checked: abcdef1/' docs/tech/auth.md && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin main"
+    - "ssh-keygen -q -t ed25519 -N '' -C workline -f ../signing && git config gpg.format ssh && git config user.signingkey \"$(cd .. && pwd)/signing\" && git config commit.gpgsign true"
+    - "echo \"fixture@example.invalid $(cat ../signing.pub)\" > ../allowed-signers && git config gpg.ssh.allowedSignersFile \"$(cd .. && pwd)/allowed-signers\""
+  forge: {merge-requests: [{id: 4, branch: workline/documentalist/suspect, base: main, labels: [], comments: []}]}
+run: {follow: [--gardening, --base, main]}
+expect:
+  status: pass
+  findings: [{rule: rebuilt, where: workline/documentalist/suspect, message: "on main"}]
+  pushed:
+    workline/documentalist/suspect: {docs/tech/auth.md: "checked: abcdef1\njudged: 1a8e5a4\n---\n# Authentication\n\n## Token refresh\n\nAccess tokens last two hours."}
+  pushed-message: {workline/documentalist/suspect: "Workline-Role: documentalist"}
+  on-top: {workline/documentalist/suspect: main}
+  signed: {workline/documentalist/suspect: true}

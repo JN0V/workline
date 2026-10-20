@@ -118,6 +118,10 @@ type runSpec struct {
 	// status, steps and calls is its; the findings are both runs'.
 	ThenLine *thenLine `yaml:"then-line"`
 	CLI      []string  `yaml:"cli"` // workline with these arguments, as typed: its exit code, what it prints
+	// Sh: a shell line, the engine first on PATH as workline: what a
+	// person types around it (install its hooks, then the git command
+	// that runs them), checked as cli is.
+	Sh string `yaml:"sh"`
 	// ApplyFrom: with then: resume, the runs applied as the base's job
 	// applies a merge request's own CI run (apply --from-merge-request).
 	ApplyFrom *applyFrom `yaml:"apply-from"`
@@ -206,6 +210,7 @@ type expectSpec struct {
 	PushedMsg    map[string]string            `yaml:"pushed-message"` // branch -> a text the message of the remote branch's tip holds
 	NotPushed    []string                     `yaml:"not-pushed"`     // branches of the remote the run left where they were
 	OnTop        map[string]string            `yaml:"on-top"`         // branch -> the branch of the remote its tip holds
+	Signed       map[string]bool              `yaml:"signed"`         // branch -> the remote branch's tip carries a signature git verifies (true), or none (false)
 	Merged       map[string]string            `yaml:"merged"`         // branch -> base: the remote branch's tip merges base's tip into its tip before the run, its first parent
 	Gone         []string                     `yaml:"gone"`           // branches of the remote absent after the run
 	Forge        *forgeWant                   `yaml:"forge"`
@@ -571,7 +576,7 @@ func runCase(t *testing.T, c *caseFile) []string {
 		defer srv.Close()
 		env = append(env, "CI_API_V4_URL="+srv.URL+"/api/v4", "CI_PROJECT_ID=1", "CI_PROJECT_PATH=", "GITLAB_TOKEN=conformance")
 	}
-	if c.Run.CLI != nil {
+	if c.Run.CLI != nil || c.Run.Sh != "" {
 		return runCLI(engineBin, c, repo, env)
 	}
 	roles := rolesDir
@@ -1091,9 +1096,26 @@ func runCase(t *testing.T, c *caseFile) []string {
 }
 
 // runCLI runs workline with the case's arguments, as a person or a script
-// types them, and checks its exit code and what it prints where.
+// types them, or the case's shell line, and checks its exit code and what
+// it prints where.
 func runCLI(engineBin string, c *caseFile, repo string, env []string) []string {
 	cmd := exec.Command(engineBin, c.Run.CLI...)
+	if c.Run.Sh != "" {
+		bin := filepath.Join(filepath.Dir(repo), "engine-bin")
+		if err := os.MkdirAll(bin, 0o755); err != nil {
+			return []string{err.Error()}
+		}
+		if err := os.Symlink(engineBin, filepath.Join(bin, "workline")); err != nil {
+			return []string{err.Error()}
+		}
+		cmd = exec.Command("sh", "-c", c.Run.Sh)
+		path := bin // never an empty entry, which is the current folder
+		if old := lookup(env, "PATH"); old != "" {
+			path += string(os.PathListSeparator) + old
+		}
+		// A run from inside a workline hook would skip the hooks it installs.
+		env = append(slices.Clone(env), "PATH="+path, "WORKLINE_HOOK_RUNNING=")
+	}
 	cmd.Dir, cmd.Env = repo, env
 	for k, v := range c.Given.Env { // what the command is run with, as a hook is: WORKLINE_AI
 		cmd.Env = append(cmd.Env, k+"="+os.Expand(v, func(name string) string { return lookup(cmd.Env, name) }))
@@ -1230,6 +1252,16 @@ func compare(c *caseFile, r *result, repo string) []string {
 		exec.Command("git", "-C", repo, "fetch", "-q", "origin").Run()
 		if exec.Command("git", "-C", repo, "merge-base", "--is-ancestor", "origin/"+base, "origin/"+branch).Run() != nil {
 			p = append(p, fmt.Sprintf("origin's %s is not on top of origin's %s", branch, base))
+		}
+	}
+	for branch, want := range e.Signed {
+		exec.Command("git", "-C", repo, "fetch", "-q", "origin").Run()
+		if want {
+			if out, err := exec.Command("git", "-C", repo, "verify-commit", "origin/"+branch).CombinedOutput(); err != nil {
+				p = append(p, fmt.Sprintf("the tip of origin's %s carries no signature git verifies: %s", branch, out))
+			}
+		} else if out, _ := exec.Command("git", "-C", repo, "log", "-1", "--format=%G?", "origin/"+branch).Output(); strings.TrimSpace(string(out)) != "N" {
+			p = append(p, fmt.Sprintf("the tip of origin's %s is signed (%s), want no signature", branch, strings.TrimSpace(string(out))))
 		}
 	}
 	if e.RefusedKept > 0 {

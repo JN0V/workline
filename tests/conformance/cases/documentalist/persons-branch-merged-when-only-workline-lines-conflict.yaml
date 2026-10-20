@@ -13,6 +13,7 @@ expect:
   status: pass
   findings: [{rule: merged, where: feat/sessions, message: "main merged in"}]
   merged: {feat/sessions: main}
+  signed: {feat/sessions: false}   # git not set to sign: none, as before (#549)
   pushed:
     feat/sessions: {docs/tech/auth.md: "checked: 3333333\n---", src/auth/token.go: "7200", src/auth/refresh.go: "Refresh renews"}
   pushed-message: {feat/sessions: "Merge branch 'main' into feat/sessions\n\nEvery conflict was in a line workline writes, settled in:\n\n- docs/tech/auth.md"}

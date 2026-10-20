@@ -8,6 +8,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -167,9 +168,13 @@ func settle(repo, base string, mr forge.MergeRequest, local bool, isDoc func(str
 	if len(settled) == 0 {
 		msg = updateMessage(base, mr.Branch)
 	}
-	commit, err := gitIn(repo, msg, "commit-tree", tree, "-p", tip, "-p", baseTip, "-F", "-")
+	sign, err := signing(repo)
 	if err != nil {
 		return verdict.Finding{}, err
+	}
+	commit, err := gitIn(repo, msg, slices.Concat([]string{"commit-tree"}, sign, []string{tree, "-p", tip, "-p", baseTip, "-F", "-"})...)
+	if err != nil {
+		return verdict.Finding{}, fmt.Errorf("%w%s", err, signed(sign))
 	}
 	// A fast-forward, with a lease on the tip read: never over a push of
 	// theirs, never bringing back a branch deleted meanwhile. Not quiet: a
@@ -439,6 +444,8 @@ func mergeBlobs(repo, name, old, ours, theirs string) (string, bool, error) {
 		if err != nil {
 			return "", err
 		}
+		// Never pushed, never kept: never signed, whatever git is set to
+		// (commit-tree signs only when told, with -S).
 		args := []string{"-c", "user.name=workline", "-c", "user.email=workline@localhost", "commit-tree", tree, "-m", name}
 		for _, p := range parents {
 			args = append(args, "-p", p)
