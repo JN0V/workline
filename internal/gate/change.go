@@ -35,6 +35,9 @@ type line struct {
 // changeSince reads the change from the merge base of since and HEAD to
 // the working tree, as the checks see it.
 func changeSince(repo, since string) (*change, error) {
+	if _, err := git(repo, "rev-parse", "--verify", "--quiet", since+"^{commit}"); err != nil {
+		return nil, fmt.Errorf("%s is not a commit here (misspelled, or not fetched), so the findings the change adds cannot be told", since)
+	}
 	mb, err := git(repo, "merge-base", since, "HEAD")
 	if err != nil {
 		return nil, fmt.Errorf("the merge base of %s and HEAD is not known (a shallow clone?), so the findings the change adds cannot be told: %v", since, err)

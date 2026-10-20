@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/line, internal/hooks, internal/forge/gitlab.go, ci/gitlab/workline.gitlab-ci.yml, ci/github/workline.yml, ci/github/workline-gardening.yml, ci/github/workline-sample.yml, routing.default.yaml]
-checked: f5a2e917
+checked: 8a4d71eb
 verified: agent:claude-code
 reader: 2de353fab113
 ---
@@ -174,7 +174,8 @@ one issue, the level the product owner's acts suggest among it
 code scanning, on a merge request not the documentalist's, the
 reviewer's nor the gates' ([#412](https://github.com/JN0V/workline/issues/412)).
 `gate:<name>` steps, or `workline gate <name>`, run your own scanners; on
-a merge request given its `range`, only the findings the change adds count
+a merge request given its `range`, or with `workline gate <name> --base
+<rev>`, only the findings the change adds count
 ([new findings](spec/gates.md#on-a-merge-request-the-findings-the-change-adds)).
 
 ## What each job needs
