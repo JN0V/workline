@@ -203,7 +203,14 @@ func (f *Fake) load() (*FakeState, error) {
 
 func (f *Fake) save(s *FakeState) error {
 	data, _ := json.MarshalIndent(s, "", "  ")
-	return os.WriteFile(f.Path, data, 0o644)
+	// Written beside it, then moved in place: a process reading the file
+	// never sees half of it.
+	tmp := f.Path + ".tmp"
+	if err := os.WriteFile(tmp, data, 0o644); err != nil {
+		return err
+	}
+	os.Rename(tmp, f.Path)
+	return nil
 }
 
 // write runs change as one write, failing it if it is the one told to fail.
