@@ -214,7 +214,7 @@ var flagValue = map[string]string{
 	"scope": "<glob>", "input": "<name=value>", "input-file": "<name=path>", "lenses": "<lens,...>",
 	"sarif": "<file>", "code-quality": "<file>", "summary": "<file>", "out": "<file>", "line": "<file>",
 	"week": "<year-Wnn>", "since": "<rev>", "lines": "<n>", "hooks": "yes|no", "human-po": "yes|no",
-	"install": "<tool,...>|all|none",
+	"install": "<tool,...>|all|none", "gates-kept": "<dir>",
 }
 
 // commandHelp prints the command's usage line, what it does, and its

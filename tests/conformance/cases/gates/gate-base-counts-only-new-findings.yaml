@@ -1,0 +1,21 @@
+case: gates/gate-base-counts-only-new-findings
+about: >
+  Outside the line, `workline gate <name> --base <rev>` compares as a merge
+  request does: only the finding the change adds since the merge base of
+  the revision and HEAD counts; the three already on main do not.
+given:
+  repo: linted
+  setup:
+    - git checkout -q -b change
+    - |
+      sed -i 's|^\tos.Remove("c.tmp")$|&\n\tos.Remove("d.tmp")|' clean.go && git commit -qam "feat: clean d too"
+  env: {PATH: "$FIXTURES/bin:$PATH"}
+  config:
+    gates: {merge: {checks: [{id: lint, run: "golangci-lint run --output.sarif.path={out}/lint.sarif", output: sarif, max: {error: 0}}]}}
+run: {gate: merge, args: [--base, main]}
+expect:
+  status: block
+  summary: "only the findings the change adds since"
+  findings:
+    - {rule: over-threshold, where: lint, message: "1 new error finding, at most 0 allowed (3 there before it, not counted"}
+    - {rule: over-threshold, where: lint, message: "clean.go:10 errcheck"}
