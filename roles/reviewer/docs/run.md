@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/instruction.md, roles/reviewer/policy.md, roles/reviewer/lenses, internal/builtin/reviewer]
-checked: dcce5a60
+checked: 2f8eac9d
 verified: agent:claude-code
 ---
 # Reviewer — a run on code
@@ -40,11 +40,11 @@ flowchart LR
 2. **The rules**, on the comments the change adds, no agent:
    - a story of the code (`bug-story`, `story-words`: "used to", "the bug
      was");
-   - a code internal to the project (`internal-code`, by the committer's
-     lists);
+   - a code internal to the project (`internal-code`, the committer's lists);
    - a block over `comment-block-max` lines (`long-comment`, a warning).
 
-   While a rule blocks, no agent is asked.
+   While a rule blocks, no agent is asked; one the project sets to `warn`
+   (`enforce`) only warns ([#550](https://github.com/JN0V/workline/issues/550)).
 
 ## 3. The record
 

@@ -281,6 +281,14 @@ func prepare(runDir, repo string, s Settings) int {
 	if err != nil {
 		return fail(err)
 	}
+	// The rules at the levels the project set them to (`enforce`), before
+	// they decide anything: one set to warn is shown, never holds the
+	// lenses; one set to off is not said (#550).
+	enforce, err := enforcement(repo)
+	if err != nil {
+		return fail(err)
+	}
+	mech = verdict.Levels(mech, enforce)
 	// The rules block on the verdict's run, which reports them; the run
 	// apart waits for them as it does, saying nothing of them again.
 	rulesHold := status(mech) == verdict.Block
@@ -2308,6 +2316,16 @@ func committerSettings(repo string) (committer.Settings, error) {
 	}
 	data, _ := json.Marshal(r.MergedSettings(cfg))
 	return s, json.Unmarshal(data, &s)
+}
+
+// enforcement is how hard each rule bites in this project, as the engine
+// reads it on the verdict after: `roles.<name>.enforce`.
+func enforcement(repo string) (map[string]string, error) {
+	cfg, err := role.LoadProjectConfig(repo)
+	if err != nil {
+		return nil, err
+	}
+	return cfg.Roles[roleName()].Enforce, nil
 }
 
 func settings(runDir string) (Settings, error) {

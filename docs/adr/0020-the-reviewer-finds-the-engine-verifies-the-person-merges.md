@@ -53,6 +53,10 @@ before the push; and on the merge request, a safety net.
    (the committer's own list), a comment block too long. They block, but the
    long block, which warns. While they block, no agent is asked: the author
    fixes them first.
+   *(Amended 2026-10-20: a rule is read at the level the project's
+   `enforce` sets before it holds anything; one set to `warn` is shown and
+   never holds the agent, one set to `off` is not said,
+   [#550](https://github.com/JN0V/workline/issues/550).)*
 2. **Finders.** Each lens — correctness, edge cases, tests — is a part of
    one question (ADR-0009), in a context of its own, answering `finding`s
    only: a new intention, `{severity, title, why, cause, symptom, fix}`,
