@@ -2,11 +2,14 @@ package forge
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
+	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
@@ -75,13 +78,17 @@ func TestGitLabAPI(t *testing.T) {
 // cannot be edited (403): the sticky one is written anew after it.
 func TestGitLabWho(t *testing.T) {
 	var got []string
-	members, written := true, false // written: the bot wrote its own state note since
+	members, written := true, false           // written: the bot wrote its own state note since
+	refused, asked := http.StatusForbidden, 0 // the members' answer when not readable; the times they were asked
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		p := strings.TrimPrefix(r.URL.EscapedPath(), "/api/v4/projects/group%2Fproj")
 		author := func(u string) map[string]any { return map[string]any{"username": u} }
+		if p == "/members/all" {
+			asked++
+		}
 		switch {
 		case p == "/members/all" && !members:
-			http.Error(w, `{"message":"403 Forbidden"}`, http.StatusForbidden)
+			http.Error(w, fmt.Sprintf(`{"message":"%d %s"}`, refused, http.StatusText(refused)), refused)
 		case p == "/members/all":
 			json.NewEncoder(w).Encode([]map[string]any{
 				{"username": "owner", "access_level": 50, "state": "active"},
@@ -161,10 +168,104 @@ func TestGitLabWho(t *testing.T) {
 	if len(got) != 1 || got[0] != "PUT /issues/3/notes/7" {
 		t.Fatalf("the bot's own state note: %q", got)
 	}
-	// Members not readable: said, never every reporter taken for an outsider.
+	// Members not readable — 403, or 401 as the job's token gets (#552):
+	// an issue's author is said unknown, never every reporter taken for an
+	// outsider; the comments read all the same, their bodies needing no
+	// member, and with their authors each a bot by its name, none of the
+	// project. The members are asked once.
 	members = false
-	if _, err := (&gitlab{repo: t.TempDir()}).Issue(3); err == nil || !strings.Contains(err.Error(), "members") {
-		t.Fatalf("members refused: %v", err)
+	for _, refused = range []int{http.StatusForbidden, http.StatusUnauthorized} {
+		g, asked = &gitlab{repo: t.TempDir()}, 0
+		bodies, err := g.Comments(Target{Kind: "issue", ID: 3})
+		if err != nil || len(bodies) != 6 || bodies[0] != "state <!-- workline:k -->" || asked != 0 {
+			t.Fatalf("%d, the comments: %q %v, the members asked %d times", refused, bodies, err, asked)
+		}
+		if _, err := g.Issue(3); !errors.Is(err, ErrAuthorsUnknown) || !strings.Contains(err.Error(), "members") {
+			t.Fatalf("%d, members refused: %v", refused, err)
+		}
+		notes, err = g.Notes(Target{Kind: "issue", ID: 3})
+		if !errors.Is(err, ErrAuthorsUnknown) || !errors.Is(err, ErrUnreachable) {
+			t.Fatalf("%d, the notes: %v", refused, err)
+		}
+		want := []Note{
+			{Body: "state <!-- workline:k -->", Author: "owner", ID: "1"},
+			{Body: "agreed", Author: "guest", ID: "3"},
+			{Body: "ok", Author: "plan", ID: "4"},
+			{Body: "done", Author: "project_1_bot_0a1b", Bot: true, ID: "5"},
+			{Body: "me too", Author: "gone", ID: "6"},
+			{Body: "new <!-- workline:k -->", Author: "project_1_bot_0a1b", Bot: true, ID: "7"},
+		}
+		if fmt.Sprint(notes) != fmt.Sprint(want) {
+			t.Fatalf("%d, the notes:\n%+v\nwant\n%+v", refused, notes, want)
+		}
+		if asked != 1 {
+			t.Fatalf("%d: the members asked %d times, want once", refused, asked)
+		}
+	}
+	// Members out of reach for a moment are no refusal: the notes fail.
+	refused = http.StatusNotImplemented
+	if _, err := (&gitlab{repo: t.TempDir()}).Notes(Target{Kind: "issue", ID: 3}); err == nil || errors.Is(err, ErrAuthorsUnknown) {
+		t.Fatalf("members out of reach: %v", err)
+	}
+}
+
+// A bot GitLab does not name so (#552): a service account the project
+// names in `gitlab: {bots}` is a bot, the members read or not; with the
+// members unread, the bot's own token's user (WORKLINE_GITLAB_TOKEN, GET
+// /user) is one too, a person's token's never.
+func TestGitLabBotsNamed(t *testing.T) {
+	members, userAsked := true, 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		p := strings.TrimPrefix(r.URL.EscapedPath(), "/api/v4/projects/group%2Fproj")
+		author := func(u string) map[string]any { return map[string]any{"username": u} }
+		switch {
+		case p == "/api/v4/user":
+			userAsked++
+			json.NewEncoder(w).Encode(map[string]any{"id": 9, "username": "line-account", "bot": false})
+		case p == "/members/all" && !members:
+			http.Error(w, `{"message":"401 Unauthorized"}`, http.StatusUnauthorized)
+		case p == "/members/all":
+			json.NewEncoder(w).Encode([]map[string]any{{"username": "service_account_group_7_ab12", "access_level": 30, "state": "active"}})
+		case p == "/merge_requests/5/notes":
+			json.NewEncoder(w).Encode([]map[string]any{
+				{"id": 1, "body": "kept", "author": author("service_account_group_7_ab12")},
+				{"id": 2, "body": "applied", "author": author("line-account")},
+				{"id": 3, "body": "a word", "author": author("alice")},
+			})
+		default:
+			http.Error(w, `{"message":"404 Not Found"}`, http.StatusNotFound)
+		}
+	}))
+	defer srv.Close()
+	t.Setenv("CI_API_V4_URL", srv.URL+"/api/v4")
+	t.Setenv("CI_PROJECT_ID", "")
+	t.Setenv("CI_PROJECT_PATH", "group/proj")
+	t.Setenv("GITLAB_TOKEN", "the-bots")
+	repo := t.TempDir()
+	os.MkdirAll(filepath.Join(repo, ".workline"), 0o755)
+	os.WriteFile(filepath.Join(repo, ".workline", "config.yaml"), []byte("gitlab: {bots: [service_account_group_7_ab12]}\n"), 0o644)
+	mr := Target{Kind: "merge-request", ID: 5}
+	bots := func(notes []Note) string {
+		var out []string
+		for _, n := range notes {
+			out = append(out, fmt.Sprintf("%s:%v", n.Author, n.Bot))
+		}
+		return strings.Join(out, " ")
+	}
+
+	notes, err := (&gitlab{repo: repo}).Notes(mr)
+	if err != nil || bots(notes) != "service_account_group_7_ab12:true line-account:false alice:false" || !notes[0].Insider {
+		t.Fatalf("members read: %+v %v", notes, err)
+	}
+	members = false
+	notes, err = (&gitlab{repo: repo}).Notes(mr)
+	if !errors.Is(err, ErrAuthorsUnknown) || bots(notes) != "service_account_group_7_ab12:true line-account:false alice:false" || userAsked != 0 {
+		t.Fatalf("members unread, a person's token: %+v %v, /user asked %d times", notes, err, userAsked)
+	}
+	t.Setenv("WORKLINE_GITLAB_TOKEN", "the-bots")
+	notes, err = (&gitlab{repo: repo}).Notes(mr)
+	if !errors.Is(err, ErrAuthorsUnknown) || bots(notes) != "service_account_group_7_ab12:true line-account:true alice:false" || userAsked != 1 {
+		t.Fatalf("members unread, the bot's own token: %+v %v, /user asked %d times", notes, err, userAsked)
 	}
 }
 
