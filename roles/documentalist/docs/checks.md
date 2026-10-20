@@ -38,8 +38,9 @@ rendering shows, or in a frontmatter the doc has.
     "after", "before", "added in", "fixed in", "at least", or before "or
     later", "and newer", `+`, quoted or not, in prose (across a line
     break too) or a code block's comment (`# since 1.2.0`, by the
-    block's language); a range (`>=1.2.0`), in code too. A word between
-    pins it: "Install from tag v1.2.0", `FROM tool:v1.2.0`.
+    block's language, over lines too); a range (`>=1.2.0`), in code
+    too. A word between pins it: "Install from tag v1.2.0",
+    `FROM tool:v1.2.0`.
   - A doc the release commit bumps too says the new version: not
     suspect.
 - **A `checked` the branch does not hold** — one of a merge request since
