@@ -1,0 +1,31 @@
+case: reviewer/block-stands-while-the-head-holds-its-quote
+about: "A merge request rewrites a line of main; on ready, correctness blocks on the new line, quoting a part both lines hold (#570). The author pushes a commit elsewhere, the new line left as it was: its quote is still on a line the head holds, and the block stands."
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / len(values) + 1|' calc/calc.go && git commit -qam 'fix: average over one more'"]
+  env:
+    WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"
+    REVIEW_TITLE: Average comes out one more than the mean
+    REVIEW_QUOTE: return total / len(values)
+  config:
+    routing: {events: {merge-request: [reviewer]}}
+    roles: {reviewer: {settings: {ai-findings: {correctness: block}}}}
+  forge: {merge-requests: [{id: 5, labels: [], comments: []}]}
+run:
+  route: merge-request
+  warn-apart: true
+  input: {range: main..HEAD, draft: "false"}
+  target: {merge-request: 5}
+  ai: "cmd:sh $FIXTURES/agents/review-quoting.sh"
+  then: again
+  again-after: ["printf 'package calc\\n\\n// Half halves a count.\\nfunc Half(n int) int { return n / 2 }\\n' > calc/half.go && git add calc/half.go && git commit -qm 'feat: halve a count'"]
+expect:
+  status: block
+  agent-calls: 2
+  calls: [{task: part, for: 1-correctness}, {task: judge, for: judge/01}]
+  findings: [{rule: correctness, level: block, where: "calc/calc.go:11", message: "no commit since answers it"}]
+  forge:
+    merge-requests:
+      - id: 5
+        comments: 1
+        comment-contains: ["no lens that blocks on this push", "| **blocks** | correctness | `calc/calc.go:11`", "1 finding of a review before still blocks", "<!-- workline:blocks "]
