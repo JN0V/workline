@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -67,6 +68,42 @@ var ErrShallow = errors.New("this clone is shallow: the last release may be in t
 // hotfix merged back would be. A prerelease (v1.2.0-rc.1) and an alias (v1,
 // latest) are not releases. "" when there is none.
 func Last(repo, pattern string) (string, error) {
+	return highest(repo, pattern, nil)
+}
+
+// Before is the release a run at the release compares with: the last
+// release HEAD holds, the release HEAD's own tag names left out. A tag
+// pipeline runs on the release it cuts (GitLab's `workline:release`,
+// ADR-0050): its tag is that release, never the one before it. With no
+// tag on HEAD, Last.
+func Before(repo, pattern string) (string, error) {
+	at, err := AtHead(repo, pattern)
+	if err != nil {
+		return "", err
+	}
+	return highest(repo, pattern, at)
+}
+
+// AtHead lists the releases HEAD's own tags name: those matching the
+// pattern that read as a version, no prerelease nor alias.
+func AtHead(repo, pattern string) ([]string, error) {
+	out, err := exec.Command("git", "-C", repo, "tag", "--points-at", "HEAD", "--list", pattern).Output()
+	if err != nil {
+		return nil, fmt.Errorf("git tag: %w", err)
+	}
+	prefix, _, _ := strings.Cut(pattern, "*")
+	var at []string
+	for _, tag := range strings.Fields(string(out)) {
+		if version(strings.TrimPrefix(tag, prefix)) != nil {
+			at = append(at, tag)
+		}
+	}
+	return at, nil
+}
+
+// highest is the highest version among the tags matching the pattern and
+// merged into HEAD, those left out aside; "" when there is none.
+func highest(repo, pattern string, left []string) (string, error) {
 	out, err := exec.Command("git", "-C", repo, "rev-parse", "--is-shallow-repository").Output()
 	if err != nil {
 		return "", fmt.Errorf("git rev-parse: %w", err)
@@ -81,6 +118,9 @@ func Last(repo, pattern string) (string, error) {
 	prefix, _, _ := strings.Cut(pattern, "*")
 	best, bestV := "", []int(nil)
 	for _, tag := range strings.Fields(string(out)) {
+		if slices.Contains(left, tag) {
+			continue
+		}
 		v := version(strings.TrimPrefix(tag, prefix))
 		if v != nil && (bestV == nil || later(v, bestV)) {
 			best, bestV = tag, v

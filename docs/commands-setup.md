@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/hooks, internal/role/config.go]
-checked: 615b87f5
+checked: a88dc872
 verified: agent:claude-code
 ---
 # The commands that set up
@@ -14,7 +14,7 @@ Step by step: [install](install.md).
 - `workline hooks install --global` / `uninstall --global`: takes
   `core.hooksPath` for every repository, and gives it back as it was. The
   hooks run the `commit-msg` and `pre-push` lines, then hand over to the
-  hooks that were there.
+  hooks that were there, from any worktree of a repository.
 - `workline hooks install --repo`: writes `.githooks/commit-msg` in this
   repository; remove that file to uninstall.
 
@@ -53,8 +53,8 @@ Adopts this repository; run it again to do what is left.
 Says what is set up, with the command that sets up each thing missing;
 changes nothing.
 
-- On this machine: git, the global hooks, the agent, the tools the roles
-  use.
+- On this machine: git, the global hooks (and whether this version wrote
+  them), the agent, the tools the roles use.
 - In this repository: which hooks git runs there, whether the
   documentalist runs before a push, how many docs declare their sources,
   which files read as docs it does not read.

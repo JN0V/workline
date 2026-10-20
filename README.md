@@ -1,6 +1,6 @@
 <!-- workline
 sources: [ci/gitlab/workline.gitlab-ci.yml, ci/github/workline-fork.yml, routing.default.yaml, internal/forge/forge.go, internal/agent/agent.go, ci/github/workline-apply.yml, internal/gate, cmd/workline/cli.go, ci/github/workline.yml, ci/forgejo/workline-forge.sh, ci/github/workline-gardening.yml, ci/github/workline-sample.yml]
-checked: 78fd03ce
+checked: f5008630
 judged: 220b6dc
 verified: agent:documentalist
 reader: e375241655b6
@@ -130,18 +130,20 @@ Each role, from a hook, a script or a CI job: [triggers](docs/triggers.md).
 
 | When | Roles | Writes |
 |---|---|---|
+| after each merge (`workline route main`) | the merge request's gates, every finding kept as the next base; documentalist, the whole repository, no agent | one issue, edited when what it lists changes ([how](docs/main-after-merge.md)) |
 | gardening, nightly or weekly (`workline route schedule`) | documentalist, first on an open release's docs; product owner, opt-in | one merge request per task, kept on main or closed; the release's docs fix; the issues |
 | the other nights (`workline route release --target merge-request:release`) | documentalist, on an open release's docs alone | the release's docs fix |
 | the weekly sample (`workline sample`) | auditor: one in ten of every role's acts, each re-checked | one issue, a comment a week; a merge request undoing a wrong confirmation |
 | each push to main (`workline follow`) | the engine, no agent: rebuilds the documentalist's release fix on main's new tip; when set, merges main into pull requests in conflict only on workline's lines, and turns auto-merge on for what a person accepted, at `normal` for workline's own routine work too ([merge policy](docs/merge-policy.md)) | its merge request, force-pushed; a merge commit on theirs; the forge's auto-merge |
-| before your release tool tags (`workline route release`) | documentalist, on the docs due at the release | a non-zero exit holds the release |
+| every night (`workline route release --dry-run`) | what would hold the release if it were cut now, no agent | one comment on the release merge request, else a part of main's issue ([how](docs/release.md)) |
+| before your release tool tags (`workline route release`); on GitLab, at a tag | documentalist, on the docs due at the release | a non-zero exit holds the release |
 
 - workline cuts no releases: it runs before your release tool.
 - Templates: GitHub's [gardening](ci/github/workline-gardening.yml),
   [release docs](ci/github/workline-release-docs.yml) and
   [sample](ci/github/workline-sample.yml), `follow` in
   [workline-apply.yml](ci/github/workline-apply.yml); on GitLab, three pipeline
-  schedules and a push to the default branch, all in the same
+  schedules, a push to the default branch and a tag, all in the same
   [template](ci/gitlab/workline.gitlab-ci.yml).
 - Each command in detail: [usage](docs/usage.md#commands).
 
@@ -170,6 +172,8 @@ Each role, from a hook, a script or a CI job: [triggers](docs/triggers.md).
 - On a merge request, only the findings the change adds count, told
   against the merge base: old debt never blocks
   ([new findings](docs/spec/gates.md#on-a-merge-request-the-findings-the-change-adds)).
+  Main's run after a merge keeps every finding by commit: a merge
+  request based on it reads them rather than run its tools there again.
 - In CI, the gates run in a job with no token; what they add is shown
   beside its line: on GitHub a check and one comment, on GitLab Code
   Quality ([gates in CI](docs/gates-in-ci.md)).

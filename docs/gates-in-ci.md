@@ -1,6 +1,6 @@
 ---
 sources: [ci/github/workline.yml, ci/github/workline-apply.yml, ci/gitlab/workline.gitlab-ci.yml, internal/report/gates.go, internal/engine/annotate.go, internal/line]
-checked: 78fd03ce
+checked: f5008630
 judged: 14c41d9
 verified: agent:documentalist
 ---
@@ -35,6 +35,14 @@ The templates need the first release after v0.35.0.
 - **In a merge queue or train**: the same job runs the gates on the
   merged result; on GitHub the judge gives their verdict, on GitLab the
   job alone runs ([how](merge-queue.md)).
+- **On main after a merge**: the same job runs them on the new tip,
+  every finding kept by the commit where no branch can write it (Actions'
+  cache, main's pipeline artifacts on GitLab); red when the
+  merge adds what they count ([how](main-after-merge.md)).
+- **The merge base's findings**: read as main kept them, when kept with
+  the same command, config and tool: the tools run once, at the head;
+  else again at the merge base, said why
+  ([the next base](main-after-merge.md#the-next-base)).
 
 ## On GitHub
 

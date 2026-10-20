@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine/engine.go, internal/line, internal/routing, internal/verdict, routing.default.yaml]
-checked: 615b87f5
+checked: ebe6dfdd
 verified: agent:claude-code
 judged-in-parts: 5d66009
 judged: 71c5f05
@@ -17,13 +17,14 @@ The words the other pages use, each in a few lines. The rules behind them:
   is a folder: `role.yaml` (its events, model, settings), facets the agent
   reads, and two programs, `pre` and `post`.
 - **Event** — what starts work: `commit-msg` and `pre-push` (git hooks on
-  your machine), `merge-request`, `schedule` (gardening), `release`,
+  your machine), `merge-request`, `main` (after a merge,
+  [how](main-after-merge.md)), `schedule` (gardening), `release`,
   `review`, `import`, `init`. workline never watches for events: a hook, a
   CI job or you run the command for one ([triggers](triggers.md)).
 - **Routing, the line** — which roles run, in order, for an event
   (`routing.default.yaml`, changed in `.workline/config.yaml`). `workline
   route <event>` runs the line; the first step that does not pass stops it,
-  but on `schedule`, where every step runs and the worst verdict stands
+  but on `schedule` and `main`, where every step runs and the worst verdict stands
   ([ADR-0037](adr/0037-the-schedule-runs-every-step.md)); there, a
   proposal refused is said, not failed.
   `workline run-role <role> --event <event>` runs one role alone.
@@ -57,8 +58,9 @@ job that holds the write token and no AI key. Each run is kept in
 | `blocked-external` | 3 | something outside failed (agent quota, forge): never a verdict on the work |
 
 A **finding** has a rule, a place and a level: `block` or `warn`. A new
-rule starts as `warn`; `enforce` in the config moves a rule between `block`,
-`warn` and `off`.
+rule starts as `warn`; `enforce` in the config lowers a rule to `warn` or
+`off` (raising one to `block`: [#99](https://github.com/JN0V/workline/issues/99)).
+A warning never blocks ([warn before block](spec/role-outcome.md#warn-before-block)).
 
 ## Without AI
 

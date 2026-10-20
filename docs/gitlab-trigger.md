@@ -1,6 +1,6 @@
 ---
 sources: [ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile]
-checked: 78fd03ce
+checked: f5008630
 judged: bf016b7
 verified: agent:claude-code
 ---
@@ -47,7 +47,7 @@ none of them:
 
 | Variable | Value |
 |---|---|
-| `WORKLINE_TASK` | `merge-request`, `garden`, `product-owner`, `release`, `sample`, `follow` (when the default branch moved: the release fix rebuilt on it, [ADR-0034](adr/0034-the-release-fix-follows-its-base.md); people's too, when set, [ADR-0041](adr/0041-workline-settles-its-own-lines-when-the-base-moves.md)), `import` |
+| `WORKLINE_TASK` | `merge-request`, `garden`, `product-owner`, `release`, `sample`, `follow` (when the default branch moved: the release fix rebuilt on it, [ADR-0034](adr/0034-the-release-fix-follows-its-base.md); people's too, when set, [ADR-0041](adr/0041-workline-settles-its-own-lines-when-the-base-moves.md)), `main` (after a merge, `MAIN_BEFORE` its tip before: [main after a merge](main-after-merge.md)), `import` |
 | `MR_IID`, `MR_SOURCE_BRANCH`, `MR_TARGET_BRANCH`, `MR_BASE_SHA` | for `merge-request`: from the merge request (`diff_refs.base_sha`); the pipeline's `ref` is the source branch; the tool cancels the one still judging an older head first ([#359](https://github.com/JN0V/workline/issues/359)) |
 | `MR_READY`, `MR_DRAFT` | for `merge-request`: `MR_DRAFT`, `true` or `false`, each run, `true` asking no agent; `MR_READY` when it becomes ready (opened not a draft, or an `update` whose `changes.draft` went false), a pipeline the template never gets: every reviewer lens once ([how](../roles/reviewer/docs/ready.md)) |
 | `WORKLINE_IMPORT` | for `import`: the file moved to issues, as committed on the pipeline's `ref` |
@@ -117,6 +117,10 @@ if [ "$step" = judge ]; then                      # reads the forge, writes noth
 else                                              # writes, with no AI key
   export GITLAB_TOKEN="$WORKLINE_GITLAB_TOKEN"; unset CLAUDE_CODE_OAUTH_TOKEN ANTHROPIC_API_KEY
   git config user.name workline; git config user.email "workline@noreply.$CI_SERVER_HOST"
+  if [ -n "${WORKLINE_SIGNING_KEY:-}" ]; then     # signed commits, an SSH key as a File variable
+    chmod 600 "$WORKLINE_SIGNING_KEY"; [ -z "$(tail -c 1 "$WORKLINE_SIGNING_KEY")" ] || echo >> "$WORKLINE_SIGNING_KEY"
+    git config gpg.format ssh; git config user.signingkey "$WORKLINE_SIGNING_KEY"; git config commit.gpgsign true
+  fi
   git remote set-url origin "https://oauth2:$WORKLINE_GITLAB_TOKEN@$CI_SERVER_HOST/$CI_PROJECT_PATH.git"
 fi
 case "$WORKLINE_TASK" in garden|product-owner|release) git checkout -q -B "$CI_COMMIT_REF_NAME";; esac
@@ -142,6 +146,8 @@ case "$step:$WORKLINE_TASK" in
   apply:sample) [ ! -s sample.json ] || workline sample --apply sample.json --forge gitlab $sum ;;
   judge:follow) ;;                                # no agent: all in the applying job
   apply:follow) workline follow --base "$CI_DEFAULT_BRANCH" --forge gitlab $sum || status=$? ;;
+  judge:main) workline route main --ai none --forge none --input "range=${MAIN_BEFORE:-}..$CI_COMMIT_SHA" $sum --json > line.json || status=$? ;;
+  apply:main) [ ! -s line.json ] || workline apply --main line.json --forge gitlab $sum || status=$? ;;
   apply:merge-request)                            # then the merge policy, by the target branch's config
     [ ! -f line.json ] || workline apply --line line.json $sum || status=$?
     git fetch -q origin "$MR_TARGET_BRANCH"; git checkout -q -B "$MR_TARGET_BRANCH" FETCH_HEAD
@@ -192,6 +198,7 @@ exit "$status"
 | `WORKLINE_GITLAB_TOKEN` | a project (or group) access token, Developer, `api` and `write_repository` ([triggers.md](triggers.md#gitlab-tokens)) | yes | only if every triggered pipeline runs on a protected branch |
 | `WORKLINE_GITLAB_READ_TOKEN` | a token with `read_api`, Reporter: gardening, the product owner, the reviewer and the weekly sample read the forge while judging — gardening, the release's merge request it judges first; unset, `CI_JOB_TOKEN`, which reads no issue | yes | the same |
 | the agent's credentials | whichever agent you chose; for Claude, `CLAUDE_CODE_OAUTH_TOKEN` (`claude setup-token`, a Claude subscription) or `ANTHROPIC_API_KEY` | yes | the same |
+| `WORKLINE_SIGNING_KEY` | where the project refuses unsigned commits: the bot's SSH private key, type File ([signed commits](gitlab/signed-commits.md)) | no: GitLab masks no value of several lines | the same |
 
 A merge request's source branch is rarely protected: a protected variable
 never reaches its pipeline. The trigger token acts as the user who owns it.

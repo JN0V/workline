@@ -1,0 +1,13 @@
+case: setup/doctor-repo-hooks-outdated
+about: A repository's .githooks/commit-msg written by another version of workline (hooks install --repo), which may skip the repository's own commit-msg, is reported with the command that writes it again.
+given:
+  repo: basic
+  setup:
+    - "mkdir -p .githooks && printf '#!/bin/sh\\n# workline hook dispatcher, written by \"workline hooks install\".\\nbin=\"/usr/local/bin/workline\"\\ngit_dir=$(git rev-parse --git-dir 2>/dev/null) || exit 0\\n' > .githooks/commit-msg && chmod +x .githooks/commit-msg && git config core.hooksPath .githooks"
+run: {doctor: true}
+expect:
+  status: pass
+  checks:
+    - {rule: hooks-path, level: ok, where: .githooks, message: "hands over to workline"}
+  findings:
+    - {rule: hooks-outdated, level: warn, where: .githooks/commit-msg, message: "another version of workline wrote", fix: "workline hooks install --repo"}

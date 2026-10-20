@@ -6,11 +6,18 @@ events:
   merge-request: [committer, documentalist]
   schedule:      [documentalist]
   release:       [documentalist]   # before the project's release tool: the docs due at the release gate it
+  # After a merge, on the default branch's new tip (ADR-0050): the gates of
+  # merge-request run first, whatever this lists, every finding kept as the
+  # next base; then these steps, no agent asked: the whole repository's
+  # checks, once.
+  main:          [documentalist]
 # The first step that does not pass stops the line, but on schedule: its
 # roles are upkeep, each on its own (docs, backlog), so every one runs and
-# the line takes the worst verdict (ADR-0037).
+# the line takes the worst verdict (ADR-0037). On main, every step runs too:
+# a gate red after a merge leaves the whole repository's checks to run.
 fail-fast:
   schedule: false
+  main: false
 handoffs: []
 max-handoffs: 3
 # Each moment's wait budget, in seconds (ADR-0050): a run over it says so

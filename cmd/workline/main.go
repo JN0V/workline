@@ -1079,13 +1079,30 @@ func routeCmd(args []string) int {
 	verdictHead := fs.String("verdict-head", "", "with --verdict: the head the verdict is for, when the commit judged is a merge result (GitLab's merged results pipelines)")
 	gatesOnly := fs.Bool("gates-only", false, "run the event's gate steps alone, each one: a CI job of their own, with no write token and no agent's (the result, --json, is what --gates-from and `apply --gates` read)")
 	gatesFrom := fs.String("gates-from", "", "take each gate step's verdict from this file, the result a run with --gates-only printed, rather than running it")
+	gatesKept := fs.String("gates-kept", "", "the folder of the gates' findings kept by commit: on main, the head's are written there, the next base; on a merge request, the merge base's are read there when kept with the same command, config and tool, rather than running the tools again")
 	warnApart := fs.Bool("warn-apart", false, "leave what only warns to a run apart, which --warn-only makes: the reviewer's lenses that warn, on a merge request; the verdict waits only for what can block")
 	warnOnly := fs.Bool("warn-only", false, "the run apart from the verdict: only what a line with --warn-apart left, posted when done; never the head's verdict")
+	dryRun := fs.Bool("dry-run", false, "on release: what would hold the release if it were cut now, every step run with no agent, nothing applied, said as warnings, never a block (`workline apply --release-dry-run` posts it)")
 	inputs := pairs{}
 	fs.Var(inputs, "input", "input name=value, given to every step (repeatable)")
 	event, code, done := parseAfter(fs, args, "an event")
 	if done {
 		return code
+	}
+	// A release's dry run (ADR-0050) asks no agent, applies and writes
+	// nothing: it says what would hold the release cut from the branch
+	// checked out.
+	if *dryRun {
+		switch {
+		case event != "release":
+			return misuse(fs, "--dry-run goes with the event release: what would hold the release")
+		case *ai != "" && *ai != "none":
+			return misuse(fs, "a release's dry run asks no agent: no --ai "+*ai)
+		case *target != "" || *openMR || *pushMR:
+			return misuse(fs, "a release's dry run writes nothing: no --target, --open-merge-request nor --push-to-merge-request (`workline apply --release-dry-run` posts what it found)")
+		case *verdictFile != "" || *gatesOnly || *gatesFrom != "" || *warnApart || *warnOnly:
+			return misuse(fs, "a release's dry run runs the release's whole line, giving no verdict: no --verdict, --gates-only, --gates-from, --warn-apart nor --warn-only")
+		}
 	}
 	if *gatesOnly && *gatesFrom != "" {
 		return misuse(fs, "--gates-only runs the gates, --gates-from reads them: one or the other")
@@ -1141,10 +1158,13 @@ func routeCmd(args []string) int {
 	if *gatesFrom != "" {
 		*gatesFrom, _ = filepath.Abs(*gatesFrom)
 	}
+	if *gatesKept != "" {
+		*gatesKept, _ = filepath.Abs(*gatesKept)
+	}
 	res := line.RunWith(event, engine.Options{Repo: abs, RolesDir: rolesDir, AI: *ai, DefaultAI: userDefaultAI(), Inputs: inputs,
 		Forge: *forgeSpec, Target: t, Branch: *branch, Scope: scope, NoApply: *noApply, OpenMergeRequest: *openMR, PushToMergeRequest: *pushMR,
-		FindRelease: findRelease},
-		&line.Gates{Only: *gatesOnly, From: *gatesFrom})
+		FindRelease: findRelease, DryRun: *dryRun},
+		&line.Gates{Only: *gatesOnly, From: *gatesFrom, Kept: *gatesKept})
 	if err := wlreport.Write(abs, event, wlreport.FromLine(res), *sarifFile, *cqFile); err != nil {
 		fmt.Fprintln(os.Stderr, "workline:", err)
 		return 1
@@ -1373,8 +1393,24 @@ func applyCmd(args []string) int {
 	repo := fs.String("repo", ".", "with --from-merge-request: this job's checkout of the base, whose settings are read")
 	forgeSpec := fs.String("forge", "", "with --from-merge-request: github, gitlab, cmd:<command> (default: the project's `forge` setting)")
 	gatesFile := fs.String("gates", "", "with --from-merge-request: show on it what its gates found the change adds, from the result `route --gates-only` printed in its own run: a check's annotations and one summary comment")
+	mainFile := fs.String("main", "", "keep what main's run after a merge found, the result `route main --json` printed, in one issue, edited when what it lists changes; with --forge, --repo")
+	dryFile := fs.String("release-dry-run", "", "post what a release's dry run found, the result `route release --dry-run --json` printed: in one comment on the release tool's merge request it judged, else in the default branch's issue, edited when what it lists changes; with --forge, --repo")
 	if code, done := parseOnly(fs, args); done {
 		return code
+	}
+	if *dryFile != "" {
+		if *mainFile != "" || *lineFile != "" || *gatesFile != "" || *fromMR != 0 || len(dirs) > 0 {
+			fmt.Fprintln(os.Stderr, "workline: --release-dry-run posts what a release's dry run found, and applies nothing else: no run, --main, --line, --gates nor --from-merge-request")
+			return 64
+		}
+		return keepDryRun(*dryFile, *repo, *forgeSpec, summaryFiles, *asJSON)
+	}
+	if *mainFile != "" {
+		if *lineFile != "" || *gatesFile != "" || *fromMR != 0 || len(dirs) > 0 {
+			fmt.Fprintln(os.Stderr, "workline: --main keeps main's findings in its issue, and applies nothing else: no run, --line, --gates nor --from-merge-request")
+			return 64
+		}
+		return keepMain(*mainFile, *repo, *forgeSpec, summaryFiles, *asJSON)
 	}
 	if *gatesFile != "" && *fromMR == 0 {
 		fmt.Fprintln(os.Stderr, "workline: --gates goes with --from-merge-request: its findings are shown on that merge request")
@@ -1478,6 +1514,206 @@ func applyCmd(args []string) int {
 		report(res)
 	}
 	return exitFor(res.Status)
+}
+
+// keepMain keeps what main's run after a merge found in one issue
+// (ADR-0050): opened when there is something to list, edited when what
+// it lists changes, left as it is when nothing is new or gone. The run's
+// result is data its job wrote: what it says is cut and defused.
+func keepMain(file, repo, forgeSpec string, summaryFiles []string, asJSON bool) int {
+	fail := func(err error) int {
+		fmt.Fprintln(os.Stderr, "workline:", err)
+		return 1
+	}
+	data, err := os.ReadFile(file)
+	if err != nil {
+		return fail(err)
+	}
+	var r line.Result
+	if err := json.Unmarshal(data, &r); err != nil {
+		return fail(fmt.Errorf("--main %s: %v", file, err))
+	}
+	if r.Event != line.MainEvent {
+		return fail(fmt.Errorf("--main %s: not the result of `workline route main`", file))
+	}
+	root, err := gitRoot(repo)
+	if err != nil {
+		return fail(errors.New("not in a git repository"))
+	}
+	if forgeSpec == "" {
+		cfg, err := role.LoadProjectConfig(root)
+		if err != nil {
+			return fail(err)
+		}
+		forgeSpec = cfg.Forge
+	}
+	f, err := forge.Open(forgeSpec, root)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "workline:", err)
+		return 64
+	}
+	b, ok := f.(forge.Backlog)
+	if f == nil || !ok {
+		fmt.Fprintln(os.Stderr, "workline: --main needs a forge (--forge github, gitlab…) to keep its issue")
+		return 64
+	}
+	open, err := b.Issues()
+	if err != nil {
+		return fail(err)
+	}
+	now, id := "", 0
+	for _, is := range open {
+		if is.Title == wlreport.MainTitle && !is.Closed {
+			now, id = is.Body, is.ID
+			break
+		}
+	}
+	body, changed, found := wlreport.MainIssue(&r, now)
+	res := &engine.Result{Status: verdict.Pass, Applied: []string{}, Refused: []string{}}
+	switch {
+	case !changed && id != 0:
+		res.Summary = fmt.Sprintf("nothing new nor gone on the default branch: issue #%d left as it is", id)
+	case !changed:
+		res.Summary = "nothing found on the default branch: no issue opened"
+	default:
+		n, err := f.KeepIssue(wlreport.MainTitle, backlog.Inert(body), found)
+		if err != nil {
+			return fail(err)
+		}
+		res.Summary = fmt.Sprintf("issue #%d kept: what the default branch's run found changed", n)
+		res.Applied = append(res.Applied, fmt.Sprintf("issue #%d", n))
+	}
+	res.Findings = append(res.Findings, verdict.Finding{Rule: "main-issue", Message: res.Summary})
+	if err := wlreport.AppendSummary(summaryFiles, wlreport.RoleSummary("apply --main", "", res)); err != nil {
+		return fail(err)
+	}
+	if asJSON {
+		out, _ := json.MarshalIndent(res, "", "  ")
+		fmt.Println(string(out))
+	} else {
+		report(res)
+	}
+	return 0
+}
+
+// keepDryRun posts what a release's dry run found (ADR-0050): in one
+// comment on the release tool's merge request it judged, edited when what
+// it lists changes, posted only once something holds; else in a part of
+// the default branch's issue, put in, edited, or taken out when nothing
+// holds. The run's result is data its job wrote: what it says is cut and
+// defused.
+func keepDryRun(file, repo, forgeSpec string, summaryFiles []string, asJSON bool) int {
+	fail := func(err error) int {
+		fmt.Fprintln(os.Stderr, "workline:", err)
+		return 1
+	}
+	data, err := os.ReadFile(file)
+	if err != nil {
+		return fail(err)
+	}
+	var r line.Result
+	if err := json.Unmarshal(data, &r); err != nil {
+		return fail(fmt.Errorf("--release-dry-run %s: %v", file, err))
+	}
+	if r.DryRun == nil {
+		return fail(fmt.Errorf("--release-dry-run %s: not the result of `workline route release --dry-run`", file))
+	}
+	d := r.DryRun
+	root, err := gitRoot(repo)
+	if err != nil {
+		return fail(errors.New("not in a git repository"))
+	}
+	if forgeSpec == "" {
+		cfg, err := role.LoadProjectConfig(root)
+		if err != nil {
+			return fail(err)
+		}
+		forgeSpec = cfg.Forge
+	}
+	f, err := forge.Open(forgeSpec, root)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "workline:", err)
+		return 64
+	}
+	b, ok := f.(forge.Backlog)
+	if f == nil || !ok {
+		fmt.Fprintln(os.Stderr, "workline: --release-dry-run needs a forge (--forge github, gitlab…) to post what it found")
+		return 64
+	}
+	res := &engine.Result{Status: verdict.Pass, Applied: []string{}, Refused: []string{}}
+	open, err := b.Issues()
+	if err != nil {
+		return fail(err)
+	}
+	now, id := "", 0
+	for _, is := range open {
+		if is.Title == wlreport.MainTitle && !is.Closed {
+			now, id = is.Body, is.ID
+			break
+		}
+	}
+	var said []string
+	// The issue's part: this dry run's when no release merge request was
+	// judged, else taken out, the merge request's comment saying it.
+	shown := d
+	if d.MergeRequest != 0 {
+		shown = nil
+	}
+	if body, changed := wlreport.WithDryRun(now, shown); changed && (id != 0 || len(d.Holds) > 0) {
+		n, err := f.KeepIssue(wlreport.MainTitle, backlog.Inert(body), true)
+		if err != nil {
+			return fail(err)
+		}
+		said = append(said, fmt.Sprintf("issue #%d kept: what would hold the release changed", n))
+		res.Applied = append(res.Applied, fmt.Sprintf("issue #%d", n))
+	} else if d.MergeRequest == 0 && id != 0 {
+		said = append(said, fmt.Sprintf("nothing new nor gone for the release: issue #%d left as it is", id))
+	} else if d.MergeRequest == 0 {
+		said = append(said, "nothing would hold the release: no issue opened")
+	}
+	if d.MergeRequest != 0 {
+		t := forge.Target{Kind: "merge-request", ID: d.MergeRequest}
+		comments, err := b.Comments(t)
+		if err != nil {
+			return fail(err)
+		}
+		was := ""
+		for _, c := range comments {
+			if strings.Contains(c, wlreport.DryRunMarker) {
+				was = c
+			}
+		}
+		body, changed, any := wlreport.DryRunComment(d, was)
+		ref := forge.MergeRef(f, d.MergeRequest)
+		switch {
+		case changed:
+			if err := f.Sticky(t, backlog.Inert(body), wlreport.DryRunMarker, any); err != nil {
+				return fail(err)
+			}
+			what := "what would hold the release said in its comment"
+			if !any {
+				what = "its comment edited: nothing would hold the release any more"
+			}
+			said = append(said, fmt.Sprintf("%s: %s", ref, what))
+			res.Applied = append(res.Applied, "comment on "+ref)
+		case was != "":
+			said = append(said, fmt.Sprintf("%s: nothing new nor gone for the release, its comment left as it is", ref))
+		default:
+			said = append(said, fmt.Sprintf("%s: nothing would hold the release, no comment posted", ref))
+		}
+	}
+	res.Summary = strings.Join(said, "; ")
+	res.Findings = append(res.Findings, verdict.Finding{Rule: "release-dry-run", Message: res.Summary})
+	if err := wlreport.AppendSummary(summaryFiles, wlreport.RoleSummary("apply --release-dry-run", "", res)); err != nil {
+		return fail(err)
+	}
+	if asJSON {
+		out, _ := json.MarshalIndent(res, "", "  ")
+		fmt.Println(string(out))
+	} else {
+		report(res)
+	}
+	return 0
 }
 
 // nothingToApply ends an apply the line proposed nothing to, its findings

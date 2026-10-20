@@ -118,6 +118,10 @@ type runSpec struct {
 	// status, steps and calls is its; the findings are both runs'.
 	ThenLine *thenLine `yaml:"then-line"`
 	CLI      []string  `yaml:"cli"` // workline with these arguments, as typed: its exit code, what it prints
+	// Sh: a shell line, the engine first on PATH as workline: what a
+	// person types around it (install its hooks, then the git command
+	// that runs them), checked as cli is.
+	Sh string `yaml:"sh"`
 	// ApplyFrom: with then: resume, the runs applied as the base's job
 	// applies a merge request's own CI run (apply --from-merge-request).
 	ApplyFrom *applyFrom `yaml:"apply-from"`
@@ -139,6 +143,18 @@ type runSpec struct {
 	// the second run (a second push); the first run's Code Quality report
 	// is kept for code-quality-kept.
 	AgainAfter []string `yaml:"again-after"`
+	// MainIssue: after the run, and after the second with then: again,
+	// what it printed kept in main's issue (apply --main), as CI's job
+	// holding the forge's token does after main's run.
+	MainIssue bool `yaml:"main-issue"`
+	// DryRunPosted: after the run, and after the second with then: again,
+	// what a release's dry run printed posted (apply --release-dry-run),
+	// as CI's job holding the forge's token does each night.
+	DryRunPosted bool `yaml:"dry-run-posted"`
+	// KeptOnMain: before the run, main's run after a merge on this
+	// revision, checked out then left, as CI's job on main: the gates'
+	// findings kept by commit in a folder the run reads (--gates-kept).
+	KeptOnMain string `yaml:"kept-on-main"`
 }
 
 // gatesJob is CI's job running the gates alone, before the line.
@@ -194,6 +210,7 @@ type expectSpec struct {
 	PushedMsg    map[string]string            `yaml:"pushed-message"` // branch -> a text the message of the remote branch's tip holds
 	NotPushed    []string                     `yaml:"not-pushed"`     // branches of the remote the run left where they were
 	OnTop        map[string]string            `yaml:"on-top"`         // branch -> the branch of the remote its tip holds
+	Signed       map[string]bool              `yaml:"signed"`         // branch -> the remote branch's tip carries a signature git verifies (true), or none (false)
 	Merged       map[string]string            `yaml:"merged"`         // branch -> base: the remote branch's tip merges base's tip into its tip before the run, its first parent
 	Gone         []string                     `yaml:"gone"`           // branches of the remote absent after the run
 	Forge        *forgeWant                   `yaml:"forge"`
@@ -330,6 +347,7 @@ type itemWant struct {
 	BodyLacks       texts               `yaml:"body-lacks"`
 	Comments        *int                `yaml:"comments"` // how many
 	Posted          *int                `yaml:"posted"`   // comments posted, each mailing the issue's followers; an edit posts none
+	Edits           *int                `yaml:"edits"`    // times its body was rewritten, as the forge's edit history counts them
 	CommentContains texts               `yaml:"comment-contains"`
 	CommentLacks    texts               `yaml:"comment-lacks"`
 	BlockedBy       *[]int              `yaml:"blocked-by"` // the forge's own relation
@@ -558,7 +576,7 @@ func runCase(t *testing.T, c *caseFile) []string {
 		defer srv.Close()
 		env = append(env, "CI_API_V4_URL="+srv.URL+"/api/v4", "CI_PROJECT_ID=1", "CI_PROJECT_PATH=", "GITLAB_TOKEN=conformance")
 	}
-	if c.Run.CLI != nil {
+	if c.Run.CLI != nil || c.Run.Sh != "" {
 		return runCLI(engineBin, c, repo, env)
 	}
 	roles := rolesDir
@@ -691,6 +709,63 @@ func runCase(t *testing.T, c *caseFile) []string {
 		out, _ := exec.Command("git", "-C", repo, "ls-remote", "origin", "refs/heads/"+b).Output()
 		before[b], _, _ = strings.Cut(string(out), "\t")
 	}
+	if rev := c.Run.KeptOnMain; rev != "" {
+		// CI's job on main after the merge, before the merge request's
+		// run: the revision checked out, the gates' findings kept.
+		kept := filepath.Join(work, "kept")
+		back, _ := exec.Command("git", "-C", repo, "rev-parse", "--abbrev-ref", "HEAD").Output()
+		at := strings.TrimSpace(string(back))
+		if at == "HEAD" {
+			back, _ = exec.Command("git", "-C", repo, "rev-parse", "HEAD").Output()
+			at = strings.TrimSpace(string(back))
+		}
+		if out, err := exec.Command("git", "-C", repo, "checkout", "-q", "--detach", rev).CombinedOutput(); err != nil {
+			return []string{fmt.Sprintf("kept-on-main: %s not checked out: %s", rev, out)}
+		}
+		onMain := exec.Command(engineBin, "route", "main", "--repo", repo, "--roles", roles, "--json", "--ai", "none", "--forge", "none", "--gates-kept", kept)
+		onMain.Dir, onMain.Env = repo, cmd.Env
+		if out, err := onMain.Output(); len(out) == 0 {
+			return []string{fmt.Sprintf("kept-on-main: main's run printed nothing: %v", err)}
+		}
+		if out, err := exec.Command("git", "-C", repo, "checkout", "-q", at).CombinedOutput(); err != nil {
+			return []string{fmt.Sprintf("kept-on-main: %s not checked out again: %s", at, out)}
+		}
+		cmd.Args = append(cmd.Args, "--gates-kept", kept)
+	}
+	// What main's run printed, kept in its issue as CI's job holding the
+	// forge's token does (apply --main): its findings added to the run's.
+	keepMain := func(printed []byte, into *result) []string {
+		file := filepath.Join(work, "main.json")
+		os.WriteFile(file, printed, 0o644)
+		apply := exec.Command(engineBin, "apply", "--main", file, "--repo", repo, "--forge", forgeSpec, "--json")
+		apply.Dir, apply.Env = repo, cmd.Env
+		var errOut bytes.Buffer
+		apply.Stderr = &errOut
+		out, err := apply.Output()
+		var kept result
+		if json.Unmarshal(out, &kept) != nil {
+			return []string{fmt.Sprintf("apply --main printed no result: %v\n%s", err, errOut.String())}
+		}
+		into.Findings = append(into.Findings, kept.Findings...)
+		return nil
+	}
+	// What a release's dry run printed, posted as CI's job holding the
+	// forge's token does each night (apply --release-dry-run).
+	postDryRun := func(printed []byte, into *result) []string {
+		file := filepath.Join(work, "dry-run.json")
+		os.WriteFile(file, printed, 0o644)
+		apply := exec.Command(engineBin, "apply", "--release-dry-run", file, "--repo", repo, "--forge", forgeSpec, "--json")
+		apply.Dir, apply.Env = repo, cmd.Env
+		var errOut bytes.Buffer
+		apply.Stderr = &errOut
+		out, err := apply.Output()
+		var posted result
+		if json.Unmarshal(out, &posted) != nil {
+			return []string{fmt.Sprintf("apply --release-dry-run printed no result: %v\n%s", err, errOut.String())}
+		}
+		into.Findings = append(into.Findings, posted.Findings...)
+		return nil
+	}
 	if j := c.Run.GatesJob; j != nil {
 		// CI's job of the gates alone, before the line: its own variables,
 		// its result the file the line reads.
@@ -725,6 +800,16 @@ func runCase(t *testing.T, c *caseFile) []string {
 	if err := json.Unmarshal(stdout.Bytes(), &r); err != nil {
 		return []string{fmt.Sprintf("engine printed no result: %v\n%s", err, stderr.String())}
 	}
+	if c.Run.MainIssue {
+		if p := keepMain(stdout.Bytes(), &r); len(p) > 0 {
+			return p
+		}
+	}
+	if c.Run.DryRunPosted {
+		if p := postDryRun(stdout.Bytes(), &r); len(p) > 0 {
+			return p
+		}
+	}
 	if c.Run.Then == "again" {
 		// The same run once more, on the forge and the repository as the
 		// first left them, after a person's edits (between): what a run
@@ -746,6 +831,16 @@ func runCase(t *testing.T, c *caseFile) []string {
 		var r2 result
 		if err := json.Unmarshal(stdout.Bytes(), &r2); err != nil {
 			return []string{fmt.Sprintf("the second run printed no result: %v\n%s", err, stderr.String())}
+		}
+		if c.Run.MainIssue {
+			if p := keepMain(stdout.Bytes(), &r2); len(p) > 0 {
+				return p
+			}
+		}
+		if c.Run.DryRunPosted {
+			if p := postDryRun(stdout.Bytes(), &r2); len(p) > 0 {
+				return p
+			}
 		}
 		r2.AgentCalls += r.AgentCalls
 		r2.Calls = append(r.Calls, r2.Calls...)
@@ -1001,9 +1096,26 @@ func runCase(t *testing.T, c *caseFile) []string {
 }
 
 // runCLI runs workline with the case's arguments, as a person or a script
-// types them, and checks its exit code and what it prints where.
+// types them, or the case's shell line, and checks its exit code and what
+// it prints where.
 func runCLI(engineBin string, c *caseFile, repo string, env []string) []string {
 	cmd := exec.Command(engineBin, c.Run.CLI...)
+	if c.Run.Sh != "" {
+		bin := filepath.Join(filepath.Dir(repo), "engine-bin")
+		if err := os.MkdirAll(bin, 0o755); err != nil {
+			return []string{err.Error()}
+		}
+		if err := os.Symlink(engineBin, filepath.Join(bin, "workline")); err != nil {
+			return []string{err.Error()}
+		}
+		cmd = exec.Command("sh", "-c", c.Run.Sh)
+		path := bin // never an empty entry, which is the current folder
+		if old := lookup(env, "PATH"); old != "" {
+			path += string(os.PathListSeparator) + old
+		}
+		// A run from inside a workline hook would skip the hooks it installs.
+		env = append(slices.Clone(env), "PATH="+path, "WORKLINE_HOOK_RUNNING=")
+	}
 	cmd.Dir, cmd.Env = repo, env
 	for k, v := range c.Given.Env { // what the command is run with, as a hook is: WORKLINE_AI
 		cmd.Env = append(cmd.Env, k+"="+os.Expand(v, func(name string) string { return lookup(cmd.Env, name) }))
@@ -1140,6 +1252,16 @@ func compare(c *caseFile, r *result, repo string) []string {
 		exec.Command("git", "-C", repo, "fetch", "-q", "origin").Run()
 		if exec.Command("git", "-C", repo, "merge-base", "--is-ancestor", "origin/"+base, "origin/"+branch).Run() != nil {
 			p = append(p, fmt.Sprintf("origin's %s is not on top of origin's %s", branch, base))
+		}
+	}
+	for branch, want := range e.Signed {
+		exec.Command("git", "-C", repo, "fetch", "-q", "origin").Run()
+		if want {
+			if out, err := exec.Command("git", "-C", repo, "verify-commit", "origin/"+branch).CombinedOutput(); err != nil {
+				p = append(p, fmt.Sprintf("the tip of origin's %s carries no signature git verifies: %s", branch, out))
+			}
+		} else if out, _ := exec.Command("git", "-C", repo, "log", "-1", "--format=%G?", "origin/"+branch).Output(); strings.TrimSpace(string(out)) != "N" {
+			p = append(p, fmt.Sprintf("the tip of origin's %s is signed (%s), want no signature", branch, strings.TrimSpace(string(out))))
 		}
 	}
 	if e.RefusedKept > 0 {
@@ -1689,6 +1811,9 @@ func compareItem(kind string, wm itemWant, got []map[string]any) []string {
 	}
 	if posted, _ := found["posted"].(float64); wm.Posted != nil && int(posted) != *wm.Posted {
 		p = append(p, fmt.Sprintf("forge: %s %v posted %d comments, want %d", kind, wm.ID, int(posted), *wm.Posted))
+	}
+	if edits, _ := found["edits"].([]any); wm.Edits != nil && len(edits) != *wm.Edits {
+		p = append(p, fmt.Sprintf("forge: %s %v's body was rewritten %d times, want %d", kind, wm.ID, len(edits), *wm.Edits))
 	}
 	held := func(text string) bool {
 		for _, c := range comments {

@@ -64,9 +64,31 @@ variables:
 
 .workline:trust: &trust             # a self-managed instance's own authority, when it has one
   - '[ -z "${CI_SERVER_TLS_CA_FILE:-}" ] || cat "$CI_SERVER_TLS_CA_FILE" >> /etc/ssl/certs/ca-certificates.crt'
+# The bot's name on the commits it writes; given an SSH private key, the
+# File variable WORKLINE_SIGNING_KEY, git signs them with it, for a project
+# that refuses unsigned commits (docs/gitlab/signed-commits.md; the first
+# release after v0.37.0). Never echoed: a key typed as a plain variable
+# fails the job, unread.
+.workline:bot: &bot
+  - git config user.name "workline"
+  - git config user.email "workline@noreply.$CI_SERVER_HOST"
+  - |
+    if [ -n "${WORKLINE_SIGNING_KEY:-}" ]; then
+      [ -f "$WORKLINE_SIGNING_KEY" ] || { echo "workline: WORKLINE_SIGNING_KEY is not a file: set its type to File (Settings, CI/CD, Variables)"; exit 1; }
+      chmod 600 "$WORKLINE_SIGNING_KEY"   # a File variable is readable by all, which ssh-keygen refuses
+      [ -z "$(tail -c 1 "$WORKLINE_SIGNING_KEY")" ] || echo >> "$WORKLINE_SIGNING_KEY"   # nor reads a key with no last newline
+      git config gpg.format ssh
+      git config user.signingkey "$WORKLINE_SIGNING_KEY"
+      git config commit.gpgsign true
+    fi
 .workline:summary: &summary         # the summary, at the end of the log and linked from the job's page
   - '[ ! -s workline-summary.md ] || cat workline-summary.md'
   - printf '{"workline":[{"external_link":{"label":"workline summary","url":"%s/artifacts/file/workline-summary.html"}}]}\n' "$CI_JOB_URL" > workline-annotations.json
+# kept <file>: a file of .workline-kept/ from main's last successful
+# workline:main, never a cache a branch could write. Read with the bot's
+# token; else the job's, which gitlab.com's Free tier refuses there.
+.workline:kept: &kept
+  - 'kept() { h="JOB-TOKEN: $CI_JOB_TOKEN"; [ -z "${WORKLINE_GITLAB_TOKEN:-}" ] || h="PRIVATE-TOKEN: $WORKLINE_GITLAB_TOKEN"; mkdir -p .workline-kept; curl -fsSL --header "$h" -o ".workline-kept/$1" "$CI_API_V4_URL/projects/$CI_PROJECT_ID/jobs/artifacts/$CI_DEFAULT_BRANCH/raw/.workline-kept/$1?job=workline:main" 2>/dev/null || { rm -f ".workline-kept/$1"; return 1; }; }'
 .workline:claude: &claude           # the agent, only when the project gives its token; not installed on a draft, which asks none
   - ai=none
   - if [ -n "$CLAUDE_CODE_OAUTH_TOKEN" ]; then if [ "${draft:-}" = true ]; then ai=claude; else npm install -g --silent @anthropic-ai/claude-code && ai=claude; fi; fi
@@ -126,14 +148,25 @@ workline:gates:
   extends: .workline
   stage: test
   interruptible: true
+  # The merge base's findings, read from main's own pipeline artifacts
+  # (workline:main), never from a cache a branch could write: the tools
+  # then run once, when kept with the same command, config and tool. Read
+  # before the tokens are unset, no tool run yet.
+  before_script:
+    - *trust
+    - workline version
+    - git fetch --quiet origin $CI_MERGE_REQUEST_DIFF_BASE_SHA || true
+    - '[ -z "${CI_MERGE_REQUEST_TARGET_BRANCH_SHA:-}" ] || git fetch --quiet origin "$CI_MERGE_REQUEST_TARGET_BRANCH_SHA" || true'
+    - base=$CI_MERGE_REQUEST_DIFF_BASE_SHA; queue=
+    - 'if [ "${CI_MERGE_REQUEST_EVENT_TYPE:-}" = merge_train ]; then base=${CI_MERGE_REQUEST_TARGET_BRANCH_SHA:-$base}; queue="--input queue=true"; fi'
+    - *kept
+    - 'kept "$base.json" || echo "workline: main''s pipeline kept no findings for $base: the gates run again at the merge base"'
   script:
     - unset CLAUDE_CODE_OAUTH_TOKEN WORKLINE_GITLAB_TOKEN GITLAB_TOKEN
     - status=0
-    - base=$CI_MERGE_REQUEST_DIFF_BASE_SHA; queue=
-    - 'if [ "${CI_MERGE_REQUEST_EVENT_TYPE:-}" = merge_train ]; then base=${CI_MERGE_REQUEST_TARGET_BRANCH_SHA:-$base}; queue="--input queue=true"; fi'
     - >
       workline route merge-request --gates-only --forge none $queue
-      --input range=$base..$CI_COMMIT_SHA
+      --input range=$base..$CI_COMMIT_SHA --gates-kept .workline-kept
       --code-quality gl-code-quality-gates.json --summary gates-summary.md --summary gates-summary.html
       --json > gates.json || status=$?
     - exit $status
@@ -202,8 +235,7 @@ workline:apply:
       when: always
   script:
     - export GITLAB_TOKEN=$WORKLINE_GITLAB_TOKEN
-    - git config user.name "workline"
-    - git config user.email "workline@noreply.$CI_SERVER_HOST"
+    - *bot
     - git remote set-url origin "https://oauth2:${WORKLINE_GITLAB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"
     - workline apply --line line.json --summary workline-summary.md --summary workline-summary.html
   after_script: *summary
@@ -299,8 +331,7 @@ workline:merge:
     - if ! grep -qE '^merge:' .workline/config.yaml 2>/dev/null; then echo "workline:" "no merge policy (merge:), nothing to do"; exit 0; fi
     - workline version
     - export GITLAB_TOKEN=$WORKLINE_GITLAB_TOKEN
-    - git config user.name "workline"
-    - git config user.email "workline@noreply.$CI_SERVER_HOST"
+    - *bot
     - git remote set-url origin "https://oauth2:${WORKLINE_GITLAB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"
     - verdict=; [ ! -s workline-verdict.json ] || verdict=workline-verdict.json
     - workline follow --base "$CI_MERGE_REQUEST_TARGET_BRANCH_NAME" --forge gitlab ${verdict:+--verdict "$verdict"} --summary workline-summary.md --summary workline-summary.html
@@ -361,8 +392,7 @@ workline:garden:apply:
     - if: $CI_PIPELINE_SOURCE == "schedule" && $WORKLINE_GITLAB_TOKEN && $WORKLINE_TASK != "sample" && $WORKLINE_TASK != "release-docs"
       when: always
   script:
-    - git config user.name "workline"
-    - git config user.email "workline@noreply.$CI_SERVER_HOST"
+    - *bot
     - git remote set-url origin "https://oauth2:${WORKLINE_GITLAB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"
     - status=0
     - workline apply --line line.json --summary workline-summary.md --summary workline-summary.html || status=$?
@@ -419,11 +449,150 @@ workline:release-docs:apply:
     - if: $CI_PIPELINE_SOURCE == "schedule" && $WORKLINE_GITLAB_TOKEN && $WORKLINE_TASK == "release-docs"
       when: always
   script:
-    - git config user.name "workline"
-    - git config user.email "workline@noreply.$CI_SERVER_HOST"
+    - *bot
     - git remote set-url origin "https://oauth2:${WORKLINE_GITLAB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"
     - '[ -s line.json ] || { echo "workline: the release docs judge left nothing to apply"; exit 0; }'
     - workline apply --line line.json --summary workline-summary.md --summary workline-summary.html
+  after_script: *summary
+  artifacts:
+    when: always
+    paths: [workline-summary.html, workline-summary.md]
+    reports: {annotations: workline-annotations.json}
+    expire_in: 1 week
+
+# A release's dry run, on each schedule but the sample's (ADR-0050; the
+# first release after v0.37.0): what would hold the release if it were cut
+# now, on the release merge request open (read with the bot's token), else
+# the branch's tip. Every step, no agent, nothing applied, said as
+# warnings. Install here the tools of your `release` line's gates.
+# workline:release:dry-run:post says it on that merge request, else in the
+# default branch's issue (docs/release.md).
+workline:release:dry-run:
+  image: $WORKLINE_IMAGE:$WORKLINE_VERSION
+  stage: test
+  variables: {GIT_DEPTH: 0}         # the whole history: the release since its tag
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule" && $WORKLINE_TASK != "sample"
+  script:
+    - *trust
+    - workline version
+    - git checkout -q -B "$CI_COMMIT_REF_NAME"   # GitLab runs on a detached HEAD
+    - unset CLAUDE_CODE_OAUTH_TOKEN
+    - forge=none; if [ -n "${WORKLINE_GITLAB_TOKEN:-}" ]; then export GITLAB_TOKEN=$WORKLINE_GITLAB_TOKEN; forge=gitlab; fi
+    - workline route release --dry-run --forge $forge --summary workline-summary.md --summary workline-summary.html --json > dry-run.json
+  allow_failure: {exit_codes: [3]}  # never 3: it asks no agent; as every night's job
+  after_script: *summary
+  artifacts:
+    when: always
+    paths: [workline-summary.html, workline-summary.md, dry-run.json]
+    reports: {annotations: workline-annotations.json}
+    expire_in: 1 day
+
+workline:release:dry-run:post:
+  image: $WORKLINE_IMAGE:$WORKLINE_VERSION
+  stage: deploy
+  needs: [workline:release:dry-run]
+  variables: {GIT_DEPTH: 0}         # the whole history, as .workline
+  resource_group: workline-main-issue   # one writer of the default branch's issue at a time, with workline:main:issue
+  rules:                            # also when the dry run failed: said
+    - if: $CI_PIPELINE_SOURCE == "schedule" && $WORKLINE_TASK != "sample" && $WORKLINE_GITLAB_TOKEN
+      when: always
+  script:
+    - *trust
+    - workline version
+    - '[ -s dry-run.json ] || { echo "workline: the release''s dry run left no result: nothing to post"; exit 0; }'
+    - export GITLAB_TOKEN=$WORKLINE_GITLAB_TOKEN
+    - workline apply --release-dry-run dry-run.json --forge gitlab --summary workline-summary.md --summary workline-summary.html
+  after_script: *summary
+  artifacts:
+    when: always
+    paths: [workline-summary.html, workline-summary.md]
+    reports: {annotations: workline-annotations.json}
+    expire_in: 1 week
+
+# At a release's tag (ADR-0050; the first release after v0.37.0), whoever
+# pushed it: the release's line, no agent, no token, red when it holds the
+# release, compared with the release before this one. Have the jobs that
+# publish it need it (`needs: [workline:release]`). A tool that tags and
+# publishes in one job (semantic-release) runs `workline route release
+# --ai none` before it, in that job. Why and how: docs/release.md.
+workline:release:
+  image: $WORKLINE_IMAGE:$WORKLINE_VERSION
+  stage: test
+  variables: {GIT_DEPTH: 0}         # the whole history: the release before this one
+  rules:
+    - if: $CI_COMMIT_TAG
+  script:
+    - *trust
+    - workline version
+    - git fetch --quiet --tags origin || true   # every release tag, the one before this
+    - unset CLAUDE_CODE_OAUTH_TOKEN WORKLINE_GITLAB_TOKEN GITLAB_TOKEN
+    - status=0
+    - workline route release --ai none --forge none --summary workline-summary.md --summary workline-summary.html --json > release.json || status=$?
+    - exit $status
+  after_script: *summary
+  artifacts:
+    when: always
+    paths: [workline-summary.html, workline-summary.md, release.json]
+    reports: {annotations: workline-annotations.json}
+    expire_in: 1 week
+
+# Main after a merge (ADR-0050; the first release after v0.37.0), each
+# push to the default branch, no token, no agent: the gates, red when the
+# push adds what they count, their findings kept in its artifacts by the
+# commit for workline:gates to read; then the whole repository's checks.
+# No Code Quality report: the merge requests' widget compares with it.
+# workline:main:issue keeps what it found in one issue
+# (docs/main-after-merge.md).
+workline:main:
+  image: $WORKLINE_IMAGE:$WORKLINE_VERSION
+  stage: test
+  variables: {GIT_DEPTH: 0}         # the whole history, as .workline
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  # Its artifact, .workline-kept/, holds the findings of the last 20
+  # commits main's pipelines analysed, carried from its last successful
+  # pipeline: the only writer of the merge requests' base.
+  before_script:                    # read before the tokens are unset, no tool run yet
+    - *trust
+    - workline version
+    - *kept
+    - 'kept commits && for c in $(head -n 19 .workline-kept/commits); do kept "$c.json" || true; done || echo "workline: main''s last pipeline kept no findings"'
+  script:
+    - unset CLAUDE_CODE_OAUTH_TOKEN WORKLINE_GITLAB_TOKEN GITLAB_TOKEN
+    - status=0
+    - >
+      workline route main --ai none --forge none --gates-kept .workline-kept
+      --input range=$CI_COMMIT_BEFORE_SHA..$CI_COMMIT_SHA
+      --summary workline-summary.md --summary workline-summary.html --json > main.json || status=$?
+    - |
+      { echo "$CI_COMMIT_SHA"; cat .workline-kept/commits 2>/dev/null || true; } | awk 'NF && !seen[$0]++' | head -n 20 > .workline-kept/next || true
+      : > .workline-kept/commits; while read -r c; do [ ! -s ".workline-kept/$c.json" ] || echo "$c" >> .workline-kept/commits; done < .workline-kept/next
+      for f in .workline-kept/*.json; do grep -qxF "$(basename "$f" .json)" .workline-kept/commits || rm -f "$f"; done; rm -f .workline-kept/next
+    - exit $status
+  allow_failure: {exit_codes: [3]}  # a source repository out of reach warns, as on a merge request
+  after_script: *summary
+  artifacts:
+    when: always
+    paths: [workline-summary.html, workline-summary.md, main.json, .workline-kept/]
+    reports: {annotations: workline-annotations.json}
+    expire_in: 30 days
+
+workline:main:issue:
+  image: $WORKLINE_IMAGE:$WORKLINE_VERSION
+  stage: deploy
+  needs: [workline:main]
+  variables: {GIT_DEPTH: 0}         # the whole history, as .workline
+  rules:                            # red too: the issue says so
+    - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $WORKLINE_GITLAB_TOKEN
+      when: always
+  resource_group: workline-main-issue   # one at a time: each reads the issue the one before left
+  script:
+    - *trust
+    - workline version
+    - '[ -s main.json ] || { echo "workline: main''s run left no result: nothing to keep"; exit 0; }'
+    - export GITLAB_TOKEN=$WORKLINE_GITLAB_TOKEN
+    - workline apply --main main.json --forge gitlab --summary workline-summary.md --summary workline-summary.html
   after_script: *summary
   artifacts:
     when: always
@@ -455,8 +624,7 @@ workline:follow:
     - *trust
     - workline version
     - export GITLAB_TOKEN=$WORKLINE_GITLAB_TOKEN
-    - git config user.name "workline"
-    - git config user.email "workline@noreply.$CI_SERVER_HOST"
+    - *bot
     - git remote set-url origin "https://oauth2:${WORKLINE_GITLAB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"
     - workline follow --base "$CI_DEFAULT_BRANCH" --forge gitlab --summary workline-summary.md --summary workline-summary.html
   after_script: *summary
@@ -516,8 +684,7 @@ workline:sample:write:              # writes to the forge; no agent installed
   needs: [workline:sample:read]
   script:
     - export GITLAB_TOKEN=$WORKLINE_GITLAB_TOKEN
-    - git config user.name "workline"
-    - git config user.email "workline@noreply.$CI_SERVER_HOST"
+    - *bot
     - git remote set-url origin "https://oauth2:${WORKLINE_GITLAB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"
     - workline sample --apply sample.json --forge gitlab --summary workline-summary.md --summary workline-summary.html
   after_script: *summary

@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/adopt.go, internal/builtin/documentalist/byname.go, internal/builtin/documentalist/releasekept.go, internal/engine/night.go]
-checked: 56e17f81
+checked: a88dc872
 verified: agent:claude-code
 judged-in-parts: c7e1e98
 ---
@@ -19,11 +19,15 @@ moves to the commit the task gave.
   suggestion can only sit on lines the merge request changes, and a doc
   made wrong by a change of code usually has none.
 - From a fork, the fix goes in one comment, as a diff to apply.
-- Given the commits of a merge request (`range`), only the docs they made
-  suspect — one of their own sources touched by those commits — are
-  judged, whole, against every source that changed. The other suspect
-  docs are reported, left for gardening
+- Given the commits of a merge request (`range`), only the docs they
+  touched are read, as at a push: those they made suspect — one of their
+  own sources touched by those commits, a merge's own change too — are
+  judged, whole, against every source that changed
   ([ADR-0007](../../../docs/adr/0007-docs-reviewed-after-the-code-before-the-push.md)).
+  A doc suspect from before is gardening's; the checks across every doc
+  run on main after the merge, once
+  ([ADR-0050](../../../docs/adr/0050-each-act-has-its-moment-and-a-wait-budget.md),
+  [how](../../../docs/main-after-merge.md)).
 - One too large to be judged whole is left for the next gardening, which
   judges it [in parts](parts.md), there as with
   `workline docs` and at the release
@@ -68,7 +72,7 @@ an agent: a push never waits on one, nor asks
 - **Only the docs the commits touched are read**: one of their sources,
   or the doc itself; their own budgets and links are counted. The other
   docs — suspect from before, a passage written twice, a link gone — are
-  said on the merge request and by gardening: about 5 s less a push
+  said on main after the merge and by gardening: about 5 s less a push
   ([ADR-0050](../../../docs/adr/0050-each-act-has-its-moment-and-a-wait-budget.md)).
 - The person has them judged when they choose — `workline docs` — reviews
   each change, and those kept go in one `docs:` commit
@@ -91,7 +95,7 @@ docs`, or by a person moving `checked`.
   judges it in parts, or a person moves `checked`.
 - The last release is the highest version tag merged (`release.tags`, `v*`
   by default), prereleases left out — never the nearest tag, which a
-  hotfix merged back would be.
+  hotfix merged back would be; at a tag, the one before it ([how](../../../docs/release.md#at-a-tag-on-gitlab)).
 - A shallow clone, which may lack it or a doc's `checked`, holds the
   release (`shallow-clone`).
 

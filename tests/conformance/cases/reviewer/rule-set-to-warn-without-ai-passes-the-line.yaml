@@ -1,0 +1,24 @@
+case: reviewer/rule-set-to-warn-without-ai-passes-the-line
+about: "The merge request of #550: a project with no agent sets a rule to warn, and the record of the last review does not read. Both are warnings: the line passes, and its summary shows them; the change waits for a person's review, said."
+given:
+  repo: reviewed
+  setup:
+    - "printf '\\n// Double returns twice n.\\n// The bug was an overflow here.\\nfunc Double(n int) int { return 2 * n }\\n' >> calc/calc.go && git commit -qam 'feat: double a count'"
+  config:
+    routing: {events: {merge-request: [reviewer]}}
+    roles: {reviewer: {enforce: {bug-story: warn}}}
+  forge:
+    issues: []
+    merge-requests:
+      - id: 5
+        labels: []
+        comments: ["Reviewed.\n\n<!-- workline:record reviewed=0000000 runs=one -->\n\n<!-- workline:sticky=reviewer/summary -->"]
+run: {route: merge-request, input: {range: main..HEAD}, target: {merge-request: 5}, ai: none, summary: true}
+expect:
+  status: pass
+  agent-calls: 0
+  findings:
+    - {rule: bug-story, level: warn, where: "calc/calc.go:21"}
+    - {rule: record-unread, level: warn}
+    - {rule: not-reviewed, level: warn}
+  summary-file: ["bug-story", "record-unread"]

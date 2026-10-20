@@ -121,7 +121,7 @@ func (g *Gate) Validate() []verdict.Finding {
 // run, or whose output cannot be read, fails the gate unless marked
 // optional.
 func Run(repo, name string) *verdict.Verdict {
-	v, _ := run(repo, name, "")
+	v, _ := RunWith(repo, name, Options{})
 	return v
 }
 
@@ -129,9 +129,28 @@ func Run(repo, name string) *verdict.Verdict {
 // it adds since the merge base of since and HEAD, and a suppression it
 // adds counts as one (ADR-0049). Added is what the change adds, for what
 // shows it on the merge request; nil when the gate did not run.
-func RunNew(repo, name, since string) (*verdict.Verdict, *Added) { return run(repo, name, since) }
+func RunNew(repo, name, since string) (*verdict.Verdict, *Added) {
+	return RunWith(repo, name, Options{Since: since})
+}
 
-func run(repo, name, since string) (*verdict.Verdict, *Added) {
+// Options says how a gate runs.
+type Options struct {
+	// Since: the change's start. Only the findings it adds since the
+	// merge base of Since and HEAD count; empty, every one.
+	Since string
+	// Kept: the folder of the findings kept by commit (ADR-0050). A SARIF
+	// check's findings at the merge base are read there when kept with
+	// the same command, config and tool, rather than run again.
+	Kept string
+	// Keep: HEAD's findings are written there, every one of each SARIF
+	// check: main after a merge, the next merge requests' base. Added
+	// then names them all (Present), and is given with no change too.
+	Keep bool
+}
+
+// RunWith runs the gate as o says.
+func RunWith(repo, name string, o Options) (*verdict.Verdict, *Added) {
+	since := o.Since
 	g, err := Load(repo, name)
 	if err != nil {
 		return &verdict.Verdict{Status: verdict.Block, Summary: "the gate could not be loaded",
@@ -154,15 +173,36 @@ func run(repo, name, since string) (*verdict.Verdict, *Added) {
 	}
 	v := &verdict.Verdict{}
 	var add *Added
-	if ch != nil {
-		add = &Added{Base: ch.base, Checks: []CheckCount{}, Findings: []Finding{}}
+	if ch != nil || o.Keep {
+		add = &Added{Checks: []CheckCount{}, Findings: []Finding{}}
 	}
+	r := &runner{repo: repo, out: out, gate: name, ch: ch, all: g.Checks, asked: o.Kept != ""}
+	if ch != nil {
+		add.Base = ch.base
+		r.kept = readKept(o.Kept, ch.base)
+	}
+	// HEAD's findings, kept by its commit: only when the tree is that
+	// commit's; else said, nothing kept.
+	if o.Keep && o.Kept != "" {
+		head, err := git(repo, "rev-parse", "HEAD")
+		if err == nil {
+			err = clean(repo)
+		}
+		if err != nil {
+			v.Findings = append(v.Findings, verdict.Finding{Rule: "not-kept", Where: name, Level: "warn",
+				Message: fmt.Sprintf("its findings are not kept as the next base: %v", err)})
+		} else {
+			r.keepDir, r.keepAt = o.Kept, strings.TrimSpace(head)
+		}
+	}
+	r.present = o.Keep
 	var told []string // how each check's new findings were told
 	for _, c := range g.Checks {
-		found, note, count, shown := runCheck(repo, out, c, ch, g.Checks)
+		found, note, count, shown := r.check(c)
 		if add != nil {
 			add.Checks = append(add.Checks, count)
 			add.Findings = append(add.Findings, shown...)
+			add.Present = append(add.Present, r.found...)
 		}
 		for _, f := range found {
 			if f.Rule == "check-error" && c.Optional {
@@ -219,11 +259,28 @@ func enforce(v *verdict.Verdict, g *Gate) {
 	}
 }
 
-// runCheck runs one check and reads its result; on a change, a SARIF
-// check runs again at the merge base and only the results the head adds
-// count. The note says how many, for the summary; the count and the
-// findings shown are what the change adds, for what shows them.
-func runCheck(repo, out string, c Check, ch *change, all []Check) (found []verdict.Finding, note string, count CheckCount, shown []Finding) {
+// runner runs a gate's checks: on a change, against its merge base; with
+// a folder of findings kept by commit, that base's read there when they
+// stand for a run, HEAD's written there to keep.
+type runner struct {
+	repo, out, gate string
+	ch              *change
+	all             []Check
+	kept            *keptFile // the merge base's, when kept
+	asked           bool      // a folder of kept findings was given: none there for the base is said
+	keepDir, keepAt string    // where HEAD's findings are kept, and its commit
+	present         bool      // name every finding of HEAD (found)
+	found           []string  // the last check's, by their fingerprints
+}
+
+// check runs one check and reads its result; on a change, a SARIF check
+// is compared with its run at the merge base, kept on main or run again
+// there, and only the results the head adds count. The note says how
+// many, for the summary; the count and the findings shown are what the
+// change adds, for what shows them.
+func (rn *runner) check(c Check) (found []verdict.Finding, note string, count CheckCount, shown []Finding) {
+	repo, out, ch, all := rn.repo, rn.out, rn.ch, rn.all
+	rn.found = nil
 	count = CheckCount{ID: c.ID, Output: c.Output, Fix: c.Fix, Before: -1}
 	failedWith := func(f verdict.Finding) ([]verdict.Finding, string, CheckCount, []Finding) {
 		count.Error = f.Message
@@ -254,31 +311,70 @@ func runCheck(repo, out string, c Check, ch *change, all []Check) (found []verdi
 	if err != nil {
 		return failedWith(verdict.Finding{Rule: "check-error", Where: c.ID, Message: err.Error()})
 	}
+	took := time.Since(start)
 	counted := results(head)
+	headLines := &lines{root: repo}
+	tool := version(head)
+	var bins string
+	if rn.keepAt != "" || rn.kept != nil {
+		bins = binaries(c)
+	}
+	// Every finding of HEAD, kept by its commit for the merge requests
+	// based on it; a check telling its new findings itself reads none.
+	if rn.keepAt != "" && c.New != "tool" {
+		if err := keep(rn.keepDir, rn.keepAt, rn.gate, c.ID, &keptCheck{Command: commandOf(c), Tool: tool, Binaries: bins,
+			Seconds: took.Seconds(), Results: keptResults(counted, headLines)}); err != nil {
+			found = append(found, verdict.Finding{Rule: "not-kept", Where: c.ID, Level: "warn",
+				Message: fmt.Sprintf("its findings are not kept as the next base: %v", err)})
+		}
+	}
 	if ch == nil {
-		return overThreshold(c, counted, ""), "", count, nil
+		if rn.present {
+			stamp(counted, headLines)
+			count.Before = len(counted)
+			rn.found = fingerprints(counted)
+		}
+		return append(found, overThreshold(c, counted, "")...), "", count, nil
 	}
 	if c.New == "tool" {
-		stamp(counted, &lines{root: repo})
+		stamp(counted, headLines)
 		count.New, count.Before = len(counted), -1
 		return overThreshold(c, counted, ""), c.ID + " told by the tool", count, added(c, counted)
 	}
-	took := time.Since(start)
-	base, failed := rerun(ch, out, c, all, took, timeout)
-	tookBase := time.Since(start) - took
-	if failed != nil {
-		return failedWith(*failed)
+	// The merge base's findings: kept on main for the same command,
+	// config and tool, else run again there (ADR-0049, ADR-0050).
+	kept, notKept := keptBase(rn.kept, rn.gate, c, ch, tool, bins)
+	if rn.kept == nil && rn.asked {
+		notKept = "none kept for " + short(ch.base) // missing, expired, another commit's
 	}
-	// The same tool on both sides, by construction, but for one the
-	// project's tree pins (go.mod's tool, package.json): said, as a
-	// finding of a rule the new version brings looks new.
-	if hv, bv := version(head), version(base); hv != "" && bv != "" && hv != bv {
-		found = append(found, verdict.Finding{Rule: "tool-version-differs", Where: c.ID, Level: "warn",
-			Message: fmt.Sprintf("the head ran %s, the merge base %s: a finding the new version adds counts as the change's; a tool's upgrade gets a pull request of its own", hv, bv)})
+	var atBase string
+	if kept != nil {
+		compareWith(counted, kept.Results, headLines, ch.moved)
+		count.Kept = true
+		atBase = fmt.Sprintf("%s; the merge base's kept on main, not run again", took.Round(100*time.Millisecond))
+	} else {
+		base, failed := rerun(ch, out, c, all, took, timeout)
+		tookBase := time.Since(start) - took
+		if failed != nil {
+			return failedWith(*failed)
+		}
+		// The same tool on both sides, by construction, but for one the
+		// project's tree pins (go.mod's tool, package.json): said, as a
+		// finding of a rule the new version brings looks new.
+		if hv, bv := tool, version(base); hv != "" && bv != "" && hv != bv {
+			found = append(found, verdict.Finding{Rule: "tool-version-differs", Where: c.ID, Level: "warn",
+				Message: fmt.Sprintf("the head ran %s, the merge base %s: a finding the new version adds counts as the change's; a tool's upgrade gets a pull request of its own", hv, bv)})
+		}
+		compare(counted, results(base), headLines, &lines{root: ch.tree}, ch.moved)
+		atBase = fmt.Sprintf("%s, then %s at the merge base", took.Round(100*time.Millisecond), tookBase.Round(100*time.Millisecond))
+		if notKept != "" {
+			atBase += "; not read as kept on main: " + notKept
+		}
 	}
-	headLines := &lines{root: repo}
-	compare(counted, results(base), headLines, &lines{root: ch.tree}, ch.moved)
 	stamp(counted, headLines)
+	if rn.present {
+		rn.found = fingerprints(counted)
+	}
 	compared := filepath.Join(out, "compared", c.ID)
 	if err := writeCompared(compared, head); err != nil {
 		return failedWith(verdict.Finding{Rule: "check-error", Where: c.ID, Message: err.Error()})
@@ -292,8 +388,16 @@ func runCheck(repo, out string, c Check, ch *change, all []Check) (found []verdi
 	old := len(counted) - len(fresh)
 	count.New, count.Before = len(fresh), old
 	found = append(found, overThreshold(c, fresh, fmt.Sprintf(" (%d there before it, not counted; each marked in %s)", old, compared))...)
-	return found, fmt.Sprintf("%s %d new, %d before it (%s, then %s at the merge base)", c.ID, len(fresh), old, took.Round(100*time.Millisecond), tookBase.Round(100*time.Millisecond)),
-		count, added(c, counted)
+	return found, fmt.Sprintf("%s %d new, %d before it (%s)", c.ID, len(fresh), old, atBase), count, added(c, counted)
+}
+
+// fingerprints are results' fingerprints, once stamped.
+func fingerprints(rs []*result) []string {
+	out := make([]string, 0, len(rs))
+	for _, r := range rs {
+		out = append(out, r.posted)
+	}
+	return out
 }
 
 // fixWith is what a check's findings say of the command that fixes them.

@@ -21,6 +21,7 @@ func TestTracking(t *testing.T) {
 		{forge.Issue{Title: "workline: the weekly sample of the product owner's acts"}, true},
 		{forge.Issue{Title: "Docs waiting for a person", Body: "Two docs.\n\nKept up to date by the documentalist role."}, true},
 		{forge.Issue{Title: "workline: its merge requests wait", Body: "Close it.\n\n<!-- workline:merge-demoted=abc123 -->"}, true},
+		{forge.Issue{Title: "workline: findings on the default branch", Body: "Two.\n\n<!-- workline:main-findings {\"keys\":[]} -->"}, true},
 		{forge.Issue{Title: "workline: the gardening fails", Body: "A person's issue, titled so."}, false},
 		{forge.Issue{Title: "Rows lost", Body: "Found.\n\n<!-- workline:opened-by=reviewer -->"}, false},
 		{forge.Issue{Title: "Roadmap item", Body: "Item.\n\n<!-- workline:import=docs/ROADMAP.md:3 -->"}, false},

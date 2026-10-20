@@ -630,18 +630,53 @@ func recommit(repo, tip, tree, parent string) (string, error) {
 		return "", err
 	}
 	a := strings.Split(who, "\x1f")
-	cmd := exec.Command("git", "-C", repo, "commit-tree", tree, "-p", parent, "-F", "-")
+	sign, err := signing(repo)
+	if err != nil {
+		return "", err
+	}
+	cmd := exec.Command("git", slices.Concat([]string{"-C", repo, "commit-tree"}, sign, []string{tree, "-p", parent, "-F", "-"})...)
 	cmd.Stdin = strings.NewReader(msg + "\n")
 	cmd.Env = append(os.Environ(), "GIT_AUTHOR_NAME="+a[0], "GIT_AUTHOR_EMAIL="+a[1], "GIT_AUTHOR_DATE="+a[2])
 	out, err := cmd.Output()
 	if err != nil {
 		var ee *exec.ExitError
 		if errors.As(err, &ee) {
-			return "", fmt.Errorf("git commit-tree: %s", strings.TrimSpace(string(ee.Stderr)))
+			return "", fmt.Errorf("git commit-tree%s: %s", signed(sign), strings.TrimSpace(string(ee.Stderr)))
 		}
 		return "", err
 	}
 	return strings.TrimSpace(string(out)), nil
+}
+
+// signing is how commit-tree signs a commit workline pushes: `-S` when git
+// is set to sign commits (`commit.gpgsign`), with the key and format git
+// is given (`user.signingkey`, `gpg.format`), as `git commit` signs; none
+// when it is not. commit-tree reads none of it itself, and a forge that
+// refuses unsigned commits refused its push (#549). A setting git cannot
+// read fails, as it fails `git commit`.
+func signing(repo string) ([]string, error) {
+	out, err := exec.Command("git", "-C", repo, "config", "--bool", "--get", "commit.gpgsign").Output()
+	var ee *exec.ExitError
+	switch {
+	case errors.As(err, &ee) && ee.ExitCode() == 1:
+		return nil, nil // not set
+	case errors.As(err, &ee):
+		return nil, fmt.Errorf("git config commit.gpgsign: %s", strings.TrimSpace(string(ee.Stderr)))
+	case err != nil:
+		return nil, err
+	case strings.TrimSpace(string(out)) == "true":
+		return []string{"-S"}, nil
+	}
+	return nil, nil
+}
+
+// signed says, in a failed commit's error, that it was signing as git is
+// set to: a key missing, unreadable or refused is told apart from the rest.
+func signed(sign []string) string {
+	if len(sign) == 0 {
+		return ""
+	}
+	return " (signing, as commit.gpgsign asks)"
 }
 
 func short(commit string) string {

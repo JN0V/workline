@@ -261,6 +261,10 @@ func TestGitLabApplyRunsWhenTheJudgeFails(t *testing.T) {
 			if job["allow_failure"] != true {
 				t.Errorf("job %s: allow_failure %v: what only warns would fail the pipeline", name, job["allow_failure"])
 			}
+		case name == "workline:release":
+			// At a tag, a release held, or whose checks could not run
+			// (3), is never published: no failure allowed
+			// (TestGitLabReleaseJobAtATag).
 		case strings.Contains(script, "workline route") && !strings.Contains(script, "--gates-only"):
 			judges++
 			af, _ := job["allow_failure"].(map[string]any)
@@ -334,7 +338,10 @@ const notCancelled = "github.event.workflow_run.conclusion != 'cancelled'"
 // ownGroup is a concurrency group as a pull request's run reads it: a
 // merge queue's group takes one of its own (TestGitHubMergeQueueRunsTheGatesAlone).
 func ownGroup(group string) string {
-	return strings.ReplaceAll(group, " || github.event.merge_group.head_ref }}", " }}")
+	for _, other := range []string{" || github.event.merge_group.head_ref || github.sha }}", " || github.event.merge_group.head_ref }}", " || github.sha }}"} {
+		group = strings.ReplaceAll(group, other, " }}")
+	}
+	return group
 }
 
 func TestOneLinePerMergeRequestAtATime(t *testing.T) {
@@ -1049,7 +1056,7 @@ func TestGardeningTendsItsMergeRequests(t *testing.T) {
 		found := false
 		for name, job := range wf.Jobs {
 			for _, s := range job.Steps {
-				if !strings.Contains(s.Run, "workline apply") {
+				if !strings.Contains(s.Run, "workline apply") || strings.Contains(s.Run, "--release-dry-run") {
 					continue
 				}
 				found = true
@@ -1116,7 +1123,7 @@ func TestGardeningJudgesTheReleaseAtNight(t *testing.T) {
 						t.Errorf("%s, job %s: the schedule line does not list the open pull requests (--forge github, --open-merge-request, pull-requests: read): no release is judged at night", f, name)
 					}
 				}
-				if strings.Contains(s.Run, "workline apply") {
+				if strings.Contains(s.Run, "workline apply") && !strings.Contains(s.Run, "--release-dry-run") {
 					applied = true
 					if !strings.Contains(s.Env["WORKLINE_APP"], "steps.app.outputs.app-slug") {
 						t.Errorf("%s, job %s: applies with no WORKLINE_APP: who pushed to the release's branch is not checked before its fix is opened as the App's", f, name)
@@ -1200,13 +1207,13 @@ func TestReleaseDocsJudgedNightly(t *testing.T) {
 	judged, applied := false, false
 	for name, job := range wf.Jobs {
 		for _, s := range job.Steps {
-			if strings.Contains(s.Run, "workline route release") {
+			if strings.Contains(s.Run, "workline route release") && !strings.Contains(s.Run, "--dry-run") {
 				judged = true
 				if !strings.Contains(s.Run, "--target merge-request:release") || !strings.Contains(s.Run, "--forge github") || job.Permissions["pull-requests"] != "read" {
 					t.Errorf("job %s: does not find the release pull request (--target merge-request:release, --forge github, pull-requests: read)", name)
 				}
 			}
-			if strings.Contains(s.Run, "workline apply") {
+			if strings.Contains(s.Run, "workline apply") && !strings.Contains(s.Run, "--release-dry-run") {
 				applied = true
 				if !strings.Contains(s.Env["WORKLINE_APP"], "steps.app.outputs.app-slug") {
 					t.Errorf("job %s: applies with no WORKLINE_APP", name)
@@ -1494,8 +1501,9 @@ func TestGatesRunWithNoTokenNorAgent(t *testing.T) {
 		if running != 1 {
 			t.Errorf("%s: %d jobs run the gates alone, want one", f, running)
 		}
+		// Main's run after a merge is the gates' job's alone (ADR-0050).
 		judge := wf.Jobs["judge"]
-		if fmt.Sprint(judge.Needs) != "gates" || judge.If != "!cancelled()" {
+		if fmt.Sprint(judge.Needs) != "gates" || judge.If != "!cancelled() && github.event_name != 'push'" {
 			t.Errorf("%s: judge does not run after the gates whatever their verdict (needs %v, if %q)", f, judge.Needs, judge.If)
 		}
 		read := false

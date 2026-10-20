@@ -215,18 +215,25 @@ var trackingTitles = []string{
 // keptBy is the line the engine ends an issue a role keeps in place with
 // ("Docs waiting for a person"); mergeDemoted, the key of an issue holding
 // the merge policy back after a revert.
+// mainFindings, the key of the issue main's run after a merge keeps its
+// findings in (ADR-0050);
 var (
 	keptBy       = regexp.MustCompile(`(?m)^Kept up to date by the [\w -]+ role\.[ \t\r]*$`)
 	mergeDemoted = regexp.MustCompile(`(?m)^<!-- workline:merge-demoted=[^\n]*-->[ \t\r]*$`)
+	mainFindings = regexp.MustCompile(`(?m)^<!-- workline:main-findings [^\n]*-->[ \t\r]*$`)
+	// releaseDryRun, the end of the part a release's dry run keeps in it,
+	// alone there before main's first run.
+	releaseDryRun = regexp.MustCompile(`(?m)^<!-- workline:release-dry-run-end [^\n]*-->[ \t\r]*$`)
 )
 
 // Tracking says whether an issue is one workline keeps for its own work —
 // the role's old report, the weekly sample, a role's issue kept in place,
-// a demotion of the merge policy —: never refined, asked about, nor
-// proposed on, nor listed among the backlog's (#429). A role's finding or
-// an import is work, not tracking.
+// a demotion of the merge policy, main's findings after a merge —: never
+// refined, asked about, nor proposed on, nor listed among the backlog's
+// (#429). A role's finding or an import is work, not tracking.
 func Tracking(is forge.Issue, role string) bool {
-	return is.Title == ReportTitle(role) || slices.Contains(trackingTitles, is.Title) || keptBy.MatchString(is.Body) || mergeDemoted.MatchString(is.Body)
+	return is.Title == ReportTitle(role) || slices.Contains(trackingTitles, is.Title) || keptBy.MatchString(is.Body) ||
+		mergeDemoted.MatchString(is.Body) || mainFindings.MatchString(is.Body) || releaseDryRun.MatchString(is.Body)
 }
 
 var openedKey = regexp.MustCompile(`(?m)^<!-- workline:(import|issue|opened-by)=[^\n]*-->[ \t\r]*$`)

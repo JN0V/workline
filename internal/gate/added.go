@@ -13,6 +13,10 @@ type Added struct {
 	Base     string       `json:"base"` // the merge base they are counted since
 	Checks   []CheckCount `json:"checks"`
 	Findings []Finding    `json:"findings"`
+	// Present: on main after a merge (Options.Keep), the fingerprint of
+	// every finding HEAD holds, new or not: what one found earlier is
+	// still there while it is named here.
+	Present []string `json:"present,omitempty"`
 }
 
 // CheckCount is how one check of a gate ended on a change.
@@ -24,6 +28,7 @@ type CheckCount struct {
 	// the tool told the new ones itself, the rest not known, or none were read.
 	Before int    `json:"before"`
 	Failed bool   `json:"failed,omitempty"` // an exit check that did not pass
+	Kept   bool   `json:"kept,omitempty"`   // the merge base's findings read as main kept them, not run again there
 	Error  string `json:"error,omitempty"`  // the check did not work: nothing it found is known
 	Fix    string `json:"fix,omitempty"`    // the command that fixes what it finds: a formatter's
 }

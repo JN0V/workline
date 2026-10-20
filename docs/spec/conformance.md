@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go, tests/evaluation]
-checked: 615b87f5
+checked: c2732ae5
 verified: agent:claude-code
 judged: ae14474
 ---
@@ -105,7 +105,8 @@ What else a case can give, run and expect, and how each is checked, is in
   author, insider, bot, created}`); `reactions-by`, the reactions people
   put on its comments, by the comment's id (`{emoji, author, writer}`);
   `edits`, its earlier bodies, newest first, as GitHub's edit history
-  keeps them, a body set adding the one it replaces. A comment is its text, or `{body,
+  keeps them, a body set, or an issue kept in place rewritten to another,
+  adding the one it replaces. A comment is its text, or `{body,
   author, insider, bot, id}`, its id its place from 1 when not given, kept
   once a comment before it is deleted; an edit keeps a comment's author;
   `posted` counts the comments posted on an issue, each one a mail on a

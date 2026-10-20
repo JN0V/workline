@@ -1,6 +1,6 @@
 ---
 sources: [internal/line, internal/routing, internal/work, routing.default.yaml]
-checked: 615b87f5
+checked: ebe6dfdd
 verified: agent:claude-code
 ---
 # Routing — v1 (draft)
@@ -78,9 +78,11 @@ routing:
     merge-request: [committer, documentalist, gate:merge]
     schedule:      [documentalist]
     release:       [gate:release, documentalist]   # before the release tool tags
+    main:          [documentalist]      # after a merge: merge-request's gates first
 
   fail-fast:                            # per event; true unless set
     schedule: false                     # every step runs, the worst verdict stands
+    main: false
 
   handoffs:                             # the only handoffs a role may ask for
     - {from: my-role, to: documentalist}  # a project's own role; none shipped asks
@@ -222,6 +224,30 @@ push. With no agent set, nothing waits; `draft=false` changes nothing.
   again; a branch moved on applies nothing (`moved-on`); the App's fix
   only when the App alone pushed to the release branch.
 
+### A release's dry run
+
+[ADR-0050](../adr/0050-each-act-has-its-moment-and-a-wait-budget.md#3-the-moment-table):
+`route release --dry-run`, each night, says what would hold the
+release if it were cut now ([how](../release.md)):
+
+- **On what**: with a forge, the release tool's merge request open into
+  the branch checked out, its head checked out then put back, its roles
+  run as on it; none, the branch's tip. A tip that is a release already
+  runs no step: nothing to cut.
+- **Every step** of `release`, none stopping the others, with no agent
+  and nothing applied. What a step that does not pass says blocks, else
+  what it leaves to its verdict, else the step, is listed in the
+  result's `dry-run` (`holds`, `head`, `since`, `merge-request`); then
+  lowered to a warning. The line passes.
+- **Refused** (misuse, 64): another event, an agent named, `--target`,
+  `--open-merge-request`, `--push-to-merge-request`, `--verdict`, the
+  gates alone or read, `--warn-*`.
+- **Posted** by `apply --release-dry-run`: on that merge request, one
+  comment, posted once something holds, edited when what it lists
+  changes; else a part of main's issue, taken out when nothing holds.
+- **At a tag**, `route release` compares with the release before the
+  one the tag names: a tag at HEAD is never the last release.
+
 ### A merge queue's or train's run: the gates alone
 
 [ADR-0050](../adr/0050-each-act-has-its-moment-and-a-wait-budget.md#4-what-the-table-holds-to):
@@ -235,6 +261,26 @@ head's verdict and the person's yes stay the merge request's
 ([ADR-0042](../adr/0042-the-engine-merges-by-the-projects-policy.md));
 so is `--warn-only`, and any value but `true` or `false`
 ([a merge queue or train](../merge-queue.md)).
+
+### Main after a merge
+
+[ADR-0050](../adr/0050-each-act-has-its-moment-and-a-wait-budget.md#3-the-moment-table):
+`route main`, on the default branch's new tip, given the push as
+`range` ([how](../main-after-merge.md)):
+
+- **Its steps**: the gate steps of `merge-request` first, each once,
+  then those `main` lists (the documentalist, by default); every step
+  runs (`fail-fast: false`).
+- **The gates**: what the push adds since main's tip before it counts,
+  the range's start, else HEAD's first parent; with none, every finding
+  is said, none counted. Every finding is kept by HEAD's commit in the
+  folder `--gates-kept` names, the next base.
+- **No agent asked** by the shipped roles: the documentalist checks the
+  whole repository there, judging no doc. The engine's own commits are
+  checked as any other.
+- **Its result** names the event (`event`) and what it compared
+  (`main`: `before`, `head`, the commits between); `apply --main` keeps
+  it in one issue, edited only when what it lists changes.
 
 ### Each step's seconds, a moment's budget
 
@@ -257,8 +303,8 @@ its budget says so once more, naming that step; it never blocks.
 | `ready-review` | `merge-request --warn-only`: the lenses that warn, posted when done | 10 min |
 | `queue` | `merge-request --input queue=true`, a merge queue's or train's run: what workline adds to it | 1 min |
 
-- Any other event has none: main, the night and the release wait for
-  nobody.
+- Any other event has none: main, the night and the release, its dry
+  run too, wait for nobody.
 - The line measures itself: a runner's setup and queue, and the job
   that applies, are not in it.
 - A project sets its own in `routing.budgets`, in seconds, finite and

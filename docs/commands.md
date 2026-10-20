@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/engine/engine.go, internal/hooks]
-checked: 615b87f5
+checked: a88dc872
 verified: agent:claude-code
 judged: e343388
 ---
@@ -42,6 +42,14 @@ for a nightly job ([more](../roles/documentalist/docs/push.md#a-release-tools-pu
 With `--input queue=true`, a merge queue's or train's run: the gates
 alone, on the merged result, the steps left named; `--verdict` and
 `--warn-only` refused ([a merge queue or train](merge-queue.md)).
+`route main`, after a merge: the merge request's gates, then the
+whole repository's checks, every step run; `--gates-kept <folder>`
+keeps the gates' findings there by commit, and on a merge request reads
+its merge base's there ([main after a merge](main-after-merge.md)).
+`route release --dry-run`: what would hold the release if it were cut
+now, on the release merge request open, else the branch's tip; every
+step, no agent, nothing applied, said as warnings
+([the release](release.md)).
 
 ### workline apply
 
@@ -67,6 +75,13 @@ alone, on the merged result, the steps left named; `--verdict` and
   change adds, from the result `route --gates-only --json` printed in
   that run; on GitHub, the annotations of the check `workline gates` and
   one summary comment ([gates](spec/gates.md#shown-on-the-merge-request)).
+- `--main <file>`, alone: what `route main --json` found, kept in one
+  issue, edited only when what it lists changes; `--forge`, `--repo`
+  ([main after a merge](main-after-merge.md)).
+- `--release-dry-run <file>`, alone: what `route release --dry-run
+  --json` found, in one comment on the release merge request it judged,
+  else in a part of main's issue; edited only when what it lists
+  changes ([the release](release.md)).
 
 ### workline gate
 

@@ -1,6 +1,6 @@
 ---
 sources: [roles/documentalist/role.yaml, internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/kept.go, routing.default.yaml]
-checked: 615b87f5
+checked: a88dc872
 judged: f70db89
 verified: agent:claude-code
 ---
@@ -9,7 +9,7 @@ verified: agent:claude-code
 ```mermaid
 %%{init: {"flowchart": {"wrappingWidth": 400}}}%%
 flowchart LR
-  when["<b>When</b><br/>git push: the pre-push hook<br/>each push to a merge request<br/>gardening, nightly or weekly<br/>before your release tool tags<br/>workline init, workline docs"]
+  when["<b>When</b><br/>git push: the pre-push hook<br/>each push to a merge request<br/>after a merge<br/>gardening, nightly or weekly<br/>before your release tool tags<br/>workline init, workline docs"]
   reads["<b>Reads</b><br/>each doc's sources and checked<br/>the commits since<br/>the code they name"]
   role(["Documentalist"])
   alone["<b>Alone</b><br/>counts the docs a push made suspect<br/>on a merge request: fixes a doc<br/>or vouches for it, on its branch<br/>holds a release while docs are due"]
@@ -48,9 +48,10 @@ doc by doc), or make a push wait on an agent.
 | Event | Fired by | Does |
 |---|---|---|
 | `pre-push` | the global hook, when routed | counts the docs the pushed commits made suspect, reading no other doc, no agent |
-| `merge-request` | CI | judges the docs the merge request made suspect; fix committed to its branch; a draft: counts them, judged once it is ready; a release tool's: counts the docs due, judged at night |
+| `merge-request` | CI | judges the docs the merge request made suspect, reading no other doc; fix committed to its branch; a draft: counts them, judged once it is ready; a release tool's: counts the docs due, judged at night |
+| `main` | CI, after each merge | the whole repository's checks, no agent, in one issue ([more](../../docs/main-after-merge.md)) |
 | `schedule` | CI, nightly or weekly (gardening) | first the docs due for an open release pull request, on its head; then every suspect or stale doc, budgets, links, reader checks; one merge request per task |
-| `release` | `workline route release`, before your release tool tags; with `--target`, a release pull request, now or each night | holds the release until the docs due are judged |
+| `release` | `workline route release`, before your release tool tags, or at its tag; with `--target`, a release pull request, now or each night; `--dry-run`, each night, no agent | holds the release until the docs due are judged; the dry run says what would hold it |
 | `init` | `workline init` | proposes each doc's `sources`, for you to review |
 
 `workline docs` judges, on your machine, what was made suspect since the
@@ -104,6 +105,9 @@ Under `roles: {documentalist: {settings: …}}` in `.workline/config.yaml`
   - its findings beside their lines, none a conversation to resolve: on
     GitHub the check `workline findings`, on GitLab the Code Quality
     report ([#412](https://github.com/JN0V/workline/issues/412)).
+- On main after a merge: the whole repository's findings, with the
+  gates', in one issue, edited only when they change
+  ([more](../../docs/main-after-merge.md)).
 - Gardening: a branch and merge request per task,
   `workline/documentalist/<task>` — `records` for the records merged merge
   requests kept —, rebuilt on `main` once `main` moved, or

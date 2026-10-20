@@ -1,0 +1,12 @@
+case: setup/hooks-hand-over-from-a-linked-worktree-commit-msg
+about: From a linked worktree, the global commit-msg runs workline, then the repository's own commit-msg in .git/hooks; a guard there refuses the commit, saying so.
+given:
+  repo: basic
+  setup:
+    - git worktree add -q ../linked -b side
+    - "printf '#!/bin/sh\\necho \"guard: the repository refuses this commit\" >&2\\nexit 1\\n' > .git/hooks/commit-msg && chmod +x .git/hooks/commit-msg"
+  env: {GIT_CONFIG_GLOBAL: "$XDG_CONFIG_HOME/gitconfig", WORKLINE_AI: none}
+run: {sh: "workline hooks install --global && cd ../linked && echo change >> main.go && git commit -q -am 'feat: change the start'"}
+expect:
+  exit: 1
+  stderr: ["guard: the repository refuses this commit"]

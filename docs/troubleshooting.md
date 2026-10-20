@@ -1,6 +1,6 @@
 ---
 sources: [internal/doctor/doctor.go, internal/doctor/conversations.go, internal/hooks/hooks.go, cmd/workline/main.go, cmd/workline/cli.go, internal/forge/local.go]
-checked: 615b87f5
+checked: a88dc872
 verified: agent:claude-code
 ---
 # Troubleshooting
@@ -19,6 +19,11 @@ tokens — and `--json` prints every finding.
 - **The binary moved**: the hooks call it where it was when installed.
   Install it to the same place, or run `workline hooks install --global`
   again.
+- **Written by another version**: doctor says `hooks-outdated`. Older
+  hooks skipped a repository's own `.git/hooks/` from a linked worktree
+  ([#551](https://github.com/JN0V/workline/issues/551)). Run `workline
+  hooks install --global` again; `--repo` too, then commit
+  `.githooks/commit-msg`.
 - **A repository sets its own `core.hooksPath`** (husky, lefthook…): git
   takes it over the global one. `workline doctor` in the repository says
   `hooks-bypassed`, naming the path, when its `commit-msg` (and `pre-push`,
@@ -27,7 +32,8 @@ tokens — and `--json` prints every finding.
   (or workline's global hook) as a command before a top-level `exit`: a
   comment or an `echo` does not count.
   The fix it prints:
-  - the path is `.githooks` or `.git/hooks`: unset it (`git config --local
+  - the path is `.githooks` or `.git/hooks` (the main one, from a linked
+    worktree too): unset it (`git config --local
     --unset core.hooksPath`); the global hooks run workline, then hand over
     to that folder;
   - another folder: add `workline hook <hook> "$@" || exit $?` at the top of

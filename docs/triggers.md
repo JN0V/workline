@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/line, internal/hooks, internal/forge/gitlab.go, ci/gitlab/workline.gitlab-ci.yml, ci/github/workline.yml, ci/github/workline-gardening.yml, ci/github/workline-sample.yml, routing.default.yaml]
-checked: 78fd03ce
+checked: f5008630
 verified: agent:claude-code
 reader: 2de353fab113
 ---
@@ -25,6 +25,7 @@ trigger token or another pipeline: [gitlab-trigger.md](gitlab-trigger.md).
 | the backlog | `workline run-role product-owner --event schedule --forge gitlab` | yours |
 | a roadmap file to issues | `workline issues import <file>`, then the same with `--apply`; in CI, `--json > line.json`, then `workline apply --line line.json` | yours |
 | before tagging a release | `workline route release` | yours |
+| what would hold the release now | `workline route release --dry-run` | never |
 | the weekly sample | `workline sample --out s.json`, then `workline sample --apply s.json` | the judge |
 
 `--ai none` on any of them runs every check with no agent. With `--forge
@@ -72,6 +73,10 @@ ready, as the templates do ([how](../roles/reviewer/docs/ready.md)).
 In a merge queue or train, the same line with `--input queue=true` and
 the merged result's range runs the gates alone, no agent, no verdict
 written ([the commands](merge-queue.md#the-commands-for-another-ci)).
+After a merge, `route main --ai none --gates-kept <folder>` on the new
+tip, then `apply --main` with a token writing issues; the gates' job
+of a merge request reads that folder too
+([the commands](main-after-merge.md#the-commands-for-another-ci)).
 
 The templates also read the reviewer's lenses that only warn apart from
 the verdict: `--warn-apart` on the line above, and beside it a job of
@@ -119,6 +124,13 @@ Before your release tool tags; a non-zero exit holds it.
   --open-merge-request --json > line.json`, then `workline apply --line
   line.json`, puts the docs' fix on a merge request of its own (untried
   this way).
+- At a tag (GitLab's `workline:release`): `workline route release --ai
+  none --forge none`, no token; the tag's own release is not the last
+  one. The jobs that publish need it.
+- Each night, a dry run: `workline route release --dry-run --forge
+  gitlab --json > dry-run.json` (no agent, writes nothing), then
+  `workline apply --release-dry-run dry-run.json --forge gitlab` (token,
+  no agent) ([the release](release.md)).
 - A release tool's merge request: its own runs ask no agent; its docs
   are judged every night, by gardening or `workline route release
   --target merge-request:release --no-apply --forge gitlab --json >
@@ -171,10 +183,11 @@ a merge request given its `range`, only the findings the change adds count
 |---|---|---|---|
 | judging (`--no-apply`, `sample --out`) | the whole history (`GIT_DEPTH: 0`, `fetch-depth: 0`), the base commit fetched | the agent's credentials, whichever agent you chose (Claude Code: `CLAUDE_CODE_OAUTH_TOKEN` from `claude setup-token`, or `ANTHROPIC_API_KEY`); none is fine: `--ai none` | the engine, gitleaks, your agent's CLI (Claude Code: `claude`, from npm) |
 | judging gardening, the product owner, a merge request with the reviewer, or the sample | as above | a token that reads issues, merge requests and their notes: `GITLAB_TOKEN` with `read_api` (`CI_JOB_TOKEN` reads no issue); on GitHub `GH_TOKEN`, `issues: read`, `pull-requests: read` | as above |
-| applying (`apply`, `sample --apply`) | a branch, not a detached HEAD, for gardening | `GITLAB_TOKEN` (below); a git identity (`user.name`, `user.email`); `origin` with the token, to push | the engine |
+| applying (`apply`, `sample --apply`) | a branch, not a detached HEAD, for gardening | `GITLAB_TOKEN` (below); a git identity (`user.name`, `user.email`); `origin` with the token, to push; git set to sign where the forge refuses unsigned commits ([how](gitlab/signed-commits.md)) | the engine; `ssh-keygen` to sign with an SSH key |
 
 The image `ghcr.io/jn0v/workline:<version>` holds the engine, gitleaks,
-git, jq and npm. `workline version` in a job's log says which engine ran.
+git, jq, npm and, from the first release after v0.37.0, `ssh-keygen`.
+`workline version` in a job's log says which engine ran.
 
 ### GitLab tokens
 
