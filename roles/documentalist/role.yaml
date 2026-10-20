@@ -50,6 +50,9 @@ duties:
   writes: [$settings.docs]    # only documentation, never code
 
 intentions: [patch, claim, issue, comment, label, note]
+# A blocked run still applies its comments, which say why: the release
+# held for its docs due, waiting for the night (ADR-0050, §7).
+on-block: [comment]
 
 # Without AI, every check still runs. What needed judgement (is this suspect doc
 # still right?) is reported for a person, who clears it by updating `checked`.

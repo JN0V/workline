@@ -138,17 +138,23 @@ func OnReleaseHead(o Options) (back func(), branch string, err error) {
 // ReleaseHeld says whether a run on the release blocked only for its docs:
 // those due, and their fix in a merge request of its own, to merge first
 // (ADR-0017). At night that is said on the release's merge request, and
-// fails nothing of the night's.
+// fails nothing of the night's. On the release, what holds it keeps its
+// level, `block`; what only informs has none (budgets, links): only the
+// first are read. A block with none of them blocks for another reason.
 func ReleaseHeld(r *Result) bool {
 	if r == nil || r.Status != verdict.Block {
 		return false
 	}
+	n := 0
 	for _, f := range r.Findings {
-		if (f.Level == "" || f.Level == "block") && !slices.Contains(heldFor, f.Rule) {
-			return false
+		if f.Level == "block" {
+			if !slices.Contains(heldFor, f.Rule) {
+				return false
+			}
+			n++
 		}
 	}
-	return true
+	return n > 0
 }
 
 // heldFor are the rules of what holds a release for its docs.

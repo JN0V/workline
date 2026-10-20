@@ -1394,6 +1394,18 @@ doc when its reader really gained something to know.
 		if findings, err = holdTheRelease(findings, suspects, repo); err != nil {
 			return fail(err)
 		}
+		// Its docs due waiting for the night, said on the release's merge
+		// request, where its person looks (principle 14).
+		if c, ok := nightNote(findings); ok {
+			file := filepath.Join(runDir, "in", "fallback.yaml")
+			fallback, err := intent.Read(file)
+			if err != nil {
+				return fail(err)
+			}
+			if err := intent.Write(file, append(fallback, c)); err != nil {
+				return fail(err)
+			}
+		}
 	}
 	var left strings.Builder
 	saidOnce := map[string]bool{}
@@ -1552,11 +1564,11 @@ func holdTheRelease(findings []verdict.Finding, suspects map[string]*suspectDoc,
 	if night {
 		by = "by the agent at night, or a person moving `checked`"
 	}
-	due := 0
+	due := map[string]bool{} // the docs due, each once: a doc has a finding a source
 	for i := range findings {
 		f := &findings[i]
 		if f.Rule == "due" && f.Level == "block" {
-			due++
+			due[f.Where] = true
 		}
 		sd := suspects[f.Where]
 		if f.Rule != "suspect" || sd == nil || held(sd.doc, sd.doc.Judged, repo) || held(sd.doc, sd.doc.JudgedInParts, repo) {
@@ -1567,12 +1579,49 @@ func holdTheRelease(findings []verdict.Finding, suspects map[string]*suspectDoc,
 		}
 		f.Level = "block"
 		f.Message += "\n(made suspect since " + since + ": the release waits until it is judged — " + by + on + ")"
-		due++
+		due[f.Where] = true
 	}
-	if night && due > 0 {
-		findings = append(findings, atNight(due))
+	if night && len(due) > 0 {
+		findings = append(findings, atNight(len(due)))
 	}
 	return findings, nil
+}
+
+// nightNote is the comment on a release tool's merge request whose docs due
+// wait for the agent at night (ADR-0050, §7): each doc, when its fix comes,
+// how to have it sooner. Edited on each move; with none left, it says so,
+// and none is opened on a merge request that never had one.
+func nightNote(findings []verdict.Finding) (intent.Intention, bool) {
+	t, ok := targetMergeRequest()
+	if os.Getenv("WORKLINE_AI_WAITS") != "night" || !ok {
+		return intent.Intention{}, false
+	}
+	var docs []string
+	why := map[string]string{}
+	for _, f := range findings {
+		if f.Level != "block" || f.Rule != "suspect" && f.Rule != "due" || f.Where == "" {
+			continue
+		}
+		if _, seen := why[f.Where]; !seen {
+			docs = append(docs, f.Where)
+			why[f.Where], _, _ = strings.Cut(f.Message, "\n")
+		}
+	}
+	value := map[string]any{"sticky": "release-night"}
+	if len(docs) == 0 {
+		value["body"], value["update-only"] = "**Docs due for this release**: none left.", true
+		return intent.Intention{Kind: "comment", Value: value}, true
+	}
+	var b strings.Builder
+	fmt.Fprintf(&b, "**Docs due for this release** — %d hold it, until each is judged. No agent judges them here, on each push: a doc fix would change the head after a person's yes. "+
+		"The agent judges and fixes them at night, in a merge request of its own (`workline/documentalist/release`); the release waits until it is merged.\n\n", len(docs))
+	for _, d := range docs {
+		fmt.Fprintf(&b, "- `%s` — %s\n", d, strings.TrimSuffix(why[d], ":"))
+	}
+	fmt.Fprintf(&b, "\nFor the release sooner: run the release docs workflow, or the gardening, now; or, where an agent may judge, `workline route release --target merge-request:%d --push-to-merge-request`; "+
+		"or a person reads each doc against its sources and moves its `checked`.", t.ID)
+	value["body"] = b.String()
+	return intent.Intention{Kind: "comment", Value: value}, true
 }
 
 // atNight says, on a release tool's merge request, that its docs due wait

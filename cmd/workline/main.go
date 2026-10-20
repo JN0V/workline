@@ -1227,7 +1227,7 @@ func writeVerdict(repo, file, rng string, res *line.Result) error {
 	} // a full id not fetched here: the source head of a merge result
 	v := engine.HeadVerdict{Head: head, Status: res.Status, Findings: res.Findings}
 	for _, s := range res.Steps {
-		v.Steps = append(v.Steps, engine.StepStatus{Name: s.Name, Status: s.Status})
+		v.Steps = append(v.Steps, engine.StepStatus{Name: s.Name, Status: s.Status, Held: engine.ReleaseHeld(s.Result)})
 	}
 	return engine.WriteVerdict(file, v)
 }

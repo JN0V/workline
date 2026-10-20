@@ -1,0 +1,19 @@
+case: documentalist/release-docs-due-counted-once-a-doc
+about: "A doc due whose two sources changed since the last tag has a finding for each, and is one doc due: the warning on the release pull request counts docs, not findings. On workline's 0.38.0 release (#536), one doc with three changed sources was said \"3 docs due\"."
+given:
+  repo: documented
+  setup:
+    - "printf 'package auth\\n' > src/auth/session.go && sed -i 's|^sources: .*|sources: [src/auth/token.go, src/auth/session.go]|' docs/tech/auth.md && git add src/auth/session.go && git commit -qam 'feat(auth): sessions'"
+    - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C/\" docs/tech/auth.md && git commit -qam 'docs: confirm the auth doc' && git tag v1.0.0"
+    - "sed -i 's/3600/7200/' src/auth/token.go && printf '// sessions last a day\\n' >> src/auth/session.go && git commit -qam 'feat(auth): longer tokens and sessions'"
+    - "git checkout -qb release-please--branches--main && echo '# Changelog' > CHANGELOG.md && git add CHANGELOG.md && git commit -qm 'chore(main): release 1.1.0' && git checkout -q --detach"
+  forge: {merge-requests: [{id: 1, branch: release-please--branches--main, base: main, labels: [], comments: []}]}
+run: {role: documentalist, event: merge-request, target: {merge-request: 1}, input: {range: "main..HEAD"}, ai: "fake:doc-fixed"}
+expect:
+  status: block
+  agent-calls: 0
+  findings:
+    - {rule: ai-waits-for-night, level: warn, message: "1 doc due for the release is judged"}
+  forge:
+    merge-requests:
+      - {id: 1, comments: 1, comment-contains: "**Docs due for this release** — 1 hold it"}
