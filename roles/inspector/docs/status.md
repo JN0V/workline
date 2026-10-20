@@ -10,7 +10,9 @@ beta, not released yet.
 A try is told in its pull request's `## Tried`
 ([ADR-0043](../../../docs/adr/0043-a-try-is-told-in-its-pull-request.md)):
 the first, on a copy of workline with golangci-lint and one real call,
-on [#574](https://github.com/JN0V/workline/pull/574).
+on [#574](https://github.com/JN0V/workline/pull/574); the first on
+workline's own pull requests, a finding planted, on
+[#584](https://github.com/JN0V/workline/pull/584).
 
 ## To leave beta
 
@@ -20,12 +22,14 @@ hold, as
 [ADR-0049](../../../docs/adr/0049-the-inspector-judges-the-new-findings-of-the-projects-tools.md#leaving-beta)
 sets them:
 
-1. **Nothing buildable in Missing**: open. Steps 2 to 4 are built with
+1. **Nothing buildable in Missing**: open. Steps 2 to 5 are built with
    their cases; Missing below holds what is left.
 2. **The main issue validated on real use**: open.
    [#202](https://github.com/JN0V/workline/issues/202)'s Validation, on
-   workline and on a copy of a real repository with lint debt, needs the
-   golangci-lint gate on workline itself (ADR-0049's step 5).
+   workline and on a copy of a real repository with lint debt. On
+   workline, the golangci-lint gate is built (ADR-0049's step 5), tried
+   once on a planted finding; the maintainer's run of the Validation
+   there, and the copy, are left.
 3. **AI verdicts measured**: open. The triage run five times on a bench
    of planted findings, true defects and known false positives, its
    false-positive calls counted against the truth, recorded in
@@ -59,6 +63,9 @@ Cases in
 - **In CI**, beside the lenses that warn: workline-warn.yml waits for
   workline.yml's gates job, `workline:warn` for `workline:gates`
   (`TestWarnApartSaysWhatIsMissing`, `TestWarnApartNeverHoldsTheVerdict`).
+- **A golangci-lint gate on workline itself**, ADR-0049's step 5: its
+  findings triaged on workline's own pull requests, the tool installed
+  pinned, its checksum in the workflow (`TestOwnGatesToolsArePinned`).
 
 ## Missing
 
@@ -77,9 +84,6 @@ Cases in
 - **The reviewer told what the linters cover**
   ([ADR-0049, section 6](../../../docs/adr/0049-the-inspector-judges-the-new-findings-of-the-projects-tools.md#6-guards)):
   [#578](https://github.com/JN0V/workline/issues/578).
-- **A golangci-lint gate on workline itself**, ADR-0049's step 5, and
-  [#202](https://github.com/JN0V/workline/issues/202)'s Validation:
-  [#579](https://github.com/JN0V/workline/issues/579).
 - **Two runs judged before either is applied**: the second does not see
   the first's record, and asks its findings again; the reviewer's apply
   merges its record for that ([#375](https://github.com/JN0V/workline/issues/375)):
