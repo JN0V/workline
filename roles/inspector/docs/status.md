@@ -8,7 +8,9 @@ verdict. Off the verdict's path, in the run apart. Built as step 4 of
 beta, not released yet.
 
 A try is told in its pull request's `## Tried`
-([ADR-0043](../../../docs/adr/0043-a-try-is-told-in-its-pull-request.md)).
+([ADR-0043](../../../docs/adr/0043-a-try-is-told-in-its-pull-request.md)):
+the first, on a copy of workline with golangci-lint and one real call,
+on [#574](https://github.com/JN0V/workline/pull/574).
 
 ## To leave beta
 
