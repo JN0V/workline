@@ -118,6 +118,10 @@ type runSpec struct {
 	// status, steps and calls is its; the findings are both runs'.
 	ThenLine *thenLine `yaml:"then-line"`
 	CLI      []string  `yaml:"cli"` // workline with these arguments, as typed: its exit code, what it prints
+	// Sh: a shell line, the engine first on PATH as workline: what a
+	// person types around it (install its hooks, then the git command
+	// that runs them), checked as cli is.
+	Sh string `yaml:"sh"`
 	// ApplyFrom: with then: resume, the runs applied as the base's job
 	// applies a merge request's own CI run (apply --from-merge-request).
 	ApplyFrom *applyFrom `yaml:"apply-from"`
@@ -567,7 +571,7 @@ func runCase(t *testing.T, c *caseFile) []string {
 		defer srv.Close()
 		env = append(env, "CI_API_V4_URL="+srv.URL+"/api/v4", "CI_PROJECT_ID=1", "CI_PROJECT_PATH=", "GITLAB_TOKEN=conformance")
 	}
-	if c.Run.CLI != nil {
+	if c.Run.CLI != nil || c.Run.Sh != "" {
 		return runCLI(engineBin, c, repo, env)
 	}
 	roles := rolesDir
@@ -1060,9 +1064,22 @@ func runCase(t *testing.T, c *caseFile) []string {
 }
 
 // runCLI runs workline with the case's arguments, as a person or a script
-// types them, and checks its exit code and what it prints where.
+// types them, or the case's shell line, and checks its exit code and what
+// it prints where.
 func runCLI(engineBin string, c *caseFile, repo string, env []string) []string {
 	cmd := exec.Command(engineBin, c.Run.CLI...)
+	if c.Run.Sh != "" {
+		bin := filepath.Join(filepath.Dir(repo), "engine-bin")
+		if err := os.MkdirAll(bin, 0o755); err != nil {
+			return []string{err.Error()}
+		}
+		if err := os.Symlink(engineBin, filepath.Join(bin, "workline")); err != nil {
+			return []string{err.Error()}
+		}
+		cmd = exec.Command("sh", "-c", c.Run.Sh)
+		// A run from inside a workline hook would skip the hooks it installs.
+		env = append(slices.Clone(env), "PATH="+bin+string(os.PathListSeparator)+lookup(env, "PATH"), "WORKLINE_HOOK_RUNNING=")
+	}
 	cmd.Dir, cmd.Env = repo, env
 	for k, v := range c.Given.Env { // what the command is run with, as a hook is: WORKLINE_AI
 		cmd.Env = append(cmd.Env, k+"="+os.Expand(v, func(name string) string { return lookup(cmd.Env, name) }))
