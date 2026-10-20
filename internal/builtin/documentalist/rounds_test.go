@@ -31,7 +31,7 @@ func TestEarlierRounds(t *testing.T) {
 	must(intent.Write(filepath.Join(second, "out", "intentions.yaml"), []intent.Intention{{Kind: "patch", Value: "--- a/docs/b.md\n+++ b/docs/b.md\n"}}))
 	must(writeYAML(filepath.Join(first, "out", "release-fix.yaml"), releaseFix{Title: "docs: bring the docs in line with the code",
 		Docs: map[string]string{"docs/a.md": "still true, `checked` moved"}, Withheld: []verdict.Finding{{Rule: "removal-uncited", Where: "docs/a.md"}}}))
-	t.Setenv("WORKLINE_EARLIER_ROUNDS", first+" "+second)
+	t.Setenv("WORKLINE_EARLIER_ROUNDS", first+string(os.PathListSeparator)+second)
 
 	docs := map[string]*suspectDoc{"docs/a.md": {}, "docs/b.md": {}, "docs/c.md": {}, "docs/d.md": {note: "(its own)"}}
 	if err := holdEarlierRounds(earlierRounds(), docs); err != nil {

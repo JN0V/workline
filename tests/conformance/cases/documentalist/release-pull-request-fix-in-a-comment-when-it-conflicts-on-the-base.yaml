@@ -1,0 +1,31 @@
+case: documentalist/release-pull-request-fix-in-a-comment-when-it-conflicts-on-the-base
+about: "On a release pull request, judged then applied as at night: a doc due that the release tool bumped, whose header main changed since on the very lines the fix changes. Put on main three ways, the fix conflicts: it goes in a comment for a person, as before, no merge request is opened, and the clone keeps nothing of the attempt (#572)."
+given:
+  repo: documented
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git"
+    - "printf '%s\\n' '---' 'type: reference' 'sources: [src/auth/token.go]' 'checked: HEAD' '---' '# Pin' '' 'Pin it in your job:' '' '```yaml' 'VERSION: v1.0.0   # x-release-please-version' '```' > docs/tech/pin.md && git add docs && git commit -qm 'docs: the pin'"
+    - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: HEAD/checked: $C/\" docs/tech/pin.md && git commit -qam 'docs: confirm the pin' && git tag v1.0.0"
+    - "printf '\\n// Refreshed on use.\\n' >> src/auth/token.go && git commit -qam 'feat(auth): refresh tokens on use' && git push -q origin main"
+    - "git checkout -qb release-please--branches--main && sed -i 's/v1.0.0/v1.1.0/' docs/tech/pin.md && git commit -qam 'chore(main): release 1.1.0' && git push -q origin release-please--branches--main"
+    - "git checkout -q main && sed -i 's/^checked: .*/checked: 0000000/' docs/tech/pin.md && git commit -qam 'docs: a person moves the pin' && git push -q origin main && git checkout -q --detach release-please--branches--main"
+  forge:
+    merge-requests:
+      - id: 1
+        branch: release-please--branches--main
+        base: main
+        labels: []
+        comments: []
+        pushes: [{head: release-please--branches--main, at: "2026-01-03T00:00:00Z", by: workline-bot}]
+run: {role: documentalist, event: release, target: {merge-request: 1}, branch: release-please--branches--main, ai: 'cmd:sh "$FIXTURES/agents/confirm-every-doc.sh"', push-to-merge-request: true, no-apply: true, then: resume}
+expect:
+  findings:
+    - {rule: fix-in-comment, where: release-please--branches--main, message: "the docs it fixes differ on main"}
+  files:
+    docs/tech/pin.md: {contains: "VERSION: v1.1.0", lacks: ["<<<<<<<", "verified: agent:documentalist"]}
+  not-pushed: [release-please--branches--main, main]
+  gone: [workline/documentalist/release]
+  forge:
+    merge-requests:
+      - {id: 1, comment-contains: ["+verified: agent:documentalist"]}
+      - {id: 2, absent: true}

@@ -150,22 +150,13 @@ type Result struct {
 	// settle, and applied what it fixed in this clone (#543): the next
 	// round may take up what it deferred, as after a pass.
 	held bool
-	// A release's rounds, one fix (#572). release: the branch of the
-	// release tool's merge request the run judges, run on `release`, its
-	// fix going to one merge request of its own; "" for any other run.
-	// folded: this round left docs for the next, and
-	// its fix is kept in this clone for that round to see, proposed with
-	// it rather than applied or listed. earlier: the run folders of the
-	// rounds folded so far, oldest first; carried: their patches, judged,
-	// proposed again by the round after them; carriedIn: the round that
-	// did. local: what each file those patches wrote held before, put
-	// back once the run ends (nil: no such file).
-	release   string
-	folded    bool
-	earlier   []string
-	carried   []intent.Intention
-	carriedIn string
-	local     map[string]*[]byte
+	// A release's rounds, one fix (#572, the role contract's step 6).
+	release   string             // the release tool's branch, on `release`; "" for any other run
+	folded    bool               // this round kept its fix in the clone for the next
+	earlier   []string           // the run folders of the rounds folded so far, oldest first
+	carried   []intent.Intention // their patches, proposed again by the round after them
+	carriedIn string             // the round that proposed them
+	local     map[string]*[]byte // what the files they wrote held before; nil: none
 }
 
 // errTokensSpent refuses a call once the run has spent its ai-max-tokens.
@@ -700,7 +691,7 @@ func run(o Options, res *Result) error {
 		res.release = releaseFrom
 	}
 	if len(res.earlier) > 0 {
-		env = append(env, "WORKLINE_EARLIER_ROUNDS="+strings.Join(res.earlier, " "))
+		env = append(env, "WORKLINE_EARLIER_ROUNDS="+strings.Join(res.earlier, string(os.PathListSeparator)))
 	}
 	if o.OpenMergeRequest {
 		// The role decides what it proposes when enough of its merge requests wait.
@@ -1760,10 +1751,21 @@ func threeWay(st runState, tip, orig string) (bool, error) {
 		return false, errors.Join(err, again())
 	}
 	if _, err := git(st.Repo, strings.NewReader(diff), "apply", "--3way", "-"); err != nil {
-		if _, err := git(st.Repo, nil, "reset", "-q", "--hard"); err != nil {
-			return false, errors.Join(err, again())
+		// Its files as tip holds them, and no other file touched.
+		_, err := git(st.Repo, nil, append([]string{"reset", "-q", "--"}, st.Written...)...)
+		for _, p := range st.Written {
+			if err != nil {
+				break
+			}
+			if _, gone := git(st.Repo, nil, "cat-file", "-e", tip+":"+p); gone != nil {
+				if err = os.Remove(filepath.Join(st.Repo, filepath.FromSlash(p))); errors.Is(err, fs.ErrNotExist) {
+					err = nil
+				}
+				continue
+			}
+			_, err = git(st.Repo, nil, "checkout", "-q", tip, "--", p)
 		}
-		return false, again()
+		return false, errors.Join(err, again())
 	}
 	return true, nil
 }

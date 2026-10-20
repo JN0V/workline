@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
-	"strings"
 
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/verdict"
@@ -18,12 +17,12 @@ import (
 // a round that leaves docs for the next keeps its fix in the clone, and
 // the next round proposes it with its own, in one merge request of its
 // own (ADR-0017). The engine names those earlier rounds' folders in
-// WORKLINE_EARLIER_ROUNDS, oldest first; what they asked, kept and
-// proposed is read there.
+// WORKLINE_EARLIER_ROUNDS, a path list as PATH is, oldest first: what
+// they asked, kept and proposed is read there.
 
 // earlierRounds are the run folders of the rounds before this one whose
 // fix this round proposes with its own.
-func earlierRounds() []string { return strings.Fields(os.Getenv("WORKLINE_EARLIER_ROUNDS")) }
+func earlierRounds() []string { return filepath.SplitList(os.Getenv("WORKLINE_EARLIER_ROUNDS")) }
 
 // askedEarlier is a doc an earlier round of the run put before the agent
 // and left suspect: not asked again before the next run, and still
