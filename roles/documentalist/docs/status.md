@@ -68,7 +68,9 @@ its evaluation in
   `cascade-is-cut`, `release-propagates-product-docs`. A release tool's
   bump makes suspect only the docs that pin the version it replaces,
   never one naming it as history
-  ([#346](https://github.com/JN0V/workline/issues/346)): `version-bump-*`.
+  ([#346](https://github.com/JN0V/workline/issues/346)); in a code block,
+  the code pins under any key, `since:` too
+  ([#571](https://github.com/JN0V/workline/issues/571)): `version-bump-*`.
 - **Hygiene without AI**: budgets, duplicates, links (lychee), identifiers
   gone, superseded decisions, derived blocks, code no doc describes,
   sources gone: `budgets-reported`, `duplicates-reported`,

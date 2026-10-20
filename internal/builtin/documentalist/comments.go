@@ -160,6 +160,32 @@ func shebang(content string) string {
 // docstring — is a comment.
 func commentMask(p, content string) []bool {
 	st, _ := styleOf(p, content)
+	return maskWith(st, content)
+}
+
+// fenceLangs are the languages a code block names by a word other than
+// its files' extension.
+var fenceLangs = map[string]string{
+	"shell": "sh", "console": "sh", "shell-session": "sh", "python": "py", "javascript": "js",
+	"typescript": "ts", "golang": "go", "rust": "rs", "ruby": "rb", "kotlin": "kt", "csharp": "cs",
+	"c++": "cpp", "powershell": "ps1", "makefile": "mk", "docker": "dockerfile",
+}
+
+// fenceStyle is how a doc's code block writes its comments, by the
+// language its fence names. A block naming none, or one not known, reads
+// `#` and `//` after white space as comments: the shell's and C's.
+func fenceStyle(lang string) commentStyle {
+	if e, ok := fenceLangs[lang]; ok {
+		lang = e
+	}
+	if s, ok := styles[lang]; ok {
+		return s
+	}
+	return commentStyle{known: true, line: []string{"#", "//"}, afterSpace: []string{"#", "//"}}
+}
+
+// maskWith is commentMask with the file's style given.
+func maskWith(st commentStyle, content string) []bool {
 	mask := make([]bool, len(content))
 	mark := func(from, to int) {
 		for k := from; k < to && k < len(mask); k++ {
