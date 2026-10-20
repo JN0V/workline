@@ -1,6 +1,6 @@
 # ADR-0049: The inspector judges the new findings of the project's own tools
 
-- **Status:** accepted; steps 1 to 4 built ([the build plan](#build-plan))
+- **Status:** accepted; steps 1 to 5 built ([the build plan](#build-plan))
 - **Date:** 2026-10-18
 - **Decided by:** the maintainer, on 2026-10-18: the direction a panel of
   four argued (users, principles, prior art, skeptic), and the three
@@ -189,7 +189,9 @@
    copy of workline, an unchecked `os.Rename` and a deferred `os.Remove`
    planted: 2,275 tokens in, the defect first, the removal a likely false
    positive, the gate's block unchanged.
-5. A golangci-lint gate on workline itself: [#202]'s Validation.
+5. A golangci-lint gate on workline itself: [#202]'s Validation. Built
+   ([#584](https://github.com/JN0V/workline/pull/584)), a new finding
+   blocking.
 6. [#203]: SonarQube read as a gate.
 
 ## Leaving beta

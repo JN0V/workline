@@ -24,9 +24,10 @@ The templates need the first release after v0.35.0.
   a linter's config, a plugin, a build. On GitHub the job holds a read
   token, and its checkout keeps none.
 - **Its tools are yours to install**: in the job `gates`, pinned and
-  checksum verified, before `workline route`. On GitLab, in
-  `workline:gates`'s `before_script`, or give it your image with
-  workline in it.
+  checksum verified, before `workline route`; workline's own installs
+  golangci-lint so ([workline.yml](../.github/workflows/workline.yml)).
+  On GitLab, in `workline:gates`'s `before_script`, or give it your
+  image with workline in it.
 - **The judge reads their verdicts** (`--gates-from`): the line never
   runs a gate beside the agent's token. A verdict missing is an error,
   never a pass.
