@@ -253,6 +253,7 @@ func repository(r *Report, o Options) {
 			Message: "the push counts the docs its commits make suspect"})
 	}
 	findingsOnMergeRequests(r, o, cfg.Forge)
+	tokensScoped(r, o, cfg.Forge)
 	// A shallow clone lacks the commits docs were checked against, and the
 	// last release: the documentalist and the release say so and stop.
 	if out, err := exec.Command("git", "-C", o.Repo, "rev-parse", "--is-shallow-repository").Output(); err == nil && strings.TrimSpace(string(out)) == "true" {

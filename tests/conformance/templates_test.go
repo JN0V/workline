@@ -56,6 +56,9 @@ func TestGitLabTemplateFetchesWholeHistory(t *testing.T) {
 		if strings.HasPrefix(name, ".") || job["script"] == nil {
 			continue
 		}
+		if vars, _ := job["variables"].(map[string]any); fmt.Sprint(vars["GIT_STRATEGY"]) == "none" {
+			continue // checks nothing out (workline:base): no history to lack
+		}
 		n++
 		if d := depth(name); d != "0" {
 			t.Errorf("job %s: GIT_DEPTH is %q, want 0 (the whole history)", name, d)
@@ -440,7 +443,11 @@ func TestOneLinePerMergeRequestAtATime(t *testing.T) {
 			continue
 		}
 		n++
-		judge := strings.Contains(fmt.Sprint(job["script"]), "workline route merge-request")
+		// Every job that writes nothing (the judge, the gates, what reads
+		// their base) is interruptible: one that is not, once started,
+		// keeps GitLab from cancelling the whole pipeline.
+		script := fmt.Sprint(job["script"])
+		judge := !strings.Contains(script, "workline apply") && !strings.Contains(script, "workline follow")
 		why := "a job that writes goes to its end"
 		if judge {
 			why = "a push must cancel the judge still on the head before"

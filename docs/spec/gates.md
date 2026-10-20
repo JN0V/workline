@@ -156,16 +156,16 @@ since the branch's tip before it counts.
   ([ADR-0049](../adr/0049-the-inspector-judges-the-new-findings-of-the-projects-tools.md)).
 - **The gates alone, in a job of their own** (`--gates-only`), with no
   write token and no agent's; the judging job reads their verdicts
-  (`--gates-from`) and runs no gate.
+  (`--gates-from`) and runs no gate. On GitLab, the tokens scoped to the
+  environment `workline` never reach that job, which declares none; they
+  still reach whoever changes the pipeline
+  ([the environment](../gitlab/environment.md)).
 - **Each new finding's fingerprint** holds no line number.
 - **How, and what is said**: [the new findings shown](gates-shown.md), [explained](../../roles/inspector/README.md).
 
 *Not built yet*: a formatter's fixes applied, rather than its command
 said; the count's trend; vendored and generated code skipped; CI's build
-reused; a monorepo's changed folders only. On GitLab, the agent's and the
-bot's tokens are in every job's variables: the gates' job unsets them,
-which keeps them from the tools' environment, not from whoever changes
-the pipeline.
+reused; a monorepo's changed folders only.
 
 ## Three outcomes, not two
 

@@ -1,6 +1,6 @@
 <!-- workline
 sources: [ci/gitlab/workline.gitlab-ci.yml, internal/engine/follow.go, internal/engine/settle.go, Dockerfile]
-checked: a0b7c5a7
+checked: cb130c27
 verified: agent:claude-code
 -->
 # Signed commits on GitLab
@@ -23,15 +23,18 @@ SSH key: the template signs its commits with it.
    ```
 
 2. **The private key as a File variable**, `WORKLINE_SIGNING_KEY`: not
-   protected, as the token (a merge request's pipeline needs it). GitLab
-   masks no value of several lines: only who may change a pipeline can
-   read it. With glab, logged in as a Maintainer:
+   protected, as the token (a merge request's pipeline needs it), and
+   scoped to the environment `workline`, as the token
+   ([why](environment.md)). GitLab masks no value of several lines: only
+   who may change a pipeline can read it. With glab, logged in as a
+   Maintainer:
 
    ```sh
-   glab variable set WORKLINE_SIGNING_KEY --type file --raw --repo <group/project> < workline-signing
+   glab variable set WORKLINE_SIGNING_KEY --type file --raw --scope workline --repo <group/project> < workline-signing
    ```
 
-   Or Settings → CI/CD → Variables → Add variable, type **File**.
+   Or Settings → CI/CD → Variables → Add variable, type **File**,
+   *Environments* `workline`.
 3. **Delete `workline-signing`** from your machine once stored.
 
 ## What the template does

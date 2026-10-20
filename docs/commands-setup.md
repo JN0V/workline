@@ -1,6 +1,6 @@
 ---
-sources: [cmd/workline, internal/hooks, internal/role/config.go]
-checked: a0b7c5a7
+sources: [cmd/workline, internal/hooks, internal/role/config.go, internal/doctor/variables.go]
+checked: 32104a40
 verified: agent:claude-code
 ---
 # The commands that set up
@@ -67,6 +67,12 @@ changes nothing.
   it cannot read — classic branch protection, without an admin's token —
   is said. `--forge` names the forge; by default the project's `forge`,
   else GitHub when its workflows run workline.
+- On GitLab (`--forge gitlab`, the project's `forge`, or a
+  `.gitlab-ci.yml` naming workline): whether workline's tokens are
+  scoped to the environment `workline`, read from the project's
+  variables, their values never said; a token that may not list them
+  (only a Maintainer's may) is said
+  ([the environment](gitlab/environment.md#workline-doctor)).
 - Exits 1 only on an error — the agent named cannot be called, the config
   does not load — never for a tool left out; `--json` prints every check.
 

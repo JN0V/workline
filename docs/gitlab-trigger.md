@@ -1,6 +1,6 @@
 ---
 sources: [ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile]
-checked: a0b7c5a7
+checked: cb130c27
 judged: bf016b7
 verified: agent:claude-code
 ---
@@ -207,6 +207,11 @@ never reaches its pipeline. The trigger token acts as the user who owns it.
 GitLab gives every variable to every job of the pipeline: the script keeps
 the write token out of the judging job's commands, not out of its reach.
 The template does the same, and gives its gardening judge the write token.
+It also scopes the tokens to the environment `workline`, which the jobs
+running your tools never declare ([the environment](gitlab/environment.md)).
+Here the judging job runs the gates beside the agent's token; scoped
+there, both jobs above declare `environment: {name: workline, action:
+prepare}`, or they get no token.
 
 The Code Quality report shows on the merge request when the pipeline is
 the merge request's own; a pipeline started on its branch by a tool may not

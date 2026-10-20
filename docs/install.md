@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/setup, internal/hooks, internal/tools, internal/agent/agent.go, ci/github, ci/gitlab]
-checked: 6970b95e
+checked: cb130c27
 judged: a8574a5
 verified: agent:claude-code
 ---
@@ -173,8 +173,8 @@ What the templates need:
 
 | | GitHub | GitLab |
 |---|---|---|
-| the agent, your choice | its credentials; for Claude, which the templates install: secret `CLAUDE_CODE_OAUTH_TOKEN` (`claude setup-token`) | the same as a variable, masked, not protected |
-| writing | a [GitHub App](ci-github-app.md): variable `WORKLINE_APP_ID`, secret `WORKLINE_APP_PRIVATE_KEY` in the environment `workline-app` | variable `WORKLINE_GITLAB_TOKEN`: a project access token, `api` and `write_repository` |
+| the agent, your choice | its credentials; for Claude, which the templates install: secret `CLAUDE_CODE_OAUTH_TOKEN` (`claude setup-token`) | the same as a variable, masked, not protected, scoped to the environment `workline` ([why](gitlab/environment.md)) |
+| writing | a [GitHub App](ci-github-app.md): variable `WORKLINE_APP_ID`, secret `WORKLINE_APP_PRIVATE_KEY` in the environment `workline-app` | variable `WORKLINE_GITLAB_TOKEN`: a project access token, `api` and `write_repository`, scoped the same |
 | the history | `fetch-depth: 0`, set | `GIT_DEPTH: 0`, set |
 | the sample's judge | variable `WORKLINE_JUDGE` (optional) | the same, and `WORKLINE_TASK=sample` on its schedule |
 

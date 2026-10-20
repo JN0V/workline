@@ -237,6 +237,7 @@ type expectSpec struct {
 	Stdout       []string                     `yaml:"stdout"`            // with cli: texts printed on stdout
 	Stderr       []string                     `yaml:"stderr"`            // with cli: texts printed on stderr
 	StderrLacks  []string                     `yaml:"stderr-lacks"`      // with cli: texts not printed on stderr
+	StdoutLacks  []string                     `yaml:"stdout-lacks"`      // texts not printed on stdout, the result's JSON included
 	SummaryLacks []string                     `yaml:"summary-lacks"`     // texts the --summary file does not hold; with cli, workline-summary.md
 	SummaryOnce  []string                     `yaml:"summary-once"`      // texts the --summary file holds once, not more; with cli, workline-summary.md
 	// Moment: the wait the line's run is part of, as its result says it
@@ -823,6 +824,9 @@ func runCase(t *testing.T, c *caseFile) []string {
 	if err := json.Unmarshal(stdout.Bytes(), &r); err != nil {
 		return []string{fmt.Sprintf("engine printed no result: %v\n%s", err, stderr.String())}
 	}
+	if p := stdoutLacks(c.Expect.StdoutLacks, stdout.String()); len(p) > 0 {
+		return p
+	}
 	if c.Run.MainIssue {
 		if p := keepMain(stdout.Bytes(), &r); len(p) > 0 {
 			return p
@@ -1177,6 +1181,7 @@ func runCLI(engineBin string, c *caseFile, repo string, env []string) []string {
 			p = append(p, fmt.Sprintf("stderr holds %q:\n%s", text, stderr.String()))
 		}
 	}
+	p = append(p, stdoutLacks(c.Expect.StdoutLacks, stdout.String())...)
 	if len(c.Expect.SummaryFile) > 0 { // the arguments name it, as CI's templates do
 		p = append(p, compareSummaryFile(c.Expect.SummaryFile, filepath.Join(repo, "workline-summary.md"))...)
 	}
@@ -1981,6 +1986,17 @@ func summaryOnce(texts []string, file string) []string {
 	for _, t := range texts {
 		if n := strings.Count(string(data), t); n != 1 {
 			p = append(p, fmt.Sprintf("the summary file holds %q %d times, want once:\n%s", t, n, data))
+		}
+	}
+	return p
+}
+
+// stdoutLacks says which texts were printed on stdout that must not be.
+func stdoutLacks(texts []string, stdout string) []string {
+	var p []string
+	for _, text := range texts {
+		if strings.Contains(stdout, text) {
+			p = append(p, fmt.Sprintf("stdout holds %q:\n%s", text, stdout))
 		}
 	}
 	return p
