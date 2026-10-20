@@ -1,6 +1,6 @@
 ---
 sources: [internal/gate/added.go, internal/line/line.go, internal/report/gates.go, internal/report/report.go, internal/engine/annotate.go, cmd/workline/main.go]
-checked: 615b87f5
+checked: 1279892d
 verified: agent:claude-code
 ---
 # Gates — the new findings shown on a merge request
@@ -14,8 +14,11 @@ the findings a change adds go, and how
 
 - **On an event given a range**, its result in `--json` holds `new`: the
   merge base, each check's count (`new`; `before`, `-1` when not known;
-  `failed`, `error`, `fix`), and each new finding: check, tool, rule,
-  SARIF level, file, line, message, and a fingerprint.
+  `failed`, `error`, `fix`; `kept`, the merge base's findings read as
+  main kept them), and each new finding: check, tool, rule, SARIF level,
+  file, line, message, and a fingerprint. On `main`, `present` names
+  every finding the head holds, by its fingerprint
+  ([main after a merge](../main-after-merge.md)).
 - **The fingerprint** hashes the finding's identity
   ([gates.md](gates.md#on-a-merge-request-the-findings-the-change-adds))
   and how many alike come before it: no line number.

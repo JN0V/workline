@@ -1,0 +1,37 @@
+case: routing/main-checks-the-whole-repository-once
+about: >
+  After a merge, on main's new tip (ADR-0050): the merge request's gates
+  run first, only what the merge adds since main's tip before it counted;
+  then the documentalist checks the whole repository, no agent asked: a
+  doc the merge did not touch is over its budget and holds a dead link.
+  What the run found goes to one issue, opened since none is, saying
+  nothing holds a merge request.
+given:
+  repo: linted
+  setup:
+    - "mkdir -p docs && printf '# Notes\\n\\nOne.\\n\\nTwo.\\n\\nSee [the guide](guide.md).\\n' > docs/notes.md && git add docs && git commit -qm 'docs: add notes'"
+    - "git checkout -qb change && echo '// More to come.' >> main.go && git commit -qam 'docs: say more comes' && git checkout -q main && git merge -q --no-ff change -m 'Merge pull request #1 from change'"
+  env: {PATH: "$FIXTURES/bin:$PATH"}
+  forge: {issues: []}
+  config:
+    routing: {events: {merge-request: [committer, documentalist, "gate:merge"]}}
+    gates: {merge: {checks: [{id: lint, run: "golangci-lint run --output.sarif.path={out}/lint.sarif", output: sarif, max: {error: 0}}]}}
+    roles: {documentalist: {settings: {budgets: {doc-lines: 3}}}}
+run: {route: main, input: {range: "HEAD^1..HEAD"}, ai: "fake:doc-fixed", main-issue: true, summary: true}
+expect:
+  status: pass
+  agent-calls: 0
+  steps: ["gate:merge", documentalist]
+  findings:
+    - {rule: doc-too-long, where: docs/notes.md}
+    - {rule: dead-link, where: docs/notes.md, message: "guide.md"}
+    - {rule: main-issue, message: "issue #1 kept"}
+  no-findings: [{rule: nothing-tracked}, {rule: over-threshold}]
+  summary-file: ["gate merge passed", "lint 0 new, 3 before it"]
+  forge:
+    issues:
+      - id: 1
+        title: "workline: findings on the default branch"
+        body-contains: ["**2 findings on the default branch**: 1 `doc-too-long`, 1 `dead-link`.", "Nothing here holds a merge request", "<details><summary>The whole repository: 2 findings</summary>", "`docs/notes.md` `documentalist doc-too-long`", "guide.md: no such file", "</details>", "<!-- workline:main-findings "]
+        body-lacks: ["is red", "Gates:"]
+      - {id: 2, absent: true}

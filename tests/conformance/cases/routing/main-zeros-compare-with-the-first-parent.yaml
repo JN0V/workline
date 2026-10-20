@@ -1,0 +1,18 @@
+case: routing/main-zeros-compare-with-the-first-parent
+about: >
+  A forge gives forty zeros as the push's start on a branch's first push,
+  or a pipeline run by hand: main's run then compares with HEAD's first
+  parent, and the finding the last commit adds counts.
+given:
+  repo: linted
+  setup:
+    - |
+      sed -i 's|^\tos.Remove("c.tmp")$|&\n\tos.Remove("d.tmp")|' clean.go && git commit -qam "feat: clean d too"
+  env: {PATH: "$FIXTURES/bin:$PATH"}
+  config:
+    routing: {events: {merge-request: ["gate:merge"], main: []}}
+    gates: {merge: {checks: [{id: lint, run: "golangci-lint run --output.sarif.path={out}/lint.sarif", output: sarif, max: {error: 0}}]}}
+run: {route: main, input: {range: "0000000000000000000000000000000000000000..HEAD"}}
+expect:
+  status: block
+  findings: [{rule: over-threshold, where: lint, message: "1 new error finding, at most 0 allowed (3 there before it"}]

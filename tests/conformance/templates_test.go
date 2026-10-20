@@ -334,7 +334,10 @@ const notCancelled = "github.event.workflow_run.conclusion != 'cancelled'"
 // ownGroup is a concurrency group as a pull request's run reads it: a
 // merge queue's group takes one of its own (TestGitHubMergeQueueRunsTheGatesAlone).
 func ownGroup(group string) string {
-	return strings.ReplaceAll(group, " || github.event.merge_group.head_ref }}", " }}")
+	for _, other := range []string{" || github.event.merge_group.head_ref || github.sha }}", " || github.event.merge_group.head_ref }}", " || github.sha }}"} {
+		group = strings.ReplaceAll(group, other, " }}")
+	}
+	return group
 }
 
 func TestOneLinePerMergeRequestAtATime(t *testing.T) {
@@ -1494,8 +1497,9 @@ func TestGatesRunWithNoTokenNorAgent(t *testing.T) {
 		if running != 1 {
 			t.Errorf("%s: %d jobs run the gates alone, want one", f, running)
 		}
+		// Main's run after a merge is the gates' job's alone (ADR-0050).
 		judge := wf.Jobs["judge"]
-		if fmt.Sprint(judge.Needs) != "gates" || judge.If != "!cancelled()" {
+		if fmt.Sprint(judge.Needs) != "gates" || judge.If != "!cancelled() && github.event_name != 'push'" {
 			t.Errorf("%s: judge does not run after the gates whatever their verdict (needs %v, if %q)", f, judge.Needs, judge.If)
 		}
 		read := false

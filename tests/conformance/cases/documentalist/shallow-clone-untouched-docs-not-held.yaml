@@ -1,5 +1,5 @@
 case: documentalist/shallow-clone-untouched-docs-not-held
-about: "Given the commits of a merge request, a shallow clone lacking the `checked` of docs those commits did not touch is said, without holding them: such docs would only be left for gardening."
+about: "Given the commits of a merge request, a shallow clone lacking the `checked` of docs those commits did not touch holds nothing: such docs are not read there (ADR-0050)."
 given:
   repo: documented
   setup:
@@ -10,5 +10,4 @@ given:
 run: {role: documentalist, event: merge-request, input: {range: "HEAD~1..HEAD"}, ai: none}
 expect:
   status: pass
-  findings: [{rule: shallow-clone, message: "GIT_DEPTH: 0"}]
-  no-findings: [{rule: suspect}]
+  no-findings: [{rule: suspect}, {rule: shallow-clone}]

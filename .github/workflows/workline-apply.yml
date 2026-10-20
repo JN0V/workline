@@ -43,6 +43,10 @@
 #          after judge alone: the head's verdict kept as the status
 #          workline/verdict, by the App; in no concurrency group, so no newer
 #          run cancels it.
+#   main   after workline.yml's run on main after a merge (ADR-0050),
+#          whatever its verdict, holds issues: write and no AI key: what
+#          that run found kept in one issue, edited only when what it lists
+#          changes, never commented on.
 #   follow on a push to main, holds the write token and no AI key: the
 #          documentalist's merge request for the release, when one is open
 #          (workline/documentalist/release), is rebuilt on main's new tip and
@@ -186,6 +190,41 @@ jobs:
           [ "$head" = "$HEAD_SHA" ] || { echo "::error title=workline::the verdict is for $head, not the head judged, $HEAD_SHA"; exit 1; }
           status=0
           workline follow --forge github --verdict "$RUNNER_TEMP/verdict/workline-verdict.json" --verdict-only --summary workline-summary.md || status=$?
+          [ ! -s workline-summary.md ] || cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"
+          exit "$status"
+
+  main:
+    # workline.yml's run on main after a merge, whatever its verdict: red
+    # is said in the issue too. Never a push to another branch, whose
+    # workflow its branch can change.
+    if: github.event_name == 'workflow_run' && github.event.workflow_run.name == 'workline' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == github.event.repository.default_branch && github.event.workflow_run.conclusion != 'cancelled' && github.event.workflow_run.head_repository.full_name == github.repository
+    # One at a time: each run reads the issue the one before left.
+    concurrency: {group: "workline-main-issue", cancel-in-progress: false}
+    runs-on: ubuntu-latest
+    environment: workline-app
+    permissions: {actions: read, contents: read, issues: write}
+    steps:
+      - id: app
+        if: vars.WORKLINE_APP_ID != ''
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.WORKLINE_APP_ID }}
+          private-key: ${{ secrets.WORKLINE_APP_PRIVATE_KEY }}
+      # The base: its config says the forge; the run's result is data.
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: ./.github/actions/engine
+      # What main's run found, outside the checkout: kept in one issue.
+      - env:
+          GH_TOKEN: ${{ steps.app.outputs.token || github.token }}
+          READ_TOKEN: ${{ github.token }}
+          RUN: ${{ github.event.workflow_run.id }}
+        run: |
+          names=$(GH_TOKEN="$READ_TOKEN" gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN/artifacts" --jq '.artifacts[].name')
+          grep -qx workline-main <<<"$names" || { echo "main's run left no result: nothing to keep"; exit 0; }
+          GH_TOKEN="$READ_TOKEN" gh run download "$RUN" -R "$GITHUB_REPOSITORY" -n workline-main -D "$RUNNER_TEMP/main"
+          status=0
+          workline apply --main "$RUNNER_TEMP/main/main.json" --forge github --summary workline-summary.md || status=$?
           [ ! -s workline-summary.md ] || cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"
           exit "$status"
 

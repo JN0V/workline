@@ -1,5 +1,5 @@
-case: documentalist/repository-checks-on-the-merge-request
-about: "What a push no longer reads is said on the merge request, given the same commits: a doc made suspect by an earlier commit, left for gardening; a passage written twice; a dead link (ADR-0050). Gardening says them too."
+case: documentalist/repository-checks-left-to-main
+about: "On a merge request, the documentalist reads only the docs its commits touched (ADR-0050): a doc made suspect by an earlier commit, a passage written twice, a dead link in a doc the commits did not touch are not said there. Main's run after the merge says the whole repository's, once (repository-checks-on-main); gardening says them too."
 given:
   repo: documented
   setup:
@@ -9,7 +9,4 @@ given:
 run: {role: documentalist, event: merge-request, input: {range: "HEAD~1..HEAD"}, ai: none}
 expect:
   status: pass
-  findings:
-    - {rule: suspect, where: docs/tech/auth.md, message: "not changed by these commits"}
-    - {rule: duplicate, where: docs/faq.md}
-    - {rule: dead-link, where: docs/faq.md}
+  no-findings: [{rule: suspect}, {rule: duplicate}, {rule: dead-link}]

@@ -1,6 +1,6 @@
 ---
 sources: [routing.default.yaml, roles/committer/role.yaml, roles/documentalist/role.yaml, roles/reviewer/role.yaml, roles/product-owner/role.yaml, roles/judge/role.yaml, roles/auditor/role.yaml]
-checked: b4f67a9d
+checked: dba82333
 judged: d34fd75
 verified: agent:claude-code
 ---
@@ -15,7 +15,7 @@ and where it stands: planned, beta or built, by
 | Role | Does | Runs on | Page |
 |---|---|---|---|
 | Committer | checks each commit's message, secrets and author | `commit-msg`, `pre-push`, `merge-request` | [committer](../roles/committer/README.md) |
-| Documentalist | keeps the docs true to the code they name | `pre-push`, `merge-request`, `schedule`, `release`, `init` | [documentalist](../roles/documentalist/README.md) |
+| Documentalist | keeps the docs true to the code they name | `pre-push`, `merge-request`, `main`, `schedule`, `release`, `init` | [documentalist](../roles/documentalist/README.md) |
 | Reviewer | says what a change, or a spec, breaks or leaves out; never approves | `review`, `spec`, `merge-request` and `schedule` (opt-in) | [reviewer](../roles/reviewer/README.md) |
 | Product owner | keeps the open issues true to the code and ready to build, proposing on each issue | `schedule` (opt-in), `import` | [product owner](../roles/product-owner/README.md) |
 | Judge | answers one yes-or-no question a role's check cannot | asked by the other roles | [judge](../roles/judge/role.yaml) |
@@ -27,7 +27,9 @@ Which role runs on which event is the routing: `routing.default.yaml` as
 shipped, changed in `.workline/config.yaml` ([config](config.md)).
 
 - **By default**: `commit-msg` → committer; `merge-request` → committer,
-  documentalist; `schedule` and `release` → documentalist.
+  documentalist; `main`, after a merge, → the merge request's gates, then
+  the documentalist ([how](main-after-merge.md)); `schedule` and
+  `release` → documentalist.
 - **`workline init`** routes `pre-push` to the committer and the
   documentalist; `--review` adds the reviewer to `merge-request`.
 - **The reviewer after the product owner** in `schedule` reads each spec it

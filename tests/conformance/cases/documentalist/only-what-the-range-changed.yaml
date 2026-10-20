@@ -1,5 +1,5 @@
 case: documentalist/only-what-the-range-changed
-about: "Given the commits of a merge request, a doc is judged only if one of them touched its sources: a doc made suspect by an earlier commit is reported, left for gardening, and no agent is called for it. A push does not read it at all (ADR-0050)."
+about: "Given the commits of a merge request, a doc is read only if one of them touched its sources or itself: a doc made suspect by an earlier commit is not read there, as at a push, and no agent is called for it; gardening judges it (ADR-0050)."
 given:
   repo: documented
   setup:
@@ -9,4 +9,4 @@ run: {role: documentalist, event: merge-request, input: {range: "HEAD~1..HEAD"},
 expect:
   status: pass
   agent-calls: 0
-  findings: [{rule: suspect, where: docs/tech/auth.md, message: "not changed by these commits"}]
+  no-findings: [{rule: suspect}]

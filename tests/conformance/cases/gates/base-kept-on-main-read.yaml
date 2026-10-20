@@ -1,0 +1,25 @@
+case: gates/base-kept-on-main-read
+about: >
+  Main's run after a merge kept every finding of its gates by commit
+  (ADR-0050). A merge request based on that commit reads them as its
+  merge base's, the same command, config and tool: its tools run once,
+  at the head, and only the finding the change adds counts, as with a
+  run at the merge base.
+given:
+  repo: linted
+  setup:
+    - git checkout -q -b change
+    - |
+      sed -i 's|^\tos.Remove("c.tmp")$|&\n\tos.Remove("d.tmp")|' clean.go && git commit -qam "feat: clean d too"
+  env: {PATH: "$FIXTURES/bin:$PATH"}
+  config:
+    routing: {events: {merge-request: ["gate:merge"]}}
+    gates: {merge: {checks: [{id: lint, run: "golangci-lint run --output.sarif.path={out}/lint.sarif", output: sarif, max: {error: 0}}]}}
+run: {route: merge-request, input: {range: main..HEAD}, kept-on-main: main, summary: true}
+expect:
+  status: block
+  findings:
+    - {rule: over-threshold, where: lint, message: "1 new error finding, at most 0 allowed (3 there before it, not counted"}
+    - {rule: over-threshold, where: lint, message: "clean.go:10 errcheck"}
+  summary-file: ["lint 1 new, 3 before it", "the merge base's kept on main, not run again"]
+  summary-lacks: ["at the merge base"]

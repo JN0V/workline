@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go]
-checked: 615b87f5
+checked: dba82333
 verified: agent:claude-code
 ---
 # Conformance — a case in full
@@ -90,6 +90,11 @@ saying so.
   apart's status, `pass` when not given;
 - `summary: true` — also write `--summary`, Markdown and HTML, and give the
   same files to the `apply` or `sample --apply` that follows;
+- `main-issue: true` — after the run, and after the second with `then:
+  again`, what it printed kept in main's issue (`apply --main`), its
+  findings added; `kept-on-main: <rev>` — first, main's run after a merge
+  on that revision, checked out then left, its gates' findings kept in a
+  folder the run reads (`--gates-kept`);
 - `scope` — the run's scope, as a ready work item would give it;
 - `no-apply: true` — judge, and stop before applying;
 - `forge` — a forge spec given as `--forge` instead of the simulated forge
@@ -152,7 +157,8 @@ saying so.
 - `steps` — for a line, the steps that ran, in order.
 - `forge` — fields the simulated forge must hold afterwards: per item, by
   `id`, `comments` (a count), `posted` (the comments posted on it, each
-  one mailing who follows it; an edit posts none), `labels` (the exact
+  one mailing who follows it; an edit posts none), `edits` (the times its
+  body was rewritten, as the forge's edit history counts them), `labels` (the exact
   set), `comment-contains`
   (a text some comment holds, or a list of them) and `comment-lacks` (a
   text none does, or a list of them), `closed`

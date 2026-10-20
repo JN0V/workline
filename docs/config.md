@@ -1,6 +1,6 @@
 ---
 sources: [internal/role/config.go, internal/role/role.go, cmd/workline, internal/engine/engine.go, internal/forge/gitlab.go, internal/hooks]
-checked: 615b87f5
+checked: dba82333
 judged: e343388
 verified: agent:claude-code
 reader: 0b97bbc207c5
@@ -25,7 +25,7 @@ owner), then the project's `settings`.
 | `roles.<role>.settings` | the role's settings, merged into its defaults |
 | `roles.<role>.enforce` | `<rule>: block \| warn \| off`, per rule |
 | `routing.events` | `<event>: [role, gate:<name>, …]`, replacing the shipped line event by event |
-| `routing.fail-fast` | `<event>: false` runs every step of the event, the worst verdict standing, a refused proposal said, not failed; true unless set, but on `schedule` ([ADR-0037](adr/0037-the-schedule-runs-every-step.md)) |
+| `routing.fail-fast` | `<event>: false` runs every step of the event, the worst verdict standing, a refused proposal said, not failed; true unless set, but on `schedule` and `main` ([ADR-0037](adr/0037-the-schedule-runs-every-step.md)) |
 | `routing.handoffs`, `routing.max-handoffs` | which role may hand over to which, and how many times ([routing](spec/routing.md)) |
 | `routing.budgets` | `<moment>: <seconds>`, each moment's wait budget; over it, the summary says so, never a block ([routing](spec/routing.md#each-steps-seconds-a-moments-budget)) |
 | `gates.<name>` | `criteria`, `checks` (`id`, `run`, `output`, `max`, `optional`, `timeout`, `fix`; on a merge request `new`, `base-timeout`, `config`), `enforce` ([gates](spec/gates.md)) |

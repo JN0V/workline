@@ -193,24 +193,39 @@ func (l *lines) at(file string, n int) string {
 // it, then the tool's own fingerprints when it writes some, else the
 // message and the text of the line it is on, read in its own tree.
 func (r *result) identity(l *lines, name string) string {
-	id := r.tool + "\x00" + r.rule + "\x00" + name + "\x00"
+	return identity(r.tool, r.rule, name, r.rest(l))
+}
+
+// rest is what tells a finding apart beside its tool, rule and file: the
+// tool's own fingerprints, else its message and the text of its line.
+func (r *result) rest(l *lines) string {
 	if r.fingerprint != "" {
-		return id + r.fingerprint
+		return r.fingerprint
 	}
-	return id + r.text + "\x00" + l.at(r.uri, r.line)
+	return r.text + "\x00" + l.at(r.uri, r.line)
+}
+
+func identity(tool, rule, name, rest string) string {
+	return tool + "\x00" + rule + "\x00" + name + "\x00" + rest
 }
 
 // compare marks each of the head's results new or unchanged, one for one:
 // a result the base holds as many times as the head is not new, wherever
 // its line moved to; a file the change renamed is followed.
 func compare(head, base []*result, headLines, baseLines *lines, renamed map[string]string) {
+	compareWith(head, keptResults(base, baseLines), headLines, renamed)
+}
+
+// compareWith is compare, the base's results as kept: read in the base's
+// tree, or on main when it was analysed there (kept.go).
+func compareWith(head []*result, base []keptResult, headLines *lines, renamed map[string]string) {
 	there := map[string]int{}
 	for _, r := range base {
-		name := r.uri
+		name := r.Path
 		if to, ok := renamed[name]; ok {
 			name = to
 		}
-		there[r.identity(baseLines, name)]++
+		there[identity(r.Tool, r.Rule, name, r.Rest)]++
 	}
 	for _, r := range head {
 		id := r.identity(headLines, r.uri)

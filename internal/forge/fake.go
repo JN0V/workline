@@ -587,8 +587,11 @@ func (f *Fake) KeepIssue(title, body string, create bool) (int, error) {
 	id := 0
 	err := f.write(func(s *FakeState) error {
 		for i := range s.Issues {
-			if s.Issues[i].Title == title && !s.Issues[i].Closed {
-				s.Issues[i].Body, id = body, s.Issues[i].ID
+			if it := &s.Issues[i]; it.Title == title && !it.Closed {
+				if it.Body != body { // its edit history, as SetBody keeps it
+					it.Edits = append([]string{it.Body}, it.Edits...)
+				}
+				it.Body, id = body, it.ID
 				return nil
 			}
 		}

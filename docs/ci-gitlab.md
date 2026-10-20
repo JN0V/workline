@@ -1,6 +1,6 @@
 ---
 sources: [ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile]
-checked: 78fd03ce
+checked: e8182aaa
 judged: cd97f28
 verified: agent:claude-code
 reader: 9799dcaf51f3
@@ -188,6 +188,11 @@ a cron off the hour (`13 17 * * *`) was listed as due at 18:00 and ran at
   the branch merged into people's merge requests in conflict only on
   workline's lines ([more](../roles/documentalist/docs/follow.md)), and the
   [merge policy](merge-policy.md), also after each judge (`workline:merge`).
+- **`workline:main`**, each push to the default branch, no token, no
+  agent: the gates, their findings kept in its artifacts as the next base
+  `workline:gates` reads, and the whole repository's checks;
+  `workline:main:issue`, the bot's token, keeps what it found in one issue
+  ([main after a merge](main-after-merge.md#gitlab)).
 - **`workline:garden:apply`** then rebuilds gardening's earlier merge
   requests, or closes those with nothing left to merge
   ([ADR-0034, amended](adr/0034-the-release-fix-follows-its-base.md#amendment-2026-10-12-gardenings-merge-requests-follow-too-or-are-closed)).
