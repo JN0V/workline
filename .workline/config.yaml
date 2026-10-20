@@ -74,13 +74,31 @@ roles:
 routing:
   # Before a push, the committer checks the commits leaving the machine, and
   # the documentalist has the docs they made suspect judged. On a pull
-  # request, the reviewer reads the code too (ADR-0020). Gardening at
+  # request, the gate `lint`, then the reviewer reads the code too
+  # (ADR-0020): a lint finding the change adds stops the line before an
+  # agent is asked; the inspector triages what the gate found new, apart
+  # from the verdict (ADR-0049). Gardening at
   # night: the docs, then the backlog — the GitHub issues, kept by the
   # product owner (ADR-0018) —, then the specs of up to five issues it
   # refined (specs-per-run), read by the reviewer, which holds each from
   # ready while a finding is open (#128; on since 2026-10-17).
-  events: {pre-push: [committer, documentalist], merge-request: [committer, documentalist, reviewer],
+  events: {pre-push: [committer, documentalist], merge-request: [committer, documentalist, "gate:lint", reviewer, inspector],
     schedule: [documentalist, product-owner, reviewer]}
+
+# workline's own Go code, read by golangci-lint (ADR-0049, step 5), its
+# standard linters (.golangci.yml). On a pull request, a finding the change
+# adds blocks: a tool's rule, no model, and only what is new counts. Main's
+# debt, there before, is a count in the summary, never a block; main's run
+# after a merge keeps every finding, the next pull requests' base. The tool:
+# workline.yml's gates job installs it, pinned, its checksum verified; an
+# upgrade gets a pull request of its own.
+gates:
+  lint:
+    checks:
+      - id: golangci-lint
+        run: golangci-lint run --max-issues-per-linter=0 --max-same-issues=0 --output.sarif.path={out}/lint.sarif ./...
+        output: sarif
+        max: {error: 0}
 
 # The forge merges what a person accepted (ADR-0042): `workline:accepted` on
 # a pull request, its head judged, and `main` requiring `workline/accepted`
