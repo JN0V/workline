@@ -1,6 +1,6 @@
 ---
 sources: [ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile]
-checked: f5008630
+checked: cfcd9422
 judged: cd97f28
 verified: agent:claude-code
 reader: 9799dcaf51f3
@@ -18,7 +18,7 @@ flowchart LR
     sample["<b>Schedule, WORKLINE_TASK=sample</b><br/>workline:sample:read"]
     import["<b>By hand, WORKLINE_IMPORT</b><br/>workline:import:judge"]
   end
-  subgraph none["No agent, no write token"]
+  subgraph none["No agent, nothing written"]
     dry["<b>Schedule</b><br/>workline:release:dry-run"]
     rel["<b>A tag</b><br/>workline:release"]
   end
