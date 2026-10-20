@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/instruction.md, roles/reviewer/policy.md, roles/reviewer/lenses, internal/builtin/reviewer]
-checked: 8c2caf60
+checked: ee97604e
 verified: agent:claude-code
 ---
 # Reviewer — a run on code
@@ -64,6 +64,9 @@ flowchart LR
      resolution; never the base's code. Nothing settled: nobody asked.
    - New commits that change no code are recorded, nobody asked, the turn
      of the lenses kept.
+   - **A lens that does not answer** owes the commits: the record names
+     it (`failed=`), holds none of them, and the next run asks it first,
+     whosever turn it is ([#588](https://github.com/JN0V/workline/issues/588)).
    - **A push before the last review is written** waits for it, and reads it;
      a review written after another keeps its commits and lines ([#375](https://github.com/JN0V/workline/issues/375)).
    - **What blocked stands**, recorded too, until a commit answers it

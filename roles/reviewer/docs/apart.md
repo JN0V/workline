@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, internal/builtin/reviewer/reviewer.go, internal/builtin/reviewer/record.go, internal/line/line.go, ci/github/workline.yml, ci/github/workline-warn.yml, ci/github/workline-apply.yml, ci/gitlab/workline.gitlab-ci.yml]
-checked: cb130c27
+checked: ee97604e
 judged: a5cd2cf
 verified: agent:claude-code
 ---
@@ -37,6 +37,9 @@ beside the verdict's, and posts once it answered.
   reads every one ([after ready](ready.md#after-ready-only-what-is-new)).
 - **A push whose turn is the other run's lens**: nobody asked in this
   run; the commits are recorded and the turn moves on, as in the other.
+  A lens of this run that did not answer on them is asked instead: no
+  run records what it owes
+  ([#588](https://github.com/JN0V/workline/issues/588)).
 - **The rules** (`bug-story`, `internal-code`) block on the verdict's
   run. While they block, the run apart asks no lens either, and says
   nothing of them again.
@@ -74,8 +77,11 @@ beside the verdict's, and posts once it answered.
 - **A warn finding arriving after the verdict** is shown, in its comment
   and on its line; it never changes a verdict given.
 - **A lens that fails** — an answer that never reads, the tokens spent —
-  says so in that comment (`lens-failed`), its record unmoved: the next
-  push asks it again; the agent out of reach, in the job's log. It never
+  says so in that comment (`lens-failed`). Its record holds none of the
+  commits and names the lens (`failed=`): the next push, or the run run
+  again, asks it first, whosever turn it is
+  ([the record](run.md#3-the-record)). The agent out of reach is said
+  in the job's log. It never
   turns a pass into a fail, nor a fail into a pass; the job stays green,
   only the engine's own error fails it.
 - **The merge policy merges on the head's verdict**

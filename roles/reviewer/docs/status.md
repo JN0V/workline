@@ -80,6 +80,13 @@ its measure in
   `every-lens-on-the-push-after-a-failed-run-on-ready`,
   `every-lens-not-whole-said-after-a-second-failure`,
   `every-lens-run-on-ready-unreachable-writes-nothing`.
+- **A lens that did not answer owes its commits**, asked first at the
+  next run, whosever turn it is; `read=all` waits for it
+  ([#588](https://github.com/JN0V/workline/issues/588)):
+  `warn-lenses-failed-read-their-commits-when-run-again`,
+  `lens-that-blocks-failed-reads-its-commits-when-run-again`,
+  `warn-lenses-answered-read-nothing-when-run-again`,
+  `warn-turn-of-a-lens-that-blocks-records-what-none-owes`.
 - **One review at a time per merge request**: a push waits for the
   review before it to be written, which the apply writes even once the
   branch moved on; each apply merges the record it finds

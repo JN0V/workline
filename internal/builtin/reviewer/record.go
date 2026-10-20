@@ -20,9 +20,11 @@ import (
 // they made, by git's patch id, so a commit rebased with its change intact
 // is not asked again either (#286); and how many reviews ran, which turns
 // the lens a push gets; and the findings of the last review that block,
-// which stand until a commit answers them (#326); and whether every lens
-// read the change since it was last a draft (#359). On a merge request it
-// is hidden in the summary comment; on a machine, in the git directory.
+// which stand until a commit answers them (#326); whether every lens
+// read the change since it was last a draft (#359); and the lenses that
+// did not answer on the commits it does not hold, which no run records
+// before they read them (#588). On a merge request it is hidden in the
+// summary comment; on a machine, in the git directory.
 type Record struct {
 	Reviewed []string `json:"reviewed"`
 	Patches  []string `json:"patches,omitempty"`
@@ -30,6 +32,7 @@ type Record struct {
 	Owed     bool     `json:"owed,omitempty"`     // every lens owed: the run on ready, a rule holding it, asked none (#129)
 	ReadAll  bool     `json:"read-all,omitempty"` // every lens answered on the whole change, since the merge request was last a draft (#359)
 	Retried  bool     `json:"retried,omitempty"`  // the run on ready failed once: every lens owed again, once (#359)
+	Failed   []string `json:"failed,omitempty"`   // the lenses that did not answer on the commits after the record: asked first, those commits theirs (#588)
 	Blocks   []Block  `json:"blocks,omitempty"`   // the findings that block, carried to the next run (#326)
 	// Judged are the findings the judge answered, every run's, kept on a
 	// merge request for the weekly sample (ADR-0046); Gone, how many of
@@ -105,10 +108,11 @@ func keyOf(side string) string {
 }
 
 // recordLine reads a record; one an engine wrote before patch ids holds no
-// `patches=`, nor `read=all` and `retried=once` before #359, and still reads. blocksLine reads
-// its blocks, a line of their own an engine before them leaves.
+// `patches=`, nor `read=all` and `retried=once` before #359, nor `failed=`
+// before #588, and still reads. blocksLine reads its blocks, a line of
+// their own an engine before them leaves.
 var (
-	recordLine = regexp.MustCompile(`<!-- workline:record reviewed=([0-9a-f,]*)(?: patches=([0-9a-f,]*))? runs=(\d+)( owed=all)?( read=all)?( retried=once)? -->`)
+	recordLine = regexp.MustCompile(`<!-- workline:record reviewed=([0-9a-f,]*)(?: patches=([0-9a-f,]*))? runs=(\d+)( owed=all)?( read=all)?( retried=once)?(?: failed=([\w.,-]+))? -->`)
 	blocksLine = regexp.MustCompile(`<!-- workline:blocks (.*?) -->`)
 	// judgedHead opens the lines of the findings judged, saying how many
 	// the comment no longer holds; an engine before them wrote none.
@@ -140,6 +144,9 @@ func (r Record) String() string {
 	}
 	if r.Retried {
 		owed += " retried=once"
+	}
+	if len(r.Failed) > 0 {
+		owed += " failed=" + strings.Join(r.Failed, ",")
 	}
 	s := fmt.Sprintf("<!-- workline:record reviewed=%s%s runs=%d%s -->", strings.Join(r.Reviewed, ","), patches, r.Runs, owed)
 	if len(r.Blocks) > 0 {
@@ -213,6 +220,7 @@ func parseRecord(text string) (Record, error) {
 	r.Owed = m[4] != ""
 	r.ReadAll = m[5] != ""
 	r.Retried = m[6] != ""
+	r.Failed = ids(m[7])
 	if b := blocksLine.FindStringSubmatch(text); b != nil {
 		if err := json.Unmarshal([]byte(b[1]), &r.Blocks); err != nil {
 			return Record{Judged: r.Judged, Gone: r.Gone}, fmt.Errorf("the findings that blocked do not read: %v", err)
@@ -234,7 +242,9 @@ func ids(list string) []string {
 
 // add records commits as reviewed, and the patch ids of their changes, once
 // each, and one more run; the blocks kept, the findings judged, and
-// whether every lens read the change.
+// whether every lens read the change. No lens owes them any more: a
+// caller records only what a lens of its run read, or what none had to
+// read (#588).
 func (r Record) add(commits, patches []string) Record {
 	out := Record{Reviewed: slices.Clone(r.Reviewed), Patches: slices.Clone(r.Patches), Runs: r.Runs + 1, Blocks: slices.Clone(r.Blocks), ReadAll: r.ReadAll, Retried: r.Retried,
 		Judged: slices.Clone(r.Judged), Gone: r.Gone}
@@ -249,6 +259,19 @@ func (r Record) add(commits, patches []string) Record {
 		}
 	}
 	return out
+}
+
+// owing are the lenses that owe the commits after the record once a run
+// asked some of them and the failed did not answer (#588): those owing
+// before that it did not ask, or that did not answer again, then the new.
+func (r Record) owing(asked, failed []string) []string {
+	var out []string
+	for _, l := range r.Failed {
+		if !slices.Contains(asked, l) || slices.Contains(failed, l) {
+			out = append(out, l)
+		}
+	}
+	return union(out, failed)
 }
 
 // standing are the blocks of the last review that still stand at the head
@@ -545,8 +568,9 @@ func loadRecord(repo string, s Settings, side string) (Record, string, error) {
 			}
 		}
 		// The run apart's first (ADR-0050): a summary comment a run not
-		// split wrote holds every lens's commits and turn, which it takes
-		// up; its blocks and judged lines stay there. One a split review
+		// split wrote holds every lens's commits and turn, and the lenses
+		// owing them, which it takes up; its blocks and judged lines stay
+		// there. One a split review
 		// wrote is the verdict's run's alone: it starts from the base.
 		for _, c := range comments {
 			if side == warnOnly && strings.Contains(c, forge.Marker("sticky=reviewer/"+SummaryKey)) && !strings.Contains(c, splitMark) {
@@ -554,7 +578,7 @@ func loadRecord(repo string, s Settings, side string) (Record, string, error) {
 				if err != nil {
 					return Record{}, where, nil
 				}
-				return Record{Reviewed: r.Reviewed, Patches: r.Patches, Runs: r.Runs, Owed: r.Owed, ReadAll: r.ReadAll, Retried: r.Retried}, where, nil
+				return Record{Reviewed: r.Reviewed, Patches: r.Patches, Runs: r.Runs, Owed: r.Owed, ReadAll: r.ReadAll, Retried: r.Retried, Failed: r.Failed}, where, nil
 			}
 		}
 		return Record{}, where, nil

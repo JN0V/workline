@@ -1,5 +1,5 @@
 case: reviewer/every-lens-owed-once-after-a-failed-run-on-ready
-about: "The run on ready whose lenses give no answer that reads, after their one retry, does not say every lens read the change (#359): its record says one retry is spent (`retried=once`), and the comment says the next push asks every lens again, once."
+about: "The run on ready whose lenses give no answer that reads, after their one retry, does not say every lens read the change (#359): its record says one retry is spent (`retried=once`) and which lenses did not answer (`failed=`, #588), and the comment says the next push asks every lens again, once."
 given:
   repo: reviewed
   setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
@@ -14,4 +14,4 @@ expect:
     - {rule: every-lens-again, level: warn, message: "the next push asks every lens again, on the whole change, once"}
   forge:
     merge-requests:
-      - {id: 5, comments: 1, comment-contains: ["| warns | every-lens-again |", " runs=0 retried=once -->"], comment-lacks: "read=all"}
+      - {id: 5, comments: 1, comment-contains: ["| warns | every-lens-again |", " runs=0 retried=once failed=correctness,edge-cases,tests,claims -->"], comment-lacks: "read=all"}
