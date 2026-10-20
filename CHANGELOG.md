@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.39.0](https://github.com/JN0V/workline/compare/v0.38.0...v0.39.0) (2026-10-20)
+
+
+### Features
+
+* **documentalist:** judge every due doc of a release in one night ([#587](https://github.com/JN0V/workline/issues/587)) ([9583d0b](https://github.com/JN0V/workline/commit/9583d0b15879ea869282931a28efac9682787a40))
+* **inspector:** triage the new findings of the project's gates ([#574](https://github.com/JN0V/workline/issues/574)) ([ef98970](https://github.com/JN0V/workline/commit/ef98970d623cf97d73427058560d298b40e6da91))
+
+
+### Bug Fixes
+
+* **documentalist:** a version in a code block is a pin ([#582](https://github.com/JN0V/workline/issues/582)) ([64d29a1](https://github.com/JN0V/workline/commit/64d29a18765353d4f3a136b2c82d7ec3023464bc))
+* **documentalist:** hold a release on a pinned version, not its history ([#568](https://github.com/JN0V/workline/issues/568)) ([42ffe0b](https://github.com/JN0V/workline/commit/42ffe0bd7befc029ae441954c53ac6cc12ddffe2))
+* **documentalist:** keep a release's fixes when a doc waits on a person ([#567](https://github.com/JN0V/workline/issues/567)) ([b7773bf](https://github.com/JN0V/workline/commit/b7773bfc03dfb01c667d93a18e6a11219843b72c))
+* **gate:** compare against --base when one is given ([#564](https://github.com/JN0V/workline/issues/564)) ([9aa1939](https://github.com/JN0V/workline/commit/9aa1939b59e81e35d4a5660e0cd1eadb7d89553b))
+* **gitlab:** keep the tokens out of the gates job by environment ([#586](https://github.com/JN0V/workline/issues/586)) ([936956f](https://github.com/JN0V/workline/commit/936956fa8f896c13910e5282f79ad58c3f70933f))
+* **gitlab:** read a merge request's notes without its members list ([#565](https://github.com/JN0V/workline/issues/565)) ([9c9a6a1](https://github.com/JN0V/workline/commit/9c9a6a145f7a2567b6ad661fb4716b03d22c7a47))
+* **reviewer:** a block holds only on the side its cause was found on ([#583](https://github.com/JN0V/workline/issues/583)) ([aef2d40](https://github.com/JN0V/workline/commit/aef2d40c7d05edbd42962735dbda96a9b8d7cd27))
+* **reviewer:** leave commits unread when a warn lens fails ([#590](https://github.com/JN0V/workline/issues/590)) ([5ffc2c4](https://github.com/JN0V/workline/commit/5ffc2c463cce525240145fcbd76a8f694140ea09))
+
 ## [0.38.0](https://github.com/JN0V/workline/compare/v0.37.0...v0.38.0) (2026-10-20)
 
 
