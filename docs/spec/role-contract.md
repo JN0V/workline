@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine, internal/intent, internal/role, internal/agent, roles_test.go]
-checked: f5008630
+checked: cfcd9422
 verified: agent:claude-code
 judged: b530b72
 ---
@@ -105,7 +105,9 @@ intentions: [commit-message, note]   # subset of the catalogue below
 part-intentions: [claim]        # what a part of a question answers with (In parts);
                                 # claims when unset; a reviewer's lens, findings
 on-block: []                    # what a run still applies when post blocks: what
-                                # only says why (the reviewer's comment); none by default
+                                # only says why (the reviewer's comment, the
+                                # documentalist's on a release held for its
+                                # docs); none by default
 on-moved-on: []                 # what a merge request's run still applies once its
                                 # branch moved on from the head judged: what only says
                                 # what that head held (the reviewer's review); never a
@@ -318,7 +320,9 @@ token), **apply** (trusted, no AI key).
    answer, an act undone — and written back (docs/spec/backlog-acts.md).
    A run that blocks applies nothing, but the kinds its role names in
    `on-block`, of its intentions: what only says why it blocks, the
-   reviewer's summary comment and the record in it (#226). The run still
+   reviewer's summary comment and the record in it (#226), the
+   documentalist's comment listing a release's docs due
+   ([#558](https://github.com/JN0V/workline/pull/558)). The run still
    blocks; judged with `--no-apply`, they wait in `pending` like any
    other, for the applying job, which runs whatever the judge's outcome.
    Applied by a job of the base once the merge request's branch moved on

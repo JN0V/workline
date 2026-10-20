@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/engine, internal/intent, internal/role, internal/agent, internal/verdict, internal/report]
 verified: agent:claude-code
-checked: f5008630
+checked: cfcd9422
 judged: b5899f5
 status: draft
 ---
@@ -42,9 +42,9 @@ Findings map to SARIF, so the same verdict can be posted on GitHub or GitLab:
 `--sarif` writes them for code scanning, `--code-quality` as GitLab's Code
 Quality report, rule `<role>/<rule>`, on the file and line `where` names — at
 the heading of its `#anchor`, else line 1. A finding that blocks is an
-`error` (`blocker`), one lowered by `enforce` a `warning` (`minor`), one from
-a run that passed, or of level `question` (a reviewer's question for a
-person), a `note` (`info`). One whose `where` names no file — a
+`error` (`blocker`), one at `warn` a `warning` (`minor`), one from a run
+that passed, or of level `question` (a reviewer's question for a person), a
+`note` (`info`). One whose `where` names no file — a
 commit's subject, a folder, a gate's check — is left out: both formats need a
 file, and `--json` still has it, as does `--summary`, the summary a CI job's
 page shows (ADR-0035). On a merge request, `--sarif` leaves out the
@@ -58,7 +58,8 @@ annotations of a check (`notice`, `warning`, `failure` as `note`,
 gates' new findings, as another check's annotations and one comment
 ([gates](gates.md#shown-on-the-merge-request)). A gate's new finding in
 `--code-quality` is its tool's rule, level and fingerprint. `route --verdict <file>` writes the line's verdict
-on the head it judged — its status, each step's, the findings — which
+on the head it judged — its status, each step's (`held`: only for the
+release's docs), the findings — which
 `follow --verdict` keeps for the merge policy (ADR-0042).
 
 ### Warn before block
@@ -69,12 +70,13 @@ A new rule is not trusted on day one. A project sets how hard each rule bites:
 roles:
   committer:
     enforce:
-      internal-code: warn        # block (default) | warn | off
+      internal-code: warn        # warn | off | block (default: the role's level)
 ```
 
 The engine recomputes the status from the findings: a `block` verdict whose
-blocking findings are all set to `warn` or `off` becomes a `pass` that shows
-what is left. A finding its role gives as a warning (`record-unread`) never
+blocking findings, one at least, are all set to `warn` or `off` becomes a
+`pass` that shows what is left; a block with none to lower — no finding, or
+warnings only — stands. A finding its role gives as a warning (`record-unread`) never
 counts as blocking; `block` leaves a rule at its role's level, never raising a
 warning ([#99](https://github.com/JN0V/workline/issues/99)). A role that
 decides on its findings before its verdict reads them at these levels first:
