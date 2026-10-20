@@ -13,12 +13,9 @@ import (
 // workline's own pull requests read its Go code with golangci-lint, a gate
 // of its line (ADR-0049, step 5). Each tool a gate of the merge requests'
 // line runs is installed in workline.yml's gates job before any gate runs,
-// on a pull request and on main after a merge alike: an exact version, the
-// archive's SHA-256 written in the workflow and checked, in the runner's
-// own folder, never with sudo. A tool taken at its latest version, or
-// checked against a file downloaded beside it, could read other findings
-// from one run to the next, and the merge base's kept findings would not
-// stand for the head's.
+// on a pull request and on main alike: an exact version, the archive's
+// SHA-256 written in the workflow and checked, in the runner's own folder,
+// never with sudo, so that every run, and the base main kept, read alike.
 
 var (
 	pinnedVersion = regexp.MustCompile(`\b[0-9]+\.[0-9]+\.[0-9]+\b`)
