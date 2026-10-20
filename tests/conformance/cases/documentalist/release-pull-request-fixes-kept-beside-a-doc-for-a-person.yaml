@@ -1,0 +1,34 @@
+case: documentalist/release-pull-request-fixes-kept-beside-a-doc-for-a-person
+about: "On a release pull request, judged then applied in two jobs as at night, three docs due and one too wide for the agent: the fixes of the two it judged go to the documentalist's release branch, a merge request of its own, and the release stays held for the third alone, a person's, said (#543; ADR-0017). Before, only the comment was applied."
+given:
+  repo: documented
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git"
+    - "seq 1 3000 | sed 's/^/var b/' > src/auth/big.go && printf '%s\\n' '---' 'type: reference' 'sources: [src/auth/big.go]' 'checked: HEAD' '---' '# Tables' '' 'The big table holds one row a line.' > docs/tech/tables.md && printf '%s\\n' '---' 'type: reference' 'sources: [src/auth/token.go]' 'checked: HEAD' '---' '# Sessions' '' 'A session lasts as long as its token.' > docs/tech/session.md && git add src docs && git commit -qm 'feat(auth): add the big table and sessions'"
+    - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: HEAD/checked: $C/\" docs/tech/tables.md docs/tech/session.md && git commit -qam 'docs: confirm the tables and sessions docs' && git tag v1.0.0"
+    - "seq 1 3000 | sed 's/^/const b/' > src/auth/big.go && printf '\\n// Refreshed on use.\\n' >> src/auth/token.go && git commit -qam 'feat(auth): refresh tokens on use' && git push -q origin main"
+    - "git checkout -qb release-please--branches--main && git push -q origin release-please--branches--main && git checkout -q --detach"
+  forge:
+    merge-requests:
+      - id: 1
+        branch: release-please--branches--main
+        base: main
+        labels: []
+        comments: []
+        pushes: [{head: release-please--branches--main, at: "2026-01-03T00:00:00Z", by: workline-bot}]
+  config: {roles: {documentalist: {settings: {parts-max: 1}}}}
+run: {role: documentalist, event: release, target: {merge-request: 1}, branch: release-please--branches--main, ai: 'cmd:sh "$FIXTURES/agents/confirm-every-doc.sh"', push-to-merge-request: true, no-apply: true, then: resume}
+expect:
+  status: pass
+  findings:
+    - {rule: fixed-elsewhere, where: docs/tech/auth.md, message: "merge request #2"}
+    - {rule: fixed-elsewhere, where: docs/tech/session.md, message: "merge request #2"}
+  run-files:
+    out/verdict.yaml: {contains: ["held: true", "1 doc due holds the release: 1 for a person (docs/tech/tables.md)", "a person judges it"]}
+  pushed:
+    workline/documentalist/release: {docs/tech/auth.md: "verified: agent:documentalist", docs/tech/session.md: "verified: agent:documentalist"}
+  not-pushed: [release-please--branches--main, main]
+  forge:
+    merge-requests:
+      - {id: 1, comments: 1, comment-contains: "<!-- workline:doc-judged-at-release"}
+      - {id: 2, branch: workline/documentalist/release, base: main, body-contains: "for the release"}

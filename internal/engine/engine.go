@@ -146,6 +146,10 @@ type Result struct {
 	thenAsked   bool     // the run went round once for it: never twice
 	capped      bool     // a call was refused, the run having spent maxTokens
 	partRefused []string // what the parts answered and may not: refused with them
+	// held: the round blocked only to hold a release for what it did not
+	// settle, and applied what it fixed in this clone (#543): the next
+	// round may take up what it deferred, as after a pass.
+	held bool
 }
 
 // errTokensSpent refuses a call once the run has spent its ai-max-tokens.
@@ -261,7 +265,7 @@ func Run(o Options) *Result {
 			}
 		}
 		applied := len(res.Applied)
-		res.Findings, res.ToApply = nil, false
+		res.Findings, res.ToApply, res.held = nil, false, false
 		if err := run(o, res); err != nil {
 			res.Status = verdict.Block
 			rule := "engine-error"
@@ -291,7 +295,10 @@ func Run(o Options) *Result {
 			}
 			res.ToApply = len(res.Pending) > 0 // what earlier rounds proposed is still to apply
 		}
-		last := err != nil || res.Status != verdict.Pass || !goOn || round == maxRounds
+		// Held for a release, what it fixed applied here: the next round
+		// takes up what this one deferred, if any (#543).
+		passed := res.Status == verdict.Pass || res.held && strings.TrimSpace(string(more)) != ""
+		last := err != nil || !passed || !goOn || round == maxRounds
 		// A task the role asks for once the others are done (in/then): one
 		// round more, that task alone, within what the run may still spend
 		// (the documentalist's pages read for their reader, ADR-0048).
@@ -655,7 +662,7 @@ func run(o Options, res *Result) error {
 		// applied, and a quote left unescaped is a slip, not a refusal. The
 		// documentalist's post passes with no proposal, and such a doc was
 		// judged again, whole, the next night (DomoticsCore, ADR-0014 step 4).
-		if a.askedAgent && a.unread != "" && v.Status != verdict.Block && !unreadAsked && r.Model.PromoteAfter > 0 {
+		if a.askedAgent && a.unread != "" && (v.Status != verdict.Block || v.Accepted()) && !unreadAsked && r.Model.PromoteAfter > 0 {
 			unreadAsked = true
 			if err := os.WriteFile(filepath.Join(runDir, "out", "feedback.md"), []byte(unreadFeedback(a.unread)), 0o644); err != nil {
 				return err
@@ -702,7 +709,9 @@ func run(o Options, res *Result) error {
 			if err != nil {
 				return err
 			}
-			if nv.Status == verdict.Pass {
+			// Held for a release, the docs left out among what holds it:
+			// what is kept is applied as on a pass (#543).
+			if nv.Accepted() {
 				if kept, err = narrowedByPost(r, o, runDir, line, settings); err != nil {
 					return err
 				}
@@ -734,17 +743,24 @@ func run(o Options, res *Result) error {
 	// A role keeping a backlog reads its report on every run, acts or not:
 	// a closing undone, a box ticked, runs nobody answered (ADR-0025).
 	keeps := slices.ContainsFunc(r.Intentions, func(k string) bool { return slices.Contains(backlog.Kinds, k) })
+	// Held, a release waits for what the run did not settle — docs due no
+	// round judged, a person's — not for its answer: what post kept is
+	// applied as on a pass, and the run still blocks (#543).
+	held := res.Status == verdict.Block && v.Accepted()
 	// Blocked, a run applies only what its role names to tell why
 	// (`on-block`): the reviewer's comment, its record in it (#226). The
 	// run still blocks.
-	onBlock := res.Status == verdict.Block && len(r.OnBlock) > 0
+	onBlock := res.Status == verdict.Block && len(r.OnBlock) > 0 && !held
 	if onBlock {
 		intents = slices.DeleteFunc(intents, func(i intent.Intention) bool { return !slices.Contains(r.OnBlock, i.Kind) })
 		keeps = false
 	}
-	if res.Status != verdict.Pass && !onBlock || (len(intents) == 0 && !keeps) {
+	if res.Status != verdict.Pass && !onBlock && !held || (len(intents) == 0 && !keeps) {
 		return nil
 	}
+	// Applied here, in this clone, the next round sees what it fixed and
+	// takes up what it deferred; sent elsewhere, it would not.
+	res.held = held && !o.NoApply && !o.OpenMergeRequest && !o.PushToMergeRequest
 
 	// 5. Apply — only what was prepared, unchanged.
 	if o.TamperBeforeApply {
@@ -809,9 +825,12 @@ func run(o Options, res *Result) error {
 		return err
 	}
 	if o.NoApply {
-		if onBlock {
+		switch {
+		case onBlock:
 			res.Summary = fmt.Sprintf("%s; what says why judged, not applied (%d proposals); apply with: workline apply %s", res.Summary, len(intents), runDir)
-		} else {
+		case held:
+			res.Summary = fmt.Sprintf("%s; judged, not applied (%d proposals); apply with: workline apply %s", res.Summary, len(intents), runDir)
+		default:
 			res.Summary = fmt.Sprintf("judged, not applied (%d proposals); apply with: workline apply %s", len(intents), runDir)
 		}
 		res.ToApply = true
@@ -2068,13 +2087,14 @@ func attempt(r *role.Role, o Options, ag agent.Agent, hasTask bool, tier, runDir
 	// post may narrow the proposals it passes: a place it refuses taken out,
 	// the rest kept, rather than the whole task asked again for it (the
 	// documentalist, ADR-0014 step 4). What it leaves in out/intentions.yaml
-	// is what is applied, held to the same catalogue and bounds.
-	if v.Status == verdict.Pass && len(intents) > 0 {
+	// is what is applied, held to the same catalogue and bounds. A release
+	// held for what the run did not settle keeps them as a pass does (#543).
+	if v.Accepted() && len(intents) > 0 {
 		if a.intents, err = narrowedByPost(r, o, runDir, line, settings); err != nil {
 			return nil, err
 		}
 	}
-	if v.Status == verdict.Pass && a.askedAgent {
+	if v.Accepted() && a.askedAgent {
 		if err := askJudge(o, res, runDir, v, a); err != nil {
 			return nil, err
 		}
@@ -2193,7 +2213,7 @@ func judgeAgain(r *role.Role, o Options, runDir string, env []string, cfg *role.
 		return nil, fmt.Errorf("post exited %d but its verdict says %q", code, v.Status)
 	}
 	verdict.Enforce(v, r.Enforcement(cfg))
-	if v.Status == verdict.Pass {
+	if v.Accepted() {
 		if err := askJudge(o, res, runDir, v, &attemptResult{askedAgent: true}); err != nil {
 			return nil, err
 		}
@@ -2922,8 +2942,11 @@ func askJudge(o Options, res *Result, runDir string, v *verdict.Verdict, a *atte
 		return err
 	}
 	bounded, ok := res.bounded(judgeRole)
+	// Anything but a yes blocks for the answer: never a release's hold,
+	// which would apply it all the same (#543).
 	if !ok {
 		a.external = true
+		v.Held, v.Final = false, false
 		v.Status, v.Summary = verdict.Block, "the judge was not asked"
 		v.Findings = append(v.Findings, verdict.Finding{Rule: "judge-unavailable", Message: "not asked: " + errTimeSpent.Error()})
 		return nil
@@ -2936,9 +2959,11 @@ func askJudge(o Options, res *Result, runDir string, v *verdict.Verdict, a *atte
 	switch {
 	case err != nil:
 		a.external = true
+		v.Held, v.Final = false, false
 		v.Status, v.Summary = verdict.Block, "the judge could not answer"
 		v.Findings = append(v.Findings, verdict.Finding{Rule: "judge-unavailable", Message: err.Error() + "; " + who})
 	case !ans.Yes:
+		v.Held, v.Final = false, false
 		v.Status, v.Summary = verdict.Block, "the judge refused the proposal"
 		v.Findings = append(v.Findings, verdict.Finding{Rule: "judged-no", Message: ans.Why + " (" + who + ")"})
 	default:
