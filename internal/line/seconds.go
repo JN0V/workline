@@ -129,7 +129,8 @@ func (r *Result) OverBudget() string {
 }
 
 // timed is a step's name and seconds, with what its agents took of them:
-// the reviewer's lenses, the committer's rewrite, the judges.
+// the reviewer's lenses, the inspector's triage, the committer's
+// rewrite, the judges.
 func (s Step) timed() string {
 	t := s.Name + " " + Seconds(s.Seconds)
 	if s.From != "" {
@@ -148,6 +149,8 @@ func (s Step) timed() string {
 			kind = "judges"
 		case c.Task == "part" && role == "reviewer":
 			kind = "lenses"
+		case c.Task == "part" && role == "inspector":
+			kind = "triage"
 		case c.Task == "part":
 			kind = "parts"
 		case role == "committer":

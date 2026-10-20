@@ -1,0 +1,29 @@
+case: inspector/no-new-finding-no-call
+about: >
+  A change the gates find nothing new in asks the agent nothing: the old
+  debt is the gates' count, never triaged (ADR-0049, section 6). Nothing is
+  posted.
+given:
+  repo: linted
+  setup:
+    - git checkout -q -b change
+    - |
+      printf 'package main\n\n// version is the release.\nconst version = "1.0.0"\n' > version.go && git add version.go && git commit -qm "feat: name the version"
+  forge: {merge-requests: [{id: 1, branch: change, labels: [], comments: []}]}
+  config:
+    routing: {events: {merge-request: [committer, "gate:merge", inspector]}}
+    gates: {merge: {checks: [{id: lint, run: "golangci-lint run --output.sarif.path={out}/lint.sarif", output: sarif, max: {error: 0}}]}}
+run:
+  route: merge-request
+  warn-only: true
+  summary: true
+  gates-job: {env: {PATH: "$FIXTURES/bin:$PATH"}}
+  input: {range: main..change}
+  target: {merge-request: 1}
+  ai: "cmd:sh $FIXTURES/agents/triage.sh"
+expect:
+  status: pass
+  agent-calls: 0
+  summary-file: ["no new finding of the gates: nobody asked"]
+  no-findings: [{rule: triage}]
+  forge: {merge-requests: [{id: 1, comments: 0}]}

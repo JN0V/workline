@@ -289,12 +289,13 @@ func CodeQuality(repo string, items []Item) ([]byte, error) {
 
 // postedOnMergeRequest are the roles whose findings a merge request gets
 // from workline itself: the documentalist's as a check's annotations, the
-// job applying the run writes them; the reviewer's in its own review.
-var postedOnMergeRequest = map[string]bool{"documentalist": true, "reviewer": true}
+// job applying the run writes them; the reviewer's in its own review; the
+// inspector's triage in its own comment.
+var postedOnMergeRequest = map[string]bool{"documentalist": true, "reviewer": true, "inspector": true}
 
 // ForCodeScanning is what of a run on event goes to code scanning: on a
-// merge request, neither the documentalist's findings nor the reviewer's
-// nor the gates', which workline posts there itself. Code scanning would
+// merge request, neither the documentalist's findings nor the reviewer's,
+// the inspector's nor the gates', which workline posts there itself. Code scanning would
 // open a conversation for each, whatever its level, that a base requiring
 // them resolved holds the merge on (#412), and is paid on a private
 // repository (ADR-0049); the committer's stay.

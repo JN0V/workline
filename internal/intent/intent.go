@@ -40,6 +40,7 @@ var Catalogue = map[string]bool{
 	"depend":         true, // what an issue waits on: the forge's relation, or a line in its body (ADR-0028)
 	"undepend":       true, // a link the role set taken off: done once its blockers close, proposed while one is open (ADR-0028)
 	"finding":        true, // a lens's answer (in/parts): a defect, its cause quoted; read by pre, never applied (ADR-0020)
+	"triage":         true, // the inspector's answer (in/parts): a gate's new finding explained, a likely false positive said, its place in the fixes; read by pre, never applied (ADR-0049)
 	"claim":          true, // a part's answer (in/parts), read by pre; or why a patch takes words out, read by post; never applied
 	"read":           true, // a judge's ask to read code before it answers, served at the commit judged; never applied (ADR-0045)
 	"quote":          true, // the code a judge's no rests on, found again before a finding is dropped; never applied (ADR-0045)

@@ -39,6 +39,7 @@ import (
 	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/builtin/committer"
 	"github.com/JN0V/workline/internal/builtin/documentalist"
+	"github.com/JN0V/workline/internal/builtin/inspector"
 	"github.com/JN0V/workline/internal/builtin/productowner"
 	"github.com/JN0V/workline/internal/builtin/reviewer"
 	"github.com/JN0V/workline/internal/doctor"
@@ -469,6 +470,10 @@ func builtin(args []string) int {
 		return reviewer.Pre(runDir, repo)
 	case "reviewer post":
 		return reviewer.Post(runDir, repo)
+	case "inspector pre":
+		return inspector.Pre(runDir, repo)
+	case "inspector post":
+		return inspector.Post(runDir, repo)
 	}
 	fmt.Fprintf(os.Stderr, "workline builtin: no built-in step %q\n", strings.Join(args, " "))
 	return 99
