@@ -248,4 +248,5 @@ Not chosen:
 Conformance: documentalist/release-pull-request-fixes-every-due-doc-in-one-night,
 release-pull-request-by-hand-fixes-every-due-doc,
 release-pull-request-night-stops-at-its-tokens,
-release-pull-request-fix-of-a-doc-the-release-bumps.
+release-pull-request-fix-of-a-doc-the-release-bumps,
+release-pull-request-fix-in-a-comment-when-it-conflicts-on-the-base.

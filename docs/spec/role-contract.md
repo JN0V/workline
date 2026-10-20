@@ -363,7 +363,8 @@ token), **apply** (trusted, no AI key).
    A round that deferred something and proposed patches, passed or
    `held`, keeps them in the clone, not applied, and the run goes round,
    applied or judged with `--no-apply`. The next round is told the
-   folders of those rounds (`WORKLINE_EARLIER_ROUNDS`, oldest first) and
+   folders of those rounds (`WORKLINE_EARLIER_ROUNDS`, a path list as
+   `PATH` is, oldest first) and
    proposes their patches, as judged, ahead of its own: the run's fix is
    one, applied once or listed once in `pending`. Twenty rounds at most,
    the run's caps on tokens and on the wait first. When the run ends, the

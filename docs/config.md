@@ -211,8 +211,8 @@ A role's `pre` and `post` receive:
   `release` ([ADR-0017](adr/0017-the-release-manager.md)); the reviewer
   leaves the versions the tool bumps
   ([#384](https://github.com/JN0V/workline/issues/384));
-  `WORKLINE_EARLIER_ROUNDS`, the folders of the run's earlier rounds,
-  whose fix the round proposes with its own
+  `WORKLINE_EARLIER_ROUNDS`, the folders of the run's earlier rounds, a
+  path list as `PATH` is, whose fix the round proposes with its own
   ([#572](https://github.com/JN0V/workline/issues/572));
 - run by a handoff: the inputs `handoff-from` and `handoff-reason`.
 - in the round a role asks last (`in/then`): `WORKLINE_THEN`, its task.
