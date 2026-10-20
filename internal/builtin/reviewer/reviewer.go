@@ -94,6 +94,7 @@ type Finding struct {
 	Where    string    `json:"where"`          // the cause's file and line
 	On       int       `json:"on,omitempty"`   // the change's: the line of its quote the change touched, where its comment goes on the forge (#277)
 	Related  bool      `json:"related"`        // the cause lies in the change: the author fixes it
+	Side     string    `json:"side,omitempty"` // the change's: where its cause was found, onHead or onRemoved (#570)
 	Line     string    `json:"line,omitempty"` // outside the change: the line the cause starts at, as it reads, which keys its issue
 	Also     []Finding `json:"also,omitempty"` // other findings on the same line, grouped under this one, each judged by its own lens
 	Verified string    `json:"verified,omitempty"`
@@ -1222,7 +1223,7 @@ func lensFindings(repo string, s Settings, st state, ls []string, answers []inte
 		if err != nil {
 			return err
 		}
-		f, why := found(repo, st, lens, l.Cites == "claim", a.Value)
+		f, why := found(repo, st, lens, l.Cites == "claim", a.Value, "")
 		if why != "" {
 			c.Logged = append(c.Logged, verdict.Finding{Rule: "finding-unfounded", Level: "warn",
 				Message: fmt.Sprintf("dropped, from the %s lens: %q — %s", lens, f.Title, why)})
@@ -1361,13 +1362,23 @@ func askJudges(runDir, repo string, s Settings, st state, c *candidates, n *int)
 	return nil
 }
 
+// The sides of the change a cause is found on (#570): a line the head
+// holds — added, kept beside a removal, or using what a removed line
+// tested — or a line the change removed.
+const (
+	onHead    = "head"
+	onRemoved = "removed"
+)
+
 // found reads one finding a lens answered, and finds its quotes again: its
 // cause in the file at the head of the range, or among the lines the change
 // removed; its symptom, when it gives one, in its file. Related: its cause
 // lies on a line the change added or removed, on a kept line beside a
 // removal, or on one using what a removed line of its function tested or
-// assigned. why says why it is dropped.
-func found(repo string, st state, lens string, cites bool, v any) (Finding, string) {
+// assigned, the side it lies on said. on, when set, looks on that side
+// alone: a block found before is the change's only where it was found
+// (#570). why says why it is dropped.
+func found(repo string, st state, lens string, cites bool, v any, on string) (Finding, string) {
 	var raw struct {
 		Severity string `json:"severity"`
 		Title    string `json:"title"`
@@ -1433,36 +1444,41 @@ func found(repo string, st state, lens string, cites bool, v any) (Finding, stri
 	if ok {
 		places = locate(strings.Split(text, "\n"), f.Cause.Quote)
 	}
+	head, gone := on != onRemoved, on != onHead
+	var atHead []func(string, int) bool
+	if head {
+		atHead = []func(string, int) bool{st.Change.addedAt, st.Change.exposedAt}
+	}
 	// The change's: a line it added, then a kept line beside a removal, then
 	// a line it removed, even one also kept elsewhere (#224).
-	for _, in := range []func(string, int) bool{st.Change.addedAt, st.Change.exposedAt} {
+	for _, in := range atHead {
 		for _, p := range places {
 			for n := p.From; n <= p.To && f.Where == ""; n++ {
 				if in(f.Cause.Path, n) {
-					f.Where, f.Related, f.On = fmt.Sprintf("%s:%d", f.Cause.Path, p.From), true, n
+					f.Where, f.Related, f.On, f.Side = fmt.Sprintf("%s:%d", f.Cause.Path, p.From), true, n, onHead
 				}
 			}
 		}
 	}
-	if f.Where == "" {
+	if f.Where == "" && gone {
 		var removed []string
 		for _, l := range st.Change.Removed[f.Cause.Path] {
 			removed = append(removed, l.Text)
 		}
 		if at := locate(removed, f.Cause.Quote); len(at) > 0 {
 			f.On = st.Change.Removed[f.Cause.Path][at[0].From-1].At
-			f.Where, f.Related = fmt.Sprintf("%s:%d", f.Cause.Path, f.On), true
+			f.Where, f.Related, f.Side = fmt.Sprintf("%s:%d", f.Cause.Path, f.On), true, onRemoved
 		}
 	}
 	// Then a kept line further down using a name a removed line tested or
 	// assigned, in the same function (#357): its comment goes where the
 	// removal shows.
 	for _, p := range places {
-		if f.Where != "" {
+		if f.Where != "" || !head {
 			break
 		}
 		if at := st.Change.reaches(repo, st.Head, f.Cause.Path, p); at > 0 {
-			f.Where, f.Related, f.On = fmt.Sprintf("%s:%d", f.Cause.Path, p.From), true, at
+			f.Where, f.Related, f.On, f.Side = fmt.Sprintf("%s:%d", f.Cause.Path, p.From), true, at, onHead
 		}
 	}
 	if f.Where == "" && len(places) > 0 {
@@ -1799,7 +1815,7 @@ func settled(runDir, repo string, s Settings, st state, c candidates) (Review, [
 		level := "warn"
 		if s.blocking(f) {
 			level = ""
-			blocks = append(blocks, Block{Lens: f.Lens, At: st.Head, Where: f.Where, Title: shortMessage(f), Cause: f.Cause})
+			blocks = append(blocks, Block{Lens: f.Lens, At: st.Head, Where: f.Where, Title: shortMessage(f), Cause: f.Cause, Side: f.Side})
 		}
 		v.Findings = append(v.Findings, verdict.Finding{Rule: f.Lens, Where: f.Where, Level: level, Message: message(f)})
 	}
