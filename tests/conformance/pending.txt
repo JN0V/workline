@@ -1,2 +1,5 @@
 # Cases the engine does not pass yet. The suite runs them anyway and fails
 # if one starts passing while still listed here.
+
+# A block found at the head, its quote left only on a removed line (#570).
+reviewer/block-goes-when-only-a-removed-line-holds-its-quote
