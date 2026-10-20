@@ -49,6 +49,11 @@ func TestSaysAsNow(t *testing.T) {
 		{"a minimum opening the next line", "The templates need v0.38.0\nor later.\n", "v0.38.0", false},
 		{"a sentence ended on the line before", "It signs.\nv0.38.0 is the version to pin.\n", "v0.38.0", true},
 		{"a heading is no sentence before", "## Since\n\nv0.38.0 is the version to pin.\n", "v0.38.0", true},
+		{"a code block's comment, since", "```yaml\n# since v0.38.0\nNAME: tool\n```\n", "v0.38.0", false},
+		{"a code block's comment, a minimum", "```sh\n# needs 0.38.0 or later\nrun\n```\n", "v0.38.0", false},
+		{"minimum version", "Minimum version 0.38.0.\n", "v0.38.0", false},
+		{"at least version", "It needs at least version v0.38.0.\n", "v0.38.0", false},
+		{"a code line is no sentence before", "```\nsigned after\nv0.38.0\n```\n", "v0.38.0", true},
 	} {
 		if got := saysAsNow(doc(c.body), c.v); got != c.want {
 			t.Errorf("%s: saysAsNow = %v, want %v", c.name, got, c.want)

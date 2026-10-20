@@ -181,10 +181,11 @@ var versionRange = regexp.MustCompile(`(?:>=?|<=?|\^|~>?)\s*v?$`)
 // (docs/research/documentalist-genericity.md). The release a feature came
 // in, "from v0.38.0", "the first release after v0.37.0", "fixed in", and
 // a minimum, "at least", are history too (#346): true at every later
-// release; these, right before the version, no word between ("Install from
-// tag v1.2.0" pins it). French: "depuis", "à partir de", "avant", "après".
-// A version in code quotes or plain quotes is read the same.
-var versionMarker = regexp.MustCompile(`(?i)(?:^|[^a-z0-9])(?:(?:since|until|prior\s+to|available\s+(?:in|since|from)|(?:added|new|introduced|removed|fixed|shipped|released)\s+in|changed\b[^.;]*?\s+in|deprecated(?:\s+(?:in|since))?|version(?:added|changed|removed))(?:\s+version|\s+[a-z][a-z0-9_-]*)?|from|after|before|at\s+least|minimum|depuis|à\s+partir\s+d(?:e|u)|avant|après)[\s:*_({}\x60"']*v?$`)
+// release; these, right before the version, "version" alone between
+// ("Install from tag v1.2.0", `FROM tool:v1.2.0` pin it). French:
+// "depuis", "à partir de", "avant", "après". A version in code quotes or
+// plain quotes is read the same, in prose as in a code block's comment.
+var versionMarker = regexp.MustCompile(`(?i)(?:^|[^a-z0-9])(?:(?:since|until|prior\s+to|available\s+(?:in|since|from)|(?:added|new|introduced|removed|fixed|shipped|released)\s+in|changed\b[^.;]*?\s+in|deprecated(?:\s+(?:in|since))?|version(?:added|changed|removed))(?:\s+version|\s+[a-z][a-z0-9_-]*)?|(?:from|after|before|at\s+least|minimum|depuis|à\s+partir\s+d(?:e|u)|avant|après)(?:\s+version)?)[\s:*_({}\x60"']*v?$`)
 
 // versionLater starts the text after a version given as a minimum —
 // "1.4.1 or later", "and newer", "onwards", `1.4.1+` — which says what is
@@ -195,13 +196,10 @@ var versionLater = regexp.MustCompile(`(?i)^[*_\x60"')]*(?:\+(?:[^0-9a-z.]|$)|\s
 
 // saidAsNow says whether a version, the text before and after it given,
 // is said as the version now — a pin, an example, a version stated — not
-// as a range, nor, in prose, after a history marker or as a minimum. In a
-// code block the words are the code's: `FROM tool:v1.2.0` pins it.
-func saidAsNow(before, after string, code bool) bool {
-	if versionRange.MatchString(before) {
-		return false
-	}
-	return code || !versionMarker.MatchString(before) && !versionLater.MatchString(after)
+// as a range, nor after a history marker, nor as a minimum: in prose as in
+// a code block's comment (`# since 1.4.1`).
+func saidAsNow(before, after string) bool {
+	return !versionRange.MatchString(before) && !versionMarker.MatchString(before) && !versionLater.MatchString(after)
 }
 
 // around is the text before and after a version found at at in lines[i],
@@ -239,7 +237,7 @@ func linesSaying(content, v string) []int {
 			continue
 		}
 		for _, at := range versionsIn(l.text) {
-			if before, after := around(lines, i, at); l.text[at[0]:at[1]] == v && saidAsNow(before, after, l.code) {
+			if before, after := around(lines, i, at); l.text[at[0]:at[1]] == v && saidAsNow(before, after) {
 				out = append(out, l.n)
 				break
 			}
@@ -274,7 +272,7 @@ func saysAsNow(content, v string) bool {
 			if digit(t, at[0]-1) || at[0] > 0 && t[at[0]-1] == '.' || digit(t, at[1]) || at[1] < len(t) && t[at[1]] == '.' && digit(t, at[1]+1) {
 				continue
 			}
-			if before, after := around(lines, n, at); saidAsNow(before, after, l.code) {
+			if before, after := around(lines, n, at); saidAsNow(before, after) {
 				return true
 			}
 		}
