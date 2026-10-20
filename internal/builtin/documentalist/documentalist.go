@@ -386,10 +386,13 @@ func versionsOnly(dir, commit, path string) (bool, []string) {
 
 // dropBumps leaves out of a doc's commits ("%h %s" lines), on a release
 // tool's pull request, those that only bumped a version in path, unless the
-// doc quotes a version they replaced: the tool's own bump says nothing else
-// a doc describes, and would make the release's docs suspect at every
-// release. Elsewhere a bump is a change like any: the docs it touches are
-// judged (the evaluation's drifted-version-bump).
+// doc still says a version they replaced as the version now — a pin, which
+// must follow the bump — never as history: the release a feature came in,
+// a minimum, stay true at every later release (saysAsNow, #346). The
+// tool's own bump says nothing else a doc describes, and would make the
+// release's docs suspect at every release. Elsewhere a bump is a change
+// like any: the docs it touches are judged (the evaluation's
+// drifted-version-bump).
 func dropBumps(dir, commits, path, doc string) string {
 	if commits == "" || strings.HasPrefix(commits, "(") {
 		return commits
@@ -398,8 +401,8 @@ func dropBumps(dir, commits, path, doc string) string {
 	for _, l := range strings.Split(commits, "\n") {
 		hash, _, _ := strings.Cut(l, " ")
 		bump, old := versionsOnly(dir, hash, path)
-		quoted := slices.ContainsFunc(old, func(v string) bool { return strings.Contains(doc, strings.TrimPrefix(v, "v")) })
-		if !bump || quoted {
+		pinned := slices.ContainsFunc(old, func(v string) bool { return saysAsNow(doc, v) })
+		if !bump || pinned {
 			kept = append(kept, l)
 		}
 	}

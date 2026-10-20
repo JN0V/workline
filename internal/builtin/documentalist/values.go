@@ -178,11 +178,32 @@ var versionRange = regexp.MustCompile(`(?:>=?|<=?|\^|~>?)\s*v?$`)
 // "default changed from `avoid` to `always` in", Sphinx's `versionadded::`
 // and MyST's `{versionadded}`, a name between or not ("prior to pip 18.0")
 // — history, not the version now: 39 of the 43 lines reported on prettier
-// (docs/research/documentalist-genericity.md).
-var versionMarker = regexp.MustCompile(`(?i)(?:^|[^a-z0-9])(?:since|until|prior\s+to|available\s+(?:in|since|from)|(?:added|new|introduced|removed)\s+in|changed\b[^.;]*?\s+in|deprecated(?:\s+(?:in|since))?|version(?:added|changed|removed))(?:\s+version|\s+[a-z][a-z0-9_-]*)?[\s:*_({}]*v?$`)
+// (docs/research/documentalist-genericity.md). The release a feature came
+// in, "from v0.38.0", "the first release after v0.37.0", "fixed in", and
+// a minimum, "at least", are history too (#346): true at every later
+// release. French: "depuis", "à partir de", "avant", "après".
+var versionMarker = regexp.MustCompile(`(?i)(?:^|[^a-z0-9])(?:since|until|from|after|before|at\s+least|minimum|prior\s+to|available\s+(?:in|since|from)|(?:added|new|introduced|removed|fixed|shipped|released)\s+in|changed\b[^.;]*?\s+in|deprecated(?:\s+(?:in|since))?|version(?:added|changed|removed)|depuis|à\s+partir\s+du?|avant|après)(?:\s+version|\s+[a-z][a-z0-9_-]*)?[\s:*_({}]*v?$`)
 
-// linesSaying lists the doc's body lines saying a version, outside derived
-// blocks and ranges.
+// versionLater starts the text after a version given as a minimum —
+// "1.4.1 or later", "and newer", "onwards", `1.4.1+` — which says what is
+// needed, true at every later release, not the version now (#346).
+// French: "ou plus récent", "ou ultérieure", "et suivantes".
+var versionLater = regexp.MustCompile(`(?i)^[*_\x60)]*(?:\+|\s+(?:or|and)\s+(?:later|newer|above|higher|up)\b|\s+onwards?\b|\s+ou\s+(?:plus\s+récente?|ultérieure?|supérieure?)|\s+et\s+(?:suivantes?|plus)\b)`)
+
+// saidAsNow says whether the version at l[at[0]:at[1]] is said as the
+// version now — a pin, an example, a version stated — not as a range, nor,
+// in prose, after a history marker or as a minimum. In a code block the
+// words are the code's: `FROM tool:v1.2.0` pins it.
+func saidAsNow(l string, at []int, code bool) bool {
+	before := l[:at[0]]
+	if versionRange.MatchString(before) {
+		return false
+	}
+	return code || !versionMarker.MatchString(before) && !versionLater.MatchString(l[at[1]:])
+}
+
+// linesSaying lists the doc's body lines saying a version as the version
+// now (saidAsNow), outside derived blocks.
 func linesSaying(content, v string) []int {
 	skip := derivedLines(content)
 	var out []int
@@ -191,13 +212,46 @@ func linesSaying(content, v string) []int {
 			continue
 		}
 		for _, at := range versionsIn(l.text) {
-			if before := l.text[:at[0]]; l.text[at[0]:at[1]] == v && !versionRange.MatchString(before) && !versionMarker.MatchString(before) {
+			if l.text[at[0]:at[1]] == v && saidAsNow(l.text, at, l.code) {
 				out = append(out, l.n)
 				break
 			}
 		}
 	}
 	return out
+}
+
+// saysAsNow says whether a doc's body, outside derived blocks, says version
+// v as the version now (saidAsNow): a pin the reader installs or copies —
+// `WORKLINE_VERSION: v0.38.0`, `go install …@v0.38.0`, an image's tag —
+// never the release a feature came in, nor a minimum (#346). v is as a
+// release tool bumps it: three parts, a `v` before, maybe a pre-release
+// after; a longer number holding it (10.38.0, 0.38.0.1) is not it.
+func saysAsNow(content, v string) bool {
+	v = strings.TrimPrefix(v, "v")
+	digit := func(s string, i int) bool { return i >= 0 && i < len(s) && s[i] >= '0' && s[i] <= '9' }
+	skip := derivedLines(content)
+	for _, l := range scan(content) {
+		if skip[l.n] {
+			continue
+		}
+		for from := 0; ; {
+			i := strings.Index(l.text[from:], v)
+			if i < 0 {
+				break
+			}
+			at := []int{from + i, from + i + len(v)}
+			from = at[1]
+			t := l.text
+			if digit(t, at[0]-1) || at[0] > 0 && t[at[0]-1] == '.' || digit(t, at[1]) || at[1] < len(t) && t[at[1]] == '.' && digit(t, at[1]+1) {
+				continue
+			}
+			if saidAsNow(t, at, l.code) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // sourceFilesOf lists the files of this repository a doc names in its
