@@ -228,10 +228,12 @@ a cron off the hour (`13 17 * * *`) was listed as due at 18:00 and ran at
   - Not tried: a merge request's `expose_as` link, an applying job's page,
     a private project's Pages preview, a self-managed instance.
 - **The reviewer** ([ADR-0020](adr/0020-the-reviewer-finds-the-engine-verifies-the-person-merges.md)):
-  - the judging job reads its summary comment to review only new commits;
-    `CI_JOB_TOKEN` may not read a merge request's notes, so give
-    `GITLAB_TOKEN` (`read_api`), or each push reviews the whole merge request
-    again, said (`record-unread`);
+  - the judging job reads its summary comment to review only new commits,
+    with `CI_JOB_TOKEN`: the notes alone, never the project's members,
+    which that token may not list (401,
+    [#552](https://github.com/JN0V/workline/issues/552)); a comment it
+    cannot read is said (`record-unread`), and the push reviews the whole
+    merge request again;
   - the applying job posts each finding as a discussion on its line, with
     `WORKLINE_GITLAB_TOKEN`
     ([more](../roles/reviewer/docs/lines.md));
@@ -239,9 +241,13 @@ a cron off the hour (`13 17 * * *`) was listed as due at 18:00 and ran at
     pipeline: the next one, a push or **Run pipeline**, has every lens
     read the whole change once, as the draft's summary says
     ([how](../roles/reviewer/docs/ready.md); not tried on a GitLab yet).
-- **The documentalist** reads, with the same `GITLAB_TOKEN`, the records
-  its note keeps instead of commits; else it commits them, said
-  (`record-unread`, [more](../roles/documentalist/docs/push.md#a-doc-found-with-nothing-to-fix-no-commit)).
+- **The documentalist** reads the records its note keeps instead of
+  commits ([more](../roles/documentalist/docs/push.md#a-doc-found-with-nothing-to-fix-no-commit)):
+  - with `CI_JOB_TOKEN`, a note a project access token's user wrote, as
+    `WORKLINE_GITLAB_TOKEN`'s; one a person's token wrote is not taken on
+    its word, said once (`members-unread`); `GITLAB_TOKEN` (`read_api`)
+    tells a person of the project too;
+  - a note it cannot read: it commits the records, said (`record-unread`).
 
 ## The product owner
 

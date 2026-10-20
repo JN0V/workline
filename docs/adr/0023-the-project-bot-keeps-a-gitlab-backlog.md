@@ -71,3 +71,30 @@ note's author, or a Maintainer, edits a note.
 - Left: the Planner role's refusal reported as such, not only as the
   fallback; a group access token, and service accounts, untried; a
   self-managed instance untried.
+
+## Amendment (2026-10-20): comments read without the members list
+
+On a self-managed GitLab, the judging job, with only `CI_JOB_TOKEN`, read
+a merge request's notes but not `members/all` (401). Reading the
+reviewer's comment went through the members, so it failed: each push
+reviewed the whole merge request again (`record-unread`,
+[#552](https://github.com/JN0V/workline/issues/552)).
+
+- **A comment's text needs no member.** What reads a comment by its
+  marker alone, as the reviewer's record, reads the notes and never asks
+  for the members.
+- **A token that may not list the members** (401, 403) is said once a
+  run, never asked again. Who wrote each comment is kept, a bot told by
+  its name, as above; none counts as a person of the project.
+- **Trust still needs the members.** What acts on a person's word — an
+  issue's author, an answer, a label's or a reaction's author — fails
+  loud, as decided above. The documentalist's records are read from a
+  bot's comment alone, said (`members-unread`): one a person's token
+  wrote is not taken on its word.
+
+Not chosen: giving the judging job a token of its own, which a project
+then has to make and rotate; taking an unknown author for a person of
+the project.
+
+Conformance: reviewer/record-read-without-the-members-on-gitlab and the
+two documentalist/judged-kept-…-without-the-members-on-gitlab cases.

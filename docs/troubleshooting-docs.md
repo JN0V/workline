@@ -27,6 +27,13 @@ or of the heads a release pull request's fix named, could not be read:
 the records are committed, or those docs judged again, at night. On GitLab, give the judging job `GITLAB_TOKEN`
 ([more](../roles/documentalist/docs/push.md#a-doc-found-with-nothing-to-fix-no-commit)).
 
+`members-unread` (a warning, once a run): the token may not list the
+project's members, as GitLab's `CI_JOB_TOKEN`. That comment is read only
+when a bot wrote it; one a person's token wrote is not, and its docs are
+judged again. `GITLAB_TOKEN` (`read_api`) on the judging job tells a
+person of the project too
+([more](../roles/documentalist/docs/push.md#a-doc-found-with-nothing-to-fix-no-commit)).
+
 `shallow-clone`: the clone lacks history the documentalist needs — the
 last release, or the commit a doc's `checked` names, so whether its
 sources changed cannot be told. It holds the release, and any run whose

@@ -61,6 +61,13 @@ took a commit on their branch, 41 of 42 in two weeks
     ([ci-gitlab.md](../../../docs/ci-gitlab.md#what-the-template-does));
   - a doc with a source in another repository.
 - Only a comment a bot or a person of the project wrote is read.
+  - A token that may not list the project's members (GitLab's
+    `CI_JOB_TOKEN`) reads a bot's alone, said once (`members-unread`).
+  - A project access token's user is one, as the template's
+    `WORKLINE_GITLAB_TOKEN` advises.
+  - One a person's token wrote is not taken on its word: its docs are
+    judged again
+    ([#552](https://github.com/JN0V/workline/issues/552)).
 
 ### At the push
 
