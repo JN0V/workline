@@ -258,7 +258,9 @@ func stickyOn(f forge.Forge, t forge.Target, key string, u *unknownAuthors) (str
 		case n.Bot || n.Insider:
 			body = n.Body
 		case unknown && n.Author != "":
-			u.unread = append(u.unread, fmt.Sprintf("@%s's on merge request %d", n.Author, t.ID))
+			if s := fmt.Sprintf("@%s's on merge request %d", n.Author, t.ID); !slices.Contains(u.unread, s) {
+				u.unread = append(u.unread, s)
+			}
 		}
 	}
 	return body, nil
@@ -280,7 +282,7 @@ func (u *unknownAuthors) findings() []verdict.Finding {
 	}
 	what := "none other carried its records"
 	if len(u.unread) > 0 {
-		what = strings.Join(slices.Compact(u.unread), ", ") + " not taken on its word: the docs it kept are judged again"
+		what = strings.Join(u.unread, ", ") + " not taken on its word: the docs it kept are judged again"
 	}
 	return []verdict.Finding{{Rule: "members-unread", Level: "warn",
 		Message: fmt.Sprintf("%v: only a bot's comment, a project or group access token's user, is read as the documentalist's; %s. To tell a person of the project's, give the judging job GITLAB_TOKEN (read_api)", u.err, what)}}

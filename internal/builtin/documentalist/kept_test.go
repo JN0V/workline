@@ -31,6 +31,8 @@ func TestStickyOnUnknownAuthors(t *testing.T) {
 		{Body: "the bot's " + marker, Author: "project_1_bot_0a1b", Bot: true},
 		{Body: "alice's " + marker, Author: "alice"},
 		{Body: "a word", Author: "bob"},
+		{Body: "carol's " + marker, Author: "carol"},
+		{Body: "alice's again " + marker, Author: "alice"},
 	}, err: fmt.Errorf("%w: 401", forge.ErrAuthorsUnknown)}
 	var u unknownAuthors
 	for _, id := range []int{3, 4} {
@@ -42,7 +44,7 @@ func TestStickyOnUnknownAuthors(t *testing.T) {
 	got := u.findings()
 	if len(got) != 1 || got[0].Rule != "members-unread" || got[0].Level != "warn" ||
 		!strings.Contains(got[0].Message, "401: only a bot's comment") ||
-		!strings.Contains(got[0].Message, "@alice's on merge request 3, @alice's on merge request 4 not taken on its word") ||
+		!strings.Contains(got[0].Message, "@alice's on merge request 3, @carol's on merge request 3, @alice's on merge request 4, @carol's on merge request 4 not taken on its word") ||
 		strings.Contains(got[0].Message, "bob") {
 		t.Fatalf("said: %+v", got)
 	}
