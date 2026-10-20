@@ -174,12 +174,12 @@ func TestGitLabWho(t *testing.T) {
 	members = false
 	for _, refused = range []int{http.StatusForbidden, http.StatusUnauthorized} {
 		g, asked = &gitlab{repo: t.TempDir()}, 0
+		bodies, err := g.Comments(Target{Kind: "issue", ID: 3})
+		if err != nil || len(bodies) != 6 || bodies[0] != "state <!-- workline:k -->" || asked != 0 {
+			t.Fatalf("%d, the comments: %q %v, the members asked %d times", refused, bodies, err, asked)
+		}
 		if _, err := g.Issue(3); !errors.Is(err, ErrAuthorsUnknown) || !strings.Contains(err.Error(), "members") {
 			t.Fatalf("%d, members refused: %v", refused, err)
-		}
-		bodies, err := g.Comments(Target{Kind: "issue", ID: 3})
-		if err != nil || len(bodies) != 6 || bodies[0] != "state <!-- workline:k -->" {
-			t.Fatalf("%d, the comments: %q %v", refused, bodies, err)
 		}
 		notes, err = g.Notes(Target{Kind: "issue", ID: 3})
 		if !errors.Is(err, ErrAuthorsUnknown) || !errors.Is(err, ErrUnreachable) {
