@@ -17,7 +17,7 @@ expect:
   findings:
     - {rule: suspect, where: docs/tech/auth.md, message: "the doc and its sources unchanged since: not put before an agent again"}
     - {rule: members-unread, level: warn, message: "the token may not list the project's members"}
-    - {rule: members-unread, message: "only a bot's comment, a project or group access token's user, is read as the documentalist's; none other carried its records"}
+    - {rule: members-unread, message: "only a bot's comment is read as the documentalist's, a project or group access token's user or one .workline/config.yaml names (gitlab: {bots: […]}); none other carried its records"}
   no-findings: [{rule: record-unread}]
   summary-once: [members-unread]
   forge:

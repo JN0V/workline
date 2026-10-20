@@ -285,7 +285,7 @@ func (u *unknownAuthors) findings() []verdict.Finding {
 		what = strings.Join(u.unread, ", ") + " not taken on its word: the docs it kept are judged again"
 	}
 	return []verdict.Finding{{Rule: "members-unread", Level: "warn",
-		Message: fmt.Sprintf("%v: only a bot's comment, a project or group access token's user, is read as the documentalist's; %s. To tell a person of the project's, give the judging job GITLAB_TOKEN (read_api)", u.err, what)}}
+		Message: fmt.Sprintf("%v: only a bot's comment is read as the documentalist's, a project or group access token's user or one .workline/config.yaml names (gitlab: {bots: […]}); %s. To tell a person of the project's, give the judging job GITLAB_TOKEN (read_api)", u.err, what)}}
 }
 
 // keptBody is the comment keeping the records: what a person reads, then
