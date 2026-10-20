@@ -197,6 +197,13 @@ func positional(fs *flag.FlagSet, args []string, n int) (code int, done bool) {
 	return 0, false
 }
 
+// isSet says whether the option was given, an empty value too.
+func isSet(fs *flag.FlagSet, name string) bool {
+	set := false
+	fs.Visit(func(f *flag.Flag) { set = set || f.Name == name })
+	return set
+}
+
 // misuse says what was wrong, then the command's usage, on stderr: 64.
 func misuse(fs *flag.FlagSet, msg string) int {
 	fmt.Fprintf(os.Stderr, "workline %s: %s\n", fs.Name(), msg)
@@ -214,7 +221,7 @@ var flagValue = map[string]string{
 	"scope": "<glob>", "input": "<name=value>", "input-file": "<name=path>", "lenses": "<lens,...>",
 	"sarif": "<file>", "code-quality": "<file>", "summary": "<file>", "out": "<file>", "line": "<file>",
 	"week": "<year-Wnn>", "since": "<rev>", "lines": "<n>", "hooks": "yes|no", "human-po": "yes|no",
-	"install": "<tool,...>|all|none",
+	"install": "<tool,...>|all|none", "gates-kept": "<dir>",
 }
 
 // commandHelp prints the command's usage line, what it does, and its

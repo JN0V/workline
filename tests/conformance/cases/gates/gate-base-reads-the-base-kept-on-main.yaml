@@ -1,0 +1,20 @@
+case: gates/gate-base-reads-the-base-kept-on-main
+about: >
+  `workline gate <name> --base <rev> --gates-kept <folder>` reads the
+  merge base's findings as main's run kept them, by the rules of the line:
+  the same command, config and tool. Its tools run once, at the head.
+given:
+  repo: linted
+  setup:
+    - git checkout -q -b change
+    - |
+      sed -i 's|^\tos.Remove("c.tmp")$|&\n\tos.Remove("d.tmp")|' clean.go && git commit -qam "feat: clean d too"
+  env: {PATH: "$FIXTURES/bin:$PATH"}
+  config:
+    routing: {events: {merge-request: ["gate:merge"]}}
+    gates: {merge: {checks: [{id: lint, run: "golangci-lint run --output.sarif.path={out}/lint.sarif", output: sarif, max: {error: 0}}]}}
+run: {gate: merge, args: [--base, main], kept-on-main: main}
+expect:
+  status: block
+  summary: "the merge base's kept on main, not run again"
+  findings: [{rule: over-threshold, where: lint, message: "1 new error finding, at most 0 allowed (3 there before it, not counted"}]

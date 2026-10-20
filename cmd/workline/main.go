@@ -1037,13 +1037,33 @@ func userDefaultAI() string { return userConfig().AI }
 func gateCmd(args []string) int {
 	fs := newFlags("gate")
 	repo := fs.String("repo", ".", "repository to check")
+	base := fs.String("base", "", "count only the findings the change adds since the merge base of this revision and HEAD, as on a merge request (default: none, every finding counts)")
+	kept := fs.String("gates-kept", "", "with --base: the folder of the gates' findings kept by commit, where the merge base's are read when kept with the same command, config and tool, rather than running the tools again")
 	asJSON := fs.Bool("json", false, "print the result as JSON")
 	name, code, done := parseAfter(fs, args, "a gate's name")
 	if done {
 		return code
 	}
+	switch {
+	case isSet(fs, "base") && strings.TrimSpace(*base) == "":
+		// An unset variable in a CI job: never read as no base at all.
+		return misuse(fs, "--base names no revision (an unset variable?): give one, or leave --base out to count every finding")
+	case *kept != "" && *base == "":
+		return misuse(fs, "--gates-kept reads the merge base's findings: it goes with --base")
+	}
 	abs, _ := filepath.Abs(*repo)
-	v := gate.Run(abs, name)
+	var v *verdict.Verdict
+	if *base != "" {
+		// As on a merge request (ADR-0049): only what the change adds
+		// since the merge base counts, the base's findings read as main
+		// kept them or run again there.
+		if *kept != "" {
+			*kept, _ = filepath.Abs(*kept)
+		}
+		v, _ = gate.RunWith(abs, name, gate.Options{Since: *base, Kept: *kept})
+	} else {
+		v = gate.Run(abs, name)
+	}
 	res := &engine.Result{Status: v.Status, Summary: v.Summary, Findings: v.Findings, Applied: []string{}, Refused: []string{}}
 	if *asJSON {
 		out, _ := json.MarshalIndent(res, "", "  ")
