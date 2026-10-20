@@ -1,6 +1,6 @@
 ---
 sources: [ci/github/workline.yml, ci/github/workline-apply.yml, ci/gitlab/workline.gitlab-ci.yml, internal/line/line.go, internal/engine/queue.go]
-checked: f5008630
+checked: fbf84ebb
 judged: e4550b8
 verified: agent:documentalist
 ---
@@ -57,7 +57,7 @@ merges. workline's run there guards that combination only
   holds it; a head with no yes fails the group.
 - **Set up**: Settings → Rules, on the base: "Require merge queue", and
   the checks required as without a queue.
-- **The engine**: the first release after v0.37.0.
+- **The engine**: from v0.38.0.
 
 ## GitLab: a merge train
 
