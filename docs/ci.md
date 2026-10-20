@@ -56,7 +56,7 @@ then one that applies, with the write token and no AI key
 - **A judge that fails still hands over**: the applying job runs whatever
   the judge's outcome, and the pipeline fails by the judge's. It applies
   what the steps that passed proposed, and what a blocked role says why
-  it blocks (`on-block`: the reviewer's comment, [#226](https://github.com/JN0V/workline/issues/226)). An agent out of
+  it blocks, such as its comments ([`on-block`](spec/role-contract.md#one-run)). An agent out of
   reach (3) warns on both forges.
 - **One judge per merge request at a time**: a push cancels the run still
   judging the head before, and nothing of it is applied; the newer run

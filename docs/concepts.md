@@ -60,9 +60,10 @@ job that holds the write token and no AI key. Each run is kept in
 | `blocked-external` | 3 | something outside failed (agent quota, forge): never a verdict on the work |
 
 A **finding** has a rule, a place and a level: `block` (when none is
-said), `warn`, or `question` (the reviewer's, for a person); only `block`
-blocks. A new rule starts as `warn`; `enforce` in the config lowers a rule
-to `warn` or `off` (raising one to `block`: [#99](https://github.com/JN0V/workline/issues/99)).
+said), `warn`, `question` (the reviewer's, for a person), or `info` (only
+tells, such as the product owner's acts); only `block` blocks. A new
+rule starts as `warn`; `enforce` in the config lowers a rule to `warn`
+or `off` (raising one to `block`: [#99](https://github.com/JN0V/workline/issues/99)).
 How the status follows: [warn before block](spec/role-outcome.md#warn-before-block).
 
 ## Without AI
