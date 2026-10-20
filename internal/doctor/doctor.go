@@ -117,6 +117,11 @@ func machine(r *Report, o Options) {
 				r.add(Check{Area: "machine", Rule: "hooks-broken", Level: Error,
 					Message: "core.hooksPath points to " + p.Hooks + ", which holds no hook: git runs no hook at all",
 					Fix:     "workline hooks install --global"})
+			} else if old := hooks.OutdatedGlobal(p); len(old) > 0 {
+				r.add(Check{Area: "machine", Rule: "hooks-outdated", Level: Warn,
+					Message: fmt.Sprintf("%d global git %s in %s %s written by another version of workline: a repository's own hooks may be skipped",
+						len(old), plural(old, "hook", "hooks"), p.Hooks, plural(old, "was", "were")),
+					Fix:     "workline hooks install --global"})
 			} else {
 				r.add(Check{Area: "machine", Rule: "hooks", Level: OK, Message: "global git hooks installed in " + p.Hooks})
 			}
@@ -327,6 +332,13 @@ func hooksPath(r *Report, o Options, prePush bool) {
 			missing = append(missing, n)
 		}
 	}
+	// `hooks install --repo` writes its dispatcher there, to be committed.
+	if filepath.Clean(dir) == filepath.Join(o.Repo, ".githooks") && hooks.Outdated(filepath.Join(dir, "commit-msg"), "") {
+		file := filepath.Join(path, "commit-msg")
+		r.add(Check{Area: "repository", Rule: "hooks-outdated", Where: file, Level: Warn,
+			Message: "another version of workline wrote " + file + ": it may skip this repository's own commit-msg",
+			Fix:     "workline hooks install --repo   # then commit " + file})
+	}
 	own := fmt.Sprintf("this repository's core.hooksPath (%s, %s setting) wins over the global one", path, scope)
 	if len(missing) == 0 {
 		r.add(Check{Area: "repository", Rule: "hooks-path", Where: path, Level: OK,
@@ -337,11 +349,16 @@ func hooksPath(r *Report, o Options, prePush bool) {
 	if missing[0] == "pre-push" {
 		lost = "pushes are not checked here"
 	}
-	// The global hooks hand over to .githooks/ and the git dir's hooks/:
-	// without the setting, workline runs, then them.
+	// The global hooks hand over to .githooks/ and to hooks/ in the folder
+	// the repository's worktrees share: without the setting, workline
+	// runs, then them.
 	var fix string
-	gitDir, _ := exec.Command("git", "-C", o.Repo, "rev-parse", "--absolute-git-dir").Output()
-	if c := filepath.Clean(dir); c == filepath.Join(o.Repo, ".githooks") || c == filepath.Join(strings.TrimSpace(string(gitDir)), "hooks") {
+	out, _ = exec.Command("git", "-C", o.Repo, "rev-parse", "--git-common-dir").Output()
+	shared := strings.TrimSpace(string(out))
+	if !filepath.IsAbs(shared) {
+		shared = filepath.Join(o.Repo, shared)
+	}
+	if c := filepath.Clean(dir); c == filepath.Join(o.Repo, ".githooks") || c == filepath.Join(shared, "hooks") {
 		fix = fmt.Sprintf("git config --%s --unset core.hooksPath   # workline's global hooks then hand over to %s", scope, path)
 	} else {
 		var adds []string

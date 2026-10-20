@@ -1,0 +1,12 @@
+case: setup/hooks-hand-over-from-a-linked-worktree-repo-hooks
+about: A repository whose own core.hooksPath is .githooks, holding workline's commit-msg (hooks install --repo), hands over from a linked worktree to its commit-msg in .git/hooks as well; a guard there refuses the commit, saying so.
+given:
+  repo: basic
+  setup:
+    - git worktree add -q ../linked -b side
+    - "printf '#!/bin/sh\\necho \"guard: the repository refuses this commit\" >&2\\nexit 1\\n' > .git/hooks/commit-msg && chmod +x .git/hooks/commit-msg"
+  env: {WORKLINE_AI: none}
+run: {sh: "cd ../linked && workline hooks install --repo && git config core.hooksPath .githooks && echo change >> main.go && git commit -q -am 'feat: change the start'"}
+expect:
+  exit: 1
+  stderr: ["guard: the repository refuses this commit"]

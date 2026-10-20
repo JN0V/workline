@@ -1,0 +1,13 @@
+case: setup/hooks-hand-over-in-a-submodule
+about: In a submodule, the global commit-msg runs workline, then the submodule's own commit-msg, kept in the superproject's .git/modules/; a guard there refuses the commit, saying so.
+given:
+  repo: basic
+  setup:
+    - "git init -q -b main ../library && cd ../library && echo lib > lib.txt && git add lib.txt && git commit -q -m 'feat: start the library'"
+    - "git -c protocol.file.allow=always submodule add -q \"$PWD/../library\" library && git commit -q -m 'build: add the library'"
+    - "hook=$(cd library && git rev-parse --git-common-dir)/hooks/commit-msg && printf '#!/bin/sh\\necho \"guard: the submodule refuses this commit\" >&2\\nexit 1\\n' > \"$hook\" && chmod +x \"$hook\""
+  env: {GIT_CONFIG_GLOBAL: "$XDG_CONFIG_HOME/gitconfig", WORKLINE_AI: none}
+run: {sh: "workline hooks install --global && cd library && echo change >> lib.txt && git commit -q -am 'feat: change the library'"}
+expect:
+  exit: 1
+  stderr: ["guard: the submodule refuses this commit"]
