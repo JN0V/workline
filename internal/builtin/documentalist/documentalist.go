@@ -1523,13 +1523,14 @@ doc when its reader really gained something to know.
 // release was let through then; one judged without being vouched for, or in
 // parts, waits for a person, and does not hold it. Without a release, every
 // suspect doc holds the first one; in a shallow clone, which may lack it,
-// the release is held.
+// the release is held. At a release's own tag (a tag pipeline), the last
+// release is the one before it.
 func holdTheRelease(findings []verdict.Finding, suspects map[string]*suspectDoc, repo string) ([]verdict.Finding, error) {
 	rs, err := release.Load(repo)
 	if err != nil {
 		return findings, err
 	}
-	tag, err := release.Last(repo, rs.Tags)
+	tag, err := release.Before(repo, rs.Tags)
 	if errors.Is(err, release.ErrShallow) {
 		return append(findings, verdict.Finding{Rule: "shallow-clone", Level: "block",
 			Message: "the release waits: " + err.Error()}), nil
@@ -2007,9 +2008,14 @@ func Post(runDir, repo string) int {
 		if judgedFix.countFixed(f) {
 			f.Message += " (fixed in this run)"
 		}
+		// At the release, what holds it keeps its level, among the
+		// findings that only inform: what a release's dry run lists
+		// (ADR-0050).
 		if f.Level == "block" {
 			blocking++
-			f.Level = ""
+			if os.Getenv("WORKLINE_EVENT") != "release" {
+				f.Level = ""
+			}
 		}
 		if f.Rule == "due" {
 			due++

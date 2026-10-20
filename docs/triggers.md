@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/line, internal/hooks, internal/forge/gitlab.go, ci/gitlab/workline.gitlab-ci.yml, ci/github/workline.yml, ci/github/workline-gardening.yml, ci/github/workline-sample.yml, routing.default.yaml]
-checked: e8182aaa
+checked: ebe6dfdd
 verified: agent:claude-code
 reader: 2de353fab113
 ---
@@ -25,6 +25,7 @@ trigger token or another pipeline: [gitlab-trigger.md](gitlab-trigger.md).
 | the backlog | `workline run-role product-owner --event schedule --forge gitlab` | yours |
 | a roadmap file to issues | `workline issues import <file>`, then the same with `--apply`; in CI, `--json > line.json`, then `workline apply --line line.json` | yours |
 | before tagging a release | `workline route release` | yours |
+| what would hold the release now | `workline route release --dry-run` | never |
 | the weekly sample | `workline sample --out s.json`, then `workline sample --apply s.json` | the judge |
 
 `--ai none` on any of them runs every check with no agent. With `--forge
@@ -123,6 +124,13 @@ Before your release tool tags; a non-zero exit holds it.
   --open-merge-request --json > line.json`, then `workline apply --line
   line.json`, puts the docs' fix on a merge request of its own (untried
   this way).
+- At a tag (GitLab's `workline:release`): `workline route release --ai
+  none --forge none`, no token; the tag's own release is not the last
+  one. The jobs that publish need it.
+- Each night, a dry run: `workline route release --dry-run --forge
+  gitlab --json > dry-run.json` (no agent, writes nothing), then
+  `workline apply --release-dry-run dry-run.json --forge gitlab` (token,
+  no agent) ([the release](release.md)).
 - A release tool's merge request: its own runs ask no agent; its docs
   are judged every night, by gardening or `workline route release
   --target merge-request:release --no-apply --forge gitlab --json >
