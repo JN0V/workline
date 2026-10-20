@@ -1,5 +1,5 @@
 case: release/dry-run-warns-runs-every-step
-about: "A release's dry run only warns (ADR-0050): a gate the project runs at the release that fails, and a doc made suspect with the product doc following it, are said as what would hold it; every step runs though the first would stop the release's line, the line passes, and nothing is left to apply."
+about: "A release's dry run only warns (ADR-0050): a gate the project runs at the release that fails, and a doc made suspect, are said as what would hold it; every step runs though the first would stop the release's line, the line passes, and nothing is left to apply."
 given:
   repo: documented
   setup:
@@ -13,7 +13,7 @@ expect:
   status: pass
   agent-calls: 0
   steps: ["gate:release", documentalist]
-  summary: "3 would hold the release if it were cut now (gate:release 1, documentalist 2); said, never a block"
+  summary: "2 would hold the release if it were cut now (gate:release 1, documentalist 1); said, never a block"
   findings:
     - {rule: suspect, where: docs/tech/auth.md, level: warn}
   no-findings:

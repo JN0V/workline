@@ -1,5 +1,5 @@
 case: release/dry-run-lists-what-holds
-about: "Each night, a release's dry run says what would hold the release if it were cut now from the branch's tip (ADR-0050): here a doc made suspect since the last tag, and the product doc that follows it, due at the release. Every step runs with no agent, nothing is applied, and what would block is said as a warning: the line passes. With no release merge request open, it is posted in a part of the default branch's issue, opened for it."
+about: "Each night, a release's dry run says what would hold the release if it were cut now from the branch's tip (ADR-0050): here a doc made suspect since the last tag; the product doc that follows it waits for it, informing only, and holds nothing of its own. Every step runs with no agent, nothing is applied, and what would block is said as a warning: the line passes. With no release merge request open, it is posted in a part of the default branch's issue, opened for it."
 given:
   repo: documented
   setup:
@@ -11,7 +11,7 @@ expect:
   status: pass
   agent-calls: 0
   steps: [documentalist]
-  summary: "2 would hold the release if it were cut now (documentalist 2)"
+  summary: "1 would hold the release if it were cut now (documentalist 1)"
   findings:
     - {rule: suspect, where: docs/tech/auth.md, level: warn, message: "since v1.0.0"}
     - {rule: release-dry-run, message: "issue #1 kept: what would hold the release changed"}
@@ -20,4 +20,5 @@ expect:
       - id: 1
         title: "workline: findings on the default branch"
         comments: 0
-        body-contains: ["### The next release", "2 findings would hold the release if it were cut now", "since `v1.0.0`", "`docs/tech/auth.md` `documentalist suspect`", "`docs/product/sign-in.md` `documentalist pending`", "never a block"]
+        body-contains: ["### The next release", "1 finding would hold the release if it were cut now", "since `v1.0.0`", "`docs/tech/auth.md` `documentalist suspect`", "never a block"]
+        body-lacks: ["`docs/product/sign-in.md` `documentalist pending`"]

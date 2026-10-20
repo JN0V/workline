@@ -2008,9 +2008,14 @@ func Post(runDir, repo string) int {
 		if judgedFix.countFixed(f) {
 			f.Message += " (fixed in this run)"
 		}
+		// At the release, what holds it keeps its level, among the
+		// findings that only inform: what a release's dry run lists
+		// (ADR-0050).
 		if f.Level == "block" {
 			blocking++
-			f.Level = ""
+			if os.Getenv("WORKLINE_EVENT") != "release" {
+				f.Level = ""
+			}
 		}
 		if f.Rule == "due" {
 			due++
