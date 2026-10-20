@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/line, internal/hooks, internal/forge/gitlab.go, ci/gitlab/workline.gitlab-ci.yml, ci/github/workline.yml, ci/github/workline-gardening.yml, ci/github/workline-sample.yml, routing.default.yaml]
-checked: f5008630
+checked: cfcd9422
 verified: agent:claude-code
 reader: 2de353fab113
 ---
@@ -219,8 +219,8 @@ An unknown option exits 64 too, never 2. `workline gate` exits 0 or 1;
 `workline sample` exits 2 when a doc or an act is left for a person and 3
 when the judge or the forge cannot be reached; `workline doctor`, 1 on an error only. The
 templates keep a job's status and still apply what passed, and the
-comment of a reviewer that blocks (`artifacts: when: always`,
-`if: always()`, `when: always`).
+comment of a role that blocks — the reviewer's, the documentalist's on a
+release held for its docs (`artifacts: when: always`, `if: always()`, `when: always`).
 
 ## Outputs
 
