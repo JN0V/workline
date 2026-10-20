@@ -1,6 +1,7 @@
 package report
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -46,6 +47,33 @@ func TestMainIssueKeepsWhatMainHolds(t *testing.T) {
 	gone, changed, any := MainIssue(fixed, again)
 	if !changed || !any || strings.Contains(gone, "godot") {
 		t.Errorf("fixed: changed %v, any %v:\n%s", changed, any, gone)
+	}
+}
+
+// The count by kind: the most first, alike in the order first found, main
+// red said first; past mainShown entries, the rest counted.
+func TestMainIssueCountsByKindAndCaps(t *testing.T) {
+	e := func(rule string) mainEntry { return mainEntry{Rule: rule} }
+	got := byKind([]mainEntry{e("lint/godot")}, []mainEntry{e("dead-link"), e("doc-too-long"), e("doc-too-long"), e("dead-link"), e("doc-too-long")}, true)
+	if want := "main's run red, 3 `doc-too-long`, 2 `dead-link`, 1 `lint/godot`"; got != want {
+		t.Errorf("byKind = %q, want %q", got, want)
+	}
+	if got := byKind(nil, []mainEntry{e("b"), e("a")}, false); got != "1 `b`, 1 `a`" {
+		t.Errorf("a tie keeps the order found: %q", got)
+	}
+	if got := byKind(nil, nil, true); got != "main's run red" {
+		t.Errorf("red with no finding listed: %q", got)
+	}
+	var findings []verdict.Finding
+	for i := range mainShown + 5 {
+		findings = append(findings, verdict.Finding{Rule: "doc-too-long", Where: fmt.Sprintf("docs/d%d.md", i), Message: "too long"})
+	}
+	r := &line.Result{Event: line.MainEvent, Main: &line.MainRun{Head: "h"}, Steps: []line.Step{{Name: "documentalist", Status: verdict.Pass,
+		Result: &engine.Result{Findings: findings}}}}
+	body, _, _ := MainIssue(r, "")
+	if n := strings.Count(body, "\n- `docs/d"); n != mainShown || !strings.Contains(body, "- and 5 more, not listed here") ||
+		!strings.HasPrefix(body, fmt.Sprintf("**%d findings on the default branch**: %d `doc-too-long`.", mainShown+5, mainShown+5)) {
+		t.Errorf("listed %d of %d, the rest not counted:\n%s", n, mainShown+5, body[:min(len(body), 300)])
 	}
 }
 

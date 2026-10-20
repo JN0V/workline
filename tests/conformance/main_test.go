@@ -3,6 +3,8 @@ package conformance
 import (
 	"fmt"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
@@ -254,5 +256,95 @@ func TestGitLabMainAfterAMergeRunsOnce(t *testing.T) {
 		if len(rules) != 1 || !strings.Contains(fmt.Sprint(rules[0]), `$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH`) {
 			t.Errorf("%s: runs on %v, want a push to the default branch alone", name, rules)
 		}
+	}
+}
+
+// GitLab's stored base as the template's own lines run it, a fake curl
+// serving main's last artifact: workline:main carries the commits kept
+// before it, 20 at most, its own first, a file it could not read left
+// out; workline:gates reads its merge base's alone. The bot's token reads
+// where set, else the job's; a file not served leaves none behind.
+func TestGitLabStoredBaseCarriedAndPruned(t *testing.T) {
+	data, err := os.ReadFile("../../ci/gitlab/workline.gitlab-ci.yml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var top map[string]any
+	if err := yaml.Unmarshal(data, &top); err != nil {
+		t.Fatal(err)
+	}
+	lines := func(job string, parts ...string) string {
+		j, _ := top[job].(map[string]any)
+		var b strings.Builder
+		for _, part := range parts {
+			items, _ := j[part].([]any)
+			for _, l := range items {
+				if anchored, ok := l.([]any); ok { // an anchor's lines, flattened as GitLab does
+					for _, a := range anchored {
+						fmt.Fprintln(&b, a)
+					}
+					continue
+				}
+				fmt.Fprintln(&b, l)
+			}
+		}
+		return b.String()
+	}
+	bin, store := t.TempDir(), t.TempDir()
+	// curl -fsSL --header H -o OUT URL: the file URL names, from the
+	// store, else curl -f's 22; each header said.
+	fake := "#!/bin/sh\nout=; url=; h=\n" +
+		"while [ $# -gt 0 ]; do case $1 in -o) out=$2; shift ;; --header) h=$2; shift ;; -*) ;; *) url=$1 ;; esac; shift; done\n" +
+		"echo \"$h\" >> \"$STORE/headers\"\n" +
+		"name=${url##*/.workline-kept/}; name=${name%%\\?*}\n" +
+		"[ -f \"$STORE/$name\" ] || exit 22\ncp \"$STORE/$name\" \"$out\"\n"
+	os.WriteFile(filepath.Join(bin, "curl"), []byte(fake), 0o755)
+	os.WriteFile(filepath.Join(bin, "workline"), []byte("#!/bin/sh\n[ \"$1 $2\" != \"route main\" ] || echo '{}' > \".workline-kept/$CI_COMMIT_SHA.json\"\n"), 0o755)
+	var before []string
+	for i := 1; i <= 25; i++ {
+		c := fmt.Sprintf("c%02d", i)
+		before = append(before, c)
+		if c != "c03" { // listed, its file gone
+			os.WriteFile(filepath.Join(store, c+".json"), []byte("{}"), 0o644)
+		}
+	}
+	os.WriteFile(filepath.Join(store, "commits"), []byte(strings.Join(before, "\n")+"\n"), 0o644)
+	run := func(job string, env ...string) string {
+		dir := t.TempDir()
+		os.Remove(filepath.Join(store, "headers"))
+		cmd := exec.Command("sh", "-ec", lines(job, "before_script", "script"))
+		cmd.Dir = dir
+		cmd.Env = append([]string{"PATH=" + bin + string(os.PathListSeparator) + os.Getenv("PATH"), "STORE=" + store,
+			"CI_API_V4_URL=https://gitlab.invalid/api/v4", "CI_PROJECT_ID=1", "CI_DEFAULT_BRANCH=main", "CI_JOB_TOKEN=job",
+			"CI_COMMIT_BEFORE_SHA=c01", "CI_COMMIT_SHA=head", "CI_MERGE_REQUEST_DIFF_BASE_SHA=c02"}, env...)
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("%s: %v\n%s", job, err, out)
+		}
+		return dir
+	}
+	dir := run("workline:main", "WORKLINE_GITLAB_TOKEN=bot")
+	got, _ := os.ReadFile(filepath.Join(dir, ".workline-kept", "commits"))
+	want := append([]string{"head", "c01", "c02"}, before[3:19]...)
+	if strings.Join(strings.Fields(string(got)), ",") != strings.Join(want, ",") {
+		t.Errorf("workline:main keeps the commits %q, want %v", got, want)
+	}
+	files, _ := filepath.Glob(filepath.Join(dir, ".workline-kept", "*.json"))
+	if len(files) != len(want) {
+		t.Errorf("workline:main leaves %d files, want one for each of the %d commits listed", len(files), len(want))
+	}
+	if headers, _ := os.ReadFile(filepath.Join(store, "headers")); strings.Contains(string(headers), "JOB-TOKEN") || !strings.Contains(string(headers), "PRIVATE-TOKEN: bot") {
+		t.Errorf("with the bot's token, read with %q", headers)
+	}
+	dir = run("workline:gates")
+	files, _ = filepath.Glob(filepath.Join(dir, ".workline-kept", "*"))
+	if len(files) != 1 || filepath.Base(files[0]) != "c02.json" {
+		t.Errorf("workline:gates read %v, want its merge base's alone", files)
+	}
+	if headers, _ := os.ReadFile(filepath.Join(store, "headers")); strings.TrimSpace(string(headers)) != "JOB-TOKEN: job" {
+		t.Errorf("with no bot's token, read with %q, want the job's", headers)
+	}
+	dir = run("workline:gates", "CI_MERGE_REQUEST_DIFF_BASE_SHA=c03")
+	if files, _ = filepath.Glob(filepath.Join(dir, ".workline-kept", "*")); len(files) != 0 {
+		t.Errorf("a base not served leaves %v behind", files)
 	}
 }
