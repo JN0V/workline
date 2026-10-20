@@ -12,7 +12,7 @@ import (
 
 // Main after a merge (ADR-0050): on each push to the default branch, the
 // line of `main` runs once, in the job holding no secret: the gates every
-// finding kept by the commit in the forge's cache, the whole repository's
+// finding kept by the commit where main alone writes it, the whole repository's
 // checks after them, no agent. A pull request based on that commit reads
 // the kept findings as its merge base's. One job that writes keeps what
 // main's run found in one issue, and only main's run: never a pull
@@ -213,26 +213,28 @@ func TestGitLabMainAfterAMergeRunsOnce(t *testing.T) {
 	if reports, _ := main["artifacts"].(map[string]any)["reports"].(map[string]any); reports["codequality"] != nil {
 		t.Errorf("workline:main: gives GitLab a Code Quality report, which the merge requests' widget would read old findings as fixed against")
 	}
-	keys := map[string]string{}
-	caches, _ := main["cache"].([]any)
-	for _, c := range caches {
-		m, _ := c.(map[string]any)
-		keys[fmt.Sprint(m["policy"])] = fmt.Sprint(m["key"])
-		if fmt.Sprint(m["paths"]) != "[.workline-kept/]" || m["unprotect"] != true {
-			t.Errorf("workline:main: a cache not of .workline-kept/ shared with the merge requests: %v", m)
+	// A base written by a branch is never read: the findings come from
+	// main's own pipeline artifacts, by the default branch and its job,
+	// with the job's token; no cache holds them, which a merge request's
+	// pipeline could write (`unprotect`).
+	const fromMain = `/jobs/artifacts/$CI_DEFAULT_BRANCH/raw/.workline-kept/$1?job=workline:main`
+	for name, v := range top {
+		j, _ := v.(map[string]any)
+		if c, _ := yaml.Marshal(j["cache"]); strings.Contains(string(c), ".workline-kept") || strings.Contains(string(c), "unprotect") {
+			t.Errorf("%s: keeps or reads the stored base in a cache, which a branch's pipeline could write: %s", name, c)
 		}
-		if m["policy"] == "push" && m["when"] != "always" {
-			t.Errorf("workline:main: a red run keeps no findings (cache when %v)", m["when"])
+		paths, _ := yaml.Marshal(j["artifacts"])
+		if strings.Contains(string(paths), ".workline-kept/") != (name == "workline:main") {
+			t.Errorf("%s: its artifacts hold the stored base, the default branch's job's alone to write: %s", name, paths)
 		}
 	}
-	if keys["pull"] != "workline-gates-$CI_COMMIT_BEFORE_SHA" || keys["push"] != "workline-gates-$CI_COMMIT_SHA" {
-		t.Errorf("workline:main: reads and keeps its findings as %v, want main's tip before the push, then the commit pushed", keys)
+	if !strings.Contains(fmt.Sprint(main["script"]), fromMain) || !strings.Contains(fmt.Sprint(main["script"]), "kept commits") {
+		t.Errorf("workline:main: does not carry the findings main's last pipeline kept: %v", main["script"])
 	}
 	gates := job("workline:gates")
-	cache, _ := gates["cache"].(map[string]any)
-	if fmt.Sprint(cache["key"]) != "workline-gates-$CI_MERGE_REQUEST_DIFF_BASE_SHA" || cache["policy"] != "pull" || cache["unprotect"] != true ||
-		!strings.Contains(fmt.Sprint(gates["script"]), "--gates-kept .workline-kept") {
-		t.Errorf("workline:gates: does not read the findings main kept at the merge base: %v", cache)
+	if script := fmt.Sprint(gates["script"]); !strings.Contains(script, fromMain) || !strings.Contains(script, `JOB-TOKEN: $CI_JOB_TOKEN`) ||
+		!strings.Contains(script, `kept "$base.json"`) || !strings.Contains(script, "--gates-kept .workline-kept") {
+		t.Errorf("workline:gates: does not read its merge base's findings from main's own artifacts: %v", script)
 	}
 	issue := job("workline:main:issue")
 	if !strings.Contains(fmt.Sprint(issue["script"]), "export GITLAB_TOKEN=$WORKLINE_GITLAB_TOKEN") ||

@@ -32,9 +32,12 @@ Nobody waits for it; nothing in it holds a merge request.
   - opened when there is something to list; edited in place when what it
     lists changes; left as it is when nothing is new nor gone; never
     commented on;
-  - it lists main red, if so, with what main gained since; each finding
-    the gates found main gained, kept while main holds it; the whole
-    repository's findings;
+  - its first line counts the findings by kind; then main red, if so,
+    with what main gained since; then, folded, each finding the gates
+    found main gained, kept while main holds it, and the whole
+    repository's findings. On day one, the old debt is shown once
+    ([ADR-0049](adr/0049-the-inspector-judges-the-new-findings-of-the-projects-tools.md#6-guards)),
+    then only what changes;
   - the product owner leaves it alone, as its other issues.
 - **No agent, no secret** where the tools run; the issue is written by a
   job holding the issue's right, no AI key.
@@ -52,8 +55,13 @@ Nobody waits for it; nothing in it holds a merge request.
   hash of the binary its command runs. Else the tools run again there,
   and the summary says why.
 - **A tool naming no version, not found on the PATH**: run again.
+- **None kept for the merge base** (missing, expired, another commit's):
+  run again, said.
 - **Said in the summary**: `lint 1 new, 3 before it (6.5s; the merge
   base's kept on main, not run again)`.
+- **Written by main alone**: a branch's pipeline can never write the base
+  another merge request reads, so no finding a change adds can be made
+  to look old. Each forge's store below holds to that.
 
 ## GitHub
 
@@ -63,9 +71,14 @@ Nobody waits for it; nothing in it holds a merge request.
 - **Actions' cache** holds the findings: main's run reads
   `workline-gates-<main's tip before>` and keeps
   `workline-gates-<its commit>`; a pull request reads
-  `workline-gates-<its merge base>`. A pull request reads the default
-  branch's entries, never writes them; one unused for 7 days is gone,
-  and the tools run again.
+  `workline-gates-<its merge base>`, by that exact key.
+- **Safe from a branch**: GitHub scopes a cache to the ref that saved
+  it. A pull request reads the default branch's entries, and can save
+  only into its own merge ref's scope, which no other pull request nor
+  main reads
+  ([GitHub's docs](https://docs.github.com/en/actions/reference/workflows-and-actions/dependency-caching#restrictions-for-accessing-a-cache)).
+  The template saves only on a push to `main`.
+- **An entry unused for 7 days is gone**: the tools run again.
 - **The issue**: [workline-apply.yml](../ci/github/workline-apply.yml)'s
   `main` job, after that run, with `issues: write`; never after a push to
   another branch.
@@ -76,13 +89,16 @@ Nobody waits for it; nothing in it holds a merge request.
   agent's and the bot's tokens, as `workline:gates` does. No Code Quality
   report there: the merge requests' widget compares with it, and old
   findings would read as fixed.
-- **The cache**: `workline-gates-$CI_COMMIT_BEFORE_SHA` read,
-  `workline-gates-$CI_COMMIT_SHA` kept, even when red;
-  `workline:gates` reads `workline-gates-$CI_MERGE_REQUEST_DIFF_BASE_SHA`.
-- **Shared with merge requests' pipelines** (`unprotect`): whoever may
-  push a branch could write an entry, as they can read the bot's token
-  ([the template's trust](ci-gitlab.md#what-the-template-does)). A
-  runner with no shared cache misses: the tools run again.
+- **Main's own artifacts** hold the findings, never a cache: a merge
+  request's pipeline can write a cache entry another reads
+  (`cache:unprotect`), not the default branch's job's artifacts.
+  - `workline:main` keeps `.workline-kept/` as its artifact, 30 days: the
+    last 20 commits analysed, carried from its last successful pipeline.
+  - `workline:gates` reads `<merge base>.json` from it with the job's
+    token, `jobs/artifacts/$CI_DEFAULT_BRANCH/raw/...?job=workline:main`.
+- **Not found** (expired, a red pipeline's, a base older than those 20):
+  the tools run again, said in the job's log and the summary. GitLab
+  gives a branch's artifacts from its last successful pipeline only.
 - **The issue**: `workline:main:issue`, with `WORKLINE_GITLAB_TOKEN`.
 
 ## The commands, for another CI

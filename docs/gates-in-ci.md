@@ -36,7 +36,8 @@ The templates need the first release after v0.35.0.
   merged result; on GitHub the judge gives their verdict, on GitLab the
   job alone runs ([how](merge-queue.md)).
 - **On main after a merge**: the same job runs them on the new tip,
-  every finding kept in the forge's cache by the commit; red when the
+  every finding kept by the commit where no branch can write it (Actions'
+  cache, main's pipeline artifacts on GitLab); red when the
   merge adds what they count ([how](main-after-merge.md)).
 - **The merge base's findings**: read as main kept them, when kept with
   the same command, config and tool: the tools run once, at the head;

@@ -310,6 +310,12 @@ func TestGitLabMergeTrainRunsTheGatesAlone(t *testing.T) {
 	gates, _ := top["workline:gates"].(map[string]any)
 	var script strings.Builder
 	for _, l := range gates["script"].([]any) {
+		if anchored, ok := l.([]any); ok { // an anchor's lines, flattened as GitLab does
+			for _, a := range anchored {
+				fmt.Fprintln(&script, a)
+			}
+			continue
+		}
 		fmt.Fprintln(&script, l)
 	}
 	dir := t.TempDir()
