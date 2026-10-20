@@ -2,6 +2,7 @@ package forge
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -75,13 +76,17 @@ func TestGitLabAPI(t *testing.T) {
 // cannot be edited (403): the sticky one is written anew after it.
 func TestGitLabWho(t *testing.T) {
 	var got []string
-	members, written := true, false // written: the bot wrote its own state note since
+	members, written := true, false           // written: the bot wrote its own state note since
+	refused, asked := http.StatusForbidden, 0 // the members' answer when not readable; the times they were asked
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		p := strings.TrimPrefix(r.URL.EscapedPath(), "/api/v4/projects/group%2Fproj")
 		author := func(u string) map[string]any { return map[string]any{"username": u} }
+		if p == "/members/all" {
+			asked++
+		}
 		switch {
 		case p == "/members/all" && !members:
-			http.Error(w, `{"message":"403 Forbidden"}`, http.StatusForbidden)
+			http.Error(w, fmt.Sprintf(`{"message":"%d %s"}`, refused, http.StatusText(refused)), refused)
 		case p == "/members/all":
 			json.NewEncoder(w).Encode([]map[string]any{
 				{"username": "owner", "access_level": 50, "state": "active"},
@@ -161,10 +166,44 @@ func TestGitLabWho(t *testing.T) {
 	if len(got) != 1 || got[0] != "PUT /issues/3/notes/7" {
 		t.Fatalf("the bot's own state note: %q", got)
 	}
-	// Members not readable: said, never every reporter taken for an outsider.
+	// Members not readable — 403, or 401 as the job's token gets (#552):
+	// an issue's author is said unknown, never every reporter taken for an
+	// outsider; the comments read all the same, their bodies needing no
+	// member, and with their authors each a bot by its name, none of the
+	// project. The members are asked once.
 	members = false
-	if _, err := (&gitlab{repo: t.TempDir()}).Issue(3); err == nil || !strings.Contains(err.Error(), "members") {
-		t.Fatalf("members refused: %v", err)
+	for _, refused = range []int{http.StatusForbidden, http.StatusUnauthorized} {
+		g, asked = &gitlab{repo: t.TempDir()}, 0
+		if _, err := g.Issue(3); !errors.Is(err, ErrAuthorsUnknown) || !strings.Contains(err.Error(), "members") {
+			t.Fatalf("%d, members refused: %v", refused, err)
+		}
+		bodies, err := g.Comments(Target{Kind: "issue", ID: 3})
+		if err != nil || len(bodies) != 6 || bodies[0] != "state <!-- workline:k -->" {
+			t.Fatalf("%d, the comments: %q %v", refused, bodies, err)
+		}
+		notes, err = g.Notes(Target{Kind: "issue", ID: 3})
+		if !errors.Is(err, ErrAuthorsUnknown) || !errors.Is(err, ErrUnreachable) {
+			t.Fatalf("%d, the notes: %v", refused, err)
+		}
+		want := []Note{
+			{Body: "state <!-- workline:k -->", Author: "owner", ID: "1"},
+			{Body: "agreed", Author: "guest", ID: "3"},
+			{Body: "ok", Author: "plan", ID: "4"},
+			{Body: "done", Author: "project_1_bot_0a1b", Bot: true, ID: "5"},
+			{Body: "me too", Author: "gone", ID: "6"},
+			{Body: "new <!-- workline:k -->", Author: "project_1_bot_0a1b", Bot: true, ID: "7"},
+		}
+		if fmt.Sprint(notes) != fmt.Sprint(want) {
+			t.Fatalf("%d, the notes:\n%+v\nwant\n%+v", refused, notes, want)
+		}
+		if asked != 1 {
+			t.Fatalf("%d: the members asked %d times, want once", refused, asked)
+		}
+	}
+	// Members out of reach for a moment are no refusal: the notes fail.
+	refused = http.StatusNotImplemented
+	if _, err := (&gitlab{repo: t.TempDir()}).Notes(Target{Kind: "issue", ID: 3}); err == nil || errors.Is(err, ErrAuthorsUnknown) {
+		t.Fatalf("members out of reach: %v", err)
 	}
 }
 

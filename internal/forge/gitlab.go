@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -24,6 +25,7 @@ type gitlab struct {
 	base, project, header string // the API's root, the project's id, how the token goes
 	token                 string
 	members               map[string]int // the project's members, direct and inherited, and their access level; read once
+	membersRefused        error          // the token may not list them (ErrAuthorsUnknown): not asked again
 	bots                  map[int]bool   // whether a user is a bot, by id, as the users API says; read once each
 }
 
@@ -44,11 +46,19 @@ const developer = 30
 var botName = regexp.MustCompile(`^(project|group)_\d+_bot(_|$)`)
 
 // insider says whether username is a person of the project. The members
-// are read once a run: a token that may not list them fails loud rather
-// than taking every reporter for an outsider.
+// are read once a run: a token that may not list them (401, 403: the
+// job's own) fails loud with ErrAuthorsUnknown rather than taking every
+// reporter for an outsider, and is not asked again.
 func (g *gitlab) insider(username string) (bool, error) {
+	if g.membersRefused != nil {
+		return false, g.membersRefused
+	}
 	if g.members == nil {
 		out, err := g.api("--paginate", "projects/:id/members/all?per_page=100")
+		if errors.Is(err, errForbidden) || errors.As(err, new(deniedRead)) {
+			g.membersRefused = fmt.Errorf("%w: the token may not list the project's members (%w)", ErrAuthorsUnknown, err)
+			return false, g.membersRefused
+		}
 		if err != nil {
 			return false, fmt.Errorf("reading the project's members, to tell who is of the project: %w", err)
 		}
@@ -166,7 +176,11 @@ func (g *gitlab) api(args ...string) ([]byte, error) {
 			a.code == http.StatusMethodNotAllowed, a.code == http.StatusNotAcceptable, a.code == http.StatusConflict:
 			return nil, fmt.Errorf("%w: GitLab %s %s: %s %s", errRefused, method, path, a.status, data)
 		case a.code >= 300:
-			return nil, fmt.Errorf("%w: GitLab %s %s: %s %s%s", ErrUnreachable, method, path, a.status, data, aside(a.note))
+			err := fmt.Errorf("%w: GitLab %s %s: %s %s%s", ErrUnreachable, method, path, a.status, data, aside(a.note))
+			if a.code == http.StatusUnauthorized {
+				err = deniedRead{err}
+			}
+			return nil, err
 		}
 		all = append(all, a.data...)
 		page := a.header.Get("X-Next-Page")
@@ -181,6 +195,13 @@ func (g *gitlab) api(args ...string) ([]byte, error) {
 	}
 	return all, nil
 }
+
+// deniedRead marks a read GitLab answered 401: a token it does not take
+// there, as the job's own on the project's members (#552). It reads as
+// the call's error, the forge out of reach, as before.
+type deniedRead struct{ error }
+
+func (d deniedRead) Unwrap() error { return d.error }
 
 // gitRemote is the URL of the repository's origin, or "".
 func gitRemote(repo string) string {
@@ -606,42 +627,64 @@ func (g *gitlab) RemoveBlocker(id, blocker int) error {
 	return nil
 }
 
+// Comments reads the notes' bodies alone: who wrote them is not asked,
+// so a token that may not list the project's members reads them (#552).
 func (g *gitlab) Comments(t Target) ([]string, error) {
-	notes, err := g.Notes(t)
-	return Bodies(notes), err
+	found, err := g.notes(t)
+	var all []string
+	for _, n := range found {
+		all = append(all, n.Body)
+	}
+	return all, err
 }
 
 // Notes reads each note's author, of the project by their access level; a
-// project or group access token's user is a bot.
+// project or group access token's user is a bot. A token that may not list
+// the members reads them all the same, with ErrAuthorsUnknown: each a bot
+// by its name, none of the project.
 func (g *gitlab) Notes(t Target) ([]Note, error) {
-	out, err := g.api("--paginate", path(t)+"/notes?sort=asc&order_by=created_at&per_page=100")
-	if err != nil {
-		return nil, err
-	}
-	found, err := pages[struct {
-		ID      int    `json:"id"`
-		Body    string `json:"body"`
-		System  bool   `json:"system"`
-		Created string `json:"created_at"`
-		Author  struct {
-			Username string `json:"username"`
-		} `json:"author"`
-	}](out)
+	found, err := g.notes(t)
 	if err != nil {
 		return nil, err
 	}
 	var all []Note
+	var unknown error
 	for _, n := range found {
-		if n.System { // GitLab's own notes: "changed the description", …
-			continue
-		}
 		in, err := g.insider(n.Author.Username)
-		if err != nil {
+		switch {
+		case errors.Is(err, ErrAuthorsUnknown):
+			unknown = err
+		case err != nil:
 			return nil, err
 		}
 		all = append(all, Note{Body: n.Body, Author: n.Author.Username, Insider: in, Bot: botName.MatchString(n.Author.Username), Created: n.Created, ID: strconv.Itoa(n.ID)})
 	}
-	return all, nil
+	return all, unknown
+}
+
+// gitlabNote is a note as GitLab lists it.
+type gitlabNote struct {
+	ID      int    `json:"id"`
+	Body    string `json:"body"`
+	System  bool   `json:"system"`
+	Created string `json:"created_at"`
+	Author  struct {
+		Username string `json:"username"`
+	} `json:"author"`
+}
+
+// notes lists t's notes, oldest first, GitLab's own left out ("changed
+// the description", …).
+func (g *gitlab) notes(t Target) ([]gitlabNote, error) {
+	out, err := g.api("--paginate", path(t)+"/notes?sort=asc&order_by=created_at&per_page=100")
+	if err != nil {
+		return nil, err
+	}
+	found, err := pages[gitlabNote](out)
+	if err != nil {
+		return nil, err
+	}
+	return slices.DeleteFunc(found, func(n gitlabNote) bool { return n.System }), nil
 }
 
 // mentioned reads GitLab's system notes naming an issue from elsewhere:
