@@ -173,8 +173,8 @@ exit "$status"
   agent or forge unreachable. Make 3 a warning with `allow_failure:
   {exit_codes: [3]}`, as the template does.
 - The applying job still runs (`when: always`) and applies what passed,
-  and the comment of a reviewer that blocks
-  ([#226](https://github.com/JN0V/workline/issues/226)).
+  and what a role that blocks names to say why, such as its comments
+  ([`on-block`](spec/role-contract.md#one-run)).
 - On `garden`, the applying job then tends the merge requests gardening
   opened before: rebuilt on the branch, or closed when nothing is left to
   merge
