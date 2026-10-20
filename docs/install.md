@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/setup, internal/hooks, internal/tools, internal/agent/agent.go, ci/github, ci/gitlab]
-checked: e8182aaa
+checked: fc18bcbe
 judged: a8574a5
 verified: agent:claude-code
 ---
@@ -90,8 +90,11 @@ workline hooks uninstall --global   # gives core.hooksPath back as it was
 ```
 
 - Each global hook hands over to the one that held `core.hooksPath` before,
-  or else to the repository's own (`.githooks/`, `.git/hooks/`): nothing
-  that ran before stops running.
+  or else to the repository's own (`.githooks/`, `.git/hooks/`), from a
+  linked worktree (`git worktree add`), a submodule or a bare repository
+  too: nothing that ran before stops running.
+- Hooks written by another version of workline: `workline doctor` says
+  `hooks-outdated`; run `workline hooks install --global` again.
 - A repository that sets its own `core.hooksPath` bypasses the global
   hooks: `workline doctor` there says so and prints the fix
   ([troubleshooting](troubleshooting.md#a-hook-does-not-fire)).

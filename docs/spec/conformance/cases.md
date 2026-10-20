@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go]
-checked: dba82333
+checked: fc18bcbe
 verified: agent:claude-code
 ---
 # Conformance — a case in full
@@ -64,6 +64,9 @@ saying so.
   hook (`[hook, commit-msg, .git/COMMIT_EDITMSG]`); checked by `exit`,
   `stdout`, `stderr`, `stderr-lacks`, `files`, and `summary-file` for the
   `workline-summary.md` its arguments name;
+- `sh: <line>` instead of `role` — a shell line in the repository, the
+  engine first on `PATH` as `workline`: what a person types around it
+  (`workline hooks install --global && git push`), checked as `cli` is;
 
 ## Run, around the role
 
@@ -217,5 +220,5 @@ saying so.
   text (`contains`), or not (`not-contains`), each a text or a list.
 - `files` — paths that must exist (`exists`, or not), or contain a text or
   each of a list of texts (`contains`), or lack them (`lacks`), afterwards.
-- `exit` / `stdout` / `stderr` — with `cli`: the exit code, and texts
+- `exit` / `stdout` / `stderr` — with `cli` or `sh`: the exit code, and texts
   printed on each stream; `stderr-lacks`, texts not printed there.
