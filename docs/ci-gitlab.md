@@ -195,8 +195,8 @@ a cron off the hour (`13 17 * * *`) was listed as due at 18:00 and ran at
   the pipeline failed by the judge's job.
   - Gardening: what steps passed before one blocked is applied
     ([#142](https://github.com/JN0V/workline/issues/142)).
-  - A merge request the reviewer holds still gets its comment
-    ([#226](https://github.com/JN0V/workline/issues/226)).
+  - A role that blocks still posts its comments, the reviewer's as the
+    documentalist's ([`on-block`](spec/role-contract.md#one-run)).
   - An agent out of reach (3) warns (`allow_failure: {exit_codes: [3]}`),
     as on GitHub: a person judges what it would have; a GitLab call is
     tried again first ([which](gitlab/calls.md)).
