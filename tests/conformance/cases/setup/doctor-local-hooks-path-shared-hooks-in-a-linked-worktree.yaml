@@ -1,0 +1,12 @@
+case: setup/doctor-local-hooks-path-shared-hooks-in-a-linked-worktree
+about: In a linked worktree, a core.hooksPath naming the hooks folder its worktrees share (the main .git/hooks) is one the global hooks hand over to; the doctor's fix unsets it, not a line to add.
+given:
+  repo: basic
+  setup:
+    - git worktree add -q ../linked -b side
+    - "printf '#!/bin/sh\\nexit 0\\n' > .git/hooks/commit-msg && chmod +x .git/hooks/commit-msg && git config core.hooksPath \"$PWD/.git/hooks\""
+run: {sh: "cd ../linked && workline doctor"}
+expect:
+  stdout:
+    - "its commit-msg does not hand over to workline"
+    - "git config --local --unset core.hooksPath   # workline's global hooks then hand over to"

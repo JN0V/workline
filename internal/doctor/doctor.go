@@ -337,11 +337,16 @@ func hooksPath(r *Report, o Options, prePush bool) {
 	if missing[0] == "pre-push" {
 		lost = "pushes are not checked here"
 	}
-	// The global hooks hand over to .githooks/ and the git dir's hooks/:
-	// without the setting, workline runs, then them.
+	// The global hooks hand over to .githooks/ and to hooks/ in the folder
+	// the repository's worktrees share: without the setting, workline
+	// runs, then them.
 	var fix string
-	gitDir, _ := exec.Command("git", "-C", o.Repo, "rev-parse", "--absolute-git-dir").Output()
-	if c := filepath.Clean(dir); c == filepath.Join(o.Repo, ".githooks") || c == filepath.Join(strings.TrimSpace(string(gitDir)), "hooks") {
+	out, _ = exec.Command("git", "-C", o.Repo, "rev-parse", "--git-common-dir").Output()
+	shared := strings.TrimSpace(string(out))
+	if !filepath.IsAbs(shared) {
+		shared = filepath.Join(o.Repo, shared)
+	}
+	if c := filepath.Clean(dir); c == filepath.Join(o.Repo, ".githooks") || c == filepath.Join(shared, "hooks") {
 		fix = fmt.Sprintf("git config --%s --unset core.hooksPath   # workline's global hooks then hand over to %s", scope, path)
 	} else {
 		var adds []string

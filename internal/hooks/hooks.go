@@ -63,9 +63,13 @@ if [ -r "$next_file" ]; then
 		exit $?
 	fi
 fi
-root=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
-git_dir=$(git rev-parse --git-dir 2>/dev/null) || exit 0
-for d in "$root/.githooks/$hook" "$git_dir/hooks/$hook"; do
+# The repository's own hooks: its .githooks/, then hooks/ in the folder its
+# worktrees share. A linked worktree's --git-dir holds no hooks/, and
+# --git-path hooks names core.hooksPath: this very folder. A bare
+# repository has no .githooks/.
+common=$(git rev-parse --git-common-dir 2>/dev/null) || exit 0
+root=$(git rev-parse --show-toplevel 2>/dev/null) || root=""
+for d in ${root:+"$root/.githooks/$hook"} "$common/hooks/$hook"; do
 	if [ -x "$d" ] && [ ! "$d" -ef "$0" ]; then
 		feed "$d" "$@"
 		exit $?
