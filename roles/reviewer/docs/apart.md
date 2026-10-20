@@ -1,7 +1,8 @@
 ---
 sources: [roles/reviewer/role.yaml, internal/builtin/reviewer/reviewer.go, internal/builtin/reviewer/record.go, internal/line/line.go, ci/github/workline.yml, ci/github/workline-warn.yml, ci/github/workline-apply.yml, ci/gitlab/workline.gitlab-ci.yml]
 checked: ebe6dfdd
-verified: agent:claude-code
+judged: a5cd2cf
+verified: agent:documentalist
 ---
 # Reviewer — the lenses that warn, apart from the verdict
 
@@ -39,6 +40,8 @@ beside the verdict's, and posts once it answered.
 - **The rules** (`bug-story`, `internal-code`) block on the verdict's
   run. While they block, the run apart asks no lens either, and says
   nothing of them again.
+  They are read at the levels the project sets in
+  `roles.<name>.enforce` first.
 - **Every lens blocking** (`ai-findings: block`): the run apart asks
   nothing and writes nothing. **None blocking**: the verdict's run asks
   no lens; its summary comment still holds the rules and its record.
