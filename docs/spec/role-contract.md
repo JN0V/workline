@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine, internal/intent, internal/role, internal/agent, roles_test.go]
-checked: c771ecef
+checked: 4c90e75f
 verified: agent:claude-code
 judged: b530b72
 ---
