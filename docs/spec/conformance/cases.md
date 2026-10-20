@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go]
-checked: fc18bcbe
+checked: a88dc872
 verified: agent:claude-code
 ---
 # Conformance — a case in full
@@ -97,7 +97,9 @@ saying so.
   again`, what it printed kept in main's issue (`apply --main`), its
   findings added; `kept-on-main: <rev>` — first, main's run after a merge
   on that revision, checked out then left, its gates' findings kept in a
-  folder the run reads (`--gates-kept`);
+  folder the run reads (`--gates-kept`); `dry-run-posted: true` — after
+  the run, and after the second with `then: again`, what a release's
+  dry run printed posted (`apply --release-dry-run`), its findings added;
 - `scope` — the run's scope, as a ready work item would give it;
 - `no-apply: true` — judge, and stop before applying;
 - `forge` — a forge spec given as `--forge` instead of the simulated forge

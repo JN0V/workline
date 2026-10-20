@@ -1,0 +1,13 @@
+case: release/dry-run-at-a-release-has-nothing-to-cut
+about: "A dry run on a branch whose tip is a release already, nothing merged since, has no release to cut: it runs no step and lists nothing, rather than listing again what the release just cut let through (ADR-0050)."
+given:
+  repo: documented
+  setup:
+    - "git tag v1.0.0"
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git tag v1.1.0"
+run: {route: release, args: [--dry-run], forge: none}
+expect:
+  status: pass
+  agent-calls: 0
+  steps: []
+  summary: "is the release v1.1.0 already, nothing since to cut"

@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/builtin/productowner/productowner.go, internal/backlog/ledger.go, internal/backlog/opening.go]
 status: draft
-checked: dba82333
+checked: a88dc872
 verified: agent:claude-code
 ---
 # Reading
@@ -23,7 +23,8 @@ person's comment answered, the summary saying the agent was not asked
 the old report, the weekly sample's issue under its titles, a role's
 issue kept in place — its body's last line "Kept up to date by the …
 role." —, a demotion of the merge policy, main's findings after a merge
-— its key `workline:main-findings` —) is never read nor listed, and
+— its key `workline:main-findings`, or the release dry run's part,
+`workline:release-dry-run-end` —) is never read nor listed, and
 no act is done nor proposed on it (`workline-issue`, #429); a role's
 finding and an import are work. The order: an issue a person who counts commented on since the role read it
 — waiting on them ([A person's answers](answers.md)), set aside, or neither: their
