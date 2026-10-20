@@ -1,0 +1,28 @@
+case: reviewer/warn-turn-of-a-lens-that-blocks-records-what-none-owes
+about: "The guard of #588 after ready: the lenses that warn answered on every commit before, none owes one. A push whose turn is correctness, which blocks, asks nobody in the run apart: the new commit is recorded and the turn moves on, as the verdict's run reads it."
+given:
+  repo: reviewed
+  setup:
+    - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"
+    - "sed -i \"s/@reviewed@/$(git rev-parse HEAD)/g\" \"$FORGE_FILE\""
+    - "printf 'package calc\\n\\n// Half halves a count.\\nfunc Half(n int) int { return n / 2 }\\n' > calc/half.go && git add calc/half.go && git commit -qm 'feat: halve a count'"
+  config:
+    routing: {events: {merge-request: [reviewer]}}
+    roles: {reviewer: {settings: {ai-findings: {correctness: block}}}}
+  forge:
+    merge-requests:
+      - id: 5
+        labels: []
+        comments: ["Every lens that warns read the change.\n\n<!-- workline:record reviewed=@reviewed@ runs=5 read=all -->\n\n<!-- workline:sticky=reviewer/warn -->"]
+run: {route: merge-request, warn-only: true, input: {range: main..HEAD, draft: "false"}, target: {merge-request: 5}, ai: "cmd:sh $FIXTURES/agents/review-by-lens.sh"}
+expect:
+  status: pass
+  agent-calls: 0
+  forge:
+    merge-requests:
+      - id: 5
+        comments: 1
+        comment-contains:
+          - "no lens that warns on this push: correctness, which blocks, reads it on the verdict's run; the 1 new commit recorded"
+          - " runs=6 read=all -->"
+        comment-lacks: "failed="

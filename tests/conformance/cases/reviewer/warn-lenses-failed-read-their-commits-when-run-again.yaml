@@ -1,0 +1,36 @@
+case: reviewer/warn-lenses-failed-read-their-commits-when-run-again
+about: "#582's sequence (#588). The run on ready apart asked the lenses that warn, together, and got no answer that reads (`retried=once`). The push after it asks them again, and they fail again: its record names them (`failed=`), never says every lens read the change, and holds none of the 4 commits. The run run again on the same head asks those lenses, though the turn is correctness, which blocks: they read the 4 commits on the whole change, which are recorded then."
+given:
+  repo: reviewed
+  setup:
+    - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"
+    - 'for i in 1 2 3; do printf "package calc\n\n// F$i is $i.\nfunc F$i() int { return $i }\n" > calc/f$i.go && git add calc/f$i.go && git commit -qm "feat: add f$i"; done'
+  # The lenses' first two calls, the push's and its retry, get an answer
+  # that never reads; the third, the run again's, reads.
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml", REVIEW_LENS_BROKEN: edge-cases, REVIEW_LENS_BROKEN_CALLS: "2", REVIEW_LENS_COUNT: "$XDG_CONFIG_HOME/review-lens-calls"}
+  config:
+    routing: {events: {merge-request: [reviewer]}}
+    roles: {reviewer: {settings: {ai-findings: {correctness: block}}}}
+  forge:
+    merge-requests:
+      - id: 5
+        labels: []
+        comments: ["Not every lens answered.\n\n<!-- workline:record reviewed= runs=0 retried=once -->\n\n<!-- workline:sticky=reviewer/warn -->"]
+run: {route: merge-request, warn-only: true, input: {range: main..HEAD, draft: "false"}, target: {merge-request: 5}, ai: "cmd:sh $FIXTURES/agents/review-by-lens.sh", then: again}
+expect:
+  status: pass
+  calls: [{task: part, for: 1-lenses}, {task: part, for: 1-lenses}, {task: part, for: 1-lenses}, {task: judge, for: judge/01}]
+  run-files:
+    in/parts/1-lenses/task.md: {contains: ["## Lens: edge-cases", "## Lens: tests", "## Lens: claims", "### calc/calc.go", "### calc/f1.go", "### calc/f3.go"], not-contains: ["## Lens: correctness"]}
+  findings:
+    - {rule: lens-failed, level: warn, message: "the lenses edge-cases, tests, claims, asked together, got no answer that reads"}
+    - {rule: every-lens-not-whole, level: warn, message: "the lenses that did not answer, edge-cases, tests, claims, are asked again on the whole change at the next push, or when the run runs again"}
+    - {rule: edge-cases, level: warn, where: "calc/calc.go:11", message: "Important: One value divides by zero"}
+  forge:
+    merge-requests:
+      - id: 5
+        comments: 1
+        comment-contains:
+          - "**workline reviewer, the lenses that warn** — 1 findings on the change; lenses: edge-cases, tests, claims"
+          - " runs=1 read=all -->"
+        comment-lacks: "failed="
