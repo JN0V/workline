@@ -64,6 +64,23 @@ variables:
 
 .workline:trust: &trust             # a self-managed instance's own authority, when it has one
   - '[ -z "${CI_SERVER_TLS_CA_FILE:-}" ] || cat "$CI_SERVER_TLS_CA_FILE" >> /etc/ssl/certs/ca-certificates.crt'
+# The bot's name on the commits it writes; given an SSH private key, the
+# File variable WORKLINE_SIGNING_KEY, git signs them with it, for a project
+# that refuses unsigned commits (docs/gitlab/signed-commits.md; the first
+# release after v0.37.0). Never echoed: a key typed as a plain variable
+# fails the job, unread.
+.workline:bot: &bot
+  - git config user.name "workline"
+  - git config user.email "workline@noreply.$CI_SERVER_HOST"
+  - |
+    if [ -n "${WORKLINE_SIGNING_KEY:-}" ]; then
+      [ -f "$WORKLINE_SIGNING_KEY" ] || { echo "workline: WORKLINE_SIGNING_KEY is not a file: set its type to File (Settings, CI/CD, Variables)"; exit 1; }
+      chmod 600 "$WORKLINE_SIGNING_KEY"   # a File variable is readable by all, which ssh-keygen refuses
+      [ -z "$(tail -c 1 "$WORKLINE_SIGNING_KEY")" ] || echo >> "$WORKLINE_SIGNING_KEY"   # nor reads a key with no last newline
+      git config gpg.format ssh
+      git config user.signingkey "$WORKLINE_SIGNING_KEY"
+      git config commit.gpgsign true
+    fi
 .workline:summary: &summary         # the summary, at the end of the log and linked from the job's page
   - '[ ! -s workline-summary.md ] || cat workline-summary.md'
   - printf '{"workline":[{"external_link":{"label":"workline summary","url":"%s/artifacts/file/workline-summary.html"}}]}\n' "$CI_JOB_URL" > workline-annotations.json
@@ -218,8 +235,7 @@ workline:apply:
       when: always
   script:
     - export GITLAB_TOKEN=$WORKLINE_GITLAB_TOKEN
-    - git config user.name "workline"
-    - git config user.email "workline@noreply.$CI_SERVER_HOST"
+    - *bot
     - git remote set-url origin "https://oauth2:${WORKLINE_GITLAB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"
     - workline apply --line line.json --summary workline-summary.md --summary workline-summary.html
   after_script: *summary
@@ -315,8 +331,7 @@ workline:merge:
     - if ! grep -qE '^merge:' .workline/config.yaml 2>/dev/null; then echo "workline:" "no merge policy (merge:), nothing to do"; exit 0; fi
     - workline version
     - export GITLAB_TOKEN=$WORKLINE_GITLAB_TOKEN
-    - git config user.name "workline"
-    - git config user.email "workline@noreply.$CI_SERVER_HOST"
+    - *bot
     - git remote set-url origin "https://oauth2:${WORKLINE_GITLAB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"
     - verdict=; [ ! -s workline-verdict.json ] || verdict=workline-verdict.json
     - workline follow --base "$CI_MERGE_REQUEST_TARGET_BRANCH_NAME" --forge gitlab ${verdict:+--verdict "$verdict"} --summary workline-summary.md --summary workline-summary.html
@@ -377,8 +392,7 @@ workline:garden:apply:
     - if: $CI_PIPELINE_SOURCE == "schedule" && $WORKLINE_GITLAB_TOKEN && $WORKLINE_TASK != "sample" && $WORKLINE_TASK != "release-docs"
       when: always
   script:
-    - git config user.name "workline"
-    - git config user.email "workline@noreply.$CI_SERVER_HOST"
+    - *bot
     - git remote set-url origin "https://oauth2:${WORKLINE_GITLAB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"
     - status=0
     - workline apply --line line.json --summary workline-summary.md --summary workline-summary.html || status=$?
@@ -435,8 +449,7 @@ workline:release-docs:apply:
     - if: $CI_PIPELINE_SOURCE == "schedule" && $WORKLINE_GITLAB_TOKEN && $WORKLINE_TASK == "release-docs"
       when: always
   script:
-    - git config user.name "workline"
-    - git config user.email "workline@noreply.$CI_SERVER_HOST"
+    - *bot
     - git remote set-url origin "https://oauth2:${WORKLINE_GITLAB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"
     - '[ -s line.json ] || { echo "workline: the release docs judge left nothing to apply"; exit 0; }'
     - workline apply --line line.json --summary workline-summary.md --summary workline-summary.html
@@ -534,8 +547,7 @@ workline:follow:
     - *trust
     - workline version
     - export GITLAB_TOKEN=$WORKLINE_GITLAB_TOKEN
-    - git config user.name "workline"
-    - git config user.email "workline@noreply.$CI_SERVER_HOST"
+    - *bot
     - git remote set-url origin "https://oauth2:${WORKLINE_GITLAB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"
     - workline follow --base "$CI_DEFAULT_BRANCH" --forge gitlab --summary workline-summary.md --summary workline-summary.html
   after_script: *summary
@@ -595,8 +607,7 @@ workline:sample:write:              # writes to the forge; no agent installed
   needs: [workline:sample:read]
   script:
     - export GITLAB_TOKEN=$WORKLINE_GITLAB_TOKEN
-    - git config user.name "workline"
-    - git config user.email "workline@noreply.$CI_SERVER_HOST"
+    - *bot
     - git remote set-url origin "https://oauth2:${WORKLINE_GITLAB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"
     - workline sample --apply sample.json --forge gitlab --summary workline-summary.md --summary workline-summary.html
   after_script: *summary
