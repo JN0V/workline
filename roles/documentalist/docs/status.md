@@ -134,7 +134,9 @@ its evaluation in
   ([#510](https://github.com/JN0V/workline/issues/510)), its docs judged
   at night with the gardening, none on its moves
   ([ADR-0050, §7](../../../docs/adr/0050-each-act-has-its-moment-and-a-wait-budget.md#7-decided-by-the-maintainer-on-2026-10-19);
-  [tried](https://github.com/JN0V/workline/pull/535)): `release-*`; on workline,
+  [tried](https://github.com/JN0V/workline/pull/535)), held by a doc
+  only a person can judge without losing the others' fixes
+  ([#543](https://github.com/JN0V/workline/issues/543)): `release-*`; on workline,
   [#258](https://github.com/JN0V/workline/pull/258) held,
   [#259](https://github.com/JN0V/workline/pull/259) merged first.
 - **Condense, split, merge a card, merge a repeated passage**:

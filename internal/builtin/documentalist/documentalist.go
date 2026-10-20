@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -1394,18 +1395,6 @@ doc when its reader really gained something to know.
 		if findings, err = holdTheRelease(findings, suspects, repo); err != nil {
 			return fail(err)
 		}
-		// Its docs due waiting for the night, said on the release's merge
-		// request, where its person looks (principle 14).
-		if c, ok := nightNote(findings); ok {
-			file := filepath.Join(runDir, "in", "fallback.yaml")
-			fallback, err := intent.Read(file)
-			if err != nil {
-				return fail(err)
-			}
-			if err := intent.Write(file, append(fallback, c)); err != nil {
-				return fail(err)
-			}
-		}
 	}
 	var left strings.Builder
 	saidOnce := map[string]bool{}
@@ -1449,7 +1438,7 @@ doc when its reader really gained something to know.
 			continue
 		}
 		if sd.tooLarge {
-			f.Message += "\n(too large to be put before the agent — the doc with what changed in its sources, or with its sources as they are now: a person judges it)"
+			f.Message += "\n(too large to be put before the agent — the doc with what changed in its sources, or with its sources as they are now: " + personJudges + ")"
 			continue
 		}
 		if task != "" || partsAsked > 0 || recording {
@@ -1460,6 +1449,19 @@ doc when its reader really gained something to know.
 	findings = slices.DeleteFunc(findings, func(f verdict.Finding) bool {
 		return f.Rule == "" || readerOnly && !slices.Contains(readerShown, f.Rule) && f.Rule != "too-large-to-read" && f.Rule != "reader-declined-unread"
 	})
+	// Its docs due waiting for the night, said on the release's merge
+	// request, where its person looks (principle 14), once each finding
+	// says what became of its doc: whom each waits on (#543).
+	if c, ok := nightNote(findings); ok && os.Getenv("WORKLINE_EVENT") == "release" {
+		file := filepath.Join(runDir, "in", "fallback.yaml")
+		fallback, err := intent.Read(file)
+		if err != nil {
+			return fail(err)
+		}
+		if err := intent.Write(file, append(fallback, c)); err != nil {
+			return fail(err)
+		}
+	}
 	// Once each finding says what became of its doc: those left to a person.
 	if i, ok := personIssue(findings, repo); ok && !readerOnly {
 		file := filepath.Join(runDir, "in", "fallback.yaml")
@@ -1588,6 +1590,63 @@ func holdTheRelease(findings []verdict.Finding, suspects map[string]*suspectDoc,
 	return findings, nil
 }
 
+// personJudges ends the note of a doc no agent can judge: a person does.
+// Every such note says it, and heldBy reads it there (#543).
+const personJudges = "a person judges it"
+
+// Whom a doc due holding the release waits on (heldBy).
+const (
+	heldForAPerson = "a person"
+	heldForParts   = "the next gardening, in parts"
+	heldForAgent   = "the agent, on a later round or run"
+)
+
+// heldBy says whom a doc due holding the release waits on, as the last
+// line of its finding says what became of it (#543): a person, when no
+// agent can judge it; the next gardening, which judges it in parts; else
+// the agent, on a later round or run.
+func heldBy(f verdict.Finding) string {
+	lines := strings.Split(f.Message, "\n")
+	switch last := lines[len(lines)-1]; {
+	case last == partsLater:
+		return heldForParts
+	case strings.Contains(last, personJudges):
+		return heldForAPerson
+	}
+	return heldForAgent
+}
+
+// heldSummary says how many docs due hold the release, and whom they wait
+// on, a person's by name: "3 docs due hold the release: 1 for a person
+// (docs/a.md), 2 for the agent, on a later round or run".
+func heldSummary(docs map[string]string) string {
+	byWho := map[string][]string{}
+	for _, p := range slices.Sorted(maps.Keys(docs)) {
+		byWho[docs[p]] = append(byWho[docs[p]], p)
+	}
+	var parts []string
+	for _, who := range []string{heldForAPerson, heldForParts, heldForAgent} {
+		ps := byWho[who]
+		if len(ps) == 0 {
+			continue
+		}
+		said := who
+		if who == heldForAgent && os.Getenv("WORKLINE_AI_WAITS") == "night" {
+			said = "the agent at night" // a release tool's merge request on its moves (ADR-0050, §7)
+		}
+		part := fmt.Sprintf("%d for %s", len(ps), said)
+		if who == heldForAPerson && len(ps) <= 3 {
+			part += " (" + strings.Join(ps, ", ") + ")"
+		}
+		parts = append(parts, part)
+	}
+	docsWord, hold := "docs", "hold"
+	if len(docs) == 1 {
+		docsWord, hold = "doc", "holds"
+	}
+	return fmt.Sprintf("%d %s due %s the release: %s — see the findings", len(docs), docsWord, hold, strings.Join(parts, ", "))
+}
+
 // nightNote is the comment on a release tool's merge request whose docs due
 // wait for the agent at night (ADR-0050, §7): each doc, when its fix comes,
 // how to have it sooner. Edited on each move; with none left, it says so,
@@ -1598,14 +1657,22 @@ func nightNote(findings []verdict.Finding) (intent.Intention, bool) {
 		return intent.Intention{}, false
 	}
 	var docs []string
-	why := map[string]string{}
+	why, then := map[string]string{}, map[string]string{}
+	person := false
 	for _, f := range findings {
 		if f.Level != "block" || f.Rule != "suspect" && f.Rule != "due" || f.Where == "" {
 			continue
 		}
 		if _, seen := why[f.Where]; !seen {
 			docs = append(docs, f.Where)
-			why[f.Where], _, _ = strings.Cut(f.Message, "\n")
+			first, _, _ := strings.Cut(f.Message, "\n")
+			why[f.Where] = strings.TrimSuffix(first, ":")
+			// Whom it waits on, when not the agent tonight: its last line.
+			if who := heldBy(f); who != heldForAgent {
+				lines := strings.Split(f.Message, "\n")
+				then[f.Where] = strings.Trim(lines[len(lines)-1], "()")
+				person = person || who == heldForAPerson
+			}
 		}
 	}
 	value := map[string]any{"sticky": "release-night"}
@@ -1615,9 +1682,17 @@ func nightNote(findings []verdict.Finding) (intent.Intention, bool) {
 	}
 	var b strings.Builder
 	fmt.Fprintf(&b, "**Docs due for this release** — %d hold it, until each is judged. No agent judges them here, on each push: a doc fix would change the head after a person's yes. "+
-		"The agent judges and fixes them at night, in a merge request of its own (`workline/documentalist/release`); the release waits until it is merged.\n\n", len(docs))
+		"The agent judges and fixes them at night, in a merge request of its own (`workline/documentalist/release`); the release waits until it is merged.", len(docs))
+	if person {
+		b.WriteString(" Those no agent can judge say so: a person reads each against its sources, fixes it, and moves its `checked`.")
+	}
+	b.WriteString("\n\n")
 	for _, d := range docs {
-		fmt.Fprintf(&b, "- `%s` — %s\n", d, strings.TrimSuffix(why[d], ":"))
+		if then[d] != "" {
+			fmt.Fprintf(&b, "- `%s` — %s; %s\n", d, why[d], then[d])
+			continue
+		}
+		fmt.Fprintf(&b, "- `%s` — %s\n", d, why[d])
 	}
 	fmt.Fprintf(&b, "\nFor the release sooner: run the release docs workflow, or the gardening, now; or, where an agent may judge, `workline route release --target merge-request:%d --push-to-merge-request`; "+
 		"or a person reads each doc against its sources and moves its `checked`.", t.ID)
@@ -2023,6 +2098,11 @@ func Post(runDir, repo string) int {
 		}
 	}
 	blocking, due := 0, 0
+	// At the release, the docs due this run did not settle hold it, each
+	// for whom it waits on; the findings holding it for them alone, the
+	// run is held, not failed: what it fixed is applied (#543).
+	release := os.Getenv("WORKLINE_EVENT") == "release"
+	heldFindings, heldDocs := 0, map[string]string{}
 	var kept []verdict.Finding
 	said := map[string]bool{}
 	for _, f := range findings {
@@ -2063,8 +2143,13 @@ func Post(runDir, repo string) int {
 		// (ADR-0050).
 		if f.Level == "block" {
 			blocking++
-			if os.Getenv("WORKLINE_EVENT") != "release" {
+			if !release {
 				f.Level = ""
+			} else if (f.Rule == "suspect" || f.Rule == "due") && f.Where != "" {
+				heldFindings++
+				if _, seen := heldDocs[f.Where]; !seen {
+					heldDocs[f.Where] = heldBy(f)
+				}
 			}
 		}
 		if f.Rule == "due" {
@@ -2106,6 +2191,12 @@ func Post(runDir, repo string) int {
 	// due, a check that could not run — is not the answer's, and asking the
 	// agent again would change none of it.
 	switch {
+	case release && blocking > 0 && heldFindings == blocking:
+		v.Status, v.Final, v.Held = verdict.Block, true, true
+		v.Summary = heldSummary(heldDocs)
+		if slices.ContainsFunc(intents, func(in intent.Intention) bool { return in.Kind == "patch" }) {
+			v.Summary = "docs updated; " + v.Summary
+		}
 	case due > 0 && due == blocking:
 		v.Status, v.Summary, v.Final = verdict.Block, fmt.Sprintf("%d docs due at this moment are not up to date yet: they wait for an agent, or a person", due), true
 	case blocking > 0:

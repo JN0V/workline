@@ -126,7 +126,7 @@ var errTooLarge = errors.New("its sources do not fit in a task whole")
 // before the agent: judged against what is not there, it would be confirmed
 // unread (#239). A person judges it.
 func unreadNote(err error) string {
-	return fmt.Sprintf("(a source cannot be read — %v: not put before the agent; a person judges it, naming in `sources` what replaced it)", err)
+	return fmt.Sprintf("(a source cannot be read — %v: not put before the agent; "+personJudges+", naming in `sources` what replaced it)", err)
 }
 
 // sourcesNow is each source of a doc as it is now: a section of a doc, or

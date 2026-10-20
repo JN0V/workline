@@ -1,0 +1,25 @@
+case: documentalist/release-keeps-the-fixes-beside-a-doc-for-a-person
+about: "At the release, three docs due, one too wide for the agent: the two it judged are fixed and vouched for, a next round started for the one a round could not hold, and the release stays held for the doc a person must judge alone, said in the summary and its finding (#543). Before, a doc left to a person held the run as if the answer had failed: nothing was applied, and no next round started."
+given:
+  repo: documented
+  setup:
+    - "seq 1 3000 | sed 's/^/var b/' > src/auth/big.go && printf '%s\\n' '---' 'type: reference' 'sources: [src/auth/big.go]' 'checked: HEAD' '---' '# Tables' '' 'The big table holds one row a line.' > docs/tech/tables.md && printf '%s\\n' '---' 'type: reference' 'sources: [src/auth/token.go]' 'checked: HEAD' '---' '# Sessions' '' 'A session lasts as long as its token.' > docs/tech/session.md && git add src docs && git commit -qm 'feat(auth): add the big table and sessions'"
+    - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: HEAD/checked: $C/\" docs/tech/tables.md docs/tech/session.md && git commit -qam 'docs: confirm the tables and sessions docs' && git tag v1.0.0"
+    - "seq 1 3000 | sed 's/^/const b/' > src/auth/big.go && printf '\\n// Refreshed on use.\\n' >> src/auth/token.go && git commit -qam 'feat(auth): refresh tokens on use'"
+  config: {roles: {documentalist: {settings: {parts-max: 1, ai-max-calls: 1}}}}
+run: {role: documentalist, event: release, ai: 'cmd:sh "$FIXTURES/agents/confirm-every-doc.sh"'}
+expect:
+  status: block
+  agent-calls: 2
+  applied: [patch, patch]
+  summary: "1 doc due holds the release: 1 for a person"
+  findings:
+    - {rule: sources-too-wide, where: docs/tech/tables.md, message: "past parts-max (1)"}
+    - {rule: suspect, where: docs/tech/tables.md, level: block, message: "a person judges it"}
+  no-findings:
+    - {rule: suspect, where: docs/tech/auth.md}
+    - {rule: suspect, where: docs/tech/session.md}
+  files:
+    docs/tech/auth.md: {contains: "verified: agent:documentalist"}
+    docs/tech/session.md: {contains: "verified: agent:documentalist"}
+    docs/tech/tables.md: {lacks: "verified:"}
