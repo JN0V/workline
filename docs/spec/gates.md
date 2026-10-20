@@ -142,7 +142,7 @@ since the branch's tip before it counts.
 - **`--gates-kept <folder>`**, with `--base`: the merge base's findings
   read as main kept them, by the rules above; else run again there.
 - **A `<rev>` that is no commit here is an error**, never a run counting
-  every finding.
+  every finding; an empty one (`--base ""`, a variable unset) is misuse.
 - **Each summary says how it counted**: `only the findings the change
   adds since <merge base> count`, or `every finding counts, none
   compared with a base`.
