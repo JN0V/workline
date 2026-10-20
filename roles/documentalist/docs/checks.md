@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/identifiers.go, internal/builtin/documentalist/derive.go, internal/builtin/documentalist/freshness.go, internal/builtin/documentalist/counts.go, roles/documentalist/role.yaml]
-checked: a88dc872
+checked: b9e7900b
 judged: f70db89
 verified: agent:claude-code
 ---
@@ -140,7 +140,9 @@ turns one off with `enforce`.
   `reader-claim-dropped` and `reader-patch-withheld` (gardening); for a
   doc judged in parts, `sources-too-wide`, `uncovered`, `claims-dropped`;
   on a draft, `ai-waits-for-ready`; on a release tool's pull request,
-  `ai-waits-for-night`, the docs due holding it all the same.
+  `ai-waits-for-night`, the docs due holding it all the same, counted
+  once a doc, and listed in a comment there, which a blocked run still
+  posts (`on-block: [comment]`).
 - **Reported, and the block regenerated**: `derived-stale` (gardening,
   `init`).
 - **Reported, left as it is**: `derive-unclosed`, a derive marker with no end before the next block's ([#302](https://github.com/JN0V/workline/issues/302)).
