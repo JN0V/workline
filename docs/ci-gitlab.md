@@ -3,7 +3,7 @@ sources: [ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workli
 checked: e8182aaa
 judged: cd97f28
 verified: agent:claude-code
-reader: 9799dcaf51f3
+reader: a130959f0bfa
 judged-in-parts: 220b6dc
 ---
 # workline on GitLab CI
@@ -159,14 +159,10 @@ a cron off the hour (`13 17 * * *`) was listed as due at 18:00 and ran at
   train's pipeline, it is workline's only job; a merged results pipeline
   runs them all ([a merge train](merge-queue.md#gitlab-a-merge-train)).
 - **The reviewer's lenses that only warn** read apart from the verdict:
-  `workline:judge` asks those that block (`--warn-apart`; without
-  `WORKLINE_GITLAB_TOKEN`, every lens, said in its log and summary);
-  `workline:warn`, from the pipeline's start, with the agent's token and
-  the bot's, asks the others (`--warn-only`), and `workline:warn:apply` posts them in
-  a comment of their own. Neither fails the pipeline (`allow_failure`);
-  `workline:merge` reads the verdict from `workline:judge` alone. GitLab
-  merges once the pipeline succeeds: the merge waits for them, never on
-  what they find ([apart](../roles/reviewer/docs/apart.md)).
+  - `workline:judge` asks those that block (`--warn-apart`; without `WORKLINE_GITLAB_TOKEN`, every lens, said in its log and summary);
+  - `workline:warn`, from the pipeline's start, with the agent's token and the bot's, asks the others (`--warn-only`), and `workline:warn:apply` posts them in a comment of their own;
+  - neither fails the pipeline (`allow_failure`); `workline:merge` reads the verdict from `workline:judge` alone;
+  - GitLab merges once the pipeline succeeds: the merge waits for them, never on what they find ([apart](../roles/reviewer/docs/apart.md)).
 - **The whole history** (`GIT_DEPTH: 0`, over the project's "Git shallow
   clone" setting, 20 commits on a new project): the documentalist compares
   each doc's sources since its `checked`, the release looks for its last

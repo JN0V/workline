@@ -3,6 +3,7 @@ sources: [internal/sample, internal/builtin/documentalist/sample.go, ci/github/w
 checked: e8182aaa
 judged: c9d96e2
 verified: agent:claude-code
+reader: 33e59f1eaf2a
 ---
 # The weekly sample
 
