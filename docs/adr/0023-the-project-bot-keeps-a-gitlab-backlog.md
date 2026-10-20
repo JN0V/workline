@@ -94,7 +94,9 @@ reviewed the whole merge request again (`record-unread`,
 
 Not chosen: giving the judging job a token of its own, which a project
 then has to make and rotate; taking an unknown author for a person of
-the project.
+the project. Left: a service account, a bot GitLab names otherwise, is
+not told a bot by its name; its comment counts as a person's while the
+members are unread.
 
 Conformance: reviewer/record-read-without-the-members-on-gitlab and the
 two documentalist/judged-kept-…-without-the-members-on-gitlab cases.
