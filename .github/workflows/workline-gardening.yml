@@ -4,7 +4,9 @@
 # kept for apply. Claude with CLAUDE_CODE_OAUTH_TOKEN, pull
 # requests opened with the GitHub App (ADR-0006, ADR-0010). The release
 # pull request's docs due are judged here, on its head, once a night
-# (ADR-0050); run it by hand for the release sooner.
+# (ADR-0050); run it by hand for the release sooner. And the release's dry
+# run: what would hold it if it were cut now, said on that pull request,
+# else in the default branch's issue.
 name: workline gardening
 on:
   # Nightly while its docs are caught up, then Mondays ("17 2 * * 1"). Off
@@ -101,5 +103,54 @@ jobs:
           # Its pull requests main moved under: rebuilt on it, or closed when
           # nothing is left to merge; one a person committed to is theirs.
           workline follow --gardening --base "$GITHUB_REF_NAME" --forge github --summary workline-summary.md || status=$?
+          [ ! -s workline-summary.md ] || cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"
+          exit "$status"
+
+  # A release's dry run, every night this runs (ADR-0050; the first release
+  # after v0.37.0): what would hold the release if it were cut now — on
+  # the release tool's pull request open into this branch, its head; else
+  # this branch's tip. The release's line, every step, no agent, nothing
+  # applied: said as warnings, never a block. Install the tools of the
+  # gates your `release` line runs here. dry-run-post says what it found in
+  # one comment on that pull request, else in the default branch's issue
+  # (docs/release-dry-run.md).
+  dry-run:
+    runs-on: ubuntu-latest
+    permissions: {contents: read, pull-requests: read}   # the release's pull request, found
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: ./.github/actions/engine
+      - name: What would hold the release (said, never a block)
+        env: {GH_TOKEN: "${{ github.token }}"}
+        run: |
+          workline route release --dry-run --forge github --summary workline-summary.md --json > dry-run.json
+          [ ! -s workline-summary.md ] || cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with: {name: workline-dry-run, path: dry-run.json}
+
+  dry-run-post:
+    needs: dry-run
+    runs-on: ubuntu-latest
+    environment: workline-app       # the App's key: the default branch only (ADR-0044)
+    # One writer of the default branch's issue at a time, with main's.
+    concurrency: {group: "workline-main-issue", cancel-in-progress: false}
+    permissions: {contents: read, pull-requests: write, issues: write}
+    steps:
+      - id: app
+        if: vars.WORKLINE_APP_ID != ''
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.WORKLINE_APP_ID }}
+          private-key: ${{ secrets.WORKLINE_APP_PRIVATE_KEY }}
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/engine
+      - uses: actions/download-artifact@v4
+        with: {name: workline-dry-run}
+      - env:
+          GH_TOKEN: ${{ steps.app.outputs.token || github.token }}
+        run: |
+          status=0
+          workline apply --release-dry-run dry-run.json --forge github --summary workline-summary.md || status=$?
           [ ! -s workline-summary.md ] || cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"
           exit "$status"

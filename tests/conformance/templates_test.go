@@ -1119,7 +1119,7 @@ func TestGardeningJudgesTheReleaseAtNight(t *testing.T) {
 						t.Errorf("%s, job %s: the schedule line does not list the open pull requests (--forge github, --open-merge-request, pull-requests: read): no release is judged at night", f, name)
 					}
 				}
-				if strings.Contains(s.Run, "workline apply") {
+				if strings.Contains(s.Run, "workline apply") && !strings.Contains(s.Run, "--release-dry-run") {
 					applied = true
 					if !strings.Contains(s.Env["WORKLINE_APP"], "steps.app.outputs.app-slug") {
 						t.Errorf("%s, job %s: applies with no WORKLINE_APP: who pushed to the release's branch is not checked before its fix is opened as the App's", f, name)
@@ -1203,13 +1203,13 @@ func TestReleaseDocsJudgedNightly(t *testing.T) {
 	judged, applied := false, false
 	for name, job := range wf.Jobs {
 		for _, s := range job.Steps {
-			if strings.Contains(s.Run, "workline route release") {
+			if strings.Contains(s.Run, "workline route release") && !strings.Contains(s.Run, "--dry-run") {
 				judged = true
 				if !strings.Contains(s.Run, "--target merge-request:release") || !strings.Contains(s.Run, "--forge github") || job.Permissions["pull-requests"] != "read" {
 					t.Errorf("job %s: does not find the release pull request (--target merge-request:release, --forge github, pull-requests: read)", name)
 				}
 			}
-			if strings.Contains(s.Run, "workline apply") {
+			if strings.Contains(s.Run, "workline apply") && !strings.Contains(s.Run, "--release-dry-run") {
 				applied = true
 				if !strings.Contains(s.Env["WORKLINE_APP"], "steps.app.outputs.app-slug") {
 					t.Errorf("job %s: applies with no WORKLINE_APP", name)

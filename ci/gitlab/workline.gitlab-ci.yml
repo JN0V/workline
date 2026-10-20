@@ -447,6 +447,88 @@ workline:release-docs:apply:
     reports: {annotations: workline-annotations.json}
     expire_in: 1 week
 
+# A release's dry run, every night (ADR-0050; the first release after
+# v0.37.0): each schedule but the sample's, the gardening's and the release
+# docs'. What would hold the release if it were cut now: on the release
+# tool's merge request open into the branch, its head (read with the bot's
+# token); else the branch's tip. The release's line, every step, no agent,
+# nothing applied: said as warnings, never failing the pipeline. Install
+# the tools of the gates your `release` line runs here.
+# workline:release:dry-run:post says it in one comment on that merge
+# request, else in the default branch's issue (docs/release-dry-run.md).
+workline:release:dry-run:
+  image: $WORKLINE_IMAGE:$WORKLINE_VERSION
+  stage: test
+  variables: {GIT_DEPTH: 0}         # the whole history: the release since its tag
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule" && $WORKLINE_TASK != "sample"
+  script:
+    - *trust
+    - workline version
+    - git checkout -q -B "$CI_COMMIT_REF_NAME"   # GitLab runs on a detached HEAD
+    - unset CLAUDE_CODE_OAUTH_TOKEN
+    - forge=none; if [ -n "${WORKLINE_GITLAB_TOKEN:-}" ]; then export GITLAB_TOKEN=$WORKLINE_GITLAB_TOKEN; forge=gitlab; fi
+    - workline route release --dry-run --forge $forge --summary workline-summary.md --summary workline-summary.html --json > dry-run.json
+  after_script: *summary
+  artifacts:
+    when: always
+    paths: [workline-summary.html, workline-summary.md, dry-run.json]
+    reports: {annotations: workline-annotations.json}
+    expire_in: 1 day
+
+workline:release:dry-run:post:
+  image: $WORKLINE_IMAGE:$WORKLINE_VERSION
+  stage: deploy
+  needs: [workline:release:dry-run]
+  resource_group: workline-main-issue   # one writer of the default branch's issue at a time, with workline:main:issue
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule" && $WORKLINE_TASK != "sample" && $WORKLINE_GITLAB_TOKEN
+  script:
+    - *trust
+    - workline version
+    - '[ -s dry-run.json ] || { echo "workline: the release''s dry run left no result: nothing to post"; exit 0; }'
+    - export GITLAB_TOKEN=$WORKLINE_GITLAB_TOKEN
+    - workline apply --release-dry-run dry-run.json --forge gitlab --summary workline-summary.md --summary workline-summary.html
+  after_script: *summary
+  artifacts:
+    when: always
+    paths: [workline-summary.html, workline-summary.md]
+    reports: {annotations: workline-annotations.json}
+    expire_in: 1 week
+
+# At a release's tag (ADR-0050; the first release after v0.37.0): a tag
+# pipeline, whoever pushed the tag, a person or a release tool. The
+# release's line, no agent, no token: the docs made suspect since the
+# release before this one, the gates your `release` line runs; red when
+# they hold the release. Have the jobs that publish it need it (`needs:
+# [workline:release]`): GitLab's release job, a package's upload. Nobody
+# waits on it: the night judged the docs before (the release merge
+# request's, the dry run's list). A release merge request
+# (releaser-pleaser's) is judged as the release on each of its pipelines
+# already; this checks its tag again. A tool that tags and publishes in
+# one job (semantic-release): run `workline route release --ai none`
+# before it, in that job. docs/release-dry-run.md.
+workline:release:
+  image: $WORKLINE_IMAGE:$WORKLINE_VERSION
+  stage: test
+  variables: {GIT_DEPTH: 0}         # the whole history: the release before this one
+  rules:
+    - if: $CI_COMMIT_TAG
+  script:
+    - *trust
+    - workline version
+    - git fetch --quiet --tags origin || true   # every release tag, the one before this
+    - unset CLAUDE_CODE_OAUTH_TOKEN WORKLINE_GITLAB_TOKEN GITLAB_TOKEN
+    - status=0
+    - workline route release --ai none --forge none --summary workline-summary.md --summary workline-summary.html --json > release.json || status=$?
+    - exit $status
+  after_script: *summary
+  artifacts:
+    when: always
+    paths: [workline-summary.html, workline-summary.md, release.json]
+    reports: {annotations: workline-annotations.json}
+    expire_in: 1 week
+
 # Main after a merge (ADR-0050; the first release after v0.37.0), each
 # push to the default branch, no token, no agent: the gates, red when the
 # push adds what they count, their findings kept in its artifacts by the
