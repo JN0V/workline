@@ -1,0 +1,9 @@
+case: cli/gate-empty-base-is-misuse
+about: >
+  `workline gate <name> --base ""`, a CI variable left unset, is misuse,
+  64: never read as no base, every finding counted without a word.
+given: {repo: basic}
+run: {cli: [gate, merge, --base, ""]}
+expect:
+  exit: 64
+  stderr: ["--base names no revision"]

@@ -1044,7 +1044,11 @@ func gateCmd(args []string) int {
 	if done {
 		return code
 	}
-	if *kept != "" && *base == "" {
+	switch {
+	case isSet(fs, "base") && strings.TrimSpace(*base) == "":
+		// An unset variable in a CI job: never read as no base at all.
+		return misuse(fs, "--base names no revision (an unset variable?): give one, or leave --base out to count every finding")
+	case *kept != "" && *base == "":
 		return misuse(fs, "--gates-kept reads the merge base's findings: it goes with --base")
 	}
 	abs, _ := filepath.Abs(*repo)
