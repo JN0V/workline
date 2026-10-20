@@ -2,6 +2,7 @@ package conformance
 
 import (
 	"os"
+	"path"
 	"regexp"
 	"slices"
 	"strings"
@@ -53,8 +54,8 @@ func TestOwnGatesToolsArePinned(t *testing.T) {
 			continue
 		}
 		for _, c := range g.Checks {
-			if f := strings.Fields(c.Run); len(f) > 0 && !slices.Contains(tools, f[0]) {
-				tools = append(tools, f[0])
+			if tool := toolOf(c.Run); tool != "" && !slices.Contains(tools, tool) {
+				tools = append(tools, tool)
 			}
 		}
 	}
@@ -93,6 +94,9 @@ func TestOwnGatesToolsArePinned(t *testing.T) {
 		t.Fatalf("workline.yml's gates job runs no gate, or takes no engine: %+v", steps)
 	}
 	for _, tool := range tools {
+		if tool == "go" { // set up by the engine's action, checked above
+			continue
+		}
 		at := slices.IndexFunc(steps, func(s engineStep) bool {
 			return strings.Contains(s.Run, "curl") && strings.Contains(s.Run, tool)
 		})
@@ -112,10 +116,69 @@ func TestOwnGatesToolsArePinned(t *testing.T) {
 			t.Errorf("gates job: %s is installed only %q, the gates run %q", tool, s.If, steps[engine].If)
 		case !pinnedVersion.MatchString(pins) || strings.Contains(pins, "latest"):
 			t.Errorf("gates job: %s is installed at no exact version:\n%s", tool, pins)
-		case !pinnedSHA256.MatchString(pins) || !strings.Contains(s.Run, "sha256sum -c"):
+		case !checksDigest(s):
 			t.Errorf("gates job: %s's archive is not checked against a SHA-256 the workflow holds:\n%s", tool, pins)
 		case strings.Contains(s.Run, "sudo") || !strings.Contains(s.Run, "$RUNNER_TEMP"):
 			t.Errorf("gates job: %s is installed outside the runner's own folder:\n%s", tool, s.Run)
+		}
+	}
+}
+
+// toolOf is the tool a check's command runs: its first word past any
+// `NAME=value` set before it, by its base name.
+func toolOf(run string) string {
+	for _, w := range strings.Fields(run) {
+		if name, _, ok := strings.Cut(w, "="); ok && name != "" && !strings.ContainsAny(name, "/-.") {
+			continue
+		}
+		return path.Base(w)
+	}
+	return ""
+}
+
+// checksDigest says whether a step checks what it downloaded against a
+// SHA-256 it holds: the line running `sha256sum -c` holds the digest, or
+// a variable the step's env sets to one; never a file fetched beside it.
+func checksDigest(s engineStep) bool {
+	for _, l := range strings.Split(s.Run, "\n") {
+		if !strings.Contains(l, "sha256sum -c") || strings.Contains(l, "curl") {
+			continue
+		}
+		if pinnedSHA256.MatchString(l) {
+			return true
+		}
+		for k, v := range s.Env {
+			if pinnedSHA256.MatchString(v) && (strings.Contains(l, "$"+k+" ") || strings.Contains(l, "${"+k+"}")) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func TestOwnGatesToolsArePinnedReadsTheInstall(t *testing.T) {
+	sha := strings.Repeat("ab", 32)
+	for run, want := range map[string]string{
+		"golangci-lint run ./...":       "golangci-lint",
+		"GOFLAGS=-mod=mod go vet ./...": "go",
+		"./bin/lint --all":              "lint",
+	} {
+		if got := toolOf(run); got != want {
+			t.Errorf("toolOf(%q) = %q, want %q", run, got, want)
+		}
+	}
+	for _, c := range []struct {
+		name string
+		step engineStep
+		want bool
+	}{
+		{"the digest held in env", engineStep{Env: map[string]string{"SHA256": sha}, Run: `echo "$SHA256  $f" | sha256sum -c -`}, true},
+		{"the digest on the line", engineStep{Run: `echo "` + sha + `  f.tar.gz" | sha256sum -c`}, true},
+		{"a checksums file fetched beside it", engineStep{Env: map[string]string{"SHA256": sha}, Run: "# " + sha + "\ncurl -fsSL $u/checksums.txt | grep f.tar.gz | sha256sum -c -"}, false},
+		{"a digest in env, not the one checked", engineStep{Env: map[string]string{"SHA256": sha}, Run: "sha256sum -c sums.txt"}, false},
+	} {
+		if got := checksDigest(c.step); got != c.want {
+			t.Errorf("%s: checksDigest = %v, want %v", c.name, got, c.want)
 		}
 	}
 }
