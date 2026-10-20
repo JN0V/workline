@@ -190,8 +190,7 @@ a cron off the hour (`13 17 * * *`) was listed as due at 18:00 and ran at
   [merge policy](merge-policy.md), also after each judge (`workline:merge`).
 - **`workline:main`**, each push to the default branch, no token, no
   agent: the gates, their findings kept in its artifacts as the next base
-  `workline:gates` reads with the job's token, and the whole repository's
-  checks;
+  `workline:gates` reads, and the whole repository's checks;
   `workline:main:issue`, the bot's token, keeps what it found in one issue
   ([main after a merge](main-after-merge.md#gitlab)).
 - **`workline:garden:apply`** then rebuilds gardening's earlier merge

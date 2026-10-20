@@ -94,8 +94,11 @@ Nobody waits for it; nothing in it holds a merge request.
   (`cache:unprotect`), not the default branch's job's artifacts.
   - `workline:main` keeps `.workline-kept/` as its artifact, 30 days: the
     last 20 commits analysed, carried from its last successful pipeline.
-  - `workline:gates` reads `<merge base>.json` from it with the job's
-    token, `jobs/artifacts/$CI_DEFAULT_BRANCH/raw/...?job=workline:main`.
+  - `workline:gates` reads `<merge base>.json` from it,
+    `jobs/artifacts/$CI_DEFAULT_BRANCH/raw/...?job=workline:main`, in its
+    `before_script`: with `WORKLINE_GITLAB_TOKEN`, then unset before a
+    tool runs; else with the job's token, which gitlab.com's Free tier
+    refuses there (404, tried).
 - **Not found** (expired, a red pipeline's, a base older than those 20):
   the tools run again, said in the job's log and the summary. GitLab
   gives a branch's artifacts from its last successful pipeline only.

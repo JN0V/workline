@@ -309,7 +309,8 @@ func TestGitLabMergeTrainRunsTheGatesAlone(t *testing.T) {
 	// queue's run; else against the merge request's diff base, as before.
 	gates, _ := top["workline:gates"].(map[string]any)
 	var script strings.Builder
-	for _, l := range gates["script"].([]any) {
+	before, _ := gates["before_script"].([]any) // its own, where the base is told
+	for _, l := range append(slices.Clone(before), gates["script"].([]any)...) {
 		if anchored, ok := l.([]any); ok { // an anchor's lines, flattened as GitLab does
 			for _, a := range anchored {
 				fmt.Fprintln(&script, a)

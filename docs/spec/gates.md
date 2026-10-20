@@ -90,8 +90,10 @@ push adds since the branch's tip before it counts.
   tool there. Only for the same command, `output` and `config`, no file
   the tool reads its config from changed by the change, and the same
   tool: the version its SARIF names, the hash of the binary found on the
-  PATH; one naming neither runs again. Else run again, the summary
-  saying why ([main after a merge](../main-after-merge.md#the-next-base)).
+  PATH; one naming neither runs again. Else, or none kept for that
+  commit, run again, the summary saying why. The folder is filled only
+  from main's own runs, never from a store a branch could write
+  ([main after a merge](../main-after-merge.md#the-next-base)).
 - **Compared one for one, never by line number**: the tool, the rule, the
   file (a rename followed), then the tool's own `fingerprints`, else its
   `partialFingerprints`, else the message and the text of the line, its

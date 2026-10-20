@@ -67,8 +67,11 @@ variables:
 .workline:summary: &summary         # the summary, at the end of the log and linked from the job's page
   - '[ ! -s workline-summary.md ] || cat workline-summary.md'
   - printf '{"workline":[{"external_link":{"label":"workline summary","url":"%s/artifacts/file/workline-summary.html"}}]}\n' "$CI_JOB_URL" > workline-annotations.json
-.workline:kept: &kept               # kept <file>: a file of .workline-kept/ from main's last successful workline:main, never a cache a branch could write
-  - 'kept() { mkdir -p .workline-kept; curl -fsS --header "JOB-TOKEN: $CI_JOB_TOKEN" -o ".workline-kept/$1" "$CI_API_V4_URL/projects/$CI_PROJECT_ID/jobs/artifacts/$CI_DEFAULT_BRANCH/raw/.workline-kept/$1?job=workline:main" 2>/dev/null || { rm -f ".workline-kept/$1"; return 1; }; }'
+# kept <file>: a file of .workline-kept/ from main's last successful
+# workline:main, never a cache a branch could write. Read with the bot's
+# token; else the job's, which gitlab.com's Free tier refuses there.
+.workline:kept: &kept
+  - 'kept() { h="JOB-TOKEN: $CI_JOB_TOKEN"; [ -z "${WORKLINE_GITLAB_TOKEN:-}" ] || h="PRIVATE-TOKEN: $WORKLINE_GITLAB_TOKEN"; mkdir -p .workline-kept; curl -fsSL --header "$h" -o ".workline-kept/$1" "$CI_API_V4_URL/projects/$CI_PROJECT_ID/jobs/artifacts/$CI_DEFAULT_BRANCH/raw/.workline-kept/$1?job=workline:main" 2>/dev/null || { rm -f ".workline-kept/$1"; return 1; }; }'
 .workline:claude: &claude           # the agent, only when the project gives its token; not installed on a draft, which asks none
   - ai=none
   - if [ -n "$CLAUDE_CODE_OAUTH_TOKEN" ]; then if [ "${draft:-}" = true ]; then ai=claude; else npm install -g --silent @anthropic-ai/claude-code && ai=claude; fi; fi
@@ -130,14 +133,20 @@ workline:gates:
   interruptible: true
   # The merge base's findings, read from main's own pipeline artifacts
   # (workline:main), never from a cache a branch could write: the tools
-  # then run once, when kept with the same command, config and tool.
-  script:
-    - unset CLAUDE_CODE_OAUTH_TOKEN WORKLINE_GITLAB_TOKEN GITLAB_TOKEN
-    - status=0
+  # then run once, when kept with the same command, config and tool. Read
+  # before the tokens are unset, no tool run yet.
+  before_script:
+    - *trust
+    - workline version
+    - git fetch --quiet origin $CI_MERGE_REQUEST_DIFF_BASE_SHA || true
+    - '[ -z "${CI_MERGE_REQUEST_TARGET_BRANCH_SHA:-}" ] || git fetch --quiet origin "$CI_MERGE_REQUEST_TARGET_BRANCH_SHA" || true'
     - base=$CI_MERGE_REQUEST_DIFF_BASE_SHA; queue=
     - 'if [ "${CI_MERGE_REQUEST_EVENT_TYPE:-}" = merge_train ]; then base=${CI_MERGE_REQUEST_TARGET_BRANCH_SHA:-$base}; queue="--input queue=true"; fi'
     - *kept
     - 'kept "$base.json" || echo "workline: main''s pipeline kept no findings for $base: the gates run again at the merge base"'
+  script:
+    - unset CLAUDE_CODE_OAUTH_TOKEN WORKLINE_GITLAB_TOKEN GITLAB_TOKEN
+    - status=0
     - >
       workline route merge-request --gates-only --forge none $queue
       --input range=$base..$CI_COMMIT_SHA --gates-kept .workline-kept
@@ -454,12 +463,13 @@ workline:main:
   # Its artifact, .workline-kept/, holds the findings of the last 20
   # commits main's pipelines analysed, carried from its last successful
   # pipeline: the only writer of the merge requests' base.
-  script:
-    - unset CLAUDE_CODE_OAUTH_TOKEN WORKLINE_GITLAB_TOKEN GITLAB_TOKEN
+  before_script:                    # read before the tokens are unset, no tool run yet
     - *trust
     - workline version
     - *kept
     - 'kept commits && for c in $(head -n 19 .workline-kept/commits); do kept "$c.json" || true; done || echo "workline: main''s last pipeline kept no findings"'
+  script:
+    - unset CLAUDE_CODE_OAUTH_TOKEN WORKLINE_GITLAB_TOKEN GITLAB_TOKEN
     - status=0
     - >
       workline route main --ai none --forge none --gates-kept .workline-kept

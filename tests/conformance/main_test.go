@@ -228,13 +228,21 @@ func TestGitLabMainAfterAMergeRunsOnce(t *testing.T) {
 			t.Errorf("%s: its artifacts hold the stored base, the default branch's job's alone to write: %s", name, paths)
 		}
 	}
-	if !strings.Contains(fmt.Sprint(main["script"]), fromMain) || !strings.Contains(fmt.Sprint(main["script"]), "kept commits") {
-		t.Errorf("workline:main: does not carry the findings main's last pipeline kept: %v", main["script"])
+	// Read before the tokens are unset, in before_script: no tool has run.
+	if before := fmt.Sprint(main["before_script"]); !strings.Contains(before, fromMain) || !strings.Contains(before, "kept commits") {
+		t.Errorf("workline:main: does not carry the findings main's last pipeline kept: %v", before)
 	}
 	gates := job("workline:gates")
-	if script := fmt.Sprint(gates["script"]); !strings.Contains(script, fromMain) || !strings.Contains(script, `JOB-TOKEN: $CI_JOB_TOKEN`) ||
-		!strings.Contains(script, `kept "$base.json"`) || !strings.Contains(script, "--gates-kept .workline-kept") {
-		t.Errorf("workline:gates: does not read its merge base's findings from main's own artifacts: %v", script)
+	if before := fmt.Sprint(gates["before_script"]); !strings.Contains(before, fromMain) || !strings.Contains(before, `PRIVATE-TOKEN: $WORKLINE_GITLAB_TOKEN`) ||
+		!strings.Contains(before, `JOB-TOKEN: $CI_JOB_TOKEN`) || !strings.Contains(before, `kept "$base.json"`) ||
+		!strings.Contains(fmt.Sprint(gates["script"]), "--gates-kept .workline-kept") {
+		t.Errorf("workline:gates: does not read its merge base's findings from main's own artifacts: %v", before)
+	}
+	for _, name := range []string{"workline:gates", "workline:main"} {
+		before := fmt.Sprint(job(name)["before_script"])
+		if strings.Contains(before, "workline route") || strings.Contains(before, "golangci") {
+			t.Errorf("%s: runs a tool beside the bot's token, before it is unset: %v", name, before)
+		}
 	}
 	issue := job("workline:main:issue")
 	if !strings.Contains(fmt.Sprint(issue["script"]), "export GITLAB_TOKEN=$WORKLINE_GITLAB_TOKEN") ||
