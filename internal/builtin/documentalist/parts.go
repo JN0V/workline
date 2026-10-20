@@ -135,7 +135,7 @@ func tooWide(doc string, parts, max int) verdict.Finding {
 		Message: fmt.Sprintf("judging it in parts would take %d parts, past parts-max (%d): its sources name more than a doc can be judged against; narrow them to the files it describes, or split the doc", parts, max)}
 }
 
-const tooWideNote = "(too large to be judged whole, and its sources too wide to be judged in parts: a person judges it)"
+const tooWideNote = "(too large to be judged whole, and its sources too wide to be judged in parts: " + personJudges + ")"
 
 // partsLater is what a doc too large to be judged whole says on a merge
 // request: it waits for the next gardening, which judges it in parts.
@@ -223,11 +223,11 @@ func partsFor(runDir, repo string, cands []*suspectDoc, s Settings, total *int, 
 			return "", nil, nil, nil, nil, err
 		}
 		if verdictOf.unanswered == len(plans) && os.Getenv("WORKLINE_AI") == "none" {
-			sd.note = "(too large to be judged whole, and judged in parts only with an agent: a person judges it)"
+			sd.note = "(too large to be judged whole, and judged in parts only with an agent: " + personJudges + ")"
 			continue
 		}
 		if verdictOf.unanswered > 0 {
-			sd.note = fmt.Sprintf("(judged in parts, but %d of its %d parts got no answer that can be read: nothing they found is kept, and it is judged again on a later run; until then, a person judges it)", verdictOf.unanswered, len(plans))
+			sd.note = fmt.Sprintf("(judged in parts, but %d of its %d parts got no answer that can be read: nothing they found is kept, and it is judged again on a later run; until then, "+personJudges+")", verdictOf.unanswered, len(plans))
 			continue
 		}
 		content, err := os.ReadFile(filepath.Join(repo, sd.doc.Path))
@@ -389,11 +389,11 @@ func partsRoom(d *Doc, repo string) (room int, why string, err error) {
 	}
 	room = taskMaxChars - len(partsTaskHeader) - (len(partsSupportedWhole) - len(partsSupported)) - len(numberedDoc(d.Path, string(content)))
 	if room < taskMaxChars/4 {
-		return 0, "(too large to be judged whole, and too long itself to be judged in parts: it leaves less than a quarter of a task for its sources; condense or split it first — a person judges it until then)", nil
+		return 0, "(too large to be judged whole, and too long itself to be judged in parts: it leaves less than a quarter of a task for its sources; condense or split it first — " + personJudges + " until then)", nil
 	}
 	for _, src := range d.Sources {
 		if name, _, _ := splitSource(src); name != "" {
-			return 0, "(too large to be judged whole; its sources in another repository are not judged in parts yet: a person judges it)", nil
+			return 0, "(too large to be judged whole; its sources in another repository are not judged in parts yet: " + personJudges + ")", nil
 		}
 	}
 	return room, "", nil
@@ -479,7 +479,7 @@ func planParts(d *Doc, repo string, share int) (plans []partPlan, why string, er
 	}
 	flush()
 	if len(plans) == 0 {
-		return nil, "(too large to be judged whole, and none of its sources is a file of code to judge it against in parts: a person judges it)", nil
+		return nil, "(too large to be judged whole, and none of its sources is a file of code to judge it against in parts: " + personJudges + ")", nil
 	}
 	return plans, "", nil
 }

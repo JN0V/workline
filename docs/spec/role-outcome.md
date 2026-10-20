@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/engine, internal/intent, internal/role, internal/agent, internal/verdict, internal/report]
 verified: agent:claude-code
-checked: 68c17080
+checked: 875fc368
 judged: b5899f5
 status: draft
 ---
@@ -20,6 +20,7 @@ findings:
     where: commit a1b2c3d, subject
     message: "'AC-3' means nothing outside the project; say what changed."
 final: false   # true: the block is not the agent's answer's, so it is not asked again
+held: false    # with final: it only holds a release; what post kept is applied
 ```
 
 Every run ends with a status; there is no run without one. `blocked-external`
@@ -61,6 +62,20 @@ gates' new findings, as another check's annotations and one comment
 on the head it judged — its status, each step's (`held`: only for the
 release's docs), the findings — which
 `follow --verdict` keeps for the merge policy (ADR-0042).
+
+### A release held
+
+A `final` block that is also `held` only holds a release for what the
+run did not settle — the documentalist's docs due that no round judged,
+or that only a person can — never for the answer
+([#543](https://github.com/JN0V/workline/issues/543)):
+
+- what the answer proposed, as `post` kept it, is judged and applied as
+  on a pass; the run still blocks, and the release waits;
+- a judge's no makes it the answer's block again: asked again, nothing
+  applied;
+- applied in the clone, the next round takes up what `pre` deferred
+  ([role contract](role-contract.md), step 6).
 
 ### Warn before block
 

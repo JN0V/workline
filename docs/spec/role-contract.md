@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine, internal/intent, internal/role, internal/agent, roles_test.go]
-checked: 68c17080
+checked: 875fc368
 verified: agent:claude-code
 judged: b530b72
 ---
@@ -329,7 +329,11 @@ token), **apply** (trusted, no AI key).
    derived block's command fails or it cannot tell whether a source
    changed. The run still blocks; judged with `--no-apply`, they wait in
    `pending` like any other, for the applying job, which runs whatever
-   the judge's outcome.
+   the judge's outcome. A block `post` says is `held` — a release held
+   for what the run did not settle, never for its answer
+   ([role outcome](role-outcome.md#a-release-held)) — applies every proposal it
+   kept, as a pass does, and still blocks
+   ([#543](https://github.com/JN0V/workline/issues/543)).
    Applied by a job of the base once the merge request's branch moved on
    from the head judged (`--from-merge-request`), a run applies only the
    kinds its role names in `on-moved-on`, said (`moved-on`); none, nothing
@@ -338,7 +342,10 @@ token), **apply** (trusted, no AI key).
    the findings it defers, one `<rule> <where>` a line. When the run passed
    and applied something other than a note, the engine then runs the role
    again, from step 2, in a new run folder that sees what was applied — five
-   rounds at most. The result adds up the rounds' calls and applied
+   rounds at most. A `held` round goes on too, when it deferred something
+   and applied it in the clone, with no merge request: one whose fix went
+   to a merge request of its own leaves the rest to a later run, which
+   sees that fix once it is merged. The result adds up the rounds' calls and applied
    intentions; a later round's finding replaces an earlier one of the same
    rule and place, and a deferred one is dropped once the next round runs. A
    run judged with `--no-apply` applies nothing a next round could see: it

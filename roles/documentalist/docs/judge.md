@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/notes.go, internal/builtin/documentalist/values.go, internal/builtin/documentalist/judge.go, internal/builtin/documentalist/documentalist.go]
-checked: 7bf523f5
+checked: 35f9092d
 verified: agent:claude-code
 ---
 # Documentalist — the judge
@@ -163,7 +163,9 @@ one place the engine had already named (step 4). Now:
   again without it and applied. The doc stays as it was, suspect.
 - A block the answer did not cause — docs due, a release held, a check
   that could not run — is never asked again: another answer would change
-  none of it.
+  none of it. A release held only for docs due this run did not settle
+  applies the answer's fixes all the same
+  ([#543](https://github.com/JN0V/workline/issues/543)).
 
 ## After the fixes pass
 
