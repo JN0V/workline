@@ -1,0 +1,56 @@
+case: inspector/new-findings-triaged-and-posted
+about: >
+  The run apart from the verdict, given the gates' job's result (ADR-0049,
+  step 4; ADR-0050): the two findings the change adds to golangci-lint's
+  debt are put to the agent in one call, each with the head's code around
+  it. Each gets its triage — why it matters here, what to fix, a likely
+  false positive said with why — in the order to fix them, posted in the
+  inspector's own comment, the record of what was triaged hidden in it.
+given:
+  repo: linted
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - git checkout -q -b change
+    - |
+      sed -i 's|^\tos.Remove("c.tmp")$|&\n\tos.Remove("d.tmp")|' clean.go
+      printf 'package main\n\nimport "os"\n\n// scratch writes a temporary file and removes it on the way out.\nfunc scratch() {\n\tf, _ := os.CreateTemp("", "scratch")\n\tdefer os.Remove(f.Name())\n}\n' > cleanup.go
+      git add . && git commit -qm "feat: clean d too, and a scratch file" && git push -q origin change
+  forge: {merge-requests: [{id: 1, branch: change, labels: [], comments: []}]}
+  config:
+    routing: {events: {merge-request: [committer, "gate:merge", inspector]}}
+    gates: {merge: {checks: [{id: lint, run: "golangci-lint run --output.sarif.path={out}/lint.sarif", output: sarif, max: {error: 0}}]}}
+run:
+  route: merge-request
+  warn-only: true
+  gates-job: {env: {PATH: "$FIXTURES/bin:$PATH"}}
+  input: {range: main..change}
+  target: {merge-request: 1}
+  ai: "cmd:sh $FIXTURES/agents/triage.sh"
+expect:
+  status: pass
+  steps: [inspector]
+  calls: [{task: part, for: triage}]
+  findings:
+    - {rule: triage, level: warn, where: "clean.go:10", message: "fix 1 of 2, errcheck (golangci-lint): an unchecked os.Remove leaves the temporary file behind"}
+    - {rule: triage, level: warn, where: "cleanup.go:8", message: "fix 2 of 2, errcheck (golangci-lint): likely a false positive: the file is created in the same function"}
+  no-findings: [{rule: over-threshold}]
+  run-files:
+    in/parts/triage/task.md:
+      contains:
+        - "## t1 — `errcheck (golangci-lint)`, clean.go:10 (error)"
+        - "Error return value of `os.Remove` is not checked"
+        - ">   10  \tos.Remove(\"d.tmp\")"
+        - "## t2 — `errcheck (golangci-lint)`, cleanup.go:8 (error)"
+        - "you never change it"
+  forge:
+    merge-requests:
+      - id: 1
+        comments: 1
+        comment-contains:
+          - "**workline inspector** — the gates' 2 new findings at"
+          - ": 2 triaged, 1 likely a false positive."
+          - "never changes it: a finding that blocks still blocks"
+          - "1. **`errcheck (golangci-lint)`** at `clean.go:10`: an unchecked os.Remove leaves the temporary file behind when it fails, and the next run reads it as its own. Fix: return the error, or log it."
+          - "2. **`errcheck (golangci-lint)`** at `cleanup.go:8`: **likely a false positive**: the file is created in the same function and its removal failing changes nothing the caller sees. the deferred os.Remove"
+          - "<!-- workline:triaged {\"fingerprint\":"
+          - "<!-- workline:sticky=inspector/triage -->"

@@ -1,0 +1,29 @@
+case: inspector/no-agent-no-call-said
+about: >
+  With no agent, nothing is triaged (ADR-0049, section 4): no call, and the
+  run says the new findings stand as the gates report them. No comment is
+  opened to say nothing; the gates' own findings and verdict are theirs,
+  the same with an agent or none.
+given:
+  repo: linted
+  setup:
+    - git checkout -q -b change
+    - |
+      sed -i 's|^\tos.Remove("c.tmp")$|&\n\tos.Remove("d.tmp")|' clean.go && git commit -qam "feat: clean d too"
+  forge: {merge-requests: [{id: 1, branch: change, labels: [], comments: []}]}
+  config:
+    routing: {events: {merge-request: [committer, "gate:merge", inspector]}}
+    gates: {merge: {checks: [{id: lint, run: "golangci-lint run --output.sarif.path={out}/lint.sarif", output: sarif, max: {error: 0}}]}}
+run:
+  route: merge-request
+  warn-only: true
+  gates-job: {env: {PATH: "$FIXTURES/bin:$PATH"}}
+  input: {range: main..change}
+  target: {merge-request: 1}
+  ai: none
+expect:
+  status: pass
+  agent-calls: 0
+  findings: [{rule: not-triaged, level: warn, message: "1 new finding of the gates not triaged: no agent (--ai none); it stands as the gates report it"}]
+  no-findings: [{rule: triage}]
+  forge: {merge-requests: [{id: 1, comments: 0}]}

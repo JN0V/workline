@@ -1,6 +1,6 @@
 ---
-sources: [routing.default.yaml, roles/committer/role.yaml, roles/documentalist/role.yaml, roles/reviewer/role.yaml, roles/product-owner/role.yaml, roles/judge/role.yaml, roles/auditor/role.yaml]
-checked: b9e7900b
+sources: [routing.default.yaml, roles/committer/role.yaml, roles/documentalist/role.yaml, roles/reviewer/role.yaml, roles/inspector/role.yaml, roles/product-owner/role.yaml, roles/judge/role.yaml, roles/auditor/role.yaml]
+checked: a0b7c5a7
 judged: d34fd75
 verified: agent:claude-code
 ---
@@ -17,6 +17,7 @@ and where it stands: planned, beta or built, by
 | Committer | checks each commit's message, secrets and author | `commit-msg`, `pre-push`, `merge-request` | [committer](../roles/committer/README.md) |
 | Documentalist | keeps the docs true to the code they name | `pre-push`, `merge-request`, `main`, `schedule`, `release`, `init` | [documentalist](../roles/documentalist/README.md) |
 | Reviewer | says what a change, or a spec, breaks or leaves out; never approves | `review`, `spec`, `merge-request` and `schedule` (opt-in) | [reviewer](../roles/reviewer/README.md) |
+| Inspector | explains the findings a merge request adds to your gates; never their verdict | `merge-request` (opt-in), after the gates | [inspector](../roles/inspector/README.md) |
 | Product owner | keeps the open issues true to the code and ready to build, proposing on each issue | `schedule` (opt-in), `import` | [product owner](../roles/product-owner/README.md) |
 | Judge | answers one yes-or-no question a role's check cannot | asked by the other roles | [judge](../roles/judge/role.yaml) |
 | Auditor | re-checks a weekly sample of every role's acts | `workline sample` | [auditor](../roles/auditor/role.yaml) |
@@ -35,6 +36,9 @@ shipped, changed in `.workline/config.yaml` ([config](config.md)).
 - **The reviewer after the product owner** in `schedule` reads each spec it
   refines before it goes ready
   ([a spec on the forge](../roles/reviewer/docs/spec.md#on-the-forge)).
+- **The inspector after the gates** in `merge-request` triages what they
+  found the change adds, apart from the verdict
+  ([the inspector](../roles/inspector/README.md#set-it-up)).
 
 ## Behind the others
 

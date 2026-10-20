@@ -40,7 +40,8 @@
 #          The reviewer's lenses that only warn read apart, in
 #          workline-warn.yml (--warn-apart, ADR-0050; the first release
 #          after v0.36.0): the head's verdict waits only for what can block.
-#          It warns when no workflow reads them.
+#          So does the inspector's triage, when routed (ADR-0049). It
+#          warns when no workflow reads them.
 #
 # A merge queue's group (`merge_group`, ADR-0050; the first release after
 # v0.37.0): gates runs the gates on the merged result, judge only says
@@ -240,7 +241,7 @@ jobs:
           echo "status=$status" >> "$GITHUB_OUTPUT"
           echo "proposed=$(jq '(.pending // []) | length > 0' line.json)" >> "$GITHUB_OUTPUT"
           echo "found=$(jq '[.steps[]? | select(.name | startswith("documentalist")) | .result.findings[]?] | length > 0' line.json)" >> "$GITHUB_OUTPUT"
-          echo "reviewed=$(jq '[.steps[]? | select(.name == "reviewer")] | length > 0' line.json)" >> "$GITHUB_OUTPUT"
+          echo "reviewed=$(jq '[.steps[]? | select(.name == "reviewer" or .name == "inspector")] | length > 0' line.json)" >> "$GITHUB_OUTPUT"
           [ ! -s workline-summary.md ] || cat workline-summary.md
           [ ! -s workline-summary.md ] || cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"
           mkdir -p report && { [ ! -s workline-summary.md ] || cp workline-summary.md report/report.md; }
@@ -268,13 +269,14 @@ jobs:
         run: |
           grep -qsE 'workflows: \[workline[],]' .github/workflows/*.yml ||
             echo "::warning title=workline::no workflow applies what this run proposed, nor shows the docs' findings on their lines; copy workline-apply.yml beside workline.yml (docs/ci-github.md)"
-      # The reviewer's lenses that only warn, left to workline-warn.yml:
+      # The reviewer's lenses that only warn and the inspector's triage,
+      # left to workline-warn.yml:
       # said when no workflow reads them.
       - name: Whether anything reads the lenses that warn
         if: steps.line.outputs.reviewed == 'true' && github.event.pull_request.head.repo.full_name == github.repository
         run: |
           grep -qs -e '--warn-onl[y]' .github/workflows/*.yml ||
-            echo "::warning title=workline::no workflow reads the reviewer's lenses that warn, which this run left apart; copy workline-warn.yml beside workline.yml (docs/ci-github.md)"
+            echo "::warning title=workline::no workflow reads what this run left apart, the reviewer's lenses that warn or the inspector's triage; copy workline-warn.yml beside workline.yml (docs/ci-github.md)"
 
       # From a fork, this job has no right to comment: the report goes to
       # workline-fork.yml, which comments it from the repository's side.

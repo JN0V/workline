@@ -1,8 +1,8 @@
 <!-- workline
 sources: [ci/gitlab/workline.gitlab-ci.yml, ci/github/workline-fork.yml, routing.default.yaml, internal/forge/forge.go, internal/agent/agent.go, ci/github/workline-apply.yml, internal/gate, cmd/workline/cli.go, ci/github/workline.yml, ci/forgejo/workline-forge.sh, ci/github/workline-gardening.yml, ci/github/workline-sample.yml]
-checked: c9ebec38
+checked: a0b7c5a7
 judged: 220b6dc
-verified: agent:documentalist
+verified: agent:claude-code
 reader: e375241655b6
 -->
 <h1>
@@ -55,9 +55,9 @@ pull requests and nightly gardening of workline and of another project;
 | [**Documentalist**](roles/documentalist/README.md) | keeps the docs true to the code they name | [beta](roles/documentalist/docs/status.md) |
 | [**Reviewer**](roles/reviewer/README.md) | reads a change before a person does and says what it breaks; never approves | [beta](roles/reviewer/docs/status.md) |
 | [**Product owner**](roles/product-owner/README.md) | keeps the open issues true to the code, refined and in order | [beta](roles/product-owner/docs/status.md) |
+| [**Inspector**](roles/inspector/README.md) | explains the findings a merge request adds to your linters and scanners; never their verdict | [beta](roles/inspector/docs/status.md) |
 | [Judge](roles/judge/role.yaml) | answers one yes-or-no question for the other roles, from another context or model | [built](roles/judge/docs/status.md) |
 | [Auditor](roles/auditor/role.yaml) | re-checks a weekly sample of the roles' acts | [beta](roles/auditor/docs/status.md) |
-| [Inspector](https://github.com/JN0V/workline/issues/202) | will post the static-analysis findings a merge request adds | planned |
 | [Security](https://github.com/JN0V/workline/issues/204) | will add security scanners as gates and a security lens | planned |
 | [Developer](https://github.com/JN0V/workline/issues/117) | will take a ready issue and open the pull request | planned |
 | [Process engineer](https://github.com/JN0V/workline/issues/89) | will read the line's measures and propose fixes | planned |
@@ -114,13 +114,13 @@ Each role, from a hook, a script or a CI job: [triggers](docs/triggers.md).
 
 | What | Roles | Writes |
 |---|---|---|
-| each push to it; on GitHub, marked ready too | committer; documentalist; reviewer, opt-in | the docs' fix on its branch; each finding on its line, and one summary comment; the findings in the forge's code-scanning view; the job's summary |
+| each push to it; on GitHub, marked ready too | committer; documentalist; reviewer and inspector, opt-in | the docs' fix on its branch; each finding on its line, and one summary comment; the findings in the forge's code-scanning view; the job's summary |
 | a release tool's (release-please…) | documentalist, no agent: holds it while docs are due, judged at night | the docs due, said on its checks |
 | a fork's | judged with no agent | on GitHub, a comment; on GitLab, nothing |
 
 - The review is on the merge request; a person merges.
 - Templates: [GitHub Actions](ci/github/workline.yml),
-  [the lenses that warn, beside it](ci/github/workline-warn.yml),
+  [what only warns, beside it](ci/github/workline-warn.yml),
   [its jobs that write](ci/github/workline-apply.yml) and
   [its fork job](ci/github/workline-fork.yml),
   [GitLab CI](ci/gitlab/workline.gitlab-ci.yml). Setting up:
@@ -187,8 +187,9 @@ gates:
 ```
 
 - Everything else: [the gates spec](docs/spec/gates.md).
-- Not built yet: the inspector's triage of the new findings
-  ([#202](https://github.com/JN0V/workline/issues/202)); a SonarQube
+- The inspector explains what they add, apart from the verdict
+  ([the inspector](roles/inspector/README.md)).
+- Not built yet: a SonarQube
   quality gate read, never rerun
   ([#203](https://github.com/JN0V/workline/issues/203)); other outputs
   (k6 or benchmark JSON); baselines with an expiry date.

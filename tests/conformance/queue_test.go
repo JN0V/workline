@@ -299,6 +299,9 @@ func TestGitLabMergeTrainRunsTheGatesAlone(t *testing.T) {
 			job, _ := top[name].(map[string]any)
 			needs, _ := job["needs"].([]any)
 			for _, n := range needs {
+				if m, ok := n.(map[string]any); ok { // {job, artifacts}
+					n = m["job"]
+				}
 				if !slices.Contains(ran, fmt.Sprint(n)) {
 					t.Errorf("a %s pipeline: %s needs %v, which does not run", c.kind, name, n)
 				}

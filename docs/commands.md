@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/engine/engine.go, internal/hooks]
-checked: 3a71decc
+checked: a0b7c5a7
 verified: agent:claude-code
 judged: e343388
 ---
@@ -29,11 +29,14 @@ With `--gates-only`, the event's gates alone run, each one, for a CI job
 of their own; `--gates-from <file>` reads their verdicts from its result
 instead of running them ([gates in CI](gates-in-ci.md)).
 With `--warn-apart`, a role that reads what only warns apart on the event
-(role.yaml's `apart`: the reviewer's lenses that warn, on a merge request)
-leaves it; `--warn-only` runs only that, never a gate nor another role,
-and writes no verdict (`--verdict` refused): what only warns, apart from
-the verdict ([apart](../roles/reviewer/docs/apart.md)). Both flags, or one
-and an `--input warn=` naming the other run, are misuse.
+(role.yaml's `apart`: the reviewer's lenses that warn and the inspector's
+triage, on a merge request) leaves it; `--warn-only` runs only that,
+never a gate nor another role, and writes no verdict (`--verdict`
+refused): what only warns, apart from the verdict
+([apart](../roles/reviewer/docs/apart.md)). Given `--gates-from`, it
+hands the gates' result to the inspector
+([the inspector](../roles/inspector/README.md#set-it-up)). Both flags, or
+one and an `--input warn=` naming the other run, are misuse.
 A release tool's merge request: on `schedule` with a forge and
 `--open-merge-request`, its docs are judged first, on its head;
 `route release --target merge-request:<n>` does it now, its head checked

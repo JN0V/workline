@@ -1,0 +1,32 @@
+case: inspector/gates-of-another-head-not-triaged
+about: >
+  The run apart is given a gates' result for other commits than it
+  judges: a push landed after the gates ran. Their findings are given to
+  no step, said; the inspector triages nothing and asks no agent, never
+  explaining a finding the head may not hold.
+given:
+  repo: linted
+  setup:
+    - git checkout -q -b change
+    - |
+      sed -i 's|^\tos.Remove("c.tmp")$|&\n\tos.Remove("d.tmp")|' clean.go && git commit -qam "feat: clean d too"
+  forge: {merge-requests: [{id: 1, branch: change, labels: [], comments: []}]}
+  config:
+    routing: {events: {merge-request: [committer, "gate:merge", inspector]}}
+    gates: {merge: {checks: [{id: lint, run: "golangci-lint run --output.sarif.path={out}/lint.sarif", output: sarif, max: {error: 0}}]}}
+run:
+  route: merge-request
+  warn-only: true
+  gates-job:
+    env: {PATH: "$FIXTURES/bin:$PATH"}
+    after: ["printf '\\n// done cleans nothing more.\\nfunc done() {}\\n' >> clean.go && git commit -qam 'feat: say when the cleaning is done'"]
+  input: {range: main..change}
+  target: {merge-request: 1}
+  ai: "cmd:sh $FIXTURES/agents/triage.sh"
+expect:
+  status: pass
+  agent-calls: 0
+  findings:
+    - {rule: gates-unread, level: warn, message: "this run judges \"main..change\": their findings are given to no step of this run"}
+    - {rule: gates-not-given, level: warn}
+  forge: {merge-requests: [{id: 1, comments: 0}]}

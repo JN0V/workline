@@ -16,6 +16,11 @@
 # Without the reviewer in the line, or with every lens blocking, it ends at
 # once.
 #
+# The inspector's triage too, when the line routes it (ADR-0049): it waits
+# for workline.yml's gates job on the same head, reads the result that job
+# left (`--gates-from`), and posts the triage in a comment of its own. The
+# gates never run here: this job holds the agent's token.
+#
 # The pull request's own, as workline.yml: GitHub runs the copy its branch
 # holds; no write token, never the GitHub App's key (ADR-0044). With the
 # secret CLAUDE_CODE_OAUTH_TOKEN (`claude setup-token`, a Claude
@@ -42,8 +47,9 @@ jobs:
     # waits while the run before it is applied, then reads its record.
     concurrency: {group: "workline-warn-review-${{ github.event.pull_request.number }}", cancel-in-progress: false}
     # pull-requests read: its own comment, the record of what it read, and
-    # the pull request's title and body.
-    permissions: {contents: read, pull-requests: read}
+    # the pull request's title and body; actions read: the gates' result
+    # of workline.yml's run, for the inspector.
+    permissions: {contents: read, pull-requests: read, actions: read}
     env:
       HAS_CLAUDE: "${{ secrets.CLAUDE_CODE_OAUTH_TOKEN != '' }}"
     steps:
@@ -53,20 +59,22 @@ jobs:
       - uses: actions/checkout@v4
         if: env.HAS_CLAUDE == 'true'
         with: {fetch-depth: 0, ref: "${{ github.event.pull_request.head.sha }}"}
-      # The lenses that warn are the reviewer's: with no reviewer in the
-      # project's config, nothing reads apart, nothing is installed. Nor
-      # when no workflow applies what they propose, said: their record would
-      # never move, and every push read them all again.
+      # What reads apart is the reviewer's lenses that warn and the
+      # inspector's triage: with neither in the project's config, nothing
+      # reads apart, nothing is installed. Nor when no workflow applies what
+      # they propose, said: their record would never move, and every push
+      # read them all again.
       - name: Whether anything reads apart
         id: any
         if: env.HAS_CLAUDE == 'true'
         run: |
-          if ! grep -qsw reviewer .workline/config.yaml; then
-            echo "no reviewer in .workline/config.yaml, nothing reads apart"
+          if ! grep -qswE 'reviewer|inspector' .workline/config.yaml; then
+            echo "no reviewer nor inspector in .workline/config.yaml, nothing reads apart"
           elif ! grep -qsE 'workflows: \[.*workline warn' .github/workflows/*.yml; then
             echo "::warning title=workline::no workflow applies what the lenses that warn propose, so they do not read; copy workline-apply.yml of this release beside workline-warn.yml (docs/ci-github.md)"
           else
             echo "any=true" >> "$GITHUB_OUTPUT"
+            ! grep -qsw inspector .workline/config.yaml || echo "triage=true" >> "$GITHUB_OUTPUT"
           fi
       # The engine built from this commit, taken from the cache when a job
       # built it first, for no job after; and the agent.
@@ -77,6 +85,27 @@ jobs:
       - name: Claude
         if: steps.any.outputs.any == 'true' && !github.event.pull_request.draft
         run: npm install -g @anthropic-ai/claude-code
+      # The inspector triages what the gates found the change adds
+      # (ADR-0049): their result as workline.yml's gates job left it for
+      # this head, the same the verdict counted; never the gates run again
+      # here, in the agent's reach. Waited for, 15 minutes at most; none,
+      # said, and the triage reads nothing. Not on a draft, which asks no
+      # agent (ADR-0050).
+      - name: The gates' findings, from workline.yml's run of this head
+        if: steps.any.outputs.triage == 'true' && !github.event.pull_request.draft
+        env: {GH_TOKEN: "${{ github.token }}", HEAD_SHA: "${{ github.event.pull_request.head.sha }}"}
+        run: |
+          run=
+          for i in $(seq 90); do
+            run=$(gh run list -R "$GITHUB_REPOSITORY" --workflow workline.yml --commit "$HEAD_SHA" --event pull_request --json databaseId --jq '.[0].databaseId // empty')
+            [ -z "$run" ] || [ "$(gh run view "$run" -R "$GITHUB_REPOSITORY" --json jobs --jq '[.jobs[] | select(.name == "gates")][0].status // empty')" != completed ] || break
+            sleep 10
+          done
+          if [ -n "$run" ] && gh run download "$run" -R "$GITHUB_REPOSITORY" -n workline-gates -D "$RUNNER_TEMP/gates"; then
+            echo "the gates' result of workline.yml's run $run"
+          else
+            echo "::warning title=workline::no gates' result from workline.yml's run of $HEAD_SHA: the inspector triages nothing"
+          fi
       - name: What only warns, apart from the verdict (proposals only)
         id: line
         if: steps.any.outputs.any == 'true'
@@ -91,11 +120,12 @@ jobs:
           DRAFT: ${{ github.event.pull_request.draft }}
         run: |
           ready=; case "$ACTION:$DRAFT" in opened:false|ready_for_review:*) ready=1 ;; esac
+          gates=; [ ! -s "$RUNNER_TEMP/gates/gates.json" ] || gates="$RUNNER_TEMP/gates/gates.json"
           status=0
           workline route merge-request --warn-only --ai claude --no-apply \
             --forge github --target merge-request:${{ github.event.pull_request.number }} --branch "$HEAD_REF" \
             --input range=${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} ${ready:+--input lenses=all} --input draft="$DRAFT" \
-            --summary workline-summary.md --json > line.json || status=$?
+            ${gates:+--gates-from "$gates"} --summary workline-summary.md --json > line.json || status=$?
           echo "status=$status" >> "$GITHUB_OUTPUT"
           echo "proposed=$(jq '(.pending // []) | length > 0' line.json)" >> "$GITHUB_OUTPUT"
           [ ! -s workline-summary.md ] || cat workline-summary.md

@@ -1,6 +1,6 @@
 ---
 sources: [internal/gate/added.go, internal/line/line.go, internal/report/gates.go, internal/report/report.go, internal/engine/annotate.go, cmd/workline/main.go]
-checked: 8a4d71eb
+checked: 6970b95e
 verified: agent:claude-code
 ---
 # Gates — the new findings shown on a merge request
@@ -35,6 +35,11 @@ the findings a change adds go, and how
   (`commits`), a branch moved since names others.
 - **A gate's findings are reported by the job that ran it**: a step read
   from a file adds none to `--sarif` nor `--code-quality`.
+- **The run apart** (`--warn-only --gates-from <file>`) reads no verdict
+  there: it hands that result to the inspector, which triages the new
+  findings, only for the commits it judges; for others, said
+  (`gates-unread`), none given
+  ([the inspector](../../roles/inspector/README.md)).
 
 ## Where they go
 
@@ -51,7 +56,7 @@ the findings a change adds go, and how
     edited on each push: a row per check, a line per rule with its first
     three places, as many rules as the reviewer's `findings-max`.
 - **Never code scanning** on a merge request: `--sarif` leaves the gates'
-  findings out.
+  findings out, and the inspector's triage of them.
 - **Nothing to say**: with no new finding and every check passing, no
   check is written; the comment is only edited where an earlier push
   left one.

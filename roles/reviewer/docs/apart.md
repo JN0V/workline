@@ -1,8 +1,8 @@
 ---
 sources: [roles/reviewer/role.yaml, internal/builtin/reviewer/reviewer.go, internal/builtin/reviewer/record.go, internal/line/line.go, ci/github/workline.yml, ci/github/workline-warn.yml, ci/github/workline-apply.yml, ci/gitlab/workline.gitlab-ci.yml]
-checked: f5008630
+checked: 6970b95e
 judged: a5cd2cf
-verified: agent:documentalist
+verified: agent:claude-code
 ---
 # Reviewer — the lenses that warn, apart from the verdict
 
@@ -94,12 +94,17 @@ beside the verdict's, and posts once it answered.
   `judge` warns that nothing reads them; with an older
   workline-apply.yml, which does not name it, `warn` warns and reads
   nothing: unposted, its record would never move.
-- **GitLab**: `workline:warn`, from the pipeline's start, then
+- **GitLab**: `workline:warn`, after `workline:gates`, then
   `workline:warn:apply`, with the agent's token and the bot's; without
   the bot's, the lenses that warn read in `workline:judge`, said in its
   log and summary. Neither fails the pipeline
   ([CI on GitLab](../../../docs/ci-gitlab.md)). GitLab
   merges once the pipeline succeeds: the merge waits for them, never on
   what they find.
-- **No agent, or no reviewer in the line**: the run apart ends at once.
+- **No agent, or neither the reviewer nor the inspector in the line**:
+  the run apart ends at once.
+- **The inspector's triage** reads in the same run, given what the gates
+  found, its own comment beside this one; with it routed, the run waits
+  for the gates' job first, but on a draft
+  ([the inspector](../../inspector/README.md)).
 - **On a machine**: `workline review` asks every lens in one run.

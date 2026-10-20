@@ -557,14 +557,20 @@ func TestWarnApartSaysWhatIsMissing(t *testing.T) {
 		return ""
 	}
 	// run runs a step's script in a folder holding these workflows and, with
-	// reviewer, a config routing the reviewer; it says whether the step
-	// warned, and whether it said the run apart reads (any=true).
+	// reviewer, a config routing the reviewer (routed, when set, the roles
+	// it routes instead); it says whether the step warned, and whether it
+	// said the run apart reads (any=true), and triage (triage=true).
+	routed, triage := "", false
 	run := func(script string, files map[string]string, reviewer bool) (warned, reads bool) {
 		dir := t.TempDir()
 		os.MkdirAll(filepath.Join(dir, ".github", "workflows"), 0o755)
 		os.MkdirAll(filepath.Join(dir, ".workline"), 0o755)
+		roles := "reviewer"
+		if routed != "" {
+			roles = routed
+		}
 		if reviewer {
-			os.WriteFile(filepath.Join(dir, ".workline", "config.yaml"), []byte("routing: {events: {merge-request: [committer, reviewer]}}\n"), 0o644)
+			os.WriteFile(filepath.Join(dir, ".workline", "config.yaml"), []byte("routing: {events: {merge-request: [committer, "+roles+"]}}\n"), 0o644)
 		}
 		for name, from := range files {
 			data, err := os.ReadFile(from)
@@ -588,6 +594,7 @@ func TestWarnApartSaysWhatIsMissing(t *testing.T) {
 			t.Fatalf("%s: %v\n%s", script, err, out)
 		}
 		said, _ := os.ReadFile(output)
+		triage = strings.Contains(string(said), "triage=true")
 		return strings.Contains(string(out), "::warning"), strings.Contains(string(said), "any=true")
 	}
 	warns := func(script string, files map[string]string) bool {
@@ -613,6 +620,23 @@ func TestWarnApartSaysWhatIsMissing(t *testing.T) {
 		}
 		if warned, reads := run(apart, map[string]string{"workline-warn.yml": dir + "workline-warn.yml", "workline-apply.yml": dir + "workline-apply.yml"}, false); warned || reads {
 			t.Errorf("%sworkline-warn.yml: with no reviewer, warned %v, reads %v; want neither", dir, warned, reads)
+		}
+		if _, reads := run(apart, map[string]string{"workline-warn.yml": dir + "workline-warn.yml", "workline-apply.yml": dir + "workline-apply.yml"}, true); triage {
+			t.Errorf("%sworkline-warn.yml: the reviewer alone routed, reads %v, and waits for the gates' result: no inspector triages it", dir, reads)
+		}
+		// The inspector alone reads apart too, waiting for the gates'
+		// result it triages (ADR-0049).
+		routed = "\"gate:lint\", inspector"
+		if warned, reads := run(apart, map[string]string{"workline-warn.yml": dir + "workline-warn.yml", "workline-apply.yml": dir + "workline-apply.yml"}, true); warned || !reads || !triage {
+			t.Errorf("%sworkline-warn.yml: with the inspector alone, warned %v, reads %v, triage %v; want a read and the gates' result, no warning", dir, warned, reads, triage)
+		}
+		routed = ""
+		triageJudge := script(dir+"workline.yml", "The line for this pull request (proposals only)")
+		if !strings.Contains(triageJudge, `select(.name == "reviewer" or .name == "inspector")`) {
+			t.Errorf("%sworkline.yml: the judge says not that nothing reads the inspector's triage it left apart", dir)
+		}
+		if line := script(dir+"workline-warn.yml", "What only warns, apart from the verdict (proposals only)"); !strings.Contains(line, `${gates:+--gates-from "$gates"}`) {
+			t.Errorf("%sworkline-warn.yml: the run apart is not given the gates' result for the inspector", dir)
 		}
 		applies := script(dir+"workline.yml", "Whether anything applies what it proposed")
 		if warns(applies, map[string]string{"workline.yml": dir + "workline.yml", "workline-apply.yml": dir + "workline-apply.yml"}) {
@@ -747,8 +771,18 @@ func TestWarnApartNeverHoldsTheVerdict(t *testing.T) {
 	}
 	warn, _ := top["workline:warn"].(map[string]any)
 	script := fmt.Sprint(warn["script"])
-	if !strings.Contains(script, "--warn-only") || strings.Contains(script, "--verdict") || strings.Contains(script, "--code-quality") || fmt.Sprint(warn["needs"]) != "[]" {
-		t.Errorf("workline:warn: does not read what only warns alone, from the pipeline's start, with no verdict nor report (needs %v): %s", warn["needs"], script)
+	if !strings.Contains(script, "--warn-only") || strings.Contains(script, "--verdict") || strings.Contains(script, "--code-quality") || fmt.Sprint(warn["needs"]) != "[map[artifacts:true job:workline:gates]]" {
+		t.Errorf("workline:warn: does not read what only warns alone, after the gates and given their result, with no verdict nor report (needs %v): %s", warn["needs"], script)
+	}
+	// The inspector triages the gates' findings (ADR-0049): whatever their
+	// verdict, read from their job, never run here.
+	rules, _ := warn["rules"].([]any)
+	var rule map[string]any
+	if len(rules) == 1 {
+		rule, _ = rules[0].(map[string]any)
+	}
+	if rule["when"] != "always" || !strings.Contains(script, "--gates-from") || strings.Contains(script, "--gates-only") {
+		t.Errorf("workline:warn: does not read the gates' result whatever their verdict (rules %v): %s", rules, script)
 	}
 	for _, name := range []string{"workline:warn", "workline:warn:apply"} {
 		if job, _ := top[name].(map[string]any); job["allow_failure"] != true {

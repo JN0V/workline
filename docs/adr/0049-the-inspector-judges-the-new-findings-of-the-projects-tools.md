@@ -1,6 +1,6 @@
 # ADR-0049: The inspector judges the new findings of the project's own tools
 
-- **Status:** accepted; steps 1 to 3 built ([the build plan](#build-plan))
+- **Status:** accepted; steps 1 to 4 built ([the build plan](#build-plan))
 - **Date:** 2026-10-18
 - **Decided by:** the maintainer, on 2026-10-18: the direction a panel of
   four argued (users, principles, prior art, skeptic), and the three
@@ -181,7 +181,14 @@
    - **On GitLab**, every job holds the project's variables: the gates'
      job unsets the agent's and the bot's tokens, which keeps them from
      the tools' environment only.
-4. `roles/inspector`: the AI's triage, and runs with no agent.
+4. `roles/inspector`: the AI's triage, and runs with no agent. Built
+   ([#574](https://github.com/JN0V/workline/pull/574),
+   [the inspector](../../roles/inspector/README.md)): one call a push
+   with new findings, each kept by its fingerprint, in a comment of its
+   own, in the run apart given the gates' job's result. Measured on a
+   copy of workline, an unchecked `os.Rename` and a deferred `os.Remove`
+   planted: 2,275 tokens in, the defect first, the removal a likely false
+   positive, the gate's block unchanged.
 5. A golangci-lint gate on workline itself: [#202]'s Validation.
 6. [#203]: SonarQube read as a gate.
 

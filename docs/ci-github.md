@@ -1,6 +1,6 @@
 ---
 sources: [ci/github, .github/workflows/workline.yml, .github/workflows/workline-apply.yml, .github/workflows/workline-gardening.yml, .github/workflows/workline-sample.yml, .github/actions/engine/action.yml, .github/workflows/release.yml, .github/workflows/release-please.yml, release-please-config.json, .goreleaser.yaml, cmd/workline]
-checked: 8a4d71eb
+checked: 6970b95e
 judged: 220b6dc
 verified: agent:claude-code
 reader: fe1505d43360
@@ -51,14 +51,16 @@ write run the default branch's workflow, never a pull request's own
      rename `main` in its `push:` for another default branch.
    - [workline-warn.yml](../ci/github/workline-warn.yml): `warn` beside
      `judge`, the reviewer's lenses that only warn, apart from the
-     verdict ([apart](../roles/reviewer/docs/apart.md)); without it,
-     `judge` warns that nothing reads them; it reads only beside this
-     release's workline-apply.yml, else warns.
+     verdict ([apart](../roles/reviewer/docs/apart.md)), and the
+     inspector's triage, given what `gates` found: it waits for that job
+     (`actions: read`) ([the triage in CI](gates-in-ci.md#the-inspectors-triage));
+     without it, `judge` warns that nothing reads them; it reads only
+     beside this release's workline-apply.yml, else warns.
    - [workline-apply.yml](../ci/github/workline-apply.yml), from the
      default branch:
      - `apply` after each `judge`, the fixes committed to the pull
        request's branch, and after each `warn`, the comment of the
-       lenses that warn;
+       lenses that warn and the inspector's;
      - `main` after main's run: what it found, in one issue;
      - `follow` on each push to `main`
        ([ADR-0034](adr/0034-the-release-fix-follows-its-base.md)): the

@@ -1,6 +1,6 @@
 ---
 sources: [ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile]
-checked: 68c17080
+checked: a0b7c5a7
 judged: cd97f28
 verified: agent:claude-code
 reader: 9799dcaf51f3
@@ -179,9 +179,11 @@ a cron off the hour (`13 17 * * *`) was listed as due at 18:00 and ran at
 - **The reviewer's lenses that only warn** read apart from the verdict:
   `workline:judge` asks those that block (`--warn-apart`; without
   `WORKLINE_GITLAB_TOKEN`, every lens, said in its log and summary);
-  `workline:warn`, from the pipeline's start, with the agent's token and
-  the bot's, asks the others (`--warn-only`), and `workline:warn:apply` posts them in
-  a comment of their own. Neither fails the pipeline (`allow_failure`);
+  `workline:warn`, after `workline:gates` whatever its verdict, with the
+  agent's token and the bot's, asks the others (`--warn-only`), and the
+  inspector's triage given the gates' `gates.json`
+  ([the triage in CI](gates-in-ci.md#the-inspectors-triage)); `workline:warn:apply` posts them,
+  each in a comment of its own. Neither fails the pipeline (`allow_failure`);
   `workline:merge` reads the verdict from `workline:judge` alone. GitLab
   merges once the pipeline succeeds: the merge waits for them, never on
   what they find ([apart](../roles/reviewer/docs/apart.md)).

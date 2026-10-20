@@ -1,0 +1,46 @@
+case: inspector/findings-past-the-cap-asked-at-the-next-push
+about: >
+  Past `findings-max`, the new findings left are not put to the agent: the
+  comment and the run say how many, asked at the next push. The next run
+  asks only those, the one triaged before named for its place only; the
+  comment then holds both.
+given:
+  repo: linted
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - git checkout -q -b change
+    - |
+      sed -i 's|^\tos.Remove("c.tmp")$|&\n\tos.Remove("d.tmp")|' clean.go
+      printf 'package main\n\nimport "os"\n\n// scratch writes a temporary file and removes it on the way out.\nfunc scratch() {\n\tf, _ := os.CreateTemp("", "scratch")\n\tdefer os.Remove(f.Name())\n}\n' > cleanup.go
+      git add . && git commit -qm "feat: clean d too, and a scratch file" && git push -q origin change
+  forge: {merge-requests: [{id: 1, branch: change, labels: [], comments: []}]}
+  config:
+    routing: {events: {merge-request: [committer, "gate:merge", inspector]}}
+    gates: {merge: {checks: [{id: lint, run: "golangci-lint run --output.sarif.path={out}/lint.sarif", output: sarif, max: {error: 0}}]}}
+    roles: {inspector: {settings: {findings-max: 1}}}
+run:
+  route: merge-request
+  warn-only: true
+  then: again
+  gates-job: {env: {PATH: "$FIXTURES/bin:$PATH"}}
+  input: {range: main..change}
+  target: {merge-request: 1}
+  ai: "cmd:sh $FIXTURES/agents/triage.sh"
+expect:
+  status: pass
+  agent-calls: 2
+  findings:
+    - {rule: findings-max, level: warn, message: "1 more new finding of the gates not triaged this run (findings-max 1): asked at the next push"}
+  run-files:
+    in/parts/triage/task.md:
+      contains:
+        - "## t1 — `errcheck (golangci-lint)`, clean.go:10 (error)"
+        - "## t1 — `errcheck (golangci-lint)`, cleanup.go:8 (error)"
+        - "- r1 — `errcheck (golangci-lint)`, clean.go:10: an unchecked os.Remove"
+  forge:
+    merge-requests:
+      - id: 1
+        comments: 1
+        comment-contains:
+          - ": 2 triaged, 1 likely a false positive."
+          - "2. **`errcheck (golangci-lint)`** at `cleanup.go:8`: **likely a false positive**"

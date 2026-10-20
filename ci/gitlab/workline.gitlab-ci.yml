@@ -21,9 +21,11 @@
 #          (--warn-apart, ADR-0050; the first release after v0.36.0) when
 #          WORKLINE_GITLAB_TOKEN is set; else they read here, said.
 #   warn   beside judge, with the agent's token: the reviewer's lenses that
-#          only warn (--warn-only); warn:apply posts what they found, in a
-#          comment of their own. Neither fails the pipeline, nor holds the
-#          head's verdict, which workline:merge reads from judge alone.
+#          only warn (--warn-only), and the inspector's triage of what the
+#          gates found, given their result (ADR-0049); warn:apply posts
+#          what they found, each in a comment of its own. Neither fails the
+#          pipeline, nor holds the head's verdict, which workline:merge
+#          reads from judge alone.
 #   The findings show in the merge request's Code Quality report, on every tier.
 #   Each job also writes its summary (`--summary`): what ran, each step's
 #   verdict, the findings, what waits to be applied; the applying job adds
@@ -257,25 +259,29 @@ workline:apply:
 # merge waits for them, never on what they find. With the agent's token
 # and the bot's: unposted, their record would never move, and every
 # pipeline read them all again. One review apart at a time per merge
-# request.
+# request. The inspector's triage too, when the line routes it (ADR-0049):
+# after workline:gates, whatever its verdict, it reads the result that job
+# left (`--gates-from`); the gates never run here, in the agent's reach.
 workline:warn:
   extends: .workline
   stage: test
-  needs: []
+  needs: [{job: "workline:gates", artifacts: true}]
   interruptible: true
   resource_group: workline-warn-$CI_MERGE_REQUEST_IID
   variables: {WORKLINE_STICKY: reviewer/warn}   # the ready note read against its own comment
-  rules:
+  rules:                            # also when the gates did not pass: their findings are what the inspector triages
     - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_EVENT_TYPE != "merge_train" && $CLAUDE_CODE_OAUTH_TOKEN && $WORKLINE_GITLAB_TOKEN
+      when: always
   script:
     - *ready
     - *claude
+    - gates=; [ ! -s gates.json ] || gates=gates.json
     - status=0
     - >
       workline route merge-request --warn-only --ai "$ai" --no-apply
       --forge gitlab --target merge-request:$CI_MERGE_REQUEST_IID --branch "$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME"
       --input range=$CI_MERGE_REQUEST_DIFF_BASE_SHA..$CI_COMMIT_SHA $lenses ${draft:+--input draft=$draft}
-      --summary workline-summary.md --summary workline-summary.html --json > line.json || status=$?
+      ${gates:+--gates-from $gates} --summary workline-summary.md --summary workline-summary.html --json > line.json || status=$?
     - '[ "$status" != 3 ] || echo "workline: the agent could not be reached: the lenses that warn did not read this push"'
     - '[ "$status" = 0 ] || [ "$status" = 3 ] || exit $status'
   allow_failure: true

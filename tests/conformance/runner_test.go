@@ -767,15 +767,31 @@ func runCase(t *testing.T, c *caseFile) []string {
 		into.Findings = append(into.Findings, posted.Findings...)
 		return nil
 	}
-	if j := c.Run.GatesJob; j != nil {
-		// CI's job of the gates alone, before the line: its own variables,
-		// its result the file the line reads.
-		gatesFile := filepath.Join(work, "gates.json")
-		jobArgs := append(slices.Clone(args), "--gates-only")
+	// CI's job of the gates alone, before the line: its own variables,
+	// its result the file the line reads; the run apart's flags left to
+	// the line (--warn-only runs no gate). Run again before a second push's
+	// run (then: again with again-after), as CI runs it on each push.
+	gatesFile := filepath.Join(work, "gates.json")
+	gatesJobRun := func() []string {
+		j := c.Run.GatesJob
+		var jobArgs []string
+		for i := 0; i < len(args); i++ {
+			switch args[i] {
+			case "--warn-only", "--warn-apart":
+			case "--gates-from": // its own result, the second time
+				i++
+			default:
+				jobArgs = append(jobArgs, args[i])
+			}
+		}
+		jobArgs = append(jobArgs, "--gates-only")
 		for i := 0; i+1 < len(jobArgs); i++ {
 			if k, _, ok := strings.Cut(jobArgs[i+1], "="); jobArgs[i] == "--input" && ok {
 				if v, given := j.Input[k]; given {
 					jobArgs[i+1] = k + "=" + v
+				}
+				if k == "warn" {
+					jobArgs[i+1] = "warn=" // the line's, never the gates' job's
 				}
 			}
 		}
@@ -789,10 +805,16 @@ func runCase(t *testing.T, c *caseFile) []string {
 			return []string{fmt.Sprintf("the gates' job printed nothing: %v", err)}
 		}
 		os.WriteFile(gatesFile, out, 0o644)
-		if p := inRepo(repo, j.After); len(p) > 0 {
+		return inRepo(repo, j.After)
+	}
+	if c.Run.GatesJob != nil {
+		if p := gatesJobRun(); len(p) > 0 {
 			return p
 		}
 		cmd.Args = append(cmd.Args, "--gates-from", gatesFile)
+		// The runs after it (then: again, apart) read the same job's
+		// result, as CI's jobs of the same push do.
+		args = append(args, "--gates-from", gatesFile)
 	}
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &stdout, &stderr
@@ -822,6 +844,11 @@ func runCase(t *testing.T, c *caseFile) []string {
 			os.Rename(cqFile, cqFile+".first")
 			if p := inRepo(repo, c.Run.AgainAfter); len(p) > 0 {
 				return p
+			}
+			if c.Run.GatesJob != nil {
+				if p := gatesJobRun(); len(p) > 0 {
+					return p
+				}
 			}
 		}
 		again := exec.Command(engineBin, args...)
