@@ -15,6 +15,7 @@ expect:
     workline/documentalist/suspect: {docs/tech/auth.md: "checked: abcdef1\njudged: 1a8e5a4\n---\n# Authentication\n\n## Token refresh\n\nAccess tokens last two hours."}
   pushed-message: {workline/documentalist/suspect: "Workline-Role: documentalist"}
   on-top: {workline/documentalist/suspect: main}
+  signed: {workline/documentalist/suspect: false}   # git not set to sign: none, as before (#549)
   forge:
     merge-requests:
       - {id: 4, branch: workline/documentalist/suspect, closed: false}

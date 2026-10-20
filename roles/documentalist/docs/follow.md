@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine/settle.go, internal/engine/follow.go, roles/documentalist/role.yaml]
-checked: dba82333
+checked: f5008630
 verified: agent:claude-code
 ---
 # Documentalist — a pull request in conflict on workline's lines
@@ -77,6 +77,10 @@ push to the default branch.
 - **Pushed as a fast-forward, never forced**, a lease on the tip it read:
   a push of theirs meanwhile stays, a branch deleted is not brought back;
   the next push to the base tries again.
+- **Signed when git is set to sign** (`commit.gpgsign`), with its key, as
+  `git commit` signs: a forge refusing unsigned commits takes it. A key
+  missing or refused: nothing pushed, the job fails and says so
+  ([signed commits on GitLab](../../../docs/gitlab/signed-commits.md)).
 - **Only files are settled**: a submodule or a link in conflict is the
   person's.
 - **The token**: on GitHub, the App's runs the pull request's checks

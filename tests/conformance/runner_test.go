@@ -210,6 +210,7 @@ type expectSpec struct {
 	PushedMsg    map[string]string            `yaml:"pushed-message"` // branch -> a text the message of the remote branch's tip holds
 	NotPushed    []string                     `yaml:"not-pushed"`     // branches of the remote the run left where they were
 	OnTop        map[string]string            `yaml:"on-top"`         // branch -> the branch of the remote its tip holds
+	Signed       map[string]bool              `yaml:"signed"`         // branch -> the remote branch's tip carries a signature git verifies (true), or none (false)
 	Merged       map[string]string            `yaml:"merged"`         // branch -> base: the remote branch's tip merges base's tip into its tip before the run, its first parent
 	Gone         []string                     `yaml:"gone"`           // branches of the remote absent after the run
 	Forge        *forgeWant                   `yaml:"forge"`
@@ -1251,6 +1252,16 @@ func compare(c *caseFile, r *result, repo string) []string {
 		exec.Command("git", "-C", repo, "fetch", "-q", "origin").Run()
 		if exec.Command("git", "-C", repo, "merge-base", "--is-ancestor", "origin/"+base, "origin/"+branch).Run() != nil {
 			p = append(p, fmt.Sprintf("origin's %s is not on top of origin's %s", branch, base))
+		}
+	}
+	for branch, want := range e.Signed {
+		exec.Command("git", "-C", repo, "fetch", "-q", "origin").Run()
+		if want {
+			if out, err := exec.Command("git", "-C", repo, "verify-commit", "origin/"+branch).CombinedOutput(); err != nil {
+				p = append(p, fmt.Sprintf("the tip of origin's %s carries no signature git verifies: %s", branch, out))
+			}
+		} else if out, _ := exec.Command("git", "-C", repo, "log", "-1", "--format=%G?", "origin/"+branch).Output(); strings.TrimSpace(string(out)) != "N" {
+			p = append(p, fmt.Sprintf("the tip of origin's %s is signed (%s), want no signature", branch, strings.TrimSpace(string(out))))
 		}
 	}
 	if e.RefusedKept > 0 {

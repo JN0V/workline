@@ -1,6 +1,6 @@
 ---
 sources: [ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile]
-checked: ebe6dfdd
+checked: f5008630
 judged: cd97f28
 verified: agent:claude-code
 reader: 9799dcaf51f3
@@ -257,6 +257,12 @@ run by hand (Build → Pipelines → Run pipeline, the variable
 ([its variables](gitlab-trigger.md#tokens-and-variables)):
 
 the two jobs to add are in [gitlab/import-jobs.md](gitlab/import-jobs.md).
+
+## A project that refuses unsigned commits
+
+The push rule *Reject unsigned commits* refuses the bot's pushes too:
+give it an SSH key, the File variable `WORKLINE_SIGNING_KEY`, and the
+template signs its commits ([how](gitlab/signed-commits.md)).
 
 ## A self-managed GitLab
 
