@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/notes.go, internal/builtin/documentalist/values.go, internal/builtin/documentalist/judge.go, internal/builtin/documentalist/documentalist.go]
-checked: 7eadd606
+checked: c8ff7ad5
 verified: agent:claude-code
 ---
 # Documentalist — the judge
@@ -184,6 +184,10 @@ These findings are added, never refusing:
   - The files of `versions.files` (a `pyproject.toml`, a `package.json`)
     are every doc's sources there.
   - Left out: history docs; a version given as a range (`>=1.4.1`,
-    `^1.4.1`), what a dependant accepts; a version after a history marker
-    ("First available in v1.9.0", "Added in", "since", "New in version",
-    "Deprecated in", `versionadded::`), which says when something came.
+    `^1.4.1`), what a dependant accepts; in prose, a version after a
+    history marker ("First available in v1.9.0", "Added in", "since",
+    "from", "after", "New in version", "Deprecated in", `versionadded::`),
+    which says when something came, or given as a minimum ("1.4.1 or
+    later", "and newer"). The same reading decides whether a release's
+    bump holds a doc ([the checks](checks.md#suspects),
+    [#346](https://github.com/JN0V/workline/issues/346)).
