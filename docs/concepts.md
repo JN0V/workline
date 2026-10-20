@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine/engine.go, internal/line, internal/routing, internal/verdict, routing.default.yaml]
-checked: 1279892d
+checked: 2f8eac9d
 verified: agent:claude-code
 judged-in-parts: 5d66009
 judged: 71c5f05
@@ -58,8 +58,9 @@ job that holds the write token and no AI key. Each run is kept in
 | `blocked-external` | 3 | something outside failed (agent quota, forge): never a verdict on the work |
 
 A **finding** has a rule, a place and a level: `block` or `warn`. A new
-rule starts as `warn`; `enforce` in the config moves a rule between `block`,
-`warn` and `off`.
+rule starts as `warn`; `enforce` in the config lowers a rule to `warn` or
+`off` (raising one to `block`: [#99](https://github.com/JN0V/workline/issues/99)).
+A warning never blocks ([warn before block](spec/role-outcome.md#warn-before-block)).
 
 ## Without AI
 
