@@ -37,6 +37,12 @@ func TestRunWaitIsBounded(t *testing.T) {
 		t.Fatalf("an agent failing with time left failed on its own: %v", err)
 	}
 
+	res.waitSince = time.Now().Add(-20 * time.Second)
+	got, _ = res.bounded(r)
+	if limit, _ := got.Model.AnswerTimeout(); limit > 10*time.Second || limit < 9*time.Second {
+		t.Fatalf("a later call, a retry, may take what is left of the run's 30 s, not 30 s more: %v", limit)
+	}
+
 	res.waitSince = time.Now().Add(-31 * time.Second)
 	if !res.overTime() {
 		t.Fatal("31 s waited, 30 allowed: over")
