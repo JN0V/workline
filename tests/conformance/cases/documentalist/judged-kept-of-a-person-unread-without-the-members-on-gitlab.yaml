@@ -15,7 +15,7 @@ expect:
   agent-calls: 2
   not-pushed: [feature]
   findings:
-    - {rule: members-unread, level: warn, message: "one a person's token wrote is not taken on its word, and the docs it kept are judged again"}
+    - {rule: members-unread, level: warn, message: "is read as the documentalist's; @workline-bot's on merge request 1 not taken on its word: the docs it kept are judged again"}
   no-findings: [{rule: record-unread}]
   summary-once: [members-unread]
   forge:

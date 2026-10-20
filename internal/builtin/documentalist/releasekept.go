@@ -89,8 +89,9 @@ func readReleaseKept(runDir, repo string, docs []*Doc) ([]verdict.Finding, error
 	if err != nil {
 		findings = append(findings, unread(err))
 	}
+	var u unknownAuthors
 	if _, lists := f.(forge.Backlog); err == nil && lists { // a forge that lists no comment keeps none, as before
-		body, err := stickyOn(f, t, releaseKeptKey)
+		body, err := stickyOn(f, t, releaseKeptKey, &u)
 		if err != nil {
 			findings = append(findings, unread(err))
 		} else {
@@ -109,7 +110,7 @@ func readReleaseKept(runDir, repo string, docs []*Doc) ([]verdict.Finding, error
 			}
 		}
 	}
-	findings = append(findings, unknownAuthors()...)
+	findings = append(findings, u.findings()...)
 	return findings, writeYAML(filepath.Join(runDir, "in", "release-kept.yaml"), in)
 }
 
