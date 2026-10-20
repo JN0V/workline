@@ -1142,6 +1142,11 @@ func Pre(runDir, repo string) int {
 		}
 	}
 	holdWaitingTasks(wait, suspects, stale)
+	// A release's earlier rounds of this run, their fix kept in the clone
+	// for this one (#572): the docs they asked are not asked again.
+	if err := holdEarlierRounds(earlierRounds(), suspects, propagate); err != nil {
+		return fail(err)
+	}
 	var task string
 	var judged map[string]map[string]string
 	if adopting {
@@ -2171,12 +2176,34 @@ func Post(runDir, repo string) int {
 	kept = append(kept, judgedFix.exampleFindings()...)
 	kept = append(kept, withheld...)
 	kept = append(kept, comments...)
-	if proposedPatch(intents, fallback) || len(fallback) > 0 {
+	// A release's earlier rounds of this run, whose fix this round proposes
+	// with its own (#572): their docs are in its merge request too.
+	before, err := earlierFix()
+	if err != nil {
+		return fail(err)
+	}
+	if proposedPatch(intents, fallback) || len(fallback) > 0 || before != nil {
 		outcome := outcomes(judged, inParts, vouchedInParts, patched, partly, judgedFix, readOf)
 		if readerOutcome != nil {
 			outcome = readerOutcome
 		}
-		mr := mergeRequest(runDir, judged, inParts, proposedPatch(intents, fallback), withheld, outcome)
+		outcome, said := before.withEarlier(outcome, judged, withheld)
+		mr := mergeRequest(runDir, judged, inParts, proposedPatch(intents, fallback) || before != nil, said, outcome)
+		if onReleaseMergeRequest() { // for the round after this one, if any
+			mr["title"] = before.titled(mr["title"])
+			fix := releaseFix{Title: mr["title"], Docs: maps.Clone(outcome), Withheld: said}
+			if fix.Docs == nil {
+				fix.Docs = map[string]string{}
+			}
+			for p := range judged {
+				if _, ok := fix.Docs[p]; !ok {
+					fix.Docs[p] = ""
+				}
+			}
+			if err := writeYAML(filepath.Join(runDir, "out", "release-fix.yaml"), fix); err != nil {
+				return fail(err)
+			}
+		}
 		if onPersonsMergeRequest() { // the commit on a person's branch names the doc (#463)
 			if t := personsTitle(patchedDocs(intents, fallback, judgedFix)); t != "" {
 				mr["title"] = t

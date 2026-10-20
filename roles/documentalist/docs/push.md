@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/adopt.go, internal/builtin/documentalist/byname.go, internal/builtin/documentalist/releasekept.go, internal/engine/night.go]
-checked: 875fc368
+checked: e443e5e2
 verified: agent:claude-code
 judged-in-parts: c7e1e98
 ---
@@ -143,7 +143,13 @@ commits touched.
 - **Its fix does not go onto that branch**, which the tool rewrites: it
   goes to a merge request of its own into the release's base,
   `workline/documentalist/release`. The release pull request stays held
-  until that one is merged and the tool brings it in.
+  until that one is merged and the tool brings it in. A doc the tool
+  bumped takes the fix on the base's version, three ways.
+- **Every doc due in one run, one fix**: round after round,
+  `ai-max-calls` docs a round, each round's fix kept in the clone for the
+  next, until `ai-max-tokens`, `ai-max-seconds` or 20 rounds; what is left
+  waits for the next night
+  ([ADR-0034, amended](../../../docs/adr/0034-the-release-fix-follows-its-base.md#amendment-2026-10-20-one-fix-for-every-doc-a-run-reaches)).
 - **Its record stands for the heads the tool rebuilds**: the
   documentalist's comment on the release pull request keeps the head each
   fix set `checked` or `judged` to, and the ids of the doc's sources

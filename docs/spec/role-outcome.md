@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/engine, internal/intent, internal/role, internal/agent, internal/verdict, internal/report]
 verified: agent:claude-code
-checked: a0b7c5a7
+checked: 4c90e75f
 judged: b5899f5
 status: draft
 ---
@@ -75,7 +75,8 @@ or that only a person can — never for the answer
   on a pass; the run still blocks, and the release waits;
 - a judge's no makes it the answer's block again: asked again, nothing
   applied;
-- applied in the clone, the next round takes up what `pre` deferred
+- applied in the clone, or kept there on a release tool's merge request,
+  the next round takes up what `pre` deferred
   ([role contract](role-contract.md), step 6).
 
 ### Warn before block

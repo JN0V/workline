@@ -92,10 +92,21 @@ func readReleaseKept(runDir, repo string, docs []*Doc) ([]verdict.Finding, error
 	var u unknownAuthors
 	if _, lists := f.(forge.Backlog); err == nil && lists { // a forge that lists no comment keeps none, as before
 		body, err := stickyOn(f, t, releaseKeptKey, &u)
+		newer, proposed := "", false
+		if err == nil { // an earlier round of this run kept its own (#572)
+			newer, proposed, err = earlierSticky(releaseKeptKey)
+		}
 		if err != nil {
 			findings = append(findings, unread(err))
 		} else {
 			in.Keep = true
+			if proposed {
+				written := parseReleaseKept(body)
+				for _, p := range slices.Sorted(maps.Keys(written)) {
+					in.OnForge = append(in.OnForge, written[p])
+				}
+				body, in.Newer = newer, true
+			}
 			records := parseReleaseKept(body)
 			releaseRecorded = map[string]keptRecord{}
 			for _, d := range docs {
@@ -196,7 +207,7 @@ func keepReleaseRecords(repo string, in keptInput, intents []intent.Intention, j
 	for _, p := range slices.Sorted(maps.Keys(merged)) {
 		records = append(records, merged[p])
 	}
-	if hiddenJSON(records) == hiddenJSON(in.Records) {
+	if hiddenJSON(records) == hiddenJSON(in.written()) {
 		return intents, nil
 	}
 	return append(intents, intent.Intention{Kind: "comment", Value: map[string]any{"sticky": releaseKeptKey, "body": releaseKeptBody(records)}}), nil

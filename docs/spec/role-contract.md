@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine, internal/intent, internal/role, internal/agent, roles_test.go]
-checked: a0b7c5a7
+checked: 4c90e75f
 verified: agent:claude-code
 judged: b530b72
 ---
@@ -344,19 +344,32 @@ token), **apply** (trusted, no AI key).
    and applied something other than a note, the engine then runs the role
    again, from step 2, in a new run folder that sees what was applied — five
    rounds at most. A `held` round goes on too, when it deferred something
-   and applied it in the clone, with no merge request: one whose fix went
-   to a merge request of its own leaves the rest to a later run, which
-   sees that fix once it is merged. The result adds up the rounds' calls and applied
-   intentions; a later round's finding replaces an earlier one of the same
-   rule and place, and a deferred one is dropped once the next round runs. A
-   run judged with `--no-apply` applies nothing a next round could see: it
-   goes round again only when, with `--open-merge-request`, the round
-   proposed a merge request for a task no earlier round of the run proposed
-   (the key of `out/merge-request.yaml`). The next round is told that task
-   waits, as one open on the forge, and takes up what was deferred — on a
-   gardening night, the docs judged in parts after those judged whole
-   (ADR-0013, amended). Each round is a run folder to apply, listed in the
-   result's `pending`, a merge request each.
+   and applied it in the clone, with no merge request. The result adds up
+   the rounds' calls and applied intentions; a later round's finding
+   replaces an earlier one of the same rule and place, and a deferred one
+   is dropped once the next round runs. A run judged with `--no-apply`
+   applies nothing a next round could see: it goes round again only when,
+   with `--open-merge-request`, the round proposed a merge request for a
+   task no earlier round of the run proposed (the key of
+   `out/merge-request.yaml`). The next round is told that task waits, as
+   one open on the forge, and takes up what was deferred — on a gardening
+   night, the docs judged in parts after those judged whole (ADR-0013,
+   amended). Each round is a run folder to apply, listed in the result's
+   `pending`, a merge request each.
+
+   **A release's rounds, one fix.** On a release tool's merge request, run
+   on `release`, the fix goes to one merge request of its own
+   ([ADR-0034, amended](../adr/0034-the-release-fix-follows-its-base.md#amendment-2026-10-20-one-fix-for-every-doc-a-run-reaches)).
+   A round that deferred something and proposed patches, passed or
+   `held`, keeps them in the clone, not applied, and the run goes round,
+   applied or judged with `--no-apply`. The next round is told the
+   folders of those rounds (`WORKLINE_EARLIER_ROUNDS`, a path list as
+   `PATH` is, oldest first) and
+   proposes their patches, as judged, ahead of its own: the run's fix is
+   one, applied once or listed once in `pending`. Twenty rounds at most,
+   the run's caps on tokens and on the wait first. When the run ends, the
+   clone is put back as it was; a last round that proposed nothing leaves
+   the fix of the round before it to apply.
 
    **Then.** A round that passed may name in `in/then` a task asked once
    the others are done: one round more, `WORKLINE_THEN` naming it, within
