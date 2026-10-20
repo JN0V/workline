@@ -31,12 +31,15 @@ rendering shows, or in a frontmatter the doc has.
   ([#346](https://github.com/JN0V/workline/issues/346)):
   - **A pin** follows the bump, so the doc is suspect: the version said
     as the one to use, in a code block, an install line (`@v1.2.0`), an
-    image's tag, or plain prose ("Clock **1.2.0**").
+    image's tag, or plain prose ("Clock **1.2.0**"). In a code block, the
+    code pins whatever word comes before: `since: v1.2.0`, `--from
+    v1.2.0` ([#571](https://github.com/JN0V/workline/issues/571)).
   - **History** does not: the version right after "from", "since",
     "after", "before", "added in", "fixed in", "at least", or before "or
     later", "and newer", `+`, quoted or not, in prose (across a line
-    break too) or a code block's comment (`# since 1.2.0`); a range
-    (`>=1.2.0`). A word between pins it: "Install from tag v1.2.0",
+    break too) or a code block's comment (`# since 1.2.0`, by the
+    block's language, over lines too); a range (`>=1.2.0`), in code
+    too. A word between pins it: "Install from tag v1.2.0",
     `FROM tool:v1.2.0`.
   - A doc the release commit bumps too says the new version: not
     suspect.
