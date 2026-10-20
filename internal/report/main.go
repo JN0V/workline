@@ -24,7 +24,7 @@ const MainTitle = "workline: findings on the default branch"
 const mainMarker = "<!-- workline:main-findings "
 
 // mainShown caps the entries each section lists; the rest are counted.
-const mainShown = 50
+const mainShown = 100
 
 const mainADR = "https://github.com/JN0V/workline/blob/main/docs/adr/0050-each-act-has-its-moment-and-a-wait-budget.md"
 
@@ -134,10 +134,14 @@ func MainIssue(r *line.Result, now string) (body string, changed, any bool) {
 	changed = !slices.Equal(keys, prev.Keys) || now == "" && any
 
 	var b strings.Builder
-	fmt.Fprintf(&b, "The checks of the whole repository, run once on the default branch after each merge, and what its gates found it gained ([ADR-0050](%s)). Nothing here holds a merge request. workline keeps this issue: it is edited when what it lists changes, never commented on.\n\n", mainADR)
-	if !any {
-		fmt.Fprintf(&b, "Nothing found on the default branch at %s.\n", span(short7(head)))
+	// The count by kind first; the lists folded below: on day one, the old
+	// debt is shown once, then only what changes (ADR-0049, section 6).
+	if any {
+		fmt.Fprintf(&b, "**%d %s on the default branch**: %s.\n\n", len(gates)+len(docs), plural(len(gates)+len(docs), "finding", "findings"), byKind(gates, docs, len(red) > 0))
+	} else {
+		fmt.Fprintf(&b, "**Nothing found on the default branch** at %s.\n\n", span(short7(head)))
 	}
+	fmt.Fprintf(&b, "The checks of the whole repository, run once on the default branch after each merge, and what its gates found it gained ([ADR-0050](%s)). Nothing here holds a merge request. workline keeps this issue: it is edited when what it lists changes, never commented on.\n\n", mainADR)
 	if len(red) > 0 {
 		fmt.Fprintf(&b, "**The default branch's run is red** at %s: the merges since %s add these findings together, though each merge request was checked alone, against its own base.\n\n", span(short7(head)), span(short7(before)))
 		for _, l := range red {
@@ -152,7 +156,7 @@ func MainIssue(r *line.Result, now string) (body string, changed, any bool) {
 		b.WriteString("\n")
 	}
 	if len(gates) > 0 {
-		fmt.Fprintf(&b, "### Gates: %d %s the default branch gained\n\n", len(gates), plural(len(gates), "finding", "findings"))
+		fmt.Fprintf(&b, "<details><summary>Gates: %d %s the default branch gained</summary>\n\n", len(gates), plural(len(gates), "finding", "findings"))
 		b.WriteString("Each was found new after a merge, and stays here while the branch holds it.\n\n")
 		list(&b, gates, func(e mainEntry) string {
 			s := fmt.Sprintf("%s %s", span(e.Where), span(e.Rule))
@@ -166,7 +170,7 @@ func MainIssue(r *line.Result, now string) (body string, changed, any bool) {
 		})
 	}
 	if len(docs) > 0 {
-		fmt.Fprintf(&b, "### The whole repository: %d %s\n\n", len(docs), plural(len(docs), "finding", "findings"))
+		fmt.Fprintf(&b, "<details><summary>The whole repository: %d %s</summary>\n\n", len(docs), plural(len(docs), "finding", "findings"))
 		list(&b, docs, func(e mainEntry) string {
 			s := span(strings.TrimPrefix(e.Step+" "+e.Rule, " "))
 			if e.Where != "" {
@@ -186,7 +190,8 @@ func MainIssue(r *line.Result, now string) (body string, changed, any bool) {
 	return b.String(), changed, any
 }
 
-// list writes entries, mainShown at most, the rest counted.
+// list writes entries, mainShown at most, the rest counted, folded in
+// the <details> its caller opened.
 func list(b *strings.Builder, es []mainEntry, say func(mainEntry) string) {
 	for i, e := range es {
 		if i == mainShown {
@@ -195,7 +200,29 @@ func list(b *strings.Builder, es []mainEntry, say func(mainEntry) string) {
 		}
 		b.WriteString("- " + say(e) + "\n")
 	}
-	b.WriteString("\n")
+	b.WriteString("\n</details>\n\n")
+}
+
+// byKind counts the findings by rule, the most first: `53
+// section-too-long, 30 doc-too-long`; main red said first.
+func byKind(gates, docs []mainEntry, red bool) string {
+	n := map[string]int{}
+	var kinds []string
+	for _, e := range append(slices.Clone(gates), docs...) {
+		if n[e.Rule] == 0 {
+			kinds = append(kinds, e.Rule)
+		}
+		n[e.Rule]++
+	}
+	sort.SliceStable(kinds, func(i, j int) bool { return n[kinds[i]] > n[kinds[j]] })
+	var out []string
+	if red {
+		out = append(out, "main's run red")
+	}
+	for _, k := range kinds {
+		out = append(out, fmt.Sprintf("%d %s", n[k], span(k)))
+	}
+	return strings.Join(out, ", ")
 }
 
 var digits = regexp.MustCompile(`[0-9]+`)

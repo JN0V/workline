@@ -32,6 +32,6 @@ expect:
     issues:
       - id: 1
         title: "workline: findings on the default branch"
-        body-contains: ["Nothing here holds a merge request", "`docs/notes.md` `documentalist doc-too-long`", "guide.md: no such file", "<!-- workline:main-findings "]
-        body-lacks: ["is red", "### Gates"]
+        body-contains: ["**2 findings on the default branch**: 1 `doc-too-long`, 1 `dead-link`.", "Nothing here holds a merge request", "<details><summary>The whole repository: 2 findings</summary>", "`docs/notes.md` `documentalist doc-too-long`", "guide.md: no such file", "</details>", "<!-- workline:main-findings "]
+        body-lacks: ["is red", "Gates:"]
       - {id: 2, absent: true}

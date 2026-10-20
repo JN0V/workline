@@ -28,6 +28,11 @@ func TestMainIssueKeepsWhatMainHolds(t *testing.T) {
 	if !changed || !any || !strings.Contains(body, "`x.go:3` `lint/godot`") || !strings.Contains(body, "(since `bbbbbbb`)") {
 		t.Fatalf("first run: changed %v, any %v:\n%s", changed, any, body)
 	}
+	// The count by kind on top, the lists folded.
+	if !strings.HasPrefix(body, "**2 findings on the default branch**: 1 `lint/godot`, 1 `doc-too-long`.\n") ||
+		strings.Count(body, "<details>") != 2 || strings.Count(body, "</details>") != 2 {
+		t.Errorf("not the count by kind, then the lists folded:\n%s", body)
+	}
 	// The next merge adds nothing; the doc grew. Nothing new nor gone.
 	next := &line.Result{Event: line.MainEvent, Main: &line.MainRun{Before: "bbbbbbb2", Head: "ccccccc3"},
 		Steps: []line.Step{gateStep([]string{"fp1", "old"}), docs("260")}}

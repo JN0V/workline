@@ -35,6 +35,6 @@ expect:
   forge:
     issues:
       - id: 1
-        body-contains: ["**The default branch's run is red**", "each merge request was checked alone, against its own base", "Merge pull request #2 from helper", "`main.go:8` `lint/godot`"]
+        body-contains: ["**1 finding on the default branch**: main's run red, 1 `lint/godot`.", "**The default branch's run is red**", "each merge request was checked alone, against its own base", "Merge pull request #2 from helper", "`main.go:8` `lint/godot`"]
         body-lacks: "each marked in"
       - {id: 2, absent: true}
