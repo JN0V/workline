@@ -13,18 +13,24 @@ import (
 // A release's earlier rounds (#572): what they asked is not asked again,
 // the comment they proposed is the newest, their docs stay in the fix.
 func TestEarlierRounds(t *testing.T) {
+	must := func(err error) {
+		t.Helper()
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
 	first, second := t.TempDir(), t.TempDir()
 	for _, d := range []string{first, second} {
-		os.MkdirAll(filepath.Join(d, "in"), 0o755)
-		os.MkdirAll(filepath.Join(d, "out"), 0o755)
+		must(os.MkdirAll(filepath.Join(d, "in"), 0o755))
+		must(os.MkdirAll(filepath.Join(d, "out"), 0o755))
 	}
-	os.WriteFile(filepath.Join(first, "in", "judged.yaml"), []byte("docs/a.md: {\"\": abc}\n"), 0o644)
-	os.WriteFile(filepath.Join(second, "in", "judged.yaml"), []byte("docs/b.md: {\"\": abc}\n"), 0o644)
-	intent.Write(filepath.Join(first, "out", "intentions.yaml"), []intent.Intention{
-		{Kind: "comment", Value: map[string]any{"sticky": releaseKeptKey, "body": "first"}}})
-	intent.Write(filepath.Join(second, "out", "intentions.yaml"), []intent.Intention{{Kind: "patch", Value: "--- a/docs/b.md\n+++ b/docs/b.md\n"}})
-	writeYAML(filepath.Join(first, "out", "release-fix.yaml"), releaseFix{Title: "docs: bring the docs in line with the code",
-		Docs: map[string]string{"docs/a.md": "still true, `checked` moved"}, Withheld: []verdict.Finding{{Rule: "removal-uncited", Where: "docs/a.md"}}})
+	must(os.WriteFile(filepath.Join(first, "in", "judged.yaml"), []byte("docs/a.md: {\"\": abc}\n"), 0o644))
+	must(os.WriteFile(filepath.Join(second, "in", "judged.yaml"), []byte("docs/b.md: {\"\": abc}\n"), 0o644))
+	must(intent.Write(filepath.Join(first, "out", "intentions.yaml"), []intent.Intention{
+		{Kind: "comment", Value: map[string]any{"sticky": releaseKeptKey, "body": "first"}}}))
+	must(intent.Write(filepath.Join(second, "out", "intentions.yaml"), []intent.Intention{{Kind: "patch", Value: "--- a/docs/b.md\n+++ b/docs/b.md\n"}}))
+	must(writeYAML(filepath.Join(first, "out", "release-fix.yaml"), releaseFix{Title: "docs: bring the docs in line with the code",
+		Docs: map[string]string{"docs/a.md": "still true, `checked` moved"}, Withheld: []verdict.Finding{{Rule: "removal-uncited", Where: "docs/a.md"}}}))
 	t.Setenv("WORKLINE_EARLIER_ROUNDS", first+" "+second)
 
 	docs := map[string]*suspectDoc{"docs/a.md": {}, "docs/b.md": {}, "docs/c.md": {}, "docs/d.md": {note: "(its own)"}}

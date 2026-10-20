@@ -521,15 +521,13 @@ func (res *Result) keepHere(repo string, writes []string, patches []intent.Inten
 			case errors.Is(err, fs.ErrNotExist):
 				res.local[p] = nil
 			case err != nil:
-				res.putBack(repo)
-				return err
+				return errors.Join(err, res.putBack(repo))
 			default:
 				res.local[p] = &data
 			}
 		}
 		if err := ap.patch(in.Value); err != nil {
-			res.putBack(repo)
-			return err
+			return errors.Join(err, res.putBack(repo))
 		}
 	}
 	return nil
@@ -1762,7 +1760,9 @@ func threeWay(st runState, tip, orig string) (bool, error) {
 		return false, errors.Join(err, again())
 	}
 	if _, err := git(st.Repo, strings.NewReader(diff), "apply", "--3way", "-"); err != nil {
-		git(st.Repo, nil, "reset", "-q", "--hard")
+		if _, err := git(st.Repo, nil, "reset", "-q", "--hard"); err != nil {
+			return false, errors.Join(err, again())
+		}
 		return false, again()
 	}
 	return true, nil
