@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go, tests/evaluation]
-checked: a0b7c5a7
+checked: 32104a40
 verified: agent:claude-code
 judged: ae14474
 ---
@@ -141,7 +141,8 @@ What else a case can give, run and expect, and how each is checked, is in
   user wrote refuses an edit (403), an `is_blocked_by` link is refused for
   its license (403) as on GitLab Free, and GraphQL refuses all. With
   `weights`, its issues carry Premium's `weight` key, set by a `PUT`;
-  without, Free's: no key, a weight sent ignored. A merge
+  without, Free's: no key, a weight sent ignored. `variables` are the
+  project's CI/CD variables, else `variables-refused`. A merge
   request's diffs are the repository's, from its `base` (main) to its
   `branch` (HEAD); a discussion on a line they do not show, or on a kept
   line without its old one, lands on no line, as on gitlab.com;

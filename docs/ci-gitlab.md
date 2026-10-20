@@ -1,6 +1,6 @@
 ---
 sources: [ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile]
-checked: a0b7c5a7
+checked: cb130c27
 judged: cd97f28
 verified: agent:claude-code
 reader: 9799dcaf51f3
@@ -44,11 +44,13 @@ on gitlab.com, then on a self-managed instance. A tool starting the
 pipelines instead (trigger API, pipelines API, another pipeline):
 [gitlab-trigger.md](gitlab-trigger.md).
 
-GitLab gives every variable to every job: the template keeps the write
-token out of the judging jobs' commands, not out of their reach — and
-gardening's judge (the scheduled run) reads the open merge requests with
-it. The agent is
-installed only in the judging jobs.
+GitLab gives a variable to every job unless it is scoped to an
+environment: the template's jobs holding a token declare `workline`,
+those running your tools none ([the environment](gitlab/environment.md)).
+Among the others, it keeps the write token out of the judging jobs'
+commands, not out of their reach — gardening's judge (the scheduled run)
+reads the open merge requests with it. The agent is installed only in
+the judging jobs.
 
 ## gitlab.com
 
@@ -64,11 +66,17 @@ include: {local: ci/workline.gitlab-ci.yml}
 
 ### 2. The variables
 
-Settings → CI/CD → Variables, **masked** and **not protected**: GitLab
-gives a protected variable only to protected branches, never to a merge
-request's. Anyone who may push a branch can read them from a pipeline they
-change: people who may already write to the repository.
+Settings → CI/CD → Variables, **masked**, **not protected**, and scoped
+to the environment **`workline`**:
 
+- **Not protected**: GitLab gives a protected variable only to protected
+  branches, never to a merge request's. Anyone who may push a branch can
+  read them from a pipeline they change: people who may already write to
+  the repository.
+- **Environment `workline`** (each one's *Environments*): only the jobs
+  that hold a token get it, never those running your linters
+  ([why and how](gitlab/environment.md)). `workline doctor` warns of one
+  left to every environment.
 - **`WORKLINE_GITLAB_TOKEN`**: a project access token — a bot user of this
   project only ([ADR-0023](adr/0023-the-project-bot-keeps-a-gitlab-backlog.md))
   —, role Developer, scopes `api` and `write_repository`. One command makes
@@ -77,7 +85,7 @@ change: people who may already write to the repository.
   ```sh
   glab token create workline --repo <group/project> --access-level developer \
     --scope api --scope write_repository --duration 8760h \
-    | glab variable set WORKLINE_GITLAB_TOKEN --masked --repo <group/project>
+    | glab variable set WORKLINE_GITLAB_TOKEN --masked --scope workline --repo <group/project>
   ```
 
   Or Settings → Access tokens → Add new token, the same role and scopes,
@@ -88,10 +96,11 @@ change: people who may already write to the repository.
   2026-10-05): a personal access token, `api` and `write_repository`, of
   an account made for the line, added to the project as Developer. The
   job's own `CI_JOB_TOKEN` reaches no issue: it is never enough.
-- **The agent's credentials**, if you want an agent to judge. The template
-  installs Claude Code when `CLAUDE_CODE_OAUTH_TOKEN` is set (`claude
-  setup-token`); unset, the jobs run with no agent. For another agent,
-  change the template's `--ai` to a `cmd:`.
+- **The agent's credentials**, if you want an agent to judge, scoped to
+  `workline` too. The template installs Claude Code when
+  `CLAUDE_CODE_OAUTH_TOKEN` is set (`claude setup-token`); unset, the
+  jobs run with no agent. For another agent, change the template's
+  `--ai` to a `cmd:`.
 
 ### 3. Gardening
 
@@ -173,8 +182,10 @@ a cron off the hour (`13 17 * * *`) was listed as due at 18:00 and ran at
 
 - `workline:gates` runs your gates alone, before `workline:judge`, and
   writes what they found the change adds as its Code Quality report;
-  install their tools in it ([gates in CI](gates-in-ci.md)). In a merge
-  train's pipeline, it is workline's only job; a merged results pipeline
+  install their tools in it ([gates in CI](gates-in-ci.md)). No token:
+  `workline:base`, before it, reads the merge base's findings
+  ([the environment](gitlab/environment.md)). In a merge train's
+  pipeline, they are workline's only jobs; a merged results pipeline
   runs them all ([a merge train](merge-queue.md#gitlab-a-merge-train)).
 - **The reviewer's lenses that only warn** read apart from the verdict:
   `workline:judge` asks those that block (`--warn-apart`; without

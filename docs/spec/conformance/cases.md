@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go]
-checked: a0b7c5a7
+checked: 32104a40
 verified: agent:claude-code
 ---
 # Conformance — a case in full
@@ -228,4 +228,5 @@ saying so.
 - `files` — paths that must exist (`exists`, or not), or contain a text or
   each of a list of texts (`contains`), or lack them (`lacks`), afterwards.
 - `exit` / `stdout` / `stderr` — with `cli` or `sh`: the exit code, and texts
-  printed on each stream; `stderr-lacks`, texts not printed there.
+  printed on each stream; `stderr-lacks`, texts not printed there;
+  `stdout-lacks`, with any run, texts not printed on stdout.
