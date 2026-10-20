@@ -261,6 +261,10 @@ func TestGitLabApplyRunsWhenTheJudgeFails(t *testing.T) {
 			if job["allow_failure"] != true {
 				t.Errorf("job %s: allow_failure %v: what only warns would fail the pipeline", name, job["allow_failure"])
 			}
+		case name == "workline:release":
+			// At a tag, a release held, or whose checks could not run
+			// (3), is never published: no failure allowed
+			// (TestGitLabReleaseJobAtATag).
 		case strings.Contains(script, "workline route") && !strings.Contains(script, "--gates-only"):
 			judges++
 			af, _ := job["allow_failure"].(map[string]any)
@@ -1052,7 +1056,7 @@ func TestGardeningTendsItsMergeRequests(t *testing.T) {
 		found := false
 		for name, job := range wf.Jobs {
 			for _, s := range job.Steps {
-				if !strings.Contains(s.Run, "workline apply") {
+				if !strings.Contains(s.Run, "workline apply") || strings.Contains(s.Run, "--release-dry-run") {
 					continue
 				}
 				found = true

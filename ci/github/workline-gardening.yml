@@ -157,7 +157,7 @@ jobs:
   # applied: said as warnings, never a block. Install the tools of the
   # gates your `release` line runs here. dry-run-post says what it found in
   # one comment on that pull request, else in the default branch's issue
-  # (docs/release-dry-run.md).
+  # (docs/release.md).
   dry-run:
     runs-on: ubuntu-latest
     permissions: {contents: read, pull-requests: read}   # the release's pull request, found
@@ -177,10 +177,12 @@ jobs:
           workline route release --dry-run --forge github --summary workline-summary.md --json > dry-run.json
           [ ! -s workline-summary.md ] || cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
-        with: {name: workline-dry-run, path: dry-run.json}
+        if: always()
+        with: {name: workline-dry-run, path: dry-run.json, if-no-files-found: ignore}
 
   dry-run-post:
     needs: dry-run
+    if: always()                    # a dry run that left no result is said
     runs-on: ubuntu-latest
     environment: workline-app       # the App's key: the default branch only (ADR-0044)
     # One writer of the default branch's issue at a time, with main's.
@@ -194,6 +196,7 @@ jobs:
           app-id: ${{ vars.WORKLINE_APP_ID }}
           private-key: ${{ secrets.WORKLINE_APP_PRIVATE_KEY }}
       - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
       - name: workline
         run: |
           bin="$RUNNER_TEMP/bin"; mkdir -p "$bin"; cd "$RUNNER_TEMP"
@@ -202,10 +205,12 @@ jobs:
           echo "$bin" >> "$GITHUB_PATH"
           "$bin/workline" version
       - uses: actions/download-artifact@v4
+        continue-on-error: true         # none: said below
         with: {name: workline-dry-run}
       - env:
           GH_TOKEN: ${{ steps.app.outputs.token || github.token }}
         run: |
+          [ -s dry-run.json ] || { echo "::warning title=workline::the release's dry run left no result: nothing posted"; exit 0; }
           status=0
           workline apply --release-dry-run dry-run.json --forge github --summary workline-summary.md || status=$?
           [ ! -s workline-summary.md ] || cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"

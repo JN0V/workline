@@ -455,7 +455,7 @@ workline:release-docs:apply:
 # nothing applied: said as warnings, never failing the pipeline. Install
 # the tools of the gates your `release` line runs here.
 # workline:release:dry-run:post says it in one comment on that merge
-# request, else in the default branch's issue (docs/release-dry-run.md).
+# request, else in the default branch's issue (docs/release.md).
 workline:release:dry-run:
   image: $WORKLINE_IMAGE:$WORKLINE_VERSION
   stage: test
@@ -469,6 +469,7 @@ workline:release:dry-run:
     - unset CLAUDE_CODE_OAUTH_TOKEN
     - forge=none; if [ -n "${WORKLINE_GITLAB_TOKEN:-}" ]; then export GITLAB_TOKEN=$WORKLINE_GITLAB_TOKEN; forge=gitlab; fi
     - workline route release --dry-run --forge $forge --summary workline-summary.md --summary workline-summary.html --json > dry-run.json
+  allow_failure: {exit_codes: [3]}  # never 3: it asks no agent; as every night's job
   after_script: *summary
   artifacts:
     when: always
@@ -480,9 +481,11 @@ workline:release:dry-run:post:
   image: $WORKLINE_IMAGE:$WORKLINE_VERSION
   stage: deploy
   needs: [workline:release:dry-run]
+  variables: {GIT_DEPTH: 0}         # the whole history, as .workline
   resource_group: workline-main-issue   # one writer of the default branch's issue at a time, with workline:main:issue
-  rules:
+  rules:                            # also when the dry run failed: said
     - if: $CI_PIPELINE_SOURCE == "schedule" && $WORKLINE_TASK != "sample" && $WORKLINE_GITLAB_TOKEN
+      when: always
   script:
     - *trust
     - workline version
@@ -507,7 +510,7 @@ workline:release:dry-run:post:
 # (releaser-pleaser's) is judged as the release on each of its pipelines
 # already; this checks its tag again. A tool that tags and publishes in
 # one job (semantic-release): run `workline route release --ai none`
-# before it, in that job. docs/release-dry-run.md.
+# before it, in that job. docs/release.md.
 workline:release:
   image: $WORKLINE_IMAGE:$WORKLINE_VERSION
   stage: test
