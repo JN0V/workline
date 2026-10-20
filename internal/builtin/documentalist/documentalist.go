@@ -1581,6 +1581,7 @@ func holdTheRelease(findings []verdict.Finding, suspects map[string]*suspectDoc,
 		f.Message += "\n(made suspect since " + since + ": the release waits until it is judged — " + by + on + ")"
 		due[f.Where] = true
 	}
+	delete(due, "") // a doc names itself: what names none is listed nowhere (nightNote)
 	if night && len(due) > 0 {
 		findings = append(findings, atNight(len(due)))
 	}
