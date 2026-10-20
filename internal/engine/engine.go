@@ -1688,8 +1688,17 @@ func commitOntoBase(st runState, base, title string, local bool) (why string, er
 		}
 	}
 	if _, err := git(st.Repo, nil, "checkout", "-q", "--detach", tip); err != nil {
-		back()
-		return fmt.Sprintf("the docs it fixes differ on %s", base), nil
+		// A doc the base holds otherwise — the release's own bump in it,
+		// one of the tool's files — takes the fix three ways: its change
+		// on the base's version (#572).
+		onto, err := threeWay(st, tip, orig)
+		if err != nil || !onto {
+			back()
+			if err != nil {
+				return "", err
+			}
+			return fmt.Sprintf("the docs it fixes differ on %s", base), nil
+		}
 	}
 	for _, s := range [][]string{append([]string{"add", "--"}, st.Written...), {"commit", "-q", "-m", title, "-m", st.trailers()}} {
 		if _, err := git(st.Repo, nil, s...); err != nil {
@@ -1710,6 +1719,53 @@ func commitOntoBase(st runState, base, title string, local bool) (why string, er
 	}
 	_, err = git(st.Repo, nil, "checkout", "-q", orig)
 	return "", err
+}
+
+// threeWay puts what the run's patches wrote onto tip when some of those
+// files differ there, as git applies a patch three ways: the clone left
+// detached at tip, the change in its index. False, and the clone as it
+// was, the change in its working tree, when the change does not apply
+// there.
+func threeWay(st runState, tip, orig string) (bool, error) {
+	diff, err := writtenDiff(st)
+	if err != nil || diff == "" {
+		return false, err
+	}
+	created, err := gitRaw(st.Repo, append([]string{"ls-files", "-z", "--others", "--"}, st.Written...)...)
+	if err != nil {
+		return false, err
+	}
+	// The change set aside, the files as the head holds them.
+	var tracked []string
+	for _, p := range st.Written {
+		if strings.Contains("\x00"+created, "\x00"+p+"\x00") {
+			if err := os.Remove(filepath.Join(st.Repo, filepath.FromSlash(p))); err != nil && !errors.Is(err, fs.ErrNotExist) {
+				return false, err
+			}
+			continue
+		}
+		tracked = append(tracked, p)
+	}
+	if len(tracked) > 0 {
+		if _, err := git(st.Repo, nil, append([]string{"checkout", "-q", "--"}, tracked...)...); err != nil {
+			return false, err
+		}
+	}
+	again := func() error { // the change back in the working tree, on the head
+		if _, err := git(st.Repo, nil, "checkout", "-q", orig); err != nil {
+			return err
+		}
+		_, err := git(st.Repo, strings.NewReader(diff), "apply", "-")
+		return err
+	}
+	if _, err := git(st.Repo, nil, "checkout", "-q", "--detach", tip); err != nil {
+		return false, errors.Join(err, again())
+	}
+	if _, err := git(st.Repo, strings.NewReader(diff), "apply", "--3way", "-"); err != nil {
+		git(st.Repo, nil, "reset", "-q", "--hard")
+		return false, again()
+	}
+	return true, nil
 }
 
 // pushToMergeRequest commits what the run's patches wrote to the branch of

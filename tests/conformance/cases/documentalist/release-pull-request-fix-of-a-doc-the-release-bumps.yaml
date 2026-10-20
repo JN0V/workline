@@ -1,0 +1,34 @@
+case: documentalist/release-pull-request-fix-of-a-doc-the-release-bumps
+about: "On a release pull request, judged then applied as at night: two docs due, one of them a file the release tool bumps (its pinned version on the release's head, the version before on main). The fix of both goes to workline/documentalist/release, the bumped doc's change put on main's version of it, three ways; before, the whole fix went in a comment for a person, as the doc differs on main (#572)."
+given:
+  repo: documented
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git"
+    - "printf '%s\\n' '---' 'type: reference' 'sources: [src/auth/token.go]' 'checked: HEAD' '---' '# Pin' '' 'Pin it in your job:' '' '```yaml' 'VERSION: v1.0.0   # x-release-please-version' '```' > docs/tech/pin.md && git add docs && git commit -qm 'docs: the pin'"
+    - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: HEAD/checked: $C/\" docs/tech/pin.md && git commit -qam 'docs: confirm the pin' && git tag v1.0.0"
+    - "printf '\\n// Refreshed on use.\\n' >> src/auth/token.go && git commit -qam 'feat(auth): refresh tokens on use' && git push -q origin main"
+    - "git checkout -qb release-please--branches--main && sed -i 's/v1.0.0/v1.1.0/' docs/tech/pin.md && git commit -qam 'chore(main): release 1.1.0' && git push -q origin release-please--branches--main && git checkout -q --detach"
+  forge:
+    merge-requests:
+      - id: 1
+        branch: release-please--branches--main
+        base: main
+        labels: []
+        comments: []
+        pushes: [{head: release-please--branches--main, at: "2026-01-03T00:00:00Z", by: workline-bot}]
+run: {role: documentalist, event: release, target: {merge-request: 1}, branch: release-please--branches--main, ai: 'cmd:sh "$FIXTURES/agents/confirm-every-doc.sh"', push-to-merge-request: true, no-apply: true, then: resume}
+expect:
+  status: pass
+  findings:
+    - {rule: fixed-elsewhere, where: docs/tech/auth.md, message: "merge request #2"}
+    - {rule: fixed-elsewhere, where: docs/tech/pin.md, message: "merge request #2"}
+  no-findings:
+    - {rule: fix-in-comment}
+  pushed:
+    workline/documentalist/release:
+      docs/tech/auth.md: "verified: agent:documentalist"
+      docs/tech/pin.md: "verified: agent:documentalist\n---\n# Pin\n\nPin it in your job:\n\n```yaml\nVERSION: v1.0.0"
+  not-pushed: [release-please--branches--main, main]
+  forge:
+    merge-requests:
+      - {id: 2, branch: workline/documentalist/release, base: main}
