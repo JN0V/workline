@@ -176,7 +176,7 @@ func RunWith(repo, name string, o Options) (*verdict.Verdict, *Added) {
 	if ch != nil || o.Keep {
 		add = &Added{Checks: []CheckCount{}, Findings: []Finding{}}
 	}
-	r := &runner{repo: repo, out: out, gate: name, ch: ch, all: g.Checks}
+	r := &runner{repo: repo, out: out, gate: name, ch: ch, all: g.Checks, asked: o.Kept != ""}
 	if ch != nil {
 		add.Base = ch.base
 		r.kept = readKept(o.Kept, ch.base)
@@ -267,6 +267,7 @@ type runner struct {
 	ch              *change
 	all             []Check
 	kept            *keptFile // the merge base's, when kept
+	asked           bool      // a folder of kept findings was given: none there for the base is said
 	keepDir, keepAt string    // where HEAD's findings are kept, and its commit
 	present         bool      // name every finding of HEAD (found)
 	found           []string  // the last check's, by their fingerprints
@@ -343,6 +344,9 @@ func (rn *runner) check(c Check) (found []verdict.Finding, note string, count Ch
 	// The merge base's findings: kept on main for the same command,
 	// config and tool, else run again there (ADR-0049, ADR-0050).
 	kept, notKept := keptBase(rn.kept, rn.gate, c, ch, tool, bins)
+	if rn.kept == nil && rn.asked {
+		notKept = "none kept for " + short(ch.base) // missing, expired, another commit's
+	}
 	var atBase string
 	if kept != nil {
 		compareWith(counted, kept.Results, headLines, ch.moved)

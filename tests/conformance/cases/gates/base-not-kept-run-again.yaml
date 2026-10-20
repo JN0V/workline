@@ -1,0 +1,23 @@
+case: gates/base-not-kept-run-again
+about: >
+  Main kept the findings of its tip, not of the commit a merge request
+  forked from: the folder holds none for its merge base (missing, expired,
+  another commit's). The check runs again at the merge base, as before
+  (ADR-0049), and the summary says why.
+given:
+  repo: linted
+  setup:
+    - git checkout -q -b change
+    - |
+      sed -i 's|^\tos.Remove("c.tmp")$|&\n\tos.Remove("d.tmp")|' clean.go && git commit -qam "feat: clean d too"
+    - |
+      git checkout -q main && echo "// More to come." >> main.go && git commit -qam "docs: say more comes" && git checkout -q change
+  env: {PATH: "$FIXTURES/bin:$PATH"}
+  config:
+    routing: {events: {merge-request: ["gate:merge"]}}
+    gates: {merge: {checks: [{id: lint, run: "golangci-lint run --output.sarif.path={out}/lint.sarif", output: sarif, max: {error: 0}}]}}
+run: {route: merge-request, input: {range: main..HEAD}, kept-on-main: main, summary: true}
+expect:
+  status: block
+  findings: [{rule: over-threshold, where: lint, message: "1 new error finding, at most 0 allowed (3 there before it"}]
+  summary-file: ["at the merge base; not read as kept on main: none kept for"]
