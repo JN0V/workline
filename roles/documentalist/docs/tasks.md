@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/parts.go, internal/builtin/documentalist/counts.go]
-checked: 35f9092d
+checked: e443e5e2
 verified: agent:claude-code
 ---
 # Documentalist — the agent's tasks
@@ -34,8 +34,9 @@ pages the reader checks flag: [gardening](gardening.md). Part of [the documental
   context budget.
 - Docs left out are taken in the run's next round, once the first ones are
   applied ([role contract](../../../docs/spec/role-contract.md#one-run),
-  "Again"); past the last round, they stay suspect for a person or a later
-  run.
+  "Again"), or kept in the clone on a release tool's pull request
+  ([push](push.md#a-release-tools-pull-request)); past the last round,
+  they stay suspect for a person or a later run.
 - `ai-max-tokens` caps what a run spends, all calls together: past it, the
   agent is asked nothing more and the rest waits.
 

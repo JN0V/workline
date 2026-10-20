@@ -1,6 +1,6 @@
 ---
 sources: [internal/role/config.go, internal/role/role.go, cmd/workline, internal/engine/engine.go, internal/forge/gitlab.go, internal/hooks]
-checked: a0b7c5a7
+checked: e443e5e2
 judged: e343388
 verified: agent:claude-code
 reader: 0b97bbc207c5
@@ -211,5 +211,8 @@ A role's `pre` and `post` receive:
   `release` ([ADR-0017](adr/0017-the-release-manager.md)); the reviewer
   leaves the versions the tool bumps
   ([#384](https://github.com/JN0V/workline/issues/384));
+  `WORKLINE_EARLIER_ROUNDS`, the folders of the run's earlier rounds,
+  whose fix the round proposes with its own
+  ([#572](https://github.com/JN0V/workline/issues/572));
 - run by a handoff: the inputs `handoff-from` and `handoff-reason`.
 - in the round a role asks last (`in/then`): `WORKLINE_THEN`, its task.
