@@ -1,6 +1,6 @@
 ---
 sources: [ci/github/workline.yml, ci/github/workline-apply.yml, ci/gitlab/workline.gitlab-ci.yml, internal/line/line.go, internal/gate/kept.go, internal/report/main.go, routing.default.yaml]
-checked: dba82333
+checked: 1279892d
 verified: agent:claude-code
 ---
 # Main after a merge
@@ -97,7 +97,7 @@ workline route merge-request --gates-only --forge none --gates-kept kept/ \
 
 - **The range's start**: main's tip before the push. Zeros, a branch's
   first push, or no commit here: HEAD's first parent. None: every
-  finding is said, none counted.
+  finding is said, none counted; a check that did not run still errs.
 - **Kept only** from a tree that is HEAD's commit, every tracked file as
   committed; else said, nothing kept.
 - **`apply --main`** reads the result `route main` printed, as data.
