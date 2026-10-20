@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/adopt.go, internal/builtin/documentalist/byname.go, internal/builtin/documentalist/releasekept.go, internal/engine/night.go]
-checked: 7eadd606
+checked: 11255245
 verified: agent:claude-code
 judged-in-parts: c7e1e98
 ---
@@ -93,6 +93,11 @@ docs`, or by a person moving `checked`.
   and does not hold it.
 - One too large to be judged whole holds it until the next gardening
   judges it in parts, or a person moves `checked`.
+- **The others' fixes are kept**
+  ([#543](https://github.com/JN0V/workline/issues/543)): a doc still due
+  holds the release alone; the run applies what it fixed, goes round for
+  what it deferred when its fixes stay in the clone, and says whom each
+  doc waits on: a person, by name, the next gardening, or the agent.
 - The last release is the highest version tag merged (`release.tags`, `v*`
   by default), prereleases left out — never the nearest tag, which a
   hotfix merged back would be; at a tag, the one before it ([how](../../../docs/release.md#at-a-tag-on-gitlab)).
@@ -113,7 +118,8 @@ commits touched.
   on each push to it, the docs due are counted with no agent and hold the
   release; one finding says so (`ai-waits-for-night`), and one comment on
   it lists them, when their fix comes and how to have it sooner, edited on
-  each push, "none left" once they are in. A doc fix would otherwise
+  each push, "none left" once they are in. A doc no agent can judge says
+  so there, and why: a person reads it. A doc fix would otherwise
   change its head after a person's yes. Held, the head's verdict waits
   (`workline/verdict` pending), never red.
 - **The agent judges them every night**, on that pull request's head,
