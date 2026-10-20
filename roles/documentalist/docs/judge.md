@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/notes.go, internal/builtin/documentalist/values.go, internal/builtin/documentalist/judge.go, internal/builtin/documentalist/documentalist.go]
-checked: cebe3b41
+checked: 9583d0b1
 verified: agent:claude-code
 ---
 # Documentalist — the judge
@@ -117,7 +117,7 @@ one place the engine had already named (step 4). Now:
   ([ADR-0013](../../../docs/adr/0013-what-was-judged-is-not-asked-again.md));
 - each place withheld is a finding for a person — the refusal's rule, the
   doc and its lines, and why — in the run's verdict, the merge request's
-  comment or the gardening pull request, as other findings; the doc's
+  comment or the fix's own merge request, as other findings; the doc's
   `suspect` finding says it was fixed in part;
 - with every place of a doc withheld, the fix is only its record: `judged`
   set, the places reported;
@@ -144,11 +144,13 @@ one place the engine had already named (step 4). Now:
   its record is kept in the documentalist's comment there, nothing
   committed for it, and the finding says so
   ([more](push.md#a-doc-found-with-nothing-to-fix-no-commit)).
-- The gardening pull request (gardening: the scheduled run, nightly or
-  weekly) lists each doc it judged with the same outcome — fixed and in
-  how many places, still true, or nothing found wrong — whether `checked`
-  moved or `judged` was recorded, and, for a doc not given whole, what was
-  read and not read.
+- The fix's own merge request, gardening's (the scheduled run, nightly
+  or weekly) or a release's, lists each doc judged with the same outcome
+  — fixed and in how many places, still true, or nothing found wrong —
+  whether `checked` moved or `judged` was recorded, and, for a doc not
+  given whole, what was read and not read. A release's holds every round
+  of its run: their docs and places withheld, a later round's word on a
+  doc standing ([#572](https://github.com/JN0V/workline/issues/572)).
 
 ## Asked again
 
