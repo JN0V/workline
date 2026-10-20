@@ -1082,11 +1082,27 @@ func routeCmd(args []string) int {
 	gatesKept := fs.String("gates-kept", "", "the folder of the gates' findings kept by commit: on main, the head's are written there, the next base; on a merge request, the merge base's are read there when kept with the same command, config and tool, rather than running the tools again")
 	warnApart := fs.Bool("warn-apart", false, "leave what only warns to a run apart, which --warn-only makes: the reviewer's lenses that warn, on a merge request; the verdict waits only for what can block")
 	warnOnly := fs.Bool("warn-only", false, "the run apart from the verdict: only what a line with --warn-apart left, posted when done; never the head's verdict")
+	dryRun := fs.Bool("dry-run", false, "on release: what would hold the release if it were cut now, every step run with no agent, nothing applied, said as warnings, never a block (`workline apply --release-dry-run` posts it)")
 	inputs := pairs{}
 	fs.Var(inputs, "input", "input name=value, given to every step (repeatable)")
 	event, code, done := parseAfter(fs, args, "an event")
 	if done {
 		return code
+	}
+	// A release's dry run (ADR-0050) asks no agent, applies and writes
+	// nothing: it says what would hold the release cut from the branch
+	// checked out.
+	if *dryRun {
+		switch {
+		case event != "release":
+			return misuse(fs, "--dry-run goes with the event release: what would hold the release")
+		case *ai != "" && *ai != "none":
+			return misuse(fs, "a release's dry run asks no agent: no --ai "+*ai)
+		case *target != "" || *openMR || *pushMR:
+			return misuse(fs, "a release's dry run writes nothing: no --target, --open-merge-request nor --push-to-merge-request (`workline apply --release-dry-run` posts what it found)")
+		case *verdictFile != "" || *gatesOnly || *gatesFrom != "" || *warnApart || *warnOnly:
+			return misuse(fs, "a release's dry run runs the release's whole line, giving no verdict: no --verdict, --gates-only, --gates-from, --warn-apart nor --warn-only")
+		}
 	}
 	if *gatesOnly && *gatesFrom != "" {
 		return misuse(fs, "--gates-only runs the gates, --gates-from reads them: one or the other")
@@ -1147,7 +1163,7 @@ func routeCmd(args []string) int {
 	}
 	res := line.RunWith(event, engine.Options{Repo: abs, RolesDir: rolesDir, AI: *ai, DefaultAI: userDefaultAI(), Inputs: inputs,
 		Forge: *forgeSpec, Target: t, Branch: *branch, Scope: scope, NoApply: *noApply, OpenMergeRequest: *openMR, PushToMergeRequest: *pushMR,
-		FindRelease: findRelease},
+		FindRelease: findRelease, DryRun: *dryRun},
 		&line.Gates{Only: *gatesOnly, From: *gatesFrom, Kept: *gatesKept})
 	if err := wlreport.Write(abs, event, wlreport.FromLine(res), *sarifFile, *cqFile); err != nil {
 		fmt.Fprintln(os.Stderr, "workline:", err)
