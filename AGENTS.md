@@ -78,6 +78,7 @@ examples):
 ```sh
 go build -o ~/.local/bin/workline ./cmd/workline
 go test -count=1 ./...     # -count=1: the conformance suite builds the engine itself
+golangci-lint run --new-from-merge-base=origin/main ./...   # 2.15.0: a lint finding a pull request adds blocks it
 WORKLINE_EVAL=claude go test -count=1 -timeout 60m ./tests/evaluation/   # real agent, costs tokens
 ```
 
