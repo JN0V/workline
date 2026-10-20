@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
+	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
@@ -204,6 +206,66 @@ func TestGitLabWho(t *testing.T) {
 	refused = http.StatusNotImplemented
 	if _, err := (&gitlab{repo: t.TempDir()}).Notes(Target{Kind: "issue", ID: 3}); err == nil || errors.Is(err, ErrAuthorsUnknown) {
 		t.Fatalf("members out of reach: %v", err)
+	}
+}
+
+// A bot GitLab does not name so (#552): a service account the project
+// names in `gitlab: {bots}` is a bot, the members read or not; with the
+// members unread, the bot's own token's user (WORKLINE_GITLAB_TOKEN, GET
+// /user) is one too, a person's token's never.
+func TestGitLabBotsNamed(t *testing.T) {
+	members, userAsked := true, 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		p := strings.TrimPrefix(r.URL.EscapedPath(), "/api/v4/projects/group%2Fproj")
+		author := func(u string) map[string]any { return map[string]any{"username": u} }
+		switch {
+		case p == "/api/v4/user":
+			userAsked++
+			json.NewEncoder(w).Encode(map[string]any{"id": 9, "username": "line-account", "bot": false})
+		case p == "/members/all" && !members:
+			http.Error(w, `{"message":"401 Unauthorized"}`, http.StatusUnauthorized)
+		case p == "/members/all":
+			json.NewEncoder(w).Encode([]map[string]any{{"username": "service_account_group_7_ab12", "access_level": 30, "state": "active"}})
+		case p == "/merge_requests/5/notes":
+			json.NewEncoder(w).Encode([]map[string]any{
+				{"id": 1, "body": "kept", "author": author("service_account_group_7_ab12")},
+				{"id": 2, "body": "applied", "author": author("line-account")},
+				{"id": 3, "body": "a word", "author": author("alice")},
+			})
+		default:
+			http.Error(w, `{"message":"404 Not Found"}`, http.StatusNotFound)
+		}
+	}))
+	defer srv.Close()
+	t.Setenv("CI_API_V4_URL", srv.URL+"/api/v4")
+	t.Setenv("CI_PROJECT_ID", "")
+	t.Setenv("CI_PROJECT_PATH", "group/proj")
+	t.Setenv("GITLAB_TOKEN", "the-bots")
+	repo := t.TempDir()
+	os.MkdirAll(filepath.Join(repo, ".workline"), 0o755)
+	os.WriteFile(filepath.Join(repo, ".workline", "config.yaml"), []byte("gitlab: {bots: [service_account_group_7_ab12]}\n"), 0o644)
+	mr := Target{Kind: "merge-request", ID: 5}
+	bots := func(notes []Note) string {
+		var out []string
+		for _, n := range notes {
+			out = append(out, fmt.Sprintf("%s:%v", n.Author, n.Bot))
+		}
+		return strings.Join(out, " ")
+	}
+
+	notes, err := (&gitlab{repo: repo}).Notes(mr)
+	if err != nil || bots(notes) != "service_account_group_7_ab12:true line-account:false alice:false" || !notes[0].Insider {
+		t.Fatalf("members read: %+v %v", notes, err)
+	}
+	members = false
+	notes, err = (&gitlab{repo: repo}).Notes(mr)
+	if !errors.Is(err, ErrAuthorsUnknown) || bots(notes) != "service_account_group_7_ab12:true line-account:false alice:false" || userAsked != 0 {
+		t.Fatalf("members unread, a person's token: %+v %v, /user asked %d times", notes, err, userAsked)
+	}
+	t.Setenv("WORKLINE_GITLAB_TOKEN", "the-bots")
+	notes, err = (&gitlab{repo: repo}).Notes(mr)
+	if !errors.Is(err, ErrAuthorsUnknown) || bots(notes) != "service_account_group_7_ab12:true line-account:true alice:false" || userAsked != 1 {
+		t.Fatalf("members unread, the bot's own token: %+v %v, /user asked %d times", notes, err, userAsked)
 	}
 }
 

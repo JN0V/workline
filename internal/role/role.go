@@ -205,6 +205,12 @@ type ProjectConfig struct {
 	// Merge is the project's merge policy (ADR-0042): nil, none — no
 	// pull request's auto-merge is touched.
 	Merge *Merge `yaml:"merge"`
+	// GitLab.Bots are the users GitLab does not name bots that are: a
+	// service account, an account made for the line (ADR-0023, amended);
+	// the gitlab forge reads them.
+	GitLab struct {
+		Bots []string `yaml:"bots"`
+	} `yaml:"gitlab"`
 }
 
 // Merge is the project's merge policy: which pull requests `workline
