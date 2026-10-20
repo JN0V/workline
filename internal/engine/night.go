@@ -69,6 +69,22 @@ func OpenRelease(o Options) (*forge.MergeRequest, []verdict.Finding, error) {
 	return &found[0], said, nil
 }
 
+// MergeRefOf is a merge request as the forge a run speaks to names it:
+// #n on GitHub, !n on GitLab; #n when the forge cannot be opened.
+func MergeRefOf(o Options, id int) string {
+	spec := o.Forge
+	if spec == "" {
+		if cfg, err := role.LoadProjectConfig(o.Repo); err == nil {
+			spec = cfg.Forge
+		}
+	}
+	f, err := forge.Open(spec, o.Repo)
+	if err != nil || f == nil {
+		return fmt.Sprintf("#%d", id)
+	}
+	return forge.MergeRef(f, id)
+}
+
 // OnReleaseHead checks out the head of the release merge request a run on
 // `release` targets, detached, when it is not checked out already: its
 // docs are judged on its files. back puts the clone where it was; a

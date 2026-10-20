@@ -143,6 +143,10 @@ type runSpec struct {
 	// what it printed kept in main's issue (apply --main), as CI's job
 	// holding the forge's token does after main's run.
 	MainIssue bool `yaml:"main-issue"`
+	// DryRunPosted: after the run, and after the second with then: again,
+	// what a release's dry run printed posted (apply --release-dry-run),
+	// as CI's job holding the forge's token does each night.
+	DryRunPosted bool `yaml:"dry-run-posted"`
 	// KeptOnMain: before the run, main's run after a merge on this
 	// revision, checked out then left, as CI's job on main: the gates'
 	// findings kept by commit in a folder the run reads (--gates-kept).
@@ -740,6 +744,23 @@ func runCase(t *testing.T, c *caseFile) []string {
 		into.Findings = append(into.Findings, kept.Findings...)
 		return nil
 	}
+	// What a release's dry run printed, posted as CI's job holding the
+	// forge's token does each night (apply --release-dry-run).
+	postDryRun := func(printed []byte, into *result) []string {
+		file := filepath.Join(work, "dry-run.json")
+		os.WriteFile(file, printed, 0o644)
+		apply := exec.Command(engineBin, "apply", "--release-dry-run", file, "--repo", repo, "--forge", forgeSpec, "--json")
+		apply.Dir, apply.Env = repo, cmd.Env
+		var errOut bytes.Buffer
+		apply.Stderr = &errOut
+		out, err := apply.Output()
+		var posted result
+		if json.Unmarshal(out, &posted) != nil {
+			return []string{fmt.Sprintf("apply --release-dry-run printed no result: %v\n%s", err, errOut.String())}
+		}
+		into.Findings = append(into.Findings, posted.Findings...)
+		return nil
+	}
 	if j := c.Run.GatesJob; j != nil {
 		// CI's job of the gates alone, before the line: its own variables,
 		// its result the file the line reads.
@@ -779,6 +800,11 @@ func runCase(t *testing.T, c *caseFile) []string {
 			return p
 		}
 	}
+	if c.Run.DryRunPosted {
+		if p := postDryRun(stdout.Bytes(), &r); len(p) > 0 {
+			return p
+		}
+	}
 	if c.Run.Then == "again" {
 		// The same run once more, on the forge and the repository as the
 		// first left them, after a person's edits (between): what a run
@@ -803,6 +829,11 @@ func runCase(t *testing.T, c *caseFile) []string {
 		}
 		if c.Run.MainIssue {
 			if p := keepMain(stdout.Bytes(), &r2); len(p) > 0 {
+				return p
+			}
+		}
+		if c.Run.DryRunPosted {
+			if p := postDryRun(stdout.Bytes(), &r2); len(p) > 0 {
 				return p
 			}
 		}

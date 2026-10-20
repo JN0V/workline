@@ -1,0 +1,7 @@
+case: cli/release-dry-run-on-another-event-is-misuse
+about: "`--dry-run` says what would hold a release: on another event it is misuse, 64 (ADR-0050)."
+given: {repo: basic}
+run: {cli: [route, merge-request, --dry-run]}
+expect:
+  exit: 64
+  stderr: ["--dry-run goes with the event release"]
