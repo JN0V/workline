@@ -50,15 +50,22 @@ agent, the reviewer's two runs included.
   lens, in turn, on what is new ([below](#after-ready-only-what-is-new)).
 - **A run on ready where a lens did not answer** (unreadable after its
   retry, its budget spent): `retried=once`, and the next push asks every
-  lens again, once (`every-lens-again`). Failing again, `read=all` is
-  written all the same, and the comment says the change was not
-  reviewed whole by every lens (`every-lens-not-whole`).
+  lens again, once (`every-lens-again`).
+- **Failing again**: the comment says the change was not reviewed whole
+  by every lens, and names the lenses that did not answer
+  (`every-lens-not-whole`).
+  - The record names them too (`failed=`), holds none of the commits,
+    and never says every lens read the change
+    ([#588](https://github.com/JN0V/workline/issues/588)).
+  - The next push, or the run run again, asks them alone, on the whole
+    change, whosever turn it is; the others read it already.
+  - Once they answer, the commits are recorded, and `read=all` written.
 - **A run on ready cancelled**: a push while it goes on cancels it, one
   run per merge request. It wrote nothing, so the next run reads every
   lens.
 - **A draft again**: its runs ask no lens, and the last review stands,
-  its comment kept. Only its record drops `read=all` and
-  `retried=once`; ready again, every lens reads it once more, even after
+  its comment kept. Only its record drops `read=all`, `retried=once`
+  and `failed=`; ready again, every lens reads it once more, even after
   a cancelled run.
 - **A record that does not read** says nothing of it: one lens, every
   commit reviewed again. A record written before `read=all` existed: the
@@ -81,6 +88,9 @@ AI reads only what is new.
 - **The commits no review read yet**: the lens in turn reads those the
   record does not hold, by commit id or patch id. A rebase, or a merge of
   the base that settled nothing, reads nothing again
+  ([the record](run.md#3-the-record)).
+- **A lens that did not answer reads them first**, whosever turn it is:
+  no run records them before it does
   ([the record](run.md#3-the-record)).
 - **The lenses that warn: five new commits a push** (`commits-per-push`),
   those changing code counted, the oldest first.

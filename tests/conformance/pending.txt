@@ -1,9 +1,2 @@
 # Cases the engine does not pass yet. The suite runs them anyway and fails
 # if one starts passing while still listed here.
-
-# A lens that failed leaves its commits unread, read=all never written by
-# a run that did not read (#588).
-reviewer/every-lens-not-whole-said-after-a-second-failure
-reviewer/every-lens-owed-once-after-a-failed-run-on-ready
-reviewer/lens-that-blocks-failed-reads-its-commits-when-run-again
-reviewer/warn-lenses-failed-read-their-commits-when-run-again

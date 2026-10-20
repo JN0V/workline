@@ -234,6 +234,20 @@ func TestRecord(t *testing.T) {
 	if back := read(owed.add([]string{"bb"}, nil).String()); back.Owed {
 		t.Errorf("a run added still owes every lens: %+v", back)
 	}
+	// The lenses that did not answer (#588) read back; a run recording
+	// commits leaves none owing them.
+	failed := Record{Runs: 1, Failed: []string{"edge-cases", "diff-alone"}}
+	if back := read(failed.String()); !slices.Equal(back.Failed, failed.Failed) || back.Runs != 1 || back.ReadAll {
+		t.Errorf("a record owed by failed lenses read back: %+v from %s", back, failed)
+	}
+	if back := read(failed.add([]string{"aa"}, nil).String()); back.Failed != nil {
+		t.Errorf("a run added still owes failed lenses: %+v", back)
+	}
+	// Owing: those not asked still owe, those answering no longer do, the
+	// new ones join.
+	if got := failed.owing([]string{"edge-cases", "tests"}, []string{"tests"}); !slices.Equal(got, []string{"diff-alone", "tests"}) {
+		t.Errorf("owing = %v, want diff-alone, tests", got)
+	}
 	// The findings that block (#326) read back whole, whatever they hold:
 	// nothing in them ends the comment hiding them, a run added keeps them.
 	blocked := Record{Reviewed: []string{"aa"}, Runs: 1, Blocks: []Block{{Lens: "correctness", At: "aa", Where: "a.go:3",

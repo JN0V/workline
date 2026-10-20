@@ -64,6 +64,14 @@ flowchart LR
      resolution; never the base's code. Nothing settled: nobody asked.
    - New commits that change no code are recorded, nobody asked, the turn
      of the lenses kept.
+   - **A lens that does not answer** (its answer unreadable after its
+     retry, its budget spent) owes the commits
+     ([#588](https://github.com/JN0V/workline/issues/588)):
+     - the record names it (`failed=`) and holds none of them, nor their
+       patch ids;
+     - the next run, a push or the same run again, asks it first,
+       whosever turn it is, even the other run's ([apart](apart.md));
+     - once it answers, the commits are recorded and the turn moves on.
    - **A push before the last review is written** waits for it, and reads it;
      a review written after another keeps its commits and lines ([#375](https://github.com/JN0V/workline/issues/375)).
    - **What blocked stands**, recorded too, until a commit answers it

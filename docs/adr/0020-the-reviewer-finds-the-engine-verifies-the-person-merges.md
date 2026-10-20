@@ -11,7 +11,8 @@
   finding judged once
   ([ADR-0050](0050-each-act-has-its-moment-and-a-wait-budget.md));
   amended 2026-10-20: a block looked for on the side of the change it
-  was found on (#570)
+  was found on (#570); a lens that did not answer owes its commits,
+  and `read=all` waits for it (#588)
 - **Date:** 2026-10-04
 - **Builds on:** ADR-0005 (a judge's independence), ADR-0009 (a question in
   parts), ADR-0011 (the review is on the merge request), ADR-0013 (what was
@@ -588,6 +589,9 @@ merge-request line; on in workline's own repository.
   every lens (`every-lens-not-whole`): no full review on every push of a
   change too large for the budget. This replaces "a lens failing owes
   nothing" above.
+  *(Amended 2026-10-20: `read=all` is no longer written for a run that
+  did not read; the lenses that did not answer owe the change; see
+  Amendment, #588.)*
 - **An agent out of reach** writes no comment, so no mark: the next push
   asks every lens again, nothing spent in between.
 - **A draft forgets it**: a run on a draft drops `read=all`, so a merge
@@ -792,3 +796,31 @@ merge-request line; on in workline's own repository.
   - Guessing an older block's side from the commit it was found at: that
     commit may be gone after a force-push, and a wrong guess drops a
     block in silence.
+
+## Amendment (2026-10-20, #588: a lens that did not answer owes its commits)
+
+- **What was wrong**: on [#582](https://github.com/JN0V/workline/pull/582),
+  the lenses that warn failed to answer on the run on ready, then on its
+  retry. The #359 amendment wrote `read=all` all the same. The run run
+  again fell on correctness's turn, which blocks: the run apart asked
+  nobody, recorded the 4 commits and their patch ids, and said "No
+  finding on the commits reviewed"
+  ([#588](https://github.com/JN0V/workline/issues/588)).
+- **A lens that did not answer owes its commits**: the record names it
+  (`failed=`) and holds none of them. The next run of its side, a push
+  or the same run again, asks it first, whosever turn it is. No run
+  records those commits before it reads them, so no patch id of theirs
+  either: a patch is judged once only when it was truly read.
+- **`read=all` is written only when every lens answered**: past the run
+  on ready's retry, the lenses that did not answer are asked alone, on
+  the whole change, until they do; the others are not asked again.
+- **Cost**: the lenses that did not answer, together in one call by
+  default, each push until they answer; as a lens failing on an
+  ordinary push is asked again. A change too large for one call is read
+  in parts, or not asked at all past `parts-max`
+  ([#446 amendment](#amendment-2026-10-17-446-a-change-too-large-read-in-parts)).
+- **A draft forgets it**, as `read=all`: ready again reads every lens.
+- **Rejected**: one lens a push after the retry, as before (the turn
+  passes to the other run's lens, which records what no lens of this
+  side read); asking every lens again at each push (those that answered
+  read the change already).

@@ -316,7 +316,10 @@ func prepare(runDir, repo string, s Settings) int {
 			Message: "the patch ids of the commits' changes could not be read (" + sp.Unread.Error() + "): a commit rebased is reviewed again"})
 	}
 	start := sp.From
-	marked := rec.ReadAll || rec.Retried // what a draft's run forgets (runOnReady)
+	marked := rec.ReadAll || rec.Retried || len(rec.Failed) > 0 // what a draft's run forgets (runOnReady)
+	// The lenses owing commits are this run's: the other run's owe them to
+	// its own record (ADR-0050).
+	rec.Failed = slices.DeleteFunc(rec.Failed, func(l string) bool { return !s.ofSide(side, l) })
 	ready := runOnReady(runDir, &rec, recordRead)
 	if ready {
 		start = base
@@ -518,7 +521,7 @@ func (st *state) side(s Settings) []string {
 	if st.Warn == "" {
 		return nil
 	}
-	mine := func(lens string) bool { return s.AIFindings.Blocks(lens) == (st.Warn == warnApart) }
+	mine := func(lens string) bool { return s.ofSide(st.Warn, lens) }
 	var kept, other []string
 	for _, l := range st.Lenses {
 		if mine(l) {
@@ -532,6 +535,13 @@ func (st *state) side(s Settings) []string {
 		st.Alone, other = false, append(other, alone)
 	}
 	return other
+}
+
+// ofSide says whether a lens, or the diff-alone facet, is a run's to ask:
+// one that blocks on the verdict's run, one that warns on the run apart,
+// any on a run not split.
+func (s Settings) ofSide(warn, lens string) bool {
+	return warn == "" || s.AIFindings.Blocks(lens) == (warn == warnApart)
 }
 
 // warns says whether a lens of the project only warns, or the diff-alone
@@ -548,7 +558,9 @@ func (s Settings) warns() bool {
 // otherSide settles a run whose push takes only the other run's lenses
 // (ADR-0050): nobody asked here, the commits recorded and the turn moved
 // on, as the other run moves its own; on ready, every lens of this side
-// read, none being asked. The summary comment says where they read.
+// read, none being asked. The summary comment says where they read. A
+// lens of this side owing them is asked instead, never passed over
+// (lenses, #588): a commit recorded here is one none of them had to read.
 func otherSide(runDir, repo string, s Settings, st state, other []string, fresh int) int {
 	why := fmt.Sprintf("no lens that blocks on this push: %s, which only %s, %s apart from the verdict, in %s own comment", strings.Join(other, ", "),
 		plural(len(other), "warns", "warn"), plural(len(other), "reads", "read"), plural(len(other), "its", "their"))
@@ -665,7 +677,7 @@ func runOnReady(runDir string, rec *Record, recordRead bool) bool {
 	}
 	draft := input(runDir, "draft")
 	if draft == "true" {
-		rec.ReadAll, rec.Retried = false, false
+		rec.ReadAll, rec.Retried, rec.Failed = false, false, nil
 	}
 	switch asked := input(runDir, "lenses"); asked {
 	case "all":
@@ -678,7 +690,9 @@ func runOnReady(runDir string, rec *Record, recordRead bool) bool {
 
 // everyLens marks the record of the run on ready (#359): every lens read
 // the change once each answered; one that did not leaves every lens owed
-// to the next push, once, then the mark written all the same, said.
+// to the next push, once. Failing again, said, only the lenses that did
+// not answer are asked again, on the whole change, at each run until they
+// do (lenses): the record never says every lens read it before (#588).
 func everyLens(st state, v *Review, answered bool) {
 	switch {
 	case !st.Every:
@@ -686,20 +700,23 @@ func everyLens(st state, v *Review, answered bool) {
 	case answered:
 		v.Record.ReadAll, v.Record.Retried = true, false
 		return
-	case !st.Record.Retried:
+	case !st.Record.Retried && len(st.Record.Failed) == 0:
 		v.Record.Retried = true
 		v.Findings = append(v.Findings, verdict.Finding{Rule: "every-lens-again", Level: "warn",
 			Message: "not every lens answered on the run on ready: the next push asks every lens again, on the whole change, once"})
 		return
 	}
-	v.Record.ReadAll, v.Record.Retried = true, false
+	v.Record.Retried = false
+	n := len(v.Record.Failed)
 	v.Findings = append(v.Findings, verdict.Finding{Rule: "every-lens-not-whole", Level: "warn",
-		Message: "not every lens answered, the run on ready asked twice: the change was not reviewed whole by every lens; the next pushes get one lens each"})
+		Message: fmt.Sprintf("not every lens answered, the run on ready asked twice: the change was not reviewed whole by every lens; %s that did not answer, %s, %s again on the whole change at the next push, or when the run runs again",
+			plural(n, "the lens", "the lenses"), strings.Join(v.Record.Failed, ", "), plural(n, "is asked", "are asked"))})
 }
 
 // lenses are the lenses this run asks: every one on a machine, or on the
 // run on ready (every, runOnReady); on a merge request, the next in turn,
-// or those the run is told (`lenses=`). A lens
+// or those the run is told (`lenses=`); before either, those owing the
+// commits after the record (#588). A lens
 // in skip, which has nothing to read in this change, is never asked. With
 // them, the diff-alone facet, when its setting is on; a run told which
 // lenses to ask asks it only when it names it, whatever its setting.
@@ -734,7 +751,24 @@ func lenses(runDir string, s Settings, rec Record, skip map[string]string, every
 			}
 		}
 		return out, named, nil
-	case os.Getenv("WORKLINE_EVENT") != "merge-request", every: // the run on ready (#129, #359)
+	case os.Getenv("WORKLINE_EVENT") != "merge-request":
+		return usable, s.DiffAlone, nil
+	}
+	// The lenses that did not answer read their commits before the turn
+	// moves on, whosever turn it is (#588); on the run on ready past its
+	// retry, they alone: the others read the whole change already.
+	var owed []string
+	for _, l := range rec.Failed {
+		if l == alone || slices.Contains(usable, l) {
+			owed = append(owed, l)
+		}
+	}
+	if len(owed) > 0 && !rec.Retried && !rec.Owed {
+		facet := slices.Contains(owed, alone) || !every && s.DiffAlone
+		return slices.DeleteFunc(owed, func(l string) bool { return l == alone }), facet, nil
+	}
+	switch {
+	case every: // the run on ready (#129, #359)
 		return usable, s.DiffAlone, nil
 	case len(usable) == 0:
 		return nil, s.DiffAlone, nil
@@ -1851,6 +1885,10 @@ func settled(runDir, repo string, s Settings, st state, c candidates) (Review, [
 	if st.Spec == nil { // a spec is read whole each run: no commits to record, nothing carried
 		if v.Complete {
 			v.Record = st.Record.add(st.Commits, st.Patches)
+		} else {
+			// Unread by the lenses that did not answer, the commits are
+			// theirs: no run records them before they read them (#588).
+			v.Record.Failed = st.Record.owing(facets(st), c.Failed)
 		}
 		v.Record.Blocks = blocks
 		v.Record.Judged = slices.Clone(v.Record.Judged)
