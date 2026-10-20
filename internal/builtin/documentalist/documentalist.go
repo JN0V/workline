@@ -1438,7 +1438,7 @@ doc when its reader really gained something to know.
 			continue
 		}
 		if sd.tooLarge {
-			f.Message += "\n(too large to be put before the agent — the doc with what changed in its sources, or with its sources as they are now: a person judges it)"
+			f.Message += "\n(too large to be put before the agent — the doc with what changed in its sources, or with its sources as they are now: " + personJudges + ")"
 			continue
 		}
 		if task != "" || partsAsked > 0 || recording {
@@ -1590,6 +1590,10 @@ func holdTheRelease(findings []verdict.Finding, suspects map[string]*suspectDoc,
 	return findings, nil
 }
 
+// personJudges ends the note of a doc no agent can judge: a person does.
+// Every such note says it, and heldBy reads it there (#543).
+const personJudges = "a person judges it"
+
 // Whom a doc due holding the release waits on (heldBy).
 const (
 	heldForAPerson = "a person"
@@ -1606,7 +1610,7 @@ func heldBy(f verdict.Finding) string {
 	switch last := lines[len(lines)-1]; {
 	case last == partsLater:
 		return heldForParts
-	case strings.Contains(last, "a person judges it"):
+	case strings.Contains(last, personJudges):
 		return heldForAPerson
 	}
 	return heldForAgent
