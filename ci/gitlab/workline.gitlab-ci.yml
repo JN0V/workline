@@ -447,15 +447,13 @@ workline:release-docs:apply:
     reports: {annotations: workline-annotations.json}
     expire_in: 1 week
 
-# A release's dry run, every night (ADR-0050; the first release after
-# v0.37.0): each schedule but the sample's, the gardening's and the release
-# docs'. What would hold the release if it were cut now: on the release
-# tool's merge request open into the branch, its head (read with the bot's
-# token); else the branch's tip. The release's line, every step, no agent,
-# nothing applied: said as warnings, never failing the pipeline. Install
-# the tools of the gates your `release` line runs here.
-# workline:release:dry-run:post says it in one comment on that merge
-# request, else in the default branch's issue (docs/release.md).
+# A release's dry run, on each schedule but the sample's (ADR-0050; the
+# first release after v0.37.0): what would hold the release if it were cut
+# now, on the release merge request open (read with the bot's token), else
+# the branch's tip. Every step, no agent, nothing applied, said as
+# warnings. Install here the tools of your `release` line's gates.
+# workline:release:dry-run:post says it on that merge request, else in the
+# default branch's issue (docs/release.md).
 workline:release:dry-run:
   image: $WORKLINE_IMAGE:$WORKLINE_VERSION
   stage: test
@@ -499,18 +497,12 @@ workline:release:dry-run:post:
     reports: {annotations: workline-annotations.json}
     expire_in: 1 week
 
-# At a release's tag (ADR-0050; the first release after v0.37.0): a tag
-# pipeline, whoever pushed the tag, a person or a release tool. The
-# release's line, no agent, no token: the docs made suspect since the
-# release before this one, the gates your `release` line runs; red when
-# they hold the release. Have the jobs that publish it need it (`needs:
-# [workline:release]`): GitLab's release job, a package's upload. Nobody
-# waits on it: the night judged the docs before (the release merge
-# request's, the dry run's list). A release merge request
-# (releaser-pleaser's) is judged as the release on each of its pipelines
-# already; this checks its tag again. A tool that tags and publishes in
-# one job (semantic-release): run `workline route release --ai none`
-# before it, in that job. docs/release.md.
+# At a release's tag (ADR-0050; the first release after v0.37.0), whoever
+# pushed it: the release's line, no agent, no token, red when it holds the
+# release, compared with the release before this one. Have the jobs that
+# publish it need it (`needs: [workline:release]`). A tool that tags and
+# publishes in one job (semantic-release) runs `workline route release
+# --ai none` before it, in that job. Why and how: docs/release.md.
 workline:release:
   image: $WORKLINE_IMAGE:$WORKLINE_VERSION
   stage: test

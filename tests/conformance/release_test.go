@@ -194,7 +194,7 @@ func TestGitLabReleaseJobAtATag(t *testing.T) {
 		t.Errorf("workline:release may fail: a held release would publish")
 	}
 	script, _ := job["script"].([]any)
-	unset, route := -1, -1
+	unset, route, fetched := -1, -1, -1
 	for i, l := range script {
 		s := fmt.Sprint(l)
 		switch {
@@ -206,7 +206,11 @@ func TestGitLabReleaseJobAtATag(t *testing.T) {
 				t.Errorf("workline:release: %q is not the release's own line, no agent", s)
 			}
 		case strings.Contains(s, "git fetch") && strings.Contains(s, "--tags"):
+			fetched = i
 		}
+	}
+	if fetched < 0 || route >= 0 && fetched > route {
+		t.Errorf("workline:release: every tag is not fetched before the release's line: the release before this one may be missing")
 	}
 	if route < 0 || unset < 0 || unset > route {
 		t.Errorf("workline:release: the tokens are not unset before the release's line: %v", script)

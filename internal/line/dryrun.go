@@ -43,15 +43,12 @@ type Hold struct {
 	Message string `json:"message,omitempty"`
 }
 
-// dryRunOn starts a release's dry run: no agent, nothing applied. With a
-// forge, the release tool's merge request open into the branch checked
-// out is the release, were it cut now: its head is checked out for the
-// run, back puts the clone where it was, and its roles run as on it
-// (ADR-0017); none open, the branch's tip. Then HEAD, the release it
-// compares with, and the release HEAD already is, when it is one:
-// nothing is left to cut, and no step runs. A release merge request that
-// cannot be read is said; one whose head cannot be checked out holds the
-// release, its steps not run (Unread).
+// dryRunOn starts a release's dry run, no agent, nothing applied: on the
+// release tool's merge request open into the branch, its head checked out
+// (back puts the clone where it was), its roles run as on it (ADR-0017);
+// none, the branch's tip. A tip that is a release already leaves nothing
+// to cut (At). A release merge request unread is said; one whose head
+// cannot be checked out holds the release, no step run (Unread).
 func dryRunOn(res *Result, o engine.Options) (engine.Options, *DryRun, func()) {
 	o.AI, o.NoApply = "none", true
 	d, back := &DryRun{Holds: []Hold{}}, func() {}
