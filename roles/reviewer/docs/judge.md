@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/lenses, internal/builtin/reviewer]
-checked: 2f8eac9d
+checked: 8c2caf60
 verified: agent:claude-code
 ---
 # Reviewer — the judge, the verdict, the budget
@@ -129,9 +129,16 @@ each finding that blocked, its cause quoted, beside the commits reviewed
   summary comment names the finding again, marked `**blocks**`.
 - **Its file moved**: it stands, found and kept on the new path
   ([#358](https://github.com/JN0V/workline/issues/358)).
+- **Looked for where it was found**
+  ([#570](https://github.com/JN0V/workline/issues/570)):
+  - found on the head's lines (added, kept beside a removal): it stands
+    only while the head still holds its quote there, never on a line
+    the change removes that holds it too;
+  - found on a removed line: it stands while the change still removes it;
+  - recorded before this was kept: looked for on both, as before.
 - **It goes** when a commit answers it:
-  - its cause is no longer found on the change (the line changed, or
-    removed);
+  - its cause is no longer found on the change, on that side (the line
+    changed, or removed);
   - or its lens reads the cause's file again, in a whole review, and does
     not find it, or its judge says no. Found again and verified, it is
     the new review's finding, shown once.

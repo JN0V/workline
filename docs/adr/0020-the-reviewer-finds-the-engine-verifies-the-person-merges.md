@@ -9,7 +9,9 @@
   (#446); amended 2026-10-19: the lenses that warn read apart from the
   verdict, no lens on a draft, and after ready only what is new, a
   finding judged once
-  ([ADR-0050](0050-each-act-has-its-moment-and-a-wait-budget.md))
+  ([ADR-0050](0050-each-act-has-its-moment-and-a-wait-budget.md));
+  amended 2026-10-20: a block looked for on the side of the change it
+  was found on (#570)
 - **Date:** 2026-10-04
 - **Builds on:** ADR-0005 (a judge's independence), ADR-0009 (a question in
   parts), ADR-0011 (the review is on the merge request), ADR-0013 (what was
@@ -765,3 +767,28 @@ merge-request line; on in workline's own repository.
     would never match.
   - A cap on a lens that blocks: a commit left unread could let a
     blocking finding through (principle 12).
+
+## Amendment (2026-10-20, #570: a block looked for where it was found)
+
+- **What was wrong**: on [#568](https://github.com/JN0V/workline/pull/568),
+  correctness blocked on a line the change added, quoting a part it
+  shared with the line of `main` it replaced. A commit rewrote the added
+  line; the block still stood, its quote found on `main`'s line, which
+  the change removes. Only a whole review, draft then ready, lifted it
+  ([#570](https://github.com/JN0V/workline/issues/570)).
+- **The side is recorded**: each block keeps where its cause was found,
+  the head's lines (added, kept beside a removal, a removal's reach) or a
+  line the change removed (`side` in `workline:blocks`).
+- **Looked for on that side alone**: a block found at the head stands
+  while the head still holds its quote there; one found on a removed
+  line, while the change still removes it. A lens's new finding is
+  still found on either side, in the order of the #224 amendment.
+- **A block recorded before** has no side: looked for on both, as
+  before. It may still stand past its fix, until a whole review; never
+  dropped unread (principle 12).
+- **Rejected**:
+  - Never a removed line for a block: a removal's own defect, a guard
+    taken away, would go at the next push with the removal still there.
+  - Guessing an older block's side from the commit it was found at: that
+    commit may be gone after a force-push, and a wrong guess drops a
+    block in silence.
