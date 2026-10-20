@@ -1,6 +1,6 @@
 ---
 sources: [internal/line, internal/routing, internal/work, routing.default.yaml]
-checked: a0b7c5a7
+checked: 6970b95e
 verified: agent:claude-code
 ---
 # Routing — v1 (draft)
@@ -158,7 +158,8 @@ gate step's verdict there and runs none; one not there is a `check-error`
 ([gates](gates.md#shown-on-the-merge-request)). A role step after a gate
 step is given what the gates found: the input `gates`, a file holding
 their result as `--gates-only --json` prints it, the gates' job's when
-read from it, else written in the git directory. The inspector triages
+read from it, else written in the git directory until the line ends
+(`gates-not-written` when it cannot be). The inspector triages
 the new findings there ([ADR-0049](../adr/0049-the-inspector-judges-the-new-findings-of-the-projects-tools.md));
 another role ignores it.
 

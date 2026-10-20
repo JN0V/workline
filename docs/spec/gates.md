@@ -1,6 +1,6 @@
 ---
 sources: [internal/gate, internal/line, internal/linters/check.go, internal/report/report.go, internal/report/gates.go, internal/engine/annotate.go]
-checked: a0b7c5a7
+checked: 6970b95e
 verified: agent:claude-code
 ---
 # Gates — v1 (draft)

@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, internal/builtin/reviewer/reviewer.go, internal/builtin/reviewer/record.go, internal/line/line.go, ci/github/workline.yml, ci/github/workline-warn.yml, ci/github/workline-apply.yml, ci/gitlab/workline.gitlab-ci.yml]
-checked: a0b7c5a7
+checked: 6970b95e
 judged: a5cd2cf
 verified: agent:claude-code
 ---
@@ -105,5 +105,6 @@ beside the verdict's, and posts once it answered.
   the run apart ends at once.
 - **The inspector's triage** reads in the same run, given what the gates
   found, its own comment beside this one; with it routed, the run waits
-  for the gates' job first ([the inspector](../../inspector/README.md)).
+  for the gates' job first, but on a draft
+  ([the inspector](../../inspector/README.md)).
 - **On a machine**: `workline review` asks every lens in one run.

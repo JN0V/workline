@@ -1,6 +1,6 @@
 ---
 sources: [roles/inspector/role.yaml, roles/inspector/instruction.md, roles/inspector/policy.md, internal/builtin/inspector, internal/line/line.go, ci/github/workline-warn.yml, ci/gitlab/workline.gitlab-ci.yml]
-checked: a0b7c5a7
+checked: 6970b95e
 verified: agent:claude-code
 ---
 # Inspector
@@ -109,8 +109,9 @@ workline route merge-request --warn-only --gates-from gates.json --ai claude
    matters, or calling a false positive without why is not kept, said,
    and asked again at the next push.
 5. **The comment**: every new finding triaged, in the order to fix them,
-   the record hidden below. With nothing triaged to show, only a comment
-   an earlier push left is edited.
+   25 at most, the run's summary holding the rest; the record hidden
+   below. With nothing triaged to show, only a comment an earlier push
+   left is edited.
 6. **The verdict**: always a pass; each triage a warning in the run's
    summary. Never in code scanning: workline posts it itself.
 
