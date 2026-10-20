@@ -95,10 +95,7 @@ docs`, or by a person moving `checked`.
   judges it in parts, or a person moves `checked`.
 - The last release is the highest version tag merged (`release.tags`, `v*`
   by default), prereleases left out — never the nearest tag, which a
-  hotfix merged back would be. At a tag's own pipeline, the one before
-  it ([the release](../../../docs/release.md#at-a-tag-on-gitlab)).
-- What holds the release keeps the level `block` among its findings, so
-  that a dry run lists it alone ([the release](../../../docs/release.md)).
+  hotfix merged back would be; at a tag, the one before it ([how](../../../docs/release.md#at-a-tag-on-gitlab)).
 - A shallow clone, which may lack it or a doc's `checked`, holds the
   release (`shallow-clone`).
 
