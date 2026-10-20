@@ -370,7 +370,8 @@ func TestGitLabStoredBaseCarriedAndPruned(t *testing.T) {
 	if h := headers(); h != "PRIVATE-TOKEN: bot" {
 		t.Errorf("the merge base's findings read with %q, want the bot's token", h)
 	}
-	if _, log := pipeline("", []string{"workline:base", "workline:gates"}, "CI_PIPELINE_SOURCE=merge_request_event"); headers() != "JOB-TOKEN: job" || strings.Contains(log, "kept no findings") {
+	if _, log := pipeline("", []string{"workline:base", "workline:gates"}, "CI_PIPELINE_SOURCE=merge_request_event"); headers() != "JOB-TOKEN: job" || strings.Contains(log, "kept no findings") ||
+		!strings.Contains(log, "no WORKLINE_GITLAB_TOKEN here: main's findings read with the job's token") {
 		t.Errorf("with no bot's token, read with %q, want the job's\n%s", headers(), log)
 	}
 	dir, log := pipeline("bot", []string{"workline:base", "workline:gates"}, "CI_PIPELINE_SOURCE=merge_request_event", "CI_MERGE_REQUEST_DIFF_BASE_SHA=c03")

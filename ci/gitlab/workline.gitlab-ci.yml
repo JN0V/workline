@@ -171,6 +171,7 @@ workline:base:
   script:
     - *trust
     - rm -rf .workline-kept
+    - '[ -n "${WORKLINE_GITLAB_TOKEN:-}" ] || echo "workline: no WORKLINE_GITLAB_TOKEN here: main''s findings read with the job''s token, which GitLab takes there on Premium and Ultimate only"'
     - *kept
     - |
       if [ "$CI_PIPELINE_SOURCE" = push ]; then   # the commits main's last pipeline kept, 19 of them, carried
@@ -185,18 +186,14 @@ workline:base:
     paths: [.workline-kept/]
     expire_in: 1 day
 
-# The gates alone, before the judge, with no token: GitLab gives this job
-# none of the variables scoped to the environment workline. It still
-# unsets the agent's token and the project bot's before the gates run,
-# for a variable left to every environment, though whoever may push a
-# branch can read them from a pipeline they change (ADR-0044); a fork's
-# merge request runs in the fork, which has neither. The judge runs after
-# it, whatever its verdict: the line reads it, and errs on a gate it does
-# not hold.
-# In a merge train (ADR-0050), with workline:base the only job of
-# workline: the gates on the merged result, the train's commit, against
-# the target's tip; it fails the train's pipeline when they block, and its
-# summary names the steps left to the head's verdict.
+# The gates alone, before the judge, given no token scoped to the
+# environment workline; it unsets them still, for one left to every
+# environment (docs/gitlab/environment.md). The judge runs after it,
+# whatever its verdict: the line reads it, and errs on a gate it does not
+# hold. In a merge train (ADR-0050), with workline:base the only jobs of
+# workline: the gates on the merged result against the target's tip,
+# failing the train's pipeline when they block; the summary names the
+# steps left to the head's verdict.
 workline:gates:
   extends: .workline
   stage: test
