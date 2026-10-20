@@ -222,6 +222,7 @@ func RunWith(event string, base engine.Options, gates *Gates) *Result {
 	// runs no gate: it reads that job's result, when given, for the
 	// commits it judges.
 	found := &foundFor{}
+	defer found.remove()
 	if warnOnly && gates.From != "" {
 		found.read(res, base.Repo, gates, gatesRange)
 	}
@@ -250,9 +251,13 @@ func RunWith(event string, base engine.Options, gates *Gates) *Result {
 			if name == committerRole {
 				o.Inputs = whole
 			}
-			if file := found.file(base.Repo, gatesRange); file != "" {
-				o.Inputs = maps.Clone(o.Inputs)
-				o.Inputs[GatesInput] = file
+			if file := found.file(res, base.Repo, gatesRange); file != "" {
+				inputs := maps.Clone(o.Inputs)
+				if inputs == nil {
+					inputs = map[string]string{}
+				}
+				inputs[GatesInput] = file
+				o.Inputs = inputs
 			}
 			// What only warns runs apart where the role reads it apart on
 			// the event; any other step runs whole, never told to leave it.
@@ -371,12 +376,14 @@ const GatesInput = "gates"
 // foundFor is what a line hands its role steps of the gates before them
 // (GatesInput): the gates' job's result, its path, when the line reads
 // their verdicts there; else the gate steps run here, written to a file
-// of the git directory once a role step comes after one more of them.
+// of the git directory once a role step comes after one more of them,
+// removed once the line ends.
 type foundFor struct {
 	from    string // the gates' job's result, read for the commits judged
 	steps   []Step // the gate steps run here
 	written int    // how many of them the file holds
-	path    string
+	path    string // "" when none was written
+	said    bool   // a file not written, said once
 }
 
 // read takes the gates' job's result for the run apart, which runs no
@@ -417,8 +424,8 @@ func (f *foundFor) add(s Step, g *Gates, repo, rng string) {
 // file is the gates' findings for a role step, "" when no gate came
 // before it: the gates' job's result, or the gate steps run here, written
 // again when one more ran since. A file that cannot be written gives
-// none: the role says it was given none.
-func (f *foundFor) file(repo, rng string) string {
+// none, said once: the role says it was given none.
+func (f *foundFor) file(res *Result, repo, rng string) string {
 	if f.from != "" {
 		return f.from
 	}
@@ -435,15 +442,34 @@ func (f *foundFor) file(repo, rng string) string {
 	r := Result{Status: verdict.Pass, Steps: f.steps, Range: rng}
 	r.Commits, _ = commitsOf(repo, rng)
 	data, err := json.MarshalIndent(r, "", "  ")
-	if err != nil || os.MkdirAll(dir, 0o755) != nil {
-		return ""
+	if err == nil {
+		err = os.MkdirAll(dir, 0o755)
 	}
 	path := filepath.Join(dir, time.Now().UTC().Format("20060102T150405.000000000")+"-line.json")
-	if os.WriteFile(path, data, 0o644) != nil {
+	if err == nil {
+		err = os.WriteFile(path, data, 0o644)
+	}
+	f.remove()
+	f.written = len(f.steps)
+	if err != nil {
+		if !f.said {
+			f.said = true
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "gates-not-written", Level: "warn", Where: "gates",
+				Message: fmt.Sprintf("the gates' findings could not be written for the steps after them (%v): they are given to none", err)})
+		}
 		return ""
 	}
-	f.path, f.written = path, len(f.steps)
+	f.path = path
 	return path
+}
+
+// remove takes away the file written for the line's role steps: they
+// read it in their first pass, and keep what they read.
+func (f *foundFor) remove() {
+	if f.path != "" {
+		os.Remove(f.path)
+		f.path = ""
+	}
 }
 
 // QueueInput is the input saying the run is a merge queue's or train's,
