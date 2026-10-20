@@ -150,6 +150,22 @@ type Result struct {
 	// settle, and applied what it fixed in this clone (#543): the next
 	// round may take up what it deferred, as after a pass.
 	held bool
+	// A release's rounds, one fix (#572). release: the branch of the
+	// release tool's merge request the run judges, run on `release`, its
+	// fix going to one merge request of its own; "" for any other run.
+	// folded: this round left docs for the next, and
+	// its fix is kept in this clone for that round to see, proposed with
+	// it rather than applied or listed. earlier: the run folders of the
+	// rounds folded so far, oldest first; carried: their patches, judged,
+	// proposed again by the round after them; carriedIn: the round that
+	// did. local: what each file those patches wrote held before, put
+	// back once the run ends (nil: no such file).
+	release   string
+	folded    bool
+	earlier   []string
+	carried   []intent.Intention
+	carriedIn string
+	local     map[string]*[]byte
 }
 
 // errTokensSpent refuses a call once the run has spent its ai-max-tokens.
@@ -240,6 +256,12 @@ const (
 // "<rule> <where>" a line).
 const maxRounds = 5
 
+// maxReleaseRounds caps the rounds of a release's run whose fix is one
+// merge request (#572): each asks the docs no round of the run asked yet,
+// `ai-max-calls` at most, until none is left, the run's `ai-max-tokens`
+// or `ai-max-seconds` is spent, or this many rounds ran.
+const maxReleaseRounds = 20
+
 // Run executes one run and always returns a result with a status: an error
 // inside the run becomes a blocking finding, never a silent pass. When pre
 // took less than there was to do and said so in in/more, and the round
@@ -254,6 +276,12 @@ const maxRounds = 5
 // round is told that task waits, as one open on the forge, and takes up
 // what it deferred — the docs judged in parts after those judged whole
 // (ADR-0013). Each round is a run folder to apply, in Pending.
+//
+// On a release tool's merge request, run on `release`, whose fix goes to
+// one merge request of its own (ADR-0017), a round that deferred docs
+// keeps its fix in this clone for the next to see, and the next proposes
+// it with its own: one fix for the run, whether applied here or listed
+// (#572). The clone is put back as it was when the run ends.
 func Run(o Options) *Result {
 	res := &Result{Applied: []string{}, Refused: []string{}}
 	deferred := map[string]bool{}
@@ -265,7 +293,7 @@ func Run(o Options) *Result {
 			}
 		}
 		applied := len(res.Applied)
-		res.Findings, res.ToApply, res.held = nil, false, false
+		res.Findings, res.ToApply, res.held, res.folded = nil, false, false, false
 		if err := run(o, res); err != nil {
 			res.Status = verdict.Block
 			rule := "engine-error"
@@ -295,10 +323,18 @@ func Run(o Options) *Result {
 			}
 			res.ToApply = len(res.Pending) > 0 // what earlier rounds proposed is still to apply
 		}
-		// Held for a release, what it fixed applied here: the next round
-		// takes up what this one deferred, if any (#543).
-		passed := res.Status == verdict.Pass || res.held && strings.TrimSpace(string(more)) != ""
-		last := err != nil || !passed || !goOn || round == maxRounds
+		// A release's round kept its fix in this clone: the next round sees
+		// it, and proposes it with its own (#572).
+		limit := maxRounds
+		if res.release != "" {
+			limit = maxReleaseRounds
+		}
+		goOn = goOn || res.folded
+		// Held for a release, what it fixed applied here, or kept here for
+		// the next round: that round takes up what this one deferred, if
+		// any (#543).
+		passed := res.Status == verdict.Pass || (res.held || res.folded) && strings.TrimSpace(string(more)) != ""
+		last := err != nil || !passed || !goOn || round == limit
 		// A task the role asks for once the others are done (in/then): one
 		// round more, that task alone, within what the run may still spend
 		// (the documentalist's pages read for their reader, ADR-0048).
@@ -307,22 +343,32 @@ func Run(o Options) *Result {
 		}
 		tokens := res.capped || !last && res.overBudget()
 		seconds := res.timeCapped || !last && res.overTime()
+		next := "the next run"
+		if res.release != "" {
+			next = "the release's next run, at night or by hand"
+		}
 		if tokens {
 			// A cap is checked against what was spent, never estimated: the
 			// call that crossed it is paid. What is left waits, said.
 			res.Findings = append(res.Findings, verdict.Finding{Rule: "ai-max-tokens", Level: "warn",
-				Message: fmt.Sprintf("%d tokens spent, the run allows %d: the agent was asked nothing more; what is left waits for the next run", res.tokensSpent(), res.maxTokens)})
+				Message: fmt.Sprintf("%d tokens spent, the run allows %d: the agent was asked nothing more; what is left waits for %s", res.tokensSpent(), res.maxTokens, next)})
 		}
 		if seconds {
 			// A wait has its budget (ADR-0050): the answer that crossed it
 			// is not waited for, and nothing more is asked.
 			res.Findings = append(res.Findings, verdict.Finding{Rule: "ai-max-seconds", Level: "warn",
-				Message: fmt.Sprintf("the run waited %.0f s on its agents, it allows %d: the answer was not waited for, and nothing more was asked; what is left waits for a person or the next run", time.Since(res.waitSince).Seconds(), res.maxSeconds)})
+				Message: fmt.Sprintf("the run waited %.0f s on its agents, it allows %d: the answer was not waited for, and nothing more was asked; what is left waits for a person or %s", time.Since(res.waitSince).Seconds(), res.maxSeconds, next)})
+		}
+		if last && res.folded && round == limit {
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "rounds-max", Level: "warn",
+				Message: fmt.Sprintf("the run went round %d times, the most a release's run goes: what is left waits for %s", limit, next)})
 		}
 		if tokens || seconds {
+			res.settle(o)
 			return res
 		}
 		if last {
+			res.settle(o)
 			if len(res.Pending) > 1 {
 				res.Summary = fmt.Sprintf("judged, not applied: %d rounds, a merge request each; apply with: workline apply %s", len(res.Pending), strings.Join(res.Pending, " "))
 			}
@@ -439,6 +485,117 @@ func branchFiles(repo, branch string, local bool) ([]string, error) {
 	return files, nil
 }
 
+// patchesOf are the patches among intentions.
+func patchesOf(intents []intent.Intention) []intent.Intention {
+	var out []intent.Intention
+	for _, in := range intents {
+		if in.Kind == "patch" {
+			out = append(out, in)
+		}
+	}
+	return out
+}
+
+// deferredSome says whether a round's pre left findings for the next
+// round (in/more).
+func deferredSome(runDir string) bool {
+	more, _ := os.ReadFile(filepath.Join(runDir, "in", "more"))
+	return strings.TrimSpace(string(more)) != ""
+}
+
+// keepHere writes a release round's patches in this clone, for the next
+// round to see (#572), keeping what each file held before. On an error,
+// the clone is put back as it was before the run.
+func (res *Result) keepHere(repo string, writes []string, patches []intent.Intention) error {
+	if res.local == nil {
+		res.local = map[string]*[]byte{}
+	}
+	ap := applier{repo: repo, writes: writes}
+	for _, in := range patches {
+		for _, p := range intent.PatchFiles(in.Value) {
+			if _, ok := res.local[p]; ok || !ap.allowed(p) {
+				continue
+			}
+			data, err := os.ReadFile(filepath.Join(repo, filepath.FromSlash(p)))
+			switch {
+			case errors.Is(err, fs.ErrNotExist):
+				res.local[p] = nil
+			case err != nil:
+				res.putBack(repo)
+				return err
+			default:
+				res.local[p] = &data
+			}
+		}
+		if err := ap.patch(in.Value); err != nil {
+			res.putBack(repo)
+			return err
+		}
+	}
+	return nil
+}
+
+// putBack writes back what the files a release's rounds kept their fixes
+// in held before the run: the clone as it was.
+func (res *Result) putBack(repo string) error {
+	var errs []error
+	for _, p := range slices.Sorted(maps.Keys(res.local)) {
+		path := filepath.Join(repo, filepath.FromSlash(p))
+		if was := res.local[p]; was == nil {
+			if err := os.Remove(path); err != nil && !errors.Is(err, fs.ErrNotExist) {
+				errs = append(errs, err)
+			}
+		} else if err := os.WriteFile(path, *was, 0o644); err != nil {
+			errs = append(errs, err)
+		}
+	}
+	res.local = nil
+	return errors.Join(errs...)
+}
+
+// settle ends a release's run whose rounds kept their fixes in this clone
+// (#572): the clone put back, and, when no later round proposed them, the
+// fix of the last such round proposed now — its folder listed, judged
+// with --no-apply, else applied as `workline apply` would, on the head
+// judged.
+func (res *Result) settle(o Options) {
+	if err := res.putBack(o.Repo); err != nil {
+		res.Status = verdict.Block
+		res.Findings = append(res.Findings, verdict.Finding{Rule: "engine-error", Message: "the clone could not be put back as it was: " + err.Error()})
+	}
+	if len(res.earlier) == 0 || res.carriedIn != "" {
+		return
+	}
+	dir := res.earlier[len(res.earlier)-1]
+	res.carriedIn = dir
+	if o.NoApply {
+		// Ahead of what the last round proposes, if anything: its
+		// comments are newer.
+		pending := slices.DeleteFunc(slices.Clone(res.Pending), func(d string) bool { return d == dir })
+		if i := slices.Index(pending, res.RunDir); i >= 0 {
+			pending = slices.Insert(pending, i, dir)
+		} else {
+			pending = append(pending, dir)
+		}
+		res.Pending, res.ToApply, res.Status = pending, true, verdict.Block
+		res.Findings = append(res.Findings, verdict.Finding{Rule: "fixed-elsewhere", Level: "block", Where: res.release,
+			Message: "once applied, the fix goes to a merge request of its own into the release's base, not onto this branch, which the release tool rewrites: the release waits until it is merged"})
+		res.Summary = fmt.Sprintf("%s; judged, not applied: the fix of %d rounds; apply with: workline apply %s", res.Summary, len(res.earlier), strings.Join(res.Pending, " "))
+		return
+	}
+	a := Resume(dir)
+	res.Applied = append(res.Applied, a.Applied...)
+	res.Refused = append(res.Refused, a.Refused...)
+	res.Findings = append(res.Findings, a.Findings...)
+	res.MergeRequest = a.MergeRequest
+	switch {
+	case a.Status != verdict.Pass:
+		res.Status = a.Status
+	case slices.ContainsFunc(a.Findings, func(f verdict.Finding) bool { return f.Level == "block" }):
+		res.Status = verdict.Block // until the fix is merged, the release waits for it
+	}
+}
+
 // changedSomething says whether a round applied what the next one would
 // see: a note changes nothing, and going round again would ask the same.
 func changedSomething(applied []string) bool {
@@ -537,6 +694,15 @@ func run(o Options, res *Result) error {
 	releaseFrom := "" // the release, held by a role run on it
 	if o.Event == "release" {
 		releaseFrom = branch
+	}
+	// Its fix one merge request of its own, whatever the rounds (#572): the
+	// role is told which rounds before this one kept theirs in this clone.
+	res.release = ""
+	if asked == "release" {
+		res.release = releaseFrom
+	}
+	if len(res.earlier) > 0 {
+		env = append(env, "WORKLINE_EARLIER_ROUNDS="+strings.Join(res.earlier, " "))
 	}
 	if o.OpenMergeRequest {
 		// The role decides what it proposes when enough of its merge requests wait.
@@ -806,6 +972,17 @@ func run(o Options, res *Result) error {
 	}
 	intents = slices.DeleteFunc(intents, func(i intent.Intention) bool { return i.Kind == "claim" || i.Kind == "skip" })
 	intents = splitEffort(intents)
+	// A release's round that left docs for the next keeps its fix in this
+	// clone, for that round to see (#572). The patches the rounds before
+	// it kept are proposed again with its own, ahead of them, as judged.
+	own := patchesOf(intents)
+	fold := res.release != "" && !onBlock && len(own) > 0 && deferredSome(runDir)
+	if len(res.carried) > 0 && !onBlock {
+		intents = append(slices.Clone(res.carried), intents...)
+		if !fold {
+			res.carriedIn = runDir
+		}
+	}
 	intent.SortForApply(intents)
 	if err := intent.Write(filepath.Join(runDir, "out", "intentions.yaml"), intents); err != nil {
 		return err
@@ -823,6 +1000,24 @@ func run(o Options, res *Result) error {
 	}
 	if err := st.save(runDir); err != nil {
 		return err
+	}
+	if fold {
+		err := res.keepHere(o.Repo, r.Writes(settings), own)
+		if err == nil {
+			res.carried, res.earlier, res.folded = patchesOf(intents), append(res.earlier, runDir), true
+			return nil
+		}
+		// Not kept: this round's fix is the run's, applied or listed as
+		// any; the docs it left wait for the next run.
+		res.Findings = append(res.Findings, verdict.Finding{Rule: "not-kept-here", Level: "warn",
+			Message: "this round's fix could not be kept in the clone for the next round (" + err.Error() + "): it is proposed now, and the docs it left wait for the next run"})
+		res.carriedIn = runDir
+	}
+	// The clone as it was, before the fix of every round is applied.
+	if !o.NoApply {
+		if err := res.putBack(o.Repo); err != nil {
+			return err
+		}
 	}
 	if o.NoApply {
 		switch {

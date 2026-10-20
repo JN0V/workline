@@ -1,0 +1,38 @@
+case: documentalist/release-pull-request-by-hand-fixes-every-due-doc
+about: "On a release pull request, a person's run on `release`, applied where it judged (`--push-to-merge-request`): nine docs due, four a call. The run goes round three times, each round seeing the fixes before it in the clone, then applies the three rounds' fixes once, in one merge request of their own, workline/documentalist/release; the release waits for it, and the clone is left as it was (#572)."
+given:
+  repo: documented
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git"
+    - "for i in 01 02 03 04 05 06 07 08; do printf '%s\\n' '---' 'type: reference' 'sources: [src/auth/token.go]' 'checked: HEAD' '---' \"# Sessions $i\" '' 'A session lasts as long as its token.' > docs/tech/session-$i.md; done && git add docs && git commit -qm 'docs: the sessions'"
+    - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: HEAD/checked: $C/\" docs/tech/session-*.md && git commit -qam 'docs: confirm the sessions docs' && git tag v1.0.0"
+    - "printf '\\n// Refreshed on use.\\n' >> src/auth/token.go && git commit -qam 'feat(auth): refresh tokens on use' && git push -q origin main"
+    - "git checkout -qb release-please--branches--main && git push -q origin release-please--branches--main"
+  forge:
+    merge-requests:
+      - id: 1
+        branch: release-please--branches--main
+        base: main
+        labels: []
+        comments: []
+        pushes: [{head: release-please--branches--main, at: "2026-01-03T00:00:00Z", by: workline-bot}]
+  config: {roles: {documentalist: {settings: {ai-max-calls: 4}}}}
+run: {role: documentalist, event: release, target: {merge-request: 1}, branch: release-please--branches--main, ai: 'cmd:sh "$FIXTURES/agents/confirm-every-doc.sh"', push-to-merge-request: true}
+expect:
+  status: block
+  agent-calls: 3
+  findings:
+    - {rule: fixed-elsewhere, where: docs/tech/auth.md, message: "merge request #2"}
+    - {rule: fixed-elsewhere, where: docs/tech/session-08.md, message: "merge request #2"}
+  files:
+    docs/tech/session-08.md: {lacks: "verified: agent:documentalist"}
+  pushed:
+    workline/documentalist/release:
+      docs/tech/auth.md: "verified: agent:documentalist"
+      docs/tech/session-04.md: "verified: agent:documentalist"
+      docs/tech/session-08.md: "verified: agent:documentalist"
+  not-pushed: [release-please--branches--main, main]
+  forge:
+    merge-requests:
+      - {id: 2, branch: workline/documentalist/release, base: main, body-contains: ["`docs/tech/auth.md`", "`docs/tech/session-08.md`"]}
+      - {id: 3, absent: true}

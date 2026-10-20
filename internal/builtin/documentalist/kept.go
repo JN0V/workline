@@ -41,6 +41,19 @@ type keptRecord struct {
 type keptInput struct {
 	Keep    bool         `yaml:"keep"`
 	Records []keptRecord `yaml:"records,omitempty"`
+	// Newer: Records are those an earlier round of this run proposed, its
+	// comment not written yet (#572); OnForge, those the forge's keeps,
+	// which the comment proposed is told from.
+	Newer   bool         `yaml:"newer,omitempty"`
+	OnForge []keptRecord `yaml:"on-forge,omitempty"`
+}
+
+// written are the records the forge's comment keeps now.
+func (in keptInput) written() []keptRecord {
+	if in.Newer {
+		return in.OnForge
+	}
+	return in.Records
 }
 
 // keptKey keys the documentalist's comment that keeps the records.
