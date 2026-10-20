@@ -1,6 +1,6 @@
 ---
 sources: [internal/role/config.go, internal/role/role.go, cmd/workline, internal/engine/engine.go, internal/forge/gitlab.go, internal/hooks]
-checked: 875fc368
+checked: a0b7c5a7
 judged: e343388
 verified: agent:claude-code
 reader: 0b97bbc207c5
@@ -145,6 +145,7 @@ rules) and `roles/<role>/<facet>` (your own facets; on macOS,
 | `.git/workline/merge-requests/<n>.md` | `forge: local`: a merge request, its local branch and base named in the front matter; merged once its base holds the branch, closed once the branch is gone |
 | `.workline/off` | empty: the global hook skips this repository |
 | `.git/workline/reviewer-record` | the commits a review on this machine answered whole, not asked again (roles/reviewer) |
+| `.git/workline/inspector-record` | the gates' findings the inspector triaged on this machine, by fingerprint, not asked again (roles/inspector) |
 | `~/.config/workline/` (macOS: `~/Library/Application Support/workline/`) | yours: `config.yaml`, `allowed-identities`, `gitleaks.toml`, your facets in `roles/<role>/` ([above](#your-own-config)) |
 | `~/.cache/workline/models-seen.yaml` | the last model that answered each alias on this machine: when another one answers, a run reports `model-changed` once, without blocking ([ADR-0004](adr/0004-follow-model-aliases-and-measure.md)) |
 

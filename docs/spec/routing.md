@@ -1,6 +1,6 @@
 ---
 sources: [internal/line, internal/routing, internal/work, routing.default.yaml]
-checked: ebe6dfdd
+checked: a0b7c5a7
 verified: agent:claude-code
 ---
 # Routing — v1 (draft)
@@ -155,17 +155,25 @@ The gates go before, in a job of their own, with no write token and no
 agent's: `--gates-only` runs the event's gate steps alone, each one, and
 the judging job's line, given that result (`--gates-from`), reads each
 gate step's verdict there and runs none; one not there is a `check-error`
-([gates](gates.md#shown-on-the-merge-request)).
+([gates](gates.md#shown-on-the-merge-request)). A role step after a gate
+step is given what the gates found: the input `gates`, a file holding
+their result as `--gates-only --json` prints it, the gates' job's when
+read from it, else written in the git directory. The inspector triages
+the new findings there ([ADR-0049](../adr/0049-the-inspector-judges-the-new-findings-of-the-projects-tools.md));
+another role ignores it.
 
 What only warns goes beside it, off the verdict's path
 ([ADR-0050](../adr/0050-each-act-has-its-moment-and-a-wait-budget.md#2-an-act-over-its-budget)): with
 `--warn-apart`, a step whose role lists the event in role.yaml's `apart`
-(the reviewer, on a merge request) is given the input `warn=apart` and
-leaves what only warns — its lenses that warn; any other step runs whole,
+(the reviewer and the inspector, on a merge request) is given the input
+`warn=apart` and leaves what only warns — the reviewer's lenses that
+warn, the inspector's whole triage; any other step runs whole,
 never given it. With `--warn-only`, the line runs only those steps, given
 `warn=only`, no gate and no other role, and writes no verdict
 (`--verdict` refused); a flag and an `--input warn=` naming the other run
-are refused. Its
+are refused. Given `--gates-from`, it hands the gates' job's result to
+those steps (`gates`), only for the commits it judges, else said
+(`gates-unread`), and reads no verdict there. Its
 proposals are applied as the judging job's, by a job of their own: the
 head's verdict is never theirs
 ([apart](../../roles/reviewer/docs/apart.md)).
@@ -292,7 +300,8 @@ it is part of: `name`, `budget`, `seconds`, `over`, and then the `step`
 that took the most. Its summary says them in one line after the steps,
 `66 s in all — committer 0.5 s, documentalist 0.8 s, reviewer 64 s
 (lenses 40 s, judges 20 s)`: the agents' share of a step, the
-reviewer's lenses, the committer's rewrite, the judges. A moment over
+reviewer's lenses, the inspector's triage, the committer's rewrite, the
+judges. A moment over
 its budget says so once more, naming that step; it never blocks.
 
 | Moment | The run | Budget |
@@ -302,7 +311,7 @@ its budget says so once more, naming that step; it never blocks.
 | `push` | the `pre-push` hook, every range pushed together | 5 s |
 | `first-result` | `merge-request --gates-only` | 1 min |
 | `verdict` | `merge-request`; the gates' job's seconds added, their verdicts read from it (`--gates-from`) | 3 min |
-| `ready-review` | `merge-request --warn-only`: the lenses that warn, posted when done | 10 min |
+| `ready-review` | `merge-request --warn-only`: the lenses that warn, the inspector's triage, posted when done | 10 min |
 | `queue` | `merge-request --input queue=true`, a merge queue's or train's run: what workline adds to it | 1 min |
 
 - Any other event has none: main, the night and the release, its dry

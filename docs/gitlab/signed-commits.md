@@ -1,6 +1,7 @@
 <!-- workline
 sources: [ci/gitlab/workline.gitlab-ci.yml, internal/engine/follow.go, internal/engine/settle.go, Dockerfile]
-checked: fbf84ebb
+checked: a0b7c5a7
+verified: agent:claude-code
 -->
 # Signed commits on GitLab
 

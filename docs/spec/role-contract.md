@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine, internal/intent, internal/role, internal/agent, roles_test.go]
-checked: 875fc368
+checked: a0b7c5a7
 verified: agent:claude-code
 judged: b530b72
 ---
@@ -103,7 +103,8 @@ duties:
 
 intentions: [commit-message, note]   # subset of the catalogue below
 part-intentions: [claim]        # what a part of a question answers with (In parts);
-                                # claims when unset; a reviewer's lens, findings
+                                # claims when unset; a reviewer's lens, findings;
+                                # the inspector, triages
 on-block: []                    # the kinds a run still applies when post blocks:
                                 # what only says why, every proposal of them, on
                                 # any run (step 5, Apply); none by default
@@ -116,8 +117,8 @@ apart: []                       # events, of its own, where what the role finds 
                                 # line leaves it (`route --warn-apart`, input
                                 # `warn=apart`), a line of its own runs it alone
                                 # (`--warn-only`, `warn=only`), never the head's
-                                # verdict (ADR-0050; the reviewer's lenses that warn);
-                                # none by default
+                                # verdict (ADR-0050; the reviewer's lenses that warn,
+                                # the inspector's triage); none by default
 personal: []                    # settings a person may set for themselves, in their
                                 # own config (role-adapting.md, "A person's own")
 
@@ -189,7 +190,7 @@ token), **apply** (trusted, no AI key).
    on the tier `model.tasks.part` names, each call counted and kept like
    any other, named by its part (`for: <name>` in `out/calls.jsonl`); a part answers only what the role's
    `part-intentions` name — `claim`s when it names none, a reviewer's lens
-   `finding`s — which are never applied: they inform. The answers are put
+   `finding`s, the inspector `triage`s — which are never applied: they inform. The answers are put
    back as `in/parts/<name>/answer.yaml`, and `pre` runs again, with
    `WORKLINE_PARTS=answered`, to put them together — no AI — and write the
    one question that follows, `in/task.md`, or none. Only then is the digest

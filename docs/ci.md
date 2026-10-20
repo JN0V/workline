@@ -1,6 +1,6 @@
 ---
 sources: [ci/github, ci/gitlab, ci/forgejo/workline-forge.sh, roles/product-owner/role.yaml, cmd/workline]
-checked: 8a4d71eb
+checked: a0b7c5a7
 judged: a8574a5
 verified: agent:claude-code
 reader: 8aab3bd261d9
@@ -46,7 +46,9 @@ then one that applies, with the write token and no AI key
 - **What only warns runs apart**: the reviewer's lenses that warn read
   in a job of their own beside the judge, posting in a comment of their
   own; the head's verdict waits only for what can block
-  ([apart](../roles/reviewer/docs/apart.md)).
+  ([apart](../roles/reviewer/docs/apart.md)). The inspector's triage of
+  what the gates found reads there too, given their result
+  ([the triage in CI](gates-in-ci.md#the-inspectors-triage)).
 - **A draft asks no agent** until it is marked ready
   ([how](../roles/reviewer/docs/ready.md)).
 - **A merge queue or train runs the gates alone** on the merged result,

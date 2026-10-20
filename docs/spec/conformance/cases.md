@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go]
-checked: f5a2e917
+checked: a0b7c5a7
 verified: agent:claude-code
 ---
 # Conformance — a case in full
@@ -82,7 +82,9 @@ saying so.
   (`--gates-only`); `gates-job: {env, input, after}` — a run of the gates
   alone first, with these variables and inputs, then the commands `after`
   gives, whose result the route reads (`--gates-from`), as
-  CI's judge reads the gates' job; `gates-from: <file>` — read from that
+  CI's judge reads the gates' job, the run apart and the second run too;
+  that job takes no `--warn-*` of the route's, and runs again after
+  `again-after`, as on each push; `gates-from: <file>` — read from that
   file instead, by the case's folder;
 - `warn-apart: true` — the route leaves what only warns to a run apart
   (`--warn-apart`); `warn-only: true` — the route is that run

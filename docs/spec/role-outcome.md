@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/engine, internal/intent, internal/role, internal/agent, internal/verdict, internal/report]
 verified: agent:claude-code
-checked: 875fc368
+checked: a0b7c5a7
 judged: b5899f5
 status: draft
 ---
@@ -49,13 +49,14 @@ that passed, or of level `question` (a reviewer's question for a person), a
 commit's subject, a folder, a gate's check — is left out: both formats need a
 file, and `--json` still has it, as does `--summary`, the summary a CI job's
 page shows (ADR-0035). On a merge request, `--sarif` leaves out the
-documentalist's, the reviewer's and the gates' findings: code scanning
+documentalist's, the reviewer's, the inspector's and the gates' findings: code scanning
 would open a conversation for each, whatever its level, which a base
 requiring them resolved holds the merge on ([ADR-0047](../adr/0047-findings-on-a-merge-request-open-no-conversation.md),
 [ADR-0049](../adr/0049-the-inspector-judges-the-new-findings-of-the-projects-tools.md)).
 `apply --line --from-merge-request` shows the documentalist's as the
 annotations of a check (`notice`, `warning`, `failure` as `note`,
-`warning`, `error`), the reviewer's are its review; `apply --gates`, the
+`warning`, `error`), the reviewer's are its review, the inspector's its
+comment; `apply --gates`, the
 gates' new findings, as another check's annotations and one comment
 ([gates](gates.md#shown-on-the-merge-request)). A gate's new finding in
 `--code-quality` is its tool's rule, level and fingerprint. `route --verdict <file>` writes the line's verdict
@@ -135,6 +136,7 @@ refuses. The catalogue is closed and belongs to the engine:
 | `handoff` | name the next role and why | engine |
 | `note` | a message for the human, nothing else; the documentalist's may name the doc it is about, `{doc, text}`: a doc a note names is not vouched for in that answer (roles/documentalist/docs/judge.md, "Moving `checked`") | report |
 | `finding` | a lens's answer (role contract, "In parts"): `{lens, severity, title, why, cause: {path, quote}, symptom, fix, seen, claim, decision}`, `severity` `important` or `nit`, `lens` the one that found it, read when the lenses are asked together; `claim` the author's words a lens that `cites: claim` quotes; `decision` the question for a person, for a choice that is no defect, a key of the finding, never an item of its own; a cause's `path` `#4` for the issue the change closes; the engine finds each quote again, and tells the change's from the rest by where the cause lies (ADR-0020) | never: read by the reviewer's `pre` |
+| `triage` | the inspector's answer (role contract, "In parts"): `{finding, matters, fix, false-positive, why, order}`, `finding` the id the task gives a gate's new finding (`t1`), `why` only with `false-positive: true`; one the task says was triaged before (`r1`), `{finding, order}` only; never the gates' verdict (ADR-0049) | never: read by the inspector's `pre`, which keeps each by its finding's fingerprint |
 | `claim` | a part's answer about a passage of the question (role contract, "In parts"): `{lines, status, quote, source: {path, lines, quote}, why}`, `status` one of `contradicted`, `partial`, `supported`; or, beside a `patch`, why it takes words out | never: read by `pre`, which puts the parts' claims together, or by `post` |
 | `read` | a judge's ask, when its question lets it read (role contract, "A judge that reads"; ADR-0045): `{path, lines}`, `{name}` or `{grep}`, each with `why`, in place of its verdict | never: served by `pre`, at the commit judged, and the judge asked again |
 | `quote` | the lines a judge's no rests on, `{path, text}`, beside its note | never: found again by `pre` before a finding is dropped |

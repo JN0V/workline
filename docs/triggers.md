@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/line, internal/hooks, internal/forge/gitlab.go, ci/gitlab/workline.gitlab-ci.yml, ci/github/workline.yml, ci/github/workline-gardening.yml, ci/github/workline-sample.yml, routing.default.yaml]
-checked: 68c17080
+checked: a0b7c5a7
 verified: agent:claude-code
 reader: 2de353fab113
 ---
@@ -79,14 +79,15 @@ of a merge request reads that folder too
 ([the commands](main-after-merge.md#the-commands-for-another-ci)).
 
 The templates also read the reviewer's lenses that only warn apart from
-the verdict: `--warn-apart` on the line above, and beside it a job of
-their own, its apply after it ([apart](../roles/reviewer/docs/apart.md)):
+the verdict, and the inspector's triage: `--warn-apart` on the line
+above, and beside it a job of their own, after the gates' job, its apply
+after it ([apart](../roles/reviewer/docs/apart.md)):
 
 ```sh
 workline route merge-request --warn-only --ai "$ai" --no-apply \
   --forge gitlab --target merge-request:<iid> --branch <source-branch> \
-  --input range=<base-sha>..<head-sha> --json > warn.json
-workline apply --line warn.json          # its second job: their comment
+  --input range=<base-sha>..<head-sha> --gates-from gates.json --json > warn.json
+workline apply --line warn.json          # its second job: their comments
 ```
 
 ### Gardening

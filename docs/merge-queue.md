@@ -1,8 +1,8 @@
 ---
 sources: [ci/github/workline.yml, ci/github/workline-apply.yml, ci/gitlab/workline.gitlab-ci.yml, internal/line/line.go, internal/engine/queue.go]
-checked: fbf84ebb
+checked: a0b7c5a7
 judged: e4550b8
-verified: agent:documentalist
+verified: agent:claude-code
 ---
 # A merge queue or a merge train
 

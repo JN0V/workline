@@ -1,6 +1,6 @@
 ---
 sources: [internal/gate, internal/line, internal/linters/check.go, internal/report/report.go, internal/report/gates.go, internal/engine/annotate.go]
-checked: 1f6feed1
+checked: a0b7c5a7
 verified: agent:claude-code
 ---
 # Gates — v1 (draft)
@@ -158,7 +158,7 @@ since the branch's tip before it counts.
   write token and no agent's; the judging job reads their verdicts
   (`--gates-from`) and runs no gate.
 - **Each new finding's fingerprint** holds no line number.
-- **How, and what is said**: [the new findings shown](gates-shown.md).
+- **How, and what is said**: [the new findings shown](gates-shown.md), [explained](../../roles/inspector/README.md).
 
 *Not built yet*: a formatter's fixes applied, rather than its command
 said; the count's trend; vendored and generated code skipped; CI's build
