@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/documentalist.go, cmd/workline/main.go, internal/builtin/documentalist/kept.go, internal/builtin/documentalist/releasekept.go]
-checked: 3a71decc
+checked: 35f9092d
 verified: agent:claude-code
 ---
 # Troubleshooting the docs
