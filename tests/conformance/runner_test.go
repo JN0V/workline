@@ -1108,8 +1108,12 @@ func runCLI(engineBin string, c *caseFile, repo string, env []string) []string {
 			return []string{err.Error()}
 		}
 		cmd = exec.Command("sh", "-c", c.Run.Sh)
+		path := bin // never an empty entry, which is the current folder
+		if old := lookup(env, "PATH"); old != "" {
+			path += string(os.PathListSeparator) + old
+		}
 		// A run from inside a workline hook would skip the hooks it installs.
-		env = append(slices.Clone(env), "PATH="+bin+string(os.PathListSeparator)+lookup(env, "PATH"), "WORKLINE_HOOK_RUNNING=")
+		env = append(slices.Clone(env), "PATH="+path, "WORKLINE_HOOK_RUNNING=")
 	}
 	cmd.Dir, cmd.Env = repo, env
 	for k, v := range c.Given.Env { // what the command is run with, as a hook is: WORKLINE_AI
