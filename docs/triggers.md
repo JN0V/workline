@@ -219,9 +219,10 @@ requests from unprotected branches must apply.
 An unknown option exits 64 too, never 2. `workline gate` exits 0 or 1;
 `workline sample` exits 2 when a doc or an act is left for a person and 3
 when the judge or the forge cannot be reached; `workline doctor`, 1 on an error only. The
-templates keep a job's status and still apply what passed, and the
-comment of a role that blocks — the reviewer's, the documentalist's on a
-release held for its docs (`artifacts: when: always`, `if: always()`, `when: always`).
+templates keep a job's status and still apply what passed, and what a
+role that blocks names to say why, such as its comments
+([`on-block`](spec/role-contract.md#one-run); `artifacts: when: always`,
+`if: always()`, `when: always`).
 
 ## Outputs
 

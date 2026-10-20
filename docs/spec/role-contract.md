@@ -104,10 +104,9 @@ duties:
 intentions: [commit-message, note]   # subset of the catalogue below
 part-intentions: [claim]        # what a part of a question answers with (In parts);
                                 # claims when unset; a reviewer's lens, findings
-on-block: []                    # what a run still applies when post blocks: what
-                                # only says why (the reviewer's comment, the
-                                # documentalist's on a release held for its
-                                # docs); none by default
+on-block: []                    # the kinds a run still applies when post blocks:
+                                # what only says why, every proposal of them, on
+                                # any run (step 5, Apply); none by default
 on-moved-on: []                 # what a merge request's run still applies once its
                                 # branch moved on from the head judged: what only says
                                 # what that head held (the reviewer's review); never a
@@ -319,12 +318,18 @@ token), **apply** (trusted, no AI key).
    `pre` did not end the run: each issue's state is read — a person's
    answer, an act undone — and written back (docs/spec/backlog-acts.md).
    A run that blocks applies nothing, but the kinds its role names in
-   `on-block`, of its intentions: what only says why it blocks, the
-   reviewer's summary comment and the record in it (#226), the
-   documentalist's comment listing a release's docs due
-   ([#558](https://github.com/JN0V/workline/pull/558)). The run still
-   blocks; judged with `--no-apply`, they wait in `pending` like any
-   other, for the applying job, which runs whatever the judge's outcome.
+   `on-block`, of its intentions: what only says why it blocks. Every
+   proposal of those kinds is applied, the agent's or the role's own, on
+   any event. The reviewer's (`comment`, `issue`): its summary comment,
+   the record in it, its issues
+   ([#226](https://github.com/JN0V/workline/issues/226)). The
+   documentalist's (`comment`): each of its comments, the list of a
+   release's docs due ([#558](https://github.com/JN0V/workline/pull/558))
+   as the docs to check on a merge request run without an agent, when a
+   derived block's command fails or it cannot tell whether a source
+   changed. The run still blocks; judged with `--no-apply`, they wait in
+   `pending` like any other, for the applying job, which runs whatever
+   the judge's outcome.
    Applied by a job of the base once the merge request's branch moved on
    from the head judged (`--from-merge-request`), a run applies only the
    kinds its role names in `on-moved-on`, said (`moved-on`); none, nothing
