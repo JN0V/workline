@@ -1,0 +1,18 @@
+case: setup/doctor-gitlab-tokens-not-scoped
+about: "On GitLab, a token left to every environment (scope *) reaches every job, the gates' tools included: the doctor warns, naming each token and the environment to scope it to, workline; it reads only each variable's key and scope, never printing a value (#520)."
+given:
+  repo: documented
+  forge:
+    merge-requests: []
+    variables:
+      - {key: WORKLINE_GITLAB_TOKEN, value: glpat-never-printed, environment_scope: "*"}
+      - {key: CLAUDE_CODE_OAUTH_TOKEN, value: sk-ant-never-printed, environment_scope: "*"}
+      - {key: WORKLINE_SIGNING_KEY, value: key-never-printed, environment_scope: workline}
+      - {key: DEPLOY_HOST, value: example.org, environment_scope: "*"}
+run: {doctor: true, forge: gitlab}
+expect:
+  status: pass
+  checks:
+    - {rule: tokens-not-scoped, where: "WORKLINE_GITLAB_TOKEN, CLAUDE_CODE_OAUTH_TOKEN", level: warn, message: "reach every job, workline:gates' and workline:main's tools included (environment scope *): scope each to the environment workline", fix: "Environments: workline"}
+    - {rule: tokens-scoped, where: WORKLINE_SIGNING_KEY, level: ok, message: "is scoped to the environment workline"}
+  stdout-lacks: [glpat-never-printed, sk-ant-never-printed, key-never-printed, DEPLOY_HOST]

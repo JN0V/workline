@@ -23,7 +23,8 @@ import (
 // calls, over the case's simulated forge file, so a case runs `--forge
 // gitlab` and is checked as any other. Its `members` give the project's
 // members and their access level, as GitLab's members/all does, or
-// `members-refused` its refusal; what the engine writes is written by the
+// `members-refused` its refusal; its `variables`, the project's CI/CD
+// variables and their environment scope, or `variables-refused`; what the engine writes is written by the
 // token's user, "workline-bot" or its `token-user`. GraphQL
 // refuses all: a split's children are listed in the parent's body. Its
 // issue links are GitLab Free's: is_blocked_by refused, for its license.
@@ -78,6 +79,16 @@ type gitlabState struct {
 	// may not list them: 401, as the job's own token gets (#552); asked or
 	// not, unlike a fault.
 	MembersRefused int `json:"members-refused,omitempty"`
+	// Variables are the project's CI/CD variables, as GitLab lists them
+	// to a Maintainer's token, values included; VariablesRefused, the
+	// status it answers a token that may not list them (403, a
+	// Developer's).
+	Variables []struct {
+		Key   string `json:"key"`
+		Value string `json:"value"`
+		Scope string `json:"environment_scope"`
+	} `json:"variables,omitempty"`
+	VariablesRefused int `json:"variables-refused,omitempty"`
 	// TokenUser is the token's user, who writes what the engine writes:
 	// workline-bot when not given; project_<id>_bot_… for a project
 	// access token's, a bot by its name.
@@ -232,6 +243,15 @@ func (m *gitlabMock) serve(s *gitlabState, method, p string, q, form url.Values)
 		return map[string]any{"message": fmt.Sprintf("%d %s", s.MembersRefused, http.StatusText(s.MembersRefused))}, s.MembersRefused
 	case p == "/members/all":
 		return s.Members, 200
+	case p == "/variables" && s.VariablesRefused != 0:
+		return map[string]any{"message": fmt.Sprintf("%d %s", s.VariablesRefused, http.StatusText(s.VariablesRefused))}, s.VariablesRefused
+	case p == "/variables" && method == "GET":
+		out := []map[string]any{}
+		for _, v := range s.Variables {
+			out = append(out, map[string]any{"variable_type": "env_var", "key": v.Key, "value": v.Value, "protected": false,
+				"masked": true, "hidden": false, "raw": false, "environment_scope": v.Scope, "description": nil})
+		}
+		return out, 200
 	case p == "/merge_requests" && method == "GET":
 		out := []map[string]any{}
 		for _, it := range s.MergeRequests {
