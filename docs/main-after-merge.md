@@ -1,6 +1,6 @@
 ---
 sources: [ci/github/workline.yml, ci/github/workline-apply.yml, ci/gitlab/workline.gitlab-ci.yml, internal/line/line.go, internal/gate/kept.go, internal/report/main.go, routing.default.yaml]
-checked: 32104a40
+checked: cb130c27
 verified: agent:claude-code
 ---
 # Main after a merge
@@ -105,8 +105,8 @@ Nobody waits for it; nothing in it holds a merge request.
     default branch. Its artifact goes to `workline:gates` or
     `workline:main`, which never hold the token that read it.
   - It reads with `WORKLINE_GITLAB_TOKEN`, no tool run, nothing checked
-    out; else with the job's token, which gitlab.com's Free tier refuses
-    there (404, tried).
+    out; else with the job's token, said in its log, which gitlab.com's
+    Free tier refuses there (404, tried).
 - **Not found** (expired, a red pipeline's, a base older than those 20):
   the tools run again, said in the job's log and the summary. GitLab
   gives a branch's artifacts from its last successful pipeline only.
