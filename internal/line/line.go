@@ -470,7 +470,7 @@ func nothingCounted(v *verdict.Verdict) {
 		if f.Rule == "over-threshold" {
 			v.Findings[i].Level = "warn"
 		}
-		if v.Findings[i].Level == "" {
+		if l := v.Findings[i].Level; l == "" || l == verdict.Block {
 			v.Status = verdict.Block
 		}
 	}
