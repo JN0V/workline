@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/line, internal/hooks, internal/forge/gitlab.go, ci/gitlab/workline.gitlab-ci.yml, ci/github/workline.yml, ci/github/workline-gardening.yml, ci/github/workline-sample.yml, routing.default.yaml]
-checked: cfcd9422
+checked: fbf84ebb
 verified: agent:claude-code
 reader: 2de353fab113
 ---
@@ -186,7 +186,7 @@ a merge request given its `range`, only the findings the change adds count
 | applying (`apply`, `sample --apply`) | a branch, not a detached HEAD, for gardening | `GITLAB_TOKEN` (below); a git identity (`user.name`, `user.email`); `origin` with the token, to push; git set to sign where the forge refuses unsigned commits ([how](gitlab/signed-commits.md)) | the engine; `ssh-keygen` to sign with an SSH key |
 
 The image `ghcr.io/jn0v/workline:<version>` holds the engine, gitleaks,
-git, jq, npm and, from the first release after v0.37.0, `ssh-keygen`.
+git, jq, npm and, from v0.38.0, `ssh-keygen`.
 `workline version` in a job's log says which engine ran.
 
 ### GitLab tokens

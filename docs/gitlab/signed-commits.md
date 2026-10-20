@@ -1,6 +1,6 @@
 <!-- workline
 sources: [ci/gitlab/workline.gitlab-ci.yml, internal/engine/follow.go, internal/engine/settle.go, Dockerfile]
-checked: f5008630
+checked: fbf84ebb
 -->
 # Signed commits on GitLab
 
@@ -48,8 +48,7 @@ SSH key: the template signs its commits with it.
 - **A key that cannot sign** fails the job, said, nothing pushed. A key
   given as a plain variable fails it too, the key never printed.
 - **No variable**: nothing changes.
-- **The image** holds `ssh-keygen` (`openssh-client`) from the first
-  release after v0.37.0.
+- **The image** holds `ssh-keygen` (`openssh-client`) from v0.38.0.
 
 ## Shown as verified, too
 
