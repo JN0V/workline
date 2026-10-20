@@ -1098,7 +1098,7 @@ func routeCmd(args []string) int {
 	verdictFile := fs.String("verdict", "", "also write the line's verdict on the head it judged (the range's end) to this file, for `workline follow --verdict` and the merge policy")
 	verdictHead := fs.String("verdict-head", "", "with --verdict: the head the verdict is for, when the commit judged is a merge result (GitLab's merged results pipelines)")
 	gatesOnly := fs.Bool("gates-only", false, "run the event's gate steps alone, each one: a CI job of their own, with no write token and no agent's (the result, --json, is what --gates-from and `apply --gates` read)")
-	gatesFrom := fs.String("gates-from", "", "take each gate step's verdict from this file, the result a run with --gates-only printed, rather than running it")
+	gatesFrom := fs.String("gates-from", "", "take each gate step's verdict from this file, the result a run with --gates-only printed, rather than running it; with --warn-only, the gates' findings for what triages them (the inspector), never their verdict")
 	gatesKept := fs.String("gates-kept", "", "the folder of the gates' findings kept by commit: on main, the head's are written there, the next base; on a merge request, the merge base's are read there when kept with the same command, config and tool, rather than running the tools again")
 	warnApart := fs.Bool("warn-apart", false, "leave what only warns to a run apart, which --warn-only makes: the reviewer's lenses that warn, on a merge request; the verdict waits only for what can block")
 	warnOnly := fs.Bool("warn-only", false, "the run apart from the verdict: only what a line with --warn-apart left, posted when done; never the head's verdict")
@@ -1139,8 +1139,8 @@ func routeCmd(args []string) int {
 	switch w := inputs[line.WarnInput]; {
 	case w != "" && w != line.WarnApart && w != line.WarnOnly:
 		return misuse(fs, fmt.Sprintf("--input %s=%s: %s or %s", line.WarnInput, w, line.WarnApart, line.WarnOnly))
-	case w == line.WarnOnly && (*gatesOnly || *gatesFrom != ""):
-		return misuse(fs, "--warn-only runs no gate: no --gates-only nor --gates-from")
+	case w == line.WarnOnly && *gatesOnly:
+		return misuse(fs, "--warn-only runs no gate: no --gates-only (--gates-from gives the gates' findings to what triages them)")
 	case w == line.WarnOnly && *verdictFile != "":
 		return misuse(fs, "--warn-only gives no verdict: what only warns never holds the head's (--verdict goes with the line's own run)")
 	}
