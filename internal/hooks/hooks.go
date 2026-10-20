@@ -13,6 +13,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 )
 
@@ -273,6 +274,40 @@ func expandHome(w string) string {
 		}
 		return "$" + v
 	})
+}
+
+// Outdated says whether file is a dispatcher another version of workline
+// wrote, which hands over otherwise than this one's (before #551, a linked
+// worktree's own hooks were skipped): written again for the binary it
+// records and next, it would differ. A missing file, or another tool's
+// hook, is not outdated.
+func Outdated(file, next string) bool {
+	data, err := os.ReadFile(file)
+	if err != nil {
+		return false
+	}
+	lines := strings.Split(string(data), "\n")
+	if len(lines) < 2 || !strings.HasPrefix(lines[1], "# workline hook dispatcher") {
+		return false
+	}
+	for _, l := range lines {
+		if q, ok := strings.CutPrefix(l, "bin="); ok {
+			bin, err := strconv.Unquote(q)
+			return err != nil || string(data) != fmt.Sprintf(dispatcher, bin, next)
+		}
+	}
+	return true
+}
+
+// OutdatedGlobal lists the global hooks that are outdated dispatchers.
+func OutdatedGlobal(p Paths) []string {
+	var old []string
+	for _, n := range names {
+		if Outdated(filepath.Join(p.Hooks, n), p.Next) {
+			old = append(old, n)
+		}
+	}
+	return old
 }
 
 func writeDispatchers(dir, bin, next string) error {

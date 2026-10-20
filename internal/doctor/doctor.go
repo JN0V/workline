@@ -117,6 +117,11 @@ func machine(r *Report, o Options) {
 				r.add(Check{Area: "machine", Rule: "hooks-broken", Level: Error,
 					Message: "core.hooksPath points to " + p.Hooks + ", which holds no hook: git runs no hook at all",
 					Fix:     "workline hooks install --global"})
+			} else if old := hooks.OutdatedGlobal(p); len(old) > 0 {
+				r.add(Check{Area: "machine", Rule: "hooks-outdated", Level: Warn,
+					Message: fmt.Sprintf("%d global git %s in %s %s written by another version of workline: a repository's own hooks may be skipped",
+						len(old), plural(old, "hook", "hooks"), p.Hooks, plural(old, "was", "were")),
+					Fix:     "workline hooks install --global"})
 			} else {
 				r.add(Check{Area: "machine", Rule: "hooks", Level: OK, Message: "global git hooks installed in " + p.Hooks})
 			}
@@ -326,6 +331,13 @@ func hooksPath(r *Report, o Options, prePush bool) {
 		if !hooks.HandsOver(dir, n, p) {
 			missing = append(missing, n)
 		}
+	}
+	// `hooks install --repo` writes its dispatcher there, to be committed.
+	if filepath.Clean(dir) == filepath.Join(o.Repo, ".githooks") && hooks.Outdated(filepath.Join(dir, "commit-msg"), "") {
+		file := filepath.Join(path, "commit-msg")
+		r.add(Check{Area: "repository", Rule: "hooks-outdated", Where: file, Level: Warn,
+			Message: "another version of workline wrote " + file + ": it may skip this repository's own commit-msg",
+			Fix:     "workline hooks install --repo   # then commit " + file})
 	}
 	own := fmt.Sprintf("this repository's core.hooksPath (%s, %s setting) wins over the global one", path, scope)
 	if len(missing) == 0 {
