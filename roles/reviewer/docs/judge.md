@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/lenses, internal/builtin/reviewer]
-checked: dcce5a60
+checked: 2f8eac9d
 verified: agent:claude-code
 ---
 # Reviewer — the judge, the verdict, the budget
@@ -89,7 +89,9 @@ else whether the quoted code fails:
 
 ## 8. The verdict, and what goes wrong
 
-- The rules block (the long comment warns).
+- The rules block (the long comment warns); one the project sets to `warn`
+  in `enforce` only warns, and never holds the lenses
+  ([#550](https://github.com/JN0V/workline/issues/550)).
 - What the lenses find warns (`ai-findings: warn`) until the evaluation
   has measured it ([#90](https://github.com/JN0V/workline/issues/90)),
   lens by lens ([settings](../README.md#settings)).

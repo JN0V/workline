@@ -73,8 +73,14 @@ roles:
 ```
 
 The engine recomputes the status from the findings: a `block` verdict whose
-blocking findings are all set to `warn` becomes a `pass` that shows them. Rules
-start in `warn`, and move to `block` once the false positives are gone.
+blocking findings are all set to `warn` or `off` becomes a `pass` that shows
+what is left. A finding its role gives as a warning (`record-unread`) never
+counts as blocking; `block` leaves a rule at its role's level, never raising a
+warning ([#99](https://github.com/JN0V/workline/issues/99)). A role that
+decides on its findings before its verdict reads them at these levels first:
+the reviewer's rules hold its lenses only while one still blocks
+([#550](https://github.com/JN0V/workline/issues/550)). Rules start in `warn`,
+and move to `block` once the false positives are gone.
 
 A rule can also be adopted on existing code without fixing all past violations
 first: the violations present today are frozen in a baseline, with a date. Only

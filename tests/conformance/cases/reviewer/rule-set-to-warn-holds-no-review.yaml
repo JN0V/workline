@@ -1,0 +1,18 @@
+case: reviewer/rule-set-to-warn-holds-no-review
+about: "A project sets a rule to warn (`enforce: {bug-story: warn}`, #550): its finding is shown as a warning and never holds the review. The push's lens is asked, and the review passes, its comment saying the rule warns."
+given:
+  repo: reviewed
+  setup:
+    - "printf '\\n// Double returns twice n.\\n// The bug was an overflow here.\\nfunc Double(n int) int { return 2 * n }\\n' >> calc/calc.go && git commit -qam 'feat: double a count'"
+  config: {roles: {reviewer: {enforce: {bug-story: warn}}}}
+  forge:
+    issues: []
+    merge-requests: [{id: 5, labels: [], comments: []}]
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD}, target: {merge-request: 5}, ai: "fake:review-nothing"}
+expect:
+  status: pass
+  agent-calls: 1
+  findings: [{rule: bug-story, level: warn, where: "calc/calc.go:21", message: "The bug was"}]
+  forge:
+    merge-requests:
+      - {id: 5, comments: 1, comment-contains: ["| warns | bug-story |", " runs=1 -->"]}
