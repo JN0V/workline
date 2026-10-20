@@ -1,0 +1,9 @@
+case: cli/gate-kept-needs-base
+about: >
+  `workline gate --gates-kept` reads a merge base's findings: with no
+  `--base`, there is none to read, misuse, 64.
+given: {repo: basic}
+run: {cli: [gate, merge, --gates-kept, kept]}
+expect:
+  exit: 64
+  stderr: ["goes with --base"]

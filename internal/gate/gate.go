@@ -224,11 +224,14 @@ func RunWith(repo, name string, o Options) (*verdict.Verdict, *Added) {
 	} else {
 		v.Summary = fmt.Sprintf("gate %s did not pass", name)
 	}
-	if ch != nil {
+	switch {
+	case ch != nil:
 		v.Summary += fmt.Sprintf("; only the findings the change adds since %s count", short(ch.base))
 		if len(told) > 0 {
 			v.Summary += ": " + strings.Join(told, ", ")
 		}
+	case !o.Keep: // main's run says what it counts itself
+		v.Summary += "; every finding counts, none compared with a base"
 	}
 	return v, add
 }
