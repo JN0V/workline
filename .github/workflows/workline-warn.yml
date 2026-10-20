@@ -89,9 +89,10 @@ jobs:
       # (ADR-0049): their result as workline.yml's gates job left it for
       # this head, the same the verdict counted; never the gates run again
       # here, in the agent's reach. Waited for, 15 minutes at most; none,
-      # said, and the triage reads nothing.
+      # said, and the triage reads nothing. Not on a draft, which asks no
+      # agent (ADR-0050).
       - name: The gates' findings, from workline.yml's run of this head
-        if: steps.any.outputs.triage == 'true'
+        if: steps.any.outputs.triage == 'true' && !github.event.pull_request.draft
         env: {GH_TOKEN: "${{ github.token }}", HEAD_SHA: "${{ github.event.pull_request.head.sha }}"}
         run: |
           run=

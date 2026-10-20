@@ -777,7 +777,11 @@ func TestWarnApartNeverHoldsTheVerdict(t *testing.T) {
 	// The inspector triages the gates' findings (ADR-0049): whatever their
 	// verdict, read from their job, never run here.
 	rules, _ := warn["rules"].([]any)
-	if r, _ := rules[0].(map[string]any); len(rules) != 1 || r["when"] != "always" || !strings.Contains(script, "--gates-from") || strings.Contains(script, "--gates-only") {
+	var rule map[string]any
+	if len(rules) == 1 {
+		rule, _ = rules[0].(map[string]any)
+	}
+	if rule["when"] != "always" || !strings.Contains(script, "--gates-from") || strings.Contains(script, "--gates-only") {
 		t.Errorf("workline:warn: does not read the gates' result whatever their verdict (rules %v): %s", rules, script)
 	}
 	for _, name := range []string{"workline:warn", "workline:warn:apply"} {
