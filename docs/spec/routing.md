@@ -203,8 +203,10 @@ push. With no agent set, nothing waits; `draft=false` changes nothing.
 - **Each move of a release tool's merge request**: a role holding the
   release runs as with no agent (`WORKLINE_AI_WAITS=night`); what needs
   none still holds the release. The line's summary says so, the role too
-  (`ai-waits-for-night`, a warning); the head's verdict is a release
-  waiting for its docs, never a pass.
+  (`ai-waits-for-night`, a warning), and a comment on the merge request
+  (a role's `on-block: [comment]` applies it though the run blocked).
+  The head's verdict is a release waiting for its docs, never a pass:
+  each step of the verdict says whether it held only for them (`held`).
 - **At night**: on `schedule` with a forge and `--open-merge-request`,
   before such a role's step, the line runs it on `release` for the
   release merge request open into the branch checked out, with its agent,

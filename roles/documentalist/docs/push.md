@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/adopt.go, internal/builtin/documentalist/byname.go, internal/builtin/documentalist/releasekept.go, internal/engine/night.go]
-checked: a88dc872
+checked: 7eadd606
 verified: agent:claude-code
 judged-in-parts: c7e1e98
 ---
@@ -111,8 +111,11 @@ commits touched.
 - **No agent on its moves**
   ([ADR-0050, §7](../../../docs/adr/0050-each-act-has-its-moment-and-a-wait-budget.md#7-decided-by-the-maintainer-on-2026-10-19)):
   on each push to it, the docs due are counted with no agent and hold the
-  release; one finding says so (`ai-waits-for-night`). A doc fix would
-  otherwise change its head after a person's yes.
+  release; one finding says so (`ai-waits-for-night`), and one comment on
+  it lists them, when their fix comes and how to have it sooner, edited on
+  each push, "none left" once they are in. A doc fix would otherwise
+  change its head after a person's yes. Held, the head's verdict waits
+  (`workline/verdict` pending), never red.
 - **The agent judges them every night**, on that pull request's head,
   checked out for the run, then put back:
   - the other nights, the templates' release docs run:

@@ -87,7 +87,8 @@ person, or a release tool.
   only if that passed.
 
 On GitHub, the release tool's pull request is the release: its verdict
-holds it, its docs judged at night
+holds it, pending while docs are due, listed in a comment on each push
+and judged at night
 ([ADR-0050, §7](adr/0050-each-act-has-its-moment-and-a-wait-budget.md#7-decided-by-the-maintainer-on-2026-10-19)).
 
 ## By hand, for another CI

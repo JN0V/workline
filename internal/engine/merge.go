@@ -30,10 +30,12 @@ type HeadVerdict struct {
 	Findings []verdict.Finding `json:"findings,omitempty"`
 }
 
-// StepStatus is a step of the line, and how it ended.
+// StepStatus is a step of the line, and how it ended. Held: it blocked
+// only for the release's docs (ReleaseHeld), a release waiting for them.
 type StepStatus struct {
 	Name   string `json:"name"`
 	Status string `json:"status"`
+	Held   bool   `json:"held,omitempty"`
 }
 
 // WriteVerdict writes a head's verdict to file, as JSON.
@@ -56,6 +58,11 @@ var shortReview = []string{"not-reviewed", "lens-failed", "review-not-whole"}
 // its docs due waiting for the agent at night (ADR-0050, §7), for those
 // docs alone.
 func (v *HeadVerdict) held() bool {
+	// The steps say it, where the line wrote which held (ReleaseHeld):
+	// a release held is one whose every step that did not pass held.
+	if slices.ContainsFunc(v.Steps, func(s StepStatus) bool { return s.Held }) {
+		return v.Status == verdict.Block && !slices.ContainsFunc(v.Steps, func(s StepStatus) bool { return s.Status != verdict.Pass && !s.Held })
+	}
 	n := 0
 	for _, f := range v.Findings {
 		if f.Level == "" || f.Level == "block" {
