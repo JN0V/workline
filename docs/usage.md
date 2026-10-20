@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/role/config.go, internal/engine/engine.go, internal/hooks, internal/agent/claude.go, internal/agent/command.go]
-checked: 11255245
+checked: 8a4d71eb
 judged: b5899f5
 verified: agent:claude-code
 ---
@@ -63,7 +63,7 @@ Each in detail: [the commands](commands.md), and
 | `--sarif <file>` / `--code-quality <file>` | also write the findings for GitHub's code scanning (SARIF) or GitLab's Code Quality; `route`: every step's; on a merge request, the SARIF without the documentalist's, the reviewer's nor the gates' ([role outcome](spec/role-outcome.md)) |
 | `--summary <file>` | also add what a CI job's page shows ([below](#the-jobs-summary)) |
 | `--gates-only` / `--gates-from <file>` | `route` only: run the event's gates alone, for a CI job of their own; or read their verdicts from that run's result ([gates in CI](gates-in-ci.md)) |
-| `--gates-kept <folder>` | `route` only: the gates' findings kept by commit; on `main`, the head's written there; on a change, its merge base's read there ([main after a merge](main-after-merge.md)) |
+| `--gates-kept <folder>` | `route`, and `gate` with `--base`: the gates' findings kept by commit; on `main`, the head's written there; on a change, its merge base's read there ([main after a merge](main-after-merge.md)) |
 | `--warn-apart` / `--warn-only` | `route` only: leave what only warns (the reviewer's lenses that warn) to a run apart; or be that run, no verdict ([apart](../roles/reviewer/docs/apart.md)) |
 | `--verdict <file>` | `route` only: also write the line's verdict on the head it judged, for the [merge policy](merge-policy.md); `--verdict-head <commit>`, the head when the commit judged is a merge result |
 | `--json` | print the result as JSON ([below](#the-jobs-summary)) |

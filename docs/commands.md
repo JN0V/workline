@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/engine/engine.go, internal/hooks]
-checked: 11255245
+checked: 8a4d71eb
 verified: agent:claude-code
 judged: e343388
 ---
@@ -86,7 +86,13 @@ step, no agent, nothing applied, said as warnings
 ### workline gate
 
 `workline gate <name>` runs a gate declared in `.workline/config.yaml`
-([gates](spec/gates.md)); it returns 0 or 1.
+([gates](spec/gates.md)); it returns 0 or 1. Its summary says how it
+counted ([more](spec/gates.md#with-workline-gate)):
+
+- **Every finding**, by default.
+- **`--base <rev>`**: only those the change adds since the merge base of
+  `<rev>` and `HEAD`; `--gates-kept <folder>`, the base's read as main
+  kept them.
 
 ## workline review
 

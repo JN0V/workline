@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog/coverage.go, internal/builtin/productowner/productowner.go, cmd/workline/main.go, roles/product-owner/instruction.md]
 status: draft
-checked: b9e7900b
+checked: 8a4d71eb
 verified: agent:claude-code
 ---
 # Importing a file
