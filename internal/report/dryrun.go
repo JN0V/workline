@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"slices"
 	"sort"
 	"strings"
@@ -72,7 +73,7 @@ func dryRunText(d *line.DryRun) string {
 			if h.Where != "" {
 				s = span(h.Where) + " " + s
 			}
-			if m := inert(firstLine(strings.TrimSpace(h.Message)), 200); m != "" {
+			if m := inert(heldFor(h.Message), 200); m != "" {
 				s += " — " + m
 			}
 			b.WriteString("- " + s + "\n")
@@ -153,7 +154,22 @@ func keptDryRun(body string) string {
 	return part
 }
 
+// heldFor is what a hold says, for the issue's or comment's reader: its
+// first line, a log's path on the job's machine left out.
+func heldFor(message string) string {
+	l := strings.TrimSpace(firstLine(strings.TrimSpace(message)))
+	l = seeLog.ReplaceAllString(l, "")
+	return strings.TrimSuffix(l, ":")
+}
+
+// seeLog is where a gate's check says its log is: a folder of the job's
+// machine, nothing for the reader.
+var seeLog = regexp.MustCompile(`; see /\S+`)
+
 func dryRunEndLine(keys []string) string {
+	if keys == nil {
+		keys = []string{}
+	}
 	state, _ := json.Marshal(dryRunState{Keys: keys})
 	return dryRunEnd + strings.ReplaceAll(string(state), "--", `-\u002d`) + " -->\n"
 }

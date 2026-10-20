@@ -26,6 +26,8 @@ type DryRun struct {
 	// branch, the release were it cut now, judged on its head; 0 for
 	// none, the branch's tip judged.
 	MergeRequest int `json:"merge-request,omitempty"`
+	// Ref: that merge request as its forge names it, #n or !n.
+	Ref string `json:"ref,omitempty"`
 	// Unread: that merge request's head could not be checked out: no
 	// step run, the release held, said.
 	Unread bool `json:"unread,omitempty"`
@@ -61,7 +63,7 @@ func dryRunOn(res *Result, o engine.Options) (engine.Options, *DryRun, func()) {
 			Message: "the release tool's merge request could not be read: the dry run is the branch's tip, " + err.Error()})
 	case mr != nil:
 		o.Target, o.Branch = &forge.Target{Kind: "merge-request", ID: mr.ID}, mr.Branch
-		d.MergeRequest = mr.ID
+		d.MergeRequest, d.Ref = mr.ID, engine.MergeRefOf(o, mr.ID)
 		if back, _, err = engine.OnReleaseHead(o); err != nil {
 			back, d.Unread = func() {}, true
 			d.Holds = append(d.Holds, Hold{Step: "release", Rule: "release-head", Where: fmt.Sprintf("#%d", mr.ID), Message: err.Error()})
@@ -149,7 +151,11 @@ func finishDryRun(res *Result, d *DryRun) {
 func DryRunSaid(d *DryRun) string {
 	from := "from " + short(d.Head)
 	if d.MergeRequest != 0 {
-		from = fmt.Sprintf("on #%d's head %s", d.MergeRequest, short(d.Head))
+		ref := d.Ref
+		if ref == "" {
+			ref = fmt.Sprintf("#%d", d.MergeRequest)
+		}
+		from = fmt.Sprintf("on %s's head %s", ref, short(d.Head))
 	}
 	if d.Since != "" {
 		from += ", since " + d.Since

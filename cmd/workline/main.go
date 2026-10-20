@@ -1690,7 +1690,11 @@ func keepDryRun(file, repo, forgeSpec string, summaryFiles []string, asJSON bool
 			if err := f.Sticky(t, backlog.Inert(body), wlreport.DryRunMarker, any); err != nil {
 				return fail(err)
 			}
-			said = append(said, fmt.Sprintf("%s: what would hold the release said in its comment", ref))
+			what := "what would hold the release said in its comment"
+			if !any {
+				what = "its comment edited: nothing would hold the release any more"
+			}
+			said = append(said, fmt.Sprintf("%s: %s", ref, what))
 			res.Applied = append(res.Applied, "comment on "+ref)
 		case was != "":
 			said = append(said, fmt.Sprintf("%s: nothing new nor gone for the release, its comment left as it is", ref))

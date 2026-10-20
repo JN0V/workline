@@ -24,6 +24,7 @@ expect:
   summary: "nothing would hold the release if it were cut now"
   findings:
     - {rule: release-dry-run, message: "#1: what would hold the release said in its comment"}
+    - {rule: release-dry-run, message: "#1: its comment edited: nothing would hold the release any more"}
   forge:
     issues:
       - {id: 1, absent: true}
