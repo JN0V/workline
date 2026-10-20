@@ -247,6 +247,9 @@ a cron off the hour (`13 17 * * *`) was listed as due at 18:00 and ran at
     `WORKLINE_GITLAB_TOKEN`'s; one a person's token wrote is not taken on
     its word, said once (`members-unread`); `GITLAB_TOKEN` (`read_api`)
     tells a person of the project too;
+  - `WORKLINE_GITLAB_TOKEN` held by a service account, or an account made
+    for the line: name it, `gitlab: {bots: [<username>]}` in
+    `.workline/config.yaml`, or its notes are read as a person's;
   - a note it cannot read: it commits the records, said (`record-unread`).
 
 ## The product owner

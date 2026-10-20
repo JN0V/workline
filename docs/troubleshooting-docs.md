@@ -31,7 +31,8 @@ the records are committed, or those docs judged again, at night. On GitLab, give
 project's members, as GitLab's `CI_JOB_TOKEN`. That comment is read only
 when a bot wrote it; one a person's token wrote is not, and its docs are
 judged again. `GITLAB_TOKEN` (`read_api`) on the judging job tells a
-person of the project too
+person of the project too. A service account holding workline's token
+is a bot once named: `gitlab: {bots: [<username>]}`
 ([more](../roles/documentalist/docs/push.md#a-doc-found-with-nothing-to-fix-no-commit)).
 
 `shallow-clone`: the clone lacks history the documentalist needs — the

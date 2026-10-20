@@ -92,11 +92,21 @@ reviewed the whole merge request again (`record-unread`,
   bot's comment alone, said (`members-unread`): one a person's token
   wrote is not taken on its word.
 
+- **A bot GitLab does not name so** — a service account, an account made
+  for the line holding `WORKLINE_GITLAB_TOKEN` — is named by the project:
+  `gitlab: {bots: [<username>]}` in `.workline/config.yaml`. Its notes,
+  labels and reactions are a bot's, the members read or not. The merge
+  policy still asks GitLab who the token's user is (ADR-0042): a name
+  written in a file never lets a merge go with no person's yes.
+- **The bot's own token**: where the token in use is
+  `WORKLINE_GITLAB_TOKEN`, its user (`GET /user`, once) is a bot too, for
+  a note whose author the members cannot tell. Not otherwise: that token
+  may be a person's, the last resort above, whose word must still count.
+
 Not chosen: giving the judging job a token of its own, which a project
 then has to make and rotate; taking an unknown author for a person of
-the project. Left: a service account, a bot GitLab names otherwise, is
-not told a bot by its name; its comment counts as a person's while the
-members are unread.
+the project; reusing the committer's `forge-identities`, which lists
+commit addresses, not usernames.
 
 Conformance: reviewer/record-read-without-the-members-on-gitlab and the
-two documentalist/judged-kept-…-without-the-members-on-gitlab cases.
+three documentalist/judged-kept-…-without-the-members-on-gitlab cases.
