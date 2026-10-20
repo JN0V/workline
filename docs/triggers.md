@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/line, internal/hooks, internal/forge/gitlab.go, ci/gitlab/workline.gitlab-ci.yml, ci/github/workline.yml, ci/github/workline-gardening.yml, ci/github/workline-sample.yml, routing.default.yaml]
-checked: ebe6dfdd
+checked: f5008630
 verified: agent:claude-code
 reader: 2de353fab113
 ---
@@ -183,10 +183,11 @@ a merge request given its `range`, only the findings the change adds count
 |---|---|---|---|
 | judging (`--no-apply`, `sample --out`) | the whole history (`GIT_DEPTH: 0`, `fetch-depth: 0`), the base commit fetched | the agent's credentials, whichever agent you chose (Claude Code: `CLAUDE_CODE_OAUTH_TOKEN` from `claude setup-token`, or `ANTHROPIC_API_KEY`); none is fine: `--ai none` | the engine, gitleaks, your agent's CLI (Claude Code: `claude`, from npm) |
 | judging gardening, the product owner, a merge request with the reviewer, or the sample | as above | a token that reads issues, merge requests and their notes: `GITLAB_TOKEN` with `read_api` (`CI_JOB_TOKEN` reads no issue); on GitHub `GH_TOKEN`, `issues: read`, `pull-requests: read` | as above |
-| applying (`apply`, `sample --apply`) | a branch, not a detached HEAD, for gardening | `GITLAB_TOKEN` (below); a git identity (`user.name`, `user.email`); `origin` with the token, to push | the engine |
+| applying (`apply`, `sample --apply`) | a branch, not a detached HEAD, for gardening | `GITLAB_TOKEN` (below); a git identity (`user.name`, `user.email`); `origin` with the token, to push; git set to sign where the forge refuses unsigned commits ([how](gitlab/signed-commits.md)) | the engine; `ssh-keygen` to sign with an SSH key |
 
 The image `ghcr.io/jn0v/workline:<version>` holds the engine, gitleaks,
-git, jq and npm. `workline version` in a job's log says which engine ran.
+git, jq, npm and, from the first release after v0.37.0, `ssh-keygen`.
+`workline version` in a job's log says which engine ran.
 
 ### GitLab tokens
 
