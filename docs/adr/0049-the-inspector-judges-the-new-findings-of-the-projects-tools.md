@@ -178,9 +178,9 @@
      agent; telling the reviewer what the linters cover is its own step.
    - **A formatter's fixes**: its command is said (`fix:`); applying them
      is left, a patch the gates' job would propose.
-   - **On GitLab**, every job holds the project's variables: the gates'
-     job unsets the agent's and the bot's tokens, which keeps them from
-     the tools' environment only.
+   - **On GitLab**, the agent's and the bot's tokens, scoped to the
+     environment `workline`, never reach the gates' job
+     ([#520](https://github.com/JN0V/workline/issues/520)).
 4. `roles/inspector`: the AI's triage, and runs with no agent. Built
    ([#574](https://github.com/JN0V/workline/pull/574),
    [the inspector](../../roles/inspector/README.md)): one call a push

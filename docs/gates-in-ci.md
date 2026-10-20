@@ -1,6 +1,6 @@
 ---
 sources: [ci/github/workline.yml, ci/github/workline-apply.yml, ci/github/workline-warn.yml, ci/gitlab/workline.gitlab-ci.yml, internal/report/gates.go, internal/engine/annotate.go, internal/line]
-checked: 6970b95e
+checked: 32104a40
 judged: 14c41d9
 verified: agent:claude-code
 ---
@@ -76,9 +76,12 @@ found the change adds:
   no pipeline there, the widget shows nothing.
 - **Each fingerprint holds no line number**: a finding that only moves
   keeps it.
-- **The variables**: GitLab gives every job the project's. The job unsets
-  the agent's token and the project bot's before the gates run; whoever
-  may push a branch can still read them
+- **The variables**: scoped to the environment `workline`, which the job
+  does not declare, the agent's token and the project bot's never reach
+  it; `workline:base` reads the merge base's findings with the bot's,
+  and hands them over ([the environment](gitlab/environment.md)). The
+  job still unsets them, for one left to every environment. Whoever may
+  push a branch can still read them
   ([ADR-0044](adr/0044-the-apps-key-stays-with-the-default-branchs-runs.md)).
   A fork's merge request runs in the fork, which has neither.
 - **Its summary** is `gates-summary.html`, linked from its page: the
