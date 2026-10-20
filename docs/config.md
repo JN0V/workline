@@ -1,6 +1,6 @@
 ---
 sources: [internal/role/config.go, internal/role/role.go, cmd/workline, internal/engine/engine.go, internal/forge/gitlab.go, internal/hooks]
-checked: 8a4d71eb
+checked: 68c17080
 judged: e343388
 verified: agent:claude-code
 reader: 0b97bbc207c5
@@ -32,6 +32,7 @@ owner), then the project's `settings`.
 | `repos.<name>` | `url`, `branch`: other repositories docs may name ([multi-repo](spec/multi-repo.md)) |
 | `release` | `branches` (the release tool's), `tags` (`v*`) |
 | `merge` | `autonomy: cautious`: the forge merges what a person accepted; `normal`: workline's own routine work too, with no yes; `alone: [reader]`: the reader's rewordings too ([merge policy](merge-policy.md)); off unless set |
+| `gitlab.bots` | usernames GitLab does not name bots that are: the service account or line account holding workline's token; its comments, labels and reactions are a bot's, never a person's ([why](ci-gitlab.md#what-the-template-does)) |
 
 ## `.workline/config.yaml`
 

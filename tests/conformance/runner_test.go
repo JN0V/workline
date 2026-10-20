@@ -238,6 +238,7 @@ type expectSpec struct {
 	Stderr       []string                     `yaml:"stderr"`            // with cli: texts printed on stderr
 	StderrLacks  []string                     `yaml:"stderr-lacks"`      // with cli: texts not printed on stderr
 	SummaryLacks []string                     `yaml:"summary-lacks"`     // texts the --summary file does not hold; with cli, workline-summary.md
+	SummaryOnce  []string                     `yaml:"summary-once"`      // texts the --summary file holds once, not more; with cli, workline-summary.md
 	// Moment: the wait the line's run is part of, as its result says it
 	// (ADR-0050): each field given is checked; over false, not over.
 	Moment *momentWant `yaml:"moment"`
@@ -1084,6 +1085,7 @@ func runCase(t *testing.T, c *caseFile) []string {
 		problems = append(problems, compareSummaryFile(c.Expect.SummaryFile, summaryFile)...)
 	}
 	problems = append(problems, summaryLacks(c.Expect.SummaryLacks, summaryFile)...)
+	problems = append(problems, summaryOnce(c.Expect.SummaryOnce, summaryFile)...)
 	if len(c.Expect.SummaryHTML) > 0 {
 		problems = append(problems, compareSummaryFile(c.Expect.SummaryHTML, summaryHTML)...)
 	}
@@ -1152,6 +1154,7 @@ func runCLI(engineBin string, c *caseFile, repo string, env []string) []string {
 		p = append(p, compareSummaryFile(c.Expect.SummaryFile, filepath.Join(repo, "workline-summary.md"))...)
 	}
 	p = append(p, summaryLacks(c.Expect.SummaryLacks, filepath.Join(repo, "workline-summary.md"))...)
+	p = append(p, summaryOnce(c.Expect.SummaryOnce, filepath.Join(repo, "workline-summary.md"))...)
 	return append(p, compareFiles(c.Expect.Files, repo)...)
 }
 
@@ -1936,6 +1939,24 @@ func compareSummaryFile(want []string, file string) []string {
 		rest = rest[i+len(w):]
 	}
 	return nil
+}
+
+// summaryOnce says which texts the summary file does not hold exactly once.
+func summaryOnce(texts []string, file string) []string {
+	if len(texts) == 0 {
+		return nil
+	}
+	data, err := os.ReadFile(file)
+	if err != nil {
+		return []string{fmt.Sprintf("no summary file: %v", err)}
+	}
+	var p []string
+	for _, t := range texts {
+		if n := strings.Count(string(data), t); n != 1 {
+			p = append(p, fmt.Sprintf("the summary file holds %q %d times, want once:\n%s", t, n, data))
+		}
+	}
+	return p
 }
 
 // summaryLacks says which texts the summary file holds that it must not.

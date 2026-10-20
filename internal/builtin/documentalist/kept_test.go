@@ -1,9 +1,73 @@
 package documentalist
 
 import (
+	"errors"
+	"fmt"
 	"strings"
 	"testing"
+
+	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/verdict"
 )
+
+// notesForge answers a merge request's notes, the rest of the forge left
+// out: what stickyOn reads.
+type notesForge struct {
+	forge.Forge
+	forge.Backlog
+	notes []forge.Note
+	err   error
+}
+
+func (f notesForge) Notes(forge.Target) ([]forge.Note, error) { return f.notes, f.err }
+
+// With a token that may not tell who is of the project (#552), only a
+// bot's comment is read as the documentalist's; one a person wrote is
+// named, the reads of a run said in one finding. Who is of the project
+// read, nothing is said; another failure is the read's.
+func TestStickyOnUnknownAuthors(t *testing.T) {
+	marker := forge.Marker("sticky=documentalist/" + keptKey)
+	f := notesForge{notes: []forge.Note{
+		{Body: "the bot's " + marker, Author: "project_1_bot_0a1b", Bot: true},
+		{Body: "alice's " + marker, Author: "alice"},
+		{Body: "a word", Author: "bob"},
+		{Body: "carol's " + marker, Author: "carol"},
+		{Body: "alice's again " + marker, Author: "alice"},
+	}, err: fmt.Errorf("%w: 401", forge.ErrAuthorsUnknown)}
+	var u unknownAuthors
+	for _, id := range []int{3, 4} {
+		body, err := stickyOn(f, forge.Target{Kind: "merge-request", ID: id}, keptKey, &u)
+		if err != nil || body != "the bot's "+marker {
+			t.Fatalf("merge request %d: %q %v", id, body, err)
+		}
+	}
+	got := u.findings()
+	if len(got) != 1 || got[0].Rule != "members-unread" || got[0].Level != "warn" ||
+		!strings.Contains(got[0].Message, "401: only a bot's comment") ||
+		!strings.Contains(got[0].Message, "@alice's on merge request 3, @carol's on merge request 3, @alice's on merge request 4, @carol's on merge request 4 not taken on its word") ||
+		strings.Contains(got[0].Message, "bob") {
+		t.Fatalf("said: %+v", got)
+	}
+	read := func() []verdict.Finding {
+		u = unknownAuthors{}
+		if _, err := stickyOn(f, forge.Target{Kind: "merge-request", ID: 3}, keptKey, &u); err != nil {
+			t.Fatal(err)
+		}
+		return u.findings()
+	}
+	f.notes = f.notes[:1]
+	if got := read(); len(got) != 1 || !strings.Contains(got[0].Message, "none other carried its records") {
+		t.Fatalf("only the bot's: %+v", got)
+	}
+	f.err = nil
+	if got := read(); got != nil {
+		t.Fatalf("who is of the project read: %+v", got)
+	}
+	f.err = forge.ErrUnreachable
+	if _, err := stickyOn(f, forge.Target{Kind: "merge-request", ID: 3}, keptKey, &u); !errors.Is(err, forge.ErrUnreachable) {
+		t.Fatalf("another failure: %v", err)
+	}
+}
 
 // A patch changing only the lines recording when a doc was read changes
 // nothing it says; `checked`, which vouches, is not one of them.

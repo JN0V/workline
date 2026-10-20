@@ -9,11 +9,15 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
+
+	"go.yaml.in/yaml/v3"
 )
 
 // gitlab talks to GitLab's REST API itself, with nothing to install: on
@@ -24,7 +28,57 @@ type gitlab struct {
 	base, project, header string // the API's root, the project's id, how the token goes
 	token                 string
 	members               map[string]int // the project's members, direct and inherited, and their access level; read once
+	membersRefused        error          // the token may not list them (ErrAuthorsUnknown): not asked again
 	bots                  map[int]bool   // whether a user is a bot, by id, as the users API says; read once each
+	named                 []string       // the project's `gitlab: {bots}`; read once
+	namedRead             bool
+	self                  *string // the bot's own token's user (selfBot), read once; "" none
+}
+
+// botNamed says whether username is a bot by its name — a project or group
+// access token's user — or one the project names in `gitlab: {bots: […]}`
+// (.workline/config.yaml): a service account, an account made for the line
+// (#552). The config is checked when the engine loads it; one unread here
+// names none.
+func (g *gitlab) botNamed(username string) bool {
+	if botName.MatchString(username) {
+		return true
+	}
+	if !g.namedRead {
+		g.namedRead = true
+		var c struct {
+			GitLab struct {
+				Bots []string `yaml:"bots"`
+			} `yaml:"gitlab"`
+		}
+		if data, err := os.ReadFile(filepath.Join(g.repo, ".workline", "config.yaml")); err == nil && yaml.Unmarshal(data, &c) == nil {
+			g.named = c.GitLab.Bots
+		}
+	}
+	return username != "" && slices.Contains(g.named, username)
+}
+
+// selfBot says whether username is the user of the token in use when that
+// token is the bot's own, WORKLINE_GITLAB_TOKEN (the template's applying
+// jobs), as GitLab says (GET /user), read once. Asked only of an author
+// nothing else tells: with a person's token as the bot's, the last resort
+// ADR-0023 allows, that person's word would count for nothing.
+func (g *gitlab) selfBot(username string) bool {
+	if g.self == nil {
+		self := ""
+		if bot := os.Getenv("WORKLINE_GITLAB_TOKEN"); bot != "" && g.connect() == nil && g.token == bot {
+			if out, err := g.api("user"); err == nil {
+				var u struct {
+					Username string `json:"username"`
+				}
+				if decode(out, &u) == nil {
+					self = u.Username
+				}
+			}
+		}
+		g.self = &self
+	}
+	return username != "" && username == *g.self
 }
 
 // planner is GitLab's access level from which a member counts as a person
@@ -44,11 +98,19 @@ const developer = 30
 var botName = regexp.MustCompile(`^(project|group)_\d+_bot(_|$)`)
 
 // insider says whether username is a person of the project. The members
-// are read once a run: a token that may not list them fails loud rather
-// than taking every reporter for an outsider.
+// are read once a run: a token that may not list them (401, 403: the
+// job's own) fails loud with ErrAuthorsUnknown rather than taking every
+// reporter for an outsider, and is not asked again.
 func (g *gitlab) insider(username string) (bool, error) {
+	if g.membersRefused != nil {
+		return false, g.membersRefused
+	}
 	if g.members == nil {
 		out, err := g.api("--paginate", "projects/:id/members/all?per_page=100")
+		if errors.Is(err, errForbidden) || errors.As(err, new(deniedRead)) {
+			g.membersRefused = fmt.Errorf("%w: the token may not list the project's members (%w)", ErrAuthorsUnknown, err)
+			return false, g.membersRefused
+		}
 		if err != nil {
 			return false, fmt.Errorf("reading the project's members, to tell who is of the project: %w", err)
 		}
@@ -166,7 +228,11 @@ func (g *gitlab) api(args ...string) ([]byte, error) {
 			a.code == http.StatusMethodNotAllowed, a.code == http.StatusNotAcceptable, a.code == http.StatusConflict:
 			return nil, fmt.Errorf("%w: GitLab %s %s: %s %s", errRefused, method, path, a.status, data)
 		case a.code >= 300:
-			return nil, fmt.Errorf("%w: GitLab %s %s: %s %s%s", ErrUnreachable, method, path, a.status, data, aside(a.note))
+			err := fmt.Errorf("%w: GitLab %s %s: %s %s%s", ErrUnreachable, method, path, a.status, data, aside(a.note))
+			if a.code == http.StatusUnauthorized {
+				err = deniedRead{err}
+			}
+			return nil, err
 		}
 		all = append(all, a.data...)
 		page := a.header.Get("X-Next-Page")
@@ -181,6 +247,13 @@ func (g *gitlab) api(args ...string) ([]byte, error) {
 	}
 	return all, nil
 }
+
+// deniedRead marks a read GitLab answered 401: a token it does not take
+// there, as the job's own on the project's members (#552). It reads as
+// the call's error, the forge out of reach, as before.
+type deniedRead struct{ error }
+
+func (d deniedRead) Unwrap() error { return d.error }
 
 // gitRemote is the URL of the repository's origin, or "".
 func gitRemote(repo string) string {
@@ -606,42 +679,67 @@ func (g *gitlab) RemoveBlocker(id, blocker int) error {
 	return nil
 }
 
+// Comments reads the notes' bodies alone: who wrote them is not asked,
+// so a token that may not list the project's members reads them (#552).
 func (g *gitlab) Comments(t Target) ([]string, error) {
-	notes, err := g.Notes(t)
-	return Bodies(notes), err
+	found, err := g.notes(t)
+	var all []string
+	for _, n := range found {
+		all = append(all, n.Body)
+	}
+	return all, err
 }
 
 // Notes reads each note's author, of the project by their access level; a
-// project or group access token's user is a bot.
+// bot by its name, or as the project names it (botNamed). A token that may
+// not list the members reads them all the same, with ErrAuthorsUnknown:
+// none of the project, a bot as named, or the bot's own token's user
+// (selfBot).
 func (g *gitlab) Notes(t Target) ([]Note, error) {
-	out, err := g.api("--paginate", path(t)+"/notes?sort=asc&order_by=created_at&per_page=100")
-	if err != nil {
-		return nil, err
-	}
-	found, err := pages[struct {
-		ID      int    `json:"id"`
-		Body    string `json:"body"`
-		System  bool   `json:"system"`
-		Created string `json:"created_at"`
-		Author  struct {
-			Username string `json:"username"`
-		} `json:"author"`
-	}](out)
+	found, err := g.notes(t)
 	if err != nil {
 		return nil, err
 	}
 	var all []Note
+	var unknown error
 	for _, n := range found {
-		if n.System { // GitLab's own notes: "changed the description", …
-			continue
-		}
+		bot := g.botNamed(n.Author.Username)
 		in, err := g.insider(n.Author.Username)
-		if err != nil {
+		switch {
+		case errors.Is(err, ErrAuthorsUnknown):
+			unknown = err
+			bot = bot || g.selfBot(n.Author.Username)
+		case err != nil:
 			return nil, err
 		}
-		all = append(all, Note{Body: n.Body, Author: n.Author.Username, Insider: in, Bot: botName.MatchString(n.Author.Username), Created: n.Created, ID: strconv.Itoa(n.ID)})
+		all = append(all, Note{Body: n.Body, Author: n.Author.Username, Insider: in, Bot: bot, Created: n.Created, ID: strconv.Itoa(n.ID)})
 	}
-	return all, nil
+	return all, unknown
+}
+
+// gitlabNote is a note as GitLab lists it.
+type gitlabNote struct {
+	ID      int    `json:"id"`
+	Body    string `json:"body"`
+	System  bool   `json:"system"`
+	Created string `json:"created_at"`
+	Author  struct {
+		Username string `json:"username"`
+	} `json:"author"`
+}
+
+// notes lists t's notes, oldest first, GitLab's own left out ("changed
+// the description", …).
+func (g *gitlab) notes(t Target) ([]gitlabNote, error) {
+	out, err := g.api("--paginate", path(t)+"/notes?sort=asc&order_by=created_at&per_page=100")
+	if err != nil {
+		return nil, err
+	}
+	found, err := pages[gitlabNote](out)
+	if err != nil {
+		return nil, err
+	}
+	return slices.DeleteFunc(found, func(n gitlabNote) bool { return n.System }), nil
 }
 
 // mentioned reads GitLab's system notes naming an issue from elsewhere:
@@ -734,7 +832,7 @@ func (g *gitlab) labelEvents(t Target) ([]LabelEvent, error) {
 		}
 		ev := LabelEvent{Label: e.Label.Name, Added: e.Action == "add", Note: Note{Created: e.Created}}
 		if e.User != nil {
-			ev.Author, ev.Bot = e.User.Username, botName.MatchString(e.User.Username)
+			ev.Author, ev.Bot = e.User.Username, g.botNamed(e.User.Username)
 			if ev.Insider, err = g.insider(ev.Author); err != nil {
 				return nil, err
 			}
@@ -763,7 +861,7 @@ func (g *gitlab) Reactions(issue int, note string) ([]Reaction, error) {
 	}
 	var all []Reaction
 	for _, a := range found {
-		r := Reaction{Emoji: map[string]string{"thumbsup": "+1", "thumbsdown": "-1"}[a.Name], Author: a.User.Username, Bot: botName.MatchString(a.User.Username)}
+		r := Reaction{Emoji: map[string]string{"thumbsup": "+1", "thumbsdown": "-1"}[a.Name], Author: a.User.Username, Bot: g.botNamed(a.User.Username)}
 		if r.Emoji == "" {
 			r.Emoji = a.Name
 		}
