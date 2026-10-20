@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.38.0](https://github.com/JN0V/workline/compare/v0.37.0...v0.38.0) (2026-10-20)
+
+
+### Features
+
+* **ci:** run only the gates in a merge queue or train ([#539](https://github.com/JN0V/workline/issues/539)) ([815e51f](https://github.com/JN0V/workline/commit/815e51fb8784d3e8b4b8330e8590d0ea472c11da))
+* **documentalist:** fix a release's docs at night, count them per move ([#535](https://github.com/JN0V/workline/issues/535)) ([b536c8e](https://github.com/JN0V/workline/commit/b536c8eb36b4101d3903df269bb97e37619128d7))
+* **gate:** check the whole repository once on main, keep its findings ([#544](https://github.com/JN0V/workline/issues/544)) ([e5f16ce](https://github.com/JN0V/workline/commit/e5f16ced864ef05e9933591926693e31781e7fcb))
+* **line:** show each step's seconds, say a moment over its budget ([#538](https://github.com/JN0V/workline/issues/538)) ([1c7c69d](https://github.com/JN0V/workline/commit/1c7c69d9e6196c33419682fe97be2b42ed16a18d))
+* **release:** a dry run each night, a release job on GitLab ([#554](https://github.com/JN0V/workline/issues/554)) ([617bbc4](https://github.com/JN0V/workline/commit/617bbc45c7d8ab60c1d05842faae0123f5a412aa))
+* **reviewer:** read only new commits after ready, judge a patch once ([#534](https://github.com/JN0V/workline/issues/534)) ([b4a9d20](https://github.com/JN0V/workline/commit/b4a9d20396be96029ef8637e662818d6c25d1101))
+
+
+### Bug Fixes
+
+* **documentalist:** hold a release pending, say on it its docs wait ([#558](https://github.com/JN0V/workline/issues/558)) ([cfcd942](https://github.com/JN0V/workline/commit/cfcd9422e40a7de63296b943891d25eae78257f0))
+* **follow:** sign the commits it pushes when git is set to sign ([#557](https://github.com/JN0V/workline/issues/557)) ([e7b0429](https://github.com/JN0V/workline/commit/e7b0429054e5c4ab12190f6952a08550c2e0ab6e))
+* **hooks:** run a repository's own hooks from a linked worktree ([#556](https://github.com/JN0V/workline/issues/556)) ([c74e4b3](https://github.com/JN0V/workline/commit/c74e4b34bc072a80f8536b4224f5d2c1db14cbe4))
+* **reviewer:** never block on findings the project set to warn ([#555](https://github.com/JN0V/workline/issues/555)) ([4af775b](https://github.com/JN0V/workline/commit/4af775bbd4bbbe7d7616ca92ee4aec9492e07761))
+
 ## [0.37.0](https://github.com/JN0V/workline/compare/v0.36.0...v0.37.0) (2026-10-19)
 
 
