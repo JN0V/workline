@@ -1,0 +1,15 @@
+case: reviewer/line-change-skips-no-commit
+about: "A change to the line's own files (.github/, ci/, .workline/, .gitlab-ci.yml) runs its merge request's checks with its own workflow, settings and engine, which wrote what the record says was read (ADR-0051, cut 5): no commit is skipped on that record. Here a commit adds a workflow and the next takes it out again: the record names every commit, yet the lens reads every one again, and the run says why."
+given:
+  repo: reviewed
+  setup:
+    - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"
+    - "mkdir -p .github/workflows && echo 'name: x' > .github/workflows/x.yml && git add .github && git commit -qm 'ci: add a workflow'"
+    - "git rm -q .github/workflows/x.yml && git commit -qm 'ci: take the workflow out'"
+    - "mkdir -p .git/workline && echo \"<!-- workline:record reviewed=$(git rev-parse HEAD) runs=1 -->\" > .git/workline/reviewer-record"
+run: {role: reviewer, event: review, input: {range: main..HEAD}, ai: "fake:review-nothing"}
+expect:
+  status: pass
+  agent-calls: 1
+  findings:
+    - {rule: line-changed, level: warn, message: "the change touches the line's own files (.github/workflows/x.yml): no commit is skipped on the record of what was read before, every one is read again"}

@@ -424,6 +424,31 @@ func (r Record) since(repo, base, head string) (span, error) {
 	return sp, nil
 }
 
+// lineOwn are the line's own files: the forge's workflows, the CI's and
+// workline's settings. A merge request changing them runs its own checks,
+// the reviewer's runs among them (ADR-0051, cut 5).
+var lineOwn = []string{".github", "ci", ".workline", ".gitlab-ci.yml"}
+
+// lineFiles are the line's own files the commits base..head change: by
+// one of them, a change since undone too, or by the range as a whole,
+// which holds what a merge settled by hand.
+func lineFiles(repo, base, head string) ([]string, error) {
+	var out []string
+	for _, args := range [][]string{{"log", "--no-merges", "--format=", "--name-only", base + ".." + head}, {"diff", "--name-only", base, head}} {
+		names, err := git(repo, append(append(args, "--"), lineOwn...)...)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range strings.Split(names, "\n") {
+			if n != "" && !slices.Contains(out, n) {
+				out = append(out, n)
+			}
+		}
+	}
+	slices.Sort(out)
+	return out, nil
+}
+
 // patchIDs are the patch ids of commits, none a merge, by commit: git's id
 // of a change, the same whatever commit it sits on (`git patch-id
 // --verbatim`: the stable algorithm, whitespace kept, since an indent can

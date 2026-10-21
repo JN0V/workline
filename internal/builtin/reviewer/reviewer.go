@@ -140,6 +140,7 @@ type state struct {
 	Upto       string             `json:"upto,omitempty"`      // the newest commit the lenses read, past commits-per-push new commits: the rest left (ADR-0050, step 6); "": the head
 	Fresh      int                `json:"fresh,omitempty"`     // with Upto: the new commits of the push
 	Left       []string           `json:"left,omitempty"`      // with Upto: the new commits left for the next run, oldest first
+	Line       []string           `json:"line,omitempty"`      // the line's own files the change touches: no commit skipped nor left (ADR-0051, cut 5)
 }
 
 // candidates is what the lenses answered, its quotes checked, before the judge.
@@ -307,6 +308,18 @@ func prepare(runDir, repo string, s Settings) int {
 		rec = Record{Judged: rec.Judged, Gone: rec.Gone} // the findings judged read apart: kept (ADR-0046)
 	}
 	read := rec.Read() // before a draft's run drops its marks (runOnReady)
+	// A change to the line's own files is judged by its own workflow,
+	// settings and engine, which wrote what the record says was read: no
+	// commit is skipped on it (ADR-0051, cut 5), nor left past the cap.
+	line, err := lineFiles(repo, base, head)
+	if err != nil {
+		return fail(err)
+	}
+	if len(line) > 0 && len(rec.Reviewed)+len(rec.Patches) > 0 {
+		rec.Reviewed, rec.Patches = nil, nil
+		advisories = append(advisories, verdict.Finding{Rule: "line-changed", Level: "warn",
+			Message: "the change touches the line's own files (" + strings.Join(line, ", ") + "): no commit is skipped on the record of what was read before, every one is read again"})
+	}
 	sp, err := rec.since(repo, base, head)
 	if err != nil {
 		return fail(err)
@@ -324,7 +337,7 @@ func prepare(runDir, repo string, s Settings) int {
 	if ready {
 		start = base
 	}
-	st := state{Head: head, From: start, Base: base, Change: change, Mechanical: mech, Commits: sp.Commits, Patches: sp.Patches, Record: rec, Every: ready, Advisories: advisories, Read: read, Warn: side}
+	st := state{Head: head, From: start, Base: base, Change: change, Mechanical: mech, Commits: sp.Commits, Patches: sp.Patches, Record: rec, Every: ready, Advisories: advisories, Read: read, Warn: side, Line: line}
 	// What blocked the last review stands until a commit answers it (#326):
 	// a run with nothing new to read never turns it green.
 	st.Standing = standing(repo, s, st, rec.Blocks)
