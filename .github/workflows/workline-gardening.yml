@@ -113,7 +113,10 @@ jobs:
   # (docs/release.md).
   dry-run:
     runs-on: ubuntu-latest
-    permissions: {contents: read}
+    # issues, checks, statuses and actions read: what holds the release, an
+    # open issue labelled workline:hold-release, main's tip not green
+    # (docs/release-holds.md); a private repository's are unread without.
+    permissions: {contents: read, issues: read, checks: read, statuses: read, actions: read}
     steps:
       - uses: actions/checkout@v4
         with: {fetch-depth: 0}
