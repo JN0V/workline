@@ -178,8 +178,9 @@ var versionRange = regexp.MustCompile(`(?:>=?|<=?|\^|~>?)\s*v?$`)
 // line — `> v1.2.0`, `> > v1.2.0`. The `>` closing a tag or opening a
 // quote is no range (#569). A marker has a space after it, so `>= 1.2.0`
 // or `>1.2.0` opening a line stays a range. A tag is shaped as one, a name
-// then attributes, or is a comment: `v<min && v>1.2.0` is a range.
-const tag = `<(?:/?[a-zA-Z][a-zA-Z0-9:-]*(?:\s+[a-zA-Z_:][a-zA-Z0-9_:.-]*(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s"'=<>\x60]+))?)*\s*/?|!--.*?--)>`
+// then attributes each given a value, or is a comment: `v<min && v>1.2.0`
+// and `a<b and c>1.2.0` are ranges.
+const tag = `<(?:/?[a-zA-Z][a-zA-Z0-9:-]*(?:\s+[a-zA-Z_:][a-zA-Z0-9_:.-]*\s*=\s*(?:"[^"]*"|'[^']*'|[^\s"'=<>\x60]+))*\s*/?|!--.*?--)>`
 
 var (
 	tagsBefore   = regexp.MustCompile(`(?:` + tag + `[ \t]*)+(v?)$`)

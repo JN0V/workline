@@ -87,6 +87,7 @@ func TestSaysAsNow(t *testing.T) {
 		{"a tight range opening a quoted line", "> >0.38.0 is accepted.\n", "v0.38.0", false},
 		{"a comparison in code is no tag", "```c\nif (v<min && v>0.38.0) {}\n```\n", "v0.38.0", false},
 		{"a range after a tag-like comparison", "Needs <v2.0.0, >0.38.0.\n", "v0.38.0", false},
+		{"a comparison in words is no tag", "It runs if a<b and c>0.38.0.\n", "v0.38.0", false},
 		{"a pin in a tag with attributes", "```xml\n<version scope=\"compile\">0.38.0</version>\n```\n", "v0.38.0", true},
 		{"a pin after an HTML comment", "Pin <!-- the one --> v0.38.0 in your job.\n", "v0.38.0", true},
 		{"history with a tag closing the line before", "The templates need the first release after <b>\nv0.38.0</b>, its image too.\n", "v0.38.0", false},
