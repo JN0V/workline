@@ -1,0 +1,18 @@
+case: release/released-once-the-label-is-off
+about: "With the label taken off the issue, and main's tip green, nothing holds the release (ADR-0051): its merge request passes. A check cancelled, then run again green, counts as green."
+given:
+  repo: documented
+  setup:
+    - "git tag v1.0.0"
+    - "git checkout -qb release-please--branches--main && echo '# Changelog' > CHANGELOG.md && git add CHANGELOG.md && git commit -qm 'chore(main): release 1.0.1'"
+  forge:
+    issues: [{id: 7, title: "Sign-in fails on Safari", labels: [bug], comments: []}]
+    merge-requests: [{id: 1, branch: release-please--branches--main, base: main, labels: [], comments: []}]
+    tips: {main: [{name: test, state: cancelled}, {name: test, state: success}, {name: lint, state: success}]}
+run: {route: merge-request, input: {range: "main..HEAD"}, target: {merge-request: 1}, ai: none}
+expect:
+  status: pass
+  agent-calls: 0
+  no-findings:
+    - {rule: release-held, where: "#7"}
+    - {rule: release-base-pending, where: main}

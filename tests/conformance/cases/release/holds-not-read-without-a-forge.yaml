@@ -1,0 +1,11 @@
+case: release/holds-not-read-without-a-forge
+about: "At a release with no forge (`--forge none`, a tag's pipeline with no token), neither an issue labelled to hold it nor main's checks can be read: said as a warning, never silently passed (ADR-0051)."
+given:
+  repo: documented
+  setup:
+    - "git tag v1.0.0"
+run: {route: release, ai: none, forge: none}
+expect:
+  status: pass
+  findings:
+    - {rule: release-holds-unread, where: release, level: warn, message: "no forge: neither an issue labelled workline:hold-release nor the checks"}

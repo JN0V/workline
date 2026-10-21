@@ -1,0 +1,16 @@
+case: release/holds-unread-hold-the-release
+about: "What holds the release that could not be read holds it (ADR-0051, principle 12): the forge not answering main's checks is a block, never a pass."
+given:
+  repo: documented
+  setup:
+    - "git tag v1.0.0"
+    - "git checkout -qb release-please--branches--main && echo '# Changelog' > CHANGELOG.md && git add CHANGELOG.md && git commit -qm 'chore(main): release 1.0.1'"
+  forge:
+    issues: []
+    merge-requests: [{id: 1, branch: release-please--branches--main, base: main, labels: [], comments: []}]
+    tips-unread: "HTTP 502"
+run: {route: merge-request, input: {range: "main..HEAD"}, target: {merge-request: 1}, ai: none}
+expect:
+  status: block
+  findings:
+    - {rule: release-holds-unread, where: main, level: block, message: "could not be read, so the release is held"}

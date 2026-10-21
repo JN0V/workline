@@ -97,6 +97,22 @@ from a release tool's branch (`release.branches`), with no agent
 ([below](#a-releases-docs-at-night)). A routing that still
 names the retired `release-manager` is refused, saying which tool to use.
 
+On the release — `release`, or `merge-request` from a release tool's
+branch — the line also reads what holds it on the forge, once, beside its
+steps, stopping none of them; its verdict takes the worst (ADR-0051,
+[what holds a release](../release-holds.md)): each open issue labelled
+`workline:hold-release` (`release-held`, by its number); the checks on the
+tip of the branch the merge request goes into, the default branch on
+`release` — a red one is `release-base-red`, one not done
+`release-base-pending`, both blocks; none at all, `release-base-unchecked`,
+a warning. On GitHub only the runs a push started count, with other apps'
+checks and the commit statuses, workline's own left out; on GitLab, the
+newest pipeline of the tip no schedule started. What could not be read is
+`release-holds-unread`, a block; with no forge, or one that says nothing of
+releases, a warning. The line's summary ends with `the release held: …`.
+Not read by `--gates-only`, `--warn-only`, a queue's run, nor the night's
+release judging.
+
 - Steps run in the listed order. The first step that ends in `block`,
   `human`, `blocked-external` or an error stops the sequence. It fails closed.
 - But on an event the routing sets `fail-fast: false` for, every step runs,
