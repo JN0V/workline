@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/instruction.md, roles/reviewer/policy.md, roles/reviewer/lenses, internal/builtin/reviewer]
-checked: bdea377f
+checked: b79ca968
 verified: agent:claude-code
 ---
 # Reviewer — a run on code
@@ -78,6 +78,9 @@ flowchart LR
      whosever turn it is ([#588](https://github.com/JN0V/workline/issues/588)).
    - **A push before the last review is written** waits for it, and reads it;
      a review written after another keeps its commits and lines ([#375](https://github.com/JN0V/workline/issues/375)).
+     The comment names the head and the CI run it is at, hidden: an older
+     run applied last keeps the newer one's text, its record merged in
+     ([#598](https://github.com/JN0V/workline/issues/598)).
    - **What blocked stands**, recorded too, until a commit answers it
      ([#326](https://github.com/JN0V/workline/issues/326), [more](judge.md#a-block-stands-until-a-commit-answers-it)).
    - The run on ready reads the whole change, commits reviewed before too ([below](#every-lens-once-when-it-becomes-ready));

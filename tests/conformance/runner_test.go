@@ -95,7 +95,7 @@ type runSpec struct {
 	Tamper  string            `yaml:"tamper"`
 	Then    string            `yaml:"then"`
 	Between map[string]any    `yaml:"between"` // with then: again, a person's edits to the forge before the second run; with then: resume, before the apply
-	// Pushed: with then: judged-twice or applied-between, what lands on
+	// Pushed: with then: judged-twice, applied-between or applied-out-of-order, what lands on
 	// the branch after the run judged, before it is applied (#375).
 	Pushed  []string `yaml:"pushed"`
 	Route   string   `yaml:"route"`
@@ -907,7 +907,7 @@ func runCase(t *testing.T, c *caseFile) []string {
 	if want := c.Expect.ApartStatus; want != "" && want != apartStatus {
 		return []string{fmt.Sprintf("the run apart's status = %q, want %s (then: apart runs it)", apartStatus, want)}
 	}
-	if c.Run.Then == "judged-twice" || c.Run.Then == "applied-between" {
+	if c.Run.Then == "judged-twice" || c.Run.Then == "applied-between" || c.Run.Then == "applied-out-of-order" {
 		var p []string
 		var gatesAgain func() []string // the gates' job of the new head, as CI runs it on each push
 		if c.Run.GatesJob != nil {
@@ -1557,6 +1557,25 @@ func pushedBeforeApplied(c *caseFile, engineBin string, args, env []string, repo
 		return exe(repo, args...)
 	}
 	var second, applied1, applied2 result
+	if c.Run.Then == "applied-out-of-order" {
+		// The second push's pipeline, a later one (GitLab's pipeline id),
+		// applied first: GitLab picks either waiting apply (#598).
+		env = append(slices.Clone(env), "CI_PIPELINE_ID=102")
+		if second, p = judge(); p != nil {
+			return first, p
+		}
+		if applied2, p = apply(second, heads[1]); p != nil {
+			return first, p
+		}
+		if applied1, p = apply(first, heads[0]); p != nil {
+			return first, p
+		}
+		out := applied1
+		out.AgentCalls = first.AgentCalls + second.AgentCalls
+		out.Calls = append(slices.Clone(first.Calls), second.Calls...)
+		out.Findings = slices.Concat(first.Findings, second.Findings, applied2.Findings, applied1.Findings)
+		return out, nil
+	}
 	if c.Run.Then == "judged-twice" {
 		if second, p = judge(); p != nil {
 			return first, p

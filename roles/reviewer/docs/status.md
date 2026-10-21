@@ -92,7 +92,10 @@ its measure in
   branch moved on; each apply merges the record it finds
   ([#375](https://github.com/JN0V/workline/issues/375)):
   `review-applied-when-a-push-lands-before-it*`,
-  `record-merged-when-two-runs-judged-before-either-applied*`.
+  `record-merged-when-two-runs-judged-before-either-applied*`; applied
+  out of order, the newer run's text kept
+  ([#598](https://github.com/JN0V/workline/issues/598)):
+  `newer-review-kept-when-applied-out-of-order-on-gitlab`.
 - **The record read only from workline's own account's comment**,
   another's carrying its marker never read, the range read again
   ([ADR-0051](../../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md),

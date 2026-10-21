@@ -65,7 +65,9 @@ func (a *applier) lineReview(t forge.Target, v any, body string) (string, error)
 // was applied. read is the record the run read; no comment yet, or a
 // forge that lists none, leaves body as it is. The reviewer's summary
 // comment, or the inspector's triage (#580): the last workline's own
-// account wrote, the one a run reads and Sticky edits (ADR-0051).
+// account wrote, the one a run reads and Sticky edits (ADR-0051). When
+// that comment names a later run than body (forge.Newer), its text is
+// kept and body's record merged into it (#598).
 func (a *applier) mergedRecord(t forge.Target, key, body, read string) (string, error) {
 	if _, ok := a.forge.(forge.Backlog); !ok {
 		return body, nil
@@ -74,7 +76,27 @@ func (a *applier) mergedRecord(t forge.Target, key, body, read string) (string, 
 	if err != nil {
 		return "", err
 	}
-	found, ok := kept.Last(forge.Marker("sticky=" + a.role + "/" + key))
+	marker := forge.Marker("sticky=" + a.role + "/" + key)
+	found, ok := kept.Last(marker)
+	if ok && forge.Newer(found, body) {
+		// A later run's comment, applied first (#598): its text stays,
+		// this run's record merged into it; never the older text written
+		// over it, even when a record does not read: the comment is then
+		// left as it is, and this run's commits read again.
+		merge := reviewer.MergeInto
+		if a.role == "inspector" {
+			merge = inspector.MergeInto
+		}
+		said := "kept, this run's record merged into it"
+		out := merge(found, body, read, marker)
+		if out == "" {
+			said = "kept as it is, this run's record not merged (a record does not read); what it read is read again"
+			out = strings.TrimSpace(strings.Replace(found, marker, "", 1))
+		}
+		a.findings = append(a.findings, verdict.Finding{Rule: "applied-after-a-newer-run", Level: "warn",
+			Message: "the comment holds a later run's text, applied before this one: " + said})
+		return out, nil
+	}
 	switch {
 	case !ok:
 		return body, nil

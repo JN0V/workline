@@ -527,6 +527,38 @@ func MergeSummary(body, read, found string) string {
 	return out
 }
 
+// MergeInto is found, the summary comment a later run wrote, kept as it
+// is but for its record, into which body's, the record of an older run
+// applied after it, is merged (#598): GitLab may apply two waiting runs
+// in any order, and the comment says the newer head. found's blocks and
+// what it owes stay; body's commits, patch ids and findings judged join
+// them, each run counted once. marker, the comment's own, is taken out:
+// the apply writes it again. "" when a record does not read.
+func MergeInto(found, body, read, marker string) string {
+	now, err1 := readRecord(found)
+	ours, err2 := parseRecord(body)
+	was, err3 := readRecord(read)
+	at := strings.Index(found, recordOpening)
+	if err1 != nil || err2 != nil || err3 != nil || at < 0 {
+		return ""
+	}
+	merged := now
+	merged.Reviewed = union(now.Reviewed, ours.Reviewed)
+	merged.Patches = union(now.Patches, ours.Patches)
+	merged.Runs = now.Runs + max(0, ours.Runs-was.Runs)
+	merged.Judged = slices.Clone(now.Judged)
+	for _, j := range ours.Judged {
+		if !slices.Contains(was.Judged, j) && !slices.Contains(merged.Judged, j) {
+			merged.Judged = append(merged.Judged, j)
+		}
+	}
+	out := found[:at] + merged.String()
+	if _, _, held := ReadJudged(found); held {
+		out += merged.judgedLines(SummaryMax - len(out))
+	}
+	return strings.TrimSpace(strings.Replace(out, marker, "", 1))
+}
+
 // union is a's ids, then b's not in a.
 func union(a, b []string) []string {
 	out := slices.Clone(a)

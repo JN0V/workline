@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go]
-checked: 8ccdfb74
+checked: 5f7a907a
 verified: agent:claude-code
 ---
 # Conformance — a case in full
@@ -120,7 +120,7 @@ saying so.
   are counted together, the rest is the second's; `again-after`, commands
   run in the repository before the second run (a second push), the first
   run's Code Quality report kept for `code-quality-kept`;
-- `then: judged-twice` and `then: applied-between` — a push landing before
+- `then: judged-twice`, `applied-between` and `applied-out-of-order` — a push landing before
   the run is applied ([#375](https://github.com/JN0V/workline/issues/375)):
   the commands in `pushed` run, the same run judges the new head, and both
   are applied, the first first. `judged-twice` judges both before either
@@ -128,7 +128,10 @@ saying so.
   judges, as the lock the judging and applying jobs share makes it. With
   `apply-from`, each is applied with the head its run judged as `--head`;
   with `gates-job`, that job runs again on the new head before the second
-  judges, as CI runs it on each push.
+  judges, as CI runs it on each push. `applied-out-of-order` judges both,
+  the second with `CI_PIPELINE_ID=102`, a later pipeline, and applies the
+  second first ([#598](https://github.com/JN0V/workline/issues/598)); the
+  rest is the first's apply's, the last.
   Both judges' agent calls and calls are counted, all four's findings; the
   rest is the last apply's;
 - `apply-from` — with `then: resume`, `judged-twice` or
