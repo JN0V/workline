@@ -1,5 +1,5 @@
 case: documentalist/judged-kept-written-on-main-on-gitlab
-about: "On GitLab, gardening finds the merge request merged by the commit GitLab says it became (its merge or squash commit), reads the record its documentalist's note kept — the project's token a bot by its name —, and proposes `judged` in workline/documentalist/records, the doc not judged again in the round after it either: judged, not applied, as CI's gardening job judges (ADR-0010, amended 2026-10-17)."
+about: "On GitLab, gardening finds the merge request merged by the commit GitLab says it became (its merge or squash commit), reads the record its documentalist's note kept — written by workline's own account, the project's token's user, a bot by its name —, and proposes `judged` in workline/documentalist/records, the doc not judged again in the round after it either: judged, not applied, as CI's gardening job judges (ADR-0010, amended 2026-10-17)."
 given:
   repo: documented
   setup:
@@ -23,6 +23,7 @@ given:
 
               <!-- workline:sticky=documentalist/judged -->
             author: project_1_bot_3f2a
+    token-user: project_1_bot_3f2a
 run: {role: documentalist, event: schedule, ai: 'cmd:sh "$FIXTURES/agents/judged-only.sh"', open-merge-request: true, no-apply: true, forge: gitlab}
 expect:
   status: pass

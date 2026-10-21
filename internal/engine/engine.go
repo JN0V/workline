@@ -2667,7 +2667,14 @@ func (a *applier) apply(in intent.Intention) error {
 					return err
 				}
 			}
-			return a.forge.Sticky(*target, backlog.Inert(body), forge.Marker("sticky="+a.role+"/"+key), !only)
+			marker := forge.Marker("sticky=" + a.role + "/" + key)
+			if target.Kind == "merge-request" {
+				// workline's own, the comment its record is read back
+				// from (ADR-0051); on an issue, the role's by its
+				// marker, whatever account wrote it (ADR-0038).
+				return forge.KeepOwn(a.forge, *target, backlog.Inert(body), marker, !only)
+			}
+			return a.forge.Sticky(*target, backlog.Inert(body), marker, !only)
 		}
 		return a.forge.Comment(*target, backlog.Inert(body), a.marker())
 	case "label":

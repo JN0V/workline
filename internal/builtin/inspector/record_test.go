@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"strings"
 	"testing"
-
-	"github.com/JN0V/workline/internal/forge"
 )
 
 func TestRecordReadsBackWhatTheCommentHides(t *testing.T) {
@@ -70,9 +68,9 @@ func TestMergeCommentKeepsTheRunAppliedSince(t *testing.T) {
 	triaged := func(fp, at string) Triaged {
 		return Triaged{Fingerprint: fp, Check: "lint", Where: fp + ".go:1", At: at, Matters: "m " + at}
 	}
-	note := func(r Record, bot bool) forge.Note {
+	note := func(r Record) string {
 		text, _ := r.lines(nil, 1<<20)
-		return forge.Note{Body: "the triage" + text + "\n\n" + marker, Bot: bot}
+		return "the triage" + text + "\n\n" + marker
 	}
 	was := Record{}.with(triaged("old", "h0"))
 	read, _ := was.lines(nil, 1<<20)
@@ -82,10 +80,7 @@ func TestMergeCommentKeepsTheRunAppliedSince(t *testing.T) {
 	// Applied since: the old one, and "both" and "theirs" triaged at h1.
 	now := was.with(triaged("both", "h1")).with(triaged("theirs", "h1"))
 
-	if got := MergeComment(body, read, nil); got != body {
-		t.Fatalf("no comment yet, the body changed: %s", got)
-	}
-	if got := MergeComment(body, read, []forge.Note{note(was, true)}); got != body {
+	if got := MergeComment(body, read, note(was)); got != body {
 		t.Fatalf("none applied since this run read, the body changed: %s", got)
 	}
 	// One this run read and left out past the size, only placed anew by a
@@ -96,16 +91,13 @@ func TestMergeCommentKeepsTheRunAppliedSince(t *testing.T) {
 	reranked := was
 	reranked.Triaged = []Triaged{triaged("old", "h0")}
 	reranked.Triaged[0].Order = 3
-	if got := MergeComment(left, read, []forge.Note{note(reranked, true)}); got != left {
+	if got := MergeComment(left, read, note(reranked)); got != left {
 		t.Fatalf("a finding this run read, only placed anew since, was merged back: %s", got)
 	}
-	if got := MergeComment(body, read, []forge.Note{note(now, false)}); got != body {
-		t.Fatalf("a stranger's comment carrying the marker was merged: %s", got)
-	}
-	if got := MergeComment(body, read, []forge.Note{{Body: "<!-- workline:triaged {nope} -->" + marker, Bot: true}}); got != body {
+	if got := MergeComment(body, read, "<!-- workline:triaged {nope} -->"+marker); got != body {
 		t.Fatalf("a record that does not read was merged: %s", got)
 	}
-	got := MergeComment(body, read, []forge.Note{note(now, true)})
+	got := MergeComment(body, read, note(now))
 	merged, err := readRecord(got)
 	if err != nil || !strings.HasPrefix(got, body[:strings.Index(body, recordOpening)]) {
 		t.Fatalf("the merged comment does not read, or its triage changed (%v): %s", err, got)
@@ -125,7 +117,7 @@ func TestMergeCommentKeepsTheRunAppliedSince(t *testing.T) {
 	for i := range 200 {
 		big = big.with(Triaged{Fingerprint: fmt.Sprintf("theirs%03d", i), Check: "lint", Where: "x.go", At: "h1", Matters: strings.Repeat("m", textMax), Why: strings.Repeat("w", textMax)})
 	}
-	got = MergeComment(body, read, []forge.Note{note(big, true)})
+	got = MergeComment(body, read, note(big))
 	merged, err = readRecord(got)
 	if err != nil || len(got) > commentMax || len(merged.Triaged) >= len(big.Triaged) {
 		t.Fatalf("a merged comment of %d characters, over %d, or none of the others' left out (%v)", len(got), commentMax, err)

@@ -64,29 +64,22 @@ func (a *applier) lineReview(t forge.Target, v any, body string) (string, error)
 // read it wrote it, a push having been judged before the run before it
 // was applied. read is the record the run read; no comment yet, or a
 // forge that lists none, leaves body as it is. The reviewer's summary
-// comment, or the inspector's triage (#580), whose record is read from a
-// bot's comment or a person's of the project only.
+// comment, or the inspector's triage (#580): the last workline's own
+// account wrote, the one a run reads and Sticky edits (ADR-0051).
 func (a *applier) mergedRecord(t forge.Target, key, body, read string) (string, error) {
-	b, ok := a.forge.(forge.Backlog)
-	if !ok {
+	if _, ok := a.forge.(forge.Backlog); !ok {
 		return body, nil
 	}
-	if a.role == "inspector" {
-		notes, err := b.Notes(t)
-		if err != nil && !errors.Is(err, forge.ErrAuthorsUnknown) {
-			return "", err
-		}
-		return inspector.MergeComment(body, read, notes), nil
-	}
-	comments, err := b.Comments(t)
+	kept, err := forge.ReadKept(a.forge, t)
 	if err != nil {
 		return "", err
 	}
-	marker := forge.Marker("sticky=" + a.role + "/" + key)
-	for _, c := range comments { // the first, the one a run reads
-		if strings.Contains(c, marker) {
-			return reviewer.MergeSummary(body, read, c), nil
-		}
+	found, ok := kept.Last(forge.Marker("sticky=" + a.role + "/" + key))
+	switch {
+	case !ok:
+		return body, nil
+	case a.role == "inspector":
+		return inspector.MergeComment(body, read, found), nil
 	}
-	return body, nil
+	return reviewer.MergeSummary(body, read, found), nil
 }

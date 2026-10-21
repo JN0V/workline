@@ -14,18 +14,19 @@ given:
       - id: 5
         labels: []
         comments:
-          - |
-            **workline reviewer** — 0 findings on the change; lenses: edge-cases.
+          - author: workline-bot
+            body: |
+              **workline reviewer** — 0 findings on the change; lenses: edge-cases.
 
-            | | | Where | Finding |
-            |---|---|---|---|
-            | warns | finding-judged-no |  | dropped, from the edge-cases lens: "Half rounds an odd count down" at calc/half.go:4 — the judge: rounding down is what halving a count means (independence: model (claude-sonnet-5 → claude-opus-5)) |
+              | | | Where | Finding |
+              |---|---|---|---|
+              | warns | finding-judged-no |  | dropped, from the edge-cases lens: "Half rounds an odd count down" at calc/half.go:4 — the judge: rounding down is what halving a count means (independence: model (claude-sonnet-5 → claude-opus-5)) |
 
-            <!-- workline:record reviewed=@reviewed@ runs=1 -->
-            <!-- workline:judged-lines gone=0 -->
-            <!-- workline:judged {"lens":"edge\u002dcases","where":"calc/half.go:4","at":"@reviewed@","yes":false,"finder":"claude\u002dsonnet\u002d5","judge":"claude\u002dopus\u002d5","title":"Half rounds an odd count down"} -->
+              <!-- workline:record reviewed=@reviewed@ runs=1 -->
+              <!-- workline:judged-lines gone=0 -->
+              <!-- workline:judged {"lens":"edge\u002dcases","where":"calc/half.go:4","at":"@reviewed@","yes":false,"finder":"claude\u002dsonnet\u002d5","judge":"claude\u002dopus\u002d5","title":"Half rounds an odd count down"} -->
 
-            <!-- workline:sticky=reviewer/summary -->
+              <!-- workline:sticky=reviewer/summary -->
 run: {role: reviewer, event: merge-request, input: {range: main..HEAD, lenses: correctness}, target: {merge-request: 5}, ai: "fake:review-related", forge: gitlab}
 expect:
   status: pass

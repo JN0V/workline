@@ -2,7 +2,6 @@ package documentalist
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"maps"
 	"os"
@@ -234,11 +233,11 @@ func parseKept(comment string) map[string]keptRecord {
 }
 
 // keptOn reads the records the documentalist's comment on a merge request
-// keeps: the last comment carrying its marker that a bot or a person of the
-// project wrote, who may edit it anyway; never one whose author the forge
-// does not say, which anyone could have posted on a public merge request.
-// A record that does not stand for the doc as it is holds nothing.
-func keptOn(f forge.Forge, t forge.Target, u *unknownAuthors) (map[string]keptRecord, error) {
+// keeps: the last comment carrying its marker that workline's own account
+// wrote, the one Sticky edits (ADR-0051); never another's, which anyone
+// could have posted on a public merge request. A record that does not
+// stand for the doc as it is holds nothing.
+func keptOn(f forge.Forge, t forge.Target, u *othersKept) (map[string]keptRecord, error) {
 	body, err := stickyOn(f, t, keptKey, u)
 	if err != nil {
 		return nil, err
@@ -247,58 +246,38 @@ func keptOn(f forge.Forge, t forge.Target, u *unknownAuthors) (map[string]keptRe
 }
 
 // stickyOn is the last of the documentalist's comments keyed key on a merge
-// request that a bot or a person of the project wrote; "" when none. With a
-// token that may not tell who is of the project (GitLab's job token,
-// #552), a bot's alone: u gathers why, and the comments left unread.
-func stickyOn(f forge.Forge, t forge.Target, key string, u *unknownAuthors) (string, error) {
-	b, ok := f.(forge.Backlog)
-	if !ok {
-		return "", fmt.Errorf("this forge cannot list a merge request's comments")
-	}
-	notes, err := b.Notes(t)
-	unknown := errors.Is(err, forge.ErrAuthorsUnknown)
-	if err != nil && !unknown {
+// request that workline's own account wrote; "" when none. Those carrying
+// its marker that another wrote are never read: u gathers whose.
+func stickyOn(f forge.Forge, t forge.Target, key string, u *othersKept) (string, error) {
+	kept, err := forge.ReadKept(f, t)
+	if err != nil {
 		return "", err
 	}
-	if unknown {
-		u.err = err
-	}
 	marker := forge.Marker("sticky=documentalist/" + key)
-	body := ""
-	for _, n := range notes {
-		switch {
-		case !strings.Contains(n.Body, marker):
-		case n.Bot || n.Insider:
-			body = n.Body
-		case unknown && n.Author != "":
-			if s := fmt.Sprintf("@%s's on merge request %d", n.Author, t.ID); !slices.Contains(u.unread, s) {
-				u.unread = append(u.unread, s)
-			}
-		}
+	if body, ok := kept.Last(marker); ok {
+		return body, nil
 	}
-	return body, nil
+	if err := kept.Unread(marker); err != nil {
+		u.unread = append(u.unread, fmt.Sprintf("on merge request %d (%v)", t.ID, err))
+	}
+	return "", nil
 }
 
-// unknownAuthors is what a run's reads of the documentalist's comments
-// met: why who is of the project could not be read, and the comments
-// carrying its marker left unread for it. Said once (findings).
-type unknownAuthors struct {
-	err    error
+// othersKept is what a run's reads of the documentalist's comments left
+// unread: on each merge request, the comments carrying its marker that
+// workline's own account did not write (ADR-0051). Said once (findings).
+type othersKept struct {
 	unread []string
 }
 
-// findings says that only a bot's comment was read, and what it left
-// unread: nothing when who is of the project was read.
-func (u *unknownAuthors) findings() []verdict.Finding {
-	if u.err == nil {
+// findings says which comments were not read as the documentalist's, and
+// what that changes: nothing when none was left.
+func (u *othersKept) findings() []verdict.Finding {
+	if len(u.unread) == 0 {
 		return nil
 	}
-	what := "none other carried its records"
-	if len(u.unread) > 0 {
-		what = strings.Join(u.unread, ", ") + " not taken on its word: the docs it kept are judged again"
-	}
-	return []verdict.Finding{{Rule: "members-unread", Level: "warn",
-		Message: fmt.Sprintf("%v: only a bot's comment is read as the documentalist's, a project or group access token's user or one .workline/config.yaml names (gitlab: {bots: […]}); %s. To tell a person of the project's, give the judging job GITLAB_TOKEN (read_api)", u.err, what)}}
+	return []verdict.Finding{{Rule: "record-unread", Level: "warn",
+		Message: "the documentalist's comment " + strings.Join(u.unread, "; ") + " could not be read: the docs it would keep are judged again"}}
 }
 
 // keptBody is the comment keeping the records: what a person reads, then
@@ -335,7 +314,7 @@ func readKept(runDir, repo string, suspects map[string]*suspectDoc) ([]verdict.F
 	}
 	in := keptInput{}
 	var findings []verdict.Finding
-	var u unknownAuthors
+	var u othersKept
 	t, _ := targetMergeRequest()
 	f, err := forge.Open(os.Getenv("WORKLINE_FORGE"), repo)
 	if err == nil && f != nil {
@@ -603,7 +582,7 @@ func recordsMerged(repo string, suspects map[string]*suspectDoc) ([]fromMerged, 
 		return verdict.Finding{Rule: "record-unread", Level: "warn",
 			Message: fmt.Sprintf("%s could not be read (%v): the docs judged on merged merge requests are judged again", what, err)}
 	}
-	var u unknownAuthors
+	var u othersKept
 	// A merge request is merged after its commits are made: an hour's
 	// leeway for clocks apart.
 	all, err := lister.MergedSince(time.Unix(oldestAt, 0).Add(-time.Hour))

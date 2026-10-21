@@ -1,71 +1,69 @@
 package documentalist
 
 import (
+	"encoding/json"
 	"errors"
-	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/JN0V/workline/internal/forge"
-	"github.com/JN0V/workline/internal/verdict"
 )
 
-// notesForge answers a merge request's notes, the rest of the forge left
-// out: what stickyOn reads.
-type notesForge struct {
-	forge.Forge
-	forge.Backlog
-	notes []forge.Note
-	err   error
-}
-
-func (f notesForge) Notes(forge.Target) ([]forge.Note, error) { return f.notes, f.err }
-
-// With a token that may not tell who is of the project (#552), only a
-// bot's comment is read as the documentalist's; one a person wrote is
-// named, the reads of a run said in one finding. Who is of the project
-// read, nothing is said; another failure is the read's.
-func TestStickyOnUnknownAuthors(t *testing.T) {
+// Only the last comment workline's own account wrote is read as the
+// documentalist's (ADR-0051), a person of the project's or another
+// bot's never; when only others' carry its marker, whose is said, the
+// reads of a run in one finding. One of its own read, nothing is said; a
+// forge out of reach is the read's failure.
+func TestStickyOnOwnOnly(t *testing.T) {
 	marker := forge.Marker("sticky=documentalist/" + keptKey)
-	f := notesForge{notes: []forge.Note{
-		{Body: "the bot's " + marker, Author: "project_1_bot_0a1b", Bot: true},
-		{Body: "alice's " + marker, Author: "alice"},
+	file := filepath.Join(t.TempDir(), "forge.json")
+	state := func(comments ...forge.FakeComment) {
+		data, err := json.Marshal(forge.FakeState{MergeRequests: []forge.FakeItem{
+			{ID: 3, Labels: []string{}, Comments: comments}, {ID: 4, Labels: []string{}, Comments: comments}}})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(file, data, 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	f := &forge.Fake{Path: file}
+	read := func(id int, u *othersKept) string {
+		t.Helper()
+		body, err := stickyOn(f, forge.Target{Kind: "merge-request", ID: id}, keptKey, u)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return body
+	}
+	others := []forge.FakeComment{
+		{Body: "alice's " + marker, Author: "alice", Insider: true},
 		{Body: "a word", Author: "bob"},
-		{Body: "carol's " + marker, Author: "carol"},
-		{Body: "alice's again " + marker, Author: "alice"},
-	}, err: fmt.Errorf("%w: 401", forge.ErrAuthorsUnknown)}
-	var u unknownAuthors
+		{Body: "another bot's " + marker, Author: "ci[bot]", Bot: true},
+	}
+	state(append([]forge.FakeComment{{Body: "workline's " + marker, Author: "workline-bot", Bot: true},
+		{Body: "workline's last " + marker, Author: "workline-bot", Bot: true}}, others...)...)
+	var u othersKept
+	if body := read(3, &u); body != "workline's last "+marker || u.findings() != nil {
+		t.Fatalf("its own: %q, said %+v", body, u.findings())
+	}
+	state(others...)
 	for _, id := range []int{3, 4} {
-		body, err := stickyOn(f, forge.Target{Kind: "merge-request", ID: id}, keptKey, &u)
-		if err != nil || body != "the bot's "+marker {
-			t.Fatalf("merge request %d: %q %v", id, body, err)
+		if body := read(id, &u); body != "" {
+			t.Fatalf("merge request %d: another's read: %q", id, body)
 		}
 	}
 	got := u.findings()
-	if len(got) != 1 || got[0].Rule != "members-unread" || got[0].Level != "warn" ||
-		!strings.Contains(got[0].Message, "401: only a bot's comment") ||
-		!strings.Contains(got[0].Message, "@alice's on merge request 3, @carol's on merge request 3, @alice's on merge request 4, @carol's on merge request 4 not taken on its word") ||
+	if len(got) != 1 || got[0].Rule != "record-unread" || got[0].Level != "warn" ||
+		!strings.Contains(got[0].Message, "on merge request 3 (@alice's comment and @ci[bot]'s comment carry its marker: only workline's own account's is read (workline-bot)); on merge request 4 (") ||
 		strings.Contains(got[0].Message, "bob") {
 		t.Fatalf("said: %+v", got)
 	}
-	read := func() []verdict.Finding {
-		u = unknownAuthors{}
-		if _, err := stickyOn(f, forge.Target{Kind: "merge-request", ID: 3}, keptKey, &u); err != nil {
-			t.Fatal(err)
-		}
-		return u.findings()
-	}
-	f.notes = f.notes[:1]
-	if got := read(); len(got) != 1 || !strings.Contains(got[0].Message, "none other carried its records") {
-		t.Fatalf("only the bot's: %+v", got)
-	}
-	f.err = nil
-	if got := read(); got != nil {
-		t.Fatalf("who is of the project read: %+v", got)
-	}
-	f.err = forge.ErrUnreachable
+	f.Path = filepath.Join(t.TempDir(), "none.json")
 	if _, err := stickyOn(f, forge.Target{Kind: "merge-request", ID: 3}, keptKey, &u); !errors.Is(err, forge.ErrUnreachable) {
-		t.Fatalf("another failure: %v", err)
+		t.Fatalf("a forge out of reach: %v", err)
 	}
 }
 

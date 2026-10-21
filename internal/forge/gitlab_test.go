@@ -31,7 +31,9 @@ func TestGitLabAPI(t *testing.T) {
 			w.Header().Set("X-Next-Page", "2")
 			json.NewEncoder(w).Encode([]map[string]any{{"id": 1, "body": "someone's"}})
 		case r.Method == "GET" && p == "/merge_requests/7/notes":
-			json.NewEncoder(w).Encode([]map[string]any{{"id": 2, "body": "old <!-- workline:k -->"}})
+			json.NewEncoder(w).Encode([]map[string]any{{"id": 2, "body": "old <!-- workline:k -->", "author": map[string]any{"username": "workline-bot"}}})
+		case r.Method == "GET" && p == "/api/v4/user":
+			json.NewEncoder(w).Encode(map[string]any{"username": "workline-bot"})
 		case r.Method == "GET" && p == "/merge_requests/7":
 			json.NewEncoder(w).Encode(map[string]any{"source_branch": "feat", "target_branch": "main", "source_project_id": 3, "target_project_id": 3, "title": "Average", "description": "Closes #4"})
 		case r.Method == "PUT" || r.Method == "POST":
@@ -97,6 +99,8 @@ func TestGitLabWho(t *testing.T) {
 				{"username": "gone", "access_level": 30, "state": "blocked"},
 				{"username": "project_1_bot_0a1b", "access_level": 15, "state": "active"},
 			})
+		case r.Method == "GET" && p == "/api/v4/user":
+			json.NewEncoder(w).Encode(map[string]any{"username": "project_1_bot_0a1b"})
 		case r.Method == "GET" && p == "/issues/3":
 			json.NewEncoder(w).Encode(map[string]any{"iid": 3, "title": "t", "author": author("guest"), "state": "opened"})
 		case r.Method == "GET" && p == "/issues/3/notes":
