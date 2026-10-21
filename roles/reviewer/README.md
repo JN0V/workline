@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/instruction.md, roles/reviewer/policy.md, roles/reviewer/lenses, internal/builtin/reviewer, internal/backlog/spec.go, routing.default.yaml]
-checked: 9a78f69c
+checked: a539fb3e
 verified: agent:claude-code
 ---
 # Reviewer
@@ -93,7 +93,8 @@ Step by step, with every rule: [a run on code](docs/run.md).
 3. **The record**: commits already reviewed whole are not asked again,
    rebased or not, nor pushed on before their review was written; a merge
    of the base is read for what it settled. After ready, the lenses that
-   warn read five new commits a push, the rest at the next.
+   warn read five new commits a push, the rest at the next. A change to
+   the line's own files (`.github/`, `ci/`, `.workline/`) skips none.
 4. **The lenses**: correctness, edge cases, tests, intent (the issue the
    change closes), claims (what its author says), in one call; a project
    adds its own in `.workline/roles/reviewer/lenses/`.
@@ -155,7 +156,7 @@ Under `roles: {reviewer: {settings: …}}` in `.workline/config.yaml`
 | `ignore` | `*.md`, `docs/**`, `LICENSE*`, `**/*.txt`, `CHANGELOG*` | not code: a change touching only these asks nobody |
 | `lenses` | `[correctness, edge-cases, tests, intent, claims]` | in this order, in turn, on a merge request; a lens with nothing to read skipped |
 | `lenses-per-push` | `1` | `--input lenses=all` asks every one, on the whole change: the templates pass it when the merge request becomes ready |
-| `commits-per-push` | `5` | after ready: new commits a lens that warns reads a push, the oldest first; the rest at the next push, said; `0`: every one ([more](docs/ready.md#after-ready-only-what-is-new)) |
+| `commits-per-push` | `5` | after ready: new commits a lens that warns reads a push, the oldest first; the rest at the next push, said; none left when the line's own files change; `0`: every one ([more](docs/ready.md#after-ready-only-what-is-new)) |
 | `lenses-together` | `true` | the lenses of a run in one call; `false`: a call each |
 | `diff-alone` | `false` | `true`: one more call, given the change only |
 | `spec-lenses` | `[ambiguous, unverifiable, out-of-scope, contradicted]` | the lenses a spec is read through |

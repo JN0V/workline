@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, internal/builtin/reviewer/reviewer.go, internal/builtin/reviewer/record.go, internal/line/line.go, ci/github/workline.yml, ci/github/workline-warn.yml, ci/github/workline-apply.yml, ci/gitlab/workline.gitlab-ci.yml]
-checked: ae744e99
+checked: a539fb3e
 judged: a5cd2cf
 verified: agent:claude-code
 ---
@@ -35,6 +35,8 @@ beside the verdict's, and posts once it answered.
 - **After ready, the run apart reads five new commits a push**
   (`commits-per-push`), the rest at the next push; the verdict's run
   reads every one ([after ready](ready.md#after-ready-only-what-is-new)).
+  A change to the line's own files leaves none
+  ([the record](run.md#3-the-record)).
 - **A push whose turn is the other run's lens**: nobody asked in this
   run; the commits are recorded and the turn moves on, as in the other.
   A lens of this run that did not answer on them is asked instead: no
