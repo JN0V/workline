@@ -420,6 +420,10 @@ func MergeComment(body, read string, notes []forge.Note) string {
 	for _, t := range ours.Triaged {
 		keep[t.Fingerprint] = true
 	}
+	// This run's own lines fit this room already, its note counting those
+	// it left out: past it, only triages of the run applied since go, the
+	// oldest first and uncounted, as comment drops those of findings not
+	// at the head; none of ours goes, so the count is 0.
 	merged := Record{Triaged: append(since, ours.Triaged...)}
 	record, _ := merged.lines(keep, commentMax-len(head)-10)
 	return head + record

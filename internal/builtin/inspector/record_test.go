@@ -1,6 +1,7 @@
 package inspector
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -105,6 +106,22 @@ func TestMergeCommentKeepsTheRunAppliedSince(t *testing.T) {
 	for i, w := range want {
 		if g := merged.Triaged[i]; g.Fingerprint != w.Fingerprint || g.At != w.At {
 			t.Fatalf("merged %+v, want the run's applied since first, then this run's own, its triage of one both made kept: %+v", merged.Triaged, want)
+		}
+	}
+	// Past the comment's size: the run's applied since go, never this
+	// run's own.
+	big := now
+	for i := range 200 {
+		big = big.with(Triaged{Fingerprint: fmt.Sprintf("theirs%03d", i), Check: "lint", Where: "x.go", At: "h1", Matters: strings.Repeat("m", textMax), Why: strings.Repeat("w", textMax)})
+	}
+	got = MergeComment(body, read, []forge.Note{note(big, true)})
+	merged, err = readRecord(got)
+	if err != nil || len(got) > commentMax || len(merged.Triaged) >= len(big.Triaged) {
+		t.Fatalf("a merged comment of %d characters, over %d, or none of the others' left out (%v)", len(got), commentMax, err)
+	}
+	for _, fp := range []string{"old", "both", "ours"} {
+		if _, ok := merged.find(fp); !ok {
+			t.Fatalf("past its size, the merge left out this run's own %q", fp)
 		}
 	}
 }
