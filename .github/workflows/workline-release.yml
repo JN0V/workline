@@ -1,16 +1,9 @@
-# What holds the release, read again (ADR-0051): ci/github/workline-release.yml,
-# main's workflows named: workline's, its tests, release-please.
-#
-# The release tool's pull request is the release: its check, workline.yml's
-# judge, blocks while an open issue carries the label workline:hold-release,
-# or while a check on main's tip is red or not done. That check reads the
-# forge when it runs; this workflow runs it again when what it read changes:
-#   - the label put on an issue or taken off, or such an issue closed,
-#     reopened or deleted;
-#   - one of main's workflows ended, after a push: list each one that runs
-#     on a push to main under `workflows:` below (the tests' too), by name.
-# It re-runs the pull request's last workline run, nothing else, with the
-# job's own token: no App, no secret, no agent.
+# What holds the release, read again (docs/release-holds.md):
+# ci/github/workline-release.yml, main's workflows named: workline's, its
+# tests, release-please. It re-runs the release pull request's last
+# workline run, with the job's own token, when the label
+# workline:hold-release changes on an issue, or when main's runs after a
+# push have all ended.
 name: workline release
 on:
   issues: {types: [labeled, unlabeled, closed, reopened, deleted]}
@@ -46,8 +39,5 @@ jobs:
             run=$(gh run list --workflow workline.yml --commit "$sha" --event pull_request --limit 1 --json databaseId --jq '.[0].databaseId // empty')
             if [ -z "$run" ]; then echo "#$pr: no workline run on $sha yet"; continue; fi
             gh run watch "$run" --exit-status > /dev/null 2>&1 || true   # one still running ends first
-            if [ "$EVENT" = workflow_run ] && [ "$(gh run view "$run" --json conclusion --jq .conclusion)" = success ]; then
-              echo "#$pr: its check passed; main's runs change nothing it holds"; continue
-            fi
             gh run rerun "$run" && echo "#$pr: workline run $run started again, to read what holds the release"
           done
