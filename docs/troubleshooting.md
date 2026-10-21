@@ -91,8 +91,9 @@ goes ready, a hidden record that does not read: in
   `parts-max` ([in parts](../roles/reviewer/docs/parts.md)).
 - `blocked-external` (exit 3): the agent's quota, a timeout, the forge or a
   repository failed. Never a verdict: run it again later. The CI templates
-  turn it into a warning, the docs listed for a person. A GitLab call is
-  tried again first ([which](gitlab/calls.md)).
+  turn it into a warning, the docs listed for a person. A GitHub or
+  GitLab call is tried again first (which: [GitHub](github/calls.md),
+  [GitLab](gitlab/calls.md)).
 - `agent-unavailable`: the agent named cannot be called; doctor says why.
 - `model-changed`: another model answered an alias than last time on this
   machine; said once, never blocking.
