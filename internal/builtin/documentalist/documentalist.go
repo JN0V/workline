@@ -231,7 +231,7 @@ func slug(heading string) string {
 // changed says what changed in a source since checked, as text for a person;
 // empty means nothing that matters. dir is the repository holding the source,
 // rev the revision to compare with (HEAD, or a branch for another repository).
-func changed(dir, checked, rev, path, anchor string) (string, error) {
+func changed(dir, checked, rev, path, anchor string, names map[string]bool) (string, error) {
 	if !strings.HasSuffix(path, ".md") {
 		out, err := git(dir, "log", "--format=%H %h %s", checked+".."+rev, "--", path)
 		if err != nil || out == "" {
@@ -240,7 +240,7 @@ func changed(dir, checked, rev, path, anchor string) (string, error) {
 		var kept []string
 		for _, l := range strings.Split(out, "\n") {
 			full, rest, _ := strings.Cut(l, " ")
-			if !headersOnly(dir, full, path) {
+			if !headersOnly(dir, full, path) && touchesNames(dir, full, path, names) {
 				kept = append(kept, rest)
 			}
 		}
@@ -391,6 +391,71 @@ func versionsOnly(dir, commit, path string) (bool, []string) {
 // tool's own bump says nothing else a doc describes, and would make the
 // release's docs suspect at every release. Elsewhere a bump is a change
 // like any: the docs it touches are judged (the evaluation's
+// docNames are what a doc names that a change of code can make false: the
+// names it writes in backticks — flags, identifiers, settings, files —,
+// lowercased, leading dashes cut, four characters or more; and the values
+// it states anywhere, numbers of two characters or more (3600, 1.4.1). A
+// doc writing no name in backticks gets nil: any change to a source makes
+// it suspect, as always.
+func docNames(text string) map[string]bool {
+	names := map[string]bool{}
+	for _, m := range backticked.FindAllStringSubmatch(text, -1) {
+		for _, n := range nameWord.FindAllString(m[1], -1) {
+			if n = strings.ToLower(strings.TrimLeft(n, "-")); len(n) >= 4 {
+				names[n] = true
+			}
+		}
+	}
+	if len(names) == 0 {
+		return nil
+	}
+	for _, v := range valueWord.FindAllString(text, -1) {
+		names[v] = true
+	}
+	return names
+}
+
+var (
+	backticked = regexp.MustCompile("`([^`\\n]{1,80})`")
+	nameWord   = regexp.MustCompile(`-*[A-Za-z_][A-Za-z0-9_.-]*`)
+	valueWord  = regexp.MustCompile(`\b[0-9][0-9.]*[0-9]\b`)
+)
+
+// touchesNames says whether a commit's change to path touches what its doc
+// names (ADR-0014, amended 2026-10-21): a file the doc names, changed at
+// all; or a line removed or changed holding a name or a value the doc
+// writes. A line added alone makes nothing the doc says false. With no
+// names, any change does. What escapes: a change of behaviour that renames
+// nothing the doc names; staleness and the weekly sample read such a doc
+// again.
+func touchesNames(dir, commit, path string, names map[string]bool) bool {
+	if names == nil {
+		return true
+	}
+	out, err := git(dir, "show", "--format=", "-U0", "--no-color", commit, "--", path)
+	if err != nil {
+		return true // cannot tell: suspect, never a silent pass
+	}
+	for _, l := range strings.Split(out, "\n") {
+		if f, ok := strings.CutPrefix(l, "diff --git a/"); ok {
+			f, _, _ = strings.Cut(f, " b/")
+			if names[strings.ToLower(f)] || names[strings.ToLower(filepath.Base(f))] {
+				return true
+			}
+			continue
+		}
+		if !strings.HasPrefix(l, "-") || strings.HasPrefix(l, "---") {
+			continue
+		}
+		for _, n := range append(nameWord.FindAllString(l, -1), valueWord.FindAllString(l, -1)...) {
+			if names[strings.ToLower(strings.TrimLeft(n, "-"))] {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 // drifted-version-bump).
 func dropBumps(dir, commits, path, doc string) string {
 	if commits == "" || strings.HasPrefix(commits, "(") {
@@ -788,7 +853,7 @@ func Pre(runDir, repo string) int {
 			} else if err == nil && unanchored {
 				commits = fmt.Sprintf("(`checked` names %s, which %s does not hold, and no commit brought it there)", checked, where.rev)
 			} else if err == nil {
-				commits, err = changed(where.dir, checked, where.rev, path, anchor)
+				commits, err = changed(where.dir, checked, where.rev, path, anchor, docNames(tree.Docs[d.Path]))
 				if err == nil && name == "" && os.Getenv("WORKLINE_RELEASE_BRANCH") != "" {
 					commits = dropBumps(where.dir, commits, path, tree.Docs[d.Path])
 				}
