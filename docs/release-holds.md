@@ -58,7 +58,8 @@ glab label create --name workline:hold-release --description "Holds the release 
   - when main's workflows end after a push, none still running: list
     each one in its `workflow_run`, the tests' too.
   - `judge` reads with its own token: `issues`, `checks`, `statuses` and
-    `actions` read, as [workline.yml](../ci/github/workline.yml) gives.
+    `actions` read, as [workline.yml](../ci/github/workline.yml) gives;
+    the gardening's `dry-run` gets the same.
 - **GitLab**: no pipeline starts on a label. Once the label is off, or
   main green, run the release merge request's `workline:judge` job
   again. It reads with `GITLAB_TOKEN` (`read_api`); the job's own token
