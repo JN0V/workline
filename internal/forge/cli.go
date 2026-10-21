@@ -214,6 +214,12 @@ func ghRead(args []string) bool {
 			}
 			return ""
 		}
+		field := func(v string) {
+			fields = true
+			if q, ok := strings.CutPrefix(v, "query="); ok {
+				query = q
+			}
+		}
 		switch {
 		case a == "api":
 		case a == "-X" || a == "--method":
@@ -221,12 +227,15 @@ func ghRead(args []string) bool {
 		case strings.HasPrefix(a, "--method="):
 			method = strings.ToUpper(strings.TrimPrefix(a, "--method="))
 		case strings.HasPrefix(a, "-X"):
-			method = strings.ToUpper(strings.TrimPrefix(a, "-X"))
+			method = strings.ToUpper(strings.TrimPrefix(strings.TrimPrefix(a, "-X"), "="))
 		case a == "-f" || a == "-F" || a == "--field" || a == "--raw-field" || a == "--input":
-			fields = true
-			if v, ok := strings.CutPrefix(next(), "query="); ok {
-				query = v
-			}
+			field(next())
+		case strings.HasPrefix(a, "--field=") || strings.HasPrefix(a, "--raw-field=") || strings.HasPrefix(a, "--input="):
+			_, v, _ := strings.Cut(a, "=")
+			field(v)
+		case strings.HasPrefix(a, "-f") || strings.HasPrefix(a, "-F"):
+			// A value attached: -fbody=…, -F=n=1.
+			field(strings.TrimPrefix(a[2:], "="))
 		case a == "--jq" || a == "-q" || a == "-H" || a == "--header" || a == "-t" || a == "--template" ||
 			a == "-p" || a == "--preview" || a == "--hostname" || a == "--cache":
 			next()

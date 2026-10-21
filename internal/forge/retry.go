@@ -154,8 +154,9 @@ func asked(f failure) (time.Duration, string, bool) {
 	if err != nil {
 		return 0, "", false
 	}
-	// Up to the second: not sooner than the reset.
-	after := (max(time.Until(time.Unix(min(reset, time.Now().Unix()+86400), 0)), 0) + time.Second - 1).Truncate(time.Second)
+	// Up to the second, not sooner than the reset; a second when it has
+	// passed, which only a clock behind GitHub's sees.
+	after := max((time.Until(time.Unix(min(reset, time.Now().Unix()+86400), 0)) + time.Second - 1).Truncate(time.Second), time.Second)
 	return after, fmt.Sprintf("%sReset: in %d s", f.rate, int(after.Seconds())), true
 }
 

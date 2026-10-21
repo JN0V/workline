@@ -236,6 +236,11 @@ func TestGitHubRead(t *testing.T) {
 		{[]string{"api", "-X", "POST", "repos/{owner}/{repo}/check-runs", "--input", "-"}, false},
 		{[]string{"api", "-X", "DELETE", "repos/{owner}/{repo}/issues/comments/1"}, false},
 		{[]string{"api", "-XPATCH", "repos/{owner}/{repo}/issues/9"}, false},
+		{[]string{"api", "repos/{owner}/{repo}/issues/9/comments", "-fbody=hi"}, false},
+		{[]string{"api", "repos/{owner}/{repo}/issues/9/comments", "--raw-field=body=hi"}, false},
+		{[]string{"api", "repos/{owner}/{repo}/issues/9", "-F=milestone=2"}, false},
+		{[]string{"api", "graphql", "--field=query=mutation { x }"}, false},
+		{[]string{"api", "-X=GET", "search/issues", "-fq=is:open"}, true},
 	} {
 		if got := ghRead(c.args); got != c.read {
 			t.Errorf("%q: read %v, want %v", c.args, got, c.read)
@@ -285,6 +290,10 @@ func TestGitHubRateWaits(t *testing.T) {
 	if wait, note := again("GitHub", true, 1, failure{code: 403, limited: true, least: time.Minute, rate: "X-RateLimit-", header: spent}); wait >= 0 ||
 		!strings.Contains(note, "GitHub asks to wait (X-RateLimit-Reset: in 3600 s), longer than workline waits (60 s): not tried again") {
 		t.Errorf("a limit reset in an hour: %v %q, want not tried again, said", wait, note)
+	}
+	passed := http.Header{"X-Ratelimit-Remaining": {"0"}, "X-Ratelimit-Reset": {fmt.Sprint(time.Now().Add(-time.Minute).Unix())}}
+	if wait, _ := again("GitHub", true, 1, failure{code: 429, limited: true, least: time.Minute, rate: "X-RateLimit-", header: passed}); wait != time.Second {
+		t.Errorf("a reset already passed, by this clock: %v, want a second", wait)
 	}
 	if wait, note := again("GitHub", false, 1, failure{code: 502, header: spent}); wait >= 0 || note != "a write: not sent again, GitHub may have taken it" {
 		t.Errorf("a write answered 502: %v %q", wait, note)
