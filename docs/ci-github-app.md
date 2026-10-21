@@ -1,6 +1,6 @@
 ---
 sources: [ci/github, .github/workflows/workline-apply.yml, .github/workflows/workline.yml]
-checked: 0839bca7
+checked: 2d24380f
 judged: c7e1e98
 verified: agent:claude-code
 judged-in-parts: 220b6dc
@@ -34,7 +34,9 @@ branch's workflow
      accept the new permission on its installation;
    - generate a private key, install the App on the repository.
 2. **Its ID**: Settings → Secrets and variables → Actions → Variables →
-   `WORKLINE_APP_ID`.
+   `WORKLINE_APP_ID`. The judging jobs read it too, holding no key: a
+   role reads its record back only from a comment the App wrote
+   ([ADR-0051](adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md)).
 3. **Its key, in an environment**: Settings → Environments → New
    environment, `workline-app`:
    - Deployment branches and tags → Selected branches and tags → `main`,
@@ -71,7 +73,8 @@ gh secret delete WORKLINE_APP_PRIVATE_KEY -R OWNER/REPO    # the repository's ow
 - **Without an App**, the jobs use their own token: the checks of a fix
   wait for someone to approve them, and gardening needs Settings →
   Actions → General → "Allow GitHub Actions to create and approve pull
-  requests".
+  requests". The records are then read from `github-actions[bot]`'s
+  comments.
 
 ## Why an environment
 

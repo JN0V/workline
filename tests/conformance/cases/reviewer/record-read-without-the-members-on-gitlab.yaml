@@ -1,5 +1,5 @@
 case: reviewer/record-read-without-the-members-on-gitlab
-about: "On GitLab, a token that may not list the project's members — 401, the job's own on a self-managed instance (#552) — still reads the merge request's notes: the reviewer reads its record in its summary comment, which needs no author's access level, and reviews only the commit pushed since. No record-unread: the push costs no whole review."
+about: "On GitLab, a token that may not list the project's members — 401, the job's own on a self-managed instance (#552) — still reads the merge request's notes: the reviewer reads its record in its summary comment, written by workline's own account (the token's user), which needs no author's access level, and reviews only the commit pushed since. No record-unread: the push costs no whole review."
 given:
   repo: reviewed
   setup:
@@ -12,7 +12,7 @@ given:
     merge-requests:
       - id: 5
         labels: []
-        comments: ["Reviewed.\n\n<!-- workline:record reviewed=@reviewed@ runs=1 -->\n\n<!-- workline:sticky=reviewer/summary -->"]
+        comments: [{body: "Reviewed.\n\n<!-- workline:record reviewed=@reviewed@ runs=1 -->\n\n<!-- workline:sticky=reviewer/summary -->", author: workline-bot}]
 run: {role: reviewer, event: merge-request, input: {range: main..HEAD}, target: {merge-request: 5}, ai: "fake:review-nothing", summary: true, forge: gitlab}
 expect:
   status: pass

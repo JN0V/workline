@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog/depend.go, internal/backlog/order.go, internal/backlog/board.go, internal/builtin/productowner/productowner.go, internal/forge/forge.go]
 status: draft
-checked: f5a2e917
+checked: 2d24380f
 verified: agent:claude-code
 ---
 # The order, and what is next
