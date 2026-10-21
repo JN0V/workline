@@ -50,7 +50,7 @@ func TestStickyOnOwnOnly(t *testing.T) {
 		t.Fatalf("its own: %q, said %+v", body, u.findings())
 	}
 	state(others...)
-	for _, id := range []int{3, 4} {
+	for _, id := range []int{3, 4, 3} { // read twice, said once
 		if body := read(id, &u); body != "" {
 			t.Fatalf("merge request %d: another's read: %q", id, body)
 		}
@@ -58,7 +58,7 @@ func TestStickyOnOwnOnly(t *testing.T) {
 	got := u.findings()
 	if len(got) != 1 || got[0].Rule != "record-unread" || got[0].Level != "warn" ||
 		!strings.Contains(got[0].Message, "on merge request 3 (@alice's comment and @ci[bot]'s comment carry its marker: only workline's own account's is read (workline-bot)); on merge request 4 (") ||
-		strings.Contains(got[0].Message, "bob") {
+		strings.Count(got[0].Message, "on merge request 3") != 1 || strings.Contains(got[0].Message, "bob") {
 		t.Fatalf("said: %+v", got)
 	}
 	f.Path = filepath.Join(t.TempDir(), "none.json")

@@ -258,7 +258,9 @@ func stickyOn(f forge.Forge, t forge.Target, key string, u *othersKept) (string,
 		return body, nil
 	}
 	if err := kept.Unread(marker); err != nil {
-		u.unread = append(u.unread, fmt.Sprintf("on merge request %d (%v)", t.ID, err))
+		if s := fmt.Sprintf("on merge request %d (%v)", t.ID, err); !slices.Contains(u.unread, s) {
+			u.unread = append(u.unread, s)
+		}
 	}
 	return "", nil
 }
