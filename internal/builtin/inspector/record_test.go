@@ -88,6 +88,17 @@ func TestMergeCommentKeepsTheRunAppliedSince(t *testing.T) {
 	if got := MergeComment(body, read, []forge.Note{note(was, true)}); got != body {
 		t.Fatalf("none applied since this run read, the body changed: %s", got)
 	}
+	// One this run read and left out past the size, only placed anew by a
+	// run applied since: this run's to leave.
+	trimmed := run
+	trimmed.Record = Record{}.with(triaged("both", "h2")).with(triaged("ours", "h2"))
+	left := comment(trimmed, current(trimmed))
+	reranked := was
+	reranked.Triaged = []Triaged{triaged("old", "h0")}
+	reranked.Triaged[0].Order = 3
+	if got := MergeComment(left, read, []forge.Note{note(reranked, true)}); got != left {
+		t.Fatalf("a finding this run read, only placed anew since, was merged back: %s", got)
+	}
 	if got := MergeComment(body, read, []forge.Note{note(now, false)}); got != body {
 		t.Fatalf("a stranger's comment carrying the marker was merged: %s", got)
 	}

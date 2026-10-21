@@ -400,12 +400,13 @@ func MergeComment(body, read string, notes []forge.Note) string {
 	if err1 != nil || err2 != nil || err3 != nil {
 		return body
 	}
-	var since []Triaged // triaged by a run applied since this one read
+	// Triaged by a run applied since this one read: a finding this run
+	// neither read nor triaged; one it read is its own to keep or leave.
+	var since []Triaged
 	for _, t := range now.Triaged {
-		if w, ok := was.find(t.Fingerprint); ok && w == t {
-			continue
-		}
-		if _, ok := ours.find(t.Fingerprint); !ok {
+		_, read := was.find(t.Fingerprint)
+		_, own := ours.find(t.Fingerprint)
+		if !read && !own {
 			since = append(since, t)
 		}
 	}
