@@ -23,7 +23,7 @@ expect:
   status: pass
   findings: [{rule: auto-merge-on, where: "#7", message: "accepted by @dana, its head's verdict passed: auto-merge turned on"}]
   not-pushed: [feat/sessions]
-  summary-file: ["#7", "auto-merge turned on", "first in line #7, up to date"]
+  summary-file: ["accepted into main, #7: each merges once its own head is green", "auto-merge turned on for 1"]
   forge:
     merge-requests:
       - {id: 7, auto-merge: true, labels: [workline:accepted], comments: 0}

@@ -1,6 +1,6 @@
 ---
 sources: [ci/github, .github/workflows/workline.yml, .github/workflows/workline-apply.yml, .github/workflows/workline-gardening.yml, .github/workflows/workline-sample.yml, .github/actions/engine/action.yml, .github/workflows/release.yml, .github/workflows/release-please.yml, release-please-config.json, .goreleaser.yaml, cmd/workline]
-checked: 2d24380f
+checked: 35eb7554
 judged: 220b6dc
 verified: agent:claude-code
 reader: fe1505d43360
@@ -108,7 +108,8 @@ write run the default branch's workflow, never a pull request's own
    check required (workline.yml's verdict). The review is on the pull
    request ([ADR-0011](adr/0011-the-review-is-on-the-merge-request-not-the-push.md)):
    an agent never merges. With the merge policy, `workline/accepted` from
-   the App too. A merge queue, on an organisation's repository: "Require
+   the App too. Leave "Require branches to be up to date" off: main's run
+   says a red main ([ADR-0051](adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-2-strict-up-to-date-dropped)). A merge queue, on an organisation's repository: "Require
    merge queue" beside them ([a merge queue](merge-queue.md)).
 5. **A private repository** without GitHub Advanced Security: remove the
    `upload-sarif` step of workline.yml, code scanning being paid there.

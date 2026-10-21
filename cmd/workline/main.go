@@ -1607,8 +1607,20 @@ func keepMain(file, repo, forgeSpec string, summaryFiles []string, asJSON bool) 
 		}
 		res.Summary = fmt.Sprintf("issue #%d kept: what the default branch's run found changed", n)
 		res.Applied = append(res.Applied, fmt.Sprintf("issue #%d", n))
+		id = n
 	}
 	res.Findings = append(res.Findings, verdict.Finding{Rule: "main-issue", Message: res.Summary})
+	// Red, each open merge request into it is told, once a red spell: a
+	// check red there for it is the base's (ADR-0051, cut 2).
+	if since := wlreport.RedSince(body); since != "" && id != 0 && r.Main != nil {
+		n, err := noteBaseRed(f, root, r.Main.Head, since, id)
+		if err != nil {
+			return fail(err)
+		}
+		if n > 0 {
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "base-red", Message: fmt.Sprintf("the default branch red since %s: the open merge requests into it told, once each: %d", since, n)})
+		}
+	}
 	if err := wlreport.AppendSummary(summaryFiles, wlreport.RoleSummary("apply --main", "", res)); err != nil {
 		return fail(err)
 	}
@@ -1619,6 +1631,40 @@ func keepMain(file, repo, forgeSpec string, summaryFiles []string, asJSON bool) 
 		report(res)
 	}
 	return 0
+}
+
+// noteBaseRed says, on each open merge request whose base holds head, that
+// the default branch's run is red since a commit, from merges each green
+// alone: a check red there for it is not the merge request's own. One
+// comment each, by the commit main turned red at. It returns how many it
+// looked at.
+func noteBaseRed(f forge.Forge, repo, head, since string, issue int) (int, error) {
+	open, err := f.ListMergeRequests()
+	if err != nil {
+		return 0, err
+	}
+	holds, n := map[string]bool{}, 0
+	for _, mr := range open {
+		held, read := holds[mr.Base]
+		if !read {
+			for _, ref := range []string{"refs/remotes/origin/" + mr.Base, "refs/heads/" + mr.Base} {
+				if exec.Command("git", "-C", repo, "merge-base", "--is-ancestor", head, ref).Run() == nil {
+					held = true
+					break
+				}
+			}
+			holds[mr.Base] = held
+		}
+		if !held {
+			continue
+		}
+		body := fmt.Sprintf("**Base red, not yours**: the default branch's run is red since `%.7s`, from merges each green alone (#%d). A check red here for that is the base's, not this merge request's: it clears once the base is fixed.", since, issue)
+		if err := f.Comment(forge.Target{Kind: "merge-request", ID: mr.ID}, body, forge.Marker("base-red="+since)); err != nil {
+			return 0, err
+		}
+		n++
+	}
+	return n, nil
 }
 
 // keepDryRun posts what a release's dry run found (ADR-0050): in one

@@ -1,6 +1,6 @@
 ---
 sources: [ci/github/workline.yml, ci/github/workline-apply.yml, ci/gitlab/workline.gitlab-ci.yml, internal/line/line.go, internal/engine/queue.go]
-checked: 2d24380f
+checked: 8425efe1
 judged: e4550b8
 verified: agent:claude-code
 ---
@@ -16,7 +16,10 @@ flowchart LR
 
 A merge queue (GitHub) or a merge train (GitLab Premium) tests each
 merge request merged on the base, and on those ahead of it, before it
-merges. workline's run there guards that combination only
+merges. Worth turning on once main's run is red more than once a week,
+as its [issue](main-after-merge.md) counts
+([ADR-0051](adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-2-strict-up-to-date-dropped)).
+workline's run there guards that combination only
 ([ADR-0050](adr/0050-each-act-has-its-moment-and-a-wait-budget.md#4-what-the-table-holds-to)):
 
 - **The gates alone**, on the merged result: what it adds over the

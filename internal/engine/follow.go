@@ -36,9 +36,9 @@ import (
 // (ADR-0041; settle.go).
 //
 // With Merge, the project's merge policy, it turns the forge's auto-merge
-// on for each merge request a person accepted, its head's verdict passed,
-// and brings the first in line up to date with base, one at a time
-// (ADR-0042; merge.go). Verdict, a head's verdict the line wrote, is kept
+// on for each merge request a person accepted, its head's verdict passed:
+// each merges once its own head is green, none brought up to date first
+// (ADR-0042, ADR-0051; merge.go). Verdict, a head's verdict the line wrote, is kept
 // first, in hand for this run and, where the forge keeps it, for the next.
 func Follow(o FollowOptions) *Result {
 	repo, forgeSpec, base, gardening := o.Repo, o.Forge, o.Base, o.Gardening

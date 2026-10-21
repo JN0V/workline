@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/JN0V/workline/internal/engine"
 	"github.com/JN0V/workline/internal/gate"
@@ -86,5 +87,42 @@ func TestMainIssueMarkerHoldsNoCommentEnd(t *testing.T) {
 	_, marker, _ := strings.Cut(body, mainMarker)
 	if strings.Count(marker, "-->") != 1 || readMainState(body).Gates[0].Message != "a --> b <!-- c" {
 		t.Errorf("marker %q", marker)
+	}
+}
+
+// A red main is counted once, on the run it turned red at, and kept a
+// week (ADR-0051, cut 2): still red after the next merge counts nothing
+// more; green, then red again, counts a second; past the week, gone.
+func TestMainIssueCountsRedMainsAWeek(t *testing.T) {
+	defer func(was func() time.Time) { today = was }(today)
+	day := time.Date(2026, 10, 21, 9, 0, 0, 0, time.UTC)
+	today = func() time.Time { return day }
+	run := func(head string, red bool) *line.Result {
+		s := line.Step{Name: "gate:merge", Status: verdict.Pass, Gate: &verdict.Verdict{Status: verdict.Pass}, New: &gate.Added{}}
+		if red {
+			s.Status, s.Gate = verdict.Block, &verdict.Verdict{Status: verdict.Block, Findings: []verdict.Finding{{Rule: "over-threshold", Where: "lint", Message: "1 new error finding"}}}
+		}
+		return &line.Result{Event: line.MainEvent, Main: &line.MainRun{Before: "before", Head: head}, Steps: []line.Step{s}}
+	}
+	body, _, _ := MainIssue(run("aaaaaaa1", true), "")
+	if RedSince(body) != "aaaaaaa1" || !strings.Contains(body, "**Red 1 time in the 7 days to 2026-10-21**") {
+		t.Fatalf("turned red: since %q:\n%s", RedSince(body), body)
+	}
+	body, _, _ = MainIssue(run("bbbbbbb2", true), body)
+	if RedSince(body) != "aaaaaaa1" || !strings.Contains(body, "**Red 1 time in") {
+		t.Errorf("still red, counted again: since %q:\n%s", RedSince(body), body)
+	}
+	body, _, _ = MainIssue(run("ccccccc3", false), body)
+	if RedSince(body) != "" || !strings.Contains(body, "**Red 1 time in") {
+		t.Errorf("green: since %q, the week's count lost:\n%s", RedSince(body), body)
+	}
+	body, _, _ = MainIssue(run("ddddddd4", true), body)
+	if RedSince(body) != "ddddddd4" || !strings.Contains(body, "**Red 2 times in the 7 days to 2026-10-21**") {
+		t.Errorf("red again: since %q:\n%s", RedSince(body), body)
+	}
+	day = day.Add(8 * 24 * time.Hour)
+	body, _, _ = MainIssue(run("eeeeeee5", false), body)
+	if strings.Contains(body, "**Red ") {
+		t.Errorf("a week later, still counted:\n%s", body)
 	}
 }

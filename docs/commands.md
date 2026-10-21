@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/engine/engine.go, internal/hooks]
-checked: 2d24380f
+checked: 35eb7554
 verified: agent:claude-code
 judged: e343388
 ---
@@ -263,7 +263,7 @@ Run when the default branch moves (CI's `follow` job,
   ([when the base moves](../roles/documentalist/docs/follow.md)).
 - **The [merge policy](merge-policy.md)**, with `merge:`: auto-merge on
   for what a person accepted — at `normal`, workline's own routine work
-  too —, the first in line brought up to date.
+  too —, each merging once its own head is green.
 - Options: `--base` (default: the branch checked out), `--forge`,
   `--repo`, `--json`, `--summary`; `--verdict <file>`, a head's verdict
   `route --verdict` wrote, kept first (`--verdict-only`: nothing else);
