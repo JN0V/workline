@@ -1,6 +1,6 @@
 ---
 sources: [roles/inspector/role.yaml, roles/inspector/instruction.md, roles/inspector/policy.md, internal/builtin/inspector, internal/line/line.go, ci/github/workline-warn.yml, ci/gitlab/workline.gitlab-ci.yml]
-checked: 0839bca7
+checked: 2d24380f
 verified: agent:claude-code
 ---
 # Inspector
@@ -103,9 +103,11 @@ workline route merge-request --warn-only --gates-from gates.json --ai claude
 
 1. **The gates' result**: the gate steps before it in the line, or the
    file `--gates-from` gives, only for the commits the run judges.
-2. **The record**: hidden in its comment on a merge request; on a
-   machine, in `.git/workline/inspector-record`. A finding there is not
-   asked again.
+2. **The record**: hidden in its comment on a merge request, read only
+   from the one workline's own account wrote
+   ([ADR-0051](../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md));
+   on a machine, in `.git/workline/inspector-record`. A finding there is
+   not asked again.
 3. **One call**: the findings left, each with the head's code around it;
    those triaged before named for their place in the order only.
 4. **Read back**: a triage naming no finding asked, saying not why it

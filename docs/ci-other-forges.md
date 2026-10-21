@@ -1,6 +1,6 @@
 ---
 sources: [ci/forgejo/workline-forge.sh, ci/github, internal/forge/local.go, cmd/workline]
-checked: 0839bca7
+checked: d6079370
 judged: cd97f28
 verified: agent:claude-code
 ---
@@ -36,9 +36,12 @@ JSON request per operation ([forge-command.md](spec/forge-command.md)).
   ```
 - It needs `curl` and `jq`, and:
   - `FORGEJO_URL`;
-  - `FORGEJO_TOKEN`: issues and pull requests, write; its user an
-    administrator of the repository for the product owner, which asks who
-    of a comment's authors may write;
+  - `FORGEJO_TOKEN`: issues and pull requests, write; user, read: its
+    user is workline's own account, whose comments keep the records a
+    role reads back
+    ([ADR-0051](adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md));
+    its user an administrator of the repository for the product owner,
+    which asks who of a comment's authors may write;
   - `FORGEJO_REPO` (`owner/name`), unless `origin` names it.
 - The engine pushes the branches itself, with the job's git credentials;
   the script does the rest.

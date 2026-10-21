@@ -9,8 +9,9 @@
 #
 #   FORGEJO_URL    https://codeberg.org, or your instance (no trailing /)
 #   FORGEJO_TOKEN  a token with the repository's issue and pull request
-#                  scopes, write; read-only is enough for `workline item`;
-#                  `comments` needs its user to administer the repository
+#                  scopes, write, and the user's, read; read-only is
+#                  enough for `workline item`; `comments` needs its user
+#                  to administer the repository
 #   FORGEJO_REPO   owner/name (default: read from the `origin` remote)
 #
 # Forgejo and Gitea answer the GitHub-like API /api/v1. A sample, written
@@ -53,9 +54,27 @@ all() {
 }
 
 # The comment holding a marker, by id, on an issue or pull request (they
-# share numbers and comments on Forgejo, as on GitHub).
-comment_with() { # number marker
-	api GET "/issues/$1/comments" | jq -r --arg m "$2" 'map(select(.body | contains($m))) | .[0].id // empty'
+# share numbers and comments on Forgejo, as on GitHub); with a login, the
+# last that user wrote.
+comment_with() { # number marker [login]
+	api GET "/issues/$1/comments" | jq -r --arg m "$2" --arg u "${3:-}" \
+		'map(select((.body | contains($m)) and ($u == "" or .user.login == $u))) | if $u == "" then .[0] else .[-1] end | .id // empty'
+}
+
+# The token's user: workline's own account, whose comments keep the
+# records a role reads back (ADR-0051). A lookup refused, or no login,
+# fails the operation, loud: never anyone taken for workline.
+me() {
+	user=$(curl -fsS -H "Authorization: token $FORGEJO_TOKEN" "$FORGEJO_URL/api/v1/user") || {
+		echo "the token's user could not be read: the token needs the user scope, read" >&2
+		exit 1
+	}
+	login=$(printf '%s' "$user" | jq -r '.login // empty')
+	[ -n "$login" ] || {
+		echo "the token's user has no login" >&2
+		exit 1
+	}
+	printf '%s' "$login"
 }
 
 open_issue_titled() { # title
@@ -89,8 +108,9 @@ comments)
 	# taking everyone for an outsider. An author gone (404) is outside.
 	# Forgejo's API has no bot field: its system users (a negative id: the
 	# ghost, the actions user) and a login ending in "-bot" or "[bot]" are
-	# bots, whose `agreed` never counts.
+	# bots, whose `agreed` never counts. `own`: the token's user wrote it.
 	got=$(all "/issues/$(arg .target.id)/comments")
+	self=$(me)
 	perms='{}'
 	tmp=$(mktemp)
 	# One login a line, read whole; put in the URL escaped, curl's globbing
@@ -111,15 +131,23 @@ comments)
 		perms=$(printf '%s' "$perms" | jq -c --arg u "$u" --arg p "$p" '. + {($u): $p}')
 	done < "$tmp.logins"
 	rm -f "$tmp" "$tmp.logins"
-	printf '%s' "$got" | jq -c --argjson perms "$perms" '{comments: [.[] | {body: (.body // ""), author: .user.login,
+	printf '%s' "$got" | jq -c --argjson perms "$perms" --arg self "$self" '{comments: [.[] | {body: (.body // ""), author: .user.login,
 		insider: ($perms[.user.login] | IN("write", "admin", "owner")),
-		bot: ((.user.id // 0) < 0 or (.user.login | test("(-bot|\\[bot\\])$")))} + (if .created_at then {created: .created_at} else {} end)]}'
+		bot: ((.user.id // 0) < 0 or (.user.login | test("(-bot|\\[bot\\])$"))), own: (.user.login == $self)} + (if .created_at then {created: .created_at} else {} end)]}'
 	;;
 comment | sticky)
 	n=$(arg .target.id)
 	marker=$(arg .marker)
 	text=$(printf '%s' "$req" | jq -c '{body: (.body + "\n\n" + .marker)}')
-	id=$(comment_with "$n" "$marker")
+	# `own`: only the token's user's, another's left and its own posted
+	# after it (ADR-0051).
+	who=
+	if [ "$(arg '.own // false')" = true ]; then
+		who=$(me)
+		[ -n "$who" ] || exit 1
+		[ -n "$(comment_with "$n" "$marker")" ] && req=$(printf '%s' "$req" | jq -c '.create = true')
+	fi
+	id=$(comment_with "$n" "$marker" "$who")
 	if [ -n "$id" ]; then
 		[ "$WORKLINE_FORGE_OPERATION" = sticky ] && api PATCH "/issues/comments/$id" "$text" >/dev/null
 	elif [ "$WORKLINE_FORGE_OPERATION" = comment ] || [ "$(arg .create)" = true ]; then

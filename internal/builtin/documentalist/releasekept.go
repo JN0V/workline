@@ -89,7 +89,7 @@ func readReleaseKept(runDir, repo string, docs []*Doc) ([]verdict.Finding, error
 	if err != nil {
 		findings = append(findings, unread(err))
 	}
-	var u unknownAuthors
+	var u othersKept
 	if _, lists := f.(forge.Backlog); err == nil && lists { // a forge that lists no comment keeps none, as before
 		body, err := stickyOn(f, t, releaseKeptKey, &u)
 		newer, proposed := "", false

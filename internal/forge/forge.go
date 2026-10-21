@@ -139,6 +139,12 @@ type Note struct {
 	// ID is the forge's own id of the comment, to put a reaction on it
 	// (React); "" when the forge does not say.
 	ID string `json:"id,omitempty"`
+	// App is the GitHub App that wrote it, by its id; "" when none did,
+	// or the forge does not say. Own is a forge command's word that
+	// workline's own account wrote it (docs/spec/forge-command.md): the
+	// other forges tell by its author (OwnAccount).
+	App string `json:"app,omitempty"`
+	Own bool   `json:"own,omitempty"`
 }
 
 // LabelEvent is a label set on an issue, or taken off, with who did it

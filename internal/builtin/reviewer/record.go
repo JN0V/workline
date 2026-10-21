@@ -545,7 +545,10 @@ func keptReview(text, side string, rec Record) string {
 // the run is on one and may write there, else from the machine's. It says
 // where it read it, and why it could not, when it could not. The summary
 // comment and the machine's file always hold a record: one holding none
-// was damaged, said as one that does not read (#302).
+// was damaged, said as one that does not read (#302). On a merge request,
+// only a comment workline's own account wrote is read, the last, the one
+// Sticky edits (ADR-0051): one another wrote carrying its marker is never
+// taken for the record, and the range is read again, said.
 func loadRecord(repo string, s Settings, side string) (Record, string, error) {
 	if t := mergeRequest(); t != nil && s.ForgeWrites {
 		where := fmt.Sprintf("in its summary comment on merge request %d", t.ID)
@@ -559,36 +562,29 @@ func loadRecord(repo string, s Settings, side string) (Record, string, error) {
 		if f == nil {
 			return Record{}, where, fmt.Errorf("no forge to read the merge request's comments from")
 		}
-		b, ok := f.(forge.Backlog)
-		if !ok {
-			return Record{}, where, fmt.Errorf("this forge cannot list a merge request's comments")
-		}
-		comments, err := b.Comments(*t)
+		kept, err := forge.ReadKept(f, *t)
 		if err != nil {
 			return Record{}, where, err
 		}
-		for _, c := range comments {
-			if strings.Contains(c, forge.Marker("sticky=reviewer/"+keyOf(side))) {
-				r, err := readRecord(c)
-				r.comment = c
-				return r, where, err
-			}
+		marker := forge.Marker("sticky=reviewer/" + keyOf(side))
+		if c, ok := kept.Last(marker); ok {
+			r, err := readRecord(c)
+			r.comment = c
+			return r, where, err
 		}
 		// The run apart's first (ADR-0050): a summary comment a run not
 		// split wrote holds every lens's commits and turn, and the lenses
-		// owing them or that left some, which it takes up; its blocks and judged lines stay
-		// there. One a split review
-		// wrote is the verdict's run's alone: it starts from the base.
-		for _, c := range comments {
-			if side == warnOnly && strings.Contains(c, forge.Marker("sticky=reviewer/"+SummaryKey)) && !strings.Contains(c, splitMark) {
-				r, err := readRecord(c)
-				if err != nil {
-					return Record{}, where, nil
-				}
-				return Record{Reviewed: r.Reviewed, Patches: r.Patches, Runs: r.Runs, Owed: r.Owed, ReadAll: r.ReadAll, Retried: r.Retried, Failed: r.Failed, LeftBy: r.LeftBy}, where, nil
+		// owing them or that left some, which it takes up; its blocks and
+		// judged lines stay there. One a split review wrote is the
+		// verdict's run's alone: it starts from the base.
+		if c, ok := kept.Last(forge.Marker("sticky=reviewer/" + SummaryKey)); side == warnOnly && ok && !strings.Contains(c, splitMark) {
+			r, err := readRecord(c)
+			if err != nil {
+				return Record{}, where, nil
 			}
+			return Record{Reviewed: r.Reviewed, Patches: r.Patches, Runs: r.Runs, Owed: r.Owed, ReadAll: r.ReadAll, Retried: r.Retried, Failed: r.Failed, LeftBy: r.LeftBy}, where, nil
 		}
-		return Record{}, where, nil
+		return Record{}, where, kept.Unread(marker)
 	}
 	file := localRecord(repo, side)
 	where := "in " + file

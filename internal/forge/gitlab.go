@@ -33,6 +33,7 @@ type gitlab struct {
 	named                 []string       // the project's `gitlab: {bots}`; read once
 	namedRead             bool
 	self                  *string // the bot's own token's user (selfBot), read once; "" none
+	owner                 *Own    // workline's own account, read once (own)
 }
 
 // botNamed says whether username is a bot by its name — a project or group
@@ -957,24 +958,40 @@ func (g *gitlab) Comment(t Target, body, marker string) error {
 }
 
 func (g *gitlab) Sticky(t Target, body, marker string, create bool) error {
+	return g.sticky(t, body, marker, create, nil)
+}
+
+// stickyOwn edits the last note carrying marker that workline's own
+// account wrote (KeepOwn); never another's.
+func (g *gitlab) stickyOwn(t Target, body, marker string, create bool) error {
+	own, err := g.own()
+	if err != nil {
+		return err
+	}
+	return g.sticky(t, body, marker, create, &own)
+}
+
+func (g *gitlab) sticky(t Target, body, marker string, create bool, own *Own) error {
 	// Oldest first: GitLab lists the newest first unless asked.
 	out, err := g.api("--paginate", path(t)+"/notes?sort=asc&order_by=created_at&per_page=100")
 	if err != nil {
 		return err
 	}
-	notes, err := pages[struct {
-		ID   int    `json:"id"`
-		Body string `json:"body"`
-	}](out)
+	notes, err := pages[gitlabNote](out)
 	if err != nil {
 		return err
 	}
-	// The last carrying the marker, the one read (backlog's readBlock).
-	// GitLab lets only its author, or a Maintainer, edit a note: one
-	// another token wrote — a person's, before the project's bot took over
-	// — is left, and a new one, this token's, carries the marker after it.
+	// The last carrying the marker, the one read (backlog's readBlock);
+	// the last own wrote, when given (KeepOwn). GitLab lets only its
+	// author, or a Maintainer, edit a note: one another token wrote — a
+	// person's, before the project's bot took over — is left, and a new
+	// one, this token's, carries the marker after it.
 	for i := len(notes) - 1; i >= 0; i-- {
 		if !strings.Contains(notes[i].Body, marker) {
+			continue
+		}
+		if own != nil && !own.Wrote(Note{Author: notes[i].Author.Username}) {
+			create = true
 			continue
 		}
 		if notes[i].Body == body+"\n\n"+marker {

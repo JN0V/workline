@@ -116,6 +116,7 @@ jobs:
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           HEAD_REF: ${{ github.head_ref }}
           GH_TOKEN: ${{ github.token }}
+          WORKLINE_APP_ID: ${{ vars.WORKLINE_APP_ID }}   # the App whose comments keep the records a role reads back (ADR-0051)
           ACTION: ${{ github.event.action }}
           DRAFT: ${{ github.event.pull_request.draft }}
         run: |

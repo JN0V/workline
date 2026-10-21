@@ -1,6 +1,6 @@
 ---
 sources: [internal/role/config.go, internal/role/role.go, cmd/workline, internal/engine/engine.go, internal/forge/gitlab.go, internal/hooks]
-checked: 0839bca7
+checked: 2d24380f
 judged: e343388
 verified: agent:claude-code
 reader: 0b97bbc207c5
@@ -181,7 +181,8 @@ Runs are kept in `.git/workline/runs/` (the last
 | `GITLAB_TOKEN` | the GitLab forge's token; else glab's, if glab is set up; else `CI_JOB_TOKEN`, which reaches no issue |
 | `CI_API_V4_URL`, `CI_PROJECT_ID` (or `CI_PROJECT_PATH`) | the GitLab instance and project, set by GitLab CI; elsewhere `GITLAB_HOST` and the `origin` remote |
 | `GH_TOKEN` | read by `gh`, which the GitHub forge calls |
-| `WORKLINE_APP`, `WORKLINE_APP_ID` | in GitHub Actions, the GitHub App's slug and id: who keeps the [merge policy](merge-policy.md)'s verdicts and holds its yes. No slug: the job's own token, nothing turned on |
+| `WORKLINE_APP`, `WORKLINE_APP_ID` | in GitHub Actions, the GitHub App's slug and id: who keeps the [merge policy](merge-policy.md)'s verdicts and holds its yes. No slug: the job's own token, nothing turned on. The id alone, in a job holding no App token: whose comments keep the records a role reads back ([ADR-0051](adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md)) |
+| `WORKLINE_GITLAB_TOKEN` | in GitLab CI, the bot's token: its user, as GitLab says, is workline's own account, whose notes keep the records a role reads back, even in a job reading with another token |
 | `GITLEAKS_CONFIG`, `GITLEAKS_CONFIG_TOML` | the committer's term list, before the repository's and yours |
 | `CI`, `GITHUB_ACTIONS`, `GITLAB_CI` | any set: `forge: local` refuses its writes, the clone being thrown away |
 

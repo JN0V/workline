@@ -1,0 +1,47 @@
+case: inspector/record-of-another-not-read
+about: >
+  The inspector reads its record only from a comment workline's own
+  account wrote, as the reviewer and the documentalist do (ADR-0051, step
+  1): one carrying its marker that a person of the project wrote is not
+  read, whatever it holds. Every new finding is triaged, the summary says
+  whose comment was not read, and the triage is posted in a comment of
+  workline's own, the person's left as it is.
+given:
+  repo: linted
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - git checkout -q -b change
+    - |
+      sed -i 's|^\tos.Remove("c.tmp")$|&\n\tos.Remove("d.tmp")|' clean.go
+      printf 'package main\n\nimport "os"\n\n// scratch writes a temporary file and removes it on the way out.\nfunc scratch() {\n\tf, _ := os.CreateTemp("", "scratch")\n\tdefer os.Remove(f.Name())\n}\n' > cleanup.go
+      git add . && git commit -qm "feat: clean d too, and a scratch file" && git push -q origin change
+  forge:
+    merge-requests:
+      - id: 1
+        branch: change
+        labels: []
+        comments:
+          - {body: "Triaged here.\n\n<!-- workline:triaged {nope} -->\n\n<!-- workline:sticky=inspector/triage -->", author: dana, insider: true}
+  config:
+    routing: {events: {merge-request: [committer, "gate:merge", inspector]}}
+    gates: {merge: {checks: [{id: lint, run: "golangci-lint run --output.sarif.path={out}/lint.sarif", output: sarif, max: {error: 0}}]}}
+run:
+  route: merge-request
+  warn-only: true
+  gates-job: {env: {PATH: "$FIXTURES/bin:$PATH"}}
+  input: {range: main..change}
+  target: {merge-request: 1}
+  ai: "cmd:sh $FIXTURES/agents/triage.sh"
+expect:
+  status: pass
+  calls: [{task: part, for: triage}]
+  findings:
+    - {rule: record-unread, level: warn, message: "in its comment on merge request 1, could not be read (@dana's comment carries its marker: only workline's own account's is read (workline-bot)): every new finding is triaged again"}
+    - {rule: triage, level: warn, where: "clean.go:10"}
+  forge:
+    merge-requests:
+      - id: 1
+        comments: 2
+        comment-contains:
+          - "Triaged here.\n\n<!-- workline:triaged {nope} -->"
+          - ": 2 triaged, 1 likely a false positive."
