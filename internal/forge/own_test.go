@@ -129,7 +129,7 @@ func TestGitLabOwn(t *testing.T) {
 			http.Error(w, `{"message":"401 Unauthorized"}`, http.StatusUnauthorized)
 			return
 		}
-		json.NewEncoder(w).Encode(map[string]any{"username": u})
+		_ = json.NewEncoder(w).Encode(map[string]any{"username": u})
 	}))
 	defer srv.Close()
 	t.Setenv("CI_API_V4_URL", srv.URL+"/api/v4")

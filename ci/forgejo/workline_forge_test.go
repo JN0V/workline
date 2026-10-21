@@ -75,12 +75,12 @@ func (m *mock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprint(w, `[]`)
 		}
 	case r.Method == "GET" && r.URL.Path == "/api/v1/user":
-		fmt.Fprint(w, `{"id": 11, "login": "ci[bot]"}`)
+		_, _ = fmt.Fprint(w, `{"id": 11, "login": "ci[bot]"}`)
 	case r.Method == "GET" && r.URL.Path == repo+"/issues/5/comments":
-		fmt.Fprint(w, `[{"id": 50, "body": "old <!-- workline:k -->", "user": {"id": 11, "login": "ci[bot]"}},
+		_, _ = fmt.Fprint(w, `[{"id": 50, "body": "old <!-- workline:k -->", "user": {"id": 11, "login": "ci[bot]"}},
 			{"id": 51, "body": "another's <!-- workline:k -->", "user": {"id": 7, "login": "zed"}}]`)
 	case r.Method == "PATCH" && strings.HasPrefix(r.URL.Path, repo+"/issues/comments/"), r.Method == "POST" && r.URL.Path == repo+"/issues/5/comments":
-		fmt.Fprint(w, `{}`)
+		_, _ = fmt.Fprint(w, `{}`)
 	case r.Method == "GET" && r.URL.Path == repo+"/issues/6/comments":
 		fmt.Fprint(w, `[]`)
 	case r.Method == "POST" && r.URL.Path == repo+"/issues/6/comments":
