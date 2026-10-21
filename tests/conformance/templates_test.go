@@ -782,7 +782,10 @@ func TestWarnApartNeverHoldsTheVerdict(t *testing.T) {
 	// In a child pipeline the merge request's does not wait for (ADR-0051):
 	// GitLab's "merge when the pipeline succeeds" waits for allow_failure
 	// jobs too. Started after the gates, whatever their verdict, from this
-	// same file, with no strategy.
+	// same file, with no strategy. It forwards no variable of the file's:
+	// a trigger job expands them where CI_PROJECT_DIR is empty, and the
+	// child's runs went to /.workline-runs, out of its artifacts (tried
+	// on gitlab.com, 2026-10-21).
 	child, _ := top["workline:warn:child"].(map[string]any)
 	trigger, _ := child["trigger"].(map[string]any)
 	rules, _ := child["rules"].([]any)
@@ -791,7 +794,8 @@ func TestWarnApartNeverHoldsTheVerdict(t *testing.T) {
 		rule, _ = rules[0].(map[string]any)
 	}
 	if trigger["include"] != "ci/workline.gitlab-ci.yml" || trigger["strategy"] != nil || fmt.Sprint(child["needs"]) != "[workline:gates]" ||
-		rule["when"] != "always" || child["allow_failure"] != true || fmt.Sprint(child["variables"]) != "map[WORKLINE_PARENT_PIPELINE_ID:$CI_PIPELINE_ID]" {
+		rule["when"] != "always" || child["allow_failure"] != true || fmt.Sprint(child["variables"]) != "map[WORKLINE_PARENT_PIPELINE_ID:$CI_PIPELINE_ID]" ||
+		fmt.Sprint(child["inherit"]) != "map[variables:false]" {
 		t.Errorf("workline:warn:child: does not start what only warns in a child pipeline the merge does not wait for, after the gates whatever their verdict: %v", child)
 	}
 	// The inspector triages the gates' findings (ADR-0049): read from their

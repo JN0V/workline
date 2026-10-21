@@ -314,6 +314,9 @@ workline:warn:child:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_EVENT_TYPE != "merge_train"
       when: always
   variables: {WORKLINE_PARENT_PIPELINE_ID: $CI_PIPELINE_ID}   # where workline:warn reads the gates' result
+  # The file's own variables, never forwarded: a trigger job would expand
+  # them where CI_PROJECT_DIR is empty (WORKLINE_RUNS_DIR=/.workline-runs).
+  inherit: {variables: false}
   trigger:
     include: ci/workline.gitlab-ci.yml
   allow_failure: true               # a child that cannot start warns: the lenses that warn did not read
