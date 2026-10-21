@@ -3,7 +3,16 @@
 # pull request (from $GH_HEAD_REF, else change, into main), a commit's
 # check runs and a merge request's comments. Each call is
 # numbered in $GH_LOG with what it sent, the annotations counted; what it
-# keeps is beside the log. Any other call is refused, and said.
+# keeps is beside the log. Any other call is refused, and said. With
+# --include, each answer is printed after its status and headers, as gh
+# 2.102 prints them.
+#
+# $GH_FAULT fails a call for a moment, as GitHub can: "<method> <path>
+# <status>", the status 502, 503, 429 or 403 (GitHub's secondary rate
+# limit), or stall: no answer until the engine gives up, a write taken
+# all the same. $GH_FAULT_TIMES calls fail (1 when not set, 0 all), then
+# they are answered; $GH_FAULT_RETRY_AFTER seconds are asked, and a call
+# sooner gets the status again, said in the log ("sooner than asked").
 set -eu
 log=${GH_LOG:?GH_LOG names the log}
 state=$log.state
@@ -12,7 +21,7 @@ n=$(( $(cat "$state/calls" 2>/dev/null || echo 0) + 1 ))
 echo "$n" > "$state/calls"
 [ "${1:-}" = api ] || { echo "fake gh: only api is simulated: $*" >&2; exit 1; }
 shift
-method=GET body= input= path= jq=
+method=GET body= input= path= jq= include=
 while [ $# -gt 0 ]; do
   case $1 in
     -X) method=$2; shift 2 ;;
@@ -20,27 +29,42 @@ while [ $# -gt 0 ]; do
     -f) case $2 in body=*) body=${2#body=} ;; esac; shift 2 ;;
     --jq) jq=$2; shift 2 ;;
     --paginate) shift ;;
+    --include|-i) include=1; shift ;;
     *) path=$1; shift ;;
   esac
 done
 path=${path#repos/\{owner\}/\{repo\}/}
 annotations() { printf '%s' "$input" | grep -o '"start_line"' | wc -l | tr -d ' '; }
+now() { date +%s%N; }
+# status_line prints a status and headers, as gh does with --include.
+status_line() {
+  [ -n "$include" ] || return 0
+  printf 'HTTP/1.1 %s\nContent-Type: application/json\r\n' "$1"
+  [ -z "${2:-}" ] || printf 'Retry-After: %s\r\n' "$2"
+  printf '\r\n'
+}
+
+answer() {
 case "$method $path" in
   "GET pulls/"*)
     echo "call $n: GET $path" >> "$log"
+    status_line "200 OK"
     printf '{"title":"t","body":"","head":{"ref":"%s","repo":{"full_name":"o/r"}},"base":{"ref":"main","repo":{"full_name":"o/r"}}}\n' "${GH_HEAD_REF:-change}" ;;
   "POST check-runs")
     runs=$(( $(cat "$state/runs" 2>/dev/null || echo 0) + 1 ))
     echo "$runs" > "$state/runs"
     title=$(printf '%s' "$input" | sed -n 's/.*"output":{"title":"\([^"]*\)".*/\1/p')
     echo "call $n: POST check-runs: $(annotations) annotations, title $title" >> "$log"
+    status_line "201 Created"
     printf '{"id":%d,"html_url":"https://github.com/o/r/runs/%d"}\n' "$runs" "$runs" ;;
   "PATCH check-runs/"*)
     echo "call $n: PATCH $path: $(annotations) annotations" >> "$log"
+    status_line "200 OK"
     echo '{}' ;;
   "GET issues/"*"/comments")
     marker=$(printf '%s' "$jq" | sed -n 's/.*contains("\(.*\)")).*/\1/p')
     echo "call $n: GET $path" >> "$log"
+    status_line "200 OK"
     for f in "$state"/comment-*; do
       if [ -f "$f" ] && grep -qF -- "$marker" "$f"; then
         printf '{"id":%s,"body":"kept"}\n' "${f##*comment-}"
@@ -51,12 +75,54 @@ case "$method $path" in
     echo "$id" > "$state/comments"
     printf '%s' "$body" > "$state/comment-$id"
     echo "call $n: POST $path: comment $id" >> "$log"
+    status_line "201 Created"
     printf '{"id":%d}\n' "$id" ;;
   "PATCH issues/comments/"*)
     printf '%s' "$body" > "$state/comment-${path#issues/comments/}"
     echo "call $n: PATCH $path" >> "$log"
+    status_line "200 OK"
     echo '{}' ;;
   *)
     echo "fake gh: $method $path is not simulated" >&2
     exit 1 ;;
 esac
+}
+
+# fail answers the fault's status, as GitHub and gh do.
+fail() {
+  case $1 in
+    429) text="429 Too Many Requests" msg="API rate limit exceeded for installation ID 1." ;;
+    403) text="403 Forbidden" msg="You have exceeded a secondary rate limit. Please wait a few minutes before you try again." ;;
+    503) text="503 Service Unavailable" msg="Service Unavailable" ;;
+    *) text="$1 Bad Gateway" msg="Server Error" ;;
+  esac
+  status_line "$text" "${GH_FAULT_RETRY_AFTER:-}"
+  printf '{"message":"%s"}' "$msg"
+  echo "gh: $msg (HTTP $1)" >&2
+  exit 1
+}
+
+if [ -n "${GH_FAULT:-}" ]; then
+  set -- $GH_FAULT
+  if [ "$1 $2" = "$method $path" ]; then
+    met=$(cat "$state/fault-met" 2>/dev/null || echo 0)
+    times=${GH_FAULT_TIMES:-1}
+    if [ -n "${GH_FAULT_RETRY_AFTER:-}" ] && [ -f "$state/fault-at" ] &&
+      [ "$(now)" -lt $(( $(cat "$state/fault-at") + GH_FAULT_RETRY_AFTER * 1000000000 )) ]; then
+      echo "call $n: $method $path: $3 again, sooner than asked" >> "$log"
+      fail "$3"
+    fi
+    if [ "$times" = 0 ] || [ "$met" -lt "$times" ]; then
+      echo $(( met + 1 )) > "$state/fault-met"
+      now > "$state/fault-at"
+      if [ "$3" = stall ]; then
+        answer > /dev/null
+        echo "call $n: $method $path: stalled" >> "$log"
+        exec sleep 30
+      fi
+      echo "call $n: $method $path: $3" >> "$log"
+      fail "$3"
+    fi
+  fi
+fi
+answer
