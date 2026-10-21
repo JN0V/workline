@@ -272,7 +272,7 @@ jobs:
     concurrency: {group: "workline-main-issue", cancel-in-progress: false}
     runs-on: ubuntu-latest
     environment: workline-app
-    permissions: {actions: read, contents: read, issues: write, pull-requests: write}
+    permissions: {actions: read, contents: read, issues: write}
     steps:
       - id: app
         if: vars.WORKLINE_APP_ID != ''

@@ -52,8 +52,8 @@ Nobody waits for it; nothing in it holds a merge request.
   check red there for it is the base's. No merge request waits for
   another to merge ([the merge policy](merge-policy.md#a-red-main)).
 - **No agent, no secret** where the tools run; the issue and the
-  comments are written by a job holding the issue's and the merge
-  requests' rights, no AI key.
+  comments are written by a job allowed to write issues and comments, no
+  AI key.
 
 ## The next base
 
@@ -94,8 +94,8 @@ Nobody waits for it; nothing in it holds a merge request.
 - **An entry unused for 7 days is gone**: the tools run again.
 - **The issue** and the comments:
   [workline-apply.yml](../ci/github/workline-apply.yml)'s `main` job,
-  after that run, with `issues: write` and `pull-requests: write`; never
-  after a push to another branch.
+  after that run, with `issues: write`, which comments on a pull request
+  too; never after a push to another branch.
 
 ## GitLab
 
