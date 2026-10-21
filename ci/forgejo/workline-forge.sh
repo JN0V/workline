@@ -62,9 +62,19 @@ comment_with() { # number marker [login]
 }
 
 # The token's user: workline's own account, whose comments keep the
-# records a role reads back (ADR-0051).
+# records a role reads back (ADR-0051). A lookup refused, or no login,
+# fails the operation, loud: never anyone taken for workline.
 me() {
-	curl -fsS -H "Authorization: token $FORGEJO_TOKEN" "$FORGEJO_URL/api/v1/user" | jq -r .login
+	user=$(curl -fsS -H "Authorization: token $FORGEJO_TOKEN" "$FORGEJO_URL/api/v1/user") || {
+		echo "the token's user could not be read: the token needs the user scope, read" >&2
+		exit 1
+	}
+	login=$(printf '%s' "$user" | jq -r '.login // empty')
+	[ -n "$login" ] || {
+		echo "the token's user has no login" >&2
+		exit 1
+	}
+	printf '%s' "$login"
 }
 
 open_issue_titled() { # title
@@ -134,6 +144,7 @@ comment | sticky)
 	who=
 	if [ "$(arg '.own // false')" = true ]; then
 		who=$(me)
+		[ -n "$who" ] || exit 1
 		[ -n "$(comment_with "$n" "$marker")" ] && req=$(printf '%s' "$req" | jq -c '.create = true')
 	fi
 	id=$(comment_with "$n" "$marker" "$who")
