@@ -13,23 +13,27 @@ import (
 	"time"
 )
 
-// A GitLab call that fails for a moment is tried again: a read on no
-// answer, a 5xx but 501 or a 429; a write only when GitLab certainly did
-// not take it (no connection made, or a 429). A write answered late or
-// with a 5xx is not sent twice: its failure says so. Why, and what is
-// borrowed from GitLab's own client: docs/gitlab/calls.md.
+// A forge call that fails for a moment is tried again: a read on no
+// answer, a 5xx but 501 or a refusal for the forge's rate; a write only
+// when the forge certainly did not take it (no connection made, or a
+// refusal for the rate). A write answered late or with a 5xx is not sent
+// twice: its failure says so. GitLab's calls (send) and GitHub's, through
+// gh (cli.go), go by this one rule (again). Why, and what is borrowed:
+// docs/gitlab/calls.md, docs/github/calls.md.
 
 // retry is how a call is tried again: tries in all, the pause after the
-// first (doubled after each), the longest Retry-After waited for.
+// first (doubled after each), the longest wait asked that is waited for,
+// how long an answer is waited for.
 var retry = struct {
-	tries   int
-	pause   time.Duration
-	waitMax time.Duration
-}{tries: 3, pause: 2 * time.Second, waitMax: 60 * time.Second}
+	tries     int
+	pause     time.Duration
+	waitMax   time.Duration
+	answerMax time.Duration
+}{tries: 3, pause: 2 * time.Second, waitMax: 60 * time.Second, answerMax: 60 * time.Second}
 
 // httpClient gives each request a minute: gitlab.com answers in under one
 // second (#489).
-var httpClient = &http.Client{Timeout: 60 * time.Second}
+var httpClient = &http.Client{Timeout: retry.answerMax}
 
 // answer is a call's answer, read whole.
 type answer struct {
@@ -38,6 +42,18 @@ type answer struct {
 	header http.Header
 	data   []byte
 	note   string // when it failed for a moment: why it was not tried again, or how often it was
+}
+
+// failure is how one try of a call failed, whatever the forge, as again
+// reads it.
+type failure struct {
+	code    int           // the status answered; 0 when none came
+	header  http.Header   // the answer's headers, when read
+	cut     bool          // no answer came: no connection, one dropped, none in time
+	lasting bool          // cut for good: a host that does not exist, a certificate refused
+	unsent  bool          // it certainly never reached the forge: no connection was made
+	limited bool          // refused for the forge's rate: a 429, GitHub's 403 saying so
+	least   time.Duration // the wait the forge asks for its rate when no header says (GitHub: a minute)
 }
 
 // send makes one call to GitLab, tried again by the rules above; read is
@@ -64,7 +80,13 @@ func (g *gitlab) send(method, target, contentType string, body []byte, read bool
 			a.data, err = io.ReadAll(resp.Body)
 			resp.Body.Close()
 		}
-		wait, note := again(read, try, a, err)
+		f := failure{cut: err != nil}
+		if err != nil {
+			f.lasting, f.unsent = lasting(err), unsent(err)
+		} else {
+			f.code, f.header, f.limited = a.code, a.header, a.code == http.StatusTooManyRequests
+		}
+		wait, note := again("GitLab", read, try, f)
 		if wait < 0 || note != "" {
 			if err != nil {
 				return nil, fmt.Errorf("%w: %v%s", ErrUnreachable, err, aside(note))
@@ -76,37 +98,63 @@ func (g *gitlab) send(method, target, contentType string, body []byte, read bool
 	}
 }
 
-// again says how long to wait before a try is sent again, -1 when it is
-// not because it did not fail for a moment; note, when it failed for a
-// moment, is why it is not sent again, or how often it was.
-func again(read bool, try int, a *answer, err error) (wait time.Duration, note string) {
+// again says how long to wait before a try of a call to forge is sent
+// again, -1 when it is not because it did not fail for a moment; note,
+// when it failed for a moment, is why it is not sent again, or how often
+// it was.
+func again(forge string, read bool, try int, f failure) (wait time.Duration, note string) {
+	taken := "a write: not sent again, " + forge + " may have taken it"
 	switch {
-	case err != nil && lasting(err):
+	case f.cut && f.lasting:
 		return -1, ""
-	case err != nil && !read && !unsent(err):
-		return -1, "a write: not sent again, GitLab may have taken it"
-	case err != nil:
-	case a.code == http.StatusTooManyRequests:
-	case a.code >= 500 && a.code != http.StatusNotImplemented && !read:
-		return -1, "a write: not sent again, GitLab may have taken it"
-	case a.code >= 500 && a.code != http.StatusNotImplemented:
+	case f.cut && !read && !f.unsent:
+		return -1, taken
+	case f.cut, f.limited:
+	case f.code >= 500 && f.code != http.StatusNotImplemented && !read:
+		return -1, taken
+	case f.code >= 500 && f.code != http.StatusNotImplemented:
 	default:
 		return -1, ""
 	}
 	wait = retry.pause << (try - 1)
-	if a != nil {
-		if after, ok := retryAfter(a.header.Get("Retry-After")); ok {
-			if after > retry.waitMax {
-				return -1, fmt.Sprintf("GitLab asks to wait (Retry-After: %s), longer than workline waits (%d s): not tried again",
-					strings.TrimSpace(a.header.Get("Retry-After")), int(retry.waitMax.Seconds()))
-			}
-			wait = after
+	if f.limited {
+		wait = max(wait, f.least)
+	}
+	if after, said, ok := asked(f); ok {
+		if after > retry.waitMax {
+			return -1, fmt.Sprintf("%s asks to wait (%s), longer than workline waits (%d s): not tried again",
+				forge, said, int(retry.waitMax.Seconds()))
 		}
+		wait = after
 	}
 	if try >= retry.tries {
 		return -1, fmt.Sprintf("tried %d times", try)
 	}
 	return wait, ""
+}
+
+// asked is the wait the forge asks before a call is sent again, and the
+// header that says it: a Retry-After; for a call refused for the rate,
+// none left, the time it is reset at (GitHub's X-RateLimit-Reset).
+func asked(f failure) (time.Duration, string, bool) {
+	if f.header == nil {
+		return 0, "", false
+	}
+	if v := strings.TrimSpace(f.header.Get("Retry-After")); v != "" {
+		if after, ok := retryAfter(v); ok {
+			return after, "Retry-After: " + v, true
+		}
+	}
+	if !f.limited || strings.TrimSpace(f.header.Get("X-RateLimit-Remaining")) != "0" {
+		return 0, "", false
+	}
+	reset, err := strconv.ParseInt(strings.TrimSpace(f.header.Get("X-RateLimit-Reset")), 10, 64)
+	if err != nil {
+		return 0, "", false
+	}
+	// Up to the second: not sooner than the reset.
+	after := (max(time.Until(time.Unix(min(reset, time.Now().Unix()+86400), 0)), 0) + time.Second - 1).Truncate(time.Second)
+	return after, fmt.Sprintf("X-RateLimit-Reset: in %d s", int(after.Seconds())), true
 }
 
 // aside is a note in parentheses, after the failure it explains.
