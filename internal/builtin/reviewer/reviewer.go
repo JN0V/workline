@@ -2241,7 +2241,7 @@ func summaryComment(v Review, issues int, short map[string]string, lines []forge
 	if len(nits) > 0 {
 		b.WriteString("**Nits**, for information: no reply, no fix asked.\n\n")
 		for _, f := range nits {
-			fmt.Fprintf(&b, "- `%s` (%s): %s\n", f.Where, f.Rule, strings.TrimPrefix(f.Message, "Nit: "))
+			fmt.Fprintf(&b, "- `%s` (%s): %s\n", f.Where, f.Rule, oneLine(strings.TrimPrefix(f.Message, "Nit: "), 600))
 		}
 		b.WriteString("\n")
 	}
@@ -2254,17 +2254,19 @@ func summaryComment(v Review, issues int, short map[string]string, lines []forge
 }
 
 // apartNits takes the change's nits out of a review's findings: shown
-// below the rest, on no line, asking nothing (ADR-0051, cut 4).
+// below the rest, on no line, asking nothing (ADR-0051, cut 4). Each is
+// found by the very finding it became (settled), never by its place
+// alone.
 func apartNits(v Review) (Review, []verdict.Finding) {
-	nit := map[string]bool{}
+	nit := map[verdict.Finding]bool{}
 	for _, g := range v.Change {
 		if g.Severity != "important" {
-			nit[g.Lens+"\x00"+g.Where] = true
+			nit[verdict.Finding{Rule: g.Lens, Where: g.Where, Level: "warn", Message: message(g)}] = true
 		}
 	}
 	var rest, nits []verdict.Finding
 	for _, f := range v.Findings {
-		if f.Level == "warn" && nit[f.Rule+"\x00"+f.Where] {
+		if nit[f] {
 			nits = append(nits, f)
 		} else {
 			rest = append(rest, f)
