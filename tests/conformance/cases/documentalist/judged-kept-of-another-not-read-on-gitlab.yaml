@@ -20,7 +20,7 @@ given:
 
               <!-- workline:sticky=documentalist/judged -->
             author: dana
-run: {role: documentalist, event: merge-request, target: {merge-request: 1}, ai: 'cmd:sh "$FIXTURES/agents/judged-only.sh"', push-to-merge-request: true, forge: gitlab, summary: true}
+run: {role: documentalist, event: merge-request, target: {merge-request: 1}, ai: 'cmd:sh "$FIXTURES/agents/judged-only.sh"', forge: gitlab, summary: true}
 expect:
   status: pass
   agent-calls: 1

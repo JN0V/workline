@@ -246,9 +246,15 @@ func changed(dir, checked, rev, path, anchor string) (string, error) {
 		}
 		return strings.Join(kept, "\n"), nil
 	}
+	// A doc renamed or written since `checked`, or its section added since:
+	// the doc is suspect, judged against it as it is now. Never an error,
+	// which would hold the whole run, every other doc with it.
 	before, err := git(dir, "show", checked+":"+path)
 	if err != nil {
-		return "", err
+		if _, e := git(dir, "rev-parse", "--verify", "-q", checked+"^{commit}"); e != nil {
+			return "", err
+		}
+		before = ""
 	}
 	after, err := git(dir, "show", rev+":"+path)
 	if err != nil {
@@ -256,16 +262,17 @@ func changed(dir, checked, rev, path, anchor string) (string, error) {
 	}
 	old, okOld := Section(before, anchor)
 	now, okNow := Section(after, anchor)
-	if !okOld {
-		return "", fmt.Errorf("section #%s did not exist in %s at %s", anchor, path, checked)
-	}
 	if !okNow {
 		return "section #" + anchor + " is gone", nil
 	}
-	if old == now {
+	if okOld && old == now {
 		return "", nil
 	}
-	return git(dir, "log", "--format=%h %s", checked+".."+rev, "--", path)
+	out, err := git(dir, "log", "--format=%h %s", checked+".."+rev, "--", path)
+	if err == nil && out == "" {
+		out = fmt.Sprintf("(section #%s of %s was not there at %s)", anchor, path, checked)
+	}
+	return out, err
 }
 
 // onMain returns the commit to compare a doc's sources with: the one its
@@ -1932,11 +1939,6 @@ func Post(runDir, repo string) int {
 			outcome = readerOutcome
 		}
 		mr := mergeRequest(runDir, judged, inParts, proposedPatch(intents, fallback), withheld, outcome)
-		if onPersonsMergeRequest() { // the commit on a person's branch names the doc (#463)
-			if t := personsTitle(patchedDocs(intents, fallback, judgedFix)); t != "" {
-				mr["title"] = t
-			}
-		}
 		if list := readerList(readerClaims); list != "" {
 			mr["body"] = strings.Replace(mr["body"], "\nRunning the same task", "\nWhat a reader would miss or skip, as the agent read the pages:\n\n"+list+"\nRunning the same task", 1)
 		}

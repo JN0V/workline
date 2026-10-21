@@ -131,20 +131,3 @@ func TestDocPaths(t *testing.T) {
 		t.Error("a source in another repository: its state is not this one's")
 	}
 }
-
-func TestPersonsTitle(t *testing.T) {
-	for _, c := range []struct {
-		fixed, recorded []string
-		want            string
-	}{
-		{[]string{"docs/a.md"}, nil, "docs: bring docs/a.md in line with the code"},
-		{[]string{"docs/a.md", "docs/b.md"}, []string{"docs/c.md"}, "docs: bring docs/a.md and 1 more in line with the code"},
-		{nil, []string{"docs/c.md"}, "docs: record when docs/c.md was judged"},
-		{[]string{"docs/" + strings.Repeat("x", 60) + ".md"}, nil, "docs: bring the docs in line with the code"},
-		{nil, nil, ""},
-	} {
-		if got := personsTitle(c.fixed, c.recorded); got != c.want {
-			t.Errorf("personsTitle(%v, %v) = %q, want %q", c.fixed, c.recorded, got, c.want)
-		}
-	}
-}

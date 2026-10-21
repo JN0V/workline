@@ -1,5 +1,5 @@
 case: documentalist/fix-applied-from-the-merge-request-run
-about: "A merge request's own CI run judges; a job of the base's applies it (apply --from-merge-request, #331): from the base checked out, the doc fix is committed on the head that run judged and pushed to the merge request's branch, then the base is checked out again."
+about: "A merge request's own CI run judges; a job of the base's applies it (apply --from-merge-request, #331): from the base checked out, the doc fix, made on the head that run judged, goes in a comment on the merge request, never on its branch (ADR-0051), then the base is checked out again."
 given:
   repo: documented
   setup:
@@ -11,7 +11,6 @@ run:
   event: merge-request
   target: {merge-request: 1}
   ai: "fake:doc-fixed"
-  push-to-merge-request: true
   no-apply: true
   then: resume
   apply-from: {merge-request: 1, base: main, head: feature}
@@ -19,6 +18,6 @@ expect:
   status: pass
   agent-calls: 1
   applied: [patch]
-  findings: [{rule: pushed, where: feature}]
-  pushed: {feature: {docs/tech/auth.md: "Access tokens last two hours."}}
+  findings: [{rule: patch-as-comment}]
+  not-pushed: [feature]
   files: {src/auth/token.go: {contains: "3600"}, docs/tech/auth.md: {contains: "Access tokens last one hour."}}

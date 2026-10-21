@@ -93,7 +93,7 @@ func TestGitHubMergeQueueRunsTheGatesAlone(t *testing.T) {
 				"gates": {"--gates-only", "--input queue=true", "--input range=b0b0..4e4d"},
 				"judge": {"--ai none", "--forge none", "--input queue=true", "--input range=b0b0..4e4d", "--gates-from"},
 			},
-			never: map[string][]string{"judge": {"--verdict", "--target", "--push-to-merge-request", "lenses=all", "--sarif"}},
+			never: map[string][]string{"judge": {"--verdict", "--target", "lenses=all", "--sarif"}},
 		},
 		{
 			name: "a pull request's push", event: pullRequestPush, head: "c0c0",

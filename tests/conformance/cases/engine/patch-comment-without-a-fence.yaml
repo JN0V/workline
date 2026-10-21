@@ -1,5 +1,5 @@
 case: engine/patch-comment-without-a-fence
-about: 'A patch that cannot be pushed goes in a comment (#145). Its diff holds no backtick: the comment reads as it always did, the diff in a fence of three backticks.'
+about: 'A patch on a merge request goes in a comment, never on its branch (#145). Its diff holds no backtick: the comment reads as it always did, the diff in a fence of three backticks.'
 given:
   repo: basic
   setup:
@@ -7,10 +7,10 @@ given:
     - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
     - "git checkout -qb feature && echo 'func quiet() {}' >> main.go && git commit -qam 'feat: run quietly' && git checkout -q --detach"
   forge: {merge-requests: [{id: 1, branch: feature, fork: true, labels: [], comments: []}]}
-run: {role: fixes-a-doc, event: merge-request, target: {merge-request: 1}, ai: "fake:doc-gains-a-sentence", push-to-merge-request: true}
+run: {role: fixes-a-doc, event: merge-request, target: {merge-request: 1}, ai: "fake:doc-gains-a-sentence"}
 expect:
   status: pass
-  findings: [{rule: patch-as-comment, message: "fork"}]
+  findings: [{rule: patch-as-comment, message: "pushes nothing"}]
   forge:
     merge-requests:
       - id: 1
