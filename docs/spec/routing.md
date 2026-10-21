@@ -77,7 +77,7 @@ routing:
     commit-msg:    [committer]
     merge-request: [committer, documentalist, gate:merge]
     schedule:      [documentalist]
-    release:       [gate:release, documentalist]   # before the release tool tags
+    release:       [gate:release]       # before the release tool tags; never the docs
     main:          [documentalist]      # after a merge: merge-request's gates first
 
   fail-fast:                            # per event; true unless set
