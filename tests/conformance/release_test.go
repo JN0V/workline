@@ -224,7 +224,8 @@ func TestGitLabReleaseJobAtATag(t *testing.T) {
 		t.Errorf("workline:release does not end with the line's status: a held release goes green")
 	}
 	// No other job of workline's runs at a tag: every other one asks for a
-	// merge request, a schedule, or a branch, which a tag pipeline has not.
+	// merge request, a schedule, or a branch, which a tag pipeline has not;
+	// a merge request's child (`parent_pipeline`), the lenses that warn.
 	for name, v := range top {
 		j, ok := v.(map[string]any)
 		if !ok || name == "workline:release" || strings.HasPrefix(name, ".") || !strings.HasPrefix(name, "workline:") {
@@ -238,7 +239,7 @@ func TestGitLabReleaseJobAtATag(t *testing.T) {
 			}
 		}
 		if rules == "<nil>" || strings.Contains(rules, "$CI_COMMIT_TAG") ||
-			!(strings.Contains(rules, "merge_request_event") || strings.Contains(rules, `"schedule"`) || strings.Contains(rules, "$CI_COMMIT_BRANCH ==") || strings.Contains(rules, `"web"`) || strings.Contains(rules, `"api"`) || strings.Contains(rules, `"trigger"`)) {
+			!(strings.Contains(rules, "merge_request_event") || strings.Contains(rules, `"parent_pipeline" && $CI_MERGE_REQUEST_IID`) || strings.Contains(rules, `"schedule"`) || strings.Contains(rules, "$CI_COMMIT_BRANCH ==") || strings.Contains(rules, `"web"`) || strings.Contains(rules, `"api"`) || strings.Contains(rules, `"trigger"`)) {
 			t.Errorf("GitLab: %s may run on a tag pipeline: %s", name, rules)
 		}
 	}

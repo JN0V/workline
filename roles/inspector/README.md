@@ -89,7 +89,8 @@ gates:
 - **In CI**: the templates' run apart gives it the gates' job's result
   ([gates in CI](../../docs/gates-in-ci.md#the-inspectors-triage)). On
   GitHub, workline-warn.yml waits for workline.yml's `gates` job on the
-  same head; on GitLab, `workline:warn` runs after `workline:gates`.
+  same head; on GitLab, `workline:warn` runs in a child pipeline
+  started after `workline:gates`.
 - **On a machine**: `workline route merge-request --ai claude` runs the
   gates, then the inspector. A gate that blocks stops the line before
   it; to triage then, give it their result:

@@ -13,7 +13,7 @@ judged-in-parts: 220b6dc
 flowchart LR
   subgraph reads["The agent, when its token is set"]
     judge["<b>Merge request</b><br/>workline:judge"]
-    warn["<b>Merge request</b><br/>workline:warn"]
+    warn["<b>Merge request, a child pipeline</b><br/>workline:warn"]
     garden["<b>Schedule</b><br/>workline:garden:judge"]
     sample["<b>Schedule, WORKLINE_TASK=sample</b><br/>workline:sample:read"]
     import["<b>By hand, WORKLINE_IMPORT</b><br/>workline:import:judge"]
@@ -63,6 +63,9 @@ to `ci/` and add to `.gitlab-ci.yml`:
 stages: [test, deploy]
 include: {local: ci/workline.gitlab-ci.yml}
 ```
+
+Keep that path: `workline:warn:child` starts the same file as a child
+pipeline. Elsewhere, change its `include` too.
 
 ### 2. The variables
 
@@ -183,17 +186,24 @@ a cron off the hour (`13 17 * * *`) was listed as due at 18:00 and ran at
   ([the environment](gitlab/environment.md)). In a merge train's
   pipeline, they are workline's only jobs; a merged results pipeline
   runs them all ([a merge train](merge-queue.md#gitlab-a-merge-train)).
-- **The reviewer's lenses that only warn** read apart from the verdict:
-  `workline:judge` asks those that block (`--warn-apart`; without
-  `WORKLINE_GITLAB_TOKEN`, every lens, said in its log and summary);
-  `workline:warn`, after `workline:gates` whatever its verdict, with the
-  agent's token and the bot's, asks the others (`--warn-only`), and the
-  inspector's triage given the gates' `gates.json`
-  ([the triage in CI](gates-in-ci.md#the-inspectors-triage)); `workline:warn:apply` posts them,
-  each in a comment of its own. Neither fails the pipeline (`allow_failure`);
-  `workline:merge` reads the verdict from `workline:judge` alone. GitLab
-  merges once the pipeline succeeds: the merge waits for them, never on
-  what they find ([apart](../roles/reviewer/docs/apart.md)).
+- **The reviewer's lenses that only warn** read apart from the verdict
+  ([apart](../roles/reviewer/docs/apart.md)):
+  - `workline:judge` asks those that block (`--warn-apart`; without
+    `WORKLINE_GITLAB_TOKEN`, every lens, said in its log and summary).
+  - `workline:warn`, with the agent's token and the bot's, asks the
+    others (`--warn-only`), and the inspector's triage given the gates'
+    `gates.json` ([the triage in CI](gates-in-ci.md#the-inspectors-triage));
+    `workline:warn:apply` posts them, each in a comment of its own.
+  - **Both in a child pipeline**, `workline:warn:child`, started after
+    `workline:gates` whatever its verdict, with no `strategy`: "merge
+    when the pipeline succeeds" waits for `allow_failure` jobs too, never
+    for a child
+    ([ADR-0051](adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#4-also)).
+  - The child gets the merge request's `CI_MERGE_REQUEST_*` variables and
+    the tokens scoped to `workline`. `workline:warn` reads `gates.json`
+    from the merge request's pipeline with the bot's token: GitLab's
+    `needs:pipeline:job` gives no failed job's artifacts.
+  - `workline:merge` reads the verdict from `workline:judge` alone.
 - **The whole history** (`GIT_DEPTH: 0`, over the project's "Git shallow
   clone" setting, 20 commits on a new project): the documentalist compares
   each doc's sources since its `checked`, the release looks for its last

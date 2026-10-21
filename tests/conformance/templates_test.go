@@ -776,18 +776,58 @@ func TestWarnApartNeverHoldsTheVerdict(t *testing.T) {
 	}
 	warn, _ := top["workline:warn"].(map[string]any)
 	script := fmt.Sprint(warn["script"])
-	if !strings.Contains(script, "--warn-only") || strings.Contains(script, "--verdict") || strings.Contains(script, "--code-quality") || fmt.Sprint(warn["needs"]) != "[map[artifacts:true job:workline:gates]]" {
-		t.Errorf("workline:warn: does not read what only warns alone, after the gates and given their result, with no verdict nor report (needs %v): %s", warn["needs"], script)
+	if !strings.Contains(script, "--warn-only") || strings.Contains(script, "--verdict") || strings.Contains(script, "--code-quality") {
+		t.Errorf("workline:warn: does not read what only warns alone, with no verdict nor report: %s", script)
 	}
-	// The inspector triages the gates' findings (ADR-0049): whatever their
-	// verdict, read from their job, never run here.
-	rules, _ := warn["rules"].([]any)
+	// In a child pipeline the merge request's does not wait for (ADR-0051):
+	// GitLab's "merge when the pipeline succeeds" waits for allow_failure
+	// jobs too. Started after the gates, whatever their verdict, from this
+	// same file, with no strategy.
+	child, _ := top["workline:warn:child"].(map[string]any)
+	trigger, _ := child["trigger"].(map[string]any)
+	rules, _ := child["rules"].([]any)
 	var rule map[string]any
 	if len(rules) == 1 {
 		rule, _ = rules[0].(map[string]any)
 	}
-	if rule["when"] != "always" || !strings.Contains(script, "--gates-from") || strings.Contains(script, "--gates-only") {
-		t.Errorf("workline:warn: does not read the gates' result whatever their verdict (rules %v): %s", rules, script)
+	if trigger["include"] != "ci/workline.gitlab-ci.yml" || trigger["strategy"] != nil || fmt.Sprint(child["needs"]) != "[workline:gates]" ||
+		rule["when"] != "always" || child["allow_failure"] != true || fmt.Sprint(child["variables"]) != "map[WORKLINE_PARENT_PIPELINE_ID:$CI_PIPELINE_ID]" {
+		t.Errorf("workline:warn:child: does not start what only warns in a child pipeline the merge does not wait for, after the gates whatever their verdict: %v", child)
+	}
+	// The inspector triages the gates' findings (ADR-0049): read from their
+	// job in the merge request's pipeline, never run here. GitLab's
+	// needs:pipeline:job fetches only a job that passed: the bot's token
+	// reads it, as given or as missing, said.
+	if !strings.Contains(script, "--gates-from") || strings.Contains(script, "--gates-only") || fmt.Sprint(warn["needs"]) != "[]" {
+		t.Errorf("workline:warn: does not read the gates' result from the merge request's pipeline (needs %v): %s", warn["needs"], script)
+	}
+	if _, err := exec.LookPath("jq"); err == nil {
+		var fetch string
+		for _, s := range warn["script"].([]any) {
+			if line := fmt.Sprint(s); strings.Contains(line, "WORKLINE_PARENT_PIPELINE_ID") {
+				fetch = line
+			}
+		}
+		dir := t.TempDir()
+		curl := "#!/bin/sh\nout=; for a; do [ \"$prev\" = -o ] && out=$a; prev=$a; url=$a; done\n" +
+			"case $url in */pipelines/7/jobs*) echo '[{\"id\":41,\"name\":\"workline:judge\"},{\"id\":42,\"name\":\"workline:gates\"}]' ;;\n" +
+			"*/jobs/42/artifacts/gates.json) echo '{\"steps\":[]}' > \"$out\" ;;\n*) exit 22 ;; esac\n"
+		if err := os.WriteFile(filepath.Join(dir, "curl"), []byte(curl), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		for _, c := range []struct{ parent, gates string }{{"7", "gates.json"}, {"8", ""}, {"", ""}} {
+			work := t.TempDir()
+			cmd := exec.Command("sh", "-ec", fetch+"\necho \"gates[$gates]\"")
+			cmd.Dir, cmd.Env = work, []string{"PATH=" + dir + string(os.PathListSeparator) + os.Getenv("PATH"), "WORKLINE_PARENT_PIPELINE_ID=" + c.parent,
+				"WORKLINE_GITLAB_TOKEN=glpat", "CI_API_V4_URL=https://gitlab.example/api/v4", "CI_PROJECT_ID=1"}
+			out, err := cmd.CombinedOutput()
+			said := strings.Contains(string(out), "left no gates.json")
+			if err != nil || !strings.Contains(string(out), "gates["+c.gates+"]") || said != (c.gates == "") {
+				t.Errorf("workline:warn, the parent pipeline %q: %s (%v); want gates %q, a missing result said", c.parent, out, err, c.gates)
+			}
+		}
+	} else if os.Getenv("GITHUB_ACTIONS") != "" {
+		t.Fatal("jq is not on PATH: the GitLab template's check runs it, in its image")
 	}
 	for _, name := range []string{"workline:warn", "workline:warn:apply"} {
 		if job, _ := top[name].(map[string]any); job["allow_failure"] != true {

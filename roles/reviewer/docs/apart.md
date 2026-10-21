@@ -106,11 +106,10 @@ beside the verdict's, and posts once it answered.
 - **GitLab**: `workline:warn`, after `workline:gates`, then
   `workline:warn:apply`, with the agent's token and the bot's; without
   the bot's, `workline:warn` says so and stops, and the lenses that warn
-  read in `workline:judge`, said in its log and summary. Neither fails
-  the pipeline
-  ([CI on GitLab](../../../docs/ci-gitlab.md)). GitLab
-  merges once the pipeline succeeds: the merge waits for them, never on
-  what they find.
+  read in `workline:judge`, said in its log and summary. Both run in a
+  child pipeline the merge request's does not wait for: "merge when the
+  pipeline succeeds" waits for the verdict alone
+  ([CI on GitLab](../../../docs/ci-gitlab.md#what-the-template-does)).
 - **No agent, or neither the reviewer nor the inspector in the line**:
   the run apart ends at once.
 - **The inspector's triage** reads in the same run, given what the gates
