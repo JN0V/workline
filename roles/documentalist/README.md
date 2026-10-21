@@ -9,11 +9,11 @@ verified: agent:claude-code
 ```mermaid
 %%{init: {"flowchart": {"wrappingWidth": 400}}}%%
 flowchart LR
-  when["<b>When</b><br/>git push: the pre-push hook<br/>each push to a merge request<br/>after a merge<br/>gardening, nightly or weekly<br/>before your release tool tags<br/>workline init, workline docs"]
+  when["<b>When</b><br/>git push: the pre-push hook<br/>each push to a merge request<br/>after a merge<br/>gardening, nightly or weekly<br/>workline init, workline docs"]
   reads["<b>Reads</b><br/>each doc's sources and checked<br/>the commits since<br/>the code they name"]
   role(["Documentalist"])
-  alone["<b>Alone</b><br/>counts the docs a push made suspect<br/>on a merge request: fixes a doc<br/>or vouches for it, on its branch<br/>holds a release while docs are due"]
-  proposed["<b>Proposed</b><br/>workline docs: each fix, kept or dropped<br/>gardening, release: a merge request a task<br/>workline init: each doc's sources"]
+  alone["<b>Alone</b><br/>counts the docs a push made suspect<br/>on a merge request: fixes a doc<br/>or vouches for it, on its branch"]
+  proposed["<b>Proposed</b><br/>workline docs: each fix, kept or dropped<br/>gardening: a merge request a task<br/>workline init: each doc's sources"]
   person["<b>Left to a person</b><br/>a doc it cannot judge<br/>code that disagrees with a decision"]
   out["<b>Lands in</b><br/>a commit on the merge request<br/>merge requests of its own<br/>one comment, issues"]
   when --> role
@@ -48,10 +48,9 @@ doc by doc), or make a push wait on an agent.
 | Event | Fired by | Does |
 |---|---|---|
 | `pre-push` | the global hook, when routed | counts the docs the pushed commits made suspect, reading no other doc, no agent |
-| `merge-request` | CI | judges the docs the merge request made suspect, reading no other doc; fix committed to its branch; a draft: counts them, judged once it is ready; a release tool's: counts the docs due, judged at night |
+| `merge-request` | CI | judges the docs the merge request made suspect, reading no other doc; fix committed to its branch; a draft: counts them, judged once it is ready |
 | `main` | CI, after each merge | the whole repository's checks, no agent, in one issue ([more](../../docs/main-after-merge.md)) |
-| `schedule` | CI, nightly or weekly (gardening) | first the docs due for an open release pull request, on its head; then every suspect or stale doc, budgets, links, reader checks; one merge request per task |
-| `release` | `workline route release`, before your release tool tags, or at its tag; with `--target`, a release pull request, now or each night; `--dry-run`, each night, no agent | holds the release until the docs due are judged; the dry run says what would hold it |
+| `schedule` | CI, nightly or weekly (gardening) | every suspect or stale doc, the docs due, budgets, links, reader checks; one merge request per task |
 | `init` | `workline init` | proposes each doc's `sources`, for you to review |
 
 `workline docs` judges, on your machine, what was made suspect since the
@@ -70,7 +69,7 @@ Under `roles: {documentalist: {settings: …}}` in `.workline/config.yaml`
 |---|---|---|
 | `docs` | `["docs/**", "*.md"]` | what is a doc; only these are ever patched |
 | `truth` | `{doc: ["docs/adr/**"]}` | docs the code follows: an issue, never a rewrite |
-| `propagation` | code → `docs/tech/**` now; `docs/tech/**` → `docs/product/**` at the release | which cascades wait |
+| `propagation` | code → `docs/tech/**` now; `docs/tech/**` → `docs/product/**` at gardening | which cascades wait |
 | `budgets` | doc 200 lines, section 400 words, card 80–400 words, folder 2000 lines, `AGENTS.md` 200 lines | sizes reported |
 | `freshness.stale-after-days` | `180` | a doc confirmed longer ago is read again |
 | `reader` | user pages `README.md`, `docs/**` but specs; from `README.md`; paragraph 80 words, cell 30; `agent-pages: 4` | which pages a reader uses, how much they read at once ([checks](docs/checks-docs.md#docs-for-their-reader)), and how many the agent reads a run ([more](docs/reader.md)) |
@@ -113,13 +112,10 @@ Under `roles: {documentalist: {settings: …}}` in `.workline/config.yaml`
   requests kept —, rebuilt on `main` once `main` moved, or
   closed, saying why, when nothing is left to merge
   ([when the base moves](docs/gardening.md#when-the-base-moves)); a
-  tracking issue for docs due at the release; an issue when the code
+  tracking issue for docs due later; an issue when the code
   disagrees with a doc it follows.
-- On a release tool's pull request: no agent on its moves; at night, the
-  fix on a merge request of its own,
-  `workline/documentalist/release`, rebuilt on `main` each time `main`
-  moves (`workline follow`, [ADR-0034](../../docs/adr/0034-the-release-fix-follows-its-base.md)), never over a person's commit
-  ([more](docs/push.md#a-release-tools-pull-request)).
+- Never at the release: the release does not wait for the docs
+  ([ADR-0051](../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-1-the-release-weekly)).
 - On a person's pull request, with `update-branches: conflicts`: a merge
   of main when it conflicts only on workline's lines, those settled; else
   named in the job's summary ([more](docs/follow.md)).
@@ -155,7 +151,7 @@ comment. Gardening only regenerates derived blocks.
 
 - [The checks](docs/checks.md): what `pre` finds with no AI, and their
   levels; [those on the docs alone](docs/checks-docs.md);
-  [cascades](docs/cascades.md): how they are cut, what holds a release,
+  [cascades](docs/cascades.md): how they are cut,
   the docs the code never rewrites.
 - [The agent's tasks](docs/tasks.md): suspect docs judged whole, or
   [in parts](docs/parts.md);
@@ -165,7 +161,7 @@ comment. Gardening only regenerates derived blocks.
   [its claims](docs/judge-claims.md): what backs a word taken out;
   [code examples](docs/examples.md): said unverified, or checked by your
   command.
-- [At the push, the release and the adoption](docs/push.md);
+- [At the push and the adoption](docs/push.md);
   [a pull request in conflict on its lines](docs/follow.md): main merged
   in, when set.
 

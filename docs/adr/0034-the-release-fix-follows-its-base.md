@@ -1,9 +1,8 @@
 # ADR-0034: The release's own fix follows its base
 
-- **Status:** accepted; amended 2026-10-12 (gardening's merge requests
-  follow too, or are closed), 2026-10-19 (the fix's record stands for the
-  heads the tool rebuilds), 2026-10-20 (one fix for every doc a run
-  reaches)
+- **Status:** removed 2026-10-21 with the release's docs, but for its
+  2026-10-12 amendment (gardening's merge requests follow, or are
+  closed), which stands; amended 2026-10-19 and 2026-10-20 before
 - **Date:** 2026-10-06
 - **Builds on:** ADR-0017 (a release tool's pull request is the release;
   its fix goes to a merge request of its own), ADR-0027 (derived blocks
@@ -252,3 +251,14 @@ release-pull-request-by-hand-fixes-every-due-doc,
 release-pull-request-night-stops-at-its-tokens,
 release-pull-request-fix-of-a-doc-the-release-bumps,
 release-pull-request-fix-in-a-comment-when-it-conflicts-on-the-base.
+
+## Removed (2026-10-21): the release's fix is gone
+
+[ADR-0051](0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-1-the-release-weekly), built:
+
+- **No release fix**: the documentalist judges no release's docs, so no
+  `workline/documentalist/release` is opened, followed, or recorded.
+- **Gone with it**: the record standing for the rebuilt heads
+  (2026-10-19) and the rounds kept in the clone for one fix (2026-10-20).
+- **Stands**: gardening's merge requests follow their base, or are
+  closed (2026-10-12), with `workline follow --gardening`.

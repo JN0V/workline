@@ -41,7 +41,7 @@ SSH key: the template signs its commits with it.
 ## What the template does
 
 - **Each job that pushes** (`workline:apply`, `workline:merge`,
-  `workline:follow`, gardening's, the release docs', the sample's) sets
+  `workline:follow`, gardening's, the sample's) sets
   git to sign with the key: `gpg.format ssh`, `user.signingkey`,
   `commit.gpgsign true`.
 - **The key file is fixed first**: readable by its owner alone (GitLab

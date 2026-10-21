@@ -39,8 +39,7 @@ Nobody waits for it; nothing in it holds a merge request.
     ([ADR-0049](adr/0049-the-inspector-judges-the-new-findings-of-the-projects-tools.md#6-guards)),
     then only what changes;
   - the product owner leaves it alone, as its other issues;
-  - with no release merge request open, the night's release dry run
-    keeps a part of its own there, *The next release*: what would hold
+  - the night's release dry run keeps a part of its own there, *The next release*: what would hold
     it ([the release](release.md)). Each writer leaves the other's part
     as it is.
 - **No agent, no secret** where the tools run; the issue is written by a

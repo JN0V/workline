@@ -47,8 +47,7 @@ merge: {autonomy: cautious}   # off unless set: no auto-merge is touched
     settled ([ADR-0041](adr/0041-workline-settles-its-own-lines-when-the-base-moves.md));
   - a role's own branch rebuilt on the base instead
     ([ADR-0034](adr/0034-the-release-fix-follows-its-base.md)).
-- **The order**: the release's docs fix first, then the order the labels
-  were put. Auto-merge a person turned on by hand is their yes, weighed as
+- **The order**: the order the labels were put. Auto-merge a person turned on by hand is their yes, weighed as
   the label's.
 - **Out of line, said in the job's summary**: a verdict or a check red,
   a review short, a conflict on a person's line, a push refused. A run
@@ -90,10 +89,8 @@ merge: {autonomy: cautious}   # off unless set: no auto-merge is touched
 
 ## Never without a person's yes
 
-- **A release pull request** merges only labelled. Held for its docs, it
-  waits for them, then is brought up to date and merges. Its docs due
-  wait for the night's agent: held too, never red, its yes kept
-  ([ADR-0050, §7](adr/0050-each-act-has-its-moment-and-a-wait-budget.md#7-decided-by-the-maintainer-on-2026-10-19)).
+- **A release pull request** merges only labelled; it never waits for
+  the docs ([ADR-0051](adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-1-the-release-weekly)).
 - **A fork's** is never brought up to date: the token cannot write to a
   fork. Its CI run is the fork's own, so the templates keep no verdict of
   it: it waits for a person.
@@ -184,7 +181,6 @@ counts as workline's own, the kinds, the revert and the limits:
 | `verdict-red`, `review-short`, `checks-red` | out of line, why |
 | `accepted-reset` | a push after the yes: the yes and auto-merge off |
 | `vetoed`, `draft`, `auto-merge-off` | the forge's veto, or the label taken off |
-| `waits-for-docs` | a release whose docs are still open, or still to be judged at night |
 | `fork-behind`, `update-left` | behind, not brought up to date |
 | `label-ignored` | put by someone who may not push nor merge |
 | `merge-unguarded`, `merge-token`, `merge-unsupported` | a base, a token or a forge it cannot act with |

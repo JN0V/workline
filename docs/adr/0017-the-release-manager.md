@@ -1,6 +1,7 @@
 # ADR-0017: workline does not cut releases; it works with the release tools a project has
 
-- **Status:** accepted (2026-10-03)
+- **Status:** accepted (2026-10-03); amended 2026-10-21 (no doc holds
+  the release)
 - **Date:** 2026-10-02; rewritten 2026-10-03 on the person's decision
 - **Amends:** ADR-0010 (the hold "at the release" moves onto the release
   pull request a tool opens); ADR-0016 (a release's notes are no longer one
@@ -248,3 +249,17 @@ next starts.
   no forge tags by hand, after `workline route release`.
 - The notes check the backlog wished for ("claims only what is built")
   becomes a question for the tool's changelog, out of workline's scope.
+
+## Amendment (2026-10-21): no doc holds the release
+
+[ADR-0051](0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-1-the-release-weekly), built:
+
+- **A release tool's pull request is a merge request like another**:
+  the documentalist no longer runs on it as the release, asks no agent
+  at night for it, and opens no fix of its own
+  (`workline/documentalist/release`).
+- **The release still is the tool's**: workline cuts none; the `release`
+  line runs the project's gates, none by default.
+- **Kept**: `release.branches`, which tells each role the branch (the
+  reviewer leaves the versions the tool bumps, #384; a bump makes no
+  doc suspect, #346), and `release.tags`, which the dry run reads.

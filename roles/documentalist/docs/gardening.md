@@ -154,9 +154,6 @@ Run with `--open-merge-request` (the CI templates' scheduled jobs):
   ([ADR-0013, amended 2026-10-14](../../../docs/adr/0013-what-was-judged-is-not-asked-again.md#amendment-2026-10-14-a-doc-waits-while-a-merge-request-holds-it));
 - a doc to condense or split, a card to merge, a repeated passage wait
   while their own merge request does; the next one goes;
-- a doc the release's fix changes, `workline/documentalist/release`, open
-  or judged the same night before the gardening, waits too
-  ([at the release](push.md#a-release-tools-pull-request));
 - `records` is proposed again only for a doc it does not hold yet: then
   with every record that still holds;
 - a task proposed by an earlier round of the same run counts as waiting: a
@@ -194,7 +191,6 @@ One the base moved under is:
   cannot tell (`conflict-unread`). Running the task again never pushes
   over that commit either (`not-proposed`).
 
-A push to the base leaves them alone: only the release's fix follows each
-push ([at the release](push.md#a-release-tools-pull-request)), and, when
-set, people's pull requests in conflict on workline's lines
+A push to the base leaves them alone: only, when set, people's pull
+requests in conflict on workline's lines follow each push
 ([more](follow.md)).

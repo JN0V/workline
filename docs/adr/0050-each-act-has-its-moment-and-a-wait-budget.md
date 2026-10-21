@@ -1,6 +1,6 @@
 # ADR-0050: Each act has its moment, and each moment a wait budget
 
-- **Status:** accepted; steps 1 to 11 built, 12 and 13 to come ([the build plan](#build-plan))
+- **Status:** accepted; steps 1 to 11 built, 12 and 13 to come ([the build plan](#build-plan)); the release's docs at night (§7) removed on 2026-10-21 ([ADR-0051](0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-1-the-release-weekly))
 - **Date:** 2026-10-19
 - **Decided by:** the maintainer, on 2026-10-19: a panel's direction,
   validated in broad lines, corrected: first the time a developer waits

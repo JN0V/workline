@@ -47,7 +47,7 @@ none of them:
 
 | Variable | Value |
 |---|---|
-| `WORKLINE_TASK` | `merge-request`, `garden`, `product-owner`, `release`, `sample`, `follow` (when the default branch moved: the release fix rebuilt on it, [ADR-0034](adr/0034-the-release-fix-follows-its-base.md); people's too, when set, [ADR-0041](adr/0041-workline-settles-its-own-lines-when-the-base-moves.md)), `main` (after a merge, `MAIN_BEFORE` its tip before: [main after a merge](main-after-merge.md)), `import` |
+| `WORKLINE_TASK` | `merge-request`, `garden`, `product-owner`, `release`, `sample`, `follow` (when the default branch moved: people's merge requests, when set, [ADR-0041](adr/0041-workline-settles-its-own-lines-when-the-base-moves.md)), `main` (after a merge, `MAIN_BEFORE` its tip before: [main after a merge](main-after-merge.md)), `import` |
 | `MR_IID`, `MR_SOURCE_BRANCH`, `MR_TARGET_BRANCH`, `MR_BASE_SHA` | for `merge-request`: from the merge request (`diff_refs.base_sha`); the pipeline's `ref` is the source branch; the tool cancels the one still judging an older head first ([#359](https://github.com/JN0V/workline/issues/359)) |
 | `MR_READY`, `MR_DRAFT` | for `merge-request`: `MR_DRAFT`, `true` or `false`, each run, `true` asking no agent; `MR_READY` when it becomes ready (opened not a draft, or an `update` whose `changes.draft` went false), a pipeline the template never gets: every reviewer lens once ([how](../roles/reviewer/docs/ready.md)) |
 | `WORKLINE_IMPORT` | for `import`: the file moved to issues, as committed on the pipeline's `ref` |
@@ -180,9 +180,9 @@ exit "$status"
   merge
   ([ADR-0034, amended](adr/0034-the-release-fix-follows-its-base.md#amendment-2026-10-12-gardenings-merge-requests-follow-too-or-are-closed));
   the first release after v0.24.0.
-- On `release`, a judging job that does not pass holds the release; the
-  docs' fix goes to a merge request of its own (untried outside a release
-  tool's merge request).
+- On `release`, a judging job that does not pass holds the release: the
+  release's gates, never the docs
+  ([ADR-0051](adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-1-the-release-weekly)).
 - The [merge policy](merge-policy.md), with `merge:` in the target
   branch's `.workline/config.yaml`, workline 0.26 or later:
   - `judge:merge-request` writes the head's verdict (`--verdict`);
@@ -198,7 +198,7 @@ exit "$status"
 | Variable | Holds | Masked | Protected |
 |---|---|---|---|
 | `WORKLINE_GITLAB_TOKEN` | a project (or group) access token, Developer, `api` and `write_repository` ([triggers.md](triggers.md#gitlab-tokens)) | yes | only if every triggered pipeline runs on a protected branch |
-| `WORKLINE_GITLAB_READ_TOKEN` | a token with `read_api`, Reporter: gardening, the product owner, the reviewer and the weekly sample read the forge while judging — gardening, the release's merge request it judges first; unset, `CI_JOB_TOKEN`, which reads no issue | yes | the same |
+| `WORKLINE_GITLAB_READ_TOKEN` | a token with `read_api`, Reporter: gardening, the product owner, the reviewer and the weekly sample read the forge while judging; unset, `CI_JOB_TOKEN`, which reads no issue | yes | the same |
 | the agent's credentials | whichever agent you chose; for Claude, `CLAUDE_CODE_OAUTH_TOKEN` (`claude setup-token`, a Claude subscription) or `ANTHROPIC_API_KEY` | yes | the same |
 | `WORKLINE_SIGNING_KEY` | where the project refuses unsigned commits: the bot's SSH private key, type File ([signed commits](gitlab/signed-commits.md)) | no: GitLab masks no value of several lines | the same |
 

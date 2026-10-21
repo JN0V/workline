@@ -34,7 +34,7 @@ merge: {autonomy: normal}   # a project's choice, never a default
     merged merge requests
     ([more](../roles/documentalist/docs/gardening.md#records-kept-on-merged-merge-requests));
   - `derived`: derived blocks, as their commands give them;
-  - `docs`: doc text a role wrote — the release's docs fix, gardening's;
+  - `docs`: doc text a role wrote — gardening's;
   - `reader`: pages an agent reworded for their reader, which wait for a
     yes ([below](#the-readers-rewordings-wait-for-a-yes)).
 - **The same path as a yes**: `workline/accepted` set on the head, auto-merge
@@ -58,8 +58,7 @@ merge: {autonomy: normal}   # a project's choice, never a default
 - **The governance line**: a change an AI wrote and an AI reviewed merges
   with no person's approval — past the two-person rule of SLSA and SOC 2.
 - **The App's key, out of a pull request's own run**: none opens a
-  `workline/` pull request as the App; a release's fix only when the App
-  alone pushed to its branch ([ADR-0044](adr/0044-the-apps-key-stays-with-the-default-branchs-runs.md)).
+  `workline/` pull request as the App ([ADR-0044](adr/0044-the-apps-key-stays-with-the-default-branchs-runs.md)).
 - **Tried on workline's own repository first**; agents' pull requests come
   later ([#322](https://github.com/JN0V/workline/issues/322); the
   [criteria](adr/0042-the-engine-merges-by-the-projects-policy.md#the-veto-what-never-merges-alone-the-criteria)).

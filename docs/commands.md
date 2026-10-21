@@ -39,11 +39,6 @@ refused): what only warns, apart from the verdict
 hands the gates' result to the inspector
 ([the inspector](../roles/inspector/README.md#set-it-up)). Both flags, or
 one and an `--input warn=` naming the other run, are misuse.
-A release tool's merge request: on `schedule` with a forge and
-`--open-merge-request`, its docs are judged first, on its head;
-`route release --target merge-request:<n>` does it now, its head checked
-out for the run, and `--target merge-request:release` finds the one open,
-for a nightly job ([more](../roles/documentalist/docs/push.md#a-release-tools-pull-request)).
 With `--input queue=true`, a merge queue's or train's run: the gates
 alone, on the merged result, the steps left named; `--verdict` and
 `--warn-only` refused ([a merge queue or train](merge-queue.md)).
@@ -52,7 +47,7 @@ whole repository's checks, every step run; `--gates-kept <folder>`
 keeps the gates' findings there by commit, and on a merge request reads
 its merge base's there ([main after a merge](main-after-merge.md)).
 `route release --dry-run`: what would hold the release if it were cut
-now, on the release merge request open, else the branch's tip; every
+now from the branch's tip; every
 step, no agent, nothing applied, said as warnings
 ([the release](release.md)).
 
@@ -84,8 +79,7 @@ step, no agent, nothing applied, said as warnings
   issue, edited only when what it lists changes; `--forge`, `--repo`
   ([main after a merge](main-after-merge.md)).
 - `--release-dry-run <file>`, alone: what `route release --dry-run
-  --json` found, in one comment on the release merge request it judged,
-  else in a part of main's issue; edited only when what it lists
+  --json` found, in a part of main's issue; edited only when what it lists
   changes ([the release](release.md)).
 
 ### workline gate
@@ -230,26 +224,18 @@ kind has any, drawn the same on a rerun.
 
 ### workline follow
 
-Run when the default branch moves (CI's `follow` job,
-[ADR-0034](adr/0034-the-release-fix-follows-its-base.md)), with no agent.
+Run when the default branch moves (CI's `follow` job), with no agent.
 
-- Each open merge request from `workline/<role>/release`
-  ([ADR-0017](adr/0017-the-release-manager.md)) whose base moved under it
-  is rebuilt on the base's new tip and force-pushed, the merge request
-  kept (`rebuilt`):
-  - its change redone file by file, a doc's header key by key, the
-    base's value kept where both changed a key;
-  - one on the tip already is left alone.
-- **Never rebuilt** (`not-rebuilt`, a warning): one holding a commit
-  without the role's `Workline-Role` trailer, or a merge, or that did not
-  leave from the base's history (its merge request goes into another
-  branch).
-- **Left for a person**: one whose change no longer applies
-  (`no-longer-applies`, exit 2).
-- **`--gardening`**, run by gardening's applying job: each other merge
-  request of a role (`workline/<role>/<task>`) is tended too
+- **`--gardening`**, run by gardening's applying job: each merge
+  request of a role (`workline/<role>/<task>`) whose base moved under it
+  is tended
   ([ADR-0034, amended](adr/0034-the-release-fix-follows-its-base.md#amendment-2026-10-12-gardenings-merge-requests-follow-too-or-are-closed)):
-  - rebuilt the same way (`rebuilt`);
+  - rebuilt on the base's new tip and force-pushed, the merge request
+    kept (`rebuilt`): its change redone file by file, a doc's header key
+    by key, the base's value kept where both changed a key; one on the
+    tip already is left alone;
+  - never rebuilt (`not-rebuilt`, a warning) when it did not leave from
+    the base's history (its merge request goes into another branch);
   - closed, one comment saying why (`closed`), when nothing is left to
     merge: the base holds its change, changed the same lines, or changed
     the docs it only records as read (a record whose docs it did not

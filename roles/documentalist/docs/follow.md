@@ -28,8 +28,7 @@ push to the default branch.
 - **Open, into the branch that moved, from this repository**, opened by a
   person.
 - **Left without a word**: workline's own (`workline/…`, kept on the base
-  apart: [at the release](push.md#a-release-tools-pull-request),
-  [gardening](gardening.md#when-the-base-moves)); a bot's — opened by an
+  apart: [gardening](gardening.md#when-the-base-moves)); a bot's — opened by an
   app or a token's user, a release tool's branch (`release.branches`),
   `dependabot/…` or `renovate/…` — which its bot rebuilds. On GitLab, a
   bot is whom the users API calls one: a project or group access token's

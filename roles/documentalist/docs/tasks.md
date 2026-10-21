@@ -34,8 +34,7 @@ pages the reader checks flag: [gardening](gardening.md). Part of [the documental
   context budget.
 - Docs left out are taken in the run's next round, once the first ones are
   applied ([role contract](../../../docs/spec/role-contract.md#one-run),
-  "Again"), or kept in the clone on a release tool's pull request
-  ([push](push.md#a-release-tools-pull-request)); past the last round,
+  "Again"); past the last round,
   they stay suspect for a person or a later run.
 - `ai-max-tokens` caps what a run spends, all calls together: past it, the
   agent is asked nothing more and the rest waits.
@@ -53,8 +52,8 @@ pages the reader checks flag: [gardening](gardening.md). Part of [the documental
 - **Otherwise**: a doc judged on diffs alone, or beside a doc of the same
   task it follows, is told that `checked` cannot move. Its fix leaves it
   and sets `judged`, the judge refusing a move (`checked-unread`), and the
-  doc stays suspect for a person. The same holds for docs due at the
-  release and for stale docs. What the run says of it names what was read
+  doc stays suspect for a person. The same holds for docs due and for
+  stale docs. What the run says of it names what was read
   and what was not ([the judge](judge.md#what-the-finding-says)).
 - **A source that cannot be read** — a file gone, or a section whose
   heading is renamed or removed — is never given as empty: the doc is
@@ -73,7 +72,7 @@ pages the reader checks flag: [gardening](gardening.md). Part of [the documental
 
 ### Every word removed is cited
 
-Every task judging docs — suspect, stale, due at the release, the fix after
+Every task judging docs — suspect, stale, due, the fix after
 the parts — says that every word a patch takes out of a body is cited
 ([ADR-0014, step 2](../../../docs/adr/0014-checked-is-earned-by-what-was-read.md#2-the-mechanical-checks-no-agent);
 [how the judge reads claims](judge-claims.md)):
