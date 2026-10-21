@@ -162,9 +162,8 @@ By upkeep removed per unit of work:
 6. **The documentalist's AI at ready**, a comment with the diff.
 7. **The weekly docs PR**, before the workday.
 8. **Fold main's two runs**: `test.yml`'s findings into `route main`.
-   Built: its findings job removed, 3.8 min a merge; `route main` is
-   the one run, gardening checks the links to other sites with lychee;
-   what code scanning held, main's issue and gardening say.
+   Built: the findings job gone, 3.8 min a merge; lychee at night, in
+   gardening; main's issue and gardening say what code scanning held.
 9. **Forge markers** for what was read (cut 5).
 10. **Remove follow's docs merges**.
 11. **The GitLab child pipeline** for what warns.

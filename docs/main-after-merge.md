@@ -18,13 +18,10 @@ repository, not the change, once
 ([ADR-0050](adr/0050-each-act-has-its-moment-and-a-wait-budget.md#3-the-moment-table)).
 Nobody waits for it; nothing in it holds a merge request.
 
-- **One run**: `route main`, beside the project's own tests; nothing
-  else checks the whole repository after a merge
-  ([ADR-0051](adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#build-order),
-  step 8).
-- **The net after a merge**: no merge request is brought up to date
-  before it merges ([#612](https://github.com/JN0V/workline/pull/612)),
-  so this run is where two changes meet first.
+- **One run, the net**: `route main`, beside the project's tests; no
+  merge request is brought up to date before it merges
+  ([#612](https://github.com/JN0V/workline/pull/612),
+  [ADR-0051](adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#build-order)).
 - **The gates**: those of the merge requests' line (`gate:` steps of
   `merge-request`), every finding read. What the push adds since the
   branch's tip before it counts against their thresholds: two merge
