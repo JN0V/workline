@@ -556,19 +556,6 @@ func checkRange(runDir, repo, rng string) int {
 		return fail(err)
 	}
 	s.allowLists(repo)
-	if inputValue(runDir, "title-only") == "true" {
-		// An edit to the title: it alone is checked again, the commits
-		// read on their push (ADR-0051).
-		title := squashed(repo, rng, s)
-		v := verdict.Verdict{Status: verdict.Pass, Summary: "the title the squash lands is clear", Findings: title}
-		if slices.ContainsFunc(title, func(f verdict.Finding) bool { return f.Level != "warn" }) {
-			v.Status, v.Summary = verdict.Block, "the squash would land a subject the rules refuse: edit the merge request's title"
-		}
-		if err := verdict.Write(filepath.Join(runDir, "out", "verdict.yaml"), &v); err != nil {
-			return fail(err)
-		}
-		return 10
-	}
 	out, err := exec.Command("git", append([]string{"-C", repo, "log", "--format=%h%x1f%B%x1e"}, gitrange.Args(rng)...)...).Output()
 	if err != nil {
 		return fail(fmt.Errorf("cannot read the commits of %s: %v", rng, err))
@@ -608,11 +595,11 @@ func checkRange(runDir, repo, rng string) int {
 	v := verdict.Verdict{Status: verdict.Pass, Summary: "every commit message is clear"}
 	switch blocking := slices.ContainsFunc(title, func(f verdict.Finding) bool { return f.Level != "warn" }); {
 	case len(findings) > 0 && blocking:
-		v = verdict.Verdict{Status: verdict.Block, Summary: "some commit messages need rewriting (git rebase -i), and the title the squash lands"}
+		v = verdict.Verdict{Status: verdict.Block, Summary: "some commit messages need rewriting (git rebase -i), and the title the squash lands: " + titleFix}
 	case len(findings) > 0:
 		v = verdict.Verdict{Status: verdict.Block, Summary: "some commit messages need rewriting (git rebase -i)"}
 	case blocking:
-		v = verdict.Verdict{Status: verdict.Block, Summary: "the squash would land a subject the rules refuse: edit the merge request's title"}
+		v = verdict.Verdict{Status: verdict.Block, Summary: "the squash would land a subject the rules refuse: " + titleFix}
 	}
 	v.Findings = append(findings, title...)
 	v.Findings = append(v.Findings, advisories...)
@@ -627,6 +614,10 @@ func checkRange(runDir, repo, rng string) int {
 	}
 	return 10
 }
+
+// titleFix is how a refused title is fixed: an edit to the title runs no
+// check, so the job is run again by hand, or by a push (ADR-0051).
+const titleFix = "edit the merge request's title, then re-run this job (one click) or push"
 
 // squashed checks, by the same rules, the subject a squash would land on
 // the base (ADR-0051): the merge request's title, or its one commit's

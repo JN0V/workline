@@ -10,5 +10,5 @@ run: {role: committer, event: merge-request, input: {range: "base..HEAD"}, targe
 expect:
   status: block
   agent-calls: 0
-  summary: "edit the merge request's title"
+  summary: "edit the merge request's title, then re-run this job (one click) or push"
   findings: [{rule: subject-length, where: title, message: "75 characters, over the limit of 72"}]
