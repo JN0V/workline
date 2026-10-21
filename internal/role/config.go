@@ -91,7 +91,7 @@ func CheckConfig(data []byte) error {
 var Retired = map[string]string{
 	"release-manager": "the release-manager role is retired: workline cuts no releases, it works with the release tool a project has " +
 		"(docs/adr/0017-the-release-manager.md, ADR-0017). Release with one — release-please, release-plz, releaser-pleaser, " +
-		"semantic-release or changesets; GoReleaser to publish — and route `release: [documentalist]` before it",
+		"semantic-release or changesets; GoReleaser to publish — and route the project's release gates on `release` before it, if any",
 }
 
 // notRetired refuses a config naming a retired role — its settings, a step

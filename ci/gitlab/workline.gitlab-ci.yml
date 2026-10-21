@@ -420,7 +420,9 @@ workline:merge:
   environment: *environment
   variables: {GIT_DEPTH: 0}         # the whole history, as .workline
   rules:
-    - if: $CI_PIPELINE_SOURCE == "schedule" && $WORKLINE_TASK != "sample"
+    # A schedule left from before ADR-0051 (WORKLINE_TASK=release-docs) runs
+    # no gardening: delete it (docs/ci-gitlab.md).
+    - if: $CI_PIPELINE_SOURCE == "schedule" && $WORKLINE_TASK != "sample" && $WORKLINE_TASK != "release-docs"
   before_script:                    # one shell with the script: a job without the bot's token stops here
     - *bot-token
     - *trust
@@ -449,7 +451,7 @@ workline:garden:apply:
   stage: deploy
   needs: [workline:garden:judge]
   rules:                            # also when the judge failed: what passed before a step blocked is applied (#142)
-    - if: $CI_PIPELINE_SOURCE == "schedule" && $WORKLINE_TASK != "sample"
+    - if: $CI_PIPELINE_SOURCE == "schedule" && $WORKLINE_TASK != "sample" && $WORKLINE_TASK != "release-docs"
       when: always
   script:
     - *bot

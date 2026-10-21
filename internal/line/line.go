@@ -233,6 +233,13 @@ func RunWith(event string, base engine.Options, gates *Gates) *Result {
 		if skip || gates.Only && !isGate || warnOnly && (isGate || !apartOn(base.RolesDir, name, event)) {
 			continue
 		}
+		// A routing written before ADR-0051 still names the documentalist
+		// on release: the step is skipped and said, never a release held.
+		if r, err := role.Load(base.RolesDir, name); event == "release" && !isGate && err == nil && !r.Accepts(event) {
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "step-skipped", Level: "warn", Where: name,
+				Message: fmt.Sprintf("the role %s does not run on release: step skipped; remove it from routing.events.release (ADR-0051)", name)})
+			continue
+		}
 		considered++
 		if isGate {
 			s := gates.step(base.Repo, g, event, gatesRange)

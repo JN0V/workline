@@ -1989,6 +1989,9 @@ func sortedKeys(m map[string]string) []string {
 func edge(s Settings, from, to string) string {
 	for _, e := range s.Propagation {
 		if match(e.From, from) && match(e.To, to) {
+			if e.When == "release" { // the documentalist no longer runs there (ADR-0051): gardening
+				return "schedule"
+			}
 			return e.When
 		}
 	}
@@ -2666,7 +2669,7 @@ func trackingIssue(findings []verdict.Finding) (intent.Intention, bool) {
 			fmt.Fprintf(&list, "- `%s` — %s\n", f.Where, why)
 		}
 	}
-	value := map[string]any{"title": "Docs due later", "sticky": true}
+	value := map[string]any{"title": "Docs due later", "sticky": true, "was": "Docs due at the next release"}
 	if list.Len() == 0 {
 		value["body"], value["update-only"] = "Nothing is due: every doc that follows another is up to date.", true
 	} else {

@@ -2161,8 +2161,19 @@ func (a *applier) apply(in intent.Intention) error {
 				return err
 			}
 			only, _ := m["update-only"].(bool)
-			_, err := a.forge.KeepIssue(title, body+fmt.Sprintf("\n\nKept up to date by the %s role.", a.role), !only)
-			return err
+			if _, err := a.forge.KeepIssue(title, body+fmt.Sprintf("\n\nKept up to date by the %s role.", a.role), !only); err != nil {
+				return err
+			}
+			// The title it had before (`was`): that issue, still open,
+			// says the new one and is closed.
+			if was, _ := m["was"].(string); was != "" {
+				id, err := a.forge.KeepIssue(was, fmt.Sprintf("Renamed: the %s role keeps this list in the issue %q now.", a.role, title), false)
+				if b, ok := a.forge.(forge.Backlog); err == nil && ok && id != 0 {
+					err = b.Close(id, 0)
+				}
+				return err
+			}
+			return nil
 		}
 		if err := a.needForge("issue"); err != nil {
 			return err

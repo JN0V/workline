@@ -113,6 +113,8 @@ weekly, on main. The release never waits for the docs
   `workline:release:dry-run`, no agent, no token, then
   `workline:release:dry-run:post`, the bot's token: what would hold the
   release if it were cut now, in main's issue ([how](release.md)).
+- **Upgrading**: delete a schedule with `WORKLINE_TASK=release-docs`,
+  left from an older template; it runs nothing now.
 
 ### 4. The weekly sample
 

@@ -18,7 +18,9 @@ doc suspect, and so on.
 
 - Only the edges marked `now` are handled inside the change.
 - Every other suspect goes on a pending list — one tracking issue, updated
-  in place — with the moment it is due: gardening (`schedule`) by default.
+  in place — with the moment it is due: gardening (`schedule`) by default;
+  an edge naming `release`, written before the release stopped waiting
+  for the docs, is read as `schedule`.
 - At that moment, each doc due becomes the `propagate` task: brought up
   to date for its reader, growing when the reader gained something to
   know. A doc due never blocks; one left as it was waits for the next
