@@ -164,6 +164,8 @@ and `apply`, with the App, commits the fix to its branch,
   lines, none a conversation; a refusal, said.
 - The product owner's issues: read when judging, write when applying —
   the gardening template gives both.
+- A GitHub call that fails for a moment is tried again first, a write
+  only when GitHub did not take it ([which](github/calls.md)).
 - **The sample**: the judge is the repository variable `WORKLINE_JUDGE`,
   or the `sample.judge` setting; its reading job reads the issues and pull
   requests, for every role's acts. For another week than the last whole

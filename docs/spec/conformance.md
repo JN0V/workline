@@ -86,7 +86,12 @@ What else a case can give, run and expect, and how each is checked, is in
 - **Fake gh.** `fixtures/gh/gh` stands for GitHub's CLI, for a case that
   runs GitHub's own forge code (`forge: github`): a pull request, a
   commit's check runs and a merge request's comments, each call numbered
-  in `$GH_LOG` with the annotations it sent, for `files` to check.
+  in `$GH_LOG` with the annotations it sent, for `files` to check; with
+  `--include`, each answer after its status and headers, as gh prints
+  them. `$GH_FAULT` (`"POST issues/1/comments 502"`) fails a call for a
+  moment: a status (502, 503, 429, 403 for the rate) or `stall`, a write
+  taken all the same; `$GH_FAULT_TIMES` calls (1, 0 all), and a call
+  sooner than `$GH_FAULT_RETRY_AFTER` refused again, said in the log.
 - **Unavailable agent.** `unavailable:quota` (or `auth`, `network`) fails the
   way a real agent does when a quota runs out.
 - **Command forge.** `cmd:sh "$FIXTURES/forges/logged.sh"` plugs a script

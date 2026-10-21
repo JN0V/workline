@@ -1,0 +1,31 @@
+case: forge/github-write-answered-late-not-sent-again
+about: "A GitHub write that gets no answer may have been taken: the comment GitHub took, answered too late, is posted once, never sent again; the failure says so (#491). GitHub's own forge code, a fake gh."
+given:
+  repo: linted
+  engine-tags: [workline_quick]
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - git checkout -q -b change
+    - "printf 'package main\n\nimport \"os\"\n\nfunc clean() {\n\tos.Remove(\"f\")\n}\n' > clean.go && git add clean.go && git commit -qm 'feat: clean' && git push -q origin change"
+  env: {PATH: "$FIXTURES/bin:$PATH"}
+  config:
+    routing: {events: {merge-request: ["gate:merge"]}}
+    gates: {merge: {checks: [{id: lint, run: "golangci-lint run --output.sarif.path={out}/lint.sarif", output: sarif, max: {error: 0}}]}}
+run:
+  route: merge-request
+  input: {range: main..change}
+  gates-only: true
+  forge: github
+  then: resume
+  apply-from:
+    merge-request: 1
+    base: main
+    head: change
+    gates: true
+    env: {PATH: "$FIXTURES/gh:$PATH", GH_LOG: .git/gh.log, GH_FAULT: "POST issues/1/comments stall"}
+expect:
+  findings: [{rule: gates-not-shown, message: "no answer within 2 s (a write: not sent again, GitHub may have taken it)"}]
+  files:
+    .git/gh.log:
+      contains: ["POST issues/1/comments: comment 1", "POST issues/1/comments: stalled"]
+      lacks: ["comment 2"]
