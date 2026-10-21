@@ -913,7 +913,11 @@ func runCase(t *testing.T, c *caseFile) []string {
 	}
 	if c.Run.Then == "judged-twice" || c.Run.Then == "applied-between" {
 		var p []string
-		if r, p = pushedBeforeApplied(c, engineBin, args, cmd.Env, repo, forgeSpec, r); len(p) > 0 {
+		var gatesAgain func() []string // the gates' job of the new head, as CI runs it on each push
+		if c.Run.GatesJob != nil {
+			gatesAgain = gatesJobRun
+		}
+		if r, p = pushedBeforeApplied(c, engineBin, args, cmd.Env, repo, forgeSpec, r, gatesAgain); len(p) > 0 {
 			return p
 		}
 	}
@@ -1487,10 +1491,11 @@ func readPending(t *testing.T) map[string]bool {
 // (#375): `pushed`, the same run judged again on the new head, both
 // applied, the first first; `judged-twice` judges both before applying,
 // `applied-between` applies the first before the second judges. With
-// apply-from, each --head is the head its run judged. The result is the
-// last apply's; the calls, both judges'; the findings, all four's
-// (docs/spec/conformance/cases.md).
-func pushedBeforeApplied(c *caseFile, engineBin string, args, env []string, repo, forgeSpec string, first result) (result, []string) {
+// apply-from, each --head is the head its run judged; with gatesAgain,
+// the gates' job runs on the new head before the second judges. The
+// result is the last apply's; the calls, both judges'; the findings, all
+// four's (docs/spec/conformance/cases.md).
+func pushedBeforeApplied(c *caseFile, engineBin string, args, env []string, repo, forgeSpec string, first result, gatesAgain func() []string) (result, []string) {
 	exe := func(dir string, cmdArgs ...string) (result, []string) {
 		cmd := exec.Command(engineBin, cmdArgs...)
 		cmd.Dir, cmd.Env = dir, env
@@ -1547,6 +1552,11 @@ func pushedBeforeApplied(c *caseFile, engineBin string, args, env []string, repo
 	judge := func() (result, []string) {
 		if _, p := git("checkout", "-q", "--detach", heads[1]); p != nil {
 			return result{}, p
+		}
+		if gatesAgain != nil {
+			if p := gatesAgain(); len(p) > 0 {
+				return result{}, p
+			}
 		}
 		return exe(repo, args...)
 	}

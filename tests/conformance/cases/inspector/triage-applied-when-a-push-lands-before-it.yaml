@@ -1,0 +1,58 @@
+case: inspector/triage-applied-when-a-push-lands-before-it
+about: >
+  A push lands while the run apart before it waits to be applied (#580).
+  The push's run apart waits for that apply: one lock a pull request,
+  which the run apart and the applying job share. The apply, as GitHub's
+  job of the base runs it, finds the branch moved on from the head its
+  run judged: the triage of that head is posted, its comment and the
+  record in it, said; never anything else. The push's run reads that
+  record: only the new finding is put to the agent, the two triaged
+  before named for their place in the order only (ADR-0013).
+given:
+  repo: linted
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - git checkout -q -b change
+    - |
+      sed -i 's|^\tos.Remove("c.tmp")$|&\n\tos.Remove("d.tmp")|' clean.go
+      printf 'package main\n\nimport "os"\n\n// scratch writes a temporary file and removes it on the way out.\nfunc scratch() {\n\tf, _ := os.CreateTemp("", "scratch")\n\tdefer os.Remove(f.Name())\n}\n' > cleanup.go
+      git add . && git commit -qm "feat: clean d too, and a scratch file" && git push -q origin change
+  forge: {merge-requests: [{id: 1, branch: change, labels: [], comments: []}]}
+  config:
+    routing: {events: {merge-request: [committer, "gate:merge", inspector]}}
+    gates: {merge: {checks: [{id: lint, run: "golangci-lint run --output.sarif.path={out}/lint.sarif", output: sarif, max: {error: 0}}]}}
+run:
+  route: merge-request
+  warn-only: true
+  no-apply: true
+  then: applied-between
+  pushed:
+    - |
+      sed -i 's|^\tos.Remove("b.tmp")$|&\n\tos.Remove("e.tmp")|' clean.go && git commit -qam "feat: clean e too" && git push -q origin change
+  apply-from: {merge-request: 1, base: main}
+  gates-job: {env: {PATH: "$FIXTURES/bin:$PATH"}}
+  input: {range: main..change}
+  target: {merge-request: 1}
+  ai: "cmd:sh $FIXTURES/agents/triage.sh"
+expect:
+  status: pass
+  findings:
+    - {rule: moved-on, level: warn, where: change, message: "only the review of that head applied (comment)"}
+  # One call a run: the push's asks the new finding alone.
+  agent-calls: 2
+  run-files:
+    in/parts/triage/task.md:
+      contains:
+        - "## t1 — `errcheck (golangci-lint)`, clean.go:9 (error)"
+        - "## Triaged before, still new at the head"
+        - "- r1 — `errcheck (golangci-lint)`, clean.go:11: an unchecked os.Remove"
+        - "- r2 — `errcheck (golangci-lint)`, cleanup.go:8: the deferred os.Remove cleans a temporary file on the way out (likely a false positive)"
+  forge:
+    merge-requests:
+      - id: 1
+        comments: 1
+        comment-contains:
+          - "the gates' 3 new findings at"
+          - ": 3 triaged, 1 likely a false positive."
+          - "1. **`errcheck (golangci-lint)`** at `clean.go:9`"
+          - "3. **`errcheck (golangci-lint)`** at `cleanup.go:8`: **likely a false positive**"
