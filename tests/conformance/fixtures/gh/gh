@@ -1,18 +1,11 @@
 #!/bin/sh
 # A fake gh, for the cases that run GitHub's own forge code: `gh api` on a
 # pull request (from $GH_HEAD_REF, else change, into main), a commit's
-# check runs and a merge request's comments. Each call is
-# numbered in $GH_LOG with what it sent, the annotations counted; what it
-# keeps is beside the log. Any other call is refused, and said. With
-# --include, each answer is printed after its status and headers, as gh
-# 2.102 prints them.
-#
-# $GH_FAULT fails a call for a moment, as GitHub can: "<method> <path>
-# <status>", the status 502, 503, 429 or 403 (GitHub's secondary rate
-# limit), or stall: no answer until the engine gives up, a write taken
-# all the same. $GH_FAULT_TIMES calls fail (1 when not set, 0 all), then
-# they are answered; $GH_FAULT_RETRY_AFTER seconds are asked, and a call
-# sooner gets the status again, said in the log ("sooner than asked").
+# check runs and a merge request's comments. Each call is numbered in
+# $GH_LOG with what it sent; what it keeps is beside the log. Any other
+# call is refused, and said. With --include, each answer comes after its
+# status and headers, as gh prints them. $GH_FAULT fails a call for a
+# moment: docs/spec/conformance.md, "Fake gh".
 set -eu
 log=${GH_LOG:?GH_LOG names the log}
 state=$log.state
