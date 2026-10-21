@@ -92,7 +92,8 @@ type Run struct {
 	Found    []Found           `json:"found"`           // every new finding of the gates, triaged or not
 	Asked    []string          `json:"asked,omitempty"` // the fingerprints put to the agent this run
 	Record   Record            `json:"record"`
-	Local    bool              `json:"local"` // the record is kept on this machine
+	Read     string            `json:"read,omitempty"` // the record as the run read it: the apply merges the comment's with it (#580)
+	Local    bool              `json:"local"`          // the record is kept on this machine
 	Status   string            `json:"status"`
 	Summary  string            `json:"summary"`
 	Findings []verdict.Finding `json:"findings,omitempty"`
@@ -152,6 +153,7 @@ func prepare(runDir, repo string, s Settings) int {
 		rec = Record{}
 	}
 	run.Record = rec
+	run.Read, _ = rec.lines(nil, 1<<30)
 	var fresh []Found
 	t, r := 0, 0
 	for i, f := range run.Found {
@@ -347,8 +349,10 @@ func settled(runDir string, s Settings, run Run) int {
 	if !run.Local {
 		body := comment(run, shown)
 		// Nothing triaged to show: only a comment an earlier push left is
-		// edited, never one opened to say nothing.
-		value := map[string]any{"sticky": stickyKey, "body": body}
+		// edited, never one opened to say nothing. With the record the run
+		// read, which the apply merges with the one the comment holds by
+		// then, a run applied since having written it (#580).
+		value := map[string]any{"sticky": stickyKey, "body": body, "read": run.Read}
 		if len(shown) == 0 {
 			value["update-only"] = true
 		}
