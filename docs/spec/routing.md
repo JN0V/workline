@@ -1,6 +1,6 @@
 ---
 sources: [internal/line, internal/routing, internal/work, routing.default.yaml]
-checked: b03872f2
+checked: f34d3dbe
 verified: agent:claude-code
 ---
 # Routing — v1 (draft)
@@ -110,7 +110,8 @@ checks and the commit statuses, workline's own left out, and a workflow that
 could not start counts red; on GitLab, the
 newest pipeline of the tip no schedule started. What could not be read is
 `release-holds-unread`, a block; with no forge, or one that says nothing of
-releases, a warning. The line's summary ends with `the release held: …`.
+releases, a warning, as is a merge request with no `--branch` the forge does
+not say is a release tool's. The line's summary ends with `the release held: …`.
 Not read by `--gates-only`, `--warn-only`, a queue's run, nor the night's
 release judging.
 
