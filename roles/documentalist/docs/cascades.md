@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/documentalist.go, roles/documentalist/role.yaml]
-checked: affb7424
+checked: c2e40104
 verified: agent:claude-code
 judged-in-parts: c7e1e98
 ---

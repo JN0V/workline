@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/freshness.go, internal/builtin/documentalist/dedupe.go, internal/builtin/documentalist/mergecard.go, internal/builtin/documentalist/waiting.go, internal/builtin/documentalist/condense.go, internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/kept.go]
-checked: d6079370
+checked: c2e40104
 verified: agent:claude-code
 ---
 # Documentalist — the gardening tasks
