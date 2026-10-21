@@ -267,8 +267,11 @@ func readerDeclined(repo string, w waiting, pages map[string]string) (map[string
 			}
 		}
 	}
-	var closings forge.Closings // a forge that tells workline's close from a person's
-	if f, err := forge.Open(os.Getenv("WORKLINE_FORGE"), repo); err == nil {
+	// A forge that tells workline's close from a person's; one that could
+	// not be opened is said where it was needed.
+	var closings forge.Closings
+	f, unopened := forge.Open(os.Getenv("WORKLINE_FORGE"), repo)
+	if unopened == nil {
 		closings, _ = f.(forge.Closings)
 	}
 	var unread []string
@@ -303,8 +306,11 @@ func readerDeclined(repo string, w waiting, pages map[string]string) (map[string
 				held = append(held, p)
 			}
 		}
-		if len(held) > 0 && closings != nil {
-			ours, err := closings.ClosedWith("workline/documentalist/"+task, forge.Marker("closed"))
+		if len(held) > 0 && (closings != nil || unopened != nil) {
+			ours, err := false, unopened
+			if err == nil {
+				ours, err = closings.ClosedWith("workline/documentalist/"+task, forge.Marker("closed"))
+			}
 			switch {
 			case err != nil:
 				unread = append(unread, fmt.Sprintf("whether workline closed workline/documentalist/%s itself could not be read (%v): its pages are not read again until they change, as after a person's close", task, err))
