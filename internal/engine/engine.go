@@ -783,6 +783,10 @@ func run(o Options, res *Result) error {
 	return applyAll(r, settings, st, runDir, intents, res)
 }
 
+// renamedIssues are the issues workline keeps whose title changed, by the
+// new title: the documentalist's tracking issue (ADR-0051).
+var renamedIssues = map[string]string{"Docs due later": "Docs due at the next release"}
+
 // prepared reads pre's exit code: stop is true when the run ends there, with
 // no question for the agent or an outside service failed.
 func prepared(code int, r *role.Role, cfg *role.ProjectConfig, runDir string, res *Result) (stop bool, err error) {
@@ -2164,9 +2168,10 @@ func (a *applier) apply(in intent.Intention) error {
 			if _, err := a.forge.KeepIssue(title, body+fmt.Sprintf("\n\nKept up to date by the %s role.", a.role), !only); err != nil {
 				return err
 			}
-			// The title it had before (`was`): that issue, still open,
-			// says the new one and is closed.
-			if was, _ := m["was"].(string); was != "" {
+			// The one issue workline renamed (ADR-0051): kept under its new
+			// title, the old one, still open, says so and is closed. Only
+			// this title, known here, never one an answer names.
+			if was := renamedIssues[title]; was != "" {
 				id, err := a.forge.KeepIssue(was, fmt.Sprintf("Renamed: the %s role keeps this list in the issue %q now.", a.role, title), false)
 				if b, ok := a.forge.(forge.Backlog); err == nil && ok && id != 0 {
 					err = b.Close(id, 0)

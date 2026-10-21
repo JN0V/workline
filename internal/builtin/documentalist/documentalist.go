@@ -2669,7 +2669,7 @@ func trackingIssue(findings []verdict.Finding) (intent.Intention, bool) {
 			fmt.Fprintf(&list, "- `%s` — %s\n", f.Where, why)
 		}
 	}
-	value := map[string]any{"title": "Docs due later", "sticky": true, "was": "Docs due at the next release"}
+	value := map[string]any{"title": "Docs due later", "sticky": true}
 	if list.Len() == 0 {
 		value["body"], value["update-only"] = "Nothing is due: every doc that follows another is up to date.", true
 	} else {

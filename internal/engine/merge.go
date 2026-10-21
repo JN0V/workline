@@ -722,6 +722,9 @@ func weigh(f forge.Forge, m forge.Merger, o FollowOptions, local bool, mr forge.
 	}
 	ours := st.AutoMerge && st.AutoMergeBot && !later(yes.Created, st.AutoMergeAt)
 	switch v.class {
+	case "held":
+		// A verdict kept before ADR-0051, a release held for its docs: the
+		// release no longer waits for them, so it reads as a pass, below.
 	case "":
 		say("verdict-missing", "", fmt.Sprintf("accepted by %s; no verdict of the line on its head (%s) yet: it waits for it", by, short(tip)))
 		return e, nil
