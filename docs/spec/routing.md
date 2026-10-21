@@ -236,7 +236,7 @@ release if it were cut now ([how](../release.md)):
   result's `dry-run` (`holds`, `head`, `since`); then
   lowered to a warning. The line passes.
 - **Refused** (misuse, 64): another event, an agent named, `--target`,
-  `--open-merge-request`, `--push-to-merge-request`, `--verdict`, the
+  `--open-merge-request`, `--verdict`, the
   gates alone or read, `--warn-*`.
 - **Posted** by `apply --release-dry-run`: a part of main's issue,
   edited when what it lists changes, taken out when nothing holds.

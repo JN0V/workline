@@ -9,7 +9,7 @@ given:
     merge-requests: [{id: 1, branch: feature, base: main, labels: [], comments: []}]
     token-user: project_1_bot_0a1b
     members-refused: 401
-run: {role: documentalist, event: merge-request, target: {merge-request: 1}, ai: 'cmd:sh "$FIXTURES/agents/judged-only.sh"', push-to-merge-request: true, forge: gitlab, then: again, summary: true}
+run: {role: documentalist, event: merge-request, target: {merge-request: 1}, ai: 'cmd:sh "$FIXTURES/agents/judged-only.sh"', forge: gitlab, then: again, summary: true}
 expect:
   status: pass
   agent-calls: 1

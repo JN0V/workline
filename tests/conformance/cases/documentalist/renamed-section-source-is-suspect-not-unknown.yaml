@@ -1,0 +1,11 @@
+case: documentalist/renamed-section-source-is-suspect-not-unknown
+about: "A doc naming a section of a doc renamed since its `checked` (docs/tech/auth.md become docs/tech/tokens.md) is due to follow it, not a check that could not run: the run passes, and the other docs' fixes are not held with it (the sandbox's gardening, 2026-10-21)."
+given:
+  repo: documented
+  setup:
+    - "git mv docs/tech/auth.md docs/tech/tokens.md && sed -i 's|docs/tech/auth.md#token-refresh|docs/tech/tokens.md#token-refresh|' docs/product/sign-in.md && git commit -qam 'docs: name the auth page after tokens'"
+run: {role: documentalist, event: schedule, ai: none}
+expect:
+  status: pass
+  findings: [{rule: due, where: docs/product/sign-in.md, message: "docs/tech/tokens.md#token-refresh changed since it was checked"}]
+  no-findings: [{rule: unknown}]

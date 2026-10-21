@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/line, internal/hooks, internal/forge/gitlab.go, ci/gitlab/workline.gitlab-ci.yml, ci/github/workline.yml, ci/github/workline-gardening.yml, ci/github/workline-sample.yml, routing.default.yaml]
-checked: 582ca3c7
+checked: ea95db01
 verified: agent:claude-code
 reader: 2de353fab113
 ---
@@ -58,7 +58,7 @@ Each event that writes runs in two jobs
 The committer, the documentalist, the reviewer if routed; one run at a time ([#359](https://github.com/JN0V/workline/issues/359)):
 
 ```sh
-workline route merge-request --ai "$ai" --no-apply --push-to-merge-request \
+workline route merge-request --ai "$ai" --no-apply \
   --forge gitlab --target merge-request:<iid> --branch <source-branch> \
   --input range=<base-sha>..<head-sha> --code-quality gl-code-quality.json --json > line.json
 workline apply --line line.json          # second job: commits the doc fixes to the branch
@@ -229,7 +229,7 @@ role that blocks names to say why, such as its comments
 - **On the forge**: a comment on the merge request (the documentalist's list
   for a person, the reviewer's summary), edited on each run; the
   reviewer's findings on their lines, in the forge's review; doc fixes
-  committed to its branch (`Workline-Role: documentalist`); gardening's
+  as a diff in a comment, nothing pushed to its branch; gardening's
   merge requests on `workline/<role>/<task>`; issues (the product owner's comment and
   label `workline:proposed` on each issue it proposes on; the sample's
   tracking issues, the docs' and the product owner's acts'; a reviewer's

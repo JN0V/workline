@@ -1,6 +1,6 @@
 ---
 sources: [roles/documentalist/role.yaml, internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/kept.go, routing.default.yaml]
-checked: 8e3fad75
+checked: 8ccdfb74
 judged: f70db89
 verified: agent:claude-code
 ---
@@ -12,10 +12,10 @@ flowchart LR
   when["<b>When</b><br/>git push: the pre-push hook<br/>each push to a merge request<br/>after a merge<br/>gardening, nightly or weekly<br/>workline init, workline docs"]
   reads["<b>Reads</b><br/>each doc's sources and checked<br/>the commits since<br/>the code they name"]
   role(["Documentalist"])
-  alone["<b>Alone</b><br/>counts the docs a push made suspect<br/>on a merge request: fixes a doc<br/>or vouches for it, on its branch"]
+  alone["<b>Alone</b><br/>counts the docs a push made suspect<br/>on a merge request: lists the docs it made suspect<br/>proposes their fix, never pushed"]
   proposed["<b>Proposed</b><br/>workline docs: each fix, kept or dropped<br/>gardening: a merge request a task<br/>workline init: each doc's sources"]
   person["<b>Left to a person</b><br/>a doc it cannot judge<br/>code that disagrees with a decision"]
-  out["<b>Lands in</b><br/>a commit on the merge request<br/>merge requests of its own<br/>one comment, issues"]
+  out["<b>Lands in</b><br/>a comment on the merge request<br/>merge requests of its own<br/>one comment, issues"]
   when --> role
   reads --> role
   role --> alone --> out
@@ -48,7 +48,7 @@ doc by doc), or make a push wait on an agent.
 | Event | Fired by | Does |
 |---|---|---|
 | `pre-push` | the global hook, when routed | counts the docs the pushed commits made suspect, reading no other doc, no agent |
-| `merge-request` | CI | judges the docs the merge request made suspect, reading no other doc; fix committed to its branch; a draft: counts them, judged once it is ready |
+| `merge-request` | CI | judges the docs the merge request made suspect, reading no other doc; its fix in a comment, nothing pushed; a draft: counts them, judged once it is ready |
 | `main` | CI, after each merge | the whole repository's checks, no agent, in one issue ([more](../../docs/main-after-merge.md)) |
 | `schedule` | CI, nightly or weekly (gardening) | every suspect or stale doc, the docs due, budgets, links, reader checks; one merge request per task |
 | `init` | `workline init` | proposes each doc's `sources`, for you to review |
@@ -96,8 +96,12 @@ Under `roles: {documentalist: {settings: …}}` in `.workline/config.yaml`
   docs` proposes changes in the working tree, then one `docs:` commit.
 - On a merge request:
   - one comment listing what is left for a person, edited on each run;
-  - the fix committed to the branch (`Workline-Role: documentalist`);
-    from a fork, the diff in a comment;
+  - the fix as a diff in one comment, to apply; nothing pushed to the
+    branch, no `checked` moved there ([ADR-0051](../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-3-no-docs-obligation-per-pr));
+  - a pull request need not leave no doc suspect: once merged, gardening's
+    docs pull request moves `checked` of those whose sources fit a task
+    whole, nightly until the weekly one; the others wait for parts or a
+    person;
   - a doc found with nothing to fix gets no commit: its record waits in a
     comment, and gardening writes it on main once merged
     ([more](docs/push.md#a-doc-found-with-nothing-to-fix-no-commit));
@@ -143,9 +147,10 @@ Under `roles: {documentalist: {settings: …}}` in `.workline/config.yaml`
 
 ## Without AI
 
-Every check still runs. Suspect docs are listed for a person, who clears
-each by moving `checked` after reading it; on a merge request, in one
-comment. Gardening only regenerates derived blocks.
+Every check still runs. Suspect docs are listed for a person, who may
+clear each by moving `checked` after reading it; on a merge request, in
+one comment, as information, never holding the merge. Gardening only
+regenerates derived blocks.
 
 ## How it works
 

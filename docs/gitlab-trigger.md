@@ -1,6 +1,6 @@
 ---
 sources: [ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile]
-checked: 582ca3c7
+checked: ea95db01
 judged: bf016b7
 verified: agent:claude-code
 ---
@@ -41,7 +41,8 @@ forge.
 GitLab sets `CI_PIPELINE_SOURCE`: `trigger` (a trigger token), `api` (the
 pipelines API), `pipeline` (another project's `trigger:` job),
 `parent_pipeline` (a child pipeline) — never `schedule` nor
-`merge_request_event`, so none of the template's jobs run. The tool passes
+`merge_request_event`, so none of the template's jobs run but in its own
+child of a merge request's pipeline, what only warns. The tool passes
 what to do as variables. The names below are this page's; the engine reads
 none of them:
 
@@ -130,7 +131,7 @@ status=0
 case "$step:$WORKLINE_TASK" in
   judge:merge-request)
     git fetch --quiet origin "$MR_BASE_SHA"
-    workline route merge-request --ai "$ai" --no-apply --push-to-merge-request --forge gitlab \
+    workline route merge-request --ai "$ai" --no-apply --forge gitlab \
       --target "merge-request:$MR_IID" --branch "$MR_SOURCE_BRANCH" \
       --input "range=$MR_BASE_SHA..$CI_COMMIT_SHA" ${MR_READY:+--input lenses=all} ${MR_DRAFT:+--input draft=$MR_DRAFT} \
       --code-quality gl-code-quality.json --verdict workline-verdict.json $sum --json > line.json || status=$? ;;

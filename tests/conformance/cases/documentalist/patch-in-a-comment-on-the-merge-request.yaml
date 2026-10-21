@@ -1,0 +1,15 @@
+case: documentalist/patch-in-a-comment-on-the-merge-request
+about: "On a merge request, the doc the change made wrong is fixed in one comment, a diff for its author to apply: workline pushes nothing to the merge request's branch, not even a move of `checked` (ADR-0051)."
+given:
+  repo: documented
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb feature && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin feature && git checkout -q --detach"
+  forge: {merge-requests: [{id: 1, branch: feature, labels: [], comments: []}]}
+run: {role: documentalist, event: merge-request, target: {merge-request: 1}, ai: "fake:doc-fixed"}
+expect:
+  status: pass
+  applied: [patch]
+  findings: [{rule: patch-as-comment, message: "pushes nothing"}]
+  not-pushed: [feature]
+  forge: {merge-requests: [{id: 1, comments: 1, comment-contains: ["+Access tokens last two hours.", "+checked:"]}]}

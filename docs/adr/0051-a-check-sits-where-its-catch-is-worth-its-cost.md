@@ -1,10 +1,11 @@
 # ADR-0051: A check sits where its catch is worth its cost
 
-- **Status:** accepted; steps 1, 2, 5, 8, 9 and 12 built ([ADR-0013],
+- **Status:** accepted; steps 1, 2, 5, 8, 9, 11 and 12 built ([ADR-0013],
   [ADR-0042] and
   [ADR-0020](0020-the-reviewer-finds-the-engine-verifies-the-person-merges.md#amendment-2026-10-21-adr-0051-cut-4-no-fix-round-for-nits),
   amended); step 3's removal of the release's docs built ([ADR-0010],
-  [ADR-0017], [ADR-0034] amended); the rest not yet
+  [ADR-0017], [ADR-0034] amended); step 4 built ([ADR-0010] amended);
+  the rest not yet
   ([the build order](#build-order)); one point open, one decided
   ([open](#open))
 - **Date:** 2026-10-21
@@ -176,6 +177,8 @@ By upkeep removed per unit of work:
    and its issue counts red mains a week; [ADR-0042] amended.
 3. **The release** (cut 1): 130 red heads, most of 61 docs PRs.
 4. **Stop stamps on PRs**: no `--push-to-merge-request`; 69 rounds.
+   Built: the flag removed; on a merge request the patches go in one
+   comment; [ADR-0010] amended.
 5. **No rounds for nits** (cut 4): up to 93 rounds.
 6. **The documentalist's AI at ready**, a comment with the diff.
 7. **The weekly docs PR**, before the workday.
@@ -186,7 +189,12 @@ By upkeep removed per unit of work:
    no skip on a change to what the PR's own pipeline runs. Built ([ADR-0013]
    amended); the forge's markers left, why in cut 5.
 10. **Remove follow's docs merges**.
-11. **The GitLab child pipeline** for what warns.
+11. **The GitLab child pipeline** for what warns. Built:
+    `workline:warn:child` starts `workline:warn` and `workline:warn:apply`
+    in a child pipeline of the same file, after the gates, with no
+    `strategy`; `workline:warn` reads the gates' result with the bot's
+    token, which GitLab's `needs:pipeline:job` does not give for a failed
+    job ([CI on GitLab](../ci-gitlab.md#what-the-template-does)).
 12. **The squash title** at the merge request. Built: the committer's
     rules on the subject a squash lands, ` (#N)` left room, when the
     forge's settings allow a squash; a refused title says to edit it, then

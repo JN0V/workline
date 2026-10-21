@@ -3,7 +3,7 @@
 - **Status:** accepted; built 2026-10-01; amended 2026-10-02 (where the
   merge requests go); amended 2026-10-17 (the commit a merge request
   became stands for its record); amended 2026-10-21 (the release no
-  longer waits for the docs)
+  longer waits for the docs; nothing pushed to a merge request)
 - **Date:** 2026-09-30
 - **Supersedes:** ADR-0007 on judging at the push (`d`, the docs listed in
   the question). Its range, the review per doc and the push approval stay.
@@ -135,3 +135,22 @@ to: the record never went through one.
   above; a product doc following a technical one is due at gardening.
 - **A solo project with no CI** is caught up by `workline docs`; the
   doctor says the docs are judged nowhere else.
+
+## Amendment (2026-10-21): nothing pushed to a merge request
+
+[ADR-0051](0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-3-no-docs-obligation-per-pr)'s
+step 4, built:
+
+- **On each merge request**, the fix is no longer a `docs:` commit on
+  its branch: it is a diff in one comment, for its author to apply. No
+  `checked` is moved there.
+- **A merge request need not leave no doc suspect**: the docs it made
+  suspect are said, never holding the merge; its author fixes the prose
+  the change made wrong.
+- **Their `checked` moves at gardening**, in its docs merge request, once
+  merged: nightly, until the weekly docs merge request (ADR-0051, step 7);
+  only for a doc whose sources fit a task whole. Tried on 2026-10-21, on
+  workline's main with this step merged, 85 docs suspect, a scripted
+  agent vouching for each it could: 5 rounds, 21 min, `judged` set on 6,
+  `checked` moved on none; every source too large to go whole. The
+  author still moves `checked` of the docs read against the change.

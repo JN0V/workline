@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go]
-checked: c2e40104
+checked: 8ccdfb74
 verified: agent:claude-code
 ---
 # Conformance — a case in full
@@ -75,8 +75,9 @@ saying so.
 - `target` — the issue or merge request comments and labels go on
   (`{merge-request: 1}`); `branch` — the branch that merge request comes from;
   `args` — more options, as typed, after the run's own (`[--dry-run]`);
-- `open-merge-request: true` or `push-to-merge-request: true` — put what the
-  patches write on a merge request;
+- `open-merge-request: true` — put what the patches write in a merge
+  request of its own; with a merge request as `target`, it goes in a
+  comment there;
 - `reports: true` — also write the findings as SARIF and Code Quality;
 - `gates-only: true` — the route runs the event's gates alone
   (`--gates-only`); `gates-job: {env, input, after}` — a run of the gates

@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/role/config.go, internal/engine/engine.go, internal/hooks, internal/agent/claude.go, internal/agent/command.go]
-checked: 8e3fad75
+checked: 8ccdfb74
 judged: b5899f5
 verified: agent:claude-code
 ---
@@ -57,7 +57,6 @@ Each in detail: [the commands](commands.md), and
 | `--branch <name>` | the branch the `--target` merge request comes from ([below](#writing-to-a-merge-request)) |
 | `--scope <glob>` | a path the task is about, repeatable; a patch outside it is refused |
 | `--no-apply` | judge, then stop; apply later, in a job that holds the write token |
-| `--push-to-merge-request` | commits what the patches write to the merge request's branch ([below](#writing-to-a-merge-request)) |
 | `--open-merge-request` | puts what the patches write in a merge request of its own ([below](#writing-to-a-merge-request)) |
 | `--roles <dir>` | a folder of roles used instead of the shipped ones |
 | `--sarif <file>` / `--code-quality <file>` | also write the findings for GitHub's code scanning (SARIF) or GitLab's Code Quality; `route`: every step's; on a merge request, the SARIF without the documentalist's, the reviewer's nor the gates' ([role outcome](spec/role-outcome.md)) |
@@ -99,13 +98,11 @@ Each in detail: [the commands](commands.md), and
 
 ### Writing to a merge request
 
-- **`--push-to-merge-request`**, with a forge and `--target
-  merge-request:<n>`: what the patches write is committed to that merge
-  request's branch and pushed, without force.
-  - From a fork, or when the branch moved on, the diff goes in one comment
-    instead, whole, to copy and apply with `git apply`: the docs it
-    creates too, and a code block of a doc it changes does not end it.
-    With `local`, committed on the local branch, nothing pushed.
+- **`--target merge-request:<n>`**, with a forge: what the patches write
+  goes in one comment there, whole, to copy and apply with `git apply`:
+  the docs it creates too, and a code block of a doc it changes does not
+  end it. Nothing is pushed to its branch, not even a move of `checked`
+  ([ADR-0051](adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-3-no-docs-obligation-per-pr)).
 - **`--open-merge-request`**, with a forge: what the patches write goes on
   a branch `workline/<role>/<task>`, pushed, with a merge request opened or
   updated for it; the role is told how many of its merge requests are

@@ -16,8 +16,8 @@
 #
 #   apply  after workline.yml's judge, holds the write token and no AI key:
 #          it applies what judge proposed (`apply --from-merge-request`). A
-#          doc fix is committed on the head judged and pushed to the pull
-#          request's branch. The documentalist's findings are the
+#          doc fix goes in a comment, never pushed to the pull request's
+#          branch (ADR-0051). The documentalist's findings are the
 #          annotations of the check `workline findings` on the head judged,
 #          beside the docs' lines: none a conversation to resolve (#412; the
 #          first release after v0.30.0). What the gates found the change
