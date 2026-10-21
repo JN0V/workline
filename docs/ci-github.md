@@ -139,7 +139,9 @@ and `apply`, with the App, commits the fix to its branch,
   ready (`ready_for_review`). A draft asks no agent, `workline/verdict`
   pending until it is ready; opened ready or marked ready, the reviewer
   reads every lens once, on the whole change
-  ([more](../roles/reviewer/docs/ready.md)).
+  ([more](../roles/reviewer/docs/ready.md)). Edited (`edited`), the title
+  a squash lands on main is checked again
+  ([the squash title](../roles/committer/README.md#the-squash-title)).
 - On a merge queue's group (`merge_group`), `gates` runs the gates on
   the merged result and `judge` gives their verdict: no agent, nothing
   applied; with the merge policy, `queue` sets the App's yes on the

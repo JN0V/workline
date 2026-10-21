@@ -61,8 +61,10 @@ name: workline
 on:
   # ready_for_review: a draft marked ready, read by every lens of the
   # reviewer once, when the line runs it (ADR-0020). A draft's pushes ask
-  # no agent: rules and gates only (ADR-0050).
-  pull_request: {types: [opened, synchronize, reopened, ready_for_review]}
+  # no agent: rules and gates only (ADR-0050). edited: a new title, which
+  # a squash lands on main, checked again (ADR-0051); what was read is
+  # not asked again (ADR-0013).
+  pull_request: {types: [opened, synchronize, reopened, ready_for_review, edited]}
   push: {branches: [main]}          # main after a merge
 permissions: {}
 # One run per pull request (#359): a push cancels the run still on the
