@@ -24,7 +24,7 @@ import (
 // asking a lens that blocks, and a machine's review read every one: what
 // can hold the verdict is never left unread.
 func capCommits(repo string, s Settings, st *state, sp span) error {
-	if s.CommitsPerPush <= 0 || st.Every || !st.Record.ReadAll || mergeRequest() == nil || len(sp.Fresh) <= s.CommitsPerPush {
+	if s.CommitsPerPush <= 0 || st.Every || len(st.Line) > 0 || !st.Record.ReadAll || mergeRequest() == nil || len(sp.Fresh) <= s.CommitsPerPush {
 		return nil
 	}
 	for _, l := range facets(*st) {

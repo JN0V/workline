@@ -133,9 +133,6 @@ func (m *gitlabMock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (m *gitlabMock) answer(r *http.Request) (any, int, *gitlabFault) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	if r.URL.Path == "/api/graphql" {
-		return map[string]any{"errors": []map[string]any{{"message": "not simulated"}}}, 200, nil
-	}
 	data, err := os.ReadFile(m.file)
 	if err != nil {
 		return map[string]any{"message": err.Error()}, http.StatusInternalServerError, nil
@@ -145,6 +142,9 @@ func (m *gitlabMock) answer(r *http.Request) (any, int, *gitlabFault) {
 		return map[string]any{"message": err.Error()}, http.StatusInternalServerError, nil
 	}
 	body, _ := io.ReadAll(r.Body)
+	if r.URL.Path == "/api/graphql" {
+		return editorsQuery(&s, body), 200, nil
+	}
 	form, _ := url.ParseQuery(string(body))
 	p := strings.TrimPrefix(r.URL.Path, "/api/v4/projects/1")
 	f := m.fault(s.Faults, r.Method, p)
@@ -157,6 +157,44 @@ func (m *gitlabMock) answer(r *http.Request) (any, int, *gitlabFault) {
 		os.WriteFile(m.file, out, 0o644)
 	}
 	return answer, status, f
+}
+
+// editorsQuery answers the one GraphQL query the simulated GitLab knows:
+// who last edited a merge request's or an issue's notes (lastEditedBy), a
+// comment's editor; any other is not simulated. Its notes' ids are the
+// REST listing's.
+func editorsQuery(s *gitlabState, body []byte) any {
+	var req struct {
+		Query     string         `json:"query"`
+		Variables map[string]any `json:"variables"`
+	}
+	_ = json.Unmarshal(body, &req)
+	if !strings.Contains(req.Query, "lastEditedBy") {
+		return map[string]any{"errors": []map[string]any{{"message": "not simulated"}}}
+	}
+	id, _ := strconv.Atoi(fmt.Sprint(req.Variables["iid"]))
+	items := s.Issues
+	if strings.Contains(req.Query, "mergeRequest(") {
+		items = s.MergeRequests
+	}
+	nodes := []map[string]any{}
+	for _, it := range items {
+		if it.ID != id {
+			continue
+		}
+		for i, c := range it.Comments {
+			n := id*1000 + i + 1
+			if v, err := strconv.Atoi(c.ID); err == nil {
+				n = v
+			}
+			var editor any
+			if c.Editor != "" {
+				editor = map[string]any{"username": c.Editor}
+			}
+			nodes = append(nodes, map[string]any{"id": fmt.Sprintf("gid://gitlab/Note/%d", n), "author": map[string]any{"username": c.Author}, "lastEditedBy": editor})
+		}
+	}
+	return map[string]any{"data": map[string]any{"project": map[string]any{"item": map[string]any{"notes": map[string]any{"nodes": nodes, "pageInfo": map[string]any{"hasNextPage": false}}}}}}
 }
 
 // fault is the fault a call meets, nil for none; it counts what each
