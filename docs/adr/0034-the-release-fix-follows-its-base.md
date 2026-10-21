@@ -184,7 +184,9 @@ head, eight in an hour ([#510](https://github.com/JN0V/workline/issues/510)).
   head each fix recorded a doc at (`checked` or `judged`) and the git ids
   of the doc's sources there, as on a person's merge request
   ([ADR-0013, amended](0013-what-was-judged-is-not-asked-again.md#amendment-2026-10-17-on-a-persons-merge-request-the-record-waits-in-a-comment)).
-  Only a comment a bot or a person of the project wrote is read.
+  Only a comment a bot or a person of the project wrote is read; since
+  2026-10-21, only workline's own account's
+  ([ADR-0013, amended](0013-what-was-judged-is-not-asked-again.md#amendment-2026-10-21-only-worklines-own-accounts-comment-holds-a-record)).
 - **A record naming such a head stands at the new head** when the doc's
   sources have the same ids there: nothing changed, the bump included.
   The doc is not judged again; one not vouched for waits for a person.

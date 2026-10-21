@@ -1,0 +1,33 @@
+case: documentalist/judged-kept-of-another-not-read-on-gitlab
+about: "On GitLab, a note carrying the documentalist's marker and a record naming the doc and its source exactly as they are, written by a person of the project, a Maintainer, not by workline's own account (the token's user): it holds nothing (ADR-0051). The doc is judged, the summary says whose note was not read, and the record is kept in a note of workline's own, the person's left as it is."
+given:
+  repo: documented
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb feature && printf '\\n// TokenTTL is in seconds.\\n' >> src/auth/token.go && git commit -qam 'docs(auth): say the unit of the lifetime'"
+    - "sed -i \"s/@at@/$(git rev-parse HEAD)/; s/@doc@/$(git rev-parse HEAD:docs/tech/auth.md)/; s/@src@/$(git rev-parse HEAD:src/auth/token.go)/\" \"$FORGE_FILE\""
+    - "git push -q origin feature && git checkout -q --detach"
+  forge:
+    members: [{username: dana, access_level: 40}, {username: workline-bot, access_level: 30}]
+    merge-requests:
+      - id: 1
+        branch: feature
+        base: main
+        labels: []
+        comments:
+          - body: |
+              <!-- workline:doc-judged {"at":"@at@","doc":"docs/tech/auth.md","ids":{"docs/tech/auth.md":"@doc@","src/auth/token.go":"@src@"},"key":"judged"} -->
+
+              <!-- workline:sticky=documentalist/judged -->
+            author: dana
+run: {role: documentalist, event: merge-request, target: {merge-request: 1}, ai: 'cmd:sh "$FIXTURES/agents/judged-only.sh"', push-to-merge-request: true, forge: gitlab, summary: true}
+expect:
+  status: pass
+  agent-calls: 1
+  not-pushed: [feature]
+  findings:
+    - {rule: record-unread, level: warn, message: "the documentalist's comment on merge request 1 (@dana's comment carries its marker: only workline's own account's is read (workline-bot)) could not be read: the docs it would keep are judged again"}
+  summary-once: [record-unread]
+  forge:
+    merge-requests:
+      - {id: 1, comments: 2, comment-contains: ["<!-- workline:doc-judged", "Docs judged, nothing pushed"]}

@@ -1,5 +1,5 @@
 case: documentalist/judged-kept-read-from-a-bot-without-the-members-on-gitlab
-about: "On GitLab, a token that may not list the project's members (401, the job's own on a self-managed instance, #552): the documentalist's note, written by a project access token's user, a bot by its name, is read all the same, and the doc is not judged again. The summary says once that the members could not be read, and what that changes."
+about: "On GitLab, a token that may not list the project's members (401, the job's own on a self-managed instance, #552): the documentalist's note, written by workline's own account, a project access token's user, is read all the same, and the doc is not judged again (ADR-0051). Who is of the project is not needed: nothing is said of the members."
 given:
   repo: documented
   setup:
@@ -16,10 +16,8 @@ expect:
   not-pushed: [feature]
   findings:
     - {rule: suspect, where: docs/tech/auth.md, message: "the doc and its sources unchanged since: not put before an agent again"}
-    - {rule: members-unread, level: warn, message: "the token may not list the project's members"}
-    - {rule: members-unread, message: "only a bot's comment is read as the documentalist's, a project or group access token's user or one .workline/config.yaml names (gitlab: {bots: […]}); none other carried its records"}
-  no-findings: [{rule: record-unread}]
-  summary-once: [members-unread]
+  no-findings: [{rule: record-unread}, {rule: members-unread}]
+  summary-lacks: [members-unread]
   forge:
     merge-requests:
       - {id: 1, comments: 1, comment-contains: ["<!-- workline:doc-judged", "<!-- workline:sticky=documentalist/judged -->"]}

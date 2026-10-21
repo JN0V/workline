@@ -19,6 +19,7 @@ import (
 // and records them.
 type mock struct {
 	refuse bool // the permission lookup refused: a token that may not ask
+	noUser bool // the token's user refused: a token without the user scope
 	mu     sync.Mutex
 	calls  []string // "METHOD path body"
 }
@@ -74,6 +75,18 @@ func (m *mock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		} else {
 			fmt.Fprint(w, `[]`)
 		}
+	case r.Method == "GET" && r.URL.Path == "/api/v1/user" && m.noUser:
+		http.Error(w, `{"message": "token does not have the scope"}`, http.StatusForbidden)
+	case r.Method == "GET" && r.URL.Path == "/api/v1/user":
+		_, _ = fmt.Fprint(w, `{"id": 11, "login": "ci[bot]"}`)
+	case r.Method == "GET" && r.URL.Path == repo+"/issues/5/comments":
+		_, _ = fmt.Fprint(w, `[{"id": 51, "body": "another's <!-- workline:k -->", "user": {"id": 7, "login": "zed"}},
+			{"id": 50, "body": "old <!-- workline:k -->", "user": {"id": 11, "login": "ci[bot]"}}]`)
+	case r.Method == "GET" && r.URL.Path == repo+"/issues/8/comments":
+		_, _ = fmt.Fprint(w, `[{"id": 80, "body": "another's <!-- workline:k -->", "user": {"id": 7, "login": "zed"}}]`)
+	case r.Method == "PATCH" && strings.HasPrefix(r.URL.Path, repo+"/issues/comments/"),
+		r.Method == "POST" && (r.URL.Path == repo+"/issues/5/comments" || r.URL.Path == repo+"/issues/8/comments"):
+		_, _ = fmt.Fprint(w, `{}`)
 	case r.Method == "GET" && r.URL.Path == repo+"/issues/6/comments":
 		fmt.Fprint(w, `[]`)
 	case r.Method == "POST" && r.URL.Path == repo+"/issues/6/comments":
@@ -142,25 +155,63 @@ func TestAllIssues(t *testing.T) {
 }
 
 // comments answers each comment with its author, whether they may write
-// to the repository, and when it was written, when Forgejo says.
+// to the repository, whether the token's user wrote it, and when it was
+// written, when Forgejo says.
 func TestComments(t *testing.T) {
 	m := &mock{}
 	out := run(t, m, "comments", map[string]any{"target": map[string]any{"kind": "issue", "id": 3}})
 	if !slices.Contains(m.calls, "GET /api/v1/repos/owner/name/collaborators/ci%5Bbot%5D/permission") {
 		t.Errorf("a login not escaped in the URL; calls: %q", m.calls)
 	}
-	want := `{"comments":[{"body":"Rows lost.","author":"zed","insider":false,"bot":false,"created":"2026-10-01T09:00:00+02:00"},` +
-		`{"body":"agreed","author":"dev","insider":true,"bot":false},` +
-		`{"body":"agreed","author":"forgejo-actions","insider":false,"bot":true},` +
-		`{"body":"agreed","author":"renovate-bot","insider":false,"bot":true},` +
-		`{"body":"old","author":"gone","insider":false,"bot":false},` +
-		`{"body":"built","author":"ci[bot]","insider":false,"bot":true}]}`
+	want := `{"comments":[{"body":"Rows lost.","author":"zed","insider":false,"bot":false,"own":false,"created":"2026-10-01T09:00:00+02:00"},` +
+		`{"body":"agreed","author":"dev","insider":true,"bot":false,"own":false},` +
+		`{"body":"agreed","author":"forgejo-actions","insider":false,"bot":true,"own":false},` +
+		`{"body":"agreed","author":"renovate-bot","insider":false,"bot":true,"own":false},` +
+		`{"body":"old","author":"gone","insider":false,"bot":false,"own":false},` +
+		`{"body":"built","author":"ci[bot]","insider":false,"bot":true,"own":true}]}`
 	if out != want {
 		t.Errorf("answer = %s\nwant     %s", out, want)
 	}
-	// A lookup refused is said, never read as "outside the project".
+	// A lookup refused is said, never read as "outside the project"; the
+	// token's user unread too, never read as no one's own.
 	if out, err := try(t, &mock{refuse: true}, "comments", map[string]any{"target": map[string]any{"kind": "issue", "id": 3}}); err == nil {
 		t.Errorf("a refused permission lookup passed: %s", out)
+	}
+	if out, err := try(t, &mock{noUser: true}, "comments", map[string]any{"target": map[string]any{"kind": "issue", "id": 3}}); err == nil {
+		t.Errorf("the token's user unread passed: %s", out)
+	}
+}
+
+// sticky edits the comment holding the marker; asked `own`, only the
+// one the token's user wrote, another's left, never edited; with only
+// another's, the token's user's posted after it, `create` or not. The
+// token's user unread fails the operation, never any comment edited.
+func TestStickyOwn(t *testing.T) {
+	const repo = "/api/v1/repos/owner/name"
+	called := func(m *mock, prefix string) bool {
+		return slices.ContainsFunc(m.calls, func(c string) bool { return strings.HasPrefix(c, prefix) })
+	}
+	m := &mock{}
+	req := map[string]any{"target": map[string]any{"kind": "merge-request", "id": 5}, "body": "new", "marker": "<!-- workline:k -->", "create": false}
+	run(t, m, "sticky", req)
+	if !called(m, "PATCH "+repo+"/issues/comments/51 ") {
+		t.Errorf("by the marker alone, the first holding it not edited; calls: %q", m.calls)
+	}
+	m = &mock{}
+	req["own"] = true
+	run(t, m, "sticky", req)
+	if !called(m, "PATCH "+repo+"/issues/comments/50 ") || called(m, "PATCH "+repo+"/issues/comments/51") {
+		t.Errorf("not the token's user's edited; calls: %q", m.calls)
+	}
+	m = &mock{}
+	req["target"] = map[string]any{"kind": "merge-request", "id": 8}
+	run(t, m, "sticky", req)
+	if !called(m, "POST "+repo+"/issues/8/comments ") || called(m, "PATCH") {
+		t.Errorf("only another's: edited, or none posted; calls: %q", m.calls)
+	}
+	m = &mock{noUser: true}
+	if out, err := try(t, m, "sticky", req); err == nil || called(m, "PATCH") || called(m, "POST") {
+		t.Errorf("the token's user unread passed, or wrote: %s; calls: %q", out, m.calls)
 	}
 }
 

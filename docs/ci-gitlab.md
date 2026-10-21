@@ -1,6 +1,6 @@
 ---
 sources: [ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile]
-checked: cb130c27
+checked: 2d24380f
 judged: e8a46f7
 verified: agent:documentalist
 reader: 9799dcaf51f3
@@ -257,13 +257,14 @@ a cron off the hour (`13 17 * * *`) was listed as due at 18:00 and ran at
     ([how](../roles/reviewer/docs/ready.md); not tried on a GitLab yet).
 - **The documentalist** reads the records its note keeps instead of
   commits ([more](../roles/documentalist/docs/push.md#a-doc-found-with-nothing-to-fix-no-commit)):
-  - with `CI_JOB_TOKEN`, a note a project access token's user wrote, as
-    `WORKLINE_GITLAB_TOKEN`'s; one a person's token wrote is not taken on
-    its word, said once (`members-unread`); `GITLAB_TOKEN` (`read_api`)
-    tells a person of the project too;
-  - `WORKLINE_GITLAB_TOKEN` held by a service account, or an account made
-    for the line: name it, `gitlab: {bots: [<username>]}` in
-    `.workline/config.yaml`, or its notes are read as a person's;
+  - only a note workline's own account wrote: `WORKLINE_GITLAB_TOKEN`'s
+    user, as GitLab says, or one named in `gitlab: {bots: [<username>]}`
+    in `.workline/config.yaml`
+    ([ADR-0051](adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md));
+    the reviewer and the inspector read theirs so too;
+  - a note carrying its marker that another wrote, a person of the
+    project's too: not read, its docs judged again, said
+    (`record-unread`);
   - a note it cannot read: it commits the records, said (`record-unread`).
 
 ## The product owner

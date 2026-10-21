@@ -1,6 +1,6 @@
 ---
 sources: [ci/github/workline.yml, ci/github/workline-apply.yml, ci/gitlab/workline.gitlab-ci.yml, internal/line/line.go, internal/gate/kept.go, internal/report/main.go, routing.default.yaml]
-checked: cb130c27
+checked: 2d24380f
 verified: agent:claude-code
 ---
 # Main after a merge

@@ -90,7 +90,10 @@ reviewed the whole merge request again (`record-unread`,
   issue's author, an answer, a label's or a reaction's author — fails
   loud, as decided above. The documentalist's records are read from a
   bot's comment alone, said (`members-unread`): one a person's token
-  wrote is not taken on its word.
+  wrote is not taken on its word. Amended 2026-10-21
+  ([ADR-0013, amended](0013-what-was-judged-is-not-asked-again.md#amendment-2026-10-21-only-worklines-own-accounts-comment-holds-a-record)):
+  a record is read from workline's own account's comment alone, which
+  needs no member; `members-unread` is gone.
 
 - **A bot GitLab does not name so** — a service account, an account made
   for the line holding `WORKLINE_GITLAB_TOKEN` — is named by the project:
