@@ -154,6 +154,15 @@ only what is new ([#375](https://github.com/JN0V/workline/issues/375));
 `workline:warn` and `workline:warn:apply` likewise, in a resource group of
 their own.
 
+- **Two applies waiting** may start in either order: GitLab's resource
+  groups default to `unordered`, and workline sets nothing there.
+- **The comment says which run wrote it**: the reviewer's and the
+  inspector's name the head and the pipeline (`CI_PIPELINE_ID`) their
+  run read, hidden.
+- **An older pipeline's apply, run last**, keeps the newer comment's text
+  and merges only its record into it
+  ([#598](https://github.com/JN0V/workline/issues/598)).
+
 Not tried on a GitLab yet.
 
 ### At a release's tag
