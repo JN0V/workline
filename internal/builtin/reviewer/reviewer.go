@@ -401,8 +401,12 @@ func prepare(runDir, repo string, s Settings) int {
 	}
 	// Of the lenses this push takes, in turn or every one on ready, each
 	// run asks those of its side (ADR-0050); the other's are its to ask.
+	// The commits a lens of this side left past commits-per-push are its
+	// to read, on the other's turn too (#591).
 	if other := st.side(s); len(st.Lenses) == 0 && !st.Alone {
-		return otherSide(runDir, repo, s, st, other, sp.New)
+		if st.Lenses, st.Alone = rec.leftTo(s, side, skip); len(st.Lenses) == 0 && !st.Alone {
+			return otherSide(runDir, repo, s, st, other, sp.New)
+		}
 	}
 	// After ready, the lenses that warn read at most commits-per-push new
 	// commits a push, the oldest first; the rest wait, said (ADR-0050).
@@ -614,7 +618,7 @@ func recordOnly(runDir string, s Settings, st state, fresh int) int {
 	}
 	v := review(st, nil, fmt.Sprintf("no code changed since the last review (%s): nobody asked, the %d new commits recorded%s", why, fresh, st.leftSaid()))
 	v.Complete = true
-	v.Record = st.Record.add(st.Commits, st.Patches)
+	v.Record = st.recorded()
 	v.Record.Runs, v.Record.Blocks = st.Record.Runs, st.Standing
 	var fallback []intent.Intention
 	if mergeRequest() != nil && s.ForgeWrites {
@@ -677,7 +681,7 @@ func runOnReady(runDir string, rec *Record, recordRead bool) bool {
 	}
 	draft := input(runDir, "draft")
 	if draft == "true" {
-		rec.ReadAll, rec.Retried, rec.Failed = false, false, nil
+		rec.ReadAll, rec.Retried, rec.Failed, rec.LeftBy = false, false, nil, nil
 	}
 	switch asked := input(runDir, "lenses"); asked {
 	case "all":
@@ -1884,7 +1888,7 @@ func settled(runDir, repo string, s Settings, st state, c candidates) (Review, [
 	v.Findings = append(v.Findings, c.Logged...)
 	if st.Spec == nil { // a spec is read whole each run: no commits to record, nothing carried
 		if v.Complete {
-			v.Record = st.Record.add(st.Commits, st.Patches)
+			v.Record = st.recorded()
 		} else {
 			// Unread by the lenses that did not answer, the commits are
 			// theirs: no run records them before they read them (#588).

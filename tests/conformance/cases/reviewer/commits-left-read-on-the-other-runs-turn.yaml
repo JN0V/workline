@@ -1,0 +1,34 @@
+case: reviewer/commits-left-read-on-the-other-runs-turn
+about: "#591. The run apart on claims's turn, the last lens, reads five of seven new commits and leaves two (ADR-0050, step 6): its record names claims (`left-by=`). Run again on the same head, the turn is correctness, which blocks: the run apart does not record the two unread, it asks claims, which read them; then the record holds all seven, and names nobody."
+given:
+  repo: reviewed
+  setup:
+    - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"
+    - "sed -i \"s/@reviewed@/$(git rev-parse HEAD)/g\" \"$FORGE_FILE\""
+    - 'for i in 1 2 3 4 5 6 7; do printf "package calc\n\n// F$i is $i.\nfunc F$i() int { return $i }\n" > calc/f$i.go && git add calc/f$i.go && git commit -qm "feat: add f$i"; done'
+  config:
+    routing: {events: {merge-request: [reviewer]}}
+    roles: {reviewer: {settings: {ai-findings: {correctness: block}}}}
+  forge:
+    merge-requests:
+      - id: 5
+        labels: []
+        comments:
+          - "Every lens that blocks read the change.\n<!-- workline:warn-apart -->\n\n<!-- workline:record reviewed=@reviewed@ runs=1 read=all -->\n\n<!-- workline:sticky=reviewer/summary -->"
+          - "Every lens that warns read the change.\n\n<!-- workline:record reviewed=@reviewed@ runs=4 read=all -->\n\n<!-- workline:sticky=reviewer/warn -->"
+run: {route: merge-request, warn-only: true, input: {range: main..HEAD, draft: "false"}, target: {merge-request: 5}, ai: "fake:review-nothing", then: again}
+expect:
+  status: pass
+  # Claims's turn, then claims again on correctness's: no lens that blocks
+  # is asked in the run apart, and none passes the two commits over. The
+  # first call reads up to f5; only the second can hold f6 and f7.
+  calls: [{task: part, for: 1-claims}, {task: part, for: 1-claims}]
+  run-files:
+    in/parts/1-claims/task.md:
+      contains: ["### calc/f6.go", "### calc/f7.go"]
+  forge:
+    merge-requests:
+      - id: 5
+        comments: 2
+        comment-contains: [" runs=6 read=all -->"]
+        comment-lacks: ["no lens that warns on this push", "left-by=", "commits-left"]
