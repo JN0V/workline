@@ -240,7 +240,7 @@ jobs:
           status=0
           workline route merge-request --ai "$ai" --no-apply --warn-apart \
             --forge github --target merge-request:${{ github.event.pull_request.number }} --branch "$HEAD_REF" \
-            --input range=${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} ${ready:+--input lenses=all} --input draft="$DRAFT" \
+            --input range=${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} ${ready:+--input lenses=all} --input ready=${ready:+true} --input draft="$DRAFT" \
             --gates-from "$RUNNER_TEMP/gates/gates.json" \
             --sarif workline.sarif --summary workline-summary.md --verdict workline-verdict.json --json > line.json || status=$?
           echo "status=$status" >> "$GITHUB_OUTPUT"
