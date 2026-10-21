@@ -1,6 +1,6 @@
 ---
 sources: [internal/forge/command.go, internal/forge/forge.go, ci/forgejo]
-checked: f5a2e917
+checked: d6079370
 verified: agent:claude-code
 ---
 # A forge plugged by a command — v1 (draft)
@@ -23,7 +23,7 @@ none), `close-merge-request`, `merge-requests`, and `comments`, each with its au
 write to the repository — asked of Forgejo, which needs the token's user
 to administer the repository: a refusal fails the operation —, a bot when
 its id is negative (the ghost, the actions user) or its login ends in
-`-bot` or `[bot]`, Forgejo saying nothing of bots; not yet the backlog's other operations (`issues`,
+`-bot` or `[bot]`, Forgejo saying nothing of bots, its own when the token's user wrote it (`own`), that user unread failing the operation; not yet the backlog's other operations (`issues`,
 `close`, `milestones`, `set-milestone`, `set-body`, `set-title`,
 `add-sub-issue`, `add-blocker`, `remove-blocker`, `closers`, `trail`, `ensure-label`, `label-events`, `react`), nor a merge request's `base`, nor a comment's `id`.
 
@@ -61,7 +61,7 @@ comment is not posted twice. A target is `{"kind": "issue" | "merge-request",
 | `issue` | `id` | reads an issue | `{id, title, body, labels: [names], closed}` |
 | `issues` | | lists the open issues, merge requests left out | `{issues: [{id, title, body, labels, milestone, milestone-due, author, insider, blocked-by, children}]}` — `milestone-due` its milestone's due date, `YYYY-MM-DD`, left out when it has none; `insider` true when the author has write access to the project; left out, the author is taken for an outsider; `blocked-by` the issues it waits on in the forge's own relation, left out on a forge without one: a "Blocked by" line in the body says it (ADR-0028); `children` its sub-issues, open or closed, left out on a forge without them: the task list under `## Sub-issues` in the body says them (ADR-0029) |
 | `all-issues` | | lists the issues open and closed, merge requests left out: a subject a role found is looked for in both | `{issues: [{id, title, body, labels, closed, reason}]}` — `reason` why it was closed, when the forge keeps one: `completed`, `not_planned` or `duplicate`; a command that does not know it answers an error, and the issue is not opened |
-| `comments` | `target` | reads the comments on the target, oldest first | `{comments: [{body, author, insider, bot, created, id}]}` — `insider` as for `issues`, `bot` true for an app's or a token's user, `created` when it was written (RFC 3339 or `YYYY-MM-DD`), left out when the forge does not say: a question to a reporter is then never said stuck (ADR-0031); `id` the forge's own, for `react`, left out: no reaction; a comment may be its body alone, a text, its author then unknown: a reply of theirs never agrees to a proposal (ADR-0021), nor brings an issue back (ADR-0038) |
+| `comments` | `target` | reads the comments on the target, oldest first | `{comments: [{body, author, insider, bot, created, id}]}` — `insider` as for `issues`, `bot` true for an app's or a token's user, `created` when it was written (RFC 3339 or `YYYY-MM-DD`), left out when the forge does not say: a question to a reporter is then never said stuck (ADR-0031); `id` the forge's own, for `react`, left out: no reaction; `own` true when the token's user wrote it, workline's own account: a role reads its record back only from such a comment (ADR-0051), left out, none is read and the role reads again what it would have skipped; a comment may be its body alone, a text, its author then unknown: a reply of theirs never agrees to a proposal (ADR-0021), nor brings an issue back (ADR-0038) |
 | `label-events` | `id` | the labels set on the issue and taken off, oldest first, with who did each and when | `{events: [{label, added, author, insider, writer, bot, created}]}` — `added` false for one taken off; `writer` true when who did it may push and merge, the merge policy's yes (ADR-0042); an error answered: the forge does not say, and a label taken off is read as a person's (ADR-0038) |
 | `react` | `id`, `note`, `emoji` | puts the reaction (`eyes`) on the issue's comment with that id; one there already changes nothing | `{}`; an error answered: no reaction, nothing failed (ADR-0038) |
 | `close` | `id`, `duplicate-of` when a duplicate | closes the issue: as a duplicate of `duplicate-of`, else as completed; one already closed changes nothing | `{}` |
@@ -76,7 +76,7 @@ comment is not posted twice. A target is `{"kind": "issue" | "merge-request",
 | `trail` | `id`, `label` | when the open issue last got the label, and the pull or merge requests and commits that name it | `{labeled, links: [{kind, ref, at}]}` — `labeled` and `at` RFC 3339 or `YYYY-MM-DD`, `kind` and `ref` as for `closers`; `labeled` left out, or an error answered: the forge does not say, and the issue is never said stuck for it (ADR-0031) |
 | `ensure-label` | `name`, `color`, `description` | creates the label when the project has none of that name | `{}` |
 | `comment` | `target`, `body`, `marker` | posts `body` + a blank line + `marker` on the target, unless a comment there holds `marker` | `{}` |
-| `sticky` | `target`, `body`, `marker`, `create` | edits the comment holding `marker` to `body` + `marker`; with none, posts it when `create` is true | `{}` |
+| `sticky` | `target`, `body`, `marker`, `create`, `own` | edits the comment holding `marker` to `body` + `marker`; with none, posts it when `create` is true. With `own` true, a role's comment on a merge request whose record it reads back: only the one the token's user wrote is edited, another's holding `marker` is left and the token's user's posted after it, `create` or not (ADR-0051) | `{}` |
 | `label` | `target`, `add`, `remove` | adds the labels (creating them on the forge if needed), removes the others; one already there, or already gone, changes nothing | `{}` |
 | `open-issue` | `title`, `body`, `marker` | on the open issue with this title, comments as `comment` does; with none, opens one, its body `body` + `marker` | `{id}` |
 | `keep-issue` | `title`, `body`, `create` | rewrites the body of the open issue with this title; with none, opens it when `create` is true | `{id}`, 0 when none was opened |

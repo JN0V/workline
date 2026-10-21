@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/adopt.go, internal/builtin/documentalist/byname.go, internal/builtin/documentalist/releasekept.go, internal/engine/night.go]
-checked: affb7424
+checked: 2d24380f
 verified: agent:claude-code
 judged-in-parts: c7e1e98
 ---
@@ -60,11 +60,12 @@ took a commit on their branch, 41 of 42 in two weeks
     the judging job `GITLAB_TOKEN`
     ([ci-gitlab.md](../../../docs/ci-gitlab.md#what-the-template-does));
   - a doc with a source in another repository.
-- Only a comment a bot or a person of the project wrote is read. A token
-  that may not list the members (GitLab's `CI_JOB_TOKEN`) reads a bot's
-  alone, a project access token's user or one named in `gitlab: {bots}`
-  ([config](../../../docs/config.md)); what a person's token kept is
-  judged again, said once (`members-unread`, [#552](https://github.com/JN0V/workline/issues/552)).
+- Only the comment workline's own account wrote is read: the GitHub App,
+  else the token's user; on GitLab, `WORKLINE_GITLAB_TOKEN`'s user, or
+  one named in `gitlab: {bots}` ([config](../../../docs/config.md)).
+  Another's carrying its marker, a person of the project's too, is not:
+  its docs are judged again, said once (`record-unread`,
+  [ADR-0051](../../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md)).
 
 ### At the push
 

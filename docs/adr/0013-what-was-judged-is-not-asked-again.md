@@ -5,7 +5,8 @@
   and what a merge of the base settled; a doc's `judged` says what was
   read); amended 2026-10-14 (a doc waits while a merge request holds it);
   amended 2026-10-17 (on a person's merge request, the record waits in a
-  comment)
+  comment); amended 2026-10-21 (a record is read only from workline's own
+  account's comment)
 - **Date:** 2026-10-01
 - **Amends:** ADR-0012 (a fix that cannot vouch is kept), ADR-0006 (one
   merge request per task)
@@ -263,3 +264,26 @@ Not chosen ([the options](https://github.com/JN0V/workline/issues/463#issuecomme
 - **Committing only real fixes, judging again after the merge**: each doc
   judged twice for one change.
 - **Keeping it as it was**: 41 commits in two weeks that change no text.
+
+## Amendment (2026-10-21): only workline's own account's comment holds a record
+
+[ADR-0051](0051-a-check-sits-where-its-catch-is-worth-its-cost.md), step 1.
+The reviewer read the first comment carrying its marker, from any author;
+the documentalist and the inspector, any bot's or person of the project's.
+
+- **A record is read only from the comment workline's own account
+  wrote**: the GitHub App, by its slug or its id (`WORKLINE_APP_ID`, which
+  the judging jobs get); else the token's user, `github-actions[bot]` for
+  a job's own token; on GitLab, `WORKLINE_GITLAB_TOKEN`'s user, or one the
+  project names in `gitlab: {bots}`. The reviewer, the inspector and the
+  documentalist read so, through one helper.
+- **Another's comment carrying the marker is never read**, a person of
+  the project's neither: the role reads again what it would have skipped,
+  and says whose comment it left (`record-unread`). Never a skip.
+- **On a merge request, a role's sticky comment is workline's own**:
+  another's carrying the marker is left, and workline's own posted after
+  it. On an issue, a role's comment stays its own by its marker
+  ([ADR-0038](0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md)).
+- **Left for later steps of ADR-0051**: an own comment edited by one who
+  may write is still read (GitHub's REST API does not say who edited);
+  the forge's own markers close it.

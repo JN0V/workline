@@ -331,9 +331,9 @@ func around(repo, head string, f Found, n int) string {
 // loadRecord reads the record: from the merge request's comment when the
 // run is on one and may write there, else from the machine's. It says
 // where it read it, whether it is the machine's, and why it could not.
-// Only a comment a bot or a person of the project wrote is read: on a
-// public merge request anyone may comment, and the record is shown again
-// under workline's name.
+// Only the last comment workline's own account wrote is read, the one
+// Sticky edits (ADR-0051): on a public merge request anyone may comment,
+// and the record is shown again under workline's name.
 func loadRecord(repo string, s Settings) (Record, string, bool, error) {
 	if t := mergeRequest(); t != nil && s.ForgeWrites {
 		where := fmt.Sprintf("in its comment on merge request %d", t.ID)
@@ -344,19 +344,15 @@ func loadRecord(repo string, s Settings) (Record, string, bool, error) {
 		if f == nil {
 			return Record{}, where, false, errors.New("no forge to read the merge request's comments from")
 		}
-		b, ok := f.(forge.Backlog)
-		if !ok {
-			return Record{}, where, false, errors.New("this forge cannot list a merge request's comments")
-		}
-		notes, err := b.Notes(*t)
-		if err != nil && !errors.Is(err, forge.ErrAuthorsUnknown) {
+		kept, err := forge.ReadKept(f, *t)
+		if err != nil {
 			return Record{}, where, false, err
 		}
-		if text, ok := recordComment(notes); ok {
+		if text, ok := kept.Last(marker); ok {
 			r, err := readRecord(text)
 			return r, where, false, err
 		}
-		return Record{}, where, false, nil
+		return Record{}, where, false, kept.Unread(marker)
 	}
 	file := localRecord(repo)
 	where := "in " + file
@@ -371,29 +367,12 @@ func loadRecord(repo string, s Settings) (Record, string, bool, error) {
 	return r, where, true, err
 }
 
-// recordComment is the comment of a merge request's the record is read
-// from: the last carrying the marker, the one the engine edits, a bot's
-// or a person's of the project.
-func recordComment(notes []forge.Note) (string, bool) {
-	for i := len(notes) - 1; i >= 0; i-- {
-		if n := notes[i]; strings.Contains(n.Body, marker) && (n.Bot || n.Insider) {
-			return n.Body, true
-		}
-	}
-	return "", false
-}
-
 // MergeComment is body, the comment a run writes, its record merged with
-// the one the comment holds now, among notes, when a run applied since
-// this one read read (#580): what that run triaged is kept, this run's
-// triage of a finding both triaged, the others' gone first past the
-// comment's size. No comment, or a record that does not read, leaves
-// body as it is.
-func MergeComment(body, read string, notes []forge.Note) string {
-	found, ok := recordComment(notes)
-	if !ok {
-		return body
-	}
+// the one the comment holds now, found, when a run applied since this one
+// read read (#580): what that run triaged is kept, this run's triage of
+// a finding both triaged, the others' gone first past the comment's
+// size. A record that does not read leaves body as it is.
+func MergeComment(body, read, found string) string {
 	ours, err1 := readRecord(body)
 	now, err2 := readRecord(found)
 	was, err3 := readRecord(read)

@@ -179,7 +179,7 @@ type FakeThread struct {
 type FakeComment Note
 
 func (c FakeComment) MarshalJSON() ([]byte, error) {
-	if c.Author == "" && !c.Insider && !c.Bot && c.Created == "" && c.ID == "" {
+	if c.Author == "" && !c.Insider && !c.Bot && c.Created == "" && c.ID == "" && c.App == "" && !c.Own {
 		return json.Marshal(c.Body)
 	}
 	return json.Marshal(Note(c))
@@ -409,13 +409,29 @@ func (f *Fake) Comment(t Target, body, marker string) error {
 }
 
 func (f *Fake) Sticky(t Target, body, marker string, create bool) error {
+	return f.sticky(t, body, marker, create, false)
+}
+
+// stickyOwn edits the last comment carrying marker its token's user
+// wrote (KeepOwn): with only others' carrying it, its own is posted
+// after them, as a forge's.
+func (f *Fake) stickyOwn(t Target, body, marker string, create bool) error {
+	return f.sticky(t, body, marker, create, true)
+}
+
+func (f *Fake) sticky(t Target, body, marker string, create, mine bool) error {
 	return f.write(func(s *FakeState) error {
 		it, err := s.item(t)
 		if err != nil {
 			return err
 		}
+		own, _ := f.own()
 		for i := len(it.Comments) - 1; i >= 0; i-- { // the last, as a forge's
-			if strings.Contains(it.Comments[i].Body, marker) {
+			switch {
+			case !strings.Contains(it.Comments[i].Body, marker):
+			case mine && !own.Wrote(Note(it.Comments[i])):
+				create = true
+			default:
 				// Edited, it stays its author's, as on a forge.
 				it.Comments[i].Body = body + "\n\n" + marker
 				return nil

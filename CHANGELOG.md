@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.39.1](https://github.com/JN0V/workline/compare/v0.39.0...v0.39.1) (2026-10-21)
+
+
+### Bug Fixes
+
+* a role trusts only its own account's records ([#611](https://github.com/JN0V/workline/issues/611)) ([2d152c4](https://github.com/JN0V/workline/commit/2d152c417f77f70341944ccaee01b50de75a3c6c))
+* **documentalist:** a tag's or a blockquote's &gt; is no range ([#594](https://github.com/JN0V/workline/issues/594)) ([0008ea5](https://github.com/JN0V/workline/commit/0008ea5ba586a84477724010509e23f922cfb026))
+* **documentalist:** apply a placed reader fix, read again what follow closed ([#600](https://github.com/JN0V/workline/issues/600)) ([a317e3f](https://github.com/JN0V/workline/commit/a317e3fa2384711354071ad493a92f6ec6621481))
+* **forge:** try a GitHub call again when it fails for a moment ([#597](https://github.com/JN0V/workline/issues/597)) ([e8a46f7](https://github.com/JN0V/workline/commit/e8a46f763d1379046ff0cb2b622ba85a4ca7d273))
+* **inspector:** post a triage when a push lands before it ([#596](https://github.com/JN0V/workline/issues/596)) ([3b783a5](https://github.com/JN0V/workline/commit/3b783a51b87dff71c772912fdfd496e7a48af08a))
+* **reviewer:** read commits left past five on the other run's turn ([#593](https://github.com/JN0V/workline/issues/593)) ([59389d3](https://github.com/JN0V/workline/commit/59389d3bca44af112292d61fc635d7ced0293744))
+
 ## [0.39.0](https://github.com/JN0V/workline/compare/v0.38.0...v0.39.0) (2026-10-20)
 
 

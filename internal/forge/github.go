@@ -23,6 +23,7 @@ type github struct {
 	login   string           // the token's user, read once (me)
 	writers map[string]bool  // who may write to the repository, read once each
 	unread  map[string]error // whose rights the token could not read, asked once each
+	owner   *Own             // workline's own account, read once (own)
 }
 
 func (g *github) api(args ...string) ([]byte, error) {
@@ -426,10 +427,11 @@ func (g *github) Comments(t Target) ([]string, error) {
 }
 
 // Notes reads each comment's author and their author_association, as an
-// issue's; an app's comment (a user of type Bot) is a bot's.
+// issue's; an app's comment (a user of type Bot) is a bot's, and names
+// the App (performed_via_github_app).
 func (g *github) Notes(t Target) ([]Note, error) {
 	out, err := g.api("--paginate", fmt.Sprintf("repos/{owner}/{repo}/issues/%d/comments?per_page=100", t.ID),
-		"--jq", ".[] | {body: (.body // \"\"), author: .user.login, association: .author_association, bot: (.user.type == \"Bot\"), created: .created_at, id: (.id | tostring)}")
+		"--jq", ".[] | {body: (.body // \"\"), author: .user.login, association: .author_association, bot: (.user.type == \"Bot\"), created: .created_at, id: (.id | tostring), app: (.performed_via_github_app.id // \"\" | tostring)}")
 	if err != nil {
 		return nil, err
 	}
@@ -473,20 +475,44 @@ func (g *github) Comment(t Target, body, marker string) error {
 }
 
 func (g *github) Sticky(t Target, body, marker string, create bool) error {
+	return g.sticky(t, body, marker, create, nil)
+}
+
+// stickyOwn edits the last comment carrying marker that workline's own
+// account wrote (KeepOwn); never another's, which GitHub lets one who
+// may write edit too, and which stays theirs.
+func (g *github) stickyOwn(t Target, body, marker string, create bool) error {
+	own, err := g.own()
+	if err != nil {
+		return err
+	}
+	return g.sticky(t, body, marker, create, &own)
+}
+
+// sticky edits the last comment carrying marker, the last own wrote when
+// own is given: with only others' carrying it, its own is posted after
+// them, as on GitLab.
+func (g *github) sticky(t Target, body, marker string, create bool, own *Own) error {
 	out, err := g.api("--paginate", fmt.Sprintf("repos/{owner}/{repo}/issues/%d/comments", t.ID),
-		"--jq", fmt.Sprintf(".[] | select(.body | contains(%q)) | {id, body}", marker))
+		"--jq", fmt.Sprintf(".[] | select(.body | contains(%q)) | {id, body, author: .user.login, app: (.performed_via_github_app.id // \"\" | tostring)}", marker))
 	if err != nil {
 		return err
 	}
 	found, err := lines[struct {
-		ID   int64  `json:"id"`
-		Body string `json:"body"`
+		ID     int64  `json:"id"`
+		Body   string `json:"body"`
+		Author string `json:"author"`
+		App    string `json:"app"`
 	}](out)
 	if err != nil {
 		return err
 	}
-	if len(found) > 0 {
-		last := found[len(found)-1] // the one read, as GitLab's (backlog's readBlock)
+	for i := len(found) - 1; i >= 0; i-- {
+		if own != nil && !own.Wrote(Note{Author: found[i].Author, App: found[i].App}) {
+			create = true
+			continue
+		}
+		last := found[i] // the one read, as GitLab's (backlog's readBlock)
 		if last.Body == body+"\n\n"+marker {
 			return nil // as it is already: not edited again
 		}
