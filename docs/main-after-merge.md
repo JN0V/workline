@@ -1,6 +1,6 @@
 ---
 sources: [ci/github/workline.yml, ci/github/workline-apply.yml, ci/gitlab/workline.gitlab-ci.yml, internal/line/line.go, internal/gate/kept.go, internal/report/main.go, routing.default.yaml]
-checked: cb130c27
+checked: 0839bca7
 verified: agent:claude-code
 ---
 # Main after a merge
@@ -138,4 +138,6 @@ workline route merge-request --gates-only --forge none --gates-kept kept/ \
   finding is said, none counted; a check that did not run still errs.
 - **Kept only** from a tree that is HEAD's commit, every tracked file as
   committed; else said, nothing kept.
-- **`apply --main`** reads the result `route main` printed, as data.
+- **`apply --main`** reads the result `route main` printed, as data;
+  red, it comments on the open merge requests whose base, a branch of
+  the clone, holds the red commit.

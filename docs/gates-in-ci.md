@@ -1,6 +1,6 @@
 ---
 sources: [ci/github/workline.yml, ci/github/workline-apply.yml, ci/github/workline-warn.yml, ci/gitlab/workline.gitlab-ci.yml, internal/report/gates.go, internal/engine/annotate.go, internal/line]
-checked: 003b0431
+checked: 0839bca7
 judged: 14c41d9
 verified: agent:claude-code
 ---
