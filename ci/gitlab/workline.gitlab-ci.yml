@@ -260,7 +260,7 @@ workline:judge:
     - >
       workline route merge-request --ai "$ai" --no-apply ${WORKLINE_GITLAB_TOKEN:+--warn-apart}
       --forge gitlab --target merge-request:$CI_MERGE_REQUEST_IID --branch "$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME"
-      --input range=$CI_MERGE_REQUEST_DIFF_BASE_SHA..$CI_COMMIT_SHA $lenses ${draft:+--input draft=$draft}
+      --input range=$CI_MERGE_REQUEST_DIFF_BASE_SHA..$CI_COMMIT_SHA $lenses ${draft:+--input draft=$draft} --input ready=${lenses:+true}
       --gates-from gates.json --code-quality gl-code-quality.json --summary workline-summary.md --summary workline-summary.html
       --verdict workline-verdict.json --verdict-head "${CI_MERGE_REQUEST_SOURCE_BRANCH_SHA:-$CI_COMMIT_SHA}" --json > line.json || status=$?
     - '[ -n "${WORKLINE_GITLAB_TOKEN:-}" ] || printf "\n- **warn lenses not run apart**: WORKLINE_GITLAB_TOKEN not set, they read in this job, on the path of the verdict\n" >> workline-summary.md'

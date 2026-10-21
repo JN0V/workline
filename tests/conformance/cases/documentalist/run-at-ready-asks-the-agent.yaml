@@ -1,0 +1,15 @@
+case: documentalist/run-at-ready-asks-the-agent
+about: "The run at ready (`ready=true`) asks the documentalist's agent; its fix goes in one comment, nothing pushed (ADR-0051)."
+given:
+  repo: documented
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb feature && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin feature && git checkout -q --detach"
+  forge: {merge-requests: [{id: 1, branch: feature, labels: [], comments: []}]}
+run: {role: documentalist, event: merge-request, input: {range: main..feature, draft: "false", ready: "true"}, target: {merge-request: 1}, ai: "fake:doc-fixed"}
+expect:
+  status: pass
+  agent-calls: 1
+  findings: [{rule: patch-as-comment}]
+  no-findings: [{rule: judged-at-ready}]
+  not-pushed: [feature]

@@ -124,6 +124,9 @@ personal: []                    # settings a person may set for themselves, in t
                                 # own config (role-adapting.md, "A person's own")
 
 without-ai: block               # block | report | pass — see "No AI" (not read yet)
+merge-request-ai: ready         # on a merge request, the agent judges once, on the
+                                # run at ready (routing.md, "Once, at ready"); unset:
+                                # on every push but a draft's
 
 settings:                       # defaults, overridable per project
   subject-max: 72

@@ -82,6 +82,18 @@ const DraftInput = "draft"
 // draft: the agent waits for the merge request to be marked ready.
 const AIWaitsReady = "ready"
 
+// ReadyInput says whether a merge request's run is the one at ready,
+// `true`, or a push after it, anything else; the templates pass it on every
+// run. A role whose agent judges once, at ready (`merge-request-ai:
+// ready`, the documentalist, ADR-0051), runs as with none on a push after
+// it, told so (WORKLINE_AI_WAITS=judged-at-ready). Unsaid, a run is at
+// ready: a person's own run asks the agent.
+const ReadyInput = "ready"
+
+// AIJudgedAtReady is what WORKLINE_AI_WAITS holds on a push after ready,
+// for a role whose agent judged the merge request once, at ready.
+const AIJudgedAtReady = "judged-at-ready"
+
 // Result is what a run reports.
 type Result struct {
 	Status     string            `json:"status"`
@@ -449,6 +461,8 @@ func run(o Options, res *Result) error {
 	}
 	if o.Inputs[DraftInput] == "true" && o.AI != "" && o.AI != "none" {
 		o.AI, o.aiWaits, res.AIWaits = "none", AIWaitsReady, AIWaitsReady
+	} else if v, said := o.Inputs[ReadyInput]; said && v != "true" && o.Event == "merge-request" && r.MergeRequestAI == "ready" && o.AI != "" && o.AI != "none" {
+		o.AI, o.aiWaits = "none", AIJudgedAtReady
 	}
 	ag, err := agent.Parse(o.AI)
 	if err != nil {

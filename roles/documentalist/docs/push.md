@@ -148,3 +148,8 @@ On a draft, an agent set, the engine asks it nothing
 ([ADR-0050](../../../docs/adr/0050-each-act-has-its-moment-and-a-wait-budget.md)):
 the docs the change made suspect are counted, and said judged once it
 is marked ready (`ai-waits-for-ready`); no checklist asks a person to.
+
+The agent judges a merge request once, on the run at ready
+([ADR-0051](../../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#2-the-moments)):
+a push after it asks nothing, and the docs it made suspect are listed
+(`judged-at-ready`), for the author and the docs pull request.

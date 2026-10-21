@@ -1458,6 +1458,17 @@ doc when its reader really gained something to know.
 		findings = append(findings, verdict.Finding{Rule: verdict.WaitsForReady, Level: "warn",
 			Message: fmt.Sprintf("a draft: %d %s this change made suspect %s judged once it is marked ready", n, docs, are)})
 	}
+	// A push after ready (ADR-0051): the agent judged this merge request
+	// once, at ready; what this push made suspect is listed, for its author
+	// and for the docs pull request once merged.
+	if n := len(suspects); n > 0 && os.Getenv("WORKLINE_AI_WAITS") == "judged-at-ready" {
+		docs := "docs"
+		if n == 1 {
+			docs = "doc"
+		}
+		findings = append(findings, verdict.Finding{Rule: "judged-at-ready", Level: "warn",
+			Message: fmt.Sprintf("%d %s this change made suspect, listed: the agent judges a merge request once, when it is marked ready", n, docs)})
+	}
 	sort.SliceStable(findings, func(i, j int) bool { return findings[i].Where < findings[j].Where })
 	if err := writeYAML(filepath.Join(runDir, "in", "findings.yaml"), findings); err != nil {
 		return fail(err)

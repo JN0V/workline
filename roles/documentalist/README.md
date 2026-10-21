@@ -48,7 +48,7 @@ doc by doc), or make a push wait on an agent.
 | Event | Fired by | Does |
 |---|---|---|
 | `pre-push` | the global hook, when routed | counts the docs the pushed commits made suspect, reading no other doc, no agent |
-| `merge-request` | CI | judges the docs the merge request made suspect, reading no other doc; its fix in a comment, nothing pushed; a draft: counts them, judged once it is ready |
+| `merge-request` | CI | judges the docs the merge request made suspect, reading no other doc; its fix in a comment, nothing pushed; the agent once, at ready; a draft or a push after: counts them |
 | `main` | CI, after each merge | the whole repository's checks, no agent, in one issue ([more](../../docs/main-after-merge.md)) |
 | `schedule` | CI, nightly or weekly (gardening) | every suspect or stale doc, the docs due, budgets, links, reader checks; one merge request per task |
 | `init` | `workline init` | proposes each doc's `sources`, for you to review |

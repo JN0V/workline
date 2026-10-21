@@ -55,6 +55,9 @@ on-block: [comment]
 # still right?) is reported for a person, who clears it by updating `checked`.
 # On a merge request, with a forge, they are listed in one comment, edited on each run.
 without-ai: report
+# On a merge request, the agent judges the docs once, on the run at ready
+# (--input ready=true); a push after it lists them (ADR-0051).
+merge-request-ai: ready
 
 settings:
   docs: ["docs/**", "*.md"]
