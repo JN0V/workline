@@ -1,6 +1,6 @@
 ---
 sources: [internal/forge/command.go, internal/forge/forge.go, ci/forgejo]
-checked: bb3b2ba9
+checked: d6079370
 verified: agent:claude-code
 ---
 # A forge plugged by a command — v1 (draft)
@@ -23,7 +23,7 @@ none), `close-merge-request`, `merge-requests`, and `comments`, each with its au
 write to the repository — asked of Forgejo, which needs the token's user
 to administer the repository: a refusal fails the operation —, a bot when
 its id is negative (the ghost, the actions user) or its login ends in
-`-bot` or `[bot]`, Forgejo saying nothing of bots, its own when the token's user wrote it (`own`); not yet the backlog's other operations (`issues`,
+`-bot` or `[bot]`, Forgejo saying nothing of bots, its own when the token's user wrote it (`own`), that user unread failing the operation; not yet the backlog's other operations (`issues`,
 `close`, `milestones`, `set-milestone`, `set-body`, `set-title`,
 `add-sub-issue`, `add-blocker`, `remove-blocker`, `closers`, `trail`, `ensure-label`, `label-events`, `react`), nor a merge request's `base`, nor a comment's `id`.
 
