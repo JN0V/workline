@@ -175,7 +175,10 @@ jobs:
     concurrency: {group: "workline-review-${{ github.event.pull_request.number || github.event.merge_group.head_ref }}", cancel-in-progress: false}
     # pull-requests read: the reviewer, when the line runs it, reads its
     # summary comment, to review only the commits it has not reviewed yet.
-    permissions: {contents: read, security-events: write, pull-requests: read}
+    # issues, checks, statuses and actions read: on the release tool's pull
+    # request, what holds the release — an open issue labelled
+    # workline:hold-release, main's tip not green (ADR-0051).
+    permissions: {contents: read, security-events: write, pull-requests: read, issues: read, checks: read, statuses: read, actions: read}
     # Only whether a token is there: the agent's goes to the one step that
     # calls it, not to installs whose scripts could read it; the App's key
     # never comes here.

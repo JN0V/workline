@@ -13,7 +13,8 @@ flowchart LR
 workline cuts no releases: a release tool does
 ([ADR-0017](adr/0017-the-release-manager.md)). It says, before the
 release, what would hold it, and checks it where the release is cut.
-Nobody waits for either.
+Nobody waits for either. What holds the release tool's merge request,
+and when to merge it: [what holds a release](release-holds.md).
 
 - **The release never waits for the docs**
   ([ADR-0051](adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-1-the-release-weekly)):
@@ -55,7 +56,8 @@ were cut now.
 `workline:release` runs on a tag pipeline, whoever pushed the tag: a
 person, or a release tool.
 
-- **The release's line**, no agent, no token.
+- **The release's line**, no agent, no token: the gates your `release`
+  line runs. No forge, so no [hold](release-holds.md) is read there: said.
 - **Red when held**: have the jobs that publish need it, so a held
   release is never published:
 

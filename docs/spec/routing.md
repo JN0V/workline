@@ -1,6 +1,6 @@
 ---
 sources: [internal/line, internal/routing, internal/work, routing.default.yaml]
-checked: a840c0a3
+checked: f34d3dbe
 verified: agent:claude-code
 ---
 # Routing — v1 (draft)
@@ -96,6 +96,24 @@ branch (`release.branches`). A role routed on `release` that does not run
 there, the documentalist in a routing written before ADR-0051, is
 skipped, said (`step-skipped`, a warning). A routing that still
 names the retired `release-manager` is refused, saying which tool to use.
+
+On the release — `release`, or `merge-request` from a release tool's
+branch — the line also reads what holds it on the forge, once, beside its
+steps, stopping none of them; its verdict takes the worst (ADR-0051,
+[what holds a release](../release-holds.md)): each open issue labelled
+`workline:hold-release` (`release-held`, by its number); the checks on the
+tip of the branch the merge request goes into, the default branch on
+`release` — a red one is `release-base-red`, one not done
+`release-base-pending`, both blocks; none at all, `release-base-unchecked`,
+a warning. On GitHub only the runs a push started count, with other apps'
+checks and the commit statuses, workline's own left out, and a workflow that
+could not start counts red; on GitLab, the
+newest pipeline of the tip no schedule started. What could not be read is
+`release-holds-unread`, a block; with no forge, or one that says nothing of
+releases, a warning, as is a merge request with no `--branch` the forge does
+not say is a release tool's. The line's summary ends with `the release held: …`.
+Not read by `--gates-only`, `--warn-only`, a queue's run, nor the night's
+release judging.
 
 - Steps run in the listed order. The first step that ends in `block`,
   `human`, `blocked-external` or an error stops the sequence. It fails closed.

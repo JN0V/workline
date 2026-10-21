@@ -142,7 +142,11 @@ type checkContext struct {
 // sumChecks sums up a head's checks as sumRuns does, check runs and
 // commit statuses both, workline's own statuses left out: a verdict kept,
 // a yes held, are no check of the change.
-func sumChecks(all []checkContext) string {
+func sumChecks(all []checkContext) string { return sumRuns(runsOf(all)) }
+
+// runsOf reads check runs and commit statuses as runs, workline's own
+// statuses left out.
+func runsOf(all []checkContext) []CheckRun {
 	var runs []CheckRun
 	for _, c := range all {
 		r := CheckRun{Name: c.Name}
@@ -160,7 +164,7 @@ func sumChecks(all []checkContext) string {
 		}
 		runs = append(runs, r)
 	}
-	return sumRuns(runs)
+	return runs
 }
 
 // me is who this token writes as: the GitHub App's bot when the workflow

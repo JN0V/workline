@@ -175,7 +175,10 @@ jobs:
     concurrency: {group: "workline-review-${{ github.event.pull_request.number }}", cancel-in-progress: false}
     # pull-requests read: the reviewer, when the line runs it, reads its
     # summary comment, to review only the commits it has not reviewed yet.
-    permissions: {contents: read, security-events: write, pull-requests: read}
+    # issues, checks, statuses and actions read: on the release tool's pull
+    # request, what holds the release — an open issue labelled
+    # workline:hold-release, main's tip not green (ADR-0051).
+    permissions: {contents: read, security-events: write, pull-requests: read, issues: read, checks: read, statuses: read, actions: read}
     # Only whether a token is there: the agent's goes to the one step that
     # calls it, not to installs whose scripts could read it; the App's key
     # never comes here.
@@ -193,8 +196,10 @@ jobs:
       # The engine built from this commit: the gates' job's when it built
       # it, else built here, for no job after; and the tools its roles use,
       # from their releases, checksums verified.
+      # Go left set up on workline's own release pull request: GoReleaser
+      # builds the release's binary with it, below.
       - uses: ./.github/actions/engine
-        with: {keep: "false"}
+        with: {keep: "false", go: "${{ startsWith(github.head_ref, 'release-please--') }}"}
       - name: gitleaks
         run: |
           bin="$RUNNER_TEMP/bin"; mkdir -p "$bin"; cd "$RUNNER_TEMP"
@@ -286,6 +291,22 @@ jobs:
       - uses: github/codeql-action/upload-sarif@v4
         if: '!cancelled() && github.event.pull_request.head.repo.full_name == github.repository'
         with: {sarif_file: workline.sarif, category: workline}
+
+      # workline's own release pull request (ADR-0051): the binary
+      # GoReleaser builds, as release.yml will at the tag, says the version
+      # the pull request releases. Beside the tests, never after them.
+      - uses: goreleaser/goreleaser-action@v6
+        if: startsWith(github.head_ref, 'release-please--')
+        with: {version: "~> v2", install-only: true}
+      - name: The release's binary says its version
+        if: startsWith(github.head_ref, 'release-please--')
+        run: |
+          want=v$(jq -r '.["."]' .release-please-manifest.json)
+          mkdir -p "$RUNNER_TEMP/release"
+          GORELEASER_CURRENT_TAG=$want goreleaser build --snapshot --single-target --clean --output "$RUNNER_TEMP/release/workline"
+          got=$("$RUNNER_TEMP/release/workline" version)
+          echo "the release's binary says $got; this pull request releases $want"
+          [ "$got" = "$want" ] || { echo "::error title=workline::the binary GoReleaser builds says $got, not $want, the version this pull request releases"; exit 1; }
 
       # An agent missing or out of quota (3) is said, not taken for the
       # change's fault: a person judges what it would have (ADR-0010).

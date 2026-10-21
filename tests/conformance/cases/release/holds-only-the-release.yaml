@@ -1,0 +1,16 @@
+case: release/holds-only-the-release
+about: "An issue labelled to hold the release, and main's tip red, hold only the release (ADR-0051): any other merge request is judged as before, neither read."
+given:
+  repo: documented
+  setup:
+    - "git checkout -qb fix-typo && echo 'notes' > NOTES.txt && git add NOTES.txt && git commit -qm 'chore: keep notes'"
+  forge:
+    issues: [{id: 7, title: "Sign-in fails on Safari", labels: ["workline:hold-release"], comments: []}]
+    merge-requests: [{id: 2, branch: fix-typo, base: main, labels: [], comments: []}]
+    tips: {main: [{name: test, state: failure}]}
+run: {route: merge-request, input: {range: "main..HEAD"}, target: {merge-request: 2}, ai: none}
+expect:
+  status: pass
+  no-findings:
+    - {rule: release-held, where: "#7"}
+    - {rule: release-base-red, where: main}

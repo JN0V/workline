@@ -1,0 +1,16 @@
+case: release/held-while-main-checks-run
+about: "A check still running on main's tip is not green: it holds the release (ADR-0051), named, till it ends; the release's check is read again then (on GitHub, workline-release.yml runs it again)."
+given:
+  repo: documented
+  setup:
+    - "git tag v1.0.0"
+    - "git checkout -qb release-please--branches--main && echo '# Changelog' > CHANGELOG.md && git add CHANGELOG.md && git commit -qm 'chore(main): release 1.0.1'"
+  forge:
+    issues: []
+    merge-requests: [{id: 1, branch: release-please--branches--main, base: main, labels: [], comments: []}]
+    tips: {main: [{name: test, state: pending}, {name: lint, state: success}]}
+run: {route: merge-request, input: {range: "main..HEAD"}, target: {merge-request: 1}, ai: none}
+expect:
+  status: block
+  findings:
+    - {rule: release-base-pending, where: main, level: block, message: "has checks not done: test"}

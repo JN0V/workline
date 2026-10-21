@@ -1,6 +1,6 @@
 ---
 sources: [ci/github, .github/workflows/workline.yml, .github/workflows/workline-apply.yml, .github/workflows/workline-gardening.yml, .github/workflows/workline-sample.yml, .github/actions/engine/action.yml, .github/workflows/release.yml, .github/workflows/release-please.yml, release-please-config.json, .goreleaser.yaml, cmd/workline]
-checked: a840c0a3
+checked: 47a746d7
 judged: 220b6dc
 verified: agent:claude-code
 reader: fe1505d43360
@@ -73,6 +73,11 @@ write run the default branch's workflow, never a pull request's own
    - [workline-fork.yml](../ci/github/workline-fork.yml): comments a fork's
      pull request, which gets no secret and no right to write
      ([its gates](gates-in-ci.md#a-forks-pull-request)).
+   - [workline-release.yml](../ci/github/workline-release.yml), with a
+     release tool: runs the release pull request's check again when the
+     label `workline:hold-release` changes, or main's runs end; list
+     main's workflows in its `workflow_run`
+     ([what holds a release](release-holds.md)).
    - [workline-gardening.yml](../ci/github/workline-gardening.yml):
      gardening, nightly while a backlog is caught up, then weekly; its
      `apply` runs every time, and then rebuilds on `main` the pull
@@ -119,6 +124,9 @@ and `apply`, with the App, commits the fix to its branch,
   it writes only code scanning's SARIF, without the documentalist's and
   the reviewer's findings: a conversation each to resolve
   ([#412](https://github.com/JN0V/workline/issues/412)).
+- `judge` reads issues, checks, statuses and actions too: on a release
+  tool's pull request, what holds the release
+  ([what holds a release](release-holds.md)).
 - `judge` runs on a pull request opened, pushed to, reopened, and marked
   ready (`ready_for_review`). A draft asks no agent, `workline/verdict`
   pending until it is ready; opened ready or marked ready, the reviewer
@@ -213,12 +221,17 @@ with release-please, never a tag by hand:
   `x-release-please-version` (release-please-config.json);
 - the App's token, not the job's: a pull request opened with
   `GITHUB_TOKEN` starts no workflow, so its checks would never run;
+- on that pull request, `judge` holds it while an open issue is labelled
+  `workline:hold-release` or main's tip is not green, and builds the
+  binary with GoReleaser: `workline version` must say the version it
+  releases ([what holds a release](release-holds.md));
 - on that pull request, `judge` passes its branch (`--branch`): it is
   judged as any other, the reviewer leaving the versions it bumps; no
   doc holds it
   ([ADR-0051](adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-1-the-release-weekly));
   release-please keeps it on `main` (`always-update`);
-- the person merges it: that is the decision. release-please tags the
+- the person merges it each Monday, sooner for a fix that touches a
+  real user: that is the decision. release-please tags the
   merged commit `vX.Y.Z` and writes the release with its notes; in the
   same run, release.yml builds the binaries with GoReleaser, which uploads
   them and keeps the notes (`release.mode: keep-existing`), and pushes the

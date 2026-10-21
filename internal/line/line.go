@@ -211,6 +211,25 @@ func RunWith(event string, base engine.Options, gates *Gates) *Result {
 		res.Range = gatesRange
 		res.Commits, _ = commitsOf(base.Repo, gatesRange)
 	}
+	// What holds the release on the forge (ADR-0051): read once, beside
+	// the steps, stopping none of them; the line's verdict takes it.
+	if !gates.Only && !warnOnly && !queue {
+		if found, held := releaseHolds(event, base); len(found) > 0 {
+			res.Findings = append(res.Findings, found...)
+			status := verdict.Pass
+			for _, f := range found {
+				if f.Level == "" || f.Level == verdict.Block {
+					status = verdict.Block
+				}
+			}
+			defer func() {
+				res.Status = worst(res.Status, status)
+				if held != "" {
+					res.Summary += "; the release held: " + held
+				}
+			}()
+		}
+	}
 	var notPassed []string // with every step run: those that did not pass, and how
 	considered := 0
 	// The gates' findings, for the role steps after them that read them

@@ -163,6 +163,11 @@ agent, no token, red when it holds the release. Have your jobs that
 publish need it (`needs: [workline:release]`)
 ([how](release.md#at-a-tag-on-gitlab)).
 
+A release tool's merge request is held while an open issue is labelled
+`workline:hold-release` or main's pipeline is not green. No pipeline
+starts on a label: run `workline:judge` again once it is off
+([what holds a release](release-holds.md)).
+
 ### When a schedule runs
 
 gitlab.com runs a schedule at its own interval, not at the minute written:

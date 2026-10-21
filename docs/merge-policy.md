@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine/merge.go, internal/engine/queue.go, internal/forge/merge.go, internal/forge/github_merge.go, internal/forge/gitlab_merge.go, ci/github/workline-apply.yml, ci/github/workline-merge.yml, ci/gitlab/workline.gitlab-ci.yml]
-checked: a840c0a3
+checked: 47a746d7
 verified: agent:claude-code
 ---
 # The merge policy
@@ -88,6 +88,8 @@ merge: {autonomy: cautious}   # off unless set: no auto-merge is touched
 
 - **A release pull request** merges only labelled; it never waits for
   the docs ([ADR-0051](adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-1-the-release-weekly)).
+  An issue labelled to hold it, or main not green, turns its verdict red
+  until they are gone ([what holds a release](release-holds.md)).
 - **A fork's**: its CI run is the fork's own, so the templates keep no
   verdict of it: it waits for a person.
 - **Any other** with no label, whoever opened it — but, at `normal`,

@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine/engine.go, internal/line, internal/routing, internal/verdict, routing.default.yaml]
-checked: a840c0a3
+checked: f34d3dbe
 verified: agent:claude-code
 judged-in-parts: 5d66009
 judged: 71c5f05
@@ -28,7 +28,9 @@ The words the other pages use, each in a few lines. The rules behind them:
   ([ADR-0037](adr/0037-the-schedule-runs-every-step.md)); there, a
   proposal refused is said, not failed. A release's dry run (`route
   release --dry-run`) runs every step too, and passes, saying what would
-  hold the release ([release](release.md#each-night-a-dry-run)).
+  hold the release ([release](release.md#each-night-a-dry-run)). On the
+  release, the line also reads what holds it on the forge, stopping no
+  step ([what holds a release](release-holds.md)).
   `workline run-role <role> --event <event>` runs one role alone.
 - **Gate** — a step that runs your own scanners and reads their output
   against thresholds, never asking a model (`gate:<name>` in a line); on
