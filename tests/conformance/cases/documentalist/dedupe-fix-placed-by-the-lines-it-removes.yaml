@@ -1,0 +1,12 @@
+case: documentalist/dedupe-fix-placed-by-the-lines-it-removes
+about: "A duplicates patch quoting a context line with a space too many is placed by the lines it removes, found once in the doc, and applied as placed, written anew so git applies it there, as for a doc the code made suspect (#592): the agent is not asked again for a fix whose place is beyond doubt."
+given: {repo: untidy}
+run: {role: documentalist, event: schedule, ai: "fake:dedupe-links-context-misquoted"}
+expect:
+  status: pass
+  agent-calls: 1
+  calls: [{task: duplicates}]
+  applied: [patch]
+  files:
+    docs/faq.md: {contains: "## How long am I signed in?\n\nSee [how long a session lasts](sessions.md#how-long-a-session-lasts).\n"}
+  no-findings: [{rule: duplicate, where: docs/faq.md}]
