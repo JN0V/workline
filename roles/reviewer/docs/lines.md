@@ -1,6 +1,7 @@
 ---
 sources: [internal/builtin/reviewer/lines.go, internal/builtin/reviewer/reviewer.go, internal/forge/review.go, internal/forge/github_review.go, internal/forge/gitlab_review.go, internal/engine/review.go]
 checked: d108841c
+judged: 39dcb7b
 verified: agent:claude-code
 ---
 # Reviewer — each finding on its line
