@@ -1,0 +1,13 @@
+case: reviewer/ci-change-skips-on-the-record
+about: "By default, only what the merge request's own pipeline runs (.github/, .gitlab-ci.yml, .workline/) makes the reviewer skip no commit (ADR-0051, cut 5). ci/ is not among them: a project's CI templates, say, are product code. The record is read and its commits skipped, as for any change."
+given:
+  repo: reviewed
+  setup:
+    - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"
+    - "mkdir -p ci && echo 'go test ./...' > ci/run.sh && git add ci && git commit -qm 'ci: a template'"
+    - "mkdir -p .git/workline && echo \"<!-- workline:record reviewed=$(git rev-parse HEAD) runs=1 -->\" > .git/workline/reviewer-record"
+run: {role: reviewer, event: review, input: {range: main..HEAD}, ai: "fake:review-nothing"}
+expect:
+  status: pass
+  agent-calls: 0
+  no-findings: [{rule: line-changed}]

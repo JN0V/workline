@@ -105,7 +105,7 @@ workline route merge-request --warn-only --gates-from gates.json --ai claude
 1. **The gates' result**: the gate steps before it in the line, or the
    file `--gates-from` gives, only for the commits the run judges.
 2. **The record**: hidden in its comment on a merge request, read only
-   from the one workline's own account wrote
+   from the one workline's own account wrote and no one else edited last
    ([ADR-0051](../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md));
    on a machine, in `.git/workline/inspector-record`. A finding there is
    not asked again.

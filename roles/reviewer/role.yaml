@@ -80,6 +80,11 @@ settings:
   # the rest left, said, for the next push or the run again, first in line.
   # A lens that blocks, and the run on ready, read every one. 0: every one.
   commits-per-push: 5
+  # A change to what the merge request's own pipeline runs skips no commit
+  # on the record (ADR-0051, cut 5): .github/, .gitlab-ci.yml and
+  # .workline/, and these paths, for a pipeline that runs scripts from
+  # elsewhere: [ci/, scripts/ci/].
+  pipeline-paths: []
   findings-max: 10      # findings on the change checked and shown a run; the rest counted
   issues-max: 3         # issues opened a run for what lies outside the change; the rest counted
   diff-lines-max: 1500  # lines of the change's hunks one call is given; past them, the change is read in parts

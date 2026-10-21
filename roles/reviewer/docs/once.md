@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, internal/builtin/reviewer/once.go, internal/builtin/reviewer/reviewer.go, internal/builtin/reviewer/record.go]
-checked: ae1b860d
+checked: bdea377f
 verified: agent:claude-code
 ---
 # Reviewer — a finding judged once

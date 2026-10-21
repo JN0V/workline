@@ -63,7 +63,9 @@ Cases in
 - **The record read only from workline's own account's comment**, a
   person of the project's never
   ([ADR-0051](../../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md),
-  step 1): `record-of-another-not-read`.
+  step 1): `record-of-another-not-read`; nor one another edited last,
+  as the forge's GraphQL says (step 9), the same helper as the
+  reviewer's: `reviewer/record-edited-by-another-not-read*`.
 - **No agent, no call, said**: `no-agent-no-call-said`; a draft waits for
   ready: `draft-waits-for-ready`; no new finding, no call:
   `no-new-finding-no-call`.
