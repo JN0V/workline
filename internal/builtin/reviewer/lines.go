@@ -13,9 +13,10 @@ import (
 
 // lineComments are the findings on the change, each a comment on its line
 // in the forge's own review (#277): the rules', on the lines the change
-// added, then each lens's, one a finding — two on one line, two comments,
-// each answered and resolved apart. A finding quoted from an issue has no
-// line, and stays in the summary comment only.
+// added, then each lens's important one, one a finding — two on one line,
+// two comments, each resolved apart. A nit is no comment, no conversation
+// to resolve: it stays in the summary comment, asking nothing (ADR-0051,
+// cut 4); so does a finding quoted from an issue, which has no line.
 func lineComments(repo string, s Settings, st state, related []Finding) []forge.LineComment {
 	files := map[string][]string{}
 	linesOf := func(path string) []string {
@@ -40,7 +41,7 @@ func lineComments(repo string, s Settings, st state, related []Finding) []forge.
 	for _, g := range related {
 		for _, f := range members(g) {
 			path, n, ok := fileLine(f.Where)
-			if !ok {
+			if !ok || f.Severity != "important" {
 				continue
 			}
 			if f.On > 0 {
@@ -95,16 +96,12 @@ func holds(blocks bool) string {
 	return "warns"
 }
 
-// lineBody is a lens's finding on its line: what it holds and which lens
-// found it, then the finding whole — title, why, fix, how it was verified.
+// lineBody is a lens's important finding on its line: what it holds and
+// which lens found it, then the finding whole — title, why, fix, how it
+// was verified.
 func lineBody(s Settings, f Finding) string {
-	blocks := s.blocking(f)
-	sev := "Important"
-	if f.Severity != "important" {
-		sev = "Nit"
-	}
 	var b strings.Builder
-	fmt.Fprintf(&b, "**workline reviewer** · %s · %s\n\n**%s: %s**\n\n%s\n", holds(blocks), f.Lens, sev, f.Title, f.Why)
+	fmt.Fprintf(&b, "**workline reviewer** · %s · %s\n\n**Important: %s**\n\n%s\n", holds(s.blocking(f)), f.Lens, f.Title, f.Why)
 	if f.Claim != "" {
 		fmt.Fprintf(&b, "\nThe author said: “%s”\n", oneLine(f.Claim, 300))
 	}
@@ -146,9 +143,9 @@ func reviewOf(st state, lines []forge.LineComment) map[string]any {
 	for _, c := range lines {
 		comments = append(comments, map[string]any{"path": c.Path, "line": c.Line, "key": c.Key, "body": c.Body})
 	}
-	body := fmt.Sprintf("**workline reviewer** on %s: each finding on its line, what blocks marked. The summary comment holds the verdict; the reviewer never approves: the author fixes, a person merges.", short(st.Head))
+	body := fmt.Sprintf("**workline reviewer** on %s: each important finding on its line, what blocks marked; the summary comment holds the verdict, and the nits. The reviewer never approves: the author fixes what blocks, a person merges.", short(st.Head))
 	if st.Warn == warnOnly { // the run apart (ADR-0050)
-		body = fmt.Sprintf("**workline reviewer, the lenses that warn** on %s: each finding on its line; none holds the verdict. The reviewer never approves: the author fixes, a person merges.", short(st.Head))
+		body = fmt.Sprintf("**workline reviewer, the lenses that warn** on %s: each important finding on its line, the nits in their summary comment; none holds the verdict, none asks a fix. The reviewer never approves: a person merges.", short(st.Head))
 	}
 	return map[string]any{"head": st.Head, "comments": comments, "body": body}
 }

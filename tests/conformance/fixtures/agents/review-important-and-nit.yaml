@@ -1,0 +1,15 @@
+# A lens of the reviewer, on the `reviewed` fixture once Average divides by
+# one less than the count and Double is added: an important finding and a
+# nit, both on the change.
+- finding:
+    severity: important
+    title: Average divides by one less than the count
+    why: the mean of [2, 4] comes out 6, and one value divides by zero
+    cause: {path: calc/calc.go, quote: "return total / (len(values) - 1)"}
+    fix: divide by len(values)
+- finding:
+    severity: nit
+    title: Double on one line
+    why: the other functions are written over several lines
+    cause: {path: calc/calc.go, quote: "func Double(n int) int { return 2 * n }"}
+    fix: write it over three lines
