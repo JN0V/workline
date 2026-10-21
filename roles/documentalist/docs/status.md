@@ -132,8 +132,8 @@ its evaluation in
 - **The merge policy**, `cautious`, and `normal` for workline's own
   routine pull requests
   ([ADR-0042](../../../docs/adr/0042-the-engine-merges-by-the-projects-policy.md)):
-  the forge merges what a person accepted, kept up to date, the yes taken
-  back on a later push; at `normal`, workline's own records, derived
+  the forge merges what a person accepted once its own head is green, the
+  yes taken back on a later push; at `normal`, workline's own records, derived
   blocks and docs with no yes, each recorded, a revert demoting its kind: the
   [merge cases](../../../tests/conformance/cases/merge), routing's
   `forged-merge-is-judged`, `merge-of-another-branch-is-judged`.

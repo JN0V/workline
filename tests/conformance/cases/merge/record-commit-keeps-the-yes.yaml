@@ -30,7 +30,7 @@ expect:
   status: pass
   no-findings: [{rule: accepted-reset}, {rule: update-left}]
   not-pushed: [feat/sessions]
-  summary-file: ["first in line #7, up to date: it merges once its checks pass"]
+  summary-file: ["accepted into main, #7: each merges once its own head is green"]
   forge:
     merge-requests:
       - {id: 7, auto-merge: true, labels: [workline:accepted], comments: 0}

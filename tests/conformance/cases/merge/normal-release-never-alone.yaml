@@ -24,7 +24,7 @@ expect:
     - {rule: waits-for-a-yes, where: "#10", message: "merging it is the decision to release, never made with no person's yes"}
     - {rule: auto-merge-on, where: "#11", message: "with no person's yes, workline's own docs — it changes doc pages a role wrote —"}
   no-findings: [{rule: auto-merge-on, where: "#10"}]
-  summary-file: ["in line into main, #11", "first in line #11, up to date"]
+  summary-file: ["accepted into main, #11: each merges once its own head is green"]
   forge:
     merge-requests:
       - {id: 10, auto-merge: false, comments: 0}

@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine/merge.go, internal/engine/queue.go, internal/forge/merge.go, internal/forge/github_merge.go, internal/forge/gitlab_merge.go, ci/github/workline-apply.yml, ci/github/workline-merge.yml, ci/gitlab/workline.gitlab-ci.yml]
-checked: c2e40104
+checked: 8425efe1
 verified: agent:claude-code
 ---
 # The merge policy
@@ -9,14 +9,13 @@ verified: agent:claude-code
 flowchart LR
   yes["<b>A person</b><br/>labels it accepted"] --> follow["<b>workline follow</b><br/>checks the head's verdict"]
   follow --> on["<b>The forge</b><br/>auto-merge on"]
-  on --> merged["merged,<br/>its checks green"]
-  merged -- "the base moves" --> up["the next in line<br/>brought up to date"]
-  up --> on
+  on --> merged["merged,<br/>its own head green"]
+  merged --> main["<b>main's run</b><br/>a red main said"]
 ```
 
 A person says yes with a label; the forge merges, by its own rules.
-`workline follow` turns the forge's auto-merge on for what was accepted
-and keeps the line moving, one pull request at a time. No agent is called
+`workline follow` turns the forge's auto-merge on for what was accepted;
+each merges once its own head is green. No agent is called
 ([ADR-0042](adr/0042-the-engine-merges-by-the-projects-policy.md)).
 
 ```yaml
@@ -41,19 +40,17 @@ merge: {autonomy: cautious}   # off unless set: no auto-merge is touched
 - **The forge merges**: GitHub's auto-merge, GitLab's "merge when the
   pipeline succeeds", each checking its own rules. One the forge could
   merge at once is merged at once.
-- **One at a time**: when the base moves, the first in line that is behind
-  is brought up to date; the others wait until it merges:
-  - the base merged in, as Update branch does, workline's own lines
-    settled ([ADR-0041](adr/0041-workline-settles-its-own-lines-when-the-base-moves.md));
-  - a role's own branch rebuilt on the base instead
-    ([ADR-0034](adr/0034-the-release-fix-follows-its-base.md)).
-- **The order**: the order the labels were put. Auto-merge a person turned on by hand is their yes, weighed as
-  the label's.
-- **Out of line, said in the job's summary**: a verdict or a check red,
-  a review short, a conflict on a person's line, a push refused. A run
-  the forge cancelled is no result: another run of that check counts —
-  on GitLab, the newest other pipeline of that head —, else it waits.
-  One not judged yet waits, named; the next comes up.
+- **No one at a time, no update first**: a pull request behind its base
+  merges as it is, none waiting for another
+  ([ADR-0051](adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-2-strict-up-to-date-dropped)).
+  Two green alone may break the base together: main's run says it
+  ([below](#a-red-main)).
+- **Auto-merge a person turned on by hand** is their yes, weighed as the
+  label's.
+- **Nothing turned on, said in the job's summary**: a verdict or a check
+  red, a review short. A run the forge cancelled is no result: another
+  run of that check counts — on GitLab, the newest other pipeline of that
+  head —, else it waits. One not judged yet waits, named.
 - **The label** is made in the forge's list when missing: put it in bulk,
   from a saved filter.
 
@@ -91,9 +88,8 @@ merge: {autonomy: cautious}   # off unless set: no auto-merge is touched
 
 - **A release pull request** merges only labelled; it never waits for
   the docs ([ADR-0051](adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-1-the-release-weekly)).
-- **A fork's** is never brought up to date: the token cannot write to a
-  fork. Its CI run is the fork's own, so the templates keep no verdict of
-  it: it waits for a person.
+- **A fork's**: its CI run is the fork's own, so the templates keep no
+  verdict of it: it waits for a person.
 - **Any other** with no label, whoever opened it — but, at `normal`,
   workline's own routine work. A bot's own auto-merge (a dependency
   bot's) is left to it.
@@ -161,9 +157,11 @@ counts as workline's own, the kinds, the revert and the limits:
     `workline-app`; a merge made with the job's own token starts no
     workflow on `main` — nothing is turned on then, said;
   - a ruleset on the base requiring the checks, and `workline/accepted`
-    from the App.
+    from the App; "Require branches to be up to date" left off.
 - **GitLab**: the [template](ci-gitlab.md)'s `workline:merge` job, after
-  the judge; the project bot's token. A label starts no pipeline there: it
+  the judge; the project bot's token. Merged results pipelines on
+  (Premium): without them a merge request's pipeline tests its branch
+  alone. A label starts no pipeline there: it
   waits for that merge request's own next pipeline.
 - **Another forge** (`cmd:`): the operations `merge-state`, `auto-merge`,
   `guarded`, `accept`, `keep-verdict` and `verdict`
@@ -176,17 +174,25 @@ counts as workline's own, the kinds, the revert and the limits:
 | Said | When |
 |---|---|
 | `auto-merge-on`, `merged-at-once` | accepted, its head's verdict passed; at `normal`, "with no person's yes", its kind |
-| `updated` | first in line, brought up to date |
 | `verdict-kept`, `verdict-missing`, `review-to-come` | the verdict kept; one not judged yet; marked ready, the draft's verdict still on its head |
-| `verdict-red`, `review-short`, `checks-red` | out of line, why |
+| `verdict-red`, `review-short`, `checks-red` | nothing turned on, why |
 | `accepted-reset` | a push after the yes: the yes and auto-merge off |
 | `vetoed`, `draft`, `auto-merge-off` | the forge's veto, or the label taken off |
-| `fork-behind`, `update-left` | behind, not brought up to date |
 | `label-ignored` | put by someone who may not push nor merge |
 | `merge-unguarded`, `merge-token`, `merge-unsupported` | a base, a token or a forge it cannot act with |
 | `checks-unread` | its head's checks could not be read: only the line's verdict counts |
 | `merge-state-unread`, `verdict-unread` | its state or its head's verdict could not be read: left as it is |
 | `auto-merge-refused`, `label-not-made` | the forge refused to turn auto-merge on, or to make the label |
+
+## A red main
+
+- **The net is main's run**, after each merge
+  ([main after a merge](main-after-merge.md)): red, it says so in its one
+  issue, and once on each open pull request into it, "base red, not
+  yours".
+- **Counted a week**, in that issue. Above one a week, turn on the
+  forge's queue: GitHub's merge queue in an organisation, GitLab's merge
+  train ([a merge queue or train](merge-queue.md)).
 
 At `normal`, more words:
 [what the summary says there](merge-policy-normal.md#what-the-summary-says).

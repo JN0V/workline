@@ -1,6 +1,6 @@
 ---
 sources: [roles/inspector/role.yaml, roles/inspector/instruction.md, roles/inspector/policy.md, internal/builtin/inspector, internal/line/line.go, ci/github/workline-warn.yml, ci/gitlab/workline.gitlab-ci.yml]
-checked: c2e40104
+checked: 8425efe1
 verified: agent:claude-code
 ---
 # Inspector

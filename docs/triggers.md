@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/line, internal/hooks, internal/forge/gitlab.go, ci/gitlab/workline.gitlab-ci.yml, ci/github/workline.yml, ci/github/workline-gardening.yml, ci/github/workline-sample.yml, routing.default.yaml]
-checked: c2e40104
+checked: 35eb7554
 verified: agent:claude-code
 reader: 2de353fab113
 ---
@@ -74,7 +74,7 @@ In a merge queue or train, the same line with `--input queue=true` and
 the merged result's range runs the gates alone, no agent, no verdict
 written ([the commands](merge-queue.md#the-commands-for-another-ci)).
 After a merge, `route main --ai none --gates-kept <folder>` on the new
-tip, then `apply --main` with a token writing issues; the gates' job
+tip, then `apply --main` with a token writing issues and comments; the gates' job
 of a merge request reads that folder too
 ([the commands](main-after-merge.md#the-commands-for-another-ci)).
 

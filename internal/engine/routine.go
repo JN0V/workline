@@ -352,7 +352,7 @@ type weighed struct {
 // weighRoutine weighs one of workline's own merge requests no person said
 // yes to, at `normal`, and does what the policy says of it: auto-merge on
 // and the yes held on its head with no person's yes, the merge recorded on
-// it; or why it waits for a person's. It returns it when it is in line.
+// it; or why it waits for a person's. It returns it when it is accepted.
 func weighRoutine(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, n *normal, hand map[string]kept) (*inLine, error) {
 	mr, st, tip, e := w.mr, w.st, w.tip, w.e
 	ours := st.AutoMerge && st.AutoMergeBot
@@ -439,7 +439,7 @@ func weighRoutine(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, n *
 		w.say("checks-unread", "warn", "its head's checks could not be read, only the line's verdict counts: "+st.ChecksUnread)
 	}
 	if st.Checks == "failure" {
-		w.say("checks-red", "warn", fmt.Sprintf("workline's own %s, but a check failed on its head (%s): out of line, the next one comes up", kind, short(tip)))
+		w.say("checks-red", "warn", fmt.Sprintf("workline's own %s, but a check failed on its head (%s): auto-merge left as it is", kind, short(tip)))
 		return nil, nil
 	}
 	v, err := verdictOf(m, hand, tip)
@@ -452,10 +452,10 @@ func weighRoutine(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, n *
 	}
 	switch v.class {
 	case "":
-		w.say("verdict-missing", "", fmt.Sprintf("workline's own %s; no verdict of the line on its head (%s) yet: it waits for it, the next one comes up meanwhile", kind, short(tip)))
+		w.say("verdict-missing", "", fmt.Sprintf("workline's own %s; no verdict of the line on its head (%s) yet: it waits for it", kind, short(tip)))
 		return e, nil
 	case verdictWaits: // marked ready, the run on ready not done yet
-		w.say("review-to-come", "", fmt.Sprintf("workline's own %s; its head's (%s) verdict is the draft's, %s: it waits for the run on ready, the next one comes up meanwhile", kind, short(tip), v.why))
+		w.say("review-to-come", "", fmt.Sprintf("workline's own %s; its head's (%s) verdict is the draft's, %s: it waits for the run on ready", kind, short(tip), v.why))
 		return e, nil
 	case verdictRed, verdictShort:
 		// Held by the yes not given on this head (the status Accepted;
@@ -465,7 +465,7 @@ func weighRoutine(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, n *
 		if err := m.Accept(tip, false, v.why); err != nil {
 			return nil, err
 		}
-		w.say(rule, "warn", fmt.Sprintf("workline's own %s, but %s: no yes on its head, out of line", kind, v.why))
+		w.say(rule, "warn", fmt.Sprintf("workline's own %s, but %s: no yes on its head", kind, v.why))
 		return nil, nil
 	}
 	why := fmt.Sprintf("workline's own %s — %s —, opened and pushed by its App, every commit its own; its head's verdict passed, every agent's review whole", kind, kindSays[kind])
@@ -473,7 +473,6 @@ func weighRoutine(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, n *
 		return nil, err
 	}
 	if st.AutoMerge {
-		e.ready = true
 		return e, nil
 	}
 	// The record, where a person sees it and the engine finds it again
@@ -496,7 +495,6 @@ func weighRoutine(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, n *
 		return nil, nil
 	}
 	w.say("auto-merge-on", "", fmt.Sprintf("with no person's yes, %s: auto-merge turned on, the forge merges it once its checks pass", why))
-	e.ready = true
 	return e, nil
 }
 

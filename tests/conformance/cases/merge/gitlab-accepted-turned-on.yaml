@@ -1,5 +1,5 @@
-case: merge/gitlab-accepted-turned-on-and-brought-up
-about: "On GitLab (#321): a Developer of the project put `workline::accepted` — the scoped spelling — on a merge request behind main whose head the line passed; `workline follow` sets it to merge when its pipeline succeeds (the merge API's `auto_merge`, at its head), then, first in line, merges main into it, as on GitHub (ADR-0042)."
+case: merge/gitlab-accepted-turned-on
+about: "On GitLab (#321): a Developer of the project put `workline::accepted` — the scoped spelling — on a merge request behind main whose head the line passed; `workline follow` sets it to merge when its pipeline succeeds (the merge API's `auto_merge`, at its head), and leaves it behind main as it is: GitLab merges it once its own pipeline succeeds, as on GitHub (ADR-0042, ADR-0051)."
 given:
   repo: documented
   config: {merge: {autonomy: cautious}}
@@ -24,8 +24,8 @@ expect:
   status: pass
   findings:
     - {rule: auto-merge-on, where: "!7", message: "accepted by @dana, its head's verdict passed: auto-merge turned on"}
-    - {rule: updated, where: "!7", message: "first in line, brought up to date: main merged in"}
-  merged: {feat/sessions: main}
+  no-findings: [{rule: updated}]
+  not-pushed: [feat/sessions]
   forge:
     merge-requests:
       - {id: 7, auto-merge: true, labels: ["workline::accepted"], comments: 0}

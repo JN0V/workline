@@ -253,7 +253,8 @@ so is `--warn-only`, and any value but `true` or `false`
   checked as any other.
 - **Its result** names the event (`event`) and what it compared
   (`main`: `before`, `head`, the commits between); `apply --main` keeps
-  it in one issue, edited only when what it lists changes.
+  it in one issue, edited only when what it lists changes, and, red,
+  says so once on each open merge request whose base holds it.
 
 ### Each step's seconds, a moment's budget
 
