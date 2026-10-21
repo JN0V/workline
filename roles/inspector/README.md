@@ -1,6 +1,6 @@
 ---
 sources: [roles/inspector/role.yaml, roles/inspector/instruction.md, roles/inspector/policy.md, internal/builtin/inspector, internal/line/line.go, ci/github/workline-warn.yml, ci/gitlab/workline.gitlab-ci.yml]
-checked: ae744e99
+checked: ae1b860d
 verified: agent:claude-code
 ---
 # Inspector
@@ -119,7 +119,9 @@ workline route merge-request --warn-only --gates-from gates.json --ai claude
    left is edited. A push landing before it is posted: it is still
    posted, and the push's run, which waits for it, asks only what is
    new; both runs' records are merged
-   ([#580](https://github.com/JN0V/workline/issues/580)).
+   ([#580](https://github.com/JN0V/workline/issues/580)). Applied out
+   of order, the newer run's text stays
+   ([#598](https://github.com/JN0V/workline/issues/598)).
 6. **The verdict**: always a pass; each triage a warning in the run's
    summary. Never in code scanning: workline posts it itself.
 
