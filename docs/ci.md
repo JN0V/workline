@@ -1,6 +1,6 @@
 ---
 sources: [ci/github, ci/gitlab, ci/forgejo/workline-forge.sh, roles/product-owner/role.yaml, cmd/workline]
-checked: 35eb7554
+checked: 47a746d7
 judged: a8574a5
 verified: agent:claude-code
 reader: 8aab3bd261d9
@@ -37,6 +37,7 @@ then one that applies, with the write token and no AI key
 | gardening | nightly while a backlog is caught up, then weekly | the `schedule` line; first, an open release pull request's docs | one merge request a task ([ADR-0006](adr/0006-gardening-opens-one-merge-request-per-task.md)); then those the branch moved under, rebuilt or closed ([ADR-0034](adr/0034-the-release-fix-follows-its-base.md#amendment-2026-10-12-gardenings-merge-requests-follow-too-or-are-closed)) |
 | release docs | the other nights | an open release pull request's docs due; none, no agent | their fix, a merge request of its own |
 | release dry run | every night, with the two above | what would hold the release if it were cut now; no agent | one comment on the release pull request, else a part of main's issue ([how](release.md)) |
+| release merge request | each of its runs; on GitHub, again when the hold label changes or main's runs end | an open issue labelled `workline:hold-release`, main's tip not green: read, never run again | its check red ([how](release-holds.md)) |
 | release, GitLab | a tag pipeline | the release's line, no agent, no token | — : red when it holds the release, so the jobs publishing it wait ([how](release.md#at-a-tag-on-gitlab)) |
 | sample | weekly | the docs and acts drawn | an issue comment, a merge request |
 | import | by hand | a file's items | the issues |

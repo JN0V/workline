@@ -63,6 +63,10 @@ type FakeState struct {
 	// what of the branches' rules the token cannot read (Conversations).
 	ConversationsRequired []string `json:"conversations-required,omitempty"`
 	ConversationsUnread   string   `json:"conversations-unread,omitempty"`
+	// Tips are the runs on each branch's tip, by branch, as Tip reads
+	// them; TipsUnread, why the forge does not answer them.
+	Tips       map[string][]CheckRun `json:"tips,omitempty"`
+	TipsUnread string                `json:"tips-unread,omitempty"`
 }
 
 // FakeCheck is a check written on a commit.

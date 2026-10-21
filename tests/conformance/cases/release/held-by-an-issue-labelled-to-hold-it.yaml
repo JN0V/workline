@@ -1,0 +1,23 @@
+case: release/held-by-an-issue-labelled-to-hold-it
+about: "An open issue labelled `workline:hold-release` holds the release (ADR-0051, cut 1): the release tool's merge request blocks, the issue named, and how to let it go said. The hold is the forge's own: a person takes the label off, or closes the issue. A closed issue with the label, and main's tip green, hold nothing."
+given:
+  repo: documented
+  setup:
+    - "git tag v1.0.0"
+    - "git checkout -qb release-please--branches--main && echo '# Changelog' > CHANGELOG.md && git add CHANGELOG.md && git commit -qm 'chore(main): release 1.0.1'"
+  forge:
+    issues:
+      - {id: 7, title: "Sign-in fails on Safari", labels: [bug, "workline:hold-release"], comments: []}
+      - {id: 8, title: "An old hold", closed: true, labels: ["workline:hold-release"], comments: []}
+    merge-requests: [{id: 1, branch: release-please--branches--main, base: main, labels: [], comments: []}]
+    tips: {main: [{name: test, state: success}]}
+run: {route: merge-request, input: {range: "main..HEAD"}, target: {merge-request: 1}, ai: none}
+expect:
+  status: block
+  agent-calls: 0
+  summary: "the release held: #7"
+  findings:
+    - {rule: release-held, where: "#7", level: block, message: "\"Sign-in fails on Safari\" is open, labelled workline:hold-release: it holds the release; take the label off, or close the issue"}
+  no-findings:
+    - {rule: release-held, where: "#8"}
+    - {rule: release-base-red, where: main}

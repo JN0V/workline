@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine/merge.go, internal/engine/queue.go, internal/forge/merge.go, internal/forge/github_merge.go, internal/forge/gitlab_merge.go, ci/github/workline-apply.yml, ci/github/workline-merge.yml, ci/gitlab/workline.gitlab-ci.yml]
-checked: 8425efe1
+checked: 47a746d7
 verified: agent:claude-code
 ---
 # The merge policy
@@ -91,6 +91,8 @@ merge: {autonomy: cautious}   # off unless set: no auto-merge is touched
   merges: the only one `follow` updates. Its docs due
   wait for the night's agent: held too, never red, its yes kept
   ([ADR-0050, §7](adr/0050-each-act-has-its-moment-and-a-wait-budget.md#7-decided-by-the-maintainer-on-2026-10-19)).
+  An issue labelled to hold it, or main not green, turns its verdict red
+  until they are gone ([what holds a release](release-holds.md)).
 - **A fork's**: its CI run is the fork's own, so the templates keep no
   verdict of it: it waits for a person.
 - **Any other** with no label, whoever opened it — but, at `normal`,
