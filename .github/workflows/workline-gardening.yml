@@ -33,7 +33,10 @@ jobs:
       # The documentalist's links to other sites, checked at night only:
       # they break with no change to the repository, and main's run after
       # a merge leaves them here (ADR-0051, step 8). Pinned, its checksum.
+      # A failed download fails nothing: the night's summary then says the
+      # links were not checked, lychee not installed.
       - name: lychee, for the links to other sites
+        continue-on-error: true
         run: |
           cd "$RUNNER_TEMP"; f=lychee-x86_64-unknown-linux-musl.tar.gz
           curl -sSfLO https://github.com/lycheeverse/lychee/releases/download/lychee-v0.24.2/$f
