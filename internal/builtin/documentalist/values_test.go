@@ -69,6 +69,20 @@ func TestSaysAsNow(t *testing.T) {
 		{"a block comment over lines", "```go\n/*\n since v0.38.0\n*/\nrun()\n```\n", "v0.38.0", false},
 		{"code after a block comment closed", "```go\n/* the pin */\nconst Version = \"v0.38.0\"\n```\n", "v0.38.0", true},
 		{"a comment in a block before is not this one's", "```go\n/* open\n```\n\n```yaml\nsince: v0.38.0\n```\n", "v0.38.0", true},
+		// A tag's `>` and a blockquote's are markup, not a range (#569).
+		{"a pin in an HTML tag", "Install <code>v0.38.0</code>.\n", "v0.38.0", true},
+		{"a version stated in bold HTML", "This is Clock <b>0.38.0</b>.\n", "v0.38.0", true},
+		{"a pin in a blockquote", "> v0.38.0 is the version to pin.\n", "v0.38.0", true},
+		{"a pin in a nested blockquote", "> > v0.38.0 is the version to pin.\n", "v0.38.0", true},
+		{"a pin in an XML example", "```xml\n<version>0.38.0</version>\n```\n", "v0.38.0", true},
+		{"a range in prose, a bare >", "Any version > 0.38.0 works.\n", "v0.38.0", false},
+		{"a range in prose, >=", "Declare >= 0.38.0 in your manifest.\n", "v0.38.0", false},
+		{"a range in a tag", "Declare <code>>=0.38.0</code>.\n", "v0.38.0", false},
+		{"a range in a blockquote", "> >= 0.38.0 is what it accepts.\n", "v0.38.0", false},
+		{"history in a tag", "The name, added in <code>v0.38.0</code>.\n", "v0.38.0", false},
+		{"a minimum in a tag", "It needs <code>v0.38.0</code> or later.\n", "v0.38.0", false},
+		{"history in a blockquote over lines", "> The templates need the first release after\n> v0.38.0, its image too.\n", "v0.38.0", false},
+		{"a minimum in a blockquote over lines", "> The templates need v0.38.0\n> or later.\n", "v0.38.0", false},
 	} {
 		if got := saysAsNow(doc(c.body), c.v); got != c.want {
 			t.Errorf("%s: saysAsNow = %v, want %v", c.name, got, c.want)
