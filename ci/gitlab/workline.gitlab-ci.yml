@@ -25,9 +25,11 @@
 #   warn   beside judge, with the agent's token: the reviewer's lenses that
 #          only warn (--warn-only), and the inspector's triage of what the
 #          gates found, given their result (ADR-0049); warn:apply posts
-#          what they found, each in a comment of its own. Neither fails the
-#          pipeline, nor holds the head's verdict, which workline:merge
-#          reads from judge alone.
+#          what they found, each in a comment of its own. Both run in a
+#          child pipeline of this same file, which the merge request's
+#          does not wait for (ADR-0051): neither fails a pipeline the
+#          merge waits on, nor holds the head's verdict, which
+#          workline:merge reads from judge alone.
 #   The findings show in the merge request's Code Quality report, on every tier.
 #   Each job also writes its summary (`--summary`): what ran, each step's
 #   verdict, the findings, what waits to be applied; the applying job adds
@@ -298,37 +300,63 @@ workline:apply:
     reports: {annotations: workline-annotations.json}
     expire_in: 1 week
 
+# What only warns, in a child pipeline (ADR-0051): GitLab merges a merge
+# request set to merge once its pipeline succeeds, and waits for
+# `allow_failure` jobs too. Started with no `strategy`, the merge
+# request's pipeline ends with the verdict. The child is this same file,
+# where only workline:warn and workline:warn:apply run: copied elsewhere
+# than ci/workline.gitlab-ci.yml, change its `include`.
+workline:warn:child:
+  stage: test
+  needs: [workline:gates]
+  interruptible: true
+  rules:                            # also when the gates did not pass: their findings are what the inspector triages
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_EVENT_TYPE != "merge_train"
+      when: always
+  variables: {WORKLINE_PARENT_PIPELINE_ID: $CI_PIPELINE_ID}   # where workline:warn reads the gates' result
+  # The file's own variables, never forwarded: a trigger job would expand
+  # them where CI_PROJECT_DIR is empty (WORKLINE_RUNS_DIR=/.workline-runs).
+  inherit: {variables: false}
+  trigger:
+    include: ci/workline.gitlab-ci.yml
+  allow_failure: true               # a child that cannot start warns: the lenses that warn did not read
+
 # The reviewer's lenses that only warn (its `ai-findings`, ADR-0050; the
 # first release after v0.36.0): workline:judge asks the lenses that block
 # (--warn-apart), and workline:merge reads the head's verdict from it
-# alone. This job asks the others beside it, from the pipeline's start
+# alone. This job asks the others beside it, in the child pipeline
 # (--warn-only); workline:warn:apply posts what they found, in a comment
 # of their own. Never a verdict, and neither job fails the pipeline
-# (allow_failure): a lens that fails is said in that comment. GitLab
-# merges a merge request set to merge once its pipeline succeeds: the
-# merge waits for them, never on what they find. With the agent's token
-# and the bot's: unposted, their record would never move, and every
-# pipeline read them all again. One review apart at a time per merge
-# request. The inspector's triage too, when the line routes it (ADR-0049):
-# after workline:gates, whatever its verdict, it reads the result that job
-# left (`--gates-from`); the gates never run here, in the agent's reach.
+# (allow_failure): a lens that fails is said in that comment. With the
+# agent's token and the bot's: unposted, their record would never move,
+# and every pipeline read them all again. One review apart at a time per
+# merge request. The inspector's triage too, when the line routes it
+# (ADR-0049): after workline:gates, whatever its verdict, it reads the
+# result that job left (`--gates-from`); the gates never run here, in the
+# agent's reach.
 workline:warn:
   extends: .workline
   stage: test
   environment: *environment
-  needs: [{job: "workline:gates", artifacts: true}]
+  needs: []
   interruptible: true
   resource_group: workline-warn-$CI_MERGE_REQUEST_IID
   variables: {WORKLINE_STICKY: reviewer/warn}   # the ready note read against its own comment
-  rules:                            # also when the gates did not pass: their findings are what the inspector triages
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_EVENT_TYPE != "merge_train"
-      when: always
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "parent_pipeline" && $CI_MERGE_REQUEST_IID
   script:
     - *bot-token
     - '[ -n "${CLAUDE_CODE_OAUTH_TOKEN:-}" ] || { echo "workline: CLAUDE_CODE_OAUTH_TOKEN is not set, or not scoped to the environment workline: no agent, nothing read apart"; exit 0; }'
     - *ready
     - *claude
-    - gates=; [ ! -s gates.json ] || gates=gates.json
+    # workline:gates's gates.json, read from the merge request's pipeline
+    # with the bot's token: GitLab's needs:pipeline:job fetches only a job
+    # that passed, and the inspector triages most when the gates did not.
+    - |
+      gates=; api="$CI_API_V4_URL/projects/$CI_PROJECT_ID"; h="PRIVATE-TOKEN: $WORKLINE_GITLAB_TOKEN"
+      job=$(curl -fsS --header "$h" "$api/pipelines/${WORKLINE_PARENT_PIPELINE_ID:-none}/jobs?per_page=100" | jq -r '[.[] | select(.name == "workline:gates")][0].id // empty') || job=
+      [ -z "$job" ] || curl -fsSL --header "$h" -o gates.json "$api/jobs/$job/artifacts/gates.json" || rm -f gates.json
+      if [ -s gates.json ]; then gates=gates.json; else echo "workline: workline:gates left no gates.json in the merge request's pipeline: nothing to triage"; fi
     - status=0
     - >
       workline route merge-request --warn-only --ai "$ai" --no-apply
@@ -354,7 +382,7 @@ workline:warn:apply:
   interruptible: false
   resource_group: workline-warn-$CI_MERGE_REQUEST_IID   # one review apart at a time, with workline:warn
   rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_EVENT_TYPE != "merge_train"
+    - if: $CI_PIPELINE_SOURCE == "parent_pipeline" && $CI_MERGE_REQUEST_IID
       when: always
   script:
     - *bot-token

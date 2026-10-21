@@ -260,23 +260,32 @@ func TestGitLabMergeTrainRunsTheGatesAlone(t *testing.T) {
 	project := map[string]any{"$CI_PIPELINE_SOURCE": "merge_request_event", "$WORKLINE_GITLAB_TOKEN": "glpat",
 		"$CLAUDE_CODE_OAUTH_TOKEN": "sk", "$CI_MERGE_REQUEST_SOURCE_PROJECT_ID": "1", "$CI_PROJECT_ID": "1",
 		"$CI_COMMIT_BRANCH": "", "$CI_DEFAULT_BRANCH": "main"}
-	every := []string{"workline:base", "workline:gates", "workline:judge", "workline:apply", "workline:warn", "workline:warn:apply", "workline:merge"}
+	// What only warns runs in a child pipeline of the same file (ADR-0051),
+	// started by workline:warn:child, which the merge request's pipeline
+	// does not wait for: GitLab gives it parent_pipeline as its source, and
+	// the merge request's CI_MERGE_REQUEST_* variables.
+	every := []string{"workline:base", "workline:gates", "workline:judge", "workline:apply", "workline:warn:child", "workline:merge"}
 	for _, c := range []struct {
-		kind string // CI_MERGE_REQUEST_EVENT_TYPE
-		jobs []string
+		kind   string // CI_MERGE_REQUEST_EVENT_TYPE
+		source string // CI_PIPELINE_SOURCE, when not the merge request's
+		jobs   []string
 	}{
-		{"merge_train", []string{"workline:base", "workline:gates"}}, // the gates, given their base
-		{"merged_result", every}, // the merge request's own pipeline, on each push
-		{"detached", every},
+		{"merge_train", "", []string{"workline:base", "workline:gates"}}, // the gates, given their base
+		{"merged_result", "", every}, // the merge request's own pipeline, on each push
+		{"detached", "", every},
+		{"detached", "parent_pipeline", []string{"workline:warn", "workline:warn:apply"}}, // the child
 	} {
-		ctx := map[string]any{"$CI_MERGE_REQUEST_EVENT_TYPE": c.kind}
+		ctx := map[string]any{"$CI_MERGE_REQUEST_EVENT_TYPE": c.kind, "$CI_MERGE_REQUEST_IID": "5"}
 		for k, v := range project {
 			ctx[k] = v
+		}
+		if c.source != "" {
+			ctx["$CI_PIPELINE_SOURCE"] = c.source
 		}
 		var ran []string
 		for name, v := range top {
 			job, ok := v.(map[string]any)
-			if !ok || strings.HasPrefix(name, ".") || job["script"] == nil {
+			if !ok || strings.HasPrefix(name, ".") || job["script"] == nil && job["trigger"] == nil {
 				continue
 			}
 			for _, r := range rules(name) {
@@ -291,7 +300,7 @@ func TestGitLabMergeTrainRunsTheGatesAlone(t *testing.T) {
 		want := slices.Clone(c.jobs)
 		slices.Sort(want)
 		if !slices.Equal(ran, want) {
-			t.Errorf("a %s pipeline runs %v, want %v", c.kind, ran, want)
+			t.Errorf("a %s %s pipeline runs %v, want %v", c.kind, c.source, ran, want)
 		}
 		// Every job a job needs runs beside it: GitLab refuses the
 		// pipeline otherwise.

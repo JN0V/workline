@@ -1,6 +1,6 @@
 ---
 sources: [ci/github/workline.yml, ci/github/workline-apply.yml, ci/github/workline-warn.yml, ci/gitlab/workline.gitlab-ci.yml, internal/report/gates.go, internal/engine/annotate.go, internal/line]
-checked: 8ccdfb74
+checked: ea95db01
 judged: 14c41d9
 verified: agent:claude-code
 ---
@@ -142,8 +142,9 @@ With the inspector after the gates in the routing
   token. On GitHub, workline-warn.yml waits for workline.yml's `gates`
   job on the same head, 15 minutes at most, and reads the result it left
   (`actions: read`); not on a draft, which asks no agent. On GitLab,
-  `workline:warn` runs after `workline:gates`, whatever its verdict, and
-  reads its `gates.json`.
+  `workline:warn` runs in a child pipeline started after
+  `workline:gates`, whatever its verdict, and reads its `gates.json`
+  with the bot's token.
 - **No result found**: said in the job's log; the inspector triages
   nothing, and says so.
 - **The lenses that warn wait too**: in the same job, they start once
