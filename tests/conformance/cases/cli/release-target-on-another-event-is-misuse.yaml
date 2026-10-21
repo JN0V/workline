@@ -1,7 +1,0 @@
-case: cli/release-target-on-another-event-is-misuse
-about: "`--target merge-request:release`, the release tool's merge request found on the forge, names the release's docs judged as at night: on another event it is misuse, 64 (ADR-0050, §7)."
-given: {repo: basic}
-run: {cli: [route, schedule, --target, merge-request:release]}
-expect:
-  exit: 64
-  stderr: ["--target merge-request:release goes with the event release"]

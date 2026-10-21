@@ -46,24 +46,3 @@ func TestEnforce(t *testing.T) {
 		})
 	}
 }
-
-// A block that only holds a release keeps what the run proposed; any other
-// block, a final one too, does not (#543).
-func TestAccepted(t *testing.T) {
-	for _, c := range []struct {
-		name string
-		v    Verdict
-		want bool
-	}{
-		{"a pass", Verdict{Status: Pass}, true},
-		{"a release held for docs the run did not settle", Verdict{Status: Block, Final: true, Held: true}, true},
-		{"a final block, a check that could not run", Verdict{Status: Block, Final: true}, false},
-		{"a refusal", Verdict{Status: Block}, false},
-		{"held but not final: the answer's own", Verdict{Status: Block, Held: true}, false},
-		{"a person decides", Verdict{Status: Human, Final: true, Held: true}, false},
-	} {
-		if got := c.v.Accepted(); got != c.want {
-			t.Errorf("%s: accepted %v, want %v", c.name, got, c.want)
-		}
-	}
-}

@@ -30,12 +30,10 @@ type HeadVerdict struct {
 	Findings []verdict.Finding `json:"findings,omitempty"`
 }
 
-// StepStatus is a step of the line, and how it ended. Held: it blocked
-// only for the release's docs (ReleaseHeld), a release waiting for them.
+// StepStatus is a step of the line, and how it ended.
 type StepStatus struct {
 	Name   string `json:"name"`
 	Status string `json:"status"`
-	Held   bool   `json:"held,omitempty"`
 }
 
 // WriteVerdict writes a head's verdict to file, as JSON.
@@ -52,38 +50,6 @@ func WriteVerdict(file string, v HeadVerdict) error {
 // tokens spent. A pass with one is no pass for the merge policy: "an agent
 // really answered where the project sets one" (ADR-0042).
 var shortReview = []string{"not-reviewed", "lens-failed", "review-not-whole"}
-
-// held says whether a verdict blocks only for the release's own fix,
-// merged elsewhere first (ADR-0017): a release waiting for its docs. Or,
-// its docs due waiting for the agent at night (ADR-0050, §7), for those
-// docs alone.
-func (v *HeadVerdict) held() bool {
-	// The steps say it, where the line wrote which held (ReleaseHeld):
-	// a release held is one whose every step that did not pass held.
-	if slices.ContainsFunc(v.Steps, func(s StepStatus) bool { return s.Held }) {
-		return v.Status == verdict.Block && !slices.ContainsFunc(v.Steps, func(s StepStatus) bool { return s.Status != verdict.Pass && !s.Held })
-	}
-	n := 0
-	for _, f := range v.Findings {
-		if f.Level == "" || f.Level == "block" {
-			if f.Rule != "fixed-elsewhere" && !(v.atNight() && slices.Contains(heldFor, f.Rule)) {
-				return false
-			}
-			n++
-		}
-	}
-	return v.Status == verdict.Block && n > 0
-}
-
-// atNight says whether the head's docs due wait for the agent at night: a
-// release tool's merge request, judged on each move with no agent.
-func (v *HeadVerdict) atNight() bool {
-	return slices.ContainsFunc(v.Findings, func(f verdict.Finding) bool { return f.Rule == verdict.WaitsForNight })
-}
-
-// heldAtNight is why a release is held while its docs due wait for the
-// night: what a verdict kept on the forge says, and `follow` reads back.
-const heldAtNight = "the release waits for its docs, judged at night, then fixed in a merge request of their own"
 
 // short says why the review of a head that passed falls short, "" when it
 // does not.
@@ -134,7 +100,6 @@ func (v *HeadVerdict) red() string {
 // The classes of a head's verdict, as the policy reads it.
 const (
 	verdictPass  = "pass"
-	verdictHeld  = "held"  // a release waiting for its docs
 	verdictShort = "short" // passed, a review short of its agent
 	verdictWaits = "waits" // passed, a draft's: the AI review to come once ready
 	verdictRed   = "red"
@@ -143,10 +108,6 @@ const (
 // class is the verdict's class for the policy, and why.
 func (v *HeadVerdict) class() (string, string) {
 	switch {
-	case v.held() && v.atNight():
-		return verdictHeld, heldAtNight
-	case v.held():
-		return verdictHeld, "the release waits for its docs, fixed in a merge request of their own"
 	case v.Status != verdict.Pass:
 		return verdictRed, v.red()
 	case v.waits() != "":
@@ -482,20 +443,11 @@ func commitSaid(repo, c string) string {
 	return fmt.Sprintf("%s (%q)", short(c), subject)
 }
 
-// releaseFix says whether a merge request is a role's fix for a release,
-// opened apart from the release tool's (ADR-0017), from this repository:
-// first in line, before the release (ADR-0042).
-func releaseFix(mr forge.MergeRequest) bool {
-	role, task, ok := strings.Cut(strings.TrimPrefix(mr.Branch, "workline/"), "/")
-	return mr.Here && strings.HasPrefix(mr.Branch, "workline/") && ok && role != "" && task == "release"
-}
-
 // inLine is a merge request the merge policy keeps up to date.
 type inLine struct {
 	mr     forge.MergeRequest
 	where  string
 	at     string // when the yes was given: the label put, or auto-merge turned on by a person
-	first  bool   // the release's own fix: before the rest
 	behind bool
 	ready  bool // accepted, its verdict passed, auto-merge on: it merges once its checks pass
 }
@@ -576,12 +528,6 @@ func mergePolicy(f forge.Forge, o FollowOptions, local bool, res *Result, hand m
 	if err != nil {
 		return "", err
 	}
-	fix := ""
-	for _, mr := range open {
-		if mr.Base == o.Base && releaseFix(mr) {
-			fix = forge.MergeRef(f, mr.ID)
-		}
-	}
 	var line []*inLine
 	acts := map[string]int{}
 	for _, mr := range open {
@@ -596,7 +542,7 @@ func mergePolicy(f forge.Forge, o FollowOptions, local bool, res *Result, hand m
 			continue
 		}
 		before := len(res.Findings)
-		e, err := weigh(f, m, o, local, mr, fix, res, hand, n)
+		e, err := weigh(f, m, o, local, mr, res, hand, n)
 		if err != nil {
 			return "", err
 		}
@@ -610,8 +556,6 @@ func mergePolicy(f forge.Forge, o FollowOptions, local bool, res *Result, hand m
 	sort.SliceStable(line, func(i, j int) bool {
 		a, b := line[i], line[j]
 		switch {
-		case a.first != b.first:
-			return a.first
 		case a.at != b.at:
 			return a.at != "" && (b.at == "" || later(b.at, a.at))
 		}
@@ -662,7 +606,7 @@ func mergePolicy(f forge.Forge, o FollowOptions, local bool, res *Result, hand m
 // on, does what the policy says of it — auto-merge on or off, the yes held
 // on its head (Accept) or taken back — and says it; it returns it when it
 // is in line.
-func weigh(f forge.Forge, m forge.Merger, o FollowOptions, local bool, mr forge.MergeRequest, fix string, res *Result, hand map[string]kept, n *normal) (*inLine, error) {
+func weigh(f forge.Forge, m forge.Merger, o FollowOptions, local bool, mr forge.MergeRequest, res *Result, hand map[string]kept, n *normal) (*inLine, error) {
 	where := forge.MergeRef(f, mr.ID)
 	say := func(rule, level, msg string) {
 		res.Findings = append(res.Findings, verdict.Finding{Rule: rule, Level: level, Where: where, Message: msg})
@@ -685,7 +629,7 @@ func weigh(f forge.Forge, m forge.Merger, o FollowOptions, local bool, mr forge.
 	case tip == "":
 		return nil, nil // its branch is gone
 	}
-	e := &inLine{mr: mr, where: where, first: releaseFix(mr), behind: !isAncestor(o.Repo, baseTip, tip)}
+	e := &inLine{mr: mr, where: where, behind: !isAncestor(o.Repo, baseTip, tip)}
 	off := func() error {
 		if !st.AutoMerge {
 			return nil
@@ -815,20 +759,6 @@ func weigh(f forge.Forge, m forge.Merger, o FollowOptions, local bool, mr forge.
 	case verdictWaits: // marked ready, the run on ready not done yet
 		say("review-to-come", "", fmt.Sprintf("accepted by %s; its head's (%s) verdict is the draft's, %s: it waits for the run on ready, the next one comes up meanwhile", by, short(tip), v.why))
 		return e, nil
-	case verdictHeld:
-		if fix != "" {
-			say("waits-for-docs", "", fmt.Sprintf("accepted by %s; the release waits for its docs, %s, to merge first", by, fix))
-			return nil, nil
-		}
-		if v.why == heldAtNight && !e.behind { // no fix yet: the night's run proposes it
-			say("waits-for-docs", "", fmt.Sprintf("accepted by %s; the release waits for its docs, judged at night and fixed in a merge request of their own, which merges first", by))
-			return nil, nil
-		}
-		if e.behind {
-			return e, nil // its docs merged since: brought up to date, judged again
-		}
-		say("verdict-red", "warn", fmt.Sprintf("accepted by %s, but held for docs merged since: judged again at its next push", by))
-		return nil, nil
 	case verdictRed, verdictShort:
 		rule := map[string]string{verdictRed: "verdict-red", verdictShort: "review-short"}[v.class]
 		then := "auto-merge stays off"
@@ -878,8 +808,8 @@ func weigh(f forge.Forge, m forge.Merger, o FollowOptions, local bool, mr forge.
 func bringUp(f forge.Forge, o FollowOptions, local bool, mr forge.MergeRequest) (verdict.Finding, error) {
 	var finding verdict.Finding
 	var err error
-	if role, task, ok := strings.Cut(strings.TrimPrefix(mr.Branch, "workline/"), "/"); strings.HasPrefix(mr.Branch, "workline/") && ok {
-		if finding, err = follow(o.Repo, o.Base, mr.Branch, role, local, task != "release"); err != nil {
+	if role, _, ok := strings.Cut(strings.TrimPrefix(mr.Branch, "workline/"), "/"); strings.HasPrefix(mr.Branch, "workline/") && ok {
+		if finding, err = follow(o.Repo, o.Base, mr.Branch, role, local); err != nil {
 			return finding, err
 		}
 		switch finding.Rule {

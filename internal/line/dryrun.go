@@ -6,31 +6,19 @@ import (
 	"strings"
 
 	"github.com/JN0V/workline/internal/engine"
-	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/release"
 	"github.com/JN0V/workline/internal/verdict"
 )
 
 // DryRun is a release's dry run (`route release --dry-run`, ADR-0050):
 // what would hold the release were it cut now from HEAD, the default
-// branch's tip at night. Each is said, none blocks: the release itself
-// is held where it is cut, its merge request's verdict or `route
-// release` before the tag (ADR-0017).
+// branch's tip at night. Each is said, none blocks.
 type DryRun struct {
 	Head  string `json:"head"`
 	Since string `json:"since,omitempty"` // the last release it compares with; "" before the first
 	// At: HEAD is this release already, nothing since to cut; no step run.
 	At    string `json:"at,omitempty"`
 	Holds []Hold `json:"holds"`
-	// MergeRequest: the release tool's merge request open into the
-	// branch, the release were it cut now, judged on its head; 0 for
-	// none, the branch's tip judged.
-	MergeRequest int `json:"merge-request,omitempty"`
-	// Ref: that merge request as its forge names it, #n or !n.
-	Ref string `json:"ref,omitempty"`
-	// Unread: that merge request's head could not be checked out: no
-	// step run, the release held, said.
-	Unread bool `json:"unread,omitempty"`
 }
 
 // Hold is one thing that would hold the release: a step's finding that
@@ -43,41 +31,24 @@ type Hold struct {
 	Message string `json:"message,omitempty"`
 }
 
-// dryRunOn starts a release's dry run, no agent, nothing applied: on the
-// release tool's merge request open into the branch, its head checked out
-// (back puts the clone where it was), its roles run as on it (ADR-0017);
-// none, the branch's tip. A tip that is a release already leaves nothing
-// to cut (At). A release merge request unread is said; one whose head
-// cannot be checked out holds the release, no step run (Unread).
-func dryRunOn(res *Result, o engine.Options) (engine.Options, *DryRun, func()) {
+// dryRunOn starts a release's dry run on the branch's tip, no agent,
+// nothing applied. A tip that is a release already leaves nothing to cut
+// (At).
+func dryRunOn(o engine.Options) (engine.Options, *DryRun) {
 	o.AI, o.NoApply = "none", true
-	d, back := &DryRun{Holds: []Hold{}}, func() {}
-	mr, said, err := engine.OpenRelease(o)
-	res.Findings = append(res.Findings, said...)
-	switch {
-	case err != nil:
-		res.Findings = append(res.Findings, verdict.Finding{Rule: "release-unread", Level: "warn",
-			Message: "the release tool's merge request could not be read: the dry run is the branch's tip, " + err.Error()})
-	case mr != nil:
-		o.Target, o.Branch = &forge.Target{Kind: "merge-request", ID: mr.ID}, mr.Branch
-		d.MergeRequest, d.Ref = mr.ID, engine.MergeRefOf(o, mr.ID)
-		if back, _, err = engine.OnReleaseHead(o); err != nil {
-			back, d.Unread = func() {}, true
-			d.Holds = append(d.Holds, Hold{Step: "release", Rule: "release-head", Where: fmt.Sprintf("#%d", mr.ID), Message: err.Error()})
-		}
-	}
+	d := &DryRun{Holds: []Hold{}}
 	if out, err := exec.Command("git", "-C", o.Repo, "rev-parse", "HEAD").Output(); err == nil {
 		d.Head = strings.TrimSpace(string(out))
 	}
 	rs, err := release.Load(o.Repo)
 	if err != nil {
-		return o, d, back // the line's own config error says it
+		return o, d // the line's own config error says it
 	}
-	if at, err := release.AtHead(o.Repo, rs.Tags); err == nil && len(at) > 0 && d.MergeRequest == 0 {
+	if at, err := release.AtHead(o.Repo, rs.Tags); err == nil && len(at) > 0 {
 		d.At = at[0]
 	}
-	d.Since, _ = release.Last(o.Repo, rs.Tags) // a shallow clone: the documentalist's hold says it
-	return o, d, back
+	d.Since, _ = release.Last(o.Repo, rs.Tags)
+	return o, d
 }
 
 // finishDryRun turns the line's run into the dry run's: what blocks is
@@ -147,13 +118,6 @@ func finishDryRun(res *Result, d *DryRun) {
 // were it cut now, counted by step, or nothing.
 func DryRunSaid(d *DryRun) string {
 	from := "from " + short(d.Head)
-	if d.MergeRequest != 0 {
-		ref := d.Ref
-		if ref == "" {
-			ref = fmt.Sprintf("#%d", d.MergeRequest)
-		}
-		from = fmt.Sprintf("on %s's head %s", ref, short(d.Head))
-	}
 	if d.Since != "" {
 		from += ", since " + d.Since
 	}

@@ -7,6 +7,7 @@ given:
     - "git switch -q -c feat HEAD~1 && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
     - "c=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/&\\njudged: $c/; s/one hour/two hours/\" docs/tech/auth.md && git commit -qam 'docs: follow tokens lasting two hours, not vouched for'"
     - "git rebase -q main && git switch -q main && git merge -q --ff-only feat && git branch -q -D feat"
+  config: {roles: {documentalist: {settings: {propagation: [{from: code, to: "docs/tech/**", when: now}, {from: "docs/tech/**", to: "docs/product/**", when: merge-request}]}}}}
 run: {role: documentalist, event: schedule, ai: "fake:doc-fixed"}
 expect:
   status: pass
