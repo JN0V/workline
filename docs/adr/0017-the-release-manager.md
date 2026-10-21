@@ -50,7 +50,7 @@ findings, kept here as the evidence on what was built:
   matches `vendor-*`.
 - **Two "last release" lookups**: the role's (`--match <prefix>*`) and the
   documentalist's hold (internal/builtin/documentalist/documentalist.go,
-  `holdTheRelease`, no `--match` at all).
+  the release hold (removed by ADR-0051), no `--match` at all).
 - An existing forge release counts as done without its notes; a
   `v1.0.0-rc.1` tag makes every later release fail; breaking is a substring
   anywhere in a body; a revert still ships its `feat`; `packages: glob:
@@ -95,7 +95,7 @@ this machine:
   docs/research/docs-and-release.md, `.goreleaser.yaml`'s comment.
 
 The documentalist's `release` event is not the role's: its hold
-(`holdTheRelease`) and the product docs due at the release
+(the release hold (removed by ADR-0051)) and the product docs due at the release
 (conformance cases documentalist/release-*, evaluation case
 propagates-a-product-doc-at-release) stay.
 
@@ -140,7 +140,7 @@ templates, for a pull request a tool's bot opens:
   the committer passes the tool's `chore(main): release X` subject, and the
   documentalist judges the docs the pull request made suspect — the
   changelog, the manifest, the pinned templates. **That is not the
-  release hold**: `holdTheRelease` runs only when `WORKLINE_EVENT` is
+  release hold**: the release hold (removed by ADR-0051) runs only when `WORKLINE_EVENT` is
   `release`, which nothing sets on a pull request. Docs left suspect since
   the last tag, and the product docs due at the release, are not seen.
   **Must change**: the `merge-request` route recognises a release pull

@@ -148,7 +148,7 @@ Findings are reported rather than blocking while they are new (warn before
 block, the [role contract](../../../docs/spec/role-contract.md)); a project
 turns one off with `enforce`.
 
-- **Reported; the run passes**: `suspect`, `pending`, `unchecked`,
+- **Reported; the run passes**: `suspect`, `pending`, `due`, `unchecked`,
   budgets, `duplicate`, `dead-link`, `external-link-broken`,
   `identifier-gone`, `count-off`, `value-left` (after a fix, the judge),
   `cites-superseded`, `stale`, `links-not-checked`, `nothing-tracked`,
@@ -162,15 +162,13 @@ turns one off with `enforce`.
   `init`).
 - **Reported, left as it is**: `derive-unclosed`, a derive marker with no end before the next block's ([#302](https://github.com/JN0V/workline/issues/302)).
 - **Reported; the block left for gardening**: `derived-behind` (push,
-  merge request, release).
+  merge request).
 - **Blocks**:
-  - `due`: on `release`, a doc due then and not brought up to date;
   - `unknown`: a source that could not be read;
   - `setting-missing`: a budget or threshold not set, so a check did not
     run;
   - `derive-unknown` and `derive-failed`: a derived block that could not
     be regenerated;
-  - on `release`, a `suspect` doc ([cascades](cascades.md#at-the-release));
   - `shallow-clone`, unless only docs the commits in range did not touch
     lack their `checked` (then reported).
 - **`blocked-external`**: a source repository that cannot be reached.

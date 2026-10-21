@@ -54,9 +54,8 @@ can read them, even after `unset`, from its parent's start environment.
 - **No rule tests a token**: GitLab advises against `rules:` on an
   environment's variable. A job that needs the bot's token runs, and
   without it says so and stops, green.
-- **The release's dry run** holds the bot's token, to read the release's
-  merge request, while your `release` line's gates run: on the default
-  branch's code or the release's branch, never a person's merge request.
+- **The release's dry run** holds no token while your `release` line's
+  gates run, on the default branch's code; its post holds the bot's.
 
 ## What it does not stop
 

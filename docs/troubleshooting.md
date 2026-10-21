@@ -64,7 +64,7 @@ tokens — and `--json` prints every finding.
 
 ## Docs suspect, gardening paused
 
-`docs suspect: N` at the push, a release held by docs, `record-unread`,
+`docs suspect: N` at the push, `record-unread`,
 `shallow-clone`, `gardening-paused`, `merge-request-unread`: what each
 means and what to do, in [the docs' troubleshooting](troubleshooting-docs.md).
 
