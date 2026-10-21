@@ -149,7 +149,10 @@ By upkeep removed per unit of work:
 1. **Trust the reviewer's record**: today `loadRecord` reads the first
    comment carrying its marker, from any author, while it writes the
    last. First, since the cuts below skip on records.
-2. **Drop strict**: 103 rounds, merge series 0.89 a PR.
+2. **Drop strict**: 103 rounds, merge series 0.89 a PR. Built ([#612]):
+   no one at a time, none brought up to date but a release held for its
+   docs; main's run red says "base red, not yours" once on each open PR,
+   and its issue counts red mains a week; [ADR-0042] amended.
 3. **The release** (cut 1): 130 red heads, most of 61 docs PRs.
 4. **Stop stamps on PRs**: no `--push-to-merge-request`; 69 rounds.
 5. **No rounds for nits** (cut 4): up to 93 rounds.
@@ -189,6 +192,7 @@ merges assumed to stay for real conflicts.
 
 [#464]: https://github.com/JN0V/workline/issues/464
 [#607]: https://github.com/JN0V/workline/issues/607
+[#612]: https://github.com/JN0V/workline/pull/612
 [ADR-0010]: 0010-docs-judged-on-the-merge-request-and-by-gardening.md
 [ADR-0011]: 0011-the-review-is-on-the-merge-request-not-the-push.md
 [ADR-0013]: 0013-what-was-judged-is-not-asked-again.md
