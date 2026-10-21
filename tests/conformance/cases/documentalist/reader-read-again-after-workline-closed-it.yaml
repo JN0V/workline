@@ -1,0 +1,34 @@
+case: documentalist/reader-read-again-after-workline-closed-it
+about: "A reader merge request workline closed itself — `follow` closing it once main changed the lines it changed, its comment carrying workline's marker — is no person's decline: its pages, unchanged since, are read again at the next gardening, as its comment promises (#592). One a person closed without merging still holds its pages until they change."
+given:
+  repo: documented
+  setup:
+    - |
+      w() { i=0; while [ $i -lt $1 ]; do printf '%s%d ' "$2" $i; i=$((i+1)); done; }
+      git init -q --bare ../origin.git && git remote add origin ../origin.git
+      printf '# Shop\n\n[Guide](docs/guide.md), [other](docs/other.md).\n' > README.md
+      { printf '# Guide\n\n'; w 90 g; printf '\n'; } > docs/guide.md
+      { printf '# Other\n\n'; w 90 o; printf '\n'; } > docs/other.md
+      git add . && git commit -qm 'docs: two pages' && git push -q origin main
+      for p in guide other; do
+        git checkout -qb workline/documentalist/reader-docs-$p-md
+        sed -i '1i <!-- workline\nreader: 0123456789ab\n-->' docs/$p.md
+        git commit -qam "docs: read docs/$p.md for its reader" && git push -q origin workline/documentalist/reader-docs-$p-md
+        git checkout -q main
+      done
+  config: {roles: {documentalist: {settings: {freshness: {stale-after-days: 100000}}}}}
+  forge:
+    merge-requests:
+      - {id: 1, branch: workline/documentalist/reader-docs-guide-md, base: main, closed: true, labels: [],
+         comments: ["Closed by workline's documentalist: main changed the same lines of README.md since, so its change no longer applies; the next gardening judges the docs again on main and proposes what is still needed.\n\n<!-- workline:closed -->"]}
+      - {id: 2, branch: workline/documentalist/reader-docs-other-md, base: main, closed: true, labels: [], comments: ["Not what I want."]}
+run: {role: documentalist, event: schedule, ai: "fake:reader-nothing", open-merge-request: true, no-apply: true}
+expect:
+  status: pass
+  agent-calls: 1
+  findings:
+    - {rule: paragraph-too-long, where: docs/other.md, message: "workline/documentalist/reader-docs-other-md proposed a fix for it and was closed without merging"}
+  no-findings:
+    - {rule: paragraph-too-long, where: docs/guide.md, message: "closed without merging"}
+  run-files:
+    in/task.md: {contains: ["## docs/guide.md"], not-contains: ["## docs/other.md"]}
