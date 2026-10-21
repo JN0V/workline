@@ -204,6 +204,9 @@ engine:
   commit checked out, unmodified, or the job fails. A pull request's runs
   keep theirs in its own cache, which `main`'s never read;
 - no `merge_group`: a user's repository has no merge queue;
+- test.yml runs the tests alone: main's whole-repository checks are
+  `route main`'s, once a merge ([main after a merge](main-after-merge.md));
+  gardening installs lychee, for the links to other sites, at night;
 - a project never runs, in a commit's checks, the pin that commit ships: a
   pull request moving the templates to a version not yet tagged would
   download nothing, as on each release from v0.2.0 to v0.2.3
