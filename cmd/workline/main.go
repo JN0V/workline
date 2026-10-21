@@ -1089,7 +1089,7 @@ func routeCmd(args []string) int {
 	roles := fs.String("roles", os.Getenv("WORKLINE_ROLES"), "folder holding the roles")
 	asJSON := fs.Bool("json", false, "print the result as JSON")
 	forgeSpec := fs.String("forge", "", "forge: github, gitlab, none, fake:<file> (default: the project's `forge` setting)")
-	target := fs.String("target", "", "issue:<n> or merge-request:<n>, where comments and labels go; on release, merge-request:release: the release tool's merge request open into this branch, its docs judged on its head")
+	target := fs.String("target", "", "issue:<n> or merge-request:<n>, where comments and labels go")
 	branch := fs.String("branch", "", "the branch the merge request --target names comes from, when the forge is not to be asked (default: the forge says)")
 	var scope multi
 	fs.Var(&scope, "scope", "a path pattern the task is about (repeatable)")
@@ -1166,15 +1166,6 @@ func routeCmd(args []string) int {
 		fmt.Fprintln(os.Stderr, "workline:", err)
 		return 1
 	}
-	// The release tool's merge request open into this branch, found on
-	// the forge: its docs due judged as at night (ADR-0050, §7).
-	findRelease := *target == releaseTarget
-	if findRelease {
-		if event != "release" {
-			return misuse(fs, "--target "+releaseTarget+" goes with the event release")
-		}
-		*target = ""
-	}
 	t, err := parseTarget(*target)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "workline:", err)
@@ -1188,7 +1179,7 @@ func routeCmd(args []string) int {
 	}
 	res := line.RunWith(event, engine.Options{Repo: abs, RolesDir: rolesDir, AI: *ai, DefaultAI: userDefaultAI(), Inputs: inputs,
 		Forge: *forgeSpec, Target: t, Branch: *branch, Scope: scope, NoApply: *noApply, OpenMergeRequest: *openMR, PushToMergeRequest: *pushMR,
-		FindRelease: findRelease, DryRun: *dryRun},
+		DryRun: *dryRun},
 		&line.Gates{Only: *gatesOnly, From: *gatesFrom, Kept: *gatesKept})
 	if err := wlreport.Write(abs, event, wlreport.FromLine(res), *sarifFile, *cqFile); err != nil {
 		fmt.Fprintln(os.Stderr, "workline:", err)
@@ -1252,7 +1243,7 @@ func writeVerdict(repo, file, rng string, res *line.Result) error {
 	} // a full id not fetched here: the source head of a merge result
 	v := engine.HeadVerdict{Head: head, Status: res.Status, Findings: res.Findings}
 	for _, s := range res.Steps {
-		v.Steps = append(v.Steps, engine.StepStatus{Name: s.Name, Status: s.Status, Held: engine.ReleaseHeld(s.Result)})
+		v.Steps = append(v.Steps, engine.StepStatus{Name: s.Name, Status: s.Status})
 	}
 	return engine.WriteVerdict(file, v)
 }
@@ -1419,7 +1410,7 @@ func applyCmd(args []string) int {
 	forgeSpec := fs.String("forge", "", "with --from-merge-request: github, gitlab, cmd:<command> (default: the project's `forge` setting)")
 	gatesFile := fs.String("gates", "", "with --from-merge-request: show on it what its gates found the change adds, from the result `route --gates-only` printed in its own run: a check's annotations and one summary comment")
 	mainFile := fs.String("main", "", "keep what main's run after a merge found, the result `route main --json` printed, in one issue, edited when what it lists changes; with --forge, --repo")
-	dryFile := fs.String("release-dry-run", "", "post what a release's dry run found, the result `route release --dry-run --json` printed: in one comment on the release tool's merge request it judged, else in the default branch's issue, edited when what it lists changes; with --forge, --repo")
+	dryFile := fs.String("release-dry-run", "", "post what a release's dry run found, the result `route release --dry-run --json` printed, in the default branch's issue, edited when what it lists changes; with --forge, --repo")
 	if code, done := parseOnly(fs, args); done {
 		return code
 	}
@@ -1667,9 +1658,7 @@ func noteBaseRed(f forge.Forge, repo, head, since string, issue int) (int, error
 	return n, nil
 }
 
-// keepDryRun posts what a release's dry run found (ADR-0050): in one
-// comment on the release tool's merge request it judged, edited when what
-// it lists changes, posted only once something holds; else in a part of
+// keepDryRun posts what a release's dry run found (ADR-0050) in a part of
 // the default branch's issue, put in, edited, or taken out when nothing
 // holds. The run's result is data its job wrote: what it says is cut and
 // defused.
@@ -1724,54 +1713,17 @@ func keepDryRun(file, repo, forgeSpec string, summaryFiles []string, asJSON bool
 		}
 	}
 	var said []string
-	// The issue's part: this dry run's when no release merge request was
-	// judged, else taken out, the merge request's comment saying it.
-	shown := d
-	if d.MergeRequest != 0 {
-		shown = nil
-	}
-	if body, changed := wlreport.WithDryRun(now, shown); changed && (id != 0 || len(d.Holds) > 0) {
+	if body, changed := wlreport.WithDryRun(now, d); changed && (id != 0 || len(d.Holds) > 0) {
 		n, err := f.KeepIssue(wlreport.MainTitle, backlog.Inert(body), true)
 		if err != nil {
 			return fail(err)
 		}
 		said = append(said, fmt.Sprintf("issue #%d kept: what would hold the release changed", n))
 		res.Applied = append(res.Applied, fmt.Sprintf("issue #%d", n))
-	} else if d.MergeRequest == 0 && id != 0 {
+	} else if id != 0 {
 		said = append(said, fmt.Sprintf("nothing new nor gone for the release: issue #%d left as it is", id))
-	} else if d.MergeRequest == 0 {
+	} else {
 		said = append(said, "nothing would hold the release: no issue opened")
-	}
-	if d.MergeRequest != 0 {
-		t := forge.Target{Kind: "merge-request", ID: d.MergeRequest}
-		comments, err := b.Comments(t)
-		if err != nil {
-			return fail(err)
-		}
-		was := ""
-		for _, c := range comments {
-			if strings.Contains(c, wlreport.DryRunMarker) {
-				was = c
-			}
-		}
-		body, changed, any := wlreport.DryRunComment(d, was)
-		ref := forge.MergeRef(f, d.MergeRequest)
-		switch {
-		case changed:
-			if err := f.Sticky(t, backlog.Inert(body), wlreport.DryRunMarker, any); err != nil {
-				return fail(err)
-			}
-			what := "what would hold the release said in its comment"
-			if !any {
-				what = "its comment edited: nothing would hold the release any more"
-			}
-			said = append(said, fmt.Sprintf("%s: %s", ref, what))
-			res.Applied = append(res.Applied, "comment on "+ref)
-		case was != "":
-			said = append(said, fmt.Sprintf("%s: nothing new nor gone for the release, its comment left as it is", ref))
-		default:
-			said = append(said, fmt.Sprintf("%s: nothing would hold the release, no comment posted", ref))
-		}
 	}
 	res.Summary = strings.Join(said, "; ")
 	res.Findings = append(res.Findings, verdict.Finding{Rule: "release-dry-run", Message: res.Summary})
@@ -1871,10 +1823,6 @@ type multi []string
 
 func (m *multi) String() string     { return strings.Join(*m, ",") }
 func (m *multi) Set(s string) error { *m = append(*m, s); return nil }
-
-// releaseTarget names, on `route release`, the release tool's merge
-// request open into the branch checked out, which the engine finds.
-const releaseTarget = "merge-request:release"
 
 func parseTarget(s string) (*forge.Target, error) {
 	if s == "" {

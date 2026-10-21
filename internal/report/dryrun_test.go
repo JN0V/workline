@@ -55,26 +55,3 @@ func TestDryRunPartKeptInMainIssue(t *testing.T) {
 		t.Errorf("said already that nothing holds: changed")
 	}
 }
-
-// The comment on the release merge request is posted once something
-// holds, edited when what it lists changes, never for a moved head alone.
-func TestDryRunComment(t *testing.T) {
-	none := &line.DryRun{Head: "abc1234", MergeRequest: 3}
-	if _, changed, any := DryRunComment(none, ""); changed || any {
-		t.Errorf("nothing holds, no comment: changed %v, any %v", changed, any)
-	}
-	d := &line.DryRun{Head: "abc1234", MergeRequest: 3, Holds: []line.Hold{{Step: "gate:release", Rule: "check-failed", Where: "versions", Message: "exit 1 @someone <b>"}}}
-	body, changed, any := DryRunComment(d, "")
-	if !changed || !any || !strings.Contains(body, "on this release's head") {
-		t.Fatalf("something holds, no comment:\n%s", body)
-	}
-	if strings.Contains(body, "@someone") || strings.Contains(body, "<b>") {
-		t.Errorf("a run's text not defused:\n%s", body)
-	}
-	if _, changed, _ := DryRunComment(&line.DryRun{Head: "def5678", MergeRequest: 3, Holds: d.Holds}, body); changed {
-		t.Errorf("the head moved alone: changed")
-	}
-	if b, changed, _ := DryRunComment(none, body); !changed || !strings.Contains(b, "nothing would hold") {
-		t.Errorf("nothing holds any more, not said:\n%s", b)
-	}
-}

@@ -13,13 +13,9 @@ import (
 	"github.com/JN0V/workline/internal/line"
 )
 
-// DryRunMarker marks the one comment a release's dry run keeps on the
-// release tool's merge request (ADR-0050).
-const DryRunMarker = "<!-- workline:sticky=release/dry-run -->"
-
 // dryRunStart and dryRunEnd bound the dry run's part of the default
-// branch's issue (MainTitle), when no release merge request is open: the
-// part main's run after a merge leaves as it is, and the other way round.
+// branch's issue (MainTitle): the part main's run after a merge leaves as
+// it is, and the other way round.
 // The end's line holds what the part lists, by key.
 const (
 	dryRunStart = "<!-- workline:release-dry-run -->"
@@ -54,9 +50,6 @@ func dryRunKeys(d *line.DryRun) []string {
 func dryRunText(d *line.DryRun) string {
 	var b strings.Builder
 	from := "from " + span(short7(d.Head))
-	if d.MergeRequest != 0 {
-		from = fmt.Sprintf("on this release's head, %s", span(short7(d.Head)))
-	}
 	if d.Since != "" {
 		from += ", since " + span(d.Since)
 	}
@@ -80,19 +73,8 @@ func dryRunText(d *line.DryRun) string {
 		}
 		b.WriteString("\n")
 	}
-	fmt.Fprintf(&b, "Run each night with no agent, nothing applied: a warning, never a block ([ADR-0050](%s)). The release is held where it is cut: its merge request's verdict, or `workline route release` before the tag. workline keeps this text, edited when what it lists changes.\n", mainADR)
+	fmt.Fprintf(&b, "Run each night with no agent, nothing applied: a warning, never a block ([ADR-0050](%s)). workline keeps this text, edited when what it lists changes.\n", mainADR)
 	return b.String()
-}
-
-// DryRunComment is the comment a dry run keeps on the release tool's
-// merge request, from the one there now ("" for none). Changed: what it
-// lists differs, by key; else it is left as it is. Any: something holds.
-func DryRunComment(d *line.DryRun, now string) (body string, changed, any bool) {
-	keys := dryRunKeys(d)
-	prev, had := readDryRunState(now)
-	any = len(keys) > 0
-	changed = !had && any || had && !slices.Equal(keys, prev.Keys)
-	return dryRunText(d) + "\n" + dryRunEndLine(keys), changed, any
 }
 
 // WithDryRun is the default branch's issue body with the dry run's part:

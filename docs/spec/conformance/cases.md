@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go]
-checked: 586ffe0e
+checked: c2e40104
 verified: agent:claude-code
 ---
 # Conformance — a case in full
@@ -74,8 +74,7 @@ saying so.
 - `route: ready` with `item` — ask routing to move a work item;
 - `target` — the issue or merge request comments and labels go on
   (`{merge-request: 1}`); `branch` — the branch that merge request comes from;
-  `args` — more options, as typed, after the run's own (`[--target,
-  merge-request:release]`, which `target` cannot say);
+  `args` — more options, as typed, after the run's own (`[--dry-run]`);
 - `open-merge-request: true` or `push-to-merge-request: true` — put what the
   patches write on a merge request;
 - `reports: true` — also write the findings as SARIF and Code Quality;
@@ -198,7 +197,7 @@ saying so.
   case's `origin`, or the message of that branch's tip.
 - `not-pushed` — branches of the case's `origin` the run left where they
   were; `on-top` — a branch of `origin` whose tip holds another's
-  (`{workline/documentalist/release: main}`); `merged` — a branch of
+  (`{workline/documentalist/suspect: main}`); `merged` — a branch of
   `origin` whose tip is a merge of another's tip into its tip before the
   run, its first parent (`{feat/sessions: main}`); `gone` — branches of
   `origin` absent after the run.

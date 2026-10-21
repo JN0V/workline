@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine/merge.go, internal/engine/queue.go, internal/forge/merge.go, internal/forge/github_merge.go, internal/forge/gitlab_merge.go, ci/github/workline-apply.yml, ci/github/workline-merge.yml, ci/gitlab/workline.gitlab-ci.yml]
-checked: 47a746d7
+checked: ae744e99
 verified: agent:claude-code
 ---
 # The merge policy
@@ -86,11 +86,8 @@ merge: {autonomy: cautious}   # off unless set: no auto-merge is touched
 
 ## Never without a person's yes
 
-- **A release pull request** merges only labelled. Held for its docs, it
-  waits for them, then is brought up to date, so its line runs again, and
-  merges: the only one `follow` updates. Its docs due
-  wait for the night's agent: held too, never red, its yes kept
-  ([ADR-0050, §7](adr/0050-each-act-has-its-moment-and-a-wait-budget.md#7-decided-by-the-maintainer-on-2026-10-19)).
+- **A release pull request** merges only labelled; it never waits for
+  the docs ([ADR-0051](adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-1-the-release-weekly)).
   An issue labelled to hold it, or main not green, turns its verdict red
   until they are gone ([what holds a release](release-holds.md)).
 - **A fork's**: its CI run is the fork's own, so the templates keep no
@@ -179,13 +176,10 @@ counts as workline's own, the kinds, the revert and the limits:
 | Said | When |
 |---|---|
 | `auto-merge-on`, `merged-at-once` | accepted, its head's verdict passed; at `normal`, "with no person's yes", its kind |
-| `updated` | a release held for its docs, merged since: brought up to date |
 | `verdict-kept`, `verdict-missing`, `review-to-come` | the verdict kept; one not judged yet; marked ready, the draft's verdict still on its head |
 | `verdict-red`, `review-short`, `checks-red` | nothing turned on, why |
 | `accepted-reset` | a push after the yes: the yes and auto-merge off |
 | `vetoed`, `draft`, `auto-merge-off` | the forge's veto, or the label taken off |
-| `waits-for-docs` | a release whose docs are still open, or still to be judged at night |
-| `update-left` | that release not brought up to date, why |
 | `label-ignored` | put by someone who may not push nor merge |
 | `merge-unguarded`, `merge-token`, `merge-unsupported` | a base, a token or a forge it cannot act with |
 | `checks-unread` | its head's checks could not be read: only the line's verdict counts |

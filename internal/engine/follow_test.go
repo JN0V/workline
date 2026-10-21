@@ -43,19 +43,19 @@ func TestFollowAPersonsBranch(t *testing.T) {
 	run("commit", "-q", "-m", "docs: elsewhere")
 
 	branch := "workline/documentalist/suspect"
-	if f, err := follow(repo, "main", branch, "documentalist", true, true); err != nil || f.Rule != "" {
+	if f, err := follow(repo, "main", branch, "documentalist", true); err != nil || f.Rule != "" {
 		t.Errorf("merging still: %+v, %v; want nothing said", f, err)
 	}
 	was := conflicts
 	defer func() { conflicts = was }()
 	conflicts = func(string, string, string) (bool, error) { return false, errors.New("git merge-tree: unknown option") }
-	if f, err := follow(repo, "main", branch, "documentalist", true, true); err != nil || f.Rule != "conflict-unread" || f.Level != "warn" {
+	if f, err := follow(repo, "main", branch, "documentalist", true); err != nil || f.Rule != "conflict-unread" || f.Level != "warn" {
 		t.Errorf("git failing: %+v, %v; want conflict-unread, a warning", f, err)
 	}
 	conflicts = was
 	write("doc.md", "---\nchecked: 111\n---\nNinety minutes.\n")
 	run("commit", "-q", "-am", "docs: ninety minutes")
-	if f, err := follow(repo, "main", branch, "documentalist", true, true); err != nil || f.Rule != "not-rebuilt" {
+	if f, err := follow(repo, "main", branch, "documentalist", true); err != nil || f.Rule != "not-rebuilt" {
 		t.Errorf("in conflict: %+v, %v; want not-rebuilt", f, err)
 	}
 }

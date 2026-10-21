@@ -1,6 +1,6 @@
 ---
 sources: [ci/github/workline.yml, ci/github/workline-apply.yml, ci/gitlab/workline.gitlab-ci.yml, internal/line/line.go, internal/gate/kept.go, internal/report/main.go, routing.default.yaml]
-checked: 47a746d7
+checked: ae744e99
 verified: agent:claude-code
 ---
 # Main after a merge
@@ -47,8 +47,7 @@ Nobody waits for it; nothing in it holds a merge request.
     ([a merge queue or train](merge-queue.md),
     [ADR-0051](adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-2-strict-up-to-date-dropped));
   - the product owner leaves it alone, as its other issues;
-  - with no release merge request open, the night's release dry run
-    keeps a part of its own there, *The next release*: what would hold
+  - the night's release dry run keeps a part of its own there, *The next release*: what would hold
     it ([the release](release.md)). Each writer leaves the other's part
     as it is.
 - **Base red, not yours**: while main is red, one comment on each open

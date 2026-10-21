@@ -1,0 +1,16 @@
+case: documentalist/tracking-issue-renamed-closes-the-old
+about: "The tracking issue was titled \"Docs due at the next release\" before ADR-0051; gardening keeps it as \"Docs due later\" now, and the old one, still open, says so and is closed rather than left open."
+given:
+  repo: documented
+  setup: ["sed -i 's/Access tokens last one hour./Access tokens last two hours./' docs/tech/auth.md && git commit -qam 'docs(auth): tokens last two hours'"]
+  config: {roles: {documentalist: {settings: {propagation: [{from: code, to: "docs/tech/**", when: now}, {from: "docs/tech/**", to: "docs/product/**", when: merge-request}]}}}}
+  forge:
+    issues:
+      - {id: 4, title: "Docs due at the next release", body: "- `docs/product/sign-in.md` — due at release", labels: [], comments: []}
+run: {role: documentalist, event: schedule, ai: none}
+expect:
+  status: pass
+  forge:
+    issues:
+      - {id: 4, closed: true, body-contains: "Docs due later"}
+      - {id: 5, title: "Docs due later", body-contains: "`docs/product/sign-in.md`"}

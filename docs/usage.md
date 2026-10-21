@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/role/config.go, internal/engine/engine.go, internal/hooks, internal/agent/claude.go, internal/agent/command.go]
-checked: 35eb7554
+checked: ae744e99
 judged: b5899f5
 verified: agent:claude-code
 ---
@@ -37,7 +37,7 @@ Each in detail: [the commands](commands.md), and
 | [`workline issues import <file>`](commands.md#workline-issues-import) | turns a roadmap or backlog file into issues |
 | [`workline docs`](commands.md#workline-docs) | your agent fixes the docs made suspect; you keep or drop each fix |
 | [`workline sample`](commands.md#workline-sample) | the weekly sample: one in ten of every role's acts of the week, re-checked |
-| [`workline follow`](commands.md#workline-follow) | rebuilds a release fix on the default branch's new tip; `--gardening`, gardening's merge requests too; merges it into people's in conflict only on workline's lines, when set; runs the [merge policy](merge-policy.md), when set |
+| [`workline follow`](commands.md#workline-follow) | `--gardening`: rebuilds gardening's merge requests on the default branch's new tip; merges it into people's in conflict only on workline's lines, when set; runs the [merge policy](merge-policy.md), when set |
 | [`workline hooks install --global`](commands-setup.md#workline-hooks) | installs the git hooks for every repository (`--repo`: this one) |
 | [`workline setup`](commands-setup.md#workline-setup) | sets up this machine: hooks, agent, tools |
 | [`workline init`](commands-setup.md#workline-init) | adopts this repository |
@@ -106,13 +106,6 @@ Each in detail: [the commands](commands.md), and
     instead, whole, to copy and apply with `git apply`: the docs it
     creates too, and a code block of a doc it changes does not end it.
     With `local`, committed on the local branch, nothing pushed.
-  - On a release tool's merge request, which the tool rewrites, it goes to
-    a merge request of its own, `workline/<role>/release`, into the
-    release's base; the release waits until it is merged
-    ([ADR-0017](adr/0017-the-release-manager.md)). Judged on `release`
-    only, at night or by hand: on `merge-request`, no agent. Every round
-    of the run makes that one fix
-    ([more](../roles/documentalist/docs/push.md#a-release-tools-pull-request)).
 - **`--open-merge-request`**, with a forge: what the patches write goes on
   a branch `workline/<role>/<task>`, pushed, with a merge request opened or
   updated for it; the role is told how many of its merge requests are
@@ -125,9 +118,8 @@ Each in detail: [the commands](commands.md), and
   ([ADR-0034, amended](adr/0034-the-release-fix-follows-its-base.md#amendment-2026-10-12-gardenings-merge-requests-follow-too-or-are-closed)).
 - **`--branch`**: for a job that does not ask the forge (CI's judging
   job, which holds no token); default: the forge says. A release tool's
-  branch (`release.branches`) has the merge request held as the release
-  ([ADR-0017](adr/0017-the-release-manager.md)), and the versions the
-  tool bumps left out of the review
+  branch (`release.branches`) has the versions the tool bumps left out
+  of the review
   ([more](../roles/reviewer/docs/run.md#12-the-range-the-rules)).
 
 ### The job's summary

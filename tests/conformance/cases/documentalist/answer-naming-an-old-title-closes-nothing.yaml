@@ -1,0 +1,13 @@
+case: documentalist/answer-naming-an-old-title-closes-nothing
+about: "Only the engine knows the one issue workline renamed (ADR-0051): an agent's answer keeping \"Docs due later\" and naming another open issue as its old title (`was`) neither rewrites nor closes that issue."
+given:
+  repo: documented
+  setup: ["sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"]
+  forge:
+    issues:
+      - {id: 7, title: "Keep the session alive", body: "Sessions end after an hour.", labels: [], comments: []}
+run: {role: documentalist, event: schedule, ai: "fake:issue-names-another-title"}
+expect:
+  forge:
+    issues:
+      - {id: 7, closed: false, body-contains: "Sessions end after an hour.", body-lacks: "Renamed"}

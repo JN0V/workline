@@ -14,21 +14,15 @@ import (
 	"github.com/JN0V/workline/internal/verdict"
 )
 
-// Follow keeps a role's release merge requests (fixElsewhere's, ADR-0017)
-// on the tip of base, as a release tool keeps its own branch: run when base
-// moves, it rebuilds each open one whose branch base moved under, by
-// redoing the branch's change on base's new tip, and force-pushes it — the
-// merge request stays the same (ADR-0034). A branch already on base's tip
-// is left as it is; one a person committed to is never rebuilt over them;
-// one whose change no longer applies is left for a person.
-//
-// With gardening, run when gardening runs, it tends the roles' other merge
-// requests too, one a task (ADR-0006): each base moved under is rebuilt
-// the same way, or closed, one comment saying why, when nothing of it is
-// left to merge — base holds its change already, base changed the lines it
-// changed, or it only records when docs were read. One a person committed
-// to is left to them, and named only when it no longer merges (ADR-0034,
-// amended).
+// Follow, with gardening, run when gardening runs, tends the roles' merge
+// requests, one a task (ADR-0006): each base moved under is rebuilt on
+// base's new tip, by redoing the branch's change there, and force-pushed —
+// the merge request stays the same —, or closed, one comment saying why,
+// when nothing of it is left to merge — base holds its change already,
+// base changed the lines it changed, or it only records when docs were
+// read. A branch already on base's tip is left as it is; one a person
+// committed to is left to them, and named only when it no longer merges
+// (ADR-0034, amended).
 //
 // With People, the project's choice, it merges base into each person's
 // merge request left in conflict with it only on lines workline writes,
@@ -93,12 +87,12 @@ func Follow(o FollowOptions) *Result {
 	}
 	n, rebuilt, closed := 0, 0, 0
 	for _, branch := range open {
-		role, task, ok := strings.Cut(strings.TrimPrefix(branch, "workline/"), "/")
-		if !ok || task != "release" && !gardening {
+		role, _, ok := strings.Cut(strings.TrimPrefix(branch, "workline/"), "/")
+		if !ok || !gardening {
 			continue
 		}
 		n++
-		finding, err := follow(repo, base, branch, role, local, task != "release")
+		finding, err := follow(repo, base, branch, role, local)
 		if err != nil {
 			return fail(err)
 		}
@@ -122,7 +116,7 @@ func Follow(o FollowOptions) *Result {
 	if gardening {
 		res.Summary = fmt.Sprintf("%d merge requests of the roles open, %d rebuilt on %s, %d closed", n, rebuilt, base, closed)
 	} else {
-		res.Summary = fmt.Sprintf("%d release merge requests open, %d rebuilt on %s", n, rebuilt, base)
+		res.Summary = "the roles' merge requests left to gardening"
 	}
 	o.Base = base
 	if o.People {
@@ -143,9 +137,9 @@ func Follow(o FollowOptions) *Result {
 }
 
 // follow rebuilds one role's branch on base's tip, and says what it did;
-// nothing when the branch is on base's tip already. A gardening task's
-// branch with nothing left to merge is said `closed`, for Follow to close.
-func follow(repo, base, branch, role string, local, gardening bool) (verdict.Finding, error) {
+// nothing when the branch is on base's tip already. A branch with nothing
+// left to merge is said `closed`, for Follow to close.
+func follow(repo, base, branch, role string, local bool) (verdict.Finding, error) {
 	baseTip, tip, err := tips(repo, base, branch, local)
 	if err != nil || tip == "" {
 		return verdict.Finding{}, err
@@ -164,10 +158,6 @@ func follow(repo, base, branch, role string, local, gardening bool) (verdict.Fin
 		}
 	}
 	if who := personsCommit(repo, baseTip, tip, role); who != "" {
-		if !gardening {
-			return verdict.Finding{Rule: "not-rebuilt", Level: "warn", Where: branch,
-				Message: fmt.Sprintf("%s moved under it, but %s: not rebuilt over it; rebase it by hand, or close it and the next release run proposes the fix again", base, who)}, nil
-		}
 		// Theirs now: said only when it no longer merges, as the forge
 		// shows it — git's own merge, in memory — or when that could not
 		// be told, never as a conflict it may not be.
@@ -187,44 +177,34 @@ func follow(repo, base, branch, role string, local, gardening bool) (verdict.Fin
 		return verdict.Finding{}, err
 	}
 	if len(clashes) > 0 {
-		if gardening {
-			return verdict.Finding{Rule: "closed", Where: branch,
-				Message: fmt.Sprintf("%s changed the same lines of %s since, so its change no longer applies; the next gardening judges the docs again on %s and proposes what is still needed", base, strings.Join(clashes, ", "), base)}, nil
-		}
-		return verdict.Finding{Rule: "no-longer-applies", Where: branch,
-			Message: fmt.Sprintf("its change no longer applies on %s, which changed the same lines of %s: left as it is, for a person to rebase or close", base, strings.Join(clashes, ", "))}, nil
+		return verdict.Finding{Rule: "closed", Where: branch,
+			Message: fmt.Sprintf("%s changed the same lines of %s since, so its change no longer applies; the next gardening judges the docs again on %s and proposes what is still needed", base, strings.Join(clashes, ", "), base)}, nil
 	}
 	same, _ := git(repo, nil, "rev-parse", baseTip+"^{tree}")
 	if tree == same {
-		if gardening {
-			return verdict.Finding{Rule: "closed", Where: branch,
-				Message: fmt.Sprintf("%s holds its change already: nothing is left to merge", base)}, nil
-		}
-		return verdict.Finding{Rule: "already-on-base", Level: "warn", Where: branch,
-			Message: fmt.Sprintf("%s holds its change already: nothing left to merge; close it", base)}, nil
+		return verdict.Finding{Rule: "closed", Where: branch,
+			Message: fmt.Sprintf("%s holds its change already: nothing is left to merge", base)}, nil
 	}
-	if gardening {
-		// A record only: closed once base changed the docs it records —
-		// read again or vouched for there, it says nothing more. Base
-		// moving elsewhere leaves it true: rebuilt, so its docs are not
-		// judged again, an agent asked for the same record (#303).
-		docs, err := recordOnly(repo, baseTip, tree)
+	// A record only: closed once base changed the docs it records —
+	// read again or vouched for there, it says nothing more. Base
+	// moving elsewhere leaves it true: rebuilt, so its docs are not
+	// judged again, an agent asked for the same record (#303).
+	docs, err := recordOnly(repo, baseTip, tree)
+	if err != nil {
+		return verdict.Finding{}, err
+	}
+	if len(docs) > 0 {
+		from, err := git(repo, nil, "merge-base", baseTip, tip)
 		if err != nil {
 			return verdict.Finding{}, err
 		}
-		if len(docs) > 0 {
-			from, err := git(repo, nil, "merge-base", baseTip, tip)
-			if err != nil {
-				return verdict.Finding{}, err
-			}
-			moved, err := git(repo, nil, append([]string{"diff", "--name-only", from, baseTip, "--"}, docs...)...)
-			if err != nil {
-				return verdict.Finding{}, err
-			}
-			if moved != "" {
-				return verdict.Finding{Rule: "closed", Where: branch,
-					Message: fmt.Sprintf("it only records when docs were read (`judged`), and %s changed %s since; the next gardening judges again those still due", base, strings.Join(strings.Split(moved, "\n"), ", "))}, nil
-			}
+		moved, err := git(repo, nil, append([]string{"diff", "--name-only", from, baseTip, "--"}, docs...)...)
+		if err != nil {
+			return verdict.Finding{}, err
+		}
+		if moved != "" {
+			return verdict.Finding{Rule: "closed", Where: branch,
+				Message: fmt.Sprintf("it only records when docs were read (`judged`), and %s changed %s since; the next gardening judges again those still due", base, strings.Join(strings.Split(moved, "\n"), ", "))}, nil
 		}
 	}
 	commit, err := recommit(repo, tip, tree, baseTip)

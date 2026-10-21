@@ -113,7 +113,7 @@ func TestGitLabTokensKeptFromTheProjectsTools(t *testing.T) {
 			}
 		}
 	}
-	if holding < 15 {
+	if holding < 14 {
 		t.Errorf("%d jobs declare the environment workline, want every job holding a token", holding)
 	}
 	// A job holding the bot's token and lacking it: said, green, nothing
