@@ -357,8 +357,9 @@ func judgeCondense(repo string, s Settings, c *condenseTask, intents, fallback [
 }
 
 // applyDoc applies one file of a patch to an existing doc, as git will: the
-// lines it cites must be quoted as they are, and it must leave derived blocks
-// alone. rule and why say what is wrong, if anything.
+// lines it cites, once the engine places its hunks (placed, mended), must be
+// quoted as they are, and it must leave derived blocks alone. rule and why
+// say what is wrong, if anything.
 func applyDoc(old string, f fileDiff, diff string) (now, rule, why string) {
 	f = placed(old, f)
 	if why := misquoted(old, f); why != "" {
@@ -368,7 +369,18 @@ func applyDoc(old string, f fileDiff, diff string) (now, rule, why string) {
 		return "", "derived-block", "the patch changes lines between workline:derive markers; they are regenerated from the code, never written"
 	}
 	now = applyHunks(old, f)
-	if byGit, err := gitApplied(f.path, old, diff, false); err != nil || byGit != now {
+	byGit, err := gitApplied(f.path, old, diff, false)
+	if err != nil {
+		// Git cannot apply the hunks as written: what lands is the doc's
+		// part written anew from them as placed — the reader task's own
+		// patch, or the one placedPatch wrote —, which git is asked about
+		// (#592).
+		var part string
+		if part, _, err = writtenAnew(old, f); err == nil {
+			byGit, err = gitApplied(f.path, old, part, false)
+		}
+	}
+	if err != nil || byGit != now {
 		return "", "patch-ambiguous", "git would apply this diff differently from how it reads; send a plain unified diff"
 	}
 	// Moving text gives no source to read: `checked` stays (ADR-0014).

@@ -1,4 +1,2 @@
 # Cases the engine does not pass yet. The suite runs them anyway and fails
 # if one starts passing while still listed here.
-documentalist/reader-fix-placed-by-the-lines-it-removes
-documentalist/dedupe-fix-placed-by-the-lines-it-removes
