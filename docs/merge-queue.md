@@ -1,6 +1,6 @@
 ---
 sources: [ci/github/workline.yml, ci/github/workline-apply.yml, ci/gitlab/workline.gitlab-ci.yml, internal/line/line.go, internal/engine/queue.go]
-checked: fc4d887f
+checked: ac47b877
 judged: e4550b8
 verified: agent:claude-code
 ---
