@@ -116,9 +116,10 @@ func people(f forge.Forge, o FollowOptions, local bool, res *Result) (string, er
 
 // settle merges base into one person's merge request when every conflict
 // is in a line workline writes, and says what it did: nothing for one on
-// base's tip already, or behind it and merging clean — bringing it up to
-// date is for whoever merges it: with update, the merge policy's first in
-// line (ADR-0042), merged in too, as the forge's Update branch does. A
+// base's tip already, or behind it and merging clean — it merges as it is
+// (ADR-0051): with update, a release held for its docs, merged since
+// (ADR-0042), merged in too, as the forge's Update branch does, so its
+// line runs again. A
 // merge commit, never a rewrite, pushed as a fast-forward, never forced:
 // a push of theirs meanwhile stays.
 func settle(repo, base string, mr forge.MergeRequest, local bool, isDoc func(string) bool, update bool) (verdict.Finding, error) {
@@ -214,11 +215,12 @@ func settle(repo, base string, mr forge.MergeRequest, local bool, isDoc func(str
 }
 
 // updateMessage is the forge's own message for a merge of base that met
-// no conflict — the merge policy bringing its first in line up to date —,
+// no conflict — the merge policy bringing a release held for its docs up
+// to date —,
 // with the trailer of workline's own commits: the line judges the commits
 // before it.
 func updateMessage(base, branch string) string {
-	return fmt.Sprintf("Merge branch '%s' into %s\n\nBrought up to date with %s by the project's merge policy: first\nin line, it merges once its checks pass.\n\n%s: documentalist\n", base, branch, base, OwnTrailer)
+	return fmt.Sprintf("Merge branch '%s' into %s\n\nBrought up to date with %s by the project's merge policy: its docs\nmerged, its line runs again.\n\n%s: documentalist\n", base, branch, base, OwnTrailer)
 }
 
 // headTips are base's tip and the merge request's head: its branch here,

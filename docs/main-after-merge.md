@@ -38,13 +38,22 @@ Nobody waits for it; nothing in it holds a merge request.
     repository's findings. On day one, the old debt is shown once
     ([ADR-0049](adr/0049-the-inspector-judges-the-new-findings-of-the-projects-tools.md#6-guards)),
     then only what changes;
+  - red mains counted a week, each once, on the run it turned red at:
+    above one a week, the forge's queue is worth turning on
+    ([a merge queue or train](merge-queue.md),
+    [ADR-0051](adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-2-strict-up-to-date-dropped));
   - the product owner leaves it alone, as its other issues;
   - with no release merge request open, the night's release dry run
     keeps a part of its own there, *The next release*: what would hold
     it ([the release](release.md)). Each writer leaves the other's part
     as it is.
-- **No agent, no secret** where the tools run; the issue is written by a
-  job holding the issue's right, no AI key.
+- **Base red, not yours**: while main is red, one comment on each open
+  merge request whose base holds the red commit, once a red spell: a
+  check red there for it is the base's. No merge request waits for
+  another to merge ([the merge policy](merge-policy.md#a-red-main)).
+- **No agent, no secret** where the tools run; the issue and the
+  comments are written by a job allowed to write issues and comments, no
+  AI key.
 
 ## The next base
 
@@ -83,9 +92,10 @@ Nobody waits for it; nothing in it holds a merge request.
   ([GitHub's docs](https://docs.github.com/en/actions/reference/workflows-and-actions/dependency-caching#restrictions-for-accessing-a-cache)).
   The template saves only on a push to `main`.
 - **An entry unused for 7 days is gone**: the tools run again.
-- **The issue**: [workline-apply.yml](../ci/github/workline-apply.yml)'s
-  `main` job, after that run, with `issues: write`; never after a push to
-  another branch.
+- **The issue** and the comments:
+  [workline-apply.yml](../ci/github/workline-apply.yml)'s `main` job,
+  after that run, with `issues: write`, which comments on a pull request
+  too; never after a push to another branch.
 
 ## GitLab
 
@@ -110,7 +120,8 @@ Nobody waits for it; nothing in it holds a merge request.
 - **Not found** (expired, a red pipeline's, a base older than those 20):
   the tools run again, said in the job's log and the summary. GitLab
   gives a branch's artifacts from its last successful pipeline only.
-- **The issue**: `workline:main:issue`, with `WORKLINE_GITLAB_TOKEN`.
+- **The issue** and the comments: `workline:main:issue`, with
+  `WORKLINE_GITLAB_TOKEN`.
 
 ## The commands, for another CI
 
@@ -127,4 +138,6 @@ workline route merge-request --gates-only --forge none --gates-kept kept/ \
   finding is said, none counted; a check that did not run still errs.
 - **Kept only** from a tree that is HEAD's commit, every tracked file as
   committed; else said, nothing kept.
-- **`apply --main`** reads the result `route main` printed, as data.
+- **`apply --main`** reads the result `route main` printed, as data;
+  red, it comments on the open merge requests whose base, a branch of
+  the clone, holds the red commit.

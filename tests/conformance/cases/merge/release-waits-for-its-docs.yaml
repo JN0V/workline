@@ -24,7 +24,7 @@ expect:
     - {rule: auto-merge-on, where: "#11"}
   no-findings: [{rule: auto-merge-on, where: "#10"}, {rule: updated}]
   not-pushed: [release-please--branches--main, workline/documentalist/release]
-  summary-file: ["in line into main, #11", "first in line #11, up to date"]
+  summary-file: ["accepted into main, #11: each merges once its own head is green"]
   forge:
     merge-requests:
       - {id: 10, auto-merge: false}

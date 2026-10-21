@@ -1,5 +1,5 @@
 case: documentalist/persons-branch-merge-signed-when-git-signs
-about: "A project whose forge refuses unsigned commits gives the bot a key, git set to sign with it (`commit.gpgsign`, `gpg.format: ssh`, `user.signingkey`): main merged into a person's merge request in conflict only on workline's lines (ADR-0041) — as the merge policy brings its first in line up to date (ADR-0042) — is pushed signed with that key, as `git commit` would sign it (#549)."
+about: "A project whose forge refuses unsigned commits gives the bot a key, git set to sign with it (`commit.gpgsign`, `gpg.format: ssh`, `user.signingkey`): main merged into a person's merge request in conflict only on workline's lines (ADR-0041) — as the merge policy brings a release held for its docs up to date (ADR-0042) — is pushed signed with that key, as `git commit` would sign it (#549)."
 given:
   repo: documented
   config: {roles: {documentalist: {settings: {update-branches: conflicts}}}}
