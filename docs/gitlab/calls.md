@@ -1,6 +1,6 @@
 <!-- workline
 sources: [internal/forge/retry.go, internal/forge/gitlab.go]
-checked: 68c17080
+checked: 76e290d9
 -->
 # A GitLab call that fails for a moment
 
@@ -30,5 +30,5 @@ a call again before it calls the forge unreachable:
 The rules are those of GitLab's own Go client, which tries again a 429,
 a 5xx and a call that could not be sent, with two changes: a read that
 timed out is tried again (the case seen), and a write answered with a 5xx
-is not. GitHub's calls, through `gh`, are not tried again yet
-([#491](https://github.com/JN0V/workline/issues/491)).
+is not. GitHub's calls, through `gh`, go by the same rule
+([on GitHub](../github/calls.md)).
