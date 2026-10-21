@@ -13,6 +13,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/verdict"
 	"go.yaml.in/yaml/v3"
@@ -236,8 +237,12 @@ const readerPrefix = "workline/documentalist/reader"
 // again until it changes, rather than proposed again each night. The
 // branch stays once its merge request is closed (CloseMergeRequest, and the
 // forges themselves), and where it left the default branch holds the page
-// as read. Only gardening with merge requests has them; a branch that
-// cannot be listed is said, the pages then read as any.
+// as read. One workline closed itself is no decline: `follow` closes one
+// main changed the lines of, its comment carrying Marker("closed"), which
+// the forge reads (#592); its pages are read again. Only gardening with
+// merge requests has them; a branch that cannot be listed is said, the
+// pages then read as any, and a close the forge could not read is said,
+// its pages held as a person's decline.
 func readerDeclined(repo string, w waiting, pages map[string]string) (map[string]string, string) {
 	out := map[string]string{}
 	if os.Getenv("WORKLINE_OPEN_MERGE_REQUESTS") == "" {
@@ -262,6 +267,11 @@ func readerDeclined(repo string, w waiting, pages map[string]string) (map[string
 			}
 		}
 	}
+	var closings forge.Closings // a forge that tells workline's close from a person's
+	if f, err := forge.Open(os.Getenv("WORKLINE_FORGE"), repo); err == nil {
+		closings, _ = f.(forge.Closings)
+	}
+	var unread []string
 	for _, task := range slices.Sorted(maps.Keys(tips)) {
 		if w.open[task] || w.proposed[task] {
 			continue // waiting: readerHeld says it
@@ -283,17 +293,30 @@ func readerDeclined(repo string, w waiting, pages map[string]string) (map[string
 		if err != nil {
 			continue
 		}
+		var held []string
 		for _, p := range strings.Split(files, "\n") {
 			now, ok := pages[p]
-			if !ok || out[p] != "" {
+			if !ok || out[p] != "" || slices.Contains(held, p) {
 				continue
 			}
 			if was, err := exec.Command("git", "-C", repo, "show", base+":"+p).Output(); err == nil && readerHash(string(was)) == readerHash(now) {
-				out[p] = task
+				held = append(held, p)
 			}
 		}
+		if len(held) > 0 && closings != nil {
+			ours, err := closings.ClosedWith("workline/documentalist/"+task, forge.Marker("closed"))
+			switch {
+			case err != nil:
+				unread = append(unread, fmt.Sprintf("whether workline closed workline/documentalist/%s itself could not be read (%v): its pages are not read again until they change, as after a person's close", task, err))
+			case ours:
+				continue // follow's close: its pages are read again
+			}
+		}
+		for _, p := range held {
+			out[p] = task
+		}
 	}
-	return out, ""
+	return out, strings.Join(unread, "; ")
 }
 
 // readerBlock is one page of the task: what the reader checks found, then
