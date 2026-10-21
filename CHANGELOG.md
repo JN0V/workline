@@ -1,5 +1,30 @@
 # Changelog
 
+## [0.40.0](https://github.com/JN0V/workline/compare/v0.39.1...v0.40.0) (2026-10-21)
+
+
+### ⚠ BREAKING CHANGES
+
+* push nothing to a merge request's branch ([#623](https://github.com/JN0V/workline/issues/623))
+* the release never waits for the docs ([#617](https://github.com/JN0V/workline/issues/617))
+
+### Features
+
+* **committer:** check the subject a squash lands on the base ([#620](https://github.com/JN0V/workline/issues/620)) ([b22e6ac](https://github.com/JN0V/workline/commit/b22e6ac8a17d6fbdff6aaf5988e8c314da19b2db))
+* **documentalist:** judge a merge request's docs once, at ready ([#627](https://github.com/JN0V/workline/issues/627)) ([73ab545](https://github.com/JN0V/workline/commit/73ab5455814c1b4742fffb0fe26e1278b318d8cc))
+* hold the release on a labelled issue or a main not green ([#615](https://github.com/JN0V/workline/issues/615)) ([24cb5b9](https://github.com/JN0V/workline/commit/24cb5b9b9babb8bb6763d46b44f7c00c09f5af8a))
+* **merge:** drop strict up to date; main's run says a red main ([#612](https://github.com/JN0V/workline/issues/612)) ([9c9e68a](https://github.com/JN0V/workline/commit/9c9e68a2b041c2c55dcdf63e150d8159c5724373))
+* push nothing to a merge request's branch ([#623](https://github.com/JN0V/workline/issues/623)) ([accb3a6](https://github.com/JN0V/workline/commit/accb3a6f47ef20cfad531f689bb613d8a69ab26d))
+* **reviewer:** show nits in the summary, asking nothing ([#613](https://github.com/JN0V/workline/issues/613)) ([5fe30f7](https://github.com/JN0V/workline/commit/5fe30f75be657d687cd1db3d88907ddb8a6a288f))
+* the release never waits for the docs ([#617](https://github.com/JN0V/workline/issues/617)) ([4394bee](https://github.com/JN0V/workline/commit/4394bee29f7350544c6bfb64d0e9bfd05dbe23cd))
+* trust no record another edited; no skip on line changes ([#624](https://github.com/JN0V/workline/issues/624)) ([f117d3d](https://github.com/JN0V/workline/commit/f117d3d05908e9a62bc7bdb951ff82dedfa70232))
+
+
+### Bug Fixes
+
+* an older run applied last keeps the newer comment's text ([#625](https://github.com/JN0V/workline/issues/625)) ([f22195b](https://github.com/JN0V/workline/commit/f22195bad78f101d37c4c0115ef1e42369d470a9))
+* **ci:** let the release's dry run read what holds it ([#622](https://github.com/JN0V/workline/issues/622)) ([2de5678](https://github.com/JN0V/workline/commit/2de56781b89e74d2e2b08048bfb77247bfe0ab91))
+
 ## [0.39.1](https://github.com/JN0V/workline/compare/v0.39.0...v0.39.1) (2026-10-21)
 
 
