@@ -1,6 +1,7 @@
 package line
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -59,8 +60,10 @@ func releaseHolds(event string, o engine.Options) ([]verdict.Finding, string) {
 		}
 	}
 	if event == "merge-request" {
-		if branch == "" && mrErr != nil {
-			return unread("warn", fmt.Sprintf("whether %s is a release tool's is unknown, so what holds a release is not read: %v; give its branch with --branch", o.Target, mrErr))
+		// Not known to be the release, not held: said, a warning, as a
+		// forge's hiccup would otherwise hold every merge request.
+		if why := errors.Join(err, mrErr); branch == "" && why != nil && o.Target != nil {
+			return unread("warn", fmt.Sprintf("whether %s is a release tool's is unknown, so what holds a release is not read: %v; give its branch with --branch", o.Target, why))
 		}
 		rs, err := release.Load(o.Repo)
 		if err != nil || !rs.IsBranch(branch) {
