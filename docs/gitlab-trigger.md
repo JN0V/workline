@@ -131,7 +131,7 @@ status=0
 case "$step:$WORKLINE_TASK" in
   judge:merge-request)
     git fetch --quiet origin "$MR_BASE_SHA"
-    workline route merge-request --ai "$ai" --no-apply --push-to-merge-request --forge gitlab \
+    workline route merge-request --ai "$ai" --no-apply --forge gitlab \
       --target "merge-request:$MR_IID" --branch "$MR_SOURCE_BRANCH" \
       --input "range=$MR_BASE_SHA..$CI_COMMIT_SHA" ${MR_READY:+--input lenses=all} ${MR_DRAFT:+--input draft=$MR_DRAFT} \
       --code-quality gl-code-quality.json --verdict workline-verdict.json $sum --json > line.json || status=$? ;;

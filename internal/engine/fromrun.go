@@ -147,8 +147,7 @@ func ResumeFrom(listed string, from FromMergeRequest) *Result {
 			intents = kept
 		}
 		st := runState{Role: r.Name, RolesDir: from.RolesDir, Repo: from.Repo, Forge: from.Forge,
-			Target: &forge.Target{Kind: "merge-request", ID: from.ID}, Digest: was.Digest,
-			PushToMergeRequest: true}
+			Target: &forge.Target{Kind: "merge-request", ID: from.ID}, Digest: was.Digest}
 		for _, m := range was.Models {
 			if plainModel.MatchString(m) {
 				st.Models = append(st.Models, m)

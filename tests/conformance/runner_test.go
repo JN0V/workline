@@ -88,7 +88,6 @@ type runSpec struct {
 	Branch  string            `yaml:"branch"` // the branch the targeted merge request comes from, as --branch
 	NoApply bool              `yaml:"no-apply"`
 	OpenMR  bool              `yaml:"open-merge-request"`
-	PushMR  bool              `yaml:"push-to-merge-request"`
 	Event   string            `yaml:"event"`
 	Input   map[string]string `yaml:"input"`
 	AI      string            `yaml:"ai"`
@@ -644,9 +643,6 @@ func runCase(t *testing.T, c *caseFile) []string {
 	}
 	if c.Run.OpenMR {
 		args = append(args, "--open-merge-request")
-	}
-	if c.Run.PushMR {
-		args = append(args, "--push-to-merge-request")
 	}
 	if c.Run.NoApply {
 		args = append(args, "--no-apply")

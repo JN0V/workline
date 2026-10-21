@@ -21,7 +21,7 @@ given:
               <!-- workline:sticky=documentalist/judged -->
             author: workline-bot
             bot: true
-run: {role: documentalist, event: merge-request, target: {merge-request: 1}, ai: 'cmd:sh "$FIXTURES/agents/judged-only.sh"', push-to-merge-request: true}
+run: {role: documentalist, event: merge-request, target: {merge-request: 1}, ai: 'cmd:sh "$FIXTURES/agents/judged-only.sh"'}
 expect:
   status: pass
   agent-calls: 1

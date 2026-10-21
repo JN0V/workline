@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"slices"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -457,49 +456,6 @@ func keepRecords(repo string, in keptInput, intents, fallback []intent.Intention
 		docs[p] = true
 	}
 	return out, docs, nil
-}
-
-// personsTitle is the message of the commit a person's merge request gets:
-// naming the doc it fixes, or, its record committed for want of a comment
-// to keep it, the doc it records.
-func personsTitle(fixed, recorded []string) string {
-	docs, title, more, short := fixed, "docs: bring %s in line with the code", "docs: bring %s and %d more in line with the code", "docs: bring the docs in line with the code"
-	if len(fixed) == 0 {
-		docs, title, more, short = recorded, "docs: record when %s was judged", "docs: record when %s and %d more were judged", "docs: record when docs were judged"
-	}
-	if len(docs) == 0 {
-		return ""
-	}
-	t := fmt.Sprintf(title, docs[0])
-	if len(docs) > 1 {
-		t = fmt.Sprintf(more, docs[0], len(docs)-1)
-	}
-	if len([]rune(t)) > 72 {
-		return short
-	}
-	return t
-}
-
-// patchedDocs are the docs the agent's patches change, apart: those whose
-// text or `checked` they change, and those whose record alone.
-func patchedDocs(intents, fallback []intent.Intention, fix *judgedFixes) (fixed, recorded []string) {
-	for _, i := range intents {
-		if i.Kind != "patch" || isFallback(i, fallback) {
-			continue
-		}
-		for _, p := range intent.PatchFiles(i.Value) {
-			switch {
-			case slices.Contains(fixed, p) || slices.Contains(recorded, p):
-			case fix != nil && recordOnly(fix.before[p], fix.after[p]):
-				recorded = append(recorded, p)
-			default:
-				fixed = append(fixed, p)
-			}
-		}
-	}
-	sort.Strings(fixed)
-	sort.Strings(recorded)
-	return fixed, recorded
 }
 
 // fromMerged is a record a merged merge request kept, standing at the
