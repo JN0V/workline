@@ -38,7 +38,7 @@ merge: {autonomy: normal}   # a project's choice, never a default
   - `reader`: pages an agent reworded for their reader, which wait for a
     yes ([below](#the-readers-rewordings-wait-for-a-yes)).
 - **The same path as a yes**: `workline/accepted` set on the head, auto-merge
-  on, in line. The veto is the forge's, as
+  on. The veto is the forge's, as
   [at `cautious`](merge-policy.md#the-veto-is-the-forges).
 - **Each one recorded**: a comment on it — no person's yes, its kind,
   why —, and the job's summary, whose first line says which kinds merge

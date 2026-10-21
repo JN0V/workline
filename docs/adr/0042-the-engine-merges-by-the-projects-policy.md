@@ -7,7 +7,9 @@
   agents' pull requests next; workline's own record commits keep the yes
   ([#380], [amendment](#amendment-2026-10-14-380-worklines-own-record-commits-keep-the-yes));
   an agent's rewording for a reader waits for a yes unless the project
-  lets it ([#438], [amendment](#amendment-2026-10-17-438-an-agents-rewording-waits-for-a-yes))
+  lets it ([#438], [amendment](#amendment-2026-10-17-438-an-agents-rewording-waits-for-a-yes));
+  up to date and one at a time dropped by [ADR-0051]
+  ([amendment](#amendment-2026-10-21-adr-0051-no-up-to-date-no-one-at-a-time))
 - **Date:** 2026-10-12
 - **Decided by:** the maintainer, its direction (2026-10-12), after four
   agents argued role or not
@@ -446,6 +448,34 @@ Conformance: merge/normal-reader-waits-for-a-yes,
 normal-reader-alone-when-let, alone-needs-normal,
 alone-unknown-kind-refused; TestRoutineKind, TestDemotedKind.
 
+## Amendment (2026-10-21, ADR-0051): no up to date, no one at a time
+
+[ADR-0051]'s cut 2, measured: strict up to date cost 103 rounds in four
+weeks, and no test went red after a merge of main. "Up to date, one at a
+time" and "The order" above are replaced:
+
+- **Each accepted pull request merges once its own head is green**:
+  auto-merge on for every one admitted, in the same run; none waits for
+  another, none is brought up to date to merge.
+- **The base requires no branch up to date**: on GitHub, "Require
+  branches to be up to date" off; the required checks and
+  `workline/accepted` stay.
+- **Kept**: a release held for its docs, merged since, is still brought
+  up to date, so its line runs again, until [ADR-0051]'s step 3 removes
+  the release's docs. [ADR-0041]'s merges of the base, for conflicts on
+  workline's own lines, stay.
+- **The net is main's run**: red, it says so in its one issue and once
+  on each open pull request whose base holds the red commit ("base red,
+  not yours"). The issue counts red mains a week; above one, the forge's
+  queue goes on: GitHub's merge queue in an organisation, GitLab's merge
+  train. GitLab projects keep merged-results pipelines.
+- **Gone**: the line's order, `fork-behind`, the first in line's update.
+
+Conformance: merge/behind-main-merges-as-it-is,
+accepted-all-turned-on-at-once, gitlab-accepted-turned-on;
+routing/main-red-says-base-red-on-open-merge-requests;
+TestMainIssueCountsRedMainsAWeek.
+
 [ADR-0005]: 0005-independence-takes-the-best-level-available.md
 [ADR-0011]: 0011-the-review-is-on-the-merge-request-not-the-push.md
 [ADR-0017]: 0017-the-release-manager.md
@@ -457,6 +487,7 @@ alone-unknown-kind-refused; TestRoutineKind, TestDemotedKind.
 [ADR-0036]: 0036-a-roles-status-is-earned-by-written-criteria.md
 [ADR-0038]: 0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md
 [ADR-0041]: 0041-workline-settles-its-own-lines-when-the-base-moves.md
+[ADR-0051]: 0051-a-check-sits-where-its-catch-is-worth-its-cost.md
 [#73]: https://github.com/JN0V/workline/pull/73
 [#117]: https://github.com/JN0V/workline/issues/117
 [#256]: https://github.com/JN0V/workline/issues/256

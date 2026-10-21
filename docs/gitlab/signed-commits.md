@@ -10,7 +10,7 @@ From [workline on GitLab CI](../ci-gitlab.md#a-project-that-refuses-unsigned-com
 
 The push rule *Reject unsigned commits* refuses every unsigned commit
 pushed, the bot's too: a doc fix, a merge request rebuilt by `follow`,
-one brought up to date by the [merge policy](../merge-policy.md)
+a release brought up to date by the [merge policy](../merge-policy.md)
 ([#549](https://github.com/JN0V/workline/issues/549)). Give the bot an
 SSH key: the template signs its commits with it.
 
