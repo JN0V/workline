@@ -80,22 +80,22 @@ func (a *applier) mergedRecord(t forge.Target, key, body, read string) (string, 
 	found, ok := kept.Last(marker)
 	if ok && forge.Newer(found, body) {
 		// A later run's comment, applied first (#598): its text stays,
-		// this run's record merged into it.
-		merged := reviewer.MergeInto(found, body, read, marker)
+		// this run's record merged into it; never the older text written
+		// over it, even when a record does not read: the comment is then
+		// left as it is, and this run's commits read again.
+		merge := reviewer.MergeInto
 		if a.role == "inspector" {
-			merged = inspector.MergeInto(found, body, read, marker)
+			merge = inspector.MergeInto
 		}
-		if merged != "" {
-			a.findings = append(a.findings, verdict.Finding{Rule: "applied-after-a-newer-run", Level: "warn",
-				Message: "the comment holds a later run's text, applied before this one: kept, this run's record merged into it"})
-			return merged, nil
+		said := "kept, this run's record merged into it"
+		out := merge(found, body, read, marker)
+		if out == "" {
+			said = "kept as it is, this run's record not merged (a record does not read); what it read is read again"
+			out = strings.TrimSpace(strings.Replace(found, marker, "", 1))
 		}
-		// A record that does not read: the later run's comment is left
-		// as it is, never the older text written over it; this run's
-		// commits are read again at the next push.
 		a.findings = append(a.findings, verdict.Finding{Rule: "applied-after-a-newer-run", Level: "warn",
-			Message: "the comment holds a later run's text, applied before this one: kept as it is, this run's record not merged (a record does not read); what it read is read again"})
-		return strings.TrimSpace(strings.Replace(found, marker, "", 1)), nil
+			Message: "the comment holds a later run's text, applied before this one: " + said})
+		return out, nil
 	}
 	switch {
 	case !ok:
