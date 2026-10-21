@@ -1,0 +1,59 @@
+case: inspector/record-merged-when-two-runs-triaged-before-either-applied
+about: >
+  A push lands in the seconds between a run apart's end and its apply
+  taking the lock (#580): the push's run takes it first, reads the record
+  before that apply wrote it, and asks the agent again about the findings
+  still at its head; that cost is the price of a triage not posted yet.
+  Each apply then merges the record the comment holds into its own: the
+  first run's triage is posted although the branch moved on, and the
+  newer run's comment keeps it, beside its own. Here the push removed the
+  scratch file: its triage, the first run's, stays in the record, and is
+  not asked again if the finding comes back (ADR-0013).
+given:
+  repo: linted
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - git checkout -q -b change
+    - |
+      sed -i 's|^\tos.Remove("c.tmp")$|&\n\tos.Remove("d.tmp")|' clean.go
+      printf 'package main\n\nimport "os"\n\n// scratch writes a temporary file and removes it on the way out.\nfunc scratch() {\n\tf, _ := os.CreateTemp("", "scratch")\n\tdefer os.Remove(f.Name())\n}\n' > cleanup.go
+      git add . && git commit -qm "feat: clean d too, and a scratch file" && git push -q origin change
+  forge: {merge-requests: [{id: 1, branch: change, labels: [], comments: []}]}
+  config:
+    routing: {events: {merge-request: [committer, "gate:merge", inspector]}}
+    gates: {merge: {checks: [{id: lint, run: "golangci-lint run --output.sarif.path={out}/lint.sarif", output: sarif, max: {error: 0}}]}}
+run:
+  route: merge-request
+  warn-only: true
+  no-apply: true
+  then: judged-twice
+  pushed:
+    - |
+      sed -i 's|^\tos.Remove("b.tmp")$|&\n\tos.Remove("e.tmp")|' clean.go && git rm -q cleanup.go && git commit -qam "feat: clean e too, no scratch file" && git push -q origin change
+  apply-from: {merge-request: 1, base: main}
+  gates-job: {env: {PATH: "$FIXTURES/bin:$PATH"}}
+  input: {range: main..change}
+  target: {merge-request: 1}
+  ai: "cmd:sh $FIXTURES/agents/triage.sh"
+expect:
+  status: pass
+  findings:
+    - {rule: moved-on, level: warn, where: change, message: "only the review of that head applied (comment)"}
+  # One call a run; the push's, judged before the first was applied, asks
+  # again about the finding both heads hold.
+  agent-calls: 2
+  run-files:
+    in/parts/triage/task.md:
+      contains:
+        - "## t1 — `errcheck (golangci-lint)`, clean.go:9 (error)"
+        - "## t2 — `errcheck (golangci-lint)`, clean.go:11 (error)"
+  forge:
+    merge-requests:
+      - id: 1
+        comments: 1
+        comment-contains:
+          - "the gates' 2 new findings at"
+          - ": 2 triaged, 0 likely false positives."
+          - "\"where\":\"cleanup.go:8\""
+          - "\"where\":\"clean.go:9\""
+          - "\"where\":\"clean.go:11\""

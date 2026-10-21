@@ -1,4 +1,4 @@
-# Inspector — where it stands (2026-10-20)
+# Inspector — where it stands (2026-10-21)
 
 **In one line:** on a merge request, triages the findings the project's
 gates report the change adds: why each matters, a likely false positive
@@ -51,6 +51,12 @@ Cases in
   record kept there: `on-a-machine-after-the-gates`; past
   `findings-max`, the rest asked at the next push:
   `findings-past-the-cap-asked-at-the-next-push`.
+- **A push landing before the triage is posted**
+  ([#580](https://github.com/JN0V/workline/issues/580)): the triage of
+  the head judged still posted, the push's run asking only what is new:
+  `triage-applied-when-a-push-lands-before-it`; judged before it was
+  posted, the push's run asks again, and both runs' records are merged:
+  `record-merged-when-two-runs-triaged-before-either-applied`.
 - **No agent, no call, said**: `no-agent-no-call-said`; a draft waits for
   ready: `draft-waits-for-ready`; no new finding, no call:
   `no-new-finding-no-call`.
@@ -84,10 +90,6 @@ Cases in
 - **The reviewer told what the linters cover**
   ([ADR-0049, section 6](../../../docs/adr/0049-the-inspector-judges-the-new-findings-of-the-projects-tools.md#6-guards)):
   [#578](https://github.com/JN0V/workline/issues/578).
-- **Two runs judged before either is applied**: the second does not see
-  the first's record, and asks its findings again; the reviewer's apply
-  merges its record for that ([#375](https://github.com/JN0V/workline/issues/375)):
-  [#580](https://github.com/JN0V/workline/issues/580).
 - **SonarQube read as a gate**, ADR-0049's step 6, its findings triaged
   as the gates' are: [#203](https://github.com/JN0V/workline/issues/203).
 - **Gates per changed folder** in a repository of several projects, each

@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/JN0V/workline/internal/backlog"
+	"github.com/JN0V/workline/internal/builtin/inspector"
 	"github.com/JN0V/workline/internal/builtin/reviewer"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/verdict"
@@ -62,11 +63,20 @@ func (a *applier) lineReview(t forge.Target, v any, body string) (string, error)
 // the one the comment holds by then (#375): a run applied after this one
 // read it wrote it, a push having been judged before the run before it
 // was applied. read is the record the run read; no comment yet, or a
-// forge that lists none, leaves body as it is.
+// forge that lists none, leaves body as it is. The reviewer's summary
+// comment, or the inspector's triage (#580), whose record is read from a
+// bot's comment or a person's of the project only.
 func (a *applier) mergedRecord(t forge.Target, key, body, read string) (string, error) {
 	b, ok := a.forge.(forge.Backlog)
 	if !ok {
 		return body, nil
+	}
+	if a.role == "inspector" {
+		notes, err := b.Notes(t)
+		if err != nil && !errors.Is(err, forge.ErrAuthorsUnknown) {
+			return "", err
+		}
+		return inspector.MergeComment(body, read, notes), nil
 	}
 	comments, err := b.Comments(t)
 	if err != nil {

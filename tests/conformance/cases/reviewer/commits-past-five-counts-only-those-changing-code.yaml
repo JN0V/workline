@@ -34,4 +34,4 @@ expect:
     merge-requests:
       - id: 5
         comments: 2
-        comment-contains: ["8 of the 9 new commits read, 1 left for the next push", " runs=2 read=all -->"]
+        comment-contains: ["8 of the 9 new commits read, 1 left for the next push", " runs=2 read=all left-by=edge-cases -->"]

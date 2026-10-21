@@ -99,6 +99,37 @@ func capCommits(repo string, s Settings, st *state, sp span) error {
 	return nil
 }
 
+// recorded is the record once the commits the lenses read are added:
+// past commits-per-push, it names the lenses that left the rest (#591).
+func (st state) recorded() Record {
+	r := st.Record.add(st.Commits, st.Patches)
+	if st.Upto != "" {
+		r.LeftBy = facets(st)
+	}
+	return r
+}
+
+// leftTo are the lenses of this run, and whether the diff-alone facet,
+// that read the commits the last run left past commits-per-push when this
+// push's turn is the other run's (#591): those that left them, still with
+// something to read (skip). The run apart never records them unread on
+// the turn of a lens that blocks, which reads them for the verdict alone.
+func (r Record) leftTo(s Settings, side string, skip map[string]string) ([]string, bool) {
+	var out []string
+	facet := false
+	for _, l := range r.LeftBy {
+		_, skipped := skip[l]
+		switch {
+		case !s.ofSide(side, l):
+		case l == alone:
+			facet = true
+		case slices.Contains(s.Lenses, l) && !skipped && !slices.Contains(out, l):
+			out = append(out, l)
+		}
+	}
+	return out, facet
+}
+
 // leftSaid is what a summary says of the commits left past commits-per-push.
 func (st state) leftSaid() string {
 	if st.Upto == "" {

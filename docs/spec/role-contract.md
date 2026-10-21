@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine, internal/intent, internal/role, internal/agent, roles_test.go]
-checked: 4c90e75f
+checked: 586ffe0e
 verified: agent:claude-code
 judged: b530b72
 ---
@@ -110,8 +110,9 @@ on-block: []                    # the kinds a run still applies when post blocks
                                 # any run (step 5, Apply); none by default
 on-moved-on: []                 # what a merge request's run still applies once its
                                 # branch moved on from the head judged: what only says
-                                # what that head held (the reviewer's review); never a
-                                # patch nor a label; none by default
+                                # what that head held (the reviewer's review, the
+                                # inspector's triage); never a patch nor a label;
+                                # none by default
 apart: []                       # events, of its own, where what the role finds that
                                 # only warns runs apart from the verdict: the verdict's
                                 # line leaves it (`route --warn-apart`, input

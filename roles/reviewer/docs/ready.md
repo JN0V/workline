@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, internal/builtin/reviewer/reviewer.go, internal/builtin/reviewer/record.go, internal/builtin/reviewer/once.go, internal/engine/engine.go, ci/github/workline.yml, ci/gitlab/workline.gitlab-ci.yml]
-checked: ee97604e
+checked: d108841c
 verified: agent:claude-code
 ---
 # Reviewer — no lens on a draft, every lens once when it becomes ready, then what is new
@@ -64,9 +64,9 @@ agent, the reviewer's two runs included.
   run per merge request. It wrote nothing, so the next run reads every
   lens.
 - **A draft again**: its runs ask no lens, and the last review stands,
-  its comment kept. Only its record drops `read=all`, `retried=once`
-  and `failed=`; ready again, every lens reads it once more, even after
-  a cancelled run.
+  its comment kept. Only its record drops `read=all`, `retried=once`,
+  `failed=` and `left-by=`; ready again, every lens reads it once more,
+  even after a cancelled run.
 - **A record that does not read** says nothing of it: one lens, every
   commit reviewed again. A record written before `read=all` existed: the
   next push to a merge request no draft reads every lens once.
@@ -98,6 +98,10 @@ AI reads only what is new.
     (`commits-left`), with their ids.
   - They are read first at the next push, or when the run runs again on
     the same head (re-run its job).
+  - On the turn of a lens that blocks, the lenses that left them read
+    them in the run apart: its record names them (`left-by=`), and never
+    calls those commits reviewed before a lens that warns read them
+    ([#591](https://github.com/JN0V/workline/issues/591)).
   - `0`: every new commit, each push.
 - **A lens that blocks reads every new commit**, and so does the run on
   ready: what can hold the verdict is never left unread.

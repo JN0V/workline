@@ -1,8 +1,11 @@
 package inspector
 
 import (
+	"fmt"
 	"strings"
 	"testing"
+
+	"github.com/JN0V/workline/internal/forge"
 )
 
 func TestRecordReadsBackWhatTheCommentHides(t *testing.T) {
@@ -60,6 +63,77 @@ func TestCommentStaysWithinTheForgesSize(t *testing.T) {
 	body := comment(run, current(run))
 	if len(body) > commentMax || !strings.Contains(body, "55 more triaged, not listed here") || !strings.Contains(body, "triages not kept in this comment, past its size") {
 		t.Fatalf("a comment of %d characters, over %d, or not saying what it left out", len(body), commentMax)
+	}
+}
+
+func TestMergeCommentKeepsTheRunAppliedSince(t *testing.T) {
+	triaged := func(fp, at string) Triaged {
+		return Triaged{Fingerprint: fp, Check: "lint", Where: fp + ".go:1", At: at, Matters: "m " + at}
+	}
+	note := func(r Record, bot bool) forge.Note {
+		text, _ := r.lines(nil, 1<<20)
+		return forge.Note{Body: "the triage" + text + "\n\n" + marker, Bot: bot}
+	}
+	was := Record{}.with(triaged("old", "h0"))
+	read, _ := was.lines(nil, 1<<20)
+	// This run: the old one read, "both" and "ours" triaged at its head.
+	run := Run{Head: "h2", Found: []Found{{Fingerprint: "both"}, {Fingerprint: "ours"}}, Record: was.with(triaged("both", "h2")).with(triaged("ours", "h2"))}
+	body := comment(run, current(run))
+	// Applied since: the old one, and "both" and "theirs" triaged at h1.
+	now := was.with(triaged("both", "h1")).with(triaged("theirs", "h1"))
+
+	if got := MergeComment(body, read, nil); got != body {
+		t.Fatalf("no comment yet, the body changed: %s", got)
+	}
+	if got := MergeComment(body, read, []forge.Note{note(was, true)}); got != body {
+		t.Fatalf("none applied since this run read, the body changed: %s", got)
+	}
+	// One this run read and left out past the size, only placed anew by a
+	// run applied since: this run's to leave.
+	trimmed := run
+	trimmed.Record = Record{}.with(triaged("both", "h2")).with(triaged("ours", "h2"))
+	left := comment(trimmed, current(trimmed))
+	reranked := was
+	reranked.Triaged = []Triaged{triaged("old", "h0")}
+	reranked.Triaged[0].Order = 3
+	if got := MergeComment(left, read, []forge.Note{note(reranked, true)}); got != left {
+		t.Fatalf("a finding this run read, only placed anew since, was merged back: %s", got)
+	}
+	if got := MergeComment(body, read, []forge.Note{note(now, false)}); got != body {
+		t.Fatalf("a stranger's comment carrying the marker was merged: %s", got)
+	}
+	if got := MergeComment(body, read, []forge.Note{{Body: "<!-- workline:triaged {nope} -->" + marker, Bot: true}}); got != body {
+		t.Fatalf("a record that does not read was merged: %s", got)
+	}
+	got := MergeComment(body, read, []forge.Note{note(now, true)})
+	merged, err := readRecord(got)
+	if err != nil || !strings.HasPrefix(got, body[:strings.Index(body, recordOpening)]) {
+		t.Fatalf("the merged comment does not read, or its triage changed (%v): %s", err, got)
+	}
+	want := []Triaged{triaged("theirs", "h1"), triaged("old", "h0"), triaged("both", "h2"), triaged("ours", "h2")}
+	if len(merged.Triaged) != len(want) {
+		t.Fatalf("merged %+v, want %+v", merged.Triaged, want)
+	}
+	for i, w := range want {
+		if g := merged.Triaged[i]; g.Fingerprint != w.Fingerprint || g.At != w.At {
+			t.Fatalf("merged %+v, want the run's applied since first, then this run's own, its triage of one both made kept: %+v", merged.Triaged, want)
+		}
+	}
+	// Past the comment's size: the run's applied since go, never this
+	// run's own.
+	big := now
+	for i := range 200 {
+		big = big.with(Triaged{Fingerprint: fmt.Sprintf("theirs%03d", i), Check: "lint", Where: "x.go", At: "h1", Matters: strings.Repeat("m", textMax), Why: strings.Repeat("w", textMax)})
+	}
+	got = MergeComment(body, read, []forge.Note{note(big, true)})
+	merged, err = readRecord(got)
+	if err != nil || len(got) > commentMax || len(merged.Triaged) >= len(big.Triaged) {
+		t.Fatalf("a merged comment of %d characters, over %d, or none of the others' left out (%v)", len(got), commentMax, err)
+	}
+	for _, fp := range []string{"old", "both", "ours"} {
+		if _, ok := merged.find(fp); !ok {
+			t.Fatalf("past its size, the merge left out this run's own %q", fp)
+		}
 	}
 }
 

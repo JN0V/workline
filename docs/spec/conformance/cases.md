@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go]
-checked: 32104a40
+checked: 586ffe0e
 verified: agent:claude-code
 ---
 # Conformance — a case in full
@@ -126,7 +126,9 @@ saying so.
   are applied, the first first. `judged-twice` judges both before either
   is applied; `applied-between` applies the first before the second
   judges, as the lock the judging and applying jobs share makes it. With
-  `apply-from`, each is applied with the head its run judged as `--head`.
+  `apply-from`, each is applied with the head its run judged as `--head`;
+  with `gates-job`, that job runs again on the new head before the second
+  judges, as CI runs it on each push.
   Both judges' agent calls and calls are counted, all four's findings; the
   rest is the last apply's;
 - `apply-from` — with `then: resume`, `judged-twice` or
