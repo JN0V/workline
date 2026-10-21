@@ -148,4 +148,9 @@ step 4, built:
   suspect are said, never holding the merge; its author fixes the prose
   the change made wrong.
 - **Their `checked` moves at gardening**, in its docs merge request, once
-  merged: nightly, until the weekly docs merge request (ADR-0051, step 7).
+  merged: nightly, until the weekly docs merge request (ADR-0051, step 7);
+  only for a doc whose sources fit a task whole. Tried on 2026-10-21, on
+  workline's main with this step merged, 85 docs suspect, a scripted
+  agent vouching for each it could: 5 rounds, 21 min, `judged` set on 6,
+  `checked` moved on none; every source too large to go whole. The
+  author still moves `checked` of the docs read against the change.

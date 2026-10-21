@@ -98,9 +98,10 @@ Under `roles: {documentalist: {settings: …}}` in `.workline/config.yaml`
   - one comment listing what is left for a person, edited on each run;
   - the fix as a diff in one comment, to apply; nothing pushed to the
     branch, no `checked` moved there ([ADR-0051](../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-3-no-docs-obligation-per-pr));
-  - a pull request need not leave no doc suspect: gardening's docs pull
-    request moves their `checked` once merged, nightly until the weekly
-    one;
+  - a pull request need not leave no doc suspect: once merged, gardening's
+    docs pull request moves `checked` of those whose sources fit a task
+    whole, nightly until the weekly one; the others wait for parts or a
+    person;
   - a doc found with nothing to fix gets no commit: its record waits in a
     comment, and gardening writes it on main once merged
     ([more](docs/push.md#a-doc-found-with-nothing-to-fix-no-commit));

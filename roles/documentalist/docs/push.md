@@ -19,9 +19,11 @@ moves to the commit the task gave.
   ([ADR-0051](../../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-3-no-docs-obligation-per-pr)).
   A suggestion could only sit on lines the merge request changes.
 - **The docs it made suspect are said, never holding the merge**: the
-  author fixes the prose the change made wrong; gardening's docs pull
-  request moves their `checked` once merged, nightly until the weekly one
-  comes.
+  author fixes the prose the change made wrong, and may move `checked` of
+  those read against it. Once merged, gardening's docs pull request moves
+  the others' `checked`, nightly until the weekly one: only for a doc whose
+  sources fit a task whole (`whole-chars`); the others wait for
+  [parts](parts.md), a few a night, or for a person.
 - Given the commits of a merge request (`range`), only the docs they
   touched are read, as at a push: those they made suspect — one of their
   own sources touched by those commits, a merge's own change too — are

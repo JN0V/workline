@@ -20,8 +20,10 @@ against it. Then only what the task needs:
   product owner keeps them). Not in chat, not in memory, not in a file.
 - **Docs follow the code**: a doc that describes code names it in `sources`,
   with the commit it was `checked` against. When the documentalist reports it
-  `suspect`, fix the prose your change made wrong. A pull request need not
-  reach 0 suspect: gardening's docs pull request moves `checked` once merged
+  `suspect`, fix the prose your change made wrong, and move `checked` of the
+  docs you read against it. A pull request need not reach 0 suspect, but the
+  night moves `checked` only for docs whose sources fit a task whole: few of
+  workline's do
   ([ADR-0051](docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-3-no-docs-obligation-per-pr)).
 - **Conformance first**: a behaviour starts as a case in tests/conformance/cases/;
   `pending.txt` lists what does not pass yet and must never lie. README's
