@@ -256,6 +256,10 @@ a cron off the hour (`13 17 * * *`) was listed as due at 18:00 and ran at
     in `.workline/config.yaml`
     ([ADR-0051](adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md));
     the reviewer and the inspector read theirs so too;
+  - nor one a Maintainer edited last: GitLab says who in GraphQL
+    (`lastEditedBy`), which `WORKLINE_GITLAB_TOKEN` may ask and a job's
+    own token may not; unasked, no record is read, said
+    (`record-unread`);
   - a note carrying its marker that another wrote, a person of the
     project's too: not read, its docs judged again, said
     (`record-unread`);
