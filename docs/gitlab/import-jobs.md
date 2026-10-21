@@ -1,6 +1,6 @@
 <!-- workline
 sources: [ci/gitlab/workline.gitlab-ci.yml, cmd/workline]
-checked: 8425efe1
+checked: 35eb7554
 judged-in-parts: e8a46f7
 -->
 # Importing a file on GitLab: the two jobs
