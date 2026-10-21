@@ -7,9 +7,11 @@
 # default branch's issue.
 name: workline gardening
 on:
-  # Nightly while its docs are caught up, then Mondays ("17 2 * * 1"). Off
-  # the hour: GitHub may drop a run scheduled at its start, when busiest.
-  schedule: [{cron: "17 2 * * *"}]
+  # The backlog nightly, 02:17 UTC; the docs pull request weekly, Sunday
+  # 18:07 UTC, so that it lands before Monday's workday though GitHub may
+  # start a run hours late (#607; ADR-0051). Off the hour: GitHub may drop
+  # a run scheduled at its start, when busiest.
+  schedule: [{cron: "17 2 * * *"}, {cron: "7 18 * * 0"}]
   workflow_dispatch:
 permissions: {}
 
@@ -50,10 +52,12 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           WORKLINE_APP_ID: ${{ vars.WORKLINE_APP_ID }}   # the App whose comments keep the records a role reads back (ADR-0051)
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # Nightly the backlog alone, weekly the docs alone; run by hand, both.
+          SKIP: "${{ github.event.schedule == '17 2 * * *' && 'documentalist' || github.event.schedule == '7 18 * * 0' && 'product-owner,reviewer' || '' }}"
         run: |
           ai=none; [ -n "$CLAUDE_CODE_OAUTH_TOKEN" ] && ai=claude
           status=0
-          workline route schedule --ai "$ai" --no-apply --forge github --open-merge-request --summary workline-summary.md --json > line.json || status=$?
+          workline route schedule --ai "$ai" --no-apply --forge github --open-merge-request ${SKIP:+--input skip="$SKIP"} --summary workline-summary.md --json > line.json || status=$?
           echo "status=$status" >> "$GITHUB_OUTPUT"
           echo "proposed=$(jq '(.pending // []) | length > 0' line.json)" >> "$GITHUB_OUTPUT"
           [ ! -s workline-summary.md ] || cat workline-summary.md

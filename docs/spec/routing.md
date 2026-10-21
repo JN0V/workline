@@ -222,6 +222,12 @@ verdict is then a review to come, never a pass
 ([merge policy](../merge-policy.md)). The rules and gates run as on any
 push. With no agent set, nothing waits; `draft=false` changes nothing.
 
+### Steps left out
+
+`--input skip=<step>,…` leaves those steps out of the line: one schedule
+runs some roles weekly, others nightly, as workline's own does (the docs
+on Sundays, the backlog each night).
+
 ### Once, at ready
 
 [ADR-0051](../adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md): a role whose

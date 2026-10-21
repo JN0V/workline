@@ -79,7 +79,8 @@ write run the default branch's workflow, never a pull request's own
      main's workflows in its `workflow_run`
      ([what holds a release](release-holds.md)).
    - [workline-gardening.yml](../ci/github/workline-gardening.yml):
-     gardening, nightly while a backlog is caught up, then weekly; its
+     gardening, weekly, Sunday 18:07 UTC, so that its pull request lands
+     before Monday's workday though GitHub may start it hours late; its
      `apply` runs every time, and then rebuilds on `main` the pull
      requests it opened before, or closes those with nothing left to merge
      ([ADR-0034, amended](adr/0034-the-release-fix-follows-its-base.md#amendment-2026-10-12-gardenings-merge-requests-follow-too-or-are-closed)).

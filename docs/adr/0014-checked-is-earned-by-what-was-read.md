@@ -5,7 +5,8 @@
   developer; adversarial, verification-gap and edge-case lenses);
   amended 2026-10-01 (who confirms a verdict), 2026-10-02 (where the
   weekly sample is written: ADR-0015), 2026-10-15 (what step 3 left),
-  2026-10-18 (`checked` earned in parts, measured, off, then on)
+  2026-10-18 (`checked` earned in parts, measured, off, then on),
+  2026-10-21 (a doc suspect only when a line it names changes)
 - **Date:** 2026-10-01
 - **Amends:** ADR-0012 (a doc judged against its sources whole), ADR-0013
   (`judged`)
@@ -226,6 +227,29 @@ adopted only if five evaluation runs in parts hold step 4's bars.
 - **What step 3 left** (2026-10-15), "a line no part claims": with the
   setting on, such a line keeps `checked` where it is, the finding naming
   it.
+
+## Amendment (2026-10-21): suspect only when a line it names changes
+
+[ADR-0051](0051-a-check-sits-where-its-catch-is-worth-its-cost.md), step 7. Measured that day: 88 of 91
+of workline's docs name a source over the 20,000 characters a task reads
+whole, so the night can move `checked` on almost none of them; each pull
+request touching `cmd/workline` or the engine made 40 to 50 docs suspect.
+
+- **A doc writing names in backticks** (flags, identifiers, settings,
+  files) is suspect only when a commit's change to one of its sources:
+  - changes a file it names, at all;
+  - or removes or changes a line holding a name it writes, or a value it
+    states (a number of two characters or more: `3600`, `1.4.1`).
+- **A line added alone** makes it suspect no more.
+- **A doc writing no name in backticks**: any change, as before.
+- **Measured** on four pull requests (#620, #623, #626, #627), docs
+  suspect by their sources: 93; flagged by a name or value: 33.
+- **What escapes**: a change of behaviour on a line holding no name or
+  value the doc writes. The case kept for it: `TokenTTL = 3600` becomes
+  `7200`, while the doc says "one hour" and names only `RefreshToken`.
+- **What still catches it**: the staleness check reads a doc again 180
+  days after its `checked` (`freshness.stale-after-days`); the weekly
+  sample re-reads one doc in ten vouched for.
 
 ## Not decided here
 

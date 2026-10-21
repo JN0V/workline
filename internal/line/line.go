@@ -97,6 +97,10 @@ type Gates struct {
 // next merge requests' base, then the event's own steps, each one.
 const MainEvent = "main"
 
+// SkipInput names, comma-separated, the event's steps a run leaves out:
+// workline's own schedule, its docs weekly and its backlog nightly.
+const SkipInput = "skip"
+
 // MainRun is what main's run after a merge compared: main's tip before
 // it, "" when none is known, and the head; the commits between them, as
 // `git log --first-parent --oneline` says them, for whoever reads why
@@ -156,6 +160,11 @@ func RunWith(event string, base engine.Options, gates *Gates) *Result {
 	steps, ok := stepsOf(cfg, event)
 	if !ok {
 		return failed(res, "routing", fmt.Sprintf("routing names no step for event %q", event))
+	}
+	// `--input skip=<role>,…`: the line leaves those steps out, as a
+	// schedule running some roles weekly and others nightly does (ADR-0051).
+	if skip := strings.Split(base.Inputs[SkipInput], ","); base.Inputs[SkipInput] != "" {
+		steps = slices.DeleteFunc(slices.Clone(steps), func(s string) bool { return slices.Contains(skip, s) })
 	}
 	// Main after a merge: its gates compare HEAD with main's tip before
 	// the merge, whoever made it; the engine's own commits there are
