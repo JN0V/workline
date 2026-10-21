@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/committer, roles/committer/role.yaml, routing.default.yaml]
-checked: dba82333
+checked: 73bdc933
 verified: agent:claude-code
 ---
 # Committer
@@ -98,21 +98,9 @@ Messages git writes itself (`Merge …`, `Revert "…"`, `fixup! …`, `squash! 
 
 ### The squash title
 
-A squash lands one subject on the base, which no commit carried. On a
-merge request the forge may squash, it is checked by the same rules, and
-blocks the same way
-([ADR-0051](../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md)):
-
-- **The subject**: the title; on GitHub, set to take a lone commit's
-  subject, that commit's when there is one.
-- **Room for the forge's suffix**: GitHub adds ` (#N)`, so a title holds
-  `subject-max` less its length; GitLab adds nothing.
-- **The forge squashes** when its settings allow it: on GitHub, squash
-  merging; on GitLab, any squash option but "Do not allow". Turn it off
-  there if the project never squashes.
-- **Checked again on an edit**: GitHub's `edited` event; on GitLab, the
-  next pipeline: run it again after editing the title.
-- **A person edits the title**: no agent is asked.
+On a merge request the forge may squash, the subject it lands on the
+base is checked by the same rules, room left for GitHub's ` (#N)`
+([more](docs/squash-title.md)).
 
 ### Secrets and forbidden terms
 

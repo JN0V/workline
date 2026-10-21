@@ -169,7 +169,7 @@ By upkeep removed per unit of work:
     rules on the subject a squash lands, ` (#N)` left room, when the
     forge's settings allow a squash; GitHub's `edited` re-runs it; a
     person edits the title, no agent asked
-    ([the committer](../../roles/committer/README.md#the-squash-title)).
+    ([the squash title](../../roles/committer/docs/squash-title.md)).
 
 ## Consequences
 
