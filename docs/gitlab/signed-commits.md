@@ -1,6 +1,6 @@
 <!-- workline
 sources: [ci/gitlab/workline.gitlab-ci.yml, internal/engine/follow.go, internal/engine/settle.go, Dockerfile]
-checked: 8425efe1
+checked: a840c0a3
 verified: agent:claude-code
 judged-in-parts: e8a46f7
 -->
