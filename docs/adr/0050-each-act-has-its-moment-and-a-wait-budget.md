@@ -17,6 +17,7 @@
   that warn post off the verdict's path; after ready, only what is new
   (all amended, steps 5, 3 and 6)
 - **Research:** [moments.md](../research/moments.md)
+- **Amended by:** [ADR-0051](0051-a-check-sits-where-its-catch-is-worth-its-cost.md) (2026-10-21): each check sits where its catch is worth its cost; judged docs never hold the release
 - **Settles:** where SonarQube's read runs ([#203])
 
 ## Context
