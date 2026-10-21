@@ -77,7 +77,10 @@ its evaluation in
   project names: `identity-forge-*`.
 - **On a merge request**, every commit checked:
   `merge-request-checks-every-commit`,
-  `possible-code-in-pushed-commits-warns`.
+  `possible-code-in-pushed-commits-warns`; the subject a squash lands,
+  room left for the forge's ` (#N)`
+  ([ADR-0051](../../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md)):
+  `squash-*`, `title-not-checked-without-squash`.
 
 ## Missing
 
