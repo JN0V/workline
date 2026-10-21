@@ -199,6 +199,25 @@ func TestGitHubPagesTriedAgain(t *testing.T) {
 	}
 }
 
+// gh is asked for the headers, but not twice, nor for REST pages printed
+// whole: it would not join their arrays into one.
+func TestGitHubAsksHeads(t *testing.T) {
+	for _, c := range []struct {
+		args []string
+		asks bool
+	}{
+		{[]string{"api", "repos/{owner}/{repo}/issues/9"}, true},
+		{[]string{"api", "--paginate", "repos/{owner}/{repo}/labels", "--jq", ".[] | {name}"}, true},
+		{[]string{"api", "graphql", "--paginate", "-f", "query=query { viewer { login } }"}, true},
+		{[]string{"api", "--paginate", "repos/{owner}/{repo}/labels"}, false},
+		{[]string{"api", "repos/{owner}/{repo}/issues/9", "--include"}, false},
+	} {
+		if got := asksHeads(c.args); got != c.asks {
+			t.Errorf("%q: asks %v, want %v", c.args, got, c.asks)
+		}
+	}
+}
+
 // What gh is asked says whether a call only reads: a GET, said or not,
 // without a field (gh sends a POST then); a GraphQL query.
 func TestGitHubRead(t *testing.T) {
@@ -240,7 +259,7 @@ func TestGitHubFailure(t *testing.T) {
 		{"error connecting to api.github.com\ncheck your internet connection or https://githubstatus.com", 0, failure{cut: true, unsent: true}},
 		{"gh: HTTP 502", 0, failure{code: 502}},
 		{"gh: Server Error (HTTP 503)", 503, failure{code: 503}},
-		{"gh: API rate limit exceeded for user ID 1. (HTTP 403)", 403, failure{code: 403, limited: true, least: time.Minute}},
+		{"gh: API rate limit exceeded for user ID 1. (HTTP 403)", 403, failure{code: 403, limited: true, least: time.Minute, rate: "X-RateLimit-"}},
 		{"gh: Resource not accessible by integration (HTTP 403)", 403, failure{code: 403}},
 		{"gh: error evaluating jq: unexpected EOF", 0, failure{}},
 	} {
@@ -256,11 +275,14 @@ func TestGitHubFailure(t *testing.T) {
 // reset of a limit spent when it is near; a later one is not waited for.
 func TestGitHubRateWaits(t *testing.T) {
 	quick(t)
-	if wait, note := again("GitHub", true, 1, failure{code: 403, limited: true, least: time.Minute, header: http.Header{}}); wait != time.Minute || note != "" {
+	if wait, note := again("GitHub", true, 1, failure{code: 403, limited: true, least: time.Minute, rate: "X-RateLimit-", header: http.Header{}}); wait != time.Minute || note != "" {
 		t.Errorf("a limit with no wait asked: %v %q, want a minute", wait, note)
 	}
 	spent := http.Header{"X-Ratelimit-Remaining": {"0"}, "X-Ratelimit-Reset": {fmt.Sprint(time.Now().Add(time.Hour).Unix())}}
-	if wait, note := again("GitHub", true, 1, failure{code: 403, limited: true, least: time.Minute, header: spent}); wait >= 0 ||
+	if wait, note := again("GitLab", true, 1, failure{code: 429, limited: true, header: spent}); wait != retry.pause || note != "" {
+		t.Errorf("GitLab, which sends no such header: %v %q, want the pause", wait, note)
+	}
+	if wait, note := again("GitHub", true, 1, failure{code: 403, limited: true, least: time.Minute, rate: "X-RateLimit-", header: spent}); wait >= 0 ||
 		!strings.Contains(note, "GitHub asks to wait (X-RateLimit-Reset: in 3600 s), longer than workline waits (60 s): not tried again") {
 		t.Errorf("a limit reset in an hour: %v %q, want not tried again, said", wait, note)
 	}

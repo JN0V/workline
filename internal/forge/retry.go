@@ -54,6 +54,7 @@ type failure struct {
 	unsent  bool          // it certainly never reached the forge: no connection was made
 	limited bool          // refused for the forge's rate: a 429, GitHub's 403 saying so
 	least   time.Duration // the wait the forge asks for its rate when no header says (GitHub: a minute)
+	rate    string        // its rate headers' prefix, when it says when a rate spent is reset (GitHub: X-RateLimit-)
 }
 
 // send makes one call to GitLab, tried again by the rules above; read is
@@ -135,7 +136,8 @@ func again(forge string, read bool, try int, f failure) (wait time.Duration, not
 
 // asked is the wait the forge asks before a call is sent again, and the
 // header that says it: a Retry-After; for a call refused for the rate,
-// none left, the time it is reset at (GitHub's X-RateLimit-Reset).
+// none left, the time it is reset at, on a forge that says it (GitHub's
+// X-RateLimit-Reset).
 func asked(f failure) (time.Duration, string, bool) {
 	if f.header == nil {
 		return 0, "", false
@@ -145,16 +147,16 @@ func asked(f failure) (time.Duration, string, bool) {
 			return after, "Retry-After: " + v, true
 		}
 	}
-	if !f.limited || strings.TrimSpace(f.header.Get("X-RateLimit-Remaining")) != "0" {
+	if !f.limited || f.rate == "" || strings.TrimSpace(f.header.Get(f.rate+"Remaining")) != "0" {
 		return 0, "", false
 	}
-	reset, err := strconv.ParseInt(strings.TrimSpace(f.header.Get("X-RateLimit-Reset")), 10, 64)
+	reset, err := strconv.ParseInt(strings.TrimSpace(f.header.Get(f.rate+"Reset")), 10, 64)
 	if err != nil {
 		return 0, "", false
 	}
 	// Up to the second: not sooner than the reset.
 	after := (max(time.Until(time.Unix(min(reset, time.Now().Unix()+86400), 0)), 0) + time.Second - 1).Truncate(time.Second)
-	return after, fmt.Sprintf("X-RateLimit-Reset: in %d s", int(after.Seconds())), true
+	return after, fmt.Sprintf("%sReset: in %d s", f.rate, int(after.Seconds())), true
 }
 
 // aside is a note in parentheses, after the failure it explains.

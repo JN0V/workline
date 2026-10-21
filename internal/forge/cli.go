@@ -36,10 +36,7 @@ func runInput(repo string, input []byte, bin string, args ...string) ([]byte, er
 		return nil, fmt.Errorf("%w: %s is not installed", ErrUnreachable, bin)
 	}
 	read := ghRead(args)
-	if asks := !slices.Contains(args, "--include") && !slices.Contains(args, "-i"); asks && (!slices.Contains(args, "--paginate") ||
-		slices.Contains(args, "graphql") || slices.Contains(args, "--jq") || slices.Contains(args, "-q")) {
-		// Not on REST pages printed whole: gh joins their arrays into one
-		// only without --include.
+	if asksHeads(args) {
 		args = append(slices.Clone(args), "--include")
 	}
 	for try := 1; ; try++ {
@@ -53,6 +50,17 @@ func runInput(repo string, input []byte, bin string, args ...string) ([]byte, er
 		}
 		time.Sleep(wait)
 	}
+}
+
+// asksHeads says whether gh is asked for the answers' headers: not when
+// it is already, nor for REST pages printed whole, whose arrays gh joins
+// into one only without --include; their status is read from its words.
+func asksHeads(args []string) bool {
+	if slices.Contains(args, "--include") || slices.Contains(args, "-i") {
+		return false
+	}
+	return !slices.Contains(args, "--paginate") || slices.Contains(args, "graphql") ||
+		slices.Contains(args, "--jq") || slices.Contains(args, "-q")
 }
 
 // ghCall is one try of a gh call: what it printed, the answers' headers
@@ -168,7 +176,7 @@ func ghFailure(stalled bool, msg string, code int, header http.Header) failure {
 	f.limited = code == http.StatusTooManyRequests || code == http.StatusForbidden &&
 		(header.Get("Retry-After") != "" || header.Get("X-RateLimit-Remaining") == "0" || strings.Contains(strings.ToLower(msg), "rate limit"))
 	if f.limited {
-		f.least = time.Minute
+		f.least, f.rate = time.Minute, "X-RateLimit-"
 	}
 	return f
 }
