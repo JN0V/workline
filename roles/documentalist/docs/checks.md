@@ -33,7 +33,10 @@ rendering shows, or in a frontmatter the doc has.
     as the one to use, in a code block, an install line (`@v1.2.0`), an
     image's tag, or plain prose ("Clock **1.2.0**"). In a code block, the
     code pins whatever word comes before: `since: v1.2.0`, `--from
-    v1.2.0` ([#571](https://github.com/JN0V/workline/issues/571)).
+    v1.2.0` ([#571](https://github.com/JN0V/workline/issues/571)). An
+    HTML tag or a blockquote around it is markup, its `>` no range:
+    `<code>v1.2.0</code>`, `> v1.2.0`
+    ([#569](https://github.com/JN0V/workline/issues/569)).
   - **History** does not: the version right after "from", "since",
     "after", "before", "added in", "fixed in", "at least", or before "or
     later", "and newer", `+`, quoted or not, in prose (across a line

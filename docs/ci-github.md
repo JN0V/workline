@@ -77,7 +77,8 @@ write run the default branch's workflow, never a pull request's own
    - [workline-merge.yml](../ci/github/workline-merge.yml), with the merge
      policy: `follow` on a label.
    - [workline-fork.yml](../ci/github/workline-fork.yml): comments a fork's
-     pull request, which gets no secret and no right to write.
+     pull request, which gets no secret and no right to write
+     ([its gates](gates-in-ci.md#a-forks-pull-request)).
    - [workline-gardening.yml](../ci/github/workline-gardening.yml):
      gardening, nightly while a backlog is caught up, then weekly; its
      `apply` runs every time, and then rebuilds on `main` the pull

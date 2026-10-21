@@ -172,6 +172,22 @@ func sortedSet(m map[string]bool) []string {
 // now (measured on DomoticsCore: `>=1.13.0` beside Core 1.13.1).
 var versionRange = regexp.MustCompile(`(?:>=?|<=?|\^|~>?)\s*v?$`)
 
+// tagsBefore, tagsAfter and quoteMarkers find markup, read as `*` or a
+// backquote are: the tags beside a version — `<code>v1.2.0</code>`,
+// `<version>1.2.0</version>` — and the markers opening a blockquote's
+// line — `> v1.2.0`, `> > v1.2.0`. The `>` closing a tag or opening a
+// quote is no range (#569). A marker has a space after it, so `>= 1.2.0`
+// or `>1.2.0` opening a line stays a range. A tag is shaped as one, a name
+// then attributes each given a value, or is a comment: `v<min && v>1.2.0`
+// and `a<b and c>1.2.0` are ranges.
+const tag = `<(?:/?[a-zA-Z][a-zA-Z0-9:-]*(?:\s+[a-zA-Z_:][a-zA-Z0-9_:.-]*\s*=\s*(?:"[^"]*"|'[^']*'|[^\s"'=<>\x60]+))*\s*/?|!--.*?--)>`
+
+var (
+	tagsBefore   = regexp.MustCompile(`(?:` + tag + `[ \t]*)+(v?)$`)
+	tagsAfter    = regexp.MustCompile(`^(?:[ \t]*` + tag + `)+`)
+	quoteMarkers = regexp.MustCompile(`^[ \t]*(?:>(?:[ \t]+|$))+`)
+)
+
 // versionMarker ends the text before a version that names when something
 // came, changed or went — "_First available in v1.9.0_", "Added in",
 // "since", "until", "prior to", "New in version", "Deprecated in",
@@ -243,22 +259,34 @@ func isFence(text string) bool {
 // a sentence wrapped across lines read whole: in prose, a version opening
 // its line follows the previous one of its paragraph ("the first release
 // after" / "v0.38.0"), one closing it is followed by the next ("v1.2.0" /
-// "or later").
+// "or later"). Markup is left out of it: the tags beside the version,
+// in prose as in code, and in prose the markers opening a blockquote's
+// lines (tagsBefore, quoteMarkers), on the lines joined too.
 func around(lines []line, i int, at []int) (before, after string) {
 	l := lines[i]
-	before, after = l.text[:at[0]], l.text[at[1]:]
+	// The markers are read on the whole line: `>1.2.0` opening it is a
+	// range, the `>` cut from the version no marker.
+	text := func(j int) string {
+		if lines[j].code {
+			return lines[j].text
+		}
+		return quoteMarkers.ReplaceAllString(lines[j].text, "")
+	}
+	q := min(len(l.text)-len(text(i)), at[0])
+	before = tagsBefore.ReplaceAllString(l.text[q:at[0]], "${1}")
+	after = tagsAfter.ReplaceAllString(l.text[at[1]:], "")
 	if l.code {
 		return before, after
 	}
 	prose := func(j int) bool {
-		return j >= 0 && j < len(lines) && !lines[j].code && lines[j].heading == 0 && strings.TrimSpace(lines[j].text) != ""
+		return j >= 0 && j < len(lines) && !lines[j].code && lines[j].heading == 0 && strings.TrimSpace(text(j)) != ""
 	}
 	// Nothing but markup and the version's `v` on its side of the line.
 	if strings.Trim(before, " \t*_`\"'({v") == "" && prose(i-1) {
-		before = lines[i-1].text + " " + strings.TrimLeft(before, " \t")
+		before = tagsBefore.ReplaceAllString(text(i-1), "${1}") + " " + strings.TrimLeft(before, " \t")
 	}
 	if strings.Trim(after, " \t*_`\"')") == "" && prose(i+1) {
-		after = " " + strings.TrimLeft(lines[i+1].text, " \t")
+		after = " " + strings.TrimLeft(tagsAfter.ReplaceAllString(text(i+1), ""), " \t")
 	}
 	return before, after
 }
