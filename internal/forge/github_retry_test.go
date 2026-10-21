@@ -4,6 +4,7 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -24,12 +25,9 @@ func githubAt(t *testing.T, srv *httptest.Server) *github {
 		t.Skip("gh is not installed")
 	}
 	ca := filepath.Join(t.TempDir(), "ca.pem")
-	f, err := os.Create(ca)
-	if err != nil {
+	if err := os.WriteFile(ca, pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: srv.Certificate().Raw}), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	pem.Encode(f, &pem.Block{Type: "CERTIFICATE", Bytes: srv.Certificate().Raw})
-	f.Close()
 	host := srv.Listener.Addr().String()
 	t.Setenv("GH_HOST", host)
 	t.Setenv("GH_REPO", host+"/o/r")
@@ -73,15 +71,18 @@ func status(code int, header map[string]string, body string) func(http.ResponseW
 			w.Header().Set(k, v)
 		}
 		w.WriteHeader(code)
-		fmt.Fprint(w, body)
+		say(w, body)
 	}
 }
+
+// say writes an answer's body; a client gone is the case's to see.
+func say(w http.ResponseWriter, body string) { _, _ = io.WriteString(w, body) }
 
 // dropped closes the connection with no answer, as a proxy that fails.
 func dropped(w http.ResponseWriter, r *http.Request) {
 	c, _, err := w.(http.Hijacker).Hijack()
 	if err == nil {
-		c.Close()
+		_ = c.Close()
 	}
 }
 
@@ -101,7 +102,7 @@ func TestGitHubReadTriedAgain(t *testing.T) {
 		{"502", status(502, nil, `{"message":"Server Error"}`), 0},
 		{"502 not JSON", func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(502)
-			fmt.Fprint(w, "<html>Unicorn</html>")
+			say(w, "<html>Unicorn</html>")
 		}, 0},
 		{"dropped", dropped, 0},
 		{"secondary rate limit", status(403, map[string]string{"Retry-After": "1"}, secondary), time.Second},
@@ -181,15 +182,15 @@ func TestGitHubPagesTriedAgain(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		if r.URL.Query().Get("page") != "2" {
 			w.Header().Set("Link", "<"+srv.URL+"/api/v3/repos/o/r/labels?per_page=100&page=2>; rel=\"next\"")
-			fmt.Fprint(w, `[{"name":"bug"}]`)
+			say(w, `[{"name":"bug"}]`)
 			return
 		}
 		if page2++; page2 == 1 {
 			w.WriteHeader(502)
-			fmt.Fprint(w, `{"message":"Server Error"}`)
+			say(w, `{"message":"Server Error"}`)
 			return
 		}
-		fmt.Fprint(w, `[{"name":"HTTP/1.1 200 OK"}]`)
+		say(w, `[{"name":"HTTP/1.1 200 OK"}]`)
 	}))
 	defer srv.Close()
 	names, err := githubAt(t, srv).projectLabels()
