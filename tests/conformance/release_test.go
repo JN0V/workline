@@ -3,6 +3,7 @@ package conformance
 import (
 	"fmt"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -95,8 +96,15 @@ func TestReleaseDryRunEachNight(t *testing.T) {
 				for _, s := range job.Steps {
 					if strings.Contains(s.Run, "workline route release --dry-run") {
 						ran = name
-						if job.Permissions["contents"] != "read" || len(job.Permissions) != 1 {
-							t.Errorf("%s, job %s: the dry run holds more than contents read: %v", f, name, job.Permissions)
+						// Read only: the code, and what holds the release
+						// (issues, checks, statuses, actions; ADR-0051).
+						for k, v := range job.Permissions {
+							if v != "read" || !slices.Contains([]string{"contents", "issues", "checks", "statuses", "actions"}, k) {
+								t.Errorf("%s, job %s: the dry run holds %s: %s; it writes nothing", f, name, k, v)
+							}
+						}
+						if job.Permissions["issues"] != "read" || job.Permissions["checks"] != "read" || job.Permissions["statuses"] != "read" {
+							t.Errorf("%s, job %s: the dry run cannot read what holds the release on a private repository: %v", f, name, job.Permissions)
 						}
 						for k, v := range s.Env {
 							if strings.Contains(v, "secrets.") || strings.Contains(k, "CLAUDE") {
