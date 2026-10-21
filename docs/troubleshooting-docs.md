@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/documentalist.go, cmd/workline/main.go, internal/builtin/documentalist/kept.go, internal/builtin/documentalist/releasekept.go]
-checked: affb7424
+checked: 2d24380f
 verified: agent:claude-code
 ---
 # Troubleshooting the docs
@@ -27,13 +27,13 @@ or of the heads a release pull request's fix named, could not be read:
 the records are committed, or those docs judged again, at night. On GitLab, give the judging job `GITLAB_TOKEN`
 ([more](../roles/documentalist/docs/push.md#a-doc-found-with-nothing-to-fix-no-commit)).
 
-`members-unread` (a warning, once a run): the token may not list the
-project's members, as GitLab's `CI_JOB_TOKEN`. That comment is read only
-when a bot wrote it; one a person's token wrote is not, and its docs are
-judged again. `GITLAB_TOKEN` (`read_api`) on the judging job tells a
-person of the project too. A service account holding workline's token
-is a bot once named: `gitlab: {bots: [<username>]}`
-([more](../roles/documentalist/docs/push.md#a-doc-found-with-nothing-to-fix-no-commit)).
+- **Its marker in another's comment**: only workline's own account's
+  comment is read; the warning names whose was not, and the account read.
+- **Not the account you expect**: on GitHub, give the judging jobs the
+  App's id, `WORKLINE_APP_ID` (the templates do); on GitLab, name a
+  service account holding workline's token, `gitlab: {bots:
+  [<username>]}`
+  ([ADR-0051](adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md)).
 
 `shallow-clone`: the clone lacks history the documentalist needs — the
 last release, or the commit a doc's `checked` names, so whether its

@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/instruction.md, roles/reviewer/policy.md, roles/reviewer/lenses, internal/builtin/reviewer]
-checked: d108841c
+checked: 2d24380f
 verified: agent:claude-code
 ---
 # Reviewer — a run on code
@@ -49,8 +49,8 @@ flowchart LR
 ## 3. The record
 
 3. **The record.** Commits a review answered whole are not asked again.
-   - It is kept in the summary comment on a merge request,
-     `.git/workline/reviewer-record` on a machine. One that does not read is said (`record-unread`, [#302](https://github.com/JN0V/workline/issues/302)): every commit reviewed again, once, as a whole review writes it anew.
+   - It is kept in the summary comment on a merge request, read only from the one workline's own account wrote ([ADR-0051](../../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md)),
+     `.git/workline/reviewer-record` on a machine. One that does not read, or only another's carrying its marker, is said (`record-unread`, [#302](https://github.com/JN0V/workline/issues/302)): every commit reviewed again, once, as a whole review writes it anew.
    - Beside it on a merge request, a line per finding judged, every
      run's, for the weekly sample; kept even when the record does not
      read ([more](judge.md#every-finding-judged-kept-for-the-weekly-sample)).

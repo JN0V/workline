@@ -1,7 +1,7 @@
 # ADR-0051: A check sits where its catch is worth its cost
 
-- **Status:** accepted when the maintainer merges it; nothing built yet
-  ([the build order](#build-order)); two points open ([open](#open))
+- **Status:** accepted; step 1 built ([ADR-0013], amended), the rest not
+  yet ([the build order](#build-order)); two points open ([open](#open))
 - **Date:** 2026-10-21
 - **Decided by:** the maintainer, on 2026-10-21: the principle and five
   cuts, as a panel of three lenses (latency, reliability, cost) refined

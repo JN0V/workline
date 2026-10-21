@@ -57,6 +57,10 @@ Cases in
   `triage-applied-when-a-push-lands-before-it`; judged before it was
   posted, the push's run asks again, and both runs' records are merged:
   `record-merged-when-two-runs-triaged-before-either-applied`.
+- **The record read only from workline's own account's comment**, a
+  person of the project's never
+  ([ADR-0051](../../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md),
+  step 1): `record-of-another-not-read`.
 - **No agent, no call, said**: `no-agent-no-call-said`; a draft waits for
   ready: `draft-waits-for-ready`; no new finding, no call:
   `no-new-finding-no-call`.

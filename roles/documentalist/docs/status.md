@@ -124,7 +124,11 @@ its evaluation in
   by gardening in `records`; a real fix one commit naming the doc; GitHub
   and GitLab: `judged-kept-*`,
   `judged-committed-where-the-forge-lists-no-merge`,
-  `patch-pushed-to-the-merge-request`.
+  `patch-pushed-to-the-merge-request`; read only from workline's own
+  account's comment
+  ([ADR-0051](../../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md),
+  step 1): `judged-kept-by-an-outsider-is-not-read`,
+  `judged-kept-of-another-not-read-on-gitlab`.
 - **The merge policy**, `cautious`, and `normal` for workline's own
   routine pull requests
   ([ADR-0042](../../../docs/adr/0042-the-engine-merges-by-the-projects-policy.md)):

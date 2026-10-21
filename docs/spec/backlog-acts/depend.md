@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog/depend.go, internal/backlog/backlog.go, internal/forge/forge.go, internal/engine/backlog.go]
 status: draft
-checked: f5a2e917
+checked: 2d24380f
 verified: agent:claude-code
 ---
 # What an issue waits on

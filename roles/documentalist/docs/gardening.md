@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/freshness.go, internal/builtin/documentalist/dedupe.go, internal/builtin/documentalist/mergecard.go, internal/builtin/documentalist/waiting.go, internal/builtin/documentalist/condense.go, internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/kept.go]
-checked: affb7424
+checked: 2d24380f
 verified: agent:claude-code
 ---
 # Documentalist — the gardening tasks
@@ -129,9 +129,9 @@ there, not committed
   such commit, and one read of the comments of each one a doc points to
   ([ADR-0010, amended](../../../docs/adr/0010-docs-judged-on-the-merge-request-and-by-gardening.md#amendment-2026-10-17-the-commit-a-merge-request-became-stands-for-its-record)).
 - **Never a pass by guess**: a listing or a comment unread is said
-  (`record-unread`), and the docs are judged again; so is a comment a
-  person's token wrote when the token may not list the project's members
-  (`members-unread`, [why](push.md#a-doc-found-with-nothing-to-fix-no-commit)).
+  (`record-unread`), and the docs are judged again; so is a comment
+  carrying its marker that workline's own account did not write
+  ([why](push.md#a-doc-found-with-nothing-to-fix-no-commit)).
 
 ## One merge request per task
 

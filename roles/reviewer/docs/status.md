@@ -93,6 +93,10 @@ its measure in
   ([#375](https://github.com/JN0V/workline/issues/375)):
   `review-applied-when-a-push-lands-before-it*`,
   `record-merged-when-two-runs-judged-before-either-applied*`.
+- **The record read only from workline's own account's comment**,
+  another's carrying its marker never read, the range read again
+  ([ADR-0051](../../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md),
+  step 1): `record-of-another-author-not-read`.
 - **The lenses that warn read apart from the verdict**, each run its own
   comment and record
   ([ADR-0050](../../../docs/adr/0050-each-act-has-its-moment-and-a-wait-budget.md),
