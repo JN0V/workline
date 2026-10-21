@@ -21,15 +21,12 @@ const (
 	RuleHoldsUnread = "release-holds-unread"
 )
 
-// releaseHolds reads what holds the release on the forge, when the line
-// runs on it: a release tool's merge request (ADR-0017), or the `release`
-// event. Each open issue labelled forge.HoldLabel holds it, until a
-// person takes the label off or closes the issue; so does the tip of the
-// branch it is cut from until every check there is green, read, never
-// run again: the tests ran there after the merge. What could not be read
-// holds it too; with no forge to read, it is said. It returns the
-// findings, and what holds in a few words, "" when nothing does; none at
-// all when the run is no release's.
+// releaseHolds reads what holds the release on the forge, on `release` or
+// a release tool's merge request (ADR-0017): each open issue labelled
+// forge.HoldLabel, and the tip of the branch it is cut from until every
+// check there is green, read, never run again. What could not be read
+// holds it too; with no forge, it is said. It returns the findings, and
+// what holds in a few words; none when the run is no release's.
 func releaseHolds(event string, o engine.Options) ([]verdict.Finding, string) {
 	if event != "release" && event != "merge-request" {
 		return nil, ""
@@ -45,9 +42,16 @@ func releaseHolds(event string, o engine.Options) ([]verdict.Finding, string) {
 	if spec != "" && spec != "none" {
 		f, err = forge.Open(spec, o.Repo)
 	}
+	unread := func(level, why string) ([]verdict.Finding, string) {
+		return []verdict.Finding{{Rule: RuleHoldsUnread, Level: level, Where: "release", Message: why}}, ""
+	}
+	// The merge request says where it goes; unread, the branch it goes
+	// into is not known, and never taken for the default one.
 	branch, base := o.Branch, ""
+	var mrErr error
 	if f != nil && o.Target != nil && o.Target.Kind == "merge-request" {
-		if mr, err := f.MergeRequest(o.Target.ID); err == nil {
+		var mr forge.MergeRequest
+		if mr, mrErr = f.MergeRequest(o.Target.ID); mrErr == nil {
 			base = mr.Base
 			if branch == "" {
 				branch = mr.Branch
@@ -55,13 +59,13 @@ func releaseHolds(event string, o engine.Options) ([]verdict.Finding, string) {
 		}
 	}
 	if event == "merge-request" {
+		if branch == "" && mrErr != nil {
+			return unread("warn", fmt.Sprintf("whether %s is a release tool's is unknown, so what holds a release is not read: %v; give its branch with --branch", o.Target, mrErr))
+		}
 		rs, err := release.Load(o.Repo)
 		if err != nil || !rs.IsBranch(branch) {
 			return nil, ""
 		}
-	}
-	unread := func(level, why string) ([]verdict.Finding, string) {
-		return []verdict.Finding{{Rule: RuleHoldsUnread, Level: level, Where: "release", Message: why}}, ""
 	}
 	rf, ok := f.(forge.Releasing)
 	switch {
@@ -84,6 +88,11 @@ func releaseHolds(event string, o engine.Options) ([]verdict.Finding, string) {
 		found = append(found, verdict.Finding{Rule: RuleHeld, Where: fmt.Sprintf("#%d", is.ID),
 			Message: fmt.Sprintf("#%d %q is open, labelled %s: it holds the release; take the label off, or close the issue, to let it go", is.ID, is.Title, forge.HoldLabel)})
 		held = append(held, fmt.Sprintf("#%d", is.ID))
+	}
+	if mrErr != nil {
+		found = append(found, verdict.Finding{Rule: RuleHoldsUnread, Where: o.Target.String(),
+			Message: fmt.Sprintf("%s could not be read, so the branch it goes into is not known, nor its checks read: the release is held: %v", o.Target, mrErr)})
+		return found, strings.Join(append(held, "its merge request unread"), ", ")
 	}
 	tip, err := rf.Tip(base)
 	name := tip.Branch
