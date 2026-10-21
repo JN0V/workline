@@ -51,6 +51,7 @@ stars and dates were checked against the GitHub API that day.
 | [reviewer-measured.md](reviewer-measured.md) | What each reviewer lens finds and gets wrong over five runs, whether correctness should block, and a cheaper push |
 | [claude-session-env.md](claude-session-env.md) | Why a call started from a Claude Code session cost twice the tokens, and which variable did it |
 | [moments.md](moments.md) | How long a developer waits at each moment, the budgets others keep, where a check is skipped |
+| [catch-and-cost.md](catch-and-cost.md) | What each check of workline's own line catches and costs a product pull request, per period, and the circles that recur |
 
 ## Method
 
