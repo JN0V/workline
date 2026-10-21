@@ -34,7 +34,9 @@ doc suspect, and so on.
 
 With a forge, two issues are kept in place:
 
-- "Docs due later": the docs due at another moment their edge names;
+- "Docs due later": the docs due at another moment their edge names; one
+  still open under its old title, "Docs due at the next release", says
+  so and is closed;
 - "Docs waiting for a person": the docs only a person can clear — too
   large for the agent, naming a source that cannot be read, or judged
   without being vouched for — each with why and what to do.

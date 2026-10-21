@@ -7,7 +7,7 @@ verified: agent:claude-code
 # Documentalist — the checks
 
 What `pre` finds with no AI, and how much each finding weighs. How
-cascades are cut and the release held: [cascades](cascades.md). Part of
+cascades are cut: [cascades](cascades.md). Part of
 [the documentalist](../README.md). Gardening is the scheduled run, nightly
 or weekly (`schedule`).
 

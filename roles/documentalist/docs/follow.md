@@ -39,9 +39,7 @@ push to the default branch.
 - **Left, named**: one from a fork, in conflict (the job's token may not
   write there).
 - **Left**: one behind but merging clean: it merges as it is
-  ([ADR-0051](../../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-2-strict-up-to-date-dropped));
-  the project's [merge policy](../../../docs/merge-policy.md) brings up
-  to date only a release held for its docs, the same merge.
+  ([ADR-0051](../../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-2-strict-up-to-date-dropped)).
 
 ## Which lines are workline's
 

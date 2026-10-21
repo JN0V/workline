@@ -92,7 +92,9 @@ workline cuts no releases: a release tool does (release-please,
 semantic-release…), and `release` runs the project's release gates before
 it; none by default, never the docs (ADR-0017, ADR-0051). A release tool's
 pull request is a merge request as any other; each role is told its
-branch (`release.branches`). A routing that still
+branch (`release.branches`). A role routed on `release` that does not run
+there, the documentalist in a routing written before ADR-0051, is
+skipped, said (`step-skipped`, a warning). A routing that still
 names the retired `release-manager` is refused, saying which tool to use.
 
 - Steps run in the listed order. The first step that ends in `block`,

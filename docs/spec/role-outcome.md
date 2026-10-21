@@ -29,8 +29,8 @@ never be read as one.
 
 A `block` from `post` after the agent answered has the agent asked again,
 with the findings as the reasons (docs/spec/model-grid.md), unless `final`:
-`post` says the block does not come from the answer — a release held by
-docs the answer was not about, a check that could not run — and asking
+`post` says the block does not come from the answer — a check that could
+not run — and asking
 again would change nothing, but grow the question with every finding.
 Still refused once asked again, on an event whose steps all run
 (`schedule`), the step passes, nothing of the proposal applied, each
