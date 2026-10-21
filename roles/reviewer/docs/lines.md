@@ -1,28 +1,30 @@
 ---
 sources: [internal/builtin/reviewer/lines.go, internal/builtin/reviewer/reviewer.go, internal/forge/review.go, internal/forge/github_review.go, internal/forge/gitlab_review.go, internal/engine/review.go]
-checked: 2d24380f
+checked: 9e152b9a
 judged: 39dcb7b
 verified: agent:claude-code
 ---
 # Reviewer — each finding on its line
 
 Part of [the reviewer](../README.md), on a merge request
-([#277](https://github.com/JN0V/workline/issues/277)): each finding with a
-file and a line is a comment on that line, in the forge's own review. The
-author answers it, or resolves it, there, as a person's review comment.
+([#277](https://github.com/JN0V/workline/issues/277)): each important
+finding with a file and a line is a comment on that line, in the forge's
+own review, as a person's review comment. A nit is shown in the summary
+comment, and asks nothing
+([ADR-0051, cut 4](../../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-4-no-fix-round-for-nits)).
 
 ```mermaid
 flowchart LR
-  found["<b>Findings</b><br/>with a line"] --> review["<b>The forge's review</b><br/>one comment a finding"]
-  found --> summary["<b>The summary comment</b><br/>a row each, its title"]
+  found["<b>Important findings</b><br/>with a line"] --> review["<b>The forge's review</b><br/>one comment a finding"]
+  found --> summary["<b>The summary comment</b><br/>a row each, its title<br/>the nits, below"]
   review -. "not on the diff,<br/>refused" .-> summary
 ```
 
 ## What goes on a line
 
 - **The rules' findings** (`bug-story`, `internal-code`, `long-comment`)
-  and **each lens's finding on the change**, one comment each: two lenses
-  on one line, two comments, each resolved apart.
+  and **each lens's important finding on the change**, one comment each:
+  two lenses on one line, two comments, each resolved apart.
 - **Each comment** says what it does to the merge request, `**blocks**` or
   `warns`, and the lens or rule; then the finding whole: its title, why,
   the fix, the author's words it contradicts, how it was verified.
@@ -34,6 +36,21 @@ flowchart LR
 - **Not on a line**, in the summary comment as before: a finding quoted
   from the issue the change closes (`#4`), a question for a person.
   What lies outside the change is an issue, never a comment.
+
+## What it asks
+
+- **What blocks** stands until a commit fixes it
+  ([more](judge.md#a-block-stands-until-a-commit-answers-it)).
+- **What warns asks nothing**: no reply, no fix. The summary comment says
+  so, and asks no answer of a comment on a line.
+- **A nit is on no line**: no conversation to resolve. The summary comment
+  lists the nits last, under **Nits**, "for information: no reply, no fix
+  asked". A nit found on the same line as an important finding is named
+  in that finding's row.
+- **To hold the merge on every important finding**, turn on the forge's
+  own rule: GitHub's "Require conversation resolution before merging" (a
+  branch rule), GitLab's "All threads must be resolved" (merge checks).
+  Nits never hold it: they open no conversation.
 
 ## The forge's own review
 
@@ -49,8 +66,8 @@ flowchart LR
   ([#412](https://github.com/JN0V/workline/issues/412)).
 - **The diff read first**: the pull request's files, the merge request's
   diffs; a line the forge does not show is known before anything is posted.
-- **The summary comment** keeps a row for each finding, its title only,
-  and links to the review: the one posted, else the merge request's
+- **The summary comment** keeps a row for each finding on a line, its
+  title only, and links to the review: the one posted, else the merge request's
   changes, where the comments show. The lenses that warn, read apart, post
   a review and rows of their own, in their own comment ([apart](apart.md)).
 - **Other forges** (`local`, `cmd:`) take no comment on a line: each

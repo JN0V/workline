@@ -9,8 +9,7 @@ import (
 )
 
 // LineComment is a comment on a line of a merge request's change: a
-// reviewer's finding where it stands, for its author to answer or resolve
-// there, as a person's review comment (#277).
+// reviewer's finding where it stands, as a person's review comment (#277).
 type LineComment struct {
 	Path string `json:"path" yaml:"path"`
 	Line int    `json:"line" yaml:"line"` // in the file at the head of the change
@@ -126,7 +125,7 @@ func (r Reviewed) Section() string {
 		if on == 1 {
 			comments = "comment"
 		}
-		fmt.Fprintf(&b, "**On their lines**: %d %s, in %s (%s): reply to each, or resolve it, there.\n\n",
+		fmt.Fprintf(&b, "**On their lines**: %d %s, in %s (%s). What blocks stands until a commit fixes it; what warns asks nothing.\n\n",
 			on, comments, review, strings.Join(parts, ", "))
 	}
 	var whys []string

@@ -13,7 +13,9 @@
   amended 2026-10-20: a block looked for on the side of the change it
   was found on (#570); a lens that did not answer owes its commits,
   and `read=all` waits for it (#588); amended 2026-10-21: the commits
-  left past five a push read on the other run's turn (#591)
+  left past five a push read on the other run's turn (#591); a nit on
+  no line, nothing asked of what warns
+  ([ADR-0051](0051-a-check-sits-where-its-catch-is-worth-its-cost.md))
 - **Date:** 2026-10-04
 - **Builds on:** ADR-0005 (a judge's independence), ADR-0009 (a question in
   parts), ADR-0011 (the review is on the merge request), ADR-0013 (what was
@@ -845,3 +847,28 @@ merge-request line; on in workline's own repository.
     that lens would be asked again at the next push.
   - Asking the lenses that left them first at every push, as `failed=`
     does: the lens in turn would lose its push for commits it can read.
+
+## Amendment (2026-10-21, ADR-0051 cut 4: no fix round for nits)
+
+[ADR-0051](0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-4-no-fix-round-for-nits):
+619 nits shown in four weeks cost 93 rounds, about half acted on.
+
+- **What asked a round**: every finding, nits too, was a comment on its
+  line, and the summary comment said "reply to each, or resolve it,
+  there". Each nit was a conversation to answer, new ones on each push
+  a lens read; under the forge's "conversations resolved" rule, each held
+  the merge.
+- **A nit is on no line** now: the summary comment lists it last, under
+  **Nits**, "for information: no reply, no fix asked". One beside an
+  important finding on its line is named in that finding's row.
+- **Nothing is asked of what warns**: the summary says what blocks stands
+  until a commit fixes it, and what warns asks nothing. An important
+  finding stays on its line, whatever its lens.
+- **Unchanged**: what blocks (`ai-findings`), the judge, a block standing
+  until a commit answers it, the lenses a push reads.
+- **A team wanting important findings to hold the merge** turns on the
+  forge's own rule: GitHub's "Require conversation resolution before
+  merging", GitLab's "All threads must be resolved".
+- **Rejected**: the tests and intent lenses' important findings off
+  their lines too. ADR-0051 keeps important findings as conversations a
+  team may make hold; a lens set per project would need a setting.
