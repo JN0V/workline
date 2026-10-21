@@ -402,6 +402,11 @@ type Squash struct {
 	Suffix     string `json:"suffix,omitempty"` // what the forge adds: GitHub's " (#N)"
 }
 
+// TitleMax is the longest title workline gives a merge request it opens:
+// a squash lands it on the base with the forge's " (#N)", within the
+// committer's 72, room left for a number of five digits (ADR-0051).
+const TitleMax = 72 - len(" (#12345)")
+
 // Squasher is a forge that says how it would squash a merge request.
 type Squasher interface {
 	Squash(id int) (Squash, error)

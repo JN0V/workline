@@ -1,5 +1,5 @@
 ---
-sources: [internal/builtin/committer/committer.go, internal/forge/github.go, internal/forge/gitlab.go]
+sources: [internal/builtin/committer/committer.go, internal/forge/github.go, internal/forge/gitlab.go, internal/forge/forge.go]
 checked: ac47b877
 verified: agent:claude-code
 ---
@@ -26,3 +26,7 @@ commits' rules, and blocks the same way
   fix: edit the title, then re-run the job (GitHub's `judge`, GitLab's
   pipeline; one click) or push.
 - **A person edits the title**: the AI rewrite is not built.
+- **workline's own merge requests** (the documentalist's, the weekly
+  sample's, a role's) get titles of 63 characters at most, room left
+  for ` (#12345)`: a long path gives way to a count ("docs: bring 2 docs
+  in line with the code"). Tests hold each one to these rules.
