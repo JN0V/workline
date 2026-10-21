@@ -12,7 +12,8 @@
   ([ADR-0050](0050-each-act-has-its-moment-and-a-wait-budget.md));
   amended 2026-10-20: a block looked for on the side of the change it
   was found on (#570); a lens that did not answer owes its commits,
-  and `read=all` waits for it (#588)
+  and `read=all` waits for it (#588); amended 2026-10-21: the commits
+  left past five a push read on the other run's turn (#591)
 - **Date:** 2026-10-04
 - **Builds on:** ADR-0005 (a judge's independence), ADR-0009 (a question in
   parts), ADR-0011 (the review is on the merge request), ADR-0013 (what was
@@ -824,3 +825,23 @@ merge-request line; on in workline's own repository.
   passes to the other run's lens, which records what no lens of this
   side read); asking every lens again at each push (those that answered
   read the change already).
+
+## Amendment (2026-10-21, #591: commits left past five a push are read)
+
+- **What was wrong**: the run apart, on claims's turn, read five of seven
+  new commits and left two, said. Run again, the turn was correctness,
+  which blocks: the run apart asked nobody, recorded the two, and said
+  "No finding on the commits reviewed". No lens that warns read them
+  ([#591](https://github.com/JN0V/workline/issues/591)).
+- **The record names the lenses that left them** (`left-by=`). When the
+  next run apart has no lens of its own in turn, it asks those lenses,
+  on the commits the record does not hold, instead of recording them.
+- **Otherwise unchanged**: on a turn of a lens that warns, the lens in
+  turn reads them, as before; a run that records commits names nobody
+  again, unless it leaves some too. A draft forgets the mark, as
+  `read=all`.
+- **Rejected**:
+  - The next lens that warns in turn: the turn is counted by runs, so
+    that lens would be asked again at the next push.
+  - Asking the lenses that left them first at every push, as `failed=`
+    does: the lens in turn would lose its push for commits it can read.
