@@ -1,6 +1,6 @@
 <!-- workline
 sources: [ci/gitlab/workline.gitlab-ci.yml, ci/github/workline-fork.yml, routing.default.yaml, internal/forge/forge.go, internal/agent/agent.go, ci/github/workline-apply.yml, internal/gate, cmd/workline/cli.go, ci/github/workline.yml, ci/forgejo/workline-forge.sh, ci/github/workline-gardening.yml, ci/github/workline-sample.yml]
-checked: 47a746d7
+checked: ae744e99
 judged: e8a46f7
 verified: agent:documentalist
 reader: e375241655b6
@@ -115,7 +115,7 @@ Each role, from a hook, a script or a CI job: [triggers](docs/triggers.md).
 | What | Roles | Writes |
 |---|---|---|
 | each push to it; on GitHub, marked ready too | committer; documentalist; reviewer and inspector, opt-in | the docs' fix on its branch; each finding on its line, and one summary comment; the findings in the forge's code-scanning view; the job's summary |
-| a release tool's (release-please…) | documentalist, no agent: holds it while docs are due, judged at night; an issue labelled to hold it, or main not green, holds it too ([how](docs/release-holds.md)) | the docs due, said on its checks |
+| a release tool's (release-please…) | as any other, the docs never holding it; an issue labelled to hold it, or main not green, holds it ([how](docs/release-holds.md)) | its checks |
 | a fork's | judged with no agent | on GitHub, a comment; on GitLab, nothing |
 
 - The review is on the merge request; a person merges.
@@ -132,16 +132,14 @@ Each role, from a hook, a script or a CI job: [triggers](docs/triggers.md).
 | When | Roles | Writes |
 |---|---|---|
 | after each merge (`workline route main`) | the merge request's gates, every finding kept as the next base; documentalist, the whole repository, no agent | one issue, edited when what it lists changes ([how](docs/main-after-merge.md)) |
-| gardening, nightly or weekly (`workline route schedule`) | documentalist, first on an open release's docs; product owner, opt-in | one merge request per task, kept on main or closed; the release's docs fix; the issues |
-| the other nights (`workline route release --target merge-request:release`) | documentalist, on an open release's docs alone | the release's docs fix |
+| gardening, nightly or weekly (`workline route schedule`) | documentalist; product owner, opt-in | one merge request per task, kept on main or closed; the issues |
 | the weekly sample (`workline sample`) | auditor: one in ten of every role's acts, each re-checked | one issue, a comment a week; a merge request undoing a wrong confirmation |
-| each push to main (`workline follow`) | the engine, no agent: rebuilds the documentalist's release fix on main's new tip; when set, merges main into pull requests in conflict only on workline's lines, and turns auto-merge on for what a person accepted, at `normal` for workline's own routine work too ([merge policy](docs/merge-policy.md)) | its merge request, force-pushed; a merge commit on theirs; the forge's auto-merge |
-| every night (`workline route release --dry-run`) | what would hold the release if it were cut now, no agent | one comment on the release merge request, else a part of main's issue ([how](docs/release.md)) |
-| before your release tool tags (`workline route release`); on GitLab, at a tag | documentalist, on the docs due at the release | a non-zero exit holds the release |
+| each push to main (`workline follow`) | the engine, no agent: when set, merges main into pull requests in conflict only on workline's lines, and turns auto-merge on for what a person accepted, at `normal` for workline's own routine work too ([merge policy](docs/merge-policy.md)) | a merge commit on theirs; the forge's auto-merge |
+| with the gardening (`workline route release --dry-run`) | what would hold the release if it were cut now, no agent | a part of main's issue ([how](docs/release.md)) |
+| before your release tool tags (`workline route release`); on GitLab, at a tag | your release's gates, none by default | a non-zero exit holds the release |
 
 - workline cuts no releases: it runs before your release tool.
-- Templates: GitHub's [gardening](ci/github/workline-gardening.yml),
-  [release docs](ci/github/workline-release-docs.yml) and
+- Templates: GitHub's [gardening](ci/github/workline-gardening.yml) and
   [sample](ci/github/workline-sample.yml), `follow` in
   [workline-apply.yml](ci/github/workline-apply.yml); on GitLab, three pipeline
   schedules, a push to the default branch and a tag, all in the same

@@ -4,7 +4,7 @@ given:
   repo: documented
   forge:
     issues:
-      - {id: 4, title: "Docs due at the next release", body: "- `docs/product/sign-in.md` — due at release", labels: [], comments: []}
+      - {id: 4, title: "Docs due later", body: "- `docs/product/sign-in.md` — due at merge-request", labels: [], comments: []}
 run: {role: documentalist, event: schedule, ai: none}
 expect:
   status: pass

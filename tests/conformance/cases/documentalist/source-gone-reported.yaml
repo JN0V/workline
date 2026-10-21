@@ -1,5 +1,5 @@
 case: documentalist/source-gone-reported
-about: A source that no longer exists — a file moved, a doc deleted — is reported with the doc naming it, and what removed it reaches the doc as any change does — here pending, a product doc waiting for the release — never a check that could not run.
+about: A source that no longer exists — a file moved, a doc deleted — is reported with the doc naming it, and what removed it reaches the doc as any change does — here due, a product doc following it at gardening — never a check that could not run.
 given:
   repo: documented
   setup:
@@ -10,4 +10,4 @@ expect:
   status: pass
   findings:
     - {rule: source-gone, where: docs/product/sign-in.md, message: "docs/tech/auth.md"}
-    - {rule: pending, where: docs/product/sign-in.md}
+    - {rule: due, where: docs/product/sign-in.md}

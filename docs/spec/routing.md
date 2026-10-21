@@ -1,6 +1,6 @@
 ---
 sources: [internal/line, internal/routing, internal/work, routing.default.yaml]
-checked: f34d3dbe
+checked: ae744e99
 verified: agent:claude-code
 ---
 # Routing — v1 (draft)
@@ -77,7 +77,7 @@ routing:
     commit-msg:    [committer]
     merge-request: [committer, documentalist, gate:merge]
     schedule:      [documentalist]
-    release:       [gate:release, documentalist]   # before the release tool tags
+    release:       [gate:release]       # before the release tool tags; never the docs
     main:          [documentalist]      # after a merge: merge-request's gates first
 
   fail-fast:                            # per event; true unless set
@@ -89,12 +89,12 @@ routing:
 ```
 
 workline cuts no releases: a release tool does (release-please,
-semantic-release…), and `release` runs the documentalist before it, so the
-docs due at the release gate it (ADR-0010, ADR-0017). A tool that opens a
-release pull request needs no `release` step: on `merge-request`, a role
-that runs on `release` runs as on `release` when the merge request comes
-from a release tool's branch (`release.branches`), with no agent
-([below](#a-releases-docs-at-night)). A routing that still
+semantic-release…), and `release` runs the project's release gates before
+it; none by default, never the docs (ADR-0017, ADR-0051). A release tool's
+pull request is a merge request as any other; each role is told its
+branch (`release.branches`). A role routed on `release` that does not run
+there, the documentalist in a routing written before ADR-0051, is
+skipped, said (`step-skipped`, a warning). A routing that still
 names the retired `release-manager` is refused, saying which tool to use.
 
 On the release — `release`, or `merge-request` from a release tool's
@@ -204,9 +204,7 @@ merge requests or a proposal its role never makes (`run-refused`);
 once the branch moved on (`moved-on`), only what the role names in
 `on-moved-on`, the reviewer's review or the inspector's triage of the head
 judged, never a patch nor
-a label ([ADR-0044, amended](../adr/0044-the-apps-key-stays-with-the-default-branchs-runs.md#amendment-2026-10-15-the-review-of-a-head-the-branch-moved-on-from)). A release's fix
-goes to a merge request of the App's only when the forge says the App
-(`WORKLINE_APP`) alone pushed to the release branch; else in a comment.
+a label ([ADR-0044, amended](../adr/0044-the-apps-key-stays-with-the-default-branchs-runs.md#amendment-2026-10-15-the-review-of-a-head-the-branch-moved-on-from)).
 
 Applying runs no role, so a handoff proposed under `--no-apply` is recorded
 and not run: both steps say so (`handoff-deferred`), with the command that runs
@@ -224,59 +222,24 @@ verdict is then a review to come, never a pass
 ([merge policy](../merge-policy.md)). The rules and gates run as on any
 push. With no agent set, nothing waits; `draft=false` changes nothing.
 
-### A release's docs at night
-
-[ADR-0050, §7](../adr/0050-each-act-has-its-moment-and-a-wait-budget.md#7-decided-by-the-maintainer-on-2026-10-19):
-
-- **Each move of a release tool's merge request**: a role holding the
-  release runs as with no agent (`WORKLINE_AI_WAITS=night`); what needs
-  none still holds the release. The line's summary says so, the role too
-  (`ai-waits-for-night`, a warning), and a comment on the merge request
-  (a role's `on-block: [comment]` applies it though the run blocked).
-  The head's verdict is a release waiting for its docs, never a pass:
-  each step of the verdict says whether it held only for them (`held`).
-- **At night**: on `schedule` with a forge and `--open-merge-request`,
-  before such a role's step, the line runs it on `release` for the
-  release merge request open into the branch checked out, with its agent,
-  on that merge request's head — checked out, then put back. Its step is
-  `<role> (release #n)`; the release waiting for its docs fails nothing
-  of the night's, anything else counts. What its fix patches waits for
-  the role's own step after it (`Waiting`), never judged twice. With
-  `--ai none`, not run, said (`release-not-judged`).
-- **The other nights**: `route release --target merge-request:release`
-  runs only that step, for the release merge request it finds, the
-  templates' nightly job; none open, no step, said in the summary. The
-  target goes with `release` alone (else misuse, 64).
-- **By hand**: `route release --target merge-request:<n>` on a release
-  tool's merge request does the same, the fix to a merge request of its
-  own (`--push-to-merge-request` implied).
-- **Applied apart** (`apply`): only on the head judged, checked out
-  again; a branch moved on applies nothing (`moved-on`); the App's fix
-  only when the App alone pushed to the release branch.
-
 ### A release's dry run
 
 [ADR-0050](../adr/0050-each-act-has-its-moment-and-a-wait-budget.md#3-the-moment-table):
 `route release --dry-run`, each night, says what would hold the
 release if it were cut now ([how](../release.md)):
 
-- **On what**: with a forge, the release tool's merge request open into
-  the branch checked out, its head checked out then put back, its roles
-  run as on it; none, the branch's tip. A tip that is a release already
-  runs no step: nothing to cut.
+- **On what**: the branch's tip. A tip that is a release already runs no
+  step: nothing to cut.
 - **Every step** of `release`, none stopping the others, with no agent
   and nothing applied. What a step that does not pass says blocks, else
   what it leaves to its verdict, else the step, is listed in the
-  result's `dry-run` (`holds`, `head`, `since`, `merge-request`); then
+  result's `dry-run` (`holds`, `head`, `since`); then
   lowered to a warning. The line passes.
 - **Refused** (misuse, 64): another event, an agent named, `--target`,
   `--open-merge-request`, `--push-to-merge-request`, `--verdict`, the
   gates alone or read, `--warn-*`.
-- **Posted** by `apply --release-dry-run`: on that merge request, one
-  comment, posted once something holds, edited when what it lists
-  changes; else a part of main's issue, taken out when nothing holds.
-- **At a tag**, `route release` compares with the release before the
-  one the tag names: a tag at HEAD is never the last release.
+- **Posted** by `apply --release-dry-run`: a part of main's issue,
+  edited when what it lists changes, taken out when nothing holds.
 
 ### A merge queue's or train's run: the gates alone
 

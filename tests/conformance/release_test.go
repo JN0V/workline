@@ -80,10 +80,10 @@ func nightsOf(t *testing.T, wf ghWorkflow) map[int]bool {
 }
 
 func TestReleaseDryRunEachNight(t *testing.T) {
-	// The templates: the weekly gardening and the release's docs the other
-	// nights, every night between them; workline's own, its nightly gardening.
+	// The templates' gardening, and workline's own: the dry run runs each
+	// night the gardening does.
 	sets := [][]string{
-		{"../../ci/github/workline-gardening.yml", "../../ci/github/workline-release-docs.yml"},
+		{"../../ci/github/workline-gardening.yml"},
 		{"../../.github/workflows/workline-gardening.yml"},
 	}
 	for _, files := range sets {
@@ -95,11 +95,8 @@ func TestReleaseDryRunEachNight(t *testing.T) {
 				for _, s := range job.Steps {
 					if strings.Contains(s.Run, "workline route release --dry-run") {
 						ran = name
-						if job.Permissions["contents"] != "read" || job.Permissions["pull-requests"] != "read" || len(job.Permissions) != 2 {
-							t.Errorf("%s, job %s: the dry run holds more than contents and pull-requests read: %v", f, name, job.Permissions)
-						}
-						if !strings.Contains(s.Run, "--forge github") {
-							t.Errorf("%s, job %s: the dry run lists no pull request (--forge github): the release's own is never judged", f, name)
+						if job.Permissions["contents"] != "read" || len(job.Permissions) != 1 {
+							t.Errorf("%s, job %s: the dry run holds more than contents read: %v", f, name, job.Permissions)
 						}
 						for k, v := range s.Env {
 							if strings.Contains(v, "secrets.") || strings.Contains(k, "CLAUDE") {
@@ -109,8 +106,8 @@ func TestReleaseDryRunEachNight(t *testing.T) {
 					}
 					if strings.Contains(s.Run, "workline apply --release-dry-run") {
 						posted = name
-						if job.Permissions["issues"] != "write" || job.Permissions["pull-requests"] != "write" {
-							t.Errorf("%s, job %s: posts with no issues and pull-requests write: %v", f, name, job.Permissions)
+						if job.Permissions["issues"] != "write" || job.Permissions["pull-requests"] != "" {
+							t.Errorf("%s, job %s: posts with no issues write, or with pull-requests: %v", f, name, job.Permissions)
 						}
 						if fmt.Sprint(job.Concurrency["group"]) != "workline-main-issue" {
 							t.Errorf("%s, job %s: not in main's issue concurrency group: two writers of one issue", f, name)
@@ -134,8 +131,8 @@ func TestReleaseDryRunEachNight(t *testing.T) {
 				nights[d] = true
 			}
 		}
-		if len(nights) != 7 {
-			t.Errorf("%v: the dry run runs %d nights a week, not every night", files, len(nights))
+		if len(nights) == 0 {
+			t.Errorf("%v: the dry run runs on no night", files)
 		}
 	}
 
@@ -146,8 +143,8 @@ func TestReleaseDryRunEachNight(t *testing.T) {
 		t.Fatal("GitLab: no workline:release:dry-run, or no workline:release:dry-run:post")
 	}
 	rules := fmt.Sprint(run["rules"])
-	if !strings.Contains(rules, `$CI_PIPELINE_SOURCE == "schedule"`) || !strings.Contains(rules, `$WORKLINE_TASK != "sample"`) || strings.Contains(rules, "release-docs") {
-		t.Errorf("GitLab: the dry run does not run on every night's schedule, the gardening's and the release docs': %s", rules)
+	if !strings.Contains(rules, `$CI_PIPELINE_SOURCE == "schedule"`) || !strings.Contains(rules, `$WORKLINE_TASK != "sample"`) {
+		t.Errorf("GitLab: the dry run does not run on the gardening's schedule: %s", rules)
 	}
 	script := fmt.Sprint(run["script"])
 	if !strings.Contains(script, "workline route release --dry-run") || !strings.Contains(script, "unset CLAUDE_CODE_OAUTH_TOKEN") || strings.Contains(script, "npm install") {

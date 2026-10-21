@@ -27,8 +27,8 @@ flowchart LR
      past half its lines, git's similarity, it is a new file.
    - **A release tool's pull request**
      ([#384](https://github.com/JN0V/workline/issues/384)), told by its
-     branch as the documentalist tells it
-     ([ADR-0017](../../../docs/adr/0017-the-release-manager.md)): a file
+     branch (`release.branches`,
+     [ADR-0017](../../../docs/adr/0017-the-release-manager.md)): a file
      whose every changed line is a version the tool bumps is not code.
      - A bump: the same line but for its first version, as release-please
        replaces it, on a line the tool marks — `x-release-please-version` (or `-major`, `-minor`,

@@ -1,6 +1,6 @@
 ---
 sources: [ci/github, .github/workflows/workline.yml, .github/workflows/workline-apply.yml, .github/workflows/workline-gardening.yml, .github/workflows/workline-sample.yml, .github/actions/engine/action.yml, .github/workflows/release.yml, .github/workflows/release-please.yml, release-please-config.json, .goreleaser.yaml, cmd/workline]
-checked: f687c738
+checked: ae744e99
 judged: 220b6dc
 verified: agent:claude-code
 reader: fe1505d43360
@@ -62,13 +62,7 @@ write run the default branch's workflow, never a pull request's own
        request's branch, and after each `warn`, the comment of the
        lenses that warn and the inspector's;
      - `main` after main's run: what it found, in one issue;
-     - `follow` on each push to `main`
-       ([ADR-0034](adr/0034-the-release-fix-follows-its-base.md)): the
-       documentalist's pull request for the release, when one is open, is
-       rebuilt on `main`'s new tip, so a pull request merged meanwhile that
-       touched the same doc leaves it mergeable; one a person committed to
-       is left alone;
-     - with `update-branches: conflicts`, `main` is merged
+     - `follow` on each push to `main`: with `update-branches: conflicts`, `main` is merged
        into people's pull requests in conflict only on workline's lines
        ([more](../roles/documentalist/docs/follow.md));
      - with the [merge policy](merge-policy.md), `verdict` and `follow` run
@@ -89,14 +83,12 @@ write run the default branch's workflow, never a pull request's own
      `apply` runs every time, and then rebuilds on `main` the pull
      requests it opened before, or closes those with nothing left to merge
      ([ADR-0034, amended](adr/0034-the-release-fix-follows-its-base.md#amendment-2026-10-12-gardenings-merge-requests-follow-too-or-are-closed)).
-     A release pull request open, it first judges that release's docs
-     ([more](../roles/documentalist/docs/push.md#a-release-tools-pull-request)).
-   - [workline-release-docs.yml](../ci/github/workline-release-docs.yml):
-     the release pull request's docs, every night but Monday, the
-     gardening's; none due, no agent. With a nightly gardening, not needed.
-   - Both run **a release's dry run** too, `dry-run` then `dry-run-post`:
-     what would hold the release if it were cut now, said on the release
-     pull request, else in main's issue; no agent ([how](release.md)).
+     It runs **a release's dry run** too, `dry-run` then `dry-run-post`:
+     what would hold the release if it were cut now, said in main's
+     issue; no agent ([how](release.md)). The release never waits for
+     the docs ([ADR-0051](adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-1-the-release-weekly)).
+     **Upgrading**: delete a copied `workline-release-docs.yml`; its
+     command is gone, and the job fails (exit 64).
    - [workline-sample.yml](../ci/github/workline-sample.yml): the
      [weekly sample](ci.md#the-weekly-sample), from the first release
      after v0.2.1.
@@ -236,12 +228,11 @@ with release-please, never a tag by hand:
   `workline:hold-release` or main's tip is not green, and builds the
   binary with GoReleaser: `workline version` must say the version it
   releases ([what holds a release](release-holds.md));
-- on that pull request, `judge` passes its branch (`--branch`): the
-  documentalist holds it, with no agent, on every doc made suspect since
-  the last release; gardening judges them at night, their fix a pull
-  request of its own on `main`, which `follow` rebuilds at each push
-  there, as release-please does its own (`always-update`: never left
-  behind `main`) ([more](../roles/documentalist/docs/push.md#a-release-tools-pull-request));
+- on that pull request, `judge` passes its branch (`--branch`): it is
+  judged as any other, the reviewer leaving the versions it bumps; no
+  doc holds it
+  ([ADR-0051](adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-1-the-release-weekly));
+  release-please keeps it on `main` (`always-update`);
 - the person merges it each Monday, sooner for a fix that touches a
   real user: that is the decision. release-please tags the
   merged commit `vX.Y.Z` and writes the release with its notes; in the

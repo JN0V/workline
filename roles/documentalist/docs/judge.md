@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/notes.go, internal/builtin/documentalist/values.go, internal/builtin/documentalist/judge.go, internal/builtin/documentalist/documentalist.go]
-checked: affb7424
+checked: ae744e99
 verified: agent:claude-code
 ---
 # Documentalist — the judge
@@ -115,10 +115,8 @@ one place the engine had already named (step 4). Now:
   put back, `judged` set), so a person reads it before moving `checked`;
   it is not put before an agent again until a source changes, unless one
   is in another repository or the doc is due at a later moment (a product
-  doc, at the release)
+  doc, at gardening)
   ([ADR-0013](../../../docs/adr/0013-what-was-judged-is-not-asked-again.md));
-  nor in a later round of a release's run
-  ([#572](https://github.com/JN0V/workline/issues/572));
 - each place withheld is a finding for a person — the refusal's rule, the
   doc and its lines, and why — in the run's verdict, the merge request's
   comment or the fix's own merge request, as other findings; the doc's
@@ -168,11 +166,8 @@ one place the engine had already named (step 4). Now:
 - Asked again as often as the role allows and still refused, a doc's fix
   is left out (`left-out`, saying why); the other docs' fixes are judged
   again without it and applied. The doc stays as it was, suspect.
-- A block the answer did not cause — docs due, a release held, a check
-  that could not run — is never asked again: another answer would change
-  none of it. A release held only for docs due this run did not settle
-  applies the answer's fixes all the same
-  ([#543](https://github.com/JN0V/workline/issues/543)).
+- A block the answer did not cause — a check that could not run — is
+  never asked again: another answer would change none of it.
 
 ## After the fixes pass
 

@@ -109,12 +109,7 @@ func holdWaitingTasks(w waiting, maps ...map[string]*suspectDoc) {
 			if sd.tooLarge {
 				task, waits, earlier = w.changing(sd.doc.Path)
 			}
-			// The release's own fix changes it, open or judged tonight
-			// before the gardening (ADR-0050, §7): judged once a night.
-			release := !waits && slices.Contains(w.files["release"], sd.doc.Path)
 			switch {
-			case release:
-				sd.note = "(workline/documentalist/release, the release's fix, changes it and waits for review: not put before an agent again until it is merged or closed)"
 			case !waits:
 			case earlier: // an earlier round of this run judged it
 				sd.note, sd.earlier = "(judged in an earlier round of this run)", true

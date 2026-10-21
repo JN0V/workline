@@ -413,18 +413,15 @@ workline:merge:
 # under are rebuilt on it, or closed when nothing is left to merge
 # (ADR-0034). WORKLINE_GITLAB_TOKEN also
 # needs the `write_repository` scope, to push the branch. Without AI, only
-# derived blocks are regenerated. A release tool's merge request open
-# (releaser-pleaser's), the documentalist first judges its docs due, on its
-# head, and proposes their fix in a merge request of its own,
-# workline/documentalist/release, opened by the project's bot only if the
-# bot alone pushed to the release's branch; on each of its pipelines, no
-# agent judges them and they hold the release (ADR-0050). Play the
-# schedule for the release sooner.
+# derived blocks are regenerated. The release never waits for the docs
+# (ADR-0051).
 .workline:garden:
   image: $WORKLINE_IMAGE:$WORKLINE_VERSION
   environment: *environment
   variables: {GIT_DEPTH: 0}         # the whole history, as .workline
   rules:
+    # A schedule left from before ADR-0051 (WORKLINE_TASK=release-docs) runs
+    # no gardening: delete it (docs/ci-gitlab.md).
     - if: $CI_PIPELINE_SOURCE == "schedule" && $WORKLINE_TASK != "sample" && $WORKLINE_TASK != "release-docs"
   before_script:                    # one shell with the script: a job without the bot's token stops here
     - *bot-token
@@ -473,69 +470,11 @@ workline:garden:apply:
     reports: {annotations: workline-annotations.json}
     expire_in: 1 week
 
-# The release merge request's docs, the nights the gardening does not run
-# (ADR-0050; the first release after v0.37.0): a pipeline schedule with
-# WORKLINE_TASK=release-docs. It judges the docs due of the release merge
-# request open, with the agent (none due, no agent), and opens their fix
-# in workline/documentalist/release. Play it for the release sooner.
-# Why and how: docs/ci-gitlab.md.
-.workline:release-docs:
-  image: $WORKLINE_IMAGE:$WORKLINE_VERSION
-  environment: *environment
-  variables: {GIT_DEPTH: 0}         # the whole history, as .workline
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "schedule" && $WORKLINE_TASK == "release-docs"
-  before_script:                    # one shell with the script: a job without the bot's token stops here
-    - *bot-token
-    - *trust
-    - workline version
-    - git checkout -q -B "$CI_COMMIT_REF_NAME"   # GitLab runs on a detached HEAD
-    - export GITLAB_TOKEN=$WORKLINE_GITLAB_TOKEN  # the open merge requests, read
-
-workline:release-docs:judge:
-  extends: .workline:release-docs
-  stage: test
-  script:
-    - *claude
-    - status=0
-    - workline route release --target merge-request:release --ai "$ai" --no-apply --forge gitlab --summary workline-summary.md --summary workline-summary.html --json > line.json || status=$?
-    - exit $status
-  allow_failure: {exit_codes: [3]}  # an agent out of reach warns: the next night judges
-  after_script: *summary
-  artifacts:
-    when: always
-    paths: [workline-summary.html, workline-summary.md, .workline-runs/, line.json]
-    reports: {annotations: workline-annotations.json}
-    expire_in: 1 day
-
-workline:release-docs:apply:
-  extends: .workline:release-docs
-  stage: deploy
-  needs: [workline:release-docs:judge]
-  rules:                            # also when the judge failed: what it proposed is applied
-    - if: $CI_PIPELINE_SOURCE == "schedule" && $WORKLINE_TASK == "release-docs"
-      when: always
-  script:
-    - *bot
-    - git remote set-url origin "https://oauth2:${WORKLINE_GITLAB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"
-    - '[ -s line.json ] || { echo "workline: the release docs judge left nothing to apply"; exit 0; }'
-    - workline apply --line line.json --summary workline-summary.md --summary workline-summary.html
-  after_script: *summary
-  artifacts:
-    when: always
-    paths: [workline-summary.html, workline-summary.md]
-    reports: {annotations: workline-annotations.json}
-    expire_in: 1 week
-
-# A release's dry run, on each schedule but the sample's (ADR-0050; the
-# first release after v0.37.0): what would hold the release if it were cut
-# now, on the release merge request open (read with the bot's token), else
-# the branch's tip. Every step, no agent, nothing applied, said as
-# warnings. Install here the tools of your `release` line's gates: they
-# run beside the bot's token, which reads that merge request, on the
-# default branch's code or the release's branch's, never a merge
-# request's of a person.
-# workline:release:dry-run:post says it on that merge request, else in the
+# A release's dry run, on each schedule but the sample's (ADR-0050): what
+# would hold the release if it were cut now from the branch's tip. Every
+# step, no agent, nothing applied, said as warnings. Install here the
+# tools of your `release` line's gates: they run on the default branch's
+# code, with no token. workline:release:dry-run:post says it in the
 # default branch's issue (docs/release.md).
 workline:release:dry-run:
   image: $WORKLINE_IMAGE:$WORKLINE_VERSION
@@ -548,9 +487,8 @@ workline:release:dry-run:
     - *trust
     - workline version
     - git checkout -q -B "$CI_COMMIT_REF_NAME"   # GitLab runs on a detached HEAD
-    - unset CLAUDE_CODE_OAUTH_TOKEN
-    - forge=none; if [ -n "${WORKLINE_GITLAB_TOKEN:-}" ]; then export GITLAB_TOKEN=$WORKLINE_GITLAB_TOKEN; forge=gitlab; fi
-    - workline route release --dry-run --forge $forge --summary workline-summary.md --summary workline-summary.html --json > dry-run.json
+    - unset CLAUDE_CODE_OAUTH_TOKEN WORKLINE_GITLAB_TOKEN
+    - workline route release --dry-run --forge none --summary workline-summary.md --summary workline-summary.html --json > dry-run.json
   allow_failure: {exit_codes: [3]}  # never 3: it asks no agent; as every night's job
   after_script: *summary
   artifacts:
@@ -584,8 +522,8 @@ workline:release:dry-run:post:
     expire_in: 1 week
 
 # At a release's tag (ADR-0050; the first release after v0.37.0), whoever
-# pushed it: the release's line, no agent, no token, red when it holds the
-# release, compared with the release before this one. Have the jobs that
+# pushed it: the release's line, its gates, no agent, no token, red when it
+# holds the release; never the docs (ADR-0051). Have the jobs that
 # publish it need it (`needs: [workline:release]`). A tool that tags and
 # publishes in one job (semantic-release) runs `workline route release
 # --ai none` before it, in that job. Why and how: docs/release.md.
@@ -677,14 +615,8 @@ workline:main:issue:
     reports: {annotations: workline-annotations.json}
     expire_in: 1 week
 
-# The release's own fix follows the default branch (ADR-0034): when it
-# moves, the documentalist's merge request for the release, when one is
-# open (workline/documentalist/release), is rebuilt on its new tip and
-# force-pushed, as release-please rebuilds its own branch, so a merge
-# request that touched the same doc leaves it mergeable. No agent; one a
-# person committed to is left as it is. Needs a workline release with
-# `workline follow`: the first after v0.16.0.
-# With the documentalist's `update-branches: conflicts` (ADR-0041, off by
+# When the default branch moves, no agent (`workline follow`). With the
+# documentalist's `update-branches: conflicts` (ADR-0041, off by
 # default; the first release after v0.24.0), a person's merge request from
 # this project in conflict with the default branch only on lines workline
 # writes gets it merged in, by the project's bot: a merge commit, never

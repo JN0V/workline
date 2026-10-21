@@ -7,14 +7,14 @@ given:
     - |
       mkdir -p .git/workline/issues && cat > .git/workline/issues/4.md <<'IS'
       ---
-      title: "Docs due at the next release"
+      title: "Docs due later"
       state: open
       labels: []
       ---
 
-      - `docs/old.md` — due at release
+      - `docs/old.md` — due at merge-request
       IS
-  config: {forge: local}
+  config: {forge: local, roles: {documentalist: {settings: {propagation: [{from: code, to: "docs/tech/**", when: now}, {from: "docs/tech/**", to: "docs/product/**", when: merge-request}]}}}}
 run: {role: documentalist, event: schedule, ai: none}
 expect:
   status: pass

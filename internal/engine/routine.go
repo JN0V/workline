@@ -457,11 +457,11 @@ func weighRoutine(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, n *
 	case verdictWaits: // marked ready, the run on ready not done yet
 		w.say("review-to-come", "", fmt.Sprintf("workline's own %s; its head's (%s) verdict is the draft's, %s: it waits for the run on ready", kind, short(tip), v.why))
 		return e, nil
-	case verdictHeld, verdictRed, verdictShort:
+	case verdictRed, verdictShort:
 		// Held by the yes not given on this head (the status Accepted;
 		// GitLab, the head's pipeline red): auto-merge left as it is, for
 		// the next head the line passes.
-		rule := map[string]string{verdictHeld: "verdict-red", verdictRed: "verdict-red", verdictShort: "review-short"}[v.class]
+		rule := map[string]string{verdictRed: "verdict-red", verdictShort: "review-short"}[v.class]
 		if err := m.Accept(tip, false, v.why); err != nil {
 			return nil, err
 		}

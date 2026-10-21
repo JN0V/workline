@@ -1,6 +1,6 @@
 ---
-sources: [internal/builtin/documentalist/documentalist.go, cmd/workline/main.go, internal/builtin/documentalist/kept.go, internal/builtin/documentalist/releasekept.go]
-checked: 35eb7554
+sources: [internal/builtin/documentalist/documentalist.go, cmd/workline/main.go, internal/builtin/documentalist/kept.go]
+checked: ae744e99
 verified: agent:claude-code
 ---
 # Troubleshooting the docs
@@ -18,12 +18,9 @@ by hand: read it against its sources, fix it, and set its `checked` to the
 commit you read them at. A doc that names no `sources` is never suspect:
 `workline init` proposes them.
 
-On a release, a doc made suspect since the last release holds it (`due`,
-`suspect`) until judged.
-
 `record-unread` (a warning): the documentalist's comment keeping the
-records of docs found with nothing to fix, of the merge requests merged,
-or of the heads a release pull request's fix named, could not be read:
+records of docs found with nothing to fix, or of the merge requests
+merged, could not be read:
 the records are committed, or those docs judged again, at night. On GitLab, give the judging job `GITLAB_TOKEN`
 ([more](../roles/documentalist/docs/push.md#a-doc-found-with-nothing-to-fix-no-commit)).
 
@@ -36,9 +33,8 @@ the records are committed, or those docs judged again, at night. On GitLab, give
   ([ADR-0051](adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md)).
 
 `shallow-clone`: the clone lacks history the documentalist needs — the
-last release, or the commit a doc's `checked` names, so whether its
-sources changed cannot be told. It holds the release, and any run whose
-task is such a doc; `workline doctor` warns too. Fetch the whole history:
+commit a doc's `checked` names, so whether its sources changed cannot be
+told. It holds any run whose task is such a doc; `workline doctor` warns too. Fetch the whole history:
 `git fetch --unshallow`; in CI, GitHub's `fetch-depth: 0`, GitLab's
 `GIT_DEPTH: 0` (workline's templates set both).
 

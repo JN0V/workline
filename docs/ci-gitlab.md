@@ -1,6 +1,6 @@
 ---
 sources: [ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile]
-checked: 35eb7554
+checked: a840c0a3
 judged: e8a46f7
 verified: agent:documentalist
 reader: 9799dcaf51f3
@@ -106,24 +106,15 @@ to the environment **`workline`**:
 
 Gardening is the scheduled run of the documentalist (and the product
 owner, when routed): Build → Pipeline schedules → New schedule, nightly or
-weekly, on main. A release tool's merge request open, it first judges the
-docs due for that release, on its head; on the release's own pipelines no
-agent judges them, and they hold it
-([ADR-0050, §7](adr/0050-each-act-has-its-moment-and-a-wait-budget.md#7-decided-by-the-maintainer-on-2026-10-19)).
+weekly, on main. The release never waits for the docs
+([ADR-0051](adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-1-the-release-weekly)).
 
-- **The other nights**: one more schedule, every night but the
-  gardening's, with `WORKLINE_TASK` set to `release-docs`: the release's
-  docs alone; none due, no agent is asked. Play it for the release sooner.
-  Its variable needs "Minimum role to use pipeline variables" at
-  Maintainer, as the sample's.
-- **A release's dry run**, on both schedules:
-  `workline:release:dry-run`, no agent, then
+- **A release's dry run**, on the schedule:
+  `workline:release:dry-run`, no agent, no token, then
   `workline:release:dry-run:post`, the bot's token: what would hold the
-  release if it were cut now, on the release merge request, else in
-  main's issue ([how](release.md)).
-- Its fix is the bot's merge request only when the bot alone pushed to
-  the release's branch: run the release tool with the bot's token, else
-  the fix goes in a comment.
+  release if it were cut now, in main's issue ([how](release.md)).
+- **Upgrading**: delete a schedule with `WORKLINE_TASK=release-docs`,
+  left from an older template; it runs nothing now.
 
 ### 4. The weekly sample
 
@@ -220,9 +211,7 @@ a cron off the hour (`13 17 * * *`) was listed as due at 18:00 and ran at
     as on GitHub: a person judges what it would have; a GitLab call is
     tried again first ([which](gitlab/calls.md)).
 - **`workline:follow`**, each push to the default branch, its bot's token,
-  no agent: the documentalist's release merge request rebuilt on the new
-  tip ([ADR-0034](adr/0034-the-release-fix-follows-its-base.md)); when set,
-  the branch merged into people's merge requests in conflict only on
+  no agent: when set, the branch merged into people's merge requests in conflict only on
   workline's lines ([more](../roles/documentalist/docs/follow.md)), and the
   [merge policy](merge-policy.md), also after each judge (`workline:merge`).
 - **`workline:main`**, each push to the default branch, no token, no

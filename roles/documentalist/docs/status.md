@@ -63,9 +63,9 @@ Cases in
 its evaluation in
 [tests/evaluation/cases/documentalist](../../../tests/evaluation/cases/documentalist).
 
-- **Suspect docs from git history**, cascades cut, propagated at the
-  release: `stale-docs-reported`, `suspect-*`, `range-*`,
-  `cascade-is-cut`, `release-propagates-product-docs`. A release tool's
+- **Suspect docs from git history**, cascades cut, propagated at
+  gardening: `stale-docs-reported`, `suspect-*`, `range-*`,
+  `cascade-is-cut`, `product-doc-waits-for-gardening`. A release tool's
   bump makes suspect only the docs that pin the version it replaces,
   never one naming it as history
   ([#346](https://github.com/JN0V/workline/issues/346)); in a code block,
@@ -91,7 +91,7 @@ its evaluation in
   `doc-fixed-in-a-rebased-merge-request`,
   `judged-in-a-rebased-merge-request`.
 - **A shallow clone said, never a silent pass**: `shallow-clone-*`,
-  `release-refuses-a-shallow-clone`, setup's `doctor-shallow-clone`.
+  setup's `doctor-shallow-clone`.
 - **On each merge request**, GitHub and GitLab, the fix committed to the
   branch, its own commit not judged again; a fork's as a comment:
   `patch-pushed-to-the-merge-request`, `patch-as-comment-from-a-fork`,
@@ -137,19 +137,9 @@ its evaluation in
   blocks and docs with no yes, each recorded, a revert demoting its kind: the
   [merge cases](../../../tests/conformance/cases/merge), routing's
   `forged-merge-is-judged`, `merge-of-another-branch-is-judged`.
-- **A release tool's pull request held as the release**, its fix on a
-  merge request of its own that follows `main`, its record standing for
-  the heads the tool rebuilds
-  ([#510](https://github.com/JN0V/workline/issues/510)), its docs judged
-  at night with the gardening, none on its moves
-  ([ADR-0050, §7](../../../docs/adr/0050-each-act-has-its-moment-and-a-wait-budget.md#7-decided-by-the-maintainer-on-2026-10-19);
-  [tried](https://github.com/JN0V/workline/pull/535)), held by a doc
-  only a person can judge without losing the others' fixes
-  ([#543](https://github.com/JN0V/workline/issues/543)), every doc due
-  judged in one run, round after round, in one fix
-  ([#572](https://github.com/JN0V/workline/issues/572)): `release-*`; on workline,
-  [#258](https://github.com/JN0V/workline/pull/258) held,
-  [#259](https://github.com/JN0V/workline/pull/259) merged first.
+- **Never at the release**: the release does not wait for the docs; the
+  release docs, their fix and its record removed
+  ([ADR-0051](../../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-1-the-release-weekly)).
 - **Condense, split, merge a card, merge a repeated passage**:
   `condense-*`, `split-*`, `merge-card-*`, `dedupe-*`.
 - **Judging in parts**, a partial claim settled by another part:
@@ -260,7 +250,6 @@ its evaluation in
     - its stale merge requests closed on GitHub and GitLab, and settled
       people's branches pushed there (the App's `workflows` permission),
       each in its CI job;
-    - the release fix following `main` in CI and on GitLab;
     - on GitLab, a fork's merge request; the weekly sample on GitHub; a
       `checked` found false;
     - `checked` earned by what was read, with a real agent;
@@ -270,7 +259,7 @@ its evaluation in
       `examples.check` running on it;
     - the merge policy in CI: its jobs with the GitHub App's token, the
       `verdict` job, a merge starting `follow` and release-please on
-      `main`, a release and its docs, a fork's pull request; on GitLab, a
+      `main`, a release, a fork's pull request; on GitLab, a
       yes held through the new head's pipeline;
     - the jobs that write from workline-apply.yml, after a pull request's
       run, the App's key in its environment
