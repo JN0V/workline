@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/freshness.go, internal/builtin/documentalist/dedupe.go, internal/builtin/documentalist/mergecard.go, internal/builtin/documentalist/waiting.go, internal/builtin/documentalist/condense.go, internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/kept.go]
-checked: e443e5e2
+checked: affb7424
 verified: agent:claude-code
 ---
 # Documentalist — the gardening tasks
@@ -67,6 +67,10 @@ The judge refuses a condense patch when:
   (`patch-introduces`) — a part over its budget already, moved whole into
   a new doc, its text word for word, is the same problem moved, not a
   new one.
+
+A condense, split, merge-card or dedupe hunk quoting a doc wrong is placed
+as for a suspect doc ([hunks](judge.md#hunks-that-misquote-the-doc)); one
+whose place is in doubt is refused.
 
 A condense, split, merge-card or dedupe patch moving an existing doc's
 `checked`, or creating a doc that carries one, is refused

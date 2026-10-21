@@ -1955,13 +1955,28 @@ func Post(runDir, repo string) int {
 	patched, partly := map[string]bool{}, map[string]bool{}
 	resolved := map[string]bool{} // "rule where" of budget problems a condense patch resolves
 	var mergedPair []string       // the two docs a duplicates patch merged
+	// A task moving text between docs judges the agent's patches as git
+	// applies them, their hunks placed by the engine (placedPatches), and
+	// the engine applies them so once none is refused (#592).
+	var asPlaced []intent.Intention
+	placedFor := func() ([]intent.Intention, error) {
+		p, changed, err := placedPatches(repo, s, intents, fallback)
+		if changed {
+			asPlaced = p
+		}
+		return p, err
+	}
 	if data, err := os.ReadFile(filepath.Join(runDir, "in", "condense.yaml")); err == nil {
 		var c condenseTask
 		if err := yaml.Unmarshal(data, &c); err != nil {
 			return fail(err)
 		}
+		placedIn, err := placedFor()
+		if err != nil {
+			return fail(err)
+		}
 		var material string
-		refused, material, err = judgeCondense(repo, s, &c, intents, fallback)
+		refused, material, err = judgeCondense(repo, s, &c, placedIn, fallback)
 		if err != nil {
 			return fail(err)
 		}
@@ -1981,7 +1996,11 @@ func Post(runDir, repo string) int {
 		if err := yaml.Unmarshal(data, &m); err != nil {
 			return fail(err)
 		}
-		if refused, err = judgeMergeCard(repo, s, &m, intents, fallback); err != nil {
+		placedIn, err := placedFor()
+		if err != nil {
+			return fail(err)
+		}
+		if refused, err = judgeMergeCard(repo, s, &m, placedIn, fallback); err != nil {
 			return fail(err)
 		}
 		resolved["card-too-short "+m.Card] = len(refused) == 0 && proposedPatch(intents, fallback)
@@ -2007,7 +2026,11 @@ func Post(runDir, repo string) int {
 		if err := yaml.Unmarshal(data, &d); err != nil {
 			return fail(err)
 		}
-		if refused, err = judgeDedupe(repo, s, &d, intents, fallback); err != nil {
+		placedIn, err := placedFor()
+		if err != nil {
+			return fail(err)
+		}
+		if refused, err = judgeDedupe(repo, s, &d, placedIn, fallback); err != nil {
 			return fail(err)
 		}
 		if len(refused) == 0 && proposedPatch(intents, fallback) {
@@ -2040,6 +2063,12 @@ func Post(runDir, repo string) int {
 			}
 		}
 		if err != nil {
+			return fail(err)
+		}
+	}
+	if len(refused) == 0 && asPlaced != nil {
+		intents = asPlaced
+		if err := writeIntents(filepath.Join(runDir, "out", "intentions.yaml"), intents); err != nil {
 			return fail(err)
 		}
 	}

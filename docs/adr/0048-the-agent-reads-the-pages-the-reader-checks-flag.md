@@ -65,3 +65,20 @@
   when the run's `ai-max-tokens` is spent.
 - A closed merge request whose branch is deleted leaves no trace: its
   pages are read again at the next run.
+
+## Amendment (2026-10-21): a close of workline's own is no decline
+
+- **Context**: [#547](https://github.com/JN0V/workline/pull/547), a reader
+  merge request, conflicts with `main` on another of its pages.
+  `workline follow` closes such a merge request at the next gardening, its
+  comment saying the docs are judged again on `main`. Its branch stays,
+  so its pages unchanged since read as a person's decline, and are never
+  read again ([#592](https://github.com/JN0V/workline/issues/592)).
+- **Decision**: a merge request whose closing comment carries workline's
+  marker, `follow`'s, is no decline: its pages are read again at the next
+  gardening. One a person closed still holds its pages until they change.
+- **How it is told**: the forge reads the last merge request from the
+  branch and its comments — GitHub, GitLab, the local and the simulated
+  forge. Through a forge plugged by a command, every close reads as a
+  person's. A close the forge could not read is said
+  (`reader-declined-unread`), its pages held.
