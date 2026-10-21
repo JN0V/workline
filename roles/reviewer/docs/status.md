@@ -99,9 +99,10 @@ its measure in
   step 1): `record-of-another-author-not-read`; nor one another edited
   last, as the forge's GraphQL says (step 9):
   `record-edited-by-another-not-read*`.
-- **No commit skipped when the line's own files change** (`.github/`,
-  `ci/`, `.workline/`, `.gitlab-ci.yml`; ADR-0051, step 9):
-  `line-change-skips-no-commit`.
+- **No commit skipped when what its own pipeline runs changes**
+  (`.github/`, `.gitlab-ci.yml`, `.workline/`, `pipeline-paths`;
+  ADR-0051, step 9): `line-change-skips-no-commit`,
+  `pipeline-paths-skip-no-commit`, `ci-change-skips-on-the-record`.
 - **The lenses that warn read apart from the verdict**, each run its own
   comment and record
   ([ADR-0050](../../../docs/adr/0050-each-act-has-its-moment-and-a-wait-budget.md),

@@ -127,9 +127,14 @@ Ships: *default* in the templates and `routing.default.yaml`;
 - **Trusted only from workline's own account**, never from a comment
   another edited last: the forge says who did, in GraphQL (GitHub's
   `editor`, GitLab's `lastEditedBy`).
-- **A change to the line's own files** (`.github/`, `ci/`, `.workline/`,
-  `.gitlab-ci.yml`), by any of its commits, gets no skip: such a PR
-  runs its own workflow, which wrote what the record says was read.
+- **A change to what the PR's own pipeline runs**, by any of its
+  commits, gets no skip: such a PR runs its own workflow, which wrote
+  what the record says was read. By default `.github/` (workflows,
+  actions), `.gitlab-ci.yml` and `.workline/`; a project whose pipeline
+  runs scripts from elsewhere adds them (the reviewer's
+  `pipeline-paths`). Not `ci/` by default: in workline it holds product
+  templates its own pipeline does not run. 14 of workline's last 60
+  merged PRs would be read whole at each push, 21 with `ci/`.
 - **Not on the forge's own marker** (a GitHub review's `commit_id`,
   GitLab's diff versions), amended once the design was looked at:
   - **It ends no race**: a push's run reads before the run before it
@@ -178,7 +183,7 @@ By upkeep removed per unit of work:
    Built: the findings job gone, 3.8 min a merge; lychee at night, in
    gardening; main's issue and gardening say what code scanning held.
 9. **What was read, trusted** (cut 5): no record another edited last,
-   no skip on a change to the line's own files. Built ([ADR-0013]
+   no skip on a change to what the PR's own pipeline runs. Built ([ADR-0013]
    amended); the forge's markers left, why in cut 5.
 10. **Remove follow's docs merges**.
 11. **The GitLab child pipeline** for what warns.

@@ -7,7 +7,7 @@
   amended 2026-10-17 (on a person's merge request, the record waits in a
   comment); amended 2026-10-21 (a record is read only from workline's own
   account's comment, one no one else edited last; the reviewer skips no
-  commit when the line's own files change)
+  commit when what its own pipeline runs changes)
 - **Date:** 2026-10-01
 - **Amends:** ADR-0012 (a fix that cannot vouch is kept), ADR-0006 (one
   merge request per task)
@@ -290,9 +290,10 @@ the documentalist and the inspector, any bot's or person of the project's.
   (GitHub's `editor`, GitLab's `lastEditedBy`). workline's next edit
   makes it its own again. A token GraphQL refuses, GitLab's job's own,
   reads no record, said (`record-unread`).
-- **The reviewer skips no commit when the line's own files change**
-  (`.github/`, `ci/`, `.workline/`, `.gitlab-ci.yml`), by any commit of
-  the range ([ADR-0051], step 9): such a merge request runs its own
+- **The reviewer skips no commit when what its own pipeline runs
+  changes** (`.github/`, `.gitlab-ci.yml`, `.workline/`, and the paths
+  `pipeline-paths` names), by any commit of the range ([ADR-0051], step
+  9): such a merge request runs its own
   workflow, which wrote what the record says. Every commit is read again
   at each push, none left past `commits-per-push`, said
   (`line-changed`). The inspector's record is left as it is: its triage
