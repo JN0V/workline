@@ -171,8 +171,8 @@ By upkeep removed per unit of work:
 11. **The GitLab child pipeline** for what warns.
 12. **The squash title** at the merge request. Built: the committer's
     rules on the subject a squash lands, ` (#N)` left room, when the
-    forge's settings allow a squash; on GitHub, a title's edit re-checks
-    only the title. The AI rewrite is not built: a person edits the title
+    forge's settings allow a squash; a refused title says to edit it, then
+    re-run the job or push. The AI rewrite is not built: a person edits the title
     ([the squash title](../../roles/committer/docs/squash-title.md)).
 
 ## Consequences

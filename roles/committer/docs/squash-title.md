@@ -1,5 +1,5 @@
 ---
-sources: [internal/builtin/committer/committer.go, internal/forge/github.go, internal/forge/gitlab.go, ci/github/workline-title.yml]
+sources: [internal/builtin/committer/committer.go, internal/forge/github.go, internal/forge/gitlab.go]
 checked: fc4d887f
 verified: agent:claude-code
 ---
@@ -22,9 +22,7 @@ commits' rules, and blocks the same way
   that never squashes turns it off there.
 - **Not read**: a forge that does not say, or could not be read, gives a
   warning: the title is not checked.
-- **An edit re-checks only the title**: on GitHub, `workline-title.yml`
-  runs on a title's edit alone, no commit read, no agent; when its result
-  differs from `judge`'s last on the head, it runs `judge` again. An edit
-  to the description runs nothing. On GitLab, the next pipeline: run it
-  again after editing the title.
+- **Checked on each push**, not on an edit. A title refused says the
+  fix: edit the title, then re-run the job (GitHub's `judge`, GitLab's
+  pipeline; one click) or push.
 - **A person edits the title**: the AI rewrite is not built.

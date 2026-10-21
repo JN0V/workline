@@ -121,7 +121,6 @@ Each role, from a hook, a script or a CI job: [triggers](docs/triggers.md).
 - The review is on the merge request; a person merges.
 - Templates: [GitHub Actions](ci/github/workline.yml),
   [what only warns, beside it](ci/github/workline-warn.yml),
-  [a title's edit](ci/github/workline-title.yml),
   [its jobs that write](ci/github/workline-apply.yml) and
   [its fork job](ci/github/workline-fork.yml),
   [the release's holds read again](ci/github/workline-release.yml),

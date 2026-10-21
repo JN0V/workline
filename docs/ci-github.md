@@ -56,9 +56,6 @@ write run the default branch's workflow, never a pull request's own
      (`actions: read`) ([the triage in CI](gates-in-ci.md#the-inspectors-triage));
      without it, `judge` warns that nothing reads them; it reads only
      beside this release's workline-apply.yml, else warns.
-   - [workline-title.yml](../ci/github/workline-title.yml): `title` on
-     an edit to a pull request's title, which a squash lands on `main`
-     ([the squash title](../roles/committer/docs/squash-title.md)).
    - [workline-apply.yml](../ci/github/workline-apply.yml), from the
      default branch:
      - `apply` after each `judge`, the fixes committed to the pull
@@ -134,12 +131,9 @@ and `apply`, with the App, commits the fix to its branch,
   ready (`ready_for_review`). A draft asks no agent, `workline/verdict`
   pending until it is ready; opened ready or marked ready, the reviewer
   reads every lens once, on the whole change
-  ([more](../roles/reviewer/docs/ready.md)). An edit runs no `judge`:
-  a title's edit is `title`'s, below.
-- `title` runs on a title's edit alone: the title checked again, then
-  `judge` run again when its last result differs (`actions: write`)
-  ([the squash title](../roles/committer/docs/squash-title.md)). An edit
-  to the description runs nothing.
+  ([more](../roles/reviewer/docs/ready.md)). An edit runs nothing: after
+  fixing a refused title, re-run `judge` or push
+  ([the squash title](../roles/committer/docs/squash-title.md)).
 - On a merge queue's group (`merge_group`), `gates` runs the gates on
   the merged result and `judge` gives their verdict: no agent, nothing
   applied; with the merge policy, `queue` sets the App's yes on the

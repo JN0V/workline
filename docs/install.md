@@ -155,9 +155,7 @@ What the jobs are: [ci.md](ci.md); every detail on your forge's page. In short:
   `.github/workflows/` — [workline.yml](../ci/github/workline.yml) (each
   pull request, and main after each merge), [workline-warn.yml](../ci/github/workline-warn.yml) (what
   only warns, beside it: the reviewer's lenses that warn, the inspector's
-  triage), [workline-title.yml](../ci/github/workline-title.yml) (a
-  title's edit: the title checked again),
-  [workline-apply.yml](../ci/github/workline-apply.yml)
+  triage), [workline-apply.yml](../ci/github/workline-apply.yml)
   (what it proposed applied, main's findings in one issue, and each push
   to main for `workline follow`), [workline-fork.yml](../ci/github/workline-fork.yml) (a
   fork's), [workline-gardening.yml](../ci/github/workline-gardening.yml),
