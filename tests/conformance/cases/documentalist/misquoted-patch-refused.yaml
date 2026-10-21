@@ -3,7 +3,7 @@ about: A patch whose removed lines are not at the lines it cites, nor a few line
 given:
   repo: documented
   setup: ["sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"]
-run: {role: documentalist, event: merge-request, ai: "fake:doc-fixed-misquoted"}
+run: {role: documentalist, event: pre-push, ai: "fake:doc-fixed-misquoted"}
 expect:
   status: block
   agent-calls: 2
