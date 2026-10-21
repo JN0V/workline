@@ -72,8 +72,9 @@ func (g *github) Holding() ([]Issue, error) {
 }
 
 // tipQuery asks a branch's tip for its check suites, each with the event
-// that started it when GitHub Actions ran it, and its commit statuses.
-const tipQuery = `query($owner: String!, $name: String!, $ref: String!) { repository(owner: $owner, name: $name) { ref(qualifiedName: $ref) { target { ... on Commit { oid checkSuites(first: 100) { nodes { workflowRun { event } checkRuns(first: 100, filterBy: {checkType: LATEST}) { nodes { __typename name status conclusion } } } } status { contexts { __typename context state } } } } } } }`
+// and the workflow that started it when GitHub Actions ran it, and its
+// commit statuses.
+const tipQuery = `query($owner: String!, $name: String!, $ref: String!) { repository(owner: $owner, name: $name) { ref(qualifiedName: $ref) { target { ... on Commit { oid checkSuites(first: 100) { nodes { status conclusion app { slug } workflowRun { event workflow { name } } checkRuns(first: 100, filterBy: {checkType: LATEST}) { nodes { __typename name status conclusion } } } } status { contexts { __typename context state } } } } } } }`
 
 func (g *github) Tip(branch string) (Tip, error) {
 	if branch == "" {
@@ -95,8 +96,16 @@ func (g *github) Tip(branch string) (Tip, error) {
 						OID    string `json:"oid"`
 						Suites struct {
 							Nodes []struct {
+								Status     string `json:"status"`
+								Conclusion string `json:"conclusion"`
+								App        *struct {
+									Slug string `json:"slug"`
+								} `json:"app"`
 								Run *struct {
-									Event string `json:"event"`
+									Event    string `json:"event"`
+									Workflow struct {
+										Name string `json:"name"`
+									} `json:"workflow"`
 								} `json:"workflowRun"`
 								Runs struct {
 									Nodes []checkContext `json:"nodes"`
@@ -120,8 +129,22 @@ func (g *github) Tip(branch string) (Tip, error) {
 	}
 	var all []checkContext
 	for _, s := range ref.Target.Suites.Nodes {
-		if s.Run == nil || s.Run.Event == "push" {
-			all = append(all, s.Runs.Nodes...)
+		if s.Run != nil && s.Run.Event != "push" {
+			continue
+		}
+		all = append(all, s.Runs.Nodes...)
+		// A workflow that could not start ends with no run: its suite
+		// failed, which is main red. One never begun, an app's suite
+		// GitHub makes on each push, says nothing.
+		if len(s.Runs.Nodes) == 0 && s.Status == "COMPLETED" {
+			name := "a check suite"
+			switch {
+			case s.Run != nil && s.Run.Workflow.Name != "":
+				name = s.Run.Workflow.Name
+			case s.App != nil:
+				name = s.App.Slug
+			}
+			all = append(all, checkContext{Type: "CheckRun", Name: name, Status: s.Status, Conclusion: s.Conclusion})
 		}
 	}
 	if ref.Target.Status != nil {

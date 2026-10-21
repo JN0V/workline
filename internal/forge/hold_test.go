@@ -28,7 +28,7 @@ func TestGitHubTip(t *testing.T) {
 	}
 	tip := func(suites, statuses string) string {
 		return `{"data":{"repository":{"ref":{"target":{"oid":"abc1234def","checkSuites":{"nodes":[` + suites +
-			`,{"workflowRun":null,"checkRuns":{"nodes":[]}}]},"status":{"contexts":[` + statuses + `]}}}}}}`
+			`,{"status":"QUEUED","conclusion":null,"app":{"slug":"workline-app"},"workflowRun":null,"checkRuns":{"nodes":[]}}]},"status":{"contexts":[` + statuses + `]}}}}}}`
 	}
 	for _, c := range []struct {
 		name, tip, state string
@@ -40,6 +40,7 @@ func TestGitHubTip(t *testing.T) {
 		{"another app's run, not done", tip(suite("", "ci/external", "IN_PROGRESS", ""), ``), "pending", nil, []string{"ci/external"}},
 		{"a status red, workline's own left out", tip(suite("push", "test", "COMPLETED", "SUCCESS"), `{"__typename":"StatusContext","context":"ci/legacy","state":"FAILURE"},{"__typename":"StatusContext","context":"workline/accepted","state":"PENDING"}`), "failure", []string{"ci/legacy"}, nil},
 		{"none", tip(suite("workflow_run", "workline apply", "COMPLETED", "SUCCESS"), ``), "", nil, nil},
+		{"a workflow that could not start", tip(`{"status":"COMPLETED","conclusion":"FAILURE","app":{"slug":"github-actions"},"workflowRun":{"event":"push","workflow":{"name":".github/workflows/test.yml"}},"checkRuns":{"nodes":[]}}`+","+suite("push", "workline", "COMPLETED", "SUCCESS"), ``), "failure", []string{".github/workflows/test.yml"}, nil},
 	} {
 		t.Setenv("TIP", c.tip)
 		got, err := g.Tip("")
