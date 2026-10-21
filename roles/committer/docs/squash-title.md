@@ -15,7 +15,7 @@ commits' rules, and blocks the same way
 - **The subject**: the title; on GitHub, set to take a lone commit's
   subject, that commit's when there is one.
 - **Room for the forge's suffix**: GitHub adds ` (#N)`, so a title holds
-  `subject-max` less its length: 66 characters for `(#123)`. GitLab
+  `subject-max` less its length: 65 characters for ` (#123)`. GitLab
   adds nothing.
 - **The forge squashes** when its settings allow it: on GitHub, squash
   merging; on GitLab, any squash option but "Do not allow". A project
