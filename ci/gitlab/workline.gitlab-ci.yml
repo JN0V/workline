@@ -309,6 +309,7 @@ workline:apply:
 workline:warn:child:
   stage: test
   needs: [workline:gates]
+  interruptible: true
   rules:                            # also when the gates did not pass: their findings are what the inspector triages
     - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_EVENT_TYPE != "merge_train"
       when: always

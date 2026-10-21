@@ -437,8 +437,8 @@ func TestOneLinePerMergeRequestAtATime(t *testing.T) {
 			}
 			rules = parent["rules"]
 		}
-		if !strings.Contains(fmt.Sprint(rules), "merge_request_event") {
-			continue
+		if !strings.Contains(fmt.Sprint(rules), "merge_request_event") && !strings.Contains(fmt.Sprint(rules), "parent_pipeline") {
+			continue // the merge request's, or its child's: what only warns
 		}
 		n++
 		// Every job that writes nothing (the judge, the gates, what reads
