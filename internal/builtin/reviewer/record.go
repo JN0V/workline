@@ -424,18 +424,21 @@ func (r Record) since(repo, base, head string) (span, error) {
 	return sp, nil
 }
 
-// lineOwn are the line's own files: the forge's workflows, the CI's and
-// workline's settings. A merge request changing them runs its own checks,
-// the reviewer's runs among them (ADR-0051, cut 5).
-var lineOwn = []string{".github", "ci", ".workline", ".gitlab-ci.yml"}
+// lineOwn are the files that change what a merge request's own pipeline
+// runs: GitHub's workflows and actions, GitLab's pipeline, workline's
+// settings. A merge request changing them runs its own checks, the
+// reviewer's runs among them (ADR-0051, cut 5); `pipeline-paths` adds
+// those the project's pipeline runs scripts from.
+var lineOwn = []string{".github", ".gitlab-ci.yml", ".workline"}
 
-// lineFiles are the line's own files the commits base..head change: by
-// one of them, a change since undone too, or by the range as a whole,
-// which holds what a merge settled by hand.
-func lineFiles(repo, base, head string) ([]string, error) {
+// lineFiles are the line's own files, and the paths more names, that the
+// commits base..head change: by one of them, a change since undone too,
+// or by the range as a whole, which holds what a merge settled by hand.
+func lineFiles(repo, base, head string, more []string) ([]string, error) {
 	var out []string
+	paths := append(slices.Clone(lineOwn), more...)
 	for _, args := range [][]string{{"log", "--no-merges", "--format=", "--name-only", base + ".." + head}, {"diff", "--name-only", base, head}} {
-		names, err := git(repo, append(append(args, "--"), lineOwn...)...)
+		names, err := git(repo, append(append(args, "--"), paths...)...)
 		if err != nil {
 			return nil, err
 		}

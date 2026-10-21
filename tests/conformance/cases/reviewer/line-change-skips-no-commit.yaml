@@ -1,5 +1,5 @@
 case: reviewer/line-change-skips-no-commit
-about: "A change to the line's own files (.github/, ci/, .workline/, .gitlab-ci.yml) runs its merge request's checks with its own workflow, settings and engine, which wrote what the record says was read (ADR-0051, cut 5): no commit is skipped on that record. Here a commit adds a workflow and the next takes it out again: the record names every commit, yet the lens reads every one again, and the run says why."
+about: "A change to what the merge request's own pipeline runs (.github/, .gitlab-ci.yml, .workline/) runs its checks with its own workflow, settings and engine, which wrote what the record says was read (ADR-0051, cut 5): no commit is skipped on that record. Here a commit adds a workflow and the next takes it out again: the record names every commit, yet the lens reads every one again, and the run says why."
 given:
   repo: reviewed
   setup:
@@ -12,4 +12,4 @@ expect:
   status: pass
   agent-calls: 1
   findings:
-    - {rule: line-changed, level: warn, message: "the change touches the line's own files (.github/workflows/x.yml): no commit is skipped on the record of what was read before, every one is read again"}
+    - {rule: line-changed, level: warn, message: "the change touches what its own pipeline runs (.github/workflows/x.yml): no commit is skipped on the record of what was read before, every one is read again"}

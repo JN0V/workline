@@ -68,6 +68,7 @@ type Settings struct {
 	QuestionsMax    int      `json:"questions-max"`        // decisions put to a person a run; the rest counted
 	DiffAlone       bool     `json:"diff-alone"`           // ask the diff-alone facet too, apart, given the change only
 	SpecLenses      []string `json:"spec-lenses"`          // the lenses a spec is read through (#128)
+	PipelinePaths   []string `json:"pipeline-paths"`       // besides .github/, .gitlab-ci.yml and .workline/, what the pipeline runs: a change to them skips no commit (ADR-0051, cut 5)
 	SpecLinesMax    int      `json:"spec-lines-max"`       // lines of a spec the lenses are given; the rest cut, said
 	SpecRounds      int      `json:"spec-rounds"`          // on the forge: reviews in a row with a finding open, then a person (#128)
 	SpecsPerRun     int      `json:"specs-per-run"`        // on the forge: the specs a run reads; the rest wait for the next (#433)
@@ -311,14 +312,14 @@ func prepare(runDir, repo string, s Settings) int {
 	// A change to the line's own files is judged by its own workflow,
 	// settings and engine, which wrote what the record says was read: no
 	// commit is skipped on it (ADR-0051, cut 5), nor left past the cap.
-	line, err := lineFiles(repo, base, head)
+	line, err := lineFiles(repo, base, head, s.PipelinePaths)
 	if err != nil {
 		return fail(err)
 	}
 	if len(line) > 0 && len(rec.Reviewed)+len(rec.Patches) > 0 {
 		rec.Reviewed, rec.Patches = nil, nil
 		advisories = append(advisories, verdict.Finding{Rule: "line-changed", Level: "warn",
-			Message: "the change touches the line's own files (" + strings.Join(line, ", ") + "): no commit is skipped on the record of what was read before, every one is read again"})
+			Message: "the change touches what its own pipeline runs (" + strings.Join(line, ", ") + "): no commit is skipped on the record of what was read before, every one is read again"})
 	}
 	sp, err := rec.since(repo, base, head)
 	if err != nil {
