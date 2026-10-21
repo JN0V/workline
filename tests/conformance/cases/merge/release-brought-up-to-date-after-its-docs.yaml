@@ -22,4 +22,4 @@ expect:
   merged: {release-please--branches--main: main}
   pushed:
     release-please--branches--main: {version.txt: "1.1.0", docs/tech/auth.md: "renewed"}
-  summary-file: ["first in line #10, brought up to date"]
+  summary-file: ["#10 brought up to date, its docs merged"]

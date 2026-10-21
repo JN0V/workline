@@ -1,5 +1,5 @@
-case: merge/behind-main-brought-up-to-date
-about: "Behind main (#321): an accepted pull request whose auto-merge is on waits, the base requiring it up to date; when main moves, `workline follow` merges main into it as the forge's Update branch does — a merge commit, its commits kept, workline's trailer so the line judges the commits before it — and its auto-merge stays on: it merges once its checks pass again (ADR-0042)."
+case: merge/behind-main-merges-as-it-is
+about: "Behind main (ADR-0051, cut 2): an accepted pull request whose auto-merge is on, its head's verdict passed, is not brought up to date when main moves: `workline follow` pushes nothing, and the forge merges it once its own head is green. A red main after it is main's run's to say."
 given:
   repo: documented
   config: {merge: {autonomy: cautious}}
@@ -25,13 +25,9 @@ given:
 run: {follow: [--base, main], summary: true}
 expect:
   status: pass
-  findings: [{rule: updated, where: "#7", message: "first in line, brought up to date: main merged in"}]
-  no-findings: [{rule: auto-merge-on}]
-  merged: {feat/sessions: main}
-  pushed:
-    feat/sessions: {src/auth/token.go: "7200", src/auth/refresh.go: "Refresh renews"}
-  pushed-message: {feat/sessions: "Merge branch 'main' into feat/sessions\n\nBrought up to date with main by the project's merge policy"}
-  summary-file: ["first in line #7, brought up to date"]
+  no-findings: [{rule: updated}, {rule: auto-merge-on}]
+  not-pushed: [feat/sessions]
+  summary-file: ["accepted into main, #7: each merges once its own head is green"]
   forge:
     merge-requests:
       - {id: 7, auto-merge: true, labels: [workline:accepted], comments: 0}
