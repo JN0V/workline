@@ -1,6 +1,6 @@
 ---
 sources: [ci/github/workline-gardening.yml, ci/gitlab/workline.gitlab-ci.yml, internal/line/dryrun.go, internal/report/dryrun.go, internal/release/release.go, cmd/workline]
-checked: a840c0a3
+checked: 348153b5
 ---
 # The release: a dry run each night, a check at the tag
 
@@ -41,7 +41,8 @@ were cut now.
 
 ## In CI
 
-- **GitHub**: the jobs `dry-run` (contents read, no secret) and
+- **GitHub**: the jobs `dry-run` (contents, issues, checks, statuses
+  and actions read: [what holds a release](release-holds.md); no secret) and
   `dry-run-post` (the App's token, issues write), in
   [the gardening](../ci/github/workline-gardening.yml).
 - **GitLab**: `workline:release:dry-run` (no token) and
