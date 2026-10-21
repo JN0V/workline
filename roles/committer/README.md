@@ -36,7 +36,7 @@ code, rewrite commits already made (on a merge request it lists them, for
 |---|---|---|
 | `commit-msg` | the global git hook (`workline hooks install --global`) | the message being written, what the commit adds |
 | `pre-push` | the global hook, when `.workline/config.yaml` routes it | every commit pushed |
-| `merge-request` | CI (`workline route merge-request --input range=<base>..<head>`) | every commit of the range |
+| `merge-request` | CI (`workline route merge-request --input range=<base>..<head>`) | every commit of the range; [the subject a squash lands](#the-squash-title) |
 
 The global hook still hands over to the hooks installed before workline.
 
@@ -95,6 +95,24 @@ and `pre-push`, every commit of the range given as `--input range=<base>..<head>
 
 Messages git writes itself (`Merge …`, `Revert "…"`, `fixup! …`, `squash! …`,
 `amend! …`) are not checked. A message that passes asks no agent.
+
+### The squash title
+
+A squash lands one subject on the base, which no commit carried. On a
+merge request the forge may squash, it is checked by the same rules, and
+blocks the same way
+([ADR-0051](../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md)):
+
+- **The subject**: the title; on GitHub, set to take a lone commit's
+  subject, that commit's when there is one.
+- **Room for the forge's suffix**: GitHub adds ` (#N)`, so a title holds
+  `subject-max` less its length; GitLab adds nothing.
+- **The forge squashes** when its settings allow it: on GitHub, squash
+  merging; on GitLab, any squash option but "Do not allow". Turn it off
+  there if the project never squashes.
+- **Checked again on an edit**: GitHub's `edited` event; on GitLab, the
+  next pipeline: run it again after editing the title.
+- **A person edits the title**: no agent is asked.
 
 ### Secrets and forbidden terms
 

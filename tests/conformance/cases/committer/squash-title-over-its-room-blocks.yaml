@@ -1,0 +1,14 @@
+case: committer/squash-title-over-its-room-blocks
+about: "On a merge request the forge may squash, its title lands on the base as a subject (ADR-0051): checked by the commits' rules, room left for what the forge adds, GitHub's ` (#N)`. A title of 70 characters lands at 75, and blocks; its commit passes."
+given:
+  repo: basic
+  setup: ["git tag base && echo a >> main.go && git commit -qam 'feat: add a greeting'"]
+  forge:
+    squash: {on: true, suffix: " (#{n})"}
+    merge-requests: [{id: 5, title: "feat(committer): check the title a squash lands, room left for its tag", labels: [], comments: []}]
+run: {role: committer, event: merge-request, input: {range: "base..HEAD"}, target: {merge-request: 5}}
+expect:
+  status: block
+  agent-calls: 0
+  summary: "edit the merge request's title"
+  findings: [{rule: subject-length, where: title, message: "75 characters, over the limit of 72"}]

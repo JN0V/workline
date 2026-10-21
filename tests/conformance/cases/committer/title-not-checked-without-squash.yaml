@@ -1,0 +1,10 @@
+case: committer/title-not-checked-without-squash
+about: "A forge that never squashes lands the commits, not the title: a title out of the rules is not checked (ADR-0051)."
+given:
+  repo: basic
+  setup: ["git tag base && echo a >> main.go && git commit -qam 'feat: add a greeting'"]
+  forge:
+    squash: {on: false}
+    merge-requests: [{id: 5, title: "Some changes", labels: [], comments: []}]
+run: {role: committer, event: merge-request, input: {range: "base..HEAD"}, target: {merge-request: 5}}
+expect: {status: pass, agent-calls: 0}

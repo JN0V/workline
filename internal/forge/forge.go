@@ -391,6 +391,22 @@ type MergeRequest struct {
 	MergedAt string
 }
 
+// Squash is how a merge request lands on its base when the forge squashes
+// it (ADR-0051): its title, or its one commit's subject, becomes the
+// subject of a commit on the base, Suffix after it.
+type Squash struct {
+	On bool `json:"on"` // the forge's settings let it squash the merge request
+	// LoneCommit: with one commit, the squash takes that commit's subject,
+	// not the title (GitHub's "default to commit or pull request title").
+	LoneCommit bool   `json:"lone-commit,omitempty"`
+	Suffix     string `json:"suffix,omitempty"` // what the forge adds: GitHub's " (#N)"
+}
+
+// Squasher is a forge that says how it would squash a merge request.
+type Squasher interface {
+	Squash(id int) (Squash, error)
+}
+
 // Reaction is a reaction a person put on a comment: its emoji, as GitHub
 // names it (+1, -1; GitLab's thumbsup and thumbsdown read so), and who.
 type Reaction struct {
