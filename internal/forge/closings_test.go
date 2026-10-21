@@ -57,11 +57,11 @@ func TestGitLabClosedWith(t *testing.T) {
 			if s, ok := states[q.Get("source_branch")]; ok {
 				out = append(out, s)
 			}
-			json.NewEncoder(w).Encode(out)
+			_ = json.NewEncoder(w).Encode(out)
 		case p == "/merge_requests/5/notes":
-			json.NewEncoder(w).Encode([]map[string]any{{"id": 1, "body": "Closed by workline.\n\n<!-- workline:closed -->"}})
+			_ = json.NewEncoder(w).Encode([]map[string]any{{"id": 1, "body": "Closed by workline.\n\n<!-- workline:closed -->"}})
 		case p == "/merge_requests/8/notes":
-			json.NewEncoder(w).Encode([]map[string]any{{"id": 2, "body": "Not what I want."}})
+			_ = json.NewEncoder(w).Encode([]map[string]any{{"id": 2, "body": "Not what I want."}})
 		default:
 			http.Error(w, `{"message":"404 Not Found"}`, http.StatusNotFound)
 		}
