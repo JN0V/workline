@@ -14,11 +14,14 @@ moves to the commit the task gave.
 
 ### On a merge request
 
-- Run with `--push-to-merge-request` (the CI templates), the docs fixed are
-  committed to the merge request's own branch, as pre-commit.ci does: a
-  suggestion can only sit on lines the merge request changes, and a doc
-  made wrong by a change of code usually has none.
-- From a fork, the fix goes in one comment, as a diff to apply.
+- **Nothing is pushed to its branch**, not a fix, not a move of
+  `checked`: the fix goes in one comment, a diff for its author to apply
+  ([ADR-0051](../../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-3-no-docs-obligation-per-pr)).
+  A suggestion could only sit on lines the merge request changes.
+- **The docs it made suspect are said, never holding the merge**: the
+  author fixes the prose the change made wrong; gardening's docs pull
+  request moves their `checked` once merged, nightly until the weekly one
+  comes.
 - Given the commits of a merge request (`range`), only the docs they
   touched are read, as at a push: those they made suspect — one of their
   own sources touched by those commits, a merge's own change too — are
@@ -50,10 +53,10 @@ took a commit on their branch, 41 of 42 in two weeks
   ([records](gardening.md#records-kept-on-merged-merge-requests)); for a
   doc whose sources are too large to go whole, it reads it in parts
   instead ([#462](https://github.com/JN0V/workline/issues/462)).
-- **A real fix is one commit**, naming the doc: "docs: bring
-  docs/tech/auth.md in line with the code". A move of `checked` too.
+- **A real fix goes in the comment's diff**, a move of `checked` too.
 - **A fork's merge request** keeps its record too.
-- **Committed, as before**, where the comment cannot keep it:
+- **In the comment's diff too**, where the documentalist's comment
+  cannot keep the record:
   - a forge that does not say which commit a merge request became
     (`local`, `cmd:`);
   - a comment the job cannot read, said (`record-unread`): on GitLab, give

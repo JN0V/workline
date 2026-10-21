@@ -4,7 +4,8 @@
   [ADR-0042] and
   [ADR-0020](0020-the-reviewer-finds-the-engine-verifies-the-person-merges.md#amendment-2026-10-21-adr-0051-cut-4-no-fix-round-for-nits),
   amended); step 3's removal of the release's docs built ([ADR-0010],
-  [ADR-0017], [ADR-0034] amended); the rest not yet
+  [ADR-0017], [ADR-0034] amended); step 4 built ([ADR-0010] amended);
+  the rest not yet
   ([the build order](#build-order)); one point open, one decided
   ([open](#open))
 - **Date:** 2026-10-21
@@ -160,6 +161,8 @@ By upkeep removed per unit of work:
    and its issue counts red mains a week; [ADR-0042] amended.
 3. **The release** (cut 1): 130 red heads, most of 61 docs PRs.
 4. **Stop stamps on PRs**: no `--push-to-merge-request`; 69 rounds.
+   Built: the flag removed; on a merge request the patches go in one
+   comment; [ADR-0010] amended.
 5. **No rounds for nits** (cut 4): up to 93 rounds.
 6. **The documentalist's AI at ready**, a comment with the diff.
 7. **The weekly docs PR**, before the workday.

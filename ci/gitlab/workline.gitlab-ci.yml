@@ -45,8 +45,8 @@
 #   apply  holds WORKLINE_GITLAB_TOKEN (a project access token, role Developer,
 #          scopes `api` and `write_repository`: one glab command in
 #          docs/ci-gitlab.md makes and stores it; CI_JOB_TOKEN reaches no issue) and
-#          no AI key. A doc fix is committed to the merge request's branch
-#          (--push-to-merge-request).
+#          no AI key. A doc fix goes in one comment on the merge request,
+#          never on its branch (ADR-0051).
 #
 # Both variables are masked, and NOT protected: GitLab gives a protected
 # variable only to protected branches, never to a merge request's. Anyone who
@@ -256,7 +256,7 @@ workline:judge:
     - '[ -n "${WORKLINE_GITLAB_TOKEN:-}" ] || echo "workline: warn lenses not run apart: WORKLINE_GITLAB_TOKEN not set, they read in this job, on the path of the verdict"'
     - status=0
     - >
-      workline route merge-request --ai "$ai" --no-apply --push-to-merge-request ${WORKLINE_GITLAB_TOKEN:+--warn-apart}
+      workline route merge-request --ai "$ai" --no-apply ${WORKLINE_GITLAB_TOKEN:+--warn-apart}
       --forge gitlab --target merge-request:$CI_MERGE_REQUEST_IID --branch "$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME"
       --input range=$CI_MERGE_REQUEST_DIFF_BASE_SHA..$CI_COMMIT_SHA $lenses ${draft:+--input draft=$draft}
       --gates-from gates.json --code-quality gl-code-quality.json --summary workline-summary.md --summary workline-summary.html

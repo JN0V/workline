@@ -119,7 +119,7 @@ a plugged forge keeps priorities in labels only.
 ## What stays with the engine
 
 Git is the engine's: it commits and pushes the branches of merge requests
-(`--open-merge-request`, `--push-to-merge-request`, the weekly sample,
+(`--open-merge-request`, the weekly sample,
 `workline follow`) to `origin` itself; the command is asked only for what is the forge's — issues,
 comments, labels, merge requests. A command is not sandboxed: what
 it does with the tokens it is given is its own promise, not the engine's.

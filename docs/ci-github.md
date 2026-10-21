@@ -58,8 +58,8 @@ write run the default branch's workflow, never a pull request's own
      beside this release's workline-apply.yml, else warns.
    - [workline-apply.yml](../ci/github/workline-apply.yml), from the
      default branch:
-     - `apply` after each `judge`, the fixes committed to the pull
-       request's branch, and after each `warn`, the comment of the
+     - `apply` after each `judge`, the doc fixes in a comment, nothing
+       pushed to the branch, and after each `warn`, the comment of the
        lenses that warn and the inspector's;
      - `main` after main's run: what it found, in one issue;
      - `follow` on each push to `main`: with `update-branches: conflicts`, `main` is merged

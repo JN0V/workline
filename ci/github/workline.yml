@@ -236,7 +236,7 @@ jobs:
           ai=none; [ -n "$CLAUDE_CODE_OAUTH_TOKEN" ] && ai=claude
           ready=; case "$ACTION:$DRAFT" in opened:false|ready_for_review:*) ready=1 ;; esac
           status=0
-          workline route merge-request --ai "$ai" --no-apply --push-to-merge-request --warn-apart \
+          workline route merge-request --ai "$ai" --no-apply --warn-apart \
             --forge github --target merge-request:${{ github.event.pull_request.number }} --branch "$HEAD_REF" \
             --input range=${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} ${ready:+--input lenses=all} --input draft="$DRAFT" \
             --gates-from "$RUNNER_TEMP/gates/gates.json" \

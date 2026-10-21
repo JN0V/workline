@@ -1931,11 +1931,6 @@ func Post(runDir, repo string) int {
 			outcome = readerOutcome
 		}
 		mr := mergeRequest(runDir, judged, inParts, proposedPatch(intents, fallback), withheld, outcome)
-		if onPersonsMergeRequest() { // the commit on a person's branch names the doc (#463)
-			if t := personsTitle(patchedDocs(intents, fallback, judgedFix)); t != "" {
-				mr["title"] = t
-			}
-		}
 		if list := readerList(readerClaims); list != "" {
 			mr["body"] = strings.Replace(mr["body"], "\nRunning the same task", "\nWhat a reader would miss or skip, as the agent read the pages:\n\n"+list+"\nRunning the same task", 1)
 		}

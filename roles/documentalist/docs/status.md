@@ -1,9 +1,9 @@
-# Documentalist — where it stands (2026-10-19)
+# Documentalist — where it stands (2026-10-21)
 
 **In one line:** usable every day on a GitHub or GitLab repository that
 takes merge requests: docs judged on each one and gardened at night, by
 Claude in CI from a release of workline ([CI](../../../docs/ci.md)),
-fixes committed to the branch and reviewed on the forge. Beta: judging
+fixes proposed in a comment, never pushed to the branch. Beta: judging
 docs too large in parts, on by default, ran six nights on DomoticsCore
 and workline; a fix in parts once followed a stale code comment, and
 once made a true line false, each now refused.
@@ -39,8 +39,11 @@ hold:
 2. **The main issue validated on real use**: open.
    [#464](https://github.com/JN0V/workline/issues/464) holds the
    Validation: a merge request, a night's gardening, and nothing false
-   landing in two weeks on two repositories. The maintainer signs it
-   after those weeks.
+   staying past a week's docs pull request, in two weeks on two
+   repositories
+   ([ADR-0051](../../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-3-no-docs-obligation-per-pr):
+   it was "nothing false landing"). The maintainer signs it after those
+   weeks.
 3. **AI verdicts measured**: **met** (2026-10-17). Step 4 of
    [ADR-0014](../../../docs/adr/0014-checked-is-earned-by-what-was-read.md#4-acceptance-written-before-it-is-measured)
    holds, at the third run, on the held-out set: the bars and runs in
@@ -92,10 +95,10 @@ its evaluation in
   `judged-in-a-rebased-merge-request`.
 - **A shallow clone said, never a silent pass**: `shallow-clone-*`,
   setup's `doctor-shallow-clone`.
-- **On each merge request**, GitHub and GitLab, the fix committed to the
-  branch, its own commit not judged again; a fork's as a comment:
-  `patch-pushed-to-the-merge-request`, `patch-as-comment-from-a-fork`,
-  routing's `own-commit-*`.
+- **On each merge request**, GitHub and GitLab, the fix in one comment,
+  a diff to apply, nothing pushed to the branch, no `checked` moved
+  ([ADR-0051](../../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-3-no-docs-obligation-per-pr)):
+  `patch-in-a-comment-on-the-merge-request`, `patch-comment-*`.
 - **The push counts suspect docs**, asks nothing, reading only the docs
   its commits touched, in 0.8 to 2.4 s
   ([tried](https://github.com/JN0V/workline/pull/531)); the merge request
@@ -121,10 +124,8 @@ its evaluation in
 - **No commit on a person's pull request for a doc only read**
   ([#463](https://github.com/JN0V/workline/issues/463)): its record kept
   in the documentalist's comment, read by the next push, written on `main`
-  by gardening in `records`; a real fix one commit naming the doc; GitHub
-  and GitLab: `judged-kept-*`,
-  `judged-committed-where-the-forge-lists-no-merge`,
-  `patch-pushed-to-the-merge-request`; read only from workline's own
+  by gardening in `records`; GitHub and GitLab: `judged-kept-*`; read
+  only from workline's own
   account's comment
   ([ADR-0051](../../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md),
   step 1): `judged-kept-by-an-outsider-is-not-read`,

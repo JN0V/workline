@@ -8,7 +8,7 @@ given:
   forge:
     merge-requests: [{id: 1, branch: feature, base: main, labels: [], comments: []}]
     members: [{username: workline-bot, access_level: 30}]
-run: {role: documentalist, event: merge-request, target: {merge-request: 1}, ai: 'cmd:sh "$FIXTURES/agents/judged-only.sh"', push-to-merge-request: true, forge: gitlab, then: again}
+run: {role: documentalist, event: merge-request, target: {merge-request: 1}, ai: 'cmd:sh "$FIXTURES/agents/judged-only.sh"', forge: gitlab, then: again}
 expect:
   status: pass
   agent-calls: 1
