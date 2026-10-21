@@ -250,11 +250,12 @@ func comment(run Run, shown []Triaged) string {
 	}
 	const note = "- %d triages not kept in this comment, past its size: asked again at the next push.\n"
 	body := strings.TrimRight(b.String(), "\n") + "\n"
-	record, left := run.Record.lines(keep, commentMax-len(body)-len(note)-10)
+	at := forge.At(run.Head) // the head and the run, above the record (#598)
+	record, left := run.Record.lines(keep, commentMax-len(body)-len(note)-len(at)-10)
 	if left > 0 {
 		body += fmt.Sprintf(note, left)
 	}
-	return body + record
+	return body + at + record
 }
 
 // task is the one part put to the agent: the findings to triage, each
@@ -405,6 +406,38 @@ func MergeComment(body, read, found string) string {
 	// oldest first and uncounted, as comment drops those of findings not
 	// at the head; none of ours goes, so the count is 0.
 	merged := Record{Triaged: append(since, ours.Triaged...)}
+	record, _ := merged.lines(keep, commentMax-len(head)-10)
+	return head + record
+}
+
+// MergeInto is found, the comment a later run wrote, kept as it is but
+// for its record, into which body's, an older run's applied after it, is
+// merged (#598): what that older run triaged and found does not hold
+// joins found's, gone first past the comment's size. marker, the
+// comment's own, is taken out: the apply writes it again. "" when a
+// record does not read.
+func MergeInto(found, body, read, marker string) string {
+	now, err1 := readRecord(found)
+	ours, err2 := readRecord(body)
+	was, err3 := readRecord(read)
+	if err1 != nil || err2 != nil || err3 != nil {
+		return ""
+	}
+	head := strings.TrimSpace(strings.Replace(found, marker, "", 1))
+	if at := strings.Index(head, recordOpening); at >= 0 {
+		head = strings.TrimSuffix(head[:at], "\n")
+	}
+	keep := map[string]bool{}
+	for _, t := range now.Triaged {
+		keep[t.Fingerprint] = true
+	}
+	merged := now
+	for _, t := range ours.Triaged {
+		_, read := was.find(t.Fingerprint)
+		if _, there := now.find(t.Fingerprint); !read && !there {
+			merged.Triaged = append([]Triaged{t}, merged.Triaged...)
+		}
+	}
 	record, _ := merged.lines(keep, commentMax-len(head)-10)
 	return head + record
 }

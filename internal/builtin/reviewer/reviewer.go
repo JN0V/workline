@@ -2194,10 +2194,14 @@ func summaryIntention(repo string, s Settings, st state, v Review, related []Fin
 	return intent.Intention{Kind: "comment", Value: value}
 }
 
-// summaryValue is the summary comment's proposal: its body, and the
-// record the run read, which the apply merges with the one the comment
-// holds by then, a run applied since having written it (#375).
+// summaryValue is the summary comment's proposal: its body, the head and
+// the run it is at above its record (forge.At), and the record the run
+// read, which the apply merges with the one the comment holds by then, a
+// run applied since having written it (#375, #598).
 func summaryValue(st state, body string) map[string]any {
+	if at := strings.Index(body, recordOpening); at >= 0 {
+		body = body[:at] + forge.At(st.Head) + "\n" + body[at:]
+	}
 	return map[string]any{"sticky": keyOf(st.Warn), "body": body, "read": st.Read}
 }
 
