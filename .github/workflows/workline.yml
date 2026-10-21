@@ -196,8 +196,10 @@ jobs:
       # The engine built from this commit: the gates' job's when it built
       # it, else built here, for no job after; and the tools its roles use,
       # from their releases, checksums verified.
+      # Go left set up on workline's own release pull request: GoReleaser
+      # builds the release's binary with it, below.
       - uses: ./.github/actions/engine
-        with: {keep: "false"}
+        with: {keep: "false", go: "${{ startsWith(github.head_ref, 'release-please--') }}"}
       - name: gitleaks
         run: |
           bin="$RUNNER_TEMP/bin"; mkdir -p "$bin"; cd "$RUNNER_TEMP"
@@ -294,9 +296,6 @@ jobs:
       # workline's own release pull request (ADR-0051): the binary
       # GoReleaser builds, as release.yml will at the tag, says the version
       # the pull request releases. Beside the tests, never after them.
-      - uses: actions/setup-go@v5
-        if: startsWith(github.head_ref, 'release-please--')
-        with: {go-version-file: go.mod}
       - uses: goreleaser/goreleaser-action@v6
         if: startsWith(github.head_ref, 'release-please--')
         with: {version: "~> v2", install-only: true}
