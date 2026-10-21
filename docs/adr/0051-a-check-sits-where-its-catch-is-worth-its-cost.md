@@ -1,6 +1,6 @@
 # ADR-0051: A check sits where its catch is worth its cost
 
-- **Status:** accepted; steps 1, 2, 5 and 12 built ([ADR-0013],
+- **Status:** accepted; steps 1, 2, 5, 8 and 12 built ([ADR-0013],
   [ADR-0042] and
   [ADR-0020](0020-the-reviewer-finds-the-engine-verifies-the-person-merges.md#amendment-2026-10-21-adr-0051-cut-4-no-fix-round-for-nits),
   amended); step 3's removal of the release's docs built ([ADR-0010],
@@ -164,6 +164,8 @@ By upkeep removed per unit of work:
 6. **The documentalist's AI at ready**, a comment with the diff.
 7. **The weekly docs PR**, before the workday.
 8. **Fold main's two runs**: `test.yml`'s findings into `route main`.
+   Built: the findings job gone, 3.8 min a merge; lychee at night, in
+   gardening; main's issue and gardening say what code scanning held.
 9. **Forge markers** for what was read (cut 5).
 10. **Remove follow's docs merges**.
 11. **The GitLab child pipeline** for what warns.
