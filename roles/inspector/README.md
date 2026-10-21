@@ -63,6 +63,9 @@ file. All roles: [docs/roles.md](../../docs/roles.md).
 - **Without an agent**: no call; the findings stand as the gates report
   them, said in the run (`not-triaged`). On a draft too, until it is
   marked ready.
+- **A fork's merge request**: no triage, its run gets no secret; on
+  GitHub, the gates' verdicts are in one comment
+  ([what a fork gets](../../docs/gates-in-ci.md#a-forks-pull-request)).
 - **Status**: beta; [where it stands](docs/status.md).
 
 ## Set it up

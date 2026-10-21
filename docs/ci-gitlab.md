@@ -203,7 +203,8 @@ a cron off the hour (`13 17 * * *`) was listed as due at 18:00 and ran at
   each doc's sources since its `checked`, the release looks for its last
   tag. A job set too shallow gets `shallow-clone`, never a pass.
 - **A fork's merge request** runs in the fork, which has neither variable:
-  judged without an agent, nothing applied or commented.
+  judged without an agent, nothing applied or commented
+  ([its gates](gates-in-ci.md#a-forks-pull-request)).
 - **A judge that fails**: the applying jobs still run (`when: always`),
   the pipeline failed by the judge's job.
   - Gardening: what steps passed before one blocked is applied
