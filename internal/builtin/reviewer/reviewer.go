@@ -2183,7 +2183,7 @@ func summaryIntention(repo string, s Settings, st state, v Review, related []Fin
 	lines := lineComments(repo, s, st, related)
 	short := map[string]string{}
 	for _, g := range related {
-		if _, _, ok := fileLine(g.Where); ok {
+		if _, _, ok := fileLine(g.Where); ok && g.Severity == "important" {
 			short[g.Lens+"\x00"+g.Where] = shortMessage(g)
 		}
 	}
@@ -2222,7 +2222,12 @@ func summaryComment(v Review, issues int, short map[string]string, lines []forge
 		fmt.Fprintf(&b, "%s\n%s\n%s\n\n", forge.ReviewHere,
 			forge.Unplaced(lines, "the engine that applied this run posts no comment on a line").Section(), forge.ReviewEnd)
 	}
-	b.WriteString(findingsTable(v, "No finding on the commits reviewed.", short))
+	table, nits := apartNits(v)
+	empty := "No finding on the commits reviewed."
+	if len(nits) > 0 {
+		empty = "Nothing but nits on the commits reviewed."
+	}
+	b.WriteString(findingsTable(table, empty, short))
 	if len(v.Questions) > 0 {
 		b.WriteString("**Questions for a person**\n\nNot defects, not judged: choices the change leaves to a person; a reply here is enough, the reviewer does not wait for it.\n\n")
 		for _, q := range v.Questions {
@@ -2233,12 +2238,42 @@ func summaryComment(v Review, issues int, short map[string]string, lines []forge
 	if issues > 0 {
 		fmt.Fprintf(&b, "What lies outside this change goes to %d issues, labelled `needs-triage`: not the author's to fix here.\n\n", issues)
 	}
-	b.WriteString("The reviewer never approves and never changes the code: the author fixes, a person merges.\n\n")
+	if len(nits) > 0 {
+		b.WriteString("**Nits**, for information: no reply, no fix asked.\n\n")
+		for _, f := range nits {
+			fmt.Fprintf(&b, "- `%s` (%s): %s\n", f.Where, f.Rule, oneLine(strings.TrimPrefix(f.Message, "Nit: "), 600))
+		}
+		b.WriteString("\n")
+	}
+	b.WriteString("The reviewer never approves and never changes the code: the author fixes what blocks, a person merges.\n\n")
 	b.WriteString(v.Record.String())
 	if v.Subject != "spec" { // what every run's judge answered, within the comment's size (ADR-0046)
 		b.WriteString(v.Record.judgedLines(SummaryMax - b.Len()))
 	}
 	return b.String()
+}
+
+// apartNits takes the change's nits out of a review's findings: shown
+// below the rest, on no line, asking nothing (ADR-0051, cut 4). Each is
+// found by the very finding it became (settled), never by its place
+// alone.
+func apartNits(v Review) (Review, []verdict.Finding) {
+	nit := map[verdict.Finding]bool{}
+	for _, g := range v.Change {
+		if g.Severity != "important" {
+			nit[verdict.Finding{Rule: g.Lens, Where: g.Where, Level: "warn", Message: message(g)}] = true
+		}
+	}
+	var rest, nits []verdict.Finding
+	for _, f := range v.Findings {
+		if nit[f] {
+			nits = append(nits, f)
+		} else {
+			rest = append(rest, f)
+		}
+	}
+	v.Findings = rest
+	return v, nits
 }
 
 // findingsTable is the findings as a table, what blocks first (#226), the

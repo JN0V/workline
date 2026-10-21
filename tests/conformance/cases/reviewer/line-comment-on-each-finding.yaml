@@ -1,5 +1,5 @@
 case: reviewer/line-comment-on-each-finding
-about: "On a merge request, each finding with a file and a line is a comment on that line, in one review of the forge's own (the simulated forge takes it whole, as GitHub does): a rule's, then a lens's, each saying whether it blocks or warns, the lens's whole, its why and its fix. The summary comment stays, links to the review and keeps each finding on a line to its title (#277)."
+about: "On a merge request, each important finding with a file and a line, and each rule's, is a comment on that line, in one review of the forge's own (the simulated forge takes it whole, as GitHub does): a rule's, then a lens's, each saying whether it blocks or warns, the lens's whole, its why and its fix. The summary comment stays, links to the review and keeps each finding on a line to its title (#277)."
 given:
   repo: reviewed
   setup:
@@ -23,7 +23,7 @@ expect:
       - id: 5
         comments: 1
         comment-contains:
-          - "**On their lines**: 2 comments, in [the review](https://forge.example/merge-requests/5#review-1) (2 posted now): reply to each, or resolve it, there."
+          - "**On their lines**: 2 comments, in [the review](https://forge.example/merge-requests/5#review-1) (2 posted now). What blocks stands until a commit fixes it; what warns asks nothing."
           - "| **blocks** | correctness | `calc/calc.go:11` | Important: Average divides by one less than the count |"
         comment-lacks: "the mean of [2, 4]"
         threads:

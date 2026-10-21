@@ -1,9 +1,11 @@
 # ADR-0051: A check sits where its catch is worth its cost
 
-- **Status:** accepted; step 1 built ([ADR-0013], amended); step 3's
-  removal of the release's docs built ([ADR-0010], [ADR-0017], [ADR-0034]
-  amended); the rest not yet ([the build order](#build-order)); one point
-  open, one decided ([open](#open))
+- **Status:** accepted; steps 1 and 5 built ([ADR-0013] and
+  [ADR-0020](0020-the-reviewer-finds-the-engine-verifies-the-person-merges.md#amendment-2026-10-21-adr-0051-cut-4-no-fix-round-for-nits),
+  amended); step 3's removal of the release's docs built ([ADR-0010],
+  [ADR-0017], [ADR-0034] amended); the rest not yet
+  ([the build order](#build-order)); one point open, one decided
+  ([open](#open))
 - **Date:** 2026-10-21
 - **Decided by:** the maintainer, on 2026-10-21: the principle and five
   cuts, as a panel of three lenses (latency, reliability, cost) refined
