@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/verdict"
 )
 
 // A comment's key: lines added above keep it, a line changed gets a new
@@ -49,5 +50,24 @@ func TestSummaryReviewRegion(t *testing.T) {
 	filled := forge.FillReview(body, "**On their lines**: 1 comment")
 	if strings.Contains(filled, "why it fails") || strings.Contains(filled, "workline:review") || !strings.Contains(filled, "**On their lines**: 1 comment\n\n| ") && !strings.Contains(filled, "**On their lines**: 1 comment\n\nNo finding") {
 		t.Errorf("filled:\n%s", filled)
+	}
+}
+
+// A nit is taken apart by the very finding it became: an important one
+// of the same lens on the same line, warning, stays in the table
+// (ADR-0051, cut 4).
+func TestApartNitsKeepsAnImportantFindingAlike(t *testing.T) {
+	nit := Finding{Lens: "tests", Where: "a.go:3", Severity: "nit", Title: "named better", Why: "it reads poorly"}
+	important := Finding{Lens: "tests", Where: "a.go:3", Severity: "important", Title: "no test fails", Why: "nothing asserts it"}
+	v := Review{Change: []Finding{nit}, Findings: []verdict.Finding{
+		{Rule: "tests", Where: "a.go:3", Level: "warn", Message: message(important)},
+		{Rule: "tests", Where: "a.go:3", Level: "warn", Message: message(nit)},
+	}}
+	rest, nits := apartNits(v)
+	if len(rest.Findings) != 1 || rest.Findings[0].Message != message(important) {
+		t.Errorf("the table holds %v, want the important finding only", rest.Findings)
+	}
+	if len(nits) != 1 || nits[0].Message != message(nit) {
+		t.Errorf("the nits are %v, want the nit only", nits)
 	}
 }

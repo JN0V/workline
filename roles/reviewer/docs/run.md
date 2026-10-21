@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/instruction.md, roles/reviewer/policy.md, roles/reviewer/lenses, internal/builtin/reviewer]
-checked: 2d24380f
+checked: 9e152b9a
 verified: agent:claude-code
 ---
 # Reviewer — a run on code
@@ -141,7 +141,7 @@ on a draft (`--input draft=true`, [ADR-0050](../../../docs/adr/0050-each-act-has
    - **The change's**: a cause on a line the change added or removed, or
      on a kept line within three of a removal (a hunk taking away more
      lines than it adds, [#224](https://github.com/JN0V/workline/issues/224)).
-     Reported on that line, for its author to fix.
+     Its author's: an important one on that line, a nit in the summary.
    - **A removal's reach**
      ([#357](https://github.com/JN0V/workline/issues/357)): a kept line
      further down is the change's too when, in the same function, it uses
@@ -188,13 +188,13 @@ reviewed: on GitHub it needs a read token (`GH_TOKEN`,
 [ci/github/workline.yml](../../../ci/github/workline.yml) gives it. The
 lenses that only warn read apart, in a comment of their own ([apart](apart.md)).
 
-- **Each finding on its line**, in the forge's own review; the summary
-  comment keeps a row for each, its title, and links to the review
-  ([each finding on its line](lines.md)).
+- **Each important finding on its line**, in the forge's own review; the
+  summary comment keeps a row for each, its title, links to the review,
+  and lists the nits last, asking nothing ([what it asks](lines.md#what-it-asks)).
 - **A blocked merge request still gets the comment**
   ([#226](https://github.com/JN0V/workline/issues/226)): what blocks
-  first, marked `**blocks**`, then the warnings; the issues outside the
-  change opened as on a pass (role.yaml's `on-block`).
+  first, marked `**blocks**`, then the warnings, then the nits; the issues
+  outside the change opened as on a pass (role.yaml's `on-block`).
 - **The record moves** as on a pass when every lens answered: the next
   push reviews only the new commits. A rule that blocks writes the comment
   too, the record left as it was: no lens ran.
