@@ -106,7 +106,8 @@ tip of the branch the merge request goes into, the default branch on
 `release` — a red one is `release-base-red`, one not done
 `release-base-pending`, both blocks; none at all, `release-base-unchecked`,
 a warning. On GitHub only the runs a push started count, with other apps'
-checks and the commit statuses, workline's own left out; on GitLab, the
+checks and the commit statuses, workline's own left out, and a workflow that
+could not start counts red; on GitLab, the
 newest pipeline of the tip no schedule started. What could not be read is
 `release-holds-unread`, a block; with no forge, or one that says nothing of
 releases, a warning. The line's summary ends with `the release held: …`.
