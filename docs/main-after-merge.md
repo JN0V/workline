@@ -18,6 +18,10 @@ repository, not the change, once
 ([ADR-0050](adr/0050-each-act-has-its-moment-and-a-wait-budget.md#3-the-moment-table)).
 Nobody waits for it; nothing in it holds a merge request.
 
+- **One run, the net**: `route main`, beside the project's tests; no
+  merge request is brought up to date before it merges
+  ([#612](https://github.com/JN0V/workline/pull/612),
+  [ADR-0051](adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#build-order)).
 - **The gates**: those of the merge requests' line (`gate:` steps of
   `merge-request`), every finding read. What the push adds since the
   branch's tip before it counts against their thresholds: two merge
