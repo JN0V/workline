@@ -1618,7 +1618,7 @@ func keepMain(file, repo, forgeSpec string, summaryFiles []string, asJSON bool) 
 			return fail(err)
 		}
 		if n > 0 {
-			res.Findings = append(res.Findings, verdict.Finding{Rule: "base-red", Message: fmt.Sprintf("the default branch red since %s: said on %d open merge requests into it", since, n)})
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "base-red", Message: fmt.Sprintf("the default branch red since %s: the open merge requests into it told, once each: %d", since, n)})
 		}
 	}
 	if err := wlreport.AppendSummary(summaryFiles, wlreport.RoleSummary("apply --main", "", res)); err != nil {

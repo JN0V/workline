@@ -31,7 +31,7 @@ expect:
   status: block
   findings:
     - {rule: main-issue, message: "issue #1 kept"}
-    - {rule: base-red, message: "said on 1 open merge requests into it"}
+    - {rule: base-red, message: "the open merge requests into it told, once each: 1"}
   forge:
     issues:
       - id: 1
