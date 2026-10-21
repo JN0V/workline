@@ -3,7 +3,7 @@ sources: [ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, Dockerfile
 checked: cb130c27
 judged: c9d96e2
 verified: agent:claude-code
-judged-in-parts: 220b6dc
+judged-in-parts: e8a46f7
 ---
 # workline on a self-managed GitLab
 
