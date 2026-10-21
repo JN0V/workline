@@ -110,6 +110,12 @@ func ReadKept(f Forge, t Target) (Kept, error) {
 	return Kept{notes: notes, own: own}, nil
 }
 
+// edited says whether one who is not workline's own account edited n
+// last: a record read from it could hold what they wrote.
+func (k Kept) edited(n Note) bool {
+	return n.Editor != "" && !k.own.Wrote(Note{Author: n.Editor})
+}
+
 // Last is the last comment carrying marker that workline's own account
 // wrote, the one KeepOwn edits, when no one else edited it last: one
 // another did is never read (ADR-0051, cut 5), nor an older one in its
@@ -117,7 +123,7 @@ func ReadKept(f Forge, t Target) (Kept, error) {
 func (k Kept) Last(marker string) (string, bool) {
 	for i := len(k.notes) - 1; i >= 0; i-- {
 		if n := k.notes[i]; strings.Contains(n.Body, marker) && k.own.Wrote(n) {
-			return n.Body, n.Editor == ""
+			return n.Body, !k.edited(n)
 		}
 	}
 	return "", false
@@ -133,12 +139,12 @@ func (k Kept) Unread(marker string) error {
 	}
 	var who []string
 	for _, n := range k.notes {
-		if !strings.Contains(n.Body, marker) || k.own.Wrote(n) && n.Editor == "" {
+		if !strings.Contains(n.Body, marker) || k.own.Wrote(n) && !k.edited(n) {
 			continue
 		}
 		w := "a comment whose author the forge does not say"
 		switch {
-		case n.Editor != "" && k.own.Wrote(n):
+		case k.edited(n) && k.own.Wrote(n):
 			w = "workline's comment, last edited by @" + n.Editor + ","
 		case n.Author != "":
 			w = "@" + n.Author + "'s comment"

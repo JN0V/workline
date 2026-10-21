@@ -261,6 +261,12 @@ func TestKeptLastAndUnread(t *testing.T) {
 	if err := k.Unread(marker); err == nil || err.Error() != want {
 		t.Fatalf("said %v, want %q", err, want)
 	}
+	// Edited by one of workline's own logins — the person's on their
+	// machine, whose token it writes with —: read.
+	k.own.logins = append(k.own.logins, "mallory")
+	if body, ok := k.Last(marker); !ok || body != "edited "+marker {
+		t.Fatalf("an edit by its own account not read: %q %v", body, ok)
+	}
 	// The local forge's every comment is the person's own; a command's,
 	// those it says are.
 	if o, _ := (&Local{}).own(); !o.Wrote(Note{Body: "x"}) {
