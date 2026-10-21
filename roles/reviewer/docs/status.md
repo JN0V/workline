@@ -1,4 +1,4 @@
-# Reviewer — where it stands (2026-10-20)
+# Reviewer — where it stands (2026-10-21)
 
 **In one line:** reviews code on a machine (`workline review`) and on a
 merge request (opt-in): rules first, lenses as parts, quotes found again,
@@ -173,8 +173,10 @@ its measure in
   ([ADR-0046](../../../docs/adr/0046-the-auditor-re-checks-every-roles-acts.md)):
   `judged-line-for-each-finding-judged`, `judged-lines-*`.
 - **`workline review`**, findings as JSON: `local-review-outputs-json`.
-- **Each finding on its line**, in the forge's own review:
-  `line-comment-*`.
+- **Each important finding on its line**, in the forge's own review:
+  `line-comment-*`. A nit on no line, listed last, asking nothing
+  ([ADR-0051, cut 4](../../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-4-no-fix-round-for-nits)):
+  `nit-in-the-summary-asks-nothing`.
 - **Intent, claims, a decision for a person, the diff alone, the finder
   floor**: `intent-*`, `claim-contradicted-is-a-finding-on-the-line`,
   `merge-request-body-given-as-testimony`, `decision-*`, `diff-alone-*`,

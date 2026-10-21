@@ -1,0 +1,30 @@
+case: reviewer/nit-in-the-summary-asks-nothing
+about: "On a merge request, a nit is no comment on its line: it is shown in the summary comment, in a section of its own below the findings, which asks no reply and no fix. The important finding stays on its line and still blocks; the summary asks nothing of what warns (ADR-0051, cut 4)."
+given:
+  repo: reviewed
+  setup:
+    - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"
+    - "printf '\\nfunc Double(n int) int { return 2 * n }\\n' >> calc/calc.go && git commit -qam 'feat: double a count'"
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  config: {roles: {reviewer: {settings: {ai-findings: {correctness: block}}}}}
+  forge:
+    issues: []
+    merge-requests: [{id: 5, labels: [], comments: []}]
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD, lenses: correctness}, target: {merge-request: 5}, ai: "fake:review-important-and-nit"}
+expect:
+  status: block
+  applied: [comment]
+  findings:
+    - {rule: correctness, where: "calc/calc.go:11", message: "Important: Average divides by one less than the count"}
+    - {rule: correctness, where: "calc/calc.go:20", message: "Nit: Double on one line"}
+  forge:
+    merge-requests:
+      - id: 5
+        comments: 1
+        comment-contains:
+          - "**On their lines**: 1 comment, in [the review](https://forge.example/merge-requests/5#review-1) (1 posted now). What blocks stands until a commit fixes it; what warns asks nothing."
+          - "| **blocks** | correctness | `calc/calc.go:11` | Important: Average divides by one less than the count |"
+          - "**Nits**, for information: no reply, no fix asked.\n\n- `calc/calc.go:20` (correctness): Double on one line — the other functions are written over several lines Fix: write it over three lines"
+        comment-lacks: ["reply to each", "| warns | correctness | `calc/calc.go:20`"]
+        threads:
+          - {path: calc/calc.go, line: 11, contains: ["**workline reviewer** · **blocks** · correctness", "**Important: Average divides by one less than the count**"]}
