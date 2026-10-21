@@ -58,8 +58,8 @@ func OwnAccount(f any) (Own, error) {
 // run as Sticky does, but only one workline's own account wrote: the one
 // a role reads its record back from (ReadKept). Another's carrying the
 // marker is left, and workline's own posted after it, even with create
-// false. A forge that keeps its comments itself, a command's, keeps it
-// as its Sticky does.
+// false. A command is asked so (`own`); the local forge's comments are
+// all the person's.
 func KeepOwn(f Forge, t Target, body, marker string, create bool) error {
 	if o, ok := f.(interface {
 		stickyOwn(t Target, body, marker string, create bool) error
