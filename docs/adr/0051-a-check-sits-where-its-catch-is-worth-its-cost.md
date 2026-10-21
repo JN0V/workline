@@ -4,8 +4,8 @@
   [ADR-0042] and
   [ADR-0020](0020-the-reviewer-finds-the-engine-verifies-the-person-merges.md#amendment-2026-10-21-adr-0051-cut-4-no-fix-round-for-nits),
   amended); step 3's removal of the release's docs built ([ADR-0010],
-  [ADR-0017], [ADR-0034] amended); step 4 built ([ADR-0010] amended);
-  the rest not yet
+  [ADR-0017], [ADR-0034] amended); steps 4 and 6 built ([ADR-0010]
+  amended); the rest not yet
   ([the build order](#build-order)); one point open, one decided
   ([open](#open))
 - **Date:** 2026-10-21
@@ -180,7 +180,8 @@ By upkeep removed per unit of work:
    Built: the flag removed; on a merge request the patches go in one
    comment; [ADR-0010] amended.
 5. **No rounds for nits** (cut 4): up to 93 rounds.
-6. **The documentalist's AI at ready**, a comment with the diff.
+6. **The documentalist's AI at ready**, a comment with the diff. Built:
+   `merge-request-ai: ready`, the templates' `--input ready`.
 7. **The weekly docs PR**, before the workday.
 8. **Fold main's two runs**: `test.yml`'s findings into `route main`.
    Built: the findings job gone, 3.8 min a merge; lychee at night, in
