@@ -8,7 +8,7 @@ about: >
   stays in the record, and is not asked again if the finding comes back.
 given:
   repo: linted
-  env: {CI_PIPELINE_ID: "101"}
+  env: {CI_PIPELINE_ID: "101", GITHUB_RUN_ID: ""}
   setup:
     - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
     - git checkout -q -b change

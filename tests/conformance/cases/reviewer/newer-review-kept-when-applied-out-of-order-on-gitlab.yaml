@@ -4,7 +4,7 @@ given:
   repo: reviewed
   setup:
     - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"
-  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml", CI_PIPELINE_ID: "101"}
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml", CI_PIPELINE_ID: "101", GITHUB_RUN_ID: ""}
   forge: {issues: [], merge-requests: [{id: 5, labels: [], comments: []}]}
 run:
   role: reviewer

@@ -90,6 +90,12 @@ func (a *applier) mergedRecord(t forge.Target, key, body, read string) (string, 
 				Message: "the comment holds a later run's text, applied before this one: kept, this run's record merged into it"})
 			return merged, nil
 		}
+		// A record that does not read: the later run's comment is left
+		// as it is, never the older text written over it; this run's
+		// commits are read again at the next push.
+		a.findings = append(a.findings, verdict.Finding{Rule: "applied-after-a-newer-run", Level: "warn",
+			Message: "the comment holds a later run's text, applied before this one: kept as it is, this run's record not merged (a record does not read); what it read is read again"})
+		return strings.TrimSpace(strings.Replace(found, marker, "", 1)), nil
 	}
 	switch {
 	case !ok:
