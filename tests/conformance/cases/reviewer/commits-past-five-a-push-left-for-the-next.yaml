@@ -1,5 +1,5 @@
 case: reviewer/commits-past-five-a-push-left-for-the-next
-about: "After the run on ready, the lenses that warn read at most five new commits a push (ADR-0050, step 6; `commits-per-push`). A push brings seven, each adding a file: the run apart reads the oldest five, records them, and says the two left and how they are read: first at the next push, or when the run runs again."
+about: "After the run on ready, the lenses that warn read at most five new commits a push (ADR-0050, step 6; `commits-per-push`). A push brings seven, each adding a file: the run apart reads the oldest five, records them with the lens that left the rest (`left-by=`, #591), and says the two left and how they are read: first at the next push, or when the run runs again."
 given:
   repo: reviewed
   setup:
@@ -29,4 +29,4 @@ expect:
     merge-requests:
       - id: 5
         comments: 2
-        comment-contains: ["5 of the 7 new commits read, 2 left for the next push", " runs=2 read=all -->"]
+        comment-contains: ["5 of the 7 new commits read, 2 left for the next push", " runs=2 read=all left-by=edge-cases -->"]

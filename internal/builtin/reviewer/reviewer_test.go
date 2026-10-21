@@ -248,6 +248,25 @@ func TestRecord(t *testing.T) {
 	if got := failed.owing([]string{"edge-cases", "tests"}, []string{"tests"}); !slices.Equal(got, []string{"diff-alone", "tests"}) {
 		t.Errorf("owing = %v, want diff-alone, tests", got)
 	}
+	// The lenses that left commits past commits-per-push (#591) read back,
+	// after failed=; a run recording commits names none.
+	left := Record{Runs: 2, ReadAll: true, Failed: []string{"tests"}, LeftBy: []string{"claims", "diff-alone"}}
+	if back := read(left.String()); !slices.Equal(back.LeftBy, left.LeftBy) || !slices.Equal(back.Failed, left.Failed) || !back.ReadAll {
+		t.Errorf("a record naming the lenses that left commits read back: %+v from %s", back, left)
+	}
+	if back := read(left.add([]string{"aa"}, nil).String()); back.LeftBy != nil {
+		t.Errorf("a run added still names lenses that left commits: %+v", back)
+	}
+	// Who reads them on the other run's turn: those of the run's side,
+	// with something to read; the diff-alone facet apart.
+	s := Settings{Lenses: []string{"correctness", "edge-cases", "intent", "claims"}, AIFindings: Gate{ByLens: map[string]string{"correctness": "block"}}}
+	by := Record{LeftBy: []string{"correctness", "intent", "claims", "diff-alone"}}
+	if got, facet := by.leftTo(s, warnOnly, map[string]string{"intent": "no issue"}); !slices.Equal(got, []string{"claims"}) || !facet {
+		t.Errorf("leftTo on the run apart = %v, %v; want claims, the facet", got, facet)
+	}
+	if got, facet := by.leftTo(s, warnApart, nil); !slices.Equal(got, []string{"correctness"}) || facet {
+		t.Errorf("leftTo on the verdict's run = %v, %v; want correctness alone", got, facet)
+	}
 	// The findings that block (#326) read back whole, whatever they hold:
 	// nothing in them ends the comment hiding them, a run added keeps them.
 	blocked := Record{Reviewed: []string{"aa"}, Runs: 1, Blocks: []Block{{Lens: "correctness", At: "aa", Where: "a.go:3",
