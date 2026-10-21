@@ -1,6 +1,6 @@
 ---
 sources: [internal/doctor/doctor.go, internal/doctor/conversations.go, internal/doctor/variables.go, internal/hooks/hooks.go, cmd/workline/main.go, cmd/workline/cli.go, internal/forge/local.go]
-checked: 35eb7554
+checked: a840c0a3
 verified: agent:claude-code
 ---
 # Troubleshooting
@@ -64,7 +64,7 @@ tokens — and `--json` prints every finding.
 
 ## Docs suspect, gardening paused
 
-`docs suspect: N` at the push, a release held by docs, `record-unread`,
+`docs suspect: N` at the push, `record-unread`,
 `shallow-clone`, `gardening-paused`, `merge-request-unread`: what each
 means and what to do, in [the docs' troubleshooting](troubleshooting-docs.md).
 

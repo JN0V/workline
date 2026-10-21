@@ -10,7 +10,7 @@ given:
 run: {follow: [--base, main]}
 expect:
   status: pass
-  summary: "0 release merge requests open, 0 rebuilt on main"
+  summary: "the roles' merge requests left to gardening"
   no-findings:
     - {rule: merged, where: feat/sessions}
     - {rule: not-merged, where: feat/sessions}

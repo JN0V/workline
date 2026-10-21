@@ -1,5 +1,5 @@
 case: release/dry-run-with-nothing-to-hold-posts-nothing
-about: "A release's dry run with nothing to hold the release lists nothing, and posts nothing: no issue is opened for it (ADR-0050). Its doc unchanged since the last tag, the documentalist holds nothing."
+about: "A release's dry run with nothing to hold the release lists nothing, and posts nothing: no issue is opened for it (ADR-0050)."
 given:
   repo: documented
   setup:

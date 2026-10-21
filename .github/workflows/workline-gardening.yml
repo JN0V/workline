@@ -2,11 +2,9 @@
 # with the engine built from this checkout rather than installed — both jobs
 # check out the same commit, built once (.github/actions/engine), judge's
 # kept for apply. Claude with CLAUDE_CODE_OAUTH_TOKEN, pull
-# requests opened with the GitHub App (ADR-0006, ADR-0010). The release
-# pull request's docs due are judged here, on its head, once a night
-# (ADR-0050); run it by hand for the release sooner. And the release's dry
-# run: what would hold it if it were cut now, said on that pull request,
-# else in the default branch's issue.
+# requests opened with the GitHub App (ADR-0006, ADR-0010). And the
+# release's dry run: what would hold it if it were cut now, said in the
+# default branch's issue.
 name: workline gardening
 on:
   # Nightly while its docs are caught up, then Mondays ("17 2 * * 1"). Off
@@ -89,7 +87,7 @@ jobs:
       - env:
           GH_TOKEN: ${{ steps.app.outputs.token || github.token }}
           APP: ${{ steps.app.outputs.app-slug }}
-          WORKLINE_APP: ${{ steps.app.outputs.app-slug }}   # the release's fix is its pull request only if it alone pushed to the release's branch
+          WORKLINE_APP: ${{ steps.app.outputs.app-slug }}   # workline's own account: the records it trusts
           PROPOSED: ${{ needs.judge.outputs.proposed }}
         run: |
           if [ -n "$APP" ]; then
@@ -107,17 +105,15 @@ jobs:
           [ ! -s workline-summary.md ] || cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"
           exit "$status"
 
-  # A release's dry run, every night this runs (ADR-0050; the first release
-  # after v0.37.0): what would hold the release if it were cut now — on
-  # the release tool's pull request open into this branch, its head; else
-  # this branch's tip. The release's line, every step, no agent, nothing
-  # applied: said as warnings, never a block. Install the tools of the
-  # gates your `release` line runs here. dry-run-post says what it found in
-  # one comment on that pull request, else in the default branch's issue
+  # A release's dry run, every night this runs (ADR-0050): what would hold
+  # the release if it were cut now from this branch's tip. The release's
+  # line, every step, no agent, nothing applied: said as warnings, never a
+  # block. Install the tools of the gates your `release` line runs here.
+  # dry-run-post says what it found in the default branch's issue
   # (docs/release.md).
   dry-run:
     runs-on: ubuntu-latest
-    permissions: {contents: read, pull-requests: read}   # the release's pull request, found
+    permissions: {contents: read}
     steps:
       - uses: actions/checkout@v4
         with: {fetch-depth: 0}
@@ -138,7 +134,7 @@ jobs:
     environment: workline-app       # the App's key: the default branch only (ADR-0044)
     # One writer of the default branch's issue at a time, with main's.
     concurrency: {group: "workline-main-issue", cancel-in-progress: false}
-    permissions: {contents: read, pull-requests: write, issues: write}
+    permissions: {contents: read, issues: write}
     steps:
       - id: app
         if: vars.WORKLINE_APP_ID != ''

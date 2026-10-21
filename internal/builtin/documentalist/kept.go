@@ -40,19 +40,6 @@ type keptRecord struct {
 type keptInput struct {
 	Keep    bool         `yaml:"keep"`
 	Records []keptRecord `yaml:"records,omitempty"`
-	// Newer: Records are those an earlier round of this run proposed, its
-	// comment not written yet (#572); OnForge, those the forge's keeps,
-	// which the comment proposed is told from.
-	Newer   bool         `yaml:"newer,omitempty"`
-	OnForge []keptRecord `yaml:"on-forge,omitempty"`
-}
-
-// written are the records the forge's comment keeps now.
-func (in keptInput) written() []keptRecord {
-	if in.Newer {
-		return in.OnForge
-	}
-	return in.Records
 }
 
 // keptKey keys the documentalist's comment that keeps the records.
@@ -71,8 +58,7 @@ var (
 const recordsTask = "records"
 
 // onPersonsMergeRequest says whether the run judges a merge request a
-// forge names on the merge-request event: a person's, since a release
-// tool's runs as the release (ADR-0017).
+// forge names on the merge-request event, rather than a role's own.
 func onPersonsMergeRequest() bool {
 	_, ok := targetMergeRequest()
 	return ok && os.Getenv("WORKLINE_EVENT") == "merge-request"

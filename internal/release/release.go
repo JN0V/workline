@@ -9,7 +9,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"slices"
 	"strconv"
 	"strings"
 
@@ -59,8 +58,7 @@ func (s Settings) IsBranch(branch string) bool {
 }
 
 // ErrShallow is a clone missing history: the last release may be in what
-// was not fetched, and starting from no tag would take every doc ever
-// suspect for the release's.
+// was not fetched.
 var ErrShallow = errors.New("this clone is shallow: the last release may be in the history it lacks; fetch it whole (actions/checkout's `fetch-depth: 0`, GitLab's `GIT_DEPTH: 0`)")
 
 // Last is the last release HEAD holds: the highest version among the tags
@@ -68,20 +66,7 @@ var ErrShallow = errors.New("this clone is shallow: the last release may be in t
 // hotfix merged back would be. A prerelease (v1.2.0-rc.1) and an alias (v1,
 // latest) are not releases. "" when there is none.
 func Last(repo, pattern string) (string, error) {
-	return highest(repo, pattern, nil)
-}
-
-// Before is the release a run at the release compares with: the last
-// release HEAD holds, the release HEAD's own tag names left out. A tag
-// pipeline runs on the release it cuts (GitLab's `workline:release`,
-// ADR-0050): its tag is that release, never the one before it. With no
-// tag on HEAD, Last.
-func Before(repo, pattern string) (string, error) {
-	at, err := AtHead(repo, pattern)
-	if err != nil {
-		return "", err
-	}
-	return highest(repo, pattern, at)
+	return highest(repo, pattern)
 }
 
 // AtHead lists the releases HEAD's own tags name: those matching the
@@ -102,8 +87,8 @@ func AtHead(repo, pattern string) ([]string, error) {
 }
 
 // highest is the highest version among the tags matching the pattern and
-// merged into HEAD, those left out aside; "" when there is none.
-func highest(repo, pattern string, left []string) (string, error) {
+// merged into HEAD; "" when there is none.
+func highest(repo, pattern string) (string, error) {
 	out, err := exec.Command("git", "-C", repo, "rev-parse", "--is-shallow-repository").Output()
 	if err != nil {
 		return "", fmt.Errorf("git rev-parse: %w", err)
@@ -118,9 +103,6 @@ func highest(repo, pattern string, left []string) (string, error) {
 	prefix, _, _ := strings.Cut(pattern, "*")
 	best, bestV := "", []int(nil)
 	for _, tag := range strings.Fields(string(out)) {
-		if slices.Contains(left, tag) {
-			continue
-		}
 		v := version(strings.TrimPrefix(tag, prefix))
 		if v != nil && (bestV == nil || later(v, bestV)) {
 			best, bestV = tag, v

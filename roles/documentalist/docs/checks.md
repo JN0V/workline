@@ -1,13 +1,13 @@
 ---
 sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/identifiers.go, internal/builtin/documentalist/derive.go, internal/builtin/documentalist/freshness.go, internal/builtin/documentalist/counts.go, roles/documentalist/role.yaml]
-checked: affb7424
+checked: ae744e99
 judged: f70db89
 verified: agent:claude-code
 ---
 # Documentalist — the checks
 
 What `pre` finds with no AI, and how much each finding weighs. How
-cascades are cut and the release held: [cascades](cascades.md). Part of
+cascades are cut: [cascades](cascades.md). Part of
 [the documentalist](../README.md). Gardening is the scheduled run, nightly
 or weekly (`schedule`).
 
@@ -148,7 +148,7 @@ Findings are reported rather than blocking while they are new (warn before
 block, the [role contract](../../../docs/spec/role-contract.md)); a project
 turns one off with `enforce`.
 
-- **Reported; the run passes**: `suspect`, `pending`, `unchecked`,
+- **Reported; the run passes**: `suspect`, `pending`, `due`, `unchecked`,
   budgets, `duplicate`, `dead-link`, `external-link-broken`,
   `identifier-gone`, `count-off`, `value-left` (after a fix, the judge),
   `cites-superseded`, `stale`, `links-not-checked`, `nothing-tracked`,
@@ -157,23 +157,18 @@ turns one off with `enforce`.
   `too-large-to-condense`, `too-large-to-split`, `too-large-to-read`,
   `reader-claim-dropped` and `reader-patch-withheld` (gardening); for a
   doc judged in parts, `sources-too-wide`, `uncovered`, `claims-dropped`;
-  on a draft, `ai-waits-for-ready`; on a release tool's pull request,
-  `ai-waits-for-night`, the docs due holding it all the same, counted
-  once a doc, and listed in a comment there, which a blocked run still
-  posts (`on-block: [comment]`).
+  on a draft, `ai-waits-for-ready`.
 - **Reported, and the block regenerated**: `derived-stale` (gardening,
   `init`).
 - **Reported, left as it is**: `derive-unclosed`, a derive marker with no end before the next block's ([#302](https://github.com/JN0V/workline/issues/302)).
 - **Reported; the block left for gardening**: `derived-behind` (push,
-  merge request, release).
+  merge request).
 - **Blocks**:
-  - `due`: on `release`, a doc due then and not brought up to date;
   - `unknown`: a source that could not be read;
   - `setting-missing`: a budget or threshold not set, so a check did not
     run;
   - `derive-unknown` and `derive-failed`: a derived block that could not
     be regenerated;
-  - on `release`, a `suspect` doc ([cascades](cascades.md#at-the-release));
   - `shallow-clone`, unless only docs the commits in range did not touch
     lack their `checked` (then reported).
 - **`blocked-external`**: a source repository that cannot be reached.

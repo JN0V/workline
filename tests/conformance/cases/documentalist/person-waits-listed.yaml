@@ -11,7 +11,7 @@ expect:
   status: pass
   forge:
     issues:
-      - {id: 1, title: "Docs due at the next release"}
+      - {id: 1, title: "Docs due later"}
       - {id: 2, title: "Docs waiting for a person", body-contains: "- [ ] `docs/tech/auth.md` — "}
       - {id: 2, body-contains: "then set `checked: "}
       - {id: 3, absent: true}
