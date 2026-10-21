@@ -14,7 +14,8 @@ workline cuts no releases: a release tool does
 ([ADR-0017](adr/0017-the-release-manager.md)). It says, before the
 release, what would hold it, and checks it where the release is cut
 ([ADR-0050](adr/0050-each-act-has-its-moment-and-a-wait-budget.md#3-the-moment-table)).
-Nobody waits for either.
+Nobody waits for either. What holds the release tool's merge request,
+and when to merge it: [what holds a release](release-holds.md).
 
 ## Each night, a dry run
 
@@ -67,6 +68,7 @@ person, or a release tool.
 
 - **The release's line**, no agent, no token: the docs made suspect
   since the release before this one, the gates your `release` line runs.
+  No forge, so no [hold](release-holds.md) is read there: said.
 - **Red when held**: have the jobs that publish need it, so a held
   release is never published:
 
