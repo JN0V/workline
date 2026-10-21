@@ -1,4 +1,2 @@
 # Cases the engine does not pass yet. The suite runs them anyway and fails
 # if one starts passing while still listed here.
-inspector/record-merged-when-two-runs-triaged-before-either-applied
-inspector/triage-applied-when-a-push-lands-before-it

@@ -352,11 +352,9 @@ func loadRecord(repo string, s Settings) (Record, string, bool, error) {
 		if err != nil && !errors.Is(err, forge.ErrAuthorsUnknown) {
 			return Record{}, where, false, err
 		}
-		for i := len(notes) - 1; i >= 0; i-- { // the last, the one the engine edits
-			if n := notes[i]; strings.Contains(n.Body, marker) && (n.Bot || n.Insider) {
-				r, err := readRecord(n.Body)
-				return r, where, false, err
-			}
+		if text, ok := recordComment(notes); ok {
+			r, err := readRecord(text)
+			return r, where, false, err
 		}
 		return Record{}, where, false, nil
 	}
@@ -371,6 +369,60 @@ func loadRecord(repo string, s Settings) (Record, string, bool, error) {
 	}
 	r, err := readRecord(string(data))
 	return r, where, true, err
+}
+
+// recordComment is the comment of a merge request's the record is read
+// from: the last carrying the marker, the one the engine edits, a bot's
+// or a person's of the project.
+func recordComment(notes []forge.Note) (string, bool) {
+	for i := len(notes) - 1; i >= 0; i-- {
+		if n := notes[i]; strings.Contains(n.Body, marker) && (n.Bot || n.Insider) {
+			return n.Body, true
+		}
+	}
+	return "", false
+}
+
+// MergeComment is body, the comment a run writes, its record merged with
+// the one the comment holds now, among notes, when a run applied since
+// this one read read (#580): what that run triaged is kept, this run's
+// triage of a finding both triaged, the others' gone first past the
+// comment's size. No comment, or a record that does not read, leaves
+// body as it is.
+func MergeComment(body, read string, notes []forge.Note) string {
+	found, ok := recordComment(notes)
+	if !ok {
+		return body
+	}
+	ours, err1 := readRecord(body)
+	now, err2 := readRecord(found)
+	was, err3 := readRecord(read)
+	if err1 != nil || err2 != nil || err3 != nil {
+		return body
+	}
+	var since []Triaged // triaged by a run applied since this one read
+	for _, t := range now.Triaged {
+		if w, ok := was.find(t.Fingerprint); ok && w == t {
+			continue
+		}
+		if _, ok := ours.find(t.Fingerprint); !ok {
+			since = append(since, t)
+		}
+	}
+	if len(since) == 0 {
+		return body
+	}
+	head := body
+	if at := strings.Index(body, recordOpening); at >= 0 {
+		head = strings.TrimSuffix(body[:at], "\n")
+	}
+	keep := map[string]bool{}
+	for _, t := range ours.Triaged {
+		keep[t.Fingerprint] = true
+	}
+	merged := Record{Triaged: append(since, ours.Triaged...)}
+	record, _ := merged.lines(keep, commentMax-len(head)-10)
+	return head + record
 }
 
 // localRecord is the record's file on this machine, in the git directory.

@@ -40,6 +40,10 @@ duties:
 # verdict: the gates' verdict is the line's.
 part-intentions: [triage]
 intentions: [comment, note]
+# A push landing before the triage is posted: the triage of the head it
+# judged is still posted, its record merged with the one the comment
+# holds by then, so the push's run asks only what is new (#580).
+on-moved-on: [comment]
 
 # Without AI, nothing is triaged: the findings stand as the gates report
 # them, said; the verdict is the same.
