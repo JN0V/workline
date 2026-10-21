@@ -41,7 +41,8 @@ forge.
 GitLab sets `CI_PIPELINE_SOURCE`: `trigger` (a trigger token), `api` (the
 pipelines API), `pipeline` (another project's `trigger:` job),
 `parent_pipeline` (a child pipeline) — never `schedule` nor
-`merge_request_event`, so none of the template's jobs run. The tool passes
+`merge_request_event`, so none of the template's jobs run but in its own
+child of a merge request's pipeline, what only warns. The tool passes
 what to do as variables. The names below are this page's; the engine reads
 none of them:
 
