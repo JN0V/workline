@@ -171,6 +171,61 @@ func TestGitLabOwn(t *testing.T) {
 	}
 }
 
+// KeepOwn on GitLab edits the last note carrying the marker the bot
+// wrote, never another's, a Maintainer's that GitLab would let the token
+// edit too; with only another's, the bot's own is posted after it.
+func TestGitLabKeepOwn(t *testing.T) {
+	var got []string
+	notes := []map[string]any{}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		p := strings.TrimPrefix(r.URL.EscapedPath(), "/api/v4/projects/1")
+		switch {
+		case p == "/api/v4/user":
+			_ = json.NewEncoder(w).Encode(map[string]any{"username": "project_1_bot_0a1b"})
+		case r.Method == "GET" && p == "/merge_requests/5/notes":
+			_ = json.NewEncoder(w).Encode(notes)
+		case r.Method == "PUT" || r.Method == "POST":
+			got = append(got, r.Method+" "+p)
+			_, _ = w.Write([]byte(`{"id": 9}`))
+		default:
+			http.Error(w, `{"message":"404 Not Found"}`, http.StatusNotFound)
+		}
+	}))
+	defer srv.Close()
+	t.Setenv("CI_API_V4_URL", srv.URL+"/api/v4")
+	t.Setenv("CI_PROJECT_ID", "1")
+	t.Setenv("GITLAB_TOKEN", "bot-token")
+	t.Setenv("WORKLINE_GITLAB_TOKEN", "")
+	marker := "<!-- workline:k -->"
+	author := func(u string) map[string]any { return map[string]any{"username": u} }
+	mr := Target{Kind: "merge-request", ID: 5}
+
+	notes = []map[string]any{
+		{"id": 1, "body": "old " + marker, "author": author("project_1_bot_0a1b")},
+		{"id": 2, "body": "another's " + marker, "author": author("dana")},
+	}
+	if err := KeepOwn(&gitlab{repo: t.TempDir()}, mr, "new", marker, false); err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 1 || got[0] != "PUT /merge_requests/5/notes/1" {
+		t.Fatalf("not the bot's own edited: %q", got)
+	}
+	got, notes = nil, notes[1:]
+	if err := KeepOwn(&gitlab{repo: t.TempDir()}, mr, "new", marker, false); err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 1 || got[0] != "POST /merge_requests/5/notes" {
+		t.Fatalf("only another's: edited, or none posted: %q", got)
+	}
+	got = nil
+	if err := (&gitlab{repo: t.TempDir()}).Sticky(mr, "new", marker, false); err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 1 || got[0] != "PUT /merge_requests/5/notes/2" {
+		t.Fatalf("Sticky, by the marker alone, did not edit the last: %q", got)
+	}
+}
+
 // A record is read from the last comment carrying its marker that
 // workline's own account wrote; when only others' carry it, none is, and
 // whose they are is said; when none does, nothing is.
