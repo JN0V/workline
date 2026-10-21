@@ -1234,6 +1234,23 @@ func (g *gitlab) MergeRequest(id int) (MergeRequest, error) {
 	return MergeRequest{ID: id, Branch: mr.Source, Base: mr.Target, Here: mr.SourceProject == mr.TargetProject, Title: mr.Title, Body: mr.Description}, nil
 }
 
+// Squash reads the project's squash option: every one but "never" lets a
+// merge request be squashed, its title the subject (GitLab's default
+// template), nothing added after it.
+func (g *gitlab) Squash(int) (Squash, error) {
+	out, err := g.api("projects/:id")
+	if err != nil {
+		return Squash{}, err
+	}
+	var p struct {
+		Option string `json:"squash_option"`
+	}
+	if err := decode(out, &p); err != nil {
+		return Squash{}, err
+	}
+	return Squash{On: p.Option != "never"}, nil
+}
+
 // ListMergeRequests reads each open merge request: one from another
 // project is not here; a bot's is told by the users API (`bot`: a project
 // or group access token's user, a service account), asked once an author

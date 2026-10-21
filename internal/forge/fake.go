@@ -67,6 +67,9 @@ type FakeState struct {
 	// them; TipsUnread, why the forge does not answer them.
 	Tips       map[string][]CheckRun `json:"tips,omitempty"`
 	TipsUnread string                `json:"tips-unread,omitempty"`
+	// Squash is how its merge requests land when squashed, the same for
+	// each but Suffix, where "{n}" is the merge request's number (Squasher).
+	Squash *Squash `json:"squash,omitempty"`
 }
 
 // FakeCheck is a check written on a commit.
@@ -591,6 +594,18 @@ func (f *Fake) MergeRequest(id int) (MergeRequest, error) {
 		return MergeRequest{}, err
 	}
 	return MergeRequest{ID: id, Branch: it.Branch, Base: it.Base, Here: !it.Fork, Title: it.Title, Body: it.Body}, nil
+}
+
+// Squash is the state's, a merge request's number in its suffix; none set,
+// the forge never squashes.
+func (f *Fake) Squash(id int) (Squash, error) {
+	s, err := f.load()
+	if err != nil || s.Squash == nil {
+		return Squash{}, err
+	}
+	sq := *s.Squash
+	sq.Suffix = strings.ReplaceAll(sq.Suffix, "{n}", strconv.Itoa(id))
+	return sq, nil
 }
 
 // ListMergeRequests lists the open merge requests, each head kept under

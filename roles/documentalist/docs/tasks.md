@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/parts.go, internal/builtin/documentalist/counts.go]
-checked: ae744e99
+checked: 8e3fad75
 verified: agent:claude-code
 ---
 # Documentalist — the agent's tasks

@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/freshness.go, internal/builtin/documentalist/dedupe.go, internal/builtin/documentalist/mergecard.go, internal/builtin/documentalist/waiting.go, internal/builtin/documentalist/condense.go, internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/kept.go]
-checked: ae744e99
+checked: 8e3fad75
 verified: agent:claude-code
 ---
 # Documentalist — the gardening tasks
@@ -139,7 +139,9 @@ Run with `--open-merge-request` (the CI templates' scheduled jobs):
 
 - a gardening task's patch goes on a branch of its own,
   `workline/documentalist/<task>`, with a merge request titled after the
-  task; running the task again updates it
+  task, short enough for a squash's ` (#N)`
+  ([the squash title](../../committer/docs/squash-title.md)); running the
+  task again updates it
   ([ADR-0006](../../../docs/adr/0006-gardening-opens-one-merge-request-per-task.md));
 - while `max-open-merge-requests` of them wait for review, gardening
   proposes nothing (`gardening-paused`), and what it finds is still

@@ -711,6 +711,30 @@ func (g *github) MergeRequest(id int) (MergeRequest, error) {
 	return MergeRequest{ID: id, Branch: pr.Head.Ref, Base: pr.Base.Ref, Here: pr.Head.Repo.Name == pr.Base.Repo.Name, Title: pr.Title, Body: pr.Body}, nil
 }
 
+// Squash reads whether the repository allows squash merging, and which
+// subject GitHub gives the squash: the title, or a lone commit's subject.
+// GitHub adds " (#N)" after it.
+func (g *github) Squash(id int) (Squash, error) {
+	out, err := g.api("graphql", "-f", "query=query($owner: String!, $name: String!) { repository(owner: $owner, name: $name) { squashMergeAllowed squashMergeCommitTitle } }",
+		"-F", "owner={owner}", "-F", "name={repo}")
+	if err != nil {
+		return Squash{}, err
+	}
+	var v struct {
+		Data struct {
+			Repository struct {
+				Allowed bool   `json:"squashMergeAllowed"`
+				Title   string `json:"squashMergeCommitTitle"`
+			} `json:"repository"`
+		} `json:"data"`
+	}
+	if err := decode(out, &v); err != nil {
+		return Squash{}, err
+	}
+	r := v.Data.Repository
+	return Squash{On: r.Allowed, LoneCommit: r.Title == "COMMIT_OR_PR_TITLE", Suffix: fmt.Sprintf(" (#%d)", id)}, nil
+}
+
 // ListMergeRequests reads each open pull request: one from a fork, or
 // whose fork is gone, is not here; an app's (a user of type Bot) is a
 // bot's. GitHub keeps every head under refs/pull/<n>/head.
