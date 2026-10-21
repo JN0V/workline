@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, internal/builtin/reviewer/reviewer.go, internal/builtin/reviewer/record.go, internal/line/line.go, ci/github/workline.yml, ci/github/workline-warn.yml, ci/github/workline-apply.yml, ci/gitlab/workline.gitlab-ci.yml]
-checked: d108841c
+checked: 40d52c09
 judged: a5cd2cf
 verified: agent:claude-code
 ---
@@ -77,7 +77,8 @@ beside the verdict's, and posts once it answered.
   and the lenses that block with their judges.
 - **It never waits** for a lens that only warns, nor its judges.
 - **A warn finding arriving after the verdict** is shown, in its comment
-  and on its line; it never changes a verdict given.
+  and, important, on its line; it asks nothing and never changes a
+  verdict given.
 - **A lens that fails** — an answer that never reads, the tokens spent —
   says so in that comment (`lens-failed`). Its record holds none of the
   commits and names the lens (`failed=`): the next push, or the run run

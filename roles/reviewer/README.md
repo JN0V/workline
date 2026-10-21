@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/instruction.md, roles/reviewer/policy.md, roles/reviewer/lenses, internal/builtin/reviewer, internal/backlog/spec.go, routing.default.yaml]
-checked: d108841c
+checked: 40d52c09
 verified: agent:claude-code
 ---
 # Reviewer
@@ -57,9 +57,9 @@ file. All roles: [docs/roles.md](../../docs/roles.md).
 | `schedule` | CI gardening, opt-in: `reviewer` after `product-owner` in the `schedule` line | one issue the product owner refined, every spec lens |
 
 - **Outputs**: on a machine, the findings and `out/review.json` for your
-  agent to fix; on a merge request, each finding as a comment on its
-  line in the forge's own review ([more](docs/lines.md)), one summary
-  comment edited each run, hiding a line per finding judged for the
+  agent to fix; on a merge request, each important finding as a comment
+  on its line in the forge's own review ([more](docs/lines.md)), one summary
+  comment edited each run, the nits last, hiding a line per finding judged for the
   weekly sample ([more](docs/judge.md#every-finding-judged-kept-for-the-weekly-sample)),
   the findings for GitHub's code scanning or
   GitLab's Code Quality (`--sarif`, `--code-quality`), and an issue
@@ -108,7 +108,8 @@ Step by step, with every rule: [a run on code](docs/run.md).
 8. **The verdict**: rules block; findings warn until measured
    (`ai-findings`); one that blocks stands until a commit answers it
    ([more](docs/judge.md#a-block-stands-until-a-commit-answers-it)); on a
-   merge request, each finding on its line and one summary comment.
+   merge request, each important finding on its line and one summary
+   comment, the nits last, asking nothing.
 
 The run's tokens are capped and said ([the budget](docs/judge.md#the-budget)).
 
@@ -128,10 +129,15 @@ gives them to your agent ([more](docs/run.md#on-a-machine)).
 `workline init --review` adds the reviewer to the project's merge-request
 line. On GitHub the judging job needs a read token (`GH_TOKEN`,
 `pull-requests: read`), which the [template](../../ci/github/workline.yml)
-gives it. Each finding is a comment on its line, which the author answers
-or resolves there; one still open is not posted again
-([more](docs/lines.md)). A blocked merge request still gets its comments
-([more](docs/run.md#on-a-merge-request)).
+gives it. Each important finding is a comment on its line; one still
+open is not posted again ([more](docs/lines.md)). A blocked merge request
+still gets its comments ([more](docs/run.md#on-a-merge-request)).
+
+- **What it asks**: what blocks, a commit that fixes it; what warns,
+  nothing. A nit is on no line, listed last in the summary comment
+  ([ADR-0051, cut 4](../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-4-no-fix-round-for-nits)).
+- **To hold the merge on important findings**: the forge's own
+  "conversations resolved" rule ([how](docs/lines.md#what-it-asks)).
 
 The templates read the lenses that only warn apart from the verdict, in
 a run and a comment of their own: the head's verdict waits only for the
