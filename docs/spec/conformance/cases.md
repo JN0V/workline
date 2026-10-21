@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go]
-checked: c2e40104
+checked: 8ccdfb74
 verified: agent:claude-code
 ---
 # Conformance — a case in full
