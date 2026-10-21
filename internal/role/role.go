@@ -45,7 +45,7 @@ type Role struct {
 	// their own words, never what the project's line holds to.
 	Personal []string `yaml:"personal"`
 	Model    Model    `yaml:"model"`
-	Duties    struct {
+	Duties   struct {
 		Reads  []string `yaml:"reads"`
 		Writes []string `yaml:"writes"`
 	} `yaml:"duties"`
@@ -53,8 +53,11 @@ type Role struct {
 		Knowledge []string `yaml:"knowledge"`
 		Budget    int      `yaml:"budget"`
 	} `yaml:"context"`
-	WithoutAI string         `yaml:"without-ai"`
-	Settings  map[string]any `yaml:"settings"`
+	WithoutAI string `yaml:"without-ai"`
+	// MergeRequestAI `ready`: on a merge request, the agent is asked on the
+	// run at ready alone, never on a push after it (ADR-0051).
+	MergeRequestAI string         `yaml:"merge-request-ai"`
+	Settings       map[string]any `yaml:"settings"`
 	// Levels are named sets of settings a project picks with one setting
 	// (docs/spec/role-adapting.md, "Levels"): setting -> value -> the
 	// settings laid over the role's before the project's own.

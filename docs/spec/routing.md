@@ -222,6 +222,15 @@ verdict is then a review to come, never a pass
 ([merge policy](../merge-policy.md)). The rules and gates run as on any
 push. With no agent set, nothing waits; `draft=false` changes nothing.
 
+### Once, at ready
+
+[ADR-0051](../adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md): a role whose
+`merge-request-ai` is `ready` (the documentalist) asks its agent on the
+run at ready alone. The templates pass `--input ready=true` on that run,
+`ready=` on a push after it; there the role runs as with no agent, told
+so (`WORKLINE_AI_WAITS=judged-at-ready`), and lists what the push made
+suspect (`judged-at-ready`, a warning). Unsaid, a run is at ready.
+
 ### A release's dry run
 
 [ADR-0050](../adr/0050-each-act-has-its-moment-and-a-wait-budget.md#3-the-moment-table):

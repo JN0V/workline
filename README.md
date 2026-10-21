@@ -1,6 +1,6 @@
 <!-- workline
 sources: [ci/gitlab/workline.gitlab-ci.yml, ci/github/workline-fork.yml, routing.default.yaml, internal/forge/forge.go, internal/agent/agent.go, ci/github/workline-apply.yml, internal/gate, cmd/workline/cli.go, ci/github/workline.yml, ci/forgejo/workline-forge.sh, ci/github/workline-gardening.yml, ci/github/workline-sample.yml]
-checked: ea95db01
+checked: b6085f38
 judged: e8a46f7
 verified: agent:documentalist
 reader: e375241655b6
@@ -114,7 +114,7 @@ Each role, from a hook, a script or a CI job: [triggers](docs/triggers.md).
 
 | What | Roles | Writes |
 |---|---|---|
-| each push to it; on GitHub, marked ready too | committer; documentalist; reviewer and inspector, opt-in | the docs' fix on its branch; each finding on its line, and one summary comment; the findings in the forge's code-scanning view; the job's summary |
+| each push to it; on GitHub, marked ready too | committer; documentalist; reviewer and inspector, opt-in | the docs' fix in a comment, the agent once at ready; each finding on its line, and one summary comment; the findings in the forge's code-scanning view; the job's summary |
 | a release tool's (release-please…) | as any other, the docs never holding it; an issue labelled to hold it, or main not green, holds it ([how](docs/release-holds.md)) | its checks |
 | a fork's | judged with no agent | on GitHub, a comment; on GitLab, nothing |
 
