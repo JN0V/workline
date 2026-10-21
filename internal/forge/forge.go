@@ -145,6 +145,10 @@ type Note struct {
 	// other forges tell by its author (OwnAccount).
 	App string `json:"app,omitempty"`
 	Own bool   `json:"own,omitempty"`
+	// Editor is who last edited it, when not its author: a record read
+	// from it could hold what they wrote (ADR-0051, cut 5); "" when none
+	// did, or the forge does not say.
+	Editor string `json:"editor,omitempty"`
 }
 
 // LabelEvent is a label set on an issue, or taken off, with who did it

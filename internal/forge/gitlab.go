@@ -743,6 +743,62 @@ func (g *gitlab) notes(t Target) ([]gitlabNote, error) {
 	return slices.DeleteFunc(found, func(n gitlabNote) bool { return n.System }), nil
 }
 
+// editors are who last edited t's notes, by the note's id, those their
+// author edited last, or none did, left out (ReadKept): GitLab's REST API
+// does not say, its GraphQL does (`lastEditedBy`). A Maintainer may edit
+// another's note. A token GraphQL refuses, the job's own, is an error.
+func (g *gitlab) editors(t Target) (map[string]string, error) {
+	kind := "issue"
+	if t.Kind == "merge-request" {
+		kind = "mergeRequest"
+	}
+	query := `query($p: ID!, $iid: String!, $after: String) { project(fullPath: $p) { item: ` + kind + `(iid: $iid) { notes(first: 100, after: $after) { nodes { id author { username } lastEditedBy { username } } pageInfo { hasNextPage endCursor } } } } }`
+	by, after := map[string]string{}, ""
+	for {
+		var v struct {
+			Project struct {
+				Item struct {
+					Notes struct {
+						Nodes []struct {
+							ID     string `json:"id"`
+							Author struct {
+								Username string `json:"username"`
+							} `json:"author"`
+							Editor *struct {
+								Username string `json:"username"`
+							} `json:"lastEditedBy"`
+						} `json:"nodes"`
+						PageInfo struct {
+							HasNextPage bool   `json:"hasNextPage"`
+							EndCursor   string `json:"endCursor"`
+						} `json:"pageInfo"`
+					} `json:"notes"`
+				} `json:"item"`
+			} `json:"project"`
+		}
+		vars := map[string]any{"p": g.projectPath(), "iid": strconv.Itoa(t.ID)}
+		if after != "" {
+			vars["after"] = after
+		}
+		ok, err := g.graphql(query, vars, &v)
+		if err != nil {
+			return nil, err
+		}
+		if !ok {
+			return nil, errors.New("GitLab's GraphQL API did not answer who last edited the notes: a job's own token cannot ask it; give the job WORKLINE_GITLAB_TOKEN")
+		}
+		for _, n := range v.Project.Item.Notes.Nodes {
+			if n.Editor != nil && n.Editor.Username != "" && n.Editor.Username != n.Author.Username {
+				by[n.ID[strings.LastIndex(n.ID, "/")+1:]] = n.Editor.Username
+			}
+		}
+		if !v.Project.Item.Notes.PageInfo.HasNextPage {
+			return by, nil
+		}
+		after = v.Project.Item.Notes.PageInfo.EndCursor
+	}
+}
+
 // mentioned reads GitLab's system notes naming an issue from elsewhere:
 // "mentioned in commit 1a2b3c4d", "mentioned in merge request !7", with
 // another project's path before the reference when it is another's —

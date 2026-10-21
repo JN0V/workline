@@ -179,11 +179,12 @@ type FakeThread struct {
 }
 
 // FakeComment is a comment: in the file, its body alone, or with its
-// author as {body, author, insider, bot, created}.
+// author as {body, author, insider, bot, created}, and who last edited
+// it when not its author (editor).
 type FakeComment Note
 
 func (c FakeComment) MarshalJSON() ([]byte, error) {
-	if c.Author == "" && !c.Insider && !c.Bot && c.Created == "" && c.ID == "" && c.App == "" && !c.Own {
+	if c.Author == "" && !c.Insider && !c.Bot && c.Created == "" && c.ID == "" && c.App == "" && !c.Own && c.Editor == "" {
 		return json.Marshal(c.Body)
 	}
 	return json.Marshal(Note(c))
@@ -306,6 +307,9 @@ func (f *Fake) Notes(t Target) ([]Note, error) {
 		n := Note(c)
 		if n.ID == "" {
 			n.ID = strconv.Itoa(i + 1) // its place: the fake's comments are never deleted
+		}
+		if n.Editor == n.Author {
+			n.Editor = ""
 		}
 		notes = append(notes, n)
 	}
@@ -436,8 +440,13 @@ func (f *Fake) sticky(t Target, body, marker string, create, mine bool) error {
 			case mine && !own.Wrote(Note(it.Comments[i])):
 				create = true
 			default:
-				// Edited, it stays its author's, as on a forge.
+				// Edited, it stays its author's, as on a forge, and the
+				// token's user is its last editor.
 				it.Comments[i].Body = body + "\n\n" + marker
+				it.Comments[i].Editor = ""
+				if a := it.Comments[i].Author; a != "" && a != fakeBot {
+					it.Comments[i].Editor = fakeBot
+				}
 				return nil
 			}
 		}

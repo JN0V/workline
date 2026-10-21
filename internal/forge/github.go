@@ -447,6 +447,38 @@ func (g *github) Notes(t Target) ([]Note, error) {
 	return notes, err
 }
 
+// editorsQuery lists an issue's or a pull request's comments, a hundred a
+// page: who wrote each and who last edited it, which GitHub's REST API
+// does not say.
+const editorsQuery = `query($owner: String!, $name: String!, $number: Int!, $endCursor: String) { repository(owner: $owner, name: $name) { %s(number: $number) { comments(first: 100, after: $endCursor) { pageInfo { hasNextPage endCursor } nodes { databaseId author { login } editor { login } } } } } }`
+
+// editors are who last edited t's comments, by the comment's id, those
+// their author edited last, or none did, left out (ReadKept). GitHub lets
+// one who may write edit another's comment.
+func (g *github) editors(t Target) (map[string]string, error) {
+	kind := "issue"
+	if t.Kind == "merge-request" {
+		kind = "pullRequest"
+	}
+	out, err := g.api("graphql", "--paginate", "-f", "query="+fmt.Sprintf(editorsQuery, kind), "-F", "owner={owner}", "-F", "name={repo}", "-F", fmt.Sprintf("number=%d", t.ID),
+		"--jq", fmt.Sprintf(`.data.repository.%s.comments.nodes[] | select(.editor != null and .editor.login != (.author.login // "")) | {id: (.databaseId | tostring), editor: .editor.login}`, kind))
+	if err != nil {
+		return nil, err
+	}
+	found, err := lines[struct {
+		ID     string `json:"id"`
+		Editor string `json:"editor"`
+	}](out)
+	if err != nil {
+		return nil, err
+	}
+	by := map[string]string{}
+	for _, e := range found {
+		by[e.ID] = e.Editor
+	}
+	return by, nil
+}
+
 // Close closes with GitHub's own reason; a duplicate's original is named by
 // the engine's comment, "Duplicate of #n", which GitHub links.
 func (g *github) Close(id, dup int) error {
