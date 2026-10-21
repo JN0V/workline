@@ -1415,6 +1415,12 @@ func withTrailers(repo, msg, trailers string) (string, error) {
 // branchPrefix is where a role's merge requests come from (ADR-0006).
 func branchPrefix(roleName string) string { return "workline/" + roleName + "/" }
 
+// DefaultTitle is a role's merge request's title when it names none, or
+// one too long for a squash's " (#N)".
+func DefaultTitle(roleName string) string {
+	return "chore(" + roleName + "): what the " + roleName + " proposes"
+}
+
 // openMergeRequest commits what the run's patches wrote on the role's branch
 // for this task, force-pushes it, opens its merge request or updates the one
 // open, and puts the working tree back on the branch it was on. The role
@@ -1427,8 +1433,8 @@ func openMergeRequest(f forge.Forge, st runState, runDir string) (int, error) {
 		}
 	}
 	mr.Key = mergeRequestKey(st, runDir)
-	if mr.Title == "" {
-		mr.Title = "chore(" + st.Role + "): what the " + st.Role + " proposes"
+	if mr.Title == "" || len([]rune(mr.Title)) > forge.TitleMax { // a squash adds " (#N)" (ADR-0051)
+		mr.Title = DefaultTitle(st.Role)
 	}
 	return ProposeBranch(f, st.Repo, st.Role, mr.Key, mr.Title, mr.Body, st.trailers(), st.Written)
 }

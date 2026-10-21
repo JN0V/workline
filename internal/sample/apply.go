@@ -99,7 +99,7 @@ func Apply(file, repo string, f forge.Forge) *Result {
 			written = append(written, r.Doc)
 		}
 		mr, err = engine.ProposeBranch(f, repo, "documentalist", "sample-"+res.Week,
-			"docs: put back the checked the weekly sample found false", resetBody(res, standing),
+			ResetTitle, resetBody(res, standing),
 			engine.OwnTrailer+": documentalist", written)
 		if err != nil {
 			return failed(res, err)
@@ -217,6 +217,10 @@ func putBack(repo string, r Read) error {
 }
 
 // resetBody is the merge request's description.
+// ResetTitle is the title of the merge request putting back the `checked`
+// the weekly sample found false.
+const ResetTitle = "docs: put back the checked the weekly sample found false"
+
 func resetBody(res *Result, docs []Read) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "The weekly sample (%s) read these docs against their sources at the commit their `checked` names, and found that `checked` false. It is put back to what it was before, `judged` at the commit vouched for: the doc shows as suspect again, for a person.\n\n", res.Week)
