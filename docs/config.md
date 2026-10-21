@@ -1,6 +1,6 @@
 ---
 sources: [internal/role/config.go, internal/role/role.go, cmd/workline, internal/engine/engine.go, internal/forge/gitlab.go, internal/hooks]
-checked: 73bdc933
+checked: ae744e99
 judged: e343388
 verified: agent:claude-code
 reader: 0b97bbc207c5
@@ -75,7 +75,7 @@ repos:                      # other repositories docs may depend on
   api: {url: "https://github.com/acme/api.git", branch: main}
 release:                    # how the project's release tool works
   branches: ["release/*"]   # its pull requests' branches; default: release-please's, releaser-pleaser's, release-plz's, changesets'
-  tags: "v*"                # its tags (the default); the last release is the highest version merged, prereleases left out; at a tag, the one before it
+  tags: "v*"                # its tags (the default); the last release is the highest version merged, prereleases left out
 merge: {autonomy: cautious} # the forge merges what a person labelled workline:accepted, its head's verdict passed
 ```
 
@@ -201,19 +201,12 @@ A role's `pre` and `post` receive:
 - `WORKLINE_AI_WAITS=ready` on a draft (`--input draft=true`): the
   agent set aside, `WORKLINE_AI` is `none`
   ([ADR-0050](adr/0050-each-act-has-its-moment-and-a-wait-budget.md#4-what-the-table-holds-to));
-  `WORKLINE_AI_WAITS=night` so too, on a release tool's merge request, for
-  a role that runs on `release`: its agent judges at night
-  ([§7](adr/0050-each-act-has-its-moment-and-a-wait-budget.md#7-decided-by-the-maintainer-on-2026-10-19));
 - `WORKLINE_OPEN_MERGE_REQUESTS`, `WORKLINE_OPEN_MERGE_REQUEST_TASKS` and
   `WORKLINE_PROPOSED_TASKS` with `--open-merge-request`, and
   `in/waiting.yaml`, the files each waiting task changes;
 - on a release tool's merge request: `WORKLINE_RELEASE_BRANCH`, the
-  branch, to every role; `WORKLINE_EVENT=release` for a role that runs on
-  `release` ([ADR-0017](adr/0017-the-release-manager.md)); the reviewer
+  branch, to every role ([ADR-0017](adr/0017-the-release-manager.md)); the reviewer
   leaves the versions the tool bumps
   ([#384](https://github.com/JN0V/workline/issues/384));
-  `WORKLINE_EARLIER_ROUNDS`, the folders of the run's earlier rounds, a
-  path list as `PATH` is, whose fix the round proposes with its own
-  ([#572](https://github.com/JN0V/workline/issues/572));
 - run by a handoff: the inputs `handoff-from` and `handoff-reason`.
 - in the round a role asks last (`in/then`): `WORKLINE_THEN`, its task.

@@ -42,8 +42,8 @@ func TestGitLabBotSignsWithItsKey(t *testing.T) {
 			t.Errorf("%s: pushes commits, but not as .workline:bot: they are never signed", name)
 		}
 	}
-	if writers < 6 {
-		t.Fatalf("%d jobs push commits, want apply, merge, garden:apply, release-docs:apply, follow and sample:write", writers)
+	if writers < 5 {
+		t.Fatalf("%d jobs push commits, want apply, merge, garden:apply, follow and sample:write", writers)
 	}
 	var lines strings.Builder
 	for _, l := range bot {

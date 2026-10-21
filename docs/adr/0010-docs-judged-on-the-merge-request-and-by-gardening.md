@@ -2,7 +2,8 @@
 
 - **Status:** accepted; built 2026-10-01; amended 2026-10-02 (where the
   merge requests go); amended 2026-10-17 (the commit a merge request
-  became stands for its record)
+  became stands for its record); amended 2026-10-21 (the release no
+  longer waits for the docs)
 - **Date:** 2026-09-30
 - **Supersedes:** ADR-0007 on judging at the push (`d`, the docs listed in
   the question). Its range, the review per doc and the push approval stay.
@@ -123,3 +124,14 @@ to: the record never went through one.
   round, and one read of the comments of each merge request a suspect doc
   points to. A forge that names none (`local`, `cmd:`) keeps the record in
   a commit, as before.
+
+## Amendment (2026-10-21): the release no longer waits for the docs
+
+[ADR-0051](0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-1-the-release-weekly), built:
+
+- **At the release** is gone: the documentalist is off the `release`
+  line, and no doc holds a release.
+- **The docs are judged** on the merge request and by gardening, as
+  above; a product doc following a technical one is due at gardening.
+- **A solo project with no CI** is caught up by `workline docs`; the
+  doctor says the docs are judged nowhere else.

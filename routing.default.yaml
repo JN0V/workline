@@ -5,7 +5,7 @@ events:
   commit-msg:    [committer]
   merge-request: [committer, documentalist]
   schedule:      [documentalist]
-  release:       [documentalist]   # before the project's release tool: the docs due at the release gate it
+  release:       []   # before the project's release tool tags: its gates; never the docs (ADR-0051)
   # After a merge, on the default branch's new tip (ADR-0050): the gates of
   # merge-request run first, whatever this lists, every finding kept as the
   # next base; then these steps, no agent asked: the whole repository's

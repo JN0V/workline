@@ -1,5 +1,5 @@
 case: documentalist/merge-request-not-held-as-a-release
-about: "A merge request from a branch no release tool names is not the release: a doc made suspect before it, which its commits did not touch, is not read there and holds nothing; the release reads every doc."
+about: "A merge request from a branch no release tool names is not the release: a doc made suspect before it, which its commits did not touch, is not read there and holds nothing."
 given:
   repo: documented
   setup:

@@ -54,13 +54,7 @@
 #          checks and what the gates found main gained, kept in one issue,
 #          opened when there is something to list, edited only when what it
 #          lists changes, never commented on.
-#   follow on a push to main, holds the write token and no AI key: the
-#          documentalist's merge request for the release, when one is open
-#          (workline/documentalist/release), is rebuilt on main's new tip and
-#          force-pushed, as release-please rebuilds its own branch, so a pull
-#          request that touched the same doc leaves it mergeable (ADR-0034).
-#          One a person committed to is left as it is. With the job's own
-#          token, the force-push runs no check on that pull request.
+#   follow on a push to main, holds the write token and no AI key.
 #          With the documentalist's `update-branches: conflicts` (ADR-0041,
 #          off by default), a person's pull request from this repository in
 #          conflict with main only on lines workline writes gets main merged
@@ -142,7 +136,7 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app.outputs.token || github.token }}
           APP: ${{ steps.app.outputs.app-slug }}
-          WORKLINE_APP: ${{ steps.app.outputs.app-slug }}   # a release's fix is its merge request only if it alone pushed there
+          WORKLINE_APP: ${{ steps.app.outputs.app-slug }}   # workline's own account: the records it trusts
           NUMBER: ${{ steps.judged.outputs.number }}
           HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |

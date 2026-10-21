@@ -212,7 +212,7 @@ func repository(r *Report, o Options) {
 	}
 
 	// Where the docs are judged (ADR-0010): on each merge request in CI, by
-	// gardening, at the release. The push only counts them, when routed.
+	// gardening. The push only counts them, when routed.
 	routes := func(event string) bool {
 		for _, s := range line.Events[event] {
 			if s == "documentalist" {
@@ -229,24 +229,13 @@ func repository(r *Report, o Options) {
 	if routes("schedule") && ciRuns(o.Repo, "workline route schedule") {
 		judged = append(judged, "by gardening, on a schedule")
 	}
-	if routes("release") {
-		if len(judged) == 0 {
-			judged = append(judged, "at the release only: `workline docs` judges them before")
-		} else {
-			judged = append(judged, "at the release")
-		}
-	}
 	if len(judged) > 0 {
-		level := OK
-		if len(judged) == 1 && routes("release") {
-			level = Note // no CI judges them: fine for a solo project, worth knowing
-		}
-		r.add(Check{Area: "repository", Rule: "docs-judged", Where: where, Level: level,
+		r.add(Check{Area: "repository", Rule: "docs-judged", Where: where, Level: OK,
 			Message: "docs are judged " + strings.Join(judged, "; ")})
 	} else {
 		r.add(Check{Area: "repository", Rule: "docs-judged-nowhere", Where: where, Level: Warn,
-			Message: "the documentalist runs on no merge request in CI, no gardening, and not at the release: docs go stale unseen, unless someone runs `workline docs`",
-			Fix:     "copy the CI templates (ci/github, ci/gitlab), or route `release` to the documentalist"})
+			Message: "the documentalist runs on no merge request in CI, and no gardening: docs go stale unseen, unless someone runs `workline docs`",
+			Fix:     "copy the CI templates (ci/github, ci/gitlab)"})
 	}
 	if routes("pre-push") {
 		r.add(Check{Area: "repository", Rule: "docs-counted-at-push", Where: where, Level: OK,

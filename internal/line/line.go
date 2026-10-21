@@ -15,7 +15,6 @@ import (
 
 	"github.com/JN0V/workline/internal/agent"
 	"github.com/JN0V/workline/internal/engine"
-	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/gate"
 	"github.com/JN0V/workline/internal/gitrange"
 	"github.com/JN0V/workline/internal/role"
@@ -127,11 +126,9 @@ func RunWith(event string, base engine.Options, gates *Gates) *Result {
 	// first, it runs last, once the line said all it says.
 	if base.DryRun {
 		var dry *DryRun
-		var back func()
-		base, dry, back = dryRunOn(res, base)
+		base, dry = dryRunOn(base)
 		defer func() { finishDryRun(res, dry) }()
-		defer back()
-		if dry.At != "" || dry.Unread {
+		if dry.At != "" {
 			return res
 		}
 	}
@@ -216,7 +213,7 @@ func RunWith(event string, base engine.Options, gates *Gates) *Result {
 	}
 	// What holds the release on the forge (ADR-0051): read once, beside
 	// the steps, stopping none of them; the line's verdict takes it.
-	if !gates.Only && !warnOnly && !queue && !base.FindRelease {
+	if !gates.Only && !warnOnly && !queue {
 		if found, held := releaseHolds(event, base); len(found) > 0 {
 			res.Findings = append(res.Findings, found...)
 			status := verdict.Pass
@@ -252,10 +249,14 @@ func RunWith(event string, base engine.Options, gates *Gates) *Result {
 		if queue { // the gates on the merged result, whoever made its last commit
 			skip = !isGate
 		}
-		if base.FindRelease { // the found release's docs alone (ADR-0050, §7)
-			skip = isGate || !holdsRelease(base.RolesDir, name)
-		}
 		if skip || gates.Only && !isGate || warnOnly && (isGate || !apartOn(base.RolesDir, name, event)) {
+			continue
+		}
+		// A routing written before ADR-0051 still names the documentalist
+		// on release: the step is skipped and said, never a release held.
+		if r, err := role.Load(base.RolesDir, name); event == "release" && !isGate && err == nil && !r.Accepts(event) {
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "step-skipped", Level: "warn", Where: name,
+				Message: fmt.Sprintf("the role %s does not run on release: step skipped; remove it from routing.events.release (ADR-0051)", name)})
 			continue
 		}
 		considered++
@@ -285,51 +286,7 @@ func RunWith(event string, base engine.Options, gates *Gates) *Result {
 				delete(o.Inputs, WarnInput)
 			}
 			o.Role, o.Event = name, event
-			back := func() {}
-			if holdsRelease(base.RolesDir, name) {
-				switch {
-				// At night, gardening with a forge: first the release's
-				// docs, on its merge request's head; what its fix patches
-				// waits for the gardening after it (ADR-0050, §7).
-				// The release found on the forge, its docs alone: the
-				// night's run, its own step nothing else.
-				case event == "schedule" && base.OpenMergeRequest, base.FindRelease:
-					var failed, st string
-					ran := len(res.Steps)
-					o.Waiting, failed, st = nightRelease(res, cfg, o)
-					if len(res.Steps) > ran && !base.FindRelease {
-						considered++
-					}
-					if failed != "" {
-						if stopAtFirst {
-							return stopped(res, failed, st)
-						}
-						notPassed = append(notPassed, fmt.Sprintf("%s (%s)", failed, st))
-						res.Status = worst(res.Status, st)
-					}
-					if base.FindRelease {
-						continue
-					}
-				// `release` on a release tool's merge request, a person's
-				// run: on its head, its fix in a merge request of its own.
-				case event == "release" && o.Target != nil && o.Target.Kind == "merge-request":
-					var err error
-					var branch string
-					if back, branch, err = engine.OnReleaseHead(o); err != nil {
-						res.Steps = append(res.Steps, Step{Name: name, Status: verdict.Block})
-						res.Findings = append(res.Findings, verdict.Finding{Rule: "release-head", Where: name, Message: err.Error()})
-						if stopAtFirst {
-							return stopped(res, name, verdict.Block)
-						}
-						notPassed = append(notPassed, fmt.Sprintf("%s (%s)", name, verdict.Block))
-						res.Status = worst(res.Status, verdict.Block)
-						continue
-					}
-					o.PushToMergeRequest = o.PushToMergeRequest || branch != ""
-				}
-			}
 			step, status = runRole(res, cfg, o, 0)
-			back()
 		}
 		if status == verdict.Pass {
 			continue
@@ -345,9 +302,6 @@ func RunWith(event string, base engine.Options, gates *Gates) *Result {
 	} else {
 		res.Summary = fmt.Sprintf("%s: %d steps passed", event, len(res.Steps))
 	}
-	if base.FindRelease && len(res.Steps) == 0 {
-		res.Summary = event + ": no release merge request judged: none open into this branch, or none read"
-	}
 	if gates.Only {
 		res.Summary += "; the gates alone"
 	}
@@ -362,9 +316,6 @@ func RunWith(event string, base engine.Options, gates *Gates) *Result {
 	}
 	if waits(engine.AIWaitsReady) {
 		res.Summary += "; a draft: no agent asked, the AI review waits for it to be marked ready"
-	}
-	if waits(engine.AIWaitsNight) {
-		res.Summary += "; a release: no agent asked for its docs, judged at night"
 	}
 	if len(res.Pending) > 0 {
 		res.Summary += fmt.Sprintf("; %d runs to apply", len(res.Pending))
@@ -689,61 +640,6 @@ func stepsOf(cfg *routing.Config, event string) ([]string, bool) {
 		}
 	}
 	return out, true
-}
-
-// holdsRelease says whether the role a step names has release duties (its
-// role.yaml accepts `release`): the documentalist's hold (ADR-0017).
-func holdsRelease(rolesDir, name string) bool {
-	r, err := role.Load(rolesDir, name)
-	return err == nil && r.Accepts("release")
-}
-
-// nightRelease runs, before a role's gardening, its run on `release` for
-// the release tool's merge request open into the branch, with its agent,
-// on that merge request's head (ADR-0050, §7; routing.md). Its step is
-// `<role> (release #n)`; the release waiting for its docs fails nothing
-// of the night's. It returns what that run left to apply, by task, for
-// the gardening after it to leave alone; and the step, and its status,
-// when it did not pass for another reason.
-func nightRelease(res *Result, cfg *routing.Config, o engine.Options) (waiting map[string][]string, failed, status string) {
-	mr, said, err := engine.OpenRelease(o)
-	res.Findings = append(res.Findings, said...)
-	unread := func(err error) {
-		res.Findings = append(res.Findings, verdict.Finding{Rule: "release-unread", Level: "warn", Where: o.Role,
-			Message: "the release's merge request could not be read, nor its docs judged tonight: " + err.Error()})
-	}
-	if err != nil {
-		unread(err)
-		return nil, "", ""
-	}
-	if mr == nil {
-		return nil, "", ""
-	}
-	if o.AI == "none" { // no agent tonight: said, the release waiting for one or a person
-		res.Findings = append(res.Findings, verdict.Finding{Rule: "release-not-judged", Level: "warn", Where: fmt.Sprintf("#%d", mr.ID),
-			Message: fmt.Sprintf("no agent tonight (--ai none): the docs due for the release, merge request #%d, are not judged; they hold it until an agent judges them — `workline route release --target merge-request:%d --push-to-merge-request` where one may — or a person moves their `checked`", mr.ID, mr.ID)})
-		return nil, "", ""
-	}
-	ro := o
-	ro.Event, ro.Target, ro.Branch = "release", &forge.Target{Kind: "merge-request", ID: mr.ID}, mr.Branch
-	ro.OpenMergeRequest, ro.PushToMergeRequest = false, true
-	back, _, err := engine.OnReleaseHead(ro)
-	if err != nil {
-		unread(err)
-		return nil, "", ""
-	}
-	at, pending := len(res.Steps), len(res.Pending)
-	_, status = runRole(res, cfg, ro, 0)
-	back()
-	label := fmt.Sprintf("%s (release #%d)", o.Role, mr.ID)
-	res.Steps[at].Name = label
-	if left := res.Pending[pending:]; len(left) > 0 {
-		waiting = map[string][]string{"release": slices.Clone(left)}
-	}
-	if status != verdict.Pass && !engine.ReleaseHeld(res.Steps[at].Result) {
-		return waiting, label, status
-	}
-	return waiting, "", ""
 }
 
 // worst is the verdict of a line whose steps all ran: a block on the work

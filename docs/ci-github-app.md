@@ -1,6 +1,6 @@
 ---
 sources: [ci/github, .github/workflows/workline-apply.yml, .github/workflows/workline.yml]
-checked: 73bdc933
+checked: ae744e99
 judged: c7e1e98
 verified: agent:claude-code
 judged-in-parts: 220b6dc
@@ -64,12 +64,10 @@ gh secret delete WORKLINE_APP_PRIVATE_KEY -R OWNER/REPO    # the repository's ow
   secret, in reach of any branch's workflow, the merge policy's statuses
   with it.
 - **The release tool's branch** (release-please's
-  `release-please--branches--main`): the documentalist's fix for a release
-  becomes a pull request of the App's only when the App alone pushed to
-  that branch, as GitHub's repository activity says; else the fix goes in
-  a comment. Optional, to keep others off it: Settings → Rules → New
-  branch ruleset, target `release-please--*`, "Restrict creations",
-  "Restrict updates" and "Restrict deletions", the App in the bypass list.
+  `release-please--branches--main`), optional, to keep others off it:
+  Settings → Rules → New branch ruleset, target `release-please--*`,
+  "Restrict creations", "Restrict updates" and "Restrict deletions", the
+  App in the bypass list.
 - **Without an App**, the jobs use their own token: the checks of a fix
   wait for someone to approve them, and gardening needs Settings →
   Actions → General → "Allow GitHub Actions to create and approve pull

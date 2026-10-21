@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/line, internal/hooks, internal/forge/gitlab.go, ci/gitlab/workline.gitlab-ci.yml, ci/github/workline.yml, ci/github/workline-gardening.yml, ci/github/workline-sample.yml, routing.default.yaml]
-checked: 73bdc933
+checked: ae744e99
 verified: agent:claude-code
 reader: 2de353fab113
 ---
@@ -121,31 +121,16 @@ workline apply "$(jq -r '."run-dir"' po.json)"
 Before your release tool tags; a non-zero exit holds it.
 
 - On a machine: `workline route release`.
-- In CI: `workline route release --ai "$ai" --no-apply --forge gitlab
-  --open-merge-request --json > line.json`, then `workline apply --line
-  line.json`, puts the docs' fix on a merge request of its own (untried
-  this way).
 - At a tag (GitLab's `workline:release`): `workline route release --ai
-  none --forge none`, no token; the tag's own release is not the last
-  one. The jobs that publish need it.
+  none --forge none`, no token. The jobs that publish need it.
 - Each night, a dry run: `workline route release --dry-run --forge
   gitlab --json > dry-run.json` (no agent, writes nothing), then
   `workline apply --release-dry-run dry-run.json --forge gitlab` (token,
   no agent) ([the release](release.md)).
-- A release tool's merge request: its own runs ask no agent; its docs
-  are judged every night, by gardening or `workline route release
-  --target merge-request:release --no-apply --forge gitlab --json >
-  line.json`, then `workline apply --line line.json`. Sooner: `workline
-  route release --target merge-request:<n> --push-to-merge-request`, its
-  head checked out for the run
-  ([more](../roles/documentalist/docs/push.md#a-release-tools-pull-request)).
 - On a push to the default branch: `workline follow --base <branch>
-  --forge gitlab` (token, no agent) rebuilds that merge request,
-  `workline/documentalist/release`, on the branch's new tip, so it stays
-  mergeable as the branch moves
-  ([ADR-0034](adr/0034-the-release-fix-follows-its-base.md)); `user.name`
-  and `user.email` set first, as for `apply`. With `update-branches:
-  conflicts`, it also merges the branch into people's merge requests in
+  --forge gitlab` (token, no agent), `user.name` and `user.email` set
+  first, as for `apply`. With `update-branches:
+  conflicts`, it merges the branch into people's merge requests in
   conflict only on workline's lines
   ([more](../roles/documentalist/docs/follow.md)). With `merge:`, it runs
   the [merge policy](merge-policy.md): after each judge too, given the
@@ -245,8 +230,7 @@ role that blocks names to say why, such as its comments
   for a person, the reviewer's summary), edited on each run; the
   reviewer's findings on their lines, in the forge's review; doc fixes
   committed to its branch (`Workline-Role: documentalist`); gardening's
-  merge requests on `workline/<role>/<task>`; a release's fix on
-  `workline/<role>/release`; issues (the product owner's comment and
+  merge requests on `workline/<role>/<task>`; issues (the product owner's comment and
   label `workline:proposed` on each issue it proposes on; the sample's
   tracking issues, the docs' and the product owner's acts'; a reviewer's
   finding outside

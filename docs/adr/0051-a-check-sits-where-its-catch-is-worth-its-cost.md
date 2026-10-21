@@ -3,8 +3,10 @@
 - **Status:** accepted; steps 1, 2, 5 and 12 built ([ADR-0013],
   [ADR-0042] and
   [ADR-0020](0020-the-reviewer-finds-the-engine-verifies-the-person-merges.md#amendment-2026-10-21-adr-0051-cut-4-no-fix-round-for-nits),
-  amended), the rest not yet ([the build order](#build-order)); two
-  points open ([open](#open))
+  amended); step 3's removal of the release's docs built ([ADR-0010],
+  [ADR-0017], [ADR-0034] amended); the rest not yet
+  ([the build order](#build-order)); one point open, one decided
+  ([open](#open))
 - **Date:** 2026-10-21
 - **Decided by:** the maintainer, on 2026-10-21: the principle and five
   cuts, as a panel of three lenses (latency, reliability, cost) refined
@@ -190,10 +192,11 @@ merges assumed to stay for real conflicts.
 
 ## Open
 
-- **Forbidden terms in CI**: the list stays out of the repository, so
-  the merge request's gitleaks runs its default rules only; a bypassed
-  hook lets a term through. Whether CI gets the list as a secret is the
-  person's call. No term is ever written here.
+- **Forbidden terms in CI**, decided by the maintainer on 2026-10-21:
+  the list stays local, not a CI secret. The accepted risk: commits made
+  in CI are not scanned for those terms. The merge request's gitleaks
+  runs its default rules only; a bypassed hook lets a term through. No
+  term is ever written here.
 - **The builder's own cost**: 79% of a product PR's tokens, the next
   lever; not decided here.
 

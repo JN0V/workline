@@ -84,7 +84,7 @@ type givenSpec struct {
 type runSpec struct {
 	Role    string            `yaml:"role"`
 	Target  map[string]int    `yaml:"target"`
-	Args    []string          `yaml:"args"`   // more options, as typed, after the run's own: what Target cannot say (merge-request:release)
+	Args    []string          `yaml:"args"`   // more options, as typed, after the run's own: what Target cannot say (--dry-run)
 	Branch  string            `yaml:"branch"` // the branch the targeted merge request comes from, as --branch
 	NoApply bool              `yaml:"no-apply"`
 	OpenMR  bool              `yaml:"open-merge-request"`

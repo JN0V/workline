@@ -1,6 +1,6 @@
 <!-- workline
 sources: [ci/gitlab/workline.gitlab-ci.yml, internal/engine/follow.go, internal/engine/settle.go, Dockerfile]
-checked: 8425efe1
+checked: a840c0a3
 verified: agent:claude-code
 judged-in-parts: e8a46f7
 -->
@@ -9,8 +9,7 @@ judged-in-parts: e8a46f7
 From [workline on GitLab CI](../ci-gitlab.md#a-project-that-refuses-unsigned-commits).
 
 The push rule *Reject unsigned commits* refuses every unsigned commit
-pushed, the bot's too: a doc fix, a merge request rebuilt by `follow`,
-a release brought up to date by the [merge policy](../merge-policy.md)
+pushed, the bot's too: a doc fix, a merge request rebuilt by `follow`
 ([#549](https://github.com/JN0V/workline/issues/549)). Give the bot an
 SSH key: the template signs its commits with it.
 
@@ -41,7 +40,7 @@ SSH key: the template signs its commits with it.
 ## What the template does
 
 - **Each job that pushes** (`workline:apply`, `workline:merge`,
-  `workline:follow`, gardening's, the release docs', the sample's) sets
+  `workline:follow`, gardening's, the sample's) sets
   git to sign with the key: `gpg.format ssh`, `user.signingkey`,
   `commit.gpgsign true`.
 - **The key file is fixed first**: readable by its owner alone (GitLab

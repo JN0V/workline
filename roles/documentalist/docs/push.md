@@ -1,10 +1,10 @@
 ---
-sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/adopt.go, internal/builtin/documentalist/byname.go, internal/builtin/documentalist/releasekept.go, internal/engine/night.go]
-checked: 2d24380f
+sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/adopt.go, internal/builtin/documentalist/byname.go]
+checked: ae744e99
 verified: agent:claude-code
 judged-in-parts: c7e1e98
 ---
-# Documentalist — at the push, the release and the adoption
+# Documentalist — at the push and the adoption
 
 Part of [the documentalist](../README.md). Gardening, named below, is the
 scheduled run, nightly or weekly. A doc is *vouched for* when its `checked`
@@ -30,7 +30,7 @@ moves to the commit the task gave.
   [how](../../../docs/main-after-merge.md)).
 - One too large to be judged whole is left for the next gardening, which
   judges it [in parts](parts.md), there as with
-  `workline docs` and at the release
+  `workline docs`
   ([#458](https://github.com/JN0V/workline/issues/458)).
 
 ### A doc found with nothing to fix: no commit
@@ -88,88 +88,10 @@ an agent: a push never waits on one, nor asks
 
 ## At the release
 
-A doc made suspect since the last release holds it until it is judged
-([ADR-0010](../../../docs/adr/0010-docs-judged-on-the-merge-request-and-by-gardening.md)):
-by the agent, as the release runs the documentalist first, by `workline
-docs`, or by a person moving `checked`.
-
-- One suspect already at that release was let through then.
-- One judged without being vouched for, or in parts, waits for a person
-  and does not hold it.
-- One too large to be judged whole holds it until the next gardening
-  judges it in parts, or a person moves `checked`.
-- **The others' fixes are kept**
-  ([#543](https://github.com/JN0V/workline/issues/543)): a doc still due
-  holds the release alone; the run applies what it fixed, goes round for
-  what it deferred when its fixes stay in the clone, and says whom each
-  doc waits on: a person, by name, the next gardening, or the agent.
-- The last release is the highest version tag merged (`release.tags`, `v*`
-  by default), prereleases left out — never the nearest tag, which a
-  hotfix merged back would be; at a tag, the one before it ([how](../../../docs/release.md#at-a-tag-on-gitlab)).
-- A shallow clone, which may lack it or a doc's `checked`, holds the
-  release (`shallow-clone`).
-
-### A release tool's pull request
-
-Its branch one of `release.branches` (release-please's and the like by
-default), it is the release
-([ADR-0017](../../../docs/adr/0017-the-release-manager.md)): on it the
-documentalist does what it does at the release — every doc suspect since
-the last one and the docs due then, not only what the pull request's
-commits touched.
-
-- **No agent on its moves**
-  ([ADR-0050, §7](../../../docs/adr/0050-each-act-has-its-moment-and-a-wait-budget.md#7-decided-by-the-maintainer-on-2026-10-19)):
-  on each push to it, the docs due are counted with no agent and hold the
-  release; one finding says so (`ai-waits-for-night`), and one comment on
-  it lists them, when their fix comes and how to have it sooner, edited on
-  each push, "none left" once they are in. A doc no agent can judge says
-  so there, and why: a person reads it. A doc fix would otherwise
-  change its head after a person's yes. Held, the head's verdict waits
-  (`workline/verdict` pending), never red.
-- **The agent judges them every night**, on that pull request's head,
-  checked out for the run, then put back:
-  - the other nights, the templates' release docs run:
-    `workline route release --target merge-request:release` finds the
-    release pull request open into the branch. None open, or no doc due:
-    no agent is asked. GitHub: `workline-release-docs.yml`; GitLab: a
-    schedule with `WORKLINE_TASK=release-docs`;
-  - the gardening's night, before its own tasks. Gardening leaves the
-    docs that fix holds;
-  - with no agent that night, it is said (`release-not-judged`), and the
-    release waits.
-- **Sooner, by hand**: run the release docs workflow (GitHub) or play its
-  schedule (GitLab); or, where an agent may judge,
-  `workline route release --target merge-request:<n> --push-to-merge-request`.
-- **Its fix does not go onto that branch**, which the tool rewrites: it
-  goes to a merge request of its own into the release's base,
-  `workline/documentalist/release`. The release pull request stays held
-  until that one is merged and the tool brings it in. A doc the tool
-  bumped takes the fix on the base's version, three ways.
-- **Every doc due in one run, one fix**: round after round,
-  `ai-max-calls` docs a round, each round's fix kept in the clone for the
-  next, until `ai-max-tokens`, `ai-max-seconds` or 20 rounds; what is left
-  waits for the next night
-  ([ADR-0034, amended](../../../docs/adr/0034-the-release-fix-follows-its-base.md#amendment-2026-10-20-one-fix-for-every-doc-a-run-reaches)).
-- **Its record stands for the heads the tool rebuilds**: the
-  documentalist's comment on the release pull request keeps the head each
-  fix set `checked` or `judged` to, and the ids of the doc's sources
-  there. Once the fix is merged and the tool rebuilt its branch, a doc
-  whose sources are the same is not judged again, the same version bump
-  included; one whose source changed is
-  ([ADR-0034, amended](../../../docs/adr/0034-the-release-fix-follows-its-base.md#amendment-2026-10-19-the-fixs-record-stands-for-the-rebuilt-heads)).
-- **That merge request follows its base**, as the tool's own branch does
-  ([ADR-0034](../../../docs/adr/0034-the-release-fix-follows-its-base.md)):
-  on each push to the base, `workline follow` rebuilds it on the new tip —
-  main's `checked` kept beside the `judged` the fix wrote, where a rebase
-  would conflict.
-- **`workline follow` leaves it alone** when it is on the tip already, when
-  a person committed to it, or, asking that person, when its change no
-  longer applies.
-- **A new fix judged on the release pull request** is not pushed over a
-  person's commit either: it goes in a comment there; nor applied once the
-  tool moved its branch since the night's run (`moved-on`): the next run
-  judges the new head.
+The documentalist does not run at the release: the release never waits
+for the docs
+([ADR-0051](../../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-1-the-release-weekly)).
+A release tool's pull request is judged as any other.
 
 ## Adopting a repository
 
@@ -221,5 +143,3 @@ On a draft, an agent set, the engine asks it nothing
 ([ADR-0050](../../../docs/adr/0050-each-act-has-its-moment-and-a-wait-budget.md)):
 the docs the change made suspect are counted, and said judged once it
 is marked ready (`ai-waits-for-ready`); no checklist asks a person to.
-Nor on a release tool's pull request, whose docs due are judged at
-night (`ai-waits-for-night`, [above](#a-release-tools-pull-request)).

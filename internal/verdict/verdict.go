@@ -22,13 +22,6 @@ const (
 // review to come, never as one given.
 const WaitsForReady = "ai-waits-for-ready"
 
-// WaitsForNight is the rule of the finding the documentalist leaves on a
-// release tool's merge request whose docs due wait for its agent, which
-// judges them at night, with the gardening (ADR-0050, §7). The docs hold
-// the release meanwhile; the merge policy reads it as a release waiting
-// for its docs.
-const WaitsForNight = "ai-waits-for-night"
-
 // Finding is one thing a check noticed.
 type Finding struct {
 	Rule    string `yaml:"rule" json:"rule"`
@@ -42,21 +35,9 @@ type Verdict struct {
 	Status   string    `yaml:"status" json:"status"`
 	Summary  string    `yaml:"summary,omitempty" json:"summary,omitempty"`
 	Findings []Finding `yaml:"findings,omitempty" json:"findings,omitempty"`
-	// Final: a block that does not come from the agent's answer — a release
-	// held by docs it was not asked about, a check that could not run — so
-	// asking the agent again would change nothing.
+	// Final: a block that does not come from the agent's answer — a check
+	// that could not run — so asking the agent again would change nothing.
 	Final bool `yaml:"final,omitempty" json:"final,omitempty"`
-	// Held: a final block holding a release for what the run did not
-	// settle alone — docs due no round judged, or a person's — never for
-	// its answer: what the answer proposed and post kept is applied all
-	// the same, and the run still blocks (#543).
-	Held bool `yaml:"held,omitempty" json:"held,omitempty"`
-}
-
-// Accepted says whether what the run proposed stands, as post kept it:
-// a pass, or a block that only holds a release (Held).
-func (v *Verdict) Accepted() bool {
-	return v.Status == Pass || v.Status == Block && v.Held && v.Final
 }
 
 // Read loads a verdict file.

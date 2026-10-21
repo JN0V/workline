@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine, internal/intent, internal/role, internal/agent, roles_test.go]
-checked: 8425efe1
+checked: ae744e99
 verified: agent:claude-code
 judged: b530b72
 ---
@@ -325,17 +325,11 @@ token), **apply** (trusted, no AI key).
    any event. The reviewer's (`comment`, `issue`): its summary comment,
    the record in it, its issues
    ([#226](https://github.com/JN0V/workline/issues/226)). The
-   documentalist's (`comment`): each of its comments, the list of a
-   release's docs due ([#558](https://github.com/JN0V/workline/pull/558))
-   as the docs to check on a merge request run without an agent, when a
+   documentalist's (`comment`): each of its comments, as the docs to check on a merge request run without an agent, when a
    derived block's command fails or it cannot tell whether a source
    changed. The run still blocks; judged with `--no-apply`, they wait in
    `pending` like any other, for the applying job, which runs whatever
-   the judge's outcome. A block `post` says is `held` — a release held
-   for what the run did not settle, never for its answer
-   ([role outcome](role-outcome.md#a-release-held)) — applies every proposal it
-   kept, as a pass does, and still blocks
-   ([#543](https://github.com/JN0V/workline/issues/543)).
+   the judge's outcome.
    Applied by a job of the base once the merge request's branch moved on
    from the head judged (`--from-merge-request`), a run applies only the
    kinds its role names in `on-moved-on`, said (`moved-on`); none, nothing
@@ -357,20 +351,6 @@ token), **apply** (trusted, no AI key).
    night, the docs judged in parts after those judged whole (ADR-0013,
    amended). Each round is a run folder to apply, listed in the result's
    `pending`, a merge request each.
-
-   **A release's rounds, one fix.** On a release tool's merge request, run
-   on `release`, the fix goes to one merge request of its own
-   ([ADR-0034, amended](../adr/0034-the-release-fix-follows-its-base.md#amendment-2026-10-20-one-fix-for-every-doc-a-run-reaches)).
-   A round that deferred something and proposed patches, passed or
-   `held`, keeps them in the clone, not applied, and the run goes round,
-   applied or judged with `--no-apply`. The next round is told the
-   folders of those rounds (`WORKLINE_EARLIER_ROUNDS`, a path list as
-   `PATH` is, oldest first) and
-   proposes their patches, as judged, ahead of its own: the run's fix is
-   one, applied once or listed once in `pending`. Twenty rounds at most,
-   the run's caps on tokens and on the wait first. When the run ends, the
-   clone is put back as it was; a last round that proposed nothing leaves
-   the fix of the round before it to apply.
 
    **Then.** A round that passed may name in `in/then` a task asked once
    the others are done: one round more, `WORKLINE_THEN` naming it, within
@@ -426,22 +406,11 @@ left the commit judged, fetched from `origin` (the clone's own branch for
 a forge kept there); an earlier round's, the files its patches name. A
 branch that cannot be read leaves its task out, said
 (`merge-request-unread`, a warning; ADR-0013, amended 2026-10-14). On a merge request a release tool opened (its
-branch one of `release.branches`), a role that runs on `release` is run on
-it: `WORKLINE_EVENT` is `release` (ADR-0017). Every role run there is told
-the branch, `WORKLINE_RELEASE_BRANCH`: the reviewer leaves the versions the
-tool bumps (#384). A fix judged there is not pushed onto that branch, which
-the release tool rewrites: it goes to a merge request of its own into the
-release's base, and the release waits until it is merged (`fixed-elsewhere`);
-never over a person's commit on that branch, where it goes in a comment
-instead. Run on `merge-request`, such a role has no agent; on `release`
-given that merge request (`--target`: the night's run, a person's), it
-has, and the commit judged is kept (`head` in out/run.yaml): applied
-apart, only on it (routing.md, "A release's docs at night"). The tasks
-whose patches an earlier step of the line proposed (`Waiting`, the
-release's fix) are counted and named as an earlier round's. `workline follow` rebuilds that merge request on its base as the
-base moves (ADR-0034); with `--gardening`, after gardening applies, the
-role's other merge requests too, or closes those with nothing left to
-merge. A task's branch a person committed to is never force-pushed over
+branch one of `release.branches`), every role is told the branch,
+`WORKLINE_RELEASE_BRANCH`: the reviewer leaves the versions the tool bumps
+(#384). `workline follow --gardening`, after gardening applies, rebuilds the
+role's merge requests on their base as it moves, or closes those with
+nothing left to merge (ADR-0034, amended). A task's branch a person committed to is never force-pushed over
 (`not-proposed`, ADR-0034 amended).
 
 ### Exit codes

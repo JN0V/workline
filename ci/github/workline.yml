@@ -218,9 +218,8 @@ jobs:
       - name: The line for this pull request (proposals only)
         id: line
         if: github.event_name == 'pull_request'
-        # The branch tells a release tool's pull request, held as the release
-        # (ADR-0017) while docs are due, which no agent judges here: the
-        # gardening does, at night (ADR-0050); from a fork it is anyone's
+        # The branch tells a release tool's pull request, whose versions
+        # bumped the reviewer leaves (ADR-0017); from a fork it is anyone's
         # text: a variable, never written into the script. Opened ready, or marked ready, the
         # reviewer reads every lens once, on the whole change; one a push
         # after (ADR-0020). The draft state goes on every run: a push that
