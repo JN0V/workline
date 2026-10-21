@@ -1,6 +1,6 @@
 ---
 sources: [ci/github, .github/workflows/workline.yml, .github/workflows/workline-apply.yml, .github/workflows/workline-gardening.yml, .github/workflows/workline-sample.yml, .github/actions/engine/action.yml, .github/workflows/release.yml, .github/workflows/release-please.yml, release-please-config.json, .goreleaser.yaml, cmd/workline]
-checked: 03682424
+checked: fc4d887f
 judged: 220b6dc
 verified: agent:claude-code
 reader: fe1505d43360
@@ -137,7 +137,7 @@ and `apply`, with the App, commits the fix to its branch,
   ([more](../roles/reviewer/docs/ready.md)). An edit runs no `judge`:
   a title's edit is `title`'s, below.
 - `title` runs on a title's edit alone: the title checked again, then
-  `judge` run again when its last result differs
+  `judge` run again when its last result differs (`actions: write`)
   ([the squash title](../roles/committer/docs/squash-title.md)). An edit
   to the description runs nothing.
 - On a merge queue's group (`merge_group`), `gates` runs the gates on

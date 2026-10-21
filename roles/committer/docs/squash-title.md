@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/committer/committer.go, internal/forge/github.go, internal/forge/gitlab.go, ci/github/workline-title.yml]
-checked: 73bdc933
+checked: fc4d887f
 verified: agent:claude-code
 ---
 # Committer — the squash title

@@ -1,6 +1,6 @@
 <!-- workline
 sources: [ci/gitlab/workline.gitlab-ci.yml, ci/github/workline-fork.yml, routing.default.yaml, internal/forge/forge.go, internal/agent/agent.go, ci/github/workline-apply.yml, internal/gate, cmd/workline/cli.go, ci/github/workline.yml, ci/forgejo/workline-forge.sh, ci/github/workline-gardening.yml, ci/github/workline-sample.yml]
-checked: ae744e99
+checked: fc4d887f
 judged: e8a46f7
 verified: agent:documentalist
 reader: e375241655b6
@@ -121,6 +121,7 @@ Each role, from a hook, a script or a CI job: [triggers](docs/triggers.md).
 - The review is on the merge request; a person merges.
 - Templates: [GitHub Actions](ci/github/workline.yml),
   [what only warns, beside it](ci/github/workline-warn.yml),
+  [a title's edit](ci/github/workline-title.yml),
   [its jobs that write](ci/github/workline-apply.yml) and
   [its fork job](ci/github/workline-fork.yml),
   [the release's holds read again](ci/github/workline-release.yml),

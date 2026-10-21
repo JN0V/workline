@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/committer, roles/committer/role.yaml, routing.default.yaml]
-checked: c2e40104
+checked: fc4d887f
 verified: agent:claude-code
 ---
 # Committer
