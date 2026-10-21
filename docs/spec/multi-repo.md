@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/documentalist.go]
-checked: e443e5e2
+checked: affb7424
 verified: agent:claude-code
 judged-in-parts: c7e1e98
 ---

@@ -1,6 +1,6 @@
 ---
 sources: [roles/documentalist/role.yaml, internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/kept.go, routing.default.yaml]
-checked: e443e5e2
+checked: affb7424
 judged: f70db89
 verified: agent:claude-code
 ---
