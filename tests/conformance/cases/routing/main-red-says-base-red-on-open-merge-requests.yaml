@@ -1,0 +1,42 @@
+case: routing/main-red-says-base-red-on-open-merge-requests
+about: >
+  Main red after two merges each green alone (ADR-0051, cut 2): main's
+  run keeps its issue, and says on each open merge request whose base
+  holds the red commit that a check red there for it is the base's, not
+  its own. One comment each a red spell: the next red run posts none
+  again. A merge request into a branch that does not hold it is told
+  nothing. The issue counts the red mains of the week.
+given:
+  repo: linted
+  setup:
+    - "git checkout -qb godot && printf 'linters: {enable: [errcheck, godot]}\\n' > .golangci.yml && sed -i 's|^// main runs, then cleans up$|&.|' main.go && git add . && git commit -qm 'build: end every comment with a period'"
+    - "git checkout -qb helper main && printf '\\n// helper says hello\\nfunc helper() {}\\n' >> main.go && git commit -qam 'feat: add a helper'"
+    - "git checkout -q main && git merge -q --no-ff godot -m 'Merge pull request #1 from godot' && git merge -q --no-ff helper -m 'Merge pull request #2 from helper'"
+  env: {PATH: "$FIXTURES/bin:$PATH"}
+  forge:
+    issues: []
+    merge-requests:
+      - {id: 7, branch: helper, base: main, author: dana, labels: [], comments: []}
+      - {id: 8, branch: helper, base: godot, author: dana, labels: [], comments: []}
+  config:
+    routing: {events: {merge-request: [committer, documentalist, "gate:merge"]}}
+    gates: {merge: {checks: [{id: lint, run: "golangci-lint run --output.sarif.path={out}/lint.sarif", output: sarif, max: {error: 0}}]}}
+run:
+  route: main
+  input: {range: "HEAD^1..HEAD"}
+  kept-on-main: "HEAD^1"
+  main-issue: true
+  then: again
+expect:
+  status: block
+  findings:
+    - {rule: main-issue, message: "issue #1 kept"}
+    - {rule: base-red, message: "said on 1 open merge requests into it"}
+  forge:
+    issues:
+      - id: 1
+        body-contains: ["main's run red", "**Red 1 time in the 7 days to", "the forge's queue is worth turning on"]
+      - {id: 2, absent: true}
+    merge-requests:
+      - {id: 7, comments: 1, comment-contains: ["**Base red, not yours**", "(#1)", "not this merge request's"]}
+      - {id: 8, comments: 0}

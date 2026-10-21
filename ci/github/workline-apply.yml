@@ -67,8 +67,8 @@
 #          in: a merge commit, never forced. The job's summary names each one
 #          merged into, and each left.
 #          With the merge policy, also after verdict: auto-merge turned on
-#          for what a person accepted, the first in line brought up to date;
-#          workline-merge.yml runs it on a label. Only with the App's token
+#          for what a person accepted, each merging once its own head is
+#          green; workline-merge.yml runs it on a label. Only with the App's token
 #          (docs/merge-policy.md).
 name: workline apply
 on:
@@ -264,14 +264,15 @@ jobs:
 
   main:
     # workline.yml's run on main after a merge, whatever its verdict: red
-    # is said in the issue too. Never a push to another branch, whose
+    # is said in the issue too, and on each open pull request into main
+    # ("base red, not yours"). Never a push to another branch, whose
     # workflow its branch can change.
     if: github.event_name == 'workflow_run' && github.event.workflow_run.name == 'workline' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == github.event.repository.default_branch && github.event.workflow_run.conclusion != 'cancelled' && github.event.workflow_run.head_repository.full_name == github.repository
     # One at a time: each run reads the issue the one before left.
     concurrency: {group: "workline-main-issue", cancel-in-progress: false}
     runs-on: ubuntu-latest
     environment: workline-app
-    permissions: {actions: read, contents: read, issues: write}
+    permissions: {actions: read, contents: read, issues: write, pull-requests: write}
     steps:
       - id: app
         if: vars.WORKLINE_APP_ID != ''
@@ -309,8 +310,8 @@ jobs:
     # workline-warn.yml's, which keeps none.
     needs: verdict
     if: always() && (github.event_name == 'push' || (github.event.workflow_run.name == 'workline' && github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion != 'cancelled' && github.event.workflow_run.head_repository.full_name == github.repository))
-    # One at a time on a branch, with workline-merge.yml's: the first in
-    # line is brought up once.
+    # One at a time on a branch, with workline-merge.yml's: each run reads
+    # what the one before set.
     concurrency: {group: "workline-follow-${{ github.event.workflow_run.pull_requests[0].base.ref || github.ref_name }}", cancel-in-progress: false}
     runs-on: ubuntu-latest
     environment: workline-app
