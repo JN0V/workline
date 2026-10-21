@@ -20,6 +20,7 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/gitrange"
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/pathglob"
@@ -2596,8 +2597,8 @@ func mergeRequest(runDir string, judged map[string]map[string]string, inParts ma
 		if len(in) > 1 {
 			title = fmt.Sprintf("docs: bring %s and %d more in line with the code", in[0], len(in)-1)
 		}
-		if len([]rune(title)) > 72 {
-			title = "docs: bring the docs judged in parts in line with the code"
+		if len([]rune(title)) > forge.TitleMax {
+			title = fmt.Sprintf("docs: bring %d docs in line with the code", len(in))
 		}
 	case "condense", "split":
 		var c condenseTask
@@ -2619,6 +2620,9 @@ func mergeRequest(runDir string, judged map[string]map[string]string, inParts ma
 			if len(r.Pages) > 1 {
 				title = fmt.Sprintf("docs: read %s and %d more for their reader", r.Pages[0], len(r.Pages)-1)
 			}
+			if len([]rune(title)) > forge.TitleMax {
+				title = fmt.Sprintf("docs: read %d pages for their reader", len(r.Pages))
+			}
 		}
 	case "merge-card":
 		var m mergeCardTask
@@ -2626,7 +2630,7 @@ func mergeRequest(runDir string, judged map[string]map[string]string, inParts ma
 			docs, key, title = []string{m.Card}, m.key(), "docs: merge "+m.Card+" into the card it belongs with"
 		}
 	}
-	if len([]rune(title)) > 72 {
+	if len([]rune(title)) > forge.TitleMax { // room for the squash's " (#N)" (ADR-0051)
 		title = "docs: " + kind + ", proposed by the documentalist"
 	}
 	var body strings.Builder

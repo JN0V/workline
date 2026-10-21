@@ -11,9 +11,11 @@ import (
 	"path/filepath"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 	"unicode/utf8"
 
+	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/gitrange"
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/role"
@@ -589,10 +591,17 @@ func checkRange(runDir, repo, rng string) int {
 		return fail(err)
 	}
 	secrets = append(secrets, who...)
+	title := squashed(repo, rng, s)
 	v := verdict.Verdict{Status: verdict.Pass, Summary: "every commit message is clear"}
-	if len(findings) > 0 {
-		v = verdict.Verdict{Status: verdict.Block, Summary: "some commit messages need rewriting (git rebase -i)", Findings: findings}
+	switch blocking := slices.ContainsFunc(title, func(f verdict.Finding) bool { return f.Level != "warn" }); {
+	case len(findings) > 0 && blocking:
+		v = verdict.Verdict{Status: verdict.Block, Summary: "some commit messages need rewriting (git rebase -i), and the title the squash lands: " + titleFix}
+	case len(findings) > 0:
+		v = verdict.Verdict{Status: verdict.Block, Summary: "some commit messages need rewriting (git rebase -i)"}
+	case blocking:
+		v = verdict.Verdict{Status: verdict.Block, Summary: "the squash would land a subject the rules refuse: " + titleFix}
 	}
+	v.Findings = append(findings, title...)
 	v.Findings = append(v.Findings, advisories...)
 	for _, f := range secrets {
 		v.Findings = append(v.Findings, f)
@@ -604,6 +613,74 @@ func checkRange(runDir, repo, rng string) int {
 		return fail(err)
 	}
 	return 10
+}
+
+// titleFix is how a refused title is fixed: an edit to the title runs no
+// check, so the job is run again by hand, or by a push (ADR-0051).
+const titleFix = "edit the merge request's title, then re-run this job (one click) or push"
+
+// squashed checks, by the same rules, the subject a squash would land on
+// the base (ADR-0051): the merge request's title, or its one commit's
+// subject where the forge takes that, room left for what the forge adds
+// after it, GitHub's " (#N)". Only on a merge request a forge may squash;
+// what could not be read is said, never read as a pass.
+func squashed(repo, rng string, s Settings) []verdict.Finding {
+	kind, id, _ := strings.Cut(os.Getenv("WORKLINE_TARGET"), ":")
+	n, err := strconv.Atoi(id)
+	if kind != "merge-request" || err != nil {
+		return nil
+	}
+	unread := func(why string) []verdict.Finding {
+		return []verdict.Finding{{Rule: "title-unread", Level: "warn", Where: "title",
+			Message: "the subject a squash would land is not checked: " + why}}
+	}
+	f, err := forge.Open(os.Getenv("WORKLINE_FORGE"), repo)
+	if err != nil {
+		return unread("the forge could not be opened (" + err.Error() + ")")
+	}
+	if f == nil {
+		return nil // no forge: no merge request to read
+	}
+	sq, ok := f.(forge.Squasher)
+	if !ok {
+		return unread("this forge does not say whether it squashes")
+	}
+	how, err := sq.Squash(n)
+	if err != nil {
+		return unread("whether the forge squashes could not be read (" + err.Error() + ")")
+	}
+	if !how.On {
+		return nil
+	}
+	mr, err := f.MergeRequest(n)
+	if err != nil {
+		return unread("the merge request could not be read (" + err.Error() + ")")
+	}
+	subject, where := mr.Title, "title"
+	if how.LoneCommit {
+		out, err := exec.Command("git", append([]string{"-C", repo, "log", "--format=%s"}, gitrange.Args(rng)...)...).Output()
+		if lines := strings.Split(strings.TrimSpace(string(out)), "\n"); err == nil && len(lines) == 1 && lines[0] != "" {
+			subject, where = lines[0], "title (the squash takes the one commit's subject)"
+		}
+	}
+	room := s
+	if s.SubjectMax > 0 {
+		room.SubjectMax = s.SubjectMax - utf8.RuneCountInString(how.Suffix)
+	}
+	found, err := Check(subject, room)
+	if err != nil {
+		return unread(err.Error())
+	}
+	for i := range found {
+		found[i].Where = where
+		switch found[i].Rule {
+		case "subject-length":
+			found[i].Message = fmt.Sprintf("the squash lands %q: %d characters, over the limit of %d", subject+how.Suffix, utf8.RuneCountInString(subject+how.Suffix), s.SubjectMax)
+		case "possible-internal-code":
+			found[i].Level = "warn" // as on commits already made: said
+		}
+	}
+	return found
 }
 
 // rewriting is what the hook says before the agent rewrites a refused

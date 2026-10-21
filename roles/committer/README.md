@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/committer, roles/committer/role.yaml, routing.default.yaml]
-checked: c2e40104
+checked: ac47b877
 verified: agent:claude-code
 ---
 # Committer
@@ -36,7 +36,7 @@ code, rewrite commits already made (on a merge request it lists them, for
 |---|---|---|
 | `commit-msg` | the global git hook (`workline hooks install --global`) | the message being written, what the commit adds |
 | `pre-push` | the global hook, when `.workline/config.yaml` routes it | every commit pushed |
-| `merge-request` | CI (`workline route merge-request --input range=<base>..<head>`) | every commit of the range |
+| `merge-request` | CI (`workline route merge-request --input range=<base>..<head>`) | every commit of the range; [the subject a squash lands](#the-squash-title) |
 
 The global hook still hands over to the hooks installed before workline.
 
@@ -95,6 +95,12 @@ and `pre-push`, every commit of the range given as `--input range=<base>..<head>
 
 Messages git writes itself (`Merge …`, `Revert "…"`, `fixup! …`, `squash! …`,
 `amend! …`) are not checked. A message that passes asks no agent.
+
+### The squash title
+
+On a merge request the forge may squash, the subject it lands on the
+base is checked by the same rules, room left for GitHub's ` (#N)`
+([more](docs/squash-title.md)).
 
 ### Secrets and forbidden terms
 

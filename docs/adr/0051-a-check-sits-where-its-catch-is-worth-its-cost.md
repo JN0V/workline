@@ -1,6 +1,6 @@
 # ADR-0051: A check sits where its catch is worth its cost
 
-- **Status:** accepted; steps 1, 2, 5 and 8 built ([ADR-0013],
+- **Status:** accepted; steps 1, 2, 5, 8 and 12 built ([ADR-0013],
   [ADR-0042] and
   [ADR-0020](0020-the-reviewer-finds-the-engine-verifies-the-person-merges.md#amendment-2026-10-21-adr-0051-cut-4-no-fix-round-for-nits),
   amended); step 3's removal of the release's docs built ([ADR-0010],
@@ -169,7 +169,11 @@ By upkeep removed per unit of work:
 9. **Forge markers** for what was read (cut 5).
 10. **Remove follow's docs merges**.
 11. **The GitLab child pipeline** for what warns.
-12. **The squash title** at the merge request.
+12. **The squash title** at the merge request. Built: the committer's
+    rules on the subject a squash lands, ` (#N)` left room, when the
+    forge's settings allow a squash; a refused title says to edit it, then
+    re-run the job or push. The AI rewrite is not built: a person edits the title
+    ([the squash title](../../roles/committer/docs/squash-title.md)).
 
 ## Consequences
 

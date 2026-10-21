@@ -20,7 +20,8 @@ roles:
         roles/product-owner/docs/run.md, roles/product-owner/docs/outputs.md, roles/product-owner/docs/tracking.md,
         roles/product-owner/docs/settings.md, roles/product-owner/docs/writing.md,
         roles/reviewer/docs/run.md, roles/reviewer/docs/judge.md, roles/reviewer/docs/spec.md,
-        roles/reviewer/docs/lines.md, roles/reviewer/docs/apart.md, roles/reviewer/docs/once.md]
+        roles/reviewer/docs/lines.md, roles/reviewer/docs/apart.md, roles/reviewer/docs/once.md,
+        roles/committer/docs/squash-title.md]
       # The user pages (AGENTS.md, "Writing user docs"): the role pages too,
       # but their status and the archived backlog; each role page opens
       # with a diagram.
