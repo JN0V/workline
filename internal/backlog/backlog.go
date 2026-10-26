@@ -435,6 +435,9 @@ type Proposal struct {
 	// only where the role opened it and no person edited it (Rewrite).
 	Description string   `yaml:"description,omitempty"`
 	Added       []string `yaml:"added,omitempty"`
+	// Repeated, the engine's: the drafts not written because they said
+	// again what is above them (Repeated), by heading; said on the issue.
+	Repeated []string `yaml:"repeated,omitempty"`
 	// Revise, the engine's: the sections with text this refine may rewrite,
 	// to answer the reviewer's findings on the spec (#128) — the role's own
 	// only (Revisable); never taken from the agent.
@@ -1536,6 +1539,7 @@ func (p *Plan) checkRefining(f forge.Backlog, repo, role string, c *Proposal) (r
 				}
 			}
 			p.plain(is, st, c)
+			p.repeats(is, c)
 		}
 		_, added, kept := Refine(is.Body, *c, role)
 		c.Added = added
@@ -1580,6 +1584,59 @@ func (p *Plan) plain(is forge.Issue, st *State, c *Proposal) {
 	p.Findings = append(p.Findings, verdict.Finding{Rule: "description-kept", Level: "info", Where: c.where(),
 		Message: "its description is left as it is: " + why})
 }
+
+// repeats leaves out each draft of a refine that says again what is above
+// it (ADR-0039, amended): an example or a bug's steps, against all above
+// them as the issue will read — its text on top and its Need. Past the
+// role's repeated-percent-max, not written, said on the issue. How a
+// person accepts it restates the case by design: never compared. A
+// person's text is only read, and what they said yes to written whole.
+func (p *Plan) repeats(is forge.Issue, c *Proposal) {
+	if yes(*c) {
+		return // measured when proposed: what a person said yes to is written whole
+	}
+	limit := p.config.RepeatedPercent
+	if limit <= 0 {
+		limit = RepeatedPercentMax
+	}
+	have := work.ByMeaning(is.Body)
+	written := func(m work.Meaning) bool { // a draft this refine writes in the body
+		return strings.TrimSpace(c.Text(m)) != "" && !work.Has(c.Refused, m) &&
+			(strings.TrimSpace(have[m].Text) == "" || work.Has(c.Revise, m))
+	}
+	c.Repeated = nil
+	need := have[work.Need].Text
+	if written(work.Need) {
+		need = c.Need
+	}
+	above := DescriptionOf(is.Body) + "\n\n" + StripDrafts(need)
+	for _, m := range []work.Meaning{work.Example, work.Steps} {
+		if !written(m) {
+			continue
+		}
+		n := Repeated(c.Text(m), above)
+		if n <= limit {
+			continue
+		}
+		name := work.Name(m)
+		if s, ok := have[m]; ok {
+			name = s.Heading
+		}
+		if m == work.Example {
+			c.Example = ""
+		} else {
+			c.Steps = ""
+		}
+		c.Repeated = append(c.Repeated, name)
+		p.Findings = append(p.Findings, verdict.Finding{Rule: "repeated", Level: "info", Where: c.where(),
+			Message: fmt.Sprintf("its %s draft was not written: %d%% of its words are said above it already, past %d (repeated-percent-max)", name, n, limit)})
+	}
+}
+
+// yes says whether a refine is a person's yes to what was proposed: a
+// label accepting it (Ticked), or the reporter's reply agreeing (Agreed).
+// Its drafts are written as they read them.
+func yes(c Proposal) bool { return c.Ticked != "" || c.Agreed != "" }
 
 // readable makes the sections a refine writes readable to a person, as
 // the engine can tell (write.go): each decision cited bare linked to its
@@ -2639,7 +2696,18 @@ func refined(c Proposal) string {
 	if len(added) > 0 || len(changed) > 0 || len(said) == 0 {
 		said = append([]string{fmt.Sprintf("Added: %s. Changed: %s.", list(added), list(changed))}, said...)
 	}
+	said = append(said, notWritten(c)...)
 	return strings.Join(said, " ") + " See the issue's edit history."
+}
+
+// notWritten says each draft a refine left out for saying again what is
+// above it, in a sentence of its own (ADR-0039, amended).
+func notWritten(c Proposal) []string {
+	var out []string
+	for _, n := range c.Repeated {
+		out = append(out, fmt.Sprintf("Not written: the %s, which said again what is above it.", n))
+	}
+	return out
 }
 
 func cite(q Quote) string {

@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, internal/backlog/autonomy.go, internal/backlog/ledger.go, internal/sample/acts.go, internal/scale/detect.go]
-checked: 7fd48f92
+checked: a7467d4f
 verified: agent:claude-code
 ---
 # Product owner — settings
@@ -24,6 +24,7 @@ over the level, field by field.
 | `archived` | `[]` | files no longer a source: a change to their lines flags nothing |
 | `changed-needs` | `false` | a changed Need or Scope flags the issues built on it ([ADR-0032](../../../docs/adr/0032-a-changed-need-flags-the-issues-built-on-it.md)) |
 | `moved-percent-max` | `20` | with `milestone` or `order` on: the share of the open issues a run moves |
+| `repeated-percent-max` | `40` (1 to 100) | an example or steps whose words are past this share, in percent, already said above it is not written ([each thing said once](writing.md#each-thing-said-once)) |
 | `priority`, `effort` | unset | where the project keeps each: unset, workline's own labels and no effort; `auto` finds it; `{in: labels, prefix: P}` names a family ([below](#priority-and-effort)) |
 
 No longer read, each said by the run:

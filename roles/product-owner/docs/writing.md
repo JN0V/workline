@@ -1,6 +1,6 @@
 ---
-sources: [roles/product-owner/instruction.md, internal/backlog/backlog.go, internal/work/work.go]
-checked: 698042ac
+sources: [roles/product-owner/instruction.md, internal/backlog/backlog.go, internal/backlog/repeat.go, internal/work/work.go]
+checked: a7467d4f
 verified: agent:claude-code
 ---
 # Writing an issue a person reads
@@ -29,7 +29,8 @@ first, the cause folded.
 
 - **Need**: one line — who needs what, and why. Not the solution.
 - **Example**: one real case — a named person or role, numbers with
-  their unit, a real command or output, today next to what is wanted.
+  their unit, a real command or output, today next to what is wanted;
+  only with a fact the Need lacks.
 - **Validation**: named scenarios a person runs, as Given / When / Then.
 - **A bug**: the Need says who it hurts; Steps to reproduce, then
   Expected, Actual, the version; its Validation repeats the steps, the
@@ -125,6 +126,19 @@ is the role's until a person edits it:
 - **Your level decides how**: written at `normal`, proposed at
   `cautious`, like the drafts.
 
+## Each thing said once
+
+A problem said three times reads as three problems
+([ADR-0039](../../../docs/adr/0039-issue-sections-are-read-by-meaning-the-kind-is-the-forges.md),
+amended; [worked case](proposed-headings.md#each-thing-said-once)):
+
+- **An example or steps that say again what is above them are not
+  written**: past `repeated-percent-max` ([settings](settings.md)), 40%
+  of their words already in the text on top and the Need.
+- **Validation is never measured**: it restates the case by design.
+- **What you said yes to is written whole**: a proposal you accepted, a
+  text you agreed to.
+
 ## What the product owner says it changed
 
 - **One line on the issue**, in its comment: "Added: Verification, Scope.
@@ -133,6 +147,8 @@ is the role's until a person edits it:
   as it wrote it; it never changes a sentence of yours.
 - **Rewrote: the description, in plain words** when it rewrote a role's
   text on top.
+- **Not written: the Example, which said again what is above it** when
+  it left a draft out.
 - **The text before** is in the forge's edit history: "edited" above the
   description on GitHub, Gitea and Forgejo; the "changed the
   description" note on GitLab, compared with the version before on its
@@ -140,6 +156,7 @@ is the role's until a person edits it:
 
 ## Proposed next
 
-New names for these sections, each thing said once, a bug readied only
-with its steps, and the kind set by the role are proposed, not built:
-[the proposed headings](proposed-headings.md).
+New names for these sections, a role's text on top becoming the Need, a
+bug readied only with its steps, and the kind set by the role are
+proposed, not built: [the proposed headings](proposed-headings.md),
+[#435](https://github.com/JN0V/workline/issues/435).

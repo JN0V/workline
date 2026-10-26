@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, internal/builtin/productowner, internal/backlog, internal/sample/acts.go]
-checked: a88dc872
+checked: a7467d4f
 verified: agent:claude-code
 ---
 # Product owner — what it writes
@@ -40,6 +40,8 @@ Part of [the product owner](../README.md). What a run does, step by step:
   role wrote above the sections, no person having edited it, is
   rewritten short — "Rewrote: the description" in its line
   ([how](writing.md#text-a-role-wrote)). Yours never is.
+- **A draft that repeats** what is above it is not written: "Not
+  written: …" in its line ([how](writing.md#each-thing-said-once)).
 - **What it writes reads as user docs**: plain words, a link for each
   decision cited (added when it wrote one bare), "(closed)" after a
   closed issue cited.

@@ -54,6 +54,9 @@ type Config struct {
 	MovedPercent int                // the share of the open issues a run moves
 	NextMax      int                // the ready issues the job's summary lists first; 0 none (ADR-0031)
 	StuckDays    int                // the days an issue waits on a person before the summary says it stuck
+	// RepeatedPercent: the share of a draft's words already said above it
+	// past which it is not written (ADR-0039, amended).
+	RepeatedPercent int
 	// UndoneMax: the acts of a kind a person undoes, across the issues,
 	// before that kind is proposed everywhere; ProposalsMax, the issues
 	// waiting on a person before the role reads only those answered
@@ -109,13 +112,13 @@ type Read struct {
 const ReadFile = "read.yaml"
 
 // ReadConfig reads the role's settings: the level, the acts, the moved
-// share, what the summary lists first, the undoing and the proposals
-// waiting. A level or a number out of range is an error, never read as a
+// share, what the summary lists first, the undoing, the proposals waiting
+// and how much a draft may repeat. A level or a number out of range is an error, never read as a
 // default (principle 12).
 func ReadConfig(settings map[string]any) (Config, error) {
 	c := Config{Level: Normal, Acts: Settings(settings), Origins: map[string]string{},
 		MovedPercent: MovedPercent(settings), NextMax: NextMax, StuckDays: StuckDays,
-		UndoneMax: UndoneMax, ProposalsMax: ProposalsMax}
+		UndoneMax: UndoneMax, ProposalsMax: ProposalsMax, RepeatedPercent: RepeatedPercentMax}
 	if v, ok := settings["autonomy"]; ok && v != nil {
 		s, _ := v.(string)
 		if !slices.Contains(AutonomyLevels, s) {
@@ -149,7 +152,8 @@ func ReadConfig(settings map[string]any) (Config, error) {
 		min, max int
 		to       *int
 	}{{"next-max", 0, NextMaxLimit, &c.NextMax}, {"stuck-days", 1, StuckDaysLimit, &c.StuckDays},
-		{"undone-max", 1, UndoneMaxLimit, &c.UndoneMax}, {"proposals-max", 1, ProposalsMaxLimit, &c.ProposalsMax}} {
+		{"undone-max", 1, UndoneMaxLimit, &c.UndoneMax}, {"proposals-max", 1, ProposalsMaxLimit, &c.ProposalsMax},
+		{"repeated-percent-max", 1, 100, &c.RepeatedPercent}} {
 		if v, ok := settings[b.name]; ok && v != nil {
 			n, isNumber := whole(v)
 			if !isNumber || n < b.min || n > b.max {

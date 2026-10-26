@@ -1,8 +1,8 @@
 ---
 type: reference
-sources: [internal/backlog/backlog.go, internal/backlog/plain.go, internal/backlog/write.go, internal/work/headings.go, internal/work/work.go, internal/forge/forge.go, internal/engine/backlog.go]
+sources: [internal/backlog/backlog.go, internal/backlog/plain.go, internal/backlog/repeat.go, internal/backlog/write.go, internal/work/headings.go, internal/work/work.go, internal/forge/forge.go, internal/engine/backlog.go]
 status: draft
-checked: 582ca3c7
+checked: a7467d4f
 verified: agent:claude-code
 ---
 # Refining to ready
@@ -87,6 +87,17 @@ what it can and asks for the rest:
   kept (`description-kept`, said). It follows the refine's mode and
   level as the drafts do: at `cautious`, proposed. The issue's one line
   says "Rewrote: the description, in plain words."
+- **A draft that repeats is not written** (ADR-0039, amended;
+  `backlog.Repeated`): containment, the share of its words already said
+  above it, over one-word shingles, common words out. Compared: an
+  example or a bug's steps with all above them as the issue will read —
+  the text on top and the Need. Never Validation, which restates the
+  case by design. Past `repeated-percent-max` (40 by default, 1 to 100),
+  the draft is left out, the rest of the refine kept (`repeated`, said),
+  and the issue's line says "Not written: the Example, which said again
+  what is above it." What a person said yes to — a proposal accepted
+  with the label, a text the reporter agreed to — is written as they
+  read it, measured when it was proposed.
 - **What it writes is readable**, where the engine can tell
   (`backlog.LinkDecisions`, `backlog.MarkClosed`): a decision cited bare,
   `ADR-0038`, becomes a link to its page on the forge, when the commit
