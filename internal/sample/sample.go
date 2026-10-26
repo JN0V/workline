@@ -85,6 +85,7 @@ type Result struct {
 type Read struct {
 	Doc      string            `json:"doc"`
 	Commit   string            `json:"commit"`             // the commit that moved its `checked`
+	In       string            `json:"in,omitempty"`       // the merge request it came by, read on its head (a squash)
 	Checked  map[string]string `json:"checked"`            // what it moved it to
 	Previous map[string]string `json:"previous,omitempty"` // what it was before
 	By       []string          `json:"vouched-by,omitempty"`
@@ -116,6 +117,7 @@ type candidate struct {
 	doc, commit       string
 	checked, previous map[string]string
 	by                []string
+	in                string // the merge request it came by, read on its head
 }
 
 // Draw picks the week's sample: each doc of it read, the other roles'
@@ -178,7 +180,7 @@ func draw(o Options, res *Result) error {
 	// `checked` naming a commit a squash left off the branch is read
 	// there, and the trailers a squash dropped (ADR-0046). A day early: a
 	// merge's moment and its commit's may differ.
-	h := &heads{in: map[string]string{}, squash: map[string]bool{}}
+	h := newHeads()
 	if o.Forge != nil {
 		if h, err = mergedIn(o.Repo, o.Forge, since.AddDate(0, 0, -1), base, tip, after); err != nil {
 			res.NotDrawn = append(res.NotDrawn, fmt.Sprintf("the merge requests merged in the window: the forge did not answer: %v", err))
@@ -189,7 +191,7 @@ func draw(o Options, res *Result) error {
 	if err != nil {
 		return err
 	}
-	cands, err := vouched(o.Repo, settings, append(docCommits, h.own...))
+	cands, err := vouched(o.Repo, settings, append(docCommits, h.own...), h)
 	if err != nil {
 		return err
 	}
@@ -402,24 +404,18 @@ func window(repo string, from, to time.Time) (base, tip string, err error) {
 // given — the window's, newest first, then the heads' of the merge
 // requests merged in it —, one per doc and value: a commit carrying its
 // Workline-Role (its own, or squashed into another's message), or setting
-// `verified: agent:documentalist` on the doc.
-func vouched(repo string, s documentalist.Settings, commits []string) ([]candidate, error) {
+// `verified: agent:documentalist` on the doc. A squash drops its commits'
+// trailers, or mixes them, in the commit a merge request became: the
+// commit of its head that moved the same `checked` says whose the move
+// was, and who vouched (ADR-0046); the act stays the squash's, its earlier
+// `checked` the one the branch had.
+func vouched(repo string, s documentalist.Settings, commits []string, h *heads) ([]candidate, error) {
 	var out []candidate
 	seen := map[string]bool{}
 	for _, c := range commits {
-		msg, err := git(repo, "log", "-1", "--format=%B", c)
+		bot, by, err := trailers(repo, c)
 		if err != nil {
 			return nil, err
-		}
-		bot, by := false, []string(nil)
-		for _, l := range strings.Split(msg, "\n") {
-			l = strings.TrimSpace(l)
-			if v, ok := strings.CutPrefix(l, "Workline-Role:"); ok && strings.TrimSpace(v) == "documentalist" {
-				bot = true
-			}
-			if v, ok := strings.CutPrefix(l, "Workline-Model:"); ok && strings.TrimSpace(v) != "" {
-				by = append(by, strings.TrimSpace(v))
-			}
 		}
 		files, err := git(repo, "diff-tree", "--root", "--no-commit-id", "-r", "--name-only", c)
 		if err != nil {
@@ -429,35 +425,107 @@ func vouched(repo string, s documentalist.Settings, commits []string) ([]candida
 			if f == "" || !s.IsDoc(f) {
 				continue
 			}
-			after, err := git(repo, "show", c+":"+f)
-			if err != nil {
-				continue // removed
-			}
-			d, _ := documentalist.ParseDoc(f, []byte(after))
-			if d == nil || len(d.Checked) == 0 {
+			m, ok := moved(repo, c, f)
+			if !ok {
 				continue
 			}
-			before, _ := git(repo, "show", c+"^:"+f)
-			prev, _ := documentalist.ParseDoc(f, []byte(before))
-			var previous map[string]string
-			if prev != nil {
-				previous = prev.Checked
-			}
-			if fmt.Sprint(previous) == fmt.Sprint(d.Checked) {
-				continue
-			}
-			if !bot && !(verifiedByAgent(after) && !verifiedByAgent(before)) {
-				continue
-			}
-			key := f + "\x00" + fmt.Sprint(d.Checked)
+			key := f + "\x00" + fmt.Sprint(m.checked)
 			if seen[key] {
 				continue // a later move to the same commit stands for it
 			}
+			isBot, who, mine := bot, by, bot || m.verified
+			if heads := h.of[c]; len(heads) > 0 {
+				// A squash's message and header mix its commits' acts: the
+				// head's commit that moved this `checked` says whose it is.
+				if isBot, who, err = movedOnHead(repo, heads, f, m.checked); err != nil {
+					return nil, err
+				}
+				mine = isBot
+			}
+			if !mine {
+				continue
+			}
 			seen[key] = true
-			out = append(out, candidate{doc: f, commit: c, checked: d.Checked, previous: previous, by: by})
+			out = append(out, candidate{doc: f, commit: c, checked: m.checked, previous: m.previous, by: who, in: h.in[c]})
 		}
 	}
 	return out, nil
+}
+
+// trailers say whether a commit's message carries the documentalist's
+// Workline-Role, and the models its Workline-Model names.
+func trailers(repo, c string) (bool, []string, error) {
+	msg, err := git(repo, "log", "-1", "--format=%B", c)
+	if err != nil {
+		return false, nil, err
+	}
+	bot, by := false, []string(nil)
+	for _, l := range strings.Split(msg, "\n") {
+		l = strings.TrimSpace(l)
+		if v, ok := strings.CutPrefix(l, "Workline-Role:"); ok && strings.TrimSpace(v) == "documentalist" {
+			bot = true
+		}
+		if v, ok := strings.CutPrefix(l, "Workline-Model:"); ok && strings.TrimSpace(v) != "" {
+			by = append(by, strings.TrimSpace(v))
+		}
+	}
+	return bot, by, nil
+}
+
+// move is a doc's `checked` a commit moved.
+type move struct {
+	checked, previous map[string]string
+	verified          bool // `verified: agent:documentalist` newly set
+}
+
+// moved is the move of f's `checked` in commit c, if c moved it.
+func moved(repo, c, f string) (move, bool) {
+	after, err := git(repo, "show", c+":"+f)
+	if err != nil {
+		return move{}, false // removed
+	}
+	d, _ := documentalist.ParseDoc(f, []byte(after))
+	if d == nil || len(d.Checked) == 0 {
+		return move{}, false
+	}
+	before, _ := git(repo, "show", c+"^:"+f)
+	prev, _ := documentalist.ParseDoc(f, []byte(before))
+	var previous map[string]string
+	if prev != nil {
+		previous = prev.Checked
+	}
+	if fmt.Sprint(previous) == fmt.Sprint(d.Checked) {
+		return move{}, false
+	}
+	return move{checked: d.Checked, previous: previous, verified: verifiedByAgent(after) && !verifiedByAgent(before)}, true
+}
+
+// movedOnHead reads, on a squashed merge request's head, the newest commit
+// that moved f's `checked` to the value given: whether it was the
+// documentalist's — its Workline-Role, or `verified: agent:documentalist`
+// newly set — and the models it names. None, or a person's: not the
+// documentalist's.
+func movedOnHead(repo string, heads []string, f string, checked map[string]string) (bool, []string, error) {
+	for _, c := range heads {
+		m, ok := moved(repo, c, f)
+		if !ok || fmt.Sprint(m.checked) != fmt.Sprint(checked) {
+			continue
+		}
+		bot, by, err := trailers(repo, c)
+		if err != nil || !(bot || m.verified) {
+			return false, nil, err
+		}
+		return true, by, nil
+	}
+	return false, nil, nil
+}
+
+// earnedInParts: the doc, as vouched for, records it was judged in parts at
+// the commit its `checked` names, as the documentalist writes it when its
+// parts supported every line stating something (#482).
+func earnedInParts(d *documentalist.Doc) bool {
+	at, checked := d.JudgedInParts, d.Checked[""]
+	return len(d.Checked) == 1 && len(at) >= 7 && len(checked) >= 7 && (strings.HasPrefix(at, checked) || strings.HasPrefix(checked, at))
 }
 
 // verifiedByAgent: the doc's header says the documentalist vouched for it.
@@ -511,7 +579,7 @@ func pick(week string, keys []string) []int {
 // `checked` names, and checks every quote of the answer.
 func (rd *reader) readOne(c candidate) Read {
 	repo, s, auditor, spec := rd.o.Repo, rd.settings, rd.auditor, rd.spec
-	r := Read{Doc: c.doc, Commit: short(repo, c.commit), Checked: c.checked, Previous: c.previous, By: c.by}
+	r := Read{Doc: c.doc, Commit: short(repo, c.commit), In: c.in, Checked: c.checked, Previous: c.previous, By: c.by}
 	content, err := git(repo, "show", c.commit+":"+c.doc)
 	d, _ := documentalist.ParseDoc(c.doc, []byte(content))
 	if err != nil || d == nil {
@@ -521,7 +589,13 @@ func (rd *reader) readOne(c candidate) Read {
 	evidence, fits, err := documentalist.SourcesAt(repo, d, s.WholeCap())
 	switch {
 	case err != nil:
-		r.Verdict, r.Why = "not-read", err.Error()+"; for a person"
+		r.Verdict, r.Why = "not-read", err.Error()+missingWords(rd.o.Forge, err)+"; for a person"
+		return r
+	case !fits && earnedInParts(d):
+		// Its parts supported every line stating something (#482): earned,
+		// though no task could read its sources whole, nor can this one.
+		r.Verdict = "not-read"
+		r.Why = fmt.Sprintf("its `checked` was earned once judged in parts (`judged-in-parts` at the same commit): its sources take more than the %d characters the sample reads whole (whole-chars), so it is not read here; for a person to read against them", s.WholeCap())
 		return r
 	case !fits:
 		r.Verdict = "unearned"
@@ -596,6 +670,22 @@ func (rd *reader) readOne(c candidate) Read {
 		r.Panel = rd.settleByPanel(c.doc+"\x00"+c.commit, "checked", true, r.Proofs, task(c, d, content, evidence), &r.Verdict, &r.Why)
 	}
 	return r
+}
+
+// missingWords say, for a `checked` naming a commit the clone does not
+// have, where else the sample looked for it, or how it would: a squash
+// leaves it on its merge request's head (ADR-0046).
+func missingWords(f forge.Forge, err error) string {
+	if !errors.Is(err, documentalist.ErrNotInClone) {
+		return ""
+	}
+	if f == nil {
+		return ": a squash may have left it off the branch; with a forge (`--forge`, or the project's `forge`), the sample fetches it from the head of its merge request"
+	}
+	if _, ok := f.(forge.Merged); ok && !forge.KeepsBranches(f) {
+		return ", nor the heads of the merge requests merged in the window"
+	}
+	return ""
 }
 
 // claimed is a claim of the auditor's answer: the catalogue's shape.
@@ -730,7 +820,7 @@ func ask(spec string, auditor *role.Role, taskText string) ([]intent.Intention, 
 
 // findings say each read, at its doc.
 func findings(r Read) []verdict.Finding {
-	at := fmt.Sprintf("vouched for in %s at `checked: %s`", r.Commit, checkedWords(r.Checked))
+	at := fmt.Sprintf("vouched for in %s at `checked: %s`", r.where(), checkedWords(r.Checked))
 	who := ""
 	if r.Judge != "" {
 		who = fmt.Sprintf("; read by %s, independence: %s", r.Judge, r.Independence)
@@ -755,6 +845,15 @@ func findings(r Read) []verdict.Finding {
 		return []verdict.Finding{{Rule: "vouched-unearned", Where: r.Doc, Message: r.Why + "; " + at}}
 	}
 	return []verdict.Finding{{Rule: "sample-not-read", Where: r.Doc, Message: r.Why + "; " + at}}
+}
+
+// where is the commit that vouched, and the merge request it came by
+// when a squash left its commits on its head.
+func (r Read) where() string {
+	if r.In != "" {
+		return r.Commit + " (" + r.In + ")"
+	}
+	return r.Commit
 }
 
 // String is a proof as the findings and the issue say it.

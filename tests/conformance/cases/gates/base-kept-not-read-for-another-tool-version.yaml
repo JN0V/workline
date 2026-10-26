@@ -1,0 +1,21 @@
+case: gates/base-kept-not-read-for-another-tool-version
+about: >
+  A merge request whose tool runs another version than the one main
+  kept its findings with cannot read them: a rule the new version brings
+  would look new. The check runs again at the merge base, and says why;
+  the versions there differ too, said as before (ADR-0049).
+given:
+  repo: linted
+  setup:
+    - git checkout -q -b change
+    - |
+      echo 2.16.0 > .golangci-version && git add .golangci-version && git commit -qm "build: take golangci-lint 2.16.0"
+  env: {PATH: "$FIXTURES/bin:$PATH"}
+  config:
+    routing: {events: {merge-request: ["gate:merge"]}}
+    gates: {merge: {checks: [{id: lint, run: "golangci-lint run --output.sarif.path={out}/lint.sarif", output: sarif, max: {error: 0}}]}}
+run: {route: merge-request, input: {range: main..HEAD}, kept-on-main: main, summary: true}
+expect:
+  status: pass
+  findings: [{rule: tool-version-differs, where: lint, level: warn, message: "the head ran golangci-lint 2.16.0, the merge base golangci-lint 2.15.0"}]
+  summary-file: ["not read as kept on main: kept with golangci-lint 2.15.0, the head ran golangci-lint 2.16.0"]

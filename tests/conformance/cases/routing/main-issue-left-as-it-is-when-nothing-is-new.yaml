@@ -1,0 +1,32 @@
+case: routing/main-issue-left-as-it-is-when-nothing-is-new
+about: >
+  Nothing new, no noise (ADR-0050): the next merge only lengthens the doc
+  already over its budget and moves its dead link down a line, so main's
+  run finds the same problems, counted otherwise. The issue is left as it
+  is: not rewritten, nothing posted, no other opened.
+given:
+  repo: linted
+  setup:
+    - "mkdir -p docs && printf '# Notes\\n\\nOne.\\n\\nSee [the guide](guide.md).\\n' > docs/notes.md && git add docs && git commit -qm 'docs: add notes'"
+  env: {PATH: "$FIXTURES/bin:$PATH"}
+  forge: {issues: []}
+  config:
+    routing: {events: {merge-request: [committer, documentalist, "gate:merge"]}}
+    gates: {merge: {checks: [{id: lint, run: "golangci-lint run --output.sarif.path={out}/lint.sarif", output: sarif, max: {error: 0}}]}}
+    roles: {documentalist: {settings: {budgets: {doc-lines: 3}}}}
+run:
+  route: main
+  input: {range: "HEAD^1..HEAD"}
+  main-issue: true
+  then: again
+  again-after:
+    - "sed -i 's/^One.$/One.\\n\\nOne more./' docs/notes.md && git commit -qam 'docs: say one more'"
+expect:
+  status: pass
+  findings:
+    - {rule: main-issue, message: "issue #1 kept"}
+    - {rule: main-issue, message: "nothing new nor gone on the default branch: issue #1 left as it is"}
+  forge:
+    issues:
+      - {id: 1, edits: 0, comments: 0, body-contains: ["5 lines; the budget is 3", "line 5 links to guide.md"]}
+      - {id: 2, absent: true}

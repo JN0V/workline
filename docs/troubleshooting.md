@@ -1,6 +1,6 @@
 ---
-sources: [internal/doctor, internal/hooks, cmd/workline, internal/builtin/documentalist/documentalist.go, internal/builtin/productowner/productowner.go, internal/forge/local.go]
-checked: 1b93a955
+sources: [internal/doctor/doctor.go, internal/doctor/conversations.go, internal/doctor/variables.go, internal/hooks/hooks.go, cmd/workline/main.go, cmd/workline/cli.go, internal/forge/local.go]
+checked: 8ccdfb74
 verified: agent:claude-code
 ---
 # Troubleshooting
@@ -19,6 +19,11 @@ tokens — and `--json` prints every finding.
 - **The binary moved**: the hooks call it where it was when installed.
   Install it to the same place, or run `workline hooks install --global`
   again.
+- **Written by another version**: doctor says `hooks-outdated`. Older
+  hooks skipped a repository's own `.git/hooks/` from a linked worktree
+  ([#551](https://github.com/JN0V/workline/issues/551)). Run `workline
+  hooks install --global` again; `--repo` too, then commit
+  `.githooks/commit-msg`.
 - **A repository sets its own `core.hooksPath`** (husky, lefthook…): git
   takes it over the global one. `workline doctor` in the repository says
   `hooks-bypassed`, naming the path, when its `commit-msg` (and `pre-push`,
@@ -27,7 +32,8 @@ tokens — and `--json` prints every finding.
   (or workline's global hook) as a command before a top-level `exit`: a
   comment or an `echo` does not count.
   The fix it prints:
-  - the path is `.githooks` or `.git/hooks`: unset it (`git config --local
+  - the path is `.githooks` or `.git/hooks` (the main one, from a linked
+    worktree too): unset it (`git config --local
     --unset core.hooksPath`); the global hooks run workline, then hand over
     to that folder;
   - another folder: add `workline hook <hook> "$@" || exit $?` at the top of
@@ -46,85 +52,27 @@ tokens — and `--json` prints every finding.
 | exit 64 and the usage | the command was misused, named on the first line: a missing `<role>` or `<event>`, an unknown option, a bad value; `workline <command> --help` shows its options |
 | `.workline/config.yaml: line N: …` | a key the engine does not know, a retired role, or a value YAML reads otherwise than written: it blocks rather than be ignored |
 
-## Docs suspect
+## A language no tool reads
 
-`docs suspect: N` at the push counts the docs whose `sources` the pushed
-commits touched; it never asks and never blocks. They are judged on the
-merge request, by gardening, or when you run `workline docs`. To clear one
-by hand: read it against its sources, fix it, and set its `checked` to the
-commit you read them at. A doc that names no `sources` is never suspect:
-`workline init` proposes them.
+- `language-gaps`: no tool reads one kind of it (lint, types, security,
+  dependencies); doctor names the tool and the gate check to add
+  ([languages](languages.md)). A warning: nothing blocks on it.
+- **A tool your CI runs is not seen**: a script of your own runs it.
+  Name it in a gate check.
+- **Vendored or generated code is counted**: mark its folder
+  `linguist-vendored` or `linguist-generated` in `.gitattributes`.
 
-On a release, a doc made suspect since the last release holds it (`due`,
-`suspect`) until judged.
+## Docs suspect, gardening paused
 
-`shallow-clone`: the clone lacks history the documentalist needs — the
-last release, or the commit a doc's `checked` names, so whether its
-sources changed cannot be told. It holds the release, and any run whose
-task is such a doc; `workline doctor` warns too. Fetch the whole history:
-`git fetch --unshallow`; in CI, GitHub's `fetch-depth: 0`, GitLab's
-`GIT_DEPTH: 0` (workline's templates set both).
-
-## Gardening paused
-
-`gardening-paused`: as many of the documentalist's merge requests wait for
-review as `max-open-merge-requests` allows (5). Review or close them;
-gardening proposes again when fewer wait.
-
-`merge-request-unread` (a warning): the branch of one of its merge
-requests could not be fetched from `origin`. The documentalist then knows
-that merge request by its task only: a doc it holds may be asked again;
-for one judging docs in parts (`fix-…`), every doc to judge in parts
-waits. Give the job read access to the repository's branches.
+`docs suspect: N` at the push, `record-unread`,
+`shallow-clone`, `gardening-paused`, `merge-request-unread`: what each
+means and what to do, in [the docs' troubleshooting](troubleshooting-docs.md).
 
 ## The product owner paused, or does nothing
 
-- `proposals-waiting`: more issues wait on your answer than
-  `proposals-max` (10): it reads only those you commented on. Answer
-  some — `workline:accepted`, a comment, the label taken off.
-  `proposal-held`: the same cap, for an issue not labelled yet; it is
-  labelled once fewer wait.
-- `issues-cut`: the night's share stopped where the prompt would pass
-  the role's context budget; those issues are read first the next night.
-  "The agent was not asked": one issue alone is over it; lower
-  `code-lines-max`.
-- An issue you commented on is read first, set aside or not: set aside,
-  your comment brings it back, completed as any other unless it says "not
-  now". A comment written before you took `workline:proposed` off goes
-  with that "not now", and does not bring it back.
-- `setting-gone`: `ignored-runs-max` or `weekly-sample` is no longer read;
-  take it off.
-- An issue gets nothing: the summary's "read, left incomplete" says why —
-  no file found for its Scope (link or name its files, or write the Scope
-  yourself), or nothing drafted (read again once it changes or someone
-  comments).
-- It runs only where routed: `schedule: [documentalist, product-owner]`.
-- An issue refined never goes ready, the reviewer after it in the line
-  ([#128](https://github.com/JN0V/workline/issues/128)): `spec-not-reviewed` — the reviewer reads `specs-per-run` issues a
-  run (5), the rest the next (`spec-waits`), none without an agent or
-  with `forge-writes: false`; `spec-findings-open` —
-  read the reviewer's comment on the issue; `spec-rounds-spent` — a
-  person decides: `workline:accepted`, or `workline:ready` by hand.
-- A hidden record does not read
-  ([#302](https://github.com/JN0V/workline/issues/302)): the issue is
-  held, said each run, never read as none.
-  - `state-broken`: mend the product owner's comment, or delete it.
-  - `proposal-unread`: copy the proposed sections into the issue.
-  - `spec-record-unread`: delete the reviewer's comment, or accept the
-    issue (`workline:accepted`).
-- A kind of act stays proposed on an issue where a person undid one, and
-  on every issue once undone `undone-max` times (`demoted`).
-- A file the issues were imported from, archived since, flags them each
-  time it is edited: name it in `archived`
-  ([ADR-0032](adr/0032-a-changed-need-flags-the-issues-built-on-it.md)).
-- `autonomy: cautious` notes and proposes: see the issues bearing
-  `workline:proposed`.
-- Nothing said stuck though issues wait: `stuck-unknown` says
-  which issues the forge gives no day for — the local forge keeps none, a
-  plugged forge may refuse `trail` or give comments without `created`.
-- `lines-unread`: an issue imported from a file, whose lines cannot be
-  followed — the commit it was opened at gone after a force-push, or
-  beyond a shallow clone: fetch the whole history (`fetch-depth: 0`).
+`proposals-waiting`, `issues-cut`, an issue that gets nothing or never
+goes ready, a hidden record that does not read: in
+[the product owner's troubleshooting](troubleshooting-product-owner.md).
 
 ## Token caps and the agent
 
@@ -133,9 +81,19 @@ waits. Give the job read access to the repository's branches.
   (`review-not-whole`, `lens-failed`) and says what each call used. `ai-max-calls`, `parts-max-per-run`, the product owner's
   `issues-per-run` and `code-lines-max`, the reviewer's `diff-lines-max`,
   `code-lines-max` and `tests-lines-max` size each run (each role's page).
+- `ai-max-seconds` (committer): the rewrite took more than the 30 s it
+  may; the message is refused with its reasons, as with no agent.
+- `personal-setting-ignored`: your own config sets what a role does not
+  let a person set; the project's stands
+  ([your own config](config.md#your-own-config)).
+- `review-not-whole`, "past parts-max" (reviewer): the change is too
+  large to read in the parts a run allows; split it, or raise
+  `parts-max` ([in parts](../roles/reviewer/docs/parts.md)).
 - `blocked-external` (exit 3): the agent's quota, a timeout, the forge or a
   repository failed. Never a verdict: run it again later. The CI templates
-  turn it into a warning, the docs listed for a person.
+  turn it into a warning, the docs listed for a person. A GitHub or
+  GitLab call is tried again first (which: [GitHub](github/calls.md),
+  [GitLab](gitlab/calls.md)).
 - `agent-unavailable`: the agent named cannot be called; doctor says why.
 - `model-changed`: another model answered an alias than last time on this
   machine; said once, never blocking.
@@ -150,11 +108,24 @@ waits. Give the job read access to the repository's branches.
 - GitLab: `CI_JOB_TOKEN` reaches no issue; give `GITLAB_TOKEN`
   ([ci-gitlab.md](ci-gitlab.md#gitlabcom)). A **protected** variable never reaches a merge
   request's pipeline on an unprotected branch.
+- GitLab, `tokens-not-scoped`: a token left to every environment reaches
+  the jobs running your linters; scope it to `workline`.
+  `tokens-scope-unread`: listing the variables needs a Maintainer's
+  token. A job saying `WORKLINE_GITLAB_TOKEN is not set, or not scoped`:
+  the variable is scoped elsewhere, or the template's copy is older than
+  its environment ([the environment](gitlab/environment.md)).
 - `findings-not-annotated`, on GitHub: the check `workline findings` was
   refused. Give `workline-apply.yml`'s `apply` job `checks: write`, and a
   GitHub App the permission **Checks**, read and write
   ([the App](ci-github-app.md)). The findings stay in the judge's job
   summary.
+- `gates-not-shown`, on GitHub: the check `workline gates` or the gates'
+  summary comment was refused, the same rights; the findings stay in the
+  gates' job summary. `moved-on`: the branch moved on before the apply,
+  and its next run shows its own ([gates in CI](gates-in-ci.md)).
+- A gate's `check-error` in `judge`, "the gates' job left no result": the
+  job `gates` did not run it, or failed first; read its log. Copy
+  `workline.yml` of this release again if it has no job `gates`.
 
 ## A pull request blocked, its checks green
 

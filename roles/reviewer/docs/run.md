@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/instruction.md, roles/reviewer/policy.md, roles/reviewer/lenses, internal/builtin/reviewer]
-checked: 1b93a955
+checked: b79ca968
 verified: agent:claude-code
 ---
 # Reviewer — a run on code
@@ -16,7 +16,7 @@ flowchart LR
   quotes --> where["6. Related or not"] --> judge["7. The judge"] --> verdict["8. The verdict"]
 ```
 
-## 1–3. The range, the rules, the record
+## 1–2. The range, the rules
 
 1. **The range.** `workline review`: `base..HEAD` (`base`, `--base`); on a
    merge request, the range CI gives. A change touching only what is not
@@ -27,8 +27,8 @@ flowchart LR
      past half its lines, git's similarity, it is a new file.
    - **A release tool's pull request**
      ([#384](https://github.com/JN0V/workline/issues/384)), told by its
-     branch as the documentalist tells it
-     ([ADR-0017](../../../docs/adr/0017-the-release-manager.md)): a file
+     branch (`release.branches`,
+     [ADR-0017](../../../docs/adr/0017-the-release-manager.md)): a file
      whose every changed line is a version the tool bumps is not code.
      - A bump: the same line but for its first version, as release-please
        replaces it, on a line the tool marks — `x-release-please-version` (or `-major`, `-minor`,
@@ -40,14 +40,26 @@ flowchart LR
 2. **The rules**, on the comments the change adds, no agent:
    - a story of the code (`bug-story`, `story-words`: "used to", "the bug
      was");
-   - a code internal to the project (`internal-code`, by the committer's
-     lists);
+   - a code internal to the project (`internal-code`, the committer's lists);
    - a block over `comment-block-max` lines (`long-comment`, a warning).
 
-   While a rule blocks, no agent is asked.
+   While a rule blocks, no agent is asked; one the project sets to `warn`
+   (`enforce`) only warns ([#550](https://github.com/JN0V/workline/issues/550)).
+
+## 3. The record
+
 3. **The record.** Commits a review answered whole are not asked again.
-   - It is kept in the summary comment on a merge request,
-     `.git/workline/reviewer-record` on a machine. One that does not read is said (`record-unread`, [#302](https://github.com/JN0V/workline/issues/302)): every commit reviewed again, once, as a whole review writes it anew.
+   - It is kept in the summary comment on a merge request, read only from the one workline's own account wrote and no one else edited last ([ADR-0051](../../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md)),
+     `.git/workline/reviewer-record` on a machine. One that does not read, or only another's carrying its marker, or one another edited, is said (`record-unread`, [#302](https://github.com/JN0V/workline/issues/302)): every commit reviewed again, once, as a whole review writes it anew.
+   - **A change to what its own pipeline runs** (`.github/`,
+     `.gitlab-ci.yml`, `.workline/`, and `pipeline-paths`), by any of its
+     commits: no commit is skipped on the record, nor left past five a
+     push; every one is read again, at each push, said (`line-changed`).
+     Such a merge request runs its own workflow, which wrote what the
+     record says.
+   - **`pipeline-paths`** (default none): what else the pipeline runs
+     scripts from, `[ci/, scripts/ci/]` say. Set it in
+     `.workline/config.yaml`, under `roles: {reviewer: {settings: …}}`.
    - Beside it on a merge request, a line per finding judged, every
      run's, for the weekly sample; kept even when the record does not
      read ([more](judge.md#every-finding-judged-kept-for-the-weekly-sample)).
@@ -61,13 +73,18 @@ flowchart LR
      resolution; never the base's code. Nothing settled: nobody asked.
    - New commits that change no code are recorded, nobody asked, the turn
      of the lenses kept.
+   - **A lens that does not answer** owes the commits: the record names
+     it (`failed=`), holds none of them, and the next run asks it first,
+     whosever turn it is ([#588](https://github.com/JN0V/workline/issues/588)).
    - **A push before the last review is written** waits for it, and reads it;
      a review written after another keeps its commits and lines ([#375](https://github.com/JN0V/workline/issues/375)).
+     The comment names the head and the CI run it is at, hidden: an older
+     run applied last keeps the newer one's text, its record merged in
+     ([#598](https://github.com/JN0V/workline/issues/598)).
    - **What blocked stands**, recorded too, until a commit answers it
      ([#326](https://github.com/JN0V/workline/issues/326), [more](judge.md#a-block-stands-until-a-commit-answers-it)).
-   - The run when a merge request becomes ready reads the whole change,
-     commits reviewed before too
-     ([below](#every-lens-once-when-it-becomes-ready)).
+   - The run on ready reads the whole change, commits reviewed before too ([below](#every-lens-once-when-it-becomes-ready));
+     after it, a lens that warns reads five new commits a push ([more](ready.md#after-ready-only-what-is-new)).
    - Why, and what git it needs:
      [ADR-0013](../../../docs/adr/0013-what-was-judged-is-not-asked-again.md#amendment-2026-10-12).
 
@@ -78,7 +95,8 @@ The lenses (`lenses/<lens>.md`, a project's own in
 intent, claims ([#126](https://github.com/JN0V/workline/issues/126)).
 Every one on a machine; on a merge request one a push, in turn
 (`lenses-per-push`), every one with `--input lenses=all`, once when it
-becomes ready ([below](#every-lens-once-when-it-becomes-ready)).
+becomes ready ([below](#every-lens-once-when-it-becomes-ready)); none
+on a draft (`--input draft=true`, [ADR-0050](../../../docs/adr/0050-each-act-has-its-moment-and-a-wait-budget.md)).
 
 - **Together** (`lenses-together`,
   [#147](https://github.com/JN0V/workline/issues/147)): the lenses of a run
@@ -90,8 +108,8 @@ becomes ready ([below](#every-lens-once-when-it-becomes-ready)).
     reviewed yet, whole, their trailers left, and the merge request's
     title and body (`testimony-lines-max`);
   - each file they change once: whole, the change marked in it, while the
-    files fit `code-lines-max`; the others by the change's hunks
-    (`diff-lines-max`).
+    files fit `code-lines-max`; the others by the change's hunks. A change
+    past one call (the budget, `diff-lines-max`): [in parts](parts.md).
 - **Intent** (`needs: issue`): a change saying `Closes #4` (or `fixes`,
   `resolves`, `implements`), in a commit or the merge request, has `#4` read
   from the forge, its Need, Verification and Scope given
@@ -106,7 +124,8 @@ becomes ready ([below](#every-lens-once-when-it-becomes-ready)).
   (`finding-unfounded`), and its cause the line contradicting it.
 - **What they answer**: `finding`s — lens, severity, title, why, its cause
   quoted, its symptom when elsewhere, a fix; the claims lens's, the claim;
-  a `decision`, the question for a person (step 6).
+  a finding holding `decision`, the question for a person (step 6),
+  never an item of its own.
 - **The diff alone** (`diff-alone`, off,
   [#126](https://github.com/JN0V/workline/issues/126)): a call of its own,
   given the change only (`git diff -U3`, up to `diff-lines-max`), not the
@@ -134,7 +153,7 @@ becomes ready ([below](#every-lens-once-when-it-becomes-ready)).
    - **The change's**: a cause on a line the change added or removed, or
      on a kept line within three of a removal (a hunk taking away more
      lines than it adds, [#224](https://github.com/JN0V/workline/issues/224)).
-     Reported on that line, for its author to fix.
+     Its author's: an important one on that line, a nit in the summary.
    - **A removal's reach**
      ([#357](https://github.com/JN0V/workline/issues/357)): a kept line
      further down is the change's too when, in the same function, it uses
@@ -178,15 +197,16 @@ becomes ready ([below](#every-lens-once-when-it-becomes-ready)).
 line. The judging job reads the summary comment, to know what was
 reviewed: on GitHub it needs a read token (`GH_TOKEN`,
 `pull-requests: read`), which
-[ci/github/workline.yml](../../../ci/github/workline.yml) gives it.
+[ci/github/workline.yml](../../../ci/github/workline.yml) gives it. The
+lenses that only warn read apart, in a comment of their own ([apart](apart.md)).
 
-- **Each finding on its line**, in the forge's own review; the summary
-  comment keeps a row for each, its title, and links to the review
-  ([each finding on its line](lines.md)).
+- **Each important finding on its line**, in the forge's own review; the
+  summary comment keeps a row for each, its title, links to the review,
+  and lists the nits last, asking nothing ([what it asks](lines.md#what-it-asks)).
 - **A blocked merge request still gets the comment**
   ([#226](https://github.com/JN0V/workline/issues/226)): what blocks
-  first, marked `**blocks**`, then the warnings; the issues outside the
-  change opened as on a pass (role.yaml's `on-block`).
+  first, marked `**blocks**`, then the warnings, then the nits; the issues
+  outside the change opened as on a pass (role.yaml's `on-block`).
 - **The record moves** as on a pass when every lens answered: the next
   push reviews only the new commits. A rule that blocks writes the comment
   too, the record left as it was: no lens ran.
@@ -195,6 +215,6 @@ reviewed: on GitHub it needs a read token (`GH_TOKEN`,
 
 ### Every lens once when it becomes ready
 
-The run when a merge request becomes ready reads every lens once, on
-the whole change: what tells it on each forge, a run on ready cancelled,
-a draft again, the cost: [the run on ready](ready.md).
+A draft asks no lens; the run when a merge request becomes ready reads
+every lens once, on the whole change: what tells it on each forge, a
+run on ready cancelled, a draft again, the cost: [the run on ready](ready.md).

@@ -1,0 +1,17 @@
+case: documentalist/version-bump-passes-the-release-a-feature-came-in
+about: "The three sentences #562 wrote, naming the release a feature came in (\"from v0.38.0\"), do not hold the next release, whose bump replaces v0.38.0 in their sources: history, not a pin (#346). Before, the 0.38.0 release was held by \"the first release after v0.37.0\", the same way."
+given:
+  repo: documented
+  setup:
+    - "mkdir -p ci && printf 'variables:\\n  WORKLINE_VERSION: v0.38.0   # x-release-please-version\\n' > ci/workline.gitlab-ci.yml && git add ci && git commit -qm 'ci: the template'"
+    - "C=$(git rev-parse --short HEAD) && printf -- '---\\nsources: [ci/workline.gitlab-ci.yml]\\nchecked: %s\\n---\\n# Triggers\\n\\nThe image `ghcr.io/jn0v/workline:<version>` holds the engine, gitleaks,\\ngit, jq, npm and, from v0.38.0, `ssh-keygen`.\\n' $C > docs/triggers.md && printf -- '---\\nsources: [ci/workline.gitlab-ci.yml]\\nchecked: %s\\n---\\n# A merge queue\\n\\n- **The engine**: from v0.38.0.\\n' $C > docs/merge-queue.md && printf -- '---\\nsources: [ci/workline.gitlab-ci.yml]\\nchecked: %s\\n---\\n# Signed commits on GitLab\\n\\n- **The image** holds `ssh-keygen` (`openssh-client`) from v0.38.0.\\n' $C > docs/signed-commits.md && git add docs && git commit -qm 'docs: name v0.38.0 where three docs said after v0.37.0'"
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git tag v0.38.0 && git push -q origin main"
+    - "git checkout -qb release-please--branches--main && sed -i 's/v0.38.0/v0.39.0/' ci/workline.gitlab-ci.yml && git commit -qam 'chore(main): release 0.39.0' && git push -q origin release-please--branches--main"
+  forge: {merge-requests: [{id: 1, branch: release-please--branches--main, base: main, labels: [], comments: []}]}
+run: {role: documentalist, event: merge-request, target: {merge-request: 1}, ai: none}
+expect:
+  status: pass
+  no-findings:
+    - {rule: suspect, where: docs/triggers.md}
+    - {rule: suspect, where: docs/merge-queue.md}
+    - {rule: suspect, where: docs/signed-commits.md}

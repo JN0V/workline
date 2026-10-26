@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog/backlog.go, internal/backlog/opening.go, internal/backlog/acts.go, internal/builtin/productowner/productowner.go, internal/engine/backlog.go]
 status: draft
-checked: 1b93a955
+checked: a7467d4f
 verified: agent:claude-code
 ---
 # The issue's state
@@ -19,6 +19,7 @@ judged: 1a8e5a4                          # the commit the role last read it at
 comments: 2                              # an older engine's count of the comments it read; `heard` now (A person's answers)
 body: 3f9a1c0e2b7d                       # a digest of its body, when last read or written
 priority: 2                              # the priority the role last set (Ordering)
+effort: 1                                # the effort the role set, once; -1, set in a field whose values are hidden (Ordering)
 title: The CSV export drops the last row  # the title the role last set (Renaming)
 split: [13, 14]                          # the children it was split into (Splitting)
 kept: ['src/export/csv.go:b2a6ba892dee'] # announcements as obsolete kept open, by their quote (Closing)

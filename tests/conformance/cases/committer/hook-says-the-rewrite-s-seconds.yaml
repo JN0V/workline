@@ -1,0 +1,12 @@
+case: committer/hook-says-the-rewrite-s-seconds
+about: "The hook that had a message rewritten says how long the commit took, and the rewrite (ADR-0050): whether rewrites stay within their 30 s is read there, each call's seconds kept in the run's calls.jsonl too. Within that budget, nothing more."
+given:
+  repo: basic
+  setup: ["printf 'fix: AC-3\\n' > .git/COMMIT_EDITMSG"]
+  env: {WORKLINE_AI: "fake:$FIXTURES/agents/good-commit-message.yaml"}
+run: {cli: [hook, commit-msg, .git/COMMIT_EDITMSG]}
+expect:
+  exit: 0
+  stderr: ["workline committer: pass", "\nworkline: ", " s in all — committer ", " s (rewrite ", "the commit goes on with this message instead of yours"]
+  stderr-lacks: ["over its budget"]
+  run-files: {out/calls.jsonl: {contains: "\"seconds\":"}}

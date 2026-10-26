@@ -1,0 +1,7 @@
+case: cli/queue-reads-nothing-apart
+about: "A merge queue's or train's run runs the gates alone, the run apart from the verdict (--warn-only) no gate: both at once is misuse, 64."
+given: {repo: basic}
+run: {cli: [route, merge-request, --warn-only, --input, queue=true]}
+expect:
+  exit: 64
+  stderr: ["--warn-only reads what only warns, a queue's run (--input queue=true) only the gates: one or the other"]

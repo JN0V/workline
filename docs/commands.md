@@ -1,7 +1,7 @@
 ---
 sources: [cmd/workline, internal/engine/engine.go, internal/hooks]
-checked: 9fcf6cf6
-verified: agent:documentalist
+checked: 87a81d4a
+verified: agent:claude-code
 judged: e343388
 ---
 # The commands, in detail
@@ -15,7 +15,9 @@ What a role does is on its page ([roles](roles.md)).
 
 `workline run-role <role> --event <event>` runs one role: prepare,
 propose, judge, apply, again if `pre` left work for later (`in/more`), up
-to 5 rounds, then a task it asks last (`in/then`). [Options](usage.md#options-of-run-role-and-route).
+to 5 rounds, then a task it asks last (`in/then`). On a release tool's
+pull request, up to 20 rounds, one fix for them all
+([the role contract](spec/role-contract.md)). [Options](usage.md#options-of-run-role-and-route).
 
 ### workline route
 
@@ -25,6 +27,31 @@ step runs and the worst verdict stands (`fail-fast`,
 [ADR-0037](adr/0037-the-schedule-runs-every-step.md)); an agent's proposal
 refused there is said as warnings, not failed
 ([amended](adr/0037-the-schedule-runs-every-step.md#amendment-2026-10-09-a-refused-proposal-is-said-not-failed)).
+`--input skip=<step>,…` leaves those steps out
+([steps left out](spec/routing.md#steps-left-out)).
+With `--gates-only`, the event's gates alone run, each one, for a CI job
+of their own; `--gates-from <file>` reads their verdicts from its result
+instead of running them ([gates in CI](gates-in-ci.md)).
+With `--warn-apart`, a role that reads what only warns apart on the event
+(role.yaml's `apart`: the reviewer's lenses that warn and the inspector's
+triage, on a merge request) leaves it; `--warn-only` runs only that,
+never a gate nor another role, and writes no verdict (`--verdict`
+refused): what only warns, apart from the verdict
+([apart](../roles/reviewer/docs/apart.md)). Given `--gates-from`, it
+hands the gates' result to the inspector
+([the inspector](../roles/inspector/README.md#set-it-up)). Both flags, or
+one and an `--input warn=` naming the other run, are misuse.
+With `--input queue=true`, a merge queue's or train's run: the gates
+alone, on the merged result, the steps left named; `--verdict` and
+`--warn-only` refused ([a merge queue or train](merge-queue.md)).
+`route main`, after a merge: the merge request's gates, then the
+whole repository's checks, every step run; `--gates-kept <folder>`
+keeps the gates' findings there by commit, and on a merge request reads
+its merge base's there ([main after a merge](main-after-merge.md)).
+`route release --dry-run`: what would hold the release if it were cut
+now from the branch's tip; every
+step, no agent, nothing applied, said as warnings
+([the release](release.md)).
 
 ### workline apply
 
@@ -46,11 +73,27 @@ refused there is said as warnings, not failed
 - With both, on GitHub: the line's documentalist findings as annotations
   of the check `workline findings` on the head judged; `checks: write`
   ([#412](https://github.com/JN0V/workline/issues/412)).
+- `--gates <file>`, with `--from-merge-request`: what the gates found the
+  change adds, from the result `route --gates-only --json` printed in
+  that run; on GitHub, the annotations of the check `workline gates` and
+  one summary comment ([gates](spec/gates.md#shown-on-the-merge-request)).
+- `--main <file>`, alone: what `route main --json` found, kept in one
+  issue, edited only when what it lists changes; `--forge`, `--repo`
+  ([main after a merge](main-after-merge.md)).
+- `--release-dry-run <file>`, alone: what `route release --dry-run
+  --json` found, in a part of main's issue; edited only when what it lists
+  changes ([the release](release.md)).
 
 ### workline gate
 
 `workline gate <name>` runs a gate declared in `.workline/config.yaml`
-([gates](spec/gates.md)); it returns 0 or 1.
+([gates](spec/gates.md)); it returns 0 or 1. Its summary says how it
+counted ([more](spec/gates.md#with-workline-gate)):
+
+- **Every finding**, by default.
+- **`--base <rev>`**: only those the change adds since the merge base of
+  `<rev>` and `HEAD`; `--gates-kept <folder>`, the base's read as main
+  kept them.
 
 ## workline review
 
@@ -163,7 +206,7 @@ kind has any, drawn the same on a rerun.
 - **A cap**: `sample.ai-max-tokens`, 400,000 by default; each role's first
   act read before any second, the rest listed unread.
 - **A squash**: each merge request's head is fetched from the forge's ref
-  for it; a `checked` naming one of its commits is read there.
+  for it, to read the commit a `checked` names and who moved it there.
 - **Writes nothing**; `--out <file>` keeps the result.
 - **`workline sample --apply <file> --forge <forge>`** (default: the
   project's `forge`), with no agent:
@@ -183,26 +226,18 @@ kind has any, drawn the same on a rerun.
 
 ### workline follow
 
-Run when the default branch moves (CI's `follow` job,
-[ADR-0034](adr/0034-the-release-fix-follows-its-base.md)), with no agent.
+Run when the default branch moves (CI's `follow` job), with no agent.
 
-- Each open merge request from `workline/<role>/release`
-  ([ADR-0017](adr/0017-the-release-manager.md)) whose base moved under it
-  is rebuilt on the base's new tip and force-pushed, the merge request
-  kept (`rebuilt`):
-  - its change redone file by file, a doc's header key by key, the
-    base's value kept where both changed a key;
-  - one on the tip already is left alone.
-- **Never rebuilt** (`not-rebuilt`, a warning): one holding a commit
-  without the role's `Workline-Role` trailer, or a merge, or that did not
-  leave from the base's history (its merge request goes into another
-  branch).
-- **Left for a person**: one whose change no longer applies
-  (`no-longer-applies`, exit 2).
-- **`--gardening`**, run by gardening's applying job: each other merge
-  request of a role (`workline/<role>/<task>`) is tended too
+- **`--gardening`**, run by gardening's applying job: each merge
+  request of a role (`workline/<role>/<task>`) whose base moved under it
+  is tended
   ([ADR-0034, amended](adr/0034-the-release-fix-follows-its-base.md#amendment-2026-10-12-gardenings-merge-requests-follow-too-or-are-closed)):
-  - rebuilt the same way (`rebuilt`);
+  - rebuilt on the base's new tip and force-pushed, the merge request
+    kept (`rebuilt`): its change redone file by file, a doc's header key
+    by key, the base's value kept where both changed a key; one on the
+    tip already is left alone;
+  - never rebuilt (`not-rebuilt`, a warning) when it did not leave from
+    the base's history (its merge request goes into another branch);
   - closed, one comment saying why (`closed`), when nothing is left to
     merge: the base holds its change, changed the same lines, or changed
     the docs it only records as read (a record whose docs it did not
@@ -210,13 +245,15 @@ Run when the default branch moves (CI's `follow` job,
   - one a person committed to is left to them, named when it is in
     conflict with the base (`not-rebuilt`), or when git cannot tell
     (`conflict-unread`).
-- **People's pull requests**, with the documentalist's `update-branches:
-  conflicts`: one in conflict only on lines workline writes gets the base
-  merged in (`merged`); any other is left, named (`not-merged`)
-  ([when the base moves](../roles/documentalist/docs/follow.md)).
+- **People's pull requests** are never written to: a conflict with the
+  base, on a doc's `checked` too, is their author's
+  ([ADR-0051](adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-3-no-docs-obligation-per-pr)).
 - **The [merge policy](merge-policy.md)**, with `merge:`: auto-merge on
   for what a person accepted — at `normal`, workline's own routine work
-  too —, the first in line brought up to date.
+  too —, each merging once its own head is green.
 - Options: `--base` (default: the branch checked out), `--forge`,
   `--repo`, `--json`, `--summary`; `--verdict <file>`, a head's verdict
-  `route --verdict` wrote, kept first (`--verdict-only`: nothing else).
+  `route --verdict` wrote, kept first (`--verdict-only`: nothing else);
+  `--merge-group <branch> --head <commit>`, with `merge:`, the yes of the
+  head a merge queue's group ends with set on the group's commit, and
+  nothing else ([a merge queue](merge-queue.md)).

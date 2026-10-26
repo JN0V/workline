@@ -1,8 +1,8 @@
 ---
 sources: [tests/conformance/runner_test.go, tests/evaluation]
-checked: 9fcf6cf6
-verified: agent:documentalist
-judged: af2d6fb
+checked: 5f7a907a
+verified: agent:claude-code
+judged: ae14474
 ---
 # Conformance — v1 (draft)
 
@@ -79,8 +79,19 @@ What else a case can give, run and expect, and how each is checked, is in
   of the fixtures as the agent: one that reads the prompt, for a case where
   each call asks something else (`FIXTURES` names the fixtures folder).
 - **Fake tools.** `fixtures/bin/` holds tools that need the network, replaying
-  an answer the real one gave: `lychee` (recorded from 0.24.2). A case puts
+  an answer the real one gave: `lychee` (recorded from 0.24.2); and
+  `golangci-lint`, for the gates' cases: SARIF as 2.15.0 writes it,
+  `errcheck` and `godot` read from the tree, `//nolint` skipped. A case puts
   them first: `env: {PATH: "$FIXTURES/bin:$PATH"}`.
+- **Fake gh.** `fixtures/gh/gh` stands for GitHub's CLI, for a case that
+  runs GitHub's own forge code (`forge: github`): a pull request, a
+  commit's check runs and a merge request's comments, each call numbered
+  in `$GH_LOG` with the annotations it sent, for `files` to check; with
+  `--include`, each answer after its status and headers, as gh prints
+  them. `$GH_FAULT` (`"POST issues/1/comments 502"`) fails a call for a
+  moment: a status (502, 503, 429, 403 for the rate) or `stall`, a write
+  taken all the same; `$GH_FAULT_TIMES` calls (1, 0 all), and a call
+  sooner than `$GH_FAULT_RETRY_AFTER` refused again, said in the log.
 - **Unavailable agent.** `unavailable:quota` (or `auth`, `network`) fails the
   way a real agent does when a quota runs out.
 - **Command forge.** `cmd:sh "$FIXTURES/forges/logged.sh"` plugs a script
@@ -99,12 +110,19 @@ What else a case can give, run and expect, and how each is checked, is in
   author, insider, bot, created}`); `reactions-by`, the reactions people
   put on its comments, by the comment's id (`{emoji, author, writer}`);
   `edits`, its earlier bodies, newest first, as GitHub's edit history
-  keeps them, a body set adding the one it replaces. A comment is its text, or `{body,
+  keeps them, a body set, or an issue kept in place rewritten to another,
+  adding the one it replaces. A comment is its text, or `{body,
   author, insider, bot, id}`, its id its place from 1 when not given, kept
   once a comment before it is deleted; an edit keeps a comment's author;
   `posted` counts the comments posted on an issue, each one a mail on a
   real forge; with
-  `scoped-labels: true`, the forge's labels are scoped, as GitLab's. A
+  `scoped-labels: true`, the forge's labels are scoped, as GitLab's; with
+  `issue-fields` (`{id, name, options, public}`), it keeps single-select
+  issue fields, as a GitHub organisation's, an issue's values in its
+  `fields` (`{Priority: High}`), the repository `public: true`, and
+  `fields-blind: <why>` a token that reads no value visible to members
+  only; with `weights: true`, its issues carry a weight, as GitLab
+  Premium's, an issue's in its `weight`. A
   merge request's `threads` are its comments on lines, `{path, line,
   body, resolved}`: a review is posted whole, as GitHub's, on the lines
   of the repository's diff from the merge request's `base` (main) to the
@@ -126,14 +144,23 @@ What else a case can give, run and expect, and how each is checked, is in
   over the same file: its `members` (`{username, access_level}`) are the
   project's, what the engine writes is the token user's, a note another
   user wrote refuses an edit (403), an `is_blocked_by` link is refused for
-  its license (403) as on GitLab Free, and GraphQL refuses all. A merge
+  its license (403) as on GitLab Free, and GraphQL refuses all. With
+  `weights`, its issues carry Premium's `weight` key, set by a `PUT`;
+  without, Free's: no key, a weight sent ignored. `variables` are the
+  project's CI/CD variables, else `variables-refused`. A merge
   request's diffs are the repository's, from its `base` (main) to its
   `branch` (HEAD); a discussion on a line they do not show, or on a kept
   line without its old one, lands on no line, as on gitlab.com;
   `review-refused` refuses every discussion (403). Its merge API sets a
   merge request to merge when its pipeline succeeds, at its head only
   (409 otherwise), says when in a system note, and cancels it; its
-  versions are its `pushes`.
+  versions are its `pushes`. Its `faults` fail calls for a moment
+  (`{method, path, stall, status, retry-after, skip, times}`): a call on
+  the project's `path` (`/issues/9/notes`) gets no answer until the
+  engine gives up (`stall`, a write taken all the same), or the `status`;
+  `skip` calls are answered first, then `times` fail (all, without), and
+  a call sooner than its `retry-after` is refused again. A fault no call
+  met fails the case. A note posted counts in `posted`.
 
 ## Evaluation
 
@@ -169,6 +196,8 @@ The reviewer's cases ask every lens in one call, as on a machine;
 `WORKLINE_EVAL_LENSES` names the lenses asked (`diff-alone`: the facet
 alone) and `WORKLINE_EVAL_REVIEWER` sets its settings, a YAML map
 (`{lenses-together: false}`: each lens apart; `{ai-max-tokens: 10000}`).
+The committer's cases turn its rewrite on (`rewrite: true`), over the
+project's config at that commit: the rewrite is what they measure.
 A reviewer case may hold a simulated forge (`given.forge`, as a
 conformance case's): the issues its change closes. A case is read as strictly as a conformance case: a key no field names fails to load
 it, as does a check `grade` does not know. Besides the fixtures, a case can start from this repository
@@ -179,10 +208,12 @@ in `grade` is a point: `status`, `agent-calls-max`, `subject-max`,
 `keeps-words` (the share of the author's subject words kept), `no-vague-words`,
 `file-contains`, `file-lacks`, `checked-is-head`, `judged-is-head` (the
 doc's `judged` names the commit judged), `checked-unchanged` (the doc keeps
-the `checked` it had), `body-unchanged`, `never-confirms` (a claim fixed, or
+the `checked` it had), `body-unchanged` (the doc below its header),
+`never-confirms` (a claim fixed, or
 left unconfirmed, never checked again as it is), `finding` and `no-finding`
 (a finding of the run, or none, by `rule`, a part of `where` and of
-`message`, each when given), `lines-max`, `new-files-min`, and `judge`. A case's score is the points it earned; nothing
+`message`, each when given), `lines-max` (the lines below a doc's header,
+as its `doc-lines` budget counts them), `new-files-min`, and `judge`. A case's score is the points it earned; nothing
 passes or fails, the scores are compared from one run to the next. Each line of
 `results.tsv` also holds the exact models that answered (`>` for a step up),
 the efforts asked, the tokens in and out, and the cost at list price (on a

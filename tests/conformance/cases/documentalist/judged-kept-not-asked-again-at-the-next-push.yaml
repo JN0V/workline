@@ -1,0 +1,18 @@
+case: documentalist/judged-kept-not-asked-again-at-the-next-push
+about: "The record a person's merge request keeps in the documentalist's comment is read by the next run on it: the doc and its source unchanged since it was judged, it is not put before an agent again, and nothing is pushed (ADR-0013, amended 2026-10-17)."
+given:
+  repo: documented
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb feature && printf '\\n// TokenTTL is in seconds.\\n' >> src/auth/token.go && git commit -qam 'docs(auth): say the unit of the lifetime' && git push -q origin feature && git checkout -q --detach"
+  forge: {merge-requests: [{id: 1, branch: feature, labels: [], comments: []}]}
+run: {role: documentalist, event: merge-request, target: {merge-request: 1}, ai: 'cmd:sh "$FIXTURES/agents/judged-only.sh"', then: again}
+expect:
+  status: pass
+  agent-calls: 1
+  not-pushed: [feature]
+  findings:
+    - {rule: suspect, where: docs/tech/auth.md, message: "on this merge request, nothing to fix, not vouched for; the doc and its sources unchanged since: not put before an agent again"}
+  forge:
+    merge-requests:
+      - {id: 1, comments: 1, comment-contains: "<!-- workline:doc-judged"}

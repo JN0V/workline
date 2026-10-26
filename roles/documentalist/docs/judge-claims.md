@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/judge.go, internal/builtin/documentalist/words.go, internal/builtin/documentalist/cite.go, internal/builtin/documentalist/comments.go, internal/builtin/documentalist/counts.go]
-checked: 757dbca1
+checked: affb7424
 verified: agent:claude-code
 ---
 # Documentalist — the judge's claims
@@ -25,6 +25,11 @@ not see backed (workline d43b3f2).
     was last edited and gone now, as `identifier-gone` finds it.
 - **A claim that does not hold** — the quote not in the file, the file not
   a source, the name still in the code — is `citation-unchecked`.
+- **In a doc judged in parts**, a quote standing only in source lines a
+  part judged `partial` for those lines, no part finding them wrong, does
+  not hold either: that part read it and found it does not settle them.
+  A fix citing such a quote made a true line false on DomoticsCore
+  ([#467](https://github.com/JN0V/workline/issues/467)).
 - ***Withheld***, each run of changed lines refused (as
   `citation-unchecked` and `comment-not-evidence`): asked again, the agent
   had withdrawn a right fix with the refused one beside it (16c660b), and
@@ -93,7 +98,7 @@ file only inside comments. A stale comment had won over the code's setting
   and line), kept for the run's verdict, so a person or the committer
   fixes it. *Withheld*: the place resting on it.
 - **In parts too**: a part's support quoted from a comment only is no
-  support ([the parts' claims](tasks.md#reading-the-claims-no-ai)).
+  support ([the parts' claims](parts.md#reading-the-claims-no-ai)).
 - **A type whose comments the engine does not know**: its quote is taken
   as code, and said (`comment-style-unknown`, once a type a run), so a
   comment there passing as evidence is not silent.

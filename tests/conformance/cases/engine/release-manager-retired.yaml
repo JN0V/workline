@@ -3,7 +3,7 @@ about: "The release manager is retired (ADR-0017): its settings in a config, or 
 given:
   repo: released
   config: {roles: {release-manager: {settings: {flow: direct}}}}
-run: {role: documentalist, event: release, ai: none}
+run: {role: documentalist, event: merge-request, ai: none}
 expect:
   status: block
   findings: [{rule: config-invalid, message: "ADR-0017"}, {rule: config-invalid, message: "release-please"}]

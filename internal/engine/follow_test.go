@@ -43,19 +43,19 @@ func TestFollowAPersonsBranch(t *testing.T) {
 	run("commit", "-q", "-m", "docs: elsewhere")
 
 	branch := "workline/documentalist/suspect"
-	if f, err := follow(repo, "main", branch, "documentalist", true, true); err != nil || f.Rule != "" {
+	if f, err := follow(repo, "main", branch, "documentalist", true); err != nil || f.Rule != "" {
 		t.Errorf("merging still: %+v, %v; want nothing said", f, err)
 	}
 	was := conflicts
 	defer func() { conflicts = was }()
 	conflicts = func(string, string, string) (bool, error) { return false, errors.New("git merge-tree: unknown option") }
-	if f, err := follow(repo, "main", branch, "documentalist", true, true); err != nil || f.Rule != "conflict-unread" || f.Level != "warn" {
+	if f, err := follow(repo, "main", branch, "documentalist", true); err != nil || f.Rule != "conflict-unread" || f.Level != "warn" {
 		t.Errorf("git failing: %+v, %v; want conflict-unread, a warning", f, err)
 	}
 	conflicts = was
 	write("doc.md", "---\nchecked: 111\n---\nNinety minutes.\n")
 	run("commit", "-q", "-am", "docs: ninety minutes")
-	if f, err := follow(repo, "main", branch, "documentalist", true, true); err != nil || f.Rule != "not-rebuilt" {
+	if f, err := follow(repo, "main", branch, "documentalist", true); err != nil || f.Rule != "not-rebuilt" {
 		t.Errorf("in conflict: %+v, %v; want not-rebuilt", f, err)
 	}
 }
@@ -174,16 +174,101 @@ func TestSettleDoc(t *testing.T) {
 }
 
 // Only doc pages make a commit workline's own on its trailer's word: a
-// role's prompt, a tool's folder, a file steering agents never do.
+// role's prompt, a tool's folder, a file steering agents never do; a
+// role's pages for people, its README and docs/, do (#476).
 func TestDocPage(t *testing.T) {
 	for path, want := range map[string]bool{
-		"docs/tech/auth.md": true, "README.md": true, "roles/reviewer/README.md": false,
+		"docs/tech/auth.md": true, "README.md": true, "roles/reviewer/README.md": true,
+		"roles/documentalist/docs/push.md": true, "roles/reviewer/docs/lenses/x.md": true,
 		"roles/reviewer/instruction.md": false, "roles/reviewer/lenses/correctness.md": false,
+		"roles/reviewer/persona.md": false, "roles/documentalist/knowledge/doc-model.md": false,
+		"roles/auditor/kinds/split.md": false, "roles/x/skills/s/SKILL.md": false, "roles/notes.md": false,
+		"roles/x/docs/roles/y/persona.md": false, "roles/x/docs/AGENTS.md": false,
 		".workline/roles/committer/policy.md": false, ".github/copilot-instructions.md": false,
 		"AGENTS.md": false, "sub/CLAUDE.md": false, "docs/x.go": false,
 	} {
 		if got := docPage(path); got != want {
 			t.Errorf("%s: %v, want %v", path, got, want)
 		}
+	}
+}
+
+// The commits workline pushes are signed as `git commit` signs them: with
+// git set to sign (commit.gpgsign), its key and format, a signature git
+// verifies; not set, none, as before; set, but no key to sign with, an
+// error that says it was signing, never an unsigned commit. A temporary
+// commit, never pushed, is never signed (#549).
+func TestRecommitSigns(t *testing.T) {
+	if _, err := exec.LookPath("ssh-keygen"); err != nil {
+		t.Fatal("ssh-keygen, which signs with an SSH key, is needed: install openssh-client")
+	}
+	t.Setenv("GIT_CONFIG_GLOBAL", os.DevNull)
+	t.Setenv("GIT_CONFIG_NOSYSTEM", "1")
+	t.Setenv("GIT_COMMITTER_NAME", "bot")
+	t.Setenv("GIT_COMMITTER_EMAIL", "bot@example.invalid")
+	home := t.TempDir()
+	key := filepath.Join(home, "signing")
+	if out, err := exec.Command("ssh-keygen", "-q", "-t", "ed25519", "-N", "", "-C", "bot", "-f", key).CombinedOutput(); err != nil {
+		t.Fatalf("ssh-keygen: %s", out)
+	}
+	pub, err := os.ReadFile(key + ".pub")
+	if err != nil {
+		t.Fatal(err)
+	}
+	allowed := filepath.Join(home, "allowed-signers")
+	if err := os.WriteFile(allowed, []byte("bot@example.invalid "+string(pub)), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	repo := t.TempDir()
+	run := func(args ...string) string {
+		t.Helper()
+		out, err := exec.Command("git", append([]string{"-C", repo}, args...)...).CombinedOutput()
+		if err != nil {
+			t.Fatalf("git %v: %s", args, out)
+		}
+		return strings.TrimSpace(string(out))
+	}
+	run("init", "-q", "-b", "main")
+	run("-c", "user.name=T", "-c", "user.email=t@example.invalid", "commit", "-q", "--allow-empty", "-m", "feat: one")
+	tree := run("rev-parse", "HEAD^{tree}")
+
+	plain, err := recommit(repo, "HEAD", tree, "HEAD")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := run("log", "-1", "--format=%G?", plain); got != "N" {
+		t.Errorf("git not set to sign: signature %q, want none (N)", got)
+	}
+
+	run("config", "commit.gpgsign", "true")
+	run("config", "gpg.format", "ssh")
+	run("config", "user.signingkey", key)
+	run("config", "gpg.ssh.allowedSignersFile", allowed)
+	commit, err := recommit(repo, "HEAD", tree, "HEAD")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out, err := exec.Command("git", "-C", repo, "verify-commit", commit).CombinedOutput(); err != nil {
+		t.Errorf("git set to sign: the commit is not signed with its key: %s", out)
+	}
+	if got := run("log", "-1", "--format=%an %B", commit); !strings.HasPrefix(got, "T feat: one") {
+		t.Errorf("signed, the tip's author and message changed: %q", got)
+	}
+
+	// The temporary commits of a doc's merge: git set to sign with a
+	// program that always fails, the merge still reads.
+	run("config", "gpg.ssh.program", "false")
+	if got, ok, err := mergeBlobs(repo, "doc.md", "a\nb\nc\n", "A\nb\nc\n", "a\nb\nC\n"); err != nil || !ok || got != "A\nb\nC\n" {
+		t.Errorf("a temporary commit was signed: %q %v %v", got, ok, err)
+	}
+	run("config", "--unset", "gpg.ssh.program")
+
+	run("config", "--unset", "user.signingkey")
+	if _, err := recommit(repo, "HEAD", tree, "HEAD"); err == nil || !strings.Contains(err.Error(), "commit.gpgsign") {
+		t.Errorf("git set to sign, no key: %v, want an error that says it was signing", err)
+	}
+	run("config", "commit.gpgsign", "maybe")
+	if _, err := recommit(repo, "HEAD", tree, "HEAD"); err == nil || !strings.Contains(err.Error(), "commit.gpgsign") {
+		t.Errorf("commit.gpgsign unreadable: %v, want git's error", err)
 	}
 }

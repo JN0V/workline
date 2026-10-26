@@ -43,12 +43,12 @@ func (c command) Propose(req Request) (Call, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), limit)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, "sh", "-c", c.script)
-	cmd.Dir = os.TempDir()
+	cmd.Dir, cmd.WaitDelay = os.TempDir(), waitAfterTimeout
 	cmd.Env = append(os.Environ(), "WORKLINE_TIER="+call.Tier, "WORKLINE_EFFORT="+call.Effort, "WORKLINE_CALL="+report.Name())
 	cmd.Stdin = strings.NewReader(system + "\n\n" + user)
 	var out, errOut bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &out, &errOut
-	runErr := cmd.Run()
+	runErr := settled(ctx, cmd.Run())
 	if data, err := os.ReadFile(report.Name()); err == nil {
 		var said struct {
 			Model        string  `yaml:"model"`
@@ -70,7 +70,7 @@ func (c command) Propose(req Request) (Call, error) {
 	}
 	// The answer as it came, kept for audit, as Claude's is.
 	_ = os.WriteFile(filepath.Join(req.RunDir, "out", "agent-answer.txt"), out.Bytes(), 0o644)
-	proposals, mended, err := proposalsFrom(out.String())
+	proposals, mended, err := proposalsFrom(out.String(), req.Role.Intentions...)
 	call.Mended = mended
 	if err != nil {
 		return call, fmt.Errorf("%w: %v", ErrInvalidOutput, err)

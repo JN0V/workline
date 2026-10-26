@@ -1,0 +1,14 @@
+case: routing/main-with-no-commit-before-still-errs
+about: >
+  With no commit before it to compare with, main's run counts no finding,
+  but a check that did not run is still an error, never a pass
+  (principle 12): main is red, and says why.
+given:
+  repo: linted
+  config:
+    routing: {events: {merge-request: ["gate:merge"], main: []}}
+    gates: {merge: {checks: [{id: lint, run: "no-such-linter --sarif {out}/lint.sarif", output: sarif, max: {error: 0}}]}}
+run: {route: main}
+expect:
+  status: block
+  findings: [{rule: check-error, where: lint, message: "could not run"}]

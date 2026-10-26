@@ -1,0 +1,63 @@
+contract: 1
+name: inspector
+mission: The findings a change adds to the project's own tools are explained before a person reads them — why each matters, which look like false positives, what to fix first — and the tools' verdict stays theirs.
+
+# merge-request: after the gates (`gate:<name>` steps before it in the
+#         routing), or in the run apart given their result (`route
+#         --warn-only --gates-from`): their new findings, those triaged
+#         before by fingerprint not asked again (ADR-0013). Opt-in in the
+#         project's routing (ADR-0049, step 4).
+events: [merge-request]
+# The triage only warns: on a merge request it reads apart from the
+# verdict (ADR-0050), the verdict's line leaving it (`route --warn-apart`),
+# the run apart asking it (`route --warn-only`), posted in a comment of its
+# own once it answered.
+apart: [merge-request]
+
+requires: [git]
+
+# Telling why a lint finding matters here, and a false positive from a
+# defect, is judgement on code; the tools already found it.
+model:
+  capability: reasoning
+  tier: standard
+  effort: medium
+  promote-after: 1   # an answer that does not read is asked for again once
+
+context:
+  # Estimated tokens, 711 + 0.82 a character (#235): the findings asked a
+  # run (findings-max), each with the head's code around it (lines-around),
+  # and the facets.
+  budget: 40000
+
+duties:
+  reads: ["**"]
+  writes: []         # never the code, never the gates' config: a person fixes
+
+# The agent answers one triage per finding, never applied; what the engine
+# then proposes is the role's own: one comment on the merge request, the
+# record of what was triaged hidden in it. Never a patch, a label, nor a
+# verdict: the gates' verdict is the line's.
+part-intentions: [triage]
+intentions: [comment, note]
+# A push landing before the triage is posted: the triage of the head it
+# judged is still posted, its record merged with the one the comment
+# holds by then, so the push's run asks only what is new (#580).
+on-moved-on: [comment]
+
+# Without AI, nothing is triaged: the findings stand as the gates report
+# them, said; the verdict is the same.
+without-ai: pass
+
+settings:
+  # New findings asked a run, in the gates' order; the rest counted, said,
+  # asked at the next push. 0: every one.
+  findings-max: 20
+  # Lines of the head's code shown above and below each finding, 0 to 50.
+  lines-around: 8
+  # On a merge request: the comment and the record in it. false: the
+  # triage in the verdict only, the record kept on the machine.
+  forge-writes: true
+  # What a run may spend, tokens in and out as the agent reports them: one
+  # call, and the one asked again when its answer does not read.
+  ai-max-tokens: 100000

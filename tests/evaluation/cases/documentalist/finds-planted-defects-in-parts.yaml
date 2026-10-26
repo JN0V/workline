@@ -1,10 +1,16 @@
 case: documentalist/finds-planted-defects-in-parts
-about: "ADR-0009's measure, in parts: the same doc and defects as finds-planted-defects-whole, judged a source at a time (parts-always, part-chars), then one fix; `checked` does not move. Compare the checks passed, and the tokens."
+about: "ADR-0009's measure, in parts: the same doc and defects as finds-planted-defects-whole, judged a source at a time (parts-always, part-chars), then one fix; its `checked` does not move. Beside it, a clean control doc on a source the same commit changes, true in every line: judged in parts too, it ends `checked` (ADR-0014, step 4; #482). Compare the checks passed, and the tokens."
 given:
   repo: service
-  config: {roles: {documentalist: {settings: {judge-in-parts: true, parts-always: true, part-chars: 1500}}}}
+  config: {roles: {documentalist: {settings: {judge-in-parts: true, parts-always: true, part-chars: 1500, parts-move-checked: true}}}}
   setup:
-    - "sed -i 's/DefaultPort           = 8080/DefaultPort           = 9090/; s/DefaultMaxConnections = 100/DefaultMaxConnections = 250/' src/service/config.go && sed -i 's/keeps each session for the configured session TTL./keeps each session twelve hours, whatever the configuration./; s/ttl: c.SessionTTL,/ttl: 12 * time.Hour,/' src/service/store.go && sed -i 's/VerifyToken/CheckToken/g' src/service/auth.go && printf '\n// Health answers 200 while the service runs.\nfunc Health(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusOK) }\n' >> src/service/server.go && git commit -qam 'feat(service): new defaults, fixed session length, rename token check'"
+    # The clean control: every line true before the change and after it.
+    # Measured first (38fac2d1) with a last sentence, "A field the
+    # configuration sets is kept as it is", not exact: a field set to zero
+    # gets its default. In one run of five, a part found the control
+    # wanting and its fix changed nothing: that sentence, most likely.
+    - "printf -- '---\\ntype: reference\\nsources: [src/service/config.go]\\nchecked: HEAD\\n---\\n# Configuration defaults\\n\\n`Load` gives each field of `Config` left at its zero value its default.\\nThe read timeout defaults to 30 seconds, the session TTL to 24 hours,\\nand the log level to `info`.\\n' > docs/tech/defaults.md && git add docs/tech/defaults.md && git commit -qm 'docs: describe the configuration defaults' && C=$(git rev-parse --short HEAD) && sed -i \"s/checked: HEAD/checked: $C/\" docs/tech/defaults.md && git commit -qam 'docs: confirm the defaults doc'"
+    - "sed -i 's/DefaultPort           = 8080/DefaultPort           = 9090/; s/DefaultMaxConnections = 100/DefaultMaxConnections = 250/' src/service/config.go && sed -i 's/keeps each session for the configured session TTL./keeps each session twelve hours, whatever the configuration./; s/ttl: c.SessionTTL,/ttl: 12 * time.Hour,/' src/service/store.go && sed -i 's/VerifyToken/CheckToken/g' src/service/auth.go && printf '\\n// Health answers 200 while the service runs.\\nfunc Health(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusOK) }\\n' >> src/service/server.go && git commit -qam 'feat(service): new defaults, fixed session length, rename token check'"
 run: {role: documentalist, event: merge-request}
 grade:
   - {status: pass}
@@ -24,3 +30,12 @@ grade:
   - {file-contains: {docs/tech/service.md: "HMAC-SHA256"}}
   - {file-contains: {docs/tech/service.md: "lost when the service stops"}}
   - {file-contains: {docs/tech/service.md: "30 seconds"}}
+  # Never `checked` over a planted falsehood (ADR-0014, step 4).
+  - {never-confirms: {docs/tech/service.md: "port 8080"}}
+  - {never-confirms: {docs/tech/service.md: "At most 100"}}
+  - {never-confirms: {docs/tech/service.md: "lasts the configured session TTL"}}
+  - {never-confirms: {docs/tech/service.md: "`VerifyToken`"}}
+  - {checked-unchanged: docs/tech/service.md}
+  # The clean control, read in parts, ends `checked`; its text unchanged.
+  - {checked-is-head: docs/tech/defaults.md}
+  - {body-unchanged: docs/tech/defaults.md}

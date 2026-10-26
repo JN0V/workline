@@ -1,0 +1,42 @@
+--- a/README.md
++++ b/README.md
+@@ -136,3 +136,3 @@
+ | the weekly sample (`workline sample`) | auditor: one in ten of every role's acts, each re-checked | one issue, a comment a week; a merge request undoing a wrong confirmation |
+-| each push to main (`workline follow`) | the engine, no agent: rebuilds the documentalist's release fix on main's new tip; when set, merges main into pull requests in conflict only on workline's lines, and turns auto-merge on for what a person accepted, at `normal` for workline's own routine work too ([merge policy](docs/merge-policy.md)) | its merge request, force-pushed; a merge commit on theirs; the forge's auto-merge |
++| each push to main (`workline follow`) | the engine, no agent: rebuilds the release fix on main's new tip, and keeps pull requests moving ([merge policy](docs/merge-policy.md)) | its merge request, force-pushed; a merge commit on theirs; the forge's auto-merge |
+ | before your release tool tags (`workline route release`) | documentalist, on the docs due at the release | a non-zero exit holds the release |
+--- a/docs/ci-gitlab.md
++++ b/docs/ci-gitlab.md
+@@ -160,10 +160,7 @@
+   runs them all ([a merge train](merge-queue.md#gitlab-a-merge-train)).
+-- **The reviewer's lenses that only warn** read apart from the verdict:
+-  `workline:judge` asks those that block (`--warn-apart`; without
+-  `WORKLINE_GITLAB_TOKEN`, every lens, said in its log and summary);
+-  `workline:warn`, from the pipeline's start, with the agent's token and
+-  the bot's, asks the others (`--warn-only`), and `workline:warn:apply` posts them in
+-  a comment of their own. Neither fails the pipeline (`allow_failure`);
+-  `workline:merge` reads the verdict from `workline:judge` alone. GitLab
+-  merges once the pipeline succeeds: the merge waits for them, never on
+-  what they find ([apart](../roles/reviewer/docs/apart.md)).
++- **The reviewer's lenses that only warn** read apart from the verdict:
++  - `workline:judge` asks those that block (`--warn-apart`; without `WORKLINE_GITLAB_TOKEN`, every lens, said in its log and summary);
++  - `workline:warn`, from the pipeline's start, with the agent's token and the bot's, asks the others (`--warn-only`), and `workline:warn:apply` posts them in a comment of their own;
++  - neither fails the pipeline (`allow_failure`); `workline:merge` reads the verdict from `workline:judge` alone;
++  - GitLab merges once the pipeline succeeds: the merge waits for them, never on what they find ([apart](../roles/reviewer/docs/apart.md)).
+ - **The whole history** (`GIT_DEPTH: 0`, over the project's "Git shallow
+--- a/docs/weekly-sample.md
++++ b/docs/weekly-sample.md
+@@ -42,7 +42,6 @@
+     unearned nor put back.
+-- **What a product owner's act was done on**: the issue's text it read,
+-  found by the digest its record keeps — the body now, else the version
+-  GitHub's edit history keeps; for a refine, the issue as it reads now
+-  beside it —, and the code at the commit it read. A text gone from the
+-  forge is not read, for you: GitLab keeps no edit history. An act
+-  recorded before this record is read as its issue reads now, and named.
++- **What a product owner's act was done on**:
++  - the issue's text it read, found by the digest its record keeps — the body now, else the version GitHub's edit history keeps; for a refine, the issue as it reads now beside it;
++  - the code at the commit it read;
++  - a text gone from the forge is not read, for you: GitLab keeps no edit history;
++  - an act recorded before this record is read as its issue reads now, and named.
+ - **A squash**: a merge request's commits are read on its head, which

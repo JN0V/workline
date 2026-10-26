@@ -1,5 +1,5 @@
 case: merge/normal-routine-merges-alone
-about: "A record merges alone (#322): with `merge: {autonomy: normal}`, the documentalist's gardening pull request only records which docs were read (`judged`). Workline's own, as the forge says it: opened by workline's App, every push to its branch the App's, its commit committed under the App's name and workline's own by its tree, the page a doc of the documentalist's agents are not told to read; its head's verdict passed with every agent's review whole. Nobody labelled it: `workline follow` sets `workline/accepted` on its head itself, records on the pull request that it merges with no person's yes, its kind and why, and turns auto-merge on, the same path as a yes. The summary says which kinds merge with no person's yes (ADR-0042, amended)."
+about: "A record merges alone (#322): with `merge: {autonomy: normal}`, the documentalist's gardening pull request only records which docs were read (`judged`). Workline's own, as the forge says it: opened by workline's App, every push to its branch the App's, its commit committed under the App's name and workline's own by its tree, the page a doc of the documentalist's agents are not told to read; its head's verdict passed with every agent's review whole. Nobody labelled it: `workline follow` sets `workline/accepted` on its head itself, records on the pull request that it merges with no person's yes, its kind and why, and turns auto-merge on, the same path as a yes. The summary says which kinds merge with no person's yes, and which wait until the project lets them (ADR-0042, amended)."
 given:
   repo: documented
   config: {merge: {autonomy: normal}}
@@ -20,7 +20,7 @@ expect:
     - {rule: auto-merge-on, where: "#9", message: "with no person's yes, workline's own records — it only records when docs were read —, opened and pushed by its App, every commit its own"}
   no-findings: [{rule: waits-for-a-yes}, {rule: label-ignored}, {rule: merge-app-unknown}]
   not-pushed: [workline/documentalist/suspect]
-  summary-file: ["merge policy (normal; with no person's yes: workline's own merge requests, records, derived, docs)", "in line into main, #9", "auto-merge turned on for 1"]
+  summary-file: ["merge policy (normal; with no person's yes: workline's own merge requests, records, derived, docs; only with a person's yes, until `merge.alone` lists them: reader)", "accepted into main, #9", "auto-merge turned on for 1"]
   forge:
     merge-requests:
       - {id: 9, auto-merge: true, labels: [], comments: 1, comment-contains: ["Merging with no person's yes", "workline's own records", "workline:merge-alone=records"]}

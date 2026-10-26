@@ -117,6 +117,11 @@ func machine(r *Report, o Options) {
 				r.add(Check{Area: "machine", Rule: "hooks-broken", Level: Error,
 					Message: "core.hooksPath points to " + p.Hooks + ", which holds no hook: git runs no hook at all",
 					Fix:     "workline hooks install --global"})
+			} else if old := hooks.OutdatedGlobal(p); len(old) > 0 {
+				r.add(Check{Area: "machine", Rule: "hooks-outdated", Level: Warn,
+					Message: fmt.Sprintf("%d global git %s in %s %s written by another version of workline: a repository's own hooks may be skipped",
+						len(old), plural(old, "hook", "hooks"), p.Hooks, plural(old, "was", "were")),
+					Fix:     "workline hooks install --global"})
 			} else {
 				r.add(Check{Area: "machine", Rule: "hooks", Level: OK, Message: "global git hooks installed in " + p.Hooks})
 			}
@@ -207,7 +212,7 @@ func repository(r *Report, o Options) {
 	}
 
 	// Where the docs are judged (ADR-0010): on each merge request in CI, by
-	// gardening, at the release. The push only counts them, when routed.
+	// gardening. The push only counts them, when routed.
 	routes := func(event string) bool {
 		for _, s := range line.Events[event] {
 			if s == "documentalist" {
@@ -224,30 +229,20 @@ func repository(r *Report, o Options) {
 	if routes("schedule") && ciRuns(o.Repo, "workline route schedule") {
 		judged = append(judged, "by gardening, on a schedule")
 	}
-	if routes("release") {
-		if len(judged) == 0 {
-			judged = append(judged, "at the release only: `workline docs` judges them before")
-		} else {
-			judged = append(judged, "at the release")
-		}
-	}
 	if len(judged) > 0 {
-		level := OK
-		if len(judged) == 1 && routes("release") {
-			level = Note // no CI judges them: fine for a solo project, worth knowing
-		}
-		r.add(Check{Area: "repository", Rule: "docs-judged", Where: where, Level: level,
+		r.add(Check{Area: "repository", Rule: "docs-judged", Where: where, Level: OK,
 			Message: "docs are judged " + strings.Join(judged, "; ")})
 	} else {
 		r.add(Check{Area: "repository", Rule: "docs-judged-nowhere", Where: where, Level: Warn,
-			Message: "the documentalist runs on no merge request in CI, no gardening, and not at the release: docs go stale unseen, unless someone runs `workline docs`",
-			Fix:     "copy the CI templates (ci/github, ci/gitlab), or route `release` to the documentalist"})
+			Message: "the documentalist runs on no merge request in CI, and no gardening: docs go stale unseen, unless someone runs `workline docs`",
+			Fix:     "copy the CI templates (ci/github, ci/gitlab)"})
 	}
 	if routes("pre-push") {
 		r.add(Check{Area: "repository", Rule: "docs-counted-at-push", Where: where, Level: OK,
 			Message: "the push counts the docs its commits make suspect"})
 	}
 	findingsOnMergeRequests(r, o, cfg.Forge)
+	tokensScoped(r, o, cfg.Forge)
 	// A shallow clone lacks the commits docs were checked against, and the
 	// last release: the documentalist and the release say so and stop.
 	if out, err := exec.Command("git", "-C", o.Repo, "rev-parse", "--is-shallow-repository").Output(); err == nil && strings.TrimSpace(string(out)) == "true" {
@@ -255,7 +250,14 @@ func repository(r *Report, o Options) {
 			Message: "this clone is shallow: a doc checked against a commit it lacks cannot be judged, and the release cannot find the last one",
 			Fix:     "git fetch --unshallow   # in CI: actions/checkout's `fetch-depth: 0`, GitLab's `GIT_DEPTH: 0`"})
 	}
+	docs(r, o, cfg)
+	languages(r, o)
+}
 
+// docs says how many docs declare their sources, and which files read as
+// docs the documentalist does not read.
+func docs(r *Report, o Options, cfg *role.ProjectConfig) {
+	where := o.Repo
 	d, err := role.Load(o.RolesDir, "documentalist")
 	if err != nil {
 		r.add(Check{Area: "repository", Rule: "roles-unreadable", Where: o.RolesDir, Level: Error, Message: err.Error()})
@@ -320,6 +322,13 @@ func hooksPath(r *Report, o Options, prePush bool) {
 			missing = append(missing, n)
 		}
 	}
+	// `hooks install --repo` writes its dispatcher there, to be committed.
+	if filepath.Clean(dir) == filepath.Join(o.Repo, ".githooks") && hooks.Outdated(filepath.Join(dir, "commit-msg"), "") {
+		file := filepath.Join(path, "commit-msg")
+		r.add(Check{Area: "repository", Rule: "hooks-outdated", Where: file, Level: Warn,
+			Message: "another version of workline wrote " + file + ": it may skip this repository's own commit-msg",
+			Fix:     "workline hooks install --repo   # then commit " + file})
+	}
 	own := fmt.Sprintf("this repository's core.hooksPath (%s, %s setting) wins over the global one", path, scope)
 	if len(missing) == 0 {
 		r.add(Check{Area: "repository", Rule: "hooks-path", Where: path, Level: OK,
@@ -330,11 +339,16 @@ func hooksPath(r *Report, o Options, prePush bool) {
 	if missing[0] == "pre-push" {
 		lost = "pushes are not checked here"
 	}
-	// The global hooks hand over to .githooks/ and the git dir's hooks/:
-	// without the setting, workline runs, then them.
+	// The global hooks hand over to .githooks/ and to hooks/ in the folder
+	// the repository's worktrees share: without the setting, workline
+	// runs, then them.
 	var fix string
-	gitDir, _ := exec.Command("git", "-C", o.Repo, "rev-parse", "--absolute-git-dir").Output()
-	if c := filepath.Clean(dir); c == filepath.Join(o.Repo, ".githooks") || c == filepath.Join(strings.TrimSpace(string(gitDir)), "hooks") {
+	out, _ = exec.Command("git", "-C", o.Repo, "rev-parse", "--git-common-dir").Output()
+	shared := strings.TrimSpace(string(out))
+	if !filepath.IsAbs(shared) {
+		shared = filepath.Join(o.Repo, shared)
+	}
+	if c := filepath.Clean(dir); c == filepath.Join(o.Repo, ".githooks") || c == filepath.Join(shared, "hooks") {
 		fix = fmt.Sprintf("git config --%s --unset core.hooksPath   # workline's global hooks then hand over to %s", scope, path)
 	} else {
 		var adds []string

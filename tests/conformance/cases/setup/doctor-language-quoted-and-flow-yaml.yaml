@@ -1,0 +1,30 @@
+case: setup/doctor-language-quoted-and-flow-yaml
+about: "A workflow is read as YAML: in flow style, a step's name and a quoted `echo 'later; hadolint'` run nothing, while a quoted `run: 'shellcheck deploy.sh'` runs shellcheck; a folded name mentioning yamllint runs nothing either. Shell is covered; the Dockerfile and the YAML are not (ADR-0049)."
+given:
+  repo: basic
+  setup:
+    - |
+      mkdir -p .github/workflows
+      printf 'echo deploy\n' > deploy.sh
+      printf 'FROM scratch\n' > Dockerfile
+      cat > .github/workflows/lint.yml <<'EOF'
+      jobs: {lint: {steps: [{name: "Lint with hadolint"}, {run: "echo 'later; hadolint Dockerfile'"}, {run: 'shellcheck deploy.sh'}]}}
+      EOF
+      cat > .github/workflows/names.yml <<'EOF'
+      jobs:
+        names:
+          steps:
+            - name: >
+                Lint the scripts
+                with yamllint
+              run: "true"
+      EOF
+      git add deploy.sh Dockerfile .github && git commit -qm 'ci: lint the scripts'
+run: {doctor: true}
+expect:
+  status: pass
+  checks:
+    - {rule: language-covered, where: shell, level: ok, message: "lint by shellcheck (.github/workflows/lint.yml)"}
+  findings:
+    - {rule: language-gaps, where: docker, level: warn, message: "lint by nothing: hadolint"}
+    - {rule: language-gaps, where: yaml, level: warn, message: "lint by nothing: yamllint"}

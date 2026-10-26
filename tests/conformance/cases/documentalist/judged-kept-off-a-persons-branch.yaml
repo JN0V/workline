@@ -1,0 +1,26 @@
+case: documentalist/judged-kept-off-a-persons-branch
+about: "On a person's merge request, a doc the agent finds nothing to fix in, without vouching for it — its patch only records `judged` — gets no commit: nothing is pushed to the branch, and its record is kept hidden in the documentalist's comment, with the ids of the doc and its source at the commit judged (ADR-0013, amended 2026-10-17; #463: 41 of 42 commits pushed to people's pull requests only moved such a line)."
+given:
+  repo: documented
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb feature && printf '\\n// TokenTTL is in seconds.\\n' >> src/auth/token.go && git commit -qam 'docs(auth): say the unit of the lifetime' && git push -q origin feature && git checkout -q --detach"
+  forge: {merge-requests: [{id: 1, branch: feature, labels: [], comments: []}]}
+run: {role: documentalist, event: merge-request, target: {merge-request: 1}, ai: 'cmd:sh "$FIXTURES/agents/judged-only.sh"'}
+expect:
+  status: pass
+  agent-calls: 1
+  not-pushed: [feature]
+  findings:
+    - {rule: suspect, where: docs/tech/auth.md, message: "its record is kept in the documentalist's comment on this merge request: nothing committed for it"}
+  no-findings: [{rule: pushed}, {rule: patch-as-comment}]
+  forge:
+    merge-requests:
+      - id: 1
+        comments: 1
+        comment-contains:
+          - "**Docs judged, nothing pushed**"
+          - "- `docs/tech/auth.md`, judged at"
+          - "<!-- workline:doc-judged {\"doc\":\"docs/tech/auth.md\",\"key\":\"judged\",\"at\":"
+          - "\"src/auth/token.go\":"
+          - "<!-- workline:sticky=documentalist/judged -->"

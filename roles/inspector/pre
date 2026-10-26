@@ -1,0 +1,4 @@
+#!/bin/sh
+# Prepare: the gates' new findings read, those triaged before taken from
+# the record, the others put to the agent as one part; its answer read.
+exec "${WORKLINE_BIN:-workline}" builtin inspector pre

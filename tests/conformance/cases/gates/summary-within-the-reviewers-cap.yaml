@@ -1,0 +1,32 @@
+case: gates/summary-within-the-reviewers-cap
+about: >
+  The gates' summary comment lists as many rules as the reviewer's
+  `findings-max` lets it list findings; the rules past it are counted,
+  each finding still beside its line.
+given:
+  repo: linted
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - git checkout -q -b change
+    - |
+      printf 'linters: {enable: [godot]}\n' > .golangci.yml && sed -i 's|^\tos.Remove("c.tmp")$|&\n\t// d goes too\n\tos.Remove("d.tmp")|' clean.go && git add .golangci.yml && git commit -qam "feat: clean d too" && git push -q origin change
+  env: {PATH: "$FIXTURES/bin:$PATH"}
+  forge: {merge-requests: [{id: 1, branch: change, labels: [], comments: []}]}
+  config:
+    roles: {reviewer: {settings: {findings-max: 1}}}
+    routing: {events: {merge-request: ["gate:merge"]}}
+    gates: {merge: {checks: [{id: lint, run: "golangci-lint run --output.sarif.path={out}/lint.sarif", output: sarif, max: {error: 0}}]}}
+run:
+  route: merge-request
+  input: {range: main..change}
+  gates-only: true
+  then: resume
+  apply-from: {merge-request: 1, base: main, head: change, gates: true}
+expect:
+  findings: [{rule: gates-shown, message: "2 new findings of the gates"}]
+  forge:
+    check-runs: [{commit: change, name: workline gates, count: 2}]
+    merge-requests:
+      - id: 1
+        comments: 1
+        comment-contains: ["### Gates: 2 new findings", "- 1 more rule, 1 finding, not listed here: the reviewer's `findings-max` (1)"]

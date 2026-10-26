@@ -1,0 +1,14 @@
+case: committer/person-setting-of-another-kind-is-said
+about: "A person's setting of another kind than the role's, a text where a list or true or false is read, is left out and said: the commit is checked as the project says, never broken by it."
+given:
+  repo: basic
+  setup:
+    - "mkdir -p \"$XDG_CONFIG_HOME/workline\" && printf 'roles: {committer: {settings: {rewrite: \"yes\", internal-codes-allow: nRF52}}}\\n' > \"$XDG_CONFIG_HOME/workline/config.yaml\""
+run: {role: committer, event: commit-msg, input: {message: "fix: read the nRF52 flash size"}, ai: none}
+expect:
+  status: block
+  agent-calls: 0
+  findings:
+    - {rule: possible-internal-code, message: "nRF52"}
+    - {rule: personal-setting-ignored, level: warn, message: "roles.committer.settings.internal-codes-allow, left out: it is a text there, where the role's is a list"}
+    - {rule: personal-setting-ignored, level: warn, message: "roles.committer.settings.rewrite, left out: it is a text there, where the role's is true or false"}

@@ -26,7 +26,16 @@ type FakeState struct {
 	SubIssues    bool              `json:"sub-issues,omitempty"`   // the forge has sub-issues, as GitHub
 	Dependencies bool              `json:"dependencies,omitempty"` // the forge has a blocked-by relation, as GitHub
 	// Scoped: its labels are scoped, `key::value`, as GitLab's (ADR-0038).
-	Scoped      bool `json:"scoped-labels,omitempty"`
+	Scoped bool `json:"scoped-labels,omitempty"`
+	// IssueFields are its single-select issue fields, as a GitHub
+	// organisation's (ADR-0040); Public, the repository is public; Blind,
+	// why the token reads no value visible to members only, "" when it
+	// does.
+	IssueFields []Field `json:"issue-fields,omitempty"`
+	Public      bool    `json:"public,omitempty"`
+	Blind       string  `json:"fields-blind,omitempty"`
+	// Weights: its issues carry a weight, as GitLab Premium's (ADR-0040).
+	Weights     bool `json:"weights,omitempty"`
 	FailOnWrite int  `json:"fail-on-write,omitempty"` // the write that fails, counting from 1
 	Writes      int  `json:"writes"`
 	// ReviewRefused: the forge refuses every comment on a line, as a
@@ -54,6 +63,13 @@ type FakeState struct {
 	// what of the branches' rules the token cannot read (Conversations).
 	ConversationsRequired []string `json:"conversations-required,omitempty"`
 	ConversationsUnread   string   `json:"conversations-unread,omitempty"`
+	// Tips are the runs on each branch's tip, by branch, as Tip reads
+	// them; TipsUnread, why the forge does not answer them.
+	Tips       map[string][]CheckRun `json:"tips,omitempty"`
+	TipsUnread string                `json:"tips-unread,omitempty"`
+	// Squash is how its merge requests land when squashed, the same for
+	// each but Suffix, where "{n}" is the merge request's number (Squasher).
+	Squash *Squash `json:"squash,omitempty"`
 }
 
 // FakeCheck is a check written on a commit.
@@ -61,6 +77,7 @@ type FakeCheck struct {
 	Commit      string       `json:"commit"`
 	Name        string       `json:"name"`
 	Conclusion  string       `json:"conclusion"`
+	Title       string       `json:"title,omitempty"`
 	Summary     string       `json:"summary,omitempty"`
 	Annotations []Annotation `json:"annotations"`
 }
@@ -135,6 +152,14 @@ type FakeItem struct {
 	MergedAs string `json:"merged-as,omitempty"`
 	// Closing: who closed an issue, as Closing reads it.
 	Closing *LabelEvent `json:"closing,omitempty"`
+	// Rank: a label's, where the forge ranks them (GitLab's prioritized
+	// labels); 0 for none.
+	Rank int `json:"rank,omitempty"`
+	// Fields: an issue's values in the forge's issue fields, by name
+	// (GitHub's, ADR-0040).
+	Fields map[string]string `json:"fields,omitempty"`
+	// Weight: an issue's GitLab weight, with weights; none when absent.
+	Weight *int `json:"weight,omitempty"`
 }
 
 // FakePush is a push to a merge request's branch: the head, a revision
@@ -157,11 +182,12 @@ type FakeThread struct {
 }
 
 // FakeComment is a comment: in the file, its body alone, or with its
-// author as {body, author, insider, bot, created}.
+// author as {body, author, insider, bot, created}, and who last edited
+// it when not its author (editor).
 type FakeComment Note
 
 func (c FakeComment) MarshalJSON() ([]byte, error) {
-	if c.Author == "" && !c.Insider && !c.Bot && c.Created == "" && c.ID == "" {
+	if c.Author == "" && !c.Insider && !c.Bot && c.Created == "" && c.ID == "" && c.App == "" && !c.Own && c.Editor == "" {
 		return json.Marshal(c.Body)
 	}
 	return json.Marshal(Note(c))
@@ -228,7 +254,7 @@ func (f *Fake) Issue(id int) (*Issue, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Issue{ID: it.ID, Title: it.Title, Body: it.Body, Labels: it.Labels, Closed: it.Closed, Author: it.Author, Insider: it.Insider}, nil
+	return &Issue{ID: it.ID, Title: it.Title, Body: it.Body, Labels: it.Labels, Closed: it.Closed, Author: it.Author, Insider: it.Insider, Fields: it.Fields, Weight: it.Weight}, nil
 }
 
 func (f *Fake) Issues() ([]Issue, error) {
@@ -245,7 +271,7 @@ func (f *Fake) Issues() ([]Issue, error) {
 					children = append(children, c.ID)
 				}
 			}
-			out = append(out, Issue{ID: it.ID, Title: it.Title, Body: it.Body, Labels: it.Labels, Milestone: it.Milestone, MilestoneDue: s.MilestoneDue[it.Milestone], Author: it.Author, Insider: it.Insider, BlockedBy: it.BlockedBy, Children: children})
+			out = append(out, Issue{ID: it.ID, Title: it.Title, Body: it.Body, Labels: it.Labels, Milestone: it.Milestone, MilestoneDue: s.MilestoneDue[it.Milestone], Author: it.Author, Insider: it.Insider, BlockedBy: it.BlockedBy, Children: children, Fields: it.Fields, Weight: it.Weight})
 		}
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
@@ -259,7 +285,7 @@ func (f *Fake) AllIssues() ([]Issue, error) {
 	}
 	var out []Issue
 	for _, it := range s.Issues {
-		out = append(out, Issue{ID: it.ID, Title: it.Title, Body: it.Body, Labels: it.Labels, Milestone: it.Milestone, MilestoneDue: s.MilestoneDue[it.Milestone], Author: it.Author, Insider: it.Insider, Closed: it.Closed, Reason: it.Reason})
+		out = append(out, Issue{ID: it.ID, Title: it.Title, Body: it.Body, Labels: it.Labels, Milestone: it.Milestone, MilestoneDue: s.MilestoneDue[it.Milestone], Author: it.Author, Insider: it.Insider, Closed: it.Closed, Reason: it.Reason, Fields: it.Fields, Weight: it.Weight})
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
 	return out, nil
@@ -284,6 +310,9 @@ func (f *Fake) Notes(t Target) ([]Note, error) {
 		n := Note(c)
 		if n.ID == "" {
 			n.ID = strconv.Itoa(i + 1) // its place: the fake's comments are never deleted
+		}
+		if n.Editor == n.Author {
+			n.Editor = ""
 		}
 		notes = append(notes, n)
 	}
@@ -391,15 +420,36 @@ func (f *Fake) Comment(t Target, body, marker string) error {
 }
 
 func (f *Fake) Sticky(t Target, body, marker string, create bool) error {
+	return f.sticky(t, body, marker, create, false)
+}
+
+// stickyOwn edits the last comment carrying marker its token's user
+// wrote (KeepOwn): with only others' carrying it, its own is posted
+// after them, as a forge's.
+func (f *Fake) stickyOwn(t Target, body, marker string, create bool) error {
+	return f.sticky(t, body, marker, create, true)
+}
+
+func (f *Fake) sticky(t Target, body, marker string, create, mine bool) error {
 	return f.write(func(s *FakeState) error {
 		it, err := s.item(t)
 		if err != nil {
 			return err
 		}
+		own, _ := f.own()
 		for i := len(it.Comments) - 1; i >= 0; i-- { // the last, as a forge's
-			if strings.Contains(it.Comments[i].Body, marker) {
-				// Edited, it stays its author's, as on a forge.
+			switch {
+			case !strings.Contains(it.Comments[i].Body, marker):
+			case mine && !own.Wrote(Note(it.Comments[i])):
+				create = true
+			default:
+				// Edited, it stays its author's, as on a forge, and the
+				// token's user is its last editor.
 				it.Comments[i].Body = body + "\n\n" + marker
+				it.Comments[i].Editor = ""
+				if a := it.Comments[i].Author; a != "" && a != fakeBot {
+					it.Comments[i].Editor = fakeBot
+				}
 				return nil
 			}
 		}
@@ -546,6 +596,18 @@ func (f *Fake) MergeRequest(id int) (MergeRequest, error) {
 	return MergeRequest{ID: id, Branch: it.Branch, Base: it.Base, Here: !it.Fork, Title: it.Title, Body: it.Body}, nil
 }
 
+// Squash is the state's, a merge request's number in its suffix; none set,
+// the forge never squashes.
+func (f *Fake) Squash(id int) (Squash, error) {
+	s, err := f.load()
+	if err != nil || s.Squash == nil {
+		return Squash{}, err
+	}
+	sq := *s.Squash
+	sq.Suffix = strings.ReplaceAll(sq.Suffix, "{n}", strconv.Itoa(id))
+	return sq, nil
+}
+
 // ListMergeRequests lists the open merge requests, each head kept under
 // refs/pull/<id>/head, as GitHub keeps them.
 func (f *Fake) ListMergeRequests() ([]MergeRequest, error) {
@@ -569,8 +631,11 @@ func (f *Fake) KeepIssue(title, body string, create bool) (int, error) {
 	id := 0
 	err := f.write(func(s *FakeState) error {
 		for i := range s.Issues {
-			if s.Issues[i].Title == title && !s.Issues[i].Closed {
-				s.Issues[i].Body, id = body, s.Issues[i].ID
+			if it := &s.Issues[i]; it.Title == title && !it.Closed {
+				if it.Body != body { // its edit history, as SetBody keeps it
+					it.Edits = append([]string{it.Body}, it.Edits...)
+				}
+				it.Body, id = body, it.ID
 				return nil
 			}
 		}
@@ -600,15 +665,99 @@ func (f *Fake) Milestones() ([]Milestone, error) {
 }
 
 func (f *Fake) EnsureLabel(name, color, description string) error {
+	return f.ensureRanked(name, color, description, 0)
+}
+
+// ensureRanked: a label defined with its rank, as GitLab's prioritized
+// labels, when the file says its labels are scoped; one there is left.
+func (f *Fake) ensureRanked(name, color, description string, rank int) error {
 	return f.write(func(s *FakeState) error {
 		for _, l := range s.Labels {
 			if fmt.Sprint(l.Title) == name {
 				return nil
 			}
 		}
-		s.Labels = append(s.Labels, FakeItem{ID: len(s.Labels) + 1, Title: name, Body: description, Labels: []string{}})
+		if !s.Scoped {
+			rank = 0
+		}
+		s.Labels = append(s.Labels, FakeItem{ID: len(s.Labels) + 1, Title: name, Body: description, Labels: []string{}, Rank: rank})
 		return nil
 	})
+}
+
+// issueFields: the fields the file holds, as GitHub lists an
+// organisation's for a repository.
+func (f *Fake) issueFields() (Fields, error) {
+	s, err := f.load()
+	if err != nil {
+		return Fields{}, err
+	}
+	return Fields{List: s.IssueFields, Public: s.Public, Blind: s.Blind}, nil
+}
+
+// setField: an issue's value in a field the file holds, by an option's
+// name; another is refused, as GitHub refuses it.
+func (f *Fake) setField(issue int, field Field, option string) error {
+	return f.write(func(s *FakeState) error {
+		i := slices.IndexFunc(s.IssueFields, func(x Field) bool { return x.ID == field.ID })
+		if i < 0 || !slices.Contains(s.IssueFields[i].Options, option) {
+			return fmt.Errorf("no field %d with an option %q", field.ID, option)
+		}
+		it, err := s.item(Target{Kind: "issue", ID: issue})
+		if err != nil {
+			return err
+		}
+		if it.Fields == nil {
+			it.Fields = map[string]string{}
+		}
+		it.Fields[s.IssueFields[i].Name] = option
+		return nil
+	})
+}
+
+// weights: whether the file's issues carry a weight, as GitLab Premium's.
+func (f *Fake) weights() (bool, error) {
+	s, err := f.load()
+	return err == nil && s.Weights, err
+}
+
+// setWeight: an issue's weight, where the file keeps weights; refused
+// elsewhere, as a forge that keeps none.
+func (f *Fake) setWeight(issue, weight int) error {
+	return f.write(func(s *FakeState) error {
+		if !s.Weights {
+			return fmt.Errorf("this forge keeps no weight: none set on #%d", issue)
+		}
+		it, err := s.item(Target{Kind: "issue", ID: issue})
+		if err != nil {
+			return err
+		}
+		it.Weight = &weight
+		return nil
+	})
+}
+
+// projectLabels: the labels defined, and those on any issue, as a forge
+// creates one set on an issue.
+func (f *Fake) projectLabels() ([]string, error) {
+	s, err := f.load()
+	if err != nil {
+		return nil, err
+	}
+	var out []string
+	for _, l := range s.Labels {
+		if !slices.Contains(out, l.Title) {
+			out = append(out, l.Title)
+		}
+	}
+	for _, it := range s.Issues {
+		for _, l := range it.Labels {
+			if !slices.Contains(out, l) {
+				out = append(out, l)
+			}
+		}
+	}
+	return out, nil
 }
 
 func (f *Fake) SetBody(id int, body string) error {

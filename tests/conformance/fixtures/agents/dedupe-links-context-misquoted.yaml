@@ -1,0 +1,13 @@
+# The documentalist's answer to "docs/faq.md repeats docs/sessions.md" in the
+# `untidy` fixture, as dedupe-links gives it, but quoting the heading before
+# the passage with a space too many: the lines it removes place it.
+- patch: |
+    --- a/docs/faq.md
+    +++ b/docs/faq.md
+    @@ -3,5 +3,3 @@
+      ## How long am I signed in?
+
+    -A session lasts as long as its token, and a token lasts one hour unless it is
+    -refreshed. When it expires, the user is asked to sign in again, and anything
+    -they had not saved is kept in the browser until they come back to the page.
+    +See [how long a session lasts](sessions.md#how-long-a-session-lasts).

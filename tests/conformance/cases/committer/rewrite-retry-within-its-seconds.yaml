@@ -1,0 +1,26 @@
+case: committer/rewrite-retry-within-its-seconds
+about: "With the rewrite capped by ai-max-seconds, a refused rewrite is still asked again of a stronger model, and its answer applied."
+given:
+  repo: basic
+  # 30 s, the default: the wait counts from the first call, the engine's
+  # own steps included. Between the two calls, the committer's post on the
+  # first answer, a gitleaks scan, took 0.4 s on an idle machine, 5.3 s at
+  # most on one loaded 4 times over. Both answer at once: the cap costs no
+  # time. The cut past the cap is rewrite-ends-past-its-seconds'.
+  config: {roles: {committer: {settings: {rewrite: true, ai-max-seconds: 30}}}}
+run:
+  role: committer
+  event: commit-msg
+  input: {message: "fix: AC-3"}
+  # The light model answers at once, still naming the code; the stronger
+  # one answers at once, well.
+  ai: |-
+    cmd:if [ "$WORKLINE_TIER" = light ]; then echo '- commit-message: "fix: AC-3 again"'; exit 0; fi
+    echo '- commit-message: "fix(parser): stop crashing on an empty input file"'
+expect:
+  status: pass
+  agent-calls: 2
+  applied: [commit-message]
+  calls: [{agent: cmd, tier: light}, {agent: cmd, tier: standard}]
+  no-findings:
+    - {rule: ai-max-seconds}

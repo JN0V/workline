@@ -1,0 +1,29 @@
+case: gates/nothing-shown-without-a-new-finding
+about: >
+  A change that adds no finding gets no check and no comment: the debt
+  already there is a count in the gates' job summary, never a post of its
+  own (day one is quiet, ADR-0049).
+given:
+  repo: linted
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - git checkout -q -b change
+    - |
+      printf '\n// Run it with go run.\n' >> main.go && git commit -qam "docs: say how to run it" && git push -q origin change
+  env: {PATH: "$FIXTURES/bin:$PATH"}
+  forge: {merge-requests: [{id: 1, branch: change, labels: [], comments: []}]}
+  config:
+    routing: {events: {merge-request: ["gate:merge"]}}
+    gates: {merge: {checks: [{id: lint, run: "golangci-lint run --output.sarif.path={out}/lint.sarif", output: sarif, max: {error: 0}}]}}
+run:
+  route: merge-request
+  input: {range: main..change}
+  gates-only: true
+  then: resume
+  apply-from: {merge-request: 1, base: main, head: change, gates: true}
+expect:
+  status: pass
+  no-findings: [{rule: gates-shown}, {rule: gates-not-shown}]
+  forge:
+    check-runs: [{commit: change, name: workline gates, absent: true}]
+    merge-requests: [{id: 1, comments: 0}]

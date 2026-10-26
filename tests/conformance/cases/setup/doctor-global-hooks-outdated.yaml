@@ -1,0 +1,14 @@
+case: setup/doctor-global-hooks-outdated
+about: Global hooks written by another version of workline, which may skip a repository's own hooks (an older one skipped them from a linked worktree), are reported with the command that writes them again.
+given:
+  repo: basic
+  setup:
+    - "mkdir -p \"$XDG_CONFIG_HOME/workline/hooks\" && printf '#!/bin/sh\\n# workline hook dispatcher, written by \"workline hooks install\".\\nbin=\"/usr/local/bin/workline\"\\ngit_dir=$(git rev-parse --git-dir 2>/dev/null) || exit 0\\n' > \"$XDG_CONFIG_HOME/workline/hooks/commit-msg\" && chmod +x \"$XDG_CONFIG_HOME/workline/hooks/commit-msg\" && git config --file \"$XDG_CONFIG_HOME/gitconfig\" core.hooksPath \"$XDG_CONFIG_HOME/workline/hooks\""
+  env: {GIT_CONFIG_GLOBAL: "$XDG_CONFIG_HOME/gitconfig"}
+run: {doctor: true}
+expect:
+  status: pass
+  findings:
+    - {rule: hooks-outdated, level: warn, message: "1 global git hook in", fix: "workline hooks install --global"}
+  no-findings:
+    - {rule: hooks-broken}

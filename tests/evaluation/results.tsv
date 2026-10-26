@@ -467,3 +467,131 @@ date	workline	agent	models	effort	case	score	agent calls	tokens in	tokens out	co
 2026-10-15T06:23:10Z	d89c0fa8	claude	claude-sonnet-5-5	medium	reviewer/edge-cases-mean-price-of-an-empty-cart	1/2	2	11855	1452	0.0174	15	defect: edge-cases empty-input at shop/cart.go:39-39 not found		floor=1; edge-cases planted=1 found=0 own=0 judge-no=0 fp=0 nits=0 dropped=0 outside=0 opened=0 answers=0 unfounded=0 in=0 out=0 own-verified=0 fp-verified=0 unsure=0 questions=0 judges=0; diff-alone planted=0 found=0 own=0 judge-no=0 fp=0 nits=0 dropped=0 outside=0 opened=0 answers=0 unfounded=0 in=11855 out=1452 own-verified=0 fp-verified=0 unsure=0 questions=0 judges=0
 2026-10-15T06:23:27Z	d89c0fa8	claude	claude-sonnet-5-5>claude-opus-5-5	medium	reviewer/edge-cases-page-loses-its-guard	2/2	2	10524	893	0.0316	11		claude-opus-5-5 (model)	floor=1; edge-cases planted=1 found=1 own=0 judge-no=0 fp=0 nits=0 dropped=0 outside=0 opened=0 answers=0 unfounded=0 in=0 out=0 own-verified=0 fp-verified=0 unsure=0 questions=0 judges=0; diff-alone planted=0 found=0 own=0 judge-no=0 fp=0 nits=0 dropped=0 outside=0 opened=0 answers=1 unfounded=0 in=10524 out=893 own-verified=0 fp-verified=0 unsure=0 questions=0 judges=1
 2026-10-15T06:23:37Z	d89c0fa8	claude	claude-sonnet-5-5	medium	reviewer/edge-cases-return-takes-a-negative	2/2	1	5706	492	0.0075	7			floor=1; edge-cases planted=1 found=1 own=0 judge-no=0 fp=0 nits=0 dropped=0 outside=0 opened=0 answers=0 unfounded=0 in=0 out=0 own-verified=0 fp-verified=0 unsure=0 questions=0 judges=0; diff-alone planted=0 found=0 own=0 judge-no=0 fp=0 nits=0 dropped=0 outside=0 opened=0 answers=1 unfounded=0 in=5706 out=492 own-verified=0 fp-verified=0 unsure=0 questions=0 judges=0
+2026-10-17T13:29:09Z	760678b9	claude	claude-sonnet-5-5	medium	documentalist/drifted-gardening	19/19	1	41111	3160	0.1150	24			
+2026-10-17T13:29:19Z	760678b9	claude	claude-sonnet-5-5	medium	documentalist/drifted-version-bump	23/23	1	44090	4711	0.1366	34			
+2026-10-17T13:29:44Z	760678b9	claude	claude-sonnet-5-5	medium	documentalist/drifted-gardening	19/19	1	41111	3392	0.0401	25			
+2026-10-17T13:29:47Z	760678b9	claude	claude-sonnet-5-5	medium	documentalist/drifted-version-bump	23/23	1	44090	4090	0.0473	29			
+2026-10-17T13:30:09Z	760678b9	claude	claude-sonnet-5-5	medium	documentalist/drifted-gardening	19/19	1	41109	2939	0.0355	22			
+2026-10-17T13:30:11Z	760678b9	claude	claude-sonnet-5-5	medium	documentalist/drifted-version-bump	20/23	1	44086	3517	0.0415	24	never-confirms: docs/clock/status.md confirmed while it still says "33 tests"; judged-is-head: docs/clock/status.md does not record eb28bad in `judged`; checked-unchanged: docs/clock/status.md: `checked` moved from f5a13e1 to eb28bad		
+2026-10-17T14:53:00Z	be99f444	claude	claude-sonnet-5-5	medium	documentalist/drifted-version-bump	23/23	1	21701	3593	0.1227	28			
+2026-10-17T14:53:31Z	be99f444	claude	claude-sonnet-5-5	medium	documentalist/drifted-version-bump	23/23	1	21701	4371	0.0459	31			
+2026-10-17T14:54:04Z	be99f444	claude	claude-sonnet-5-5	medium	documentalist/drifted-version-bump	23/23	1	21701	4460	0.0468	32			
+2026-10-17T14:54:28Z	be99f444	claude	claude-sonnet-5-5	medium	documentalist/drifted-version-bump	23/23	1	21701	3064	0.0328	25			
+2026-10-17T14:55:00Z	be99f444	claude	claude-sonnet-5-5	medium	documentalist/drifted-version-bump	23/23	1	21701	4105	0.0432	32			
+2026-10-17T14:56:18Z	be99f444	claude	claude-sonnet-5-5	medium	documentalist/finds-planted-defects-in-parts	12/12	5	24469	4352	0.1414	43			
+2026-10-17T14:57:00Z	be99f444	claude	claude-sonnet-5-5	medium	documentalist/finds-planted-defects-in-parts	12/12	5	25043	4798	0.0776	42			
+2026-10-17T14:57:47Z	be99f444	claude	claude-sonnet-5-5	medium	documentalist/finds-planted-defects-in-parts	12/12	5	24514	4555	0.0731	47			
+2026-10-17T14:58:28Z	be99f444	claude	claude-sonnet-5-5	medium	documentalist/finds-planted-defects-in-parts	12/12	5	24302	4061	0.0673	41			
+2026-10-17T14:59:20Z	be99f444	claude	claude-sonnet-5-5	medium	documentalist/finds-planted-defects-in-parts	12/12	5	24435	4520	0.0724	51			
+2026-10-17T15:00:03Z	be99f444	claude	claude-sonnet-5-5	medium	documentalist/finds-planted-defects-in-parts	12/12	5	24333	4245	0.0693	44			
+2026-10-17T15:00:49Z	be99f444	claude	claude-sonnet-5-5	medium	documentalist/finds-planted-defects-in-parts	12/12	5	24045	4449	0.0702	46			
+2026-10-17T15:01:34Z	be99f444	claude	claude-sonnet-5-5	medium	documentalist/finds-planted-defects-in-parts	12/12	5	24111	4889	0.0748	45			
+2026-10-17T15:03:13Z	be99f444	claude	claude-opus-5-5>claude-sonnet-5-5	medium	documentalist/condenses-the-role-contract	4/4	2	21578	11646	0.3318	96	judge skipped: no WORKLINE_JUDGE		
+2026-10-17T15:05:00Z	be99f444	claude	claude-opus-5-5>claude-sonnet-5-5	medium	documentalist/condenses-the-role-contract	4/4	2	21578	12250	0.2261	107	judge skipped: no WORKLINE_JUDGE		
+2026-10-17T15:06:28Z	be99f444	claude	claude-opus-5-5>claude-sonnet-5-5	medium	documentalist/condenses-the-role-contract	3/4	2	21578	10476	0.1926	88	lines-max: docs/spec/role-contract.md has 202 lines; judge skipped: no WORKLINE_JUDGE		
+2026-10-17T15:07:49Z	be99f444	claude	claude-opus-5-5>claude-sonnet-5-5	medium	documentalist/condenses-the-role-contract	4/4	2	21578	10584	0.1845	81	judge skipped: no WORKLINE_JUDGE		
+2026-10-17T15:09:34Z	be99f444	claude	claude-opus-5-5>claude-sonnet-5-5	medium	documentalist/condenses-the-role-contract	3/4	2	21578	12513	0.2245	105	lines-max: docs/spec/role-contract.md has 203 lines; judge skipped: no WORKLINE_JUDGE		
+2026-10-17T15:09:40Z	be99f444	claude	claude-sonnet-5-5	medium	documentalist/confirms-a-doc-still-true	4/4	1	4315	347	0.0207	5			
+2026-10-17T15:09:46Z	be99f444	claude	claude-sonnet-5-5	medium	documentalist/confirms-a-doc-still-true	4/4	1	4315	347	0.0039	6			
+2026-10-17T15:09:51Z	be99f444	claude	claude-sonnet-5-5	medium	documentalist/confirms-a-doc-still-true	4/4	1	4315	327	0.0037	5			
+2026-10-17T15:09:56Z	be99f444	claude	claude-sonnet-5-5	medium	documentalist/confirms-a-doc-still-true	4/4	1	4315	313	0.0036	5			
+2026-10-17T15:10:00Z	be99f444	claude	claude-sonnet-5-5	medium	documentalist/confirms-a-doc-still-true	4/4	1	4315	370	0.0041	5			
+2026-10-17T15:10:27Z	be99f444	claude	claude-sonnet-5-5	medium	documentalist/drifted-gardening	19/19	1	20211	3540	0.1162	26			
+2026-10-17T15:10:55Z	be99f444	claude	claude-sonnet-5-5	medium	documentalist/drifted-gardening	19/19	1	20211	3611	0.0381	28			
+2026-10-17T15:11:25Z	be99f444	claude	claude-sonnet-5-5	medium	documentalist/drifted-gardening	19/19	1	20211	3960	0.0416	29			
+2026-10-17T15:11:49Z	be99f444	claude	claude-sonnet-5-5	medium	documentalist/drifted-gardening	19/19	1	20211	3295	0.0350	24			
+2026-10-17T15:12:18Z	be99f444	claude	claude-sonnet-5-5	medium	documentalist/drifted-gardening	19/19	1	20211	3587	0.0379	28			
+2026-10-17T15:12:33Z	be99f444	claude	claude-sonnet-5-5	medium	documentalist/finds-planted-defects-whole	12/12	1	7340	1933	0.0487	15			
+2026-10-17T15:12:45Z	be99f444	claude	claude-sonnet-5-5	medium	documentalist/finds-planted-defects-whole	12/12	1	7340	1749	0.0182	12			
+2026-10-17T15:12:58Z	be99f444	claude	claude-sonnet-5-5	medium	documentalist/finds-planted-defects-whole	12/12	1	7340	2012	0.0209	13			
+2026-10-17T15:13:13Z	be99f444	claude	claude-sonnet-5-5	medium	documentalist/finds-planted-defects-whole	12/12	1	7340	2156	0.0223	15			
+2026-10-17T15:13:28Z	be99f444	claude	claude-sonnet-5-5	medium	documentalist/finds-planted-defects-whole	12/12	1	7340	1941	0.0201	14			
+2026-10-17T15:13:39Z	be99f444	claude	claude-sonnet-5-5	medium	documentalist/fixes-a-doc-made-false	5/5	1	4266	594	0.0230	10			
+2026-10-17T15:13:47Z	be99f444	claude	claude-sonnet-5-5	medium	documentalist/fixes-a-doc-made-false	5/5	1	4266	765	0.0081	8			
+2026-10-17T15:13:57Z	be99f444	claude	claude-sonnet-5-5	medium	documentalist/fixes-a-doc-made-false	5/5	1	4266	762	0.0081	10			
+2026-10-17T15:14:03Z	be99f444	claude	claude-sonnet-5-5	medium	documentalist/fixes-a-doc-made-false	5/5	1	4266	562	0.0061	6			
+2026-10-17T15:14:10Z	be99f444	claude	claude-sonnet-5-5	medium	documentalist/fixes-a-doc-made-false	5/5	1	4266	702	0.0075	7			
+2026-10-17T15:14:20Z	be99f444	claude	claude-sonnet-5-5	medium	documentalist/merges-a-card-too-short	5/5	1	3609	735	0.0218	9			
+2026-10-17T15:14:28Z	be99f444	claude	claude-sonnet-5-5	medium	documentalist/merges-a-card-too-short	5/5	1	3609	674	0.0071	8			
+2026-10-17T15:14:36Z	be99f444	claude	claude-sonnet-5-5	medium	documentalist/merges-a-card-too-short	5/5	1	3609	718	0.0075	7			
+2026-10-17T15:14:46Z	be99f444	claude	claude-sonnet-5-5	medium	documentalist/merges-a-card-too-short	5/5	1	3609	618	0.0065	10			
+2026-10-17T15:15:00Z	be99f444	claude	claude-sonnet-5-5>claude-opus-5-5	medium	documentalist/merges-a-card-too-short	5/5	2	7321	1258	0.0484	14			
+2026-10-17T15:15:06Z	be99f444	claude	claude-sonnet-5-5	medium	documentalist/merges-a-repeated-passage	5/5	1	3571	375	0.0180	5			
+2026-10-17T15:15:13Z	be99f444	claude	claude-sonnet-5-5	medium	documentalist/merges-a-repeated-passage	5/5	1	3571	666	0.0070	8			
+2026-10-17T15:15:20Z	be99f444	claude	claude-sonnet-5-5	medium	documentalist/merges-a-repeated-passage	5/5	1	3571	575	0.0061	6			
+2026-10-17T15:15:26Z	be99f444	claude	claude-sonnet-5-5	medium	documentalist/merges-a-repeated-passage	5/5	1	3571	639	0.0068	7			
+2026-10-17T15:15:32Z	be99f444	claude	claude-sonnet-5-5	medium	documentalist/merges-a-repeated-passage	5/5	1	3571	594	0.0063	6			
+2026-10-17T15:15:43Z	be99f444	claude	claude-sonnet-5-5	medium	documentalist/never-confirms-a-stale-doc-made-false	4/4	1	4434	1073	0.0285	9			
+2026-10-17T15:15:52Z	be99f444	claude	claude-sonnet-5-5	medium	documentalist/never-confirms-a-stale-doc-made-false	4/4	1	4434	1068	0.0111	9			
+2026-10-17T15:16:02Z	be99f444	claude	claude-sonnet-5-5	medium	documentalist/never-confirms-a-stale-doc-made-false	4/4	1	4434	1246	0.0129	10			
+2026-10-17T15:16:14Z	be99f444	claude	claude-sonnet-5-5	medium	documentalist/never-confirms-a-stale-doc-made-false	4/4	1	4434	1052	0.0110	12			
+2026-10-17T15:16:23Z	be99f444	claude	claude-sonnet-5-5	medium	documentalist/never-confirms-a-stale-doc-made-false	4/4	1	4434	1141	0.0119	9			
+2026-10-17T15:16:30Z	be99f444	claude	claude-sonnet-5-5	medium	documentalist/opens-an-issue-when-code-disagrees-with-a-spec	5/5	1	4381	526	0.0228	6			
+2026-10-17T15:16:36Z	be99f444	claude	claude-sonnet-5-5	medium	documentalist/opens-an-issue-when-code-disagrees-with-a-spec	5/5	1	4381	538	0.0058	5			
+2026-10-17T15:16:42Z	be99f444	claude	claude-sonnet-5-5	medium	documentalist/opens-an-issue-when-code-disagrees-with-a-spec	5/5	1	4381	566	0.0061	6			
+2026-10-17T15:16:48Z	be99f444	claude	claude-sonnet-5-5	medium	documentalist/opens-an-issue-when-code-disagrees-with-a-spec	5/5	1	4381	547	0.0059	6			
+2026-10-17T15:16:54Z	be99f444	claude	claude-sonnet-5-5	medium	documentalist/opens-an-issue-when-code-disagrees-with-a-spec	5/5	1	4381	544	0.0059	6			
+2026-10-17T15:17:00Z	be99f444	claude	claude-sonnet-5-5	medium	documentalist/propagates-a-product-doc-at-release	5/5	1	4232	302	0.0199	5			
+2026-10-17T15:17:04Z	be99f444	claude	claude-sonnet-5-5	medium	documentalist/propagates-a-product-doc-at-release	5/5	1	4232	302	0.0034	4			
+2026-10-17T15:17:09Z	be99f444	claude	claude-sonnet-5-5	medium	documentalist/propagates-a-product-doc-at-release	5/5	1	4232	316	0.0036	5			
+2026-10-17T15:17:13Z	be99f444	claude	claude-sonnet-5-5	medium	documentalist/propagates-a-product-doc-at-release	5/5	1	4232	302	0.0034	4			
+2026-10-17T15:17:18Z	be99f444	claude	claude-sonnet-5-5	medium	documentalist/propagates-a-product-doc-at-release	5/5	1	4232	302	0.0034	5			
+2026-10-17T15:17:32Z	be99f444	claude	claude-opus-5-5>claude-sonnet-5-5	medium	documentalist/splits-a-card-too-long	4/4	1	4712	995	0.0499	13			
+2026-10-17T15:17:45Z	be99f444	claude	claude-opus-5-5>claude-sonnet-5-5	medium	documentalist/splits-a-card-too-long	4/4	1	4713	641	0.0178	13			
+2026-10-17T15:18:13Z	be99f444	claude	claude-opus-5-5>claude-sonnet-5-5	medium	documentalist/splits-a-card-too-long	4/4	2	8305	2137	0.0740	28			
+2026-10-17T15:18:25Z	be99f444	claude	claude-opus-5-5>claude-sonnet-5-5	medium	documentalist/splits-a-card-too-long	4/4	1	4714	817	0.0213	12			
+2026-10-17T15:18:40Z	be99f444	claude	claude-opus-5-5>claude-sonnet-5-5	medium	documentalist/splits-a-card-too-long	4/4	1	4713	871	0.0211	16			
+2026-10-17T15:59:36Z	1f81fa73	claude	claude-opus-5-5>claude-sonnet-5-5	medium	documentalist/condenses-the-role-contract	5/5	2	21578	11719	0.2070	104		claude-sonnet-5-5 (context)	
+2026-10-17T16:01:31Z	1f81fa73	claude	claude-opus-5-5>claude-sonnet-5-5	medium	documentalist/condenses-the-role-contract	5/5	2	21578	12969	0.2394	115		claude-sonnet-5-5 (context)	
+2026-10-17T16:04:32Z	1f81fa73	claude	claude-opus-5-5>claude-sonnet-5-5	medium	documentalist/condenses-the-role-contract	4/5	3	31861	18560	0.4238	181	agent-calls-max: 3 calls	claude-sonnet-5-5 (context)	
+2026-10-17T16:06:01Z	1f81fa73	claude	claude-opus-5-5>claude-sonnet-5-5	medium	documentalist/condenses-the-role-contract	5/5	2	21578	10087	0.1815	89		claude-sonnet-5-5 (context)	
+2026-10-17T16:07:32Z	1f81fa73	claude	claude-opus-5-5>claude-sonnet-5-5	medium	documentalist/condenses-the-role-contract	5/5	2	21578	10619	0.1848	91		claude-sonnet-5-5 (context)	
+2026-10-17T16:08:46Z	1f81fa73	claude	claude-sonnet-5-5	medium	documentalist/stays-on-the-task	3/4	6	103245	9472	0.4545	73	agent-calls-max: 6 calls		
+2026-10-17T16:09:46Z	1f81fa73	claude	claude-sonnet-5-5	medium	documentalist/stays-on-the-task	3/4	6	102462	7901	0.1261	60	agent-calls-max: 6 calls		
+2026-10-17T16:11:01Z	1f81fa73	claude	claude-sonnet-5-5	medium	documentalist/stays-on-the-task	3/4	6	103089	9789	0.1475	74	agent-calls-max: 6 calls		
+2026-10-17T16:11:55Z	1f81fa73	claude	claude-sonnet-5-5	medium	documentalist/stays-on-the-task	3/4	6	103611	6549	0.1172	54	agent-calls-max: 6 calls		
+2026-10-17T16:13:15Z	1f81fa73	claude	claude-sonnet-5-5	medium	documentalist/stays-on-the-task	3/4	6	102324	10526	0.1518	80	agent-calls-max: 6 calls		
+2026-10-17T17:58:14Z	2c532600	claude	claude-sonnet-5-5	medium	documentalist/stays-on-the-task	4/4	1	13647	1213	0.0667	12			
+2026-10-17T17:58:23Z	2c532600	claude	claude-sonnet-5-5	medium	documentalist/stays-on-the-task	4/4	1	13647	1008	0.0114	9			
+2026-10-17T17:58:34Z	2c532600	claude	claude-sonnet-5-5	medium	documentalist/stays-on-the-task	4/4	1	13647	1074	0.0121	9			
+2026-10-17T17:58:44Z	2c532600	claude	claude-sonnet-5-5	medium	documentalist/stays-on-the-task	4/4	1	13647	1056	0.0119	10			
+2026-10-17T17:58:54Z	2c532600	claude	claude-sonnet-5-5	medium	documentalist/stays-on-the-task	4/4	1	13647	1048	0.0118	9			
+2026-10-17T18:00:43Z	2c532600	claude	claude-opus-5-5>claude-sonnet-5-5	medium	documentalist/condenses-the-role-contract	5/5	2	21578	12462	0.3518	108		claude-sonnet-5-5 (context)	
+2026-10-17T18:02:38Z	2c532600	claude	claude-opus-5-5>claude-sonnet-5-5	medium	documentalist/condenses-the-role-contract	5/5	2	21578	13207	0.2424	114		claude-sonnet-5-5 (context)	
+2026-10-17T18:04:36Z	2c532600	claude	claude-opus-5-5>claude-sonnet-5-5	medium	documentalist/condenses-the-role-contract	5/5	2	21578	13015	0.2418	117		claude-sonnet-5-5 (context)	
+2026-10-17T18:06:05Z	2c532600	claude	claude-opus-5-5>claude-sonnet-5-5	medium	documentalist/condenses-the-role-contract	5/5	2	21578	10043	0.1778	88		claude-sonnet-5-5 (context)	
+2026-10-17T18:07:50Z	2c532600	claude	claude-opus-5-5>claude-sonnet-5-5	medium	documentalist/condenses-the-role-contract	5/5	2	21578	12196	0.2183	104		claude-sonnet-5-5 (context)	
+2026-10-18T13:47:48Z	38fac2d1	claude	claude-sonnet-5-5	medium	documentalist/finds-planted-defects-in-parts	19/19	6	29074	5668	0.1730	49			
+2026-10-18T13:48:51Z	38fac2d1+changes	claude	claude-sonnet-5-5	medium	documentalist/finds-planted-defects-in-parts	17/19	6	28763	4551	0.0725	41	file-lacks: docs/tech/service.md and "lasts the configured session TTL"; checked-is-head: docs/tech/defaults.md does not record 4fb5fba in `checked`		
+2026-10-18T13:49:41Z	38fac2d1	claude	claude-sonnet-5-5	medium	documentalist/finds-planted-defects-in-parts	19/19	6	29542	6038	0.0905	49			
+2026-10-18T13:50:29Z	38fac2d1	claude	claude-sonnet-5-5	medium	documentalist/finds-planted-defects-in-parts	18/19	6	30361	5901	0.0924	48	checked-is-head: docs/tech/defaults.md does not record 4fb5fba in `checked`		
+2026-10-18T13:51:14Z	38fac2d1	claude	claude-sonnet-5-5	medium	documentalist/finds-planted-defects-in-parts	19/19	6	29700	5297	0.0837	44			
+2026-10-18T14:49:14Z	d7bd927f	claude	claude-sonnet-5-5	medium	documentalist/finds-planted-defects-in-parts	18/19	6	28951	4847	0.0928	43	file-lacks: docs/tech/service.md and "lasts the configured session TTL"		
+2026-10-18T14:50:11Z	d7bd927f	claude	claude-sonnet-5-5	medium	documentalist/finds-planted-defects-in-parts	17/19	6	29282	5978	0.0889	48	file-lacks: docs/tech/service.md and "At most 100"; file-contains: docs/tech/service.md and "250"		
+2026-10-18T14:50:57Z	d7bd927f	claude	claude-sonnet-5-5	medium	documentalist/finds-planted-defects-in-parts	19/19	6	29278	5291	0.0820	45			
+2026-10-18T14:51:43Z	d7bd927f	claude	claude-sonnet-5-5	medium	documentalist/finds-planted-defects-in-parts	18/19	6	29948	5308	0.0849	45	file-lacks: docs/tech/service.md and "lasts the configured session TTL"		
+2026-10-18T14:52:39Z	d7bd927f	claude	claude-sonnet-5-5	medium	documentalist/finds-planted-defects-in-parts	19/19	6	29584	6602	0.0963	55			
+2026-10-18T16:06:35Z	3f79e01a	claude	claude-sonnet-5-5	medium	documentalist/finds-planted-defects-in-parts	18/19	6	29379	5186	0.1694	58	status: status block		
+2026-10-18T16:07:45Z	3f79e01a	claude	claude-sonnet-5-5	medium	documentalist/finds-planted-defects-in-parts	19/19	6	29416	5154	0.0812	53			
+2026-10-18T16:08:39Z	3f79e01a	claude	claude-sonnet-5-5	medium	documentalist/finds-planted-defects-in-parts	19/19	6	29275	5045	0.0795	53			
+2026-10-18T16:09:24Z	3f79e01a	claude	claude-sonnet-5-5	medium	documentalist/finds-planted-defects-in-parts	19/19	6	28409	5020	0.0758	44			
+2026-10-18T16:10:15Z	3f79e01a	claude	claude-sonnet-5-5	medium	documentalist/finds-planted-defects-in-parts	19/19	6	29019	5648	0.0845	50			
+2026-10-18T22:13:22Z	93660de1	claude	claude-sonnet-5-5	medium	documentalist/confirms-a-doc-still-true	4/4	1	4315	401	0.0213	9			
+2026-10-18T22:13:23Z	93660de1	claude	claude-sonnet-5-5	medium	documentalist/fixes-a-doc-made-false	5/5	1	4266	605	0.0231	10			
+2026-10-18T22:13:27Z	93660de1	claude	claude-sonnet-5-5	medium	documentalist/stays-on-the-task	4/4	1	13647	1075	0.0653	14			
+2026-10-18T22:13:28Z	93660de1	claude	claude-haiku-5-5	low	committer/drops-a-reference-from-the-subject	6/6	1	4853	494	0.0012	15		claude-sonnet-5-5 (model)	
+2026-10-18T22:13:28Z	93660de1	claude	claude-sonnet-5-5	medium	documentalist/finds-planted-defects-whole	12/12	1	7340	1656	0.0459	15			
+2026-10-18T22:13:29Z	93660de1	claude	claude-haiku-5-5	low	committer/shortens-a-fix-subject	6/6	1	5521	879	0.0015	16		claude-sonnet-5-5 (model)	
+2026-10-18T22:13:30Z	93660de1	claude	claude-sonnet-5-5	medium	product-owner/keeps-a-planted-backlog	10/11	1	8143	1423	0.0468	17	file-contains: .git/workline/issues/6.md and "Announced #1 as obsolete"		
+2026-10-18T22:13:31Z	93660de1	claude	claude-haiku-5-5	low	committer/shortens-a-ci-subject	6/6	1	4414	377	0.0011	9		claude-sonnet-5-5 (model)	
+2026-10-18T22:13:34Z	93660de1	claude	claude-sonnet-5-5	medium	documentalist/opens-an-issue-when-code-disagrees-with-a-spec	5/5	1	4381	525	0.0228	6			
+2026-10-18T22:13:35Z	93660de1	claude	claude-sonnet-5-5	medium	documentalist/propagates-a-product-doc-at-release	5/5	1	4232	302	0.0199	5			
+2026-10-18T22:13:38Z	93660de1	claude	claude-sonnet-5-5	medium	documentalist/merges-a-repeated-passage	5/5	1	3571	702	0.0213	7			
+2026-10-18T22:13:41Z	93660de1	claude	claude-haiku-5-5>claude-sonnet-5-5	low	committer/shortens-a-test-subject	4/6	2	11415	2392	0.0308	28	agent-calls-max: 2 calls; judge: the rewrite turns 'judged patches' into 'patches', dropping 'judged', so the subject no longer says the patches are judged (by the agent), which widens it to any patch.	claude-sonnet-5-5 (context)	
+2026-10-18T22:13:42Z	93660de1	claude	claude-sonnet-5-5	medium	documentalist/never-confirms-a-stale-doc-made-false	4/4	1	4434	838	0.0261	7			
+2026-10-18T22:13:42Z	93660de1	claude	claude-sonnet-5-5	medium	documentalist/merges-a-card-too-short	5/5	1	3609	706	0.0215	7			
+2026-10-18T22:13:46Z	93660de1	claude	claude-opus-5-5>claude-sonnet-5-5	medium	documentalist/splits-a-card-too-long	4/4	1	4719	1097	0.0523	17			
+2026-10-18T22:13:58Z	93660de1	claude	claude-sonnet-5-5	medium	documentalist/drifted-version-bump	23/23	1	21701	4057	0.1274	30			
+2026-10-18T22:13:58Z	93660de1	claude	claude-sonnet-5-5	medium	documentalist/drifted-gardening	19/19	1	20211	3792	0.1188	30			
+2026-10-18T22:14:08Z	93660de1	claude	claude-sonnet-5-5	medium	documentalist/finds-planted-defects-in-parts	19/19	6	29022	5254	0.1686	45			
+2026-10-18T22:15:36Z	93660de1	claude	claude-opus-5-5>claude-sonnet-5-5	medium	documentalist/condenses-the-role-contract	5/5	2	21578	13657	0.3738	118		claude-sonnet-5-5 (context)	

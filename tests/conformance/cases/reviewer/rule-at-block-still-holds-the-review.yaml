@@ -1,0 +1,15 @@
+case: reviewer/rule-at-block-still-holds-the-review
+about: "In a project that sets one rule to warn (`enforce: {bug-story: warn}`), a rule left at block still holds the review: the code internal to the project blocks, no agent is asked, and the rule set to warn only warns (#550)."
+given:
+  repo: reviewed
+  setup:
+    - "printf '\\n// Double returns twice n (PROJ-12).\\n// The bug was an overflow here.\\nfunc Double(n int) int { return 2 * n }\\n' >> calc/calc.go && git commit -qam 'feat: double a count'"
+  config: {roles: {reviewer: {enforce: {bug-story: warn}}}}
+run: {role: reviewer, event: review, input: {range: main..HEAD}, ai: "fake:review-nothing"}
+expect:
+  status: block
+  agent-calls: 0
+  summary: "the rules found what the author must fix first"
+  findings:
+    - {rule: internal-code, level: block, where: "calc/calc.go:20", message: "PROJ-12"}
+    - {rule: bug-story, level: warn, where: "calc/calc.go:21", message: "The bug was"}

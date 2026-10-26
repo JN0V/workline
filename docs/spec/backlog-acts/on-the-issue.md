@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog/backlog.go, internal/backlog/ledger.go, internal/backlog/say.go, internal/report/summary.go, internal/engine/backlog.go]
 status: draft
-checked: 1b93a955
+checked: a7467d4f
 verified: agent:claude-code
 ---
 # On the issue
@@ -75,7 +75,8 @@ written and when it is edited.
 `done` and `done-as-accepted`, `proposed`, `set-aside`,
 `left-to-a-person`, `next-ready`, `stuck`, `demoted`, `report-closed`.
 It groups them (`report.Summary`): one heading a group — done alone,
-done as a person accepted, proposed, left to a person (`left-to-a-person`,
+done as a person accepted, set to Urgent (`urgent-set`, Ordering),
+proposed, left to a person (`left-to-a-person`,
 `asks-spent`, `spec-rounds-spent`), read and left incomplete
 (`nothing-proposed`, `scope-without-files`, `sources-unknown`: each says
 what a person may do), set aside, next, stuck, held back by the engine
@@ -88,7 +89,9 @@ the issue linked to its page
 waiting on a person link the filter on the label (`forge.LabelFilter`).
 The other findings follow, a line each: on an issue, the issue linked and
 its message, no rule's name; on the backlog (`proposals-waiting`,
-`demoted`, `setting-gone`), "the backlog" and its message. The role's own
+`demoted`, `setting-gone`, `values-where`, `level-unknown`, `next-unestimated`, `values-hidden`,
+`estimates-stuck`), "the backlog"
+and its message. The role's own
 line counts what a person will see on the issues, by issue — "issues: 2
 done alone, 1 proposed to a person, 5 set aside by a person" —, never the
 writes the run takes (`engine.onIssues`). A run whose agent was not

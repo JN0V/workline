@@ -1,0 +1,14 @@
+case: merge/queue-group-with-no-policy-sets-nothing
+about: "A merge queue's group in a project with no merge policy (`merge:`, ADR-0042): its base requires no yes of workline's, so nothing is set on the group's commit, and it says so."
+given:
+  repo: documented
+  setup:
+    - "git checkout -qb feat/sessions && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+  forge:
+    merge-requests:
+      - {id: 7, branch: feat/sessions, base: main, author: dana, labels: [], comments: []}
+run: {follow: [--merge-group, gh-readonly-queue/main/pr-7-7f122f4acd601f5afc1a76b31fe0640ec2174b39, --head, feat/sessions]}
+expect:
+  status: pass
+  no-findings: [{rule: queue-accepted}, {rule: queue-not-accepted}]
+  summary: "a merge queue's group: the project sets no merge policy (`merge:`), no yes to set on its commit"

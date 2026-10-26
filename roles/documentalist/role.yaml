@@ -2,16 +2,17 @@ contract: 1
 name: documentalist
 mission: The docs stay true to the code, short enough to be read, and the product docs follow the technical ones.
 
-# merge-request: check what this change makes suspect, before it merges.
-# pre-push: the same on the machine, before the commits leave it: listed at
+# merge-request: check what this change makes suspect, before it merges;
+#           no other doc read there, nor duplicates looked for (ADR-0050).
+# pre-push: the same on the machine, before the commits leave it: counted at
 #           the push, judged with `workline docs`, each change reviewed (ADR-0007).
+# main:     after a merge, the whole repository's budgets, links, duplicates
+#           and counts, once, no agent: kept in one issue (ADR-0050).
 # schedule: gardening — freshness, duplicates, budgets, across the whole repo.
 # handoff: from a project's own role, when routing allows it; no shipped role asks.
-# release: before the project's release tool tags (ADR-0017): the docs due at
-#          the release are brought up to date; until they are, the release waits.
 # init: `workline init` adopting a repository: the docs saying nothing of the
 #       code they describe get their `sources` proposed, for a person to review.
-events: [merge-request, pre-push, schedule, handoff, release, init]
+events: [merge-request, pre-push, main, schedule, handoff, init]
 
 requires: [git]
 # Budgets, duplicates and links inside the repository are checked by the engine
@@ -47,11 +48,16 @@ duties:
   writes: [$settings.docs]    # only documentation, never code
 
 intentions: [patch, claim, issue, comment, label, note]
+# A blocked run still applies its comments, which say why.
+on-block: [comment]
 
 # Without AI, every check still runs. What needed judgement (is this suspect doc
 # still right?) is reported for a person, who clears it by updating `checked`.
 # On a merge request, with a forge, they are listed in one comment, edited on each run.
 without-ai: report
+# On a merge request, the agent judges the docs once, on the run at ready
+# (--input ready=true); a push after it lists them (ADR-0051).
+merge-request-ai: ready
 
 settings:
   docs: ["docs/**", "*.md"]
@@ -62,10 +68,11 @@ settings:
     doc: ["docs/adr/**"]
   # Cascades are cut. Only edges marked `now` are handled in the change itself;
   # the others are pending, listed in one tracking issue, until the event they
-  # name (`release`), which runs the documentalist first and waits for them.
+  # name (`schedule`: gardening), which brings them up to date. The release
+  # never waits for them (ADR-0051).
   propagation:
     - {from: code, to: "docs/tech/**", when: now}
-    - {from: "docs/tech/**", to: "docs/product/**", when: release}
+    - {from: "docs/tech/**", to: "docs/product/**", when: schedule}
   budgets:
     doc-lines: 200                   # above it: extract into cards, don't compress
     section-words: 400
@@ -131,12 +138,6 @@ settings:
   # (docs/judge.md): en or fr. Unset, each doc's own, told by its frequent words.
   language: ""
   max-open-merge-requests: 5         # backpressure: with --open-merge-request, no gardening while this many wait
-  # When the default branch moves (`workline follow`), a person's merge
-  # request from this repository left in conflict with it only on lines
-  # workline writes — a doc's checked, judged or verified, a derived
-  # block — gets it merged in, those lines settled (ADR-0041): `conflicts`.
-  # Off: workline writes to no branch it did not create.
-  update-branches: off
   ai-max-calls: 10                   # suspect docs per call; the rest wait for the next round
   # Tokens one run may spend, all calls together (in, cache included, and
   # out); past it the agent is asked nothing more and the rest waits. 0: no
@@ -153,8 +154,15 @@ settings:
   # in parts (ADR-0009): the doc whole with a share of its source files in
   # each part, then one call fixing what the parts found wrong; `checked`
   # does not move, and the doc stays suspect. On by default since #82
-  # (2026-10-14); a run asks at most parts-max-per-run parts. Turned off,
-  # such a doc goes to a person.
+  # (2026-10-14); a run asks at most parts-max-per-run parts. Only when
+  # gardening (#458): a merge request, the push or the release leaves such a
+  # doc for the next gardening. Turned off, such a doc goes to a person.
   judge-in-parts: true
   parts-max: 8                       # parts a doc may take; past it, its sources are too wide
   parts-max-per-run: 16              # parts asked in one run; the other docs wait for the next round
+  # A doc judged in parts whose parts found nothing wrong, and quote each
+  # word of every line stating something in a support from the code: its
+  # `checked` moves (#482). On since five evaluation runs held ADR-0014
+  # step 4's bars (2026-10-18: no falsehood vouched for, the control
+  # `checked` in every run). Off, such a doc waits for a person.
+  parts-move-checked: true

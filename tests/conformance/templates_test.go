@@ -55,6 +55,9 @@ func TestGitLabTemplateFetchesWholeHistory(t *testing.T) {
 		if strings.HasPrefix(name, ".") || job["script"] == nil {
 			continue
 		}
+		if vars, _ := job["variables"].(map[string]any); fmt.Sprint(vars["GIT_STRATEGY"]) == "none" {
+			continue // checks nothing out (workline:base): no history to lack
+		}
 		n++
 		if d := depth(name); d != "0" {
 			t.Errorf("job %s: GIT_DEPTH is %q, want 0 (the whole history)", name, d)
@@ -126,18 +129,25 @@ func TestGitLabTemplateKeepsTheSummary(t *testing.T) {
 			continue
 		}
 		n++
-		if !strings.Contains(script, "--summary workline-summary.md") || !strings.Contains(script, "--summary workline-summary.html") {
-			t.Errorf("job %s: workline is not given --summary workline-summary.md and .html", name)
+		// The gates' job names its own: the judge, given its artifacts,
+		// writes workline-summary.md afresh.
+		sum := "workline-summary"
+		if strings.Contains(script, "--gates-only") {
+			sum = "gates-summary"
+		}
+		if !strings.Contains(script, "--summary "+sum+".md") || !strings.Contains(script, "--summary "+sum+".html") {
+			t.Errorf("job %s: workline is not given --summary %s.md and .html", name, sum)
 		}
 		art, _ := job["artifacts"].(map[string]any)
-		if !strings.Contains(fmt.Sprint(art["paths"]), "workline-summary.html") || fmt.Sprint(art["when"]) != "always" {
-			t.Errorf("job %s: workline-summary.md is not kept as an artifact, always: %v", name, art)
+		if !strings.Contains(fmt.Sprint(art["paths"]), sum+".html") || fmt.Sprint(art["when"]) != "always" {
+			t.Errorf("job %s: %s.md is not kept as an artifact, always: %v", name, sum, art)
 		}
 		if !strings.Contains(fmt.Sprint(art["reports"]), "annotations:workline-annotations.json") ||
-			!strings.Contains(fmt.Sprint(job["after_script"]), "artifacts/file/workline-summary.html") {
+			!strings.Contains(fmt.Sprint(job["after_script"]), "artifacts/file/"+sum+".html") {
 			t.Errorf("job %s: the job's page does not link the summary (annotations)", name)
 		}
-		if strings.Contains(script, "--target merge-request") && art["expose_as"] == nil {
+		// A merge request's pipeline; not a scheduled one, whose page is the job's.
+		if strings.Contains(script, "--target merge-request:$") && art["expose_as"] == nil {
 			t.Errorf("job %s: the merge request's page does not link the summary (expose_as)", name)
 		}
 	}
@@ -247,7 +257,16 @@ func TestGitLabApplyRunsWhenTheJudgeFails(t *testing.T) {
 					t.Errorf("job %s: rule %v is not `when: always`: a failed judge would skip it", name, m)
 				}
 			}
-		case strings.Contains(script, "workline route"):
+		case strings.Contains(script, "--warn-only"):
+			// What only warns never fails the pipeline (ADR-0050).
+			if job["allow_failure"] != true {
+				t.Errorf("job %s: allow_failure %v: what only warns would fail the pipeline", name, job["allow_failure"])
+			}
+		case name == "workline:release":
+			// At a tag, a release held, or whose checks could not run
+			// (3), is never published: no failure allowed
+			// (TestGitLabReleaseJobAtATag).
+		case strings.Contains(script, "workline route") && !strings.Contains(script, "--gates-only"):
 			judges++
 			af, _ := job["allow_failure"].(map[string]any)
 			if fmt.Sprint(af["exit_codes"]) != "[3]" {
@@ -317,6 +336,15 @@ const notCancelled = "github.event.workflow_run.conclusion != 'cancelled'"
 // run is uploaded after, applied, kept, followed or commented. The jobs that
 // write on a merge request's pipeline are never interruptible: one begun
 // goes to its end.
+// ownGroup is a concurrency group as a pull request's run reads it: a
+// merge queue's group takes one of its own (TestGitHubMergeQueueRunsTheGatesAlone).
+func ownGroup(group string) string {
+	for _, other := range []string{" || github.event.merge_group.head_ref || github.sha }}", " || github.event.merge_group.head_ref }}", " || github.sha }}"} {
+		group = strings.ReplaceAll(group, other, " }}")
+	}
+	return group
+}
+
 func TestOneLinePerMergeRequestAtATime(t *testing.T) {
 	type workflow struct {
 		Concurrency map[string]any `yaml:"concurrency"`
@@ -343,8 +371,24 @@ func TestOneLinePerMergeRequestAtATime(t *testing.T) {
 	for _, dir := range []string{"../../ci/github/", "../../.github/workflows/"} {
 		judges := 0
 		wf := read(dir + "workline.yml")
-		if group := fmt.Sprint(wf.Concurrency["group"]); !strings.Contains(group, "${{ github.event.pull_request.number }}") || wf.Concurrency["cancel-in-progress"] != true {
+		if group := ownGroup(fmt.Sprint(wf.Concurrency["group"])); !strings.Contains(group, "${{ github.event.pull_request.number }}") || wf.Concurrency["cancel-in-progress"] != true {
 			t.Errorf("%sworkline.yml: no concurrency group per pull request cancelling the run in progress: %v", dir, wf.Concurrency)
+		}
+		// The run apart from the verdict (ADR-0050): one per pull request
+		// too, in a group of its own, never cancelling the judge's.
+		warn := read(dir + "workline-warn.yml")
+		if group := fmt.Sprint(warn.Concurrency["group"]); !strings.Contains(group, "${{ github.event.pull_request.number }}") || group == fmt.Sprint(wf.Concurrency["group"]) || warn.Concurrency["cancel-in-progress"] != true {
+			t.Errorf("%sworkline-warn.yml: no concurrency group of its own per pull request cancelling the run in progress: %v", dir, warn.Concurrency)
+		}
+		for name, job := range warn.Jobs {
+			if strings.Contains(job.If, "always()") {
+				t.Errorf("%sworkline-warn.yml, job %s: runs on always(), a cancelled run's too: %q", dir, name, job.If)
+			}
+			for _, s := range job.Steps {
+				if strings.Contains(s.If, "always()") {
+					t.Errorf("%sworkline-warn.yml, job %s: a step runs on always(), a cancelled run's too: %q", dir, name, s.If)
+				}
+			}
 		}
 		for name, job := range wf.Jobs {
 			route := false
@@ -393,11 +437,15 @@ func TestOneLinePerMergeRequestAtATime(t *testing.T) {
 			}
 			rules = parent["rules"]
 		}
-		if !strings.Contains(fmt.Sprint(rules), "merge_request_event") {
-			continue
+		if !strings.Contains(fmt.Sprint(rules), "merge_request_event") && !strings.Contains(fmt.Sprint(rules), "parent_pipeline") {
+			continue // the merge request's, or its child's: what only warns
 		}
 		n++
-		judge := strings.Contains(fmt.Sprint(job["script"]), "workline route merge-request")
+		// Every job that writes nothing (the judge, the gates, what reads
+		// their base) is interruptible: one that is not, once started,
+		// keeps GitLab from cancelling the whole pipeline.
+		script := fmt.Sprint(job["script"])
+		judge := !strings.Contains(script, "workline apply") && !strings.Contains(script, "workline follow")
 		why := "a job that writes goes to its end"
 		if judge {
 			why = "a push must cancel the judge still on the head before"
@@ -425,7 +473,14 @@ func TestOneReviewAtATimePerMergeRequest(t *testing.T) {
 			} `yaml:"steps"`
 		} `yaml:"jobs"`
 	}
-	locks := func(file, command string) []string {
+	// The review apart from the verdict (ADR-0050) holds a lock of its own,
+	// with the apply of its runs: its record is its own comment's.
+	const (
+		review = "workline-review-${{ github.event.pull_request.number }}"
+		apart  = "workline-warn-review-${{ github.event.pull_request.number }}"
+		apply  = "workline-${{ github.event.workflow_run.name == 'workline warn' && 'warn-review' || 'review' }}-${{ github.event.workflow_run.pull_requests[0].number }}"
+	)
+	locks := func(file, command, want string) {
 		data, err := os.ReadFile(file)
 		if err != nil {
 			t.Fatal(err)
@@ -434,29 +489,28 @@ func TestOneReviewAtATimePerMergeRequest(t *testing.T) {
 		if err := yaml.Unmarshal(data, &wf); err != nil {
 			t.Fatalf("%s: %v", file, err)
 		}
-		var out []string
+		n := 0
 		for name, job := range wf.Jobs {
 			runs := false
 			for _, s := range job.Steps {
-				runs = runs || strings.Contains(s.Run, command)
+				runs = runs || strings.Contains(s.Run, command) && !strings.Contains(s.Run, "--gates-only")
 			}
 			if !runs {
 				continue
 			}
-			group := fmt.Sprint(job.Concurrency["group"])
-			if !strings.HasPrefix(group, "workline-review-${{ github.event.") || !strings.HasSuffix(group, "number }}") || job.Concurrency["cancel-in-progress"] != false {
-				t.Errorf("%s, job %s: not in the review's lock per pull request, never cancelling: %v", file, name, job.Concurrency)
+			n++
+			if group := ownGroup(fmt.Sprint(job.Concurrency["group"])); group != want || job.Concurrency["cancel-in-progress"] != false {
+				t.Errorf("%s, job %s: not in the review's lock per pull request %q, never cancelling: %v", file, name, want, job.Concurrency)
 			}
-			out = append(out, group)
 		}
-		if len(out) == 0 {
+		if n == 0 {
 			t.Errorf("%s: no job runs %q", file, command)
 		}
-		return out
 	}
 	for _, dir := range []string{"../../ci/github/", "../../.github/workflows/"} {
-		locks(dir+"workline.yml", "workline route merge-request")
-		locks(dir+"workline-apply.yml", "--from-merge-request")
+		locks(dir+"workline.yml", "workline route merge-request", review)
+		locks(dir+"workline-warn.yml", "workline route merge-request --warn-only", apart)
+		locks(dir+"workline-apply.yml", "--from-merge-request", apply)
 	}
 	data, err := os.ReadFile("../../ci/gitlab/workline.gitlab-ci.yml")
 	if err != nil {
@@ -466,11 +520,326 @@ func TestOneReviewAtATimePerMergeRequest(t *testing.T) {
 	if err := yaml.Unmarshal(data, &top); err != nil {
 		t.Fatal(err)
 	}
-	for _, name := range []string{"workline:judge", "workline:apply"} {
+	for name, want := range map[string]string{"workline:judge": "workline-review-$CI_MERGE_REQUEST_IID", "workline:apply": "workline-review-$CI_MERGE_REQUEST_IID",
+		"workline:warn": "workline-warn-$CI_MERGE_REQUEST_IID", "workline:warn:apply": "workline-warn-$CI_MERGE_REQUEST_IID"} {
 		job, _ := top[name].(map[string]any)
-		if got := job["resource_group"]; got != "workline-review-$CI_MERGE_REQUEST_IID" {
-			t.Errorf("job %s: resource_group %v, want the review's lock per merge request, workline-review-$CI_MERGE_REQUEST_IID", name, got)
+		if got := job["resource_group"]; got != want {
+			t.Errorf("job %s: resource_group %v, want the review's lock per merge request, %s", name, got, want)
 		}
+	}
+}
+
+// The judge says when no workflow reads the lenses it left apart, and the
+// run apart when no workflow applies what it proposed: each check runs as
+// its workflow holds it, in a folder of workflows with and without the
+// other, and never takes its own text for the other (ADR-0050).
+func TestWarnApartSaysWhatIsMissing(t *testing.T) {
+	type workflow struct {
+		Jobs map[string]struct {
+			Steps []struct {
+				Name string `yaml:"name"`
+				Run  string `yaml:"run"`
+			} `yaml:"steps"`
+		} `yaml:"jobs"`
+	}
+	script := func(file, step string) string {
+		data, err := os.ReadFile(file)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var wf workflow
+		if err := yaml.Unmarshal(data, &wf); err != nil {
+			t.Fatalf("%s: %v", file, err)
+		}
+		for _, job := range wf.Jobs {
+			for _, s := range job.Steps {
+				if s.Name == step {
+					return s.Run
+				}
+			}
+		}
+		t.Fatalf("%s: no step %q", file, step)
+		return ""
+	}
+	// run runs a step's script in a folder holding these workflows and, with
+	// reviewer, a config routing the reviewer (routed, when set, the roles
+	// it routes instead); it says whether the step warned, and whether it
+	// said the run apart reads (any=true), and triage (triage=true).
+	routed, triage := "", false
+	run := func(script string, files map[string]string, reviewer bool) (warned, reads bool) {
+		dir := t.TempDir()
+		os.MkdirAll(filepath.Join(dir, ".github", "workflows"), 0o755)
+		os.MkdirAll(filepath.Join(dir, ".workline"), 0o755)
+		roles := "reviewer"
+		if routed != "" {
+			roles = routed
+		}
+		if reviewer {
+			os.WriteFile(filepath.Join(dir, ".workline", "config.yaml"), []byte("routing: {events: {merge-request: [committer, "+roles+"]}}\n"), 0o644)
+		}
+		for name, from := range files {
+			data, err := os.ReadFile(from)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if name == "old-apply" { // an apply copied before the run apart
+				old := strings.Replace(string(data), "workflows: [workline, workline warn]", "workflows: [workline]", 1)
+				if old == string(data) {
+					t.Fatalf("%s: no `workflows: [workline, workline warn]` to make an older apply of", from)
+				}
+				name, data = "workline-apply.yml", []byte(old)
+			}
+			os.WriteFile(filepath.Join(dir, ".github", "workflows", name), data, 0o644)
+		}
+		output := filepath.Join(dir, "output")
+		cmd := exec.Command("sh", "-ec", script)
+		cmd.Dir, cmd.Env = dir, append(os.Environ(), "GITHUB_OUTPUT="+output)
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			t.Fatalf("%s: %v\n%s", script, err, out)
+		}
+		said, _ := os.ReadFile(output)
+		triage = strings.Contains(string(said), "triage=true")
+		return strings.Contains(string(out), "::warning"), strings.Contains(string(said), "any=true")
+	}
+	warns := func(script string, files map[string]string) bool {
+		warned, _ := run(script, files, true)
+		return warned
+	}
+	for _, dir := range []string{"../../ci/github/", "../../.github/workflows/"} {
+		judge := script(dir+"workline.yml", "Whether anything reads the lenses that warn")
+		if !warns(judge, map[string]string{"workline.yml": dir + "workline.yml", "workline-apply.yml": dir + "workline-apply.yml"}) {
+			t.Errorf("%sworkline.yml: no warning with no workline-warn.yml beside it", dir)
+		}
+		if warns(judge, map[string]string{"workline.yml": dir + "workline.yml", "workline-warn.yml": dir + "workline-warn.yml"}) {
+			t.Errorf("%sworkline.yml: warns with workline-warn.yml beside it", dir)
+		}
+		// The run apart reads only where something applies what it
+		// proposes, said when nothing does; with no reviewer, nothing.
+		apart := script(dir+"workline-warn.yml", "Whether anything reads apart")
+		if warned, reads := run(apart, map[string]string{"workline-warn.yml": dir + "workline-warn.yml", "old-apply": dir + "workline-apply.yml"}, true); !warned || reads {
+			t.Errorf("%sworkline-warn.yml: with an apply that does not name it, warned %v, reads %v; want a warning, no read", dir, warned, reads)
+		}
+		if warned, reads := run(apart, map[string]string{"workline-warn.yml": dir + "workline-warn.yml", "workline-apply.yml": dir + "workline-apply.yml"}, true); warned || !reads {
+			t.Errorf("%sworkline-warn.yml: with this release's apply, warned %v, reads %v; want a read, no warning", dir, warned, reads)
+		}
+		if warned, reads := run(apart, map[string]string{"workline-warn.yml": dir + "workline-warn.yml", "workline-apply.yml": dir + "workline-apply.yml"}, false); warned || reads {
+			t.Errorf("%sworkline-warn.yml: with no reviewer, warned %v, reads %v; want neither", dir, warned, reads)
+		}
+		if _, reads := run(apart, map[string]string{"workline-warn.yml": dir + "workline-warn.yml", "workline-apply.yml": dir + "workline-apply.yml"}, true); triage {
+			t.Errorf("%sworkline-warn.yml: the reviewer alone routed, reads %v, and waits for the gates' result: no inspector triages it", dir, reads)
+		}
+		// The inspector alone reads apart too, waiting for the gates'
+		// result it triages (ADR-0049).
+		routed = "\"gate:lint\", inspector"
+		if warned, reads := run(apart, map[string]string{"workline-warn.yml": dir + "workline-warn.yml", "workline-apply.yml": dir + "workline-apply.yml"}, true); warned || !reads || !triage {
+			t.Errorf("%sworkline-warn.yml: with the inspector alone, warned %v, reads %v, triage %v; want a read and the gates' result, no warning", dir, warned, reads, triage)
+		}
+		routed = ""
+		triageJudge := script(dir+"workline.yml", "The line for this pull request (proposals only)")
+		if !strings.Contains(triageJudge, `select(.name == "reviewer" or .name == "inspector")`) {
+			t.Errorf("%sworkline.yml: the judge says not that nothing reads the inspector's triage it left apart", dir)
+		}
+		if line := script(dir+"workline-warn.yml", "What only warns, apart from the verdict (proposals only)"); !strings.Contains(line, `${gates:+--gates-from "$gates"}`) {
+			t.Errorf("%sworkline-warn.yml: the run apart is not given the gates' result for the inspector", dir)
+		}
+		applies := script(dir+"workline.yml", "Whether anything applies what it proposed")
+		if warns(applies, map[string]string{"workline.yml": dir + "workline.yml", "workline-apply.yml": dir + "workline-apply.yml"}) {
+			t.Errorf("%sworkline.yml: says nothing applies, with this release's apply beside it", dir)
+		}
+	}
+}
+
+// What only warns runs apart from the verdict, never holding it (ADR-0050):
+// the judge leaves the reviewer's lenses that warn (--warn-apart), a run of
+// their own reads them (--warn-only), writing no verdict and uploading no
+// SARIF, and fails no check by what it finds; the head's verdict is kept
+// from the judge's run alone. On GitLab, that job and its apply never fail
+// the pipeline, and the merge policy reads the judge alone.
+func TestWarnApartNeverHoldsTheVerdict(t *testing.T) {
+	type workflow struct {
+		On struct {
+			WorkflowRun *struct {
+				Workflows []string `yaml:"workflows"`
+			} `yaml:"workflow_run"`
+		} `yaml:"on"`
+		Jobs map[string]struct {
+			If    string `yaml:"if"`
+			Steps []struct {
+				Uses string         `yaml:"uses"`
+				With map[string]any `yaml:"with"`
+				Run  string         `yaml:"run"`
+			} `yaml:"steps"`
+		} `yaml:"jobs"`
+	}
+	read := func(f string) (workflow, string) {
+		data, err := os.ReadFile(f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var wf workflow
+		if err := yaml.Unmarshal(data, &wf); err != nil {
+			t.Fatalf("%s: %v", f, err)
+		}
+		return wf, string(data)
+	}
+	for _, dir := range []string{"../../ci/github/", "../../.github/workflows/"} {
+		judge, _ := read(dir + "workline.yml")
+		left := false
+		for _, job := range judge.Jobs {
+			for _, s := range job.Steps {
+				left = left || strings.Contains(s.Run, "workline route merge-request") && strings.Contains(s.Run, "--warn-apart")
+			}
+		}
+		if !left {
+			t.Errorf("%sworkline.yml: the judge's line does not leave what only warns apart (--warn-apart)", dir)
+		}
+		warn, text := read(dir + "workline-warn.yml")
+		if !strings.Contains(text, "workline route merge-request --warn-only") {
+			t.Errorf("%sworkline-warn.yml: does not run what only warns alone (--warn-only)", dir)
+		}
+		for _, bad := range []string{"--verdict", "--sarif", "workline-verdict", "upload-sarif", "secrets.WORKLINE_APP"} {
+			if strings.Contains(text, bad) {
+				t.Errorf("%sworkline-warn.yml: holds %q: the run apart gives no verdict, nor findings to code scanning", dir, bad)
+			}
+		}
+		reads, says := false, false
+		for name, job := range warn.Jobs {
+			for _, s := range job.Steps {
+				reads = reads || strings.Contains(s.Run, "workline route merge-request --warn-only")
+				if !strings.Contains(s.Run, "exit") {
+					continue
+				}
+				// The run's status: 0 passes, 3 (the agent out of reach) is
+				// said, anything else is the engine's own error.
+				says = strings.Contains(s.Run, `3) echo "::warning`) && strings.Contains(s.Run, "0) ;;")
+				if !says {
+					t.Errorf("%sworkline-warn.yml, job %s: a step exits by the run's status without passing 0 and saying 3", dir, name)
+				}
+			}
+		}
+		if !reads || !says {
+			t.Errorf("%sworkline-warn.yml: no step runs the line apart (%v), or none ends the job by its status (%v)", dir, reads, says)
+		}
+		apply, _ := read(dir + "workline-apply.yml")
+		if r := apply.On.WorkflowRun; r == nil || !slices.Equal(r.Workflows, []string{"workline", "workline warn"}) {
+			t.Errorf("%sworkline-apply.yml: does not apply both runs, the judge's and the one apart: %+v", dir, r)
+		}
+		for name, job := range apply.Jobs {
+			keeps := false
+			for _, s := range job.Steps {
+				keeps = keeps || strings.Contains(s.Run, "--verdict-only") || strings.Contains(s.Run, "workline follow")
+			}
+			if keeps && !strings.Contains(job.If, "github.event.workflow_run.name == 'workline'") {
+				t.Errorf("%sworkline-apply.yml, job %s: keeps or follows a verdict after any run, the one apart's too: if %q", dir, name, job.If)
+			}
+		}
+	}
+	data, err := os.ReadFile("../../ci/gitlab/workline.gitlab-ci.yml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var top map[string]any
+	if err := yaml.Unmarshal(data, &top); err != nil {
+		t.Fatal(err)
+	}
+	judge, _ := top["workline:judge"].(map[string]any)
+	// The judge leaves the lenses that warn only where workline:warn runs,
+	// the bot's token set; without it they read in the judge, said in its
+	// log and its summary: never lost in silence.
+	steps, _ := judge["script"].([]any)
+	var route string
+	var says []string
+	for _, s := range steps {
+		line := fmt.Sprint(s)
+		switch {
+		case strings.Contains(line, "workline route merge-request"):
+			route = line
+		case strings.Contains(line, "WORKLINE_GITLAB_TOKEN"):
+			says = append(says, line)
+		}
+	}
+	if !strings.Contains(route, "${WORKLINE_GITLAB_TOKEN:+--warn-apart}") || strings.Contains(strings.ReplaceAll(route, "${WORKLINE_GITLAB_TOKEN:+--warn-apart}", ""), "--warn-apart") {
+		t.Errorf("workline:judge: leaves what only warns apart whether or not workline:warn can run: %s", route)
+	}
+	for _, token := range []string{"", "bot"} {
+		dir := t.TempDir()
+		cmd := exec.Command("sh", "-ec", strings.Join(says, "\n")+"\necho \"route[${WORKLINE_GITLAB_TOKEN:+--warn-apart}]\"")
+		cmd.Dir, cmd.Env = dir, []string{"PATH=" + os.Getenv("PATH"), "WORKLINE_GITLAB_TOKEN=" + token}
+		out, err := cmd.CombinedOutput()
+		summary, _ := os.ReadFile(filepath.Join(dir, "workline-summary.md"))
+		said := strings.Contains(string(out), "WORKLINE_GITLAB_TOKEN not set") && strings.Contains(string(summary), "WORKLINE_GITLAB_TOKEN not set")
+		apart := strings.Contains(string(out), "route[--warn-apart]")
+		if err != nil || said != (token == "") || apart != (token != "") {
+			t.Errorf("workline:judge, WORKLINE_GITLAB_TOKEN %q: said in log and summary %v, left apart %v (%v)\n%s", token, said, apart, err, out)
+		}
+	}
+	warn, _ := top["workline:warn"].(map[string]any)
+	script := fmt.Sprint(warn["script"])
+	if !strings.Contains(script, "--warn-only") || strings.Contains(script, "--verdict") || strings.Contains(script, "--code-quality") {
+		t.Errorf("workline:warn: does not read what only warns alone, with no verdict nor report: %s", script)
+	}
+	// In a child pipeline the merge request's does not wait for (ADR-0051):
+	// GitLab's "merge when the pipeline succeeds" waits for allow_failure
+	// jobs too. Started after the gates, whatever their verdict, from this
+	// same file, with no strategy. It forwards no variable of the file's:
+	// a trigger job expands them where CI_PROJECT_DIR is empty, and the
+	// child's runs went to /.workline-runs, out of its artifacts (tried
+	// on gitlab.com, 2026-10-21).
+	child, _ := top["workline:warn:child"].(map[string]any)
+	trigger, _ := child["trigger"].(map[string]any)
+	rules, _ := child["rules"].([]any)
+	var rule map[string]any
+	if len(rules) == 1 {
+		rule, _ = rules[0].(map[string]any)
+	}
+	if trigger["include"] != "ci/workline.gitlab-ci.yml" || trigger["strategy"] != nil || fmt.Sprint(child["needs"]) != "[workline:gates]" ||
+		rule["when"] != "always" || child["allow_failure"] != true || fmt.Sprint(child["variables"]) != "map[WORKLINE_PARENT_PIPELINE_ID:$CI_PIPELINE_ID]" ||
+		fmt.Sprint(child["inherit"]) != "map[variables:false]" {
+		t.Errorf("workline:warn:child: does not start what only warns in a child pipeline the merge does not wait for, after the gates whatever their verdict: %v", child)
+	}
+	// The inspector triages the gates' findings (ADR-0049): read from their
+	// job in the merge request's pipeline, never run here. GitLab's
+	// needs:pipeline:job fetches only a job that passed: the bot's token
+	// reads it, as given or as missing, said.
+	if !strings.Contains(script, "--gates-from") || strings.Contains(script, "--gates-only") || fmt.Sprint(warn["needs"]) != "[]" {
+		t.Errorf("workline:warn: does not read the gates' result from the merge request's pipeline (needs %v): %s", warn["needs"], script)
+	}
+	if _, err := exec.LookPath("jq"); err == nil {
+		var fetch string
+		for _, s := range warn["script"].([]any) {
+			if line := fmt.Sprint(s); strings.Contains(line, "WORKLINE_PARENT_PIPELINE_ID") {
+				fetch = line
+			}
+		}
+		dir := t.TempDir()
+		curl := "#!/bin/sh\nout=; for a; do [ \"$prev\" = -o ] && out=$a; prev=$a; url=$a; done\n" +
+			"case $url in */pipelines/7/jobs*) echo '[{\"id\":41,\"name\":\"workline:judge\"},{\"id\":42,\"name\":\"workline:gates\"}]' ;;\n" +
+			"*/jobs/42/artifacts/gates.json) echo '{\"steps\":[]}' > \"$out\" ;;\n*) exit 22 ;; esac\n"
+		if err := os.WriteFile(filepath.Join(dir, "curl"), []byte(curl), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		for _, c := range []struct{ parent, gates string }{{"7", "gates.json"}, {"8", ""}, {"", ""}} {
+			work := t.TempDir()
+			cmd := exec.Command("sh", "-ec", fetch+"\necho \"gates[$gates]\"")
+			cmd.Dir, cmd.Env = work, []string{"PATH=" + dir + string(os.PathListSeparator) + os.Getenv("PATH"), "WORKLINE_PARENT_PIPELINE_ID=" + c.parent,
+				"WORKLINE_GITLAB_TOKEN=glpat", "CI_API_V4_URL=https://gitlab.example/api/v4", "CI_PROJECT_ID=1"}
+			out, err := cmd.CombinedOutput()
+			said := strings.Contains(string(out), "left no gates.json")
+			if err != nil || !strings.Contains(string(out), "gates["+c.gates+"]") || said != (c.gates == "") {
+				t.Errorf("workline:warn, the parent pipeline %q: %s (%v); want gates %q, a missing result said", c.parent, out, err, c.gates)
+			}
+		}
+	} else if os.Getenv("GITHUB_ACTIONS") != "" {
+		t.Fatal("jq is not on PATH: the GitLab template's check runs it, in its image")
+	}
+	for _, name := range []string{"workline:warn", "workline:warn:apply"} {
+		if job, _ := top[name].(map[string]any); job["allow_failure"] != true {
+			t.Errorf("job %s: allow_failure %v: what only warns would fail the pipeline the merge waits on", name, job["allow_failure"])
+		}
+	}
+	if merge, _ := top["workline:merge"].(map[string]any); fmt.Sprint(merge["needs"]) != "[workline:judge]" {
+		t.Errorf("workline:merge: needs %v: the head's verdict is the judge's alone", merge["needs"])
 	}
 }
 
@@ -482,7 +851,7 @@ func TestOneReviewAtATimePerMergeRequest(t *testing.T) {
 
 func TestGitHubTemplatesAskEveryLensWhenReady(t *testing.T) {
 	n := 0
-	for _, f := range []string{"../../ci/github/workline.yml", "../../.github/workflows/workline.yml"} {
+	for _, f := range []string{"../../ci/github/workline.yml", "../../.github/workflows/workline.yml", "../../ci/github/workline-warn.yml", "../../.github/workflows/workline-warn.yml"} {
 		data, err := os.ReadFile(f)
 		if err != nil {
 			t.Fatal(err)
@@ -510,7 +879,7 @@ func TestGitHubTemplatesAskEveryLensWhenReady(t *testing.T) {
 		}
 		for name, job := range wf.Jobs {
 			for _, st := range job.Steps {
-				if !strings.Contains(st.Run, "workline route merge-request") {
+				if !strings.Contains(st.Run, "workline route merge-request") || strings.Contains(st.Run, "--gates-only") || strings.Contains(st.Run, "--input queue=true") {
 					continue
 				}
 				n++
@@ -548,8 +917,93 @@ func TestGitHubTemplatesAskEveryLensWhenReady(t *testing.T) {
 			}
 		}
 	}
-	if n < 2 {
-		t.Fatalf("found %d steps running the merge request's line, want the template's and workline's own", n)
+	if n < 4 {
+		t.Fatalf("found %d steps running the merge request's line, want the template's and workline's own, the judge's and the run apart's", n)
+	}
+}
+
+// A draft asks no agent (ADR-0050): the engine sets it aside, given the
+// draft state, so the jobs that run the merge request's line install none
+// on a draft, and still name the agent, for the engine to say the AI
+// review waits for ready.
+func TestTemplatesInstallNoAgentOnADraft(t *testing.T) {
+	for _, f := range []string{"../../ci/github/workline.yml", "../../.github/workflows/workline.yml", "../../ci/github/workline-warn.yml", "../../.github/workflows/workline-warn.yml"} {
+		data, err := os.ReadFile(f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var wf struct {
+			Jobs map[string]struct {
+				Steps []struct {
+					If  string            `yaml:"if"`
+					Env map[string]string `yaml:"env"`
+					Run string            `yaml:"run"`
+				} `yaml:"steps"`
+			} `yaml:"jobs"`
+		}
+		if err := yaml.Unmarshal(data, &wf); err != nil {
+			t.Fatalf("%s: %v", f, err)
+		}
+		installs := 0
+		for name, job := range wf.Jobs {
+			for _, st := range job.Steps {
+				if !strings.Contains(st.Run, "npm install -g @anthropic-ai/claude-code") {
+					continue
+				}
+				installs++
+				skipped := strings.Contains(st.If, "!github.event.pull_request.draft") ||
+					st.Env["DRAFT"] == "${{ github.event.pull_request.draft }}" && strings.Contains(st.Run, `[ "$DRAFT" = true ] || npm install -g @anthropic-ai/claude-code`)
+				if !skipped {
+					t.Errorf("%s, job %s: the agent is installed on a draft, which asks none", filepath.Base(f), name)
+				}
+			}
+		}
+		if installs == 0 {
+			t.Errorf("%s: no step installs the agent", filepath.Base(f))
+		}
+	}
+	data, err := os.ReadFile("../../ci/gitlab/workline.gitlab-ci.yml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var top map[string]any
+	if err := yaml.Unmarshal(data, &top); err != nil {
+		t.Fatal(err)
+	}
+	claude, _ := top[".workline:claude"].([]any)
+	dir := t.TempDir()
+	npm := "#!/bin/sh\necho installed > \"$NPM_SEEN\"\n"
+	if err := os.WriteFile(filepath.Join(dir, "npm"), []byte(npm), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	for _, c := range []struct {
+		draft, token string
+		ai           string
+		installed    bool
+	}{
+		{"true", "t", "claude", false}, {"false", "t", "claude", true}, {"", "t", "claude", true}, {"true", "", "none", false},
+	} {
+		seen := filepath.Join(dir, "seen-"+c.draft+c.token)
+		var script strings.Builder
+		for _, l := range claude {
+			fmt.Fprintln(&script, l)
+		}
+		cmd := exec.Command("sh", "-ec", script.String()+"echo \"ai[$ai]\"")
+		cmd.Env = []string{"PATH=" + dir + string(os.PathListSeparator) + os.Getenv("PATH"), "NPM_SEEN=" + seen, "draft=" + c.draft, "CLAUDE_CODE_OAUTH_TOKEN=" + c.token}
+		out, err := cmd.CombinedOutput()
+		_, statErr := os.Stat(seen)
+		if err != nil || !strings.Contains(string(out), "ai["+c.ai+"]") || (statErr == nil) != c.installed {
+			t.Errorf(".workline:claude, draft %q, token %q: %s (%v), installed %v; want ai %s, installed %v", c.draft, c.token, out, err, statErr == nil, c.ai, c.installed)
+		}
+	}
+	// The draft state is read before the agent is installed.
+	for _, job := range []string{"workline:judge", "workline:warn"} {
+		j, _ := top[job].(map[string]any)
+		script := fmt.Sprint(j["script"])
+		at, install := strings.Index(script, "lenses=;"), strings.Index(script, "npm install")
+		if at < 0 || install < 0 || at > install {
+			t.Errorf("%s: the draft state (.workline:ready) is not read before the agent is installed: %s", job, script)
+		}
 	}
 }
 
@@ -685,7 +1139,7 @@ func TestGardeningTendsItsMergeRequests(t *testing.T) {
 		found := false
 		for name, job := range wf.Jobs {
 			for _, s := range job.Steps {
-				if !strings.Contains(s.Run, "workline apply") {
+				if !strings.Contains(s.Run, "workline apply") || strings.Contains(s.Run, "--release-dry-run") {
 					continue
 				}
 				found = true
@@ -715,6 +1169,69 @@ func TestGardeningTendsItsMergeRequests(t *testing.T) {
 	apply, follow := strings.Index(script, "workline apply"), strings.Index(script, "workline follow --gardening")
 	if apply < 0 || follow < apply || !strings.Contains(script[follow:], "|| status=$?") {
 		t.Errorf("workline:garden:apply does not run `workline follow --gardening` after applying: %s", script)
+	}
+}
+
+// The release pull request's docs are judged at night, with the gardening
+// (ADR-0050, §7): its judging job runs the schedule line with a forge that
+// lists the open merge requests and --open-merge-request, which is when
+// the line takes up the release; on GitHub, the job that applies names
+// the App, so that the release's fix is the App's pull request only when
+// the App alone pushed to the release's branch, as for a pull request's
+// own run (workline-apply.yml).
+func TestGardeningJudgesTheReleaseAtNight(t *testing.T) {
+	for _, f := range []string{"../../ci/github/workline-gardening.yml", "../../.github/workflows/workline-gardening.yml"} {
+		data, err := os.ReadFile(f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var wf struct {
+			Jobs map[string]struct {
+				Permissions map[string]string `yaml:"permissions"`
+				Steps       []struct {
+					Run string            `yaml:"run"`
+					Env map[string]string `yaml:"env"`
+				} `yaml:"steps"`
+			} `yaml:"jobs"`
+		}
+		if err := yaml.Unmarshal(data, &wf); err != nil {
+			t.Fatal(err)
+		}
+		judged, applied := false, false
+		for name, job := range wf.Jobs {
+			for _, s := range job.Steps {
+				if strings.Contains(s.Run, "workline route schedule") {
+					judged = true
+					if !strings.Contains(s.Run, "--forge github") || !strings.Contains(s.Run, "--open-merge-request") || job.Permissions["pull-requests"] != "read" {
+						t.Errorf("%s, job %s: the schedule line does not list the open pull requests (--forge github, --open-merge-request, pull-requests: read): no release is judged at night", f, name)
+					}
+				}
+				if strings.Contains(s.Run, "workline apply") && !strings.Contains(s.Run, "--release-dry-run") {
+					applied = true
+					if !strings.Contains(s.Env["WORKLINE_APP"], "steps.app.outputs.app-slug") {
+						t.Errorf("%s, job %s: applies with no WORKLINE_APP: who pushed to the release's branch is not checked before its fix is opened as the App's", f, name)
+					}
+				}
+			}
+		}
+		if !judged || !applied {
+			t.Errorf("%s: no job runs the schedule line, or none applies it", f)
+		}
+	}
+	data, err := os.ReadFile("../../ci/gitlab/workline.gitlab-ci.yml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var top map[string]any
+	if err := yaml.Unmarshal(data, &top); err != nil {
+		t.Fatal(err)
+	}
+	garden, _ := top[".workline:garden"].(map[string]any)
+	job, _ := top["workline:garden:judge"].(map[string]any)
+	script := fmt.Sprint(job["script"])
+	if !strings.Contains(fmt.Sprint(garden["before_script"]), "export GITLAB_TOKEN=$WORKLINE_GITLAB_TOKEN") ||
+		!strings.Contains(script, "--forge gitlab") || !strings.Contains(script, "--open-merge-request") {
+		t.Errorf("workline:garden:judge does not list the open merge requests with the project's token: no release is judged at night: %s", script)
 	}
 }
 
@@ -769,6 +1286,7 @@ func TestMergePolicyRunsAfterTheJudgeAndOnLabels(t *testing.T) {
 		for name, job := range judged.Jobs {
 			for _, s := range job.Steps {
 				switch {
+				case strings.Contains(s.Run, "--gates-only"), strings.Contains(s.Run, "--input queue=true"):
 				case strings.Contains(s.Run, "workline route merge-request"):
 					route = s.Run
 				case strings.Contains(s.Run, "workline follow"):
@@ -780,7 +1298,7 @@ func TestMergePolicyRunsAfterTheJudgeAndOnLabels(t *testing.T) {
 			t.Errorf("%sworkline.yml: judge does not write the head's verdict", dir)
 		}
 		after := read(dir + "workline-apply.yml")
-		if r := after.On.WorkflowRun; r == nil || !slices.Equal(r.Workflows, []string{"workline"}) || !slices.Equal(r.Types, []string{"completed"}) {
+		if r := after.On.WorkflowRun; r == nil || !slices.Equal(r.Workflows, []string{"workline", "workline warn"}) || !slices.Equal(r.Types, []string{"completed"}) {
 			t.Errorf("%sworkline-apply.yml: does not run when workline.yml completes: %+v", dir, r)
 		}
 		var keep string
@@ -794,6 +1312,12 @@ func TestMergePolicyRunsAfterTheJudgeAndOnLabels(t *testing.T) {
 					}
 					if !strings.Contains(s.Run, `[ "$head" = "$HEAD_SHA" ]`) {
 						t.Errorf("%sworkline-apply.yml, job %s: the verdict is kept without checking it is the event's head's", dir, name)
+					}
+				case strings.Contains(s.Run, "--merge-group"):
+					// A merge queue's group (ADR-0050): its yes set at once,
+					// the queue waiting for it, no pull request followed.
+					if job.Needs != nil || job.Concurrency != nil {
+						t.Errorf("%sworkline-apply.yml, job %s: a queue's group waits for another job (needs %v, concurrency %v)", dir, name, job.Needs, job.Concurrency)
 					}
 				case strings.Contains(s.Run, "workline follow"):
 					if fmt.Sprint(job.Needs) != "verdict" || job.Concurrency == nil {
@@ -899,6 +1423,112 @@ func TestGitHubJudgeTellsTheDocumentalistFound(t *testing.T) {
 			if got := strings.TrimSpace(string(out)); err != nil || got != c.want {
 				t.Errorf("%s, %s: %q (%v), want %s", filepath.Base(f), c.name, got, err, c.want)
 			}
+		}
+	}
+}
+
+// The gates run in a job of their own, their tools the change's code: on
+// GitHub, one holding a read token alone and no secret, the agent's
+// neither, its checkout keeping no token; the judge reads their verdicts
+// and never runs a gate (ADR-0049). On GitLab, which gives every job the
+// project's variables, the gates' job unsets the agent's token and the
+// project bot's first, and its Code Quality report is what GitLab shows.
+func TestGatesRunWithNoTokenNorAgent(t *testing.T) {
+	type step struct {
+		Uses string         `yaml:"uses"`
+		With map[string]any `yaml:"with"`
+		Env  map[string]any `yaml:"env"`
+		If   string         `yaml:"if"`
+		Run  string         `yaml:"run"`
+	}
+	type job struct {
+		Needs       any               `yaml:"needs"`
+		If          string            `yaml:"if"`
+		Permissions map[string]string `yaml:"permissions"`
+		Env         map[string]any    `yaml:"env"`
+		Steps       []step            `yaml:"steps"`
+	}
+	for _, f := range []string{"../../ci/github/workline.yml", "../../.github/workflows/workline.yml"} {
+		data, err := os.ReadFile(f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var wf struct {
+			Env  map[string]any `yaml:"env"`
+			Jobs map[string]job `yaml:"jobs"`
+		}
+		if err := yaml.Unmarshal(data, &wf); err != nil {
+			t.Fatalf("%s: %v", f, err)
+		}
+		for k, v := range wf.Env {
+			if strings.Contains(fmt.Sprint(v), "secrets.") {
+				t.Errorf("%s: the workflow's env %s gives every job a secret", f, k)
+			}
+		}
+		running := 0
+		for name, j := range wf.Jobs {
+			text, _ := yaml.Marshal(j)
+			gates := strings.Contains(string(text), "--gates-only")
+			if !gates {
+				continue
+			}
+			running++
+			if len(j.Permissions) != 1 || j.Permissions["contents"] != "read" {
+				t.Errorf("%s, job %s: runs the gates with permissions %v, want contents: read alone", f, name, j.Permissions)
+			}
+			if strings.Contains(string(text), "secrets.") {
+				t.Errorf("%s, job %s: runs the gates with a secret in reach", f, name)
+			}
+			for _, s := range j.Steps {
+				if strings.HasPrefix(s.Uses, "actions/checkout@") && fmt.Sprint(s.With["persist-credentials"]) != "false" {
+					t.Errorf("%s, job %s: its checkout keeps the token in .git/config for the gates' tools to read", f, name)
+				}
+			}
+		}
+		if running != 1 {
+			t.Errorf("%s: %d jobs run the gates alone, want one", f, running)
+		}
+		// Main's run after a merge is the gates' job's alone (ADR-0050).
+		judge := wf.Jobs["judge"]
+		if fmt.Sprint(judge.Needs) != "gates" || judge.If != "!cancelled() && github.event_name != 'push'" {
+			t.Errorf("%s: judge does not run after the gates whatever their verdict (needs %v, if %q)", f, judge.Needs, judge.If)
+		}
+		read := false
+		for _, s := range judge.Steps {
+			if strings.Contains(s.Run, "workline route merge-request") {
+				read = strings.Contains(s.Run, `--gates-from "$RUNNER_TEMP/gates/gates.json"`)
+			}
+		}
+		if !read {
+			t.Errorf("%s: judge's line runs the gates itself, beside the agent's token: no --gates-from", f)
+		}
+	}
+	data, err := os.ReadFile("../../ci/gitlab/workline.gitlab-ci.yml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var top map[string]any
+	if err := yaml.Unmarshal(data, &top); err != nil {
+		t.Fatal(err)
+	}
+	gates, _ := top["workline:gates"].(map[string]any)
+	script, _ := gates["script"].([]any)
+	if len(script) == 0 || fmt.Sprint(script[0]) != "unset CLAUDE_CODE_OAUTH_TOKEN WORKLINE_GITLAB_TOKEN GITLAB_TOKEN" {
+		t.Errorf("workline:gates: its script does not unset the agent's and the bot's tokens first: %v", script)
+	}
+	if !strings.Contains(fmt.Sprint(script), "--gates-only") || !strings.Contains(fmt.Sprint(script), "--code-quality gl-code-quality-gates.json") {
+		t.Errorf("workline:gates: does not run the gates alone into its Code Quality report: %v", script)
+	}
+	if reports, _ := gates["artifacts"].(map[string]any)["reports"].(map[string]any); fmt.Sprint(reports["codequality"]) != "gl-code-quality-gates.json" {
+		t.Errorf("workline:gates: GitLab is not given its Code Quality report: %v", reports)
+	}
+	judge, _ := top["workline:judge"].(map[string]any)
+	if !strings.Contains(fmt.Sprint(judge["script"]), "--gates-from gates.json") || fmt.Sprint(judge["needs"]) != "[workline:gates]" {
+		t.Errorf("workline:judge: does not read the gates' verdicts from their job (needs %v)", judge["needs"])
+	}
+	for _, r := range judge["rules"].([]any) {
+		if m, _ := r.(map[string]any); fmt.Sprint(m["when"]) != "always" {
+			t.Errorf("workline:judge: rule %v is not `when: always`: gates that did not pass would skip the line", m)
 		}
 	}
 }

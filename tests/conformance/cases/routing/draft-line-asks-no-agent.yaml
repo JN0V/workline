@@ -1,0 +1,25 @@
+case: routing/draft-line-asks-no-agent
+about: "A push to a draft merge request (`draft=true`), an agent set (ADR-0050): the line runs the committer, the documentalist's checks and the reviewer's rules, and asks no agent at all: no lens, no judge, no doc judged. The doc the change made suspect is counted, said judged once it is ready, and no person is asked to read it. The line's summary says the AI review waits for the merge request to be marked ready."
+given:
+  repo: documented
+  config:
+    routing: {events: {merge-request: [committer, documentalist, reviewer]}}
+  setup:
+    - "git checkout -qb feat/sessions && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+  forge:
+    issues: []
+    merge-requests: [{id: 1, labels: [], comments: []}]
+run: {route: merge-request, input: {range: main..HEAD, draft: "true"}, target: {merge-request: 1}, ai: "fake:review-nothing", summary: true}
+expect:
+  status: pass
+  agent-calls: 0
+  steps: [committer, documentalist, reviewer]
+  findings:
+    - {rule: suspect, where: docs/tech/auth.md}
+    - {rule: ai-waits-for-ready, level: warn, message: "a draft: 1 doc this change made suspect is judged once it is marked ready"}
+    - {rule: ai-waits-for-ready, level: warn, message: "a draft: no lens asked"}
+  summary: "a draft: no agent asked, the AI review waits for it to be marked ready"
+  summary-file: ["a draft: no agent asked, the AI review waits for it to be marked ready"]
+  forge:
+    merge-requests:
+      - {id: 1, comments: 0}

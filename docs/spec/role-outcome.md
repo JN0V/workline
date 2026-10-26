@@ -1,8 +1,8 @@
 ---
 type: reference
 sources: [internal/engine, internal/intent, internal/role, internal/agent, internal/verdict, internal/report]
-verified: agent:documentalist
-checked: 1b93a955
+verified: agent:claude-code
+checked: d722a840
 judged: b5899f5
 status: draft
 ---
@@ -29,12 +29,15 @@ never be read as one.
 
 A `block` from `post` after the agent answered has the agent asked again,
 with the findings as the reasons (docs/spec/model-grid.md), unless `final`:
-`post` says the block does not come from the answer — a release held by
-docs the answer was not about, a check that could not run — and asking
+`post` says the block does not come from the answer — a check that could
+not run — and asking
 again would change nothing, but grow the question with every finding.
 Still refused once asked again, on an event whose steps all run
 (`schedule`), the step passes, nothing of the proposal applied, each
 refusal a warning ([ADR-0037, amended](../adr/0037-the-schedule-runs-every-step.md#amendment-2026-10-09-a-refused-proposal-is-said-not-failed)).
+So is it on a merge request for a role whose `merge-request-ai` is
+`ready`, refused once: never asked again, no stronger model
+([ADR-0051](../adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md)).
 A `final` block met once asked again is no refusal: it still blocks, and
 the summary says it.
 
@@ -42,18 +45,23 @@ Findings map to SARIF, so the same verdict can be posted on GitHub or GitLab:
 `--sarif` writes them for code scanning, `--code-quality` as GitLab's Code
 Quality report, rule `<role>/<rule>`, on the file and line `where` names — at
 the heading of its `#anchor`, else line 1. A finding that blocks is an
-`error` (`blocker`), one lowered by `enforce` a `warning` (`minor`), one from
-a run that passed, or of level `question` (a reviewer's question for a
-person), a `note` (`info`). One whose `where` names no file — a
+`error` (`blocker`), one at `warn` a `warning` (`minor`), one from a run
+that passed, or of level `question` (a reviewer's question for a person), a
+`note` (`info`). One whose `where` names no file — a
 commit's subject, a folder, a gate's check — is left out: both formats need a
 file, and `--json` still has it, as does `--summary`, the summary a CI job's
 page shows (ADR-0035). On a merge request, `--sarif` leaves out the
-documentalist's and the reviewer's findings: code scanning would open a
-conversation for each, whatever its level, which a base requiring them
-resolved holds the merge on ([ADR-0047](../adr/0047-findings-on-a-merge-request-open-no-conversation.md)).
+documentalist's, the reviewer's, the inspector's and the gates' findings: code scanning
+would open a conversation for each, whatever its level, which a base
+requiring them resolved holds the merge on ([ADR-0047](../adr/0047-findings-on-a-merge-request-open-no-conversation.md),
+[ADR-0049](../adr/0049-the-inspector-judges-the-new-findings-of-the-projects-tools.md)).
 `apply --line --from-merge-request` shows the documentalist's as the
 annotations of a check (`notice`, `warning`, `failure` as `note`,
-`warning`, `error`), the reviewer's are its review. `route --verdict <file>` writes the line's verdict
+`warning`, `error`), the reviewer's are its review, the inspector's its
+comment; `apply --gates`, the
+gates' new findings, as another check's annotations and one comment
+([gates](gates.md#shown-on-the-merge-request)). A gate's new finding in
+`--code-quality` is its tool's rule, level and fingerprint. `route --verdict <file>` writes the line's verdict
 on the head it judged — its status, each step's, the findings — which
 `follow --verdict` keeps for the merge policy (ADR-0042).
 
@@ -65,12 +73,19 @@ A new rule is not trusted on day one. A project sets how hard each rule bites:
 roles:
   committer:
     enforce:
-      internal-code: warn        # block (default) | warn | off
+      internal-code: warn        # warn | off | block (default: the role's level)
 ```
 
 The engine recomputes the status from the findings: a `block` verdict whose
-blocking findings are all set to `warn` becomes a `pass` that shows them. Rules
-start in `warn`, and move to `block` once the false positives are gone.
+blocking findings, one at least, are all set to `warn` or `off` becomes a
+`pass` that shows what is left; a block with none to lower — no finding, or
+warnings only — stands. A finding its role gives as a warning (`record-unread`) never
+counts as blocking; `block` leaves a rule at its role's level, never raising a
+warning ([#99](https://github.com/JN0V/workline/issues/99)). A role that
+decides on its findings before its verdict reads them at these levels first:
+the reviewer's rules hold its lenses only while one still blocks
+([#550](https://github.com/JN0V/workline/issues/550)). Rules start in `warn`,
+and move to `block` once the false positives are gone.
 
 A rule can also be adopted on existing code without fixing all past violations
 first: the violations present today are frozen in a baseline, with a date. Only
@@ -85,8 +100,8 @@ refuses. The catalogue is closed and belongs to the engine:
 | Intention | Effect | Applied |
 |---|---|---|
 | `commit-message` | replace the message being written; the engine adds the role's `Workline-Role` and each `Workline-Model` to its trailers, which the agent may not write (ADR-0046) | locally |
-| `patch` | a unified diff, applied as its lines read (agents get hunk counts wrong), which may create a file (`--- /dev/null`) or delete one (`+++ /dev/null`), or `{file, content}` to replace one file; limited to `duties.writes`, every path whole; never a rename, a copy, a mode, a link — written or written through — nor a binary patch | locally, as a merge request of its own (`--open-merge-request`), or as a commit on the merge request run on (`--push-to-merge-request`) |
-| `comment` | a comment on the issue or merge request; `{body, sticky: key}` keeps one comment, edited on each run (with `update-only: true`, never opened); `issue: n` puts it on that issue instead; a line starting with `/` is escaped, never a GitLab quick action (ADR-0038); beside a sticky comment on a merge request, `review: {head, body, comments: [{path, line, key, body}]}` posts each comment on its line first, in the forge's own review — GitHub's pull request review, event `COMMENT`; GitLab's discussions —, never approving nor asking for changes; a comment whose `key` a thread not resolved holds is not posted again; one on a line the merge request's diff does not show, or the forge refuses (`line-comment-refused`, a warning), goes in full into the sticky comment's review region, from `<!-- workline:review -->` to `<!-- workline:review-end -->`, with why, the region also linking to the review; what the role wrote in the region, each comment in full, is for an engine that posts none, which leaves it; never a failed run (#277); `read: <record>`, the reviewer's record as its run read it, merged with the one the comment holds when written, a run applied since having written it (#375) | forge; `local` and `cmd:` take no comment on a line |
+| `patch` | a unified diff, applied as its lines read (agents get hunk counts wrong), which may create a file (`--- /dev/null`) or delete one (`+++ /dev/null`), or `{file, content}` to replace one file; limited to `duties.writes`, every path whole; never a rename, a copy, a mode, a link — written or written through — nor a binary patch | locally, as a merge request of its own (`--open-merge-request`), or, on a merge request, as a diff in one comment there, never on its branch |
+| `comment` | a comment on the issue or merge request; `{body, sticky: key}` keeps one comment, edited on each run (with `update-only: true`, never opened): on a merge request, one workline's own account wrote, another's carrying its marker left and its own posted after it, `update-only` or not (ADR-0051); on an issue, the role's by its marker (ADR-0038); `issue: n` puts it on that issue instead; a line starting with `/` is escaped, never a GitLab quick action (ADR-0038); beside a sticky comment on a merge request, `review: {head, body, comments: [{path, line, key, body}]}` posts each comment on its line first, in the forge's own review — GitHub's pull request review, event `COMMENT`; GitLab's discussions —, never approving nor asking for changes; a comment whose `key` a thread not resolved holds is not posted again; one on a line the merge request's diff does not show, or the forge refuses (`line-comment-refused`, a warning), goes in full into the sticky comment's review region, from `<!-- workline:review -->` to `<!-- workline:review-end -->`, with why, the region also linking to the review; what the role wrote in the region, each comment in full, is for an engine that posts none, which leaves it; never a failed run (#277); `read: <record>`, the reviewer's or the inspector's record as its run read it, merged with the one the comment holds when written, a run applied since having written it (#375, #580); the body names the head and the CI run it is at (`<!-- workline:at head=… run=… -->`): a comment naming a later run keeps its text, the run's record merged into it (#598); both read from the comment workline's own account wrote, never another's, nor one another edited last (ADR-0051, step 9) | forge; `local` and `cmd:` take no comment on a line |
 | `label` | add or remove labels | forge |
 | `issue` | report a problem without fixing it: found outside the task, or one only people can settle (code disagreeing with a spec); `{title, body, sticky: true}` keeps one issue on the forge, its body rewritten on each run (with `update-only: true`, never opened); `{title, body, at: {path, text}}` opens one once, through the one way every role shares (docs/spec/backlog-acts.md, "Opening issues"): the engine keys it from the line `at` quotes (else its title), looks in the issues open and closed, opens none for a subject held, at most `issues-max` a run, labelled `needs-triage`, the role named, with the product owner's state comment naming the file and the commit (ADR-0018) | forge (`forge: local` keeps it in the clone); refused without one |
 | `close` | close an issue as a duplicate (`duplicate-of`) or obsolete, its evidence quoted from a file or an issue; never as not planned; done, proposed or dropped by the engine — obsolete announced on the issue first, closed by the engine days later on silence and a second judge's yes (docs/spec/backlog-acts.md, ADR-0024) | forge |
@@ -94,7 +109,8 @@ refuses. The catalogue is closed and belongs to the engine:
 | `open` | open an issue from a file's item, its text quoted, once (docs/spec/backlog-acts.md, "Importing a file") | forge |
 | `skip` | when importing, an item of the file not opened, by its lines, and why: `done` (the words that say so quoted), `held` (the issue that holds it) or `not-item` (why); the engine checks the reason and puts it in the import's map (docs/spec/backlog-acts.md, "The map"; ADR-0030) | never: kept in `out/skips.yaml`, read by the import |
 | `milestone` | put an issue in a release's milestone, created if none is open (docs/spec/backlog-acts.md) | forge |
-| `order` | set an issue's priority, one label of `workline:priority/1` (the most pressing) to `/4`; a priority a person set is kept (docs/spec/backlog-acts.md, "Ordering") | forge |
+| `order` | set an issue's priority, one label of `workline:priority/1` (the most pressing) to `/4`, or of the family the project keeps it in, its settings asking; a priority a person set is kept (docs/spec/backlog-acts.md, "Ordering") | forge |
+| `effort` | the engine's, split from an `order` carrying `effort: 1` to `3` (Low, hours, to High, weeks): set once, only where empty, on code the run read (docs/spec/backlog-acts.md, "Ordering") | forge |
 | `sources` | name the code an issue is about, a line of it quoted; the issue is read again with it (docs/spec/backlog-acts.md) | forge |
 | `refine` | add the sections an issue lacks — Scope and its files, Verification, Need and Validation as drafts, a real example or a bug's steps to reproduce as drafts too, never required — in the reader's order, never rewriting one there; a role's text on top taken into the Need draft, a draft saying again what is above it left out (ADR-0039, amended); on an outsider's issue, proposed to its reporter in a comment until a person agrees (docs/spec/backlog-acts.md, "Refining to ready") | forge |
 | `ready` | move an issue to `ready`, once the engine finds its four sections there — a person's text on top standing for a Need — and none a draft — or the drafts accepted with the label `workline:accepted`; an outsider's is proposed, unless accepted | forge |
@@ -105,8 +121,9 @@ refuses. The catalogue is closed and belongs to the engine:
 | `depend` | name the open issues an issue waits on (`blocked-by`): the forge's own relation, or a line in its body; never a cycle, a person's link kept (docs/spec/backlog-acts.md, "What an issue waits on"; ADR-0028) | forge |
 | `undepend` | take off a link the role set (`blocked-by`), its blocker still open: always proposed to a person; a closed blocker's link the engine takes off itself, a person's never (ADR-0028) | forge |
 | `handoff` | name the next role and why | engine |
-| `note` | a message for the human, nothing else | report |
-| `finding` | a lens's answer (role contract, "In parts"): `{lens, severity, title, why, cause: {path, quote}, symptom, fix, claim}`, `severity` `important` or `nit`, `lens` the one that found it, read when the lenses are asked together; `claim` the author's words a lens that `cites: claim` quotes; a cause's `path` `#4` for the issue the change closes; the engine finds each quote again, and tells the change's from the rest by where the cause lies (ADR-0020) | never: read by the reviewer's `pre` |
+| `note` | a message for the human, nothing else; the documentalist's may name the doc it is about, `{doc, text}`: a doc a note names is not vouched for in that answer (roles/documentalist/docs/judge.md, "Moving `checked`") | report |
+| `finding` | a lens's answer (role contract, "In parts"): `{lens, severity, title, why, cause: {path, quote}, symptom, fix, seen, claim, decision}`, `severity` `important` or `nit`, `lens` the one that found it, read when the lenses are asked together; `claim` the author's words a lens that `cites: claim` quotes; `decision` the question for a person, for a choice that is no defect, a key of the finding, never an item of its own; a cause's `path` `#4` for the issue the change closes; the engine finds each quote again, and tells the change's from the rest by where the cause lies (ADR-0020) | never: read by the reviewer's `pre` |
+| `triage` | the inspector's answer (role contract, "In parts"): `{finding, matters, fix, false-positive, why, order}`, `finding` the id the task gives a gate's new finding (`t1`), `why` only with `false-positive: true`; one the task says was triaged before (`r1`), `{finding, order}` only; never the gates' verdict (ADR-0049) | never: read by the inspector's `pre`, which keeps each by its finding's fingerprint |
 | `claim` | a part's answer about a passage of the question (role contract, "In parts"): `{lines, status, quote, source: {path, lines, quote}, why}`, `status` one of `contradicted`, `partial`, `supported`; or, beside a `patch`, why it takes words out | never: read by `pre`, which puts the parts' claims together, or by `post` |
 | `read` | a judge's ask, when its question lets it read (role contract, "A judge that reads"; ADR-0045): `{path, lines}`, `{name}` or `{grep}`, each with `why`, in place of its verdict | never: served by `pre`, at the commit judged, and the judge asked again |
 | `quote` | the lines a judge's no rests on, `{path, text}`, beside its note | never: found again by `pre` before a finding is dropped |

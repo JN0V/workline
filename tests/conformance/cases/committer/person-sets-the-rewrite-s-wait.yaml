@@ -1,0 +1,20 @@
+case: committer/person-sets-the-rewrite-s-wait
+about: "The wait is the person's too: their own ai-max-seconds caps their rewrite, the project setting none."
+given:
+  repo: basic
+  setup:
+    - "mkdir -p \"$XDG_CONFIG_HOME/workline\" && printf 'roles: {committer: {settings: {rewrite: true, ai-max-seconds: 1}}}\\n' > \"$XDG_CONFIG_HOME/workline/config.yaml\""
+run:
+  role: committer
+  event: commit-msg
+  input: {message: "fix: AC-3"}
+  ai: |-
+    cmd:sleep 20
+    echo '- commit-message: "fix(parser): stop crashing on an empty input file"'
+expect:
+  status: block
+  agent-calls: 1
+  applied: []
+  findings:
+    - {rule: internal-code, message: "AC-3"}
+    - {rule: ai-max-seconds, level: warn, message: "it allows 1"}

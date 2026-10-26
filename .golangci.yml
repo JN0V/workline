@@ -1,0 +1,7 @@
+# golangci-lint on workline's own code: its standard linters as they come
+# (errcheck, govet, ineffassign, staticcheck, unused), none added nor
+# turned off. The gate `lint` (.workline/config.yaml) runs it on each pull
+# request and counts only the findings the change adds (ADR-0049).
+version: "2"
+linters:
+  default: standard

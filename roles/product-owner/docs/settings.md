@@ -1,6 +1,6 @@
 ---
-sources: [roles/product-owner/role.yaml, internal/backlog/autonomy.go, internal/backlog/ledger.go, internal/sample/acts.go]
-checked: 1b93a955
+sources: [roles/product-owner/role.yaml, internal/backlog/autonomy.go, internal/backlog/ledger.go, internal/sample/acts.go, internal/scale/detect.go]
+checked: a7467d4f
 verified: agent:claude-code
 ---
 # Product owner — settings
@@ -25,6 +25,7 @@ over the level, field by field.
 | `changed-needs` | `false` | a changed Need or Scope flags the issues built on it ([ADR-0032](../../../docs/adr/0032-a-changed-need-flags-the-issues-built-on-it.md)) |
 | `moved-percent-max` | `20` | with `milestone` or `order` on: the share of the open issues a run moves |
 | `repeated-percent-max` | `40` (1 to 100) | a draft whose words are past this share, in percent, already said above it is not written ([each thing said once](writing.md#each-thing-said-once)) |
+| `priority`, `effort` | unset | where the project keeps each: unset, workline's own labels and no effort; `auto` finds it; `{in: labels, prefix: P}` names a family ([below](#priority-and-effort)) |
 
 No longer read, each said by the run:
 
@@ -60,7 +61,8 @@ The code stays; each comes back with a mode
 | Kind | Turned on, does |
 |---|---|
 | `milestone` | puts an issue in its release's milestone; moves one that slipped |
-| `order` | sets `workline:priority/1` to `/4`; a person's kept. Proposed: the forge's own priority, and an effort ([priority and effort](priority-and-effort.md)) |
+| `order` | sets an issue's priority, `workline:priority/1` to `/4` unless `priority` says where the project keeps it; a person's kept |
+| `effort` | sets an issue's effort, Low to High, once, where `effort` says the project keeps it, on code the run read ([below](#priority-and-effort)) |
 | `split` | splits a need too big into 2 to 6 issues ([ADR-0022](../../../docs/adr/0022-a-split-keeps-the-need-a-rename-keeps-a-persons-title.md)) |
 | `rename` | renames a vague title; a person's kept |
 | `depend` | says what an issue waits on ([ADR-0028](../../../docs/adr/0028-an-issue-names-what-it-waits-on.md)) |
@@ -76,4 +78,44 @@ roles:
     settings:
       autonomy: cautious
       acts: {order: {mode: propose}, close-obsolete: {mode: act}}
+```
+
+## Priority and effort
+
+Where the project keeps each issue's priority and effort
+([ADR-0040](../../../docs/adr/0040-priority-and-effort-are-the-forges-the-product-owner-estimates-them.md),
+[examples](priority-and-effort.md)). Unset by default: workline's own
+labels, and no effort read.
+
+| Value | Reads and writes |
+|---|---|
+| `auto` | a GitHub organisation's own Priority and Effort fields; the effort in GitLab's weight (Premium, Ultimate); else the project's own labels (`P0`…, `P-*`, `priority/*`, `priority::*`, `effort*`), else workline's own, else the forge's: `priority/urgent` to `/low` on GitHub, `priority::1` to `::4` on GitLab, created at the first act |
+| `{in: labels, prefix: P}`, `{in: field, name: Severity}`, `{in: weight}` | that family, that field, or GitLab's weight (the effort only); the run stops if the project has none |
+| `names: {sev-1: urgent}`, beside either | a label no table knows, read as that level |
+
+- **Said once a run**: where each was found, and a name no table knows.
+- **One place each**: an issue holding a priority in another family, or
+  in a field beside the labels, gets nothing written.
+- **Fields visible to members only**, on a public repository: the values
+  are set but never shown — not in the role's comment, its state, nor the
+  job's summary — and never proposed. A token not shown to read them, the
+  job's own or an App's, writes nothing there
+  ([why](../../../docs/research/priority-and-weight.md#checked-live-2026-10-18)).
+- **GitLab's weight**: read 0–1 Low, 2–3 Medium, 4 or more High; written
+  1, 3 or 5; never a parent's, which GitLab sums from its parts'.
+- **Set once, only where empty**: a value a person set stays; one the
+  role set and a person changed or cleared is never written again.
+- **The order** goes by the priority, then the effort, the lightest
+  first; Next shows each issue's cell, "High · Effort Low → quick win".
+- **An effort** needs the `effort` act on (`max` 10 a run, 20 at
+  `enterprising`), and is estimated only on an issue whose code the run
+  read.
+
+```yaml
+roles:
+  product-owner:
+    settings:
+      priority: auto
+      effort: {in: labels, prefix: "effort/", names: {effort/xl: high}}
+      acts: {order: {mode: act}, effort: {mode: propose}}
 ```

@@ -1,0 +1,19 @@
+case: gates/base-run-failed-is-error
+about: >
+  A check that does not run at the merge base is an error, never a pass:
+  what the change adds cannot be told.
+given:
+  repo: linted
+  setup:
+    - git checkout -q -b change
+    - |
+      echo on > head-only.txt && git add head-only.txt && git commit -qm "feat: add a file"
+  env: {PATH: "$FIXTURES/bin:$PATH"}
+  config:
+    routing: {events: {merge-request: ["gate:merge"]}}
+    gates: {merge: {checks: [{id: lint, output: sarif, max: {error: 0},
+      run: "test -f head-only.txt && golangci-lint run --output.sarif.path={out}/lint.sarif"}]}}
+run: {route: merge-request, input: {range: main..HEAD}}
+expect:
+  status: block
+  findings: [{rule: check-error, where: lint, message: "at the merge base"}]

@@ -1,0 +1,13 @@
+case: documentalist/version-bump-passes-the-doc-it-bumps-too
+about: "On a release tool's pull request, a doc among the tool's files, its pinned line bumped by the same release commit, is not made suspect by the bump of its source: it says the new version (#346)."
+given:
+  repo: documented
+  setup:
+    - "mkdir -p ci && printf 'env:\\n  VERSION: v1.2.0   # x-release-please-version\\n  NAME: tool\\n' > ci/job.yml && git add ci && git commit -qm 'ci: the job'"
+    - "C=$(git rev-parse --short HEAD) && printf -- '---\\nsources: [ci/job.yml]\\nchecked: %s\\n---\\n# The job\\n\\nIt runs the tool. Pin it in your own job:\\n\\n```yaml\\nVERSION: v1.2.0   # x-release-please-version\\n```\\n' $C > docs/tech/job.md && git add docs && git commit -qm 'docs: the job'"
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git tag v1.2.0 && git push -q origin main"
+    - "git checkout -qb release-please--branches--main && sed -i 's/v1.2.0/v1.3.0/' ci/job.yml docs/tech/job.md && git commit -qam 'chore(main): release 1.3.0' && git push -q origin release-please--branches--main"
+  forge: {merge-requests: [{id: 1, branch: release-please--branches--main, base: main, labels: [], comments: []}]}
+run: {role: documentalist, event: merge-request, target: {merge-request: 1}, ai: none}
+expect:
+  no-findings: [{rule: suspect, where: docs/tech/job.md}]

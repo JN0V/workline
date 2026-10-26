@@ -1,0 +1,18 @@
+case: routing/main-with-no-commit-before-counts-nothing
+about: >
+  Main's run on a branch's first commit, no range given (ADR-0050): there
+  is no commit before it to compare with, so every finding of the gates
+  is said, as a warning, and none counted against the thresholds; the old
+  debt never turns main red.
+given:
+  repo: linted
+  env: {PATH: "$FIXTURES/bin:$PATH"}
+  config:
+    routing: {events: {merge-request: ["gate:merge"], main: []}}
+    gates: {merge: {checks: [{id: lint, run: "golangci-lint run --output.sarif.path={out}/lint.sarif", output: sarif, max: {error: 0}}]}}
+run: {route: main, summary: true}
+expect:
+  status: pass
+  steps: ["gate:merge"]
+  findings: [{rule: over-threshold, where: lint, level: warn, message: "3 error findings, at most 0 allowed"}]
+  summary-file: ["no commit before it to compare with: every finding said, none counted"]

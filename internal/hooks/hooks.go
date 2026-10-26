@@ -13,6 +13,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 )
 
@@ -63,9 +64,13 @@ if [ -r "$next_file" ]; then
 		exit $?
 	fi
 fi
-root=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
-git_dir=$(git rev-parse --git-dir 2>/dev/null) || exit 0
-for d in "$root/.githooks/$hook" "$git_dir/hooks/$hook"; do
+# The repository's own hooks: its .githooks/, then hooks/ in the folder its
+# worktrees share. A linked worktree's --git-dir holds no hooks/, and
+# --git-path hooks names core.hooksPath: this very folder. A bare
+# repository has no .githooks/.
+common=$(git rev-parse --git-common-dir 2>/dev/null) || exit 0
+root=$(git rev-parse --show-toplevel 2>/dev/null) || root=""
+for d in ${root:+"$root/.githooks/$hook"} "$common/hooks/$hook"; do
 	if [ -x "$d" ] && [ ! "$d" -ef "$0" ]; then
 		feed "$d" "$@"
 		exit $?
@@ -269,6 +274,40 @@ func expandHome(w string) string {
 		}
 		return "$" + v
 	})
+}
+
+// Outdated says whether file is a dispatcher another version of workline
+// wrote, which hands over otherwise than this one's (before #551, a linked
+// worktree's own hooks were skipped): written again for the binary it
+// records and next, it would differ. A missing file, or another tool's
+// hook, is not outdated.
+func Outdated(file, next string) bool {
+	data, err := os.ReadFile(file)
+	if err != nil {
+		return false
+	}
+	lines := strings.Split(string(data), "\n")
+	if len(lines) < 2 || !strings.HasPrefix(lines[1], "# workline hook dispatcher") {
+		return false
+	}
+	for _, l := range lines {
+		if q, ok := strings.CutPrefix(l, "bin="); ok {
+			bin, err := strconv.Unquote(q)
+			return err != nil || string(data) != fmt.Sprintf(dispatcher, bin, next)
+		}
+	}
+	return true
+}
+
+// OutdatedGlobal lists the global hooks that are outdated dispatchers.
+func OutdatedGlobal(p Paths) []string {
+	var old []string
+	for _, n := range names {
+		if Outdated(filepath.Join(p.Hooks, n), p.Next) {
+			old = append(old, n)
+		}
+	}
+	return old
 }
 
 func writeDispatchers(dir, bin, next string) error {

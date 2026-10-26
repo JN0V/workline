@@ -1,0 +1,13 @@
+case: gates/check-off-still-says-error
+about: >
+  A check turned off drops its findings, never the news that it did not
+  run: said as a warning, not blocking.
+given:
+  repo: basic
+  config:
+    gates: {merge: {checks: [{id: secrets, run: "no-such-scanner --sarif {out}/s.sarif", output: sarif, max: {error: 0}},
+      {id: tests, run: "true", output: exit}], enforce: {secrets: "off"}}}
+run: {gate: merge}
+expect:
+  status: pass
+  findings: [{rule: check-error, where: secrets, level: warn}]

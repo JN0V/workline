@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog/autonomy.go, roles/product-owner/role.yaml, internal/backlog/backlog.go, internal/builtin/productowner/productowner.go]
 status: draft
-checked: 1b93a955
+checked: a7467d4f
 verified: agent:claude-code
 ---
 # Autonomy and caps
@@ -44,11 +44,12 @@ acts:
 - `off`: dropped; a closing off is said on its issue for a person to close
   ([Closing](closing.md)).
 
-With `milestone` or `order` on, a run moves at most a share of the open
-issues: `moved-percent-max` (20, a fifth, by default; rounded up, one at
-least). Milestones — the engine's slips included — and priorities count
-together, an issue moved twice once; past the share, a move is proposed
-(`moved-cap`). Milestones are applied before priorities.
+With `milestone`, `order` or `effort` on, a run moves at most a share of
+the open issues: `moved-percent-max` (20, a fifth, by default; rounded
+up, one at least). Milestones — the engine's slips included —,
+priorities and efforts count together, an issue moved twice once; past
+the share, a move is proposed (`moved-cap`). Milestones are applied
+before priorities.
 
 Closing as obsolete, turned on as `act`, announces first, and closes only
 on silence and a second judge's yes (ADR-0024). Its `max` counts

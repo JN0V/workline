@@ -23,6 +23,7 @@ type github struct {
 	login   string           // the token's user, read once (me)
 	writers map[string]bool  // who may write to the repository, read once each
 	unread  map[string]error // whose rights the token could not read, asked once each
+	owner   *Own             // workline's own account, read once (own)
 }
 
 func (g *github) api(args ...string) ([]byte, error) {
@@ -46,6 +47,13 @@ func (g *github) Issue(id int) (*Issue, error) {
 			Login string `json:"login"`
 		} `json:"user"`
 		Association string `json:"author_association"`
+		// Its values in the organisation's issue fields (ADR-0040).
+		FieldValues []struct {
+			Name   string `json:"issue_field_name"`
+			Option *struct {
+				Name string `json:"name"`
+			} `json:"single_select_option"`
+		} `json:"issue_field_values"`
 	}
 	if err := decode(out, &v); err != nil {
 		return nil, err
@@ -54,6 +62,14 @@ func (g *github) Issue(id int) (*Issue, error) {
 		Author: v.User.Login, Insider: insider(v.Association)}
 	for _, l := range v.Labels {
 		is.Labels = append(is.Labels, l.Name)
+	}
+	for _, f := range v.FieldValues {
+		if f.Option != nil {
+			if is.Fields == nil {
+				is.Fields = map[string]string{}
+			}
+			is.Fields[f.Name] = f.Option.Name
+		}
 	}
 	return is, nil
 }
@@ -78,7 +94,7 @@ func (g *github) AllIssues() ([]Issue, error) { return g.issues("all") }
 
 func (g *github) issues(state string) ([]Issue, error) {
 	out, err := g.api("--paginate", "repos/{owner}/{repo}/issues?state="+state+"&per_page=100",
-		"--jq", ".[] | select(.pull_request == null) | {id: .number, title, body: (.body // \"\"), labels: [.labels[].name], milestone: (.milestone.title // \"\"), \"milestone-due\": ((.milestone.due_on // \"\") | .[0:10]), author: .user.login, association: .author_association, closed: (.state == \"closed\"), reason: (.state_reason // \"\"), blocked: (.issue_dependencies_summary.total_blocked_by // 0), subs: (.sub_issues_summary.total // 0), repo: .repository_url}")
+		"--jq", ".[] | select(.pull_request == null) | {id: .number, title, body: (.body // \"\"), labels: [.labels[].name], milestone: (.milestone.title // \"\"), \"milestone-due\": ((.milestone.due_on // \"\") | .[0:10]), author: .user.login, association: .author_association, closed: (.state == \"closed\"), reason: (.state_reason // \"\"), blocked: (.issue_dependencies_summary.total_blocked_by // 0), subs: (.sub_issues_summary.total // 0), repo: .repository_url, fields: ([.issue_field_values[]? | select(.single_select_option != null) | {key: .issue_field_name, value: .single_select_option.name}] | from_entries)}")
 	if err != nil {
 		return nil, err
 	}
@@ -304,6 +320,22 @@ func (g *github) EnsureLabel(name, color, description string) error {
 	return err
 }
 
+// projectLabels lists the repository's labels.
+func (g *github) projectLabels() ([]string, error) {
+	out, err := g.api("--paginate", "repos/{owner}/{repo}/labels?per_page=100", "--jq", ".[] | {name}")
+	if err != nil {
+		return nil, err
+	}
+	all, err := lines[struct {
+		Name string `json:"name"`
+	}](out)
+	var names []string
+	for _, l := range all {
+		names = append(names, l.Name)
+	}
+	return names, err
+}
+
 func (g *github) SetBody(id int, body string) error {
 	_, err := g.api("-X", "PATCH", fmt.Sprintf("repos/{owner}/{repo}/issues/%d", id), "-f", "body="+body)
 	return err
@@ -395,10 +427,11 @@ func (g *github) Comments(t Target) ([]string, error) {
 }
 
 // Notes reads each comment's author and their author_association, as an
-// issue's; an app's comment (a user of type Bot) is a bot's.
+// issue's; an app's comment (a user of type Bot) is a bot's, and names
+// the App (performed_via_github_app).
 func (g *github) Notes(t Target) ([]Note, error) {
 	out, err := g.api("--paginate", fmt.Sprintf("repos/{owner}/{repo}/issues/%d/comments?per_page=100", t.ID),
-		"--jq", ".[] | {body: (.body // \"\"), author: .user.login, association: .author_association, bot: (.user.type == \"Bot\"), created: .created_at, id: (.id | tostring)}")
+		"--jq", ".[] | {body: (.body // \"\"), author: .user.login, association: .author_association, bot: (.user.type == \"Bot\"), created: .created_at, id: (.id | tostring), app: (.performed_via_github_app.id // \"\" | tostring)}")
 	if err != nil {
 		return nil, err
 	}
@@ -412,6 +445,38 @@ func (g *github) Notes(t Target) ([]Note, error) {
 		notes = append(notes, f.Note)
 	}
 	return notes, err
+}
+
+// editorsQuery lists an issue's or a pull request's comments, a hundred a
+// page: who wrote each and who last edited it, which GitHub's REST API
+// does not say.
+const editorsQuery = `query($owner: String!, $name: String!, $number: Int!, $endCursor: String) { repository(owner: $owner, name: $name) { %s(number: $number) { comments(first: 100, after: $endCursor) { pageInfo { hasNextPage endCursor } nodes { databaseId author { login } editor { login } } } } } }`
+
+// editors are who last edited t's comments, by the comment's id, those
+// their author edited last, or none did, left out (ReadKept). GitHub lets
+// one who may write edit another's comment.
+func (g *github) editors(t Target) (map[string]string, error) {
+	kind := "issue"
+	if t.Kind == "merge-request" {
+		kind = "pullRequest"
+	}
+	out, err := g.api("graphql", "--paginate", "-f", "query="+fmt.Sprintf(editorsQuery, kind), "-F", "owner={owner}", "-F", "name={repo}", "-F", fmt.Sprintf("number=%d", t.ID),
+		"--jq", fmt.Sprintf(`.data.repository.%s.comments.nodes[] | select(.editor != null and .editor.login != (.author.login // "")) | {id: (.databaseId | tostring), editor: .editor.login}`, kind))
+	if err != nil {
+		return nil, err
+	}
+	found, err := lines[struct {
+		ID     string `json:"id"`
+		Editor string `json:"editor"`
+	}](out)
+	if err != nil {
+		return nil, err
+	}
+	by := map[string]string{}
+	for _, e := range found {
+		by[e.ID] = e.Editor
+	}
+	return by, nil
 }
 
 // Close closes with GitHub's own reason; a duplicate's original is named by
@@ -442,20 +507,44 @@ func (g *github) Comment(t Target, body, marker string) error {
 }
 
 func (g *github) Sticky(t Target, body, marker string, create bool) error {
+	return g.sticky(t, body, marker, create, nil)
+}
+
+// stickyOwn edits the last comment carrying marker that workline's own
+// account wrote (KeepOwn); never another's, which GitHub lets one who
+// may write edit too, and which stays theirs.
+func (g *github) stickyOwn(t Target, body, marker string, create bool) error {
+	own, err := g.own()
+	if err != nil {
+		return err
+	}
+	return g.sticky(t, body, marker, create, &own)
+}
+
+// sticky edits the last comment carrying marker, the last own wrote when
+// own is given: with only others' carrying it, its own is posted after
+// them, as on GitLab.
+func (g *github) sticky(t Target, body, marker string, create bool, own *Own) error {
 	out, err := g.api("--paginate", fmt.Sprintf("repos/{owner}/{repo}/issues/%d/comments", t.ID),
-		"--jq", fmt.Sprintf(".[] | select(.body | contains(%q)) | {id, body}", marker))
+		"--jq", fmt.Sprintf(".[] | select(.body | contains(%q)) | {id, body, author: .user.login, app: (.performed_via_github_app.id // \"\" | tostring)}", marker))
 	if err != nil {
 		return err
 	}
 	found, err := lines[struct {
-		ID   int64  `json:"id"`
-		Body string `json:"body"`
+		ID     int64  `json:"id"`
+		Body   string `json:"body"`
+		Author string `json:"author"`
+		App    string `json:"app"`
 	}](out)
 	if err != nil {
 		return err
 	}
-	if len(found) > 0 {
-		last := found[len(found)-1] // the one read, as GitLab's (backlog's readBlock)
+	for i := len(found) - 1; i >= 0; i-- {
+		if own != nil && !own.Wrote(Note{Author: found[i].Author, App: found[i].App}) {
+			create = true
+			continue
+		}
+		last := found[i] // the one read, as GitLab's (backlog's readBlock)
 		if last.Body == body+"\n\n"+marker {
 			return nil // as it is already: not edited again
 		}
@@ -620,6 +709,30 @@ func (g *github) MergeRequest(id int) (MergeRequest, error) {
 		return MergeRequest{}, fmt.Errorf("pull request %d: %w", id, err)
 	}
 	return MergeRequest{ID: id, Branch: pr.Head.Ref, Base: pr.Base.Ref, Here: pr.Head.Repo.Name == pr.Base.Repo.Name, Title: pr.Title, Body: pr.Body}, nil
+}
+
+// Squash reads whether the repository allows squash merging, and which
+// subject GitHub gives the squash: the title, or a lone commit's subject.
+// GitHub adds " (#N)" after it.
+func (g *github) Squash(id int) (Squash, error) {
+	out, err := g.api("graphql", "-f", "query=query($owner: String!, $name: String!) { repository(owner: $owner, name: $name) { squashMergeAllowed squashMergeCommitTitle } }",
+		"-F", "owner={owner}", "-F", "name={repo}")
+	if err != nil {
+		return Squash{}, err
+	}
+	var v struct {
+		Data struct {
+			Repository struct {
+				Allowed bool   `json:"squashMergeAllowed"`
+				Title   string `json:"squashMergeCommitTitle"`
+			} `json:"repository"`
+		} `json:"data"`
+	}
+	if err := decode(out, &v); err != nil {
+		return Squash{}, err
+	}
+	r := v.Data.Repository
+	return Squash{On: r.Allowed, LoneCommit: r.Title == "COMMIT_OR_PR_TITLE", Suffix: fmt.Sprintf(" (#%d)", id)}, nil
 }
 
 // ListMergeRequests reads each open pull request: one from a fork, or

@@ -1,0 +1,7 @@
+case: cli/apply-gates-needs-its-merge-request
+about: "What the gates found is shown on the merge request their run names: --gates without --from-merge-request is misuse, 64."
+given: {repo: basic}
+run: {cli: [apply, --gates, gates.json]}
+expect:
+  exit: 64
+  stderr: ["--gates goes with --from-merge-request"]

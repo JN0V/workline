@@ -1,0 +1,16 @@
+case: reviewer/change-past-parts-max-asks-nobody
+about: "A change that would take more parts than parts-max asks no lens, spends no token, and says how many parts it would take and that the author splits it; the commits are not recorded as reviewed (#446)."
+given:
+  repo: reviewed
+  setup:
+    - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && mkdir -p src && for n in 1 2 3; do awk 'BEGIN { for (i = 1; i <= 400; i++) printf \"// %0126d\\n\", i }' > src/big$n.go; done && git add calc src && git commit -qm 'feat: three large files, and the average over the count'"
+  config: {roles: {reviewer: {settings: {parts-max: 1}}}}
+run: {role: reviewer, event: review, input: {range: main..HEAD}, ai: "cmd:sh $FIXTURES/agents/review-in-parts.sh"}
+expect:
+  status: pass
+  agent-calls: 0
+  findings:
+    - {rule: review-not-whole, message: "would take 2 parts, each within the role's context budget and diff-lines-max, past parts-max (1): no lens asked"}
+  no-findings: [{rule: part-unanswered}, {rule: correctness}]
+  summary: "not reviewed whole"
+  run-files: {out/review.json: {contains: '"complete": false'}}

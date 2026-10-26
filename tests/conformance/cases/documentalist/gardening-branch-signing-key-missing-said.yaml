@@ -1,0 +1,15 @@
+case: documentalist/gardening-branch-signing-key-missing-said
+about: "Git is set to sign (`commit.gpgsign`) but the key it names is not there: the rebuilt commit cannot be signed, so nothing is pushed — never an unsigned commit the forge would refuse — and `workline follow` fails, saying it was signing and git's own words (#549)."
+given:
+  repo: documented
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb workline/documentalist/suspect && sed -i 's/^checked: .*/&\\njudged: 1a8e5a4/; s/one hour/two hours/' docs/tech/auth.md && git commit -qam 'docs: bring the docs in line with the code' -m 'Workline-Role: documentalist' && git push -q origin workline/documentalist/suspect && git checkout -q main"
+    - "sed -i 's/3600/7200/' src/auth/token.go && sed -i 's/^checked: .*/checked: abcdef1/' docs/tech/auth.md && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin main"
+    - "git config gpg.format ssh && git config user.signingkey \"$(cd .. && pwd)/no-such-key\" && git config commit.gpgsign true"
+  forge: {merge-requests: [{id: 4, branch: workline/documentalist/suspect, base: main, labels: [], comments: []}]}
+run: {follow: [--gardening, --base, main]}
+expect:
+  status: block
+  findings: [{rule: follow-failed, message: "signing, as commit.gpgsign asks"}]
+  not-pushed: [workline/documentalist/suspect]

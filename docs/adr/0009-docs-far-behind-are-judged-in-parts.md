@@ -1,6 +1,6 @@
 # ADR-0009: A doc far behind sources too large for one task is judged in parts
 
-- **Status:** accepted (2026-09-30, on the measures below); amended 2026-10-14 (on by default)
+- **Status:** accepted (2026-09-30, on the measures below); amended 2026-10-14 (on by default), 2026-10-17 (a conflict is on the same words; only when gardening; a partial quote is no proof), 2026-10-18 (a doc judged on its change alone; `checked` after parts, measured, off, then measured again, on; the shipped engine measured)
 - **Date:** 2026-09-29
 
 ## Context
@@ -147,3 +147,238 @@ after six nights, 2026-10-01 to 10-13, on DomoticsCore and workline:
 - A doc that cannot be judged in parts whatever its sources hold — too
   long itself, or sources in another repository — says so in the round
   that finds it, not "in a later round".
+
+## Amendment (2026-10-17)
+
+A contradiction is a **conflict** only when another part's support quotes
+some of the same words of the doc, where they stand — not merely lines
+that overlap ([#440](https://github.com/JN0V/workline/issues/440)):
+
+- A sentence spans lines, so a part supporting the words beside a
+  contradiction shared its lines. The evaluation kept a false sentence
+  in two runs of five; replayed, each could be such a disagreement, which
+  the fix call may leave as it is.
+- Replayed with no agent: "Each one lasts the configured session TTL"
+  (lines 22-23), contradicted by the store, and "24 hours by default"
+  (line 23), supported by the configuration, were a conflict; the first
+  is now found wrong. Words both parts quote stay a conflict.
+- A partial claim is still settled by a support covering its lines.
+
+## Amendment (2026-10-17): only when gardening
+
+Judging in parts runs **only when gardening**, decided by the maintainer
+on [#458](https://github.com/JN0V/workline/issues/458#issuecomment-6237581014):
+
+- **What [#82](https://github.com/JN0V/workline/issues/82)'s default did**: parts were asked on every event, so a merge
+  request touching a source of a doc too large paid that doc's parts. The
+  evaluation case `stays-on-the-task`: 6 calls, about 103k tokens in,
+  against 1 call and 13.5k on 2026-10-11. workline's pull requests
+  [#436](https://github.com/JN0V/workline/pull/436) and
+  [#444](https://github.com/JN0V/workline/pull/444): 7 calls each, about
+  129k tokens in, for the same doc 3 minutes apart; neither fix changed
+  anything.
+- **Now**: on a merge request, at the push or the release, such a doc is
+  left for the next gardening, which judges it in parts, and its finding
+  says so. One past `parts-max` is said `sources-too-wide` there too.
+- **The price**: a fix such a doc needs because of the change waits for
+  the next gardening, on that run's own merge request.
+- `parts-always`, set only to measure whole against parts, judges in
+  parts on any event.
+- Nights were not where the cost grew: none on workline asked a part
+  from 10-15 to 10-17.
+
+## Amendment (2026-10-17): a partial quote is no proof
+
+A quote a part judged `partial` for a passage, no part finding those
+lines wrong, proves nothing wrong there
+([#467](https://github.com/JN0V/workline/issues/467)):
+
+- **What happened**: on DomoticsCore, three parts called a line partial.
+  The fix cited one of their quotes, a placeholder default, in place of
+  the topic the code adopts, and made a true line false. Its own note
+  said the excerpts did not settle it.
+- **Now**: words the fix takes out on such a quote alone are withheld for
+  a person (`citation-unchecked`), the rest applied; the fix's task says
+  so. A quote standing elsewhere in the code too still counts.
+- **Measured** on every fix after parts kept, DomoticsCore and workline,
+  2026-10-01 to 10-17: 13 fix calls; the fix changed 3 places no part
+  found wrong. The two that took words out each cited the quote a part
+  judged partial, and both took out true words.
+- **The price**: a defect true only across two shares, fixed on such a
+  quote alone, goes to a person; the fix still settles it with any other
+  quote. Words only added still need no claim.
+- "The fix is not asked to act on a share that cannot", above, now holds
+  for what the fix cites, not only for what it is shown.
+
+## Amendment (2026-10-18): a doc judged on its change alone
+
+A doc whose sources do not fit a task whole, though what changed in them
+does, is **read in parts when gardening**, against all its sources as
+they are now ([#462](https://github.com/JN0V/workline/issues/462)):
+
+- **What happened**: judged on what changed alone, its `judged` kept it
+  from an agent until a source changed. On DomoticsCore, 2026-10-04, five
+  claims outside the change were false
+  ([ADR-0013, amended](0013-what-was-judged-is-not-asked-again.md#amendment-2026-10-12-what-a-docs-judged-vouches-for)).
+- **Now**: a merge request still judges it on its change. Gardening reads
+  it in parts: a `judged` its change earned does not hold it, a
+  `judged-in-parts` since its sources last changed does. A record kept on
+  a merged merge request is not written for it: the parts record when it
+  was read.
+- **Not in parts**, judged on its change as before: a doc too long
+  itself, sources in another repository, past `parts-max`, no code among
+  its sources.
+- **`checked` does not move**, as for any doc in parts; whether it may is
+  [#482](https://github.com/JN0V/workline/issues/482).
+- **The night's caps hold**: `parts-max-per-run` a round,
+  `ai-max-tokens` the run. The docs read longest ago go first, by the
+  later of `checked` and `judged-in-parts`, not the first by name.
+- **Measured** with a recording agent, no tokens: CI's night on copies,
+  tokens estimated at 711 + 0.82 a character. Uncapped, what each night would ask in
+  parts, as if no night before it had read a doc, docs / parts / tokens
+  in:
+
+  | Night (main's tip) | Before | After |
+  |---|---|---|
+  | workline, 10-12 (4950320) | none (the night: 81k) | 5 / 28 / 1.01M |
+  | workline, 10-14 (b998ed0) | none (the night: 86k) | 8 / 39 / 1.39M |
+  | workline, 10-16 (c5a4294) | none (the night: 56k) | 2 / 10 / 0.33M |
+  | workline, 10-18 (11d82b2) | 3 / 13 / 0.48M | 10 / 52 / 1.87M |
+  | DomoticsCore, 10-18 (c8c2fea) | 64 / 234 / 7.98M | 66 / 240 / 8.18M |
+
+  Capped as both repositories set it (8 parts a round, 400k tokens a
+  run), workline's night of 10-18 cost 405k before, 11 calls, and 426k
+  after, 12 calls; DomoticsCore's 420k, 13 calls, both: a run stops past
+  its cap, the call crossing it paid.
+- **The price**: on workline, a night that asked no part now spends its
+  cap, about 400k tokens in where 56k to 86k were spent, and what waits
+  outlasts a night; on DomoticsCore, already at its cap with docs far
+  behind, two docs more wait. A project lowers `ai-max-tokens` or
+  `parts-max-per-run`, or turns `judge-in-parts` off.
+- **Past the caps**, a doc waits for a later night, named; one whose
+  change no merge request judged is not judged on that change meanwhile.
+
+## Amendment (2026-10-18): `checked` after parts, measured, off
+
+Decided by the maintainer on
+[#482](https://github.com/JN0V/workline/issues/482), option 1: measure,
+then move `checked` when the engine sees every line stating something
+supported — no passage contradicted, partial or uncovered, no claim
+dropped, no note — adopted only if five evaluation runs in parts hold
+[ADR-0014](0014-checked-is-earned-by-what-was-read.md#4-acceptance-written-before-it-is-measured)
+step 4's bars.
+
+- **Built, behind `parts-move-checked`**, off by default. The engine
+  moves `checked`, never the fix, when:
+  - the parts found nothing wrong, in conflict or to be read together; a
+    partial another part's support settles is settled, as the merge
+    above reads it;
+  - no claim was dropped (a part's note is one), no line is uncovered,
+    no source is a doc, which no part reads;
+  - each word of every line stating something is quoted, where it
+    stands, in a part's support from the code. Headings, fences, derived
+    blocks, HTML comments and link definitions state nothing; a code
+    example does. A quote of a few words vouches for those words, so a
+    part is asked to quote a supported passage whole.
+- **Then** `checked` and `judged-in-parts` name that commit, `verified`
+  the documentalist; the doc leaves the list for a person. Otherwise the
+  finding says what kept it ("no part supports line 14").
+- **Measured** on 2026-10-18, engine 38fac2d1, Sonnet 5.5:
+  `finds-planted-defects-in-parts` with a clean control,
+  `docs/tech/defaults.md` (three lines stating something, one source,
+  one part), beside the doc with four defects planted:
+
+  | Run | Score | Tokens in / out | The control | Planted falsehoods |
+  |---|---|---|---|---|
+  | 1 | 19/19 | 29,074 / 5,668 | `checked` moved | none vouched for |
+  | 2 | 17/19 | 28,763 / 4,551 | stays: a claim dropped | none vouched for; one left, the doc unvouched |
+  | 3 | 19/19 | 29,542 / 6,038 | `checked` moved | none vouched for |
+  | 4 | 18/19 | 30,361 / 5,901 | stays: a fix asked, nothing changed | none vouched for |
+  | 5 | 19/19 | 29,700 / 5,297 | `checked` moved | none vouched for |
+
+  147,440 tokens in, the five together: 4.9k a call, as on 10-17 (24.3k
+  for five calls, one doc). Run 2's row says `+changes`: docs edited
+  while it ran, not the engine.
+- **The bars**: no `checked` over a planted falsehood, held in 5 runs of
+  5; the control ends `checked` in every run, not held: 3 of 5. So it
+  stays off.
+- **Why the control stayed**:
+  - run 2: a part's claim was dropped, its quote not at the lines it
+    cited; the finding did not say which. `claims-dropped` now names the
+    part, the quote and where it was looked for.
+  - run 4: a part found the control wanting, and the fix changed
+    nothing. Its last sentence, "A field the configuration sets is kept
+    as it is", is not exact: a field set to zero gets its default. It is
+    rewritten for the next measure.
+- **Next**: five runs again on the control rewritten, about 150k tokens;
+  on by default if the bars hold.
+- **The price, once on**: a doc fixed in parts still waits for a person;
+  a line no code can support (a link, a word about the project) keeps
+  the doc for a person; the weekly sample cannot read such a doc whole,
+  so it lists it for a person
+  ([ADR-0014, amended](0014-checked-is-earned-by-what-was-read.md#amendment-2026-10-18-checked-earned-in-parts)).
+
+## Amendment (2026-10-18): `checked` after parts, measured again, on
+
+The maintainer asked for the measure again on the control made exact
+([#482](https://github.com/JN0V/workline/issues/482)): its last sentence
+taken out, "`Load` gives each field of `Config` left at its zero value
+its default" in its place.
+
+- **Measured** the same day, engine d7bd927f, Sonnet 5.5, five runs
+  under the same guard:
+
+  | Run | Score | Tokens in / out | The control | Planted falsehoods |
+  |---|---|---|---|---|
+  | 1 | 18/19 | 28,951 / 4,847 | `checked` moved | none vouched for; the session TTL left, the doc unvouched |
+  | 2 | 17/19 | 29,282 / 5,978 | `checked` moved | none vouched for; the count left, the doc unvouched |
+  | 3 | 19/19 | 29,278 / 5,291 | `checked` moved | none vouched for |
+  | 4 | 18/19 | 29,948 / 5,308 | `checked` moved | none vouched for; the session TTL left, the doc unvouched |
+  | 5 | 19/19 | 29,584 / 6,602 | `checked` moved | none vouched for |
+
+  147,043 tokens in, the five together.
+- **The bars held**: no `checked` over a planted falsehood, 5 of 5; the
+  control `checked` in every run, 5 of 5. **`parts-move-checked` is on
+  by default**; a project that will not have it turns it off.
+- **To watch**: the fix's recall on the planted doc. All four defects
+  were fixed in 6 runs of these ten, where the eight runs of 10-17, the
+  part not yet asked to quote whole, fixed all four in each. The
+  sentence true only across two sources was left three times, the
+  count once; none was vouched for, the doc staying suspect for a
+  person.
+- **Why the sentence was left, and the fix** (found offline, no tokens):
+  asked to quote a passage whole, the store's part quoted "Each one
+  lasts the configured session TTL, 24 hours by default" and cited lines
+  23-24, but "Each" ends line 22. The quote was not at the lines cited,
+  so the claim saying what was wrong was dropped before the fix, which
+  never saw it: runs 1 and 4 of this measure, by their `claims-dropped`
+  findings; run 2 of the first dropped two claims too, unexplained then.
+  A part's quote is now placed where it stands when it runs across the
+  line break into its range, from the line before or into the line
+  after, one line either way and no more. Replayed with a scripted agent
+  (`judged-in-parts-quote-from-the-line-before`), the claim is kept and
+  reaches the fix as lines 22-24. The count's miss (run 2) is the fix's
+  own patch citing a heading a line off, as before this change.
+
+## Amendment (2026-10-18): the shipped engine, measured
+
+The engine on by default, a part's quote placed one line either side
+(above), had not been measured; the maintainer asked for it. Engine
+3f79e01a, Sonnet 5.5, five runs under the same guard:
+
+| Run | Score | Tokens in / out | The control | Planted falsehoods | All four defects fixed |
+|---|---|---|---|---|---|
+| 1 | 18/19 | 29,379 / 5,186 | `checked` moved | none vouched for | yes |
+| 2 | 19/19 | 29,416 / 5,154 | `checked` moved | none vouched for | yes |
+| 3 | 19/19 | 29,275 / 5,045 | `checked` moved | none vouched for | yes |
+| 4 | 19/19 | 28,409 / 5,020 | `checked` moved | none vouched for | yes |
+| 5 | 19/19 | 29,019 / 5,648 | `checked` moved | none vouched for | yes |
+
+- 145,498 tokens in, the five together; no claim dropped in any run.
+- **The bars held**, 5 of 5 each: it stays on by default.
+- **All four defects fixed in 5 runs of 5**, where the two measures
+  before the placement fixed them in 6 of 10: the session TTL, left
+  three times there by a claim dropped, was fixed in every run.
+- Run 1's point lost is its status: the fix also proposed an issue,
+  which the case's repository, with no forge set, cannot keep. The doc
+  was fixed and graded all the same.

@@ -1,0 +1,14 @@
+case: committer/refusal-gives-the-allow-line
+about: "A code refused names the exact line that lets it through, if it is a public name: in the person's own config, where it adds to their list, and in the project's, where the list replaces the role's whole."
+given:
+  repo: basic
+  config: {roles: {committer: {settings: {internal-codes-allow: ['ADR-[0-9]+']}}}}
+  setup:
+    - "mkdir -p \"$XDG_CONFIG_HOME/workline\" && printf 'roles: {committer: {settings: {internal-codes-allow: [nRF52]}}}\\n' > \"$XDG_CONFIG_HOME/workline/config.yaml\""
+run: {role: committer, event: commit-msg, input: {message: "fix: migrate f207 for AC-3"}, ai: none}
+expect:
+  status: block
+  agent-calls: 0
+  findings:
+    - {rule: possible-internal-code, message: "under roles.committer.settings: `internal-codes-allow: [nRF52, f207]`; for everyone, in .workline/config.yaml under roles.committer.settings: `internal-codes-allow: ['ADR-[0-9]+', f207]`"}
+    - {rule: internal-code, message: "`internal-codes-allow: ['ADR-[0-9]+', AC-3]`"}

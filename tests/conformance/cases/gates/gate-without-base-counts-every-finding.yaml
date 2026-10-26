@@ -1,0 +1,18 @@
+case: gates/gate-without-base-counts-every-finding
+about: >
+  `workline gate <name>` with no `--base` counts every finding of the tree,
+  those on main too, and its summary says so.
+given:
+  repo: linted
+  setup:
+    - git checkout -q -b change
+    - |
+      sed -i 's|^\tos.Remove("c.tmp")$|&\n\tos.Remove("d.tmp")|' clean.go && git commit -qam "feat: clean d too"
+  env: {PATH: "$FIXTURES/bin:$PATH"}
+  config:
+    gates: {merge: {checks: [{id: lint, run: "golangci-lint run --output.sarif.path={out}/lint.sarif", output: sarif, max: {error: 0}}]}}
+run: {gate: merge}
+expect:
+  status: block
+  summary: "every finding counts"
+  findings: [{rule: over-threshold, where: lint, message: "4 error findings, at most 0 allowed: clean.go:7 errcheck"}]

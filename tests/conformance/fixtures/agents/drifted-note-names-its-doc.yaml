@@ -1,0 +1,18 @@
+# The `drifted` fixture after its version bump to 1.5.0, judged at eb28bad:
+# status.md and events.md vouched for, and a note naming status.md in `doc`,
+# saying what in it could not be confirmed (#449).
+- patch: |
+    --- a/docs/clock/status.md
+    +++ b/docs/clock/status.md
+    @@ -3 +3 @@
+    -checked: f5a13e1
+    +checked: eb28bad
+- patch: |
+    --- a/docs/clock/events.md
+    +++ b/docs/clock/events.md
+    @@ -3 +3 @@
+    -checked: f5a13e1
+    +checked: eb28bad
+- note:
+    doc: docs/clock/status.md
+    text: 'The "33 tests" count names a file no source shows: kept, not confirmed.'

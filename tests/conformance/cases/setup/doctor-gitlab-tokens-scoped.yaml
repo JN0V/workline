@@ -1,0 +1,18 @@
+case: setup/doctor-gitlab-tokens-scoped
+about: "On GitLab, the tokens scoped to the environment the template's jobs declare, workline (a wildcard taking it counts), reach those jobs alone: the doctor says so, and warns of none (#520)."
+given:
+  repo: documented
+  forge:
+    merge-requests: []
+    variables:
+      - {key: WORKLINE_GITLAB_TOKEN, value: glpat-never-printed, environment_scope: workline}
+      - {key: CLAUDE_CODE_OAUTH_TOKEN, value: sk-ant-never-printed, environment_scope: "work*"}
+run: {doctor: true, forge: gitlab}
+expect:
+  status: pass
+  checks:
+    - {rule: tokens-scoped, where: "WORKLINE_GITLAB_TOKEN, CLAUDE_CODE_OAUTH_TOKEN", level: ok, message: "are scoped to the environment workline: workline:gates and workline:main never receive them"}
+  no-findings:
+    - {rule: tokens-not-scoped, where: WORKLINE_GITLAB_TOKEN}
+    - {rule: tokens-not-scoped, where: CLAUDE_CODE_OAUTH_TOKEN}
+  stdout-lacks: [glpat-never-printed, sk-ant-never-printed, tokens-scope-unread]

@@ -1,0 +1,7 @@
+case: cli/warn-apart-or-warn-only
+about: "--warn-apart leaves what only warns to a run apart, --warn-only is that run (ADR-0050): both at once is misuse, 64."
+given: {repo: basic}
+run: {cli: [route, merge-request, --warn-apart, --warn-only]}
+expect:
+  exit: 64
+  stderr: ["--warn-apart leaves what only warns, --warn-only runs it alone: one or the other"]

@@ -1,0 +1,28 @@
+case: merge/accepted-all-turned-on-at-once
+about: "No one at a time (ADR-0051, cut 2): three accepted pull requests behind main, their heads' verdicts passed; `workline follow` turns auto-merge on for all three in one run and brings none up to date: each merges once its own head is green, none waiting for another."
+given:
+  repo: documented
+  config: {merge: {autonomy: cautious}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "for b in a b c; do git checkout -qb feat/$b main && echo $b > $b.txt && git add $b.txt && git commit -qm \"feat: $b\" && git push -q origin feat/$b; done; git checkout -q main"
+    - "echo moved > moved.txt && git add moved.txt && git commit -qm 'feat: main moves' && git push -q origin main"
+  forge:
+    statuses:
+      - {commit: "feat/a", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+      - {commit: "feat/b", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+      - {commit: "feat/c", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+    merge-requests:
+      - {id: 7, branch: feat/a, base: main, author: dana, labels: [workline:accepted], comments: [],
+         label-events: [{label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T11:00:00Z"}]}
+      - {id: 8, branch: feat/b, base: main, author: dana, labels: [workline:accepted], comments: [],
+         label-events: [{label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T12:00:00Z"}]}
+      - {id: 9, branch: feat/c, base: main, author: dana, labels: [workline:accepted], comments: [],
+         label-events: [{label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T10:00:00Z"}]}
+run: {follow: [--base, main], summary: true}
+expect:
+  status: pass
+  findings: [{rule: auto-merge-on, where: "#7"}, {rule: auto-merge-on, where: "#8"}, {rule: auto-merge-on, where: "#9"}]
+  no-findings: [{rule: updated}]
+  not-pushed: [feat/a, feat/b, feat/c]
+  summary-file: ["accepted into main, #7, #8, #9: each merges once its own head is green", "auto-merge turned on for 3"]

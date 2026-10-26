@@ -1,0 +1,41 @@
+case: inspector/triaged-once-not-asked-again
+about: >
+  A finding triaged once is not asked again (ADR-0013), by its
+  fingerprint, which holds no line: the run apart on the same push again
+  reads the record hidden in the inspector's comment, asks the agent
+  nothing, and posts the same triage.
+given:
+  repo: linted
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - git checkout -q -b change
+    - |
+      sed -i 's|^\tos.Remove("c.tmp")$|&\n\tos.Remove("d.tmp")|' clean.go
+      printf 'package main\n\nimport "os"\n\n// scratch writes a temporary file and removes it on the way out.\nfunc scratch() {\n\tf, _ := os.CreateTemp("", "scratch")\n\tdefer os.Remove(f.Name())\n}\n' > cleanup.go
+      git add . && git commit -qm "feat: clean d too, and a scratch file" && git push -q origin change
+  forge: {merge-requests: [{id: 1, branch: change, labels: [], comments: []}]}
+  config:
+    routing: {events: {merge-request: [committer, "gate:merge", inspector]}}
+    gates: {merge: {checks: [{id: lint, run: "golangci-lint run --output.sarif.path={out}/lint.sarif", output: sarif, max: {error: 0}}]}}
+run:
+  route: merge-request
+  warn-only: true
+  then: again
+  summary: true
+  gates-job: {env: {PATH: "$FIXTURES/bin:$PATH"}}
+  input: {range: main..change}
+  target: {merge-request: 1}
+  ai: "cmd:sh $FIXTURES/agents/triage.sh"
+expect:
+  status: pass
+  agent-calls: 1
+  calls: [{task: part, for: triage}]
+  summary-file: ["2 new findings of the gates, each triaged before: nobody asked; 1 likely a false positive; fix first: clean.go:10 (errcheck (golangci-lint)); the gates' verdict stands"]
+  forge:
+    merge-requests:
+      - id: 1
+        comments: 1
+        comment-contains:
+          - ": 2 triaged, 1 likely a false positive."
+          - "1. **`errcheck (golangci-lint)`** at `clean.go:10`"
+          - "2. **`errcheck (golangci-lint)`** at `cleanup.go:8`: **likely a false positive**"

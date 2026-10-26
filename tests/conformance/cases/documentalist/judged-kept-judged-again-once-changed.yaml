@@ -1,0 +1,31 @@
+case: documentalist/judged-kept-judged-again-once-changed
+about: "A record the documentalist's comment keeps no longer holds once the doc's source changed since the commit it names: the doc is judged again, and its new record replaces the old one in the comment, nothing pushed."
+given:
+  repo: documented
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb feature && printf '\\n// TokenTTL is in seconds.\\n' >> src/auth/token.go && git commit -qam 'docs(auth): say the unit of the lifetime'"
+    - "sed -i \"s/@at@/$(git rev-parse HEAD)/; s/@doc@/$(git rev-parse HEAD:docs/tech/auth.md)/; s/@src@/$(git rev-parse HEAD:src/auth/token.go)/\" \"$FORGE_FILE\""
+    - "printf '// It is a constant.\\n' >> src/auth/token.go && git commit -qam 'docs(auth): say the lifetime is a constant' && git push -q origin feature && git checkout -q --detach"
+  forge:
+    merge-requests:
+      - id: 1
+        branch: feature
+        labels: []
+        comments:
+          - body: |
+              **Docs judged, nothing pushed** — kept here.
+
+              <!-- workline:doc-judged {"at":"@at@","doc":"docs/tech/auth.md","ids":{"docs/tech/auth.md":"@doc@","src/auth/token.go":"@src@"},"key":"judged"} -->
+
+              <!-- workline:sticky=documentalist/judged -->
+            author: workline-bot
+            bot: true
+run: {role: documentalist, event: merge-request, target: {merge-request: 1}, ai: 'cmd:sh "$FIXTURES/agents/judged-only.sh"'}
+expect:
+  status: pass
+  agent-calls: 1
+  not-pushed: [feature]
+  forge:
+    merge-requests:
+      - {id: 1, comments: 1, comment-contains: "<!-- workline:doc-judged", comment-lacks: "nothing pushed** — kept here."}

@@ -1,0 +1,23 @@
+case: setup/doctor-language-python-m-pip-is-not-a-run
+about: "A workflow whose block-scalar run only installs linters through `python -m pip install` runs none of them: Python still lacks ruff and the YAML yamllint, never said covered (ADR-0049)."
+given:
+  repo: basic
+  setup:
+    - |
+      mkdir -p .github/workflows
+      printf 'print(1)\n' > app.py
+      cat > .github/workflows/lint.yml <<'EOF'
+      jobs:
+        lint:
+          steps:
+            - run: |
+                python -m pip install yamllint
+                python3 -m pip install --user ruff
+      EOF
+      git add app.py .github && git commit -qm 'ci: install the linters'
+run: {doctor: true}
+expect:
+  status: pass
+  findings:
+    - {rule: language-gaps, where: python, level: warn, message: "lint by nothing: ruff"}
+    - {rule: language-gaps, where: yaml, level: warn, message: "lint by nothing: yamllint"}

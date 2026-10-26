@@ -1,0 +1,28 @@
+case: inspector/on-a-machine-after-the-gates
+about: >
+  On a machine, the line not split: the gate passes within its threshold,
+  and the inspector after it reads the findings that gate step found the
+  change adds, from the same line. The triage is in the verdict, as
+  warnings; the record is kept on the machine, and the same line again
+  asks nothing (ADR-0013).
+given:
+  repo: linted
+  setup:
+    - git checkout -q -b change
+    - |
+      sed -i 's|^\tos.Remove("c.tmp")$|&\n\tos.Remove("d.tmp")|' clean.go && git commit -qam "feat: clean d too"
+  env: {PATH: "$FIXTURES/bin:$PATH"}
+  config:
+    routing: {events: {merge-request: [committer, "gate:merge", inspector]}}
+    gates: {merge: {checks: [{id: lint, run: "golangci-lint run --output.sarif.path={out}/lint.sarif", output: sarif, max: {error: 5}}]}}
+run:
+  route: merge-request
+  then: again
+  input: {range: main..change}
+  ai: "cmd:sh $FIXTURES/agents/triage.sh"
+expect:
+  status: pass
+  agent-calls: 1
+  findings: [{rule: triage, level: warn, where: "clean.go:10", message: "fix 1 of 1, errcheck (golangci-lint): an unchecked os.Remove leaves the temporary file behind"}]
+  files:
+    .git/workline/inspector-record: {contains: ["<!-- workline:triaged {\"fingerprint\":"]}

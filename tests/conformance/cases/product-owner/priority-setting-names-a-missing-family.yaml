@@ -1,0 +1,20 @@
+case: product-owner/priority-setting-names-a-missing-family
+about: "The settings name a family of labels the project does not have: the run stops and says so, never reading another place nor writing anything (ADR-0040, step 2; principle 12). A setting it cannot read stops the run too."
+given:
+  repo: backlog
+  config:
+    roles:
+      product-owner:
+        settings: {priority: {in: labels, prefix: "sev-"}, acts: {order: {mode: act}}}
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.", labels: [P1, P2], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:order-two}
+expect:
+  status: block
+  agent-calls: 0
+  findings:
+    - {rule: values-where, level: block, message: "the settings name the labels sev-*, and the project has none that names a level"}
+  forge:
+    issues:
+      - {id: 9, labels: [P1, P2], comment-lacks: "priority:"}

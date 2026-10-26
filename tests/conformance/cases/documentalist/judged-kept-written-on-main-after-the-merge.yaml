@@ -1,0 +1,39 @@
+case: documentalist/judged-kept-written-on-main-after-the-merge
+about: "Once a person's merge request is squashed, gardening reads the record its documentalist's comment kept: the doc and its source as they were judged, in the commit the merge request became and now, the doc is not judged again, and `judged` naming that commit goes in a merge request of its own, workline/documentalist/records — the merge policy's `records` kind (ADR-0010, amended 2026-10-17; #463)."
+given:
+  repo: documented
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb feature && printf '\\n// TokenTTL is in seconds.\\n' >> src/auth/token.go && git commit -qam 'docs(auth): say the unit of the lifetime'"
+    - "sed -i \"s/@at@/$(git rev-parse HEAD)/; s/@doc@/$(git rev-parse HEAD:docs/tech/auth.md)/; s/@src@/$(git rev-parse HEAD:src/auth/token.go)/\" \"$FORGE_FILE\""
+    - "git checkout -q main && git merge -q --squash feature && GIT_AUTHOR_DATE=2026-01-07T12:00:00Z GIT_COMMITTER_DATE=2026-01-07T12:00:00Z git commit -qm 'docs(auth): say the unit of the lifetime (#1)' && git push -q origin main && git branch -q -D feature"
+  forge:
+    merge-requests:
+      - id: 1
+        branch: feature
+        base: main
+        labels: []
+        closed: true
+        merged: true
+        merged-at: "2026-01-07T12:00:00Z"
+        merged-as: main
+        comments:
+          - body: |
+              **Docs judged, nothing pushed** — kept here.
+
+              <!-- workline:doc-judged {"doc":"docs/tech/auth.md","key":"judged","at":"@at@","ids":{"docs/tech/auth.md":"@doc@","src/auth/token.go":"@src@"}} -->
+
+              <!-- workline:sticky=documentalist/judged -->
+            author: workline-bot
+            bot: true
+run: {role: documentalist, event: schedule, ai: 'cmd:sh "$FIXTURES/agents/judged-only.sh"', open-merge-request: true}
+expect:
+  status: pass
+  agent-calls: 0
+  findings:
+    - {rule: suspect, where: docs/tech/auth.md, message: "(judged on merge request #1 at"}
+    - {rule: suspect, where: docs/tech/auth.md, message: "in workline/documentalist/records"}
+  pushed: {workline/documentalist/records: {docs/tech/auth.md: "judged: "}}
+  forge:
+    merge-requests:
+      - {id: 2, branch: workline/documentalist/records, base: main, title: "docs: record when docs were judged on their merge requests", body-contains: "- `docs/tech/auth.md` — judged on #1 at"}

@@ -1,0 +1,17 @@
+case: release/held-by-a-red-main
+about: "A check red on main's tip holds the release (ADR-0051): read from the forge's checks, never run again; the red checks are named."
+given:
+  repo: documented
+  setup:
+    - "git tag v1.0.0"
+    - "git checkout -qb release-please--branches--main && echo '# Changelog' > CHANGELOG.md && git add CHANGELOG.md && git commit -qm 'chore(main): release 1.0.1'"
+  forge:
+    issues: []
+    merge-requests: [{id: 1, branch: release-please--branches--main, base: main, labels: [], comments: []}]
+    tips: {main: [{name: test, state: failure}, {name: lint, state: success}]}
+run: {route: merge-request, input: {range: "main..HEAD"}, target: {merge-request: 1}, ai: none}
+expect:
+  status: block
+  summary: "the release held: main red"
+  findings:
+    - {rule: release-base-red, where: main, level: block, message: "is red: test; the release waits for it green"}

@@ -1,0 +1,28 @@
+case: product-owner/weight-free-keeps-labels
+about: "On GitLab Free, its issues carrying no `weight` key, `effort: auto` keeps the effort in the forge's words, `effort::low` to `::high`, and writes no weight (ADR-0040, step 5)."
+given:
+  repo: backlog
+  config:
+    roles:
+      product-owner:
+        settings: {moved-percent-max: 100, effort: auto, acts: {effort: {mode: act}}}
+  forge:
+    members:
+      - {username: ann, access_level: 30}
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.\n\n## Scope\n\nsrc/export/csv.go", author: ann, labels: [bug], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 10, title: "Slow export", body: "The export is slow.\n\n## Scope\n\nsrc/export/csv.go", author: ann, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:order-effort, forge: gitlab}
+expect:
+  status: pass
+  findings:
+    - {rule: values-where, message: "Effort: labels effort::*, created when first set."}
+    - {rule: done, where: "#9", message: "Set #9's effort to Low (effort::low)"}
+    - {rule: done, where: "#10", message: "Set #10's effort to High (effort::high)"}
+  forge:
+    issues:
+      - {id: 9, labels: [bug, "effort::low"], weight: -1}
+      - {id: 10, labels: ["effort::high"], weight: -1}
+    labels:
+      - {id: 1, title: "effort::low"}
+      - {id: 3, title: "effort::high"}

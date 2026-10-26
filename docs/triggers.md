@@ -1,7 +1,8 @@
 ---
 sources: [cmd/workline, internal/line, internal/hooks, internal/forge/gitlab.go, ci/gitlab/workline.gitlab-ci.yml, ci/github/workline.yml, ci/github/workline-gardening.yml, ci/github/workline-sample.yml, routing.default.yaml]
-checked: 9fcf6cf6
+checked: 87a81d4a
 verified: agent:claude-code
+reader: 2de353fab113
 ---
 # Running each role from any trigger
 
@@ -15,7 +16,7 @@ trigger token or another pipeline: [gitlab-trigger.md](gitlab-trigger.md).
 
 | What | Command | Agent |
 |---|---|---|
-| each commit's message | the global `commit-msg` hook (`workline hooks install --global`) | yours, to rewrite a refused message |
+| each commit's message | the global `commit-msg` hook (`workline hooks install --global`) | yours, to rewrite a refused message, 30 s at most (`rewrite: false`, the project's or yours, turns it off) |
 | before a push | the global `pre-push` hook, when the project routes `pre-push`; by hand: `workline route pre-push --ai none --input range=origin/main..HEAD` | never |
 | docs made suspect | `workline docs` (`--since <rev>`; `--review` with no agent) | yours |
 | a branch's code | `workline review` (`--base`, `--lenses`, `--json`) | yours |
@@ -24,6 +25,7 @@ trigger token or another pipeline: [gitlab-trigger.md](gitlab-trigger.md).
 | the backlog | `workline run-role product-owner --event schedule --forge gitlab` | yours |
 | a roadmap file to issues | `workline issues import <file>`, then the same with `--apply`; in CI, `--json > line.json`, then `workline apply --line line.json` | yours |
 | before tagging a release | `workline route release` | yours |
+| what would hold the release now | `workline route release --dry-run` | never |
 | the weekly sample | `workline sample --out s.json`, then `workline sample --apply s.json` | the judge |
 
 `--ai none` on any of them runs every check with no agent. With `--forge
@@ -42,7 +44,11 @@ Each event that writes runs in two jobs
   the `--json` result from the first job to the second, at the same path;
 - where the merge request's code can change the first job (a GitHub pull
   request's own run), the second runs from the base: `--from-merge-request
-  <n> --head <sha>` ([more](commands.md#workline-apply)).
+  <n> --head <sha>` ([more](commands.md#workline-apply));
+- the gates run first, in a job with no write token and no AI key:
+  `route <event> --gates-only --json > gates.json`, which the judge reads
+  (`--gates-from gates.json`) and the second job shows (`apply --gates
+  gates.json`, on GitHub; [gates in CI](gates-in-ci.md)).
 
 `$ai` below is your choice of agent: `none`, `claude`, `cmd:<command>`
 ([usage](usage.md)).
@@ -52,16 +58,37 @@ Each event that writes runs in two jobs
 The committer, the documentalist, the reviewer if routed; one run at a time ([#359](https://github.com/JN0V/workline/issues/359)):
 
 ```sh
-workline route merge-request --ai "$ai" --no-apply --push-to-merge-request \
+workline route merge-request --ai "$ai" --no-apply \
   --forge gitlab --target merge-request:<iid> --branch <source-branch> \
   --input range=<base-sha>..<head-sha> --code-quality gl-code-quality.json --json > line.json
 workline apply --line line.json          # second job: commits the doc fixes to the branch
 ```
 
-`--input draft=<true|false>`, on each run, has the reviewer read every lens
-once, on the whole change, on a merge request no draft its record does not
+`--input draft=<true|false>`, on each run: `true` asks no agent of any
+step, the AI review waiting for ready; `false` has the reviewer read every
+lens once, on the whole change, on a merge request its record does not
 say every lens read; `--input lenses=all` asks it outright, when it becomes
 ready, as the templates do ([how](../roles/reviewer/docs/ready.md)).
+
+In a merge queue or train, the same line with `--input queue=true` and
+the merged result's range runs the gates alone, no agent, no verdict
+written ([the commands](merge-queue.md#the-commands-for-another-ci)).
+After a merge, `route main --ai none --gates-kept <folder>` on the new
+tip, then `apply --main` with a token writing issues and comments; the gates' job
+of a merge request reads that folder too
+([the commands](main-after-merge.md#the-commands-for-another-ci)).
+
+The templates also read the reviewer's lenses that only warn apart from
+the verdict, and the inspector's triage: `--warn-apart` on the line
+above, and beside it a job of their own, after the gates' job, its apply
+after it ([apart](../roles/reviewer/docs/apart.md)):
+
+```sh
+workline route merge-request --warn-only --ai "$ai" --no-apply \
+  --forge gitlab --target merge-request:<iid> --branch <source-branch> \
+  --input range=<base-sha>..<head-sha> --gates-from gates.json --json > warn.json
+workline apply --line warn.json          # its second job: their comments
+```
 
 ### Gardening
 
@@ -94,19 +121,15 @@ workline apply "$(jq -r '."run-dir"' po.json)"
 Before your release tool tags; a non-zero exit holds it.
 
 - On a machine: `workline route release`.
-- In CI: `workline route release --ai "$ai" --no-apply --forge gitlab
-  --open-merge-request --json > line.json`, then `workline apply --line
-  line.json`, puts the docs' fix on a merge request of its own (untried
-  this way).
+- At a tag (GitLab's `workline:release`): `workline route release --ai
+  none --forge none`, no token. The jobs that publish need it.
+- Each night, a dry run: `workline route release --dry-run --forge
+  gitlab --json > dry-run.json` (no agent, writes nothing), then
+  `workline apply --release-dry-run dry-run.json --forge gitlab` (token,
+  no agent) ([the release](release.md)).
 - On a push to the default branch: `workline follow --base <branch>
-  --forge gitlab` (token, no agent) rebuilds that merge request,
-  `workline/documentalist/release`, on the branch's new tip, so it stays
-  mergeable as the branch moves
-  ([ADR-0034](adr/0034-the-release-fix-follows-its-base.md)); `user.name`
-  and `user.email` set first, as for `apply`. With `update-branches:
-  conflicts`, it also merges the branch into people's merge requests in
-  conflict only on workline's lines
-  ([more](../roles/documentalist/docs/follow.md)). With `merge:`, it runs
+  --forge gitlab` (token, no agent), `user.name` and `user.email` set
+  first, as for `apply`. With `merge:`, it runs
   the [merge policy](merge-policy.md): after each judge too, given the
   head's verdict `route --verdict` wrote (`--verdict <file>`).
 
@@ -131,20 +154,24 @@ one issue, the level the product owner's acts suggest among it
 ### Your own scanners
 
 `--sarif <file>` beside `--code-quality` writes the findings for GitHub's
-code scanning, on a merge request not the documentalist's nor the
-reviewer's ([#412](https://github.com/JN0V/workline/issues/412)).
-`gate:<name>` steps, or `workline gate <name>`, run your own scanners.
+code scanning, on a merge request not the documentalist's, the
+reviewer's nor the gates' ([#412](https://github.com/JN0V/workline/issues/412)).
+`gate:<name>` steps, or `workline gate <name>`, run your own scanners; on
+a merge request given its `range`, or with `workline gate <name> --base
+<rev>`, only the findings the change adds count
+([new findings](spec/gates.md#on-a-merge-request-the-findings-the-change-adds)).
 
 ## What each job needs
 
 | Job | Clone | Variables | Tools |
 |---|---|---|---|
 | judging (`--no-apply`, `sample --out`) | the whole history (`GIT_DEPTH: 0`, `fetch-depth: 0`), the base commit fetched | the agent's credentials, whichever agent you chose (Claude Code: `CLAUDE_CODE_OAUTH_TOKEN` from `claude setup-token`, or `ANTHROPIC_API_KEY`); none is fine: `--ai none` | the engine, gitleaks, your agent's CLI (Claude Code: `claude`, from npm) |
-| judging gardening, the product owner, a merge request with the reviewer, or the sample | as above | a token that reads issues, merge requests and their notes: `GITLAB_TOKEN` with `read_api` (`CI_JOB_TOKEN` reads no issue); on GitHub `GH_TOKEN`, `issues: read`, `pull-requests: read` | as above |
-| applying (`apply`, `sample --apply`) | a branch, not a detached HEAD, for gardening | `GITLAB_TOKEN` (below); a git identity (`user.name`, `user.email`); `origin` with the token, to push | the engine |
+| judging gardening, the product owner, a merge request with the reviewer, or the sample | as above | a token that reads issues, merge requests and their notes: `GITLAB_TOKEN` with `read_api` (`CI_JOB_TOKEN` reads no issue); on GitHub `GH_TOKEN`, `issues: read`, `pull-requests: read`; on a release's, `checks`, `statuses` and `actions` read too ([what holds a release](release-holds.md)) | as above |
+| applying (`apply`, `sample --apply`) | a branch, not a detached HEAD, for gardening | `GITLAB_TOKEN` (below); a git identity (`user.name`, `user.email`); `origin` with the token, to push; git set to sign where the forge refuses unsigned commits ([how](gitlab/signed-commits.md)) | the engine; `ssh-keygen` to sign with an SSH key |
 
 The image `ghcr.io/jn0v/workline:<version>` holds the engine, gitleaks,
-git, jq and npm. `workline version` in a job's log says which engine ran.
+git, jq, npm and, from v0.38.0, `ssh-keygen`.
+`workline version` in a job's log says which engine ran.
 
 ### GitLab tokens
 
@@ -175,21 +202,22 @@ requests from unprotected branches must apply.
 An unknown option exits 64 too, never 2. `workline gate` exits 0 or 1;
 `workline sample` exits 2 when a doc or an act is left for a person and 3
 when the judge or the forge cannot be reached; `workline doctor`, 1 on an error only. The
-templates keep a job's status and still apply what passed, and the
-comment of a reviewer that blocks (`artifacts: when: always`,
+templates keep a job's status and still apply what passed, and what a
+role that blocks names to say why, such as its comments
+([`on-block`](spec/role-contract.md#one-run); `artifacts: when: always`,
 `if: always()`, `when: always`).
 
 ## Outputs
 
 - **stdout**: the verdict; with `--json`, status, summary, findings, each
-  agent call with its model and tokens, and for a line its steps and the
-  runs `pending` for `apply`.
+  agent call with its model and tokens, and for a line its steps, their
+  seconds, its moment and the runs `pending` for `apply`.
 - **Reports**: `--sarif <file>` (GitHub code scanning), `--code-quality
   <file>` (GitLab: `artifacts: reports: codequality`, shown on the merge
   request, every tier). The paths are yours to choose.
 - **Job summary**: `--summary <file>` (`route`, `run-role`, `apply`,
-  `sample`): the verdict, each step's verdict and findings, what was
-  applied and what waits to be, in Markdown, or HTML for a `.html` file,
+  `sample`): the verdict, each step's verdict, findings and seconds, what
+  was applied and what waits to be, in Markdown, or HTML for a `.html` file,
   added to the file ([ADR-0035](adr/0035-the-engine-writes-the-jobs-summary.md)).
   GitHub: `$GITHUB_STEP_SUMMARY`; GitLab: an artifact the job's page links
   ([ci.md](ci.md#what-a-job-shows)).
@@ -198,9 +226,8 @@ comment of a reviewer that blocks (`artifacts: when: always`,
 - **On the forge**: a comment on the merge request (the documentalist's list
   for a person, the reviewer's summary), edited on each run; the
   reviewer's findings on their lines, in the forge's review; doc fixes
-  committed to its branch (`Workline-Role: documentalist`); gardening's
-  merge requests on `workline/<role>/<task>`; a release's fix on
-  `workline/<role>/release`; issues (the product owner's comment and
+  as a diff in a comment, nothing pushed to its branch; gardening's
+  merge requests on `workline/<role>/<task>`; issues (the product owner's comment and
   label `workline:proposed` on each issue it proposes on; the sample's
   tracking issues, the docs' and the product owner's acts'; a reviewer's
   finding outside

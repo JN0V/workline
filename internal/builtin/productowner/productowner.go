@@ -143,6 +143,20 @@ func Pre(runDir, repo string) int {
 		findings = append(findings, verdict.Finding{Rule: "setting-gone", Level: "warn",
 			Message: name + " is no longer read: " + backlog.GoneSettings[name] + "; take it off the project's settings"})
 	}
+	// Where the project keeps each axis, when its settings ask (ADR-0040):
+	// read there for the whole run, and said once. A family the setting
+	// names and the project lacks stops the run, said.
+	scheme, where, err := backlog.Where(b, cfg, open)
+	if errors.Is(err, forge.ErrUnreachable) {
+		fmt.Fprintln(os.Stderr, err)
+		return exitExternal
+	}
+	if err != nil {
+		return final(runDir, verdict.Verdict{Status: verdict.Block, Summary: "where the project keeps its priorities is not found",
+			Findings: []verdict.Finding{{Rule: "values-where", Level: "block", Message: err.Error()}}})
+	}
+	scale.Use(scheme)
+	findings = append(findings, where...)
 	judged := 0
 	tracked := trackedFiles(repo)
 	var readIDs []string // the issues read, for the plan (backlog.Decide)
@@ -526,6 +540,16 @@ func Pre(runDir, repo string) int {
 		findings = append(findings, verdict.Finding{Rule: "next-ready", Level: "info", Where: fmt.Sprintf("#%d", is.ID),
 			Message: is.Title + placed(is)})
 	}
+	if scale.Used.Detected {
+		// The ready issues missing a value, counted; the role's values
+		// stuck on one level, said (ADR-0040).
+		findings = append(findings, unestimated(open, report, isOpen)...)
+		findings = append(findings, stuck(ledger.States, isOpen)...)
+		if scale.Used.Priority.Hidden() || scale.Used.Effort.Hidden() {
+			findings = append(findings, verdict.Finding{Rule: "values-hidden", Level: "info",
+				Message: "Values hidden: the fields are visible to organization members only, and this repository is public."})
+		}
+	}
 	// What waits on a person (ADR-0031), with no agent: a reporter's
 	// answer, from the day of the last round; a ready issue nothing
 	// started, from the day the forge says it got the label — those
@@ -636,6 +660,7 @@ func Pre(runDir, repo string) int {
 		t := taskBuilt{wasRead: map[int]bool{}}
 		var task strings.Builder
 		var code []string // the files the issues name, given once each
+		filesOf := map[int][]string{} // the files each issue read names
 		noCode := false   // an issue read names no file: the repository's folders are listed
 		left := slices.Clone(rest)
 		for i, d := range toRead {
@@ -646,6 +671,7 @@ func Pre(runDir, repo string) int {
 			t.wasRead[d.is.ID] = true
 			t.ids = append(t.ids, strconv.Itoa(d.is.ID))
 			files := named(repo, d.is, d.st, d.comments, tracked)
+			filesOf[d.is.ID] = files
 			noCode = noCode || len(files) == 0
 			review := ""
 			if r := backlog.SpecOpen(d.is, d.comments); cfg.SpecReview && r != nil {
@@ -701,7 +727,7 @@ func Pre(runDir, repo string) int {
 		if said == "" {
 			said = releases(repo, b)
 		}
-		intro := fmt.Sprintf("The run is on commit %s. %d open issues to read against the code.\n\n%s\n%s", commit, len(t.ids), said, modes(cfg, ledger.Demoted(cfg.UndoneMax)))
+		intro := fmt.Sprintf("The run is on commit %s. %d open issues to read against the code.\n\n%s\n%s", commit, len(t.ids), said, modes(cfg, ledger.Demoted(cfg.UndoneMax))+estimates(cfg))
 		if pages := forge.FilePages(f); pages != "" {
 			// What it writes cites a decision or a doc as a link a reader
 			// follows (AGENTS.md, "Writing user docs").
@@ -737,7 +763,12 @@ func Pre(runDir, repo string) int {
 		if len(others) > 0 {
 			fmt.Fprintf(&task, "# The other open issues, titles only\n\nNot read in this run; a duplicate may be one of them.\n\n%s\n\n", strings.Join(others, "\n"))
 		}
-		writeCode(&task, repo, code, s.CodeLinesMax)
+		given := writeCode(&task, repo, code, s.CodeLinesMax)
+		for _, id := range slices.Sorted(maps.Keys(filesOf)) {
+			if fs := filesOf[id]; len(fs) > 0 && !slices.ContainsFunc(fs, func(f string) bool { return !slices.Contains(given, f) }) {
+				t.codeRead = append(t.codeRead, strconv.Itoa(id))
+			}
+		}
 		if noCode {
 			writeFolders(&task, tracked)
 		}
@@ -825,6 +856,9 @@ func Pre(runDir, repo string) int {
 	if err := os.WriteFile(filepath.Join(runDir, "in", "issues-read"), []byte(strings.Join(readIDs, "\n")), 0o644); err != nil {
 		return fail(err)
 	}
+	if err := os.WriteFile(filepath.Join(runDir, "in", backlog.CodeReadFile), []byte(strings.Join(t.codeRead, "\n")), 0o644); err != nil {
+		return fail(err)
+	}
 	if len(fallback) > 0 {
 		if err := intent.Write(filepath.Join(runDir, "in", "fallback.yaml"), fallback); err != nil {
 			return fail(err)
@@ -852,6 +886,9 @@ type taskBuilt struct {
 	reads   []intent.Intention
 	ids     []string
 	wasRead map[int]bool
+	// codeRead are the issues read whose files were all given: an effort
+	// is estimated on them only (ADR-0040).
+	codeRead []string
 }
 
 // askedAgainChars is the room kept in the prompt for an answer asked again:
@@ -1048,10 +1085,25 @@ func writeIssue(b *strings.Builder, role string, rounds int, is forge.Issue, st 
 	}
 	if set := backlog.PriorityLabels(is); len(set) > 0 {
 		whose := ""
-		if len(set) != 1 || set[0] != st.Priority {
+		if st.Priority != backlog.HiddenLevel && (len(set) != 1 || set[0] != st.Priority) {
 			whose = " (a person's: kept)"
 		}
 		fmt.Fprintf(b, "Priority: %s%s\n", scale.Value(backlog.Priority(is)), whose)
+	}
+	if set := backlog.EffortLabels(is); len(set) > 0 {
+		whose := ""
+		if st.Effort != backlog.HiddenLevel && (len(set) != 1 || set[0] != st.Effort) {
+			whose = " (a person's: kept)"
+		}
+		value := scale.EffortValue(backlog.Effort(is))
+		if scale.Used.Effort.Weight {
+			// The weight the issue holds, a person's 2 as it is.
+			value = fmt.Sprintf("%s (weight %d)", scale.Effort.Name(backlog.Effort(is)), *is.Weight)
+		}
+		fmt.Fprintf(b, "Effort: %s%s\n", value, whose)
+	} else if scale.Used.Effort.Weight && len(backlog.Parts(is)) > 0 {
+		// GitLab sums a parent's weight from its parts' (ADR-0040).
+		b.WriteString("Effort: not estimated here: a parent, GitLab sums its parts' weights\n")
 	}
 	if by := backlog.OpenedBy(is.Body); by != "" {
 		// A role's finding, opened through the one way (ADR-0018): the
@@ -1199,13 +1251,114 @@ func placed(is forge.Issue) string {
 	if is.Milestone != "" {
 		out = append(out, "milestone "+is.Milestone)
 	}
-	if n := backlog.Priority(is); n > 0 {
+	switch n := backlog.Priority(is); {
+	case scale.Used.Priority.Hidden() || scale.Used.Effort.Hidden():
+		// Visible to organization members only, on a public repository:
+		// the order kept, the values never shown (ADR-0040).
+	case scale.Used.Detected && scale.Used.Effort.Said == "":
+		// No effort kept anywhere: its priority by name, or none said.
+		out = append(out, scale.PriorityName(n))
+	case scale.Used.Detected:
+		// Its cell of the value-vs-effort grid, a value missing said
+		// (ADR-0040).
+		out = append(out, scale.Cell(n, backlog.Effort(is)))
+	case n > 0:
 		out = append(out, scale.Said(n))
 	}
 	if len(out) == 0 {
 		return ""
 	}
 	return " — " + strings.Join(out, ", ")
+}
+
+// unestimated counts the ready issues offered that miss a priority or an
+// effort, as Next says them (ADR-0040): "3 of 9 ready issues have no
+// priority: they follow their number".
+func unestimated(open []forge.Issue, report int, isOpen map[int]bool) []verdict.Finding {
+	ready, noPriority, noEffort := 0, 0, 0
+	for _, is := range open {
+		if is.ID == report || !backlog.Offered(is, isOpen) {
+			continue
+		}
+		ready++
+		if backlog.Priority(is) == 0 {
+			noPriority++
+		}
+		if backlog.Effort(is) == 0 {
+			noEffort++
+		}
+	}
+	var says []string
+	if noPriority > 0 {
+		says = append(says, fmt.Sprintf("%d of %d ready issues have no priority: they follow their number", noPriority, ready))
+	}
+	if noEffort > 0 && scale.Used.Effort.Said != "" {
+		which := "ready issues "
+		if len(says) > 0 {
+			which = ""
+		}
+		says = append(says, fmt.Sprintf("%d of %d %shave no effort, read as %s", noEffort, ready, which, scale.Effort.Name(scale.Effort.None)))
+	}
+	if len(says) == 0 {
+		return nil
+	}
+	return []verdict.Finding{{Rule: "next-unestimated", Level: "info", Message: strings.Join(says, "; ") + "."}}
+}
+
+// stuck says an axis whose values the role set sit on one level, past 10
+// of them, over 60% (ADR-0040): "Effort: Medium on 8 of the 11 issues the
+// role estimated."
+func stuck(states map[int]*backlog.State, isOpen map[int]bool) []verdict.Finding {
+	var priorities, efforts []int
+	for _, id := range slices.Sorted(maps.Keys(states)) {
+		if st := states[id]; st != nil && isOpen[id] {
+			if st.Priority > 0 {
+				priorities = append(priorities, st.Priority)
+			}
+			if st.Effort > 0 {
+				efforts = append(efforts, st.Effort)
+			}
+		}
+	}
+	var out []verdict.Finding
+	for _, a := range []struct {
+		s      scale.Scale
+		levels []int
+		verb   string
+	}{{scale.Priority, priorities, "ordered"}, {scale.Effort, efforts, "estimated"}} {
+		if say := scale.Stuck(a.s, a.levels); say != "" {
+			out = append(out, verdict.Finding{Rule: "estimates-stuck", Level: "info",
+				Message: fmt.Sprintf("%s%s: %s issues the role %s.", strings.ToUpper(a.s.Axis[:1]), a.s.Axis[1:], say, a.verb)})
+		}
+	}
+	return out
+}
+
+// estimates tells the agent how the role sets an issue's priority and
+// effort where the project's settings say it keeps them (ADR-0040): once,
+// only where empty; an effort beside the order, on code given only.
+func estimates(cfg backlog.Config) string {
+	on := func(kind string) bool { s, ok := cfg.Acts[kind]; return ok && s.Mode != backlog.Off }
+	if !scale.Used.Detected || !on("order") && !on("effort") {
+		return ""
+	}
+	var b strings.Builder
+	b.WriteString("# Priority and effort\n\nEach is set once, only where the issue has none: a value there is a person's, or yours from an earlier run, never estimated again.\n\n")
+	if on("order") {
+		var levels []string
+		for l := 1; l <= scale.Priority.Count(); l++ {
+			levels = append(levels, fmt.Sprintf("%d %s", l, scale.Priority.Name(l)))
+		}
+		fmt.Fprintf(&b, "- Priority, from the issue and its code: %s. Data lost, a regression, others blocked first; what can wait last.\n", strings.Join(levels, ", "))
+	}
+	if on("effort") && scale.Used.Effort.Said != "" {
+		var levels []string
+		for l := 1; l <= scale.Effort.Count(); l++ {
+			levels = append(levels, fmt.Sprintf("%d %s (%s)", l, scale.Effort.Name(l), scale.EffortAnchor(l)))
+		}
+		fmt.Fprintf(&b, "- Effort, how hard it is to build: %s. Write it in the issue's order, `order: {issue: 12, priority: 2, effort: 1, why: \"…\"}`, the priority left out when the issue has one; only for an issue whose code is given below.\n", strings.Join(levels, ", "))
+	}
+	return b.String() + "\n"
 }
 
 // sections says which of the four sections an issue's body has — an
@@ -1384,11 +1537,13 @@ func holding(repo, name string) []string {
 }
 
 // writeCode gives each file named, whole up to codeLines, with its last
-// commits: what changed it, so an issue the code solved can be told.
-func writeCode(b *strings.Builder, repo string, files []string, budget int) {
+// commits: what changed it, so an issue the code solved can be told. It
+// returns the files given: an effort is estimated only on them (ADR-0040).
+func writeCode(b *strings.Builder, repo string, files []string, budget int) []string {
 	if len(files) == 0 {
-		return
+		return nil
 	}
+	var shown []string
 	b.WriteString("# Code the issues name, as it is at this commit\n\n")
 	for _, f := range files {
 		data, err := exec.Command("git", "-C", repo, "show", "HEAD:"+f).Output()
@@ -1406,12 +1561,14 @@ func writeCode(b *strings.Builder, repo string, files []string, budget int) {
 			fmt.Fprintf(b, "## %s\n\nLeft out: the run's code budget is spent.\n\n", f)
 			continue
 		}
+		shown = append(shown, f)
 		for i := range lines {
 			lines[i] = fmt.Sprintf("%4d  %s", i+1, lines[i])
 		}
 		log, _ := exec.Command("git", "-C", repo, "log", "-5", "--format=%h %as %s", "--", f).Output()
 		fmt.Fprintf(b, "## %s\n\nLast commits:\n%s\n```\n%s\n```%s\n\n", f, strings.TrimSpace(string(log)), strings.Join(lines, "\n"), more)
 	}
+	return shown
 }
 
 // modes tells the agent how far the role goes in this run (ADR-0026): each

@@ -61,7 +61,9 @@ The engine detects, each run and with no agent, the first that holds:
    on GitLab, effort only, an issue's `weight` key (Premium, Ultimate).
 3. **The project's own label family**: `P0`…, `P-*`, `priority/*`,
    `Priority/*`, `priority::*`, `effort*`; two values or more, one on an
-   open issue. Never `size/*`: Kubernetes' counts lines changed.
+   open issue. Never `size/*`: Kubernetes' counts lines changed. Then
+   workline's own `workline:priority/*`, one on an open issue enough,
+   until renamed (f).
 4. **Else the forge's words**, created at the first act:
 
 | Forge | Priority | Effort |
@@ -179,11 +181,11 @@ The engine detects, each run and with no agent, the first that holds:
 | Step | What | Proved by |
 |---|---|---|
 | 1 | **Levels by name**: one scheme reads `workline:priority/*`, a field, a family; no behaviour change | cases: Effort listing High first sorts High last; `P0`, `priority::1`, weight 4 read; existing cases unchanged |
-| 2 | **Detection and labels**: settings, families, words created; a disagreement writes nothing | fake forge cases; the GitLab sandbox (Free) |
-| 3 | **Effort and the grid**: the `effort` kind; `Less`; Next's cell; the 60% flag; read again before applying | cases: a person's value kept per axis; cleared, never refilled; changed since the plan, dropped; no code, no effort |
-| 4 | **GitHub fields**, members-only values never shown | fake forge cases; live on jn0v-lab, each token, the API version header |
-| 5 | **GitLab's `weight`**: the bands, never a parent | cases; live once a Premium project is at hand |
-| 6 | **workline's labels renamed**, the acts on for workline | the measures below, four weeks; then the amendment turning them on |
+| 2 | **Detection and labels**: settings, families, words created; a disagreement writes nothing. Built behind the settings `priority` and `effort`: unset, workline's own labels as before | fake forge cases; the GitLab sandbox (Free) |
+| 3 | **Effort and the grid**: the `effort` kind; `Less`; Next's cell; the 60% flag; read again before applying. The kind off by default; set once and Next's cell with the settings of step 2 only | cases: a person's value kept per axis; cleared, never refilled; changed since the plan, dropped; no code, no effort |
+| 4 | **GitHub fields**, members-only values never shown. With the settings of step 2 only; a members-only value is recorded `-1` in the state, never proposed, its undoing not watched | fake forge cases; live on jn0v-lab, each token, the API version header |
+| 5 | **GitLab's `weight`**: the bands, never a parent. With the settings of step 2 only; a weight written is read back, Free ignoring one | cases; the GitLab sandbox (Free); live on Premium once a project is at hand |
+| 6 | **workline's labels renamed**, the acts on for workline; `auto` the settings' default | the measures below, four weeks; then the amendment turning them on |
 
 ## How it is measured
 

@@ -1,0 +1,20 @@
+case: routing/main-with-nothing-found-opens-no-issue
+about: >
+  A merge that leaves main with nothing to say opens no issue (ADR-0050):
+  the gates find nothing new since main's tip before it, the old debt is
+  only counted, and the whole repository's checks find nothing.
+given:
+  repo: linted
+  setup:
+    - "git checkout -qb change && echo '// More to come.' >> main.go && git commit -qam 'docs: say more comes' && git checkout -q main && git merge -q --no-ff change -m 'Merge pull request #1 from change'"
+  env: {PATH: "$FIXTURES/bin:$PATH"}
+  forge: {issues: []}
+  config:
+    routing: {events: {merge-request: [committer, documentalist, "gate:merge"]}}
+    gates: {merge: {checks: [{id: lint, run: "golangci-lint run --output.sarif.path={out}/lint.sarif", output: sarif, max: {error: 0}}]}}
+run: {route: main, input: {range: "HEAD^1..HEAD"}, main-issue: true}
+expect:
+  status: pass
+  findings: [{rule: main-issue, message: "nothing found on the default branch: no issue opened"}]
+  forge:
+    issues: [{id: 1, absent: true}]

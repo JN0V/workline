@@ -1,6 +1,6 @@
 ---
 sources: [internal/sample, internal/builtin/documentalist/sample.go, ci/github/workline-sample.yml, ci/gitlab/workline.gitlab-ci.yml, roles/auditor, roles/product-owner/role.yaml]
-checked: 436a9c29
+checked: b6085f38
 judged: c9d96e2
 verified: agent:claude-code
 ---
@@ -13,7 +13,8 @@ docs the documentalist vouched for, read whole against their sources
 ([ADR-0014](adr/0014-checked-is-earned-by-what-was-read.md), step 4), the
 product owner's acts done alone, the findings the reviewer's judge kept
 or dropped on every run
-([a line each in its summary comment](../roles/reviewer/docs/judge.md#every-finding-judged-kept-for-the-weekly-sample)),
+([a line each in its summary comment](../roles/reviewer/docs/judge.md#every-finding-judged-kept-for-the-weekly-sample),
+and in that of its lenses that warn, [read apart](../roles/reviewer/docs/apart.md)),
 the committer's rewrites. How to schedule it: on
 [GitHub](ci-github.md), [GitLab](ci-gitlab.md#4-the-weekly-sample),
 [another forge or none](ci-other-forges.md).
@@ -35,12 +36,22 @@ roles:
   a person.
 - **False** only with the material's words, which the engine finds again;
   else the act is for a person.
+- **A doc whose `checked` moved after parts**
+  ([#482](https://github.com/JN0V/workline/issues/482)): its sources do
+  not fit to be read whole, so it is listed for a person, never called
+  unearned nor put back.
 - **What a product owner's act was done on**: the issue's text it read,
   found by the digest its record keeps — the body now, else the version
   GitHub's edit history keeps; for a refine, the issue as it reads now
   beside it —, and the code at the commit it read. A text gone from the
   forge is not read, for you: GitLab keeps no edit history. An act
   recorded before this record is read as its issue reads now, and named.
+- **A squash**: a merge request's commits are read on its head, which
+  the forge keeps (GitHub's `refs/pull/<n>/head`, GitLab's
+  `refs/merge-requests/<iid>/head`). The commit there that moved a doc's
+  `checked` says whose the move was, and which model vouched: a person's
+  move is not drawn. With no forge, a `checked` naming one of those
+  commits is not read, and the reason says to give one (`--forge`).
 - **A dispute**: a verdict against the act goes to three judges, Claude's
   three models by default (`sample: {panel: […]}`), each choosing between
   the two readings, not told whose; the majority settles it.

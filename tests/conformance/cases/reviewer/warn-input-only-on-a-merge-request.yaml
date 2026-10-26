@@ -1,0 +1,10 @@
+case: reviewer/warn-input-only-on-a-merge-request
+about: "The lenses that warn read apart on a merge request only, the reviewer's role.yaml's `apart` (ADR-0050): told to leave them on a review on a machine, where no run apart reads them, the run stops, never dropping them in silence. A line told --warn-apart gives the input only to a role reading apart on its event."
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
+run: {role: reviewer, event: review, input: {range: main..HEAD, warn: apart}, ai: "cmd:sh $FIXTURES/agents/review-by-lens.sh"}
+expect:
+  status: block
+  findings: [{rule: engine-error, message: "pre exited with code 99"}]
+  agent-calls: 0

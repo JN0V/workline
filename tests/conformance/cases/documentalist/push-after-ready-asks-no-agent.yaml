@@ -1,0 +1,14 @@
+case: documentalist/push-after-ready-asks-no-agent
+about: "On a merge request, the documentalist's agent judges once, on the run at ready (ADR-0051): a push after it (`ready=`, as the templates pass it) asks no agent; the doc it made suspect is listed, never holding the merge."
+given:
+  repo: documented
+  setup:
+    - "git checkout -qb feature && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+  forge:
+    merge-requests: [{id: 1, labels: [], comments: []}]
+run: {role: documentalist, event: merge-request, input: {range: main..HEAD, draft: "false", ready: ""}, target: {merge-request: 1}, ai: "fake:doc-fixed"}
+expect:
+  status: pass
+  agent-calls: 0
+  findings: [{rule: suspect, where: docs/tech/auth.md}, {rule: judged-at-ready, message: "1 doc this change made suspect, listed"}]
+  no-findings: [{rule: patch-as-comment}]

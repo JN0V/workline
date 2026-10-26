@@ -1,5 +1,5 @@
 case: documentalist/judged-in-parts-partial-settled-by-another
-about: "A passage one part finds partial — its share does not settle it — and another part supports, quoting the source, is settled: no fix is asked of it. A part that cannot see the source deciding the passage must not lead the fix to rewrite what that source supports (workline #29)."
+about: "A passage one part finds partial — its share does not settle it — and another part supports, quoting the source, is settled: no fix is asked of it. A part that cannot see the source deciding the passage must not lead the fix to rewrite what that source supports (workline #29). That support quoting every word of the doc's one line stating something, `checked` moves (#482)."
 given:
   repo: documented
   setup:
@@ -7,9 +7,9 @@ given:
     - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C/\" docs/tech/auth.md && git commit -qam 'docs: confirm the auth doc'"
     - "seq 1 3000 | sed 's/^/const b/' > src/auth/big.go && git commit -qam 'refactor(auth): make the big table constant'"
   config: {roles: {documentalist: {settings: {judge-in-parts: true}}}}
-run: {role: documentalist, event: merge-request, ai: "fake:parts-partial-but-supported"}
+run: {role: documentalist, event: schedule, ai: "fake:parts-partial-but-supported"}
 expect:
   status: pass
   agent-calls: 2
-  findings: [{rule: suspect, where: docs/tech/auth.md, message: "judged in parts"}]
-  files: {"docs/tech/auth.md": {contains: "judged-in-parts:", lacks: "two hours"}}
+  no-findings: [{rule: suspect, where: docs/tech/auth.md}]
+  files: {"docs/tech/auth.md": {contains: "checked: 8d4fc13\njudged-in-parts: 8d4fc13\nverified: agent:documentalist\n", lacks: "two hours"}}

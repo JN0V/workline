@@ -1,0 +1,20 @@
+case: documentalist/checked-doubted-by-a-note-naming-its-doc
+about: "A note says what the agent could not confirm (policy.md), and names its doc in `doc`: that doc's move of `checked` is withheld (`checked-over-note`), `judged` set, the note's words said on it for a person, with no agent asked again (#449). Another doc of the same answer, which no note names, is vouched for."
+given:
+  repo: drifted
+  setup:
+    - "mkdir -p .workline && printf 'forge: local\\n' > .workline/config.yaml && git add .workline && git commit -qm 'chore: keep issues in the clone'"
+    - "sed -i 's/\"version\": \"1.4.1\"/\"version\": \"1.5.0\"/' Clock/library.json && sed -i 's/#define CLOCK_VERSION \"1.4.1\"/#define CLOCK_VERSION \"1.5.0\"/' Clock/include/Clock.h && sed -i 's|^// Events the clock publishes.$|// Events the clock publishes on the bus, by topic.|' Clock/include/ClockEvents.h && git commit -qam 'feat(clock): 1.5.0'"
+run: {role: documentalist, event: merge-request, ai: "fake:drifted-note-names-its-doc"}
+expect:
+  status: pass
+  agent-calls: 1
+  findings:
+    - {rule: checked-over-note, where: docs/clock/status.md, message: "names a file no source shows"}
+    - {rule: suspect, where: docs/clock/status.md, message: "not vouched for"}
+  no-findings:
+    - {rule: checked-over-note, where: docs/clock/events.md}
+  notes: ["docs/clock/status.md: The \"33 tests\" count"]
+  files:
+    docs/clock/status.md: {contains: "checked: f5a13e1\njudged: eb28bad\n"}
+    docs/clock/events.md: {contains: "checked: eb28bad\n", lacks: "judged:"}

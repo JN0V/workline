@@ -6,6 +6,7 @@ package forge
 import (
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -42,6 +43,72 @@ type Issue struct {
 	// sub-issues, GitLab's tasks), open or closed, as Issues gives them; a
 	// task list under "## Sub-issues" in its body says the rest (ADR-0029).
 	Children []int `json:"children,omitempty"`
+	// Fields are its values in the forge's single-select issue fields,
+	// by the field's name — GitHub's Priority and Effort (ADR-0040) —, as
+	// the token reads them: a value it may not see is absent.
+	Fields map[string]string `json:"fields,omitempty"`
+	// Weight is its GitLab weight, a whole number (Premium, Ultimate,
+	// ADR-0040); nil when it has none, or the forge keeps none.
+	Weight *int `json:"weight,omitempty"`
+}
+
+// Field is a single-select issue field of the forge (ADR-0040): its id,
+// name and options, as its owner arranged them, and whether its values
+// are public; GitHub's are an organisation's.
+type Field struct {
+	ID      int64    `json:"id"`
+	Name    string   `json:"name"`
+	Options []string `json:"options"`
+	Public  bool     `json:"public,omitempty"`
+}
+
+// Fields is what a forge says of its issue fields: each single-select
+// one; whether the repository is public; and, for a value visible to the
+// organisation's members only, whether this token reads it — Blind says
+// why not, "" when it does.
+type Fields struct {
+	List   []Field
+	Public bool
+	Blind  string
+}
+
+// IssueFields reads f's single-select issue fields; none, with no error,
+// on a forge or a repository that has none (a GitHub user's).
+func IssueFields(f any) (Fields, error) {
+	if l, ok := f.(interface{ issueFields() (Fields, error) }); ok {
+		return l.issueFields()
+	}
+	return Fields{}, nil
+}
+
+// SetField sets an issue's value in a single-select field, by the
+// option's name; a forge without fields answers an error.
+func SetField(f any, issue int, field Field, option string) error {
+	if s, ok := f.(interface {
+		setField(issue int, field Field, option string) error
+	}); ok {
+		return s.setField(issue, field, option)
+	}
+	return fmt.Errorf("this forge keeps no issue fields: %s not set on #%d", field.Name, issue)
+}
+
+// Weights says whether f keeps a weight on issues: GitLab Premium and
+// Ultimate do, their issues' payloads carrying a `weight` key, Free's
+// none (ADR-0040); false, with no error, on a forge that has none.
+func Weights(f any) (bool, error) {
+	if w, ok := f.(interface{ weights() (bool, error) }); ok {
+		return w.weights()
+	}
+	return false, nil
+}
+
+// SetWeight sets an issue's weight, read back: a forge that keeps none,
+// or does not keep the one sent, answers an error.
+func SetWeight(f any, issue, weight int) error {
+	if s, ok := f.(interface{ setWeight(issue, weight int) error }); ok {
+		return s.setWeight(issue, weight)
+	}
+	return fmt.Errorf("this forge keeps no weight: none set on #%d", issue)
 }
 
 // Milestone is an open milestone: its title, and its due date when it has
@@ -72,6 +139,16 @@ type Note struct {
 	// ID is the forge's own id of the comment, to put a reaction on it
 	// (React); "" when the forge does not say.
 	ID string `json:"id,omitempty"`
+	// App is the GitHub App that wrote it, by its id; "" when none did,
+	// or the forge does not say. Own is a forge command's word that
+	// workline's own account wrote it (docs/spec/forge-command.md): the
+	// other forges tell by its author (OwnAccount).
+	App string `json:"app,omitempty"`
+	Own bool   `json:"own,omitempty"`
+	// Editor is who last edited it, when not its author: a record read
+	// from it could hold what they wrote (ADR-0051, cut 5); "" when none
+	// did, or the forge does not say.
+	Editor string `json:"editor,omitempty"`
 }
 
 // LabelEvent is a label set on an issue, or taken off, with who did it
@@ -160,7 +237,8 @@ type Backlog interface {
 	// Comments lists the comments on t, oldest first.
 	Comments(t Target) ([]string, error)
 	// Notes lists the comments on t with their authors, oldest first, as
-	// Comments does.
+	// Comments does; with ErrAuthorsUnknown, they are read, none taken for
+	// a person of the project.
 	Notes(t Target) ([]Note, error)
 	// Close closes an issue: as a duplicate of dup when dup > 0, else as
 	// completed. Closing one already closed changes nothing.
@@ -213,6 +291,38 @@ type Backlog interface {
 func ScopedLabels(f any) bool {
 	s, ok := f.(interface{ scopedLabels() bool })
 	return ok && s.scopedLabels()
+}
+
+// ProjectLabels lists the names of f's labels — a project's, and those
+// its groups give it —, where ADR-0040's detection finds the families an
+// axis is kept in. A forge that does not list them answers the labels on
+// the open issues given.
+func ProjectLabels(f any, open []Issue) ([]string, error) {
+	if l, ok := f.(interface{ projectLabels() ([]string, error) }); ok {
+		return l.projectLabels()
+	}
+	var out []string
+	for _, is := range open {
+		for _, l := range is.Labels {
+			if !slices.Contains(out, l) {
+				out = append(out, l)
+			}
+		}
+	}
+	return out, nil
+}
+
+// EnsureRankedLabel creates a label as EnsureLabel does, ranked where the
+// forge ranks labels — GitLab's prioritized labels, its "Label priority"
+// sort listing rank 1 first (ADR-0040) —; unranked elsewhere, or for a
+// rank of 0. A label there already is left as it is.
+func EnsureRankedLabel(b Backlog, name, color, description string, rank int) error {
+	if r, ok := b.(interface {
+		ensureRanked(name, color, description string, rank int) error
+	}); ok && rank > 0 {
+		return r.ensureRanked(name, color, description, rank)
+	}
+	return b.EnsureLabel(name, color, description)
 }
 
 // LabelFilter is the address of f's open issues bearing label, a person's
@@ -285,6 +395,27 @@ type MergeRequest struct {
 	MergedAt string
 }
 
+// Squash is how a merge request lands on its base when the forge squashes
+// it (ADR-0051): its title, or its one commit's subject, becomes the
+// subject of a commit on the base, Suffix after it.
+type Squash struct {
+	On bool `json:"on"` // the forge's settings let it squash the merge request
+	// LoneCommit: with one commit, the squash takes that commit's subject,
+	// not the title (GitHub's "default to commit or pull request title").
+	LoneCommit bool   `json:"lone-commit,omitempty"`
+	Suffix     string `json:"suffix,omitempty"` // what the forge adds: GitHub's " (#N)"
+}
+
+// TitleMax is the longest title workline gives a merge request it opens:
+// a squash lands it on the base with the forge's " (#N)", within the
+// committer's 72, room left for a number of five digits (ADR-0051).
+const TitleMax = 72 - len(" (#12345)")
+
+// Squasher is a forge that says how it would squash a merge request.
+type Squasher interface {
+	Squash(id int) (Squash, error)
+}
+
 // Reaction is a reaction a person put on a comment: its emoji, as GitHub
 // names it (+1, -1; GitLab's thumbsup and thumbsdown read so), and who.
 type Reaction struct {
@@ -352,6 +483,14 @@ func (m MergeRequest) ByBot() bool {
 // ErrUnreachable marks a forge that did not answer: the run is blocked by
 // something outside the role.
 var ErrUnreachable = errors.New("forge unreachable")
+
+// ErrAuthorsUnknown marks comments read without knowing which authors are
+// of the project: on GitLab, a token that may not list the project's
+// members, as the job's own (#552). Notes returns the comments with it,
+// each author kept, a bot told by its name, none taken for a person of
+// the project. A caller that acts on a person's word fails on it, as
+// before; one that can do with a bot's reads them, and says so.
+var ErrAuthorsUnknown = errors.New("who is of the project could not be read")
 
 // Open returns the forge named by spec: "github", "gitlab", "local" (kept in
 // the clone), "cmd:<command>" (another forge, plugged by a command),

@@ -1,0 +1,6 @@
+# Every part finds nothing to say, each call saying it used 100 tokens: a
+# run capped by ai-max-tokens stops after so many parts.
+tokens-in: 90
+tokens-out: 10
+calls:
+  - []

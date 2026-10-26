@@ -4,7 +4,18 @@
   spec subject on a machine and on the forge (#128); the developer's loop
   to come (roles/reviewer/docs/status.md); amended 2026-10-12: where the
   project sets a merge policy, the person accepts and the forge merges
-  ([ADR-0042](0042-the-engine-merges-by-the-projects-policy.md))
+  ([ADR-0042](0042-the-engine-merges-by-the-projects-policy.md));
+  amended 2026-10-17: a change too large for one call read in parts
+  (#446); amended 2026-10-19: the lenses that warn read apart from the
+  verdict, no lens on a draft, and after ready only what is new, a
+  finding judged once
+  ([ADR-0050](0050-each-act-has-its-moment-and-a-wait-budget.md));
+  amended 2026-10-20: a block looked for on the side of the change it
+  was found on (#570); a lens that did not answer owes its commits,
+  and `read=all` waits for it (#588); amended 2026-10-21: the commits
+  left past five a push read on the other run's turn (#591); a nit on
+  no line, nothing asked of what warns
+  ([ADR-0051](0051-a-check-sits-where-its-catch-is-worth-its-cost.md))
 - **Date:** 2026-10-04
 - **Builds on:** ADR-0005 (a judge's independence), ADR-0009 (a question in
   parts), ADR-0011 (the review is on the merge request), ADR-0013 (what was
@@ -48,6 +59,10 @@ before the push; and on the merge request, a safety net.
    (the committer's own list), a comment block too long. They block, but the
    long block, which warns. While they block, no agent is asked: the author
    fixes them first.
+   *(Amended 2026-10-20: a rule is read at the level the project's
+   `enforce` sets before it holds anything; one set to `warn` is shown and
+   never holds the agent, one set to `off` is not said,
+   [#550](https://github.com/JN0V/workline/issues/550).)*
 2. **Finders.** Each lens — correctness, edge cases, tests — is a part of
    one question (ADR-0009), in a context of its own, answering `finding`s
    only: a new intention, `{severity, title, why, cause, symptom, fix}`,
@@ -577,6 +592,9 @@ merge-request line; on in workline's own repository.
   every lens (`every-lens-not-whole`): no full review on every push of a
   change too large for the budget. This replaces "a lens failing owes
   nothing" above.
+  *(Amended 2026-10-20: `read=all` is no longer written for a run that
+  did not read; the lenses that did not answer owe the change; see
+  Amendment, #588.)*
 - **An agent out of reach** writes no comment, so no mark: the next push
   asks every lens again, nothing spent in between.
 - **A draft forgets it**: a run on a draft drops `read=all`, so a merge
@@ -622,3 +640,235 @@ merge-request line; on in workline's own repository.
   job applies nothing between rounds, so each round would read the same
   issue. Also rejected: `findings-max` shared by the specs; each has its
   own comment.
+
+## Amendment (2026-10-17, #446: a change too large read in parts)
+
+- **What was wrong**: the caps are in lines (`diff-lines-max` 1500,
+  `code-lines-max` 600), the call's budget in tokens
+  ([#446](https://github.com/JN0V/workline/issues/446)). A change of
+  +858 −415 lines in 78 files gave one call of 130,196 characters, about
+  107.5k tokens; on the forge, one lens alone, 110.4k. Refused, it was
+  never reviewed: each push refused again, the verdict red. Past 1500
+  lines, a change was cut in silence, recorded as reviewed whole.
+- **What filled it**, offline, a recording agent: the hunks of the files
+  too long to give whole 74.5% (conformance cases 47k characters for 420
+  lines, Go 38k, fixtures 10k); the files given whole 20.6%; the
+  instruction, lenses, testimony, contract and policy 5%. Its 41 docs
+  were left by `ignore`: nothing ignored was there to leave out.
+- **In parts, as a doc too large is judged**
+  ([ADR-0009](0009-docs-far-behind-are-judged-in-parts.md)): only a
+  change past one call — the role's context budget, measured as the
+  engine measures a prompt, or `diff-lines-max`, now the lines of hunks
+  one call reads. Each part: the lenses, what the author says, the issue
+  closed, every file by name, then a share of the files in path order,
+  packed to fill the budget. A file larger than what is left is cut by
+  hunks or by lines, every line read once.
+- **Merged by the engine, no AI**: each part's findings found again in
+  the whole change, grouped by line and judged as one review's. A part
+  unanswered: the lenses failed on its files, the commits not recorded.
+- **`parts-max`** (2, from 1 to 8): past it, no lens is asked, no token
+  spent, and `review-not-whole` says how many parts it would take. Two
+  parts spend at most two budgets, 200k, leaving the judges a third of
+  `ai-max-tokens` (300k).
+- **The result**, the same change offline: two calls, about 94.0k and
+  23.7k tokens; one lens, 92.9k and 22.6k.
+- **The blind spot**, ADR-0009's: a defect seen only across two files in
+  different parts. Each part knows every file by name and is told not to
+  report missing what another part may hold; the judge reads the code it
+  needs ([ADR-0045](0045-the-judge-asks-for-the-code-it-needs.md)).
+- **Rejected**: leaving the conformance cases out (tests the tests lens
+  reads: a choice of what is reviewed, not of its size); cutting the
+  change at the budget (never reviewed whole, recorded as if it were); a
+  larger budget (the role's context, principle 3); `parts-max` drawn from
+  `ai-max-tokens` (estimating calls before making them, rejected in
+  #147's amendment). The diff-alone facet, off, stays one call.
+
+## Amendment (2026-10-19, ADR-0050: the lenses that warn, off the verdict's path)
+
+- **What was wrong**: on a merge request the head's verdict waited for
+  every lens a push took, and their judges, though a lens set to warn
+  (`ai-findings`, the default) can never block it
+  ([ADR-0050](0050-each-act-has-its-moment-and-a-wait-budget.md#2-an-act-over-its-budget),
+  step 3).
+- **Two runs, the same lenses**: a push still takes one lens in turn,
+  every lens once when ready. The verdict's run (`route --warn-apart`)
+  asks those that block and their judges; a run apart
+  (`route --warn-only`, role.yaml's `apart`) asks those that warn, beside
+  it, and posts once they answered. The rules block on the verdict's run
+  only; while they block, neither asks a lens.
+- **Each run its own comment and record**: the summary comment the
+  verdict's, a comment of their own the lenses that warn's. One comment
+  written by two applying jobs at once could lose a write; neither run
+  waits for the other nor loses what the other did not read. The first
+  run apart on a merge request reviewed before takes up its record.
+- **Never on the verdict**: the run apart writes none; its job fails on
+  the engine's own error only; a lens failing there is said in its
+  comment. A warn finding may post after the verdict, and after a merge
+  the policy made on it
+  ([ADR-0042](0042-the-engine-merges-by-the-projects-policy.md)).
+- **Unchanged**: a machine's `workline review`, every lens in one run; a
+  line not told either flag, as before.
+- **Rejected**: one comment with a region a run (a lost write, no
+  concurrency group holding both applying jobs without cancelling a
+  judge); each run its own turn (the lens that blocks every push: one
+  call more a push); the run apart after the verdict, in the default
+  branch's workflow (the agent's token beside the pull request's code,
+  with the base's cache in reach).
+
+## Amendment (2026-10-19, ADR-0050: no lens on a draft)
+
+- **What changed**: a draft got one lens a push, its judges too
+  ([ADR-0050](0050-each-act-has-its-moment-and-a-wait-budget.md#4-what-the-table-holds-to),
+  step 5). Told `draft=true`, the engine now gives every role of the
+  line no agent: the rules still run and block; no lens, no judge.
+- **Said plainly**: `ai-waits-for-ready`, a warning, says every lens
+  reads the whole change once it is marked ready. With no agent set, the
+  review still says it waits for a person (`not-reviewed`).
+- **Ready, once, as before**: `lenses=all`, or a merge request no draft
+  whose record does not say every lens read it.
+- **A draft again**: its run asks no lens and posts nothing new; the
+  last review stands. Only its record forgets `read=all`, the comment
+  otherwise kept, so ready again reads every lens once more, as the
+  #359 amendment has it.
+- **Nothing gets through**: a draft never merges
+  ([ADR-0042](0042-the-engine-merges-by-the-projects-policy.md)), and
+  the merge policy reads a draft's verdict as a review to come
+  (`waits`, GitHub's status pending), never a pass, until the run on
+  ready gives its own.
+- **Rejected**: one lens a draft push (its cost on every push); no
+  line on a draft (the rules and gates are the first result); a failed
+  status on a draft (a red check people learn to skip).
+
+## Amendment (2026-10-19, ADR-0050: after ready, only what is new)
+
+- **What was spent again**: after the run on ready, a push's lens read
+  only the commits not reviewed, but a finding read again — the run on
+  ready again, a review not whole read at the next push — had its judge
+  asked again, the same answer bought twice; and a push of many commits
+  was read whole by a lens that only warns
+  ([ADR-0050](0050-each-act-has-its-moment-and-a-wait-budget.md#4-what-the-table-holds-to),
+  step 6).
+- **A finding judged once** ([ADR-0013](0013-what-was-judged-is-not-asked-again.md)'s
+  rule, for the judges): its line in the comment keeps what it was judged
+  on — the patch id of the merge request's change to the cause's file,
+  and a key of the finding, its lens, quotes and symptom, the tests or
+  issues its judge reads. The same again: no judge asked, the verdict
+  kept and said; a yes keeps its independence, a no its reason. A
+  commit changing the cause's file again makes a new patch: judged
+  again. This replaces, for those, "a judge for each important finding".
+- **Five new commits a push for the lenses that warn**
+  (`commits-per-push`), after ready: those changing code counted, the
+  oldest first. The lens reads up to the fifth; those are recorded, the
+  rest left, said (`commits-left`), read first at the next push or when
+  the run runs again. The quotes are still found at the head.
+- **Never capped**: a lens that blocks, the run on ready, a machine's
+  review. What can hold the verdict is never left unread; a block stands
+  while the head still has its cause, as before.
+- **Rejected**:
+  - The newest five read, the older left: those would never be read,
+    the record holding every commit below the newest.
+  - A key on the whole change's patch id: any new commit would judge
+    every finding again, the case this saves.
+  - A key on everything the judge is shown: it names functions from the
+    finding's own words, which differ at each call; the same finding
+    would never match.
+  - A cap on a lens that blocks: a commit left unread could let a
+    blocking finding through (principle 12).
+
+## Amendment (2026-10-20, #570: a block looked for where it was found)
+
+- **What was wrong**: on [#568](https://github.com/JN0V/workline/pull/568),
+  correctness blocked on a line the change added, quoting a part it
+  shared with the line of `main` it replaced. A commit rewrote the added
+  line; the block still stood, its quote found on `main`'s line, which
+  the change removes. Only a whole review, draft then ready, lifted it
+  ([#570](https://github.com/JN0V/workline/issues/570)).
+- **The side is recorded**: each block keeps where its cause was found,
+  the head's lines (added, kept beside a removal, a removal's reach) or a
+  line the change removed (`side` in `workline:blocks`).
+- **Looked for on that side alone**: a block found at the head stands
+  while the head still holds its quote there; one found on a removed
+  line, while the change still removes it. A lens's new finding is
+  still found on either side, in the order of the #224 amendment.
+- **A block recorded before** has no side: looked for on both, as
+  before. It may still stand past its fix, until a whole review; never
+  dropped unread (principle 12).
+- **Rejected**:
+  - Never a removed line for a block: a removal's own defect, a guard
+    taken away, would go at the next push with the removal still there.
+  - Guessing an older block's side from the commit it was found at: that
+    commit may be gone after a force-push, and a wrong guess drops a
+    block in silence.
+
+## Amendment (2026-10-20, #588: a lens that did not answer owes its commits)
+
+- **What was wrong**: on [#582](https://github.com/JN0V/workline/pull/582),
+  the lenses that warn failed to answer on the run on ready, then on its
+  retry. The #359 amendment wrote `read=all` all the same. The run run
+  again fell on correctness's turn, which blocks: the run apart asked
+  nobody, recorded the 4 commits and their patch ids, and said "No
+  finding on the commits reviewed"
+  ([#588](https://github.com/JN0V/workline/issues/588)).
+- **A lens that did not answer owes its commits**: the record names it
+  (`failed=`) and holds none of them. The next run of its side, a push
+  or the same run again, asks it first, whosever turn it is. No run
+  records those commits before it reads them, so no patch id of theirs
+  either: a patch is judged once only when it was truly read.
+- **`read=all` is written only when every lens answered**: past the run
+  on ready's retry, the lenses that did not answer are asked alone, on
+  the whole change, until they do; the others are not asked again.
+- **Cost**: the lenses that did not answer, together in one call by
+  default, each push until they answer; as a lens failing on an
+  ordinary push is asked again. A change too large for one call is read
+  in parts, or not asked at all past `parts-max`
+  ([#446 amendment](#amendment-2026-10-17-446-a-change-too-large-read-in-parts)).
+- **A draft forgets it**, as `read=all`: ready again reads every lens.
+- **Rejected**: one lens a push after the retry, as before (the turn
+  passes to the other run's lens, which records what no lens of this
+  side read); asking every lens again at each push (those that answered
+  read the change already).
+
+## Amendment (2026-10-21, #591: commits left past five a push are read)
+
+- **What was wrong**: the run apart, on claims's turn, read five of seven
+  new commits and left two, said. Run again, the turn was correctness,
+  which blocks: the run apart asked nobody, recorded the two, and said
+  "No finding on the commits reviewed". No lens that warns read them
+  ([#591](https://github.com/JN0V/workline/issues/591)).
+- **The record names the lenses that left them** (`left-by=`). When the
+  next run apart has no lens of its own in turn, it asks those lenses,
+  on the commits the record does not hold, instead of recording them.
+- **Otherwise unchanged**: on a turn of a lens that warns, the lens in
+  turn reads them, as before; a run that records commits names nobody
+  again, unless it leaves some too. A draft forgets the mark, as
+  `read=all`.
+- **Rejected**:
+  - The next lens that warns in turn: the turn is counted by runs, so
+    that lens would be asked again at the next push.
+  - Asking the lenses that left them first at every push, as `failed=`
+    does: the lens in turn would lose its push for commits it can read.
+
+## Amendment (2026-10-21, ADR-0051 cut 4: no fix round for nits)
+
+[ADR-0051](0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-4-no-fix-round-for-nits):
+619 nits shown in four weeks cost 93 rounds, about half acted on.
+
+- **What asked a round**: every finding, nits too, was a comment on its
+  line, and the summary comment said "reply to each, or resolve it,
+  there". Each nit was a conversation to answer, new ones on each push
+  a lens read; under the forge's "conversations resolved" rule, each held
+  the merge.
+- **A nit is on no line** now: the summary comment lists it last, under
+  **Nits**, "for information: no reply, no fix asked". One beside an
+  important finding on its line is named in that finding's row.
+- **Nothing is asked of what warns**: the summary says what blocks stands
+  until a commit fixes it, and what warns asks nothing. An important
+  finding stays on its line, whatever its lens.
+- **Unchanged**: what blocks (`ai-findings`), the judge, a block standing
+  until a commit answers it, the lenses a push reads.
+- **A team wanting important findings to hold the merge** turns on the
+  forge's own rule: GitHub's "Require conversation resolution before
+  merging", GitLab's "All threads must be resolved".
+- **Rejected**: the tests and intent lenses' important findings off
+  their lines too. ADR-0051 keeps important findings as conversations a
+  team may make hold; a lens set per project would need a setting.

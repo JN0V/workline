@@ -30,6 +30,52 @@ func TestChecks(t *testing.T) {
 	}
 }
 
+// TestLinesMax: lines-max counts what the engine's doc-lines budget counts,
+// the body below the header (#454).
+func TestLinesMax(t *testing.T) {
+	r := &run{repo: t.TempDir()}
+	doc := func(body int) {
+		text := "---\nsources: [internal/x.go]\nchecked: abc1234\n---\n" + strings.Repeat("A line.\n", body)
+		if err := os.MkdirAll(filepath.Join(r.repo, "docs"), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(r.repo, "docs", "x.md"), []byte(text), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	max := map[string]any{"docs/x.md": 200}
+	doc(199)
+	if why := check("lines-max", max, &caseFile{}, r); why != "" {
+		t.Errorf("4 header lines and 199 below them are within 200: %s", why)
+	}
+	doc(201)
+	if why := check("lines-max", max, &caseFile{}, r); !strings.Contains(why, "201 lines") {
+		t.Errorf("201 lines below the header are over 200, and said: %q", why)
+	}
+}
+
+// TestBodyUnchanged: a `checked` moved in a README's `<!-- workline` header
+// is no rewording, as in a frontmatter.
+func TestBodyUnchanged(t *testing.T) {
+	r := &run{repo: t.TempDir(), before: map[string]string{}}
+	for _, head := range []string{"---\nchecked: %s\n---\n", "<!-- workline\nchecked: %s\n-->\n"} {
+		r.before["README.md"] = fmt.Sprintf(head, "abc1234") + "# Title\n\nSame words.\n"
+		now := fmt.Sprintf(head, "def5678") + "# Title\n\nSame words.\n"
+		if err := os.WriteFile(filepath.Join(r.repo, "README.md"), []byte(now), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		if why := check("body-unchanged", "README.md", &caseFile{}, r); why != "" {
+			t.Errorf("%q: %s", head, why)
+		}
+		if err := os.WriteFile(filepath.Join(r.repo, "README.md"), []byte(now+"More.\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		if why := check("body-unchanged", "README.md", &caseFile{}, r); why == "" {
+			t.Errorf("%q: a line added is a rewording", head)
+		}
+	}
+}
+
 func TestAnsweredBy(t *testing.T) {
 	m, e, in, out, c := answeredBy([]call{{"low", "claude-haiku-4-5", 1000, 50, 0.01, "part", "1-lenses"}, {"low", "claude-sonnet-5", 2000, 70, 0.02, "judge", "judge/01"}})
 	if m != "claude-haiku-4-5>claude-sonnet-5" || e != "low" || in != "3000" || out != "120" || c != "0.0300" {
@@ -128,8 +174,9 @@ func TestDriftedCasesGradeBoth(t *testing.T) {
 // TestDriftedWithFakeAgents plays the `drifted` cases with fake agents that
 // change headers only (testdata/drifted-agent.sh): one vouching for every
 // doc must lose the falsehood checks; one recording `judged` on every doc
-// keeps them and loses the control; a careful one keeps both. No real
-// agent, no tokens.
+// keeps them and loses the control; a careful one keeps both, and so does
+// one that also opens an issue for the stale code comment, as the role's
+// rules ask (#439). No real agent, no tokens.
 func TestDriftedWithFakeAgents(t *testing.T) {
 	agent, _ := filepath.Abs("testdata/drifted-agent.sh")
 	lost := func(failed []string, kind string) bool {
@@ -146,7 +193,7 @@ func TestDriftedWithFakeAgents(t *testing.T) {
 			continue
 		}
 		n++
-		for _, mode := range []string{"vouches", "judges", "careful"} {
+		for _, mode := range []string{"vouches", "judges", "careful", "reports"} {
 			t.Run(c.Case+"/"+mode, func(t *testing.T) {
 				r, err := play(t, c, "cmd:sh "+agent+" "+mode)
 				if err != nil {
@@ -157,6 +204,9 @@ func TestDriftedWithFakeAgents(t *testing.T) {
 				}
 				passed, failed, _ := grade(c, r)
 				t.Logf("%d/%d; lost: %s", passed, passed+len(failed), strings.Join(failed, "; "))
+				if mode == "reports" && !slices.Contains(r.res.Applied, "issue") {
+					t.Errorf("%s: the issue was not opened: applied %v, findings %+v", f, r.res.Applied, r.res.Findings)
+				}
 				for kind, want := range map[string]bool{
 					"status":            false,
 					"never-confirms":    mode == "vouches",

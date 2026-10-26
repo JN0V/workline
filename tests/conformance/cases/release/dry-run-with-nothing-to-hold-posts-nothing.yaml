@@ -1,0 +1,18 @@
+case: release/dry-run-with-nothing-to-hold-posts-nothing
+about: "A release's dry run with nothing to hold the release lists nothing, and posts nothing: no issue is opened for it (ADR-0050)."
+given:
+  repo: documented
+  setup:
+    - "git tag v1.0.0"
+    - "echo 'tmp/' > .gitignore && git add .gitignore && git commit -qm 'chore: ignore tmp'"
+  forge: {issues: [], merge-requests: []}
+run: {route: release, args: [--dry-run], dry-run-posted: true}
+expect:
+  status: pass
+  agent-calls: 0
+  summary: "nothing would hold the release if it were cut now"
+  findings:
+    - {rule: release-dry-run, message: "nothing would hold the release: no issue opened"}
+  forge:
+    issues:
+      - {id: 1, absent: true}

@@ -1,0 +1,23 @@
+case: product-owner/field-hidden-never-proposed
+about: "A proposal shows its value on the issue and in its state: a value visible to organization members only, on a public repository, is never proposed — dropped, said, nothing on the issue (ADR-0040, step 4)."
+given:
+  repo: backlog
+  config:
+    roles:
+      product-owner:
+        settings: {moved-percent-max: 100, priority: auto, acts: {order: {mode: propose}}}
+  forge:
+    public: true
+    issue-fields:
+      - {id: 47714576, name: Priority, options: [Urgent, High, Medium, Low]}
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.\n\n## Scope\n\nsrc/export/csv.go", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:order-effort}
+expect:
+  findings:
+    - {rule: priority-hidden, where: "#9", message: "proposing it would show on the issue a value visible to organization members only"}
+  no-findings:
+    - {rule: proposed, where: "#9"}
+  forge:
+    issues:
+      - {id: 9, labels: [], fields: {}, comment-lacks: ["Urgent", "priority:", "Proposes"]}

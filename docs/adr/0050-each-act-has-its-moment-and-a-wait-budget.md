@@ -1,0 +1,217 @@
+# ADR-0050: Each act has its moment, and each moment a wait budget
+
+- **Status:** accepted; steps 1 to 11 built, 12 and 13 to come ([the build plan](#build-plan)); the release's docs at night (§7) removed on 2026-10-21 ([ADR-0051](0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-1-the-release-weekly))
+- **Date:** 2026-10-19
+- **Decided by:** the maintainer, on 2026-10-19: a panel's direction,
+  validated in broad lines, corrected: first the time a developer waits
+  at each moment, as a slow hook or pipeline makes a developer skip
+  everything (`--no-verify`, a red check ignored); tokens second. The
+  same day, the two choices left open ([§7](#7-decided-by-the-maintainer-on-2026-10-19)),
+  and later that day the second changed: the rewrite at a commit on by
+  default, capped at 30 s ([§7](#7-decided-by-the-maintainer-on-2026-10-19)).
+- **Builds on:** [ADR-0010], [ADR-0011] (the review is on the merge
+  request), [ADR-0013] (what was judged is not asked again),
+  [ADR-0017], [ADR-0020], [ADR-0042] (the engine merges on the head's
+  verdict), [ADR-0044], [ADR-0049]; principles 4, 5, 6, 7, 9, 12, 13, 14
+- **To amend once built:** [ADR-0020]: no lens on a draft; the lenses
+  that warn post off the verdict's path; after ready, only what is new
+  (all amended, steps 5, 3 and 6)
+- **Research:** [moments.md](../research/moments.md)
+- **Amended by:** [ADR-0051](0051-a-check-sits-where-its-catch-is-worth-its-cost.md) (2026-10-21): each check sits where its catch is worth its cost; judged docs never hold the release
+- **Settles:** where SonarQube's read runs ([#203])
+
+## Context
+
+Measured on 2026-10-19 ([moments.md](../research/moments.md)):
+
+- **Hooks block the terminal**: a commit 0.9 s, nearly all of it two
+  gitleaks scans; a push 6 s, 5 of them the documentalist's
+  whole-repository checks. `--no-verify` skips both in 0.03 s. An agent
+  rewriting a refused message: 12 to 20 s, once 78.5 s.
+- **The head's verdict on GitHub**: 101 s median, 154 s p90, over 70
+  pushes. About 40 s builds the engine, twice; the line, its roles and
+  their AI, 22 s median, 133 s at most. Queues: 1 to 3 s a job.
+- **Others**: about 10 minutes for a build's feedback (DORA, Fowler);
+  under a second for an analysis in the editor (Google); a day for a
+  person's review. AI reviewers post comments; a status they set fails
+  on little or nothing by default.
+- **Every hook can be skipped**, and is not installed everywhere.
+
+## Decision
+
+### 1. A wait budget per moment
+
+| Moment | Who waits | Budget, p90 | Today |
+|---|---|---|---|
+| Commit | the developer, in the terminal | 1 s; 30 s when the agent rewrites a refused message (§7) | 0.9 s; 12–78.5 s with the rewrite |
+| Push (opt-in) | the developer, in the terminal | 5 s, no agent | 6 s |
+| First result on a merge request's push | the author | 1 min | 6–12 s; 34 s with a real linter |
+| The head's verdict, `workline/verdict` | the author, the merge policy | 3 min | 154 s |
+| The ready review, every lens | a colleague | 10 min, posted when done | 158 s; 338 s the heaviest |
+| A merge queue's or train's run | the queue | workline adds 1 min at most | not used |
+| The release pull request's verdict | the person releasing | 3 min | 1.6–2.2 min |
+| Main after a merge, the night, the release | nobody | none; tokens capped as today | 5–15 min |
+
+- **Why**: the hooks near an editor's; the verdict well inside the
+  ecosystem's 10 minutes, workline being one part of a project's CI;
+  the ready review a build's 10 minutes, a colleague's taking hours.
+- **A budget is a check, never a block** (principle 7): each step's
+  seconds go in the run's summary; a moment over its budget says so,
+  naming the step (principles 12, 14). A project may set its own.
+
+### 2. An act over its budget
+
+Never silently dropped. In this order:
+
+1. **Cut its setup**: the engine fetched or built once a run, shared by
+   the jobs; tools cached, pinned.
+2. **What only warns runs apart**, posted when done, never on the
+   verdict's path: the lenses that warn, the inspector's triage. They
+   judge with no write token; a job holding it and no AI key posts
+   (principle 6, [ADR-0044]).
+3. **What blocks stays on the path, in parallel**: blocking acts in
+   jobs side by side. Still over: the verdict stays pending, saying
+   what it waits for; the act's cap ends it as a `check-error`, never a
+   pass (principle 12).
+4. **What is about the repository, not the change, moves** to main
+   after the merge, or to the night: a warning, then an issue.
+5. **What a hook cannot do in its budget moves to the merge request**,
+   which runs it anyway. A hook calls an agent only for a refused
+   message, the rewrite at a commit, capped at 30 s (§7).
+
+### 3. The moment table
+
+**B**: its check fails, the merge waits. **W**: said, never holding the
+verdict; *async*: posted by a job of its own. —: not run.
+
+| Act | Draft | Ready, once | Each push after | Queue or train | Main after merge | Night | Release pull request | Release |
+|---|---|---|---|---|---|---|---|---|
+| Committer: rules, gitleaks, on the range | B | B | B | — | — | — | B | — |
+| Gates: the project's tools, new findings | B | B | B | B, merged result | W, whole report, an issue; the next base | — | B | — |
+| Documentalist, no AI: docs the change made suspect | W | B | B | — | W, whole-repository budgets, an issue | — | B | — |
+| Documentalist's AI on the docs due | — | B | B, new ones | — | — | W, capped; the release pull request's too (§7) | — | — |
+| Reviewer, a lens the project blocks on | — | B | B, new commits | — | — | — | — | — |
+| Reviewer, lenses that warn | — | W async, every lens | W async, new commits, 5 a push | — | — | W, specs | — | — |
+| Inspector's triage | — | W async | W async, new findings | — | — | — | — | — |
+| SonarQube read (§5) | — | B | B | — | W, an issue | — | B | — |
+| Product owner, release dry run, auditor | — | — | — | — | — | W | — | — |
+
+### 4. What the table holds to
+
+- **The verdict's path holds only what blocks**: committer, gates, the
+  documentalist, a blocking lens, SonarQube where it blocks.
+- **A draft gets no AI**: rules and gates only.
+- **Ready runs the one full review**; after it, AI reads only what is
+  new, and a finding is judged once ([ADR-0013], by patch id).
+- **A queue's or train's run**: gates, never AI; it posts the statuses
+  the forge requires for the group's commit. A check skipped says so.
+- **The release** re-reads the verdicts given; no role runs at the tag.
+  With no release pull request, `release` runs before the tag
+  ([ADR-0017]); on GitLab, where a tag's pipeline publishes it, before
+  its publishing jobs, with no agent (step 10).
+- **Gates at the release only are refused**: old debt would block it,
+  findings come in a batch, who made them is lost, the last tag is a
+  fragile base.
+
+### 5. SonarQube's read ([#203])
+
+workline reads SonarQube's quality gate and issues through its Web API;
+the team's own pipeline scans. No tokens.
+
+| Edition | Merge request | Main after merge | Release pull request |
+|---|---|---|---|
+| Server Developer and up; Cloud's paid plans | B, from ready on: ERROR, or no analysis of the head | W, an issue | B |
+| Community Build; Cloud's Free plan | —: no merge request analysed | W, an issue | B, on its base |
+
+- **The exact commit**: an analysis of the head, or of the release pull
+  request's base; never the last one found. Else the read waits.
+- **The wait's own budget**: polled, 5 minutes at most, SonarQube's own
+  `sonar.qualitygate.timeout` default, in a job beside the others, so
+  the first result is never held. Past it, a `check-error`; the next
+  run reads again. Where the forge says Sonar is done (its own check),
+  that event replaces polling, a later step.
+- **New code**: the "previous version" period, `sonar.projectVersion`
+  set by the release tool; doctor checks it.
+- **Not said twice**: Sonar's comments are not posted again; the
+  reviewer and the inspector are told what Sonar covers.
+
+### 6. Defaults, a project's moments, doctor, the safety nets
+
+- **The tables are the shipped default** (`routing.default.yaml`, the
+  templates). A project moves an act in `routing:`, as today; the line
+  gains the events it lacks: a draft, a queue's group, main after a
+  merge.
+- **doctor flags a choice that defeats a guard**: the committer in
+  hooks only; gates at the release only; an agent in a hook's line; a
+  merge queue with no `merge_group` trigger; no new-code version
+  bumped for SonarQube; a budget above 10 minutes.
+- **Kept despite the duplication**: the committer on the merge
+  request's range (hooks are opt-in, `--no-verify` skips them, web
+  edits and agents never run them); the suspect-docs count at the push
+  and on the merge request; gates on each main commit, the next base
+  and a check on two green merge requests breaking together; the
+  release pull request's count of docs due at each main move.
+- **Removed**: a patch judged twice; the engine built in every job; the
+  release pull request's AI at each main move, now at night; the
+  whole-repository findings at each push; a hook's agent with no cap
+  on its wait.
+
+### 7. Decided by the maintainer on 2026-10-19
+
+- **The release pull request's documentalist AI runs at night only**,
+  with the gardening. At each move of main, only the no-AI count of
+  docs due stays, and holds the release. Refused: once a person accepts
+  it, the panel's, since a doc fix would then change the head after the
+  person's yes ([ADR-0042]). "At night" is every night: where the
+  gardening is weekly, as the templates' is, a nightly run of the
+  release's docs alone fills the other nights (the maintainer,
+  2026-10-19).
+- **The agent's rewrite at a commit is on by default, capped at 30 s**
+  (changed the same day, below). The hook says so before it starts;
+  past 30 s it refuses with the reasons, the message kept for the
+  person (principle 5). `rewrite: false`, a project's or a person's,
+  turns it off: the hook then refuses in about 1 s with the reasons.
+  `ai: none` means no agent at all.
+  - **First decided: opt-in** (2026-10-19, morning), off unless a
+    setting turned it on, since the one real hook measured took 78.5 s.
+  - **Changed** (2026-10-19, afternoon), on the measure of a firmware
+    library's 300 latest commits ([#528](https://github.com/JN0V/workline/pull/528)):
+    with no rewrite, 106 of them, 35 %, would be refused, each for a
+    person to fix by hand. A bounded wait, only on a bad message, is
+    preferred to that rate; the 30 s cap keeps it within the commit's
+    budget for a rewrite (§1).
+
+## Build plan
+
+By the wait removed each time, then tokens:
+
+1. The engine once a run, shared by the jobs: ~40 s of the verdict's 101 s, every push. Built ([#527](https://github.com/JN0V/workline/pull/527)), once a commit, in [workline's own workflows](../ci-github.md#worklines-own-workflows); the templates fetch a release.
+2. Commit: the agent's rewrite capped at 30 s (§7; first planned opt-in); one gitleaks scan: 12–78.5 s down to at most 30 s on a refused message, about 1 s with the rewrite off; ~0.4 s every commit. Built ([#528](https://github.com/JN0V/workline/pull/528)): the committer's `rewrite`, on by default, and `ai-max-seconds`, 30, which the engine holds for every call of a run ([the role contract](../spec/role-contract.md)); a project or a person turns the rewrite off for themselves, and a project's `ai: none` keeps every agent away. The two scans run side by side rather than as one: gitleaks reads a message on its standard input, where its rules on file paths cannot apply. Measured: 0.52–0.58 s a commit, refused or not, from 0.92–1.03 s.
+3. Lenses and triage that warn, off the verdict's path: their AI time, within the line's 22 s median, 133 s at most. Built ([#532](https://github.com/JN0V/workline/pull/532)) for the reviewer's lenses ([apart](../../roles/reviewer/docs/apart.md), [ADR-0020, amended](0020-the-reviewer-finds-the-engine-verifies-the-person-merges.md#amendment-2026-10-19-adr-0050-the-lenses-that-warn-off-the-verdicts-path)); the inspector's triage went the same way ([#574](https://github.com/JN0V/workline/pull/574), [ADR-0049's step 4](0049-the-inspector-judges-the-new-findings-of-the-projects-tools.md#build-plan)). The verdict's run asks the lenses that block, a run of its own beside it those that warn, each its own comment and record; the lenses a push takes stay the same. Measured on workline, correctness blocking, before on 15 runs of 4 pull requests the same day: the verdict 91–180 s, median 109 s, the line 6–68 s. After, on its own pull request: a push whose turn is a lens that warns, the verdict 80 and 86 s, the line 10–11 s, no agent on its path; the run on ready, the verdict 134 s, correctness alone on its path (64 s), the three lenses that warn and their four judges beside it (101 s, about 216k tokens).
+4. Push in 5 s: only the docs the range made suspect, whole-repository checks on main: ~5 s every push. Built ([#531](https://github.com/JN0V/workline/pull/531)): at a push, the documentalist reads only the docs its commits touched, by a source or themselves, with their budgets and links; no duplicates. The rest stays with the merge request and gardening until step 9. Measured: 0.8–2.4 s from 5.0–8.9 s, 1 commit or 16, here and on a firmware library.
+5. No AI on a draft: the AI's time on each draft push. Built ([#533](https://github.com/JN0V/workline/pull/533)): given `draft=true`, the engine gives every role no agent; the rules and gates run, the docs made suspect are counted, and the summary says the AI review waits for ready ([the reviewer on a draft](../../roles/reviewer/docs/ready.md), [ADR-0020, amended](0020-the-reviewer-finds-the-engine-verifies-the-person-merges.md#amendment-2026-10-19-adr-0050-no-lens-on-a-draft)). The head's verdict is a review to come (`waits`), GitHub's status pending, never a pass; a draft again keeps its last review. The templates install no agent on a draft.
+6. After ready, AI on what is new; a patch judged once; 5 commits a push: the judges' time (#500: ten). Built ([#534](https://github.com/JN0V/workline/pull/534)): after the run on ready, a push's lenses read only the commits no review read, by patch id, so a rebase or a merge of the base reads nothing again. The lenses that warn read five new commits changing code a push, the oldest first; the rest are said and read first at the next push (`commits-per-push`). A lens that blocks reads every one ([after ready](../../roles/reviewer/docs/ready.md#after-ready-only-what-is-new)). A finding judged once keeps its verdict while the merge request's change to its cause's file is the same patch ([judged once](../../roles/reviewer/docs/once.md), [ADR-0020, amended](0020-the-reviewer-finds-the-engine-verifies-the-person-merges.md#amendment-2026-10-19-adr-0050-after-ready-only-what-is-new)). Measured on its own pull request: the run on ready, the verdict 136 s, correctness alone on its path (1 call, 31.7k tokens in), the lenses that warn beside it (2 calls, 64.4k in), no judge; three commits pushed after it, the verdict 87 s, no agent on its path, the lens that warns 1 call, 8.1k in; main merged in, the verdict 100 s, no lens asked. Not seen live: a verdict kept, and a push past five commits, both shown by conformance cases.
+7. The release pull request's AI at night only (§7): its part of 1.6–2.2 min; ~0.8M tokens a week here. Built ([#535](https://github.com/JN0V/workline/pull/535)): on each move of a release tool's pull request, the documentalist asks no agent; its docs due hold it, said with how to have them sooner (`ai-waits-for-night`), the head's verdict held, never red. Gardening judges them first, on that pull request's head, their fix in `workline/documentalist/release`, and leaves the docs that fix holds; `route release --target merge-request:<n>` does it by hand, and the templates every night but the gardening's (`--target merge-request:release`; none due, no agent) (removed since: [ADR-0051](0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-1-the-release-weekly)). Measured on workline's 73 release pull request runs of 2026-10-14 to 19: 20 asked the agent, 6–15 s and about 7.3k tokens each (146k in all), their judging job 108 s on average against 91 s for the 53 that asked none; now none asks. What stays is the documentalist's work with no agent, about 50 s of each run's line here: a later step's.
+8. A merge queue's or train's run: gates only: the queue's turn. Built ([#539](https://github.com/JN0V/workline/pull/539)): given `queue=true`, the line runs its gates alone on the merged result, names the steps it left to the head's verdict, and writes no verdict ([a merge queue or train](../merge-queue.md)). On GitHub, `merge_group` runs `gates` and `judge`, the check the queue requires; with the merge policy, the App sets `workline/accepted` on the group's commit as the head of the pull request it ends with holds it. On GitLab, a merge train's pipeline runs `workline:gates` alone; a merged results pipeline stays the merge request's own, every job in it. Measured on an organisation's sandbox, two pull requests each green alone, red together: each group's run 24–25 s, the gates 8 s; the second group blocked, its pull request out of the queue. Not tried: GitLab's merge trains (Premium), the App's job (the yes set from a clone instead).
+9. Main after a merge: whole-repository findings once, an issue; gates kept as the base: no wait, less noise. Built ([#544](https://github.com/JN0V/workline/pull/544)): on each push to the default branch, `route main` runs the merge request's gates, then the documentalist over the whole repository, no agent; red only for what the push adds that the gates count, holding nothing; what it found kept in one issue, edited only when what it lists changes ([main after a merge](../main-after-merge.md)). The merge request's documentalist reads only the docs its commits touched, as the push. Every finding of the gates is kept by the commit where main alone writes it, Actions' cache on GitHub, main's pipeline artifacts on GitLab (never a cache a branch's pipeline could write, which could make a new finding look old); a merge request based on it reads them as its merge base's, when kept with the same command, config and tool, else the rerun stays. Measured on a copy of workline, golangci-lint 2.15.0 over 388 findings of debt, one planted: the gates' job 0.6–1.8 s with the base kept, 6.5–6.6 s run again there; the whole repository's checks on workline, 3.6 s. Live on both sandboxes: the issue opened on a merge leaving a dead link the merge request did not read, left as it was on the next, edited when two pull requests green alone broke main together; a merge request from an unprotected branch read its base from main's artifacts on GitLab.
+10. The night: a release dry run; a release job on GitLab: no wait. Built ([#554](https://github.com/JN0V/workline/pull/554)): each night, with the gardening or the release docs, `route release --dry-run` runs the `release` line on the release tool's merge request's head, else the branch's tip, every step, no agent, nothing applied; what would hold the release is said as warnings, in one comment on that merge request, else in a part of main's issue, edited only when what it lists changes ([the release](../release.md)). On GitLab, `workline:release` on a tag pipeline runs the release's line with no agent nor token, red when it holds the release, the project's publishing jobs needing it; a tag's own release is never the last one. Measured on a copy of workline, no agent: 48.5 s on main's tip, 54.9 s on the release pull request's head, nothing held; a source planted since v0.37.0, 54.3 s, 9 docs listed. On GitLab's sandbox, the engine built in each job for the try (about 35 s of it): the night's line 0.4 s, its job 52–56 s; at a tag, the line under a second, held by a gate and the publishing job skipped, then passed and published.
+11. Each step's seconds in the summary, a moment over its budget said: no wait, it measures the rest. Built ([#538](https://github.com/JN0V/workline/pull/538)): a line's result and summary say each step's seconds, the agents' share of them (the reviewer's lenses, the committer's rewrite, the judges), the line's, and its moment: §1's budgets, shipped in `routing.default.yaml`, a project's own in `routing.budgets`. Over its budget, one line names the step that took the most, never a block; the hooks say it in the terminal ([routing](../spec/routing.md#each-steps-seconds-a-moments-budget)). Measured on its own pull request, opened ready: the verdict's line 30 s (committer 0.6 s, documentalist 8.1 s, reviewer 22 s, its lens 21 s), the verdict 96 s after the push; the run apart 51 s (lenses 27 s, judges 21 s). On a copy of this repository, the machine loaded by other work (load average 13 to 30 on 8 cores): a commit 2.1 to 5.3 s, over its 1 s, said, the committer named; a rewrite by a scripted agent taking 3 s, 8.1 to 13 s in all, within its 30 s; a push of 2 commits 3.6 s, within its 5 s, and 9.4 s, over, the committer 7.1 s of it. The queue's run has its minute too (`queue`).
+12. SonarQube's read at these moments ([#203]): adds a wait, capped at 5 minutes, beside the first result.
+13. doctor's checks of §6: no wait.
+
+## Consequences
+
+- A developer waits seconds in the terminal, minutes on the merge
+  request; what takes longer comes as a comment. The verdict
+  ([ADR-0042]) holds what blocks, nothing that only warns.
+- Hooks stay a convenience; the merge request stays the check ([ADR-0011]).
+
+[#203]: https://github.com/JN0V/workline/issues/203
+[ADR-0010]: 0010-docs-judged-on-the-merge-request-and-by-gardening.md
+[ADR-0011]: 0011-the-review-is-on-the-merge-request-not-the-push.md
+[ADR-0013]: 0013-what-was-judged-is-not-asked-again.md
+[ADR-0017]: 0017-the-release-manager.md
+[ADR-0020]: 0020-the-reviewer-finds-the-engine-verifies-the-person-merges.md
+[ADR-0042]: 0042-the-engine-merges-by-the-projects-policy.md
+[ADR-0044]: 0044-the-apps-key-stays-with-the-default-branchs-runs.md
+[ADR-0049]: 0049-the-inspector-judges-the-new-findings-of-the-projects-tools.md

@@ -1,0 +1,12 @@
+case: committer/squash-takes-the-lone-commit-subject
+about: "Where the forge gives a lone commit's subject to the squash (GitHub's \"default to commit or pull request title\"), a merge request of one commit lands that subject: checked with the room, whatever the title (ADR-0051)."
+given:
+  repo: basic
+  setup: ["git tag base && echo a >> main.go && git commit -qam 'feat(committer): check the title a squash lands, room left for its tag'"]
+  forge:
+    squash: {on: true, lone-commit: true, suffix: " (#{n})"}
+    merge-requests: [{id: 5, title: "feat: add a greeting", labels: [], comments: []}]
+run: {role: committer, event: merge-request, input: {range: "base..HEAD"}, target: {merge-request: 5}}
+expect:
+  status: block
+  findings: [{rule: subject-length, where: "the squash takes the one commit's subject"}]

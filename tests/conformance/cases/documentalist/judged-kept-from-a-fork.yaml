@@ -1,0 +1,16 @@
+case: documentalist/judged-kept-from-a-fork
+about: "A merge request from a fork, which this job cannot push to, keeps its record too: a doc found with nothing to fix gets no patch in a comment, only its record in the documentalist's."
+given:
+  repo: documented
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb feature && printf '\\n// TokenTTL is in seconds.\\n' >> src/auth/token.go && git commit -qam 'docs(auth): say the unit of the lifetime' && git checkout -q --detach"
+  forge: {merge-requests: [{id: 1, branch: feature, fork: true, labels: [], comments: []}]}
+run: {role: documentalist, event: merge-request, target: {merge-request: 1}, ai: 'cmd:sh "$FIXTURES/agents/judged-only.sh"'}
+expect:
+  status: pass
+  agent-calls: 1
+  no-findings: [{rule: patch-as-comment}]
+  forge:
+    merge-requests:
+      - {id: 1, comments: 1, comment-contains: "<!-- workline:sticky=documentalist/judged -->", comment-lacks: "git apply"}

@@ -1,0 +1,20 @@
+case: gates/moved-finding-is-not-new
+about: >
+  A finding the change only moves is not new: ten lines down in its file,
+  the file renamed. Its line number is not what tells it.
+given:
+  repo: linted
+  setup:
+    - git checkout -q -b change
+    - sed -i 's|^func clean() {$|&\n\t// Ten lines to say why each file goes.\n\t//\n\t//\n\t//\n\t//\n\t//\n\t//\n\t//\n\t//\n\t// Done.|' clean.go
+    - |
+      git mv clean.go cleaning.go && git commit -qam "refactor: say why each file goes"
+  env: {PATH: "$FIXTURES/bin:$PATH"}
+  config:
+    routing: {events: {merge-request: ["gate:merge"]}}
+    gates: {merge: {checks: [{id: lint, run: "golangci-lint run --output.sarif.path={out}/lint.sarif", output: sarif, max: {error: 0}}]}}
+run: {route: merge-request, input: {range: main..HEAD}, summary: true}
+expect:
+  status: pass
+  no-findings: [{rule: over-threshold}, {rule: suppression-added}]
+  summary-file: ["count: lint 0 new, 3 before it"]

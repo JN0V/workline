@@ -1,0 +1,33 @@
+case: reviewer/newer-review-kept-when-applied-out-of-order-on-gitlab
+about: "On GitLab, two applies waiting for the resource group may start in any order (#598), as `workline:apply` runs plain `workline apply`: push B's run, a later pipeline, is applied before push A's. The summary comment names the head and the pipeline its run read; A's apply, the older, keeps B's comment as it is and merges only its record into it: B's text, both runs' commits, both runs counted, and the line of each finding judged."
+given:
+  repo: reviewed
+  setup:
+    - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml", CI_PIPELINE_ID: "101", GITHUB_RUN_ID: ""}
+  forge: {issues: [], merge-requests: [{id: 5, labels: [], comments: []}]}
+run:
+  role: reviewer
+  event: merge-request
+  input: {range: main..HEAD, lenses: correctness}
+  target: {merge-request: 5}
+  ai: "cmd:sh $FIXTURES/agents/review-calc-only.sh"
+  no-apply: true
+  then: applied-out-of-order
+  pushed:
+    - "printf 'package calc\\n\\n// Half halves a count.\\nfunc Half(n int) int { return n / 2 }\\n' > calc/half.go && git add calc/half.go && git commit -qm 'feat: halve a count'"
+  forge: gitlab
+expect:
+  status: pass
+  agent-calls: 4
+  findings:
+    - {rule: applied-after-a-newer-run, level: warn, message: "the comment holds a later run's text"}
+  forge:
+    merge-requests:
+      - id: 5
+        comments: 1
+        comment-contains:
+          - " run=102 -->"
+          - " runs=2 -->"
+          - "\"title\":\"Average divides by one less than the count\"} -->\n<!-- workline:judged {\"lens\":\"correctness\",\"where\":\"calc/calc.go:11\",\"at\":\""
+        comment-lacks: [" run=101 -->"]

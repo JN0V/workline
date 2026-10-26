@@ -1,9 +1,10 @@
 ---
 sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/adopt.go, internal/builtin/documentalist/byname.go]
-checked: 1a0ca6ec
+checked: d722a840
 verified: agent:claude-code
+judged-in-parts: c7e1e98
 ---
-# Documentalist — at the push, the release and the adoption
+# Documentalist — at the push and the adoption
 
 Part of [the documentalist](../README.md). Gardening, named below, is the
 scheduled run, nightly or weekly. A doc is *vouched for* when its `checked`
@@ -13,16 +14,67 @@ moves to the commit the task gave.
 
 ### On a merge request
 
-- Run with `--push-to-merge-request` (the CI templates), the docs fixed are
-  committed to the merge request's own branch, as pre-commit.ci does: a
-  suggestion can only sit on lines the merge request changes, and a doc
-  made wrong by a change of code usually has none.
-- From a fork, the fix goes in one comment, as a diff to apply.
-- Given the commits of a push or a merge request (`range`), only the docs
-  they made suspect — one of their own sources touched by those commits —
-  are judged, whole, against every source that changed. The other suspect
-  docs are reported, left for gardening
+- **Nothing is pushed to its branch**, not a fix, not a move of
+  `checked`: the fix goes in one comment, a diff for its author to apply
+  ([ADR-0051](../../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-3-no-docs-obligation-per-pr)).
+  A suggestion could only sit on lines the merge request changes.
+- **The docs it made suspect are said, never holding the merge**: the
+  author fixes the prose the change made wrong, and may move `checked` of
+  those read against it. Once merged, the weekly docs pull request moves
+  the others' `checked`: only for a doc whose sources fit a task whole
+  (`whole-chars`); the others wait for [parts](parts.md), a few a run,
+  or for a person.
+- **A doc writing names in backticks is suspect only when a line it
+  names changes**: a file it names, or a line removed or changed holding
+  a name or a value it writes; a line added alone leaves it
+  ([ADR-0014, amended](../../../docs/adr/0014-checked-is-earned-by-what-was-read.md#amendment-2026-10-21-suspect-only-when-a-line-it-names-changes)).
+- Given the commits of a merge request (`range`), only the docs they
+  touched are read, as at a push: those they made suspect — one of their
+  own sources touched by those commits, a merge's own change too — are
+  judged, whole, against every source that changed
   ([ADR-0007](../../../docs/adr/0007-docs-reviewed-after-the-code-before-the-push.md)).
+  A doc suspect from before is gardening's; the checks across every doc
+  run on main after the merge, once
+  ([ADR-0050](../../../docs/adr/0050-each-act-has-its-moment-and-a-wait-budget.md),
+  [how](../../../docs/main-after-merge.md)).
+- One too large to be judged whole is left for the next gardening, which
+  judges it [in parts](parts.md), there as with
+  `workline docs`
+  ([#458](https://github.com/JN0V/workline/issues/458)).
+
+### A doc found with nothing to fix: no commit
+
+On a person's merge request, the agent may find nothing wrong in a doc yet
+not vouch for every sentence: its patch only records when (`judged`). That
+took a commit on their branch, 41 of 42 in two weeks
+([#463](https://github.com/JN0V/workline/issues/463)). Now:
+
+- **Nothing is pushed for it.** Its record is kept, hidden, in the
+  documentalist's comment on the merge request: the commit judged, and the
+  ids of the doc and its sources there
+  ([ADR-0013, amended](../../../docs/adr/0013-what-was-judged-is-not-asked-again.md#amendment-2026-10-17-on-a-persons-merge-request-the-record-waits-in-a-comment)).
+- **The next push does not judge it again** while the doc and its sources
+  stay the same; a change to either has it judged again.
+- **Once merged, gardening writes `judged`** on the default branch
+  ([records](gardening.md#records-kept-on-merged-merge-requests)); for a
+  doc whose sources are too large to go whole, it reads it in parts
+  instead ([#462](https://github.com/JN0V/workline/issues/462)).
+- **A real fix goes in the comment's diff**, a move of `checked` too.
+- **A fork's merge request** keeps its record too.
+- **In the comment's diff too**, where the documentalist's comment
+  cannot keep the record:
+  - a forge that does not say which commit a merge request became
+    (`local`, `cmd:`);
+  - a comment the job cannot read, said (`record-unread`): on GitLab, give
+    the judging job `GITLAB_TOKEN`
+    ([ci-gitlab.md](../../../docs/ci-gitlab.md#what-the-template-does));
+  - a doc with a source in another repository.
+- Only the comment workline's own account wrote is read: the GitHub App,
+  else the token's user; on GitLab, `WORKLINE_GITLAB_TOKEN`'s user, or
+  one named in `gitlab: {bots}` ([config](../../../docs/config.md)).
+  Another's carrying its marker, a person of the project's too, is not:
+  its docs are judged again, said once (`record-unread`,
+  [ADR-0051](../../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md)).
 
 ### At the push
 
@@ -31,6 +83,11 @@ documentalist]}}`) has those docs counted at the push, in one line, without
 an agent: a push never waits on one, nor asks
 ([ADR-0010](../../../docs/adr/0010-docs-judged-on-the-merge-request-and-by-gardening.md)).
 
+- **Only the docs the commits touched are read**: one of their sources,
+  or the doc itself; their own budgets and links are counted. The other
+  docs — suspect from before, a passage written twice, a link gone — are
+  said on main after the merge and by gardening: about 5 s less a push
+  ([ADR-0050](../../../docs/adr/0050-each-act-has-its-moment-and-a-wait-budget.md)).
 - The person has them judged when they choose — `workline docs` — reviews
   each change, and those kept go in one `docs:` commit
   ([ADR-0007](../../../docs/adr/0007-docs-reviewed-after-the-code-before-the-push.md)).
@@ -40,43 +97,10 @@ an agent: a push never waits on one, nor asks
 
 ## At the release
 
-A doc made suspect since the last release holds it until it is judged
-([ADR-0010](../../../docs/adr/0010-docs-judged-on-the-merge-request-and-by-gardening.md)):
-by the agent, as the release runs the documentalist first, by `workline
-docs`, or by a person moving `checked`.
-
-- One suspect already at that release was let through then.
-- One judged without being vouched for, or in parts, waits for a person
-  and does not hold it.
-- The last release is the highest version tag merged (`release.tags`, `v*`
-  by default), prereleases left out — never the nearest tag, which a
-  hotfix merged back would be.
-- A shallow clone, which may lack it or a doc's `checked`, holds the
-  release (`shallow-clone`).
-
-### A release tool's pull request
-
-Its branch one of `release.branches` (release-please's and the like by
-default), it is the release
-([ADR-0017](../../../docs/adr/0017-the-release-manager.md)): on it the
-documentalist does what it does at the release — every doc suspect since
-the last one and the docs due then, not only what the pull request's
-commits touched.
-
-- **Its fix does not go onto that branch**, which the tool rewrites: it
-  goes to a merge request of its own into the release's base,
-  `workline/documentalist/release`. The release pull request stays held
-  until that one is merged and the tool brings it in.
-- **That merge request follows its base**, as the tool's own branch does
-  ([ADR-0034](../../../docs/adr/0034-the-release-fix-follows-its-base.md)):
-  on each push to the base, `workline follow` rebuilds it on the new tip —
-  main's `checked` kept beside the `judged` the fix wrote, where a rebase
-  would conflict.
-- **`workline follow` leaves it alone** when it is on the tip already, when
-  a person committed to it, or, asking that person, when its change no
-  longer applies.
-- **A new fix judged on the release pull request** is not pushed over a
-  person's commit either: it goes in a comment there.
+The documentalist does not run at the release: the release never waits
+for the docs
+([ADR-0051](../../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-1-the-release-weekly)).
+A release tool's pull request is judged as any other.
 
 ## Adopting a repository
 
@@ -123,3 +147,19 @@ comment each push:
 - the docs due later are listed apart;
 - with none left, the comment says so;
 - none is opened on a merge request that never had one.
+
+On a draft, an agent set, the engine asks it nothing
+([ADR-0050](../../../docs/adr/0050-each-act-has-its-moment-and-a-wait-budget.md)):
+the docs the change made suspect are counted, and said judged once it
+is marked ready (`ai-waits-for-ready`); no checklist asks a person to.
+
+The agent judges a merge request once, on the run at ready
+([ADR-0051](../../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#2-the-moments)):
+a push after it asks nothing, and the docs it made suspect are listed
+(`judged-at-ready`), for the author and the docs pull request. A run at
+ready cancelled by a quick push leaves its docs to the weekly docs pull
+request.
+
+- **A patch the judge refuses** on a merge request is said as a warning,
+  nothing of it applied, never holding the merge; no stronger model is
+  asked again.

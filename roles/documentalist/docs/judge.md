@@ -1,6 +1,6 @@
 ---
-sources: [internal/builtin/documentalist/judge.go, internal/builtin/documentalist/values.go, internal/builtin/documentalist/words.go, internal/builtin/documentalist/condense.go, internal/builtin/documentalist/dedupe.go, internal/builtin/documentalist/mergecard.go, internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/cite.go, internal/builtin/documentalist/comments.go]
-checked: 1a0ca6ec
+sources: [internal/builtin/documentalist/notes.go, internal/builtin/documentalist/values.go, internal/builtin/documentalist/judge.go, internal/builtin/documentalist/documentalist.go]
+checked: d722a840
 verified: agent:claude-code
 ---
 # Documentalist — the judge
@@ -45,7 +45,7 @@ A patch is refused, and the agent asked again with the reasons, when it:
 
 Places marked *withheld* below are not refused with the whole answer: the
 rest of the fix is applied without them. Condense, split, merge-card and
-dedupe tasks are judged by [their own rules](#condense-split-merge-dedupe),
+dedupe tasks are judged by their own rules ([gardening](gardening.md#condensing)),
 the reader task by [its own](reader.md#what-the-engine-checks).
 
 ## Hunks that misquote the doc
@@ -81,23 +81,28 @@ the reader task by [its own](reader.md#what-the-engine-checks).
 ## Moving `checked`
 
 - **To another commit than the one given**: refused. A fix that leaves
-  `checked` alone is kept, and the doc stays suspect, fixed but not
-  vouched for
+  `checked` alone is kept, the doc fixed but not vouched for
   ([ADR-0012](../../../docs/adr/0012-a-doc-is-judged-against-its-sources-whole.md)),
-  if it sets `judged` to that commit (`judged-not-set`). The doc is then
-  not put before an agent again until a source changes
+  if it sets `judged` to that commit (`judged-not-set`): the doc is not
+  put before an agent again until a source changes
   ([ADR-0013](../../../docs/adr/0013-what-was-judged-is-not-asked-again.md)).
 - **Sources not all given whole** (`checked-unread`,
   [ADR-0014](../../../docs/adr/0014-checked-is-earned-by-what-was-read.md)):
   judged on diffs, or beside a doc of the same task, nobody read the rest.
   `pre` records the docs whose sources it gave whole (`in/read-whole.yaml`;
   none, when the file is missing), and what it gave of the others
-  (`in/read-not-whole.yaml`). For any other, the fix sets `judged` and is
-  kept, and the doc stays suspect for a person. *Withheld*: the move of
-  `checked`.
+  (`in/read-not-whole.yaml`). *Withheld*: the move of `checked`.
 - **A line count still off** (`checked-over-count-off`, step 2): the task
   gave the real count; the fix brings it there, with no claim, or leaves
   `checked`. *Withheld*: the move of `checked`.
+- **A doc judged in parts** (`checked-moved-in-parts`): the fix saw only
+  the parts' excerpts; refused. Only the engine moves it, when the parts
+  support every line stating something and `parts-move-checked` is on, as
+  by default ([judged in parts](parts.md#when-checked-moves-after-parts)).
+- **A doc the answer's own note doubts** (`checked-over-note`,
+  [#449](https://github.com/JN0V/workline/issues/449)): a note names its
+  doc in `doc`, else in its text, by path or by a file name no other doc
+  of the task shares. *Withheld*: the move of `checked`, the note quoted.
 
 ## What holds is applied
 
@@ -108,11 +113,13 @@ one place the engine had already named (step 4). Now:
   without it, the place left as it was;
 - the doc keeps `checked` where it was and records `judged` (its header
   put back, `judged` set), so a person reads it before moving `checked`;
-  it is not put before an agent again until a source changes
+  it is not put before an agent again until a source changes, unless one
+  is in another repository or the doc is due at a later moment (a product
+  doc, at gardening)
   ([ADR-0013](../../../docs/adr/0013-what-was-judged-is-not-asked-again.md));
 - each place withheld is a finding for a person — the refusal's rule, the
   doc and its lines, and why — in the run's verdict, the merge request's
-  comment or the gardening pull request, as other findings; the doc's
+  comment or the fix's own merge request, as other findings; the doc's
   `suspect` finding says it was fixed in part;
 - with every place of a doc withheld, the fix is only its record: `judged`
   set, the places reported;
@@ -130,20 +137,28 @@ one place the engine had already named (step 4). Now:
   was read", then `read:` what the task gave (what changed in a source
   since `checked`, the doc it follows) and `not read:` the rest. Never
   "nothing found wrong" of what was not read
-  ([#120](https://github.com/JN0V/workline/issues/120)).
+  ([#120](https://github.com/JN0V/workline/issues/120)). Gardening reads
+  such a doc [in parts](parts.md) instead, when parts
+  can ([#462](https://github.com/JN0V/workline/issues/462)).
 - A doc judged in parts, once the fix is judged: the places it fixed, or
   that it changed nothing of what the parts found.
-- The gardening pull request (gardening: the scheduled run, nightly or
-  weekly) lists each doc it judged with the same outcome — fixed and in
-  how many places, still true, or nothing found wrong — whether `checked`
-  moved or `judged` was recorded, and, for a doc not given whole, what was
-  read and not read.
+- On a person's merge request, a doc whose patch only records `judged`:
+  its record is kept in the documentalist's comment there, nothing
+  committed for it, and the finding says so
+  ([more](push.md#a-doc-found-with-nothing-to-fix-no-commit)).
+- The fix's own merge request, gardening's (the scheduled run, nightly
+  or weekly) or a release's, lists each doc judged with that outcome —
+  fixed and in how many places, still true, nothing found wrong, or left
+  as it was — whether `checked` moved or `judged` was recorded, and, for
+  a doc not given whole, what was read and not read.
+- A release's lists the docs of every round of its run and the places
+  they withheld, a later round's word on a doc standing
+  ([#572](https://github.com/JN0V/workline/issues/572)).
 
 ## Asked again
 
 - For any other refusal, the answer asked again replaces the refused one
-  whole: the engine tells the agent to give again, unchanged, every change
-  not refused.
+  whole: the agent gives again, unchanged, every change not refused.
 - Each answer is kept in the run folder as it came (`out/agent-answer.txt`;
   a refused one as `out/refused-<n>-answer.txt`), and the claims of the
   accepted one in `out/claims.yaml`: judged, never applied, kept so that a
@@ -151,9 +166,8 @@ one place the engine had already named (step 4). Now:
 - Asked again as often as the role allows and still refused, a doc's fix
   is left out (`left-out`, saying why); the other docs' fixes are judged
   again without it and applied. The doc stays as it was, suspect.
-- A block the answer did not cause — docs due, a release held, a check
-  that could not run — is never asked again: another answer would change
-  none of it.
+- A block the answer did not cause — a check that could not run — is
+  never asked again: another answer would change none of it.
 
 ## After the fixes pass
 
@@ -175,26 +189,12 @@ These findings are added, never refusing:
     are every doc's sources there.
   - Left out: history docs; a version given as a range (`>=1.4.1`,
     `^1.4.1`), what a dependant accepts; a version after a history marker
-    ("First available in v1.9.0", "Added in", "since", "New in version",
-    "Deprecated in", `versionadded::`), which says when something came.
-
-## Condense, split, merge, dedupe
-
-A condense patch is refused when:
-
-- it touches another existing doc;
-- a line that leaves the doc is found in no new doc, unchanged but for a
-  heading's level — moved, not rewritten (`rewritten`); a reference
-  updated in place, keeping most of its words, is fine;
-- a MUST or SHOULD is lost;
-- a new doc is not linked from the doc (`not-linked`);
-- the budget problem it was for remains (`still-over-budget`);
-- it brings a budget problem the docs did not have, or makes one bigger
-  (`patch-introduces`) — a part over its budget already, moved whole into
-  a new doc, its text word for word, is the same problem moved, not a
-  new one.
-
-A condense, split, merge-card or dedupe patch moving an existing doc's
-`checked`, or creating a doc that carries one, is refused
-(`checked-unread`): moving text gives none of its sources, so a new doc
-starts without `checked`, listed unchecked for a person.
+    ("First available in v1.9.0", "Added in", "since", "from", "after",
+    "New in version", "Deprecated in", `versionadded::`), which says when
+    something came, in prose or a code block's comment, or given as a
+    minimum ("1.4.1 or later", "and newer"). Reported as pins:
+    `<code>v1.4.1</code>`, `> v1.4.1`, and `since: v1.4.1` in code
+    ([#569](https://github.com/JN0V/workline/issues/569),
+    [#571](https://github.com/JN0V/workline/issues/571)). A release's bump
+    holds a doc by the same reading ([the checks](checks.md#suspects),
+    [#346](https://github.com/JN0V/workline/issues/346)).

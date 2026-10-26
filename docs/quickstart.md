@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/setup, internal/doctor, internal/hooks]
-checked: 84d8b322
+checked: 8ccdfb74
 verified: agent:claude-code
 ---
 # Quickstart
@@ -31,10 +31,13 @@ In any repository:
 git commit --allow-empty -m "AC-3 fix the thing"
 ```
 
-Without AI it blocks and says why; with an agent, the message is rewritten
-(`fix: fix the thing`, `Refs: AC-3`) and printed. `WORKLINE_AI=none git
-commit …` turns the agent off for one commit; an empty `.workline/off`
-file turns workline off for a repository.
+- **With an agent**, it is rewritten, 30 s at most (`fix: fix the thing`,
+  `Refs: AC-3`), and printed
+  ([ADR-0050](adr/0050-each-act-has-its-moment-and-a-wait-budget.md)).
+- **Without AI**, or with `rewrite: false` in the committer's settings,
+  the project's or your own, it blocks in about a second and says why,
+  your message kept.
+- An empty `.workline/off` file turns workline off for a repository.
 
 ## 3. Adopt a repository
 

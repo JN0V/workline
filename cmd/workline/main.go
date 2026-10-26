@@ -39,6 +39,7 @@ import (
 	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/builtin/committer"
 	"github.com/JN0V/workline/internal/builtin/documentalist"
+	"github.com/JN0V/workline/internal/builtin/inspector"
 	"github.com/JN0V/workline/internal/builtin/productowner"
 	"github.com/JN0V/workline/internal/builtin/reviewer"
 	"github.com/JN0V/workline/internal/doctor"
@@ -80,6 +81,8 @@ func followCmd(args []string) int {
 	gardening := fs.Bool("gardening", false, "also the roles' gardening merge requests: rebuilt, or closed when nothing is left to merge (run when gardening runs)")
 	verdictFile := fs.String("verdict", "", "with the project's `merge:` policy, keep first the line's verdict on a merge request's head, the file `workline route --verdict` wrote")
 	verdictOnly := fs.Bool("verdict-only", false, "with --verdict: keep the verdict, and follow nothing else (a job no newer run cancels)")
+	group := fs.String("merge-group", "", "a merge queue's group, its branch (gh-readonly-queue/<base>/pr-<n>-<head>): with the project's `merge:` policy, set on its commit (--head) the yes the head queued holds, and follow nothing else")
+	groupHead := fs.String("head", "", "with --merge-group: the group's commit")
 	asJSON := fs.Bool("json", false, "print the result as JSON")
 	var summaryFiles multi
 	fs.Var(&summaryFiles, "summary", "also add a Markdown summary to this file, for a CI job's page (repeatable; a file named .html gets HTML)")
@@ -99,13 +102,21 @@ func followCmd(args []string) int {
 	if *forgeSpec == "" {
 		*forgeSpec = cfg.Forge
 	}
-	o := engine.FollowOptions{Repo: root, Forge: *forgeSpec, Base: *base, Gardening: *gardening, Verdict: *verdictFile, VerdictOnly: *verdictOnly}
-	if o.VerdictOnly && o.Verdict == "" {
+	o := engine.FollowOptions{Repo: root, Forge: *forgeSpec, Base: *base, Gardening: *gardening, Verdict: *verdictFile, VerdictOnly: *verdictOnly,
+		Group: *group, GroupHead: *groupHead}
+	switch {
+	case o.VerdictOnly && o.Verdict == "":
 		fmt.Fprintln(os.Stderr, "workline: --verdict-only needs --verdict <file>")
+		return 64
+	case (o.Group == "") != (o.GroupHead == ""):
+		fmt.Fprintln(os.Stderr, "workline: --merge-group and --head go together: the group's branch and its commit")
+		return 64
+	case o.Group != "" && (o.Verdict != "" || o.Gardening || o.Base != ""):
+		fmt.Fprintln(os.Stderr, "workline: --merge-group follows nothing else: no --verdict, --gardening nor --base")
 		return 64
 	}
 	if cfg.Merge != nil {
-		o.Merge = cfg.Merge.Autonomy
+		o.Merge, o.Alone = cfg.Merge.Autonomy, cfg.Merge.Alone
 	}
 	if o.Verdict != "" {
 		if o.Verdict, err = filepath.Abs(o.Verdict); err != nil {
@@ -113,11 +124,16 @@ func followCmd(args []string) int {
 			return 64
 		}
 	}
-	if err := followSettings(&o); err != nil {
+	gone, err := followSettings(&o)
+	if err != nil {
 		fmt.Fprintln(os.Stderr, "workline:", err)
 		return 64
 	}
 	res := engine.Follow(o)
+	if gone {
+		res.Findings = append(res.Findings, verdict.Finding{Rule: "setting-gone", Level: "warn",
+			Message: "the documentalist's update-branches is no longer read: workline merges nothing into a person's merge request (ADR-0051); take it off the project's settings"})
+	}
 	if err := wlreport.AppendSummary(summaryFiles, wlreport.RoleSummary("follow", "", res)); err != nil {
 		fmt.Fprintln(os.Stderr, "workline:", err)
 		return 1
@@ -132,37 +148,31 @@ func followCmd(args []string) int {
 }
 
 // followSettings reads what `workline follow` takes of the documentalist's
-// settings: whether people's merge requests in conflict only on
-// workline's lines get their base merged in (`update-branches`, ADR-0041),
-// and which files are docs; and the release tool's branches, a bot's.
-func followSettings(o *engine.FollowOptions) error {
+// settings: which files are docs; and the release tool's branches, a
+// bot's. gone says the project still sets `update-branches`, whose merges
+// into people's merge requests ADR-0051 removed.
+func followSettings(o *engine.FollowOptions) (gone bool, err error) {
 	rolesDir, err := resolveRoles(os.Getenv("WORKLINE_ROLES"))
 	if err != nil {
-		return err
+		return false, err
 	}
 	r, err := role.Load(rolesDir, "documentalist")
 	if err != nil {
-		return err
+		return false, err
 	}
 	cfg, err := role.LoadProjectConfig(o.Repo)
 	if err != nil {
-		return err
+		return false, err
 	}
 	settings := r.MergedSettings(cfg)
-	switch v := fmt.Sprint(settings["update-branches"]); v {
-	case "off", "false", "<nil>":
-	case "conflicts":
-		o.People = true
-	default:
-		return fmt.Errorf(".workline/config.yaml: the documentalist's update-branches is %q: off or conflicts", v)
-	}
+	_, gone = settings["update-branches"]
 	s, err := documentalist.SettingsFrom(settings)
 	if err != nil {
-		return fmt.Errorf(".workline/config.yaml: the documentalist's settings: %w", err)
+		return false, fmt.Errorf(".workline/config.yaml: the documentalist's settings: %w", err)
 	}
 	rs, err := release.Load(o.Repo)
 	if err != nil {
-		return err
+		return false, err
 	}
 	o.IsDoc, o.Release = s.IsDoc, rs.IsBranch
 	o.Derive = func(dir string, docs map[string]string) bool {
@@ -174,7 +184,7 @@ func followSettings(o *engine.FollowOptions) error {
 		}
 		return len(stale) == 0
 	}
-	return nil
+	return gone, nil
 }
 
 // version is the release, set when one is built (-X main.version=v0.1.0).
@@ -219,7 +229,6 @@ func runRole(args []string) int {
 	fs.Var(&scope, "scope", "a path pattern the task is about (repeatable)")
 	noApply := fs.Bool("no-apply", false, "stop after judging; apply later with `workline apply <run-dir>`")
 	openMR := fs.Bool("open-merge-request", false, "put what the patches write on a branch of the role, and open a merge request for it (needs a forge)")
-	pushMR := fs.Bool("push-to-merge-request", false, "commit what the patches write to the branch of the merge request --target names; from a fork, a comment (needs a forge)")
 	sarifFile := fs.String("sarif", "", "also write the findings to this file as SARIF, for code scanning")
 	cqFile := fs.String("code-quality", "", "also write the findings to this file as a GitLab Code Quality report")
 	var summaryFiles multi
@@ -257,7 +266,7 @@ func runRole(args []string) int {
 	res := engine.Run(engine.Options{
 		Repo: absRepo, RolesDir: absRoles, Role: name, Event: *event, AI: *ai,
 		Inputs: inputs, Targets: targets, TamperBeforeApply: *tamper,
-		Forge: *forgeSpec, Target: t, Branch: *branch, Scope: scope, NoApply: *noApply, OpenMergeRequest: *openMR, PushToMergeRequest: *pushMR,
+		Forge: *forgeSpec, Target: t, Branch: *branch, Scope: scope, NoApply: *noApply, OpenMergeRequest: *openMR,
 	})
 	if err := wlreport.Write(absRepo, *event, wlreport.FromRole(name, res), *sarifFile, *cqFile); err != nil {
 		fmt.Fprintln(os.Stderr, "workline:", err)
@@ -459,6 +468,10 @@ func builtin(args []string) int {
 		return reviewer.Pre(runDir, repo)
 	case "reviewer post":
 		return reviewer.Post(runDir, repo)
+	case "inspector pre":
+		return inspector.Pre(runDir, repo)
+	case "inspector post":
+		return inspector.Post(runDir, repo)
 	}
 	fmt.Fprintf(os.Stderr, "workline builtin: no built-in step %q\n", strings.Join(args, " "))
 	return 99
@@ -552,7 +565,13 @@ func hookCmd(args []string) int {
 			quiet = false
 		}
 	}
+	// A commit over its budget says so, quiet or not; its seconds go with
+	// what the hook says, a rewrite's above all (ADR-0050).
+	over := res.OverBudget()
 	if quiet {
+		if over != "" {
+			fmt.Fprintln(os.Stderr, "workline: over its budget: "+over)
+		}
 		return 0
 	}
 	for _, s := range res.Steps {
@@ -560,6 +579,12 @@ func hookCmd(args []string) int {
 			fmt.Fprintf(os.Stderr, "workline %s: ", s.Name)
 			report(s.Result)
 		}
+	}
+	if t := res.Times(); t != "" {
+		fmt.Fprintln(os.Stderr, "workline: "+t)
+	}
+	if over != "" {
+		fmt.Fprintln(os.Stderr, "workline: over its budget: "+over)
 	}
 	if res.Status == verdict.Pass {
 		// A rewrite replaced what the person wrote: show what is committed.
@@ -579,20 +604,23 @@ func hookCmd(args []string) int {
 			fmt.Fprintf(os.Stderr, "  %s: %s\n", f.Rule, f.Message)
 		}
 	}
-	fmt.Fprintln(os.Stderr, "commit aborted; your message is kept in", msgFile)
+	// On any refusal, a rewrite cut at its cap included (ADR-0050), the
+	// person's words are kept, and the command that takes them up again
+	// is given.
+	fmt.Fprintf(os.Stderr, "commit aborted; your message is kept in %s: to edit it and commit again, git commit -e -F %s\n", args[1], args[1])
 	return 1
 }
 
-// prePushQuiet are the findings a push does not need to show: sizes and links
-// the line reports on every run, whatever is being pushed. They are counted,
-// and `workline route pre-push` shows them.
+// prePushQuiet are the findings a push does not need to show: the sizes and
+// links of the docs it touched, which the merge request says again. They
+// are counted, and `workline route pre-push` shows them. Passages written
+// twice are not looked for at a push (ADR-0050).
 var prePushQuiet = map[string]bool{
 	"doc-too-long": true, "section-too-long": true, "card-too-short": true, "card-too-long": true,
 	"folder-too-long": true, "agent-file-too-long": true, "links-not-checked": true, "nothing-tracked": true,
 	"pending":        true, // due at a later moment, the release, which says so
 	"derived-behind": true, // regenerated on the default branch after the merge (ADR-0027)
-	// About the whole repository, not what is pushed: gardening's.
-	"dead-link": true, "duplicate": true, "cites-superseded": true,
+	"dead-link":      true, "cites-superseded": true,
 }
 
 // prePush runs the project's pre-push line on the commits being pushed, with
@@ -631,9 +659,10 @@ func prePush(remote string) int {
 }
 
 // prePushLine runs the project's pre-push line on each range pushed, with no
-// agent: a push never waits on one (ADR-0007). It counts the suspect docs,
-// never lists them: they are judged on the merge request, by gardening or
-// with `workline docs` (ADR-0010).
+// agent: a push never waits on one (ADR-0007). It counts the docs the
+// commits made suspect, never lists them: they are judged on the merge
+// request, by gardening or with `workline docs` (ADR-0010). The other docs
+// are not read at a push: the merge request and gardening do (ADR-0050).
 func prePushLine(root string, refs []hooks.Ref) int {
 	if _, err := os.Stat(filepath.Join(root, ".workline", "off")); err == nil {
 		return 0
@@ -653,7 +682,23 @@ func prePushLine(root string, refs []hooks.Ref) int {
 		return 1
 	}
 	fmt.Fprintf(os.Stderr, "workline: checking the commits pushed (%s), no agent…\n", strings.Join(cfg.Events["pre-push"], ", "))
-	var suspect, before []string
+	// The push's seconds, every range's steps together, and its budget
+	// (ADR-0050): said before what stops it, never a block.
+	start := time.Now()
+	var runs []*line.Result
+	times := func() {
+		if len(runs) == 0 {
+			return
+		}
+		all := line.Join(runs)
+		all.Seconds = line.Since(start)
+		line.Measure(all, cfg, "push")
+		fmt.Fprintln(os.Stderr, "workline: "+all.Times())
+		if over := all.OverBudget(); over != "" {
+			fmt.Fprintln(os.Stderr, "workline: over its budget: "+over)
+		}
+	}
+	var suspect []string
 	for _, ref := range refs {
 		rng := ref.Range
 		if rng == "" {
@@ -663,6 +708,7 @@ func prePushLine(root string, refs []hooks.Ref) int {
 			Repo: root, RolesDir: rolesDir, AI: "none",
 			Inputs: map[string]string{"range": rng},
 		})
+		runs = append(runs, res)
 		patched, advisory := false, 0
 		for _, s := range res.Steps {
 			if s.Result == nil {
@@ -674,12 +720,8 @@ func prePushLine(root string, refs []hooks.Ref) int {
 		}
 		for _, f := range res.Findings {
 			if f.Rule == "suspect" { // counted, never listed: the push only counts (ADR-0010)
-				into := &suspect
-				if strings.Contains(f.Message, "left for gardening") {
-					into = &before
-				}
-				if !contains(*into, f.Where) {
-					*into = append(*into, f.Where)
+				if !contains(suspect, f.Where) {
+					suspect = append(suspect, f.Where)
 				}
 				continue
 			}
@@ -698,17 +740,20 @@ func prePushLine(root string, refs []hooks.Ref) int {
 		}
 		switch {
 		case res.Status != verdict.Pass:
+			times()
 			fmt.Fprintf(os.Stderr, "workline: %s\npush stopped; `git push --no-verify` skips workline\n", res.Summary)
 			return 1
 		case patched:
+			times()
 			stat, _ := exec.Command("git", "-C", root, "-c", "core.quotePath=off", "diff", "--stat").Output()
 			fmt.Fprintf(os.Stderr, "workline: the documentalist updated docs in your working tree:\n%s", stat)
 			fmt.Fprintln(os.Stderr, "push stopped: review them (git diff), commit them, and push again")
 			return 1
 		}
 	}
-	if len(suspect)+len(before) > 0 {
-		fmt.Fprintf(os.Stderr, "workline: docs suspect: %d made so by these commits, %d before — `workline docs` judges them\n", len(suspect), len(before))
+	times()
+	if len(suspect) > 0 {
+		fmt.Fprintf(os.Stderr, "workline: docs suspect: %d made so by these commits — `workline docs` judges them\n", len(suspect))
 	}
 	return 0
 }
@@ -995,13 +1040,33 @@ func userDefaultAI() string { return userConfig().AI }
 func gateCmd(args []string) int {
 	fs := newFlags("gate")
 	repo := fs.String("repo", ".", "repository to check")
+	base := fs.String("base", "", "count only the findings the change adds since the merge base of this revision and HEAD, as on a merge request (default: none, every finding counts)")
+	kept := fs.String("gates-kept", "", "with --base: the folder of the gates' findings kept by commit, where the merge base's are read when kept with the same command, config and tool, rather than running the tools again")
 	asJSON := fs.Bool("json", false, "print the result as JSON")
 	name, code, done := parseAfter(fs, args, "a gate's name")
 	if done {
 		return code
 	}
+	switch {
+	case isSet(fs, "base") && strings.TrimSpace(*base) == "":
+		// An unset variable in a CI job: never read as no base at all.
+		return misuse(fs, "--base names no revision (an unset variable?): give one, or leave --base out to count every finding")
+	case *kept != "" && *base == "":
+		return misuse(fs, "--gates-kept reads the merge base's findings: it goes with --base")
+	}
 	abs, _ := filepath.Abs(*repo)
-	v := gate.Run(abs, name)
+	var v *verdict.Verdict
+	if *base != "" {
+		// As on a merge request (ADR-0049): only what the change adds
+		// since the merge base counts, the base's findings read as main
+		// kept them or run again there.
+		if *kept != "" {
+			*kept, _ = filepath.Abs(*kept)
+		}
+		v, _ = gate.RunWith(abs, name, gate.Options{Since: *base, Kept: *kept})
+	} else {
+		v = gate.Run(abs, name)
+	}
 	res := &engine.Result{Status: v.Status, Summary: v.Summary, Findings: v.Findings, Applied: []string{}, Refused: []string{}}
 	if *asJSON {
 		out, _ := json.MarshalIndent(res, "", "  ")
@@ -1028,18 +1093,69 @@ func routeCmd(args []string) int {
 	fs.Var(&scope, "scope", "a path pattern the task is about (repeatable)")
 	noApply := fs.Bool("no-apply", false, "judge every step, apply none; apply later with `workline apply` and the runs listed as pending")
 	openMR := fs.Bool("open-merge-request", false, "put what the patches write on a branch of the role, and open a merge request for it (needs a forge)")
-	pushMR := fs.Bool("push-to-merge-request", false, "commit what the patches write to the branch of the merge request --target names; from a fork, a comment (needs a forge)")
 	sarifFile := fs.String("sarif", "", "also write every step's findings to this file as SARIF, for code scanning")
 	cqFile := fs.String("code-quality", "", "also write every step's findings to this file as a GitLab Code Quality report")
 	var summaryFiles multi
 	fs.Var(&summaryFiles, "summary", "also add a Markdown summary of the line to this file, for a CI job's page (repeatable; a file named .html gets HTML)")
 	verdictFile := fs.String("verdict", "", "also write the line's verdict on the head it judged (the range's end) to this file, for `workline follow --verdict` and the merge policy")
 	verdictHead := fs.String("verdict-head", "", "with --verdict: the head the verdict is for, when the commit judged is a merge result (GitLab's merged results pipelines)")
+	gatesOnly := fs.Bool("gates-only", false, "run the event's gate steps alone, each one: a CI job of their own, with no write token and no agent's (the result, --json, is what --gates-from and `apply --gates` read)")
+	gatesFrom := fs.String("gates-from", "", "take each gate step's verdict from this file, the result a run with --gates-only printed, rather than running it; with --warn-only, the gates' findings for what triages them (the inspector), never their verdict")
+	gatesKept := fs.String("gates-kept", "", "the folder of the gates' findings kept by commit: on main, the head's are written there, the next base; on a merge request, the merge base's are read there when kept with the same command, config and tool, rather than running the tools again")
+	warnApart := fs.Bool("warn-apart", false, "leave what only warns to a run apart, which --warn-only makes: the reviewer's lenses that warn, on a merge request; the verdict waits only for what can block")
+	warnOnly := fs.Bool("warn-only", false, "the run apart from the verdict: only what a line with --warn-apart left, posted when done; never the head's verdict")
+	dryRun := fs.Bool("dry-run", false, "on release: what would hold the release if it were cut now, every step run with no agent, nothing applied, said as warnings, never a block (`workline apply --release-dry-run` posts it)")
 	inputs := pairs{}
 	fs.Var(inputs, "input", "input name=value, given to every step (repeatable)")
 	event, code, done := parseAfter(fs, args, "an event")
 	if done {
 		return code
+	}
+	// A release's dry run (ADR-0050) asks no agent, applies and writes
+	// nothing: it says what would hold the release cut from the branch
+	// checked out.
+	if *dryRun {
+		switch {
+		case event != "release":
+			return misuse(fs, "--dry-run goes with the event release: what would hold the release")
+		case *ai != "" && *ai != "none":
+			return misuse(fs, "a release's dry run asks no agent: no --ai "+*ai)
+		case *target != "" || *openMR:
+			return misuse(fs, "a release's dry run writes nothing: no --target nor --open-merge-request (`workline apply --release-dry-run` posts what it found)")
+		case *verdictFile != "" || *gatesOnly || *gatesFrom != "" || *warnApart || *warnOnly:
+			return misuse(fs, "a release's dry run runs the release's whole line, giving no verdict: no --verdict, --gates-only, --gates-from, --warn-apart nor --warn-only")
+		}
+	}
+	if *gatesOnly && *gatesFrom != "" {
+		return misuse(fs, "--gates-only runs the gates, --gates-from reads them: one or the other")
+	}
+	flagged := map[bool]string{true: line.WarnApart, false: line.WarnOnly}[*warnApart]
+	switch given, told := inputs[line.WarnInput]; {
+	case *warnApart && *warnOnly:
+		return misuse(fs, "--warn-apart leaves what only warns, --warn-only runs it alone: one or the other")
+	case (*warnApart || *warnOnly) && told && given != flagged:
+		return misuse(fs, fmt.Sprintf("--warn-%s and --input %s=%s say two runs: one or the other", flagged, line.WarnInput, given))
+	case *warnApart || *warnOnly:
+		inputs[line.WarnInput] = flagged
+	}
+	switch w := inputs[line.WarnInput]; {
+	case w != "" && w != line.WarnApart && w != line.WarnOnly:
+		return misuse(fs, fmt.Sprintf("--input %s=%s: %s or %s", line.WarnInput, w, line.WarnApart, line.WarnOnly))
+	case w == line.WarnOnly && *gatesOnly:
+		return misuse(fs, "--warn-only runs no gate: no --gates-only (--gates-from gives the gates' findings to what triages them)")
+	case w == line.WarnOnly && *verdictFile != "":
+		return misuse(fs, "--warn-only gives no verdict: what only warns never holds the head's (--verdict goes with the line's own run)")
+	}
+	// A merge queue's or train's run (ADR-0050) guards the merged result:
+	// the head's verdict and the person's yes stay the merge request's
+	// (ADR-0042), never the queue's to write.
+	switch q := inputs[line.QueueInput]; {
+	case q != "" && q != "true" && q != "false":
+		return misuse(fs, fmt.Sprintf("--input %s=%s: true or false", line.QueueInput, q))
+	case q == "true" && *verdictFile != "":
+		return misuse(fs, "a queue's run (--input queue=true) gives no verdict on the head: the head's stays its merge request's (--verdict goes with that line's run)")
+	case q == "true" && inputs[line.WarnInput] == line.WarnOnly:
+		return misuse(fs, "--warn-only reads what only warns, a queue's run (--input queue=true) only the gates: one or the other")
 	}
 	abs, _ := filepath.Abs(*repo)
 	rolesDir, err := resolveRoles(*roles)
@@ -1052,8 +1168,16 @@ func routeCmd(args []string) int {
 		fmt.Fprintln(os.Stderr, "workline:", err)
 		return 64
 	}
-	res := line.Run(event, engine.Options{Repo: abs, RolesDir: rolesDir, AI: *ai, DefaultAI: userDefaultAI(), Inputs: inputs,
-		Forge: *forgeSpec, Target: t, Branch: *branch, Scope: scope, NoApply: *noApply, OpenMergeRequest: *openMR, PushToMergeRequest: *pushMR})
+	if *gatesFrom != "" {
+		*gatesFrom, _ = filepath.Abs(*gatesFrom)
+	}
+	if *gatesKept != "" {
+		*gatesKept, _ = filepath.Abs(*gatesKept)
+	}
+	res := line.RunWith(event, engine.Options{Repo: abs, RolesDir: rolesDir, AI: *ai, DefaultAI: userDefaultAI(), Inputs: inputs,
+		Forge: *forgeSpec, Target: t, Branch: *branch, Scope: scope, NoApply: *noApply, OpenMergeRequest: *openMR,
+		DryRun: *dryRun},
+		&line.Gates{Only: *gatesOnly, From: *gatesFrom, Kept: *gatesKept})
 	if err := wlreport.Write(abs, event, wlreport.FromLine(res), *sarifFile, *cqFile); err != nil {
 		fmt.Fprintln(os.Stderr, "workline:", err)
 		return 1
@@ -1079,6 +1203,12 @@ func routeCmd(args []string) int {
 		fmt.Fprintf(os.Stderr, "%s — %s\n", res.Status, res.Summary)
 		for _, s := range res.Steps {
 			fmt.Fprintf(os.Stderr, "  %-28s %s\n", s.Name, s.Status)
+		}
+		if t := res.Times(); t != "" {
+			fmt.Fprintf(os.Stderr, "  seconds: %s\n", t)
+		}
+		if over := res.OverBudget(); over != "" {
+			fmt.Fprintf(os.Stderr, "  over its budget: %s\n", over)
 		}
 		for _, f := range res.Findings {
 			where := ""
@@ -1275,8 +1405,29 @@ func applyCmd(args []string) int {
 	head := fs.String("head", "", "with --from-merge-request: the commit its run judged; nothing is applied once its branch moved on")
 	repo := fs.String("repo", ".", "with --from-merge-request: this job's checkout of the base, whose settings are read")
 	forgeSpec := fs.String("forge", "", "with --from-merge-request: github, gitlab, cmd:<command> (default: the project's `forge` setting)")
+	gatesFile := fs.String("gates", "", "with --from-merge-request: show on it what its gates found the change adds, from the result `route --gates-only` printed in its own run: a check's annotations and one summary comment")
+	mainFile := fs.String("main", "", "keep what main's run after a merge found, the result `route main --json` printed, in one issue, edited when what it lists changes; with --forge, --repo")
+	dryFile := fs.String("release-dry-run", "", "post what a release's dry run found, the result `route release --dry-run --json` printed, in the default branch's issue, edited when what it lists changes; with --forge, --repo")
 	if code, done := parseOnly(fs, args); done {
 		return code
+	}
+	if *dryFile != "" {
+		if *mainFile != "" || *lineFile != "" || *gatesFile != "" || *fromMR != 0 || len(dirs) > 0 {
+			fmt.Fprintln(os.Stderr, "workline: --release-dry-run posts what a release's dry run found, and applies nothing else: no run, --main, --line, --gates nor --from-merge-request")
+			return 64
+		}
+		return keepDryRun(*dryFile, *repo, *forgeSpec, summaryFiles, *asJSON)
+	}
+	if *mainFile != "" {
+		if *lineFile != "" || *gatesFile != "" || *fromMR != 0 || len(dirs) > 0 {
+			fmt.Fprintln(os.Stderr, "workline: --main keeps main's findings in its issue, and applies nothing else: no run, --line, --gates nor --from-merge-request")
+			return 64
+		}
+		return keepMain(*mainFile, *repo, *forgeSpec, summaryFiles, *asJSON)
+	}
+	if *gatesFile != "" && *fromMR == 0 {
+		fmt.Fprintln(os.Stderr, "workline: --gates goes with --from-merge-request: its findings are shown on that merge request")
+		return 64
 	}
 	resume := engine.Resume
 	var from engine.FromMergeRequest
@@ -1292,8 +1443,20 @@ func applyCmd(args []string) int {
 		return 64
 	}
 	// What the line's documentalist found on a merge request, shown beside
-	// its lines on the head judged, a check's annotations (#412).
+	// its lines on the head judged, a check's annotations (#412); what its
+	// gates found the change adds, so too, with a summary comment (ADR-0049).
 	var noted []verdict.Finding
+	if *gatesFile != "" {
+		shown, err := showGates(from, *gatesFile)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "workline:", err)
+			return 1
+		}
+		noted = append(noted, shown...)
+	}
+	if *lineFile == "" && *gatesFile != "" && len(dirs) == 0 {
+		return nothingToApply(noted, summaryFiles, *asJSON)
+	}
 	if *lineFile != "" {
 		data, err := os.ReadFile(*lineFile)
 		var l line.Result
@@ -1305,7 +1468,7 @@ func applyCmd(args []string) int {
 			return 1
 		}
 		if *fromMR != 0 {
-			noted = engine.Annotate(from, func(read func(string) ([]byte, error)) ([]forge.Annotation, int) {
+			noted = append(engine.Annotate(from, func(read func(string) ([]byte, error)) ([]forge.Annotation, int) {
 				var found []wlreport.Item
 				for _, i := range wlreport.FromLine(&l) {
 					if i.Role == "documentalist" {
@@ -1313,23 +1476,11 @@ func applyCmd(args []string) int {
 					}
 				}
 				return wlreport.Annotations(read, found)
-			})
+			}), noted...)
 		}
 		dirs = append(dirs, l.Pending...)
 		if len(dirs) == 0 {
-			res := &engine.Result{Status: verdict.Pass, Summary: "nothing to apply: the line proposed nothing",
-				Applied: []string{}, Refused: []string{}, Findings: noted}
-			if err := wlreport.AppendSummary(summaryFiles, wlreport.Summary{Title: "apply", Status: verdict.Pass, NothingToApply: true, Findings: noted}); err != nil {
-				fmt.Fprintln(os.Stderr, "workline:", err)
-				return 1
-			}
-			if *asJSON {
-				out, _ := json.MarshalIndent(res, "", "  ")
-				fmt.Println(string(out))
-			} else {
-				report(res)
-			}
-			return 0
+			return nothingToApply(noted, summaryFiles, *asJSON)
 		}
 	}
 	if len(dirs) == 0 {
@@ -1376,6 +1527,269 @@ func applyCmd(args []string) int {
 		report(res)
 	}
 	return exitFor(res.Status)
+}
+
+// keepMain keeps what main's run after a merge found in one issue
+// (ADR-0050): opened when there is something to list, edited when what
+// it lists changes, left as it is when nothing is new or gone. The run's
+// result is data its job wrote: what it says is cut and defused.
+func keepMain(file, repo, forgeSpec string, summaryFiles []string, asJSON bool) int {
+	fail := func(err error) int {
+		fmt.Fprintln(os.Stderr, "workline:", err)
+		return 1
+	}
+	data, err := os.ReadFile(file)
+	if err != nil {
+		return fail(err)
+	}
+	var r line.Result
+	if err := json.Unmarshal(data, &r); err != nil {
+		return fail(fmt.Errorf("--main %s: %v", file, err))
+	}
+	if r.Event != line.MainEvent {
+		return fail(fmt.Errorf("--main %s: not the result of `workline route main`", file))
+	}
+	root, err := gitRoot(repo)
+	if err != nil {
+		return fail(errors.New("not in a git repository"))
+	}
+	if forgeSpec == "" {
+		cfg, err := role.LoadProjectConfig(root)
+		if err != nil {
+			return fail(err)
+		}
+		forgeSpec = cfg.Forge
+	}
+	f, err := forge.Open(forgeSpec, root)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "workline:", err)
+		return 64
+	}
+	b, ok := f.(forge.Backlog)
+	if f == nil || !ok {
+		fmt.Fprintln(os.Stderr, "workline: --main needs a forge (--forge github, gitlab…) to keep its issue")
+		return 64
+	}
+	open, err := b.Issues()
+	if err != nil {
+		return fail(err)
+	}
+	now, id := "", 0
+	for _, is := range open {
+		if is.Title == wlreport.MainTitle && !is.Closed {
+			now, id = is.Body, is.ID
+			break
+		}
+	}
+	body, changed, found := wlreport.MainIssue(&r, now)
+	res := &engine.Result{Status: verdict.Pass, Applied: []string{}, Refused: []string{}}
+	switch {
+	case !changed && id != 0:
+		res.Summary = fmt.Sprintf("nothing new nor gone on the default branch: issue #%d left as it is", id)
+	case !changed:
+		res.Summary = "nothing found on the default branch: no issue opened"
+	default:
+		n, err := f.KeepIssue(wlreport.MainTitle, backlog.Inert(body), found)
+		if err != nil {
+			return fail(err)
+		}
+		res.Summary = fmt.Sprintf("issue #%d kept: what the default branch's run found changed", n)
+		res.Applied = append(res.Applied, fmt.Sprintf("issue #%d", n))
+		id = n
+	}
+	res.Findings = append(res.Findings, verdict.Finding{Rule: "main-issue", Message: res.Summary})
+	// Red, each open merge request into it is told, once a red spell: a
+	// check red there for it is the base's (ADR-0051, cut 2).
+	if since := wlreport.RedSince(body); since != "" && id != 0 && r.Main != nil {
+		n, err := noteBaseRed(f, root, r.Main.Head, since, id)
+		if err != nil {
+			return fail(err)
+		}
+		if n > 0 {
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "base-red", Message: fmt.Sprintf("the default branch red since %s: the open merge requests into it told, once each: %d", since, n)})
+		}
+	}
+	if err := wlreport.AppendSummary(summaryFiles, wlreport.RoleSummary("apply --main", "", res)); err != nil {
+		return fail(err)
+	}
+	if asJSON {
+		out, _ := json.MarshalIndent(res, "", "  ")
+		fmt.Println(string(out))
+	} else {
+		report(res)
+	}
+	return 0
+}
+
+// noteBaseRed says, on each open merge request whose base holds head, that
+// the default branch's run is red since a commit, from merges each green
+// alone: a check red there for it is not the merge request's own. One
+// comment each, by the commit main turned red at. It returns how many it
+// looked at.
+func noteBaseRed(f forge.Forge, repo, head, since string, issue int) (int, error) {
+	open, err := f.ListMergeRequests()
+	if err != nil {
+		return 0, err
+	}
+	holds, n := map[string]bool{}, 0
+	for _, mr := range open {
+		held, read := holds[mr.Base]
+		if !read {
+			for _, ref := range []string{"refs/remotes/origin/" + mr.Base, "refs/heads/" + mr.Base} {
+				if exec.Command("git", "-C", repo, "merge-base", "--is-ancestor", head, ref).Run() == nil {
+					held = true
+					break
+				}
+			}
+			holds[mr.Base] = held
+		}
+		if !held {
+			continue
+		}
+		body := fmt.Sprintf("**Base red, not yours**: the default branch's run is red since `%.7s`, from merges each green alone (#%d). A check red here for that is the base's, not this merge request's: it clears once the base is fixed.", since, issue)
+		if err := f.Comment(forge.Target{Kind: "merge-request", ID: mr.ID}, body, forge.Marker("base-red="+since)); err != nil {
+			return 0, err
+		}
+		n++
+	}
+	return n, nil
+}
+
+// keepDryRun posts what a release's dry run found (ADR-0050) in a part of
+// the default branch's issue, put in, edited, or taken out when nothing
+// holds. The run's result is data its job wrote: what it says is cut and
+// defused.
+func keepDryRun(file, repo, forgeSpec string, summaryFiles []string, asJSON bool) int {
+	fail := func(err error) int {
+		fmt.Fprintln(os.Stderr, "workline:", err)
+		return 1
+	}
+	data, err := os.ReadFile(file)
+	if err != nil {
+		return fail(err)
+	}
+	var r line.Result
+	if err := json.Unmarshal(data, &r); err != nil {
+		return fail(fmt.Errorf("--release-dry-run %s: %v", file, err))
+	}
+	if r.DryRun == nil {
+		return fail(fmt.Errorf("--release-dry-run %s: not the result of `workline route release --dry-run`", file))
+	}
+	d := r.DryRun
+	root, err := gitRoot(repo)
+	if err != nil {
+		return fail(errors.New("not in a git repository"))
+	}
+	if forgeSpec == "" {
+		cfg, err := role.LoadProjectConfig(root)
+		if err != nil {
+			return fail(err)
+		}
+		forgeSpec = cfg.Forge
+	}
+	f, err := forge.Open(forgeSpec, root)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "workline:", err)
+		return 64
+	}
+	b, ok := f.(forge.Backlog)
+	if f == nil || !ok {
+		fmt.Fprintln(os.Stderr, "workline: --release-dry-run needs a forge (--forge github, gitlab…) to post what it found")
+		return 64
+	}
+	res := &engine.Result{Status: verdict.Pass, Applied: []string{}, Refused: []string{}}
+	open, err := b.Issues()
+	if err != nil {
+		return fail(err)
+	}
+	now, id := "", 0
+	for _, is := range open {
+		if is.Title == wlreport.MainTitle && !is.Closed {
+			now, id = is.Body, is.ID
+			break
+		}
+	}
+	var said []string
+	if body, changed := wlreport.WithDryRun(now, d); changed && (id != 0 || len(d.Holds) > 0) {
+		n, err := f.KeepIssue(wlreport.MainTitle, backlog.Inert(body), true)
+		if err != nil {
+			return fail(err)
+		}
+		said = append(said, fmt.Sprintf("issue #%d kept: what would hold the release changed", n))
+		res.Applied = append(res.Applied, fmt.Sprintf("issue #%d", n))
+	} else if id != 0 {
+		said = append(said, fmt.Sprintf("nothing new nor gone for the release: issue #%d left as it is", id))
+	} else {
+		said = append(said, "nothing would hold the release: no issue opened")
+	}
+	res.Summary = strings.Join(said, "; ")
+	res.Findings = append(res.Findings, verdict.Finding{Rule: "release-dry-run", Message: res.Summary})
+	if err := wlreport.AppendSummary(summaryFiles, wlreport.RoleSummary("apply --release-dry-run", "", res)); err != nil {
+		return fail(err)
+	}
+	if asJSON {
+		out, _ := json.MarshalIndent(res, "", "  ")
+		fmt.Println(string(out))
+	} else {
+		report(res)
+	}
+	return 0
+}
+
+// nothingToApply ends an apply the line proposed nothing to, its findings
+// said.
+func nothingToApply(noted []verdict.Finding, summaryFiles []string, asJSON bool) int {
+	res := &engine.Result{Status: verdict.Pass, Summary: "nothing to apply: the line proposed nothing",
+		Applied: []string{}, Refused: []string{}, Findings: noted}
+	if err := wlreport.AppendSummary(summaryFiles, wlreport.Summary{Title: "apply", Status: verdict.Pass, NothingToApply: true, Findings: noted}); err != nil {
+		fmt.Fprintln(os.Stderr, "workline:", err)
+		return 1
+	}
+	if asJSON {
+		out, _ := json.MarshalIndent(res, "", "  ")
+		fmt.Println(string(out))
+	} else {
+		report(res)
+	}
+	return 0
+}
+
+// showGates shows on the merge request what its gates found the change
+// adds, from the result a run of the gates alone printed in its own CI
+// run: data that run's code could have written, capped and defused. The
+// summary comment lists as many rules as the reviewer's `findings-max`
+// lets it list findings (ADR-0049).
+func showGates(from engine.FromMergeRequest, file string) ([]verdict.Finding, error) {
+	data, err := os.ReadFile(file)
+	if err != nil {
+		return nil, err
+	}
+	var r line.Result
+	if err := json.Unmarshal(data, &r); err != nil {
+		return nil, fmt.Errorf("--gates %s: %v", file, err)
+	}
+	g := wlreport.Gates(&r, from.Head)
+	entries := 10 // the reviewer's default
+	if cfg, err := role.LoadProjectConfig(from.Repo); err == nil {
+		// A whole number from 1, however it was read: YAML's int, JSON's
+		// float; any other value leaves the default.
+		switch n := cfg.Roles["reviewer"].Settings["findings-max"].(type) {
+		case int:
+			if n >= 1 {
+				entries = n
+			}
+		case int64:
+			if n >= 1 {
+				entries = int(n)
+			}
+		case float64:
+			if n >= 1 && n == float64(int(n)) {
+				entries = int(n)
+			}
+		}
+	}
+	return engine.ShowGates(from, engine.GatesToShow{Notes: g.Notes, Title: g.Title(), Summary: g.Summary(),
+		Comment: func(url string) string { return g.Comment(url, entries) }, Worth: g.Worth(), New: g.New}), nil
 }
 
 // fromMergeRequest is what `apply --from-merge-request` takes from this

@@ -1,0 +1,10 @@
+case: committer/squash-title-within-its-room-passes
+about: "A title of 67 characters lands at 72 with the forge's ` (#5)`: within the limit, it passes (ADR-0051)."
+given:
+  repo: basic
+  setup: ["git tag base && echo a >> main.go && git commit -qam 'feat: add a greeting'"]
+  forge:
+    squash: {on: true, suffix: " (#{n})"}
+    merge-requests: [{id: 5, title: "feat(committer): check the title a squash lands, with room for (#N)", labels: [], comments: []}]
+run: {role: committer, event: merge-request, input: {range: "base..HEAD"}, target: {merge-request: 5}}
+expect: {status: pass, agent-calls: 0}

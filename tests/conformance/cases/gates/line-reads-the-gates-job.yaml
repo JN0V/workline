@@ -1,0 +1,26 @@
+case: gates/line-reads-the-gates-job
+about: >
+  The job judging the line runs no gate: it reads each gate's verdict from
+  the job that ran the gates alone, the linter in that job's reach only
+  (ADR-0049, section 6). The line blocks as if it had run the gate; the
+  findings stay that job's to report, not written again.
+given:
+  repo: linted
+  setup:
+    - git checkout -q -b change
+    - |
+      sed -i 's|^\tos.Remove("c.tmp")$|&\n\tos.Remove("d.tmp")|' clean.go && git commit -qam "feat: clean d too"
+  config:
+    routing: {events: {merge-request: ["gate:merge"]}}
+    gates: {merge: {checks: [{id: lint, run: "golangci-lint run --output.sarif.path={out}/lint.sarif", output: sarif, max: {error: 0}}]}}
+run:
+  route: merge-request
+  input: {range: main..change}
+  gates-job: {env: {PATH: "$FIXTURES/bin:$PATH"}}
+  reports: true
+expect:
+  status: block
+  steps: ["gate:merge"]
+  findings: [{rule: over-threshold, where: lint, message: "1 new error finding, at most 0 allowed (3 there before it"}]
+  no-findings: [{rule: check-error}]
+  left-out: [clean.go]

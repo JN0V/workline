@@ -1,0 +1,31 @@
+case: product-owner/field-members-only-never-shown
+about: "On a public repository whose fields are visible to organization members only, a member's token writes the values but never shows them: not in the role's comment, its state (`-1`, set by the role), nor the job's summary — Next keeps the order, the values hidden, and no Urgent is listed apart (ADR-0040, step 4)."
+given:
+  repo: backlog
+  config:
+    roles:
+      product-owner:
+        settings: {moved-percent-max: 100, priority: auto, effort: auto, acts: {order: {mode: act}, effort: {mode: act}}}
+  forge:
+    public: true
+    issue-fields:
+      - {id: 47714576, name: Priority, options: [Urgent, High, Medium, Low]}
+      - {id: 47714579, name: Effort, options: [High, Medium, Low]}
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.\n\n## Scope\n\nsrc/export/csv.go", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 20, title: "Export to JSON", body: "Add a JSON export.", labels: [workline:ready], fields: {Priority: High, Effort: Low}, comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:order-effort}
+expect:
+  findings:
+    - {rule: values-where, message: "Priority: the field Priority, its values visible to organization members only: never shown."}
+    - {rule: done, where: "#9", message: "Set #9's priority to a level hidden here (was: no priority"}
+    - {rule: done, where: "#9", message: "Set #9's effort to a level hidden here (was: not estimated)"}
+    - {rule: values-hidden, message: "Values hidden"}
+    - {rule: next-ready, where: "#20", message: "Export to JSON"}
+  no-findings:
+    - {rule: urgent-set}
+    - {rule: next-ready, message: "High"}
+    - {rule: done, message: "Urgent"}
+  forge:
+    issues:
+      - {id: 9, fields: {Priority: Urgent, Effort: Low}, comment-contains: ["priority: -1", "effort: -1"], comment-lacks: ["Urgent", "done:"]}

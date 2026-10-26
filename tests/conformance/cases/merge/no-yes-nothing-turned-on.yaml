@@ -23,7 +23,7 @@ expect:
   status: pass
   no-findings: [{rule: auto-merge-on}, {rule: updated}, {rule: fork-behind}, {rule: merged-at-once}]
   not-pushed: [feat/sessions, release-please--branches--main]
-  summary-file: ["merge policy (cautious): none in line into main"]
+  summary-file: ["merge policy (cautious): none accepted into main"]
   forge:
     merge-requests:
       - {id: 7, auto-merge: false, comments: 0}

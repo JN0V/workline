@@ -1,0 +1,15 @@
+case: setup/doctor-language-ci-runs-linter
+about: "A linter the project's CI already runs counts: shell a GitHub workflow lints with shellcheck is read, the workflow named, and no gate check is asked for it; a tool named only in a comment runs nothing, so the Dockerfile still lacks hadolint (ADR-0049)."
+given:
+  repo: basic
+  setup:
+    - "mkdir -p .github/workflows && printf 'echo deploy\\n' > deploy.sh && printf 'FROM scratch\\n' > Dockerfile && printf 'jobs:\\n  lint:\\n    steps:\\n      - run: shellcheck deploy.sh   # hadolint, later\\n' > .github/workflows/lint.yml && git add deploy.sh Dockerfile .github && git commit -qm 'ci: lint the scripts'"
+run: {doctor: true}
+expect:
+  status: pass
+  checks:
+    - {rule: language-covered, where: shell, level: ok, message: "lint by shellcheck (.github/workflows/lint.yml)"}
+  findings:
+    - {rule: language-gaps, where: docker, level: warn, message: "lint by nothing: hadolint"}
+  no-findings:
+    - {rule: language-gaps, where: shell}

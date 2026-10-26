@@ -1,0 +1,21 @@
+case: documentalist/judged-kept-on-gitlab
+about: "On GitLab, as on GitHub: a doc found with nothing to fix on a person's merge request gets no commit, its record kept in the documentalist's note; the next run reads the note, written by the project's token, a member, and does not judge the doc again (ADR-0013, amended 2026-10-17)."
+given:
+  repo: documented
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb feature && printf '\\n// TokenTTL is in seconds.\\n' >> src/auth/token.go && git commit -qam 'docs(auth): say the unit of the lifetime' && git push -q origin feature && git checkout -q --detach"
+  forge:
+    merge-requests: [{id: 1, branch: feature, base: main, labels: [], comments: []}]
+    members: [{username: workline-bot, access_level: 30}]
+run: {role: documentalist, event: merge-request, target: {merge-request: 1}, ai: 'cmd:sh "$FIXTURES/agents/judged-only.sh"', forge: gitlab, then: again}
+expect:
+  status: pass
+  agent-calls: 1
+  not-pushed: [feature]
+  findings:
+    - {rule: suspect, where: docs/tech/auth.md, message: "its record is kept in the documentalist's comment on this merge request"}
+    - {rule: suspect, where: docs/tech/auth.md, message: "the doc and its sources unchanged since: not put before an agent again"}
+  forge:
+    merge-requests:
+      - {id: 1, comments: 1, comment-contains: ["<!-- workline:doc-judged", "<!-- workline:sticky=documentalist/judged -->"]}

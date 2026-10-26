@@ -181,6 +181,43 @@ last (GitHub's timeline, the webhook's previous value).
 - **jn0v-lab/workline-sandbox** is a fork with issues off; `gh` in a
   fork's clone resolves to the parent unless `GH_REPO` is set.
 
+## Checked live (2026-10-18)
+
+On [jn0v-lab/workline-priority-try](https://github.com/jn0v-lab/workline-priority-try),
+a public test repository of the organisation, its Priority and Effort
+"organization members only", for ADR-0040's step 4:
+
+- **Listed**: GraphQL's `repository.issueFields` gives each field's
+  `fullDatabaseId` (a string), name, `visibility` (`ORG_ONLY`, `ALL`) and
+  options; date fields come as empty objects. GraphQL's options read
+  Urgent, High, Medium, Low for Priority; the REST organisation listing
+  gives them in another order (High, Low, Medium, Urgent): by name, never
+  by place. `owner { ... on Organization { viewerIsAMember } }` says
+  whether the token's user is a member.
+- **Read**: the issues listing and a single issue carry
+  `issue_field_values` (`issue_field_name`, `single_select_option.name`)
+  **with or without** the version header.
+- **Written**: `POST …/issues/{n}/issue-field-values` with
+  `{"issue_field_values": [{"field_id": …, "value": "High"}]}` and
+  `X-GitHub-Api-Version: 2026-03-10` sets one field and keeps the other;
+  the timeline records `issue_field_added` by its writer.
+- **An outsider** (no token) reads `issue_field_values: []` on an issue
+  whose values are members-only: a value it cannot see reads as none,
+  never as an error. A member's token (a person's, an organisation admin)
+  reads and writes them.
+- **Not tried**: the job's own token, as a workflow in the test
+  repository needs a token with the `workflow` scope to be added (the
+  maintainer's has none); an App's, as workline's App is private to a
+  user's account and cannot be installed on the organisation.
+
+On gitlab.com/JN0V/workline-sandbox, a GitLab Free project, for step 5:
+
+- **No key**: none of its 22 open issues' JSON carries `weight`, in the
+  listing or a single issue.
+- **A weight sent is ignored**: `PUT …/issues/31` with `weight=3` answers
+  200, the issue without a `weight` key; only its `updated_at` moved, no
+  note added. A write is told kept only by reading it back.
+
 ## What to borrow, and what is missing
 
 - **Borrowed**: GitHub's fields and their levels; GitLab's ranked
@@ -192,9 +229,13 @@ last (GitHub's timeline, the webhook's previous value).
 
 ## Not verified
 
-- Whether `GITHUB_TOKEN` sets field values, and whether each token reads
-  "organization members only" values on a public repository.
+- Whether `GITHUB_TOKEN`, or an App's installation token, reads and sets
+  "organization members only" values on a public repository (a member's
+  does; an outsider reads none).
 - Whether GitHub suggestions work on a user's repository, whom they
-  notify; whether a listing gives field values without the version header.
+  notify; whether a field's write notifies anyone.
 - Which Projects templates create Priority, Size or Estimate; Shortcut's
   default estimate values (its help pages redirect).
+- GitLab Premium's weight live: the `weight` key on a listing, a `PUT`
+  read back, and whether a parent's REST `weight` is its own or its
+  parts' sum (no Premium project at hand).

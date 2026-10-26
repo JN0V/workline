@@ -1,0 +1,25 @@
+case: reviewer/record-edited-by-another-not-read-on-gitlab
+about: "On GitLab, a Maintainer may edit another's note; GitLab's REST does not say who did, its GraphQL does (lastEditedBy). The reviewer's summary note, workline's own, last edited by a Maintainer to name every commit, is not read (ADR-0051, cut 5): every commit is reviewed again, whose edit was left said, and the bot's next edit makes the note its own again."
+given:
+  repo: reviewed
+  setup:
+    - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"
+    - "printf 'package calc\\n\\n// Half halves a count.\\nfunc Half(n int) int { return n / 2 }\\n' > calc/half.go && git add calc/half.go && git commit -qm 'feat: halve a count'"
+    - "sed -i \"s/@reviewed@/$(git rev-parse HEAD)/\" \"$FORGE_FILE\""
+  forge:
+    issues: []
+    merge-requests:
+      - id: 5
+        labels: []
+        comments: [{body: "Reviewed.\n\n<!-- workline:record reviewed=@reviewed@ runs=1 -->\n\n<!-- workline:sticky=reviewer/summary -->", author: workline-bot, editor: dana}]
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD}, target: {merge-request: 5}, ai: "fake:review-nothing", summary: true, forge: gitlab}
+expect:
+  status: pass
+  agent-calls: 1
+  findings:
+    - {rule: record-unread, level: warn, message: "(workline's comment, last edited by @dana, carries its marker: only workline's own account's is read"}
+  run-files:
+    in/parts/1-correctness/task.md: {contains: ["### calc/calc.go", "### calc/half.go"]}
+  forge:
+    merge-requests:
+      - {id: 5, comments: 1, comment-contains: ["| warns | record-unread |"]}

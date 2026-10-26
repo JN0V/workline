@@ -5,7 +5,11 @@
   `normal` built for workline's own routine pull requests by [#322]
   ([amendment](#amendment-2026-10-13-322-normal-routine-pull-requests-first)),
   agents' pull requests next; workline's own record commits keep the yes
-  ([#380], [amendment](#amendment-2026-10-14-380-worklines-own-record-commits-keep-the-yes))
+  ([#380], [amendment](#amendment-2026-10-14-380-worklines-own-record-commits-keep-the-yes));
+  an agent's rewording for a reader waits for a yes unless the project
+  lets it ([#438], [amendment](#amendment-2026-10-17-438-an-agents-rewording-waits-for-a-yes));
+  up to date and one at a time dropped by [ADR-0051]
+  ([amendment](#amendment-2026-10-21-adr-0051-no-up-to-date-no-one-at-a-time))
 - **Date:** 2026-10-12
 - **Decided by:** the maintainer, its direction (2026-10-12), after four
   agents argued role or not
@@ -407,6 +411,71 @@ Conformance: merge/record-commit-keeps-the-yes,
 docs-fix-after-the-yes-takes-it-back, persons-record-commit-takes-it-back;
 TestOwnRecord.
 
+## Amendment (2026-10-17, #438): an agent's rewording waits for a yes
+
+Seen on 2026-10-16 and 10-17: the documentalist's reader task
+([ADR-0048](0048-the-agent-reads-the-pages-the-reader-checks-flag.md))
+opened two pull requests rewording pages for their reader, [#421] and
+[#423]. Each counted as `docs` and merged alone, within four minutes,
+no label. The maintainer decided on 2026-10-17 to read them first, for
+the first weeks: [#256]'s Validation is the maintainer agreeing with
+what it proposes.
+
+- **A fourth kind, `reader`, the highest**: a change writing a page's
+  `reader:` line, the record the reader task leaves in each page's
+  header. Told by what the change is, as the other kinds, never by the
+  branch's name; a `reader:` line elsewhere than a header is text.
+- **It waits for a person's yes at `normal`**, through the same path
+  as a kind demoted: auto-merge left off, or taken back, and said
+  (`waits-for-a-yes`). Said once on the pull request too: the label
+  that accepts it, and the setting that lets it merge alone.
+- **A project lets it merge alone**: `merge: {autonomy: normal, alone:
+  [reader]}`. Written in advance, like the level: the narrow class the
+  line accepts for a person (principle 1). Then it is recorded as
+  `reader`, and a revert demotes it as any kind.
+- **`alone` is checked**: a kind not waiting by default (`docs`), or
+  `alone` below `normal`, stops `follow` before anything is touched.
+- **Not chosen**:
+  - an issue the App opens, closed to let the kind merge alone: a
+    demotion is trust lost; this is a choice made in advance, and
+    belongs where the level is set;
+  - the branch's name, `workline/documentalist/reader-…`: the kinds are
+    told by the change;
+  - holding every `docs` change: gardening's fixes merged alone as
+    designed.
+
+Conformance: merge/normal-reader-waits-for-a-yes,
+normal-reader-alone-when-let, alone-needs-normal,
+alone-unknown-kind-refused; TestRoutineKind, TestDemotedKind.
+
+## Amendment (2026-10-21, ADR-0051): no up to date, no one at a time
+
+[ADR-0051]'s cut 2, measured: strict up to date cost 103 rounds in four
+weeks, and no test went red after a merge of main. "Up to date, one at a
+time" and "The order" above are replaced:
+
+- **Each accepted pull request merges once its own head is green**:
+  auto-merge on for every one admitted, in the same run; none waits for
+  another, none is brought up to date to merge.
+- **The base requires no branch up to date**: on GitHub, "Require
+  branches to be up to date" off; the required checks and
+  `workline/accepted` stay.
+- **Kept**: a release held for its docs, merged since, is still brought
+  up to date, so its line runs again, until [ADR-0051]'s step 3 removes
+  the release's docs. [ADR-0041]'s merges of the base, for conflicts on
+  workline's own lines, stay, until [ADR-0051]'s step 10 removes them.
+- **The net is main's run**: red, it says so in its one issue and once
+  on each open pull request whose base holds the red commit ("base red,
+  not yours"). The issue counts red mains a week; above one, the forge's
+  queue goes on: GitHub's merge queue in an organisation, GitLab's merge
+  train. GitLab projects keep merged-results pipelines.
+- **Gone**: the line's order, `fork-behind`, the first in line's update.
+
+Conformance: merge/behind-main-merges-as-it-is,
+accepted-all-turned-on-at-once, gitlab-accepted-turned-on;
+routing/main-red-says-base-red-on-open-merge-requests;
+TestMainIssueCountsRedMainsAWeek.
+
 [ADR-0005]: 0005-independence-takes-the-best-level-available.md
 [ADR-0011]: 0011-the-review-is-on-the-merge-request-not-the-push.md
 [ADR-0017]: 0017-the-release-manager.md
@@ -418,11 +487,16 @@ TestOwnRecord.
 [ADR-0036]: 0036-a-roles-status-is-earned-by-written-criteria.md
 [ADR-0038]: 0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md
 [ADR-0041]: 0041-workline-settles-its-own-lines-when-the-base-moves.md
+[ADR-0051]: 0051-a-check-sits-where-its-catch-is-worth-its-cost.md
 [#73]: https://github.com/JN0V/workline/pull/73
 [#117]: https://github.com/JN0V/workline/issues/117
+[#256]: https://github.com/JN0V/workline/issues/256
 [#260]: https://github.com/JN0V/workline/pull/260
 [#321]: https://github.com/JN0V/workline/issues/321
 [#322]: https://github.com/JN0V/workline/issues/322
 [#329]: https://github.com/JN0V/workline/pull/329
 [#331]: https://github.com/JN0V/workline/issues/331
 [#380]: https://github.com/JN0V/workline/issues/380
+[#421]: https://github.com/JN0V/workline/pull/421
+[#423]: https://github.com/JN0V/workline/pull/423
+[#438]: https://github.com/JN0V/workline/issues/438

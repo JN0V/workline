@@ -1,0 +1,22 @@
+case: product-owner/weight-setting-on-free-stops
+about: "The settings keep the effort in GitLab's weight, and the project keeps none, as on GitLab Free: the run stops and says so, never reading another place nor writing anything (ADR-0040, step 5; principle 12)."
+given:
+  repo: backlog
+  config:
+    roles:
+      product-owner:
+        settings: {effort: {in: weight}, acts: {effort: {mode: act}}}
+  forge:
+    members:
+      - {username: ann, access_level: 30}
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.\n\n## Scope\n\nsrc/export/csv.go", author: ann, labels: [bug], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:order-effort, forge: gitlab}
+expect:
+  status: block
+  agent-calls: 0
+  findings:
+    - {rule: values-where, level: block, message: "effort: the settings name GitLab's weight, and its issues carry none (GitLab Premium and Ultimate keep one): name a family of labels, or auto"}
+  forge:
+    issues:
+      - {id: 9, labels: [bug], weight: -1, comment-lacks: "effort:"}

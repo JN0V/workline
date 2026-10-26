@@ -33,7 +33,7 @@ func init() {
 		{name: "issues", args: "[list] | show <n>|!<n> | import <file> [options]", about: "read the local forge's issues; import a roadmap or backlog file to the forge's issues", run: issuesCmd},
 		{name: "docs", args: "[options]", about: "judge the docs made suspect since they were last judged, then review each change", run: docsCmd},
 		{name: "sample", args: "[options] | --apply <file> [options]", about: "draw and read the week's sample of the docs the documentalist vouched for; --apply writes it to the forge", run: sampleCmd},
-		{name: "follow", args: "[options]", about: "rebuild the roles' release merge requests on their base's new tip; --gardening: their gardening ones too; with update-branches, merge it into people's in conflict only on workline's lines", run: followCmd},
+		{name: "follow", args: "[options]", about: "with the merge policy, turn auto-merge on for what a person accepted; --gardening: rebuild the roles' merge requests on their base's new tip", run: followCmd},
 		{name: "init", args: "[options]", about: "adopt this repository: route pre-push, have each doc's sources proposed", run: initCmd},
 		{name: "setup", args: "[options]", about: "set workline up on this machine, asking what to enable", run: setupCmd},
 		{name: "doctor", args: "[options]", about: "say what is set up on this machine and in this repository, and what is missing", run: doctorCmd},
@@ -197,6 +197,13 @@ func positional(fs *flag.FlagSet, args []string, n int) (code int, done bool) {
 	return 0, false
 }
 
+// isSet says whether the option was given, an empty value too.
+func isSet(fs *flag.FlagSet, name string) bool {
+	set := false
+	fs.Visit(func(f *flag.Flag) { set = set || f.Name == name })
+	return set
+}
+
 // misuse says what was wrong, then the command's usage, on stderr: 64.
 func misuse(fs *flag.FlagSet, msg string) int {
 	fmt.Fprintf(os.Stderr, "workline %s: %s\n", fs.Name(), msg)
@@ -214,7 +221,7 @@ var flagValue = map[string]string{
 	"scope": "<glob>", "input": "<name=value>", "input-file": "<name=path>", "lenses": "<lens,...>",
 	"sarif": "<file>", "code-quality": "<file>", "summary": "<file>", "out": "<file>", "line": "<file>",
 	"week": "<year-Wnn>", "since": "<rev>", "lines": "<n>", "hooks": "yes|no", "human-po": "yes|no",
-	"install": "<tool,...>|all|none",
+	"install": "<tool,...>|all|none", "gates-kept": "<dir>",
 }
 
 // commandHelp prints the command's usage line, what it does, and its

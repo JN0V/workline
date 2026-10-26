@@ -7,7 +7,7 @@ given:
     - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C/\" docs/tech/auth.md && git commit -qam 'docs: confirm the auth doc'"
     - "seq 1 3000 | sed 's/^/const b/' > src/auth/big.go && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
   config: {roles: {documentalist: {settings: {judge-in-parts: true}}}}
-run: {role: documentalist, event: merge-request, ai: "fake:parts-one-answers-a-patch"}
+run: {role: documentalist, event: schedule, ai: "fake:parts-one-answers-a-patch"}
 expect:
   status: pass
   agent-calls: 2

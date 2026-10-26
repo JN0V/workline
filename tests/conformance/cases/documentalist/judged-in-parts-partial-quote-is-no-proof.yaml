@@ -1,0 +1,23 @@
+case: documentalist/judged-in-parts-partial-quote-is-no-proof
+about: "A quote a part read with its share and judged partial for a passage is no proof that the passage is wrong (#467): every part calls the session line partial, and the fix takes \"the configured session TTL\" out, citing the config part's own quote of the 24-hour default. That place is withheld for a person (`citation-unchecked`), saying why; the rest of the fix applies: the log level a part found wrong, and a word only added."
+given:
+  repo: service
+  config: {roles: {documentalist: {settings: {judge-in-parts: true, parts-always: true, part-chars: 1500}}}}
+  setup:
+    - "sed -i 's/DefaultLogLevel       = \"info\"/DefaultLogLevel       = \"warn\"/' src/service/config.go && git commit -qam 'feat(service): log warnings only by default'"
+run: {role: documentalist, event: merge-request, ai: "fake:parts-partial-quote-as-proof"}
+expect:
+  status: pass
+  agent-calls: 5   # four parts, then the fix
+  findings:
+    - {rule: citation-unchecked, where: docs/tech/service.md, message: "a part read with its share and judged partial"}
+  run-files:
+    in/task.md:
+      contains: "### To be read together"
+  files:
+    "docs/tech/service.md":
+      contains:
+        - "It logs at the `warn` level by default."
+        - "By default, at most 100 requests are served at once"
+        - "one lasts the configured session TTL, 24 hours by default, and is renewed"
+      lacks: "one lasts 24 hours, and is renewed"

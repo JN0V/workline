@@ -1,0 +1,14 @@
+case: committer/hook-says-the-rewrite-before-it-starts
+about: "By default, the hook says which agent rewrites the refused message, and for how long at most, before the agent is asked; then the message committed."
+given:
+  repo: basic
+  setup: ["printf 'fix: AC-3\\n' > .git/COMMIT_EDITMSG"]
+  env: {WORKLINE_AI: "fake:$FIXTURES/agents/good-commit-message.yaml"}
+run: {cli: [hook, commit-msg, .git/COMMIT_EDITMSG]}
+expect:
+  exit: 0
+  stderr:
+    - "workline committer: the message is refused; the agent (fake) rewrites it, 30 s at most…\nworkline committer: pass"
+    - "the commit goes on with this message instead of yours"
+  files:
+    .git/COMMIT_EDITMSG: {contains: "fix(parser): stop crashing on an empty input file"}

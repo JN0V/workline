@@ -142,7 +142,11 @@ type checkContext struct {
 // sumChecks sums up a head's checks as sumRuns does, check runs and
 // commit statuses both, workline's own statuses left out: a verdict kept,
 // a yes held, are no check of the change.
-func sumChecks(all []checkContext) string {
+func sumChecks(all []checkContext) string { return sumRuns(runsOf(all)) }
+
+// runsOf reads check runs and commit statuses as runs, workline's own
+// statuses left out.
+func runsOf(all []checkContext) []CheckRun {
 	var runs []CheckRun
 	for _, c := range all {
 		r := CheckRun{Name: c.Name}
@@ -160,7 +164,7 @@ func sumChecks(all []checkContext) string {
 		}
 		runs = append(runs, r)
 	}
-	return sumRuns(runs)
+	return runs
 }
 
 // me is who this token writes as: the GitHub App's bot when the workflow
@@ -217,9 +221,10 @@ func (g *github) setStatus(head, name, state, description string) error {
 }
 
 // KeepVerdict keeps the verdict as the status workline/verdict: success
-// when it passed, pending for a release held for its docs, failure else.
+// when it passed, pending for a release held for its docs or a draft's
+// review to come once ready (ADR-0050), failure else.
 func (g *github) KeepVerdict(head, class, why string) error {
-	state := map[string]string{"pass": "success", "held": "pending"}[class]
+	state := map[string]string{"pass": "success", "held": "pending", "waits": "pending"}[class]
 	if state == "" {
 		state = "failure"
 	}
@@ -244,6 +249,19 @@ func (g *github) Accept(head string, ok bool, why string) error {
 		state = "success"
 	}
 	return g.setStatus(head, Accepted, state, why)
+}
+
+// AcceptedOn reads the status workline/accepted this token set on the
+// head: success, the yes; one anyone else set is never read.
+func (g *github) AcceptedOn(head string) (bool, string, error) {
+	state, why, err := g.ownStatus(head, Accepted)
+	switch {
+	case err != nil:
+		return false, "", err
+	case state == "success":
+		return true, "", nil
+	}
+	return false, why, nil
 }
 
 // Guarded: the base must require the status workline/accepted, which a

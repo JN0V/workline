@@ -1,0 +1,17 @@
+case: reviewer/warn-only-every-lens-blocks-writes-nothing
+about: "A project whose every lens blocks (`ai-findings: block`) has nothing to read apart from the verdict (ADR-0050): the run apart asks no agent and writes no comment, on any push."
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
+  config:
+    routing: {events: {merge-request: [reviewer]}}
+    roles: {reviewer: {settings: {ai-findings: block}}}
+  forge: {merge-requests: [{id: 5, labels: [], comments: []}]}
+run: {route: merge-request, warn-only: true, input: {range: main..HEAD, lenses: all}, target: {merge-request: 5}, ai: "cmd:sh $FIXTURES/agents/review-by-lens.sh"}
+expect:
+  status: pass
+  agent-calls: 0
+  applied: []
+  forge:
+    merge-requests:
+      - {id: 5, comments: 0}

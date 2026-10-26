@@ -11,7 +11,6 @@ run:
   event: merge-request
   target: {merge-request: 1}
   ai: "fake:doc-fixed"
-  push-to-merge-request: true
   no-apply: true
   then: resume
   apply-from:
@@ -25,12 +24,11 @@ run:
       target: {kind: merge-request, id: 2}
       targets: {message: pwned-by-a-target}
       open-merge-request: true
-      push-to-merge-request: false
       release: feature
 expect:
   status: pass
   applied: [patch]
-  findings: [{rule: pushed, where: feature}]
-  pushed: {feature: {docs/tech/auth.md: "Access tokens last two hours."}}
+  findings: [{rule: patch-as-comment}]
+  not-pushed: [feature]
   files: {pwned-by-the-forge: {exists: false}, pwned-by-a-target: {exists: false}}
-  forge: {merge-requests: [{id: 1, comments: 0}, {id: 2, absent: true}]}
+  forge: {merge-requests: [{id: 1, comments: 1, comment-contains: "+Access tokens last two hours."}, {id: 2, absent: true}]}

@@ -35,11 +35,17 @@ var contracts = map[string]string{
 	"rename":         `- rename: {issue: 12, title: "about ten words: the problem, not the fix", why: "why the title it has does not say it"}`,
 	"handoff":        `- handoff: {role: "next role", reason: "why"}`,
 	"note":           `- note: "a message for a person"`,
-	"finding":        `- finding: {lens: correctness, severity: important, title: "what is wrong, in a few words", why: "how it fails, and when", cause: {path: "src/file.go", quote: "the line that causes it, as it reads"}, symptom: {path: "src/other.go", quote: "where it shows, as it reads"}, fix: "what would fix it, in a sentence", seen: "what a person using the project sees when it fails, in plain words"}  # lens: the one that found it; severity: important or nit; symptom only when elsewhere; claim: "the author's words, as they read", only for a lens checking claims; a cause in an issue the change closes: path "#4"; decision: "the question for a person", only for a choice that is not a defect`,
+	"finding":        `- finding: {lens: correctness, severity: important, title: "what is wrong, in a few words", why: "how it fails, and when", cause: {path: "src/file.go", quote: "the line that causes it, as it reads"}, symptom: {path: "src/other.go", quote: "where it shows, as it reads"}, fix: "what would fix it, in a sentence", seen: "what a person using the project sees when it fails, in plain words"}  # lens: the one that found it; severity: important or nit; symptom only when elsewhere; claim: "the author's words, as they read", only for a lens checking claims; a cause in an issue the change closes: path "#4"; decision: "the question for a person", a key of the finding, only for a choice that is not a defect`,
+	"triage":         `- triage: {finding: t1, matters: "why it matters in this project, in its own words", fix: "what to change, in a sentence", false-positive: false, why: "why it looks like a false positive", order: 1}  # finding: the id the task gives it; why only with false-positive: true; order: its place among every finding listed, 1 to fix first; one the task says was triaged before: {finding: r1, order: 2}, its order only`,
 	"claim":          `- claim: {lines: "12-14", status: contradicted, quote: "the doc's words, as they read", source: {path: "src/file.go", lines: "40-41", quote: "the source's words, as they read"}, why: "why they disagree"}`,
 	"read":           `- read: {path: "src/file.go", lines: "40-80", why: "what you look for there"}  # or name: "Decide", where it is defined; or grep: "a_word", the lines that name it; instead of a note, when the task lets you read`,
 	"quote":          `- quote: {path: "src/file.go", text: "the lines that refute the finding, as they read"}  # beside a note saying no`,
 }
+
+// engineOnly are the kinds the engine makes and the agent never writes,
+// left out of the output contract: an effort is split from an order
+// (ADR-0040), the task telling how when the project keeps one.
+var engineOnly = map[string]bool{"effort": true}
 
 // BlockScalars is how a text holding code is written so that it reads: a
 // plain text starting with a backtick, or holding `: ` or ` #`, does not
@@ -110,7 +116,9 @@ func Prompt(req Request) (system, user string, err error) {
 	}
 	b.WriteString("# Answer\n\nAnswer with YAML only, no prose and no code fence: a list of proposals, each item holding exactly one of:\n\n")
 	for _, k := range req.Role.Intentions {
-		b.WriteString(contracts[k] + "\n")
+		if !engineOnly[k] {
+			b.WriteString(contracts[k] + "\n")
+		}
 	}
 	b.WriteString("\n" + BlockScalars + "\n\nYou cannot act, only propose; anything else is refused.\n\n")
 	if policy, ok := facet(req, "policy.md"); ok {

@@ -1,11 +1,14 @@
-# workline on its own pull requests: ci/github/workline.yml, but for one
-# thing. judge runs the engine built from the pull request's commit, as
+# workline on its own pull requests: ci/github/workline.yml, but for two
+# things. gates installs the tool of workline's own gate, golangci-lint,
+# where the template leaves yours to add. And judge runs the engine built
+# from the pull request's commit, as
 # gardening and the sample do: a project never runs, in the checks of a
 # commit, the pin that commit ships (ADR-0017), and a pull request moving
-# the templates' pins to a version not yet tagged stays green. What it
-# proposes is applied by workline-apply.yml, from main, with the engine
-# built from main: what a pull request changes in the engine never runs
-# with the write token.
+# the templates' pins to a version not yet tagged stays green. It is built
+# once a commit (.github/actions/engine): by gates when it has a gate,
+# judge taking it from there, else by judge. What it proposes is applied
+# by workline-apply.yml, from main, with the engine built from main: what
+# a pull request changes in the engine never runs with the write token.
 # workline on GitHub Actions — copy to .github/workflows/workline.yml, with
 # workline-apply.yml beside it.
 #
@@ -19,6 +22,12 @@
 # can push a branch can change it. It holds no write token and never the
 # GitHub App's key (ADR-0044); workline-apply.yml, which runs from the
 # default branch, applies what it proposed.
+#   gates  runs the project's gates alone (`gate:<name>` steps; the first
+#          release after v0.35.0), with no write token and no secret: their
+#          tools run the pull request's code. Their verdicts are judge's to
+#          read; what they found the change adds, workline-apply.yml shows
+#          as the annotations of the check `workline gates` and one summary
+#          comment (ADR-0049). Install the tools they run in it.
 #   judge  runs the line; it can read the code, and holds no write token but
 #          code scanning's, which only uploads its findings as SARIF (free on
 #          public repositories; private ones need GitHub Advanced Security —
@@ -38,23 +47,126 @@
 #          It warns when the App's key is in its reach, a repository
 #          secret, not the environment's; and when no workflow applies
 #          what it proposed (docs/ci-github.md).
+#          The reviewer's lenses that only warn read apart, in
+#          workline-warn.yml (--warn-apart, ADR-0050): the head's verdict
+#          waits only for what can block. So does the inspector's triage,
+#          when routed (ADR-0049). It warns when no workflow reads them.
+#
+# Main after a merge (a push to main, ADR-0050): gates runs `route main`,
+# the gates every finding and the whole repository's checks, once, no
+# agent, no secret; the gates' findings kept in Actions' cache by the
+# commit, the next pull requests' base (--gates-kept). workline-apply.yml
+# keeps what it found in one issue.
 name: workline
 on:
   # ready_for_review: a draft marked ready, read by every lens of the
-  # reviewer once, when the line runs it (ADR-0020).
+  # reviewer once, when the line runs it (ADR-0020). A draft's pushes ask
+  # no agent: rules and gates only (ADR-0050).
   pull_request: {types: [opened, synchronize, reopened, ready_for_review]}
+  push: {branches: [main]}          # main after a merge
 permissions: {}
 # One run per pull request (#359): a push cancels the run still on the
 # head before, whose commits the newer run reviews with its own. Nothing
 # of a cancelled run is uploaded after (`!cancelled()`), nor applied
-# (workline-apply.yml).
-concurrency: {group: "workline-judge-${{ github.event.pull_request.number }}", cancel-in-progress: true}
+# (workline-apply.yml). Each commit of main, a group of its own: none
+# cancels another, each the next base.
+concurrency: {group: "workline-judge-${{ github.event.pull_request.number || github.sha }}", cancel-in-progress: true}
 
 env:
   WORKLINE_RUNS_DIR: ${{ github.workspace }}/.workline-runs
 
 jobs:
+  # The project's gates (`gate:<name>` steps of routing's merge-request),
+  # alone: their tools run the pull request's code — a linter's config or
+  # plugin, a build —, so this job holds no write token and no secret, the
+  # agent's neither (ADR-0049). judge reads their verdicts; workline-apply.yml
+  # shows what they found the change adds. With no gate, it ends at once.
+  gates:
+    runs-on: ubuntu-latest
+    permissions: {contents: read}
+    outputs: {ran: "${{ steps.gates.outputs.ran }}"}
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0, ref: "${{ github.event.pull_request.head.sha || github.sha }}", persist-credentials: false}
+      - name: Whether the line has a gate
+        id: any
+        run: if [ "$GITHUB_EVENT_NAME" = push ] || grep -qs 'gate:' .workline/config.yaml; then echo "any=true" >> "$GITHUB_OUTPUT"; else echo "no gate in .workline/config.yaml"; fi
+      # The engine built from this commit, kept for judge before any gate
+      # runs: judge takes it rather than build it again. Go left set up,
+      # the engine taken or built: golangci-lint loads the code with it.
+      - uses: ./.github/actions/engine
+        if: steps.any.outputs.any == 'true'
+        with: {go: "true"}
+      # The tool the gate runs (.workline/config.yaml): golangci-lint,
+      # pinned, its checksum written here, in user space. A new version
+      # gets a pull request of its own (ADR-0049).
+      - name: golangci-lint
+        if: steps.any.outputs.any == 'true'
+        env: {VERSION: 2.15.0, SHA256: 9b7fe6a6bf6334b98decf8d86b11415ea7889afdabdd1959fdce23af2a9ebcea}
+        run: |
+          bin="$RUNNER_TEMP/bin"; mkdir -p "$bin"; cd "$RUNNER_TEMP"
+          f="golangci-lint-$VERSION-linux-amd64.tar.gz"
+          curl -fsSLO "https://github.com/golangci/golangci-lint/releases/download/v$VERSION/$f"
+          echo "$SHA256  $f" | sha256sum -c -
+          tar -xzf "$f" -C "$bin" --strip-components=1 "golangci-lint-$VERSION-linux-amd64/golangci-lint"
+          echo "$bin" >> "$GITHUB_PATH"
+          "$bin/golangci-lint" version
+      # The findings main kept at the commit compared with: a pull
+      # request's merge base, main's tip before the merge.
+      - name: The base's findings, kept by main
+        id: base
+        if: steps.any.outputs.any == 'true'
+        env: {BASE: "${{ github.event.pull_request.base.sha || github.event.before }}", HEAD: "${{ github.event.pull_request.head.sha }}"}
+        run: |
+          sha=$BASE; [ -z "$HEAD" ] || sha=$(git merge-base "$BASE" "$HEAD") || sha=$BASE
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache/restore@v4
+        if: steps.any.outputs.any == 'true'
+        with: {path: "${{ runner.temp }}/workline-kept", key: "workline-gates-${{ steps.base.outputs.sha }}"}
+      - name: The gates alone
+        id: gates
+        if: steps.any.outputs.any == 'true' && github.event_name != 'push'
+        run: |
+          status=0
+          workline route merge-request --gates-only --forge none \
+            --input range=${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} \
+            --gates-kept "$RUNNER_TEMP/workline-kept" --summary workline-summary.md --json > gates.json || status=$?
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          echo "ran=$(jq '(.steps // []) | length > 0' gates.json)" >> "$GITHUB_OUTPUT"
+          [ ! -s workline-summary.md ] || cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"
+          mkdir -p report && echo "${{ github.event.pull_request.number }}" > report/number
+      # Their result, for judge, and for workline-apply.yml to show.
+      - uses: actions/upload-artifact@v4
+        if: "!cancelled() && steps.gates.outputs.ran == 'true'"
+        with: {name: workline-gates, path: "gates.json\nreport/number", retention-days: 1}
+      # Main after a merge: the gates against main's tip before it, every
+      # finding kept by this commit; the whole repository's checks, no
+      # agent. What it found, workline-apply.yml keeps in one issue.
+      - name: Main after a merge
+        id: main
+        if: github.event_name == 'push'
+        run: |
+          status=0
+          workline route main --ai none --forge none --gates-kept "$RUNNER_TEMP/workline-kept" \
+            --input range=${{ github.event.before }}..${{ github.sha }} --summary workline-summary.md --json > main.json || status=$?
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          [ ! -s workline-summary.md ] || cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"
+          find "$RUNNER_TEMP/workline-kept" -type f ! -name "$GITHUB_SHA.json" -delete 2>/dev/null || true
+          [ ! -s "$RUNNER_TEMP/workline-kept/$GITHUB_SHA.json" ] || echo "kept=true" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache/save@v4
+        if: "!cancelled() && steps.main.outputs.kept == 'true'"
+        with: {path: "${{ runner.temp }}/workline-kept", key: "workline-gates-${{ github.sha }}"}
+      - uses: actions/upload-artifact@v4
+        if: "!cancelled() && github.event_name == 'push'"
+        with: {name: workline-main, path: main.json, if-no-files-found: ignore, retention-days: 1}
+      - name: Verdict
+        run: exit "${{ steps.gates.outputs.status || steps.main.outputs.status || 0 }}"
+
   judge:
+    # After the gates, whatever their verdict: the line reads it. Not on
+    # main, whose run is the gates' job's.
+    needs: gates
+    if: "!cancelled() && github.event_name != 'push'"
     runs-on: ubuntu-latest
     # One review at a time per pull request (#375), with workline-apply.yml's
     # apply, neither cancelling the other: a push waits while the run
@@ -63,7 +175,10 @@ jobs:
     concurrency: {group: "workline-review-${{ github.event.pull_request.number }}", cancel-in-progress: false}
     # pull-requests read: the reviewer, when the line runs it, reads its
     # summary comment, to review only the commits it has not reviewed yet.
-    permissions: {contents: read, security-events: write, pull-requests: read}
+    # issues, checks, statuses and actions read: on the release tool's pull
+    # request, what holds the release — an open issue labelled
+    # workline:hold-release, main's tip not green (ADR-0051).
+    permissions: {contents: read, security-events: write, pull-requests: read, issues: read, checks: read, statuses: read, actions: read}
     # Only whether a token is there: the agent's goes to the one step that
     # calls it, not to installs whose scripts could read it; the App's key
     # never comes here.
@@ -78,48 +193,60 @@ jobs:
       # doc checked here names a commit the branch holds.
       - uses: actions/checkout@v4
         with: {fetch-depth: 0, ref: "${{ github.event.pull_request.head.sha }}"}
-      # The engine built from this commit, and the tools its roles use, from
-      # their releases, checksums verified.
-      - uses: actions/setup-go@v5
-        with: {go-version-file: go.mod}
-      - name: workline
+      # The engine built from this commit: the gates' job's when it built
+      # it, else built here, for no job after; and the tools its roles use,
+      # from their releases, checksums verified.
+      # Go left set up on workline's own release pull request: GoReleaser
+      # builds the release's binary with it, below.
+      - uses: ./.github/actions/engine
+        with: {keep: "false", go: "${{ startsWith(github.head_ref, 'release-please--') }}"}
+      - name: gitleaks
         run: |
-          bin="$RUNNER_TEMP/bin"; mkdir -p "$bin"
-          go build -o "$bin/workline" ./cmd/workline
-          cd "$RUNNER_TEMP"
+          bin="$RUNNER_TEMP/bin"; mkdir -p "$bin"; cd "$RUNNER_TEMP"
           get() { curl -fsSLO "$1/$2" && curl -fsSL "$1/$3" | grep " $2\$" | sha256sum -c - && tar -xzf "$2" -C "$bin" "$4"; }
           get https://github.com/gitleaks/gitleaks/releases/download/v8.30.1 gitleaks_8.30.1_linux_x64.tar.gz gitleaks_8.30.1_checksums.txt gitleaks
           echo "$bin" >> "$GITHUB_PATH"
-          "$bin/workline" version
+      # A draft asks no agent (ADR-0050): nothing to install.
       - name: Claude, when the repository gives its token
-        if: env.HAS_CLAUDE == 'true'
+        if: env.HAS_CLAUDE == 'true' && !github.event.pull_request.draft
         run: npm install -g @anthropic-ai/claude-code
+      # The gates' verdicts, from their job: the line never runs a gate
+      # here, and errs on one whose verdict is not there.
+      - uses: actions/download-artifact@v4
+        if: needs.gates.outputs.ran == 'true'
+        with: {name: workline-gates, path: "${{ runner.temp }}/gates"}
 
       - name: The line for this pull request (proposals only)
         id: line
-        # The branch tells a release tool's pull request, held as the release
-        # (ADR-0017); from a fork it is anyone's text: a variable, never
-        # written into the script. Opened ready, or marked ready, the
+        # The branch tells a release tool's pull request, whose versions
+        # bumped the reviewer leaves (ADR-0017); from a fork it is anyone's
+        # text: a variable, never written into the script. Opened ready, or marked ready, the
         # reviewer reads every lens once, on the whole change; one a push
         # after (ADR-0020). The draft state goes on every run: a push that
         # cancelled the run on ready leaves the next one every lens (#359).
+        # On a draft, the engine asks no agent, and says the AI review waits
+        # for it to be marked ready (ADR-0050). The lenses that only warn
+        # are left to workline-warn.yml.
         env:
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           HEAD_REF: ${{ github.head_ref }}
           GH_TOKEN: ${{ github.token }}
+          WORKLINE_APP_ID: ${{ vars.WORKLINE_APP_ID }}   # the App whose comments keep the records a role reads back (ADR-0051)
           ACTION: ${{ github.event.action }}
           DRAFT: ${{ github.event.pull_request.draft }}
         run: |
           ai=none; [ -n "$CLAUDE_CODE_OAUTH_TOKEN" ] && ai=claude
           ready=; case "$ACTION:$DRAFT" in opened:false|ready_for_review:*) ready=1 ;; esac
           status=0
-          workline route merge-request --ai "$ai" --no-apply --push-to-merge-request \
+          workline route merge-request --ai "$ai" --no-apply --warn-apart \
             --forge github --target merge-request:${{ github.event.pull_request.number }} --branch "$HEAD_REF" \
-            --input range=${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} ${ready:+--input lenses=all} --input draft="$DRAFT" \
+            --input range=${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} ${ready:+--input lenses=all} --input ready=${ready:+true} --input draft="$DRAFT" \
+            --gates-from "$RUNNER_TEMP/gates/gates.json" \
             --sarif workline.sarif --summary workline-summary.md --verdict workline-verdict.json --json > line.json || status=$?
           echo "status=$status" >> "$GITHUB_OUTPUT"
           echo "proposed=$(jq '(.pending // []) | length > 0' line.json)" >> "$GITHUB_OUTPUT"
           echo "found=$(jq '[.steps[]? | select(.name | startswith("documentalist")) | .result.findings[]?] | length > 0' line.json)" >> "$GITHUB_OUTPUT"
+          echo "reviewed=$(jq '[.steps[]? | select(.name == "reviewer" or .name == "inspector")] | length > 0' line.json)" >> "$GITHUB_OUTPUT"
           [ ! -s workline-summary.md ] || cat workline-summary.md
           [ ! -s workline-summary.md ] || cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"
           mkdir -p report && { [ ! -s workline-summary.md ] || cp workline-summary.md report/report.md; }
@@ -130,8 +257,16 @@ jobs:
       - name: Whether anything applies what it proposed
         if: (steps.line.outputs.proposed == 'true' || steps.line.outputs.found == 'true') && github.event.pull_request.head.repo.full_name == github.repository
         run: |
-          grep -qs 'workflows: \[workline\]' .github/workflows/*.yml ||
+          grep -qsE 'workflows: \[workline[],]' .github/workflows/*.yml ||
             echo "::warning title=workline::no workflow applies what this run proposed, nor shows the docs' findings on their lines; copy workline-apply.yml beside workline.yml (docs/ci-github.md)"
+      # The reviewer's lenses that only warn and the inspector's triage,
+      # left to workline-warn.yml:
+      # said when no workflow reads them.
+      - name: Whether anything reads the lenses that warn
+        if: steps.line.outputs.reviewed == 'true' && github.event.pull_request.head.repo.full_name == github.repository
+        run: |
+          grep -qs -e '--warn-onl[y]' .github/workflows/*.yml ||
+            echo "::warning title=workline::no workflow reads what this run left apart, the reviewer's lenses that warn or the inspector's triage; copy workline-warn.yml beside workline.yml (docs/ci-github.md)"
 
       # From a fork, this job has no right to comment: the report goes to
       # workline-fork.yml, which comments it from the repository's side.
@@ -156,6 +291,22 @@ jobs:
       - uses: github/codeql-action/upload-sarif@v4
         if: '!cancelled() && github.event.pull_request.head.repo.full_name == github.repository'
         with: {sarif_file: workline.sarif, category: workline}
+
+      # workline's own release pull request (ADR-0051): the binary
+      # GoReleaser builds, as release.yml will at the tag, says the version
+      # the pull request releases. Beside the tests, never after them.
+      - uses: goreleaser/goreleaser-action@v6
+        if: startsWith(github.head_ref, 'release-please--')
+        with: {version: "~> v2", install-only: true}
+      - name: The release's binary says its version
+        if: startsWith(github.head_ref, 'release-please--')
+        run: |
+          want=v$(jq -r '.["."]' .release-please-manifest.json)
+          mkdir -p "$RUNNER_TEMP/release"
+          GORELEASER_CURRENT_TAG=$want goreleaser build --snapshot --single-target --clean --output "$RUNNER_TEMP/release/workline"
+          got=$("$RUNNER_TEMP/release/workline" version)
+          echo "the release's binary says $got; this pull request releases $want"
+          [ "$got" = "$want" ] || { echo "::error title=workline::the binary GoReleaser builds says $got, not $want, the version this pull request releases"; exit 1; }
 
       # An agent missing or out of quota (3) is said, not taken for the
       # change's fault: a person judges what it would have (ADR-0010).

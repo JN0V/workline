@@ -12,6 +12,7 @@ import (
 	"github.com/JN0V/workline/internal/engine"
 	"github.com/JN0V/workline/internal/line"
 	"github.com/JN0V/workline/internal/sample"
+	"github.com/JN0V/workline/internal/scale"
 	"github.com/JN0V/workline/internal/verdict"
 )
 
@@ -35,6 +36,9 @@ type Summary struct {
 	// Issues and Waiting link the issues a backlog's findings name, and the
 	// saved filter of what waits on a person (engine.Result's).
 	Issues, Waiting string
+	// Times: a line's seconds, each step's after the total; Over, what it
+	// says when its moment went over its budget (ADR-0050). Empty, nothing.
+	Times, Over string
 }
 
 // Step is one step of a line: its verdict, and the findings it made.
@@ -52,7 +56,7 @@ type stepCall struct {
 // LineSummary is the summary of a line's run: each step with its findings,
 // then the line's own (a routing that could not run).
 func LineSummary(title string, r *line.Result) Summary {
-	s := Summary{Title: title, Status: r.Status, Text: r.Summary, Pending: len(r.Pending)}
+	s := Summary{Title: title, Status: r.Status, Text: r.Summary, Pending: len(r.Pending), Times: r.Times(), Over: r.OverBudget()}
 	n := 0
 	for _, st := range r.Steps {
 		step := Step{Name: st.Name, Status: st.Status}
@@ -140,6 +144,12 @@ func (s Summary) Markdown() string {
 		s.findings(&b, "  ", st.Findings, st.ToApply)
 	}
 	s.findings(&b, "", s.Findings, s.Pending > 0)
+	if s.Times != "" {
+		b.WriteString("- **seconds**: " + s.Times + "\n")
+	}
+	if s.Over != "" {
+		b.WriteString("- **over its budget**: " + strings.Replace(s.Over, "(ADR-0050)", "([ADR-0050]("+budgets+"))", 1) + "\n")
+	}
 	for _, r := range s.Reads {
 		fmt.Fprintf(&b, "- read, %s: %s\n", r[0], r[1])
 	}
@@ -177,6 +187,9 @@ func (s Summary) Markdown() string {
 	return b.String()
 }
 
+// budgets is where each moment's wait budget is decided.
+const budgets = "https://github.com/JN0V/workline/blob/main/docs/adr/0050-each-act-has-its-moment-and-a-wait-budget.md#1-a-wait-budget-per-moment"
+
 // A group of a backlog's findings, one line an issue under its heading
 // (ADR-0038): what was done or will be, what waits on a person.
 type group struct {
@@ -188,6 +201,7 @@ type group struct {
 var groups = []group{
 	{[]string{"done"}, "done alone", "to do alone, once applied", false},
 	{[]string{"done-as-accepted"}, "done, as a person accepted", "to do, as a person accepted", false},
+	{[]string{"urgent-set"}, "set to " + scale.Priority.Name(1) + ", to check", "to set to " + scale.Priority.Name(1) + ", to check", false},
 	{[]string{"proposed"}, "proposed, waiting on a person", "to propose, once applied", true},
 	{[]string{"left-to-a-person", "asks-spent", "spec-rounds-spent"}, "left to a person, its rounds spent", "left to a person, its rounds spent", true},
 	{[]string{"nothing-proposed", "scope-without-files", "sources-unknown"}, "read, left incomplete: yours to complete, or to leave", "read, left incomplete: yours to complete, or to leave", false},
@@ -199,7 +213,7 @@ var groups = []group{
 
 // plain are a backlog's findings on no one issue, said without their
 // rule's name: the message says it all.
-var plain = []string{"proposals-waiting", "demoted", "setting-gone", "plan-unread", "report-closed"}
+var plain = []string{"proposals-waiting", "demoted", "setting-gone", "plan-unread", "report-closed", "values-where", "level-unknown", "next-unestimated", "estimates-stuck", "values-hidden"}
 
 // heldBack are the reasons the engine did not do, or only proposed, an act
 // the product owner's agent wrote (internal/backlog): said in plain words,
@@ -207,7 +221,8 @@ var plain = []string{"proposals-waiting", "demoted", "setting-gone", "plan-unrea
 var heldBack = []string{"no-quote", "nothing-to-refine", "section-kept", "not-ready", "ask-empty", "already-asked",
 	"already-proposed", "asked-before", "question-left-out", "not-agreed", "not-accepted", "close-reason", "already-open", "once-a-run", "act-cap",
 	"moved-cap", "drafts-proposed", "undone-here", "outsider-evidence", "reporter-outside",
-	"spec-not-reviewed", "spec-findings-open", "priority-level", "priority-kept", "priority-same", "title-kept",
+	"spec-not-reviewed", "spec-findings-open", "priority-level", "priority-kept", "priority-same", "priority-elsewhere", "priority-no-label", "priority-once", "priority-changed",
+	"effort-level", "effort-nowhere", "effort-unread", "effort-elsewhere", "effort-no-label", "effort-kept", "effort-once", "effort-changed", "effort-parent", "priority-blind", "effort-blind", "priority-hidden", "effort-hidden", "title-kept",
 	"title-same", "rename-title", "split-size", "split-title", "split-sections", "split-after", "already-split",
 	"parent-accepted-by-a-person", "depend-issue", "depend-same", "depend-cycle", "undepend-issue", "undepend-theirs",
 	"undepend-gone", "unready-not-ready", "milestone-title", "not-slipped", "exempt", "announced", "obsolete-kept",

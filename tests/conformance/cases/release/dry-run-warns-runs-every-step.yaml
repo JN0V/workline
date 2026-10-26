@@ -1,0 +1,18 @@
+case: release/dry-run-warns-runs-every-step
+about: "A release's dry run only warns (ADR-0050): two gates the project runs at the release that fail are said as what would hold it; every step runs though the first would stop the release's line, the line passes, and nothing is left to apply."
+given:
+  repo: documented
+  setup:
+    - "git tag v1.0.0"
+    - "echo 'tmp/' > .gitignore && git add .gitignore && git commit -qm 'chore: ignore tmp'"
+  config:
+    routing: {events: {release: ["gate:release", "gate:notes"]}}
+    gates:
+      release: {checks: [{id: versions, run: "echo 'the version is not bumped' >&2; exit 1", output: exit}]}
+      notes: {checks: [{id: notes, run: "echo 'no release notes' >&2; exit 1", output: exit}]}
+run: {route: release, args: [--dry-run], forge: none}
+expect:
+  status: pass
+  agent-calls: 0
+  steps: ["gate:release", "gate:notes"]
+  summary: "2 would hold the release if it were cut now (gate:release 1, gate:notes 1); said, never a block"

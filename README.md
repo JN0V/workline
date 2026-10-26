@@ -1,8 +1,8 @@
 <!-- workline
 sources: [ci/gitlab/workline.gitlab-ci.yml, ci/github/workline-fork.yml, routing.default.yaml, internal/forge/forge.go, internal/agent/agent.go, ci/github/workline-apply.yml, internal/gate, cmd/workline/cli.go, ci/github/workline.yml, ci/forgejo/workline-forge.sh, ci/github/workline-gardening.yml, ci/github/workline-sample.yml]
-checked: 18109269
-judged: 7a26b30
-verified: agent:claude-code
+checked: 87a81d4a
+judged: e8a46f7
+verified: agent:documentalist
 reader: e375241655b6
 -->
 <h1>
@@ -24,7 +24,7 @@ A software factory for AI-assisted development:
 
 Status (2026-10-06): runs on every commit of its author, and in CI on the
 pull requests and nightly gardening of workline and of another project;
-<!-- workline:derive conformance-cases -->884<!-- workline:end --> conformance cases green in CI.
+<!-- workline:derive conformance-cases -->1221<!-- workline:end --> conformance cases green in CI.
 
 ## Get started
 
@@ -55,9 +55,9 @@ pull requests and nightly gardening of workline and of another project;
 | [**Documentalist**](roles/documentalist/README.md) | keeps the docs true to the code they name | [beta](roles/documentalist/docs/status.md) |
 | [**Reviewer**](roles/reviewer/README.md) | reads a change before a person does and says what it breaks; never approves | [beta](roles/reviewer/docs/status.md) |
 | [**Product owner**](roles/product-owner/README.md) | keeps the open issues true to the code, refined and in order | [beta](roles/product-owner/docs/status.md) |
+| [**Inspector**](roles/inspector/README.md) | explains the findings a merge request adds to your linters and scanners; never their verdict | [beta](roles/inspector/docs/status.md) |
 | [Judge](roles/judge/role.yaml) | answers one yes-or-no question for the other roles, from another context or model | [built](roles/judge/docs/status.md) |
 | [Auditor](roles/auditor/role.yaml) | re-checks a weekly sample of the roles' acts | [beta](roles/auditor/docs/status.md) |
-| [Inspector](https://github.com/JN0V/workline/issues/202) | will post the static-analysis findings a merge request adds | planned |
 | [Security](https://github.com/JN0V/workline/issues/204) | will add security scanners as gates and a security lens | planned |
 | [Developer](https://github.com/JN0V/workline/issues/117) | will take a ready issue and open the pull request | planned |
 | [Process engineer](https://github.com/JN0V/workline/issues/89) | will read the line's measures and propose fixes | planned |
@@ -104,7 +104,7 @@ Each role, from a hook, a script or a CI job: [triggers](docs/triggers.md).
 
 | When | Roles | Agent |
 |---|---|---|
-| `git commit` (the global hook) | committer | yours, to rewrite a refused message |
+| `git commit` (the global hook) | committer | yours, to rewrite a refused message, 30 s at most |
 | `git push` (the global hook, once `workline init` routes it) | committer; documentalist, counting the docs made suspect | never |
 | `workline review` | reviewer, before you push | yours |
 | `workline review --spec <file>`, `--issue <n>` | reviewer, on a spec before it is built | yours |
@@ -114,14 +114,16 @@ Each role, from a hook, a script or a CI job: [triggers](docs/triggers.md).
 
 | What | Roles | Writes |
 |---|---|---|
-| each push to it; on GitHub, marked ready too | committer; documentalist; reviewer, opt-in | the docs' fix on its branch; each finding on its line, and one summary comment; the findings in the forge's code-scanning view; the job's summary |
-| a release tool's (release-please…) | documentalist, on the docs due at the release | the docs' fix in a merge request of its own |
+| each push to it; on GitHub, marked ready too | committer; documentalist; reviewer and inspector, opt-in | the docs' fix in a comment, the agent once at ready; each finding on its line, and one summary comment; the findings in the forge's code-scanning view; the job's summary |
+| a release tool's (release-please…) | as any other, the docs never holding it; an issue labelled to hold it, or main not green, holds it ([how](docs/release-holds.md)) | its checks |
 | a fork's | judged with no agent | on GitHub, a comment; on GitLab, nothing |
 
 - The review is on the merge request; a person merges.
 - Templates: [GitHub Actions](ci/github/workline.yml),
+  [what only warns, beside it](ci/github/workline-warn.yml),
   [its jobs that write](ci/github/workline-apply.yml) and
   [its fork job](ci/github/workline-fork.yml),
+  [the release's holds read again](ci/github/workline-release.yml),
   [GitLab CI](ci/gitlab/workline.gitlab-ci.yml). Setting up:
   [CI](docs/ci.md).
 
@@ -129,16 +131,18 @@ Each role, from a hook, a script or a CI job: [triggers](docs/triggers.md).
 
 | When | Roles | Writes |
 |---|---|---|
+| after each merge (`workline route main`) | the merge request's gates, every finding kept as the next base; documentalist, the whole repository, no agent | one issue, edited when what it lists changes ([how](docs/main-after-merge.md)) |
 | gardening, nightly or weekly (`workline route schedule`) | documentalist; product owner, opt-in | one merge request per task, kept on main or closed; the issues |
 | the weekly sample (`workline sample`) | auditor: one in ten of every role's acts, each re-checked | one issue, a comment a week; a merge request undoing a wrong confirmation |
-| each push to main (`workline follow`) | the engine, no agent: rebuilds the documentalist's release fix on main's new tip; when set, merges main into pull requests in conflict only on workline's lines, and turns auto-merge on for what a person accepted, at `normal` for workline's own routine work too ([merge policy](docs/merge-policy.md)) | its merge request, force-pushed; a merge commit on theirs; the forge's auto-merge |
-| before your release tool tags (`workline route release`) | documentalist, on the docs due at the release | a non-zero exit holds the release |
+| each push to main (`workline follow`) | the engine, no agent: with the [merge policy](docs/merge-policy.md), turns auto-merge on for what a person accepted, at `normal` for workline's own routine work too | the forge's auto-merge |
+| with the gardening (`workline route release --dry-run`) | what would hold the release if it were cut now, no agent | a part of main's issue ([how](docs/release.md)) |
+| before your release tool tags (`workline route release`); on GitLab, at a tag | your release's gates, none by default | a non-zero exit holds the release |
 
 - workline cuts no releases: it runs before your release tool.
 - Templates: GitHub's [gardening](ci/github/workline-gardening.yml) and
   [sample](ci/github/workline-sample.yml), `follow` in
-  [workline-apply.yml](ci/github/workline-apply.yml); on GitLab, two pipeline
-  schedules and a push to the default branch, all in the same
+  [workline-apply.yml](ci/github/workline-apply.yml); on GitLab, three pipeline
+  schedules, a push to the default branch and a tag, all in the same
   [template](ci/gitlab/workline.gitlab-ci.yml).
 - Each command in detail: [usage](docs/usage.md#commands).
 
@@ -164,6 +168,14 @@ Each role, from a hook, a script or a CI job: [triggers](docs/triggers.md).
   (an `optional` check is still reported).
 - Run with `workline gate <name>`, or as `gate:<name>` in a routing
   sequence.
+- On a merge request, only the findings the change adds count, told
+  against the merge base: old debt never blocks
+  ([new findings](docs/spec/gates.md#on-a-merge-request-the-findings-the-change-adds)).
+  Main's run after a merge keeps every finding by commit: a merge
+  request based on it reads them rather than run its tools there again.
+- In CI, the gates run in a job with no token; what they add is shown
+  beside its line: on GitHub a check and one comment, on GitLab Code
+  Quality ([gates in CI](docs/gates-in-ci.md)).
 
 ```yaml
 gates:
@@ -174,8 +186,9 @@ gates:
 ```
 
 - Everything else: [the gates spec](docs/spec/gates.md).
-- Not built yet: a merge request's new findings only, posted on it
-  ([#202](https://github.com/JN0V/workline/issues/202)); a SonarQube
+- The inspector explains what they add, apart from the verdict
+  ([the inspector](roles/inspector/README.md)).
+- Not built yet: a SonarQube
   quality gate read, never rerun
   ([#203](https://github.com/JN0V/workline/issues/203)); other outputs
   (k6 or benchmark JSON); baselines with an expiry date.

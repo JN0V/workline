@@ -1,0 +1,27 @@
+case: reviewer/after-ready-a-push-reads-only-its-new-commits
+about: "After the run on ready read every lens (ADR-0050, step 6), a push's lenses read only the commits no review read yet. The run apart's record says every lens read the first commit; the push brings one more, and the lens in turn, one that warns, is given that commit's file alone, never the one read on ready."
+given:
+  repo: reviewed
+  setup:
+    - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"
+    - "sed -i \"s/@reviewed@/$(git rev-parse HEAD)/g\" \"$FORGE_FILE\""
+    - "printf 'package calc\\n\\n// Half halves a count.\\nfunc Half(n int) int { return n / 2 }\\n' > calc/half.go && git add calc/half.go && git commit -qm 'feat: halve a count'"
+  config:
+    routing: {events: {merge-request: [reviewer]}}
+    roles: {reviewer: {settings: {ai-findings: {correctness: block}}}}
+  forge:
+    merge-requests:
+      - id: 5
+        labels: []
+        comments:
+          - "Every lens that blocks read the change.\n<!-- workline:warn-apart -->\n\n<!-- workline:record reviewed=@reviewed@ runs=1 read=all -->\n\n<!-- workline:sticky=reviewer/summary -->"
+          - "Every lens that warns read the change.\n\n<!-- workline:record reviewed=@reviewed@ runs=1 read=all -->\n\n<!-- workline:sticky=reviewer/warn -->"
+run: {route: merge-request, warn-only: true, input: {range: main..HEAD, draft: "false"}, target: {merge-request: 5}, ai: "fake:review-nothing"}
+expect:
+  status: pass
+  calls: [{task: part, for: 1-edge-cases}]
+  run-files:
+    in/parts/1-edge-cases/task.md: {contains: "### calc/half.go", not-contains: "### calc/calc.go"}
+  forge:
+    merge-requests:
+      - {id: 5, comments: 2, comment-contains: [" runs=2 read=all -->"]}

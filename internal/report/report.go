@@ -14,6 +14,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
@@ -22,6 +23,7 @@ import (
 
 	"github.com/JN0V/workline/internal/engine"
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/gate"
 	"github.com/JN0V/workline/internal/line"
 	"github.com/JN0V/workline/internal/verdict"
 )
@@ -30,37 +32,63 @@ import (
 type Item struct {
 	Role, Status string
 	verdict.Finding
+	// A tool's finding a gate counts on a change (ADR-0049): its own SARIF
+	// level, and a fingerprint with no line number, stable while it moves.
+	ToolLevel, Print string
 }
 
 // FromRole lists the findings of one role's run.
 func FromRole(role string, r *engine.Result) []Item {
 	var out []Item
 	for _, f := range r.Findings {
-		out = append(out, Item{role, r.Status, f})
+		out = append(out, Item{Role: role, Status: r.Status, Finding: f})
 	}
 	return out
 }
 
-// FromLine lists the findings of every step of a line.
+// FromLine lists the findings of every step of a line, and those its
+// gates count on a change, each the tool's. A gate whose verdict was read
+// from the job that ran it is that job's to report.
 func FromLine(r *line.Result) []Item {
 	var out []Item
 	for _, s := range r.Steps {
 		if s.Result != nil {
 			out = append(out, FromRole(strings.TrimSuffix(s.Name, " (handoff)"), s.Result)...)
 		}
-		if s.Gate != nil {
+		if s.Gate != nil && s.From == "" {
 			for _, f := range s.Gate.Findings {
-				out = append(out, Item{s.Name, s.Gate.Status, f})
+				out = append(out, Item{Role: s.Name, Status: s.Gate.Status, Finding: f})
+			}
+		}
+		if s.New != nil && s.From == "" {
+			for _, f := range s.New.Findings {
+				out = append(out, gateItem(s, f))
 			}
 		}
 	}
 	return out
 }
 
+// gateItem is a tool's finding a gate counts, named by its check and rule.
+func gateItem(s line.Step, f gate.Finding) Item {
+	where := f.Path
+	if f.Line > 0 {
+		where = fmt.Sprintf("%s:%d", f.Path, f.Line)
+	}
+	rule := f.Check
+	if f.Rule != "" {
+		rule += "/" + f.Rule
+	}
+	return Item{Role: s.Name, Status: s.Status, Finding: verdict.Finding{Rule: rule, Where: where, Message: f.Message},
+		ToolLevel: f.Level, Print: f.Fingerprint}
+}
+
 // level is the SARIF level: a finding that blocks is an error, one lowered
 // to a warning is a warning, one reported by a run that passed is a note.
 func (i Item) level() string {
 	switch {
+	case i.ToolLevel == "error", i.ToolLevel == "warning", i.ToolLevel == "note":
+		return i.ToolLevel
 	case i.Level == "question": // a decision put to a person, not a defect (the reviewer, #126)
 		return "note"
 	case i.Level == "warn":
@@ -76,6 +104,9 @@ func (i Item) rule() string { return i.Role + "/" + i.Rule }
 // fingerprint stays the same while the rule and the place do, whatever the
 // message says, so a forge sees the same finding from one run to the next.
 func (i Item) fingerprint() string {
+	if i.Print != "" {
+		return i.Print
+	}
 	sum := sha256.Sum256([]byte(i.rule() + "\x00" + i.Where))
 	return hex.EncodeToString(sum[:])
 }
@@ -222,9 +253,12 @@ func SARIF(repo string, items []Item) ([]byte, error) {
 	return json.MarshalIndent(doc, "", "  ")
 }
 
-// CodeQuality writes the findings as a GitLab Code Quality report.
+// CodeQuality writes the findings as a GitLab Code Quality report. A
+// tool's finding a gate counts is as severe as the tool says, a blocking
+// one of workline's a blocker.
 func CodeQuality(repo string, items []Item) ([]byte, error) {
 	severity := map[string]string{"error": "blocker", "warning": "minor", "note": "info"}
+	toolSeverity := map[string]string{"error": "major", "warning": "minor", "note": "info"}
 	type lines struct {
 		Begin int `json:"begin"`
 	}
@@ -241,6 +275,9 @@ func CodeQuality(repo string, items []Item) ([]byte, error) {
 	out := []issue{}
 	for _, p := range place(repo, items) {
 		i := issue{Description: p.Message, CheckName: p.rule(), Fingerprint: p.fingerprint(), Severity: severity[p.level()]}
+		if p.ToolLevel != "" {
+			i.Severity = toolSeverity[p.level()]
+		}
 		if i.Description == "" {
 			i.Description = p.Rule
 		}
@@ -252,21 +289,23 @@ func CodeQuality(repo string, items []Item) ([]byte, error) {
 
 // postedOnMergeRequest are the roles whose findings a merge request gets
 // from workline itself: the documentalist's as a check's annotations, the
-// job applying the run writes them; the reviewer's in its own review.
-var postedOnMergeRequest = map[string]bool{"documentalist": true, "reviewer": true}
+// job applying the run writes them; the reviewer's in its own review; the
+// inspector's triage in its own comment.
+var postedOnMergeRequest = map[string]bool{"documentalist": true, "reviewer": true, "inspector": true}
 
 // ForCodeScanning is what of a run on event goes to code scanning: on a
 // merge request, neither the documentalist's findings nor the reviewer's,
-// which workline posts there itself. Code scanning would open a
-// conversation for each, whatever its level, that a base requiring them
-// resolved holds the merge on (#412); the gates' and the committer's stay.
+// the inspector's nor the gates', which workline posts there itself. Code scanning would
+// open a conversation for each, whatever its level, that a base requiring
+// them resolved holds the merge on (#412), and is paid on a private
+// repository (ADR-0049); the committer's stay.
 func ForCodeScanning(event string, items []Item) []Item {
 	if event != "merge-request" {
 		return items
 	}
 	var out []Item
 	for _, i := range items {
-		if !postedOnMergeRequest[i.Role] {
+		if !postedOnMergeRequest[i.Role] && !strings.HasPrefix(i.Role, "gate:") {
 			out = append(out, i)
 		}
 	}
@@ -296,12 +335,17 @@ func Annotations(read func(path string) ([]byte, error), items []Item) (notes []
 		if msg == "" {
 			msg = p.Rule
 		}
-		if len(msg) > maxAnnotationLen {
-			msg = strings.ToValidUTF8(msg[:maxAnnotationLen], "") + "…"
-		}
-		notes = append(notes, forge.Annotation{Path: p.path, Line: p.line, Level: level[p.level()], Title: p.rule(), Message: msg})
+		notes = append(notes, forge.Annotation{Path: p.path, Line: p.line, Level: level[p.level()], Title: p.rule(), Message: clip(msg)})
 	}
 	return notes, left
+}
+
+// clip cuts a message the run wrote to what an annotation holds.
+func clip(msg string) string {
+	if len(msg) > maxAnnotationLen {
+		return strings.ToValidUTF8(msg[:maxAnnotationLen], "") + "…"
+	}
+	return msg
 }
 
 // Write writes the reports asked for of a run on event; an empty file

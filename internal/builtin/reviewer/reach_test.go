@@ -145,12 +145,46 @@ func TestEnclosingByLanguage(t *testing.T) {
 }
 
 func TestNamedIn(t *testing.T) {
-	names, weak := namedIn("The `comments` operation emits no `bot` field, and Agreement accepts it; see load_all() and run(x). Report says readBlock. Last")
-	if got := strings.Join(names, " "); got != "comments bot Agreement load_all run readBlock" {
+	names, capital, weak := namedIn("The `comments` operation emits no `bot` field, and Agreement accepts it; see load_all() and run(x). Report says readBlock. Last")
+	if got := strings.Join(names, " "); got != "comments bot load_all run readBlock" {
 		t.Errorf("namedIn = %q", got)
+	}
+	if got := strings.Join(capital, " "); got != "Agreement" {
+		t.Errorf("namedIn, capital = %q", got)
 	}
 	if got := strings.Join(weak, " "); got != "The Report Last" {
 		t.Errorf("namedIn, weak = %q", got)
+	}
+}
+
+// Code read as CommonMark reads it (#425), spans first: a fence's
+// backticks pair with none of the prose's, a span closes on a run as long
+// as its opening; a path, a file's name or a flag names no function; a
+// bold label opens a sentence.
+func TestNamedInReadsCodeAsMarkdown(t *testing.T) {
+	for _, c := range []struct{ text, code, capital, weak string }{
+		{"At `a/b.go:7`:\n\n```\ncase strings.HasPrefix(l, \"- \"):\n```\n\nWhat would fix it: known change and `answerItems`.",
+			"answerItems HasPrefix", "", "What"},
+		{"~~~go\nx := child(top, \"routing\")\n~~~\nthe known words, an `answerItems`", "answerItems child", "", ""},
+		{"```\nopen to the end, parseAll(x)\n\nmore code", "parseAll", "", ""},
+		{"a ``span with ` inside`` then `next` and a ` stray\n\nquote `apart`", "span with inside next apart", "", ""},
+		{"run `workline init --review` on `code-lines-max`, in `cmd/x/main.go`, `notes.md`, `calc.go`", "workline init", "", ""},
+		{"```\nn := size-count(v) - x.Fields\nrun --verbose\nContent-Type: text/plain\n```", "count Fields", "", ""},
+		{"`item.java(x)`, called, is no file; `cfg.go` is", "item java", "", ""},
+		{"see github.com/JN0V/workline/issues/9 and internal/x/y.go. Then call Parse", "", "Parse", "Then"},
+		{"- **Empty routing:** Given a `routing:` key, When it is read, Then it holds", "routing", "When Then", "Empty Given"},
+		{"# Heading\n\n1. Split it", "", "", "Heading Split"},
+	} {
+		code, capital, weak := namedIn(c.text)
+		if got := strings.Join(code, " "); got != c.code {
+			t.Errorf("namedIn(%q) = %q, want %q", c.text, got, c.code)
+		}
+		if got := strings.Join(capital, " "); got != c.capital {
+			t.Errorf("namedIn(%q), capital = %q, want %q", c.text, got, c.capital)
+		}
+		if got := strings.Join(weak, " "); got != c.weak {
+			t.Errorf("namedIn(%q), weak = %q, want %q", c.text, got, c.weak)
+		}
 	}
 }
 

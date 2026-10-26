@@ -1,0 +1,30 @@
+case: product-owner/effort-a-persons-value-kept
+about: "Each value is written once, only where empty, axis by axis: an effort a person set is kept; one the role set, then a person changed or cleared, is never written again; a priority the role set is never estimated again; the other axis of each issue is still set (ADR-0040, step 3)."
+given:
+  repo: backlog
+  config:
+    roles:
+      product-owner:
+        settings: {moved-percent-max: 100, priority: auto, effort: auto, acts: {order: {mode: act}, effort: {mode: act}}}
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.\n\n## Scope\n\nsrc/export/csv.go", labels: [effort/high], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 10, title: "Slow export", body: "The export is slow.\n\n## Scope\n\nsrc/export/csv.go", labels: [effort/high], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\neffort: 2\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 11, title: "Quote commas", body: "A comma splits a cell.\n\n## Scope\n\nsrc/export/csv.go", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\neffort: 2\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 12, title: "Export to JSON", body: "Add a JSON export.\n\n## Scope\n\nsrc/export/csv.go", labels: [priority/high], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\npriority: 2\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:order-effort}
+expect:
+  findings:
+    - {rule: effort-kept, where: "#9", message: "its effort was set by a person"}
+    - {rule: done, where: "#9", message: "Set #9's priority to 1"}
+    - {rule: effort-once, where: "#10", message: "the role estimated its effort once already (Medium)"}
+    - {rule: effort-once, where: "#11", message: "a person's change or clearing stands"}
+    - {rule: done, where: "#11", message: "Set #11's priority to 3"}
+    - {rule: priority-once, where: "#12", message: "the role set its priority once already"}
+    - {rule: done, where: "#12", message: "Set #12's effort to Medium (effort/medium)"}
+  forge:
+    issues:
+      - {id: 9, labels: [effort/high, priority/urgent]}
+      - {id: 10, labels: [effort/high]}
+      - {id: 11, labels: [priority/medium]}
+      - {id: 12, labels: [priority/high, effort/medium]}

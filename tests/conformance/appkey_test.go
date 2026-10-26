@@ -38,6 +38,7 @@ type keyStep struct {
 }
 
 type keyJob struct {
+	If          string    `yaml:"if"`
 	Environment any       `yaml:"environment"`
 	Env         yaml.Node `yaml:"env"`
 	Steps       []keyStep `yaml:"steps"`
@@ -162,6 +163,14 @@ func checkReadsRunAsData(t *testing.T, name, jobName string, job keyJob) {
 		}
 		if strings.Contains(s.Run, "gh run download") && !strings.Contains(s.Run, `-D "$RUNNER_TEMP/`) {
 			t.Errorf("%s, job %s: downloads the run's artifacts into the checkout", name, jobName)
+		}
+		// Main's run after a merge (ADR-0050): only a push to the default
+		// branch, whose workflow is main's, never another branch's.
+		if strings.Contains(s.Run, "workline apply --main") {
+			if !strings.Contains(job.If, "github.event.workflow_run.event == 'push'") || !strings.Contains(job.If, "github.event.workflow_run.head_branch == github.event.repository.default_branch") {
+				t.Errorf("%s, job %s: keeps the findings of a run that may not be main's (if %q)", name, jobName, job.If)
+			}
+			continue
 		}
 		if strings.Contains(s.Run, "workline apply") {
 			if !strings.Contains(s.Run, `--from-merge-request "$NUMBER" --head "$HEAD_SHA"`) || s.Env["HEAD_SHA"] != head {

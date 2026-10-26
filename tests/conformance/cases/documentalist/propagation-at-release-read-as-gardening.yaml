@@ -1,0 +1,11 @@
+case: documentalist/propagation-at-release-read-as-gardening
+about: "A project's propagation edge written before ADR-0051, `when: release`, is read as `schedule`: the product doc following a changed technical doc is due at gardening, never pending for a release the documentalist no longer runs at."
+given:
+  repo: documented
+  setup: ["sed -i 's/Access tokens last one hour./Access tokens last two hours./' docs/tech/auth.md && git commit -qam 'docs(auth): tokens last two hours'"]
+  config: {roles: {documentalist: {settings: {propagation: [{from: code, to: "docs/tech/**", when: now}, {from: "docs/tech/**", to: "docs/product/**", when: release}]}}}}
+run: {role: documentalist, event: schedule, ai: none}
+expect:
+  status: pass
+  findings: [{rule: due, where: docs/product/sign-in.md}]
+  no-findings: [{rule: pending, where: docs/product/sign-in.md}]

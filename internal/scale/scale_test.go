@@ -186,8 +186,8 @@ func TestWeight(t *testing.T) {
 // The engine reads and writes workline's own labels, as before ADR-0040,
 // and reads no effort.
 func TestUsedIsWorklinesOwn(t *testing.T) {
-	f := Used.Priority
-	if f.Prefix != "workline:priority/" || len(Used.Effort.Labels) != 0 {
+	f := Used.Priority.Family
+	if f.Prefix != "workline:priority/" || len(Used.Effort.Family.Labels) != 0 || Used.Effort.Said != "" {
 		t.Fatalf("used = %+v", Used)
 	}
 	issue := []string{"bug", "workline:priority/3", "workline:priority/0", "workline:priority/5", "workline:priority/2", "priority/high"}
@@ -217,10 +217,10 @@ func TestUsedIsWorklinesOwn(t *testing.T) {
 	}
 }
 
-// The table is the one place the engine names a level: no other Go file
-// of the engine holds, in a string, a level's name, a label of the
-// families it reads, or a priority said as a number by hand — so moving
-// to the forge's names is one change here.
+// The table is the one place the engine names a level: no Go file of the
+// engine outside this package holds, in a string, a level's name, a label
+// of the families it reads, or a priority said as a number by hand — so
+// moving to the forge's names is one change here.
 func TestLevelsNamedOnlyInTheTable(t *testing.T) {
 	var words []string
 	for _, s := range []Scale{Priority, Effort} {
@@ -232,7 +232,7 @@ func TestLevelsNamedOnlyInTheTable(t *testing.T) {
 		regexp.MustCompile(`\b(` + strings.Join(words, "|") + `)\b`),
 		regexp.MustCompile(`(?i)priority[: ]+(to )?%d`),
 	}
-	for _, f := range []Family{Used.Priority, Used.Effort} {
+	for _, f := range []Family{Used.Priority.Family, Used.Effort.Family} {
 		if f.Prefix != "" {
 			named = append(named, regexp.MustCompile(regexp.QuoteMeta(f.Prefix)))
 		}
@@ -241,7 +241,7 @@ func TestLevelsNamedOnlyInTheTable(t *testing.T) {
 	for _, dir := range []string{"internal", "cmd"} {
 		err := filepath.WalkDir(filepath.Join(root, dir), func(path string, d fs.DirEntry, err error) error {
 			if err != nil || d.IsDir() || !strings.HasSuffix(path, ".go") || strings.HasSuffix(path, "_test.go") ||
-				filepath.ToSlash(path) == "../../internal/scale/scale.go" {
+				filepath.ToSlash(filepath.Dir(path)) == "../../internal/scale" {
 				return err
 			}
 			src, err := os.ReadFile(path)

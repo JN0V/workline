@@ -1,0 +1,14 @@
+case: setup/doctor-gitlab-tokens-scoped-elsewhere
+about: "On GitLab, a token scoped to an environment the template's jobs do not declare reaches none of them: the doctor notes it, naming the environment they declare, workline (#520)."
+given:
+  repo: documented
+  forge:
+    merge-requests: []
+    variables:
+      - {key: WORKLINE_GITLAB_TOKEN, value: glpat-never-printed, environment_scope: production}
+run: {doctor: true, forge: gitlab}
+expect:
+  status: pass
+  checks:
+    - {rule: tokens-scoped-elsewhere, where: WORKLINE_GITLAB_TOKEN, level: note, message: "is scoped to no environment named workline"}
+  stdout-lacks: [tokens-not-scoped, tokens-not-project-variables, glpat-never-printed]

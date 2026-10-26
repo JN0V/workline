@@ -1,21 +1,22 @@
 ---
-sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/unread.go, internal/builtin/documentalist/hygiene.go, internal/builtin/documentalist/identifiers.go, internal/builtin/documentalist/counts.go, internal/builtin/documentalist/derive.go, internal/builtin/documentalist/adr.go, internal/builtin/documentalist/freshness.go, internal/builtin/documentalist/external.go, internal/builtin/documentalist/reader.go, roles/documentalist/role.yaml]
-checked: 1a0ca6ec
+sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/identifiers.go, internal/builtin/documentalist/derive.go, internal/builtin/documentalist/freshness.go, internal/builtin/documentalist/counts.go, roles/documentalist/role.yaml]
+checked: d722a840
 judged: f70db89
-verified: agent:documentalist
+verified: agent:claude-code
 ---
 # Documentalist — the checks
 
 What `pre` finds with no AI, and how much each finding weighs. How
-cascades are cut and the release held: [cascades](cascades.md). Part of
+cascades are cut: [cascades](cascades.md). Part of
 [the documentalist](../README.md). Gardening is the scheduled run, nightly
 or weekly (`schedule`).
 
 ## Prepare (`pre`, no AI)
 
-Twelve checks, each below. Not built yet: style (vale). With an agent,
-gardening also reads the pages the reader checks flag
-([pages read for their reader](reader.md)).
+Twelve checks. Six read a doc against the code it describes, below. Six
+read the docs alone ([the checks on the docs alone](checks-docs.md)):
+budgets, duplicates, links, superseded decisions, docs not read, docs for
+their reader. Not built yet: style (vale).
 
 ### Suspects
 
@@ -26,7 +27,25 @@ rendering shows, or in a frontmatter the doc has.
 - **No change**: a commit changing only docs' headers, who checked them;
   nor, on a release tool's pull request, one only putting a version number
   in place of another, line for line — the tool's bump, which would hold
-  every release — unless the doc quotes the version replaced.
+  every release — unless the doc pins the version replaced
+  ([#346](https://github.com/JN0V/workline/issues/346)):
+  - **A pin** follows the bump, so the doc is suspect: the version said
+    as the one to use, in a code block, an install line (`@v1.2.0`), an
+    image's tag, or plain prose ("Clock **1.2.0**"). In a code block, the
+    code pins whatever word comes before: `since: v1.2.0`, `--from
+    v1.2.0` ([#571](https://github.com/JN0V/workline/issues/571)). An
+    HTML tag or a blockquote around it is markup, its `>` no range:
+    `<code>v1.2.0</code>`, `> v1.2.0`
+    ([#569](https://github.com/JN0V/workline/issues/569)).
+  - **History** does not: the version right after "from", "since",
+    "after", "before", "added in", "fixed in", "at least", or before "or
+    later", "and newer", `+`, quoted or not, in prose (across a line
+    break too) or a code block's comment (`# since 1.2.0`, by the
+    block's language, over lines too); a range (`>=1.2.0`), in code
+    too. A word between pins it: "Install from tag v1.2.0",
+    `FROM tool:v1.2.0`.
+  - A doc the release commit bumps too says the new version: not
+    suspect.
 - **A `checked` the branch does not hold** — one of a merge request since
   squashed or rebased — stands for the commit that brought it there, as
   does a `judged` or `judged-in-parts`
@@ -37,38 +56,13 @@ rendering shows, or in a frontmatter the doc has.
   brought them. When that is the only one bringing the name, the clone
   lacks the commit, and `shallow-clone` says so — the doc neither suspect
   nor passed.
+- **At a push and on a merge request, only the docs its commits
+  touched**: one of their sources, a merge's own change too, or the doc
+  itself. The others are read when gardening; on main after a merge, none
+  is judged
+  ([ADR-0050](../../../docs/adr/0050-each-act-has-its-moment-and-a-wait-budget.md)).
 - **The chain is followed**: a suspect technical section makes the product
   docs depending on it suspect too.
-
-### Budgets
-
-- Lines per doc (its body: the header records who checked it, it says
-  nothing), per folder, and of the agents' entry points at the root
-  (`AGENTS.md`, `CLAUDE.md`).
-- Words per section (its own text, up to the next heading).
-- Card size, min and max: too small is fragmentation.
-
-### Duplicates
-
-Paragraphs of at least `min-words` words compared by their three-word
-sequences; `similarity` 0.85 catches a passage copied and then lightly
-edited.
-
-### Links
-
-- Every link to a file of the repository, and to a heading in it, must
-  lead somewhere.
-  - A heading's anchor is GitHub's, whatever the forge: its shown text
-    lowercased, punctuation dropped (en and em dash too), spaces made
-    hyphens, a repeat numbered `-1`, `-2`. GitLab documents the same rule.
-- Links to other sites need the network, and break with no change to the
-  repository: on `schedule` only, [lychee](https://lychee.cli.rs) checks
-  them, with its own `lychee.toml` and `.lycheeignore` if the project has
-  them.
-  - A link answered by an HTTP error is `external-link-broken`, at its
-    line; one not reached (no network, a timeout) is only counted.
-  - Otherwise, or without lychee, they are counted and said to be
-    unchecked (`links-not-checked`).
 
 ### Identifiers gone
 
@@ -96,22 +90,6 @@ The text between `<!-- workline:derive name -->` and
   ([ADR-0027](../../../docs/adr/0027-derived-blocks-are-regenerated-on-the-default-branch.md)).
 - Commands live in the config, which only people change, never in a doc;
   they run wherever the line runs, CI included.
-
-### Superseded decisions
-
-A doc citing a superseded decision record, by a link to its file or by its
-number (`ADR-0003`), without naming what replaced it (`cites-superseded`),
-as coherence does.
-
-- **Records**: the numbered files (`0007-…`, `adr001-…`) of a folder named
-  `adr`, `adrs`, `adr-…`, `decisions`, `architecture-decisions`,
-  `decision-records` or `decision-log`, and the files of the project's
-  `decisions` globs.
-- **Superseded**: its status says so — the frontmatter's `status`, a
-  `Status:` line, or the paragraph under a `Status` heading (adr-tools) —
-  or another record's frontmatter `supersedes` it (MADR). What replaced it
-  is the record its status names.
-- Records themselves are history, and may cite it.
 
 ### Code no doc describes
 
@@ -164,53 +142,13 @@ Why (step 4): on DomoticsCore, a C++ project the role runs on in CI
 and its right fix was refused for want of a claim; an OTA table's total,
 unreported, was withdrawn by the agent for want of a claim.
 
-### Docs not read
-
-On `schedule` and `init`, one finding (`docs-not-read`) counts the files
-that read as docs and that the role does not read, a few of each kind.
-`workline doctor` says the same.
-
-- **Counted**: `.rst`, `.mdx`, `.adoc`, a `.txt` under a `docs` or `doc`
-  folder, a README outside the `docs` globs (package READMEs). Left out:
-  test folders, fixtures, dependencies, hidden folders, `requirements.txt`.
-- **How to include them**: a README is Markdown, read once a glob in `docs`
-  takes it (`"**/README.md"`); the other formats are not read yet, no
-  header form being settled for them.
-
-### Docs for their reader
-
-On `schedule` only
-([#193](https://github.com/JN0V/workline/issues/193)), whether user pages
-serve their reader. User pages: the docs matching `reader.pages`, but
-`reader.skip` (specs) and the records (decisions, research, history). One
-finding a page, with its lines:
-
-- `reference-unlinked`: a decision (`ADR-12`), a doc of the repository or
-  an issue (`#128`) named as plain text. Left alone: a name in a code span
-  (an example) or an HTML comment; a link's definition
-  (`[x]: docs/x.md`) is a link.
-- `paragraph-too-long`: a paragraph, or a list item, over
-  `reader.paragraph-words` (80).
-- `cell-too-long`: a table cell over `reader.cell-words` (30).
-- `flow-without-diagram`: a page of `reader.flow`, or with a heading
-  holding one of `reader.flow-headings` ("how it works"; as words, any spacing or
-  case, in the docs' language), with no diagram (a Mermaid, PlantUML,
-  Graphviz or D2 block, or an image).
-- `page-unreachable`: no link reaches it from `reader.navigation`
-  (`README.md`), through user pages; a link to a folder reaches its
-  README, one in an HTML comment nothing. With no such entry,
-  `navigation-missing` says so.
-
-Borrowed from Vale and Sphinx, without running them:
-[research](../../../docs/research/documentalist.md#docs-for-their-reader-2026-10-07).
-
 ## Levels
 
 Findings are reported rather than blocking while they are new (warn before
 block, the [role contract](../../../docs/spec/role-contract.md)); a project
 turns one off with `enforce`.
 
-- **Reported; the run passes**: `suspect`, `pending`, `unchecked`,
+- **Reported; the run passes**: `suspect`, `pending`, `due`, `unchecked`,
   budgets, `duplicate`, `dead-link`, `external-link-broken`,
   `identifier-gone`, `count-off`, `value-left` (after a fix, the judge),
   `cites-superseded`, `stale`, `links-not-checked`, `nothing-tracked`,
@@ -218,20 +156,19 @@ turns one off with `enforce`.
   `source-gone`, `docs-not-read`, `gardening-paused`, the reader checks,
   `too-large-to-condense`, `too-large-to-split`, `too-large-to-read`,
   `reader-claim-dropped` and `reader-patch-withheld` (gardening); for a
-  doc judged in parts, `sources-too-wide`, `uncovered`, `claims-dropped`.
+  doc judged in parts, `sources-too-wide`, `uncovered`, `claims-dropped`;
+  on a draft, `ai-waits-for-ready`.
 - **Reported, and the block regenerated**: `derived-stale` (gardening,
   `init`).
 - **Reported, left as it is**: `derive-unclosed`, a derive marker with no end before the next block's ([#302](https://github.com/JN0V/workline/issues/302)).
 - **Reported; the block left for gardening**: `derived-behind` (push,
-  merge request, release).
+  merge request).
 - **Blocks**:
-  - `due`: on `release`, a doc due then and not brought up to date;
   - `unknown`: a source that could not be read;
   - `setting-missing`: a budget or threshold not set, so a check did not
     run;
   - `derive-unknown` and `derive-failed`: a derived block that could not
     be regenerated;
-  - on `release`, a `suspect` doc ([cascades](cascades.md#at-the-release));
   - `shallow-clone`, unless only docs the commits in range did not touch
     lack their `checked` (then reported).
 - **`blocked-external`**: a source repository that cannot be reached.
