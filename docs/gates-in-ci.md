@@ -1,0 +1,151 @@
+---
+sources: [ci/github/workline.yml, ci/github/workline-apply.yml, ci/github/workline-warn.yml, ci/gitlab/workline.gitlab-ci.yml, internal/report/gates.go, internal/engine/annotate.go, internal/line]
+checked: d722a840
+judged: 14c41d9
+verified: agent:claude-code
+---
+# Gates in CI
+
+```mermaid
+flowchart LR
+  gates["<b>gates</b><br/>your tools, no token"] --> judge["<b>judge</b><br/>reads their verdicts"]
+  gates --> apply["<b>apply</b><br/>shows what is new"]
+  judge --> apply
+```
+
+Your [gates](spec/gates.md) run your own linters and scanners. In CI
+they run in a job of their own, before the line is judged
+([ADR-0049](adr/0049-the-inspector-judges-the-new-findings-of-the-projects-tools.md)).
+The templates need the first release after v0.35.0.
+
+## The job
+
+- **No write token, no secret**: the tools run the merge request's code,
+  a linter's config, a plugin, a build. On GitHub the job holds a read
+  token, and its checkout keeps none.
+- **Its tools are yours to install**: in the job `gates`, pinned and
+  checksum verified, before `workline route`; workline's own installs
+  golangci-lint so ([workline.yml](../.github/workflows/workline.yml)).
+  On GitLab, in `workline:gates`'s `before_script`, or give it your
+  image with workline in it.
+- **The judge reads their verdicts** (`--gates-from`): the line never
+  runs a gate beside the agent's token. A verdict missing is an error,
+  never a pass.
+- **A gate that does not pass** fails the job `gates`, and the judge.
+- **No gate in `.workline/config.yaml`**: the job ends at once.
+- **In a merge queue or train**: the same job runs the gates on the
+  merged result; on GitHub the judge gives their verdict, on GitLab the
+  job alone runs ([how](merge-queue.md)).
+- **On main after a merge**: the same job runs them on the new tip,
+  every finding kept by the commit where no branch can write it (Actions'
+  cache, main's pipeline artifacts on GitLab); red when the
+  merge adds what they count ([how](main-after-merge.md)).
+- **The merge base's findings**: read as main kept them, when kept with
+  the same command, config and tool: the tools run once, at the head;
+  else again at the merge base, said why
+  ([the next base](main-after-merge.md#the-next-base)).
+
+## On GitHub
+
+The job applying the run, in workline-apply.yml, shows what the gates
+found the change adds:
+
+- **Beside each line**: the annotations of the check `workline gates`,
+  on the head judged. None is a conversation to resolve. Its title gives
+  the count; past 500, the rest are counted, not written.
+- **One summary comment**, edited on each push: a row per check, its new
+  findings and those there before; a line per rule, its first places. It
+  lists as many rules as the reviewer's `findings-max` (10).
+- **Nothing new, nothing posted**: no check, no comment. A comment an
+  earlier push left says "no new finding".
+- **A formatter's check** (`fix:` set): its command is said once, rather
+  than one annotation per line.
+- **Not code scanning**: paid on private repositories, and a
+  conversation per alert.
+- **A fork's pull request**: no annotation, no summary comment; the
+  gates' verdicts are in the report workline-fork.yml comments
+  ([what a fork gets](#a-forks-pull-request)).
+- **The branch moved on** before the apply: nothing shown, and said; the
+  next run shows its own.
+
+## On GitLab
+
+- **The job's Code Quality report** holds the findings the change adds,
+  each as severe as its tool says. The merge request's widget shows it on
+  every tier; Ultimate puts each beside its line.
+- **GitLab compares it** with the report of the target branch's pipeline
+  at the merge base, which holds none of these: each shows as new. With
+  no pipeline there, the widget shows nothing.
+- **Each fingerprint holds no line number**: a finding that only moves
+  keeps it.
+- **The variables**: scoped to the environment `workline`, which the job
+  does not declare, the agent's token and the project bot's never reach
+  it; `workline:base` reads the merge base's findings with the bot's,
+  and hands them over ([the environment](gitlab/environment.md)). The
+  job still unsets them, for one left to every environment. Whoever may
+  push a branch can still read them
+  ([ADR-0044](adr/0044-the-apps-key-stays-with-the-default-branchs-runs.md)).
+  A fork's merge request runs in the fork, which has neither.
+- **Its summary** is `gates-summary.html`, linked from its page: the
+  judge writes its own.
+- **One more job a pipeline**, and its minutes.
+
+## A fork's pull request
+
+On GitHub, a fork's run gets a read-only token and no secret
+([GitHub's rule](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#workflows-in-forked-repositories)).
+The gates still run; what they find is told, not shown beside the lines.
+
+- **What it gets**:
+  - the jobs `gates` and `judge` as checks, red when a gate counts what
+    the change adds;
+  - one comment, the judge's report, from workline-fork.yml: each gate's
+    verdict, its new findings counted, and the first five places of
+    those over the gate's `max` (`src/auth/clean.go:10 errcheck`);
+  - the run's file `workline-gates`, kept a day: every new finding, its
+    file, line, rule and message (`gh run download <run> -n workline-gates`).
+- **What it does not get**:
+  - no check `workline gates`, nothing beside a line, no summary comment
+    by rule: workline-apply.yml skips a fork's run;
+  - no triage: the inspector needs the agent's token, which a fork's run
+    never gets.
+- **Why**: annotations need a token that writes checks. The job `gates`
+  runs the fork's code, a linter's config, a plugin, a build: it never
+  holds one. workline-fork.yml, which reads the fork's run from your
+  side, only comments.
+- **What you can do**:
+  - require the check `gates` in your branch's rules: a change a gate
+    blocks cannot merge, from a fork too. The run is the fork's copy of
+    workline.yml: read a change to `.github/workflows/` before trusting
+    its checks;
+  - choose whose runs wait for your approval, first-time contributors'
+    or every external contributor's (Settings → Actions → General,
+    [approval for fork runs](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/enabling-features-for-your-repository/managing-github-actions-settings-for-a-repository#controlling-changes-from-forks-to-workflows-in-public-repositories));
+  - never `pull_request_target`, nor a private repository's "Send write
+    tokens to workflows from pull requests": both put a write token
+    beside the fork's code
+    ([why](https://securitylab.github.com/resources/github-actions-preventing-pwn-requests/)).
+- **On GitLab**: a fork's merge request runs in the fork, with its
+  variables, none of yours; its Code Quality report is the fork's
+  pipeline's. Whether the merge request's widget shows it is not tried
+  yet.
+
+## The inspector's triage
+
+With the inspector after the gates in the routing
+([the inspector](../roles/inspector/README.md)):
+
+- **Apart from the verdict**: the run of what only warns triages what the
+  gates found the change adds, and posts it in a comment of its own once
+  it answered; the verdict never waits for it.
+- **The gates' own result**, never the gates run again beside the agent's
+  token. On GitHub, workline-warn.yml waits for workline.yml's `gates`
+  job on the same head, 15 minutes at most, and reads the result it left
+  (`actions: read`); not on a draft, which asks no agent. On GitLab,
+  `workline:warn` runs in a child pipeline started after
+  `workline:gates`, whatever its verdict, and reads its `gates.json`
+  with the bot's token.
+- **No result found**: said in the job's log; the inspector triages
+  nothing, and says so.
+- **The lenses that warn wait too**: in the same job, they start once
+  the gates' job ends.

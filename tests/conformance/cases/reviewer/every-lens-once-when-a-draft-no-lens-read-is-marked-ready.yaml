@@ -1,0 +1,21 @@
+case: reviewer/every-lens-once-when-a-draft-no-lens-read-is-marked-ready
+about: "A draft's two pushes asked no agent (ADR-0050), so no comment holds a record. Marked ready (`lenses=all`, `draft=false`), the run reads every lens once, on the whole change, both commits; its record says so (`read=all`), and the next push gets the lenses in turn (#129)."
+given:
+  repo: reviewed
+  setup:
+    - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"
+    - "printf 'package calc\\n\\n// Half halves a count.\\nfunc Half(n int) int { return n / 2 }\\n' > calc/half.go && git add calc/half.go && git commit -qm 'feat: halve a count'"
+  forge:
+    issues: []
+    merge-requests: [{id: 5, labels: [], comments: []}]
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD, lenses: all, draft: "false"}, target: {merge-request: 5}, ai: "fake:review-nothing"}
+expect:
+  status: pass
+  applied: [comment]
+  calls: [{task: part, for: 1-lenses}]
+  no-findings: [{rule: ai-waits-for-ready}]
+  run-files:
+    in/parts/1-lenses/task.md: {contains: ["## Lens: correctness", "## Lens: edge-cases", "## Lens: tests", "## Lens: claims", "### calc/calc.go", "### calc/half.go"]}
+  forge:
+    merge-requests:
+      - {id: 5, comments: 1, comment-contains: " runs=1 read=all -->"}

@@ -1,0 +1,21 @@
+case: product-owner/grid-next-says-each-cell
+about: "With `priority` and `effort` set, the order goes by the value-vs-effort grid — the priority first, then the effort, the lightest first, none read as Medium, then the number — and Next shows each issue's cell, a value missing said, and counts the ready issues missing one (ADR-0040, step 3)."
+given:
+  repo: backlog
+  config:
+    roles:
+      product-owner:
+        settings: {priority: auto, effort: auto}
+  forge:
+    issues:
+      - {id: 20, title: "Rewrite the importer", body: "The importer is rewritten.", labels: [workline:ready, priority/high, effort/high], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 21, title: "Export a month", body: "A month exported at once.", labels: [workline:ready, priority/high, effort/low], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 22, title: "Retry a failed upload", body: "An upload is tried again.", labels: [workline:ready, priority/high], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 23, title: "A typo in the help", body: "The help has a typo.", labels: [workline:ready, priority/low, effort/low], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 24, title: "Dark mode", body: "A dark theme.", labels: [workline:ready], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: none, summary: true}
+expect:
+  agent-calls: 0
+  findings:
+    - {rule: next-unestimated, message: "1 of 5 ready issues have no priority: they follow their number; 2 of 5 have no effort, read as Medium."}
+  summary-file: ["- **next to build** (5)\n  - [#21](https://forge.example/issues/21): Export a month — High · Effort Low → quick win\n  - [#22](https://forge.example/issues/22): Retry a failed upload — High · effort not estimated\n  - [#20](https://forge.example/issues/20): Rewrite the importer — High · Effort High → big bet\n  - [#23](https://forge.example/issues/23): A typo in the help — Low · Effort Low → fill-in\n  - [#24](https://forge.example/issues/24): Dark mode — no priority, effort not estimated\n"]

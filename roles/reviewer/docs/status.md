@@ -1,4 +1,4 @@
-# Reviewer — where it stands (2026-10-17)
+# Reviewer — where it stands (2026-10-21)
 
 **In one line:** reviews code on a machine (`workline review`) and on a
 merge request (opt-in): rules first, lenses as parts, quotes found again,
@@ -72,7 +72,7 @@ its measure in
   `run-on-ready-held-by-a-rule-owes-every-lens`,
   `every-lens-owed-read-on-the-next-push`,
   `every-lens-when-the-run-on-ready-was-cancelled`,
-  `one-lens-a-push-once-every-lens-read`, `one-lens-a-push-on-a-draft`,
+  `one-lens-a-push-once-every-lens-read`,
   `every-lens-again-once-a-draft-again`,
   `record-unread-asks-one-lens-on-a-ready-merge-request`; a failed run
   on ready asks every lens again once, then says it:
@@ -80,12 +80,60 @@ its measure in
   `every-lens-on-the-push-after-a-failed-run-on-ready`,
   `every-lens-not-whole-said-after-a-second-failure`,
   `every-lens-run-on-ready-unreachable-writes-nothing`.
+- **A lens that did not answer owes its commits**, asked first at the
+  next run, whosever turn it is; `read=all` waits for it
+  ([#588](https://github.com/JN0V/workline/issues/588)):
+  `warn-lenses-failed-read-their-commits-when-run-again`,
+  `lens-that-blocks-failed-reads-its-commits-when-run-again`,
+  `warn-lenses-answered-read-nothing-when-run-again`,
+  `warn-turn-of-a-lens-that-blocks-records-what-none-owes`.
 - **One review at a time per merge request**: a push waits for the
   review before it to be written, which the apply writes even once the
   branch moved on; each apply merges the record it finds
   ([#375](https://github.com/JN0V/workline/issues/375)):
   `review-applied-when-a-push-lands-before-it*`,
-  `record-merged-when-two-runs-judged-before-either-applied*`.
+  `record-merged-when-two-runs-judged-before-either-applied*`; applied
+  out of order, the newer run's text kept
+  ([#598](https://github.com/JN0V/workline/issues/598)):
+  `newer-review-kept-when-applied-out-of-order-on-gitlab`.
+- **The record read only from workline's own account's comment**,
+  another's carrying its marker never read, the range read again
+  ([ADR-0051](../../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md),
+  step 1): `record-of-another-author-not-read`; nor one another edited
+  last, as the forge's GraphQL says (step 9):
+  `record-edited-by-another-not-read*`.
+- **No commit skipped when what its own pipeline runs changes**
+  (`.github/`, `.gitlab-ci.yml`, `.workline/`, `pipeline-paths`;
+  ADR-0051, step 9): `line-change-skips-no-commit`,
+  `pipeline-paths-skip-no-commit`, `ci-change-skips-on-the-record`.
+- **The lenses that warn read apart from the verdict**, each run its own
+  comment and record
+  ([ADR-0050](../../../docs/adr/0050-each-act-has-its-moment-and-a-wait-budget.md),
+  [apart](apart.md)): `warn-apart-verdict-waits-for-no-lens-that-warns`,
+  `warn-apart-a-lens-that-blocks-still-holds-the-verdict`,
+  `warn-finding-posted-after-the-verdict`,
+  `warn-lens-failing-changes-no-verdict`,
+  `warn-only-takes-up-the-record-of-a-review-not-split`,
+  `warn-only-every-lens-blocks-writes-nothing`.
+- **No lens on a draft**, the last review kept, the AI review said to
+  wait for ready
+  ([ADR-0050](../../../docs/adr/0050-each-act-has-its-moment-and-a-wait-budget.md),
+  [ready](ready.md)): `no-lens-on-a-draft`,
+  `draft-with-no-agent-waits-for-a-person`,
+  `every-lens-once-when-a-draft-no-lens-read-is-marked-ready`,
+  `warn-apart-no-lens-on-a-draft`, `routing/draft-line-asks-no-agent`;
+  a draft pushed, then marked ready, tried on
+  [#533](https://github.com/JN0V/workline/pull/533).
+- **After ready, only what is new**: a push reads the commits no review
+  read, a merge of main nothing again; the lenses that warn five new
+  commits a push, the rest said and read next; a finding judged once
+  keeps its verdict on the same patch
+  ([ADR-0050](../../../docs/adr/0050-each-act-has-its-moment-and-a-wait-budget.md),
+  [after ready](ready.md#after-ready-only-what-is-new),
+  [judged once](once.md)): `after-ready-*`, `commits-*`,
+  `finding-judged-once-not-judged-again`,
+  `finding-judged-again-once-its-file-changes`; a push and a merge of
+  main after ready tried on [#534](https://github.com/JN0V/workline/pull/534).
 - **Lenses as parts**, answering findings only; an answer that does not
   read asked again once: `never-approves-nor-patches`,
   `lens-failed-not-clean`, `lens-answer-asked-again-once`.
@@ -134,8 +182,10 @@ its measure in
   ([ADR-0046](../../../docs/adr/0046-the-auditor-re-checks-every-roles-acts.md)):
   `judged-line-for-each-finding-judged`, `judged-lines-*`.
 - **`workline review`**, findings as JSON: `local-review-outputs-json`.
-- **Each finding on its line**, in the forge's own review:
-  `line-comment-*`.
+- **Each important finding on its line**, in the forge's own review:
+  `line-comment-*`. A nit on no line, listed last, asking nothing
+  ([ADR-0051, cut 4](../../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-4-no-fix-round-for-nits)):
+  `nit-in-the-summary-asks-nothing`.
 - **Intent, claims, a decision for a person, the diff alone, the finder
   floor**: `intent-*`, `claim-contradicted-is-a-finding-on-the-line`,
   `merge-request-body-given-as-testimony`, `decision-*`, `diff-alone-*`,
@@ -145,16 +195,25 @@ its measure in
   `judge-shown-the-change-near-the-cause`,
   `tests-judge-reads-tests-up-to-a-cap`,
   `review-says-the-tokens-of-each-call`, `budget-spent-*`.
+- **A change too large for one call, in parts**, past `parts-max` no
+  lens asked ([#446](https://github.com/JN0V/workline/issues/446)): `change-*`.
 - **A spec, on a machine and on the forge**: `spec-*`.
+- **The code a spec names, read as Markdown**: the functions it writes
+  as code, a fenced block's too, never a plain word; a function in a
+  file cut still shown
+  ([#425](https://github.com/JN0V/workline/issues/425)); measured with
+  no model on the 10 specs waiting, 113k tokens in down to 92k
+  ([#477](https://github.com/JN0V/workline/pull/477)):
+  `spec-fenced-quote-names-no-prose-word`,
+  `spec-long-file-named-its-function-shown`,
+  `spec-capitalised-words-name-no-code`.
 - **Spec review on workline**, on since 2026-10-17, after the product
-  owner's trial: the reviewer after it in the `schedule` line of
-  workline's `.workline/config.yaml`, up to 5 specs a night
-  (`specs-per-run`, below); a night's cost estimated offline in its pull
-  request ([#424](https://github.com/JN0V/workline/pull/424)).
+  owner's trial: the reviewer after it in workline's `schedule` line,
+  up to 5 specs a night (`specs-per-run`); a night's cost estimated
+  offline in [#424](https://github.com/JN0V/workline/pull/424).
 - **Several specs a night** on the forge, `specs-per-run` (5), the rest
   the next night; measured with no model on workline's 10 waiting, two
-  nights instead of ten
-  ([#433](https://github.com/JN0V/workline/issues/433)):
+  nights instead of ten ([#433](https://github.com/JN0V/workline/issues/433)):
   `spec-several-read-in-one-run`, `spec-rest-read-at-the-next-run`,
   `spec-tokens-spent-later-specs-wait`,
   `spec-question-to-a-person-takes-no-place`,
@@ -162,6 +221,9 @@ its measure in
   `spec-agent-unreachable-questions-wait`.
 - **A record that does not read is said**: `spec-record-unread-*`,
   `record-unread-reviews-every-commit-again`.
+- **The record read with GitLab's job token**, which may not list the
+  project's members: `record-read-without-the-members-on-gitlab`; tried
+  on gitlab.com ([#565](https://github.com/JN0V/workline/pull/565)).
 - **An issue outside the change**, opened the one way every role shares,
   written for a person first: the backlog's `issue-*` cases,
   `finding-cause-outside-diff-becomes-issue`.
@@ -182,19 +244,17 @@ its measure in
    the finder floor's worth, a decision for a person (no case plants
    one), one lens a push whichever lens is in turn, the cheaper push over
    five runs. No issue yet.
-2. **Spec review measured on real use**: first, the code a spec names
-   read right, not functions picked from plain words
-   ([#425](https://github.com/JN0V/workline/issues/425)); then more
-   specs, the product owner's real answer read again, on GitLab and in CI
-   (a round over two nights). No issue yet for these.
+2. **Spec review measured on real use**: more specs, the product
+   owner's real answer read again, on GitLab and in CI (a round over two
+   nights). No issue yet.
 3. **The tests lens outside the change**: untested code the change did not
    touch. Waits for the inspector's static-analysis results
    ([#202](https://github.com/JN0V/workline/issues/202)); decided then.
 4. **The developer's loop**: a handoff to the developer, five rounds, then
    a person. Waits for the developer role, after inspector and security
    ([#117](https://github.com/JN0V/workline/issues/117)).
-5. **Tries on real use**: a draft marked ready, a run on ready a rule
-   held, GitLab (the job token reading the notes, the next pipeline), a
+5. **Tries on real use**: a run on ready a rule
+   held, GitLab (the next pipeline with an agent), a
    block standing on a forge, an issue outside the change written by a
-   real agent; every lens on ready tried on
+   real agent, a change read in parts; every lens on ready tried on
    [#307](https://github.com/JN0V/workline/pull/307). No issue yet.

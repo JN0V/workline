@@ -1,0 +1,22 @@
+case: merge/queue-group-without-the-yes-fails-it
+about: "A merge queue's group whose head queued holds no yes of `follow`'s own token (ADR-0050): a writer set `workline/accepted` there by hand, which is never read. The group's commit gets `workline/accepted` failure, saying why: the queue drops it, never merging a head no person accepted (ADR-0042)."
+given:
+  repo: documented
+  config: {merge: {autonomy: cautious}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb feat/sessions && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin feat/sessions"
+    - "git checkout -q main && git checkout -qb queue && git merge -q --no-ff feat/sessions -m 'Merge pull request #7 from feat/sessions'"
+  forge:
+    statuses:
+      - {commit: feat/sessions, name: workline/accepted, state: success, description: "trust me", by: dana}
+    merge-requests:
+      - {id: 7, branch: feat/sessions, base: main, author: dana, labels: [], comments: []}
+run: {follow: [--merge-group, gh-readonly-queue/main/pr-7-7f122f4acd601f5afc1a76b31fe0640ec2174b39, --head, queue]}
+expect:
+  status: pass
+  findings: [{rule: queue-not-accepted, where: "#7", message: "queued, holds no yes: set on the group's commit"}]
+  no-findings: [{rule: queue-accepted}]
+  forge:
+    statuses:
+      - {commit: queue, name: workline/accepted, state: failure, by: workline-bot}

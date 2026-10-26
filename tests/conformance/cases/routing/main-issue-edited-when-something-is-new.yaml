@@ -1,0 +1,31 @@
+case: routing/main-issue-edited-when-something-is-new
+about: >
+  The issue main's run keeps is one, edited in place (ADR-0050): the
+  next merge brings one more dead link, and the issue opened after the
+  first merge is rewritten to list both; no other issue is opened, and
+  no comment posted.
+given:
+  repo: linted
+  setup:
+    - "mkdir -p docs && printf '# Notes\\n\\nOne.\\n\\nSee [the guide](guide.md).\\n' > docs/notes.md && git add docs && git commit -qm 'docs: add notes'"
+  env: {PATH: "$FIXTURES/bin:$PATH"}
+  forge: {issues: []}
+  config:
+    routing: {events: {merge-request: [committer, documentalist, "gate:merge"]}}
+    gates: {merge: {checks: [{id: lint, run: "golangci-lint run --output.sarif.path={out}/lint.sarif", output: sarif, max: {error: 0}}]}}
+run:
+  route: main
+  input: {range: "HEAD^1..HEAD"}
+  main-issue: true
+  then: again
+  again-after:
+    - "printf '\\nAnd [the questions](faq.md).\\n' >> docs/notes.md && git commit -qam 'docs: point to the questions'"
+expect:
+  status: pass
+  findings:
+    - {rule: main-issue, message: "issue #1 kept"}
+    - {rule: dead-link, where: docs/notes.md, message: "faq.md"}
+  forge:
+    issues:
+      - {id: 1, edits: 1, comments: 0, body-contains: ["guide.md: no such file", "faq.md: no such file", "2 findings"]}
+      - {id: 2, absent: true}

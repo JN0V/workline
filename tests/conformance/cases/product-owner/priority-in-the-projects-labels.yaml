@@ -1,0 +1,33 @@
+case: product-owner/priority-in-the-projects-labels
+about: "With `priority: auto`, the role finds the project's own family, P0 to P3 here — two values or more, one on an open issue — and sets the priority there, never a workline label; P0, on no issue, still reads as Urgent, the family read from the project's labels. The run says once where each axis was found (ADR-0040, step 2)."
+given:
+  repo: backlog
+  config:
+    roles:
+      product-owner:
+        settings: {moved-percent-max: 100, priority: auto, effort: auto, acts: {order: {mode: act}}}
+  forge:
+    labels:
+      - {id: 1, title: P0, labels: []}
+      - {id: 2, title: P1, labels: []}
+      - {id: 3, title: P2, labels: []}
+      - {id: 4, title: P3, labels: []}
+      - {id: 5, title: effort/small, labels: []}
+      - {id: 6, title: effort/large, labels: []}
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 10, title: "Slow export", body: "The export is slow.", labels: [bug], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 20, title: "Export to JSON", body: "Add a JSON export.", labels: [P2, effort/small], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:order-two}
+expect:
+  findings:
+    - {rule: values-where, message: "Priority: labels P0 to P3, the project's. Effort: labels effort/*, the project's."}
+    - {rule: done, where: "#9", message: "Set #9's priority to 1 (P0)"}
+    - {rule: done, where: "#10", message: "Set #10's priority to 2 (P1)"}
+  forge:
+    issues:
+      - {id: 9, labels: [P0], comment-contains: "priority: 1"}
+      - {id: 10, labels: [bug, P1], comment-contains: "priority: 2"}
+      - {id: 20, labels: [P2, effort/small]}
+    labels:
+      - {id: 7, absent: true}

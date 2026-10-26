@@ -1,7 +1,7 @@
 ---
 sources: [internal/engine, internal/intent, internal/role, internal/agent, roles_test.go]
-checked: e2580728
-verified: agent:documentalist
+checked: d722a840
+verified: agent:claude-code
 judged: b530b72
 ---
 # Role contract — v1 (draft)
@@ -103,15 +103,30 @@ duties:
 
 intentions: [commit-message, note]   # subset of the catalogue below
 part-intentions: [claim]        # what a part of a question answers with (In parts);
-                                # claims when unset; a reviewer's lens, findings
-on-block: []                    # what a run still applies when post blocks: what
-                                # only says why (the reviewer's comment); none by default
+                                # claims when unset; a reviewer's lens, findings;
+                                # the inspector, triages
+on-block: []                    # the kinds a run still applies when post blocks:
+                                # what only says why, every proposal of them, on
+                                # any run (step 5, Apply); none by default
 on-moved-on: []                 # what a merge request's run still applies once its
                                 # branch moved on from the head judged: what only says
-                                # what that head held (the reviewer's review); never a
-                                # patch nor a label; none by default
+                                # what that head held (the reviewer's review, the
+                                # inspector's triage); never a patch nor a label;
+                                # none by default
+apart: []                       # events, of its own, where what the role finds that
+                                # only warns runs apart from the verdict: the verdict's
+                                # line leaves it (`route --warn-apart`, input
+                                # `warn=apart`), a line of its own runs it alone
+                                # (`--warn-only`, `warn=only`), never the head's
+                                # verdict (ADR-0050; the reviewer's lenses that warn,
+                                # the inspector's triage); none by default
+personal: []                    # settings a person may set for themselves, in their
+                                # own config (role-adapting.md, "A person's own")
 
 without-ai: block               # block | report | pass — see "No AI" (not read yet)
+merge-request-ai: ready         # on a merge request, the agent judges once, on the
+                                # run at ready (routing.md, "Once, at ready"); unset:
+                                # on every push but a draft's
 
 settings:                       # defaults, overridable per project
   subject-max: 72
@@ -179,7 +194,7 @@ token), **apply** (trusted, no AI key).
    on the tier `model.tasks.part` names, each call counted and kept like
    any other, named by its part (`for: <name>` in `out/calls.jsonl`); a part answers only what the role's
    `part-intentions` name — `claim`s when it names none, a reviewer's lens
-   `finding`s — which are never applied: they inform. The answers are put
+   `finding`s, the inspector `triage`s — which are never applied: they inform. The answers are put
    back as `in/parts/<name>/answer.yaml`, and `pre` runs again, with
    `WORKLINE_PARTS=answered`, to put them together — no AI — and write the
    one question that follows, `in/task.md`, or none. Only then is the digest
@@ -237,6 +252,11 @@ token), **apply** (trusted, no AI key).
    slip, not a refusal. The documentalist's `post` passed with no proposal,
    and such a doc was judged again, whole, the next night (DomoticsCore,
    ADR-0014 step 4). The answer not read is kept as `out/unread-answer.txt`.
+   An item holding several keys where one kind goes, or none, is refused
+   so too, the keys named: several kinds, an item each; a key no kind is
+   named by, the role's kind whose shape holds it, under which it goes (a
+   lens wrote a finding's `decision` and `cause` as an item of their own,
+   #493).
    The output contract asks for text holding code, quotes, a backtick, `: `
    or ` #` as a YAML block scalar (`|`), which takes code as it is; the
    request again repeats it (#138). YAML, not JSON: code wrapped in JSON
@@ -264,8 +284,10 @@ token), **apply** (trusted, no AI key).
    Read whole rather than asked again: the text on the line is exactly
    what the agent wrote, a quote included, and asking costs a call that
    may repeat the slip.
-   *Claude Code runs without tools; a `cmd:` agent is not sandboxed, so
-   read-only is its command's promise, not the engine's.*
+   *Claude Code runs without tools, and apart from a Claude Code session
+   it may be started from: that session's variables are dropped
+   ([measured](../research/claude-session-env.md)). A `cmd:` agent is not
+   sandboxed, so read-only is its command's promise, not the engine's.*
 4. **Judge — `post`.** Reads `in/` and, if present, `out/intentions.yaml`.
    Writes `out/verdict.yaml`. It guards what the AI must not decide (for
    example, the committer's `post` refuses a rewritten message that fails the
@@ -283,7 +305,9 @@ token), **apply** (trusted, no AI key).
    is a `left-out` finding with the refusal's reason. Still refused on an
    event whose steps all run (`fail-fast: false`, the shipped `schedule`),
    the step passes with nothing of the proposal applied, each refusal a
-   warning ([ADR-0037, amended](../adr/0037-the-schedule-runs-every-step.md#amendment-2026-10-09-a-refused-proposal-is-said-not-failed)). A role listing `claim`
+   warning ([ADR-0037, amended](../adr/0037-the-schedule-runs-every-step.md#amendment-2026-10-09-a-refused-proposal-is-said-not-failed)).
+   So is it on a merge request for a role whose `merge-request-ai` is
+   `ready`, refused once: never asked again, no stronger model (ADR-0051). A role listing `claim`
    among its intentions may give claims beside a patch, saying why it takes
    words out (the documentalist, ADR-0014): `post` reads them; alone, with no
    patch, they are refused, and they are never applied. A `post` that passes
@@ -301,10 +325,16 @@ token), **apply** (trusted, no AI key).
    `pre` did not end the run: each issue's state is read — a person's
    answer, an act undone — and written back (docs/spec/backlog-acts.md).
    A run that blocks applies nothing, but the kinds its role names in
-   `on-block`, of its intentions: what only says why it blocks, the
-   reviewer's summary comment and the record in it (#226). The run still
-   blocks; judged with `--no-apply`, they wait in `pending` like any
-   other, for the applying job, which runs whatever the judge's outcome.
+   `on-block`, of its intentions: what only says why it blocks. Every
+   proposal of those kinds is applied, the agent's or the role's own, on
+   any event. The reviewer's (`comment`, `issue`): its summary comment,
+   the record in it, its issues
+   ([#226](https://github.com/JN0V/workline/issues/226)). The
+   documentalist's (`comment`): each of its comments, as the docs to check on a merge request run without an agent, when a
+   derived block's command fails or it cannot tell whether a source
+   changed. The run still blocks; judged with `--no-apply`, they wait in
+   `pending` like any other, for the applying job, which runs whatever
+   the judge's outcome.
    Applied by a job of the base once the merge request's branch moved on
    from the head judged (`--from-merge-request`), a run applies only the
    kinds its role names in `on-moved-on`, said (`moved-on`); none, nothing
@@ -313,17 +343,19 @@ token), **apply** (trusted, no AI key).
    the findings it defers, one `<rule> <where>` a line. When the run passed
    and applied something other than a note, the engine then runs the role
    again, from step 2, in a new run folder that sees what was applied — five
-   rounds at most. The result adds up the rounds' calls and applied
-   intentions; a later round's finding replaces an earlier one of the same
-   rule and place, and a deferred one is dropped once the next round runs. A
-   run judged with `--no-apply` applies nothing a next round could see: it
-   goes round again only when, with `--open-merge-request`, the round
-   proposed a merge request for a task no earlier round of the run proposed
-   (the key of `out/merge-request.yaml`). The next round is told that task
-   waits, as one open on the forge, and takes up what was deferred — on a
-   gardening night, the docs judged in parts after those judged whole
-   (ADR-0013, amended). Each round is a run folder to apply, listed in the
-   result's `pending`, a merge request each.
+   rounds at most. A `held` round goes on too, when it deferred something
+   and applied it in the clone, with no merge request. The result adds up
+   the rounds' calls and applied intentions; a later round's finding
+   replaces an earlier one of the same rule and place, and a deferred one
+   is dropped once the next round runs. A run judged with `--no-apply`
+   applies nothing a next round could see: it goes round again only when,
+   with `--open-merge-request`, the round proposed a merge request for a
+   task no earlier round of the run proposed (the key of
+   `out/merge-request.yaml`). The next round is told that task waits, as
+   one open on the forge, and takes up what was deferred — on a gardening
+   night, the docs judged in parts after those judged whole (ADR-0013,
+   amended). Each round is a run folder to apply, listed in the result's
+   `pending`, a merge request each.
 
    **Then.** A round that passed may name in `in/then` a task asked once
    the others are done: one round more, `WORKLINE_THEN` naming it, within
@@ -337,6 +369,16 @@ token), **apply** (trusted, no AI key).
    (`ai-max-tokens`, a warning): what is left waits for the next run. 0 or
    unset, no cap.
 
+   **A cap on the wait.** A role setting `ai-max-seconds` caps how long one
+   run waits on its agents, from its first call: every round, part, retry
+   and judge together ([ADR-0050](../adr/0050-each-act-has-its-moment-and-a-wait-budget.md)).
+   Each call may take what is left at most, its role's `model.timeout` when
+   shorter; the answer that crosses it is not waited for, a child of the
+   agent's still holding its output given 1 s more. Nothing more is asked,
+   and the run says so (`ai-max-seconds`, a warning); the role's post
+   judges as if the agent had not answered. 0 or unset, no cap; the
+   committer's is 30.
+
 ### When apply stops half-way
 
 Writes to git and to a forge are not transactional: a comment can be posted and
@@ -348,7 +390,11 @@ run from `out/run.yaml`, with the evidence of the original run, without calling
 the agent again.
 
 Scripts receive `WORKLINE_RUN_DIR`, `WORKLINE_EVENT`, `WORKLINE_AI` (the agent
-name or `none`), `WORKLINE_ROLE`, `WORKLINE_BIN` (the engine running them,
+name or `none`), `WORKLINE_AI_WAITS` (`ready` on a draft: given the input
+`draft=true`, the engine sets the agent it would give aside, `WORKLINE_AI`
+`none`, and the result says so, `ai-waits`, ADR-0050; `night` so too, on
+a release tool's merge request run on `merge-request`, for a role that
+runs on `release`), `WORKLINE_ROLE`, `WORKLINE_BIN` (the engine running them,
 which the shipped roles call for their built-in steps), `WORKLINE_ROLES_DIR`
 (the folder the role was taken from, where its siblings are),
 `WORKLINE_FORGE` (the
@@ -364,18 +410,15 @@ tasks, the files its change touches: an open one's branch from where it
 left the commit judged, fetched from `origin` (the clone's own branch for
 a forge kept there); an earlier round's, the files its patches name. A
 branch that cannot be read leaves its task out, said
-(`merge-request-unread`, a warning; ADR-0013, amended 2026-10-14). On a merge request a release tool opened (its
-branch one of `release.branches`), a role that runs on `release` is run on
-it: `WORKLINE_EVENT` is `release` (ADR-0017). Every role run there is told
-the branch, `WORKLINE_RELEASE_BRANCH`: the reviewer leaves the versions the
-tool bumps (#384). A fix judged there is not pushed onto that branch, which
-the release tool rewrites: it goes to a merge request of its own into the
-release's base, and the release waits until it is merged (`fixed-elsewhere`);
-never over a person's commit on that branch, where it goes in a comment
-instead. `workline follow` rebuilds that merge request on its base as the
-base moves (ADR-0034); with `--gardening`, after gardening applies, the
-role's other merge requests too, or closes those with nothing left to
-merge. A task's branch a person committed to is never force-pushed over
+(`merge-request-unread`, a warning; ADR-0013, amended 2026-10-14).
+`in/held.yaml` names, by number, the files each other open merge request
+of the repository changes, a fork's left out: the documentalist leaves
+those docs to it (ADR-0051). On a merge request a release tool opened (its
+branch one of `release.branches`), every role is told the branch,
+`WORKLINE_RELEASE_BRANCH`: the reviewer leaves the versions the tool bumps
+(#384). `workline follow --gardening`, after gardening applies, rebuilds the
+role's merge requests on their base as it moves, or closes those with
+nothing left to merge (ADR-0034, amended). A task's branch a person committed to is never force-pushed over
 (`not-proposed`, ADR-0034 amended).
 
 ### Exit codes

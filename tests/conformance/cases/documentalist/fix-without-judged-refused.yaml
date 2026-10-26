@@ -3,7 +3,7 @@ about: "A fix that leaves `checked` alone and says nothing in `judged` is refuse
 given:
   repo: documented
   setup: ["sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"]
-run: {role: documentalist, event: merge-request, ai: "fake:doc-fixed-not-checked"}
+run: {role: documentalist, event: pre-push, ai: "fake:doc-fixed-not-checked"}
 expect:
   status: block
   applied: []

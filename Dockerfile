@@ -3,10 +3,13 @@
 # them (docs/BACKLOG.md, "Install without Go in CI"). No AI agent inside:
 # Claude Code is installed by the job that needs it, with its token.
 # Built by .github/workflows/release.yml from the release's linux binary.
+# openssh-client: ssh-keygen, with which git signs the bot's commits when
+# a project gives it an SSH key (docs/gitlab/signed-commits.md); GnuPG is
+# left out, an SSH key signing for every forge.
 FROM node:22-bookworm-slim
 ARG GITLEAKS=8.30.1
 RUN apt-get update \
- && apt-get install -y --no-install-recommends ca-certificates curl git jq \
+ && apt-get install -y --no-install-recommends ca-certificates curl git jq openssh-client \
  && rm -rf /var/lib/apt/lists/* \
  && cd /tmp \
  && curl -fsSLO "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS}/gitleaks_${GITLEAKS}_linux_x64.tar.gz" \
@@ -15,4 +18,4 @@ RUN apt-get update \
  && tar -xzf "gitleaks_${GITLEAKS}_linux_x64.tar.gz" -C /usr/local/bin gitleaks \
  && rm -f /tmp/*
 COPY workline /usr/local/bin/workline
-RUN workline version && gitleaks version
+RUN workline version && gitleaks version && command -v ssh-keygen

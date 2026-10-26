@@ -1,0 +1,13 @@
+case: merge/queue-group-names-no-pull-request
+about: "A merge queue's group whose branch names no pull request (`gh-readonly-queue/<base>/pr-<n>-<commit>`, as GitHub names it) is an error, said, never a yes set on a guess."
+given:
+  repo: documented
+  config: {merge: {autonomy: cautious}}
+  forge:
+    merge-requests: []
+run: {follow: [--merge-group, feat/sessions, --head, main]}
+expect:
+  status: block
+  findings: [{rule: follow-failed, message: "names no pull request (gh-readonly-queue/<base>/pr-<n>-<commit>)"}]
+  forge:
+    statuses: []

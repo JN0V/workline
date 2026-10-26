@@ -1,0 +1,19 @@
+case: forge/gitlab-write-answered-5xx-not-sent-again
+about: "A GitLab write answered with a 5xx may have been taken: it is sent once, never again, which could add a note twice; the run says so, blocked-external, to run again later (#489)."
+given:
+  repo: backlog
+  engine-tags: [workline_quick]
+  forge:
+    faults:
+      - {method: POST, path: /issues/9/notes, status: 502, times: 1}
+    members:
+      - {username: plan, access_level: 15}
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.", author: plan, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:refine-an-outsider, forge: gitlab}
+expect:
+  status: blocked-external
+  findings: [{rule: forge-unreachable, message: "502 Bad Gateway {\"message\":\"Bad Gateway\"} (a write: not sent again, GitLab may have taken it)"}]
+  forge:
+    issues:
+      - {id: 9, posted: 0, comments: 1}

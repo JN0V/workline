@@ -1,0 +1,16 @@
+case: documentalist/sample-vouched-in-parts-for-a-person
+about: "A sampled doc whose `checked` was moved once its parts supported every line (#482), its header's `judged-in-parts` at the same commit, earned it with sources too large to be read whole: not unearned, nor put back; the sample cannot read it whole either, so it is left for a person, saying why, with no agent call."
+given:
+  repo: vouched
+  config: {roles: {documentalist: {settings: {whole-chars: 10}}}}
+  setup:
+    # 2026-W03: the documentalist moves people.md's `checked` after reading it in parts.
+    - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C\\njudged-in-parts: $C/; s/^verified: .*/verified: agent:documentalist/\" docs/tech/people.md && GIT_AUTHOR_DATE=2026-01-13T10:00:00Z GIT_COMMITTER_DATE=2026-01-13T10:00:00Z git commit -qam 'docs: bring the docs in line with the code' -m 'Workline-Role: documentalist' -m 'Workline-Model: claude:claude-sonnet-5'"
+run: {sample: [--week, 2026-W03, --judge, "fake:sample-nothing-false"]}
+expect:
+  status: human
+  agent-calls: 0
+  findings:
+    - {rule: sample-not-read, where: docs/tech/people.md, message: "judged in parts"}
+  no-findings:
+    - {rule: vouched-unearned}

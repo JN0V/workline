@@ -1,0 +1,21 @@
+case: gates/line-reads-a-range-spelled-otherwise
+about: >
+  The line reads the gates' verdicts when their job ran on the same
+  commits, however each spells the range: a branch's name, or its commit.
+given:
+  repo: linted
+  setup:
+    - git checkout -q -b change
+    - |
+      sed -i 's|^\tos.Remove("c.tmp")$|&\n\tos.Remove("d.tmp")|' clean.go && git commit -qam "feat: clean d too"
+  config:
+    routing: {events: {merge-request: ["gate:merge"]}}
+    gates: {merge: {checks: [{id: lint, run: "golangci-lint run --output.sarif.path={out}/lint.sarif", output: sarif, max: {error: 0}}]}}
+run:
+  route: merge-request
+  input: {range: main..HEAD}
+  gates-job: {env: {PATH: "$FIXTURES/bin:$PATH"}, input: {range: main..change}}
+expect:
+  status: block
+  findings: [{rule: over-threshold, where: lint, message: "1 new error finding"}]
+  no-findings: [{rule: check-error}]

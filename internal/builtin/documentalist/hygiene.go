@@ -73,12 +73,34 @@ func Hygiene(t Tree, b Budgets, d Duplicates) []Problem {
 	return out
 }
 
+// HygieneOf is Hygiene for some docs only, those of a push (ADR-0050):
+// their budgets, their links, the decisions they cite, each read against
+// the whole repository. Passages written twice are looked for across every
+// doc, on the merge request and when gardening, not at each push. A
+// setting missing is still said: a check that could not run is not a pass.
+func HygieneOf(t Tree, b Budgets, d Duplicates, docs map[string]bool) []Problem {
+	var out []Problem
+	for _, p := range append(append(append(budgets(t, b), duplicatesUnset(d)...), links(t)...), supersededCited(t)...) {
+		where, _, _ := strings.Cut(p.Where, "#")
+		in := p.Where == "" || docs[where]
+		for doc := range docs {
+			in = in || p.Rule == "folder-too-long" && path.Dir(doc) == where
+		}
+		if in {
+			out = append(out, p)
+		}
+	}
+	sort.SliceStable(out, func(i, j int) bool { return out[i].Where < out[j].Where })
+	return out
+}
+
 // line is one line of a doc, as the checks see it.
 type line struct {
 	n       int    // 1-based, in the whole file
 	text    string // as written
 	heading int    // 1-6 for a heading, else 0
 	code    bool   // inside a fenced code block, or a fence itself
+	lang    string // the block's language, as its opening fence names it, lowercased
 }
 
 // scan splits a doc into lines, skipping its frontmatter.
@@ -86,18 +108,25 @@ func scan(content string) []line {
 	all := strings.Split(strings.TrimSuffix(content, "\n"), "\n")
 	_, start := header(content)
 	var out []line
-	fence := ""
+	fence, lang := "", ""
 	for i := start; i < len(all); i++ {
 		l := line{n: i + 1, text: all[i]}
 		t := strings.TrimSpace(all[i])
 		switch {
 		case fence != "":
-			l.code = true
+			l.code, l.lang = true, lang
 			if strings.HasPrefix(t, fence) {
 				fence = ""
 			}
 		case strings.HasPrefix(t, "```") || strings.HasPrefix(t, "~~~"):
 			l.code, fence = true, t[:3]
+			// ```yaml, ``` yaml title="x", ```{.yaml}: the first word.
+			info := strings.Fields(strings.Trim(t, "`~ \t"))
+			lang = ""
+			if len(info) > 0 {
+				lang = strings.ToLower(strings.Trim(info[0], "{}."))
+			}
+			l.lang = lang
 		default:
 			if lv := len(t) - len(strings.TrimLeft(t, "#")); lv > 0 && lv <= 6 && strings.HasPrefix(t[lv:], " ") {
 				l.heading = lv
@@ -107,6 +136,11 @@ func scan(content string) []line {
 	}
 	return out
 }
+
+// BodyLines is how many lines a doc holds below its header: what its
+// `doc-lines` budget counts. The header records who checked the doc, it says
+// nothing.
+func BodyLines(content string) int { return len(scan(content)) }
 
 // words counts the words of prose: tokens holding a letter or a digit, so
 // list markers and table bars are not words.
@@ -154,7 +188,7 @@ func budgets(t Tree, b Budgets) []Problem {
 	}
 	folders := map[string]int{}
 	for p, content := range t.Docs {
-		n := len(scan(content)) // the body: the header records who checked the doc, it says nothing
+		n := BodyLines(content)
 		folders[path.Dir(p)] += n
 		if b.DocLines > 0 && n > b.DocLines {
 			out = append(out, Problem{Rule: "doc-too-long", Where: p, Key: "doc-too-long " + p, Size: n,
@@ -279,14 +313,22 @@ type paragraph struct {
 	text       string // its words, normalized: what identifies it wherever it moves
 }
 
+// duplicatesUnset says when the settings duplicates needs are missing.
+func duplicatesUnset(d Duplicates) []Problem {
+	if d.MinWords <= 0 || d.Similarity <= 0 {
+		return []Problem{{Rule: "setting-missing", Key: "setting-missing duplicates",
+			Message: "duplicates.min-words or duplicates.similarity is not set, so repeated passages were not looked for"}}
+	}
+	return nil
+}
+
 // duplicates finds passages written twice. Paragraphs are compared by the
 // sets of three-word sequences they hold (Jaccard similarity), which catches a
 // passage copied and then lightly edited; at the size of a project's docs,
 // comparing every pair is fast enough.
 func duplicates(t Tree, d Duplicates) []Problem {
-	if d.MinWords <= 0 || d.Similarity <= 0 {
-		return []Problem{{Rule: "setting-missing", Key: "setting-missing duplicates",
-			Message: "duplicates.min-words or duplicates.similarity is not set, so repeated passages were not looked for"}}
+	if unset := duplicatesUnset(d); unset != nil {
+		return unset
 	}
 	var paras []paragraph
 	docs := make([]string, 0, len(t.Docs))

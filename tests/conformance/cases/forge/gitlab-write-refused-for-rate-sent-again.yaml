@@ -1,0 +1,19 @@
+case: forge/gitlab-write-refused-for-rate-sent-again
+about: "A GitLab write refused for the rate (429) was not taken: it is sent again once Retry-After has passed, and taken once (#489)."
+given:
+  repo: backlog
+  engine-tags: [workline_quick]
+  forge:
+    faults:
+      - {method: POST, path: /issues/9/notes, status: 429, retry-after: 1, times: 1}
+    members:
+      - {username: plan, access_level: 15}
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.", author: plan, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:refine-an-outsider, forge: gitlab}
+expect:
+  status: pass
+  no-findings: [{rule: forge-unreachable}]
+  forge:
+    issues:
+      - {id: 9, posted: 1, comments: 1, body-contains: "## Need"}

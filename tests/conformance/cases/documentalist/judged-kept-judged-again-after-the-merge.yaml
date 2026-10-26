@@ -1,0 +1,37 @@
+case: documentalist/judged-kept-judged-again-after-the-merge
+about: "A record a merged merge request kept stands only for the doc and sources it names: main changed the source before the squash, so in the commit the merge request became the source is not as judged; gardening judges the doc again, its finding saying why, and writes no record."
+given:
+  repo: documented
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb feature && printf '\\n// TokenTTL is in seconds.\\n' >> src/auth/token.go && git commit -qam 'docs(auth): say the unit of the lifetime'"
+    - "sed -i \"s/@at@/$(git rev-parse HEAD)/; s/@doc@/$(git rev-parse HEAD:docs/tech/auth.md)/; s/@src@/$(git rev-parse HEAD:src/auth/token.go)/\" \"$FORGE_FILE\""
+    - "git checkout -q main && sed -i '1i // Package auth signs users in.' src/auth/token.go && GIT_AUTHOR_DATE=2026-01-06T12:00:00Z GIT_COMMITTER_DATE=2026-01-06T12:00:00Z git commit -qam 'docs(auth): say what the package does'"
+    - "git merge -q --squash feature && GIT_AUTHOR_DATE=2026-01-07T12:00:00Z GIT_COMMITTER_DATE=2026-01-07T12:00:00Z git commit -qm 'docs(auth): say the unit of the lifetime (#1)' && git push -q origin main && git branch -q -D feature"
+  forge:
+    merge-requests:
+      - id: 1
+        branch: feature
+        base: main
+        labels: []
+        closed: true
+        merged: true
+        merged-at: "2026-01-07T12:00:00Z"
+        merged-as: main
+        comments:
+          - body: |
+              <!-- workline:doc-judged {"doc":"docs/tech/auth.md","key":"judged","at":"@at@","ids":{"docs/tech/auth.md":"@doc@","src/auth/token.go":"@src@"}} -->
+
+              <!-- workline:sticky=documentalist/judged -->
+            author: workline-bot
+            bot: true
+run: {role: documentalist, event: schedule, ai: 'cmd:sh "$FIXTURES/agents/judged-only.sh"', open-merge-request: true}
+expect:
+  status: pass
+  agent-calls: 1
+  findings:
+    - {rule: suspect, where: docs/tech/auth.md, message: "(merge request #1 kept its record, judged at"}
+    - {rule: suspect, where: docs/tech/auth.md, message: "but src/auth/token.go is not as it was then in"}
+  forge:
+    merge-requests:
+      - {id: 2, branch: workline/documentalist/suspect, base: main}

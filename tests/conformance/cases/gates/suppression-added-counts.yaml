@@ -1,0 +1,21 @@
+case: gates/suppression-added-counts
+about: >
+  A //nolint the change adds counts as a finding, though the linter no
+  longer reports the line; the one on main, only moved, does not.
+given:
+  repo: linted
+  setup:
+    - git checkout -q -b change
+    - sed -i '/os.Remove("lock")/d' clean.go
+    - sed -i 's|^\tos.Remove("a.tmp")$|\tos.Remove("lock") //nolint:errcheck // gone already when the run ended well\n&\n\tos.Remove("d.tmp") //nolint:errcheck|' clean.go
+    - |
+      git commit -qam "feat: clean d too"
+  env: {PATH: "$FIXTURES/bin:$PATH"}
+  config:
+    routing: {events: {merge-request: ["gate:merge"]}}
+    gates: {merge: {checks: [{id: lint, run: "golangci-lint run --output.sarif.path={out}/lint.sarif", output: sarif, max: {error: 0}}]}}
+run: {route: merge-request, input: {range: main..HEAD}}
+expect:
+  status: block
+  findings: [{rule: suppression-added, where: "clean.go:9", message: "the change adds //nolint, which hides what check lint counts"}]
+  no-findings: [{rule: suppression-added, where: "clean.go:7"}, {rule: over-threshold}]

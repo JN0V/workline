@@ -16,7 +16,7 @@ run: {follow: [--base, main], summary: true}
 expect:
   status: pass
   no-findings: [{rule: auto-merge-on}, {rule: merged-at-once}, {rule: waits-for-a-yes}]
-  summary-file: ["merge policy (cautious): none in line into main"]
+  summary-file: ["merge policy (cautious): none accepted into main"]
   forge:
     merge-requests:
       - {id: 9, auto-merge: false, comments: 0}

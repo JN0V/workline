@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/setup, internal/hooks, internal/tools, internal/agent/agent.go, ci/github, ci/gitlab]
-checked: e2580728
+checked: d722a840
 judged: a8574a5
 verified: agent:claude-code
 ---
@@ -90,8 +90,11 @@ workline hooks uninstall --global   # gives core.hooksPath back as it was
 ```
 
 - Each global hook hands over to the one that held `core.hooksPath` before,
-  or else to the repository's own (`.githooks/`, `.git/hooks/`): nothing
-  that ran before stops running.
+  or else to the repository's own (`.githooks/`, `.git/hooks/`), from a
+  linked worktree (`git worktree add`), a submodule or a bare repository
+  too: nothing that ran before stops running.
+- Hooks written by another version of workline: `workline doctor` says
+  `hooks-outdated`; run `workline hooks install --global` again.
 - A repository that sets its own `core.hooksPath` bypasses the global
   hooks: `workline doctor` there says so and prints the fix
   ([troubleshooting](troubleshooting.md#a-hook-does-not-fire)).
@@ -103,12 +106,22 @@ Try it in any repository:
 git commit --allow-empty -m "AC-3 fix the thing"
 # workline committer: block — rewrite the commit message
 #   format subject: the subject must read `type(scope): summary`…
+# workline: 0.6 s in all — committer 0.5 s
+# commit aborted; your message is kept in .git/COMMIT_EDITMSG: to edit it and commit again, git commit -e -F .git/COMMIT_EDITMSG
 ```
 
-With an agent, the same commit goes through, rewritten:
+- **With no agent**, or `rewrite: false` under
+  `roles: {committer: {settings: …}}` (the project's
+  `.workline/config.yaml`, or your own config), it refuses in about a
+  second, as above.
+- **With an agent**, the same commit goes through, rewritten, 30 s at most
+  ([the committer](../roles/committer/README.md#rewrite-the-agent-30-s-at-most),
+  [ADR-0050](adr/0050-each-act-has-its-moment-and-a-wait-budget.md)):
 
 ```text
+workline committer: the message is refused; the agent (claude) rewrites it, 30 s at most…
 workline committer: pass — message rewritten
+workline: 14 s in all — committer 14 s (rewrite 13 s)
 workline: the commit goes on with this message instead of yours:
   │ fix: fix the thing
   │
@@ -140,13 +153,18 @@ What the jobs are: [ci.md](ci.md); every detail on your forge's page. In short:
 
 - **GitHub**: copy the workflows of [ci/github](../ci/github/) into
   `.github/workflows/` — [workline.yml](../ci/github/workline.yml) (each
-  pull request), [workline-apply.yml](../ci/github/workline-apply.yml)
-  (what it proposed applied, and each push to main for `workline
-  follow`), [workline-fork.yml](../ci/github/workline-fork.yml) (a
+  pull request, and main after each merge), [workline-warn.yml](../ci/github/workline-warn.yml) (what
+  only warns, beside it: the reviewer's lenses that warn, the inspector's
+  triage), [workline-apply.yml](../ci/github/workline-apply.yml)
+  (what it proposed applied, main's findings in one issue, and each push
+  to main for `workline follow`), [workline-fork.yml](../ci/github/workline-fork.yml) (a
   fork's), [workline-gardening.yml](../ci/github/workline-gardening.yml),
   [workline-sample.yml](../ci/github/workline-sample.yml),
   [workline-merge.yml](../ci/github/workline-merge.yml) (with the
-  [merge policy](merge-policy.md)) ([ci-github.md](ci-github.md)).
+  [merge policy](merge-policy.md)),
+  [workline-release.yml](../ci/github/workline-release.yml) (with a
+  release tool: [what holds a release](release-holds.md))
+  ([ci-github.md](ci-github.md)).
 - **GitLab**: include
   [ci/gitlab/workline.gitlab-ci.yml](../ci/gitlab/workline.gitlab-ci.yml),
   then add two pipeline schedules, gardening and the sample
@@ -158,8 +176,8 @@ What the templates need:
 
 | | GitHub | GitLab |
 |---|---|---|
-| the agent, your choice | its credentials; for Claude, which the templates install: secret `CLAUDE_CODE_OAUTH_TOKEN` (`claude setup-token`) | the same as a variable, masked, not protected |
-| writing | a [GitHub App](ci-github-app.md): variable `WORKLINE_APP_ID`, secret `WORKLINE_APP_PRIVATE_KEY` in the environment `workline-app` | variable `WORKLINE_GITLAB_TOKEN`: a project access token, `api` and `write_repository` |
+| the agent, your choice | its credentials; for Claude, which the templates install: secret `CLAUDE_CODE_OAUTH_TOKEN` (`claude setup-token`) | the same as a variable, masked, not protected, scoped to the environment `workline` ([why](gitlab/environment.md)) |
+| writing | a [GitHub App](ci-github-app.md): variable `WORKLINE_APP_ID`, secret `WORKLINE_APP_PRIVATE_KEY` in the environment `workline-app` | variable `WORKLINE_GITLAB_TOKEN`: a project access token, `api` and `write_repository`, scoped the same |
 | the history | `fetch-depth: 0`, set | `GIT_DEPTH: 0`, set |
 | the sample's judge | variable `WORKLINE_JUDGE` (optional) | the same, and `WORKLINE_TASK=sample` on its schedule |
 

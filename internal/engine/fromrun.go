@@ -13,7 +13,6 @@ import (
 	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
-	"github.com/JN0V/workline/internal/release"
 	"github.com/JN0V/workline/internal/role"
 	"github.com/JN0V/workline/internal/verdict"
 	"go.yaml.in/yaml/v3"
@@ -148,25 +147,10 @@ func ResumeFrom(listed string, from FromMergeRequest) *Result {
 			intents = kept
 		}
 		st := runState{Role: r.Name, RolesDir: from.RolesDir, Repo: from.Repo, Forge: from.Forge,
-			Target: &forge.Target{Kind: "merge-request", ID: from.ID}, Digest: was.Digest,
-			PushToMergeRequest: true}
+			Target: &forge.Target{Kind: "merge-request", ID: from.ID}, Digest: was.Digest}
 		for _, m := range was.Models {
 			if plainModel.MatchString(m) {
 				st.Models = append(st.Models, m)
-			}
-		}
-		// A release tool's pull request, as this job's settings say it, not
-		// as the run did: its fix goes to a merge request of its own.
-		if r.Accepts("release") {
-			rs, err := release.Load(from.Repo)
-			switch {
-			case err != nil:
-				res.Findings = append(res.Findings, verdict.Finding{Rule: "release-unknown", Level: "warn", Message: err.Error()})
-			case rs.IsBranch(mr.Branch):
-				st.Release = mr.Branch
-				if st.releaseHeld, err = releaseNotOwn(f, mr); err != nil {
-					return err
-				}
 			}
 		}
 		if !movedOn { // what applies once moved on reads no file of the head
@@ -205,40 +189,6 @@ func kindsOf(intents []intent.Intention) []string {
 		}
 	}
 	return out
-}
-
-// releaseNotOwn says why a release tool's branch is not workline's App's
-// alone, "" when it is: whoever else pushed to it could change its run, and
-// that run's fix would become a merge request the App opens, workline's own
-// work at the merge policy's `normal`. Who pushed is the forge's word, read
-// as `normal` reads it (MergeState's Pushers). With the job's own token, the
-// fix's merge request is never workline's own: nothing to check.
-func releaseNotOwn(f forge.Forge, mr forge.MergeRequest) (string, error) {
-	app, _, err := forge.App(f)
-	if err != nil || app == "" {
-		return "", err
-	}
-	var who []string
-	if m, ok := f.(forge.Merger); ok {
-		st, err := m.MergeState(mr)
-		if err != nil {
-			return "", err
-		}
-		who = st.Pushers
-	}
-	if who == nil {
-		return fmt.Sprintf("who pushed to %s since it was created, the forge does not say; only workline's App may have, for its run's fix to be a merge request of the App's", mr.Branch), nil
-	}
-	for _, p := range who {
-		if p != app {
-			name := "a hand the forge does not name"
-			if p != "" {
-				name = "@" + p
-			}
-			return fmt.Sprintf("%s pushed to %s, not workline's App alone: its run's fix is not opened as the App's merge request", name, mr.Branch), nil
-		}
-	}
-	return "", nil
 }
 
 // outOfLine says why a proposal is not one a merge request's line may

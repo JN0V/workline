@@ -1,0 +1,27 @@
+case: product-owner/priority-forges-words-created
+about: "With `priority: auto` and no family on the project, the role writes the forge's words: on GitHub, priority/urgent to priority/low, the Priority field's option names, all four created at its first act; the summary says where (ADR-0040, step 2)."
+given:
+  repo: backlog
+  config:
+    roles:
+      product-owner:
+        settings: {moved-percent-max: 100, priority: auto, acts: {order: {mode: act}}}
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.", labels: [bug], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 10, title: "Slow export", body: "The export is slow.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:order-two}
+expect:
+  findings:
+    - {rule: values-where, message: "Priority: labels priority/*, created when first set. Effort: read nowhere, its setting unset."}
+    - {rule: done, where: "#9", message: "Set #9's priority to 1 (priority/urgent)"}
+  forge:
+    issues:
+      - {id: 9, labels: [bug, priority/urgent], comment-contains: "priority: 1"}
+      - {id: 10, labels: [priority/high], comment-contains: "priority: 2"}
+    labels:
+      - {id: 1, title: priority/urgent, body-contains: "Priority Urgent, of Urgent, High, Medium, Low: set by the product owner or a person", rank: 0}
+      - {id: 2, title: priority/high}
+      - {id: 3, title: priority/medium}
+      - {id: 4, title: priority/low}
+      - {id: 5, absent: true}

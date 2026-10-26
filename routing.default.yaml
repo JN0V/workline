@@ -5,11 +5,29 @@ events:
   commit-msg:    [committer]
   merge-request: [committer, documentalist]
   schedule:      [documentalist]
-  release:       [documentalist]   # before the project's release tool: the docs due at the release gate it
+  release:       []   # before the project's release tool tags: its gates; never the docs (ADR-0051)
+  # After a merge, on the default branch's new tip (ADR-0050): the gates of
+  # merge-request run first, whatever this lists, every finding kept as the
+  # next base; then these steps, no agent asked: the whole repository's
+  # checks, once.
+  main:          [documentalist]
 # The first step that does not pass stops the line, but on schedule: its
 # roles are upkeep, each on its own (docs, backlog), so every one runs and
-# the line takes the worst verdict (ADR-0037).
+# the line takes the worst verdict (ADR-0037). On main, every step runs too:
+# a gate red after a merge leaves the whole repository's checks to run.
 fail-fast:
   schedule: false
+  main: false
 handoffs: []
 max-handoffs: 3
+# Each moment's wait budget, in seconds (ADR-0050): a run over it says so
+# in its summary, naming the step that took the time; it never blocks. A
+# project sets its own in `routing: budgets:`, moment by moment.
+budgets:
+  commit: 1            # the commit-msg hook
+  commit-rewrite: 30   # the same, when the agent rewrites a refused message
+  push: 5              # the pre-push hook, no agent
+  first-result: 60     # a merge request's push: the gates alone
+  verdict: 180         # the head's verdict: the line, the gates' job's seconds with it
+  ready-review: 600    # the run apart, the lenses that warn, posted when done
+  queue: 60            # a merge queue's or train's run: what workline adds to its turn

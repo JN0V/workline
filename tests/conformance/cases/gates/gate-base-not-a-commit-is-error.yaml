@@ -1,0 +1,15 @@
+case: gates/gate-base-not-a-commit-is-error
+about: >
+  A `--base` that names no commit here (misspelled, not fetched) is an
+  error, never a run that counts every finding instead: what the change
+  adds cannot be told.
+given:
+  repo: linted
+  env: {PATH: "$FIXTURES/bin:$PATH"}
+  config:
+    gates: {merge: {checks: [{id: lint, run: "golangci-lint run --output.sarif.path={out}/lint.sarif", output: sarif, max: {error: 0}}]}}
+run: {gate: merge, args: [--base, no-such-branch]}
+expect:
+  status: block
+  findings: [{rule: check-error, where: merge, message: "no-such-branch is not a commit here"}]
+  no-findings: [{rule: over-threshold, where: lint}]

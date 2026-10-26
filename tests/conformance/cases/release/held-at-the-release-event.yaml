@@ -1,0 +1,16 @@
+case: release/held-at-the-release-event
+about: "`workline route release` given a forge, at a tag or by hand, reads what holds the release as its merge request does (ADR-0051): an open issue labelled `workline:hold-release` blocks; the default branch's tip with no check at all is said, a warning, nothing there to read as green."
+given:
+  repo: documented
+  setup:
+    - "git tag v1.0.0"
+  forge:
+    issues: [{id: 9, title: "Payments time out", labels: ["workline:hold-release"], comments: []}]
+    merge-requests: []
+run: {route: release, ai: none}
+expect:
+  status: block
+  summary: "the release held: #9"
+  findings:
+    - {rule: release-held, where: "#9", level: block, message: "\"Payments time out\" is open, labelled workline:hold-release"}
+    - {rule: release-base-unchecked, where: main, level: warn, message: "carries no check: nothing there to read as green"}

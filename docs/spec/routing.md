@@ -1,6 +1,6 @@
 ---
 sources: [internal/line, internal/routing, internal/work, routing.default.yaml]
-checked: a6228bb0
+checked: ae744e99
 verified: agent:claude-code
 ---
 # Routing — v1 (draft)
@@ -77,22 +77,43 @@ routing:
     commit-msg:    [committer]
     merge-request: [committer, documentalist, gate:merge]
     schedule:      [documentalist]
-    release:       [gate:release, documentalist]   # before the release tool tags
+    release:       [gate:release]       # before the release tool tags; never the docs
+    main:          [documentalist]      # after a merge: merge-request's gates first
 
   fail-fast:                            # per event; true unless set
     schedule: false                     # every step runs, the worst verdict stands
+    main: false
 
   handoffs:                             # the only handoffs a role may ask for
     - {from: my-role, to: documentalist}  # a project's own role; none shipped asks
 ```
 
 workline cuts no releases: a release tool does (release-please,
-semantic-release…), and `release` runs the documentalist before it, so the
-docs due at the release gate it (ADR-0010, ADR-0017). A tool that opens a
-release pull request needs no `release` step: on `merge-request`, a role
-that runs on `release` runs as on `release` when the merge request comes
-from a release tool's branch (`release.branches`). A routing that still
+semantic-release…), and `release` runs the project's release gates before
+it; none by default, never the docs (ADR-0017, ADR-0051). A release tool's
+pull request is a merge request as any other; each role is told its
+branch (`release.branches`). A role routed on `release` that does not run
+there, the documentalist in a routing written before ADR-0051, is
+skipped, said (`step-skipped`, a warning). A routing that still
 names the retired `release-manager` is refused, saying which tool to use.
+
+On the release — `release`, or `merge-request` from a release tool's
+branch — the line also reads what holds it on the forge, once, beside its
+steps, stopping none of them; its verdict takes the worst (ADR-0051,
+[what holds a release](../release-holds.md)): each open issue labelled
+`workline:hold-release` (`release-held`, by its number); the checks on the
+tip of the branch the merge request goes into, the default branch on
+`release` — a red one is `release-base-red`, one not done
+`release-base-pending`, both blocks; none at all, `release-base-unchecked`,
+a warning. On GitHub only the runs a push started count, with other apps'
+checks and the commit statuses, workline's own left out, and a workflow that
+could not start counts red; on GitLab, the
+newest pipeline of the tip no schedule started. What could not be read is
+`release-holds-unread`, a block; with no forge, or one that says nothing of
+releases, a warning, as is a merge request with no `--branch` the forge does
+not say is a release tool's. The line's summary ends with `the release held: …`.
+Not read by `--gates-only`, `--warn-only`, a queue's run, nor the night's
+release judging.
 
 - Steps run in the listed order. The first step that ends in `block`,
   `human`, `blocked-external` or an error stops the sequence. It fails closed.
@@ -117,15 +138,16 @@ names the retired `release-manager` is refused, saying which tool to use.
   <agent>:<model>` for each agent and model whose answer they hold, so a
   later reader can stand apart from them (ADR-0005). A line given a range
   whose last commits carry one judges the range as it stood before them,
-  each left for its parent, a merge of the base (`workline follow`,
-  ADR-0041) for its first: what the engine wrote never wakes the line on
+  each left for its parent, a merge of the base (`workline follow`'s,
+  ADR-0041, which ADR-0051 removed: one still on a branch) for its first: what the engine wrote never wakes the line on
   itself, and a person's commit that blocked still blocks, never turned
   green unjudged. With nothing of a person's left in the range, only the
   committer runs; it checks every commit, the engine's too. A trailer is not
   taken on trust: a merge is the engine's only when it merges the range's
   base, or a commit of its history, and its tree is exactly what
   workline's own merge of its two parents gives; another commit only when
-  it changes doc pages alone — Markdown, never under `roles/` nor a tool's
+  it changes doc pages alone — Markdown, never a role's facet (in
+  `roles/<name>/` only its README.md and `docs/`) nor under a tool's
   folder, never a file steering agents (AGENTS.md, CLAUDE.md…); else it is
   judged as a person's (ADR-0042). `Workline-Role: committer` marks a
   person's commit whose message the committer rewrote (ADR-0046): never
@@ -147,19 +169,161 @@ keeping a backlog decides its acts in the judging job, reading the forge
 only, and keeps that plan for the apply (docs/spec/backlog-acts.md, "On the
 issue").
 
+The gates go before, in a job of their own, with no write token and no
+agent's: `--gates-only` runs the event's gate steps alone, each one, and
+the judging job's line, given that result (`--gates-from`), reads each
+gate step's verdict there and runs none; one not there is a `check-error`
+([gates](gates.md#shown-on-the-merge-request)). A role step after a gate
+step is given what the gates found: the input `gates`, a file holding
+their result as `--gates-only --json` prints it, the gates' job's when
+read from it, else written in the git directory until the line ends
+(`gates-not-written` when it cannot be). The inspector triages
+the new findings there ([ADR-0049](../adr/0049-the-inspector-judges-the-new-findings-of-the-projects-tools.md));
+another role ignores it.
+
+What only warns goes beside it, off the verdict's path
+([ADR-0050](../adr/0050-each-act-has-its-moment-and-a-wait-budget.md#2-an-act-over-its-budget)): with
+`--warn-apart`, a step whose role lists the event in role.yaml's `apart`
+(the reviewer and the inspector, on a merge request) is given the input
+`warn=apart` and leaves what only warns — the reviewer's lenses that
+warn, the inspector's whole triage; any other step runs whole,
+never given it. With `--warn-only`, the line runs only those steps, given
+`warn=only`, no gate and no other role, and writes no verdict
+(`--verdict` refused); a flag and an `--input warn=` naming the other run
+are refused. Given `--gates-from`, it hands the gates' job's result to
+those steps (`gates`), only for the commits it judges, else said
+(`gates-unread`), and reads no verdict there. Its
+proposals are applied as the judging job's, by a job of their own: the
+head's verdict is never theirs
+([apart](../../roles/reviewer/docs/apart.md)).
+
 Where the merge request's code can change its judging job (GitHub), the
 job that applies runs from the base and reads only the run's proposals
 (`--from-merge-request <n> --head <sha>`): refused whole, a role not on
 merge requests or a proposal its role never makes (`run-refused`);
 once the branch moved on (`moved-on`), only what the role names in
-`on-moved-on`, the reviewer's review of the head judged, never a patch nor
-a label ([ADR-0044, amended](../adr/0044-the-apps-key-stays-with-the-default-branchs-runs.md#amendment-2026-10-15-the-review-of-a-head-the-branch-moved-on-from)). A release's fix
-goes to a merge request of the App's only when the forge says the App
-(`WORKLINE_APP`) alone pushed to the release branch; else in a comment.
+`on-moved-on`, the reviewer's review or the inspector's triage of the head
+judged, never a patch nor
+a label ([ADR-0044, amended](../adr/0044-the-apps-key-stays-with-the-default-branchs-runs.md#amendment-2026-10-15-the-review-of-a-head-the-branch-moved-on-from)).
 
 Applying runs no role, so a handoff proposed under `--no-apply` is recorded
 and not run: both steps say so (`handoff-deferred`), with the command that runs
 it where an agent may judge.
+
+### A draft asks no agent
+
+[ADR-0050](../adr/0050-each-act-has-its-moment-and-a-wait-budget.md#4-what-the-table-holds-to):
+given `--input draft=true`, every step, a handoff too, runs as with no
+agent, told it waits for ready (the role contract's
+`WORKLINE_AI_WAITS`). The line's summary says the AI review waits for
+the merge request to be marked ready; a role whose agent would have
+judged says so too (`ai-waits-for-ready`, a warning), and the head's
+verdict is then a review to come, never a pass
+([merge policy](../merge-policy.md)). The rules and gates run as on any
+push. With no agent set, nothing waits; `draft=false` changes nothing.
+
+### Steps left out
+
+`--input skip=<step>,…` leaves those steps out of the line: one schedule
+runs some roles weekly, others nightly, as workline's own does (the docs
+on Sundays, the backlog each night).
+
+### Once, at ready
+
+[ADR-0051](../adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md): a role whose
+`merge-request-ai` is `ready` (the documentalist) asks its agent on the
+run at ready alone. The templates pass `--input ready=true` on that run,
+`ready=` on a push after it; there the role runs as with no agent, told
+so (`WORKLINE_AI_WAITS=judged-at-ready`), and lists what the push made
+suspect (`judged-at-ready`, a warning). Unsaid, a run is at ready.
+
+### A release's dry run
+
+[ADR-0050](../adr/0050-each-act-has-its-moment-and-a-wait-budget.md#3-the-moment-table):
+`route release --dry-run`, each night, says what would hold the
+release if it were cut now ([how](../release.md)):
+
+- **On what**: the branch's tip. A tip that is a release already runs no
+  step: nothing to cut.
+- **Every step** of `release`, none stopping the others, with no agent
+  and nothing applied. What a step that does not pass says blocks, else
+  what it leaves to its verdict, else the step, is listed in the
+  result's `dry-run` (`holds`, `head`, `since`); then
+  lowered to a warning. The line passes.
+- **Refused** (misuse, 64): another event, an agent named, `--target`,
+  `--open-merge-request`, `--verdict`, the
+  gates alone or read, `--warn-*`.
+- **Posted** by `apply --release-dry-run`: a part of main's issue,
+  edited when what it lists changes, taken out when nothing holds.
+
+### A merge queue's or train's run: the gates alone
+
+[ADR-0050](../adr/0050-each-act-has-its-moment-and-a-wait-budget.md#4-what-the-table-holds-to):
+given `--input queue=true`, the line runs the event's gate steps alone,
+on the merged result its range ends with, whoever made its last commit;
+no role runs, so no agent is asked. With `--gates-from`, it reads their
+verdicts, as on a merge request. The line's summary says it is a queue's
+or train's run, and names the steps it left, their verdict the head's;
+with no gate, that nothing was checked. A `--verdict` is refused: the
+head's verdict and the person's yes stay the merge request's
+([ADR-0042](../adr/0042-the-engine-merges-by-the-projects-policy.md));
+so is `--warn-only`, and any value but `true` or `false`
+([a merge queue or train](../merge-queue.md)).
+
+### Main after a merge
+
+[ADR-0050](../adr/0050-each-act-has-its-moment-and-a-wait-budget.md#3-the-moment-table):
+`route main`, on the default branch's new tip, given the push as
+`range` ([how](../main-after-merge.md)):
+
+- **Its steps**: the gate steps of `merge-request` first, each once,
+  then those `main` lists (the documentalist, by default); every step
+  runs (`fail-fast: false`).
+- **The gates**: what the push adds since main's tip before it counts,
+  the range's start, else HEAD's first parent; with none, every finding
+  is said, none counted. Every finding is kept by HEAD's commit in the
+  folder `--gates-kept` names, the next base.
+- **No agent asked** by the shipped roles: the documentalist checks the
+  whole repository there, judging no doc. The engine's own commits are
+  checked as any other.
+- **Its result** names the event (`event`) and what it compared
+  (`main`: `before`, `head`, the commits between); `apply --main` keeps
+  it in one issue, edited only when what it lists changes, and, red,
+  says so once on each open merge request whose base holds it.
+
+### Each step's seconds, a moment's budget
+
+[ADR-0050](../adr/0050-each-act-has-its-moment-and-a-wait-budget.md#1-a-wait-budget-per-moment):
+a line's result says each step's `seconds`, its own, and the `moment`
+it is part of: `name`, `budget`, `seconds`, `over`, and then the `step`
+that took the most. Its summary says them in one line after the steps,
+`66 s in all — committer 0.5 s, documentalist 0.8 s, reviewer 64 s
+(lenses 40 s, judges 20 s)`: the agents' share of a step, the
+reviewer's lenses, the inspector's triage, the committer's rewrite, the
+judges. A moment over
+its budget says so once more, naming that step; it never blocks.
+
+| Moment | The run | Budget |
+|---|---|---|
+| `commit` | the `commit-msg` line | 1 s |
+| `commit-rewrite` | the same, an agent asked: the committer's rewrite | 30 s |
+| `push` | the `pre-push` hook, every range pushed together | 5 s |
+| `first-result` | `merge-request --gates-only` | 1 min |
+| `verdict` | `merge-request`; the gates' job's seconds added, their verdicts read from it (`--gates-from`) | 3 min |
+| `ready-review` | `merge-request --warn-only`: the lenses that warn, the inspector's triage, posted when done | 10 min |
+| `queue` | `merge-request --input queue=true`, a merge queue's or train's run: what workline adds to it | 1 min |
+
+- Any other event has none: main, the night and the release, its dry
+  run too, wait for nobody.
+- The line measures itself: a runner's setup and queue, and the job
+  that applies, are not in it.
+- A project sets its own in `routing.budgets`, in seconds, finite and
+  above 0; a moment not in this table is refused (`config-invalid`).
+- At a commit, the hook says the seconds with what it says already, a
+  refusal or a rewrite, and a commit over its budget even when it says
+  nothing else; at a push, each time it checks commits, a stop
+  included (a branch deleted checks none). Each agent call's seconds
+  stay in its run's `out/calls.jsonl`.
 
 ## Where state lives
 
@@ -179,8 +343,9 @@ the move to `ready`, and its check; transitions are not logged yet.*
 The reviewer (ADR-0020) is in no shipped line: a project adds it to its
 `merge-request` line, by hand or with `workline init --review`, and runs
 it on a machine before a push with `workline review`. On a merge request it
-reviews the commits not reviewed yet, one lens a push; with `--input
-lenses=all`, every lens on the whole change, commits reviewed before too.
+reviews the commits not reviewed yet, one lens a push, none on a draft;
+with `--input lenses=all`, every lens on the whole change, commits
+reviewed before too.
 The templates pass it once, when the merge request becomes ready
 (#129): the event says so on GitHub (`opened` not a draft,
 `ready_for_review`); on GitLab, where marking ready starts no pipeline,
@@ -205,4 +370,5 @@ routing:
 
 ## Not in this version
 
-The developer and tester roles, which will consume `ready` items.
+The developer and tester roles, which will consume `ready` items. Which
+act runs at which moment, decided: [ADR-0050](../adr/0050-each-act-has-its-moment-and-a-wait-budget.md).

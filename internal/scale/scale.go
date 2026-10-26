@@ -4,9 +4,9 @@ package scale
 // counts for what its name says, never for where an option sits in a
 // list, through one table — the one place in the engine that names a
 // level, a label carrying one, or the way the role says one. Where a
-// project keeps each axis is detected later (ADR-0040, step 2): until
-// then the engine reads and writes workline's own priority labels, and
-// reads no effort.
+// project keeps each axis is detected when its settings ask (detect.go,
+// ADR-0040's step 2); unset, the engine reads and writes workline's own
+// priority labels, and reads no effort.
 
 import (
 	"fmt"
@@ -93,14 +93,16 @@ func (s Scale) Number(n, first int) int {
 	return min(n-first+1, s.Count())
 }
 
-// Label is one name of a family and the level it carries. Color and
-// About, for a label the role creates: its colour and what it says of
-// itself.
+// Label is one name of a family and the level it carries. Color, About
+// and Rank, for a label the role creates: its colour, what it says of
+// itself, and its rank where the forge ranks labels — GitLab's
+// prioritized labels, 1 listed first —, 0 for none.
 type Label struct {
 	Name  string
 	Level int
 	Color string
 	About string
+	Rank  int
 }
 
 // Describe is what a label the role creates says of itself, by the role
@@ -184,10 +186,17 @@ func (f Family) Others(l int) []string {
 // another family and Performance to none. A word no table knows carries
 // no level, and the error names it, to be said once.
 func Labels(s Scale, prefix string, labels []string) (Family, error) {
+	return named(s, prefix, labels, nil)
+}
+
+// named reads a family of labels as Labels does, a name the project's
+// settings map (Setting.Names) carrying the level they give it.
+func named(s Scale, prefix string, labels []string, names map[string]int) (Family, error) {
 	type read struct {
 		name   string
 		number int
 		word   string
+		level  int // mapped by the settings
 	}
 	var in []read
 	last, _ := utf8.DecodeLastRuneInString(prefix)
@@ -196,6 +205,10 @@ func Labels(s Scale, prefix string, labels []string) (Family, error) {
 	for _, name := range labels {
 		rest, ok := strings.CutPrefix(name, prefix)
 		if !ok || rest == "" {
+			continue
+		}
+		if l := names[name]; s.Valid(l) {
+			in = append(in, read{name: name, number: -1, level: l})
 			continue
 		}
 		if n, ok := number(rest); ok {
@@ -214,7 +227,7 @@ func Labels(s Scale, prefix string, labels []string) (Family, error) {
 	f := Family{Scale: s, Prefix: prefix}
 	var unknown []string
 	for _, r := range in {
-		l := 0
+		l := r.level
 		if r.number >= 0 {
 			l = s.Number(r.number, first)
 		} else if w, ok := s.Word(r.word); ok {
@@ -307,6 +320,19 @@ func WeightOf(l int) int {
 	return 2*l - 1
 }
 
+// WeightFamily is GitLab's weight as a family: each level and the weight
+// written for it, "weight 1" to "weight 5", as the role's texts say it.
+// An issue's weight is read in bands (Weight), never by these names.
+var WeightFamily = weightFamily()
+
+func weightFamily() Family {
+	f := Family{Scale: Effort}
+	for l := 1; l <= Effort.Count(); l++ {
+		f.Labels = append(f.Labels, Label{Name: "weight " + strconv.Itoa(WeightOf(l)), Level: l})
+	}
+	return f
+}
+
 // Own is workline's own priority labels, workline:priority/1, the most
 // pressing, to /4, the most pressing the warmest: the family the role
 // writes until ADR-0040's detection finds a project's.
@@ -324,22 +350,48 @@ func own() Family {
 
 // Scheme is where the engine reads each axis on a project.
 type Scheme struct {
-	Priority Family
-	Effort   Family
+	Priority Source
+	Effort   Source
+	// Detected: the project's settings asked where it keeps them
+	// (ADR-0040): each value is then set once, only where empty, and Next
+	// shows each issue's cell of the grid.
+	Detected bool
 }
 
-// Used is the scheme the engine reads and writes issues with: workline's
-// own priority labels; no effort, read nowhere until ADR-0040's grid.
-var Used = Scheme{Priority: Own, Effort: Family{Scale: Effort}}
+// Before is the scheme before ADR-0040's detection, a project's setting
+// unset: workline's own priority labels; no effort, read nowhere.
+var Before = Scheme{Priority: Source{Family: Own, Said: ownSaid}, Effort: Source{Family: Family{Scale: Effort}}}
+
+// Used is the scheme the engine reads and writes issues with: Before,
+// until Use sets the one detected on the project a process reads.
+var Used = Before
+
+// Use sets the scheme the engine reads and writes issues with, detected
+// on the project this process reads (Detect): a process reads one.
+func Use(s Scheme) { Used = s }
 
 // Value is a priority level as the role's texts say it: its number, 1
-// the most pressing, as workline's own labels write it; "none" for none.
+// the most pressing, as workline's own labels write it, and the label
+// that carries it when the project keeps its own ("1 (P0)"); "none" for
+// none.
 func Value(l int) string {
 	if !Priority.Valid(l) {
 		return "none"
 	}
+	if Used.Priority.Hidden() {
+		return HiddenSaid // visible to organization members only: never shown (ADR-0040)
+	}
+	if f := Used.Priority.Family; f.Prefix != Own.Prefix {
+		if label, ok := f.Label(l); ok {
+			return fmt.Sprintf("%d (%s)", l, label.Name)
+		}
+	}
 	return strconv.Itoa(l)
 }
+
+// HiddenSaid says a value visible to an organisation's members only, on a
+// public repository: set, never shown (ADR-0040).
+const HiddenSaid = "a level hidden here"
 
 // Said is a priority level in a sentence: "priority 2"; "no priority" for
 // none.
@@ -347,5 +399,81 @@ func Said(l int) string {
 	if !Priority.Valid(l) {
 		return "no priority"
 	}
+	if Used.Priority.Hidden() {
+		return "a priority hidden here"
+	}
 	return "priority " + Value(l)
+}
+
+// EffortValue is an effort level as the role's texts say it: its name,
+// and the label that carries it ("Low (effort/small)"); "not estimated"
+// for none.
+func EffortValue(l int) string {
+	if !Effort.Valid(l) {
+		return "not estimated"
+	}
+	if Used.Effort.Hidden() {
+		return HiddenSaid
+	}
+	if label, ok := Used.Effort.Family.Label(l); ok {
+		return fmt.Sprintf("%s (%s)", Effort.Name(l), label.Name)
+	}
+	return Effort.Name(l)
+}
+
+// EffortAnchor is what an effort level means to build: hours, days,
+// weeks; "" for none.
+func EffortAnchor(l int) string {
+	if !Effort.Valid(l) {
+		return ""
+	}
+	return anchors[l-1]
+}
+
+// cells name four corners of the value-vs-effort grid (ADR-0040, "The
+// order"), by priority then effort level.
+var cells = map[[2]int]string{{2, 1}: "quick win", {2, 3}: "big bet", {4, 1}: "fill-in", {4, 3}: "time sink"}
+
+// PriorityName is a priority level by its name; "no priority" for none.
+func PriorityName(l int) string {
+	if !Priority.Valid(l) {
+		return "no priority"
+	}
+	return Priority.Name(l)
+}
+
+// Cell is an issue's place in the value-vs-effort grid, as Next says it:
+// "High · Effort Low → quick win"; a value missing said so, "no
+// priority, effort not estimated".
+func Cell(p, e int) string {
+	prio, eff := PriorityName(p), "effort not estimated"
+	if Effort.Valid(e) {
+		eff = "Effort " + Effort.Name(e)
+	}
+	if !Priority.Valid(p) && !Effort.Valid(e) {
+		return prio + ", " + eff
+	}
+	if name, ok := cells[[2]int{p, e}]; ok {
+		return prio + " · " + eff + " → " + name
+	}
+	return prio + " · " + eff
+}
+
+// Stuck says an axis's estimates stuck on one value (ADR-0040): past 10
+// values set, one over 60% of them, said "Medium on 8 of the 11"; "" when
+// not.
+func Stuck(s Scale, levels []int) string {
+	if len(levels) <= 10 {
+		return ""
+	}
+	count := map[int]int{}
+	for _, l := range levels {
+		count[l]++
+	}
+	for l := 1; l <= s.Count(); l++ {
+		if count[l]*100 > 60*len(levels) {
+			return fmt.Sprintf("%s on %d of the %d", s.Name(l), count[l], len(levels))
+		}
+	}
+	return ""
 }

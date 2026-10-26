@@ -14,7 +14,7 @@ given:
 run: {follow: [--base, main]}
 expect:
   status: pass
-  findings: [{rule: verdict-red, where: "#7", message: "@dana's auto-merge left on, held by the yes not given, out of line"}]
+  findings: [{rule: verdict-red, where: "#7", message: "@dana's auto-merge left on, held by the yes not given"}]
   forge:
     merge-requests:
       - {id: 7, auto-merge: true}

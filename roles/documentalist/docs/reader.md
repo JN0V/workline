@@ -1,11 +1,11 @@
 ---
 sources: [internal/builtin/documentalist/readertask.go, internal/builtin/documentalist/reader.go, internal/builtin/documentalist/documentalist.go, roles/documentalist/role.yaml, internal/engine/routine.go]
-checked: e2580728
+checked: affb7424
 verified: agent:claude-code
 ---
 # Documentalist — pages read for their reader
 
-[The reader checks](checks.md#docs-for-their-reader) say where a user page
+[The reader checks](checks-docs.md#docs-for-their-reader) say where a user page
 is hard to read. With an agent, gardening also has it read those pages as
 their reader would, and propose a fix
 ([ADR-0048](../../../docs/adr/0048-the-agent-reads-the-pages-the-reader-checks-flag.md)).
@@ -34,8 +34,8 @@ Part of [the documentalist](../README.md).
   characters). The rest wait for a later run, said on their findings.
 - A page too large for a task alone: `too-large-to-read`, for a person.
 - A page is not read again until it changes, nor while a merge request
-  changing it waits for review, nor after one was closed without merging
-  (below).
+  changing it waits for review, nor after a person closed one without
+  merging (below).
 
 ## What the agent answers
 
@@ -54,8 +54,14 @@ passes.
 
 - A claim whose quote is not at its lines is dropped
   (`reader-claim-dropped`).
+- A hunk quoting the page wrong — a context line with a space too many —
+  is placed as for a suspect doc
+  ([hunks](judge.md#hunks-that-misquote-the-doc)): by the lines it
+  removes, found once in the page. The page gets the fix as placed
+  ([#592](https://github.com/JN0V/workline/issues/592)).
 - A page's patch is withheld whole, the page left as it was
   (`reader-patch-withheld`), when it:
+  - quotes the page wrong where no place is beyond doubt;
   - changes the page's header;
   - changes lines no kept claim quotes;
   - loses a link, a code span, a number or a heading.
@@ -79,8 +85,14 @@ passes.
   the default branch holds the page as read. While the page is still that,
   it is not read again, said on its findings — no fix proposed each night.
   - A branch deleted with it leaves no trace: the page is read again.
-  - Branches that cannot be listed (the remote unreachable) are said
-    (`reader-declined-unread`, a warning).
+  - One workline closed itself is no decline: `workline follow` closes
+    one the default branch changed the same lines of, or holds already,
+    its comment saying why. Its pages are read again at the next gardening
+    ([ADR-0048, amended](../../../docs/adr/0048-the-agent-reads-the-pages-the-reader-checks-flag.md#amendment-2026-10-21-a-close-of-worklines-own-is-no-decline)).
+    Through a forge plugged by a command, every close reads as a person's.
+  - Branches that cannot be listed (the remote unreachable), or a close
+    the forge could not read, are said (`reader-declined-unread`, a
+    warning).
 
 ## Cost
 

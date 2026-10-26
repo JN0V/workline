@@ -5,7 +5,7 @@ given:
   setup:
     - "printf '\\nfunc RefreshToken() {}\\n' >> src/auth/token.go && printf '\\nCall `RefreshToken` to renew a token.\\n' >> docs/tech/auth.md && git commit -qam 'feat(auth): renew tokens'"
     - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C/\" docs/tech/auth.md && git commit -qam 'docs: confirm the auth doc'"
-    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+    - "sed -i 's/3600/7200/; s/func RefreshToken() {}/func RefreshToken() { renew() }/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
 run: {role: documentalist, event: merge-request, ai: "cmd:sh $FIXTURES/agents/drop-gone-line.sh"}
 expect:
   status: pass

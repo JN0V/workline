@@ -1,0 +1,14 @@
+case: engine/enforce-warn-beside-a-warning-passes
+about: "A project sets the only rule that blocks to warn; another finding is a warning already, by its role (secrets not checked, gitleaks missing). Nothing blocks any more: the verdict passes, showing both (#550)."
+given:
+  repo: basic
+  setup: ["echo x >> main.go && git add main.go"]
+  env: {PATH: "/usr/bin:/bin"}
+  config: {roles: {committer: {enforce: {internal-code: warn}}}}
+run: {role: committer, event: commit-msg, input: {message: "fix: AC-3"}, ai: none}
+expect:
+  status: pass
+  agent-calls: 0
+  findings:
+    - {rule: internal-code, level: warn}
+    - {rule: secrets-not-checked, level: warn}

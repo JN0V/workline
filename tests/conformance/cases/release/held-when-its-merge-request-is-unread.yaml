@@ -1,0 +1,17 @@
+case: release/held-when-its-merge-request-is-unread
+about: "A release tool's merge request, by the branch CI gives (`--branch`), that the forge does not answer: the branch it goes into is not known, so its checks are not read, and the default branch is never read in its place; the release is held, said (ADR-0051, principle 12)."
+given:
+  repo: documented
+  setup:
+    - "git tag v1.0.0"
+    - "git checkout -qb release-please--branches--main && echo '# Changelog' > CHANGELOG.md && git add CHANGELOG.md && git commit -qm 'chore(main): release 1.0.1'"
+  forge:
+    issues: []
+    merge-requests: []
+    tips: {main: [{name: test, state: success}]}
+run: {route: merge-request, input: {range: "main..HEAD"}, target: {merge-request: 4}, branch: release-please--branches--main, ai: none}
+expect:
+  status: block
+  summary: "the release held: its merge request unread"
+  findings:
+    - {rule: release-holds-unread, where: "merge-request #4", level: block, message: "could not be read, so the branch it goes into is not known"}

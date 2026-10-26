@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog/depend.go, internal/backlog/order.go, internal/backlog/board.go, internal/builtin/productowner/productowner.go, internal/forge/forge.go]
 status: draft
-checked: 18109269
+checked: 582ca3c7
 verified: agent:claude-code
 ---
 # The order, and what is next
@@ -15,8 +15,11 @@ Part of [Acts on the backlog](../backlog-acts.md): the backlog's order, the issu
 first (by its due date, GitHub's and GitLab's alike, a milestone with one
 before a milestone without; then by title, in version order, `v1.9.0`
 before `v1.10.0`; an issue in none after every one in one), then the
-priority (an issue with none after 4), then the lowest
-number (`backlog.Less`) — and an issue that waits on an open issue after
+priority (an issue with none after 4), then the effort, the lightest
+first, one with none read as Medium — never a score, so a noisy effort
+never carries an issue across priorities (ADR-0040's value-vs-effort
+grid) —, then the lowest number (`backlog.Less`) — and an issue that
+waits on an open issue after
 it, whatever its labels ([What an issue waits on](depend.md);
 `backlog.Order`). The task lists the issues not read in that order, those
 given by title marked with the open issues they wait on.
@@ -47,7 +50,14 @@ stored:
 
 - **Next** (`next-ready`): the first `next-max` (5) issues of the order
   (`backlog.Order`): bearing `workline:ready`, waiting on no open issue,
-  no parts; each with its milestone and priority. At 0, none.
+  no parts; each with its milestone and priority. At 0, none. With the
+  role's `priority` or `effort` set, each with its cell of the grid
+  instead — "High · Effort Low → quick win", a value missing said, its
+  priority alone while no effort is kept —, and the ready issues missing
+  a value counted (`next-unestimated`): "3 of 9 ready issues have no
+  priority: they follow their number." Values visible to organization
+  members only, on a public repository, are never shown: the order kept,
+  "Values hidden" said (`values-hidden`).
 - **Stuck** (`stuck`): each issue waiting on a person for more than
   `stuck-days` (14) days, with the day it started and how long:
 

@@ -1,0 +1,17 @@
+case: routing/summary-says-each-step-s-seconds
+about: "The line's summary says each step's seconds after the line's total, the reviewer's lenses and judges in its own (ADR-0050). Its result says them too, and the moment it is part of: the head's verdict, 3 min by default. Within that budget, nothing more is said."
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  config:
+    routing: {events: {merge-request: [committer, documentalist, reviewer]}}
+  forge: {merge-requests: [{id: 5, labels: [], comments: []}]}
+run: {route: merge-request, input: {range: main..HEAD}, target: {merge-request: 5}, ai: "cmd:sh $FIXTURES/agents/review-by-lens.sh", summary: true}
+expect:
+  status: pass
+  steps: [committer, documentalist, reviewer]
+  calls: [{task: part}, {task: judge}]
+  moment: {name: verdict, budget: 180, over: false}
+  summary-file: ["- **seconds**: ", " s in all — committer ", " s, documentalist ", " s, reviewer ", " s (lenses ", " s, judges "]
+  summary-lacks: ["over its budget"]

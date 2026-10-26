@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine/engine.go, internal/line, internal/routing, internal/verdict, routing.default.yaml]
-checked: 9fcf6cf6
+checked: b6085f38
 verified: agent:claude-code
 judged-in-parts: 5d66009
 judged: 71c5f05
@@ -17,18 +17,24 @@ The words the other pages use, each in a few lines. The rules behind them:
   is a folder: `role.yaml` (its events, model, settings), facets the agent
   reads, and two programs, `pre` and `post`.
 - **Event** — what starts work: `commit-msg` and `pre-push` (git hooks on
-  your machine), `merge-request`, `schedule` (gardening), `release`,
+  your machine), `merge-request`, `main` (after a merge,
+  [how](main-after-merge.md)), `schedule` (gardening), `release`,
   `review`, `import`, `init`. workline never watches for events: a hook, a
   CI job or you run the command for one ([triggers](triggers.md)).
 - **Routing, the line** — which roles run, in order, for an event
   (`routing.default.yaml`, changed in `.workline/config.yaml`). `workline
   route <event>` runs the line; the first step that does not pass stops it,
-  but on `schedule`, where every step runs and the worst verdict stands
+  but on `schedule` and `main`, where every step runs and the worst verdict stands
   ([ADR-0037](adr/0037-the-schedule-runs-every-step.md)); there, a
-  proposal refused is said, not failed.
+  proposal refused is said, not failed. A release's dry run (`route
+  release --dry-run`) runs every step too, and passes, saying what would
+  hold the release ([release](release.md#with-each-gardening-a-dry-run)). On the
+  release, the line also reads what holds it on the forge, stopping no
+  step ([what holds a release](release-holds.md)).
   `workline run-role <role> --event <event>` runs one role alone.
 - **Gate** — a step that runs your own scanners and reads their output
-  against thresholds, never asking a model (`gate:<name>` in a line).
+  against thresholds, never asking a model (`gate:<name>` in a line); on
+  a merge request, only the findings the change adds count.
 
 ## One run
 
@@ -55,9 +61,12 @@ job that holds the write token and no AI key. Each run is kept in
 | `human` | 2 | a person must decide |
 | `blocked-external` | 3 | something outside failed (agent quota, forge): never a verdict on the work |
 
-A **finding** has a rule, a place and a level: `block` or `warn`. A new
-rule starts as `warn`; `enforce` in the config moves a rule between `block`,
-`warn` and `off`.
+A **finding** has a rule, a place and a level: `block` (when none is
+said), `warn`, `question` (the reviewer's, for a person), or `info` (only
+tells, such as the product owner's acts); only `block` blocks. A new
+rule starts as `warn`; `enforce` in the config lowers a rule to `warn`
+or `off` (raising one to `block`: [#99](https://github.com/JN0V/workline/issues/99)).
+How the status follows: [warn before block](spec/role-outcome.md#warn-before-block).
 
 ## Without AI
 
@@ -69,7 +78,9 @@ report, the job's log). Each role's page says what it does then.
 
 A doc names the code it describes in its header, `sources`, and the commit
 it was last checked against, `checked`. A commit changing one of those
-sources makes the doc **suspect** until someone reads it again: the agent,
+sources where it touches what the doc names — a name it writes in
+backticks, a value it states, a file it names — makes the doc **suspect**
+until someone reads it again: the agent,
 which fixes it or moves `checked`, or a person. **Gardening** is the
 scheduled run (`schedule`) that keeps the whole repository in order, one
 merge request per task. A **derived block**

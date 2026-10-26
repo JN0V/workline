@@ -1,0 +1,32 @@
+case: gates/code-quality-fingerprint-kept-when-moved
+about: >
+  On GitLab, the gates' job writes the findings the change adds in its
+  Code Quality report, each the tool's rule, line and severity, with a
+  fingerprint that holds no line number: a push moving the new finding
+  ten lines down keeps its fingerprint, so GitLab reads the same finding.
+  What was there before is not in the report.
+given:
+  repo: linted
+  setup:
+    - git checkout -q -b change
+    - |
+      sed -i 's|^\tos.Remove("c.tmp")$|&\n\tos.Remove("d.tmp")|' clean.go && git commit -qam "feat: clean d too"
+  env: {PATH: "$FIXTURES/bin:$PATH"}
+  config:
+    routing: {events: {merge-request: ["gate:merge"]}}
+    gates: {merge: {checks: [{id: lint, run: "golangci-lint run --output.sarif.path={out}/lint.sarif", output: sarif, max: {error: 0}}]}}
+run:
+  route: merge-request
+  input: {range: main..change}
+  gates-only: true
+  reports: true
+  then: again
+  again-after:
+    - |
+      sed -i 's|^func clean() {$|&\n\t// Ten lines to say why each file goes.\n\t//\n\t//\n\t//\n\t//\n\t//\n\t//\n\t//\n\t//\n\t// Done.|' clean.go && git commit -qam "docs: say why each file goes"
+expect:
+  status: block
+  code-quality: [{check_name: "gate:merge/lint/errcheck", path: clean.go, line: 20, severity: major}]
+  code-quality-kept: true
+  left-out: [main.go]
+  sarif-lacks: [gate:merge/lint/errcheck]

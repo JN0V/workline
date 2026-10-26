@@ -3,6 +3,7 @@ package verdict
 
 import (
 	"os"
+	"slices"
 
 	"go.yaml.in/yaml/v3"
 )
@@ -14,6 +15,12 @@ const (
 	Human           = "human"
 	BlockedExternal = "blocked-external"
 )
+
+// WaitsForReady is the rule of the finding a role leaves on a draft where
+// its agent would have judged (ADR-0050): it waits for the merge request
+// to be marked ready. The merge policy reads a head holding it as a
+// review to come, never as one given.
+const WaitsForReady = "ai-waits-for-ready"
 
 // Finding is one thing a check noticed.
 type Finding struct {
@@ -28,9 +35,8 @@ type Verdict struct {
 	Status   string    `yaml:"status" json:"status"`
 	Summary  string    `yaml:"summary,omitempty" json:"summary,omitempty"`
 	Findings []Finding `yaml:"findings,omitempty" json:"findings,omitempty"`
-	// Final: a block that does not come from the agent's answer — a release
-	// held by docs it was not asked about, a check that could not run — so
-	// asking the agent again would change nothing.
+	// Final: a block that does not come from the agent's answer — a check
+	// that could not run — so asking the agent again would change nothing.
 	Final bool `yaml:"final,omitempty" json:"final,omitempty"`
 }
 
@@ -56,25 +62,37 @@ func Write(path string, v *Verdict) error {
 	return os.WriteFile(path, data, 0o644)
 }
 
-// Enforce applies a project's per-rule enforcement: "off" drops a finding,
-// "warn" keeps it without blocking. A block whose findings are all warnings
-// becomes a pass that still shows them.
-func Enforce(v *Verdict, enforce map[string]string) {
+// Blocks says whether a finding blocks: one at no level, or at block.
+func (f Finding) Blocks() bool { return f.Level == "" || f.Level == "block" }
+
+// Levels applies a project's per-rule enforcement to findings: "off" drops
+// one, "warn" keeps it without blocking; a rule the project does not name
+// keeps the level its role gave it. A role that decides on its findings
+// before its verdict, the reviewer's rules holding its lenses, reads them so.
+func Levels(fs []Finding, enforce map[string]string) []Finding {
 	var kept []Finding
-	blocking := 0
-	for _, f := range v.Findings {
+	for _, f := range fs {
 		switch enforce[f.Rule] {
 		case "off":
 			continue
 		case "warn":
 			f.Level = "warn"
-		default:
-			blocking++
 		}
 		kept = append(kept, f)
 	}
-	v.Findings = kept
-	if v.Status == Block && blocking == 0 && len(kept) > 0 {
+	return kept
+}
+
+// Enforce applies a project's per-rule enforcement to a verdict (Levels).
+// A block that enforcement leaves no finding to block on becomes a pass
+// that still shows its warnings; a block no finding of which it lowered —
+// none at all, or warnings only — is not its to lift.
+func Enforce(v *Verdict, enforce map[string]string) {
+	lowered := slices.ContainsFunc(v.Findings, func(f Finding) bool {
+		return f.Blocks() && (enforce[f.Rule] == "off" || enforce[f.Rule] == "warn")
+	})
+	v.Findings = Levels(v.Findings, enforce)
+	if v.Status == Block && lowered && !slices.ContainsFunc(v.Findings, Finding.Blocks) {
 		v.Status = Pass
 	}
 }

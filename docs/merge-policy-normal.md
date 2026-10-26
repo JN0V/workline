@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine/routine.go, internal/engine/demote.go, internal/engine/merge.go, internal/forge/merge.go]
-checked: e2580728
+checked: ae744e99
 verified: agent:claude-code
 reader: efab3a2a0b35
 ---
@@ -24,15 +24,21 @@ merge: {autonomy: normal}   # a project's choice, never a default
     by its tree;
   - only docs of the documentalist's that agents are not told to read
     (not [AGENTS.md](../AGENTS.md), [CLAUDE.md](../CLAUDE.md), a page they link to, a prompt…);
+  - in a role's folder, only its README and `docs/` pages, never what
+    the agent is given — persona, knowledge, instruction, policy, lenses
+    ([the layout](spec/role-contract.md#layout));
   - their head's verdict passed, every agent's review whole.
 - **Four kinds, by what changed**:
-  - `records`: only when docs were read (`judged`);
+  - `records`: only when docs were read (`judged`) — gardening's
+    `workline/documentalist/records` among them, for the docs judged on
+    merged merge requests
+    ([more](../roles/documentalist/docs/gardening.md#records-kept-on-merged-merge-requests));
   - `derived`: derived blocks, as their commands give them;
-  - `docs`: doc text a role wrote — the release's docs fix, gardening's;
+  - `docs`: doc text a role wrote — gardening's;
   - `reader`: pages an agent reworded for their reader, which wait for a
     yes ([below](#the-readers-rewordings-wait-for-a-yes)).
 - **The same path as a yes**: `workline/accepted` set on the head, auto-merge
-  on, in line. The veto is the forge's, as
+  on. The veto is the forge's, as
   [at `cautious`](merge-policy.md#the-veto-is-the-forges).
 - **Each one recorded**: a comment on it — no person's yes, its kind,
   why —, and the job's summary, whose first line says which kinds merge
@@ -52,8 +58,7 @@ merge: {autonomy: normal}   # a project's choice, never a default
 - **The governance line**: a change an AI wrote and an AI reviewed merges
   with no person's approval — past the two-person rule of SLSA and SOC 2.
 - **The App's key, out of a pull request's own run**: none opens a
-  `workline/` pull request as the App; a release's fix only when the App
-  alone pushed to its branch ([ADR-0044](adr/0044-the-apps-key-stays-with-the-default-branchs-runs.md)).
+  `workline/` pull request as the App ([ADR-0044](adr/0044-the-apps-key-stays-with-the-default-branchs-runs.md)).
 - **Tried on workline's own repository first**; agents' pull requests come
   later ([#322](https://github.com/JN0V/workline/issues/322); the
   [criteria](adr/0042-the-engine-merges-by-the-projects-policy.md#the-veto-what-never-merges-alone-the-criteria)).

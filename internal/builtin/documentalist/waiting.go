@@ -3,6 +3,7 @@ package documentalist
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"os"
 	"path/filepath"
 	"slices"
@@ -22,13 +23,27 @@ import (
 type waiting struct {
 	open, proposed map[string]bool
 	files          map[string][]string // by task; a task missing is known by its name only
+	held           map[string]int      // a doc another open merge request changes: its number (in/held.yaml)
 }
 
 // readWaiting reads what waits; nothing does unless gardening.
 func readWaiting(runDir string) (waiting, error) {
-	w := waiting{open: map[string]bool{}, proposed: map[string]bool{}, files: map[string][]string{}}
+	w := waiting{open: map[string]bool{}, proposed: map[string]bool{}, files: map[string][]string{}, held: map[string]int{}}
 	if os.Getenv("WORKLINE_EVENT") != "schedule" {
 		return w, nil
+	}
+	if data, err := os.ReadFile(filepath.Join(runDir, "in", "held.yaml")); err == nil {
+		var held map[int][]string
+		if err := yaml.Unmarshal(data, &held); err != nil {
+			return w, err
+		}
+		for n, files := range held {
+			for _, p := range files {
+				if m := w.held[p]; m == 0 || n < m {
+					w.held[p] = n
+				}
+			}
+		}
 	}
 	for _, t := range strings.Fields(os.Getenv("WORKLINE_OPEN_MERGE_REQUEST_TASKS")) {
 		w.open[t] = true
@@ -103,6 +118,12 @@ func holdWaitingTasks(w waiting, maps ...map[string]*suspectDoc) {
 		kind := []string{"suspect", "stale"}[i]
 		for _, sd := range docs {
 			if sd.note != "" {
+				continue
+			}
+			// Another open merge request changes it: left to it, so that
+			// neither conflicts with the other (ADR-0051).
+			if n := w.held[sd.doc.Path]; n > 0 {
+				sd.note = fmt.Sprintf("(open merge request #%d changes it: left to it until it is merged or closed)", n)
 				continue
 			}
 			task, waits, earlier := kind, w.open[kind] || w.proposed[kind], w.proposed[kind]

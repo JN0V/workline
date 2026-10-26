@@ -1,0 +1,13 @@
+case: documentalist/version-bump-holds-a-pin-under-a-history-key
+about: "On a release tool's pull request, a doc whose config example pins the version the bump replaces under a key named like a history word — `since: v1.2.0` — is suspect: in a code block a version is a pin whatever word precedes it; history is read in prose and in a code comment only (#571)."
+given:
+  repo: documented
+  setup:
+    - "mkdir -p ci && printf 'env:\\n  VERSION: v1.2.0   # x-release-please-version\\n  NAME: tool\\n' > ci/job.yml && git add ci && git commit -qm 'ci: the job'"
+    - "C=$(git rev-parse --short HEAD) && printf -- '---\\nsources: [ci/job.yml]\\nchecked: %s\\n---\\n# The job\\n\\nIt runs the tool. Pin it in your own job:\\n\\n```yaml\\nsince: v1.2.0\\n```\\n' $C > docs/tech/job.md && git add docs && git commit -qm 'docs: the job'"
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git tag v1.2.0 && git push -q origin main"
+    - "git checkout -qb release-please--branches--main && sed -i 's/v1.2.0/v1.3.0/' ci/job.yml && git commit -qam 'chore(main): release 1.3.0' && git push -q origin release-please--branches--main"
+  forge: {merge-requests: [{id: 1, branch: release-please--branches--main, base: main, labels: [], comments: []}]}
+run: {role: documentalist, event: merge-request, target: {merge-request: 1}, ai: none}
+expect:
+  findings: [{rule: suspect, where: docs/tech/job.md, message: "chore(main): release 1.3.0"}]

@@ -1,0 +1,18 @@
+case: documentalist/push-checks-the-docs-it-made-suspect
+about: "At a push, a doc whose source its commits touched is reported suspect, its own budgets checked; another doc's budget, a passage written twice and a dead link elsewhere are not read (ADR-0050)."
+given:
+  repo: documented
+  config: {roles: {documentalist: {settings: {budgets: {doc-lines: 4}}}}}
+  setup:
+    - "P='A session lasts as long as its token, and a token lasts one hour unless it is refreshed. When it expires, the user is asked to sign in again, and anything they had not saved is kept in the browser until they come back to the page.' && printf '# Questions\\n\\n%s\\n\\nSee [the guide](guide.md).\\n' \"$P\" > docs/faq.md && printf '# Notes\\n\\n%s\\n' \"$P\" > docs/notes.md && git add docs && git commit -qm 'docs: answer the questions asked'"
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+run: {role: documentalist, event: pre-push, input: {range: "HEAD~1..HEAD"}, ai: none}
+expect:
+  status: pass
+  findings:
+    - {rule: suspect, where: docs/tech/auth.md, message: "src/auth/token.go changed since it was checked"}
+    - {rule: doc-too-long, where: docs/tech/auth.md}
+  no-findings:
+    - {rule: doc-too-long, where: docs/faq.md}
+    - {rule: duplicate, where: docs/faq.md}
+    - {rule: dead-link, where: docs/faq.md}

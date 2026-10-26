@@ -1,0 +1,11 @@
+case: routing/schedule-skips-the-steps-named
+about: "`--input skip=<step>,…` leaves those steps out of the line: one schedule runs the docs weekly and the backlog nightly (ADR-0051)."
+given:
+  repo: basic
+  config:
+    gates:
+      docs: {checks: [{id: links, run: "false", output: exit}]}
+      backlog: {checks: [{id: issues, run: "true", output: exit}]}
+    routing: {events: {schedule: ["gate:docs", "gate:backlog"]}}
+run: {route: schedule, input: {skip: "gate:docs"}}
+expect: {status: pass, steps: ["gate:backlog"]}

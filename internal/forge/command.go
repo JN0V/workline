@@ -175,6 +175,13 @@ func (c *command) Sticky(t Target, body, marker string, create bool) error {
 	return c.call("sticky", map[string]any{"target": t, "body": body, "marker": marker, "create": create}, nil)
 }
 
+// stickyOwn asks sticky with `own`: only a comment the token's user wrote
+// is edited (KeepOwn); a command that does not read it edits the one
+// holding the marker, as before.
+func (c *command) stickyOwn(t Target, body, marker string, create bool) error {
+	return c.call("sticky", map[string]any{"target": t, "body": body, "marker": marker, "create": create, "own": true}, nil)
+}
+
 func (c *command) Label(t Target, add, remove []string) error {
 	if add == nil {
 		add = []string{}

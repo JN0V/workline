@@ -51,7 +51,11 @@ hold:
   records each keeps, listed for a person
   ([#205](https://github.com/JN0V/workline/issues/205)): auditor's
   `sample-*`; a `checked` naming a commit a squash left off the branch,
-  read from its merge request's head: documentalist's `sample-checked-*`.
+  read from its merge request's head: documentalist's `sample-checked-*`;
+  the head's commit that moved a `checked` says whose the move was — a
+  person's not drawn, as all of W41's and W42's so far turned out — and
+  who vouched ([#466](https://github.com/JN0V/workline/issues/466)):
+  documentalist's `sample-squashed-*`.
 - **Each act re-checked**, one call an act, its kind's question
   (`kinds/*.md`), a finding blind, never on a model that acted, false
   only with a quote found again, within the week's tokens

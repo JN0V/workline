@@ -1,6 +1,6 @@
 ---
-sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/parts.go, internal/builtin/documentalist/freshness.go, internal/builtin/documentalist/dedupe.go, internal/builtin/documentalist/condense.go, internal/builtin/documentalist/mergecard.go, internal/builtin/documentalist/counts.go, internal/builtin/documentalist/waiting.go]
-checked: f3c0fa16
+sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/parts.go, internal/builtin/documentalist/counts.go]
+checked: d722a840
 verified: agent:claude-code
 ---
 # Documentalist — the agent's tasks
@@ -22,7 +22,10 @@ pages the reader checks flag: [gardening](gardening.md). Part of [the documental
   vouching for every sentence needs them
   ([ADR-0012](../../../docs/adr/0012-a-doc-is-judged-against-its-sources-whole.md)).
 - A doc far behind, whose changes do not fit: its sources as they are now
-  alone, or [in parts](#judged-in-parts) when they do not fit either.
+  alone, or [in parts](parts.md) when they do not fit either.
+- Sources that do not fit, though what changed in them does: what changed
+  alone on a merge request; when gardening, [in parts](parts.md)
+  against them all.
 - The commits its `checked` must name.
 
 ### How many
@@ -31,8 +34,8 @@ pages the reader checks flag: [gardening](gardening.md). Part of [the documental
   context budget.
 - Docs left out are taken in the run's next round, once the first ones are
   applied ([role contract](../../../docs/spec/role-contract.md#one-run),
-  "Again"); past the last round, they stay suspect for a person or a later
-  run.
+  "Again"); past the last round,
+  they stay suspect for a person or a later run.
 - `ai-max-tokens` caps what a run spends, all calls together: past it, the
   agent is asked nothing more and the rest waits.
 
@@ -49,8 +52,8 @@ pages the reader checks flag: [gardening](gardening.md). Part of [the documental
 - **Otherwise**: a doc judged on diffs alone, or beside a doc of the same
   task it follows, is told that `checked` cannot move. Its fix leaves it
   and sets `judged`, the judge refusing a move (`checked-unread`), and the
-  doc stays suspect for a person. The same holds for docs due at the
-  release and for stale docs. What the run says of it names what was read
+  doc stays suspect for a person. The same holds for docs due and for
+  stale docs. What the run says of it names what was read
   and what was not ([the judge](judge.md#what-the-finding-says)).
 - **A source that cannot be read** — a file gone, or a section whose
   heading is renamed or removed — is never given as empty: the doc is
@@ -62,10 +65,14 @@ pages the reader checks flag: [gardening](gardening.md). Part of [the documental
   (`checked-over-count-off`), so the fix brings it to that count or leaves
   `checked`. That change needs no claim, the task says: the engine's count
   is the evidence, and a count is not words a file holds, to be quoted.
+- **In parts**: a fix never moves it; the engine does when the parts
+  support every line stating something, unless the project turns
+  `parts-move-checked` off
+  ([judged in parts](parts.md#when-checked-moves-after-parts)).
 
 ### Every word removed is cited
 
-Every task judging docs — suspect, stale, due at the release, the fix after
+Every task judging docs — suspect, stale, due, the fix after
 the parts — says that every word a patch takes out of a body is cited
 ([ADR-0014, step 2](../../../docs/adr/0014-checked-is-earned-by-what-was-read.md#2-the-mechanical-checks-no-agent);
 [how the judge reads claims](judge-claims.md)):
@@ -78,81 +85,14 @@ the parts — says that every word a patch takes out of a body is cited
 - sources are not numbered in the task, so a claim quotes, and the engine
   finds the quote;
 - a comment is not evidence: with nothing else to cite, the words stay,
-  and a `note` says what could not be confirmed.
+  and a `note` says what could not be confirmed, naming its doc in `doc`:
+  that doc's `checked` does not move (`checked-over-note`,
+  [the judge](judge.md#moving-checked)).
 
 ## Judged in parts
 
-[ADR-0009](../../../docs/adr/0009-docs-far-behind-are-judged-in-parts.md),
-on by default since
-[#82](https://github.com/JN0V/workline/issues/82#issuecomment-6163487736):
-a suspect or stale doc whose sources, as they are now, do not fit a task
-is judged in parts instead of going to a person. `judge-in-parts: false`
-sends it to a person; `parts-max-per-run` (16) caps the parts a run asks.
-
-### The parts
-
-- Each part holds the doc whole, then a share of its source files packed
-  to fill the task.
-- A file larger than a part is cut into consecutive pieces, each read, so
-  no line goes unread.
-- Sources that are docs are left out: following a doc is propagation, not
-  evidence.
-- Each part answers with `claim`s only — a range of the doc's lines
-  `contradicted`, `partial` or `supported`, quoting the doc and the source
-  — and the engine asks each in a context of its own
-  ([role contract](../../../docs/spec/role-contract.md#one-run), "In
-  parts").
-
-### Reading the claims, no AI
-
-- A claim whose quotes are not at the lines it cites is dropped
-  (`claims-dropped`), for a person, who reads the doc whole: the claim
-  dropped may have been the one saying what is wrong. The doc is recorded
-  as judged all the same — asked again each night, its parts cost as much
-  to the same end
-  ([ADR-0014, step 4](../../../docs/adr/0014-checked-is-earned-by-what-was-read.md#4-acceptance-written-before-it-is-measured)).
-- Contradicted and supported by no other part: wrong.
-- Contradicted, and another part supports some of the same words: a
-  conflict. A support of other words on the same lines disputes nothing:
-  a sentence spans lines
-  ([#440](https://github.com/JN0V/workline/issues/440)).
-- Partial: to be read together — unless another part supports the same
-  lines, which settles them.
-- A support quoted from a code comment only is no support
-  ([ADR-0014, amended](../../../docs/adr/0014-checked-is-earned-by-what-was-read.md#amendment-2026-10-15-what-step-3-left)):
-  - it neither settles a partial nor makes a contradiction a conflict;
-  - the fix is told, with the code around the comment;
-  - a comment the code contradicts is reported (`comment-disagrees`).
-- A line naming a name from the code that no part speaks of: `uncovered`,
-  for a person.
-
-### The fix
-
-- One last call (`fix`) gets the doc and only the source lines the parts
-  cited, and patches what is wrong.
-- The judge refuses a fix that moves `checked` (`checked-moved-in-parts`).
-- The header records the commit it was judged in parts at,
-  `judged-in-parts`, found wrong or not, and the doc stays suspect, saying
-  so: nobody read it whole.
-- It is not put before an agent again until one of its sources changes
-  after that commit; a person clears it by reading it whole and moving
-  `checked`.
-- When gardening, the fix, or only the record, goes on a merge request of
-  its own, `workline/documentalist/fix-<first doc>`; the doc waits while
-  it is open ([gardening](gardening.md#one-merge-request-per-task)).
-
-### Not judged in parts
-
-Left to a person, saying why:
-
-- a doc leaving less than a quarter of a task for its sources: condense or
-  split it first;
-- one with sources in another repository;
-- one needing more than `parts-max` parts (8), reported `sources-too-wide`
-  with how many it would take: narrow its sources or split the doc;
-- one whose parts did not all answer (`part-unanswered`): nothing they
-  found is kept, it is judged again later.
-
-At most `parts-max-per-run` parts (16) are asked in a run; a doc past it
-waits for the next round. A run asking parts asks nothing else.
-
+A suspect or stale doc whose sources, as they are now, do not fit a task
+is judged in parts when gardening
+([ADR-0009](../../../docs/adr/0009-docs-far-behind-are-judged-in-parts.md)):
+each part holds the doc whole and a share of its sources, and the engine
+puts their claims together. How: [judged in parts](parts.md).

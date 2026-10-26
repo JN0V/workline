@@ -473,7 +473,8 @@ func checkedMatches(content string, want map[string]string) bool {
 // judged against, and bringing no new budget, link or duplicate problem. It
 // returns the refusals, and the docs the patches handle.
 // A doc judged in parts (inParts) is fixed with `checked` left where it is:
-// nobody read it whole, so it stays suspect. So is a doc whose sources did
+// nobody read it whole, so it stays suspect; a quote its parts judged
+// partial (partial) is no proof that its words are wrong (#467). So is a doc whose sources did
 // not all go whole into the task (not in whole, ADR-0014): the agent cannot
 // vouch for what it was not given. Nor may `checked` move while the doc
 // states a line count off (ADR-0014, step 2). What the patches accepted do
@@ -489,7 +490,7 @@ func checkedMatches(content string, want map[string]string) bool {
 // one place, and rarely brought the right fix back (ADR-0014, step 4).
 // Only a patch of which no hunk quotes the doc right is asked for again: a
 // misquote is a slip the agent mends at the second answer.
-func judgePatches(repo string, s Settings, judged map[string]map[string]string, inParts map[string]string, whole map[string]bool, intents []intent.Intention, fallback []intent.Intention, mayGrow bool) (j patchJudgement, err error) {
+func judgePatches(repo string, s Settings, judged map[string]map[string]string, inParts map[string]string, partial map[string][]partialCite, whole map[string]bool, intents []intent.Intention, fallback []intent.Intention, mayGrow bool) (j patchJudgement, err error) {
 	refuse := func(rule, where, msg string) {
 		j.refused = append(j.refused, verdict.Finding{Rule: rule, Where: where, Message: msg})
 	}
@@ -498,6 +499,7 @@ func judgePatches(repo string, s Settings, judged map[string]map[string]string, 
 	fixed := 0
 	var tree Tree
 	claims, unread := readCitations(intents)
+	doubted := doubtedDocs(intents, judged)
 	agentDocs := map[string]bool{}
 	for _, in := range intents {
 		if in.Kind == "patch" && !isFallback(in, fallback) {
@@ -573,6 +575,16 @@ func judgePatches(repo string, s Settings, judged map[string]map[string]string, 
 				}
 				return fileVerdict{rule: "checked-over-count-off", why: msg, header: true,
 					person: "`checked` not moved: the doc still states a line count off (" + strings.Join(said, "; ") + "); `judged` set instead"}
+			}
+			// The answer's own note says what it could not confirm here:
+			// kept is not confirmed (#449).
+			if notes := doubted[f.path]; len(notes) > 0 {
+				msg := "the patch moves `checked`, but a note of this answer names the doc, saying what could not be confirmed in it: moving `checked` vouches for every sentence the doc keeps, so it stays where it is"
+				if full != "" {
+					msg += fmt.Sprintf("; set `judged: %s` instead", full[:7])
+				}
+				return fileVerdict{rule: "checked-over-note", why: msg, header: true,
+					person: "`checked` not moved: the agent's own note names this doc as not confirmed" + doubtSaid(notes) + "; `judged` set instead, for a person to check it"}
 			}
 		}
 		// A fix the agent could not vouch for is kept: what it found wrong
@@ -658,6 +670,7 @@ func judgePatches(repo string, s Settings, judged map[string]map[string]string, 
 			if cc, err = newCiteContext(repo, tree.Files); err != nil {
 				return j, err
 			}
+			cc.partial = partial
 			if len(agentDocs) > 1 {
 				j.reported = append(j.reported, cc.attribute(claims, tree.Docs, agentFiles(intents, fallback, tree.Docs, judged))...)
 			}
@@ -921,22 +934,13 @@ func quotedRight(diff string, docs map[string]string, judged map[string]map[stri
 		if _, asked := judged[f.path]; !isDoc || !asked || f.deleted {
 			return "", nil, false
 		}
-		f = placed(old, f)
-		var keep []hunk
-		for _, h := range f.hunks {
-			if why := misquoted(old, fileDiff{path: f.path, hunks: []hunk{h}}); why != "" {
-				dropped[f.path] = append(dropped[f.path], verdict.Finding{Rule: "patch-does-not-apply", Where: f.path,
-					Message: strings.TrimSuffix(why, "; cite the lines as numbered in the task") + "; that hunk left out, the rest of the fix applied: a person checks this place against the sources"})
-				continue
-			}
-			keep = append(keep, h)
-		}
-		if len(keep) == 0 {
-			continue
-		}
-		d, err := unifiedDiff(f.path, old, applyHunks(old, fileDiff{path: f.path, hunks: keep}), 3)
+		d, misquotes, err := writtenAnew(old, f)
 		if err != nil {
 			return "", nil, false
+		}
+		for _, why := range misquotes {
+			dropped[f.path] = append(dropped[f.path], verdict.Finding{Rule: "patch-does-not-apply", Where: f.path,
+				Message: strings.TrimSuffix(why, "; cite the lines as numbered in the task") + "; that hunk left out, the rest of the fix applied: a person checks this place against the sources"})
 		}
 		b.WriteString(d)
 	}
@@ -944,6 +948,106 @@ func quotedRight(diff string, docs map[string]string, judged map[string]map[stri
 		return "", nil, false
 	}
 	return b.String(), dropped, true
+}
+
+// writtenAnew is one doc's part of a diff written anew from its hunks as
+// the engine places them on the doc (placed, mended): git then applies
+// each where the engine reads it. The hunks that misquote the doc still,
+// once placed, are left out, each with what it misquotes; nothing is
+// written when none is left.
+func writtenAnew(old string, f fileDiff) (part string, misquotes []string, err error) {
+	f = placed(old, f)
+	var keep []hunk
+	for _, h := range f.hunks {
+		if why := misquoted(old, fileDiff{path: f.path, hunks: []hunk{h}}); why != "" {
+			misquotes = append(misquotes, why)
+			continue
+		}
+		keep = append(keep, h)
+	}
+	if len(keep) == 0 {
+		return "", misquotes, nil
+	}
+	part, err = unifiedDiff(f.path, old, applyHunks(old, fileDiff{path: f.path, hunks: keep}), 3)
+	return part, misquotes, err
+}
+
+// placedPatch is a patch as git applies it in repo: as written, or else
+// each part changing a doc written anew from its hunks as the engine
+// places them (writtenAnew) — when every hunk then quotes its doc right,
+// and git applies the patch so. That is what the engine then judges and
+// applies, as for a doc the code made suspect (#592). A part creating or
+// deleting a file, or changing a file that is no doc, stays as written.
+// err is git's refusal of the patch as written, for the agent.
+func placedPatch(repo, diff string, docs map[string]string) (string, error) {
+	_, err := gitIn(repo, intent.NormalizeDiff(diff), "apply", "--recount", "--unidiff-zero", "--check", "-")
+	if err == nil {
+		return diff, nil
+	}
+	var b strings.Builder
+	for _, part := range fileParts(diff) {
+		files, perr := parseDiff(part)
+		old, isDoc := "", false
+		if perr == nil && len(files) == 1 && !files[0].deleted {
+			old, isDoc = docs[files[0].path]
+		}
+		if !isDoc {
+			b.WriteString(part)
+			continue
+		}
+		d, misquotes, werr := writtenAnew(old, files[0])
+		if werr != nil || len(misquotes) > 0 {
+			return "", err
+		}
+		b.WriteString(d)
+	}
+	if _, again := gitIn(repo, b.String(), "apply", "--recount", "--unidiff-zero", "--check", "-"); again != nil {
+		return "", err
+	}
+	return b.String(), nil
+}
+
+// placedPatches are the agent's patches as git applies them in repo
+// (placedPatch): what a task moving text between docs judges, and the
+// engine applies (#592); changed says whether one was written anew. A
+// patch git refuses either way stays as written, for the task to refuse.
+func placedPatches(repo string, s Settings, intents, fallback []intent.Intention) (out []intent.Intention, changed bool, err error) {
+	if !proposedPatch(intents, fallback) {
+		return intents, false, nil
+	}
+	tree, err := loadTree(repo, s.Docs)
+	if err != nil {
+		return nil, false, err
+	}
+	out = slices.Clone(intents)
+	for i, in := range out {
+		diff, ok := in.Value.(string)
+		if in.Kind != "patch" || !ok || isFallback(in, fallback) {
+			continue
+		}
+		if d, err := placedPatch(repo, diff, tree.Docs); err == nil && d != diff {
+			out[i].Value, changed = d, true
+		}
+	}
+	return out, changed, nil
+}
+
+// fileParts splits a diff into its files' parts, each as git reads it
+// (intent.NormalizeDiff): from its `diff --git` line to the next one.
+func fileParts(diff string) []string {
+	var parts []string
+	var cur strings.Builder
+	for _, l := range strings.Split(strings.TrimSuffix(intent.NormalizeDiff(diff), "\n"), "\n") {
+		if strings.HasPrefix(l, "diff --git ") && cur.Len() > 0 {
+			parts = append(parts, cur.String())
+			cur.Reset()
+		}
+		cur.WriteString(l + "\n")
+	}
+	if cur.Len() > 0 {
+		parts = append(parts, cur.String())
+	}
+	return parts
 }
 
 func sortedKeys2(m map[string][]verdict.Finding) []string {

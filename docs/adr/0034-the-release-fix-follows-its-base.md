@@ -1,7 +1,8 @@
 # ADR-0034: The release's own fix follows its base
 
-- **Status:** accepted; amended 2026-10-12 (gardening's merge requests
-  follow too, or are closed)
+- **Status:** removed 2026-10-21 with the release's docs, but for its
+  2026-10-12 amendment (gardening's merge requests follow, or are
+  closed), which stands; amended 2026-10-19 and 2026-10-20 before
 - **Date:** 2026-10-06
 - **Builds on:** ADR-0017 (a release tool's pull request is the release;
   its fix goes to a merge request of its own), ADR-0027 (derived blocks
@@ -167,3 +168,97 @@ gardening-branch-closed-when-main-changed-its-lines-on-gitlab,
 gardening-branch-only-judged-closed, gardening-branch-only-judged-rebuilt,
 gardening-branch-a-person-committed-to-is-left,
 gardening-branch-close-refused-said, gardening-keeps-a-person-commit.
+
+## Amendment (2026-10-19): the fix's record stands for the rebuilt heads
+
+On the 0.36.0 release pull request ([#499](https://github.com/JN0V/workline/pull/499)),
+the fix only set `judged` on docs/gates-in-ci.md, to the release's head.
+Merged, release-please rebuilt its branch: a new head, the same version
+bump in three of the doc's sources. Measured from the commit the fix
+became, the bump read as a change, kept as the doc quotes the version it
+replaces: the doc was judged again, a new fix moved `judged` to the new
+head, eight in an hour ([#510](https://github.com/JN0V/workline/issues/510)).
+
+- **The documentalist's comment on the release merge request keeps** the
+  head each fix recorded a doc at (`checked` or `judged`) and the git ids
+  of the doc's sources there, as on a person's merge request
+  ([ADR-0013, amended](0013-what-was-judged-is-not-asked-again.md#amendment-2026-10-17-on-a-persons-merge-request-the-record-waits-in-a-comment)).
+  Only a comment a bot or a person of the project wrote is read; since
+  2026-10-21, only workline's own account's
+  ([ADR-0013, amended](0013-what-was-judged-is-not-asked-again.md#amendment-2026-10-21-only-worklines-own-accounts-comment-holds-a-record)).
+- **A record naming such a head stands at the new head** when the doc's
+  sources have the same ids there: nothing changed, the bump included.
+  The doc is not judged again; one not vouched for waits for a person.
+- **A source changed since**, the bump to another version included: the
+  doc is judged again, and the release waits for it (ADR-0017), as it
+  waits for the first fix.
+
+Not chosen: leaving the bump out after a record a release fix brought,
+which needs the forge's merged merge requests and takes a person's commit
+on that branch for the role's; a doc found with nothing to fix kept out
+of any merge request, its record in the comment alone: a doc vouched for
+would still be judged again.
+
+Conformance: the five documentalist/release-record-* cases.
+
+## Amendment (2026-10-20): one fix for every doc a run reaches
+
+On a release tool's pull request, one run judged a single batch of the
+docs due: the docs one call can take (`ai-max-calls`, the task's size).
+Its fix went to `workline/documentalist/release`, and no next round
+followed, as none could see that fix
+([#572](https://github.com/JN0V/workline/issues/572)). The next batch
+waited until a person merged it, then for the next night. Replayed on
+the 0.38.0 release with a scripted agent
+([#567](https://github.com/JN0V/workline/pull/567)): one doc a round,
+each task filled by one large doc.
+
+- **A round that left docs for the next keeps its fix in the clone**,
+  not applied, and the run goes round, at night (`--no-apply`) as by
+  hand. The next round sees those docs fixed, does not ask again those
+  an earlier round asked, and proposes the earlier rounds' patches, as
+  judged, ahead of its own. The comment keeping the records and the merge
+  request's body carry every round's docs.
+- **One fix**: the last round's proposal, applied once or listed once
+  for the job that applies, one commit on `workline/documentalist/release`,
+  one merge request. A last round that proposed nothing leaves the round
+  before it to apply.
+- **The bound**: each round asks at most `ai-max-calls` docs, and only
+  docs no round of the run asked, so a run takes no more rounds than
+  there are docs due; it stops sooner at the run's `ai-max-tokens` or
+  `ai-max-seconds`, and at 20 rounds (`rounds-max`), five for any other
+  run. What is left still holds the release, said, for the next night's
+  run or a person's.
+- **The clone is put back as it was** when the run ends.
+- **A doc the release's bump changed too**, one of the tool's files,
+  takes the fix three ways (`git apply --3way`): its change on the
+  base's version. Before, such a doc sent the whole fix to a comment for
+  a person ("the docs it fixes differ"), which one fix for every doc
+  would make the common case: on the 0.38.0 replay, `docs/gitlab-trigger.md`.
+  A change that does not apply on the base still goes to the comment.
+
+Not chosen:
+
+- **A fix a round, stacked on the branch**: the apply job would push as
+  many times, each push the round's patches on the commit before, and
+  the merge request's body and the records comment would say the last
+  round only.
+- **Several calls in one round**, as parts are: one answer judged for
+  every batch, a refusal asking every batch again.
+
+Conformance: documentalist/release-pull-request-fixes-every-due-doc-in-one-night,
+release-pull-request-by-hand-fixes-every-due-doc,
+release-pull-request-night-stops-at-its-tokens,
+release-pull-request-fix-of-a-doc-the-release-bumps,
+release-pull-request-fix-in-a-comment-when-it-conflicts-on-the-base.
+
+## Removed (2026-10-21): the release's fix is gone
+
+[ADR-0051](0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-1-the-release-weekly), built:
+
+- **No release fix**: the documentalist judges no release's docs, so no
+  `workline/documentalist/release` is opened, followed, or recorded.
+- **Gone with it**: the record standing for the rebuilt heads
+  (2026-10-19) and the rounds kept in the clone for one fix (2026-10-20).
+- **Stands**: gardening's merge requests follow their base, or are
+  closed (2026-10-12), with `workline follow --gardening`.

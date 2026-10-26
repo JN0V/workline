@@ -1,0 +1,16 @@
+case: product-owner/priority-setting-unread-stops
+about: "A priority or effort setting the engine cannot read — not auto, nor a family of labels by its prefix — stops the run, never read as unset (ADR-0040, step 2; principle 12)."
+given:
+  repo: backlog
+  config:
+    roles:
+      product-owner:
+        settings: {effort: {in: field}}
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: none}
+expect:
+  status: block
+  agent-calls: 0
+  findings: [{rule: engine-error, message: "pre exited with code 1"}]

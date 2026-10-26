@@ -20,7 +20,11 @@ against it. Then only what the task needs:
   product owner keeps them). Not in chat, not in memory, not in a file.
 - **Docs follow the code**: a doc that describes code names it in `sources`,
   with the commit it was `checked` against. When the documentalist reports it
-  `suspect`, check it against the change, fix what is wrong, and move `checked`.
+  `suspect`, fix the prose your change made wrong, and move `checked` of the
+  docs you read against it. A pull request need not reach 0 suspect, but the
+  night moves `checked` only for docs whose sources fit a task whole: few of
+  workline's do
+  ([ADR-0051](docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-3-no-docs-obligation-per-pr)).
 - **Conformance first**: a behaviour starts as a case in tests/conformance/cases/;
   `pending.txt` lists what does not pass yet and must never lie. README's
   case count is a derived block: leave it as it is, gardening regenerates
@@ -78,6 +82,7 @@ examples):
 ```sh
 go build -o ~/.local/bin/workline ./cmd/workline
 go test -count=1 ./...     # -count=1: the conformance suite builds the engine itself
+golangci-lint run --new-from-merge-base=origin/main ./...   # 2.15.0: a lint finding a pull request adds blocks it
 WORKLINE_EVAL=claude go test -count=1 -timeout 60m ./tests/evaluation/   # real agent, costs tokens
 ```
 
@@ -90,8 +95,9 @@ Where workline's global hooks are installed, this repository goes through its
 own line (.workline/config.yaml):
 
 - **commit-msg** — the committer. A subject over 72 characters, or holding a
-  code like `AC-3`, is refused, then rewritten by the agent; the hook prints
-  the message it committed. Check it: write subjects that pass.
+  code like `AC-3`, is refused, then rewritten by the agent, 30 s at most
+  (ADR-0050); the hook prints the message it committed. Check it: write
+  subjects that pass.
 - **pre-push** — the committer on the commits pushed, then the documentalist,
   with no agent: it lists the docs they made suspect. The review is on the
   pull request (ADR-0011): `main` takes pull requests only, the checks
@@ -99,11 +105,6 @@ own line (.workline/config.yaml):
   never merge it, never turn auto-merge on, never put `workline:accepted`
   on it: the person accepts it, and merges it or, by the project's merge
   policy, the forge does (ADR-0042).
-- **follow** — when `main` moves, workline's bot may merge it into your
-  pull request, if it conflicts only on lines workline writes (a doc's
-  `checked`, ADR-0041). Pull before pushing again (`git pull`, a
-  fast-forward); never force-push over that merge nor rebase it away: the
-  conflicts come back.
 - **secrets and forbidden terms** — the committer scans each commit with
   gitleaks. A gitignored `.gitleaks.toml` link, when present, points to terms
   that must never reach this public repository, as gitleaks rules. Never

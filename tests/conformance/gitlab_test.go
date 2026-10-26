@@ -1,6 +1,7 @@
 package conformance
 
 import (
+	"cmp"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -21,17 +22,47 @@ import (
 // gitlabMock answers the part of GitLab's REST API the engine's gitlab forge
 // calls, over the case's simulated forge file, so a case runs `--forge
 // gitlab` and is checked as any other. Its `members` give the project's
-// members and their access level, as GitLab's members/all does; what the
-// engine writes is written by "workline-bot", the token's user. GraphQL
+// members and their access level, as GitLab's members/all does, or
+// `members-refused` its refusal; its `variables`, the project's CI/CD
+// variables and their environment scope, or `variables-refused`; what the engine writes is written by the
+// token's user, "workline-bot" or its `token-user`. GraphQL
 // refuses all: a split's children are listed in the parent's body. Its
 // issue links are GitLab Free's: is_blocked_by refused, for its license.
+// With `weights`, its issues carry Premium's `weight` key, written by a
+// PUT; without, Free's: no key, a weight sent ignored.
 // A merge request's diff is the repository's, from its base (main) to its
 // branch (HEAD), as GitLab computes it; a discussion on a line it does not
 // show, or a kept line without its old one, is taken on no line, as
 // gitlab.com does (#277).
+// Its `faults` fail calls for a moment (gitlabFault); a fault no call
+// met fails the case, which would prove nothing (unmet).
 type gitlabMock struct {
 	file, repo string
 	mu         sync.Mutex
+	met        map[int]*faultMet // by the fault's place in faults
+}
+
+// gitlabFault fails the calls of a method on a path for a moment: they
+// get no answer until the engine gives up (`stall`), or a status (`status`:
+// 500, 502, 503, 429), with `retry-after` seconds. `skip` calls are
+// answered first; then `times` fail (0: all), then they are answered. A
+// call sooner than the retry-after asked gets the status again, uncounted.
+// A write stalled is taken all the same, answered too late.
+type gitlabFault struct {
+	Method     string `json:"method,omitempty"` // GET when not given
+	Path       string `json:"path"`             // the project's, as /issues/9/notes
+	Stall      bool   `json:"stall,omitempty"`
+	Status     int    `json:"status,omitempty"`
+	RetryAfter int    `json:"retry-after,omitempty"`
+	Skip       int    `json:"skip,omitempty"`
+	Times      int    `json:"times,omitempty"`
+}
+
+// faultMet is what a fault met: the calls it saw, those it failed, when
+// it last failed one.
+type faultMet struct {
+	calls, failed int
+	at            time.Time
 }
 
 type gitlabState struct {
@@ -42,8 +73,29 @@ type gitlabState struct {
 	} `json:"members,omitempty"`
 	// Bots are the users the users API says are bots (`bot`), a service
 	// account's among them; a merge request's author is user 1000 + its id.
-	Bots []string `json:"bots,omitempty"`
+	Bots   []string      `json:"bots,omitempty"`
+	Faults []gitlabFault `json:"faults,omitempty"`
+	// MembersRefused is the status members/all answers the token, when it
+	// may not list them: 401, as the job's own token gets (#552); asked or
+	// not, unlike a fault.
+	MembersRefused int `json:"members-refused,omitempty"`
+	// Variables are the project's CI/CD variables, as GitLab lists them
+	// to a Maintainer's token, values included; VariablesRefused, the
+	// status it answers a token that may not list them (403, a
+	// Developer's).
+	Variables []struct {
+		Key   string `json:"key"`
+		Value string `json:"value"`
+		Scope string `json:"environment_scope"`
+	} `json:"variables,omitempty"`
+	VariablesRefused int `json:"variables-refused,omitempty"`
+	// TokenUser is the token's user, who writes what the engine writes:
+	// workline-bot when not given; project_<id>_bot_… for a project
+	// access token's, a bot by its name.
+	TokenUser string `json:"token-user,omitempty"`
 }
+
+func (s *gitlabState) tokenUser() string { return cmp.Or(s.TokenUser, defaultTokenUser) }
 
 var (
 	issuePath      = regexp.MustCompile(`^/issues/(\d+)$`)
@@ -57,38 +109,143 @@ var (
 	userPath       = regexp.MustCompile(`^/api/v4/users/(\d+)$`) // outside the project's path
 )
 
-const tokenUser = "workline-bot"
+const defaultTokenUser = "workline-bot"
 
 func (m *gitlabMock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	if r.URL.Path == "/api/graphql" {
-		fmt.Fprint(w, `{"errors": [{"message": "not simulated"}]}`)
+	answer, status, f := m.answer(r)
+	if f != nil && f.Stall {
+		// No answer until the engine gives up: it closes the connection.
+		select {
+		case <-r.Context().Done():
+		case <-time.After(time.Minute):
+		}
 		return
 	}
-	data, err := os.ReadFile(m.file)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	var s gitlabState
-	if err := json.Unmarshal(data, &s); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	body, _ := io.ReadAll(r.Body)
-	form, _ := url.ParseQuery(string(body))
-	p := strings.TrimPrefix(r.URL.Path, "/api/v4/projects/1")
-	answer, status := m.serve(&s, r.Method, p, r.URL.Query(), form)
-	if r.Method != "GET" && status < 300 {
-		out, _ := json.MarshalIndent(s, "", "  ")
-		os.WriteFile(m.file, out, 0o644)
+	if f != nil && f.RetryAfter > 0 {
+		w.Header().Set("Retry-After", strconv.Itoa(f.RetryAfter))
 	}
 	w.WriteHeader(status)
 	json.NewEncoder(w).Encode(answer)
 }
 
+// answer answers a call over the forge file, or the fault it meets: a
+// status fault's status, or a stall's answer, never sent, its write taken.
+func (m *gitlabMock) answer(r *http.Request) (any, int, *gitlabFault) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	data, err := os.ReadFile(m.file)
+	if err != nil {
+		return map[string]any{"message": err.Error()}, http.StatusInternalServerError, nil
+	}
+	var s gitlabState
+	if err := json.Unmarshal(data, &s); err != nil {
+		return map[string]any{"message": err.Error()}, http.StatusInternalServerError, nil
+	}
+	body, _ := io.ReadAll(r.Body)
+	if r.URL.Path == "/api/graphql" {
+		return editorsQuery(&s, body), 200, nil
+	}
+	form, _ := url.ParseQuery(string(body))
+	p := strings.TrimPrefix(r.URL.Path, "/api/v4/projects/1")
+	f := m.fault(s.Faults, r.Method, p)
+	if f != nil && !f.Stall {
+		return map[string]any{"message": http.StatusText(f.Status)}, f.Status, f
+	}
+	answer, status := m.serve(&s, r.Method, p, r.URL.Query(), form)
+	if r.Method != "GET" && status < 300 {
+		out, _ := json.MarshalIndent(s, "", "  ")
+		os.WriteFile(m.file, out, 0o644)
+	}
+	return answer, status, f
+}
+
+// editorsQuery answers the one GraphQL query the simulated GitLab knows:
+// who last edited a merge request's or an issue's notes (lastEditedBy), a
+// comment's editor; any other is not simulated. Its notes' ids are the
+// REST listing's.
+func editorsQuery(s *gitlabState, body []byte) any {
+	var req struct {
+		Query     string         `json:"query"`
+		Variables map[string]any `json:"variables"`
+	}
+	_ = json.Unmarshal(body, &req)
+	if !strings.Contains(req.Query, "lastEditedBy") {
+		return map[string]any{"errors": []map[string]any{{"message": "not simulated"}}}
+	}
+	id, _ := strconv.Atoi(fmt.Sprint(req.Variables["iid"]))
+	items := s.Issues
+	if strings.Contains(req.Query, "mergeRequest(") {
+		items = s.MergeRequests
+	}
+	nodes := []map[string]any{}
+	for _, it := range items {
+		if it.ID != id {
+			continue
+		}
+		for i, c := range it.Comments {
+			n := id*1000 + i + 1
+			if v, err := strconv.Atoi(c.ID); err == nil {
+				n = v
+			}
+			var editor any
+			if c.Editor != "" {
+				editor = map[string]any{"username": c.Editor}
+			}
+			nodes = append(nodes, map[string]any{"id": fmt.Sprintf("gid://gitlab/Note/%d", n), "author": map[string]any{"username": c.Author}, "lastEditedBy": editor})
+		}
+	}
+	return map[string]any{"data": map[string]any{"project": map[string]any{"item": map[string]any{"notes": map[string]any{"nodes": nodes, "pageInfo": map[string]any{"hasNextPage": false}}}}}}
+}
+
+// fault is the fault a call meets, nil for none; it counts what each
+// fault met.
+func (m *gitlabMock) fault(faults []gitlabFault, method, p string) *gitlabFault {
+	if m.met == nil {
+		m.met = map[int]*faultMet{}
+	}
+	for i, f := range faults {
+		if f.Path != p || cmp.Or(f.Method, "GET") != method {
+			continue
+		}
+		if m.met[i] == nil {
+			m.met[i] = &faultMet{}
+		}
+		met := m.met[i]
+		if met.failed > 0 && f.RetryAfter > 0 && time.Since(met.at) < time.Duration(f.RetryAfter)*time.Second {
+			return &f // sooner than asked: refused again, uncounted
+		}
+		met.calls++
+		if met.calls <= f.Skip || f.Times > 0 && met.failed >= f.Times {
+			return nil
+		}
+		met.failed++
+		met.at = time.Now()
+		return &f
+	}
+	return nil
+}
+
+// unmet names the faults no call met: a case giving one proves nothing
+// of it.
+func (m *gitlabMock) unmet() []string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	var s gitlabState
+	data, _ := os.ReadFile(m.file)
+	if err := json.Unmarshal(data, &s); err != nil {
+		return []string{"the simulated GitLab's file: " + err.Error()}
+	}
+	var out []string
+	for i, f := range s.Faults {
+		if m.met[i] == nil || m.met[i].failed == 0 {
+			out = append(out, fmt.Sprintf("faults[%d] (%s %s) met no call: the case proves nothing of it", i, cmp.Or(f.Method, "GET"), f.Path))
+		}
+	}
+	return out
+}
+
 func (m *gitlabMock) serve(s *gitlabState, method, p string, q, form url.Values) (any, int) {
+	tokenUser := s.tokenUser()
 	issue := func(id int) *forge.FakeItem {
 		for i := range s.Issues {
 			if s.Issues[i].ID == id {
@@ -113,12 +270,26 @@ func (m *gitlabMock) serve(s *gitlabState, method, p string, q, form url.Values)
 		if it.Milestone != "" {
 			v["milestone"] = map[string]any{"title": it.Milestone}
 		}
+		if s.Weights {
+			v["weight"] = it.Weight // Premium's key, null for none; Free's payload has none
+		}
 		return v
 	}
 	notFound := map[string]any{"message": "404 Not Found"}
 	switch {
+	case p == "/members/all" && s.MembersRefused != 0:
+		return map[string]any{"message": fmt.Sprintf("%d %s", s.MembersRefused, http.StatusText(s.MembersRefused))}, s.MembersRefused
 	case p == "/members/all":
 		return s.Members, 200
+	case p == "/variables" && s.VariablesRefused != 0:
+		return map[string]any{"message": fmt.Sprintf("%d %s", s.VariablesRefused, http.StatusText(s.VariablesRefused))}, s.VariablesRefused
+	case p == "/variables" && method == "GET":
+		out := []map[string]any{}
+		for _, v := range s.Variables {
+			out = append(out, map[string]any{"variable_type": "env_var", "key": v.Key, "value": v.Value, "protected": false,
+				"masked": true, "hidden": false, "raw": false, "environment_scope": v.Scope, "description": nil})
+		}
+		return out, 200
 	case p == "/merge_requests" && method == "GET":
 		out := []map[string]any{}
 		for _, it := range s.MergeRequests {
@@ -238,6 +409,11 @@ func (m *gitlabMock) serve(s *gitlabState, method, p string, q, form url.Values)
 					it.Milestone = s.Milestones[n-1]
 				}
 			}
+			if v, ok := form["weight"]; ok && s.Weights {
+				// Premium's; Free ignores the key, its answer holding none.
+				n, _ := strconv.Atoi(v[0])
+				it.Weight = &n
+			}
 		}
 		return asIssue(*it), 200
 	case notesPath.MatchString(p):
@@ -290,6 +466,7 @@ func (m *gitlabMock) serve(s *gitlabState, method, p string, q, form url.Values)
 				c.ID = strconv.Itoa(n)
 			}
 			it.Comments = append(it.Comments, c)
+			it.Posted++ // each mails the issue's followers
 			return map[string]any{"id": n}, 201
 		case method == "PUT":
 			n, _ := strconv.Atoi(sm[3])
@@ -397,8 +574,26 @@ func (m *gitlabMock) serve(s *gitlabState, method, p string, q, form url.Values)
 		}
 		return notFound, 404
 	case p == "/labels" && method == "POST":
-		s.Labels = append(s.Labels, forge.FakeItem{ID: len(s.Labels) + 1, Title: form.Get("name"), Body: form.Get("description"), Labels: []string{}})
+		rank, _ := strconv.Atoi(form.Get("priority")) // a prioritized label's rank
+		s.Labels = append(s.Labels, forge.FakeItem{ID: len(s.Labels) + 1, Title: form.Get("name"), Body: form.Get("description"), Labels: []string{}, Rank: rank})
 		return map[string]any{"name": form.Get("name")}, 201
+	case p == "/labels" && method == "GET":
+		// The project's labels: those defined, and those set on an issue,
+		// as GitLab creates one set by name.
+		var names []string
+		for _, l := range s.Labels {
+			names = append(names, l.Title)
+		}
+		for _, it := range s.Issues {
+			names = append(names, it.Labels...)
+		}
+		out := []map[string]any{}
+		for i, n := range names {
+			if !slices.Contains(names[:i], n) {
+				out = append(out, map[string]any{"name": n})
+			}
+		}
+		return out, 200
 	}
 	return notFound, 404
 }
@@ -406,6 +601,7 @@ func (m *gitlabMock) serve(s *gitlabState, method, p string, q, form url.Values)
 // mergeRequest answers a merge request — closed by PUT state_event=close —,
 // its diffs and its discussions; its notes are notesPath's.
 func (m *gitlabMock) mergeRequest(s *gitlabState, it *forge.FakeItem, part, method string, form url.Values) (any, int) {
+	tokenUser := s.tokenUser()
 	base, head := it.Base, it.Branch
 	if base == "" {
 		base = "main"

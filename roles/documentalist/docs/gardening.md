@@ -1,6 +1,6 @@
 ---
-sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/readertask.go, internal/builtin/documentalist/freshness.go, internal/builtin/documentalist/dedupe.go, internal/builtin/documentalist/condense.go, internal/builtin/documentalist/mergecard.go, internal/builtin/documentalist/waiting.go]
-checked: 1a0ca6ec
+sources: [internal/builtin/documentalist/freshness.go, internal/builtin/documentalist/dedupe.go, internal/builtin/documentalist/mergecard.go, internal/builtin/documentalist/waiting.go, internal/builtin/documentalist/condense.go, internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/kept.go]
+checked: 87a81d4a
 verified: agent:claude-code
 ---
 # Documentalist — the gardening tasks
@@ -18,7 +18,7 @@ sources as they are now, in full.
 - The agent confirms it, fixes it, or says with a `note` that the sources
   do not tell.
 - A doc whose sources are too large to be given in full is
-  [judged in parts](tasks.md#judged-in-parts), unless the project turns
+  [judged in parts](parts.md), unless the project turns
   it off; then it stays for a person.
 - One of whose sources cannot be read (a section whose heading is gone)
   stays for a person, the finding saying why: confirming it unread would
@@ -54,6 +54,29 @@ it within budget by moving whole parts into a new doc, and linking to it.
   the job stays green, and the next run asks again
   ([ADR-0037, amended](../../../docs/adr/0037-the-schedule-runs-every-step.md#amendment-2026-10-09-a-refused-proposal-is-said-not-failed)).
 
+The judge refuses a condense patch when:
+
+- it touches another existing doc;
+- a line that leaves the doc is found in no new doc, unchanged but for a
+  heading's level — moved, not rewritten (`rewritten`); a reference
+  updated in place, keeping most of its words, is fine;
+- a MUST or SHOULD is lost;
+- a new doc is not linked from the doc (`not-linked`);
+- the budget problem it was for remains (`still-over-budget`);
+- it brings a budget problem the docs did not have, or makes one bigger
+  (`patch-introduces`) — a part over its budget already, moved whole into
+  a new doc, its text word for word, is the same problem moved, not a
+  new one.
+
+A condense, split, merge-card or dedupe hunk quoting a doc wrong is placed
+as for a suspect doc ([hunks](judge.md#hunks-that-misquote-the-doc)); one
+whose place is in doubt is refused.
+
+A condense, split, merge-card or dedupe patch moving an existing doc's
+`checked`, or creating a doc that carries one, is refused
+(`checked-unread`): moving text gives none of its sources, so a new doc
+starts without `checked`, listed unchecked for a person.
+
 ## Merging cards
 
 With nothing else to do, a card too short to stand alone goes into
@@ -78,11 +101,37 @@ each other one moves, as written, into a card of its own that it links to.
 ## Pages read for their reader
 
 Last in each run, after the other tasks, in a round of its own: the pages
-the reader checks flagged. Per page, what a reader would miss or skip,
-each passage quoted, and a patch making it easy to read, at most
-`reader.agent-pages` (4) a run. What the engine cannot check against the
-quotes is withheld, never blocking; a page is not read again until it
-changes, even after its merge request is closed ([more](reader.md)).
+the reader checks flagged, read for their reader ([more](reader.md)).
+
+## Records kept on merged merge requests
+
+First, in a round of its own: the docs judged on a person's merge request
+with nothing to fix, whose record was kept in the documentalist's comment
+there, not committed
+([on a merge request](push.md#a-doc-found-with-nothing-to-fix-no-commit)).
+
+- **Which merge request**: for each suspect doc, the last commit changing
+  it or a source, and the merge request the forge says became it, or the
+  closest after — GitHub's merge commit, GitLab's merge or squash commit.
+- **The record holds** when the doc and each source are, in that commit and
+  now, as judged: the doc is not put before an agent, and `judged: <that
+  commit>` (or `judged-in-parts`, as the record says) goes in
+  `workline/documentalist/records`, which only records
+  when docs were read: it merges alone at `normal`
+  ([the merge policy](../../../docs/merge-policy-normal.md)).
+- **Otherwise the doc is judged again**, its finding naming the file no
+  longer as judged.
+- **Not for a doc read in parts that night**: its sources too large to go
+  whole, its record says only what changed was read; it is
+  [read in parts](parts.md) instead
+  ([#462](https://github.com/JN0V/workline/issues/462)).
+- **The cost**: one listing of the merge requests merged since the oldest
+  such commit, and one read of the comments of each one a doc points to
+  ([ADR-0010, amended](../../../docs/adr/0010-docs-judged-on-the-merge-request-and-by-gardening.md#amendment-2026-10-17-the-commit-a-merge-request-became-stands-for-its-record)).
+- **Never a pass by guess**: a listing or a comment unread is said
+  (`record-unread`), and the docs are judged again; so is a comment
+  carrying its marker that workline's own account did not write
+  ([why](push.md#a-doc-found-with-nothing-to-fix-no-commit)).
 
 ## One merge request per task
 
@@ -90,7 +139,9 @@ Run with `--open-merge-request` (the CI templates' scheduled jobs):
 
 - a gardening task's patch goes on a branch of its own,
   `workline/documentalist/<task>`, with a merge request titled after the
-  task; running the task again updates it
+  task, short enough for a squash's ` (#N)`
+  ([the squash title](../../committer/docs/squash-title.md)); running the
+  task again updates it
   ([ADR-0006](../../../docs/adr/0006-gardening-opens-one-merge-request-per-task.md));
 - while `max-open-merge-requests` of them wait for review, gardening
   proposes nothing (`gardening-paused`), and what it finds is still
@@ -105,6 +156,8 @@ Run with `--open-merge-request` (the CI templates' scheduled jobs):
   ([ADR-0013, amended 2026-10-14](../../../docs/adr/0013-what-was-judged-is-not-asked-again.md#amendment-2026-10-14-a-doc-waits-while-a-merge-request-holds-it));
 - a doc to condense or split, a card to merge, a repeated passage wait
   while their own merge request does; the next one goes;
+- `records` is proposed again only for a doc it does not hold yet: then
+  with every record that still holds;
 - a task proposed by an earlier round of the same run counts as waiting: a
   CI night judged with `--no-apply` that proposes the docs judged whole
   goes round again, and the docs put off to parts are judged the same
@@ -140,7 +193,4 @@ One the base moved under is:
   cannot tell (`conflict-unread`). Running the task again never pushes
   over that commit either (`not-proposed`).
 
-A push to the base leaves them alone: only the release's fix follows each
-push ([at the release](push.md#a-release-tools-pull-request)), and, when
-set, people's pull requests in conflict on workline's lines
-([more](follow.md)).
+A push to the base leaves them alone, and people's pull requests too.

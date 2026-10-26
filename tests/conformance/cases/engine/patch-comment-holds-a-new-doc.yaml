@@ -1,5 +1,5 @@
 case: engine/patch-comment-holds-a-new-doc
-about: 'A patch that cannot be pushed goes in a comment, to be applied whole with `git apply` (#145). A doc it creates, as a split or a condense does, is in the diff too, as a new file, beside the doc it changes.'
+about: 'A patch on a merge request goes in a comment, never on its branch, to be applied whole with `git apply` (#145). A doc it creates, as a split or a condense does, is in the diff too, as a new file, beside the doc it changes.'
 given:
   repo: basic
   setup:
@@ -7,10 +7,10 @@ given:
     - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
     - "git checkout -qb feature && echo 'func quiet() {}' >> main.go && git commit -qam 'feat: run quietly' && git checkout -q --detach"
   forge: {merge-requests: [{id: 1, branch: feature, fork: true, labels: [], comments: []}]}
-run: {role: fixes-a-doc, event: merge-request, target: {merge-request: 1}, ai: "fake:doc-split-off-a-new-doc", push-to-merge-request: true}
+run: {role: fixes-a-doc, event: merge-request, target: {merge-request: 1}, ai: "fake:doc-split-off-a-new-doc"}
 expect:
   status: pass
-  findings: [{rule: patch-as-comment, message: "fork"}]
+  findings: [{rule: patch-as-comment, message: "pushes nothing"}]
   forge:
     merge-requests:
       - id: 1

@@ -1,0 +1,43 @@
+# What holds the release, read again (docs/release-holds.md) — copy to
+# .github/workflows/, beside workline.yml. It re-runs the release pull
+# request's last workline run, with the job's own token, when the label
+# workline:hold-release changes on an issue, or when main's runs after a
+# push have all ended: list under `workflows:` each workflow that runs on
+# a push to main, the tests' too.
+name: workline release
+on:
+  issues: {types: [labeled, unlabeled, closed, reopened, deleted]}
+  workflow_run: {workflows: [workline, workline apply], types: [completed], branches: [main]}
+permissions: {}
+concurrency: {group: workline-release, cancel-in-progress: false}
+
+jobs:
+  again:
+    if: >-
+      github.event_name == 'workflow_run' && github.event.workflow_run.event == 'push' ||
+      github.event_name == 'issues' && (github.event.label.name == 'workline:hold-release' ||
+      contains(github.event.issue.labels.*.name, 'workline:hold-release'))
+    runs-on: ubuntu-latest
+    permissions: {actions: write, pull-requests: read}
+    steps:
+      - name: The release pull request's check, run again
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          EVENT: ${{ github.event_name }}
+          # The release tools' branches, as workline tells them; yours
+          # when .workline/config.yaml's `release: branches:` names others.
+          BRANCHES: '^(release-please--|releaser-pleaser--|release-plz-|changeset-release/)'
+        run: |
+          # main's tip with a run of a push still going: the last to end
+          # runs this again.
+          if [ "$EVENT" = workflow_run ] && [ -n "$(gh run list --commit "${{ github.event.workflow_run.head_sha }}" --event push --json status --jq '.[] | select(.status != "completed") | .status')" ]; then
+            echo "main's tip has runs not done: the last one to end reads the release again"; exit 0
+          fi
+          gh pr list --state open --json number,headRefName,headRefOid --jq ".[] | select(.headRefName | test(\"$BRANCHES\")) | \"\(.number) \(.headRefOid)\"" |
+          while read -r pr sha; do
+            run=$(gh run list --workflow workline.yml --commit "$sha" --event pull_request --limit 1 --json databaseId --jq '.[0].databaseId // empty')
+            if [ -z "$run" ]; then echo "#$pr: no workline run on $sha yet"; continue; fi
+            gh run watch "$run" --exit-status > /dev/null 2>&1 || true   # one still running ends first
+            gh run rerun "$run" && echo "#$pr: workline run $run started again, to read what holds the release"
+          done

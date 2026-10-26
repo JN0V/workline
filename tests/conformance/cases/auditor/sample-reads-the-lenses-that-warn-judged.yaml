@@ -1,0 +1,53 @@
+case: auditor/sample-reads-the-lenses-that-warn-judged
+about: "A review split from the verdict (ADR-0050) keeps the lines of the findings judged in two comments: the summary's, the lenses that block, and the one of the lenses that warn. The weekly sample draws the reviewer's acts from both (ADR-0046): a finding the summary's judge kept, one the lenses that warn's judge dropped."
+given:
+  repo: vouched
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git"
+    - "git checkout -q -b feat && printf 'package notes\\n\\nconst Extra = 12\\n' > src/notes/extra.go && git add src/notes/extra.go && GIT_AUTHOR_DATE=2026-01-06T09:00:00Z GIT_COMMITTER_DATE=2026-01-06T09:00:00Z git commit -q -m 'feat(notes): add an extra note'"
+    - "sed -i \"s/@head@/$(git rev-parse HEAD)/g\" \"$FORGE_FILE\""
+    - "git push -q origin feat:refs/pull/30/head && git checkout -q main && git merge -q --squash feat && GIT_AUTHOR_DATE=2026-01-07T12:00:00Z GIT_COMMITTER_DATE=2026-01-07T12:00:00Z git commit -q -m 'feat(notes): add an extra note (#30)' && git push -q origin main"
+    - "git branch -q -D feat && git reflog expire --expire=now --all && git gc -q --prune=now"
+  forge:
+    issues: []
+    merge-requests:
+      - id: 30
+        title: Add an extra note
+        branch: feat
+        base: main
+        labels: []
+        merged-at: "2026-01-07T12:00:00Z"
+        merged-as: main
+        comments:
+          - |
+            **workline reviewer** — 1 findings on the change; lenses: correctness.
+
+            The lenses that warn read apart, and post in their own comment: they never hold the verdict.
+            <!-- workline:warn-apart -->
+
+            The reviewer never approves and never changes the code: the author fixes, a person merges.
+
+            <!-- workline:record reviewed=@head@ runs=1 -->
+            <!-- workline:judged-lines gone=0 -->
+            <!-- workline:judged {"lens":"correctness","where":"src/notes/extra.go:3","at":"@head@","yes":true,"finder":"claude-sonnet-5","judge":"claude-opus-5","title":"Extra is not a note's number"} -->
+
+            <!-- workline:sticky=reviewer/summary -->
+          - |
+            **workline reviewer, the lenses that warn** — 0 findings on the change; lenses: edge-cases.
+
+            The reviewer never approves and never changes the code: the author fixes, a person merges.
+
+            <!-- workline:record reviewed=@head@ runs=1 -->
+            <!-- workline:judged-lines gone=0 -->
+            <!-- workline:judged {"lens":"edge-cases","where":"src/notes/extra.go:3","at":"@head@","yes":false,"finder":"claude-sonnet-5","judge":"claude-opus-5","title":"Extra shadows N12"} -->
+
+            <!-- workline:sticky=reviewer/warn -->
+run: {sample: [--week, 2026-W02, --judge, 'cmd:sh "$FIXTURES/agents/audit-acts.sh"']}
+expect:
+  findings:
+    - {rule: sample-acts, message: "1 act, finding kept, by the reviewer on the merge requests merged in the commits"}
+    - {rule: sample-acts, message: "1 act, finding dropped, by the reviewer"}
+    - {rule: act-false, where: "#30 src/notes/extra.go:3", message: "a finding the reviewer's judge kept on #30, at src/notes/extra.go:3: the correctness lens: Important: Extra is not a note's number"}
+    - {rule: act-false, where: "#30 src/notes/extra.go:3", message: "a finding the reviewer's judge dropped on #30, at src/notes/extra.go:3: the edge-cases lens: Important: Extra shadows N12"}
+  no-findings:
+    - {rule: sample-not-drawn, message: "no longer holds"}

@@ -1,11 +1,12 @@
-# Documentalist — where it stands (2026-10-17)
+# Documentalist — where it stands (2026-10-21)
 
 **In one line:** usable every day on a GitHub or GitLab repository that
 takes merge requests: docs judged on each one and gardened at night, by
 Claude in CI from a release of workline ([CI](../../../docs/ci.md)),
-fixes committed to the branch and reviewed on the forge. Beta: judging
+fixes proposed in a comment, never pushed to the branch. Beta: judging
 docs too large in parts, on by default, ran six nights on DomoticsCore
-and workline; a fix in parts once followed a stale code comment.
+and workline; a fix in parts once followed a stale code comment, and
+once made a true line false, each now refused.
 
 Each try: up to 2026-10-13 in [tried.md](tried.md), an archive; since, in
 its pull request's `## Tried`
@@ -20,24 +21,43 @@ Beta until the three criteria of
 [ADR-0036](../../../docs/adr/0036-a-roles-status-is-earned-by-written-criteria.md)
 hold:
 
-1. **Nothing buildable in Missing**: open. The docs to split are still
-   to do.
+1. **Nothing buildable in Missing**: **met** (2026-10-18). A doc judged
+   on its change alone is read in parts at night (Built:
+   [#462](https://github.com/JN0V/workline/issues/462)); moving its
+   `checked` is built, on since its bars held at the second measure
+   ([#482](https://github.com/JN0V/workline/issues/482)). No commit on a
+   person's pull request for a doc only read is built (Built:
+   [#463](https://github.com/JN0V/workline/issues/463)). DomoticsCore's
+   docs to split are done
+   ([DomoticsCore #211](https://github.com/JN0V/DomoticsCore/pull/211)).
    [#120](https://github.com/JN0V/workline/issues/120) is fixed in its
    simple version (Built: a doc judged on its diff);
    [#121](https://github.com/JN0V/workline/issues/121) too (Built: code
    examples said unverified, or checked by the project's command), a
    model reading them parked
    ([#353](https://github.com/JN0V/workline/issues/353)).
-2. **The main issue validated on real use**: open. No issue of the role
-   holds a Validation section the maintainer has signed.
-3. **AI verdicts measured**: in part. Step 4 of
+2. **The main issue validated on real use**: open.
+   [#464](https://github.com/JN0V/workline/issues/464) holds the
+   Validation: a merge request, a night's gardening, and nothing false
+   staying past a week's docs pull request, in two weeks on two
+   repositories
+   ([ADR-0051](../../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-3-no-docs-obligation-per-pr):
+   it was "nothing false landing"). The maintainer signs it after those
+   weeks.
+3. **AI verdicts measured**: **met** (2026-10-17). Step 4 of
    [ADR-0014](../../../docs/adr/0014-checked-is-earned-by-what-was-read.md#4-acceptance-written-before-it-is-measured)
    holds, at the third run, on the held-out set: the bars and runs in
    [research](../../../docs/research/documentalist-fixes-reviewed.md#the-held-out-set-adr-0014-step-4)
    and [tried.md](tried.md) (2026-10-01 to 10-02). The `drifted` cases,
    five runs each, and how to run them again: [the
    evaluation](../../../docs/spec/conformance/evaluation.md#real-shapes).
-   The other evaluation cases have one run each, not five.
+   Every evaluation case, five concordant full runs on one engine: 12 of
+   14 at be99f444, after the guard of
+   [#451](https://github.com/JN0V/workline/pull/451)
+   ([the documentalist, measured](../../../docs/research/documentalist-measured.md#after-the-guard-2026-10-17-afternoon));
+   the last two that evening at 2c532600, after
+   [#460](https://github.com/JN0V/workline/pull/460)
+   ([measured](../../../docs/research/documentalist-measured.md#the-last-two-cases-met-2026-10-17-evening)).
 
 ## Built
 
@@ -46,9 +66,14 @@ Cases in
 its evaluation in
 [tests/evaluation/cases/documentalist](../../../tests/evaluation/cases/documentalist).
 
-- **Suspect docs from git history**, cascades cut, propagated at the
-  release: `stale-docs-reported`, `suspect-*`, `range-*`,
-  `cascade-is-cut`, `release-propagates-product-docs`.
+- **Suspect docs from git history**, cascades cut, propagated at
+  gardening: `stale-docs-reported`, `suspect-*`, `range-*`,
+  `cascade-is-cut`, `product-doc-waits-for-gardening`. A release tool's
+  bump makes suspect only the docs that pin the version it replaces,
+  never one naming it as history
+  ([#346](https://github.com/JN0V/workline/issues/346)); in a code block,
+  the code pins under any key, `since:` too
+  ([#571](https://github.com/JN0V/workline/issues/571)): `version-bump-*`.
 - **Hygiene without AI**: budgets, duplicates, links (lychee), identifiers
   gone, superseded decisions, derived blocks, code no doc describes,
   sources gone: `budgets-reported`, `duplicates-reported`,
@@ -69,14 +94,34 @@ its evaluation in
   `doc-fixed-in-a-rebased-merge-request`,
   `judged-in-a-rebased-merge-request`.
 - **A shallow clone said, never a silent pass**: `shallow-clone-*`,
-  `release-refuses-a-shallow-clone`, setup's `doctor-shallow-clone`.
-- **On each merge request**, GitHub and GitLab, the fix committed to the
-  branch, its own commit not judged again; a fork's as a comment:
-  `patch-pushed-to-the-merge-request`, `patch-as-comment-from-a-fork`,
-  routing's `own-commit-*`.
-- **The push counts suspect docs**, asks nothing: routing's
-  `pre-push-line`.
-- **Gardening at night**, one merge request a task, at most 3 waiting; not
+  setup's `doctor-shallow-clone`.
+- **On each merge request**, GitHub and GitLab, the fix in one comment,
+  a diff to apply, nothing pushed to the branch, no `checked` moved
+  ([ADR-0051](../../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-3-no-docs-obligation-per-pr)):
+  `patch-in-a-comment-on-the-merge-request`, `patch-comment-*`.
+- **Suspect only when a line it names changes**, for a doc writing names
+  in backticks
+  ([ADR-0014, amended](../../../docs/adr/0014-checked-is-earned-by-what-was-read.md#amendment-2026-10-21-suspect-only-when-a-line-it-names-changes)):
+  `suspect-only-when-a-named-line-changes`.
+- **A patch refused on a merge request only warns**, asked once:
+  `refused-patch-warns-on-a-merge-request`.
+- **The push counts suspect docs**, asks nothing, reading only the docs
+  its commits touched, in 0.8 to 2.4 s
+  ([tried](https://github.com/JN0V/workline/pull/531)); the merge request
+  reads those alone too: routing's
+  `pre-push-line`, `push-touching-no-source-reads-no-doc`,
+  `push-checks-the-docs-it-made-suspect`,
+  `push-changing-a-doc-reads-it-not-its-sources`,
+  `repository-checks-left-to-main`, `only-what-the-range-changed`.
+- **The whole repository's checks on main after a merge**, once, no
+  agent, in one issue edited only when what it lists changes
+  ([main after a merge](../../../docs/main-after-merge.md);
+  [tried](https://github.com/JN0V/workline/pull/544)):
+  `repository-checks-on-main`, routing's `main-*`.
+- **Gardening weekly**, Sunday 18:07 UTC on workline, one merge request a
+  task, at most 3 waiting; a doc another open merge request changes left
+  to it ([ADR-0051](../../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#build-order),
+  step 7): `docs-pr-skips-a-doc-an-open-merge-request-changes`; not
   asked again while it is open, a doc judged in parts while any merge
   request changes it, the next doc going
   ([#356](https://github.com/JN0V/workline/issues/356)): `gardening-*`,
@@ -84,26 +129,39 @@ its evaluation in
   `parts-go-while-suspect-waits`, `parts-record-waiting-not-judged-again`,
   `parts-judged-once-a-run`, `condense-waits-for-its-merge-request`.
 - **Its stale merge requests rebuilt or closed**: `gardening-branch-*`.
-- **People's pull requests settled on its own lines**: `persons-branch*`.
+- **Nothing merged into people's pull requests**
+  ([ADR-0051](../../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#build-order), step 10):
+  `persons-branch-left-update-branches-gone`.
+- **No commit on a person's pull request for a doc only read**
+  ([#463](https://github.com/JN0V/workline/issues/463)): its record kept
+  in the documentalist's comment, read by the next push, written on `main`
+  by gardening in `records`; GitHub and GitLab: `judged-kept-*`; read
+  only from workline's own
+  account's comment
+  ([ADR-0051](../../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md),
+  step 1): `judged-kept-by-an-outsider-is-not-read`,
+  `judged-kept-of-another-not-read-on-gitlab`.
 - **The merge policy**, `cautious`, and `normal` for workline's own
   routine pull requests
   ([ADR-0042](../../../docs/adr/0042-the-engine-merges-by-the-projects-policy.md)):
-  the forge merges what a person accepted, kept up to date, the yes taken
-  back on a later push; at `normal`, workline's own records, derived
+  the forge merges what a person accepted once its own head is green, the
+  yes taken back on a later push; at `normal`, workline's own records, derived
   blocks and docs with no yes, each recorded, a revert demoting its kind: the
   [merge cases](../../../tests/conformance/cases/merge), routing's
   `forged-merge-is-judged`, `merge-of-another-branch-is-judged`.
-- **A release tool's pull request held as the release**, its fix on a
-  merge request of its own that follows `main`: `release-*`; on workline,
-  [#258](https://github.com/JN0V/workline/pull/258) held,
-  [#259](https://github.com/JN0V/workline/pull/259) merged first.
+- **Never at the release**: the release does not wait for the docs; the
+  release docs, their fix and its record removed
+  ([ADR-0051](../../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-1-the-release-weekly)).
 - **Condense, split, merge a card, merge a repeated passage**:
   `condense-*`, `split-*`, `merge-card-*`, `dedupe-*`.
 - **Judging in parts**, a partial claim settled by another part:
   `judged-in-parts-*`, `parts-*`, `judge-in-parts-off`. On by default
   ([#82](https://github.com/JN0V/workline/issues/82#issuecomment-6163487736),
   decided 2026-10-14 on six nights; a night capped by `parts-max-per-run`):
-  `judged-in-parts-by-default`; a doc too long itself says so at once:
+  `judged-in-parts-by-default`; only when gardening, a merge request
+  leaving such a doc for the next gardening
+  ([#458](https://github.com/JN0V/workline/issues/458)):
+  `parts-left-for-gardening`; a doc too long itself says so at once:
   `suspect-doc-too-large`; a part's support quoted from a comment only is
   no support ([#106](https://github.com/JN0V/workline/issues/106)):
   `judged-in-parts-comment-does-not-*`; a support disputes a
@@ -111,14 +169,39 @@ its evaluation in
   ([#440](https://github.com/JN0V/workline/issues/440)):
   `judged-in-parts-other-words-on-the-line-do-not-dispute`,
   `judged-in-parts-support-of-the-next-words-does-not-dispute`,
-  `judged-in-parts-same-words-disputed`.
+  `judged-in-parts-same-words-disputed`; a quote a part judged partial
+  is no proof a passage is wrong, DomoticsCore's run replayed
+  ([#467](https://github.com/JN0V/workline/issues/467)):
+  `judged-in-parts-partial-quote-is-no-proof`; a doc a merge request
+  judged on its change alone, its sources too large, read in parts at
+  night, the docs read longest ago first
+  ([#462](https://github.com/JN0V/workline/issues/462)):
+  `judged-on-its-diff-read-in-parts-*`,
+  `judged-on-its-diff-too-wide-for-parts-not-asked-again`,
+  `judged-kept-read-in-parts-not-recorded`,
+  `parts-read-longest-ago-first`; `checked` moved after parts when every
+  line stating something is supported, `parts-move-checked`, on: five
+  runs held no falsehood vouched for, the control made exact vouched for
+  in every one (the first five, 3)
+  ([#482](https://github.com/JN0V/workline/issues/482),
+  [tried](https://github.com/JN0V/workline/pull/490)):
+  `judged-in-parts-every-line-supported*`,
+  `judged-in-parts-a-line-unsupported`,
+  `judged-in-parts-partial-settled-by-another`,
+  `judged-in-parts-vouch-refused-with-the-set`,
+  `sample-vouched-in-parts-for-a-person`. On DomoticsCore, the six
+  docs needing more than 8 parts were split or narrowed to 8 or fewer
+  ([DomoticsCore #211](https://github.com/JN0V/DomoticsCore/pull/211),
+  2026-10-17).
 - **A cap on a run's tokens**: `token-cap-between-parts`, engine's
   `token-cap-ends-the-run`.
 - **`checked` earned by what was read**: `checked-unread-refused`,
   `checked-moves-when-read-whole`,
   `condense-new-doc-born-checked-refused`. The `checked` moved unearned
   put back: workline's 10 (0669684), DomoticsCore's 16 (0d86737 on its
-  main).
+  main). Never over the answer's own note doubting the doc
+  ([#449](https://github.com/JN0V/workline/issues/449)), the real run's
+  answer replayed: `checked-doubted-by-*`.
 - **What it reports and refuses of a fix**: `count-off-*`, `value-left-*`,
   `removal-*`, `comment-not-evidence-refused`,
   `docstring-not-evidence-refused`, `citation-not-a-source-refused`,
@@ -152,17 +235,19 @@ its evaluation in
 
 1. **The weekly sample's first weeks**, watched
    ([#155](https://github.com/JN0V/workline/issues/155)).
-2. **DomoticsCore's docs needing more than 8 parts**: two narrowed (branch
-   `docs/narrow-wide-sources`, not pushed); four to split
-   (`reference/eventbus-architecture.md`,
-   `components/core/project-context.md`,
-   `architecture/component-configuration-pattern.md`,
-   `components/webui/project-context.md`). No issue yet.
+2. **No commit for a doc only read, to count**: two weeks of real use,
+   commits to people's pull requests changing only record lines, 0
+   ([#463](https://github.com/JN0V/workline/issues/463)'s Verification).
 3. **workline's own docs far behind**, gardened nightly in parts since
    [#27](https://github.com/JN0V/workline/issues/27), to watch. No issue
    yet.
-4. **The agent reads**: a doc judged on its diff against the code as it
-   is now, a read each night (no issue yet).
+4. **A doc read in parts, to watch**: it no longer waits for a person
+   when its parts support every line (`parts-move-checked`, on). How
+   often real docs earn it. The shipped engine, a quote placed one line
+   either side, measured: both bars and all four planted defects fixed,
+   5 runs of 5
+   ([ADR-0009, amended](../../../docs/adr/0009-docs-far-behind-are-judged-in-parts.md#amendment-2026-10-18-the-shipped-engine-measured);
+   [#482](https://github.com/JN0V/workline/issues/482)).
 5. **To watch**: Sonnet citing lines a line off in long docs (now placed
    by their quote); a partial claim settled by another part; the first
    nightly's two faults, with a second task's tokens. No issue yet.
@@ -177,7 +262,6 @@ its evaluation in
     - its stale merge requests closed on GitHub and GitLab, and settled
       people's branches pushed there (the App's `workflows` permission),
       each in its CI job;
-    - the release fix following `main` in CI and on GitLab;
     - on GitLab, a fork's merge request; the weekly sample on GitHub; a
       `checked` found false;
     - `checked` earned by what was read, with a real agent;
@@ -187,7 +271,7 @@ its evaluation in
       `examples.check` running on it;
     - the merge policy in CI: its jobs with the GitHub App's token, the
       `verdict` job, a merge starting `follow` and release-please on
-      `main`, a release and its docs, a fork's pull request; on GitLab, a
+      `main`, a release, a fork's pull request; on GitLab, a
       yes held through the new head's pipeline;
     - the jobs that write from workline-apply.yml, after a pull request's
       run, the App's key in its environment

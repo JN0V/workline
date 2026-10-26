@@ -1,0 +1,30 @@
+case: reviewer/lens-that-blocks-failed-reads-its-commits-when-run-again
+about: "The verdict's side of #588. The run on ready asked correctness, which blocks, and got no answer that reads (`retried=once`); the push after it asks it again, and it fails again. Its record names it (`failed=correctness`), never says every lens read the change, and holds no commit. The run run again, though the turn is edge-cases, which only warns, asks correctness on the whole change: its finding, verified, blocks the verdict."
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
+  # Correctness's first two calls, the push's and its retry, get an answer
+  # that never reads; the third, the run again's, reads.
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml", REVIEW_LENS_BROKEN: correctness, REVIEW_LENS_BROKEN_CALLS: "2", REVIEW_LENS_COUNT: "$XDG_CONFIG_HOME/review-lens-calls"}
+  config:
+    routing: {events: {merge-request: [reviewer]}}
+    roles: {reviewer: {settings: {ai-findings: {correctness: block}}}}
+  forge:
+    merge-requests:
+      - id: 5
+        labels: []
+        comments: ["Not every lens answered.\n<!-- workline:warn-apart -->\n\n<!-- workline:record reviewed= runs=1 retried=once -->\n\n<!-- workline:sticky=reviewer/summary -->"]
+run: {route: merge-request, warn-apart: true, input: {range: main..HEAD, draft: "false"}, target: {merge-request: 5}, ai: "cmd:sh $FIXTURES/agents/review-by-lens.sh", then: again}
+expect:
+  status: block
+  calls: [{task: part, for: 1-correctness}, {task: part, for: 1-correctness}, {task: part, for: 1-correctness}, {task: judge, for: judge/01}]
+  findings:
+    - {rule: lens-failed, level: warn, message: "the correctness lens got no answer that reads"}
+    - {rule: every-lens-not-whole, level: warn, message: "the lens that did not answer, correctness, is asked again on the whole change"}
+    - {rule: correctness, where: "calc/calc.go:11", message: "Important: Average divides by one less than the count"}
+  forge:
+    merge-requests:
+      - id: 5
+        comments: 1
+        comment-contains: ["| **blocks** | correctness |", " runs=2 read=all -->"]
+        comment-lacks: "failed="

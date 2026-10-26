@@ -1,0 +1,7 @@
+case: cli/warn-only-runs-no-gate
+about: "The run apart from the verdict runs no gate (ADR-0050): --warn-only with --gates-only is misuse, 64. --gates-from is taken: it gives the gates' findings to what triages them (ADR-0049)."
+given: {repo: basic}
+run: {cli: [route, merge-request, --warn-only, --gates-only]}
+expect:
+  exit: 64
+  stderr: ["--warn-only runs no gate: no --gates-only (--gates-from gives the gates' findings to what triages them)"]

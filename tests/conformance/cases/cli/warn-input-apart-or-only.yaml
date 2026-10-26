@@ -1,0 +1,7 @@
+case: cli/warn-input-apart-or-only
+about: "The input warn, which --warn-apart and --warn-only set, takes apart or only (ADR-0050): any other value is misuse, 64, never read as a line not split."
+given: {repo: basic}
+run: {cli: [route, merge-request, --input, warn=later]}
+expect:
+  exit: 64
+  stderr: ["--input warn=later: apart or only"]

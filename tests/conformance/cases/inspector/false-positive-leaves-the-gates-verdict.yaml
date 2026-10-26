@@ -1,0 +1,43 @@
+case: inspector/false-positive-leaves-the-gates-verdict
+about: >
+  The verdict's line and the run apart, as CI runs them on a push
+  (ADR-0050): the gate blocks on the two findings the change adds, and
+  the verdict's line leaves the triage. The run apart, given the gates'
+  job's result, triages them: the deferred removal is called a likely
+  false positive, with why. The verdict stays the gate's block, and the
+  finding still counts: triage never decides (ADR-0049, section 5).
+given:
+  repo: linted
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - git checkout -q -b change
+    - |
+      sed -i 's|^\tos.Remove("c.tmp")$|&\n\tos.Remove("d.tmp")|' clean.go
+      printf 'package main\n\nimport "os"\n\n// scratch writes a temporary file and removes it on the way out.\nfunc scratch() {\n\tf, _ := os.CreateTemp("", "scratch")\n\tdefer os.Remove(f.Name())\n}\n' > cleanup.go
+      git add . && git commit -qm "feat: clean d too, and a scratch file" && git push -q origin change
+  forge: {merge-requests: [{id: 1, branch: change, labels: [], comments: []}]}
+  config:
+    routing: {events: {merge-request: [committer, "gate:merge", inspector]}}
+    gates: {merge: {checks: [{id: lint, run: "golangci-lint run --output.sarif.path={out}/lint.sarif", output: sarif, max: {error: 0}}]}}
+run:
+  route: merge-request
+  warn-apart: true
+  then: apart
+  gates-job: {env: {PATH: "$FIXTURES/bin:$PATH"}}
+  input: {range: main..change}
+  target: {merge-request: 1}
+  ai: "cmd:sh $FIXTURES/agents/triage.sh"
+expect:
+  status: block
+  apart-status: pass
+  calls: [{task: part, for: triage}]
+  findings:
+    - {rule: over-threshold, where: lint, message: "2 new error findings, at most 0 allowed"}
+    - {rule: triage, level: warn, where: "cleanup.go:8", message: "likely a false positive: the file is created in the same function"}
+  forge:
+    merge-requests:
+      - id: 1
+        comments: 1
+        comment-contains:
+          - "**likely a false positive**: the file is created in the same function"
+          - "never changes it: a finding that blocks still blocks"

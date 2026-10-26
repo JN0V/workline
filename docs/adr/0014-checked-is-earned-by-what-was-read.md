@@ -4,7 +4,9 @@
   independent reviewers (BMAD analyst, architect, product manager,
   developer; adversarial, verification-gap and edge-case lenses);
   amended 2026-10-01 (who confirms a verdict), 2026-10-02 (where the
-  weekly sample is written: ADR-0015), 2026-10-15 (what step 3 left)
+  weekly sample is written: ADR-0015), 2026-10-15 (what step 3 left),
+  2026-10-18 (`checked` earned in parts, measured, off, then on),
+  2026-10-21 (a doc suspect only when a line it names changes)
 - **Date:** 2026-10-01
 - **Amends:** ADR-0012 (a doc judged against its sources whole), ADR-0013
   (`judged`)
@@ -183,6 +185,79 @@ Decided on [#106](https://github.com/JN0V/workline/issues/106), for the gaps
 - **Left**: a line no part claims (parts never move `checked`); a fixed
   bug left in a doc (`value-left` reports it); a claim reaching three
   lines either way (stricter, it would withhold more right fixes).
+
+## Amendment (2026-10-18): `checked` earned in parts
+
+Decided by the maintainer on
+[#482](https://github.com/JN0V/workline/issues/482): step 0's "every
+source given whole in the task" may also be met by parts that read every
+line of every source file, found nothing wrong, and quote each word of
+every line stating something in a support from the code
+([ADR-0009, amended](0009-docs-far-behind-are-judged-in-parts.md#amendment-2026-10-18-checked-after-parts-measured-off)),
+adopted only if five evaluation runs in parts hold step 4's bars.
+
+- **Measured** (2026-10-18, five runs of `finds-planted-defects-in-parts`
+  with a clean control):
+  - no `checked` moved over a planted falsehood: **held**, 5 of 5;
+  - the clean control ends `checked` in every run: **not held**, 3 of 5;
+  - no true claim removed: held, the four true sentences kept in every
+    run; the four defects fixed in 4 runs of 5, one left once, its doc
+    unvouched;
+  - tokens: 4.9k a call, as before.
+- **So not adopted yet**: `parts-move-checked` is off by default; a
+  project may turn it on. Measured again once the control is exact.
+- **Measured again** the same day, the control made exact
+  ([ADR-0009, amended](0009-docs-far-behind-are-judged-in-parts.md#amendment-2026-10-18-checked-after-parts-measured-again-on)):
+  - no `checked` moved over a planted falsehood: **held**, 5 of 5;
+  - the clean control ends `checked` in every run: **held**, 5 of 5;
+  - no true claim removed: held; the four defects fixed in 2 runs of 5,
+    one left in each of the others, its doc unvouched;
+  - tokens: 4.9k a call, as before.
+- **Adopted**: `parts-move-checked` is on by default. The fix's recall
+  on the planted doc is to watch: all four defects fixed in 6 runs of the
+  ten, where the eight runs of 10-17 fixed them all.
+- **The shipped engine, measured** (a part's quote placed one line either
+  side,
+  [ADR-0009, amended](0009-docs-far-behind-are-judged-in-parts.md#amendment-2026-10-18-the-shipped-engine-measured)):
+  no `checked` over a planted falsehood, 5 of 5; the control `checked`,
+  5 of 5; all four defects fixed, 5 of 5; 4.9k tokens a call.
+- **The weekly sample** reads a doc whole, which a doc earned in parts
+  cannot be: its `judged-in-parts` at its `checked` says so, and it is
+  listed for a person, never called unearned nor put back.
+- **What step 3 left** (2026-10-15), "a line no part claims": with the
+  setting on, such a line keeps `checked` where it is, the finding naming
+  it.
+
+## Amendment (2026-10-21): suspect only when a line it names changes
+
+[ADR-0051](0051-a-check-sits-where-its-catch-is-worth-its-cost.md), step 7. Measured that day: 88 of 91
+of workline's docs name a source over the 20,000 characters a task reads
+whole, so the night can move `checked` on almost none of them; each pull
+request touching `cmd/workline` or the engine made 40 to 50 docs suspect.
+
+- **A doc writing names in backticks** (flags, identifiers, settings,
+  files) is suspect only when a commit's change to one of its sources:
+  - changes a file it names, at all;
+  - or removes or changes a line holding a name it writes, or a value it
+    states (a number of two characters or more: `3600`, `1.4.1`).
+- **A line added alone** makes it suspect no more.
+- **A doc writing no name in backticks**: any change, as before.
+- **Measured** with the engine on workline, docs suspect before and
+  after the rule, 2026-10-26:
+  - the whole repository on `main` (gardening's count): 26, then 21;
+  - #623, #624, #625 each at its own merge: 18 then 16, 8 then 1, 3
+    then 1;
+  - a first estimate by a script, on four pull requests, had 93 then
+    33: the engine's rule cuts less.
+- **What still flags most**: a release's version bump, on the line
+  holding `WORKLINE_VERSION` a doc names; a release tool's own pull
+  request drops it, any other range does not.
+- **What escapes**: a change of behaviour on a line holding no name or
+  value the doc writes. The case kept for it: `TokenTTL = 3600` becomes
+  `7200`, while the doc says "one hour" and names only `RefreshToken`.
+- **What still catches it**: the staleness check reads a doc again 180
+  days after its `checked` (`freshness.stale-after-days`); the weekly
+  sample re-reads one doc in ten vouched for.
 
 ## Not decided here
 

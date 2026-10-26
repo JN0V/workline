@@ -29,6 +29,7 @@ import (
 	"github.com/JN0V/workline/internal/role"
 	"github.com/JN0V/workline/internal/rolefs"
 	"github.com/JN0V/workline/internal/routing"
+	"github.com/JN0V/workline/internal/scale"
 	"github.com/JN0V/workline/internal/verdict"
 	"go.yaml.in/yaml/v3"
 )
@@ -57,14 +58,41 @@ type Options struct {
 	// OpenMergeRequest puts what the patches wrote on a branch of the role's,
 	// and opens a merge request for it, or updates the one open (ADR-0006).
 	OpenMergeRequest bool
-	// PushToMergeRequest commits what the patches wrote to the branch of the
-	// merge request the run targets; from a fork, the diff goes in a comment.
-	PushToMergeRequest bool
+	// DryRun: on `release`, the line's dry run (`--dry-run`, ADR-0050):
+	// every step run with no agent, nothing applied, what would hold the
+	// release said, none of it blocking. The line's; a role never sees it.
+	DryRun bool
 
 	// TamperBeforeApply changes the prepared input between propose and apply.
 	// It exists only for the conformance test that proves apply notices.
 	TamperBeforeApply bool
+
+	aiWaits string // why the agent was set aside: "ready" on a draft (DraftInput)
 }
+
+// DraftInput is the input saying a merge request is a draft, `true`, or
+// not, `false`: the templates pass it on every run (#359). A draft gets no
+// agent (ADR-0050): every role runs as with none, told the agent waits
+// for it to be marked ready (WORKLINE_AI_WAITS=ready), and the run says so
+// (Result.AIWaits). A draft never merges (ADR-0042): what it skips holds
+// nothing back from the run on ready.
+const DraftInput = "draft"
+
+// AIWaitsReady is what Result.AIWaits and WORKLINE_AI_WAITS hold on a
+// draft: the agent waits for the merge request to be marked ready.
+const AIWaitsReady = "ready"
+
+// ReadyInput says whether a merge request's run is the one at ready,
+// `true`, or a push after it, anything else; the templates pass it on every
+// run. A role whose agent judges once, at ready (`merge-request-ai:
+// ready`, the documentalist, ADR-0051), runs as with none on a push after
+// it, told so (WORKLINE_AI_WAITS=judged-at-ready). Unsaid, a run is at
+// ready: a person's own run asks the agent.
+const ReadyInput = "ready"
+
+// AIJudgedAtReady is what WORKLINE_AI_WAITS holds on a push after ready,
+// for a role whose agent judged the merge request once, at ready.
+const AIJudgedAtReady = "judged-at-ready"
 
 // Result is what a run reports.
 type Result struct {
@@ -88,18 +116,83 @@ type Result struct {
 	// job's summary (ADR-0038): the address of the forge's issues, an
 	// issue's number after it making its page; the saved filter of what
 	// waits on a person, workline:proposed.
-	Issues    string `json:"issues,omitempty"`
-	Waiting   string `json:"waiting,omitempty"`
+	Issues  string `json:"issues,omitempty"`
+	Waiting string `json:"waiting,omitempty"`
+	// AIWaits is why the run's agent was set aside: "ready", a merge
+	// request still a draft (DraftInput); "" when it had its agent, or
+	// none was set.
+	AIWaits   string `json:"ai-waits,omitempty"`
 	maxTokens int    // the role's ai-max-tokens: what the run may spend; 0, no cap
-	proposed     []string // the merge requests' tasks earlier rounds proposed, with NoApply, not opened yet
-	then         string   // the task this round asks alone, once the others are done (in/then)
-	thenAsked    bool     // the run went round once for it: never twice
-	capped       bool     // a call was refused, the run having spent maxTokens
-	partRefused  []string // what the parts answered and may not: refused with them
+	// maxSeconds is the role's ai-max-seconds: how long the run may wait on
+	// its agents, from the first call; 0, no cap. waitSince is that call.
+	maxSeconds  int
+	waitSince   time.Time
+	timeCapped  bool     // an answer was not waited for, or a call not made, the run having waited maxSeconds
+	proposed    []string // the merge requests' tasks earlier rounds proposed, with NoApply, not opened yet
+	then        string   // the task this round asks alone, once the others are done (in/then)
+	thenAsked   bool     // the run went round once for it: never twice
+	capped      bool     // a call was refused, the run having spent maxTokens
+	partRefused []string // what the parts answered and may not: refused with them
 }
 
 // errTokensSpent refuses a call once the run has spent its ai-max-tokens.
 var errTokensSpent = errors.New("the run spent its ai-max-tokens")
+
+// errTimeSpent ends a call, or refuses one, once the run has waited its
+// ai-max-seconds on its agents.
+var errTimeSpent = errors.New("the run waited its ai-max-seconds on its agents")
+
+// timeLeft is how long the run may still wait on its agents; capped is
+// false when its role sets no ai-max-seconds.
+func (res *Result) timeLeft() (left time.Duration, capped bool) {
+	if res.maxSeconds <= 0 {
+		return 0, false
+	}
+	limit := time.Duration(res.maxSeconds) * time.Second
+	if res.waitSince.IsZero() {
+		return limit, true
+	}
+	return limit - time.Since(res.waitSince), true
+}
+
+// overTime says whether the run has waited on its agents what its role allows.
+func (res *Result) overTime() bool {
+	left, capped := res.timeLeft()
+	return capped && left <= 0
+}
+
+// bounded is a role whose one answer may take no longer than what the run
+// may still wait, its own model.timeout when that is shorter; ok is false
+// when the run may wait no more. The first call starts the run's wait.
+func (res *Result) bounded(r *role.Role) (_ *role.Role, ok bool) {
+	left, capped := res.timeLeft()
+	if !capped {
+		return r, true
+	}
+	if left < time.Millisecond { // what is left would not write as a timeout
+		res.timeCapped = true
+		return r, false
+	}
+	if res.waitSince.IsZero() {
+		res.waitSince = time.Now()
+	}
+	if own, err := r.Model.AnswerTimeout(); err == nil && own <= left {
+		return r, true
+	}
+	cut := *r
+	cut.Model.Timeout = left.Round(time.Millisecond).String()
+	return &cut, true
+}
+
+// cutShort turns an agent's failure into errTimeSpent when the run's wait
+// ran out meanwhile: the answer was not waited for, past ai-max-seconds.
+func (res *Result) cutShort(err error) error {
+	if err == nil || !errors.Is(err, agent.ErrUnavailable) || !res.overTime() {
+		return err
+	}
+	res.timeCapped = true
+	return errTimeSpent
+}
 
 // tokensSpent adds up what the run's calls used, as the agents reported it:
 // the whole input, cache included, and the output.
@@ -192,11 +285,22 @@ func Run(o Options) *Result {
 		if then, _ := os.ReadFile(filepath.Join(res.RunDir, "in", "then")); last && res.Status == verdict.Pass && !res.thenAsked && strings.TrimSpace(string(then)) != "" {
 			res.then, res.thenAsked, last = strings.TrimSpace(string(then)), true, false
 		}
-		if res.capped || !last && res.overBudget() {
+		tokens := res.capped || !last && res.overBudget()
+		seconds := res.timeCapped || !last && res.overTime()
+		next := "the next run"
+		if tokens {
 			// A cap is checked against what was spent, never estimated: the
 			// call that crossed it is paid. What is left waits, said.
 			res.Findings = append(res.Findings, verdict.Finding{Rule: "ai-max-tokens", Level: "warn",
-				Message: fmt.Sprintf("%d tokens spent, the run allows %d: the agent was asked nothing more; what is left waits for the next run", res.tokensSpent(), res.maxTokens)})
+				Message: fmt.Sprintf("%d tokens spent, the run allows %d: the agent was asked nothing more; what is left waits for %s", res.tokensSpent(), res.maxTokens, next)})
+		}
+		if seconds {
+			// A wait has its budget (ADR-0050): the answer that crossed it
+			// is not waited for, and nothing more is asked.
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "ai-max-seconds", Level: "warn",
+				Message: fmt.Sprintf("the run waited %.0f s on its agents, it allows %d: the answer was not waited for, and nothing more was asked; what is left waits for a person or %s", time.Since(res.waitSince).Seconds(), res.maxSeconds, next)})
+		}
+		if tokens || seconds {
 			return res
 		}
 		if last {
@@ -223,9 +327,9 @@ func proposedTask(runDir string) string {
 // writeWaiting writes in/waiting.yaml: for each of the role's tasks
 // waiting for review, the files its change touches — an open merge
 // request's, from where its branch left this commit to its tip; one an
-// earlier round of this run proposed, the files its patches name. A role
-// holds back what they change (ADR-0013, amended). A branch that cannot
-// be read leaves its task out, said: the role knows it by name only.
+// earlier round of this run proposed, the files its patches name. A role holds back
+// what they change (ADR-0013, amended). A branch that cannot be read
+// leaves its task out, said: the role knows it by name only.
 func writeWaiting(repo, runDir, prefix string, open []string, local bool, res *Result) error {
 	waiting := map[string][]string{}
 	for _, b := range open {
@@ -271,6 +375,40 @@ func writeWaiting(repo, runDir, prefix string, open []string, local bool, res *R
 		return err
 	}
 	return os.WriteFile(filepath.Join(runDir, "in", "waiting.yaml"), data, 0o644)
+}
+
+// writeHeld lists, for a role opening merge requests, the files each other
+// open merge request of this repository changes (in/held.yaml, by number):
+// the role leaves them to it, so that neither conflicts with the other
+// (ADR-0051). A fork's is not read; one whose change cannot be read is said.
+func writeHeld(repo, runDir, prefix string, f forge.Forge, res *Result) error {
+	mrs, err := f.ListMergeRequests()
+	if err != nil {
+		res.Findings = append(res.Findings, verdict.Finding{Rule: "merge-requests-unread", Level: "warn",
+			Message: "the open merge requests could not be listed (" + err.Error() + "): what they change is not left to them"})
+		return nil
+	}
+	held := map[int][]string{}
+	for _, mr := range mrs {
+		if mr.ID == 0 || !mr.Here || mr.Branch == "" || strings.HasPrefix(mr.Branch, prefix) {
+			continue
+		}
+		files, err := branchFiles(repo, mr.Branch, forge.KeepsBranches(f))
+		if err != nil {
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "merge-request-unread", Level: "warn", Where: mr.Branch,
+				Message: fmt.Sprintf("what merge request #%d changes could not be read (%v): the role may change what it changes", mr.ID, err)})
+			continue
+		}
+		held[mr.ID] = files
+	}
+	if len(held) == 0 {
+		return nil
+	}
+	data, err := yaml.Marshal(held)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(filepath.Join(runDir, "in", "held.yaml"), data, 0o644)
 }
 
 // branchFiles lists the files a branch changes from where it left the
@@ -355,6 +493,11 @@ func run(o Options, res *Result) error {
 	if o.AI == "" {
 		o.AI = o.DefaultAI
 	}
+	if o.Inputs[DraftInput] == "true" && o.AI != "" && o.AI != "none" {
+		o.AI, o.aiWaits, res.AIWaits = "none", AIWaitsReady, AIWaitsReady
+	} else if v, said := o.Inputs[ReadyInput]; said && v != "true" && o.Event == "merge-request" && r.MergeRequestAI == "ready" && o.AI != "" && o.AI != "none" {
+		o.AI, o.aiWaits = "none", AIJudgedAtReady
+	}
 	ag, err := agent.Parse(o.AI)
 	if err != nil {
 		return err
@@ -364,10 +507,12 @@ func run(o Options, res *Result) error {
 		return err
 	}
 	res.RunDir = runDir
-	if err := writeInputs(runDir, o.Inputs, r.MergedSettings(cfg)); err != nil {
+	settings := personalSettings(r, r.MergedSettings(cfg), res)
+	if err := writeInputs(runDir, o.Inputs, settings); err != nil {
 		return err
 	}
-	res.maxTokens = intSetting(r.MergedSettings(cfg), "ai-max-tokens")
+	res.maxTokens = intSetting(settings, "ai-max-tokens")
+	res.maxSeconds = intSetting(settings, "ai-max-seconds")
 	if o.Forge == "" {
 		o.Forge = cfg.Forge
 	}
@@ -376,17 +521,12 @@ func run(o Options, res *Result) error {
 			links(f, res) // its summary names issues: each linked to its page
 		}
 	}
-	branch := releaseRequest(r, &o, res)
 	env := scriptEnv(runDir, r.Name, o)
-	if branch != "" {
+	if branch := releaseRequest(o); branch != "" {
 		env = append(env, "WORKLINE_RELEASE_BRANCH="+branch)
 	}
 	if res.then != "" {
 		env = append(env, "WORKLINE_THEN="+res.then)
-	}
-	releaseFrom := "" // the release, held by a role run on it
-	if o.Event == "release" {
-		releaseFrom = branch
 	}
 	if o.OpenMergeRequest {
 		// The role decides what it proposes when enough of its merge requests wait.
@@ -414,6 +554,9 @@ func run(o Options, res *Result) error {
 			}
 		}
 		if err := writeWaiting(o.Repo, runDir, branchPrefix(r.Name), open, forge.KeepsBranches(f), res); err != nil {
+			return err
+		}
+		if err := writeHeld(o.Repo, runDir, branchPrefix(r.Name), f, res); err != nil {
 			return err
 		}
 		env = append(env, fmt.Sprintf("WORKLINE_OPEN_MERGE_REQUESTS=%d", n),
@@ -484,7 +627,6 @@ func run(o Options, res *Result) error {
 	if err != nil {
 		return err
 	}
-	settings := r.MergedSettings(cfg)
 	_, taskErr := os.Stat(filepath.Join(runDir, "in", "task.md"))
 	if _, ok := r.Model.Tasks[taskKind(runDir)]; ok {
 		asked := *r // this task's needs, in place of the role's
@@ -528,7 +670,7 @@ func run(o Options, res *Result) error {
 		}
 		failures++
 		var retry bool
-		if retry, tier = askAgain(failures, r.Model.PromoteAfter, tier); !retry {
+		if retry, tier = askAgain(failures, r.Model.PromoteAfter, tier); !retry || warnsOnMergeRequest(r, o) {
 			break
 		}
 		var fb strings.Builder
@@ -575,7 +717,10 @@ func run(o Options, res *Result) error {
 	// The check did its job: the line is not failed for it (ADR-0037,
 	// amended). Anything else that does not pass still fails it, a final
 	// block met once asked again too: a person must repair it (#361).
-	if v.Status == verdict.Block && failures > 0 && !v.Final && line != nil && !line.StopsAtFirst(o.Event) {
+	// A role whose agent only warns on a merge request (`merge-request-ai:
+	// ready`, ADR-0051): asked once, its refused proposal is said the same
+	// way, never holding the merge, and no stronger model is asked.
+	if v.Status == verdict.Block && failures > 0 && !v.Final && (line != nil && !line.StopsAtFirst(o.Event) || warnsOnMergeRequest(r, o)) {
 		said := make([]verdict.Finding, len(v.Findings))
 		for i, f := range v.Findings {
 			if f.Level == "" {
@@ -583,8 +728,12 @@ func run(o Options, res *Result) error {
 			}
 			said[i] = f
 		}
+		next := "asked again at the next run"
+		if warnsOnMergeRequest(r, o) {
+			next = "the weekly docs pull request judges it again"
+		}
 		v = &verdict.Verdict{Status: verdict.Pass, Findings: said,
-			Summary: "the agent's proposal was refused, nothing of it applied; asked again at the next run (" + v.Summary + ")"}
+			Summary: "the agent's proposal was refused, nothing of it applied; " + next + " (" + v.Summary + ")"}
 		intents = nil
 	}
 	res.Status, res.Summary = v.Status, v.Summary
@@ -647,6 +796,7 @@ func run(o Options, res *Result) error {
 		}
 	}
 	intents = slices.DeleteFunc(intents, func(i intent.Intention) bool { return i.Kind == "claim" || i.Kind == "skip" })
+	intents = splitEffort(intents)
 	intent.SortForApply(intents)
 	if err := intent.Write(filepath.Join(runDir, "out", "intentions.yaml"), intents); err != nil {
 		return err
@@ -655,15 +805,16 @@ func run(o Options, res *Result) error {
 		o.Forge = cfg.Forge
 	}
 	st := runState{Role: r.Name, RolesDir: o.RolesDir, Repo: o.Repo, Forge: o.Forge, Target: o.Target, Scope: o.Scope, Digest: digest, Targets: o.Targets,
-		OpenMergeRequest: o.OpenMergeRequest, PushToMergeRequest: o.PushToMergeRequest, Release: releaseFrom, Models: authors(res.Calls),
+		OpenMergeRequest: o.OpenMergeRequest, Models: authors(res.Calls),
 		Unasked: unasked}
 	if err := st.save(runDir); err != nil {
 		return err
 	}
 	if o.NoApply {
-		if onBlock {
+		switch {
+		case onBlock:
 			res.Summary = fmt.Sprintf("%s; what says why judged, not applied (%d proposals); apply with: workline apply %s", res.Summary, len(intents), runDir)
-		} else {
+		default:
 			res.Summary = fmt.Sprintf("judged, not applied (%d proposals); apply with: workline apply %s", len(intents), runDir)
 		}
 		res.ToApply = true
@@ -682,16 +833,14 @@ func run(o Options, res *Result) error {
 			// What a person will see on the issues, not the writes it takes.
 			res.Summary = fmt.Sprintf("judged, not applied (%s); apply with: workline apply %s", onIssues(res.Findings, true, st.Unasked), runDir)
 		}
-		// Judged here, the fix is not on the release pull request: it waits.
-		if releaseFrom != "" && o.PushToMergeRequest && slices.ContainsFunc(intents, func(i intent.Intention) bool { return i.Kind == "patch" }) {
-			res.Status = verdict.Block
-			res.Findings = append(res.Findings, verdict.Finding{Rule: "fixed-elsewhere", Level: "block", Where: releaseFrom,
-				Message: "once applied, the fix goes to a merge request of its own into the release's base, not onto this branch, which the release tool rewrites: the release waits until it is merged"})
-		}
 		return nil
 	}
 	return applyAll(r, settings, st, runDir, intents, res)
 }
+
+// renamedIssues are the issues workline keeps whose title changed, by the
+// new title: the documentalist's tracking issue (ADR-0051).
+var renamedIssues = map[string]string{"Docs due later": "Docs due at the next release"}
 
 // prepared reads pre's exit code: stop is true when the run ends there, with
 // no question for the agent or an outside service failed.
@@ -789,9 +938,9 @@ func askParts(r *role.Role, o Options, ag agent.Agent, runDir string, tasks []st
 			// Over the context budget, this part alone: the others may fit.
 			unanswered("over-budget", err.Error())
 			continue
-		case errors.Is(err, agent.ErrUnavailable), errors.Is(err, errTokensSpent):
+		case errors.Is(err, agent.ErrUnavailable), errors.Is(err, errTokensSpent), errors.Is(err, errTimeSpent):
 			gone, goneKind = err.Error(), "unavailable"
-			if errors.Is(err, errTokensSpent) {
+			if errors.Is(err, errTokensSpent) || errors.Is(err, errTimeSpent) {
 				goneKind = "spent"
 			}
 			unanswered(goneKind, gone)
@@ -969,11 +1118,17 @@ func callAgent(ag agent.Agent, req agent.Request, task, runDir string, res *Resu
 		res.capped = true
 		return errTokensSpent
 	}
+	bounded, ok := res.bounded(req.Role)
+	if !ok {
+		return errTimeSpent
+	}
+	req.Role = bounded
 	start := time.Now()
 	call, err := ag.Propose(req)
 	if errors.Is(err, agent.ErrOverBudget) {
 		return err // refused before the call: nothing asked, nothing spent
 	}
+	err = res.cutShort(err)
 	res.AgentCalls++
 	call.Seconds = math.Round(time.Since(start).Seconds()*10) / 10
 	call.Task = task
@@ -1018,18 +1173,9 @@ type runState struct {
 	OpenMergeRequest bool     `yaml:"open-merge-request,omitempty"`
 	Written          []string `yaml:"written,omitempty"`
 	MergeRequest     int      `yaml:"merge-request,omitempty"`
-	// PushToMergeRequest: the patches go to the targeted merge request's
-	// branch; Pushed once they did, as a commit or as a comment.
-	PushToMergeRequest bool `yaml:"push-to-merge-request,omitempty"`
-	Pushed             bool `yaml:"pushed,omitempty"`
-	// Release: the targeted merge request is a release tool's, from this
-	// branch, which the tool rewrites: the patches go to a merge request of
-	// their own on its base instead (ADR-0017).
-	Release string `yaml:"release,omitempty"`
-	// releaseHeld: why the release's fix is no merge request of the
-	// role's, but a comment for a person (ResumeFrom, a release branch
-	// someone else than workline's App pushed to).
-	releaseHeld string
+	// Pushed: what the patches wrote went in the targeted merge request's
+	// comment.
+	Pushed bool `yaml:"pushed,omitempty"`
 	// Models: the agents and models that wrote the proposals, as
 	// <agent>:<model>, named in the commit (ModelTrailer).
 	Models []string `yaml:"models,omitempty"`
@@ -1175,39 +1321,10 @@ func applyAll(r *role.Role, settings map[string]any, st runState, runDir string,
 			}
 		}
 	}
-	if st.PushToMergeRequest && st.Release != "" && len(st.Written) > 0 {
-		if !st.Pushed {
-			finding, id, err := fixElsewhere(f, st, runDir)
-			if errors.Is(err, forge.ErrUnreachable) {
-				res.Status, res.Summary = verdict.BlockedExternal, fmt.Sprintf("stopped while proposing the fix; resume with: workline apply %s", runDir)
-				res.Findings = append(res.Findings, verdict.Finding{Rule: "forge-unreachable", Message: err.Error()})
-				return nil
-			}
-			if err != nil {
-				return fmt.Errorf("propose the fix: %w", err)
-			}
-			st.Pushed, st.MergeRequest = true, id
-			if err := st.save(runDir); err != nil {
-				return err
-			}
-			if id == 0 { // in a comment, for a person
-				res.Findings = append(res.Findings, finding)
-			}
-		}
-		// Until the fix is merged, the release waits for it.
-		res.Status = verdict.Block
-		for _, w := range st.Written {
-			if st.MergeRequest != 0 {
-				res.Findings = append(res.Findings, verdict.Finding{Rule: "fixed-elsewhere", Level: "block", Where: w,
-					Message: fmt.Sprintf("fixed in merge request #%d, not on %s, which the release tool rewrites: the release waits until #%d is merged", st.MergeRequest, st.Release, st.MergeRequest)})
-			}
-		}
-	}
 	res.MergeRequest = st.MergeRequest
-	if st.PushToMergeRequest && len(st.Written) > 0 && !st.Pushed {
-		if f == nil || st.Target == nil || st.Target.Kind != "merge-request" {
-			return errors.New("--push-to-merge-request needs a forge and --target merge-request:<n>")
-		}
+	// On a merge request, what the patches wrote goes in a comment, never
+	// on its branch (ADR-0051).
+	if f != nil && st.Target != nil && st.Target.Kind == "merge-request" && !st.OpenMergeRequest && len(st.Written) > 0 && !st.Pushed {
 		finding, err := pushToMergeRequest(f, st, runDir)
 		if errors.Is(err, forge.ErrUnreachable) {
 			res.Status, res.Summary = verdict.BlockedExternal, fmt.Sprintf("stopped while pushing to the merge request; resume with: workline apply %s", runDir)
@@ -1226,158 +1343,20 @@ func applyAll(r *role.Role, settings map[string]any, st runState, runDir string,
 	return nil
 }
 
-// fixElsewhere puts what the run's patches wrote, on a release tool's pull
-// request, on a merge request of the role's own into the release's base
-// (ADR-0017): the tool rewrites its branch from the base, so a commit pushed
-// there would be lost, and once the fix is merged the tool brings it in. It
-// returns the merge request opened; 0 when the patches could not go there and
-// went in a comment, said by the finding. The working tree goes back to
-// where it was.
-func fixElsewhere(f forge.Forge, st runState, runDir string) (verdict.Finding, int, error) {
-	if f == nil || st.Target == nil || st.Target.Kind != "merge-request" {
-		return verdict.Finding{}, 0, errors.New("--push-to-merge-request needs a forge and --target merge-request:<n>")
-	}
-	var mr struct{ Title, Body string }
-	if data, err := os.ReadFile(filepath.Join(runDir, "out", "merge-request.yaml")); err == nil {
-		yaml.Unmarshal(data, &mr)
-	}
-	if mr.Title == "" {
-		mr.Title = "docs: what the release waits for"
-	}
-	diff, err := writtenDiff(st)
-	if err != nil {
-		return verdict.Finding{}, 0, err
-	}
-	to, err := f.MergeRequest(st.Target.ID)
-	if err != nil {
-		return verdict.Finding{}, 0, err
-	}
-	why := "the forge does not say which branch the release goes into"
-	switch {
-	case st.releaseHeld != "":
-		why = st.releaseHeld
-	case to.Base != "":
-		why, err = commitOntoBase(st, to.Base, mr.Title, forge.KeepsBranches(f))
-		if err != nil {
-			return verdict.Finding{}, 0, err
-		}
-	}
-	if why == "" {
-		body := fmt.Sprintf("**Proposed by workline's %s** for the release pull request #%d (%s), which waits for it: "+
-			"fixed here, not on its branch, which the release tool rewrites from %s. Once this is merged, the tool "+
-			"brings it in, and the release is no longer held.\n\n%s", st.Role, st.Target.ID, st.Release, to.Base, mr.Body)
-		id, err := f.OpenMergeRequest(branchPrefix(st.Role)+"release", to.Base, mr.Title, body)
-		return verdict.Finding{}, id, err
-	}
-	body := fmt.Sprintf("**Proposed by workline's %s**, not opened as a merge request: %s. Apply it on %s with `git apply`; the release waits for it:\n\n%s", st.Role, why, to.Base, diffBlock(diff))
-	if err := f.Sticky(*st.Target, body, forge.Marker("sticky="+st.Role+"/patch"), true); err != nil {
-		return verdict.Finding{}, 0, err
-	}
-	return verdict.Finding{Rule: "fix-in-comment", Level: "block", Where: st.Release,
-		Message: "the fix went in a comment, for a person to apply on the release's base: " + why}, 0, nil
-}
-
-// commitOntoBase commits what the run wrote onto the tip of base, on the
-// role's release branch, and pushes it — force: the branch is the role's,
-// and holds only the last fix. It says why not when the patches collide
-// with the base. The working tree goes back to where it was.
-func commitOntoBase(st runState, base, title string, local bool) (why string, err error) {
-	orig, err := git(st.Repo, nil, "symbolic-ref", "-q", "--short", "HEAD")
-	if err != nil {
-		if orig, err = git(st.Repo, nil, "rev-parse", "HEAD"); err != nil {
-			return "", err
-		}
-	}
-	back := func() {
-		git(st.Repo, nil, append([]string{"reset", "-q", "--"}, st.Written...)...)
-		git(st.Repo, nil, "checkout", "-q", orig)
-	}
-	tip := "FETCH_HEAD"
-	if local {
-		if tip, err = git(st.Repo, nil, "rev-parse", "--verify", "refs/heads/"+base); err != nil {
-			return "", fmt.Errorf("the release's base %s is not in this clone", base)
-		}
-	} else if _, err := git(st.Repo, nil, "fetch", "-q", "origin", base); err != nil {
-		return "", fmt.Errorf("%w: %v", forge.ErrUnreachable, err)
-	}
-	if tip, err = git(st.Repo, nil, "rev-parse", tip); err != nil {
-		return "", err
-	}
-	branch := branchPrefix(st.Role) + "release"
-	// A person's commit on the branch is never pushed over (ADR-0034).
-	baseTip, was, err := tips(st.Repo, base, branch, local)
-	if err != nil {
-		return "", err
-	}
-	if was != "" {
-		if who := personsCommit(st.Repo, baseTip, was, st.Role); who != "" {
-			return fmt.Sprintf("%s holds the last fix, and %s: not pushed over it", branch, who), nil
-		}
-	}
-	if _, err := git(st.Repo, nil, "checkout", "-q", "--detach", tip); err != nil {
-		back()
-		return fmt.Sprintf("the docs it fixes differ on %s", base), nil
-	}
-	for _, s := range [][]string{append([]string{"add", "--"}, st.Written...), {"commit", "-q", "-m", title, "-m", st.trailers()}} {
-		if _, err := git(st.Repo, nil, s...); err != nil {
-			back()
-			return "", err
-		}
-	}
-	move := []string{"push", "-q", "--force-with-lease=refs/heads/" + branch + ":" + was, "origin", "HEAD:refs/heads/" + branch}
-	if local {
-		move = []string{"branch", "-q", "-f", branch, "HEAD"}
-	}
-	if _, err := git(st.Repo, nil, move...); err != nil {
-		back()
-		if local {
-			return "", err
-		}
-		return "", fmt.Errorf("%w: %v", forge.ErrUnreachable, err)
-	}
-	_, err = git(st.Repo, nil, "checkout", "-q", orig)
-	return "", err
-}
-
-// pushToMergeRequest commits what the run's patches wrote to the branch of
-// the merge request it targets, as pre-commit.ci and autofix.ci do: a
-// suggestion can only sit on lines the merge request changes, and a doc made
-// suspect by a change of code usually has none. From a fork, or when the
-// branch moved on, the diff goes in one comment instead, for the author to
-// apply. The working tree goes back to where it was.
+// pushToMergeRequest puts the diff of what the run's patches wrote in one
+// comment on the merge request it targets, for its author to apply: workline
+// pushes nothing to a merge request's branch (ADR-0051), not even a move of
+// `checked`.
 func pushToMergeRequest(f forge.Forge, st runState, runDir string) (verdict.Finding, error) {
-	var mr struct{ Title string }
-	if data, err := os.ReadFile(filepath.Join(runDir, "out", "merge-request.yaml")); err == nil {
-		yaml.Unmarshal(data, &mr)
-	}
-	if mr.Title == "" {
-		mr.Title = "chore(" + st.Role + "): what the " + st.Role + " proposes"
-	}
 	diff, err := writtenDiff(st)
 	if err != nil {
 		return verdict.Finding{}, err
 	}
-	from, err := f.MergeRequest(st.Target.ID)
-	if err != nil {
-		return verdict.Finding{}, err
-	}
-	branch, here := from.Branch, from.Here
-	why := "it comes from a fork, where this job cannot push"
-	if here {
-		why, err = commitOnto(st, branch, mr.Title, forge.KeepsBranches(f))
-		if err != nil {
-			return verdict.Finding{}, err
-		}
-		if why == "" {
-			return verdict.Finding{Rule: "pushed", Level: "warn", Where: branch,
-				Message: fmt.Sprintf("the patches were committed to %s (%q)", branch, mr.Title)}, nil
-		}
-	}
-	body := fmt.Sprintf("**Proposed by workline's %s**, not pushed: %s. Apply it with `git apply`:\n\n%s", st.Role, why, diffBlock(diff))
+	body := fmt.Sprintf("**Proposed by workline's %s**, not pushed: workline pushes nothing to a merge request's branch. Apply it with `git apply`:\n\n%s", st.Role, diffBlock(diff))
 	if err := f.Sticky(*st.Target, body, forge.Marker("sticky="+st.Role+"/patch"), true); err != nil {
 		return verdict.Finding{}, err
 	}
-	return verdict.Finding{Rule: "patch-as-comment", Level: "warn", Message: "the patches went in a comment: " + why}, nil
+	return verdict.Finding{Rule: "patch-as-comment", Level: "warn", Message: "the patches went in a comment: workline pushes nothing to a merge request's branch"}, nil
 }
 
 // writtenDiff is the diff of the files the run wrote, as git prints it:
@@ -1440,52 +1419,6 @@ func diffBlock(diff string) string {
 	return fence + "diff\n" + diff + fence
 }
 
-// commitOnto commits the written files on top of branch, fetched from
-// origin, and pushes it, without force; on a forge kept in the clone, on top
-// of the local branch, moved only if it did not move meanwhile. It says why
-// when it could not: the patches do not apply there, or the branch moved on.
-func commitOnto(st runState, branch, title string, local bool) (why string, err error) {
-	orig, err := git(st.Repo, nil, "symbolic-ref", "-q", "--short", "HEAD") // back on the branch it was on
-	if err != nil {
-		if orig, err = git(st.Repo, nil, "rev-parse", "HEAD"); err != nil { // or where CI left it
-			return "", err
-		}
-	}
-	back := func() {
-		git(st.Repo, nil, append([]string{"reset", "-q", "--"}, st.Written...)...)
-		git(st.Repo, nil, "checkout", "-q", orig)
-	}
-	tip := "FETCH_HEAD"
-	if local {
-		if tip, err = git(st.Repo, nil, "rev-parse", "--verify", "refs/heads/"+branch); err != nil {
-			return "", fmt.Errorf("the merge request's branch %s is not in this clone", branch)
-		}
-	} else if _, err := git(st.Repo, nil, "fetch", "-q", "origin", branch); err != nil {
-		return "", fmt.Errorf("%w: %v", forge.ErrUnreachable, err)
-	}
-	// The patches ride along to the branch's tip; git refuses if they collide there.
-	if _, err := git(st.Repo, nil, "checkout", "-q", "--detach", tip); err != nil {
-		back()
-		return "the docs changed on the branch since this run read them", nil
-	}
-	for _, s := range [][]string{append([]string{"add", "--"}, st.Written...), {"commit", "-q", "-m", title, "-m", st.trailers()}} {
-		if _, err := git(st.Repo, nil, s...); err != nil {
-			back()
-			return "", err
-		}
-	}
-	move := []string{"push", "-q", "origin", "HEAD:refs/heads/" + branch}
-	if local {
-		move = []string{"update-ref", "refs/heads/" + branch, "HEAD", tip}
-	}
-	if _, err := git(st.Repo, nil, move...); err != nil {
-		back()
-		return "the branch moved on while this run worked", nil
-	}
-	_, err = git(st.Repo, nil, "checkout", "-q", orig)
-	return "", err
-}
-
 // rolesHere is where the roles a run was judged with are on this machine. A
 // run judged on another — CI's judge job, applied by its apply job — names
 // the cache the engine's built-in roles were extracted to there; here they
@@ -1540,6 +1473,12 @@ func withTrailers(repo, msg, trailers string) (string, error) {
 // branchPrefix is where a role's merge requests come from (ADR-0006).
 func branchPrefix(roleName string) string { return "workline/" + roleName + "/" }
 
+// DefaultTitle is a role's merge request's title when it names none, or
+// one too long for a squash's " (#N)".
+func DefaultTitle(roleName string) string {
+	return "chore(" + roleName + "): what the " + roleName + " proposes"
+}
+
 // openMergeRequest commits what the run's patches wrote on the role's branch
 // for this task, force-pushes it, opens its merge request or updates the one
 // open, and puts the working tree back on the branch it was on. The role
@@ -1552,8 +1491,8 @@ func openMergeRequest(f forge.Forge, st runState, runDir string) (int, error) {
 		}
 	}
 	mr.Key = mergeRequestKey(st, runDir)
-	if mr.Title == "" {
-		mr.Title = "chore(" + st.Role + "): what the " + st.Role + " proposes"
+	if mr.Title == "" || len([]rune(mr.Title)) > forge.TitleMax { // a squash adds " (#N)" (ADR-0051)
+		mr.Title = DefaultTitle(st.Role)
 	}
 	return ProposeBranch(f, st.Repo, st.Role, mr.Key, mr.Title, mr.Body, st.trailers(), st.Written)
 }
@@ -1778,8 +1717,8 @@ func attempt(r *role.Role, o Options, ag agent.Agent, hasTask bool, tier, runDir
 		err := callAgent(ag, agent.Request{RunDir: runDir, Repo: o.Repo, Role: r, Tier: tier}, taskKind(runDir), runDir, res)
 		switch {
 		case err == nil:
-		case errors.Is(err, errTokensSpent):
-			a.askedAgent = false // not asked: no answer to refuse, none to ask again
+		case errors.Is(err, errTokensSpent), errors.Is(err, errTimeSpent):
+			a.askedAgent = false // not asked, or not waited for: no answer to refuse, none to ask again
 		case errors.Is(err, agent.ErrOverBudget):
 			// A task too large for the role's context is the role's to
 			// shrink, not a block of the line: the run goes on as without
@@ -1854,7 +1793,8 @@ func attempt(r *role.Role, o Options, ag agent.Agent, hasTask bool, tier, runDir
 	// post may narrow the proposals it passes: a place it refuses taken out,
 	// the rest kept, rather than the whole task asked again for it (the
 	// documentalist, ADR-0014 step 4). What it leaves in out/intentions.yaml
-	// is what is applied, held to the same catalogue and bounds.
+	// is what is applied, held to the same catalogue and bounds. A release
+	// held for what the run did not settle keeps them as a pass does (#543).
 	if v.Status == verdict.Pass && len(intents) > 0 {
 		if a.intents, err = narrowedByPost(r, o, runDir, line, settings); err != nil {
 			return nil, err
@@ -1876,6 +1816,12 @@ func attempt(r *role.Role, o Options, ag agent.Agent, hasTask bool, tier, runDir
 	}
 	a.verdict = v
 	return a, nil
+}
+
+// warnsOnMergeRequest says whether the role's agent only warns on this
+// run: a merge request, for a role whose agent judges it once, at ready.
+func warnsOnMergeRequest(r *role.Role, o Options) bool {
+	return o.Event == "merge-request" && r.MergeRequestAI == "ready"
 }
 
 // leaveOut takes out of the patches the files the refusals name, and says
@@ -2063,9 +2009,44 @@ type applier struct {
 	findings     []verdict.Finding // what the applying says
 	model        string            // the model whose answer is applied, as an announcement records it
 	own          string            // the run's own trailers: its role, the agents and models that answered
+	scheme       *scale.Scheme     // where the project keeps each axis, detected at the first act writing one (ADR-0040)
+	ensured      map[string]bool   // the labels this run made sure the project has
 }
 
 func (a *applier) marker() string { return forge.Marker(fmt.Sprintf("run=%s/%d", a.runID, a.index)) }
+
+// noteText is a note as a person reads it: its text, after the docs it
+// names when it names some — `{doc, text}`, a documentalist's note on what
+// it could not confirm in a doc (#449).
+func noteText(v any) string {
+	m, ok := v.(map[string]any)
+	if !ok {
+		return strings.TrimSpace(fmt.Sprint(v))
+	}
+	t, ok := m["text"]
+	if !ok {
+		return strings.TrimSpace(fmt.Sprint(v)) // not a {doc, text} note
+	}
+	text := "" // `text:` left empty
+	if t != nil {
+		text = fmt.Sprint(t) // a text YAML read as a number or a list, as it reads
+	}
+	var docs []string
+	switch d := m["doc"].(type) {
+	case string:
+		docs = append(docs, d)
+	case []any:
+		for _, x := range d {
+			if s, ok := x.(string); ok {
+				docs = append(docs, s)
+			}
+		}
+	}
+	if len(docs) == 0 {
+		return strings.TrimSpace(text)
+	}
+	return strings.TrimSpace(strings.Join(docs, ", ") + ": " + strings.TrimSpace(text))
+}
 
 func (a *applier) needForge(kind string) error {
 	if a.forge == nil {
@@ -2100,7 +2081,7 @@ func (a *applier) apply(in intent.Intention) error {
 			return err
 		}
 		defer f.Close()
-		_, err = fmt.Fprintf(f, "%s\n\n", strings.TrimSpace(fmt.Sprint(in.Value)))
+		_, err = fmt.Fprintf(f, "%s\n\n", noteText(in.Value))
 		return err
 	case "patch":
 		return a.patch(in.Value)
@@ -2145,7 +2126,14 @@ func (a *applier) apply(in intent.Intention) error {
 					return err
 				}
 			}
-			return a.forge.Sticky(*target, backlog.Inert(body), forge.Marker("sticky="+a.role+"/"+key), !only)
+			marker := forge.Marker("sticky=" + a.role + "/" + key)
+			if target.Kind == "merge-request" {
+				// workline's own, the comment its record is read back
+				// from (ADR-0051); on an issue, the role's by its
+				// marker, whatever account wrote it (ADR-0038).
+				return forge.KeepOwn(a.forge, *target, backlog.Inert(body), marker, !only)
+			}
+			return a.forge.Sticky(*target, backlog.Inert(body), marker, !only)
 		}
 		return a.forge.Comment(*target, backlog.Inert(body), a.marker())
 	case "label":
@@ -2171,8 +2159,20 @@ func (a *applier) apply(in intent.Intention) error {
 				return err
 			}
 			only, _ := m["update-only"].(bool)
-			_, err := a.forge.KeepIssue(title, body+fmt.Sprintf("\n\nKept up to date by the %s role.", a.role), !only)
-			return err
+			if _, err := a.forge.KeepIssue(title, body+fmt.Sprintf("\n\nKept up to date by the %s role.", a.role), !only); err != nil {
+				return err
+			}
+			// The one issue workline renamed (ADR-0051): kept under its new
+			// title, the old one, still open, says so and is closed. Only
+			// this title, known here, never one an answer names.
+			if was := renamedIssues[title]; was != "" {
+				id, err := a.forge.KeepIssue(was, fmt.Sprintf("Renamed: the %s role keeps this list in the issue %q now.", a.role, title), false)
+				if b, ok := a.forge.(forge.Backlog); err == nil && ok && id != 0 {
+					err = b.Close(id, 0)
+				}
+				return err
+			}
+			return nil
 		}
 		if err := a.needForge("issue"); err != nil {
 			return err
@@ -2246,12 +2246,12 @@ func (a *applier) apply(in intent.Intention) error {
 			return nil
 		}
 		return a.forge.(forge.Backlog).SetMilestone(d.Act.Issue, strings.TrimSpace(d.Act.Milestone))
-	case "order":
+	case "order", "effort":
 		d := a.plan.Decision(a.index)
 		if d == nil || d.Mode != backlog.Act {
 			return nil
 		}
-		return order(a.forge, a.role, d.Act)
+		return a.level(d.Act)
 	case "sources":
 		// The code the issue is about, named: its state gets them, and the
 		// issue is read again, with them, at the next run.
@@ -2477,6 +2477,25 @@ func RunsDir(repo string) string {
 	return filepath.Join(repo, ".workline", "runs")
 }
 
+// personalSettings are the role's settings with what the person's own
+// config sets for it laid over, as far as the role lets a person set it
+// (role.Role.WithPersonal); what it may not set, and a config that cannot
+// be read, are said, and change nothing.
+func personalSettings(r *role.Role, merged map[string]any, res *Result) map[string]any {
+	personal, err := role.PersonalSettings(r.Name)
+	if err != nil {
+		res.Findings = append(res.Findings, verdict.Finding{Rule: "personal-config-invalid", Level: "warn", Where: role.PersonalConfig(),
+			Message: "your own config could not be read (" + err.Error() + "): the project's settings stand"})
+		return merged
+	}
+	out, refused := r.WithPersonal(merged, personal)
+	for _, x := range refused {
+		res.Findings = append(res.Findings, verdict.Finding{Rule: "personal-setting-ignored", Level: "warn", Where: role.PersonalConfig(),
+			Message: fmt.Sprintf("your own config sets roles.%s.settings.%s, left out: %s; the project's stands", r.Name, x.Key, x.Why)})
+	}
+	return out
+}
+
 // intSetting reads a whole number from the role's settings; 0 when unset.
 func intSetting(settings map[string]any, key string) int {
 	switch v := settings[key].(type) {
@@ -2502,46 +2521,31 @@ func writeInputs(runDir string, inputs map[string]string, settings map[string]an
 }
 
 // releaseRequest tells whether the merge request a run targets is a release
-// tool's, by its branch (ADR-0017): that pull request is the release,
-// merged before anything is tagged. A role that has release duties is run
-// on `release`; any other is only told the branch, which the reviewer reads
-// to leave the versions the tool bumps (#384). It returns the branch, ""
-// when it is not a release's. When the branch cannot be learnt, a role
-// holding the release says so and its run stays a merge request's; another
-// reads the change as any.
-func releaseRequest(r *role.Role, o *Options, res *Result) string {
+// tool's, by its branch (ADR-0017). The role is told the branch, which the
+// reviewer reads to leave the versions the tool bumps (#384). It returns
+// the branch, "" when it is not a release's or cannot be learnt.
+func releaseRequest(o Options) string {
 	if o.Event != "merge-request" {
 		return ""
 	}
-	holds := r.Accepts("release")
 	rs, err := release.Load(o.Repo)
 	if err != nil {
-		if holds {
-			res.Findings = append(res.Findings, verdict.Finding{Rule: "release-unknown", Level: "warn", Message: err.Error()})
-		}
 		return ""
 	}
 	branch := o.Branch
 	if branch == "" && o.Target != nil && o.Target.Kind == "merge-request" {
 		f, err := forge.Open(o.Forge, o.Repo)
-		if err == nil && f != nil {
-			var mr forge.MergeRequest
-			mr, err = f.MergeRequest(o.Target.ID)
-			branch = mr.Branch
-		}
-		if err != nil {
-			if holds {
-				res.Findings = append(res.Findings, verdict.Finding{Rule: "release-unknown", Level: "warn",
-					Message: fmt.Sprintf("whether %s comes from a release tool's branch is unknown, so it is not held as the release: %v; give its branch with --branch", o.Target, err)})
-			}
+		if err != nil || f == nil {
 			return ""
 		}
+		mr, err := f.MergeRequest(o.Target.ID)
+		if err != nil {
+			return ""
+		}
+		branch = mr.Branch
 	}
 	if !rs.IsBranch(branch) {
 		return ""
-	}
-	if holds {
-		o.Event = "release"
 	}
 	return branch
 }
@@ -2560,6 +2564,9 @@ func scriptEnv(runDir, roleName string, o Options) []string {
 		"WORKLINE_BIN="+self,
 		"WORKLINE_ROLES_DIR="+o.RolesDir,
 	)
+	if o.aiWaits != "" { // the agent set aside, a draft (DraftInput)
+		env = append(env, "WORKLINE_AI_WAITS="+o.aiWaits)
+	}
 	if o.Forge != "" && o.Forge != "none" {
 		env = append(env, "WORKLINE_FORGE="+o.Forge) // what the role may write to
 	}
@@ -2648,16 +2655,28 @@ func askJudge(o Options, res *Result, runDir string, v *verdict.Verdict, a *atte
 	if err != nil {
 		return err
 	}
-	ans, err := judge.Ask(spec, judgeRole, q.Question, q.Material)
+	bounded, ok := res.bounded(judgeRole)
+	// Anything but a yes blocks for the answer.
+	if !ok {
+		a.external = true
+		v.Final = false
+		v.Status, v.Summary = verdict.Block, "the judge was not asked"
+		v.Findings = append(v.Findings, verdict.Finding{Rule: "judge-unavailable", Message: "not asked: " + errTimeSpent.Error()})
+		return nil
+	}
+	ans, err := judge.Ask(spec, bounded, q.Question, q.Material)
+	err = res.cutShort(err)
 	res.Calls = append(res.Calls, ans.Call) // its tokens count too; it is not the role's agent
 	level := judge.Independence(spec, ans.Model, o.AI, authorModels)
 	who := fmt.Sprintf("independence: %s (%s → %s)", level, last, ans.Model)
 	switch {
 	case err != nil:
 		a.external = true
+		v.Final = false
 		v.Status, v.Summary = verdict.Block, "the judge could not answer"
 		v.Findings = append(v.Findings, verdict.Finding{Rule: "judge-unavailable", Message: err.Error() + "; " + who})
 	case !ans.Yes:
+		v.Final = false
 		v.Status, v.Summary = verdict.Block, "the judge refused the proposal"
 		v.Findings = append(v.Findings, verdict.Finding{Rule: "judged-no", Message: ans.Why + " (" + who + ")"})
 	default:
@@ -2768,11 +2787,17 @@ func askQuestions(o Options, ag agent.Agent, runDir string, questions []string, 
 			res.capped = true
 			answer["error"] = "not asked: " + errTokensSpent.Error()
 		default:
+			bounded, ok := res.bounded(judgeRole)
+			if !ok {
+				answer["error"] = "not asked: " + errTimeSpent.Error()
+				break
+			}
 			ask := judge.Ask
 			if q.Reads {
 				ask = judge.AskReading
 			}
-			ans, err := ask(spec, judgeRole, q.Question, q.Material)
+			ans, err := ask(spec, bounded, q.Question, q.Material)
+			err = res.cutShort(err)
 			ans.Call.For = "judge/" + filepath.Base(filepath.Dir(file))
 			res.Calls = append(res.Calls, ans.Call) // its tokens count too; it is not the role's agent
 			res.AgentCalls++

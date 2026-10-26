@@ -1,0 +1,22 @@
+case: product-owner/field-setting-names-a-missing-field
+about: "The settings name an issue field the project does not have: the run stops and says so, never reading another place (ADR-0040, step 4)."
+given:
+  repo: backlog
+  config:
+    roles:
+      product-owner:
+        settings: {priority: {in: field, name: Severity}, acts: {order: {mode: act}}}
+  forge:
+    issue-fields:
+      - {id: 47714576, name: Priority, options: [Urgent, High, Medium, Low], public: true}
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:order-effort}
+expect:
+  status: block
+  agent-calls: 0
+  findings:
+    - {rule: values-where, level: block, message: "the settings name the field Severity, and the project has none"}
+  forge:
+    issues:
+      - {id: 9, fields: {}, comment-lacks: "priority:"}

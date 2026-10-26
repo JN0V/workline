@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/lenses, internal/builtin/reviewer]
-checked: 3fc58797
+checked: b79ca968
 verified: agent:claude-code
 ---
 # Reviewer — the judge, the verdict, the budget
@@ -13,7 +13,8 @@ and what a run may spend.
 Apart, for each important finding, at the best independence
 (`judge-at-least`); its level and both models said. A no drops it, said
 (`finding-judged-no`), when the lines it quotes are found again
-([below](#when-the-judge-reads)).
+([below](#when-the-judge-reads)). One judged before, the same finding on
+the same patch, keeps its verdict ([judged once](once.md)).
 
 **What it reads**: the finding, the code it stands on, and what the change
 did within 40 lines of the cause
@@ -88,7 +89,9 @@ else whether the quoted code fails:
 
 ## 8. The verdict, and what goes wrong
 
-- The rules block (the long comment warns).
+- The rules block (the long comment warns); one the project sets to `warn`
+  in `enforce` only warns, and never holds the lenses
+  ([#550](https://github.com/JN0V/workline/issues/550)).
 - What the lenses find warns (`ai-findings: warn`) until the evaluation
   has measured it ([#90](https://github.com/JN0V/workline/issues/90)),
   lens by lens ([settings](../README.md#settings)).
@@ -102,13 +105,17 @@ else whether the quoted code fails:
   ([below](#a-block-stands-until-a-commit-answers-it)).
 - Each finding judged leaves a hidden line in the summary comment, every
   run's, for the weekly sample
-  ([below](#every-finding-judged-kept-for-the-weekly-sample)).
+  ([below](#every-finding-judged-kept-for-the-weekly-sample)); the lenses
+  that warn, read apart, in their own comment ([apart](apart.md)).
 
 When something fails:
 
 - A lens whose answer does not read is asked again once, with what the
-  YAML reader said (`promote-after`).
-- A lens that fails is said (`lens-failed`), the commits left unrecorded.
+  YAML reader said, or where the keys of an item holding several go
+  (`promote-after`).
+- A lens that fails is said (`lens-failed`), the commits left unrecorded
+  and the lens named in the record: the next run asks it first
+  ([the record](run.md#3-the-record)).
 - An agent unreachable: `blocked-external`.
 - No agent: the rules alone, the change left for a person (`not-reviewed`).
 
@@ -124,9 +131,16 @@ each finding that blocked, its cause quoted, beside the commits reviewed
   summary comment names the finding again, marked `**blocks**`.
 - **Its file moved**: it stands, found and kept on the new path
   ([#358](https://github.com/JN0V/workline/issues/358)).
+- **Looked for where it was found**
+  ([#570](https://github.com/JN0V/workline/issues/570)):
+  - found on the head's lines (added, kept beside a removal): it stands
+    only while the head still holds its quote there, never on a line
+    the change removes that holds it too;
+  - found on a removed line: it stands while the change still removes it;
+  - recorded before this was kept: looked for on both, as before.
 - **It goes** when a commit answers it:
-  - its cause is no longer found on the change (the line changed, or
-    removed);
+  - its cause is no longer found on the change, on that side (the line
+    changed, or removed);
   - or its lens reads the cause's file again, in a whole review, and does
     not find it, or its judge says no. Found again and verified, it is
     the new review's finding, shown once.
@@ -146,8 +160,11 @@ comment hides a line for each.
 
 - **A line**: the lens, the place, the head the review read, yes (kept)
   or no (dropped), the lens's model and the judge's, the title.
+  - What it was judged on: the patch and the finding's key, a yes's
+    independence, a no's reason, so it is not judged again
+    ([judged once](once.md)). A line written before them keys nothing.
 - **No line**: a finding shown not verified, a nit, a question for a
-  person, a spec's finding.
+  person, a spec's finding, a verdict kept, not judged again.
 - **Every run's**, for the merge request's life, on GitHub and GitLab:
   each run writes the comment again, the lines before kept, its own
   added. A run that asks no lens keeps them too, and one applied after
@@ -157,7 +174,8 @@ comment hides a line for each.
 - **Within 60,000 characters**, under GitHub's 65,536: past it, the
   oldest lines go first, and the comment counts them
   (`<!-- workline:judged-lines gone=N -->`). The sample says them not
-  drawn. A line takes about 300 characters: about 200 fit.
+  drawn. A line takes about 400 characters, a no with its reason up to
+  600: about 100 to 150 fit.
 - **On a machine**: no line; the local record keeps none.
 
 ## The budget
@@ -167,15 +185,16 @@ comment hides a line for each.
   200000 so a large review is judged whole when its judges read
   ([ADR-0045](../../../docs/adr/0045-the-judge-asks-for-the-code-it-needs.md#the-token-budget));
   a run spends what it uses.
-- **Not whole**: a lens not asked, or a finding not judged
-  (`review-not-whole`), leaves the commits unrecorded, reviewed again next
-  run. Several specs a run: those after the cap are not read, each said
+- **Not whole**: a lens not asked, a finding not judged, or a change
+  past `parts-max` (`review-not-whole`), leaves the commits unrecorded,
+  reviewed again next run. Several specs a run: those after the cap are not read, each said
   ([a spec on the forge](spec.md#on-the-forge)).
 - **Said**: the summary gives the tokens used against the cap; each
   call's, by lens and by judged finding, is in `out/review.json`.
 - **A call**: `context.budget`, 100000 tokens, estimated 711 + 0.82 a
   character before the call
-  ([#235](https://github.com/JN0V/workline/issues/235)); a larger prompt
-  is not sent, the lens failing, said (`lens-failed`).
+  ([#235](https://github.com/JN0V/workline/issues/235)). A change past it
+  is read in parts, each within it ([in parts](parts.md)); a prompt still
+  larger is not sent, the lens failing, said (`lens-failed`).
 
 What a run cost when measured: [research](../../../docs/research/code-review.md#the-reviewers-cost-measured).

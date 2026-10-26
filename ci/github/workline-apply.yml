@@ -14,11 +14,14 @@
 #
 #   apply  after workline.yml's judge, holds the write token and no AI key:
 #          it applies what judge proposed (`apply --from-merge-request`). A
-#          doc fix is committed on the head judged and pushed to the pull
-#          request's branch. The documentalist's findings are the
+#          doc fix goes in a comment, never pushed to the pull request's
+#          branch (ADR-0051). The documentalist's findings are the
 #          annotations of the check `workline findings` on the head judged,
 #          beside the docs' lines: none a conversation to resolve (#412; the
-#          first release after v0.30.0). With a GitHub App (variable
+#          first release after v0.30.0). What the gates found the change
+#          adds are the annotations of the check `workline gates`, and one
+#          summary comment counts them by rule, edited on each push
+#          (ADR-0049; the first release after v0.35.0). With a GitHub App (variable
 #          WORKLINE_APP_ID, secret WORKLINE_APP_PRIVATE_KEY in the
 #          environment; contents, pull requests, issues and checks in read
 #          and write), the commit runs the checks again by itself; with the job's own token, GitHub waits for
@@ -29,34 +32,41 @@
 #          next push is judged once the review before it is written. A
 #          branch moved on since the head judged gets the reviewer's review
 #          of that head alone, never a fix (ADR-0044, amended).
+#          After workline-warn.yml too (ADR-0050; the first release after
+#          v0.36.0): the comment of the reviewer's lenses that warn, and
+#          their comments on lines, posted once they answered, maybe after
+#          the verdict; one at a time per pull request with that workflow's
+#          job, never waiting for judge's nor holding it.
 #   verdict with the merge policy, `merge: {autonomy: cautious}` (ADR-0042),
-#          after judge: the head's verdict kept as the status
+#          after judge alone: the head's verdict kept as the status
 #          workline/verdict, by the App; in no concurrency group, so no newer
 #          run cancels it.
-#   follow on a push to main, holds the write token and no AI key: the
-#          documentalist's merge request for the release, when one is open
-#          (workline/documentalist/release), is rebuilt on main's new tip and
-#          force-pushed, as release-please rebuilds its own branch, so a pull
-#          request that touched the same doc leaves it mergeable (ADR-0034).
-#          One a person committed to is left as it is. With the job's own
-#          token, the force-push runs no check on that pull request.
-#          With the documentalist's `update-branches: conflicts` (ADR-0041,
-#          off by default), a person's pull request from this repository in
-#          conflict with main only on lines workline writes gets main merged
-#          in: a merge commit, never forced. The job's summary names each one
-#          merged into, and each left.
+#   queue  with the merge policy, after workline.yml's run on a merge
+#          queue's group (ADR-0050; the first release after v0.37.0): the
+#          base requires workline/accepted from the App on the group's
+#          commit too, which no other run sets there, so the queue would
+#          wait until its timeout. Set as the head queued holds it, the
+#          person's yes follow kept there (ADR-0042); nothing else is
+#          followed, nothing applied.
+#   main   after workline.yml's run on main after a merge (ADR-0050; the
+#          first release after v0.37.0), whatever its verdict, holds issues:
+#          write and no AI key: what that run found, the whole repository's
+#          checks and what the gates found main gained, kept in one issue,
+#          opened when there is something to list, edited only when what it
+#          lists changes, never commented on.
+#   follow on a push to main, holds the write token and no AI key.
 #          With the merge policy, also after verdict: auto-merge turned on
-#          for what a person accepted, the first in line brought up to date;
-#          workline-merge.yml runs it on a label. Only with the App's token
+#          for what a person accepted, each merging once its own head is
+#          green; workline-merge.yml runs it on a label. Only with the App's token
 #          (docs/merge-policy.md).
 name: workline apply
 on:
-  workflow_run: {workflows: [workline], types: [completed]}
+  workflow_run: {workflows: [workline, workline warn], types: [completed]}
   push: {branches: [main]}          # your default branch: for the follow job
 permissions: {}
 
 env:
-  WORKLINE_VERSION: v0.31.0          # a release of workline: update it to take a newer one (x-release-please-version)
+  WORKLINE_VERSION: v0.40.0          # a release of workline: update it to take a newer one (x-release-please-version)
 
 jobs:
   apply:
@@ -66,23 +76,30 @@ jobs:
     if: github.event_name == 'workflow_run' && github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion != 'cancelled' && github.event.workflow_run.head_repository.full_name == github.repository
     # One review at a time per pull request (#375), with workline.yml's
     # judge, neither cancelling the other: the next push's judge waits for
-    # this apply, and reads the record it writes.
-    concurrency: {group: "workline-review-${{ github.event.workflow_run.pull_requests[0].number }}", cancel-in-progress: false}
+    # this apply, and reads the record it writes. A run of workline-warn.yml
+    # with that workflow's job, its record its own comment's (ADR-0050).
+    concurrency: {group: "workline-${{ github.event.workflow_run.name == 'workline warn' && 'warn-review' || 'review' }}-${{ github.event.workflow_run.pull_requests[0].number }}", cancel-in-progress: false}
     runs-on: ubuntu-latest
     environment: workline-app
     # actions: read, the artifacts of the pull request's run; checks:
-    # write, the check holding the documentalist's findings.
+    # write, the checks holding the documentalist's findings and the gates'.
     permissions: {actions: read, contents: write, pull-requests: write, issues: write, checks: write}
     steps:
-      # What judge proposed, outside the checkout: data, never run.
+      # What judge proposed, and what the gates found, outside the
+      # checkout: data, never run.
       - name: What the pull request's run proposed
         id: judged
         env: {GH_TOKEN: "${{ github.token }}", RUN: "${{ github.event.workflow_run.id }}"}
         run: |
           names=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN/artifacts" --jq '.artifacts[].name')
-          grep -qx workline-runs <<<"$names" || { echo "nothing proposed nor found on this head"; exit 0; }
-          gh run download "$RUN" -R "$GITHUB_REPOSITORY" -n workline-runs -D "$RUNNER_TEMP/judged"
-          n=$(head -c 12 "$RUNNER_TEMP/judged/report/number" | tr -cd 0-9)
+          from=
+          for a in workline-gates workline-runs; do
+            grep -qx "$a" <<<"$names" || continue
+            gh run download "$RUN" -R "$GITHUB_REPOSITORY" -n "$a" -D "$RUNNER_TEMP/$a"
+            from="$RUNNER_TEMP/$a"
+          done
+          [ -n "$from" ] || { echo "nothing proposed nor found on this head"; exit 0; }
+          n=$(head -c 12 "$from/report/number" | tr -cd 0-9)
           [ -n "$n" ] || { echo "::error title=workline::the run names no pull request: nothing applied"; exit 1; }
           echo "number=$n" >> "$GITHUB_OUTPUT"
       - id: app
@@ -114,7 +131,7 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app.outputs.token || github.token }}
           APP: ${{ steps.app.outputs.app-slug }}
-          WORKLINE_APP: ${{ steps.app.outputs.app-slug }}   # a release's fix is its merge request only if it alone pushed there
+          WORKLINE_APP: ${{ steps.app.outputs.app-slug }}   # workline's own account: the records it trusts
           NUMBER: ${{ steps.judged.outputs.number }}
           HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
@@ -126,13 +143,16 @@ jobs:
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           fi
           status=0
-          WORKLINE_RUNS_DIR="$RUNNER_TEMP/judged/.workline-runs" workline apply --line "$RUNNER_TEMP/judged/line.json" \
+          line=; [ ! -s "$RUNNER_TEMP/workline-runs/line.json" ] || line="$RUNNER_TEMP/workline-runs/line.json"
+          gates=; [ ! -s "$RUNNER_TEMP/workline-gates/gates.json" ] || gates="$RUNNER_TEMP/workline-gates/gates.json"
+          WORKLINE_RUNS_DIR="$RUNNER_TEMP/workline-runs/.workline-runs" workline apply ${line:+--line "$line"} ${gates:+--gates "$gates"} \
             --from-merge-request "$NUMBER" --head "$HEAD_SHA" --forge github --summary workline-summary.md || status=$?
           [ ! -s workline-summary.md ] || cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"
           exit "$status"
 
   verdict:
-    if: github.event_name == 'workflow_run' && github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion != 'cancelled' && github.event.workflow_run.head_repository.full_name == github.repository
+    # judge's run alone: workline-warn.yml's gives no verdict (ADR-0050).
+    if: github.event_name == 'workflow_run' && github.event.workflow_run.name == 'workline' && github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion != 'cancelled' && github.event.workflow_run.head_repository.full_name == github.repository
     runs-on: ubuntu-latest
     environment: workline-app
     permissions: {actions: read, contents: read}
@@ -184,13 +204,103 @@ jobs:
           [ ! -s workline-summary.md ] || cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"
           exit "$status"
 
+  queue:
+    # A merge queue's group: workline.yml's run on it, whatever its verdict,
+    # the queue's to weigh.
+    if: github.event_name == 'workflow_run' && github.event.workflow_run.name == 'workline' && github.event.workflow_run.event == 'merge_group' && github.event.workflow_run.conclusion != 'cancelled' && github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    environment: workline-app
+    permissions: {contents: read}
+    steps:
+      # The base: its config says the policy.
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - name: Whether there is anything to set
+        id: policy
+        run: |
+          if grep -qE '^merge:' .workline/config.yaml 2>/dev/null; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "no merge policy (merge:): no yes to set on the queue's group"
+          fi
+      - id: app
+        if: steps.policy.outputs.run == 'true' && vars.WORKLINE_APP_ID != ''
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.WORKLINE_APP_ID }}
+          private-key: ${{ secrets.WORKLINE_APP_PRIVATE_KEY }}
+      - name: workline
+        if: steps.policy.outputs.run == 'true'
+        run: |
+          bin="$RUNNER_TEMP/bin"; mkdir -p "$bin"; cd "$RUNNER_TEMP"
+          get() { curl -fsSLO "$1/$2" && curl -fsSL "$1/$3" | grep " $2\$" | sha256sum -c - && tar -xzf "$2" -C "$bin" "$4"; }
+          get "https://github.com/JN0V/workline/releases/download/$WORKLINE_VERSION" workline_linux_amd64.tar.gz checksums.txt workline
+          echo "$bin" >> "$GITHUB_PATH"
+          "$bin/workline" version
+      # The group's branch names the pull request it ends with; the engine
+      # reads that pull request's head, and its yes there, from GitHub.
+      - if: steps.policy.outputs.run == 'true'
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token || github.token }}
+          WORKLINE_APP: ${{ steps.app.outputs.app-slug }}   # who holds the yes
+          GROUP: ${{ github.event.workflow_run.head_branch }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          status=0
+          workline follow --forge github --merge-group "$GROUP" --head "$HEAD_SHA" --summary workline-summary.md || status=$?
+          [ ! -s workline-summary.md ] || cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"
+          exit "$status"
+
+  main:
+    # workline.yml's run on main after a merge, whatever its verdict: red
+    # is said in the issue too, and on each open pull request into main
+    # ("base red, not yours"). Never a push to another branch, whose
+    # workflow its branch can change.
+    if: github.event_name == 'workflow_run' && github.event.workflow_run.name == 'workline' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == github.event.repository.default_branch && github.event.workflow_run.conclusion != 'cancelled' && github.event.workflow_run.head_repository.full_name == github.repository
+    # One at a time: each run reads the issue the one before left.
+    concurrency: {group: "workline-main-issue", cancel-in-progress: false}
+    runs-on: ubuntu-latest
+    environment: workline-app
+    permissions: {actions: read, contents: read, issues: write}
+    steps:
+      - id: app
+        if: vars.WORKLINE_APP_ID != ''
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.WORKLINE_APP_ID }}
+          private-key: ${{ secrets.WORKLINE_APP_PRIVATE_KEY }}
+      # The base: its config says the forge; the run's result is data.
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - name: workline
+        run: |
+          bin="$RUNNER_TEMP/bin"; mkdir -p "$bin"; cd "$RUNNER_TEMP"
+          get() { curl -fsSLO "$1/$2" && curl -fsSL "$1/$3" | grep " $2\$" | sha256sum -c - && tar -xzf "$2" -C "$bin" "$4"; }
+          get "https://github.com/JN0V/workline/releases/download/$WORKLINE_VERSION" workline_linux_amd64.tar.gz checksums.txt workline
+          echo "$bin" >> "$GITHUB_PATH"
+          "$bin/workline" version
+      # What main's run found, outside the checkout: kept in one issue.
+      - env:
+          GH_TOKEN: ${{ steps.app.outputs.token || github.token }}
+          READ_TOKEN: ${{ github.token }}
+          RUN: ${{ github.event.workflow_run.id }}
+        run: |
+          names=$(GH_TOKEN="$READ_TOKEN" gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN/artifacts" --jq '.artifacts[].name')
+          grep -qx workline-main <<<"$names" || { echo "main's run left no result: nothing to keep"; exit 0; }
+          GH_TOKEN="$READ_TOKEN" gh run download "$RUN" -R "$GITHUB_REPOSITORY" -n workline-main -D "$RUNNER_TEMP/main"
+          status=0
+          workline apply --main "$RUNNER_TEMP/main/main.json" --forge github --summary workline-summary.md || status=$?
+          [ ! -s workline-summary.md ] || cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"
+          exit "$status"
+
   follow:
     # A push to main; with the merge policy, a pull request's run too, once
-    # its verdict is kept: never a fork's, whose run gets no secret.
+    # its verdict is kept: never a fork's, whose run gets no secret, nor
+    # workline-warn.yml's, which keeps none.
     needs: verdict
-    if: always() && (github.event_name == 'push' || (github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion != 'cancelled' && github.event.workflow_run.head_repository.full_name == github.repository))
-    # One at a time on a branch, with workline-merge.yml's: the first in
-    # line is brought up once.
+    if: always() && (github.event_name == 'push' || (github.event.workflow_run.name == 'workline' && github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion != 'cancelled' && github.event.workflow_run.head_repository.full_name == github.repository))
+    # One at a time on a branch, with workline-merge.yml's: each run reads
+    # what the one before set.
     concurrency: {group: "workline-follow-${{ github.event.workflow_run.pull_requests[0].base.ref || github.ref_name }}", cancel-in-progress: false}
     runs-on: ubuntu-latest
     environment: workline-app

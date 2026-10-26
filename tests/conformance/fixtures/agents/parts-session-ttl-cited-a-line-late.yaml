@@ -1,0 +1,19 @@
+# docs/tech/service.md judged in parts, in the `service` fixture once the
+# store keeps a session twelve hours whatever the configuration: the part
+# holding store.go contradicts the sentence "Each one lasts the configured
+# session TTL, 24 hours by default", citing lines 23-24, as Sonnet did in
+# runs 1 and 4 of 2026-10-18's second measure (their `claims-dropped`
+# findings recorded the doc's quote and lines; the source's half is
+# store.go's line as the change leaves it). "Each" ends line 22. Then the
+# fix, declined, so only the task it was given is graded.
+calls:
+  - []
+  - []
+  - - claim:
+        lines: "23-24"
+        status: contradicted
+        quote: "Each one lasts the configured session TTL, 24 hours by default"
+        source: {path: src/service/store.go, lines: "17", quote: "s := &Store{ttl: 12 * time.Hour, sessions: map[string]time.Time{}}"}
+        why: "the store keeps a session twelve hours, whatever the configuration"
+  - []
+  - - note: "Left to a person."

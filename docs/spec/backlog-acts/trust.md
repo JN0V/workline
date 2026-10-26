@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog/undo.go, internal/backlog/backlog.go, internal/backlog/acts.go, internal/sample/acts.go, internal/sample/draw.go, internal/backlog/autonomy.go, internal/backlog/ledger.go]
 status: draft
-checked: 436a9c29
+checked: 60fd83f5
 verified: agent:claude-code
 ---
 # Trust
@@ -20,7 +20,8 @@ forge, the evidence in the finding `undone`:
 | Act | Undone when |
 |---|---|
 | rename | the issue's title is the one it had before |
-| order | its priority is the one it had before (none included) |
+| order | its priority is the one it had before (none included); with the role's `priority` or `effort` set, any other than the role's too |
+| effort | its effort is another than the role's, none included, where the project keeps one (ADR-0040) |
 | milestone | its milestone is the one it had before (none included) |
 | ready | `workline:ready` is no longer on the open issue |
 | split | a child listed in the parent's state is closed as not planned (GitHub; GitLab keeps no reason) |

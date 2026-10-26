@@ -1,0 +1,34 @@
+case: product-owner/effort-set-beside-the-priority
+about: "With `priority` and `effort` set and both acts on, the agent's order carries an effort — a level or its name —, split by the engine into two acts: the priority and the effort, each written where the project keeps it (the forge's words here, all created) and recorded in the issue's state. An Urgent the role set is said apart, for a person to see at once (ADR-0040, step 3)."
+given:
+  repo: backlog
+  config:
+    roles:
+      product-owner:
+        settings: {moved-percent-max: 100, priority: auto, effort: auto, acts: {order: {mode: act}, effort: {mode: act}}}
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.\n\n## Scope\n\nsrc/export/csv.go", labels: [bug], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 10, title: "Slow export", body: "The export is slow.\n\n## Scope\n\nsrc/export/csv.go", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 11, title: "Quote commas", body: "A comma splits a cell.\n\n## Scope\n\nsrc/export/csv.go", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:order-effort, summary: true}
+expect:
+  findings:
+    - {rule: values-where, message: "Priority: labels priority/*, created when first set. Effort: labels effort/*, created when first set."}
+    - {rule: done, where: "#9", message: "Set #9's effort to Low (effort/low)"}
+    - {rule: done, where: "#10", message: "Set #10's effort to High (effort/high)"}
+    - {rule: done, where: "#11", message: "Set #11's effort to Medium (effort/medium)"}
+    - {rule: urgent-set, where: "#9", message: "Rows lost"}
+  no-findings:
+    - {rule: urgent-set, where: "#11"}
+  summary-file: ["- **set to Urgent, to check** (1)\n  - [#9](https://forge.example/issues/9): Rows lost\n"]
+  forge:
+    issues:
+      - {id: 9, labels: [bug, priority/urgent, effort/low], comment-contains: ["priority: 1", "effort: 1"]}
+      - {id: 10, labels: [effort/high], comment-contains: "effort: 3", comment-lacks: "priority:"}
+      - {id: 11, labels: [priority/medium, effort/medium], comment-contains: "effort: 2"}
+    labels:
+      - {id: 1, title: priority/urgent}
+      - {id: 4, title: priority/low}
+      - {id: 5, title: effort/low, body-contains: "Effort Low, hours to build"}
+      - {id: 7, title: effort/high}

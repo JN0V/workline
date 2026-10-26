@@ -1,0 +1,28 @@
+case: product-owner/field-and-label-two-places
+about: "A field and a label are two places: with the field read, an issue holding a priority label gets nothing written; with the labels read (the settings naming P0 to P3), an issue holding a value in the field gets nothing written either — never two values, nor a copy (ADR-0040, step 4)."
+given:
+  repo: backlog
+  config:
+    roles:
+      product-owner:
+        settings: {moved-percent-max: 100, priority: {in: labels, prefix: P}, acts: {order: {mode: act}}}
+  forge:
+    issue-fields:
+      - {id: 47714576, name: Priority, options: [Urgent, High, Medium, Low], public: true}
+    labels:
+      - {id: 1, title: P0, labels: []}
+      - {id: 2, title: P1, labels: []}
+      - {id: 3, title: P2, labels: []}
+      - {id: 4, title: P3, labels: []}
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.", labels: [], fields: {Priority: Low}, comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 12, title: "Export to JSON", body: "Add a JSON export.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:order-effort}
+expect:
+  findings:
+    - {rule: priority-elsewhere, where: "#9", message: "its priority is in the field Priority, not in P0 to P3 where the project keeps it"}
+    - {rule: done, where: "#12", message: "Set #12's priority to 2 (P1)"}
+  forge:
+    issues:
+      - {id: 9, labels: [], fields: {Priority: Low}}
+      - {id: 12, labels: [P1], fields: {}}

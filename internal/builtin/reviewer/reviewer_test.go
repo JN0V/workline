@@ -126,9 +126,46 @@ func TestChangeFindsRenames(t *testing.T) {
 	}
 	head := run("rev-parse", "HEAD")
 	f, why := found(repo, state{Head: head, Change: c}, "correctness", false, map[string]any{"severity": "important", "title": "t",
-		"cause": map[string]string{"path": "calc/calc.go", "quote": "for _, v := range values[1:] {"}})
+		"cause": map[string]string{"path": "calc/calc.go", "quote": "for _, v := range values[1:] {"}}, "")
 	if why != "" || !f.Related || f.Where != "calc/sum.go:6" {
 		t.Errorf("a removed line quoted on the old path: %+v, %s", f, why)
+	}
+}
+
+// A cause is found on the side of the change it lies on, said (#570); a
+// block looked for again on its side alone: one found on the head's lines
+// is not found on a removed line holding its quote too.
+func TestFoundOnASide(t *testing.T) {
+	repo := gitRepo(t, map[string]string{"calc/mean.go": calcGo})
+	run, commit := gitSteps(t, repo)
+	base := run("rev-parse", "HEAD")
+	// Main's line rewritten, then rewritten again by a fix: the quote is
+	// on the line added first, then on main's line, removed, alone.
+	var st []state
+	for _, text := range []string{"return sum(values) / len(values) + 1", "return sum(values) / max(len(values), 1)"} {
+		head := commit("calc/mean.go", strings.Replace(calcGo, "return sum(values) / len(values)", text, 1))
+		files, _ := changedFiles(repo, base, head)
+		c, err := readChange(repo, base, head, files)
+		if err != nil {
+			t.Fatal(err)
+		}
+		st = append(st, state{Head: head, Base: base, Change: c})
+	}
+	at := func(st state, on string) (Finding, string) {
+		return found(repo, st, "correctness", false, map[string]any{"severity": "important", "title": "t",
+			"cause": map[string]string{"path": "calc/mean.go", "quote": "sum(values) / len(values)"}}, on)
+	}
+	if f, why := at(st[0], ""); why != "" || !f.Related || f.Side != onHead || f.Where != "calc/mean.go:5" {
+		t.Errorf("on the line added: %+v, %s", f, why)
+	}
+	if f, why := at(st[1], ""); why != "" || !f.Related || f.Side != onRemoved {
+		t.Errorf("a lens's, on main's line removed: %+v, %s", f, why)
+	}
+	if f, why := at(st[1], onHead); why == "" && f.Related {
+		t.Errorf("a block found at the head, its quote on a removed line only: %+v", f)
+	}
+	if f, why := at(st[1], onRemoved); why != "" || !f.Related || f.Side != onRemoved {
+		t.Errorf("a block found on a removed line, still removed: %+v, %s", f, why)
 	}
 }
 
@@ -196,6 +233,39 @@ func TestRecord(t *testing.T) {
 	}
 	if back := read(owed.add([]string{"bb"}, nil).String()); back.Owed {
 		t.Errorf("a run added still owes every lens: %+v", back)
+	}
+	// The lenses that did not answer (#588) read back; a run recording
+	// commits leaves none owing them.
+	failed := Record{Runs: 1, Failed: []string{"edge-cases", "diff-alone"}}
+	if back := read(failed.String()); !slices.Equal(back.Failed, failed.Failed) || back.Runs != 1 || back.ReadAll {
+		t.Errorf("a record owed by failed lenses read back: %+v from %s", back, failed)
+	}
+	if back := read(failed.add([]string{"aa"}, nil).String()); back.Failed != nil {
+		t.Errorf("a run added still owes failed lenses: %+v", back)
+	}
+	// Owing: those not asked still owe, those answering no longer do, the
+	// new ones join.
+	if got := failed.owing([]string{"edge-cases", "tests"}, []string{"tests"}); !slices.Equal(got, []string{"diff-alone", "tests"}) {
+		t.Errorf("owing = %v, want diff-alone, tests", got)
+	}
+	// The lenses that left commits past commits-per-push (#591) read back,
+	// after failed=; a run recording commits names none.
+	left := Record{Runs: 2, ReadAll: true, Failed: []string{"tests"}, LeftBy: []string{"claims", "diff-alone"}}
+	if back := read(left.String()); !slices.Equal(back.LeftBy, left.LeftBy) || !slices.Equal(back.Failed, left.Failed) || !back.ReadAll {
+		t.Errorf("a record naming the lenses that left commits read back: %+v from %s", back, left)
+	}
+	if back := read(left.add([]string{"aa"}, nil).String()); back.LeftBy != nil {
+		t.Errorf("a run added still names lenses that left commits: %+v", back)
+	}
+	// Who reads them on the other run's turn: those of the run's side,
+	// with something to read; the diff-alone facet apart.
+	s := Settings{Lenses: []string{"correctness", "edge-cases", "intent", "claims"}, AIFindings: Gate{ByLens: map[string]string{"correctness": "block"}}}
+	by := Record{LeftBy: []string{"correctness", "intent", "claims", "diff-alone"}}
+	if got, facet := by.leftTo(s, warnOnly, map[string]string{"intent": "no issue"}); !slices.Equal(got, []string{"claims"}) || !facet {
+		t.Errorf("leftTo on the run apart = %v, %v; want claims, the facet", got, facet)
+	}
+	if got, facet := by.leftTo(s, warnApart, nil); !slices.Equal(got, []string{"correctness"}) || facet {
+		t.Errorf("leftTo on the verdict's run = %v, %v; want correctness alone", got, facet)
 	}
 	// The findings that block (#326) read back whole, whatever they hold:
 	// nothing in them ends the comment hiding them, a run added keeps them.

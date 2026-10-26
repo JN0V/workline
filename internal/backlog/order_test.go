@@ -11,7 +11,7 @@ import (
 
 // priorityLabel is the label the engine writes for a priority level.
 func priorityLabel(l int) string {
-	label, _ := scale.Used.Priority.Label(l)
+	label, _ := scale.Used.Priority.Family.Label(l)
 	return label.Name
 }
 

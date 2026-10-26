@@ -1,0 +1,37 @@
+case: product-owner/weight-written-1-3-or-5
+about: "On GitLab Premium, its issues carrying a `weight` key, `effort: auto` keeps the effort in GitLab's weight, before any label: the role writes 1, 3 or 5 for Low, Medium and High, read back, creates no effort label, and keeps a person's weight (ADR-0040, step 5)."
+given:
+  repo: backlog
+  config:
+    roles:
+      product-owner:
+        settings: {moved-percent-max: 100, priority: auto, effort: auto, acts: {order: {mode: act}, effort: {mode: act}}}
+  forge:
+    weights: true
+    members:
+      - {username: ann, access_level: 30}
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.\n\n## Scope\n\nsrc/export/csv.go", author: ann, labels: [bug], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 10, title: "Slow export", body: "The export is slow.\n\n## Scope\n\nsrc/export/csv.go", author: ann, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 11, title: "Quote commas", body: "A comma splits a cell.\n\n## Scope\n\nsrc/export/csv.go", author: ann, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 12, title: "Export to JSON", body: "Add a JSON export.\n\n## Scope\n\nsrc/export/csv.go", author: ann, labels: [], weight: 2, comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:order-effort, forge: gitlab}
+expect:
+  status: pass
+  findings:
+    - {rule: values-where, message: "Priority: labels priority::*, created when first set. Effort: GitLab's weight."}
+    - {rule: done, where: "#9", message: "Set #9's effort to Low (weight 1)"}
+    - {rule: done, where: "#10", message: "Set #10's effort to High (weight 5)"}
+    - {rule: done, where: "#11", message: "Set #11's effort to Medium (weight 3)"}
+    - {rule: effort-kept, where: "#12", message: "its effort was set by a person"}
+  run-files:
+    in/task.md: {contains: ["Effort: Medium (weight 2) (a person's: kept)\n"]}
+  forge:
+    issues:
+      - {id: 9, labels: [bug, "priority::1"], weight: 1, comment-contains: "effort: 1"}
+      - {id: 10, labels: [], weight: 5, comment-contains: "effort: 3"}
+      - {id: 11, labels: ["priority::3"], weight: 3, comment-contains: "effort: 2"}
+      - {id: 12, labels: ["priority::2"], weight: 2, comment-lacks: "effort:"}
+    labels:
+      - {id: 4, title: "priority::4", rank: 4}
+      - {id: 5, absent: true}

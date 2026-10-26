@@ -1,0 +1,18 @@
+case: release/documentalist-routed-on-release-is-skipped
+about: "A routing written before ADR-0051 still names the documentalist on `release`: the release is not held for it, nor for the doc it would have found suspect; the step is skipped, said, with how to remove it."
+given:
+  repo: documented
+  setup:
+    - "git tag v1.0.0"
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+  config:
+    routing: {events: {release: [documentalist]}}
+run: {route: release, ai: none, forge: none}
+expect:
+  status: pass
+  agent-calls: 0
+  steps: []
+  findings:
+    - {rule: step-skipped, where: documentalist, level: warn, message: "remove it from routing.events.release (ADR-0051)"}
+  no-findings:
+    - {rule: suspect, where: docs/tech/auth.md}

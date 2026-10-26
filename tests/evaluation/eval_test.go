@@ -22,7 +22,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	wjudge "github.com/JN0V/workline/internal/judge"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -35,6 +34,8 @@ import (
 
 	"go.yaml.in/yaml/v3"
 
+	"github.com/JN0V/workline/internal/builtin/documentalist"
+	wjudge "github.com/JN0V/workline/internal/judge"
 	"github.com/JN0V/workline/internal/role"
 )
 
@@ -323,6 +324,16 @@ func build(t *testing.T, c *caseFile) (work, repo string, env []string, err erro
 		}
 	}
 	cfg := c.Given.Config
+	if c.Run.Role == "committer" {
+		// The rewrite is what the committer's cases measure: on (ADR-0050),
+		// whatever the project's config at that commit says.
+		if cfg == nil {
+			if data, err := os.ReadFile(filepath.Join(repo, ".workline", "config.yaml")); err == nil {
+				yaml.Unmarshal(data, &cfg)
+			}
+		}
+		cfg = withSetting(cfg, "committer", "rewrite", true)
+	}
 	if c.Review != nil {
 		// The reviewer as a review on a machine runs it, every lens in one
 		// call (#147), unless the measure sets otherwise (#360):
@@ -493,8 +504,9 @@ func check(kind string, v any, c *caseFile, r *run) string {
 	case "lines-max":
 		for path, n := range v.(map[string]any) {
 			data, _ := os.ReadFile(filepath.Join(r.repo, path))
-			if got := strings.Count(string(data), "\n"); got > n.(int) {
-				return fmt.Sprintf("%s has %d lines", path, got)
+			// The lines its `doc-lines` budget counts: the body, not the header.
+			if got := documentalist.BodyLines(string(data)); got > n.(int) {
+				return fmt.Sprintf("%s has %d lines below its header", path, got)
 			}
 		}
 	case "new-files-min":
@@ -554,14 +566,11 @@ func headerField(doc, field string) string {
 	return m[1]
 }
 
-// body drops a doc's frontmatter.
+// body drops a doc's header, as the engine reads it: a frontmatter, or a
+// README's `<!-- workline` block.
 func body(s string) string {
-	if rest, ok := strings.CutPrefix(s, "---\n"); ok {
-		if _, after, ok := strings.Cut(rest, "\n---\n"); ok {
-			return after
-		}
-	}
-	return s
+	_, n := documentalist.Header(s)
+	return strings.Join(strings.Split(s, "\n")[n:], "\n")
 }
 
 func sh(dir string, env []string, script string) error {

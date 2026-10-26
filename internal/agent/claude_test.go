@@ -119,3 +119,59 @@ func TestParseClaude(t *testing.T) {
 		}
 	}
 }
+
+// An item holding several keys where one kind goes is refused, the reader
+// told where they go: a lens wrote a finding's `decision` and `cause` as an
+// item of their own (#490, #492) and, told only to send valid YAML, sent
+// it again so.
+func TestProposalsFromSaysWhereKeysGo(t *testing.T) {
+	for _, c := range []struct{ answer, want string }{
+		{"- note: x\n- decision: \"Should it be 0?\"\n  cause: {path: \"#4\", quote: left open}\n",
+			"proposal 2 holds 2 kinds (cause, decision); each holds exactly one: cause and decision are no kind, but keys of a `finding`, written under `- finding:`, indented, beside its other keys"},
+		{"- finding: {title: t}\n  decision: \"Should it be 0?\"\n",
+			"proposal 1 holds 2 kinds (decision, finding); each holds exactly one: decision is no kind, but a key of a `finding`"},
+		{"- comment: hello\n  label: {add: [bug]}\n", "proposal 1 holds 2 kinds (comment, label); each holds exactly one: write each as an item of its own"},
+		{"- note: hello\n  colour: red\n", "colour is no kind, but a key of a proposal, written under its kind, indented, as the answer's shape shows it"},
+		{"- note: hello\n  why: because\n", "why is no kind, but a key of a proposal, written under its kind"}, // a key of many kinds
+		{"- {}\n", "proposal 1 holds no kind; each holds exactly one"},
+		// A cause's key beside its finding goes under the cause, not beside
+		// the finding's keys: no finding named.
+		{"- finding: {title: t}\n  path: a.go\n", "path is no kind, but a key of a proposal, written under its kind"},
+	} {
+		if _, _, err := proposalsFrom(c.answer); err == nil || !strings.Contains(err.Error(), c.want) {
+			t.Errorf("%q: %v, want %q", c.answer, err, c.want)
+		}
+	}
+	// Only a kind the role writes is named: a role writing no finding is not
+	// told to write one.
+	answer := "- note: x\n  cause: {path: a.go, quote: x}\n"
+	if _, _, err := proposalsFrom(answer, "note", "comment"); err == nil || strings.Contains(err.Error(), "finding") ||
+		!strings.Contains(err.Error(), "cause is no kind, but a key of a proposal") {
+		t.Errorf("a role writing no finding: %v", err)
+	}
+	if _, _, err := proposalsFrom(answer, "finding", "note"); err == nil || !strings.Contains(err.Error(), "under `- finding:`") {
+		t.Errorf("a role writing findings: %v", err)
+	}
+	if _, _, err := proposalsFrom("- finding: {title: t}\n  path: a.go\n", "finding"); err == nil || strings.Contains(err.Error(), "`finding`") {
+		t.Errorf("a cause's key told to go beside the finding's: %v", err)
+	}
+}
+
+// The keys of a shape's top, its comment's included; not a nested map's,
+// nor a word in a quoted text.
+func TestShapeKeys(t *testing.T) {
+	top := shapeKeys(contracts["finding"])
+	for _, k := range []string{"lens", "severity", "title", "why", "cause", "symptom", "fix", "seen", "claim", "decision"} {
+		if !top[k] {
+			t.Errorf("%s is a finding's key", k)
+		}
+	}
+	for _, k := range []string{"path", "quote", "line", "words"} {
+		if top[k] {
+			t.Errorf("%s is no key at a finding's top", k)
+		}
+	}
+	if keys := shapeKeys(`- refine: {issue: 12, need: "one line: who needs what"}`); keys["line"] || !keys["need"] {
+		t.Errorf("a word in a quoted text read as a key: %v", keys)
+	}
+}

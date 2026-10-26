@@ -1,5 +1,5 @@
 case: documentalist/sample-checked-gone-said-without-a-forge
-about: "With no forge to read, a doc vouched for at a commit a squash left off the branch cannot be read: it is left for a person, saying why, and the sample says what it could not draw without a forge — the product owner's acts, the reviewer's findings, the commits of a merge request squashed (ADR-0046)."
+about: "With no forge to read, a doc vouched for at a commit a squash left off the branch cannot be read: it is left for a person, saying why and what would read it, and the sample says what it could not draw without a forge — the product owner's acts, the reviewer's findings, the commits of a merge request squashed (ADR-0046)."
 given:
   repo: vouched
   setup:
@@ -13,5 +13,5 @@ expect:
   status: human
   agent-calls: 0
   findings:
-    - {rule: sample-not-read, where: docs/tech/fee.md, message: "a commit this clone does not have"}
+    - {rule: sample-not-read, where: docs/tech/fee.md, message: "a commit this clone does not have: a squash may have left it off the branch; with a forge (`--forge`, or the project's `forge`), the sample fetches it from the head of its merge request"}
     - {rule: sample-not-drawn, message: "not drawn: the product owner's acts and the reviewer's findings: no forge to read them from"}

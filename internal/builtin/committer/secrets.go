@@ -58,6 +58,29 @@ func Secrets(repo, rng string) ([]verdict.Finding, error) {
 	return findings, nil
 }
 
+// scan looks for leaks in what the commits carry (Secrets) and in what
+// their messages say (MessageLeaks), the two gitleaks scans side by side:
+// each takes about 0.4 s, most of it gitleaks starting, so a commit waits
+// for one (ADR-0050). The first's findings come first.
+func scan(repo, rng string, messages []Message) ([]verdict.Finding, error) {
+	var said []verdict.Finding
+	var saidErr error
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		said, saidErr = MessageLeaks(repo, messages)
+	}()
+	carried, err := Secrets(repo, rng)
+	<-done
+	if err != nil {
+		return nil, err
+	}
+	if saidErr != nil {
+		return nil, saidErr
+	}
+	return append(carried, said...), nil
+}
+
 // A Message is a commit message, and the commit it belongs to (empty for
 // the one being written).
 type Message struct{ Commit, Text string }

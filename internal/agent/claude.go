@@ -6,17 +6,20 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"go.yaml.in/yaml/v3"
 )
 
 // claude runs Claude Code headless. It gets no tools, no MCP servers and no
-// session, and runs outside the repository so the project's CLAUDE.md is not
-// loaded: the role's facets are its whole context. model and effort, when
+// session, not even the Claude Code session it may be started from
+// (claudeEnv), and runs outside the repository so the project's CLAUDE.md is
+// not loaded: the role's facets are its whole context. model and effort, when
 // set, replace what the role's tier and effort ask: to compare models on the
 // same cases, or to run a project on one model.
 type claude struct{ model, effort string }
@@ -57,11 +60,12 @@ func (c claude) Propose(req Request) (Call, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), limit)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, bin, args...)
-	cmd.Dir = os.TempDir()
+	cmd.Dir, cmd.WaitDelay = os.TempDir(), waitAfterTimeout
+	cmd.Env = claudeEnv(os.Environ())
 	cmd.Stdin = strings.NewReader(user)
 	var out, errOut bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &out, &errOut
-	runErr := cmd.Run()
+	runErr := settled(ctx, cmd.Run())
 	answer, parsed := claudeAnswer(out.Bytes(), &call)
 	if runErr != nil || (parsed && answer.IsError) {
 		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
@@ -79,12 +83,38 @@ func (c claude) Propose(req Request) (Call, error) {
 	// The answer as it came, kept for audit: what the engine reads of it
 	// may drop what it holds (claims are judged, never applied).
 	_ = os.WriteFile(filepath.Join(req.RunDir, "out", "agent-answer.txt"), []byte(answer.Result), 0o644)
-	proposals, mended, err := proposalsFrom(answer.Result)
+	proposals, mended, err := proposalsFrom(answer.Result, req.Role.Intentions...)
 	call.Mended = mended
 	if err != nil {
 		return call, fmt.Errorf("%w: %v", ErrInvalidOutput, err)
 	}
 	return call, os.WriteFile(filepath.Join(req.RunDir, "out", "intentions.yaml"), proposals, 0o644)
+}
+
+// claudeSession are the variables a Claude Code session exports to every
+// process it starts. Passed on, they made a role's call that session's
+// child, at twice the tokens in (docs/research/claude-session-env.md).
+// They are dropped, even one a person set: a call with no tools needs
+// none, and its effort is the role's. The login (CLAUDE_CODE_OAUTH_TOKEN,
+// ANTHROPIC_API_KEY, ANTHROPIC_BASE_URL…) and other settings pass.
+var claudeSession = []string{
+	"CLAUDECODE", "CLAUDE_CODE_ENTRYPOINT", "CLAUDE_CODE_SESSION_ID", "CLAUDE_CODE_CHILD_SESSION",
+	"CLAUDE_CODE_SESSION_ATTENDED", "CLAUDE_CODE_MESSAGING_SOCKET", "CLAUDE_CODE_MESSAGING_TOKEN",
+	"CLAUDE_CODE_EXECPATH", "CLAUDE_PID", "CLAUDE_EFFORT", "CLAUDE_AGENT_SDK_VERSION",
+	"CLAUDE_CODE_ENABLE_TASKS", "CLAUDE_CODE_ENABLE_SDK_FILE_CHECKPOINTING",
+	"CLAUDE_CODE_EMIT_STARTUP_TIMING", "CLAUDE_CODE_QUESTION_PREVIEW_FORMAT",
+	"MCP_CONNECTION_NONBLOCKING", "AI_AGENT",
+}
+
+// claudeEnv is environ without the session's variables.
+func claudeEnv(environ []string) []string {
+	env := make([]string, 0, len(environ))
+	for _, kv := range environ {
+		if name, _, _ := strings.Cut(kv, "="); !slices.Contains(claudeSession, name) {
+			env = append(env, kv)
+		}
+	}
+	return env
 }
 
 // claudeResult is the part of `claude -p --output-format json` workline reads.
@@ -131,11 +161,12 @@ func claudeAnswer(stdout []byte, call *Call) (claudeResult, bool) {
 }
 
 // proposalsFrom extracts the YAML list from an answer, tolerating a code fence,
-// and says what Mend mended of it. The answer itself is tried first: a
+// and says what Mend mended of it; kinds, those the role writes, tell an
+// item holding several keys where they go. The answer itself is tried first: a
 // proposal may hold a code fence of its own (a doc's code block, moved by a
 // patch). Only when it does not read is it taken from between the first and
 // the last fence lines.
-func proposalsFrom(answer string) ([]byte, []string, error) {
+func proposalsFrom(answer string, kinds ...string) ([]byte, []string, error) {
 	s := strings.TrimSpace(answer)
 	if s == "[]" { // nothing to propose, said: a part whose share says nothing of the doc
 		return []byte("[]\n"), nil, nil
@@ -171,11 +202,95 @@ func proposalsFrom(answer string) ([]byte, []string, error) {
 		}
 	}
 	for i, m := range list {
-		if len(m) != 1 {
-			return nil, nil, fmt.Errorf("proposal %d holds %d kinds; each holds exactly one", i+1, len(m))
+		switch len(m) {
+		case 1:
+		case 0:
+			return nil, nil, fmt.Errorf("proposal %d holds no kind; each holds exactly one", i+1)
+		default:
+			return nil, nil, fmt.Errorf("proposal %d holds %d kinds (%s); each holds exactly one%s", i+1, len(m), strings.Join(slices.Sorted(maps.Keys(m)), ", "), whereKeysGo(m, kinds))
 		}
 	}
 	return []byte(s + "\n"), mended, nil
+}
+
+// whereKeysGo says, of an item holding several keys where one kind goes,
+// where they go. Several kinds: an item each. A key no kind is named by is
+// a key of a proposal, written under its kind, indented: the kind whose
+// shape holds them all is named, among those the role writes (kinds; none
+// given, any). A reviewer's lens wrote a finding's `decision` and `cause`
+// as an item of their own (#490, #492) and, asked again only for valid
+// YAML, wrote them so again.
+func whereKeysGo(m map[string]any, kinds []string) string {
+	var keys []string
+	for k := range m {
+		if _, kind := contracts[k]; !kind {
+			keys = append(keys, k)
+		}
+	}
+	if len(keys) == 0 {
+		return ": write each as an item of its own"
+	}
+	slices.Sort(keys)
+	are, them := "is no kind, but a key", "it"
+	if len(keys) > 1 {
+		are, them = "are no kind, but keys", "them"
+	}
+	said := strings.Join(keys[:len(keys)-1], ", ")
+	if said != "" {
+		said += " and "
+	}
+	said += keys[len(keys)-1]
+	if len(kinds) == 0 {
+		kinds = slices.Collect(maps.Keys(contracts))
+	}
+	var holders []string
+	for _, kind := range kinds {
+		shape, ok := contracts[kind]
+		if !ok || engineOnly[kind] {
+			continue
+		}
+		top := shapeKeys(shape)
+		if !slices.ContainsFunc(keys, func(k string) bool { return !top[k] }) {
+			holders = append(holders, kind)
+		}
+	}
+	if len(holders) == 1 {
+		return fmt.Sprintf(": %s %s of a `%s`, written under `- %s:`, indented, beside its other keys", said, are, holders[0], holders[0])
+	}
+	return fmt.Sprintf(": %s %s of a proposal, written under its kind, indented, as the answer's shape shows %s", said, are, them)
+}
+
+// shapeKeys are the keys a kind's shape names at its top: those of its
+// map, and those its comment adds (a finding's `decision`); not those of a
+// map inside it (a cause's `path`, which goes under the cause), nor words
+// in a quoted text.
+func shapeKeys(shape string) map[string]bool {
+	keys := map[string]bool{}
+	depth, quoted, from := 0, false, -1
+	for i := 0; i < len(shape); i++ {
+		c := shape[i]
+		switch {
+		case quoted:
+			quoted = c != '"'
+			continue
+		case c == '"':
+			quoted = true
+		case c == '{' || c == '[':
+			depth++
+		case c == '}' || c == ']':
+			depth--
+		case c == ':' && from >= 0 && depth <= 1:
+			keys[shape[from:i]] = true
+		}
+		word := c == '-' || c == '_' || c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c >= '0' && c <= '9'
+		switch {
+		case !word:
+			from = -1
+		case from < 0:
+			from = i
+		}
+	}
+	return keys
 }
 
 func lastLine(s string) string {

@@ -16,6 +16,10 @@ type ConfigError struct{ msg string }
 
 func (e *ConfigError) Error() string { return ".workline/config.yaml: " + e.msg }
 
+// ConfigErrorf is a ConfigError another package finds: a value it reads
+// that it cannot trust (routing's budgets).
+func ConfigErrorf(format string, a ...any) error { return &ConfigError{fmt.Sprintf(format, a...)} }
+
 // IsConfigError reports whether err, or an error it wraps, is a ConfigError.
 func IsConfigError(err error) bool {
 	var c *ConfigError
@@ -42,15 +46,20 @@ var (
 			"handoffs":     {keys: map[string]*shape{"from": free, "to": free}}, // a list: each item
 			"max-handoffs": free,
 			"fail-fast":    free,
+			// Each moment's wait budget (ADR-0050): its moments only.
+			"budgets": {keys: map[string]*shape{"commit": free, "commit-rewrite": free, "push": free,
+				"first-result": free, "verdict": free, "ready-review": free, "queue": free}},
 		}},
 		"gates": {any: &shape{keys: map[string]*shape{
 			"criteria": free,
-			"checks":   {keys: map[string]*shape{"id": free, "run": free, "output": free, "max": free, "optional": free, "timeout": free}},
-			"enforce":  free,
+			"checks": {keys: map[string]*shape{"id": free, "run": free, "output": free, "max": free, "optional": free, "timeout": free,
+				"new": free, "base-timeout": free, "config": free, "fix": free}},
+			"enforce": free,
 		}}},
 		"repos":   {any: &shape{keys: map[string]*shape{"url": free, "branch": free}}},
 		"release": {keys: map[string]*shape{"branches": free, "tags": free}},
 		"merge":   {keys: map[string]*shape{"autonomy": free, "alone": free}},
+		"gitlab":  {keys: map[string]*shape{"bots": free}},
 	}}
 )
 
@@ -82,7 +91,7 @@ func CheckConfig(data []byte) error {
 var Retired = map[string]string{
 	"release-manager": "the release-manager role is retired: workline cuts no releases, it works with the release tool a project has " +
 		"(docs/adr/0017-the-release-manager.md, ADR-0017). Release with one — release-please, release-plz, releaser-pleaser, " +
-		"semantic-release or changesets; GoReleaser to publish — and route `release: [documentalist]` before it",
+		"semantic-release or changesets; GoReleaser to publish — and route the project's release gates on `release` before it, if any",
 }
 
 // notRetired refuses a config naming a retired role — its settings, a step

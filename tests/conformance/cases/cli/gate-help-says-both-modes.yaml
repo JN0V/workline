@@ -1,0 +1,9 @@
+case: cli/gate-help-says-both-modes
+about: >
+  `workline gate --help` says both ways a gate counts: every finding, or
+  with `--base` only those the change adds.
+given: {repo: basic}
+run: {cli: [gate, --help]}
+expect:
+  exit: 0
+  stdout: ["usage: workline gate", "--base <ref>", "every finding counts", "--gates-kept <dir>"]

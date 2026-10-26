@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/JN0V/workline/internal/backlog"
+	"github.com/JN0V/workline/internal/builtin/inspector"
 	"github.com/JN0V/workline/internal/builtin/reviewer"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/verdict"
@@ -62,21 +63,45 @@ func (a *applier) lineReview(t forge.Target, v any, body string) (string, error)
 // the one the comment holds by then (#375): a run applied after this one
 // read it wrote it, a push having been judged before the run before it
 // was applied. read is the record the run read; no comment yet, or a
-// forge that lists none, leaves body as it is.
+// forge that lists none, leaves body as it is. The reviewer's summary
+// comment, or the inspector's triage (#580): the last workline's own
+// account wrote, the one a run reads and Sticky edits (ADR-0051). When
+// that comment names a later run than body (forge.Newer), its text is
+// kept and body's record merged into it (#598).
 func (a *applier) mergedRecord(t forge.Target, key, body, read string) (string, error) {
-	b, ok := a.forge.(forge.Backlog)
-	if !ok {
+	if _, ok := a.forge.(forge.Backlog); !ok {
 		return body, nil
 	}
-	comments, err := b.Comments(t)
+	kept, err := forge.ReadKept(a.forge, t)
 	if err != nil {
 		return "", err
 	}
 	marker := forge.Marker("sticky=" + a.role + "/" + key)
-	for _, c := range comments { // the first, the one a run reads
-		if strings.Contains(c, marker) {
-			return reviewer.MergeSummary(body, read, c), nil
+	found, ok := kept.Last(marker)
+	if ok && forge.Newer(found, body) {
+		// A later run's comment, applied first (#598): its text stays,
+		// this run's record merged into it; never the older text written
+		// over it, even when a record does not read: the comment is then
+		// left as it is, and this run's commits read again.
+		merge := reviewer.MergeInto
+		if a.role == "inspector" {
+			merge = inspector.MergeInto
 		}
+		said := "kept, this run's record merged into it"
+		out := merge(found, body, read, marker)
+		if out == "" {
+			said = "kept as it is, this run's record not merged (a record does not read); what it read is read again"
+			out = strings.TrimSpace(strings.Replace(found, marker, "", 1))
+		}
+		a.findings = append(a.findings, verdict.Finding{Rule: "applied-after-a-newer-run", Level: "warn",
+			Message: "the comment holds a later run's text, applied before this one: " + said})
+		return out, nil
 	}
-	return body, nil
+	switch {
+	case !ok:
+		return body, nil
+	case a.role == "inspector":
+		return inspector.MergeComment(body, read, found), nil
+	}
+	return reviewer.MergeSummary(body, read, found), nil
 }

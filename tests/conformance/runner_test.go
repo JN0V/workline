@@ -84,42 +84,83 @@ type givenSpec struct {
 type runSpec struct {
 	Role    string            `yaml:"role"`
 	Target  map[string]int    `yaml:"target"`
+	Args    []string          `yaml:"args"`   // more options, as typed, after the run's own: what Target cannot say (--dry-run)
 	Branch  string            `yaml:"branch"` // the branch the targeted merge request comes from, as --branch
 	NoApply bool              `yaml:"no-apply"`
 	OpenMR  bool              `yaml:"open-merge-request"`
-	PushMR  bool              `yaml:"push-to-merge-request"`
 	Event   string            `yaml:"event"`
 	Input   map[string]string `yaml:"input"`
 	AI      string            `yaml:"ai"`
 	Scope   []string          `yaml:"scope"`
 	Tamper  string            `yaml:"tamper"`
 	Then    string            `yaml:"then"`
-	Between map[string]any    `yaml:"between"` // with then: again, a person's edits to the forge before the second run
-	// Pushed: with then: judged-twice or applied-between, what lands on
+	Between map[string]any    `yaml:"between"` // with then: again, a person's edits to the forge before the second run; with then: resume, before the apply
+	// Pushed: with then: judged-twice, applied-between or applied-out-of-order, what lands on
 	// the branch after the run judged, before it is applied (#375).
-	Pushed []string `yaml:"pushed"`
-	Route   string            `yaml:"route"`
-	Item    int               `yaml:"item"`
-	Gate    string            `yaml:"gate"`
-	Doctor  bool              `yaml:"doctor"`
-	Init    bool              `yaml:"init"`
-	InitOpt []string          `yaml:"init-options"`  // workline init, with these options
-	Setup   []string          `yaml:"setup"`         // workline setup, with these options
-	Import  []string          `yaml:"issues-import"` // workline issues import, with these arguments
-	Review  []string          `yaml:"review"`        // workline review, with these options
-	Sample  []string          `yaml:"sample"`        // workline sample, with these options; then: apply writes what it found
-	Reports bool              `yaml:"reports"`       // also write --sarif and --code-quality
-	JobSum  bool              `yaml:"summary"`       // also write --summary, Markdown and HTML, the apply after it too
-	Forge   string            `yaml:"forge"`         // a forge spec passed as --forge (local, cmd:…), instead of the simulated one
-	Follow  []string          `yaml:"follow"`        // workline follow, with these options
+	Pushed  []string `yaml:"pushed"`
+	Route   string   `yaml:"route"`
+	Item    int      `yaml:"item"`
+	Gate    string   `yaml:"gate"`
+	Doctor  bool     `yaml:"doctor"`
+	Init    bool     `yaml:"init"`
+	InitOpt []string `yaml:"init-options"`  // workline init, with these options
+	Setup   []string `yaml:"setup"`         // workline setup, with these options
+	Import  []string `yaml:"issues-import"` // workline issues import, with these arguments
+	Review  []string `yaml:"review"`        // workline review, with these options
+	Sample  []string `yaml:"sample"`        // workline sample, with these options; then: apply writes what it found
+	Reports bool     `yaml:"reports"`       // also write --sarif and --code-quality
+	JobSum  bool     `yaml:"summary"`       // also write --summary, Markdown and HTML, the apply after it too
+	Forge   string   `yaml:"forge"`         // a forge spec passed as --forge (local, cmd:…), instead of the simulated one
+	Follow  []string `yaml:"follow"`        // workline follow, with these options
 	// ThenLine: after the run, the line on a branch of origin, checked
 	// out, as CI runs it on that branch's push: what the case expects of
 	// status, steps and calls is its; the findings are both runs'.
 	ThenLine *thenLine `yaml:"then-line"`
-	CLI     []string          `yaml:"cli"`           // workline with these arguments, as typed: its exit code, what it prints
+	CLI      []string  `yaml:"cli"` // workline with these arguments, as typed: its exit code, what it prints
+	// Sh: a shell line, the engine first on PATH as workline: what a
+	// person types around it (install its hooks, then the git command
+	// that runs them), checked as cli is.
+	Sh string `yaml:"sh"`
 	// ApplyFrom: with then: resume, the runs applied as the base's job
 	// applies a merge request's own CI run (apply --from-merge-request).
 	ApplyFrom *applyFrom `yaml:"apply-from"`
+	// GatesOnly: the route runs the event's gates alone (--gates-only), as
+	// CI's job of their own does.
+	GatesOnly bool `yaml:"gates-only"`
+	// GatesJob: the route reads its gates' verdicts from a run of the
+	// gates alone made first, with these variables (--gates-from), as CI's
+	// judging job reads that job's; GatesFrom, from this file instead,
+	// relative to the case's folder.
+	GatesJob  *gatesJob `yaml:"gates-job"`
+	GatesFrom string    `yaml:"gates-from"`
+	// WarnApart: the route leaves what only warns to a run apart
+	// (--warn-apart); WarnOnly: the route is that run (--warn-only). With
+	// then: apart, the run apart follows the run, on the forge it left.
+	WarnApart bool `yaml:"warn-apart"`
+	WarnOnly  bool `yaml:"warn-only"`
+	// AgainAfter: with then: again, commands run in the repository before
+	// the second run (a second push); the first run's Code Quality report
+	// is kept for code-quality-kept.
+	AgainAfter []string `yaml:"again-after"`
+	// MainIssue: after the run, and after the second with then: again,
+	// what it printed kept in main's issue (apply --main), as CI's job
+	// holding the forge's token does after main's run.
+	MainIssue bool `yaml:"main-issue"`
+	// DryRunPosted: after the run, and after the second with then: again,
+	// what a release's dry run printed posted (apply --release-dry-run),
+	// as CI's job holding the forge's token does each night.
+	DryRunPosted bool `yaml:"dry-run-posted"`
+	// KeptOnMain: before the run, main's run after a merge on this
+	// revision, checked out then left, as CI's job on main: the gates'
+	// findings kept by commit in a folder the run reads (--gates-kept).
+	KeptOnMain string `yaml:"kept-on-main"`
+}
+
+// gatesJob is CI's job running the gates alone, before the line.
+type gatesJob struct {
+	Env   map[string]string `yaml:"env"`   // its variables; $VAR expands
+	Input map[string]string `yaml:"input"` // its inputs, over the run's
+	After []string          `yaml:"after"` // commands run in the repository once it ran, before the line
 }
 
 // applyFrom is a merge request's own run applied by a job of the base's:
@@ -137,6 +178,12 @@ type applyFrom struct {
 	// Line: apply the line's result, as CI's job does (`apply --line`),
 	// the runs it lists, none when it proposed nothing.
 	Line bool `yaml:"line"`
+	// Gates: the run's printed result is what a run of the gates alone
+	// left, shown on the merge request (`apply --gates`).
+	Gates bool `yaml:"gates"`
+	// Again: after the apply, these commands (a second push), then the
+	// run and the apply again, on the head they leave.
+	Again []string `yaml:"again"`
 }
 
 // thenLine is the line run after a case's run: the event, the branch of
@@ -150,41 +197,60 @@ type thenLine struct {
 
 // expectSpec is what the case expects.
 type expectSpec struct {
-	Status      string                       `yaml:"status"`
-	Findings    []findingWant                `yaml:"findings"`
-	NoFindings  []findingWant                `yaml:"no-findings"` // findings that must not be there
-	Checks      []checkWant                  `yaml:"checks"`      // the doctor's checks, ok ones too
-	AgentCalls  *int                         `yaml:"agent-calls"`
-	Applied     []string                     `yaml:"applied"`
-	Refused     []string                     `yaml:"refused"`
-	Files       map[string]fileWant          `yaml:"files"`
-	Pushed      map[string]map[string]string `yaml:"pushed"`         // branch -> path -> a text the remote's branch holds there
-	PushedMsg   map[string]string            `yaml:"pushed-message"` // branch -> a text the message of the remote branch's tip holds
-	NotPushed   []string                     `yaml:"not-pushed"`     // branches of the remote the run left where they were
-	OnTop       map[string]string            `yaml:"on-top"`         // branch -> the branch of the remote its tip holds
-	Merged      map[string]string            `yaml:"merged"`         // branch -> base: the remote branch's tip merges base's tip into its tip before the run, its first parent
-	Gone        []string                     `yaml:"gone"`           // branches of the remote absent after the run
-	Forge       *forgeWant                   `yaml:"forge"`
-	Steps       []string                     `yaml:"steps"`
-	Calls       []map[string]string          `yaml:"calls"`
-	SARIF       []map[string]any             `yaml:"sarif"`         // results, by rule, uri, line, level
-	CodeQuality []map[string]any             `yaml:"code-quality"`  // issues, by check_name, path, line, severity
-	LeftOut     []string                     `yaml:"left-out"`      // wheres found in neither report
-	SARIFLacks  []string                     `yaml:"sarif-lacks"`   // rules no SARIF result has
-	Notes       []string                     `yaml:"notes"`         // texts the agent's notes hold
-	RefusedKept int                          `yaml:"refused-kept"`  // refused answers kept in the run folders
-	CallsKept   int                          `yaml:"calls-kept"`    // agent calls recorded in the run folders
-	RunFiles    map[string]runFileWant       `yaml:"run-files"`     // a file of the run folder -> the texts it holds, or not
-	Branches    map[string]map[string]string `yaml:"branches"`      // a local branch -> path -> a text it holds there
-	Listed      []string                     `yaml:"issues-listed"` // texts `workline issues list` prints afterwards
-	Summary     string                       `yaml:"summary"`       // a text the result's summary holds
-	SummaryFile []string                     `yaml:"summary-file"`  // texts the --summary file holds, in this order; with cli, workline-summary.md
-	SummaryHTML []string                     `yaml:"summary-html"`  // texts the --summary .html file holds, in this order
-	Coverage    []map[string]string          `yaml:"coverage"`      // an import's map: its items, by lines, state, issue, words, why
-	NotCovered  []map[string]string          `yaml:"not-covered"`   // an import's items left with no issue nor reason
-	Exit        *int                         `yaml:"exit"`          // with cli: the exit code
-	Stdout      []string                     `yaml:"stdout"`        // with cli: texts printed on stdout
-	Stderr      []string                     `yaml:"stderr"`        // with cli: texts printed on stderr
+	Status       string                       `yaml:"status"`
+	Findings     []findingWant                `yaml:"findings"`
+	NoFindings   []findingWant                `yaml:"no-findings"` // findings that must not be there
+	Checks       []checkWant                  `yaml:"checks"`      // the doctor's checks, ok ones too
+	AgentCalls   *int                         `yaml:"agent-calls"`
+	Applied      []string                     `yaml:"applied"`
+	Refused      []string                     `yaml:"refused"`
+	Files        map[string]fileWant          `yaml:"files"`
+	Pushed       map[string]map[string]string `yaml:"pushed"`         // branch -> path -> a text the remote's branch holds there
+	PushedMsg    map[string]string            `yaml:"pushed-message"` // branch -> a text the message of the remote branch's tip holds
+	NotPushed    []string                     `yaml:"not-pushed"`     // branches of the remote the run left where they were
+	OnTop        map[string]string            `yaml:"on-top"`         // branch -> the branch of the remote its tip holds
+	Signed       map[string]bool              `yaml:"signed"`         // branch -> the remote branch's tip carries a signature git verifies (true), or none (false)
+	Merged       map[string]string            `yaml:"merged"`         // branch -> base: the remote branch's tip merges base's tip into its tip before the run, its first parent
+	Gone         []string                     `yaml:"gone"`           // branches of the remote absent after the run
+	Forge        *forgeWant                   `yaml:"forge"`
+	Steps        []string                     `yaml:"steps"`
+	Calls        []map[string]string          `yaml:"calls"`
+	SARIF        []map[string]any             `yaml:"sarif"`             // results, by rule, uri, line, level
+	CodeQuality  []map[string]any             `yaml:"code-quality"`      // issues, by check_name, path, line, severity
+	CQKept       bool                         `yaml:"code-quality-kept"` // with again-after: each fingerprint of the first run's Code Quality report is the second's
+	LeftOut      []string                     `yaml:"left-out"`          // wheres found in neither report
+	SARIFLacks   []string                     `yaml:"sarif-lacks"`       // rules no SARIF result has
+	Notes        []string                     `yaml:"notes"`             // texts the agent's notes hold
+	RefusedKept  int                          `yaml:"refused-kept"`      // refused answers kept in the run folders
+	CallsKept    int                          `yaml:"calls-kept"`        // agent calls recorded in the run folders
+	RunFiles     map[string]runFileWant       `yaml:"run-files"`         // a file of the run folder -> the texts it holds, or not
+	Branches     map[string]map[string]string `yaml:"branches"`          // a local branch -> path -> a text it holds there
+	Listed       []string                     `yaml:"issues-listed"`     // texts `workline issues list` prints afterwards
+	Summary      string                       `yaml:"summary"`           // a text the result's summary holds
+	ApartStatus  string                       `yaml:"apart-status"`      // with then: apart, the run apart's status; status is the verdict's run's
+	SummaryFile  []string                     `yaml:"summary-file"`      // texts the --summary file holds, in this order; with cli, workline-summary.md
+	SummaryHTML  []string                     `yaml:"summary-html"`      // texts the --summary .html file holds, in this order
+	Coverage     []map[string]string          `yaml:"coverage"`          // an import's map: its items, by lines, state, issue, words, why
+	NotCovered   []map[string]string          `yaml:"not-covered"`       // an import's items left with no issue nor reason
+	Exit         *int                         `yaml:"exit"`              // with cli: the exit code
+	Stdout       []string                     `yaml:"stdout"`            // with cli: texts printed on stdout
+	Stderr       []string                     `yaml:"stderr"`            // with cli: texts printed on stderr
+	StderrLacks  []string                     `yaml:"stderr-lacks"`      // with cli: texts not printed on stderr
+	StdoutLacks  []string                     `yaml:"stdout-lacks"`      // texts not printed on stdout, the result's JSON included
+	SummaryLacks []string                     `yaml:"summary-lacks"`     // texts the --summary file does not hold; with cli, workline-summary.md
+	SummaryOnce  []string                     `yaml:"summary-once"`      // texts the --summary file holds once, not more; with cli, workline-summary.md
+	// Moment: the wait the line's run is part of, as its result says it
+	// (ADR-0050): each field given is checked; over false, not over.
+	Moment *momentWant `yaml:"moment"`
+}
+
+// momentWant is a line's moment: its name, its budget in seconds, whether
+// it went over it, and then the step named.
+type momentWant struct {
+	Name   string   `yaml:"name"`
+	Budget *float64 `yaml:"budget"`
+	Over   *bool    `yaml:"over"`
+	Step   string   `yaml:"step"`
 }
 
 // findingWant is a finding the run reports, or must not: its rule and
@@ -238,6 +304,8 @@ type forgeWant struct {
 type checkRunWant struct {
 	Commit      string           `yaml:"commit"`
 	Name        string           `yaml:"name"`
+	Title       string           `yaml:"title"` // its title, when given
+	Count       *int             `yaml:"count"` // how many annotations, when given
 	Annotations []annotationWant `yaml:"annotations"`
 	Absent      bool             `yaml:"absent"`
 }
@@ -271,6 +339,7 @@ type itemWant struct {
 	Base            *string             `yaml:"base"`
 	Reason          *string             `yaml:"reason"` // why it was closed
 	Milestone       *string             `yaml:"milestone"`
+	Rank            *int                `yaml:"rank"`   // a label's rank, where the forge ranks them (GitLab's prioritized labels)
 	Parent          *int                `yaml:"parent"` // the issue it is a sub-issue of, 0 for none
 	Closed          *bool               `yaml:"closed"`
 	AutoMerge       *bool               `yaml:"auto-merge"` // a merge request's auto-merge on (ADR-0042)
@@ -279,11 +348,14 @@ type itemWant struct {
 	BodyLacks       texts               `yaml:"body-lacks"`
 	Comments        *int                `yaml:"comments"` // how many
 	Posted          *int                `yaml:"posted"`   // comments posted, each mailing the issue's followers; an edit posts none
+	Edits           *int                `yaml:"edits"`    // times its body was rewritten, as the forge's edit history counts them
 	CommentContains texts               `yaml:"comment-contains"`
 	CommentLacks    texts               `yaml:"comment-lacks"`
 	BlockedBy       *[]int              `yaml:"blocked-by"` // the forge's own relation
 	Labels          *[]string           `yaml:"labels"`     // the exact set
 	Reactions       map[string][]string `yaml:"reactions"`  // on its comments, by the comment's id
+	Fields          map[string]string   `yaml:"fields"`     // its values in the issue fields, exactly these, by the field's name
+	Weight          *int                `yaml:"weight"`     // its GitLab weight, -1 for none
 	Threads         *[]threadWant       `yaml:"threads"`    // a merge request's comments on lines, exactly these, in the order posted
 }
 
@@ -326,8 +398,17 @@ type result struct {
 	Applied []string `json:"applied"`
 	Refused []string `json:"refused"`
 	Steps   []struct {
-		Name string `json:"name"`
+		Name    string   `json:"name"`
+		Seconds *float64 `json:"seconds"`
 	} `json:"steps"`
+	Seconds *float64 `json:"seconds"`
+	Moment  *struct {
+		Name    string  `json:"name"`
+		Budget  float64 `json:"budget"`
+		Seconds float64 `json:"seconds"`
+		Over    bool    `json:"over"`
+		Step    string  `json:"step"`
+	} `json:"moment"`
 }
 
 func TestConformance(t *testing.T) {
@@ -485,16 +566,18 @@ func runCase(t *testing.T, c *caseFile) []string {
 	if c.Run.Forge != "" {
 		forgeSpec = c.Run.Forge
 	}
+	var mock *gitlabMock
 	if c.Run.Forge == "gitlab" {
 		// GitLab's REST API, simulated over the same file (gitlab_test.go).
 		if forgeFile == "" {
 			return []string{"run.forge gitlab needs given.forge"}
 		}
-		srv := httptest.NewServer(&gitlabMock{file: forgeFile, repo: repo})
+		mock = &gitlabMock{file: forgeFile, repo: repo}
+		srv := httptest.NewServer(mock)
 		defer srv.Close()
 		env = append(env, "CI_API_V4_URL="+srv.URL+"/api/v4", "CI_PROJECT_ID=1", "CI_PROJECT_PATH=", "GITLAB_TOKEN=conformance")
 	}
-	if c.Run.CLI != nil {
+	if c.Run.CLI != nil || c.Run.Sh != "" {
 		return runCLI(engineBin, c, repo, env)
 	}
 	roles := rolesDir
@@ -561,15 +644,26 @@ func runCase(t *testing.T, c *caseFile) []string {
 	if c.Run.OpenMR {
 		args = append(args, "--open-merge-request")
 	}
-	if c.Run.PushMR {
-		args = append(args, "--push-to-merge-request")
-	}
 	if c.Run.NoApply {
 		args = append(args, "--no-apply")
 	}
 	if c.Run.Tamper != "" {
 		args = append(args, "--test-tamper-before-apply")
 	}
+	if c.Run.GatesOnly {
+		args = append(args, "--gates-only")
+	}
+	if c.Run.GatesFrom != "" {
+		from, _ := filepath.Abs(filepath.Join("cases", filepath.Dir(c.Case), c.Run.GatesFrom))
+		args = append(args, "--gates-from", from)
+	}
+	if c.Run.WarnApart {
+		args = append(args, "--warn-apart")
+	}
+	if c.Run.WarnOnly {
+		args = append(args, "--warn-only")
+	}
+	args = append(args, c.Run.Args...)
 	sarifFile, cqFile := filepath.Join(work, "findings.sarif"), filepath.Join(work, "code-quality.json")
 	if c.Run.Reports {
 		args = append(args, "--sarif", sarifFile, "--code-quality", cqFile)
@@ -613,6 +707,112 @@ func runCase(t *testing.T, c *caseFile) []string {
 		out, _ := exec.Command("git", "-C", repo, "ls-remote", "origin", "refs/heads/"+b).Output()
 		before[b], _, _ = strings.Cut(string(out), "\t")
 	}
+	if rev := c.Run.KeptOnMain; rev != "" {
+		// CI's job on main after the merge, before the merge request's
+		// run: the revision checked out, the gates' findings kept.
+		kept := filepath.Join(work, "kept")
+		back, _ := exec.Command("git", "-C", repo, "rev-parse", "--abbrev-ref", "HEAD").Output()
+		at := strings.TrimSpace(string(back))
+		if at == "HEAD" {
+			back, _ = exec.Command("git", "-C", repo, "rev-parse", "HEAD").Output()
+			at = strings.TrimSpace(string(back))
+		}
+		if out, err := exec.Command("git", "-C", repo, "checkout", "-q", "--detach", rev).CombinedOutput(); err != nil {
+			return []string{fmt.Sprintf("kept-on-main: %s not checked out: %s", rev, out)}
+		}
+		onMain := exec.Command(engineBin, "route", "main", "--repo", repo, "--roles", roles, "--json", "--ai", "none", "--forge", "none", "--gates-kept", kept)
+		onMain.Dir, onMain.Env = repo, cmd.Env
+		if out, err := onMain.Output(); len(out) == 0 {
+			return []string{fmt.Sprintf("kept-on-main: main's run printed nothing: %v", err)}
+		}
+		if out, err := exec.Command("git", "-C", repo, "checkout", "-q", at).CombinedOutput(); err != nil {
+			return []string{fmt.Sprintf("kept-on-main: %s not checked out again: %s", at, out)}
+		}
+		cmd.Args = append(cmd.Args, "--gates-kept", kept)
+	}
+	// What main's run printed, kept in its issue as CI's job holding the
+	// forge's token does (apply --main): its findings added to the run's.
+	keepMain := func(printed []byte, into *result) []string {
+		file := filepath.Join(work, "main.json")
+		os.WriteFile(file, printed, 0o644)
+		apply := exec.Command(engineBin, "apply", "--main", file, "--repo", repo, "--forge", forgeSpec, "--json")
+		apply.Dir, apply.Env = repo, cmd.Env
+		var errOut bytes.Buffer
+		apply.Stderr = &errOut
+		out, err := apply.Output()
+		var kept result
+		if json.Unmarshal(out, &kept) != nil {
+			return []string{fmt.Sprintf("apply --main printed no result: %v\n%s", err, errOut.String())}
+		}
+		into.Findings = append(into.Findings, kept.Findings...)
+		return nil
+	}
+	// What a release's dry run printed, posted as CI's job holding the
+	// forge's token does each night (apply --release-dry-run).
+	postDryRun := func(printed []byte, into *result) []string {
+		file := filepath.Join(work, "dry-run.json")
+		os.WriteFile(file, printed, 0o644)
+		apply := exec.Command(engineBin, "apply", "--release-dry-run", file, "--repo", repo, "--forge", forgeSpec, "--json")
+		apply.Dir, apply.Env = repo, cmd.Env
+		var errOut bytes.Buffer
+		apply.Stderr = &errOut
+		out, err := apply.Output()
+		var posted result
+		if json.Unmarshal(out, &posted) != nil {
+			return []string{fmt.Sprintf("apply --release-dry-run printed no result: %v\n%s", err, errOut.String())}
+		}
+		into.Findings = append(into.Findings, posted.Findings...)
+		return nil
+	}
+	// CI's job of the gates alone, before the line: its own variables,
+	// its result the file the line reads; the run apart's flags left to
+	// the line (--warn-only runs no gate). Run again before a second push's
+	// run (then: again with again-after), as CI runs it on each push.
+	gatesFile := filepath.Join(work, "gates.json")
+	gatesJobRun := func() []string {
+		j := c.Run.GatesJob
+		var jobArgs []string
+		for i := 0; i < len(args); i++ {
+			switch args[i] {
+			case "--warn-only", "--warn-apart":
+			case "--gates-from": // its own result, the second time
+				i++
+			default:
+				jobArgs = append(jobArgs, args[i])
+			}
+		}
+		jobArgs = append(jobArgs, "--gates-only")
+		for i := 0; i+1 < len(jobArgs); i++ {
+			if k, _, ok := strings.Cut(jobArgs[i+1], "="); jobArgs[i] == "--input" && ok {
+				if v, given := j.Input[k]; given {
+					jobArgs[i+1] = k + "=" + v
+				}
+				if k == "warn" {
+					jobArgs[i+1] = "warn=" // the line's, never the gates' job's
+				}
+			}
+		}
+		job := exec.Command(engineBin, jobArgs...)
+		job.Dir, job.Env = repo, slices.Clone(env)
+		for k, v := range j.Env {
+			job.Env = append(job.Env, k+"="+os.Expand(v, func(name string) string { return lookup(job.Env, name) }))
+		}
+		out, err := job.Output()
+		if err != nil && len(out) == 0 {
+			return []string{fmt.Sprintf("the gates' job printed nothing: %v", err)}
+		}
+		os.WriteFile(gatesFile, out, 0o644)
+		return inRepo(repo, j.After)
+	}
+	if c.Run.GatesJob != nil {
+		if p := gatesJobRun(); len(p) > 0 {
+			return p
+		}
+		cmd.Args = append(cmd.Args, "--gates-from", gatesFile)
+		// The runs after it (then: again, apart) read the same job's
+		// result, as CI's jobs of the same push do.
+		args = append(args, "--gates-from", gatesFile)
+	}
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &stdout, &stderr
 	_ = cmd.Run() // the exit code mirrors the status, which is checked below
@@ -620,12 +820,36 @@ func runCase(t *testing.T, c *caseFile) []string {
 	if err := json.Unmarshal(stdout.Bytes(), &r); err != nil {
 		return []string{fmt.Sprintf("engine printed no result: %v\n%s", err, stderr.String())}
 	}
+	if p := stdoutLacks(c.Expect.StdoutLacks, stdout.String()); len(p) > 0 {
+		return p
+	}
+	if c.Run.MainIssue {
+		if p := keepMain(stdout.Bytes(), &r); len(p) > 0 {
+			return p
+		}
+	}
+	if c.Run.DryRunPosted {
+		if p := postDryRun(stdout.Bytes(), &r); len(p) > 0 {
+			return p
+		}
+	}
 	if c.Run.Then == "again" {
 		// The same run once more, on the forge and the repository as the
 		// first left them, after a person's edits (between): what a run
 		// records, the next reads back.
 		if err := editForge(forgeFile, c.Run.Between); err != nil {
 			return []string{err.Error()}
+		}
+		if len(c.Run.AgainAfter) > 0 {
+			os.Rename(cqFile, cqFile+".first")
+			if p := inRepo(repo, c.Run.AgainAfter); len(p) > 0 {
+				return p
+			}
+			if c.Run.GatesJob != nil {
+				if p := gatesJobRun(); len(p) > 0 {
+					return p
+				}
+			}
 		}
 		again := exec.Command(engineBin, args...)
 		again.Dir, again.Env = repo, cmd.Env
@@ -636,14 +860,60 @@ func runCase(t *testing.T, c *caseFile) []string {
 		if err := json.Unmarshal(stdout.Bytes(), &r2); err != nil {
 			return []string{fmt.Sprintf("the second run printed no result: %v\n%s", err, stderr.String())}
 		}
+		if c.Run.MainIssue {
+			if p := keepMain(stdout.Bytes(), &r2); len(p) > 0 {
+				return p
+			}
+		}
+		if c.Run.DryRunPosted {
+			if p := postDryRun(stdout.Bytes(), &r2); len(p) > 0 {
+				return p
+			}
+		}
 		r2.AgentCalls += r.AgentCalls
 		r2.Calls = append(r.Calls, r2.Calls...)
 		r2.Findings = append(r.Findings, r2.Findings...)
 		r = r2
 	}
-	if c.Run.Then == "judged-twice" || c.Run.Then == "applied-between" {
+	apartStatus := ""
+	if c.Run.Then == "apart" {
+		// The run apart from the verdict (ADR-0050), after the verdict's run
+		// and on the forge it left: the same line, --warn-only for
+		// --warn-apart. The verdict, status and summary, stays the first
+		// run's; the calls and findings are both runs'.
+		if !c.Run.WarnApart {
+			return []string{"then: apart follows a run with warn-apart: true"}
+		}
+		apartArgs := slices.Clone(args)
+		apartArgs[slices.Index(apartArgs, "--warn-apart")] = "--warn-only"
+		apart := exec.Command(engineBin, apartArgs...)
+		apart.Dir, apart.Env = repo, cmd.Env
+		stdout.Reset()
+		apart.Stdout, apart.Stderr = &stdout, &stderr
+		_ = apart.Run()
+		var r2 result
+		if err := json.Unmarshal(stdout.Bytes(), &r2); err != nil {
+			return []string{fmt.Sprintf("the run apart printed no result: %v\n%s", err, stderr.String())}
+		}
+		apartStatus = r2.Status
+		r.AgentCalls += r2.AgentCalls
+		r.Calls = append(r.Calls, r2.Calls...)
+		r.Findings = append(r.Findings, r2.Findings...)
+		r.Applied = append(r.Applied, r2.Applied...)
+	}
+	if want := c.Expect.ApartStatus; c.Run.Then == "apart" && want == "" {
+		c.Expect.ApartStatus = "pass" // what only warns passes, unless a case says otherwise
+	}
+	if want := c.Expect.ApartStatus; want != "" && want != apartStatus {
+		return []string{fmt.Sprintf("the run apart's status = %q, want %s (then: apart runs it)", apartStatus, want)}
+	}
+	if c.Run.Then == "judged-twice" || c.Run.Then == "applied-between" || c.Run.Then == "applied-out-of-order" {
 		var p []string
-		if r, p = pushedBeforeApplied(c, engineBin, args, cmd.Env, repo, forgeSpec, r); len(p) > 0 {
+		var gatesAgain func() []string // the gates' job of the new head, as CI runs it on each push
+		if c.Run.GatesJob != nil {
+			gatesAgain = gatesJobRun
+		}
+		if r, p = pushedBeforeApplied(c, engineBin, args, cmd.Env, repo, forgeSpec, r, gatesAgain); len(p) > 0 {
 			return p
 		}
 	}
@@ -675,11 +945,15 @@ func runCase(t *testing.T, c *caseFile) []string {
 		r = r2
 	}
 	if c.Run.Then == "resume" || c.Run.Then == "resume-elsewhere" {
+		// A person's edits to the forge between the judge and the apply.
+		if err := editForge(forgeFile, c.Run.Between); err != nil {
+			return []string{err.Error()}
+		}
 		dirs := r.Pending
 		if len(dirs) == 0 && r.RunDir != "" {
 			dirs = []string{r.RunDir}
 		}
-		if len(dirs) == 0 && (c.Run.ApplyFrom == nil || !c.Run.ApplyFrom.Line) {
+		if len(dirs) == 0 && (c.Run.ApplyFrom == nil || !c.Run.ApplyFrom.Line && !c.Run.ApplyFrom.Gates) {
 			return []string{"the first run reported no run folder to resume"}
 		}
 		var fromArgs []string
@@ -690,6 +964,12 @@ func runCase(t *testing.T, c *caseFile) []string {
 			}
 		}
 		resumeArgs := append(append(append([]string{"apply"}, dirs...), "--json"), fromArgs...)
+		if a := c.Run.ApplyFrom; a != nil && a.Gates {
+			// What the gates' job printed, as the applying job downloads it.
+			gatesFile := filepath.Join(work, "gates.json")
+			os.WriteFile(gatesFile, stdout.Bytes(), 0o644)
+			resumeArgs = append([]string{"apply", "--gates", gatesFile, "--json"}, fromArgs...)
+		}
 		if a := c.Run.ApplyFrom; a != nil && a.Line {
 			// The line's result as the judge printed it, its runs listed
 			// where the run's code could have changed them (poisoned).
@@ -711,7 +991,7 @@ func runCase(t *testing.T, c *caseFile) []string {
 		resume.Dir = repo
 		if a := c.Run.ApplyFrom; a != nil {
 			for k, v := range a.Env {
-				resume.Env = append(slices.Clone(resume.Env), k+"="+v)
+				resume.Env = append(slices.Clone(resume.Env), k+"="+os.Expand(v, func(name string) string { return lookup(resume.Env, name) }))
 			}
 		}
 		if judgeCache != "" {
@@ -724,6 +1004,46 @@ func runCase(t *testing.T, c *caseFile) []string {
 		var r2 result
 		if err := json.Unmarshal(stdout.Bytes(), &r2); err != nil {
 			return []string{fmt.Sprintf("resume printed no result: %v\n%s", err, stderr.String())}
+		}
+		if a := c.Run.ApplyFrom; a != nil && len(a.Again) > 0 {
+			// A second push: the commands, then the run and the apply
+			// again, on the head they leave.
+			if p := inRepo(repo, a.Again); len(p) > 0 {
+				return p
+			}
+			again := exec.Command(engineBin, args...)
+			again.Dir, again.Env = repo, cmd.Env
+			stdout.Reset()
+			again.Stdout, again.Stderr = &stdout, &stderr
+			_ = again.Run()
+			gatesFile := filepath.Join(work, "gates.json")
+			os.WriteFile(gatesFile, stdout.Bytes(), 0o644)
+			head, err := exec.Command("git", "-C", repo, "rev-parse", "origin/"+a.Head).Output()
+			if err != nil {
+				return []string{fmt.Sprintf("apply-from: no branch %s on origin", a.Head)}
+			}
+			if a.Base != "" {
+				if out, err := exec.Command("git", "-C", repo, "checkout", "-q", "--detach", a.Base).CombinedOutput(); err != nil {
+					return []string{fmt.Sprintf("apply-from: %s not checked out again: %s", a.Base, out)}
+				}
+			}
+			second := slices.Clone(resumeArgs)
+			for i := range second {
+				if second[i] == "--head" && i+1 < len(second) {
+					second[i+1] = strings.TrimSpace(string(head))
+				}
+			}
+			reapply := exec.Command(engineBin, second...)
+			reapply.Env, reapply.Dir = resume.Env, repo
+			stdout.Reset()
+			reapply.Stdout, reapply.Stderr = &stdout, &stderr
+			_ = reapply.Run()
+			first := r2.Findings
+			r2 = result{}
+			if err := json.Unmarshal(stdout.Bytes(), &r2); err != nil {
+				return []string{fmt.Sprintf("the second apply printed no result: %v\n%s", err, stderr.String())}
+			}
+			r2.Findings = append(first, r2.Findings...)
 		}
 		r2.AgentCalls += r.AgentCalls
 		r2.Calls = append(r.Calls, r2.Calls...)
@@ -753,6 +1073,9 @@ func runCase(t *testing.T, c *caseFile) []string {
 		r = r2
 	}
 	problems := compare(c, &r, repo)
+	if mock != nil {
+		problems = append(problems, mock.unmet()...)
+	}
 	for b, before := range tips {
 		if out, _ := exec.Command("git", "-C", repo, "ls-remote", "origin", "refs/heads/"+b).Output(); string(out) != before {
 			problems = append(problems, fmt.Sprintf("origin's %s moved: %q, was %q", b, out, before))
@@ -786,9 +1109,14 @@ func runCase(t *testing.T, c *caseFile) []string {
 	if c.Run.Reports {
 		problems = append(problems, compareReports(c, sarifFile, cqFile)...)
 	}
+	if c.Expect.CQKept {
+		problems = append(problems, fingerprintsKept(cqFile+".first", cqFile)...)
+	}
 	if len(c.Expect.SummaryFile) > 0 {
 		problems = append(problems, compareSummaryFile(c.Expect.SummaryFile, summaryFile)...)
 	}
+	problems = append(problems, summaryLacks(c.Expect.SummaryLacks, summaryFile)...)
+	problems = append(problems, summaryOnce(c.Expect.SummaryOnce, summaryFile)...)
 	if len(c.Expect.SummaryHTML) > 0 {
 		problems = append(problems, compareSummaryFile(c.Expect.SummaryHTML, summaryHTML)...)
 	}
@@ -801,10 +1129,30 @@ func runCase(t *testing.T, c *caseFile) []string {
 }
 
 // runCLI runs workline with the case's arguments, as a person or a script
-// types them, and checks its exit code and what it prints where.
+// types them, or the case's shell line, and checks its exit code and what
+// it prints where.
 func runCLI(engineBin string, c *caseFile, repo string, env []string) []string {
 	cmd := exec.Command(engineBin, c.Run.CLI...)
+	if c.Run.Sh != "" {
+		bin := filepath.Join(filepath.Dir(repo), "engine-bin")
+		if err := os.MkdirAll(bin, 0o755); err != nil {
+			return []string{err.Error()}
+		}
+		if err := os.Symlink(engineBin, filepath.Join(bin, "workline")); err != nil {
+			return []string{err.Error()}
+		}
+		cmd = exec.Command("sh", "-c", c.Run.Sh)
+		path := bin // never an empty entry, which is the current folder
+		if old := lookup(env, "PATH"); old != "" {
+			path += string(os.PathListSeparator) + old
+		}
+		// A run from inside a workline hook would skip the hooks it installs.
+		env = append(slices.Clone(env), "PATH="+path, "WORKLINE_HOOK_RUNNING=")
+	}
 	cmd.Dir, cmd.Env = repo, env
+	for k, v := range c.Given.Env { // what the command is run with, as a hook is: WORKLINE_AI
+		cmd.Env = append(cmd.Env, k+"="+os.Expand(v, func(name string) string { return lookup(cmd.Env, name) }))
+	}
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &stdout, &stderr
 	err := cmd.Run()
@@ -828,9 +1176,17 @@ func runCLI(engineBin string, c *caseFile, repo string, env []string) []string {
 			p = append(p, fmt.Sprintf("stderr lacks %q:\n%s", text, stderr.String()))
 		}
 	}
+	for _, text := range c.Expect.StderrLacks {
+		if strings.Contains(stderr.String(), text) {
+			p = append(p, fmt.Sprintf("stderr holds %q:\n%s", text, stderr.String()))
+		}
+	}
+	p = append(p, stdoutLacks(c.Expect.StdoutLacks, stdout.String())...)
 	if len(c.Expect.SummaryFile) > 0 { // the arguments name it, as CI's templates do
 		p = append(p, compareSummaryFile(c.Expect.SummaryFile, filepath.Join(repo, "workline-summary.md"))...)
 	}
+	p = append(p, summaryLacks(c.Expect.SummaryLacks, filepath.Join(repo, "workline-summary.md"))...)
+	p = append(p, summaryOnce(c.Expect.SummaryOnce, filepath.Join(repo, "workline-summary.md"))...)
 	return append(p, compareFiles(c.Expect.Files, repo)...)
 }
 
@@ -933,6 +1289,16 @@ func compare(c *caseFile, r *result, repo string) []string {
 			p = append(p, fmt.Sprintf("origin's %s is not on top of origin's %s", branch, base))
 		}
 	}
+	for branch, want := range e.Signed {
+		exec.Command("git", "-C", repo, "fetch", "-q", "origin").Run()
+		if want {
+			if out, err := exec.Command("git", "-C", repo, "verify-commit", "origin/"+branch).CombinedOutput(); err != nil {
+				p = append(p, fmt.Sprintf("the tip of origin's %s carries no signature git verifies: %s", branch, out))
+			}
+		} else if out, _ := exec.Command("git", "-C", repo, "log", "-1", "--format=%G?", "origin/"+branch).Output(); strings.TrimSpace(string(out)) != "N" {
+			p = append(p, fmt.Sprintf("the tip of origin's %s is signed (%s), want no signature", branch, strings.TrimSpace(string(out))))
+		}
+	}
 	if e.RefusedKept > 0 {
 		kept, _ := filepath.Glob(filepath.Join(repo, ".git", "workline", "runs", "*", "out", "refused-*.yaml"))
 		if len(kept) != e.RefusedKept {
@@ -971,6 +1337,24 @@ func compare(c *caseFile, r *result, repo string) []string {
 				if data, _ := os.ReadFile(f); strings.Contains(string(data), text) {
 					p = append(p, fmt.Sprintf("%s holds %q", name, text))
 				}
+			}
+		}
+	}
+	if m := e.Moment; m != nil {
+		switch got := r.Moment; {
+		case got == nil:
+			p = append(p, fmt.Sprintf("no moment in the result, want %+v", *m))
+		case m.Name != "" && got.Name != m.Name, m.Budget != nil && got.Budget != *m.Budget,
+			m.Over != nil && got.Over != *m.Over, m.Step != "" && got.Step != m.Step:
+			p = append(p, fmt.Sprintf("moment = %+v, want %+v (budget %v, over %v)", *got, *m, deref(m.Budget), deref(m.Over)))
+		}
+		// Every step that ran says its seconds, and the line its own.
+		if r.Seconds == nil {
+			p = append(p, "the result says no seconds")
+		}
+		for _, s := range r.Steps {
+			if s.Seconds == nil {
+				p = append(p, fmt.Sprintf("step %s says no seconds", s.Name))
 			}
 		}
 	}
@@ -1103,10 +1487,11 @@ func readPending(t *testing.T) map[string]bool {
 // (#375): `pushed`, the same run judged again on the new head, both
 // applied, the first first; `judged-twice` judges both before applying,
 // `applied-between` applies the first before the second judges. With
-// apply-from, each --head is the head its run judged. The result is the
-// last apply's; the calls, both judges'; the findings, all four's
-// (docs/spec/conformance/cases.md).
-func pushedBeforeApplied(c *caseFile, engineBin string, args, env []string, repo, forgeSpec string, first result) (result, []string) {
+// apply-from, each --head is the head its run judged; with gatesAgain,
+// the gates' job runs on the new head before the second judges. The
+// result is the last apply's; the calls, both judges'; the findings, all
+// four's (docs/spec/conformance/cases.md).
+func pushedBeforeApplied(c *caseFile, engineBin string, args, env []string, repo, forgeSpec string, first result, gatesAgain func() []string) (result, []string) {
 	exe := func(dir string, cmdArgs ...string) (result, []string) {
 		cmd := exec.Command(engineBin, cmdArgs...)
 		cmd.Dir, cmd.Env = dir, env
@@ -1164,9 +1549,33 @@ func pushedBeforeApplied(c *caseFile, engineBin string, args, env []string, repo
 		if _, p := git("checkout", "-q", "--detach", heads[1]); p != nil {
 			return result{}, p
 		}
+		if gatesAgain != nil {
+			if p := gatesAgain(); len(p) > 0 {
+				return result{}, p
+			}
+		}
 		return exe(repo, args...)
 	}
 	var second, applied1, applied2 result
+	if c.Run.Then == "applied-out-of-order" {
+		// The second push's pipeline, a later one (GitLab's pipeline id),
+		// applied first: GitLab picks either waiting apply (#598).
+		env = append(slices.Clone(env), "CI_PIPELINE_ID=102")
+		if second, p = judge(); p != nil {
+			return first, p
+		}
+		if applied2, p = apply(second, heads[1]); p != nil {
+			return first, p
+		}
+		if applied1, p = apply(first, heads[0]); p != nil {
+			return first, p
+		}
+		out := applied1
+		out.AgentCalls = first.AgentCalls + second.AgentCalls
+		out.Calls = append(slices.Clone(first.Calls), second.Calls...)
+		out.Findings = slices.Concat(first.Findings, second.Findings, applied2.Findings, applied1.Findings)
+		return out, nil
+	}
 	if c.Run.Then == "judged-twice" {
 		if second, p = judge(); p != nil {
 			return first, p
@@ -1358,6 +1767,12 @@ func compareCheckRuns(want []checkRunWant, file, repo string) []string {
 			p = append(p, fmt.Sprintf("forge: no check %s on %s (checks: %+v)", w.Name, w.Commit, s.Checks))
 			continue
 		}
+		if w.Title != "" && last.Title != w.Title {
+			p = append(p, fmt.Sprintf("forge: check %s on %s is titled %q, want %q", w.Name, w.Commit, last.Title, w.Title))
+		}
+		if w.Count != nil && len(last.Annotations) != *w.Count {
+			p = append(p, fmt.Sprintf("forge: check %s on %s holds %d annotations, want %d", w.Name, w.Commit, len(last.Annotations), *w.Count))
+		}
 		for _, a := range w.Annotations {
 			found := false
 			for _, g := range last.Annotations {
@@ -1433,11 +1848,18 @@ func compareItem(kind string, wm itemWant, got []map[string]any) []string {
 	if found["parent"] == nil {
 		found["parent"] = 0 // not a sub-issue
 	}
+	if found["rank"] == nil {
+		found["rank"] = 0 // a label not ranked
+	}
+	if found["weight"] == nil {
+		found["weight"] = -1 // no weight
+	}
 	fields := []struct {
 		key  string
 		want any
 	}{{"branch", given(wm.Branch)}, {"base", given(wm.Base)}, {"title", given(wm.Title)},
-		{"reason", given(wm.Reason)}, {"milestone", given(wm.Milestone)}, {"parent", given(wm.Parent)}}
+		{"reason", given(wm.Reason)}, {"milestone", given(wm.Milestone)}, {"parent", given(wm.Parent)}, {"rank", given(wm.Rank)},
+		{"weight", given(wm.Weight)}}
 	for _, f := range fields {
 		if f.want != nil && fmt.Sprint(found[f.key]) != fmt.Sprint(f.want) {
 			p = append(p, fmt.Sprintf("forge: %s %v %s = %v, want %v", kind, wm.ID, f.key, found[f.key], f.want))
@@ -1449,6 +1871,9 @@ func compareItem(kind string, wm itemWant, got []map[string]any) []string {
 	}
 	if posted, _ := found["posted"].(float64); wm.Posted != nil && int(posted) != *wm.Posted {
 		p = append(p, fmt.Sprintf("forge: %s %v posted %d comments, want %d", kind, wm.ID, int(posted), *wm.Posted))
+	}
+	if edits, _ := found["edits"].([]any); wm.Edits != nil && len(edits) != *wm.Edits {
+		p = append(p, fmt.Sprintf("forge: %s %v's body was rewritten %d times, want %d", kind, wm.ID, len(edits), *wm.Edits))
 	}
 	held := func(text string) bool {
 		for _, c := range comments {
@@ -1478,6 +1903,15 @@ func compareItem(kind string, wm itemWant, got []map[string]any) []string {
 		gl, _ := found["labels"].([]any)
 		if fmt.Sprint(gl) != fmt.Sprint(*wm.Labels) {
 			p = append(p, fmt.Sprintf("forge: %s %v labels = %v, want %v", kind, wm.ID, gl, *wm.Labels))
+		}
+	}
+	if wm.Fields != nil {
+		gf, _ := found["fields"].(map[string]any)
+		if gf == nil {
+			gf = map[string]any{}
+		}
+		if fmt.Sprint(gf) != fmt.Sprint(wm.Fields) {
+			p = append(p, fmt.Sprintf("forge: %s %v fields = %v, want %v", kind, wm.ID, gf, wm.Fields))
 		}
 	}
 	if wm.Reactions != nil {
@@ -1562,6 +1996,60 @@ func compareSummaryFile(want []string, file string) []string {
 		rest = rest[i+len(w):]
 	}
 	return nil
+}
+
+// summaryOnce says which texts the summary file does not hold exactly once.
+func summaryOnce(texts []string, file string) []string {
+	if len(texts) == 0 {
+		return nil
+	}
+	data, err := os.ReadFile(file)
+	if err != nil {
+		return []string{fmt.Sprintf("no summary file: %v", err)}
+	}
+	var p []string
+	for _, t := range texts {
+		if n := strings.Count(string(data), t); n != 1 {
+			p = append(p, fmt.Sprintf("the summary file holds %q %d times, want once:\n%s", t, n, data))
+		}
+	}
+	return p
+}
+
+// stdoutLacks says which texts were printed on stdout that must not be.
+func stdoutLacks(texts []string, stdout string) []string {
+	var p []string
+	for _, text := range texts {
+		if strings.Contains(stdout, text) {
+			p = append(p, fmt.Sprintf("stdout holds %q:\n%s", text, stdout))
+		}
+	}
+	return p
+}
+
+// summaryLacks says which texts the summary file holds that it must not.
+func summaryLacks(texts []string, file string) []string {
+	if len(texts) == 0 {
+		return nil
+	}
+	data, err := os.ReadFile(file)
+	if err != nil {
+		return []string{fmt.Sprintf("no summary file: %v", err)}
+	}
+	var p []string
+	for _, t := range texts {
+		if strings.Contains(string(data), t) {
+			p = append(p, fmt.Sprintf("the summary file holds %q:\n%s", t, data))
+		}
+	}
+	return p
+}
+
+func deref[T any](v *T) any {
+	if v == nil {
+		return nil
+	}
+	return *v
 }
 
 // compareReports checks the SARIF and Code Quality files a run wrote.
@@ -1661,6 +2149,55 @@ func compareReports(c *caseFile, sarifFile, cqFile string) []string {
 	for _, w := range c.Expect.LeftOut {
 		if uris[w] {
 			p = append(p, fmt.Sprintf("%s is in a report, and should be left out", w))
+		}
+	}
+	return p
+}
+
+// inRepo runs commands in the repository, as a person between two runs.
+func inRepo(repo string, commands []string) []string {
+	for _, s := range commands {
+		cmd := exec.Command("sh", "-c", s)
+		cmd.Dir, cmd.Env = repo, hermeticEnv()
+		if out, err := cmd.CombinedOutput(); err != nil {
+			return []string{fmt.Sprintf("%q failed: %v\n%s", s, err, out)}
+		}
+	}
+	return nil
+}
+
+// fingerprintsKept says which fingerprints of the first Code Quality
+// report the second lacks: a finding that only moved keeps its own.
+func fingerprintsKept(first, second string) []string {
+	read := func(file string) (map[string]bool, error) {
+		var issues []struct {
+			Fingerprint string `json:"fingerprint"`
+		}
+		data, err := os.ReadFile(file)
+		if err == nil {
+			err = json.Unmarshal(data, &issues)
+		}
+		prints := map[string]bool{}
+		for _, i := range issues {
+			prints[i.Fingerprint] = true
+		}
+		return prints, err
+	}
+	a, err := read(first)
+	if err != nil {
+		return []string{"code-quality-kept: the first report: " + err.Error()}
+	}
+	b, err := read(second)
+	if err != nil {
+		return []string{"code-quality-kept: the second report: " + err.Error()}
+	}
+	if len(a) == 0 {
+		return []string{"code-quality-kept: the first report holds no issue"}
+	}
+	var p []string
+	for f := range a {
+		if !b[f] {
+			p = append(p, fmt.Sprintf("code-quality-kept: the second report lacks the fingerprint %s", f))
 		}
 	}
 	return p

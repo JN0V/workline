@@ -1,0 +1,33 @@
+case: forge/github-stalled-read-tried-again
+about: "A GitHub read that gets no answer is stopped, then tried again: gh has no timeout of its own; the pull request read never answered once, the engine gave up and read it the second time (#491). GitHub's own forge code, a fake gh."
+given:
+  repo: linted
+  engine-tags: [workline_quick]
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - git checkout -q -b change
+    - "printf 'package main\n\nimport \"os\"\n\nfunc clean() {\n\tos.Remove(\"f\")\n}\n' > clean.go && git add clean.go && git commit -qm 'feat: clean' && git push -q origin change"
+  env: {PATH: "$FIXTURES/bin:$PATH"}
+  config:
+    routing: {events: {merge-request: ["gate:merge"]}}
+    gates: {merge: {checks: [{id: lint, run: "golangci-lint run --output.sarif.path={out}/lint.sarif", output: sarif, max: {error: 0}}]}}
+run:
+  route: merge-request
+  input: {range: main..change}
+  gates-only: true
+  forge: github
+  then: resume
+  apply-from:
+    merge-request: 1
+    base: main
+    head: change
+    gates: true
+    env: {PATH: "$FIXTURES/gh:$PATH", GH_LOG: .git/gh.log, GH_FAULT: "GET pulls/1 stall"}
+expect:
+  no-findings: [{rule: gates-not-shown}]
+  files:
+    .git/gh.log:
+      contains:
+        - "call 1: GET pulls/1: stalled"
+        - "call 2: GET pulls/1"
+        - "call 3: POST check-runs: 1 annotations"

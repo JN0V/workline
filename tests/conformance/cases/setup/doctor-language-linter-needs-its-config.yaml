@@ -1,0 +1,13 @@
+case: setup/doctor-language-linter-needs-its-config
+about: "A linter that depends on its project's config is suggested only when that config is there: JavaScript with no ESLint config gets no gate check, only a note naming ESLint with the config it needs (ADR-0049)."
+given:
+  repo: basic
+  setup:
+    - "printf 'console.log(1)\\n' > app.js && git add app.js && git commit -qm 'feat: an app'"
+run: {doctor: true}
+expect:
+  status: pass
+  checks:
+    - {rule: language-unchecked, where: javascript, level: note, message: "eslint (eslint.config.js)"}
+  no-findings:
+    - {rule: language-gaps, where: javascript}

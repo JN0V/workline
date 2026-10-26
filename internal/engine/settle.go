@@ -12,7 +12,6 @@ import (
 	"strings"
 
 	"github.com/JN0V/workline/internal/forge"
-	"github.com/JN0V/workline/internal/verdict"
 )
 
 // FollowOptions are what `workline follow` is given.
@@ -20,10 +19,6 @@ type FollowOptions struct {
 	Repo, Forge, Base string
 	// Gardening: the roles' gardening merge requests too (ADR-0034, amended).
 	Gardening bool
-	// People: each person's merge request into Base, left in conflict with
-	// it only on lines workline writes, gets Base merged in, those lines
-	// settled (the documentalist's `update-branches: conflicts`, ADR-0041).
-	People bool
 	// IsDoc says whether a file is one of the docs, whose header workline
 	// writes; nil, none is.
 	IsDoc func(path string) bool
@@ -49,6 +44,11 @@ type FollowOptions struct {
 	// which no newer run cancels (GitHub's concurrency).
 	Verdict     string
 	VerdictOnly bool
+	// Group is a merge queue's group, its branch as GitHub names it
+	// (gh-readonly-queue/<base>/pr-<n>-<head>), GroupHead its commit: the
+	// yes the base requires is set on that commit as the head queued holds
+	// it, and nothing else is followed (ADR-0050, queue.go).
+	Group, GroupHead string
 }
 
 // workKeys are the keys of a doc's header workline writes, recording when
@@ -59,157 +59,6 @@ var workKeys = map[string]bool{"checked": true, "judged": true, "judged-in-parts
 // derived is a block regenerated from the code on the default branch
 // (ADR-0027), as the documentalist reads it.
 var derived = regexp.MustCompile(`(?s)<!-- workline:derive (\S+) -->(.*?)<!-- workline:end -->`)
-
-// people merges base into each person's merge request left in conflict with
-// it only on lines workline writes, says what it did of each, and sums it
-// up for the run's summary. workline's own are followed apart; a bot's — a
-// release tool's, a dependency bot's — is rebuilt by its bot, which a
-// commit of another stops. A long-lived branch — the base of another open
-// merge request (develop, release/1.x) — is no person's work in progress:
-// left, named once in the summary.
-func people(f forge.Forge, o FollowOptions, local bool, res *Result) (string, error) {
-	open, err := f.ListMergeRequests()
-	if err != nil {
-		return "", err
-	}
-	bases := map[string]bool{}
-	for _, mr := range open {
-		bases[mr.Base] = true
-	}
-	mine, merged, left := 0, 0, 0
-	var lasting []string
-	for _, mr := range open {
-		switch {
-		case mr.Base != o.Base, strings.HasPrefix(mr.Branch, "workline/"), mr.ByBot(), o.Release != nil && o.Release(mr.Branch):
-			continue
-		case mr.Here && bases[mr.Branch]:
-			lasting = append(lasting, mr.Branch)
-			continue
-		}
-		mine++
-		finding, err := settle(o.Repo, o.Base, mr, local, o.IsDoc, false)
-		if err != nil {
-			return "", err
-		}
-		switch finding.Rule {
-		case "":
-			continue
-		case "merged":
-			merged++
-		default:
-			left++
-		}
-		res.Findings = append(res.Findings, finding)
-	}
-	sum := fmt.Sprintf("%d merge requests of people into %s, %s merged into %d, %d left in conflict", mine, o.Base, o.Base, merged, left)
-	if len(lasting) > 0 {
-		sum += fmt.Sprintf("; left, long-lived branches (the base of other merge requests): %s", strings.Join(lasting, ", "))
-	}
-	return sum, nil
-}
-
-// settle merges base into one person's merge request when every conflict
-// is in a line workline writes, and says what it did: nothing for one on
-// base's tip already, or behind it and merging clean — bringing it up to
-// date is for whoever merges it: with update, the merge policy's first in
-// line (ADR-0042), merged in too, as the forge's Update branch does. A
-// merge commit, never a rewrite, pushed as a fast-forward, never forced:
-// a push of theirs meanwhile stays.
-func settle(repo, base string, mr forge.MergeRequest, local bool, isDoc func(string) bool, update bool) (verdict.Finding, error) {
-	where := mr.Branch
-	if !mr.Here && mr.Head == "" {
-		return verdict.Finding{Rule: "conflict-unread", Level: "warn", Where: where,
-			Message: fmt.Sprintf("from a fork, left to its author: whether it is in conflict with %s could not be told, the forge keeping no ref of its head here", base)}, nil
-	}
-	baseTip, tip, err := headTips(repo, base, mr, local)
-	if err != nil {
-		if !mr.Here {
-			return verdict.Finding{Rule: "conflict-unread", Level: "warn", Where: where,
-				Message: fmt.Sprintf("from a fork, left to its author: whether it is in conflict with %s could not be told: %v", base, err)}, nil
-		}
-		return verdict.Finding{}, err
-	}
-	if tip == "" {
-		return verdict.Finding{}, nil // its branch is gone
-	}
-	if _, err := git(repo, nil, "merge-base", "--is-ancestor", baseTip, tip); err == nil {
-		return verdict.Finding{}, nil // on base's tip already
-	}
-	clash, err := conflicts(repo, baseTip, tip)
-	switch {
-	case err != nil:
-		return verdict.Finding{Rule: "conflict-unread", Level: "warn", Where: where,
-			Message: fmt.Sprintf("left to its author: whether it is in conflict with %s could not be told: %v", base, err)}, nil
-	case !clash && !update:
-		return verdict.Finding{}, nil
-	case !mr.Here:
-		return verdict.Finding{Rule: "not-merged", Level: "warn", Where: where,
-			Message: fmt.Sprintf("from a fork, in conflict with %s: left to its author, workline may not write to a fork", base)}, nil
-	}
-	tree, settled, theirs, err := settleTree(repo, tip, baseTip, isDoc)
-	if err != nil {
-		return verdict.Finding{Rule: "conflict-unread", Level: "warn", Where: where,
-			Message: fmt.Sprintf("in conflict with %s, left to its author: its conflicts could not be read: %v", base, err)}, nil
-	}
-	if len(theirs) > 0 {
-		msg := fmt.Sprintf("in conflict with %s in %s: left to its author, nothing pushed", base, strings.Join(theirs, ", "))
-		if len(settled) > 0 {
-			msg += fmt.Sprintf("; workline would settle its own lines in %s", strings.Join(settled, ", "))
-		}
-		return verdict.Finding{Rule: "not-merged", Level: "warn", Where: where, Message: msg}, nil
-	}
-	msg := mergeMessage(base, mr.Branch, settled)
-	if len(settled) == 0 {
-		msg = updateMessage(base, mr.Branch)
-	}
-	commit, err := gitIn(repo, msg, "commit-tree", tree, "-p", tip, "-p", baseTip, "-F", "-")
-	if err != nil {
-		return verdict.Finding{}, err
-	}
-	// A fast-forward, with a lease on the tip read: never over a push of
-	// theirs, never bringing back a branch deleted meanwhile. Not quiet: a
-	// refusal says the forge's own words (`remote: …`).
-	move := []string{"push", "--force-with-lease=refs/heads/" + mr.Branch + ":" + tip, "origin", commit + ":refs/heads/" + mr.Branch}
-	if local {
-		move = []string{"update-ref", "refs/heads/" + mr.Branch, commit, tip}
-	}
-	if _, err := git(repo, nil, move...); err != nil {
-		now, readErr := branchTip(repo, mr.Branch, local)
-		switch {
-		case readErr != nil:
-			return verdict.Finding{}, fmt.Errorf("%w: %v", forge.ErrUnreachable, err)
-		case now == "":
-			return verdict.Finding{Rule: "merge-refused", Level: "warn", Where: where,
-				Message: fmt.Sprintf("the branch was deleted while workline merged %s into it: left deleted, workline's merge refused", base)}, nil
-		case now != tip:
-			return verdict.Finding{Rule: "merge-refused", Level: "warn", Where: where,
-				Message: fmt.Sprintf("the branch moved while workline merged %s into it: their push kept, workline's refused; the next push to %s tries again", base, base)}, nil
-		}
-		// A branch protected, a token short of a permission (GitHub's
-		// `workflows`, for a base that changed a workflow): as a conflict
-		// left, the person's, said with the forge's words.
-		if !clash {
-			return verdict.Finding{Rule: "merge-refused", Level: "warn", Where: where,
-				Message: fmt.Sprintf("behind %s, but the forge refused workline's merge: %s; left to its author", base, refusal(err))}, nil
-		}
-		return verdict.Finding{Rule: "merge-refused", Level: "warn", Where: where,
-			Message: fmt.Sprintf("in conflict with %s only on workline's lines, but the forge refused workline's merge: %s; left to its author", base, refusal(err))}, nil
-	}
-	if len(settled) == 0 {
-		return verdict.Finding{Rule: "merged", Where: where,
-			Message: fmt.Sprintf("%s merged in (%s), as the forge's Update branch does: a merge commit, its commits kept", base, short(baseTip))}, nil
-	}
-	return verdict.Finding{Rule: "merged", Where: where,
-		Message: fmt.Sprintf("%s merged in (%s), workline's own lines settled in %s: a merge commit, its commits kept", base, short(baseTip), strings.Join(settled, ", "))}, nil
-}
-
-// updateMessage is the forge's own message for a merge of base that met
-// no conflict — the merge policy bringing its first in line up to date —,
-// with the trailer of workline's own commits: the line judges the commits
-// before it.
-func updateMessage(base, branch string) string {
-	return fmt.Sprintf("Merge branch '%s' into %s\n\nBrought up to date with %s by the project's merge policy: first\nin line, it merges once its checks pass.\n\n%s: documentalist\n", base, branch, base, OwnTrailer)
-}
 
 // headTips are base's tip and the merge request's head: its branch here,
 // or, for one from a fork, the ref the forge keeps its head under.
@@ -228,31 +77,6 @@ func headTips(repo, base string, mr forge.MergeRequest, local bool) (baseTip, ti
 	}
 	tip, err = fetch(mr.Head)
 	return baseTip, tip, err
-}
-
-// branchTip is a branch's tip as it is now: on origin, or in the clone for
-// a forge kept there; "" when it is gone.
-func branchTip(repo, branch string, local bool) (string, error) {
-	if local {
-		tip, _ := git(repo, nil, "rev-parse", "--verify", "-q", "refs/heads/"+branch)
-		return tip, nil
-	}
-	out, err := git(repo, nil, "ls-remote", "origin", "refs/heads/"+branch)
-	tip, _, _ := strings.Cut(out, "\t")
-	return tip, err
-}
-
-// mergeMessage is the forge's own message for a merge of base, the docs it
-// settled said in its body, with the trailer of workline's own commits: a
-// line given a range ending on it judges nothing.
-func mergeMessage(base, branch string, settled []string) string {
-	var b strings.Builder
-	fmt.Fprintf(&b, "Merge branch '%s' into %s\n\nEvery conflict was in a line workline writes, settled in:\n\n", base, branch)
-	for _, f := range settled {
-		fmt.Fprintf(&b, "- %s\n", f)
-	}
-	fmt.Fprintf(&b, "\nA doc's checked, judged or verified both sides changed is %s's;\na derived block is %s's, regenerated there.\n\n%s: documentalist\n", base, base, OwnTrailer)
-	return b.String()
 }
 
 // settleTree merges baseTip into tip as git does, in memory (git
@@ -434,6 +258,8 @@ func mergeBlobs(repo, name, old, ours, theirs string) (string, bool, error) {
 		if err != nil {
 			return "", err
 		}
+		// Never pushed, never kept: never signed, whatever git is set to
+		// (commit-tree signs only when told, with -S).
 		args := []string{"-c", "user.name=workline", "-c", "user.email=workline@localhost", "commit-tree", tree, "-m", name}
 		for _, p := range parents {
 			args = append(args, "-p", p)
@@ -480,34 +306,4 @@ func object(repo, id string) (string, bool) {
 		return "", false
 	}
 	return string(out), true
-}
-
-// refusal is what the forge said refusing a push: its own lines
-// (`remote: …`) and git's naming the ref refused, with why; else git's
-// last line.
-func refusal(err error) string {
-	var said []string
-	for _, l := range strings.Split(err.Error(), "\n") { // the first after git's own "git push: exit status 1: "
-		if _, s, ok := strings.Cut(l, "remote:"); ok {
-			if s = strings.TrimSpace(s); s != "" {
-				said = append(said, s)
-			}
-		} else if i := strings.Index(l, "! ["); i >= 0 {
-			said = append(said, strings.TrimSpace(l[i:]))
-		}
-	}
-	if len(said) == 0 {
-		// No forge's words: what stopped it here — a pre-push hook of the
-		// machine's —, git's own last line left out.
-		for _, l := range strings.Split(strings.TrimSpace(err.Error()), "\n") {
-			if l = strings.TrimSpace(l); l != "" && !strings.Contains(l, "failed to push some refs") {
-				said = append(said, l)
-			}
-		}
-	}
-	if len(said) == 0 {
-		lines := strings.Split(strings.TrimSpace(err.Error()), "\n")
-		return strings.TrimSpace(lines[len(lines)-1])
-	}
-	return strings.Join(said, "; ")
 }

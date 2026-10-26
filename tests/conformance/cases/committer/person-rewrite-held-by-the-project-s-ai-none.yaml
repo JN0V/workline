@@ -1,0 +1,15 @@
+case: committer/person-rewrite-held-by-the-project-s-ai-none
+about: "A project that sets `ai: none` keeps every agent away: a person's own rewrite included, their commit is refused with its reasons, their message kept."
+given:
+  repo: basic
+  config: {ai: none}
+  setup:
+    - "mkdir -p \"$XDG_CONFIG_HOME/workline\" && printf 'ai: fake:%s\\nroles: {committer: {settings: {rewrite: true}}}\\n' \"$FIXTURES/agents/good-commit-message.yaml\" > \"$XDG_CONFIG_HOME/workline/config.yaml\""
+    - "printf 'fix: AC-3\\n' > .git/COMMIT_EDITMSG"
+  env: {WORKLINE_AI: ""}
+run: {cli: [hook, commit-msg, .git/COMMIT_EDITMSG]}
+expect:
+  exit: 1
+  stderr: ["workline committer: block — rewrite the commit message", "your message is kept in .git/COMMIT_EDITMSG"]
+  files:
+    .git/COMMIT_EDITMSG: {contains: "fix: AC-3"}

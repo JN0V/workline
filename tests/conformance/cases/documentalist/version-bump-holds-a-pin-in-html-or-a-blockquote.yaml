@@ -1,0 +1,17 @@
+case: documentalist/version-bump-holds-a-pin-in-html-or-a-blockquote
+about: "On a release tool's pull request, a doc pinning the version the bump replaces in an HTML tag — `<code>v1.2.0</code>` — or a blockquote — `> v1.2.0` — is suspect: the `>` closing a tag or opening a quote is markup, not a range (#569). A doc saying that version only as a range, `>= 1.2.0` or `> 1.2.0` in prose, still passes."
+given:
+  repo: documented
+  setup:
+    - "mkdir -p ci && printf 'env:\\n  VERSION: v1.2.0   # x-release-please-version\\n  NAME: tool\\n' > ci/job.yml && git add ci && git commit -qm 'ci: the job'"
+    - "C=$(git rev-parse --short HEAD) && printf -- '---\\nsources: [ci/job.yml]\\nchecked: %s\\n---\\n# The job\\n\\nIt runs the tool. Pin <code>v1.2.0</code> in your own job.\\n' $C > docs/tech/tag.md && printf -- '---\\nsources: [ci/job.yml]\\nchecked: %s\\n---\\n# The job, quoted\\n\\nIt runs the tool:\\n\\n> v1.2.0 is the version to pin in your own job.\\n' $C > docs/tech/quote.md && printf -- '---\\nsources: [ci/job.yml]\\nchecked: %s\\n---\\n# What it accepts\\n\\nThe job accepts a tool >= 1.2.0; any version > 1.2.0 works.\\n' $C > docs/tech/range.md && git add docs && git commit -qm 'docs: the job'"
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git tag v1.2.0 && git push -q origin main"
+    - "git checkout -qb release-please--branches--main && sed -i 's/v1.2.0/v1.3.0/' ci/job.yml && git commit -qam 'chore(main): release 1.3.0' && git push -q origin release-please--branches--main"
+  forge: {merge-requests: [{id: 1, branch: release-please--branches--main, base: main, labels: [], comments: []}]}
+run: {role: documentalist, event: merge-request, target: {merge-request: 1}, ai: none}
+expect:
+  findings:
+    - {rule: suspect, where: docs/tech/tag.md, message: "chore(main): release 1.3.0"}
+    - {rule: suspect, where: docs/tech/quote.md, message: "chore(main): release 1.3.0"}
+  no-findings:
+    - {rule: suspect, where: docs/tech/range.md}

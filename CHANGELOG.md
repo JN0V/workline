@@ -1,5 +1,164 @@
 # Changelog
 
+## [0.40.0](https://github.com/JN0V/workline/compare/v0.39.1...v0.40.0) (2026-10-21)
+
+
+### ⚠ BREAKING CHANGES
+
+* push nothing to a merge request's branch ([#623](https://github.com/JN0V/workline/issues/623))
+* the release never waits for the docs ([#617](https://github.com/JN0V/workline/issues/617))
+
+### Features
+
+* **committer:** check the subject a squash lands on the base ([#620](https://github.com/JN0V/workline/issues/620)) ([b22e6ac](https://github.com/JN0V/workline/commit/b22e6ac8a17d6fbdff6aaf5988e8c314da19b2db))
+* **documentalist:** judge a merge request's docs once, at ready ([#627](https://github.com/JN0V/workline/issues/627)) ([73ab545](https://github.com/JN0V/workline/commit/73ab5455814c1b4742fffb0fe26e1278b318d8cc))
+* hold the release on a labelled issue or a main not green ([#615](https://github.com/JN0V/workline/issues/615)) ([24cb5b9](https://github.com/JN0V/workline/commit/24cb5b9b9babb8bb6763d46b44f7c00c09f5af8a))
+* **merge:** drop strict up to date; main's run says a red main ([#612](https://github.com/JN0V/workline/issues/612)) ([9c9e68a](https://github.com/JN0V/workline/commit/9c9e68a2b041c2c55dcdf63e150d8159c5724373))
+* push nothing to a merge request's branch ([#623](https://github.com/JN0V/workline/issues/623)) ([accb3a6](https://github.com/JN0V/workline/commit/accb3a6f47ef20cfad531f689bb613d8a69ab26d))
+* **reviewer:** show nits in the summary, asking nothing ([#613](https://github.com/JN0V/workline/issues/613)) ([5fe30f7](https://github.com/JN0V/workline/commit/5fe30f75be657d687cd1db3d88907ddb8a6a288f))
+* the release never waits for the docs ([#617](https://github.com/JN0V/workline/issues/617)) ([4394bee](https://github.com/JN0V/workline/commit/4394bee29f7350544c6bfb64d0e9bfd05dbe23cd))
+* trust no record another edited; no skip on line changes ([#624](https://github.com/JN0V/workline/issues/624)) ([f117d3d](https://github.com/JN0V/workline/commit/f117d3d05908e9a62bc7bdb951ff82dedfa70232))
+
+
+### Bug Fixes
+
+* an older run applied last keeps the newer comment's text ([#625](https://github.com/JN0V/workline/issues/625)) ([f22195b](https://github.com/JN0V/workline/commit/f22195bad78f101d37c4c0115ef1e42369d470a9))
+* **ci:** let the release's dry run read what holds it ([#622](https://github.com/JN0V/workline/issues/622)) ([2de5678](https://github.com/JN0V/workline/commit/2de56781b89e74d2e2b08048bfb77247bfe0ab91))
+
+## [0.39.1](https://github.com/JN0V/workline/compare/v0.39.0...v0.39.1) (2026-10-21)
+
+
+### Bug Fixes
+
+* a role trusts only its own account's records ([#611](https://github.com/JN0V/workline/issues/611)) ([2d152c4](https://github.com/JN0V/workline/commit/2d152c417f77f70341944ccaee01b50de75a3c6c))
+* **documentalist:** a tag's or a blockquote's &gt; is no range ([#594](https://github.com/JN0V/workline/issues/594)) ([0008ea5](https://github.com/JN0V/workline/commit/0008ea5ba586a84477724010509e23f922cfb026))
+* **documentalist:** apply a placed reader fix, read again what follow closed ([#600](https://github.com/JN0V/workline/issues/600)) ([a317e3f](https://github.com/JN0V/workline/commit/a317e3fa2384711354071ad493a92f6ec6621481))
+* **forge:** try a GitHub call again when it fails for a moment ([#597](https://github.com/JN0V/workline/issues/597)) ([e8a46f7](https://github.com/JN0V/workline/commit/e8a46f763d1379046ff0cb2b622ba85a4ca7d273))
+* **inspector:** post a triage when a push lands before it ([#596](https://github.com/JN0V/workline/issues/596)) ([3b783a5](https://github.com/JN0V/workline/commit/3b783a51b87dff71c772912fdfd496e7a48af08a))
+* **reviewer:** read commits left past five on the other run's turn ([#593](https://github.com/JN0V/workline/issues/593)) ([59389d3](https://github.com/JN0V/workline/commit/59389d3bca44af112292d61fc635d7ced0293744))
+
+## [0.39.0](https://github.com/JN0V/workline/compare/v0.38.0...v0.39.0) (2026-10-20)
+
+
+### Features
+
+* **documentalist:** judge every due doc of a release in one night ([#587](https://github.com/JN0V/workline/issues/587)) ([9583d0b](https://github.com/JN0V/workline/commit/9583d0b15879ea869282931a28efac9682787a40))
+* **inspector:** triage the new findings of the project's gates ([#574](https://github.com/JN0V/workline/issues/574)) ([ef98970](https://github.com/JN0V/workline/commit/ef98970d623cf97d73427058560d298b40e6da91))
+
+
+### Bug Fixes
+
+* **documentalist:** a version in a code block is a pin ([#582](https://github.com/JN0V/workline/issues/582)) ([64d29a1](https://github.com/JN0V/workline/commit/64d29a18765353d4f3a136b2c82d7ec3023464bc))
+* **documentalist:** hold a release on a pinned version, not its history ([#568](https://github.com/JN0V/workline/issues/568)) ([42ffe0b](https://github.com/JN0V/workline/commit/42ffe0bd7befc029ae441954c53ac6cc12ddffe2))
+* **documentalist:** keep a release's fixes when a doc waits on a person ([#567](https://github.com/JN0V/workline/issues/567)) ([b7773bf](https://github.com/JN0V/workline/commit/b7773bfc03dfb01c667d93a18e6a11219843b72c))
+* **gate:** compare against --base when one is given ([#564](https://github.com/JN0V/workline/issues/564)) ([9aa1939](https://github.com/JN0V/workline/commit/9aa1939b59e81e35d4a5660e0cd1eadb7d89553b))
+* **gitlab:** keep the tokens out of the gates job by environment ([#586](https://github.com/JN0V/workline/issues/586)) ([936956f](https://github.com/JN0V/workline/commit/936956fa8f896c13910e5282f79ad58c3f70933f))
+* **gitlab:** read a merge request's notes without its members list ([#565](https://github.com/JN0V/workline/issues/565)) ([9c9a6a1](https://github.com/JN0V/workline/commit/9c9a6a145f7a2567b6ad661fb4716b03d22c7a47))
+* **reviewer:** a block holds only on the side its cause was found on ([#583](https://github.com/JN0V/workline/issues/583)) ([aef2d40](https://github.com/JN0V/workline/commit/aef2d40c7d05edbd42962735dbda96a9b8d7cd27))
+* **reviewer:** leave commits unread when a warn lens fails ([#590](https://github.com/JN0V/workline/issues/590)) ([5ffc2c4](https://github.com/JN0V/workline/commit/5ffc2c463cce525240145fcbd76a8f694140ea09))
+
+## [0.38.0](https://github.com/JN0V/workline/compare/v0.37.0...v0.38.0) (2026-10-20)
+
+
+### Features
+
+* **ci:** run only the gates in a merge queue or train ([#539](https://github.com/JN0V/workline/issues/539)) ([815e51f](https://github.com/JN0V/workline/commit/815e51fb8784d3e8b4b8330e8590d0ea472c11da))
+* **documentalist:** fix a release's docs at night, count them per move ([#535](https://github.com/JN0V/workline/issues/535)) ([b536c8e](https://github.com/JN0V/workline/commit/b536c8eb36b4101d3903df269bb97e37619128d7))
+* **gate:** check the whole repository once on main, keep its findings ([#544](https://github.com/JN0V/workline/issues/544)) ([e5f16ce](https://github.com/JN0V/workline/commit/e5f16ced864ef05e9933591926693e31781e7fcb))
+* **line:** show each step's seconds, say a moment over its budget ([#538](https://github.com/JN0V/workline/issues/538)) ([1c7c69d](https://github.com/JN0V/workline/commit/1c7c69d9e6196c33419682fe97be2b42ed16a18d))
+* **release:** a dry run each night, a release job on GitLab ([#554](https://github.com/JN0V/workline/issues/554)) ([617bbc4](https://github.com/JN0V/workline/commit/617bbc45c7d8ab60c1d05842faae0123f5a412aa))
+* **reviewer:** read only new commits after ready, judge a patch once ([#534](https://github.com/JN0V/workline/issues/534)) ([b4a9d20](https://github.com/JN0V/workline/commit/b4a9d20396be96029ef8637e662818d6c25d1101))
+
+
+### Bug Fixes
+
+* **documentalist:** hold a release pending, say on it its docs wait ([#558](https://github.com/JN0V/workline/issues/558)) ([cfcd942](https://github.com/JN0V/workline/commit/cfcd9422e40a7de63296b943891d25eae78257f0))
+* **follow:** sign the commits it pushes when git is set to sign ([#557](https://github.com/JN0V/workline/issues/557)) ([e7b0429](https://github.com/JN0V/workline/commit/e7b0429054e5c4ab12190f6952a08550c2e0ab6e))
+* **hooks:** run a repository's own hooks from a linked worktree ([#556](https://github.com/JN0V/workline/issues/556)) ([c74e4b3](https://github.com/JN0V/workline/commit/c74e4b34bc072a80f8536b4224f5d2c1db14cbe4))
+* **reviewer:** never block on findings the project set to warn ([#555](https://github.com/JN0V/workline/issues/555)) ([4af775b](https://github.com/JN0V/workline/commit/4af775bbd4bbbe7d7616ca92ee4aec9492e07761))
+
+## [0.37.0](https://github.com/JN0V/workline/compare/v0.36.0...v0.37.0) (2026-10-19)
+
+
+### Features
+
+* **committer:** cap the agent's rewrite at a commit to 30 s ([#528](https://github.com/JN0V/workline/issues/528)) ([f78fcf2](https://github.com/JN0V/workline/commit/f78fcf2276ef14810acd15708e02211dcb548aea))
+* **documentalist:** check at a push only the docs it made suspect ([#531](https://github.com/JN0V/workline/issues/531)) ([fc79b07](https://github.com/JN0V/workline/commit/fc79b0732b209838e540cbf6f8d92078c4002f5b))
+* **reviewer:** ask no agent on a draft, review once it is ready ([#533](https://github.com/JN0V/workline/issues/533)) ([8b1c2a9](https://github.com/JN0V/workline/commit/8b1c2a90bcda18ffdd7633aea56b10c983cbc883))
+* **reviewer:** post the lenses that only warn after the verdict ([#532](https://github.com/JN0V/workline/issues/532)) ([39fa39a](https://github.com/JN0V/workline/commit/39fa39a4230fd0bdf1670ab1ac179918e897c279))
+
+## [0.36.0](https://github.com/JN0V/workline/compare/v0.35.0...v0.36.0) (2026-10-19)
+
+
+### Features
+
+* **gate:** count only the findings a change adds ([#498](https://github.com/JN0V/workline/issues/498)) ([93660de](https://github.com/JN0V/workline/commit/93660de1c4389e58349bdc4891be39eda6b06b31))
+* **gate:** run the gates alone, their new findings in Code Quality ([#501](https://github.com/JN0V/workline/issues/501)) ([b43e873](https://github.com/JN0V/workline/commit/b43e873eaff770e377034baf0fa37ce788ed5802))
+* **gate:** show the new findings on GitHub: a check, one comment ([#500](https://github.com/JN0V/workline/issues/500)) ([1d65cca](https://github.com/JN0V/workline/commit/1d65cca9f5628f0a91eff2f970b75a7cc1de42c6))
+
+
+### Bug Fixes
+
+* **documentalist:** a release fix's record stands for rebuilt heads ([#516](https://github.com/JN0V/workline/issues/516)) ([18524e3](https://github.com/JN0V/workline/commit/18524e338a347d6ac6fd07b994398be4c59cec44))
+
+## [0.35.0](https://github.com/JN0V/workline/compare/v0.34.0...v0.35.0) (2026-10-18)
+
+
+### Features
+
+* **doctor:** say which languages no linter reads ([#497](https://github.com/JN0V/workline/issues/497)) ([33ed774](https://github.com/JN0V/workline/commit/33ed7743df9873f3cd84a72d11f4095a3468b6a9))
+* **documentalist:** move checked when parts support every line ([#490](https://github.com/JN0V/workline/issues/490)) ([ca88174](https://github.com/JN0V/workline/commit/ca88174150b10ce95217b15b3c72ce0f6294c366))
+
+
+### Bug Fixes
+
+* **forge:** try a stalled GitLab call again ([#492](https://github.com/JN0V/workline/issues/492)) ([40a469c](https://github.com/JN0V/workline/commit/40a469c8aacc74ba70cf5811f4dcfe1f515d6f5c))
+* **reviewer:** ask a decision as a key of its finding, said again ([#494](https://github.com/JN0V/workline/issues/494)) ([f258a19](https://github.com/JN0V/workline/commit/f258a194b2750a911d141d739e57cc2873561d68))
+
+## [0.34.0](https://github.com/JN0V/workline/compare/v0.33.0...v0.34.0) (2026-10-18)
+
+
+### Features
+
+* **documentalist:** read a doc judged on its change in parts at night ([#483](https://github.com/JN0V/workline/issues/483)) ([b656b15](https://github.com/JN0V/workline/commit/b656b1537d731af436c0f44c34410f8574f04316))
+* **product-owner:** detect where priority and effort are kept ([#481](https://github.com/JN0V/workline/issues/481)) ([2f89f23](https://github.com/JN0V/workline/commit/2f89f2346b9ee2fb4ac45e741c2ff3c2180fa892))
+* **product-owner:** estimate each issue's effort, order by the grid ([#485](https://github.com/JN0V/workline/issues/485)) ([ad9285b](https://github.com/JN0V/workline/commit/ad9285b3b51d4b67e3aebc794f48c2271ea0c6da))
+* **product-owner:** keep effort in GitLab's weight ([#488](https://github.com/JN0V/workline/issues/488)) ([9d38294](https://github.com/JN0V/workline/commit/9d3829490ddeec8f768cd4961cecf4f9c153e7cc))
+* **product-owner:** keep priority and effort in GitHub's fields ([#486](https://github.com/JN0V/workline/issues/486)) ([87f362a](https://github.com/JN0V/workline/commit/87f362a4963f6dea5a07c5aa42d6f513a3e5f388))
+
+## [0.33.0](https://github.com/JN0V/workline/compare/v0.32.0...v0.33.0) (2026-10-18)
+
+
+### Features
+
+* **documentalist:** keep a judged record off a person's branch ([#470](https://github.com/JN0V/workline/issues/470)) ([c7e1e98](https://github.com/JN0V/workline/commit/c7e1e98a8bd1c558bb3f51a6ec97b278d3350eaf))
+
+
+### Bug Fixes
+
+* **agent:** leave a Claude Code session's variables out of a call ([#453](https://github.com/JN0V/workline/issues/453)) ([de61d38](https://github.com/JN0V/workline/commit/de61d385d4e5b64fded2a974c208c3c7038242c2))
+* **documentalist:** a quote a part judged partial is no proof ([#469](https://github.com/JN0V/workline/issues/469)) ([68cbc4b](https://github.com/JN0V/workline/commit/68cbc4b305733b5ea50610cf8e1794daf74017da))
+* **documentalist:** judge docs in parts only when gardening ([#460](https://github.com/JN0V/workline/issues/460)) ([2c53260](https://github.com/JN0V/workline/commit/2c532600b2ab17dd2c3d076603af8bb31aae956d))
+* **evaluation:** count a doc's lines as its budget does ([#457](https://github.com/JN0V/workline/issues/457)) ([1f81fa7](https://github.com/JN0V/workline/commit/1f81fa73752af995dd97178fff6a646d1d5081fa))
+* **follow:** a role's README and docs pages merge alone ([#478](https://github.com/JN0V/workline/issues/478)) ([d2253bf](https://github.com/JN0V/workline/commit/d2253bf6e73a7b50e63ea29ea5f8c228926db167))
+* **reviewer:** show the code a spec writes as code, not plain words ([#477](https://github.com/JN0V/workline/issues/477)) ([e6e52d2](https://github.com/JN0V/workline/commit/e6e52d2f94632fd84e5cbd9cf750be47c7008f8f))
+* **sample:** a squash's head says whose a checked moved was ([#468](https://github.com/JN0V/workline/issues/468)) ([cdc5a33](https://github.com/JN0V/workline/commit/cdc5a338ef936965be2fcb065a4566ffcf222795))
+
+## [0.32.0](https://github.com/JN0V/workline/compare/v0.31.0...v0.32.0) (2026-10-17)
+
+
+### Features
+
+* **documentalist:** never vouch for a doc its own note doubts ([#451](https://github.com/JN0V/workline/issues/451)) ([be99f44](https://github.com/JN0V/workline/commit/be99f444bd3f789cc0213571db699f31f48bc97b))
+* **merge:** reader pull requests wait for a person's yes ([#442](https://github.com/JN0V/workline/issues/442)) ([760678b](https://github.com/JN0V/workline/commit/760678b9f03d0455b4d13f1c5394a36d82974d0a))
+* **reviewer:** read several specs a night on the forge ([#434](https://github.com/JN0V/workline/issues/434)) ([38688ec](https://github.com/JN0V/workline/commit/38688ece06adebb3fbc4ae9dba4a77ff84348383))
+
+
+### Bug Fixes
+
+* **documentalist:** a part disputes a defect only on the same words ([#443](https://github.com/JN0V/workline/issues/443)) ([6a1f621](https://github.com/JN0V/workline/commit/6a1f621621c936c282dd1dca1ed33b9e0ce10401))
+* **reviewer:** read a change too large for one call in parts ([#450](https://github.com/JN0V/workline/issues/450)) ([2d92f96](https://github.com/JN0V/workline/commit/2d92f96bab994a35704a779d39ba3aa39f9f3bff))
+
 ## [0.31.0](https://github.com/JN0V/workline/compare/v0.30.0...v0.31.0) (2026-10-17)
 
 

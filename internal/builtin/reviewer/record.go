@@ -20,9 +20,13 @@ import (
 // they made, by git's patch id, so a commit rebased with its change intact
 // is not asked again either (#286); and how many reviews ran, which turns
 // the lens a push gets; and the findings of the last review that block,
-// which stand until a commit answers them (#326); and whether every lens
-// read the change since it was last a draft (#359). On a merge request it
-// is hidden in the summary comment; on a machine, in the git directory.
+// which stand until a commit answers them (#326); whether every lens
+// read the change since it was last a draft (#359); and the lenses that
+// did not answer on the commits it does not hold, which no run records
+// before they read them (#588); and those that left new commits past
+// commits-per-push, which read them on the other run's turn (#591). On a
+// merge request it is hidden in the summary comment; on a machine, in
+// the git directory.
 type Record struct {
 	Reviewed []string `json:"reviewed"`
 	Patches  []string `json:"patches,omitempty"`
@@ -30,27 +34,41 @@ type Record struct {
 	Owed     bool     `json:"owed,omitempty"`     // every lens owed: the run on ready, a rule holding it, asked none (#129)
 	ReadAll  bool     `json:"read-all,omitempty"` // every lens answered on the whole change, since the merge request was last a draft (#359)
 	Retried  bool     `json:"retried,omitempty"`  // the run on ready failed once: every lens owed again, once (#359)
+	Failed   []string `json:"failed,omitempty"`   // the lenses that did not answer on the commits after the record: asked first, those commits theirs (#588)
+	LeftBy   []string `json:"left-by,omitempty"`  // the lenses that left new commits past commits-per-push: asked on the other run's turn, never recorded unread (#591)
 	Blocks   []Block  `json:"blocks,omitempty"`   // the findings that block, carried to the next run (#326)
 	// Judged are the findings the judge answered, every run's, kept on a
 	// merge request for the weekly sample (ADR-0046); Gone, how many of
 	// them the summary comment no longer holds. Never on a machine.
 	Judged []Answered `json:"judged,omitempty"`
 	Gone   int        `json:"judged-gone,omitempty"`
+	// comment is the side's own comment the record was read from on a
+	// merge request, whole: a draft's run keeps it as it is, its record
+	// alone written anew (ADR-0050). "" elsewhere, or with none yet.
+	comment string
 }
 
 // Answered is a finding the judge answered: kept (yes) or dropped (no), at
 // the head the review read, with the models of the lens that found it and
 // of its judge. A line each in the summary comment, for the merge
 // request's life: the weekly sample draws the reviewer's acts from them
-// (ADR-0046).
+// (ADR-0046). What it was judged on keys it too, so the same finding on
+// the same patch is not judged again, its verdict kept (ADR-0050, step 6):
+// the patch id of the merge request's change to the cause's file, and the
+// finding's own key; with the independence of a yes, the reason of a no.
+// A line written before them keys nothing: its finding is judged again.
 type Answered struct {
-	Lens   string `json:"lens"`
-	Where  string `json:"where"`
-	At     string `json:"at"`
-	Yes    bool   `json:"yes"`
-	Finder string `json:"finder"`
-	Judge  string `json:"judge"`
-	Title  string `json:"title"`
+	Lens    string `json:"lens"`
+	Where   string `json:"where"`
+	At      string `json:"at"`
+	Patch   string `json:"patch,omitempty"`
+	Finding string `json:"finding,omitempty"`
+	Level   string `json:"level,omitempty"`
+	Why     string `json:"why,omitempty"`
+	Yes     bool   `json:"yes"`
+	Finder  string `json:"finder"`
+	Judge   string `json:"judge"`
+	Title   string `json:"title"`
 }
 
 // SummaryMax is the most characters the summary comment holds: GitHub
@@ -67,16 +85,37 @@ type Block struct {
 	Where string `json:"where"`
 	Title string `json:"title"` // its severity and title, as its row reads beside its comment on the line (#277)
 	Cause Quote  `json:"cause"`
+	Side  string `json:"side,omitempty"` // where its cause was found, onHead or onRemoved: looked for there alone (#570); none in a record before it
 }
 
-// SummaryKey keys the reviewer's one comment on a merge request.
-const SummaryKey = "summary"
+// SummaryKey keys the reviewer's one comment on a merge request; WarnKey,
+// the run apart's, the lenses that warn, when the review is split
+// (ADR-0050): each run its own comment and record, written by its own
+// applying job, which no other edits at the same time.
+const (
+	SummaryKey = "summary"
+	WarnKey    = "warn"
+)
+
+// splitMark is hidden in the summary comment of a review split (ADR-0050):
+// its record is the verdict's run's alone. One without it, written by a
+// run not split, holds every lens's turn: the run apart's first record.
+const splitMark = "<!-- workline:warn-apart -->"
+
+// keyOf is the comment a run of that side keeps its summary and record in.
+func keyOf(side string) string {
+	if side == warnOnly {
+		return WarnKey
+	}
+	return SummaryKey
+}
 
 // recordLine reads a record; one an engine wrote before patch ids holds no
-// `patches=`, nor `read=all` and `retried=once` before #359, and still reads. blocksLine reads
-// its blocks, a line of their own an engine before them leaves.
+// `patches=`, nor `read=all` and `retried=once` before #359, nor `failed=`
+// before #588, nor `left-by=` before #591, and still reads. blocksLine
+// reads its blocks, a line of their own an engine before them leaves.
 var (
-	recordLine = regexp.MustCompile(`<!-- workline:record reviewed=([0-9a-f,]*)(?: patches=([0-9a-f,]*))? runs=(\d+)( owed=all)?( read=all)?( retried=once)? -->`)
+	recordLine = regexp.MustCompile(`<!-- workline:record reviewed=([0-9a-f,]*)(?: patches=([0-9a-f,]*))? runs=(\d+)( owed=all)?( read=all)?( retried=once)?(?: failed=([\w.,-]+))?(?: left-by=([\w.,-]+))? -->`)
 	blocksLine = regexp.MustCompile(`<!-- workline:blocks (.*?) -->`)
 	// judgedHead opens the lines of the findings judged, saying how many
 	// the comment no longer holds; an engine before them wrote none.
@@ -108,6 +147,12 @@ func (r Record) String() string {
 	}
 	if r.Retried {
 		owed += " retried=once"
+	}
+	if len(r.Failed) > 0 {
+		owed += " failed=" + strings.Join(r.Failed, ",")
+	}
+	if len(r.LeftBy) > 0 {
+		owed += " left-by=" + strings.Join(r.LeftBy, ",")
 	}
 	s := fmt.Sprintf("<!-- workline:record reviewed=%s%s runs=%d%s -->", strings.Join(r.Reviewed, ","), patches, r.Runs, owed)
 	if len(r.Blocks) > 0 {
@@ -181,6 +226,8 @@ func parseRecord(text string) (Record, error) {
 	r.Owed = m[4] != ""
 	r.ReadAll = m[5] != ""
 	r.Retried = m[6] != ""
+	r.Failed = ids(m[7])
+	r.LeftBy = ids(m[8])
 	if b := blocksLine.FindStringSubmatch(text); b != nil {
 		if err := json.Unmarshal([]byte(b[1]), &r.Blocks); err != nil {
 			return Record{Judged: r.Judged, Gone: r.Gone}, fmt.Errorf("the findings that blocked do not read: %v", err)
@@ -202,7 +249,9 @@ func ids(list string) []string {
 
 // add records commits as reviewed, and the patch ids of their changes, once
 // each, and one more run; the blocks kept, the findings judged, and
-// whether every lens read the change.
+// whether every lens read the change. No lens owes them any more, nor
+// left any: a caller records only what a lens of its run read, or what
+// none had to read (#588), and names who left the rest (recorded, #591).
 func (r Record) add(commits, patches []string) Record {
 	out := Record{Reviewed: slices.Clone(r.Reviewed), Patches: slices.Clone(r.Patches), Runs: r.Runs + 1, Blocks: slices.Clone(r.Blocks), ReadAll: r.ReadAll, Retried: r.Retried,
 		Judged: slices.Clone(r.Judged), Gone: r.Gone}
@@ -219,12 +268,29 @@ func (r Record) add(commits, patches []string) Record {
 	return out
 }
 
+// owing are the lenses that owe the commits after the record once a run
+// asked some of them and the failed did not answer (#588): those owing
+// before that it did not ask, or that did not answer again, then the new.
+func (r Record) owing(asked, failed []string) []string {
+	var out []string
+	for _, l := range r.Failed {
+		if !slices.Contains(asked, l) || slices.Contains(failed, l) {
+			out = append(out, l)
+		}
+	}
+	return union(out, failed)
+}
+
 // standing are the blocks of the last review that still stand at the head
 // (#326), each at its line there: its lens still blocks (`ai-findings`),
-// and its cause is found again on the change, as a lens's is. A cause no
-// longer found is a commit's answer; one whose file moved is found on its
-// new path, and kept there (#358). One quoted from an issue stands until
-// its lens reads the issue again.
+// and its cause is found again on the change, as a lens's is, on the side
+// it was found on (#570): one found on the head's lines only there, never
+// on a line the change removes that holds its quote too; one found on a
+// removed line while the change still removes it. A cause no longer found
+// is a commit's answer; one whose file moved is found on its new path, and
+// kept there (#358). One quoted from an issue stands until its lens reads
+// the issue again. A block recorded before its side was is looked for on
+// both, as it was then.
 func standing(repo string, s Settings, st state, blocks []Block) []Block {
 	var out []Block
 	for _, b := range blocks {
@@ -232,7 +298,7 @@ func standing(repo string, s Settings, st state, blocks []Block) []Block {
 			continue
 		}
 		if !strings.HasPrefix(b.Cause.Path, "#") {
-			f, why := found(repo, st, b.Lens, false, map[string]any{"severity": "important", "title": b.Lens, "cause": b.Cause})
+			f, why := found(repo, st, b.Lens, false, map[string]any{"severity": "important", "title": b.Lens, "cause": b.Cause}, b.Side)
 			if why != "" || !f.Related {
 				continue
 			}
@@ -255,7 +321,7 @@ func reread(repo string, s Settings, st state, c candidates, related []Finding, 
 	var files []File
 	if whole {
 		var err error
-		if files, err = codeFiles(repo, s, st.lensFrom(), st.Head); err != nil {
+		if files, err = codeFiles(repo, s, st.lensFrom(), st.lensTo()); err != nil {
 			return nil, err
 		}
 	}
@@ -283,8 +349,11 @@ type span struct {
 	From    string   // the newest commit reviewed, with all it holds: the base when none is, the head when every one is
 	Commits []string // the range's, newest first
 	New     int      // how many of them are not reviewed: a merge's line may lie between those that are
+	Fresh   []string // those not reviewed, parents first: what a cap on the commits a push reads counts (ADR-0050)
 	Patches []string // the patch ids of their changes
 	Unread  error    // why git gave no patch ids, when it gave none: commit ids alone tell
+	patchOf map[string]string
+	merges  map[string]bool
 }
 
 // since reads the commits base..head and the patch ids of their changes,
@@ -299,7 +368,7 @@ func (r Record) since(repo, base, head string) (span, error) {
 	if err != nil {
 		return span{}, err
 	}
-	var sp span
+	sp := span{merges: map[string]bool{}}
 	parents := map[string][]string{}
 	var single []string // the commits with one parent: those a patch id names
 	for _, l := range strings.Split(strings.TrimSpace(out), "\n") {
@@ -312,6 +381,7 @@ func (r Record) since(repo, base, head string) (span, error) {
 		if len(f) == 2 {
 			single = append(single, f[0])
 		}
+		sp.merges[f[0]] = len(f) > 2
 	}
 	patch, err := patchIDs(repo, single)
 	if err != nil {
@@ -335,8 +405,10 @@ func (r Record) since(repo, base, head string) (span, error) {
 		})
 		if !reviewed[c] {
 			sp.New++
+			sp.Fresh = append(sp.Fresh, c)
 		}
 	}
+	sp.patchOf = patch
 	sp.From = base
 	for _, c := range sp.Commits {
 		if reviewed[c] {
@@ -350,6 +422,34 @@ func (r Record) since(repo, base, head string) (span, error) {
 		}
 	}
 	return sp, nil
+}
+
+// lineOwn are the files that change what a merge request's own pipeline
+// runs: GitHub's workflows and actions, GitLab's pipeline, workline's
+// settings. A merge request changing them runs its own checks, the
+// reviewer's runs among them (ADR-0051, cut 5); `pipeline-paths` adds
+// those the project's pipeline runs scripts from.
+var lineOwn = []string{".github", ".gitlab-ci.yml", ".workline"}
+
+// lineFiles are the line's own files, and the paths more names, that the
+// commits base..head change: by one of them, a change since undone too,
+// or by the range as a whole, which holds what a merge settled by hand.
+func lineFiles(repo, base, head string, more []string) ([]string, error) {
+	var out []string
+	paths := append(slices.Clone(lineOwn), more...)
+	for _, args := range [][]string{{"log", "--no-merges", "--format=", "--name-only", base + ".." + head}, {"diff", "--name-only", base, head}} {
+		names, err := git(repo, append(append(args, "--"), paths...)...)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range strings.Split(names, "\n") {
+			if n != "" && !slices.Contains(out, n) {
+				out = append(out, n)
+			}
+		}
+	}
+	slices.Sort(out)
+	return out, nil
 }
 
 // patchIDs are the patch ids of commits, none a merge, by commit: git's id
@@ -427,6 +527,38 @@ func MergeSummary(body, read, found string) string {
 	return out
 }
 
+// MergeInto is found, the summary comment a later run wrote, kept as it
+// is but for its record, into which body's, the record of an older run
+// applied after it, is merged (#598): GitLab may apply two waiting runs
+// in any order, and the comment says the newer head. found's blocks and
+// what it owes stay; body's commits, patch ids and findings judged join
+// them, each run counted once. marker, the comment's own, is taken out:
+// the apply writes it again. "" when a record does not read.
+func MergeInto(found, body, read, marker string) string {
+	now, err1 := readRecord(found)
+	ours, err2 := parseRecord(body)
+	was, err3 := readRecord(read)
+	at := strings.Index(found, recordOpening)
+	if err1 != nil || err2 != nil || err3 != nil || at < 0 {
+		return ""
+	}
+	merged := now
+	merged.Reviewed = union(now.Reviewed, ours.Reviewed)
+	merged.Patches = union(now.Patches, ours.Patches)
+	merged.Runs = now.Runs + max(0, ours.Runs-was.Runs)
+	merged.Judged = slices.Clone(now.Judged)
+	for _, j := range ours.Judged {
+		if !slices.Contains(was.Judged, j) && !slices.Contains(merged.Judged, j) {
+			merged.Judged = append(merged.Judged, j)
+		}
+	}
+	out := found[:at] + merged.String()
+	if _, _, held := ReadJudged(found); held {
+		out += merged.judgedLines(SummaryMax - len(out))
+	}
+	return strings.TrimSpace(strings.Replace(out, marker, "", 1))
+}
+
 // union is a's ids, then b's not in a.
 func union(a, b []string) []string {
 	out := slices.Clone(a)
@@ -439,23 +571,50 @@ func union(a, b []string) []string {
 }
 
 // localRecord is where a machine keeps the record: in the git directory,
-// never tracked.
-func localRecord(repo string) string {
+// never tracked; the run apart's beside it (ADR-0050).
+func localRecord(repo, side string) string {
+	name := "reviewer-record"
+	if side == warnOnly {
+		name += "-" + WarnKey
+	}
 	dir, err := git(repo, "rev-parse", "--absolute-git-dir")
 	if err != nil {
-		return filepath.Join(repo, ".git", "workline", "reviewer-record")
+		return filepath.Join(repo, ".git", "workline", name)
 	}
-	return filepath.Join(strings.TrimSpace(dir), "workline", "reviewer-record")
+	return filepath.Join(strings.TrimSpace(dir), "workline", name)
+}
+
+// keptReview is a side's comment, text, as it stands, its record and the
+// blocks beside it replaced by rec's: what the last review said is kept,
+// only the record changes (a draft again, ADR-0050). "" when text holds no
+// record that reads.
+func keptReview(text, side string, rec Record) string {
+	loc := recordLine.FindStringIndex(text)
+	if loc == nil {
+		return ""
+	}
+	end := loc[1]
+	if m := blocksLine.FindStringIndex(text[end:]); m != nil && strings.TrimSpace(text[end:end+m[0]]) == "" {
+		end += m[1]
+	}
+	body := text[:loc[0]] + rec.String() + text[end:]
+	return strings.TrimSpace(strings.Replace(body, forge.Marker("sticky=reviewer/"+keyOf(side)), "", 1))
 }
 
 // loadRecord reads the record: from the merge request's summary comment when
 // the run is on one and may write there, else from the machine's. It says
 // where it read it, and why it could not, when it could not. The summary
 // comment and the machine's file always hold a record: one holding none
-// was damaged, said as one that does not read (#302).
-func loadRecord(repo string, s Settings) (Record, string, error) {
+// was damaged, said as one that does not read (#302). On a merge request,
+// only a comment workline's own account wrote is read, the last, the one
+// Sticky edits (ADR-0051): one another wrote carrying its marker is never
+// taken for the record, and the range is read again, said.
+func loadRecord(repo string, s Settings, side string) (Record, string, error) {
 	if t := mergeRequest(); t != nil && s.ForgeWrites {
 		where := fmt.Sprintf("in its summary comment on merge request %d", t.ID)
+		if side == warnOnly {
+			where = fmt.Sprintf("in the comment of the lenses that warn on merge request %d", t.ID)
+		}
 		f, err := forge.Open(os.Getenv("WORKLINE_FORGE"), repo)
 		if err != nil {
 			return Record{}, where, fmt.Errorf("the forge: %v", err)
@@ -463,23 +622,31 @@ func loadRecord(repo string, s Settings) (Record, string, error) {
 		if f == nil {
 			return Record{}, where, fmt.Errorf("no forge to read the merge request's comments from")
 		}
-		b, ok := f.(forge.Backlog)
-		if !ok {
-			return Record{}, where, fmt.Errorf("this forge cannot list a merge request's comments")
-		}
-		comments, err := b.Comments(*t)
+		kept, err := forge.ReadKept(f, *t)
 		if err != nil {
 			return Record{}, where, err
 		}
-		for _, c := range comments {
-			if strings.Contains(c, forge.Marker("sticky=reviewer/"+SummaryKey)) {
-				r, err := readRecord(c)
-				return r, where, err
-			}
+		marker := forge.Marker("sticky=reviewer/" + keyOf(side))
+		if c, ok := kept.Last(marker); ok {
+			r, err := readRecord(c)
+			r.comment = c
+			return r, where, err
 		}
-		return Record{}, where, nil
+		// The run apart's first (ADR-0050): a summary comment a run not
+		// split wrote holds every lens's commits and turn, and the lenses
+		// owing them or that left some, which it takes up; its blocks and
+		// judged lines stay there. One a split review wrote is the
+		// verdict's run's alone: it starts from the base.
+		if c, ok := kept.Last(forge.Marker("sticky=reviewer/" + SummaryKey)); side == warnOnly && ok && !strings.Contains(c, splitMark) {
+			r, err := readRecord(c)
+			if err != nil {
+				return Record{}, where, nil
+			}
+			return Record{Reviewed: r.Reviewed, Patches: r.Patches, Runs: r.Runs, Owed: r.Owed, ReadAll: r.ReadAll, Retried: r.Retried, Failed: r.Failed, LeftBy: r.LeftBy}, where, nil
+		}
+		return Record{}, where, kept.Unread(marker)
 	}
-	file := localRecord(repo)
+	file := localRecord(repo, side)
 	where := "in " + file
 	if rel, err := filepath.Rel(repo, file); err == nil && !strings.HasPrefix(rel, "..") {
 		where = "in " + rel
@@ -506,8 +673,8 @@ func readRecord(text string) (Record, error) {
 
 // saveLocal keeps the record on this machine: never the findings judged,
 // which only a merge request's summary keeps (String leaves them out).
-func saveLocal(repo string, r Record) error {
-	file := localRecord(repo)
+func saveLocal(repo, side string, r Record) error {
+	file := localRecord(repo, side)
 	if err := os.MkdirAll(filepath.Dir(file), 0o755); err != nil {
 		return err
 	}

@@ -1,0 +1,42 @@
+case: gates/summary-says-none-once-fixed
+about: >
+  A push that fixes the new finding leaves no check on its head, and the
+  summary comment the push before left is edited to say so, never left
+  counting what is gone.
+given:
+  repo: linted
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - git checkout -q -b change
+    - |
+      sed -i 's|^\tos.Remove("c.tmp")$|&\n\tos.Remove("d.tmp")|' clean.go && git commit -qam "feat: clean d too" && git push -q origin change
+  env: {PATH: "$FIXTURES/bin:$PATH"}
+  forge: {merge-requests: [{id: 1, branch: change, labels: [], comments: []}]}
+  config:
+    routing: {events: {merge-request: ["gate:merge"]}}
+    gates: {merge: {checks: [{id: lint, run: "golangci-lint run --output.sarif.path={out}/lint.sarif", output: sarif, max: {error: 0}}]}}
+run:
+  route: merge-request
+  input: {range: main..change}
+  gates-only: true
+  then: resume
+  apply-from:
+    merge-request: 1
+    base: main
+    head: change
+    gates: true
+    again:
+      - |
+        git checkout -q change && sed -i 's|^\tos.Remove("d.tmp")$|\tif err := os.Remove("d.tmp"); err != nil {\n\t\tpanic(err)\n\t}|' clean.go && git commit -qam "fix: check the error" && git push -q origin change
+expect:
+  no-findings: [{rule: gates-not-shown}]
+  forge:
+    check-runs:
+      - {commit: change, name: workline gates, absent: true}
+      - {commit: "change~1", name: workline gates, count: 1}
+    merge-requests:
+      - id: 1
+        comments: 1
+        posted: 1
+        comment-contains: ["### Gates: no new finding", "| `merge` | `lint` | 0 | 3 |"]
+        comment-lacks: ["clean.go:10"]

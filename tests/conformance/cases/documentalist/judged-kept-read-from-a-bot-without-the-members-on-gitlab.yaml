@@ -1,0 +1,23 @@
+case: documentalist/judged-kept-read-from-a-bot-without-the-members-on-gitlab
+about: "On GitLab, a token that may not list the project's members (401, the job's own on a self-managed instance, #552): the documentalist's note, written by workline's own account, a project access token's user, is read all the same, and the doc is not judged again (ADR-0051). Who is of the project is not needed: nothing is said of the members."
+given:
+  repo: documented
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb feature && printf '\\n// TokenTTL is in seconds.\\n' >> src/auth/token.go && git commit -qam 'docs(auth): say the unit of the lifetime' && git push -q origin feature && git checkout -q --detach"
+  forge:
+    merge-requests: [{id: 1, branch: feature, base: main, labels: [], comments: []}]
+    token-user: project_1_bot_0a1b
+    members-refused: 401
+run: {role: documentalist, event: merge-request, target: {merge-request: 1}, ai: 'cmd:sh "$FIXTURES/agents/judged-only.sh"', forge: gitlab, then: again, summary: true}
+expect:
+  status: pass
+  agent-calls: 1
+  not-pushed: [feature]
+  findings:
+    - {rule: suspect, where: docs/tech/auth.md, message: "the doc and its sources unchanged since: not put before an agent again"}
+  no-findings: [{rule: record-unread}, {rule: members-unread}]
+  summary-lacks: [members-unread]
+  forge:
+    merge-requests:
+      - {id: 1, comments: 1, comment-contains: ["<!-- workline:doc-judged", "<!-- workline:sticky=documentalist/judged -->"]}

@@ -1,0 +1,31 @@
+case: forge/github-write-answered-5xx-not-sent-again
+about: "A GitHub write answered with a 5xx may have been taken: it is sent once, never again, which could post a comment twice; the failure says so, to run again later (#491). GitHub's own forge code, a fake gh."
+given:
+  repo: linted
+  engine-tags: [workline_quick]
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - git checkout -q -b change
+    - "printf 'package main\n\nimport \"os\"\n\nfunc clean() {\n\tos.Remove(\"f\")\n}\n' > clean.go && git add clean.go && git commit -qm 'feat: clean' && git push -q origin change"
+  env: {PATH: "$FIXTURES/bin:$PATH"}
+  config:
+    routing: {events: {merge-request: ["gate:merge"]}}
+    gates: {merge: {checks: [{id: lint, run: "golangci-lint run --output.sarif.path={out}/lint.sarif", output: sarif, max: {error: 0}}]}}
+run:
+  route: merge-request
+  input: {range: main..change}
+  gates-only: true
+  forge: github
+  then: resume
+  apply-from:
+    merge-request: 1
+    base: main
+    head: change
+    gates: true
+    env: {PATH: "$FIXTURES/gh:$PATH", GH_LOG: .git/gh.log, GH_FAULT: "POST issues/1/comments 502"}
+expect:
+  findings: [{rule: gates-not-shown, message: "gh: Server Error (HTTP 502) (a write: not sent again, GitHub may have taken it)"}]
+  files:
+    .git/gh.log:
+      contains: ["POST issues/1/comments: 502"]
+      lacks: ["comment 1"]

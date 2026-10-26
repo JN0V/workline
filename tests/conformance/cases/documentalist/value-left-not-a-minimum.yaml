@@ -1,0 +1,12 @@
+case: documentalist/value-left-not-a-minimum
+about: "A version given as a minimum (\"1.4.1 or later\", \"and newer\") or as the release a feature came in (\"from 1.4.1\", \"the first release after 1.4.1\") is not reported as left by a fix replacing it: it stays true at the next version (#346; ADR-0014, step 2). A version said plainly beside them is."
+given:
+  repo: drifted
+  setup:
+    - "printf -- '---\\nsources: [Clock/library.json]\\nchecked: X\\n---\\n# Upgrading\\n\\nThe drift table needs Clock 1.4.1 or later.\\nThe retry works with 1.4.1 and newer.\\nThe web page holds the chart from 1.4.1.\\nIts own image: the first release after 1.4.1.\\n\\nInstall `clock@1.4.1`.\\n' > docs/clock/upgrading.md && C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: X$/checked: $C/\" docs/clock/upgrading.md && git add . && git commit -qm 'docs(clock): upgrading'"
+    - "sed -i 's/\"version\": \"1.4.1\"/\"version\": \"1.5.0\"/' Clock/library.json && git commit -qam 'feat(clock): 1.5.0'"
+run: {role: documentalist, event: merge-request, ai: "cmd:sh $FIXTURES/agents/fix-clock-readme.sh version"}
+expect:
+  status: pass
+  findings:
+    - {rule: value-left, where: docs/clock/upgrading.md, message: "is still said on line 12;"}

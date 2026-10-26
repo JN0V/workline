@@ -58,8 +58,7 @@ func (s Settings) IsBranch(branch string) bool {
 }
 
 // ErrShallow is a clone missing history: the last release may be in what
-// was not fetched, and starting from no tag would take every doc ever
-// suspect for the release's.
+// was not fetched.
 var ErrShallow = errors.New("this clone is shallow: the last release may be in the history it lacks; fetch it whole (actions/checkout's `fetch-depth: 0`, GitLab's `GIT_DEPTH: 0`)")
 
 // Last is the last release HEAD holds: the highest version among the tags
@@ -67,6 +66,29 @@ var ErrShallow = errors.New("this clone is shallow: the last release may be in t
 // hotfix merged back would be. A prerelease (v1.2.0-rc.1) and an alias (v1,
 // latest) are not releases. "" when there is none.
 func Last(repo, pattern string) (string, error) {
+	return highest(repo, pattern)
+}
+
+// AtHead lists the releases HEAD's own tags name: those matching the
+// pattern that read as a version, no prerelease nor alias.
+func AtHead(repo, pattern string) ([]string, error) {
+	out, err := exec.Command("git", "-C", repo, "tag", "--points-at", "HEAD", "--list", pattern).Output()
+	if err != nil {
+		return nil, fmt.Errorf("git tag: %w", err)
+	}
+	prefix, _, _ := strings.Cut(pattern, "*")
+	var at []string
+	for _, tag := range strings.Fields(string(out)) {
+		if version(strings.TrimPrefix(tag, prefix)) != nil {
+			at = append(at, tag)
+		}
+	}
+	return at, nil
+}
+
+// highest is the highest version among the tags matching the pattern and
+// merged into HEAD; "" when there is none.
+func highest(repo, pattern string) (string, error) {
 	out, err := exec.Command("git", "-C", repo, "rev-parse", "--is-shallow-repository").Output()
 	if err != nil {
 		return "", fmt.Errorf("git rev-parse: %w", err)

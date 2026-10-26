@@ -1,9 +1,9 @@
 ---
 sources: [ci/github, ci/gitlab, ci/forgejo/workline-forge.sh, roles/product-owner/role.yaml, cmd/workline]
-checked: e2580728
-judged: 7e7b322
-verified: agent:documentalist
-reader: dccc73a60a07
+checked: 87a81d4a
+judged: a8574a5
+verified: agent:claude-code
+reader: 8aab3bd261d9
 ---
 # Setting up workline in CI
 
@@ -32,15 +32,33 @@ then one that applies, with the write token and no AI key
 | Task | When | Judges | Applies |
 |---|---|---|---|
 | merge request | each one | the line on its commits | the fixes, to its branch; the doc findings beside their lines |
-| follow | a push to the default branch; with the merge policy, after each judge and when a label changes | — | the release fix rebuilt on it ([ADR-0034](adr/0034-the-release-fix-follows-its-base.md)); when set, the branch merged into people's pull requests in conflict only on workline's lines ([ADR-0041](adr/0041-workline-settles-its-own-lines-when-the-base-moves.md)), and the forge's auto-merge turned on for what a person accepted ([merge policy](merge-policy.md)) |
-| gardening | nightly while a backlog is caught up, then weekly | the `schedule` line | one merge request a task ([ADR-0006](adr/0006-gardening-opens-one-merge-request-per-task.md)); then those the branch moved under, rebuilt or closed ([ADR-0034](adr/0034-the-release-fix-follows-its-base.md#amendment-2026-10-12-gardenings-merge-requests-follow-too-or-are-closed)) |
+| main after a merge | a push to the default branch | the gates, every finding kept as the next base; the whole repository's checks; no agent | one issue, edited when what it lists changes ([how](main-after-merge.md)) |
+| follow | a push to the default branch; with the merge policy, after each judge and when a label changes | — | auto-merge on for what a person accepted ([merge policy](merge-policy.md)) |
+| gardening | weekly, Sunday evening; nightly to catch up a backlog | the `schedule` line | one merge request a task ([ADR-0006](adr/0006-gardening-opens-one-merge-request-per-task.md)); then those the branch moved under, rebuilt or closed ([ADR-0034](adr/0034-the-release-fix-follows-its-base.md#amendment-2026-10-12-gardenings-merge-requests-follow-too-or-are-closed)) |
+| release dry run | with the gardening | what would hold the release if it were cut now; no agent | a part of main's issue ([how](release.md)) |
+| release merge request | each of its runs; on GitHub, again when the hold label changes or main's runs end | an open issue labelled `workline:hold-release`, main's tip not green: read, never run again | its check red ([how](release-holds.md)) |
+| release, GitLab | a tag pipeline | the release's line, no agent, no token | — : red when it holds the release, so the jobs publishing it wait ([how](release.md#at-a-tag-on-gitlab)) |
 | sample | weekly | the docs and acts drawn | an issue comment, a merge request |
 | import | by hand | a file's items | the issues |
+
+- **The gates run first, alone**, with no write token and no AI key
+  ([gates in CI](gates-in-ci.md)).
+- **What only warns runs apart**: the reviewer's lenses that warn read
+  in a job of their own beside the judge, posting in a comment of their
+  own; the head's verdict waits only for what can block
+  ([apart](../roles/reviewer/docs/apart.md)). The inspector's triage of
+  what the gates found reads there too, given their result
+  ([the triage in CI](gates-in-ci.md#the-inspectors-triage)).
+- **A draft asks no agent** until it is marked ready
+  ([how](../roles/reviewer/docs/ready.md)).
+- **A merge queue or train runs the gates alone** on the merged result,
+  no agent; the checks it requires report there
+  ([how](merge-queue.md)).
 
 - **A judge that fails still hands over**: the applying job runs whatever
   the judge's outcome, and the pipeline fails by the judge's. It applies
   what the steps that passed proposed, and what a blocked role says why
-  it blocks (`on-block`: the reviewer's comment, [#226](https://github.com/JN0V/workline/issues/226)). An agent out of
+  it blocks, such as its comments ([`on-block`](spec/role-contract.md#one-run)). An agent out of
   reach (3) warns on both forges.
 - **One judge per merge request at a time**: a push cancels the run still
   judging the head before, and nothing of it is applied; the newer run
@@ -70,8 +88,8 @@ In the repository:
    them, you review and commit
    ([adopting a repository](../roles/documentalist/docs/push.md#adopting-a-repository)).
 2. `.workline/config.yaml`, if the defaults do not suit — for a backlog of
-   docs far behind, the caps on judging in parts, on by default
-   ([ADR-0009](adr/0009-docs-far-behind-are-judged-in-parts.md)):
+   docs far behind, the caps on judging in parts, on by default when
+   gardening ([ADR-0009](adr/0009-docs-far-behind-are-judged-in-parts.md)):
 
    ```yaml
    roles:
@@ -91,9 +109,9 @@ In the repository:
 
 ## What a job shows
 
-Each job's summary — the verdict, each step's verdict and findings, the
-agent's calls, what was applied and what waits to be — is written by the
-engine (`--summary`,
+Each job's summary — the verdict, each step's verdict, findings and
+seconds, the agent's calls, what was applied and what waits to be — is
+written by the engine (`--summary`,
 [ADR-0035](adr/0035-the-engine-writes-the-jobs-summary.md)), for a person
 who reads neither the log nor `line.json`:
 
@@ -111,9 +129,11 @@ conversation to resolve but the reviewer's comments
 ([ADR-0047](adr/0047-findings-on-a-merge-request-open-no-conversation.md)):
 
 - **GitHub**: the documentalist's as the annotations of the check
-  `workline findings`; code scanning keeps the gates' and the
-  committer's.
-- **GitLab**: the Code Quality report, a report, not a thread.
+  `workline findings`; the gates' new ones as those of `workline gates`,
+  with one summary comment ([gates in CI](gates-in-ci.md)); code scanning
+  keeps the committer's.
+- **GitLab**: the Code Quality report, a report, not a thread; the gates'
+  job writes its own.
 - `workline doctor` says whether merging requires every conversation
   resolved.
 

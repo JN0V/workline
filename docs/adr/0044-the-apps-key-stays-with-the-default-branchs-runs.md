@@ -125,7 +125,9 @@ Decided by the maintainer on [#375], from the options written there.
     head, its issues for what lies outside the change, its record. Never
     a patch, a label nor a verdict: the run of the new head applies its
     own. A role names what it applies then (`on-moved-on`,
-    [role contract](../spec/role-contract.md)); the reviewer alone does.
+    [role contract](../spec/role-contract.md)): the reviewer, and the
+    inspector its triage, comment and record
+    ([#580](https://github.com/JN0V/workline/issues/580)).
   - **The next judging run waits for that apply**: one lock per pull
     request, which the judging and the applying jobs share, neither
     cancelling the other (GitHub's `concurrency`, GitLab's

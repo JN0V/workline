@@ -1,6 +1,6 @@
 ---
 sources: [tests/evaluation]
-checked: e94245f9
+checked: 0cefabc7
 judged: 62abc22
 verified: agent:claude-code
 ---
@@ -30,6 +30,17 @@ the local forge (`forge: local`,
 reported by the engine with no agent (ADR-0014, step 2), are graded there
 too and must never be lost.
 
+Judged in parts, both sides too: `finds-planted-defects-in-parts` holds,
+beside the doc with four defects planted, a clean control on a source the
+same commit changes, read in parts with `parts-move-checked` on. Never
+`checked` over a planted falsehood, and `checked` on the control
+([ADR-0009, amended](../../adr/0009-docs-far-behind-are-judged-in-parts.md#amendment-2026-10-18-checked-after-parts-measured-off):
+measured on 2026-10-18, the control ended `checked` in 3 runs of 5;
+[again](../../adr/0009-docs-far-behind-are-judged-in-parts.md#amendment-2026-10-18-checked-after-parts-measured-again-on),
+the control made exact, in 5 of 5;
+[the shipped engine](../../adr/0009-docs-far-behind-are-judged-in-parts.md#amendment-2026-10-18-the-shipped-engine-measured),
+in 5 of 5).
+
 To measure the `drifted` cases again, five runs, as ADR-0014's steps 1
 and 3 ran them (`-v` for the notes):
 
@@ -38,6 +49,13 @@ for i in 1 2 3 4 5; do WORKLINE_EVAL=claude:sonnet go test -count=1 -timeout 60m
 # the summary pools every run of a case: keep one engine's rows apart (the workline column)
 awk -F'\t' 'NR==1 || $2 == "<commit>"' tests/evaluation/results.tsv > "$TMPDIR/runs.tsv" && go run ./tests/evaluation/summary "$TMPDIR/runs.tsv" | grep drifted
 ```
+
+Measured again on 2026-10-17, every documentalist case planned at five
+runs: stopped at three in the morning when one vouched for a falsehood;
+after the guard against it, 12 of 14 cases earning every point in every
+run; the last two too that evening, once a merge request left a doc too
+large for the gardening: all 14 met
+([the documentalist, measured](../../research/documentalist-measured.md)).
 
 ## The reviewer's measure
 

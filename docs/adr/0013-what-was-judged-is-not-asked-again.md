@@ -3,7 +3,11 @@
 - **Status:** accepted; amended 2026-10-02 (a task proposed earlier in the
   run waits too); amended 2026-10-12 (the reviewer knows a change rebased,
   and what a merge of the base settled; a doc's `judged` says what was
-  read); amended 2026-10-14 (a doc waits while a merge request holds it)
+  read); amended 2026-10-14 (a doc waits while a merge request holds it);
+  amended 2026-10-17 (on a person's merge request, the record waits in a
+  comment); amended 2026-10-21 (a record is read only from workline's own
+  account's comment, one no one else edited last; the reviewer skips no
+  commit when what its own pipeline runs changes)
 - **Date:** 2026-10-01
 - **Amends:** ADR-0012 (a fix that cannot vouch is kept), ADR-0006 (one
   merge request per task)
@@ -171,7 +175,8 @@ Not chosen, for now: the agent reading the doc's claims against the code
 as it is now, not only the diff, before saying nothing is wrong. It would
 vouch for more, but would cost a read of each such doc against its sources
 every night one changes. Left as a follow-up; the doc still waits for a
-person, as before.
+person, as before. *(Built 2026-10-18, when gardening, in parts:
+[ADR-0009, amended](0009-docs-far-behind-are-judged-in-parts.md#amendment-2026-10-18-a-doc-judged-on-its-change-alone).)*
 
 ## Amendment (2026-10-14): a doc waits while a merge request holds it
 
@@ -213,3 +218,86 @@ Not chosen:
   applied has no branch. Such a doc waits for `derived` too, said.
 - **One merge request per doc judged in parts**: one fix call per doc,
   fewer docs a night.
+
+## Amendment (2026-10-17): on a person's merge request, the record waits in a comment
+
+From 2026-10-04 to 2026-10-17, the documentalist pushed 42 commits to 20
+people's pull requests on workline: 41 only moved a record line
+(`judged`, `verified` or `judged-in-parts`), one changed a doc's text
+([#463](https://github.com/JN0V/workline/issues/463)). Each was a new
+head: the checks ran again (`test`, 2 min 46 s on
+[#451](https://github.com/JN0V/workline/pull/451)), and the person pulled
+before pushing again: the record, the doc's header (above), took a commit.
+
+- **A doc found with nothing to fix gets no commit** on a person's merge
+  request: a patch changing only those lines is taken out of what is
+  committed.
+- **Its record is kept in the documentalist's comment** on the merge
+  request, hidden, as the reviewer keeps its own: the commit judged at,
+  and the git object id of the doc and of each of its sources there (a
+  blob, or a tree for a folder). Only a comment a bot or a person of the
+  project wrote is read: on a public merge request, anyone may comment.
+- **The next push reads it**: a doc whose ids are all the same at the new
+  head is not put before an agent again; one whose doc or source changed
+  is judged again.
+- **A real fix is still one commit**, its message naming the doc. A move of
+  `checked` is still a commit too: what earns it does not change
+  ([ADR-0014](0014-checked-is-earned-by-what-was-read.md)).
+- **After the merge, gardening writes `judged` on the default branch**,
+  naming the commit the merge request became, when the doc and its sources
+  are still as judged
+  ([ADR-0010, amended](0010-docs-judged-on-the-merge-request-and-by-gardening.md#amendment-2026-10-17-the-commit-a-merge-request-became-stands-for-its-record)).
+- **A fork's merge request**, which gets no push, gets its record too.
+- **Where the comment cannot serve, the record is committed, as before**:
+  a forge that does not say which commit a merge request became (`local`,
+  `cmd:`), a comment that could not be read (`record-unread`), a doc with
+  a source in another repository.
+
+The record is still the doc's header once merged, in the repository. While
+the merge request is open it is a comment, which anyone with write access
+may edit, as the reviewer's.
+
+Not chosen ([the options](https://github.com/JN0V/workline/issues/463#issuecomment-6239964209),
+[the decision](https://github.com/JN0V/workline/issues/463#issuecomment-6240008472)):
+
+- **One record commit, at the yes**: a merge request merged with the
+  forge's button and no label gets none.
+- **Committing only real fixes, judging again after the merge**: each doc
+  judged twice for one change.
+- **Keeping it as it was**: 41 commits in two weeks that change no text.
+
+## Amendment (2026-10-21): only workline's own account's comment holds a record
+
+[ADR-0051](0051-a-check-sits-where-its-catch-is-worth-its-cost.md), step 1.
+The reviewer read the first comment carrying its marker, from any author;
+the documentalist and the inspector, any bot's or person of the project's.
+
+- **A record is read only from the comment workline's own account
+  wrote**: the GitHub App, by its slug or its id (`WORKLINE_APP_ID`, which
+  the judging jobs get); else the token's user, `github-actions[bot]` for
+  a job's own token; on GitLab, `WORKLINE_GITLAB_TOKEN`'s user, or one the
+  project names in `gitlab: {bots}`. The reviewer, the inspector and the
+  documentalist read so, through one helper.
+- **Another's comment carrying the marker is never read**, a person of
+  the project's neither: the role reads again what it would have skipped,
+  and says whose comment it left (`record-unread`). Never a skip.
+- **On a merge request, a role's sticky comment is workline's own**:
+  another's carrying the marker is left, and workline's own posted after
+  it. On an issue, a role's comment stays its own by its marker
+  ([ADR-0038](0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md)).
+- **Nor one another edited last** ([ADR-0051], step 9): GitHub's and
+  GitLab's REST APIs do not say who edited a comment, their GraphQL does
+  (GitHub's `editor`, GitLab's `lastEditedBy`). workline's next edit
+  makes it its own again. A token GraphQL refuses, GitLab's job's own,
+  reads no record, said (`record-unread`).
+- **The reviewer skips no commit when what its own pipeline runs
+  changes** (`.github/`, `.gitlab-ci.yml`, `.workline/`, and the paths
+  `pipeline-paths` names), by any commit of the range ([ADR-0051], step
+  9): such a merge request runs its own
+  workflow, which wrote what the record says. Every commit is read again
+  at each push, none left past `commits-per-push`, said
+  (`line-changed`). The inspector's record is left as it is: its triage
+  never changes the verdict.
+- **Not the forge's own markers**: why in [ADR-0051], cut 5.
+
+[ADR-0051]: 0051-a-check-sits-where-its-catch-is-worth-its-cost.md

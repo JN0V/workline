@@ -37,7 +37,7 @@ in a repository's refs — more than workline needs, and a tool to install.
   with git: a merge request whose branch its base holds reads as merged, one
   whose branch is gone as closed. `workline issues` lists and shows them.
   Every write that reaches a forge works on it: the merge request's comment
-  and labels, `--push-to-merge-request` (a commit on the local branch),
+  and labels, a merge request's patch comment,
   `--open-merge-request`, the tracking issues, the sample's `--apply`, the
   release, `workline item ready --forge local`, and `workline docs`
   through the engine.

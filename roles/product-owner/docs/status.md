@@ -1,4 +1,4 @@
-# Product owner — where it stands (2026-10-17)
+# Product owner — where it stands (2026-10-18)
 
 **In one line:** refocused by
 [ADR-0038](../../../docs/adr/0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md):
@@ -93,6 +93,12 @@ in [tests/evaluation/cases/product-owner](../../../tests/evaluation/cases/produc
   `sources-a-folder`.
 - **Ordering and milestones**, by due date: `order-*`, `milestone-set`,
   `slipped-*`, `summary-next-milestones-by-due-date`.
+- **Where priority and effort are kept**, off by default
+  ([ADR-0040](../../../docs/adr/0040-priority-and-effort-are-the-forges-the-product-owner-estimates-them.md),
+  step 2): `priority-*`; the effort and the grid (step 3): `effort-*`,
+  `grid-next-says-each-cell`, `estimates-stuck-said`, the reviewer's
+  `spec-read-in-the-owners-order`; GitHub's fields (step 4): `field-*`;
+  GitLab's weight (step 5): `weight-*`.
 - **A backlog file imported**, mapped item by item, judged then applied
   apart: backlog's `import-*`.
 - **One way for every role to open an issue**: backlog's `issue-*`,
@@ -139,10 +145,37 @@ in [tests/evaluation/cases/product-owner](../../../tests/evaluation/cases/produc
    agent.
 2. **Priority and effort where the forge keeps them, proposed**
    ([ADR-0040](../../../docs/adr/0040-priority-and-effort-are-the-forges-the-product-owner-estimates-them.md),
-   [examples](priority-and-effort.md)): six steps, conformance first, then
-   a live try on a new jn0v-lab repository. Step 1 built: the levels read
-   by name through one table (`internal/scale`), no behaviour change, not
-   tried live. No issue yet.
+   [examples](priority-and-effort.md),
+   [#475](https://github.com/JN0V/workline/issues/475)): six steps,
+   conformance first, then a live try on a new jn0v-lab repository.
+   - **Step 1 built**: the levels read by name through one table
+     (`internal/scale`), no behaviour change.
+   - **Step 2 built, off by default**: where each axis is kept, found when
+     the settings ask (`priority`, `effort`); the forge's words created,
+     ranked on GitLab; a value in two places writes nothing. Tried on the
+     GitLab sandbox, judged and not applied (its pull request's Tried).
+   - **Step 3 built, off by default**: the effort estimated beside the
+     priority (the act `effort`, off), each value set once, only where
+     empty, read again when applied; the grid's order and Next's cells,
+     the Urgents said apart, estimates stuck on one value said, with the
+     settings; the reviewer reads the specs in that order.
+   - **Step 4 built, off by default**: GitHub's Priority and Effort
+     fields found before any label, read and written by option name;
+     members-only values on a public repository never shown nor
+     proposed; a token not shown to read them writes nothing there. Tried
+     live on [jn0v-lab/workline-priority-try](https://github.com/jn0v-lab/workline-priority-try)
+     with a member's token (its pull request's Tried); the job's own
+     token and an App's not tried: the first needs a token with the
+     `workflow` scope to add a workflow there, the second the App
+     installed on jn0v-lab.
+   - **Step 5 built, off by default**: GitLab's weight found for the
+     effort where the issues carry one (Premium, Ultimate), read in
+     bands, written 1, 3 or 5 and read back, never a parent's; Free
+     keeps the labels. Tried on the GitLab sandbox, Free only
+     ([#488](https://github.com/JN0V/workline/pull/488)'s Tried); Premium
+     not tried, no project at hand. A
+     project's own bands ("another scale sets its bands") not built.
+   - **Next**: step 6, workline's labels renamed.
 3. **Tries on real use**, nothing to build (no issue yet):
    - **answers on the issue**: the trial, measured (To leave beta, 2); a
      real agent's revision after a comment; an outsider's and a bot's

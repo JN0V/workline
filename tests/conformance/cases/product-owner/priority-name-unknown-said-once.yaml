@@ -1,0 +1,20 @@
+case: product-owner/priority-name-unknown-said-once
+about: "In the project's family, a name no table knows carries no value and is said once in the run, with how to map it; the issues bearing it order as having none. The values known still order Next (ADR-0040, step 2)."
+given:
+  repo: backlog
+  config:
+    roles:
+      product-owner:
+        settings: {priority: auto}
+  forge:
+    issues:
+      - {id: 12, title: "Quote commas in exported cells", body: "A comma splits a cell.", labels: [workline:ready, priority/awaiting-more-evidence], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 13, title: "Keep the last row in the CSV export", body: "The export drops its last row.", labels: [workline:ready, priority/backlog], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 14, title: "Export in JSON", body: "Add a JSON export.", labels: [workline:ready, priority/critical-urgent], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: none, summary: true}
+expect:
+  agent-calls: 0
+  findings:
+    - {rule: values-where, message: "Priority: labels priority/*, the project's."}
+    - {rule: level-unknown, message: "\"priority/awaiting-more-evidence\" names no level"}
+  summary-file: ["- **next to build** (3)\n  - [#14](https://forge.example/issues/14): Export in JSON — Urgent\n  - [#13](https://forge.example/issues/13): Keep the last row in the CSV export — Low\n  - [#12](https://forge.example/issues/12): Quote commas in exported cells — no priority\n"]

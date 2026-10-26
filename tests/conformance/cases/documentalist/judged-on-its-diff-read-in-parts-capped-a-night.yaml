@@ -1,0 +1,18 @@
+case: documentalist/judged-on-its-diff-read-in-parts-capped-a-night
+about: "Docs whose sources are too large to go whole, read in parts at night rather than on their change alone, share the night's caps with the others: parts-max-per-run a round, ai-max-tokens the run. Three such docs of two parts each, four parts a round, a night that can pay four calls: two are read, the third named for a later run (#462)."
+given:
+  repo: documented
+  setup:
+    - "seq 1 3000 | sed 's/^/var b/' > src/auth/big.go && sed -i 's#^sources: \\[src/auth/token.go\\]#sources: [src/auth/token.go, src/auth/big.go]#' docs/tech/auth.md && sed 's/^# Authentication/# The token table/' docs/tech/auth.md > docs/tech/table.md && sed 's/^# Authentication/# Token lifetime/' docs/tech/auth.md > docs/tech/ttl.md && git add -A && git commit -qm 'feat(auth): add the big table'"
+    - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C/\" docs/tech/auth.md docs/tech/table.md docs/tech/ttl.md && git commit -qam 'docs: confirm the auth docs'"
+    - "echo 'var extra' >> src/auth/big.go && git commit -qam 'feat(auth): add a row to the big table'"
+  config: {roles: {documentalist: {settings: {parts-max-per-run: 4, ai-max-tokens: 400}}}}
+run: {role: documentalist, event: schedule, ai: "fake:parts-nothing-found-costly"}
+expect:
+  status: pass
+  agent-calls: 4   # two parts a doc, two docs
+  findings:
+    - {rule: ai-max-tokens, level: warn}
+    - {rule: suspect, where: docs/tech/auth.md, message: "2 parts, 0 claims kept, nothing found wrong"}
+    - {rule: suspect, where: docs/tech/table.md, message: "2 parts, 0 claims kept, nothing found wrong"}
+    - {rule: suspect, where: docs/tech/ttl.md, message: "in a later round: past parts-max-per-run, 4"}

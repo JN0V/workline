@@ -1,0 +1,26 @@
+case: release/dry-run-lists-what-holds
+about: "Each night, a release's dry run says what would hold the release if it were cut now from the branch's tip (ADR-0050): here a gate the project runs at the release, which fails. Every step runs with no agent, nothing is applied, and what would block is said as a warning: the line passes. It is posted in a part of the default branch's issue, opened for it. The docs hold no release (ADR-0051): a doc made suspect since the last tag is not listed."
+given:
+  repo: documented
+  setup:
+    - "git tag v1.0.0"
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+  config:
+    routing: {events: {release: ["gate:release"]}}
+    gates: {release: {checks: [{id: versions, run: "echo 'the version is not bumped' >&2; exit 1", output: exit}]}}
+  forge: {issues: [], merge-requests: []}
+run: {route: release, args: [--dry-run], dry-run-posted: true}
+expect:
+  status: pass
+  agent-calls: 0
+  steps: ["gate:release"]
+  summary: "1 would hold the release if it were cut now (gate:release 1)"
+  findings:
+    - {rule: release-dry-run, message: "issue #1 kept: what would hold the release changed"}
+  forge:
+    issues:
+      - id: 1
+        title: "workline: findings on the default branch"
+        comments: 0
+        body-contains: ["### The next release", "1 finding would hold the release if it were cut now", "since `v1.0.0`", "never a block"]
+        body-lacks: ["docs/tech/auth.md"]

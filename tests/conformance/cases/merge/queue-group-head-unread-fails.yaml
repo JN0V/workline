@@ -1,0 +1,15 @@
+case: merge/queue-group-head-unread-fails
+about: "A merge queue's group naming a pull request the forge does not know (ADR-0050): its head, and so its yes, cannot be read. An error, said, and no status set on the group's commit: never a yes, nor a no, on a guess."
+given:
+  repo: documented
+  config: {merge: {autonomy: cautious}}
+  forge:
+    merge-requests: []
+run: {follow: [--merge-group, gh-readonly-queue/main/pr-7-7f122f4acd601f5afc1a76b31fe0640ec2174b39, --head, main]}
+expect:
+  status: block
+  findings: [{rule: follow-failed, message: "#7, queued: its head could not be read"}]
+  no-findings: [{rule: queue-accepted}, {rule: queue-not-accepted}]
+  forge:
+    statuses:
+      - {commit: main, name: workline/accepted, absent: true}

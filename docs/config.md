@@ -1,9 +1,9 @@
 ---
 sources: [internal/role/config.go, internal/role/role.go, cmd/workline, internal/engine/engine.go, internal/forge/gitlab.go, internal/hooks]
-checked: e2580728
+checked: b6085f38
 judged: e343388
-verified: agent:documentalist
-reader: 02114d783860
+verified: agent:claude-code
+reader: 0b97bbc207c5
 ---
 # Configuration
 
@@ -25,12 +25,14 @@ owner), then the project's `settings`.
 | `roles.<role>.settings` | the role's settings, merged into its defaults |
 | `roles.<role>.enforce` | `<rule>: block \| warn \| off`, per rule |
 | `routing.events` | `<event>: [role, gate:<name>, …]`, replacing the shipped line event by event |
-| `routing.fail-fast` | `<event>: false` runs every step of the event, the worst verdict standing, a refused proposal said, not failed; true unless set, but on `schedule` ([ADR-0037](adr/0037-the-schedule-runs-every-step.md)) |
+| `routing.fail-fast` | `<event>: false` runs every step of the event, the worst verdict standing, a refused proposal said, not failed; true unless set, but on `schedule` and `main` ([ADR-0037](adr/0037-the-schedule-runs-every-step.md)) |
 | `routing.handoffs`, `routing.max-handoffs` | which role may hand over to which, and how many times ([routing](spec/routing.md)) |
-| `gates.<name>` | `criteria`, `checks` (`id`, `run`, `output`, `max`, `optional`, `timeout`), `enforce` ([gates](spec/gates.md)) |
+| `routing.budgets` | `<moment>: <seconds>`, each moment's wait budget; over it, the summary says so, never a block ([routing](spec/routing.md#each-steps-seconds-a-moments-budget)) |
+| `gates.<name>` | `criteria`, `checks` (`id`, `run`, `output`, `max`, `optional`, `timeout`, `fix`; on a merge request `new`, `base-timeout`, `config`), `enforce` ([gates](spec/gates.md)) |
 | `repos.<name>` | `url`, `branch`: other repositories docs may name ([multi-repo](spec/multi-repo.md)) |
 | `release` | `branches` (the release tool's), `tags` (`v*`) |
 | `merge` | `autonomy: cautious`: the forge merges what a person accepted; `normal`: workline's own routine work too, with no yes; `alone: [reader]`: the reader's rewordings too ([merge policy](merge-policy.md)); off unless set |
+| `gitlab.bots` | usernames GitLab does not name bots that are: the service account or line account holding workline's token; its comments, labels and reactions are a bot's, never a person's ([why](ci-gitlab.md#what-the-template-does)) |
 
 ## `.workline/config.yaml`
 
@@ -41,7 +43,7 @@ ai: claude                  # the project's agent, one choice: none (default), c
 forge: github               # github | gitlab | local | cmd:<command> | none (default)
 roles:
   committer:
-    settings: {subject-max: 60}          # a role's settings, see its role.yaml
+    settings: {subject-max: 60, rewrite: false}  # a role's settings, see its role.yaml; rewrite: an agent rewrites a refused message, 30 s at most (on)
     enforce: {internal-code: warn}       # block (default) | warn | off, per rule
   documentalist:
     settings:
@@ -65,6 +67,7 @@ routing:                    # replaces the shipped line, event by event
   handoffs: [{from: my-role, to: documentalist}]   # a role of your own (--roles); none shipped hands over
   max-handoffs: 3
   fail-fast: {schedule: false}   # every step of the schedule runs, the worst verdict stands (the default)
+  budgets: {verdict: 300}        # the head's verdict may take 5 min here (3 by default); over it, said
 gates:                      # your own checks, as a step of the line
   merge:
     checks: [{id: secrets, run: "gitleaks detect --report-format sarif --report-path {out}/secrets.sarif", output: sarif, max: {error: 0}}]
@@ -83,17 +86,12 @@ change control (SLSA's source level 4, SOC 2's change management): a
 project's choice, never a default
 ([merge policy](merge-policy.md#normal-routine-work-with-no-yes)).
 
-Where the comments point:
-
-- `sample`: the least independence its judge must have
-  ([ADR-0005](adr/0005-independence-takes-the-best-level-available.md));
-- `diff-alone`: measured in
-  [#126](https://github.com/JN0V/workline/issues/126);
-- the reviewer on `schedule`, `ready` waiting on its read:
-  [#128](https://github.com/JN0V/workline/issues/128);
-- `gates`: [gates](spec/gates.md); `repos`:
-  [multi-repo](spec/multi-repo.md); `release`: how the project's release
-  tool works ([ADR-0017](adr/0017-the-release-manager.md)).
+Where the comments point: `sample`'s independence,
+[ADR-0005](adr/0005-independence-takes-the-best-level-available.md);
+`diff-alone`, [#126](https://github.com/JN0V/workline/issues/126); the
+reviewer on `schedule`, [#128](https://github.com/JN0V/workline/issues/128);
+`gates`, [gates](spec/gates.md); `repos`, [multi-repo](spec/multi-repo.md);
+`release`, [ADR-0017](adr/0017-the-release-manager.md).
 
 ### What blocks
 
@@ -129,6 +127,7 @@ Support/workline/config.yaml`), what you want wherever you work:
 | `ai` | your agent when a project does not say (`workline setup` writes it) |
 | `approve-push` | `true`: you approve each push (off by default, [ADR-0011](adr/0011-the-review-is-on-the-merge-request-not-the-push.md)) |
 | `approve-push-via` | where you are asked, in order: `terminal`, `editor`, `dialog` |
+| `roles.<role>.settings` | what a role lets you set for yourself (`personal` in its role.yaml; the committer's `rewrite`, `ai-max-seconds`, `internal-codes-allow`): a value wins over the project's, a list adds to it; a project's `ai: none` still keeps every agent away; any other setting, or one of another kind than the role's, is said and left out |
 
 Beside it, in the same folder: `allowed-identities` (one address pattern a
 line, for the committer), `gitleaks.toml` (your forbidden terms, as gitleaks
@@ -146,6 +145,7 @@ rules) and `roles/<role>/<facet>` (your own facets; on macOS,
 | `.git/workline/merge-requests/<n>.md` | `forge: local`: a merge request, its local branch and base named in the front matter; merged once its base holds the branch, closed once the branch is gone |
 | `.workline/off` | empty: the global hook skips this repository |
 | `.git/workline/reviewer-record` | the commits a review on this machine answered whole, not asked again (roles/reviewer) |
+| `.git/workline/inspector-record` | the gates' findings the inspector triaged on this machine, by fingerprint, not asked again (roles/inspector) |
 | `~/.config/workline/` (macOS: `~/Library/Application Support/workline/`) | yours: `config.yaml`, `allowed-identities`, `gitleaks.toml`, your facets in `roles/<role>/` ([above](#your-own-config)) |
 | `~/.cache/workline/models-seen.yaml` | the last model that answered each alias on this machine: when another one answers, a run reports `model-changed` once, without blocking ([ADR-0004](adr/0004-follow-model-aliases-and-measure.md)) |
 
@@ -181,7 +181,8 @@ Runs are kept in `.git/workline/runs/` (the last
 | `GITLAB_TOKEN` | the GitLab forge's token; else glab's, if glab is set up; else `CI_JOB_TOKEN`, which reaches no issue |
 | `CI_API_V4_URL`, `CI_PROJECT_ID` (or `CI_PROJECT_PATH`) | the GitLab instance and project, set by GitLab CI; elsewhere `GITLAB_HOST` and the `origin` remote |
 | `GH_TOKEN` | read by `gh`, which the GitHub forge calls |
-| `WORKLINE_APP`, `WORKLINE_APP_ID` | in GitHub Actions, the GitHub App's slug and id: who keeps the [merge policy](merge-policy.md)'s verdicts and holds its yes; no slug, the token is the job's own, and nothing is turned on |
+| `WORKLINE_APP`, `WORKLINE_APP_ID` | in GitHub Actions, the GitHub App's slug and id: who keeps the [merge policy](merge-policy.md)'s verdicts and holds its yes. No slug: the job's own token, nothing turned on. The id alone, in a job holding no App token: whose comments keep the records a role reads back ([ADR-0051](adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md)) |
+| `WORKLINE_GITLAB_TOKEN` | in GitLab CI, the bot's token: its user, as GitLab says, is workline's own account, whose notes keep the records a role reads back, even in a job reading with another token; it may ask GitLab's GraphQL who last edited them, as a job's own token may not |
 | `GITLEAKS_CONFIG`, `GITLEAKS_CONFIG_TOML` | the committer's term list, before the repository's and yours |
 | `CI`, `GITHUB_ACTIONS`, `GITLAB_CI` | any set: `forge: local` refuses its writes, the clone being thrown away |
 
@@ -197,12 +198,15 @@ A role's `pre` and `post` receive:
   roles);
 - `WORKLINE_FORGE` when a forge is given, `WORKLINE_TARGET`
   (`merge-request:12`) with a target too;
+- `WORKLINE_AI_WAITS=ready` on a draft (`--input draft=true`): the
+  agent set aside, `WORKLINE_AI` is `none`
+  ([ADR-0050](adr/0050-each-act-has-its-moment-and-a-wait-budget.md#4-what-the-table-holds-to));
 - `WORKLINE_OPEN_MERGE_REQUESTS`, `WORKLINE_OPEN_MERGE_REQUEST_TASKS` and
   `WORKLINE_PROPOSED_TASKS` with `--open-merge-request`, and
-  `in/waiting.yaml`, the files each waiting task changes;
+  `in/waiting.yaml`, the files each waiting task changes, and
+  `in/held.yaml`, those each other open merge request changes;
 - on a release tool's merge request: `WORKLINE_RELEASE_BRANCH`, the
-  branch, to every role; `WORKLINE_EVENT=release` for a role that runs on
-  `release` ([ADR-0017](adr/0017-the-release-manager.md)); the reviewer
+  branch, to every role ([ADR-0017](adr/0017-the-release-manager.md)); the reviewer
   leaves the versions the tool bumps
   ([#384](https://github.com/JN0V/workline/issues/384));
 - run by a handoff: the inputs `handoff-from` and `handoff-reason`.

@@ -1,6 +1,6 @@
 case: engine/calls-say-what-answered
 about: Each agent call is recorded with the agent, the tier and effort asked, and the model that answered — a step up included.
-given: {repo: basic}
+given: {repo: basic, config: {roles: {committer: {settings: {rewrite: true}}}}}
 run: {role: committer, event: commit-msg, input: {message: "docs: BUG-64 done\n\nCo-Authored-By: A <a@example.invalid>"}, ai: "fake:rewrite-glued-to-subject"}
 expect:
   agent-calls: 2

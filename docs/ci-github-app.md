@@ -1,8 +1,9 @@
 ---
 sources: [ci/github, .github/workflows/workline-apply.yml, .github/workflows/workline.yml]
-checked: 733da152
-judged: 7a26b30
+checked: d722a840
+judged: c7e1e98
 verified: agent:claude-code
+judged-in-parts: 220b6dc
 ---
 # The GitHub App and its key
 
@@ -26,14 +27,16 @@ branch's workflow
    - repository permissions **Contents**, **Pull requests**,
      **Issues** and **Checks**, read and write; with the merge policy,
      **Commit statuses** too;
-   - **Checks** writes the check `workline findings`: the documentalist's
+   - **Checks** writes the checks `workline findings` and `workline gates`: the documentalist's
      findings beside their lines, none a conversation to resolve
      ([#412](https://github.com/JN0V/workline/issues/412)). An App made
      before: Settings → Developer settings → your App → Permissions, then
      accept the new permission on its installation;
    - generate a private key, install the App on the repository.
 2. **Its ID**: Settings → Secrets and variables → Actions → Variables →
-   `WORKLINE_APP_ID`.
+   `WORKLINE_APP_ID`. The judging jobs read it too, holding no key: a
+   role reads its record back only from a comment the App wrote
+   ([ADR-0051](adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md)).
 3. **Its key, in an environment**: Settings → Environments → New
    environment, `workline-app`:
    - Deployment branches and tags → Selected branches and tags → `main`,
@@ -61,16 +64,15 @@ gh secret delete WORKLINE_APP_PRIVATE_KEY -R OWNER/REPO    # the repository's ow
   secret, in reach of any branch's workflow, the merge policy's statuses
   with it.
 - **The release tool's branch** (release-please's
-  `release-please--branches--main`): the documentalist's fix for a release
-  becomes a pull request of the App's only when the App alone pushed to
-  that branch, as GitHub's repository activity says; else the fix goes in
-  a comment. Optional, to keep others off it: Settings → Rules → New
-  branch ruleset, target `release-please--*`, "Restrict creations",
-  "Restrict updates" and "Restrict deletions", the App in the bypass list.
+  `release-please--branches--main`), optional, to keep others off it:
+  Settings → Rules → New branch ruleset, target `release-please--*`,
+  "Restrict creations", "Restrict updates" and "Restrict deletions", the
+  App in the bypass list.
 - **Without an App**, the jobs use their own token: the checks of a fix
   wait for someone to approve them, and gardening needs Settings →
   Actions → General → "Allow GitHub Actions to create and approve pull
-  requests".
+  requests". The records are then read from `github-actions[bot]`'s
+  comments.
 
 ## Why an environment
 

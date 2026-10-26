@@ -1,8 +1,8 @@
 ---
-sources: [cmd/workline, internal/role/config.go, internal/engine/engine.go, internal/hooks]
-checked: e2580728
+sources: [cmd/workline, internal/role/config.go, internal/engine/engine.go, internal/hooks, internal/agent/claude.go, internal/agent/command.go]
+checked: 87a81d4a
 judged: b5899f5
-verified: agent:documentalist
+verified: agent:claude-code
 ---
 # Using workline
 
@@ -29,7 +29,7 @@ Each in detail: [the commands](commands.md), and
 |---|---|
 | [`workline run-role <role> --event <event>`](commands.md#workline-run-role) | runs one role |
 | [`workline route <event>`](commands.md#workline-route) | runs the roles routing names for the event, in order |
-| [`workline apply <run-dir>...`, `--line <file>`](commands.md#workline-apply) | applies runs judged with `--no-apply` |
+| [`workline apply <run-dir>...`, `--line <file>`](commands.md#workline-apply) | applies runs judged with `--no-apply`; `--main <file>`: main's findings in one issue; `--release-dry-run <file>`: what would hold the release |
 | [`workline review`](commands.md#workline-review) | the reviewer reads this branch, or a spec, before you push |
 | [`workline gate <name>`](commands.md#workline-gate) | runs a gate declared in `.workline/config.yaml` |
 | [`workline item ready <id>`](commands.md#workline-item-ready) | moves a work item to `ready`, once its sections are written |
@@ -37,7 +37,7 @@ Each in detail: [the commands](commands.md), and
 | [`workline issues import <file>`](commands.md#workline-issues-import) | turns a roadmap or backlog file into issues |
 | [`workline docs`](commands.md#workline-docs) | your agent fixes the docs made suspect; you keep or drop each fix |
 | [`workline sample`](commands.md#workline-sample) | the weekly sample: one in ten of every role's acts of the week, re-checked |
-| [`workline follow`](commands.md#workline-follow) | rebuilds a release fix on the default branch's new tip; `--gardening`, gardening's merge requests too; merges it into people's in conflict only on workline's lines, when set; runs the [merge policy](merge-policy.md), when set |
+| [`workline follow`](commands.md#workline-follow) | `--gardening`: rebuilds gardening's merge requests on the default branch's new tip; runs the [merge policy](merge-policy.md), when set |
 | [`workline hooks install --global`](commands-setup.md#workline-hooks) | installs the git hooks for every repository (`--repo`: this one) |
 | [`workline setup`](commands-setup.md#workline-setup) | sets up this machine: hooks, agent, tools |
 | [`workline init`](commands-setup.md#workline-init) | adopts this repository |
@@ -57,11 +57,13 @@ Each in detail: [the commands](commands.md), and
 | `--branch <name>` | the branch the `--target` merge request comes from ([below](#writing-to-a-merge-request)) |
 | `--scope <glob>` | a path the task is about, repeatable; a patch outside it is refused |
 | `--no-apply` | judge, then stop; apply later, in a job that holds the write token |
-| `--push-to-merge-request` | commits what the patches write to the merge request's branch ([below](#writing-to-a-merge-request)) |
 | `--open-merge-request` | puts what the patches write in a merge request of its own ([below](#writing-to-a-merge-request)) |
 | `--roles <dir>` | a folder of roles used instead of the shipped ones |
-| `--sarif <file>` / `--code-quality <file>` | also write the findings for GitHub's code scanning (SARIF) or GitLab's Code Quality; `route`: every step's; on a merge request, the SARIF without the documentalist's and the reviewer's ([role outcome](spec/role-outcome.md)) |
+| `--sarif <file>` / `--code-quality <file>` | also write the findings for GitHub's code scanning (SARIF) or GitLab's Code Quality; `route`: every step's; on a merge request, the SARIF without the documentalist's, the reviewer's nor the gates' ([role outcome](spec/role-outcome.md)) |
 | `--summary <file>` | also add what a CI job's page shows ([below](#the-jobs-summary)) |
+| `--gates-only` / `--gates-from <file>` | `route` only: run the event's gates alone, for a CI job of their own; or read their verdicts from that run's result, with `--warn-only` their findings for the inspector ([gates in CI](gates-in-ci.md)) |
+| `--gates-kept <folder>` | `route`, and `gate` with `--base`: the gates' findings kept by commit; on `main`, the head's written there; on a change, its merge base's read there ([main after a merge](main-after-merge.md)) |
+| `--warn-apart` / `--warn-only` | `route` only: leave what only warns (the reviewer's lenses that warn, the inspector's triage) to a run apart; or be that run, no verdict ([apart](../roles/reviewer/docs/apart.md)) |
 | `--verdict <file>` | `route` only: also write the line's verdict on the head it judged, for the [merge policy](merge-policy.md); `--verdict-head <commit>`, the head when the commit judged is a merge result |
 | `--json` | print the result as JSON ([below](#the-jobs-summary)) |
 
@@ -73,6 +75,14 @@ Each in detail: [the commands](commands.md), and
 - `cmd:<command>`: any other agent ([another agent](#another-agent)).
 - Default: `WORKLINE_AI` for the hook, else the project's `ai`, else
   yours, else none.
+- `claude` runs headless, outside the repository, with no tools. It gets
+  your environment without the variables a Claude Code session exports
+  (`CLAUDECODE`, `CLAUDE_CODE_ENTRYPOINT`…): started from a session,
+  a commit's hook included, the call would run as its child, at twice
+  the tokens ([measured](research/claude-session-env.md)). They are
+  dropped even when you set one (`CLAUDE_EFFORT`: the effort is the
+  role's, or `claude:@<effort>`'s). Your login (`CLAUDE_CODE_OAUTH_TOKEN`,
+  `ANTHROPIC_API_KEY`…) and other settings pass.
 
 ### The forge
 
@@ -88,17 +98,11 @@ Each in detail: [the commands](commands.md), and
 
 ### Writing to a merge request
 
-- **`--push-to-merge-request`**, with a forge and `--target
-  merge-request:<n>`: what the patches write is committed to that merge
-  request's branch and pushed, without force.
-  - From a fork, or when the branch moved on, the diff goes in one comment
-    instead, whole, to copy and apply with `git apply`: the docs it
-    creates too, and a code block of a doc it changes does not end it.
-    With `local`, committed on the local branch, nothing pushed.
-  - On a release tool's merge request, which the tool rewrites, it goes to
-    a merge request of its own, `workline/<role>/release`, into the
-    release's base; the release waits until it is merged
-    ([ADR-0017](adr/0017-the-release-manager.md)).
+- **`--target merge-request:<n>`**, with a forge: what the patches write
+  goes in one comment there, whole, to copy and apply with `git apply`:
+  the docs it creates too, and a code block of a doc it changes does not
+  end it. Nothing is pushed to its branch, not even a move of `checked`
+  ([ADR-0051](adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-3-no-docs-obligation-per-pr)).
 - **`--open-merge-request`**, with a forge: what the patches write goes on
   a branch `workline/<role>/<task>`, pushed, with a merge request opened or
   updated for it; the role is told how many of its merge requests are
@@ -111,10 +115,9 @@ Each in detail: [the commands](commands.md), and
   ([ADR-0034, amended](adr/0034-the-release-fix-follows-its-base.md#amendment-2026-10-12-gardenings-merge-requests-follow-too-or-are-closed)).
 - **`--branch`**: for a job that does not ask the forge (CI's judging
   job, which holds no token); default: the forge says. A release tool's
-  branch (`release.branches`) has the merge request held as the release
-  ([ADR-0017](adr/0017-the-release-manager.md)), and the versions the
-  tool bumps left out of the review
-  ([more](../roles/reviewer/docs/run.md#13-the-range-the-rules-the-record)).
+  branch (`release.branches`) has the versions the tool bumps left out
+  of the review
+  ([more](../roles/reviewer/docs/run.md#12-the-range-the-rules)).
 
 ### The job's summary
 
@@ -128,16 +131,25 @@ Each in detail: [the commands](commands.md), and
     too.
   - The product owner's findings grouped, one line an issue linked to
     its page ([what it writes](../roles/product-owner/docs/outputs.md#in-the-ci-jobs-summary)).
+  - A line's seconds, after the steps
+    ([ADR-0050](adr/0050-each-act-has-its-moment-and-a-wait-budget.md#1-a-wait-budget-per-moment)):
+    `66 s in all — committer 0.5 s, documentalist 0.8 s, reviewer 64 s
+    (lenses 40 s, judges 20 s)`; a gate read from its job, `(its job)`.
+  - Over its moment's budget, one line more, naming the step that took
+    the most; never a block ([the budgets](spec/routing.md#each-steps-seconds-a-moments-budget)).
 - **`--json`**: status, summary, findings, the agent's notes, each agent
   call (agent, tier, effort, the exact model that answered, tokens in,
   cached and out, cost, seconds), and for a line its steps and pending
-  runs.
+  runs, each step's `seconds`, the line's, and its `moment`: `name`,
+  `budget`, `seconds`, `over`, `step`.
 
 ## Another agent
 
 `cmd:<command>` makes any command the agent: another provider's CLI, or a
 wrapper around your own. It runs with `sh -c`, outside the repository:
 
+- it gets your environment as it is, a Claude Code session's variables
+  included;
 - its input is the prompt, the role's persona first;
 - `WORKLINE_TIER` and `WORKLINE_EFFORT` say what the role asks (`light`,
   `standard`, `frontier`; `none` to `max`), for it to pick its model;
@@ -146,7 +158,9 @@ wrapper around your own. It runs with `sh -c`, outside the repository:
 - it may write what answered, in YAML, to the file `WORKLINE_CALL` names:
   `model`, `tokens-in`, `tokens-cached`, `tokens-out`, `cost-usd`;
 - a non-zero exit, or no answer within the role's `model.timeout`, ends
-  the run as `blocked-external`, as a used-up quota does.
+  the run as `blocked-external`, as a used-up quota does; no answer within
+  what the role's `ai-max-seconds` leaves (the committer's: 30 s) ends it
+  as if the agent had not answered, said (`ai-max-seconds`).
 
 A script of your own, or Claude Code run this way (the command the
 judge's trial used):

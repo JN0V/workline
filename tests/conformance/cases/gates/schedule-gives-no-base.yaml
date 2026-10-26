@@ -1,0 +1,14 @@
+case: gates/schedule-gives-no-base
+about: >
+  Where every finding counts, a check is given no merge base, even one
+  the job's environment held: a tool that tells new findings itself
+  reads the whole tree.
+given:
+  repo: basic
+  env: {WORKLINE_BASE: 0123456789abcdef0123456789abcdef01234567}
+  config:
+    routing: {events: {schedule: ["gate:merge"]}}
+    gates: {merge: {checks: [{id: lint, run: "test -z \"$WORKLINE_BASE\"", output: exit}]}}
+run: {route: schedule}
+expect:
+  status: pass

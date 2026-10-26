@@ -1,0 +1,31 @@
+case: merge/draft-verdict-kept-pending
+about: "A draft's verdict (ADR-0050): its line asked no agent, the reviewer saying its review waits for ready (`ai-waits-for-ready`). The job holding the write token keeps it as a review to come — on GitHub, the status `workline/verdict` pending, never a pass a merge could be made on — and turns nothing on, the merge request a draft (ADR-0042)."
+given:
+  repo: documented
+  config: {merge: {autonomy: cautious}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb feat/sessions && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin feat/sessions && git checkout -q main"
+    - "sh \"$FIXTURES/verdict.sh\" feat/sessions pass ../verdict.json '[{\"rule\": \"ai-waits-for-ready\", \"level\": \"warn\", \"message\": \"a draft: no lens asked\"}]'"
+  forge:
+    merge-requests:
+      - id: 7
+        branch: feat/sessions
+        base: main
+        author: dana
+        draft: true
+        labels: [workline:accepted]
+        label-events: [{label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T10:00:00Z"}]
+        comments: []
+run: {follow: [--base, main, --verdict, ../verdict.json]}
+expect:
+  status: pass
+  findings:
+    - {rule: verdict-kept, message: "waits, a draft: the rules and gates passed, the AI review waits for it to be marked ready"}
+    - {rule: draft, where: "#7"}
+  no-findings: [{rule: auto-merge-on}]
+  forge:
+    merge-requests:
+      - {id: 7, auto-merge: false}
+    statuses:
+      - {commit: feat/sessions, name: workline/verdict, state: pending, by: workline-bot, description: "waits: a draft"}

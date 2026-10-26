@@ -196,3 +196,22 @@ func TestMergeSummaryKeepsTheRunAppliedSince(t *testing.T) {
 		t.Errorf("merged: %+v; want a1 b2 c3, 3 runs, this run's block, every run's line once", m)
 	}
 }
+
+// An older run applied after a newer one (#598): the newer comment's text
+// and blocks stay, the older's commits join them, each run counted once;
+// a record that does not read merges nothing.
+func TestMergeInto(t *testing.T) {
+	marker := "<!-- workline:sticky=reviewer/summary -->"
+	was := Record{Reviewed: []string{"a1"}, Runs: 1}
+	older := "older text\n" + Record{Reviewed: []string{"a1", "b2"}, Runs: 2}.String()
+	newer := "newer text\n" + Record{Reviewed: []string{"a1", "c3"}, Runs: 2, Blocks: []Block{{Lens: "correctness", Where: "x.go:1", Title: "t"}}}.String() + "\n\n" + marker
+	got := MergeInto(newer, older, was.String(), marker)
+	m, err := readRecord(got)
+	if err != nil || !strings.HasPrefix(got, "newer text\n") || strings.Contains(got, marker) ||
+		!slices.Equal(m.Reviewed, []string{"a1", "c3", "b2"}) || m.Runs != 3 || len(m.Blocks) != 1 {
+		t.Fatalf("merged %q: %+v %v", got, m, err)
+	}
+	if got := MergeInto(newer, "older text\n<!-- workline:record reviewed=zz runs=x -->", was.String(), marker); got != "" {
+		t.Fatalf("a record that does not read merged: %q", got)
+	}
+}

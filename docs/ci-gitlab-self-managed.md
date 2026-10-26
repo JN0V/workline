@@ -1,8 +1,9 @@
 ---
 sources: [ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, Dockerfile]
-checked: 9fcf6cf6
+checked: d722a840
 judged: c9d96e2
-verified: agent:documentalist
+verified: agent:claude-code
+judged-in-parts: e8a46f7
 ---
 # workline on a self-managed GitLab
 
@@ -22,10 +23,14 @@ own changes. **Not tried yet on one**: tell us what differs.
   and Anthropic's API. Without that, set no `CLAUDE_CODE_OAUTH_TOKEN`: the
   docs are listed for a person.
 - **Tokens**: project access tokens exist on every tier of a self-managed
-  instance.
+  instance. Scope them to the environment `workline`, as on gitlab.com
+  ([how](gitlab/environment.md)): on a self-managed 19.2.4-ee, a variable
+  so scoped reached only the jobs declaring that environment
+  ([#520](https://github.com/JN0V/workline/issues/520)).
 - **The reviewer when a merge request becomes ready**: before GitLab
   17.10, no `CI_MERGE_REQUEST_DRAFT`, so the merge request is read from
-  the API; a job token that reads no notes leaves one lens, said in the
+  the API, before the agent is installed, none on a draft; a job token
+  that reads no notes leaves one lens, said in the
   log, unless the job has `GITLAB_TOKEN`
   ([how](../roles/reviewer/docs/ready.md)).
 - **One pipeline per merge request at a time**: the same project setting

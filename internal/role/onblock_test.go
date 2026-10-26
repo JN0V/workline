@@ -49,3 +49,21 @@ func TestOnMovedOnNeverAPatchNorALabel(t *testing.T) {
 		t.Errorf("on-moved-on [note]: %v, want it refused", err)
 	}
 }
+
+// apart names only events the role runs on: what only warns runs apart
+// from the verdict where the role runs at all (ADR-0050).
+func TestApartOnlyOnItsEvents(t *testing.T) {
+	dir := t.TempDir()
+	os.MkdirAll(filepath.Join(dir, "r"), 0o755)
+	write := func(apart string) {
+		os.WriteFile(filepath.Join(dir, "r", "role.yaml"), []byte("contract: 1\nname: r\nevents: [review, merge-request]\napart: "+apart+"\n"), 0o644)
+	}
+	write("[merge-request]")
+	if r, err := Load(dir, "r"); err != nil || !r.ApartOn("merge-request") || r.ApartOn("review") {
+		t.Fatalf("apart [merge-request]: %v, %v", r, err)
+	}
+	write("[schedule]")
+	if _, err := Load(dir, "r"); err == nil || !strings.Contains(err.Error(), `apart names "schedule", not one of its events`) {
+		t.Fatalf("apart [schedule]: %v, want it refused", err)
+	}
+}
