@@ -1,6 +1,6 @@
 ---
 sources: [ci/github/workline-gardening.yml, ci/gitlab/workline.gitlab-ci.yml, internal/line/dryrun.go, internal/report/dryrun.go, internal/release/release.go, cmd/workline]
-checked: b6085f38
+checked: d722a840
 ---
 # The release: a dry run with gardening, a check at the tag
 
