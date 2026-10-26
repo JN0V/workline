@@ -203,7 +203,8 @@ A role's `pre` and `post` receive:
   ([ADR-0050](adr/0050-each-act-has-its-moment-and-a-wait-budget.md#4-what-the-table-holds-to));
 - `WORKLINE_OPEN_MERGE_REQUESTS`, `WORKLINE_OPEN_MERGE_REQUEST_TASKS` and
   `WORKLINE_PROPOSED_TASKS` with `--open-merge-request`, and
-  `in/waiting.yaml`, the files each waiting task changes;
+  `in/waiting.yaml`, the files each waiting task changes, and
+  `in/held.yaml`, those each other open merge request changes;
 - on a release tool's merge request: `WORKLINE_RELEASE_BRANCH`, the
   branch, to every role ([ADR-0017](adr/0017-the-release-manager.md)); the reviewer
   leaves the versions the tool bumps

@@ -27,6 +27,8 @@ step runs and the worst verdict stands (`fail-fast`,
 [ADR-0037](adr/0037-the-schedule-runs-every-step.md)); an agent's proposal
 refused there is said as warnings, not failed
 ([amended](adr/0037-the-schedule-runs-every-step.md#amendment-2026-10-09-a-refused-proposal-is-said-not-failed)).
+`--input skip=<step>,…` leaves those steps out
+([steps left out](spec/routing.md#steps-left-out)).
 With `--gates-only`, the event's gates alone run, each one, for a CI job
 of their own; `--gates-from <file>` reads their verdicts from its result
 instead of running them ([gates in CI](gates-in-ci.md)).

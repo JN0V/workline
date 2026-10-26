@@ -242,8 +242,16 @@ request touching `cmd/workline` or the engine made 40 to 50 docs suspect.
     states (a number of two characters or more: `3600`, `1.4.1`).
 - **A line added alone** makes it suspect no more.
 - **A doc writing no name in backticks**: any change, as before.
-- **Measured** on four pull requests (#620, #623, #626, #627), docs
-  suspect by their sources: 93; flagged by a name or value: 33.
+- **Measured** with the engine on workline, docs suspect before and
+  after the rule, 2026-10-26:
+  - the whole repository on `main` (gardening's count): 26, then 21;
+  - #623, #624, #625 each at its own merge: 18 then 16, 8 then 1, 3
+    then 1;
+  - a first estimate by a script, on four pull requests, had 93 then
+    33: the engine's rule cuts less.
+- **What still flags most**: a release's version bump, on the line
+  holding `WORKLINE_VERSION` a doc names; a release tool's own pull
+  request drops it, any other range does not.
 - **What escapes**: a change of behaviour on a line holding no name or
   value the doc writes. The case kept for it: `TokenTTL = 3600` becomes
   `7200`, while the doc says "one hour" and names only `RefreshToken`.

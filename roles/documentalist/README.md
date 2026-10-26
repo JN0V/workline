@@ -29,8 +29,9 @@ file. All roles: [docs/roles.md](../../docs/roles.md).
 **Does**: keeps the docs true to the code they describe.
 
 - A doc names its code in `sources`, and the commit it was last checked
-  against in `checked`; a commit touching one of those sources makes the
-  doc *suspect*.
+  against in `checked`; a commit changing one of those sources where it
+  touches what the doc names makes the doc *suspect*
+  ([more](docs/push.md)).
 - With no agent: finds the suspect docs, and checks sizes, duplicates, dead
   links, identifiers gone from the code, decisions superseded, derived
   blocks; when gardening, whether user pages serve their reader.

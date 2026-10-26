@@ -99,6 +99,12 @@ its evaluation in
   a diff to apply, nothing pushed to the branch, no `checked` moved
   ([ADR-0051](../../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-3-no-docs-obligation-per-pr)):
   `patch-in-a-comment-on-the-merge-request`, `patch-comment-*`.
+- **Suspect only when a line it names changes**, for a doc writing names
+  in backticks
+  ([ADR-0014, amended](../../../docs/adr/0014-checked-is-earned-by-what-was-read.md#amendment-2026-10-21-suspect-only-when-a-line-it-names-changes)):
+  `suspect-only-when-a-named-line-changes`.
+- **A patch refused on a merge request only warns**, asked once:
+  `refused-patch-warns-on-a-merge-request`.
 - **The push counts suspect docs**, asks nothing, reading only the docs
   its commits touched, in 0.8 to 2.4 s
   ([tried](https://github.com/JN0V/workline/pull/531)); the merge request
@@ -112,7 +118,10 @@ its evaluation in
   ([main after a merge](../../../docs/main-after-merge.md);
   [tried](https://github.com/JN0V/workline/pull/544)):
   `repository-checks-on-main`, routing's `main-*`.
-- **Gardening at night**, one merge request a task, at most 3 waiting; not
+- **Gardening weekly**, Sunday 18:07 UTC on workline, one merge request a
+  task, at most 3 waiting; a doc another open merge request changes left
+  to it ([ADR-0051](../../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#build-order),
+  step 7): `docs-pr-skips-a-doc-an-open-merge-request-changes`; not
   asked again while it is open, a doc judged in parts while any merge
   request changes it, the next doc going
   ([#356](https://github.com/JN0V/workline/issues/356)): `gardening-*`,
