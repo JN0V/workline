@@ -55,13 +55,20 @@
   the doc again ([ADR-0014, amended][suspect-by-name]).
 - **Judged in parts** ([ADR-0009]) still reads whole files: its parts cite
   lines by number.
-- **Measured** on workline, `--ai none`, the engine of this change; the
-  narrowed docs listed in its pull request:
-  - docs whose sources fit a task whole: 2 of 99 → see the pull request;
-  - docs suspect on `main` (gardening's count): 28 → see the pull request.
+- **Measured** on workline at a91e3e78, `--ai none`, eight docs' sources
+  narrowed ([#635]):
+  - docs whose sources fit a task whole: 2 of 99, then 5;
+  - docs suspect (gardening's count): 28, then 26; through the GitLab
+    template, 10, then 5. The other three narrowed there stay suspect
+    through a source still named whole (a GitHub workflow,
+    `cmd/workline`).
+- **Next**: the docs that name `documentalist.go`, `productowner.go` or
+  `cmd/workline` whole ([#634]).
 
 [ADR-0009]: 0009-docs-far-behind-are-judged-in-parts.md
 [ADR-0012]: 0012-a-doc-is-judged-against-its-sources-whole.md
 [ADR-0014]: 0014-checked-is-earned-by-what-was-read.md
 [ADR-0051]: 0051-a-check-sits-where-its-catch-is-worth-its-cost.md
 [suspect-by-name]: 0014-checked-is-earned-by-what-was-read.md#amendment-2026-10-21-suspect-only-when-a-line-it-names-changes
+[#634]: https://github.com/JN0V/workline/issues/634
+[#635]: https://github.com/JN0V/workline/pull/635
