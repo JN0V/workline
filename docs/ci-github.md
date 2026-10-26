@@ -62,9 +62,6 @@ write run the default branch's workflow, never a pull request's own
        pushed to the branch, and after each `warn`, the comment of the
        lenses that warn and the inspector's;
      - `main` after main's run: what it found, in one issue;
-     - `follow` on each push to `main`: with `update-branches: conflicts`, `main` is merged
-       into people's pull requests in conflict only on workline's lines
-       ([more](../roles/documentalist/docs/follow.md));
      - with the [merge policy](merge-policy.md), `verdict` and `follow` run
        after `judge`, and `queue` after a merge queue's group;
      - rename `main` in its `push:` for another default branch.

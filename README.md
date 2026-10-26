@@ -134,7 +134,7 @@ Each role, from a hook, a script or a CI job: [triggers](docs/triggers.md).
 | after each merge (`workline route main`) | the merge request's gates, every finding kept as the next base; documentalist, the whole repository, no agent | one issue, edited when what it lists changes ([how](docs/main-after-merge.md)) |
 | gardening, nightly or weekly (`workline route schedule`) | documentalist; product owner, opt-in | one merge request per task, kept on main or closed; the issues |
 | the weekly sample (`workline sample`) | auditor: one in ten of every role's acts, each re-checked | one issue, a comment a week; a merge request undoing a wrong confirmation |
-| each push to main (`workline follow`) | the engine, no agent: when set, merges main into pull requests in conflict only on workline's lines, and turns auto-merge on for what a person accepted, at `normal` for workline's own routine work too ([merge policy](docs/merge-policy.md)) | a merge commit on theirs; the forge's auto-merge |
+| each push to main (`workline follow`) | the engine, no agent: with the [merge policy](docs/merge-policy.md), turns auto-merge on for what a person accepted, at `normal` for workline's own routine work too | the forge's auto-merge |
 | with the gardening (`workline route release --dry-run`) | what would hold the release if it were cut now, no agent | a part of main's issue ([how](docs/release.md)) |
 | before your release tool tags (`workline route release`); on GitLab, at a tag | your release's gates, none by default | a non-zero exit holds the release |
 

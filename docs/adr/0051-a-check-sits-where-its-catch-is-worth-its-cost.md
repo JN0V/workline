@@ -5,7 +5,8 @@
   [ADR-0020](0020-the-reviewer-finds-the-engine-verifies-the-person-merges.md#amendment-2026-10-21-adr-0051-cut-4-no-fix-round-for-nits),
   amended); step 3's removal of the release's docs built ([ADR-0010],
   [ADR-0017], [ADR-0034] amended); steps 4, 6 and 7 built ([ADR-0010]
-  and [ADR-0014] amended); the rest not yet
+  and [ADR-0014] amended); step 10 built ([ADR-0041] removed); the rest
+  not yet
   ([the build order](#build-order)); one point open, one decided
   ([open](#open))
 - **Date:** 2026-10-21
@@ -16,8 +17,8 @@
   the release's docs at night (§7); it placed each act by the wait
   alone, now by catch and cost too
 - **To amend once built:** [ADR-0010] and [ADR-0017] (docs hold the
-  release), [ADR-0034] (removed with the release's docs), [ADR-0041]
-  (follow's docs merges), [ADR-0042] (up to date, one at a time)
+  release), [ADR-0034] (removed with the release's docs), [ADR-0042]
+  (up to date, one at a time)
 - **Builds on:** [ADR-0011], [ADR-0043]; principles 4, 5, 7, 9, 12, 13
 - **Research:** [catch-and-cost.md](../research/catch-and-cost.md)
 
@@ -192,7 +193,10 @@ By upkeep removed per unit of work:
 9. **What was read, trusted** (cut 5): no record another edited last,
    no skip on a change to what the PR's own pipeline runs. Built ([ADR-0013]
    amended); the forge's markers left, why in cut 5.
-10. **Remove follow's docs merges**.
+10. **Remove follow's docs merges**. Built: `follow` merges the base into
+    no person's merge request; `update-branches` gone, a project still
+    setting it warned (`setting-gone`); the recognition of a merge it
+    made, still on an open branch, kept ([ADR-0041] amended).
 11. **The GitLab child pipeline** for what warns. Built:
     `workline:warn:child` starts `workline:warn` and `workline:warn:apply`
     in a child pipeline of the same file, after the gates, with no

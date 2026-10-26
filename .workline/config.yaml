@@ -16,7 +16,7 @@ roles:
       docs: ["docs/**", "*.md", "roles/*/README.md", roles/documentalist/docs/checks.md, roles/documentalist/docs/checks-docs.md,
         roles/documentalist/docs/tasks.md, roles/documentalist/docs/parts.md, roles/documentalist/docs/judge.md, roles/documentalist/docs/push.md,
         roles/documentalist/docs/cascades.md, roles/documentalist/docs/gardening.md,
-        roles/documentalist/docs/judge-claims.md, roles/documentalist/docs/follow.md,
+        roles/documentalist/docs/judge-claims.md,
         roles/product-owner/docs/run.md, roles/product-owner/docs/outputs.md, roles/product-owner/docs/tracking.md,
         roles/product-owner/docs/settings.md, roles/product-owner/docs/writing.md,
         roles/reviewer/docs/run.md, roles/reviewer/docs/judge.md, roles/reviewer/docs/spec.md,

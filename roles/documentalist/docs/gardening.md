@@ -193,6 +193,4 @@ One the base moved under is:
   cannot tell (`conflict-unread`). Running the task again never pushes
   over that commit either (`not-proposed`).
 
-A push to the base leaves them alone: only, when set, people's pull
-requests in conflict on workline's lines follow each push
-([more](follow.md)).
+A push to the base leaves them alone, and people's pull requests too.

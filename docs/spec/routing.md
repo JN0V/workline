@@ -138,8 +138,8 @@ release judging.
   <agent>:<model>` for each agent and model whose answer they hold, so a
   later reader can stand apart from them (ADR-0005). A line given a range
   whose last commits carry one judges the range as it stood before them,
-  each left for its parent, a merge of the base (`workline follow`,
-  ADR-0041) for its first: what the engine wrote never wakes the line on
+  each left for its parent, a merge of the base (`workline follow`'s,
+  ADR-0041, which ADR-0051 removed: one still on a branch) for its first: what the engine wrote never wakes the line on
   itself, and a person's commit that blocked still blocks, never turned
   green unjudged. With nothing of a person's left in the range, only the
   committer runs; it checks every commit, the engine's too. A trailer is not

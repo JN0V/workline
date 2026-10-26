@@ -129,7 +129,9 @@ its evaluation in
   `parts-go-while-suspect-waits`, `parts-record-waiting-not-judged-again`,
   `parts-judged-once-a-run`, `condense-waits-for-its-merge-request`.
 - **Its stale merge requests rebuilt or closed**: `gardening-branch-*`.
-- **People's pull requests settled on its own lines**: `persons-branch*`.
+- **Nothing merged into people's pull requests**
+  ([ADR-0051](../../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#build-order), step 10):
+  `persons-branch-left-update-branches-gone`.
 - **No commit on a person's pull request for a doc only read**
   ([#463](https://github.com/JN0V/workline/issues/463)): its record kept
   in the documentalist's comment, read by the next push, written on `main`
