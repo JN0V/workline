@@ -1,0 +1,12 @@
+case: documentalist/suspect-only-when-the-named-yaml-key-changes
+about: "A source may name a YAML key after `#`, its path dotted from the top (ADR-0053): a doc naming `ci.yml#jobs.test` is not suspect when another job of the file changes."
+given:
+  repo: documented
+  setup:
+    - "printf 'jobs:\\n  test:\\n    run: go test\\n  lint:\\n    run: golangci-lint run\\n' > ci.yml && printf -- '---\\nsources: [ci.yml#jobs.test]\\nchecked: HEAD\\n---\\n# CI\\n\\nThe tests run on each push.\\n' > docs/tech/ci.md && git add ci.yml docs/tech/ci.md && git commit -qm 'ci: test and lint'"
+    - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C/\" docs/tech/ci.md && git commit -qam 'docs: confirm the ci doc'"
+    - "sed -i 's/golangci-lint run/golangci-lint run --fast/' ci.yml && git commit -qam 'ci: lint fast'"
+run: {role: documentalist, event: pre-push, input: {range: "HEAD~1..HEAD"}, ai: none}
+expect:
+  status: pass
+  no-findings: [{rule: suspect, where: docs/tech/ci.md}, {rule: unknown}]

@@ -1,0 +1,12 @@
+case: documentalist/suspect-only-when-the-named-part-changes
+about: "A source may name a part of a Go file after `#`, a declaration (ADR-0053): the doc is suspect only when that part changes, never for another function of the same file, even with a line removed."
+given:
+  repo: documented
+  setup:
+    - "sed -i 's|sources: \\[src/auth/token.go\\]|sources: [src/auth/token.go#TokenTTL]|' docs/tech/auth.md && printf '\\nfunc Revoke() {}\\n' >> src/auth/token.go && git commit -qam 'feat(auth): revoke tokens'"
+    - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C/\" docs/tech/auth.md && git commit -qam 'docs: confirm the auth doc'"
+    - "sed -i 's/func Revoke() {}/func Revoke() { panic(1) }/' src/auth/token.go && git commit -qam 'fix(auth): refuse to revoke'"
+run: {role: documentalist, event: pre-push, input: {range: "HEAD~1..HEAD"}, ai: none}
+expect:
+  status: pass
+  no-findings: [{rule: suspect, where: docs/tech/auth.md}, {rule: unknown}]

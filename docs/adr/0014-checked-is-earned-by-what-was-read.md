@@ -259,6 +259,13 @@ request touching `cmd/workline` or the engine made 40 to 50 docs suspect.
   days after its `checked` (`freshness.stale-after-days`); the weekly
   sample re-reads one doc in ten vouched for.
 
+## Amendment (2026-10-26): a source may name a part of a file
+
+[ADR-0053](0053-a-source-may-name-a-part-of-a-file.md): a source naming a
+Go declaration or a YAML key after `#` makes its doc suspect only when
+that part changes, and a task reads that part whole, not the file. The
+rule above applies to the part's lines.
+
 ## Not decided here
 
 New code no doc describes (today silently ignored unless `documented` is

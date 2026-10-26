@@ -1,0 +1,12 @@
+case: documentalist/named-part-gone-is-said
+about: "A doc naming a Go declaration that no longer exists is suspect, the finding saying the part is gone: never read as an empty part (ADR-0053)."
+given:
+  repo: documented
+  setup:
+    - "sed -i 's|sources: \\[src/auth/token.go\\]|sources: [src/auth/token.go#TokenTTL]|' docs/tech/auth.md && git commit -qam 'docs(auth): name the constant'"
+    - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C/\" docs/tech/auth.md && git commit -qam 'docs: confirm the auth doc'"
+    - "sed -i 's/TokenTTL/TokenLifetime/' src/auth/token.go && git commit -qam 'refactor(auth): rename the lifetime'"
+run: {role: documentalist, event: pre-push, input: {range: "HEAD~1..HEAD"}, ai: none}
+expect:
+  status: pass
+  findings: [{rule: suspect, where: docs/tech/auth.md, message: "part #TokenTTL of src/auth/token.go is gone"}]

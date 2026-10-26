@@ -31,7 +31,8 @@ file. All roles: [docs/roles.md](../../docs/roles.md).
 - A doc names its code in `sources`, and the commit it was last checked
   against in `checked`; a commit changing one of those sources where it
   touches what the doc names makes the doc *suspect*
-  ([more](docs/push.md)).
+  ([more](docs/push.md)). A source may name a part of a file: a heading,
+  a Go declaration, a YAML key.
 - With no agent: finds the suspect docs, and checks sizes, duplicates, dead
   links, identifiers gone from the code, decisions superseded, derived
   blocks; when gardening, whether user pages serve their reader.

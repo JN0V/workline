@@ -28,6 +28,13 @@ A source in another repository is prefixed with that repository's name, as
 declared in the project's config (`api:src/auth/token.go`), and `checked` then
 holds one commit per repository (`checked: {api: 3f2a91c}`).
 
+A source may name a part of a file after `#`: a heading of a doc
+(`docs/tech/auth.md#token-refresh`), a Go declaration
+(`src/auth/token.go#TokenTTL`, a method as `Store.Get`), a YAML key dotted
+from the top (`ci.yml#jobs.test`). The doc is then suspect only when that
+part changes, and is judged against that part. Name a part when a doc
+describes a few declarations of a large file.
+
 A doc describing no code — a decision record, a backlog, a changelog — says
 so with `sources: []`, and has no `checked`.
 
