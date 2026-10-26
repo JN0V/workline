@@ -138,12 +138,6 @@ settings:
   # (docs/judge.md): en or fr. Unset, each doc's own, told by its frequent words.
   language: ""
   max-open-merge-requests: 5         # backpressure: with --open-merge-request, no gardening while this many wait
-  # When the default branch moves (`workline follow`), a person's merge
-  # request from this repository left in conflict with it only on lines
-  # workline writes — a doc's checked, judged or verified, a derived
-  # block — gets it merged in, those lines settled (ADR-0041): `conflicts`.
-  # Off: workline writes to no branch it did not create.
-  update-branches: off
   ai-max-calls: 10                   # suspect docs per call; the rest wait for the next round
   # Tokens one run may spend, all calls together (in, cache included, and
   # out); past it the agent is asked nothing more and the rest waits. 0: no

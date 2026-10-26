@@ -124,11 +124,16 @@ func followCmd(args []string) int {
 			return 64
 		}
 	}
-	if err := followSettings(&o); err != nil {
+	gone, err := followSettings(&o)
+	if err != nil {
 		fmt.Fprintln(os.Stderr, "workline:", err)
 		return 64
 	}
 	res := engine.Follow(o)
+	if gone {
+		res.Findings = append(res.Findings, verdict.Finding{Rule: "setting-gone", Level: "warn",
+			Message: "the documentalist's update-branches is no longer read: workline merges nothing into a person's merge request (ADR-0051); take it off the project's settings"})
+	}
 	if err := wlreport.AppendSummary(summaryFiles, wlreport.RoleSummary("follow", "", res)); err != nil {
 		fmt.Fprintln(os.Stderr, "workline:", err)
 		return 1
@@ -143,37 +148,31 @@ func followCmd(args []string) int {
 }
 
 // followSettings reads what `workline follow` takes of the documentalist's
-// settings: whether people's merge requests in conflict only on
-// workline's lines get their base merged in (`update-branches`, ADR-0041),
-// and which files are docs; and the release tool's branches, a bot's.
-func followSettings(o *engine.FollowOptions) error {
+// settings: which files are docs; and the release tool's branches, a
+// bot's. gone says the project still sets `update-branches`, whose merges
+// into people's merge requests ADR-0051 removed.
+func followSettings(o *engine.FollowOptions) (gone bool, err error) {
 	rolesDir, err := resolveRoles(os.Getenv("WORKLINE_ROLES"))
 	if err != nil {
-		return err
+		return false, err
 	}
 	r, err := role.Load(rolesDir, "documentalist")
 	if err != nil {
-		return err
+		return false, err
 	}
 	cfg, err := role.LoadProjectConfig(o.Repo)
 	if err != nil {
-		return err
+		return false, err
 	}
 	settings := r.MergedSettings(cfg)
-	switch v := fmt.Sprint(settings["update-branches"]); v {
-	case "off", "false", "<nil>":
-	case "conflicts":
-		o.People = true
-	default:
-		return fmt.Errorf(".workline/config.yaml: the documentalist's update-branches is %q: off or conflicts", v)
-	}
+	_, gone = settings["update-branches"]
 	s, err := documentalist.SettingsFrom(settings)
 	if err != nil {
-		return fmt.Errorf(".workline/config.yaml: the documentalist's settings: %w", err)
+		return false, fmt.Errorf(".workline/config.yaml: the documentalist's settings: %w", err)
 	}
 	rs, err := release.Load(o.Repo)
 	if err != nil {
-		return err
+		return false, err
 	}
 	o.IsDoc, o.Release = s.IsDoc, rs.IsBranch
 	o.Derive = func(dir string, docs map[string]string) bool {
@@ -185,7 +184,7 @@ func followSettings(o *engine.FollowOptions) error {
 		}
 		return len(stale) == 0
 	}
-	return nil
+	return gone, nil
 }
 
 // version is the release, set when one is built (-X main.version=v0.1.0).

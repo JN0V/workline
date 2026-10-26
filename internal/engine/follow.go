@@ -24,10 +24,9 @@ import (
 // committed to is left to them, and named only when it no longer merges
 // (ADR-0034, amended).
 //
-// With People, the project's choice, it merges base into each person's
-// merge request left in conflict with it only on lines workline writes,
-// those settled: a doc's record of when it was checked, a derived block
-// (ADR-0041; settle.go).
+// A person's merge request is never written to: its conflicts with base,
+// a doc's `checked` among them, are its author's (ADR-0051, which removed
+// ADR-0041's merges).
 //
 // With Merge, the project's merge policy, it turns the forge's auto-merge
 // on for each merge request a person accepted, its head's verdict passed:
@@ -119,13 +118,6 @@ func Follow(o FollowOptions) *Result {
 		res.Summary = "the roles' merge requests left to gardening"
 	}
 	o.Base = base
-	if o.People {
-		sum, err := people(f, o, local, res)
-		if err != nil {
-			return fail(err)
-		}
-		res.Summary += "; " + sum
-	}
 	if o.Merge != "" {
 		sum, err := mergePolicy(f, o, local, res, hand)
 		if err != nil {
