@@ -1,6 +1,6 @@
 ---
 sources: [ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile]
-checked: d722a840
+checked: 87a81d4a
 judged: e8a46f7
 verified: agent:documentalist
 reader: 9799dcaf51f3
@@ -231,9 +231,8 @@ a cron off the hour (`13 17 * * *`) was listed as due at 18:00 and ran at
     as on GitHub: a person judges what it would have; a GitLab call is
     tried again first ([which](gitlab/calls.md)).
 - **`workline:follow`**, each push to the default branch, its bot's token,
-  no agent: when set, the branch merged into people's merge requests in conflict only on
-  workline's lines ([more](../roles/documentalist/docs/follow.md)), and the
-  [merge policy](merge-policy.md), also after each judge (`workline:merge`).
+  no agent: the [merge policy](merge-policy.md), when set, also after
+  each judge (`workline:merge`).
 - **`workline:main`**, each push to the default branch, no token, no
   agent: the gates, their findings kept in its artifacts as the next base
   `workline:gates` reads, and the whole repository's checks;

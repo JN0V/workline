@@ -463,7 +463,7 @@ time" and "The order" above are replaced:
 - **Kept**: a release held for its docs, merged since, is still brought
   up to date, so its line runs again, until [ADR-0051]'s step 3 removes
   the release's docs. [ADR-0041]'s merges of the base, for conflicts on
-  workline's own lines, stay.
+  workline's own lines, stay, until [ADR-0051]'s step 10 removes them.
 - **The net is main's run**: red, it says so in its one issue and once
   on each open pull request whose base holds the red commit ("base red,
   not yours"). The issue counts red mains a week; above one, the forge's

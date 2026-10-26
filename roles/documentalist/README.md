@@ -1,6 +1,6 @@
 ---
 sources: [roles/documentalist/role.yaml, internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/kept.go, routing.default.yaml]
-checked: d722a840
+checked: 87a81d4a
 judged: f70db89
 verified: agent:claude-code
 ---
@@ -82,7 +82,6 @@ Under `roles: {documentalist: {settings: …}}` in `.workline/config.yaml`
 | `versions` | `{pattern: "", files: []}` | how the project writes a version, and where |
 | `language` | `""` (read from each doc) | `en` or `fr` |
 | `max-open-merge-requests` | `5` | gardening pauses while this many of its merge requests wait |
-| `update-branches` | `off` | `conflicts`: when main moves, merge it into a pull request in conflict only on workline's lines ([more](docs/follow.md)) |
 | `ai-max-calls` | `10` | suspect docs per call |
 | `ai-max-tokens` | `0` (no cap) | tokens one run may spend, all calls together |
 | `whole-chars` | `20000` | characters of sources a doc may take to be judged whole; 25000 at most, its task fitting the context budget |
@@ -121,9 +120,9 @@ Under `roles: {documentalist: {settings: …}}` in `.workline/config.yaml`
   disagrees with a doc it follows.
 - Never at the release: the release does not wait for the docs
   ([ADR-0051](../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-1-the-release-weekly)).
-- On a person's pull request, with `update-branches: conflicts`: a merge
-  of main when it conflicts only on workline's lines, those settled; else
-  named in the job's summary ([more](docs/follow.md)).
+- Never a commit on a person's pull request: a conflict with main, on a
+  doc's `checked` too, is its author's
+  ([ADR-0051](../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-3-no-docs-obligation-per-pr)).
 - `--json`, `--sarif`, `--code-quality` for CI.
 
 ## Cost
@@ -167,9 +166,7 @@ regenerates derived blocks.
   [its claims](docs/judge-claims.md): what backs a word taken out;
   [code examples](docs/examples.md): said unverified, or checked by your
   command.
-- [At the push and the adoption](docs/push.md);
-  [a pull request in conflict on its lines](docs/follow.md): main merged
-  in, when set.
+- [At the push and the adoption](docs/push.md).
 
 **Status**: [beta](../../docs/adr/0036-a-roles-status-is-earned-by-written-criteria.md), used on workline and DomoticsCore in CI;
 [docs/status.md](docs/status.md); each try in its pull request ([before 2026-10-13](docs/tried.md)).

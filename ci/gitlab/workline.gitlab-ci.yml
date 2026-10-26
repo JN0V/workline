@@ -643,13 +643,9 @@ workline:main:issue:
     reports: {annotations: workline-annotations.json}
     expire_in: 1 week
 
-# When the default branch moves, no agent (`workline follow`). With the
-# documentalist's `update-branches: conflicts` (ADR-0041, off by
-# default; the first release after v0.24.0), a person's merge request from
-# this project in conflict with the default branch only on lines workline
-# writes gets it merged in, by the project's bot: a merge commit, never
-# forced. The summary names each one merged into, and each left. With the
-# merge policy (`merge:`), as workline:merge.
+# When the default branch moves, no agent (`workline follow`): with the
+# merge policy (`merge:`), as workline:merge. It writes to no person's
+# merge request.
 workline:follow:
   image: $WORKLINE_IMAGE:$WORKLINE_VERSION
   stage: deploy

@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine/merge.go, internal/engine/queue.go, internal/forge/merge.go, internal/forge/github_merge.go, internal/forge/gitlab_merge.go, ci/github/workline-apply.yml, ci/github/workline-merge.yml, ci/gitlab/workline.gitlab-ci.yml]
-checked: d722a840
+checked: 87a81d4a
 verified: agent:claude-code
 ---
 # The merge policy
@@ -62,9 +62,11 @@ merge: {autonomy: cautious}   # off unless set: no auto-merge is touched
 - **workline's own commit is no push**, checked by its tree; its trailer
   is needed, never taken on trust. The committer checks every commit all
   the same:
-  - `follow`'s update: the base merged in, never another branch, or a
-    role's branch rebuilt on it — exactly what workline's own merge or
-    rebuild gives;
+  - a role's branch rebuilt on the base, or a merge of the base workline
+    made before it stopped writing to people's branches
+    ([ADR-0051](adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#build-order),
+    step 10), never another branch — exactly what workline's own rebuild
+    or merge gives;
   - a record: one commit changing, against its parent, only lines
     workline writes in the docs — a header's `checked`, `judged`,
     `judged-in-parts` or `verified`, a derived block as its command gives

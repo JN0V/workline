@@ -1,6 +1,6 @@
 ---
 sources: [ci/github, .github/workflows/workline.yml, .github/workflows/workline-apply.yml, .github/workflows/workline-gardening.yml, .github/workflows/workline-sample.yml, .github/actions/engine/action.yml, .github/workflows/release.yml, .github/workflows/release-please.yml, release-please-config.json, .goreleaser.yaml, cmd/workline]
-checked: d722a840
+checked: 87a81d4a
 judged: 220b6dc
 verified: agent:claude-code
 reader: fe1505d43360
@@ -62,9 +62,6 @@ write run the default branch's workflow, never a pull request's own
        pushed to the branch, and after each `warn`, the comment of the
        lenses that warn and the inspector's;
      - `main` after main's run: what it found, in one issue;
-     - `follow` on each push to `main`: with `update-branches: conflicts`, `main` is merged
-       into people's pull requests in conflict only on workline's lines
-       ([more](../roles/documentalist/docs/follow.md));
      - with the [merge policy](merge-policy.md), `verdict` and `follow` run
        after `judge`, and `queue` after a merge queue's group;
      - rename `main` in its `push:` for another default branch.

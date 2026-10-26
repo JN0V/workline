@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/engine/engine.go, internal/hooks]
-checked: d722a840
+checked: 87a81d4a
 verified: agent:claude-code
 judged: e343388
 ---
@@ -245,10 +245,9 @@ Run when the default branch moves (CI's `follow` job), with no agent.
   - one a person committed to is left to them, named when it is in
     conflict with the base (`not-rebuilt`), or when git cannot tell
     (`conflict-unread`).
-- **People's pull requests**, with the documentalist's `update-branches:
-  conflicts`: one in conflict only on lines workline writes gets the base
-  merged in (`merged`); any other is left, named (`not-merged`)
-  ([when the base moves](../roles/documentalist/docs/follow.md)).
+- **People's pull requests** are never written to: a conflict with the
+  base, on a doc's `checked` too, is their author's
+  ([ADR-0051](adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-3-no-docs-obligation-per-pr)).
 - **The [merge policy](merge-policy.md)**, with `merge:`: auto-merge on
   for what a person accepted — at `normal`, workline's own routine work
   too —, each merging once its own head is green.

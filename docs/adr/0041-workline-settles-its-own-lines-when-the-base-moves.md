@@ -1,7 +1,11 @@
 # ADR-0041: workline settles its own lines when a pull request's base moves
 
-- **Status:** accepted, "For the person" as proposed; built by
-  [#319](https://github.com/JN0V/workline/issues/319) ([page](../../roles/documentalist/docs/follow.md))
+- **Status:** removed 2026-10-26 by
+  [ADR-0051](0051-a-check-sits-where-its-catch-is-worth-its-cost.md#build-order)'s
+  step 10, but for the recognition of a merge it made
+  ([amendment](#amendment-2026-10-26-adr-0051-step-10-the-merges-removed));
+  accepted before, "For the person" as proposed, built by
+  [#319](https://github.com/JN0V/workline/issues/319)
 - **Date:** 2026-10-12
 - **Extends:** [ADR-0034](0034-the-release-fix-follows-its-base.md)
   (`follow` keeps workline's own branches on their base, a doc's header
@@ -198,3 +202,22 @@ belong to that decision.
 - **`main` holds no merge commit**: this repository merges by squash.
   Conformance: documentalist/persons-branch* (18), forge/cmd-persons-branch-merged,
   routing/own-*, routing/follow-merge-keeps-a-red-verdict, reviewer/workline-merge-of-main-asks-no-lens.
+
+## Amendment (2026-10-26, ADR-0051 step 10): the merges removed
+
+- **Why**: since [ADR-0051](0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-3-no-docs-obligation-per-pr),
+  no `checked` is pushed to a pull request and none needs 0 suspect: two
+  pull requests no longer move the same header lines, the conflict this
+  decision settled.
+- **Removed**: `follow`'s merge of the base into a person's pull request,
+  and the documentalist's `update-branches`. A project still setting it
+  gets a warning, `setting-gone`; nothing is written to its branches.
+- **Kept**: the recognition of a merge it made, still on an open branch
+  ([routing](../spec/routing.md), the reviewer, the merge policy): judged
+  through its first parent, as before. It goes once no open branch
+  holds one.
+- **A conflict on a header line** is its author's, as any other: rare now
+  no `checked` is pushed to a pull request.
+- Conformance: documentalist/persons-branch-left-update-branches-gone;
+  the 18 `persons-branch*` cases, forge/cmd-persons-branch-merged and
+  routing/follow-merge-keeps-a-red-verdict removed.

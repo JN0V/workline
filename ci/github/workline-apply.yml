@@ -55,11 +55,6 @@
 #          opened when there is something to list, edited only when what it
 #          lists changes, never commented on.
 #   follow on a push to main, holds the write token and no AI key.
-#          With the documentalist's `update-branches: conflicts` (ADR-0041,
-#          off by default), a person's pull request from this repository in
-#          conflict with main only on lines workline writes gets main merged
-#          in: a merge commit, never forced. The job's summary names each one
-#          merged into, and each left.
 #          With the merge policy, also after verdict: auto-merge turned on
 #          for what a person accepted, each merging once its own head is
 #          green; workline-merge.yml runs it on a label. Only with the App's token

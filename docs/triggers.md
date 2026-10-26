@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/line, internal/hooks, internal/forge/gitlab.go, ci/gitlab/workline.gitlab-ci.yml, ci/github/workline.yml, ci/github/workline-gardening.yml, ci/github/workline-sample.yml, routing.default.yaml]
-checked: d722a840
+checked: 87a81d4a
 verified: agent:claude-code
 reader: 2de353fab113
 ---
@@ -129,10 +129,7 @@ Before your release tool tags; a non-zero exit holds it.
   no agent) ([the release](release.md)).
 - On a push to the default branch: `workline follow --base <branch>
   --forge gitlab` (token, no agent), `user.name` and `user.email` set
-  first, as for `apply`. With `update-branches:
-  conflicts`, it merges the branch into people's merge requests in
-  conflict only on workline's lines
-  ([more](../roles/documentalist/docs/follow.md)). With `merge:`, it runs
+  first, as for `apply`. With `merge:`, it runs
   the [merge policy](merge-policy.md): after each judge too, given the
   head's verdict `route --verdict` wrote (`--verdict <file>`).
 

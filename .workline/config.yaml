@@ -16,7 +16,7 @@ roles:
       docs: ["docs/**", "*.md", "roles/*/README.md", roles/documentalist/docs/checks.md, roles/documentalist/docs/checks-docs.md,
         roles/documentalist/docs/tasks.md, roles/documentalist/docs/parts.md, roles/documentalist/docs/judge.md, roles/documentalist/docs/push.md,
         roles/documentalist/docs/cascades.md, roles/documentalist/docs/gardening.md,
-        roles/documentalist/docs/judge-claims.md, roles/documentalist/docs/follow.md,
+        roles/documentalist/docs/judge-claims.md,
         roles/product-owner/docs/run.md, roles/product-owner/docs/outputs.md, roles/product-owner/docs/tracking.md,
         roles/product-owner/docs/settings.md, roles/product-owner/docs/writing.md,
         roles/reviewer/docs/run.md, roles/reviewer/docs/judge.md, roles/reviewer/docs/spec.md,
@@ -34,10 +34,6 @@ roles:
       # night (8 parts), and a night spends at most 400k tokens.
       parts-max-per-run: 8
       ai-max-tokens: 400000
-      # When main moves, a pull request in conflict with it only on lines
-      # workline writes — a doc's checked, judged or verified, a derived
-      # block — gets main merged in, those settled (ADR-0041).
-      update-branches: conflicts
       # The weekly sample of the docs vouched for (ADR-0014, step 4) is read
       # by Opus: the gardening vouches with Sonnet, and no other provider is
       # set up here, so another model is the best independence (ADR-0005).
