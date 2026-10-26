@@ -25,10 +25,12 @@
 v1.0 is reached when all three hold:
 
 1. **The six core roles are out of beta**: committer, documentalist,
-   reviewer, inspector, product owner, auditor; each by the criteria of
-   its `roles/<name>/docs/status.md` ([ADR-0036]). The judge, built,
-   serves them.
-2. **The inspector is validated on a real GitLab**, not only on GitHub.
+   reviewer, product owner, judge, auditor; each by the criteria of
+   its `roles/<name>/docs/status.md` ([ADR-0036]). A role built once
+   counts only while its status.md says built: a role can go back to
+   beta.
+2. **The inspector is validated on a real GitLab**, not only on GitHub;
+   it is not one of the six.
 3. **Upkeep stays under 10% of tokens for 4 weeks in a row**, by the
    weekly measure of [#610].
 
