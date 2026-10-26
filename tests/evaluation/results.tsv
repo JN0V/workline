@@ -595,3 +595,20 @@ date	workline	agent	models	effort	case	score	agent calls	tokens in	tokens out	co
 2026-10-18T22:13:58Z	93660de1	claude	claude-sonnet-5-5	medium	documentalist/drifted-gardening	19/19	1	20211	3792	0.1188	30			
 2026-10-18T22:14:08Z	93660de1	claude	claude-sonnet-5-5	medium	documentalist/finds-planted-defects-in-parts	19/19	6	29022	5254	0.1686	45			
 2026-10-18T22:15:36Z	93660de1	claude	claude-opus-5-5>claude-sonnet-5-5	medium	documentalist/condenses-the-role-contract	5/5	2	21578	13657	0.3738	118		claude-sonnet-5-5 (context)	
+2026-10-26T11:10:00Z	f22195ba	claude	claude-sonnet-5-5	medium	documentalist/fixes-a-doc-made-false	5/5	1	4266	616	0.0232	7			
+2026-10-26T11:10:01Z	f22195ba	claude	claude-sonnet-5-5	medium	documentalist/confirms-a-doc-still-true	4/4	1	4315	355	0.0208	8			
+2026-10-26T11:10:12Z	f22195ba	claude	claude-haiku-5-5	low	committer/shortens-a-fix-subject	6/6	1	5521	876	0.0015	19		claude-sonnet-5-5 (model)	
+2026-10-26T11:10:12Z	f22195ba	claude	claude-haiku-5-5	low	committer/shortens-a-ci-subject	6/6	1	4414	320	0.0010	12		claude-sonnet-5-5 (model)	
+2026-10-26T11:10:13Z	f22195ba	claude	claude-haiku-5-5	low	committer/drops-a-reference-from-the-subject	6/6	1	5198	690	0.0014	20		claude-sonnet-5-5 (model)	
+2026-10-26T11:10:14Z	f22195ba	claude	claude-sonnet-5-5	medium	documentalist/finds-planted-defects-whole	12/12	1	7340	1649	0.0458	12			
+2026-10-26T11:10:17Z	f22195ba	claude	claude-haiku-5-5	low	committer/shortens-a-test-subject	6/6	1	5668	862	0.0016	24		claude-sonnet-5-5 (model)	
+2026-10-26T11:10:17Z	f22195ba	claude			documentalist/propagates-a-product-doc-at-release	1/5	0	0	0	0.0000	0	status: status block; file-contains: docs/product/sign-in.md and "two hours"; file-lacks: docs/product/sign-in.md and "one hour"; checked-is-head: docs/product/sign-in.md does not record 7438800 in `checked`		
+2026-10-26T11:10:23Z	f22195ba	claude	claude-sonnet-5-5	medium	documentalist/drifted-version-bump	20/23	1	21701	4055	0.1273	30	never-confirms: docs/clock/status.md confirmed while it still says "33 tests"; judged-is-head: docs/clock/status.md does not record eb28bad in `judged`; checked-unchanged: docs/clock/status.md: `checked` moved from f5a13e1 to eb28bad		
+2026-10-26T11:10:24Z	f22195ba	claude	claude-sonnet-5-5	medium	documentalist/opens-an-issue-when-code-disagrees-with-a-spec	5/5	1	4381	585	0.0234	7			
+2026-10-26T11:10:24Z	f22195ba	claude	claude-sonnet-5-5	medium	documentalist/stays-on-the-task	4/4	1	13647	1028	0.0649	11			
+2026-10-26T11:10:28Z	f22195ba	claude	claude-opus-5-5>claude-sonnet-5-5	medium	documentalist/splits-a-card-too-long	4/4	1	4713	1035	0.0507	15			
+2026-10-26T11:10:29Z	f22195ba	claude	claude-sonnet-5-5	medium	product-owner/keeps-a-planted-backlog	10/11	1	8143	1800	0.0506	17	file-contains: .git/workline/issues/6.md and "Announced #1 as obsolete"		
+2026-10-26T11:10:29Z	f22195ba	claude	claude-sonnet-5-5	medium	documentalist/merges-a-repeated-passage	5/5	1	3571	372	0.0180	6			
+2026-10-26T11:10:31Z	f22195ba	claude	claude-sonnet-5-5	medium	documentalist/never-confirms-a-stale-doc-made-false	4/4	1	4434	772	0.0255	8			
+2026-10-26T11:10:33Z	f22195ba	claude	claude-sonnet-5-5	medium	documentalist/merges-a-card-too-short	5/5	1	3609	692	0.0214	9			
+2026-10-26T11:10:35Z	f22195ba	claude	claude-sonnet-5-5	medium	documentalist/drifted-gardening	19/19	1	20211	3083	0.1117	23			
