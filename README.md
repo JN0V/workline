@@ -69,6 +69,8 @@ pull requests and nightly gardening of workline and of another project;
 - What each role does and does not, its settings and costs: its page, or
   [all the roles](docs/roles.md).
 - A planned role links to its issue, which holds its design.
+- Planned roles start after v1.0, once the core roles are out of beta
+  ([ADR-0052](docs/adr/0052-v1-0-when-the-core-roles-are-out-of-beta.md)).
 - The auditor widening to every role: [#205](https://github.com/JN0V/workline/issues/205).
 - Why these roles, in this order: the
   [roles panorama](docs/research/roles-panorama.md).
