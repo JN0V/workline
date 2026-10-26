@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.41.0](https://github.com/JN0V/workline/compare/v0.40.0...v0.41.0) (2026-10-26)
+
+
+### ⚠ BREAKING CHANGES
+
+* follow merges main into no person's pull request ([#632](https://github.com/JN0V/workline/issues/632))
+
+### Features
+
+* **documentalist:** weekly docs PR, suspect by name ([#630](https://github.com/JN0V/workline/issues/630)) ([c9f7626](https://github.com/JN0V/workline/commit/c9f762604287d00de5c1662c48d91a063f70434e))
+* follow merges main into no person's pull request ([#632](https://github.com/JN0V/workline/issues/632)) ([acd38a9](https://github.com/JN0V/workline/commit/acd38a9acfa006347642fe6bb80649708ed88e10))
+* **product-owner:** drop a draft that repeats the text above ([#444](https://github.com/JN0V/workline/issues/444)) ([a91e3e7](https://github.com/JN0V/workline/commit/a91e3e78a9fc4e9593cd471f58166a63109d3c7b))
+
 ## [0.40.0](https://github.com/JN0V/workline/compare/v0.39.1...v0.40.0) (2026-10-21)
 
 
