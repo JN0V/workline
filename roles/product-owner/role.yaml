@@ -72,9 +72,9 @@ settings:
   # With milestone or order on: a run moves at most this share of the open
   # issues, in percent; past it, proposed (ADR-0018).
   moved-percent-max: 20
-  # Each thing said once (ADR-0039): a draft of the Need, an example or a
-  # bug's steps whose words are past this share, in percent (1 to 100),
-  # already said above it is not written.
+  # Each thing said once (ADR-0039): an example or a bug's steps whose
+  # words are past this share, in percent (1 to 100), already said above
+  # them (the text on top and the Need) are not written.
   repeated-percent-max: 40
   # Where each issue's priority and effort are kept (ADR-0040), unset: the
   # role's own labels, workline:priority/1 to /4, and no effort. `auto`
