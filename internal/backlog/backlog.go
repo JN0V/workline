@@ -1638,7 +1638,7 @@ func (p *Plan) repeats(is forge.Issue, st *State, c *Proposal) {
 		need = c.Need
 	}
 	above := StripDrafts(need)
-	if !(c.Lift && written(work.Need)) {
+	if !c.Lift || !written(work.Need) {
 		above = top + "\n\n" + above
 	}
 	for _, m := range []work.Meaning{work.Example, work.Steps} {

@@ -195,7 +195,7 @@ func BroughtBack(b forge.Backlog, is forge.Issue, st *State, notes []forge.Note)
 func lacking(is forge.Issue, st *State) bool {
 	have := work.ByMeaning(is.Body)
 	for _, m := range work.Required {
-		if strings.TrimSpace(have[m].Text) == "" && !work.Has(st.Deleted, m) && !(m == work.Need && NeedOnTop(is, st)) {
+		if strings.TrimSpace(have[m].Text) == "" && !work.Has(st.Deleted, m) && (m != work.Need || !NeedOnTop(is, st)) {
 			return true
 		}
 	}
