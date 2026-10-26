@@ -1,4 +1,4 @@
-# Product owner — where it stands (2026-10-18)
+# Product owner — where it stands (2026-10-26)
 
 **In one line:** refocused by
 [ADR-0038](../../../docs/adr/0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md):
@@ -8,8 +8,8 @@ rest on each issue (`workline:proposed`, one comment edited in place),
 and reads a person's answer there. Milestones, priorities, splits,
 renames, links, obsolete issues and changed needs are off by default,
 their code kept; its acts done alone are drawn by the weekly sample of
-every role's. Tried on both sandboxes; a trial on
-workline and another project of its author's is running. Beta.
+every role's. Tried on both sandboxes; its second trial
+on real use (2026-10-17 to 10-24) did not meet its aim. Beta.
 
 Each try: up to 2026-10-13 in [tried.md](tried.md), an archive (the first
 nights of the trial, 2026-10-08 to 10-12, among them); since, in its pull
@@ -31,6 +31,15 @@ hold:
    [ADR-0038](../../../docs/adr/0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md)
    measures the proposals on each issue — accepted unchanged, edited,
    revised, set aside, ignored —; the maintainer validates it from them.
+   - **Second trial, 2026-10-17 to 10-24: not met** (the maintainer,
+     2026-10-26). None of its 11 proposals was answered; 3 of 5 acts
+     drawn by the weekly sample were judged false
+     ([#155](https://github.com/JN0V/workline/issues/155), week 42); it
+     sent too many emails
+     ([#548](https://github.com/JN0V/workline/issues/548)).
+   - **Next**: drafts that repeat left out (this page's Built), then
+     [#548](https://github.com/JN0V/workline/issues/548); a third trial
+     only once a person can answer the proposals.
 3. **AI verdicts measured on the acts on by default**: in part. An evident
    duplicate: `keeps-a-planted-backlog`, 5 in 5 on Sonnet. Left: refine
    (drafts accepted unchanged in the trial; rated blind, the new drafts
