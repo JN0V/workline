@@ -383,14 +383,6 @@ func versionsOnly(dir, commit, path string) (bool, []string) {
 	return true, old
 }
 
-// dropBumps leaves out of a doc's commits ("%h %s" lines), on a release
-// tool's pull request, those that only bumped a version in path, unless the
-// doc still says a version they replaced as the version now — a pin, which
-// must follow the bump — never as history: the release a feature came in,
-// a minimum, stay true at every later release (saysAsNow, #346). The
-// tool's own bump says nothing else a doc describes, and would make the
-// release's docs suspect at every release. Elsewhere a bump is a change
-// like any: the docs it touches are judged (the evaluation's
 // docNames are what a doc names that a change of code can make false: the
 // names it writes in backticks — flags, identifiers, settings, files —,
 // lowercased, leading dashes cut, four characters or more; and the values
@@ -456,6 +448,14 @@ func touchesNames(dir, commit, path string, names map[string]bool) bool {
 	return false
 }
 
+// dropBumps leaves out of a doc's commits ("%h %s" lines), on a release
+// tool's pull request, those that only bumped a version in path, unless the
+// doc still says a version they replaced as the version now — a pin, which
+// must follow the bump — never as history: the release a feature came in,
+// a minimum, stay true at every later release (saysAsNow, #346). The
+// tool's own bump says nothing else a doc describes, and would make the
+// release's docs suspect at every release. Elsewhere a bump is a change
+// like any: the docs it touches are judged (the evaluation's
 // drifted-version-bump).
 func dropBumps(dir, commits, path, doc string) string {
 	if commits == "" || strings.HasPrefix(commits, "(") {
