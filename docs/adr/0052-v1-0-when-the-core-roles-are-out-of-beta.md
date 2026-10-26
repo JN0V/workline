@@ -7,7 +7,7 @@
   criteria), [ADR-0051] (a check sits where its catch is worth its cost)
 - **Research:** [catch-and-cost.md](../research/catch-and-cost.md)
 - **Tracked by:** the GitHub milestone
-  [v1.0](https://github.com/JN0V/workline/milestones)
+  [v1.0](https://github.com/JN0V/workline/milestone/1)
 
 ## Context
 
