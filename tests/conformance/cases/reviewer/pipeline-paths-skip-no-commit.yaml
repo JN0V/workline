@@ -1,0 +1,15 @@
+case: reviewer/pipeline-paths-skip-no-commit
+about: "A project whose pipeline runs scripts from elsewhere names them in `pipeline-paths` (ADR-0051, cut 5): a change to ci/run.sh then skips no commit on the record, as a change to .github/ does. Unnamed, ci/ is product code like any other: the record is read, and its commits skipped (reviewer/ci-change-skips-on-the-record)."
+given:
+  repo: reviewed
+  config: {roles: {reviewer: {settings: {pipeline-paths: [ci/]}}}}
+  setup:
+    - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"
+    - "mkdir -p ci && echo 'go test ./...' > ci/run.sh && git add ci && git commit -qm 'ci: a script the pipeline runs'"
+    - "mkdir -p .git/workline && echo \"<!-- workline:record reviewed=$(git rev-parse HEAD) runs=1 -->\" > .git/workline/reviewer-record"
+run: {role: reviewer, event: review, input: {range: main..HEAD}, ai: "fake:review-nothing"}
+expect:
+  status: pass
+  agent-calls: 1
+  findings:
+    - {rule: line-changed, level: warn, message: "the change touches what its own pipeline runs (ci/run.sh): no commit is skipped"}

@@ -251,6 +251,22 @@ func TestKeptLastAndUnread(t *testing.T) {
 	if err := k.Unread("<!-- workline:none -->"); err != nil {
 		t.Fatalf("none carrying it: %v", err)
 	}
+	// Its own, last edited by another: not read, nor an older own one in
+	// its place; who edited it is said.
+	k.notes = []Note{{Body: "older " + marker, Author: "workline-bot"}, {Body: "edited " + marker, Author: "workline-bot", Editor: "mallory"}}
+	if body, ok := k.Last(marker); ok {
+		t.Fatalf("an edited record read: %q", body)
+	}
+	want = "workline's comment, last edited by @mallory, carries its marker: only workline's own account's is read (workline-bot)"
+	if err := k.Unread(marker); err == nil || err.Error() != want {
+		t.Fatalf("said %v, want %q", err, want)
+	}
+	// Edited by one of workline's own logins — the person's on their
+	// machine, whose token it writes with —: read.
+	k.own.logins = append(k.own.logins, "mallory")
+	if body, ok := k.Last(marker); !ok || body != "edited "+marker {
+		t.Fatalf("an edit by its own account not read: %q %v", body, ok)
+	}
 	// The local forge's every comment is the person's own; a command's,
 	// those it says are.
 	if o, _ := (&Local{}).own(); !o.Wrote(Note{Body: "x"}) {
@@ -258,5 +274,58 @@ func TestKeptLastAndUnread(t *testing.T) {
 	}
 	if o, _ := (&command{}).own(); o.Wrote(Note{Author: "workline-bot", Bot: true}) || !o.Wrote(Note{Own: true}) {
 		t.Fatal("a command's comments not read by its word")
+	}
+}
+
+// ReadKept asks who last edited each comment in GraphQL, which GitHub's
+// and GitLab's REST do not say: workline's own comment another edited is
+// not read. A GraphQL refused is an error, never a record read unasked.
+func TestReadKeptEditors(t *testing.T) {
+	marker := "<!-- workline:k -->"
+	t.Setenv("WORKLINE_APP", "workline-x")
+	t.Setenv("WORKLINE_APP_ID", "")
+	log := fakeGh(t, "", `{"id":"7","body":"record `+marker+`","author":"workline-x[bot]","editor":"mallory"}`)
+	k, err := ReadKept(&github{repo: t.TempDir()}, Target{Kind: "merge-request", ID: 5})
+	if err != nil {
+		t.Fatal(err)
+	}
+	asked, _ := os.ReadFile(log)
+	if _, ok := k.Last(marker); ok || !strings.Contains(string(asked), "pullRequest(number: $number)") {
+		t.Fatalf("GitHub: an edited record read, or its editors not asked: %s", asked)
+	}
+
+	refuse := false
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch p := r.URL.EscapedPath(); {
+		case p == "/api/v4/user":
+			_ = json.NewEncoder(w).Encode(map[string]any{"username": "project_1_bot_0a1b"})
+		case p == "/api/v4/projects/1/merge_requests/5/notes":
+			_ = json.NewEncoder(w).Encode([]map[string]any{{"id": 4, "body": "record " + marker, "author": map[string]any{"username": "project_1_bot_0a1b"}}})
+		case p == "/api/v4/projects/1/members/all":
+			_, _ = w.Write([]byte(`[]`))
+		case p == "/api/graphql" && refuse:
+			_, _ = w.Write([]byte(`{"errors":[{"message":"not allowed"}]}`))
+		case p == "/api/graphql":
+			_, _ = w.Write([]byte(`{"data":{"project":{"item":{"notes":{"nodes":[{"id":"gid://gitlab/Note/4","author":{"username":"project_1_bot_0a1b"},"lastEditedBy":{"username":"dana"}}],"pageInfo":{"hasNextPage":false}}}}}}`))
+		default:
+			http.Error(w, `{"message":"404 Not Found"}`, http.StatusNotFound)
+		}
+	}))
+	defer srv.Close()
+	t.Setenv("CI_API_V4_URL", srv.URL+"/api/v4")
+	t.Setenv("CI_PROJECT_ID", "1")
+	t.Setenv("CI_PROJECT_PATH", "group/project")
+	t.Setenv("GITLAB_TOKEN", "bot-token")
+	t.Setenv("WORKLINE_GITLAB_TOKEN", "")
+	k, err = ReadKept(&gitlab{repo: t.TempDir()}, Target{Kind: "merge-request", ID: 5})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := k.Unread(marker); err == nil || !strings.Contains(err.Error(), "last edited by @dana") {
+		t.Fatalf("GitLab: the edited note not said: %v", err)
+	}
+	refuse = true
+	if _, err := ReadKept(&gitlab{repo: t.TempDir()}, Target{Kind: "merge-request", ID: 5}); err == nil || !strings.Contains(err.Error(), "who last edited") {
+		t.Fatalf("GitLab: a GraphQL refused not said: %v", err)
 	}
 }

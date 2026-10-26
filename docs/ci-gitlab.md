@@ -1,6 +1,6 @@
 ---
 sources: [ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile]
-checked: b6085f38
+checked: 21669ba1
 judged: e8a46f7
 verified: agent:documentalist
 reader: 9799dcaf51f3
@@ -158,6 +158,15 @@ only what is new ([#375](https://github.com/JN0V/workline/issues/375));
 `workline:warn` and `workline:warn:apply` likewise, in a resource group of
 their own.
 
+- **Two applies waiting** may start in either order: GitLab's resource
+  groups default to `unordered`, and workline sets nothing there.
+- **The comment says which run wrote it**: the reviewer's and the
+  inspector's name the head and the pipeline (`CI_PIPELINE_ID`) their
+  run read, hidden.
+- **An older pipeline's apply, run last**, keeps the newer comment's text
+  and merges only its record into it
+  ([#598](https://github.com/JN0V/workline/issues/598)).
+
 Not tried on a GitLab yet.
 
 ### At a release's tag
@@ -267,6 +276,10 @@ a cron off the hour (`13 17 * * *`) was listed as due at 18:00 and ran at
     in `.workline/config.yaml`
     ([ADR-0051](adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md));
     the reviewer and the inspector read theirs so too;
+  - nor one a Maintainer edited last: GitLab says who in GraphQL
+    (`lastEditedBy`), which `WORKLINE_GITLAB_TOKEN` may ask and a job's
+    own token may not; unasked, no record is read, said
+    (`record-unread`);
   - a note carrying its marker that another wrote, a person of the
     project's too: not read, its docs judged again, said
     (`record-unread`);

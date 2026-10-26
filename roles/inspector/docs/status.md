@@ -56,11 +56,16 @@ Cases in
   the head judged still posted, the push's run asking only what is new:
   `triage-applied-when-a-push-lands-before-it`; judged before it was
   posted, the push's run asks again, and both runs' records are merged:
-  `record-merged-when-two-runs-triaged-before-either-applied`.
+  `record-merged-when-two-runs-triaged-before-either-applied`; applied
+  out of order, the newer run's triage kept
+  ([#598](https://github.com/JN0V/workline/issues/598)):
+  `newer-triage-kept-when-applied-out-of-order`.
 - **The record read only from workline's own account's comment**, a
   person of the project's never
   ([ADR-0051](../../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md),
-  step 1): `record-of-another-not-read`.
+  step 1): `record-of-another-not-read`; nor one another edited last,
+  as the forge's GraphQL says (step 9), the same helper as the
+  reviewer's: `reviewer/record-edited-by-another-not-read*`.
 - **No agent, no call, said**: `no-agent-no-call-said`; a draft waits for
   ready: `draft-waits-for-ready`; no new finding, no call:
   `no-new-finding-no-call`.

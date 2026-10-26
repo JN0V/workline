@@ -76,9 +76,11 @@ type Kept struct {
 	own   Own
 }
 
-// ReadKept lists t's comments, and who workline's own account is. A
-// token that may not tell who is of the project still reads them: who
-// wrote each is all a record needs.
+// ReadKept lists t's comments, who last edited each when not its author,
+// and who workline's own account is. A token that may not tell who is of
+// the project still reads them: who wrote each, and who edited it, is all
+// a record needs. A forge that lists comments but not their editors in
+// one call (GitHub's REST, GitLab's) is asked them apart, in GraphQL.
 func ReadKept(f Forge, t Target) (Kept, error) {
 	b, ok := f.(Backlog)
 	if !ok {
@@ -88,6 +90,19 @@ func ReadKept(f Forge, t Target) (Kept, error) {
 	if err != nil && !errors.Is(err, ErrAuthorsUnknown) {
 		return Kept{}, err
 	}
+	if e, ok := f.(interface {
+		editors(t Target) (map[string]string, error)
+	}); ok {
+		by, err := e.editors(t)
+		if err != nil {
+			return Kept{}, fmt.Errorf("who last edited its comments could not be read: %w", err)
+		}
+		for i := range notes {
+			if who := by[notes[i].ID]; who != "" {
+				notes[i].Editor = who
+			}
+		}
+	}
 	own, err := OwnAccount(f)
 	if err != nil {
 		return Kept{}, fmt.Errorf("who workline's own account is could not be read: %w", err)
@@ -95,31 +110,43 @@ func ReadKept(f Forge, t Target) (Kept, error) {
 	return Kept{notes: notes, own: own}, nil
 }
 
+// edited says whether one who is not workline's own account edited n
+// last: a record read from it could hold what they wrote.
+func (k Kept) edited(n Note) bool {
+	return n.Editor != "" && !k.own.Wrote(Note{Author: n.Editor})
+}
+
 // Last is the last comment carrying marker that workline's own account
-// wrote: the one KeepOwn edits.
+// wrote, the one KeepOwn edits, when no one else edited it last: one
+// another did is never read (ADR-0051, cut 5), nor an older one in its
+// place; workline's next edit makes it its own again.
 func (k Kept) Last(marker string) (string, bool) {
 	for i := len(k.notes) - 1; i >= 0; i-- {
 		if n := k.notes[i]; strings.Contains(n.Body, marker) && k.own.Wrote(n) {
-			return n.Body, true
+			return n.Body, !k.edited(n)
 		}
 	}
 	return "", false
 }
 
 // Unread says why no record was read when only comments workline's own
-// account did not write carry marker: who wrote them, and who is read;
-// nil when one of its own carries it, or none does.
+// account did not write, or that another edited last, carry marker: who
+// wrote or edited them, and who is read; nil when one of its own carries
+// it, or none does.
 func (k Kept) Unread(marker string) error {
 	if _, ok := k.Last(marker); ok {
 		return nil
 	}
 	var who []string
 	for _, n := range k.notes {
-		if !strings.Contains(n.Body, marker) {
+		if !strings.Contains(n.Body, marker) || k.own.Wrote(n) && !k.edited(n) {
 			continue
 		}
 		w := "a comment whose author the forge does not say"
-		if n.Author != "" {
+		switch {
+		case k.edited(n) && k.own.Wrote(n):
+			w = "workline's comment, last edited by @" + n.Editor + ","
+		case n.Author != "":
 			w = "@" + n.Author + "'s comment"
 		}
 		if !slices.Contains(who, w) {

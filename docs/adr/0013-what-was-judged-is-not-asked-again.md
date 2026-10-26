@@ -6,7 +6,8 @@
   read); amended 2026-10-14 (a doc waits while a merge request holds it);
   amended 2026-10-17 (on a person's merge request, the record waits in a
   comment); amended 2026-10-21 (a record is read only from workline's own
-  account's comment)
+  account's comment, one no one else edited last; the reviewer skips no
+  commit when what its own pipeline runs changes)
 - **Date:** 2026-10-01
 - **Amends:** ADR-0012 (a fix that cannot vouch is kept), ADR-0006 (one
   merge request per task)
@@ -284,6 +285,19 @@ the documentalist and the inspector, any bot's or person of the project's.
   another's carrying the marker is left, and workline's own posted after
   it. On an issue, a role's comment stays its own by its marker
   ([ADR-0038](0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md)).
-- **Left for later steps of ADR-0051**: an own comment edited by one who
-  may write is still read (GitHub's REST API does not say who edited);
-  the forge's own markers close it.
+- **Nor one another edited last** ([ADR-0051], step 9): GitHub's and
+  GitLab's REST APIs do not say who edited a comment, their GraphQL does
+  (GitHub's `editor`, GitLab's `lastEditedBy`). workline's next edit
+  makes it its own again. A token GraphQL refuses, GitLab's job's own,
+  reads no record, said (`record-unread`).
+- **The reviewer skips no commit when what its own pipeline runs
+  changes** (`.github/`, `.gitlab-ci.yml`, `.workline/`, and the paths
+  `pipeline-paths` names), by any commit of the range ([ADR-0051], step
+  9): such a merge request runs its own
+  workflow, which wrote what the record says. Every commit is read again
+  at each push, none left past `commits-per-push`, said
+  (`line-changed`). The inspector's record is left as it is: its triage
+  never changes the verdict.
+- **Not the forge's own markers**: why in [ADR-0051], cut 5.
+
+[ADR-0051]: 0051-a-check-sits-where-its-catch-is-worth-its-cost.md

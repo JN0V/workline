@@ -1,6 +1,6 @@
 # ADR-0051: A check sits where its catch is worth its cost
 
-- **Status:** accepted; steps 1, 2, 5, 8, 11 and 12 built ([ADR-0013],
+- **Status:** accepted; steps 1, 2, 5, 8, 9, 11 and 12 built ([ADR-0013],
   [ADR-0042] and
   [ADR-0020](0020-the-reviewer-finds-the-engine-verifies-the-person-merges.md#amendment-2026-10-21-adr-0051-cut-4-no-fix-round-for-nits),
   amended); step 3's removal of the release's docs built ([ADR-0010],
@@ -17,8 +17,7 @@
   alone, now by catch and cost too
 - **To amend once built:** [ADR-0010] and [ADR-0017] (docs hold the
   release), [ADR-0034] (removed with the release's docs), [ADR-0041]
-  (follow's docs merges), [ADR-0042] (up to date, one at a time),
-  [ADR-0013] (what was read, on the forge's marker)
+  (follow's docs merges), [ADR-0042] (up to date, one at a time)
 - **Builds on:** [ADR-0011], [ADR-0043]; principles 4, 5, 7, 9, 12, 13
 - **Research:** [catch-and-cost.md](../research/catch-and-cost.md)
 
@@ -126,12 +125,29 @@ Ships: *default* in the templates and `routing.default.yaml`;
 
 #### Cut 5: one record of what was read
 
-- **On the forge's own marker** where it exists: a GitHub review's
-  `commit_id`, GitLab's merge request diff versions.
-- **Trusted only from workline's App account**, never from an edited
-  comment.
-- **A head that changes CI config** (`.github/`, `ci/`, `.workline/`)
-  gets no skip: such a PR runs its own verdict's workflow.
+- **Trusted only from workline's own account**, never from a comment
+  another edited last: the forge says who did, in GraphQL (GitHub's
+  `editor`, GitLab's `lastEditedBy`).
+- **A change to what the PR's own pipeline runs**, by any of its
+  commits, gets no skip: such a PR runs its own workflow, which wrote
+  what the record says was read. By default `.github/` (workflows,
+  actions), `.gitlab-ci.yml` and `.workline/`; a project whose pipeline
+  runs scripts from elsewhere adds them (the reviewer's
+  `pipeline-paths`). Not `ci/` by default: in workline it holds product
+  templates its own pipeline does not run. 14 of workline's last 60
+  merged PRs would be read whole at each push, 21 with `ci/`.
+- **Not on the forge's own marker** (a GitHub review's `commit_id`,
+  GitLab's diff versions), amended once the design was looked at:
+  - **It ends no race**: a push's run reads before the run before it
+    is applied, whatever the apply writes to.
+  - **One notification a push**: a GitHub review needs a body, so it
+    adds an entry on the PR each push; a GitLab note pins a commit only
+    on a line.
+  - **The record holds more than the commits read**: patch ids, the
+    lenses' turn, the lenses owing commits, what blocks, the findings
+    judged; the inspector's holds findings, by fingerprint, no commit.
+- **A fast second push reads twice** what the push before it read,
+  accepted: about 2.3k tokens in on [#580]'s example.
 
 ### 4. Also
 
@@ -173,7 +189,9 @@ By upkeep removed per unit of work:
 8. **Fold main's two runs**: `test.yml`'s findings into `route main`.
    Built: the findings job gone, 3.8 min a merge; lychee at night, in
    gardening; main's issue and gardening say what code scanning held.
-9. **Forge markers** for what was read (cut 5).
+9. **What was read, trusted** (cut 5): no record another edited last,
+   no skip on a change to what the PR's own pipeline runs. Built ([ADR-0013]
+   amended); the forge's markers left, why in cut 5.
 10. **Remove follow's docs merges**.
 11. **The GitLab child pipeline** for what warns. Built:
     `workline:warn:child` starts `workline:warn` and `workline:warn:apply`
@@ -215,6 +233,7 @@ merges assumed to stay for real conflicts.
   lever; not decided here.
 
 [#464]: https://github.com/JN0V/workline/issues/464
+[#580]: https://github.com/JN0V/workline/issues/580
 [#607]: https://github.com/JN0V/workline/issues/607
 [#612]: https://github.com/JN0V/workline/pull/612
 [ADR-0010]: 0010-docs-judged-on-the-merge-request-and-by-gardening.md

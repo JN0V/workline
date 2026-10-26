@@ -105,7 +105,7 @@ workline route merge-request --warn-only --gates-from gates.json --ai claude
 1. **The gates' result**: the gate steps before it in the line, or the
    file `--gates-from` gives, only for the commits the run judges.
 2. **The record**: hidden in its comment on a merge request, read only
-   from the one workline's own account wrote
+   from the one workline's own account wrote and no one else edited last
    ([ADR-0051](../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md));
    on a machine, in `.git/workline/inspector-record`. A finding there is
    not asked again.
@@ -120,7 +120,9 @@ workline route merge-request --warn-only --gates-from gates.json --ai claude
    left is edited. A push landing before it is posted: it is still
    posted, and the push's run, which waits for it, asks only what is
    new; both runs' records are merged
-   ([#580](https://github.com/JN0V/workline/issues/580)).
+   ([#580](https://github.com/JN0V/workline/issues/580)). Applied out
+   of order, the newer run's text stays
+   ([#598](https://github.com/JN0V/workline/issues/598)).
 6. **The verdict**: always a pass; each triage a warning in the run's
    summary. Never in code scanning: workline posts it itself.
 

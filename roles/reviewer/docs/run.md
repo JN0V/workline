@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/instruction.md, roles/reviewer/policy.md, roles/reviewer/lenses, internal/builtin/reviewer]
-checked: 9e152b9a
+checked: b79ca968
 verified: agent:claude-code
 ---
 # Reviewer — a run on code
@@ -49,8 +49,17 @@ flowchart LR
 ## 3. The record
 
 3. **The record.** Commits a review answered whole are not asked again.
-   - It is kept in the summary comment on a merge request, read only from the one workline's own account wrote ([ADR-0051](../../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md)),
-     `.git/workline/reviewer-record` on a machine. One that does not read, or only another's carrying its marker, is said (`record-unread`, [#302](https://github.com/JN0V/workline/issues/302)): every commit reviewed again, once, as a whole review writes it anew.
+   - It is kept in the summary comment on a merge request, read only from the one workline's own account wrote and no one else edited last ([ADR-0051](../../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md)),
+     `.git/workline/reviewer-record` on a machine. One that does not read, or only another's carrying its marker, or one another edited, is said (`record-unread`, [#302](https://github.com/JN0V/workline/issues/302)): every commit reviewed again, once, as a whole review writes it anew.
+   - **A change to what its own pipeline runs** (`.github/`,
+     `.gitlab-ci.yml`, `.workline/`, and `pipeline-paths`), by any of its
+     commits: no commit is skipped on the record, nor left past five a
+     push; every one is read again, at each push, said (`line-changed`).
+     Such a merge request runs its own workflow, which wrote what the
+     record says.
+   - **`pipeline-paths`** (default none): what else the pipeline runs
+     scripts from, `[ci/, scripts/ci/]` say. Set it in
+     `.workline/config.yaml`, under `roles: {reviewer: {settings: …}}`.
    - Beside it on a merge request, a line per finding judged, every
      run's, for the weekly sample; kept even when the record does not
      read ([more](judge.md#every-finding-judged-kept-for-the-weekly-sample)).
@@ -69,6 +78,9 @@ flowchart LR
      whosever turn it is ([#588](https://github.com/JN0V/workline/issues/588)).
    - **A push before the last review is written** waits for it, and reads it;
      a review written after another keeps its commits and lines ([#375](https://github.com/JN0V/workline/issues/375)).
+     The comment names the head and the CI run it is at, hidden: an older
+     run applied last keeps the newer one's text, its record merged in
+     ([#598](https://github.com/JN0V/workline/issues/598)).
    - **What blocked stands**, recorded too, until a commit answers it
      ([#326](https://github.com/JN0V/workline/issues/326), [more](judge.md#a-block-stands-until-a-commit-answers-it)).
    - The run on ready reads the whole change, commits reviewed before too ([below](#every-lens-once-when-it-becomes-ready));

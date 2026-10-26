@@ -424,6 +424,34 @@ func (r Record) since(repo, base, head string) (span, error) {
 	return sp, nil
 }
 
+// lineOwn are the files that change what a merge request's own pipeline
+// runs: GitHub's workflows and actions, GitLab's pipeline, workline's
+// settings. A merge request changing them runs its own checks, the
+// reviewer's runs among them (ADR-0051, cut 5); `pipeline-paths` adds
+// those the project's pipeline runs scripts from.
+var lineOwn = []string{".github", ".gitlab-ci.yml", ".workline"}
+
+// lineFiles are the line's own files, and the paths more names, that the
+// commits base..head change: by one of them, a change since undone too,
+// or by the range as a whole, which holds what a merge settled by hand.
+func lineFiles(repo, base, head string, more []string) ([]string, error) {
+	var out []string
+	paths := append(slices.Clone(lineOwn), more...)
+	for _, args := range [][]string{{"log", "--no-merges", "--format=", "--name-only", base + ".." + head}, {"diff", "--name-only", base, head}} {
+		names, err := git(repo, append(append(args, "--"), paths...)...)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range strings.Split(names, "\n") {
+			if n != "" && !slices.Contains(out, n) {
+				out = append(out, n)
+			}
+		}
+	}
+	slices.Sort(out)
+	return out, nil
+}
+
 // patchIDs are the patch ids of commits, none a merge, by commit: git's id
 // of a change, the same whatever commit it sits on (`git patch-id
 // --verbatim`: the stable algorithm, whitespace kept, since an indent can
@@ -497,6 +525,38 @@ func MergeSummary(body, read, found string) string {
 		out += merged.judgedLines(SummaryMax - len(out))
 	}
 	return out
+}
+
+// MergeInto is found, the summary comment a later run wrote, kept as it
+// is but for its record, into which body's, the record of an older run
+// applied after it, is merged (#598): GitLab may apply two waiting runs
+// in any order, and the comment says the newer head. found's blocks and
+// what it owes stay; body's commits, patch ids and findings judged join
+// them, each run counted once. marker, the comment's own, is taken out:
+// the apply writes it again. "" when a record does not read.
+func MergeInto(found, body, read, marker string) string {
+	now, err1 := readRecord(found)
+	ours, err2 := parseRecord(body)
+	was, err3 := readRecord(read)
+	at := strings.Index(found, recordOpening)
+	if err1 != nil || err2 != nil || err3 != nil || at < 0 {
+		return ""
+	}
+	merged := now
+	merged.Reviewed = union(now.Reviewed, ours.Reviewed)
+	merged.Patches = union(now.Patches, ours.Patches)
+	merged.Runs = now.Runs + max(0, ours.Runs-was.Runs)
+	merged.Judged = slices.Clone(now.Judged)
+	for _, j := range ours.Judged {
+		if !slices.Contains(was.Judged, j) && !slices.Contains(merged.Judged, j) {
+			merged.Judged = append(merged.Judged, j)
+		}
+	}
+	out := found[:at] + merged.String()
+	if _, _, held := ReadJudged(found); held {
+		out += merged.judgedLines(SummaryMax - len(out))
+	}
+	return strings.TrimSpace(strings.Replace(out, marker, "", 1))
 }
 
 // union is a's ids, then b's not in a.
