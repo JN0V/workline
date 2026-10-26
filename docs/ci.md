@@ -1,6 +1,6 @@
 ---
 sources: [ci/github, ci/gitlab, ci/forgejo/workline-forge.sh, roles/product-owner/role.yaml, cmd/workline]
-checked: b6085f38
+checked: d722a840
 judged: a8574a5
 verified: agent:claude-code
 reader: 8aab3bd261d9
@@ -34,7 +34,7 @@ then one that applies, with the write token and no AI key
 | merge request | each one | the line on its commits | the fixes, to its branch; the doc findings beside their lines |
 | main after a merge | a push to the default branch | the gates, every finding kept as the next base; the whole repository's checks; no agent | one issue, edited when what it lists changes ([how](main-after-merge.md)) |
 | follow | a push to the default branch; with the merge policy, after each judge and when a label changes | — | when set, people's pull requests in conflict only on workline's lines get the branch merged ([ADR-0041](adr/0041-workline-settles-its-own-lines-when-the-base-moves.md)); auto-merge on for what a person accepted ([merge policy](merge-policy.md)) |
-| gardening | nightly while a backlog is caught up, then weekly | the `schedule` line | one merge request a task ([ADR-0006](adr/0006-gardening-opens-one-merge-request-per-task.md)); then those the branch moved under, rebuilt or closed ([ADR-0034](adr/0034-the-release-fix-follows-its-base.md#amendment-2026-10-12-gardenings-merge-requests-follow-too-or-are-closed)) |
+| gardening | weekly, Sunday evening; nightly to catch up a backlog | the `schedule` line | one merge request a task ([ADR-0006](adr/0006-gardening-opens-one-merge-request-per-task.md)); then those the branch moved under, rebuilt or closed ([ADR-0034](adr/0034-the-release-fix-follows-its-base.md#amendment-2026-10-12-gardenings-merge-requests-follow-too-or-are-closed)) |
 | release dry run | with the gardening | what would hold the release if it were cut now; no agent | a part of main's issue ([how](release.md)) |
 | release merge request | each of its runs; on GitHub, again when the hold label changes or main's runs end | an open issue labelled `workline:hold-release`, main's tip not green: read, never run again | its check red ([how](release-holds.md)) |
 | release, GitLab | a tag pipeline | the release's line, no agent, no token | — : red when it holds the release, so the jobs publishing it wait ([how](release.md#at-a-tag-on-gitlab)) |

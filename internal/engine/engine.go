@@ -377,6 +377,40 @@ func writeWaiting(repo, runDir, prefix string, open []string, local bool, res *R
 	return os.WriteFile(filepath.Join(runDir, "in", "waiting.yaml"), data, 0o644)
 }
 
+// writeHeld lists, for a role opening merge requests, the files each other
+// open merge request of this repository changes (in/held.yaml, by number):
+// the role leaves them to it, so that neither conflicts with the other
+// (ADR-0051). A fork's is not read; one whose change cannot be read is said.
+func writeHeld(repo, runDir, prefix string, f forge.Forge, res *Result) error {
+	mrs, err := f.ListMergeRequests()
+	if err != nil {
+		res.Findings = append(res.Findings, verdict.Finding{Rule: "merge-requests-unread", Level: "warn",
+			Message: "the open merge requests could not be listed (" + err.Error() + "): what they change is not left to them"})
+		return nil
+	}
+	held := map[int][]string{}
+	for _, mr := range mrs {
+		if mr.ID == 0 || !mr.Here || mr.Branch == "" || strings.HasPrefix(mr.Branch, prefix) {
+			continue
+		}
+		files, err := branchFiles(repo, mr.Branch, forge.KeepsBranches(f))
+		if err != nil {
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "merge-request-unread", Level: "warn", Where: mr.Branch,
+				Message: fmt.Sprintf("what merge request #%d changes could not be read (%v): the role may change what it changes", mr.ID, err)})
+			continue
+		}
+		held[mr.ID] = files
+	}
+	if len(held) == 0 {
+		return nil
+	}
+	data, err := yaml.Marshal(held)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(filepath.Join(runDir, "in", "held.yaml"), data, 0o644)
+}
+
 // branchFiles lists the files a branch changes from where it left the
 // checked-out commit: its tip fetched from origin, or the clone's own
 // branch for a forge kept there. None changed is an empty list, never nil.
@@ -522,6 +556,9 @@ func run(o Options, res *Result) error {
 		if err := writeWaiting(o.Repo, runDir, branchPrefix(r.Name), open, forge.KeepsBranches(f), res); err != nil {
 			return err
 		}
+		if err := writeHeld(o.Repo, runDir, branchPrefix(r.Name), f, res); err != nil {
+			return err
+		}
 		env = append(env, fmt.Sprintf("WORKLINE_OPEN_MERGE_REQUESTS=%d", n),
 			"WORKLINE_OPEN_MERGE_REQUEST_TASKS="+strings.Join(tasks, " "),
 			"WORKLINE_PROPOSED_TASKS="+strings.Join(res.proposed, " "))
@@ -633,7 +670,7 @@ func run(o Options, res *Result) error {
 		}
 		failures++
 		var retry bool
-		if retry, tier = askAgain(failures, r.Model.PromoteAfter, tier); !retry {
+		if retry, tier = askAgain(failures, r.Model.PromoteAfter, tier); !retry || warnsOnMergeRequest(r, o) {
 			break
 		}
 		var fb strings.Builder
@@ -680,7 +717,10 @@ func run(o Options, res *Result) error {
 	// The check did its job: the line is not failed for it (ADR-0037,
 	// amended). Anything else that does not pass still fails it, a final
 	// block met once asked again too: a person must repair it (#361).
-	if v.Status == verdict.Block && failures > 0 && !v.Final && line != nil && !line.StopsAtFirst(o.Event) {
+	// A role whose agent only warns on a merge request (`merge-request-ai:
+	// ready`, ADR-0051): asked once, its refused proposal is said the same
+	// way, never holding the merge, and no stronger model is asked.
+	if v.Status == verdict.Block && failures > 0 && !v.Final && (line != nil && !line.StopsAtFirst(o.Event) || warnsOnMergeRequest(r, o)) {
 		said := make([]verdict.Finding, len(v.Findings))
 		for i, f := range v.Findings {
 			if f.Level == "" {
@@ -688,8 +728,12 @@ func run(o Options, res *Result) error {
 			}
 			said[i] = f
 		}
+		next := "asked again at the next run"
+		if warnsOnMergeRequest(r, o) {
+			next = "the weekly docs pull request judges it again"
+		}
 		v = &verdict.Verdict{Status: verdict.Pass, Findings: said,
-			Summary: "the agent's proposal was refused, nothing of it applied; asked again at the next run (" + v.Summary + ")"}
+			Summary: "the agent's proposal was refused, nothing of it applied; " + next + " (" + v.Summary + ")"}
 		intents = nil
 	}
 	res.Status, res.Summary = v.Status, v.Summary
@@ -1772,6 +1816,12 @@ func attempt(r *role.Role, o Options, ag agent.Agent, hasTask bool, tier, runDir
 	}
 	a.verdict = v
 	return a, nil
+}
+
+// warnsOnMergeRequest says whether the role's agent only warns on this
+// run: a merge request, for a role whose agent judges it once, at ready.
+func warnsOnMergeRequest(r *role.Role, o Options) bool {
+	return o.Event == "merge-request" && r.MergeRequestAI == "ready"
 }
 
 // leaveOut takes out of the patches the files the refusals name, and says

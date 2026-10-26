@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine, internal/intent, internal/role, internal/agent, roles_test.go]
-checked: b6085f38
+checked: d722a840
 verified: agent:claude-code
 judged: b530b72
 ---
@@ -305,7 +305,9 @@ token), **apply** (trusted, no AI key).
    is a `left-out` finding with the refusal's reason. Still refused on an
    event whose steps all run (`fail-fast: false`, the shipped `schedule`),
    the step passes with nothing of the proposal applied, each refusal a
-   warning ([ADR-0037, amended](../adr/0037-the-schedule-runs-every-step.md#amendment-2026-10-09-a-refused-proposal-is-said-not-failed)). A role listing `claim`
+   warning ([ADR-0037, amended](../adr/0037-the-schedule-runs-every-step.md#amendment-2026-10-09-a-refused-proposal-is-said-not-failed)).
+   So is it on a merge request for a role whose `merge-request-ai` is
+   `ready`, refused once: never asked again, no stronger model (ADR-0051). A role listing `claim`
    among its intentions may give claims beside a patch, saying why it takes
    words out (the documentalist, ADR-0014): `post` reads them; alone, with no
    patch, they are refused, and they are never applied. A `post` that passes
@@ -408,7 +410,10 @@ tasks, the files its change touches: an open one's branch from where it
 left the commit judged, fetched from `origin` (the clone's own branch for
 a forge kept there); an earlier round's, the files its patches name. A
 branch that cannot be read leaves its task out, said
-(`merge-request-unread`, a warning; ADR-0013, amended 2026-10-14). On a merge request a release tool opened (its
+(`merge-request-unread`, a warning; ADR-0013, amended 2026-10-14).
+`in/held.yaml` names, by number, the files each other open merge request
+of the repository changes, a fork's left out: the documentalist leaves
+those docs to it (ADR-0051). On a merge request a release tool opened (its
 branch one of `release.branches`), every role is told the branch,
 `WORKLINE_RELEASE_BRANCH`: the reviewer leaves the versions the tool bumps
 (#384). `workline follow --gardening`, after gardening applies, rebuilds the

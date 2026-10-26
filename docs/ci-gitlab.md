@@ -1,6 +1,6 @@
 ---
 sources: [ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile]
-checked: 21669ba1
+checked: d722a840
 judged: e8a46f7
 verified: agent:documentalist
 reader: 9799dcaf51f3
@@ -108,8 +108,9 @@ to the environment **`workline`**:
 ### 3. Gardening
 
 Gardening is the scheduled run of the documentalist (and the product
-owner, when routed): Build → Pipeline schedules → New schedule, nightly or
-weekly, on main. The release never waits for the docs
+owner, when routed): Build → Pipeline schedules → New schedule, weekly on
+main, Sunday evening (`7 18 * * 0`), so that its merge request lands before
+Monday's workday. The release never waits for the docs
 ([ADR-0051](adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-1-the-release-weekly)).
 
 - **A release's dry run**, on the schedule:

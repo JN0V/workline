@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/engine, internal/intent, internal/role, internal/agent, internal/verdict, internal/report]
 verified: agent:claude-code
-checked: b79ca968
+checked: d722a840
 judged: b5899f5
 status: draft
 ---
@@ -35,6 +35,9 @@ again would change nothing, but grow the question with every finding.
 Still refused once asked again, on an event whose steps all run
 (`schedule`), the step passes, nothing of the proposal applied, each
 refusal a warning ([ADR-0037, amended](../adr/0037-the-schedule-runs-every-step.md#amendment-2026-10-09-a-refused-proposal-is-said-not-failed)).
+So is it on a merge request for a role whose `merge-request-ai` is
+`ready`, refused once: never asked again, no stronger model
+([ADR-0051](../adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md)).
 A `final` block met once asked again is no refusal: it still blocks, and
 the summary says it.
 

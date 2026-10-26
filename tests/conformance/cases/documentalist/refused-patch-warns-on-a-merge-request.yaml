@@ -1,0 +1,11 @@
+case: documentalist/refused-patch-warns-on-a-merge-request
+about: "On a merge request the documentalist's agent only warns (ADR-0051): a patch the judge refuses is said as a warning, nothing of it applied, the merge never held, and no stronger model is asked again."
+given:
+  repo: documented
+  setup: ["sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"]
+run: {role: documentalist, event: merge-request, ai: "fake:doc-fixed-and-grown"}
+expect:
+  status: pass
+  agent-calls: 1
+  applied: []
+  findings: [{rule: patch-grows, where: docs/tech/auth.md, level: warn}]

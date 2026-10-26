@@ -1,6 +1,6 @@
 ---
 sources: [roles/documentalist/role.yaml, internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/kept.go, routing.default.yaml]
-checked: b6085f38
+checked: d722a840
 judged: f70db89
 verified: agent:claude-code
 ---
@@ -29,8 +29,9 @@ file. All roles: [docs/roles.md](../../docs/roles.md).
 **Does**: keeps the docs true to the code they describe.
 
 - A doc names its code in `sources`, and the commit it was last checked
-  against in `checked`; a commit touching one of those sources makes the
-  doc *suspect*.
+  against in `checked`; a commit changing one of those sources where it
+  touches what the doc names makes the doc *suspect*
+  ([more](docs/push.md)).
 - With no agent: finds the suspect docs, and checks sizes, duplicates, dead
   links, identifiers gone from the code, decisions superseded, derived
   blocks; when gardening, whether user pages serve their reader.
@@ -50,7 +51,7 @@ doc by doc), or make a push wait on an agent.
 | `pre-push` | the global hook, when routed | counts the docs the pushed commits made suspect, reading no other doc, no agent |
 | `merge-request` | CI | judges the docs the merge request made suspect, reading no other doc; its fix in a comment, nothing pushed; the agent once, at ready; a draft or a push after: counts them |
 | `main` | CI, after each merge | the whole repository's checks, no agent, in one issue ([more](../../docs/main-after-merge.md)) |
-| `schedule` | CI, nightly or weekly (gardening) | every suspect or stale doc, the docs due, budgets, links, reader checks; one merge request per task |
+| `schedule` | CI, weekly, Sunday 18:07 UTC (gardening) | every suspect or stale doc, the docs due, budgets, links, reader checks; one merge request per task |
 | `init` | `workline init` | proposes each doc's `sources`, for you to review |
 
 `workline docs` judges, on your machine, what was made suspect since the
@@ -98,10 +99,9 @@ Under `roles: {documentalist: {settings: …}}` in `.workline/config.yaml`
   - one comment listing what is left for a person, edited on each run;
   - the fix as a diff in one comment, to apply; nothing pushed to the
     branch, no `checked` moved there ([ADR-0051](../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-3-no-docs-obligation-per-pr));
-  - a pull request need not leave no doc suspect: once merged, gardening's
+  - a pull request need not leave no doc suspect: once merged, the weekly
     docs pull request moves `checked` of those whose sources fit a task
-    whole, nightly until the weekly one; the others wait for parts or a
-    person;
+    whole; the others wait for parts or a person;
   - a doc found with nothing to fix gets no commit: its record waits in a
     comment, and gardening writes it on main once merged
     ([more](docs/push.md#a-doc-found-with-nothing-to-fix-no-commit));
@@ -111,7 +111,8 @@ Under `roles: {documentalist: {settings: …}}` in `.workline/config.yaml`
 - On main after a merge: the whole repository's findings, with the
   gates', in one issue, edited only when they change
   ([more](../../docs/main-after-merge.md)).
-- Gardening: a branch and merge request per task,
+- Gardening: weekly, before Monday's workday; a doc another open pull
+  request changes is left to it. A branch and merge request per task,
   `workline/documentalist/<task>` — `records` for the records merged merge
   requests kept —, rebuilt on `main` once `main` moved, or
   closed, saying why, when nothing is left to merge

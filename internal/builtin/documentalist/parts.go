@@ -1254,7 +1254,7 @@ func held(d *Doc, at, repo string) bool {
 		if name != "" {
 			return false
 		}
-		if commits, err := changed(repo, at, "HEAD", p, anchor); err != nil || commits != "" {
+		if commits, err := changed(repo, at, "HEAD", p, anchor, nil); err != nil || commits != "" {
 			return false
 		}
 	}

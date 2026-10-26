@@ -3,7 +3,7 @@ about: "A code span naming a file (`platformio.ini`) is not a name from the code
 given:
   repo: documented
   setup:
-    - "seq 1 3000 | sed 's/^/var b/' > src/auth/big.go && sed -i 's#^sources: \\[src/auth/token.go\\]#sources: [src/auth/token.go, src/auth/big.go]#' docs/tech/auth.md && sed -i 's/^# Authentication$/# Authentication, set in `platformio.ini`/' docs/tech/auth.md && git add -A && git commit -qm 'feat(auth): add the big table'"
+    - "seq 1 3000 | sed 's/^/var b/' > src/auth/big.go && sed -i 's#^sources: \\[src/auth/token.go\\]#sources: [src/auth/token.go, src/auth/big.go]#' docs/tech/auth.md && sed -i 's/^# Authentication$/# Authentication, set in `platformio.ini`, tabled in `big.go`/' docs/tech/auth.md && git add -A && git commit -qm 'feat(auth): add the big table'"
     - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C/\" docs/tech/auth.md && git commit -qam 'docs: confirm the auth doc'"
     - "seq 1 3000 | sed 's/^/const b/' > src/auth/big.go && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
   config: {roles: {documentalist: {settings: {judge-in-parts: true}}}}

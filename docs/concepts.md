@@ -28,7 +28,7 @@ The words the other pages use, each in a few lines. The rules behind them:
   ([ADR-0037](adr/0037-the-schedule-runs-every-step.md)); there, a
   proposal refused is said, not failed. A release's dry run (`route
   release --dry-run`) runs every step too, and passes, saying what would
-  hold the release ([release](release.md#each-night-a-dry-run)). On the
+  hold the release ([release](release.md#with-each-gardening-a-dry-run)). On the
   release, the line also reads what holds it on the forge, stopping no
   step ([what holds a release](release-holds.md)).
   `workline run-role <role> --event <event>` runs one role alone.
@@ -78,7 +78,9 @@ report, the job's log). Each role's page says what it does then.
 
 A doc names the code it describes in its header, `sources`, and the commit
 it was last checked against, `checked`. A commit changing one of those
-sources makes the doc **suspect** until someone reads it again: the agent,
+sources where it touches what the doc names — a name it writes in
+backticks, a value it states, a file it names — makes the doc **suspect**
+until someone reads it again: the agent,
 which fixes it or moves `checked`, or a person. **Gardening** is the
 scheduled run (`schedule`) that keeps the whole repository in order, one
 merge request per task. A **derived block**

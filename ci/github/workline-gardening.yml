@@ -29,9 +29,11 @@
 #          let Actions create pull requests (Settings → Actions → General).
 name: workline gardening
 on:
-  # Mondays, 02:17 UTC; nightly ("17 2 * * *") to catch up a backlog. Off
-  # the hour: GitHub may drop a run scheduled at its start, when busiest.
-  schedule: [{cron: "17 2 * * 1"}]
+  # Sundays, 18:07 UTC: the docs pull request lands before Monday's
+  # workday, though GitHub may start a run hours late (ADR-0051); nightly
+  # ("17 2 * * *") to catch up a backlog. Off the hour: GitHub may drop a
+  # run scheduled at its start, when busiest.
+  schedule: [{cron: "7 18 * * 0"}]
   workflow_dispatch:
 permissions: {}
 

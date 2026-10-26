@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/adopt.go, internal/builtin/documentalist/byname.go]
-checked: b6085f38
+checked: d722a840
 verified: agent:claude-code
 judged-in-parts: c7e1e98
 ---
@@ -20,10 +20,14 @@ moves to the commit the task gave.
   A suggestion could only sit on lines the merge request changes.
 - **The docs it made suspect are said, never holding the merge**: the
   author fixes the prose the change made wrong, and may move `checked` of
-  those read against it. Once merged, gardening's docs pull request moves
-  the others' `checked`, nightly until the weekly one: only for a doc whose
-  sources fit a task whole (`whole-chars`); the others wait for
-  [parts](parts.md), a few a night, or for a person.
+  those read against it. Once merged, the weekly docs pull request moves
+  the others' `checked`: only for a doc whose sources fit a task whole
+  (`whole-chars`); the others wait for [parts](parts.md), a few a run,
+  or for a person.
+- **A doc writing names in backticks is suspect only when a line it
+  names changes**: a file it names, or a line removed or changed holding
+  a name or a value it writes; a line added alone leaves it
+  ([ADR-0014, amended](../../../docs/adr/0014-checked-is-earned-by-what-was-read.md#amendment-2026-10-21-suspect-only-when-a-line-it-names-changes)).
 - Given the commits of a merge request (`range`), only the docs they
   touched are read, as at a push: those they made suspect — one of their
   own sources touched by those commits, a merge's own change too — are
@@ -152,4 +156,10 @@ is marked ready (`ai-waits-for-ready`); no checklist asks a person to.
 The agent judges a merge request once, on the run at ready
 ([ADR-0051](../../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#2-the-moments)):
 a push after it asks nothing, and the docs it made suspect are listed
-(`judged-at-ready`), for the author and the docs pull request.
+(`judged-at-ready`), for the author and the docs pull request. A run at
+ready cancelled by a quick push leaves its docs to the weekly docs pull
+request.
+
+- **A patch the judge refuses** on a merge request is said as a warning,
+  nothing of it applied, never holding the merge; no stronger model is
+  asked again.

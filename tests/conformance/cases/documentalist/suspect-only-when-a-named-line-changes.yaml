@@ -1,0 +1,12 @@
+case: documentalist/suspect-only-when-a-named-line-changes
+about: "A doc writing names in backticks is suspect only when a commit removes or changes a line of its sources holding one of them, a value it states, or a file it names (ADR-0014, amended 2026-10-21). A line added alone leaves it unsuspected. What escapes: here, a change of 3600 to 7200 the doc says as \"one hour\", on a line holding no name it writes; staleness and the weekly sample read it again."
+given:
+  repo: documented
+  setup:
+    - "printf '\\nfunc RefreshToken() {}\\n' >> src/auth/token.go && printf '\\nCall `RefreshToken` to renew a token.\\n' >> docs/tech/auth.md && git commit -qam 'feat(auth): renew tokens'"
+    - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C/\" docs/tech/auth.md && git commit -qam 'docs: confirm the auth doc'"
+    - "printf '\\nfunc Revoke() {}\\n' >> src/auth/token.go && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): revoke tokens, keep them two hours'"
+run: {role: documentalist, event: pre-push, input: {range: "HEAD~1..HEAD"}, ai: none}
+expect:
+  status: pass
+  no-findings: [{rule: suspect, where: docs/tech/auth.md}]

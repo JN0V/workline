@@ -4,8 +4,8 @@
   [ADR-0042] and
   [ADR-0020](0020-the-reviewer-finds-the-engine-verifies-the-person-merges.md#amendment-2026-10-21-adr-0051-cut-4-no-fix-round-for-nits),
   amended); step 3's removal of the release's docs built ([ADR-0010],
-  [ADR-0017], [ADR-0034] amended); steps 4 and 6 built ([ADR-0010]
-  amended); the rest not yet
+  [ADR-0017], [ADR-0034] amended); steps 4, 6 and 7 built ([ADR-0010]
+  and [ADR-0014] amended); the rest not yet
   ([the build order](#build-order)); one point open, one decided
   ([open](#open))
 - **Date:** 2026-10-21
@@ -182,7 +182,10 @@ By upkeep removed per unit of work:
 5. **No rounds for nits** (cut 4): up to 93 rounds.
 6. **The documentalist's AI at ready**, a comment with the diff. Built:
    `merge-request-ai: ready`, the templates' `--input ready`.
-7. **The weekly docs PR**, before the workday.
+7. **The weekly docs PR**, before the workday. Built: Sunday 18:07 UTC;
+   a doc suspect only when a line it names changes ([ADR-0014]
+   amended); docs another open PR changes skipped; a refused docs patch
+   on a PR warns, no stronger model asked.
 8. **Fold main's two runs**: `test.yml`'s findings into `route main`.
    Built: the findings job gone, 3.8 min a merge; lychee at night, in
    gardening; main's issue and gardening say what code scanning held.
@@ -236,6 +239,7 @@ merges assumed to stay for real conflicts.
 [ADR-0010]: 0010-docs-judged-on-the-merge-request-and-by-gardening.md
 [ADR-0011]: 0011-the-review-is-on-the-merge-request-not-the-push.md
 [ADR-0013]: 0013-what-was-judged-is-not-asked-again.md
+[ADR-0014]: 0014-checked-is-earned-by-what-was-read.md
 [ADR-0017]: 0017-the-release-manager.md
 [ADR-0034]: 0034-the-release-fix-follows-its-base.md
 [ADR-0041]: 0041-workline-settles-its-own-lines-when-the-base-moves.md

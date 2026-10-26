@@ -1,12 +1,12 @@
 ---
 sources: [ci/github/workline-gardening.yml, ci/gitlab/workline.gitlab-ci.yml, internal/line/dryrun.go, internal/report/dryrun.go, internal/release/release.go, cmd/workline]
-checked: b6085f38
+checked: d722a840
 ---
-# The release: a dry run each night, a check at the tag
+# The release: a dry run with gardening, a check at the tag
 
 ```mermaid
 flowchart LR
-  night["<b>Each gardening night</b><br/>a release's dry run<br/>no agent, nothing applied"] --> said["<b>Said</b><br/>in main's issue"]
+  night["<b>Each gardening run</b><br/>a release's dry run<br/>no agent, nothing applied"] --> said["<b>Said</b><br/>in main's issue"]
   tag["<b>A tag, on GitLab</b><br/>workline:release"] --> held["<b>Red when held</b><br/>your publishing jobs wait"]
 ```
 
@@ -23,7 +23,7 @@ and when to merge it: [what holds a release](release-holds.md).
 - **The `release` line runs your gates**: none by default
   (`routing: {events: {release: [...]}}`, [config](config.md)).
 
-## Each night, a dry run
+## With each gardening, a dry run
 
 `workline route release --dry-run`: what would hold the release if it
 were cut now.

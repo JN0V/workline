@@ -1,0 +1,14 @@
+case: documentalist/docs-pr-skips-a-doc-an-open-merge-request-changes
+about: "Gardening's docs pull request leaves out a doc another open merge request changes (ADR-0051): neither conflicts with the other, and nothing needs merging into that merge request's branch. The doc waits for it, said; no agent is asked about it."
+given:
+  repo: documented
+  setup:
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb tokens && sed -i 's/one hour/two hours/' docs/tech/auth.md && git commit -qam 'docs(auth): say two hours' && git push -q origin tokens && git checkout -q main"
+  forge: {merge-requests: [{id: 7, branch: tokens, labels: [], comments: []}]}
+run: {role: documentalist, event: schedule, ai: "fake:doc-fixed", open-merge-request: true}
+expect:
+  status: pass
+  agent-calls: 0
+  findings: [{rule: suspect, where: docs/tech/auth.md, message: "open merge request #7 changes it"}]
