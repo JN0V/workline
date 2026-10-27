@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, roles/product-owner/instruction.md, roles/product-owner/policy.md, internal/builtin/productowner, internal/backlog]
-checked: a7467d4f
+checked: f38d194f
 verified: agent:claude-code
 ---
 # Product owner — a run
@@ -111,6 +111,10 @@ On an issue waiting on you, it is "revise":
 
 ## 5. The reporter
 
+- **Never asked what the code answers**: an ask on an issue whose code
+  the same run names (`sources`) is not asked; the issue is read again
+  with that code at the next run
+  ([#548](https://github.com/JN0V/workline/issues/548)).
 - **Asked again** only after they answered, never the same question
   twice, `acts.ask.rounds` times at most
   ([ADR-0021](../../../docs/adr/0021-the-product-owner-talks-with-the-reporter.md)):

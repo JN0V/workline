@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, internal/builtin/productowner, internal/backlog, internal/sample/acts.go]
-checked: a7467d4f
+checked: f38d194f
 verified: agent:claude-code
 ---
 # Product owner — what it writes
@@ -23,8 +23,9 @@ Part of [the product owner](../README.md). What a run does, step by step:
   - what you may answer, while the issue waits on you: a short list, one
     gesture a line;
   - set aside, when you took its label off;
-  - what it knows of the issue, folded: what it read, wrote, did,
-    proposed, and what you undid.
+  - what it knows of the issue, out of sight in an HTML comment — what
+    it read, wrote, did, proposed, and what you undid —, so no mail
+    holds it; the comment's source shows it.
 - **Labels**: `workline:proposed` (GitLab: `workline::proposed`) while it
   waits on you; `workline:draft` while a draft of its own is left;
   `workline:to-refine`, `workline:ready`. Checked at every run: set

@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, internal/builtin/productowner, internal/backlog, internal/sample/acts.go, routing.default.yaml]
-checked: a7467d4f
+checked: f38d194f
 verified: agent:claude-code
 ---
 # Product owner
@@ -46,8 +46,9 @@ is on each issue; you answer there
 ## On each issue
 
 - **Its one comment**, edited in place: what it did, what it proposes,
-  what it wants from you; what it knows of the issue, folded. Posted
-  anew when it proposes something: one mail per proposal.
+  what it wants from you. What it knows of the issue is in the comment,
+  out of sight. Posted anew when it proposes something: one mail per
+  proposal, holding only what it tells you.
 - **The label `workline:proposed`** (GitLab: `workline::proposed`) while
   the issue waits on you: its drafts, or a proposal.
 - **What waits on you** is a saved filter on that label.
