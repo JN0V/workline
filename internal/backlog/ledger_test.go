@@ -99,7 +99,9 @@ func TestDemoted(t *testing.T) {
 // block's fence is longer, so nothing in it ends the block, and a draft
 // accepted later writes the text as proposed.
 func TestStateKeepsAFence(t *testing.T) {
-	v := "Run:\n\n```sh\ngo test ./...\n```\n\n````md\nfour\n````\n/close"
+	// What would end the HTML comment the record sits in, and its escape,
+	// read back as written.
+	v := "Run:\n\n```sh\ngo test ./...\n```\n\n````md\nfour\n````\n/close\nA --> B --!> C, R&D, --&gt; &amp;"
 	s := State{Confirmed: "abc", Label: LabelProposed, Proposed: []Pending{{Act: "refine", Line: "Refine.", Proposal: &Proposal{Do: "refine", Issue: 9, Verification: v}}}}
 	got := FormatState(s)
 	st, found, err := ReadState([]string{got + "\n\n" + StateMarker("product-owner")}, "product-owner")
@@ -133,17 +135,22 @@ func TestProposedSaysFits(t *testing.T) {
 // person while its label is on.
 func TestStateSays(t *testing.T) {
 	plain := FormatState(State{Confirmed: "abc"})
-	if !strings.HasPrefix(plain, "What workline knows of this issue; edited by the engine") {
+	if !strings.HasPrefix(plain, "What workline knows of this issue is kept in this comment, out of sight") {
 		t.Errorf("plain state: %q", plain)
 	}
 	s := State{Confirmed: "abc", Label: scopedProposed, Did: []Did{{Act: "refine", Day: "2026-10-08", Line: "Refined #9: Need (draft)."}},
 		Proposed: []Pending{{Act: "rename", Line: "Rename #9.", Proposal: &Proposal{Do: "rename", Issue: 9, Title: "A title", Why: "```x```"}}}}
 	got := FormatState(s)
 	for _, want := range []string{"**The product owner**, on 2026-10-08:\n\n- Refined #9: Need (draft).", "**Proposes**: Rename it to \"A title\". Why: '''x'''",
-		"label `workline::accepted`: yes", "take `workline::proposed` off: not now", "<details><summary>What workline knows of this issue, edited by the engine</summary>"} {
+		"label `workline::accepted`: yes", "take `workline::proposed` off: not now", "<!-- What workline knows of this issue, edited by the engine, not by hand.\n````yaml\n"} {
 		if !strings.Contains(got, want) {
 			t.Errorf("state says %q, want it to hold %q", got, want)
 		}
+	}
+	// The record is out of sight, in an HTML comment: nothing shown after
+	// what the role tells a person, so a forge mails none of it (#548).
+	if at := strings.Index(got, "<!--"); at < 0 || !strings.HasSuffix(got, "\n-->") || strings.Contains(got[at+4:len(got)-3], "-->") {
+		t.Errorf("record not one HTML comment, last: %q", got)
 	}
 	if st, found, err := ReadState([]string{got + "\n\n" + StateMarker("product-owner")}, "product-owner"); !found || err != nil || st.Proposed[0].Proposal.Title != "A title" {
 		t.Errorf("read back: %+v %v %v", st, found, err)

@@ -184,16 +184,35 @@ func FormatState(s State) string {
 		Rules     int               `yaml:"rules,omitempty"`
 	}{s.Sources, s.Confirmed, s.Judged, s.Comments, s.Body, s.Priority, s.Effort, s.Title, s.Split, s.After, s.Kept, s.Sections, s.Wrote, s.Answered, s.Plain, s.Deleted,
 		s.Proposed, s.Done, s.Undone, s.Did, s.Closed, s.Label, s.Aside, s.Heard, s.Revisions, s.Rules})
-	// A fence in a text the agent wrote must not end the block: the block's
-	// is longer than any run of backticks in it.
-	fence := FenceFor(string(data))
-	block := fence + "yaml\n" + string(data) + fence
+	// The record is kept out of sight, in an HTML comment (#548): a forge
+	// mails what a comment shows, and a person reads there only what the
+	// role tells them, never its record.
+	block := hidden(recordTitle, string(data))
 	say := s.say()
 	if say == "" {
-		return "What workline knows of this issue; edited by the engine, not by hand.\n\n" + block
+		return "What workline knows of this issue is kept in this comment, out of sight; edited by the engine, not by hand.\n\n" + block
 	}
-	return Inert(strings.ReplaceAll(say, "```", "'''")) + "\n\n<details><summary>What workline knows of this issue, edited by the engine</summary>\n\n" + block + "\n\n</details>"
+	return Inert(strings.ReplaceAll(say, "```", "'''")) + "\n\n" + block
 }
+
+// recordTitle heads the record in an issue's state comment.
+const recordTitle = "What workline knows of this issue, edited by the engine, not by hand."
+
+// hidden is a YAML block in an HTML comment: no forge shows it, nor mails
+// it, and the engine reads it back (yamlBlock). Its fence is longer than
+// any run of backticks in data, so nothing in it ends the block; what
+// would end the HTML comment is escaped, and read back as it was.
+func hidden(title, data string) string {
+	fence := FenceFor(data)
+	return "<!-- " + title + "\n" + fence + "yaml\n" + hide.Replace(data) + fence + "\n-->"
+}
+
+// hide escapes what ends an HTML comment, and the escape itself; unhide
+// reads it back.
+var (
+	hide   = strings.NewReplacer("&", "&amp;", "-->", "--&gt;", "--!>", "--!&gt;")
+	unhide = strings.NewReplacer("--&gt;", "-->", "--!&gt;", "--!>", "&amp;", "&")
+)
 
 // FenceFor is a code fence longer than any run of backticks in text: three,
 // or one more than its longest run, so nothing in it closes the block.
@@ -219,6 +238,8 @@ func yamlBlock(c string) (string, bool) {
 	}
 	fence := c[m[2]:m[3]]
 	rest := c[m[1]:]
+	before := strings.TrimSuffix(c[:m[0]], "\n")
+	inComment := strings.HasPrefix(before[strings.LastIndex(before, "\n")+1:], "<!-- ") // hidden's
 	for at := 0; ; {
 		k := strings.Index(rest[at:], fence)
 		if k < 0 {
@@ -227,6 +248,9 @@ func yamlBlock(c string) (string, bool) {
 		k += at
 		after := k + len(fence)
 		if (k == 0 || rest[k-1] == '\n') && (after == len(rest) || rest[after] != '`') {
+			if inComment {
+				return unhide.Replace(rest[:k]), true
+			}
 			return rest[:k], true
 		}
 		at = after
@@ -563,6 +587,9 @@ type Plan struct {
 	// (ADR-0038).
 	Report int  `yaml:"report,omitempty"`
 	Moved  bool `yaml:"moved,omitempty"`
+	// codeFirst are the issues this run names the code of: no ask on them
+	// (#548).
+	codeFirst map[int]bool
 	// Visit are the open issues with a state, written back at the end of
 	// the run (Persist); SetAside, those a person took workline:proposed
 	// off; Answers, a person's comments read as "revise" on each.
@@ -718,6 +745,7 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 		return nil, err
 	}
 	p.readChanges(changes)
+	p.codeFirst = codeFirst(repo, settings, closes)
 	dropped := func(c Proposal, rule, msg string) {
 		p.Findings = append(p.Findings, verdict.Finding{Rule: rule, Where: c.where(), Message: msg})
 	}
@@ -1287,17 +1315,8 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 			}
 		}
 	} else if c.Do == "sources" {
-		if len(c.Sources) == 0 || len(c.Sources) > maxSources {
-			return "sources-unknown", fmt.Sprintf("could not tell which code #%d is about (1 to %d files named): nothing changed; add a %s naming them, or leave it", c.Issue, maxSources, work.Name(work.Scope))
-		}
-		for _, s := range c.Sources {
-			path, _, _ := strings.Cut(s, "#")
-			if exec.Command("git", "-C", repo, "cat-file", "-e", "HEAD:"+path).Run() != nil {
-				return "sources-unknown", fmt.Sprintf("could not tell which code #%d is about: %s, named for it, is not in the repository; nothing changed", c.Issue, path)
-			}
-		}
-		if c.Quote != nil && c.Quote.Path != "" && !slices.ContainsFunc(c.Sources, func(s string) bool { return holds(s, c.Quote.Path) }) {
-			return "no-quote", "the line quoted to show its code is from none of the files named: nothing changed"
+		if rule, why := checkSources(repo, *c); rule != "" {
+			return rule, why
 		}
 	} else if c.Do == "close" && !slices.Contains(closeReasons, c.Reason) {
 		return "close-reason", fmt.Sprintf("not closed: the role closes only a duplicate, or an issue the code made obsolete; closing one as %q is a person's call", c.Reason)
@@ -1468,6 +1487,43 @@ func (p *Plan) checkKeep(f forge.Backlog, repo, role string, st *State, c *Propo
 	return "", ""
 }
 
+// checkSources checks the code a `sources` names for an issue: 1 to
+// maxSources files the commit holds, the line quoted from one of them.
+func checkSources(repo string, c Proposal) (rule, why string) {
+	if len(c.Sources) == 0 || len(c.Sources) > maxSources {
+		return "sources-unknown", fmt.Sprintf("could not tell which code #%d is about (1 to %d files named): nothing changed; add a %s naming them, or leave it", c.Issue, maxSources, work.Name(work.Scope))
+	}
+	for _, s := range c.Sources {
+		path, _, _ := strings.Cut(s, "#")
+		if exec.Command("git", "-C", repo, "cat-file", "-e", "HEAD:"+path).Run() != nil {
+			return "sources-unknown", fmt.Sprintf("could not tell which code #%d is about: %s, named for it, is not in the repository; nothing changed", c.Issue, path)
+		}
+	}
+	if c.Quote != nil && c.Quote.Path != "" && !slices.ContainsFunc(c.Sources, func(s string) bool { return holds(s, c.Quote.Path) }) {
+		return "no-quote", "the line quoted to show its code is from none of the files named: nothing changed"
+	}
+	return "", ""
+}
+
+// codeFirst are the issues a run names the code of, by a `sources` done
+// alone (#548): an ask on one waits for that code, read at the next run —
+// the author is never asked what the code answers.
+func codeFirst(repo string, settings map[string]Setting, closes map[int]Proposal) map[int]bool {
+	if settings["sources"].Mode != Act {
+		return nil
+	}
+	out := map[int]bool{}
+	for _, c := range closes {
+		if c.Do != "sources" || c.Ticked != "" {
+			continue
+		}
+		if rule, _ := checkSources(repo, c); rule == "" {
+			out[c.Issue] = true
+		}
+	}
+	return out
+}
+
 // checkRefining checks a refine, a ready or an ask against the issue as it
 // is: what refining would add, whether it is ready, whether its reporter
 // was asked already.
@@ -1559,6 +1615,9 @@ func (p *Plan) checkRefining(f forge.Backlog, repo, role string, c *Proposal) (r
 	case "ask":
 		if strings.TrimSpace(c.Questions) == "" {
 			return "ask-empty", "nothing asked: the question was empty"
+		}
+		if p.codeFirst[c.Issue] {
+			return "code-first", fmt.Sprintf("not asked: the code #%d is about, named in this run, is read first, at the next run; asked then only if it does not answer", c.Issue)
 		}
 	}
 	return "", ""

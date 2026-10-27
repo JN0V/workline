@@ -1,0 +1,15 @@
+case: product-owner/ask-waits-for-the-code
+about: An ask on an issue whose code the same run names is not asked; the code is recorded, and the issue read again with it at the next run, so its author is never asked what the code answers. An ask on an issue no code is named for is asked (#548).
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "WriteRows loses rows.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 12, title: "Gone", body: "Something gone.", author: bob, insider: true, labels: [], comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:ask-before-code}
+expect:
+  findings: [{rule: code-first, where: "#9"}, {rule: done, where: "#9", message: "Named the code #9 is about: src/export/csv.go."}]
+  forge:
+    issues:
+      - {id: 9, comments: 1, comment-contains: "sources: [src/export/csv.go]", comment-lacks: ["@ann", "Which function"]}
+      - {id: 12, comment-contains: "@bob, to refine this issue: Who needs this, and what did you see?"}

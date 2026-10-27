@@ -1,0 +1,15 @@
+case: product-owner/proposal-mail-holds-no-record
+about: A proposal's comment shows a person only what the role tells them; its record (YAML) sits in an HTML comment, which no forge shows nor mails, and is read back from there (#548).
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:refine-nine-again}
+expect:
+  forge:
+    issues:
+      - {id: 9, labels: [workline:to-refine, workline:draft, workline:proposed], comments: 1}
+      - id: 9
+        comment-contains: ["**Your answer:**", "- close the issue: it should not exist\n\n<!-- What workline knows of this issue, edited by the engine, not by hand.\n```yaml\nsources: [", "label: workline:proposed\n", "\n```\n-->\n\n<!-- workline:sticky=product-owner/state -->"]
+        comment-lacks: ["<details>", "<summary>"]
