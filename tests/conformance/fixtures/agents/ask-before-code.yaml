@@ -1,0 +1,7 @@
+- sources:
+    issue: 9
+    sources: [src/export/csv.go]
+    quote: {path: src/export/csv.go, text: "func WriteRows(rows []string, write func(string)) {"}
+    why: "#9's WriteRows is defined here."
+- ask: {issue: 9, questions: "Which function loses the rows, and in which file?", why: "no code read yet"}
+- ask: {issue: 12, questions: "Who needs this, and what did you see?", why: "too thin"}

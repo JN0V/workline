@@ -125,7 +125,11 @@ draft at all, and write instead:
   saw); a bug with no steps to
   reproduce (ask for them); when it holds several topics (name them, ask
   whether it should be split); when what it rests on is closed (name it,
-  ask what is left);
+  ask what is left). Never ask what the code answers — which file, which
+  function, what it does now: read it in the code given; when the code
+  given is not the issue's, propose `sources` instead. An `ask` beside a
+  `sources` for the same issue is not asked: the issue is read again with
+  its code first;
 - a `close` as obsolete, its code quoted, when the code given already
   does what it asks; with `close-obsolete` off, it is said on the issue
   for a person to close.

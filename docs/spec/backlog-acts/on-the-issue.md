@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog/backlog.go, internal/backlog/ledger.go, internal/backlog/say.go, internal/report/summary.go, internal/engine/backlog.go]
 status: draft
-checked: a7467d4f
+checked: f38d194f
 verified: agent:claude-code
 ---
 # On the issue
@@ -11,7 +11,8 @@ Part of [Acts on the backlog](../backlog-acts.md): what the role shows on each i
 
 No report issue (ADR-0038). Each issue holds what the role holds of it,
 in its state ([The issue's state](state.md)), and shows it in the same comment, the
-state folded under it (`backlog.FormatState`):
+state under it in an HTML comment, so no mail holds it (`backlog.FormatState`,
+[#548](https://github.com/JN0V/workline/issues/548)):
 
 - what the role did there on the last day it acted, a line an act — "Accepted by @x"
   when it was a person's yes; a refine says what it wrote in one line,

@@ -1,0 +1,11 @@
+- sources:
+    issue: 9
+    sources: [src/export/csv.go]
+    quote: {path: src/export/csv.go, text: "func WriteRows(rows []string, write func(string)) {"}
+    why: "#9's WriteRows is defined here."
+- sources:
+    issue: 12
+    sources: [src/export/csv.go]
+    quote: {path: src/export/csv.go, text: "func WriteRows(rows []string, write func(string)) {"}
+    why: "#12's rows are written here."
+- ask: {issue: 12, questions: "Which rows are gone, and after what?", why: "no code read yet"}

@@ -1,6 +1,6 @@
 # ADR-0038: The product owner proposes on the issue; a person answers there, with forge labels
 
-- **Status:** accepted — built (amended below, five times on 2026-10-09, once each on 2026-10-10, 10-11 and 10-17); a week's trial running
+- **Status:** accepted — built (amended below, five times on 2026-10-09, once each on 2026-10-10, 10-11, 10-17 and 10-27)
 - **Date:** 2026-10-08
 - **Supersedes:** the report issue in
   [ADR-0018](0018-the-product-owner.md) ("one report issue") and
@@ -424,3 +424,26 @@ person, none answered.
   left alone, as the old report was; a bot's issue is the project's —
   "Who counts" above already ignored bots' comments —: nobody is asked
   there, and a refine is not addressed to the bot.
+
+## Amendment (2026-10-27): a mail holds what a person answers
+
+The second trial closed as not met: 13 mails in 3 nights on one project,
+none of its 11 proposals answered
+([#548](https://github.com/JN0V/workline/issues/548)).
+
+- **The record is out of sight.** Each proposal's mail held about 7 lines
+  for a person and about 30 of the role's record (YAML), folded on the
+  page but shown in the mail. The record now sits in an HTML comment in
+  the same comment: the forge shows it neither on the page nor in the
+  mail's rendered part; the engine reads it back. What would end the
+  HTML comment (`-->`) is escaped in it and read back as it was. A
+  record an earlier engine folded still reads.
+  - Still one comment of the role's on each issue, one mail per proposal.
+  - Rejected: posting the comment short, then editing the record in (a
+    forge may render the mail after the edit); a second comment for the
+    record (one more mail when created).
+- **The code first, then a question.** 4 of its 5 questions came before
+  the role had read any code; one asked which names, in which files, the
+  code holds. An `ask` beside a `sources` the same run does for the same
+  issue is not asked: the issue is read again with its code at the next
+  run, and asked then only what the code does not answer.
