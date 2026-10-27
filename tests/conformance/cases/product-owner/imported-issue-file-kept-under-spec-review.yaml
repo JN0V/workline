@@ -1,0 +1,36 @@
+case: product-owner/imported-issue-file-kept-under-spec-review
+about: "An imported issue whose spec the reviewer has findings open on is read with both: the lines of the file it was imported from, then the findings to answer; the findings never replace the file's lines (#548)."
+given:
+  repo: backlog
+  config:
+    routing:
+      events: {schedule: [product-owner, reviewer]}
+  setup:
+    - |
+      cat > ROADMAP.md <<'MD'
+      # Roadmap
+
+      ## Export
+
+      - LO-3: **Keep the last row.** WriteRows stops one row short.
+      MD
+      git add ROADMAP.md && git commit -qm 'docs: a roadmap' && git tag imported
+  forge:
+    issues:
+      - id: 9
+        title: Keep the last row
+        body: "- LO-3: **Keep the last row.** WriteRows stops one row short.\n\n## Need\n\nThe monthly report counts every sale.\n\n## Verification\n\nSessions feel right to the users.\n\n## Validation\n\nAnn opens a known day.\n\n## Scope\n\nsrc/export/csv.go\n\nOpened from `ROADMAP.md`, lines 5 to 5 by the product-owner role.\n\n<!-- workline:import=ROADMAP.md:0a1b2c3d4e5f -->"
+        author: ann
+        insider: true
+        labels: [workline:to-refine]
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: imported\njudged: imported\nbody: 58ca4f68cd6d\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "**workline reviewer**, its spec.\n\n<!-- workline:spec-review body=58ca4f68cd6d round=1 open=2 in=Verification,Scope -->\n\n<!-- workline:sticky=reviewer/spec -->"
+run: {role: product-owner, event: schedule, ai: fake:proposes-nothing}
+expect:
+  run-files:
+    in/task.md:
+      contains:
+        - "Imported from `ROADMAP.md`: its item is at lines 5 to 5 as the file reads at this commit."
+        - "     3  ## Export\n     4\n     5  - LO-3: **Keep the last row.** WriteRows stops one row short.\n"
+        - "Scope: a person's, never rewritten"

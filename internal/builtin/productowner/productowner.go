@@ -677,7 +677,7 @@ func Pre(runDir, repo string) int {
 			noCode = noCode || len(files) == 0
 			review := written
 			if r := backlog.SpecOpen(d.is, d.comments); cfg.SpecReview && r != nil {
-				review = specFindings(d.is, d.st, d.comments, r)
+				review += specFindings(d.is, d.st, d.comments, r)
 			}
 			if readyOpen(d.is, d.st, cfg) {
 				review += fmt.Sprintf("Ready: its four sections are there, %s and %s a person's — propose `ready` when it is evident: one need, a %s that proves it, nothing left open in its comments; the engine checks it.\n",
