@@ -4,6 +4,7 @@
 # workline:hold-release changes on an issue, or when main's runs after a
 # push have all ended: list under `workflows:` each workflow that runs on
 # a push to main, the tests' too.
+# A run that waited for them (--release-wait) and ended green is left.
 name: workline release
 on:
   issues: {types: [labeled, unlabeled, closed, reopened, deleted]}
@@ -25,6 +26,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           EVENT: ${{ github.event_name }}
+          MAIN_ENDED: ${{ github.event.workflow_run.updated_at }}
           # The release tools' branches, as workline tells them; yours
           # when .workline/config.yaml's `release: branches:` names others.
           BRANCHES: '^(release-please--|releaser-pleaser--|release-plz-|changeset-release/)'
@@ -39,5 +41,9 @@ jobs:
             run=$(gh run list --workflow workline.yml --commit "$sha" --event pull_request --limit 1 --json databaseId --jq '.[0].databaseId // empty')
             if [ -z "$run" ]; then echo "#$pr: no workline run on $sha yet"; continue; fi
             gh run watch "$run" --exit-status > /dev/null 2>&1 || true   # one still running ends first
+            # Green, ended after main's runs: it waited for them (--release-wait), nothing to read again.
+            if [ "$EVENT" = workflow_run ] && gh run view "$run" --json conclusion,updatedAt --jq "select(.conclusion == \"success\" and .updatedAt > \"$MAIN_ENDED\")" | grep -q .; then
+              echo "#$pr: workline run $run read main's checks ended, green"; continue
+            fi
             gh run rerun "$run" && echo "#$pr: workline run $run started again, to read what holds the release"
           done

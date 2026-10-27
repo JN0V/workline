@@ -251,7 +251,10 @@ workline:judge:
   resource_group: workline-review-$CI_MERGE_REQUEST_IID
   # The lenses that warn read apart only where workline:warn runs, which
   # needs the bot's token too (ADR-0050); without it they read here, on the
-  # verdict's path, said in the log and the summary, never lost.
+  # verdict's path, said in the log and the summary, never lost. On a
+  # release tool's merge request, the default branch's checks not done
+  # yet are waited for, 30 minutes at most, this job running meanwhile
+  # (#640).
   script:
     - *ready
     - *claude
@@ -259,7 +262,7 @@ workline:judge:
     - status=0
     - >
       workline route merge-request --ai "$ai" --no-apply ${WORKLINE_GITLAB_TOKEN:+--warn-apart}
-      --forge gitlab --target merge-request:$CI_MERGE_REQUEST_IID --branch "$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME"
+      --forge gitlab --target merge-request:$CI_MERGE_REQUEST_IID --branch "$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME" --release-wait 30m
       --input range=$CI_MERGE_REQUEST_DIFF_BASE_SHA..$CI_COMMIT_SHA $lenses ${draft:+--input draft=$draft} --input ready=${lenses:+true}
       --gates-from gates.json --code-quality gl-code-quality.json --summary workline-summary.md --summary workline-summary.html
       --verdict workline-verdict.json --verdict-head "${CI_MERGE_REQUEST_SOURCE_BRANCH_SHA:-$CI_COMMIT_SHA}" --json > line.json || status=$?
