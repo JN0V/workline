@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog/backlog.go, internal/backlog/plain.go, internal/backlog/repeat.go, internal/backlog/write.go, internal/work/headings.go, internal/work/work.go, internal/forge/forge.go, internal/engine/backlog.go]
 status: draft
-checked: f38d194f
+checked: ffc4c10b
 verified: agent:claude-code
 ---
 # Refining to ready
@@ -148,7 +148,9 @@ what it can and asks for the rest:
   the next run. An `ask` beside a `sources` the same run does alone for
   the same issue is not asked (`code-first`, `codeFirst`): the issue is
   read again with that code first, and its reporter never asked what the
-  code answers ([#548](https://github.com/JN0V/workline/issues/548)).
+  code answers ([#548](https://github.com/JN0V/workline/issues/548)),
+  nor, for an imported issue, what the file it came from says around its
+  item: the task gives it ([Reading](reading.md)).
 - An issue whose body a person changed since it was read — a draft
   accepted, a section written — is read again (its state's `body`, a
   digest of the body when it was last read or written by the engine).

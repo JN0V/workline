@@ -1,0 +1,30 @@
+case: product-owner/imported-issue-archived-file-not-given
+about: "An issue imported from a file the project archived — the setting `archived` naming it — is read without that file: an archived file is no longer a source (ADR-0032, #548). Lines a commit moved are followed: the item is found where it is now."
+given:
+  repo: backlog
+  config:
+    roles:
+      product-owner:
+        settings: {archived: [OLD.md]}
+  setup:
+    - |
+      printf '# Old\n\n- LO-1: **Trim the names.** In `src/export/csv.go`.\n' > OLD.md
+      printf '# Roadmap\n\n- LO-2: **Sort the columns.**\n' > ROADMAP.md
+      git add OLD.md ROADMAP.md && git commit -qm 'docs: two lists' && git tag imported
+    - |
+      printf '# Roadmap\n\nWhere it goes.\n\n- LO-2: **Sort the columns.**\n' > ROADMAP.md
+      git commit -qam 'docs: a line on top'
+  forge:
+    issues:
+      - {id: 4, title: "Trim the names", body: "- LO-1: **Trim the names.** In `src/export/csv.go`.\n\nOpened from `OLD.md`, lines 3 to 3 by the product-owner role.\n\n<!-- workline:import=OLD.md:0a1b2c3d4e5f -->", labels: [], comments: ["```yaml\nsources: []\nconfirmed: imported\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 5, title: "Sort the columns", body: "- LO-2: **Sort the columns.**\n\nOpened from `ROADMAP.md`, lines 3 to 3 by the product-owner role.\n\n<!-- workline:import=ROADMAP.md:5f4e3d2c1b0a -->", labels: [], comments: ["```yaml\nsources: []\nconfirmed: imported\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:proposes-nothing}
+expect:
+  status: pass
+  run-files:
+    in/task.md:
+      contains:
+        - "## #4 Trim the names\n"
+        - "Imported from `ROADMAP.md`: its item is at lines 5 to 5 as the file reads at this commit."
+        - "     1  # Roadmap\n     2\n     3  Where it goes.\n     4\n     5  - LO-2: **Sort the columns.**\n"
+      not-contains: "Imported from `OLD.md`"

@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/builtin/productowner/productowner.go, internal/backlog/ledger.go, internal/backlog/opening.go]
 status: draft
-checked: edc4ffc2
+checked: ffc4c10b
 verified: agent:claude-code
 ---
 # Reading
@@ -60,7 +60,16 @@ sources (a folder given as the list of its files), the paths its title,
 body and people's comments name — a link to a file on the forge,
 `…/blob/<ref>/<path>` or GitLab's `…/-/blob/…`, is that file —, a file
 named alone when one file of the commit has that name, a symbol quoted
-as code; at most three an issue. When an issue read names no file the
+as code; at most three an issue. An issue imported from a file (its
+import key) is read with that file's lines around its item, as the commit
+holds them and followed there from the commit it was confirmed at: its
+section, from its heading, 20 lines each side at most, 60 in all, and the
+file's other lines that name the item's id (`writtenAt`). The file itself
+is never code it names; a path the lines naming its id name is, after
+the item's own — never one only the lines around it name: in a list or a
+table, those are other items'. A file the commit does not hold, one `archived`, or an item's lines
+gone give nothing ([#548](https://github.com/JN0V/workline/issues/548)).
+When an issue read names no file the
 commit holds, the task lists the repository's folders, nearest the root
 first (150 at most), for the agent to name a Scope's files from. Each issue read gets `judged`
 moved to the run's commit; without an agent, or when its answer does not

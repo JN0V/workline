@@ -27,6 +27,7 @@ import (
 	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
+	"github.com/JN0V/workline/internal/pathglob"
 	"github.com/JN0V/workline/internal/role"
 	"github.com/JN0V/workline/internal/routing"
 	"github.com/JN0V/workline/internal/scale"
@@ -670,12 +671,13 @@ func Pre(runDir, repo string) int {
 			}
 			t.wasRead[d.is.ID] = true
 			t.ids = append(t.ids, strconv.Itoa(d.is.ID))
-			files := named(repo, d.is, d.st, d.comments, tracked)
+			written, aboutIt := writtenAt(repo, d.is, d.st, tracked, cfg.Archived)
+			files := named(repo, d.is, d.st, d.comments, aboutIt, tracked)
 			filesOf[d.is.ID] = files
 			noCode = noCode || len(files) == 0
-			review := ""
+			review := written
 			if r := backlog.SpecOpen(d.is, d.comments); cfg.SpecReview && r != nil {
-				review = specFindings(d.is, d.st, d.comments, r)
+				review += specFindings(d.is, d.st, d.comments, r)
 			}
 			if readyOpen(d.is, d.st, cfg) {
 				review += fmt.Sprintf("Ready: its four sections are there, %s and %s a person's — propose `ready` when it is evident: one need, a %s that proves it, nothing left open in its comments; the engine checks it.\n",
@@ -749,7 +751,7 @@ func Pre(runDir, repo string) int {
 		backlog.Order(ordered)
 		for _, is := range ordered {
 			d := byID[is.ID]
-			files := named(repo, d.is, d.st, d.comments, tracked)
+			files := named(repo, d.is, d.st, d.comments, "", tracked)
 			if shown < relatedMax && slices.ContainsFunc(files, func(f string) bool { return slices.Contains(code, f) }) {
 				shown++
 				fmt.Fprintf(&related, "## #%d %s\n\n%s\n\n", d.is.ID, d.is.Title, clip(d.is.Body, bodyMax/2))
@@ -1470,8 +1472,11 @@ func writeFolders(b *strings.Builder, tracked map[string]bool) {
 // named lists the files an issue is about: its sources, then the paths its
 // title and body name that the commit holds, at most filesPerIssue. A file
 // named alone (`csv.go:5`, as a roadmap writes it) is the one file of the
-// commit with that name; a name two files share is not guessed.
-func named(repo string, is forge.Issue, st *backlog.State, comments []string, tracked map[string]bool) []string {
+// commit with that name; a name two files share is not guessed. aboutIt,
+// the lines of the file an issue was imported from that name its item's
+// id (writtenAt), names code after the item's own; never the lines around
+// it, which are other items' (#548).
+func named(repo string, is forge.Issue, st *backlog.State, comments []string, aboutIt string, tracked map[string]bool) []string {
 	var out []string
 	add := func(p string) {
 		p = backlog.RepoPath(p) // a link to a file on the forge is that file
@@ -1515,6 +1520,9 @@ func named(repo string, is forge.Issue, st *backlog.State, comments []string, tr
 		for _, f := range holding(repo, name) {
 			add(f)
 		}
+	}
+	for _, m := range backlog.PathLike.FindAllString(aboutIt, -1) {
+		add(m)
 	}
 	return out
 }
@@ -1784,6 +1792,17 @@ var itemID = regexp.MustCompile(`\b[A-Z][A-Z0-9]*(?:-[A-Z][A-Z0-9]*)*-[0-9]+\b`)
 // table of what shipped, a summary — and a share alone would open it again.
 // Which line says what is the agent's to read; pre only finds them.
 func elsewhere(lines []string, from, to int) string {
+	said := mentions(lines, from, to, from, to)
+	if said == "" {
+		return ""
+	}
+	return "\n# What the rest of the file says of this share's items\n\nThe lines outside the share that name an id the share holds. An item they say is done, merged or dropped is not opened.\n\n" + said
+}
+
+// mentions lists, for each id lines from to to hold, the lines of the
+// file outside out to outTo that name it, those of a table or a heading
+// first.
+func mentions(lines []string, from, to, out, outTo int) string {
 	var ids []string
 	for _, l := range lines[from-1 : to] {
 		for _, id := range itemID.FindAllString(l, -1) {
@@ -1798,7 +1817,7 @@ func elsewhere(lines []string, from, to int) string {
 		named := regexp.MustCompile(`(^|[^A-Za-z0-9-])` + regexp.QuoteMeta(id) + `($|[^0-9])`)
 		var structure, prose []int
 		for i, l := range lines {
-			if i+1 >= from && i+1 <= to || !named.MatchString(l) {
+			if i+1 >= out && i+1 <= outTo || !named.MatchString(l) {
 				continue
 			}
 			if t := strings.TrimSpace(l); strings.HasPrefix(t, "|") || strings.HasPrefix(t, "#") {
@@ -1823,10 +1842,65 @@ func elsewhere(lines []string, from, to int) string {
 		}
 		b.WriteString(more)
 	}
-	if b.Len() == 0 {
-		return ""
+	return b.String()
+}
+
+const (
+	aroundLines = 20 // lines given each side of an imported item, its section's at most
+	fromFileMax = 60 // lines of the file it was imported from given an issue
+)
+
+// writtenAt gives an issue imported from a file the lines around its item
+// in that file as it reads at the commit — its section, from its heading —
+// and the lines elsewhere in it that name the item's id: where it was
+// written, facts to refine from rather than ask its author (#548). The
+// file is never code the issue names (named): a file the commit does not
+// hold, or the project archived, gives nothing; nor do lines gone since.
+// aboutIt is the lines elsewhere that name the item's id.
+func writtenAt(repo string, is forge.Issue, st *backlog.State, tracked map[string]bool, archived []string) (text, aboutIt string) {
+	path, from, to, ok := backlog.Imported(is.Body)
+	if !ok || !tracked[path] || pathglob.Any(archived, path) {
+		return "", ""
 	}
-	return "\n# What the rest of the file says of this share's items\n\nThe lines outside the share that name an id the share holds. An item they say is done, merged or dropped is not opened.\n\n" + b.String()
+	data, err := exec.Command("git", "-C", repo, "show", "HEAD:"+path).Output()
+	if err != nil {
+		return "", ""
+	}
+	if st.Confirmed != "" { // the lines it was opened from, followed to this commit
+		_, now, nfrom, nto, changed, err := backlog.LinesChange(repo, path, from, to, st.Confirmed, st.Confirmed, "HEAD")
+		if err != nil || changed && now == "" {
+			return "", ""
+		}
+		from, to = nfrom, nto
+	}
+	lines := strings.Split(strings.TrimRight(string(data), "\n"), "\n")
+	if from < 1 || to < from || to > len(lines) {
+		return "", ""
+	}
+	heading := func(i int) bool { return strings.HasPrefix(strings.TrimSpace(lines[i-1]), "#") }
+	start := from
+	for start > 1 && start > from-aroundLines && !heading(start) {
+		start--
+	}
+	end := to
+	for end < len(lines) && end < to+aroundLines && !heading(end+1) {
+		end++
+	}
+	end = min(end, start+fromFileMax-1)
+	var b strings.Builder
+	fmt.Fprintf(&b, "Imported from `%s`: its item is at lines %d to %d as the file reads at this commit. Around it, and where the file names its id, are facts to refine from — never asked of its reporter:\n\n```\n", path, from, to)
+	for i := start; i <= end; i++ {
+		fmt.Fprintln(&b, strings.TrimRight(fmt.Sprintf("%6d  %s", i, clip(lines[i-1], mentionChars)), " "))
+	}
+	if more := to - end; more > 0 {
+		fmt.Fprintf(&b, "(%d more lines of the item left out)\n", more)
+	}
+	b.WriteString("```\n")
+	aboutIt = mentions(lines, from, to, start, end)
+	if aboutIt != "" {
+		b.WriteString("\nIts id elsewhere in the file:\n\n" + aboutIt)
+	}
+	return b.String(), aboutIt
 }
 
 // specFindings tells the agent the reviewer's findings open on an issue's

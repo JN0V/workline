@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog/coverage.go, internal/builtin/productowner/productowner.go, cmd/workline/main.go, roles/product-owner/instruction.md]
 status: draft
-checked: edc4ffc2
+checked: ffc4c10b
 verified: agent:claude-code
 judged-in-parts: e8bd744
 ---
@@ -42,7 +42,8 @@ judgement: the product owner reads the file, not a parser (principle 4).
   holding the same text is not opened again (`already-open`, a digest of
   the text in a marker), so an import stopped half-way is run again. Each
   issue gets its state, confirmed at the commit, no sources: gardening
-  names them (`sources`).
+  names them (`sources`), reading the issue with its lines in the file
+  ([Reading](reading.md)).
 - Without `--apply`, it says what it would open and writes nothing.
   Its runs are listed as pending, as `workline route --no-apply` lists
   a line's (`to apply:`; `--json`: `pending`): `workline apply --line

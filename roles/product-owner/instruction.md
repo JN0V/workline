@@ -126,7 +126,9 @@ draft at all, and write instead:
   reproduce (ask for them); when it holds several topics (name them, ask
   whether it should be split); when what it rests on is closed (name it,
   ask what is left). Never ask what the code answers — which file, which
-  function, what it does now: read it in the code given; when the code
+  function, what it does now: read it in the code given; nor what the
+  file an issue was imported from says around its item, given with it;
+  when the code
   given is not the issue's, propose `sources` instead. An `ask` beside a
   `sources` for the same issue is not asked: the issue is read again with
   its code first;
