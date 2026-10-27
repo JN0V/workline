@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog/backlog.go, internal/backlog/opening.go, internal/backlog/acts.go, internal/builtin/productowner/productowner.go, internal/engine/backlog.go]
 status: draft
-checked: a7467d4f
+checked: f38d194f
 verified: agent:claude-code
 ---
 # The issue's state
@@ -44,8 +44,12 @@ rules: 2                                 # the way of reading it was last read u
 ```
 
 The comment says, above the state, what the role did and proposes there,
-the state folded ([On the issue](on-the-issue.md)). The block's fence is longer than any
+the state below it in an HTML comment, out of sight on the page and in the
+mail ([On the issue](on-the-issue.md)). The block's fence is longer than any
 run of backticks in it: a text holding a code fence is kept as written.
+What would end the HTML comment (`-->`, `--!>`) is escaped as `--&gt;`,
+`&` as `&amp;`, and read back as written; a state an earlier engine
+folded in `<details>` still reads.
 
 Each act in `did` keeps what its run read, for the weekly sample to
 re-check it on that (ADR-0046): `at`, the commit the run's `pre` ran on;
