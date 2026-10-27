@@ -3,7 +3,9 @@ package line
 import (
 	"errors"
 	"fmt"
+	"os"
 	"strings"
+	"time"
 
 	"github.com/JN0V/workline/internal/engine"
 	"github.com/JN0V/workline/internal/forge"
@@ -21,6 +23,71 @@ const (
 	RuleBaseNone    = "release-base-unchecked"
 	RuleHoldsUnread = "release-holds-unread"
 )
+
+var holdRules = []string{RuleHeld, RuleBaseRed, RuleBasePending, RuleBaseNone, RuleHoldsUnread}
+
+// waitHolds reads what holds the release again while the only thing
+// holding it is checks not done on the tip it is cut from, till
+// o.ReleaseWait ends (#640): the release's check runs on, pending on the
+// forge, and ends green or red with them rather than red while they run.
+// It says whether it read again; checks still not done then stay a block.
+func waitHolds(event string, o engine.Options, found []verdict.Finding) ([]verdict.Finding, string, bool) {
+	if o.ReleaseWait <= 0 || !onlyPending(found) {
+		return found, "", false
+	}
+	poll := min(30*time.Second, o.ReleaseWait/20)
+	deadline := time.Now().Add(o.ReleaseWait)
+	var held string
+	for onlyPending(found) && time.Now().Before(deadline) {
+		fmt.Fprintf(os.Stderr, "workline: the release waits for checks not done, read again in %s\n", poll)
+		time.Sleep(poll)
+		again, h := releaseHolds(event, o)
+		// A read that failed while waiting is a hiccup: the wait goes on
+		// from the last read, unless it was the last chance.
+		if onlyUnread(again) && time.Now().Before(deadline) {
+			fmt.Fprintf(os.Stderr, "workline: what holds the release could not be read again, the wait goes on\n")
+			continue
+		}
+		found, held = again, h
+	}
+	for i := range found {
+		if found[i].Rule == RuleBasePending {
+			found[i].Message += fmt.Sprintf("; still not done after %s", o.ReleaseWait)
+		}
+	}
+	return found, held, true
+}
+
+// onlyUnread says whether what holds the release is only what could not
+// be read, or checks not done.
+func onlyUnread(found []verdict.Finding) bool {
+	unread := false
+	for _, f := range found {
+		switch {
+		case f.Rule == RuleHoldsUnread && (f.Level == "" || f.Level == verdict.Block):
+			unread = true
+		case f.Rule == RuleBasePending:
+		case f.Level == "" || f.Level == verdict.Block:
+			return false
+		}
+	}
+	return unread
+}
+
+// onlyPending says whether checks not done hold the release, and nothing
+// else does.
+func onlyPending(found []verdict.Finding) bool {
+	pending := false
+	for _, f := range found {
+		switch {
+		case f.Rule == RuleBasePending:
+			pending = true
+		case f.Level == "" || f.Level == verdict.Block:
+			return false
+		}
+	}
+	return pending
+}
 
 // releaseHolds reads what holds the release on the forge, on `release` or
 // a release tool's merge request (ADR-0017): each open issue labelled

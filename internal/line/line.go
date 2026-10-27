@@ -225,13 +225,20 @@ func RunWith(event string, base engine.Options, gates *Gates) *Result {
 	if !gates.Only && !warnOnly && !queue {
 		if found, held := releaseHolds(event, base); len(found) > 0 {
 			res.Findings = append(res.Findings, found...)
-			status := verdict.Pass
-			for _, f := range found {
-				if f.Level == "" || f.Level == verdict.Block {
-					status = verdict.Block
-				}
-			}
 			defer func() {
+				// Checks not done there, and nothing else holding it: read
+				// again once the steps ran, till they end (#640).
+				if again, h, waited := waitHolds(event, base, found); waited {
+					res.Findings = slices.DeleteFunc(res.Findings, func(f verdict.Finding) bool { return slices.Contains(holdRules, f.Rule) })
+					res.Findings = append(res.Findings, again...)
+					found, held = again, h
+				}
+				status := verdict.Pass
+				for _, f := range found {
+					if f.Level == "" || f.Level == verdict.Block {
+						status = verdict.Block
+					}
+				}
 				res.Status = worst(res.Status, status)
 				if held != "" {
 					res.Summary += "; the release held: " + held

@@ -62,6 +62,10 @@ type Options struct {
 	// every step run with no agent, nothing applied, what would hold the
 	// release said, none of it blocking. The line's; a role never sees it.
 	DryRun bool
+	// ReleaseWait: on the release, how long the line waits for the checks
+	// not done on the tip it is cut from (`--release-wait`, #640), then
+	// reads them again; none, it reads them once.
+	ReleaseWait time.Duration
 
 	// TamperBeforeApply changes the prepared input between propose and apply.
 	// It exists only for the conformance test that proves apply notices.

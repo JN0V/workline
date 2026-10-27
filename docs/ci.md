@@ -36,7 +36,7 @@ then one that applies, with the write token and no AI key
 | follow | a push to the default branch; with the merge policy, after each judge and when a label changes | — | auto-merge on for what a person accepted ([merge policy](merge-policy.md)) |
 | gardening | weekly, Sunday evening; nightly to catch up a backlog | the `schedule` line | one merge request a task ([ADR-0006](adr/0006-gardening-opens-one-merge-request-per-task.md)); then those the branch moved under, rebuilt or closed ([ADR-0034](adr/0034-the-release-fix-follows-its-base.md#amendment-2026-10-12-gardenings-merge-requests-follow-too-or-are-closed)) |
 | release dry run | with the gardening | what would hold the release if it were cut now; no agent | a part of main's issue ([how](release.md)) |
-| release merge request | each of its runs; on GitHub, again when the hold label changes or main's runs end | an open issue labelled `workline:hold-release`, main's tip not green: read, never run again | its check red ([how](release-holds.md)) |
+| release merge request | each of its runs; on GitHub, again when the hold label changes or main's runs end | an open issue labelled `workline:hold-release`, main's tip not green: read, never run again | its check pending while main runs, red when held ([how](release-holds.md)) |
 | release, GitLab | a tag pipeline | the release's line, no agent, no token | — : red when it holds the release, so the jobs publishing it wait ([how](release.md#at-a-tag-on-gitlab)) |
 | sample | weekly | the docs and acts drawn | an issue comment, a merge request |
 | import | by hand | a file's items | the issues |

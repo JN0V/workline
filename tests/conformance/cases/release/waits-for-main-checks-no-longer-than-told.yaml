@@ -1,0 +1,16 @@
+case: release/waits-for-main-checks-no-longer-than-told
+about: "Given a wait, checks on main's tip still not done when it ends hold the release, said with the time waited (#640); workline-release.yml reads it again once they end."
+given:
+  repo: documented
+  setup:
+    - "git tag v1.0.0"
+    - "git checkout -qb release-please--branches--main && echo '# Changelog' > CHANGELOG.md && git add CHANGELOG.md && git commit -qm 'chore(main): release 1.0.1'"
+  forge:
+    issues: []
+    merge-requests: [{id: 1, branch: release-please--branches--main, base: main, labels: [], comments: []}]
+    tips: {main: [{name: test, state: pending}, {name: lint, state: success}]}
+run: {route: merge-request, input: {range: "main..HEAD"}, target: {merge-request: 1}, ai: none, args: [--release-wait, 1s]}
+expect:
+  status: block
+  findings:
+    - {rule: release-base-pending, where: main, level: block, message: "has checks not done: test; the release waits for them green, read again once they end; still not done after 1s"}

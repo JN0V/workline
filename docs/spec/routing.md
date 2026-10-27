@@ -1,6 +1,6 @@
 ---
 sources: [internal/line, internal/routing, internal/work, routing.default.yaml]
-checked: ae744e99
+checked: 698d5497
 verified: agent:claude-code
 ---
 # Routing — v1 (draft)
@@ -105,7 +105,13 @@ steps, stopping none of them; its verdict takes the worst (ADR-0051,
 tip of the branch the merge request goes into, the default branch on
 `release` — a red one is `release-base-red`, one not done
 `release-base-pending`, both blocks; none at all, `release-base-unchecked`,
-a warning. On GitHub only the runs a push started count, with other apps'
+a warning. Given `--release-wait`, checks not done and nothing else
+holding it, the line reads them again once its steps ran, every 30 s
+(a twentieth of the wait if shorter) till none is pending or the wait
+ends: the job runs on meanwhile, pending on the forge, and ends with
+`release-base-red` or none; still not done, `release-base-pending`
+says the time waited. A read that fails while waiting is a hiccup: the
+wait goes on from the last read, and only the last read's failure holds. On GitHub only the runs a push started count, with other apps'
 checks and the commit statuses, workline's own left out, and a workflow that
 could not start counts red; on GitLab, the
 newest pipeline of the tip no schedule started. What could not be read is

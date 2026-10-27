@@ -253,6 +253,13 @@ func (f *Fake) Tip(branch string) (Tip, error) {
 	if s.TipsUnread != "" {
 		return Tip{}, fmt.Errorf("%w: %s", ErrUnreachable, s.TipsUnread)
 	}
+	if why := s.TipsUnreadNext; why != "" {
+		s.TipsUnreadNext = ""
+		if err := f.save(s); err != nil {
+			return Tip{}, err
+		}
+		return Tip{}, fmt.Errorf("%w: %s", ErrUnreachable, why)
+	}
 	if branch == "" {
 		branch = "main"
 	}
@@ -260,5 +267,17 @@ func (f *Fake) Tip(branch string) (Tip, error) {
 	if sha := f.resolve(branch); f.Repo != "" && sha != "" {
 		commit = sha
 	}
-	return tipOf(Tip{Branch: branch, Commit: commit}, s.Tips[branch]), nil
+	runs := s.Tips[branch]
+	if then, ok := s.TipsThen[branch]; ok {
+		if s.Tips == nil {
+			s.Tips = map[string][]CheckRun{}
+		}
+		s.Tips[branch] = then
+		delete(s.TipsThen, branch)
+		s.TipsUnreadNext, s.TipsUnreadThen = s.TipsUnreadThen, ""
+		if err := f.save(s); err != nil {
+			return Tip{}, err
+		}
+	}
+	return tipOf(Tip{Branch: branch, Commit: commit}, runs), nil
 }
