@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, roles/product-owner/instruction.md, roles/product-owner/policy.md, internal/builtin/productowner, internal/backlog]
-checked: f38d194f
+checked: ffc4c10b
 verified: agent:claude-code
 ---
 # Product owner — a run
@@ -63,7 +63,10 @@ Each issue comes with:
 - its comments, with who wrote each;
 - the issues it cites, open or closed;
 - the code it names — a file linked on the forge counts —, or else the
-  repository's folders, to name a Scope's files from.
+  repository's folders, to name a Scope's files from;
+- for an issue imported from a file: that file's lines around its item,
+  and its other lines naming the item's id — facts to refine from, not
+  to ask you.
 
 ## 3. What it proposes, what the engine checks
 

@@ -38,8 +38,9 @@ hold:
      ([#155](https://github.com/JN0V/workline/issues/155), week 42); it
      sent too many emails
      ([#548](https://github.com/JN0V/workline/issues/548)).
-   - **Next**: drafts that repeat left out (this page's Built), then
-     [#548](https://github.com/JN0V/workline/issues/548); a third trial
+   - **Next**: drafts that repeat left out and
+     [#548](https://github.com/JN0V/workline/issues/548) (this page's
+     Built); a third trial
      only once a person can answer the proposals.
 3. **AI verdicts measured on the acts on by default**: in part. An evident
    duplicate: `keeps-a-planted-backlog`, 5 in 5 on Sonnet. Left: refine
@@ -104,7 +105,8 @@ in [tests/evaluation/cases/product-owner](../../../tests/evaluation/cases/produc
 - **A backlog read a share a run**, read again when its code or a person
   moved: `reads-a-*`, `read-again-when-*`, `first-run-reads-nothing-new`.
 - **The code an issue is about named**: `code-named-*`, `sources-named`,
-  `sources-a-folder`.
+  `sources-a-folder`; an imported issue read with its lines in the file
+  it came from: `imported-issue-*`.
 - **Ordering and milestones**, by due date: `order-*`, `milestone-set`,
   `slipped-*`, `summary-next-milestones-by-due-date`.
 - **Where priority and effort are kept**, off by default
