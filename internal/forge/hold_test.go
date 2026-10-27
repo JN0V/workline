@@ -39,6 +39,7 @@ func TestGitHubTip(t *testing.T) {
 		{"a push's red run", tip(suite("push", "test", "COMPLETED", "FAILURE")+","+suite("push", "workline", "COMPLETED", "SUCCESS"), ``), "failure", []string{"test"}, nil},
 		{"another app's run, not done", tip(suite("", "ci/external", "IN_PROGRESS", ""), ``), "pending", nil, []string{"ci/external"}},
 		{"a status red, workline's own left out", tip(suite("push", "test", "COMPLETED", "SUCCESS"), `{"__typename":"StatusContext","context":"ci/legacy","state":"FAILURE"},{"__typename":"StatusContext","context":"workline/accepted","state":"PENDING"}`), "failure", []string{"ci/legacy"}, nil},
+		{"a push's run cancelled passed over", tip(suite("push", "follow", "COMPLETED", "CANCELLED")+","+suite("workflow_run", "follow", "COMPLETED", "SUCCESS")+","+suite("push", "test", "COMPLETED", "SUCCESS"), ``), "success", nil, nil},
 		{"none", tip(suite("workflow_run", "workline apply", "COMPLETED", "SUCCESS"), ``), "", nil, nil},
 		{"a workflow that could not start", tip(`{"status":"COMPLETED","conclusion":"FAILURE","app":{"slug":"github-actions"},"workflowRun":{"event":"push","workflow":{"name":".github/workflows/test.yml"}},"checkRuns":{"nodes":[]}}`+","+suite("push", "workline", "COMPLETED", "SUCCESS"), ``), "failure", []string{".github/workflows/test.yml"}, nil},
 	} {

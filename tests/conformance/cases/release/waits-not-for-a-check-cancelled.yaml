@@ -1,0 +1,18 @@
+case: release/waits-not-for-a-check-cancelled
+about: "A check on main's tip cancelled, and never run again there, never ends: on GitHub a newer run of its concurrency group takes its place, filed under another event. The release neither waits for it nor holds on it: with main's other checks green, its merge request passes at once."
+given:
+  repo: documented
+  setup:
+    - "git tag v1.0.0"
+    - "git checkout -qb release-please--branches--main && echo '# Changelog' > CHANGELOG.md && git add CHANGELOG.md && git commit -qm 'chore(main): release 1.0.1'"
+  forge:
+    issues: []
+    merge-requests: [{id: 1, branch: release-please--branches--main, base: main, labels: [], comments: []}]
+    tips: {main: [{name: follow, state: cancelled}, {name: test, state: success}]}
+run: {route: merge-request, input: {range: "main..HEAD"}, target: {merge-request: 1}, ai: none, args: [--release-wait, 2s]}
+expect:
+  status: pass
+  agent-calls: 0
+  no-findings:
+    - {rule: release-base-pending, where: main}
+    - {rule: release-base-red, where: main}
