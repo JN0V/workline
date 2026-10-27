@@ -745,7 +745,7 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 		return nil, err
 	}
 	p.readChanges(changes)
-	p.codeFirst = codeFirst(repo, settings, closes)
+	p.codeFirst = map[int]bool{}
 	dropped := func(c Proposal, rule, msg string) {
 		p.Findings = append(p.Findings, verdict.Finding{Rule: rule, Where: c.where(), Message: msg})
 	}
@@ -763,6 +763,17 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 		indexes = append(indexes, i)
 	}
 	slices.Sort(indexes)
+	// A sources is decided before the asks: an ask waits only for code a
+	// sources done in this run names (#548).
+	slices.SortStableFunc(indexes, func(a, b int) int {
+		first := func(i int) int {
+			if closes[i].Do == "sources" {
+				return 0
+			}
+			return 1
+		}
+		return first(a) - first(b)
+	})
 	decided := map[string]bool{}
 	for _, i := range indexes {
 		c := closes[i]
@@ -964,6 +975,9 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 				}
 				if c.Do == "undepend" {
 					p.recordUndepend(c)
+				}
+				if c.Do == "sources" && c.Ticked == "" {
+					p.codeFirst[c.Issue] = true // its code read at the next run: no ask on it now
 				}
 				p.recordDone(c)
 				p.recordDid(c)
@@ -1503,25 +1517,6 @@ func checkSources(repo string, c Proposal) (rule, why string) {
 		return "no-quote", "the line quoted to show its code is from none of the files named: nothing changed"
 	}
 	return "", ""
-}
-
-// codeFirst are the issues a run names the code of, by a `sources` done
-// alone (#548): an ask on one waits for that code, read at the next run —
-// the author is never asked what the code answers.
-func codeFirst(repo string, settings map[string]Setting, closes map[int]Proposal) map[int]bool {
-	if settings["sources"].Mode != Act {
-		return nil
-	}
-	out := map[int]bool{}
-	for _, c := range closes {
-		if c.Do != "sources" || c.Ticked != "" {
-			continue
-		}
-		if rule, _ := checkSources(repo, c); rule == "" {
-			out[c.Issue] = true
-		}
-	}
-	return out
 }
 
 // checkRefining checks a refine, a ready or an ask against the issue as it

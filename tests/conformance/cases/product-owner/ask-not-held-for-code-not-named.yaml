@@ -1,0 +1,17 @@
+case: product-owner/ask-not-held-for-code-not-named
+about: An ask waits only for code the same run names. A sources past this run's limit is not done, so the ask on its issue is asked, never left unasked (#548).
+given:
+  repo: backlog
+  config:
+    roles: {product-owner: {settings: {acts: {sources: {mode: act, max: 1}}}}}
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "WriteRows loses rows.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 12, title: "Gone", body: "Something gone.", author: bob, insider: true, labels: [], comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:ask-after-capped-code}
+expect:
+  findings: [{rule: act-cap, where: "#12"}]
+  no-findings: [{rule: code-first, where: "#12"}]
+  forge:
+    issues:
+      - {id: 12, comment-contains: "@bob, to refine this issue: Which rows are gone, and after what?"}
