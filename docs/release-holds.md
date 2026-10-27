@@ -62,8 +62,9 @@ glab label create --name workline:hold-release --description "Holds the release 
   - when the label is put on an issue or taken off, or such an issue is
     closed, reopened or deleted;
   - when main's workflows end after a push, none still running: list
-    each one in its `workflow_run`, the tests' too. A run that waited
-    for them and ended green is left as it is.
+    each one in its `workflow_run`, the tests' too. A run that started
+    after main's push, waited for its checks and ended green is left as
+    it is.
   - `judge` reads with its own token: `issues`, `checks`, `statuses` and
     `actions` read, as [workline.yml](../ci/github/workline.yml) gives;
     the gardening's `dry-run` gets the same.
