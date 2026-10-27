@@ -1,5 +1,5 @@
 case: product-owner/level-cautious-proposes-example-and-steps
-about: "At autonomy cautious, an example of the need and a bug's steps to reproduce are drafts as the Need and Validation are: proposed on the issue, in its comment, never written in the body; Scope and Verification, what the code shows, are written."
+about: "At autonomy cautious, an example of the need and a bug's steps to reproduce are drafts as the Need and Validation are: proposed on the issue, in its comment, never written in the body; Scope and Verification, what the code shows, are written. A Need draft saying again the reporter's text on top is not proposed, said with the drafts (ADR-0039)."
 given:
   repo: backlog
   config:
@@ -28,4 +28,4 @@ expect:
         body-contains: "The export drops the last sale of the day.\n\n## Verification\n\nA test with a sale at 18:59 fails today and passes after the fix.\n\n## Scope\n\nWriteRows in src/export/csv.go."
         body-lacks: "## Steps to reproduce"
         labels: [workline:to-refine, workline:proposed]
-        comment-contains: ["**Proposes**: Add Need, Steps to reproduce and Validation to it (Need, Steps to reproduce and Validation as drafts for you to correct).", "**Steps to reproduce**\n\n1. Make 3 sales on 8 Oct, the last at 18:59."]
+        comment-contains: ["**Proposes**: Add Steps to reproduce and Validation to it (Steps to reproduce and Validation as drafts for you to correct). Not written: the Need, which said again what is above it.", "**Steps to reproduce**\n\n1. Make 3 sales on 8 Oct, the last at 18:59.", "- Added: Verification, Scope. Changed: —. See the issue's edit history."]

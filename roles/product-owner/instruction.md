@@ -90,10 +90,12 @@ Propose `refine` with those it lacks: `scope` and `sources`,
 so, write the text alone. Write an `example` or `steps` only with a Need
 you draft: a person's Need is left as it is.
 
-**Each thing said once.** An `example` or `steps` that says again what
-is above it — the text on top, the Need — is not written: the engine
-measures the share of its words already said, and leaves it out past a
-limit. `validation` restates the case by design: it is never measured. A section it has is never
+**Each thing said once.** A person's text on top — above the sections,
+with no Need heading — is the Need: the task says so. Draft no `need`
+restating it; draft one only when that text states no problem. A draft
+that says again what is above it is not written: the engine measures
+the share of its words already said, and leaves it out past a limit.
+`validation` restates the case by design: it is never measured. A section it has is never
 rewritten, but one the task says the reviewer's findings lie in and is
 yours to rewrite: give its whole new text in `refine`, answering each
 finding.
@@ -130,15 +132,15 @@ draft at all, and write instead:
 
 **A role's text on top.** When the task says an issue's description —
 the text above its sections — is a role's and no person edited it (an
-item imported from a file, another role's finding), rewrite it in
-`refine`'s `description`, also when you ask its reporter:
+item imported from a file, another role's finding), give it as the
+`need` draft, also when you ask its reporter: the engine takes it from
+the top, so the problem is said once.
 
-- what goes wrong, or what is wanted, first; who it hurts; one real case
-  it holds;
+- what goes wrong, or what is wanted, first; who it hurts; in plain
+  words, nothing it does not say;
 - a word only a builder knows explained or gone;
-- what only a builder needs — the code, a path, a commit, the fix — at
-  its end, folded in one `<details><summary>…</summary>`;
-- at most 100 words before the fold; nothing it does not say;
+- what only a builder needs — the code, a path, a commit, the fix — in
+  `scope`, not in the `need`;
 - the line saying where it comes from is the engine's, kept: do not
   write it.
 

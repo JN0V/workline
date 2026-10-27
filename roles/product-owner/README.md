@@ -96,9 +96,10 @@ At `autonomy: normal`, the default:
   line; plain words, a link for each decision cited, a closed issue said
   closed ([writing an issue](docs/writing.md),
   [what it writes](docs/outputs.md#on-each-issue)).
-- **A role's text in plain words**: what an import or another role
-  opened an issue with, no person having edited it, rewritten short
-  ([text a role wrote](docs/writing.md#text-a-role-wrote)).
+- **Each thing said once**: what an import or another role opened an
+  issue with becomes its Need draft; your text on top is its Need; a
+  draft repeating what is above it is not written
+  ([how](docs/writing.md#each-thing-said-once)).
 - **Undone by you** (`workline:ready` taken off, a closing reopened…):
   that kind is proposed on that issue from then on; undone `undone-max`
   times across the issues, on every issue.

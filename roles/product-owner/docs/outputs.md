@@ -36,12 +36,11 @@ Part of [the product owner](../README.md). What a run does, step by step:
 - **In the reader's order**: Need, Example, Validation, then a line,
   then Verification and Scope; yours never moved
   ([writing an issue](writing.md)).
-- **A role's text on top, in plain words**: what an import or another
-  role wrote above the sections, no person having edited it, is
-  rewritten short — "Rewrote: the description" in its line
-  ([how](writing.md#text-a-role-wrote)). Yours never is.
-- **A draft that repeats** what is above it is not written: "Not
-  written: …" in its line ([how](writing.md#each-thing-said-once)).
+- **Each thing said once**: what an import or another role wrote above
+  the sections, no person having edited it, becomes the Need draft —
+  "Rewrote: the text on top as the Need" in its line; a draft saying
+  again what is above it is not written
+  ([how](writing.md#each-thing-said-once)). Your text is never touched.
 - **What it writes reads as user docs**: plain words, a link for each
   decision cited (added when it wrote one bare), "(closed)" after a
   closed issue cited.

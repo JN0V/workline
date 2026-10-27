@@ -190,11 +190,12 @@ func BroughtBack(b forge.Backlog, is forge.Issue, st *State, notes []forge.Note)
 }
 
 // lacking says whether an issue lacks one of its four sections; one a
-// person deleted is theirs, not lacking.
+// person deleted is theirs, not lacking, and a person's text on top is
+// its Need (NeedOnTop).
 func lacking(is forge.Issue, st *State) bool {
 	have := work.ByMeaning(is.Body)
 	for _, m := range work.Required {
-		if strings.TrimSpace(have[m].Text) == "" && !work.Has(st.Deleted, m) {
+		if strings.TrimSpace(have[m].Text) == "" && !work.Has(st.Deleted, m) && (m != work.Need || !NeedOnTop(is, st)) {
 			return true
 		}
 	}
@@ -914,7 +915,12 @@ func (p *Plan) reply(id int, a *Answer) string {
 		}
 		switch {
 		case d.Mode == Act && d.Act.Do == "refine" && !d.Act.ToReporter:
-			did = append(did, "rewrote "+and(d.Act.Added)+" in place")
+			names := slices.DeleteFunc(slices.Clone(d.Act.Added), func(n string) bool { return n == DescriptionName })
+			line := "rewrote " + and(names) + " in place"
+			if len(names) < len(d.Act.Added) {
+				line += ", its text on top taken into the " + work.Name(work.Need)
+			}
+			did = append(did, line)
 		case d.Mode == Act:
 			did = append(did, strings.TrimSuffix(describe(d.Act, "Closed"), "."))
 		case d.Mode == Propose:

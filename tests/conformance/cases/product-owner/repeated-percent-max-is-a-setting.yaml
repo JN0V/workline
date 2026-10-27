@@ -1,5 +1,5 @@
 case: product-owner/repeated-percent-max-is-a-setting
-about: "How much of a draft may be said above it already is the project's setting, repeated-percent-max (1 to 100, 40 by default; ADR-0039, amended): at 60, #103's Example, 53% said above it, is written."
+about: "How much of a draft may be said above it already is the project's setting, repeated-percent-max (1 to 100, 40 by default; ADR-0039, amended): at 60, #103's Example, 47% said in the Need its text on top became, is written."
 given:
   repo: backlog
   config:
@@ -12,7 +12,7 @@ given:
 run: {role: product-owner, event: schedule, ai: fake:said-once-setting}
 expect:
   findings:
-    - {rule: done, where: "#103", message: "Refined #103: Need (draft), Example (draft)."}
+    - {rule: done, where: "#103", message: "Refined #103: Need (draft, from the text on top), Example (draft)."}
   forge:
     issues:
       - {id: 103, body-contains: "so link checks work without manual steps.\n\n## Example\n\n<!-- workline:draft -->\n\nOn a Linux machine with neither brew nor cargo"}

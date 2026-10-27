@@ -531,7 +531,7 @@ func refining(f forge.Forge, role string, c backlog.Proposal) error {
 			return err
 		}
 		st, _, _ := backlog.ReadState(comments, role) // its drafts told from a person's edit
-		if missing := backlog.NotReady(is.Body, st, accepted); len(missing) > 0 {
+		if missing := backlog.NotReady(*is, st, accepted); len(missing) > 0 {
 			return nil // changed since the plan: it stays to refine
 		}
 		if strings.Contains(is.Body, backlog.DraftMarker) {
@@ -586,9 +586,7 @@ func keepBody(f forge.Forge, role string, t forge.Target, body string, sources, 
 	}
 	for _, name := range wrote {
 		if name == backlog.DescriptionName {
-			// Rewritten in plain words: the role's, until a person edits it.
-			st.Plain = backlog.DescriptionDigest(body)
-			continue
+			continue // its text on top taken into the Need: no description left to keep
 		}
 		st.SetWrote(name, backlog.SectionDigest(body, name))
 	}

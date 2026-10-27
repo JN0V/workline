@@ -325,9 +325,6 @@ func drafts(c Proposal) string {
 			fmt.Fprintf(&b, "**%s**\n\n%s\n\n", name, strings.ReplaceAll(text, "```", "'''"))
 		}
 	}
-	if len(c.Added) == 0 || slices.Contains(c.Added, DescriptionName) {
-		write(DescriptionName, c.Description)
-	}
 	for _, m := range layout() {
 		if len(c.Added) == 0 || work.Has(c.Added, m) {
 			write(named(c.Added, m), c.Text(m))
@@ -431,10 +428,15 @@ type Proposal struct {
 	Example      string `yaml:"example,omitempty"`
 	Steps        string `yaml:"steps,omitempty"`
 	Validation   string `yaml:"validation,omitempty"`
-	// Description, the text above its sections rewritten in plain words:
-	// only where the role opened it and no person edited it (Rewrite).
+	// Description, the text above its sections rewritten in plain words by
+	// an earlier engine: read in a proposal kept from then, never written —
+	// a role's text on top is now taken into the Need (Lift).
 	Description string   `yaml:"description,omitempty"`
 	Added       []string `yaml:"added,omitempty"`
+	// Lift, the engine's: the issue's text on top is a role's no person
+	// edited (RolesTop), taken from the top as this refine writes its Need
+	// draft, the engine's lines there kept (ADR-0039, amended).
+	Lift bool `yaml:"lift,omitempty"`
 	// Repeated, the engine's: the drafts not written because they said
 	// again what is above them (Repeated), by heading; said on the issue.
 	Repeated []string `yaml:"repeated,omitempty"`
@@ -1539,7 +1541,7 @@ func (p *Plan) checkRefining(f forge.Backlog, repo, role string, c *Proposal) (r
 				}
 			}
 			p.plain(is, st, c)
-			p.repeats(is, c)
+			p.repeats(is, st, c)
 		}
 		_, added, kept := Refine(is.Body, *c, role)
 		c.Added = added
@@ -1551,7 +1553,7 @@ func (p *Plan) checkRefining(f forge.Backlog, repo, role string, c *Proposal) (r
 				Message: "already in the body, left as it is: " + strings.Join(kept, ", ")})
 		}
 	case "ready":
-		if missing := NotReady(is.Body, p.ledger.States[c.Issue], Accepted(is)); len(missing) > 0 {
+		if missing := NotReady(is, p.ledger.States[c.Issue], Accepted(is)); len(missing) > 0 {
 			return "not-ready", "not moved to ready: " + strings.Join(missing, "; ")
 		}
 	case "ask":
@@ -1562,36 +1564,39 @@ func (p *Plan) checkRefining(f forge.Backlog, repo, role string, c *Proposal) (r
 	return "", ""
 }
 
-// plain checks a refine's description rewritten in plain words: written
-// only over a role's text no person edited (Rewrite), short, and never in
-// a comment to an outsider; otherwise left out, the rest of the refine
-// kept, and said.
+// plain decides whether a refine takes the issue's text on top into the
+// Need it drafts (ADR-0039, amended): a role's text no person edited
+// (RolesTop), never on an outsider's issue proposed in a comment. A
+// proposal a person said yes to is done as they read it: taken only if it
+// said so, and the text still the role's. A description given apart, as
+// an earlier engine asked, is left out, said.
 func (p *Plan) plain(is forge.Issue, st *State, c *Proposal) {
-	if strings.TrimSpace(c.Description) == "" {
-		return
+	if strings.TrimSpace(c.Description) != "" {
+		c.Description = ""
+		p.Findings = append(p.Findings, verdict.Finding{Rule: "description-kept", Level: "info", Where: c.where(),
+			Message: fmt.Sprintf("its description is left as it is: a role's text on top is taken into the %s it drafts, never rewritten apart", work.Name(work.Need))})
 	}
-	ok, why := Rewrite(is, st, p.Answers[c.Issue] != nil)
-	switch {
-	case c.ToReporter:
-		ok, why = false, "the issue is its reporter's, outside the project: its description is theirs"
-	case ok && words(c.Description) > DescriptionWordsMax:
-		ok, why = false, fmt.Sprintf("its description rewritten holds %d words before any fold, past %d: a reader's first lines stay short", words(c.Description), DescriptionWordsMax)
+	said := c.Lift
+	c.Lift = false
+	if strings.TrimSpace(c.Need) != "" && !c.ToReporter {
+		roles, _ := RolesTop(is, st)
+		c.Lift = roles && (said || !yes(*c))
 	}
-	if ok {
-		return
-	}
-	c.Description = ""
-	p.Findings = append(p.Findings, verdict.Finding{Rule: "description-kept", Level: "info", Where: c.where(),
-		Message: "its description is left as it is: " + why})
 }
 
+// yes says whether a refine is a person's yes to what was proposed: a
+// label accepting it (Ticked), or the reporter's reply agreeing (Agreed).
+// Its drafts are written as they read them.
+func yes(c Proposal) bool { return c.Ticked != "" || c.Agreed != "" }
+
 // repeats leaves out each draft of a refine that says again what is above
-// it (ADR-0039, amended): an example or a bug's steps, against all above
-// them as the issue will read — its text on top and its Need. Past the
+// it (ADR-0039, amended): a Need draft over a person's text on top; an
+// example or a bug's steps against all above them, as the issue will read
+// — the text on top, unless taken into the Need, and the Need. Past the
 // role's repeated-percent-max, not written, said on the issue. How a
 // person accepts it restates the case by design: never compared. A
 // person's text is only read, and what they said yes to written whole.
-func (p *Plan) repeats(is forge.Issue, c *Proposal) {
+func (p *Plan) repeats(is forge.Issue, st *State, c *Proposal) {
 	if yes(*c) {
 		return // measured when proposed: what a person said yes to is written whole
 	}
@@ -1604,39 +1609,47 @@ func (p *Plan) repeats(is forge.Issue, c *Proposal) {
 		return strings.TrimSpace(c.Text(m)) != "" && !work.Has(c.Refused, m) &&
 			(strings.TrimSpace(have[m].Text) == "" || work.Has(c.Revise, m))
 	}
-	c.Repeated = nil
-	need := have[work.Need].Text
-	if written(work.Need) {
-		need = c.Need
-	}
-	above := DescriptionOf(is.Body) + "\n\n" + StripDrafts(need)
-	for _, m := range []work.Meaning{work.Example, work.Steps} {
-		if !written(m) {
-			continue
-		}
-		n := Repeated(c.Text(m), above)
-		if n <= limit {
-			continue
-		}
-		name := work.Name(m)
+	drop := func(m work.Meaning, n int) {
+		name := named(nil, m)
 		if s, ok := have[m]; ok {
 			name = s.Heading
 		}
-		if m == work.Example {
+		switch m {
+		case work.Need:
+			c.Need = ""
+		case work.Example:
 			c.Example = ""
-		} else {
+		case work.Steps:
 			c.Steps = ""
 		}
 		c.Repeated = append(c.Repeated, name)
 		p.Findings = append(p.Findings, verdict.Finding{Rule: "repeated", Level: "info", Where: c.where(),
 			Message: fmt.Sprintf("its %s draft was not written: %d%% of its words are said above it already, past %d (repeated-percent-max)", name, n, limit)})
 	}
+	c.Repeated = nil
+	top := DescriptionOf(is.Body)
+	if written(work.Need) && NeedOnTop(is, st) {
+		if n := Repeated(c.Need, top); n > limit {
+			drop(work.Need, n)
+		}
+	}
+	need := have[work.Need].Text
+	if written(work.Need) {
+		need = c.Need
+	}
+	above := StripDrafts(need)
+	if !c.Lift || !written(work.Need) {
+		above = top + "\n\n" + above
+	}
+	for _, m := range []work.Meaning{work.Example, work.Steps} {
+		if !written(m) {
+			continue
+		}
+		if n := Repeated(c.Text(m), above); n > limit {
+			drop(m, n)
+		}
+	}
 }
-
-// yes says whether a refine is a person's yes to what was proposed: a
-// label accepting it (Ticked), or the reporter's reply agreeing (Agreed).
-// Its drafts are written as they read them.
-func yes(c Proposal) bool { return c.Ticked != "" || c.Agreed != "" }
 
 // readable makes the sections a refine writes readable to a person, as
 // the engine can tell (write.go): each decision cited bare linked to its
@@ -1650,7 +1663,7 @@ func (p *Plan) readable(f forge.Backlog, repo string, c *Proposal) error {
 		p.decisions = Decisions(repo)
 	}
 	files, issues := p.pages[0], p.pages[1]
-	for _, t := range []*string{&c.Description, &c.Need, &c.Example, &c.Steps, &c.Verification, &c.Validation, &c.Scope} {
+	for _, t := range []*string{&c.Need, &c.Example, &c.Steps, &c.Verification, &c.Validation, &c.Scope} {
 		*t = LinkDecisions(*t, files, p.decisions)
 		if !slices.ContainsFunc(CitedIssues(*t, issues), func(n int) bool { return !p.open[n] }) {
 			continue
@@ -1867,17 +1880,13 @@ func HasDraft(body string, st *State) bool {
 // added where the Layout puts it among those there, after the text, which
 // stays as it is — a thematic break between the person's part and the
 // builder's; added and kept name the sections written and those already
-// there, left alone.
+// there, left alone. A role's text on top (c.Lift, checked before) leaves
+// the top as the Need draft is written: Description among added.
 func Refine(body string, c Proposal, role string) (string, []string, []string) {
 	have := work.ByMeaning(body)
 	body, footer := work.Footer(body) // a section added goes above the body's footer
 	body = strings.TrimRight(body, " \r\n")
 	var added, kept []string
-	if text := Inert(strings.TrimSpace(c.Description)); text != "" && squeeze(text) != squeeze(DescriptionOf(body)) {
-		// Checked before (Rewrite): a role's text no person edited.
-		body = withDescription(body, text)
-		added = append(added, DescriptionName)
-	}
 	for _, m := range layout() {
 		text := Inert(strings.TrimSpace(c.Text(m))) // no quick action run on GitLab when the body is written
 		if text == "" || work.Has(c.Refused, m) {
@@ -1893,12 +1902,19 @@ func Refine(body string, c Proposal, role string) (string, []string, []string) {
 		if ok {
 			name = old.Heading
 		}
-		switch {
-		case ok && strings.TrimSpace(old.Text) != "" && work.Has(c.Revise, m) && squeeze(StripDrafts(old.Text)) != squeeze(StripDrafts(text)):
-			body = fill(body, name, text) // the role's own, rewritten to answer the reviewer (#128)
-		case ok && strings.TrimSpace(old.Text) != "":
+		revised := ok && strings.TrimSpace(old.Text) != "" && work.Has(c.Revise, m) && squeeze(StripDrafts(old.Text)) != squeeze(StripDrafts(text))
+		if ok && strings.TrimSpace(old.Text) != "" && !revised {
 			kept = append(kept, name)
 			continue
+		}
+		if m == work.Need && c.Lift && DescriptionOf(body) != "" {
+			// Its text on top, a role's, is this draft now: said once.
+			body = withoutTop(body)
+			added = append(added, DescriptionName)
+		}
+		switch {
+		case revised:
+			body = fill(body, name, text) // the role's own, rewritten to answer the reviewer (#128)
 		case ok:
 			body = fill(body, name, text)
 		default:
@@ -2090,13 +2106,16 @@ func StripDrafts(body string) string {
 }
 
 // NotReady says what keeps an issue's body from ready: a section missing or
-// empty, Need or Validation still a draft no person accepted nor edited.
-func NotReady(body string, st *State, accepted bool) []string {
+// empty, Need or Validation still a draft no person accepted nor edited. A
+// person's text on top, with no Need section, is its Need (NeedOnTop).
+func NotReady(is forge.Issue, st *State, accepted bool) []string {
+	body := is.Body
 	have := work.ByMeaning(body)
 	var out []string
 	for _, m := range work.Required {
 		text := strings.TrimSpace(have[m].Text)
 		switch {
+		case m == work.Need && text == "" && NeedOnTop(is, st):
 		case text == "":
 			out = append(out, work.Name(m)+" is missing")
 		case !accepted && IsDraft(body, m, st):
@@ -2613,10 +2632,13 @@ func describe(c Proposal, verb string) string {
 			return fmt.Sprintf("%s #%d's reporter (an outsider) the sections %s, in a comment: nothing written in the issue until they or a maintainer agree. %s", map[bool]string{true: "Proposed to", false: "Propose to"}[done], c.Issue, strings.Join(c.Added, ", "), strings.TrimSpace(c.Why))
 		}
 		var names []string
+		lifted := slices.Contains(c.Added, DescriptionName)
 		for _, n := range c.Added {
 			switch {
 			case n == DescriptionName:
-				n = "the description in plain words"
+				continue
+			case lifted && work.MeaningOf(n) == work.Need:
+				n += " (draft, from the text on top)"
 			case Drafted(n):
 				n += " (draft)"
 			}
@@ -2675,7 +2697,7 @@ func refined(c Proposal) string {
 	for _, n := range c.Added {
 		name := n
 		if n == DescriptionName {
-			said = append(said, "Rewrote: the description, in plain words.")
+			said = append(said, fmt.Sprintf("Rewrote: the text on top as the %s, in plain words.", work.Name(work.Need)))
 			continue
 		}
 		if Drafted(n) {

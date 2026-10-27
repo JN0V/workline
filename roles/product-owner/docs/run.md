@@ -56,9 +56,10 @@ Each issue comes with:
 
 - what the engine knows of it, who opened it — of the project or not —,
   which sections it has, which are the role's drafts and which yours;
-- when its four sections are there and Need and Validation are yours,
-  that it may go to `ready` if evident: the agent judges that, the
-  engine checks the sections;
+- when its four sections are there and Need and Validation are yours —
+  your text on top, with no Need heading, is its Need —, that it may go
+  to `ready` if evident: the agent judges that, the engine checks the
+  sections;
 - its comments, with who wrote each;
 - the issues it cites, open or closed;
 - the code it names — a file linked on the forge counts —, or else the
