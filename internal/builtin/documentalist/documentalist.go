@@ -232,6 +232,9 @@ func slug(heading string) string {
 // empty means nothing that matters. dir is the repository holding the source,
 // rev the revision to compare with (HEAD, or a branch for another repository).
 func changed(dir, checked, rev, path, anchor string, names map[string]bool) (string, error) {
+	if isPart(path, anchor) {
+		return partChanged(dir, checked, rev, path, anchor, names)
+	}
 	if !strings.HasSuffix(path, ".md") {
 		out, err := git(dir, "log", "--format=%H %h %s", checked+".."+rev, "--", path)
 		if err != nil || out == "" {
@@ -439,10 +442,18 @@ func touchesNames(dir, commit, path string, names map[string]bool) bool {
 		if !strings.HasPrefix(l, "-") || strings.HasPrefix(l, "---") {
 			continue
 		}
-		for _, n := range append(nameWord.FindAllString(l, -1), valueWord.FindAllString(l, -1)...) {
-			if names[strings.ToLower(strings.TrimLeft(n, "-"))] {
-				return true
-			}
+		if holdsName(l, names) {
+			return true
+		}
+	}
+	return false
+}
+
+// holdsName says whether a line holds a name or a value a doc writes.
+func holdsName(l string, names map[string]bool) bool {
+	for _, n := range append(nameWord.FindAllString(l, -1), valueWord.FindAllString(l, -1)...) {
+		if names[strings.ToLower(strings.TrimLeft(n, "-"))] {
+			return true
 		}
 	}
 	return false
@@ -531,6 +542,12 @@ const evidenceLines = 80
 // evidence shows the agent what changed in a source: the diff of a file, or a
 // doc section before and after.
 func evidence(dir, checked, rev, path, anchor string, max int) string {
+	if isPart(path, anchor) {
+		old, _, _ := partAt(dir, checked, path, anchor)
+		now, _, _ := partAt(dir, rev, path, anchor)
+		lang := partLang(path)
+		return "Before:\n\n```" + lang + "\n" + truncate(old, max) + "\n```\n\nNow:\n\n```" + lang + "\n" + truncate(now, max) + "\n```"
+	}
 	if !strings.HasSuffix(path, ".md") {
 		diff, err := git(dir, "diff", checked, rev, "--", path)
 		if err != nil {

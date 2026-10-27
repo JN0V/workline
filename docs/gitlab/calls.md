@@ -1,5 +1,8 @@
 <!-- workline
-sources: [internal/forge/retry.go, internal/forge/gitlab.go]
+sources:
+  - internal/forge/retry.go
+  - internal/forge/gitlab.go#gitlab.api
+  - internal/forge/gitlab.go#gitlab.graphql
 checked: 582ca3c7
 -->
 # A GitLab call that fails for a moment

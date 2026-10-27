@@ -1,0 +1,12 @@
+case: documentalist/named-part-changed-is-suspect
+about: "A doc naming a Go declaration as its source is suspect when that declaration changes, the commit said (ADR-0053)."
+given:
+  repo: documented
+  setup:
+    - "sed -i 's|sources: \\[src/auth/token.go\\]|sources: [src/auth/token.go#TokenTTL]|' docs/tech/auth.md && printf '\\nfunc Revoke() {}\\n' >> src/auth/token.go && git commit -qam 'feat(auth): revoke tokens'"
+    - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C/\" docs/tech/auth.md && git commit -qam 'docs: confirm the auth doc'"
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep tokens two hours'"
+run: {role: documentalist, event: pre-push, input: {range: "HEAD~1..HEAD"}, ai: none}
+expect:
+  status: pass
+  findings: [{rule: suspect, where: docs/tech/auth.md, message: "src/auth/token.go#TokenTTL changed since it was checked"}]

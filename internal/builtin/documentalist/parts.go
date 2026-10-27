@@ -7,6 +7,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -423,7 +424,8 @@ func planParts(d *Doc, repo string, share int) (plans []partPlan, why string, er
 			return nil, "", err
 		}
 		for _, f := range pathList(out) {
-			if f != "" && !strings.HasSuffix(f, ".md") {
+			// Two parts of one file name it twice: read once, whole.
+			if f != "" && !strings.HasSuffix(f, ".md") && !slices.Contains(files, f) {
 				files = append(files, f)
 			}
 		}

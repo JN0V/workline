@@ -241,6 +241,10 @@ func judgeSources(repo string, s Settings, judged map[string]map[string]string, 
 					missing = append(missing, src+" (another repository: name only this one's files)")
 				case !tree.exists(strings.TrimSuffix(p, "/")):
 					missing = append(missing, src)
+				case isPart(p, anchor):
+					if _, ok, _ := partAt(repo, "HEAD", p, anchor); !ok {
+						missing = append(missing, src+" (no such part)")
+					}
 				case anchor != "":
 					if _, ok := Section(tree.Docs[p], anchor); !ok {
 						missing = append(missing, src+" (no such heading)")

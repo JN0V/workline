@@ -1,5 +1,9 @@
 <!-- workline
-sources: [internal/forge/gitlab.go]
+sources:
+  - internal/forge/gitlab.go#planner
+  - internal/forge/gitlab.go#gitlab.insider
+  - internal/forge/gitlab.go#gitlab.blockedBy
+  - internal/forge/gitlab.go#gitlab.AddSubIssue
 checked: 582ca3c7
 -->
 # The product owner on GitLab

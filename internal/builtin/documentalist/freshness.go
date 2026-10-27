@@ -171,6 +171,19 @@ func sourcesAs(d *Doc, pl *places, limit int, as string) ([]string, error) {
 			}
 			continue
 		}
+		if isPart(path, anchor) {
+			part, found, err := partAt(where.dir, where.rev, path, anchor)
+			switch {
+			case err != nil:
+				return nil, fmt.Errorf("%s: %v", named, err)
+			case !found:
+				return nil, fmt.Errorf("%s holds no part #%s", named, anchor)
+			}
+			if !add(src, partLang(path), part) {
+				return nil, errTooLarge
+			}
+			continue
+		}
 		files, err := git(where.dir, "ls-tree", "-z", "-r", "--name-only", where.rev, "--", path)
 		if err != nil || files == "" {
 			return nil, fmt.Errorf("%s holds no file", named)
