@@ -1,5 +1,20 @@
 ---
-sources: [internal/builtin/documentalist/documentalist.go, cmd/workline/main.go, internal/builtin/documentalist/kept.go]
+sources:
+  - cmd/workline/main.go#prePushLine
+  - internal/builtin/documentalist/documentalist.go#changed
+  - internal/builtin/documentalist/documentalist.go#docNames
+  - internal/builtin/documentalist/documentalist.go#touchesNames
+  - internal/builtin/documentalist/documentalist.go#holdsName
+  - internal/builtin/documentalist/documentalist.go#preRun.sayShallow
+  - internal/builtin/documentalist/documentalist.go#preRun.pauseIfBackpressure
+  - internal/builtin/documentalist/kept.go#othersKept
+  - internal/builtin/documentalist/kept.go#othersKept.findings
+  - internal/builtin/documentalist/kept.go#readKept
+  - internal/builtin/documentalist/kept.go#readKeptInput
+  - internal/builtin/documentalist/kept.go#recordsMerged
+  - internal/engine/engine.go#writeWaiting
+  - internal/engine/engine.go#writeHeld
+  - roles/documentalist/role.yaml#settings.max-open-merge-requests
 checked: d722a840
 verified: agent:claude-code
 ---

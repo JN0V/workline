@@ -1,5 +1,22 @@
 ---
-sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/parts.go, internal/builtin/documentalist/counts.go]
+sources:
+  - internal/builtin/documentalist/documentalist.go#taskMaxChars
+  - internal/builtin/documentalist/documentalist.go#docEvidenceLines
+  - internal/builtin/documentalist/documentalist.go#suspectDoc.evidenceFor
+  - internal/builtin/documentalist/documentalist.go#preRun.giveSourcesNow
+  - internal/builtin/documentalist/documentalist.go#preRun.leaveForNextRound
+  - internal/builtin/documentalist/documentalist.go#suspectTask
+  - internal/builtin/documentalist/documentalist.go#docTask
+  - internal/builtin/documentalist/cite.go#citeTask
+  - internal/builtin/documentalist/freshness.go#wholeChars
+  - internal/builtin/documentalist/freshness.go#wholeCharsMax
+  - internal/builtin/documentalist/freshness.go#sourcesNow
+  - internal/builtin/documentalist/parts.go#vouchFor
+  - roles/documentalist/role.yaml#settings.ai-max-calls
+  - roles/documentalist/role.yaml#settings.ai-max-tokens
+  - roles/documentalist/role.yaml#settings.whole-chars
+  - roles/documentalist/role.yaml#settings.judge-in-parts
+  - roles/documentalist/role.yaml#settings.parts-move-checked
 checked: d722a840
 verified: agent:claude-code
 ---
