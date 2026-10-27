@@ -528,8 +528,8 @@ func judgePatches(repo string, s Settings, judged map[string]map[string]string, 
 			return fileVerdict{rule: "derived-block", why: "the patch changes lines between workline:derive markers; they are regenerated from the code, never written"}
 		}
 		now := applyHunks(old, f)
-		if isAuthority(s, f.path) && body(now) != body(old) {
-			return fileVerdict{rule: "truth-doc-changed", why: "this doc is an authority (truth: doc): the code follows it, never the reverse; set only `checked` and `verified`, and open an issue where the code disagrees"}
+		if v, refused := truthChanged(s, f.path, old, now); refused {
+			return v
 		}
 		places, held, off, comments := cc.citationRefusals(f.path, old, f, claims, unread, len(agentDocs) == 1)
 		j.reported = append(j.reported, comments...)
@@ -819,6 +819,15 @@ func judgePatches(repo string, s Settings, judged map[string]map[string]string, 
 		}
 	}
 	return j, nil
+}
+
+// truthChanged refuses a patch that changes what an authority says (`truth:
+// doc`): the code follows it, never the reverse.
+func truthChanged(s Settings, path, old, now string) (fileVerdict, bool) {
+	if isAuthority(s, path) && body(now) != body(old) {
+		return fileVerdict{rule: "truth-doc-changed", why: "this doc is an authority (truth: doc): the code follows it, never the reverse; set only `checked` and `verified`, and open an issue where the code disagrees"}, true
+	}
+	return fileVerdict{}, false
 }
 
 // agentFiles are the docs' parts of the agent's patches, each placed on
