@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog/change.go, internal/builtin/productowner/changes.go, internal/builtin/productowner/productowner.go, internal/backlog/autonomy.go, internal/backlog/parent.go, internal/backlog/depend.go]
 status: draft
-checked: edc4ffc2
+checked: a7467d4f
 verified: agent:claude-code
 ---
 # A changed need

@@ -1,5 +1,11 @@
 ---
-sources: [internal/builtin/documentalist/documentalist.go]
+sources:
+  - internal/builtin/documentalist/documentalist.go#splitSource
+  - internal/builtin/documentalist/documentalist.go#ParseDoc
+  - internal/builtin/documentalist/documentalist.go#projectRepos
+  - internal/builtin/documentalist/documentalist.go#external
+  - internal/builtin/documentalist/documentalist.go#places
+  - internal/builtin/documentalist/documentalist.go#places.get
 checked: d722a840
 verified: agent:claude-code
 judged-in-parts: c7e1e98

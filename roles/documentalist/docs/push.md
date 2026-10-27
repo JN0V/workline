@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/adopt.go, internal/builtin/documentalist/byname.go]
-checked: d722a840
+checked: e1cbe478
 verified: agent:claude-code
 judged-in-parts: c7e1e98
 ---
@@ -28,6 +28,10 @@ moves to the commit the task gave.
   names changes**: a file it names, or a line removed or changed holding
   a name or a value it writes; a line added alone leaves it
   ([ADR-0014, amended](../../../docs/adr/0014-checked-is-earned-by-what-was-read.md#amendment-2026-10-21-suspect-only-when-a-line-it-names-changes)).
+- **A source naming a part of a file** — `f.go#Name`, `f.go#Type.Method`,
+  `ci.yml#jobs.test` — makes the doc suspect only when that part changes;
+  a task reads that part, not the file
+  ([ADR-0053](../../../docs/adr/0053-a-source-may-name-a-part-of-a-file.md)).
 - Given the commits of a merge request (`range`), only the docs they
   touched are read, as at a push: those they made suspect — one of their
   own sources touched by those commits, a merge's own change too — are

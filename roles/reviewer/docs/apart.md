@@ -1,5 +1,16 @@
 ---
-sources: [roles/reviewer/role.yaml, internal/builtin/reviewer/reviewer.go, internal/builtin/reviewer/record.go, internal/line/line.go, ci/github/workline.yml, ci/github/workline-warn.yml, ci/github/workline-apply.yml, ci/gitlab/workline.gitlab-ci.yml]
+sources:
+  - roles/reviewer/role.yaml
+  - internal/builtin/reviewer/reviewer.go
+  - internal/builtin/reviewer/record.go
+  - internal/line/line.go
+  - ci/github/workline.yml
+  - ci/github/workline-warn.yml
+  - ci/github/workline-apply.yml
+  - ci/gitlab/workline.gitlab-ci.yml#workline:judge
+  - ci/gitlab/workline.gitlab-ci.yml#workline:warn:child
+  - ci/gitlab/workline.gitlab-ci.yml#workline:warn
+  - ci/gitlab/workline.gitlab-ci.yml#workline:warn:apply
 checked: d722a840
 judged: a5cd2cf
 verified: agent:claude-code

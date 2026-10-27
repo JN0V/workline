@@ -1,0 +1,14 @@
+case: documentalist/named-part-is-what-the-task-reads
+about: "A doc naming one declaration of a Go file too large for a task is given that declaration whole, as it is now, not the file: its sources now fit, so it can be vouched for (ADR-0053)."
+given:
+  repo: documented
+  setup:
+    - "for i in $(seq 1 800); do echo \"// Filler $i of the token package, far from the constant.\"; done >> src/auth/token.go && sed -i 's|sources: \\[src/auth/token.go\\]|sources: [src/auth/token.go#TokenTTL]|' docs/tech/auth.md && git commit -qam 'docs(auth): say the rules'"
+    - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C/\" docs/tech/auth.md && git commit -qam 'docs: confirm the auth doc'"
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+# A command agent: it answers only when given the constant as it is now, and no filler line.
+run: {role: documentalist, event: merge-request, ai: "cmd:p=$(cat); echo \"$p\" | grep -q 'as they are now' && echo \"$p\" | grep -q 'const TokenTTL = 7200' && ! echo \"$p\" | grep -q 'Filler 700' && echo '- note: judged against the part whole'"}
+expect:
+  status: pass
+  agent-calls: 1
+  notes: ["judged against the part whole"]

@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog/backlog.go, internal/backlog/plain.go, internal/backlog/repeat.go, internal/backlog/write.go, internal/work/headings.go, internal/work/work.go, internal/forge/forge.go, internal/engine/backlog.go]
 status: draft
-checked: edc4ffc2
+checked: a7467d4f
 verified: agent:claude-code
 ---
 # Refining to ready
