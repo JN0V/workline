@@ -37,6 +37,7 @@ stars and dates were checked against the GitHub API that day.
 | [auditing-agent-acts.md](auditing-agent-acts.md) | How a sample of automated decisions is drawn, read again by another reader, disputes settled and an error rate reported |
 | [merge-conflicts.md](merge-conflicts.md) | Why open pull requests conflict with `main`, what forges and git offer, what workline adds |
 | [merging.md](merging.md) | What a person does at merge, who merges elsewhere and how autonomy is graded, whether merging is a role |
+| [issue-to-pull-request.md](issue-to-pull-request.md) | How coding agents take an issue to a pull request: trigger, rights, scope, proof, review rounds, caps, why their pull requests are rejected |
 | [inspector.md](inspector.md) | How SARIF, the forges and linters tell a merge request's new findings, where the base's come from, AI triage measured |
 | [inspector-coverage.md](inspector-coverage.md) | Which linter fits each language, how it is suggested and installed pinned, the licences that limit it, AI in its place |
 
