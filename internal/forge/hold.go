@@ -260,5 +260,16 @@ func (f *Fake) Tip(branch string) (Tip, error) {
 	if sha := f.resolve(branch); f.Repo != "" && sha != "" {
 		commit = sha
 	}
-	return tipOf(Tip{Branch: branch, Commit: commit}, s.Tips[branch]), nil
+	runs := s.Tips[branch]
+	if then, ok := s.TipsThen[branch]; ok {
+		if s.Tips == nil {
+			s.Tips = map[string][]CheckRun{}
+		}
+		s.Tips[branch] = then
+		delete(s.TipsThen, branch)
+		if err := f.save(s); err != nil {
+			return Tip{}, err
+		}
+	}
+	return tipOf(Tip{Branch: branch, Commit: commit}, runs), nil
 }

@@ -1,0 +1,18 @@
+case: release/waits-not-when-an-issue-holds-it
+about: "An issue labelled to hold the release holds it whatever main's checks say: the line waits for none of them (#640), and blocks at once."
+given:
+  repo: documented
+  setup:
+    - "git tag v1.0.0"
+    - "git checkout -qb release-please--branches--main && echo '# Changelog' > CHANGELOG.md && git add CHANGELOG.md && git commit -qm 'chore(main): release 1.0.1'"
+  forge:
+    issues: [{id: 7, title: "Sign-in fails on Safari", labels: [workline:hold-release], comments: []}]
+    merge-requests: [{id: 1, branch: release-please--branches--main, base: main, labels: [], comments: []}]
+    tips: {main: [{name: test, state: pending}]}
+    tips-then: {main: [{name: test, state: success}]}
+run: {route: merge-request, input: {range: "main..HEAD"}, target: {merge-request: 1}, ai: none, args: [--release-wait, 10m]}
+expect:
+  status: block
+  findings:
+    - {rule: release-held, where: "#7"}
+    - {rule: release-base-pending, where: main}

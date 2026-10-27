@@ -1,0 +1,20 @@
+case: release/waits-for-main-checks-then-fails-red
+about: "Given a wait, a check running on main's tip that ends red holds the release once it ends (#640): the release's check fails then, naming main's red check."
+given:
+  repo: documented
+  setup:
+    - "git tag v1.0.0"
+    - "git checkout -qb release-please--branches--main && echo '# Changelog' > CHANGELOG.md && git add CHANGELOG.md && git commit -qm 'chore(main): release 1.0.1'"
+  forge:
+    issues: []
+    merge-requests: [{id: 1, branch: release-please--branches--main, base: main, labels: [], comments: []}]
+    tips: {main: [{name: test, state: pending}, {name: lint, state: success}]}
+    tips-then: {main: [{name: test, state: failure}, {name: lint, state: success}]}
+run: {route: merge-request, input: {range: "main..HEAD"}, target: {merge-request: 1}, ai: none, args: [--release-wait, 2s]}
+expect:
+  status: block
+  summary: "the release held: main red"
+  findings:
+    - {rule: release-base-red, where: main, level: block, message: "is red: test; the release waits for it green"}
+  no-findings:
+    - {rule: release-base-pending, where: main}

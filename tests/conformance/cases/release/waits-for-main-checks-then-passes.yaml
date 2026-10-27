@@ -1,0 +1,19 @@
+case: release/waits-for-main-checks-then-passes
+about: "Given a wait (--release-wait, a CI job's), a check still running on main's tip and nothing else holding the release, the line reads main again till it ends (#640): the release's check stays pending on the forge, then passes once main is green, never red meanwhile."
+given:
+  repo: documented
+  setup:
+    - "git tag v1.0.0"
+    - "git checkout -qb release-please--branches--main && echo '# Changelog' > CHANGELOG.md && git add CHANGELOG.md && git commit -qm 'chore(main): release 1.0.1'"
+  forge:
+    issues: []
+    merge-requests: [{id: 1, branch: release-please--branches--main, base: main, labels: [], comments: []}]
+    tips: {main: [{name: test, state: pending}, {name: lint, state: success}]}
+    tips-then: {main: [{name: test, state: success}, {name: lint, state: success}]}
+run: {route: merge-request, input: {range: "main..HEAD"}, target: {merge-request: 1}, ai: none, args: [--release-wait, 2s]}
+expect:
+  status: pass
+  agent-calls: 0
+  no-findings:
+    - {rule: release-base-pending, where: main}
+    - {rule: release-base-red, where: main}
