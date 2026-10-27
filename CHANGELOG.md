@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.43.0](https://github.com/JN0V/workline/compare/v0.42.0...v0.43.0) (2026-10-27)
+
+
+### Features
+
+* **product-owner:** an imported issue read with its file ([#638](https://github.com/JN0V/workline/issues/638)) ([bec9b83](https://github.com/JN0V/workline/commit/bec9b837eb590d8bb62596c035bc0b01f7d87b9e))
+
 ## [0.42.0](https://github.com/JN0V/workline/compare/v0.41.0...v0.42.0) (2026-10-27)
 
 
