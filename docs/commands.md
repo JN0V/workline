@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/engine/engine.go, internal/hooks]
-checked: 87a81d4a
+checked: 698d5497
 verified: agent:claude-code
 judged: e343388
 ---
@@ -51,7 +51,9 @@ its merge base's there ([main after a merge](main-after-merge.md)).
 `route release --dry-run`: what would hold the release if it were cut
 now from the branch's tip; every
 step, no agent, nothing applied, said as warnings
-([the release](release.md)).
+([the release](release.md)). `--release-wait 30m`: on the release, the
+checks still running on the branch it is cut from are waited for, then
+read again ([what holds a release](release-holds.md#read-again)).
 
 ### workline apply
 

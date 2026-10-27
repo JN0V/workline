@@ -1,6 +1,6 @@
 ---
 sources: [internal/line/hold.go, internal/forge/hold.go, internal/line/line.go, ci/github/workline-release.yml, ci/github/workline.yml, .github/workflows/workline.yml, .github/workflows/workline-release.yml]
-checked: d722a840
+checked: 698d5497
 ---
 # What holds a release, and when to release
 
@@ -51,17 +51,23 @@ glab label create --name workline:hold-release --description "Holds the release 
 
 ## Read again
 
+- **While main's checks run**: the release's check waits for them,
+  pending, then turns green or red with them, 30 minutes at most
+  (`route --release-wait 30m` in both templates). A forge's required
+  check cannot say "pending" otherwise: a job that ended is green or
+  red. Only when nothing else holds the release.
 - **GitHub**: [workline-release.yml](../ci/github/workline-release.yml)
   runs the release pull request's last workline run again:
   - when the label is put on an issue or taken off, or such an issue is
     closed, reopened or deleted;
   - when main's workflows end after a push, none still running: list
-    each one in its `workflow_run`, the tests' too.
+    each one in its `workflow_run`, the tests' too. A run that waited
+    for them and ended green is left as it is.
   - `judge` reads with its own token: `issues`, `checks`, `statuses` and
     `actions` read, as [workline.yml](../ci/github/workline.yml) gives;
     the gardening's `dry-run` gets the same.
 - **GitLab**: no pipeline starts on a label. Once the label is off, or
-  main green, run the release merge request's `workline:judge` job
+  main green after the wait ran out, run the release merge request's `workline:judge` job
   again. It reads with `GITLAB_TOKEN` (`read_api`); the job's own token
   reaches no issue, so the release is held, said.
 
