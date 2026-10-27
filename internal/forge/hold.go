@@ -253,6 +253,13 @@ func (f *Fake) Tip(branch string) (Tip, error) {
 	if s.TipsUnread != "" {
 		return Tip{}, fmt.Errorf("%w: %s", ErrUnreachable, s.TipsUnread)
 	}
+	if why := s.TipsUnreadNext; why != "" {
+		s.TipsUnreadNext = ""
+		if err := f.save(s); err != nil {
+			return Tip{}, err
+		}
+		return Tip{}, fmt.Errorf("%w: %s", ErrUnreachable, why)
+	}
 	if branch == "" {
 		branch = "main"
 	}
@@ -267,6 +274,7 @@ func (f *Fake) Tip(branch string) (Tip, error) {
 		}
 		s.Tips[branch] = then
 		delete(s.TipsThen, branch)
+		s.TipsUnreadNext, s.TipsUnreadThen = s.TipsUnreadThen, ""
 		if err := f.save(s); err != nil {
 			return Tip{}, err
 		}

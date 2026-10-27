@@ -70,6 +70,11 @@ type FakeState struct {
 	// TipsThen are the runs a branch's tip carries once Tip has read it:
 	// its checks ending while the line waits for them.
 	TipsThen map[string][]CheckRun `json:"tips-then,omitempty"`
+	// TipsUnreadThen: why the forge does not answer the read after the
+	// first, once, a hiccup while the line waits; TipsUnreadNext carries
+	// it from the first read to the next.
+	TipsUnreadThen string `json:"tips-unread-then,omitempty"`
+	TipsUnreadNext string `json:"tips-unread-next,omitempty"`
 	// Squash is how its merge requests land when squashed, the same for
 	// each but Suffix, where "{n}" is the merge request's number (Squasher).
 	Squash *Squash `json:"squash,omitempty"`

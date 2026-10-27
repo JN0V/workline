@@ -55,7 +55,8 @@ glab label create --name workline:hold-release --description "Holds the release 
   pending, then turns green or red with them, 30 minutes at most
   (`route --release-wait 30m` in both templates). A forge's required
   check cannot say "pending" otherwise: a job that ended is green or
-  red. Only when nothing else holds the release.
+  red. Only when nothing else holds the release. A read of the forge
+  that fails meanwhile does not end the wait.
 - **GitHub**: [workline-release.yml](../ci/github/workline-release.yml)
   runs the release pull request's last workline run again:
   - when the label is put on an issue or taken off, or such an issue is

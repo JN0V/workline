@@ -41,7 +41,14 @@ func waitHolds(event string, o engine.Options, found []verdict.Finding) ([]verdi
 	for onlyPending(found) && time.Now().Before(deadline) {
 		fmt.Fprintf(os.Stderr, "workline: the release waits for checks not done, read again in %s\n", poll)
 		time.Sleep(poll)
-		found, held = releaseHolds(event, o)
+		again, h := releaseHolds(event, o)
+		// A read that failed while waiting is a hiccup: the wait goes on
+		// from the last read, unless it was the last chance.
+		if onlyUnread(again) && time.Now().Before(deadline) {
+			fmt.Fprintf(os.Stderr, "workline: what holds the release could not be read again, the wait goes on\n")
+			continue
+		}
+		found, held = again, h
 	}
 	for i := range found {
 		if found[i].Rule == RuleBasePending {
@@ -49,6 +56,22 @@ func waitHolds(event string, o engine.Options, found []verdict.Finding) ([]verdi
 		}
 	}
 	return found, held, true
+}
+
+// onlyUnread says whether what holds the release is only what could not
+// be read, or checks not done.
+func onlyUnread(found []verdict.Finding) bool {
+	unread := false
+	for _, f := range found {
+		switch {
+		case f.Rule == RuleHoldsUnread && (f.Level == "" || f.Level == verdict.Block):
+			unread = true
+		case f.Rule == RuleBasePending:
+		case f.Level == "" || f.Level == verdict.Block:
+			return false
+		}
+	}
+	return unread
 }
 
 // onlyPending says whether checks not done hold the release, and nothing

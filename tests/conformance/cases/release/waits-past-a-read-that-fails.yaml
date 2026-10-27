@@ -1,0 +1,21 @@
+case: release/waits-past-a-read-that-fails
+about: "Given a wait, a check still running on main's tip and nothing else holding the release, a read of main that fails while the line waits is a hiccup (#640): the wait goes on, and the release passes once main is green, never red for the failed read."
+given:
+  repo: documented
+  setup:
+    - "git tag v1.0.0"
+    - "git checkout -qb release-please--branches--main && echo '# Changelog' > CHANGELOG.md && git add CHANGELOG.md && git commit -qm 'chore(main): release 1.0.1'"
+  forge:
+    issues: []
+    merge-requests: [{id: 1, branch: release-please--branches--main, base: main, labels: [], comments: []}]
+    tips: {main: [{name: test, state: pending}, {name: lint, state: success}]}
+    tips-then: {main: [{name: test, state: success}, {name: lint, state: success}]}
+    tips-unread-then: "HTTP 502"
+run: {route: merge-request, input: {range: "main..HEAD"}, target: {merge-request: 1}, ai: none, args: [--release-wait, 2s]}
+expect:
+  status: pass
+  agent-calls: 0
+  no-findings:
+    - {rule: release-base-pending, where: main}
+    - {rule: release-base-red, where: main}
+    - {rule: release-holds-unread}
