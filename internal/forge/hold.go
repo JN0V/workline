@@ -41,13 +41,17 @@ type Releasing interface {
 var _ = []Releasing{&github{}, &gitlab{}, &Fake{}}
 
 // tipOf sums a tip's runs up as the merge policy does (sumRuns), and
-// names the checks red and those not done: a check cancelled with no
-// other run of it is not done.
+// names the checks red and those not done. A run cancelled is passed
+// over, as GitLab's canceled pipeline: it never ends, so waiting for it
+// would last the whole wait. On GitHub a concurrency group cancels the
+// run waiting in it for a newer one, which another event's suite holds:
+// workline-apply.yml's follow, on each merge.
 func tipOf(t Tip, runs []CheckRun) Tip {
+	runs = slices.DeleteFunc(slices.Clone(runs), func(r CheckRun) bool { return r.State == "cancelled" })
 	t.State = sumRuns(runs)
 	done := map[string]bool{}
 	for _, r := range runs {
-		if r.State != "cancelled" && r.State != "pending" {
+		if r.State != "pending" {
 			done[r.Name] = true
 		}
 	}
@@ -55,7 +59,7 @@ func tipOf(t Tip, runs []CheckRun) Tip {
 		switch {
 		case r.State == "failure" && !slices.Contains(t.Failing, r.Name):
 			t.Failing = append(t.Failing, r.Name)
-		case (r.State == "pending" || r.State == "cancelled") && !done[r.Name] && !slices.Contains(t.Pending, r.Name):
+		case r.State == "pending" && !done[r.Name] && !slices.Contains(t.Pending, r.Name):
 			t.Pending = append(t.Pending, r.Name)
 		}
 	}

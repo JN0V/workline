@@ -1,6 +1,6 @@
 ---
 sources: [internal/line/hold.go, internal/forge/hold.go, internal/line/line.go, ci/github/workline-release.yml, ci/github/workline.yml, .github/workflows/workline.yml, .github/workflows/workline-release.yml]
-checked: 698d5497
+checked: 3f339a94
 ---
 # What holds a release, and when to release
 
@@ -34,7 +34,9 @@ names them, [config](config.md)) blocks, its check red, while:
   issue, to let it go. Each such issue is named in the check.
 - **a check on the default branch's tip is red, or not done**: the tests
   ran there after the merge, so they are read, never run again. The red
-  ones are named; the release waits for them green.
+  ones are named; the release waits for them green. A check cancelled
+  there, and not run again, is passed over: it would never end (on
+  GitHub, a newer run of its concurrency group took its place).
 - **what holds it could not be read**: the forge not answering, or a
   token that may not read issues or checks. Never read as a pass.
 
