@@ -72,7 +72,7 @@ curl -fsS -X POST --form token="$TRIGGER_TOKEN" --form ref=main \
 
 ```yaml
 stages: [test, deploy]
-variables: {GIT_DEPTH: 0, WORKLINE_VERSION: v0.41.0, WORKLINE_RUNS_DIR: $CI_PROJECT_DIR/.workline-runs}  # x-release-please-version
+variables: {GIT_DEPTH: 0, WORKLINE_VERSION: v0.42.0, WORKLINE_RUNS_DIR: $CI_PROJECT_DIR/.workline-runs}  # x-release-please-version
 .workline:
   image: ghcr.io/jn0v/workline:$WORKLINE_VERSION
   rules: [{if: '$CI_PIPELINE_SOURCE =~ /^(api|trigger|pipeline|parent_pipeline)$/ && $WORKLINE_TASK'}]

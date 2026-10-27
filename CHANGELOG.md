@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.42.0](https://github.com/JN0V/workline/compare/v0.41.0...v0.42.0) (2026-10-27)
+
+
+### Features
+
+* **documentalist:** a source may name a Go symbol or YAML key ([#635](https://github.com/JN0V/workline/issues/635)) ([fa48a72](https://github.com/JN0V/workline/commit/fa48a72eee98e1359d4f16012b347185c12a2fcb))
+* **product-owner:** no record in the mail, the code before asks ([#637](https://github.com/JN0V/workline/issues/637)) ([8f455d2](https://github.com/JN0V/workline/commit/8f455d2db1cfb77c3d980b219a3b38fbea598cf6))
+* **product-owner:** role's text on top becomes the Need ([#447](https://github.com/JN0V/workline/issues/447)) ([33af394](https://github.com/JN0V/workline/commit/33af39444810661748f9d973f422263d127a024a))
+
 ## [0.41.0](https://github.com/JN0V/workline/compare/v0.40.0...v0.41.0) (2026-10-26)
 
 
