@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.43.2](https://github.com/JN0V/workline/compare/v0.43.1...v0.43.2) (2026-10-27)
+
+
+### Bug Fixes
+
+* a release waits not for a check cancelled on main ([#644](https://github.com/JN0V/workline/issues/644)) ([5a05d11](https://github.com/JN0V/workline/commit/5a05d11fd098860f6fd7bc5bef589a70562e713e))
+
 ## [0.43.1](https://github.com/JN0V/workline/compare/v0.43.0...v0.43.1) (2026-10-27)
 
 
