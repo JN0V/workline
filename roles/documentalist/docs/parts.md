@@ -1,5 +1,15 @@
 ---
-sources: [internal/builtin/documentalist/parts.go, internal/builtin/documentalist/documentalist.go]
+sources:
+  - internal/builtin/documentalist/parts.go
+  - internal/builtin/documentalist/documentalist.go#preRun.giveSourcesNow
+  - internal/builtin/documentalist/documentalist.go#preRun.holdJudged
+  - internal/builtin/documentalist/documentalist.go#preRun.askSuspects
+  - internal/builtin/documentalist/documentalist.go#preRun.inPartsTask
+  - internal/builtin/documentalist/documentalist.go#preRun.askStale
+  - internal/builtin/documentalist/documentalist.go#preRun.writeParts
+  - internal/builtin/documentalist/documentalist.go#preRun.leaveForNextRound
+  - internal/builtin/documentalist/documentalist.go#Post
+  - internal/builtin/documentalist/documentalist.go#outcomes
 checked: d722a840
 verified: agent:claude-code
 ---

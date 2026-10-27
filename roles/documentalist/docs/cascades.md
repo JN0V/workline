@@ -1,5 +1,17 @@
 ---
-sources: [internal/builtin/documentalist/documentalist.go, roles/documentalist/role.yaml]
+sources:
+  - internal/builtin/documentalist/documentalist.go#preRun.findSuspects
+  - internal/builtin/documentalist/documentalist.go#preRun.cutCascade
+  - internal/builtin/documentalist/documentalist.go#edge
+  - internal/builtin/documentalist/documentalist.go#preRun.askPropagate
+  - internal/builtin/documentalist/documentalist.go#trackingIssue
+  - internal/builtin/documentalist/documentalist.go#personIssue
+  - internal/builtin/documentalist/documentalist.go#docTask
+  - internal/builtin/documentalist/documentalist.go#isAuthority
+  - internal/builtin/documentalist/judge.go#truthChanged
+  - internal/engine/engine.go#renamedIssues
+  - roles/documentalist/role.yaml#settings.truth
+  - roles/documentalist/role.yaml#settings.propagation
 checked: d722a840
 verified: agent:claude-code
 judged-in-parts: c7e1e98

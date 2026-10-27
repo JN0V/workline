@@ -1,5 +1,15 @@
 ---
-sources: [internal/builtin/documentalist/notes.go, internal/builtin/documentalist/values.go, internal/builtin/documentalist/judge.go, internal/builtin/documentalist/documentalist.go]
+sources:
+  - internal/builtin/documentalist/notes.go
+  - internal/builtin/documentalist/values.go
+  - internal/builtin/documentalist/judge.go
+  - internal/builtin/documentalist/documentalist.go#docTask
+  - internal/builtin/documentalist/documentalist.go#preRun.writeTask
+  - internal/builtin/documentalist/documentalist.go#Post
+  - internal/builtin/documentalist/documentalist.go#notVouched
+  - internal/builtin/documentalist/documentalist.go#outcomes
+  - internal/builtin/documentalist/documentalist.go#mergeRequest
+  - internal/builtin/documentalist/documentalist.go#checklist
 checked: d722a840
 verified: agent:claude-code
 ---
