@@ -22,10 +22,8 @@ answer a review, and what goes wrong? For the developer role
   agent's prefix (`copilot/`, `claude/`); gh-aw caps pull requests at one
   a run and holds a list of files the agent may touch, and of protected
   files it may not.
-- **Every one caps a session, none caps review rounds**: time (Copilot
-  59 min, gh-aw 20 min for the agent's step), turns (gh-aw 500, OpenHands
-  50 iterations, Claude's action `--max-turns`), cost (SWE-agent 3 USD an
-  issue, gh-aw AI credits, Devin's ACUs).
+- **Each caps a session, none caps review rounds**: time (Copilot
+  59 min), turns (OpenHands 50), cost (SWE-agent 3 USD an issue).
 - **Proof is the agent running the project's tests in its sandbox**; no
   tool ties it to the issue's own test plan. A failure keeps the work:
   OpenHands pushes the branch and comments on the issue; gh-aw opens an
@@ -44,9 +42,8 @@ answer a review, and what goes wrong? For the developer role
   pull request. "Only users with write access to the repository can
   trigger" it; comments from others never reach it ([risks][cop-risks]).
 - **Sandbox**: an "ephemeral cloud development environment" on GitHub
-  Actions ([about][cop-about]). A firewall on by default, with a
-  "recommended allowlist"; it covers only the agent's shell, not MCP
-  servers nor the setup steps ([firewall][cop-fw]).
+  Actions ([about][cop-about]); a firewall with a "recommended
+  allowlist", on the agent's shell only ([firewall][cop-fw]).
 - **Rights**: pushes only to a new `copilot/` branch, or to the branch of
   the pull request it was mentioned on. Branch protections and required
   checks apply. CI on its pull requests waits for a person's "Approve and
@@ -55,27 +52,22 @@ answer a review, and what goes wrong? For the developer role
   merges it. "The user who asked Copilot to create a pull request cannot
   approve it." Commits are authored by Copilot, the person co-author,
   signed, linked to the session's logs ([risks][cop-risks]).
-- **Scope**: one repository, "one branch at a time", "one pull request
-  per task"; "a maximum execution time of 59 minutes", not extensible
-  ([about][cop-about]).
+- **Scope**: "one pull request per task"; "a maximum execution time of
+  59 minutes" ([about][cop-about]).
 - **Proof**: it may "run tests and linters" in an environment set up by
   `copilot-setup-steps.yml`; it also runs CodeQL, secret scanning and a
   check of new dependencies before it finishes ([risks][cop-risks]).
-- **Review**: a comment mentioning `@copilot` makes it push again; "Add
-  to batch" gathers several review comments for one session. No cap on
-  rounds is written ([existing PR][cop-pr]).
-- **Cost**: "one premium request per session", times the model's
-  multiplier, plus Actions minutes ([changelog][cop-cost]).
-- **Prompt injection**: hidden characters filtered, HTML comments of the
-  issue not passed to the agent ([risks][cop-risks]).
+- **Review**: `@copilot` in a comment makes it push again; "Add to
+  batch" gathers review comments for one session; no cap on rounds
+  ([existing PR][cop-pr]).
+- **Cost**: "one premium request per session", plus Actions minutes
+  ([changelog][cop-cost]).
 
 ### GitHub Agentic Workflows (gh-aw)
 
-- **Trigger**: an `on:` block — `slash_command`, `label_command` (the
-  label removed by default), `schedule` ("daily around 14:00"); `roles:`
-  an allowlist, `[admin, maintainer, write]` by default; `stop-after:` a
-  deadline "to control costs"; `manual-approval:` an environment a person
-  approves ([triggers][aw-trig]).
+- **Trigger**: `slash_command`, `label_command`, `schedule`; `roles:`
+  `[admin, maintainer, write]` by default; `stop-after:` a deadline "to
+  control costs" ([triggers][aw-trig]).
 - **Rights**: the agent's job runs "with minimal read-only permissions";
   writes happen in separate "safe output" jobs, after a threat-detection
   job with no write access gives a verdict. Egress goes through a proxy
@@ -85,27 +77,23 @@ answer a review, and what goes wrong? For the developer role
   exclusive allowlist"; `protected-files` by default `request-review`,
   else `blocked` or `fallback-to-issue`; `fallback-as-issue` opens an
   issue when the pull request is refused ([safe outputs][aw-pr]).
-- **CI**: "PRs do not trigger CI by default" — a pull request opened
-  with the job's own token starts no workflow; a second token is the way
-  around ([safe outputs][aw-pr]).
-- **Caps**: the agent's step 20 min, its job 60 min; `max-turns` 500;
-  `max-ai-credits` 1000 by default, warned at 80 to 99 %; a rate limit a
-  user and a window ([frontmatter][aw-front]).
-- **The agent is a choice**: Copilot, Claude, Codex, Gemini and others.
+- **CI**: "PRs do not trigger CI by default": the job's own token starts
+  no workflow ([safe outputs][aw-pr]).
+- **Caps**: the agent's step 20 min; `max-turns` 500; `max-ai-credits`
+  1000 ([frontmatter][aw-front]). The agent is a choice: Copilot, Claude,
+  Codex, Gemini and others.
 
 ### Claude Code GitHub Actions
 
 - **Trigger**: `@claude` (`trigger_phrase`), a label, an assignee, or a
   fixed `prompt`; only users with write access; bots refused unless
   listed in `allowed_bots` ([action.yml][cc-action], [security][cc-sec]).
-- **Rights**: the project's own runner; a short-lived token for one
-  repository; shell commands refused unless allowed (`allowed_tools`)
-  ([security][cc-sec]).
+- **Rights**: the project's runner; a short-lived token for one
+  repository ([security][cc-sec]).
 - **Never**: approves ("for security reasons"), merges. On an issue it
   pushes a `claude/` branch and "links back to a prefilled PR creation
   page": a person opens the pull request ([capabilities][cc-cap]).
-- **Cost**: `--max-turns`, "controlling costs by preventing runaway
-  conversations"; no other cap ([configuration][cc-conf]).
+- **Cost**: `--max-turns` alone ([configuration][cc-conf]).
 
 ### OpenHands resolver
 
@@ -113,51 +101,45 @@ answer a review, and what goes wrong? For the developer role
   mentioning `@openhands-agent`; the example workflow also listens to
   review comments ([package][oh-pypi], [workflow][oh-wf]).
 - **Outcome**: "Create a draft PR if successful"; else the branch pushed
-  with what was done, and a comment on the issue ([package][oh-pypi]).
-- **Cap**: `max_iterations`, 50 by default ([issue][oh-iter]); a bug once
-  ignored it in headless mode ([fix][oh-fix]).
+  and a comment on the issue ([package][oh-pypi]). **Cap**:
+  `max_iterations`, 50 by default ([issue][oh-iter]); once ignored by a
+  bug ([fix][oh-fix]).
 
 ### SWE-agent and mini-swe-agent
 
-- **SWE-agent** takes an issue's URL; opening the pull request is off by
-  default (`open_pr: False`), "if we can solve the issue"
-  ([run config][swe-run]). `per_instance_cost_limit` 3.0 USD; the call
-  and total limits off by default ([model config][swe-model]).
-- **mini-swe-agent**: `cost_limit` 3.0; at the limit, `LimitsExceeded`,
-  an empty submission, the trajectory kept ([agent][mini]).
-- No loop on review comments.
+- **SWE-agent** takes an issue's URL; opening the pull request is off
+  by default (`open_pr: False`) ([run config][swe-run]);
+  `per_instance_cost_limit` 3.0 USD ([model config][swe-model]). No loop
+  on review comments.
+- **mini-swe-agent**: `cost_limit` 3.0; at the limit, an empty
+  submission, the trajectory kept ([agent][mini]).
 
 ### Devin
 
-- **Trigger**: a session from its web app or a chat tool; `/devin
-  <prompt>` on an open pull request, review comments included
-  ([GitHub][devin-gh]).
+- **Trigger**: its web app, a chat tool, `/devin <prompt>` on a pull
+  request ([GitHub][devin-gh]).
 - **Review**: "Devin automatically responds to comments on PRs its
   sessions are working on"; no cap on rounds written.
-- **Rights**: its GitHub App writes contents, pull requests, checks and
-  workflows; the docs advise branch protection so checks pass "before
-  Devin can merge changes" — it can merge where allowed.
-- **Cost**: compute-unit caps a organisation, all activity stopped once
-  reached ([usage][devin-cost]).
+- **Rights**: its App writes contents, pull requests and workflows; the
+  docs advise branch protection so checks pass "before Devin can merge
+  changes". **Cost**: compute-unit caps an organisation
+  ([usage][devin-cost]).
 
 ### GitLab Duo Developer flow
 
 - **Trigger**: assign the issue to its service account, the "Implement"
   button, a mention, or a work item's status; Developer role at least,
   "Allow foundational flows" on for the group ([developer][gl-dev]).
-- **Runs** on the project's runners or GitLab's; push rules must allow
-  the service account.
-- **Proof**: it opens a draft merge request. Without `agent-config.yml`
+- **Proof**: it opens a draft merge request, on the project's runners. Without `agent-config.yml`
   it "cannot install dependencies or run tests"; "large, open-ended tasks
   are more likely to hit iteration limits", no number given.
-- **Review**: mention it on a line, or submit a review then mention it to
-  take every open thread.
+- **Review**: a mention on a line, or a review then a mention for every
+  open thread.
 
 ## What goes wrong, measured
 
-- **The AIDev dataset**: 932,791 pull requests by five agents, up to
-  2025-08-01; 33,596 from projects over 100 stars ([AIDev][aidev]).
-- **On that subset** ([failed agentic PRs][fail]):
+- **33,596 agent pull requests** of the AIDev dataset ([AIDev][aidev]),
+  from projects over 100 stars ([failed agentic PRs][fail]):
   - 71 % merged; by agent from 43 % to 83 %; by task, docs 84 %, CI 79 %,
     fixes 64 %, performance 55 %.
   - Each extra failed CI check cuts the odds of a merge by about 15 %;
@@ -168,9 +150,8 @@ answer a review, and what goes wrong? For the developer role
 - **Another sample of 353 rejected**: about a third technical, a third
   the workflow, a third no reason; rejections "substantially overstate
   agent error" ([rejected][rej]; read from its summary only).
-- **A vendor's own figure**: Cognition reports 67 % of Devin's pull
-  requests merged, up from 34 %, mostly on well-defined tasks
-  ([review][devin-rev]; self-reported).
+- **Self-reported**: 67 % of Devin's pull requests merged, up from 34 %
+  ([Cognition][devin-rev]).
 
 ## What workline takes
 
