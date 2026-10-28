@@ -73,7 +73,10 @@ func parseObjection(body string) (objection, []string) {
 		if m == nil {
 			continue
 		}
-		v := strings.TrimSpace(strings.Trim(m[2], "*` "))
+		v := strings.TrimSpace(m[2])
+		if !strings.EqualFold(m[1], "why") {
+			v = unwrap(v)
+		}
 		switch strings.ToLower(m[1]) {
 		case "test":
 			o.Test = v
@@ -208,7 +211,22 @@ func answerPre(runDir, repo string, s Settings) int {
 		return fail(err)
 	}
 	mine := func(n forge.Note, mark string) bool { return own.Wrote(n) && strings.Contains(n.Body, mark) }
-	var waiting []forge.Thread
+	// read counts the tester's answers in a thread, and a person's
+	// decision once one was asked; asked, they did not decide yet.
+	read := func(t forge.Thread) (answers int, decided string, asked bool) {
+		for _, c := range t.Comments {
+			switch {
+			case mine(c, personMark):
+				asked = true
+			case mine(c, answerMark):
+				answers++
+			case asked && c.Insider && !c.Bot:
+				decided = c.Body // a person of the project, after they were asked
+			}
+		}
+		return answers, decided, asked
+	}
+	var waiting, toAPerson []forge.Thread
 	for _, t := range threads {
 		if t.Resolved || len(t.Comments) == 0 || !strings.HasPrefix(strings.TrimSpace(t.Comments[0].Body), ObjectionWord) {
 			continue
@@ -216,24 +234,23 @@ func answerPre(runDir, repo string, s Settings) int {
 		if last := t.Comments[len(t.Comments)-1]; mine(last, answerMark) {
 			continue // answered, the builder's turn
 		}
+		if _, decided, asked := read(t); asked && decided == "" {
+			toAPerson = append(toAPerson, t) // a person's turn: the others go on
+			continue
+		}
 		waiting = append(waiting, t)
 	}
 	if len(waiting) == 0 {
-		return final(runDir, verdict.Verdict{Status: verdict.Pass, Summary: "no objection waits for the tester's answer"})
+		v := verdict.Verdict{Status: verdict.Pass, Summary: "no objection waits for the tester's answer"}
+		for _, t := range toAPerson {
+			v.Summary = "a person decides the objection: nothing for the tester till they do"
+			v.Findings = append(v.Findings, verdict.Finding{Rule: "objection-to-a-person", Level: "warn", Where: t.URL, Message: "past the tester's last answer, a person of the project decides, in the thread"})
+		}
+		return final(runDir, v)
 	}
 	t := waiting[0]
 	a := answer{MR: id, Issue: issue, Thread: t.ID, URL: t.URL, File: t.Path, Record: r, Waiting: len(waiting) - 1}
-	asked := -1 // where a person was asked, -1 for not
-	for i, c := range t.Comments {
-		switch {
-		case mine(c, personMark):
-			asked = i
-		case mine(c, answerMark):
-			a.Answers++
-		case asked >= 0 && c.Insider && !c.Bot:
-			a.Decided = c.Body // a person of the project, after they were asked
-		}
-	}
+	a.Answers, a.Decided, _ = read(t)
 	exchanges := s.Exchanges
 	if exchanges <= 0 {
 		exchanges = 3
@@ -253,9 +270,6 @@ func answerPre(runDir, repo string, s Settings) int {
 		}
 	}
 	switch {
-	case asked >= 0 && a.Decided == "":
-		return final(runDir, verdict.Verdict{Status: verdict.Pass, Summary: "a person decides the objection: nothing for the tester till they do",
-			Findings: []verdict.Finding{{Rule: "objection-to-a-person", Level: "warn", Where: t.URL, Message: "past the tester's last answer, a person of the project decides, in the thread"}}})
 	case a.Decided != "":
 		a.Mode = modeAgent
 	case a.Answers >= exchanges:
@@ -516,4 +530,15 @@ func upper(s string) string {
 		return s
 	}
 	return strings.ToUpper(s[:1]) + s[1:]
+}
+
+// unwrap strips one wrapping pair of markdown markers, `**x**` or `` `x` ``,
+// never a marker that only ends the text.
+func unwrap(v string) string {
+	for _, m := range []string{"**", "*", "`"} {
+		if len(v) > 2*len(m) && strings.HasPrefix(v, m) && strings.HasSuffix(v, m) {
+			return strings.TrimSpace(v[len(m) : len(v)-len(m)])
+		}
+	}
+	return v
 }

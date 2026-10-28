@@ -14,6 +14,9 @@ func TestParseObjection(t *testing.T) {
 	if !slices.Equal(missing, []string{"scenario", "kind (one of: " + kindNames() + ")"}) {
 		t.Fatalf("missing %v", missing)
 	}
+	if o, _ := parseObjection("workline:objection\nwhy: use the `validate`"); o.Why != "use the `validate`" {
+		t.Fatalf("why %q", o.Why)
+	}
 	if k := kindOf("the need itself"); k != "need" {
 		t.Fatalf("kind %q", k)
 	}
