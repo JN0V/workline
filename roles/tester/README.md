@@ -4,7 +4,7 @@ sources:
   - internal/tester
   - ci/github/workline-objection.yml
   - ci/github/workline-answer.yml
-checked: b075cadb
+checked: 6c6fbd29
 verified: agent:claude-code
 ---
 # Tester
@@ -135,7 +135,9 @@ workline test write --issue 42 --ai claude
     ([how](../../docs/gitlab-trigger.md#how-the-pipeline-knows-what-to-do)).
   - Woken by a person of the project or an App installed on it only.
 - **Both** judge with no write token (`--no-apply`); a job apart
-  applies, holding it and no agent's key (`workline apply <run>`).
+  applies, holding it and no agent's key (`workline apply <run>`; an
+  objection's from the default branch, its run as data:
+  [what each job holds](../../docs/objection-jobs.md)).
 
 ## Check a change
 

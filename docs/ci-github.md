@@ -1,6 +1,6 @@
 ---
 sources: [ci/github, .github/workflows/workline.yml, .github/workflows/workline-apply.yml, .github/workflows/workline-gardening.yml, .github/workflows/workline-sample.yml, .github/workflows/workline-answer.yml, .github/actions/engine/action.yml, .github/workflows/release.yml, .github/workflows/release-please.yml, release-please-config.json, .goreleaser.yaml, cmd/workline]
-checked: c8bb8b8c
+checked: 1b56482b
 judged: 220b6dc
 verified: agent:claude-code
 reader: fe1505d43360
@@ -91,7 +91,8 @@ write run the default branch's workflow, never a pull request's own
      [workline-answer.yml](../ci/github/workline-answer.yml), with the
      tester: an objection to one of its tests, on its Draft's line, wakes
      its answer; the first notices it with no token, the second answers
-     from the default branch ([tester](../roles/tester/README.md#frozen-tests-and-objections)).
+     from the default branch ([tester](../roles/tester/README.md#frozen-tests-and-objections),
+     [what each job holds](objection-jobs.md)).
    - [workline-sample.yml](../ci/github/workline-sample.yml): the
      [weekly sample](ci.md#the-weekly-sample), from the first release
      after v0.2.1.
