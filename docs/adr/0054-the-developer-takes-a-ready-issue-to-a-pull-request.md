@@ -37,7 +37,7 @@
 - **The pull request is the App's**: the project's checks run on it, and
   the reviewer judges it at `judge-at-least: model`.
 - **The agent is a choice**: none, `claude`, `cmd:<any command>`; with
-  none, it names the issue it would take and opens nothing (principle 5).
+  none, it names the issue it would take, opens nothing (principle 5).
 
 ### It takes work by the forge's assignment
 
@@ -69,16 +69,17 @@
   product owner's `sources` for it, and the tests beside them
   ([ADR-0039]: Scope is read by meaning). Any other file is refused at
   `apply`, said in the pull request (principle 8).
-- **The tester's acceptance tests are read-only to it**: it makes them
-  pass, never edits them; a patch touching one is refused at `apply`.
+- **The tester's acceptance tests are read-only to it**: a patch
+  touching one is refused at `apply`. One that does not fit, it objects
+  to on the test's line (`workline:objection`); the tester keeps or
+  rewrites it, three exchanges, then a person
+  ([ADR-0055](https://github.com/JN0V/workline/pull/648)).
 - **Never, whatever the Scope**: the files that steer agents (AGENTS.md,
   CLAUDE.md, a page they link, a prompt — [ADR-0042]'s `normal` list),
   `.workline/`, the role folders, CI workflows, a gate's definition.
   Asked: a refusal, the issue told a person must do it.
-- **Caps**: `ai-max-tokens` and 30 min a run (gh-aw's agent step).
-- **The code and the tests apart**: separate commits, and the pull
-  request lists the code it changed and the tests it added, so the
-  tester's later job — adapting tests after a change — reads its part.
+- **Caps**: `ai-max-tokens` and 30 min a run. **Code and tests apart**:
+  separate commits, both listed, for the tester's adapting job.
 
 ### The same developer fixes the review's findings
 
@@ -128,8 +129,8 @@
 ## For the person
 
 The maintainer chose the headings above on 2026-10-28, against the first
-draft: the schedule taking an issue unmarked, one developer pull request
-open until read, no five whys, no tester first.
+draft (an unmarked pick, one pull request open until read, no five whys,
+no tester first).
 
 ## Build plan
 
@@ -149,7 +150,7 @@ listing what does not pass.
    `no-agent-opens-nothing`.
 2. **The bounds** at `apply`: `refuses-file-outside-scope`,
    `refuses-acceptance-test-edit`, `refuses-steering-file`,
-   `refuses-gate-file`, `has-no-merge-intention`.
+   `refuses-gate-file`, `has-no-merge-intention`, `objects-to-a-test`.
 3. **The proof** and the caps: `green-opens-ready`, `red-opens-draft`,
    `cap-reached-pushes-draft`.
 4. **The pull request**: the App's, its sections, code and tests apart,
@@ -180,12 +181,11 @@ listing what does not pass.
 
 - **One developer pull request open at a time**: it waits on a person's
   reading, not the work; duplicates and conflicts have their own bounds.
-  The rejection figures stay in the research.
 - **A live developer waiting for the review**: a process held for hours
   costs and dies; the trace on the forge continues.
 - **The agent pushing itself**: a write token in its hands (principle 6).
 - **No cap on rounds**, as the tools studied; **its own acceptance
-  tests**: the check and the checked one hand.
+  tests**, or editing the tester's: the check and the checked one hand.
 
 [ADR-0013]: 0013-what-was-judged-is-not-asked-again.md
 [ADR-0018]: 0018-the-product-owner.md
