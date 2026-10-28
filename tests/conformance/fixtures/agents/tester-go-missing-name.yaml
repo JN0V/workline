@@ -1,0 +1,14 @@
+- patch:
+    file: calc/mul_test.go
+    content: |
+      package calc
+
+      import "testing"
+
+      // Scenario: Two by three
+      // Given the library, When I multiply 2 by 3, Then I get 6.
+      func TestMulTwoByThree(t *testing.T) {
+      	if Mul(2, 3) != 6 {
+      		t.Fatal("2 x 3 is not 6")
+      	}
+      }

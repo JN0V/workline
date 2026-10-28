@@ -36,6 +36,9 @@ type Settings struct {
 	// label put on the merge request, or an @login mentioned.
 	Exchanges int    `json:"objection-exchanges"`
 	Person    string `json:"objection-person"`
+	// BuildErrors tell, by ecosystem, a build a new test broke by a name
+	// the code lacks from one broken otherwise.
+	BuildErrors []BuildErrors `json:"build-errors"`
 }
 
 // SettingsFrom reads the tester's merged settings.
@@ -86,6 +89,29 @@ func Prove(repo, base string, s Settings) (*verdict.Verdict, []string) {
 			return refuse("the red-first check did not run", *f), nil
 		}
 	}
+	// The build where the change's tests were laid on the base: an error
+	// it printed in a test of the change, naming what the base lacks, is
+	// a missing name, red for the right reason; any other error is a
+	// build broken otherwise, never a proof (build-errors).
+	rules, _ := compileBuildErrors(s.BuildErrors) // unset said a bad one
+	errs := buildErrorsIn(redRun.output, ch.tests, rules)
+	var broken []buildError
+	for _, e := range errs {
+		if !e.missing {
+			broken = append(broken, e)
+		}
+	}
+	if len(broken) > 0 {
+		lines := make([]string, len(broken))
+		for i, e := range broken {
+			lines[i] = e.line
+		}
+		return &verdict.Verdict{Status: verdict.Block, Summary: "the build broke on the base with the change's tests, not by a missing name",
+			Findings: []verdict.Finding{{Rule: "build-broken", Where: broken[0].file,
+				Message: fmt.Sprintf("%d build error%s not a name the base lacks in a test of the change (%s): a test must fail by its assertion or a missing name, "+
+					"never a syntax error, a wrong import or code that does not build", len(broken), plural(len(broken)), sample(lines))}}}, nil
+	}
+	byName := len(errs) > 0
 	// A base test the red run lacks was not built there. Beside code, the
 	// red run holds every base test file (deleted ones are not laid on
 	// it), so each one it lacks is unbuilt; one the red run alone names is
@@ -97,7 +123,8 @@ func Prove(repo, base string, s Settings) (*verdict.Verdict, []string) {
 	// has the record's shape: the suite's one case in the head's report,
 	// with no classname (a collection error) or named TestMain
 	// (gotestsum's). A suite whose old tests were all deleted, and new ones
-	// added, keeps its new tests counted.
+	// added, keeps its new tests counted; a new suite's record is one when
+	// the build broke by a missing name.
 	var added, unbuilt, records []string
 	lost := map[string]bool{} // suites none of whose base tests ran
 	if !onHead {
@@ -114,7 +141,7 @@ func Prove(repo, base string, s Settings) (*verdict.Verdict, []string) {
 		if _, ok := baseRun.results[id]; ok {
 			continue
 		}
-		if !onHead && headRun.results[id] == failed && lost[headRun.suite[id]] && headRun.buildRecord(id) {
+		if !onHead && headRun.results[id] == failed && (lost[headRun.suite[id]] || byName) && headRun.buildRecord(id) {
 			records = append(records, id)
 			continue
 		}
@@ -132,11 +159,20 @@ func Prove(repo, base string, s Settings) (*verdict.Verdict, []string) {
 			unbuilt = append(unbuilt, id)
 		}
 	}
+	// Tests alone, broken by a missing name: no report names the tests
+	// that did not build, so their files do, as file:name.
+	if !onHead && byName {
+		names, err := unbuiltTests(repo, ch, headRun, errs, rules)
+		if err != nil {
+			return refuse("the red-first check did not run", verdict.Finding{Rule: "check-error", Where: "test", Message: err.Error()}), nil
+		}
+		added = append(added, names...)
+	}
 	slices.Sort(added)
 	slices.Sort(unbuilt)
 	slices.Sort(records)
 	v := &verdict.Verdict{Status: verdict.Pass}
-	if len(unbuilt) > 0 {
+	if len(unbuilt) > 0 && !byName {
 		msg := fmt.Sprintf("%d of the base's tests are not in the report on the base with the change's tests (%s): their build broke there, "+
 			"so a new test is red by a missing name, not by its own assertion", len(unbuilt), sample(unbuilt))
 		if len(records) > 0 {
@@ -193,6 +229,42 @@ func Prove(repo, base string, s Settings) (*verdict.Verdict, []string) {
 	return v, added
 }
 
+// unbuiltTests is the tests the change's test files declare, by the
+// test-name of the ecosystems whose errors broke the build, that the
+// head's report does not name: they did not build, as file:name.
+func unbuiltTests(repo string, ch *change, head ran, errs []buildError, rules []buildRules) ([]string, error) {
+	used := map[int]bool{}
+	for _, e := range errs {
+		used[e.rules] = true
+	}
+	ran := func(name string) bool {
+		for id := range head.results {
+			if id == name || strings.HasSuffix(id, "."+name) {
+				return true
+			}
+		}
+		return false
+	}
+	var out []string
+	for _, file := range ch.tests {
+		content, err := git(repo, "show", ch.head+":"+file)
+		if err != nil {
+			return nil, err
+		}
+		for i, r := range rules {
+			if !used[i] {
+				continue
+			}
+			for _, name := range testNames(content, r) {
+				if !ran(name) {
+					out = append(out, file+":"+name)
+				}
+			}
+		}
+	}
+	return out, nil
+}
+
 // unset is the check's refusal when test-command or test-report is not
 // set, never a pass; nil when both are.
 func unset(s Settings) *verdict.Verdict {
@@ -204,6 +276,9 @@ func unset(s Settings) *verdict.Verdict {
 	case strings.TrimSpace(s.Report) == "":
 		return refuse("the red-first check did not run", verdict.Finding{Rule: "setting-missing", Where: "test-report",
 			Message: "no test report: set roles.tester.settings.test-report, where the test command writes its JUnit XML report"})
+	}
+	if _, err := compileBuildErrors(s.BuildErrors); err != nil {
+		return refuse("the red-first check did not run", verdict.Finding{Rule: "setting-invalid", Where: "build-errors", Message: err.Error()})
 	}
 	return nil
 }
@@ -254,6 +329,7 @@ func changeOf(repo, base string, paths []string) (*change, error) {
 // ran is a run's tests: each one's result, and its suite, by id; the ids
 // written with no classname.
 type ran struct {
+	output    string // the command's, stdout and stderr
 	results   map[string]result
 	suite     map[string]string
 	classless map[string]bool
@@ -313,7 +389,7 @@ func run(repo, rev string, files []string, from string, s Settings, where string
 		return ran{}, &verdict.Finding{Rule: "report-missing", Where: s.Report,
 			Message: fmt.Sprintf("the test command wrote no report %s (%s); its output ends: %s", where, said, tail(out.String(), 10))}
 	}
-	rep := ran{results: map[string]result{}, suite: map[string]string{}, classless: map[string]bool{}}
+	rep := ran{output: out.String(), results: map[string]result{}, suite: map[string]string{}, classless: map[string]bool{}}
 	for _, f := range found {
 		if err := readJUnit(f, rep.results, rep.suite, rep.classless); err != nil {
 			rel, _ := filepath.Rel(tree, f)

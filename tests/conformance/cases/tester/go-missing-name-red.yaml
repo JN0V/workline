@@ -1,0 +1,20 @@
+case: tester/go-missing-name-red
+about: >
+  The tests alone, in Go, calling a name the code lacks: the package does
+  not build, and the report holds only the runner's record of it. Every
+  compiler error lies in the change's test file and names what the base
+  lacks (`undefined: Mul`): red for the right reason, the test named from
+  its file (ADR-0055, the proof).
+given:
+  repo: go-tested
+  setup:
+    - git checkout -q -b workline/issue-7
+    - |
+      printf 'package calc\n\nimport "testing"\n\nfunc TestMulTwoByThree(t *testing.T) {\n\tif Mul(2, 3) != 6 {\n\t\tt.Fatal("2 x 3 is not 6")\n\t}\n}\n' > calc/mul_test.go && git add . && git commit -qm "test: multiply"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+run: {test: [check, --base, main]}
+expect:
+  status: pass
+  summary: "1 new test, red on the base (1 not built there, a missing name)"
+  no-findings: [{rule: tests-not-built}, {rule: no-new-test}]

@@ -1,0 +1,32 @@
+case: tester/write-go-missing-name-draft
+about: >
+  The tester writes a Go test for a ready issue whose code does not exist
+  yet: it calls a name the base lacks, so its package does not build.
+  That is red by a missing name: the Draft opens, the test named from its
+  file.
+given:
+  repo: go-tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:ready"]
+        body: "## Need\n\nWhen I total an order, I want to multiply a price by a count, so I need not add it up by hand.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n\n---\n\n## Verification\n\nA Go test.\n\n## Scope\n\n- `calc/calc.go`: a `Mul` function beside `Add`.\n"
+run: {test: [write, --issue, "3"], ai: "fake:tester-go-missing-name"}
+expect:
+  status: pass
+  summary: "1 new test, red on the base (1 not built there, a missing name)"
+  agent-calls: 1
+  pushed:
+    workline/tester/issue-3:
+      calc/mul_test.go: "Scenario: Two by three"
+  forge:
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        draft: true
+        body-contains: ["Refs #3", "Two by three", "calc/mul_test.go:TestMulTwoByThree"]
