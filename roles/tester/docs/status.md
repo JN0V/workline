@@ -15,7 +15,9 @@ the first, the check on a copy of a real Go module with gotestsum, on
 [#649](https://github.com/JN0V/workline/pull/649); then a real agent's
 tests for a real bug, on [#652](https://github.com/JN0V/workline/pull/652);
 the scheduled pick and the objection's chain on GitHub, stub agents, on
-[#656](https://github.com/JN0V/workline/pull/656).
+[#656](https://github.com/JN0V/workline/pull/656); a real agent's Go
+tests of a name the base lacks, on a copy of workline, on
+[#659](https://github.com/JN0V/workline/pull/659).
 
 ## To leave beta
 
