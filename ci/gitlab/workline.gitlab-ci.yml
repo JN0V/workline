@@ -123,6 +123,8 @@ variables:
 # draft state goes on every run (`draft`): a merge request no draft whose
 # record does not say every lens read it gets them (#359). The lenses that
 # warn read the ready note against their own comment (WORKLINE_STICKY).
+# The draft state as the API says it when the job runs (#662), else as
+# the pipeline was created with it (CI_MERGE_REQUEST_DRAFT).
 .workline:ready: &ready
   - |
     lenses=; last=; auth="JOB-TOKEN: $CI_JOB_TOKEN"
@@ -130,8 +132,8 @@ variables:
     [ -z "${GITLAB_TOKEN:-}" ] || auth="PRIVATE-TOKEN: $GITLAB_TOKEN"
     mr="$CI_API_V4_URL/projects/$CI_PROJECT_ID/merge_requests/$CI_MERGE_REQUEST_IID"
     get() { curl -fsS --header "$auth" "$mr$1"; }
-    draft=${CI_MERGE_REQUEST_DRAFT:-}
-    [ -n "$draft" ] || draft=$(get "" | jq -r .draft) || draft=
+    draft=$(get "" | jq -r .draft) || draft=
+    case "$draft" in true|false) ;; *) draft=${CI_MERGE_REQUEST_DRAFT:-} ;; esac
     page=0; [ "$draft" != false ] || last=more
     while [ "$last" = more ] && [ "$page" -lt 50 ]; do
       page=$((page + 1))

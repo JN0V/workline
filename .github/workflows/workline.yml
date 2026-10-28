@@ -206,9 +206,21 @@ jobs:
           get() { curl -fsSLO "$1/$2" && curl -fsSL "$1/$3" | grep " $2\$" | sha256sum -c - && tar -xzf "$2" -C "$bin" "$4"; }
           get https://github.com/gitleaks/gitleaks/releases/download/v8.30.1 gitleaks_8.30.1_linux_x64.tar.gz gitleaks_8.30.1_checksums.txt gitleaks
           echo "$bin" >> "$GITHUB_PATH"
+      # The pull request's draft state as it is now, not as its event said
+      # (#662): marked ready seconds after a push, the push's run can be
+      # the one the concurrency group keeps, its event still saying draft.
+      # Unread, the event's, said.
+      - name: The pull request, a draft or not
+        id: pr
+        if: github.event_name == 'pull_request'
+        env: {GH_TOKEN: "${{ github.token }}", EVENT_DRAFT: "${{ github.event.pull_request.draft }}", NUMBER: "${{ github.event.pull_request.number }}"}
+        run: |
+          draft=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$NUMBER" --jq .draft) || draft=
+          case "$draft" in true|false) ;; *) draft=$EVENT_DRAFT; echo "::warning title=workline::the pull request's draft state could not be read, the event's taken: $EVENT_DRAFT" ;; esac
+          echo "draft=$draft" >> "$GITHUB_OUTPUT"
       # A draft asks no agent (ADR-0050): nothing to install.
       - name: Claude, when the repository gives its token
-        if: env.HAS_CLAUDE == 'true' && !github.event.pull_request.draft
+        if: env.HAS_CLAUDE == 'true' && steps.pr.outputs.draft != 'true'
         run: npm install -g @anthropic-ai/claude-code
       # The gates' verdicts, from their job: the line never runs a gate
       # here, and errs on one whose verdict is not there.
@@ -225,8 +237,10 @@ jobs:
         # 30 minutes at most, the check pending meanwhile (#640). Opened
         # ready, or marked ready, the
         # reviewer reads every lens once, on the whole change; one a push
-        # after (ADR-0020). The draft state goes on every run: a push that
-        # cancelled the run on ready leaves the next one every lens (#359).
+        # after (ADR-0020). The draft state, as it is now, goes on every
+        # run: a push that cancelled the run on ready leaves the next one
+        # every lens (#359), and a run whose event said draft, on a pull
+        # request ready now, is the run on ready (#662).
         # On a draft, the engine asks no agent, and says the AI review waits
         # for it to be marked ready (ADR-0050). The lenses that only warn
         # are left to workline-warn.yml.
@@ -236,10 +250,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           WORKLINE_APP_ID: ${{ vars.WORKLINE_APP_ID }}   # the App whose comments keep the records a role reads back (ADR-0051)
           ACTION: ${{ github.event.action }}
-          DRAFT: ${{ github.event.pull_request.draft }}
+          EVENT_DRAFT: ${{ github.event.pull_request.draft }}
+          DRAFT: ${{ steps.pr.outputs.draft }}
         run: |
           ai=none; [ -n "$CLAUDE_CODE_OAUTH_TOKEN" ] && ai=claude
-          ready=; case "$ACTION:$DRAFT" in opened:false|ready_for_review:*) ready=1 ;; esac
+          ready=; case "$ACTION:$EVENT_DRAFT:$DRAFT" in opened:*:false|ready_for_review:*|*:true:false) ready=1 ;; esac
           status=0
           workline route merge-request --ai "$ai" --no-apply --warn-apart \
             --forge github --target merge-request:${{ github.event.pull_request.number }} --branch "$HEAD_REF" --release-wait 30m \
