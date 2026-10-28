@@ -1,0 +1,8 @@
+- patch:
+    file: tests/test_mul_two_by_three.sh
+    content: |
+      # Scenario: Two by three
+      # Given the library, When I multiply 2 by 3, Then I get 6.
+      . ./lib.sh
+      [ "$(mul 2 3 | tr -d ' ')" -eq 6 ]
+- note: "Right: the scenario asks for the value 6, not its spaces; the test now reads the number."

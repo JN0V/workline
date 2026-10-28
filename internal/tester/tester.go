@@ -31,6 +31,11 @@ type Settings struct {
 	// CodeLinesMax caps the lines of code and tests given to the agent
 	// when it writes an issue's tests, all files together.
 	CodeLinesMax int `json:"code-lines-max"`
+	// Exchanges bounds an objection's thread: the tester's answers in it
+	// before a person decides (ADR-0055); Person, who is then asked: a
+	// label put on the merge request, or an @login mentioned.
+	Exchanges int    `json:"objection-exchanges"`
+	Person    string `json:"objection-person"`
 }
 
 // SettingsFrom reads the tester's merged settings.

@@ -369,6 +369,9 @@ type threadWant struct {
 	Contains texts  `yaml:"contains"`
 	Lacks    texts  `yaml:"lacks"`
 	Resolved *bool  `yaml:"resolved"`
+	// Replies: how many replies under it, and texts they hold, all together.
+	Replies        *int  `yaml:"replies"`
+	RepliesContain texts `yaml:"replies-contain"`
 }
 
 type result struct {
@@ -1955,6 +1958,16 @@ func compareThreads(item string, want []threadWant, got any) []string {
 		}
 		if w.Resolved != nil && (g["resolved"] == true) != *w.Resolved {
 			p = append(p, fmt.Sprintf("forge: %s thread %d resolved = %v, want %v", item, i+1, g["resolved"] == true, *w.Resolved))
+		}
+		replies, _ := g["replies"].([]any)
+		if w.Replies != nil && len(replies) != *w.Replies {
+			p = append(p, fmt.Sprintf("forge: %s thread %d has %d replies, want %d: %v", item, i+1, len(replies), *w.Replies, replies))
+		}
+		all := fmt.Sprint(replies)
+		for _, t := range w.RepliesContain {
+			if !strings.Contains(all, t) {
+				p = append(p, fmt.Sprintf("forge: %s thread %d's replies do not hold %q: %q", item, i+1, t, all))
+			}
 		}
 		body := fmt.Sprint(g["body"])
 		for _, t := range w.Contains {

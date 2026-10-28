@@ -1,0 +1,38 @@
+case: tester/objection-need-to-product-owner
+about: >
+  An objection to the need itself is not the tester's to judge: no agent,
+  the issue goes back to refine for the product owner, said on the issue
+  and in the thread.
+given:
+  repo: tested-draft
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main workline/tester/issue-3"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:ready"]
+        body: "## Need\n\nWhen I total an order, I want to multiply a price by a count, so I need not add it up by hand.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **By zero:** Given the library, When I multiply 5 by 0, Then I get 0.\n\n---\n\n## Verification\n\nA test a scenario, in tests/.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        draft: true
+        comments: ["The tests of #3, frozen.\n\n<!-- workline:tester-record {\"issue\":3,\"base\":\"main\",\"files\":{\"tests/test_mul_by_zero.sh\":\"8f123a0bacbd681063880b867df38dd216784b97\",\"tests/test_mul_two_by_three.sh\":\"2dee0641bd7a79057ade7bff5af43b603125f543\"}} -->\n<!-- workline:sticky=tester/tests -->"]
+        threads:
+          - {id: "7", path: tests/test_mul_two_by_three.sh, line: 4, author: builder, body: "workline:objection\n- test: tests/test_mul_two_by_three.sh\n- scenario: Two by three\n- kind: the need itself\n- why: an order total needs decimals, not integers"}
+run: {test: [answer, --merge-request, "1"], ai: "fake:tester-answer-kept"}
+expect:
+
+  status: pass
+  agent-calls: 0
+  forge:
+    issues:
+      - id: 3
+        labels: ["workline:to-refine"]
+        comment-contains: ["objects to the need itself", "Two by three", "needs decimals", "#thread-7"]
+    merge-requests:
+      - id: 1
+        threads:
+          - {path: tests/test_mul_two_by_three.sh, replies: 1, replies-contain: ["Sent to the product owner", "#3 is back to refine"]}

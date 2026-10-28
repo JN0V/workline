@@ -1,0 +1,22 @@
+case: tester/frozen-test-changed-blocks
+about: >
+  The frozen guard, no agent (ADR-0055, guards): on the tester's Draft, a
+  later commit not the tester's that changes one of its tests, or deletes
+  one, blocks, tester-test-changed; the test left as it was passes.
+given:
+  repo: tested-draft
+  setup:
+    - "printf 'mul() { echo $(($1 * $2)); }\n' >> lib.sh && printf '. ./lib.sh\n[ \"$(mul 2 3)\" ]\n' > tests/test_mul_two_by_three.sh && git rm -q tests/test_mul_by_zero.sh && git commit -qam 'feat: multiply' -m 'Workline-Role: tester'"
+  forge:
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        draft: true
+        comments: ["The tests of #3, frozen.\n\n<!-- workline:tester-record {\"issue\":3,\"base\":\"main\",\"files\":{\"tests/test_mul_by_zero.sh\":\"8f123a0bacbd681063880b867df38dd216784b97\",\"tests/test_mul_two_by_three.sh\":\"2dee0641bd7a79057ade7bff5af43b603125f543\"}} -->\n<!-- workline:sticky=tester/tests -->"]
+run: {role: tester, event: merge-request, target: {merge-request: 1}}
+expect:
+  status: block
+  agent-calls: 0
+  findings:
+    - {rule: tester-test-changed, where: tests/test_mul_by_zero.sh, message: "deletes"}
+    - {rule: tester-test-changed, where: tests/test_mul_two_by_three.sh, message: "feat: multiply changes"}

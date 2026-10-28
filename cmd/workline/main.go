@@ -1092,11 +1092,12 @@ func testCmd(args []string) int {
 	repo := fs.String("repo", ".", "repository to check")
 	base := fs.String("base", "", "check: the revision the change is proven red on: its merge base with HEAD, as on a merge request")
 	issue := fs.Int("issue", 0, "write: the ready issue whose scenarios the tests check")
+	mr := fs.Int("merge-request", 0, "answer: the tester's Draft whose objections it answers, the first waiting")
 	ai := fs.String("ai", "", "write: agent: none, claude, cmd:<command> (default: the project's `ai` setting, else none)")
 	forgeSpec := fs.String("forge", "", "write: forge: github, gitlab, local, fake:<file> (default: the project's `forge` setting)")
 	roles := fs.String("roles", os.Getenv("WORKLINE_ROLES"), "folder holding the roles")
 	asJSON := fs.Bool("json", false, "print the result as JSON")
-	sub, code, done := parseAfter(fs, args, "check or write")
+	sub, code, done := parseAfter(fs, args, "check, write or answer")
 	if done {
 		return code
 	}
@@ -1105,9 +1106,14 @@ func testCmd(args []string) int {
 		if *issue <= 0 {
 			return misuse(fs, "write needs --issue <n>, the ready issue to write the tests of")
 		}
-		return testWrite(*repo, *roles, *ai, *forgeSpec, *issue, *asJSON)
+		return testRun(*repo, *roles, *ai, *forgeSpec, "issue", forge.Target{Kind: "issue", ID: *issue}, *asJSON)
+	case sub == "answer":
+		if *mr <= 0 {
+			return misuse(fs, "answer needs --merge-request <n>, the tester's Draft whose objections it answers")
+		}
+		return testRun(*repo, *roles, *ai, *forgeSpec, "objection", forge.Target{Kind: "merge-request", ID: *mr}, *asJSON)
 	case sub != "check":
-		return misuse(fs, fmt.Sprintf("unknown command %q: check or write", sub))
+		return misuse(fs, fmt.Sprintf("unknown command %q: check, write or answer", sub))
 	case strings.TrimSpace(*base) == "":
 		// An unset variable in a CI job: never read as no base at all.
 		return misuse(fs, "--base names no revision (an unset variable?): give the base the change is proven red on")
@@ -1144,10 +1150,12 @@ func testCmd(args []string) int {
 	return exitFor(v.Status)
 }
 
-// testWrite runs the tester on one issue (ADR-0055, step 2): the agent
-// writes a test a scenario, post proves them red on the base, and the
-// engine commits them on workline/tester/issue-<n>, opened as a Draft.
-func testWrite(repo, roles, ai, forgeSpec string, issue int, asJSON bool) int {
+// testRun runs the tester on one target (ADR-0055). On an issue, write
+// (step 2): the agent writes a test a scenario, post proves them red on
+// the base, and the engine commits them on workline/tester/issue-<n>,
+// opened as a Draft. On its Draft, answer (step 3): the first objection
+// waiting, kept or rewritten, its own commit pushed on the branch.
+func testRun(repo, roles, ai, forgeSpec, event string, target forge.Target, asJSON bool) int {
 	abs, _ := filepath.Abs(repo)
 	rolesDir, err := resolveRoles(roles)
 	if err != nil {
@@ -1155,8 +1163,8 @@ func testWrite(repo, roles, ai, forgeSpec string, issue int, asJSON bool) int {
 		return 1
 	}
 	absRoles, _ := filepath.Abs(rolesDir)
-	res := engine.Run(engine.Options{Repo: abs, RolesDir: absRoles, Role: "tester", Event: "issue", AI: ai,
-		Forge: forgeSpec, Target: &forge.Target{Kind: "issue", ID: issue}, OpenMergeRequest: true})
+	res := engine.Run(engine.Options{Repo: abs, RolesDir: absRoles, Role: "tester", Event: event, AI: ai,
+		Forge: forgeSpec, Target: &target, OpenMergeRequest: event == "issue"})
 	if asJSON {
 		out, _ := json.MarshalIndent(res, "", "  ")
 		fmt.Println(string(out))
