@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/engine/engine.go, internal/hooks]
-checked: 227c05e8
+checked: 1b56482b
 verified: agent:claude-code
 judged: e343388
 ---
@@ -67,11 +67,17 @@ read again ([what holds a release](release-holds.md#read-again)).
   it (`runs-not-applied`), with the command that resumes them;
 - `--summary`, as for `route`: what was done on each issue, what failed,
   what was left.
+- Each `<run-dir>` given is a folder named as the engine names one
+  (`<date>T<time>.<ns>-<role>`); another name, `..` among them, is
+  misuse (64), nothing applied.
 - `--from-merge-request <n> --head <sha>`: merge request `<n>`'s own CI
   run read as data — only its proposals; settings, roles, forge this
   job's, from the base (`--repo`); once the branch moved on, only the
   reviewer's review of the head judged, never a fix
-  ([more](spec/routing.md#on-a-forge-judge-then-apply)).
+  ([more](spec/routing.md#on-a-forge-judge-then-apply)). On an issue,
+  only the one its role's branch was opened for
+  (`workline/<role>/issue-<n>`): the tester's answer
+  ([its jobs](objection-jobs.md)).
 - With both, on GitHub: the line's documentalist findings as annotations
   of the check `workline findings` on the head judged; `checks: write`
   ([#412](https://github.com/JN0V/workline/issues/412)).
