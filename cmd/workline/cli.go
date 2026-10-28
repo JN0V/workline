@@ -29,6 +29,7 @@ func init() {
 		{name: "apply", args: "<run-dir>... | --line <file> [options]", about: "apply runs judged with --no-apply, or resume a run stopped while applying", run: applyCmd},
 		{name: "review", args: "[options]", about: "have the reviewer review this branch before it is pushed, or a spec before it is built", run: reviewCmd},
 		{name: "gate", args: "<name> [options]", about: "run a gate declared in .workline/config.yaml", run: gateCmd},
+		{name: "test", args: "check --base <ref> [options]", about: "the tester's red-first check: each test the change adds fails on the base, from the test runner's JUnit report", run: testCmd},
 		{name: "item", args: "ready <id> [options]", about: "move a work item to ready, once its " + required() + " are written", run: itemCmd},
 		{name: "issues", args: "[list] | show <n>|!<n> | import <file> [options]", about: "read the local forge's issues; import a roadmap or backlog file to the forge's issues", run: issuesCmd},
 		{name: "docs", args: "[options]", about: "judge the docs made suspect since they were last judged, then review each change", run: docsCmd},

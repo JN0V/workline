@@ -1,0 +1,18 @@
+case: tester/no-report-blocks
+about: >
+  The test command ran but wrote no report where test-report says
+  (ADR-0055, no command, no report): report-missing, blocking; no test
+  is read as red or green from its exit code.
+given:
+  repo: tested
+  setup:
+    - git checkout -q -b change
+    - |
+      printf '. ./lib.sh\n[ "$(mul 2 3)" = 6 ]\n' > tests/test_mul.sh && git add . && git commit -qm "test: multiply"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh out/other.xml"}}}
+run: {test: [check, --base, main]}
+expect:
+  status: block
+  findings: [{rule: report-missing, where: junit.xml, message: "on the base"}]
+  no-findings: [{rule: test-green-on-base}]

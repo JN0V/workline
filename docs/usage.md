@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/role/config.go, internal/engine/engine.go, internal/hooks, internal/agent/claude.go, internal/agent/command.go]
-checked: 698d5497
+checked: 1775cda4
 judged: b5899f5
 verified: agent:claude-code
 ---
@@ -32,6 +32,7 @@ Each in detail: [the commands](commands.md), and
 | [`workline apply <run-dir>...`, `--line <file>`](commands.md#workline-apply) | applies runs judged with `--no-apply`; `--main <file>`: main's findings in one issue; `--release-dry-run <file>`: what would hold the release |
 | [`workline review`](commands.md#workline-review) | the reviewer reads this branch, or a spec, before you push |
 | [`workline gate <name>`](commands.md#workline-gate) | runs a gate declared in `.workline/config.yaml` |
+| [`workline test check --base <ref>`](commands.md#workline-test) | the tester's red-first check: each test the change adds fails on the base |
 | [`workline item ready <id>`](commands.md#workline-item-ready) | moves a work item to `ready`, once its sections are written |
 | [`workline issues`, `issues show <n>`](commands.md#workline-issues) | reads the issues kept in the clone (`forge: local`) |
 | [`workline issues import <file>`](commands.md#workline-issues-import) | turns a roadmap or backlog file into issues |

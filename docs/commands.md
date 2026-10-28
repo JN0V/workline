@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/engine/engine.go, internal/hooks]
-checked: 698d5497
+checked: 1775cda4
 verified: agent:claude-code
 judged: e343388
 ---
@@ -96,6 +96,18 @@ counted ([more](spec/gates.md#with-workline-gate)):
 - **`--base <rev>`**: only those the change adds since the merge base of
   `<rev>` and `HEAD`; `--gates-kept <folder>`, the base's read as main
   kept them.
+
+### workline test
+
+`workline test check --base <ref>` is the tester's red-first check, with
+no agent ([tester](../roles/tester/README.md#run-it)); it returns 0 or 1:
+
+- **The new tests**: those the head's JUnit report holds and the
+  base's does not, the test command run in a checkout apart for each.
+- **Red on the base**: each fails there with the change's test files
+  laid on it; one that passes is refused.
+- **Green on the head**, when the change holds code too.
+- **`--base ""`** is misuse, 64: a CI variable left unset.
 
 ## workline review
 
