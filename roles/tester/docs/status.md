@@ -11,7 +11,7 @@ A try is told in its pull request's `## Tried`
 ([ADR-0043](../../../docs/adr/0043-a-try-is-told-in-its-pull-request.md)):
 the first, the check on a copy of a real Go module with gotestsum, on
 [#649](https://github.com/JN0V/workline/pull/649); then a real agent's
-tests for a real bug, on [the step 2 pull request](https://github.com/JN0V/workline/pulls?q=head%3Afeat%2Ftester-write-tests).
+tests for a real bug, on [#652](https://github.com/JN0V/workline/pull/652).
 
 ## To leave beta
 

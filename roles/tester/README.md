@@ -2,7 +2,7 @@
 sources:
   - roles/tester/role.yaml
   - internal/tester
-checked: d09d3c87
+checked: 80bc665e
 verified: agent:claude-code
 ---
 # Tester
