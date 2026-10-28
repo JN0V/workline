@@ -32,6 +32,12 @@ flowchart LR
 - Its end wakes `workline-answer.yml`, which runs as the default branch
   holds it (`workflow_run`).
 
+## head (GitLab only)
+
+- Reads the Draft's head with `git ls-remote`, before any of the
+  Draft's code runs, holding no agent's token.
+- The judge checks that head out; apply applies at that head only.
+
 ## judge
 
 - The agent's token, read rights, no write token: it proposes
@@ -58,8 +64,10 @@ flowchart LR
 - Only what the Draft's line may do: its branch, its threads, the issue
   it was opened for (`workline/tester/issue-<n>`); anything else refuses
   the whole run.
-- The head: the event's on GitHub, the judge's on GitLab. A branch moved
-  on since applies nothing; the objection waits for the next run.
+- The head: the event's on GitHub; on GitLab, the one
+  `workline:objection:head` reads before the judge, holding no agent. A
+  judge reporting another head applies nothing; so does a branch moved
+  on since: the objection waits for the next run.
 
 ## The Draft's files beside the write token
 
