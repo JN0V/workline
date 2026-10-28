@@ -76,6 +76,18 @@ jobs:
             echo "any=true" >> "$GITHUB_OUTPUT"
             ! grep -qsw inspector .workline/config.yaml || echo "triage=true" >> "$GITHUB_OUTPUT"
           fi
+      # The pull request's draft state as it is now, not as its event said
+      # (#662): marked ready seconds after a push, the push's run can be
+      # the one the concurrency group keeps, its event still saying draft.
+      # Unread, the event's, said.
+      - name: The pull request, a draft or not
+        id: pr
+        if: steps.any.outputs.any == 'true'
+        env: {GH_TOKEN: "${{ github.token }}", EVENT_DRAFT: "${{ github.event.pull_request.draft }}", NUMBER: "${{ github.event.pull_request.number }}"}
+        run: |
+          draft=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$NUMBER" --jq .draft) || draft=
+          case "$draft" in true|false) ;; *) draft=$EVENT_DRAFT; echo "::warning title=workline::the pull request's draft state could not be read, the event's taken: $EVENT_DRAFT" ;; esac
+          echo "draft=$draft" >> "$GITHUB_OUTPUT"
       # The engine built from this commit, taken from the cache when a job
       # built it first, for no job after; and the agent.
       - uses: ./.github/actions/engine
@@ -83,7 +95,7 @@ jobs:
         with: {keep: "false"}
       # Not on a draft, which asks no agent (ADR-0050).
       - name: Claude
-        if: steps.any.outputs.any == 'true' && !github.event.pull_request.draft
+        if: steps.any.outputs.any == 'true' && steps.pr.outputs.draft != 'true'
         run: npm install -g @anthropic-ai/claude-code
       # The inspector triages what the gates found the change adds
       # (ADR-0049): their result as workline.yml's gates job left it for
@@ -92,7 +104,7 @@ jobs:
       # said, and the triage reads nothing. Not on a draft, which asks no
       # agent (ADR-0050).
       - name: The gates' findings, from workline.yml's run of this head
-        if: steps.any.outputs.triage == 'true' && !github.event.pull_request.draft
+        if: steps.any.outputs.triage == 'true' && steps.pr.outputs.draft != 'true'
         env: {GH_TOKEN: "${{ github.token }}", HEAD_SHA: "${{ github.event.pull_request.head.sha }}"}
         run: |
           run=
@@ -118,9 +130,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           WORKLINE_APP_ID: ${{ vars.WORKLINE_APP_ID }}   # the App whose comments keep the records a role reads back (ADR-0051)
           ACTION: ${{ github.event.action }}
-          DRAFT: ${{ github.event.pull_request.draft }}
+          EVENT_DRAFT: ${{ github.event.pull_request.draft }}
+          DRAFT: ${{ steps.pr.outputs.draft }}
         run: |
-          ready=; case "$ACTION:$DRAFT" in opened:false|ready_for_review:*) ready=1 ;; esac
+          ready=; case "$ACTION:$EVENT_DRAFT:$DRAFT" in opened:*:false|ready_for_review:*|*:true:false) ready=1 ;; esac
           gates=; [ ! -s "$RUNNER_TEMP/gates/gates.json" ] || gates="$RUNNER_TEMP/gates/gates.json"
           status=0
           workline route merge-request --warn-only --ai claude --no-apply \

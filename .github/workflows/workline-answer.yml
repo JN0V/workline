@@ -1,9 +1,8 @@
 # workline's tester answering an objection, on its own repository:
 # ci/github/workline-answer.yml, with the engine built from the default
-# branch's checkout rather than installed (.github/actions/engine), as
-# gardening does; Go left set up for workline's tests. The tester is not
-# routed here yet (roles/tester/docs/status.md): no Draft of it opens but
-# by hand.
+# branch's checkout (.github/actions/engine); Go left set up for its tests.
+# It runs for any branch workline/tester/* of this repository that gets an
+# objection: the tester is not routed here yet, its Drafts open by hand.
 name: workline answer
 on:
   workflow_run: {workflows: [workline objection], types: [completed]}
@@ -43,18 +42,18 @@ jobs:
           WORKLINE_APP_ID: ${{ vars.WORKLINE_APP_ID }}   # the App whose comments keep the tester's record (ADR-0051)
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           BRANCH: ${{ github.event.workflow_run.head_branch }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
           ai=none; [ -n "$CLAUDE_CODE_OAUTH_TOKEN" ] && ai=claude
           pr=$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number // empty')
           [ -n "$pr" ] || { echo "no open pull request from $BRANCH: nothing to answer"; exit 0; }
-          # The Draft's tip, where the test objected to is read and a
-          # rewrite committed on top; the engine already set up from the
-          # default branch's checkout.
-          git checkout -q -B "$BRANCH" "origin/$BRANCH"
+          # The head the objection was made on; the engine already set up
+          # from the default branch's checkout.
+          git checkout -q -B "$BRANCH" "$HEAD_SHA"
           status=0
           workline test answer --merge-request "$pr" --ai "$ai" --no-apply --forge github --json > answer.json || status=$?
           echo "status=$status" >> "$GITHUB_OUTPUT"
-          echo "run=$(jq -r '(.pending // [])[0] // empty' answer.json)" >> "$GITHUB_OUTPUT"   # a run left to apply; none when it stopped before
+          echo "run=$(jq -r '(.pending // [])[0] // empty | split("/") | last' answer.json)" >> "$GITHUB_OUTPUT"   # a run left to apply, by name; none when it stopped before
           jq -r '.summary // empty' answer.json >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         if: steps.answer.outputs.run != ''
@@ -86,20 +85,24 @@ jobs:
           fetch-depth: 0
           token: ${{ steps.app.outputs.token || github.token }}
       - uses: ./.github/actions/engine
+      # judge ran the Draft's code: its folder is data, outside the checkout.
       - uses: actions/download-artifact@v4
-        with: {name: workline-answer, path: .workline-runs}
+        with: {name: workline-answer, path: "${{ runner.temp }}/workline-runs"}
+      # Only what the Draft's line may do, to it, at the event's head: the
+      # repository, roles and forge this job's (`apply --from-merge-request`).
       - env:
           GH_TOKEN: ${{ steps.app.outputs.token || github.token }}
           APP: ${{ steps.app.outputs.app-slug }}
           WORKLINE_APP: ${{ steps.app.outputs.app-slug }}   # workline's own account: the records it trusts
+          WORKLINE_RUNS_DIR: ${{ runner.temp }}/workline-runs
           RUN: ${{ needs.judge.outputs.run }}
           BRANCH: ${{ github.event.workflow_run.head_branch }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
-          # The rewrite goes on top of the Draft's tip, without force. Its
-          # files are only read here: `workline apply` runs git and the
-          # forge's API, no command of the project, and the engine came
-          # before the switch.
-          git checkout -q -B "$BRANCH" "origin/$BRANCH"
+          printf '%s' "$RUN" | grep -Eqx '[0-9]{8}T[0-9]{6}\.[0-9]{9}-[a-z0-9-]+' && [ -d "$WORKLINE_RUNS_DIR/$RUN" ] ||
+            { echo "::error title=workline::judge named no run of its own: $RUN"; exit 1; }
+          NUMBER=$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number // empty')
+          [ -n "$NUMBER" ] || { echo "no open pull request from $BRANCH: nothing to apply"; exit 0; }
           if [ -n "$APP" ]; then
             git config user.name "$APP[bot]"
             git config user.email "$(gh api "/users/$APP%5Bbot%5D" --jq .id)+$APP[bot]@users.noreply.github.com"
@@ -108,6 +111,6 @@ jobs:
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           fi
           status=0
-          workline apply "$RUN" --summary workline-summary.md || status=$?
+          workline apply "$RUN" --from-merge-request "$NUMBER" --head "$HEAD_SHA" --forge github --summary workline-summary.md || status=$?
           [ ! -s workline-summary.md ] || cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"
           exit "$status"

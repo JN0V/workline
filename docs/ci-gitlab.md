@@ -1,6 +1,6 @@
 ---
 sources: [ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile]
-checked: c8bb8b8c
+checked: 1b56482b
 judged: e8a46f7
 verified: agent:documentalist
 reader: 9799dcaf51f3
@@ -307,7 +307,8 @@ the two jobs to add are in [gitlab/import-jobs.md](gitlab/import-jobs.md).
   A tool given the note webhook starts one on the default branch, with
   `WORKLINE_TASK=objection`, `MR_IID` and `MR_SOURCE_BRANCH`
   ([the variables](gitlab-trigger.md#how-the-pipeline-knows-what-to-do));
-  the jobs `workline:objection:*` answer it.
+  the jobs `workline:objection:*` answer it
+  ([what each job holds](objection-jobs.md)).
 
 ## A project that refuses unsigned commits
 

@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/JN0V/workline/internal/backlog"
@@ -37,6 +38,10 @@ type FromMergeRequest struct {
 
 // runName is how a run's folder is named (newRunDir).
 var runName = regexp.MustCompile(`^[0-9]{8}T[0-9]{6}\.[0-9]{9}-[a-z0-9-]+$`)
+
+// RunName says whether name is how a run's folder is named: an
+// argument naming anything else is no run to apply.
+func RunName(name string) bool { return runName.MatchString(name) }
 
 // plainModel is an agent and model as a commit's trailer names them.
 var plainModel = regexp.MustCompile(`^[A-Za-z0-9._:@/+-]+$`)
@@ -100,12 +105,6 @@ func ResumeFrom(listed string, from FromMergeRequest) *Result {
 		if err != nil {
 			return err
 		}
-		for _, in := range intents {
-			if why := outOfLine(r, in); why != "" {
-				refuse(why)
-				return nil
-			}
-		}
 		cfg, err := role.LoadProjectConfig(from.Repo)
 		if err != nil {
 			return err
@@ -124,6 +123,12 @@ func ResumeFrom(listed string, from FromMergeRequest) *Result {
 		if !mr.Here {
 			refuse(fmt.Sprintf("merge request #%d comes from a fork", from.ID))
 			return nil
+		}
+		for _, in := range intents {
+			if why := outOfLine(r, in, issueFor(r.Name, mr.Branch)); why != "" {
+				refuse(why)
+				return nil
+			}
 		}
 		local := forge.KeepsBranches(f)
 		tip, err := fetchTip(from.Repo, mr.Branch, local)
@@ -193,18 +198,34 @@ func kindsOf(intents []intent.Intention) []string {
 
 // outOfLine says why a proposal is not one a merge request's line may
 // apply: a kind its role never proposes, an act on the backlog, a comment
-// on another issue; "" when it is.
-func outOfLine(r *role.Role, in intent.Intention) string {
+// or a label on an issue but own, the one the role's branch was opened
+// for (0: none); "" when it is.
+func outOfLine(r *role.Role, in intent.Intention, own int) string {
 	switch {
 	case !slices.Contains(r.Intentions, in.Kind):
 		return fmt.Sprintf("it proposes %s, which the %s never does", in.Kind, r.Name)
 	case slices.Contains(backlog.Kinds, in.Kind):
 		return fmt.Sprintf("it proposes %s, an act on the backlog, which no merge request's run does", in.Kind)
 	}
-	if m, ok := in.Value.(map[string]any); ok && in.Kind == "comment" && m["issue"] != nil {
-		return "it proposes a comment on another issue than its merge request"
+	m, ok := in.Value.(map[string]any)
+	if !ok || (in.Kind != "comment" && in.Kind != "label") || m["issue"] == nil {
+		return ""
 	}
-	return ""
+	if n, ok := m["issue"].(int); ok && own != 0 && n == own {
+		return ""
+	}
+	return fmt.Sprintf("it proposes a %s on another issue than its merge request's", in.Kind)
+}
+
+// issueFor is the issue a role's branch was opened for, by the engine's
+// name for it (workline/<role>/issue-<n>); 0 when the branch is not one.
+func issueFor(role, branch string) int {
+	prefix := branchPrefix(role) + "issue-"
+	n, err := strconv.Atoi(strings.TrimPrefix(branch, prefix))
+	if err != nil || n <= 0 || !strings.HasPrefix(branch, prefix) {
+		return 0
+	}
+	return n
 }
 
 // linkIn names the first link in dir, "" when it holds none.

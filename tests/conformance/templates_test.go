@@ -864,6 +864,7 @@ func TestGitHubTemplatesAskEveryLensWhenReady(t *testing.T) {
 			} `yaml:"on"`
 			Jobs map[string]struct {
 				Steps []struct {
+					ID  string            `yaml:"id"`
 					Env map[string]string `yaml:"env"`
 					Run string            `yaml:"run"`
 				} `yaml:"steps"`
@@ -878,13 +879,21 @@ func TestGitHubTemplatesAskEveryLensWhenReady(t *testing.T) {
 			}
 		}
 		for name, job := range wf.Jobs {
-			for _, st := range job.Steps {
+			pr := -1 // the step reading the pull request's draft state now (#662)
+			for i, st := range job.Steps {
+				if st.ID == "pr" {
+					pr = i
+					livePullRequestDraft(t, filepath.Base(f)+", job "+name, st.Env, st.Run)
+				}
 				if !strings.Contains(st.Run, "workline route merge-request") || strings.Contains(st.Run, "--gates-only") || strings.Contains(st.Run, "--input queue=true") {
 					continue
 				}
 				n++
-				if st.Env["ACTION"] != "${{ github.event.action }}" || st.Env["DRAFT"] != "${{ github.event.pull_request.draft }}" {
-					t.Errorf("%s, job %s: ACTION and DRAFT are not the event's action and the pull request's draft: %v", filepath.Base(f), name, st.Env)
+				if pr < 0 {
+					t.Errorf("%s, job %s: the line runs with no step reading the pull request's draft state before it (#662)", filepath.Base(f), name)
+				}
+				if st.Env["ACTION"] != "${{ github.event.action }}" || st.Env["EVENT_DRAFT"] != "${{ github.event.pull_request.draft }}" || st.Env["DRAFT"] != "${{ steps.pr.outputs.draft }}" {
+					t.Errorf("%s, job %s: ACTION, EVENT_DRAFT and DRAFT are not the event's action, the event's draft and the pull request's draft now: %v", filepath.Base(f), name, st.Env)
 				}
 				if !strings.Contains(st.Run, "${ready:+--input lenses=all}") {
 					t.Errorf("%s, job %s: the line is not given lenses=all when ready", filepath.Base(f), name)
@@ -901,17 +910,21 @@ func TestGitHubTemplatesAskEveryLensWhenReady(t *testing.T) {
 					}
 				}
 				for _, c := range []struct {
-					action, draft string
-					ready         bool
+					action, event, draft string // the event's draft, the pull request's now
+					ready                bool
 				}{
-					{"opened", "false", true}, {"opened", "true", false}, {"ready_for_review", "false", true},
-					{"synchronize", "false", false}, {"reopened", "false", false},
+					{"opened", "false", "false", true}, {"opened", "true", "true", false}, {"ready_for_review", "false", "false", true},
+					{"synchronize", "false", "false", false}, {"reopened", "false", "false", false},
+					{"synchronize", "true", "true", false},
+					// Marked ready while the push's run waited: that run, its event
+					// still saying draft, is the run on ready (#662).
+					{"synchronize", "true", "false", true}, {"opened", "true", "false", true},
 				} {
 					cmd := exec.Command("sh", "-ec", decide+"\necho \"[$ready]\"")
-					cmd.Env = []string{"ACTION=" + c.action, "DRAFT=" + c.draft}
+					cmd.Env = []string{"ACTION=" + c.action, "EVENT_DRAFT=" + c.event, "DRAFT=" + c.draft}
 					out, err := cmd.CombinedOutput()
 					if got := strings.TrimSpace(string(out)) == "[1]"; err != nil || got != c.ready {
-						t.Errorf("%s, job %s: %s, draft %s: ready %v (%s, %v), want %v", filepath.Base(f), name, c.action, c.draft, got, out, err, c.ready)
+						t.Errorf("%s, job %s: %s, event's draft %s, draft now %s: ready %v (%s, %v), want %v", filepath.Base(f), name, c.action, c.event, c.draft, got, out, err, c.ready)
 					}
 				}
 			}
@@ -919,6 +932,45 @@ func TestGitHubTemplatesAskEveryLensWhenReady(t *testing.T) {
 	}
 	if n < 4 {
 		t.Fatalf("found %d steps running the merge request's line, want the template's and workline's own, the judge's and the run apart's", n)
+	}
+}
+
+// livePullRequestDraft runs the step reading the pull request's draft
+// state when the job runs (#662), with a gh that answers as the API, or
+// fails: the API's state, else the event's, said.
+func livePullRequestDraft(t *testing.T, where string, env map[string]string, run string) {
+	t.Helper()
+	if env["EVENT_DRAFT"] != "${{ github.event.pull_request.draft }}" || env["GH_TOKEN"] == "" || !strings.Contains(run, "gh api ") {
+		t.Errorf("%s: the step pr does not read the pull request from the API, the event's draft beside: %v", where, env)
+	}
+	dir := t.TempDir()
+	gh := "#!/bin/sh\n[ -z \"$API_DOWN\" ] || exit 1\necho \"$API_DRAFT\"\n"
+	if err := os.WriteFile(filepath.Join(dir, "gh"), []byte(gh), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	for _, c := range []struct {
+		event, api, want string
+		down             bool
+	}{
+		{event: "true", api: "false", want: "false"}, {event: "false", api: "true", want: "true"},
+		{event: "true", api: "true", want: "true"}, {event: "true", down: true, want: "true"}, {event: "false", api: "null", want: "false"},
+	} {
+		out := filepath.Join(dir, "output")
+		_ = os.Remove(out)
+		cmd := exec.Command("sh", "-ec", run)
+		cmd.Env = []string{"PATH=" + dir + string(os.PathListSeparator) + os.Getenv("PATH"), "GITHUB_OUTPUT=" + out, "GITHUB_REPOSITORY=o/r", "NUMBER=7",
+			"EVENT_DRAFT=" + c.event, "API_DRAFT=" + c.api}
+		if c.down {
+			cmd.Env = append(cmd.Env, "API_DOWN=1")
+		}
+		log, err := cmd.CombinedOutput()
+		got, _ := os.ReadFile(out)
+		if err != nil || strings.TrimSpace(string(got)) != "draft="+c.want {
+			t.Errorf("%s: event's draft %s, API %q (down %v): %q (%v, %s), want draft=%s", where, c.event, c.api, c.down, got, err, log, c.want)
+		}
+		if (c.down || c.api == "null") && !strings.Contains(string(log), "could not be read") {
+			t.Errorf("%s: the API unread, not said: %s", where, log)
+		}
 	}
 }
 
@@ -951,8 +1003,9 @@ func TestTemplatesInstallNoAgentOnADraft(t *testing.T) {
 					continue
 				}
 				installs++
-				skipped := strings.Contains(st.If, "!github.event.pull_request.draft") ||
-					st.Env["DRAFT"] == "${{ github.event.pull_request.draft }}" && strings.Contains(st.Run, `[ "$DRAFT" = true ] || npm install -g @anthropic-ai/claude-code`)
+				// The draft state now, not the event's (#662).
+				skipped := strings.Contains(st.If, "steps.pr.outputs.draft != 'true'") ||
+					st.Env["DRAFT"] == "${{ steps.pr.outputs.draft }}" && strings.Contains(st.Run, `[ "$DRAFT" = true ] || npm install -g @anthropic-ai/claude-code`)
 				if !skipped {
 					t.Errorf("%s, job %s: the agent is installed on a draft, which asks none", filepath.Base(f), name)
 				}
@@ -1070,6 +1123,8 @@ printf '%s' "$f"
 		{name: "a draft", draft: "true", pages: []string{"[" + marked + "]"}},
 		{name: "before GitLab 17.10: ready, by the API", mr: `{"draft": false}`, pages: []string{"[" + marked + "," + summary + "]"}, all: true},
 		{name: "before GitLab 17.10: a draft, by the API", mr: `{"draft": true}`, pages: []string{"[" + marked + "]"}},
+		{name: "marked ready after the pipeline was created: the API's state now (#662)", draft: "true", mr: `{"draft": false}`, pages: []string{"[" + marked + "," + summary + "]"}, all: true},
+		{name: "marked a draft after the pipeline was created", draft: "false", mr: `{"draft": true}`, pages: []string{"[" + marked + "]"}},
 		{name: "read with GITLAB_TOKEN when the job has one", draft: "false", token: "read", pages: []string{"[" + marked + "]"}, all: true},
 		{name: "the comment past a full page", draft: "false", pages: []string{full, "[" + summary + "," + marked + "]"}},
 		{name: "the ready note past a full page", draft: "false", pages: []string{full, "[" + marked + "," + summary + "]"}, all: true},

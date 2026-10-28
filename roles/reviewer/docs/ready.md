@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, internal/builtin/reviewer/reviewer.go, internal/builtin/reviewer/record.go, internal/builtin/reviewer/once.go, internal/engine/engine.go, ci/github/workline.yml, ci/gitlab/workline.gitlab-ci.yml]
-checked: 000a3816
+checked: d03372bb
 verified: agent:claude-code
 ---
 # Reviewer — no lens on a draft, every lens once when it becomes ready, then what is new
@@ -119,10 +119,17 @@ AI reads only what is new.
 
 - **GitHub**: the pull request `opened`, not a draft, or
   `ready_for_review`, which runs the line.
+  - The draft state is the pull request's when the job runs, read from
+    the API; the event's only when unread, said.
+  - A run whose event said draft, on a pull request ready now, is the
+    run on ready: marked ready seconds after a push, the push's run can
+    be the one left
+    ([#662](https://github.com/JN0V/workline/issues/662)).
 - **GitLab**: marking a draft ready starts no pipeline
   ([gitlab-org/gitlab#25426](https://gitlab.com/gitlab-org/gitlab/-/issues/25426)).
   The next pipeline, a push or **Run pipeline**, is the one when the
-  merge request is no draft (`CI_MERGE_REQUEST_DRAFT`, else the API)
+  merge request is no draft (the API when the job runs, else
+  `CI_MERGE_REQUEST_DRAFT`)
   and GitLab's note "marked this merge request as **ready**" is newer
   than the reviewer's comment, or there is no comment yet.
   - What the person sees: the draft's last summary says the AI review
