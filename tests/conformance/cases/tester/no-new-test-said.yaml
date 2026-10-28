@@ -1,0 +1,16 @@
+case: tester/no-new-test-said
+about: >
+  A change that adds no test has nothing to prove red: the check passes,
+  and says it found no new test, never silently.
+given:
+  repo: tested
+  setup:
+    - git checkout -q -b change
+    - |
+      printf 'sub() { echo $(($1 - $2)); }\n' >> lib.sh && git commit -qam "feat: subtract"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+run: {test: [check, --base, main]}
+expect:
+  status: pass
+  summary: "no new test"

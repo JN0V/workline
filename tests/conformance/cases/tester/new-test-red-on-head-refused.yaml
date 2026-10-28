@@ -1,0 +1,17 @@
+case: tester/new-test-red-on-head-refused
+about: >
+  A change adds code beside its new test, and the test still fails on the
+  head: the code does not do what the test asks; blocking, the test named.
+given:
+  repo: tested
+  setup:
+    - git checkout -q -b change
+    - |
+      printf 'sub() { echo $(($1 + $2)); }\n' >> lib.sh && printf '. ./lib.sh\n[ "$(sub 5 3)" = 2 ]\n' > tests/test_sub.sh && git add . && git commit -qm "feat: subtract"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+run: {test: [check, --base, main]}
+expect:
+  status: block
+  findings: [{rule: test-red-on-head, where: tests.test_sub, message: "fails on the head"}]
+  no-findings: [{rule: test-green-on-base}]

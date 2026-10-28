@@ -1,0 +1,18 @@
+case: tester/tests-alone-red-pass
+about: >
+  The tester's own change holds the tests alone, before any code
+  (ADR-0055, where the tests land): red on the base, which is also the
+  head; nothing asks them green yet, the developer makes them so.
+given:
+  repo: tested
+  setup:
+    - git checkout -q -b workline/issue-7
+    - |
+      printf '. ./lib.sh\n[ "$(mul 2 3)" = 6 ]\n' > tests/test_mul.sh && git add . && git commit -qm "test: multiply"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+run: {test: [check, --base, main]}
+expect:
+  status: pass
+  summary: "1 new test, red on the base"
+  no-findings: [{rule: test-red-on-head}]

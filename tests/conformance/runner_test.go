@@ -101,6 +101,7 @@ type runSpec struct {
 	Route   string   `yaml:"route"`
 	Item    int      `yaml:"item"`
 	Gate    string   `yaml:"gate"`
+	Test    []string `yaml:"test"` // workline test, with these arguments: the tester's checks, no agent
 	Doctor  bool     `yaml:"doctor"`
 	Init    bool     `yaml:"init"`
 	InitOpt []string `yaml:"init-options"`  // workline init, with these options
@@ -585,6 +586,8 @@ func runCase(t *testing.T, c *caseFile) []string {
 	switch {
 	case c.Run.Gate != "":
 		args = []string{"gate", c.Run.Gate, "--repo", repo, "--json"}
+	case c.Run.Test != nil:
+		args = append(append([]string{"test"}, c.Run.Test...), "--repo", repo, "--json")
 	case c.Run.Doctor:
 		args = []string{"doctor", "--repo", repo, "--json"}
 	case c.Run.Init:

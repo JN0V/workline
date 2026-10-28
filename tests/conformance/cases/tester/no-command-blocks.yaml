@@ -1,0 +1,15 @@
+case: tester/no-command-blocks
+about: >
+  No test command set: nothing is run, and nothing is read as a pass
+  (ADR-0055, no command, no report): setting-missing, blocking, saying
+  what to set.
+given:
+  repo: tested
+  setup:
+    - git checkout -q -b change
+    - |
+      printf '. ./lib.sh\n[ "$(add 2 0)" = 2 ]\n' > tests/test_add_zero.sh && git add . && git commit -qm "test: add zero"
+run: {test: [check, --base, main]}
+expect:
+  status: block
+  findings: [{rule: setting-missing, where: test-command, message: "roles.tester.settings.test-command"}]

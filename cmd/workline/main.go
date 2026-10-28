@@ -58,6 +58,7 @@ import (
 	"github.com/JN0V/workline/internal/routing"
 	"github.com/JN0V/workline/internal/sample"
 	"github.com/JN0V/workline/internal/setup"
+	"github.com/JN0V/workline/internal/tester"
 	"github.com/JN0V/workline/internal/verdict"
 	"github.com/JN0V/workline/internal/work"
 	"go.yaml.in/yaml/v3"
@@ -1078,6 +1079,57 @@ func gateCmd(args []string) int {
 		return 0
 	}
 	return 1
+}
+
+// testCmd runs the tester's checks that need no agent (ADR-0055): check,
+// the red-first proof on the change since --base.
+func testCmd(args []string) int {
+	fs := newFlags("test")
+	repo := fs.String("repo", ".", "repository to check")
+	base := fs.String("base", "", "the revision the change is proven red on: its merge base with HEAD, as on a merge request")
+	roles := fs.String("roles", os.Getenv("WORKLINE_ROLES"), "folder holding the roles")
+	asJSON := fs.Bool("json", false, "print the result as JSON")
+	sub, code, done := parseAfter(fs, args, "a check (check)")
+	if done {
+		return code
+	}
+	switch {
+	case sub != "check":
+		return misuse(fs, fmt.Sprintf("unknown check %q: check", sub))
+	case strings.TrimSpace(*base) == "":
+		// An unset variable in a CI job: never read as no base at all.
+		return misuse(fs, "--base names no revision (an unset variable?): give the base the change is proven red on")
+	}
+	abs, _ := filepath.Abs(*repo)
+	rolesDir, err := resolveRoles(*roles)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "workline:", err)
+		return 1
+	}
+	r, err := role.Load(rolesDir, "tester")
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "workline:", err)
+		return 1
+	}
+	cfg, err := role.LoadProjectConfig(abs)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "workline:", err)
+		return 1
+	}
+	s, err := tester.SettingsFrom(r.MergedSettings(cfg))
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "workline:", err)
+		return 1
+	}
+	v := tester.Check(abs, *base, s)
+	res := &engine.Result{Status: v.Status, Summary: v.Summary, Findings: v.Findings, Applied: []string{}, Refused: []string{}}
+	if *asJSON {
+		out, _ := json.MarshalIndent(res, "", "  ")
+		fmt.Println(string(out))
+	} else {
+		report(res)
+	}
+	return exitFor(v.Status)
 }
 
 func routeCmd(args []string) int {

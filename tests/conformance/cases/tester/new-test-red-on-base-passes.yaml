@@ -1,0 +1,18 @@
+case: tester/new-test-red-on-base-passes
+about: >
+  A change adds a test and the code it checks (ADR-0055, the proof, red
+  first): run on the base with the new test, it fails, a missing name;
+  run on the head, it passes. The red-first check passes, with no agent.
+given:
+  repo: tested
+  setup:
+    - git checkout -q -b change
+    - |
+      printf 'sub() { echo $(($1 - $2)); }\n' >> lib.sh && printf '. ./lib.sh\n[ "$(sub 5 3)" = 2 ]\n' > tests/test_sub.sh && git add . && git commit -qm "feat: subtract"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+run: {test: [check, --base, main]}
+expect:
+  status: pass
+  summary: "1 new test, red on the base, green on the head"
+  no-findings: [{rule: test-green-on-base}, {rule: test-red-on-head}]

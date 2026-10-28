@@ -1,0 +1,9 @@
+case: cli/test-check-empty-base-is-misuse
+about: >
+  `workline test check --base ""`, a CI variable left unset, is misuse,
+  64: the red-first check needs the base it proves red on.
+given: {repo: tested}
+run: {cli: [test, check, --base, ""]}
+expect:
+  exit: 64
+  stderr: ["--base names no revision"]

@@ -1,0 +1,39 @@
+contract: 1
+name: tester
+mission: Each test a change adds is proven red on its base before the code makes it green, from the project's own test runner's report.
+
+# Step 1 of ADR-0055: the red-first check, engine code with no agent,
+# run as `workline test check --base <ref>`, not by the line yet. Events,
+# model and intentions come with the tests written from the criteria
+# (step 2).
+events: []
+
+requires: [git]
+
+duties:
+  reads: ["**"]
+  writes: []
+
+settings:
+  # Runs the project's tests and writes a JUnit XML report; {report} is
+  # replaced by test-report's path. Unset: the check blocks,
+  # setting-missing, never a pass. E.g. `pytest --junitxml={report}`,
+  # `gotestsum --junitfile {report} ./...`, `npx jest --reporters=jest-junit`.
+  test-command: ""
+  # Where the command writes the report, from the repository's root: a
+  # path, or a pattern one folder deep (target/surefire-reports/*.xml).
+  test-report: junit.xml
+  # The test files: those a change touches are laid on the base for the
+  # red proof; the change's other files are its code.
+  test-paths:
+    - "**/*_test.go"
+    - "**/test_*.py"
+    - "**/*_test.py"
+    - "**/*.test.ts"
+    - "**/*.test.js"
+    - "**/*.spec.ts"
+    - "**/*.spec.js"
+    - "**/*_test.rs"
+    - "tests/**"
+    - "test/**"
+    - "**/src/test/**"
