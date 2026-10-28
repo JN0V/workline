@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.45.0](https://github.com/JN0V/workline/compare/v0.44.0...v0.45.0) (2026-10-28)
+
+
+### Features
+
+* **tester:** write a ready issue's tests, proven red, as a Draft ([#652](https://github.com/JN0V/workline/issues/652)) ([9a3c1fc](https://github.com/JN0V/workline/commit/9a3c1fc40afae07e27cacc776049a4d31361128f))
+
 ## [0.44.0](https://github.com/JN0V/workline/compare/v0.43.2...v0.44.0) (2026-10-28)
 
 

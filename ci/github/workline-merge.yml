@@ -13,7 +13,7 @@ on:
 permissions: {}
 
 env:
-  WORKLINE_VERSION: v0.44.0          # a release of workline: update it to take a newer one (x-release-please-version)
+  WORKLINE_VERSION: v0.45.0          # a release of workline: update it to take a newer one (x-release-please-version)
 
 jobs:
   follow:
