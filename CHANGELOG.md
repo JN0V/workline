@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.50.0](https://github.com/JN0V/workline/compare/v0.49.0...v0.50.0) (2026-10-28)
+
+
+### Features
+
+* **auditor:** draw the tester's acts in the weekly sample ([#669](https://github.com/JN0V/workline/issues/669)) ([9037022](https://github.com/JN0V/workline/commit/903702234eb125becb392014e821050caaffc3a3))
+* the five whys, a shared skill the tester loads first ([#671](https://github.com/JN0V/workline/issues/671)) ([d765ff4](https://github.com/JN0V/workline/commit/d765ff4706445989b16c647afe937a1d347ed50d))
+
 ## [0.49.0](https://github.com/JN0V/workline/compare/v0.48.0...v0.49.0) (2026-10-28)
 
 
