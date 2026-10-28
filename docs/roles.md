@@ -1,6 +1,6 @@
 ---
-sources: [routing.default.yaml, roles/committer/role.yaml, roles/documentalist/role.yaml, roles/reviewer/role.yaml, roles/inspector/role.yaml, roles/product-owner/role.yaml, roles/judge/role.yaml, roles/auditor/role.yaml]
-checked: b6085f38
+sources: [routing.default.yaml, roles/committer/role.yaml, roles/documentalist/role.yaml, roles/reviewer/role.yaml, roles/inspector/role.yaml, roles/product-owner/role.yaml, roles/judge/role.yaml, roles/auditor/role.yaml, roles/tester/role.yaml]
+checked: 1775cda4
 judged: d34fd75
 verified: agent:claude-code
 ---
@@ -18,6 +18,7 @@ and where it stands: planned, beta or built, by
 | Documentalist | keeps the docs true to the code they name | `pre-push`, `merge-request`, `main`, `schedule`, `release`, `init` | [documentalist](../roles/documentalist/README.md) |
 | Reviewer | says what a change, or a spec, breaks or leaves out; never approves | `review`, `spec`, `merge-request` and `schedule` (opt-in) | [reviewer](../roles/reviewer/README.md) |
 | Inspector | explains the findings a merge request adds to your gates; never their verdict | `merge-request` (opt-in), after the gates | [inspector](../roles/inspector/README.md) |
+| Tester | proves each test a change adds red on its base, then green; step 1, no agent | `workline test check` | [tester](../roles/tester/README.md) |
 | Product owner | keeps the open issues true to the code and ready to build, proposing on each issue | `schedule` (opt-in), `import` | [product owner](../roles/product-owner/README.md) |
 | Judge | answers one yes-or-no question a role's check cannot | asked by the other roles | [judge](../roles/judge/role.yaml) |
 | Auditor | re-checks a weekly sample of every role's acts | `workline sample` | [auditor](../roles/auditor/role.yaml) |
