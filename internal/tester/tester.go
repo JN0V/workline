@@ -5,6 +5,7 @@ package tester
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -12,6 +13,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/JN0V/workline/internal/pathglob"
 	"github.com/JN0V/workline/internal/verdict"
@@ -50,6 +52,20 @@ type Settings struct {
 	CuratorWindow   int    `json:"curator-window"`
 	SuiteMaxSeconds int    `json:"suite-max-seconds"`
 	CoverageReport  string `json:"coverage-report"`
+	// The curator's removals (`workline test curate`, step 7): the test
+	// files it may change; files listing tests it never removes; the
+	// tests a run removes at most; the proof's command on the touched
+	// folders ({packages}), and the mutation tool's on each ({package}),
+	// writing MutationReport; the proof's time budget, in seconds.
+	CuratorPaths    []string `json:"curator-paths"`
+	CuratorKeep     []string `json:"curator-keep"`
+	RemovalsMax     int      `json:"curator-removals-max"`
+	ProofCommand    string   `json:"curator-proof-command"`
+	MutationCommand string   `json:"curator-mutation-command"`
+	MutationReport  string   `json:"curator-mutation-report"`
+	ProofSeconds    int      `json:"curator-proof-seconds"`
+	// deadline, when set, stops a test command past it (the proof's budget).
+	deadline time.Time
 }
 
 // SettingsFrom reads the tester's merged settings.
@@ -402,12 +418,10 @@ func runIn(tree string, s Settings, where string) (ran, *verdict.Finding) {
 			return ran{}, &verdict.Finding{Rule: "check-error", Where: "test", Message: err.Error()}
 		}
 	}
-	cmd := exec.Command("sh", "-c", strings.ReplaceAll(s.Command, "{report}", report))
-	cmd.Dir = tree
-	cmd.Env = uncached(os.Environ())
-	var out bytes.Buffer
-	cmd.Stdout, cmd.Stderr = &out, &out
-	runErr := cmd.Run() // a test that fails exits non-zero: the report says which
+	out, late, runErr := shell(tree, strings.ReplaceAll(s.Command, "{report}", report), s.deadline)
+	if late {
+		return ran{}, overTime(where)
+	}
 	found, _ := filepath.Glob(report)
 	if len(found) == 0 {
 		said := "it exited 0"
@@ -426,6 +440,30 @@ func runIn(tree string, s Settings, where string) (ran, *verdict.Finding) {
 		}
 	}
 	return rep, nil
+}
+
+// shell runs a command line in dir, Go's result cache off, stopped past
+// deadline when one is set: late says it was.
+func shell(dir, line string, deadline time.Time) (out bytes.Buffer, late bool, err error) {
+	ctx := context.Background()
+	if !deadline.IsZero() {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithDeadline(ctx, deadline)
+		defer cancel()
+	}
+	cmd := exec.CommandContext(ctx, "sh", "-c", line)
+	cmd.Dir = dir
+	cmd.Env = uncached(os.Environ())
+	cmd.Stdout, cmd.Stderr = &out, &out
+	cmd.WaitDelay = 5 * time.Second
+	err = cmd.Run() // a test that fails exits non-zero: the report says which
+	return out, ctx.Err() != nil, err
+}
+
+// overTime is the finding of a command stopped past the proof's budget.
+func overTime(where string) *verdict.Finding {
+	return &verdict.Finding{Rule: "proof-over-time", Where: "curator-proof-seconds",
+		Message: "the proof ran past its time budget " + where + ": stopped; no proof, nothing proposed"}
 }
 
 // uncached is env with Go told to run each test, never to replay a

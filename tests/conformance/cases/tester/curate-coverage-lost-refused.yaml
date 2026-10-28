@@ -1,0 +1,20 @@
+case: tester/curate-coverage-lost-refused
+about: >
+  A test removed was the only one covering a line: the proof finds the
+  line covered before and not after, and nothing is proposed.
+given:
+  repo: curated
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}", coverage-report: cover.info, curator-mutation-command: "sh mutate.sh {report} {package}"}}}
+  forge:
+    merge-requests: []
+run: {test: [curate], ai: "fake:tester-curate-mul"}
+expect:
+  status: block
+  agent-calls: 1
+  findings: [{rule: coverage-lost, where: "lib.sh:2"}, {rule: mutant-lost}]
+  forge:
+    merge-requests:
+      - {id: 1, absent: true}

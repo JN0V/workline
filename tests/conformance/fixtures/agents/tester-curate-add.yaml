@@ -1,0 +1,17 @@
+- patch:
+    file: tests/test_add.sh
+    content: |
+      # covers: 1
+      . ./lib.sh
+      [ "$(add 2 3)" = 5 ]
+- patch: |
+    diff --git a/tests/test_add_again.sh b/tests/test_add_again.sh
+    deleted file mode 100644
+    --- a/tests/test_add_again.sh
+    +++ /dev/null
+    @@ -1,4 +0,0 @@
+    -# covers: 1
+    -# kills: 1
+    -. ./lib.sh
+    -[ "$(add 1 1)" = 2 ]
+- note: "test_add_again: test_add checks the same add."

@@ -4,7 +4,8 @@ sources:
   - internal/tester
   - ci/github/workline-objection.yml
   - ci/github/workline-answer.yml
-checked: 8445924a
+  - ci/github/workline-gardening.yml
+checked: b2002093
 verified: agent:claude-code
 ---
 # Tester
@@ -25,7 +26,7 @@ file. All roles: [docs/roles.md](../../docs/roles.md). Where it stands:
 [status](docs/status.md); its design:
 [ADR-0055](../../docs/adr/0055-the-tester-writes-the-acceptance-tests-before-the-code.md).
 
-**Does**, today (steps 1 to 6 of the
+**Does**, today (steps 1 to 7 of the
 [build plan](../../docs/adr/0055-the-tester-writes-the-acceptance-tests-before-the-code.md#build-plan)):
 
 - `workline test write --issue <n>`: has the agent write one test for
@@ -42,9 +43,12 @@ file. All roles: [docs/roles.md](../../docs/roles.md). Where it stands:
 - proves the new tests green three runs out of three on the pull
   request that closes the issue: one red is flaky ([how](docs/green-proof.md));
 - `workline test measure`: the corpus's measures, no agent, weekly in
-  CI: count, time, slowest, red and flaky over time ([how](docs/curator.md)).
+  CI: count, time, slowest, red and flaky over time ([how](docs/curator.md));
+- `workline test curate`: the agent proposes a few redundant tests
+  removed; proven with no agent, coverage and killed mutants kept, a
+  pull request the merge policy merges ([how](docs/removals.md)).
 
-**Does not**, yet: prune the corpus ([status](docs/status.md#missing)).
+**Does not**, yet: the five whys skill ([status](docs/status.md#missing)).
 
 ## Write an issue's tests
 
@@ -192,7 +196,7 @@ Under `roles: {tester: {settings: …}}` in `.workline/config.yaml`
 | `ai-max-tokens`, `ai-max-seconds` | 300000, 1200 | what one `test write` or `test answer` run may spend, and wait on its agent |
 | `objection-exchanges` | 3 | the tester's answers in an objection's thread before a person decides |
 | `objection-person` | `workline:human` | who decides then: a label put on the merge request, or an `@login` mentioned |
-| `curator-*`, `suite-max-seconds`, `coverage-report` | 2 runs, 600 s | the curator's measures ([page](docs/curator.md#settings)) |
+| `curator-*`, `suite-max-seconds`, `coverage-report` | 2 runs, 600 s | the curator's measures ([page](docs/curator.md#settings)) and removals ([page](docs/removals.md#settings)) |
 
 The command, by ecosystem:
 

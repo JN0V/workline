@@ -6,6 +6,7 @@ about: >
   one is set up here, too (step 7's proof).
 given:
   repo: tested
+  env: {PATH: "/usr/bin:/bin"} # no mutation tool a machine installed: the case says none set up
   setup:
     - |
       printf 'module example.com/m\n\ngo 1.22\n' > go.mod && printf 'mode: set\nexample.com/m/a/a.go:1.1,2.2 3 1\nexample.com/m/a/a.go:3.1,4.2 1 0\nexample.com/m/b/b.go:1.1,2.2 4 0\n' > cover.txt && git add . && git commit -qm "chore: a module"

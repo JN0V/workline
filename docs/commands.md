@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/engine/engine.go, internal/hooks]
-checked: 8445924a
+checked: 7f7b4f32
 verified: agent:claude-code
 judged: e343388
 ---
@@ -146,6 +146,15 @@ run:
   ones, coverage where the command writes it.
 - **`--history`**: read before, written after; missing, the first
   measure. **`--summary <file>`**: the measures, for a CI job's page.
+
+`workline test curate --history <file>` has the curator remove a few
+redundant tests of one folder ([removals](../roles/tester/docs/removals.md)):
+
+- **The agent proposes**, a reason each; `--ai` none removes nothing.
+- **The proof, no agent**: the folder's tests before and after, green,
+  no covered line and no killed mutant lost; else nothing is opened.
+- **Proven**: a pull request on `workline/tester/curate-<folder>`, not
+  a Draft, on `--forge`.
 
 ## workline review
 

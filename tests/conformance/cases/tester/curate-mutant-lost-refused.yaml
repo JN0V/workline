@@ -1,0 +1,20 @@
+case: tester/curate-mutant-lost-refused
+about: >
+  The lines stay covered, but the test left no longer catches a mutant a
+  removed one caught: a killed mutant lost, nothing is proposed.
+given:
+  repo: curated
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}", coverage-report: cover.info, curator-mutation-command: "sh mutate.sh {report} {package}"}}}
+  forge:
+    merge-requests: []
+run: {test: [curate], ai: "fake:tester-curate-add"}
+expect:
+  status: block
+  agent-calls: 1
+  findings: [{rule: mutant-lost, where: "tests/lib.sh:1:20:ARITHMETIC_BASE"}]
+  forge:
+    merge-requests:
+      - {id: 1, absent: true}
