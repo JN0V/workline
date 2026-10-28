@@ -1,17 +1,8 @@
 # workline's tester woken by an objection, on GitHub Actions — copy to
 # .github/workflows/workline-objection.yml, with workline-answer.yml beside it.
-#
-# Whoever builds on the tester's Draft (branch workline/tester/issue-<n>)
-# objects to a test on its line, a comment opened by `workline:objection`
-# (roles/tester/README.md). This workflow only notices it: GitHub runs it as
-# the pull request's branch holds it, so it holds no token and no secret,
-# runs nothing of the repository, and passes. Its end wakes
-# workline-answer.yml, which runs as the default branch holds it: there the
-# tester answers, kept or rewritten (ADR-0055).
-#
-# Woken by a person of the project (owner, member, collaborator) or an App
-# installed on it, such as workline's own builder; another's comment wakes
-# nothing, an agent's tokens never spent on a stranger's word.
+# A comment opened by `workline:objection` on the tester's Draft, from a
+# person of the project or an App: noticed, with no token and no secret;
+# its end wakes workline-answer.yml. Why: docs/objection-jobs.md.
 name: workline objection
 on:
   pull_request_review_comment: {types: [created]}

@@ -102,8 +102,10 @@ func TestGitHubAppKeyOutOfPullRequestRuns(t *testing.T) {
 			if env := environmentOf(job.Environment); env != "workline-app" {
 				t.Errorf("%s, job %s: uses the App's key outside the environment workline-app (%q)", name, jobName, env)
 			}
-			if _, ok := wf.On["workflow_run"]; ok && !ownRunOnly(job) {
-				checkReadsRunAsData(t, name, jobName, job)
+			if _, ok := wf.On["workflow_run"]; ok {
+				for _, p := range readsRunAsData(job) {
+					t.Errorf("%s, job %s: %s", name, jobName, p)
+				}
 			}
 			_, target := wf.On["pull_request_target"]
 			if _, after := wf.On["workflow_run"]; target || after {
@@ -153,53 +155,41 @@ func environmentOf(v any) string {
 	return ""
 }
 
-// ownRunOnly says whether a job after workflow_run reads only what a job
-// of its own run left (needs:), never the run that woke it: the tester's
-// answer, judged by this workflow as the default branch holds it.
-func ownRunOnly(job keyJob) bool {
-	if job.Needs == nil {
-		return false
-	}
-	for _, s := range job.Steps {
-		if strings.Contains(s.Run, "gh run download") || strings.HasPrefix(s.Uses, "actions/download-artifact@") && s.With["run-id"] != nil {
-			return false
-		}
-	}
-	return true
-}
-
-// checkReadsRunAsData checks a job reading a pull request's run after it
-// completed (workflow_run): its artifacts outside the checkout, the head
-// the event names, only what that pull request's line may do applied.
-func checkReadsRunAsData(t *testing.T, name, jobName string, job keyJob) {
+// readsRunAsData says what a job reading another job's run after it
+// completed (workflow_run) does wrong: that run may have run a branch's
+// code, the tester's answer too. Its artifacts outside the checkout, the
+// head the event names, only what that pull request's line may do
+// applied.
+func readsRunAsData(job keyJob) (problems []string) {
 	const head = "${{ github.event.workflow_run.head_sha }}"
 	for _, s := range job.Steps {
 		if strings.HasPrefix(s.Uses, "actions/download-artifact@") && !strings.Contains(fmt.Sprint(s.With["path"]), "runner.temp") {
-			t.Errorf("%s, job %s: downloads the run's artifacts into the checkout", name, jobName)
+			problems = append(problems, "downloads the run's artifacts into the checkout")
 		}
 		if strings.Contains(s.Run, "gh run download") && !strings.Contains(s.Run, `-D "$RUNNER_TEMP/`) {
-			t.Errorf("%s, job %s: downloads the run's artifacts into the checkout", name, jobName)
+			problems = append(problems, "downloads the run's artifacts into the checkout")
 		}
 		// Main's run after a merge (ADR-0050): only a push to the default
 		// branch, whose workflow is main's, never another branch's.
 		if strings.Contains(s.Run, "workline apply --main") {
 			if !strings.Contains(job.If, "github.event.workflow_run.event == 'push'") || !strings.Contains(job.If, "github.event.workflow_run.head_branch == github.event.repository.default_branch") {
-				t.Errorf("%s, job %s: keeps the findings of a run that may not be main's (if %q)", name, jobName, job.If)
+				problems = append(problems, fmt.Sprintf("keeps the findings of a run that may not be main's (if %q)", job.If))
 			}
 			continue
 		}
 		if strings.Contains(s.Run, "workline apply") {
 			if !strings.Contains(s.Run, `--from-merge-request "$NUMBER" --head "$HEAD_SHA"`) || s.Env["HEAD_SHA"] != head {
-				t.Errorf("%s, job %s: applies a pull request's run without --from-merge-request and the event's head", name, jobName)
+				problems = append(problems, "applies a pull request's run without --from-merge-request and the event's head")
 			}
 			if s.Env["WORKLINE_APP"] != "${{ steps.app.outputs.app-slug }}" {
-				t.Errorf("%s, job %s: applies a pull request's run without naming the App, whose pushes alone let a release's fix be its merge request", name, jobName)
+				problems = append(problems, "applies a pull request's run without naming the App, whose pushes alone let a release's fix be its merge request")
 			}
 		}
 		if strings.Contains(s.Run, "--verdict-only") && s.Env["HEAD_SHA"] != head {
-			t.Errorf("%s, job %s: keeps a verdict for another head than the event's", name, jobName)
+			problems = append(problems, "keeps a verdict for another head than the event's")
 		}
 	}
+	return problems
 }
 
 // Every template pinning a release of workline is one release-please moves
@@ -234,6 +224,22 @@ func TestReleasePleaseMovesEveryPin(t *testing.T) {
 		}
 		if p := strings.TrimPrefix(f, "../../"); strings.Contains(string(data), "x-release-please-version") && !slices.Contains(moved, p) {
 			t.Errorf("%s pins a release, but release-please-config.json does not move it", p)
+		}
+	}
+}
+
+// A job holding the App's key after another run, the tester's answer as
+// #656 first wrote it: the judge's folder downloaded into the checkout,
+// applied whole, by the path it named. Each is caught.
+func TestReadsRunAsDataRefusesAnAnswerAppliedWhole(t *testing.T) {
+	job := keyJob{Needs: "judge", Steps: []keyStep{
+		{Uses: "actions/download-artifact@v4", With: map[string]any{"name": "workline-answer", "path": ".workline-runs"}},
+		{Run: `workline apply "$RUN" --summary workline-summary.md`, Env: map[string]string{"RUN": "${{ needs.judge.outputs.run }}", "WORKLINE_APP": "${{ steps.app.outputs.app-slug }}"}},
+	}}
+	got := readsRunAsData(job)
+	for _, want := range []string{"downloads the run's artifacts into the checkout", "applies a pull request's run without --from-merge-request"} {
+		if !slices.ContainsFunc(got, func(p string) bool { return strings.Contains(p, want) }) {
+			t.Errorf("not caught: %s (found %q)", want, got)
 		}
 	}
 }

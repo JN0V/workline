@@ -1555,6 +1555,12 @@ func applyCmd(args []string) int {
 	if *lineFile == "" && *gatesFile != "" && len(dirs) == 0 {
 		return nothingToApply(noted, summaryFiles, *asJSON)
 	}
+	// The runs named here, never a line's result's: one with
+	// --from-merge-request is found by name (ResumeFrom), its refusal said.
+	var named []string
+	if *fromMR == 0 {
+		named = append(named, dirs...)
+	}
 	if *lineFile != "" {
 		data, err := os.ReadFile(*lineFile)
 		var l line.Result
@@ -1584,6 +1590,12 @@ func applyCmd(args []string) int {
 	if len(dirs) == 0 {
 		fmt.Fprintln(os.Stderr, "usage: workline apply <run-dir>... | --line <route result> [--json] [--summary <file>]")
 		return 64
+	}
+	for _, d := range named {
+		if !engine.RunName(filepath.Base(d)) {
+			fmt.Fprintf(os.Stderr, "workline: %q names no run's folder (<date>T<time>.<ns>-<role>): nothing applied\n", d)
+			return 64
+		}
 	}
 	res := resume(dirs[0])
 	stopped := len(dirs) - 1 // the last run applied

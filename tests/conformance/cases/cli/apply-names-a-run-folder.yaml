@@ -1,0 +1,7 @@
+case: cli/apply-names-a-run-folder
+about: "apply takes runs, each folder named as the engine names a run's (<date>T<time>.<ns>-<role>): another name, a path climbing out (..), is misuse, 64, nothing applied — a CI job passes it a name another job wrote."
+given: {repo: basic}
+run: {cli: [apply, "../.."]}
+expect:
+  exit: 64
+  stderr: ["names no run's folder", "nothing applied"]

@@ -507,7 +507,8 @@ workline:garden:apply:
 # webhook starts one on the default branch, through the pipelines API or a
 # trigger token, with WORKLINE_TASK=objection, MR_IID and MR_SOURCE_BRANCH,
 # the merge request (docs/gitlab-trigger.md). The judge proposes, holding the agent's token;
-# apply writes the reply and a rewrite, holding the bot's and no agent's.
+# apply writes the reply and a rewrite, holding the bot's and no agent's,
+# from the default branch's checkout (docs/objection-jobs.md).
 # Install your test runner in the judge: a rewrite is proven red there.
 .workline:objection:
   image: $WORKLINE_IMAGE:$WORKLINE_VERSION
@@ -520,24 +521,25 @@ workline:garden:apply:
     - *trust
     - workline version
     - export GITLAB_TOKEN=$WORKLINE_GITLAB_TOKEN
-    # The Draft's tip: the test objected to is read there, a rewrite
-    # committed on top of it, without force.
     - 'case "$MR_SOURCE_BRANCH" in workline/tester/*) ;; *) echo "workline: $MR_SOURCE_BRANCH is not a branch of the tester: nothing to answer"; exit 1;; esac'
-    - git fetch -q origin "$MR_SOURCE_BRANCH" && git checkout -q -B "$MR_SOURCE_BRANCH" FETCH_HEAD
 
 workline:objection:judge:
   extends: .workline:objection
   stage: test
   script:
     - *claude
+    # The Draft's tip, where the test objected to is read; its head, the
+    # one apply checks the branch is still at.
+    - git fetch -q origin "$MR_SOURCE_BRANCH" && git checkout -q -B "$MR_SOURCE_BRANCH" FETCH_HEAD
+    - git rev-parse HEAD > answer-head
     - status=0
     - workline test answer --merge-request "$MR_IID" --ai "$ai" --no-apply --forge gitlab --json > answer.json || status=$?
-    - jq -r '(.pending // [])[0] // empty' answer.json > answer-run   # a run left to apply; none when it stopped before
+    - jq -r '(.pending // [])[0] // empty | split("/") | last' answer.json > answer-run   # a run left to apply, by name; none when it stopped before
     - exit $status
   allow_failure: {exit_codes: [3]}  # an agent out of reach warns: the objection waits for the next
   artifacts:
     when: always
-    paths: [.workline-runs/, answer.json, answer-run]
+    paths: [.workline-runs/, answer.json, answer-run, answer-head]
     expire_in: 1 day
 
 workline:objection:apply:
@@ -551,8 +553,12 @@ workline:objection:apply:
     - *bot
     - git remote set-url origin "https://oauth2:${WORKLINE_GITLAB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"
     - '[ -s answer-run ] || { echo "nothing proposed: nothing to apply"; exit 0; }'
+    # The judge ran the Draft's code: its run is data, found by name; the
+    # repository, roles and forge are this job's, the default branch's.
+    - run=$(cat answer-run)
+    - 'printf "%s" "$run" | grep -Eqx "[0-9]{8}T[0-9]{6}\.[0-9]{9}-[a-z0-9-]+" && [ -d "$WORKLINE_RUNS_DIR/$run" ] || { echo "workline: the judge named no run of its own: $run"; exit 1; }'
     - status=0
-    - workline apply "$(cat answer-run)" --summary workline-summary.md --summary workline-summary.html || status=$?
+    - workline apply "$run" --from-merge-request "$MR_IID" --head "$(cat answer-head)" --forge gitlab --summary workline-summary.md --summary workline-summary.html || status=$?
     - exit $status
   after_script: *summary
   artifacts:
