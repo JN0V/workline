@@ -1,6 +1,6 @@
 ---
 sources: [ci/github, .github/workflows/workline.yml, .github/workflows/workline-apply.yml, .github/workflows/workline-gardening.yml, .github/workflows/workline-sample.yml, .github/workflows/workline-answer.yml, .github/actions/engine/action.yml, .github/workflows/release.yml, .github/workflows/release-please.yml, release-please-config.json, .goreleaser.yaml, cmd/workline]
-checked: 8445924a
+checked: 7f7b4f32
 judged: 220b6dc
 verified: agent:claude-code
 reader: fe1505d43360
@@ -87,7 +87,9 @@ write run the default branch's workflow, never a pull request's own
      the docs ([ADR-0051](adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-1-the-release-weekly)).
      With the variable `WORKLINE_CURATOR` set to `on`, its `curator`
      measures the test corpus, no agent, no write token
-     ([how](../roles/tester/docs/curator.md)).
+     ([how](../roles/tester/docs/curator.md)); with Claude's token, it
+     proposes a few redundant tests removed, proven, and `apply` opens
+     the pull request ([how](../roles/tester/docs/removals.md)).
      **Upgrading**: delete a copied `workline-release-docs.yml`; its
      command is gone, and the job fails (exit 64).
    - [workline-objection.yml](../ci/github/workline-objection.yml) and

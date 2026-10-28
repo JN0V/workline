@@ -1,6 +1,6 @@
 ---
 sources: [ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile]
-checked: 8445924a
+checked: 7f7b4f32
 judged: e8a46f7
 verified: agent:documentalist
 reader: 9799dcaf51f3
@@ -119,7 +119,9 @@ Monday's workday. The release never waits for the docs
   release if it were cut now, in main's issue ([how](release.md)).
 - **The test corpus's measures**, opt-in (`WORKLINE_CURATOR=on`):
   `workline:curator`, no agent, no token; its image needs your test
-  runner ([how](../roles/tester/docs/curator.md)).
+  runner ([how](../roles/tester/docs/curator.md)). With Claude's token,
+  `workline:curator:judge` and `:apply` propose a few redundant tests
+  removed, proven ([how](../roles/tester/docs/removals.md)).
 - **Upgrading**: delete a schedule with `WORKLINE_TASK=release-docs`,
   left from an older template; it runs nothing now.
 
