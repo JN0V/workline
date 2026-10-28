@@ -8,7 +8,7 @@ sources:
   - ci/gitlab/workline.gitlab-ci.yml#workline:sample:write
   - roles/auditor
   - roles/product-owner/role.yaml
-checked: b6085f38
+checked: 3b872f73
 judged: c9d96e2
 verified: agent:claude-code
 ---
