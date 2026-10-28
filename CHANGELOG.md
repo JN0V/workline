@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.46.0](https://github.com/JN0V/workline/compare/v0.45.0...v0.46.0) (2026-10-28)
+
+
+### Features
+
+* **tester:** freeze its tests, answer an objection on its line ([#654](https://github.com/JN0V/workline/issues/654)) ([d09427c](https://github.com/JN0V/workline/commit/d09427c67167bd657ddaa710910284c1d53e92b1))
+
 ## [0.45.0](https://github.com/JN0V/workline/compare/v0.44.0...v0.45.0) (2026-10-28)
 
 
