@@ -287,3 +287,23 @@ Each step: conformance cases first; a try told under `## Tried` ([ADR-0043]).
 [ADR-0050]: 0050-each-act-has-its-moment-and-a-wait-budget.md
 [ADR-0054]: 0054-the-developer-takes-a-ready-issue-to-a-pull-request.md
 [ADR-0051]: 0051-a-check-sits-where-its-catch-is-worth-its-cost.md
+
+## Amendment 2026-10-28: step 5 as built
+
+- **Where**: the tester on `merge-request`, after the frozen guard, on
+  its branch once the pull request is marked ready: the builder marks
+  it so when it closes the issue. A Draft's tests are meant red; the
+  proof waits.
+- **What runs**: the base once, to tell the new tests (the head's
+  reports hold them, the base's does not); then the head three times,
+  one after the other. Never again until green.
+- **One fresh checkout for the three**, not three: the runner's build
+  cache. On a copy of workline, a Go package: the proof about 10 s,
+  not 22 s. A test that a run before it breaks is flaky too.
+- **Go's result cache off** (`-count=1` in `GOFLAGS`): it would replay
+  the first pass. A random order is the project's `test-command`'s,
+  `-shuffle=on` in Go
+  ([per ecosystem](../../roles/tester/docs/green-proof.md)).
+- **Findings**: one red of three is `test-flaky`, blocking, the runs
+  named; red in all three, `test-red-on-head`; a flaky test the base
+  had warns, not the change's (principle 8).

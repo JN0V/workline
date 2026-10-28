@@ -4,7 +4,7 @@ sources:
   - internal/tester
   - ci/github/workline-objection.yml
   - ci/github/workline-answer.yml
-checked: b075cadb
+checked: 68001ec6
 verified: agent:claude-code
 ---
 # Tester
@@ -25,7 +25,7 @@ file. All roles: [docs/roles.md](../../docs/roles.md). Where it stands:
 [status](docs/status.md); its design:
 [ADR-0055](../../docs/adr/0055-the-tester-writes-the-acceptance-tests-before-the-code.md).
 
-**Does**, today (steps 1 to 4 of the
+**Does**, today (steps 1 to 5 of the
 [build plan](../../docs/adr/0055-the-tester-writes-the-acceptance-tests-before-the-code.md#build-plan)):
 
 - `workline test write --issue <n>`: has the agent write one test for
@@ -38,11 +38,11 @@ file. All roles: [docs/roles.md](../../docs/roles.md). Where it stands:
   ([below](#frozen-tests-and-objections));
 - runs on its own: one ready issue a scheduled run, and an objection
   as it is posted ([below](#when-it-runs)); hands its Draft to whoever
-  builds ([hand-over](docs/hand-over.md)).
+  builds ([hand-over](docs/hand-over.md));
+- proves the new tests green three runs out of three on the pull
+  request that closes the issue: one red is flaky ([how](docs/green-proof.md)).
 
-**Does not**, yet: prove the tests green on the closing pull request,
-or prune the corpus.
-Those are the next steps ([status](docs/status.md#missing)).
+**Does not**, yet: prune the corpus ([status](docs/status.md#missing)).
 
 ## Write an issue's tests
 
