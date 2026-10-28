@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.49.0](https://github.com/JN0V/workline/compare/v0.48.0...v0.49.0) (2026-10-28)
+
+
+### Features
+
+* **tester:** remove redundant tests with their proof ([#668](https://github.com/JN0V/workline/issues/668)) ([7486e83](https://github.com/JN0V/workline/commit/7486e831922454c6d21ae3b7418aaec50e1655ba))
+* **tester:** the curator's measures, no agent ([#665](https://github.com/JN0V/workline/issues/665)) ([4da4f5a](https://github.com/JN0V/workline/commit/4da4f5aa6dffa19c47759c302607c06e10d4364d))
+
+
+### Bug Fixes
+
+* **conformance:** keep workline's own variables out of every case ([#667](https://github.com/JN0V/workline/issues/667)) ([33a1935](https://github.com/JN0V/workline/commit/33a19351b363f81a6926a9bd236b15c88a5b7be6))
+
 ## [0.48.0](https://github.com/JN0V/workline/compare/v0.47.0...v0.48.0) (2026-10-28)
 
 
