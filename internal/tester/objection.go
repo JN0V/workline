@@ -31,10 +31,13 @@ import (
 const ObjectionWord = "workline:objection"
 
 // The tester's own comments in a thread carry answerMark, a person's turn
-// personMark: workline's own account may write for other roles too.
+// personMark, an objection it could not read unreadMark (the builder's
+// turn, not an answer counted): workline's own account may write for
+// other roles too.
 var (
 	answerMark = forge.Marker("tester-answer")
 	personMark = forge.Marker("tester-person-decides")
+	unreadMark = forge.Marker("tester-unreadable")
 )
 
 // The kinds an objection names, as the ADR words them.
@@ -59,7 +62,7 @@ type objection struct {
 	Test, Scenario, Kind, Why string
 }
 
-var fieldLine = regexp.MustCompile(`(?i)^\s*(?:[-*+]\s+)?\**\s*(test|scenario|kind|why)\s*\**\s*:\s*\**\s*(.*)$`)
+var fieldLine = regexp.MustCompile(`(?i)^\s*(?:[-*+]\s+)?(\**)\s*(test|scenario|kind|why)\s*\**\s*:\s*(.*)$`)
 
 // parseObjection reads `test:`, `scenario:`, `kind:`, `why:` lines; why
 // runs to the end. The kind is one of kinds, by its word.
@@ -73,11 +76,14 @@ func parseObjection(body string) (objection, []string) {
 		if m == nil {
 			continue
 		}
-		v := strings.TrimSpace(m[2])
-		if !strings.EqualFold(m[1], "why") {
+		label, v := m[2], strings.TrimSpace(m[3])
+		if m[1] != "" { // a bold label, `**test:** value`: its closing marker
+			v = strings.TrimSpace(strings.TrimPrefix(v, m[1]))
+		}
+		if !strings.EqualFold(label, "why") {
 			v = unwrap(v)
 		}
-		switch strings.ToLower(m[1]) {
+		switch strings.ToLower(label) {
 		case "test":
 			o.Test = v
 		case "scenario":
@@ -87,10 +93,28 @@ func parseObjection(body string) (objection, []string) {
 		case "why":
 			o.Why = strings.TrimSpace(v + "\n" + strings.Join(lines[i+1:], "\n"))
 		}
-		if strings.EqualFold(m[1], "why") {
+		if strings.EqualFold(label, "why") {
 			break
 		}
 	}
+	return o, o.missing()
+}
+
+// with is o, each field r gives replacing its own.
+func (o objection) with(r objection) objection {
+	for _, f := range []struct {
+		to *string
+		v  string
+	}{{&o.Test, r.Test}, {&o.Scenario, r.Scenario}, {&o.Kind, r.Kind}, {&o.Why, r.Why}} {
+		if f.v != "" {
+			*f.to = f.v
+		}
+	}
+	return o
+}
+
+// missing names the fields o lacks.
+func (o objection) missing() []string {
 	var missing []string
 	if o.Test == "" {
 		missing = append(missing, "test")
@@ -104,7 +128,7 @@ func parseObjection(body string) (objection, []string) {
 	if o.Why == "" {
 		missing = append(missing, "why")
 	}
-	return o, missing
+	return missing
 }
 
 func kindOf(s string) string {
@@ -231,7 +255,7 @@ func answerPre(runDir, repo string, s Settings) int {
 		if t.Resolved || len(t.Comments) == 0 || !strings.HasPrefix(strings.TrimSpace(t.Comments[0].Body), ObjectionWord) {
 			continue
 		}
-		if last := t.Comments[len(t.Comments)-1]; mine(last, answerMark) {
+		if last := t.Comments[len(t.Comments)-1]; mine(last, answerMark) || mine(last, unreadMark) {
 			continue // answered, the builder's turn
 		}
 		if _, decided, asked := read(t); asked && decided == "" {
@@ -255,7 +279,18 @@ func answerPre(runDir, repo string, s Settings) int {
 	if exchanges <= 0 {
 		exchanges = 3
 	}
-	o, unread := parseObjection(t.Comments[0].Body)
+	// The first comment's fields, then those the builder gave in a reply,
+	// the latest kept: an unreadable objection is completed in the thread.
+	o, _ := parseObjection(t.Comments[0].Body)
+	for _, c := range t.Comments[1:] {
+		if own.Wrote(c) {
+			continue
+		}
+		if r, _ := parseObjection(c.Body); r != (objection{}) {
+			o = o.with(r)
+		}
+	}
+	unread := o.missing()
 	a.Objection, a.Kind = o, kindOf(o.Kind)
 	is, err := f.Issue(issue)
 	if errors.Is(err, forge.ErrUnreachable) {
@@ -317,14 +352,14 @@ func writeAnswerTask(runDir, repo string, a answer, t forge.Thread, is *forge.Is
 	for i, c := range t.Comments {
 		who := "the builder"
 		switch {
-		case strings.Contains(c.Body, answerMark):
+		case strings.Contains(c.Body, answerMark), strings.Contains(c.Body, unreadMark):
 			who = "you, the tester"
 		case strings.Contains(c.Body, personMark):
 			who = "the engine, asking a person"
 		case c.Insider && !c.Bot && a.Decided == c.Body:
 			who = "a person of the project, deciding"
 		}
-		body := strings.TrimSpace(strings.NewReplacer(answerMark, "", personMark, "").Replace(c.Body))
+		body := strings.TrimSpace(strings.NewReplacer(answerMark, "", personMark, "", unreadMark, "").Replace(c.Body))
 		fmt.Fprintf(&b, "### %d. From %s\n\n%s\n\n", i+1, who, body)
 	}
 	if a.Decided != "" {
@@ -383,8 +418,8 @@ func (a answer) left() string {
 func plainAnswer(a answer, s Settings) ([]intent.Intention, verdict.Verdict) {
 	switch a.Mode {
 	case modeMalformed:
-		return []intent.Intention{a.reply(fmt.Sprintf("**Not answered**: %s. An objection opens with `%s`, then `test:`, `scenario:` (its name in #%d), `kind:` (%s) and `why:`, one a line; edit it, or reply with them.",
-				a.Why, ObjectionWord, a.Issue, kindNames()))},
+		return []intent.Intention{{Kind: "comment", Value: map[string]any{"thread": a.Thread, "body": fmt.Sprintf("**Not answered**: %s. An objection opens with `%s`, then `test:`, `scenario:` (its name in #%d), `kind:` (%s) and `why:`, one a line; reply in this thread with the ones to fix.\n\n%s",
+				a.Why, ObjectionWord, a.Issue, kindNames(), unreadMark)}}},
 			verdict.Verdict{Status: verdict.Pass, Summary: "an objection the tester cannot read, said in its thread" + a.left(),
 				Findings: []verdict.Finding{{Rule: "objection-unreadable", Level: "warn", Where: a.URL, Message: a.Why}}}
 	case modePerson:
@@ -532,12 +567,16 @@ func upper(s string) string {
 	return strings.ToUpper(s[:1]) + s[1:]
 }
 
-// unwrap strips one wrapping pair of markdown markers, `**x**` or `` `x` ``,
-// never a marker that only ends the text.
+// unwrap strips one pair of markdown markers wrapping the whole value,
+// bold, italic or code; never a marker that only ends the text, nor the
+// outer two of several spans.
 func unwrap(v string) string {
 	for _, m := range []string{"**", "*", "`"} {
 		if len(v) > 2*len(m) && strings.HasPrefix(v, m) && strings.HasSuffix(v, m) {
-			return strings.TrimSpace(v[len(m) : len(v)-len(m)])
+			if in := v[len(m) : len(v)-len(m)]; !strings.Contains(in, m) {
+				return strings.TrimSpace(in)
+			}
+			return v
 		}
 	}
 	return v

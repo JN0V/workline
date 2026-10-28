@@ -17,6 +17,9 @@ func TestParseObjection(t *testing.T) {
 	if o, _ := parseObjection("workline:objection\nwhy: use the `validate`"); o.Why != "use the `validate`" {
 		t.Fatalf("why %q", o.Why)
 	}
+	if o, _ := parseObjection("workline:objection\nscenario: **Two** by **three**"); o.Scenario != "**Two** by **three**" {
+		t.Fatalf("scenario %q", o.Scenario)
+	}
 	if k := kindOf("the need itself"); k != "need" {
 		t.Fatalf("kind %q", k)
 	}
