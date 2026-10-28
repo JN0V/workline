@@ -1376,8 +1376,8 @@ func openedRecord(runDir string) (key, body string) {
 	var mr struct {
 		Record struct{ Sticky, Body string }
 	}
-	if data, err := os.ReadFile(filepath.Join(runDir, "out", "merge-request.yaml")); err == nil {
-		yaml.Unmarshal(data, &mr)
+	if data, err := os.ReadFile(filepath.Join(runDir, "out", "merge-request.yaml")); err != nil || yaml.Unmarshal(data, &mr) != nil {
+		return "", ""
 	}
 	return mr.Record.Sticky, mr.Record.Body
 }
@@ -1387,8 +1387,8 @@ func openedRecord(runDir string) (key, body string) {
 // none: then they go in a comment.
 func ownPush(runDir string) string {
 	var mr struct{ Push string }
-	if data, err := os.ReadFile(filepath.Join(runDir, "out", "merge-request.yaml")); err == nil {
-		yaml.Unmarshal(data, &mr)
+	if data, err := os.ReadFile(filepath.Join(runDir, "out", "merge-request.yaml")); err != nil || yaml.Unmarshal(data, &mr) != nil {
+		return ""
 	}
 	return strings.TrimSpace(mr.Push)
 }
@@ -1410,12 +1410,11 @@ func commitOnOwnBranch(f forge.Forge, st runState, message string) error {
 	if err != nil {
 		return err
 	}
-	tipRef := "origin/" + mr.Branch
-	if forge.KeepsBranches(f) {
-		tipRef = mr.Branch
-	} else if _, err := git(st.Repo, nil, "fetch", "-q", "origin", mr.Branch); err != nil {
-		return fmt.Errorf("%w: %v", forge.ErrUnreachable, err)
-	} else {
+	tipRef := mr.Branch // the clone keeps it; else its tip on origin, fetched
+	if !forge.KeepsBranches(f) {
+		if _, err := git(st.Repo, nil, "fetch", "-q", "origin", mr.Branch); err != nil {
+			return fmt.Errorf("%w: %v", forge.ErrUnreachable, err)
+		}
 		tipRef = "FETCH_HEAD"
 	}
 	tip, err := git(st.Repo, nil, "rev-parse", tipRef)
@@ -1431,7 +1430,7 @@ func commitOnOwnBranch(f forge.Forge, st runState, message string) error {
 	}
 	for _, s := range steps {
 		if _, err := git(st.Repo, nil, s...); err != nil {
-			git(st.Repo, nil, append([]string{"reset", "-q", "--"}, st.Written...)...)
+			_, _ = git(st.Repo, nil, append([]string{"reset", "-q", "--"}, st.Written...)...)
 			return err
 		}
 	}
