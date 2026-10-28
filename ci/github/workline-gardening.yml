@@ -6,6 +6,9 @@
 # workline/<role>/<task>, updated when the task runs again, and no more are
 # proposed while max-open-merge-requests of them wait (ADR-0006).
 # The review is on those pull requests; nothing is merged here (ADR-0011).
+# The tester, when the line lists it, writes a ready issue's tests, one
+# issue a run, opened as a Draft (ADR-0055): install your test runner in
+# judge, where it proves them red.
 # And a release's dry run: what would hold the release if it were cut now,
 # said in the default branch's issue (dry-run below). The release never
 # waits for the docs (ADR-0051).

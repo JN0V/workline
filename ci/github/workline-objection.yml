@@ -1,0 +1,31 @@
+# workline's tester woken by an objection, on GitHub Actions — copy to
+# .github/workflows/workline-objection.yml, with workline-answer.yml beside it.
+#
+# Whoever builds on the tester's Draft (branch workline/tester/issue-<n>)
+# objects to a test on its line, a comment opened by `workline:objection`
+# (roles/tester/README.md). This workflow only notices it: GitHub runs it as
+# the pull request's branch holds it, so it holds no token and no secret,
+# runs nothing of the repository, and passes. Its end wakes
+# workline-answer.yml, which runs as the default branch holds it: there the
+# tester answers, kept or rewritten (ADR-0055).
+#
+# Woken by a person of the project (owner, member, collaborator) or an App
+# installed on it, such as workline's own builder; another's comment wakes
+# nothing, an agent's tokens never spent on a stranger's word.
+name: workline objection
+on:
+  pull_request_review_comment: {types: [created]}
+permissions: {}
+
+jobs:
+  noticed:
+    if: >-
+      startsWith(github.event.pull_request.head.ref, 'workline/tester/') &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      contains(github.event.comment.body, 'workline:objection') &&
+      (contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association) || github.event.comment.user.type == 'Bot')
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - env: {PR: "${{ github.event.pull_request.number }}", URL: "${{ github.event.comment.html_url }}"}
+        run: echo "an objection on pull request #$PR, $URL; workline-answer.yml answers it"

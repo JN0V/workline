@@ -38,6 +38,7 @@ type keyStep struct {
 }
 
 type keyJob struct {
+	Needs       any       `yaml:"needs"`
 	If          string    `yaml:"if"`
 	Environment any       `yaml:"environment"`
 	Env         yaml.Node `yaml:"env"`
@@ -101,7 +102,7 @@ func TestGitHubAppKeyOutOfPullRequestRuns(t *testing.T) {
 			if env := environmentOf(job.Environment); env != "workline-app" {
 				t.Errorf("%s, job %s: uses the App's key outside the environment workline-app (%q)", name, jobName, env)
 			}
-			if _, ok := wf.On["workflow_run"]; ok {
+			if _, ok := wf.On["workflow_run"]; ok && !ownRunOnly(job) {
 				checkReadsRunAsData(t, name, jobName, job)
 			}
 			_, target := wf.On["pull_request_target"]
@@ -150,6 +151,21 @@ func environmentOf(v any) string {
 		return fmt.Sprint(e["name"])
 	}
 	return ""
+}
+
+// ownRunOnly says whether a job after workflow_run reads only what a job
+// of its own run left (needs:), never the run that woke it: the tester's
+// answer, judged by this workflow as the default branch holds it.
+func ownRunOnly(job keyJob) bool {
+	if job.Needs == nil {
+		return false
+	}
+	for _, s := range job.Steps {
+		if strings.Contains(s.Run, "gh run download") || strings.HasPrefix(s.Uses, "actions/download-artifact@") && s.With["run-id"] != nil {
+			return false
+		}
+	}
+	return true
 }
 
 // checkReadsRunAsData checks a job reading a pull request's run after it
