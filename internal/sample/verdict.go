@@ -89,6 +89,11 @@ func kindOf(a Act) string {
 		return "finding"
 	case commitRole:
 		return "rewrite"
+	case testRole:
+		switch a.Kind {
+		case "tests", "kept", "rewritten", "removal":
+			return a.Kind
+		}
 	case productOwner:
 		switch {
 		case a.Kind == "ready", a.Kind == "refine", a.Kind == "sources", a.Kind == "ask", a.Kind == "split":
@@ -360,6 +365,8 @@ func (rd *reader) material(a *Act, kind string) (*material, string) {
 		return m, rd.finding(a, m)
 	case commitRole:
 		return m, rd.rewrite(a, m)
+	case testRole:
+		return m, rd.testerMaterial(a, m)
 	}
 	return m, rd.issueAct(a, m, kind)
 }
@@ -416,18 +423,24 @@ func (rd *reader) rewrite(a *Act, m *material) string {
 	if err != nil {
 		return fmt.Sprintf("the diff of %s cannot be read", a.Ref)
 	}
-	if len(diff) > diffChars {
-		cut := diffChars
-		for cut > 0 && !utf8.RuneStart(diff[cut]) {
-			cut-- // never inside a character
-		}
-		diff = diff[:cut] + fmt.Sprintf("\n… (cut: the diff takes more than %d characters)", diffChars)
-	}
+	diff = cutDiff(diff)
 	text := strings.TrimSpace(strings.Join(keep, "\n"))
 	m.items = append(m.items, item{name: "message", text: text, full: text}, item{name: "diff", text: diff, full: diff})
 	m.act = fmt.Sprintf("The message of commit %s, which the committer rewrote.", a.Ref)
 	m.author, m.acted = actedBy(a.By)
 	return ""
+}
+
+// cutDiff is a diff as its judge reads it: at most diffChars characters.
+func cutDiff(diff string) string {
+	if len(diff) <= diffChars {
+		return diff
+	}
+	cut := diffChars
+	for cut > 0 && !utf8.RuneStart(diff[cut]) {
+		cut-- // never inside a character
+	}
+	return diff[:cut] + fmt.Sprintf("\n… (cut: the diff takes more than %d characters)", diffChars)
 }
 
 // actedBy reads the agents and models a record names, <agent>:<model>, a

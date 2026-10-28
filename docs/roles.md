@@ -51,7 +51,8 @@ Two roles never run on an event of their own:
 - the **auditor** re-checks, each week, one in ten of every role's acts
   (`workline sample`, [ADR-0046](adr/0046-the-auditor-re-checks-every-roles-acts.md)): the docs the
   documentalist confirmed, the product owner's acts, the reviewer's judged
-  findings, the committer's rewrites, each against what it was done on.
+  findings, the committer's rewrites, the tester's acts, each against
+  what it was done on.
 
 How to run each role from a hook, a script or a CI job:
 [triggers.md](triggers.md). What a role is, for those who write one:

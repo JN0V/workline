@@ -1,0 +1,76 @@
+case: auditor/verdict-reads-the-testers-acts
+about: "Each act of the tester drawn is re-checked by the auditor against what it was done on (ADR-0046, the tester's row): its tests against the scenarios its record keeps, the code at the base it proved them red on; an answer kept against the scenario, the objection's thread and the test as it read it; a rewrite, the test before and after; a removal against its pull request's proof and the diff. Each planted wrong is found false with the material's words, found again; the judge's independence from the model that acted is said."
+given:
+  repo: curated
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main && git tag base"
+    - "git checkout -q -b workline/tester/issue-3 && printf '. ./lib.sh\\n[ \"$(sub 3 5)\" = -2 ]\\n' > tests/test_sub.sh && git add tests/test_sub.sh && GIT_AUTHOR_DATE=2026-01-06T09:00:00Z GIT_COMMITTER_DATE=2026-01-06T09:00:00Z git commit -q -m 'test: the acceptance tests of #3' -m 'Workline-Role: tester\nWorkline-Model: claude:claude-sonnet-5' && git tag tests-written"
+    - "printf '. ./lib.sh\\n[ \"$(sub 5 3)\" -ge 0 ]\\n' > tests/test_sub.sh && GIT_AUTHOR_DATE=2026-01-06T15:00:00Z GIT_COMMITTER_DATE=2026-01-06T15:00:00Z git commit -q -am 'test: rewrite tests/test_sub.sh on an objection' -m 'Workline-Role: tester\nWorkline-Model: claude:claude-sonnet-5' && git tag tests-rewritten"
+    - "printf 'sub() { echo $(($1 - $2)); }\\n' >> lib.sh && GIT_AUTHOR_DATE=2026-01-07T09:00:00Z GIT_COMMITTER_DATE=2026-01-07T09:00:00Z git commit -q -am 'feat: subtract two numbers'"
+    - "git push -q origin workline/tester/issue-3:refs/pull/1/head && git checkout -q main && git merge -q --squash workline/tester/issue-3 && GIT_AUTHOR_DATE=2026-01-07T12:00:00Z GIT_COMMITTER_DATE=2026-01-07T12:00:00Z git commit -q -m 'feat: subtract two numbers (#1)' && git tag m1"
+    - "git checkout -q -b workline/tester/curate-tests && git rm -q tests/test_add_again.sh && GIT_AUTHOR_DATE=2026-01-08T09:00:00Z GIT_COMMITTER_DATE=2026-01-08T09:00:00Z git commit -q -m 'test: curate tests, 1 test fewer' -m 'Workline-Role: tester\nWorkline-Model: claude:claude-sonnet-5'"
+    - "git push -q origin workline/tester/curate-tests:refs/pull/2/head && git checkout -q main && git merge -q --squash workline/tester/curate-tests && GIT_AUTHOR_DATE=2026-01-08T12:00:00Z GIT_COMMITTER_DATE=2026-01-08T12:00:00Z git commit -q -m 'test: curate tests, 1 test fewer (#2)' && git tag m2 && git push -q origin main"
+    - "git branch -q -D workline/tester/issue-3 workline/tester/curate-tests"
+  forge:
+    issues:
+      - id: 3
+        title: "Subtract two numbers"
+        labels: []
+        body: "## Need\n\nI want to subtract a count from a price.\n\n## Validation\n\n- **Five minus three:** Given the library, When I subtract 3 from 5, Then I get 2.\n\n---\n\n## Scope\n\n- `lib.sh`: a `sub` function beside `add`.\n"
+    merge-requests:
+      - id: 1
+        title: "test: the acceptance tests of #3"
+        branch: workline/tester/issue-3
+        base: main
+        labels: []
+        merged-at: "2026-01-07T12:00:00Z"
+        merged-as: m1
+        comments:
+          - |
+            The tests of #3, frozen.
+
+            <!-- workline:tester-record {"issue":3,"base":"base","files":{"tests/test_sub.sh":"0000000000000000000000000000000000000000"},"scenarios":[{"name":"Five minus three","text":"Given the library, When I subtract 3 from 5, Then I get 2."}]} -->
+            <!-- workline:sticky=tester/tests -->
+        threads:
+          - id: "7"
+            path: tests/test_sub.sh
+            line: 2
+            author: builder
+            body: "workline:objection\n- test: tests/test_sub.sh\n- scenario: Five minus three\n- kind: over-specified\n- why: sub may print a sign"
+            replies:
+              - created: "2026-01-06T10:00:00Z"
+                body: |
+                  **Kept**: the scenario names the value 2, which the test checks.
+                  <!-- workline:tester-act {"act":"kept","at":"tests-written","model":"claude:claude-sonnet-5","scenario":{"name":"Five minus three","text":"Given the library, When I subtract 3 from 5, Then I get 2."},"test":"tests/test_sub.sh"} -->
+
+                  <!-- workline:tester-answer -->
+              - {body: "workline:objection\n- why: still, the sign varies", author: builder}
+              - created: "2026-01-06T15:00:00Z"
+                body: |
+                  **Rewritten**, the tester's own commit on this branch, red on the base: the sign may vary, the test now reads a value not below zero.
+                  <!-- workline:tester-act {"act":"rewritten","at":"tests-written","model":"claude:claude-sonnet-5","scenario":{"name":"Five minus three","text":"Given the library, When I subtract 3 from 5, Then I get 2."},"test":"tests/test_sub.sh","blob":"tests-rewritten:tests/test_sub.sh"} -->
+
+                  <!-- workline:tester-answer -->
+      - id: 2
+        title: "test: curate tests, 1 test fewer"
+        branch: workline/tester/curate-tests
+        base: main
+        labels: []
+        merged-at: "2026-01-08T12:00:00Z"
+        merged-as: m2
+        body: "The tester's curator removes 1 test of `tests`.\n\n| | Before | After |\n|---|---|---|\n| Tests | 3 | 2 |\n| Coverage | 2 of 2 lines | 2 of 2 lines |\n| Mutants killed | 2 of 2 | 2 of 2 |\n\n## Removed\n\n- `tests.test_add_again`\n\n## Why\n\n- test_add_again checks what test_add checks: add of two numbers.\n"
+run: {sample: [--week, 2026-W02, --judge, 'cmd:sh "$FIXTURES/agents/audit-acts.sh"'], then: apply}
+expect:
+  status: pass
+  agent-calls: 4
+  findings:
+    - {rule: act-false, where: "#1", message: "the tests the tester wrote, on #1: test: the acceptance tests of #3 — false: tests/test_sub.sh:2 says \"sub 3 5\"; scenarios says \"When I subtract 3 from 5, Then I get 2.\"; read by cmd:"}
+    - {rule: act-false, where: "#1 tests/test_sub.sh", message: "an objection the tester answered kept, on #1, at `tests/test_sub.sh`: **Kept**: the scenario names the value 2, which the test checks. — false: tests/test_sub.sh:2 says \"= -2 ]\""}
+    - {rule: act-false, where: "#1 tests/test_sub.sh", message: "an objection the tester answered rewritten, on #1, at `tests/test_sub.sh`"}
+    - {rule: act-false, where: "#1 tests/test_sub.sh", message: "after:2 says \"-ge 0 ]\"; scenarios says \"Then I get 2.\"; read by cmd:"}
+    - {rule: act-false, where: "#2", message: "tests the tester's curator removed, on #2: test: curate tests, 1 test fewer — false: diff says \"add 1 1\""}
+    - {rule: act-false, where: "#2", message: "independence: provider (claude-sonnet-5 → cmd)"}
+  forge:
+    issues:
+      - {id: 4, title: "workline: the weekly sample of every role's acts", comment-contains: "| #1 | tester, tests written | 2026-01-06 | test: the acceptance tests of #3 (claude:claude-sonnet-5) | **false** |"}
+      - {id: 4, comment-contains: "- **#2**, false:\n  - diff says \"add 1 1\"\n"}

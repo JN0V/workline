@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -30,7 +31,7 @@ const (
 	commitRole = "committer"
 )
 
-var roleOrder = []string{docsRole, productOwner, reviewRole, commitRole}
+var roleOrder = []string{docsRole, productOwner, reviewRole, commitRole, testRole}
 
 // Act is an act of a role the sample drew.
 type Act struct {
@@ -57,17 +58,18 @@ type Act struct {
 	// Verdict: true (it stands), false (proven wrong, with the
 	// material's words), unproven (said wrong, not proven: for a person),
 	// or not-read (for a person, Why says why).
-	Verdict      string  `json:"verdict"`
-	Why          string  `json:"why,omitempty"`
-	Judge        string  `json:"judge,omitempty"`
-	Model        string  `json:"model,omitempty"`
-	Independence string  `json:"independence,omitempty"`
-	Proofs       []Proof `json:"proofs,omitempty"`
-	Unproven     []Proof `json:"unproven,omitempty"`
-	Panel        *Panel  `json:"panel,omitempty"`  // how a false verdict was settled
-	Defect       *Defect `json:"defect,omitempty"` // a true finding its judge dropped, for an issue
-	key          string  // what it is ranked by, with the week
-	older        bool    // a product owner's act read without the record ADR-0046 completes: as its issue reads now
+	Verdict      string     `json:"verdict"`
+	Why          string     `json:"why,omitempty"`
+	Judge        string     `json:"judge,omitempty"`
+	Model        string     `json:"model,omitempty"`
+	Independence string     `json:"independence,omitempty"`
+	Proofs       []Proof    `json:"proofs,omitempty"`
+	Unproven     []Proof    `json:"unproven,omitempty"`
+	Panel        *Panel     `json:"panel,omitempty"`  // how a false verdict was settled
+	Defect       *Defect    `json:"defect,omitempty"` // a true finding its judge dropped, for an issue
+	key          string     // what it is ranked by, with the week
+	tester       *testerAct // a tester's act: what it is re-checked against
+	older        bool       // a product owner's act read without the record ADR-0046 completes: as its issue reads now
 }
 
 // Count is how many acts of a role's kind the window held, and how many
@@ -104,6 +106,9 @@ func drawEach(week string, acts []Act) ([]Act, []Count) {
 		rj, kj, _ := strings.Cut(order[j], "\x00")
 		if rank(ri) != rank(rj) {
 			return rank(ri) < rank(rj)
+		}
+		if ri == testRole { // in the order the tester does them
+			return slices.Index(testerKinds, ki) < slices.Index(testerKinds, kj)
 		}
 		return ki < kj
 	})
@@ -533,6 +538,12 @@ func actsOfTheWindow(o Options, res *Result, h *heads, commits []string, first, 
 		} else {
 			acts = append(acts, rv...)
 			res.NotDrawn = append(res.NotDrawn, unread...)
+			if ts, unread, err := testerActs(o.Repo, o.Forge, h.merged); err != nil {
+				unreachable("the tester's acts", err)
+			} else {
+				acts = append(acts, ts...)
+				res.NotDrawn = append(res.NotDrawn, unread...)
+			}
 		}
 	}
 	res.NotDrawn = append(res.NotDrawn, h.unread...)
@@ -565,6 +576,15 @@ func actWords(a Act) string {
 		if a.In != "" {
 			fmt.Fprintf(&b, ", on the head of %s", a.In)
 		}
+	case testRole:
+		switch a.Kind {
+		case "tests":
+			fmt.Fprintf(&b, "the tests the tester wrote, on %s", a.Ref)
+		case "removal":
+			fmt.Fprintf(&b, "tests the tester's curator removed, on %s", a.Ref)
+		default:
+			fmt.Fprintf(&b, "an objection the tester answered %s, on %s, at `%s`", a.Kind, a.Ref, a.Where)
+		}
 	default:
 		fmt.Fprintf(&b, "the %s's %s, %s", a.Role, a.Kind, a.Ref)
 	}
@@ -586,6 +606,12 @@ func kindWords(c Count) string {
 		return "finding " + c.Kind
 	case c.Role == commitRole:
 		return "message rewritten"
+	case c.Role == testRole && c.Kind == "tests":
+		return "tests written"
+	case c.Role == testRole && c.Kind == "removal":
+		return "tests removed"
+	case c.Role == testRole:
+		return "objection answered " + c.Kind
 	}
 	return "`" + c.Kind + "`"
 }

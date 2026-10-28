@@ -257,7 +257,8 @@ kind has any, drawn the same on a rerun.
   owner's acts done alone, the findings the reviewer's judge kept or
   dropped on every run, from the lines its summary comment hides
   ([more](../roles/reviewer/docs/judge.md#every-finding-judged-kept-for-the-weekly-sample)),
-  the committer's rewrites. What cannot be drawn is said.
+  the committer's rewrites; the tester's tests, answers and removals, on
+  its merge requests merged. What cannot be drawn is said.
 - **Each re-checked**, one call an act, by the judge (`--judge`, else
   `WORKLINE_JUDGE`, else `sample.judge`), never a model that acted;
   a finding blind. False only with a quote the engine finds again, a

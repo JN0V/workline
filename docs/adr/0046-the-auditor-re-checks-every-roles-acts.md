@@ -5,7 +5,8 @@
   finding judged, the oldest going first past the comment's size
   ([the reviewer's judge](../../roles/reviewer/docs/judge.md#every-finding-judged-kept-for-the-weekly-sample));
   the committer's trailers; the product owner's fields and its issue
-  folded in (2026-10-17, [settled while building](#settled-while-building))
+  folded in (2026-10-17, [settled while building](#settled-while-building));
+  the tester's acts (2026-10-28, [the tester's row](#amendment-2026-10-28-the-testers-row))
 - **Date:** 2026-10-14
 - **Decided by:** the maintainer, on 2026-10-14: [#205] and [#276] built
   together, the share one in ten; the open points settled as below
@@ -55,6 +56,7 @@ so a rare kind is still read ([research]).
 | Product owner | each act done alone: ready, refine, sources, order, ask; closing, split, milestone, rename where turned on | 45: 10, 12, 6, 14, 3 | 7 |
 | Reviewer | an important finding its judge let through, or dropped | about 160 a week: 39, 121 | 17 |
 | Committer | a message it rewrote | 7 in two weeks, at least | 1 |
+| Tester | its tests; an objection answered kept or rewritten; a curator's removal ([amendment](#amendment-2026-10-28-the-testers-row)) | none merged yet | 1 a kind |
 
 Not drawn, and why:
 
@@ -86,6 +88,7 @@ completed:
 | Product owner | `did` in the issue's state | `at`, the commit read at; `model`; `body`, a digest of the text read |
 | Reviewer | its summary comment | a hidden line per finding judged — lens, place, commit, yes or no, both models — kept for the merge request's life, on every forge |
 | Committer | the commit and its diff | trailers `Workline-Role: committer` and `Workline-Model`; never the author's words |
+| Tester | its merge requests merged: its commits, the record on its Draft, its replies, the curator's pull request | the scenarios read, in the record; a hidden line per answer — the commit read at, the models, the scenario, a rewrite's blob |
 
 - **A commit gone from `main`**, as in W41: fetched from the forge's ref
   of its merge request (`refs/pull/<n>/head`; on GitLab
@@ -115,6 +118,9 @@ finding was kept: it answers blind, and the engine compares.
 | Split | Does each part hold one need, together the parent's? | the parent's words in no part |
 | A finding | Does the code fail as the finding says? The lens's question | the code's words |
 | A rewrite | Does the message say what the commit does, nothing more? Against the diff alone | the message's words, and the diff's |
+| The tester's tests | Does each test check its scenario's Then, red on the base for that reason? | the test's words, the scenario's or the base code's |
+| An answer kept, rewritten | Kept: does the test check the Then, nothing it leaves open? Rewritten: is the Then's meaning kept? | the test's words, before and after, and the scenario's |
+| A curator's removal | Is each test removed redundant, no behaviour the measures cannot see? | the removed test's words |
 
 - **Another model than every model that acted**: for a finding, neither
   the lens's nor the judge's. Workline has one provider and several
@@ -292,6 +298,42 @@ The documentalist's row (2026-10-17, [#466]):
   and a `checked` naming a commit gone from `main` says to give the
   forge.
 
+## Amendment 2026-10-28: the tester's row
+
+Built after [ADR-0055]'s tester, whose acts no record yet let the
+auditor read ([#264]):
+
+- **Where they are read**: on each merge request merged in the window
+  from a `workline/tester/` branch, its head as for the others. Its
+  tests: the commit `test: the acceptance tests of #<n>`, with
+  `Workline-Role: tester` and `Workline-Model`, and the record on its
+  Draft. A removal: the commit `test: curate …` and its pull request's
+  body, the proof's numbers and each test's reason.
+- **What the records gained**: the record on the Draft keeps the
+  scenarios as the run read them (`scenarios`), beside `base`, the
+  commit they were proven red on. Each answer kept or rewritten ends
+  with a hidden line, `workline:tester-act`: the commit the test was read
+  at, the models asked (the run's calls), the scenario, the test, and a
+  rewrite's blob. Nothing else is written.
+- **Its material**: the tests at their commit, the scenarios, the code
+  the issue's Scope names at the base; an answer, the scenario, the
+  objection's thread up to it, the test before and after; a removal, its
+  pull request, the diff, the tests it touched.
+- **Not drawn, mechanical** (as above): an objection to the need itself,
+  sent to the product owner on the builder's own word — the product
+  owner's refine that follows is drawn as its own; a flaky verdict, three
+  runs counted; an objection the tester could not read, or one past its
+  answers, for a person.
+- **The verdict path is unchanged**: a false act counted, settled by the
+  panel, contested by the maintainer. No issue is opened from it: that
+  path stays a dropped finding's.
+- **Cost**: a read is the tests and up to 300 lines of code, about 2k
+  tokens on a small project (measured), about 8k on a real one (estimated); one act a kind
+  a week while the tester's acts stay few.
+- **Older answers**, before the hidden line: not drawn; an older record
+  without `scenarios` is read with the issue's Validation as it reads
+  now, said.
+
 [#89]: https://github.com/JN0V/workline/issues/89
 [#108]: https://github.com/JN0V/workline/issues/108
 [#136]: https://github.com/JN0V/workline/pull/136
@@ -300,6 +342,7 @@ The documentalist's row (2026-10-17, [#466]):
 [#276]: https://github.com/JN0V/workline/issues/276
 [#362]: https://github.com/JN0V/workline/issues/362
 [#466]: https://github.com/JN0V/workline/issues/466
+[#264]: https://github.com/JN0V/workline/issues/264
 [ADR-0005]: 0005-independence-takes-the-best-level-available.md
 [ADR-0014]: 0014-checked-is-earned-by-what-was-read.md
 [ADR-0015]: 0015-the-weekly-sample-is-written-on-the-forge.md
@@ -308,6 +351,7 @@ The documentalist's row (2026-10-17, [#466]):
 [ADR-0033]: 0033-the-weekly-sample-draws-the-product-owners-acts.md
 [ADR-0036]: 0036-a-roles-status-is-earned-by-written-criteria.md
 [ADR-0043]: 0043-a-try-is-told-in-its-pull-request.md
+[ADR-0055]: 0055-the-tester-writes-the-acceptance-tests-before-the-code.md
 [research]: ../research/auditing-agent-acts.md
 [judge-measured]: ../research/judge-measured.md
 [panorama]: ../research/roles-panorama.md
