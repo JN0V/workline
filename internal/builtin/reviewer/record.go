@@ -309,6 +309,24 @@ func standing(repo string, s Settings, st state, blocks []Block) []Block {
 	return out
 }
 
+// answering are the lenses of the standing blocks whose cause's file the
+// commits a lens reads change: each is asked, whosever turn it is, so that
+// a commit that may answer a block is never recorded unread by its lens,
+// the block then held until its line changed (ADR-0020, amended). A lens
+// with nothing to read in this change (skip) is not.
+func answering(blocks []Block, files []File, skip map[string]string) []string {
+	var out []string
+	for _, b := range blocks {
+		if _, ok := skip[b.Lens]; ok || slices.Contains(out, b.Lens) {
+			continue
+		}
+		if slices.Contains(paths(files), b.Cause.Path) {
+			out = append(out, b.Lens)
+		}
+	}
+	return out
+}
+
 // reread leaves out the standing blocks a review read again (#326): a
 // whole one, their lens answering, given the cause's file among those the
 // new commits change, or its issue. Found again and blocking, it is the

@@ -1,0 +1,34 @@
+case: reviewer/block-lens-reads-a-commit-to-its-file-on-another-turn
+about: "The reviewer blocked a merge request on its commit; the author pushes a commit to the cause's file, its cause left as it was, on the turn of a lens that warns (ADR-0050, split runs). The lens that blocked reads that commit, whosever turn it is, and finds nothing: the block goes. Else the commit would be recorded unread by it, and the block held until its line changed."
+given:
+  repo: reviewed
+  setup:
+    - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"
+    # The review of that commit blocked on its finding: recorded with it.
+    - "sed -i \"s/@reviewed@/$(git rev-parse HEAD)/g\" \"$FORGE_FILE\""
+    - "sed -i 's|// Parse reads a count.|// Parse reads a count, zero when it is no number.|' calc/calc.go && git commit -qam 'docs: say what Parse gives for no number'"
+  config:
+    routing: {events: {merge-request: [reviewer]}}
+    roles: {reviewer: {settings: {ai-findings: {correctness: block}}}}
+  forge:
+    issues: []
+    merge-requests:
+      - id: 5
+        labels: []
+        comments:
+          - |
+            **workline reviewer** — 1 findings on the change; lenses: correctness; the author fixes what blocks.
+
+            <!-- workline:record reviewed=@reviewed@ runs=1 read=all -->
+            <!-- workline:blocks [{"lens":"correctness","at":"@reviewed@","where":"calc/calc.go:11","title":"Important: Average divides by one less than the count","cause":{"path":"calc/calc.go","quote":"return total / (len(values) - 1)"}}] -->
+
+            <!-- workline:sticky=reviewer/summary -->
+run: {route: merge-request, warn-apart: true, input: {range: main..HEAD}, target: {merge-request: 5}, ai: "fake:review-nothing"}
+expect:
+  status: pass
+  agent-calls: 1
+  calls: [{task: part, for: 1-correctness}]
+  no-findings: [{rule: correctness}]
+  forge:
+    merge-requests:
+      - {id: 5, comments: 1, comment-contains: " runs=2 ", comment-lacks: ["**blocks**", "workline:blocks"]}
