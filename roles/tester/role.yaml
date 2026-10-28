@@ -2,19 +2,46 @@ contract: 1
 name: tester
 mission: Each test a change adds is proven red on its base before the code makes it green, from the project's own test runner's report.
 
-# Step 1 of ADR-0055: the red-first check, engine code with no agent,
-# run as `workline test check --base <ref>`, not by the line yet. Events,
-# model and intentions come with the tests written from the criteria
-# (step 2).
-events: []
+# issue: `workline test write --issue <n>` — a ready issue's Validation
+#        scenarios, a test each, proven red on the base, opened as a Draft
+#        (ADR-0055, step 2). Not in the line yet: its moment is step 4.
+# The red-first check alone, `workline test check --base <ref>`, runs no
+# role and no agent (step 1).
+events: [issue]
 
 requires: [git]
 
+# Turning a person's scenario into a test that fails for the right reason,
+# in the project's own framework, is judgement on code.
+model:
+  capability: coding
+  tier: standard
+  effort: medium
+  timeout: 10m
+
+context:
+  # Estimated tokens, 711 + 0.82 a character: the issue's scenarios, the
+  # Scope's code and the tests beside it (code-lines-max).
+  budget: 60000
+
 duties:
   reads: ["**"]
-  writes: []
+  writes: [$settings.test-paths]   # test files only, never the code
+
+# patch: a test file, new or changed. note: a scenario no test can check,
+# and why, said in the Draft.
+intentions: [patch, note]
+
+without-ai: pass   # with none, nothing is written: the issue waits for its tests
 
 settings:
+  # A run's caps (ADR-0055, guards): the tokens it may spend, every call
+  # together, and how long it waits on its agent, in seconds.
+  ai-max-tokens: 300000
+  ai-max-seconds: 1200
+  # Lines of code and tests given to the agent, all files together: the
+  # Scope's files, then up to three test files beside them.
+  code-lines-max: 1500
   # Runs the project's tests and writes a JUnit XML report; {report} is
   # replaced by test-report's path. Unset: the check blocks,
   # setting-missing, never a pass. E.g. `pytest --junitxml={report}`,

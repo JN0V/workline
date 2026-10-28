@@ -1,0 +1,24 @@
+case: tester/write-green-on-base-not-opened
+about: >
+  A test the tester writes that passes on the base proves nothing: the
+  red-first check refuses it, and the Draft is not opened as proven.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:ready"]
+        body: "## Need\n\nWhen I total an order, I want to multiply a price by a count, so I need not add it up by hand.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **By zero:** Given the library, When I multiply 5 by 0, Then I get 0.\n\n---\n\n## Verification\n\nA test a scenario, in tests/.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+run: {test: [write, --issue, "3"], ai: "fake:tester-green-on-base"}
+expect:
+  status: block
+  findings: [{rule: test-green-on-base, where: tests.test_mul_by_zero}]
+  not-pushed: [workline/tester/issue-3]
+  forge:
+    merge-requests:
+      - {id: 1, absent: true}

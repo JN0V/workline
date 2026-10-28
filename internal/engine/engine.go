@@ -1488,17 +1488,24 @@ func DefaultTitle(roleName string) string {
 // open, and puts the working tree back on the branch it was on. The role
 // names the task's key and the title in out/merge-request.yaml.
 func openMergeRequest(f forge.Forge, st runState, runDir string) (int, error) {
-	var mr struct{ Key, Title, Body string }
+	var mr struct {
+		Key, Title, Body string
+		Draft            bool
+	}
 	if data, err := os.ReadFile(filepath.Join(runDir, "out", "merge-request.yaml")); err == nil {
 		if err := yaml.Unmarshal(data, &mr); err != nil {
 			return 0, fmt.Errorf("out/merge-request.yaml: %w", err)
 		}
 	}
 	mr.Key = mergeRequestKey(st, runDir)
-	if mr.Title == "" || len([]rune(mr.Title)) > forge.TitleMax { // a squash adds " (#N)" (ADR-0051)
+	limit := forge.TitleMax // a squash adds " (#N)" (ADR-0051)
+	if mr.Draft {
+		limit -= len("Draft: ") // GitLab's draft is a title prefix
+	}
+	if mr.Title == "" || len([]rune(mr.Title)) > limit {
 		mr.Title = DefaultTitle(st.Role)
 	}
-	return ProposeBranch(f, st.Repo, st.Role, mr.Key, mr.Title, mr.Body, st.trailers(), st.Written)
+	return ProposeBranch(f, st.Repo, st.Role, mr.Key, mr.Title, mr.Body, mr.Draft, st.trailers(), st.Written)
 }
 
 // mergeRequestKey is the task's key the role named in
@@ -1523,9 +1530,10 @@ var ErrLeftToAPerson = errors.New("left to a person")
 // branch for a task (workline/<role>/<key>), force-pushes it — unless the
 // forge keeps its branches in the clone — opens its merge request or
 // updates the one open, and puts the working tree back on the branch it was
-// on. trailers end the commit's message. A branch a person committed to is
-// never pushed over: ErrLeftToAPerson, the working tree as it was.
-func ProposeBranch(f forge.Forge, repo, roleName, key, title, body, trailers string, written []string) (int, error) {
+// on: a draft, when draft is true. trailers end the commit's message. A
+// branch a person committed to is never pushed over: ErrLeftToAPerson, the
+// working tree as it was.
+func ProposeBranch(f forge.Forge, repo, roleName, key, title, body string, draft bool, trailers string, written []string) (int, error) {
 	base, err := git(repo, nil, "symbolic-ref", "--short", "HEAD")
 	if err != nil {
 		return 0, errors.New("a merge request is opened from a branch; this run is on a detached HEAD")
@@ -1562,7 +1570,7 @@ func ProposeBranch(f forge.Forge, repo, roleName, key, title, body, trailers str
 	if _, err := git(repo, nil, "checkout", "-q", base); err != nil {
 		return 0, err
 	}
-	return f.OpenMergeRequest(branch, base, title, body)
+	return f.OpenMergeRequest(branch, base, title, body, draft)
 }
 
 // slugify keeps a branch name to lowercase letters, digits and dashes.

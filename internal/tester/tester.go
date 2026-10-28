@@ -28,6 +28,9 @@ type Settings struct {
 	Report string `json:"test-report"`
 	// Paths are the test files, as patterns (`**` spans folders).
 	Paths []string `json:"test-paths"`
+	// CodeLinesMax caps the lines of code and tests given to the agent
+	// when it writes an issue's tests, all files together.
+	CodeLinesMax int `json:"code-lines-max"`
 }
 
 // SettingsFrom reads the tester's merged settings.
@@ -49,33 +52,33 @@ func SettingsFrom(m map[string]any) (Settings, error) {
 // change's test files laid on it, and, when the change touches more than
 // tests, pass on HEAD. No report read is never a pass.
 func Check(repo, base string, s Settings) *verdict.Verdict {
-	switch {
-	case strings.TrimSpace(s.Command) == "":
-		return refuse("the red-first check did not run", verdict.Finding{Rule: "setting-missing", Where: "test-command",
-			Message: "no test command: set roles.tester.settings.test-command in .workline/config.yaml, the command running the project's tests " +
-				"and writing a JUnit XML report to {report}, as `pytest --junitxml={report}` or `gotestsum --junitfile {report} ./...`"})
-	case strings.TrimSpace(s.Report) == "":
-		return refuse("the red-first check did not run", verdict.Finding{Rule: "setting-missing", Where: "test-report",
-			Message: "no test report: set roles.tester.settings.test-report, where the test command writes its JUnit XML report"})
+	v, _ := Prove(repo, base, s)
+	return v
+}
+
+// Prove is Check, with the new tests it found, sorted.
+func Prove(repo, base string, s Settings) (*verdict.Verdict, []string) {
+	if v := unset(s); v != nil {
+		return v, nil
 	}
 	ch, err := changeOf(repo, base, s.Paths)
 	if err != nil {
-		return refuse("the red-first check did not run", verdict.Finding{Rule: "check-error", Where: "test", Message: err.Error()})
+		return refuse("the red-first check did not run", verdict.Finding{Rule: "check-error", Where: "test", Message: err.Error()}), nil
 	}
 	baseRun, f := run(repo, ch.base, nil, "", s, "on the base "+short(ch.base))
 	if f != nil {
-		return refuse("the red-first check did not run", *f)
+		return refuse("the red-first check did not run", *f), nil
 	}
 	headRun, f := run(repo, ch.head, nil, "", s, "on the head "+short(ch.head))
 	if f != nil {
-		return refuse("the red-first check did not run", *f)
+		return refuse("the red-first check did not run", *f), nil
 	}
 	// Tests alone changed: the head is the base with its tests, and red
 	// there is all a change holding no code yet can prove.
 	redRun, onHead := headRun, len(ch.other) > 0
 	if onHead {
 		if redRun, f = run(repo, ch.base, ch.tests, ch.head, s, "on the base "+short(ch.base)+" with the change's tests"); f != nil {
-			return refuse("the red-first check did not run", *f)
+			return refuse("the red-first check did not run", *f), nil
 		}
 	}
 	// A base test the red run lacks was not built there. Beside code, the
@@ -85,7 +88,11 @@ func Check(repo, base string, s Settings) *verdict.Verdict {
 	// TestMain), never in the head's report. Tests alone, the red run is
 	// the head, which lacks the tests deleted too: unbuilt are the tests
 	// of a suite (a Go package) none of whose base tests ran where a new
-	// red id is the build's record, not a test proven red.
+	// red id is the build's record, not a test proven red — only when it
+	// has the record's shape: the suite's one case in the head's report,
+	// with no classname (a collection error) or named TestMain
+	// (gotestsum's). A suite whose old tests were all deleted, and new ones
+	// added, keeps its new tests counted.
 	var added, unbuilt, records []string
 	lost := map[string]bool{} // suites none of whose base tests ran
 	if !onHead {
@@ -102,7 +109,7 @@ func Check(repo, base string, s Settings) *verdict.Verdict {
 		if _, ok := baseRun.results[id]; ok {
 			continue
 		}
-		if !onHead && headRun.results[id] == failed && lost[headRun.suite[id]] {
+		if !onHead && headRun.results[id] == failed && lost[headRun.suite[id]] && headRun.buildRecord(id) {
 			records = append(records, id)
 			continue
 		}
@@ -138,7 +145,7 @@ func Check(repo, base string, s Settings) *verdict.Verdict {
 			v.Findings = append(v.Findings, verdict.Finding{Rule: "no-new-test", Level: "warn", Where: s.Report,
 				Message: fmt.Sprintf("the change touches %d test file(s) (%s) but its report names no test the base's does not: a build that fails names none", len(ch.tests), sample(ch.tests))})
 		}
-		return v
+		return v, nil
 	}
 	missing := 0
 	for _, id := range added {
@@ -178,7 +185,22 @@ func Check(repo, base string, s Settings) *verdict.Verdict {
 			break
 		}
 	}
-	return v
+	return v, added
+}
+
+// unset is the check's refusal when test-command or test-report is not
+// set, never a pass; nil when both are.
+func unset(s Settings) *verdict.Verdict {
+	switch {
+	case strings.TrimSpace(s.Command) == "":
+		return refuse("the red-first check did not run", verdict.Finding{Rule: "setting-missing", Where: "test-command",
+			Message: "no test command: set roles.tester.settings.test-command in .workline/config.yaml, the command running the project's tests " +
+				"and writing a JUnit XML report to {report}, as `pytest --junitxml={report}` or `gotestsum --junitfile {report} ./...`"})
+	case strings.TrimSpace(s.Report) == "":
+		return refuse("the red-first check did not run", verdict.Finding{Rule: "setting-missing", Where: "test-report",
+			Message: "no test report: set roles.tester.settings.test-report, where the test command writes its JUnit XML report"})
+	}
+	return nil
 }
 
 func refuse(summary string, f verdict.Finding) *verdict.Verdict {
@@ -224,10 +246,24 @@ func changeOf(repo, base string, paths []string) (*change, error) {
 	return c, nil
 }
 
-// ran is a run's tests: each one's result, and its suite, by id.
+// ran is a run's tests: each one's result, and its suite, by id; the ids
+// written with no classname.
 type ran struct {
-	results map[string]result
-	suite   map[string]string
+	results   map[string]result
+	suite     map[string]string
+	classless map[string]bool
+}
+
+// buildRecord says whether id has the shape of a runner's record of a
+// build that failed: its suite's only case, with no classname or named
+// TestMain (gotestsum's).
+func (r ran) buildRecord(id string) bool {
+	for other, s := range r.suite {
+		if other != id && s == r.suite[id] {
+			return false
+		}
+	}
+	return r.classless[id] || id == "TestMain" || strings.HasSuffix(id, ".TestMain")
 }
 
 // run checks rev out apart, the files given laid on it as from holds them,
@@ -272,9 +308,9 @@ func run(repo, rev string, files []string, from string, s Settings, where string
 		return ran{}, &verdict.Finding{Rule: "report-missing", Where: s.Report,
 			Message: fmt.Sprintf("the test command wrote no report %s (%s); its output ends: %s", where, said, tail(out.String(), 10))}
 	}
-	rep := ran{results: map[string]result{}, suite: map[string]string{}}
+	rep := ran{results: map[string]result{}, suite: map[string]string{}, classless: map[string]bool{}}
 	for _, f := range found {
-		if err := readJUnit(f, rep.results, rep.suite); err != nil {
+		if err := readJUnit(f, rep.results, rep.suite, rep.classless); err != nil {
 			rel, _ := filepath.Rel(tree, f)
 			return ran{}, &verdict.Finding{Rule: "report-missing", Where: s.Report,
 				Message: fmt.Sprintf("the report %s %s is not JUnit XML: %v", rel, where, err)}

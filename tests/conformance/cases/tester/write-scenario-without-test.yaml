@@ -1,0 +1,23 @@
+case: tester/write-scenario-without-test
+about: >
+  Each scenario gets a test that names it, or is said untestable: a
+  scenario left with neither blocks, and no Draft is opened.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:ready"]
+        body: "## Need\n\nWhen I total an order, I want to multiply a price by a count, so I need not add it up by hand.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **By zero:** Given the library, When I multiply 5 by 0, Then I get 0.\n\n---\n\n## Verification\n\nA test a scenario, in tests/.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+run: {test: [write, --issue, "3"], ai: "fake:tester-one-scenario-left"}
+expect:
+  status: block
+  findings: [{rule: scenario-without-test, where: "By zero"}]
+  forge:
+    merge-requests:
+      - {id: 1, absent: true}

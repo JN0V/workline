@@ -344,6 +344,7 @@ type itemWant struct {
 	Parent          *int                `yaml:"parent"` // the issue it is a sub-issue of, 0 for none
 	Closed          *bool               `yaml:"closed"`
 	AutoMerge       *bool               `yaml:"auto-merge"` // a merge request's auto-merge on (ADR-0042)
+	Draft           *bool               `yaml:"draft"`      // a merge request opened as a draft
 	Merged          *bool               `yaml:"merged"`     // a merge request the forge merged
 	BodyContains    texts               `yaml:"body-contains"`
 	BodyLacks       texts               `yaml:"body-lacks"`
@@ -1844,6 +1845,9 @@ func compareItem(kind string, wm itemWant, got []map[string]any) []string {
 	}
 	if wm.AutoMerge != nil && (found["auto-merge"] == true) != *wm.AutoMerge {
 		p = append(p, fmt.Sprintf("forge: %s %v auto-merge = %v, want %v", kind, wm.ID, found["auto-merge"] == true, *wm.AutoMerge))
+	}
+	if wm.Draft != nil && (found["draft"] == true) != *wm.Draft {
+		p = append(p, fmt.Sprintf("forge: %s %v draft = %v, want %v", kind, wm.ID, found["draft"] == true, *wm.Draft))
 	}
 	if wm.Merged != nil && (found["merged"] == true) != *wm.Merged {
 		p = append(p, fmt.Sprintf("forge: %s %v merged = %v, want %v", kind, wm.ID, found["merged"] == true, *wm.Merged))

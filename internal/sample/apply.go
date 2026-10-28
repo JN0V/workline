@@ -99,7 +99,7 @@ func Apply(file, repo string, f forge.Forge) *Result {
 			written = append(written, r.Doc)
 		}
 		mr, err = engine.ProposeBranch(f, repo, "documentalist", "sample-"+res.Week,
-			ResetTitle, resetBody(res, standing),
+			ResetTitle, resetBody(res, standing), false,
 			engine.OwnTrailer+": documentalist", written)
 		if err != nil {
 			return failed(res, err)

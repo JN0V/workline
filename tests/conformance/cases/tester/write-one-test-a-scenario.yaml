@@ -1,0 +1,34 @@
+case: tester/write-one-test-a-scenario
+about: >
+  The tester reads a ready issue's Validation scenarios and writes one
+  test each, named after it (ADR-0055, step 2). The engine proves them
+  red on the base, then commits them on the work branch and opens it as
+  a Draft that refers to the issue and lists each scenario with its test.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:ready"]
+        body: "## Need\n\nWhen I total an order, I want to multiply a price by a count, so I need not add it up by hand.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **By zero:** Given the library, When I multiply 5 by 0, Then I get 0.\n\n---\n\n## Verification\n\nA test a scenario, in tests/.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+run: {test: [write, --issue, "3"], ai: "fake:tester-two-scenarios"}
+expect:
+  status: pass
+  summary: "2 new tests, red on the base"
+  agent-calls: 1
+  pushed:
+    workline/tester/issue-3:
+      tests/test_mul_two_by_three.sh: "Scenario: Two by three"
+      tests/test_mul_by_zero.sh: "Scenario: By zero"
+  forge:
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        draft: true
+        body-contains: ["Refs #3", "## Tests", "Two by three", "tests.test_mul_two_by_three", "By zero", "tests.test_mul_by_zero"]
+        body-lacks: ["Closes #3"]

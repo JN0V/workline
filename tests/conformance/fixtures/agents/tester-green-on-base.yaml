@@ -1,0 +1,13 @@
+- patch:
+    file: tests/test_mul_two_by_three.sh
+    content: |
+      # Scenario: Two by three
+      . ./lib.sh
+      [ "$(mul 2 3)" = 6 ]
+- patch:
+    file: tests/test_mul_by_zero.sh
+    content: |
+      # Scenario: By zero
+      # Proves nothing: it checks what the base already does.
+      . ./lib.sh
+      [ "$(add 5 0)" = 5 ]

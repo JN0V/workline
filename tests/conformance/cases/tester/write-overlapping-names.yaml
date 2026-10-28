@@ -1,0 +1,24 @@
+case: tester/write-overlapping-names
+about: >
+  A test names a scenario by its whole name: a test for "Minus one
+  hundred", or prose saying "minus one", does not name the scenario
+  "Minus one", which is left without a test and blocks.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    issues:
+      - id: 4
+        title: "Add negative numbers"
+        labels: ["workline:ready"]
+        body: "## Need\n\nWhen I total refunds, I want to add negative amounts, so a refund lowers the total.\n\n## Validation\n\n- **Minus one:** Given the library, When I add -1 to 0, Then I get -1.\n- **Minus one hundred:** Given the library, When I add -100 to 0, Then I get -100.\n\n---\n\n## Verification\n\nA test a scenario, in tests/.\n\n## Scope\n\n- `lib.sh`: `add` takes negative numbers.\n"
+run: {test: [write, --issue, "4"], ai: "fake:tester-longer-name-only"}
+expect:
+  status: block
+  findings: [{rule: scenario-without-test, where: "Minus one"}]
+  forge:
+    merge-requests:
+      - {id: 1, absent: true}

@@ -180,6 +180,16 @@ Each step: conformance cases first; a try told under `## Tried` ([ADR-0043]).
 6. **Curator measures, no AI**; 7. **redundancy** with its proof;
    8. **five whys skill**, then **job 3** once the developer is built.
 
+## Amendment 2026-10-28: step 2 as built
+
+- **No `test-file` intention**: the catalogue's `patch`, held to
+  `test-paths` by `duties.writes`; `post` refuses a file the base holds.
+- **The command**: `workline test write --issue <n>`; the branch
+  `workline/tester/issue-<n>`, as every role's branch is named.
+- **`post` proves, before `apply`**: the tests committed on the base in
+  a checkout apart, the red-first check run there; not red, nothing is
+  applied nor opened.
+
 ## Consequences
 
 - **The builder gets its target first**; only the tester moves it, on

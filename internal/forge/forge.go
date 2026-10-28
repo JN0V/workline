@@ -207,9 +207,10 @@ type Forge interface {
 	// KeepIssue rewrites the body of the open issue with this title, or opens
 	// it when there is none and create is true: one issue, kept in place.
 	KeepIssue(title, body string, create bool) (int, error)
-	// OpenMergeRequest opens a merge request from branch into base, or
-	// updates the title and body of the one already open from branch.
-	OpenMergeRequest(branch, base, title, body string) (int, error)
+	// OpenMergeRequest opens a merge request from branch into base, a
+	// draft when draft is true, or updates the title and body of the one
+	// already open from branch, its draft state as it is.
+	OpenMergeRequest(branch, base, title, body string, draft bool) (int, error)
 	// OpenMergeRequests lists the branches of the open merge requests whose
 	// branch starts with prefix, sorted.
 	OpenMergeRequests(prefix string) ([]string, error)
