@@ -532,7 +532,7 @@ workline:objection:judge:
     - *claude
     - status=0
     - workline test answer --merge-request "$MR_IID" --ai "$ai" --no-apply --forge gitlab --json > answer.json || status=$?
-    - jq -r '."run-dir" // empty' answer.json > answer-run
+    - jq -r '(.pending // [])[0] // empty' answer.json > answer-run   # a run left to apply; none when it stopped before
     - exit $status
   allow_failure: {exit_codes: [3]}  # an agent out of reach warns: the objection waits for the next
   artifacts:
