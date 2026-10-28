@@ -10,7 +10,9 @@ mission: Each test a change adds is proven red on its base before the code makes
 #        then as on issue; needs --open-merge-request.
 # merge-request: the frozen guard, no agent (step 3): a test file the
 #        tester wrote, changed or deleted by another, blocks
-#        (tester-test-changed); routed where the project lists it.
+#        (tester-test-changed); routed where the project lists it. Then,
+#        the pull request marked ready, the green proof (step 5): each
+#        new test passes on the head three runs out of three (test-flaky).
 # objection: `workline test answer --merge-request <n>` — the first
 #        objection waiting on the tester's Draft, kept or rewritten
 #        (step 3); in CI, woken by the comment (workline-objection.yml).

@@ -89,7 +89,7 @@ func Pre(runDir, repo string) int {
 	}
 	switch os.Getenv("WORKLINE_EVENT") {
 	case "merge-request": // the frozen guard, no agent
-		return guardPre(runDir, repo)
+		return guardPre(runDir, repo, s)
 	case "objection":
 		return answerPre(runDir, repo, s)
 	}

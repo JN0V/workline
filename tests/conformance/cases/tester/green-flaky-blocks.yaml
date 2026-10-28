@@ -1,0 +1,27 @@
+case: tester/green-flaky-blocks
+about: >
+  A test red in one run of three is flaky: blocking, the test named,
+  never retried until green. The code here fails its third call, kept in
+  a counter all checkouts share: the first test of the second run.
+given:
+  repo: tested-draft
+  setup:
+    - |
+      cat >> lib.sh <<'L'
+      mul() { c="$(git rev-parse --git-common-dir)/mul-calls"; n=$(($(cat "$c" 2>/dev/null || echo 0) + 1)); echo $n > "$c"; [ $n -eq 3 ] && { echo 1; return; }; echo $(($1 * $2)); }
+      L
+      git commit -qam 'feat: multiply'
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        body: "Closes #3"
+        comments: ["The tests of #3, frozen.\n\n<!-- workline:tester-record {\"issue\":3,\"base\":\"main\",\"files\":{\"tests/test_mul_by_zero.sh\":\"8f123a0bacbd681063880b867df38dd216784b97\",\"tests/test_mul_two_by_three.sh\":\"2dee0641bd7a79057ade7bff5af43b603125f543\"}} -->\n<!-- workline:sticky=tester/tests -->"]
+run: {role: tester, event: merge-request, target: {merge-request: 1}}
+expect:
+  status: block
+  agent-calls: 0
+  findings: [{rule: test-flaky, where: tests.test_mul_by_zero, message: "passed 2 of 3 runs, red in run 2"}]
+  no-findings: [{rule: test-flaky, where: tests.test_mul_two_by_three}, {rule: test-red-on-head}]
