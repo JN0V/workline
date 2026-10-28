@@ -26,8 +26,8 @@ and what is left for workline to add?
   not flaky, adds something.
 - **Agents bend tests**: a coding agent that can edit the tests deletes
   or rewrites the failing ones (ImpossibleBench). Hidden holdout tests
-  help and are not foolproof (EvilGenie). A frozen, visible test with a
-  mechanical check on its edits is the cheaper guard.
+  help, not foolproof (EvilGenie). A visible test the builder cannot
+  edit is cheaper; one that does not fit is talked over ([disputes](acceptance-test-disputes.md)).
 - **Selection is mature, minimization is rare**: test impact analysis
   ships in every ecosystem (Go's test cache, pytest-testmon, Jest
   `--findRelatedTests`, Nx affected, bazel-diff, Launchable). Removing
@@ -131,8 +131,9 @@ and what is left for workline to add?
   tests by another model, weakened-assertion detection, modified tests
   replayed on the old code ([gates.md](gates.md#test-integrity)).
 - **Taken**: the builder may read the tests and must not change them; a
-  change to them is a finding a person lifts. Hiding them costs a
-  private store and a second runner, and does not hold either.
+  change to them is a finding; an objection goes to the tester, which
+  keeps or rewrites the test ([disputes](acceptance-test-disputes.md)).
+  Hiding them costs a private store and a second runner, no better.
 
 ## Running only what a change touches
 

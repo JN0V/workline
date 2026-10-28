@@ -39,6 +39,7 @@ stars and dates were checked against the GitHub API that day.
 | [merging.md](merging.md) | What a person does at merge, who merges elsewhere and how autonomy is graded, whether merging is a role |
 | [inspector.md](inspector.md) | How SARIF, the forges and linters tell a merge request's new findings, where the base's come from, AI triage measured |
 | [tests-first-and-corpus.md](tests-first-and-corpus.md) | How tests are written from acceptance criteria before the code, kept red off `main`, selected per change, cut when they protect nothing |
+| [acceptance-test-disputes.md](acceptance-test-disputes.md) | How teams settle a builder's objection to an acceptance test: three amigos, example mapping, code owners, contracts |
 | [inspector-coverage.md](inspector-coverage.md) | Which linter fits each language, how it is suggested and installed pinned, the licences that limit it, AI in its place |
 
 ### Measured

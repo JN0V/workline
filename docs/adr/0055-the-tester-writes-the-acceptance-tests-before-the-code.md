@@ -3,13 +3,14 @@
 - **Status:** proposed
 - **Date:** 2026-10-28
 - **Decided by:** the maintainer, on 2026-10-28: build the tester before
-  the developer, which depends on it; the five choices
-  [below](#for-the-person) wait for the maintainer
+  the developer, which depends on it; the [five choices](#for-the-person)
+  as recommended, choice 2 amended: an objection is talked over
 - **Builds on:** [ADR-0018], [ADR-0027], [ADR-0039], [ADR-0042],
   [ADR-0043], [ADR-0050], [ADR-0051]; principles 1, 2, 4, 5, 7, 11, 12, 13
-- **Touches:** ADR-0054 ([#647](https://github.com/JN0V/workline/pull/647)):
-  the developer starts from the tester's branch
-- **Research:** [tests-first-and-corpus.md](../research/tests-first-and-corpus.md)
+- **Touches:** ADR-0054 ([#647]): the developer starts from the
+  tester's branch, and objects to a test rather than edit it
+- **Research:** [tests-first-and-corpus.md](../research/tests-first-and-corpus.md),
+  [acceptance-test-disputes.md](../research/acceptance-test-disputes.md)
 
 ## Context
 
@@ -20,9 +21,8 @@
 - **The issue already holds the tests' source**: acceptance criteria as
   named Given / When / Then scenarios, a person's ([ADR-0039]); a test
   plan, the builder's.
-- **workline's own practice is the model**: a behaviour starts as a
-  conformance case, listed in `pending.txt` until it passes; the suite
-  fails if a listed case passes ([ADR-0027]).
+- **workline's own practice is the model**: a conformance case first,
+  in `pending.txt` until it passes ([ADR-0027]).
 - **The maintainer asked, on [#264](https://github.com/JN0V/workline/issues/264)**:
   red then green, a bug shown by a red test first; a corpus that does
   not grow forever; subsets per module run locally, a wider set in CI.
@@ -31,12 +31,10 @@
 
 ### Three jobs, built in this order
 
-1. **Tests first**: from a `ready` issue's acceptance criteria, the
-   acceptance tests, before any code; red on the base.
-2. **Corpus curator**: run time, redundancy, flaky tests, the subset a
-   change needs; proposals to remove or merge, each with its proof.
-3. **Adapt after a change**: a test a change made wrong, rewritten with
-   the reason; after the developer exists.
+1. **Tests first**: a `ready` issue's acceptance tests, red on the base.
+2. **Corpus curator**: time, redundancy, flaky tests, subsets; removals
+   with their proof.
+3. **Adapt after a change**, with the reason, once the developer exists.
 
 ### Job 1: what it takes, and when
 
@@ -44,27 +42,25 @@
   product owner's under the rules a person wrote ([ADR-0018]).
 - **The moment**: a scheduled run after the product owner's and the spec
   review's, before the developer's ([ADR-0050] §3, the night column);
-  `workline test --issue <n>` on a machine. Nobody waits: no wait
-  budget, a token and time cap instead.
+  `workline test --issue <n>` on a machine. Nobody waits: a token and
+  time cap, no wait budget.
 - **Input**: the acceptance criteria, the test plan, the Scope's paths
   and the tests beside them; the project's test command and report.
 - **One test per scenario**, in the project's own framework, named
   after it, its Given / When / Then as the test's comment (Gherkin only
   where the project has `.feature` files). A scenario no test can check
   (a person's look) is said in the pull request, not faked.
-- **The agent is a choice**: none, `claude`, `cmd:<any command>`. With
-  none, the role says the issue waits for its tests, writes nothing:
-  writing a test from a need is judgement (principle 5).
+- **The agent is a choice**: none, `claude`, `cmd:<any command>`; with
+  none, the issue waits for its tests (judgement, principle 5).
 
 ### Where the tests land
 
 - **The first commit of the work branch** `workline/issue-<n>`, a Draft
   pull request `Refs #<n>`, `## Tests` listing each scenario and its
   test. No pending marker: `main` never runs them red, in any language.
-- **Whoever builds next pushes on that branch**: the developer
-  (ADR-0054 starts from it when it exists) or a person; the same pull
-  request then says `Closes #<n>` and merges by the project's policy
-  ([ADR-0042]). The tests are not reviewed in a queue of their own.
+- **Whoever builds next pushes on that branch**, the developer
+  ([#647]) or a person; the same pull request then says `Closes #<n>`
+  and merges by the project's policy ([ADR-0042]), no queue of its own.
 
 ### The proof, red first
 
@@ -74,60 +70,68 @@
 - **Each new test must fail on the base**, by an assertion or a missing
   name, not a broken build of other tests. One that passes is refused:
   it proves nothing new (inverting TestGen-LLM's pass filter).
-- **No command, no report**: `setting-missing` or `report-missing`, said
-  and blocking (principle 12).
+- **No command, no report**: `setting-missing` or `report-missing`, blocking.
 - **Green, on the closing pull request**: each test passes three runs
   out of three (TestGen-LLM's flakiness filter, cheaper).
 
 ### Guards
 
-- **Frozen**: the tester's state on the pull request records each test
-  file and its hash. A later commit that changes or deletes one is a
-  blocking finding, `tester-test-changed`; a person lifts it with a
-  label, `workline:tests-changed` (one click, as every person's yes,
-  [ADR-0038]). Tests stay readable by the builder: hiding them costs a
-  second store and holds no better (EvilGenie).
+- **Frozen to the builder**: the tester's state records each test
+  file's hash; another's commit that changes or deletes one is a
+  blocking finding, `tester-test-changed`. No label lifts it: only the
+  tester's commit moves a hash ([below](#a-test-that-does-not-fit)).
+  Tests stay readable: hiding them holds no better (EvilGenie).
 - **Writes test paths only**: the project's `test-paths` setting, by
   default each ecosystem's names (`*_test.go`, `test_*.py`,
   `*.test.ts`, `tests/`). Any other file refused at `apply`.
 - **Never weakens an existing test without proof**: removing a test or
   an assertion is refused unless the pull request shows the corpus
   keeps its coverage and its killed mutants, before and after.
-- **Budget caps**: `ai-max-tokens` and 20 min a run; at most one test a
-  scenario plus two; new tests add at most `max-added-seconds` (30 s by
-  default) to the suite. Over a cap: the Draft says which.
+- **Budget caps**: `ai-max-tokens`, 20 min a run, one test a scenario
+  plus two, `max-added-seconds` (30 s) to the suite; the Draft says which.
+
+### A test that does not fit
+
+A team's way ([research](../research/acceptance-test-disputes.md)):
+the one held to the test explains, the one who wrote it decides.
+
+- **The objection**: the builder comments on the test's line, opened by
+  `workline:objection`: the test, its scenario, the kind (wrong
+  interface, over-specified, contradicts another scenario, untestable
+  as written, the need itself) and why. The Draft stays red.
+- **The answer**: a fresh tester run, woken by it ([ADR-0050] §2),
+  reads the scenario, the objection, the code only for an interface
+  claim; replies *kept* with the reason, or *rewritten*, its own commit
+  `Refs` the thread. Either wakes a fresh developer run.
+- **The need itself**: a wrong or ambiguous scenario goes to the
+  product owner, which amends the issue ([ADR-0038]); the tester adapts.
+- **Three exchanges a thread**: still open after the second, the five
+  whys; past the third, a person decides (`human`), the tester writes it. The
+  review's shape ([#647]: five rounds, the five whys at three), shorter:
+  one test against one scenario, not a whole change.
+- **Not a cheat path**: the tester judges the scenario's meaning, not
+  the builder's convenience; a rewrite still checks the scenario's Then
+  and fails on the base (red-first); the reviewer reads it.
+- **Five whys, a shared skill** ([defects become guards](../spec/role-adapting.md#defects-become-guards)):
+  `skills/five-whys/SKILL.md`, also for a bug's red test (why no catch?).
 
 ### Job 2: the corpus curator
 
-- **The moment**: weekly, off every path; the measures without AI
-  ([ADR-0051]: a check sits where its catch is worth its cost).
-- **Measures, no AI**: each test's time from the JUnit report, the
-  suite's total against `suite-max-seconds`; tests whose covered lines
-  are a subset of another's; mutation on the lines changed since the
-  last run, with the project's tool (Stryker, PIT, mutmut,
-  cargo-mutants, Gremlins), Google's way, not the whole tree.
-- **The AI judges a candidate**: a real duplicate, or a distinct
-  behaviour the measure cannot see (a bug's regression with its own
-  scenario stays).
-- **Output**: a pull request that removes or merges, with the measures
-  before and after, by the project's merge policy; adequate only, never
-  a lost killed mutant. A project with no coverage or mutation tool
-  gets an issue proposing one, pinned, as the inspector does
+- **Weekly, off every path**, measures without AI ([ADR-0051]).
+- **Measures**: each test's time from the JUnit report against
+  `suite-max-seconds`; tests whose covered lines are a subset of
+  another's; mutation on the lines changed since the last run, with the
+  project's tool (Stryker, PIT, mutmut, cargo-mutants, Gremlins).
+- **The AI judges a candidate**: a real duplicate, or a behaviour the
+  measure cannot see (a bug's regression with its scenario stays).
+- **Output**: a pull request that removes or merges, measures before
+  and after, by the merge policy; never a lost killed mutant. No
+  coverage or mutation tool: an issue proposing one, pinned
   ([inspector-coverage.md](../research/inspector-coverage.md)).
 - **Subsets**: the project's own selection (Go's cache, pytest-testmon,
-  Jest `--findRelatedTests`, Nx affected, bazel-diff), proposed once in
-  an issue: the subset on a machine, a wider set on a pull request, all
-  on a release. workline builds no selector of its own.
-- **Flaky**: a test that fails then passes on the same tree gets the
-  ecosystem's skip and an issue naming it, counted in each run's
-  report; never deleted for it.
-
-### Five whys, a shared skill
-
-- **`skills/five-whys/SKILL.md`**, any role may load it
-  ([defects become guards](../spec/role-adapting.md#defects-become-guards)):
-  the tester when a person lifts `tester-test-changed`, or writes a
-  bug's red test (why did no test catch it?); the answer to the ledger.
+  Jest `--findRelatedTests`, Nx affected), proposed once in an issue:
+  a subset on a machine, wider on a pull request, all on a release.
+- **Flaky**: the ecosystem's skip and an issue naming it, never deleted.
 
 ### What it never does
 
@@ -139,30 +143,27 @@
 
 ## For the person
 
-Five choices, each with the recommendation and its alternative:
+Five choices, each with the recommendation (chosen 2026-10-28, choice 2
+amended) and its alternative:
 
 1. **Where red tests live**: the work branch, in the pull request that
    makes them green. *Alternative*: merged first behind strict pending
-   markers ([per ecosystem](../research/tests-first-and-corpus.md#a-failing-test-that-keeps-main-green))
-   — reviewed alone, but a list where only a skip exists (Go, Rust).
-2. **Kept from the builder**: visible and frozen, a change a finding.
-   *Alternative*: hidden holdout tests, run only by a gate — a private
-   store, a second runner, no better against an agent.
+   markers ([per ecosystem](../research/tests-first-and-corpus.md#a-failing-test-that-keeps-main-green)),
+   only a skip in Go and Rust.
+2. **Kept from the builder**: visible, frozen, an objection talked
+   over with the tester (amended). *Alternative*: hidden holdout tests
+   — a private store, a second runner, no better against an agent.
 3. **Format**: the project's own test framework. *Alternative*: Gherkin
-   `.feature` files — the scenarios word for word, but a runner and step
-   code in every project.
+   `.feature` files — a runner and step code in every project.
 4. **Red proof**: the runner's JUnit XML report. *Alternative*: one run
-   per test by a name filter (`-run`, `-k`) — no report needed, a run
-   per test.
+   per test by a name filter (`-run`, `-k`).
 5. **Curator's output**: removal pull requests with before / after
    proof, by the merge policy. *Alternative*: an issue a person acts on —
    safer, and the corpus grows meanwhile.
 
 ## Build plan
 
-Each step: its conformance cases first, `pending.txt` listing what does
-not pass; a try on JN0V/workline-sandbox told under `## Tried`
-([ADR-0043]).
+Each step: conformance cases first; a try told under `## Tried` ([ADR-0043]).
 
 1. **Red-first check, no AI**: `roles/tester`; settings `test-command`,
    `test-report`, `test-paths`; `workline test check --base <ref>`.
@@ -171,25 +172,23 @@ not pass; a try on JN0V/workline-sandbox told under `## Tried`
 2. **Tests from the criteria**: `pre` writes `task.md`; a `test-file`
    intention; `apply` holds the paths, runs step 1, opens the Draft.
    Cases: one test a scenario; a product file refused; agent none.
-3. **Frozen guard**: hashes in the state; `tester-test-changed`; the
-   label. Cases: changed or deleted blocks; the label lifts; a new test
-   beside them passes.
+3. **Frozen guard, objections**: a change blocks; an objection wakes
+   the tester; kept, or rewritten red; a need to the product owner.
 4. **Moment and hand-over**: the scheduled run; the developer starts
    from the branch. Cases: one issue a run, an open Draft skipped.
 5. **Green proof**: three runs on the closing pull request.
-6. **Curator measures, no AI**: times, budget; subset and coverage tools
-   proposed.
-7. **Redundancy**: coverage, diff mutation, the AI's judgement, proof.
-8. **Five whys skill**; then **job 3**, once the developer is built.
+6. **Curator measures, no AI**; 7. **redundancy** with its proof;
+   8. **five whys skill**, then **job 3** once the developer is built.
 
 ## Consequences
 
-- **The builder gets its target first**; only a person's click moves it.
-- **No test command or report**: a blocking finding; the tester never guesses.
+- **The builder gets its target first**; only the tester moves it, on
+  a traced objection; a person only past three exchanges.
 - **Not covered**: a human test campaign, UI tests beyond the project's
   runner, observability; `unsafe` and CVE audits go to the security role
   ([#204](https://github.com/JN0V/workline/issues/204)).
 
+[#647]: https://github.com/JN0V/workline/pull/647
 [ADR-0018]: 0018-the-product-owner.md
 [ADR-0027]: 0027-derived-blocks-are-regenerated-on-the-default-branch.md
 [ADR-0038]: 0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md
