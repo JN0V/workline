@@ -96,13 +96,14 @@ workline test write --issue 42 --ai claude
   - *kept*, with its reason;
   - *rewritten*: its own commit on the branch, `Refs` the thread. It
     still names the scenario and must be red on the base. The record
-    moves with it.
+    and the reply follow only once the commit is pushed.
 - **The need itself** goes to the product owner, with no agent: the
   issue back to `workline:to-refine`, said there and in the thread.
 - **Bounded**: three answers a thread (`objection-exchanges`). The
   third says the five whys are due. After it, a person decides
   (`objection-person`: a label on the merge request, or an `@login`).
-  The tester then follows the next comment of a person of the project.
+  The tester then follows the next comment of a person of the project;
+  meanwhile the other objections are answered.
 - **The agent is a choice** here too: with none, `no-agent`, the
   objection waits.
 

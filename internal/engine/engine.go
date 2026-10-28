@@ -1251,22 +1251,24 @@ func applyAll(r *role.Role, settings map[string]any, st runState, runDir string,
 	for _, i := range st.Applied {
 		done[i] = true
 	}
-	for i, in := range intents {
+	// applyOne applies intention i; stopped when the forge is out of reach.
+	applyOne := func(i int) (stopped bool, err error) {
+		in := intents[i]
 		acted := !slices.Contains(backlog.Kinds, in.Kind) || plan.Acts(i)
 		if done[i] {
 			if acted {
 				res.Applied = append(res.Applied, in.Kind)
 			}
-			continue
+			return false, nil
 		}
 		ap.index = i
 		if err := ap.apply(in); err != nil {
 			if errors.Is(err, forge.ErrUnreachable) {
 				res.Status, res.Summary = verdict.BlockedExternal, fmt.Sprintf("stopped while applying %s; resume with: workline apply %s", in.Kind, runDir)
 				res.Findings = append(res.Findings, verdict.Finding{Rule: "forge-unreachable", Message: err.Error()})
-				return nil
+				return true, nil
 			}
-			return fmt.Errorf("apply %s: %w", in.Kind, err)
+			return false, fmt.Errorf("apply %s: %w", in.Kind, err)
 		}
 		st.Applied = append(st.Applied, i)
 		for _, w := range ap.written { // a resumed run adds to what the first attempt wrote
@@ -1275,10 +1277,51 @@ func applyAll(r *role.Role, settings map[string]any, st runState, runDir string,
 			}
 		}
 		if err := st.save(runDir); err != nil {
-			return err
+			return false, err
 		}
 		if acted {
 			res.Applied = append(res.Applied, in.Kind)
+		}
+		return false, nil
+	}
+	// The role's own branch, asked by the role (the tester's rewrite on an
+	// objection, ADR-0055): its patches first, committed on top and
+	// pushed, never forced; its comments only once the commit landed, so
+	// a record never names what is not on the branch.
+	ownMessage := ownPush(runDir)
+	ownBranch := ownMessage != "" && f != nil && st.Target != nil && st.Target.Kind == "merge-request" && !st.OpenMergeRequest
+	var order, after []int
+	for i, in := range intents {
+		if ownBranch && in.Kind != "patch" {
+			after = append(after, i)
+		} else {
+			order = append(order, i)
+		}
+	}
+	for _, i := range order {
+		if stopped, err := applyOne(i); stopped || err != nil {
+			return err
+		}
+	}
+	if ownBranch && len(st.Written) > 0 && !st.Pushed {
+		if err := commitOnOwnBranch(f, st, ownMessage); err != nil {
+			if errors.Is(err, forge.ErrUnreachable) {
+				res.Status, res.Summary = verdict.BlockedExternal, fmt.Sprintf("stopped while pushing to the role's branch; resume with: workline apply %s", runDir)
+				res.Findings = append(res.Findings, verdict.Finding{Rule: "forge-unreachable", Message: err.Error()})
+				return nil
+			}
+			res.Status, res.Summary = verdict.Block, "not pushed to the role's branch: nothing else is said"
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "not-pushed", Message: err.Error()})
+			return nil
+		}
+		st.Pushed = true
+		if err := st.save(runDir); err != nil {
+			return err
+		}
+	}
+	for _, i := range after {
+		if stopped, err := applyOne(i); stopped || err != nil {
+			return err
 		}
 	}
 	res.Findings = append(res.Findings, ap.findings...)
@@ -1335,19 +1378,8 @@ func applyAll(r *role.Role, settings map[string]any, st runState, runDir string,
 		}
 	}
 	res.MergeRequest = st.MergeRequest
-	// The role's own branch, asked by the role: its commit on top, pushed,
-	// never forced (the tester's rewrite on an objection, ADR-0055).
-	if message := ownPush(runDir); f != nil && st.Target != nil && st.Target.Kind == "merge-request" && !st.OpenMergeRequest && len(st.Written) > 0 && !st.Pushed && message != "" {
-		if err := commitOnOwnBranch(f, st, message); err != nil {
-			if errors.Is(err, forge.ErrUnreachable) {
-				res.Status, res.Summary = verdict.BlockedExternal, fmt.Sprintf("stopped while pushing to the role's branch; resume with: workline apply %s", runDir)
-				res.Findings = append(res.Findings, verdict.Finding{Rule: "forge-unreachable", Message: err.Error()})
-				return nil
-			}
-			return fmt.Errorf("commit on the role's branch: %w", err)
-		}
-		st.Pushed = true
-		return st.save(runDir)
+	if ownBranch {
+		return nil // its commit is pushed above, never a comment
 	}
 	// On a merge request, what the patches wrote goes in a comment, never
 	// on its branch (ADR-0051).
