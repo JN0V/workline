@@ -586,6 +586,8 @@ func actWords(a Act) string {
 			fmt.Fprintf(&b, "the tests the tester wrote, on %s", a.Ref)
 		case "removal":
 			fmt.Fprintf(&b, "tests the tester's curator removed, on %s", a.Ref)
+		case "whys":
+			fmt.Fprintf(&b, "the five whys the tester gave on an objection, on %s, at `%s`", a.Ref, a.Where)
 		default:
 			fmt.Fprintf(&b, "an objection the tester answered %s, on %s, at `%s`", a.Kind, a.Ref, a.Where)
 		}
@@ -614,6 +616,8 @@ func kindWords(c Count) string {
 		return "tests written"
 	case c.Role == testRole && c.Kind == "removal":
 		return "tests removed"
+	case c.Role == testRole && c.Kind == "whys":
+		return "five whys given"
 	case c.Role == testRole:
 		return "objection answered " + c.Kind
 	}
