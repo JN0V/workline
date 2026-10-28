@@ -17,6 +17,7 @@ const (
 // suite is a JUnit XML <testsuite>, or <testsuites> holding them: each
 // runner nests them its own way.
 type suite struct {
+	Name   string     `xml:"name,attr"`
 	Suites []suite    `xml:"testsuite"`
 	Cases  []testcase `xml:"testcase"`
 }
@@ -30,10 +31,11 @@ type testcase struct {
 }
 
 // readJUnit adds the tests of a JUnit XML report to results, by id —
-// classname.name, or the name alone — and, when class is not nil, each
-// one's classname to class. A test run more than once (a parameter, a
-// retry) is red when one of its runs is.
-func readJUnit(file string, results map[string]result, class map[string]string) error {
+// classname.name, or the name alone — and, when suites is not nil, the
+// name of the testsuite holding each one (a Go package, a pytest run), or
+// its classname when the suite has none. A test run more than once (a
+// parameter, a retry) is red when one of its runs is.
+func readJUnit(file string, results map[string]result, suites map[string]string) error {
 	data, err := os.ReadFile(file)
 	if err != nil {
 		return err
@@ -59,8 +61,11 @@ func readJUnit(file string, results map[string]result, class map[string]string) 
 			if prev, ok := results[id]; !ok || r > prev {
 				results[id] = r
 			}
-			if class != nil {
-				class[id] = c.Class
+			if suites != nil {
+				suites[id] = s.Name
+				if s.Name == "" {
+					suites[id] = c.Class
+				}
 			}
 		}
 		for _, sub := range s.Suites {

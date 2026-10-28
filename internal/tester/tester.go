@@ -84,17 +84,17 @@ func Check(repo, base string, s Settings) *verdict.Verdict {
 	// the runner's own record of the build that failed (gotestsum's
 	// TestMain), never in the head's report. Tests alone, the red run is
 	// the head, which lacks the tests deleted too: unbuilt are the tests
-	// of a class (a package, a module) none of whose base tests ran where
-	// a new red id is the build's record, not a test proven red.
+	// of a suite (a Go package) none of whose base tests ran where a new
+	// red id is the build's record, not a test proven red.
 	var added, unbuilt, records []string
-	lost := map[string]bool{} // classes none of whose base tests ran
+	lost := map[string]bool{} // suites none of whose base tests ran
 	if !onHead {
 		for id := range baseRun.results {
-			lost[baseRun.class[id]] = true
+			lost[baseRun.suite[id]] = true
 		}
 		for id := range redRun.results {
 			if _, ok := baseRun.results[id]; ok {
-				delete(lost, redRun.class[id])
+				delete(lost, redRun.suite[id])
 			}
 		}
 	}
@@ -102,18 +102,18 @@ func Check(repo, base string, s Settings) *verdict.Verdict {
 		if _, ok := baseRun.results[id]; ok {
 			continue
 		}
-		if !onHead && headRun.results[id] == failed && lost[headRun.class[id]] {
+		if !onHead && headRun.results[id] == failed && lost[headRun.suite[id]] {
 			records = append(records, id)
 			continue
 		}
 		added = append(added, id)
 	}
-	broke := map[string]bool{} // tests alone: a lost class with no build record lost its tests to a deletion
+	broke := map[string]bool{} // tests alone: a lost suite with no build record lost its tests to a deletion
 	for _, id := range records {
-		broke[headRun.class[id]] = true
+		broke[headRun.suite[id]] = true
 	}
 	for id := range baseRun.results {
-		if !onHead && !broke[baseRun.class[id]] {
+		if !onHead && !broke[baseRun.suite[id]] {
 			continue
 		}
 		if _, ok := redRun.results[id]; !ok {
@@ -224,10 +224,10 @@ func changeOf(repo, base string, paths []string) (*change, error) {
 	return c, nil
 }
 
-// ran is a run's tests: each one's result, and its classname, by id.
+// ran is a run's tests: each one's result, and its suite, by id.
 type ran struct {
 	results map[string]result
-	class   map[string]string
+	suite   map[string]string
 }
 
 // run checks rev out apart, the files given laid on it as from holds them,
@@ -272,9 +272,9 @@ func run(repo, rev string, files []string, from string, s Settings, where string
 		return ran{}, &verdict.Finding{Rule: "report-missing", Where: s.Report,
 			Message: fmt.Sprintf("the test command wrote no report %s (%s); its output ends: %s", where, said, tail(out.String(), 10))}
 	}
-	rep := ran{results: map[string]result{}, class: map[string]string{}}
+	rep := ran{results: map[string]result{}, suite: map[string]string{}}
 	for _, f := range found {
-		if err := readJUnit(f, rep.results, rep.class); err != nil {
+		if err := readJUnit(f, rep.results, rep.suite); err != nil {
 			rel, _ := filepath.Rel(tree, f)
 			return ran{}, &verdict.Finding{Rule: "report-missing", Where: s.Report,
 				Message: fmt.Sprintf("the report %s %s is not JUnit XML: %v", rel, where, err)}

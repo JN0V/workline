@@ -2,7 +2,7 @@ case: tester/tests-alone-build-record-not-a-test
 about: >
   The tests alone, on a project whose build they break: the runner drops
   the suite's tests and writes one record of the failed build in their
-  place (gotestsum's TestMain). That record is not a new test proven red:
+  place, in the suite (gotestsum's TestMain, with no classname). That record is not a new test proven red:
   the check counts it as none and warns the tests were not built.
 given:
   repo: tested
@@ -11,7 +11,7 @@ given:
     - |
       printf '. ./lib.sh\n[ "$(mul 2 3)" = 6 ]\n' > tests/test_mul.sh && git add . && git commit -qm "test: multiply"
   config:
-    roles: {tester: {settings: {test-command: "if [ -e tests/test_mul.sh ]; then printf '<testsuites><testsuite><testcase classname=\"tests\" name=\"TestMain\"><failure message=\"build failed\"/></testcase></testsuite></testsuites>' > {report}; exit 2; fi; sh run-tests.sh {report}"}}}
+    roles: {tester: {settings: {test-command: "if [ -e tests/test_mul.sh ]; then printf '<testsuites><testsuite name=\"tests\"><testcase name=\"TestMain\"><failure message=\"build failed\"/></testcase></testsuite></testsuites>' > {report}; exit 2; fi; sh run-tests.sh {report}"}}}
 run: {test: [check, --base, main]}
 expect:
   status: pass
