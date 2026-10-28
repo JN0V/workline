@@ -84,6 +84,7 @@ func testerActs(repo string, f forge.Forge, mrs []forge.MergeRequest) ([]Act, []
 			if t, err := time.Parse(time.RFC3339, p[2]); err == nil {
 				day = t.UTC().Format(time.DateOnly)
 			}
+			break
 		}
 		switch {
 		case strings.HasPrefix(m.Branch, tester.CurateBranch):
