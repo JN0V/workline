@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.44.0](https://github.com/JN0V/workline/compare/v0.43.2...v0.44.0) (2026-10-28)
+
+
+### Features
+
+* **tester:** prove each new test red on the base, no agent ([#649](https://github.com/JN0V/workline/issues/649)) ([65a0d76](https://github.com/JN0V/workline/commit/65a0d76da765694b0bdcbbc818642d1dd23f42bd))
+
+
+### Bug Fixes
+
+* **reviewer:** a block's lens reads a commit to its file ([#650](https://github.com/JN0V/workline/issues/650)) ([e8ff1f9](https://github.com/JN0V/workline/commit/e8ff1f910db0c950197f822c4e58d158bc3c8132))
+
 ## [0.43.2](https://github.com/JN0V/workline/compare/v0.43.1...v0.43.2) (2026-10-27)
 
 
