@@ -5,12 +5,10 @@
 - **Decided by:** the maintainer, on 2026-10-28: build the tester before
   the developer, which depends on it; the five choices
   [below](#for-the-person) wait for the maintainer
-- **Builds on:** [ADR-0018], [ADR-0027], [ADR-0039],
-  [ADR-0042], [ADR-0043], [ADR-0050], [ADR-0051]; principles 1, 2, 4, 5,
-  7, 11, 12, 13
-- **Touches:** ADR-0054, the developer, proposed in
-  [#647](https://github.com/JN0V/workline/pull/647): it starts from the
-  tester's branch ([below](#where-the-tests-land))
+- **Builds on:** [ADR-0018], [ADR-0027], [ADR-0039], [ADR-0042],
+  [ADR-0043], [ADR-0050], [ADR-0051]; principles 1, 2, 4, 5, 7, 11, 12, 13
+- **Touches:** ADR-0054 ([#647](https://github.com/JN0V/workline/pull/647)):
+  the developer starts from the tester's branch
 - **Research:** [tests-first-and-corpus.md](../research/tests-first-and-corpus.md)
 
 ## Context
@@ -28,9 +26,6 @@
 - **The maintainer asked, on [#264](https://github.com/JN0V/workline/issues/264)**:
   red then green, a bug shown by a red test first; a corpus that does
   not grow forever; subsets per module run locally, a wider set in CI.
-- **No tool writes tests from a need, red first**: AI generators keep
-  only tests that pass today
-  ([research](../research/tests-first-and-corpus.md#ai-test-generation)).
 
 ## Decision
 
@@ -53,11 +48,10 @@
   budget, a token and time cap instead.
 - **Input**: the acceptance criteria, the test plan, the Scope's paths
   and the tests beside them; the project's test command and report.
-- **One test per scenario**, named after it; the scenario's Given /
-  When / Then kept as the test's comment. A scenario no test can check
+- **One test per scenario**, in the project's own framework, named
+  after it, its Given / When / Then as the test's comment (Gherkin only
+  where the project has `.feature` files). A scenario no test can check
   (a person's look) is said in the pull request, not faked.
-- **The project's own framework**, in its language. Gherkin only where
-  the project already has `.feature` files and a runner.
 - **The agent is a choice**: none, `claude`, `cmd:<any command>`. With
   none, the role says the issue waits for its tests, writes nothing:
   writing a test from a need is judgement (principle 5).
@@ -71,10 +65,6 @@
   (ADR-0054 starts from it when it exists) or a person; the same pull
   request then says `Closes #<n>` and merges by the project's policy
   ([ADR-0042]). The tests are not reviewed in a queue of their own.
-- **Pending markers, only when tests must merge first** (choice 1's
-  alternative): pytest `xfail(strict=True)`, Jest `test.failing`,
-  Cucumber / behave `@wip` with `--wip`; where the ecosystem has only a
-  skip (Go, Rust, JUnit), a list the engine checks, as `pending.txt`.
 
 ### The proof, red first
 
@@ -134,12 +124,10 @@
 
 ### Five whys, a shared skill
 
-- **One `skills/five-whys/SKILL.md`** (Agent Skills format), any role
-  may load ([role-adapting.md](../spec/role-adapting.md#defects-become-guards)).
-- **The tester loads it** when a person lifts `tester-test-changed`
-  (why was the test wrong?) and when a bug's red test is written (why
-  did no test catch it?). The answer goes to the defect ledger, not to
-  a test.
+- **`skills/five-whys/SKILL.md`**, any role may load it
+  ([defects become guards](../spec/role-adapting.md#defects-become-guards)):
+  the tester when a person lifts `tester-test-changed`, or writes a
+  bug's red test (why did no test catch it?); the answer to the ledger.
 
 ### What it never does
 
@@ -155,8 +143,8 @@ Five choices, each with the recommendation and its alternative:
 
 1. **Where red tests live**: the work branch, in the pull request that
    makes them green. *Alternative*: merged first behind strict pending
-   markers — reviewed alone, but a marker per ecosystem and a list
-   where only a skip exists.
+   markers ([per ecosystem](../research/tests-first-and-corpus.md#a-failing-test-that-keeps-main-green))
+   — reviewed alone, but a list where only a skip exists (Go, Rust).
 2. **Kept from the builder**: visible and frozen, a change a finding.
    *Alternative*: hidden holdout tests, run only by a gate — a private
    store, a second runner, no better against an agent.
@@ -176,41 +164,31 @@ Each step: its conformance cases first, `pending.txt` listing what does
 not pass; a try on JN0V/workline-sandbox told under `## Tried`
 ([ADR-0043]).
 
-1. **Red-first check, no AI**: `roles/tester`, settings `test-command`,
-   `test-report`, `test-paths`; `workline test check --base <ref>` runs
-   the suite and refuses a new test that passes. Cases: a new test red,
-   passes; one green, refused; no report, blocks; no command,
-   `setting-missing`.
-2. **Tests from the criteria**: `pre` reads the acceptance criteria and
-   the Scope's tests, writes `task.md`; a `test-file` intention;
-   `apply` holds the test paths, runs step 1, pushes the branch, opens
-   the Draft. Cases: one test a scenario; a product file refused; agent
-   none says so; a missing scenario asked.
-3. **Frozen guard**: the state block's hashes; `tester-test-changed`;
-   the label lifts it. Cases: a changed test blocks; a deleted one too;
-   the label lifts; a new test beside them passes.
-4. **Moment and hand-over**: the scheduled run on `ready` issues; the
-   developer starts from the branch (ADR-0054). Cases: routing, one
-   issue a run, an open Draft skipped.
-5. **Green proof**: three runs on the closing pull request; flaky said.
-6. **Curator measures, no AI**: run times, budget, slowest tests; an
-   issue proposing the project's subset and coverage tools.
-7. **Redundancy**: per-test coverage, diff mutation, the AI's judgement,
-   removal pull requests with proof.
-8. **Five whys skill**, loaded by the tester first.
-9. **Job 3, adapt after a change**: once the developer is built.
+1. **Red-first check, no AI**: `roles/tester`; settings `test-command`,
+   `test-report`, `test-paths`; `workline test check --base <ref>`.
+   Cases: a new test red passes; one green refused; no report or no
+   command blocks.
+2. **Tests from the criteria**: `pre` writes `task.md`; a `test-file`
+   intention; `apply` holds the paths, runs step 1, opens the Draft.
+   Cases: one test a scenario; a product file refused; agent none.
+3. **Frozen guard**: hashes in the state; `tester-test-changed`; the
+   label. Cases: changed or deleted blocks; the label lifts; a new test
+   beside them passes.
+4. **Moment and hand-over**: the scheduled run; the developer starts
+   from the branch. Cases: one issue a run, an open Draft skipped.
+5. **Green proof**: three runs on the closing pull request.
+6. **Curator measures, no AI**: times, budget; subset and coverage tools
+   proposed.
+7. **Redundancy**: coverage, diff mutation, the AI's judgement, proof.
+8. **Five whys skill**; then **job 3**, once the developer is built.
 
 ## Consequences
 
-- **The developer gets its target before it starts**, and cannot move
-  it without a person's click.
-- **A person building by hand gets the same**: a Draft with red tests.
-- **Projects without a JUnit report or a test command** get a blocking
-  finding until they set one: the tester never guesses.
-- **The corpus is measured weekly**; a removal always carries its proof.
-- **Not covered**: a human test campaign plan, UI tests beyond the
-  project's own runner, observability, `unsafe` and CVE audits (the
-  security role, [#204](https://github.com/JN0V/workline/issues/204)).
+- **The builder gets its target first**; only a person's click moves it.
+- **No test command or report**: a blocking finding; the tester never guesses.
+- **Not covered**: a human test campaign, UI tests beyond the project's
+  runner, observability; `unsafe` and CVE audits go to the security role
+  ([#204](https://github.com/JN0V/workline/issues/204)).
 
 [ADR-0018]: 0018-the-product-owner.md
 [ADR-0027]: 0027-derived-blocks-are-regenerated-on-the-default-branch.md
