@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/lenses, internal/builtin/reviewer]
-checked: b79ca968
+checked: 000a3816
 verified: agent:claude-code
 ---
 # Reviewer — the judge, the verdict, the budget
@@ -144,6 +144,10 @@ each finding that blocked, its cause quoted, beside the commits reviewed
   - or its lens reads the cause's file again, in a whole review, and does
     not find it, or its judge says no. Found again and verified, it is
     the new review's finding, shown once.
+- **Its lens reads a commit to its file**, whosever turn it is: a push
+  changing the cause's file asks it beside the lens in turn, so the
+  commit that may answer it is never recorded unread by it
+  ([ADR-0020, amended](../../../docs/adr/0020-the-reviewer-finds-the-engine-verifies-the-person-merges.md#amendment-2026-10-28-a-blocks-lens-reads-a-commit-to-its-file)).
 - **It stays past a commit elsewhere**: a lens that did not read the cause
   again leaves it. One quoted from an issue stays until its lens reads the
   issue again.
