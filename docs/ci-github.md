@@ -85,6 +85,9 @@ write run the default branch's workflow, never a pull request's own
      what would hold the release if it were cut now, said in main's
      issue; no agent ([how](release.md)). The release never waits for
      the docs ([ADR-0051](adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-1-the-release-weekly)).
+     With the variable `WORKLINE_CURATOR` set to `on`, its `curator`
+     measures the test corpus, no agent, no write token
+     ([how](../roles/tester/docs/curator.md)).
      **Upgrading**: delete a copied `workline-release-docs.yml`; its
      command is gone, and the job fails (exit 64).
    - [workline-objection.yml](../ci/github/workline-objection.yml) and

@@ -307,3 +307,30 @@ Each step: conformance cases first; a try told under `## Tried` ([ADR-0043]).
 - **Findings**: one red of three is `test-flaky`, blocking, the runs
   named; red in all three, `test-red-on-head`; a flaky test the base
   had warns, not the change's (principle 8).
+
+## Amendment 2026-10-28: step 6 as built
+
+- **The command**: `workline test measure --history <file>`, no agent,
+  on `HEAD` in a checkout apart; the suite `curator-runs` times (2), to
+  tell a flaky test on one commit. Red or flaky warns, never blocks.
+- **The history**: a JSON file the CI passes from one run to the next as
+  an artifact (GitHub 90 days, GitLab a branch's latest): no store of
+  its own. Missing, the first measure, said. A test gone longer than
+  `curator-window` (12 measures) is dropped.
+- **Where a person reads it**: the job's summary, not a sticky issue.
+  Nothing in it asks a person yet; step 7's pull requests will.
+- **Its moment**: a `curator` job beside the gardening's, opt-in
+  (`WORKLINE_CURATOR=on`), not a step of the `schedule` line: that line
+  holds the agent's token; the measure needs none, nor a write token.
+- **Coverage**: the command's own report, Go's profile or LCOV
+  (`coverage-report`); total and least covered packages.
+- **Not built**: per-test coverage, a run per test: twelve times the
+  package's time on `internal/tester` (3.6 s, not 0.3 s), 11 min more on
+  the whole corpus at that rate; duplicates by name or
+  shape (a name says little, a shape needs a parser per language): step
+  7 measures redundancy by covered lines. Mutation: only whether a tool
+  exists for the language and is set up.
+- **On workline**: 1,877 tests, 250 s of suite time; the measure 7.5
+  min for two runs with coverage; no test over 2.7 s; coverage 33.9 %
+  (the engine the conformance cases run is not profiled); a test red
+  on the environment (`WORKLINE_AI` set), found.
