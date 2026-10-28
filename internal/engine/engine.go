@@ -1323,9 +1323,32 @@ func applyAll(r *role.Role, settings map[string]any, st runState, runDir string,
 			if err := st.save(runDir); err != nil {
 				return err
 			}
+			// The role's record on the merge request it opened, in
+			// workline's own comment (ADR-0051): the tester's tests and
+			// their hashes, which only its own runs move (ADR-0055).
+			if key, body := openedRecord(runDir); key != "" {
+				t := forge.Target{Kind: "merge-request", ID: id}
+				if err := forge.KeepOwn(f, t, backlog.Inert(body), forge.Marker("sticky="+st.Role+"/"+key), true); err != nil {
+					return fmt.Errorf("the record on the merge request opened: %w", err)
+				}
+			}
 		}
 	}
 	res.MergeRequest = st.MergeRequest
+	// The role's own branch, asked by the role: its commit on top, pushed,
+	// never forced (the tester's rewrite on an objection, ADR-0055).
+	if message := ownPush(runDir); f != nil && st.Target != nil && st.Target.Kind == "merge-request" && !st.OpenMergeRequest && len(st.Written) > 0 && !st.Pushed && message != "" {
+		if err := commitOnOwnBranch(f, st, message); err != nil {
+			if errors.Is(err, forge.ErrUnreachable) {
+				res.Status, res.Summary = verdict.BlockedExternal, fmt.Sprintf("stopped while pushing to the role's branch; resume with: workline apply %s", runDir)
+				res.Findings = append(res.Findings, verdict.Finding{Rule: "forge-unreachable", Message: err.Error()})
+				return nil
+			}
+			return fmt.Errorf("commit on the role's branch: %w", err)
+		}
+		st.Pushed = true
+		return st.save(runDir)
+	}
 	// On a merge request, what the patches wrote goes in a comment, never
 	// on its branch (ADR-0051).
 	if f != nil && st.Target != nil && st.Target.Kind == "merge-request" && !st.OpenMergeRequest && len(st.Written) > 0 && !st.Pushed {
@@ -1343,6 +1366,84 @@ func applyAll(r *role.Role, settings map[string]any, st runState, runDir string,
 			return err
 		}
 		res.Findings = append(res.Findings, finding)
+	}
+	return nil
+}
+
+// openedRecord is the record a role keeps on the merge request it opens,
+// out/merge-request.yaml's `record: {sticky: key, body}`; "" for none.
+func openedRecord(runDir string) (key, body string) {
+	var mr struct {
+		Record struct{ Sticky, Body string }
+	}
+	if data, err := os.ReadFile(filepath.Join(runDir, "out", "merge-request.yaml")); err == nil {
+		yaml.Unmarshal(data, &mr)
+	}
+	return mr.Record.Sticky, mr.Record.Body
+}
+
+// ownPush is the commit message a role asks its patches pushed with, on
+// the merge request it targets, out/merge-request.yaml's `push:`; "" for
+// none: then they go in a comment.
+func ownPush(runDir string) string {
+	var mr struct{ Push string }
+	if data, err := os.ReadFile(filepath.Join(runDir, "out", "merge-request.yaml")); err == nil {
+		yaml.Unmarshal(data, &mr)
+	}
+	return strings.TrimSpace(mr.Push)
+}
+
+// commitOnOwnBranch commits what the patches wrote on the merge request's
+// branch, the role's own (workline/<role>/…, in this repository), on top
+// of what others pushed, and pushes it without force: the working tree
+// must be at that branch's tip, else nothing is committed. Another's
+// branch is never written to (ADR-0051).
+func commitOnOwnBranch(f forge.Forge, st runState, message string) error {
+	mr, err := f.MergeRequest(st.Target.ID)
+	if err != nil {
+		return err
+	}
+	if !strings.HasPrefix(mr.Branch, branchPrefix(st.Role)) || !mr.Here {
+		return fmt.Errorf("merge request %d comes from %s, not a branch of the %s's own: nothing is pushed there", st.Target.ID, mr.Branch, st.Role)
+	}
+	head, err := git(st.Repo, nil, "rev-parse", "HEAD")
+	if err != nil {
+		return err
+	}
+	tipRef := "origin/" + mr.Branch
+	if forge.KeepsBranches(f) {
+		tipRef = mr.Branch
+	} else if _, err := git(st.Repo, nil, "fetch", "-q", "origin", mr.Branch); err != nil {
+		return fmt.Errorf("%w: %v", forge.ErrUnreachable, err)
+	} else {
+		tipRef = "FETCH_HEAD"
+	}
+	tip, err := git(st.Repo, nil, "rev-parse", tipRef)
+	if err != nil {
+		return err
+	}
+	if strings.TrimSpace(tip) != strings.TrimSpace(head) {
+		return fmt.Errorf("the working tree is at %s, not at %s's tip %s: check the branch out first; nothing is committed", short(head), mr.Branch, short(tip))
+	}
+	steps := [][]string{
+		append([]string{"add", "--"}, st.Written...),
+		{"commit", "-q", "-m", message, "-m", st.trailers()},
+	}
+	for _, s := range steps {
+		if _, err := git(st.Repo, nil, s...); err != nil {
+			git(st.Repo, nil, append([]string{"reset", "-q", "--"}, st.Written...)...)
+			return err
+		}
+	}
+	if forge.KeepsBranches(f) {
+		if on, _ := git(st.Repo, nil, "symbolic-ref", "-q", "--short", "HEAD"); strings.TrimSpace(on) == mr.Branch {
+			return nil
+		}
+		_, err := git(st.Repo, nil, "branch", "-f", mr.Branch, "HEAD")
+		return err
+	}
+	if _, err := git(st.Repo, nil, "push", "-q", "origin", "HEAD:refs/heads/"+mr.Branch); err != nil {
+		return fmt.Errorf("%w: %v", forge.ErrUnreachable, err)
 	}
 	return nil
 }
@@ -2115,6 +2216,15 @@ func (a *applier) apply(in intent.Intention) error {
 		if target == nil {
 			return errors.New("a comment needs a target issue or merge request (--target)")
 		}
+		if thread, ok := m["thread"].(string); ok && thread != "" {
+			// A reply in a conversation on a line of the merge request:
+			// the tester's answer to an objection (ADR-0055).
+			th, ok := a.forge.(forge.Threaded)
+			if !ok || target.Kind != "merge-request" {
+				return errors.New("a reply in a thread needs a merge request, on a forge that lists its threads")
+			}
+			return th.Reply(target.ID, thread, backlog.Inert(body))
+		}
 		if sticky {
 			key, _ := m["sticky"].(string)
 			if key == "" {
@@ -2153,10 +2263,14 @@ func (a *applier) apply(in intent.Intention) error {
 		if err := a.needForge("label"); err != nil {
 			return err
 		}
-		if a.target == nil {
+		target := a.target
+		if n, ok := m["issue"].(int); ok { // the issue a merge request's role names: the tester's, sending a need back
+			target = &forge.Target{Kind: "issue", ID: n}
+		}
+		if target == nil {
 			return errors.New("a label needs a target issue or merge request (--target)")
 		}
-		return a.forge.Label(*a.target, strs(m["add"]), strs(m["remove"]))
+		return a.forge.Label(*target, strs(m["add"]), strs(m["remove"]))
 	case "issue":
 		m, _ := in.Value.(map[string]any)
 		title, _ := m["title"].(string)
