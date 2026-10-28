@@ -1,0 +1,8 @@
+- patch:
+    file: tests/test_minus_one_hundred.sh
+    content: |
+      # Scenario: Minus one hundred
+      # Given the library, When I add -100 to 0, Then I get -100.
+      # Unlike minus one, the sum goes past two digits.
+      . ./lib.sh
+      [ "$(add 0 -100)" = -100 ]

@@ -18,6 +18,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"unicode"
 
 	"go.yaml.in/yaml/v3"
 
@@ -296,22 +297,23 @@ func Post(runDir, repo string) int {
 	}
 	tested := map[string]string{} // scenario -> the first test file naming it
 	said := map[string]string{}   // scenario -> the note saying no test checks it
+	for _, n := range notes {
+		if i := claim(words(n), t.Scenarios, hasPrefix); i >= 0 {
+			if _, ok := said[t.Scenarios[i].Name]; !ok {
+				said[t.Scenarios[i].Name] = n
+			}
+		}
+	}
 	for _, sc := range t.Scenarios {
-		key := norm(sc.Name)
 		for _, file := range order {
-			if strings.Contains(norm(written[file]), key) {
+			if names(written[file], sc.Name) {
 				tested[sc.Name] = file
 				break
 			}
 		}
 		if _, ok := tested[sc.Name]; ok {
+			delete(said, sc.Name)
 			continue
-		}
-		for _, n := range notes {
-			if strings.Contains(norm(n), key) {
-				said[sc.Name] = n
-				break
-			}
 		}
 		if _, ok := said[sc.Name]; !ok {
 			findings = append(findings, verdict.Finding{Rule: "scenario-without-test", Where: sc.Name,
@@ -411,7 +413,7 @@ func draftBody(t task, tested, said map[string]string, newTests []string, proof 
 		}
 		var ids []string
 		for _, id := range newTests {
-			if strings.Contains(norm(id), norm(sc.Name)) {
+			if i := claim(words(id[strings.LastIndexAny(id, "./:")+1:]), t.Scenarios, hasSuffix); i >= 0 && t.Scenarios[i].Name == sc.Name {
 				ids = append(ids, "`"+id+"`")
 			}
 		}
@@ -458,6 +460,97 @@ func noteText(v any) string {
 	}
 	t, _ := v.(string)
 	return t
+}
+
+// names reports whether a test file names the scenario by a whole,
+// delimited mention, never as a part of a longer name nor in prose: a
+// "Scenario: <name>" line, a quoted string that is the name, or an
+// identifier whose words are the name's, after a "test" prefix or an
+// underscore (`TestMinusOne`, `test_minus_one`, `TestSub_MinusOne`).
+// "Minus one" is thus not named by `TestMinusOneHundred`.
+func names(text, name string) bool {
+	want := words(name)
+	if len(want) == 0 {
+		return false
+	}
+	for _, line := range strings.Split(text, "\n") {
+		if i := strings.Index(strings.ToLower(line), "scenario:"); i >= 0 && slices.Equal(words(line[i+len("scenario:"):]), want) {
+			return true
+		}
+		for _, q := range quotedRe.FindAllString(line, -1) {
+			if slices.Equal(words(q[1:len(q)-1]), want) {
+				return true
+			}
+		}
+		for _, id := range identRe.FindAllString(line, -1) {
+			w := words(id)
+			if len(w) > 0 && (w[0] == "test" || w[0] == "tests") && slices.Equal(w[1:], want) {
+				return true
+			}
+			// a camel-cased last segment, after a prefix: `TestSub_MinusOne`
+			if seg := id[strings.LastIndex(id, "_")+1:]; seg != id && hasUpper(seg) && slices.Equal(words(seg), want) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+var (
+	quotedRe = regexp.MustCompile("\"[^\"]*\"|'[^']*'|`[^`]*`")
+	identRe  = regexp.MustCompile(`[A-Za-z_][A-Za-z0-9_]*`)
+)
+
+func hasUpper(s string) bool { return strings.ToLower(s) != s }
+
+// words cuts a text into its lowercased words: at what is no letter nor
+// digit, at a lower-to-upper case change and between letters and digits,
+// so "Two by 3", `TwoBy3` and `two_by_3` give the same words.
+func words(s string) []string {
+	var out []string
+	var cur []rune
+	cut := func() {
+		if len(cur) > 0 {
+			out = append(out, strings.ToLower(string(cur)))
+			cur = cur[:0]
+		}
+	}
+	for _, r := range s {
+		if !unicode.IsLetter(r) && !unicode.IsDigit(r) {
+			cut()
+			continue
+		}
+		if n := len(cur); n > 0 {
+			p := cur[n-1]
+			if (unicode.IsUpper(r) && !unicode.IsUpper(p)) || unicode.IsLetter(r) != unicode.IsLetter(p) {
+				cut()
+			}
+		}
+		cur = append(cur, r)
+	}
+	cut()
+	return out
+}
+
+func hasPrefix(have, want []string) bool {
+	return len(have) >= len(want) && slices.Equal(have[:len(want)], want)
+}
+
+func hasSuffix(have, want []string) bool {
+	return len(have) >= len(want) && slices.Equal(have[len(have)-len(want):], want)
+}
+
+// claim is the scenario a text's words mention, by the match given: the
+// one with the most words when several do ("Minus one hundred" before
+// "Minus one"); -1 when none does.
+func claim(have []string, scenarios []Scenario, match func(have, want []string) bool) int {
+	best, most := -1, 0
+	for i, sc := range scenarios {
+		if w := words(sc.Name); len(w) > most && match(have, w) {
+			best, most = i, len(w)
+		}
+	}
+	return best
 }
 
 // norm keeps a text's letters and digits, lowercased: a scenario's name
