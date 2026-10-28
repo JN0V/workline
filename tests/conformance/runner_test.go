@@ -1453,12 +1453,14 @@ func lookup(env []string, name string) string {
 }
 
 // hermeticEnv keeps the machine's git config and hooks out of the tests,
-// and the CI the suite may run in: a case sets CI's variables itself.
+// the CI the suite may run in, and workline's own variables set where
+// go test runs (WORKLINE_AI, WORKLINE_ROLES...): a case sets them itself.
 func hermeticEnv() []string {
 	fixtures, _ := filepath.Abs("fixtures")
 	var env []string
 	for _, kv := range os.Environ() {
-		if name, _, _ := strings.Cut(kv, "="); name != "CI" && name != "GITHUB_ACTIONS" && name != "GITLAB_CI" {
+		name, _, _ := strings.Cut(kv, "=")
+		if name != "CI" && name != "GITHUB_ACTIONS" && name != "GITLAB_CI" && !strings.HasPrefix(name, "WORKLINE_") {
 			env = append(env, kv)
 		}
 	}
