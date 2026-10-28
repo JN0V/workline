@@ -1,0 +1,19 @@
+case: tester/measure-red-and-slow-said
+about: >
+  A test red in every run of a measure on HEAD is said, a warning; a
+  corpus over suite-max-seconds too. No history file asked: the measure
+  says flakiness over time is not kept.
+given:
+  repo: tested
+  setup:
+    - |
+      printf '<testsuite name="tests" time="90"><testcase classname="tests" name="test_add" time="80"><failure/></testcase><testcase classname="tests" name="test_sub" time="10"/></testsuite>\n' > report.xml && git add report.xml && git commit -qm "test: a report"
+  config:
+    roles: {tester: {settings: {test-command: "cp report.xml {report}", suite-max-seconds: 60}}}
+run: {test: [measure]}
+expect:
+  status: pass
+  findings:
+    - {rule: test-red, level: warn, where: tests.test_add}
+    - {rule: corpus-slow, level: warn, message: "90 s, over suite-max-seconds (60 s)"}
+  summary: "no history kept"

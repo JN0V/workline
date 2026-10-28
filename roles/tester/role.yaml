@@ -17,7 +17,8 @@ mission: Each test a change adds is proven red on its base before the code makes
 #        objection waiting on the tester's Draft, kept or rewritten
 #        (step 3); in CI, woken by the comment (workline-objection.yml).
 # The red-first check alone, `workline test check --base <ref>`, runs no
-# role and no agent (step 1).
+# role and no agent (step 1); the curator's measures,
+# `workline test measure --history <file>`, neither (step 6).
 events: [issue, schedule, merge-request, objection]
 
 requires: [git]
@@ -96,3 +97,16 @@ settings:
   # thread. The five whys are due once the second answer did not settle it.
   objection-exchanges: 3
   objection-person: "workline:human"
+  # The curator's measures, no agent (`workline test measure`, ADR-0055
+  # step 6): the command run, when not test-command (one that also writes
+  # coverage-report, Go's profile or LCOV, e.g. `gotestsum --junitfile
+  # {report} -- -coverprofile=cover.out ./...`); the runs a measure, two to
+  # tell a flaky test on one commit; the slowest tests named; the window of
+  # measures a test never red is counted over (twelve: a quarter, weekly);
+  # the corpus's time over which it warns, in seconds (0: none).
+  curator-command: ""
+  curator-runs: 2
+  curator-slowest: 10
+  curator-window: 12
+  suite-max-seconds: 600
+  coverage-report: ""

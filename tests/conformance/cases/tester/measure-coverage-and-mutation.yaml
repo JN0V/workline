@@ -1,0 +1,21 @@
+case: tester/measure-coverage-and-mutation
+about: >
+  Where the test command also writes a coverage report (coverage-report,
+  Go's profile or LCOV), its total and least covered packages are said;
+  whether a mutation tool exists for the project's language, and whether
+  one is set up here, too (step 7's proof).
+given:
+  repo: tested
+  setup:
+    - |
+      printf 'module example.com/m\n\ngo 1.22\n' > go.mod && printf 'mode: set\nexample.com/m/a/a.go:1.1,2.2 3 1\nexample.com/m/a/a.go:3.1,4.2 1 0\nexample.com/m/b/b.go:1.1,2.2 4 0\n' > cover.txt && git add . && git commit -qm "chore: a module"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report} && cp cover.txt cover.out", coverage-report: cover.out}}}
+run: {test: [measure], summary: true}
+expect:
+  status: pass
+  summary-file:
+    - "37.5% of 8 statements"
+    - "example.com/m/b: 0.0% of 4"
+    - "Go has Gremlins, go-mutesting"
+    - "none set up here"

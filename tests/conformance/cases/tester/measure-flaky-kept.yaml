@@ -1,0 +1,22 @@
+case: tester/measure-flaky-kept
+about: >
+  A test red in one run of a measure and green in the other, on the same
+  commit, is flaky: said as a warning, never a block (the curator is off
+  every path), and counted in the history across measures.
+given:
+  repo: tested
+  setup:
+    - |
+      printf 'if [ -e .ran ]; then printf "<testsuite name=\\"tests\\"><testcase classname=\\"tests\\" name=\\"test_add\\" time=\\"0.1\\"/></testsuite>" > "$1"; else touch .ran; printf "<testsuite name=\\"tests\\"><testcase classname=\\"tests\\" name=\\"test_add\\" time=\\"0.1\\"><failure/></testcase></testsuite>" > "$1"; fi\n' > flaky.sh && git add flaky.sh && git commit -qm "test: a flaky runner"
+    - |
+      printf '{"version":1,"count":4,"measures":[{"n":4,"tests":1,"seconds":0.1}],"tests":{"tests.test_add":{"first":1,"last":4,"seen":4,"runs":8,"red":1,"flaky":1,"last-red":2,"seconds":0.1}}}\n' > curator.json
+  config:
+    roles: {tester: {settings: {test-command: "sh flaky.sh {report}", curator-runs: 2}}}
+run: {test: [measure, --history, curator.json], summary: true}
+expect:
+  status: pass
+  findings:
+    - {rule: test-flaky, level: warn, where: tests.test_add, message: "red in 1 of 2 runs"}
+  summary-file: ["flaky", "tests.test_add", "flaky in 2 measures of 5"]
+  files:
+    curator.json: {contains: ['"count": 5', '"flaky": 2', '"last-red": 5']}

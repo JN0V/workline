@@ -18,6 +18,7 @@ const (
 // runner nests them its own way.
 type suite struct {
 	Name   string     `xml:"name,attr"`
+	Time   string     `xml:"time,attr"`
 	Suites []suite    `xml:"testsuite"`
 	Cases  []testcase `xml:"testcase"`
 }
@@ -25,6 +26,7 @@ type suite struct {
 type testcase struct {
 	Class   string    `xml:"classname,attr"`
 	Name    string    `xml:"name,attr"`
+	Time    string    `xml:"time,attr"`
 	Failure *struct{} `xml:"failure"`
 	Error   *struct{} `xml:"error"`
 	Skipped *struct{} `xml:"skipped"`
