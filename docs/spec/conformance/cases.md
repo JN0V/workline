@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go]
-checked: 5f7a907a
+checked: 1775cda4
 verified: agent:claude-code
 ---
 # Conformance — a case in full
@@ -42,6 +42,8 @@ saying so.
 
 - `route: <event>` instead of `role` — run the event's whole line;
 - `gate: <name>` instead of `role` — run one gate;
+- `test: [<argument>...]` instead of `role` — run `workline test` on the
+  repository (`[check, --base, main]`), the tester's check with no agent;
 - `doctor: true` instead of `role` — run `workline doctor` on the repository;
 - `init: true` instead of `role` — run `workline init` on the repository,
   with `init-options: [<option>...]` if given (`--human-po yes`);
