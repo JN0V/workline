@@ -51,7 +51,10 @@ type Role struct {
 	} `yaml:"duties"`
 	Context struct {
 		Knowledge []string `yaml:"knowledge"`
-		Budget    int      `yaml:"budget"`
+		// Skills are the shared skills a run of the role may load, when
+		// its pre names them in in/skills (docs/spec/role-contract.md).
+		Skills []string `yaml:"skills"`
+		Budget int      `yaml:"budget"`
 	} `yaml:"context"`
 	WithoutAI string `yaml:"without-ai"`
 	// MergeRequestAI `ready`: on a merge request, the agent is asked on the

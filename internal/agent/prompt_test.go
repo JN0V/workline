@@ -113,3 +113,43 @@ func TestFacetFromTheConfigFolderFirst(t *testing.T) {
 		t.Errorf("persona.md read %q, want the one in ~/.config", got)
 	}
 }
+
+// A shared skill is given after the task when the run's pre names it and
+// the role declares it; a project's copy wins over the shipped one; one
+// the role does not declare is refused.
+func TestPromptLoadsTheSkillsThePreNames(t *testing.T) {
+	must := func(err error) {
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	ask := func(declared []string, project string) (string, error) {
+		dir, run, repo := t.TempDir(), t.TempDir(), t.TempDir()
+		must(os.WriteFile(filepath.Join(dir, "instruction.md"), []byte("Answer."), 0o644))
+		must(os.MkdirAll(filepath.Join(run, "in"), 0o755))
+		must(os.MkdirAll(filepath.Join(run, "out"), 0o755))
+		must(os.WriteFile(filepath.Join(run, "in", "task.md"), []byte("The thread."), 0o644))
+		must(os.WriteFile(filepath.Join(run, "in", SkillsFile), []byte("five-whys\n"), 0o644))
+		if project != "" {
+			must(os.MkdirAll(filepath.Join(repo, ".workline", "skills", "five-whys"), 0o755))
+			must(os.WriteFile(filepath.Join(repo, ".workline", "skills", "five-whys", "SKILL.md"), []byte(project), 0o644))
+		}
+		r := &role.Role{Name: "tester", Dir: dir, Intentions: []string{"note"}}
+		r.Context.Skills = declared
+		_, user, err := Prompt(Request{RunDir: run, Repo: repo, Role: r})
+		return user, err
+	}
+	user, err := ask([]string{"five-whys"}, "")
+	if err != nil || !strings.Contains(user, "# Skill: five-whys") || !strings.Contains(user, "Root cause:") || strings.Contains(user, "description:") {
+		t.Errorf("the shipped skill, its body only, is not given: %v\n%s", err, user)
+	}
+	if strings.Index(user, "# Skill") < strings.Index(user, "# Task") {
+		t.Error("the skill comes before the task")
+	}
+	if user, _ := ask([]string{"five-whys"}, "---\nname: five-whys\ndescription: ours\n---\nOur own whys."); !strings.Contains(user, "Our own whys.") {
+		t.Errorf("the project's copy is not the one given:\n%s", user)
+	}
+	if _, err := ask(nil, ""); err == nil || !strings.Contains(err.Error(), "context.skills") {
+		t.Errorf("a skill the role does not declare is not refused: %v", err)
+	}
+}
