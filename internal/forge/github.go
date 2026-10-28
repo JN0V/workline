@@ -692,6 +692,7 @@ func (g *github) MergeRequest(id int) (MergeRequest, error) {
 	var pr struct {
 		Title string `json:"title"`
 		Body  string `json:"body"`
+		Draft bool   `json:"draft"`
 		Head  struct {
 			Ref  string `json:"ref"`
 			Repo struct {
@@ -708,7 +709,7 @@ func (g *github) MergeRequest(id int) (MergeRequest, error) {
 	if err := decode(out, &pr); err != nil {
 		return MergeRequest{}, fmt.Errorf("pull request %d: %w", id, err)
 	}
-	return MergeRequest{ID: id, Branch: pr.Head.Ref, Base: pr.Base.Ref, Here: pr.Head.Repo.Name == pr.Base.Repo.Name, Title: pr.Title, Body: pr.Body}, nil
+	return MergeRequest{ID: id, Branch: pr.Head.Ref, Base: pr.Base.Ref, Here: pr.Head.Repo.Name == pr.Base.Repo.Name, Title: pr.Title, Body: pr.Body, Draft: pr.Draft}, nil
 }
 
 // Squash reads whether the repository allows squash merging, and which

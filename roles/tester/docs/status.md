@@ -5,7 +5,8 @@ a test for each named scenario of a ready issue, proves them red on the
 base with the red-first check (`workline test check`, no agent), and
 opens them as a Draft; it keeps them from the builder, and answers an
 objection to one (`workline test answer`); a scheduled run takes one
-ready issue a night, an objection wakes its answer. Steps 1 to 4 of
+ready issue a night, an objection wakes its answer; on the closing pull
+request, each new test passes three runs out of three. Steps 1 to 5 of
 [ADR-0055's plan](../../../docs/adr/0055-the-tester-writes-the-acceptance-tests-before-the-code.md#build-plan);
 beta, not in the line yet.
 
@@ -25,7 +26,7 @@ Beta until the three criteria of
 [ADR-0036](../../../docs/adr/0036-a-roles-status-is-earned-by-written-criteria.md)
 hold:
 
-1. **Nothing buildable in Missing**: open; steps 5 to 8 below.
+1. **Nothing buildable in Missing**: open; steps 6 to 8 below.
 2. **The main issue validated on real use**: open.
    [#264](https://github.com/JN0V/workline/issues/264), on workline and
    on a copy of a real repository: a bug shown by a red test first, then
@@ -72,6 +73,11 @@ Cases in `tests/conformance/cases/tester/`:
 - **The objection's trigger** (step 4): GitHub's
   `workline-objection.yml` and `workline-answer.yml`, GitLab's
   `workline:objection:*` jobs on a pipeline a note webhook starts.
+- **The green proof** (step 5), no agent: on the tester's pull request
+  marked ready, the base once, then the head three times in one fresh
+  checkout; a new test red in some runs is flaky and blocks
+  (`test-flaky`), red in all is `test-red-on-head`; a flaky test the
+  base had warns; a Draft waits ([the page](green-proof.md)).
 - **The hand-over** to whoever builds:
   [the contract](hand-over.md).
 - **Settings** `test-command`, `test-report`, `test-paths`,
@@ -93,8 +99,8 @@ Cases in `tests/conformance/cases/tester/`:
   scheduled run may take its issue again.
 - **Objections on a forge command** (`cmd:`): it lists no thread, and
   `no-threads` blocks.
-- **Step 5, green proof**: three runs out of three on the closing pull
-  request; step 1 runs the head once.
+- **A test's flakiness over time**: each push to the ready pull request
+  runs the three again; no history across pushes (the curator's, step 6).
 - **Steps 6 to 8**: the curator's measures, redundancy with its proof,
   the five whys skill.
 - **A missing name in Rust or Java**: their compilers' errors span

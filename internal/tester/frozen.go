@@ -107,8 +107,9 @@ func issueOf(branch string) int {
 	return n
 }
 
-// guardPre is the frozen guard, the tester on a merge request: no agent.
-func guardPre(runDir, repo string) int {
+// guardPre is the frozen guard, the tester on a merge request, then, on
+// the one that closes the issue, the green proof: no agent.
+func guardPre(runDir, repo string, s Settings) int {
 	kind, num, _ := strings.Cut(os.Getenv("WORKLINE_TARGET"), ":")
 	id, _ := strconv.Atoi(num)
 	if kind != "merge-request" || id <= 0 {
@@ -144,6 +145,16 @@ func guardPre(runDir, repo string) int {
 		return final(runDir, verdict.Verdict{Status: verdict.Block, Summary: "the tester's tests cannot be told", Findings: []verdict.Finding{*missing}})
 	}
 	v := guard(repo, r)
+	switch {
+	case v.Status != verdict.Pass:
+		v.Summary += "; the green proof waits for the tests as the tester wrote them"
+	case mr.Draft: // its tests are meant red until whoever builds marks it ready
+		v.Summary += "; the green proof waits for the pull request marked ready"
+	default:
+		g := green(repo, r.Base, s)
+		g.Summary = v.Summary + "; " + g.Summary
+		v = g
+	}
 	return final(runDir, v)
 }
 

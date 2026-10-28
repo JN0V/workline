@@ -605,7 +605,7 @@ func (f *Fake) MergeRequest(id int) (MergeRequest, error) {
 	if err != nil {
 		return MergeRequest{}, err
 	}
-	return MergeRequest{ID: id, Branch: it.Branch, Base: it.Base, Here: !it.Fork, Title: it.Title, Body: it.Body}, nil
+	return MergeRequest{ID: id, Branch: it.Branch, Base: it.Base, Here: !it.Fork, Title: it.Title, Body: it.Body, Draft: it.Draft}, nil
 }
 
 // Squash is the state's, a merge request's number in its suffix; none set,

@@ -1,6 +1,6 @@
 ---
-sources: [internal/tester/moment.go, internal/tester/write.go, internal/tester/frozen.go, internal/tester/objection.go]
-checked: b075cadb
+sources: [internal/tester/moment.go, internal/tester/write.go, internal/tester/frozen.go, internal/tester/objection.go, internal/tester/green.go]
+checked: 68001ec6
 verified: agent:claude-code
 ---
 # The hand-over: what whoever builds finds
@@ -55,11 +55,12 @@ flowchart LR
   `Closes #<n>`, and the Draft is marked ready. It then merges by the
   project's policy
   ([ADR-0042](../../../docs/adr/0042-the-engine-merges-by-the-projects-policy.md)).
+- **Green three times**: once marked ready, each new test passes on the
+  head three runs out of three; one red is flaky and blocks
+  (`test-flaky`, [the proof](green-proof.md)).
 
 ## Not yet
 
-- Three green runs out of three on the closing pull request: step 5 of
-  [ADR-0055's plan](../../../docs/adr/0055-the-tester-writes-the-acceptance-tests-before-the-code.md#build-plan).
 - A Draft a person closed unmerged is not remembered as refused: a
   later scheduled run may take that issue again
   ([status](status.md#missing)).

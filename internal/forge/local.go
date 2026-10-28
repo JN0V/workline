@@ -442,7 +442,7 @@ func (l *Local) MergeRequest(id int) (MergeRequest, error) {
 	if err != nil {
 		return MergeRequest{}, err
 	}
-	return MergeRequest{ID: id, Branch: it.Branch, Base: it.Base, Here: true, Title: it.Title, Body: it.Body}, nil
+	return MergeRequest{ID: id, Branch: it.Branch, Base: it.Base, Here: true, Title: it.Title, Body: it.Body, Draft: it.Draft}, nil
 }
 
 // ListMergeRequests lists the open merge requests: each from a branch of

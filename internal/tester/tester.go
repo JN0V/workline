@@ -350,24 +350,40 @@ func (r ran) buildRecord(id string) bool {
 // run checks rev out apart, the files given laid on it as from holds them,
 // runs the test command there and reads its report.
 func run(repo, rev string, files []string, from string, s Settings, where string) (ran, *verdict.Finding) {
-	tree, err := os.MkdirTemp("", "workline-test-")
-	if err != nil {
-		return ran{}, &verdict.Finding{Rule: "check-error", Where: "test", Message: err.Error()}
+	tree, done, f := checkout(repo, rev)
+	if f != nil {
+		return ran{}, f
 	}
-	defer func() {
-		if _, err := git(repo, "worktree", "remove", "--force", tree); err != nil {
-			_ = os.RemoveAll(tree)
-			_, _ = git(repo, "worktree", "prune")
-		}
-	}()
-	if _, err := git(repo, "-c", "core.hooksPath=/dev/null", "worktree", "add", "--detach", "--quiet", tree, rev); err != nil {
-		return ran{}, &verdict.Finding{Rule: "check-error", Where: "test", Message: fmt.Sprintf("%s could not be checked out: %v", short(rev), err)}
-	}
+	defer done()
 	for _, file := range files {
 		if _, err := git(tree, "-c", "core.hooksPath=/dev/null", "--literal-pathspecs", "checkout", from, "--", file); err != nil {
 			return ran{}, &verdict.Finding{Rule: "check-error", Where: file, Message: fmt.Sprintf("%s could not be laid on %s: %v", file, short(rev), err)}
 		}
 	}
+	return runIn(tree, s, where)
+}
+
+// checkout checks rev out apart; done removes the checkout.
+func checkout(repo, rev string) (tree string, done func(), f *verdict.Finding) {
+	tree, err := os.MkdirTemp("", "workline-test-")
+	if err != nil {
+		return "", nil, &verdict.Finding{Rule: "check-error", Where: "test", Message: err.Error()}
+	}
+	done = func() {
+		if _, err := git(repo, "worktree", "remove", "--force", tree); err != nil {
+			_ = os.RemoveAll(tree)
+			_, _ = git(repo, "worktree", "prune")
+		}
+	}
+	if _, err := git(repo, "-c", "core.hooksPath=/dev/null", "worktree", "add", "--detach", "--quiet", tree, rev); err != nil {
+		done()
+		return "", nil, &verdict.Finding{Rule: "check-error", Where: "test", Message: fmt.Sprintf("%s could not be checked out: %v", short(rev), err)}
+	}
+	return tree, done, nil
+}
+
+// runIn runs the test command in tree and reads its report.
+func runIn(tree string, s Settings, where string) (ran, *verdict.Finding) {
 	report := filepath.Join(tree, filepath.FromSlash(s.Report))
 	old, _ := filepath.Glob(report)
 	for _, f := range old { // a report committed is not this run's
@@ -377,6 +393,7 @@ func run(repo, rev string, files []string, from string, s Settings, where string
 	}
 	cmd := exec.Command("sh", "-c", strings.ReplaceAll(s.Command, "{report}", report))
 	cmd.Dir = tree
+	cmd.Env = uncached(os.Environ())
 	var out bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &out, &out
 	runErr := cmd.Run() // a test that fails exits non-zero: the report says which
@@ -398,6 +415,25 @@ func run(repo, rev string, files []string, from string, s Settings, where string
 		}
 	}
 	return rep, nil
+}
+
+// uncached is env with Go told to run each test, never to replay a
+// cached result (-count=1): a run after another in one checkout would
+// pass on the first one's word. Other commands ignore GOFLAGS, and go
+// commands not taking -count too; a -count the project set is kept.
+func uncached(env []string) []string {
+	flags := ""
+	out := slices.DeleteFunc(slices.Clone(env), func(e string) bool {
+		v, ok := strings.CutPrefix(e, "GOFLAGS=")
+		if ok {
+			flags = v
+		}
+		return ok
+	})
+	if !strings.Contains(flags, "-count") {
+		flags = strings.TrimSpace(flags + " -count=1")
+	}
+	return append(out, "GOFLAGS="+flags)
 }
 
 func git(dir string, args ...string) (string, error) {

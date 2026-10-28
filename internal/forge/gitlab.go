@@ -1230,11 +1230,12 @@ func (g *gitlab) MergeRequest(id int) (MergeRequest, error) {
 		TargetProject int    `json:"target_project_id"`
 		Title         string `json:"title"`
 		Description   string `json:"description"`
+		Draft         bool   `json:"draft"`
 	}
 	if err := decode(out, &mr); err != nil {
 		return MergeRequest{}, err
 	}
-	return MergeRequest{ID: id, Branch: mr.Source, Base: mr.Target, Here: mr.SourceProject == mr.TargetProject, Title: mr.Title, Body: mr.Description}, nil
+	return MergeRequest{ID: id, Branch: mr.Source, Base: mr.Target, Here: mr.SourceProject == mr.TargetProject, Title: mr.Title, Body: mr.Description, Draft: mr.Draft}, nil
 }
 
 // Squash reads the project's squash option: every one but "never" lets a

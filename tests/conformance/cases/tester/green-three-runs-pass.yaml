@@ -1,0 +1,23 @@
+case: tester/green-three-runs-pass
+about: >
+  The green proof (ADR-0055, step 5): on the pull request that closes the
+  issue, the tester's branch marked ready, each new test passes on the
+  head three runs out of three, in one fresh checkout of it; it passes.
+given:
+  repo: tested-draft
+  setup:
+    - "printf 'mul() { echo $(($1 * $2)); }\n' >> lib.sh && git commit -qam 'feat: multiply'"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        body: "Closes #3"
+        comments: ["The tests of #3, frozen.\n\n<!-- workline:tester-record {\"issue\":3,\"base\":\"main\",\"files\":{\"tests/test_mul_by_zero.sh\":\"8f123a0bacbd681063880b867df38dd216784b97\",\"tests/test_mul_two_by_three.sh\":\"2dee0641bd7a79057ade7bff5af43b603125f543\"}} -->\n<!-- workline:sticky=tester/tests -->"]
+run: {role: tester, event: merge-request, target: {merge-request: 1}}
+expect:
+  status: pass
+  summary: "2 new tests green on the head, three runs out of three"
+  agent-calls: 0
+  no-findings: [{rule: test-flaky}, {rule: test-red-on-head}]
