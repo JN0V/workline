@@ -35,6 +35,7 @@ Each in detail: [the commands](commands.md), and
 | [`workline test check --base <ref>`](commands.md#workline-test) | the tester's red-first check: each test the change adds fails on the base |
 | [`workline test write --issue <n>`](commands.md#workline-test) | the tester writes a ready issue's tests, proves them red, opens a Draft |
 | [`workline test answer --merge-request <n>`](commands.md#workline-test) | the tester answers an objection to one of its tests: kept, or rewritten |
+| [`workline test measure --history <file>`](commands.md#workline-test) | the tester's curator measures the test corpus: times, red and flaky tests |
 | [`workline item ready <id>`](commands.md#workline-item-ready) | moves a work item to `ready`, once its sections are written |
 | [`workline issues`, `issues show <n>`](commands.md#workline-issues) | reads the issues kept in the clone (`forge: local`) |
 | [`workline issues import <file>`](commands.md#workline-issues-import) | turns a roadmap or backlog file into issues |
