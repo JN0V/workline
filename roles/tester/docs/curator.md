@@ -1,6 +1,6 @@
 ---
 sources: [internal/tester/measure.go, internal/tester/coverage.go, ci/github/workline-gardening.yml, ci/gitlab/workline.gitlab-ci.yml]
-checked: 8445924a
+checked: 7f7b4f32
 verified: agent:claude-code
 ---
 # The curator's measures
@@ -8,7 +8,8 @@ verified: agent:claude-code
 Part of [the tester](../README.md). Step 6 of
 [ADR-0055's plan](../../../docs/adr/0055-the-tester-writes-the-acceptance-tests-before-the-code.md#build-plan):
 keep the test corpus concise, scoped and fast, measured first. No agent;
-nothing removed here (step 7 proposes removals, with their proof).
+nothing removed here: step 7 proposes removals, with their proof
+([removals](removals.md)).
 
 ```mermaid
 flowchart LR
@@ -35,13 +36,14 @@ checkout apart:
   ([ADR-0051](../../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md)).
 - **Over time**: each test's runs, red runs, flaky measures, last red
   measure, from the history file.
-- **Never red** in the last `curator-window` measures: counted, the
-  candidates step 7 weighs; a test is never removed on this alone.
+- **Never red** in the last `curator-window` measures: counted, and
+  given to [the removals](removals.md)' agent; a test is never removed
+  on this alone.
 - **Coverage**, where the command writes one (`coverage-report`): Go's
   profile or LCOV; its total and the five least covered packages.
 - **Mutation**: whether a tool exists for the project's language
   (Gremlins, go-mutesting, Stryker, PIT, mutmut, cargo-mutants), and
-  whether one is set up here. Step 7 runs it.
+  whether one is set up here. [The removals](removals.md) run it.
 - **Over `suite-max-seconds`**: `corpus-slow`, a warning.
 
 ## Where it is kept and said
@@ -51,8 +53,8 @@ checkout apart:
   it 90 days; GitLab keeps a branch's latest. Missing: the first
   measure, said.
 - **A test gone** longer than the window is dropped from it.
-- **Said in the job's summary**: a person reads it there. Nothing in it
-  needs a person yet; step 7's pull requests will.
+- **Said in the job's summary**: a person reads it there; nothing in it
+  needs a person. [The removals](removals.md) open pull requests.
 
 ## In CI
 
@@ -101,7 +103,8 @@ told in the pull request [status](status.md) links):
   times; at that rate the 1,877 tests take 11 min more, the conformance
   cases also an engine built for coverage.
 - **Duplicates by name or shape**: a name says little (Go's `TestRun`
-  in many packages), a shape needs a parser per language. Step 7's
-  measure is coverage: a test whose lines another's cover.
+  in many packages), a shape needs a parser per language.
+  [The removals](removals.md) prove by a folder's coverage and mutants,
+  before and after.
 - **The pull requests' runs** (the green proof's three): not fed to the
   history yet.

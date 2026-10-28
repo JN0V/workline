@@ -334,3 +334,38 @@ Each step: conformance cases first; a try told under `## Tried` ([ADR-0043]).
   min for two runs with coverage; no test over 2.7 s; coverage 33.9 %
   (the engine the conformance cases run is not profiled); a test red
   on the environment (`WORKLINE_AI` set), found.
+
+## Amendment 2026-10-28: step 7 as built
+
+- **The command**: `workline test curate --history <file>`, the
+  tester's `curate` event; one folder of tests a run, the largest that
+  fits `code-lines-max`, not weighed within `curator-window` measures
+  (kept in the history) nor held by an open curator pull request.
+- **The judgement**: the agent reads the folder's test files and each
+  test's measures; proposes at most `curator-removals-max` (5) tests
+  removed or merged, a note each naming the test that keeps its check.
+- **The proof, no agent**: one checkout of `HEAD`, the touched folders
+  only (`{packages}`), before and after the patches: green both times;
+  no covered line lost; no killed mutant lost, the language's tool on
+  each folder (`curator-mutation-command`, Gremlins' JSON or the
+  mutation testing report schema); within `curator-proof-seconds`.
+  Not per-test coverage: the folder's covered lines before and after
+  are the same proof, at two runs' cost.
+- **Departs from choice 5's "a drop with a stated reason"**: none is
+  accepted; a covered line or a killed mutant lost is no pull request.
+- **Kept out**: a test file the tester's open Draft records (frozen),
+  a name a `curator-keep` file lists (workline: the conformance
+  `pending.txt`), files outside `curator-paths` (workline: the
+  conformance cases, whose built engine the profile does not see).
+  A tester's test merged with an issue still open is not told apart.
+- **Mutation required** where the language has a tool: unset, the
+  curator does not run; `none`, coverage alone, said in the pull
+  request.
+- **The pull request**: not a Draft, opened by the bot from the weekly
+  curator job (the gardening's `apply` on GitHub, `workline:curator:apply` on
+  GitLab), merged by the merge policy ([ADR-0042]).
+- **On workline**: three folders of its own unit tests, nothing
+  redundant found (14 to 25 thousand tokens, under 10 s each); a
+  duplicate planted in `internal/scale`, found and proven in 32 s:
+  20 tests to 19, coverage 94.7 % and 141 of 173 mutants killed, both
+  unchanged.

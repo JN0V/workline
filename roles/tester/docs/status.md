@@ -7,7 +7,9 @@ opens them as a Draft; it keeps them from the builder, and answers an
 objection to one (`workline test answer`); a scheduled run takes one
 ready issue a night, an objection wakes its answer; on the closing pull
 request, each new test passes three runs out of three; a weekly job
-measures the corpus, no agent (`workline test measure`). Steps 1 to 6 of
+measures the corpus, no agent (`workline test measure`), and proposes
+a few redundant tests removed, proven with no agent (`workline test
+curate`). Steps 1 to 7 of
 [ADR-0055's plan](../../../docs/adr/0055-the-tester-writes-the-acceptance-tests-before-the-code.md#build-plan);
 beta, not in the line yet.
 
@@ -29,7 +31,8 @@ Beta until the three criteria of
 [ADR-0036](../../../docs/adr/0036-a-roles-status-is-earned-by-written-criteria.md)
 hold:
 
-1. **Nothing buildable in Missing**: open; steps 7 and 8 below.
+1. **Nothing buildable in Missing**: open; step 8 below (step 7
+   built).
 2. **The main issue validated on real use**: open.
    [#264](https://github.com/JN0V/workline/issues/264), on workline and
    on a copy of a real repository: a bug shown by a red test first, then
@@ -87,6 +90,13 @@ Cases in `tests/conformance/cases/tester/`:
   artifact; slowest tests, never-red ones, coverage, whether a mutation
   tool exists; said in the job's summary. Opt-in in the gardening
   templates ([the page](curator.md)).
+- **The curator's removals** (step 7): `workline test curate` gives
+  the agent one folder of tests and their measures; it proposes a few
+  removed or merged, a reason each; the engine proves it with no agent,
+  the folder's tests before and after: green, no covered line and no
+  killed mutant lost (Gremlins pinned on Go); frozen and kept tests
+  refused; a pull request, not a Draft, from the weekly curator job
+  ([the page](removals.md)).
 - **The hand-over** to whoever builds:
   [the contract](hand-over.md).
 - **Settings** `test-command`, `test-report`, `test-paths`,
@@ -111,8 +121,10 @@ Cases in `tests/conformance/cases/tester/`:
 - **A test's flakiness over time on pull requests**: each push to the
   ready pull request runs the three again; their runs are not fed to the
   curator's history, which reads the weekly measure only.
-- **Steps 7 and 8**: redundancy and removals with their proof (mutation
-  included), the five whys skill.
+- **Step 8**: the five whys skill.
+- **The curator's removals**: a tester's test merged while its issue is
+  still open is not told apart (only open Drafts' records are read); a
+  mutation report other than Gremlins' or the schema's is not read.
 - **A missing name in Rust or Java**: their compilers' errors span
   several lines, which `build-errors` does not read
   ([the page](missing-name.md#other-languages)).
