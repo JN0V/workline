@@ -100,7 +100,7 @@ counted ([more](spec/gates.md#with-workline-gate)):
 ### workline test
 
 `workline test check --base <ref>` is the tester's red-first check, with
-no agent ([tester](../roles/tester/README.md#run-it)); it returns 0 or 1:
+no agent ([tester](../roles/tester/README.md#check-a-change)); it returns 0 or 1:
 
 - **The new tests**: those the head's JUnit report holds and the
   base's does not, the test command run in a checkout apart for each.
@@ -108,6 +108,18 @@ no agent ([tester](../roles/tester/README.md#run-it)); it returns 0 or 1:
   laid on it; one that passes is refused.
 - **Green on the head**, when the change holds code too.
 - **`--base ""`** is misuse, 64: a CI variable left unset.
+
+`workline test write --issue <n>` has the tester write a ready issue's
+tests, one a scenario, through the agent
+([tester](../roles/tester/README.md#write-an-issues-tests)):
+
+- **`--ai`**: none, `claude`, `cmd:<any command>`; with none, nothing is
+  written, and it says so.
+- **Proven first**: the check above runs on them, the base with the tests
+  alone; red, they are committed on `workline/tester/issue-<n>`, opened
+  as a Draft `Refs #<n>`. Not red, nothing is opened.
+- **`--forge`**: where the issue is read and the Draft opened; the
+  project's `forge` setting by default.
 
 ## workline review
 

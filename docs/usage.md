@@ -33,6 +33,7 @@ Each in detail: [the commands](commands.md), and
 | [`workline review`](commands.md#workline-review) | the reviewer reads this branch, or a spec, before you push |
 | [`workline gate <name>`](commands.md#workline-gate) | runs a gate declared in `.workline/config.yaml` |
 | [`workline test check --base <ref>`](commands.md#workline-test) | the tester's red-first check: each test the change adds fails on the base |
+| [`workline test write --issue <n>`](commands.md#workline-test) | the tester writes a ready issue's tests, proves them red, opens a Draft |
 | [`workline item ready <id>`](commands.md#workline-item-ready) | moves a work item to `ready`, once its sections are written |
 | [`workline issues`, `issues show <n>`](commands.md#workline-issues) | reads the issues kept in the clone (`forge: local`) |
 | [`workline issues import <file>`](commands.md#workline-issues-import) | turns a roadmap or backlog file into issues |

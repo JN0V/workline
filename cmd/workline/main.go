@@ -473,6 +473,10 @@ func builtin(args []string) int {
 		return inspector.Pre(runDir, repo)
 	case "inspector post":
 		return inspector.Post(runDir, repo)
+	case "tester pre":
+		return tester.Pre(runDir, repo)
+	case "tester post":
+		return tester.Post(runDir, repo)
 	}
 	fmt.Fprintf(os.Stderr, "workline builtin: no built-in step %q\n", strings.Join(args, " "))
 	return 99
@@ -1086,16 +1090,24 @@ func gateCmd(args []string) int {
 func testCmd(args []string) int {
 	fs := newFlags("test")
 	repo := fs.String("repo", ".", "repository to check")
-	base := fs.String("base", "", "the revision the change is proven red on: its merge base with HEAD, as on a merge request")
+	base := fs.String("base", "", "check: the revision the change is proven red on: its merge base with HEAD, as on a merge request")
+	issue := fs.Int("issue", 0, "write: the ready issue whose scenarios the tests check")
+	ai := fs.String("ai", "", "write: agent: none, claude, cmd:<command> (default: the project's `ai` setting, else none)")
+	forgeSpec := fs.String("forge", "", "write: forge: github, gitlab, local, fake:<file> (default: the project's `forge` setting)")
 	roles := fs.String("roles", os.Getenv("WORKLINE_ROLES"), "folder holding the roles")
 	asJSON := fs.Bool("json", false, "print the result as JSON")
-	sub, code, done := parseAfter(fs, args, "a check (check)")
+	sub, code, done := parseAfter(fs, args, "check or write")
 	if done {
 		return code
 	}
 	switch {
+	case sub == "write":
+		if *issue <= 0 {
+			return misuse(fs, "write needs --issue <n>, the ready issue to write the tests of")
+		}
+		return testWrite(*repo, *roles, *ai, *forgeSpec, *issue, *asJSON)
 	case sub != "check":
-		return misuse(fs, fmt.Sprintf("unknown check %q: check", sub))
+		return misuse(fs, fmt.Sprintf("unknown command %q: check or write", sub))
 	case strings.TrimSpace(*base) == "":
 		// An unset variable in a CI job: never read as no base at all.
 		return misuse(fs, "--base names no revision (an unset variable?): give the base the change is proven red on")
@@ -1130,6 +1142,28 @@ func testCmd(args []string) int {
 		report(res)
 	}
 	return exitFor(v.Status)
+}
+
+// testWrite runs the tester on one issue (ADR-0055, step 2): the agent
+// writes a test a scenario, post proves them red on the base, and the
+// engine commits them on workline/tester/issue-<n>, opened as a Draft.
+func testWrite(repo, roles, ai, forgeSpec string, issue int, asJSON bool) int {
+	abs, _ := filepath.Abs(repo)
+	rolesDir, err := resolveRoles(roles)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "workline:", err)
+		return 1
+	}
+	absRoles, _ := filepath.Abs(rolesDir)
+	res := engine.Run(engine.Options{Repo: abs, RolesDir: absRoles, Role: "tester", Event: "issue", AI: ai,
+		Forge: forgeSpec, Target: &forge.Target{Kind: "issue", ID: issue}, OpenMergeRequest: true})
+	if asJSON {
+		out, _ := json.MarshalIndent(res, "", "  ")
+		fmt.Println(string(out))
+	} else {
+		report(res)
+	}
+	return exitFor(res.Status)
 }
 
 func routeCmd(args []string) int {

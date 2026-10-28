@@ -1,0 +1,7 @@
+- patch:
+    file: tests/test_add.sh
+    content: |
+      # Scenario: Two by three
+      # Scenario: By zero
+      . ./lib.sh
+      [ "$(mul 2 3)" = 6 ] && [ "$(mul 5 0)" = 0 ]

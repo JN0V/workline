@@ -56,7 +56,7 @@ pull requests and nightly gardening of workline and of another project;
 | [**Reviewer**](roles/reviewer/README.md) | reads a change before a person does and says what it breaks; never approves | [beta](roles/reviewer/docs/status.md) |
 | [**Product owner**](roles/product-owner/README.md) | keeps the open issues true to the code, refined and in order | [beta](roles/product-owner/docs/status.md) |
 | [**Inspector**](roles/inspector/README.md) | explains the findings a merge request adds to your linters and scanners; never their verdict | [beta](roles/inspector/docs/status.md) |
-| [**Tester**](roles/tester/README.md) | proves each test a change adds red on its base, green on the head; will write an issue's tests first | [beta](roles/tester/docs/status.md) |
+| [**Tester**](roles/tester/README.md) | writes a ready issue's tests from its scenarios, each proven red on its base before the code | [beta](roles/tester/docs/status.md) |
 | [Judge](roles/judge/role.yaml) | answers one yes-or-no question for the other roles, from another context or model | [built](roles/judge/docs/status.md) |
 | [Auditor](roles/auditor/role.yaml) | re-checks a weekly sample of the roles' acts | [beta](roles/auditor/docs/status.md) |
 | [Security](https://github.com/JN0V/workline/issues/204) | will add security scanners as gates and a security lens | planned |
