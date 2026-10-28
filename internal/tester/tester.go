@@ -78,27 +78,59 @@ func Check(repo, base string, s Settings) *verdict.Verdict {
 			return refuse("the red-first check did not run", *f)
 		}
 	}
-	// The new tests are the head's: one the red run alone names is the
-	// runner's own record of a build that failed there (gotestsum's
-	// TestMain), not a test.
-	var added, unbuilt []string
-	for id := range headRun {
-		if _, ok := baseRun[id]; !ok {
-			added = append(added, id)
+	// A base test the red run lacks was not built there. Beside code, the
+	// red run holds every base test file (deleted ones are not laid on
+	// it), so each one it lacks is unbuilt; one the red run alone names is
+	// the runner's own record of the build that failed (gotestsum's
+	// TestMain), never in the head's report. Tests alone, the red run is
+	// the head, which lacks the tests deleted too: unbuilt are the tests
+	// of a class (a package, a module) none of whose base tests ran where
+	// a new red id is the build's record, not a test proven red.
+	var added, unbuilt, records []string
+	lost := map[string]bool{} // classes none of whose base tests ran
+	if !onHead {
+		for id := range baseRun.results {
+			lost[baseRun.class[id]] = true
+		}
+		for id := range redRun.results {
+			if _, ok := baseRun.results[id]; ok {
+				delete(lost, redRun.class[id])
+			}
 		}
 	}
-	for id := range baseRun {
-		if _, ok := redRun[id]; !ok {
+	for id := range headRun.results {
+		if _, ok := baseRun.results[id]; ok {
+			continue
+		}
+		if !onHead && headRun.results[id] == failed && lost[headRun.class[id]] {
+			records = append(records, id)
+			continue
+		}
+		added = append(added, id)
+	}
+	broke := map[string]bool{} // tests alone: a lost class with no build record lost its tests to a deletion
+	for _, id := range records {
+		broke[headRun.class[id]] = true
+	}
+	for id := range baseRun.results {
+		if !onHead && !broke[baseRun.class[id]] {
+			continue
+		}
+		if _, ok := redRun.results[id]; !ok {
 			unbuilt = append(unbuilt, id)
 		}
 	}
 	slices.Sort(added)
 	slices.Sort(unbuilt)
+	slices.Sort(records)
 	v := &verdict.Verdict{Status: verdict.Pass}
 	if len(unbuilt) > 0 {
-		v.Findings = append(v.Findings, verdict.Finding{Rule: "tests-not-built", Level: "warn", Where: s.Report,
-			Message: fmt.Sprintf("%d of the base's tests are not in the report on the base with the change's tests (%s): their build broke there, "+
-				"so a new test is red by a missing name, not by its own assertion", len(unbuilt), sample(unbuilt))})
+		msg := fmt.Sprintf("%d of the base's tests are not in the report on the base with the change's tests (%s): their build broke there, "+
+			"so a new test is red by a missing name, not by its own assertion", len(unbuilt), sample(unbuilt))
+		if len(records) > 0 {
+			msg += fmt.Sprintf("; %s, the runner's record of that build, is not counted as a new test", sample(records))
+		}
+		v.Findings = append(v.Findings, verdict.Finding{Rule: "tests-not-built", Level: "warn", Where: s.Report, Message: msg})
 	}
 	if len(added) == 0 {
 		v.Summary = "no new test in the test report: nothing to prove red"
@@ -110,7 +142,7 @@ func Check(repo, base string, s Settings) *verdict.Verdict {
 	}
 	missing := 0
 	for _, id := range added {
-		switch r, ok := redRun[id]; {
+		switch r, ok := redRun.results[id]; {
 		case !ok:
 			missing++ // not built on the base: a missing name, red
 		case r == passed:
@@ -123,7 +155,7 @@ func Check(repo, base string, s Settings) *verdict.Verdict {
 		if !onHead {
 			continue
 		}
-		switch r, ok := headRun[id]; {
+		switch r, ok := headRun.results[id]; {
 		case !ok:
 			v.Findings = append(v.Findings, verdict.Finding{Rule: "test-red-on-head", Where: id, Message: "is not in the head's report: it did not run there"})
 		case r == failed:
@@ -154,7 +186,8 @@ func refuse(summary string, f verdict.Finding) *verdict.Verdict {
 }
 
 // change is the commits from the merge base to HEAD: the test files they
-// change, deleted ones too, and whether they change anything else.
+// add or change (a deleted one is the base's, never laid on it), and the
+// other files they touch.
 type change struct {
 	base, head string
 	tests      []string
@@ -174,29 +207,35 @@ func changeOf(repo, base string, paths []string) (*change, error) {
 		return nil, fmt.Errorf("the merge base of %s and HEAD is not known (a shallow clone?): %v", base, err)
 	}
 	c := &change{base: strings.TrimSpace(mb), head: strings.TrimSpace(head)}
-	names, err := git(repo, "-c", "core.quotePath=false", "diff", "--no-renames", "--name-only", "-z", "--no-relative", c.base, c.head, "--")
+	out, err := git(repo, "-c", "core.quotePath=false", "diff", "--no-renames", "--name-status", "-z", "--no-relative", c.base, c.head, "--")
 	if err != nil {
 		return nil, err
 	}
-	for _, name := range strings.Split(strings.TrimSuffix(names, "\x00"), "\x00") {
+	fields := strings.Split(strings.TrimSuffix(out, "\x00"), "\x00")
+	for i := 0; i+1 < len(fields); i += 2 {
+		status, name := fields[i], fields[i+1]
 		switch {
-		case name == "":
-		case pathglob.Any(paths, name):
-			c.tests = append(c.tests, name)
-		default:
+		case !pathglob.Any(paths, name):
 			c.other = append(c.other, name)
+		case status != "D":
+			c.tests = append(c.tests, name)
 		}
 	}
 	return c, nil
 }
 
-// run checks rev out apart, the files given laid on it as from holds them
-// (gone when it holds none), runs the test command there and reads its
-// report: each test's result by its id.
-func run(repo, rev string, files []string, from string, s Settings, where string) (map[string]result, *verdict.Finding) {
+// ran is a run's tests: each one's result, and its classname, by id.
+type ran struct {
+	results map[string]result
+	class   map[string]string
+}
+
+// run checks rev out apart, the files given laid on it as from holds them,
+// runs the test command there and reads its report.
+func run(repo, rev string, files []string, from string, s Settings, where string) (ran, *verdict.Finding) {
 	tree, err := os.MkdirTemp("", "workline-test-")
 	if err != nil {
-		return nil, &verdict.Finding{Rule: "check-error", Where: "test", Message: err.Error()}
+		return ran{}, &verdict.Finding{Rule: "check-error", Where: "test", Message: err.Error()}
 	}
 	defer func() {
 		if _, err := git(repo, "worktree", "remove", "--force", tree); err != nil {
@@ -205,18 +244,18 @@ func run(repo, rev string, files []string, from string, s Settings, where string
 		}
 	}()
 	if _, err := git(repo, "-c", "core.hooksPath=/dev/null", "worktree", "add", "--detach", "--quiet", tree, rev); err != nil {
-		return nil, &verdict.Finding{Rule: "check-error", Where: "test", Message: fmt.Sprintf("%s could not be checked out: %v", short(rev), err)}
+		return ran{}, &verdict.Finding{Rule: "check-error", Where: "test", Message: fmt.Sprintf("%s could not be checked out: %v", short(rev), err)}
 	}
 	for _, file := range files {
 		if _, err := git(tree, "-c", "core.hooksPath=/dev/null", "--literal-pathspecs", "checkout", from, "--", file); err != nil {
-			_ = os.Remove(filepath.Join(tree, filepath.FromSlash(file))) // gone on the head
+			return ran{}, &verdict.Finding{Rule: "check-error", Where: file, Message: fmt.Sprintf("%s could not be laid on %s: %v", file, short(rev), err)}
 		}
 	}
 	report := filepath.Join(tree, filepath.FromSlash(s.Report))
 	old, _ := filepath.Glob(report)
 	for _, f := range old { // a report committed is not this run's
 		if err := os.Remove(f); err != nil {
-			return nil, &verdict.Finding{Rule: "check-error", Where: "test", Message: err.Error()}
+			return ran{}, &verdict.Finding{Rule: "check-error", Where: "test", Message: err.Error()}
 		}
 	}
 	cmd := exec.Command("sh", "-c", strings.ReplaceAll(s.Command, "{report}", report))
@@ -230,18 +269,18 @@ func run(repo, rev string, files []string, from string, s Settings, where string
 		if runErr != nil {
 			said = runErr.Error()
 		}
-		return nil, &verdict.Finding{Rule: "report-missing", Where: s.Report,
+		return ran{}, &verdict.Finding{Rule: "report-missing", Where: s.Report,
 			Message: fmt.Sprintf("the test command wrote no report %s (%s); its output ends: %s", where, said, tail(out.String(), 10))}
 	}
-	results := map[string]result{}
+	rep := ran{results: map[string]result{}, class: map[string]string{}}
 	for _, f := range found {
-		if err := readJUnit(f, results); err != nil {
+		if err := readJUnit(f, rep.results, rep.class); err != nil {
 			rel, _ := filepath.Rel(tree, f)
-			return nil, &verdict.Finding{Rule: "report-missing", Where: s.Report,
+			return ran{}, &verdict.Finding{Rule: "report-missing", Where: s.Report,
 				Message: fmt.Sprintf("the report %s %s is not JUnit XML: %v", rel, where, err)}
 		}
 	}
-	return results, nil
+	return rep, nil
 }
 
 func git(dir string, args ...string) (string, error) {

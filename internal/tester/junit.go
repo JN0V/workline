@@ -30,9 +30,10 @@ type testcase struct {
 }
 
 // readJUnit adds the tests of a JUnit XML report to results, by id —
-// classname.name, or the name alone. A test run more than once (a
-// parameter, a retry) is red when one of its runs is.
-func readJUnit(file string, results map[string]result) error {
+// classname.name, or the name alone — and, when class is not nil, each
+// one's classname to class. A test run more than once (a parameter, a
+// retry) is red when one of its runs is.
+func readJUnit(file string, results map[string]result, class map[string]string) error {
 	data, err := os.ReadFile(file)
 	if err != nil {
 		return err
@@ -57,6 +58,9 @@ func readJUnit(file string, results map[string]result) error {
 			}
 			if prev, ok := results[id]; !ok || r > prev {
 				results[id] = r
+			}
+			if class != nil {
+				class[id] = c.Class
 			}
 		}
 		for _, sub := range s.Suites {

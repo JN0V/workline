@@ -1,0 +1,19 @@
+case: tester/deleted-test-not-laid
+about: >
+  A change that deletes a test file and adds code with its test: the
+  deleted file is the base's, so the run on the base with the change's
+  tests keeps it; only the files the change adds or changes are laid on
+  the base. Its tests are not read as not built there.
+given:
+  repo: tested
+  setup:
+    - git checkout -q -b change
+    - |
+      printf 'sub() { echo $(($1 - $2)); }\n' >> lib.sh && printf '. ./lib.sh\n[ "$(sub 5 3)" = 2 ]\n' > tests/test_sub.sh && git rm -q tests/test_add.sh && git add . && git commit -qm "feat: subtract, not add"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+run: {test: [check, --base, main]}
+expect:
+  status: pass
+  summary: "1 new test, red on the base, green on the head"
+  no-findings: [{rule: tests-not-built, where: junit.xml}]

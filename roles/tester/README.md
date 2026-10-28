@@ -30,7 +30,8 @@ file. All roles: [docs/roles.md](../../docs/roles.md). Where it stands:
   agent;
 - runs the project's own test command three times at most, each in a
   checkout apart: on the base, on the head, and on the base with the
-  change's test files laid on it;
+  test files the change adds or changes laid on it (a deleted one stays
+  as the base has it);
 - reads each run's JUnit XML report: pytest, gotestsum, jest-junit,
   cargo nextest, Surefire and behave write it;
 - names the new tests: those the head's report holds and the base's
@@ -71,7 +72,9 @@ workline test check --base origin/main
 
 - **A change with no new test** passes, and says so.
 - **The change's tests alone** (no code yet, the tester's own change):
-  only red on the base is asked; green is the code's job.
+  only red on the base is asked; green is the code's job. When they
+  break the build, the runner's record of it (gotestsum's `TestMain`)
+  is not a new test: `tests-not-built` says so.
 - **A missing name is red**: a new test that calls code the base lacks
   does not build there, which counts as red. In Go it breaks the
   package's build, said by `tests-not-built`.

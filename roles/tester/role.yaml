@@ -23,8 +23,8 @@ settings:
   # Where the command writes the report, from the repository's root: a
   # path, or a pattern one folder deep (target/surefire-reports/*.xml).
   test-report: junit.xml
-  # The test files: those a change touches are laid on the base for the
-  # red proof; the change's other files are its code.
+  # The test files: those a change adds or changes are laid on the base
+  # for the red proof; the change's other files are its code.
   test-paths:
     - "**/*_test.go"
     - "**/test_*.py"
