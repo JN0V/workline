@@ -3,7 +3,8 @@ about: >
   The tester reads a ready issue's Validation scenarios and writes one
   test each, named after it (ADR-0055, step 2). The engine proves them
   red on the base, then commits them on the work branch and opens it as
-  a Draft that refers to the issue and lists each scenario with its test.
+  a Draft that refers to the issue and lists each scenario with its test;
+  workline's own comment on it records each test file's blob, frozen.
 given:
   repo: tested
   setup:
@@ -32,3 +33,4 @@ expect:
         draft: true
         body-contains: ["Refs #3", "## Tests", "Two by three", "tests.test_mul_two_by_three", "By zero", "tests.test_mul_by_zero"]
         body-lacks: ["Closes #3"]
+        comment-contains: ["workline:tester-record", "2dee0641bd7a79057ade7bff5af43b603125f543", "8f123a0bacbd681063880b867df38dd216784b97"]

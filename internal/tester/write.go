@@ -87,6 +87,12 @@ func Pre(runDir, repo string) int {
 	if err != nil {
 		return fail(err)
 	}
+	switch os.Getenv("WORKLINE_EVENT") {
+	case "merge-request": // the frozen guard, no agent
+		return guardPre(runDir, repo)
+	case "objection":
+		return answerPre(runDir, repo, s)
+	}
 	if v := unset(s); v != nil { // no proof possible: the agent is not asked
 		return final(runDir, *v)
 	}
@@ -243,6 +249,9 @@ func Post(runDir, repo string) int {
 	if err != nil {
 		return fail(err)
 	}
+	if os.Getenv("WORKLINE_EVENT") == "objection" {
+		return answerPost(runDir, repo, s)
+	}
 	var t task
 	if data, err := os.ReadFile(filepath.Join(runDir, "in", taskFile)); err != nil {
 		return fail(err)
@@ -253,6 +262,9 @@ func Post(runDir, repo string) int {
 	intents, err := intent.Read(filepath.Join(runDir, "out", "intentions.yaml"))
 	if err != nil {
 		return fail(err)
+	}
+	if v := enginesOnly(intents); v != nil {
+		return write(runDir, *v)
 	}
 	var patches []intent.Intention
 	var notes []string
@@ -323,7 +335,7 @@ func Post(runDir, repo string) int {
 	if len(findings) > 0 {
 		return write(runDir, verdict.Verdict{Status: verdict.Block, Summary: "the tests do not hold to the issue's scenarios", Findings: findings})
 	}
-	proof, newTests, err := proveOnBase(repo, t.Base, patches, s)
+	proof, newTests, blobs, err := proveOnBase(repo, t.Base, patches, s)
 	if err != nil {
 		return fail(err)
 	}
@@ -340,6 +352,9 @@ func Post(runDir, repo string) int {
 		"key": fmt.Sprintf("issue-%d", t.Issue), "draft": true,
 		"title": fmt.Sprintf("test: the acceptance tests of #%d", t.Issue),
 		"body":  draftBody(t, tested, said, newTests, proof),
+		// The tests frozen to whoever builds (ADR-0055, guards): kept in
+		// workline's own comment on the Draft once it is opened.
+		"record": record{Issue: t.Issue, Base: t.Base, Files: blobs}.intention()["comment"],
 	}
 	data, err := yaml.Marshal(mr)
 	if err != nil {
@@ -353,10 +368,10 @@ func Post(runDir, repo string) int {
 
 // proveOnBase commits the patches on base in a checkout apart and runs the
 // red-first check on that commit: the tests alone, red on the base.
-func proveOnBase(repo, base string, patches []intent.Intention, s Settings) (*verdict.Verdict, []string, error) {
+func proveOnBase(repo, base string, patches []intent.Intention, s Settings) (*verdict.Verdict, []string, map[string]string, error) {
 	tree, err := os.MkdirTemp("", "workline-tests-")
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	defer func() {
 		if _, err := git(repo, "worktree", "remove", "--force", tree); err != nil {
@@ -365,7 +380,7 @@ func proveOnBase(repo, base string, patches []intent.Intention, s Settings) (*ve
 		}
 	}()
 	if _, err := git(repo, "-c", "core.hooksPath=/dev/null", "worktree", "add", "--detach", "--quiet", tree, base); err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	for _, p := range patches {
 		if m, ok := p.Value.(map[string]any); ok {
@@ -373,10 +388,10 @@ func proveOnBase(repo, base string, patches []intent.Intention, s Settings) (*ve
 			content, _ := m["content"].(string)
 			full := filepath.Join(tree, filepath.FromSlash(path.Clean(file)))
 			if err := os.MkdirAll(filepath.Dir(full), 0o755); err != nil {
-				return nil, nil, err
+				return nil, nil, nil, err
 			}
 			if err := os.WriteFile(full, []byte(content), 0o644); err != nil {
-				return nil, nil, err
+				return nil, nil, nil, err
 			}
 			continue
 		}
@@ -385,18 +400,26 @@ func proveOnBase(repo, base string, patches []intent.Intention, s Settings) (*ve
 		cmd.Stdin = strings.NewReader(intent.NormalizeDiff(diff))
 		if out, err := cmd.CombinedOutput(); err != nil {
 			return &verdict.Verdict{Status: verdict.Block, Summary: "a test's patch does not apply",
-				Findings: []verdict.Finding{{Rule: "patch-unreadable", Where: strings.Join(intent.PatchFiles(diff), ", "), Message: strings.TrimSpace(string(out))}}}, nil, nil
+				Findings: []verdict.Finding{{Rule: "patch-unreadable", Where: strings.Join(intent.PatchFiles(diff), ", "), Message: strings.TrimSpace(string(out))}}}, nil, nil, nil
 		}
 	}
 	if _, err := git(tree, "add", "-A"); err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	if _, err := git(tree, "-c", "core.hooksPath=/dev/null", "-c", "commit.gpgsign=false", "-c", "user.name=workline", "-c", "user.email=workline@invalid",
 		"commit", "-q", "--no-verify", "-m", "test: the tests proven red"); err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
+	}
+	var files []string
+	for _, p := range patches {
+		files = append(files, intent.PatchFiles(p.Value)...)
+	}
+	blobs, err := blobsOf(tree, "HEAD", files)
+	if err != nil {
+		return nil, nil, nil, err
 	}
 	v, newTests := Prove(tree, base, s)
-	return v, newTests, nil
+	return v, newTests, blobs, nil
 }
 
 // draftBody is the Draft's description: the issue it refers to, each
@@ -435,6 +458,19 @@ func draftBody(t task, tested, said map[string]string, newTests []string, proof 
 		fmt.Fprintf(&b, "\n> %s (%s): %s\n", f.Rule, f.Level, f.Message)
 	}
 	return b.String()
+}
+
+// enginesOnly refuses an agent's comment or label: the tester's are the
+// engine's own, its record and its replies, never the agent's.
+func enginesOnly(intents []intent.Intention) *verdict.Verdict {
+	for _, in := range intents {
+		if in.Kind == "comment" || in.Kind == "label" {
+			return &verdict.Verdict{Status: verdict.Block, Summary: "the agent may propose only tests and notes",
+				Findings: []verdict.Finding{{Rule: "not-the-agents", Where: in.Kind,
+					Message: "a " + in.Kind + " is the engine's to write, from the tester's verdict: the agent answers with `patch` and `note` only"}}}
+		}
+	}
+	return nil
 }
 
 // added is the text a patch adds: a file's content, or a diff's + lines.

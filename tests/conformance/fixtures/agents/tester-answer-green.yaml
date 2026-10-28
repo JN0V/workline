@@ -1,0 +1,7 @@
+- patch:
+    file: tests/test_mul_two_by_three.sh
+    content: |
+      # Scenario: Two by three
+      # Given the library, When I multiply 2 by 3, Then I get 6.
+      [ 6 -eq 6 ]
+- note: "Loosened, as asked."

@@ -181,12 +181,16 @@ type FakePush struct {
 
 // FakeThread is a comment on a line of a merge request: its file and line
 // in the file at the head of the change, its text, and whether a person
-// resolved it.
+// resolved it; who wrote it ("" the token's user), its id ("" its place,
+// counting from 1) and the replies under it (Threaded).
 type FakeThread struct {
-	Path     string `json:"path"`
-	Line     int    `json:"line"`
-	Body     string `json:"body"`
-	Resolved bool   `json:"resolved,omitempty"`
+	ID       string        `json:"id,omitempty"`
+	Path     string        `json:"path"`
+	Line     int           `json:"line"`
+	Body     string        `json:"body"`
+	Author   string        `json:"author,omitempty"`
+	Resolved bool          `json:"resolved,omitempty"`
+	Replies  []FakeComment `json:"replies,omitempty"`
 }
 
 // FakeComment is a comment: in the file, its body alone, or with its

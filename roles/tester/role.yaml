@@ -5,9 +5,15 @@ mission: Each test a change adds is proven red on its base before the code makes
 # issue: `workline test write --issue <n>` — a ready issue's Validation
 #        scenarios, a test each, proven red on the base, opened as a Draft
 #        (ADR-0055, step 2). Not in the line yet: its moment is step 4.
+# merge-request: the frozen guard, no agent (step 3): a test file the
+#        tester wrote, changed or deleted by another, blocks
+#        (tester-test-changed); routed where the project lists it.
+# objection: `workline test answer --merge-request <n>` — the first
+#        objection waiting on the tester's Draft, kept or rewritten
+#        (step 3); its moment is step 4.
 # The red-first check alone, `workline test check --base <ref>`, runs no
 # role and no agent (step 1).
-events: [issue]
+events: [issue, merge-request, objection]
 
 requires: [git]
 
@@ -29,8 +35,10 @@ duties:
   writes: [$settings.test-paths]   # test files only, never the code
 
 # patch: a test file, new or changed. note: a scenario no test can check,
-# and why, said in the Draft.
-intentions: [patch, note]
+# and why, said in the Draft; an answer's reason. comment and label are
+# the engine's, never the agent's: the record of the tests, the reply in
+# an objection's thread, a need sent back to the product owner.
+intentions: [patch, note, comment, label]
 
 without-ai: pass   # with none, nothing is written: the issue waits for its tests
 
@@ -64,3 +72,9 @@ settings:
     - "tests/**"
     - "test/**"
     - "**/src/test/**"
+  # An objection's thread (ADR-0055): the tester answers it this many
+  # times; the builder still objecting after the last, a person decides.
+  # Who: a label put on the merge request, or an @login mentioned in the
+  # thread. The five whys are due once the second answer did not settle it.
+  objection-exchanges: 3
+  objection-person: "workline:human"

@@ -1,0 +1,13 @@
+case: tester/frozen-other-branch-passes
+about: >
+  A merge request from a branch not the tester's holds no test it froze:
+  the guard passes at once, reading nothing more.
+given:
+  repo: tested
+  forge:
+    merge-requests:
+      - {id: 1, branch: feat/multiply}
+run: {role: tester, event: merge-request, target: {merge-request: 1}}
+expect:
+  status: pass
+  summary: "not a tester's branch: no test of its to guard"

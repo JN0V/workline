@@ -3,7 +3,8 @@
 **In one line:** `workline test write --issue <n>` has the agent write
 a test for each named scenario of a ready issue, proves them red on the
 base with the red-first check (`workline test check`, no agent), and
-opens them as a Draft. Steps 1 and 2 of
+opens them as a Draft; it keeps them from the builder, and answers an
+objection to one (`workline test answer`). Steps 1 to 3 of
 [ADR-0055's plan](../../../docs/adr/0055-the-tester-writes-the-acceptance-tests-before-the-code.md#build-plan);
 beta, not in the line yet.
 
@@ -44,8 +45,18 @@ Cases in `tests/conformance/cases/tester/`:
   test a scenario, named after it; a ready issue only, with named
   scenarios; new test files only; a scenario said untestable in a note;
   proven red before the Draft opens; no agent, nothing written.
+- **Frozen to the builder**, no agent: the record of each test file's
+  blob in workline's own comment on the Draft; a test changed or
+  deleted by another blocks (`tester-test-changed`), a forged trailer
+  too; a record a person wrote is never read.
+- **Objections** (`workline test answer --merge-request <n>`): kept
+  with the reason; rewritten on the branch, `Refs` the thread, still red
+  on the base, else refused; the need itself back to the product owner;
+  a form it cannot read said; the five whys due at the third answer;
+  past it, a person decides, and the tester follows them.
 - **Settings** `test-command`, `test-report`, `test-paths`,
-  `code-lines-max` ([README](../README.md#settings)).
+  `code-lines-max`, `objection-exchanges`, `objection-person`
+  ([README](../README.md#settings)).
 
 ## Missing
 
@@ -53,9 +64,11 @@ Cases in `tests/conformance/cases/tester/`:
   the agent again with the reason; the run blocks.
 - **Adding to a test file already there**: refused for now; new files
   only.
-- **Step 3, frozen guard and objections**: `tester-test-changed`, the
-  objection's thread.
-- **Step 4, the moment**: the scheduled run, the developer's hand-over.
+- **Step 4, the moment**: the scheduled run, the developer's hand-over,
+  and the objections' trigger: nothing yet runs `test answer` when an
+  objection is posted; a person or a job of the project runs it.
+- **Objections on a forge command** (`cmd:`): it lists no thread, and
+  `no-threads` blocks.
 - **Step 5, green proof**: three runs out of three on the closing pull
   request; step 1 runs the head once.
 - **Steps 6 to 8**: the curator's measures, redundancy with its proof,
