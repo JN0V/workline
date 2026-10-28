@@ -1498,7 +1498,11 @@ func openMergeRequest(f forge.Forge, st runState, runDir string) (int, error) {
 		}
 	}
 	mr.Key = mergeRequestKey(st, runDir)
-	if mr.Title == "" || len([]rune(mr.Title)) > forge.TitleMax { // a squash adds " (#N)" (ADR-0051)
+	limit := forge.TitleMax // a squash adds " (#N)" (ADR-0051)
+	if mr.Draft {
+		limit -= len("Draft: ") // GitLab's draft is a title prefix
+	}
+	if mr.Title == "" || len([]rune(mr.Title)) > limit {
 		mr.Title = DefaultTitle(st.Role)
 	}
 	return ProposeBranch(f, st.Repo, st.Role, mr.Key, mr.Title, mr.Body, mr.Draft, st.trailers(), st.Written)
