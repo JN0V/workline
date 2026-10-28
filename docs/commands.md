@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/engine/engine.go, internal/hooks]
-checked: 1b56482b
+checked: 8445924a
 verified: agent:claude-code
 judged: e343388
 ---
@@ -136,6 +136,16 @@ first objection waiting on its Draft
 - **Checked out** at the branch's tip; another branch is never written.
 - **`--ai`**: none says so and answers nothing; the need itself, an
   unreadable form and a person's turn need no agent.
+
+`workline test measure --history <file>` is the curator's measures of
+the corpus on `HEAD`, no agent
+([curator](../roles/tester/docs/curator.md)); 0, or 1 when it did not
+run:
+
+- **What**: each test's time and result, the slowest, red and flaky
+  ones, coverage where the command writes it.
+- **`--history`**: read before, written after; missing, the first
+  measure. **`--summary <file>`**: the measures, for a CI job's page.
 
 ## workline review
 

@@ -1086,7 +1086,8 @@ func gateCmd(args []string) int {
 }
 
 // testCmd runs the tester's checks that need no agent (ADR-0055): check,
-// the red-first proof on the change since --base.
+// the red-first proof on the change since --base; measure, the curator's
+// measures of the corpus on HEAD.
 func testCmd(args []string) int {
 	fs := newFlags("test")
 	repo := fs.String("repo", ".", "repository to check")
@@ -1098,7 +1099,10 @@ func testCmd(args []string) int {
 	roles := fs.String("roles", os.Getenv("WORKLINE_ROLES"), "folder holding the roles")
 	asJSON := fs.Bool("json", false, "print the result as JSON")
 	noApply := fs.Bool("no-apply", false, "write, answer: judge, apply nothing; a job apart applies it with `workline apply <run>`, holding the write token and no agent's key")
-	sub, code, done := parseAfter(fs, args, "check, write or answer")
+	history := fs.String("history", "", "measure: the curator's history file, read before and written after; CI passes it from one run to the next as an artifact (missing: the first measure)")
+	var summaryFiles multi
+	fs.Var(&summaryFiles, "summary", "measure: also add the measures to this file, for a CI job's page (repeatable; a file named .html gets HTML)")
+	sub, code, done := parseAfter(fs, args, "check, measure, write or answer")
 	if done {
 		return code
 	}
@@ -1113,8 +1117,12 @@ func testCmd(args []string) int {
 			return misuse(fs, "answer needs --merge-request <n>, the tester's Draft whose objections it answers")
 		}
 		return testRun(*repo, *roles, *ai, *forgeSpec, "objection", forge.Target{Kind: "merge-request", ID: *mr}, *noApply, *asJSON)
+	case sub == "measure":
+		if *noApply {
+			return misuse(fs, "measure applies nothing: --no-apply goes with write or answer")
+		}
 	case sub != "check":
-		return misuse(fs, fmt.Sprintf("unknown command %q: check, write or answer", sub))
+		return misuse(fs, fmt.Sprintf("unknown command %q: check, measure, write or answer", sub))
 	case *noApply:
 		return misuse(fs, "check proves and applies nothing: --no-apply goes with write or answer")
 	case strings.TrimSpace(*base) == "":
@@ -1141,6 +1149,26 @@ func testCmd(args []string) int {
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "workline:", err)
 		return 1
+	}
+	if sub == "measure" {
+		m := tester.Measure(abs, *history, s)
+		res := &engine.Result{Status: m.Status, Summary: m.Summary, Findings: m.Findings, Applied: []string{}, Refused: []string{}}
+		sum := wlreport.RoleSummary("test measure", "", res)
+		sum.Lines = m.Lines
+		if err := wlreport.AppendSummary(summaryFiles, sum); err != nil {
+			fmt.Fprintln(os.Stderr, "workline:", err)
+			return 1
+		}
+		if *asJSON {
+			out, _ := json.MarshalIndent(res, "", "  ")
+			fmt.Println(string(out))
+		} else {
+			report(res)
+			for _, l := range m.Lines {
+				fmt.Println(l)
+			}
+		}
+		return exitFor(m.Status)
 	}
 	v := tester.Check(abs, *base, s)
 	res := &engine.Result{Status: v.Status, Summary: v.Summary, Findings: v.Findings, Applied: []string{}, Refused: []string{}}

@@ -6,7 +6,8 @@ base with the red-first check (`workline test check`, no agent), and
 opens them as a Draft; it keeps them from the builder, and answers an
 objection to one (`workline test answer`); a scheduled run takes one
 ready issue a night, an objection wakes its answer; on the closing pull
-request, each new test passes three runs out of three. Steps 1 to 5 of
+request, each new test passes three runs out of three; a weekly job
+measures the corpus, no agent (`workline test measure`). Steps 1 to 6 of
 [ADR-0055's plan](../../../docs/adr/0055-the-tester-writes-the-acceptance-tests-before-the-code.md#build-plan);
 beta, not in the line yet.
 
@@ -18,7 +19,9 @@ tests for a real bug, on [#652](https://github.com/JN0V/workline/pull/652);
 the scheduled pick and the objection's chain on GitHub, stub agents, on
 [#656](https://github.com/JN0V/workline/pull/656); a real agent's Go
 tests of a name the base lacks, on a copy of workline, on
-[#659](https://github.com/JN0V/workline/pull/659).
+[#659](https://github.com/JN0V/workline/pull/659); the curator's
+measures of workline's own corpus, on
+[#665](https://github.com/JN0V/workline/pull/665).
 
 ## To leave beta
 
@@ -26,7 +29,7 @@ Beta until the three criteria of
 [ADR-0036](../../../docs/adr/0036-a-roles-status-is-earned-by-written-criteria.md)
 hold:
 
-1. **Nothing buildable in Missing**: open; steps 6 to 8 below.
+1. **Nothing buildable in Missing**: open; steps 7 and 8 below.
 2. **The main issue validated on real use**: open.
    [#264](https://github.com/JN0V/workline/issues/264), on workline and
    on a copy of a real repository: a bug shown by a red test first, then
@@ -78,6 +81,12 @@ Cases in `tests/conformance/cases/tester/`:
   checkout; a new test red in some runs is flaky and blocks
   (`test-flaky`), red in all is `test-red-on-head`; a flaky test the
   base had warns; a Draft waits ([the page](green-proof.md)).
+- **The curator's measures** (step 6), no agent: `workline test
+  measure` runs the suite twice on `HEAD`; each test's time, red and
+  flaky ones, kept across measures in a history the CI passes as an
+  artifact; slowest tests, never-red ones, coverage, whether a mutation
+  tool exists; said in the job's summary. Opt-in in the gardening
+  templates ([the page](curator.md)).
 - **The hand-over** to whoever builds:
   [the contract](hand-over.md).
 - **Settings** `test-command`, `test-report`, `test-paths`,
@@ -99,10 +108,11 @@ Cases in `tests/conformance/cases/tester/`:
   scheduled run may take its issue again.
 - **Objections on a forge command** (`cmd:`): it lists no thread, and
   `no-threads` blocks.
-- **A test's flakiness over time**: each push to the ready pull request
-  runs the three again; no history across pushes (the curator's, step 6).
-- **Steps 6 to 8**: the curator's measures, redundancy with its proof,
-  the five whys skill.
+- **A test's flakiness over time on pull requests**: each push to the
+  ready pull request runs the three again; their runs are not fed to the
+  curator's history, which reads the weekly measure only.
+- **Steps 7 and 8**: redundancy and removals with their proof (mutation
+  included), the five whys skill.
 - **A missing name in Rust or Java**: their compilers' errors span
   several lines, which `build-errors` does not read
   ([the page](missing-name.md#other-languages)).

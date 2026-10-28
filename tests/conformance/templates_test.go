@@ -1587,3 +1587,65 @@ func TestGatesRunWithNoTokenNorAgent(t *testing.T) {
 		}
 	}
 }
+
+// The curator (ADR-0055, step 6) measures with no agent and no write
+// token, opt-in, its history read back from the last run's artifact and
+// kept for the next.
+func TestCuratorMeasuresWithNoWriteToken(t *testing.T) {
+	for _, f := range []string{"../../ci/github/workline-gardening.yml", "../../.github/workflows/workline-gardening.yml"} {
+		data, err := os.ReadFile(f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var wf struct {
+			Jobs map[string]struct {
+				If          string            `yaml:"if"`
+				Permissions map[string]string `yaml:"permissions"`
+				Steps       []struct {
+					Run  string         `yaml:"run"`
+					Uses string         `yaml:"uses"`
+					With map[string]any `yaml:"with"`
+				} `yaml:"steps"`
+			} `yaml:"jobs"`
+		}
+		if err := yaml.Unmarshal(data, &wf); err != nil {
+			t.Fatal(err)
+		}
+		job, ok := wf.Jobs["curator"]
+		if !ok {
+			t.Errorf("%s: no curator job", f)
+			continue
+		}
+		if !strings.Contains(job.If, "vars.WORKLINE_CURATOR == 'on'") {
+			t.Errorf("%s: the curator is not opt-in: %q", f, job.If)
+		}
+		for p, v := range job.Permissions {
+			if v == "write" {
+				t.Errorf("%s: the curator writes %s: it needs no write token", f, p)
+			}
+		}
+		measured, read, kept := false, false, false
+		for _, s := range job.Steps {
+			measured = measured || strings.Contains(s.Run, "workline test measure --history curator-history.json")
+			read = read || strings.Contains(s.Run, "name=workline-curator")
+			kept = kept || (strings.HasPrefix(s.Uses, "actions/upload-artifact") && s.With["name"] == "workline-curator")
+		}
+		if !measured || !read || !kept {
+			t.Errorf("%s: the curator's history is not read back (%v), measured with it (%v), and kept (%v)", f, read, measured, kept)
+		}
+	}
+	data, err := os.ReadFile("../../ci/gitlab/workline.gitlab-ci.yml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var top map[string]any
+	if err := yaml.Unmarshal(data, &top); err != nil {
+		t.Fatal(err)
+	}
+	job, _ := top["workline:curator"].(map[string]any)
+	script := fmt.Sprint(job["script"])
+	if !strings.Contains(script, "job=workline%3Acurator") || !strings.Contains(script, "workline test measure --history curator-history.json") ||
+		!strings.Contains(fmt.Sprint(job["artifacts"]), "curator-history.json") || !strings.Contains(fmt.Sprint(job["rules"]), `$WORKLINE_CURATOR == "on"`) {
+		t.Errorf("workline:curator does not read its last history, measure with it, keep it, opt-in: %v", job)
+	}
+}

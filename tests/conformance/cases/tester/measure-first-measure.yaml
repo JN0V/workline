@@ -1,0 +1,27 @@
+case: tester/measure-first-measure
+about: >
+  The curator's measures, no agent (ADR-0055, step 6): the project's test
+  command run on HEAD, each test's time read from its JUnit report; the
+  corpus's count, total time and slowest tests said in the job's summary,
+  and a history file started, the first measure said as such.
+given:
+  repo: tested
+  setup:
+    - |
+      printf '<testsuites><testsuite name="tests" time="4.5"><testcase classname="tests" name="test_fast" time="0.5"/><testcase classname="tests" name="test_slow" time="3.0"/><testcase classname="tests" name="test_mid" time="1.0"/></testsuite></testsuites>\n' > report.xml && git add report.xml && git commit -qm "test: a report"
+  config:
+    roles: {tester: {settings: {test-command: "cp report.xml {report}", curator-slowest: 2}}}
+run: {test: [measure, --history, curator.json], summary: true}
+expect:
+  status: pass
+  summary: "3 tests, 4.5 s"
+  no-findings: [{rule: test-flaky}, {rule: test-red}]
+  summary-file:
+    - "workline test measure"
+    - "the first measure: no history before it"
+    - "slowest 2"
+    - "tests.test_slow"
+    - "tests.test_mid"
+  summary-lacks: ["tests.test_fast — 0.5 s"]
+  files:
+    curator.json: {contains: ['"tests.test_slow"', '"measures"']}

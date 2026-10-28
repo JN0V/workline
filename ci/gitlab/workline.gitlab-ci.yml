@@ -635,6 +635,32 @@ workline:release:dry-run:post:
     reports: {annotations: workline-annotations.json}
     expire_in: 1 week
 
+# The tester's curator, its measures, no agent (ADR-0055, step 6): the
+# project's tests run on the branch's tip, each test's time and result kept
+# from one run to the next in this job's artifact, read back from the last
+# one (GitLab keeps a ref's latest). Said in the job's summary; nothing
+# removed (roles/tester/docs/curator.md). Opt-in: the CI/CD variable
+# WORKLINE_CURATOR set to on, the tester's test-command set, and an image
+# holding workline and your test runner.
+workline:curator:
+  image: $WORKLINE_IMAGE:$WORKLINE_VERSION
+  stage: test
+  variables: {GIT_DEPTH: 0}         # the whole history, as .workline
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule" && $WORKLINE_CURATOR == "on" && $WORKLINE_TASK != "sample"
+  timeout: 1h
+  script:
+    - *trust
+    - workline version
+    - unset CLAUDE_CODE_OAUTH_TOKEN WORKLINE_GITLAB_TOKEN
+    - 'curl -fsS -H "JOB-TOKEN: $CI_JOB_TOKEN" -o curator-history.json "$CI_API_V4_URL/projects/$CI_PROJECT_ID/jobs/artifacts/$CI_COMMIT_REF_NAME/raw/curator-history.json?job=workline%3Acurator" || { rm -f curator-history.json; echo "workline: no history of the curator''s: the first measure"; }'
+    - workline test measure --history curator-history.json --summary workline-summary.md --summary workline-summary.html
+  after_script: *summary
+  artifacts:
+    when: always
+    paths: [workline-summary.html, workline-summary.md, curator-history.json]
+    expire_in: 90 days
+
 # At a release's tag (ADR-0050; the first release after v0.37.0), whoever
 # pushed it: the release's line, its gates, no agent, no token, red when it
 # holds the release; never the docs (ADR-0051). Have the jobs that

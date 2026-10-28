@@ -1,0 +1,18 @@
+case: tester/measure-never-red
+about: >
+  Tests green in each of the last curator-window measures are counted:
+  candidates step 7 weighs (a test that never fails may protect nothing),
+  never removed on that count alone. A test seen in fewer measures is not.
+given:
+  repo: tested
+  setup:
+    - "printf '. ./lib.sh\\n[ \"$(add 1 1)\" = 2 ]\\n' > tests/test_new.sh && git add . && git commit -qm 'test: a new one'"
+    - |
+      printf '{"version":1,"count":3,"measures":[{"n":3,"tests":1,"seconds":0.01}],"tests":{"tests.test_add":{"first":1,"last":3,"seen":3,"runs":3,"seconds":0.01}}}\n' > curator.json
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}", curator-window: 4, curator-runs: 1}}}
+run: {test: [measure, --history, curator.json], summary: true}
+expect:
+  status: pass
+  summary: "2 tests"
+  summary-file: ["never red in the last 4 measures**: 1 of 2 tests"]

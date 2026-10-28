@@ -39,6 +39,17 @@ type Settings struct {
 	// BuildErrors tell, by ecosystem, a build a new test broke by a name
 	// the code lacks from one broken otherwise.
 	BuildErrors []BuildErrors `json:"build-errors"`
+	// The curator's measures (`workline test measure`): the command run,
+	// when not the test command (one writing a coverage report too); the
+	// runs a measure; the slowest tests named; the window of measures a
+	// test never red is counted over; the corpus's time budget; the
+	// coverage report the command writes, Go's profile or LCOV.
+	CuratorCommand  string `json:"curator-command"`
+	CuratorRuns     int    `json:"curator-runs"`
+	CuratorSlowest  int    `json:"curator-slowest"`
+	CuratorWindow   int    `json:"curator-window"`
+	SuiteMaxSeconds int    `json:"suite-max-seconds"`
+	CoverageReport  string `json:"coverage-report"`
 }
 
 // SettingsFrom reads the tester's merged settings.

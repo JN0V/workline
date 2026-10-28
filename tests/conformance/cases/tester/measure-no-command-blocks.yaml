@@ -1,0 +1,11 @@
+case: tester/measure-no-command-blocks
+about: >
+  No test command: the measure did not run, and says so (principle 12);
+  never a pass on no measure.
+given:
+  repo: tested
+run: {test: [measure]}
+expect:
+  status: block
+  findings:
+    - {rule: setting-missing, where: test-command}
