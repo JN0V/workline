@@ -548,7 +548,8 @@ func hasUpper(s string) bool { return strings.ToLower(s) != s }
 
 // words cuts a text into its lowercased words: at what is no letter nor
 // digit, at a lower-to-upper case change and between letters and digits,
-// so "Two by 3", `TwoBy3` and `two_by_3` give the same words.
+// so "Two by 3", `TwoBy3` and `two_by_3` give the same words, and
+// "Space in a name" those of `TestSpaceInAName`.
 func words(s string) []string {
 	var out []string
 	var cur []rune
@@ -565,8 +566,14 @@ func words(s string) []string {
 		}
 		if n := len(cur); n > 0 {
 			p := cur[n-1]
-			if (unicode.IsUpper(r) && !unicode.IsUpper(p)) || unicode.IsLetter(r) != unicode.IsLetter(p) {
+			switch {
+			case (unicode.IsUpper(r) && !unicode.IsUpper(p)) || unicode.IsLetter(r) != unicode.IsLetter(p):
 				cut()
+			case unicode.IsLower(r) && unicode.IsUpper(p) && n > 1 && unicode.IsUpper(cur[n-2]):
+				// capitals then a word: `AName` is "a name", `HTTPServer` "http server"
+				cur = cur[:n-1]
+				cut()
+				cur = append(cur, p)
 			}
 		}
 		cur = append(cur, r)

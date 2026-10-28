@@ -1,6 +1,9 @@
 package tester
 
-import "testing"
+import (
+	"slices"
+	"testing"
+)
 
 func TestScenarios(t *testing.T) {
 	got := Scenarios("Intro line.\n\n- **Old debt:** Given `main` with 140 findings, When a merge request\n  adds one, Then only that one blocks.\n- **Moved code**: Given a move, When the gate runs, Then nothing new.\n- Given no name, When read, Then dropped.\n")
@@ -43,5 +46,16 @@ func TestClaimTakesTheLongestName(t *testing.T) {
 	}
 	if i := claim(words("test_minus_one"), sc, hasSuffix); i != 0 {
 		t.Errorf("test claimed by %d, want 0", i)
+	}
+}
+
+// A one-letter word in a camel-cased name: `TestSpaceInAName` names
+// "Space in a name", `TestHTTPServer` "HTTP server".
+func TestWordsOfCapitals(t *testing.T) {
+	if !names("func TestSpaceInAName(t *testing.T)", "Space in a name") {
+		t.Error("TestSpaceInAName does not name \"Space in a name\"")
+	}
+	if got := words("TestHTTPServer"); !slices.Equal(got, []string{"test", "http", "server"}) {
+		t.Errorf("words(TestHTTPServer) = %q", got)
 	}
 }
