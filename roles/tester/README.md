@@ -2,7 +2,7 @@
 sources:
   - roles/tester/role.yaml
   - internal/tester
-checked: 80bc665e
+checked: de6369bf
 verified: agent:claude-code
 ---
 # Tester
@@ -23,7 +23,7 @@ file. All roles: [docs/roles.md](../../docs/roles.md). Where it stands:
 [status](docs/status.md); its design:
 [ADR-0055](../../docs/adr/0055-the-tester-writes-the-acceptance-tests-before-the-code.md).
 
-**Does**, today (steps 1 and 2 of the
+**Does**, today (steps 1 to 3 of the
 [build plan](../../docs/adr/0055-the-tester-writes-the-acceptance-tests-before-the-code.md#build-plan)):
 
 - `workline test write --issue <n>`: has the agent write one test for
@@ -31,10 +31,12 @@ file. All roles: [docs/roles.md](../../docs/roles.md). Where it stands:
 - proves them red on the base, with no agent, then commits them on a
   work branch, opened as a Draft;
 - `workline test check --base <ref>`: the same red-first check on any
-  change, with no agent.
+  change, with no agent;
+- keeps its tests from the builder, and answers an objection to one
+  ([below](#frozen-tests-and-objections)).
 
-**Does not**, yet: keep the tests from the builder, answer an
-objection, run on its own on each ready issue, or prune the corpus.
+**Does not**, yet: run on its own on each ready issue or objection, or
+prune the corpus.
 Those are the next steps ([status](docs/status.md#missing)).
 
 ## Write an issue's tests
@@ -75,6 +77,34 @@ workline test write --issue 42 --ai claude
 | `test-file-exists` | a patch changes a test file the base holds |
 | `intention-refused` | a patch reaches a file outside `test-paths` |
 | `test-green-on-base`, `no-new-test` | a test is not proven red, or none is named in the report |
+
+## Frozen tests and objections
+
+- **The record**: on the Draft, workline's own comment lists each test
+  file and its git blob. Only the tester's runs write it.
+- **The guard**, no agent: route the tester on `merge-request`. On its
+  branch, a test file changed or deleted by anyone else blocks,
+  `tester-test-changed`. No label lifts it, and no commit trailer is
+  trusted. With no record to read, `tester-record-missing` blocks.
+- **An objection**: a comment on the test's line, opened by
+  `workline:objection`, one field a line: `test:`, `scenario:`,
+  `kind:` (wrong interface, over-specified, contradicts another
+  scenario, untestable as written, the need itself), `why:`.
+- **The answer**: `workline test answer --merge-request <n> --ai claude`
+  takes the first objection waiting, checked out at the branch's tip.
+  The agent reads the scenario first, then answers in the thread:
+  - *kept*, with its reason;
+  - *rewritten*: its own commit on the branch, `Refs` the thread. It
+    still names the scenario and must be red on the base. The record
+    moves with it.
+- **The need itself** goes to the product owner, with no agent: the
+  issue back to `workline:to-refine`, said there and in the thread.
+- **Bounded**: three answers a thread (`objection-exchanges`). The
+  third says the five whys are due. After it, a person decides
+  (`objection-person`: a label on the merge request, or an `@login`).
+  The tester then follows the next comment of a person of the project.
+- **The agent is a choice** here too: with none, `no-agent`, the
+  objection waits.
 
 ## Check a change
 
@@ -121,7 +151,9 @@ Under `roles: {tester: {settings: …}}` in `.workline/config.yaml`
 | `test-report` | `junit.xml` | where the report is written, from the root: a path, or a pattern one folder deep |
 | `test-paths` | each ecosystem's names | the test files, as patterns: `**/*_test.go`, `**/test_*.py`, `**/*.test.ts`, `tests/**` and others; the only files `test write` may add |
 | `code-lines-max` | 1500 | lines of the Scope's code and tests given to the agent, all files together |
-| `ai-max-tokens`, `ai-max-seconds` | 300000, 1200 | what one `test write` run may spend, and wait on its agent |
+| `ai-max-tokens`, `ai-max-seconds` | 300000, 1200 | what one `test write` or `test answer` run may spend, and wait on its agent |
+| `objection-exchanges` | 3 | the tester's answers in an objection's thread before a person decides |
+| `objection-person` | `workline:human` | who decides then: a label put on the merge request, or an `@login` mentioned |
 
 The command, by ecosystem:
 

@@ -190,6 +190,30 @@ Each step: conformance cases first; a try told under `## Tried` ([ADR-0043]).
   a checkout apart, the red-first check run there; not red, nothing is
   applied nor opened.
 
+## Amendment 2026-10-28: step 3 as built
+
+- **The record**: each test file's git blob, in workline's own comment
+  on the Draft (ADR-0051's records), written when it opens and by the
+  tester's runs only; never a commit's trailer, which anyone writes.
+  The guard runs on `merge-request` where the project routes the
+  tester; none to read blocks, `tester-record-missing`.
+- **The form**: one field a line after `workline:objection`: `test:`,
+  `scenario:`, `kind:`, `why:`. One it cannot read is told the form.
+- **No trigger yet**: `workline test answer --merge-request <n>` takes
+  the first objection waiting; what runs it on a comment comes with
+  step 4's moment, in CI templates beside the scheduled run.
+- **The rewrite**: the engine commits it on the role's own branch, on
+  top, without force; another's branch is never written to (ADR-0051).
+- **The need itself**: no agent; the issue back to `to-refine`, its
+  `ready` taken off (docs/spec/routing.md), said on it and in the thread.
+- **A person decides**: the run passes, having said so (a `human`
+  verdict applies nothing); the merge request labelled
+  `objection-person` (default `workline:human`), or an `@login`
+  mentioned. The next comment of a person of the project is their
+  decision; the tester follows it.
+- **The five whys** are said due at the third answer; the skill is
+  step 8. A fresh developer run is woken once the developer exists.
+
 ## Consequences
 
 - **The builder gets its target first**; only the tester moves it, on
