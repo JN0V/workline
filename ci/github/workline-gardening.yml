@@ -9,6 +9,7 @@
 # The tester, when the line lists it, writes a ready issue's tests, one
 # issue a run, opened as a Draft (ADR-0055): install your test runner in
 # judge, where it proves them red.
+# The tester's curator measures the test corpus, opt-in (curator below).
 # And a release's dry run: what would hold the release if it were cut now,
 # said in the default branch's issue (dry-run below). The release never
 # waits for the docs (ADR-0051).
@@ -182,6 +183,48 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with: {name: workline-dry-run, path: dry-run.json, if-no-files-found: ignore}
+
+  # The tester's curator, its measures, no agent (ADR-0055, step 6): the
+  # project's tests run on this branch's tip, each test's time and result
+  # kept from one run to the next in the artifact workline-curator, read
+  # back here (one run within its 90 days keeps it). Said in the job's
+  # summary; nothing removed (roles/tester/docs/curator.md). Opt-in: the
+  # repository variable WORKLINE_CURATOR set to on, the tester's
+  # test-command set, your test runner installed below.
+  curator:
+    if: vars.WORKLINE_CURATOR == 'on'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    # actions: the last run's artifact, the history.
+    permissions: {contents: read, actions: read}
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - name: workline
+        run: |
+          bin="$RUNNER_TEMP/bin"; mkdir -p "$bin"; cd "$RUNNER_TEMP"
+          get() { curl -fsSLO "$1/$2" && curl -fsSL "$1/$3" | grep " $2\$" | sha256sum -c - && tar -xzf "$2" -C "$bin" "$4"; }
+          get "https://github.com/JN0V/workline/releases/download/$WORKLINE_VERSION" workline_linux_amd64.tar.gz checksums.txt workline
+          echo "$bin" >> "$GITHUB_PATH"
+          "$bin/workline" version
+      # Your test runner here, as the test-command needs it (gotestsum,
+      # pytest, jest-junit…).
+      - name: The history, from the last measure's artifact
+        env: {GH_TOKEN: "${{ github.token }}"}
+        run: |
+          id=$(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts?name=workline-curator&per_page=30" \
+            --jq "[.artifacts[] | select(.expired | not) | select(.workflow_run.head_branch == \"$GITHUB_REF_NAME\")][0].id // empty")
+          if [ -z "$id" ]; then echo "::notice title=workline::no history of the curator's: the first measure"; exit 0; fi
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$id/zip" > curator.zip && unzip -oq curator.zip curator-history.json
+      - name: The corpus's measures (said, never a block)
+        run: |
+          status=0
+          workline test measure --history curator-history.json --summary workline-summary.md || status=$?
+          [ ! -s workline-summary.md ] || cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"
+          exit "$status"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: {name: workline-curator, path: curator-history.json, if-no-files-found: ignore, retention-days: 90}
 
   dry-run-post:
     needs: dry-run

@@ -57,6 +57,13 @@ roles:
       # The backlog file the issues were imported from, archived since: the
       # issues are the source, an edit to it flags none of them (ADR-0032).
       archived: [docs/BACKLOG.md]
+  tester:
+    settings:
+      # The curator's measures (`workline test measure`, the gardening's
+      # curator job): the whole suite, its coverage profile too.
+      test-command: gotestsum --junitfile {report} -- ./...
+      curator-command: gotestsum --junitfile {report} -- -coverprofile=cover.out ./...
+      coverage-report: cover.out
   reviewer:
     settings:
       # The role's list, plus the judge's replay set: questions and answers
