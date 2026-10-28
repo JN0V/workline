@@ -28,4 +28,4 @@ jobs:
     permissions: {}
     steps:
       - env: {PR: "${{ github.event.pull_request.number }}", URL: "${{ github.event.comment.html_url }}"}
-        run: echo "an objection on pull request #$PR, $URL; workline-answer.yml answers it"
+        run: 'echo "an objection on pull request $PR, $URL: workline-answer.yml answers it"'
