@@ -19,14 +19,8 @@
   in the middle ([routing.md](../spec/routing.md#work-starts-from-a-clear-need)).
 - **The reviewer finds, nobody fixes**: its loop waits for this role
   ([reviewer status](../../roles/reviewer/docs/status.md), Missing 4).
-- **What others do** ([research](../research/issue-to-pull-request.md)):
-  - an issue assigned to the agent starts it (Copilot, GitLab's Duo
-    Developer, Claude's action); it never merges nor approves; the best
-    designs give the agent no write right, a separate job writes;
-  - one issue, one branch, one pull request; a file allowlist;
-  - a cap on each session (time, turns, cost), none on review rounds;
-  - rejected agent pull requests: 38 % never reviewed, 23 % duplicates,
-    17 % red CI, 5 % a wrong change.
+- **Elsewhere**, an issue assigned to the agent starts it; a separate
+  job writes; sessions are capped, rounds not.
 
 ## Decision
 
@@ -40,12 +34,10 @@
     tests; no forge token, no App key;
   - `apply`'s: the App's key, no AI key; validates the patch against the
     catalogue and the bounds, pushes, assigns, opens the pull request.
-- **The pull request is the App's**, so the project's checks run on it
-  (a job's own token starts none) and the reviewer tells it from a
-  person's: judged at `judge-at-least: model`.
-- **The agent is a choice**: none, `claude`, `cmd:<any command>`. With
-  none, the role names the issue it would take and opens nothing:
-  writing the code is judgement (principle 5).
+- **The pull request is the App's**: the project's checks run on it, and
+  the reviewer judges it at `judge-at-least: model`.
+- **The agent is a choice**: none, `claude`, `cmd:<any command>`; with
+  none, it names the issue it would take and opens nothing (principle 5).
 
 ### It takes work by the forge's assignment
 
@@ -54,12 +46,10 @@
   backlog's order
   ([`backlog.Order`](../spec/backlog-acts/next.md#the-order-and-what-waits)):
   waiting on no open issue, no parts, no open pull request closing it.
-- **The assignee is the claim**, as on the forges studied: a person who
-  assigns themselves keeps the issue from it; the developer never
-  unassigns anyone.
-- **The moment**: when an issue becomes `ready`, and its own scheduled
-  run after the product owner's ([ADR-0050] §3). Nobody waits on it: no
-  wait budget, a token and time cap instead.
+- **The assignee is the claim**: a person assigning themselves keeps the
+  issue from it; it never unassigns anyone.
+- **The moment**: an issue set `ready`, and a scheduled run after the
+  product owner's ([ADR-0050] §3); no wait budget, a cap instead.
 
 ### It proves locally first
 
@@ -70,9 +60,8 @@
 - **Green**: the pull request opens ready, `Closes #<n>`, a
   `## Verification` section saying what ran and its result, a `## Tried`
   section ([ADR-0043]).
-- **Red after its turns, or a cap reached**: the work is kept as a
-  Draft saying what failed; a Draft wakes no AI ([ADR-0050] §4). The run
-  after skips the issue while the Draft is open.
+- **Red, or a cap reached**: a Draft saying what failed, which wakes no
+  AI ([ADR-0050] §4); the issue is skipped while it is open.
 
 ### What bounds it
 
@@ -86,9 +75,7 @@
   CLAUDE.md, a page they link, a prompt — [ADR-0042]'s `normal` list),
   `.workline/`, the role folders, CI workflows, a gate's definition.
   Asked: a refusal, the issue told a person must do it.
-- **Caps**: `ai-max-tokens` a run and a wall-clock cap (30 min, as
-  gh-aw's agent step and under Copilot's 59). Reached: a Draft, the cap
-  named.
+- **Caps**: `ai-max-tokens` and 30 min a run (gh-aw's agent step).
 - **The code and the tests apart**: separate commits, and the pull
   request lists the code it changed and the tests it added, so the
   tester's later job — adapting tests after a change — reads its part.
@@ -105,8 +92,7 @@
 - **Its input**: the findings that hold the merge ([ADR-0051]:
   correctness) and the Important ones given a round; nits shown, not
   asked. A person's review comment is read the same way.
-- **The reviewer decides a finding is fixed**, on its next read
-  ([ADR-0013]); the developer never resolves a conversation.
+- **The reviewer decides a finding is fixed** ([ADR-0013]).
 
 ### Review rounds: five, the five whys at three
 
@@ -127,110 +113,79 @@
 - **A person's yes is asked by kind only** ([ADR-0039]: the kind is the
   forge's): a new user-facing feature (UI, UX) by default. A task or a
   fix never waits for one.
-- **Several developer pull requests may be open.** The limit, if any, is
-  about conflicts: it does not take an issue whose Scope overlaps an
-  open developer pull request's files. Never a second pull request for
-  one issue.
-- **The policy stays the project's**: at `cautious` every pull request
-  still waits for a label; the developer's join `normal` under
-  [ADR-0042]'s criteria, its governance line said where it is set.
+- **Several developer pull requests may be open**, limited by conflicts
+  only: no issue whose Scope overlaps an open one's files, never two
+  pull requests for one issue.
+- **The policy stays the project's**: at `cautious` all wait for a
+  label; `normal` takes the developer's under [ADR-0042]'s criteria.
 
 ### What it never does
 
-- Merge, approve, turn auto-merge on, put `workline:accepted`, resolve
-  a conversation.
-- Take an issue not `ready`, or assigned to someone.
-- Edit an acceptance test, or touch a file outside the bounds above.
-- Close or move an issue: `Closes #<n>` does it at the merge.
+- Merge, approve, turn auto-merge on, put `workline:accepted`, resolve a
+  conversation, close or move an issue (`Closes #<n>` does it).
+- Take an issue not `ready` or assigned; edit an acceptance test.
 
 ## For the person
 
-The maintainer's seven choices, 2026-10-28, each against what was first
-proposed:
-
-1. **CI**, the agent's job holding no token. *Not*: the person's machine
-   first.
-2. **The forge's assignment**: the first ready, unassigned issue; a
-   person's assignment keeps it. *Not*: the schedule taking one
-   unmarked, nor a person labelling each.
-3. **Proven locally first**: gates, tests, Verification before the pull
-   request opens.
-4. **The same developer fixes the findings**: one identity, a written
-   trace, a fresh run each verdict.
-5. **On the loop**: several open, a yes by kind only. *Not*: one
-   developer pull request open until a person has read it.
-6. **Five rounds, the five whys at three**. *Not*: five rounds alone.
-7. **The tester first**: its acceptance tests before the code, the
-   developer never editing them.
+The maintainer chose the headings above on 2026-10-28, against the first
+draft: the schedule taking an issue unmarked, one developer pull request
+open until read, no five whys, no tester first.
 
 ## Build plan
 
 Nothing starts before the tester's first step
 ([#264](https://github.com/JN0V/workline/issues/264)): the issue's
 Validation (Given / When / Then) turned into acceptance tests before the
-developer codes. Then each step one pull request, its cases first in
-`tests/conformance/cases/`, `pending.txt` listing what does not pass.
+developer codes. Then one pull request a step, its cases first in
+`tests/conformance/cases/` (names prefixed `developer-`), `pending.txt`
+listing what does not pass.
 
-1. **The role and its pick**, no agent: `roles/developer/`,
-   `workline develop`, the assignment. First check the forge takes the
-   App as an assignee (GitLab's service accounts can be; GitHub may
-   refuse a bot), and write the fallback if not. Cases:
-   `developer-picks-first-ready-unassigned`,
-   `developer-skips-assigned-issue`, `developer-skips-issue-with-open-pr`,
-   `developer-skips-overlapping-scope`, `developer-none-ready-says-so`,
-   `developer-no-agent-opens-nothing`.
-2. **The patch and its bounds** at `apply`. Cases:
-   `developer-refuses-file-outside-scope`,
-   `developer-refuses-acceptance-test-edit`,
-   `developer-refuses-steering-file`, `developer-refuses-gate-file`,
-   `developer-has-no-merge-intention`.
-3. **The proof**: gates, tests, acceptance tests, the Verification's
-   commands, the caps. Cases: `developer-green-opens-ready`,
-   `developer-red-opens-draft`, `developer-cap-reached-pushes-draft`.
-4. **The pull request**: the App's, `Closes #<n>`, its sections, code
-   and tests apart, the hidden record; the agent's job holds no token.
-   Cases: `developer-pr-closes-issue`, `developer-pr-splits-code-tests`,
-   `developer-agent-env-has-no-token`, `developer-pr-judged-at-model`,
-   and on GitLab and a `cmd:` forge.
-5. **The triggers**: `ready` set and the schedule, GitHub and GitLab
-   templates. Case: `routing-schedule-runs-developer`.
-6. **The review loop**: a fresh run per verdict, from the trace; needs
-   the five whys skill. Cases: `developer-fixes-blocking-finding`,
-   `developer-skips-nits`, `developer-reads-trace-not-memory`,
-   `developer-round-three-five-whys`,
-   `developer-round-five-hands-to-person`,
-   `developer-person-comment-is-a-round`.
-7. **The merge**: its pull requests in [ADR-0042]'s `normal`, a yes by
-   kind. Cases: `merge-normal-admits-developer-fix`,
+1. **The pick**, no agent: `roles/developer/`, `workline develop`, the
+   assignment; first check the forge takes the App as an assignee
+   (GitLab's service accounts can be, GitHub may refuse a bot), else a
+   fallback. Cases: `picks-first-ready-unassigned`,
+   `skips-assigned-issue`, `skips-issue-with-open-pr`,
+   `skips-overlapping-scope`, `none-ready-says-so`,
+   `no-agent-opens-nothing`.
+2. **The bounds** at `apply`: `refuses-file-outside-scope`,
+   `refuses-acceptance-test-edit`, `refuses-steering-file`,
+   `refuses-gate-file`, `has-no-merge-intention`.
+3. **The proof** and the caps: `green-opens-ready`, `red-opens-draft`,
+   `cap-reached-pushes-draft`.
+4. **The pull request**: the App's, its sections, code and tests apart,
+   the hidden record, no token in the agent's job: `pr-closes-issue`,
+   `pr-splits-code-tests`, `agent-env-has-no-token`,
+   `pr-judged-at-model`; on GitLab and a `cmd:` forge.
+5. **The triggers**, `ready` and the schedule, both forges' templates:
+   `routing-schedule-runs-developer`.
+6. **The review loop**, a fresh run a verdict, with the five whys skill:
+   `fixes-blocking-finding`, `skips-nits`, `reads-trace-not-memory`,
+   `round-three-five-whys`, `round-five-hands-to-person`,
+   `person-comment-is-a-round`.
+7. **The merge** in [ADR-0042]'s `normal`, a yes by kind:
+   `merge-normal-admits-developer-fix`,
    `merge-normal-holds-developer-feature`.
 8. **Measured**: an evaluation on planted issues (`WORKLINE_EVAL`), then
-   a try on a copy of a real repository, told in the pull request.
+   a try on a copy of a real repository, told in its pull request.
 
 ## Consequences
 
-- The line runs from need to merge with no session opened; a person
-  answers what the policy asks by kind, and reads the rest after.
-- Its tokens run each time an issue becomes ready and on each reviewer
-  verdict on its pull requests: one issue a run, capped.
-- A project with no agent gets the pick and nothing else.
-- The developer waits on the tester: nothing ships before its first step.
-- The reviewer's Missing 4 is built by step 6; the role is beta until
-  [ADR-0036]'s criteria hold.
+- Need to merge with no session opened; a person answers by kind only.
+- Tokens on each `ready` issue and each verdict on its pull requests,
+  one issue a run, capped. With no agent, the pick alone.
+- Nothing before the tester's first step; the reviewer's Missing 4 built
+  by step 6; beta until [ADR-0036]'s criteria hold.
 
 ## Not chosen
 
 - **One developer pull request open at a time**: it waits on a person's
-  reading, not on the work. Duplicates are kept off by one pull request
-  an issue, conflicts by the Scope overlap; the rejection figures stay
-  in the [research](../research/issue-to-pull-request.md).
+  reading, not the work; duplicates and conflicts have their own bounds.
+  The rejection figures stay in the research.
 - **A live developer waiting for the review**: a process held for hours
-  costs and dies; the trace on the forge is what continues.
-- **The agent pushing itself**: it would hold a write token (principle
-  6); Claude's action and gh-aw both keep the push out of its hands.
-- **No cap on rounds**, as the tools studied: each round costs tokens;
-  past five, a person.
-- **The developer writing its own acceptance tests**: the check and the
-  checked would be one hand.
+  costs and dies; the trace on the forge continues.
+- **The agent pushing itself**: a write token in its hands (principle 6).
+- **No cap on rounds**, as the tools studied; **its own acceptance
+  tests**: the check and the checked one hand.
 
 [ADR-0013]: 0013-what-was-judged-is-not-asked-again.md
 [ADR-0018]: 0018-the-product-owner.md
