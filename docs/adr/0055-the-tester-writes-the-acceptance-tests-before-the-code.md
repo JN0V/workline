@@ -214,6 +214,36 @@ Each step: conformance cases first; a try told under `## Tried` ([ADR-0043]).
 - **The five whys** are said due at the third answer; the skill is
   step 8. A fresh developer run is woken once the developer exists.
 
+## Amendment 2026-10-28: step 4 as built
+
+- **The moment**: the tester on `schedule`, opt-in in the project's
+  routing, after the product owner and the reviewer. One issue a run:
+  the first in the backlog's order offered to whoever builds (ready, no
+  open blocker, no parts) whose Validation names scenarios, its Draft
+  not open. None: said, a pass.
+- **Needs `--open-merge-request`**: the open Drafts are the engine's
+  list of the role's branches; without it, `no-merge-request` blocks.
+- **Two jobs** (principle 6): `route schedule --no-apply` proves the
+  tests red with no write token; `apply` opens the Draft and its record.
+  `test write` and `test answer` take `--no-apply` too.
+- **The objection's trigger**: on GitHub, `pull_request_review_comment`
+  runs a workflow with no token, which only notices a
+  `workline:objection` comment of a person of the project or an App on
+  a `workline/tester/` branch; its end wakes a `workflow_run` workflow
+  from the default branch, which answers, then applies apart. On
+  GitLab, no pipeline starts on a comment: a tool given the note webhook
+  starts the template's `objection` jobs.
+- **The Draft's tip is checked out** in both jobs: the test is read,
+  and a rewrite committed, there. The apply job runs only git and the
+  forge's API; its engine is set up before the switch.
+- **The hand-over**: the branch, the Draft (`Refs`, never `Closes`), its
+  `## Tests` table and the record;
+  [the contract](../../roles/tester/docs/hand-over.md). No label: the
+  branch is the data. The builder claims the issue by assignment
+  ([ADR-0054]); the tester assigns nobody.
+- **Not in workline's own line yet**: in Go, a test of a name the code
+  lacks gets no Draft (step 2's limit), and most of its issues add one.
+
 ## Consequences
 
 - **The builder gets its target first**; only the tester moves it, on
@@ -230,4 +260,5 @@ Each step: conformance cases first; a try told under `## Tried` ([ADR-0043]).
 [ADR-0042]: 0042-the-engine-merges-by-the-projects-policy.md
 [ADR-0043]: 0043-a-try-is-told-in-its-pull-request.md
 [ADR-0050]: 0050-each-act-has-its-moment-and-a-wait-budget.md
+[ADR-0054]: 0054-the-developer-takes-a-ready-issue-to-a-pull-request.md
 [ADR-0051]: 0051-a-check-sits-where-its-catch-is-worth-its-cost.md

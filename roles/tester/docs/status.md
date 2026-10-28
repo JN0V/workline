@@ -4,7 +4,8 @@
 a test for each named scenario of a ready issue, proves them red on the
 base with the red-first check (`workline test check`, no agent), and
 opens them as a Draft; it keeps them from the builder, and answers an
-objection to one (`workline test answer`). Steps 1 to 3 of
+objection to one (`workline test answer`); a scheduled run takes one
+ready issue a night, an objection wakes its answer. Steps 1 to 4 of
 [ADR-0055's plan](../../../docs/adr/0055-the-tester-writes-the-acceptance-tests-before-the-code.md#build-plan);
 beta, not in the line yet.
 
@@ -20,7 +21,7 @@ Beta until the three criteria of
 [ADR-0036](../../../docs/adr/0036-a-roles-status-is-earned-by-written-criteria.md)
 hold:
 
-1. **Nothing buildable in Missing**: open; steps 3 to 8 below.
+1. **Nothing buildable in Missing**: open; steps 5 to 8 below.
 2. **The main issue validated on real use**: open.
    [#264](https://github.com/JN0V/workline/issues/264), on workline and
    on a copy of a real repository: a bug shown by a red test first, then
@@ -54,6 +55,16 @@ Cases in `tests/conformance/cases/tester/`:
   on the base, else refused; the need itself back to the product owner;
   a form it cannot read said; the five whys due at the third answer;
   past it, a person decides, and the tester follows them.
+- **Its moment** (step 4): on `schedule`, one ready issue a run, the
+  first in the backlog's order with named scenarios and no open Draft;
+  none waiting, said; `--open-merge-request` needed
+  (`no-merge-request`). Judged with no write token, applied apart
+  (`--no-apply`, then `workline apply`).
+- **The objection's trigger** (step 4): GitHub's
+  `workline-objection.yml` and `workline-answer.yml`, GitLab's
+  `workline:objection:*` jobs on a pipeline a note webhook starts.
+- **The hand-over** to whoever builds:
+  [the contract](hand-over.md).
 - **Settings** `test-command`, `test-report`, `test-paths`,
   `code-lines-max`, `objection-exchanges`, `objection-person`
   ([README](../README.md#settings)).
@@ -64,9 +75,11 @@ Cases in `tests/conformance/cases/tester/`:
   the agent again with the reason; the run blocks.
 - **Adding to a test file already there**: refused for now; new files
   only.
-- **Step 4, the moment**: the scheduled run, the developer's hand-over,
-  and the objections' trigger: nothing yet runs `test answer` when an
-  objection is posted; a person or a job of the project runs it.
+- **Not in workline's own line yet**: a Go issue that adds a name gets
+  no Draft (below), and most of workline's do; the objection workflows
+  are shipped here, inert until a Draft opens.
+- **A Draft a person closed** is not remembered as refused: a later
+  scheduled run may take its issue again.
 - **Objections on a forge command** (`cmd:`): it lists no thread, and
   `no-threads` blocks.
 - **Step 5, green proof**: three runs out of three on the closing pull

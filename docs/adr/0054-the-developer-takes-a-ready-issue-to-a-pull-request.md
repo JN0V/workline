@@ -48,6 +48,11 @@
   waiting on no open issue, no parts, no open pull request closing it.
 - **The assignee is the claim**: a person assigning themselves keeps the
   issue from it; it never unassigns anyone.
+- **It starts from the tester's Draft** (amended 2026-10-28,
+  [ADR-0055] step 4): its branch `workline/tester/issue-<n>`, pushed on
+  top; the Draft says `Refs`, so it is no pull request closing the
+  issue. Where the tester is routed, a ready issue with no Draft waits
+  for it ([the hand-over](../../roles/tester/docs/hand-over.md)).
 - **The moment**: an issue set `ready`, and a scheduled run after the
   product owner's ([ADR-0050] §3); no wait budget, a cap instead.
 
@@ -198,3 +203,4 @@ listing what does not pass.
 [ADR-0044]: 0044-the-apps-key-stays-with-the-default-branchs-runs.md
 [ADR-0050]: 0050-each-act-has-its-moment-and-a-wait-budget.md
 [ADR-0051]: 0051-a-check-sits-where-its-catch-is-worth-its-cost.md
+[ADR-0055]: 0055-the-tester-writes-the-acceptance-tests-before-the-code.md
