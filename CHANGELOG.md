@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.47.0](https://github.com/JN0V/workline/compare/v0.46.0...v0.47.0) (2026-10-28)
+
+
+### Features
+
+* **tester:** its moment, the objection's trigger, the hand-over ([#656](https://github.com/JN0V/workline/issues/656)) ([b5e2c28](https://github.com/JN0V/workline/commit/b5e2c280fed6c53a7d8b2731850805fc6d48373f))
+
 ## [0.46.0](https://github.com/JN0V/workline/compare/v0.45.0...v0.46.0) (2026-10-28)
 
 
