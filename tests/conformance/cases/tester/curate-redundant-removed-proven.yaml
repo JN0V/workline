@@ -4,7 +4,8 @@ about: >
   proves it with no agent, the folder's tests run before and after, all
   green, no covered line and no killed mutant lost, and the bot opens a
   pull request, not a Draft, with the numbers before and after and each
-  test's reason (ADR-0055, step 7).
+  test's reason (ADR-0055, step 7). The folder is marked weighed once
+  the answer is judged.
 given:
   repo: curated
   setup:
@@ -13,8 +14,10 @@ given:
     roles: {tester: {settings: {test-command: "sh run-tests.sh {report}", coverage-report: cover.info, curator-mutation-command: "sh mutate.sh {report} {package}"}}}
   forge:
     merge-requests: []
-run: {test: [curate], ai: "fake:tester-curate-duplicate"}
+run: {test: [curate, --history, curator.json], ai: "fake:tester-curate-duplicate"}
 expect:
+  files:
+    curator.json: {contains: ['"curated"', '"tests": 0']}
   status: pass
   summary: "1 test removed, 0 added; no covered line, no killed mutant lost"
   agent-calls: 1

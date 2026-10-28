@@ -37,3 +37,46 @@ func TestKeeps(t *testing.T) {
 		}
 	}
 }
+
+// A note explains a removal only when it names the test whole.
+func TestMentions(t *testing.T) {
+	for _, c := range []struct {
+		note, name string
+		want       bool
+	}{
+		{"TestRun: TestOther checks the same", "TestRun", true},
+		{"`TestRun/sub` is TestOther's", "TestRun", true},
+		{"TestRunAll keeps the check", "TestRun", false},
+		{"MyTestRun keeps it", "TestRun", false},
+		{"test_add_again: test_add checks it", "test_add", true},
+		{"test_add_again keeps it", "test_add", false},
+	} {
+		if got := mentions(c.note, c.name); got != c.want {
+			t.Errorf("mentions(%q, %q) = %v, want %v", c.note, c.name, got, c.want)
+		}
+	}
+}
+
+// A folder's measures are its own tests', never a subfolder's nor a
+// folder whose name only starts the same; the root's too.
+func TestInFolder(t *testing.T) {
+	for _, c := range []struct {
+		id, dir string
+		files   []string
+		want    bool
+	}{
+		{"example.com/m/internal/scale.TestRun/sub", "internal/scale", []string{"internal/scale/a_test.go"}, true},
+		{"example.com/m/internal/scale2.TestRun", "internal/scale", []string{"internal/scale/a_test.go"}, false},
+		{"example.com/m/internal/scale/sub.TestRun", "internal/scale", []string{"internal/scale/a_test.go"}, false},
+		{"example.com/m.TestRun", ".", []string{"a_test.go"}, true},
+		{"example.com/m/a.TestRun", ".", []string{"a_test.go"}, false},
+		{"tests.test_add_again", "tests", []string{"tests/test_add_again.sh"}, true},
+		{"tests.unit.test_add", "tests", []string{"tests/test_add.sh"}, false},
+		{"test_add.TestAdd.test_one", ".", []string{"test_add.py"}, true},
+		{"tests.test_add", ".", []string{"test_add.py"}, false},
+	} {
+		if got := inFolder(c.id, c.dir, c.files, "example.com/m"); got != c.want {
+			t.Errorf("inFolder(%q, %q) = %v, want %v", c.id, c.dir, got, c.want)
+		}
+	}
+}

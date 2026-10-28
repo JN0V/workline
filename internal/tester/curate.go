@@ -22,6 +22,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+	"unicode"
+	"unicode/utf8"
 
 	"go.yaml.in/yaml/v3"
 
@@ -44,6 +46,7 @@ type curateTask struct {
 	Base   string         `json:"base"`
 	Dir    string         `json:"dir"`
 	Frozen map[string]int `json:"frozen,omitempty"` // test file -> its issue
+	Count  int            `json:"count"`            // the history's measures when picked
 }
 
 const curateTaskFile = "curate-task.json"
@@ -96,20 +99,11 @@ func curatePre(runDir, repo string, s Settings) int {
 			Findings: []verdict.Finding{{Rule: "nothing-to-curate", Level: "warn", Where: "curator-paths",
 				Message: "each folder of tests is weighed already (an open pull request, or within curator-window measures), or over code-lines-max"}}})
 	}
-	if hist != "" {
-		if h.Curated == nil {
-			h.Curated = map[string]int{}
-		}
-		h.Curated[dir] = h.Count
-		if err := writeHistory(hist, h); err != nil {
-			return fail(err)
-		}
-	}
 	head, err := git(repo, "rev-parse", "HEAD")
 	if err != nil {
 		return fail(err)
 	}
-	t := curateTask{Base: strings.TrimSpace(head), Dir: dir, Frozen: frozen}
+	t := curateTask{Base: strings.TrimSpace(head), Dir: dir, Frozen: frozen, Count: h.Count}
 	if data, err := json.Marshal(t); err != nil {
 		return fail(err)
 	} else if err := os.WriteFile(filepath.Join(runDir, "in", curateTaskFile), data, 0o644); err != nil {
@@ -240,10 +234,10 @@ lost. Unproven, nothing is proposed.
 		}
 	}
 	b.WriteString("\n## Each test's measures\n\n")
-	dotted := strings.ReplaceAll(dir, "/", ".")
+	module := goModule(repo)
 	var ids []string
 	for id := range h.Tests {
-		if dir != "." && (strings.Contains(id, dir) || strings.Contains(id, dotted)) {
+		if inFolder(id, dir, files, module) {
 			ids = append(ids, id)
 		}
 	}
@@ -272,6 +266,88 @@ lost. Unproven, nothing is proposed.
 		fmt.Fprintf(&b, "\n### `%s`\n\n````\n%s````\n", f, data)
 	}
 	return b.String()
+}
+
+// weighed records, in the curator's history, the folder as weighed: only
+// once the agent answered and its answer was judged, so a run that failed
+// leaves the folder to the next one.
+func (t curateTask) weighed() error {
+	hist := os.Getenv(HistoryEnv)
+	if hist == "" {
+		return nil
+	}
+	h, _, err := readHistory(hist)
+	if err != nil {
+		return err
+	}
+	if h.Curated == nil {
+		h.Curated = map[string]int{}
+	}
+	h.Curated[t.Dir] = t.Count
+	return writeHistory(hist, h)
+}
+
+// inFolder reports whether a measured test id is one of the folder's own,
+// never a subfolder's nor a folder whose name only starts the same: Go's
+// `<import path>.TestX` (the root's, the module's path), or a dotted
+// `<folder>.<file>.<test>` whose file is one of the folder's.
+func inFolder(id, dir string, files []string, module string) bool {
+	stems := map[string]bool{}
+	for _, f := range files {
+		base := path.Base(f)
+		stems[strings.TrimSuffix(base, path.Ext(base))] = true
+	}
+	pkg, prefix := dir, ""
+	if dir == "." {
+		pkg = module
+	} else {
+		prefix = strings.ReplaceAll(dir, "/", ".") + "."
+	}
+	if pkg != "" {
+		for i := 0; ; i++ {
+			j := strings.Index(id[i:], pkg+".")
+			if j < 0 {
+				break
+			}
+			at := i + j
+			// the whole import path, or its end after a /, then the test
+			if (at == 0 || id[at-1] == '/') && !strings.Contains(strings.SplitN(id[at+len(pkg)+1:], "/", 2)[0], ".") {
+				return true
+			}
+			i = at
+		}
+	}
+	for i := 0; ; i++ {
+		j := strings.Index(id[i:], prefix)
+		if j < 0 {
+			return false
+		}
+		at := i + j
+		if at == 0 || id[at-1] == '.' || id[at-1] == '/' {
+			stem, _, _ := strings.Cut(id[at+len(prefix):], ".")
+			if stems[stem] {
+				return true
+			}
+		}
+		if prefix == "" {
+			return false
+		}
+		i = at
+	}
+}
+
+// goModule is the module path go.mod names, if any.
+func goModule(repo string) string {
+	data, err := os.ReadFile(filepath.Join(repo, "go.mod"))
+	if err != nil {
+		return ""
+	}
+	for _, line := range strings.Split(string(data), "\n") {
+		if f := strings.Fields(line); len(f) == 2 && f[0] == "module" {
+			return strings.Trim(f[1], `"`)
+		}
+	}
+	return ""
 }
 
 // curatePost holds the agent's removal to what the curator may touch, then
@@ -311,6 +387,9 @@ func curatePost(runDir, repo string, s Settings) int {
 		if len(notes) > 0 {
 			said += ": " + notes[0]
 		}
+		if err := t.weighed(); err != nil {
+			return fail(err)
+		}
 		return write(runDir, verdict.Verdict{Status: verdict.Pass, Summary: said})
 	}
 	kept, err := keptNames(repo, s.CuratorKeep)
@@ -335,6 +414,9 @@ func curatePost(runDir, repo string, s Settings) int {
 		}
 	}
 	if len(findings) > 0 {
+		if err := t.weighed(); err != nil {
+			return fail(err)
+		}
 		return write(runDir, verdict.Verdict{Status: verdict.Block, Summary: "the removal touches what the curator may not", Findings: findings})
 	}
 	p, v, err := proveRemoval(repo, t.Base, patches, touched, s)
@@ -343,6 +425,11 @@ func curatePost(runDir, repo string, s Settings) int {
 	}
 	if v == nil {
 		v = p.judge(s, kept, notes)
+	}
+	if !v.Final { // judged; a proof that did not run leaves the folder to the next run
+		if err := t.weighed(); err != nil {
+			return fail(err)
+		}
 	}
 	if v.Status != verdict.Pass {
 		return write(runDir, *v)
@@ -599,11 +686,12 @@ func (p *proof) judge(s Settings, kept []string, notes []string) *verdict.Verdic
 			Message: fmt.Sprintf("%d tests removed, over curator-removals-max (%d): a few a run, each weighed", len(p.removed), max(s.RemovalsMax, 1))})
 	}
 	for _, id := range p.removed {
-		name, _, _ := strings.Cut(p.before.tests[id].name, "/") // Go's subtest: its test
-		if keeps(kept, id) || slices.Contains(kept, name) {
+		full := p.before.tests[id].name
+		name, _, _ := strings.Cut(full, "/") // Go's subtest: its test
+		if keeps(kept, id) || slices.Contains(kept, name) || slices.Contains(kept, full) {
 			fs = append(fs, verdict.Finding{Rule: "test-kept", Where: id, Message: "listed in a curator-keep file: never removed"})
 		}
-		if !slices.ContainsFunc(notes, func(n string) bool { return strings.Contains(n, name) }) {
+		if !slices.ContainsFunc(notes, func(n string) bool { return mentions(n, name) }) {
 			fs = append(fs, verdict.Finding{Rule: "removal-unexplained", Where: id, Message: "no note names it: each test removed says which test keeps its check"})
 		}
 	}
@@ -620,6 +708,28 @@ func (p *proof) judge(s Settings, kept []string, notes []string) *verdict.Verdic
 	}
 	return &verdict.Verdict{Status: verdict.Pass, Summary: fmt.Sprintf("%d test%s removed, %d added; no covered line, no killed mutant lost",
 		len(p.removed), plural(len(p.removed)), len(p.added))}
+}
+
+// mentions reports whether a note names a test whole: `TestRun` is not
+// named by a note on `TestRunAll`.
+func mentions(note, name string) bool {
+	if name == "" {
+		return false
+	}
+	ident := func(r rune) bool { return r == '_' || unicode.IsLetter(r) || unicode.IsDigit(r) }
+	for i := 0; ; {
+		j := strings.Index(note[i:], name)
+		if j < 0 {
+			return false
+		}
+		at, end := i+j, i+j+len(name)
+		before, _ := utf8.DecodeLastRuneInString(note[:at])
+		after, _ := utf8.DecodeRuneInString(note[end:])
+		if (at == 0 || !ident(before)) && (end == len(note) || !ident(after)) {
+			return true
+		}
+		i = at + 1
+	}
 }
 
 // lostLines are the blocks covered before and not after, the test files'

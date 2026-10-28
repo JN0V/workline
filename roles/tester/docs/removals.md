@@ -27,7 +27,9 @@ flowchart LR
 - **One folder of tests**: the largest, by lines, that fits
   `code-lines-max`, among the files `curator-paths` names; not one an
   open curator pull request holds, nor one weighed within
-  `curator-window` measures (kept in the history).
+  `curator-window` measures (kept in the history). A folder counts as
+  weighed once the agent's answer is judged: a run that failed leaves
+  it to the next.
 - **The agent reads** that folder's test files whole, and each test's
   measures: time, runs, red runs, never red.
 - **The agent proposes** at most `curator-removals-max` tests removed

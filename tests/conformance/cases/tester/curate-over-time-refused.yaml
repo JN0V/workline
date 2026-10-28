@@ -1,7 +1,8 @@
 case: tester/curate-over-time-refused
 about: >
   The proof past curator-proof-seconds is stopped: no proof, nothing
-  proposed (fail loud).
+  proposed (fail loud); the folder is not marked weighed, left to the
+  next run.
 given:
   repo: curated
   setup:
@@ -10,8 +11,10 @@ given:
     roles: {tester: {settings: {test-command: "sh run-tests.sh {report}", coverage-report: cover.info, curator-mutation-command: "sh mutate.sh {report} {package}", curator-proof-command: "sleep 3; sh run-tests.sh {report}", curator-proof-seconds: 1}}}
   forge:
     merge-requests: []
-run: {test: [curate], ai: "fake:tester-curate-duplicate"}
+run: {test: [curate, --history, curator.json], ai: "fake:tester-curate-duplicate"}
 expect:
+  files:
+    curator.json: {exists: false}
   status: block
   agent-calls: 1
   findings: [{rule: proof-over-time}]
