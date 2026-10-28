@@ -1,0 +1,20 @@
+case: tester/curate-over-time-refused
+about: >
+  The proof past curator-proof-seconds is stopped: no proof, nothing
+  proposed (fail loud).
+given:
+  repo: curated
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}", coverage-report: cover.info, curator-mutation-command: "sh mutate.sh {report} {package}", curator-proof-command: "sleep 3; sh run-tests.sh {report}", curator-proof-seconds: 1}}}
+  forge:
+    merge-requests: []
+run: {test: [curate], ai: "fake:tester-curate-duplicate"}
+expect:
+  status: block
+  agent-calls: 1
+  findings: [{rule: proof-over-time}]
+  forge:
+    merge-requests:
+      - {id: 1, absent: true}

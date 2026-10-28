@@ -1,0 +1,17 @@
+case: tester/curate-no-coverage-blocks
+about: >
+  Without a coverage report the removal cannot be proven: the curator
+  does not run, the agent is not called.
+given:
+  repo: curated
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}", curator-mutation-command: "sh mutate.sh {report} {package}"}}}
+  forge:
+    merge-requests: []
+run: {test: [curate], ai: "fake:tester-curate-duplicate"}
+expect:
+  status: block
+  agent-calls: 0
+  findings: [{rule: setting-missing, where: coverage-report}]

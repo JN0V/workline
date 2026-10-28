@@ -638,10 +638,12 @@ workline:release:dry-run:post:
 # The tester's curator, its measures, no agent (ADR-0055, step 6): the
 # project's tests run on the branch's tip, each test's time and result kept
 # from one run to the next in this job's artifact, read back from the last
-# one (GitLab keeps a ref's latest). Said in the job's summary; nothing
-# removed (roles/tester/docs/curator.md). Opt-in: the CI/CD variable
-# WORKLINE_CURATOR set to on, the tester's test-command set, and an image
-# holding workline and your test runner.
+# one (GitLab keeps a ref's latest). Said in the job's summary. Opt-in: the
+# CI/CD variable WORKLINE_CURATOR set to on, the tester's test-command set,
+# and an image holding workline and your test runner. With
+# CLAUDE_CODE_OAUTH_TOKEN (scoped to the environment workline) too, workline:curator:judge then proposes a few
+# redundant tests removed, and workline:curator:apply opens the merge
+# request once the proof holds (step 7, roles/tester/docs/curator.md).
 workline:curator:
   image: $WORKLINE_IMAGE:$WORKLINE_VERSION
   stage: test
@@ -653,13 +655,62 @@ workline:curator:
     - *trust
     - workline version
     - unset CLAUDE_CODE_OAUTH_TOKEN WORKLINE_GITLAB_TOKEN
-    - 'curl -fsS -H "JOB-TOKEN: $CI_JOB_TOKEN" -o curator-history.json "$CI_API_V4_URL/projects/$CI_PROJECT_ID/jobs/artifacts/$CI_COMMIT_REF_NAME/raw/curator-history.json?job=workline%3Acurator" || { rm -f curator-history.json; echo "workline: no history of the curator''s: the first measure"; }'
+    # The judge's, when one ran: it adds the folder it weighed.
+    - 'h="$CI_API_V4_URL/projects/$CI_PROJECT_ID/jobs/artifacts/$CI_COMMIT_REF_NAME/raw/curator-history.json"; curl -fsS -H "JOB-TOKEN: $CI_JOB_TOKEN" -o curator-history.json "$h?job=workline%3Acurator%3Ajudge" || curl -fsS -H "JOB-TOKEN: $CI_JOB_TOKEN" -o curator-history.json "$h?job=workline%3Acurator" || { rm -f curator-history.json; echo "workline: no history of the curator''s: the first measure"; }'
     - workline test measure --history curator-history.json --summary workline-summary.md --summary workline-summary.html
   after_script: *summary
   artifacts:
     when: always
     paths: [workline-summary.html, workline-summary.md, curator-history.json]
     expire_in: 90 days
+
+# The curator's removals (step 7): the agent weighs one folder of tests,
+# the engine proves its removal with no agent (the tester's
+# curator-proof-command and curator-mutation-command, which your image
+# runs); the bot's token opens the merge request, merged by your policy.
+workline:curator:judge:
+  extends: .workline:garden
+  stage: test
+  needs: [{job: "workline:curator", artifacts: true}]
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule" && $WORKLINE_CURATOR == "on" && $WORKLINE_TASK != "sample"
+  timeout: 1h
+  script:
+    - *claude
+    - '[ "$ai" != none ] || { echo "workline: no CLAUDE_CODE_OAUTH_TOKEN: the curator measures, and removes nothing"; exit 0; }'
+    - status=0
+    - workline test curate --history curator-history.json --ai "$ai" --no-apply --forge gitlab --json > curate.json || status=$?
+    - jq -r '(.pending // [])[0] // empty | split("/") | last' curate.json > curate-run   # a run left to apply, by name
+    - jq -r '.summary // empty' curate.json
+    - exit $status
+  allow_failure: {exit_codes: [3]}  # an agent out of reach warns: the next week weighs again
+  artifacts:
+    when: always
+    paths: [.workline-runs/, curate.json, curate-run, curator-history.json]
+    expire_in: 90 days
+
+workline:curator:apply:
+  extends: .workline:garden
+  stage: deploy
+  needs: [workline:curator:judge]
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule" && $WORKLINE_CURATOR == "on" && $WORKLINE_TASK != "sample"
+      when: always
+  script:
+    - *bot
+    - git remote set-url origin "https://oauth2:${WORKLINE_GITLAB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"
+    - '[ -s curate-run ] || { echo "nothing proposed: nothing to apply"; exit 0; }'
+    - run=$(cat curate-run)
+    - 'printf "%s" "$run" | grep -Eqx "[0-9]{8}T[0-9]{6}\.[0-9]{9}-[a-z0-9-]+" && [ -d "$WORKLINE_RUNS_DIR/$run" ] || { echo "workline: the judge named no run of its own: $run"; exit 1; }'
+    - status=0
+    - workline apply "$run" --summary workline-summary.md --summary workline-summary.html || status=$?
+    - exit $status
+  after_script: *summary
+  artifacts:
+    when: always
+    paths: [workline-summary.html, workline-summary.md]
+    reports: {annotations: workline-annotations.json}
+    expire_in: 1 week
 
 # At a release's tag (ADR-0050; the first release after v0.37.0), whoever
 # pushed it: the release's line, its gates, no agent, no token, red when it

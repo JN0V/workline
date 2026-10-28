@@ -1,0 +1,11 @@
+- patch: |
+    diff --git a/tests/test_mul.sh b/tests/test_mul.sh
+    deleted file mode 100644
+    --- a/tests/test_mul.sh
+    +++ /dev/null
+    @@ -1,4 +0,0 @@
+    -# covers: 2
+    -# kills: 2
+    -. ./lib.sh
+    -[ "$(mul 2 3)" = 6 ]
+- note: "test_mul: test_add holds it."

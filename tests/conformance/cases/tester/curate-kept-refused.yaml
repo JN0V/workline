@@ -1,0 +1,21 @@
+case: tester/curate-kept-refused
+about: >
+  A test a curator-keep file lists (a conformance suite's pending list)
+  is never removed.
+given:
+  repo: curated
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "printf '# never removed\\ntest_add_again\\n' > keep.txt && git add keep.txt && git commit -qm keep"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}", coverage-report: cover.info, curator-mutation-command: "sh mutate.sh {report} {package}", curator-keep: [keep.txt]}}}
+  forge:
+    merge-requests: []
+run: {test: [curate], ai: "fake:tester-curate-duplicate"}
+expect:
+  status: block
+  agent-calls: 1
+  findings: [{rule: test-kept, where: tests/test_add_again.sh}]
+  forge:
+    merge-requests:
+      - {id: 1, absent: true}

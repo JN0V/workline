@@ -1,0 +1,26 @@
+case: tester/curate-redundant-removed-proven
+about: >
+  The curator's agent removes a test another already holds; the engine
+  proves it with no agent, the folder's tests run before and after, all
+  green, no covered line and no killed mutant lost, and the bot opens a
+  pull request, not a Draft, with the numbers before and after and each
+  test's reason (ADR-0055, step 7).
+given:
+  repo: curated
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}", coverage-report: cover.info, curator-mutation-command: "sh mutate.sh {report} {package}"}}}
+  forge:
+    merge-requests: []
+run: {test: [curate], ai: "fake:tester-curate-duplicate"}
+expect:
+  status: pass
+  summary: "1 test removed, 0 added; no covered line, no killed mutant lost"
+  agent-calls: 1
+  forge:
+    merge-requests:
+      - id: 1
+        branch: workline/tester/curate-tests
+        draft: false
+        body-contains: ["| Tests | 3 | 2 |", "| Coverage | 100.0 % of 2 lines | 100.0 % of 2 lines |", "| Mutants killed | 2 of 2 (100.0 %) | 2 of 2 (100.0 %) |", "`tests.test_add_again`", "test_add checks the same add"]

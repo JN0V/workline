@@ -92,6 +92,8 @@ func Pre(runDir, repo string) int {
 		return guardPre(runDir, repo, s)
 	case "objection":
 		return answerPre(runDir, repo, s)
+	case "curate":
+		return curatePre(runDir, repo, s)
 	}
 	if v := unset(s); v != nil { // no proof possible: the agent is not asked
 		return final(runDir, *v)
@@ -256,8 +258,11 @@ func Post(runDir, repo string) int {
 	if err != nil {
 		return fail(err)
 	}
-	if os.Getenv("WORKLINE_EVENT") == "objection" {
+	switch os.Getenv("WORKLINE_EVENT") {
+	case "objection":
 		return answerPost(runDir, repo, s)
+	case "curate":
+		return curatePost(runDir, repo, s)
 	}
 	var t task
 	if data, err := os.ReadFile(filepath.Join(runDir, "in", taskFile)); err != nil {
@@ -389,26 +394,8 @@ func proveOnBase(repo, base string, patches []intent.Intention, s Settings) (*ve
 	if _, err := git(repo, "-c", "core.hooksPath=/dev/null", "worktree", "add", "--detach", "--quiet", tree, base); err != nil {
 		return nil, nil, nil, err
 	}
-	for _, p := range patches {
-		if m, ok := p.Value.(map[string]any); ok {
-			file, _ := m["file"].(string)
-			content, _ := m["content"].(string)
-			full := filepath.Join(tree, filepath.FromSlash(path.Clean(file)))
-			if err := os.MkdirAll(filepath.Dir(full), 0o755); err != nil {
-				return nil, nil, nil, err
-			}
-			if err := os.WriteFile(full, []byte(content), 0o644); err != nil {
-				return nil, nil, nil, err
-			}
-			continue
-		}
-		diff, _ := p.Value.(string)
-		cmd := exec.Command("git", "-C", tree, "apply", "--recount", "--unidiff-zero", "-")
-		cmd.Stdin = strings.NewReader(intent.NormalizeDiff(diff))
-		if out, err := cmd.CombinedOutput(); err != nil {
-			return &verdict.Verdict{Status: verdict.Block, Summary: "a test's patch does not apply",
-				Findings: []verdict.Finding{{Rule: "patch-unreadable", Where: strings.Join(intent.PatchFiles(diff), ", "), Message: strings.TrimSpace(string(out))}}}, nil, nil, nil
-		}
+	if v, err := layPatches(tree, patches); v != nil || err != nil {
+		return v, nil, nil, err
 	}
 	if _, err := git(tree, "add", "-A"); err != nil {
 		return nil, nil, nil, err
@@ -427,6 +414,33 @@ func proveOnBase(repo, base string, patches []intent.Intention, s Settings) (*ve
 	}
 	v, newTests := Prove(tree, base, s)
 	return v, newTests, blobs, nil
+}
+
+// layPatches writes the patches in tree: a whole file, or a diff applied;
+// a diff that does not apply is a blocking verdict.
+func layPatches(tree string, patches []intent.Intention) (*verdict.Verdict, error) {
+	for _, p := range patches {
+		if m, ok := p.Value.(map[string]any); ok {
+			file, _ := m["file"].(string)
+			content, _ := m["content"].(string)
+			full := filepath.Join(tree, filepath.FromSlash(path.Clean(file)))
+			if err := os.MkdirAll(filepath.Dir(full), 0o755); err != nil {
+				return nil, err
+			}
+			if err := os.WriteFile(full, []byte(content), 0o644); err != nil {
+				return nil, err
+			}
+			continue
+		}
+		diff, _ := p.Value.(string)
+		cmd := exec.Command("git", "-C", tree, "apply", "--recount", "--unidiff-zero", "-")
+		cmd.Stdin = strings.NewReader(intent.NormalizeDiff(diff))
+		if out, err := cmd.CombinedOutput(); err != nil {
+			return &verdict.Verdict{Status: verdict.Block, Summary: "a test's patch does not apply",
+				Findings: []verdict.Finding{{Rule: "patch-unreadable", Where: strings.Join(intent.PatchFiles(diff), ", "), Message: strings.TrimSpace(string(out))}}}, nil
+		}
+	}
+	return nil, nil
 }
 
 // draftBody is the Draft's description: the issue it refers to, each

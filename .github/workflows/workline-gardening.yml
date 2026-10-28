@@ -78,8 +78,10 @@ jobs:
 
   # Every night, proposed or not: it also tends the pull requests gardening
   # opened before (ADR-0034, amended).
+  # Also the curator's proven removal, when it proposed one (its job's
+  # run): the write token, no agent's key.
   apply:
-    needs: judge
+    needs: [judge, curator]
     if: always()
     runs-on: ubuntu-latest
     environment: workline-app       # the App's key: the default branch only (ADR-0044)
@@ -100,11 +102,15 @@ jobs:
       - uses: actions/download-artifact@v4
         if: needs.judge.outputs.proposed == 'true'
         with: {name: workline-runs}
+      - uses: actions/download-artifact@v4
+        if: needs.curator.outputs.run != ''
+        with: {name: workline-curate, path: .workline-runs}
       - env:
           GH_TOKEN: ${{ steps.app.outputs.token || github.token }}
           APP: ${{ steps.app.outputs.app-slug }}
           WORKLINE_APP: ${{ steps.app.outputs.app-slug }}   # workline's own account: the records it trusts
           PROPOSED: ${{ needs.judge.outputs.proposed }}
+          CURATED: ${{ needs.curator.outputs.run }}   # the curator's run, when it proposed a removal
         run: |
           if [ -n "$APP" ]; then
             git config user.name "$APP[bot]"
@@ -115,6 +121,13 @@ jobs:
           fi
           status=0
           [ "$PROPOSED" != true ] || workline apply --line line.json --summary workline-summary.md || status=$?
+          if [ -n "$CURATED" ]; then
+            if printf '%s' "$CURATED" | grep -Eqx '[0-9]{8}T[0-9]{6}\.[0-9]{9}-[a-z0-9-]+' && [ -d "$WORKLINE_RUNS_DIR/$CURATED" ]; then
+              workline apply "$CURATED" --summary workline-summary.md || status=$?
+            else
+              echo "::error title=workline::the curator named no run of its own: $CURATED"; status=1
+            fi
+          fi
           # Its pull requests main moved under: rebuilt on it, or closed when
           # nothing is left to merge; one a person committed to is theirs.
           workline follow --gardening --base "$GITHUB_REF_NAME" --forge github --summary workline-summary.md || status=$?
@@ -149,13 +162,19 @@ jobs:
   # The tester's curator, its measures, no agent (ADR-0055, step 6): the
   # whole suite, twice, on Sunday's run only, the history passed from one
   # run to the next as the artifact workline-curator. Opt-in: the
-  # repository variable WORKLINE_CURATOR set to on.
+  # repository variable WORKLINE_CURATOR set to on. Then, with Claude, a
+  # few redundant tests of one folder removed, proven with no agent, and
+  # apply opens the pull request (step 7).
   curator:
     if: vars.WORKLINE_CURATOR == 'on' && github.event.schedule != '17 2 * * *'
     runs-on: ubuntu-latest
-    timeout-minutes: 60
-    # actions: the last run's artifact, the history.
-    permissions: {contents: read, actions: read}
+    timeout-minutes: 90
+    # actions: the last run's artifact, the history; pull-requests: the
+    # tester's open Drafts, whose tests are never removed.
+    permissions: {contents: read, actions: read, pull-requests: read}
+    env: {HAS_CLAUDE: "${{ secrets.CLAUDE_CODE_OAUTH_TOKEN != '' }}"}
+    outputs:
+      run: ${{ steps.curate.outputs.run }}
     steps:
       - uses: actions/checkout@v4
         with: {fetch-depth: 0}
@@ -174,6 +193,26 @@ jobs:
           workline test measure --history curator-history.json --summary workline-summary.md || status=$?
           [ ! -s workline-summary.md ] || cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"
           exit "$status"
+      - name: Claude, when the repository gives its token
+        if: env.HAS_CLAUDE == 'true'
+        run: npm install -g @anthropic-ai/claude-code
+      - name: A few redundant tests removed, proven (proposed only)
+        id: curate
+        if: env.HAS_CLAUDE == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          WORKLINE_APP_ID: ${{ vars.WORKLINE_APP_ID }}   # the App whose comments keep the tester's records (ADR-0051)
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        run: |
+          status=0
+          workline test curate --history curator-history.json --ai claude --no-apply --forge github --json > curate.json || status=$?
+          echo "run=$(jq -r '(.pending // [])[0] // empty | split("/") | last' curate.json)" >> "$GITHUB_OUTPUT"
+          jq -r '"**The curator**: " + (.summary // "")' curate.json >> "$GITHUB_STEP_SUMMARY"
+          if [ "$status" = 3 ]; then echo "::warning title=workline::the agent could not be reached; the next week weighs again"; exit 0; fi
+          exit "$status"
+      - uses: actions/upload-artifact@v4
+        if: steps.curate.outputs.run != ''
+        with: {name: workline-curate, path: ".workline-runs", include-hidden-files: true, retention-days: 1}
       - uses: actions/upload-artifact@v4
         if: always()
         with: {name: workline-curator, path: curator-history.json, if-no-files-found: ignore, retention-days: 90}

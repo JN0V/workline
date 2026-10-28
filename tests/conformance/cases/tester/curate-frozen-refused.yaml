@@ -1,0 +1,24 @@
+case: tester/curate-frozen-refused
+about: >
+  A test file the frozen guard records on the tester's open Draft is never
+  removed while the Draft is open: refused before any proof runs.
+given:
+  repo: curated
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}", coverage-report: cover.info, curator-mutation-command: "sh mutate.sh {report} {package}"}}}
+  forge:
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        draft: true
+        comments: ["The tests of #3, frozen.\n\n<!-- workline:tester-record {\"issue\":3,\"base\":\"main\",\"files\":{\"tests/test_add_again.sh\":\"8f123a0bacbd681063880b867df38dd216784b97\"}} -->\n<!-- workline:sticky=tester/tests -->"]
+run: {test: [curate], ai: "fake:tester-curate-duplicate"}
+expect:
+  status: block
+  agent-calls: 1
+  findings: [{rule: test-frozen, where: tests/test_add_again.sh}]
+  forge:
+    merge-requests:
+      - {id: 2, absent: true}

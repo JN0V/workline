@@ -65,6 +65,13 @@ roles:
       test-command: go run gotest.tools/gotestsum@v1.12.3 --junitfile {report} -- ./...
       curator-command: go run gotest.tools/gotestsum@v1.12.3 --junitfile {report} -- -coverprofile=cover.out ./...
       coverage-report: cover.out
+      # Its removals (`workline test curate`): the unit tests only, the
+      # conformance cases running a built engine the profile does not
+      # see; a folder's tests and its mutants, Gremlins pinned.
+      curator-paths: ["internal/**/*_test.go", "cmd/**/*_test.go"]
+      curator-keep: [tests/conformance/pending.txt]
+      curator-proof-command: go run gotest.tools/gotestsum@v1.12.3 --junitfile {report} -- -coverprofile=cover.out {packages}
+      curator-mutation-command: go run github.com/go-gremlins/gremlins/cmd/gremlins@v0.6.0 unleash -s -o {report} {package}
   reviewer:
     settings:
       # The role's list, plus the judge's replay set: questions and answers

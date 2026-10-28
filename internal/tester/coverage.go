@@ -62,16 +62,42 @@ func coverageLines(tree, report string) []string {
 }
 
 // readCoverage reads Go's profile or LCOV, by package: the folder of each
-// file. A Go block counted in more than one package's run is covered when
-// one of them covers it.
+// file.
 func readCoverage(sc *bufio.Scanner) (map[string]cover, string, error) {
-	sc.Buffer(make([]byte, 1<<20), 1<<20)
+	blocks, unit, err := coveredBlocks(sc)
+	if err != nil {
+		return nil, "", err
+	}
 	pkgs := map[string]cover{}
+	for key, b := range blocks {
+		p := path.Dir(key[:strings.LastIndexByte(key, ':')])
+		c := pkgs[p]
+		c.all += b.stmts
+		if b.hit {
+			c.hit += b.stmts
+		}
+		pkgs[p] = c
+	}
+	return pkgs, unit, nil
+}
+
+// block is a Go profile's block (file:range) or an LCOV line (file:line):
+// its statements, and whether a test ran it.
+type block struct {
+	stmts int
+	hit   bool
+}
+
+// coveredBlocks reads Go's profile or LCOV, block by block. A Go block
+// counted in more than one package's run is covered when one of them
+// covers it.
+func coveredBlocks(sc *bufio.Scanner) (map[string]block, string, error) {
+	sc.Buffer(make([]byte, 1<<20), 1<<20)
+	blocks := map[string]block{}
 	if !sc.Scan() {
 		return nil, "", sc.Err()
 	}
 	if strings.HasPrefix(sc.Text(), "mode:") {
-		blocks := map[string][2]int{} // file:range -> statements, hit
 		for sc.Scan() {
 			l := sc.Text()
 			i := strings.LastIndexByte(l, ':')
@@ -86,41 +112,29 @@ func readCoverage(sc *bufio.Scanner) (map[string]cover, string, error) {
 			count, _ := strconv.Atoi(fields[2])
 			key := l[:i] + ":" + fields[0]
 			b := blocks[key]
-			b[0] = stmts
-			if count > 0 {
-				b[1] = 1
-			}
+			b.stmts = stmts
+			b.hit = b.hit || count > 0
 			blocks[key] = b
 		}
-		for key, b := range blocks {
-			file := key[:strings.LastIndexByte(key, ':')]
-			c := pkgs[path.Dir(file)]
-			c.all += b[0]
-			c.hit += b[0] * b[1]
-			pkgs[path.Dir(file)] = c
-		}
-		return pkgs, "statements", sc.Err()
+		return blocks, "statements", sc.Err()
 	}
-	pkg := ""
+	file := ""
 	for ok := true; ok; ok = sc.Scan() {
 		l := sc.Text()
 		switch {
 		case strings.HasPrefix(l, "SF:"):
-			pkg = path.Dir(filepath.ToSlash(strings.TrimPrefix(l, "SF:")))
-		case strings.HasPrefix(l, "DA:") && pkg != "":
+			file = filepath.ToSlash(strings.TrimPrefix(l, "SF:"))
+		case strings.HasPrefix(l, "DA:") && file != "":
 			parts := strings.Split(strings.TrimPrefix(l, "DA:"), ",")
 			if len(parts) < 2 {
 				continue
 			}
-			c := pkgs[pkg]
-			c.all++
-			if n, _ := strconv.Atoi(parts[1]); n > 0 {
-				c.hit++
-			}
-			pkgs[pkg] = c
+			key := file + ":" + parts[0]
+			n, _ := strconv.Atoi(parts[1])
+			blocks[key] = block{stmts: 1, hit: blocks[key].hit || n > 0}
 		}
 	}
-	return pkgs, "lines", sc.Err()
+	return blocks, "lines", sc.Err()
 }
 
 // mutators is, per ecosystem, the file that tells it, its mutation tools,

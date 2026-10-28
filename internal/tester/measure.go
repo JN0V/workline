@@ -33,6 +33,9 @@ type History struct {
 	Count    int              `json:"count"`
 	Measures []MeasureTotal   `json:"measures"`
 	Tests    map[string]*Kept `json:"tests"`
+	// Curated is, for each folder the curator weighed (step 7), the
+	// measure it was weighed after: another waits curator-window measures.
+	Curated map[string]int `json:"curated,omitempty"`
 }
 
 // MeasureTotal is one measure's totals, for the trend.
@@ -73,6 +76,7 @@ type Measured struct {
 type timed struct {
 	res     result
 	seconds float64
+	name    string // the report's name, its suite left out
 }
 
 // Measure runs the curator's measures on HEAD. history, when not empty,
@@ -299,9 +303,9 @@ func readTimes(file string, out map[string]timed) (float64, error) {
 			sec, _ := strconv.ParseFloat(c.Time, 64)
 			cases += sec
 			if prev, ok := out[id]; !ok || r > prev.res {
-				out[id] = timed{r, prev.seconds + sec}
+				out[id] = timed{r, prev.seconds + sec, c.Name}
 			} else {
-				out[id] = timed{prev.res, prev.seconds + sec}
+				out[id] = timed{prev.res, prev.seconds + sec, c.Name}
 			}
 		}
 		if len(s.Cases) > 0 {

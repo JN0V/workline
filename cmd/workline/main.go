@@ -1087,22 +1087,23 @@ func gateCmd(args []string) int {
 
 // testCmd runs the tester's checks that need no agent (ADR-0055): check,
 // the red-first proof on the change since --base; measure, the curator's
-// measures of the corpus on HEAD.
+// measures of the corpus on HEAD; and the runs with an agent: write,
+// answer, curate (step 7: a few redundant tests removed, proven).
 func testCmd(args []string) int {
 	fs := newFlags("test")
 	repo := fs.String("repo", ".", "repository to check")
 	base := fs.String("base", "", "check: the revision the change is proven red on: its merge base with HEAD, as on a merge request")
 	issue := fs.Int("issue", 0, "write: the ready issue whose scenarios the tests check")
 	mr := fs.Int("merge-request", 0, "answer: the tester's Draft whose objections it answers, the first waiting")
-	ai := fs.String("ai", "", "write: agent: none, claude, cmd:<command> (default: the project's `ai` setting, else none)")
-	forgeSpec := fs.String("forge", "", "write: forge: github, gitlab, local, fake:<file> (default: the project's `forge` setting)")
+	ai := fs.String("ai", "", "write, answer, curate: agent: none, claude, cmd:<command> (default: the project's `ai` setting, else none)")
+	forgeSpec := fs.String("forge", "", "write, answer, curate: forge: github, gitlab, local, fake:<file> (default: the project's `forge` setting)")
 	roles := fs.String("roles", os.Getenv("WORKLINE_ROLES"), "folder holding the roles")
 	asJSON := fs.Bool("json", false, "print the result as JSON")
-	noApply := fs.Bool("no-apply", false, "write, answer: judge, apply nothing; a job apart applies it with `workline apply <run>`, holding the write token and no agent's key")
-	history := fs.String("history", "", "measure: the curator's history file, read before and written after; CI passes it from one run to the next as an artifact (missing: the first measure)")
+	noApply := fs.Bool("no-apply", false, "write, answer, curate: judge, apply nothing; a job apart applies it with `workline apply <run>`, holding the write token and no agent's key")
+	history := fs.String("history", "", "measure, curate: the curator's history file, read before and written after (curate: the folder it weighed); CI passes it from one run to the next as an artifact (missing: the first measure)")
 	var summaryFiles multi
 	fs.Var(&summaryFiles, "summary", "measure: also add the measures to this file, for a CI job's page (repeatable; a file named .html gets HTML)")
-	sub, code, done := parseAfter(fs, args, "check, measure, write or answer")
+	sub, code, done := parseAfter(fs, args, "check, measure, curate, write or answer")
 	if done {
 		return code
 	}
@@ -1111,20 +1112,27 @@ func testCmd(args []string) int {
 		if *issue <= 0 {
 			return misuse(fs, "write needs --issue <n>, the ready issue to write the tests of")
 		}
-		return testRun(*repo, *roles, *ai, *forgeSpec, "issue", forge.Target{Kind: "issue", ID: *issue}, *noApply, *asJSON)
+		return testRun(*repo, *roles, *ai, *forgeSpec, "issue", &forge.Target{Kind: "issue", ID: *issue}, *noApply, *asJSON)
 	case sub == "answer":
 		if *mr <= 0 {
 			return misuse(fs, "answer needs --merge-request <n>, the tester's Draft whose objections it answers")
 		}
-		return testRun(*repo, *roles, *ai, *forgeSpec, "objection", forge.Target{Kind: "merge-request", ID: *mr}, *noApply, *asJSON)
+		return testRun(*repo, *roles, *ai, *forgeSpec, "objection", &forge.Target{Kind: "merge-request", ID: *mr}, *noApply, *asJSON)
+	case sub == "curate":
+		// The measures it weighs, and where it keeps the folder it weighed.
+		if *history != "" {
+			h, _ := filepath.Abs(*history)
+			_ = os.Setenv(tester.HistoryEnv, h)
+		}
+		return testRun(*repo, *roles, *ai, *forgeSpec, "curate", nil, *noApply, *asJSON)
 	case sub == "measure":
 		if *noApply {
-			return misuse(fs, "measure applies nothing: --no-apply goes with write or answer")
+			return misuse(fs, "measure applies nothing: --no-apply goes with write, answer or curate")
 		}
 	case sub != "check":
-		return misuse(fs, fmt.Sprintf("unknown command %q: check, measure, write or answer", sub))
+		return misuse(fs, fmt.Sprintf("unknown command %q: check, measure, curate, write or answer", sub))
 	case *noApply:
-		return misuse(fs, "check proves and applies nothing: --no-apply goes with write or answer")
+		return misuse(fs, "check proves and applies nothing: --no-apply goes with write, answer or curate")
 	case strings.TrimSpace(*base) == "":
 		// An unset variable in a CI job: never read as no base at all.
 		return misuse(fs, "--base names no revision (an unset variable?): give the base the change is proven red on")
@@ -1185,8 +1193,10 @@ func testCmd(args []string) int {
 // (step 2): the agent writes a test a scenario, post proves them red on
 // the base, and the engine commits them on workline/tester/issue-<n>,
 // opened as a Draft. On its Draft, answer (step 3): the first objection
-// waiting, kept or rewritten, its own commit pushed on the branch.
-func testRun(repo, roles, ai, forgeSpec, event string, target forge.Target, noApply, asJSON bool) int {
+// waiting, kept or rewritten, its own commit pushed on the branch. With no
+// target, curate (step 7): a folder's redundant tests removed, proven with
+// no agent, on workline/tester/curate-<folder>.
+func testRun(repo, roles, ai, forgeSpec, event string, target *forge.Target, noApply, asJSON bool) int {
 	abs, _ := filepath.Abs(repo)
 	rolesDir, err := resolveRoles(roles)
 	if err != nil {
@@ -1195,7 +1205,7 @@ func testRun(repo, roles, ai, forgeSpec, event string, target forge.Target, noAp
 	}
 	absRoles, _ := filepath.Abs(rolesDir)
 	res := engine.Run(engine.Options{Repo: abs, RolesDir: absRoles, Role: "tester", Event: event, AI: ai,
-		Forge: forgeSpec, Target: &target, NoApply: noApply, OpenMergeRequest: event == "issue"})
+		Forge: forgeSpec, Target: target, NoApply: noApply, OpenMergeRequest: event == "issue" || event == "curate"})
 	if asJSON {
 		out, _ := json.MarshalIndent(res, "", "  ")
 		fmt.Println(string(out))
