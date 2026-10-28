@@ -2,7 +2,9 @@ case: tester/objection-kept
 about: >
   The builder objects to a test on its line; a fresh tester run reads the
   scenario first and keeps the test, its reason a reply in the thread
-  (ADR-0055). Nothing is pushed.
+  (ADR-0055), with a hidden line for the auditor's weekly sample: the
+  commit the test was read at, the model asked, the scenario read
+  (ADR-0046). Nothing is pushed.
 given:
   repo: tested-draft
   setup:
@@ -33,4 +35,4 @@ expect:
     merge-requests:
       - id: 1
         threads:
-          - {path: tests/test_mul_two_by_three.sh, replies: 1, replies-contain: ["**Kept**", "nothing of how mul prints it", "workline:tester-answer"]}
+          - {path: tests/test_mul_two_by_three.sh, replies: 1, replies-contain: ["**Kept**", "nothing of how mul prints it", "workline:tester-answer", '<!-- workline:tester-act {"act":"kept","at":"', '"model":"fake:tester-answer-kept","scenario":{"name":"Two by three","text":"Given the library, When I multiply 2 by 3, Then I get 6."},"test":"tests/test_mul_two_by_three.sh"} -->']}

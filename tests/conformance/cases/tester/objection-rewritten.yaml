@@ -3,7 +3,8 @@ about: >
   The tester rewrites its test on an objection: its own commit on its
   branch, on top, referring to the thread; the rewrite still names its
   scenario and is red on the base; the record moves to it, and the reply
-  says why.
+  says why, its hidden line naming the rewrite's blob for the auditor's
+  weekly sample (ADR-0046).
 given:
   repo: tested-draft
   setup:
@@ -39,4 +40,4 @@ expect:
         comment-lacks: ["2dee0641bd7a79057ade7bff5af43b603125f543"]
         comment-contains: ["workline:tester-record", "8f123a0bacbd681063880b867df38dd216784b97"]
         threads:
-          - {path: tests/test_mul_two_by_three.sh, replies: 1, replies-contain: ["**Rewritten**", "reads the number"]}
+          - {path: tests/test_mul_two_by_three.sh, replies: 1, replies-contain: ["**Rewritten**", "reads the number", '"act":"rewritten"', '"model":"fake:tester-answer-rewritten"', '"blob":"35b8d1cabaf8f601ef8e22062fd337164b068579"']}

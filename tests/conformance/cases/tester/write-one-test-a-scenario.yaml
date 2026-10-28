@@ -4,7 +4,9 @@ about: >
   test each, named after it (ADR-0055, step 2). The engine proves them
   red on the base, then commits them on the work branch and opens it as
   a Draft that refers to the issue and lists each scenario with its test;
-  workline's own comment on it records each test file's blob, frozen.
+  workline's own comment on it records each test file's blob, frozen,
+  and the scenarios as the run read them; the commit names the role and
+  the model, for the auditor's weekly sample (ADR-0046).
 given:
   repo: tested
   setup:
@@ -26,6 +28,8 @@ expect:
     workline/tester/issue-3:
       tests/test_mul_two_by_three.sh: "Scenario: Two by three"
       tests/test_mul_by_zero.sh: "Scenario: By zero"
+  pushed-message:
+    workline/tester/issue-3: "Workline-Role: tester\nWorkline-Model: fake:tester-two-scenarios"
   forge:
     merge-requests:
       - id: 1
@@ -33,4 +37,4 @@ expect:
         draft: true
         body-contains: ["Refs #3", "## Tests", "Two by three", "tests.test_mul_two_by_three", "By zero", "tests.test_mul_by_zero"]
         body-lacks: ["Closes #3"]
-        comment-contains: ["workline:tester-record", "2dee0641bd7a79057ade7bff5af43b603125f543", "8f123a0bacbd681063880b867df38dd216784b97"]
+        comment-contains: ["workline:tester-record", "2dee0641bd7a79057ade7bff5af43b603125f543", "8f123a0bacbd681063880b867df38dd216784b97", '"scenarios":[{"name":"Two by three","text":"Given the library, When I multiply 2 by 3, Then I get 6."}']

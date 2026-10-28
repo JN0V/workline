@@ -34,8 +34,9 @@ flowchart LR
     a missing name. A test whose package did not build is named
     `file:name` ([how](missing-name.md)).
 - **The record**: workline's own comment on the Draft, marked
-  `workline:tester-record`. It holds the issue, the base, and each test
-  file with its git blob. Only the tester's runs write it.
+  `workline:tester-record`. It holds the issue, the base, each test
+  file with its git blob, and the scenarios as read. Only the tester's
+  runs write it.
 
 ## What the builder does
 

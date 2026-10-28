@@ -37,6 +37,9 @@ type record struct {
 	Issue int               `json:"issue"`
 	Base  string            `json:"base"`
 	Files map[string]string `json:"files"`
+	// Scenarios: the issue's, as the run that wrote the tests read them,
+	// for the auditor (ADR-0046); none in a record written before.
+	Scenarios []Scenario `json:"scenarios,omitempty"`
 }
 
 var recordData = regexp.MustCompile(`<!-- workline:tester-record (\{.*\}) -->`)
