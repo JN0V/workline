@@ -532,18 +532,22 @@ func actsOfTheWindow(o Options, res *Result, h *heads, commits []string, first, 
 			res.Autonomy = au
 		}
 		if _, ok := o.Forge.(forge.Merged); !ok {
-			notDrawn("the reviewer's findings, and the commits of a merge request squashed: this forge does not list the merge requests merged")
-		} else if rv, unread, err := reviewerActs(o.Repo, o.Forge, b, h.merged); err != nil {
+			notDrawn("the reviewer's findings, the tester's acts, and the commits of a merge request squashed: this forge does not list the merge requests merged")
+			break
+		}
+		// Each role's acts are read apart: one that fails is said for that
+		// role and hides no other's.
+		if rv, unread, err := reviewerActs(o.Repo, o.Forge, b, h.merged); err != nil {
 			unreachable("the reviewer's findings", err)
 		} else {
 			acts = append(acts, rv...)
 			res.NotDrawn = append(res.NotDrawn, unread...)
-			if ts, unread, err := testerActs(o.Repo, o.Forge, h.merged); err != nil {
-				unreachable("the tester's acts", err)
-			} else {
-				acts = append(acts, ts...)
-				res.NotDrawn = append(res.NotDrawn, unread...)
-			}
+		}
+		if ts, unread, err := testerActs(o.Repo, o.Forge, h.merged); err != nil {
+			unreachable("the tester's acts", err)
+		} else {
+			acts = append(acts, ts...)
+			res.NotDrawn = append(res.NotDrawn, unread...)
 		}
 	}
 	res.NotDrawn = append(res.NotDrawn, h.unread...)
