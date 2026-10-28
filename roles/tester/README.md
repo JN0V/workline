@@ -48,7 +48,7 @@ file. All roles: [docs/roles.md](../../docs/roles.md). Where it stands:
   removed; proven with no agent, coverage and killed mutants kept, a
   pull request the merge policy merges ([how](docs/removals.md)).
 
-**Does not**, yet: the five whys skill ([status](docs/status.md#missing)).
+**Does not**, yet: adapt a test after a change, once the developer is built ([status](docs/status.md#missing)).
 
 ## Write an issue's tests
 
@@ -112,7 +112,10 @@ workline test write --issue 42 --ai claude
 - **The need itself** goes to the product owner, with no agent: the
   issue back to `workline:to-refine`, said there and in the thread.
 - **Bounded**: three answers a thread (`objection-exchanges`). The
-  third says the five whys are due. After it, a person decides
+  third first runs the [five whys](../../skills/five-whys/SKILL.md) on
+  the thread and posts them with its answer: the chain, the root cause,
+  one action. Missing or malformed, the answer is refused and asked
+  again. After it, a person decides
   (`objection-person`: a label on the merge request, or an `@login`).
   The tester then follows the next comment of a person of the project;
   meanwhile the other objections are answered.

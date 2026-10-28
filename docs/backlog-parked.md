@@ -12,9 +12,6 @@ sources: []
   the one fix just made. Before adding a test, look for one covering the same
   behaviour and extend it; periodically merge redundant tests, using coverage
   overlap and mutation score. A tester or test-curator role.
-- **Five whys as a shared skill.** Root cause before any countermeasure in the
-  defect ledger; used by reviewer, developer, tester, architect; triggered when
-  a defect is recorded or a role blocks repeatedly.
 - **Context and memory management.** Long agent sessions fill their context and
   degrade (compaction, context rot). Make My Dreams addressed it; decide whether
   the framework handles it, e.g. what a role writes down for the next run

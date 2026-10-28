@@ -93,8 +93,10 @@ hold:
 - **The tester's acts** (2026-10-28): its tests, from its commit and
   the record on its Draft, which now keeps the scenarios read; an
   objection answered kept or rewritten, from its reply's hidden line; a
-  curator's removal, from its commit and pull request; each with its own
-  question (`kinds/tests.md`, `kept.md`, `rewritten.md`, `removal.md`)
+  curator's removal, from its commit and pull request; the five whys a
+  third answer gave, drawn apart (step 8 of the tester); each with its
+  own question (`kinds/tests.md`, `kept.md`, `rewritten.md`, `whys.md`,
+  `removal.md`)
   ([ADR-0046](../../../docs/adr/0046-the-auditor-re-checks-every-roles-acts.md#amendment-2026-10-28-the-testers-row)): auditor's
   `sample-draws-the-testers-acts`, `verdict-reads-the-testers-acts`.
   Tried with stub tester runs and a real judge, on

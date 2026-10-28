@@ -73,7 +73,8 @@ Cases in `tests/conformance/cases/tester/`:
 - **Objections** (`workline test answer --merge-request <n>`): kept
   with the reason; rewritten on the branch, `Refs` the thread, still red
   on the base, else refused; the need itself back to the product owner;
-  a form it cannot read said; the five whys due at the third answer;
+  a form it cannot read said; the third answer gives the five whys,
+  the shared skill, checked and posted with it (step 8);
   past it, a person decides, and the tester follows them.
 - **Its moment** (step 4): on `schedule`, one ready issue a run, the
   first in the backlog's order with named scenarios and no open Draft;
@@ -133,7 +134,8 @@ Cases in `tests/conformance/cases/tester/`:
 - **A test's flakiness over time on pull requests**: each push to the
   ready pull request runs the three again; their runs are not fed to the
   curator's history, which reads the weekly measure only.
-- **Step 8**: the five whys skill.
+- **Job 3**, a test adapted after a change, with the reason, once the
+  developer is built.
 - **The curator's removals**: a tester's test merged while its issue is
   still open is not told apart (only open Drafts' records are read); a
   mutation report other than Gremlins' or the schema's is not read.
