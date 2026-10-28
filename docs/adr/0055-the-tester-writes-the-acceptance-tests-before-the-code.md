@@ -242,7 +242,32 @@ Each step: conformance cases first; a try told under `## Tried` ([ADR-0043]).
   branch is the data. The builder claims the issue by assignment
   ([ADR-0054]); the tester assigns nobody.
 - **Not in workline's own line yet**: in Go, a test of a name the code
-  lacks gets no Draft (step 2's limit), and most of its issues add one.
+  lacks got no Draft (step 2's limit), and most of its issues add one;
+  lifted by the amendment below.
+
+## Amendment 2026-10-28: a missing name, told from a broken build
+
+- **The gap**: in a compiled language, a test calling a name the base
+  lacks breaks its package's build. The report then holds only the
+  runner's record of it (gotestsum's `TestMain`), no new test:
+  `test write` opened no Draft, though step 1 meant such a test red.
+- **Borrowed**: "it does not compile" is TDD's first red. The compiler
+  says which name is missing, in a shape each ecosystem fixes: Go's
+  `file:line:col: undefined: X` (as `go vet` prints it, and gotestsum
+  under `=== Errors`), tsc's `TS2304`, C#'s `CS0103`, rustc's `E0425`,
+  javac's `cannot find symbol`.
+- **The rule**: a build that broke on the base with the change's tests
+  is red for the right reason only when every error line of the test
+  command's output lies in a test file the change adds or changes, and
+  names what the base lacks. Any other error blocks (`build-broken`).
+- **The names**: with the tests alone, read from the test files
+  (`file:name`); beside code, from the head's report, which must build
+  and run them green.
+- **Per ecosystem, by setting**: `build-errors`, each an error-line
+  pattern, the missing-name messages and the test-name pattern; Go's is
+  the default. One-line shapes (tsc, C#) are a setting away; rustc's and
+  javac's span several lines, not read yet
+  ([the page](../../roles/tester/docs/missing-name.md)).
 
 ## Consequences
 

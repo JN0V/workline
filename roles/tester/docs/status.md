@@ -44,6 +44,11 @@ Cases in `tests/conformance/cases/tester/`:
 - **A build record told from a test**: with the tests alone, a red id
   in a suite that lost its base tests is the runner's record only when
   it is the suite's one case, with no classname or named `TestMain`.
+- **A missing name told from a broken build**: a build that broke on
+  the base is red only when each compiler error lies in the change's
+  tests and names what the base lacks; any other blocks
+  (`build-broken`). Go's errors by default (`build-errors`,
+  [the page](missing-name.md)).
 - **Tests from the criteria** (`workline test write --issue <n>`): one
   test a scenario, named after it; a ready issue only, with named
   scenarios; new test files only; a scenario said untestable in a note;
@@ -77,9 +82,11 @@ Cases in `tests/conformance/cases/tester/`:
   the agent again with the reason; the run blocks.
 - **Adding to a test file already there**: refused for now; new files
   only.
-- **Not in workline's own line yet**: a Go issue that adds a name gets
-  no Draft (below), and most of workline's do; the objection workflows
-  are shipped here, inert until a Draft opens.
+- **Not in workline's own line yet**: a Go issue that adds a name now
+  gets its Draft. Routing it on workline's schedule still needs its
+  `test-command` set, gotestsum in the gardening's judge job, and a
+  choice for the conformance cases many issues ask for, which run only
+  in `./tests/conformance`; the objection workflows wait for a Draft.
 - **A Draft a person closed** is not remembered as refused: a later
   scheduled run may take its issue again.
 - **Objections on a forge command** (`cmd:`): it lists no thread, and
@@ -88,10 +95,8 @@ Cases in `tests/conformance/cases/tester/`:
   request; step 1 runs the head once.
 - **Steps 6 to 8**: the curator's measures, redundancy with its proof,
   the five whys skill.
-- **A missing name told from a broken build**: in Go, a missing name
-  breaks the whole package's build; the check counts it red and warns
-  (`tests-not-built`), but `test write` then finds no test named in the
-  report and blocks (`no-new-test`): a Go issue that adds a name gets no
-  Draft yet.
+- **A missing name in Rust or Java**: their compilers' errors span
+  several lines, which `build-errors` does not read
+  ([the page](missing-name.md#other-languages)).
 - **Not in the line, nor in the CI templates**: a project runs the
   command in its own job.

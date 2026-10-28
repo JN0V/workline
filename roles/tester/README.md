@@ -4,7 +4,7 @@ sources:
   - internal/tester
   - ci/github/workline-objection.yml
   - ci/github/workline-answer.yml
-checked: c8bb8b8c
+checked: b075cadb
 verified: agent:claude-code
 ---
 # Tester
@@ -161,15 +161,17 @@ workline test check --base origin/main
 | `report-missing` | yes | a run wrote no report where `test-report` says, or not JUnit XML |
 | `tests-not-built` | no, warns | tests the base ran are not in the report of the base with the change's tests: their build broke there |
 | `no-new-test` | no, warns | the change touches test files, but no new test is in the report |
+| `build-broken` | yes | the build broke on the base with the change's tests, by more than a name the base lacks |
+| `setting-invalid` | yes | a `build-errors` pattern does not compile |
 
 - **A change with no new test** passes, and says so.
 - **The change's tests alone** (no code yet, the tester's own change):
   only red on the base is asked; green is the code's job. When they
   break the build, the runner's record of it (gotestsum's `TestMain`)
   is not a new test: `tests-not-built` says so.
-- **A missing name is red**: a new test that calls code the base lacks
-  does not build there, which counts as red. In Go it breaks the
-  package's build, said by `tests-not-built`.
+- **A missing name is red**: a test calling code the base lacks does
+  not build there. Red only when each compiler error is such a name, in
+  the change's tests ([how](docs/missing-name.md)).
 
 ## Settings
 
@@ -181,6 +183,7 @@ Under `roles: {tester: {settings: …}}` in `.workline/config.yaml`
 | `test-command` | none | runs the project's tests and writes a JUnit XML report; `{report}` is its path |
 | `test-report` | `junit.xml` | where the report is written, from the root: a path, or a pattern one folder deep |
 | `test-paths` | each ecosystem's names | the test files, as patterns: `**/*_test.go`, `**/test_*.py`, `**/*.test.ts`, `tests/**` and others; the only files `test write` may add |
+| `build-errors` | Go's | how a build broken by a missing name reads, by ecosystem ([page](docs/missing-name.md)) |
 | `code-lines-max` | 1500 | lines of the Scope's code and tests given to the agent, all files together |
 | `ai-max-tokens`, `ai-max-seconds` | 300000, 1200 | what one `test write` or `test answer` run may spend, and wait on its agent |
 | `objection-exchanges` | 3 | the tester's answers in an objection's thread before a person decides |
