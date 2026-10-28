@@ -1,0 +1,42 @@
+case: tester/objection-answered-then-applied
+about: >
+  The tester rewrites its test on an objection: its own commit on its
+  branch, on top, referring to the thread; the rewrite still names its
+  scenario and is red on the base; the record moves to it, and the reply
+  says why.
+given:
+  repo: tested-draft
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main workline/tester/issue-3"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:ready"]
+        body: "## Need\n\nWhen I total an order, I want to multiply a price by a count, so I need not add it up by hand.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **By zero:** Given the library, When I multiply 5 by 0, Then I get 0.\n\n---\n\n## Verification\n\nA test a scenario, in tests/.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        draft: true
+        comments: ["The tests of #3, frozen.\n\n<!-- workline:tester-record {\"issue\":3,\"base\":\"main\",\"files\":{\"tests/test_mul_by_zero.sh\":\"8f123a0bacbd681063880b867df38dd216784b97\",\"tests/test_mul_two_by_three.sh\":\"2dee0641bd7a79057ade7bff5af43b603125f543\"}} -->\n<!-- workline:sticky=tester/tests -->"]
+        threads:
+          - {id: "7", path: tests/test_mul_two_by_three.sh, line: 4, author: builder, body: "workline:objection\n- test: tests/test_mul_two_by_three.sh\n- scenario: Two by three\n- kind: over-specified\n- why: mul may print spaces around the number"}
+run: {test: [answer, --merge-request, "1", --no-apply], ai: "fake:tester-answer-rewritten", then: resume}
+expect:
+
+  status: pass
+  agent-calls: 1
+  pushed:
+    workline/tester/issue-3:
+      tests/test_mul_two_by_three.sh: "tr -d"
+  pushed-message:
+    workline/tester/issue-3: "Refs https://forge.example/merge-requests/1#thread-7"
+  forge:
+    merge-requests:
+      - id: 1
+        comment-lacks: ["2dee0641bd7a79057ade7bff5af43b603125f543"]
+        comment-contains: ["workline:tester-record", "8f123a0bacbd681063880b867df38dd216784b97"]
+        threads:
+          - {path: tests/test_mul_two_by_three.sh, replies: 1, replies-contain: ["**Rewritten**", "reads the number"]}

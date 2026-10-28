@@ -1097,6 +1097,7 @@ func testCmd(args []string) int {
 	forgeSpec := fs.String("forge", "", "write: forge: github, gitlab, local, fake:<file> (default: the project's `forge` setting)")
 	roles := fs.String("roles", os.Getenv("WORKLINE_ROLES"), "folder holding the roles")
 	asJSON := fs.Bool("json", false, "print the result as JSON")
+	noApply := fs.Bool("no-apply", false, "write, answer: judge, apply nothing; a job apart applies it with `workline apply <run>`, holding the write token and no agent's key")
 	sub, code, done := parseAfter(fs, args, "check, write or answer")
 	if done {
 		return code
@@ -1106,14 +1107,16 @@ func testCmd(args []string) int {
 		if *issue <= 0 {
 			return misuse(fs, "write needs --issue <n>, the ready issue to write the tests of")
 		}
-		return testRun(*repo, *roles, *ai, *forgeSpec, "issue", forge.Target{Kind: "issue", ID: *issue}, *asJSON)
+		return testRun(*repo, *roles, *ai, *forgeSpec, "issue", forge.Target{Kind: "issue", ID: *issue}, *noApply, *asJSON)
 	case sub == "answer":
 		if *mr <= 0 {
 			return misuse(fs, "answer needs --merge-request <n>, the tester's Draft whose objections it answers")
 		}
-		return testRun(*repo, *roles, *ai, *forgeSpec, "objection", forge.Target{Kind: "merge-request", ID: *mr}, *asJSON)
+		return testRun(*repo, *roles, *ai, *forgeSpec, "objection", forge.Target{Kind: "merge-request", ID: *mr}, *noApply, *asJSON)
 	case sub != "check":
 		return misuse(fs, fmt.Sprintf("unknown command %q: check, write or answer", sub))
+	case *noApply:
+		return misuse(fs, "check proves and applies nothing: --no-apply goes with write or answer")
 	case strings.TrimSpace(*base) == "":
 		// An unset variable in a CI job: never read as no base at all.
 		return misuse(fs, "--base names no revision (an unset variable?): give the base the change is proven red on")
@@ -1155,7 +1158,7 @@ func testCmd(args []string) int {
 // the base, and the engine commits them on workline/tester/issue-<n>,
 // opened as a Draft. On its Draft, answer (step 3): the first objection
 // waiting, kept or rewritten, its own commit pushed on the branch.
-func testRun(repo, roles, ai, forgeSpec, event string, target forge.Target, asJSON bool) int {
+func testRun(repo, roles, ai, forgeSpec, event string, target forge.Target, noApply, asJSON bool) int {
 	abs, _ := filepath.Abs(repo)
 	rolesDir, err := resolveRoles(roles)
 	if err != nil {
@@ -1164,7 +1167,7 @@ func testRun(repo, roles, ai, forgeSpec, event string, target forge.Target, asJS
 	}
 	absRoles, _ := filepath.Abs(rolesDir)
 	res := engine.Run(engine.Options{Repo: abs, RolesDir: absRoles, Role: "tester", Event: event, AI: ai,
-		Forge: forgeSpec, Target: &target, OpenMergeRequest: event == "issue"})
+		Forge: forgeSpec, Target: &target, NoApply: noApply, OpenMergeRequest: event == "issue"})
 	if asJSON {
 		out, _ := json.MarshalIndent(res, "", "  ")
 		fmt.Println(string(out))

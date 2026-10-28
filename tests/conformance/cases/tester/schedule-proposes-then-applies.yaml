@@ -1,0 +1,31 @@
+case: tester/schedule-proposes-then-applies
+about: >
+  In CI, the scheduled line judges with no write token (--no-apply) and
+  a job apart applies (principle 6): the tests proven red in the first,
+  the Draft and its record opened by the second.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+    routing: {events: {schedule: [tester]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:ready"]
+        body: "## Need\n\nWhen I total an order, I want to multiply a price by a count, so I need not add it up by hand.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **By zero:** Given the library, When I multiply 5 by 0, Then I get 0.\n\n---\n\n## Verification\n\nA test a scenario, in tests/.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+run: {route: schedule, open-merge-request: true, no-apply: true, ai: "fake:tester-two-scenarios", then: resume}
+expect:
+  status: pass
+  agent-calls: 1
+  pushed:
+    workline/tester/issue-3:
+      tests/test_mul_two_by_three.sh: "Scenario: Two by three"
+  forge:
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        draft: true
+        comment-contains: ["workline:tester-record"]

@@ -1,0 +1,47 @@
+case: tester/schedule-picks-one-ready-issue
+about: >
+  The tester's moment (ADR-0055, step 4): a scheduled run takes the first
+  ready issue, in the backlog's order, whose Validation names scenarios,
+  and writes its tests as on `test write`; one issue a run. A ready issue
+  with no named scenario is passed over, as is one not ready; the next
+  ready one waits for the next run.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+    routing: {events: {schedule: [tester]}}
+  forge:
+    issues:
+      - id: 1
+        title: "Divide two numbers"
+        labels: ["workline:ready"]
+        body: "## Need\n\nI want to divide.\n\n## Validation\n\n- It divides.\n"
+      - id: 2
+        title: "Subtract two numbers"
+        labels: ["workline:to-refine"]
+        body: "## Need\n\nI want to subtract.\n\n## Validation\n\n- **Three minus one:** Given the library, When I subtract 1 from 3, Then I get 2.\n"
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:ready"]
+        body: "## Need\n\nWhen I total an order, I want to multiply a price by a count, so I need not add it up by hand.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **By zero:** Given the library, When I multiply 5 by 0, Then I get 0.\n\n---\n\n## Verification\n\nA test a scenario, in tests/.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+      - id: 4
+        title: "Multiply again"
+        labels: ["workline:ready"]
+        body: "## Need\n\nWhen I total an order, I want to multiply a price by a count, so I need not add it up by hand.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **By zero:** Given the library, When I multiply 5 by 0, Then I get 0.\n\n---\n\n## Verification\n\nA test a scenario, in tests/.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+run: {route: schedule, open-merge-request: true, ai: "fake:tester-two-scenarios"}
+expect:
+  status: pass
+  agent-calls: 1
+  pushed:
+    workline/tester/issue-3:
+      tests/test_mul_two_by_three.sh: "Scenario: Two by three"
+  not-pushed: [workline/tester/issue-4, workline/tester/issue-1]
+  forge:
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        draft: true
+        body-contains: ["Refs #3", "## Tests"]
+        comment-contains: ["workline:tester-record"]

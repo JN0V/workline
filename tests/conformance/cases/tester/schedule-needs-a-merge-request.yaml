@@ -1,0 +1,22 @@
+case: tester/schedule-needs-a-merge-request
+about: >
+  The scheduled run opens its tests as a Draft: run without
+  --open-merge-request, it cannot tell which Drafts wait, nor open one;
+  it blocks, saying the option, never writing the tests in the tree.
+given:
+  repo: tested
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+    routing: {events: {schedule: [tester]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:ready"]
+        body: "## Need\n\nWhen I total an order, I want to multiply a price by a count, so I need not add it up by hand.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **By zero:** Given the library, When I multiply 5 by 0, Then I get 0.\n\n---\n\n## Verification\n\nA test a scenario, in tests/.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+run: {route: schedule, ai: "fake:tester-two-scenarios"}
+expect:
+  status: block
+  agent-calls: 0
+  findings:
+    - {rule: no-merge-request, message: "--open-merge-request"}
