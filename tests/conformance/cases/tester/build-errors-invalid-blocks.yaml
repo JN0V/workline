@@ -1,0 +1,12 @@
+case: tester/build-errors-invalid-blocks
+about: >
+  A build-errors pattern that does not compile, or lacks its file and
+  message groups, is said before any run, never read as a pass.
+given:
+  repo: go-tested
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}", build-errors: [{error: '^(\S+\.go):\d+: (.+)$', missing-name: ['^undefined'], test-name: '(Test\w+)'}]}}}
+run: {test: [check, --base, main]}
+expect:
+  status: block
+  findings: [{rule: setting-invalid, where: build-errors}]

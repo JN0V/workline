@@ -75,6 +75,19 @@ settings:
     - "tests/**"
     - "test/**"
     - "**/src/test/**"
+  # A build broken by a new test, told apart by ecosystem: an error line
+  # of the test command's output (groups file and message), the messages
+  # naming what the code lacks, and the tests a file declares. Every error
+  # in a test of the change and a missing name: red, the tests named from
+  # their files; any other error blocks (build-broken). Go's here; others
+  # in docs/missing-name.md.
+  build-errors:
+    - error: '^(?:\./)?(?P<file>[^\s:]+\.go):\d+:\d+: (?P<message>.+)$'
+      missing-name:
+        - '^undefined: [\w.]+$'
+        - '^\S+ undefined \(type .+ has no field or method \w+'
+        - '^unknown field \w+ in struct literal'
+      test-name: '(?m)^func (Test\w*)\(\w+ \*testing\.T\)'
   # An objection's thread (ADR-0055): the tester answers it this many
   # times; the builder still objecting after the last, a person decides.
   # Who: a label put on the merge request, or an @login mentioned in the

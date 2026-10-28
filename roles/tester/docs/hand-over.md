@@ -1,6 +1,6 @@
 ---
 sources: [internal/tester/moment.go, internal/tester/write.go, internal/tester/frozen.go, internal/tester/objection.go]
-checked: c8bb8b8c
+checked: b075cadb
 verified: agent:claude-code
 ---
 # The hand-over: what whoever builds finds
@@ -31,7 +31,8 @@ flowchart LR
   - `## Tests`: a table, each scenario and the test that checks it;
     a scenario no test can check is listed as not tested, with why.
   - What the proof said: each test red on the base, by an assertion or
-    a missing name.
+    a missing name. A test whose package did not build is named
+    `file:name` ([how](missing-name.md)).
 - **The record**: workline's own comment on the Draft, marked
   `workline:tester-record`. It holds the issue, the base, and each test
   file with its git blob. Only the tester's runs write it.

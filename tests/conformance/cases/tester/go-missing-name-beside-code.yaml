@@ -1,0 +1,21 @@
+case: tester/go-missing-name-beside-code
+about: >
+  A Go change with its code and its test: on the base the test calls a
+  name the base lacks, so the package does not build there, by that name
+  only; the head builds and runs the test green. Red, then green, with
+  no warning that tests were not built.
+given:
+  repo: go-tested
+  setup:
+    - git checkout -q -b feat/mul
+    - |
+      printf 'package calc\n\n// Mul multiplies two numbers.\nfunc Mul(a, b int) int { return a * b }\n' > calc/mul.go
+    - |
+      printf 'package calc\n\nimport "testing"\n\nfunc TestMulTwoByThree(t *testing.T) {\n\tif Mul(2, 3) != 6 {\n\t\tt.Fatal("2 x 3 is not 6")\n\t}\n}\n' > calc/mul_test.go && git add . && git commit -qm "feat: multiply"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+run: {test: [check, --base, main]}
+expect:
+  status: pass
+  summary: "1 new test, red on the base, green on the head (1 not built there, a missing name)"
+  no-findings: [{rule: tests-not-built}]

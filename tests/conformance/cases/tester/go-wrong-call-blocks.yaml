@@ -1,0 +1,17 @@
+case: tester/go-wrong-call-blocks
+about: >
+  The tests alone, in Go, calling a name the base has, wrongly (too few
+  arguments) beside one it lacks: one error is not a missing name, so the
+  build broke otherwise, and nothing is proven red (build-broken).
+given:
+  repo: go-tested
+  setup:
+    - git checkout -q -b workline/issue-7
+    - |
+      printf 'package calc\n\nimport "testing"\n\nfunc TestMulTwoByThree(t *testing.T) {\n\tif Mul(2, 3) != Add(6) {\n\t\tt.Fatal("2 x 3 is not 6")\n\t}\n}\n' > calc/mul_test.go && git add . && git commit -qm "test: multiply"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+run: {test: [check, --base, main]}
+expect:
+  status: block
+  findings: [{rule: build-broken, where: calc/mul_test.go}]
