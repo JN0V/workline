@@ -1,6 +1,6 @@
 ---
-sources: [ci/github, .github/workflows/workline.yml, .github/workflows/workline-apply.yml, .github/workflows/workline-gardening.yml, .github/workflows/workline-sample.yml, .github/actions/engine/action.yml, .github/workflows/release.yml, .github/workflows/release-please.yml, release-please-config.json, .goreleaser.yaml, cmd/workline]
-checked: 87a81d4a
+sources: [ci/github, .github/workflows/workline.yml, .github/workflows/workline-apply.yml, .github/workflows/workline-gardening.yml, .github/workflows/workline-sample.yml, .github/workflows/workline-answer.yml, .github/actions/engine/action.yml, .github/workflows/release.yml, .github/workflows/release-please.yml, release-please-config.json, .goreleaser.yaml, cmd/workline]
+checked: c8bb8b8c
 judged: 220b6dc
 verified: agent:claude-code
 reader: fe1505d43360
@@ -87,6 +87,11 @@ write run the default branch's workflow, never a pull request's own
      the docs ([ADR-0051](adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-1-the-release-weekly)).
      **Upgrading**: delete a copied `workline-release-docs.yml`; its
      command is gone, and the job fails (exit 64).
+   - [workline-objection.yml](../ci/github/workline-objection.yml) and
+     [workline-answer.yml](../ci/github/workline-answer.yml), with the
+     tester: an objection to one of its tests, on its Draft's line, wakes
+     its answer; the first notices it with no token, the second answers
+     from the default branch ([tester](../roles/tester/README.md#frozen-tests-and-objections)).
    - [workline-sample.yml](../ci/github/workline-sample.yml): the
      [weekly sample](ci.md#the-weekly-sample), from the first release
      after v0.2.1.

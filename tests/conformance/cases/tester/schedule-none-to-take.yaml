@@ -1,0 +1,22 @@
+case: tester/schedule-none-to-take
+about: >
+  No ready issue waits for its tests: the only ready one has its Draft
+  open. The scheduled run says so and passes, the agent not asked.
+given:
+  repo: tested
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+    routing: {events: {schedule: [tester]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:ready"]
+        body: "## Need\n\nWhen I total an order, I want to multiply a price by a count, so I need not add it up by hand.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **By zero:** Given the library, When I multiply 5 by 0, Then I get 0.\n\n---\n\n## Verification\n\nA test a scenario, in tests/.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+    merge-requests:
+      - {id: 1, branch: workline/tester/issue-3, base: main, draft: true, labels: [], comments: []}
+run: {route: schedule, open-merge-request: true, ai: "fake:tester-two-scenarios", summary: true}
+expect:
+  status: pass
+  summary-file: ["no ready issue waits for its tests"]
+  agent-calls: 0

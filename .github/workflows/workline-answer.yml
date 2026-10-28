@@ -1,0 +1,113 @@
+# workline's tester answering an objection, on its own repository:
+# ci/github/workline-answer.yml, with the engine built from the default
+# branch's checkout rather than installed (.github/actions/engine), as
+# gardening does; Go left set up for workline's tests. The tester is not
+# routed here yet (roles/tester/docs/status.md): no Draft of it opens but
+# by hand.
+name: workline answer
+on:
+  workflow_run: {workflows: [workline objection], types: [completed]}
+permissions: {}
+# One answer at a time per Draft: the next takes the objection waiting after it.
+concurrency: {group: "workline-answer-${{ github.event.workflow_run.head_branch }}", cancel-in-progress: false}
+
+env:
+  WORKLINE_RUNS_DIR: ${{ github.workspace }}/.workline-runs
+
+jobs:
+  judge:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_repository.full_name == github.repository &&
+      startsWith(github.event.workflow_run.head_branch, 'workline/tester/')
+    runs-on: ubuntu-latest
+    permissions: {contents: read, pull-requests: read, issues: read}
+    env: {HAS_CLAUDE: "${{ secrets.CLAUDE_CODE_OAUTH_TOKEN != '' }}"}
+    outputs:
+      run: ${{ steps.answer.outputs.run }}
+      status: ${{ steps.answer.outputs.status }}
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: ./.github/actions/engine
+        with: {go: "true"}         # Go left set up: workline's tests run with it
+      - name: Claude, when the repository gives its token
+        if: env.HAS_CLAUDE == 'true'
+        run: npm install -g @anthropic-ai/claude-code
+      # Your test runner here: the tester proves a rewrite red on the base
+      # with the project's `test-command`.
+      - name: The answer (proposed only)
+        id: answer
+        env:
+          GH_TOKEN: ${{ github.token }}
+          WORKLINE_APP_ID: ${{ vars.WORKLINE_APP_ID }}   # the App whose comments keep the tester's record (ADR-0051)
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          BRANCH: ${{ github.event.workflow_run.head_branch }}
+        run: |
+          ai=none; [ -n "$CLAUDE_CODE_OAUTH_TOKEN" ] && ai=claude
+          pr=$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number // empty')
+          [ -n "$pr" ] || { echo "no open pull request from $BRANCH: nothing to answer"; exit 0; }
+          # The Draft's tip, where the test objected to is read and a
+          # rewrite committed on top; the engine already set up from the
+          # default branch's checkout.
+          git checkout -q -B "$BRANCH" "origin/$BRANCH"
+          status=0
+          workline test answer --merge-request "$pr" --ai "$ai" --no-apply --forge github --json > answer.json || status=$?
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          echo "run=$(jq -r '(.pending // [])[0] // empty' answer.json)" >> "$GITHUB_OUTPUT"   # a run left to apply; none when it stopped before
+          jq -r '.summary // empty' answer.json >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: steps.answer.outputs.run != ''
+        with: {name: workline-answer, path: ".workline-runs", include-hidden-files: true, retention-days: 1}
+      - name: Verdict
+        env: {STATUS: "${{ steps.answer.outputs.status }}"}
+        run: |
+          if [ "$STATUS" = 3 ]; then
+            echo "::warning title=workline::the agent could not be reached; the objection waits for the next one"
+            exit 0
+          fi
+          exit "${STATUS:-0}"
+
+  apply:
+    needs: judge
+    if: always() && needs.judge.outputs.run != ''
+    runs-on: ubuntu-latest
+    environment: workline-app       # the App's key: the default branch only (ADR-0044)
+    permissions: {contents: write, pull-requests: write, issues: write}
+    steps:
+      - id: app
+        if: vars.WORKLINE_APP_ID != ''
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.WORKLINE_APP_ID }}
+          private-key: ${{ secrets.WORKLINE_APP_PRIVATE_KEY }}
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ steps.app.outputs.token || github.token }}
+      - uses: ./.github/actions/engine
+      - uses: actions/download-artifact@v4
+        with: {name: workline-answer, path: .workline-runs}
+      - env:
+          GH_TOKEN: ${{ steps.app.outputs.token || github.token }}
+          APP: ${{ steps.app.outputs.app-slug }}
+          WORKLINE_APP: ${{ steps.app.outputs.app-slug }}   # workline's own account: the records it trusts
+          RUN: ${{ needs.judge.outputs.run }}
+          BRANCH: ${{ github.event.workflow_run.head_branch }}
+        run: |
+          # The rewrite goes on top of the Draft's tip, without force. Its
+          # files are only read here: `workline apply` runs git and the
+          # forge's API, no command of the project, and the engine came
+          # before the switch.
+          git checkout -q -B "$BRANCH" "origin/$BRANCH"
+          if [ -n "$APP" ]; then
+            git config user.name "$APP[bot]"
+            git config user.email "$(gh api "/users/$APP%5Bbot%5D" --jq .id)+$APP[bot]@users.noreply.github.com"
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          fi
+          status=0
+          workline apply "$RUN" --summary workline-summary.md || status=$?
+          [ ! -s workline-summary.md ] || cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"
+          exit "$status"

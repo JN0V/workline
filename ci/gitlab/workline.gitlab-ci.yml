@@ -501,6 +501,66 @@ workline:garden:apply:
     reports: {annotations: workline-annotations.json}
     expire_in: 1 week
 
+# The tester answers an objection (ADR-0055): a comment opened by
+# `workline:objection` on a line of its Draft (branch workline/tester/…).
+# GitLab starts no pipeline on a comment: a tool given the project's note
+# webhook starts one on the default branch, through the pipelines API or a
+# trigger token, with WORKLINE_TASK=objection, MR_IID and MR_SOURCE_BRANCH,
+# the merge request (docs/gitlab-trigger.md). The judge proposes, holding the agent's token;
+# apply writes the reply and a rewrite, holding the bot's and no agent's.
+# Install your test runner in the judge: a rewrite is proven red there.
+.workline:objection:
+  image: $WORKLINE_IMAGE:$WORKLINE_VERSION
+  environment: *environment
+  variables: {GIT_DEPTH: 0}
+  rules:
+    - if: ($CI_PIPELINE_SOURCE == "api" || $CI_PIPELINE_SOURCE == "trigger" || $CI_PIPELINE_SOURCE == "pipeline") && $WORKLINE_TASK == "objection" && $MR_IID && $MR_SOURCE_BRANCH && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  before_script:
+    - *bot-token
+    - *trust
+    - workline version
+    - export GITLAB_TOKEN=$WORKLINE_GITLAB_TOKEN
+    # The Draft's tip: the test objected to is read there, a rewrite
+    # committed on top of it, without force.
+    - 'case "$MR_SOURCE_BRANCH" in workline/tester/*) ;; *) echo "workline: $MR_SOURCE_BRANCH is not a branch of the tester: nothing to answer"; exit 1;; esac'
+    - git fetch -q origin "$MR_SOURCE_BRANCH" && git checkout -q -B "$MR_SOURCE_BRANCH" FETCH_HEAD
+
+workline:objection:judge:
+  extends: .workline:objection
+  stage: test
+  script:
+    - *claude
+    - status=0
+    - workline test answer --merge-request "$MR_IID" --ai "$ai" --no-apply --forge gitlab --json > answer.json || status=$?
+    - jq -r '(.pending // [])[0] // empty' answer.json > answer-run   # a run left to apply; none when it stopped before
+    - exit $status
+  allow_failure: {exit_codes: [3]}  # an agent out of reach warns: the objection waits for the next
+  artifacts:
+    when: always
+    paths: [.workline-runs/, answer.json, answer-run]
+    expire_in: 1 day
+
+workline:objection:apply:
+  extends: .workline:objection
+  stage: deploy
+  needs: [workline:objection:judge]
+  rules:
+    - if: ($CI_PIPELINE_SOURCE == "api" || $CI_PIPELINE_SOURCE == "trigger" || $CI_PIPELINE_SOURCE == "pipeline") && $WORKLINE_TASK == "objection" && $MR_IID && $MR_SOURCE_BRANCH && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      when: always
+  script:
+    - *bot
+    - git remote set-url origin "https://oauth2:${WORKLINE_GITLAB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"
+    - '[ -s answer-run ] || { echo "nothing proposed: nothing to apply"; exit 0; }'
+    - status=0
+    - workline apply "$(cat answer-run)" --summary workline-summary.md --summary workline-summary.html || status=$?
+    - exit $status
+  after_script: *summary
+  artifacts:
+    when: always
+    paths: [workline-summary.html, workline-summary.md]
+    reports: {annotations: workline-annotations.json}
+    expire_in: 1 week
+
 # A release's dry run, on each schedule but the sample's (ADR-0050): what
 # would hold the release if it were cut now from the branch's tip. Every
 # step, no agent, nothing applied, said as warnings. Install here the

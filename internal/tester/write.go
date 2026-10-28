@@ -98,6 +98,13 @@ func Pre(runDir, repo string) int {
 	}
 	kind, num, _ := strings.Cut(os.Getenv("WORKLINE_TARGET"), ":")
 	id, _ := strconv.Atoi(num)
+	if os.Getenv("WORKLINE_EVENT") == "schedule" { // the moment: the run picks its issue
+		var code int
+		if id, code = scheduled(runDir, repo); id == 0 {
+			return code
+		}
+		kind = "issue"
+	}
 	if kind != "issue" || id <= 0 {
 		return final(runDir, verdict.Verdict{Status: verdict.Block, Summary: "no issue to write tests for",
 			Findings: []verdict.Finding{{Rule: "no-issue", Message: "the tester writes the tests of one issue: run `workline test write --issue <n>`"}}})

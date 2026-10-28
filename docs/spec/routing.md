@@ -1,6 +1,6 @@
 ---
 sources: [internal/line, internal/routing, internal/work, routing.default.yaml]
-checked: 698d5497
+checked: c8bb8b8c
 verified: agent:claude-code
 ---
 # Routing — v1 (draft)
@@ -374,7 +374,20 @@ routing:
   events: {schedule: [documentalist, product-owner, reviewer]}
 ```
 
+The tester writes a `ready` issue's acceptance tests on `schedule`, one
+issue a run: the first in the backlog's order whose Validation names
+scenarios and whose Draft is not open
+([ADR-0055](../adr/0055-the-tester-writes-the-acceptance-tests-before-the-code.md#amendment-2026-10-28-step-4-as-built)).
+It needs `--open-merge-request`; opt-in, after the product owner and the
+reviewer:
+
+```yaml
+routing:
+  events: {schedule: [documentalist, product-owner, reviewer, tester]}
+```
+
 ## Not in this version
 
-The developer and tester roles, which will consume `ready` items. Which
+The developer role, which will consume `ready` items from the tester's
+Draft. Which
 act runs at which moment, decided: [ADR-0050](../adr/0050-each-act-has-its-moment-and-a-wait-budget.md).

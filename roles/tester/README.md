@@ -2,7 +2,9 @@
 sources:
   - roles/tester/role.yaml
   - internal/tester
-checked: de6369bf
+  - ci/github/workline-objection.yml
+  - ci/github/workline-answer.yml
+checked: c8bb8b8c
 verified: agent:claude-code
 ---
 # Tester
@@ -23,7 +25,7 @@ file. All roles: [docs/roles.md](../../docs/roles.md). Where it stands:
 [status](docs/status.md); its design:
 [ADR-0055](../../docs/adr/0055-the-tester-writes-the-acceptance-tests-before-the-code.md).
 
-**Does**, today (steps 1 to 3 of the
+**Does**, today (steps 1 to 4 of the
 [build plan](../../docs/adr/0055-the-tester-writes-the-acceptance-tests-before-the-code.md#build-plan)):
 
 - `workline test write --issue <n>`: has the agent write one test for
@@ -33,10 +35,13 @@ file. All roles: [docs/roles.md](../../docs/roles.md). Where it stands:
 - `workline test check --base <ref>`: the same red-first check on any
   change, with no agent;
 - keeps its tests from the builder, and answers an objection to one
-  ([below](#frozen-tests-and-objections)).
+  ([below](#frozen-tests-and-objections));
+- runs on its own: one ready issue a scheduled run, and an objection
+  as it is posted ([below](#when-it-runs)); hands its Draft to whoever
+  builds ([hand-over](docs/hand-over.md)).
 
-**Does not**, yet: run on its own on each ready issue or objection, or
-prune the corpus.
+**Does not**, yet: prove the tests green on the closing pull request,
+or prune the corpus.
 Those are the next steps ([status](docs/status.md#missing)).
 
 ## Write an issue's tests
@@ -106,6 +111,31 @@ workline test write --issue 42 --ai claude
   meanwhile the other objections are answered.
 - **The agent is a choice** here too: with none, `no-agent`, the
   objection waits.
+
+## When it runs
+
+- **At night**, list it in the `schedule` line, after the product owner
+  and the reviewer
+  ([routing](../../docs/spec/routing.md#the-line)):
+  `schedule: [documentalist, product-owner, reviewer, tester]`.
+  - It takes **one issue a run**: the first ready one, in the backlog's
+    order, whose Validation names scenarios and whose Draft is not open.
+  - Then as `test write`. None waiting: it says so and passes.
+  - It needs `--open-merge-request`, as the gardening templates give
+    it; without, `no-merge-request` blocks.
+  - Install your test runner in the gardening's judge job: the tests are
+    proven red there.
+- **On an objection**, in CI:
+  - GitHub: [workline-objection.yml](../../ci/github/workline-objection.yml)
+    notices the comment, with no token;
+    [workline-answer.yml](../../ci/github/workline-answer.yml) answers,
+    from the default branch. Copy both.
+  - GitLab: a tool given the note webhook starts the template's
+    `workline:objection:*` jobs
+    ([how](../../docs/gitlab-trigger.md#how-the-pipeline-knows-what-to-do)).
+  - Woken by a person of the project or an App installed on it only.
+- **Both** judge with no write token (`--no-apply`); a job apart
+  applies, holding it and no agent's key (`workline apply <run>`).
 
 ## Check a change
 

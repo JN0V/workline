@@ -27,6 +27,7 @@
         {"type": "generic", "path": "ci/github/workline-gardening.yml"},
         {"type": "generic", "path": "ci/github/workline-sample.yml"},
         {"type": "generic", "path": "ci/github/workline-merge.yml"},
+        {"type": "generic", "path": "ci/github/workline-answer.yml"},
         {"type": "generic", "path": "ci/gitlab/workline.gitlab-ci.yml"},
         {"type": "generic", "path": "docs/gitlab-trigger.md"}
       ]

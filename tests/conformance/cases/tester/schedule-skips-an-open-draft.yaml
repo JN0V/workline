@@ -1,0 +1,37 @@
+case: tester/schedule-skips-an-open-draft
+about: >
+  A ready issue whose tests already wait in an open Draft of the tester
+  is skipped: the scheduled run takes the next ready one (ADR-0055,
+  step 4: one issue a run, an open Draft skipped).
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+    routing: {events: {schedule: [tester]}}
+  forge:
+    issues:
+      - id: 2
+        title: "Multiply two numbers"
+        labels: ["workline:ready"]
+        body: "## Need\n\nWhen I total an order, I want to multiply a price by a count, so I need not add it up by hand.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **By zero:** Given the library, When I multiply 5 by 0, Then I get 0.\n\n---\n\n## Verification\n\nA test a scenario, in tests/.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+      - id: 3
+        title: "Multiply again"
+        labels: ["workline:ready"]
+        body: "## Need\n\nWhen I total an order, I want to multiply a price by a count, so I need not add it up by hand.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **By zero:** Given the library, When I multiply 5 by 0, Then I get 0.\n\n---\n\n## Verification\n\nA test a scenario, in tests/.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+    merge-requests:
+      - {id: 1, branch: workline/tester/issue-2, base: main, draft: true, labels: [], comments: []}
+run: {route: schedule, open-merge-request: true, ai: "fake:tester-two-scenarios"}
+expect:
+  status: pass
+  agent-calls: 1
+  pushed:
+    workline/tester/issue-3:
+      tests/test_mul_by_zero.sh: "Scenario: By zero"
+  forge:
+    merge-requests:
+      - id: 2
+        branch: workline/tester/issue-3
+        draft: true
+        body-contains: ["Refs #3"]
