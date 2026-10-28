@@ -10,8 +10,7 @@ beta, not in the line yet.
 A try is told in its pull request's `## Tried`
 ([ADR-0043](../../../docs/adr/0043-a-try-is-told-in-its-pull-request.md)):
 the first, the check on a copy of a real Go module with gotestsum, on
-the pull request that built step 1
-([#264](https://github.com/JN0V/workline/issues/264)).
+[#649](https://github.com/JN0V/workline/pull/649).
 
 ## To leave beta
 
