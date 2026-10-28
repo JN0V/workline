@@ -3,9 +3,11 @@
 **In one line:** re-checks, each week, one in ten of every role's acts,
 per kind (`workline sample`): the docs the documentalist vouched for, the
 product owner's acts, the reviewer's judged findings, the committer's
-rewrites, each against what it was done on. The docs' sample tried on a GitLab
-sandbox, its first scheduled run on workline on 2026-10-05; the other
-acts' verdicts tried with no real agent yet. Beta.
+rewrites, the tester's acts, each against what it was done on. The
+docs' sample tried on a GitLab sandbox, its first scheduled run on
+workline on 2026-10-05; the tester's acts read by a real judge on stub
+acts ([#669](https://github.com/JN0V/workline/pull/669)), the others'
+with no real agent yet. Beta.
 
 A try since 2026-10-13 is told in its pull request's `## Tried`
 ([ADR-0043](../../../docs/adr/0043-a-try-is-told-in-its-pull-request.md)).
@@ -87,6 +89,16 @@ hold:
   engine recorded, read as its issue reads now: product owner's
   `acts-record-what-was-read`; auditor's
   `verdict-reads-what-the-product-owner-read`.
+
+- **The tester's acts** (2026-10-28): its tests, from its commit and
+  the record on its Draft, which now keeps the scenarios read; an
+  objection answered kept or rewritten, from its reply's hidden line; a
+  curator's removal, from its commit and pull request; each with its own
+  question (`kinds/tests.md`, `kept.md`, `rewritten.md`, `removal.md`)
+  ([ADR-0046](../../../docs/adr/0046-the-auditor-re-checks-every-roles-acts.md#amendment-2026-10-28-the-testers-row)): auditor's
+  `sample-draws-the-testers-acts`, `verdict-reads-the-testers-acts`.
+  Tried with stub tester runs and a real judge, on
+  [#669](https://github.com/JN0V/workline/pull/669).
 
 ## Missing
 

@@ -40,7 +40,9 @@ hold:
    on a copy of a real repository: a bug shown by a red test first, then
    green.
 3. **AI verdicts measured**: open. The tests `test write` writes,
-   measured against the scenarios they cover: one try so far.
+   measured against the scenarios they cover: one try so far. Its acts
+   are observable: the auditor's weekly sample draws them
+   ([ADR-0046](../../../docs/adr/0046-the-auditor-re-checks-every-roles-acts.md#amendment-2026-10-28-the-testers-row)).
 
 ## Built
 
@@ -99,6 +101,14 @@ Cases in `tests/conformance/cases/tester/`:
   killed mutant lost (Gremlins pinned on Go); frozen and kept tests
   refused; a pull request, not a Draft, from the weekly curator job
   ([the page](removals.md)).
+- **Observable** ([ADR-0046](../../../docs/adr/0046-the-auditor-re-checks-every-roles-acts.md#amendment-2026-10-28-the-testers-row)): its acts drawn in the auditor's
+  weekly sample, one in ten a kind — its tests, its answers kept or
+  rewritten, its curator's removals; the record keeps the scenarios
+  read, each answer a hidden line (commit, model, scenario): tester's
+  `write-one-test-a-scenario`, `objection-kept`, `objection-rewritten`;
+  auditor's `sample-draws-the-testers-acts`,
+  `verdict-reads-the-testers-acts`. Tried on
+  [#669](https://github.com/JN0V/workline/pull/669).
 - **The hand-over** to whoever builds:
   [the contract](hand-over.md).
 - **Settings** `test-command`, `test-report`, `test-paths`,

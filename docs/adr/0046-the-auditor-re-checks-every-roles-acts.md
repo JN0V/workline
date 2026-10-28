@@ -118,9 +118,7 @@ finding was kept: it answers blind, and the engine compares.
 | Split | Does each part hold one need, together the parent's? | the parent's words in no part |
 | A finding | Does the code fail as the finding says? The lens's question | the code's words |
 | A rewrite | Does the message say what the commit does, nothing more? Against the diff alone | the message's words, and the diff's |
-| The tester's tests | Does each test check its scenario's Then, red on the base for that reason? | the test's words, the scenario's or the base code's |
-| An answer kept, rewritten | Kept: does the test check the Then, nothing it leaves open? Rewritten: is the Then's meaning kept? | the test's words, before and after, and the scenario's |
-| A curator's removal | Is each test removed redundant, no behaviour the measures cannot see? | the removed test's words |
+| The tester's acts | Its tests check their Then, red for it? Kept, rewritten: the Then kept? Removed: redundant? ([amendment](#amendment-2026-10-28-the-testers-row)) | the test's words, the scenario's |
 
 - **Another model than every model that acted**: for a finding, neither
   the lens's nor the judge's. Workline has one provider and several

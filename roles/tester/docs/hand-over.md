@@ -1,6 +1,6 @@
 ---
 sources: [internal/tester/moment.go, internal/tester/write.go, internal/tester/frozen.go, internal/tester/objection.go, internal/tester/green.go]
-checked: 68001ec6
+checked: cb1fa38e
 verified: agent:claude-code
 ---
 # The hand-over: what whoever builds finds
