@@ -26,7 +26,7 @@ func TestReadJUnitAsRunnersWriteIt(t *testing.T) {
 		if err := os.WriteFile(file, []byte(body), 0o644); err != nil {
 			t.Fatal(err)
 		}
-		if err := readJUnit(file, got, nil); err != nil {
+		if err := readJUnit(file, got, nil, nil); err != nil {
 			t.Fatalf("%s: %v", name, err)
 		}
 	}

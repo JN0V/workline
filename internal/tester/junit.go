@@ -34,8 +34,9 @@ type testcase struct {
 // classname.name, or the name alone — and, when suites is not nil, the
 // name of the testsuite holding each one (a Go package, a pytest run), or
 // its classname when the suite has none. A test run more than once (a
-// parameter, a retry) is red when one of its runs is.
-func readJUnit(file string, results map[string]result, suites map[string]string) error {
+// parameter, a retry) is red when one of its runs is. classless, when not
+// nil, holds the ids of the cases written with no classname.
+func readJUnit(file string, results map[string]result, suites map[string]string, classless map[string]bool) error {
 	data, err := os.ReadFile(file)
 	if err != nil {
 		return err
@@ -50,6 +51,8 @@ func readJUnit(file string, results map[string]result, suites map[string]string)
 			id := c.Name
 			if c.Class != "" {
 				id = c.Class + "." + c.Name
+			} else if classless != nil {
+				classless[id] = true
 			}
 			r := passed
 			switch {

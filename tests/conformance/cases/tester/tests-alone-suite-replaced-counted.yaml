@@ -1,0 +1,19 @@
+case: tester/tests-alone-suite-replaced-counted
+about: >
+  The tests alone, deleting every old test of a suite and adding a new
+  one that fails: the suite lost its base tests, but the new test is a
+  test of its own (a classname, one of the suite's), not the runner's
+  record of a failed build. It is counted, and proven red.
+given:
+  repo: tested
+  setup:
+    - git checkout -q -b workline/issue-7
+    - |
+      git rm -q tests/test_add.sh && mkdir -p tests && printf '. ./lib.sh\n[ "$(mul 2 3)" = 6 ]\n' > tests/test_mul.sh && git add . && git commit -qm "test: multiply, not add"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+run: {test: [check, --base, main]}
+expect:
+  status: pass
+  summary: "1 new test, red on the base"
+  no-findings: [{rule: no-new-test}]
