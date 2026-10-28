@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, internal/builtin/reviewer/reviewer.go, internal/builtin/reviewer/record.go, internal/builtin/reviewer/once.go, internal/engine/engine.go, ci/github/workline.yml, ci/gitlab/workline.gitlab-ci.yml]
-checked: d108841c
+checked: 000a3816
 verified: agent:claude-code
 ---
 # Reviewer — no lens on a draft, every lens once when it becomes ready, then what is new
@@ -105,6 +105,9 @@ AI reads only what is new.
   - `0`: every new commit, each push.
 - **A lens that blocks reads every new commit**, and so does the run on
   ready: what can hold the verdict is never left unread.
+  - A push changing the file of a block that stands asks its lens,
+    whosever turn it is
+    ([a block stands](judge.md#a-block-stands-until-a-commit-answers-it)).
 - **A finding judged once keeps its verdict**, the same finding on the
   same patch: its judge is not asked again, said
   ([judged once](once.md)).

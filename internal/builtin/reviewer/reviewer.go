@@ -410,6 +410,9 @@ func prepare(runDir, repo string, s Settings) int {
 	if err != nil {
 		return fail(err)
 	}
+	if input(runDir, "lenses") == "" {
+		st.Lenses = union(st.Lenses, answering(st.Standing, files, skip))
+	}
 	if len(st.Lenses) == 0 && !st.Alone {
 		return final(runDir, review(st, nil, "no lens asked can review this change: not asked: "+strings.Join(st.Skipped, ", ")))
 	}

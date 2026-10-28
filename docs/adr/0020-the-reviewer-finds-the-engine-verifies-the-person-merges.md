@@ -872,3 +872,24 @@ merge-request line; on in workline's own repository.
 - **Rejected**: the tests and intent lenses' important findings off
   their lines too. ADR-0051 keeps important findings as conversations a
   team may make hold; a lens set per project would need a setting.
+
+## Amendment (2026-10-28): a block's lens reads a commit to its file
+
+- **What was wrong**: on a pull request, correctness blocked on a line
+  of one file. The fix push changed that file, its quoted line kept, on
+  the turn of a lens that warns. The verdict's run asked no lens and
+  recorded the three commits: correctness never read them, and the block
+  held until its line changed. That is the outcome the [#326](https://github.com/JN0V/workline/issues/326) amendment
+  rejected.
+- **The lens of a block that stands is asked** on a push whose commits
+  change its cause's file, whosever turn it is, beside the lens in turn.
+  It reads those commits; not finding the cause again, or its judge
+  saying no, the block goes.
+- **Cost**: one call on the pushes touching a blocked file only; a push
+  elsewhere asks nothing more, the block standing.
+- **Unchanged**: the turn, a run told its lenses (`lenses=`), a block
+  quoted from an issue, which stands until its lens reads the issue
+  again.
+- **Rejected**: the lens that blocks asked every push (the call a push
+  the two runs' amendment rejected); its block lifted on any commit to
+  its file, unread (a commit there need not answer it).
