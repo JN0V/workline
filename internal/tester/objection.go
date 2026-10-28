@@ -6,7 +6,8 @@ package tester
 // and answers in the thread: kept, with its reason, or rewritten, its own
 // commit referring to the thread, still red on the base. The need itself
 // goes to the product owner. Three answers a thread; still open after the
-// second, the five whys are due; past the third, a person decides.
+// second, the third run loads the shared five whys skill and posts the
+// analysis with its answer; past the third, a person decides.
 
 import (
 	"encoding/json"
@@ -20,10 +21,12 @@ import (
 
 	"go.yaml.in/yaml/v3"
 
+	"github.com/JN0V/workline/internal/agent"
 	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/verdict"
+	"github.com/JN0V/workline/internal/whys"
 	"github.com/JN0V/workline/internal/work"
 )
 
@@ -338,6 +341,11 @@ func answerPre(runDir, repo string, s Settings) int {
 		}
 		return 0
 	}
+	if a.FiveWhys {
+		if err := os.WriteFile(filepath.Join(runDir, "in", agent.SkillsFile), []byte(whys.Skill+"\n"), 0o644); err != nil {
+			return fail(err)
+		}
+	}
 	return writeAnswerTask(runDir, repo, a, t, is, s)
 }
 
@@ -377,6 +385,10 @@ func writeAnswerTask(runDir, repo string, a answer, t forge.Thread, is *forge.Is
 		"- **Kept**: a `note`, the reason the test holds for the scenario.\n" +
 		"- **Rewritten**: the same file whole as a `patch` with `file` and `content`, and a `note`, why. " +
 		"It still checks the scenario's Then, names the scenario, and fails on the code before the change.\n")
+	if a.FiveWhys {
+		b.WriteString("- **The five whys**: two answers did not settle this thread. First run the five whys skill below on it; " +
+			"give the analysis as its own `note`, and answer as its root cause says: a rewrite when the test is the cause, kept when it is not.\n")
+	}
 	if err := os.WriteFile(filepath.Join(runDir, "in", "task.md"), []byte(b.String()), 0o644); err != nil {
 		return fail(err)
 	}
@@ -460,13 +472,17 @@ func judgeAnswer(runDir, repo string, a answer, s Settings) int {
 		return write(runDir, *v)
 	}
 	var patches []intent.Intention
-	var notes []string
+	var notes, analyses []string
 	for _, in := range intents {
 		switch in.Kind {
 		case "patch":
 			patches = append(patches, in)
 		case "note":
-			notes = append(notes, noteText(in.Value))
+			if text := noteText(in.Value); a.FiveWhys && whys.Is(text) {
+				analyses = append(analyses, text)
+			} else {
+				notes = append(notes, text)
+			}
 		}
 	}
 	block := func(rule, msg string) int {
@@ -486,16 +502,23 @@ func judgeAnswer(runDir, repo string, a answer, s Settings) int {
 	}
 	why := ""
 	if a.FiveWhys {
-		why = "\n\n**Five whys due**: the second answer did not settle it. Ask why the test and the code disagree, five times, down to the cause; the shared skill comes later (ADR-0055, step 8)."
+		if len(analyses) != 1 {
+			return block("five-whys-missing", fmt.Sprintf("two answers did not settle this thread: the answer gives the five whys as one `note` opening with `Five whys`, as the skill says (%d given)", len(analyses)))
+		}
+		w, err := whys.Parse(analyses[0])
+		if err != nil {
+			return block("five-whys-unreadable", "the five whys do not follow the skill's form: "+err.Error())
+		}
+		why = "\n\n" + w.Markdown()
 	}
 	at, _ := git(repo, "rev-parse", "HEAD")
-	act := Answered{Act: "kept", At: strings.TrimSpace(at), Model: asked(runDir), Scenario: a.Scenario, Test: a.File}
+	act := Answered{Act: "kept", At: strings.TrimSpace(at), Model: asked(runDir), Scenario: a.Scenario, Test: a.File, Whys: a.FiveWhys}
 	if len(patches) == 0 {
 		out := []intent.Intention{reply("**Kept**: " + reason + why + "\n" + act.line())}
 		if err := intent.Write(filepath.Join(runDir, "out", "intentions.yaml"), out); err != nil {
 			return fail(err)
 		}
-		return write(runDir, verdict.Verdict{Status: verdict.Pass, Summary: "the test is kept, the reason in the thread" + left, Findings: fiveWhys(a)})
+		return write(runDir, verdict.Verdict{Status: verdict.Pass, Summary: "the test is kept, the reason in the thread" + whysSaid(a) + left})
 	}
 	var content string
 	for _, p := range patches {
@@ -536,8 +559,8 @@ func judgeAnswer(runDir, repo string, a answer, s Settings) int {
 		reply("**Rewritten**, the tester's own commit on this branch, red on the base: " + reason + why + "\n" + act.line()),
 		{Kind: "comment", Value: r.intention()["comment"]}}
 	for _, in := range intents {
-		if in.Kind == "note" {
-			out = append(out, in)
+		if in.Kind == "note" && (!a.FiveWhys || !whys.Is(noteText(in.Value))) {
+			out = append(out, in) // the five whys are in the thread already
 		}
 	}
 	if err := intent.Write(filepath.Join(runDir, "out", "intentions.yaml"), out); err != nil {
@@ -550,17 +573,16 @@ func judgeAnswer(runDir, repo string, a answer, s Settings) int {
 	if err := os.WriteFile(filepath.Join(runDir, "out", "merge-request.yaml"), data, 0o644); err != nil {
 		return fail(err)
 	}
-	proof.Summary = "the test is rewritten, red on the base: " + proof.Summary + left
-	proof.Findings = append(proof.Findings, fiveWhys(a)...)
+	proof.Summary = "the test is rewritten, red on the base: " + proof.Summary + whysSaid(a) + left
 	return write(runDir, *proof)
 }
 
-func fiveWhys(a answer) []verdict.Finding {
+// whysSaid says the five whys were posted with the answer.
+func whysSaid(a answer) string {
 	if !a.FiveWhys {
-		return nil
+		return ""
 	}
-	return []verdict.Finding{{Rule: "five-whys-due", Level: "warn", Where: a.URL,
-		Message: "two answers did not settle the objection: the five whys are due, said in the thread; the shared skill is ADR-0055's step 8"}}
+	return ", the five whys with it"
 }
 
 func upper(s string) string {

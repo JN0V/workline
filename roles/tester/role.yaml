@@ -40,6 +40,9 @@ context:
   # Estimated tokens, 711 + 0.82 a character: the issue's scenarios, the
   # Scope's code and the tests beside it (code-lines-max).
   budget: 60000
+  # The shared skill an answer loads, after the task, when an objection's
+  # thread is still open after the second answer (skills/five-whys).
+  skills: [five-whys]
 
 duties:
   reads: ["**"]
@@ -99,7 +102,8 @@ settings:
   # An objection's thread (ADR-0055): the tester answers it this many
   # times; the builder still objecting after the last, a person decides.
   # Who: a label put on the merge request, or an @login mentioned in the
-  # thread. The five whys are due once the second answer did not settle it.
+  # thread. Once the second answer did not settle it, the third gives the
+  # five whys with it, the shared skill (skills/five-whys/SKILL.md).
   objection-exchanges: 3
   objection-person: "workline:human"
   # The curator's measures, no agent (`workline test measure`, ADR-0055
