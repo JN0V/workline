@@ -1,6 +1,6 @@
 ---
 sources: [internal/tester/measure.go, internal/tester/coverage.go, ci/github/workline-gardening.yml, ci/gitlab/workline.gitlab-ci.yml]
-checked: CHECKED
+checked: 8445924a
 verified: agent:claude-code
 ---
 # The curator's measures
