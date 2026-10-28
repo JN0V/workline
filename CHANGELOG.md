@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.48.0](https://github.com/JN0V/workline/compare/v0.47.0...v0.48.0) (2026-10-28)
+
+
+### Features
+
+* **tester:** count a test red when its build lacks only a name ([#659](https://github.com/JN0V/workline/issues/659)) ([423d3c7](https://github.com/JN0V/workline/commit/423d3c79d971bcd00ef26e1cffd23b523882204a))
+* **tester:** prove new tests green three runs out of three ([#664](https://github.com/JN0V/workline/issues/664)) ([c24258c](https://github.com/JN0V/workline/commit/c24258c7e9602623e964d211a9226a5c429b1a64))
+
+
+### Bug Fixes
+
+* **ci:** apply an objection's answer from the default branch ([#660](https://github.com/JN0V/workline/issues/660)) ([d83558c](https://github.com/JN0V/workline/commit/d83558cd54289f96088da04943d261a1676da3cd))
+* **ci:** read a pull request's draft state when the job runs ([#663](https://github.com/JN0V/workline/issues/663)) ([82f2a47](https://github.com/JN0V/workline/commit/82f2a47e12a7122c801e85626568b54273200680))
+
 ## [0.47.0](https://github.com/JN0V/workline/compare/v0.46.0...v0.47.0) (2026-10-28)
 
 
