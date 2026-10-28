@@ -23,7 +23,9 @@ the scheduled pick and the objection's chain on GitHub, stub agents, on
 tests of a name the base lacks, on a copy of workline, on
 [#659](https://github.com/JN0V/workline/pull/659); the curator's
 measures of workline's own corpus, on
-[#665](https://github.com/JN0V/workline/pull/665).
+[#665](https://github.com/JN0V/workline/pull/665); a real agent's
+removal of a duplicate test, proven on a copy of workline, on
+[#668](https://github.com/JN0V/workline/pull/668).
 
 ## To leave beta
 
