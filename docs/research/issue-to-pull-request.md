@@ -160,12 +160,12 @@ answer a review, and what goes wrong? For the developer role
 | Agent read-only, a separate job writes (gh-aw) | Principle 6 already: the agent proposes a patch; `apply`, holding the App's key and no AI key, opens the pull request |
 | Never ready, approve, merge (Copilot) | No merge intention in its catalogue; merging stays `follow`'s, by the project's policy ([ADR-0042](../adr/0042-the-engine-merges-by-the-projects-policy.md)) |
 | One pull request a run, a file allowlist, protected files (gh-aw) | One issue a run; its writes bounded by the issue's Scope; the files that steer agents never touched |
-| Duplicates and unread pull requests are most rejections | Never a second pull request for an issue; one open at a time until the person has read it |
+| Duplicates and unread pull requests are most rejections | Never a second pull request for an issue; several open, never two touching the same files |
 | Red CI cuts the merge odds (MSR 2026) | The project's tests and the Verification run before the pull request leaves Draft |
 | Failure keeps the work (OpenHands, gh-aw) | Over budget or red: a Draft, saying what failed |
-| Caps on a session, not on rounds | A token and time cap a run; rounds capped by the reviewer, five, then a person |
+| Caps on a session, not on rounds | A token and time cap a run; rounds capped by the reviewer, five, the five whys at three, then a person |
 | A pull request opened with the job's token runs no CI (gh-aw) | Opened by workline's App, so the project's checks run |
-| A person starts each one | Here `workline:ready` is that act: a person's, or the product owner's under the person's written rules |
+| A person starts each one, by assigning it the issue | The developer assigns itself the first issue the product owner set `ready`; a person assigning themselves keeps it |
 
 **Not found**: a tool tying the proof to the issue's own test plan; a
 written cap on review rounds; a measure of agents' cost per merged pull
