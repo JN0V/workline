@@ -99,7 +99,7 @@ func TestLocalAndFakeClosedWith(t *testing.T) {
 	for _, b := range []string{"workline/documentalist/reader-a", "workline/documentalist/reader-b"} {
 		run("checkout", "-q", "-b", b, "main")
 		run("commit", "-q", "--allow-empty", "-m", b)
-		if _, err := l.OpenMergeRequest(b, "main", "docs: "+b, "body"); err != nil {
+		if _, err := l.OpenMergeRequest(b, "main", "docs: "+b, "body", false); err != nil {
 			t.Fatal(err)
 		}
 	}

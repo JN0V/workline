@@ -29,6 +29,7 @@ type LocalItem struct {
 	Milestone string   `yaml:"milestone,omitempty"`
 	Branch    string   `yaml:"branch,omitempty"` // a merge request's local branch
 	Base      string   `yaml:"base,omitempty"`
+	Draft     bool     `yaml:"draft,omitempty"` // a merge request opened as a draft
 	Body      string   `yaml:"-"`
 	Comments  []string `yaml:"-"`
 }
@@ -385,7 +386,7 @@ func (l *Local) KeepIssue(title, body string, create bool) (int, error) {
 	return id, l.save("issue", &LocalItem{ID: id, Title: title, State: "open", Body: body})
 }
 
-func (l *Local) OpenMergeRequest(branch, base, title, body string) (int, error) {
+func (l *Local) OpenMergeRequest(branch, base, title, body string, draft bool) (int, error) {
 	items, err := l.Items("merge-request")
 	if err != nil {
 		return 0, err
@@ -400,7 +401,7 @@ func (l *Local) OpenMergeRequest(branch, base, title, body string) (int, error) 
 	if err != nil {
 		return 0, err
 	}
-	return id, l.save("merge-request", &LocalItem{ID: id, Title: title, State: "open", Branch: branch, Base: base, Body: body})
+	return id, l.save("merge-request", &LocalItem{ID: id, Title: title, State: "open", Branch: branch, Base: base, Body: body, Draft: draft})
 }
 
 func (l *Local) OpenMergeRequests(prefix string) ([]string, error) {

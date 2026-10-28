@@ -635,7 +635,7 @@ func (g *github) openPulls() (map[string]int, error) {
 	return pulls, nil
 }
 
-func (g *github) OpenMergeRequest(branch, base, title, body string) (int, error) {
+func (g *github) OpenMergeRequest(branch, base, title, body string, draft bool) (int, error) {
 	pulls, err := g.openPulls()
 	if err != nil {
 		return 0, err
@@ -644,7 +644,7 @@ func (g *github) OpenMergeRequest(branch, base, title, body string) (int, error)
 		_, err := g.api("-X", "PATCH", fmt.Sprintf("repos/{owner}/{repo}/pulls/%d", id), "-f", "title="+title, "-f", "body="+body)
 		return id, err
 	}
-	out, err := g.api("-X", "POST", "repos/{owner}/{repo}/pulls", "-f", "title="+title, "-f", "head="+branch, "-f", "base="+base, "-f", "body="+body, "--jq", ".number")
+	out, err := g.api("-X", "POST", "repos/{owner}/{repo}/pulls", "-f", "title="+title, "-f", "head="+branch, "-f", "base="+base, "-f", "body="+body, "-F", fmt.Sprintf("draft=%t", draft), "--jq", ".number")
 	if err != nil {
 		return 0, err
 	}

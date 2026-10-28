@@ -540,7 +540,7 @@ func (f *Fake) OpenIssue(title, body, marker string) (int, error) {
 	return id, err
 }
 
-func (f *Fake) OpenMergeRequest(branch, base, title, body string) (int, error) {
+func (f *Fake) OpenMergeRequest(branch, base, title, body string, draft bool) (int, error) {
 	id := 0
 	err := f.write(func(s *FakeState) error {
 		for i := range s.MergeRequests {
@@ -553,7 +553,7 @@ func (f *Fake) OpenMergeRequest(branch, base, title, body string) (int, error) {
 			id = max(id, m.ID)
 		}
 		id++
-		s.MergeRequests = append(s.MergeRequests, FakeItem{ID: id, Branch: branch, Base: base, Title: title, Body: body, Labels: []string{}, Comments: []FakeComment{}})
+		s.MergeRequests = append(s.MergeRequests, FakeItem{ID: id, Branch: branch, Base: base, Title: title, Body: body, Draft: draft, Labels: []string{}, Comments: []FakeComment{}})
 		return nil
 	})
 	return id, err

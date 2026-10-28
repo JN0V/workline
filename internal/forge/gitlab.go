@@ -1160,7 +1160,7 @@ func (g *gitlab) openMergeRequests() (map[string]int, error) {
 	return open, nil
 }
 
-func (g *gitlab) OpenMergeRequest(branch, base, title, body string) (int, error) {
+func (g *gitlab) OpenMergeRequest(branch, base, title, body string, draft bool) (int, error) {
 	open, err := g.openMergeRequests()
 	if err != nil {
 		return 0, err
@@ -1168,6 +1168,9 @@ func (g *gitlab) OpenMergeRequest(branch, base, title, body string) (int, error)
 	if id, ok := open[branch]; ok {
 		_, err := g.api("-X", "PUT", fmt.Sprintf("projects/:id/merge_requests/%d", id), "-f", "title="+title, "-f", "description="+body)
 		return id, err
+	}
+	if draft { // GitLab's draft is a title starting "Draft:"
+		title = "Draft: " + title
 	}
 	out, err := g.api("-X", "POST", "projects/:id/merge_requests", "-f", "source_branch="+branch, "-f", "target_branch="+base,
 		"-f", "title="+title, "-f", "description="+body, "-f", "remove_source_branch=true")
