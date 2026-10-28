@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/engine/engine.go, internal/hooks]
-checked: 80bc665e
+checked: 227c05e8
 verified: agent:claude-code
 judged: e343388
 ---
@@ -120,6 +120,16 @@ tests, one a scenario, through the agent
   as a Draft `Refs #<n>`. Not red, nothing is opened.
 - **`--forge`**: where the issue is read and the Draft opened; the
   project's `forge` setting by default.
+
+`workline test answer --merge-request <n>` has the tester answer the
+first objection waiting on its Draft
+([tester](../roles/tester/README.md#frozen-tests-and-objections)):
+
+- **Kept** or **rewritten**, in the objection's thread; a rewrite is its
+  own commit on the branch, red on the base, pushed without force.
+- **Checked out** at the branch's tip; another branch is never written.
+- **`--ai`**: none says so and answers nothing; the need itself, an
+  unreadable form and a person's turn need no agent.
 
 ## workline review
 
