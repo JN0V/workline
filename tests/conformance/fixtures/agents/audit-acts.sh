@@ -45,6 +45,20 @@ misquote:*)
 *"The message of commit"*)
 	printf '%s\n' '- claim: {status: contradicted, quote: "and drop N01", source: {path: diff, quote: "+const Extra = 12"}, why: "The diff adds Extra and drops nothing."}' \
 		'- note: "false: the message says more than the commit does"' ;;
+*"The tests the tester wrote"*"### lib.sh (base)"*)
+	printf '%s\n' '- claim: {status: contradicted, source: {path: tests/test_sub.sh, quote: "sub 3 5"}, why: "It subtracts 5 from 3."}' \
+		'- claim: {status: contradicted, source: {path: scenarios, quote: "When I subtract 3 from 5, Then I get 2."}, why: "The scenario subtracts 3 from 5."}' \
+		'- note: "false: the test checks another subtraction"' ;;
+*"The tester kept its test"*)
+	printf '%s\n' '- claim: {status: contradicted, source: {path: tests/test_sub.sh, quote: "= -2 ]"}, why: "The test wants -2, the scenario 2."}' \
+		'- note: "false: the test does not check the scenario"' ;;
+*"The tester rewrote its test"*"### before"*"### after"*)
+	printf '%s\n' '- claim: {status: contradicted, source: {path: after, quote: "-ge 0 ]"}, why: "Any value not below zero passes."}' \
+		'- claim: {status: contradicted, source: {path: scenarios, quote: "Then I get 2."}, why: "The scenario wants 2."}' \
+		'- note: "false: the rewrite loosens the Then"' ;;
+*"The tester's curator removed"*)
+	printf '%s\n' '- claim: {status: contradicted, source: {path: diff, quote: "add 1 1"}, why: "1 + 1 is the only sum of equal numbers checked."}' \
+		'- note: "false: the removed test checks what none kept does"' ;;
 *'`ready` on #20'*)
 	printf '%s\n' '- claim: {status: contradicted, source: {path: "#20", quote: "### Validation TBD"}, why: "No person wrote its Validation."}' \
 		'- note: "false: it was not ready"' ;;

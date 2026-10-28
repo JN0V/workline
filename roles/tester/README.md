@@ -92,7 +92,7 @@ workline test write --issue 42 --ai claude
 ## Frozen tests and objections
 
 - **The record**: on the Draft, workline's own comment lists each test
-  file and its git blob. Only the tester's runs write it.
+  file, its git blob, the scenarios read. Only the tester's runs write it.
 - **The guard**, no agent: route the tester on `merge-request`. On its
   branch, a test file changed or deleted by anyone else blocks,
   `tester-test-changed`. No label lifts it, and no commit trailer is
@@ -108,6 +108,7 @@ workline test write --issue 42 --ai claude
   - *rewritten*: its own commit on the branch, `Refs` the thread. It
     still names the scenario and must be red on the base. The record
     and the reply follow only once the commit is pushed.
+  - Either keeps a hidden line for the [weekly sample](../../docs/weekly-sample.md).
 - **The need itself** goes to the product owner, with no agent: the
   issue back to `workline:to-refine`, said there and in the thread.
 - **Bounded**: three answers a thread (`objection-exchanges`). The

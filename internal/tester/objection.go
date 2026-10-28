@@ -488,8 +488,10 @@ func judgeAnswer(runDir, repo string, a answer, s Settings) int {
 	if a.FiveWhys {
 		why = "\n\n**Five whys due**: the second answer did not settle it. Ask why the test and the code disagree, five times, down to the cause; the shared skill comes later (ADR-0055, step 8)."
 	}
+	at, _ := git(repo, "rev-parse", "HEAD")
+	act := Answered{Act: "kept", At: strings.TrimSpace(at), Model: asked(runDir), Scenario: a.Scenario, Test: a.File}
 	if len(patches) == 0 {
-		out := []intent.Intention{reply("**Kept**: " + reason + why)}
+		out := []intent.Intention{reply("**Kept**: " + reason + why + "\n" + act.line())}
 		if err := intent.Write(filepath.Join(runDir, "out", "intentions.yaml"), out); err != nil {
 			return fail(err)
 		}
@@ -522,6 +524,7 @@ func judgeAnswer(runDir, repo string, a answer, s Settings) int {
 		proof.Summary = "the rewrite is not red on the base: " + proof.Summary
 		return write(runDir, *proof)
 	}
+	act.Act, act.Blob = "rewritten", blobs[a.File]
 	r := a.Record
 	files := map[string]string{}
 	for f, b := range r.Files {
@@ -530,7 +533,7 @@ func judgeAnswer(runDir, repo string, a answer, s Settings) int {
 	files[a.File] = blobs[a.File]
 	r.Files = files
 	out := []intent.Intention{patches[len(patches)-1],
-		reply("**Rewritten**, the tester's own commit on this branch, red on the base: " + reason + why),
+		reply("**Rewritten**, the tester's own commit on this branch, red on the base: " + reason + why + "\n" + act.line()),
 		{Kind: "comment", Value: r.intention()["comment"]}}
 	for _, in := range intents {
 		if in.Kind == "note" {
