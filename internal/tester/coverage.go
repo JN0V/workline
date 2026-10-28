@@ -35,7 +35,7 @@ func coverageLines(tree, report string) []string {
 	if err != nil {
 		return []string{fmt.Sprintf("- **coverage**: the test command wrote no %s", report)}
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	pkgs, unit, err := readCoverage(bufio.NewScanner(f))
 	if err != nil || len(pkgs) == 0 {
 		return []string{fmt.Sprintf("- **coverage**: %s is neither Go's profile nor LCOV", report)}

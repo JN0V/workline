@@ -161,8 +161,6 @@ jobs:
         with: {fetch-depth: 0}
       - uses: ./.github/actions/engine
         with: {go: "true"}
-      - name: gotestsum, pinned
-        run: go install gotest.tools/gotestsum@v1.12.3
       - name: The history, from the last measure's artifact
         env: {GH_TOKEN: "${{ github.token }}"}
         run: |

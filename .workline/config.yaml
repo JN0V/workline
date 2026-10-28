@@ -60,9 +60,10 @@ roles:
   tester:
     settings:
       # The curator's measures (`workline test measure`, the gardening's
-      # curator job): the whole suite, its coverage profile too.
-      test-command: gotestsum --junitfile {report} -- ./...
-      curator-command: gotestsum --junitfile {report} -- -coverprofile=cover.out ./...
+      # curator job): the whole suite, its coverage profile too; gotestsum
+      # pinned, run by Go.
+      test-command: go run gotest.tools/gotestsum@v1.12.3 --junitfile {report} -- ./...
+      curator-command: go run gotest.tools/gotestsum@v1.12.3 --junitfile {report} -- -coverprofile=cover.out ./...
       coverage-report: cover.out
   reviewer:
     settings:
