@@ -1,12 +1,17 @@
 package agent
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
+	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 
+	"github.com/JN0V/workline"
 	"github.com/JN0V/workline/internal/scale"
 	"github.com/JN0V/workline/internal/work"
 )
@@ -110,6 +115,11 @@ func Prompt(req Request) (system, user string, err error) {
 		return "", "", err
 	}
 	b.WriteString("# Task\n\n" + string(task) + "\n\n")
+	skills, err := Skills(req)
+	if err != nil {
+		return "", "", err
+	}
+	b.WriteString(skills)
 	if fb, err := os.ReadFile(filepath.Join(req.RunDir, "out", "feedback.md")); err == nil {
 		b.WriteString("# Your previous answer was refused\n\n" + string(fb) + "\n" +
 			"Your new answer replaces it whole: give again, unchanged, every proposal and every change of it not refused above, and change only what is refused.\n\n")
@@ -132,6 +142,58 @@ func Prompt(req Request) (system, user string, err error) {
 		}
 	}
 	return system, user, nil
+}
+
+// SkillsFile, in a run's in/, names the shared skills the run loads, one
+// a line: the role's pre writes it when its task calls for one.
+const SkillsFile = "skills"
+
+var skillName = regexp.MustCompile(`^[a-z0-9]+(-[a-z0-9]+)*$`)
+
+// Skills is the text of the shared skills the run's pre named, each after
+// the task, under its own heading, its frontmatter left out: the role
+// decides when a skill is due, so its body is given whole, not its
+// description first (Agent Skills' progressive loading). A skill is looked
+// up as a facet (skills/<name>/SKILL.md), then in the project's
+// .workline/skills/, then as shipped; one the role does not declare in
+// context.skills is refused.
+func Skills(req Request) (string, error) {
+	data, err := os.ReadFile(filepath.Join(req.RunDir, "in", SkillsFile))
+	if errors.Is(err, fs.ErrNotExist) {
+		return "", nil
+	} else if err != nil {
+		return "", err
+	}
+	var b strings.Builder
+	for _, name := range strings.Fields(string(data)) {
+		if !skillName.MatchString(name) || !slices.Contains(req.Role.Context.Skills, name) {
+			return "", fmt.Errorf("skill %q: not one role %s declares in context.skills (%s)", name, req.Role.Name, strings.Join(req.Role.Context.Skills, ", "))
+		}
+		rel := filepath.Join("skills", name, "SKILL.md")
+		text, ok := facet(req, rel)
+		if !ok {
+			if d, err := os.ReadFile(filepath.Join(req.Repo, ".workline", rel)); err == nil {
+				text, ok = string(d), true
+			} else if d, err := fs.ReadFile(workline.Skills, "skills/"+name+"/SKILL.md"); err == nil {
+				text, ok = string(d), true
+			}
+		}
+		if !ok {
+			return "", fmt.Errorf("skill %q not found", name)
+		}
+		fmt.Fprintf(&b, "# Skill: %s\n\n%s\n\n", name, strings.TrimSpace(skillBody(text)))
+	}
+	return b.String(), nil
+}
+
+// skillBody is a SKILL.md without its frontmatter.
+func skillBody(text string) string {
+	if rest, ok := strings.CutPrefix(text, "---\n"); ok {
+		if _, body, ok := strings.Cut(rest, "\n---\n"); ok {
+			return body
+		}
+	}
+	return text
 }
 
 // Tokens estimates what a prompt of so many characters (bytes) costs, before

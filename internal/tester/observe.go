@@ -53,6 +53,7 @@ type Answered struct {
 	Scenario Scenario `json:"scenario"`        // the scenario, as the run read it
 	Test     string   `json:"test"`            // the test objected to
 	Blob     string   `json:"blob,omitempty"`  // a rewrite's: the test as rewritten
+	Whys     bool     `json:"whys,omitempty"`  // the reply holds the five whys, the third answer's
 }
 
 var answeredData = regexp.MustCompile(`<!-- workline:tester-act (\{.*\}) -->`)

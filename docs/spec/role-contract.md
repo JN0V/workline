@@ -25,7 +25,7 @@ roles/<name>/
   post              deterministic: validates, decides the verdict
   lenses/*.md       the reviewer's: one facet per lens
   kinds/*.md        the auditor's: one facet per kind of act
-  skills/           optional, Agent Skills format (SKILL.md); not read yet
+  skills/<n>/SKILL.md  optional: the role's own copy of a shared skill (see "Shared skills")
   docs/             about the role, never loaded: reference pages, status.md, tried.md (archived)
 ```
 
@@ -87,6 +87,8 @@ model:                          # what kind of thinking, never a model name
 
 context:
   knowledge: []                 # which knowledge/ files to load; none by default
+  skills: []                    # shared skills a run may load, when its pre
+                                # names them (see "Shared skills"); none by default
   budget: 16000                 # tokens, estimated 711 + 0.82 a character
                                 # (agent.Tokens); the engine refuses a larger prompt:
                                 # the agent is not asked, the run goes on without it,
@@ -159,6 +161,29 @@ macOS: `~/Library/Application Support/workline/roles/<name>/`, then
 `~/.config/workline/roles/<name>/`), then in the role as shipped.
 The first one found wins, so a project can replace one facet without copying the
 role.
+
+## Shared skills
+
+A method several roles use — the five whys first — ships once, in
+`skills/<name>/SKILL.md` at the repository's root, in the
+[Agent Skills](https://agentskills.io/specification) format: a
+frontmatter with `name` and `description`, then the method.
+
+- **Declared**: a role lists the skills it may load in
+  `context.skills`; any other is refused.
+- **Triggered by the role's `pre`**, never chosen by the agent: when the
+  task calls for one, `pre` writes its name in `in/skills`, one a line.
+  The role's code decides when (the tester: an objection's thread still
+  open after two answers).
+- **Given whole, after the task**, under `# Skill: <name>`, its
+  frontmatter left out; the role's context budget counts it.
+- **Looked up** as a facet (`skills/<name>/SKILL.md` in the role's
+  folders, the project's first), then in the project's
+  `.workline/skills/<name>/`, then as shipped.
+- **Its answer** is what the skill says, among the role's intentions;
+  the role's `post` checks its form. The five whys: one `note`, read by
+  the engine's `whys` package
+  ([role-adapting.md](role-adapting.md#defects-become-guards)).
 
 ## One run
 

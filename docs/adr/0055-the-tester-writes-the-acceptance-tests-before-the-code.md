@@ -369,3 +369,31 @@ Each step: conformance cases first; a try told under `## Tried` ([ADR-0043]).
   duplicate planted in `internal/scale`, found and proven in 32 s:
   20 tests to 19, coverage 94.7 % and 141 of 173 mutants killed, both
   unchanged.
+
+## Amendment 2026-10-28: step 8 as built, the five whys
+
+- **One shared skill**: `skills/five-whys/SKILL.md` at the repository's
+  root, in the Agent Skills format, shipped in the binary; any role
+  declares it in `context.skills`, its `pre` names it in the run's
+  `in/skills` when due ([role contract](../spec/role-contract.md#shared-skills),
+  [research](../research/root-cause.md)). The `skills/` folder of a
+  role holds only its own copy of one.
+- **Not the agent's choice**: the role's code says when it is due; the
+  body is given whole after the task, not picked from a description.
+- **Its form, checked**: one `note` opening with `Five whys`; the
+  problem, the whys numbered (five at most, each quoting the material),
+  the root cause, an optional second (`Also:`), one action of a kind
+  (`issue`, `test`, `doc`, `code`, `decision`); 1,500 characters at
+  most. Read by the engine's `whys` package.
+- **The tester, its first user**: the third answer to a thread loads it;
+  the analysis is posted under its answer, kept or rewritten, for the
+  builder's next turn or the person. Missing (`five-whys-missing`) or
+  malformed (`five-whys-unreadable`), the answer is refused and the
+  agent asked again. It replaces the warning `five-whys-due`.
+- **Drawn by the auditor**: its own kind, `whys` ("five whys given"),
+  from the answer's hidden line (`"whys": true`): does each because
+  follow from the thread, is the cause one the project can change?
+- **The developer** loads it the same way at review round three
+  ([ADR-0054]), when it is built; the defect ledger
+  ([role-adapting.md](../spec/role-adapting.md#defects-become-guards))
+  likewise, when a defect is recorded.

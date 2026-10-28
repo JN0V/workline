@@ -1,7 +1,8 @@
-case: tester/objection-five-whys-due
+case: tester/objection-five-whys-missing-refused
 about: >
   Still open after the tester's second answer, the five whys are due:
-  the third answer says so, and the run warns (ADR-0055).
+  a third answer that gives no analysis is refused, and nothing is said
+  in the thread (ADR-0055, the shared skill).
 given:
   repo: tested-draft
   setup:
@@ -23,11 +24,10 @@ given:
           - {id: "7", path: tests/test_mul_two_by_three.sh, line: 4, author: builder, body: "workline:objection\n- test: tests/test_mul_two_by_three.sh\n- scenario: Two by three\n- kind: over-specified\n- why: too strict", replies: ["Kept: first.\n\n<!-- workline:tester-answer -->", {body: "still too strict", author: builder}, "Kept: second.\n\n<!-- workline:tester-answer -->", {body: "still", author: builder}]}
 run: {test: [answer, --merge-request, "1"], ai: "fake:tester-answer-kept"}
 expect:
-
-  status: pass
-  findings: [{rule: five-whys-due, level: warn}]
+  status: block
+  findings: [{rule: five-whys-missing}]
   forge:
     merge-requests:
       - id: 1
         threads:
-          - {path: tests/test_mul_two_by_three.sh, replies: 5, replies-contain: ["Five whys due"]}
+          - {path: tests/test_mul_two_by_three.sh, replies: 4}

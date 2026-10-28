@@ -8,7 +8,7 @@ sources:
   - ci/gitlab/workline.gitlab-ci.yml#workline:sample:write
   - roles/auditor
   - roles/product-owner/role.yaml
-checked: b6085f38
+checked: 3b872f73
 judged: c9d96e2
 verified: agent:claude-code
 ---
@@ -23,8 +23,8 @@ product owner's acts done alone, the findings the reviewer's judge kept
 or dropped on every run
 ([a line each in its summary comment](../roles/reviewer/docs/judge.md#every-finding-judged-kept-for-the-weekly-sample),
 and in that of its lenses that warn, [read apart](../roles/reviewer/docs/apart.md)),
-the committer's rewrites, the tester's tests, its answers to objections
-and its curator's removals. How to schedule it: on
+the committer's rewrites, the tester's tests, its answers to objections,
+the five whys it gave, and its curator's removals. How to schedule it: on
 [GitHub](ci-github.md), [GitLab](ci-gitlab.md#4-the-weekly-sample),
 [another forge or none](ci-other-forges.md).
 

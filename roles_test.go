@@ -2,7 +2,11 @@ package workline
 
 import (
 	"io/fs"
+	"regexp"
+	"strings"
 	"testing"
+
+	"go.yaml.in/yaml/v3"
 )
 
 // loaded names what the engine reads at a role's top level
@@ -34,6 +38,50 @@ func TestRoleTopLevelHoldsOnlyWhatTheEngineLoads(t *testing.T) {
 			default:
 				t.Errorf("roles/%s/%s: the engine does not load it; a page about the role goes to roles/%s/docs/",
 					r.Name(), name, r.Name())
+			}
+		}
+	}
+}
+
+// Each shared skill is in the Agent Skills format: a SKILL.md whose
+// frontmatter names it as its folder and says when to use it; each skill a
+// role declares in context.skills is shipped.
+func TestSharedSkillsFollowTheAgentSkillsFormat(t *testing.T) {
+	name := regexp.MustCompile(`^[a-z0-9]+(-[a-z0-9]+)*$`)
+	skills, err := fs.ReadDir(Skills, "skills")
+	if err != nil {
+		t.Fatal(err)
+	}
+	shipped := map[string]bool{}
+	for _, d := range skills {
+		data, err := fs.ReadFile(Skills, "skills/"+d.Name()+"/SKILL.md")
+		if err != nil {
+			t.Errorf("skills/%s: no SKILL.md", d.Name())
+			continue
+		}
+		var front struct{ Name, Description string }
+		head, _, _ := strings.Cut(strings.TrimPrefix(string(data), "---\n"), "\n---\n")
+		if err := yaml.Unmarshal([]byte(head), &front); err != nil || front.Name != d.Name() || !name.MatchString(front.Name) ||
+			front.Description == "" || len(front.Description) > 1024 {
+			t.Errorf("skills/%s/SKILL.md: frontmatter %+v (%v): a name as its folder's, a description of 1 to 1024 characters", d.Name(), front, err)
+		}
+		shipped[d.Name()] = true
+	}
+	roles, _ := fs.ReadDir(Roles, "roles")
+	for _, r := range roles {
+		data, err := fs.ReadFile(Roles, "roles/"+r.Name()+"/role.yaml")
+		if err != nil {
+			continue
+		}
+		var role struct {
+			Context struct{ Skills []string } `yaml:"context"`
+		}
+		if err := yaml.Unmarshal(data, &role); err != nil {
+			t.Errorf("roles/%s/role.yaml: %v", r.Name(), err)
+		}
+		for _, s := range role.Context.Skills {
+			if !shipped[s] {
+				t.Errorf("roles/%s declares the skill %q, which is not shipped in skills/", r.Name(), s)
 			}
 		}
 	}

@@ -16,7 +16,8 @@ import (
 // The tester's acts in the weekly sample (ADR-0046, the tester's row), on
 // each merge request of its merged in the window, read where it did them:
 // its tests, from its commit and the record on its Draft; an objection
-// answered kept or rewritten, from its reply's hidden line; a removal of
+// answered kept or rewritten, from its reply's hidden line, and the five
+// whys a third answer posted with it, drawn apart; a removal of
 // its curator's, from its commit and its pull request's proof. Not drawn:
 // an objection to the need itself, sent to the product owner by the
 // builder's own word, and a flaky verdict, three runs counted: mechanical
@@ -25,7 +26,7 @@ import (
 const testRole = "tester"
 
 // testerKinds are the tester's kinds of act drawn, in the order it does them.
-var testerKinds = []string{"tests", "kept", "rewritten", "removal"}
+var testerKinds = []string{"tests", "kept", "rewritten", "whys", "removal"}
 
 // testerAct is what a tester's act is re-checked against, read with it.
 type testerAct struct {
@@ -153,6 +154,11 @@ func answeredOn(f forge.Forge, id int, ref string, r tester.Record, recorded boo
 			out = append(out, Act{Role: testRole, Kind: ans.Act, Ref: ref, Where: ans.Test, Commit: ans.At, Day: day, By: ans.Model,
 				Line: words, key: fmt.Sprintf("%s/%s/%d", ref, t.ID, i),
 				tester: &testerAct{mr: id, record: r, recorded: recorded, answered: ans, thread: t.Comments[:i], reply: words}})
+			if ans.Whys { // the analysis, its own act: its root cause read, not the answer's
+				w := out[len(out)-1]
+				w.Kind, w.key = "whys", w.key+"/whys"
+				out = append(out, w)
+			}
 		}
 	}
 	return out, "", nil
@@ -206,16 +212,19 @@ func (rd *reader) testerMaterial(a *Act, m *material) string {
 		m.items = append(m.items, code...)
 		m.act = fmt.Sprintf("The tests the tester wrote for #%d's scenarios, in commit %.7s, proven red on the base %.7s before any code was written.", t.record.Issue, a.Commit, t.record.Base)
 		m.about = about + "; each test file at the tester's commit; the code the issue's " + work.Name(work.Scope) + " names, at the base (`(base)`)."
-	case "kept", "rewritten":
+	case "kept", "rewritten", "whys":
 		ans := t.answered
 		m.items = append(m.items, scenariosItem([]tester.Scenario{ans.Scenario}), item{name: "objection", text: threadText(t.thread), full: threadText(t.thread)})
 		before, err := git(repo, "show", ans.At+":"+ans.Test)
 		if err != nil {
 			return fmt.Sprintf("%s is not at %.7s, where the answer read it", ans.Test, ans.At)
 		}
-		if a.Kind == "kept" {
+		if a.Kind != "rewritten" {
 			m.items = append(m.items, item{name: ans.Test, text: before, full: before, code: true})
 			m.act = fmt.Sprintf("The tester kept its test `%s` against the builder's objection.", ans.Test)
+			if a.Kind == "whys" {
+				m.act = fmt.Sprintf("Two answers did not settle the builder's objection to `%s`: the tester's third gives the five whys, the cause and one action.", ans.Test)
+			}
 		} else {
 			after, err := git(repo, "cat-file", "-p", ans.Blob)
 			if err != nil {

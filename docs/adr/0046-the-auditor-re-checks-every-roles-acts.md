@@ -56,7 +56,7 @@ so a rare kind is still read ([research]).
 | Product owner | each act done alone: ready, refine, sources, order, ask; closing, split, milestone, rename where turned on | 45: 10, 12, 6, 14, 3 | 7 |
 | Reviewer | an important finding its judge let through, or dropped | about 160 a week: 39, 121 | 17 |
 | Committer | a message it rewrote | 7 in two weeks, at least | 1 |
-| Tester | its tests; an objection answered kept or rewritten; a curator's removal ([amendment](#amendment-2026-10-28-the-testers-row)) | none merged yet | 1 a kind |
+| Tester | its tests; an objection answered kept or rewritten; the five whys a third answer gives; a curator's removal ([amendment](#amendment-2026-10-28-the-testers-row)) | none merged yet | 1 a kind |
 
 Not drawn, and why:
 
@@ -118,7 +118,7 @@ finding was kept: it answers blind, and the engine compares.
 | Split | Does each part hold one need, together the parent's? | the parent's words in no part |
 | A finding | Does the code fail as the finding says? The lens's question | the code's words |
 | A rewrite | Does the message say what the commit does, nothing more? Against the diff alone | the message's words, and the diff's |
-| The tester's acts | Its tests check their Then, red for it? Kept, rewritten: the Then kept? Removed: redundant? ([amendment](#amendment-2026-10-28-the-testers-row)) | the test's words, the scenario's |
+| The tester's acts | Its tests check their Then, red for it? Kept, rewritten: the Then kept? Five whys: each because shown? Removed: redundant? ([amendment](#amendment-2026-10-28-the-testers-row)) | the test's words, the scenario's |
 
 - **Another model than every model that acted**: for a finding, neither
   the lens's nor the judge's. Workline has one provider and several
@@ -312,7 +312,11 @@ auditor read ([#264]):
   commit they were proven red on. Each answer kept or rewritten ends
   with a hidden line, `workline:tester-act`: the commit the test was read
   at, the models asked (the run's calls), the scenario, the test, and a
-  rewrite's blob. Nothing else is written.
+  rewrite's blob, and `whys` when the answer gives the five whys
+  ([ADR-0055]'s step 8). Nothing else is written.
+- **The five whys, a kind apart** (`whys`, "five whys given"): read on
+  the same material as its answer; the question is whether each because
+  follows from the thread and the cause is one the project can change.
 - **Its material**: the tests at their commit, the scenarios, the code
   the issue's Scope names at the base; an answer, the scenario, the
   objection's thread up to it, the test before and after; a removal, its

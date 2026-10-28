@@ -1,6 +1,6 @@
 ---
 type: reference
-sources: [internal/engine, internal/intent, internal/role, internal/agent]
+sources: [internal/engine, internal/intent, internal/role, internal/agent, internal/whys, skills]
 verified: agent:claude-code
 checked: edc4ffc2
 judged: b530b72
@@ -79,9 +79,9 @@ role's conformance cases are the way to check the fork still keeps the contract.
 
 ## Defects become guards
 
-*Not built yet: the ledger and the shared skill. Defects found so far are
-guarded by tests, recorded in the role's README ("Tried for real"), or in the
-page it links to.*
+*Not built yet: the ledger. Defects found so far are guarded by tests,
+recorded in the role's README ("Tried for real"), or in the page it links
+to. The shared skill is built; the tester is its first user.*
 
 When a role lets a defect through, fixing the output is not enough. The
 defect is recorded in the role's `DEFECTS.md` (what happened, why, the
@@ -92,9 +92,29 @@ repeat.
 The "why" is found with the five whys: ask why the defect happened, then why
 that happened, until the answer is a cause the project can act on rather than a
 symptom. A countermeasure against a symptom only moves the defect elsewhere.
-The method ships as a shared skill that any role can load.
+The method ships as a shared skill that any role can load:
+[`skills/five-whys/SKILL.md`](../../skills/five-whys/SKILL.md)
+([research](../research/root-cause.md)).
+
+- **Who triggers it**: the role's `pre`, by writing `five-whys` in the
+  run's `in/skills`; the role declares it in `context.skills`
+  ([role-contract.md](role-contract.md#shared-skills)).
+- **When**: a problem that came back — an objection still open after two
+  answers (the tester, built), a review finding still there at round
+  three (the developer, [ADR-0054]), a role blocked again, a defect
+  recorded, a disagreement on a spec while it is written.
+- **What it gives**: one `note` opening with `Five whys` — the problem,
+  the whys numbered (five at most, each quoting the material), the root
+  cause, an optional second one (`Also:`), and one action of a kind:
+  `issue`, `test`, `doc`, `code` or `decision`. 1,500 characters at most.
+- **What the role does with it**: its `post` reads it with the `whys`
+  package (missing or malformed: refused, the agent asked again), posts
+  it where the next reader looks, and carries the action with its own
+  intentions; the analysis only proposes.
 
 A guard is trusted to block only when it is proven: it must fail on the commit
 where the defect happened, and pass on the fixed tree. A guard that cannot fail
 protects nothing, and a guard that fails on everything gets switched off. A rule written only in `policy.md` is a
 wish; the ledger is where wishes become checks.
+
+[ADR-0054]: ../adr/0054-the-developer-takes-a-ready-issue-to-a-pull-request.md
