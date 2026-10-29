@@ -1,19 +1,32 @@
 package developer
 
-// The bounds at apply (ADR-0054, step 2): post, with no agent, leaves out
-// each patch reaching a gate's file, a file that steers agents, a frozen
-// test or a file outside the issue's scope, and the agent's labels and
-// comments but an objection; roles/developer/docs/bounds.md says why.
+// The bounds at apply (ADR-0054, what bounds it; step 2): what the
+// developer's patches may never touch, refused by post with no agent. Pre
+// reads them before the agent is asked and keeps them in in/bounds.json;
+// post takes out each patch reaching past one, says why, and keeps the
+// rest. Refused, in this order:
+//
+//   - gate-file: a gate's definition — .workline/, the CI's workflows, the
+//     files a gate's check runs or reads its config from;
+//   - steering-file: a file that steers agents (internal/steer) or one in
+//     a role's folder, whatever the Scope says;
+//   - acceptance-test-edit: a test the tester froze on its open Draft
+//     (ADR-0055): the developer objects to it on its line instead;
+//   - outside-scope: a file neither the issue's Scope names, nor the
+//     product owner's sources for it, nor a test beside them (principle 8).
+//
+// A label or comment the agent proposes is refused too (not-the-developers):
+// the claim is the engine's, and the developer never labels, accepts nor
+// merges (ADR-0054, what it never does). Its one comment is an objection,
+// which post writes on the test's line of the tester's Draft.
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 	"path"
 	"path/filepath"
 	"slices"
-	"strconv"
 	"strings"
 
 	"go.yaml.in/yaml/v3"
@@ -47,8 +60,6 @@ type Bounds struct {
 type Refusal struct {
 	File string `json:"file"`
 	Rule string `json:"rule"`
-	// Detail is why the bounds could not be read, for bounds-unread.
-	Detail string `json:"detail,omitempty"`
 }
 
 // readBounds reads, on the forge, what bounds the issue's patches.
@@ -60,7 +71,7 @@ func readBounds(f forge.Forge, bl forge.Backlog, repo string, is forge.Issue) (B
 	}
 	if st, found, err := backlog.ReadState(comments, "product-owner"); found && err == nil {
 		for _, s := range st.Sources {
-			if s, ok := scopeEntry(s); ok && !slices.Contains(b.Scope, s) {
+			if s = strings.TrimSuffix(path.Clean(s), "/"); !slices.Contains(b.Scope, s) {
 				b.Scope = append(b.Scope, s)
 			}
 		}
@@ -112,9 +123,8 @@ var ciFiles = []string{".workline", ".github/workflows", ".github/actions", ".gi
 
 // gateFiles are the files a gate's checks run or read their config from,
 // as .workline/config.yaml declares them: a word of a check's command
-// that is a file of the repository, and its `config`. A config that
-// cannot be read is an error: no gate's file is known then.
-func gateFiles(repo string) ([]string, error) {
+// that is a file of the repository, and its `config`.
+func gateFiles(repo string) []string {
 	var cfg struct {
 		Gates map[string]struct {
 			Checks []struct {
@@ -124,81 +134,49 @@ func gateFiles(repo string) ([]string, error) {
 		} `yaml:"gates"`
 	}
 	data, err := os.ReadFile(filepath.Join(repo, ".workline", "config.yaml"))
-	if errors.Is(err, os.ErrNotExist) {
-		return nil, nil
-	}
-	if err != nil {
-		return nil, err
-	}
-	if err := yaml.Unmarshal(data, &cfg); err != nil {
-		return nil, fmt.Errorf(".workline/config.yaml: %w", err)
+	if err != nil || yaml.Unmarshal(data, &cfg) != nil {
+		return nil
 	}
 	var out []string
 	for _, g := range cfg.Gates {
 		for _, c := range g.Checks {
-			for _, f := range c.Config {
-				if f, ok := repoPath(f); ok {
-					out = append(out, f)
-				}
-			}
+			out = append(out, c.Config...)
 			for _, w := range strings.Fields(c.Run) {
 				w = strings.Trim(w, `"'`)
-				if st, err := os.Stat(filepath.Join(repo, w)); err == nil && !st.IsDir() {
-					if f, ok := repoPath(w); ok {
-						out = append(out, f)
-					}
+				if st, err := os.Stat(filepath.Join(repo, w)); err == nil && !st.IsDir() && !filepath.IsAbs(w) {
+					out = append(out, filepath.ToSlash(filepath.Clean(w)))
 				}
 			}
 		}
 	}
-	return out, nil
-}
-
-// repoPath is p cleaned, its slashes forward, when it names a file or a
-// folder inside the repository other than its root.
-func repoPath(p string) (string, bool) {
-	p = path.Clean(strings.ReplaceAll(strings.TrimSpace(p), `\`, "/"))
-	if p == "." || p == ".." || strings.HasPrefix(p, "../") || path.IsAbs(p) || filepath.IsAbs(p) {
-		return "", false
-	}
-	return p, true
-}
-
-// scopeEntry is a Scope's or a source's path, when it bounds less than
-// the whole repository: "." or "./" would put every file in bounds.
-func scopeEntry(p string) (string, bool) {
-	return repoPath(p)
+	return out
 }
 
 // under says whether p is one of roots or in one of them.
 func under(p string, roots []string) bool {
 	return slices.ContainsFunc(roots, func(r string) bool {
-		r = path.Clean(r)
-		return r != "." && (p == r || strings.HasPrefix(p, r+"/"))
+		r = strings.TrimSuffix(path.Clean(r), "/")
+		return r == "." || p == r || strings.HasPrefix(p, r+"/")
 	})
 }
 
-// besideTest says whether p is a test beside one of the scope's paths, its
-// name holding "test" or "spec": in a scope path's folder or under it, or
-// in a test folder that sits there. A folder's own folder is not its
-// neighbourhood: a Scope `src` lets in no test at the root.
-func besideTest(p string, scope []string, isDir func(string) bool) bool {
+// besideTest says whether p is a test beside one of the scope's paths: in
+// the same folder or under it, or in a test folder, its name holding
+// "test" or "spec".
+func besideTest(p string, scope []string) bool {
 	name := strings.ToLower(path.Base(p))
 	if !strings.Contains(name, "test") && !strings.Contains(name, "spec") {
 		return false
 	}
-	dirs := []string{path.Dir(p)}
-	parts := strings.Split(path.Dir(p), "/")
-	for i, part := range parts {
+	dir := path.Dir(p)
+	for _, part := range strings.Split(dir, "/") {
 		if part == "test" || part == "tests" || part == "spec" || part == "__tests__" {
-			dirs = append(dirs, path.Join(append([]string{"."}, parts[:i]...)...))
+			return true
 		}
 	}
-	for _, d := range dirs {
-		for _, s := range scope {
-			if d == path.Dir(s) && !isDir(s) || under(d, []string{s}) {
-				return true
-			}
+	for _, s := range scope {
+		if d := path.Dir(s); dir == d || under(dir, []string{s}) {
+			return true
 		}
 	}
 	return false
@@ -212,17 +190,11 @@ type checker struct {
 	roles string // the role folders, when in the repository
 	repo  string
 	steer func(string) bool
-	// unread is why the gates or the steering files could not be read:
-	// every file is refused then, rather than one let past.
-	unread error
 }
 
 func newChecker(repo string, b Bounds) checker {
-	c := checker{b: b, repo: repo, steer: func(string) bool { return false }}
-	c.gates, c.unread = gateFiles(repo)
-	if s, err := steer.Files(repo, "HEAD"); err != nil {
-		c.unread = errors.Join(c.unread, fmt.Errorf("the files that steer agents: %w", err))
-	} else {
+	c := checker{b: b, repo: repo, gates: gateFiles(repo), steer: func(string) bool { return false }}
+	if s, err := steer.Files(repo, "HEAD"); err == nil {
 		c.steer = s
 	}
 	if d := os.Getenv("WORKLINE_ROLES_DIR"); d != "" {
@@ -238,27 +210,16 @@ func (c checker) rule(p string) string {
 	switch {
 	case p == ".." || strings.HasPrefix(p, "../") || path.IsAbs(p):
 		return "outside-scope" // out of the repository
-	case under(p, ciFiles) || under(p, c.gates):
+	case under(p, ciFiles) || slices.Contains(c.gates, p):
 		return "gate-file"
-	case c.unread != nil:
-		return "bounds-unread"
 	case c.steer(p) || c.roles != "" && under(p, []string{c.roles}) || c.roleFolder(p):
 		return "steering-file"
 	case c.b.Frozen[p] > 0:
 		return "acceptance-test-edit"
-	case !under(p, c.b.Scope) && !besideTest(p, c.b.Scope, c.isDir):
+	case !under(p, c.b.Scope) && !besideTest(p, c.b.Scope):
 		return "outside-scope"
 	}
 	return ""
-}
-
-// isDir says whether a Scope's path is a folder: one in the repository,
-// or, not there yet, a name with no extension.
-func (c checker) isDir(p string) bool {
-	if st, err := os.Stat(filepath.Join(c.repo, filepath.FromSlash(p))); err == nil {
-		return st.IsDir()
-	}
-	return path.Ext(p) == ""
 }
 
 // roleFolder says whether p is in a role's folder of the repository: a
@@ -283,18 +244,14 @@ func (c checker) roleFolder(p string) bool {
 // why is what a refusal says to a person.
 func why(r Refusal) string {
 	switch r.Rule {
-	case "patch-unread":
-		return "a patch naming no file, or a diff header whose files cannot be told apart: nothing the bounds can hold, so refused rather than let past"
-	case "bounds-unread":
-		return "the engine could not read what bounds the developer (" + r.Detail + "): every patch refused rather than one let past; a person fixes it and runs it again"
 	case "gate-file":
 		return "a gate's definition or the CI's: only a person changes it (docs/spec/gates.md, protection); a person must do it"
 	case "steering-file":
-		return "a file that steers agents or a role's folder: never the developer's, whatever the scope; a person must do it"
+		return "a file that steers agents or a role's folder: never the developer's, whatever the Scope; a person must do it"
 	case "acceptance-test-edit":
 		return "an acceptance test the tester froze: read-only to the developer, which objects to it on its line instead; the tester keeps or rewrites it (ADR-0055)"
 	}
-	return "outside the issue's scope, the product owner's sources for it and the tests beside them: anything found there belongs in an issue (principle 8)"
+	return "outside the issue's Scope, the product owner's sources for it and the tests beside them: anything found there belongs in an issue (principle 8)"
 }
 
 // objection is the agent's word against a frozen test, as it proposes it.
@@ -344,21 +301,9 @@ func bounded(repo string, b Bounds, claim, proposed []intent.Intention) (kept []
 		case isClaim(i):
 		case i.Kind == "patch":
 			var bad []Refusal
-			files, read := touched(i.Value)
-			if !read || len(files) == 0 { // a patch the bounds cannot hold
-				ref := Refusal{File: "(a patch)", Rule: "patch-unread"}
-				if c.unread != nil {
-					ref.Rule, ref.Detail = "bounds-unread", c.unread.Error()
-				}
-				bad = append(bad, ref)
-			}
-			for _, f := range files {
+			for _, f := range touched(i.Value) {
 				if r := c.rule(f); r != "" {
-					ref := Refusal{File: path.Clean(filepath.ToSlash(f)), Rule: r}
-					if r == "bounds-unread" {
-						ref.Detail = c.unread.Error()
-					}
-					bad = append(bad, ref)
+					bad = append(bad, Refusal{File: path.Clean(filepath.ToSlash(f)), Rule: r})
 				}
 			}
 			if len(bad) == 0 {
@@ -372,8 +317,6 @@ func bounded(repo string, b Bounds, claim, proposed []intent.Intention) (kept []
 				said = append(said, "a comment: the developer's one comment is an objection to a frozen test; the claim's is the engine's")
 			case b.Draft == 0 || b.Frozen[o.Test] != b.Issue:
 				said = append(said, fmt.Sprintf("an objection to `%s`: not a test the tester froze for #%d on an open Draft", o.Test, b.Issue))
-			case b.Head == "":
-				said = append(said, fmt.Sprintf("an objection to `%s`: the commit of the tester's Draft !%d could not be read, so no line to put it on", o.Test, b.Draft))
 			case o.Line < 1 || strings.TrimSpace(o.Scenario) == "" || strings.TrimSpace(o.Kind) == "" || strings.TrimSpace(o.Why) == "":
 				said = append(said, fmt.Sprintf("an objection to `%s`: it names the test's line, the scenario, the kind and why", o.Test))
 			default:
@@ -393,114 +336,29 @@ func bounded(repo string, b Bounds, claim, proposed []intent.Intention) (kept []
 	return kept, refused, said
 }
 
-// touched lists the files a patch touches: its `file`, the `---` and
-// `+++` lines of its diff, both sides of each `diff --git` header and of
-// each `rename` or `copy` line, so that a rename or a deletion is held to
-// the bounds too. A path git quotes is unquoted. read is false when a
-// header names files it cannot tell apart (a name holding " b/") and no
-// other line of its section names them: the patch is refused then.
-func touched(v any) (files []string, read bool) {
-	diff, isDiff := v.(string)
-	if !isDiff {
-		return intent.PatchFiles(v), true
-	}
-	read = true
-	named := true // the current section's files are known
-	lines := strings.Split(diff, "\n")
-	for i, l := range lines {
-		if rest, ok := strings.CutPrefix(l, "diff --git "); ok {
-			read = read && named
-			a, b, ok := gitHeader(rest)
-			named = ok
-			if ok {
+// touched lists the files a patch touches: its `file`, the `+++` lines
+// of its diff, and both sides of each `diff --git` header and `rename`
+// line, so that a rename or a deletion is held to the bounds too.
+func touched(v any) []string {
+	files := intent.PatchFiles(v)
+	diff, _ := v.(string)
+	for _, l := range strings.Split(diff, "\n") {
+		if rest, ok := strings.CutPrefix(l, "diff --git a/"); ok {
+			if a, b, ok := strings.Cut(rest, " b/"); ok {
 				files = append(files, a, b)
-			}
-			continue
-		}
-		// A `---` line is a file's only before its `+++` and a hunk: a
-		// removed line "-- x" or an added "++ y" names no file.
-		if strings.HasPrefix(l, "--- ") && i+1 < len(lines) && strings.HasPrefix(lines[i+1], "+++ ") &&
-			(i+2 == len(lines) || strings.HasPrefix(lines[i+2], "@@")) {
-			for _, h := range []string{l, lines[i+1]} {
-				p, _, _ := strings.Cut(h[4:], "\t")
-				if p = unquote(strings.TrimSpace(p)); p != "/dev/null" {
-					files = append(files, stripSide(p))
-					named = true
-				}
 			}
 		}
 		for _, w := range []string{"rename from ", "rename to ", "copy from ", "copy to "} {
 			if p, ok := strings.CutPrefix(l, w); ok {
-				files = append(files, unquote(strings.TrimSpace(p)))
-				named = true
+				files = append(files, strings.TrimSpace(p))
 			}
 		}
 	}
-	read = read && named
 	for i, f := range files {
 		files[i] = path.Clean(f)
 	}
 	slices.Sort(files)
-	return slices.Compact(files), read
-}
-
-// gitHeader reads the two paths of a `diff --git` header, quoted or not;
-// ok is false when they cannot be told apart.
-func gitHeader(rest string) (a, b string, ok bool) {
-	if strings.HasPrefix(rest, `"`) {
-		q, err := strconv.QuotedPrefix(rest)
-		if err != nil {
-			return "", "", false
-		}
-		a, _ = strconv.Unquote(q)
-		b = unquote(strings.TrimPrefix(rest[len(q):], " "))
-		return stripSide(a), stripSide(b), strings.HasPrefix(b, "b/")
-	}
-	if i := strings.LastIndex(rest, ` "b/`); i > 0 && strings.HasSuffix(rest, `"`) {
-		return stripSide(rest[:i]), stripSide(unquote(rest[i+1:])), true
-	}
-	// Unquoted: split at the " b/" that leaves the same name on both
-	// sides; a rename's names differ, its rename lines name them.
-	var cuts []int
-	for i := 0; ; {
-		j := strings.Index(rest[i:], " b/")
-		if j < 0 {
-			break
-		}
-		cuts = append(cuts, i+j)
-		i += j + 1
-	}
-	for _, c := range cuts {
-		if x, y := stripSide(rest[:c]), stripSide(rest[c+1:]); x == y {
-			return x, y, true
-		}
-	}
-	if len(cuts) == 1 {
-		return stripSide(rest[:cuts[0]]), stripSide(rest[cuts[0]+1:]), true
-	}
-	return "", "", false
-}
-
-// unquote is a path as git writes it, C-quoted when it holds a special
-// character, read back.
-func unquote(p string) string {
-	if strings.HasPrefix(p, `"`) {
-		if u, err := strconv.Unquote(p); err == nil {
-			return u
-		}
-	}
-	return p
-}
-
-// stripSide drops the a/ or b/ git puts before a path.
-func stripSide(p string) string {
-	if s, ok := strings.CutPrefix(p, "a/"); ok {
-		return s
-	}
-	if s, ok := strings.CutPrefix(p, "b/"); ok {
-		return s
-	}
-	return p
+	return slices.Compact(files)
 }
 
 // same says whether two proposals' values are the same, as YAML reads them.

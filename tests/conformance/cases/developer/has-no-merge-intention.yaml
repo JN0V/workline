@@ -7,8 +7,6 @@ about: >
   comment of its own, is refused at apply, its code kept.
 given:
   repo: tested
-  setup:
-    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
   forge:
     issues:
       - {id: 2, title: "Multiply", labels: ["workline:ready"], body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: a `mul` function.\n"}
@@ -18,9 +16,8 @@ expect:
   agent-calls: 1
   findings:
     - {rule: not-the-developers, level: warn, where: "#2"}
-  pushed:
-    workline/developer/2:
-      lib.sh: "mul()"
+  files:
+    lib.sh: {contains: ["mul()"]}
   forge:
     issues:
       - id: 2

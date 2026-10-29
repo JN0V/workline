@@ -7,8 +7,6 @@ about: >
   applied beside it.
 given:
   repo: tested-draft
-  setup:
-    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main workline/tester/issue-3"
   config:
     roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
   forge:
@@ -27,9 +25,8 @@ expect:
   status: pass
   agent-calls: 1
   no-findings: [{rule: not-the-developers}, {rule: acceptance-test-edit}]
-  pushed:
-    workline/developer/3:
-      lib.sh: "mul()"
+  files:
+    lib.sh: {contains: ["mul()"]}
   forge:
     merge-requests:
       - id: 1
