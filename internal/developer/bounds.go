@@ -247,11 +247,11 @@ func why(r Refusal) string {
 	case "gate-file":
 		return "a gate's definition or the CI's: only a person changes it (docs/spec/gates.md, protection); a person must do it"
 	case "steering-file":
-		return "a file that steers agents or a role's folder: never the developer's, whatever the Scope; a person must do it"
+		return "a file that steers agents or a role's folder: never the developer's, whatever the scope; a person must do it"
 	case "acceptance-test-edit":
 		return "an acceptance test the tester froze: read-only to the developer, which objects to it on its line instead; the tester keeps or rewrites it (ADR-0055)"
 	}
-	return "outside the issue's Scope, the product owner's sources for it and the tests beside them: anything found there belongs in an issue (principle 8)"
+	return "outside the issue's scope, the product owner's sources for it and the tests beside them: anything found there belongs in an issue (principle 8)"
 }
 
 // objection is the agent's word against a frozen test, as it proposes it.
