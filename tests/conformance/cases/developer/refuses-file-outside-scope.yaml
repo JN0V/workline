@@ -24,4 +24,4 @@ expect:
     issues:
       - id: 2
         labels: ["workline:ready", "workline:developing"]
-        comment-contains: ["Refused at apply", "`README.md`: outside the issue's Scope", '"refused":[{"file":"README.md","rule":"outside-scope"}]']
+        comment-contains: ["Refused at apply", "`README.md`: outside the issue's scope", '"refused":[{"file":"README.md","rule":"outside-scope"}]']

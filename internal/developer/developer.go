@@ -277,7 +277,7 @@ func taskText(is forge.Issue, b Bounds) string {
 	}
 	t.WriteString("- the tests beside them: in their folder, or in a test folder, the name holding `test` or `spec`.\n\n" +
 		"Anything else is refused at apply, whatever the reason: say it in your answer, it belongs in an issue. " +
-		"Never, whatever the Scope: the files that steer agents (AGENTS.md, CLAUDE.md, a page they link, a prompt), " +
+		"Never, whatever the scope: the files that steer agents (AGENTS.md, CLAUDE.md, a page they link, a prompt), " +
 		"a role's folder, `.workline/`, the CI's workflows, a gate's definition.\n")
 	var frozen []string
 	for f, n := range b.Frozen {
@@ -371,7 +371,9 @@ func Post(runDir, repo string) int {
 		Message: "the developer's patches within its bounds are applied to the working tree; proving them and opening the pull request are not built yet (ADR-0054, steps 3 and 4): a person takes it from here, or removes the label"})
 	// The claim carries the record, the refusals in it (ADR-0046).
 	kept = append(claimOf(a, s), kept[len(claim):]...)
-	os.Remove(filepath.Join(runDir, "out", "intentions.yaml"))
+	if err := os.Remove(filepath.Join(runDir, "out", "intentions.yaml")); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return fail(err)
+	}
 	if err := intent.Write(filepath.Join(runDir, "out", "intentions.yaml"), kept); err != nil {
 		return fail(err)
 	}
