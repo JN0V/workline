@@ -2,7 +2,7 @@
 sources:
   - roles/developer/role.yaml
   - internal/developer
-checked: 9d472ac7
+checked: 68550c97
 verified: agent:claude-code
 ---
 # Developer
@@ -14,8 +14,8 @@ flowchart LR
   claim["<b>Claims</b><br/>the first<br/>nobody took"]
   never["<b>Never</b><br/>an assigned issue,<br/>a merge"]
   code["<b>Writes</b><br/>the code,<br/>within bounds"]
-  out["<b>Later</b><br/>its pull request"]
-  issue --> role --> claim --> code -.-> out
+  out["<b>Opens</b><br/>ready if green,<br/>else a Draft"]
+  issue --> role --> claim --> code --> out
   role --> never
 ```
 
@@ -24,7 +24,7 @@ file. All roles: [docs/roles.md](../../docs/roles.md). Where it stands:
 [status](docs/status.md); its design:
 [ADR-0054](../../docs/adr/0054-the-developer-takes-a-ready-issue-to-a-pull-request.md).
 
-**Does**, today (steps 1 and 2 of the
+**Does**, today (steps 1 to 3 of the
 [build plan](../../docs/adr/0054-the-developer-takes-a-ready-issue-to-a-pull-request.md#build-plan)):
 
 - **Picks** the first ready issue in the backlog's order that nobody
@@ -36,11 +36,13 @@ file. All roles: [docs/roles.md](../../docs/roles.md). Where it stands:
   agents or a gate's are refused, no agent judging
   ([the bounds](docs/bounds.md)). A test that does not fit, it objects
   to on the tester's Draft.
+- **Proves it** on the project's tests, the tester's `test-command`,
+  then opens its pull request: ready when green with no cap reached,
+  else a Draft ([the proof and the caps](docs/proof.md)).
 - **With no agent**: names the issue it would take; claims nothing.
 
-**Does not, yet**: prove the Verification, open the pull request, fix
-the review's findings (steps 3 to 6). The code lands in the working
-tree.
+**Does not, yet**: the pull request's full sections, its triggers,
+fixing the review's findings (steps 4 to 6).
 
 **Never**: merge, approve, put `workline:accepted`, unassign a person,
 close or move an issue.
@@ -64,9 +66,16 @@ In `.workline/config.yaml`, under `roles: {developer: {settings: …}}`:
 | Setting | Default | What it does |
 |---|---|---|
 | `claim-label` | `workline:developing` | the label that says the developer took an issue |
+| `ai-max-tokens` | 300000 | what a run's agent calls may spend; reached, a Draft |
+| `ai-max-seconds` | 1800 | what a run waits on its agent |
+| `proof-seconds` | 900 | how long the project's tests may run on its code; past it, a Draft |
+
+The tests it runs are the tester's `test-command` and `test-report`
+([the tester](../tester/README.md)).
 
 ## Cost
 
-- **The pick and the bounds**: no agent, no token; one listing of the
+- **The pick, the bounds and the proof**: no agent, no token; one listing of the
   open issues and one of the open merge requests.
 - **The code**: one agent call a run, `ai-max-tokens` at most.
+- **The proof**: one run of the project's tests, `proof-seconds` at most.
