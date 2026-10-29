@@ -406,7 +406,8 @@ func touched(v any) (files []string, read bool) {
 	}
 	read = true
 	named := true // the current section's files are known
-	for _, l := range strings.Split(diff, "\n") {
+	lines := strings.Split(diff, "\n")
+	for i, l := range lines {
 		if rest, ok := strings.CutPrefix(l, "diff --git "); ok {
 			read = read && named
 			a, b, ok := gitHeader(rest)
@@ -416,9 +417,12 @@ func touched(v any) (files []string, read bool) {
 			}
 			continue
 		}
-		for _, w := range []string{"--- ", "+++ "} {
-			if p, ok := strings.CutPrefix(l, w); ok {
-				p, _, _ = strings.Cut(p, "\t")
+		// A `---` line is a file's only before its `+++` and a hunk: a
+		// removed line "-- x" or an added "++ y" names no file.
+		if strings.HasPrefix(l, "--- ") && i+1 < len(lines) && strings.HasPrefix(lines[i+1], "+++ ") &&
+			(i+2 == len(lines) || strings.HasPrefix(lines[i+2], "@@")) {
+			for _, h := range []string{l, lines[i+1]} {
+				p, _, _ := strings.Cut(h[4:], "\t")
 				if p = unquote(strings.TrimSpace(p)); p != "/dev/null" {
 					files = append(files, stripSide(p))
 					named = true
