@@ -1,0 +1,7 @@
+# The developer's agent writing #3's mul wrong, an addition: the tester's
+# "Two by three" and "By zero" stay red.
+- patch:
+    file: lib.sh
+    content: |
+      add() { echo $(($1 + $2)); }
+      mul() { echo $(($1 + $2)); }

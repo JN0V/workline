@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/engine/engine.go, internal/hooks]
-checked: b33c2ed6
+checked: 68550c97
 verified: agent:claude-code
 judged: e343388
 ---
@@ -167,8 +167,11 @@ its code within [its bounds](../roles/developer/docs/bounds.md):
   issues the developer holds; `--issue <n>` looks at that one alone.
 - **`--ai`**: none, `claude`, `cmd:<any command>`; with none, the issue
   is named, nothing claimed. With one, the claim label and a comment
-  holding the record go on the issue, and the agent's patches within
-  the bounds are applied to the working tree; the others are refused.
+  holding the record go on the issue; the agent's patches within the
+  bounds are proven on the project's tests and pushed on
+  `workline/developer/<n>`, its pull request ready when green with no
+  cap reached, else a Draft ([the proof](../roles/developer/docs/proof.md));
+  the others are refused.
 - **`--no-apply`**: judged, nothing written; `workline apply <run>` claims.
 - **None to take**: it says so, and passes.
 

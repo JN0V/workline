@@ -1,0 +1,7 @@
+# The developer's agent writing #3's mul in lib.sh, beside add: the
+# tester's acceptance tests on the branch turn green.
+- patch:
+    file: lib.sh
+    content: |
+      add() { echo $(($1 + $2)); }
+      mul() { echo $(($1 * $2)); }

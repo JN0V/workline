@@ -1,6 +1,6 @@
 # ADR-0054: The developer takes a ready issue to a pull request
 
-- **Status:** proposed; step 1 built, the claim a label
+- **Status:** proposed; steps 1 to 3 built, the claim a label
   ([settled while building](#settled-while-building))
 - **Date:** 2026-10-27; rewritten 2026-10-28 to the maintainer's choices
 - **Decided by:** the maintainer: build the developer
@@ -202,6 +202,19 @@ Step 2, the bounds (2026-10-29,
   rest applied; when the bounds cannot be read, every patch.
 - **The steering test** is the routine merge's ([ADR-0042]), shared;
   the frozen tests, the tester's record. The rules and why: the page.
+
+Step 3, the proof and the caps (2026-10-29,
+[the proof](../../roles/developer/docs/proof.md)):
+
+- **The tests are the tester's `test-command`**, run once on the code
+  laid on the commit read, in post, no agent: one setting for both
+  roles. The gates and the Verification's commands: later, in Missing.
+- **The pull request is the engine's**, as the tester's Draft: a
+  branch `workline/developer/<n>`, ready or a Draft, `Closes #<n>` and
+  a `## Verification`; its other sections are step 4's.
+- **Two time caps**: `ai-max-seconds` (1200) on the agent's wait,
+  `proof-seconds` (600) on the tests, 30 min in all; past either, nothing waited for
+  or a Draft. A cap reached makes a Draft even when green.
 
 ## Consequences
 

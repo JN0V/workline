@@ -8,6 +8,7 @@ given:
   repo: tested
   setup:
     - "printf 'exit 1\\n' > check.sh && git add check.sh && git commit -q -m 'chore: a check'"
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
   config:
     gates: {default: {checks: [{id: own, run: "sh check.sh", output: exit}]}}
   forge:
@@ -22,7 +23,9 @@ expect:
     - {rule: gate-file, level: warn, where: check.sh}
     - {rule: gate-file, level: warn, where: .github/workflows/ci.yml}
   files:
-    lib.sh: {contains: ["mul()"]}
     check.sh: {contains: ["exit 1"]}
     .workline/config.yaml: {contains: ["sh check.sh"]}
     .github/workflows/ci.yml: {exists: false}
+  pushed:
+    workline/developer/2:
+      lib.sh: "mul()"
