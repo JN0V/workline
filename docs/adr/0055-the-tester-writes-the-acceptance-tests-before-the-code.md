@@ -407,6 +407,8 @@ Each step: conformance cases first; a try told under `## Tried` ([ADR-0043]).
 - **The curator removes only**: never a test rewritten, nor two merged
   into one; step 7's "removed or merged" no longer holds. A test stays
   tied to its issue's scenario, and the proof covers a removal only.
-- **Held by the engine**: a touched file must keep the base's lines in
-  order, a few gone, none added nor changed (blank lines and trailing
-  spaces aside); else `removal-writes-code` blocks, nothing proposed.
+- **Held by the engine**: `removal-writes-code` blocks, nothing proposed,
+  when a touched file writes anything. A Go file is read by its
+  declarations: each one left is one of the base's, unchanged but for
+  whitespace. Any other file is read by its lines: the base's, in order,
+  some gone. That is weaker, since deleted lines can still join two tests.

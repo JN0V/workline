@@ -474,56 +474,6 @@ type proof struct {
 	base           string
 }
 
-// removesOnly refuses a proposal that writes test code: the curator
-// removes, it never rewrites or merges two tests into one. A test stays
-// tied to its issue's scenario, and the proof covers a removal only. Each
-// touched file, as laid in tree, keeps base's lines in order, a few gone,
-// none added nor changed (blank lines and trailing spaces aside).
-func removesOnly(repo, base, tree string, touched []string) (*verdict.Verdict, error) {
-	var fs []verdict.Finding
-	for _, file := range touched {
-		now, err := os.ReadFile(filepath.Join(tree, filepath.FromSlash(path.Clean(file))))
-		if errors.Is(err, os.ErrNotExist) {
-			continue // deleted whole
-		} else if err != nil {
-			return nil, err
-		}
-		was, err := git(repo, "show", base+":"+file)
-		if err != nil { // a new file: written, not removed
-			was = ""
-		}
-		if line, ok := subsequence(string(now), was); !ok {
-			fs = append(fs, verdict.Finding{Rule: "removal-writes-code", Where: file,
-				Message: fmt.Sprintf("the curator removes tests, never rewrites or merges them: %q is not the base's", line)})
-		}
-	}
-	if len(fs) == 0 {
-		return nil, nil
-	}
-	return &verdict.Verdict{Status: verdict.Block, Summary: "the removal is not proven", Findings: fs}, nil
-}
-
-// subsequence reports whether now's lines are was's, in order, some
-// dropped; else the first line that is not.
-func subsequence(now, was string) (string, bool) {
-	old := strings.Split(was, "\n")
-	i := 0
-	for _, l := range strings.Split(now, "\n") {
-		l = strings.TrimRight(l, " \t\r")
-		if l == "" {
-			continue
-		}
-		for i < len(old) && strings.TrimRight(old[i], " \t\r") != l {
-			i++
-		}
-		if i == len(old) {
-			return l, false
-		}
-		i++
-	}
-	return "", true
-}
-
 // proveRemoval runs the touched folders' tests, their coverage and their
 // mutants on base, then again with the patches laid, in one checkout and
 // within curator-proof-seconds. A run that did not hold is the verdict.

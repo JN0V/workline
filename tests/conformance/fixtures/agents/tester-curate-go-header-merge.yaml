@@ -1,0 +1,16 @@
+- patch:
+    file: calc/calc_test.go
+    content: |
+      package calc
+
+      import "testing"
+
+      func TestAdd(t *testing.T) {
+      	if Add(2, 3) != 5 {
+      		t.Fatal("2 + 3 is not 5")
+      	}
+      	if Add(1, 1) != 2 {
+      		t.Fatal("1 + 1 is not 2")
+      	}
+      }
+- note: "TestAddAgain: joined to TestAdd, which now checks both sums."
