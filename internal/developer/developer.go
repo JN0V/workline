@@ -467,7 +467,7 @@ func scopeCode(repo, at string, b Bounds) (string, error) {
 		// A path absent from the commit lists nothing, with no error.
 		list, err := gitOut(repo, "ls-tree", "-r", "--name-only", at, "--", p)
 		if err != nil {
-			return "", fmt.Errorf("the Scope's code: git cannot list %s at %s: %w", p, at, err)
+			return "", fmt.Errorf("the code in scope: git cannot list %s at %s: %w", p, at, err)
 		}
 		if list == "" {
 			fmt.Fprintf(&t, "- `%s`: not there yet; a patch creates it.\n", p)
