@@ -159,14 +159,16 @@ redundant tests of one folder ([removals](../roles/tester/docs/removals.md)):
 ### workline develop
 
 `workline develop` has the developer take a ready issue
-([the pick](../roles/developer/docs/pick.md)); no agent is asked yet:
+([the pick](../roles/developer/docs/pick.md)) and, with an agent, write
+its code within [its bounds](../roles/developer/docs/bounds.md):
 
 - **The first ready issue** in the backlog's order, assigned to nobody,
   not taken, no open merge request closing it, its Scope clear of the
   issues the developer holds; `--issue <n>` looks at that one alone.
 - **`--ai`**: none, `claude`, `cmd:<any command>`; with none, the issue
   is named, nothing claimed. With one, the claim label and a comment
-  holding the record go on the issue.
+  holding the record go on the issue, and the agent's patches within
+  the bounds are applied to the working tree; the others are refused.
 - **`--no-apply`**: judged, nothing written; `workline apply <run>` claims.
 - **None to take**: it says so, and passes.
 

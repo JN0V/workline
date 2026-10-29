@@ -3,7 +3,7 @@ sources:
   - internal/developer/bounds.go
   - internal/developer/developer.go
   - internal/steer/steer.go
-checked: 68550c97
+checked: 1d79329d
 verified: agent:claude-code
 ---
 # The bounds: what its code may never touch
@@ -39,35 +39,10 @@ matches refuses the whole patch:
 
 - the paths in backticks in the issue's Scope;
 - the product owner's `sources` for the issue;
-- the tests beside them: a name holding `test` or `spec`, in a Scope
-  file's folder or under a Scope folder, or in a `test`/`tests` folder
-  that sits there. A Scope `src` lets in no test at the root.
+- the tests beside them: a name holding `test` or `spec`, in the
+  same folder, under a Scope folder, or in a `test`/`tests` folder.
 
-**Never in bounds:**
-
-- a Scope or source naming the repository's root (`.`, `./`): it is
-  dropped, else every file would be in bounds;
-- anything, when the engine cannot read the gates' config or the files
-  that steer agents: every patch is refused (`bounds-unread`), the
-  error said, rather than one let past.
-
-A patch naming no file, or a diff header whose two names cannot be told
-apart with no other line naming them, is refused (`patch-unread`).
-A rename or a deletion is checked on both sides, a name git quotes read
-back. A gate's `config`
-path is compared cleaned (`./x`, `x/`); a folder covers its files.
-
-## Why these rules
-
-- **Gate files**: a gate checks the code; the code's author never
-  changes what checks it. Only a person does.
-- **Steering files**: they steer every agent, the developer's too.
-  Whatever the Scope says, a person changes them.
-- **Frozen tests**: the tester wrote them from the issue's scenarios,
-  before the code ([ADR-0055](https://github.com/JN0V/workline/pull/648)).
-  The developer objects; it never edits them.
-- **Outside the scope**: anything found there belongs in an issue
-  ([principle 8](../../../docs/PRINCIPLES.md)).
+A rename or a deletion is checked on both sides.
 
 ## What happens to a refusal
 
@@ -89,13 +64,11 @@ path is compared cleaned (`./x`, `x/`); a folder covers its files.
   `workline:objection`, in [the tester's form](../../tester/README.md#frozen-tests-and-objections).
   The tester keeps or rewrites the test.
 - **An objection to a test that is not frozen** for the issue, or
-  missing a field, or when the Draft's commit cannot be read: refused,
-  said.
+  missing a field: refused, said.
 
 ## Not yet
 
 - **A refused patch is not asked again**: the code is applied without
   it; the proof (step 3) shows what is missing.
-- **Where the code goes**: a branch of its own, proven, opened ready
-  or as a Draft ([the proof](proof.md)); the pull request's sections
-  are step 4.
+- **Where the code goes**: the working tree, for now; the pull request
+  is step 4.
