@@ -38,8 +38,12 @@ flowchart LR
 | Cap | Default | Reached |
 |---|---|---|
 | `ai-max-tokens` | 300000 | the run's agent calls spent it |
-| `ai-max-seconds` | 1800 | the engine stops waiting on the agent |
-| `proof-seconds` | 900 | the tests stopped past it |
+| `ai-max-seconds` | 1200 | the engine stops waiting on the agent |
+| `proof-seconds` | 600 | the tests stopped past it |
+
+- **A run's time**: the agent's wait and the tests' together, 30 min,
+  [ADR-0054](../../../docs/adr/0054-the-developer-takes-a-ready-issue-to-a-pull-request.md#what-bounds-it)'s
+  bound for a run. A project raising one lowers the other to keep it.
 
 - **A cap reached**: a Draft, even when the tests are green. A run that
   needed more than it may spend is a person's to read.

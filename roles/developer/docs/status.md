@@ -85,5 +85,5 @@ measure. Also:
   ([ADR-0054](../../../docs/adr/0054-the-developer-takes-a-ready-issue-to-a-pull-request.md#it-proves-locally-first))
   do not run in it yet; the pull request's checks run the gates.
 - **A run's time as one cap**: the agent's wait (`ai-max-seconds`) and
-  the tests' (`proof-seconds`) are two caps, 45 min together, not the
-  ADR's 30 min a run.
+  the tests' (`proof-seconds`) are two caps whose defaults sum to the
+  ADR's 30 min a run; a project raising one is not held to the sum.

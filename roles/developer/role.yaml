@@ -2,16 +2,11 @@ contract: 1
 name: developer
 mission: A ready issue becomes a pull request that proves its Verification, written within its Scope, without a person opening a session.
 
-# issue: `workline develop [--issue <n>]` — the pick (ADR-0054, step 1):
-#        the first ready issue in the backlog's order, assigned to
-#        nobody, not taken already, no open merge request closing it, its
-#        Scope clear of the issues the developer holds. With an agent, the
-#        engine claims it: the claim label and a comment holding the
-#        record; the agent writes the code, held to its bounds at apply
-#        (step 2, docs/bounds.md); its code proven on the project's
-#        tests, its pull request ready when green with no cap reached,
-#        else a Draft (step 3, docs/proof.md). With none, it is named,
-#        nothing claimed. The pull request's sections: step 4.
+# issue: `workline develop [--issue <n>]` (ADR-0054): picks the first
+#        ready issue free to take (docs/pick.md); with an agent, claims
+#        it, writes its code within its bounds (docs/bounds.md), proves
+#        it: ready when green, no cap reached, else a Draft
+#        (docs/proof.md). With none, the issue is named, nothing claimed.
 events: [issue]
 
 requires: [git]
@@ -43,11 +38,9 @@ settings:
   # assign an issue to an App, so the claim is a label on every forge;
   # a person's assignment keeps an issue from it (docs/pick.md).
   claim-label: "workline:developing"
-  # The caps (ADR-0054, docs/proof.md). ai-max-tokens: what the run's
-  # agent calls may spend; reached, its pull request opens as a Draft.
-  # ai-max-seconds: what the run waits on its agent, every call together.
-  # proof-seconds: how long the project's tests may run on its code;
-  # past it, stopped, a Draft. The tests are the tester's test-command.
+  # The caps (docs/proof.md): the tokens the run's agent calls may
+  # spend, the seconds it waits on its agent, the seconds the tests run
+  # on its code. The two times together: the ADR's 30 min a run.
   ai-max-tokens: 300000
-  ai-max-seconds: 1800
-  proof-seconds: 900
+  ai-max-seconds: 1200
+  proof-seconds: 600

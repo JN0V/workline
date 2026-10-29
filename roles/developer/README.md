@@ -67,8 +67,8 @@ In `.workline/config.yaml`, under `roles: {developer: {settings: …}}`:
 |---|---|---|
 | `claim-label` | `workline:developing` | the label that says the developer took an issue |
 | `ai-max-tokens` | 300000 | what a run's agent calls may spend; reached, a Draft |
-| `ai-max-seconds` | 1800 | what a run waits on its agent |
-| `proof-seconds` | 900 | how long the project's tests may run on its code; past it, a Draft |
+| `ai-max-seconds` | 1200 | what a run waits on its agent |
+| `proof-seconds` | 600 | how long the project's tests may run on its code; past it, a Draft |
 
 The tests it runs are the tester's `test-command` and `test-report`
 ([the tester](../tester/README.md)).
