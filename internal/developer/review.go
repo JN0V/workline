@@ -310,8 +310,22 @@ func reviewPre(runDir, repo string, s Settings, id int) int {
 			return fail(err)
 		}
 	}
-	head, _ := gitOut(repo, "rev-parse", "HEAD") // its branch, where its code is
-	return writeFile(runDir, "task.md", roundTask(r, *is, bounds, s, scopeCode(repo, head, bounds)))
+	code, err := roundCode(repo, bounds)
+	if err != nil {
+		return fail(err)
+	}
+	return writeFile(runDir, "task.md", roundTask(r, *is, bounds, s, code))
+}
+
+// roundCode is the Scope's code as its branch, checked out, holds it. A
+// head git cannot read fails the round: an agent shown no code writes no
+// patch, and the round would count for nothing.
+func roundCode(repo string, b Bounds) (string, error) {
+	head, err := gitOut(repo, "rev-parse", "HEAD")
+	if err != nil {
+		return "", fmt.Errorf("the round's code: git cannot read its branch's head in %s: %w", repo, err)
+	}
+	return scopeCode(repo, head, b)
 }
 
 // roundTask is the round's question: the issue, the trace of the rounds

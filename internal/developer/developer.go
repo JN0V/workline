@@ -332,7 +332,11 @@ func Pre(runDir, repo string) int {
 	if bounds.Head != "" {
 		on = bounds.Head // its code starts from the tester's Draft
 	}
-	task := taskText(is, bounds, frozenTexts(repo, bounds), scopeCode(repo, on, bounds))
+	code, err := scopeCode(repo, on, bounds)
+	if err != nil {
+		return fail(err)
+	}
+	task := taskText(is, bounds, frozenTexts(repo, bounds), code)
 	if err := os.WriteFile(filepath.Join(runDir, "in", "task.md"), []byte(task), 0o644); err != nil {
 		return fail(err)
 	}
@@ -450,16 +454,22 @@ const codeRoom = 100_000
 // code starts from: the agent has no tools, so a file it is not shown, it
 // cannot patch (measured, docs/status.md). A Scope's folder shows its
 // files; a path not there yet is said; past codeRoom, files are named.
-func scopeCode(repo, at string, b Bounds) string {
+// A git that cannot read the commit is an error, never read as a path not
+// there yet: the agent would write over a file it was not shown.
+func scopeCode(repo, at string, b Bounds) (string, error) {
 	if at == "" || len(b.Scope) == 0 {
-		return ""
+		return "", nil
 	}
 	var t strings.Builder
 	t.WriteString("\n## The code in scope, as it reads\n\n")
 	room := codeRoom
 	for _, p := range b.Scope {
+		// A path absent from the commit lists nothing, with no error.
 		list, err := gitOut(repo, "ls-tree", "-r", "--name-only", at, "--", p)
-		if err != nil || list == "" {
+		if err != nil {
+			return "", fmt.Errorf("the Scope's code: git cannot list %s at %s: %w", p, at, err)
+		}
+		if list == "" {
 			fmt.Fprintf(&t, "- `%s`: not there yet; a patch creates it.\n", p)
 			continue
 		}
@@ -470,7 +480,7 @@ func scopeCode(repo, at string, b Bounds) string {
 			text, err := gitOut(repo, "show", at+":"+f)
 			switch {
 			case err != nil:
-				continue
+				fmt.Fprintf(&t, "- `%s`: not shown, git cannot read it.\n", f)
 			case len(text) > room:
 				fmt.Fprintf(&t, "- `%s`: not shown, over the question's room.\n", f)
 			default:
@@ -479,7 +489,7 @@ func scopeCode(repo, at string, b Bounds) string {
 			}
 		}
 	}
-	return t.String()
+	return t.String(), nil
 }
 
 // claimBody is the comment the claim leaves on the issue, its record hidden.
