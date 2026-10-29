@@ -1,6 +1,6 @@
 ---
 sources: [ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile]
-checked: eebe4270
+checked: 492192ca
 judged: bf016b7
 verified: agent:claude-code
 ---
@@ -43,17 +43,18 @@ pipelines API), `pipeline` (another project's `trigger:` job),
 `parent_pipeline` (a child pipeline) — never `schedule` nor
 `merge_request_event`, so none of the template's jobs run but in its own
 child of a merge request's pipeline, what only warns, and the tester's
-answer to an objection and the developer's ready issue, below. The tool passes
+answer to an objection, the developer's ready issue and its review round, below. The tool passes
 what to do as variables. The names below are this page's; the engine reads
 none of them:
 
 | Variable | Value |
 |---|---|
-| `WORKLINE_TASK` | `merge-request`, `garden`, `objection`, `develop`, `product-owner`, `release`, `sample`, `follow` (when the default branch moved: the [merge policy](merge-policy.md), when set), `main` (after a merge, `MAIN_BEFORE` its tip before: [main after a merge](main-after-merge.md)), `import` |
+| `WORKLINE_TASK` | `merge-request`, `garden`, `objection`, `develop`, `review`, `product-owner`, `release`, `sample`, `follow` (when the default branch moved: the [merge policy](merge-policy.md), when set), `main` (after a merge, `MAIN_BEFORE` its tip before: [main after a merge](main-after-merge.md)), `import` |
 | `MR_IID`, `MR_SOURCE_BRANCH`, `MR_TARGET_BRANCH`, `MR_BASE_SHA` | for `merge-request`: from the merge request (`diff_refs.base_sha`); the pipeline's `ref` is the source branch; the tool cancels the one still judging an older head first ([#359](https://github.com/JN0V/workline/issues/359)) |
 | `MR_READY`, `MR_DRAFT` | for `merge-request`: `MR_DRAFT`, `true` or `false`, each run, `true` asking no agent; `MR_READY` when it becomes ready (opened not a draft, or an `update` whose `changes.draft` went false), a pipeline the template never gets: every reviewer lens once ([how](../roles/reviewer/docs/ready.md)) |
 | `MR_IID`, `MR_SOURCE_BRANCH` with `WORKLINE_TASK=objection` | the tester's Draft: a note opened by `workline:objection` on a merge request from `workline/tester/…` (the note webhook); the pipeline's `ref`, the default branch. The template's jobs `workline:objection:*` run it: `workline test answer --merge-request "$MR_IID"` ([tester](../roles/tester/README.md#objections)) |
 | `ISSUE_IID` with `WORKLINE_TASK=develop` | the issue labelled `workline:ready` (the issue webhook); none: the first ready issue nobody took. The template's jobs `workline:develop:*` run `workline route issue --target issue:<n>` ([developer](../roles/developer/docs/triggers.md)) |
+| `MR_IID`, `MR_SOURCE_BRANCH` with `WORKLINE_TASK=review` | the developer's pull request: the reviewer's note on a merge request from `workline/developer/…`, or a person's (the note webhook). The template's jobs `workline:review:*` run `workline develop --merge-request "$MR_IID"` ([the review loop](../roles/developer/docs/review-loop.md)) |
 | `WORKLINE_IMPORT` | for `import`: the file moved to issues, as committed on the pipeline's `ref` |
 
 A triggered pipeline has none of the `CI_MERGE_REQUEST_*` variables: the

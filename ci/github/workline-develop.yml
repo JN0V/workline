@@ -2,8 +2,11 @@
 # .github/workflows/workline-develop.yml, route `issue: [developer]` in
 # .workline/config.yaml (ADR-0054). An issue labelled workline:ready runs
 # the issue line on it; by hand with no issue, the first nobody took.
-#   judge  the agent and a read token; install your test runner there.
-#   apply  the App's key (environment workline-app), no AI key.
+# On its own pull request (workline/developer/…), the reviewer's verdict
+# (its comment, written by the App) or a person's comment runs a review
+# round: its fix pushed on its branch (docs/review-loop.md).
+#   judge, review          the agent and a read token; install your test runner there.
+#   apply, review-apply    the App's key (environment workline-app), no AI key.
 # Why each part: roles/developer/docs/triggers.md.
 name: workline develop
 on:
@@ -11,6 +14,10 @@ on:
   workflow_dispatch:
     inputs:
       issue: {description: "the ready issue to take; empty: the first nobody took", required: false, default: ""}
+      pull-request: {description: "a review round on this pull request of the developer's, rather than an issue", required: false, default: ""}
+  # The reviewer's comment, written or edited by the App (a comment the
+  # job's own token writes wakes nothing), or a person's.
+  issue_comment: {types: [created, edited]}
 permissions: {}
 
 env:
@@ -20,8 +27,8 @@ env:
 jobs:
   judge:
     if: >-
-      github.event_name == 'workflow_dispatch' ||
-      (github.event.label.name == 'workline:ready' && github.event.issue.state == 'open' && !github.event.issue.pull_request)
+      (github.event_name == 'workflow_dispatch' && inputs['pull-request'] == '') ||
+      (github.event_name == 'issues' && github.event.label.name == 'workline:ready' && github.event.issue.state == 'open' && !github.event.issue.pull_request)
     # On the job, after its `if`: another label takes no group. One run an
     # issue; ready issues apart run side by side.
     concurrency:
@@ -122,5 +129,122 @@ jobs:
           fi
           status=0
           workline apply --line line.json --summary workline-summary.md || status=$?
+          [ ! -s workline-summary.md ] || cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"
+          exit "$status"
+
+  # A review round (ADR-0054, step 6): a fresh run on the developer's own
+  # pull request, reading its record, the reviewer's findings and a
+  # person's comments; its fix proposed only.
+  review:
+    if: >-
+      (github.event_name == 'workflow_dispatch' && inputs['pull-request'] != '') ||
+      (github.event_name == 'issue_comment' && github.event.issue.pull_request && github.event.issue.state == 'open' &&
+        (contains(github.event.comment.body, 'workline:sticky=reviewer/') ||
+          (github.event.action == 'created' && github.event.comment.user.type != 'Bot' &&
+            contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association))))
+    concurrency:
+      group: workline-develop-review-${{ github.event.issue.number || inputs['pull-request'] }}
+      cancel-in-progress: false
+    runs-on: ubuntu-latest
+    permissions: {contents: read, pull-requests: read, issues: read}
+    env: {HAS_CLAUDE: "${{ secrets.CLAUDE_CODE_OAUTH_TOKEN != '' }}"}
+    outputs:
+      run: ${{ steps.round.outputs.run }}
+      head: ${{ steps.round.outputs.head }}
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - name: workline
+        run: |
+          bin="$RUNNER_TEMP/bin"; mkdir -p "$bin"; cd "$RUNNER_TEMP"
+          get() { curl -fsSLO "$1/$2" && curl -fsSL "$1/$3" | grep " $2\$" | sha256sum -c - && tar -xzf "$2" -C "$bin" "$4"; }
+          get "https://github.com/JN0V/workline/releases/download/$WORKLINE_VERSION" workline_linux_amd64.tar.gz checksums.txt workline
+          echo "$bin" >> "$GITHUB_PATH"
+          "$bin/workline" version
+      - name: Claude, when the repository gives its token
+        if: env.HAS_CLAUDE == 'true'
+        run: npm install -g @anthropic-ai/claude-code
+      # Your test runner here: the developer proves its fix with the
+      # tester's `test-command` before it is pushed.
+      - name: The round (proposed only)
+        id: round
+        env:
+          GH_TOKEN: ${{ github.token }}
+          WORKLINE_APP_ID: ${{ vars.WORKLINE_APP_ID }}   # the App whose comments keep the records a role reads back (ADR-0051)
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          PR: ${{ github.event.issue.number || inputs['pull-request'] }}
+        run: |
+          ai=none; [ -n "$CLAUDE_CODE_OAUTH_TOKEN" ] && ai=claude
+          printf '%s' "$PR" | grep -Eqx '[0-9]+' || { echo "::error title=workline::not a pull request number: $PR"; exit 64; }
+          branch=$(gh pr view "$PR" --json headRefName,isCrossRepository --jq 'select(.isCrossRepository | not) | .headRefName')
+          case "$branch" in workline/developer/*) ;; *) echo "pull request $PR is not the developer's: no round"; exit 0;; esac
+          # Its branch's head: the fix is laid and proven there.
+          git fetch -q origin "$branch" && git checkout -q -B "$branch" FETCH_HEAD
+          echo "head=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          status=0
+          workline develop --merge-request "$PR" --ai "$ai" --no-apply --forge github --json > round.json || status=$?
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          echo "run=$(jq -r '(.pending // [])[0] // empty | split("/") | last' round.json)" >> "$GITHUB_OUTPUT"   # a run left to apply, by name
+          jq -r '.summary // empty' round.json >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: steps.round.outputs.run != ''
+        with: {name: workline-round, path: ".workline-runs", include-hidden-files: true, retention-days: 1}
+      - name: Verdict
+        env: {STATUS: "${{ steps.round.outputs.status }}"}
+        run: |
+          if [ "$STATUS" = 3 ]; then
+            echo "::warning title=workline::the agent could not be reached; the review waits for the next verdict"
+            exit 0
+          fi
+          exit "${STATUS:-0}"
+
+  review-apply:
+    needs: review
+    if: always() && needs.review.outputs.run != ''
+    runs-on: ubuntu-latest
+    environment: workline-app       # the App's key: the default branch only (ADR-0044)
+    permissions: {contents: write, pull-requests: write, issues: write}
+    steps:
+      - id: app
+        if: vars.WORKLINE_APP_ID != ''
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.WORKLINE_APP_ID }}
+          private-key: ${{ secrets.WORKLINE_APP_PRIVATE_KEY }}
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ steps.app.outputs.token || github.token }}
+      - name: workline
+        run: |
+          bin="$RUNNER_TEMP/bin"; mkdir -p "$bin"; cd "$RUNNER_TEMP"
+          get() { curl -fsSLO "$1/$2" && curl -fsSL "$1/$3" | grep " $2\$" | sha256sum -c - && tar -xzf "$2" -C "$bin" "$4"; }
+          get "https://github.com/JN0V/workline/releases/download/$WORKLINE_VERSION" workline_linux_amd64.tar.gz checksums.txt workline
+          echo "$bin" >> "$GITHUB_PATH"
+      # The round ran the pull request's code: its folder is data, outside the checkout.
+      - uses: actions/download-artifact@v4
+        with: {name: workline-round, path: "${{ runner.temp }}/workline-runs"}
+      # Only what its pull request's line may do, to it, at the head the
+      # round read: its fix pushed on its branch, never forced.
+      - env:
+          GH_TOKEN: ${{ steps.app.outputs.token || github.token }}
+          APP: ${{ steps.app.outputs.app-slug }}
+          WORKLINE_APP: ${{ steps.app.outputs.app-slug }}   # workline's own account: the records it trusts
+          WORKLINE_RUNS_DIR: ${{ runner.temp }}/workline-runs
+          RUN: ${{ needs.review.outputs.run }}
+          HEAD_SHA: ${{ needs.review.outputs.head }}
+          PR: ${{ github.event.issue.number || inputs['pull-request'] }}
+        run: |
+          printf '%s' "$RUN" | grep -Eqx '[0-9]{8}T[0-9]{6}\.[0-9]{9}-[a-z0-9-]+' && [ -d "$WORKLINE_RUNS_DIR/$RUN" ] ||
+            { echo "::error title=workline::the round named no run of its own: $RUN"; exit 1; }
+          if [ -n "$APP" ]; then
+            git config user.name "$APP[bot]"
+            git config user.email "$(gh api "/users/$APP%5Bbot%5D" --jq .id)+$APP[bot]@users.noreply.github.com"
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          fi
+          status=0
+          workline apply "$RUN" --from-merge-request "$PR" --head "$HEAD_SHA" --forge github --summary workline-summary.md || status=$?
           [ ! -s workline-summary.md ] || cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"
           exit "$status"

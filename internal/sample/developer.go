@@ -100,5 +100,12 @@ func (rd *reader) developerMaterial(a *Act, m *material) string {
 	}
 	m.act = fmt.Sprintf("The developer's code for #%d, its commits up to %.7s, opened as %s.", d.record.Issue, a.Commit, a.Ref)
 	m.about = "The issue as it reads now, the diff of the developer's own commits (its code, its tests), and what the project's tests said on it."
+	// Its review rounds (ADR-0054, step 6): what each was asked and how it
+	// ended, its fixes among the commits drawn.
+	if rounds := developer.RoundLines(d.record); rounds != "" {
+		m.items = append(m.items, item{name: "rounds", text: rounds, full: rounds})
+		m.act = fmt.Sprintf("The developer's code for #%d, its commits up to %.7s, opened as %s, then %s.", d.record.Issue, a.Commit, a.Ref, plural(len(d.record.Rounds), "review round"))
+		m.about += " Then its review rounds: what the reviewer or a person asked each, and how it ended."
+	}
 	return ""
 }

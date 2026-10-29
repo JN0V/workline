@@ -643,6 +643,81 @@ workline:develop:apply:
     reports: {annotations: workline-annotations.json}
     expire_in: 1 week
 
+# A review round on the developer's own merge request (ADR-0054, step 6):
+# the reviewer's verdict or a person's comment. GitLab starts no pipeline
+# on a comment: a tool given the note webhook starts one on the default
+# branch with WORKLINE_TASK=review, MR_IID and MR_SOURCE_BRANCH
+# (docs/gitlab-trigger.md). The judge proposes the fix, holding the
+# agent's token; apply pushes it on its branch, holding the bot's
+# (roles/developer/docs/review-loop.md). Install your test runner in the judge.
+.workline:review:
+  image: $WORKLINE_IMAGE:$WORKLINE_VERSION
+  environment: *environment
+  variables: {GIT_DEPTH: 0}
+  resource_group: workline-review-$MR_IID
+  rules:
+    - if: ($CI_PIPELINE_SOURCE == "api" || $CI_PIPELINE_SOURCE == "trigger" || $CI_PIPELINE_SOURCE == "pipeline") && $WORKLINE_TASK == "review" && $MR_IID && $MR_SOURCE_BRANCH && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  before_script:
+    - *bot-token
+    - *trust
+    - workline version
+    - export GITLAB_TOKEN=$WORKLINE_GITLAB_TOKEN
+    - 'case "$MR_SOURCE_BRANCH" in workline/developer/*) ;; *) echo "workline: $MR_SOURCE_BRANCH is not a branch of the developer: no round"; exit 1;; esac'
+
+# Its head, read before any of its code runs, by a job holding no agent.
+workline:review:head:
+  extends: .workline:review
+  stage: .pre
+  script:
+    - git ls-remote origin "refs/heads/$MR_SOURCE_BRANCH" | cut -f1 > review-head
+    - 'grep -Eqx "[0-9a-f]{40}|[0-9a-f]{64}" review-head || { echo "workline: no branch $MR_SOURCE_BRANCH: no round"; exit 1; }'
+  artifacts:
+    paths: [review-head]
+    expire_in: 1 day
+
+workline:review:judge:
+  extends: .workline:review
+  stage: test
+  needs: [workline:review:head]
+  script:
+    - *claude
+    - git fetch -q origin "$MR_SOURCE_BRANCH" && git checkout -q -B "$MR_SOURCE_BRANCH" "$(cat review-head)"
+    - git rev-parse HEAD > round-head
+    - status=0
+    - workline develop --merge-request "$MR_IID" --ai "$ai" --no-apply --forge gitlab --json > round.json || status=$?
+    - jq -r '(.pending // [])[0] // empty | split("/") | last' round.json > round-run   # a run left to apply, by name
+    - exit $status
+  allow_failure: {exit_codes: [3]}  # an agent out of reach warns: the review waits for the next verdict
+  artifacts:
+    when: always
+    paths: [.workline-runs/, round.json, round-run, round-head]
+    expire_in: 1 day
+
+workline:review:apply:
+  extends: .workline:review
+  stage: deploy
+  needs: [workline:review:head, workline:review:judge]
+  rules:
+    - if: ($CI_PIPELINE_SOURCE == "api" || $CI_PIPELINE_SOURCE == "trigger" || $CI_PIPELINE_SOURCE == "pipeline") && $WORKLINE_TASK == "review" && $MR_IID && $MR_SOURCE_BRANCH && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      when: always
+  script:
+    - *bot
+    - git remote set-url origin "https://oauth2:${WORKLINE_GITLAB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"
+    - '[ -s round-run ] || { echo "nothing proposed: nothing to apply"; exit 0; }'
+    - run=$(cat round-run)
+    - 'printf "%s" "$run" | grep -Eqx "[0-9]{8}T[0-9]{6}\.[0-9]{9}-[a-z0-9-]+" && [ -d "$WORKLINE_RUNS_DIR/$run" ] || { echo "workline: the judge named no run of its own: $run"; exit 1; }'
+    - head=$(cat review-head)
+    - '[ "$(cat round-head 2>/dev/null)" = "$head" ] || { echo "workline: the judge reports a head other than $head, the one read before it: nothing applied"; exit 1; }'
+    - status=0
+    - workline apply "$run" --from-merge-request "$MR_IID" --head "$head" --forge gitlab --summary workline-summary.md --summary workline-summary.html || status=$?
+    - exit $status
+  after_script: *summary
+  artifacts:
+    when: always
+    paths: [workline-summary.html, workline-summary.md]
+    reports: {annotations: workline-annotations.json}
+    expire_in: 1 week
+
 # A release's dry run, on each schedule but the sample's (ADR-0050): what
 # would hold the release if it were cut now from the branch's tip. Every
 # step, no agent, nothing applied, said as warnings. Install here the

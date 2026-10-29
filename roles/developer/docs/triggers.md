@@ -4,7 +4,7 @@ sources:
   - internal/developer/developer.go
   - ci/github/workline-develop.yml
   - ci/gitlab/workline.gitlab-ci.yml
-checked: 170e0fba
+checked: 492192ca
 verified: agent:claude-code
 ---
 # The triggers
@@ -85,6 +85,13 @@ routing:
   queues every run.
 - **A label workline's job token puts** starts no workflow on GitHub;
   the App's does. Without the App, the schedule takes the issue.
+
+## On its pull request
+
+- **A review round**, the reviewer's verdict or a person's comment on
+  a pull request from `workline/developer/<n>`: no routing, the same
+  workflow's `review` jobs on GitHub, `WORKLINE_TASK=review` on GitLab
+  ([the review loop](review-loop.md#what-wakes-it)).
 
 ## Two runs on one issue
 

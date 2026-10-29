@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/engine/engine.go, internal/hooks]
-checked: 68550c97
+checked: 523d0359
 verified: agent:claude-code
 judged: e343388
 ---
@@ -174,6 +174,9 @@ its code within [its bounds](../roles/developer/docs/bounds.md):
   the others are refused.
 - **`--no-apply`**: judged, nothing written; `workline apply <run>` claims.
 - **None to take**: it says so, and passes.
+- **`--merge-request <n>`**: a review round on its own pull request, not
+  an issue: the review's findings fixed, proven and pushed on its
+  branch ([the review loop](../roles/developer/docs/review-loop.md)).
 
 ## workline review
 

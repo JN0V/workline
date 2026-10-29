@@ -1722,3 +1722,74 @@ func TestDeveloperTemplatesRouteTheReadyIssue(t *testing.T) {
 		t.Errorf("workline:develop:apply does not apply the line: %v", a["script"])
 	}
 }
+
+// The developer's review round (ADR-0054, step 6): on GitHub, the
+// reviewer's comment or a person's wakes it on the developer's pull
+// request, the judge with no write token, proposing only on its branch's
+// head; the apply holds no agent's token and applies from the merge
+// request at that head. On GitLab, the same from WORKLINE_TASK=review.
+func TestDeveloperTemplatesRunTheReviewRound(t *testing.T) {
+	data, err := os.ReadFile("../../ci/github/workline-develop.yml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var wf struct {
+		On   map[string]any `yaml:"on"`
+		Jobs map[string]struct {
+			If          string            `yaml:"if"`
+			Permissions map[string]string `yaml:"permissions"`
+			Steps       []struct {
+				Run string            `yaml:"run"`
+				Env map[string]string `yaml:"env"`
+			} `yaml:"steps"`
+		} `yaml:"jobs"`
+	}
+	if err := yaml.Unmarshal(data, &wf); err != nil {
+		t.Fatal(err)
+	}
+	review := wf.Jobs["review"]
+	if _, ok := wf.On["issue_comment"]; !ok || !strings.Contains(review.If, "workline:sticky=reviewer/") || !strings.Contains(review.If, "author_association") || review.Permissions["contents"] != "read" {
+		t.Errorf("workline-develop.yml, review: not woken by the reviewer's comment and a person's, or holds a write token: %v %q %v", wf.On, review.If, review.Permissions)
+	}
+	if strings.Contains(wf.Jobs["judge"].If, "issue_comment") || !strings.Contains(wf.Jobs["judge"].If, "github.event_name == 'issues'") {
+		t.Errorf("workline-develop.yml, judge: a comment would take an issue: %q", wf.Jobs["judge"].If)
+	}
+	ran := false
+	for _, s := range review.Steps {
+		if strings.Contains(s.Run, "workline develop --merge-request") {
+			ran = strings.Contains(s.Run, "--no-apply") && strings.Contains(s.Run, "workline/developer/*")
+		}
+	}
+	if !ran {
+		t.Error("workline-develop.yml, review: does not run the round, proposing only, on the developer's pull request alone")
+	}
+	applied := false
+	for _, s := range wf.Jobs["review-apply"].Steps {
+		if strings.Contains(s.Run, "workline apply") {
+			applied = strings.Contains(s.Run, `--from-merge-request "$PR" --head "$HEAD_SHA"`) && s.Env["CLAUDE_CODE_OAUTH_TOKEN"] == ""
+		}
+	}
+	if !applied {
+		t.Error("workline-develop.yml, review-apply: does not apply from the merge request at the head read, or holds the agent's token")
+	}
+
+	data, err = os.ReadFile("../../ci/gitlab/workline.gitlab-ci.yml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var top map[string]any
+	if err := yaml.Unmarshal(data, &top); err != nil {
+		t.Fatal(err)
+	}
+	base, _ := top[".workline:review"].(map[string]any)
+	if !strings.Contains(fmt.Sprint(base["rules"]), `$WORKLINE_TASK == "review"`) || !strings.Contains(fmt.Sprint(base["before_script"]), "workline/developer/*") {
+		t.Errorf(".workline:review: not run by WORKLINE_TASK=review on the developer's branch: %v", base)
+	}
+	j, _ := top["workline:review:judge"].(map[string]any)
+	if script := fmt.Sprint(j["script"]); !strings.Contains(script, `workline develop --merge-request "$MR_IID"`) || !strings.Contains(script, "--no-apply") {
+		t.Errorf("workline:review:judge does not run the round, proposing only: %s", script)
+	}
+	if a, _ := top["workline:review:apply"].(map[string]any); !strings.Contains(fmt.Sprint(a["script"]), `--from-merge-request "$MR_IID" --head "$head"`) {
+		t.Errorf("workline:review:apply does not apply from the merge request: %v", a["script"])
+	}
+}

@@ -48,11 +48,21 @@ type Settings struct {
 	// is a cap reached. ProofSeconds bound the test command's run.
 	MaxTokens    int
 	ProofSeconds int
+	// Rounds are the review rounds it runs on its pull request; past
+	// them, a person, by the label Person (step 6).
+	Rounds int
+	Person string
 }
 
 // SettingsFrom reads the settings.
 func SettingsFrom(m map[string]any) Settings {
-	s := Settings{ClaimLabel: "workline:developing"}
+	s := Settings{ClaimLabel: "workline:developing", Rounds: 5, Person: "workline:human"}
+	if n := number(m["review-rounds"]); n > 0 {
+		s.Rounds = n
+	}
+	if v, ok := m["person"].(string); ok && strings.TrimSpace(v) != "" {
+		s.Person = strings.TrimSpace(v)
+	}
 	if v, ok := m["claim-label"].(string); ok && strings.TrimSpace(v) != "" {
 		s.ClaimLabel = strings.TrimSpace(v)
 	}
@@ -89,6 +99,16 @@ type Act struct {
 	Acceptance []string `json:"acceptance,omitempty"`
 	Code       []string `json:"code,omitempty"`
 	Tests      []string `json:"tests,omitempty"`
+	// The review loop (step 6): the rounds run, the reviewer's runs and
+	// a person's comments read already, the findings asked before (to
+	// tell one still there), the five whys run, a person handed it.
+	Round      int      `json:"round,omitempty"`
+	ReviewRuns int      `json:"review-runs,omitempty"`
+	Heard      []string `json:"heard,omitempty"`
+	Seen       []string `json:"seen,omitempty"`
+	Rounds     []Round  `json:"rounds,omitempty"`
+	Whys       bool     `json:"whys,omitempty"`
+	Handed     bool     `json:"handed,omitempty"`
 }
 
 // number is a setting's whole number, 0 when not one.
@@ -217,6 +237,11 @@ func Pre(runDir, repo string) int {
 	s, err := settingsIn(runDir)
 	if err != nil {
 		return fail(err)
+	}
+	// On its own pull request, a review round (step 6).
+	if kind, num, _ := strings.Cut(os.Getenv("WORKLINE_TARGET"), ":"); kind == "merge-request" {
+		id, _ := strconv.Atoi(num)
+		return reviewPre(runDir, repo, s, id)
 	}
 	// Its code goes to a pull request of its own, never the checkout's
 	// branch: a line that opens none (`workline route` with no
@@ -436,6 +461,13 @@ func claimBody(a Act, s Settings) string {
 // claim, the patches within them and the objections kept, the rest
 // refused and said, in the verdict and in the claim's record.
 func Post(runDir, repo string) int {
+	if _, err := os.Stat(filepath.Join(runDir, "in", roundFile)); err == nil {
+		s, err := settingsIn(runDir)
+		if err != nil {
+			return fail(err)
+		}
+		return reviewPost(runDir, repo, s)
+	}
 	var a Act
 	data, err := os.ReadFile(filepath.Join(runDir, "in", pickFile))
 	if err != nil {

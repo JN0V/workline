@@ -1,6 +1,6 @@
 # ADR-0054: The developer takes a ready issue to a pull request
 
-- **Status:** proposed; steps 1 to 4 built, the claim a label
+- **Status:** proposed; steps 1 to 6 built, the claim a label
   ([settled while building](#settled-while-building))
 - **Date:** 2026-10-27; rewritten 2026-10-28 to the maintainer's choices
 - **Decided by:** the maintainer: build the developer
@@ -253,6 +253,24 @@ Step 5, the triggers (2026-10-29,
   the issue again once its agent answered, and backs off if another
   run took it. Two runs coding at the same time can still both take
   it: left open, the forge holds no lock.
+
+Step 6, the review loop (2026-10-29,
+[the review loop](../../roles/developer/docs/review-loop.md)):
+
+- **The findings are read from the reviewer's comment**, its table:
+  a row that blocks, or warns and is Important, is asked; a nit is
+  counted. Kept by lens, file and title, round after round, to tell a
+  finding still there.
+- **A new verdict** is the reviewer's runs, its record's, past those
+  the developer's record read; else only a person's comment wakes a
+  round. Each comment heard is kept by its id.
+- **Its fix is pushed on its own branch** as the tester's rewrite is
+  ([ADR-0055]), proven first; red, pushed still and said.
+- **Woken on GitHub by the comment**: the reviewer's, which workline's
+  App writes or edits, or a person's of the project. On GitLab, a
+  tool on the note webhook (`WORKLINE_TASK=review`).
+- **Applied from the merge request** like any role's run on one: a
+  role that runs on a review of its own branch is let through.
 
 ## Consequences
 

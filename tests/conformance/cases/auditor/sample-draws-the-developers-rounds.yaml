@@ -1,0 +1,37 @@
+case: auditor/sample-draws-the-developers-rounds
+about: "The developer's review rounds go with its code in the weekly sample (ADR-0046, the developer's row, ADR-0054 step 6): each round its record keeps, what the reviewer or a person asked and how it ended, the five whys run, is given to the auditor beside the issue, the diff and the proof."
+given:
+  repo: curated
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -q -b workline/developer/3 && printf '. ./lib.sh\\n[ \"$(sub 5 3)\" = 2 ]\\n' > tests/test_sub.sh && git add tests/test_sub.sh && GIT_AUTHOR_DATE=2026-01-06T09:00:00Z GIT_COMMITTER_DATE=2026-01-06T09:00:00Z git commit -q -m 'test: the acceptance tests of #3' -m 'Workline-Role: tester\nWorkline-Model: claude:claude-sonnet-5'"
+    - "printf 'sub() { echo $(($2 - $1)); }\\n' >> lib.sh && GIT_AUTHOR_DATE=2026-01-07T09:00:00Z GIT_COMMITTER_DATE=2026-01-07T09:00:00Z git commit -q -am 'Subtract two numbers' -m 'Workline-Role: developer\nWorkline-Model: claude:claude-sonnet-5'"
+    - "git push -q origin workline/developer/3:refs/pull/1/head && git checkout -q main && git merge -q --squash workline/developer/3 && GIT_AUTHOR_DATE=2026-01-07T12:00:00Z GIT_COMMITTER_DATE=2026-01-07T12:00:00Z git commit -q -m 'Subtract two numbers (#1)' && git tag m1 && git push -q origin main"
+    - "git branch -q -D workline/developer/3"
+  forge:
+    issues:
+      - id: 3
+        title: "Subtract two numbers"
+        labels: []
+        body: "## Need\n\nI want to subtract a count from a price.\n\n## Validation\n\n- **Five minus three:** Given the library, When I subtract 3 from 5, Then I get 2.\n\n---\n\n## Scope\n\n- `lib.sh`: a `sub` function beside `add`.\n"
+    merge-requests:
+      - id: 1
+        title: "Subtract two numbers"
+        branch: workline/developer/3
+        base: main
+        labels: []
+        merged-at: "2026-01-07T12:00:00Z"
+        merged-as: m1
+        comments:
+          - |
+            **The developer**'s record of this pull request, for its next runs and the auditor.
+
+            <!-- workline:developer-act {"act":"code","issue":3,"proof":{"result":"green","command":"sh run-tests.sh {report}","passed":4},"code":["lib.sh"],"round":2,"rounds":[{"n":1,"asked":["blocks correctness `lib.sh:2`: Important: sub subtracts the wrong way"],"result":"red"},{"n":2,"asked":["a person, @alice"],"result":"green","whys":true}]} -->
+            <!-- workline:sticky=developer/code -->
+run: {sample: [--week, 2026-W02, --judge, 'cmd:sh "$FIXTURES/agents/audit-keeps-prompt.sh"'], then: apply}
+expect:
+  status: pass
+  agent-calls: 1
+  findings:
+    - {rule: sample-acts, message: "1 act, code written, by the developer on the merge requests merged in the commits"}
+    - {rule: act-stands, where: "#1", message: "the code the developer wrote, on #1: Subtract two numbers — stands"}

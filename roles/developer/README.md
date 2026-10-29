@@ -3,7 +3,7 @@ sources:
   - roles/developer/role.yaml
   - ci/github/workline-develop.yml
   - internal/developer
-checked: 170e0fba
+checked: 492192ca
 verified: agent:claude-code
 ---
 # Developer
@@ -25,7 +25,7 @@ file. All roles: [docs/roles.md](../../docs/roles.md). Where it stands:
 [status](docs/status.md); its design:
 [ADR-0054](../../docs/adr/0054-the-developer-takes-a-ready-issue-to-a-pull-request.md).
 
-**Does**, today (steps 1 to 5 of the
+**Does**, today (steps 1 to 6 of the
 [build plan](../../docs/adr/0054-the-developer-takes-a-ready-issue-to-a-pull-request.md#build-plan)):
 
 - **Picks** the first ready issue in the backlog's order that nobody
@@ -45,9 +45,12 @@ file. All roles: [docs/roles.md](../../docs/roles.md). Where it stands:
   agent holds no forge token ([the pull request](docs/pull-request.md)).
 - **Runs when routed**: when an issue is labelled ready, and on the
   schedule ([the triggers](docs/triggers.md)).
+- **Fixes the review** of its pull request, a fresh run a verdict or
+  a person's comment; the five whys at round three, a person past
+  round five ([the review loop](docs/review-loop.md)).
 - **With no agent**: names the issue it would take; claims nothing.
 
-**Does not, yet**: fixing the review's findings (step 6).
+**Does not, yet**: the merge by kind (step 7), the measure (step 8).
 
 **Never**: merge, approve, put `workline:accepted`, unassign a person,
 close or move an issue.
@@ -58,6 +61,7 @@ close or move an issue.
 workline develop --ai none           # names the issue it would take
 workline develop --ai claude         # claims it, writes the code; any agent: claude, cmd:<command>
 workline develop --issue 42 --ai none
+workline develop --merge-request 7 --ai claude   # a review round on its pull request
 ```
 
 - **`--forge`**: GitHub, GitLab, the local forge or a command's; the
@@ -75,6 +79,8 @@ In `.workline/config.yaml`, under `roles: {developer: {settings: …}}`:
 | `ai-max-tokens` | 300000 | what a run's agent calls may spend; reached, a Draft |
 | `ai-max-seconds` | 1200 | what a run waits on its agent |
 | `proof-seconds` | 600 | how long the project's tests may run on its code; past it, a Draft |
+| `review-rounds` | 5 | the review rounds it runs on its pull request |
+| `person` | `workline:human` | the label its pull request gets past the last round |
 
 The tests it runs are the tester's `test-command` and `test-report`
 ([the tester](../tester/README.md)).

@@ -153,5 +153,49 @@ func body(a Act, ready bool) string {
 func recordBody(a Act) string {
 	r := a
 	r.Act, r.Passed = "code", nil
-	return fmt.Sprintf("**The developer**'s record of this pull request, for its next runs and the auditor.\n\n%s\n", r.Line())
+	var b strings.Builder
+	b.WriteString("**The developer**'s record of this pull request, for its next runs and the auditor.\n\n")
+	for _, x := range r.Rounds {
+		fmt.Fprintf(&b, "- Review round %d: %d asked, %s", x.N, len(x.Asked), roundResult(x))
+		if x.Whys {
+			b.WriteString(", the five whys run")
+		}
+		b.WriteString(".\n")
+	}
+	if len(r.Rounds) > 0 {
+		b.WriteString("\n")
+	}
+	fmt.Fprintf(&b, "%s\n", r.Line())
+	return b.String()
+}
+
+// RoundLines are its review rounds as the auditor reads them: each, what
+// was asked and how it ended; "" for none (ADR-0046).
+func RoundLines(a Act) string {
+	var b strings.Builder
+	for _, x := range a.Rounds {
+		fmt.Fprintf(&b, "- Round %d: %s", x.N, roundResult(x))
+		if x.Whys {
+			b.WriteString(", the five whys run")
+		}
+		if x.Nits > 0 {
+			fmt.Fprintf(&b, ", %d nit%s not asked", x.Nits, plural(x.Nits))
+		}
+		b.WriteString(".\n")
+		for _, t := range x.Asked {
+			fmt.Fprintf(&b, "  - asked: %s\n", t)
+		}
+	}
+	return b.String()
+}
+
+// roundResult says how a review round ended.
+func roundResult(x Round) string {
+	switch {
+	case x.Person:
+		return "handed to a person"
+	case x.Result == "no-code":
+		return "no fix"
+	}
+	return "its fix pushed, the tests " + x.Result
 }
