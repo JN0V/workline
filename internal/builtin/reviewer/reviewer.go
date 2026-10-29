@@ -54,6 +54,7 @@ type Settings struct {
 	StoryWords      []string `json:"story-words"`          // what tells a bug's story in a comment
 	AIFindings      Gate     `json:"ai-findings"`          // warn, until measured (#90); block: a verified important finding blocks; or one of the two by lens
 	JudgeAtLeast    string   `json:"judge-at-least"`       // the independence a verification needs: context, model, provider
+	JudgeByRole     map[string]string `json:"judge-at-least-by-role"` // a higher floor for a change a role made, by its commits' Workline-Role (the developer's: model, ADR-0054)
 	ForgeWrites     bool     `json:"forge-writes"`         // on a merge request: the comments on lines, the summary comment and the issues
 	FinderFloor     bool     `json:"finder-floor"`         // ask each lens to look for a number of candidates before it stops
 	Tests           []string `json:"tests"`                // the test files: what a judge reading tests is shown of them
@@ -1371,7 +1372,7 @@ func askJudges(runDir, repo string, s Settings, st state, c *candidates, n *int)
 				c.Same = map[string]Answered{}
 			}
 			c.Same[JudgeKey(f)] = same
-			if before, ok := judgedBefore(st.Record, f.Lens, same, s.JudgeAtLeast); ok {
+			if before, ok := judgedBefore(st.Record, f.Lens, same, judgeFloor(repo, s, st)); ok {
 				if c.Reused == nil {
 					c.Reused = map[string]Answered{}
 				}
@@ -1750,10 +1751,7 @@ func settled(runDir, repo string, s Settings, st state, c candidates) (Review, [
 		i := strings.LastIndex(a, "\x00")
 		keys[a[:i]] = a[i+1:]
 	}
-	floor := s.JudgeAtLeast
-	if floor == "" {
-		floor = "context"
-	}
+	floor := judgeFloor(repo, s, st)
 	unjudged := 0 // findings the judge was not asked of, the run's tokens spent
 	reused := 0   // findings judged before on the same patch, their verdicts kept (ADR-0050, step 6)
 	var readsDone []JudgeRead

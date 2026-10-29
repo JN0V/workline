@@ -223,6 +223,30 @@ func patchOf(repo, base, head, file string) string {
 // the same patch, by its lens: a no, or a yes at an independence
 // judge-at-least still takes. A line written before the keys holds none:
 // never the same.
+// judgeFloor is the independence a verification needs on this change:
+// judge-at-least, raised by judge-at-least-by-role for each role whose
+// Workline-Role trailer a commit of the change carries — the developer's
+// code judged at model (ADR-0054). A log not read keeps the setting.
+func judgeFloor(repo string, s Settings, st state) string {
+	floor := s.JudgeAtLeast
+	if floor == "" {
+		floor = "context"
+	}
+	if len(s.JudgeByRole) == 0 || st.Base == "" || st.Head == "" {
+		return floor
+	}
+	out, err := git(repo, "log", "--format=%(trailers:key=Workline-Role,valueonly,separator=%x2c)", st.Base+".."+st.Head)
+	if err != nil {
+		return floor
+	}
+	for _, r := range strings.FieldsFunc(out, func(c rune) bool { return c == ',' || c == '\n' }) {
+		if f := s.JudgeByRole[strings.TrimSpace(r)]; judge.Levels[f] > judge.Levels[floor] {
+			floor = f
+		}
+	}
+	return floor
+}
+
 func judgedBefore(rec Record, lens string, same Answered, floor string) (Answered, bool) {
 	if same.Patch == "" || same.Finding == "" {
 		return Answered{}, false
