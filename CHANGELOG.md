@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.51.0](https://github.com/JN0V/workline/compare/v0.50.0...v0.51.0) (2026-10-29)
+
+
+### Features
+
+* measure the auditor's own verdicts ([#673](https://github.com/JN0V/workline/issues/673)) ([684d10e](https://github.com/JN0V/workline/commit/684d10e135cfa00d99498ece0525a48480ed218c))
+
+
+### Bug Fixes
+
+* **tester:** the curator removes tests, never merges them ([#674](https://github.com/JN0V/workline/issues/674)) ([6b84efd](https://github.com/JN0V/workline/commit/6b84efdbd73260ba6e455f806eea27df9621254c))
+
 ## [0.50.0](https://github.com/JN0V/workline/compare/v0.49.0...v0.50.0) (2026-10-28)
 
 
