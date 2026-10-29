@@ -1,6 +1,6 @@
 # ADR-0054: The developer takes a ready issue to a pull request
 
-- **Status:** proposed; steps 1 to 3 built, the claim a label
+- **Status:** proposed; steps 1 to 4 built, the claim a label
   ([settled while building](#settled-while-building))
 - **Date:** 2026-10-27; rewritten 2026-10-28 to the maintainer's choices
 - **Decided by:** the maintainer: build the developer
@@ -215,6 +215,24 @@ Step 3, the proof and the caps (2026-10-29,
 - **Two time caps**: `ai-max-seconds` (1200) on the agent's wait,
   `proof-seconds` (600) on the tests, 30 min in all; past either, nothing waited for
   or a Draft. A cap reached makes a Draft even when green.
+
+Step 4, the pull request (2026-10-29,
+[the pull request](../../roles/developer/docs/pull-request.md)):
+
+- **On the tester's Draft, to the default branch**: the engine builds
+  the branch from the Draft's commit (`from` in the role's
+  out/merge-request.yaml); its pull request's base is the branch the
+  run is on. The agent is shown the frozen tests in its question.
+- **Code and tests apart** by name: a file named `test` or `spec`, or in
+  a test folder, is a test (`commits` in out/merge-request.yaml).
+- **No token in the agent's job**: the engine takes the forge's tokens,
+  the App's key and the signing key out of every agent's environment,
+  whatever the role; the job split is step 5's.
+- **Judged at model** by the reviewer's `judge-at-least-by-role`, read
+  from the commits' `Workline-Role` trailer, not the branch's name.
+- **The auditor's draw** of its code: its merge requests merged, its
+  own commits and the record on the pull request
+  ([ADR-0046](0046-the-auditor-re-checks-every-roles-acts.md#amendment-2026-10-29-the-developers-row)).
 
 ## Consequences
 

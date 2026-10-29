@@ -1,0 +1,26 @@
+case: developer/pr-closes-issue-on-a-forge-command
+about: >
+  On a forge plugged by a command, as on GitHub and GitLab (ADR-0054,
+  step 4): its code starts from the tester's Draft, its pull request is
+  asked of the command against the default branch, closing the issue,
+  and its record is kept in workline's own comment on it.
+given:
+  repo: tested-draft
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main workline/tester/issue-3 && git checkout -q main"
+  config:
+    forge: 'cmd:sh "$FIXTURES/forges/developing.sh"'
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+run: {develop: [], ai: "fake:developer-writes-mul"}
+expect:
+  status: pass
+  summary: "took #3; proven green, its pull request ready"
+  on-top: {workline/developer/3: workline/tester/issue-3}
+  files:
+    .git/forge-requests.jsonl:
+      contains:
+        - '"base":"main","body":"Closes #3'
+        - '## Changes'
+        - '"branch":"workline/developer/3","draft":false'
+        - '"operation":"sticky"'
+        - 'workline:developer-act {\"act\":\"code\"'

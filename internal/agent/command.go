@@ -44,7 +44,7 @@ func (c command) Propose(req Request) (Call, error) {
 	defer cancel()
 	cmd := exec.CommandContext(ctx, "sh", "-c", c.script)
 	cmd.Dir, cmd.WaitDelay = os.TempDir(), waitAfterTimeout
-	cmd.Env = append(os.Environ(), "WORKLINE_TIER="+call.Tier, "WORKLINE_EFFORT="+call.Effort, "WORKLINE_CALL="+report.Name())
+	cmd.Env = append(withoutTokens(os.Environ()), "WORKLINE_TIER="+call.Tier, "WORKLINE_EFFORT="+call.Effort, "WORKLINE_CALL="+report.Name())
 	cmd.Stdin = strings.NewReader(system + "\n\n" + user)
 	var out, errOut bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &out, &errOut

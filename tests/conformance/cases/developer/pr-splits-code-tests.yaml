@@ -1,0 +1,42 @@
+case: developer/pr-splits-code-tests
+about: >
+  The developer's code and its own tests go in commits apart, both
+  listed in its pull request (ADR-0054): the tester's adapting job reads
+  the tests alone. Its commits sit on the tester's, whose acceptance
+  tests it never touches.
+given:
+  repo: tested-draft
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main workline/tester/issue-3 && git checkout -q main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:ready"]
+        body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        draft: true
+        comments: ["The tests of #3, frozen.\n\n<!-- workline:tester-record {\"issue\":3,\"base\":\"main\",\"files\":{\"tests/test_mul_by_zero.sh\":\"8f123a0bacbd681063880b867df38dd216784b97\",\"tests/test_mul_two_by_three.sh\":\"2dee0641bd7a79057ade7bff5af43b603125f543\"}} -->\n<!-- workline:sticky=tester/tests -->"]
+run: {develop: [], ai: "fake:developer-writes-mul-and-test"}
+expect:
+  status: pass
+  summary: "proven green, its pull request ready"
+  findings: [{rule: proof-green, where: "#3", message: "4 tests passed on its code, none red"}]
+  pushed-log:
+    workline/developer/3:
+      - "test: the acceptance tests of #3"
+      - "test: the tests beside the code of #3"
+      - "tests/test_mul_negative.sh"
+      - "Multiply two numbers"
+      - "lib.sh"
+  forge:
+    merge-requests:
+      - id: 2
+        branch: workline/developer/3
+        base: main
+        body-contains: ["- Code: `lib.sh`.", "- Tests, in a commit apart: `tests/test_mul_negative.sh`."]
+        comment-contains: ["\"tests\":[\"tests/test_mul_negative.sh\"]"]

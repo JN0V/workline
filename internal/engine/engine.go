@@ -1623,6 +1623,7 @@ func openMergeRequest(f forge.Forge, st runState, runDir string) (int, error) {
 	var mr struct {
 		Key, Title, Body string
 		Draft            bool
+		Proposal         `yaml:",inline"`
 	}
 	if data, err := os.ReadFile(filepath.Join(runDir, "out", "merge-request.yaml")); err == nil {
 		if err := yaml.Unmarshal(data, &mr); err != nil {
@@ -1637,7 +1638,50 @@ func openMergeRequest(f forge.Forge, st runState, runDir string) (int, error) {
 	if mr.Title == "" || len([]rune(mr.Title)) > limit {
 		mr.Title = DefaultTitle(st.Role)
 	}
-	return ProposeBranch(f, st.Repo, st.Role, mr.Key, mr.Title, mr.Body, mr.Draft, st.trailers(), st.Written)
+	return ProposeBranchFrom(f, st.Repo, st.Role, mr.Key, mr.Title, mr.Body, mr.Draft, st.trailers(), st.Written, mr.Proposal)
+}
+
+// Proposal is how a role's branch is built, beyond the files written
+// (out/merge-request.yaml): the commit it starts from, and the files in
+// commits apart.
+type Proposal struct {
+	// From is the commit the branch starts from, "" the base's tip: the
+	// developer's on the tester's Draft (ADR-0054). Its commits past the
+	// base are not a person's.
+	From string `yaml:"from,omitempty"`
+	// Commits are the files written, each group its own commit, in order;
+	// those no group names go in the last, the title its message (the
+	// developer's code and tests apart, ADR-0054).
+	Commits []Commit `yaml:"commits,omitempty"`
+}
+
+// Commit is one commit of a branch: its message, the files it holds.
+type Commit struct {
+	Message string   `yaml:"message"`
+	Files   []string `yaml:"files"`
+}
+
+// commits are the commits the written files go in: the groups named, each
+// holding the files written it names, then the rest under the title.
+func (p Proposal) commits(title string, written []string) []Commit {
+	var out []Commit
+	left := slices.Clone(written)
+	for _, c := range p.Commits {
+		var files []string
+		for _, f := range c.Files {
+			if i := slices.Index(left, f); i >= 0 {
+				files = append(files, f)
+				left = slices.Delete(left, i, i+1)
+			}
+		}
+		if len(files) > 0 && strings.TrimSpace(c.Message) != "" {
+			out = append(out, Commit{Message: c.Message, Files: files})
+		}
+	}
+	if len(left) > 0 || len(out) == 0 {
+		out = append(out, Commit{Message: title, Files: left})
+	}
+	return out
 }
 
 // mergeRequestKey is the task's key the role named in
@@ -1666,6 +1710,12 @@ var ErrLeftToAPerson = errors.New("left to a person")
 // branch a person committed to is never pushed over: ErrLeftToAPerson, the
 // working tree as it was.
 func ProposeBranch(f forge.Forge, repo, roleName, key, title, body string, draft bool, trailers string, written []string) (int, error) {
+	return ProposeBranchFrom(f, repo, roleName, key, title, body, draft, trailers, written, Proposal{})
+}
+
+// ProposeBranchFrom is ProposeBranch, the branch built as p says: from
+// p.From, the files written in p's commits.
+func ProposeBranchFrom(f forge.Forge, repo, roleName, key, title, body string, draft bool, trailers string, written []string, p Proposal) (int, error) {
 	base, err := git(repo, nil, "symbolic-ref", "--short", "HEAD")
 	if err != nil {
 		return 0, errors.New("a merge request is opened from a branch; this run is on a detached HEAD")
@@ -1676,14 +1726,23 @@ func ProposeBranch(f forge.Forge, repo, roleName, key, title, body string, draft
 		return 0, err
 	}
 	if was != "" {
-		if who := personsCommit(repo, baseTip, was, roleName); who != "" {
+		// The commits it started from are not a person's; on another role's
+		// commit, nor that role's older ones, rewritten since.
+		since := []string{baseTip}
+		if p.From != "" {
+			since = append(since, p.From)
+		}
+		if who := personsCommitPast(repo, since, was, roleName, p.From != ""); who != "" {
 			return 0, fmt.Errorf("%w: %s", ErrLeftToAPerson, who)
 		}
 	}
-	steps := [][]string{
-		{"checkout", "-q", "-B", branch},
-		append([]string{"add", "--"}, written...),
-		{"commit", "-q", "-m", title, "-m", trailers},
+	start := []string{"checkout", "-q", "-B", branch}
+	if p.From != "" {
+		start = append(start, p.From) // the files written carried over
+	}
+	steps := [][]string{start}
+	for _, c := range p.commits(title, written) {
+		steps = append(steps, append([]string{"add", "--"}, c.Files...), []string{"commit", "-q", "-m", c.Message, "-m", trailers})
 	}
 	if !forge.KeepsBranches(f) {
 		steps = append(steps, []string{"push", "-q", "--force", "origin", branch})

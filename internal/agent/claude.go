@@ -108,9 +108,26 @@ var claudeSession = []string{
 
 // claudeEnv is environ without the session's variables.
 func claudeEnv(environ []string) []string {
+	return without(withoutTokens(environ), claudeSession)
+}
+
+// ForgeTokens are the variables holding what writes to the forge or signs
+// for workline: the forge's tokens, the App's key, the signing key. No
+// agent is handed one (principle 6): it proposes, the engine acts. The
+// agent's own login passes.
+var ForgeTokens = []string{
+	"GH_TOKEN", "GITHUB_TOKEN", "GH_ENTERPRISE_TOKEN", "GITHUB_ENTERPRISE_TOKEN",
+	"GITLAB_TOKEN", "GLAB_TOKEN", "WORKLINE_GITLAB_TOKEN", "WORKLINE_GITLAB_READ_TOKEN", "CI_JOB_TOKEN",
+	"FORGEJO_TOKEN", "WORKLINE_APP_PRIVATE_KEY", "WORKLINE_SIGNING_KEY",
+}
+
+// withoutTokens is the environment an agent is called with: no forge token.
+func withoutTokens(environ []string) []string { return without(environ, ForgeTokens) }
+
+func without(environ, names []string) []string {
 	env := make([]string, 0, len(environ))
 	for _, kv := range environ {
-		if name, _, _ := strings.Cut(kv, "="); !slices.Contains(claudeSession, name) {
+		if name, _, _ := strings.Cut(kv, "="); !slices.Contains(names, name) {
 			env = append(env, kv)
 		}
 	}

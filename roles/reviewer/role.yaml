@@ -108,6 +108,10 @@ settings:
   # The independence a verification needs (ADR-0005): context (the same
   # model, apart), model, provider.
   judge-at-least: context
+  # A higher floor for a change a role made, by the Workline-Role trailer
+  # of its commits: the developer's code is judged by another model than
+  # the finder's (ADR-0054).
+  judge-at-least-by-role: {developer: model}
   # On a merge request: each finding on its line, the summary comment, and
   # an issue for each verified finding outside the change. false: all of
   # them only in the verdict.

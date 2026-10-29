@@ -1,0 +1,13 @@
+# The developer's agent writing #3's mul in lib.sh and a test of its own
+# beside the tester's: its code and its test, in commits apart.
+- patch:
+    file: lib.sh
+    content: |
+      add() { echo $(($1 + $2)); }
+      mul() { echo $(($1 * $2)); }
+- patch:
+    file: tests/test_mul_negative.sh
+    content: |
+      # A test of the developer's: a negative factor.
+      . ./lib.sh
+      [ "$(mul -2 3)" = -6 ]

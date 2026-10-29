@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/role/config.go, internal/engine/engine.go, internal/hooks, internal/agent/claude.go, internal/agent/command.go]
-checked: 7f7b4f32
+checked: 21ce8c2c
 judged: b5899f5
 verified: agent:claude-code
 ---
@@ -37,6 +37,7 @@ Each in detail: [the commands](commands.md), and
 | [`workline test answer --merge-request <n>`](commands.md#workline-test) | the tester answers an objection to one of its tests: kept, or rewritten |
 | [`workline test measure --history <file>`](commands.md#workline-test) | the tester's curator measures the test corpus: times, red and flaky tests |
 | [`workline test curate --history <file>`](commands.md#workline-test) | the curator removes a few redundant tests, proven by coverage and mutants |
+| [`workline develop`](commands.md#workline-develop) | the developer takes the first ready issue, writes its code, opens its pull request |
 | [`workline item ready <id>`](commands.md#workline-item-ready) | moves a work item to `ready`, once its sections are written |
 | [`workline issues`, `issues show <n>`](commands.md#workline-issues) | reads the issues kept in the clone (`forge: local`) |
 | [`workline issues import <file>`](commands.md#workline-issues-import) | turns a roadmap or backlog file into issues |
@@ -89,6 +90,9 @@ Each in detail: [the commands](commands.md), and
   dropped even when you set one (`CLAUDE_EFFORT`: the effort is the
   role's, or `claude:@<effort>`'s). Your login (`CLAUDE_CODE_OAUTH_TOKEN`,
   `ANTHROPIC_API_KEY`…) and other settings pass.
+- **No agent gets a forge token**: `claude` and `cmd:` are called
+  without `GH_TOKEN`, `GITHUB_TOKEN`, `GITLAB_TOKEN`, the App's key or
+  the signing key; the engine writes to the forge, the agent proposes.
 
 ### The forge
 
@@ -154,8 +158,8 @@ Each in detail: [the commands](commands.md), and
 `cmd:<command>` makes any command the agent: another provider's CLI, or a
 wrapper around your own. It runs with `sh -c`, outside the repository:
 
-- it gets your environment as it is, a Claude Code session's variables
-  included;
+- it gets your environment, a Claude Code session's variables included,
+  the forge's tokens left out;
 - its input is the prompt, the role's persona first;
 - `WORKLINE_TIER` and `WORKLINE_EFFORT` say what the role asks (`light`,
   `standard`, `frontier`; `none` to `max`), for it to pick its model;

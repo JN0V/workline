@@ -3,7 +3,8 @@
 **In one line:** re-checks, each week, one in ten of every role's acts,
 per kind (`workline sample`): the docs the documentalist vouched for, the
 product owner's acts, the reviewer's judged findings, the committer's
-rewrites, the tester's acts, each against what it was done on. The
+rewrites, the tester's acts, the developer's code, each against what it
+was done on. The
 docs' sample tried on a GitLab sandbox, its first scheduled run on
 workline on 2026-10-05; the tester's acts read by a real judge on stub
 acts ([#669](https://github.com/JN0V/workline/pull/669)), the others'
@@ -106,6 +107,11 @@ hold:
   `sample-draws-the-testers-acts`, `verdict-reads-the-testers-acts`.
   Tried with stub tester runs and a real judge, on
   [#669](https://github.com/JN0V/workline/pull/669).
+- **The developer's code** (2026-10-29): on its merge requests merged,
+  its own commits and the record on its pull request; its question in
+  `kinds/code.md`
+  ([ADR-0046](../../../docs/adr/0046-the-auditor-re-checks-every-roles-acts.md#amendment-2026-10-29-the-developers-row)):
+  auditor's `sample-draws-the-developers-code`. No real judge yet.
 
 ## Missing
 

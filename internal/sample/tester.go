@@ -49,26 +49,13 @@ func testerActs(repo string, f forge.Forge, mrs []forge.MergeRequest) ([]Act, []
 			continue
 		}
 		ref := forge.MergeRef(f, m.ID)
-		head := ""
-		for _, h := range []string{fmt.Sprintf("refs/workline/sample/%d", m.ID), m.Branch} {
-			if c, err := git(repo, "rev-parse", "-q", "--verify", h+"^{commit}"); err == nil && c != "" {
-				head = c
-				break
-			}
-		}
-		if head == "" {
-			unread = append(unread, fmt.Sprintf("the tester's acts on %s: its head is not in this clone", ref))
-			continue
-		}
-		args := []string{"rev-list", "--no-merges", head}
-		if m.MergedAs != "" {
-			if p, err := git(repo, "rev-parse", "-q", "--verify", m.MergedAs+"^1"); err == nil && p != "" {
-				args = append(args, "^"+p)
-			}
-		}
-		list, err := git(repo, args...)
+		list, found, err := mergedCommits(repo, m)
 		if err != nil {
 			return nil, nil, err
+		}
+		if !found {
+			unread = append(unread, fmt.Sprintf("the tester's acts on %s: its head is not in this clone", ref))
+			continue
 		}
 		var commit, subject, by, day string
 		for _, c := range strings.Fields(list) { // newest first: the first of its own kept
@@ -119,6 +106,30 @@ func testerActs(repo string, f forge.Forge, mrs []forge.MergeRequest) ([]Act, []
 		}
 	}
 	return out, unread, nil
+}
+
+// mergedCommits are the commits of a merge request merged, newest first,
+// read on its head: the ref the sample fetched, else its branch; past the
+// base it was merged on. found is false when its head is not in the clone.
+func mergedCommits(repo string, m forge.MergeRequest) (list string, found bool, err error) {
+	head := ""
+	for _, h := range []string{fmt.Sprintf("refs/workline/sample/%d", m.ID), m.Branch} {
+		if c, err := git(repo, "rev-parse", "-q", "--verify", h+"^{commit}"); err == nil && c != "" {
+			head = c
+			break
+		}
+	}
+	if head == "" {
+		return "", false, nil
+	}
+	args := []string{"rev-list", "--no-merges", head}
+	if m.MergedAs != "" {
+		if p, err := git(repo, "rev-parse", "-q", "--verify", m.MergedAs+"^1"); err == nil && p != "" {
+			args = append(args, "^"+p)
+		}
+	}
+	list, err = git(repo, args...)
+	return list, true, err
 }
 
 // answeredOn are the tester's answers kept or rewritten in the threads of

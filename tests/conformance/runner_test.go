@@ -209,6 +209,7 @@ type expectSpec struct {
 	Files        map[string]fileWant          `yaml:"files"`
 	Pushed       map[string]map[string]string `yaml:"pushed"`         // branch -> path -> a text the remote's branch holds there
 	PushedMsg    map[string]string            `yaml:"pushed-message"` // branch -> a text the message of the remote branch's tip holds
+	PushedLog    map[string][]string          `yaml:"pushed-log"`     // branch -> texts its commits past origin's main hold, oldest first: each subject, then its files, in this order
 	NotPushed    []string                     `yaml:"not-pushed"`     // branches of the remote the run left where they were
 	OnTop        map[string]string            `yaml:"on-top"`         // branch -> the branch of the remote its tip holds
 	Signed       map[string]bool              `yaml:"signed"`         // branch -> the remote branch's tip carries a signature git verifies (true), or none (false)
@@ -1291,6 +1292,19 @@ func compare(c *caseFile, r *result, repo string) []string {
 		out, err := exec.Command("git", "-C", repo, "log", "-1", "--format=%B", "origin/"+branch).Output()
 		if err != nil || !strings.Contains(string(out), text) {
 			p = append(p, fmt.Sprintf("the tip of origin's %s does not say %q in its message: %s", branch, text, out))
+		}
+	}
+	for branch, texts := range e.PushedLog {
+		_ = exec.Command("git", "-C", repo, "fetch", "-q", "origin").Run() // a fetch that fails leaves the log empty, said below
+		out, _ := exec.Command("git", "-C", repo, "log", "--reverse", "--format=%s", "--name-only", "origin/main..origin/"+branch).Output()
+		rest := string(out)
+		for _, t := range texts {
+			i := strings.Index(rest, t)
+			if i < 0 {
+				p = append(p, fmt.Sprintf("origin's %s does not hold %q, in this order, past main:\n%s", branch, t, out))
+				break
+			}
+			rest = rest[i+len(t):]
 		}
 	}
 	for branch, base := range e.OnTop {

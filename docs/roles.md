@@ -1,6 +1,6 @@
 ---
 sources: [routing.default.yaml, roles/committer/role.yaml, roles/documentalist/role.yaml, roles/reviewer/role.yaml, roles/inspector/role.yaml, roles/product-owner/role.yaml, roles/judge/role.yaml, roles/auditor/role.yaml, roles/tester/role.yaml, roles/developer/role.yaml]
-checked: ccb53431
+checked: 21ce8c2c
 judged: d34fd75
 verified: agent:claude-code
 ---
@@ -52,7 +52,8 @@ Two roles never run on an event of their own:
 - the **auditor** re-checks, each week, one in ten of every role's acts
   (`workline sample`, [ADR-0046](adr/0046-the-auditor-re-checks-every-roles-acts.md)): the docs the
   documentalist confirmed, the product owner's acts, the reviewer's judged
-  findings, the committer's rewrites, the tester's acts, each against
+  findings, the committer's rewrites, the tester's acts, the developer's
+  code, each against
   what it was done on.
 
 How to run each role from a hook, a script or a CI job:

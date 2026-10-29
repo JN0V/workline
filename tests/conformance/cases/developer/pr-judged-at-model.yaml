@@ -1,0 +1,15 @@
+case: developer/pr-judged-at-model
+about: >
+  The developer's code is judged by another model than the one that
+  found the finding (ADR-0054): its commits carry Workline-Role:
+  developer, and the reviewer's judge-at-least-by-role raises its floor
+  to model. A judge of the same model, in a context of its own, leaves
+  the finding shown, not verified.
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count' -m 'Workline-Role: developer'"]
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/same-model/review-related.yaml"}
+run: {role: reviewer, event: review, input: {range: main..HEAD, lenses: correctness}, ai: "fake:review-related"}
+expect:
+  status: pass
+  findings: [{rule: correctness, where: "calc/calc.go:11", message: "not verified: the judge stood at context, below model"}]

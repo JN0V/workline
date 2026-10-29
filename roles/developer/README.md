@@ -2,7 +2,7 @@
 sources:
   - roles/developer/role.yaml
   - internal/developer
-checked: ccb53431
+checked: e04c31ef
 verified: agent:claude-code
 ---
 # Developer
@@ -24,7 +24,7 @@ file. All roles: [docs/roles.md](../../docs/roles.md). Where it stands:
 [status](docs/status.md); its design:
 [ADR-0054](../../docs/adr/0054-the-developer-takes-a-ready-issue-to-a-pull-request.md).
 
-**Does**, today (steps 1 to 3 of the
+**Does**, today (steps 1 to 4 of the
 [build plan](../../docs/adr/0054-the-developer-takes-a-ready-issue-to-a-pull-request.md#build-plan)):
 
 - **Picks** the first ready issue in the backlog's order that nobody
@@ -39,10 +39,13 @@ file. All roles: [docs/roles.md](../../docs/roles.md). Where it stands:
 - **Proves it** on the project's tests, the tester's `test-command`,
   then opens its pull request: ready when green with no cap reached,
   else a Draft ([the proof and the caps](docs/proof.md)).
+- **Opens it on the tester's Draft**, the acceptance tests with it,
+  its code and tests in commits apart, its record hidden on it; the
+  agent holds no forge token ([the pull request](docs/pull-request.md)).
 - **With no agent**: names the issue it would take; claims nothing.
 
-**Does not, yet**: the pull request's full sections, its triggers,
-fixing the review's findings (steps 4 to 6).
+**Does not, yet**: its triggers, fixing the review's findings (steps 5
+and 6).
 
 **Never**: merge, approve, put `workline:accepted`, unassign a person,
 close or move an issue.

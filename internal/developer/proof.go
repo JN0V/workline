@@ -22,7 +22,6 @@ import (
 	"github.com/JN0V/workline/internal/role"
 	"github.com/JN0V/workline/internal/tester"
 	"github.com/JN0V/workline/internal/verdict"
-	"github.com/JN0V/workline/internal/work"
 )
 
 // The proof's results.
@@ -174,26 +173,6 @@ func proofLines(p Proof, caps []Cap) string {
 		fmt.Fprintf(&b, "- Cap reached: %s, %d spent of %d.\n", c.Setting, c.Spent, c.Allows)
 	}
 	return b.String()
-}
-
-// mergeRequest is out/merge-request.yaml: the branch's key, the issue's
-// title, a body saying what the proof said; ready only when green with no
-// cap reached. The body's other sections are step 4's.
-func mergeRequest(a Act, title string) map[string]any {
-	ready := a.Proof != nil && a.Proof.Result == Green && len(a.Caps) == 0
-	var b strings.Builder
-	fmt.Fprintf(&b, "Closes #%d\n\n", a.Issue)
-	if ready {
-		fmt.Fprintf(&b, "The developer's code for #%d, proven on the project's tests.\n\n", a.Issue)
-	} else {
-		fmt.Fprintf(&b, "The developer's code for #%d, **a Draft**: not proven green, or a cap reached. "+
-			"A person takes it from here, or removes the claim on the issue.\n\n", a.Issue)
-	}
-	fmt.Fprintf(&b, "## %s\n\n", work.Name(work.Verification))
-	if a.Proof != nil {
-		b.WriteString(proofLines(*a.Proof, a.Caps))
-	}
-	return map[string]any{"key": fmt.Sprint(a.Issue), "title": title, "body": b.String(), "draft": !ready}
 }
 
 // issueTitle is the issue's title, from the task pre wrote; "" when not
