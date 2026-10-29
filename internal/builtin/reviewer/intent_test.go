@@ -11,7 +11,7 @@ import (
 // The issues a change closes, as GitHub and GitLab read the keywords; a
 // reference closes nothing.
 func TestCloses(t *testing.T) {
-	got := closes("Closes #4.\n\nfixes: #7, Resolved #4", "Refs #126\nimplements #9\nsee owner/repo#3 and close#5")
+	got := forge.Closes("Closes #4.\n\nfixes: #7, Resolved #4", "Refs #126\nimplements #9\nsee owner/repo#3 and close#5")
 	if fmt.Sprint(got) != "[4 7 9]" {
 		t.Errorf("closes = %v, want [4 7 9]", got)
 	}

@@ -4,31 +4,12 @@ import (
 	"fmt"
 	"os"
 	"regexp"
-	"slices"
-	"strconv"
 	"strings"
 
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/verdict"
 	"github.com/JN0V/workline/internal/work"
 )
-
-// closing is an issue closed by a keyword, as GitHub and GitLab read it:
-// `Closes #4`, `fixes: #4`, `Resolved #4`. `Refs #4` closes nothing.
-var closing = regexp.MustCompile(`(?i)\b(?:clos(?:e|es|ed|ing)|fix(?:es|ed|ing)?|resolv(?:e|es|ed|ing)|implement(?:s|ed|ing)?):?\s+#(\d+)\b`)
-
-// closes are the issues the texts say the change closes, once each, in order.
-func closes(texts ...string) []int {
-	var ids []int
-	for _, t := range texts {
-		for _, m := range closing.FindAllStringSubmatch(t, -1) {
-			if n, err := strconv.Atoi(m[1]); err == nil && !slices.Contains(ids, n) {
-				ids = append(ids, n)
-			}
-		}
-	}
-	return ids
-}
 
 // ClosedIssue is an issue the change says it closes, as the lenses read it.
 type ClosedIssue struct {

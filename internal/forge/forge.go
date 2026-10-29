@@ -50,6 +50,9 @@ type Issue struct {
 	// Weight is its GitLab weight, a whole number (Premium, Ultimate,
 	// ADR-0040); nil when it has none, or the forge keeps none.
 	Weight *int `json:"weight,omitempty"`
+	// Assignees are the logins it is assigned to: a person's claim, which
+	// keeps it from the developer (ADR-0054).
+	Assignees []string `json:"assignees,omitempty"`
 }
 
 // Field is a single-select issue field of the forge (ADR-0040): its id,
