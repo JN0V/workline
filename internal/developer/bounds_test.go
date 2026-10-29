@@ -57,8 +57,14 @@ func TestBesideTestNeedsTheTestFolderBesideTheScope(t *testing.T) {
 		"other/tests/test_lib.sh": false,
 		"other/spec/lib_spec.rb":  false,
 	} {
-		if got := besideTest(p, scope); got != want {
+		if got := besideTest(p, scope, checker{}.isDir); got != want {
 			t.Errorf("besideTest(%s) = %v, want %v", p, got, want)
+		}
+	}
+	// A folder's Scope lets in the tests under it, none at the root.
+	for p, want := range map[string]bool{"src/x_test.go": true, "src/tests/test_x.sh": true, "x_test.go": false, "tests/test_x.sh": false} {
+		if got := besideTest(p, []string{"src"}, checker{}.isDir); got != want {
+			t.Errorf("besideTest(%s) with a Scope src = %v, want %v", p, got, want)
 		}
 	}
 }
