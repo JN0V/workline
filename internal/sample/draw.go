@@ -31,7 +31,7 @@ const (
 	commitRole = "committer"
 )
 
-var roleOrder = []string{docsRole, productOwner, reviewRole, commitRole, testRole}
+var roleOrder = []string{docsRole, productOwner, reviewRole, commitRole, testRole, devRole}
 
 // Act is an act of a role the sample drew.
 type Act struct {
@@ -69,6 +69,7 @@ type Act struct {
 	Defect       *Defect    `json:"defect,omitempty"` // a true finding its judge dropped, for an issue
 	key          string     // what it is ranked by, with the week
 	tester       *testerAct // a tester's act: what it is re-checked against
+	developer    *devAct    // the developer's code: what it is re-checked against
 	older        bool       // a product owner's act read without the record ADR-0046 completes: as its issue reads now
 }
 
@@ -532,7 +533,7 @@ func actsOfTheWindow(o Options, res *Result, h *heads, commits []string, first, 
 			res.Autonomy = au
 		}
 		if _, ok := o.Forge.(forge.Merged); !ok {
-			notDrawn("the reviewer's findings, the tester's acts, and the commits of a merge request squashed: this forge does not list the merge requests merged")
+			notDrawn("the reviewer's findings, the tester's acts, the developer's code, and the commits of a merge request squashed: this forge does not list the merge requests merged")
 			break
 		}
 		// Each role's acts are read apart: one that fails is said for that
@@ -547,6 +548,12 @@ func actsOfTheWindow(o Options, res *Result, h *heads, commits []string, first, 
 			unreachable("the tester's acts", err)
 		} else {
 			acts = append(acts, ts...)
+			res.NotDrawn = append(res.NotDrawn, unread...)
+		}
+		if ds, unread, err := developerActs(o.Repo, o.Forge, h.merged); err != nil {
+			unreachable("the developer's code", err)
+		} else {
+			acts = append(acts, ds...)
 			res.NotDrawn = append(res.NotDrawn, unread...)
 		}
 	}
@@ -591,6 +598,8 @@ func actWords(a Act) string {
 		default:
 			fmt.Fprintf(&b, "an objection the tester answered %s, on %s, at `%s`", a.Kind, a.Ref, a.Where)
 		}
+	case devRole:
+		fmt.Fprintf(&b, "the code the developer wrote, on %s", a.Ref)
 	default:
 		fmt.Fprintf(&b, "the %s's %s, %s", a.Role, a.Kind, a.Ref)
 	}
@@ -620,6 +629,8 @@ func kindWords(c Count) string {
 		return "five whys given"
 	case c.Role == testRole:
 		return "objection answered " + c.Kind
+	case c.Role == devRole:
+		return "code written"
 	}
 	return "`" + c.Kind + "`"
 }

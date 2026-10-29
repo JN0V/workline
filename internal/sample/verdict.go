@@ -89,6 +89,10 @@ func kindOf(a Act) string {
 		return "finding"
 	case commitRole:
 		return "rewrite"
+	case devRole:
+		if a.Kind == "code" {
+			return "code"
+		}
 	case testRole:
 		switch a.Kind {
 		case "tests", "kept", "rewritten", "whys", "removal":
@@ -367,6 +371,8 @@ func (rd *reader) material(a *Act, kind string) (*material, string) {
 		return m, rd.rewrite(a, m)
 	case testRole:
 		return m, rd.testerMaterial(a, m)
+	case devRole:
+		return m, rd.developerMaterial(a, m)
 	}
 	return m, rd.issueAct(a, m, kind)
 }

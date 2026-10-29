@@ -14,6 +14,7 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/tester"
 	"github.com/JN0V/workline/internal/work"
@@ -21,6 +22,27 @@ import (
 
 // RecordKey is the sticky key of the record on its pull request.
 const RecordKey = "code"
+
+// Branch opens its branches' names: workline/developer/<issue>.
+const Branch = "workline/developer/"
+
+// ReadRecord reads the record of its code on its merge request id, from
+// workline's own comment; ok is false when there is none it can read.
+func ReadRecord(f forge.Forge, id int) (Act, bool, error) {
+	kept, err := forge.ReadKept(f, forge.Target{Kind: "merge-request", ID: id})
+	if err != nil {
+		return Act{}, false, err
+	}
+	body, ok := kept.Last(forge.Marker("sticky=developer/" + RecordKey))
+	if !ok {
+		return Act{}, false, nil
+	}
+	a, ok := ReadAct(body)
+	return a, ok && a.Act == "code", nil
+}
+
+// ProofLines are a proof's lines, as its pull request's body says them.
+func ProofLines(p Proof, caps []Cap) string { return proofLines(p, caps) }
 
 // isTest says whether a file is a test: "test" or "spec" a word of its
 // name (test_x.py, x_test.go, x.spec.ts, XTest.java), or in a test folder.

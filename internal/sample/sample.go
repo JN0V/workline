@@ -331,7 +331,7 @@ func revList(repo, base, tip, after string) ([]string, error) {
 // actsWindow says where a role's acts were drawn from.
 func actsWindow(role, window, first, end string) string {
 	switch {
-	case role == reviewRole, role == testRole:
+	case role == reviewRole, role == testRole, role == devRole:
 		return "on the merge requests merged in the commits " + window
 	case role == commitRole:
 		return "in the commits " + window
