@@ -11,7 +11,9 @@ measures the corpus, no agent (`workline test measure`), and proposes
 a few redundant tests removed, proven with no agent (`workline test
 curate`). Steps 1 to 7 of
 [ADR-0055's plan](../../../docs/adr/0055-the-tester-writes-the-acceptance-tests-before-the-code.md#build-plan);
-beta, not in the line yet.
+beta; in workline's own line since
+[#264](https://github.com/JN0V/workline/issues/264), its first real
+night awaited.
 
 A try is told in its pull request's `## Tried`
 ([ADR-0043](../../../docs/adr/0043-a-try-is-told-in-its-pull-request.md)):
@@ -38,7 +40,9 @@ hold:
 2. **The main issue validated on real use**: open.
    [#264](https://github.com/JN0V/workline/issues/264), on workline and
    on a copy of a real repository: a bug shown by a red test first, then
-   green.
+   green. Routed on workline's own line (`schedule`, one ready issue a
+   night, a Draft; `merge-request`, its guard): awaiting its first real
+   night.
 3. **AI verdicts measured**: open. The tests `test write` writes,
    measured against the scenarios they cover: one try so far. Its acts
    are observable: the auditor's weekly sample draws them
@@ -122,11 +126,9 @@ Cases in `tests/conformance/cases/tester/`:
   the agent again with the reason; the run blocks.
 - **Adding to a test file already there**: refused for now; new files
   only.
-- **Not in workline's own line yet**: a Go issue that adds a name now
-  gets its Draft. Routing it on workline's schedule still needs its
-  `test-command` set, gotestsum in the gardening's judge job, and a
-  choice for the conformance cases many issues ask for, which run only
-  in `./tests/conformance`; the objection workflows wait for a Draft.
+- **A case the conformance suite cannot read** is told by workline's
+  own `build-errors` line, not by the role: another project's suite
+  that fails a malformed test file alike reads as red.
 - **A Draft a person closed** is not remembered as refused: a later
   scheduled run may take its issue again.
 - **Objections on a forge command** (`cmd:`): it lists no thread, and

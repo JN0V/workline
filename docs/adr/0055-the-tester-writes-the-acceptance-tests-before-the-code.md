@@ -397,3 +397,27 @@ Each step: conformance cases first; a try told under `## Tried` ([ADR-0043]).
   ([ADR-0054]), when it is built; the defect ledger
   ([role-adapting.md](../spec/role-adapting.md#defects-become-guards))
   likewise, when a defect is recorded.
+
+## Amendment 2026-10-29: in workline's own line
+
+- **Routed** ([#264](https://github.com/JN0V/workline/issues/264)):
+  `schedule`, last, one ready issue a night, its tests a Draft, the
+  role's own settings; `merge-request`, after the gate and before the
+  reviewer, its frozen guard and green proof on its own branches.
+  Weekly, the docs' run skips it.
+- **The command**: every package but `tests/evaluation`, whose tests
+  measure agents, not the code; the conformance suite in, though it is
+  most of the run (about 230 s of 240 s on a laptop). One run of the
+  whole suite, never a second command beside it.
+- **The report**: gotestsum, pinned, run by `go run` as the curator's
+  commands are; the gardening's judge job leaves Go set up, and
+  workline.yml's judge on `workline/tester/` branches. A check holds it
+  (`TestOwnTesterHasGoWhereItRuns`).
+- **Conformance cases are acceptance tests**: a new case under
+  `tests/conformance/cases/` is a subtest of the suite's report, red on
+  the base while the engine lacks what it says; its scenario named in a
+  `# scenario:` comment. Never listed in `pending.txt`: a pending case is
+  skipped, which the check refuses as green.
+- **A case the suite cannot read** fails too, red for no reason:
+  workline's `build-errors` adds a line for it, never a missing name,
+  so the check says `build-broken`.
