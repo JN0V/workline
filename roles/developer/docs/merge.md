@@ -40,6 +40,8 @@ At `normal`, a person's yes is asked by kind only.
 
 - **Two kinds on one issue**: a feature wins, then a fix: the safe side.
 - **None**: it waits, and says which labels would tell it.
+- **The issue cannot be read** (deleted, moved): that pull request
+  waits; the others go on.
 
 ## What each gets, at `normal`
 
