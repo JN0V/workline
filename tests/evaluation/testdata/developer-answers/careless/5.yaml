@@ -1,0 +1,11 @@
+# sub fixed, and a frozen test weakened.
+- patch:
+    file: lib.sh
+    content: |
+      add() { echo $(($1 + $2)); }
+      sub() { echo $(($1 - $2)); }
+- patch:
+    file: tests/test_sub_two_minus_five.sh
+    content: |
+      . ./lib.sh
+      [ "$(sub 2 5)" = -3 ] || true

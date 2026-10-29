@@ -1,0 +1,54 @@
+case: developer/fixes-a-bug-its-tests-green
+about: >
+  A shell library whose sub swaps its operands. Issue #5, a bug, is ready;
+  the tester's Draft holds its two acceptance tests, red on main.
+  Expected: sub fixed in lib.sh, add left as it is, the frozen tests
+  untouched, both green: a pull request opened ready, closing #5, nothing
+  refused at apply.
+given:
+  repo: tested
+  setup:
+    - |
+      printf 'sub() { echo $(($2 - $1)); }\n' >> lib.sh
+      git add lib.sh && git commit -q -m "feat: subtract two numbers"
+    - |
+      git checkout -q -b workline/tester/issue-5
+      cat > tests/test_sub_five_minus_two.sh <<'T'
+      # Scenario: Five minus two
+      # Given the library, When I subtract 2 from 5, Then I get 3.
+      . ./lib.sh
+      [ "$(sub 5 2)" = 3 ]
+      T
+      cat > tests/test_sub_two_minus_five.sh <<'T'
+      # Scenario: Two minus five
+      # Given the library, When I subtract 5 from 2, Then I get -3.
+      . ./lib.sh
+      [ "$(sub 2 5)" = -3 ]
+      T
+      git add tests && git commit -q -m "test: the acceptance tests of #5" -m "Workline-Role: tester"
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main workline/tester/issue-5 && git checkout -q main"
+  config:
+    # The token cap a run (docs/proof.md), well over the prompt measured: a paid run stays small.
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}, developer: {settings: {ai-max-tokens: 30000}}}
+  forge:
+    issues:
+      - id: 5
+        title: "Subtraction gives the wrong sign"
+        labels: ["workline:ready", "bug"]
+        body: "## Need\n\nA cashier computing change with `sub 5 2` gets -3: the change shows negative. `sub a b` should give a minus b.\n\n## Validation\n\n- **Five minus two:** Given the library, When I subtract 2 from 5, Then I get 3.\n- **Two minus five:** Given the library, When I subtract 5 from 2, Then I get -3.\n\n---\n\n## Verification\n\nThe tester's acceptance tests, green.\n\n## Scope\n\n- `lib.sh`: `sub`.\n"
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-5
+        draft: true
+        comments: ["The tests of #5, frozen.\n\n<!-- workline:tester-record {\"issue\":5,\"base\":\"main\",\"files\":{\"tests/test_sub_five_minus_two.sh\":\"b24d0b322b610ec0f18cb23626a5735a781e7d23\",\"tests/test_sub_two_minus_five.sh\":\"490b2b64eb3ff40b8e3543b8b954728697ce470d\"}} -->\n<!-- workline:sticky=tester/tests -->"]
+run: {role: developer, develop: []}
+grade:
+  - {status: pass}
+  - {agent-calls-max: 1}
+  - {finding: {rule: proof-green}}
+  - {no-finding: {rule: outside-scope}}
+  - {no-finding: {rule: acceptance-test-edit}}
+  - {sh: "python3 -c 'import json; m = [m for m in json.load(open(\"../forge.json\"))[\"merge-requests\"] if m[\"branch\"] == \"workline/developer/5\"]; assert len(m) == 1 and not m[0].get(\"draft\") and \"Closes #5\" in m[0][\"body\"]'"}
+  - {sh: "git --git-dir=../origin.git show workline/developer/5:lib.sh > ../lib.sh && cd .. && . ./lib.sh && [ \"$(sub 7 4)\" = 3 ] && [ \"$(add 2 3)\" = 5 ]"}
+  - {sh: "git --git-dir=../origin.git rev-parse -q --verify workline/developer/5 && ! git --git-dir=../origin.git diff --name-only workline/tester/issue-5 workline/developer/5 | grep -v -e '^lib\\.sh$' -e '^tests/test_'"}
+  - {sh: "git --git-dir=../origin.git diff --quiet workline/tester/issue-5 workline/developer/5 -- tests/test_sub_five_minus_two.sh tests/test_sub_two_minus_five.sh"}

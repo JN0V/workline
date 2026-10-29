@@ -1,0 +1,11 @@
+# sub fixed, untested, and money.sh fixed out of scope.
+- patch:
+    file: lib.sh
+    content: |
+      add() { echo $(($1 + $2)); }
+      sub() { echo $(($1 - $2)); }
+- patch:
+    file: money.sh
+    content: |
+      # Refunds: what the shop gives back.
+      refund() { echo $(($1 - $2)); }
