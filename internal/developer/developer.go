@@ -13,7 +13,6 @@ import (
 	"maps"
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
 	"regexp"
 	"slices"
@@ -96,8 +95,8 @@ var pathWord = regexp.MustCompile("`([^`\\s]+)`")
 func scopePaths(body string) []string {
 	var out []string
 	for _, m := range pathWord.FindAllStringSubmatch(work.ByMeaning(body)[work.Scope].Text, -1) {
-		p := strings.TrimSuffix(path.Clean(m[1]), "/")
-		if strings.ContainsAny(m[1], "/.") && !slices.Contains(out, p) {
+		p, ok := scopeEntry(m[1])
+		if ok && strings.ContainsAny(m[1], "/.") && !slices.Contains(out, p) {
 			out = append(out, p)
 		}
 	}
