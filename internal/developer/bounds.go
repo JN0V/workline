@@ -1,27 +1,13 @@
 package developer
 
-// The bounds at apply (ADR-0054, what bounds it; step 2): what the
-// developer's patches may never touch, refused by post with no agent. Pre
-// reads them before the agent is asked and keeps them in in/bounds.json;
-// post takes out each patch reaching past one, says why, and keeps the
-// rest. Refused, in this order:
-//
-//   - gate-file: a gate's definition — .workline/, the CI's workflows, the
-//     files a gate's check runs or reads its config from;
-//   - steering-file: a file that steers agents (internal/steer) or one in
-//     a role's folder, whatever the Scope says;
-//   - acceptance-test-edit: a test the tester froze on its open Draft
-//     (ADR-0055): the developer objects to it on its line instead;
-//   - outside-scope: a file neither the issue's Scope names, nor the
-//     product owner's sources for it, nor a test beside them (principle 8).
-//
-// A label or comment the agent proposes is refused too (not-the-developers):
-// the claim is the engine's, and the developer never labels, accepts nor
-// merges (ADR-0054, what it never does). Its one comment is an objection,
-// which post writes on the test's line of the tester's Draft.
+// The bounds at apply (ADR-0054, step 2): post, with no agent, leaves out
+// each patch reaching a gate's file, a file that steers agents, a frozen
+// test or a file outside the issue's scope, and the agent's labels and
+// comments but an objection; roles/developer/docs/bounds.md says why.
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path"
@@ -60,6 +46,8 @@ type Bounds struct {
 type Refusal struct {
 	File string `json:"file"`
 	Rule string `json:"rule"`
+	// Detail is why the bounds could not be read, for bounds-unread.
+	Detail string `json:"detail,omitempty"`
 }
 
 // readBounds reads, on the forge, what bounds the issue's patches.
@@ -71,7 +59,7 @@ func readBounds(f forge.Forge, bl forge.Backlog, repo string, is forge.Issue) (B
 	}
 	if st, found, err := backlog.ReadState(comments, "product-owner"); found && err == nil {
 		for _, s := range st.Sources {
-			if s = strings.TrimSuffix(path.Clean(s), "/"); !slices.Contains(b.Scope, s) {
+			if s, ok := scopeEntry(s); ok && !slices.Contains(b.Scope, s) {
 				b.Scope = append(b.Scope, s)
 			}
 		}
@@ -123,8 +111,9 @@ var ciFiles = []string{".workline", ".github/workflows", ".github/actions", ".gi
 
 // gateFiles are the files a gate's checks run or read their config from,
 // as .workline/config.yaml declares them: a word of a check's command
-// that is a file of the repository, and its `config`.
-func gateFiles(repo string) []string {
+// that is a file of the repository, and its `config`. A config that
+// cannot be read is an error: no gate's file is known then.
+func gateFiles(repo string) ([]string, error) {
 	var cfg struct {
 		Gates map[string]struct {
 			Checks []struct {
@@ -134,49 +123,80 @@ func gateFiles(repo string) []string {
 		} `yaml:"gates"`
 	}
 	data, err := os.ReadFile(filepath.Join(repo, ".workline", "config.yaml"))
-	if err != nil || yaml.Unmarshal(data, &cfg) != nil {
-		return nil
+	if errors.Is(err, os.ErrNotExist) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	if err := yaml.Unmarshal(data, &cfg); err != nil {
+		return nil, fmt.Errorf(".workline/config.yaml: %w", err)
 	}
 	var out []string
 	for _, g := range cfg.Gates {
 		for _, c := range g.Checks {
-			out = append(out, c.Config...)
+			for _, f := range c.Config {
+				if f, ok := repoPath(f); ok {
+					out = append(out, f)
+				}
+			}
 			for _, w := range strings.Fields(c.Run) {
 				w = strings.Trim(w, `"'`)
-				if st, err := os.Stat(filepath.Join(repo, w)); err == nil && !st.IsDir() && !filepath.IsAbs(w) {
-					out = append(out, filepath.ToSlash(filepath.Clean(w)))
+				if st, err := os.Stat(filepath.Join(repo, w)); err == nil && !st.IsDir() {
+					if f, ok := repoPath(w); ok {
+						out = append(out, f)
+					}
 				}
 			}
 		}
 	}
-	return out
+	return out, nil
+}
+
+// repoPath is p cleaned, its slashes forward, when it names a file or a
+// folder inside the repository other than its root.
+func repoPath(p string) (string, bool) {
+	p = path.Clean(strings.ReplaceAll(strings.TrimSpace(p), `\`, "/"))
+	if p == "." || p == ".." || strings.HasPrefix(p, "../") || path.IsAbs(p) || filepath.IsAbs(p) {
+		return "", false
+	}
+	return p, true
+}
+
+// scopeEntry is a Scope's or a source's path, when it bounds less than
+// the whole repository: "." or "./" would put every file in bounds.
+func scopeEntry(p string) (string, bool) {
+	return repoPath(p)
 }
 
 // under says whether p is one of roots or in one of them.
 func under(p string, roots []string) bool {
 	return slices.ContainsFunc(roots, func(r string) bool {
-		r = strings.TrimSuffix(path.Clean(r), "/")
-		return r == "." || p == r || strings.HasPrefix(p, r+"/")
+		r = path.Clean(r)
+		return r != "." && (p == r || strings.HasPrefix(p, r+"/"))
 	})
 }
 
-// besideTest says whether p is a test beside one of the scope's paths: in
-// the same folder or under it, or in a test folder, its name holding
-// "test" or "spec".
+// besideTest says whether p is a test beside one of the scope's paths, its
+// name holding "test" or "spec": in a scope path's folder or under it, or
+// in a test folder that sits there.
 func besideTest(p string, scope []string) bool {
 	name := strings.ToLower(path.Base(p))
 	if !strings.Contains(name, "test") && !strings.Contains(name, "spec") {
 		return false
 	}
-	dir := path.Dir(p)
-	for _, part := range strings.Split(dir, "/") {
+	dirs := []string{path.Dir(p)}
+	parts := strings.Split(path.Dir(p), "/")
+	for i, part := range parts {
 		if part == "test" || part == "tests" || part == "spec" || part == "__tests__" {
-			return true
+			dirs = append(dirs, path.Join(append([]string{"."}, parts[:i]...)...))
 		}
 	}
-	for _, s := range scope {
-		if d := path.Dir(s); dir == d || under(dir, []string{s}) {
-			return true
+	for _, d := range dirs {
+		for _, s := range scope {
+			if d == path.Dir(s) || under(d, []string{s}) {
+				return true
+			}
 		}
 	}
 	return false
@@ -190,11 +210,17 @@ type checker struct {
 	roles string // the role folders, when in the repository
 	repo  string
 	steer func(string) bool
+	// unread is why the gates or the steering files could not be read:
+	// every file is refused then, rather than one let past.
+	unread error
 }
 
 func newChecker(repo string, b Bounds) checker {
-	c := checker{b: b, repo: repo, gates: gateFiles(repo), steer: func(string) bool { return false }}
-	if s, err := steer.Files(repo, "HEAD"); err == nil {
+	c := checker{b: b, repo: repo, steer: func(string) bool { return false }}
+	c.gates, c.unread = gateFiles(repo)
+	if s, err := steer.Files(repo, "HEAD"); err != nil {
+		c.unread = errors.Join(c.unread, fmt.Errorf("the files that steer agents: %w", err))
+	} else {
 		c.steer = s
 	}
 	if d := os.Getenv("WORKLINE_ROLES_DIR"); d != "" {
@@ -210,8 +236,10 @@ func (c checker) rule(p string) string {
 	switch {
 	case p == ".." || strings.HasPrefix(p, "../") || path.IsAbs(p):
 		return "outside-scope" // out of the repository
-	case under(p, ciFiles) || slices.Contains(c.gates, p):
+	case under(p, ciFiles) || under(p, c.gates):
 		return "gate-file"
+	case c.unread != nil:
+		return "bounds-unread"
 	case c.steer(p) || c.roles != "" && under(p, []string{c.roles}) || c.roleFolder(p):
 		return "steering-file"
 	case c.b.Frozen[p] > 0:
@@ -244,6 +272,8 @@ func (c checker) roleFolder(p string) bool {
 // why is what a refusal says to a person.
 func why(r Refusal) string {
 	switch r.Rule {
+	case "bounds-unread":
+		return "the engine could not read what bounds the developer (" + r.Detail + "): every patch refused rather than one let past; a person fixes it and runs it again"
 	case "gate-file":
 		return "a gate's definition or the CI's: only a person changes it (docs/spec/gates.md, protection); a person must do it"
 	case "steering-file":
@@ -303,7 +333,11 @@ func bounded(repo string, b Bounds, claim, proposed []intent.Intention) (kept []
 			var bad []Refusal
 			for _, f := range touched(i.Value) {
 				if r := c.rule(f); r != "" {
-					bad = append(bad, Refusal{File: path.Clean(filepath.ToSlash(f)), Rule: r})
+					ref := Refusal{File: path.Clean(filepath.ToSlash(f)), Rule: r}
+					if r == "bounds-unread" {
+						ref.Detail = c.unread.Error()
+					}
+					bad = append(bad, ref)
 				}
 			}
 			if len(bad) == 0 {
@@ -317,6 +351,8 @@ func bounded(repo string, b Bounds, claim, proposed []intent.Intention) (kept []
 				said = append(said, "a comment: the developer's one comment is an objection to a frozen test; the claim's is the engine's")
 			case b.Draft == 0 || b.Frozen[o.Test] != b.Issue:
 				said = append(said, fmt.Sprintf("an objection to `%s`: not a test the tester froze for #%d on an open Draft", o.Test, b.Issue))
+			case b.Head == "":
+				said = append(said, fmt.Sprintf("an objection to `%s`: the commit of the tester's Draft !%d could not be read, so no line to put it on", o.Test, b.Draft))
 			case o.Line < 1 || strings.TrimSpace(o.Scenario) == "" || strings.TrimSpace(o.Kind) == "" || strings.TrimSpace(o.Why) == "":
 				said = append(said, fmt.Sprintf("an objection to `%s`: it names the test's line, the scenario, the kind and why", o.Test))
 			default:
