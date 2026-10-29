@@ -1194,13 +1194,6 @@ func testCmd(args []string) int {
 	return exitFor(v.Status)
 }
 
-// testRun runs the tester on one target (ADR-0055). On an issue, write
-// (step 2): the agent writes a test a scenario, post proves them red on
-// the base, and the engine commits them on workline/tester/issue-<n>,
-// opened as a Draft. On its Draft, answer (step 3): the first objection
-// waiting, kept or rewritten, its own commit pushed on the branch. With no
-// target, curate (step 7): a folder's redundant tests removed, proven with
-// no agent, on workline/tester/curate-<folder>.
 func developCmd(args []string) int {
 	fs := newFlags("develop")
 	repo := fs.String("repo", ".", "repository to work on")
@@ -1235,6 +1228,13 @@ func developCmd(args []string) int {
 	return exitFor(res.Status)
 }
 
+// testRun runs the tester on one target (ADR-0055). On an issue, write
+// (step 2): the agent writes a test a scenario, post proves them red on
+// the base, and the engine commits them on workline/tester/issue-<n>,
+// opened as a Draft. On its Draft, answer (step 3): the first objection
+// waiting, kept or rewritten, its own commit pushed on the branch. With no
+// target, curate (step 7): a folder's redundant tests removed, proven with
+// no agent, on workline/tester/curate-<folder>.
 func testRun(repo, roles, ai, forgeSpec, event string, target *forge.Target, noApply, asJSON bool) int {
 	abs, _ := filepath.Abs(repo)
 	rolesDir, err := resolveRoles(roles)
