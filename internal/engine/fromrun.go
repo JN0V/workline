@@ -122,7 +122,8 @@ func ResumeFrom(listed string, from FromMergeRequest) *Result {
 		}
 		// A role runs on a merge request's event, or on a review of its
 		// own branch (the developer's round, ADR-0054).
-		if !r.Accepts("merge-request") && !(r.Accepts("review") && strings.HasPrefix(mr.Branch, branchPrefix(r.Name))) {
+		ownRound := r.Accepts("review") && strings.HasPrefix(mr.Branch, branchPrefix(r.Name))
+		if !r.Accepts("merge-request") && !ownRound {
 			refuse(fmt.Sprintf("the %s does not run on a merge request", r.Name))
 			return nil
 		}
