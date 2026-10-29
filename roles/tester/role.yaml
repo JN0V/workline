@@ -18,7 +18,7 @@ mission: Each test a change adds is proven red on its base before the code makes
 #        (step 3); in CI, woken by the comment (workline-objection.yml).
 # curate: `workline test curate --history <file>` — the curator's
 #        removals (step 7): one folder of tests a run, a few redundant
-#        tests removed or merged by the agent, proven with no agent
+#        tests removed by the agent, never rewritten, proven with no agent
 #        (coverage and killed mutants before and after), opened as a pull
 #        request merged by the project's merge policy.
 # The red-first check alone, `workline test check --base <ref>`, runs no

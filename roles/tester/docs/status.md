@@ -1,4 +1,4 @@
-# Tester — where it stands (2026-10-28)
+# Tester — where it stands (2026-10-29)
 
 **In one line:** `workline test write --issue <n>` has the agent write
 a test for each named scenario of a ready issue, proves them red on the
@@ -44,8 +44,17 @@ hold:
    night, a Draft; `merge-request`, its guard), tried with a stub agent
    on [#676](https://github.com/JN0V/workline/pull/676): awaiting its
    first real night.
-3. **AI verdicts measured**: open. The tests `test write` writes,
-   measured against the scenarios they cover: one try so far. Its acts
+3. **AI verdicts measured**: in part. Seven evaluation cases with known
+   answers (`tests/evaluation/cases/tester/`): `test write` (a bug, a
+   name the base lacks, a scenario no test can check), `test answer` (a
+   right objection, a wrong one), `test curate` (a true duplicate, a
+   near-duplicate of another branch). On Sonnet, 30 of 35 runs passed
+   every check; the miss, 5 of 5: the curator merged the near-duplicate
+   rather than keeping it
+   ([tried](https://github.com/JN0V/workline/pull/672)). The curator
+   now removes only, told and held by the engine: 3 of 3 kept both
+   ([tried](https://github.com/JN0V/workline/pull/674)). Left: another
+   model, more runs over time. Its acts
    are observable: the auditor's weekly sample draws them
    ([ADR-0046](../../../docs/adr/0046-the-auditor-re-checks-every-roles-acts.md#amendment-2026-10-28-the-testers-row)).
 
@@ -102,7 +111,8 @@ Cases in `tests/conformance/cases/tester/`:
   templates ([the page](curator.md)).
 - **The curator's removals** (step 7): `workline test curate` gives
   the agent one folder of tests and their measures; it proposes a few
-  removed or merged, a reason each; the engine proves it with no agent,
+  removed, a reason each, never a test rewritten nor merged
+  (`removal-writes-code`); the engine proves it with no agent,
   the folder's tests before and after: green, no covered line and no
   killed mutant lost (Gremlins pinned on Go); frozen and kept tests
   refused; a pull request, not a Draft, from the weekly curator job

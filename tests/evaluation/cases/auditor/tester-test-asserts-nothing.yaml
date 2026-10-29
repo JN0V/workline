@@ -1,0 +1,34 @@
+case: auditor/tester-test-asserts-nothing
+about: "Planted: the tester's test asserts nothing. The scenario wants 2 from subtracting 3 from 5; the test calls sub and checks no value, red on the base only because sub is missing. The auditor finds the test does not check its Then: the act is false, with the test's words and the scenario's."
+given:
+  repo: curated
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main && git tag base"
+    - "git checkout -q -b workline/tester/issue-3 && printf '. ./lib.sh\\nsub 5 3\\n' > tests/test_sub.sh && git add tests/test_sub.sh && GIT_AUTHOR_DATE=2026-01-06T09:00:00Z GIT_COMMITTER_DATE=2026-01-06T09:00:00Z git commit -q -m 'test: the acceptance tests of #3' -m 'Workline-Role: tester\nWorkline-Model: claude:claude-sonnet-5'"
+    - "printf 'sub() { echo $(($1 - $2)); }\\n' >> lib.sh && GIT_AUTHOR_DATE=2026-01-07T09:00:00Z GIT_COMMITTER_DATE=2026-01-07T09:00:00Z git commit -q -am 'feat: subtract two numbers'"
+    - "git push -q origin workline/tester/issue-3:refs/pull/1/head && git checkout -q main && git merge -q --squash workline/tester/issue-3 && GIT_AUTHOR_DATE=2026-01-07T12:00:00Z GIT_COMMITTER_DATE=2026-01-07T12:00:00Z git commit -q -m 'feat: subtract two numbers (#1)' && git tag m1 && git push -q origin main"
+    - "git branch -q -D workline/tester/issue-3"
+  forge:
+    issues:
+      - id: 3
+        title: "Subtract two numbers"
+        labels: []
+        body: "## Need\n\nI want to subtract a count from a price.\n\n## Validation\n\n- **Five minus three:** Given the library, When I subtract 3 from 5, Then I get 2.\n\n---\n\n## Scope\n\n- `lib.sh`: a `sub` function beside `add`.\n"
+    merge-requests:
+      - id: 1
+        title: "test: the acceptance tests of #3"
+        branch: workline/tester/issue-3
+        base: main
+        labels: []
+        merged-at: "2026-01-07T12:00:00Z"
+        merged-as: m1
+        comments:
+          - |
+            The tests of #3, frozen.
+
+            <!-- workline:tester-record {"issue":3,"base":"base","files":{"tests/test_sub.sh":"0000000000000000000000000000000000000000"},"scenarios":[{"name":"Five minus three","text":"Given the library, When I subtract 3 from 5, Then I get 2."}]} -->
+            <!-- workline:sticky=tester/tests -->
+run: {role: auditor, sample: [--week, 2026-W02]}
+grade:
+  - finding: {rule: act-false, where: "#1", message: "the tests the tester wrote, on #1"}
+  - no-finding: {rule: act-stands, where: "#1"}

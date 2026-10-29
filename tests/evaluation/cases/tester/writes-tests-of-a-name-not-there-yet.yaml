@@ -1,0 +1,29 @@
+case: tester/writes-tests-of-a-name-not-there-yet
+about: >
+  A Go module with Add only. Issue #3 asks for Mul, which does not exist
+  yet, with three named scenarios. Expected: three tests, one a scenario,
+  named after it, calling Mul with Add's signature; red on the base by a
+  missing name (the engine's red-first check decides before the Draft
+  opens); Add itself not tested again.
+given:
+  repo: go-tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:ready"]
+        body: "## Need\n\nWhen I total an order, I want to multiply a price by a count, so I need not add it up by hand.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **By zero:** Given the library, When I multiply 5 by 0, Then I get 0.\n- **A negative count:** Given the library, When I multiply 4 by -2, Then I get -8.\n\n---\n\n## Verification\n\nA Go test a scenario.\n\n## Scope\n\n- `calc/calc.go`: a `Mul(a, b int) int` function beside `Add`.\n"
+run: {role: tester, event: issue, target: "issue:3", open-merge-request: true}
+grade:
+  - {status: pass}
+  - {agent-calls-max: 1}
+  - {sh: "git --git-dir=../origin.git grep -q 'Two by three' workline/tester/issue-3 -- '*_test.go'"}
+  - {sh: "git --git-dir=../origin.git grep -q 'By zero' workline/tester/issue-3 -- '*_test.go'"}
+  - {sh: "git --git-dir=../origin.git grep -q 'A negative count' workline/tester/issue-3 -- '*_test.go'"}
+  - {sh: "test $(git --git-dir=../origin.git diff main workline/tester/issue-3 -- '*_test.go' | grep -c '^+func Test') -eq 3"}
+  - {sh: "! git --git-dir=../origin.git diff main workline/tester/issue-3 | grep -q '^+.*Add('"}
+  - {sh: "python3 -c 'import json; m = json.load(open(\"../forge.json\")).get(\"merge-requests\", []); assert len(m) == 1 and m[0][\"draft\"]'"}

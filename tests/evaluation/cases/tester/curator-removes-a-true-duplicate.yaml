@@ -1,0 +1,22 @@
+case: tester/curator-removes-a-true-duplicate
+about: >
+  A shell project whose tests/ holds test_add (add 2 3 is 5),
+  test_add_again (add 1 1 is 2: the same line, the same mutant) and
+  test_mul. Expected: one of the two add tests removed, test_mul kept;
+  the engine proves it with no agent (no covered line, no killed mutant
+  lost) and opens a pull request.
+given:
+  repo: curated
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}", coverage-report: cover.info, curator-mutation-command: "sh mutate.sh {report} {package}"}}}
+  forge:
+    merge-requests: []
+run: {role: tester, event: curate, open-merge-request: true}
+grade:
+  - {status: pass}
+  - {agent-calls-max: 1}
+  - {sh: "git --git-dir=../origin.git cat-file -e workline/tester/curate-tests:tests/test_mul.sh"}
+  - {sh: "test $(git --git-dir=../origin.git ls-tree --name-only workline/tester/curate-tests tests/ | grep -c '^tests/test_add') -eq 1"}
+  - {sh: "python3 -c 'import json; m = json.load(open(\"../forge.json\")).get(\"merge-requests\", []); assert len(m) == 1 and not m[0].get(\"draft\")'"}

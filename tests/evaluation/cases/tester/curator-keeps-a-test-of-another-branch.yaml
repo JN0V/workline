@@ -1,0 +1,36 @@
+case: tester/curator-keeps-a-test-of-another-branch
+about: >
+  A shell project whose floor0 prints 0 for a negative number, else the
+  number. test_floor0 (floor0 3 is 3) and test_floor0_again (floor0 -3
+  is 0) look alike, but each checks its own branch: removing the second
+  loses no covered line, yet lets the mutant of `echo 0` live. No test is
+  redundant. Expected: nothing proposed, no pull request; whatever is
+  proposed, both branches still checked. Two tests merged into one that
+  checks both keeps that point, and loses the one for no pull request.
+given:
+  repo: curated
+  setup:
+    - |
+      printf '%s\n' 'add() { echo $(($1 + $2)); }' 'floor0() { if [ "$1" -lt 0 ]; then echo 0' 'else echo "$1"; fi; }' > lib.sh
+      git rm -q tests/test_add_again.sh tests/test_mul.sh
+      printf '# covers: 2\n# covers: 3\n# kills: 3\n. ./lib.sh\n[ "$(floor0 3)" = 3 ]\n' > tests/test_floor0.sh
+      printf '# covers: 2\n# kills: 2\n. ./lib.sh\n[ "$(floor0 -3)" = 0 ]\n' > tests/test_floor0_again.sh
+      sed -i 's/for l in 1 2;/for l in 1 2 3;/' run-tests.sh
+      cat > mutate.sh <<'MUT'
+      #!/bin/sh
+      # mutate.sh <report> <package>: a mutant a line of lib.sh, Gremlins' JSON.
+      s() { if cat tests/test_*.sh | grep -q "^# kills: $1\$"; then echo KILLED; else echo LIVED; fi; }
+      printf '{"files":[{"file_name":"lib.sh","mutations":[{"type":"ARITHMETIC_BASE","status":"%s","line":1,"column":20},{"type":"CONDITIONALS_NEGATION","status":"%s","line":2,"column":20},{"type":"CONDITIONALS_NEGATION","status":"%s","line":3,"column":6}]}]}\n' "$(s 1)" "$(s 2)" "$(s 3)" > "$1"
+      MUT
+      git add . && git commit -q -m "feat: floor a number at zero"
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}", coverage-report: cover.info, curator-mutation-command: "sh mutate.sh {report} {package}"}}}
+  forge:
+    merge-requests: []
+run: {role: tester, event: curate, open-merge-request: true}
+grade:
+  - {status: pass}
+  - {agent-calls-max: 1}
+  - {sh: "python3 -c 'import json; assert json.load(open(\"../forge.json\"))[\"merge-requests\"] == []'"}
+  - {sh: "b=workline/tester/curate-tests; git --git-dir=../origin.git rev-parse -q --verify $b >/dev/null || b=main; git --git-dir=../origin.git grep -q 'floor0 3)' $b -- tests/ && git --git-dir=../origin.git grep -q 'floor0 -3)' $b -- tests/"}

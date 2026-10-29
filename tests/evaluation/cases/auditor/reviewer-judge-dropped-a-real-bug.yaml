@@ -1,0 +1,34 @@
+case: auditor/reviewer-judge-dropped-a-real-bug
+about: "Planted: the reviewer's judge dropped a true finding. Take's check became `<=`, so the last units of a product can never be taken; the correctness lens said so, and its judge dropped it. Asked blind, the auditor finds the code fails as the finding says: the act is false, with the code's words."
+given:
+  repo: shop
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git"
+    - "git checkout -q -b feat && sed -i 's/s.left\\[sku\\] < n {/s.left[sku] <= n {/' shop/stock.go && GIT_AUTHOR_DATE=2026-01-07T09:00:00Z GIT_COMMITTER_DATE=2026-01-07T09:00:00Z git commit -qam 'fix(stock): never take a product below zero'"
+    - "git push -q origin feat:refs/pull/30/head && git checkout -q main && git merge -q --squash feat && GIT_AUTHOR_DATE=2026-01-07T12:00:00Z GIT_COMMITTER_DATE=2026-01-07T12:00:00Z git commit -q -m 'fix(stock): never take a product below zero (#30)' && git push -q origin main"
+    - "git branch -q -D feat"
+  forge:
+    issues: []
+    merge-requests:
+      - id: 30
+        title: Never take a product below zero
+        branch: feat
+        base: main
+        labels: []
+        merged-at: "2026-01-07T12:00:00Z"
+        merged-as: main
+        comments:
+          - |
+            **workline reviewer** — 0 findings on the change; lenses: correctness.
+
+            | | | Where | Finding |
+            |---|---|---|---|
+            | warns | finding-judged-no |  | dropped, from the correctness lens: "Take refuses the last units of a product: with 3 left, Take(sku, 3) says false" at shop/stock.go:32 — the judge: the check only keeps the stock from going below zero (independence: model (claude-sonnet-5 → claude-haiku-4-5)) |
+
+            <!-- workline:record reviewed=0123456789abcdef0123456789abcdef01234567 runs=1 -->
+
+            <!-- workline:sticky=reviewer/summary -->
+run: {role: auditor, sample: [--week, 2026-W02]}
+grade:
+  - finding: {rule: act-false, where: "#30 shop/stock.go:32", message: "a finding the reviewer's judge dropped on #30"}
+  - no-finding: {rule: act-stands, where: "#30"}
