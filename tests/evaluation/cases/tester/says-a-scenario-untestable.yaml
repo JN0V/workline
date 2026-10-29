@@ -1,0 +1,36 @@
+case: tester/says-a-scenario-untestable
+about: >
+  The rounding bug of writes-a-test-a-scenario-of-a-bug, its issue with a
+  second scenario no test can check: how a customer feels reading the
+  receipt. Expected: one test, for the testable scenario, red on the base;
+  the other said untestable in the Draft, never turned into a test of
+  something else.
+given:
+  repo: go-tested
+  setup:
+    - |
+      cat > calc/round.go <<'GO'
+      package calc
+
+      // RoundCash rounds an amount in cents for a cash payment, to a
+      // multiple of 5 cents.
+      func RoundCash(cents int) int { return cents - cents%5 }
+      GO
+      git add calc && git commit -q -m "feat: round cash payments"
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    issues:
+      - id: 4
+        title: "Cash rounding always goes down"
+        labels: ["workline:ready"]
+        body: "## Need\n\nWhen a customer pays 1.03 in cash, the till asks 1.00: the shop loses up to 4 cents a sale. Cash should round to the nearest 5 cents, and customers should find it fair.\n\n## Validation\n\n- **Up from three:** Given an amount of 103 cents, When I round it for cash, Then I get 105 cents.\n- **Fair to the customer:** Given a customer reading the receipt, When they see the rounded amount, Then they feel the shop treats them fairly.\n\n---\n\n## Verification\n\nA Go test a scenario.\n\n## Scope\n\n- `calc/round.go`: `RoundCash`.\n"
+run: {role: tester, event: issue, target: "issue:4", open-merge-request: true}
+grade:
+  - {status: pass}
+  - {agent-calls-max: 1}
+  - {sh: "git --git-dir=../origin.git grep -q 'Up from three' workline/tester/issue-4 -- '*_test.go'"}
+  - {sh: "test $(git --git-dir=../origin.git diff main workline/tester/issue-4 -- '*_test.go' | grep -c '^+func Test') -eq 1"}
+  - {sh: "! git --git-dir=../origin.git grep -q 'Fair to the customer' workline/tester/issue-4 -- '*_test.go'"}
+  - {sh: "python3 -c 'import json; m = json.load(open(\"../forge.json\")).get(\"merge-requests\", []); assert len(m) == 1 and \"Not tested\" in m[0][\"body\"] and \"Fair to the customer\" in m[0][\"body\"]'"}

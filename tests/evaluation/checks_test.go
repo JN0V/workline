@@ -120,7 +120,7 @@ func TestJudge(t *testing.T) {
 var grades = map[string]bool{"status": true, "agent-calls-max": true, "subject-max": true, "keeps-words": true,
 	"no-vague-words": true, "file-contains": true, "file-lacks": true, "checked-is-head": true, "judged-is-head": true,
 	"checked-unchanged": true, "never-confirms": true, "body-unchanged": true, "lines-max": true, "new-files-min": true,
-	"finding": true, "no-finding": true, "judge": true}
+	"finding": true, "no-finding": true, "judge": true, "sh": true}
 
 func loadCases(t *testing.T) map[string]*caseFile {
 	files, _ := filepath.Glob("cases/*/*.yaml")

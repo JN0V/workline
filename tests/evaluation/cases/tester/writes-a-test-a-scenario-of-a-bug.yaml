@@ -1,0 +1,37 @@
+case: tester/writes-a-test-a-scenario-of-a-bug
+about: >
+  A Go module whose RoundCash rounds cents down to 5, where cash rounds to
+  the nearest 5. Issue #4 names two scenarios, both wrong on the base.
+  Expected: two tests, one a scenario, named after it, red on the base
+  (the engine's red-first check decides before the Draft opens), nothing
+  tested that the issue does not ask (Add stays untested).
+given:
+  repo: go-tested
+  setup:
+    - |
+      cat > calc/round.go <<'GO'
+      package calc
+
+      // RoundCash rounds an amount in cents for a cash payment, to a
+      // multiple of 5 cents.
+      func RoundCash(cents int) int { return cents - cents%5 }
+      GO
+      git add calc && git commit -q -m "feat: round cash payments"
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    issues:
+      - id: 4
+        title: "Cash rounding always goes down"
+        labels: ["workline:ready"]
+        body: "## Need\n\nWhen a customer pays 1.03 in cash, the till asks 1.00: the shop loses up to 4 cents a sale. Cash should round to the nearest 5 cents.\n\n## Validation\n\n- **Up from three:** Given an amount of 103 cents, When I round it for cash, Then I get 105 cents.\n- **Up from eight:** Given an amount of 108 cents, When I round it for cash, Then I get 110 cents.\n\n---\n\n## Verification\n\nA Go test a scenario.\n\n## Scope\n\n- `calc/round.go`: `RoundCash`.\n"
+run: {role: tester, event: issue, target: "issue:4", open-merge-request: true}
+grade:
+  - {status: pass}
+  - {agent-calls-max: 1}
+  - {sh: "git --git-dir=../origin.git grep -q 'Up from three' workline/tester/issue-4 -- '*_test.go'"}
+  - {sh: "git --git-dir=../origin.git grep -q 'Up from eight' workline/tester/issue-4 -- '*_test.go'"}
+  - {sh: "test $(git --git-dir=../origin.git diff main workline/tester/issue-4 -- '*_test.go' | grep -c '^+func Test') -eq 2"}
+  - {sh: "! git --git-dir=../origin.git diff main workline/tester/issue-4 | grep -q '^+.*Add('"}
+  - {sh: "python3 -c 'import json; m = json.load(open(\"../forge.json\")).get(\"merge-requests\", []); assert len(m) == 1 and m[0][\"draft\"]'"}

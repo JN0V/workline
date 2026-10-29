@@ -612,3 +612,38 @@ date	workline	agent	models	effort	case	score	agent calls	tokens in	tokens out	co
 2026-10-26T11:10:31Z	f22195ba	claude	claude-sonnet-5-5	medium	documentalist/never-confirms-a-stale-doc-made-false	4/4	1	4434	772	0.0255	8			
 2026-10-26T11:10:33Z	f22195ba	claude	claude-sonnet-5-5	medium	documentalist/merges-a-card-too-short	5/5	1	3609	692	0.0214	9			
 2026-10-26T11:10:35Z	f22195ba	claude	claude-sonnet-5-5	medium	documentalist/drifted-gardening	19/19	1	20211	3083	0.1117	23			
+2026-10-29T07:12:20Z	d765ff47+changes	claude	claude-sonnet-5-5	medium	tester/says-a-scenario-untestable	6/6	1	1839	250	0.0099	5			
+2026-10-29T07:12:20Z	d765ff47+changes	claude	claude-sonnet-5-5	medium	tester/writes-a-test-a-scenario-of-a-bug	7/7	1	1821	336	0.0106	5			
+2026-10-29T07:12:20Z	d765ff47+changes	claude	claude-sonnet-5-5	medium	tester/keeps-a-test-of-a-real-requirement	4/4	1	1658	272	0.0093	5			
+2026-10-29T07:12:21Z	d765ff47+changes	claude	claude-sonnet-5-5	medium	tester/writes-tests-of-a-name-not-there-yet	8/8	1	1793	446	0.0116	6			
+2026-10-29T07:12:22Z	d765ff47+changes	claude	claude-sonnet-5-5	medium	tester/rewrites-a-test-of-an-implementation-detail	5/5	1	1708	533	0.0122	7			
+2026-10-29T07:12:25Z	d765ff47+changes	claude	claude-sonnet-5-5	medium	tester/curator-keeps-a-test-of-another-branch	2/4	1	1908	1112	0.0187	11	sh: "python3 -c 'import json; assert json.load(open(\"../forge.json\"))[\"merge-requests\"] == []'": exit status 1 Traceback (most recent call last): File "<string>", line 1, in <module> import json; assert json.load(open("../forge.json"))["merge-requests"] == [] ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ AssertionError ; sh: "! git --git-dir=../origin.git rev-parse -q --verify workline/tester/curate-tests": exit status 1 2fc678979a7213f00b4eb2d29e0459e21af4d376		
+2026-10-29T07:12:26Z	d765ff47+changes	claude	claude-sonnet-5-5	medium	tester/curator-removes-a-true-duplicate	5/5	1	1898	1107	0.0187	11			
+2026-10-29T07:13:44Z	2f2a5f65	claude	claude-sonnet-5-5	medium	tester/says-a-scenario-untestable	6/6	1	1839	249	0.0027	5			
+2026-10-29T07:13:44Z	2f2a5f65	claude	claude-sonnet-5-5	medium	tester/keeps-a-test-of-a-real-requirement	4/4	1	1658	243	0.0026	5			
+2026-10-29T07:13:44Z	2f2a5f65	claude	claude-sonnet-5-5	medium	tester/writes-a-test-a-scenario-of-a-bug	7/7	1	1821	334	0.0035	5			
+2026-10-29T07:13:45Z	2f2a5f65	claude	claude-sonnet-5-5	medium	tester/writes-tests-of-a-name-not-there-yet	8/8	1	1793	446	0.0046	6			
+2026-10-29T07:13:47Z	2f2a5f65	claude	claude-sonnet-5-5	medium	tester/rewrites-a-test-of-an-implementation-detail	5/5	1	1708	574	0.0059	7			
+2026-10-29T07:13:49Z	2f2a5f65	claude	claude-sonnet-5-5	medium	tester/curator-removes-a-true-duplicate	5/5	1	1898	792	0.0081	9			
+2026-10-29T07:13:50Z	2f2a5f65	claude	claude-sonnet-5-5	medium	tester/curator-keeps-a-test-of-another-branch	3/4	1	1908	1124	0.0114	11	sh: "python3 -c 'import json; assert json.load(open(\"../forge.json\"))[\"merge-requests\"] == []'": exit status 1 Traceback (most recent call last): File "<string>", line 1, in <module> import json; assert json.load(open("../forge.json"))["merge-requests"] == [] ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ AssertionError		
+2026-10-29T07:13:56Z	2f2a5f65	claude	claude-sonnet-5-5	medium	tester/says-a-scenario-untestable	6/6	1	1839	257	0.0028	5			
+2026-10-29T07:13:57Z	2f2a5f65	claude	claude-sonnet-5-5	medium	tester/writes-tests-of-a-name-not-there-yet	8/8	1	1793	446	0.0046	6			
+2026-10-29T07:13:57Z	2f2a5f65	claude	claude-sonnet-5-5	medium	tester/keeps-a-test-of-a-real-requirement	4/4	1	1658	305	0.0032	6			
+2026-10-29T07:13:58Z	2f2a5f65	claude	claude-sonnet-5-5	medium	tester/writes-a-test-a-scenario-of-a-bug	7/7	1	1821	564	0.0058	7			
+2026-10-29T07:13:59Z	2f2a5f65	claude	claude-sonnet-5-5	medium	tester/rewrites-a-test-of-an-implementation-detail	5/5	1	1708	613	0.0063	8			
+2026-10-29T07:14:01Z	2f2a5f65	claude	claude-sonnet-5-5	medium	tester/curator-removes-a-true-duplicate	5/5	1	1898	1108	0.0113	10			
+2026-10-29T07:14:03Z	2f2a5f65	claude	claude-sonnet-5-5	medium	tester/curator-keeps-a-test-of-another-branch	3/4	1	1908	1376	0.0140	12	sh: "python3 -c 'import json; assert json.load(open(\"../forge.json\"))[\"merge-requests\"] == []'": exit status 1 Traceback (most recent call last): File "<string>", line 1, in <module> import json; assert json.load(open("../forge.json"))["merge-requests"] == [] ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ AssertionError		
+2026-10-29T07:14:09Z	2f2a5f65	claude	claude-sonnet-5-5	medium	tester/says-a-scenario-untestable	6/6	1	1839	251	0.0027	5			
+2026-10-29T07:14:09Z	2f2a5f65	claude	claude-sonnet-5-5	medium	tester/writes-a-test-a-scenario-of-a-bug	7/7	1	1821	336	0.0035	5			
+2026-10-29T07:14:09Z	2f2a5f65	claude	claude-sonnet-5-5	medium	tester/keeps-a-test-of-a-real-requirement	4/4	1	1658	318	0.0033	5			
+2026-10-29T07:14:10Z	2f2a5f65	claude	claude-sonnet-5-5	medium	tester/writes-tests-of-a-name-not-there-yet	8/8	1	1793	446	0.0046	5			
+2026-10-29T07:14:13Z	2f2a5f65	claude	claude-sonnet-5-5	medium	tester/rewrites-a-test-of-an-implementation-detail	5/5	1	1708	726	0.0074	9			
+2026-10-29T07:14:14Z	2f2a5f65	claude	claude-sonnet-5-5	medium	tester/curator-removes-a-true-duplicate	5/5	1	1898	1016	0.0104	10			
+2026-10-29T07:14:16Z	2f2a5f65	claude	claude-sonnet-5-5	medium	tester/curator-keeps-a-test-of-another-branch	3/4	1	1908	1309	0.0133	12	sh: "python3 -c 'import json; assert json.load(open(\"../forge.json\"))[\"merge-requests\"] == []'": exit status 1 Traceback (most recent call last): File "<string>", line 1, in <module> import json; assert json.load(open("../forge.json"))["merge-requests"] == [] ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ AssertionError		
+2026-10-29T07:14:22Z	2f2a5f65	claude	claude-sonnet-5-5	medium	tester/says-a-scenario-untestable	6/6	1	1839	265	0.0028	5			
+2026-10-29T07:14:22Z	2f2a5f65	claude	claude-sonnet-5-5	medium	tester/keeps-a-test-of-a-real-requirement	4/4	1	1658	235	0.0025	5			
+2026-10-29T07:14:23Z	2f2a5f65	claude	claude-sonnet-5-5	medium	tester/writes-a-test-a-scenario-of-a-bug	7/7	1	1821	334	0.0035	5			
+2026-10-29T07:14:23Z	2f2a5f65	claude	claude-sonnet-5-5	medium	tester/writes-tests-of-a-name-not-there-yet	8/8	1	1793	446	0.0046	5			
+2026-10-29T07:14:25Z	2f2a5f65	claude	claude-sonnet-5-5	medium	tester/rewrites-a-test-of-an-implementation-detail	5/5	1	1708	708	0.0073	8			
+2026-10-29T07:14:28Z	2f2a5f65	claude	claude-sonnet-5-5	medium	tester/curator-removes-a-true-duplicate	5/5	1	1898	1167	0.0119	11			
+2026-10-29T07:14:30Z	2f2a5f65	claude	claude-sonnet-5-5	medium	tester/curator-keeps-a-test-of-another-branch	3/4	1	1908	1462	0.0148	13	sh: "python3 -c 'import json; assert json.load(open(\"../forge.json\"))[\"merge-requests\"] == []'": exit status 1 Traceback (most recent call last): File "<string>", line 1, in <module> import json; assert json.load(open("../forge.json"))["merge-requests"] == [] ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ AssertionError		
