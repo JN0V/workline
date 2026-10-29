@@ -4,7 +4,7 @@ sources:
   - internal/developer/developer.go
   - internal/tester/onchange.go
   - roles/developer/role.yaml
-checked: 68550c97
+checked: e04c31ef
 verified: agent:claude-code
 ---
 # The proof and the caps: ready or a Draft
@@ -26,8 +26,8 @@ flowchart LR
 - **What runs**: the tester's `test-command`, once, its JUnit report
   read ([the tester's settings](../../tester/role.yaml)). One setting
   for both roles: the project's tests.
-- **The acceptance tests**: they run with the rest, when the run starts
-  from the tester's branch; starting there is step 4's.
+- **The acceptance tests**: they run with the rest, its code laid on
+  the tester's Draft when one is open ([the pull request](pull-request.md)).
 - **Green**: tests reported, none red, the command exited 0.
 - **Red**: a test failed, errored or was skipped, or the command failed.
 - **Not run whole**: no `test-command`, a patch that does not apply, no
@@ -58,7 +58,7 @@ flowchart LR
   agent ([ADR-0050](../../../docs/adr/0050-each-act-has-its-moment-and-a-wait-budget.md)).
 - **Its body**: `Closes #<n>` — the pick skips the issue while it is
   open — and a `## Verification` saying what ran, each test red, each
-  cap. Its other sections are step 4's.
+  cap. Its other sections: [the pull request](pull-request.md).
 
 ## The record
 

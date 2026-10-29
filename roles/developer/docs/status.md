@@ -4,8 +4,9 @@
 took and, with an agent set, claims it with a label and a comment
 holding its record, then has the agent write the code, held to its
 bounds at apply, proves it on the project's tests and opens a pull
-request, ready when green with no cap reached, else a Draft; with none,
-it names the issue. Steps 1 to 3 of
+request on the tester's Draft, ready when green with no cap reached,
+else a Draft, its record hidden on it; with none, it names the issue.
+Steps 1 to 4 of
 [ADR-0054's plan](../../../docs/adr/0054-the-developer-takes-a-ready-issue-to-a-pull-request.md#build-plan);
 beta; not routed.
 
@@ -14,7 +15,7 @@ A try is told in its pull request's `## Tried`
 the forge's assignment of an App and the pick on GitHub, on the pull
 request of step 1; the bounds on a copy of a real repository, on the
 pull request of step 2; the proof and the caps, on the pull request of
-step 3.
+step 3; the pull request, on the pull request of step 4.
 
 ## To leave beta
 
@@ -22,7 +23,7 @@ Beta until the three criteria of
 [ADR-0036](../../../docs/adr/0036-a-roles-status-is-earned-by-written-criteria.md)
 hold:
 
-1. **Nothing buildable in Missing**: open; steps 4 to 8 below.
+1. **Nothing buildable in Missing**: open; steps 5 to 8 below.
 2. **The main issue validated on real use**: open. A maintainer reads a
    pull request the developer opened for a `ready` issue, its
    Verification proved in it, and merges it or sends it back
@@ -30,8 +31,9 @@ hold:
 3. **Observable**: its acts read by the auditor
    ([ADR-0046](../../../docs/adr/0046-the-auditor-re-checks-every-roles-acts.md#amendment-2026-10-29-the-developers-row)):
    the pick's record from step 1, its refusals at apply in it from
-   step 2, its proof and caps reached from step 3; its code, drawn,
-   from step 4.
+   step 2, its proof and caps reached from step 3; its code's record
+   on its pull request from step 4. The auditor's draw of its code:
+   Missing.
 
 ## Built
 
@@ -57,13 +59,30 @@ hold:
   and caps in the claim's record ([the proof](proof.md)). Cases
   `developer/green-opens-ready`, `red-opens-draft`,
   `cap-reached-pushes-draft`.
+- **The pull request** (step 4): its branch on the tester's Draft, the
+  acceptance tests shown to the agent; to the default branch; its code
+  and tests in commits apart; `## Changes`, `## Left out`,
+  `## Verification`, `## Tried`; its record hidden in workline's own
+  comment on it; no forge token in the agent's environment; the
+  reviewer's floor at `model` on its commits
+  ([the pull request](pull-request.md)). Cases `developer/pr-closes-issue`,
+  `pr-closes-issue-on-gitlab`, `pr-closes-issue-on-a-forge-command`,
+  `pr-splits-code-tests`, `agent-env-has-no-token`,
+  `pr-judged-at-model`.
 
 ## Missing
 
-Steps 4 to 8 of
+Steps 5 to 8 of
 [the plan](../../../docs/adr/0054-the-developer-takes-a-ready-issue-to-a-pull-request.md#build-plan):
-the pull request, the triggers, the review loop, the merge, the
-measure. Also:
+the triggers, the review loop, the merge, the measure. Also:
+
+- **The auditor's draw of its code**
+  ([ADR-0046](../../../docs/adr/0046-the-auditor-re-checks-every-roles-acts.md#amendment-2026-10-29-the-developers-row)):
+  the record on its pull request is there to read; the weekly sample
+  does not draw it yet, as it draws the tester's.
+- **`workline follow` on its branch**: the branch holds the tester's
+  commit, which `follow` reads as a person's; it leaves the branch as it
+  is rather than bring it up to date.
 
 - **The claim on GitLab** by assignment, where the token's user is a
   service account that can be assigned: a label for now, on every forge.
@@ -73,13 +92,6 @@ measure. Also:
   applied; asking the agent again with the refusal would save a round.
 - **A new file in a new folder**: the engine writes a `{file, content}`
   patch only where its folder exists; a diff creates it.
-- **Starting from the tester's branch**: the code is written on the
-  checkout the run is given; working on `workline/tester/issue-<n>` is
-  step 4's. Until then, the acceptance tests run in the proof only when
-  the run is given that branch, and its pull request's base is the
-  branch the run is on.
-- **The pull request's body**: `Closes #<n>` and `## Verification`
-  only; `## Tried`, code and tests apart, the hidden record are step 4's.
 - **The proof's other parts**: the project's gates and the commands
   the issue's Verification names
   ([ADR-0054](../../../docs/adr/0054-the-developer-takes-a-ready-issue-to-a-pull-request.md#it-proves-locally-first))
