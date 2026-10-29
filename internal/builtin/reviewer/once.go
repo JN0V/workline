@@ -219,10 +219,6 @@ func patchOf(repo, base, head, file string) string {
 	return id
 }
 
-// judgedBefore is the last verdict a record holds on the same finding on
-// the same patch, by its lens: a no, or a yes at an independence
-// judge-at-least still takes. A line written before the keys holds none:
-// never the same.
 // judgeFloor is the independence a verification needs on this change:
 // judge-at-least, raised by judge-at-least-by-role for each role whose
 // Workline-Role trailer a commit of the change carries — the developer's
@@ -247,6 +243,10 @@ func judgeFloor(repo string, s Settings, st state) string {
 	return floor
 }
 
+// judgedBefore is the last verdict a record holds on the same finding on
+// the same patch, by its lens: a no, or a yes at an independence
+// judge-at-least still takes. A line written before the keys holds none:
+// never the same.
 func judgedBefore(rec Record, lens string, same Answered, floor string) (Answered, bool) {
 	if same.Patch == "" || same.Finding == "" {
 		return Answered{}, false

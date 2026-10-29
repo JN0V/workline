@@ -1,12 +1,9 @@
 // Package developer is the developer role's built-in steps (ADR-0054): it
-// takes a ready issue to a pull request. Step 1, the pick: the first ready
-// issue nobody claimed, in the backlog's order, claimed by a label the
-// engine puts with a record on the issue. Step 2, the bounds: the agent's
-// patches held at apply to what the issue lets it touch (bounds.go). Step
-// 3, the proof and the caps: the project's tests on its code, its pull
-// request ready when green with no cap reached, else a Draft (proof.go).
-// Step 4, the pull request: on the tester's Draft, its code and tests
-// apart, its record kept on it (pullrequest.go).
+// takes a ready issue to a pull request. The pick: the first ready issue
+// nobody claimed. The bounds: its patches held at apply to what the issue
+// lets it touch (bounds.go). The proof: the project's tests on its code,
+// ready when green, else a Draft (proof.go). The pull request: on the
+// tester's Draft, code and tests apart, its record on it (pullrequest.go).
 package developer
 
 import (
