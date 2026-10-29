@@ -81,8 +81,8 @@ type round struct {
 }
 
 // reviewRows reads the findings of the reviewer's comment: what blocks,
-// what warns and is Important; the nits counted. A row whose finding
-// opens neither Important nor Nit is not a lens's finding: left.
+// a lens's or a rule's, and what warns and is Important; the nits
+// counted. Another row that warns asks nothing: left.
 func reviewRows(comment string) (asked []Asked, nits int) {
 	for _, l := range strings.Split(comment, "\n") {
 		cells := tableRow(l)
@@ -94,9 +94,8 @@ func reviewRows(comment string) (asked []Asked, nits int) {
 		case strings.HasPrefix(msg, "Nit:"):
 			nits++
 			continue
-		case !strings.HasPrefix(msg, "Important:"):
-			continue
-		case holds != "blocks" && holds != "warns":
+		case holds == "blocks": // a lens's, or a rule's: a gate's, said bare
+		case holds != "warns" || !strings.HasPrefix(msg, "Important:"):
 			continue
 		}
 		title := strings.TrimSpace(strings.TrimPrefix(msg, "Important:"))

@@ -12,10 +12,14 @@ func TestReviewRows(t *testing.T) {
 		"| warns | design | `lib.sh:1` | Important: a \\| in it; also tests: more |\n" +
 		"| warns | style | `lib.sh:2` | Nit: name the operands |\n" +
 		"| warns | finding-judged-no |  | dropped, from the correctness lens: \"x\" at lib.sh:3 — the judge: no |\n" +
-		"| warns | gate-lint | `a.go:4` | unused variable |\n"
+		"| warns | gate-lint | `a.go:4` | unused variable |\n" +
+		"| **blocks** | gate:lint | `a.go:9` | gate lint did not pass — 1 new finding |\n"
 	asked, nits := reviewRows(comment)
-	if nits != 1 || len(asked) != 2 {
-		t.Fatalf("asked %v, nits %d: want 2 asked, 1 nit", asked, nits)
+	if nits != 1 || len(asked) != 3 {
+		t.Fatalf("asked %v, nits %d: want 3 asked, 1 nit", asked, nits)
+	}
+	if asked[2].Holds != "blocks" || asked[2].Key != "gate:lint|a.go|gate lint did not pass" {
+		t.Errorf("a rule's row that blocks: %+v", asked[2])
 	}
 	if asked[0].Holds != "blocks" || asked[0].Key != "correctness|lib.sh|mul adds" {
 		t.Errorf("first: %+v", asked[0])
