@@ -328,7 +328,12 @@ func Pre(runDir, repo string) int {
 	if err := os.WriteFile(filepath.Join(runDir, "in", boundsFile), data, 0o644); err != nil {
 		return fail(err)
 	}
-	if err := os.WriteFile(filepath.Join(runDir, "in", "task.md"), []byte(taskText(is, bounds, frozenTexts(repo, bounds))), 0o644); err != nil {
+	on := at
+	if bounds.Head != "" {
+		on = bounds.Head // its code starts from the tester's Draft
+	}
+	task := taskText(is, bounds, frozenTexts(repo, bounds), scopeCode(repo, on, bounds))
+	if err := os.WriteFile(filepath.Join(runDir, "in", "task.md"), []byte(task), 0o644); err != nil {
 		return fail(err)
 	}
 	return 0
@@ -375,7 +380,7 @@ func claimOf(a Act, s Settings) []intent.Intention {
 }
 
 // taskText is the question: the issue, and what bounds the code.
-func taskText(is forge.Issue, b Bounds, texts map[string]string) string {
+func taskText(is forge.Issue, b Bounds, texts map[string]string, code string) string {
 	var t strings.Builder
 	fmt.Fprintf(&t, "# Issue #%d: %s\n\n%s\n\n## What you may touch\n\n", is.ID, is.Title, strings.TrimSpace(is.Body))
 	if len(b.Scope) == 0 {
@@ -398,10 +403,14 @@ func taskText(is forge.Issue, b Bounds, texts map[string]string) string {
 				fmt.Fprintf(&t, "- `%s`\n", f)
 			}
 		}
-		t.WriteString("\nOne that does not fit: object to it, a `comment` whose value is " +
-			"`{objection: {test: <file>, line: <n>, scenario: <its name>, kind: <interface | over-specified | contradicts | untestable | need>, why: <one or two sentences>}}`. " +
+		// The answer's generic `comment` is a text: a real agent wrote its
+		// objection so, and it was refused (measured, docs/status.md).
+		t.WriteString("\nOne that does not fit: object to it, a `comment` whose value is an objection, " +
+			"never a text (a text comment is refused):\n\n" +
+			"```yaml\n- comment:\n    objection: {test: <file>, line: <n>, scenario: <its name>, kind: <interface | over-specified | contradicts | untestable | need>, why: <one or two sentences>}\n```\n\n" +
 			"The tester keeps or rewrites it.\n")
 	}
+	t.WriteString(code)
 	t.WriteString("\n## Your answer\n\nPatches only, and objections if any. No label, no other comment: the claim is the engine's.\n")
 	return t.String()
 }
@@ -431,6 +440,46 @@ func frozenTexts(repo string, b Bounds) map[string]string {
 		}
 	}
 	return texts
+}
+
+// codeRoom is the most of the Scope's code a question shows, in bytes:
+// about 25k tokens, under the role's context budget with the rest.
+const codeRoom = 100_000
+
+// scopeCode is the code the agent may touch, as it reads on the commit its
+// code starts from: the agent has no tools, so a file it is not shown, it
+// cannot patch (measured, docs/status.md). A Scope's folder shows its
+// files; a path not there yet is said; past codeRoom, files are named.
+func scopeCode(repo, at string, b Bounds) string {
+	if at == "" || len(b.Scope) == 0 {
+		return ""
+	}
+	var t strings.Builder
+	t.WriteString("\n## The code in scope, as it reads\n\n")
+	room := codeRoom
+	for _, p := range b.Scope {
+		list, err := gitOut(repo, "ls-tree", "-r", "--name-only", at, "--", p)
+		if err != nil || list == "" {
+			fmt.Fprintf(&t, "- `%s`: not there yet; a patch creates it.\n", p)
+			continue
+		}
+		for _, f := range strings.Split(list, "\n") {
+			if _, frozen := b.Frozen[f]; frozen {
+				continue // shown with the acceptance tests
+			}
+			text, err := gitOut(repo, "show", at+":"+f)
+			switch {
+			case err != nil:
+				continue
+			case len(text) > room:
+				fmt.Fprintf(&t, "- `%s`: not shown, over the question's room.\n", f)
+			default:
+				room -= len(text)
+				fmt.Fprintf(&t, "### `%s`\n\n```\n%s\n```\n\n", f, text)
+			}
+		}
+	}
+	return t.String()
 }
 
 // claimBody is the comment the claim leaves on the issue, its record hidden.

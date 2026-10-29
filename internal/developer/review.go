@@ -310,16 +310,17 @@ func reviewPre(runDir, repo string, s Settings, id int) int {
 			return fail(err)
 		}
 	}
-	return writeFile(runDir, "task.md", roundTask(r, *is, bounds, s))
+	head, _ := gitOut(repo, "rev-parse", "HEAD") // its branch, where its code is
+	return writeFile(runDir, "task.md", roundTask(r, *is, bounds, s, scopeCode(repo, head, bounds)))
 }
 
 // roundTask is the round's question: the issue, the trace of the rounds
 // before, the findings to fix, and what bounds the code.
-func roundTask(r round, is forge.Issue, b Bounds, s Settings) string {
+func roundTask(r round, is forge.Issue, b Bounds, s Settings, code string) string {
 	var t strings.Builder
 	n := r.Record.Round + 1
 	fmt.Fprintf(&t, "# Review round %d of %d on your pull request %d, for issue #%d: %s\n\n", n, s.Rounds, r.MR, is.ID, is.Title)
-	t.WriteString("You wrote this pull request's code; you remember none of it. What you did is below, from its record, and the code is on the branch you are on.\n\n")
+	t.WriteString("You wrote this pull request's code; you remember none of it. What you did is below, from its record, and the code in scope is below, as its branch holds it.\n\n")
 	fmt.Fprintf(&t, "## The issue\n\n%s\n\n", strings.TrimSpace(is.Body))
 	if len(r.Record.Rounds) > 0 {
 		t.WriteString("## The rounds before, from its record\n\n")
@@ -368,6 +369,7 @@ func roundTask(r round, is forge.Issue, b Bounds, s Settings) string {
 		}
 		t.WriteString(".\n")
 	}
+	t.WriteString(code)
 	t.WriteString("\n## Your answer\n\nPatches that fix what is asked, the cause and not the symptom; and a `note`, one line a finding, what you did. " +
 		"A finding you hold wrong: say why in the note, patch nothing for it; the reviewer decides a finding is fixed.\n")
 	if r.FiveWhys {
