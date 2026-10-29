@@ -7,7 +7,8 @@ bounds at apply, proves it on the project's tests and opens a pull
 request on the tester's Draft, ready when green with no cap reached,
 else a Draft, its record hidden on it; with none, it names the issue.
 Routed, it runs when an issue is labelled ready and on the schedule.
-Steps 1 to 5 of
+On its pull request, a fresh run fixes each review: the five whys at
+round three, a person past round five. Steps 1 to 6 of
 [ADR-0054's plan](../../../docs/adr/0054-the-developer-takes-a-ready-issue-to-a-pull-request.md#build-plan);
 beta; routed where a project lists it.
 
@@ -16,7 +17,8 @@ A try is told in its pull request's `## Tried`
 the forge's assignment of an App and the pick on GitHub, on the pull
 request of step 1; the bounds on a copy of a real repository, on the
 pull request of step 2; the proof and the caps, on the pull request of
-step 3; the pull request, on the pull request of step 4.
+step 3; the pull request, on the pull request of step 4; the review
+loop, on the pull request of step 6.
 
 ## To leave beta
 
@@ -24,7 +26,7 @@ Beta until the three criteria of
 [ADR-0036](../../../docs/adr/0036-a-roles-status-is-earned-by-written-criteria.md)
 hold:
 
-1. **Nothing buildable in Missing**: open; steps 6 to 8 below.
+1. **Nothing buildable in Missing**: open; steps 7 and 8 below.
 2. **The main issue validated on real use**: open. A maintainer reads a
    pull request the developer opened for a `ready` issue, its
    Verification proved in it, and merges it or sends it back
@@ -34,7 +36,8 @@ hold:
    the pick's record from step 1, its refusals at apply in it from
    step 2, its proof and caps reached from step 3; its code's record
    on its pull request from step 4, drawn by the weekly sample (the
-   auditor's `sample-draws-the-developers-code`).
+   auditor's `sample-draws-the-developers-code`); its review rounds
+   from step 6, drawn with it (`sample-draws-the-developers-rounds`).
 
 ## Built
 
@@ -85,11 +88,28 @@ hold:
   `developer/skips-issue-without-tests`,
   `backs-off-issue-taken-meanwhile`.
 
+- **The review loop** (step 6): a fresh run a reviewer's verdict or a
+  person's comment on its pull request, reading its record, not a
+  memory; what blocks and what is Important asked, nits not; its fix
+  bounded, proven and pushed on its branch; the five whys at round
+  three, a person past round five; the GitHub jobs and the GitLab
+  ones ([the review loop](review-loop.md)). Cases
+  `developer/fixes-blocking-finding`, `skips-nits`,
+  `reads-trace-not-memory`, `round-three-five-whys`,
+  `round-five-hands-to-person`, `person-comment-is-a-round`,
+  `round-applied-from-the-default-branch`.
+
 ## Missing
 
-Steps 6 to 8 of
+Steps 7 and 8 of
 [the plan](../../../docs/adr/0054-the-developer-takes-a-ready-issue-to-a-pull-request.md#build-plan):
-the review loop, the merge, the measure. Also:
+the merge, the measure. Also:
+
+- **The reviewer's full text**: a round reads the reviewer's summary
+  table, where a finding with a comment on its line reads short (its
+  title); the line's comment, with the why and the fix, is not read.
+- **A finding the developer holds wrong**: said in its round's
+  comment; no thread with the reviewer, who decides on its next run.
 
 - **The auditor's draw of its code, by a real judge**: drawn and
   re-checked on a planted act only
