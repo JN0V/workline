@@ -1726,11 +1726,13 @@ func ProposeBranchFrom(f forge.Forge, repo, roleName, key, title, body string, d
 		return 0, err
 	}
 	if was != "" {
-		since := baseTip // the commits it started from are not a person's
+		// The commits it started from are not a person's; on another role's
+		// commit, nor that role's older ones, rewritten since.
+		since := []string{baseTip}
 		if p.From != "" {
-			since = p.From
+			since = append(since, p.From)
 		}
-		if who := personsCommit(repo, since, was, roleName); who != "" {
+		if who := personsCommitPast(repo, since, was, roleName, p.From != ""); who != "" {
 			return 0, fmt.Errorf("%w: %s", ErrLeftToAPerson, who)
 		}
 	}

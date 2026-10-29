@@ -272,3 +272,42 @@ func TestRecommitSigns(t *testing.T) {
 		t.Errorf("commit.gpgsign unreadable: %v, want git's error", err)
 	}
 }
+
+// The developer's branch, built on the tester's Draft: once the tester
+// rewrote its Draft, its old commit on the developer's branch is still no
+// person's; a person's commit there still is.
+func TestPersonsCommitPastARewrittenDraft(t *testing.T) {
+	repo := t.TempDir()
+	run := func(args ...string) string {
+		t.Helper()
+		cmd := exec.Command("git", append([]string{"-C", repo, "-c", "core.hooksPath=/dev/null", "-c", "user.name=T", "-c", "user.email=t@example.invalid"}, args...)...)
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			t.Fatalf("git %v: %s", args, out)
+		}
+		return strings.TrimSpace(string(out))
+	}
+	run("init", "-q", "-b", "main")
+	run("commit", "-q", "--allow-empty", "-m", "chore: start")
+	run("checkout", "-q", "-b", "workline/tester/1")
+	run("commit", "-q", "--allow-empty", "-m", "test: one", "-m", OwnTrailer+": tester")
+	run("checkout", "-q", "-b", "workline/developer/1")
+	run("commit", "-q", "--allow-empty", "-m", "feat: one", "-m", OwnTrailer+": developer")
+	dev := run("rev-parse", "HEAD")
+	run("checkout", "-q", "workline/tester/1")
+	run("commit", "-q", "--amend", "--allow-empty", "-m", "test: one, again", "-m", OwnTrailer+": tester")
+	from := run("rev-parse", "HEAD")
+
+	if who := personsCommitPast(repo, []string{"main", from}, dev, "developer", true); who != "" {
+		t.Errorf("the tester's old commit read as a person's: %s", who)
+	}
+	if who := personsCommitPast(repo, []string{"main", from}, dev, "developer", false); who == "" {
+		t.Error("without anyRole, the tester's old commit is not the developer's; want it named")
+	}
+	run("checkout", "-q", "workline/developer/1")
+	run("commit", "-q", "--allow-empty", "-m", "fix: a person's")
+	dev = run("rev-parse", "HEAD")
+	if who := personsCommitPast(repo, []string{"main", from}, dev, "developer", true); !strings.Contains(who, "a person's") {
+		t.Errorf("a person's commit: %q; want it named", who)
+	}
+}

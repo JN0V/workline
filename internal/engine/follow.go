@@ -334,7 +334,18 @@ func tips(repo, base, branch string, local bool) (baseTip, tip string, err error
 // personsCommit names the first commit of the branch, past base, the role
 // did not make: one without its trailer, or a merge. "" when all are its.
 func personsCommit(repo, baseTip, tip, role string) string {
-	out, err := git(repo, nil, "log", "--format=%h%x1f%p%x1f%s%x1f%(trailers:key="+OwnTrailer+",valueonly,separator=%x2c)%x1e", baseTip+".."+tip)
+	return personsCommitPast(repo, []string{baseTip}, tip, role, false)
+}
+
+// personsCommitPast is personsCommit past each of from; with anyRole, a
+// commit any workline role made is not a person's: a branch built on
+// another role's, whose old commits that role has since rewritten.
+func personsCommitPast(repo string, from []string, tip, role string, anyRole bool) string {
+	args := []string{"log", "--format=%h%x1f%p%x1f%s%x1f%(trailers:key=" + OwnTrailer + ",valueonly,separator=%x2c)%x1e", tip}
+	for _, f := range from {
+		args = append(args, "^"+f)
+	}
+	out, err := git(repo, nil, args...)
 	if err != nil {
 		return "its commits could not be read: " + err.Error()
 	}
@@ -343,7 +354,8 @@ func personsCommit(repo, baseTip, tip, role string) string {
 		if len(fields) < 4 {
 			continue
 		}
-		if strings.Contains(fields[1], " ") || madeBy(fields[3]) != role {
+		by := madeBy(fields[3])
+		if strings.Contains(fields[1], " ") || by != role && (!anyRole || by == "") {
 			return fmt.Sprintf("a person committed to it (%s %q)", fields[0], fields[2])
 		}
 	}
