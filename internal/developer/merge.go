@@ -85,7 +85,10 @@ func ReadMerge(f forge.Forge, mr forge.MergeRequest) (Merge, error) {
 	m := Merge{Issue: a.Issue}
 	is, err := f.Issue(a.Issue)
 	if err != nil {
-		return Merge{}, fmt.Errorf("#%d, the issue it closes: %w", a.Issue, err)
+		// One pull request's issue gone, or unreadable, holds that one
+		// only: the follow run goes on with the others.
+		m.Why = fmt.Sprintf("#%d, the issue it closes, cannot be read: %v", a.Issue, err)
+		return m, nil
 	}
 	m.Kind, m.Label = IssueKind(is.Labels)
 	for _, marker := range reviewerMarkers {
