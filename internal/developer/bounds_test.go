@@ -14,11 +14,56 @@ import (
 // the bounds, so a frozen test cannot leave by a rename.
 func TestTouchedHoldsBothSidesOfARename(t *testing.T) {
 	diff := "diff --git a/tests/test_mul.sh b/tests/old_mul.sh\nsimilarity index 100%\nrename from tests/test_mul.sh\nrename to tests/old_mul.sh\n"
-	got := touched(diff)
+	got, read := touched(diff)
 	for _, want := range []string{"tests/test_mul.sh", "tests/old_mul.sh"} {
-		if !slices.Contains(got, want) {
-			t.Errorf("touched = %v, want %s in it", got, want)
+		if !read || !slices.Contains(got, want) {
+			t.Errorf("touched = %v, %v; want %s in it", got, read, want)
 		}
+	}
+}
+
+// A name holding a space, " b/", or one git quotes is read whole from
+// its diff's header; a header whose two names cannot be told apart, and
+// no other line naming them, leaves the patch unread.
+func TestTouchedReadsNamesWithSpaces(t *testing.T) {
+	for _, tc := range []struct {
+		name, diff string
+		want       []string
+		read       bool
+	}{
+		{"a space", "diff --git a/my file.sh b/my file.sh\nold mode 100644\nnew mode 100755\n", []string{"my file.sh"}, true},
+		{"a b/ in the name", "diff --git a/x b/y b/x b/y\nold mode 100644\nnew mode 100755\n", []string{"x b/y"}, true},
+		{"quoted", "diff --git \"a/t\\303\\251st.sh\" \"b/t\\303\\251st.sh\"\n--- \"a/t\\303\\251st.sh\"\n+++ \"b/t\\303\\251st.sh\"\n", []string{"tést.sh"}, true},
+		{"a rename with spaces", "diff --git a/tests/frozen test.sh b/src/x b/y.sh\nsimilarity index 100%\nrename from tests/frozen test.sh\nrename to src/x b/y.sh\n",
+			[]string{"src/x b/y.sh", "tests/frozen test.sh"}, true},
+		{"edited, with spaces", "diff --git a/a b/c b/d b/e\n--- a/a b/c\n+++ b/d b/e\n@@ -1 +1 @@\n-x\n+y\n", []string{"a b/c", "d b/e"}, true},
+		{"cannot be told apart", "diff --git a/a b/c b/d b/e\nold mode 100644\nnew mode 100755\n", nil, false},
+	} {
+		got, read := touched(tc.diff)
+		if read != tc.read {
+			t.Errorf("%s: read = %v, want %v", tc.name, read, tc.read)
+		}
+		for _, w := range tc.want {
+			if !slices.Contains(got, w) {
+				t.Errorf("%s: touched = %q, want %q in it", tc.name, got, w)
+			}
+		}
+	}
+}
+
+// A patch the bounds cannot hold, naming no file, is refused, never laid;
+// with the bounds unread, it is refused as every other.
+func TestPatchNamingNoFileIsRefused(t *testing.T) {
+	repo := t.TempDir()
+	nameless := intent.Intention{Kind: "patch", Value: "@@ -1 +1 @@\n-a\n+b\n"}
+	kept, refused, _ := bounded(repo, Bounds{Issue: 3, Scope: []string{"src"}}, nil, []intent.Intention{nameless})
+	if len(kept) != 0 || len(refused) != 1 || refused[0].Rule != "bounds-unread" {
+		t.Errorf("bounds unread: kept = %v, refused = %+v; want nothing kept, one bounds-unread", kept, refused)
+	}
+	repo = gitRepo(t, map[string]string{"src/a.sh": "a\n"})
+	kept, refused, _ = bounded(repo, Bounds{Issue: 3, Scope: []string{"src"}}, nil, []intent.Intention{nameless})
+	if len(kept) != 0 || len(refused) != 1 || refused[0].Rule != "patch-unread" {
+		t.Errorf("bounds read: kept = %v, refused = %+v; want nothing kept, one patch-unread", kept, refused)
 	}
 }
 
