@@ -12,6 +12,7 @@ import (
 	"path"
 	"slices"
 	"strings"
+	"unicode"
 
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/tester"
@@ -21,12 +22,19 @@ import (
 // RecordKey is the sticky key of the record on its pull request.
 const RecordKey = "code"
 
-// isTest says whether a file is a test: its name holding "test" or
-// "spec", or in a test folder.
+// isTest says whether a file is a test: "test" or "spec" a word of its
+// name (test_x.py, x_test.go, x.spec.ts, XTest.java), or in a test folder.
 func isTest(p string) bool {
-	name := strings.ToLower(path.Base(p))
-	if strings.Contains(name, "test") || strings.Contains(name, "spec") {
-		return true
+	stem := strings.TrimSuffix(path.Base(p), path.Ext(p))
+	for _, w := range strings.FieldsFunc(stem, func(c rune) bool { return c == '_' || c == '.' || c == '-' }) {
+		switch lw := strings.ToLower(w); {
+		case lw == "test" || lw == "tests" || lw == "spec" || lw == "conftest":
+			return true
+		case strings.HasSuffix(w, "Test") || strings.HasSuffix(w, "Tests") || strings.HasSuffix(w, "Spec"):
+			return true // XTest.java, XSpec.scala
+		case len(w) > 4 && strings.HasPrefix(w, "Test") && unicode.IsUpper(rune(w[4])):
+			return true // TestX.java, not Testimony.go
+		}
 	}
 	for _, part := range strings.Split(path.Dir(p), "/") {
 		if part == "test" || part == "tests" || part == "spec" || part == "__tests__" {
