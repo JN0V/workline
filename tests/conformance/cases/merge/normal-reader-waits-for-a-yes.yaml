@@ -24,7 +24,7 @@ expect:
     - {rule: waits-for-a-yes, where: "#9", message: "workline's own reader (it rewords pages an agent read for their reader), which merges with no person's yes only once the project lets it, `merge: {autonomy: normal, alone: [reader]}`: it waits for a person's yes, the label `workline:accepted`"}
     - {rule: auto-merge-on, where: "#10", message: "with no person's yes, workline's own docs"}
   no-findings: [{rule: auto-merge-on, where: "#9"}, {rule: merged-at-once}]
-  summary-file: ["with no person's yes: workline's own merge requests, records, derived, docs; only with a person's yes, until `merge.alone` lists them: reader"]
+  summary-file: ["with no person's yes: workline's own merge requests, records, derived, docs, code; only with a person's yes, until `merge.alone` lists them: reader"]
   forge:
     merge-requests:
       - {id: 9, auto-merge: false, comments: 1, comment-contains: ["**Waiting for a person's yes**", "workline's own reader merge request", "put the label `workline:accepted`", "merge: {autonomy: normal, alone: [reader]}", "workline:merge-waits=reader"]}

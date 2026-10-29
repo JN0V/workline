@@ -62,7 +62,7 @@ func demotedKind(title string) (string, bool) {
 		return kindAll, true
 	}
 	kind, after, _ := strings.Cut(rest, " ")
-	if slices.Contains(RoutineKinds, kind) && strings.HasPrefix(after, "merge requests wait for a person's yes again") {
+	if slices.Contains(mergeKinds, kind) && strings.HasPrefix(after, "merge requests wait for a person's yes again") {
 		return kind, true
 	}
 	return "", false
@@ -299,7 +299,7 @@ func demotions(f forge.Forge, o FollowOptions, baseTip, app string, res *Result)
 			}
 			alone, ok := ownNote(notes, "merge-alone=", app)
 			switch {
-			case ok && slices.Contains(RoutineKinds, alone):
+			case ok && slices.Contains(mergeKinds, alone):
 				kind = alone
 			case err == nil:
 				continue // a merge request merged with a person's yes, or never by workline

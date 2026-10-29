@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/JN0V/workline/internal/backlog"
+	"github.com/JN0V/workline/internal/developer"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/role"
 	"github.com/JN0V/workline/internal/steer"
@@ -34,10 +35,15 @@ const (
 	kindDocs    = "docs"    // doc pages a role wrote
 	kindReader  = "reader"  // pages an agent read for their reader, recorded read (`reader:`), reworded
 	kindAll     = "all"     // every kind: a revert that names nothing workline can find
+	kindCode    = "code"    // the developer's code for an issue no feature (code.go)
 )
 
 // RoutineKinds are the kinds, from the narrowest.
 var RoutineKinds = []string{kindRecords, kindDerived, kindDocs, kindReader}
+
+// mergeKinds are the kinds recorded on a merge with no person's yes, a
+// revert demoting each: the routine ones, and the developer's code.
+var mergeKinds = append(slices.Clone(RoutineKinds), kindCode)
 
 // kindSays says what a kind's change is, for a person.
 var kindSays = map[string]string{
@@ -271,7 +277,7 @@ type weighed struct {
 // and the yes held on its head with no person's yes, the merge recorded on
 // it; or why it waits for a person's. It returns it when it is accepted.
 func weighRoutine(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, n *normal, hand map[string]kept) (*inLine, error) {
-	mr, st, tip, e := w.mr, w.st, w.tip, w.e
+	mr, st, tip := w.mr, w.st, w.tip
 	ours := st.AutoMerge && st.AutoMergeBot
 	waits := func(level, why string) (*inLine, error) {
 		if ours {
@@ -307,6 +313,9 @@ func weighRoutine(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, n *
 			return waits("", fmt.Sprintf("opened by workline, but %s pushed to its branch", who))
 		}
 	}
+	if strings.HasPrefix(mr.Branch, developer.Branch) {
+		return weighCode(f, m, o, w, n, hand, waits)
+	}
 	who, err := notOwn(o.Repo, w.baseTip, tip, n.committer)
 	if err != nil {
 		return nil, err
@@ -336,12 +345,21 @@ func weighRoutine(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, n *
 		}
 		return waits("", fmt.Sprintf("workline's own %s (%s), which merges with no person's yes only once the project lets it, `merge: {autonomy: normal, alone: [%s]}`", kind, kindSays[kind], kind))
 	}
+	return admit(f, m, o, w, n, hand, waits, kind, kindSays[kind])
+}
+
+// admit weighs workline's own merge request of kind, says what its change
+// is, past what tells its kind: held since a revert of its kind, vetoed,
+// red, or its yes set on its head with no person's, recorded on it, and
+// auto-merge on.
+func admit(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, n *normal, hand map[string]kept, waits func(level, why string) (*inLine, error), kind, says string) (*inLine, error) {
+	mr, st, tip, e := w.mr, w.st, w.tip, w.e
 	issue, held := n.demoted[kind]
 	if all, ok := n.demoted[kindAll]; ok && !held {
 		issue, held = all, true
 	}
 	if held {
-		return waits("warn", fmt.Sprintf("workline's own %s (%s), but its %s merge requests wait for a person's yes since a revert (%s)", kind, kindSays[kind], kind, issue))
+		return waits("warn", fmt.Sprintf("workline's own %s (%s), but its %s merge requests wait for a person's yes since a revert (%s)", kind, says, kind, issue))
 	}
 	if !st.AutoMerge && st.AutoMergeAt != "" {
 		// The veto by turning auto-merge off: it stays off until a person's
@@ -385,7 +403,7 @@ func weighRoutine(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, n *
 		w.say(rule, "warn", fmt.Sprintf("workline's own %s, but %s: no yes on its head", kind, v.why))
 		return nil, nil
 	}
-	why := fmt.Sprintf("workline's own %s — %s —, opened and pushed by its App, every commit its own; its head's verdict passed, every agent's review whole", kind, kindSays[kind])
+	why := fmt.Sprintf("workline's own %s — %s —, opened and pushed by its App, every commit its own; its head's verdict passed, every agent's review whole", kind, says)
 	if err := m.Accept(tip, true, "with no person's yes: "+why); err != nil {
 		return nil, err
 	}
@@ -396,7 +414,7 @@ func weighRoutine(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, n *
 	// when a revert names this merge request.
 	t := forge.Target{Kind: "merge-request", ID: mr.ID}
 	body := fmt.Sprintf("**Merging with no person's yes**: the project's merge policy is `normal`, and this is workline's own %s: %s. Opened and pushed by workline's App, every commit its own, and the line passed on its head (%s), every agent's review whole. To hold it, mark it a draft or turn auto-merge off. Reverted, workline's %s merge requests wait for a person's yes again.",
-		kind, kindSays[kind], short(tip), kind)
+		kind, says, short(tip), kind)
 	if err := f.Comment(t, body, forge.Marker("merge-alone="+kind)); err != nil {
 		return nil, err
 	}
@@ -439,7 +457,7 @@ func alone(n *normal) string {
 		return "with no person's yes: none, the token is no App's"
 	}
 	var free, held, asked []string
-	for _, kind := range RoutineKinds {
+	for _, kind := range mergeKinds {
 		if n.asked(kind) {
 			asked = append(asked, kind)
 			continue

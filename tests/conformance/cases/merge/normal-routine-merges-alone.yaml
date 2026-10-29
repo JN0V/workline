@@ -20,7 +20,7 @@ expect:
     - {rule: auto-merge-on, where: "#9", message: "with no person's yes, workline's own records — it only records when docs were read —, opened and pushed by its App, every commit its own"}
   no-findings: [{rule: waits-for-a-yes}, {rule: label-ignored}, {rule: merge-app-unknown}]
   not-pushed: [workline/documentalist/suspect]
-  summary-file: ["merge policy (normal; with no person's yes: workline's own merge requests, records, derived, docs; only with a person's yes, until `merge.alone` lists them: reader)", "accepted into main, #9", "auto-merge turned on for 1"]
+  summary-file: ["merge policy (normal; with no person's yes: workline's own merge requests, records, derived, docs, code; only with a person's yes, until `merge.alone` lists them: reader)", "accepted into main, #9", "auto-merge turned on for 1"]
   forge:
     merge-requests:
       - {id: 9, auto-merge: true, labels: [], comments: 1, comment-contains: ["Merging with no person's yes", "workline's own records", "workline:merge-alone=records"]}
