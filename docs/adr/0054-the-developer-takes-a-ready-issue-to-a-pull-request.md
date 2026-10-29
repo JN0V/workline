@@ -1,6 +1,7 @@
 # ADR-0054: The developer takes a ready issue to a pull request
 
-- **Status:** proposed
+- **Status:** proposed; step 1 built, the claim a label
+  ([settled while building](#settled-while-building))
 - **Date:** 2026-10-27; rewritten 2026-10-28 to the maintainer's choices
 - **Decided by:** the maintainer: build the developer
   ([#117](https://github.com/JN0V/workline/issues/117), 2026-10-27); its
@@ -173,6 +174,26 @@ listing what does not pass.
    `merge-normal-holds-developer-feature`.
 8. **Measured**: an evaluation on planted issues (`WORKLINE_EVAL`), then
    a try on a copy of a real repository, told in its pull request.
+
+## Settled while building
+
+Step 1, the pick (2026-10-29,
+[the pick](../../roles/developer/docs/pick.md)):
+
+- **GitHub does not assign an issue to an App**: tried with workline's
+  App on its own repository, the REST API answered 403 for the
+  `[bot]` login, and GraphQL said "Assigning agents is not supported
+  with GitHub App installation tokens". **The claim is a label**,
+  `claim-label` (`workline:developing`), on every forge, with a comment
+  holding the pick's record. A person's assignment still keeps an issue
+  from it. GitLab's assignment of a service account: later, in Missing.
+- **"Overlaps an open one's files"**, before any code: the paths in
+  backticks of the candidate's Scope, under or over those of the issues
+  the developer holds (its label on them).
+- **With no agent**, nothing is claimed: a claim nobody codes would keep
+  the issue from people.
+- **The cases** sit in `tests/conformance/cases/developer/`, as the
+  tester's in their folder.
 
 ## Consequences
 
