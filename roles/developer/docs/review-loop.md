@@ -4,7 +4,7 @@ sources:
   - roles/developer/role.yaml
   - ci/github/workline-develop.yml
   - ci/gitlab/workline.gitlab-ci.yml
-checked: 492192ca
+checked: e64f6235
 verified: agent:claude-code
 ---
 # The review loop
@@ -31,7 +31,11 @@ step 6).
   `workline develop --merge-request <n>`.
 - **No memory**: it reads its record on the pull request (the rounds
   before, the reviewer's runs read, the comments heard), the
-  reviewer's comment, and the issue. Nothing else.
+  reviewer's comment and its comments on lines, and the issue. Nothing
+  else.
+- **A finding on its line**: its row shows only a title; the round
+  reads it whole from the reviewer's comment on that line. Only
+  workline's own account's comment is read.
 - **What it asks the agent**: the findings that block, and those that
   warn and are Important; a person's comment, as a finding. Nits are
   counted, never asked.
