@@ -1,0 +1,45 @@
+case: auditor/reviewer-judge-dropped-a-false-alarm
+about: "Control: the reviewer's judge dropped a false alarm. Restock adds each product of an order through Add, which adds nothing for a count of zero or less; the lens said a negative count lowers the stock, and its judge dropped it. The auditor finds the code does not fail so: the act stands, no false alarm."
+given:
+  repo: shop
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git"
+    - |
+      git checkout -q -b feat
+      cat >> shop/stock.go <<'GO'
+
+      // Restock adds each product of an order to the stock.
+      func (s *Stock) Restock(order map[string]int) {
+      	for sku, n := range order {
+      		s.Add(sku, n)
+      	}
+      }
+      GO
+      GIT_AUTHOR_DATE=2026-01-07T09:00:00Z GIT_COMMITTER_DATE=2026-01-07T09:00:00Z git commit -qam 'feat(stock): restock from an order'
+    - "git push -q origin feat:refs/pull/30/head && git checkout -q main && git merge -q --squash feat && GIT_AUTHOR_DATE=2026-01-07T12:00:00Z GIT_COMMITTER_DATE=2026-01-07T12:00:00Z git commit -q -m 'feat(stock): restock from an order (#30)' && git push -q origin main"
+    - "git branch -q -D feat"
+  forge:
+    issues: []
+    merge-requests:
+      - id: 30
+        title: Restock from an order
+        branch: feat
+        base: main
+        labels: []
+        merged-at: "2026-01-07T12:00:00Z"
+        merged-as: main
+        comments:
+          - |
+            **workline reviewer** — 0 findings on the change; lenses: correctness.
+
+            | | | Where | Finding |
+            |---|---|---|---|
+            | warns | finding-judged-no |  | dropped, from the correctness lens: "Restock with a negative count lowers the stock" at shop/stock.go:48 — the judge: Add adds nothing for a count of zero or less (independence: model (claude-sonnet-5 → claude-haiku-4-5)) |
+
+            <!-- workline:record reviewed=0123456789abcdef0123456789abcdef01234567 runs=1 -->
+
+            <!-- workline:sticky=reviewer/summary -->
+run: {role: auditor, sample: [--week, 2026-W02]}
+grade:
+  - finding: {rule: act-stands, where: "#30 shop/stock.go:48", message: "a finding the reviewer's judge dropped on #30"}
+  - no-finding: {rule: act-false, where: "#30"}

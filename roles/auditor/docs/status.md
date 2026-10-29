@@ -35,7 +35,12 @@ hold:
    comment on [#155](https://github.com/JN0V/workline/issues/155), no
    week answered yet; a `checked` found false on a forge is untried
    ([#155](https://github.com/JN0V/workline/issues/155) collects it when
-   one turns up). The bar:
+   one turns up). Planted: six evaluation cases, a wrong act and its
+   right twin for a reviewer's dropped finding, a committer's rewrite and
+   a tester's tests, 30 of 30 in five runs (2026-10-29,
+   [amendment](../../../docs/adr/0046-the-auditor-re-checks-every-roles-acts.md#amendment-2026-10-29-the-auditor-measured));
+   a product owner's act and a doc not planted yet. Its own issues closed
+   as not planned are counted in the count's comment. The bar:
    [ADR-0046](../../../docs/adr/0046-the-auditor-re-checks-every-roles-acts.md#leaving-beta).
 
 ## Built

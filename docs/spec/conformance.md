@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go, tests/evaluation]
-checked: 10d895f1
+checked: 4188075c
 verified: agent:claude-code
 judged: ae14474
 ---
@@ -198,6 +198,8 @@ alone) and `WORKLINE_EVAL_REVIEWER` sets its settings, a YAML map
 (`{lenses-together: false}`: each lens apart; `{ai-max-tokens: 10000}`).
 The committer's cases turn its rewrite on (`rewrite: true`), over the
 project's config at that commit: the rewrite is what they measure.
+The auditor's cases run `workline sample`, the agent as its judge
+([its verdicts](conformance/evaluation.md#the-auditors-verdicts)).
 A reviewer case may hold a simulated forge (`given.forge`, as a
 conformance case's): the issues its change closes. The tester's cases
 run it as `workline test write` and `answer` do: `run.target`

@@ -1,6 +1,6 @@
 ---
 sources: [tests/evaluation]
-checked: 10d895f1
+checked: 4188075c
 judged: 62abc22
 verified: agent:claude-code
 ---
@@ -56,6 +56,18 @@ after the guard against it, 12 of 14 cases earning every point in every
 run; the last two too that evening, once a merge request left a doc too
 large for the gardening: all 14 met
 ([the documentalist, measured](../../research/documentalist-measured.md)).
+
+## The auditor's verdicts
+
+**The auditor's verdicts, both sides graded**
+([ADR-0046, amended](../../adr/0046-the-auditor-re-checks-every-roles-acts.md#amendment-2026-10-29-the-auditor-measured)).
+An auditor case says `run: {role: auditor, sample: [--week, …]}`: one
+week of one act, on a fake forge, run as `workline sample` with the
+case's agent as its judge, written nowhere. A planted wrong act grades
+`finding: {rule: act-false}` and no `act-stands`; its right twin, the
+reverse. `TestAuditorCasesWithBlindJudge` plays them with a judge
+answering `true`, then `false`, quoting nothing: it wins no planted
+case, and each control once — the act is drawn and read. No agent.
 
 ## The reviewer's measure
 

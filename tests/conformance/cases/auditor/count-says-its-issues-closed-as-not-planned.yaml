@@ -1,0 +1,19 @@
+case: auditor/count-says-its-issues-closed-as-not-planned
+about: "The auditor's own false alarms are counted, with no agent (ADR-0046, amendment 2026-10-29): of the issues it opened, from findings the reviewer's judge dropped, the count says how many the product owner or a person closed as not planned, how many were closed otherwise, how many are open. Another role's issue is not counted."
+given:
+  repo: vouched
+  forge:
+    issues:
+      - {id: 1, title: "workline: the weekly sample of every role's acts", body: "Each week…", labels: [], comments: []}
+      - {id: 4, title: "Extra shadows N12", body: "The judge dropped it.\n\nFound by the auditor role re-checking a finding.\n\n<!-- workline:opened-by=auditor -->", labels: [], closed: true, reason: not_planned, comments: []}
+      - {id: 5, title: "Take refuses the last unit", body: "The judge dropped it.\n\nFound by the auditor role re-checking a finding.\n\n<!-- workline:opened-by=auditor -->", labels: [], closed: true, reason: completed, comments: []}
+      - {id: 6, title: "Mean of an empty cart", body: "The judge dropped it.\n\nFound by the auditor role re-checking a finding.\n\n<!-- workline:opened-by=auditor -->", labels: [needs-triage], comments: []}
+      - {id: 7, title: "A doc says too much", body: "Found by the documentalist role.\n\n<!-- workline:opened-by=documentalist -->", labels: [], closed: true, reason: not_planned, comments: []}
+    merge-requests: []
+run: {sample: [--week, 2026-W02, --judge, none], then: apply}
+expect:
+  status: pass
+  applied: [comment, count]
+  forge:
+    issues:
+      - {id: 1, comment-contains: "Issues the auditor opened: 3 — closed as not planned, a false alarm: 1 (#4); closed otherwise: 1 (#5); open: 1 (#6)."}

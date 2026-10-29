@@ -6,7 +6,8 @@
   ([the reviewer's judge](../../roles/reviewer/docs/judge.md#every-finding-judged-kept-for-the-weekly-sample));
   the committer's trailers; the product owner's fields and its issue
   folded in (2026-10-17, [settled while building](#settled-while-building));
-  the tester's acts (2026-10-28, [the tester's row](#amendment-2026-10-28-the-testers-row))
+  the tester's acts (2026-10-28, [the tester's row](#amendment-2026-10-28-the-testers-row));
+  the auditor measured (2026-10-29, [amendment](#amendment-2026-10-29-the-auditor-measured))
 - **Date:** 2026-10-14
 - **Decided by:** the maintainer, on 2026-10-14: [#205] and [#276] built
   together, the share one in ten; the open points settled as below
@@ -335,6 +336,27 @@ auditor read ([#264]):
 - **Older answers**, before the hidden line: not drawn; an older record
   without `scenarios` is read with the issue's Validation as it reads
   now, said.
+
+## Amendment 2026-10-29: the auditor measured
+
+Its verdicts are measured as every role's acts are, in two ways:
+
+- **Planted, with the evaluation's harness**: cases in
+  `tests/evaluation/cases/auditor`, each a week of one act, run through
+  `workline sample` with the real agent as its judge. A wrong act — a
+  true finding the reviewer's judge dropped, a rewritten message saying
+  more than its diff, a tester's test asserting nothing — must come out
+  false; its right twin must stand. Two points a case: the verdict, and
+  not the other one. A judge answering blind, quoting nothing, wins no
+  planted case (a test proves it, no agent). Rows go to results.tsv.
+  First five runs, 2026-10-29: 30 of 30, about 150k tokens in all
+  ([#673](https://github.com/JN0V/workline/pull/673)).
+  Not yet planted: a product owner's act, a doc vouched for.
+- **Its own false alarms, counted with no agent**: the count's comment
+  ends with the issues the auditor opened (its hidden `opened-by`
+  marker) — closed as not planned, the product owner's or a person's
+  no; closed otherwise; open — each linked. Not planned is the forge's
+  own reason for a no, the one the product owner's closings read.
 
 [#89]: https://github.com/JN0V/workline/issues/89
 [#108]: https://github.com/JN0V/workline/issues/108

@@ -55,6 +55,7 @@ type caseFile struct {
 		Event   string            `yaml:"event"`
 		Message string            `yaml:"message"` // commit-msg: the message the author wrote
 		Input   map[string]string `yaml:"input"`
+		Sample  []string          `yaml:"sample"` // the auditor: workline sample, these options, the agent as its judge
 		// The tester's runs, as `workline test write` and `answer` start
 		// them: where it acts, and whether its branch opens a merge request.
 		Target           string `yaml:"target"` // issue:<n> or merge-request:<n>
@@ -254,6 +255,9 @@ func play(t *testing.T, c *caseFile, ai string) (*run, error) {
 	}
 	roles, _ := filepath.Abs("../../roles")
 	args := []string{"run-role", c.Run.Role, "--event", c.Run.Event, "--repo", repo, "--roles", roles, "--ai", ai, "--json"}
+	if c.Run.Sample != nil { // the week's acts drawn and re-checked, written nowhere (ADR-0046)
+		args = append(append([]string{"sample"}, c.Run.Sample...), "--repo", repo, "--roles", roles, "--judge", ai, "--json")
+	}
 	msgFile := filepath.Join(work, "message")
 	if c.Run.Message != "" {
 		if err := os.WriteFile(msgFile, []byte(c.Run.Message+"\n"), 0o644); err != nil {
