@@ -66,7 +66,8 @@ expect:
 ```
 
 What else a case can give, run and expect, and how each is checked, is in
-[Conformance — a case in full](conformance/cases.md), [read strictly](conformance/cases.md#read-strictly).
+[Conformance — a case in full](conformance/cases.md), [read strictly](conformance/cases.md#read-strictly), and
+[what a case expects](conformance/cases-expect.md).
 
 ## The fakes
 

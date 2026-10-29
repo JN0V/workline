@@ -1,6 +1,6 @@
 ---
 sources: [routing.default.yaml, roles/committer/role.yaml, roles/documentalist/role.yaml, roles/reviewer/role.yaml, roles/inspector/role.yaml, roles/product-owner/role.yaml, roles/judge/role.yaml, roles/auditor/role.yaml, roles/tester/role.yaml, roles/developer/role.yaml]
-checked: ccb53431
+checked: 21ce8c2c
 judged: d34fd75
 verified: agent:claude-code
 ---
