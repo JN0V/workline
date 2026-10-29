@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.55.0](https://github.com/JN0V/workline/compare/v0.54.0...v0.55.0) (2026-10-29)
+
+
+### Features
+
+* **developer:** merge a fix alone at normal, hold a feature ([#688](https://github.com/JN0V/workline/issues/688)) ([84e2631](https://github.com/JN0V/workline/commit/84e263183216ef5eeb7263c697404de730024a4f))
+
 ## [0.54.0](https://github.com/JN0V/workline/compare/v0.53.0...v0.54.0) (2026-10-29)
 
 
