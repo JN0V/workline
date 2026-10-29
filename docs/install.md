@@ -160,6 +160,8 @@ What the jobs are: [ci.md](ci.md); every detail on your forge's page. In short:
   to main for `workline follow`), [workline-fork.yml](../ci/github/workline-fork.yml) (a
   fork's), [workline-gardening.yml](../ci/github/workline-gardening.yml),
   [workline-sample.yml](../ci/github/workline-sample.yml),
+  [workline-develop.yml](../ci/github/workline-develop.yml) (with the
+  [developer](../roles/developer/docs/triggers.md)),
   [workline-merge.yml](../ci/github/workline-merge.yml) (with the
   [merge policy](merge-policy.md)),
   [workline-release.yml](../ci/github/workline-release.yml) (with a

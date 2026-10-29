@@ -116,6 +116,16 @@ workline run-role product-owner --event schedule --ai "$ai" --no-apply --forge g
 workline apply "$(jq -r '."run-dir"' po.json)"
 ```
 
+### A ready issue
+
+With the developer routed on `issue`, when an issue is labelled
+`workline:ready` ([the triggers](../roles/developer/docs/triggers.md)):
+
+```sh
+workline route issue --target issue:<n> --ai "$ai" --no-apply --forge gitlab --open-merge-request --json > line.json
+workline apply --line line.json
+```
+
 ### Release
 
 Before your release tool tags; a non-zero exit holds it.

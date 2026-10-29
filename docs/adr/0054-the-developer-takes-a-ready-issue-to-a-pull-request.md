@@ -246,6 +246,13 @@ Step 5, the triggers (2026-10-29,
 - **A line with no pull request to open blocks**: without
   `--open-merge-request`, its code would land on the checkout's branch.
 - **No ready issue**: said in the line's summary, nothing on the forge.
+- **Tests first, on any trigger**: where the tester is routed, an issue
+  whose Validation names scenarios waits for the tester's Draft; one
+  with none gets no Draft, so it does not wait.
+- **Two runs on one issue**: the claim lands at apply, so a run reads
+  the issue again once its agent answered, and backs off if another
+  run took it. Two runs coding at the same time can still both take
+  it: left open, the forge holds no lock.
 
 ## Consequences
 

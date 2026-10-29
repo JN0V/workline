@@ -77,6 +77,13 @@ hold:
   `developer/routing-schedule-runs-developer`,
   `routing-ready-runs-developer`, `routing-schedule-none-ready-said`,
   `routing-needs-a-merge-request`.
+- **Tests first, and a claim read again**: where the tester is routed,
+  an issue whose Validation names scenarios waits for the tester's
+  Draft; before its claim goes to apply, a run reads the issue again
+  and backs off if another run took it
+  ([the triggers](triggers.md#two-runs-on-one-issue)). Cases
+  `developer/skips-issue-without-tests`,
+  `backs-off-issue-taken-meanwhile`.
 
 ## Missing
 
@@ -91,12 +98,10 @@ the review loop, the merge, the measure. Also:
 - **`workline follow` on its branch**: the branch holds the tester's
   commit, which `follow` reads as a person's; it leaves the branch as it
   is rather than bring it up to date.
-- **The tester and the developer in one scheduled run**: both may
-  take the same issue, the code written before its tests' Draft is
-  opened ([the triggers](triggers.md#on-a-schedule)).
-- **Two runs at once**: the ready workflow runs one at a time, but the
-  schedule's line runs beside it; both may claim the same issue in the
-  half hour a run lasts.
+- **Two runs coding at once**: the claim is read again just before
+  apply, not held by the forge; two runs whose agents code at the same
+  time, or two ready issues with overlapping Scopes, can still both be
+  taken ([the triggers](triggers.md#two-runs-on-one-issue)).
 
 - **The claim on GitLab** by assignment, where the token's user is a
   service account that can be assigned: a label for now, on every forge.
