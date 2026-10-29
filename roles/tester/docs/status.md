@@ -44,9 +44,11 @@ hold:
    name the base lacks, a scenario no test can check), `test answer` (a
    right objection, a wrong one), `test curate` (a true duplicate, a
    near-duplicate of another branch). On Sonnet, 30 of 35 runs passed
-   every check; the miss, 5 of 5: the curator merges the near-duplicate
-   rather than keeping it, both branches still checked
-   ([tried](https://github.com/JN0V/workline/pull/672)). Left: another
+   every check; the miss, 5 of 5: the curator merged the near-duplicate
+   rather than keeping it
+   ([tried](https://github.com/JN0V/workline/pull/672)). The curator
+   now removes only, told and held by the engine: 3 of 3 kept both
+   ([tried](https://github.com/JN0V/workline/pull/674)). Left: another
    model, more runs over time. Its acts
    are observable: the auditor's weekly sample draws them
    ([ADR-0046](../../../docs/adr/0046-the-auditor-re-checks-every-roles-acts.md#amendment-2026-10-28-the-testers-row)).
