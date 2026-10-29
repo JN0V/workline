@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.52.0](https://github.com/JN0V/workline/compare/v0.51.0...v0.52.0) (2026-10-29)
+
+
+### Features
+
+* **developer:** pick the first ready issue nobody took ([#679](https://github.com/JN0V/workline/issues/679)) ([d64462b](https://github.com/JN0V/workline/commit/d64462be47a453a976ac540f0f9c2db79bf884df))
+* **developer:** prove its code, open ready or a Draft ([#681](https://github.com/JN0V/workline/issues/681)) ([7a7ad88](https://github.com/JN0V/workline/commit/7a7ad889b135cbc465c71f2ba35064b0a2f67d78))
+* **developer:** the bounds at apply (ADR-0054, step 2) ([#680](https://github.com/JN0V/workline/issues/680)) ([824bab5](https://github.com/JN0V/workline/commit/824bab55493f23ed59c95cf486c817f88f542380))
+
 ## [0.51.0](https://github.com/JN0V/workline/compare/v0.50.0...v0.51.0) (2026-10-29)
 
 
