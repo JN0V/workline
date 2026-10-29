@@ -24,6 +24,8 @@ import (
 	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
+	"github.com/JN0V/workline/internal/routing"
+	"github.com/JN0V/workline/internal/tester"
 	"github.com/JN0V/workline/internal/verdict"
 	"github.com/JN0V/workline/internal/work"
 )
@@ -149,15 +151,20 @@ func overlap(a, b []string) string {
 // order, offered to whoever builds (ready, waiting on no open issue, no
 // parts), assigned to nobody, not claimed already, no open merge request
 // closing it, its Scope's paths clear of the issues the developer holds.
-// only, when not 0, is the one issue looked at. passed are the issues
-// offered it passed over, why each.
-func pick(issues []forge.Issue, mrs []forge.MergeRequest, s Settings, only int) (id int, passed []Passed) {
+// testsFirst, where the project routes the tester: an issue whose
+// Validation names scenarios waits for the tester's open Draft of its
+// tests (ADR-0055). only, when not 0, is the one issue looked at.
+// passed are the issues offered it passed over, why each.
+func pick(issues []forge.Issue, mrs []forge.MergeRequest, s Settings, only int, testsFirst bool) (id int, passed []Passed) {
 	open := map[int]bool{}
 	for _, is := range issues {
 		open[is.ID] = true
 	}
-	closer := map[int]int{}
+	closer, tested := map[int]int{}, map[int]bool{}
 	for _, m := range mrs {
+		if n := testerIssue(m.Branch); n != 0 {
+			tested[n] = true
+		}
 		for _, n := range forge.Closes(m.Title, m.Body) {
 			if _, ok := closer[n]; !ok {
 				closer[n] = m.ID
@@ -183,6 +190,8 @@ func pick(issues []forge.Issue, mrs []forge.MergeRequest, s Settings, only int) 
 			why = "taken already, labelled " + s.ClaimLabel
 		case closer[is.ID] != 0:
 			why = fmt.Sprintf("the open merge request %d closes it", closer[is.ID])
+		case testsFirst && !tested[is.ID] && len(tester.Scenarios(work.ByMeaning(is.Body)[work.Validation].Text)) > 0:
+			why = "its acceptance tests are not written yet: it waits for the tester's Draft"
 		default:
 			mine := scopePaths(is.Body)
 			for _, n := range slices.Sorted(maps.Keys(held)) {
@@ -241,7 +250,11 @@ func Pre(runDir, repo string) int {
 	if err != nil {
 		return external(err)
 	}
-	id, passed := pick(issues, mrs, s, only)
+	line, err := routing.Load(repo)
+	if err != nil {
+		return fail(err)
+	}
+	id, passed := pick(issues, mrs, s, only, line.Runs("tester"))
 	var findings []verdict.Finding
 	for _, p := range passed {
 		findings = append(findings, verdict.Finding{Rule: "issue-passed", Level: "info", Where: fmt.Sprintf("#%d", p.Issue), Message: p.Why})
@@ -294,6 +307,38 @@ func Pre(runDir, repo string) int {
 		return fail(err)
 	}
 	return 0
+}
+
+// takenMeanwhile reads the issue again, just before its claim goes to
+// apply: why another run holds it now, "" when free. Best effort: a forge
+// out of reach is read as free, and two runs whose agents code at the
+// same time can still both claim it (docs/triggers.md).
+func takenMeanwhile(repo string, id int, s Settings) string {
+	f, err := forge.Open(os.Getenv("WORKLINE_FORGE"), repo)
+	if err != nil || f == nil {
+		return ""
+	}
+	b, ok := f.(forge.Backlog)
+	if !ok {
+		return ""
+	}
+	issues, err := b.Issues()
+	if err != nil {
+		return ""
+	}
+	for _, is := range issues {
+		if is.ID != id {
+			continue
+		}
+		switch {
+		case len(is.Assignees) > 0:
+			return "assigned to " + strings.Join(is.Assignees, ", ")
+		case slices.Contains(is.Labels, s.ClaimLabel):
+			return "labelled " + s.ClaimLabel
+		}
+		return ""
+	}
+	return "no longer open"
 }
 
 // claimOf is the claim: the label and the comment holding the record.
@@ -409,6 +454,20 @@ func Post(runDir, repo string) int {
 	s, err := settingsIn(runDir)
 	if err != nil {
 		return fail(err)
+	}
+	// Another run may have claimed the issue while its agent coded: read
+	// again, it backs off, nothing claimed nor opened (docs/triggers.md).
+	if why := takenMeanwhile(repo, a.Issue, s); why != "" {
+		if err := os.Remove(filepath.Join(runDir, "out", "intentions.yaml")); err != nil && !errors.Is(err, os.ErrNotExist) {
+			return fail(err)
+		}
+		where := fmt.Sprintf("#%d", a.Issue)
+		v := verdict.Verdict{Status: verdict.Pass, Summary: where + " taken meanwhile: nothing claimed, its code left",
+			Findings: []verdict.Finding{{Rule: "taken-meanwhile", Level: "warn", Where: where, Message: why + " while its agent coded: another run took it first"}}}
+		if err := verdict.Write(filepath.Join(runDir, "out", "verdict.yaml"), &v); err != nil {
+			return fail(err)
+		}
+		return 0
 	}
 	proposed, err := intent.Read(filepath.Join(runDir, "out", "intentions.yaml"))
 	if err != nil {
