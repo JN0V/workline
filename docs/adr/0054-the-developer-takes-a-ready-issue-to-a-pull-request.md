@@ -195,6 +195,23 @@ Step 1, the pick (2026-10-29,
 - **The cases** sit in `tests/conformance/cases/developer/`, as the
   tester's in their folder.
 
+Step 2, the bounds (2026-10-29,
+[the bounds](../../roles/developer/docs/bounds.md)):
+
+- **Refused in the developer's judge step**, with no agent: a refused
+  patch is left out and the rest applied, as the documentalist's judge
+  narrows its fixes; each file said and kept in the claim's record.
+- **The rules, in order**: `gate-file`, `steering-file`,
+  `acceptance-test-edit`, `outside-scope`. The steering test is the
+  routine merge's ([ADR-0042]), moved to its own package to be shared.
+- **The frozen tests** are read from the tester's record on its open
+  Drafts, the frozen guard's ([ADR-0055](https://github.com/JN0V/workline/pull/648)).
+- **An objection** is a comment the agent proposes; the engine posts
+  it on the test's line of the tester's Draft, in the form the tester
+  reads.
+- **Labels and comments of the agent's** are refused: the claim is the
+  engine's. The catalogue has no merge.
+
 ## Consequences
 
 - Need to merge with no session opened; a person answers by kind only.
