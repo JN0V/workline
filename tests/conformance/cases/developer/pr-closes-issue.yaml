@@ -1,0 +1,46 @@
+case: developer/pr-closes-issue
+about: >
+  The developer's pull request (ADR-0054, step 4): run on the default
+  branch, its code starts from the tester's Draft, the acceptance tests
+  on it, and its pull request goes to the default branch. Its body
+  closes the issue and says what changed, what ran and what was not
+  tried; its record is hidden in workline's own comment on it, for its
+  next runs and the auditor (ADR-0046).
+given:
+  repo: tested-draft
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main workline/tester/issue-3 && git checkout -q main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:ready"]
+        body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        draft: true
+        comments: ["The tests of #3, frozen.\n\n<!-- workline:tester-record {\"issue\":3,\"base\":\"main\",\"files\":{\"tests/test_mul_by_zero.sh\":\"8f123a0bacbd681063880b867df38dd216784b97\",\"tests/test_mul_two_by_three.sh\":\"2dee0641bd7a79057ade7bff5af43b603125f543\"}} -->\n<!-- workline:sticky=tester/tests -->"]
+run: {develop: [], ai: "fake:developer-writes-mul"}
+expect:
+  status: pass
+  summary: "took #3; proven green, its pull request ready"
+  findings: [{rule: proof-green, where: "#3", message: "3 tests passed on its code, none red"}]
+  on-top: {workline/developer/3: workline/tester/issue-3}
+  pushed:
+    workline/developer/3:
+      lib.sh: "mul()"
+      tests/test_mul_by_zero.sh: "mul 5 0"
+  run-files:
+    in/task.md: {contains: ["Your code goes on the tester's branch", "[ \"$(mul 5 0)\" = 0 ]"]}
+  forge:
+    merge-requests:
+      - id: 2
+        branch: workline/developer/3
+        base: main
+        draft: false
+        title: "Multiply two numbers"
+        body-contains: ["Closes #3", "## Changes", "- Code: `lib.sh`.", "from `workline/tester/issue-3`: `tests/test_mul_by_zero.sh`, `tests/test_mul_two_by_three.sh`", "## Verification", "## Tried", "Not tried: the commands the issue names to verify it"]
+        comment-contains: ["<!-- workline:developer-act {\"act\":\"code\"", "\"proof\":{\"result\":\"green\"", "\"code\":[\"lib.sh\"]", "workline:sticky=developer/code"]

@@ -319,6 +319,17 @@ func (m *gitlabMock) serve(s *gitlabState, method, p string, q, form url.Values)
 			out = append(out, mr)
 		}
 		return out, 200
+	case p == "/merge_requests" && method == "POST":
+		// Opened by the token's user; a draft is a title starting "Draft:".
+		id := 1
+		for _, it := range s.MergeRequests {
+			id = max(id, it.ID+1)
+		}
+		title, draft := strings.CutPrefix(form.Get("title"), "Draft: ")
+		s.MergeRequests = append(s.MergeRequests, forge.FakeItem{ID: id, Title: title, Body: form.Get("description"),
+			Branch: form.Get("source_branch"), Base: form.Get("target_branch"), Draft: draft,
+			Labels: []string{}, Comments: []forge.FakeComment{}, Author: tokenUser})
+		return map[string]any{"iid": id}, 201
 	case p == "/api/v4/users/999", p == "/api/v4/user":
 		// The token's user, who sets a merge request to merge (merge_user):
 		// a bot, as a project access token's is.

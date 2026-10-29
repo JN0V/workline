@@ -5,7 +5,8 @@
 // patches held at apply to what the issue lets it touch (bounds.go). Step
 // 3, the proof and the caps: the project's tests on its code, its pull
 // request ready when green with no cap reached, else a Draft (proof.go).
-// The pull request's sections are a later step.
+// Step 4, the pull request: on the tester's Draft, its code and tests
+// apart, its record kept on it (pullrequest.go).
 package developer
 
 import (
@@ -81,6 +82,14 @@ type Act struct {
 	// on the run it reached (step 3).
 	Proof *Proof `json:"proof,omitempty"`
 	Caps  []Cap  `json:"caps,omitempty"`
+	// From: the tester's Draft's commit its code starts from, the
+	// acceptance tests on it, those for the issue in Acceptance; Code and
+	// Tests: the files its code and its tests wrote, in commits apart
+	// (step 4).
+	From       string   `json:"from,omitempty"`
+	Acceptance []string `json:"acceptance,omitempty"`
+	Code       []string `json:"code,omitempty"`
+	Tests      []string `json:"tests,omitempty"`
 }
 
 // number is a setting's whole number, 0 when not one.
@@ -251,10 +260,6 @@ func Pre(runDir, repo string) int {
 	}
 	at, _ := gitOut(repo, "rev-parse", "HEAD")
 	act := Act{Act: "pick", At: at, Issue: id, Passed: passed}
-	data, _ := json.Marshal(act)
-	if err := os.WriteFile(filepath.Join(runDir, "in", pickFile), data, 0o644); err != nil {
-		return fail(err)
-	}
 	if err := intent.Write(filepath.Join(runDir, "in", "fallback.yaml"), claimOf(act, s)); err != nil {
 		return fail(err)
 	}
@@ -268,13 +273,20 @@ func Pre(runDir, repo string) int {
 	if err != nil {
 		return external(err)
 	}
+	// Its code starts from the tester's Draft: the acceptance tests on it
+	// run in the proof (ADR-0054, step 4).
+	act.From, act.Acceptance = bounds.Head, bounds.acceptance()
+	data, _ := json.Marshal(act)
+	if err := os.WriteFile(filepath.Join(runDir, "in", pickFile), data, 0o644); err != nil {
+		return fail(err)
+	}
 	if data, err = json.Marshal(bounds); err != nil {
 		return fail(err)
 	}
 	if err := os.WriteFile(filepath.Join(runDir, "in", boundsFile), data, 0o644); err != nil {
 		return fail(err)
 	}
-	if err := os.WriteFile(filepath.Join(runDir, "in", "task.md"), []byte(taskText(is, bounds)), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(runDir, "in", "task.md"), []byte(taskText(is, bounds, frozenTexts(repo, bounds))), 0o644); err != nil {
 		return fail(err)
 	}
 	return 0
@@ -289,7 +301,7 @@ func claimOf(a Act, s Settings) []intent.Intention {
 }
 
 // taskText is the question: the issue, and what bounds the code.
-func taskText(is forge.Issue, b Bounds) string {
+func taskText(is forge.Issue, b Bounds, texts map[string]string) string {
 	var t strings.Builder
 	fmt.Fprintf(&t, "# Issue #%d: %s\n\n%s\n\n## What you may touch\n\n", is.ID, is.Title, strings.TrimSpace(is.Body))
 	if len(b.Scope) == 0 {
@@ -302,17 +314,15 @@ func taskText(is forge.Issue, b Bounds) string {
 		"Anything else is refused at apply, whatever the reason: say it in your answer, it belongs in an issue. " +
 		"Never, whatever the scope: the files that steer agents (AGENTS.md, CLAUDE.md, a page they link, a prompt), " +
 		"a role's folder, `.workline/`, the CI's workflows, a gate's definition.\n")
-	var frozen []string
-	for f, n := range b.Frozen {
-		if n == is.ID {
-			frozen = append(frozen, f)
-		}
-	}
-	if len(frozen) > 0 {
-		slices.Sort(frozen)
-		t.WriteString("\n## The tester's acceptance tests: frozen\n\nRead-only to you; make them pass. A patch touching one is refused.\n\n")
+	if frozen := b.acceptance(); len(frozen) > 0 {
+		t.WriteString("\n## The tester's acceptance tests: frozen\n\nRead-only to you; make them pass. A patch touching one is refused. " +
+			"Your code goes on the tester's branch, where they are.\n\n")
 		for _, f := range frozen {
-			fmt.Fprintf(&t, "- `%s`\n", f)
+			if text, ok := texts[f]; ok {
+				fmt.Fprintf(&t, "### `%s`\n\n```\n%s\n```\n\n", f, strings.TrimRight(text, "\n"))
+			} else {
+				fmt.Fprintf(&t, "- `%s`\n", f)
+			}
 		}
 		t.WriteString("\nOne that does not fit: object to it, a `comment` whose value is " +
 			"`{objection: {test: <file>, line: <n>, scenario: <its name>, kind: <interface | over-specified | contradicts | untestable | need>, why: <one or two sentences>}}`. " +
@@ -320,6 +330,33 @@ func taskText(is forge.Issue, b Bounds) string {
 	}
 	t.WriteString("\n## Your answer\n\nPatches only, and objections if any. No label, no other comment: the claim is the engine's.\n")
 	return t.String()
+}
+
+// acceptance are the tests the tester froze for the issue, sorted.
+func (b Bounds) acceptance() []string {
+	var out []string
+	for f, n := range b.Frozen {
+		if n == b.Issue {
+			out = append(out, f)
+		}
+	}
+	slices.Sort(out)
+	return out
+}
+
+// frozenTexts are the acceptance tests as the tester's Draft holds them,
+// for the agent to read: its checkout is the default branch's.
+func frozenTexts(repo string, b Bounds) map[string]string {
+	texts := map[string]string{}
+	if b.Head == "" {
+		return texts
+	}
+	for _, f := range b.acceptance() {
+		if text, err := gitOut(repo, "show", b.Head+":"+f); err == nil {
+			texts[f] = text
+		}
+	}
+	return texts
 }
 
 // claimBody is the comment the claim leaves on the issue, its record hidden.
@@ -403,7 +440,12 @@ func Post(runDir, repo string) int {
 		v.Findings = append(v.Findings, verdict.Finding{Rule: "no-code", Level: "warn", Where: where,
 			Message: "its agent wrote no code within its bounds: nothing to prove, no pull request; the claim stays until a person removes it"})
 	} else {
-		p, over := prove(repo, a.At, patches, s)
+		a.Code, a.Tests = written(patches)
+		on := a.At
+		if a.From != "" {
+			on = a.From // the tester's Draft, its acceptance tests on it
+		}
+		p, over := prove(repo, on, patches, s)
 		a.Proof = &p
 		if over != nil {
 			a.Caps = append(a.Caps, *over)
