@@ -7,15 +7,14 @@ mission: A ready issue becomes a pull request that proves its Verification, writ
 #        nobody, not taken already, no open merge request closing it, its
 #        Scope clear of the issues the developer holds. With an agent, the
 #        engine claims it: the claim label and a comment holding the
-#        record; the agent writes the code, held to its bounds at apply
-#        (step 2, docs/bounds.md). With none, it is named, nothing
-#        claimed. The proof and the pull request: steps 3 and 4.
+#        record. With none, it is named, nothing claimed. No code is
+#        written yet: steps 2 to 4.
 events: [issue]
 
 requires: [git]
 
-# Writing the code an issue asks for is judgement on code; the pick and
-# the bounds are mechanical and ask no agent.
+# Writing the code an issue asks for is judgement on code (steps 2 on);
+# the pick is mechanical and asks no agent.
 model:
   capability: coding
   tier: standard
@@ -27,12 +26,11 @@ context:
 
 duties:
   reads: ["**"]
-  writes: ["**"]   # held, file by file, to the issue's bounds by post (docs/bounds.md)
+  writes: []   # step 1 writes no file
 
-# label and comment are the engine's, never the agent's: the claim and
-# its record on the issue. The agent's: patches, and a comment that is an
-# objection to a frozen test; post refuses any other (docs/bounds.md).
-intentions: [patch, comment, label]
+# comment and label are the engine's, never the agent's: the claim and
+# its record on the issue.
+intentions: [comment, label]
 
 without-ai: pass   # with none, the issue is named, nothing claimed
 

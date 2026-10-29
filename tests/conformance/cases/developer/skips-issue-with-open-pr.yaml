@@ -12,11 +12,11 @@ given:
     merge-requests:
       - {id: 5, branch: feat/mul, base: main, title: "feat: multiply", body: "Closes #2", labels: [], comments: []}
       - {id: 6, branch: workline/tester/issue-3, base: main, draft: true, title: "test: the acceptance tests of #3", body: "Refs #3", labels: [], comments: []}
-run: {develop: [], ai: "fake:developer-nothing"}
+run: {develop: [], ai: "cmd:true"}
 expect:
   status: pass
   summary: "took #3"
-  agent-calls: 1
+  agent-calls: 0
   forge:
     issues:
       - {id: 2, labels: ["workline:ready"], comments: 0}
