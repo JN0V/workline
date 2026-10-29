@@ -24,7 +24,9 @@ func TestPreBlocksWithoutMergeRequest(t *testing.T) {
 			}
 			t.Setenv("WORKLINE_OPEN_MERGE_REQUESTS", "")
 			if !set {
-				os.Unsetenv("WORKLINE_OPEN_MERGE_REQUESTS")
+				if err := os.Unsetenv("WORKLINE_OPEN_MERGE_REQUESTS"); err != nil {
+					t.Fatal(err)
+				}
 			}
 			if code := Pre(runDir, t.TempDir()); code != exitNothing {
 				t.Fatalf("exit %d, want %d", code, exitNothing)
