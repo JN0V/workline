@@ -19,7 +19,7 @@ expect:
   findings:
     - {rule: auto-merge-on, where: "#9", message: "with no person's yes, workline's own reader — it rewords pages an agent read for their reader —, opened and pushed by its App, every commit its own"}
   no-findings: [{rule: waits-for-a-yes}]
-  summary-file: ["merge policy (normal; with no person's yes: workline's own merge requests, records, derived, docs, reader)"]
+  summary-file: ["merge policy (normal; with no person's yes: workline's own merge requests, records, derived, docs, reader, code)"]
   forge:
     merge-requests:
       - {id: 9, auto-merge: true, comments: 1, comment-contains: ["Merging with no person's yes", "workline's own reader", "workline:merge-alone=reader"]}
