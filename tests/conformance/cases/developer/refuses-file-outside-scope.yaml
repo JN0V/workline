@@ -7,19 +7,23 @@ about: >
   and kept in the claim's record, for the auditor (ADR-0046).
 given:
   repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
   forge:
     issues:
       - {id: 2, title: "Multiply", labels: ["workline:ready"], body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: a `mul` function.\n"}
 run: {develop: [], ai: "fake:developer-outside-scope"}
 expect:
   status: pass
-  summary: "took #2; 1 of its agent's proposals refused at apply"
+  summary: "took #2; 1 of its agent's proposals refused at apply; a Draft: unproven"
   agent-calls: 1
   findings: [{rule: outside-scope, level: warn, where: README.md}]
   files:
-    lib.sh: {contains: ["mul()"]}
-    tests/test_mul.sh: {exists: true}
     README.md: {lacks: ["It multiplies now"]}
+  pushed:
+    workline/developer/2:
+      lib.sh: "mul()"
+      tests/test_mul.sh: "mul 2 3"
   forge:
     issues:
       - id: 2

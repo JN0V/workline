@@ -2,8 +2,10 @@
 // takes a ready issue to a pull request. Step 1, the pick: the first ready
 // issue nobody claimed, in the backlog's order, claimed by a label the
 // engine puts with a record on the issue. Step 2, the bounds: the agent's
-// patches held at apply to what the issue lets it touch (bounds.go). The
-// proof and the pull request are later steps.
+// patches held at apply to what the issue lets it touch (bounds.go). Step
+// 3, the proof and the caps: the project's tests on its code, its pull
+// request ready when green with no cap reached, else a Draft (proof.go).
+// The pull request's sections are a later step.
 package developer
 
 import (
@@ -18,6 +20,8 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+
+	"go.yaml.in/yaml/v3"
 
 	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/forge"
@@ -40,6 +44,10 @@ type Settings struct {
 	// ClaimLabel is the label that says the developer took an issue: the
 	// forge's assignee where it cannot assign workline's App (GitHub).
 	ClaimLabel string
+	// MaxTokens is the engine's ai-max-tokens: the run's calls spending it
+	// is a cap reached. ProofSeconds bound the test command's run.
+	MaxTokens    int
+	ProofSeconds int
 }
 
 // SettingsFrom reads the settings.
@@ -48,6 +56,7 @@ func SettingsFrom(m map[string]any) Settings {
 	if v, ok := m["claim-label"].(string); ok && strings.TrimSpace(v) != "" {
 		s.ClaimLabel = strings.TrimSpace(v)
 	}
+	s.MaxTokens, s.ProofSeconds = number(m["ai-max-tokens"]), number(m["proof-seconds"])
 	return s
 }
 
@@ -68,6 +77,21 @@ type Act struct {
 	// Refused: each file its agent's patches reached past its bounds, and
 	// the bound (ADR-0054, step 2).
 	Refused []Refusal `json:"refused,omitempty"`
+	// Proof: what the project's tests said on its code; Caps: the bounds
+	// on the run it reached (step 3).
+	Proof *Proof `json:"proof,omitempty"`
+	Caps  []Cap  `json:"caps,omitempty"`
+}
+
+// number is a setting's whole number, 0 when not one.
+func number(v any) int {
+	switch n := v.(type) {
+	case int:
+		return n
+	case float64:
+		return int(n)
+	}
+	return 0
 }
 
 var actData = regexp.MustCompile(`<!-- ` + ActMark + ` (\{.*\}) -->`)
@@ -315,6 +339,9 @@ func claimBody(a Act, s Settings) string {
 			fmt.Fprintf(&b, "- `%s`: %s\n", r.File, why(r))
 		}
 	}
+	if a.Proof != nil {
+		b.WriteString("\nIts code on the project's tests:\n\n" + proofLines(*a.Proof, a.Caps))
+	}
 	fmt.Fprintf(&b, "\n%s\n", a.Line())
 	return b.String()
 }
@@ -366,8 +393,42 @@ func Post(runDir, repo string) int {
 	if n := len(refused) + len(said); n > 0 {
 		v.Summary += fmt.Sprintf("; %d of its agent's proposals refused at apply", n)
 	}
-	v.Findings = append(v.Findings, verdict.Finding{Rule: "pull-request-not-built", Level: "warn", Where: where,
-		Message: "the developer's patches within its bounds are applied to the working tree; proving them and opening the pull request are not built yet (ADR-0054, steps 3 and 4): a person takes it from here, or removes the label"})
+	var patches []intent.Intention
+	for _, in := range kept[len(claim):] {
+		if in.Kind == "patch" {
+			patches = append(patches, in)
+		}
+	}
+	if len(patches) == 0 {
+		v.Findings = append(v.Findings, verdict.Finding{Rule: "no-code", Level: "warn", Where: where,
+			Message: "its agent wrote no code within its bounds: nothing to prove, no pull request; the claim stays until a person removes it"})
+	} else {
+		p, over := prove(repo, a.At, patches, s)
+		a.Proof = &p
+		if over != nil {
+			a.Caps = append(a.Caps, *over)
+		}
+		if c := tokensCap(runDir, s.MaxTokens); c != nil {
+			a.Caps = append(a.Caps, *c)
+		}
+		v.Findings = append(v.Findings, proofFindings(where, p, a.Caps)...)
+		mr := mergeRequest(a, issueTitle(runDir, a.Issue))
+		if mr["draft"] == true {
+			v.Summary += "; a Draft: " + p.Result
+			if len(a.Caps) > 0 {
+				v.Summary += ", a cap reached"
+			}
+		} else {
+			v.Summary += "; proven green, its pull request ready"
+		}
+		data, err := yaml.Marshal(mr)
+		if err != nil {
+			return fail(err)
+		}
+		if err := os.WriteFile(filepath.Join(runDir, "out", "merge-request.yaml"), data, 0o644); err != nil {
+			return fail(err)
+		}
+	}
 	// The claim carries the record, the refusals in it (ADR-0046).
 	kept = append(claimOf(a, s), kept[len(claim):]...)
 	if err := os.Remove(filepath.Join(runDir, "out", "intentions.yaml")); err != nil && !errors.Is(err, os.ErrNotExist) {

@@ -6,6 +6,8 @@ about: >
   frozen tests are read from the tester's own record, the guard's.
 given:
   repo: tested-draft
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main workline/tester/issue-3"
   config:
     roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
   forge:
@@ -25,8 +27,10 @@ expect:
   agent-calls: 1
   findings: [{rule: acceptance-test-edit, level: warn, where: tests/test_mul_by_zero.sh}]
   files:
-    lib.sh: {contains: ["mul()"]}
     tests/test_mul_by_zero.sh: {contains: ["[ \"$(mul 5 0)\" = 0 ]"]}
+  pushed:
+    workline/developer/3:
+      lib.sh: "mul()"
   forge:
     issues:
       - id: 3

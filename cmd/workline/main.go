@@ -1218,7 +1218,7 @@ func developCmd(args []string) int {
 	}
 	absRoles, _ := filepath.Abs(rolesDir)
 	res := engine.Run(engine.Options{Repo: abs, RolesDir: absRoles, Role: "developer", Event: "issue", AI: *ai,
-		Forge: *forgeSpec, Target: target, NoApply: *noApply})
+		Forge: *forgeSpec, Target: target, NoApply: *noApply, OpenMergeRequest: true})
 	if *asJSON {
 		out, _ := json.MarshalIndent(res, "", "  ")
 		fmt.Println(string(out))
