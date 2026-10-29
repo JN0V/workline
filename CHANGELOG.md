@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.53.0](https://github.com/JN0V/workline/compare/v0.52.0...v0.53.0) (2026-10-29)
+
+
+### Features
+
+* **developer:** open its pull request on the tester's Draft ([#682](https://github.com/JN0V/workline/issues/682)) ([e29b141](https://github.com/JN0V/workline/commit/e29b141d23345ea95efd383378df4d3cfd3be55c))
+* **developer:** the triggers, a ready issue and the schedule ([#684](https://github.com/JN0V/workline/issues/684)) ([5528cb1](https://github.com/JN0V/workline/commit/5528cb15cd8390a87e4300c1914a4906ac2e2f44))
+
 ## [0.52.0](https://github.com/JN0V/workline/compare/v0.51.0...v0.52.0) (2026-10-29)
 
 
