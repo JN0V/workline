@@ -201,7 +201,9 @@ saying so.
 ## Expect, after the run
 
 - `pushed` / `pushed-message` — a text a file holds on a branch of the
-  case's `origin`, or the message of that branch's tip.
+  case's `origin`, or the message of that branch's tip; `pushed-log` —
+  texts its commits past `main` hold, oldest first, each subject then
+  its files, in the order given.
 - `not-pushed` — branches of the case's `origin` the run left where they
   were; `on-top` — a branch of `origin` whose tip holds another's
   (`{workline/documentalist/suspect: main}`); `merged` — a branch of

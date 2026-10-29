@@ -89,6 +89,9 @@ Each in detail: [the commands](commands.md), and
   dropped even when you set one (`CLAUDE_EFFORT`: the effort is the
   role's, or `claude:@<effort>`'s). Your login (`CLAUDE_CODE_OAUTH_TOKEN`,
   `ANTHROPIC_API_KEY`…) and other settings pass.
+- **No agent gets a forge token**: `claude` and `cmd:` are called
+  without `GH_TOKEN`, `GITHUB_TOKEN`, `GITLAB_TOKEN`, the App's key or
+  the signing key; the engine writes to the forge, the agent proposes.
 
 ### The forge
 
@@ -154,8 +157,8 @@ Each in detail: [the commands](commands.md), and
 `cmd:<command>` makes any command the agent: another provider's CLI, or a
 wrapper around your own. It runs with `sh -c`, outside the repository:
 
-- it gets your environment as it is, a Claude Code session's variables
-  included;
+- it gets your environment, a Claude Code session's variables included,
+  the forge's tokens left out;
 - its input is the prompt, the role's persona first;
 - `WORKLINE_TIER` and `WORKLINE_EFFORT` say what the role asks (`light`,
   `standard`, `frontier`; `none` to `max`), for it to pick its model;
