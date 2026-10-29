@@ -1,4 +1,4 @@
-# Tester — where it stands (2026-10-28)
+# Tester — where it stands (2026-10-29)
 
 **In one line:** `workline test write --issue <n>` has the agent write
 a test for each named scenario of a ready issue, proves them red on the
@@ -39,8 +39,15 @@ hold:
    [#264](https://github.com/JN0V/workline/issues/264), on workline and
    on a copy of a real repository: a bug shown by a red test first, then
    green.
-3. **AI verdicts measured**: open. The tests `test write` writes,
-   measured against the scenarios they cover: one try so far. Its acts
+3. **AI verdicts measured**: in part. Seven evaluation cases with known
+   answers (`tests/evaluation/cases/tester/`): `test write` (a bug, a
+   name the base lacks, a scenario no test can check), `test answer` (a
+   right objection, a wrong one), `test curate` (a true duplicate, a
+   near-duplicate of another branch). On Sonnet, 30 of 35 runs passed
+   every check; the miss, 5 of 5: the curator merges the near-duplicate
+   rather than keeping it, both branches still checked
+   ([tried](https://github.com/JN0V/workline/pull/672)). Left: another
+   model, more runs over time. Its acts
    are observable: the auditor's weekly sample draws them
    ([ADR-0046](../../../docs/adr/0046-the-auditor-re-checks-every-roles-acts.md#amendment-2026-10-28-the-testers-row)).
 
