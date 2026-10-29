@@ -3,7 +3,7 @@ sources:
   - internal/developer/bounds.go
   - internal/developer/developer.go
   - internal/steer/steer.go
-checked: 5b4d9511
+checked: 9d472ac7
 verified: agent:claude-code
 ---
 # The bounds: what its code may never touch
@@ -40,8 +40,8 @@ matches refuses the whole patch:
 - the paths in backticks in the issue's Scope;
 - the product owner's `sources` for the issue;
 - the tests beside them: a name holding `test` or `spec`, in a Scope
-  path's folder or under it, or in a `test`/`tests` folder that sits
-  there.
+  file's folder or under a Scope folder, or in a `test`/`tests` folder
+  that sits there. A Scope `src` lets in no test at the root.
 
 **Never in bounds:**
 
