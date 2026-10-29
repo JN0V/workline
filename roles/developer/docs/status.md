@@ -141,6 +141,10 @@ prove the grading first (`TestDeveloperWithStandIns`).
   Draft planted: proven green, ready, at the second run; at the
   first, a malformed line in the agent's diff kept it from applying,
   said in a Draft.
+- **A copy of DomoticsCore**, a C++ library, local with a simulated
+  forge: a bug planted in a header, two tests frozen by the tester's
+  Draft, built with g++. Proven green and ready at its first run, the
+  original line restored, about 3.5k tokens.
 
 ## Missing
 
