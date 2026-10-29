@@ -55,6 +55,10 @@ type caseFile struct {
 		Event   string            `yaml:"event"`
 		Message string            `yaml:"message"` // commit-msg: the message the author wrote
 		Input   map[string]string `yaml:"input"`
+		// The tester's runs, as `workline test write` and `answer` start
+		// them: where it acts, and whether its branch opens a merge request.
+		Target           string `yaml:"target"` // issue:<n> or merge-request:<n>
+		OpenMergeRequest bool   `yaml:"open-merge-request"`
 	} `yaml:"run"`
 	Grade  []map[string]any `yaml:"grade"`
 	Review *reviewCase      `yaml:"review"` // a reviewer case: what is planted, scored with no agent (review_test.go)
@@ -265,6 +269,12 @@ func play(t *testing.T, c *caseFile, ai string) (*run, error) {
 	}
 	if l := os.Getenv("WORKLINE_EVAL_LENSES"); l != "" && c.Review != nil {
 		args = append(args, "--input", "lenses="+l) // the reviewer's lenses a measure asks, `diff-alone` among them
+	}
+	if c.Run.Target != "" {
+		args = append(args, "--target", c.Run.Target)
+	}
+	if c.Run.OpenMergeRequest {
+		args = append(args, "--open-merge-request")
 	}
 	if c.Given.Forge != nil { // the issues a change closes, for the intent lens
 		forgeFile := filepath.Join(work, "forge.json")
@@ -508,6 +518,15 @@ func check(kind string, v any, c *caseFile, r *run) string {
 			if got := documentalist.BodyLines(string(data)); got > n.(int) {
 				return fmt.Sprintf("%s has %d lines below its header", path, got)
 			}
+		}
+	case "sh":
+		// What no check of its own says: a shell line run in the
+		// repository, passing when it exits 0. The simulated forge's state
+		// is ../forge.json, the branches pushed are in ../origin.git.
+		cmd := exec.Command("sh", "-c", fmt.Sprint(v))
+		cmd.Dir = r.repo
+		if out, err := cmd.CombinedOutput(); err != nil {
+			return fmt.Sprintf("%q: %v %.300s", v, err, strings.Join(strings.Fields(string(out)), " ")) // one line of results.tsv
 		}
 	case "new-files-min":
 		out, _ := exec.Command("git", "-C", r.repo, "ls-files", "--others", "--exclude-standard").Output()

@@ -1,0 +1,42 @@
+case: tester/rewrites-a-test-of-an-implementation-detail
+about: >
+  The tester's Draft for issue #3 (mul): its Two-by-three test also greps
+  lib.sh for mul's exact source line. The builder objects, rightly: the
+  scenario asks for 6, not for how mul is written. Expected: the test
+  rewritten on the branch, still checking that mul 2 3 prints 6, no
+  longer reading mul's source; still red on the base (the engine checks
+  it before it pushes).
+given:
+  repo: tested-draft
+  setup:
+    - |
+      cat > tests/test_mul_two_by_three.sh <<'T'
+      # Scenario: Two by three
+      # Given the library, When I multiply 2 by 3, Then I get 6.
+      . ./lib.sh
+      [ "$(mul 2 3)" = 6 ] && grep -q '^mul() { echo $(($1 \* $2)); }$' lib.sh
+      T
+      git commit -q -am "test: the acceptance tests of #3, as written" -m "Workline-Role: tester"
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main workline/tester/issue-3"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:ready"]
+        body: "## Need\n\nWhen I total an order, I want to multiply a price by a count, so I need not add it up by hand.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **By zero:** Given the library, When I multiply 5 by 0, Then I get 0.\n\n---\n\n## Verification\n\nA test a scenario, in tests/.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        draft: true
+        comments: ["The tests of #3, frozen.\n\n<!-- workline:tester-record {\"issue\":3,\"base\":\"main\",\"files\":{\"tests/test_mul_by_zero.sh\":\"8f123a0bacbd681063880b867df38dd216784b97\",\"tests/test_mul_two_by_three.sh\":\"3e6f369cde2f75cd6130336259c7ad70db1a042b\"}} -->\n<!-- workline:sticky=tester/tests -->"]
+        threads:
+          - {id: "7", path: tests/test_mul_two_by_three.sh, line: 4, author: builder, body: "workline:objection\n- test: tests/test_mul_two_by_three.sh\n- scenario: Two by three\n- kind: over-specified\n- why: the test greps lib.sh for mul's exact source line; mul written another way, with expr or a loop, prints 6 and still fails it"}
+run: {role: tester, event: objection, target: "merge-request:1"}
+grade:
+  - {status: pass}
+  - {agent-calls-max: 1}
+  - {sh: "git --git-dir=../origin.git show workline/tester/issue-3:tests/test_mul_two_by_three.sh | grep -q 'mul 2 3'"}
+  - {sh: "! git --git-dir=../origin.git show workline/tester/issue-3:tests/test_mul_two_by_three.sh | grep -q 'grep'"}
+  - {sh: "grep -q 'Rewritten' ../forge.json"}
