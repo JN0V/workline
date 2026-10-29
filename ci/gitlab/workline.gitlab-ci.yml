@@ -584,18 +584,11 @@ workline:objection:apply:
     reports: {annotations: workline-annotations.json}
     expire_in: 1 week
 
-# The developer takes a ready issue (ADR-0054): routed in the project's
-# `issue` line (`routing: {events: {issue: [developer]}}`), it claims the
-# issue, writes its code, proves it with your test command, and opens its
-# merge request. GitLab starts no pipeline on a label: a tool given the
-# project's issue webhook starts one on the default branch, through the
-# pipelines API or a trigger token, with WORKLINE_TASK=develop and
-# ISSUE_IID, the issue labelled workline:ready (docs/gitlab-trigger.md);
-# without ISSUE_IID, the first ready issue nobody took. Its schedule is
-# gardening's: list `developer` in the `schedule` line
-# (roles/developer/docs/triggers.md). One at a time (resource_group): a
-# second run reads the first's claim. Install your test runner in the
-# judge: the code is proven there.
+# The developer takes a ready issue (ADR-0054), routed `issue: [developer]`:
+# a pipeline a tool starts on the issue webhook, WORKLINE_TASK=develop and
+# ISSUE_IID (docs/gitlab-trigger.md); without ISSUE_IID, the first ready
+# issue nobody took. One at a time (resource_group). Install your test
+# runner in the judge. Why each part: roles/developer/docs/triggers.md.
 .workline:develop:
   image: $WORKLINE_IMAGE:$WORKLINE_VERSION
   environment: *environment

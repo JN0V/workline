@@ -1665,6 +1665,7 @@ func TestDeveloperTemplatesRouteTheReadyIssue(t *testing.T) {
 		Concurrency map[string]any `yaml:"concurrency"`
 		Jobs        map[string]struct {
 			If          string            `yaml:"if"`
+			Concurrency map[string]any    `yaml:"concurrency"`
 			Permissions map[string]string `yaml:"permissions"`
 			Steps       []struct {
 				Run string            `yaml:"run"`
@@ -1675,10 +1676,13 @@ func TestDeveloperTemplatesRouteTheReadyIssue(t *testing.T) {
 	if err := yaml.Unmarshal(data, &wf); err != nil {
 		t.Fatal(err)
 	}
-	if _, ok := wf.On["issues"]; !ok || wf.Concurrency["cancel-in-progress"] != false {
-		t.Errorf("workline-develop.yml: not woken by an issue's label, or not one run at a time: %v %v", wf.On, wf.Concurrency)
-	}
 	judge := wf.Jobs["judge"]
+	// The group on the judge, after its `if`, per issue: a label other
+	// than ready never takes it, so never drops a ready issue's run.
+	if _, ok := wf.On["issues"]; !ok || wf.Concurrency != nil || judge.Concurrency["cancel-in-progress"] != false ||
+		!strings.Contains(fmt.Sprint(judge.Concurrency["group"]), "github.event.issue.number") {
+		t.Errorf("workline-develop.yml: not woken by an issue's label, or its group not on the judge, one an issue: %v %v %v", wf.On, wf.Concurrency, judge.Concurrency)
+	}
 	if !strings.Contains(judge.If, "workline:ready") || judge.Permissions["contents"] != "read" {
 		t.Errorf("workline-develop.yml, judge: not on the ready label, or holds a write token: %q %v", judge.If, judge.Permissions)
 	}

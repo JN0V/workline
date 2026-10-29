@@ -1,22 +1,10 @@
-# workline's developer woken by a ready issue, on GitHub Actions — copy to
-# .github/workflows/workline-develop.yml, and route it in
-# .workline/config.yaml: `routing: {events: {issue: [developer]}}`.
-# An issue labelled workline:ready (the product owner's, or a person's)
-# runs the project's `issue` line on that issue: the developer claims it,
-# writes its code, proves it with your test command, and opens its pull
-# request (ADR-0054). Run by hand with no issue, it takes the first ready
-# issue nobody took. Its schedule is gardening's: list `developer` in the
-# `schedule` line (roles/developer/docs/triggers.md).
-# A label the job's own token puts starts no workflow on GitHub: the App's
-# does; else the schedule takes the issue.
-#
-# Two jobs, two trust zones, as gardening's:
-#   judge  the agent (secret CLAUDE_CODE_OAUTH_TOKEN), a read token for the
-#          pick, no write token; the engine gives the agent no forge token
-#          at all. It runs your test command: install your test runner
-#          there. Without the agent, the issue is named, nothing claimed.
-#   apply  the App's key (environment workline-app), no AI key: the
-#          claim, the branch, the pull request.
+# workline's developer woken by a ready issue, on GitHub Actions: copy to
+# .github/workflows/workline-develop.yml, route `issue: [developer]` in
+# .workline/config.yaml (ADR-0054). An issue labelled workline:ready runs
+# the issue line on it; by hand with no issue, the first nobody took.
+#   judge  the agent and a read token; install your test runner there.
+#   apply  the App's key (environment workline-app), no AI key.
+# Why each part: roles/developer/docs/triggers.md.
 name: workline develop
 on:
   issues: {types: [labeled]}
@@ -24,10 +12,6 @@ on:
     inputs:
       issue: {description: "the ready issue to take; empty: the first nobody took", required: false, default: ""}
 permissions: {}
-# One developer at a time: a second run waits, and reads the first's claim.
-# GitHub keeps one run waiting: an older one waiting is dropped, its issue
-# left to the next run or the schedule.
-concurrency: {group: workline-develop, cancel-in-progress: false}
 
 env:
   WORKLINE_VERSION: v0.52.0          # a release of workline: update it to take a newer one (x-release-please-version)
@@ -38,6 +22,11 @@ jobs:
     if: >-
       github.event_name == 'workflow_dispatch' ||
       (github.event.label.name == 'workline:ready' && github.event.issue.state == 'open' && !github.event.issue.pull_request)
+    # On the job, after its `if`: another label takes no group. One run an
+    # issue; ready issues apart run side by side.
+    concurrency:
+      group: workline-develop-${{ github.event.issue.number || inputs.issue || 'first' }}
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     permissions: {contents: read, pull-requests: read, issues: read}
     env: {HAS_CLAUDE: "${{ secrets.CLAUDE_CODE_OAUTH_TOKEN != '' }}"}
