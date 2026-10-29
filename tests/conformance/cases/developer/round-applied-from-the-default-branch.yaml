@@ -1,0 +1,43 @@
+case: developer/round-applied-from-the-default-branch
+about: >
+  As CI runs it (ci/github/workline-develop.yml): the round proposes on
+  its pull request's head, holding no write token; a job apart, on the
+  default branch's checkout, applies it from the merge request, its fix
+  pushed on the developer's own branch, the record kept.
+given:
+  repo: tested-draft
+  setup:
+    - "git checkout -q -b workline/developer/3 && printf 'add() { echo $(($1 + $2)); }\\nmul() { echo $(($1 + $2)); }\\n' > lib.sh && git commit -qam 'feat: mul for #3' -m 'Workline-Role: developer' && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main workline/tester/issue-3 workline/developer/3"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:ready", "workline:developing"]
+        body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        draft: true
+        comments: ["The tests of #3, frozen.\n\n<!-- workline:tester-record {\"issue\":3,\"base\":\"main\",\"files\":{\"tests/test_mul_by_zero.sh\":\"8f123a0bacbd681063880b867df38dd216784b97\",\"tests/test_mul_two_by_three.sh\":\"2dee0641bd7a79057ade7bff5af43b603125f543\"}} -->\n<!-- workline:sticky=tester/tests -->"]
+      - id: 2
+        branch: workline/developer/3
+        title: "Multiply two numbers"
+        body: "Closes #3"
+        comments:
+          - "**The developer**'s record of this pull request, for its next runs and the auditor.\n\n<!-- workline:developer-act {\"act\":\"code\",\"issue\":3,\"acceptance\":[\"tests/test_mul_by_zero.sh\",\"tests/test_mul_two_by_three.sh\"],\"code\":[\"lib.sh\"],\"proof\":{\"result\":\"red\",\"passed\":1,\"red\":[\"test_mul_two_by_three\"]}} -->\n<!-- workline:sticky=developer/code -->"
+          - "**workline reviewer**\n\n| | | Where | Finding |\n|---|---|---|---|\n| **blocks** | correctness | `lib.sh:2` | Important: mul adds its operands — mul 2 3 gives 5, not 6. Fix: multiply. |\n\n<!-- workline:record reviewed=1111111 runs=1 -->\n<!-- workline:sticky=reviewer/summary -->"
+run: {develop: [--merge-request, "2", --no-apply], ai: "fake:developer-writes-mul", then: resume, apply-from: {merge-request: 2, base: main, head: workline/developer/3}}
+expect:
+  status: pass
+  agent-calls: 1
+  pushed:
+    workline/developer/3:
+      lib.sh: "$1 * $2"
+  pushed-message:
+    workline/developer/3: "fix: the review's findings on #3, round 1"
+  forge:
+    merge-requests:
+      - id: 2
+        comment-contains: ["\"round\":1", "review round 1 of 5"]

@@ -97,10 +97,6 @@ func ResumeFrom(listed string, from FromMergeRequest) *Result {
 			refuse(fmt.Sprintf("it names the role %q, none of this engine's", was.Role))
 			return nil
 		}
-		if !r.Accepts("merge-request") {
-			refuse(fmt.Sprintf("the %s does not run on a merge request", r.Name))
-			return nil
-		}
 		intents, err := intent.Read(filepath.Join(runDir, "out", "intentions.yaml"))
 		if err != nil {
 			return err
@@ -122,6 +118,12 @@ func ResumeFrom(listed string, from FromMergeRequest) *Result {
 		}
 		if !mr.Here {
 			refuse(fmt.Sprintf("merge request #%d comes from a fork", from.ID))
+			return nil
+		}
+		// A role runs on a merge request's event, or on a review of its
+		// own branch (the developer's round, ADR-0054).
+		if !r.Accepts("merge-request") && !(r.Accepts("review") && strings.HasPrefix(mr.Branch, branchPrefix(r.Name))) {
+			refuse(fmt.Sprintf("the %s does not run on a merge request", r.Name))
 			return nil
 		}
 		for _, in := range intents {
