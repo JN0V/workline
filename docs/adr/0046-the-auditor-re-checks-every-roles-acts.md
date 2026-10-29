@@ -8,7 +8,7 @@
   folded in (2026-10-17, [settled while building](#settled-while-building));
   the tester's acts (2026-10-28, [the tester's row](#amendment-2026-10-28-the-testers-row));
   the auditor measured (2026-10-29, [amendment](#amendment-2026-10-29-the-auditor-measured));
-  the developer's pick recorded, not drawn (2026-10-29, [the developer's row](#amendment-2026-10-29-the-developers-row))
+  the developer's pick recorded, not drawn, its code drawn (2026-10-29, [the developer's row](#amendment-2026-10-29-the-developers-row))
 - **Date:** 2026-10-14
 - **Decided by:** the maintainer, on 2026-10-14: [#205] and [#276] built
   together, the share one in ten; the open points settled as below
@@ -59,7 +59,7 @@ so a rare kind is still read ([research]).
 | Reviewer | an important finding its judge let through, or dropped | about 160 a week: 39, 121 | 17 |
 | Committer | a message it rewrote | 7 in two weeks, at least | 1 |
 | Tester | its tests; an objection answered kept or rewritten; the five whys a third answer gives; a curator's removal ([amendment](#amendment-2026-10-28-the-testers-row)) | none merged yet | 1 a kind |
-| Developer | its pick: recorded, not drawn, mechanical; its code from [ADR-0054]'s step 4 ([amendment](#amendment-2026-10-29-the-developers-row)) | none yet | 0 |
+| Developer | its code, on its merge requests merged; its pick: recorded, not drawn, mechanical ([amendment](#amendment-2026-10-29-the-developers-row)) | none yet | 1 |
 
 Not drawn, and why:
 
@@ -92,6 +92,7 @@ completed:
 | Reviewer | its summary comment | a hidden line per finding judged — lens, place, commit, yes or no, both models — kept for the merge request's life, on every forge |
 | Committer | the commit and its diff | trailers `Workline-Role: committer` and `Workline-Model`; never the author's words |
 | Tester | its merge requests merged: its commits, the record on its Draft, its replies, the curator's pull request | the scenarios read, in the record; a hidden line per answer — the commit read at, the models, the scenario, a rewrite's blob |
+| Developer | its merge requests merged: its commits, the record on its pull request | trailers `Workline-Role: developer` and `Workline-Model`; the record's proof |
 
 - **A commit gone from `main`**, as in W41: fetched from the forge's ref
   of its merge request (`refs/pull/<n>/head`; on GitLab
@@ -122,6 +123,7 @@ finding was kept: it answers blind, and the engine compares.
 | A finding | Does the code fail as the finding says? The lens's question | the code's words |
 | A rewrite | Does the message say what the commit does, nothing more? Against the diff alone | the message's words, and the diff's |
 | The tester's acts | Its tests check their Then, red for it? Kept, rewritten: the Then kept? Five whys: each because shown? Removed: redundant? ([amendment](#amendment-2026-10-28-the-testers-row)) | the test's words, the scenario's |
+| The developer's code | Does it do what the issue's Validation asks, within its Scope, nothing more? ([amendment](#amendment-2026-10-29-the-developers-row)) | the diff's words, the issue's |
 
 - **Another model than every model that acted**: for a finding, neither
   the lens's nor the judge's. Workline has one provider and several
@@ -369,8 +371,13 @@ Built with [ADR-0054]'s first step, the pick, before any code:
   read, the issue taken, each ready issue passed over and why.
 - **Not drawn**: the pick is the engine's own move, no agent asked —
   mechanical, as above; its conformance cases prove it.
-- **Drawn from step 4**: its code, on its merge requests merged, as the
-  tester's are; the record of the pick read with it.
+- **Drawn from step 4**: its code, on each merge request merged from a
+  `workline/developer/` branch, as the tester's are. Read: its own
+  commits on the head (`Workline-Role: developer`), the tester's under
+  them left out; the record on its pull request (`sticky=developer/code`).
+- **Its material**: the issue as it reads now, the diff of its commits
+  (its code and its tests), the proof's lines; the question in
+  `kinds/code.md`.
 - **Its bounds** (step 2): the same record keeps each file its patches
   were refused at apply, and the rule — mechanical, not drawn. Its
   objections to a frozen test are read in the tester's threads, where

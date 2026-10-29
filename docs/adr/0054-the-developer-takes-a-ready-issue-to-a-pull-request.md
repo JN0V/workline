@@ -230,8 +230,9 @@ Step 4, the pull request (2026-10-29,
   whatever the role; the job split is step 5's.
 - **Judged at model** by the reviewer's `judge-at-least-by-role`, read
   from the commits' `Workline-Role` trailer, not the branch's name.
-- **The auditor's draw** of its code waits: its record is on the pull
-  request.
+- **The auditor's draw** of its code: its merge requests merged, its
+  own commits and the record on the pull request
+  ([ADR-0046](0046-the-auditor-re-checks-every-roles-acts.md#amendment-2026-10-29-the-developers-row)).
 
 ## Consequences
 

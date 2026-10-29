@@ -32,8 +32,8 @@ hold:
    ([ADR-0046](../../../docs/adr/0046-the-auditor-re-checks-every-roles-acts.md#amendment-2026-10-29-the-developers-row)):
    the pick's record from step 1, its refusals at apply in it from
    step 2, its proof and caps reached from step 3; its code's record
-   on its pull request from step 4. The auditor's draw of its code:
-   Missing.
+   on its pull request from step 4, drawn by the weekly sample (the
+   auditor's `sample-draws-the-developers-code`).
 
 ## Built
 
@@ -76,10 +76,10 @@ Steps 5 to 8 of
 [the plan](../../../docs/adr/0054-the-developer-takes-a-ready-issue-to-a-pull-request.md#build-plan):
 the triggers, the review loop, the merge, the measure. Also:
 
-- **The auditor's draw of its code**
-  ([ADR-0046](../../../docs/adr/0046-the-auditor-re-checks-every-roles-acts.md#amendment-2026-10-29-the-developers-row)):
-  the record on its pull request is there to read; the weekly sample
-  does not draw it yet, as it draws the tester's.
+- **The auditor's draw of its code, by a real judge**: drawn and
+  re-checked on a planted act only
+  ([ADR-0046](../../../docs/adr/0046-the-auditor-re-checks-every-roles-acts.md#amendment-2026-10-29-the-developers-row));
+  none merged yet to read.
 - **`workline follow` on its branch**: the branch holds the tester's
   commit, which `follow` reads as a person's; it leaves the branch as it
   is rather than bring it up to date.
