@@ -1,0 +1,28 @@
+case: developer/refuses-gate-file
+about: >
+  A gate's definition is never the developer's (ADR-0054, what bounds it;
+  docs/spec/gates.md, protection): workline's settings, the script a
+  gate's check runs, a CI workflow, each refused at apply though the
+  Scope names them. A gate the agent can edit is not a gate.
+given:
+  repo: tested
+  setup:
+    - "printf 'exit 1\\n' > check.sh && git add check.sh && git commit -q -m 'chore: a check'"
+  config:
+    gates: {default: {checks: [{id: own, run: "sh check.sh", output: exit}]}}
+  forge:
+    issues:
+      - {id: 2, title: "Multiply", labels: ["workline:ready"], body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`, `check.sh`, `.workline/config.yaml`, `.github/workflows/ci.yml`.\n"}
+run: {develop: [], ai: "fake:developer-gate-file"}
+expect:
+  status: pass
+  agent-calls: 1
+  findings:
+    - {rule: gate-file, level: warn, where: .workline/config.yaml}
+    - {rule: gate-file, level: warn, where: check.sh}
+    - {rule: gate-file, level: warn, where: .github/workflows/ci.yml}
+  files:
+    lib.sh: {contains: ["mul()"]}
+    check.sh: {contains: ["exit 1"]}
+    .workline/config.yaml: {contains: ["sh check.sh"]}
+    .github/workflows/ci.yml: {exists: false}

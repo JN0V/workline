@@ -1,0 +1,23 @@
+case: developer/refuses-steering-file
+about: >
+  A file that steers agents is never the developer's, whatever the Scope
+  (ADR-0054, what bounds it): AGENTS.md, named by the issue's Scope, is
+  refused at apply all the same, and the issue is told a person must do
+  it, in the claim's comment.
+given:
+  repo: tested
+  forge:
+    issues:
+      - {id: 2, title: "Multiply", labels: ["workline:ready"], body: "## Need\n\nI want to multiply, and agents told so.\n\n## Scope\n\n- `lib.sh`: a `mul` function.\n- `AGENTS.md`: say to multiply.\n"}
+run: {develop: [], ai: "fake:developer-steering-file"}
+expect:
+  status: pass
+  agent-calls: 1
+  findings: [{rule: steering-file, level: warn, where: AGENTS.md}]
+  files:
+    lib.sh: {contains: ["mul()"]}
+    AGENTS.md: {exists: false}
+  forge:
+    issues:
+      - id: 2
+        comment-contains: ["`AGENTS.md`: a file that steers agents", "a person must do it", '"rule":"steering-file"']

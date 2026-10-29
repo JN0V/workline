@@ -1,0 +1,14 @@
+# The developer's agent writing #3's mul, and objecting to a frozen test
+# rather than editing it.
+- patch:
+    file: lib.sh
+    content: |
+      add() { echo $(($1 + $2)); }
+      mul() { echo $(($1 * $2)); }
+- comment:
+    objection:
+      test: tests/test_mul_by_zero.sh
+      line: 4
+      scenario: By zero
+      kind: over-specified
+      why: The scenario asks for 0; the test also fixes how the call is written.

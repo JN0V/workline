@@ -1,0 +1,33 @@
+case: developer/refuses-acceptance-test-edit
+about: >
+  The tester's acceptance tests are read-only to the developer (ADR-0054,
+  ADR-0055): a patch touching a test the tester froze on its open Draft
+  is refused at apply, though the test sits beside the Scope's code. The
+  frozen tests are read from the tester's own record, the guard's.
+given:
+  repo: tested-draft
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:ready"]
+        body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        draft: true
+        comments: ["The tests of #3, frozen.\n\n<!-- workline:tester-record {\"issue\":3,\"base\":\"main\",\"files\":{\"tests/test_mul_by_zero.sh\":\"8f123a0bacbd681063880b867df38dd216784b97\",\"tests/test_mul_two_by_three.sh\":\"2dee0641bd7a79057ade7bff5af43b603125f543\"}} -->\n<!-- workline:sticky=tester/tests -->"]
+run: {develop: [], ai: "fake:developer-edits-acceptance-test"}
+expect:
+  status: pass
+  agent-calls: 1
+  findings: [{rule: acceptance-test-edit, level: warn, where: tests/test_mul_by_zero.sh}]
+  files:
+    lib.sh: {contains: ["mul()"]}
+    tests/test_mul_by_zero.sh: {contains: ["[ \"$(mul 5 0)\" = 0 ]"]}
+  forge:
+    issues:
+      - id: 3
+        comment-contains: ['"rule":"acceptance-test-edit"', "an acceptance test the tester froze"]

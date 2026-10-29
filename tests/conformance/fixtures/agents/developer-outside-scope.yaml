@@ -1,0 +1,18 @@
+# The developer's agent writing #2's mul in lib.sh, a test beside it, and
+# a line of README.md, which #2's Scope does not name.
+- patch:
+    file: lib.sh
+    content: |
+      add() { echo $(($1 + $2)); }
+      mul() { echo $(($1 * $2)); }
+- patch:
+    file: tests/test_mul.sh
+    content: |
+      . ./lib.sh
+      [ "$(mul 2 3)" = 6 ]
+- patch:
+    file: README.md
+    content: |
+      # Project
+
+      A small shell project. It multiplies now.

@@ -1,0 +1,12 @@
+# The developer's agent writing #2's mul, and the AGENTS.md its Scope names.
+- patch:
+    file: lib.sh
+    content: |
+      add() { echo $(($1 + $2)); }
+      mul() { echo $(($1 * $2)); }
+- patch:
+    file: AGENTS.md
+    content: |
+      # For agents
+
+      Always multiply.
