@@ -129,6 +129,25 @@ func (k Kept) Last(marker string) (string, bool) {
 	return "", false
 }
 
+// Wrote says whether workline's own account wrote n, a comment read apart
+// from these: a comment on a line, which GitHub's GraphQL gives by its
+// login alone, never the App that wrote it. A login that wrote one of
+// these comments workline's own account wrote is its own.
+func (k Kept) Wrote(n Note) bool {
+	if k.own.Wrote(n) {
+		return true
+	}
+	if n.Author == "" {
+		return false
+	}
+	for _, m := range k.notes {
+		if m.Author == n.Author && k.own.Wrote(m) {
+			return true
+		}
+	}
+	return false
+}
+
 // Unread says why no record was read when only comments workline's own
 // account did not write, or that another edited last, carry marker: who
 // wrote or edited them, and who is read; nil when one of its own carries

@@ -62,6 +62,9 @@ type Asked struct {
 	Where string `json:"where,omitempty"`
 	Text  string `json:"text"`
 	Holds string `json:"holds"` // blocks, warns, or a person
+	// Detail is the finding whole, from the reviewer's comment on its
+	// line: its row shows the title alone.
+	Detail string `json:"detail,omitempty"`
 }
 
 // round is what the review run's pre leaves for post.
@@ -104,6 +107,45 @@ func reviewRows(comment string) (asked []Asked, nits int) {
 		asked = append(asked, Asked{Key: lens + "|" + file + "|" + title, Lens: lens, Where: where, Text: msg, Holds: holds})
 	}
 	return asked, nits
+}
+
+// lineDetails gives each finding of the reviewer's rows its text whole,
+// from the reviewer's comment on its line: the row, when the finding has
+// one, shows only its title. Only a comment workline's own account wrote
+// is read, on the finding's file, carrying its title; an open one before
+// one resolved, the latest first.
+func lineDetails(asked []Asked, threads []forge.Thread, wrote func(forge.Note) bool) {
+	for i, a := range asked {
+		if a.Holds == "a person" {
+			continue
+		}
+		_, title, _ := strings.Cut(strings.TrimPrefix(a.Key, a.Lens+"|"), "|")
+		title, _, _ = strings.Cut(title, "; also ") // one row, two lenses: two comments
+		file, _, _ := strings.Cut(a.Where, ":")
+		head := "**Important: " + title + "**"
+		found, open := "", false
+		for _, t := range threads {
+			if len(t.Comments) == 0 || t.Path != file || open && t.Resolved {
+				continue
+			}
+			c := t.Comments[0]
+			if !wrote(c) || !strings.HasPrefix(strings.TrimSpace(c.Body), "**workline reviewer**") || !strings.Contains(c.Body, head) {
+				continue
+			}
+			found, open = c.Body, !t.Resolved
+		}
+		if found == "" {
+			continue
+		}
+		_, body, _ := strings.Cut(found, head)
+		var keep []string
+		for _, l := range strings.Split(body, "\n") {
+			if !strings.HasPrefix(strings.TrimSpace(l), "<!-- workline:") {
+				keep = append(keep, l)
+			}
+		}
+		asked[i].Detail = strings.TrimSpace(strings.Join(keep, "\n"))
+	}
 }
 
 // tableRow is a Markdown table's row, its cells; nil for any other line,
@@ -191,6 +233,13 @@ func reviewPre(runDir, repo string, s Settings, id int) int {
 			n, _ := strconv.Atoi(m[1])
 			r.Runs += n
 		}
+	}
+	if th, ok := f.(forge.Threaded); ok && len(r.Asked) > 0 {
+		threads, err := th.Threads(id)
+		if err != nil {
+			return external(err)
+		}
+		lineDetails(r.Asked, threads, kept.Wrote)
 	}
 	notes, err := b.Notes(target)
 	if err != nil && !errors.Is(err, forge.ErrAuthorsUnknown) {
@@ -298,6 +347,9 @@ func roundTask(r round, is forge.Issue, b Bounds, s Settings) string {
 			continue
 		}
 		fmt.Fprintf(&t, "- %s, the %s lens, `%s`%s: %s\n", a.Holds, a.Lens, a.Where, seen, a.Text)
+		if a.Detail != "" {
+			fmt.Fprintf(&t, "\n  > %s\n\n", strings.ReplaceAll(a.Detail, "\n", "\n  > "))
+		}
 	}
 	if r.Nits > 0 {
 		fmt.Fprintf(&t, "\nThe reviewer showed %d nit%s too: not asked, leave them.\n", r.Nits, plural(r.Nits))
