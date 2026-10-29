@@ -41,8 +41,9 @@ hold:
    [#264](https://github.com/JN0V/workline/issues/264), on workline and
    on a copy of a real repository: a bug shown by a red test first, then
    green. Routed on workline's own line (`schedule`, one ready issue a
-   night, a Draft; `merge-request`, its guard): awaiting its first real
-   night.
+   night, a Draft; `merge-request`, its guard), tried with a stub agent
+   on [#676](https://github.com/JN0V/workline/pull/676): awaiting its
+   first real night.
 3. **AI verdicts measured**: open. The tests `test write` writes,
    measured against the scenarios they cover: one try so far. Its acts
    are observable: the auditor's weekly sample draws them
