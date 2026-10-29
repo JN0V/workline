@@ -7,7 +7,8 @@
   the committer's trailers; the product owner's fields and its issue
   folded in (2026-10-17, [settled while building](#settled-while-building));
   the tester's acts (2026-10-28, [the tester's row](#amendment-2026-10-28-the-testers-row));
-  the auditor measured (2026-10-29, [amendment](#amendment-2026-10-29-the-auditor-measured))
+  the auditor measured (2026-10-29, [amendment](#amendment-2026-10-29-the-auditor-measured));
+  the developer's pick recorded, not drawn (2026-10-29, [the developer's row](#amendment-2026-10-29-the-developers-row))
 - **Date:** 2026-10-14
 - **Decided by:** the maintainer, on 2026-10-14: [#205] and [#276] built
   together, the share one in ten; the open points settled as below
@@ -58,6 +59,7 @@ so a rare kind is still read ([research]).
 | Reviewer | an important finding its judge let through, or dropped | about 160 a week: 39, 121 | 17 |
 | Committer | a message it rewrote | 7 in two weeks, at least | 1 |
 | Tester | its tests; an objection answered kept or rewritten; the five whys a third answer gives; a curator's removal ([amendment](#amendment-2026-10-28-the-testers-row)) | none merged yet | 1 a kind |
+| Developer | its pick: recorded, not drawn, mechanical; its code from [ADR-0054]'s step 4 ([amendment](#amendment-2026-10-29-the-developers-row)) | none yet | 0 |
 
 Not drawn, and why:
 
@@ -358,6 +360,18 @@ Its verdicts are measured as every role's acts are, in two ways:
   no; closed otherwise; open — each linked. Not planned is the forge's
   own reason for a no, the one the product owner's closings read.
 
+## Amendment 2026-10-29: the developer's row
+
+Built with [ADR-0054]'s first step, the pick, before any code:
+
+- **What it records**: the comment claiming the issue ends with a hidden
+  line, `workline:developer-act` — the act (`pick`), the commit the run
+  read, the issue taken, each ready issue passed over and why.
+- **Not drawn**: the pick is the engine's own move, no agent asked —
+  mechanical, as above; its conformance cases prove it.
+- **Drawn from step 4**: its code, on its merge requests merged, as the
+  tester's are; the record of the pick read with it.
+
 [#89]: https://github.com/JN0V/workline/issues/89
 [#108]: https://github.com/JN0V/workline/issues/108
 [#136]: https://github.com/JN0V/workline/pull/136
@@ -375,6 +389,7 @@ Its verdicts are measured as every role's acts are, in two ways:
 [ADR-0033]: 0033-the-weekly-sample-draws-the-product-owners-acts.md
 [ADR-0036]: 0036-a-roles-status-is-earned-by-written-criteria.md
 [ADR-0043]: 0043-a-try-is-told-in-its-pull-request.md
+[ADR-0054]: 0054-the-developer-takes-a-ready-issue-to-a-pull-request.md
 [ADR-0055]: 0055-the-tester-writes-the-acceptance-tests-before-the-code.md
 [research]: ../research/auditing-agent-acts.md
 [judge-measured]: ../research/judge-measured.md

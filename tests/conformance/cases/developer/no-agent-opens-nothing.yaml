@@ -1,0 +1,18 @@
+case: developer/no-agent-opens-nothing
+about: >
+  With no agent (principle 5), the developer names the issue it would
+  take and stops: no label, no comment, no merge request.
+given:
+  repo: tested
+  forge:
+    issues:
+      - {id: 2, title: "Multiply", labels: ["workline:ready"], body: "## Need\n\nI want to multiply.\n"}
+run: {develop: [], ai: none}
+expect:
+  status: pass
+  summary: "would take #2: no agent, nothing claimed"
+  agent-calls: 0
+  forge:
+    issues:
+      - {id: 2, labels: ["workline:ready"], comments: 0}
+    merge-requests: []

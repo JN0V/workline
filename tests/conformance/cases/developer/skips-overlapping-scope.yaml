@@ -1,0 +1,25 @@
+case: developer/skips-overlapping-scope
+about: >
+  Several issues may be taken at once, limited by conflicts only
+  (ADR-0054): an issue whose Scope names a path under or over one that an
+  issue the developer holds names is passed over, as is the one it holds;
+  the next, clear, is taken.
+given:
+  repo: tested
+  forge:
+    issues:
+      - {id: 1, title: "Add", labels: ["workline:ready", "workline:developing"], body: "## Need\n\nI want to add.\n\n## Scope\n\n- `src/lib.sh`: `add`.\n"}
+      - {id: 2, title: "Multiply", labels: ["workline:ready"], body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `src/`: a `mul` function.\n"}
+      - {id: 3, title: "Document", labels: ["workline:ready"], body: "## Need\n\nI want it said.\n\n## Scope\n\n- `docs/usage.md`.\n"}
+run: {develop: [], ai: "cmd:true"}
+expect:
+  status: pass
+  summary: "took #3"
+  agent-calls: 0
+  forge:
+    issues:
+      - {id: 1, labels: ["workline:ready", "workline:developing"], comments: 0}
+      - {id: 2, labels: ["workline:ready"], comments: 0}
+      - id: 3
+        labels: ["workline:ready", "workline:developing"]
+        comment-contains: ["#1: taken already, labelled workline:developing", "#2: its Scope's `src` overlaps #1's, taken"]

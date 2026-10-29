@@ -2,9 +2,28 @@ package forge
 
 import (
 	"net/url"
+	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 )
+
+// closing is an issue closed by a keyword, as GitHub and GitLab read it:
+// `Closes #4`, `fixes: #4`, `Resolved #4`. `Refs #4` closes nothing.
+var closing = regexp.MustCompile(`(?i)\b(?:clos(?:e|es|ed|ing)|fix(?:es|ed|ing)?|resolv(?:e|es|ed|ing)|implement(?:s|ed|ing)?):?\s+#(\d+)\b`)
+
+// Closes are the issues the texts say the change closes, once each, in order.
+func Closes(texts ...string) []int {
+	var ids []int
+	for _, t := range texts {
+		for _, m := range closing.FindAllStringSubmatch(t, -1) {
+			if n, err := strconv.Atoi(m[1]); err == nil && !slices.Contains(ids, n) {
+				ids = append(ids, n)
+			}
+		}
+	}
+	return ids
+}
 
 // Closings is a forge that says how the last merge request from a branch
 // was closed: a role tells there a close of workline's own, its comment

@@ -401,8 +401,11 @@ func (g *gitlab) issues(state string) ([]Issue, error) {
 		Author struct {
 			Username string `json:"username"`
 		} `json:"author"`
-		State  string `json:"state"`
-		Weight *int   `json:"weight"` // Premium's, Ultimate's
+		State     string `json:"state"`
+		Weight    *int   `json:"weight"` // Premium's, Ultimate's
+		Assignees []struct {
+			Username string `json:"username"`
+		} `json:"assignees"`
 	}](out)
 	var all []Issue
 	for _, f := range found {
@@ -416,6 +419,9 @@ func (g *gitlab) issues(state string) ([]Issue, error) {
 			return nil, err
 		}
 		is := Issue{ID: f.IID, Title: f.Title, Body: f.Description, Labels: f.Labels, Author: f.Author.Username, Insider: in, Closed: f.State == "closed", Weight: f.Weight}
+		for _, a := range f.Assignees {
+			is.Assignees = append(is.Assignees, a.Username)
+		}
 		if f.Milestone != nil {
 			is.Milestone, is.MilestoneDue = f.Milestone.Title, f.Milestone.Due
 		}
@@ -1272,6 +1278,7 @@ func (g *gitlab) ListMergeRequests() ([]MergeRequest, error) {
 		SourceProject int    `json:"source_project_id"`
 		TargetProject int    `json:"target_project_id"`
 		Title         string `json:"title"`
+		Description   string `json:"description"`
 		Author        struct {
 			ID       int    `json:"id"`
 			Username string `json:"username"`
@@ -1294,7 +1301,7 @@ func (g *gitlab) ListMergeRequests() ([]MergeRequest, error) {
 				}
 			}
 			all = append(all, MergeRequest{ID: m.IID, Branch: m.Source, Base: m.Target, Here: m.SourceProject == m.TargetProject,
-				Title: m.Title, Author: m.Author.Username, Bot: bot, Head: fmt.Sprintf("refs/merge-requests/%d/head", m.IID),
+				Title: m.Title, Body: m.Description, Author: m.Author.Username, Bot: bot, Head: fmt.Sprintf("refs/merge-requests/%d/head", m.IID),
 				Labels: m.Labels, Draft: m.Draft, AutoMerge: m.Auto})
 		}
 	}

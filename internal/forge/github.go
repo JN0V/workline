@@ -94,7 +94,7 @@ func (g *github) AllIssues() ([]Issue, error) { return g.issues("all") }
 
 func (g *github) issues(state string) ([]Issue, error) {
 	out, err := g.api("--paginate", "repos/{owner}/{repo}/issues?state="+state+"&per_page=100",
-		"--jq", ".[] | select(.pull_request == null) | {id: .number, title, body: (.body // \"\"), labels: [.labels[].name], milestone: (.milestone.title // \"\"), \"milestone-due\": ((.milestone.due_on // \"\") | .[0:10]), author: .user.login, association: .author_association, closed: (.state == \"closed\"), reason: (.state_reason // \"\"), blocked: (.issue_dependencies_summary.total_blocked_by // 0), subs: (.sub_issues_summary.total // 0), repo: .repository_url, fields: ([.issue_field_values[]? | select(.single_select_option != null) | {key: .issue_field_name, value: .single_select_option.name}] | from_entries)}")
+		"--jq", ".[] | select(.pull_request == null) | {id: .number, title, body: (.body // \"\"), labels: [.labels[].name], milestone: (.milestone.title // \"\"), \"milestone-due\": ((.milestone.due_on // \"\") | .[0:10]), author: .user.login, association: .author_association, closed: (.state == \"closed\"), reason: (.state_reason // \"\"), assignees: [.assignees[]?.login], blocked: (.issue_dependencies_summary.total_blocked_by // 0), subs: (.sub_issues_summary.total // 0), repo: .repository_url, fields: ([.issue_field_values[]? | select(.single_select_option != null) | {key: .issue_field_name, value: .single_select_option.name}] | from_entries)}")
 	if err != nil {
 		return nil, err
 	}
@@ -741,7 +741,7 @@ func (g *github) Squash(id int) (Squash, error) {
 // bot's. GitHub keeps every head under refs/pull/<n>/head.
 func (g *github) ListMergeRequests() ([]MergeRequest, error) {
 	out, err := g.api("--paginate", "repos/{owner}/{repo}/pulls?state=open&per_page=100", "--jq",
-		`.[] | {id: .number, branch: .head.ref, base: .base.ref, here: ((.head.repo.full_name // "") == .base.repo.full_name), author: .user.login, bot: (.user.type == "Bot"), title: .title, labels: [.labels[].name], draft: (.draft // false), auto: (.auto_merge != null)}`)
+		`.[] | {id: .number, branch: .head.ref, base: .base.ref, here: ((.head.repo.full_name // "") == .base.repo.full_name), author: .user.login, bot: (.user.type == "Bot"), title: .title, body: (.body // ""), labels: [.labels[].name], draft: (.draft // false), auto: (.auto_merge != null)}`)
 	if err != nil {
 		return nil, err
 	}
@@ -753,6 +753,7 @@ func (g *github) ListMergeRequests() ([]MergeRequest, error) {
 		Author string   `json:"author"`
 		Bot    bool     `json:"bot"`
 		Title  string   `json:"title"`
+		Body   string   `json:"body"`
 		Labels []string `json:"labels"`
 		Draft  bool     `json:"draft"`
 		Auto   bool     `json:"auto"`
@@ -762,7 +763,7 @@ func (g *github) ListMergeRequests() ([]MergeRequest, error) {
 	}
 	var all []MergeRequest
 	for _, p := range found {
-		all = append(all, MergeRequest{ID: p.ID, Branch: p.Branch, Base: p.Base, Here: p.Here, Title: p.Title,
+		all = append(all, MergeRequest{ID: p.ID, Branch: p.Branch, Base: p.Base, Here: p.Here, Title: p.Title, Body: p.Body,
 			Author: p.Author, Bot: p.Bot, Head: fmt.Sprintf("refs/pull/%d/head", p.ID), Labels: p.Labels, Draft: p.Draft, AutoMerge: p.Auto})
 	}
 	sort.Slice(all, func(i, j int) bool { return all[i].ID < all[j].ID })

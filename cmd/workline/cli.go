@@ -30,6 +30,7 @@ func init() {
 		{name: "review", args: "[options]", about: "have the reviewer review this branch before it is pushed, or a spec before it is built", run: reviewCmd},
 		{name: "gate", args: "<name> [options]", about: "run a gate declared in .workline/config.yaml", run: gateCmd},
 		{name: "test", args: "check --base <ref> | write --issue <n> | answer --merge-request <n> [options]", about: "the tester: check proves each test a change adds red on the base, from the test runner's JUnit report; write has the agent write a ready issue's tests, opened as a Draft; answer, an objection to one of them, kept or rewritten", run: testCmd},
+		{name: "develop", args: "[--issue <n>] [options]", about: "the developer: take the first ready issue nobody took, in the backlog's order, and claim it; with no agent, name it and claim nothing", run: developCmd},
 		{name: "item", args: "ready <id> [options]", about: "move a work item to ready, once its " + required() + " are written", run: itemCmd},
 		{name: "issues", args: "[list] | show <n>|!<n> | import <file> [options]", about: "read the local forge's issues; import a roadmap or backlog file to the forge's issues", run: issuesCmd},
 		{name: "docs", args: "[options]", about: "judge the docs made suspect since they were last judged, then review each change", run: docsCmd},

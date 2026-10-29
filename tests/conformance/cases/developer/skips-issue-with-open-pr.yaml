@@ -1,0 +1,25 @@
+case: developer/skips-issue-with-open-pr
+about: >
+  An issue an open merge request closes is being built already (ADR-0054:
+  never two pull requests for one issue): passed over, the next ready one
+  taken. `Refs #3`, as the tester's Draft says, closes nothing.
+given:
+  repo: tested
+  forge:
+    issues:
+      - {id: 2, title: "Multiply", labels: ["workline:ready"], body: "## Need\n\nI want to multiply.\n"}
+      - {id: 3, title: "Divide", labels: ["workline:ready"], body: "## Need\n\nI want to divide.\n"}
+    merge-requests:
+      - {id: 5, branch: feat/mul, base: main, title: "feat: multiply", body: "Closes #2", labels: [], comments: []}
+      - {id: 6, branch: workline/tester/issue-3, base: main, draft: true, title: "test: the acceptance tests of #3", body: "Refs #3", labels: [], comments: []}
+run: {develop: [], ai: "cmd:true"}
+expect:
+  status: pass
+  summary: "took #3"
+  agent-calls: 0
+  forge:
+    issues:
+      - {id: 2, labels: ["workline:ready"], comments: 0}
+      - id: 3
+        labels: ["workline:ready", "workline:developing"]
+        comment-contains: ["#2: the open merge request 5 closes it"]

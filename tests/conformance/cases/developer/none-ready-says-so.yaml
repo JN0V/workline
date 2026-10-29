@@ -1,0 +1,20 @@
+case: developer/none-ready-says-so
+about: >
+  No ready issue waits: the one ready is assigned to a person, the other
+  not ready. The developer says so and passes, nothing claimed, the agent
+  not asked (principle 12: said, never silent).
+given:
+  repo: tested
+  forge:
+    issues:
+      - {id: 1, title: "Subtract", labels: ["workline:to-refine"], body: "## Need\n\nI want to subtract.\n"}
+      - {id: 2, title: "Multiply", labels: ["workline:ready"], assignees: [alice], body: "## Need\n\nI want to multiply.\n"}
+run: {develop: [], ai: "cmd:true"}
+expect:
+  status: pass
+  summary: "no ready issue waits for the developer"
+  agent-calls: 0
+  forge:
+    issues:
+      - {id: 1, labels: ["workline:to-refine"], comments: 0}
+      - {id: 2, labels: ["workline:ready"], comments: 0}

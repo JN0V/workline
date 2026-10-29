@@ -168,6 +168,8 @@ type FakeItem struct {
 	Fields map[string]string `json:"fields,omitempty"`
 	// Weight: an issue's GitLab weight, with weights; none when absent.
 	Weight *int `json:"weight,omitempty"`
+	// Assignees: who an issue is assigned to, by login.
+	Assignees []string `json:"assignees,omitempty"`
 }
 
 // FakePush is a push to a merge request's branch: the head, a revision
@@ -266,7 +268,7 @@ func (f *Fake) Issue(id int) (*Issue, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Issue{ID: it.ID, Title: it.Title, Body: it.Body, Labels: it.Labels, Closed: it.Closed, Author: it.Author, Insider: it.Insider, Fields: it.Fields, Weight: it.Weight}, nil
+	return &Issue{ID: it.ID, Title: it.Title, Body: it.Body, Labels: it.Labels, Closed: it.Closed, Author: it.Author, Insider: it.Insider, Fields: it.Fields, Weight: it.Weight, Assignees: it.Assignees}, nil
 }
 
 func (f *Fake) Issues() ([]Issue, error) {
@@ -283,7 +285,7 @@ func (f *Fake) Issues() ([]Issue, error) {
 					children = append(children, c.ID)
 				}
 			}
-			out = append(out, Issue{ID: it.ID, Title: it.Title, Body: it.Body, Labels: it.Labels, Milestone: it.Milestone, MilestoneDue: s.MilestoneDue[it.Milestone], Author: it.Author, Insider: it.Insider, BlockedBy: it.BlockedBy, Children: children, Fields: it.Fields, Weight: it.Weight})
+			out = append(out, Issue{ID: it.ID, Title: it.Title, Body: it.Body, Labels: it.Labels, Milestone: it.Milestone, MilestoneDue: s.MilestoneDue[it.Milestone], Author: it.Author, Insider: it.Insider, BlockedBy: it.BlockedBy, Children: children, Fields: it.Fields, Weight: it.Weight, Assignees: it.Assignees})
 		}
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
@@ -297,7 +299,7 @@ func (f *Fake) AllIssues() ([]Issue, error) {
 	}
 	var out []Issue
 	for _, it := range s.Issues {
-		out = append(out, Issue{ID: it.ID, Title: it.Title, Body: it.Body, Labels: it.Labels, Milestone: it.Milestone, MilestoneDue: s.MilestoneDue[it.Milestone], Author: it.Author, Insider: it.Insider, Closed: it.Closed, Reason: it.Reason, Fields: it.Fields, Weight: it.Weight})
+		out = append(out, Issue{ID: it.ID, Title: it.Title, Body: it.Body, Labels: it.Labels, Milestone: it.Milestone, MilestoneDue: s.MilestoneDue[it.Milestone], Author: it.Author, Insider: it.Insider, Closed: it.Closed, Reason: it.Reason, Fields: it.Fields, Weight: it.Weight, Assignees: it.Assignees})
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
 	return out, nil
