@@ -4,7 +4,7 @@ sources:
   - internal/engine/engine.go
   - internal/agent/claude.go
   - internal/builtin/reviewer/once.go
-checked: e04c31ef
+checked: f5dc27c6
 verified: agent:claude-code
 ---
 # The pull request
@@ -30,6 +30,9 @@ flowchart LR
   branch in CI, never to the tester's. Merged, it brings the tests with
   it.
 - **No Draft**: its code starts from the commit the run read.
+- **Run again**, its branch is rebuilt: the tester's commits on it, even
+  those the tester has since rewritten, are no person's; a person's
+  commit leaves the branch to them.
 
 ## Who opens it
 
@@ -41,8 +44,9 @@ flowchart LR
 
 ## Its commits
 
-- **Its tests apart**: a file named `test` or `spec`, or in a test
-  folder, goes in a commit of its own, `test: the tests beside the code
+- **Its tests apart**: a file with `test` or `spec` a word of its name
+  (`x_test.go`, `test_x.py`, `x.spec.ts`, `XTest.java`; not
+  `latest.go`), or in a test folder, goes in a commit of its own, `test: the tests beside the code
   of #<n>`; its code in another, the issue's title.
 - **Each carries `Workline-Role: developer`** and the model that wrote
   it, as every commit workline makes.
@@ -62,8 +66,9 @@ flowchart LR
 - **Hidden in workline's own comment** on the pull request, kept up to
   date: the issue, the commit it starts from, its code and tests files,
   the proof, the caps, the refusals.
-- **For its next runs** (the review loop, step 6) and **the auditor**
-  ([ADR-0046](../../../docs/adr/0046-the-auditor-re-checks-every-roles-acts.md)).
+- **For its next runs** (the review loop, step 6) and **the auditor**,
+  whose weekly sample draws its code once merged
+  ([ADR-0046](../../../docs/adr/0046-the-auditor-re-checks-every-roles-acts.md#amendment-2026-10-29-the-developers-row)).
 
 ## How it is judged
 
