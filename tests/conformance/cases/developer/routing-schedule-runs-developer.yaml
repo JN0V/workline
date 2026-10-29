@@ -1,0 +1,46 @@
+case: developer/routing-schedule-runs-developer
+about: >
+  The developer's schedule (ADR-0054, step 5): a project that lists it
+  on `schedule` has the night take the first ready issue nobody took,
+  as `workline develop` does, one issue a run: claimed, coded, proven,
+  its pull request opened. The line needs --open-merge-request, as the
+  tester's on schedule.
+given:
+  repo: tested-draft
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main workline/tester/issue-3"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+    routing: {events: {schedule: [developer]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:ready"]
+        body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        draft: true
+        comments: ["The tests of #3, frozen.\n\n<!-- workline:tester-record {\"issue\":3,\"base\":\"main\",\"files\":{\"tests/test_mul_by_zero.sh\":\"8f123a0bacbd681063880b867df38dd216784b97\",\"tests/test_mul_two_by_three.sh\":\"2dee0641bd7a79057ade7bff5af43b603125f543\"}} -->\n<!-- workline:sticky=tester/tests -->"]
+run: {route: schedule, open-merge-request: true, ai: "fake:developer-writes-mul", summary: true}
+expect:
+  status: pass
+  summary-file: ["took #3; proven green, its pull request ready"]
+  agent-calls: 1
+  findings: [{rule: proof-green, level: info, where: "#3", message: "3 tests passed on its code, none red"}]
+  no-findings: [{rule: proof-red}, {rule: cap-reached}]
+  pushed:
+    workline/developer/3:
+      lib.sh: "mul()"
+  forge:
+    issues:
+      - id: 3
+        labels: ["workline:ready", "workline:developing"]
+        comment-contains: ['"proof":{"result":"green","command":"sh run-tests.sh {report}","passed":3}']
+    merge-requests:
+      - id: 2
+        branch: workline/developer/3
+        draft: false
+        title: "Multiply two numbers"
+        body-contains: ["Closes #3", "## Verification", "`sh run-tests.sh {report}`: 3 tests passed, none red."]

@@ -584,6 +584,65 @@ workline:objection:apply:
     reports: {annotations: workline-annotations.json}
     expire_in: 1 week
 
+# The developer takes a ready issue (ADR-0054), routed `issue: [developer]`:
+# a pipeline a tool starts on the issue webhook, WORKLINE_TASK=develop and
+# ISSUE_IID (docs/gitlab-trigger.md); without ISSUE_IID, the first ready
+# issue nobody took. One at a time (resource_group). Install your test
+# runner in the judge. Why each part: roles/developer/docs/triggers.md.
+.workline:develop:
+  image: $WORKLINE_IMAGE:$WORKLINE_VERSION
+  environment: *environment
+  variables: {GIT_DEPTH: 0}
+  resource_group: workline-develop
+  rules:
+    - if: ($CI_PIPELINE_SOURCE == "api" || $CI_PIPELINE_SOURCE == "trigger" || $CI_PIPELINE_SOURCE == "pipeline") && $WORKLINE_TASK == "develop" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  before_script:
+    - *bot-token
+    - *trust
+    - workline version
+    - git checkout -q -B "$CI_COMMIT_REF_NAME"   # GitLab runs on a detached HEAD
+    - export GITLAB_TOKEN=$WORKLINE_GITLAB_TOKEN
+    - '[ -z "${ISSUE_IID:-}" ] || printf "%s" "$ISSUE_IID" | grep -Eqx "[0-9]+" || { echo "workline: ISSUE_IID is not an issue number: $ISSUE_IID"; exit 64; }'
+
+# The engine gives the agent no forge token: the bot's reads the issues
+# for the pick here, and writes nothing until apply.
+workline:develop:judge:
+  extends: .workline:develop
+  stage: test
+  script:
+    - *claude
+    - status=0
+    - workline route issue ${ISSUE_IID:+--target issue:$ISSUE_IID} --ai "$ai" --no-apply --forge gitlab --open-merge-request --summary workline-summary.md --summary workline-summary.html --json > line.json || status=$?
+    - exit $status
+  allow_failure: {exit_codes: [3]}  # an agent out of reach warns: the issue waits for the next run
+  after_script: *summary
+  artifacts:
+    when: always
+    paths: [workline-summary.html, workline-summary.md, .workline-runs/, line.json]
+    reports: {annotations: workline-annotations.json}
+    expire_in: 1 day
+
+workline:develop:apply:
+  extends: .workline:develop
+  stage: deploy
+  needs: [workline:develop:judge]
+  rules:
+    - if: ($CI_PIPELINE_SOURCE == "api" || $CI_PIPELINE_SOURCE == "trigger" || $CI_PIPELINE_SOURCE == "pipeline") && $WORKLINE_TASK == "develop" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      when: always
+  script:
+    - *bot
+    - git remote set-url origin "https://oauth2:${WORKLINE_GITLAB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"
+    - '[ -s line.json ] || { echo "nothing proposed: nothing to apply"; exit 0; }'
+    - status=0
+    - workline apply --line line.json --summary workline-summary.md --summary workline-summary.html || status=$?
+    - exit $status
+  after_script: *summary
+  artifacts:
+    when: always
+    paths: [workline-summary.html, workline-summary.md]
+    reports: {annotations: workline-annotations.json}
+    expire_in: 1 week
+
 # A release's dry run, on each schedule but the sample's (ADR-0050): what
 # would hold the release if it were cut now from the branch's tip. Every
 # step, no agent, nothing applied, said as warnings. Install here the

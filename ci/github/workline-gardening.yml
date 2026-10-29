@@ -9,6 +9,10 @@
 # The tester, when the line lists it, writes a ready issue's tests, one
 # issue a run, opened as a Draft (ADR-0055): install your test runner in
 # judge, where it proves them red.
+# The developer, when the line lists it, takes the first ready issue nobody
+# took, one a run, and opens its pull request (ADR-0054): install your test
+# runner in judge, where it proves its code. workline-develop.yml takes an
+# issue as soon as it is labelled ready.
 # The tester's curator measures the test corpus, opt-in (curator below).
 # And a release's dry run: what would hold the release if it were cut now,
 # said in the default branch's issue (dry-run below). The release never

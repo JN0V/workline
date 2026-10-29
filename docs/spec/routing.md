@@ -1,6 +1,6 @@
 ---
 sources: [internal/line, internal/routing, internal/work, routing.default.yaml]
-checked: c8bb8b8c
+checked: eebe4270
 verified: agent:claude-code
 ---
 # Routing — v1 (draft)
@@ -386,8 +386,19 @@ routing:
   events: {schedule: [documentalist, product-owner, reviewer, tester]}
 ```
 
+The developer takes a `ready` issue to a pull request
+([ADR-0054](../adr/0054-the-developer-takes-a-ready-issue-to-a-pull-request.md)):
+on `issue`, the one CI names (`--target issue:<n>`) when it is labelled
+ready; on `schedule`, the first nobody took, one a run. It needs
+`--open-merge-request`; opt-in
+([the triggers](../../roles/developer/docs/triggers.md)):
+
+```yaml
+routing:
+  events: {issue: [developer], schedule: [documentalist, developer]}
+```
+
 ## Not in this version
 
-The developer role, which will consume `ready` items from the tester's
-Draft. Which
+Which
 act runs at which moment, decided: [ADR-0050](../adr/0050-each-act-has-its-moment-and-a-wait-budget.md).

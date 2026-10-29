@@ -1,8 +1,9 @@
 ---
 sources:
   - roles/developer/role.yaml
+  - ci/github/workline-develop.yml
   - internal/developer
-checked: e04c31ef
+checked: 170e0fba
 verified: agent:claude-code
 ---
 # Developer
@@ -24,7 +25,7 @@ file. All roles: [docs/roles.md](../../docs/roles.md). Where it stands:
 [status](docs/status.md); its design:
 [ADR-0054](../../docs/adr/0054-the-developer-takes-a-ready-issue-to-a-pull-request.md).
 
-**Does**, today (steps 1 to 4 of the
+**Does**, today (steps 1 to 5 of the
 [build plan](../../docs/adr/0054-the-developer-takes-a-ready-issue-to-a-pull-request.md#build-plan)):
 
 - **Picks** the first ready issue in the backlog's order that nobody
@@ -42,10 +43,11 @@ file. All roles: [docs/roles.md](../../docs/roles.md). Where it stands:
 - **Opens it on the tester's Draft**, the acceptance tests with it,
   its code and tests in commits apart, its record hidden on it; the
   agent holds no forge token ([the pull request](docs/pull-request.md)).
+- **Runs when routed**: when an issue is labelled ready, and on the
+  schedule ([the triggers](docs/triggers.md)).
 - **With no agent**: names the issue it would take; claims nothing.
 
-**Does not, yet**: its triggers, fixing the review's findings (steps 5
-and 6).
+**Does not, yet**: fixing the review's findings (step 6).
 
 **Never**: merge, approve, put `workline:accepted`, unassign a person,
 close or move an issue.
@@ -60,7 +62,8 @@ workline develop --issue 42 --ai none
 
 - **`--forge`**: GitHub, GitLab, the local forge or a command's; the
   project's `forge` setting by default.
-- **In CI**: not routed yet; the triggers are step 5.
+- **In CI**: route it on `issue` and `schedule`; the GitHub and GitLab
+  templates run it ([the triggers](docs/triggers.md)).
 
 ## Settings
 

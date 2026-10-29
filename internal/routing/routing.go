@@ -121,3 +121,15 @@ func (c *Config) Follows(first, then string) bool {
 	}
 	return false
 }
+
+// Runs reports whether any event's line runs role: the developer waits
+// for the tester's tests only where the project routes the tester
+// (ADR-0055).
+func (c *Config) Runs(role string) bool {
+	for _, steps := range c.Events {
+		if slices.Contains(steps, role) {
+			return true
+		}
+	}
+	return false
+}

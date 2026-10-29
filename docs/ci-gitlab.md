@@ -1,6 +1,6 @@
 ---
 sources: [ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile]
-checked: 7f7b4f32
+checked: eebe4270
 judged: e8a46f7
 verified: agent:documentalist
 reader: 9799dcaf51f3
@@ -314,6 +314,16 @@ the two jobs to add are in [gitlab/import-jobs.md](gitlab/import-jobs.md).
   ([the variables](gitlab-trigger.md#how-the-pipeline-knows-what-to-do));
   the jobs `workline:objection:*` answer it
   ([what each job holds](objection-jobs.md)).
+
+## The developer
+
+- **Its scheduled run**: list `developer` in the `schedule` line; the
+  gardening jobs run it. Install your test runner in their image.
+- **An issue labelled ready**: GitLab starts no pipeline on a label. A
+  tool given the issue webhook starts one on the default branch, with
+  `WORKLINE_TASK=develop` and `ISSUE_IID`; the jobs `workline:develop:*`
+  run the `issue` line on it
+  ([the triggers](../roles/developer/docs/triggers.md)).
 
 ## A project that refuses unsigned commits
 

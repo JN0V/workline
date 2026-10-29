@@ -1,0 +1,21 @@
+case: developer/backs-off-issue-taken-meanwhile
+about: >
+  Two runs may pick one issue: the night's and a ready label's. Before
+  its claim goes to apply, the developer reads the issue again; another
+  run's claim landed while its agent coded, so it backs off: nothing
+  claimed, no pull request, said.
+given:
+  repo: tested
+  forge:
+    issues:
+      - {id: 3, title: "Multiply", labels: ["workline:ready"], body: "## Need\n\nI want to multiply.\n"}
+run: {develop: [], ai: 'cmd:sh "$FIXTURES/agents/developer-claimed-meanwhile.sh"'}
+expect:
+  status: pass
+  summary: "#3 taken meanwhile"
+  agent-calls: 1
+  findings: [{rule: taken-meanwhile, level: warn, where: "#3", message: "labelled workline:developing"}]
+  forge:
+    issues:
+      - {id: 3, labels: ["workline:ready", "workline:developing"], comments: 0}
+    merge-requests: []

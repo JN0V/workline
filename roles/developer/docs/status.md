@@ -6,9 +6,10 @@ holding its record, then has the agent write the code, held to its
 bounds at apply, proves it on the project's tests and opens a pull
 request on the tester's Draft, ready when green with no cap reached,
 else a Draft, its record hidden on it; with none, it names the issue.
-Steps 1 to 4 of
+Routed, it runs when an issue is labelled ready and on the schedule.
+Steps 1 to 5 of
 [ADR-0054's plan](../../../docs/adr/0054-the-developer-takes-a-ready-issue-to-a-pull-request.md#build-plan);
-beta; not routed.
+beta; routed where a project lists it.
 
 A try is told in its pull request's `## Tried`
 ([ADR-0043](../../../docs/adr/0043-a-try-is-told-in-its-pull-request.md)):
@@ -23,7 +24,7 @@ Beta until the three criteria of
 [ADR-0036](../../../docs/adr/0036-a-roles-status-is-earned-by-written-criteria.md)
 hold:
 
-1. **Nothing buildable in Missing**: open; steps 5 to 8 below.
+1. **Nothing buildable in Missing**: open; steps 6 to 8 below.
 2. **The main issue validated on real use**: open. A maintainer reads a
    pull request the developer opened for a `ready` issue, its
    Verification proved in it, and merges it or sends it back
@@ -69,12 +70,26 @@ hold:
   `pr-closes-issue-on-gitlab`, `pr-closes-issue-on-a-forge-command`,
   `pr-splits-code-tests`, `agent-env-has-no-token`,
   `pr-judged-at-model`.
+- **The triggers** (step 5): the `issue` line on an issue labelled
+  ready, the `schedule` line on the first ready issue nobody took; the
+  GitHub workflow and the GitLab jobs; a line with no pull request to
+  open blocks ([the triggers](triggers.md)). Cases
+  `developer/routing-schedule-runs-developer`,
+  `routing-ready-runs-developer`, `routing-schedule-none-ready-said`,
+  `routing-needs-a-merge-request`.
+- **Tests first, and a claim read again**: where the tester is routed,
+  an issue whose Validation names scenarios waits for the tester's
+  Draft; before its claim goes to apply, a run reads the issue again
+  and backs off if another run took it
+  ([the triggers](triggers.md#two-runs-on-one-issue)). Cases
+  `developer/skips-issue-without-tests`,
+  `backs-off-issue-taken-meanwhile`.
 
 ## Missing
 
-Steps 5 to 8 of
+Steps 6 to 8 of
 [the plan](../../../docs/adr/0054-the-developer-takes-a-ready-issue-to-a-pull-request.md#build-plan):
-the triggers, the review loop, the merge, the measure. Also:
+the review loop, the merge, the measure. Also:
 
 - **The auditor's draw of its code, by a real judge**: drawn and
   re-checked on a planted act only
@@ -83,6 +98,10 @@ the triggers, the review loop, the merge, the measure. Also:
 - **`workline follow` on its branch**: the branch holds the tester's
   commit, which `follow` reads as a person's; it leaves the branch as it
   is rather than bring it up to date.
+- **Two runs coding at once**: the claim is read again just before
+  apply, not held by the forge; two runs whose agents code at the same
+  time, or two ready issues with overlapping Scopes, can still both be
+  taken ([the triggers](triggers.md#two-runs-on-one-issue)).
 
 - **The claim on GitLab** by assignment, where the token's user is a
   service account that can be assigned: a label for now, on every forge.

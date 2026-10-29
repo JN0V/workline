@@ -26,9 +26,10 @@ const appKey = "secrets.WORKLINE_APP_PRIVATE_KEY"
 var prEvents = []string{"pull_request", "pull_request_review", "pull_request_review_comment"}
 
 // baseEvents are the events whose run is the default branch's workflow
-// (pull_request_target's since 2025-12-08), or one a writer starts on a
-// branch, which the environment's branch rule refuses (workflow_dispatch).
-var baseEvents = []string{"push", "schedule", "workflow_dispatch", "workflow_run", "pull_request_target"}
+// (pull_request_target's since 2025-12-08, an issue's always), or one a
+// writer starts on a branch, which the environment's branch rule refuses
+// (workflow_dispatch).
+var baseEvents = []string{"push", "schedule", "workflow_dispatch", "workflow_run", "pull_request_target", "issues"}
 
 type keyStep struct {
 	Uses string            `yaml:"uses"`

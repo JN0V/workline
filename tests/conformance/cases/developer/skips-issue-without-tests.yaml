@@ -1,0 +1,29 @@
+case: developer/skips-issue-without-tests
+about: >
+  Where the project routes the tester, the issue's Validation becomes
+  acceptance tests before the developer codes (ADR-0054, ADR-0055): a
+  ready issue whose scenarios have no tester's Draft open yet waits for
+  it, said in the record. An issue whose Validation names no scenario
+  gets no Draft, so it does not wait.
+given:
+  repo: tested
+  config:
+    routing: {events: {schedule: [tester]}}
+  forge:
+    issues:
+      - id: 2
+        title: "Multiply"
+        labels: ["workline:ready"]
+        body: "## Need\n\nI want to multiply.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n"
+      - {id: 3, title: "Divide", labels: ["workline:ready"], body: "## Need\n\nI want to divide.\n"}
+run: {develop: [], ai: "fake:developer-nothing"}
+expect:
+  status: pass
+  summary: "took #3"
+  agent-calls: 1
+  forge:
+    issues:
+      - {id: 2, labels: ["workline:ready"], comments: 0}
+      - id: 3
+        labels: ["workline:ready", "workline:developing"]
+        comment-contains: ['"passed":[{"issue":2,"why":"its acceptance tests are not written yet: it waits for the tester''s Draft"}]']

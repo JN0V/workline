@@ -234,6 +234,26 @@ Step 4, the pull request (2026-10-29,
   own commits and the record on the pull request
   ([ADR-0046](0046-the-auditor-re-checks-every-roles-acts.md#amendment-2026-10-29-the-developers-row)).
 
+Step 5, the triggers (2026-10-29,
+[the triggers](../../roles/developer/docs/triggers.md)):
+
+- **Two events, the project's routing**: `issue`, on the issue CI saw
+  labelled ready (`--target issue:<n>`), and `schedule`, the first ready
+  issue nobody took. Nothing routes it by default.
+- **Its own workflow on GitHub**, woken by the label; on GitLab, jobs
+  a tool starts with `WORKLINE_TASK=develop`, since no pipeline starts
+  on a label. The schedule is gardening's line.
+- **A line with no pull request to open blocks**: without
+  `--open-merge-request`, its code would land on the checkout's branch.
+- **No ready issue**: said in the line's summary, nothing on the forge.
+- **Tests first, on any trigger**: where the tester is routed, an issue
+  whose Validation names scenarios waits for the tester's Draft; one
+  with none gets no Draft, so it does not wait.
+- **Two runs on one issue**: the claim lands at apply, so a run reads
+  the issue again once its agent answered, and backs off if another
+  run took it. Two runs coding at the same time can still both take
+  it: left open, the forge holds no lock.
+
 ## Consequences
 
 - Need to merge with no session opened; a person answers by kind only.

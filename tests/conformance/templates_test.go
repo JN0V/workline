@@ -1649,3 +1649,76 @@ func TestCuratorMeasuresWithNoWriteToken(t *testing.T) {
 		t.Errorf("workline:curator does not read its last history, measure with it, keep it, opt-in: %v", job)
 	}
 }
+
+// The developer's ready trigger (ADR-0054, step 5): an issue labelled
+// ready runs the project's `issue` line on it, the judge with no write
+// token and the line proposing only (--no-apply, --open-merge-request),
+// one run at a time; the job that applies holds the App's key, no AI key.
+// On GitLab, the same from a pipeline a tool starts (WORKLINE_TASK=develop).
+func TestDeveloperTemplatesRouteTheReadyIssue(t *testing.T) {
+	data, err := os.ReadFile("../../ci/github/workline-develop.yml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var wf struct {
+		On          map[string]any `yaml:"on"`
+		Concurrency map[string]any `yaml:"concurrency"`
+		Jobs        map[string]struct {
+			If          string            `yaml:"if"`
+			Concurrency map[string]any    `yaml:"concurrency"`
+			Permissions map[string]string `yaml:"permissions"`
+			Steps       []struct {
+				Run string            `yaml:"run"`
+				Env map[string]string `yaml:"env"`
+			} `yaml:"steps"`
+		} `yaml:"jobs"`
+	}
+	if err := yaml.Unmarshal(data, &wf); err != nil {
+		t.Fatal(err)
+	}
+	judge := wf.Jobs["judge"]
+	// The group on the judge, after its `if`, per issue: a label other
+	// than ready never takes it, so never drops a ready issue's run.
+	if _, ok := wf.On["issues"]; !ok || wf.Concurrency != nil || judge.Concurrency["cancel-in-progress"] != false ||
+		!strings.Contains(fmt.Sprint(judge.Concurrency["group"]), "github.event.issue.number") {
+		t.Errorf("workline-develop.yml: not woken by an issue's label, or its group not on the judge, one an issue: %v %v %v", wf.On, wf.Concurrency, judge.Concurrency)
+	}
+	if !strings.Contains(judge.If, "workline:ready") || judge.Permissions["contents"] != "read" {
+		t.Errorf("workline-develop.yml, judge: not on the ready label, or holds a write token: %q %v", judge.If, judge.Permissions)
+	}
+	routed := false
+	for _, s := range judge.Steps {
+		if strings.Contains(s.Run, "workline route issue") {
+			routed = strings.Contains(s.Run, "--no-apply") && strings.Contains(s.Run, "--open-merge-request") && strings.Contains(s.Run, "--target issue:")
+		}
+	}
+	if !routed {
+		t.Error("workline-develop.yml, judge: does not run the issue line on the issue, proposing only, its pull request opened")
+	}
+	for _, s := range wf.Jobs["apply"].Steps {
+		if strings.Contains(s.Run, "workline apply") && s.Env["CLAUDE_CODE_OAUTH_TOKEN"] != "" {
+			t.Error("workline-develop.yml, apply: holds the agent's token")
+		}
+	}
+
+	data, err = os.ReadFile("../../ci/gitlab/workline.gitlab-ci.yml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var top map[string]any
+	if err := yaml.Unmarshal(data, &top); err != nil {
+		t.Fatal(err)
+	}
+	base, _ := top[".workline:develop"].(map[string]any)
+	if !strings.Contains(fmt.Sprint(base["rules"]), `$WORKLINE_TASK == "develop"`) || base["resource_group"] == nil {
+		t.Errorf(".workline:develop: not run by WORKLINE_TASK=develop, or not one at a time: %v", base)
+	}
+	j, _ := top["workline:develop:judge"].(map[string]any)
+	script := fmt.Sprint(j["script"])
+	if !strings.Contains(script, "workline route issue ${ISSUE_IID:+--target issue:$ISSUE_IID}") || !strings.Contains(script, "--no-apply") || !strings.Contains(script, "--open-merge-request") {
+		t.Errorf("workline:develop:judge does not run the issue line on ISSUE_IID, proposing only: %s", script)
+	}
+	if a, _ := top["workline:develop:apply"].(map[string]any); !strings.Contains(fmt.Sprint(a["script"]), "workline apply --line line.json") {
+		t.Errorf("workline:develop:apply does not apply the line: %v", a["script"])
+	}
+}
