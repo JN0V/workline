@@ -1235,6 +1235,40 @@ func developCmd(args []string) int {
 // waiting, kept or rewritten, its own commit pushed on the branch. With no
 // target, curate (step 7): a folder's redundant tests removed, proven with
 // no agent, on workline/tester/curate-<folder>.
+func developCmd(args []string) int {
+	fs := newFlags("develop")
+	repo := fs.String("repo", ".", "repository to work on")
+	issue := fs.Int("issue", 0, "the ready issue to take, rather than the first in the backlog's order")
+	ai := fs.String("ai", "", "agent: none, claude, cmd:<command> (default: the project's `ai` setting, else none); with none, the issue is named, nothing claimed")
+	forgeSpec := fs.String("forge", "", "forge: github, gitlab, local, fake:<file> (default: the project's `forge` setting)")
+	roles := fs.String("roles", os.Getenv("WORKLINE_ROLES"), "folder holding the roles")
+	asJSON := fs.Bool("json", false, "print the result as JSON")
+	noApply := fs.Bool("no-apply", false, "judge, apply nothing; a job apart applies the claim with `workline apply <run>`, holding the write token and no agent's key")
+	if code, done := parseOnly(fs, args); done {
+		return code
+	}
+	var target *forge.Target
+	if *issue > 0 {
+		target = &forge.Target{Kind: "issue", ID: *issue}
+	}
+	abs, _ := filepath.Abs(*repo)
+	rolesDir, err := resolveRoles(*roles)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "workline:", err)
+		return 1
+	}
+	absRoles, _ := filepath.Abs(rolesDir)
+	res := engine.Run(engine.Options{Repo: abs, RolesDir: absRoles, Role: "developer", Event: "issue", AI: *ai,
+		Forge: *forgeSpec, Target: target, NoApply: *noApply})
+	if *asJSON {
+		out, _ := json.MarshalIndent(res, "", "  ")
+		fmt.Println(string(out))
+	} else {
+		report(res)
+	}
+	return exitFor(res.Status)
+}
+
 func testRun(repo, roles, ai, forgeSpec, event string, target *forge.Target, noApply, asJSON bool) int {
 	abs, _ := filepath.Abs(repo)
 	rolesDir, err := resolveRoles(roles)

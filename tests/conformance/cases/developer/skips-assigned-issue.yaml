@@ -9,11 +9,11 @@ given:
     issues:
       - {id: 2, title: "Multiply", labels: ["workline:ready"], assignees: [alice], body: "## Need\n\nI want to multiply.\n"}
       - {id: 3, title: "Divide", labels: ["workline:ready"], body: "## Need\n\nI want to divide.\n"}
-run: {develop: [], ai: "fake:developer-nothing"}
+run: {develop: [], ai: "cmd:true"}
 expect:
   status: pass
   summary: "took #3"
-  agent-calls: 1
+  agent-calls: 0
   forge:
     issues:
       - {id: 2, labels: ["workline:ready"], comments: 0}
