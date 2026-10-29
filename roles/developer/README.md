@@ -3,7 +3,7 @@ sources:
   - roles/developer/role.yaml
   - ci/github/workline-develop.yml
   - internal/developer
-checked: 93dac05e
+checked: d72088d2
 verified: agent:claude-code
 ---
 # Developer
