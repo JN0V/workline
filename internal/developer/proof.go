@@ -83,7 +83,7 @@ func prove(repo, at string, patches []intent.Intention, s Settings) (Proof, *Cap
 	} else if len(o.Red) == 0 {
 		p.Why = "the test command failed, no test red: " + o.Exit
 		if len(o.Passed) == 0 {
-			p.Why = "the report names no test"
+			p.Result, p.Why = Unproven, "the report names no test"
 		}
 	}
 	return p, nil
