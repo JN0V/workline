@@ -272,6 +272,21 @@ Step 6, the review loop (2026-10-29,
 - **Applied from the merge request** like any role's run on one: a
   role that runs on a review of its own branch is let through.
 
+Step 7, the merge (2026-10-29,
+[the merge](../../roles/developer/docs/merge.md)):
+
+- **Fix or feature, from the issue's labels**: the issue its record
+  names, a fixed list of labels until the product owner's `kinds` is
+  built; a feature over a fix over a task; none, it waits.
+- **A kind of [ADR-0042]'s `normal`, `code`**: the developer's, as the
+  forge says it — the App's pushes, every commit the App's, the
+  tester's or the developer's by its trailer —; no file that steers
+  agents; no finding open that blocks or is Important, which a
+  verdict that only warns lets pass. Recorded on the pull request; a
+  revert demotes it as any kind.
+- **A feature is held** with one comment on it, the record the auditor
+  reads beside the developer's code.
+
 ## Consequences
 
 - Need to merge with no session opened; a person answers by kind only.

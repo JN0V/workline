@@ -24,7 +24,7 @@ expect:
   findings:
     - {rule: waits-for-a-yes, where: "#10", message: "its records merge requests wait for a person's yes since a revert (#1)"}
   no-findings: [{rule: auto-merge-on, where: "#10"}, {rule: merge-record-lost}]
-  summary-file: ["with no person's yes: workline's own merge requests, derived, docs; waiting for a person's yes again since a revert: records (#1)"]
+  summary-file: ["with no person's yes: workline's own merge requests, derived, docs, code; waiting for a person's yes again since a revert: records (#1)"]
   forge:
     merge-requests:
       - {id: 10, auto-merge: false}

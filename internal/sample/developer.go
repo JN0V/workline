@@ -11,7 +11,8 @@ import (
 
 // The developer's code in the weekly sample (ADR-0046, the developer's
 // row), on each merge request of its merged in the window: its commits on
-// the head, `Workline-Role: developer`, and the record on its pull request.
+// the head, `Workline-Role: developer`, the record on its pull request,
+// and how it merged: the policy's record, the issue's kind it read.
 // Not drawn: its pick and its refusals at apply, the engine's own moves.
 
 const devRole = "developer"
@@ -21,6 +22,7 @@ type devAct struct {
 	record   developer.Act
 	recorded bool
 	first    string // its oldest commit on the head
+	merge    string // how the merge policy decided on it, "" a person's yes
 }
 
 // developerActs are the developer's code on its merge requests merged in
@@ -67,8 +69,12 @@ func developerActs(repo string, f forge.Forge, mrs []forge.MergeRequest) ([]Act,
 		if err != nil {
 			return nil, nil, err
 		}
+		said, err := developer.MergeSaid(f, m.ID)
+		if err != nil {
+			return nil, nil, err
+		}
 		out = append(out, Act{Role: devRole, Kind: "code", Ref: ref, Commit: tip, Day: day, By: by, Line: subject, key: tip,
-			developer: &devAct{record: r, recorded: ok, first: first}})
+			developer: &devAct{record: r, recorded: ok, first: first, merge: said}})
 	}
 	return out, unread, nil
 }
@@ -107,5 +113,13 @@ func (rd *reader) developerMaterial(a *Act, m *material) string {
 		m.act = fmt.Sprintf("The developer's code for #%d, its commits up to %.7s, opened as %s, then %s.", d.record.Issue, a.Commit, a.Ref, plural(len(d.record.Rounds), "review round"))
 		m.about += " Then its review rounds: what the reviewer or a person asked each, and how it ended."
 	}
+	// Its merge (ADR-0054, step 7): by the policy with no person's yes, the
+	// issue's kind said, or by a person's.
+	merge := "merged with a person's yes: the merge policy left no record of its own on it"
+	if d.merge != "" {
+		merge = d.merge
+	}
+	m.items = append(m.items, item{name: "merge", text: merge, full: merge})
+	m.about += " Then how it merged: the issue's kind the policy read, or a person's yes."
 	return ""
 }

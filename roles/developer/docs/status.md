@@ -8,7 +8,9 @@ request on the tester's Draft, ready when green with no cap reached,
 else a Draft, its record hidden on it; with none, it names the issue.
 Routed, it runs when an issue is labelled ready and on the schedule.
 On its pull request, a fresh run fixes each review: the five whys at
-round three, a person past round five. Steps 1 to 6 of
+round three, a person past round five. At the merge policy's `normal`,
+its pull request for a fix or a task merges with no person's yes; a
+feature waits for one. Steps 1 to 7 of
 [ADR-0054's plan](../../../docs/adr/0054-the-developer-takes-a-ready-issue-to-a-pull-request.md#build-plan);
 beta; routed where a project lists it.
 
@@ -26,7 +28,7 @@ Beta until the three criteria of
 [ADR-0036](../../../docs/adr/0036-a-roles-status-is-earned-by-written-criteria.md)
 hold:
 
-1. **Nothing buildable in Missing**: open; steps 7 and 8 below.
+1. **Nothing buildable in Missing**: open; step 8 below.
 2. **The main issue validated on real use**: open. A maintainer reads a
    pull request the developer opened for a `ready` issue, its
    Verification proved in it, and merges it or sends it back
@@ -99,11 +101,25 @@ hold:
   `round-five-hands-to-person`, `person-comment-is-a-round`,
   `round-applied-from-the-default-branch`.
 
+- **The merge** (step 7): at `normal`, `workline follow` merges its
+  pull request with no person's yes, the kind `code`, when the issue it
+  closes is a fix or a task by its labels, every gate passed and no
+  finding open that blocks or is Important; a feature, or no kind,
+  waits for a person's yes. Each decision recorded on the pull
+  request, read by the auditor with its code
+  ([the merge](merge.md)). Cases
+  `developer/merge-normal-admits-developer-fix`,
+  `merge-normal-holds-developer-feature`.
+
 ## Missing
 
-Steps 7 and 8 of
+Step 8 of
 [the plan](../../../docs/adr/0054-the-developer-takes-a-ready-issue-to-a-pull-request.md#build-plan):
-the merge, the measure. Also:
+the measure. Also:
+
+- **The issue's kind from the forge's types and the project's labels**:
+  read from a fixed list of labels only
+  ([the merge](merge.md#not-yet)).
 
 - **The reviewer's full text**: a round reads the reviewer's summary
   table, where a finding with a comment on its line reads short (its
