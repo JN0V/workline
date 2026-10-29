@@ -19,7 +19,7 @@ and where it stands: planned, beta or built, by
 | Reviewer | says what a change, or a spec, breaks or leaves out; never approves | `review`, `spec`, `merge-request` and `schedule` (opt-in) | [reviewer](../roles/reviewer/README.md) |
 | Inspector | explains the findings a merge request adds to your gates; never their verdict | `merge-request` (opt-in), after the gates | [inspector](../roles/inspector/README.md) |
 | Tester | writes a ready issue's tests from its scenarios, each proven red on the base, frozen to the builder | `workline test write`, `test answer`, `test check`, `test measure`, `test curate` | [tester](../roles/tester/README.md) |
-| Developer | takes the first ready issue nobody took, toward its pull request | `workline develop` | [developer](../roles/developer/README.md) |
+| Developer | takes the first ready issue nobody took and writes its code, within bounds, toward its pull request | `workline develop` | [developer](../roles/developer/README.md) |
 | Product owner | keeps the open issues true to the code and ready to build, proposing on each issue | `schedule` (opt-in), `import` | [product owner](../roles/product-owner/README.md) |
 | Judge | answers one yes-or-no question a role's check cannot | asked by the other roles | [judge](../roles/judge/role.yaml) |
 | Auditor | re-checks a weekly sample of every role's acts | `workline sample` | [auditor](../roles/auditor/role.yaml) |

@@ -1,0 +1,35 @@
+case: developer/objects-to-a-test
+about: >
+  A frozen test that does not fit, the developer objects to rather than
+  edits (ADR-0054, ADR-0055): its objection goes on the test's line of
+  the tester's Draft, opened by workline:objection and in the form the
+  tester reads — the test, its scenario, the kind, why. Its code is
+  applied beside it.
+given:
+  repo: tested-draft
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:ready"]
+        body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        draft: true
+        comments: ["The tests of #3, frozen.\n\n<!-- workline:tester-record {\"issue\":3,\"base\":\"main\",\"files\":{\"tests/test_mul_by_zero.sh\":\"8f123a0bacbd681063880b867df38dd216784b97\",\"tests/test_mul_two_by_three.sh\":\"2dee0641bd7a79057ade7bff5af43b603125f543\"}} -->\n<!-- workline:sticky=tester/tests -->"]
+run: {develop: [], ai: "fake:developer-objects"}
+expect:
+  status: pass
+  agent-calls: 1
+  no-findings: [{rule: not-the-developers}, {rule: acceptance-test-edit}]
+  files:
+    lib.sh: {contains: ["mul()"]}
+  forge:
+    merge-requests:
+      - id: 1
+        comment-contains: ["The developer** objects to 1 of the tester's tests of #3"]
+        threads:
+          - {path: tests/test_mul_by_zero.sh, line: 4, contains: ["workline:objection", "- test: tests/test_mul_by_zero.sh", "- scenario: By zero", "- kind: over-specified", "- why: The scenario asks for 0"]}

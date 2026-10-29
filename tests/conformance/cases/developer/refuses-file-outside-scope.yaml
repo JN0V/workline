@@ -1,0 +1,27 @@
+case: developer/refuses-file-outside-scope
+about: >
+  The developer's bounds at apply (ADR-0054, step 2): its patches touch
+  the paths the issue's Scope names and the tests beside them. A patch
+  reaching another file is refused by the engine, no agent judging it,
+  and left out; the others are applied. The refusal is said in the run
+  and kept in the claim's record, for the auditor (ADR-0046).
+given:
+  repo: tested
+  forge:
+    issues:
+      - {id: 2, title: "Multiply", labels: ["workline:ready"], body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: a `mul` function.\n"}
+run: {develop: [], ai: "fake:developer-outside-scope"}
+expect:
+  status: pass
+  summary: "took #2; 1 of its agent's proposals refused at apply"
+  agent-calls: 1
+  findings: [{rule: outside-scope, level: warn, where: README.md}]
+  files:
+    lib.sh: {contains: ["mul()"]}
+    tests/test_mul.sh: {exists: true}
+    README.md: {lacks: ["It multiplies now"]}
+  forge:
+    issues:
+      - id: 2
+        labels: ["workline:ready", "workline:developing"]
+        comment-contains: ["Refused at apply", "`README.md`: outside the issue's scope", '"refused":[{"file":"README.md","rule":"outside-scope"}]']

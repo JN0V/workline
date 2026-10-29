@@ -1,7 +1,9 @@
 // Package developer is the developer role's built-in steps (ADR-0054): it
 // takes a ready issue to a pull request. Step 1, the pick: the first ready
 // issue nobody claimed, in the backlog's order, claimed by a label the
-// engine puts with a record on the issue. No agent writes code yet.
+// engine puts with a record on the issue. Step 2, the bounds: the agent's
+// patches held at apply to what the issue lets it touch (bounds.go). The
+// proof and the pull request are later steps.
 package developer
 
 import (
@@ -11,7 +13,6 @@ import (
 	"maps"
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
 	"regexp"
 	"slices"
@@ -64,6 +65,9 @@ type Act struct {
 	At     string   `json:"at,omitempty"`
 	Issue  int      `json:"issue"`
 	Passed []Passed `json:"passed,omitempty"`
+	// Refused: each file its agent's patches reached past its bounds, and
+	// the bound (ADR-0054, step 2).
+	Refused []Refusal `json:"refused,omitempty"`
 }
 
 var actData = regexp.MustCompile(`<!-- ` + ActMark + ` (\{.*\}) -->`)
@@ -91,8 +95,8 @@ var pathWord = regexp.MustCompile("`([^`\\s]+)`")
 func scopePaths(body string) []string {
 	var out []string
 	for _, m := range pathWord.FindAllStringSubmatch(work.ByMeaning(body)[work.Scope].Text, -1) {
-		p := strings.TrimSuffix(path.Clean(m[1]), "/")
-		if strings.ContainsAny(m[1], "/.") && !slices.Contains(out, p) {
+		p, ok := scopeEntry(m[1])
+		if ok && strings.ContainsAny(m[1], "/.") && !slices.Contains(out, p) {
 			out = append(out, p)
 		}
 	}
@@ -168,8 +172,8 @@ func pick(issues []forge.Issue, mrs []forge.MergeRequest, s Settings, only int) 
 
 // Pre picks the issue: with no agent, it names it and stops, nothing
 // claimed; with one, it leaves the claim to the engine — the label and the
-// comment holding the record — and no question: the code is a later
-// step's (ADR-0054, build plan).
+// comment holding the record — reads the bounds, and asks the agent for
+// the code (ADR-0054, build plan).
 func Pre(runDir, repo string) int {
 	s, err := settingsIn(runDir)
 	if err != nil {
@@ -227,14 +231,71 @@ func Pre(runDir, repo string) int {
 	if err := os.WriteFile(filepath.Join(runDir, "in", pickFile), data, 0o644); err != nil {
 		return fail(err)
 	}
-	claim := []intent.Intention{
-		{Kind: "label", Value: map[string]any{"issue": id, "add": []string{s.ClaimLabel}}},
-		{Kind: "comment", Value: map[string]any{"issue": id, "sticky": "claim", "body": claimBody(act, s)}},
+	if err := intent.Write(filepath.Join(runDir, "in", "fallback.yaml"), claimOf(act, s)); err != nil {
+		return fail(err)
 	}
-	if err := intent.Write(filepath.Join(runDir, "in", "fallback.yaml"), claim); err != nil {
+	var is forge.Issue
+	for _, i := range issues {
+		if i.ID == id {
+			is = i
+		}
+	}
+	bounds, err := readBounds(f, b, repo, is)
+	if err != nil {
+		return external(err)
+	}
+	if data, err = json.Marshal(bounds); err != nil {
+		return fail(err)
+	}
+	if err := os.WriteFile(filepath.Join(runDir, "in", boundsFile), data, 0o644); err != nil {
+		return fail(err)
+	}
+	if err := os.WriteFile(filepath.Join(runDir, "in", "task.md"), []byte(taskText(is, bounds)), 0o644); err != nil {
 		return fail(err)
 	}
 	return 0
+}
+
+// claimOf is the claim: the label and the comment holding the record.
+func claimOf(a Act, s Settings) []intent.Intention {
+	return []intent.Intention{
+		{Kind: "label", Value: map[string]any{"issue": a.Issue, "add": []string{s.ClaimLabel}}},
+		{Kind: "comment", Value: map[string]any{"issue": a.Issue, "sticky": "claim", "body": claimBody(a, s)}},
+	}
+}
+
+// taskText is the question: the issue, and what bounds the code.
+func taskText(is forge.Issue, b Bounds) string {
+	var t strings.Builder
+	fmt.Fprintf(&t, "# Issue #%d: %s\n\n%s\n\n## What you may touch\n\n", is.ID, is.Title, strings.TrimSpace(is.Body))
+	if len(b.Scope) == 0 {
+		t.WriteString("The issue names no path: every patch is refused. Propose none.\n")
+	}
+	for _, p := range b.Scope {
+		fmt.Fprintf(&t, "- `%s`\n", p)
+	}
+	t.WriteString("- the tests beside them: in their folder, or in a test folder, the name holding `test` or `spec`.\n\n" +
+		"Anything else is refused at apply, whatever the reason: say it in your answer, it belongs in an issue. " +
+		"Never, whatever the scope: the files that steer agents (AGENTS.md, CLAUDE.md, a page they link, a prompt), " +
+		"a role's folder, `.workline/`, the CI's workflows, a gate's definition.\n")
+	var frozen []string
+	for f, n := range b.Frozen {
+		if n == is.ID {
+			frozen = append(frozen, f)
+		}
+	}
+	if len(frozen) > 0 {
+		slices.Sort(frozen)
+		t.WriteString("\n## The tester's acceptance tests: frozen\n\nRead-only to you; make them pass. A patch touching one is refused.\n\n")
+		for _, f := range frozen {
+			fmt.Fprintf(&t, "- `%s`\n", f)
+		}
+		t.WriteString("\nOne that does not fit: object to it, a `comment` whose value is " +
+			"`{objection: {test: <file>, line: <n>, scenario: <its name>, kind: <interface | over-specified | contradicts | untestable | need>, why: <one or two sentences>}}`. " +
+			"The tester keeps or rewrites it.\n")
+	}
+	t.WriteString("\n## Your answer\n\nPatches only, and objections if any. No label, no other comment: the claim is the engine's.\n")
+	return t.String()
 }
 
 // claimBody is the comment the claim leaves on the issue, its record hidden.
@@ -248,11 +309,19 @@ func claimBody(a Act, s Settings) string {
 			fmt.Fprintf(&b, "- #%d: %s\n", p.Issue, p.Why)
 		}
 	}
+	if len(a.Refused) > 0 {
+		b.WriteString("\nRefused at apply, left out of its code:\n\n")
+		for _, r := range a.Refused {
+			fmt.Fprintf(&b, "- `%s`: %s\n", r.File, why(r))
+		}
+	}
 	fmt.Fprintf(&b, "\n%s\n", a.Line())
 	return b.String()
 }
 
-// Post says what the run took; the claim is the engine's to apply.
+// Post holds the agent's proposals to the bounds, with no agent: the
+// claim, the patches within them and the objections kept, the rest
+// refused and said, in the verdict and in the claim's record.
 func Post(runDir, repo string) int {
 	var a Act
 	data, err := os.ReadFile(filepath.Join(runDir, "in", pickFile))
@@ -262,13 +331,51 @@ func Post(runDir, repo string) int {
 	if err := json.Unmarshal(data, &a); err != nil {
 		return fail(err)
 	}
+	var b Bounds
+	if data, err = os.ReadFile(filepath.Join(runDir, "in", boundsFile)); err != nil {
+		return fail(err)
+	}
+	if err := json.Unmarshal(data, &b); err != nil {
+		return fail(err)
+	}
+	s, err := settingsIn(runDir)
+	if err != nil {
+		return fail(err)
+	}
+	proposed, err := intent.Read(filepath.Join(runDir, "out", "intentions.yaml"))
+	if err != nil {
+		return fail(err)
+	}
+	claim, err := intent.Read(filepath.Join(runDir, "in", "fallback.yaml"))
+	if err != nil {
+		return fail(err)
+	}
+	kept, refused, said := bounded(repo, b, claim, proposed)
+	a.Refused = refused
 	where := fmt.Sprintf("#%d", a.Issue)
 	v := verdict.Verdict{Status: verdict.Pass, Summary: "took " + where}
 	for _, p := range a.Passed {
 		v.Findings = append(v.Findings, verdict.Finding{Rule: "issue-passed", Level: "info", Where: fmt.Sprintf("#%d", p.Issue), Message: p.Why})
 	}
-	v.Findings = append(v.Findings, verdict.Finding{Rule: "code-not-built", Level: "warn", Where: where,
-		Message: "the developer claimed the issue; writing its code and opening its pull request are not built yet (ADR-0054, steps 2 to 4): a person takes it from here, or removes the label"})
+	for _, r := range refused {
+		v.Findings = append(v.Findings, verdict.Finding{Rule: r.Rule, Level: "warn", Where: r.File, Message: "refused at apply, its patch left out: " + why(r)})
+	}
+	for _, w := range said {
+		v.Findings = append(v.Findings, verdict.Finding{Rule: "not-the-developers", Level: "warn", Where: where, Message: "refused at apply: " + w})
+	}
+	if n := len(refused) + len(said); n > 0 {
+		v.Summary += fmt.Sprintf("; %d of its agent's proposals refused at apply", n)
+	}
+	v.Findings = append(v.Findings, verdict.Finding{Rule: "pull-request-not-built", Level: "warn", Where: where,
+		Message: "the developer's patches within its bounds are applied to the working tree; proving them and opening the pull request are not built yet (ADR-0054, steps 3 and 4): a person takes it from here, or removes the label"})
+	// The claim carries the record, the refusals in it (ADR-0046).
+	kept = append(claimOf(a, s), kept[len(claim):]...)
+	if err := os.Remove(filepath.Join(runDir, "out", "intentions.yaml")); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return fail(err)
+	}
+	if err := intent.Write(filepath.Join(runDir, "out", "intentions.yaml"), kept); err != nil {
+		return fail(err)
+	}
 	if err := verdict.Write(filepath.Join(runDir, "out", "verdict.yaml"), &v); err != nil {
 		return fail(err)
 	}

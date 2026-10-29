@@ -1,0 +1,26 @@
+case: developer/has-no-merge-intention
+about: >
+  The developer never merges, approves, accepts, labels nor moves an
+  issue (ADR-0054, what it never does). The engine's catalogue holds no
+  merge to propose; the label and comment its role allows are the
+  claim's, the engine's: an agent proposing workline:accepted, or a
+  comment of its own, is refused at apply, its code kept.
+given:
+  repo: tested
+  forge:
+    issues:
+      - {id: 2, title: "Multiply", labels: ["workline:ready"], body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: a `mul` function.\n"}
+run: {develop: [], ai: "fake:developer-merges"}
+expect:
+  status: pass
+  agent-calls: 1
+  findings:
+    - {rule: not-the-developers, level: warn, where: "#2"}
+  files:
+    lib.sh: {contains: ["mul()"]}
+  forge:
+    issues:
+      - id: 2
+        labels: ["workline:ready", "workline:developing"]
+        comments: 1
+        comment-lacks: ["merging it"]

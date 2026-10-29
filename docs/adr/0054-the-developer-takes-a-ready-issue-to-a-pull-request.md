@@ -195,6 +195,14 @@ Step 1, the pick (2026-10-29,
 - **The cases** sit in `tests/conformance/cases/developer/`, as the
   tester's in their folder.
 
+Step 2, the bounds (2026-10-29,
+[the bounds](../../roles/developer/docs/bounds.md)):
+
+- **Refused in post, with no agent**: a refused patch is left out, the
+  rest applied; when the bounds cannot be read, every patch.
+- **The steering test** is the routine merge's ([ADR-0042]), shared;
+  the frozen tests, the tester's record. The rules and why: the page.
+
 ## Consequences
 
 - Need to merge with no session opened; a person answers by kind only.

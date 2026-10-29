@@ -1,0 +1,9 @@
+# The developer's agent writing #2's mul, then accepting its own work:
+# the acceptance label, and a comment saying it merges.
+- patch:
+    file: lib.sh
+    content: |
+      add() { echo $(($1 + $2)); }
+      mul() { echo $(($1 * $2)); }
+- label: {issue: 2, add: ["workline:accepted"]}
+- comment: {issue: 2, body: "Done: merging it."}
