@@ -169,6 +169,26 @@ func recordBody(a Act) string {
 	return b.String()
 }
 
+// RoundLines are its review rounds as the auditor reads them: each, what
+// was asked and how it ended; "" for none (ADR-0046).
+func RoundLines(a Act) string {
+	var b strings.Builder
+	for _, x := range a.Rounds {
+		fmt.Fprintf(&b, "- Round %d: %s", x.N, roundResult(x))
+		if x.Whys {
+			b.WriteString(", the five whys run")
+		}
+		if x.Nits > 0 {
+			fmt.Fprintf(&b, ", %d nit%s not asked", x.Nits, plural(x.Nits))
+		}
+		b.WriteString(".\n")
+		for _, t := range x.Asked {
+			fmt.Fprintf(&b, "  - asked: %s\n", t)
+		}
+	}
+	return b.String()
+}
+
 // roundResult says how a review round ended.
 func roundResult(x Round) string {
 	switch {
