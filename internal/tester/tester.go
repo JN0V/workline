@@ -357,6 +357,7 @@ func changeOf(repo, base string, paths []string) (*change, error) {
 // written with no classname.
 type ran struct {
 	output    string // the command's, stdout and stderr
+	failure   string // why the command exited non-zero, "" when it exited 0
 	results   map[string]result
 	suite     map[string]string
 	classless map[string]bool
@@ -432,6 +433,9 @@ func runIn(tree string, s Settings, where string) (ran, *verdict.Finding) {
 			Message: fmt.Sprintf("the test command wrote no report %s (%s); its output ends: %s", where, said, tail(out.String(), 10))}
 	}
 	rep := ran{output: out.String(), results: map[string]result{}, suite: map[string]string{}, classless: map[string]bool{}}
+	if runErr != nil {
+		rep.failure = runErr.Error()
+	}
 	for _, f := range found {
 		if err := readJUnit(f, rep.results, rep.suite, rep.classless); err != nil {
 			rel, _ := filepath.Rel(tree, f)
