@@ -1,0 +1,41 @@
+contract: 1
+name: developer
+mission: A ready issue becomes a pull request that proves its Verification, written within its Scope, without a person opening a session.
+
+# issue: `workline develop [--issue <n>]` — the pick (ADR-0054, step 1):
+#        the first ready issue in the backlog's order, assigned to
+#        nobody, not taken already, no open merge request closing it, its
+#        Scope clear of the issues the developer holds. With an agent, the
+#        engine claims it: the claim label and a comment holding the
+#        record. With none, it is named, nothing claimed. No code is
+#        written yet: steps 2 to 4.
+events: [issue]
+
+requires: [git]
+
+# Writing the code an issue asks for is judgement on code (steps 2 on);
+# the pick is mechanical and asks no agent.
+model:
+  capability: coding
+  tier: standard
+  effort: medium
+  timeout: 30m
+
+context:
+  budget: 60000
+
+duties:
+  reads: ["**"]
+  writes: []   # step 1 writes no file
+
+# comment and label are the engine's, never the agent's: the claim and
+# its record on the issue.
+intentions: [comment, label]
+
+without-ai: pass   # with none, the issue is named, nothing claimed
+
+settings:
+  # The label that says the developer took an issue. GitHub does not
+  # assign an issue to an App, so the claim is a label on every forge;
+  # a person's assignment keeps an issue from it (docs/pick.md).
+  claim-label: "workline:developing"

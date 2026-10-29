@@ -1,0 +1,22 @@
+case: developer/skips-assigned-issue
+about: >
+  An issue a person assigned is theirs (ADR-0054: the assignee is the
+  claim): the developer passes it over, never unassigns anyone, and takes
+  the next ready one, saying in its record which it passed and why.
+given:
+  repo: tested
+  forge:
+    issues:
+      - {id: 2, title: "Multiply", labels: ["workline:ready"], assignees: [alice], body: "## Need\n\nI want to multiply.\n"}
+      - {id: 3, title: "Divide", labels: ["workline:ready"], body: "## Need\n\nI want to divide.\n"}
+run: {develop: [], ai: "cmd:true"}
+expect:
+  status: pass
+  summary: "took #3"
+  agent-calls: 0
+  forge:
+    issues:
+      - {id: 2, labels: ["workline:ready"], comments: 0}
+      - id: 3
+        labels: ["workline:ready", "workline:developing"]
+        comment-contains: ["#2: assigned to alice", '"passed":[{"issue":2,"why":"assigned to alice"}]']
