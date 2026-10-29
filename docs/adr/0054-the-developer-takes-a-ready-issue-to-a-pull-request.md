@@ -287,6 +287,18 @@ Step 7, the merge (2026-10-29,
 - **A feature is held** with one comment on it, the record the auditor
   reads beside the developer's code.
 
+Step 8, measured (2026-10-29,
+[the measure](../../roles/developer/docs/status.md#measured)), the
+plan built:
+
+- **Four planted issues**, scored with a real agent: 29/30, about 2k
+  tokens a case; then a copy of a real repository, green at its second
+  run.
+- **The question holds the Scope's code**, as it reads where the code
+  starts: the agent has no tools, and shown none, it wrote no patch.
+- **The objection's form is shown whole**: the answer's generic
+  comment is a text, and an objection written so was refused.
+
 ## Consequences
 
 - Need to merge with no session opened; a person answers by kind only.

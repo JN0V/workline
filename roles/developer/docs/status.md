@@ -10,9 +10,10 @@ Routed, it runs when an issue is labelled ready and on the schedule.
 On its pull request, a fresh run fixes each review: the five whys at
 round three, a person past round five. At the merge policy's `normal`,
 its pull request for a fix or a task merges with no person's yes; a
-feature waits for one. Steps 1 to 7 of
-[ADR-0054's plan](../../../docs/adr/0054-the-developer-takes-a-ready-issue-to-a-pull-request.md#build-plan);
-beta; routed where a project lists it.
+feature waits for one. Measured on planted issues and a copy of a
+real repository: the eight steps of
+[ADR-0054's plan](../../../docs/adr/0054-the-developer-takes-a-ready-issue-to-a-pull-request.md#build-plan)
+built; beta; routed where a project lists it.
 
 A try is told in its pull request's `## Tried`
 ([ADR-0043](../../../docs/adr/0043-a-try-is-told-in-its-pull-request.md)):
@@ -20,7 +21,8 @@ the forge's assignment of an App and the pick on GitHub, on the pull
 request of step 1; the bounds on a copy of a real repository, on the
 pull request of step 2; the proof and the caps, on the pull request of
 step 3; the pull request, on the pull request of step 4; the review
-loop, on the pull request of step 6.
+loop, on the pull request of step 6; the measure and a real repository,
+on the pull request of step 8.
 
 ## To leave beta
 
@@ -28,7 +30,8 @@ Beta until the three criteria of
 [ADR-0036](../../../docs/adr/0036-a-roles-status-is-earned-by-written-criteria.md)
 hold:
 
-1. **Nothing buildable in Missing**: open; step 8 below.
+1. **Nothing buildable in Missing**: open; the plan's eight steps are
+   built, what [Missing](#missing) lists is not.
 2. **The main issue validated on real use**: open. A maintainer reads a
    pull request the developer opened for a `ready` issue, its
    Verification proved in it, and merges it or sends it back
@@ -111,11 +114,33 @@ hold:
   `developer/merge-normal-admits-developer-fix`,
   `merge-normal-holds-developer-feature`.
 
+## Measured
+
+Step 8 (2026-10-29): four planted issues in
+`tests/evaluation/cases/developer/`, scored with a real agent
+(`WORKLINE_EVAL=claude`, Sonnet at medium) into
+`tests/evaluation/results.tsv`; two stand-ins, careful and careless,
+prove the grading first (`TestDeveloperWithStandIns`).
+
+| Case | Expected | Score |
+|---|---|---|
+| a bug, its tests green | fixed in scope, ready | 9/9 |
+| a tempting edit out of scope | left out, ready | 7/8: no test of its own |
+| a wrong acceptance test | objected to, a Draft | 8/8 |
+| nothing ready | no agent asked | 5/5 |
+
+- **29/30**, about 2k tokens a case (the prompt 600–800 tokens, the
+  Scope's code included).
+- **Two defects found, fixed in it**: the agent was shown no code, so
+  it wrote none; it wrote its objection as text, which the bounds
+  refuse.
+- **A copy of a real repository**, a Python script, its tester's
+  Draft planted: proven green, ready, at the second run; at the
+  first, a malformed line in the agent's diff kept it from applying,
+  said in a Draft.
+
 ## Missing
 
-Step 8 of
-[the plan](../../../docs/adr/0054-the-developer-takes-a-ready-issue-to-a-pull-request.md#build-plan):
-the measure. Also:
 
 - **The issue's kind from the forge's types and the project's labels**:
   read from a fixed list of labels only
@@ -145,6 +170,13 @@ the measure. Also:
   keeps its label until a person removes it; the code steps release it.
 - **A refused patch asked again**: today it is left out and the rest
   applied; asking the agent again with the refusal would save a round.
+  So for a diff that does not apply: unproven, a Draft
+  ([measured](#measured)).
+- **What the agent says out of its patches**: told to say what is out of
+  its Scope, a real agent wrote a `note`, which the bounds refuse on an
+  issue; the pull request's `## Left out` could hold it.
+- **A test of its own with no tester's Draft**: asked by the issue's
+  Verification, the agent wrote none ([measured](#measured)).
 - **A new file in a new folder**: the engine writes a `{file, content}`
   patch only where its folder exists; a diff creates it.
 - **The proof's other parts**: the project's gates and the commands

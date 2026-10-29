@@ -3,7 +3,7 @@ sources:
   - internal/developer/bounds.go
   - internal/developer/developer.go
   - internal/steer/steer.go
-checked: e04c31ef
+checked: fcb1c15f
 verified: agent:claude-code
 ---
 # The bounds: what its code may never touch
@@ -84,7 +84,9 @@ path is compared cleaned (`./x`, `x/`); a folder covers its files.
   claim is the engine's. The developer never accepts, merges, closes
   or moves an issue. The catalogue holds no merge to propose.
 - **One comment is allowed: an objection** to a frozen test. The agent
-  gives the test, its line, the scenario, the kind and why. The engine
+  gives the test, its line, the scenario, the kind and why, as a map:
+  its question shows the item whole, since a text comment is refused.
+  The engine
   posts it on that line of the tester's Draft, opened by
   `workline:objection`, in [the tester's form](../../tester/README.md#frozen-tests-and-objections).
   The tester keeps or rewrites the test.
