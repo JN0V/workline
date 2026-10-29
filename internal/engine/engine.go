@@ -2243,6 +2243,8 @@ func (a *applier) apply(in intent.Intention) error {
 		target := a.target
 		if n, ok := m["issue"].(int); ok { // a role keeping the backlog comments on the issue it names
 			target = &forge.Target{Kind: "issue", ID: n}
+		} else if n, ok := m["merge-request"].(int); ok { // the developer's objection, on the tester's Draft (ADR-0054)
+			target = &forge.Target{Kind: "merge-request", ID: n}
 		}
 		if target == nil {
 			return errors.New("a comment needs a target issue or merge request (--target)")
