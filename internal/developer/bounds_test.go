@@ -37,11 +37,15 @@ func TestTouchedReadsNamesWithSpaces(t *testing.T) {
 		{"a rename with spaces", "diff --git a/tests/frozen test.sh b/src/x b/y.sh\nsimilarity index 100%\nrename from tests/frozen test.sh\nrename to src/x b/y.sh\n",
 			[]string{"src/x b/y.sh", "tests/frozen test.sh"}, true},
 		{"edited, with spaces", "diff --git a/a b/c b/d b/e\n--- a/a b/c\n+++ b/d b/e\n@@ -1 +1 @@\n-x\n+y\n", []string{"a b/c", "d b/e"}, true},
+		{"content lines like headers", "diff --git a/src/a.sh b/src/a.sh\n--- a/src/a.sh\n+++ b/src/a.sh\n@@ -1,2 +1,2 @@\n--- a/AGENTS.md\n+++ b/AGENTS.md\n", []string{"src/a.sh"}, true},
 		{"cannot be told apart", "diff --git a/a b/c b/d b/e\nold mode 100644\nnew mode 100755\n", nil, false},
 	} {
 		got, read := touched(tc.diff)
 		if read != tc.read {
 			t.Errorf("%s: read = %v, want %v", tc.name, read, tc.read)
+		}
+		if tc.read && len(got) != len(tc.want) {
+			t.Errorf("%s: touched = %q, want only %q", tc.name, got, tc.want)
 		}
 		for _, w := range tc.want {
 			if !slices.Contains(got, w) {
