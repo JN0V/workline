@@ -3,7 +3,7 @@ package tester
 // The curator's removals (ADR-0055, step 7): pre picks one folder of
 // tests, from the measures, and gives the agent its test files and each
 // test's measures; the agent, the judgement, proposes a few tests to
-// remove or merge, a reason each. post proves it with no agent: the
+// remove, a reason each, never a line written (removal-writes-code). post proves it with no agent: the
 // touched folders' tests run before and after in one checkout, with
 // their coverage and, where the project's language has a mutation tool,
 // its mutants; a covered line or a killed mutant lost, a test red, no
@@ -199,19 +199,23 @@ func curateTaskText(repo, dir string, files []string, frozen map[string]int, h H
 	var b strings.Builder
 	fmt.Fprintf(&b, "# Curate the tests of `%s`\n\n", dir)
 	fmt.Fprintf(&b, `You keep the project's test corpus concise. In the test files below, find
-at most %d tests that are redundant, and remove or merge them:
+at most %d tests that are redundant, and remove them:
 
 - **Redundant**: another test checks the same behaviour on the same code;
-  a slow test a faster one dominates; one scenario tested twice. Merge
-  two tests into one when each checks something the other does not.
+  a slow test a faster one dominates; one scenario tested twice.
 - **Kept**: a test that is the only one checking a behaviour, a bug's
   regression whose scenario no other test holds, a test in a frozen file.
-  When in doubt, keep it.
+  Two tests that each check something the other does not are both kept:
+  never merged into one. When in doubt, keep it.
+- **Remove only**: never rewrite a test, never merge two into one, never
+  add a line. A test stays tied to its issue's scenario, and the proof
+  covers a removal only: a file with a line that is not the base's is
+  refused.
 - **Answer**: each test file you change, whole, as a `+"`patch`"+` with `+"`file`"+`
-  and `+"`content`"+`; a file you delete whole, as a diff deleting it. Change
-  test files only, never the code. Then one `+"`note`"+` for each test you
-  remove or merge: the test's name first, then the test that keeps its
-  check, and why.
+  and `+"`content`"+`, the removed tests' lines gone and nothing else; a
+  file you delete whole, as a diff deleting it. Change test files only,
+  never the code. Then one `+"`note`"+` for each test you remove: the
+  test's name first, then the test that keeps its check, and why.
 - **Nothing redundant**: one `+"`note`"+` saying so, no patch.
 
 The engine then proves your change, with no agent: the folder's tests
@@ -500,6 +504,9 @@ func proveRemoval(repo, base string, patches []intent.Intention, touched []strin
 		return nil, refuse("the proof did not run", *vf), nil
 	}
 	if v, err := layPatches(tree, patches); v != nil || err != nil {
+		return nil, v, err
+	}
+	if v, err := removesOnly(repo, base, tree, touched); v != nil || err != nil {
 		return nil, v, err
 	}
 	if p.after, vf = p.measure(tree, s, "after the removal"); vf != nil {

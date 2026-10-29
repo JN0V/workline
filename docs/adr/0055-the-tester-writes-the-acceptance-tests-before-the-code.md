@@ -397,3 +397,18 @@ Each step: conformance cases first; a try told under `## Tried` ([ADR-0043]).
   ([ADR-0054]), when it is built; the defect ledger
   ([role-adapting.md](../spec/role-adapting.md#defects-become-guards))
   likewise, when a defect is recorded.
+
+## Amendment 2026-10-29: the curator removes, never merges
+
+- **Decided by** the maintainer, on 2026-10-29, after the evaluation
+  ([#672](https://github.com/JN0V/workline/pull/672)): on two tests that
+  each checked their own branch, the curator merged them into one, five
+  runs out of five, and the proof passed it.
+- **The curator removes only**: never a test rewritten, nor two merged
+  into one; step 7's "removed or merged" no longer holds. A test stays
+  tied to its issue's scenario, and the proof covers a removal only.
+- **Held by the engine**: `removal-writes-code` blocks, nothing proposed,
+  when a touched file writes anything. A Go file is read by its
+  declarations: each one left is one of the base's, unchanged but for
+  whitespace. Any other file is read by its lines: the base's, in order,
+  some gone. That is weaker, since deleted lines can still join two tests.

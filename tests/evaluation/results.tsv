@@ -677,3 +677,6 @@ date	workline	agent	models	effort	case	score	agent calls	tokens in	tokens out	co
 2026-10-29T07:14:25Z	2f2a5f65	claude	claude-sonnet-5-5	medium	tester/rewrites-a-test-of-an-implementation-detail	5/5	1	1708	708	0.0073	8			
 2026-10-29T07:14:28Z	2f2a5f65	claude	claude-sonnet-5-5	medium	tester/curator-removes-a-true-duplicate	5/5	1	1898	1167	0.0119	11			
 2026-10-29T07:14:30Z	2f2a5f65	claude	claude-sonnet-5-5	medium	tester/curator-keeps-a-test-of-another-branch	3/4	1	1908	1462	0.0148	13	sh: "python3 -c 'import json; assert json.load(open(\"../forge.json\"))[\"merge-requests\"] == []'": exit status 1 Traceback (most recent call last): File "<string>", line 1, in <module> import json; assert json.load(open("../forge.json"))["merge-requests"] == [] ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ AssertionError		
+2026-10-29T07:33:22Z	03141411	claude	claude-sonnet-5-5	medium	tester/curator-keeps-a-test-of-another-branch	4/4	1	1999	298	0.0110	5			
+2026-10-29T07:33:29Z	03141411	claude	claude-sonnet-5-5	medium	tester/curator-keeps-a-test-of-another-branch	4/4	1	1999	327	0.0035	5			
+2026-10-29T07:33:36Z	03141411	claude	claude-sonnet-5-5	medium	tester/curator-keeps-a-test-of-another-branch	4/4	1	1999	325	0.0035	5			

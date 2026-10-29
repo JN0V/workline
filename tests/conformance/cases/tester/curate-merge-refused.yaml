@@ -1,0 +1,23 @@
+case: tester/curate-merge-refused
+about: >
+  The curator's agent merges two tests into one: it deletes test_add_again
+  and rewrites test_add to check both sums. No line nor mutant is lost,
+  yet the curator removes, never rewrites: a test stays tied to its
+  scenario, and the proof covers a removal only. Refused, nothing
+  proposed.
+given:
+  repo: curated
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}", coverage-report: cover.info, curator-mutation-command: "sh mutate.sh {report} {package}"}}}
+  forge:
+    merge-requests: []
+run: {test: [curate], ai: "fake:tester-curate-merge"}
+expect:
+  status: block
+  agent-calls: 1
+  findings: [{rule: removal-writes-code, where: tests/test_add.sh}]
+  forge:
+    merge-requests:
+      - {id: 1, absent: true}

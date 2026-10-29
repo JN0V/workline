@@ -1,6 +1,6 @@
 ---
 sources: [internal/tester/build.go, internal/tester/tester.go, roles/tester/role.yaml]
-checked: b075cadb
+checked: 10d895f1
 verified: agent:claude-code
 ---
 # A missing name, told from a broken build
