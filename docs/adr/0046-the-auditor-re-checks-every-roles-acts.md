@@ -371,10 +371,6 @@ Built with [ADR-0054]'s first step, the pick, before any code:
   mechanical, as above; its conformance cases prove it.
 - **Drawn from step 4**: its code, on its merge requests merged, as the
   tester's are; the record of the pick read with it.
-- **Its bounds** (step 2): the same record keeps each file its patches
-  were refused at apply, and the rule — mechanical, not drawn. Its
-  objections to a frozen test are read in the tester's threads, where
-  the tester's answers are drawn.
 
 [#89]: https://github.com/JN0V/workline/issues/89
 [#108]: https://github.com/JN0V/workline/issues/108
