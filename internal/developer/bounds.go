@@ -13,6 +13,7 @@ import (
 	"path"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 
 	"go.yaml.in/yaml/v3"
@@ -282,6 +283,8 @@ func (c checker) roleFolder(p string) bool {
 // why is what a refusal says to a person.
 func why(r Refusal) string {
 	switch r.Rule {
+	case "patch-unread":
+		return "a patch naming no file, or a diff header whose files cannot be told apart: nothing the bounds can hold, so refused rather than let past"
 	case "bounds-unread":
 		return "the engine could not read what bounds the developer (" + r.Detail + "): every patch refused rather than one let past; a person fixes it and runs it again"
 	case "gate-file":
@@ -341,7 +344,15 @@ func bounded(repo string, b Bounds, claim, proposed []intent.Intention) (kept []
 		case isClaim(i):
 		case i.Kind == "patch":
 			var bad []Refusal
-			for _, f := range touched(i.Value) {
+			files, read := touched(i.Value)
+			if !read || len(files) == 0 { // a patch the bounds cannot hold
+				ref := Refusal{File: "(a patch)", Rule: "patch-unread"}
+				if c.unread != nil {
+					ref.Rule, ref.Detail = "bounds-unread", c.unread.Error()
+				}
+				bad = append(bad, ref)
+			}
+			for _, f := range files {
 				if r := c.rule(f); r != "" {
 					ref := Refusal{File: path.Clean(filepath.ToSlash(f)), Rule: r}
 					if r == "bounds-unread" {
@@ -382,29 +393,110 @@ func bounded(repo string, b Bounds, claim, proposed []intent.Intention) (kept []
 	return kept, refused, said
 }
 
-// touched lists the files a patch touches: its `file`, the `+++` lines
-// of its diff, and both sides of each `diff --git` header and `rename`
-// line, so that a rename or a deletion is held to the bounds too.
-func touched(v any) []string {
-	files := intent.PatchFiles(v)
-	diff, _ := v.(string)
+// touched lists the files a patch touches: its `file`, the `---` and
+// `+++` lines of its diff, both sides of each `diff --git` header and of
+// each `rename` or `copy` line, so that a rename or a deletion is held to
+// the bounds too. A path git quotes is unquoted. read is false when a
+// header names files it cannot tell apart (a name holding " b/") and no
+// other line of its section names them: the patch is refused then.
+func touched(v any) (files []string, read bool) {
+	diff, isDiff := v.(string)
+	if !isDiff {
+		return intent.PatchFiles(v), true
+	}
+	read = true
+	named := true // the current section's files are known
 	for _, l := range strings.Split(diff, "\n") {
-		if rest, ok := strings.CutPrefix(l, "diff --git a/"); ok {
-			if a, b, ok := strings.Cut(rest, " b/"); ok {
+		if rest, ok := strings.CutPrefix(l, "diff --git "); ok {
+			read = read && named
+			a, b, ok := gitHeader(rest)
+			named = ok
+			if ok {
 				files = append(files, a, b)
+			}
+			continue
+		}
+		for _, w := range []string{"--- ", "+++ "} {
+			if p, ok := strings.CutPrefix(l, w); ok {
+				p, _, _ = strings.Cut(p, "\t")
+				if p = unquote(strings.TrimSpace(p)); p != "/dev/null" {
+					files = append(files, stripSide(p))
+					named = true
+				}
 			}
 		}
 		for _, w := range []string{"rename from ", "rename to ", "copy from ", "copy to "} {
 			if p, ok := strings.CutPrefix(l, w); ok {
-				files = append(files, strings.TrimSpace(p))
+				files = append(files, unquote(strings.TrimSpace(p)))
+				named = true
 			}
 		}
 	}
+	read = read && named
 	for i, f := range files {
 		files[i] = path.Clean(f)
 	}
 	slices.Sort(files)
-	return slices.Compact(files)
+	return slices.Compact(files), read
+}
+
+// gitHeader reads the two paths of a `diff --git` header, quoted or not;
+// ok is false when they cannot be told apart.
+func gitHeader(rest string) (a, b string, ok bool) {
+	if strings.HasPrefix(rest, `"`) {
+		q, err := strconv.QuotedPrefix(rest)
+		if err != nil {
+			return "", "", false
+		}
+		a, _ = strconv.Unquote(q)
+		b = unquote(strings.TrimPrefix(rest[len(q):], " "))
+		return stripSide(a), stripSide(b), strings.HasPrefix(b, "b/")
+	}
+	if i := strings.LastIndex(rest, ` "b/`); i > 0 && strings.HasSuffix(rest, `"`) {
+		return stripSide(rest[:i]), stripSide(unquote(rest[i+1:])), true
+	}
+	// Unquoted: split at the " b/" that leaves the same name on both
+	// sides; a rename's names differ, its rename lines name them.
+	var cuts []int
+	for i := 0; ; {
+		j := strings.Index(rest[i:], " b/")
+		if j < 0 {
+			break
+		}
+		cuts = append(cuts, i+j)
+		i += j + 1
+	}
+	for _, c := range cuts {
+		if x, y := stripSide(rest[:c]), stripSide(rest[c+1:]); x == y {
+			return x, y, true
+		}
+	}
+	if len(cuts) == 1 {
+		return stripSide(rest[:cuts[0]]), stripSide(rest[cuts[0]+1:]), true
+	}
+	return "", "", false
+}
+
+// unquote is a path as git writes it, C-quoted when it holds a special
+// character, read back.
+func unquote(p string) string {
+	if strings.HasPrefix(p, `"`) {
+		if u, err := strconv.Unquote(p); err == nil {
+			return u
+		}
+	}
+	return p
+}
+
+// stripSide drops the a/ or b/ git puts before a path.
+func stripSide(p string) string {
+	if s, ok := strings.CutPrefix(p, "a/"); ok {
+		return s
+	}
+	if s, ok := strings.CutPrefix(p, "b/"); ok {
+		return s
+	}
+	return p
 }
 
 // same says whether two proposals' values are the same, as YAML reads them.

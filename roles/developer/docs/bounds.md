@@ -51,7 +51,10 @@ matches refuses the whole patch:
   that steer agents: every patch is refused (`bounds-unread`), the
   error said, rather than one let past.
 
-A rename or a deletion is checked on both sides. A gate's `config`
+A patch naming no file, or a diff header whose two names cannot be told
+apart with no other line naming them, is refused (`patch-unread`).
+A rename or a deletion is checked on both sides, a name git quotes read
+back. A gate's `config`
 path is compared cleaned (`./x`, `x/`); a folder covers its files.
 
 ## Why these rules
