@@ -87,3 +87,6 @@ measure. Also:
 - **A run's time as one cap**: the agent's wait (`ai-max-seconds`) and
   the tests' (`proof-seconds`) are two caps whose defaults sum to the
   ADR's 30 min a run; a project raising one is not held to the sum.
+- **"Implements #4" on GitHub**: the pick reads `implement` as a
+  closing word, as GitLab does; GitHub does not close on it, so there
+  the issue is skipped as taken though nothing will close it.
