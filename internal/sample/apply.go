@@ -133,12 +133,16 @@ func Apply(file, repo string, f forge.Forge) *Result {
 	}
 	// The count, written again from every week, this one's included; a
 	// forge that cannot read the weeks back leaves the one there.
-	if _, ok := f.(forge.Backlog); ok {
+	if b, ok := f.(forge.Backlog); ok {
 		ws, err := weeks(f, id)
 		if err != nil {
 			return failed(res, fmt.Errorf("the weeks, read back: %w", err))
 		}
-		if err := f.Sticky(issue, countComment(ws), forge.Marker(countKey), true); err != nil {
+		all, err := b.AllIssues()
+		if err != nil {
+			return failed(res, fmt.Errorf("the issues the auditor opened: %w", err))
+		}
+		if err := f.Sticky(issue, countComment(ws)+openedCount(all), forge.Marker(countKey), true); err != nil {
 			return failed(res, err)
 		}
 		res.Applied = append(res.Applied, "count")

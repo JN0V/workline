@@ -304,6 +304,39 @@ func countComment(ws []week) string {
 	return b.String()
 }
 
+// openedCount is how the issues the auditor opened fared, every week's
+// (ADR-0046, amendment 2026-10-29): one closed as not planned is the
+// product owner's or a person's no, a false alarm of the auditor's own.
+func openedCount(all []forge.Issue) string {
+	var open, done, no []string
+	for _, is := range all {
+		if backlog.OpenedBy(is.Body) != "auditor" {
+			continue
+		}
+		ref := fmt.Sprintf("#%d", is.ID)
+		switch {
+		case !is.Closed:
+			open = append(open, ref)
+		case is.Reason == "not_planned":
+			no = append(no, ref)
+		default:
+			done = append(done, ref)
+		}
+	}
+	n := len(open) + len(done) + len(no)
+	if n == 0 {
+		return "\nIssues the auditor opened: none yet.\n"
+	}
+	refs := func(ids []string) string {
+		if len(ids) == 0 {
+			return ""
+		}
+		return " (" + strings.Join(ids, ", ") + ")"
+	}
+	return fmt.Sprintf("\nIssues the auditor opened: %d — closed as not planned, a false alarm: %d%s; closed otherwise: %d%s; open: %d%s.\n",
+		n, len(no), refs(no), len(done), refs(done), len(open), refs(open))
+}
+
 // openDefects opens an issue for each true finding the reviewer's judge
 // dropped whose cause is still on the branch, through the one way every
 // role opens one (ADR-0018): `needs-triage`, at most three a week, the rest
