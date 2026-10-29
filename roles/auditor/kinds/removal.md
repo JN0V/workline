@@ -1,4 +1,4 @@
-The tester's curator removed or merged these tests, proven with no
+The tester's curator removed these tests, proven with no
 agent: green before and after, no covered line nor killed mutant lost.
 Is each test removed truly redundant: does a test kept check the same
 behaviour? A regression's test, or a behaviour the measures cannot see

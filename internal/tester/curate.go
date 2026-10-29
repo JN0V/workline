@@ -3,7 +3,7 @@ package tester
 // The curator's removals (ADR-0055, step 7): pre picks one folder of
 // tests, from the measures, and gives the agent its test files and each
 // test's measures; the agent, the judgement, proposes a few tests to
-// remove or merge, a reason each. post proves it with no agent: the
+// remove, a reason each, never a line written (removal-writes-code). post proves it with no agent: the
 // touched folders' tests run before and after in one checkout, with
 // their coverage and, where the project's language has a mutation tool,
 // its mutants; a covered line or a killed mutant lost, a test red, no
@@ -199,19 +199,23 @@ func curateTaskText(repo, dir string, files []string, frozen map[string]int, h H
 	var b strings.Builder
 	fmt.Fprintf(&b, "# Curate the tests of `%s`\n\n", dir)
 	fmt.Fprintf(&b, `You keep the project's test corpus concise. In the test files below, find
-at most %d tests that are redundant, and remove or merge them:
+at most %d tests that are redundant, and remove them:
 
 - **Redundant**: another test checks the same behaviour on the same code;
-  a slow test a faster one dominates; one scenario tested twice. Merge
-  two tests into one when each checks something the other does not.
+  a slow test a faster one dominates; one scenario tested twice.
 - **Kept**: a test that is the only one checking a behaviour, a bug's
   regression whose scenario no other test holds, a test in a frozen file.
-  When in doubt, keep it.
+  Two tests that each check something the other does not are both kept:
+  never merged into one. When in doubt, keep it.
+- **Remove only**: never rewrite a test, never merge two into one, never
+  add a line. A test stays tied to its issue's scenario, and the proof
+  covers a removal only: a file with a line that is not the base's is
+  refused.
 - **Answer**: each test file you change, whole, as a `+"`patch`"+` with `+"`file`"+`
-  and `+"`content`"+`; a file you delete whole, as a diff deleting it. Change
-  test files only, never the code. Then one `+"`note`"+` for each test you
-  remove or merge: the test's name first, then the test that keeps its
-  check, and why.
+  and `+"`content`"+`, the removed tests' lines gone and nothing else; a
+  file you delete whole, as a diff deleting it. Change test files only,
+  never the code. Then one `+"`note`"+` for each test you remove: the
+  test's name first, then the test that keeps its check, and why.
 - **Nothing redundant**: one `+"`note`"+` saying so, no patch.
 
 The engine then proves your change, with no agent: the folder's tests
@@ -470,6 +474,56 @@ type proof struct {
 	base           string
 }
 
+// removesOnly refuses a proposal that writes test code: the curator
+// removes, it never rewrites or merges two tests into one. A test stays
+// tied to its issue's scenario, and the proof covers a removal only. Each
+// touched file, as laid in tree, keeps base's lines in order, a few gone,
+// none added nor changed (blank lines and trailing spaces aside).
+func removesOnly(repo, base, tree string, touched []string) (*verdict.Verdict, error) {
+	var fs []verdict.Finding
+	for _, file := range touched {
+		now, err := os.ReadFile(filepath.Join(tree, filepath.FromSlash(path.Clean(file))))
+		if errors.Is(err, os.ErrNotExist) {
+			continue // deleted whole
+		} else if err != nil {
+			return nil, err
+		}
+		was, err := git(repo, "show", base+":"+file)
+		if err != nil { // a new file: written, not removed
+			was = ""
+		}
+		if line, ok := subsequence(string(now), was); !ok {
+			fs = append(fs, verdict.Finding{Rule: "removal-writes-code", Where: file,
+				Message: fmt.Sprintf("the curator removes tests, never rewrites or merges them: %q is not the base's", line)})
+		}
+	}
+	if len(fs) == 0 {
+		return nil, nil
+	}
+	return &verdict.Verdict{Status: verdict.Block, Summary: "the removal is not proven", Findings: fs}, nil
+}
+
+// subsequence reports whether now's lines are was's, in order, some
+// dropped; else the first line that is not.
+func subsequence(now, was string) (string, bool) {
+	old := strings.Split(was, "\n")
+	i := 0
+	for _, l := range strings.Split(now, "\n") {
+		l = strings.TrimRight(l, " \t\r")
+		if l == "" {
+			continue
+		}
+		for i < len(old) && strings.TrimRight(old[i], " \t\r") != l {
+			i++
+		}
+		if i == len(old) {
+			return l, false
+		}
+		i++
+	}
+	return "", true
+}
+
 // proveRemoval runs the touched folders' tests, their coverage and their
 // mutants on base, then again with the patches laid, in one checkout and
 // within curator-proof-seconds. A run that did not hold is the verdict.
@@ -500,6 +554,9 @@ func proveRemoval(repo, base string, patches []intent.Intention, touched []strin
 		return nil, refuse("the proof did not run", *vf), nil
 	}
 	if v, err := layPatches(tree, patches); v != nil || err != nil {
+		return nil, v, err
+	}
+	if v, err := removesOnly(repo, base, tree, touched); v != nil || err != nil {
 		return nil, v, err
 	}
 	if p.after, vf = p.measure(tree, s, "after the removal"); vf != nil {

@@ -14,7 +14,7 @@ it weighs: [the curator's measures](curator.md).
 ```mermaid
 flowchart LR
   pick["<b>Picks</b><br/>one folder<br/>of tests"]
-  ai["<b>The agent weighs</b><br/>a few tests<br/>to remove or merge"]
+  ai["<b>The agent weighs</b><br/>a few tests<br/>to remove"]
   proof["<b>The proof</b>, no agent<br/>before and after:<br/>coverage, mutants"]
   pr["<b>Pull request</b><br/>the numbers,<br/>a reason each"]
   pick --> ai --> proof --> pr
@@ -32,10 +32,14 @@ flowchart LR
   it to the next.
 - **The agent reads** that folder's test files whole, and each test's
   measures: time, runs, red runs, never red.
-- **The agent proposes** at most `curator-removals-max` tests removed
-  or merged: redundant (another checks the same behaviour on the same
-  code), slow and dominated by a faster one, one scenario tested twice.
-  A note a test: the test that keeps its check, and why.
+- **The agent proposes** at most `curator-removals-max` tests removed:
+  redundant (another checks the same behaviour on the same code), slow
+  and dominated by a faster one, one scenario tested twice. A note a
+  test: the test that keeps its check, and why.
+- **Remove only**: never a test rewritten, nor two merged into one. A
+  test stays tied to its issue's scenario, and the proof covers a
+  removal only: a file left with a line the base lacks is refused
+  (`removal-writes-code`).
 - **The agent is a choice**: none, `claude`, `cmd:<any command>`. With
   none, nothing is removed (`no-agent`).
 

@@ -397,3 +397,16 @@ Each step: conformance cases first; a try told under `## Tried` ([ADR-0043]).
   ([ADR-0054]), when it is built; the defect ledger
   ([role-adapting.md](../spec/role-adapting.md#defects-become-guards))
   likewise, when a defect is recorded.
+
+## Amendment 2026-10-29: the curator removes, never merges
+
+- **Decided by** the maintainer, on 2026-10-29, after the evaluation
+  ([#672](https://github.com/JN0V/workline/pull/672)): on two tests that
+  each checked their own branch, the curator merged them into one, five
+  runs out of five, and the proof passed it.
+- **The curator removes only**: never a test rewritten, nor two merged
+  into one; step 7's "removed or merged" no longer holds. A test stays
+  tied to its issue's scenario, and the proof covers a removal only.
+- **Held by the engine**: a touched file must keep the base's lines in
+  order, a few gone, none added nor changed (blank lines and trailing
+  spaces aside); else `removal-writes-code` blocks, nothing proposed.

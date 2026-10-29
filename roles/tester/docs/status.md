@@ -104,7 +104,8 @@ Cases in `tests/conformance/cases/tester/`:
   templates ([the page](curator.md)).
 - **The curator's removals** (step 7): `workline test curate` gives
   the agent one folder of tests and their measures; it proposes a few
-  removed or merged, a reason each; the engine proves it with no agent,
+  removed, a reason each, never a test rewritten nor merged
+  (`removal-writes-code`); the engine proves it with no agent,
   the folder's tests before and after: green, no covered line and no
   killed mutant lost (Gremlins pinned on Go); frozen and kept tests
   refused; a pull request, not a Draft, from the weekly curator job
