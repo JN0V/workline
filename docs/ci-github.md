@@ -1,6 +1,6 @@
 ---
 sources: [ci/github, .github/workflows/workline.yml, .github/workflows/workline-apply.yml, .github/workflows/workline-gardening.yml, .github/workflows/workline-sample.yml, .github/workflows/workline-answer.yml, .github/actions/engine/action.yml, .github/workflows/release.yml, .github/workflows/release-please.yml, release-please-config.json, .goreleaser.yaml, cmd/workline]
-checked: 7f7b4f32
+checked: eebe4270
 judged: 220b6dc
 verified: agent:claude-code
 reader: fe1505d43360
@@ -98,6 +98,10 @@ write run the default branch's workflow, never a pull request's own
      its answer; the first notices it with no token, the second answers
      from the default branch ([tester](../roles/tester/README.md#frozen-tests-and-objections),
      [what each job holds](objection-jobs.md)).
+   - [workline-develop.yml](../ci/github/workline-develop.yml), with the
+     developer routed on `issue`: an issue labelled `workline:ready`
+     runs it on that issue; its schedule is gardening's
+     ([the triggers](../roles/developer/docs/triggers.md)).
    - [workline-sample.yml](../ci/github/workline-sample.yml): the
      [weekly sample](ci.md#the-weekly-sample), from the first release
      after v0.2.1.
