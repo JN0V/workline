@@ -17,6 +17,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"slices"
@@ -65,15 +66,15 @@ type Asked struct {
 
 // round is what the review run's pre leaves for post.
 type round struct {
-	MR       int     `json:"merge-request"`
-	Branch   string  `json:"branch"`
-	Record   Act     `json:"record"`
-	Asked    []Asked `json:"asked"`
+	MR       int      `json:"merge-request"`
+	Branch   string   `json:"branch"`
+	Record   Act      `json:"record"`
+	Asked    []Asked  `json:"asked"`
 	Heard    []string `json:"heard,omitempty"` // the ids of a person's comments it reads
-	Nits     int     `json:"nits"`
-	Runs     int     `json:"review-runs"`
-	FiveWhys bool    `json:"five-whys"`
-	Person   bool    `json:"person"` // past the last round: no agent, a person
+	Nits     int      `json:"nits"`
+	Runs     int      `json:"review-runs"`
+	FiveWhys bool     `json:"five-whys"`
+	Person   bool     `json:"person"` // past the last round: no agent, a person
 }
 
 // reviewRows reads the findings of the reviewer's comment: what blocks,
@@ -424,6 +425,9 @@ func reviewPost(runDir, repo string, s Settings) int {
 	}
 	var patches, others []intent.Intention
 	for _, in := range kept {
+		if in.Kind == "patch" && unchanged(repo, in.Value) {
+			continue // nothing to commit: a fix that changes nothing is none
+		}
 		if in.Kind == "patch" {
 			patches = append(patches, in)
 		} else {
@@ -435,7 +439,7 @@ func reviewPost(runDir, repo string, s Settings) int {
 	if len(patches) == 0 {
 		this.Result = "no-code"
 		v.Findings = append(v.Findings, verdict.Finding{Rule: "no-code", Level: "warn", Where: where,
-			Message: "its agent wrote no fix within its bounds: the round is counted, nothing pushed"})
+			Message: "its agent wrote no fix within its bounds that changes the branch: the round is counted, nothing pushed"})
 	} else {
 		p, over := prove(repo, "HEAD", patches, s)
 		this.Result = p.Result
@@ -512,6 +516,22 @@ func roundBody(x Round, s Settings, notes []string, analysis string) string {
 	}
 	b.WriteString("\nThe reviewer decides a finding is fixed.\n")
 	return b.String()
+}
+
+// unchanged says a patch given whole, {file, content}, writes what its
+// file holds already on the branch's head.
+func unchanged(repo string, v any) bool {
+	m, ok := v.(map[string]any)
+	if !ok {
+		return false
+	}
+	file, _ := m["file"].(string)
+	content, ok := m["content"].(string)
+	if file == "" || !ok {
+		return false
+	}
+	out, err := exec.Command("git", "-C", repo, "show", "HEAD:"+file).Output()
+	return err == nil && string(out) == content
 }
 
 // noteText is a note's text, given bare or as {text}.
