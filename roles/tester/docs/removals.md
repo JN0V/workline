@@ -1,6 +1,6 @@
 ---
-sources: [internal/tester/curate.go, roles/tester/role.yaml, ci/github/workline-gardening.yml, ci/gitlab/workline.gitlab-ci.yml]
-checked: 05563345
+sources: [internal/tester/curate.go, internal/tester/removal.go, roles/tester/role.yaml, ci/github/workline-gardening.yml, ci/gitlab/workline.gitlab-ci.yml]
+checked: 010bf37f
 verified: agent:claude-code
 ---
 # The curator's removals
@@ -38,8 +38,14 @@ flowchart LR
   test: the test that keeps its check, and why.
 - **Remove only**: never a test rewritten, nor two merged into one. A
   test stays tied to its issue's scenario, and the proof covers a
-  removal only: a file left with a line the base lacks is refused
-  (`removal-writes-code`).
+  removal only. A file that writes anything is refused
+  (`removal-writes-code`):
+  - **Go**: read by its declarations. Each one left must be one of the
+    base's, unchanged but for whitespace, and no import may be added.
+    Two tests joined by deleting a closing brace and a header are told.
+  - **Other languages**: read by its lines. The lines left must be the
+    base's, in order. This is weaker: lines deleted from two tests can
+    still join them into one.
 - **The agent is a choice**: none, `claude`, `cmd:<any command>`. With
   none, nothing is removed (`no-agent`).
 
