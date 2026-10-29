@@ -1,0 +1,21 @@
+case: developer/routing-needs-a-merge-request
+about: >
+  The developer's code goes to a pull request of its own: a line run
+  without --open-merge-request would leave it on the checkout's branch.
+  It blocks, saying the option, the agent not asked, nothing claimed.
+given:
+  repo: tested
+  config:
+    routing: {events: {schedule: [developer]}}
+  forge:
+    issues:
+      - {id: 2, title: "Multiply", labels: ["workline:ready"], body: "## Need\n\nI want to multiply.\n"}
+run: {route: schedule, ai: "cmd:true"}
+expect:
+  status: block
+  agent-calls: 0
+  findings:
+    - {rule: no-merge-request, message: "--open-merge-request"}
+  forge:
+    issues:
+      - {id: 2, labels: ["workline:ready"], comments: 0}

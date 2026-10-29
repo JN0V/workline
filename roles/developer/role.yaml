@@ -7,7 +7,11 @@ mission: A ready issue becomes a pull request that proves its Verification, writ
 #        it, writes its code within its bounds (docs/bounds.md), proves
 #        it: ready when green, no cap reached, else a Draft
 #        (docs/proof.md). With none, the issue is named, nothing claimed.
-events: [issue]
+#        Routed on `issue` (`workline route issue --target issue:<n>`)
+#        when CI sees an issue labelled ready: that issue alone.
+# schedule: the same, the first ready issue nobody took, one a run
+#        (step 5). Both need --open-merge-request (docs/triggers.md).
+events: [issue, schedule]
 
 requires: [git]
 

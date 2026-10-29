@@ -209,6 +209,13 @@ func Pre(runDir, repo string) int {
 	if err != nil {
 		return fail(err)
 	}
+	// Its code goes to a pull request of its own, never the checkout's
+	// branch: a line that opens none (`workline route` with no
+	// --open-merge-request) takes nothing.
+	if n, ok := os.LookupEnv("WORKLINE_OPEN_MERGE_REQUESTS"); !ok || n == "" {
+		return final(runDir, verdict.Verdict{Status: verdict.Block, Summary: "no pull request can be opened",
+			Findings: []verdict.Finding{{Rule: "no-merge-request", Message: "the developer opens its code as a pull request of its own: route it with --open-merge-request and a forge, or run `workline develop`"}}})
+	}
 	only := 0
 	if kind, num, _ := strings.Cut(os.Getenv("WORKLINE_TARGET"), ":"); kind == "issue" {
 		only, _ = strconv.Atoi(num)
