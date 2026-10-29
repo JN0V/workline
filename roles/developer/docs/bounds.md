@@ -3,7 +3,7 @@ sources:
   - internal/developer/bounds.go
   - internal/developer/developer.go
   - internal/steer/steer.go
-checked: 9d472ac7
+checked: 68550c97
 verified: agent:claude-code
 ---
 # The bounds: what its code may never touch
@@ -93,5 +93,6 @@ path is compared cleaned (`./x`, `x/`); a folder covers its files.
 
 - **A refused patch is not asked again**: the code is applied without
   it; the proof (step 3) shows what is missing.
-- **Where the code goes**: the working tree, for now; the pull request
-  is step 4.
+- **Where the code goes**: a branch of its own, proven, opened ready
+  or as a Draft ([the proof](proof.md)); the pull request's sections
+  are step 4.
