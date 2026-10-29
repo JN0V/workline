@@ -31,7 +31,7 @@ flowchart LR
 - **Green**: tests reported, none red, the command exited 0.
 - **Red**: a test failed, errored or was skipped, or the command failed.
 - **Not run whole**: no `test-command`, a patch that does not apply, no
-  report: not green, never a pass.
+  report or one naming no test: not green, never a pass.
 
 ## The caps
 

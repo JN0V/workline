@@ -89,6 +89,15 @@ func TestProveNotRunWhole(t *testing.T) {
 	}
 }
 
+// A report naming no test proves nothing: unproven, never red.
+func TestProveEmptyReportIsUnproven(t *testing.T) {
+	repo := provingRepo(t, `"printf '<testsuite name=\"lib\"></testsuite>' > {report}"`)
+	p, c := prove(repo, "", lib("ok"), Settings{ProofSeconds: 60})
+	if p.Result != Unproven || p.Why != "the report names no test" || c != nil {
+		t.Errorf("proof = %+v, cap = %+v; want unproven, the report naming no test", p, c)
+	}
+}
+
 // Past proof-seconds, the command is stopped: unproven, and the cap said.
 func TestProveStoppedPastItsSeconds(t *testing.T) {
 	repo := provingRepo(t, `"exec sleep 30"`)
