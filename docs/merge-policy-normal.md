@@ -1,6 +1,6 @@
 ---
-sources: [internal/engine/routine.go, internal/engine/demote.go, internal/engine/merge.go, internal/forge/merge.go]
-checked: ae744e99
+sources: [internal/engine/routine.go, internal/engine/code.go, internal/engine/demote.go, internal/engine/merge.go, internal/forge/merge.go]
+checked: 93dac05e
 verified: agent:claude-code
 reader: efab3a2a0b35
 ---
@@ -28,7 +28,8 @@ merge: {autonomy: normal}   # a project's choice, never a default
     the agent is given — persona, knowledge, instruction, policy, lenses
     ([the layout](spec/role-contract.md#layout));
   - their head's verdict passed, every agent's review whole.
-- **Four kinds, by what changed**:
+- **Four kinds, by what changed** (and the developer's `code`,
+  [below](#the-developers-code-a-fix-alone-a-feature-with-a-yes)):
   - `records`: only when docs were read (`judged`) — gardening's
     `workline/documentalist/records` among them, for the docs judged on
     merged merge requests
@@ -59,9 +60,18 @@ merge: {autonomy: normal}   # a project's choice, never a default
   with no person's approval — past the two-person rule of SLSA and SOC 2.
 - **The App's key, out of a pull request's own run**: none opens a
   `workline/` pull request as the App ([ADR-0044](adr/0044-the-apps-key-stays-with-the-default-branchs-runs.md)).
-- **Tried on workline's own repository first**; agents' pull requests come
-  later ([#322](https://github.com/JN0V/workline/issues/322); the
+- **Tried on workline's own repository first**
+  ([#322](https://github.com/JN0V/workline/issues/322); the
   [criteria](adr/0042-the-engine-merges-by-the-projects-policy.md#the-veto-what-never-merges-alone-the-criteria)).
+
+## The developer's code: a fix alone, a feature with a yes
+
+- **A fifth kind, `code`**: the developer's pull request for an issue
+  its labels call a fix or a task, every gate passed and no finding of
+  the reviewer's open that blocks or is Important.
+- **A feature waits for a person's yes**, said once on it.
+- **Told by the issue it closes**, never by the agent: the rules, the
+  labels and the record on [the developer's merge](../roles/developer/docs/merge.md).
 
 ## The reader's rewordings wait for a yes
 
@@ -99,7 +109,7 @@ and:
 
 | Said | When |
 |---|---|
-| `waits-for-a-yes` | the release tool's; a push, a commit or a page not workline's; a kind demoted; `reader`, not let merge alone |
+| `waits-for-a-yes` | the release tool's; a push, a commit or a page not workline's; a kind demoted; `reader`, not let merge alone; the developer's feature, or a finding open |
 | `merge-app-unknown` | the token is no App's: nothing merges alone |
 | `merge-demoted`, `demotion-unrecorded` | a revert of one merged alone read: its kind demoted, its issue opened or not |
 | `revert-unread` | a revert tied to no merge request: every kind demoted |
