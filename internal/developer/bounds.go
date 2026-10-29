@@ -179,8 +179,9 @@ func under(p string, roots []string) bool {
 
 // besideTest says whether p is a test beside one of the scope's paths, its
 // name holding "test" or "spec": in a scope path's folder or under it, or
-// in a test folder that sits there.
-func besideTest(p string, scope []string) bool {
+// in a test folder that sits there. A folder's own folder is not its
+// neighbourhood: a Scope `src` lets in no test at the root.
+func besideTest(p string, scope []string, isDir func(string) bool) bool {
 	name := strings.ToLower(path.Base(p))
 	if !strings.Contains(name, "test") && !strings.Contains(name, "spec") {
 		return false
@@ -194,7 +195,7 @@ func besideTest(p string, scope []string) bool {
 	}
 	for _, d := range dirs {
 		for _, s := range scope {
-			if d == path.Dir(s) || under(d, []string{s}) {
+			if d == path.Dir(s) && !isDir(s) || under(d, []string{s}) {
 				return true
 			}
 		}
@@ -244,10 +245,19 @@ func (c checker) rule(p string) string {
 		return "steering-file"
 	case c.b.Frozen[p] > 0:
 		return "acceptance-test-edit"
-	case !under(p, c.b.Scope) && !besideTest(p, c.b.Scope):
+	case !under(p, c.b.Scope) && !besideTest(p, c.b.Scope, c.isDir):
 		return "outside-scope"
 	}
 	return ""
+}
+
+// isDir says whether a Scope's path is a folder: one in the repository,
+// or, not there yet, a name with no extension.
+func (c checker) isDir(p string) bool {
+	if st, err := os.Stat(filepath.Join(c.repo, filepath.FromSlash(p))); err == nil {
+		return st.IsDir()
+	}
+	return path.Ext(p) == ""
 }
 
 // roleFolder says whether p is in a role's folder of the repository: a
