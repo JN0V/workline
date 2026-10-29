@@ -1198,6 +1198,7 @@ func developCmd(args []string) int {
 	fs := newFlags("develop")
 	repo := fs.String("repo", ".", "repository to work on")
 	issue := fs.Int("issue", 0, "the ready issue to take, rather than the first in the backlog's order")
+	mr := fs.Int("merge-request", 0, "a review round on its own pull request: the findings of the reviewer's last verdict and a person's comments, fixed and pushed on its branch")
 	ai := fs.String("ai", "", "agent: none, claude, cmd:<command> (default: the project's `ai` setting, else none); with none, the issue is named, nothing claimed")
 	forgeSpec := fs.String("forge", "", "forge: github, gitlab, local, fake:<file> (default: the project's `forge` setting)")
 	roles := fs.String("roles", os.Getenv("WORKLINE_ROLES"), "folder holding the roles")
@@ -1207,8 +1208,14 @@ func developCmd(args []string) int {
 		return code
 	}
 	var target *forge.Target
-	if *issue > 0 {
+	event := "issue"
+	switch {
+	case *issue > 0 && *mr > 0:
+		return misuse(fs, "--issue or --merge-request: a ready issue to take, or its pull request to fix the review of")
+	case *issue > 0:
 		target = &forge.Target{Kind: "issue", ID: *issue}
+	case *mr > 0:
+		target, event = &forge.Target{Kind: "merge-request", ID: *mr}, "review"
 	}
 	abs, _ := filepath.Abs(*repo)
 	rolesDir, err := resolveRoles(*roles)
@@ -1217,8 +1224,8 @@ func developCmd(args []string) int {
 		return 1
 	}
 	absRoles, _ := filepath.Abs(rolesDir)
-	res := engine.Run(engine.Options{Repo: abs, RolesDir: absRoles, Role: "developer", Event: "issue", AI: *ai,
-		Forge: *forgeSpec, Target: target, NoApply: *noApply, OpenMergeRequest: true})
+	res := engine.Run(engine.Options{Repo: abs, RolesDir: absRoles, Role: "developer", Event: event, AI: *ai,
+		Forge: *forgeSpec, Target: target, NoApply: *noApply, OpenMergeRequest: event == "issue"})
 	if *asJSON {
 		out, _ := json.MarshalIndent(res, "", "  ")
 		fmt.Println(string(out))

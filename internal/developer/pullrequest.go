@@ -153,5 +153,29 @@ func body(a Act, ready bool) string {
 func recordBody(a Act) string {
 	r := a
 	r.Act, r.Passed = "code", nil
-	return fmt.Sprintf("**The developer**'s record of this pull request, for its next runs and the auditor.\n\n%s\n", r.Line())
+	var b strings.Builder
+	b.WriteString("**The developer**'s record of this pull request, for its next runs and the auditor.\n\n")
+	for _, x := range r.Rounds {
+		fmt.Fprintf(&b, "- Review round %d: %d asked, %s", x.N, len(x.Asked), roundResult(x))
+		if x.Whys {
+			b.WriteString(", the five whys run")
+		}
+		b.WriteString(".\n")
+	}
+	if len(r.Rounds) > 0 {
+		b.WriteString("\n")
+	}
+	fmt.Fprintf(&b, "%s\n", r.Line())
+	return b.String()
+}
+
+// roundResult says how a review round ended.
+func roundResult(x Round) string {
+	switch {
+	case x.Person:
+		return "handed to a person"
+	case x.Result == "no-code":
+		return "no fix"
+	}
+	return "its fix pushed, the tests " + x.Result
 }
