@@ -1,0 +1,11 @@
+# sub fixed and tested; money.sh's refund left to another issue.
+- patch:
+    file: lib.sh
+    content: |
+      add() { echo $(($1 + $2)); }
+      sub() { echo $(($1 - $2)); }
+- patch:
+    file: tests/test_sub.sh
+    content: |
+      . ./lib.sh
+      [ "$(sub 5 2)" = 3 ]

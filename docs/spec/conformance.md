@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go, tests/evaluation]
-checked: 4188075c
+checked: fcb1c15f
 verified: agent:claude-code
 judged: ae14474
 ---
@@ -206,7 +206,12 @@ conformance case's): the issues its change closes. The tester's cases
 run it as `workline test write` and `answer` do: `run.target`
 (`issue:<n>`, `merge-request:<n>`) and `run.open-merge-request`, the
 simulated forge kept in `../forge.json`, the branches pushed in
-`../origin.git`. A case is read as strictly as a conformance case: a key no field names fails to load
+`../origin.git`. The developer's cases run `workline develop`, its
+options in `run.develop`, on a planted ready issue and, where the case
+says, the tester's Draft; `TestDeveloperWithStandIns` plays them with a
+careful and a careless stand-in (`testdata/developer-agent.sh`), whose
+tokens in are the prompt's size: the measure taken before paying a real
+agent. A case is read as strictly as a conformance case: a key no field names fails to load
 it, as does a check `grade` does not know. Besides the fixtures, a case can start from this repository
 itself: `given.workline-commit: <sha>` stages that commit's diff on its parent
 (a message the hook refused, replayed with the author's words in

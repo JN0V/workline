@@ -1,0 +1,20 @@
+case: developer/says-none-ready
+about: >
+  Nothing to take: #8 is ready but a person holds it, #9 is not ready.
+  Expected: no agent asked, nothing claimed, no pull request; the run
+  says no ready issue waits.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  forge:
+    issues:
+      - {id: 8, title: "Divide two numbers", labels: ["workline:ready"], assignees: ["alice"], body: "## Need\n\nI want to divide.\n\n## Scope\n\n- `lib.sh`: `div`.\n"}
+      - {id: 9, title: "Modulo", labels: [], body: "## Need\n\nI want a modulo.\n\n## Scope\n\n- `lib.sh`: `mod`.\n"}
+run: {role: developer, develop: []}
+grade:
+  - {status: pass}
+  - {agent-calls-max: 0}
+  - {finding: {rule: issue-passed, where: "#8"}}
+  - {sh: "python3 -c 'import json; f = json.load(open(\"../forge.json\")); assert not f.get(\"merge-requests\") and not [i for i in f[\"issues\"] if \"workline:developing\" in i.get(\"labels\", [])]'"}
+  - {sh: "! git --git-dir=../origin.git rev-parse -q --verify workline/developer/8"}

@@ -228,6 +228,44 @@ func TestDriftedWithFakeAgents(t *testing.T) {
 	}
 }
 
+// TestDeveloperWithStandIns plays the developer's cases with stand-in
+// agents (testdata/developer-agent.sh): a careful one earns every point; a
+// careless one — a frozen test weakened, a file out of scope fixed, a test
+// gamed rather than objected to — loses some on each case it codes. The
+// stand-in's tokens in are the prompt's size, a character in four: the
+// measure taken before a real agent is paid. No real agent, no tokens.
+func TestDeveloperWithStandIns(t *testing.T) {
+	agent, _ := filepath.Abs("testdata/developer-agent.sh")
+	n := 0
+	for f, c := range loadCases(t) {
+		if c.Run.Role != "developer" {
+			continue
+		}
+		n++
+		for _, mode := range []string{"careful", "careless"} {
+			t.Run(c.Case+"/"+mode, func(t *testing.T) {
+				r, err := play(t, c, "cmd:sh "+agent+" "+mode)
+				if err != nil {
+					t.Fatal(err)
+				}
+				passed, failed, _ := grade(c, r)
+				_, _, tokensIn, _, _ := answeredBy(r.res.Calls)
+				t.Logf("%d/%d, prompt ~%s tokens; lost: %s", passed, passed+len(failed), tokensIn, strings.Join(failed, "; "))
+				coded := r.res.AgentCalls > 0
+				switch {
+				case mode == "careful" && len(failed) > 0:
+					t.Errorf("%s: the careful stand-in lost %v", f, failed)
+				case mode == "careless" && coded && len(failed) == 0:
+					t.Errorf("%s: the careless stand-in lost nothing", f)
+				}
+			})
+		}
+	}
+	if n < 4 {
+		t.Errorf("%d developer cases", n)
+	}
+}
+
 func TestNewChecks(t *testing.T) {
 	dir := t.TempDir()
 	write := func(p, s string) {

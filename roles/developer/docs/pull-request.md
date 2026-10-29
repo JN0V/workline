@@ -1,10 +1,11 @@
 ---
 sources:
   - internal/developer/pullrequest.go
+  - internal/developer/developer.go
   - internal/engine/engine.go
   - internal/agent/claude.go
   - internal/builtin/reviewer/once.go
-checked: f5dc27c6
+checked: fcb1c15f
 verified: agent:claude-code
 ---
 # The pull request
@@ -26,6 +27,12 @@ flowchart LR
   them ([the proof](proof.md)).
 - **The agent reads them**: its question holds each frozen test as the
   Draft has it; its checkout is the default branch's.
+- **And the code it may touch**: the agent has no tools, so its
+  question holds each file of the issue's Scope as it reads where its
+  code starts, a folder's files, a path not there yet said; past about
+  25k tokens, a file is named only. A review round shows them as its
+  branch holds them. Without them, a real agent wrote no patch
+  ([measured](status.md#measured)).
 - **Its pull request goes to the branch the run is on**, the default
   branch in CI, never to the tester's. Merged, it brings the tests with
   it.

@@ -3,7 +3,7 @@ sources:
   - roles/developer/role.yaml
   - ci/github/workline-develop.yml
   - internal/developer
-checked: d72088d2
+checked: 0fa4e302
 verified: agent:claude-code
 ---
 # Developer
@@ -25,7 +25,7 @@ file. All roles: [docs/roles.md](../../docs/roles.md). Where it stands:
 [status](docs/status.md); its design:
 [ADR-0054](../../docs/adr/0054-the-developer-takes-a-ready-issue-to-a-pull-request.md).
 
-**Does**, today (steps 1 to 7 of the
+**Does**, today (the eight steps of the
 [build plan](../../docs/adr/0054-the-developer-takes-a-ready-issue-to-a-pull-request.md#build-plan)):
 
 - **Picks** the first ready issue in the backlog's order that nobody
@@ -53,7 +53,8 @@ file. All roles: [docs/roles.md](../../docs/roles.md). Where it stands:
   which, never the agent ([the merge](docs/merge.md)).
 - **With no agent**: names the issue it would take; claims nothing.
 
-**Does not, yet**: the measure (step 8).
+**Measured** on planted issues and a copy of a real repository:
+[where it stands](docs/status.md#measured).
 
 **Never**: merge, approve, put `workline:accepted`, unassign a person,
 close or move an issue.

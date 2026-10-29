@@ -1,0 +1,6 @@
+# sub fixed, in its scope.
+- patch:
+    file: lib.sh
+    content: |
+      add() { echo $(($1 + $2)); }
+      sub() { echo $(($1 - $2)); }
