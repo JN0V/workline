@@ -2,7 +2,7 @@
 sources:
   - roles/developer/role.yaml
   - internal/developer
-checked: 5b4d9511
+checked: 9d472ac7
 verified: agent:claude-code
 ---
 # Developer
