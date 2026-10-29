@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.56.0](https://github.com/JN0V/workline/compare/v0.55.0...v0.56.0) (2026-10-29)
+
+
+### Features
+
+* **developer:** measured on planted issues and a real repository ([#690](https://github.com/JN0V/workline/issues/690)) ([6cc9a0b](https://github.com/JN0V/workline/commit/6cc9a0bbeb315caf75c1b30da2632228afbe55bf))
+
 ## [0.55.0](https://github.com/JN0V/workline/compare/v0.54.0...v0.55.0) (2026-10-29)
 
 
