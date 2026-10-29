@@ -212,8 +212,8 @@ Step 3, the proof and the caps (2026-10-29,
 - **The pull request is the engine's**, as the tester's Draft: a
   branch `workline/developer/<n>`, ready or a Draft, `Closes #<n>` and
   a `## Verification`; its other sections are step 4's.
-- **Two time caps**: `ai-max-seconds` (1800) on the agent's wait,
-  `proof-seconds` (900) on the tests; past either, nothing waited for
+- **Two time caps**: `ai-max-seconds` (1200) on the agent's wait,
+  `proof-seconds` (600) on the tests, 30 min in all; past either, nothing waited for
   or a Draft. A cap reached makes a Draft even when green.
 
 ## Consequences
