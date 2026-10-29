@@ -59,10 +59,25 @@ roles:
       archived: [docs/BACKLOG.md]
   tester:
     settings:
+      # Its red-first proof, at night, and the green proof on its own
+      # branches (issue #264): every package but tests/evaluation, whose
+      # tests measure agents, not the code; the conformance suite in, so a
+      # new case is a test too, red until the engine does what it says.
+      # gotestsum pinned, run by Go, its JUnit report the check reads.
+      test-command: go run gotest.tools/gotestsum@v1.12.3 --junitfile {report} -- $(go list ./... | grep -v /tests/evaluation)
+      # Go's build errors, the role's default, and a conformance case the
+      # suite cannot read: red for no reason, so the build is said broken.
+      build-errors:
+        - error: '^(?:\./)?(?P<file>[^\s:]+\.go):\d+:\d+: (?P<message>.+)$'
+          missing-name:
+            - '^undefined: [\w.]+$'
+            - '^\S+ undefined \(type .+ has no field or method \w+'
+            - '^unknown field \w+ in struct literal'
+          test-name: '(?m)^func (Test\w*)\(\w+ \*testing\.T\)'
+        - error: '^\s*runner_test\.go:\d+: (?P<file>cases/[^\s:]+\.yaml): (?P<message>.+)$'
+          test-name: '(?m)^case: (\S+)$'
       # The curator's measures (`workline test measure`, the gardening's
-      # curator job): the whole suite, its coverage profile too; gotestsum
-      # pinned, run by Go.
-      test-command: go run gotest.tools/gotestsum@v1.12.3 --junitfile {report} -- ./...
+      # curator job): the whole suite, its coverage profile too.
       curator-command: go run gotest.tools/gotestsum@v1.12.3 --junitfile {report} -- -coverprofile=cover.out ./...
       coverage-report: cover.out
       # Its removals (`workline test curate`): the unit tests only, the
@@ -94,9 +109,12 @@ routing:
   # night: the docs, then the backlog — the GitHub issues, kept by the
   # product owner (ADR-0018) —, then the specs of up to five issues it
   # refined (specs-per-run), read by the reviewer, which holds each from
-  # ready while a finding is open (#128; on since 2026-10-17).
-  events: {pre-push: [committer, documentalist], merge-request: [committer, documentalist, "gate:lint", reviewer, inspector],
-    schedule: [documentalist, product-owner, reviewer]}
+  # ready while a finding is open (#128; on since 2026-10-17). Last, the
+  # tester: one ready issue a night, its tests opened as a Draft
+  # (ADR-0055, #264); on a pull request, before the reviewer, its frozen
+  # guard on its own branches, a test changed by another stopping the line.
+  events: {pre-push: [committer, documentalist], merge-request: [committer, documentalist, "gate:lint", tester, reviewer, inspector],
+    schedule: [documentalist, product-owner, reviewer, tester]}
 
 # workline's own Go code, read by golangci-lint (ADR-0049, step 5), its
 # standard linters (.golangci.yml). On a pull request, a finding the change

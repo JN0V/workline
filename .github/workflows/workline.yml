@@ -197,9 +197,10 @@ jobs:
       # it, else built here, for no job after; and the tools its roles use,
       # from their releases, checksums verified.
       # Go left set up on workline's own release pull request: GoReleaser
-      # builds the release's binary with it, below.
+      # builds the release's binary with it, below; and on the tester's
+      # branches, whose green proof runs its test-command.
       - uses: ./.github/actions/engine
-        with: {keep: "false", go: "${{ startsWith(github.head_ref, 'release-please--') }}"}
+        with: {keep: "false", go: "${{ startsWith(github.head_ref, 'release-please--') || startsWith(github.head_ref, 'workline/tester/') }}"}
       - name: gitleaks
         run: |
           bin="$RUNNER_TEMP/bin"; mkdir -p "$bin"; cd "$RUNNER_TEMP"
