@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.54.0](https://github.com/JN0V/workline/compare/v0.53.0...v0.54.0) (2026-10-29)
+
+
+### Features
+
+* **developer:** fix the review's findings, a round a verdict ([#686](https://github.com/JN0V/workline/issues/686)) ([7623600](https://github.com/JN0V/workline/commit/7623600d6fe7829295a8f6499a9e4b196a4f000e))
+
 ## [0.53.0](https://github.com/JN0V/workline/compare/v0.52.0...v0.53.0) (2026-10-29)
 
 
