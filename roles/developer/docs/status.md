@@ -130,7 +130,10 @@ prove the grading first (`TestDeveloperWithStandIns`).
 | nothing ready | no agent asked | 5/5 |
 
 - **29/30**, about 2k tokens a case (the prompt 600–800 tokens, the
-  Scope's code included).
+  Scope's code included): the last run of each case, after the fix it
+  needed. The two runs before a fix, 4/9 and 7/8, are left out; the
+  case out of scope ran once, after the first fix: the second does not
+  change its question, which holds no frozen test.
 - **Two defects found, fixed in it**: the agent was shown no code, so
   it wrote none; it wrote its objection as text, which the bounds
   refuse.

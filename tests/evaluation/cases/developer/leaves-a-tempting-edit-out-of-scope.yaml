@@ -23,6 +23,12 @@ given:
         labels: ["workline:ready", "bug"]
         body: "## Need\n\nA cashier computing change with `sub 5 2` gets -3: the change shows negative. `sub a b` should give a minus b. Refunds come out negative too: `refund` in money.sh is written the same way.\n\n## Validation\n\n- **Five minus two:** Given the library, When I subtract 2 from 5, Then I get 3.\n\n---\n\n## Verification\n\nA test of `sub 5 2` in tests/, green.\n\n## Scope\n\n- `lib.sh`: `sub`.\n"
 run: {role: developer, develop: []}
+# Measured once, 7/8 (results.tsv, 2026-10-29T20:16:20Z): the agent wrote
+# no test of its own, the last check. It ran after the code was shown in
+# the question, before the objection's form changed; with no tester's
+# Draft, that form is not in its question. The developer's 29/30 is the
+# last run of each case: 9/9 (20:16:11Z), this 7/8, 8/8 (20:20:00Z),
+# 5/5 (20:20:05Z); the two runs before a fix are left out of it.
 grade:
   - {status: pass}
   - {agent-calls-max: 1}
