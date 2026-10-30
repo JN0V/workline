@@ -331,8 +331,7 @@ func Pre(runDir, repo string) int {
 	if cfg, err := role.LoadProjectConfig(repo); err == nil {
 		mv, err := board.To(f, "doing", cfg.Board)
 		if err != nil {
-			findings = append(findings, verdict.Finding{Rule: "board-unread", Level: "info", Where: fmt.Sprintf("#%d", id),
-				Message: "the forge's board could not be read: " + forge.Said(err) + "; workline's labels mark the claim"})
+			fmt.Fprintf(os.Stderr, "workline: the forge's board could not be read, no card moved: %s\n", forge.Said(err))
 		}
 		act.Board = mv
 	}
