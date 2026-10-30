@@ -106,6 +106,14 @@ hold:
   `worktree-reverts-frozen-test-deleted`,
   `worktree-reverts-steering-file`, `worktree-refuses-symlink-out`,
   `worktree-ignores-agent-commits`.
+- **No credential in reach** (step 2): the agent not started while git
+  would hand it one (a persisted header, a helper, a URL holding a
+  token, saved credentials), said, nothing claimed; the CI tokens that
+  mint or carry one out of its environment; the templates' judging jobs
+  keep no token in the clone
+  ([the pull request](pull-request.md#who-opens-it)). Cases
+  `developer/worktree-env-has-no-token`,
+  `worktree-refuses-persisted-credential`.
 
 - **The review loop** (step 6): a fresh run a reviewer's verdict or a
   person's comment on its pull request, reading its record, not a
@@ -165,9 +173,9 @@ prove the grading first (`TestDeveloperWithStandIns`).
 
 - **The agent reads, edits and runs the tests**: `claude` is one call
   with no tools today, the Scope's code pasted in its question; a
-  `cmd:` agent edits a worktree already. No credential in reach, the
+  `cmd:` agent edits a worktree already, no credential in its reach. The
   proof on a fresh tree, the caps, `claude` with tools and the review
-  loop are steps 2 to 6 of
+  loop are steps 3 to 6 of
   [ADR-0056](../../../docs/adr/0056-the-developers-agent-works-in-a-sandbox-with-tools.md).
 - **The issue's kind from the forge's types and the project's labels**:
   read from a fixed list of labels only

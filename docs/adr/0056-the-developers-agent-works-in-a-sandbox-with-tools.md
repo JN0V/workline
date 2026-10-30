@@ -47,7 +47,8 @@
   ([ADR-0054] step 4's scrub stays); its own AI key only.
 - **Checked, not trusted** (principle 7): the engine refuses to start
   the agent when the worktree's git config holds a credential (a
-  checkout's persisted token): said, a Draft, never a silent run.
+  checkout's persisted token): said, a block before any claim (no
+  code, so no Draft to open), never a silent run.
 
 ### The engine bounds the result, after
 
