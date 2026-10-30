@@ -1,0 +1,43 @@
+# The developer's bounds on its merge request, on GitLab CI (ADR-0058):
+# include it beside workline.gitlab-ci.yml, or from a pipeline execution
+# policy (Ultimate) — docs/ci-gitlab.md#the-developers-bounds.
+#   include: [{local: ci/workline.gitlab-ci.yml}, {local: ci/workline-bounds.gitlab-ci.yml}]
+# On a merge request from a workline/developer/<n> branch, each file
+# changed since its target is held to issue n's bounds, read at the
+# target's tip: one refused fails the pipeline, whoever pushed it. No
+# agent, none of the merge request's code run: git diffs it. The verdict
+# is kept on the merge request, for the auditor, with the bot's token;
+# without it, the bounds cannot be read and the job fails, never passes.
+#
+# GitLab runs a merge request's pipeline from its source branch's
+# .gitlab-ci.yml, which the branch can edit: what keeps this job, by
+# tier (`workline doctor` says which the project has):
+#   Ultimate  a pipeline execution policy includes this file, from a
+#             project the merge request cannot touch.
+#   Premium   CODEOWNERS owns the CI files, its approval required on the
+#             default branch: a change to them waits for an owner.
+#   Free      nothing but the review: read each change to the CI files.
+# Self-contained, no anchor nor `extends` from workline.gitlab-ci.yml: a
+# policy's jobs see none of the project's.
+workline:bounds:
+  image: $WORKLINE_IMAGE:$WORKLINE_BOUNDS_VERSION
+  stage: test
+  environment: {name: workline, action: prepare}   # the bot's token, scoped to it (docs/ci-gitlab.md)
+  needs: []
+  interruptible: true
+  variables:
+    GIT_DEPTH: 0                    # the whole history: the merge base, the tester's frozen tests
+    WORKLINE_BOUNDS_VERSION: v0.57.0   # a release of workline: update it to take a newer one (x-release-please-version)
+    WORKLINE_IMAGE: ghcr.io/jn0v/workline   # a project's variable WORKLINE_IMAGE, your registry's copy, wins
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_EVENT_TYPE != "merge_train" && $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME =~ /^workline\/developer\/[0-9]+$/
+  script:
+    - '[ -z "${CI_SERVER_TLS_CA_FILE:-}" ] || cat "$CI_SERVER_TLS_CA_FILE" >> /etc/ssl/certs/ca-certificates.crt'
+    - '[ -n "${WORKLINE_GITLAB_TOKEN:-}" ] || { echo "workline: WORKLINE_GITLAB_TOKEN is not set, or not scoped to the environment workline: the bounds cannot be read, so they do not pass (docs/ci-gitlab.md)"; exit 1; }'
+    - export GITLAB_TOKEN=$WORKLINE_GITLAB_TOKEN
+    - workline version
+    # The rules at the target's tip; the head the pipeline runs, its
+    # source branch's in a merged results pipeline.
+    - git fetch -q origin "$CI_MERGE_REQUEST_TARGET_BRANCH_NAME" && base=$(git rev-parse FETCH_HEAD)
+    - head=${CI_MERGE_REQUEST_SOURCE_BRANCH_SHA:-$CI_COMMIT_SHA}
+    - workline develop --bounds --merge-request "$CI_MERGE_REQUEST_IID" --ai none --forge gitlab --input range="$base..$head"

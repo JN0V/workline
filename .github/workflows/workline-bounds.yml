@@ -1,0 +1,90 @@
+# workline's developer bounds on its own repository (ADR-0058):
+# ci/github/workline-bounds.yml, with the engine built from the default
+# branch's commit checked out, never the pull request's, rather than
+# installed (.github/actions/engine). The check `workline bounds` is
+# required on main.
+#   bounds        a read token; its verdict is the check.
+#   bounds-apply  the App's key (environment workline-app), no AI key.
+name: workline bounds
+on:
+  pull_request_target: {types: [opened, synchronize, reopened]}
+permissions: {}
+# A push cancels the check still on the head before.
+concurrency: {group: "workline-bounds-${{ github.event.pull_request.number }}", cancel-in-progress: true}
+
+env:
+  WORKLINE_RUNS_DIR: ${{ github.workspace }}/.workline-runs
+
+jobs:
+  bounds:
+    name: workline bounds           # the check branch protection requires
+    if: startsWith(github.event.pull_request.head.ref, 'workline/developer/')
+    runs-on: ubuntu-latest
+    permissions: {contents: read, pull-requests: read, issues: read}
+    outputs:
+      run: ${{ steps.bounds.outputs.run }}
+    steps:
+      # The base's tip, every branch: the rules are read there, and the
+      # tester's Draft its frozen tests come from.
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0, persist-credentials: false}
+      - uses: ./.github/actions/engine
+      # The head, as data: fetched, never checked out. Its branch's name is
+      # anyone's text: a variable, never written into the script.
+      - name: The bounds
+        id: bounds
+        env:
+          GH_TOKEN: ${{ github.token }}
+          WORKLINE_APP_ID: ${{ vars.WORKLINE_APP_ID }}   # the App whose comments keep the records the bounds read (ADR-0051)
+          PR: ${{ github.event.pull_request.number }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          git -c "http.extraheader=AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)" \
+            fetch -q origin "+$HEAD_SHA:refs/remotes/origin/$HEAD_REF"
+          status=0
+          workline develop --bounds --merge-request "$PR" --ai none --no-apply --forge github \
+            --input range="$GITHUB_SHA..$HEAD_SHA" --json > bounds.json || status=$?
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          echo "run=$(jq -r '(.pending // [])[0] // empty | split("/") | last' bounds.json)" >> "$GITHUB_OUTPUT"
+          jq -r '.summary // empty' bounds.json
+          jq -r '.summary // empty' bounds.json >> "$GITHUB_STEP_SUMMARY"
+          jq -r '.steps[]?.result.findings[]? | "::error file=\(.where // ""),title=workline bounds::\(.rule): \(.message)"' bounds.json || true
+      - uses: actions/upload-artifact@v4
+        if: steps.bounds.outputs.run != ''
+        with: {name: workline-bounds, path: .workline-runs, include-hidden-files: true, retention-days: 1}
+      - name: Verdict
+        env: {STATUS: "${{ steps.bounds.outputs.status }}"}
+        run: exit "${STATUS:-1}"
+
+  # The verdict kept on the pull request, its sticky comment, refused or
+  # not: data from the job above, no code of the pull request.
+  bounds-apply:
+    needs: bounds
+    if: always() && needs.bounds.outputs.run != ''
+    runs-on: ubuntu-latest
+    environment: workline-app       # the App's key: the default branch only (ADR-0044)
+    permissions: {pull-requests: write, issues: write}
+    steps:
+      - id: app
+        if: vars.WORKLINE_APP_ID != ''
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.WORKLINE_APP_ID }}
+          private-key: ${{ secrets.WORKLINE_APP_PRIVATE_KEY }}
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: ./.github/actions/engine
+      - uses: actions/download-artifact@v4
+        with: {name: workline-bounds, path: "${{ runner.temp }}/workline-runs"}
+      - env:
+          GH_TOKEN: ${{ steps.app.outputs.token || github.token }}
+          WORKLINE_APP: ${{ steps.app.outputs.app-slug }}   # workline's own account: the records it trusts
+          WORKLINE_RUNS_DIR: ${{ runner.temp }}/workline-runs
+          RUN: ${{ needs.bounds.outputs.run }}
+          PR: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          printf '%s' "$RUN" | grep -Eqx '[0-9]{8}T[0-9]{6}\.[0-9]{9}-[a-z0-9-]+' && [ -d "$WORKLINE_RUNS_DIR/$RUN" ] ||
+            { echo "::error title=workline::the bounds named no run of their own: $RUN"; exit 1; }
+          workline apply "$RUN" --from-merge-request "$PR" --head "$HEAD_SHA" --forge github

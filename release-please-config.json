@@ -29,6 +29,8 @@
         {"type": "generic", "path": "ci/github/workline-merge.yml"},
         {"type": "generic", "path": "ci/github/workline-answer.yml"},
         {"type": "generic", "path": "ci/github/workline-develop.yml"},
+        {"type": "generic", "path": "ci/github/workline-bounds.yml"},
+        {"type": "generic", "path": "ci/gitlab/workline-bounds.gitlab-ci.yml"},
         {"type": "generic", "path": "ci/gitlab/workline.gitlab-ci.yml"},
         {"type": "generic", "path": "docs/gitlab-trigger.md"}
       ]
