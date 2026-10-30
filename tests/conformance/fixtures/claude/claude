@@ -15,7 +15,7 @@ esac
 [ "${CLAUDE_CODE_SUBPROCESS_ENV_SCRUB:-}" = 1 ] || want "its shell would hold its login"
 for a in "--output-format stream-json" "--verbose" "--tools Read,Edit,Write,Glob,Grep,Bash" \
 	"--allowedTools Read,Edit,Write,Glob,Grep,Bash" "--permission-mode dontAsk" "--strict-mcp-config" \
-	"--no-session-persistence" "--append-system-prompt" "--max-turns 100"; do
+	"--no-session-persistence" "--append-system-prompt" "--max-turns 300"; do
 	case "$args" in *" $a "*) ;; *) want "not given $a" ;; esac
 done
 case "$args" in *" --system-prompt "*) want "its own prompt replaced" ;; esac

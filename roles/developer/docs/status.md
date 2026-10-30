@@ -222,7 +222,7 @@ prove the grading first (`TestDeveloperWithStandIns`).
 [ADR-0056](../../../docs/adr/0056-the-developers-agent-works-in-a-sandbox-with-tools.md)'s
 step 7 (2026-10-30), Sonnet at medium, in its worktree with its tools;
 tokens from `out/calls.jsonl`, now kept in results.tsv's `measure`
-column ([the try](PRLINK)).
+column ([the try](https://github.com/JN0V/workline/pull/747#tried)).
 
 | Case | Fresh in | Cache write | Out | Cache read | Turns | s | Outcome |
 |---|---|---|---|---|---|---|---|

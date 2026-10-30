@@ -51,4 +51,4 @@ expect:
   forge:
     merge-requests:
       - id: 2
-        comment-contains: ["review round 1 of 5: its fix pushed, the project's tests green", "\"round\":1", '"turns":6', '"tokens":46500', '"tools":{"Bash":1,"Edit":1,"Read":2,"Write":1}']
+        comment-contains: ["review round 1 of 5: its fix pushed, the project's tests green", "\"round\":1", '"turns":6', '"tokens":6500', '"cached":40000', '"tools":{"Bash":1,"Edit":1,"Read":2,"Write":1}']

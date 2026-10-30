@@ -4,7 +4,7 @@ sources:
   - internal/agent/command.go
   - internal/agent/prompt.go
   - internal/developer/developer.go
-checked: 1fa2e7f4
+checked: 62a62929
 verified: agent:claude-code
 ---
 # The agent: where it works, what it gets

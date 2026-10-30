@@ -5,7 +5,7 @@ sources:
   - internal/tester/onchange.go
   - internal/tester/fresh.go
   - roles/developer/role.yaml
-checked: aea0b546
+checked: 62a62929
 verified: agent:claude-code
 ---
 # The proof and the caps: ready or a Draft
