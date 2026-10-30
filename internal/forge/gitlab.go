@@ -1557,11 +1557,13 @@ func (g *gitlab) AddSubIssue(parent, child int) (bool, error) {
 }
 
 // projectPath is the project's full path, for GraphQL, which takes no
-// numeric id.
+// numeric id: CI's, else the remote's, the forge connected first when it
+// is the first call (the boards').
 func (g *gitlab) projectPath() string {
 	if p := os.Getenv("CI_PROJECT_PATH"); p != "" {
 		return p
 	}
+	_ = g.connect() // its error is the call's own, said there
 	p, _ := url.PathUnescape(g.project)
 	return p
 }

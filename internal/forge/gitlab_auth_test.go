@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"slices"
 	"testing"
@@ -40,5 +41,36 @@ func TestGitLabGlabOAuthToken(t *testing.T) {
 	want := []string{"PRIVATE-TOKEN= Authorization=Bearer oauth-tok", "PRIVATE-TOKEN=glpat-x Authorization="}
 	if !slices.Equal(sent, want) {
 		t.Fatalf("sent %q, want %q", sent, want)
+	}
+}
+
+// Out of CI, the boards are the first call: the project's path comes
+// from the remote all the same, never asked empty.
+func TestGitLabBoardsFromRemote(t *testing.T) {
+	var asked []string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var q struct {
+			Variables map[string]string `json:"variables"`
+		}
+		_ = json.NewDecoder(r.Body).Decode(&q)
+		asked = append(asked, q.Variables["p"])
+		_, _ = w.Write([]byte(`{"data":{"project":{"group":null,"boards":{"nodes":[{"id":"gid://gitlab/Board/7","name":"Development","lists":{"nodes":[{"listType":"label","label":{"title":"To do"}}]}}]}}}}`))
+	}))
+	defer srv.Close()
+	repo := t.TempDir()
+	if out, err := exec.Command("git", "-C", repo, "init", "-q").CombinedOutput(); err != nil {
+		t.Fatal(string(out))
+	}
+	if out, err := exec.Command("git", "-C", repo, "remote", "add", "origin", "https://gitlab.example/group/proj.git").CombinedOutput(); err != nil {
+		t.Fatal(string(out))
+	}
+	t.Setenv("CI_API_V4_URL", "")
+	t.Setenv("CI_PROJECT_ID", "")
+	t.Setenv("CI_PROJECT_PATH", "")
+	t.Setenv("GITLAB_HOST", srv.URL)
+	t.Setenv("GITLAB_TOKEN", "glpat-x")
+	boards, err := (&gitlab{repo: repo}).boards()
+	if err != nil || len(boards) != 1 || !slices.Equal(asked, []string{"group/proj"}) {
+		t.Fatalf("boards %v, %v; asked %q", boards, err, asked)
 	}
 }
