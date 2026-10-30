@@ -28,7 +28,7 @@ jobs:
       proposed: ${{ steps.line.outputs.proposed }}
     steps:
       - uses: actions/checkout@v4
-        with: {fetch-depth: 0}
+        with: {fetch-depth: 0, persist-credentials: false}   # no token left in .git/config for the developer's agent (ADR-0056)
       # Go left set up: the tester's test-command runs it, gotestsum
       # pinned in .workline/config.yaml, proving the tester's tests red
       # here and the developer's code green; the tools they need, as the

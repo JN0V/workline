@@ -60,7 +60,7 @@ jobs:
       proposed: ${{ steps.line.outputs.proposed }}
     steps:
       - uses: actions/checkout@v4
-        with: {fetch-depth: 0}
+        with: {fetch-depth: 0, persist-credentials: false}   # no token left in .git/config for the developer's agent (ADR-0056)
       # The engine at the version pinned above, and the tools its roles use,
       # from their releases, checksums verified: seconds, not a build.
       - name: workline

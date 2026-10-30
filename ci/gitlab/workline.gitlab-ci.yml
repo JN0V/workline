@@ -112,6 +112,14 @@ variables:
 .workline:claude: &claude           # the agent, only when the project gives its token; not installed on a draft, which asks none
   - ai=none
   - if [ -n "$CLAUDE_CODE_OAUTH_TOKEN" ]; then if [ "${draft:-}" = true ]; then ai=claude; else npm install -g --silent @anthropic-ai/claude-code && ai=claude; fi; fi
+# The developer's agent runs commands in a worktree of the clone: in the
+# jobs that may run it, the runner's job token leaves its git config
+# first, every branch fetched while it is there; the engine refuses to
+# start the agent while git would hand it one (ADR-0056).
+.workline:no-credential: &no-credential
+  - git fetch -q origin '+refs/heads/*:refs/remotes/origin/*'
+  - git config remote.origin.url "$CI_SERVER_URL/$CI_PROJECT_PATH.git"
+  - for k in $(git config --local --name-only --get-regexp '^(http\..*extraheader|credential\..*helper)$'); do git config --local --unset-all "$k"; done
 # Every lens of the reviewer once when the merge request becomes ready
 # (ADR-0020); a draft's pipelines ask no agent, the summary saying the AI
 # review waits for ready (ADR-0050). Marking a draft ready starts no
@@ -468,6 +476,7 @@ workline:garden:judge:
   stage: test
   script:
     - *claude
+    - *no-credential
     - status=0
     - workline route schedule --ai "$ai" --no-apply --forge gitlab --open-merge-request --summary workline-summary.md --summary workline-summary.html --json > line.json || status=$?
     - exit $status
@@ -611,6 +620,7 @@ workline:develop:judge:
   stage: test
   script:
     - *claude
+    - *no-credential
     - status=0
     - workline route issue ${ISSUE_IID:+--target issue:$ISSUE_IID} --ai "$ai" --no-apply --forge gitlab --open-merge-request --summary workline-summary.md --summary workline-summary.html --json > line.json || status=$?
     - exit $status
@@ -682,6 +692,7 @@ workline:review:judge:
   script:
     - *claude
     - git fetch -q origin "$MR_SOURCE_BRANCH" && git checkout -q -B "$MR_SOURCE_BRANCH" "$(cat review-head)"
+    - *no-credential
     - git rev-parse HEAD > round-head
     - status=0
     - workline develop --merge-request "$MR_IID" --ai "$ai" --no-apply --forge gitlab --json > round.json || status=$?
