@@ -50,6 +50,12 @@ Step 3 of
   commits' contents only, never the store's refs, replacements, config,
   attributes or hooks, nor the machine's git config. A commit the agent
   put in the start commit's place changes neither its diff nor the proof.
+- **The repository's hash**: the tree takes its object format, SHA-1
+  or SHA-256.
+- **Not whole, not run**: a start commit holding a submodule, or a
+  file whose attributes name a filter (git-lfs, an encryption), is not
+  checked out whole there. The proof does not run: unproven, the file
+  named, a Draft. Never a red or a green on a pointer file.
 - **Not apart yet**: the job's environment outside the tree (the home
   folder, tool caches, the path) is the one the agent ran in; the
   proof in the project's own environment is

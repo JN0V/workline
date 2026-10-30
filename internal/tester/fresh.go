@@ -7,7 +7,10 @@ package tester
 // config, attributes, hooks, refs or replacements, which a worktree of
 // repo shares with the agent's, nor the machine's git config. What the
 // agent left beside its diff (an ignored file, a cache, a commit put in
-// the start commit's place) is not there.
+// the start commit's place) is not there. It takes repo's object format,
+// to read its objects. A commit holding a submodule or naming a filter
+// in its attributes (git-lfs) is not checked out whole here: the proof
+// says so and does not run, never a red or a green on what is missing.
 
 import (
 	"bytes"
@@ -34,12 +37,16 @@ func freshTree(repo, rev string) (tree, at string, done func(), f *verdict.Findi
 	if err != nil {
 		return fail(err)
 	}
+	format, err := freshGit(repo, "rev-parse", "--show-object-format")
+	if err != nil {
+		return fail(err)
+	}
 	tree, err = os.MkdirTemp("", "workline-proof-")
 	if err != nil {
 		return fail(err)
 	}
 	done = func() { _ = os.RemoveAll(tree) }
-	if _, err := freshGit(tree, "init", "-q", "--template=", "."); err != nil {
+	if _, err := freshGit(tree, "init", "-q", "--template=", "--object-format="+format, "."); err != nil {
 		done()
 		return fail(err)
 	}
@@ -56,7 +63,56 @@ func freshTree(repo, rev string) (tree, at string, done func(), f *verdict.Findi
 		done()
 		return fail(fmt.Errorf("%s could not be checked out: %w", short(at), err))
 	}
+	if why, err := notWhole(tree); err != nil || why != "" {
+		done()
+		if err == nil {
+			err = fmt.Errorf("%s is not whole in a fresh tree: %s", short(at), why)
+		}
+		return fail(err)
+	}
 	return tree, at, done, nil
+}
+
+// notWhole says what of the commit checked out in tree a fresh tree does
+// not give whole: a submodule, left empty, or a file whose attributes
+// name a filter (git-lfs, an encryption), checked out as stored, never
+// smudged; "" when nothing.
+func notWhole(tree string) (string, error) {
+	staged, err := freshGit(tree, "ls-files", "--stage", "-z")
+	if err != nil {
+		return "", err
+	}
+	var files []string
+	for _, e := range strings.Split(staged, "\x00") {
+		mode, name, ok := strings.Cut(e, "\t")
+		if !ok {
+			continue
+		}
+		if strings.HasPrefix(mode, "160000 ") {
+			return "submodule " + name, nil
+		}
+		files = append(files, name)
+	}
+	if len(files) == 0 {
+		return "", nil
+	}
+	cmd := exec.Command("git", "-C", tree, "--no-replace-objects", "-c", "core.hooksPath=/dev/null", "check-attr", "-z", "--stdin", "filter")
+	cmd.Env = freshEnv()
+	cmd.Stdin = strings.NewReader(strings.Join(files, "\x00") + "\x00")
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	out, err := cmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("git check-attr filter: %v: %s", err, strings.TrimSpace(stderr.String()))
+	}
+	// -z: path, attribute, value, each ended by NUL.
+	f := strings.Split(string(out), "\x00")
+	for i := 0; i+2 < len(f); i += 3 {
+		if v := f[i+2]; v != "unspecified" && v != "unset" {
+			return fmt.Sprintf("%s names filter %s", f[i], v), nil
+		}
+	}
+	return "", nil
 }
 
 // freshGit runs git in dir as a fresh tree needs it: no replacement
