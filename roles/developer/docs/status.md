@@ -136,6 +136,12 @@ hold:
   `developer/claude-runs-in-worktree`, `claude-ignores-project-settings`,
   `claude-broken-objection-not-lost`,
   with a stand-in for claude: no real call measured yet (step 7).
+- **A review round in a worktree** (step 6): its pull request's head
+  checked out, its agent edits there as an issue run's does; the
+  question names the findings, no code pasted; its diff bounded,
+  proven on a fresh tree, capped, pushed
+  ([the review loop](review-loop.md#a-round)). Case
+  `developer/round-edits-in-worktree`.
 
 - **The review loop** (step 6): a fresh run a reviewer's verdict or a
   person's comment on its pull request, reading its record, not a
@@ -196,9 +202,6 @@ prove the grading first (`TestDeveloperWithStandIns`).
   the worktree only, no network by default
   ([#719](https://github.com/JN0V/workline/issues/719)).
 
-- **A review round in a worktree**: a round's agent still answers
-  patches, the Scope's code pasted in its question; step 6 of
-  [ADR-0056](../../../docs/adr/0056-the-developers-agent-works-in-a-sandbox-with-tools.md).
 - **`claude` with tools, measured**: tokens and time a run on planted
   issues and real repositories, step 7 of
   [ADR-0056](../../../docs/adr/0056-the-developers-agent-works-in-a-sandbox-with-tools.md).
