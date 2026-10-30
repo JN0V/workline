@@ -40,11 +40,15 @@ var known = map[string]Tool{
 			// this way is nearly always there.
 			{Needs: "go", Command: "go install github.com/zricethezav/gitleaks/v8@latest"},
 		}},
-	"lychee": {Name: "lychee", For: "the documentalist: links to other sites, when gardening",
+	"lychee": {Name: "lychee", For: "the documentalist: links to other sites, when gardening", Local: true,
 		Page: "https://lychee.cli.rs/installation/",
 		Ways: []Way{
 			{Needs: "brew", Command: "brew install lychee"},
 			{Needs: "cargo", Command: "cargo install lychee"},
+			// No brew, no cargo: the pinned release binary, its checksum
+			// checked, put in ~/.local/bin. WORKLINE_LYCHEE_RELEASE_URL
+			// replaces the download site (tests use a fake one).
+			{Needs: "curl", OS: "linux", Command: lycheeRelease},
 		}},
 	"claude": {Name: "claude", For: "the agent `claude`: refused messages rewritten, suspect docs judged", Local: true,
 		Page: "https://docs.claude.com/en/docs/claude-code/setup",
@@ -59,6 +63,15 @@ var known = map[string]Tool{
 		Page: "https://cli.github.com",
 		Ways: []Way{{Needs: "brew", Command: "brew install gh"}}},
 }
+
+// lycheeRelease downloads lychee's pinned release, checks its sha256 and
+// installs it in ~/.local/bin.
+const lycheeRelease = `set -e; b="${WORKLINE_LYCHEE_RELEASE_URL:-https://github.com/lycheeverse/lychee/releases/download}"; ` +
+	`a="lychee-$(uname -m)-unknown-linux-gnu.tar.gz"; u="$b/lychee-v0.21.0"; d="$(mktemp -d)"; ` +
+	`curl -fsSL -o "$d/$a" "$u/$a"; curl -fsSL -o "$d/$a.sha256" "$u/$a.sha256"; ` +
+	`(cd "$d" && echo "$(cut -d' ' -f1 "$a.sha256")  $a" | sha256sum -c -); ` +
+	`tar -xzf "$d/$a" -C "$d"; mkdir -p "$HOME/.local/bin"; ` +
+	`install -m 755 "$d/lychee" "$HOME/.local/bin/lychee"; rm -rf "$d"`
 
 // Lookup returns what workline knows of a tool; an unknown one has its name only.
 func Lookup(name string) Tool {
