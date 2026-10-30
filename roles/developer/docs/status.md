@@ -106,14 +106,16 @@ hold:
   `worktree-reverts-frozen-test-deleted`,
   `worktree-reverts-steering-file`, `worktree-refuses-symlink-out`,
   `worktree-ignores-agent-commits`.
-- **No credential in reach** (step 2): the agent not started while git
-  would hand it one (a persisted header, a helper, a URL holding a
-  token, saved credentials), said, nothing claimed; the CI tokens that
-  mint or carry one out of its environment; the templates' judging jobs
-  keep no token in the clone
-  ([the pull request](pull-request.md#who-opens-it)). Cases
+- **No credential in reach** (step 2): the agent runs with git, ssh,
+  gh and glab sealed, on a person's machine as in CI; not started while
+  a token is written in a file it can read (a persisted header, a URL
+  holding a token, saved credentials, gh's or glab's config), said,
+  nothing claimed; the CI tokens that mint or carry one out of its
+  environment; the templates' judging jobs keep no token in the clone
+  ([the agent](agent.md#no-credential-in-reach)). Cases
   `developer/worktree-env-has-no-token`,
-  `worktree-refuses-persisted-credential`.
+  `worktree-refuses-persisted-credential`,
+  `worktree-seals-credential-helper`, `worktree-refuses-token-in-a-file`.
 - **The proof on a fresh tree** (step 3): a checkout of the start
   commit in a repository of its own, never the agent's worktree, its
   git store's refs, replacements and config not read; its record says

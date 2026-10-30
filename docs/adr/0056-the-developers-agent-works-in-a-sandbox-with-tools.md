@@ -45,10 +45,25 @@
 - **No write token, as today** (principle 6, [ADR-0044]): no forge
   token, no App key, no signing key in its environment
   ([ADR-0054] step 4's scrub stays); its own AI key only.
-- **Checked, not trusted** (principle 7): the engine refuses to start
-  the agent when the worktree's git config holds a credential (a
-  checkout's persisted token): said, a block before any claim (no
-  code, so no Draft to open), never a silent run.
+- **Sealed, on a person's machine as in CI** (amended 2026-10-30):
+  the agent runs where git, ssh, gh and glab reach no credential, by
+  their own switches: no system nor global git config, an empty
+  `credential.helper` and `http.extraheader` read last
+  (`GIT_CONFIG_COUNT`), no prompt, no ssh key nor agent, gh's and
+  glab's config folders empty and their tokens a placeholder (gh with
+  no config still reads the keyring's token). Its own login (`HOME`)
+  is kept. Before,
+  any credential helper refused the run, so it could not run on a
+  person's machine, where one is nearly always set.
+- **Checked, not trusted** (principle 7): git, under the sealed
+  environment, must find no helper left; and the engine refuses to
+  start the agent while a token is written in a file it can read (a
+  checkout's persisted header, a URL, git's store, gh's or glab's
+  config), which no environment hides: said, a block before any claim
+  (no code, so no Draft to open), never a silent run.
+- **Its limit**: an agent that sets its environment back, or reads the
+  keyring or an ssh key itself, reaches what the job's user reaches;
+  boxing its shell is the answer, not yet built.
 
 ### The engine bounds the result, after
 
@@ -132,7 +147,11 @@ not pass.
    `developer-worktree-ignores-agent-commits`.
 2. **No credential in reach**: `developer-worktree-env-has-no-token`,
    `developer-worktree-refuses-persisted-credential`; the templates'
-   checkout without persisted credentials.
+   checkout without persisted credentials. Then the sealed environment,
+   for a person's machine: `developer-worktree-seals-credential-helper`,
+   `developer-worktree-refuses-token-in-a-file`,
+   `developer-worktree-seals-included-credential`,
+   `developer-worktree-refuses-included-token`.
 3. **The proof on a fresh tree**: `developer-proof-ignores-worktree-cache`,
    `developer-proof-red-after-agent-green`.
 4. **The caps**: `developer-turn-cap-makes-draft`,

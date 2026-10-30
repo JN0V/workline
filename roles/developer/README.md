@@ -3,7 +3,7 @@ sources:
   - roles/developer/role.yaml
   - ci/github/workline-develop.yml
   - internal/developer
-checked: 98d1a6a6
+checked: 0d116a14
 verified: agent:claude-code
 ---
 # Developer
@@ -77,6 +77,17 @@ workline develop --merge-request 7 --ai claude   # a review round on its pull re
 - **In CI**: route it on `issue` and `schedule`; the GitHub and GitLab
   templates run it, and a review round on its pull request
   ([the triggers](docs/triggers.md)).
+
+### Run it locally
+
+- **The same command on your machine**, your credential helper, ssh
+  agent and gh or glab login left as they are.
+- **The agent cannot use them**: the engine starts it with git, ssh,
+  gh and glab sealed ([the agent](docs/agent.md#no-credential-in-reach)).
+- **Refused only for a token written in a file** it could read (a
+  token in glab's `config.yml`, `~/.git-credentials`): the run says
+  which file, and the way out (the keyring: `glab auth login
+  --use-keyring`).
 
 ## Settings
 

@@ -4,7 +4,7 @@ sources:
   - internal/developer/developer.go
   - ci/github/workline-develop.yml
   - ci/gitlab/workline.gitlab-ci.yml
-checked: 1738b65b
+checked: 0d116a14
 verified: agent:claude-code
 ---
 # The triggers
@@ -76,8 +76,8 @@ routing:
 - **Two jobs**: the judge holds the agent and a read token for the
   pick; the engine gives the agent no forge token. The applying job
   holds the write token, no AI key.
-- **No token left in the judge's clone**: the agent's git would read it,
-  and the engine refuses to start the agent
+- **No token left in the judge's clone**: the agent could read it, and
+  the engine refuses to start the agent
   ([the pull request](pull-request.md#who-opens-it)).
   - The judging jobs: the developer's own, and the gardening's, whose
     schedule may run it.
@@ -85,7 +85,10 @@ routing:
     review round takes its branch from that checkout, every branch
     fetched.
   - GitLab: they fetch every branch, then take the runner's job token
-    out of the clone's git config (`.workline:no-credential`).
+    out of the clone's git config (`.workline:no-credential`): each
+    header, helper and rewrite holding a token, in the file git read it
+    from, a file the config includes too (gitlab-runner 19.6,
+    [#722](https://github.com/JN0V/workline/issues/722)).
 - **GitHub, one run an issue**: the concurrency group is on the judge
   job, after its `if`, named by the issue.
   - A label other than `workline:ready` never takes the group, so it

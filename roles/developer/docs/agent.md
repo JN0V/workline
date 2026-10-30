@@ -3,8 +3,10 @@ sources:
   - internal/agent/claude.go
   - internal/agent/command.go
   - internal/agent/prompt.go
+  - internal/agent/seal.go
+  - internal/developer/credential.go
   - internal/developer/developer.go
-checked: 369e4cc8
+checked: 0d116a14
 verified: agent:claude-code
 ---
 # The agent: where it works, what it gets
@@ -24,8 +26,7 @@ The agent is a choice: none, `claude`, or `cmd:<any command>`.
   ([the bounds](bounds.md#a-worktree-its-diff-is-the-code)), then
   proven on a fresh tree ([the proof](proof.md#a-fresh-tree)).
 - **No credential in reach**: no forge token in its environment, and
-  it is not started while git would hand it one
-  ([the pull request](pull-request.md#who-opens-it)).
+  git, ssh, gh and glab sealed ([below](#no-credential-in-reach)).
 
 ## What each agent gets
 
@@ -60,6 +61,34 @@ Checked against Claude Code 2.1.314; each flag in its `--help`:
 - **What it used**: `--output-format stream-json --verbose`; its
   turns, tokens and the tools it used, one count a tool, go in the
   claim's record.
+
+## No credential in reach
+
+The same on a person's machine and in CI: the engine starts the agent
+in a sealed environment, with git's and the tools' own switches
+(checked against git 2.53, OpenSSH 10.2, gh 2.103, glab 1.53):
+
+| What would hand a credential | Sealed by |
+|---|---|
+| a forge token in the environment | taken out (`GH_TOKEN`, `GITLAB_TOKEN`, `CI_JOB_TOKEN`…) |
+| git's system and global config | `GIT_CONFIG_NOSYSTEM=1`, `GIT_CONFIG_GLOBAL` an empty file |
+| a credential helper, any scope, the repository's too | `credential.helper` set empty in `GIT_CONFIG_COUNT`, read last |
+| an unscoped `http.extraheader` | the same, set empty |
+| a prompt | `GIT_TERMINAL_PROMPT=0`, `GIT_ASKPASS` and `SSH_ASKPASS` fail |
+| an ssh key or agent | `GIT_SSH_COMMAND="ssh -F /dev/null -o IdentitiesOnly=yes -o IdentityFile=/dev/null -o BatchMode=yes"`, `SSH_AUTH_SOCK` dropped |
+| gh's and glab's login | `GH_CONFIG_DIR`, `GLAB_CONFIG_DIR` an empty folder |
+| gh's token in the keyring, which it reads with no config | `GH_TOKEN`, `GH_ENTERPRISE_TOKEN`, `GITLAB_TOKEN` set to a placeholder that opens nothing: an environment token comes first |
+
+- **Kept**: `HOME`, so the agent's own login (`~/.claude`) works.
+- **Checked, not trusted**: git, under the sealed environment, must
+  find no helper left.
+- **Refused**, what no environment hides: a token written in a file
+  the agent can read
+  ([the pull request](pull-request.md#who-opens-it)).
+- **Its limit**: an agent that sets its own environment back, or reads
+  the keyring or an ssh key file itself (`gh auth token --user <you>`
+  still reads it), reaches what the person reaches. The seal stops git and the tools handing one; boxing the
+  shell is [not yet](#not-yet) done.
 
 ## The question
 
