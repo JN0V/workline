@@ -69,12 +69,13 @@ step 1); `claude` answers patches until step 5.
   the commit read), checked out in the run's folder. The agent runs
   there, its path in `WORKLINE_WORKTREE`, and edits in place.
 - **What is taken**: the diff against that commit, new files in,
-  whatever the agent committed; one patch a file, held to the rules
-  above. A file's mode is not read.
+  whatever the agent committed, a deleted file a deletion; one patch a
+  file, held to the rules above. A file's mode is not read.
 - **Refused before the rules**: a link out of the tree
   (`symlink-out`); another link, a binary, a submodule (`not-text`).
-- **Reverted**: a refused file leaves nothing. The worktree is
-  removed; only what passes the bounds goes on.
+- **Reverted**: a refused file leaves nothing. The worktree stays
+  while the agent may be asked again, then the engine removes it,
+  whatever post did; only what passes the bounds goes on.
 
 ## Why these rules
 

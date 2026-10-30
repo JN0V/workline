@@ -103,6 +103,7 @@ hold:
   ([the bounds](bounds.md#a-worktree-its-diff-is-the-code)). Cases
   `developer/worktree-diff-is-the-code`,
   `worktree-reverts-out-of-scope`, `worktree-reverts-frozen-test`,
+  `worktree-reverts-frozen-test-deleted`,
   `worktree-reverts-steering-file`, `worktree-refuses-symlink-out`,
   `worktree-ignores-agent-commits`.
 

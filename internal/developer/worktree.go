@@ -4,9 +4,10 @@ package developer
 // code starts from out in the run's worktree, where a cmd: agent edits in
 // place; post takes the worktree's diff against that commit, untracked
 // files in, whatever the agent committed, one patch a file, for the bounds
-// to hold like any patch. A link or a file that is not text is refused
-// here, a link out of the tree said so. The worktree is removed: only what
-// passes the bounds leaves the run.
+// to hold like any patch, a file deleted a deletion patch. A link or a
+// file that is not text is refused here, a link out of the tree said so.
+// The engine removes the worktree once its agent is asked no more: only
+// what passes the bounds leaves the run.
 
 import (
 	"bytes"
@@ -28,14 +29,13 @@ func openWorktree(runDir, repo, at string) error {
 }
 
 // worktreeCode is the run's worktree's diff against base, one patch a
-// file, and the files refused before the bounds; the worktree is removed.
-// No worktree: nothing.
-func worktreeCode(runDir, repo, base string) (patches []intent.Intention, refused []Refusal, err error) {
+// file, a deletion too, and the files refused before the bounds. No
+// worktree: nothing.
+func worktreeCode(runDir, base string) (patches []intent.Intention, refused []Refusal, err error) {
 	tree := agent.Worktree(runDir)
 	if tree == "" {
 		return nil, nil, nil
 	}
-	defer tester.RemoveWorktree(repo, tree)
 	// Modes are not the developer's (a role writes text files): an
 	// executable bit the agent set is not read.
 	if _, err := treeGit(tree, "add", "-A"); err != nil {
@@ -80,12 +80,23 @@ func notTextFile(tree, name, diff string) string {
 		if strings.HasPrefix(l, "@@") {
 			break
 		}
-		if strings.HasPrefix(l, "Binary files ") || strings.HasPrefix(l, "GIT binary patch") ||
-			strings.Contains(l, " 120000") || strings.Contains(l, " 160000") {
+		if strings.HasPrefix(l, "Binary files ") || strings.HasPrefix(l, "GIT binary patch") || linkOrModule(l) {
 			return "not-text"
 		}
 	}
 	return ""
+}
+
+// linkOrModule says a header line of a diff gives a link's or a
+// submodule's mode: its mode lines and its index line, never its names.
+func linkOrModule(l string) bool {
+	for _, p := range []string{"new file mode ", "deleted file mode ", "old mode ", "new mode ", "index "} {
+		if rest, ok := strings.CutPrefix(l, p); ok {
+			f := strings.Fields(rest)
+			return len(f) > 0 && (f[len(f)-1] == "120000" || f[len(f)-1] == "160000")
+		}
+	}
+	return false
 }
 
 // treeGit runs git in the agent's worktree, its hooks off, the files'

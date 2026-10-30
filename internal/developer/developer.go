@@ -553,12 +553,12 @@ func Post(runDir, repo string) int {
 		return fail(err)
 	}
 	// What its agent edited in the worktree is code too: its diff, held
-	// to the same bounds, the worktree removed (ADR-0056).
+	// to the same bounds; the engine removes the worktree (ADR-0056).
 	base := a.At
 	if a.From != "" {
 		base = a.From
 	}
-	fromTree, treeRefused, err := worktreeCode(runDir, repo, base)
+	fromTree, treeRefused, err := worktreeCode(runDir, base)
 	if err != nil {
 		return fail(err)
 	}
