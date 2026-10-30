@@ -14,9 +14,11 @@ choice is settled against this page.
    is called only when a decision needs judgement.
 5. **It works without AI.** No model, no quota, no network: every check still
    runs and still blocks; judgement calls go to a person.
-6. **The agent proposes, the engine acts.** The agent writes proposals from a
-   closed catalogue; a separate step, holding the write token and no AI key,
-   validates and applies them.
+6. **The agent proposes; the forge's guards decide.** What an agent writes
+   reaches the default branch only through the forge's guards — protection,
+   required checks, review, the merge policy — which hold whoever pushes.
+   Where the forge splits rights natively, as in CI, the agent's step holds
+   no write token; a separate step applies its proposals.
 7. **A rule that matters is a check.** A rule written only in prose is a wish.
    Every defect that got through ends as a proven, mechanical guard.
 8. **Stay on the task.** Anything found outside the task's scope is reported,
