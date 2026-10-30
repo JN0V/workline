@@ -6,7 +6,7 @@ sources:
   - internal/developer/developer.go
   - internal/agent/closing.go
   - internal/developer/words.go
-checked: 7f12e806
+checked: e5e6a3f8
 verified: agent:claude-code
 ---
 # The agent: where it works, what it gets
@@ -94,7 +94,10 @@ It answers with its edits; its diff is its code
   - A YAML list among prose is read alone, said (`answer-mended`).
   - Nothing reads: the words go as they came on the pull request,
     under "Its agent's words, unread", said (`agent-words-unread`), so
-    an objection written there is not lost.
+    an objection written there is not lost; with no pull request, in
+    its claim on the issue.
+  - An objections file that is a link, or a folder: never followed nor
+    read, removed, said.
 - **The same for a `cmd:` agent**: its output is read so.
 
 ## Not yet
