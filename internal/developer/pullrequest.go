@@ -48,7 +48,25 @@ func ProofLines(p Proof, caps []Cap) string { return proofLines(p, caps) }
 // isTest says whether a file is a test: "test" or "spec" a word of its
 // name (test_x.py, x_test.go, x.spec.ts, XTest.java), or in a test folder.
 func isTest(p string) bool {
-	stem := strings.TrimSuffix(path.Base(p), path.Ext(p))
+	if testName(p) {
+		return true
+	}
+	for _, part := range strings.Split(path.Dir(p), "/") {
+		if part == "test" || part == "tests" || part == "spec" || part == "__tests__" {
+			return true
+		}
+	}
+	return false
+}
+
+// testName says whether a file's name is a test's: "test" or "spec" a
+// word of it. A hidden file's never is: .env.test is a setting (#745).
+func testName(p string) bool {
+	base := path.Base(p)
+	if strings.HasPrefix(base, ".") {
+		return false
+	}
+	stem := strings.TrimSuffix(base, path.Ext(base))
 	for _, w := range strings.FieldsFunc(stem, func(c rune) bool { return c == '_' || c == '.' || c == '-' }) {
 		switch lw := strings.ToLower(w); {
 		case lw == "test" || lw == "tests" || lw == "spec" || lw == "conftest":
@@ -57,11 +75,6 @@ func isTest(p string) bool {
 			return true // XTest.java, XSpec.scala
 		case len(w) > 4 && strings.HasPrefix(w, "Test") && unicode.IsUpper(rune(w[4])):
 			return true // TestX.java, not Testimony.go
-		}
-	}
-	for _, part := range strings.Split(path.Dir(p), "/") {
-		if part == "test" || part == "tests" || part == "spec" || part == "__tests__" {
-			return true
 		}
 	}
 	return false

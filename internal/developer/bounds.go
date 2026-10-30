@@ -195,12 +195,11 @@ func under(p string, roots []string) bool {
 }
 
 // besideTest says whether p is a test beside one of the scope's paths, its
-// name holding "test" or "spec": in a scope path's folder or under it, or
-// in a test folder that sits there. A folder's own folder is not its
+// name a test's (testName): in a scope path's folder or under it, or in a
+// test folder that sits there. A folder's own folder is not its
 // neighbourhood: a Scope `src` lets in no test at the root.
 func besideTest(p string, scope []string, isDir func(string) bool) bool {
-	name := strings.ToLower(path.Base(p))
-	if !strings.Contains(name, "test") && !strings.Contains(name, "spec") {
+	if !testName(p) {
 		return false
 	}
 	dirs := []string{path.Dir(p)}

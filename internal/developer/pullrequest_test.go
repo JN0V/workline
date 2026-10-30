@@ -21,6 +21,8 @@ func TestIsTest(t *testing.T) {
 		"src/Testimony.java":    false,
 		"internal/spectrum.go":  false,
 		"docs/specification.md": false,
+		".env.test":             false,
+		".env.test.local":       false,
 	} {
 		if got := isTest(p); got != want {
 			t.Errorf("isTest(%q) = %v, want %v", p, got, want)

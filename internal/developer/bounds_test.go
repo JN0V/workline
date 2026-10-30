@@ -105,6 +105,10 @@ func TestBesideTestNeedsTheTestFolderBesideTheScope(t *testing.T) {
 		"tests/test_lib.sh":       false,
 		"other/tests/test_lib.sh": false,
 		"other/spec/lib_spec.rb":  false,
+		"src/.env.test":           false, // a setting (#745)
+		"src/.env.test.local":     false,
+		"src/latest.go":           false, // "test" in a word, not a word
+		"src/inspect.go":          false,
 	} {
 		if got := besideTest(p, scope, checker{}.isDir); got != want {
 			t.Errorf("besideTest(%s) = %v, want %v", p, got, want)
