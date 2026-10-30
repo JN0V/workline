@@ -341,7 +341,9 @@ token), **apply** (trusted, no AI key).
    may narrow the proposals in `out/intentions.yaml` — a place it refuses
    taken out, the rest kept — rather than block for the whole task to be
    asked again (the documentalist, ADR-0014 step 4); what it leaves there is
-   what is applied, held to the same catalogue and bounds.
+   what is applied, held to the same catalogue and bounds. Where its pre
+   gave the agent a worktree, `post` writes them from its diff, even when
+   the agent answered none (ADR-0056).
 5. **Apply.** The engine checks that `in/` still matches its digest, then
    validates the intentions against the catalogue, the role's `intentions` list
    and its `duties.writes`. An invalid intention set is refused whole. Valid
