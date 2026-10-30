@@ -192,6 +192,9 @@ func TestUsedReadsAFailure(t *testing.T) {
 	if u.failed != "agent unavailable: the command failed: it gave up" {
 		t.Errorf("failed = %q, want the call's", u.failed)
 	}
+	if u := calls(t, `{"agent":"cmd","failed":"agent answered without valid proposals"}`, `{"agent":"cmd","turns":2}`); u.failed != "" {
+		t.Errorf("asked again, then answered: want not failed, got %q", u.failed)
+	}
 	if u := calls(t, `{"agent":"cmd","time-cut":true}`); u.failed != "" || !u.timeCut {
 		t.Errorf("a time cut: want cut, not failed; got %+v", u)
 	}

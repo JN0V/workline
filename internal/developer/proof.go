@@ -120,8 +120,8 @@ type Used struct {
 	// mostTurns: the most turns one call took, each call told
 	// ai-max-turns whole (claude's --max-turns is per call); timeCut:
 	// the engine stopped waiting, the run's ai-max-seconds spent;
-	// noTurns, noTokens: the calls that reported none; failed: why a
-	// call failed, its time aside.
+	// noTurns, noTokens: the calls that reported none; failed: why the
+	// last call failed, its time aside (an earlier one asked again).
 	mostTurns         int
 	timeCut           bool
 	noTurns, noTokens int
@@ -152,9 +152,7 @@ func used(runDir string) Used {
 		if c.TokensIn+c.TokensOut == 0 {
 			u.noTokens++
 		}
-		if c.Failed != "" {
-			u.failed = c.Failed
-		}
+		u.failed = c.Failed // the last call says: one asked again that answered did not fail
 	}
 	u.Seconds = int(math.Round(seconds))
 	return u
