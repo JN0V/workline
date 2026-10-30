@@ -1,0 +1,27 @@
+case: product-owner/board-github-ready-set
+about: >
+  On a GitHub project an organisation owns, a column is an option of
+  its Status field (ADR-0057, step 3): the product owner, setting an
+  issue ready, sets the issue's card's Status to the ready option, one
+  value, and puts no label for it; `workline:ready` stays its own mark.
+  Its record, the issue's state, says the card moved.
+given:
+  repo: backlog
+  forge:
+    boards:
+      - forge: github
+        number: 3
+        name: Team plan
+        owner: organization
+        columns: [Backlog, Todo, In Progress, Done]
+        workflows: {"Item closed": true, "Pull request merged": true, "Pull request linked to issue": true}
+    issues:
+      - {id: 41, title: "Last sale missing", author: ann, insider: true, labels: [], status: {"3": ""}, body: "Exports drop the last sale of the day: 3 sales, 2 rows.\n\n## Validation\n\nAnn exports a day of 3 sales and counts 3 rows.\n\n---\n\n## Verification\n\nA test writes 3 rows and reads 3 back.\n\n## Scope\n\n`WriteRows` in `src/export/csv.go`.", comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:ready-text-on-top}
+expect:
+  forge:
+    issues:
+      - id: 41
+        labels: [workline:ready]
+        status: {"3": "Todo"}
+        comment-contains: ["to ready, its card to `Todo` on the board"]

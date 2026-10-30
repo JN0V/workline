@@ -1,0 +1,28 @@
+case: developer/board-workflow-off-said
+about: >
+  On a GitHub project whose workflow *Item closed* is off, no card
+  reaches Done at the close (ADR-0057, step 3): the role that moves the
+  card says it once, an info naming the project and the workflow to
+  turn on; its verdict stays a pass.
+given:
+  repo: tested
+  forge:
+    boards:
+      - forge: github
+        number: 3
+        name: Team plan
+        owner: organization
+        url: https://github.com/orgs/o/projects/3
+        columns: [Todo, In Progress, Done]
+        workflows: {"Item closed": false, "Pull request merged": true, "Pull request linked to issue": false}
+    issues:
+      - {id: 2, title: "Multiply", labels: ["workline:ready"], status: {"3": "Todo"}, body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: a `mul` function.\n"}
+run: {develop: [], ai: "fake:developer-nothing"}
+expect:
+  status: pass
+  summary: "took #2"
+  findings:
+    - {rule: board-workflow-off, level: info, where: "https://github.com/orgs/o/projects/3", message: "turn on the workflow *Item closed* of the GitHub project \"Team plan\" (#3)"}
+  forge:
+    issues:
+      - {id: 2, status: {"3": "In Progress"}}

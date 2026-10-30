@@ -422,11 +422,15 @@ func claimOf(a Act, s Settings) []intent.Intention {
 // call when the forge's board has that column (ADR-0057).
 func claimLabel(a Act, s Settings) intent.Intention {
 	v := map[string]any{"issue": a.Issue, "add": []string{s.ClaimLabel}}
-	if a.Board != nil {
+	switch {
+	case a.Board.Labels():
 		v["add"] = []string{s.ClaimLabel, a.Board.Column}
 		if len(a.Board.Off) > 0 {
 			v["remove"] = a.Board.Off
 		}
+	case a.Board.Writes():
+		// A GitHub project's Status, set after the label (ADR-0057).
+		v["status"] = map[string]any{"project": a.Board.Project, "option": a.Board.Column}
 	}
 	return intent.Intention{Kind: "label", Value: v}
 }
@@ -510,7 +514,7 @@ func claimBody(a Act, s Settings) string {
 	fmt.Fprintf(&b, "**The developer** takes this issue: the first ready one nobody took, in the backlog's order. "+
 		"`%s` says so; a person who takes it back removes the label, or assigns themselves.\n", s.ClaimLabel)
 	if a.Board != nil {
-		fmt.Fprintf(&b, "\nIts card moved to `%s` on the board %q.\n", a.Board.Column, a.Board.Board)
+		fmt.Fprintf(&b, "\n%s\n", a.Board.Told())
 	}
 	if len(a.Passed) > 0 {
 		b.WriteString("\nPassed over before it:\n\n")
@@ -583,6 +587,9 @@ func Post(runDir, repo string) int {
 	v := verdict.Verdict{Status: verdict.Pass, Summary: "took " + where, Findings: []verdict.Finding{rightsFinding(where)}}
 	for _, p := range a.Passed {
 		v.Findings = append(v.Findings, verdict.Finding{Rule: "issue-passed", Level: "info", Where: fmt.Sprintf("#%d", p.Issue), Message: p.Why})
+	}
+	if a.Board != nil && a.Board.Said != "" {
+		v.Findings = append(v.Findings, verdict.Finding{Rule: "board-workflow-off", Level: "info", Where: a.Board.URL, Message: a.Board.Said})
 	}
 	v.Findings = append(v.Findings, refusalFindings(where, refused, said)...)
 	if n := len(refused) + len(said); n > 0 {

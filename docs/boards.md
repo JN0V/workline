@@ -1,6 +1,6 @@
 ---
 sources: [internal/board/board.go, internal/forge/board.go, internal/doctor/board.go]
-checked: befbed81
+checked: 16acf2af
 ---
 # Boards
 
@@ -17,9 +17,9 @@ the forge's board each run and creates none
 ([ADR-0057](adr/0057-workline-finds-the-forges-board-and-moves-its-cards.md)).
 
 - **`workline doctor`** says the board found and its columns matched.
-- **On GitLab, the roles move its cards**: the product owner to the
-  ready column, the developer to the doing column (below). On GitHub,
-  no card moves yet.
+- **The roles move its cards**: the product owner to the ready column,
+  the developer to the doing column (below); GitHub's own workflows
+  do what they can first.
 - **workline's labels stay** (`workline:ready`, `workline:developing`):
   they are the roles' marks, board or not.
 - **Only when it matters**: the doctor looks for a board when the line
@@ -93,10 +93,33 @@ From
 - **With no agent**, neither role acts: no card moves.
 - **A board out of reach**, even in part, moves nothing, said in the run's output;
   no verdict changes.
-- **GitHub**: not built yet. Ready, then Status set; Doing left to
-  *Pull request linked to issue* when on; Done by GitHub's workflows.
 - **A person's drag is theirs**: it never frees a claim, and no role
   moves a card back.
+
+### On GitHub
+
+A column is an option of the project's Status field: a move sets that
+one value, and puts no label for it.
+
+| Step | An organisation's project | A user's project |
+|---|---|---|
+| ready | the product owner sets Status to the ready option | no move: GitHub lets no App write it |
+| doing | left to *Pull request linked to issue* when on, the pull request opening; else the developer sets Status | left to *Pull request linked to issue*; off, no move |
+| done | *Item closed*, at the close | the same |
+
+- **The App's right**: on an organisation's project, *Organization
+  projects: read and write*. GitHub offers no such right on a user's
+  project
+  ([ADR-0057](adr/0057-workline-finds-the-forges-board-and-moves-its-cards.md#who-may-write-a-github-project)).
+- **An issue in no project** is not added: that is the project's
+  *Auto-add* workflow.
+- ***Item closed* off**: no card reaches Done. The role that moves a
+  card says it once a run, `board-workflow-off` (info), naming the
+  project.
+- **In the role's record**: the move, or why it is left (the
+  workflow, a user's project). A write the forge refuses is said in
+  the run's output; no verdict changes.
+- **Turning a workflow on**: the project's menu, *Workflows*.
 
 ## What the doctor says
 

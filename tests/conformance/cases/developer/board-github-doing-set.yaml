@@ -1,0 +1,28 @@
+case: developer/board-github-doing-set
+about: >
+  On a GitHub project an organisation owns whose workflow *Pull request
+  linked to issue* is off (ADR-0057, step 3): the developer's claim sets
+  the issue's card's Status to the doing option itself, one value, no
+  label for it. The claim's record keeps the move.
+given:
+  repo: tested
+  forge:
+    boards:
+      - forge: github
+        number: 3
+        name: Team plan
+        owner: organization
+        columns: [Todo, In Progress, Done]
+        workflows: {"Item closed": true, "Pull request linked to issue": false}
+    issues:
+      - {id: 2, title: "Multiply", labels: ["workline:ready"], status: {"3": "Todo"}, body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: a `mul` function.\n"}
+run: {develop: [], ai: "fake:developer-nothing"}
+expect:
+  status: pass
+  summary: "took #2"
+  forge:
+    issues:
+      - id: 2
+        labels: ["workline:ready", "workline:developing"]
+        status: {"3": "In Progress"}
+        comment-contains: ["Its card moved to `In Progress` on the board \"Team plan\"", '"board":{"board":"Team plan","column":"In Progress","project":3}']
