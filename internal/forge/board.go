@@ -288,7 +288,7 @@ func projectUnwritable(err error) error {
 		return nil
 	}
 	m := err.Error()
-	if strings.Contains(m, "Resource not accessible") || strings.Contains(m, "required scopes") || strings.Contains(m, "FORBIDDEN") {
+	if strings.Contains(m, "Resource not accessible by integration") || (strings.Contains(m, "required scopes") && strings.Contains(m, "'project'")) {
 		return fmt.Errorf("%w: %s", ErrProjectUnwritable, m)
 	}
 	return err

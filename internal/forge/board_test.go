@@ -68,7 +68,14 @@ func TestGitHubSetStatusUnwritable(t *testing.T) {
 	if !errors.Is(err, ErrProjectUnwritable) {
 		t.Errorf("err = %v", err)
 	}
-	if err := projectUnwritable(errors.New("502 Bad Gateway")); errors.Is(err, ErrProjectUnwritable) {
-		t.Errorf("a forge down read as unwritable: %v", err)
+	for _, other := range []string{"502 Bad Gateway", "FORBIDDEN: the item was archived",
+		"Your token has not been granted the required scopes: ['read:org']"} {
+		if err := projectUnwritable(errors.New(other)); errors.Is(err, ErrProjectUnwritable) || err.Error() != other {
+			t.Errorf("%q read as unwritable: %v", other, err)
+		}
+	}
+	scope := "Your token has not been granted the required scopes to execute this query. The 'updateProjectV2ItemFieldValue' field requires one of the following scopes: ['project']"
+	if err := projectUnwritable(errors.New(scope)); !errors.Is(err, ErrProjectUnwritable) {
+		t.Errorf("the project scope missing: %v", err)
 	}
 }

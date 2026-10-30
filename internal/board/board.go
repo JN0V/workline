@@ -184,6 +184,11 @@ func To(f any, slot string, s role.Board) (*Move, error) {
 // built-in workflows move the rest, those off named to turn on.
 func userSaid(b forge.Board, m Slots, off func(string) bool) string {
 	said := fmt.Sprintf("the GitHub project %q (#%d) is a user's, which GitHub lets no App write: a ready moves no card", b.Name, b.Number)
+	if b.WorkflowsUnread != "" {
+		// Never read as on: what moves the other cards is not known.
+		return said + fmt.Sprintf("; its workflows not read (%s): *%s* and *%s* move the cards to the other columns when on",
+			b.WorkflowsUnread, LinkedWorkflow, ClosedWorkflow)
+	}
 	var flows, cols []string
 	if m.Doing != "" && off(LinkedWorkflow) {
 		flows, cols = append(flows, "*"+LinkedWorkflow+"*"), append(cols, "`"+m.Doing+"`")
