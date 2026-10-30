@@ -300,6 +300,10 @@ func Pre(runDir, repo string) int {
 			Message: "with no agent, the developer names the issue it would take, and claims and opens nothing (principle 5)"})
 		return final(runDir, verdict.Verdict{Status: verdict.Pass, Summary: fmt.Sprintf("would take #%d: no agent, nothing claimed", id), Findings: findings})
 	}
+	// No credential in its reach: checked before anything is claimed.
+	if v := refuseCredentials(repo, findings); v != nil {
+		return final(runDir, *v)
+	}
 	at, _ := gitOut(repo, "rev-parse", "HEAD")
 	act := Act{Act: "pick", At: at, Issue: id, Passed: passed}
 	if err := intent.Write(filepath.Join(runDir, "in", "fallback.yaml"), claimOf(act, s)); err != nil {

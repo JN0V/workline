@@ -1,0 +1,36 @@
+case: developer/worktree-env-has-no-token
+about: >
+  No token in the hands of an agent that runs commands in its worktree
+  (ADR-0056, step 2, principle 6): the forge's tokens, the App's key, the
+  signing key, and what a CI job holds that mints or carries one (GitHub's
+  OIDC request token, GitLab's job token in its registry password and
+  clone URL) are taken out of its environment; its own login is left. It
+  writes in lib.sh what it saw; the engine pushes it.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  env:
+    EDIT: env
+    GH_TOKEN: "ghs_planted"
+    GITHUB_TOKEN: "ghs_planted"
+    GITLAB_TOKEN: "glpat-planted"
+    WORKLINE_GITLAB_TOKEN: "glpat-planted"
+    CI_JOB_TOKEN: "planted"
+    CI_REGISTRY_PASSWORD: "planted"
+    CI_REPOSITORY_URL: "https://gitlab-ci-token:planted@gitlab.example/p.git"
+    WORKLINE_APP_PRIVATE_KEY: "planted"
+    WORKLINE_SIGNING_KEY: "planted"
+    ACTIONS_ID_TOKEN_REQUEST_TOKEN: "planted"
+    ANTHROPIC_API_KEY: "the-agent-s-own"
+  forge:
+    issues:
+      - {id: 2, title: "Multiply", labels: ["workline:ready"], body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: a `mul` function.\n"}
+run: {develop: [], ai: 'cmd:sh "$FIXTURES/agents/developer-edits-worktree.sh"'}
+expect:
+  status: pass
+  agent-calls: 1
+  no-findings: [{rule: credential-in-reach}]
+  pushed:
+    workline/developer/2:
+      lib.sh: "# tokens seen: none; login seen: yes"

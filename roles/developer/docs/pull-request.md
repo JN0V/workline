@@ -2,10 +2,11 @@
 sources:
   - internal/developer/pullrequest.go
   - internal/developer/developer.go
+  - internal/developer/credential.go
   - internal/engine/engine.go
   - internal/agent/claude.go
   - internal/builtin/reviewer/once.go
-checked: fcb1c15f
+checked: 1738b65b
 verified: agent:claude-code
 ---
 # The pull request
@@ -46,8 +47,25 @@ flowchart LR
 - **The engine, at apply**, with the forge's token the job holds: in CI
   the App's ([ADR-0044](../../../docs/adr/0044-the-apps-key-stays-with-the-default-branchs-runs.md)).
 - **The agent holds no forge token**: the engine calls every agent with
-  the forge's tokens, the App's key and the signing key taken out of its
+  the forge's tokens, the App's key, the signing key and what a CI job
+  holds that mints or carries one (GitHub's OIDC request token, GitLab's
+  job token in its registry password and clone URL) taken out of its
   environment; its own login passes (principle 6).
+- **Nor through git**: its git reads the repository's config. While git
+  would hand it a credential, the engine does not start it: a run
+  blocks, `credential-in-reach`, naming the key or the file, never its
+  value; nothing claimed
+  ([ADR-0056](../../../docs/adr/0056-the-developers-agent-works-in-a-sandbox-with-tools.md),
+  step 2). Refused:
+  - a header git sends (`http.*.extraheader`: a checkout's persisted
+    token);
+  - a credential helper left set, in any config git reads;
+  - a URL holding a user and a token (a remote, a rewrite);
+  - a file of saved credentials (`~/.git-credentials`).
+  - In CI, the templates' judging jobs keep none
+    ([the triggers](triggers.md#what-both-need)); on a machine,
+    `git config credential.helper ''` in the repository stops git
+    asking one.
 
 ## Its commits
 

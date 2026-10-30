@@ -41,7 +41,7 @@ jobs:
       proposed: ${{ steps.line.outputs.proposed }}
     steps:
       - uses: actions/checkout@v4
-        with: {fetch-depth: 0}
+        with: {fetch-depth: 0, persist-credentials: false}   # no token left in .git/config for the agent (ADR-0056)
       # The engine at the version pinned above, from its release, checksum
       # verified: seconds, not a build.
       - name: workline
@@ -178,7 +178,7 @@ jobs:
       head: ${{ steps.round.outputs.head }}
     steps:
       - uses: actions/checkout@v4
-        with: {fetch-depth: 0}
+        with: {fetch-depth: 0, persist-credentials: false}   # no token left in .git/config for the agent (ADR-0056)
       - name: workline
         run: |
           bin="$RUNNER_TEMP/bin"; mkdir -p "$bin"; cd "$RUNNER_TEMP"
@@ -205,7 +205,7 @@ jobs:
           branch=$BRANCH
           case "$branch" in workline/developer/*) ;; *) echo "pull request $PR is not the developer's: no round"; exit 0;; esac
           # Its branch's head: the fix is laid and proven there.
-          git fetch -q origin "$branch" && git checkout -q -B "$branch" FETCH_HEAD
+          git checkout -q -B "$branch" "origin/$branch"   # fetched by the checkout, which keeps no token
           echo "head=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
           status=0
           workline develop --merge-request "$PR" --ai "$ai" --no-apply --forge github --json > round.json || status=$?

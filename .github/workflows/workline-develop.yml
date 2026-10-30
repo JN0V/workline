@@ -41,7 +41,7 @@ jobs:
       proposed: ${{ steps.line.outputs.proposed }}
     steps:
       - uses: actions/checkout@v4
-        with: {fetch-depth: 0}
+        with: {fetch-depth: 0, persist-credentials: false}   # no token left in .git/config for the agent (ADR-0056)
       # Go left set up: the developer proves its code with the tester's
       # test-command (gotestsum, pinned in .workline/config.yaml), with the
       # tools the test job has: without gitleaks, the committer's cases
@@ -168,7 +168,7 @@ jobs:
       head: ${{ steps.round.outputs.head }}
     steps:
       - uses: actions/checkout@v4
-        with: {fetch-depth: 0}
+        with: {fetch-depth: 0, persist-credentials: false}   # no token left in .git/config for the agent (ADR-0056)
       # The engine built from the default branch, before the round checks
       # out the developer's branch; Go left set up, its fix proven with the
       # tester's test-command, with the tools the test job has.
@@ -192,7 +192,7 @@ jobs:
           branch=$BRANCH
           case "$branch" in workline/developer/*) ;; *) echo "pull request $PR is not the developer's: no round"; exit 0;; esac
           # Its branch's head: the fix is laid and proven there.
-          git fetch -q origin "$branch" && git checkout -q -B "$branch" FETCH_HEAD
+          git checkout -q -B "$branch" "origin/$branch"   # fetched by the checkout, which keeps no token
           echo "head=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
           status=0
           workline develop --merge-request "$PR" --ai "$ai" --no-apply --forge github --json > round.json || status=$?

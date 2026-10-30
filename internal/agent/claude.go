@@ -112,13 +112,18 @@ func claudeEnv(environ []string) []string {
 }
 
 // ForgeTokens are the variables holding what writes to the forge or signs
-// for workline: the forge's tokens, the App's key, the signing key. No
+// for workline: the forge's tokens, the App's key, the signing key, and
+// what a CI job holds that mints or carries one (GitHub's OIDC request
+// token, GitLab's job token in its registry password and clone URL). No
 // agent is handed one (principle 6): it proposes, the engine acts. The
 // agent's own login passes.
 var ForgeTokens = []string{
 	"GH_TOKEN", "GITHUB_TOKEN", "GH_ENTERPRISE_TOKEN", "GITHUB_ENTERPRISE_TOKEN",
 	"GITLAB_TOKEN", "GLAB_TOKEN", "WORKLINE_GITLAB_TOKEN", "WORKLINE_GITLAB_READ_TOKEN", "CI_JOB_TOKEN",
 	"FORGEJO_TOKEN", "WORKLINE_APP_PRIVATE_KEY", "WORKLINE_SIGNING_KEY",
+	"ACTIONS_ID_TOKEN_REQUEST_TOKEN", "ACTIONS_RUNTIME_TOKEN",
+	"CI_REGISTRY_PASSWORD", "CI_DEPLOY_PASSWORD", "CI_JOB_JWT", "CI_JOB_JWT_V1", "CI_JOB_JWT_V2", "CI_REPOSITORY_URL",
+	"CI_BUILD_TOKEN", "CI_DEPENDENCY_PROXY_PASSWORD",
 }
 
 // withoutTokens is the environment an agent is called with: no forge token.

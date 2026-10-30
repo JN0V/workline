@@ -1800,6 +1800,68 @@ func TestDeveloperTemplatesRunTheReviewRound(t *testing.T) {
 	}
 }
 
+// The developer's agent runs commands in a worktree of the checkout
+// (ADR-0056, step 2): the jobs that run it leave no token in the clone's
+// git config, where its git would read it and the engine would refuse to
+// start it: its own jobs, and the gardening's judge, which may run it on
+// the schedule. On GitHub, a checkout without persisted credentials; on
+// GitLab, the runner's job token taken out before the line runs.
+func TestDeveloperJudgesKeepNoCredential(t *testing.T) {
+	// The jobs that may run the developer's agent: its own, and the
+	// gardening's judge, whose schedule line may list it.
+	judges := map[string][]string{
+		"../../ci/github/workline-develop.yml": {"judge", "review"}, "../../.github/workflows/workline-develop.yml": {"judge", "review"},
+		"../../ci/github/workline-gardening.yml": {"judge"}, "../../.github/workflows/workline-gardening.yml": {"judge"},
+	}
+	for f, names := range judges {
+		data, err := os.ReadFile(f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var wf struct {
+			Jobs map[string]struct {
+				Steps []struct {
+					Uses string         `yaml:"uses"`
+					With map[string]any `yaml:"with"`
+					Run  string         `yaml:"run"`
+				} `yaml:"steps"`
+			} `yaml:"jobs"`
+		}
+		if err := yaml.Unmarshal(data, &wf); err != nil {
+			t.Fatalf("%s: %v", f, err)
+		}
+		for _, name := range names {
+			checkout, fetches := false, false
+			for _, s := range wf.Jobs[name].Steps {
+				if strings.HasPrefix(s.Uses, "actions/checkout@") {
+					checkout = fmt.Sprint(s.With["persist-credentials"]) == "false"
+				}
+				fetches = fetches || strings.Contains(s.Run, "git fetch")
+			}
+			if !checkout || fetches {
+				t.Errorf("%s, job %s: its checkout keeps the token for the agent's git, or a step fetches with none (persisted %v, fetches %v)", f, name, !checkout, fetches)
+			}
+		}
+	}
+	data, err := os.ReadFile("../../ci/gitlab/workline.gitlab-ci.yml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var top map[string]any
+	if err := yaml.Unmarshal(data, &top); err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{"workline:develop:judge", "workline:review:judge", "workline:garden:judge"} {
+		j, _ := top[name].(map[string]any)
+		script := fmt.Sprint(j["script"])
+		cut := strings.Index(script, `git config remote.origin.url "$CI_SERVER_URL/$CI_PROJECT_PATH.git"`)
+		line := strings.Index(script, "workline ")
+		if cut < 0 || !strings.Contains(script, "extraheader|credential") || line < cut {
+			t.Errorf("%s: the runner's job token is not taken out of the clone's git config before the line runs: %s", name, script)
+		}
+	}
+}
+
 // workline's own tests run where its roles prove code, not in the test job
 // alone: the developer's proof, the tester's, the curator's measures. Each
 // job that leaves Go set up for them has the tools the test job has, from
