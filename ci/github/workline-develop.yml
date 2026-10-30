@@ -54,8 +54,9 @@ jobs:
       - name: Claude, when the repository gives its token
         if: env.HAS_CLAUDE == 'true'
         run: npm install -g @anthropic-ai/claude-code
-      # Your test runner here: the developer proves its code with the
-      # tester's `test-command` before it opens the pull request.
+      # Your test runner here, and every tool your test job installs: the
+      # developer proves its code with the tester's `test-command` before
+      # it opens the pull request; a tool missing turns a test red here.
       - name: The issue line (proposals only)
         id: line
         env:

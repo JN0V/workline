@@ -1,5 +1,5 @@
 ---
-sources: [ci/github, .github/workflows/workline.yml, .github/workflows/workline-apply.yml, .github/workflows/workline-gardening.yml, .github/workflows/workline-sample.yml, .github/workflows/workline-answer.yml, .github/workflows/workline-develop.yml, .github/actions/engine/action.yml, .github/workflows/release.yml, .github/workflows/release-please.yml, release-please-config.json, .goreleaser.yaml, cmd/workline]
+sources: [ci/github, .github/workflows/workline.yml, .github/workflows/workline-apply.yml, .github/workflows/workline-gardening.yml, .github/workflows/workline-sample.yml, .github/workflows/workline-answer.yml, .github/workflows/workline-develop.yml, .github/actions/engine/action.yml, .github/actions/tests/action.yml, .github/workflows/release.yml, .github/workflows/release-please.yml, release-please-config.json, .goreleaser.yaml, cmd/workline]
 checked: eebe4270
 verified: agent:claude-code
 judged: 220b6dc
@@ -26,6 +26,10 @@ engine:
   commit checked out, unmodified, or the job fails. A pull request's runs
   keep theirs in its own cache, which `main`'s never read;
 - no `merge_group`: a user's repository has no merge queue;
+- the tools the tests need beyond Go (gitleaks) come from
+  [one action](../../.github/actions/tests/action.yml), in test.yml and in
+  each job where a role runs the tests: the developer's and the tester's
+  proofs, the curator's measures;
 - test.yml runs the tests alone: main's whole-repository checks are
   `route main`'s, once a merge ([main after a merge](../main-after-merge.md));
   gardening installs lychee, for the links to other sites, at night;

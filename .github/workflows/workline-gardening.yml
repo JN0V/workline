@@ -31,9 +31,11 @@ jobs:
         with: {fetch-depth: 0}
       # Go left set up: the tester's test-command runs it, gotestsum
       # pinned in .workline/config.yaml, proving the tester's tests red
-      # here and the developer's code green.
+      # here and the developer's code green; the tools they need, as the
+      # test job.
       - uses: ./.github/actions/engine
         with: {go: "true"}
+      - uses: ./.github/actions/tests
       # The documentalist's links to other sites, checked at night only:
       # they break with no change to the repository, and main's run after
       # a merge leaves them here (ADR-0051, step 8). Pinned, its checksum.
@@ -185,6 +187,7 @@ jobs:
         with: {fetch-depth: 0}
       - uses: ./.github/actions/engine
         with: {go: "true"}
+      - uses: ./.github/actions/tests   # the tools the tests need, as the test job
       - name: The history, from the last measure's artifact
         env: {GH_TOKEN: "${{ github.token }}"}
         run: |

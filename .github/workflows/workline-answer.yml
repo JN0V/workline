@@ -30,6 +30,7 @@ jobs:
         with: {fetch-depth: 0}
       - uses: ./.github/actions/engine
         with: {go: "true"}         # Go left set up: workline's tests run with it
+      - uses: ./.github/actions/tests   # and the tools they need, as the test job
       - name: Claude, when the repository gives its token
         if: env.HAS_CLAUDE == 'true'
         run: npm install -g @anthropic-ai/claude-code

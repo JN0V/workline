@@ -1793,3 +1793,59 @@ func TestDeveloperTemplatesRunTheReviewRound(t *testing.T) {
 		t.Errorf("workline:review:apply does not apply from the merge request: %v", a["script"])
 	}
 }
+
+// workline's own tests run where its roles prove code, not in the test job
+// alone: the developer's proof, the tester's, the curator's measures. Each
+// job that leaves Go set up for them has the tools the test job has, from
+// one action; else a test that needs one goes red on the proof alone, and
+// every pull request of the developer's opens a Draft. The gates' job
+// leaves Go set up for golangci-lint only.
+func TestOwnProofsRunWhereTheTestsRun(t *testing.T) {
+	files, err := filepath.Glob("../../.github/workflows/*.yml")
+	if err != nil || len(files) == 0 {
+		t.Fatalf("no workflow: %v", err)
+	}
+	proving := 0
+	for _, f := range files {
+		data, err := os.ReadFile(f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var wf struct {
+			Jobs map[string]struct {
+				Steps []struct {
+					Uses string            `yaml:"uses"`
+					Run  string            `yaml:"run"`
+					With map[string]string `yaml:"with"`
+				} `yaml:"steps"`
+			} `yaml:"jobs"`
+		}
+		if err := yaml.Unmarshal(data, &wf); err != nil {
+			t.Fatalf("%s: %v", f, err)
+		}
+		for name, job := range wf.Jobs {
+			proves, tools := false, false
+			for _, s := range job.Steps {
+				goSet := s.Uses == "./.github/actions/engine" && s.With["go"] != "" && s.With["go"] != "false"
+				if (goSet && name != "gates") || strings.Contains(s.Run, "go test") {
+					proves = true
+				}
+				if s.Uses == "./.github/actions/tests" {
+					tools = true
+				}
+				if strings.Contains(s.Run, "gitleaks") {
+					t.Errorf("%s, %s: installs a test tool of its own, not from ./.github/actions/tests", filepath.Base(f), name)
+				}
+			}
+			if proves {
+				proving++
+				if !tools {
+					t.Errorf("%s, %s: runs workline's tests without the tools the test job has (./.github/actions/tests)", filepath.Base(f), name)
+				}
+			}
+		}
+	}
+	if proving < 7 {
+		t.Errorf("only %d jobs run the tests: the rule reads too few workflows", proving)
+	}
+}
