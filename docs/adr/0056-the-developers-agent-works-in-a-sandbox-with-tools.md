@@ -1,6 +1,6 @@
 # ADR-0056: The developer's agent works in a sandbox, with tools
 
-- **Status:** proposed
+- **Status:** accepted (2026-10-30)
 - **Date:** 2026-10-30
 - **Decided by:** the maintainer agreed to write it, after the role's
   first live run; the choice is theirs, [below](#for-the-person)

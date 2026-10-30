@@ -154,7 +154,7 @@ prove the grading first (`TestDeveloperWithStandIns`).
 
 - **The agent reads, edits and runs the tests**: one call with no
   tools today, the Scope's code pasted in its question; a worktree with
-  tools, its diff bounded after, is proposed in
+  tools, its diff bounded after, is decided in
   [ADR-0056](../../../docs/adr/0056-the-developers-agent-works-in-a-sandbox-with-tools.md).
 - **The issue's kind from the forge's types and the project's labels**:
   read from a fixed list of labels only

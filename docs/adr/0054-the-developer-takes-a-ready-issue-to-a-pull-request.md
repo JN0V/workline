@@ -12,7 +12,7 @@
   [ADR-0039], [ADR-0042], [ADR-0044], [ADR-0050], [ADR-0051]; principles
   1, 5, 6, 8, 12
 - **Research:** [issue-to-pull-request.md](../research/issue-to-pull-request.md)
-- **Amended by:** [ADR-0056] (proposed): the agent works with tools in
+- **Amended by:** [ADR-0056] (accepted 2026-10-30): the agent works with tools in
   a worktree, the engine bounds its diff after; no pasted code, no
   `patch` intention
 
@@ -299,7 +299,7 @@ plan built:
   run.
 - **The question holds the Scope's code**, as it reads where the code
   starts: the agent has no tools, and shown none, it wrote no patch.
-  [ADR-0056] proposes tools in a worktree instead.
+  [ADR-0056], accepted, puts tools in a worktree instead.
 - **The objection's form is shown whole**: the answer's generic
   comment is a text, and an objection written so was refused.
 
