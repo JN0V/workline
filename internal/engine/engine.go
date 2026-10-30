@@ -1143,6 +1143,8 @@ func callAgent(ag agent.Agent, req agent.Request, task, runDir string, res *Resu
 	}
 	err = res.cutShort(err)
 	call.TimeCut = errors.Is(err, errTimeSpent)
+	// Every failed call is recorded, for the audit; a call asked again
+	// that answers supersedes it, as the developer reads only the last.
 	if err != nil && !call.TimeCut {
 		call.Failed = err.Error()
 	}
