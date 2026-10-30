@@ -12,9 +12,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"path"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/JN0V/workline/internal/forge"
@@ -225,6 +227,17 @@ func prRefusals(repo string, b Bounds, base, head string) (files int, refused []
 				r.Detail = c.unread.Error()
 			}
 			refused = append(refused, r)
+		}
+	}
+	// A test frozen for its issue that the head lacks or changed, though
+	// the diff does not show it: added by the tester's Draft, then
+	// deleted on the branch, it is in neither end of the range.
+	for _, t := range slices.Sorted(maps.Keys(b.Frozen)) {
+		if b.Frozen[t] != b.Issue || slices.ContainsFunc(refused, func(r Refusal) bool { return r.File == t }) {
+			continue
+		}
+		if blob, _ := gitOut(repo, "rev-parse", "-q", "--verify", head+":"+t); blob != b.Blobs[t] {
+			refused = append(refused, Refusal{File: t, Rule: "acceptance-test-edit"})
 		}
 	}
 	return files, refused, nil

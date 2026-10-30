@@ -1,0 +1,30 @@
+case: developer/pr-bounds-reads-rules-at-base
+about: >
+  The bounds on the pull request (ADR-0058, step 1) read their rules at
+  the base's tip, never at the head nor in the checkout: the base made
+  lint.sh a gate's script after the branch left it; the branch, checked
+  out, holds no gate and changes lint.sh, which its Scope names. The
+  base's rule blocks it, gate-file.
+given:
+  repo: tested-draft
+  setup:
+    - "git checkout -q main && printf 'echo lint\\n' > lint.sh && git add lint.sh && git commit -qm 'chore: lint' && git checkout -q -b workline/developer/3 && printf 'echo skipped\\n' > lint.sh && git commit -qam 'feat: lint for #3' -m 'Workline-Role: developer' && git checkout -q main && mkdir -p .workline && printf 'gates:\\n  lint:\\n    checks:\\n      - run: sh lint.sh\\n' > .workline/config.yaml && git add .workline && git commit -qm 'ci: a lint gate' && git checkout -q workline/developer/3"
+  forge:
+    issues:
+      - id: 3
+        title: "Lint"
+        labels: ["workline:developing"]
+        body: "## Need\n\nA lint.\n\n## Scope\n\n- `lint.sh`: what it runs.\n"
+    merge-requests:
+      - id: 2
+        branch: workline/developer/3
+        base: main
+        title: "Lint"
+        body: "Closes #3"
+run: {develop: [--bounds, --merge-request, "2"], ai: none}
+expect:
+  status: block
+  agent-calls: 0
+  findings:
+    - {rule: gate-file, where: lint.sh}
+  no-findings: [{rule: outside-scope}]

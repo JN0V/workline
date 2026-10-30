@@ -125,7 +125,8 @@ hold:
   the pull request ([the bounds](bounds.md#on-the-pull-request)). Cases
   `developer/pr-bounds-refuses-out-of-scope`,
   `pr-bounds-refuses-frozen-test`, `pr-bounds-refuses-steering-file`,
-  `pr-bounds-passes-in-scope`, `pr-bounds-skips-a-persons-branch`.
+  `pr-bounds-passes-in-scope`, `pr-bounds-skips-a-persons-branch`,
+  `pr-bounds-refuses-frozen-test-deleted`, `pr-bounds-reads-rules-at-base`.
 - **The proof on a fresh tree** (step 3): a checkout of the start
   commit in a repository of its own, never the agent's worktree, its
   git store's refs, replacements and config not read; its record says

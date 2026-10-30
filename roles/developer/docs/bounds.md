@@ -96,7 +96,8 @@ The check above, before the push, stays a fast first pass.
   cannot loosen its own check. The head and base: `--input
   range=<base>..<head>`, else the branches as fetched.
 - **Frozen tests**: from the tester's record, with each test's blob. A
-  test as the tester wrote it passes; changed or deleted, it blocks.
+  test as the tester wrote it passes; changed or deleted, it blocks,
+  deleted even when the range shows no trace of it.
 - **A refused file blocks**, named with its rule; a link out of the
   tree is `symlink-out`. Its next round or a person reverts it.
 - **Kept for the auditor**: a comment on the pull request,
