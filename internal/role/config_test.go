@@ -14,7 +14,7 @@ func TestCheckConfig(t *testing.T) {
 		{"merge: {autonomy: cautious}\n", ""},
 		{"merge: {autonmy: cautious}\n", `unknown key "autonmy" in merge (known: alone, autonomy)`},
 		{"", ""},
-		{"rolse: {}\n", `line 1: unknown key "rolse" at the top level (known: ai, forge, gates, gitlab, merge, release, repos, roles, routing)`},
+		{"rolse: {}\n", `line 1: unknown key "rolse" at the top level (known: ai, board, forge, gates, gitlab, merge, release, repos, roles, routing)`},
 		{"roles:\n  committer:\n    from: https://x\n", `unknown key "from" in roles.committer: a role taken from elsewhere`},
 		{"routing:\n  handoffs: [{from: a, too: b}]\n", `unknown key "too" in routing.handoffs`},
 		{"gates:\n  release:\n    checks: [{id: x, timout: 5m}]\n", `unknown key "timout" in gates.release.checks`},

@@ -1,0 +1,21 @@
+case: setup/board-ambiguous-said
+about: >
+  Two GitHub projects linked to the repository and no `board: {project:}`:
+  none is chosen, said as a note naming both and the setting that picks
+  one (ADR-0057, `board-ambiguous`).
+given:
+  repo: documented
+  config:
+    routing: {events: {issue: [developer]}}
+  forge:
+    merge-requests: []
+    boards:
+      - {forge: github, number: 1, name: Roadmap, owner: organization, columns: [Todo, Done]}
+      - {forge: github, number: 4, name: Sprint, owner: organization, columns: [Todo, Doing, Done]}
+run: {doctor: true}
+expect:
+  status: pass
+  checks:
+    - {rule: board-ambiguous, level: note, message: "2 boards: GitHub project \"Roadmap\" (#1, organization's), GitHub project \"Sprint\" (#4, organization's)"}
+    - {rule: board-ambiguous, fix: "board: {project: 1}"}
+  no-checks: [{rule: board-found}]

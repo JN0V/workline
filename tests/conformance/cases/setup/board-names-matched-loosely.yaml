@@ -1,0 +1,18 @@
+case: setup/board-names-matched-loosely
+about: >
+  Columns are matched by their names, lowercase, letters only, a scope's
+  key dropped; in each slot, the first name of its list wins: Todo
+  before Backlog (ADR-0057, "Columns matched by their names, loosely").
+given:
+  repo: documented
+  config:
+    routing: {events: {issue: [developer]}}
+  forge:
+    merge-requests: []
+    boards:
+      - {forge: github, number: 1, name: Plan, owner: user, columns: [Backlog, "To-do", "status::WIP", Completed], workflows: {}}
+run: {doctor: true}
+expect:
+  status: pass
+  checks:
+    - {rule: board-found, message: "ready → To-do, doing → status::WIP, done → Completed"}

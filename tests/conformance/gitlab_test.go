@@ -1,6 +1,7 @@
 package conformance
 
 import (
+	"bytes"
 	"cmp"
 	"encoding/json"
 	"fmt"
@@ -152,6 +153,9 @@ func (m *gitlabMock) answer(r *http.Request) (any, int, *gitlabFault) {
 	}
 	body, _ := io.ReadAll(r.Body)
 	if r.URL.Path == "/api/graphql" {
+		if bytes.Contains(body, []byte("boards(")) {
+			return boardsQuery(&s, body), 200, nil
+		}
 		return editorsQuery(&s, body), 200, nil
 	}
 	form, _ := url.ParseQuery(string(body))
@@ -204,6 +208,38 @@ func editorsQuery(s *gitlabState, body []byte) any {
 		}
 	}
 	return map[string]any{"data": map[string]any{"project": map[string]any{"item": map[string]any{"notes": map[string]any{"nodes": nodes, "pageInfo": map[string]any{"hasNextPage": false}}}}}}
+}
+
+// boardsQuery answers a project's or its group's boards (ADR-0057) from
+// the file's boards, by their owner: the project is in group g when one
+// is the group's.
+func boardsQuery(s *gitlabState, body []byte) any {
+	owner := "project"
+	if bytes.Contains(body, []byte("group(fullPath")) {
+		owner = "group"
+	}
+	nodes, grouped := []map[string]any{}, false
+	for _, b := range s.Boards {
+		grouped = grouped || b.Owner == "group"
+		if b.Owner != owner {
+			continue
+		}
+		lists := []map[string]any{{"listType": "backlog", "label": nil}}
+		for _, c := range b.Columns {
+			lists = append(lists, map[string]any{"listType": "label", "label": map[string]any{"title": c}})
+		}
+		lists = append(lists, map[string]any{"listType": "closed", "label": nil})
+		nodes = append(nodes, map[string]any{"id": fmt.Sprintf("gid://gitlab/Board/%d", b.Number), "name": b.Name, "webUrl": b.URL,
+			"hideClosedList": !b.ClosedList, "lists": map[string]any{"nodes": lists}})
+	}
+	at := map[string]any{"boards": map[string]any{"nodes": nodes}}
+	if owner == "project" {
+		at["group"] = nil
+		if grouped {
+			at["group"] = map[string]any{"fullPath": "g"}
+		}
+	}
+	return map[string]any{"data": map[string]any{owner: at}}
 }
 
 // fault is the fault a call meets, nil for none; it counts what each

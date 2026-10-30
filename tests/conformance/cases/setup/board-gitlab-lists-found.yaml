@@ -1,0 +1,21 @@
+case: setup/board-gitlab-lists-found
+about: >
+  On GitLab, `workline doctor` reads the project's boards and its
+  group's through GraphQL: a label list is a column, scoped or plain;
+  done is the Closed list, at the close. Two boards matching the same
+  labels are one, a label being the same move on each (ADR-0057, step 1).
+given:
+  repo: documented
+  config:
+    routing: {events: {issue: [developer]}}
+  forge:
+    merge-requests: []
+    boards:
+      - {forge: gitlab, number: 7, name: Development, owner: project, columns: ["workflow::Ready", "workflow::Doing"], closed-list: true}
+      - {forge: gitlab, number: 9, name: Team, owner: group, columns: ["workflow::Ready", "workflow::Doing", "workflow::Review"], closed-list: true}
+run: {doctor: true, forge: gitlab}
+expect:
+  status: pass
+  checks:
+    - {rule: board-found, level: ok, message: "GitLab board \"Development\" (the project's): ready → workflow::Ready, doing → workflow::Doing, done → the Closed list, at the close"}
+  no-checks: [{rule: board-ambiguous}]
