@@ -223,10 +223,6 @@ engine:
 - test.yml runs the tests alone: main's whole-repository checks are
   `route main`'s, once a merge ([main after a merge](main-after-merge.md));
   gardening installs lychee, for the links to other sites, at night;
-- Go set up where the tester's `test-command` runs: gardening's judge,
-  the tester's own pull requests, and workline-develop.yml's judge and
-  review, where the developer proves its code
-  ([#696](https://github.com/JN0V/workline/issues/696));
 - a project never runs, in a commit's checks, the pin that commit ships: a
   pull request moving the templates to a version not yet tagged would
   download nothing, as on each release from v0.2.0 to v0.2.3
