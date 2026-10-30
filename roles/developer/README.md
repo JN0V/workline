@@ -3,7 +3,7 @@ sources:
   - roles/developer/role.yaml
   - ci/github/workline-develop.yml
   - internal/developer
-checked: 98d1a6a6
+checked: 1fa2e7f4
 verified: agent:claude-code
 ---
 # Developer
@@ -42,8 +42,8 @@ file. All roles: [docs/roles.md](../../docs/roles.md). Where it stands:
   then opens its pull request: ready when green with no cap reached,
   else a Draft ([the proof and the caps](docs/proof.md)).
 - **Opens it on the tester's Draft**, the acceptance tests with it,
-  its code and tests in commits apart, its record hidden on it; the
-  agent holds no forge token ([the pull request](docs/pull-request.md)).
+  its code and tests in commits apart, its record hidden on it; in CI,
+  the agent holds no forge token ([the pull request](docs/pull-request.md)).
 - **Runs when routed**: when an issue is labelled ready, and on the
   schedule ([the triggers](docs/triggers.md)).
 - **Fixes the review** of its pull request, a fresh run a verdict or
@@ -77,6 +77,23 @@ workline develop --merge-request 7 --ai claude   # a review round on its pull re
 - **In CI**: route it on `issue` and `schedule`; the GitHub and GitLab
   templates run it, and a review round on its pull request
   ([the triggers](docs/triggers.md)).
+
+## Run it locally
+
+Each run with an agent says once, in its output and in the pull
+request's description:
+
+> the agent runs with your account's rights; the forge's guards decide what merges
+
+- **What it means**: the agent works as you, as your own coding agent
+  does: your files, your git credentials, your forge login.
+- **What still guards the project**: the default branch's protection,
+  its required checks, the review and the merge policy
+  ([ADR-0058](../../docs/adr/0058-the-forge-guards-the-project-not-the-agents-environment.md)).
+  A pull request with your commits waits for your yes.
+- **Set those guards first**: an unprotected default branch is as open
+  to the agent as to you.
+- **In CI**, it says the CI job's rights instead: what the job's token may do, the CI config decides.
 
 ## Settings
 

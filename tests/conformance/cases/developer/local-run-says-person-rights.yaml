@@ -1,0 +1,17 @@
+case: developer/local-run-says-person-rights
+about: >
+  Said plainly, once, in the run's output (ADR-0058): run outside CI,
+  its agent had the rights of the person who ran it, as their own coding
+  agent has; the forge's guards decide what merges.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  forge:
+    issues:
+      - {id: 2, title: "Multiply", labels: ["workline:ready"], body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: a `mul` function.\n"}
+run: {develop: [], ai: 'cmd:sh "$FIXTURES/agents/developer-edits-worktree.sh"'}
+expect:
+  status: pass
+  agent-calls: 1
+  findings: [{rule: agent-rights, where: "#2", message: "the agent runs with your account's rights; the forge's guards decide what merges"}]

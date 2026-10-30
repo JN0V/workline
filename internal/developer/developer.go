@@ -313,10 +313,6 @@ func Pre(runDir, repo string) int {
 			Message: "with no agent, the developer names the issue it would take, and claims and opens nothing (principle 5)"})
 		return final(runDir, verdict.Verdict{Status: verdict.Pass, Summary: fmt.Sprintf("would take #%d: no agent, nothing claimed", id), Findings: findings})
 	}
-	// No credential in its reach: checked before anything is claimed.
-	if v := refuseCredentials(repo, findings); v != nil {
-		return final(runDir, *v)
-	}
 	at, _ := gitOut(repo, "rev-parse", "HEAD")
 	act := Act{Act: "pick", At: at, Issue: id, Passed: passed}
 	if err := intent.Write(filepath.Join(runDir, "in", "fallback.yaml"), claimOf(act, s)); err != nil {
@@ -545,7 +541,7 @@ func Post(runDir, repo string) int {
 		return fail(err)
 	}
 	a.Refused = refused
-	v := verdict.Verdict{Status: verdict.Pass, Summary: "took " + where}
+	v := verdict.Verdict{Status: verdict.Pass, Summary: "took " + where, Findings: []verdict.Finding{rightsFinding(where)}}
 	for _, p := range a.Passed {
 		v.Findings = append(v.Findings, verdict.Finding{Rule: "issue-passed", Level: "info", Where: fmt.Sprintf("#%d", p.Issue), Message: p.Why})
 	}
@@ -603,6 +599,31 @@ func held(runDir, repo, base string, b Bounds, claim, proposed []intent.Intentio
 	}
 	kept, refused, said = bounded(repo, b, claim, append(proposed, fromTree...))
 	return kept, append(treeRefused, refused...), said, nil
+}
+
+// rights is with whose rights its agent ran, said to whoever runs it:
+// no refusal, the forge's guards decide what merges (ADR-0058,
+// principle 6). In CI, the job's: what its token may do is not checked
+// here.
+func rights() string {
+	if forge.InCI() != "" {
+		return "the agent runs with the CI job's rights; the forge's guards decide what merges"
+	}
+	return "the agent runs with your account's rights; the forge's guards decide what merges"
+}
+
+// rightsLine says it in the pull request's description, to its reviewer.
+func rightsLine() string {
+	who := "the account that ran it"
+	if forge.InCI() != "" {
+		who = "the CI job"
+	}
+	return "Its agent ran with the rights of " + who + "; the forge's guards decide what merges."
+}
+
+// rightsFinding says it once in the run's output.
+func rightsFinding(where string) verdict.Finding {
+	return verdict.Finding{Rule: "agent-rights", Level: "info", Where: where, Message: rights()}
 }
 
 // refusalFindings say in the verdict what the bounds refused.
