@@ -120,6 +120,7 @@ Each role, from a hook, a script or a CI job: [triggers](docs/triggers.md).
 | each push to it; on GitHub, marked ready too | committer; documentalist; reviewer and inspector, opt-in | the docs' fix in a comment, the agent once at ready; each finding on its line, and one summary comment; the findings in the forge's code-scanning view; the job's summary |
 | a release tool's (release-please…) | as any other, the docs never holding it; an issue labelled to hold it, or main not green, holds it ([how](docs/release-holds.md)) | its checks |
 | a fork's | judged with no agent | on GitHub, a comment; on GitLab, nothing |
+| a role's own: a comment on the tester's Draft, a verdict on the developer's | tester: answers an objection; developer: fixes its review | a reply or a rewritten test; the fix, pushed on its branch |
 
 - The review is on the merge request; a person merges.
 - Templates: [GitHub Actions](ci/github/workline.yml),
@@ -135,7 +136,7 @@ Each role, from a hook, a script or a CI job: [triggers](docs/triggers.md).
 | When | Roles | Writes |
 |---|---|---|
 | after each merge (`workline route main`) | the merge request's gates, every finding kept as the next base; documentalist, the whole repository, no agent | one issue, edited when what it lists changes ([how](docs/main-after-merge.md)) |
-| gardening, nightly or weekly (`workline route schedule`) | documentalist; product owner, opt-in | one merge request per task, kept on main or closed; the issues |
+| gardening, nightly or weekly (`workline route schedule`) | documentalist; product owner, reviewer, tester, developer, opt-in | one merge request per task, kept on main or closed; the issues |
 | the weekly sample (`workline sample`) | auditor: one in ten of every role's acts, each re-checked | one issue, a comment a week; a merge request undoing a wrong confirmation |
 | each push to main (`workline follow`) | the engine, no agent: with the [merge policy](docs/merge-policy.md), turns auto-merge on for what a person accepted, at `normal` for workline's own routine work too | the forge's auto-merge |
 | with the gardening (`workline route release --dry-run`) | what would hold the release if it were cut now, no agent | a part of main's issue ([how](docs/release.md)) |
@@ -155,6 +156,8 @@ Each role, from a hook, a script or a CI job: [triggers](docs/triggers.md).
 |---|---|
 | product owner, on gardening | reads a share of the open issues against the code: completes them, readies the evident ones, proposes the rest on each issue, `workline:proposed` |
 | `workline issues import <file>` | a roadmap file to issues |
+| tester, opt-in | a ready issue's tests, proven red, in a Draft |
+| developer, opt-in | a ready issue's code, proven, in a pull request; the issue labelled ready, or the gardening |
 | reviewer | a finding outside the change: an issue, `needs-triage` |
 | documentalist | the code disagrees with a decision a doc records: an issue |
 | a person | accepts: the label `workline:accepted`, a parent closed |

@@ -3,7 +3,7 @@ sources:
   - roles/developer/role.yaml
   - ci/github/workline-develop.yml
   - internal/developer
-checked: 0fa4e302
+checked: 99a14dc0
 verified: agent:claude-code
 ---
 # Developer
@@ -68,10 +68,13 @@ workline develop --issue 42 --ai none
 workline develop --merge-request 7 --ai claude   # a review round on its pull request
 ```
 
+- **`--ai`**: the agent is a choice: none, `claude`, `cmd:<any
+  command>`; the project's `ai` setting by default.
 - **`--forge`**: GitHub, GitLab, the local forge or a command's; the
   project's `forge` setting by default.
 - **In CI**: route it on `issue` and `schedule`; the GitHub and GitLab
-  templates run it ([the triggers](docs/triggers.md)).
+  templates run it, and a review round on its pull request
+  ([the triggers](docs/triggers.md)).
 
 ## Settings
 

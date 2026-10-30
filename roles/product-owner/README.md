@@ -41,7 +41,7 @@ is on each issue; you answer there
 | Event | Fired by | Does |
 |---|---|---|
 | `schedule` | CI gardening, with `product-owner` in the `schedule` line | reads `issues-per-run` open issues, completes and proposes |
-| `import` | `workline issues import <file>` | opens each item still to do in a file as an issue ([the command](../../docs/commands.md#workline-issues-import)) |
+| `import` | `workline issues import <file>` | opens each item still to do in a file as an issue ([the command](../../docs/commands-work.md#workline-issues-import)) |
 
 ## On each issue
 

@@ -1,14 +1,13 @@
 ---
 sources: [internal/tester/moment.go, internal/tester/write.go, internal/tester/frozen.go, internal/tester/objection.go, internal/tester/green.go]
-checked: cb1fa38e
+checked: 99a14dc0
 verified: agent:claude-code
 ---
 # The hand-over: what whoever builds finds
 
 Part of [the tester](../README.md). The contract the developer
 ([ADR-0054](../../../docs/adr/0054-the-developer-takes-a-ready-issue-to-a-pull-request.md))
-or a person reads before building a ready issue. The developer role is
-not built yet.
+or a person reads before building a ready issue.
 
 ```mermaid
 flowchart LR
@@ -40,12 +39,16 @@ flowchart LR
 
 ## What the builder does
 
-- **Claims the issue** by the forge's assignment, as ADR-0054 says; the
-  tester assigns nobody.
+- **Claims the issue**: a person by the forge's assignment, the
+  developer by its label ([the claim](../../developer/docs/pick.md#the-claim));
+  the tester assigns nobody.
 - **Starts from the branch**: checks it out and pushes its commits on
   top. Never a force push, never a branch of its own for the issue.
   Where the project routes the tester, a ready issue whose Draft is not
   open yet waits for it.
+- **The developer** opens a pull request of its own instead,
+  `workline/developer/<n>`, on top of the Draft's commits; merged, it
+  brings the tests ([its pull request](../../developer/docs/pull-request.md)).
 - **Leaves the tests as they are**: a change to a recorded file, or its
   deletion, blocks the merge request (`tester-test-changed`). Its own
   new tests go in other files.
