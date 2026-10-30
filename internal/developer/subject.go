@@ -12,6 +12,7 @@ import (
 
 	"github.com/JN0V/workline/internal/builtin/committer"
 	"github.com/JN0V/workline/internal/role"
+	"github.com/JN0V/workline/internal/verdict"
 )
 
 // The developer's commits pass the project's commit check (#736): each
@@ -136,22 +137,31 @@ func subject(typ, scope, summary string, s committer.Settings) string {
 }
 
 // committerSettings are the committer's settings for the project, its
-// subject limit and the codes it refuses; the role's own limit when they
-// cannot be read.
-func committerSettings(repo string) committer.Settings {
+// subject limit and the codes it refuses. Unread, the role's own as it
+// ships them, else its limit alone, and the finding that says so: the
+// subjects may then miss the project's rules.
+func committerSettings(repo, where string) (committer.Settings, []verdict.Finding) {
+	unread := func(err error, fallback committer.Settings) (committer.Settings, []verdict.Finding) {
+		return fallback, []verdict.Finding{{Rule: "commit-rules-unread", Level: "warn", Where: where,
+			Message: "the project's commit rules could not be read (" + err.Error() + "): its commits' subjects follow the committer's own, which the project's check may refuse"}}
+	}
 	r, err := role.Load(os.Getenv("WORKLINE_ROLES_DIR"), "committer")
 	if err != nil {
-		return committer.Settings{SubjectMax: 72}
+		return unread(err, committer.Settings{SubjectMax: 72})
+	}
+	own, _ := committer.SettingsFrom(r.MergedSettings(&role.ProjectConfig{}))
+	if own.SubjectMax == 0 {
+		own.SubjectMax = 72
 	}
 	cfg, err := role.LoadProjectConfig(repo)
 	if err != nil {
-		cfg = &role.ProjectConfig{}
+		return unread(err, own)
 	}
 	s, err := committer.SettingsFrom(r.MergedSettings(cfg))
 	if err != nil {
-		return committer.Settings{SubjectMax: 72}
+		return unread(err, own)
 	}
-	return s
+	return s, nil
 }
 
 // reviewSubject is the subject of a review round's fix commit.

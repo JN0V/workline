@@ -1,6 +1,8 @@
 package developer
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -93,5 +95,28 @@ func TestSubjectFitsTheProjectsLimit(t *testing.T) {
 		if f, _ := committer.Check(got, s); len(f) > 0 {
 			t.Errorf("scope %q: %q refused: %v", scope, got, f)
 		}
+	}
+}
+
+// A project config that cannot be read is said, never passed over in
+// silence: the role's own rules then, its limit kept.
+func TestCommitterSettingsUnreadSaid(t *testing.T) {
+	t.Setenv("WORKLINE_ROLES_DIR", "../../roles")
+	repo := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(repo, ".workline"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(repo, ".workline", "config.yaml"), []byte("roles: [not, a, map\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	s, found := committerSettings(repo, "#4")
+	if len(found) != 1 || found[0].Rule != "commit-rules-unread" {
+		t.Fatalf("findings = %v, want commit-rules-unread", found)
+	}
+	if s.SubjectMax != 72 || len(s.Types) == 0 {
+		t.Errorf("fallback = %d, %v; want the role's own", s.SubjectMax, s.Types)
+	}
+	if _, found := committerSettings(t.TempDir(), "#4"); len(found) != 0 {
+		t.Errorf("no config: findings = %v, want none", found)
 	}
 }

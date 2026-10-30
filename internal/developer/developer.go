@@ -605,7 +605,9 @@ func Post(runDir, repo string) int {
 		a.Turns, a.Tokens, a.Tools, a.AgentFailed = u.Turns, u.Tokens, u.Tools, u.failed
 		v.Findings = append(v.Findings, found...)
 		title := issueTitle(runDir, a.Issue)
-		mr := mergeRequest(a, title, subjects(a.Issue, title, b.Kind, b.Scope, committerSettings(repo)))
+		cs, unread := committerSettings(repo, where)
+		v.Findings = append(v.Findings, unread...)
+		mr := mergeRequest(a, title, subjects(a.Issue, title, b.Kind, b.Scope, cs))
 		if mr["draft"] == true {
 			v.Summary += "; a Draft: " + p.Result
 			if len(a.Caps) > 0 {
