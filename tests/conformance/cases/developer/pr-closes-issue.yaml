@@ -34,7 +34,7 @@ expect:
       lib.sh: "mul()"
       tests/test_mul_by_zero.sh: "mul 5 0"
   run-files:
-    in/task.md: {contains: ["Your code goes on the tester's branch", "[ \"$(mul 5 0)\" = 0 ]"]}
+    in/task.md: {contains: ["In your worktree, read-only to you", "- `tests/test_mul_by_zero.sh`"], not-contains: ["[ \"$(mul 5 0)\" = 0 ]"]}
   forge:
     merge-requests:
       - id: 2

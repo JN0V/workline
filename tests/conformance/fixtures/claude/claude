@@ -1,0 +1,43 @@
+#!/bin/sh
+# A stand-in for Claude Code (claude -p) as the developer runs it in a
+# worktree (ADR-0056, step 5). It fails, saying why, unless: it runs in
+# the worktree, given its tools allowed and no person asked, the turns
+# capped, no MCP server, no session, the role's prompt after Claude
+# Code's; its question names the Scope, the frozen tests and the test
+# command, and pastes no code. Then it reads lib.sh, writes mul and a
+# test of its own, runs the tests as the question says, and reports in
+# stream-json: the tools it used, its turns and tokens, answering `[]`.
+set -eu
+want() { echo "claude stand-in: $*" >&2; exit 1; }
+args=" $* "
+for a in "--output-format stream-json" "--verbose" "--tools Read,Edit,Write,Glob,Grep,Bash" \
+	"--allowedTools Read,Edit,Write,Glob,Grep,Bash" "--permission-mode dontAsk" "--strict-mcp-config" \
+	"--no-session-persistence" "--append-system-prompt" "--max-turns 100"; do
+	case "$args" in *" $a "*) ;; *) want "not given $a" ;; esac
+done
+case "$args" in *" --system-prompt "*) want "its own prompt replaced" ;; esac
+[ "$(git rev-parse --show-toplevel)" = "$(pwd -P)" ] && [ -f lib.sh ] || want "not run in the worktree: $(pwd)"
+question=$(cat)
+for w in '`lib.sh`' '`tests/test_mul_by_zero.sh`' '`sh run-tests.sh {report}`' 'Edit the files in your worktree'; do
+	case "$question" in *"$w"*) ;; *) want "the question does not name $w" ;; esac
+done
+case "$question" in *'add() {'* | *'- patch:'*) want "the question pastes code, or asks for patches" ;; esac
+cat > lib.sh <<'LIB'
+add() { echo $(($1 + $2)); }
+mul() { echo $(($1 * $2)); }
+LIB
+cat > tests/test_mul.sh <<'T'
+. ./lib.sh
+[ "$(mul 2 3)" = 6 ]
+T
+report=$(mktemp)
+sh run-tests.sh "$report" >/dev/null || want "its own run is red"
+rm -f "$report"
+tool() { printf '{"type":"assistant","message":{"content":[{"type":"text","text":"…"},{"type":"tool_use","id":"t%s","name":"%s","input":{}}]}}\n' "$1" "$2"; }
+echo '{"type":"system","subtype":"init","tools":["Read","Edit","Write","Glob","Grep","Bash"]}'
+tool 1 Read
+tool 2 Read
+tool 3 Write
+tool 4 Edit
+tool 5 Bash
+echo '{"type":"result","subtype":"success","is_error":false,"num_turns":6,"result":"[]","total_cost_usd":0.12,"modelUsage":{"claude-sonnet-5":{"inputTokens":3000,"cacheReadInputTokens":40000,"cacheCreationInputTokens":2000,"outputTokens":1500}}}'

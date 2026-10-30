@@ -124,13 +124,25 @@ func Prompt(req Request) (system, user string, err error) {
 		b.WriteString("# Your previous answer was refused\n\n" + string(fb) + "\n" +
 			"Your new answer replaces it whole: give again, unchanged, every proposal and every change of it not refused above, and change only what is refused.\n\n")
 	}
-	b.WriteString("# Answer\n\nAnswer with YAML only, no prose and no code fence: a list of proposals, each item holding exactly one of:\n\n")
+	tree := Worktree(req.RunDir) != ""
+	if tree {
+		// It edits in place (ADR-0056): its diff is its code, no patch.
+		b.WriteString("# Answer\n\nYour working directory is a worktree of the code: edit its files there and run its tests. " +
+			"Its diff is your code, held to the task's bounds once you are done.\n\n" +
+			"Then end with YAML only, no prose and no code fence: a list of what you propose beside your edits, `[]` if nothing, each item holding exactly one of:\n\n")
+	} else {
+		b.WriteString("# Answer\n\nAnswer with YAML only, no prose and no code fence: a list of proposals, each item holding exactly one of:\n\n")
+	}
 	for _, k := range req.Role.Intentions {
-		if !engineOnly[k] {
+		if !engineOnly[k] && (!tree || k != "patch") {
 			b.WriteString(contracts[k] + "\n")
 		}
 	}
-	b.WriteString("\n" + BlockScalars + "\n\nYou cannot act, only propose; anything else is refused.\n\n")
+	if tree {
+		b.WriteString("\n" + BlockScalars + "\n\nBeyond the worktree you cannot act, only propose; anything else is refused.\n\n")
+	} else {
+		b.WriteString("\n" + BlockScalars + "\n\nYou cannot act, only propose; anything else is refused.\n\n")
+	}
 	if policy, ok := facet(req, "policy.md"); ok {
 		b.WriteString("# Rules\n\n" + policy)
 	}

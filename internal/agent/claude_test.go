@@ -175,3 +175,26 @@ func TestShapeKeys(t *testing.T) {
 		t.Errorf("a word in a quoted text read as a key: %v", keys)
 	}
 }
+
+// TestClaudeStream: in a worktree, claude's stream-json is read for its
+// result, as its JSON would be, and the tools it used are counted.
+func TestClaudeStream(t *testing.T) {
+	stream := `{"type":"system","subtype":"init"}
+{"type":"assistant","message":{"content":[{"type":"text","text":"x"},{"type":"tool_use","name":"Read"}]}}
+{"type":"user","message":{"content":[{"type":"tool_result"}]}}
+{"type":"assistant","message":{"content":[{"type":"tool_use","name":"Bash"},{"type":"tool_use","name":"Read"}]}}
+{"type":"result","subtype":"success","num_turns":3,"result":"[]","modelUsage":{"claude-sonnet-5":{"inputTokens":10,"outputTokens":5}}}
+`
+	result, tools := claudeStream([]byte(stream))
+	var call Call
+	r, ok := claudeAnswer(result, &call)
+	if !ok || r.Result != "[]" || call.Turns != 3 || call.TokensIn+call.TokensOut != 15 {
+		t.Errorf("the result not read: %+v, %+v", r, call)
+	}
+	if len(tools) != 2 || tools["Read"] != 2 || tools["Bash"] != 1 {
+		t.Errorf("tools counted %v, want Read 2, Bash 1", tools)
+	}
+	if out, _ := claudeStream([]byte("not json")); string(out) != "not json" {
+		t.Errorf("no result message: stdout not kept as it came: %q", out)
+	}
+}
