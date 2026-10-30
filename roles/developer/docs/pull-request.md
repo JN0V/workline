@@ -6,7 +6,7 @@ sources:
   - internal/engine/engine.go
   - internal/agent/claude.go
   - internal/builtin/reviewer/once.go
-checked: 249872c2
+checked: f3fd0881
 verified: agent:claude-code
 ---
 # The pull request
@@ -78,6 +78,10 @@ flowchart LR
     the codes the committer refuses taken out, cut on a word to the
     committer's `subject-max`;
   - a review round's fix: `fix: the review's findings on #<n>, round <r>`.
+- **Its title is its code's subject**, cut shorter: a squash lands it
+  with the forge's ` (#N)`, and GitLab marks a Draft with `Draft: `;
+  both still fit the committer's limit
+  ([ADR-0051](../../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md)).
 - **Each carries `Workline-Role: developer`** and the model that wrote
   it, as every commit workline makes.
 
