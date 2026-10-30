@@ -1,5 +1,5 @@
 ---
-sources: [ci/github, .github/workflows/workline.yml, .github/workflows/workline-apply.yml, .github/workflows/workline-gardening.yml, .github/workflows/workline-sample.yml, .github/workflows/workline-answer.yml, .github/actions/engine/action.yml, .github/workflows/release.yml, .github/workflows/release-please.yml, release-please-config.json, .goreleaser.yaml, cmd/workline]
+sources: [ci/github, .github/workflows/workline.yml, .github/workflows/workline-apply.yml, .github/workflows/workline-gardening.yml, .github/workflows/workline-sample.yml, .github/workflows/workline-answer.yml, .github/workflows/workline-develop.yml, .github/actions/engine/action.yml, .github/workflows/release.yml, .github/workflows/release-please.yml, release-please-config.json, .goreleaser.yaml, cmd/workline]
 checked: eebe4270
 judged: 220b6dc
 verified: agent:claude-code
@@ -208,7 +208,8 @@ engine:
 - `gates` installs golangci-lint, pinned by its SHA-256, for
   [the gate](../.workline/config.yaml);
 - they build the engine from the commit they run on rather than run a
-  release: gardening and the sample, both jobs, from `main`; a pull
+  release: gardening, the sample and the developer's
+  (workline-develop.yml), every job, from `main`; a pull
   request's jobs, from its commit; workline-apply.yml's and
   workline-merge.yml's, from `main`'s commit, merged and reviewed: what a
   pull request changes in the engine never runs with the write token;
@@ -222,6 +223,10 @@ engine:
 - test.yml runs the tests alone: main's whole-repository checks are
   `route main`'s, once a merge ([main after a merge](main-after-merge.md));
   gardening installs lychee, for the links to other sites, at night;
+- Go set up where the tester's `test-command` runs: gardening's judge,
+  the tester's own pull requests, and workline-develop.yml's judge and
+  review, where the developer proves its code
+  ([#696](https://github.com/JN0V/workline/issues/696));
 - a project never runs, in a commit's checks, the pin that commit ships: a
   pull request moving the templates to a version not yet tagged would
   download nothing, as on each release from v0.2.0 to v0.2.3
