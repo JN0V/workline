@@ -3,7 +3,7 @@ sources:
   - roles/developer/role.yaml
   - ci/github/workline-develop.yml
   - internal/developer
-checked: 1fa2e7f4
+checked: 87d9ef80
 verified: agent:claude-code
 ---
 # Developer
@@ -36,7 +36,8 @@ file. All roles: [docs/roles.md](../../docs/roles.md). Where it stands:
   reads, edits and runs the tests there ([the agent](docs/agent.md)).
   Its diff is held to its bounds: a file outside the Scope, a frozen
   acceptance test, a file that steers agents or a gate's are reverted,
-  no agent judging ([the bounds](docs/bounds.md)). A test that does not
+  no agent judging; on its pull request, the same bounds are a check,
+  whoever pushed ([the bounds](docs/bounds.md)). A test that does not
   fit, it objects to on the tester's Draft.
 - **Proves it** on the project's tests, the tester's `test-command`,
   then opens its pull request: ready when green with no cap reached,
@@ -67,6 +68,7 @@ workline develop --ai none           # names the issue it would take
 workline develop --ai claude         # claims it, writes the code; any agent: claude, cmd:<command>
 workline develop --issue 42 --ai none
 workline develop --merge-request 7 --ai claude   # a review round on its pull request
+workline develop --bounds --merge-request 7      # its bounds on its pull request, no agent
 ```
 
 - **`--ai`**: the agent is a choice: none, `claude`, `cmd:<any
