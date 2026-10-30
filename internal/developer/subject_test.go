@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/JN0V/workline/internal/builtin/committer"
+	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/role"
 )
 
@@ -55,6 +56,20 @@ func TestSubjectsPassTheCommitterCheck(t *testing.T) {
 			if f, err := committer.Check(m+"\n\nWorkline-Role: developer", s); err != nil || len(f) > 0 {
 				t.Errorf("%s: %q refused by the committer: %v %v", tc.name, m, f, err)
 			}
+		}
+		// Its pull request's title, squashed: the forge's " (#N)" after
+		// it, a number of five digits, as the committer's squash rule
+		// reads it; GitLab's "Draft: " on top for a Draft.
+		for _, title := range []string{got.Title, got.DraftTitle} {
+			if !strings.HasPrefix(got.Code, strings.TrimRight(title, " ")) || !strings.HasPrefix(title, strings.SplitN(got.Code, ": ", 2)[0]+": ") {
+				t.Errorf("%s: title %q is not the code's subject %q", tc.name, title, got.Code)
+			}
+			if f, err := committer.Check(title+" (#12345)", s); err != nil || len(f) > 0 {
+				t.Errorf("%s: the squash of %q refused: %v %v", tc.name, title, f, err)
+			}
+		}
+		if n := len([]rune("Draft: " + got.DraftTitle)); n > forge.TitleMax {
+			t.Errorf("%s: Draft title %q is %d characters, over %d", tc.name, got.DraftTitle, n, forge.TitleMax)
 		}
 	}
 	if m := reviewSubject(3, 2, s); m != "fix: the review's findings on #3, round 2" {
