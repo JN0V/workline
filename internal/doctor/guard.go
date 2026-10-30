@@ -1,7 +1,6 @@
 package doctor
 
 import (
-	"bufio"
 	"os"
 	"path"
 	"path/filepath"
@@ -14,7 +13,7 @@ import (
 )
 
 // boundsDoc is where a person reads how to guard the bounds' job.
-const boundsDoc = "docs/ci-gitlab.md#the-developers-bounds"
+const boundsDoc = "docs/gitlab/bounds.md"
 
 // boundsGuard says, on GitLab, what keeps a developer's merge request
 // from editing out workline:bounds, the job that holds it to its issue's
@@ -119,13 +118,12 @@ func ciFiles(repo string) []string {
 func ownerless(repo string, files []string) []string {
 	var rules [][2]string // pattern, whether owned
 	for _, p := range []string{"CODEOWNERS", "docs/CODEOWNERS", ".gitlab/CODEOWNERS"} {
-		fh, err := os.Open(filepath.Join(repo, p))
+		data, err := os.ReadFile(filepath.Join(repo, p))
 		if err != nil {
 			continue
 		}
-		sc := bufio.NewScanner(fh)
-		for sc.Scan() {
-			l := strings.TrimSpace(sc.Text())
+		for l := range strings.Lines(string(data)) {
+			l = strings.TrimSpace(l)
 			if l == "" || strings.HasPrefix(l, "#") || strings.HasPrefix(l, "[") || strings.HasPrefix(l, "^[") {
 				continue
 			}
@@ -136,7 +134,6 @@ func ownerless(repo string, files []string) []string {
 			}
 			rules = append(rules, [2]string{f[0], owned})
 		}
-		fh.Close()
 		break // GitLab reads the first file it finds
 	}
 	var bare []string

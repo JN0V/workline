@@ -15,4 +15,4 @@ run: {doctor: true, forge: gitlab}
 expect:
   status: pass
   checks:
-    - {rule: bounds-guard-policy, level: note, message: "pipeline execution policy", fix: "docs/ci-gitlab.md#the-developers-bounds"}
+    - {rule: bounds-guard-policy, level: note, message: "pipeline execution policy", fix: "docs/gitlab/bounds.md"}

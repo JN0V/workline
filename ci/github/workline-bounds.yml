@@ -1,6 +1,6 @@
 # The developer's bounds on its pull request, on GitHub Actions: copy to
 # .github/workflows/workline-bounds.yml, then require the check
-# `workline bounds` on the default branch (docs/ci-github.md#the-developers-bounds;
+# `workline bounds` on the default branch (roles/developer/docs/bounds.md#on-the-pull-request;
 # ADR-0058). On a pull request from a workline/developer/<n> branch, each
 # file changed since its base is held to issue n's bounds, read at the
 # base's tip: one refused fails the check, whoever pushed it.
@@ -65,7 +65,7 @@ jobs:
           echo "run=$(jq -r '(.pending // [])[0] // empty | split("/") | last' bounds.json)" >> "$GITHUB_OUTPUT"
           jq -r '.summary // empty' bounds.json
           jq -r '.summary // empty' bounds.json >> "$GITHUB_STEP_SUMMARY"
-          jq -r '.steps[]?.result.findings[]? | "::error file=\(.where // ""),title=workline bounds::\(.rule): \(.message)"' bounds.json || true
+          jq -r '.findings[]? | "::error file=\(.where // ""),title=workline bounds::\(.rule): \(.message)"' bounds.json || true
       - uses: actions/upload-artifact@v4
         if: steps.bounds.outputs.run != ''
         with: {name: workline-bounds, path: .workline-runs, include-hidden-files: true, retention-days: 1}

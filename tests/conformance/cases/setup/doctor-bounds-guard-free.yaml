@@ -16,4 +16,4 @@ run: {doctor: true, forge: gitlab}
 expect:
   status: pass
   checks:
-    - {rule: bounds-guard-free, level: warn, message: "nothing but the review keeps it", fix: "docs/ci-gitlab.md#the-developers-bounds"}
+    - {rule: bounds-guard-free, level: warn, message: "nothing but the review keeps it", fix: "docs/gitlab/bounds.md"}

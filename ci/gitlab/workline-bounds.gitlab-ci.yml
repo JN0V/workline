@@ -1,6 +1,6 @@
 # The developer's bounds on its merge request, on GitLab CI (ADR-0058):
 # include it beside workline.gitlab-ci.yml, or from a pipeline execution
-# policy (Ultimate) — docs/ci-gitlab.md#the-developers-bounds.
+# policy (Ultimate) — docs/gitlab/bounds.md.
 #   include: [{local: ci/workline.gitlab-ci.yml}, {local: ci/workline-bounds.gitlab-ci.yml}]
 # On a merge request from a workline/developer/<n> branch, each file
 # changed since its target is held to issue n's bounds, read at the
@@ -36,8 +36,11 @@ workline:bounds:
     - '[ -n "${WORKLINE_GITLAB_TOKEN:-}" ] || { echo "workline: WORKLINE_GITLAB_TOKEN is not set, or not scoped to the environment workline: the bounds cannot be read, so they do not pass (docs/ci-gitlab.md)"; exit 1; }'
     - export GITLAB_TOKEN=$WORKLINE_GITLAB_TOKEN
     - workline version
-    # The rules at the target's tip; the head the pipeline runs, its
-    # source branch's in a merged results pipeline.
+    # The rules at the target's tip, checked out: the engine reads the
+    # project's settings there, never the merge request's. Its head, the
+    # commit the pipeline runs (its source branch's in a merged results
+    # pipeline), as data.
     - git fetch -q origin "$CI_MERGE_REQUEST_TARGET_BRANCH_NAME" && base=$(git rev-parse FETCH_HEAD)
     - head=${CI_MERGE_REQUEST_SOURCE_BRANCH_SHA:-$CI_COMMIT_SHA}
+    - git checkout -q --detach "$base"
     - workline develop --bounds --merge-request "$CI_MERGE_REQUEST_IID" --ai none --forge gitlab --input range="$base..$head"

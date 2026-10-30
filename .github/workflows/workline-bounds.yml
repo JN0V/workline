@@ -49,7 +49,7 @@ jobs:
           echo "run=$(jq -r '(.pending // [])[0] // empty | split("/") | last' bounds.json)" >> "$GITHUB_OUTPUT"
           jq -r '.summary // empty' bounds.json
           jq -r '.summary // empty' bounds.json >> "$GITHUB_STEP_SUMMARY"
-          jq -r '.steps[]?.result.findings[]? | "::error file=\(.where // ""),title=workline bounds::\(.rule): \(.message)"' bounds.json || true
+          jq -r '.findings[]? | "::error file=\(.where // ""),title=workline bounds::\(.rule): \(.message)"' bounds.json || true
       - uses: actions/upload-artifact@v4
         if: steps.bounds.outputs.run != ''
         with: {name: workline-bounds, path: .workline-runs, include-hidden-files: true, retention-days: 1}
