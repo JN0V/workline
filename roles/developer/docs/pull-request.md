@@ -6,7 +6,7 @@ sources:
   - internal/engine/engine.go
   - internal/agent/claude.go
   - internal/builtin/reviewer/once.go
-checked: f3fd0881
+checked: a668abb2
 verified: agent:claude-code
 ---
 # The pull request
@@ -66,7 +66,8 @@ flowchart LR
 
 - **Its tests apart**: a file with `test` or `spec` a word of its name
   (`x_test.go`, `test_x.py`, `x.spec.ts`, `XTest.java`; not
-  `latest.go`), or in a test folder, goes in a commit of its own; its
+  `latest.go`, nor a hidden file like `.env.test`), or in a test
+  folder, goes in a commit of its own; its
   code in another.
 - **Subjects the project's commit check passes**: `type(scope): summary`
   ([#736](https://github.com/JN0V/workline/issues/736)):
