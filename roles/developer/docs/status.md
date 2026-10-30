@@ -71,6 +71,11 @@ hold:
   and caps in the claim's record ([the proof](proof.md)). Cases
   `developer/green-opens-ready`, `red-opens-draft`,
   `cap-reached-pushes-draft`.
+- **The proof on the touched folders, in the project's environment**
+  ([#703](https://github.com/JN0V/workline/issues/703)): `proof-command`
+  with `{packages}`, the whole suite said otherwise; the project's
+  setup steps in the CI judges ([the triggers](triggers.md#the-projects-environment)).
+  Case `developer/proof-runs-touched-packages`; tried in its pull request.
 - **The pull request** (step 4): its branch on the tester's Draft, the
   acceptance tests shown to the agent; to the default branch; its code
   and tests in commits apart; `## Changes`, `## Left out`,
