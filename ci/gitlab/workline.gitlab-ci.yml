@@ -119,7 +119,10 @@ variables:
 .workline:no-credential: &no-credential
   - git fetch -q origin '+refs/heads/*:refs/remotes/origin/*'
   - git config remote.origin.url "$CI_SERVER_URL/$CI_PROJECT_PATH.git"
-  - for k in $(git config --local --name-only --get-regexp '^(http\..*extraheader|credential\..*helper)$'); do git config --local --unset-all "$k"; done
+  # Where git keeps each, a file the repository's config includes too
+  # (gitlab-runner 19.6, #722): a header, a helper, a rewrite to a URL
+  # holding a token.
+  - git config --show-origin --name-only --get-regexp '^(http\..*extraheader|credential\..*helper|url\..*@.*\.insteadof)$' | while read -r origin k; do case "$origin" in file:*) git config --file "${origin#file:}" --unset-all "$k" ;; esac; done
 # Every lens of the reviewer once when the merge request becomes ready
 # (ADR-0020); a draft's pipelines ask no agent, the summary saying the AI
 # review waits for ready (ADR-0050). Marking a draft ready starts no
