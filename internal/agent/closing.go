@@ -21,7 +21,7 @@ const ClosingUnread = "closing-unread.txt"
 // its role to post. Empty or `[]`, it proposes nothing beside its edits.
 func closingWords(runDir, answer string, kinds []string) ([]byte, []string) {
 	unread := filepath.Join(runDir, "out", ClosingUnread)
-	os.Remove(unread) // an earlier attempt's
+	_ = os.Remove(unread) // an earlier attempt's
 	s := strings.TrimSpace(answer)
 	if s == "" {
 		return []byte("[]\n"), nil

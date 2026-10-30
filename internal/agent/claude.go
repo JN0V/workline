@@ -133,6 +133,10 @@ func (c claude) Propose(req Request) (Call, error) {
 		proposals, call.Mended = closingWords(req.RunDir, answer.Result, req.Role.Intentions)
 	} else {
 		proposals, call.Mended, err = proposalsFrom(answer.Result, req.Role.Intentions...)
+		if err != nil && maxed {
+			// Stopped mid-way, its answer is not written yet: none.
+			proposals, err = []byte("[]\n"), nil
+		}
 	}
 	if err != nil {
 		return call, fmt.Errorf("%w: %v", ErrInvalidOutput, err)

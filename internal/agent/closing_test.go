@@ -23,8 +23,12 @@ func TestClosingWords(t *testing.T) {
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			dir := t.TempDir()
-			os.MkdirAll(filepath.Join(dir, "out"), 0o755)
-			os.WriteFile(filepath.Join(dir, "out", ClosingUnread), []byte("stale"), 0o644)
+			if err := os.MkdirAll(filepath.Join(dir, "out"), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(filepath.Join(dir, "out", ClosingUnread), []byte("stale"), 0o644); err != nil {
+				t.Fatal(err)
+			}
 			got, mended := closingWords(dir, c.answer, kinds)
 			if string(got) != c.want {
 				t.Errorf("read %q, want %q", got, c.want)
