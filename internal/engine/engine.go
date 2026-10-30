@@ -1192,6 +1192,9 @@ type runState struct {
 	OpenMergeRequest bool     `yaml:"open-merge-request,omitempty"`
 	Written          []string `yaml:"written,omitempty"`
 	MergeRequest     int      `yaml:"merge-request,omitempty"`
+	// Committed: the tip of the role's branch this run committed, its push
+	// failed; a resume pushes it as it is, nothing committed again (#739).
+	Committed string `yaml:"committed,omitempty"`
 	// Pushed: what the patches wrote went in the targeted merge request's
 	// comment.
 	Pushed bool `yaml:"pushed,omitempty"`
@@ -1363,8 +1366,18 @@ func applyAll(r *role.Role, settings map[string]any, st runState, runDir string,
 	}
 	res.Handoffs = ap.handoffs
 	if st.OpenMergeRequest && len(st.Written) > 0 && st.MergeRequest == 0 {
-		id, err := openMergeRequest(f, st, runDir)
+		id, tip, err := openMergeRequest(f, st, runDir)
+		if tip != "" && tip == st.Committed {
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "already-committed", Level: "info", Where: branchPrefix(st.Role) + slugify(mergeRequestKey(st, runDir)),
+				Message: "nothing new to commit: the run before committed this code here, its push failed; pushed as it is"})
+		}
 		if errors.Is(err, forge.ErrUnreachable) {
+			if tip != "" && tip != st.Committed { // its resume pushes these commits
+				st.Committed = tip
+				if err := st.save(runDir); err != nil {
+					return err
+				}
+			}
 			res.Status, res.Summary = verdict.BlockedExternal, fmt.Sprintf("stopped while opening the merge request; resume with: workline apply %s", runDir)
 			res.Findings = append(res.Findings, verdict.Finding{Rule: "forge-unreachable", Message: err.Error()})
 			return nil
@@ -1634,7 +1647,11 @@ func DefaultTitle(roleName string) string {
 // for this task, force-pushes it, opens its merge request or updates the one
 // open, and puts the working tree back on the branch it was on. The role
 // names the task's key and the title in out/merge-request.yaml.
-func openMergeRequest(f forge.Forge, st runState, runDir string) (int, error) {
+//
+// A run whose push failed has its commits on the branch still: the tip
+// is returned, kept (runState.Committed), and its resume pushes them as
+// they are, nothing committed again (#739).
+func openMergeRequest(f forge.Forge, st runState, runDir string) (int, string, error) {
 	var mr struct {
 		Key, Title, Body string
 		Draft            bool
@@ -1642,7 +1659,7 @@ func openMergeRequest(f forge.Forge, st runState, runDir string) (int, error) {
 	}
 	if data, err := os.ReadFile(filepath.Join(runDir, "out", "merge-request.yaml")); err == nil {
 		if err := yaml.Unmarshal(data, &mr); err != nil {
-			return 0, fmt.Errorf("out/merge-request.yaml: %w", err)
+			return 0, "", fmt.Errorf("out/merge-request.yaml: %w", err)
 		}
 	}
 	mr.Key = mergeRequestKey(st, runDir)
@@ -1653,7 +1670,7 @@ func openMergeRequest(f forge.Forge, st runState, runDir string) (int, error) {
 	if mr.Title == "" || len([]rune(mr.Title)) > limit {
 		mr.Title = DefaultTitle(st.Role)
 	}
-	return ProposeBranchFrom(f, st.Repo, st.Role, mr.Key, mr.Title, mr.Body, mr.Draft, st.trailers(), st.Written, mr.Proposal)
+	return proposeBranch(f, st.Repo, st.Role, mr.Key, mr.Title, mr.Body, mr.Draft, st.trailers(), st.Written, mr.Proposal, st.Committed)
 }
 
 // Proposal is how a role's branch is built, beyond the files written
@@ -1738,14 +1755,22 @@ func ProposeBranch(f forge.Forge, repo, roleName, key, title, body string, draft
 // ProposeBranchFrom is ProposeBranch, the branch built as p says: from
 // p.From, the files written in p's commits.
 func ProposeBranchFrom(f forge.Forge, repo, roleName, key, title, body string, draft bool, trailers string, written []string, p Proposal) (int, error) {
+	id, _, err := proposeBranch(f, repo, roleName, key, title, body, draft, trailers, written, p, "")
+	return id, err
+}
+
+// proposeBranch is ProposeBranchFrom, also returning the branch's tip once
+// committed. committed, when the branch's tip still, is a failed push's
+// commits: pushed as they are, nothing committed again (#739).
+func proposeBranch(f forge.Forge, repo, roleName, key, title, body string, draft bool, trailers string, written []string, p Proposal, committed string) (int, string, error) {
 	base, err := git(repo, nil, "symbolic-ref", "--short", "HEAD")
 	if err != nil {
-		return 0, errors.New("a merge request is opened from a branch; this run is on a detached HEAD")
+		return 0, "", errors.New("a merge request is opened from a branch; this run is on a detached HEAD")
 	}
 	branch := branchPrefix(roleName) + slugify(key)
 	baseTip, was, err := tips(repo, base, branch, forge.KeepsBranches(f))
 	if err != nil {
-		return 0, err
+		return 0, "", err
 	}
 	if was != "" {
 		// The commits it started from are not a person's; on another role's
@@ -1755,35 +1780,46 @@ func ProposeBranchFrom(f forge.Forge, repo, roleName, key, title, body string, d
 			since = append(since, p.From)
 		}
 		if who := personsCommitPast(repo, since, was, roleName, p.From != ""); who != "" {
-			return 0, fmt.Errorf("%w: %s", ErrLeftToAPerson, who)
+			return 0, "", fmt.Errorf("%w: %s", ErrLeftToAPerson, who)
 		}
 	}
-	start := []string{"checkout", "-q", "-B", branch}
-	if p.From != "" {
-		start = append(start, p.From) // the files written carried over
-	}
-	steps := [][]string{start}
-	for _, c := range p.commits(title, written) {
-		steps = append(steps, append([]string{"add", "--"}, c.Files...), []string{"commit", "-q", "-m", c.Message, "-m", trailers})
+	var steps [][]string
+	tip := ""
+	if now, _ := git(repo, nil, "rev-parse", "--verify", "-q", "refs/heads/"+branch); committed == "" || now != committed {
+		start := []string{"checkout", "-q", "-B", branch}
+		if p.From != "" {
+			start = append(start, p.From) // the files written carried over
+		}
+		steps = append(steps, start)
+		for _, c := range p.commits(title, written) {
+			steps = append(steps, append([]string{"add", "--"}, c.Files...), []string{"commit", "-q", "-m", c.Message, "-m", trailers})
+		}
+	} else {
+		tip = committed // on the branch already: nothing new to commit
 	}
 	if !forge.KeepsBranches(f) {
 		steps = append(steps, []string{"push", "-q", "--force", "origin", branch})
 	}
 	for _, s := range steps {
+		if s[0] == "push" && tip == "" {
+			tip, _ = git(repo, nil, "rev-parse", "refs/heads/"+branch)
+		}
 		if _, err := git(repo, nil, s...); err != nil {
 			// Back where it was: the patches in the working tree, unstaged.
 			git(repo, nil, append([]string{"reset", "-q", "--"}, written...)...)
 			git(repo, nil, "checkout", "-q", base)
 			if s[0] == "push" {
-				return 0, fmt.Errorf("%w: %v", forge.ErrUnreachable, err)
+				// Committed, kept on the branch: a resume pushes it.
+				return 0, tip, fmt.Errorf("%w: %v", forge.ErrUnreachable, err)
 			}
-			return 0, err
+			return 0, "", err
 		}
 	}
 	if _, err := git(repo, nil, "checkout", "-q", base); err != nil {
-		return 0, err
+		return 0, tip, err
 	}
-	return f.OpenMergeRequest(branch, base, title, body, draft)
+	id, err := f.OpenMergeRequest(branch, base, title, body, draft)
+	return id, tip, err
 }
 
 // slugify keeps a branch name to lowercase letters, digits and dashes.
