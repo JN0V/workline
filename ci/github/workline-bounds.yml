@@ -89,7 +89,7 @@ jobs:
           app-id: ${{ vars.WORKLINE_APP_ID }}
           private-key: ${{ secrets.WORKLINE_APP_PRIVATE_KEY }}
       - uses: actions/checkout@v4
-        with: {persist-credentials: false}
+        with: {fetch-depth: 0, persist-credentials: false}
       - name: workline
         run: |
           bin="$RUNNER_TEMP/bin"; mkdir -p "$bin"; cd "$RUNNER_TEMP"
@@ -108,4 +108,7 @@ jobs:
         run: |
           printf '%s' "$RUN" | grep -Eqx '[0-9]{8}T[0-9]{6}\.[0-9]{9}-[a-z0-9-]+' && [ -d "$WORKLINE_RUNS_DIR/$RUN" ] ||
             { echo "::error title=workline::the bounds named no run of their own: $RUN"; exit 1; }
-          workline apply "$RUN" --from-merge-request "$PR" --head "$HEAD_SHA" --forge github
+          status=0
+          workline apply "$RUN" --from-merge-request "$PR" --head "$HEAD_SHA" --forge github --summary workline-summary.md || status=$?
+          [ ! -s workline-summary.md ] || cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"
+          exit "$status"
