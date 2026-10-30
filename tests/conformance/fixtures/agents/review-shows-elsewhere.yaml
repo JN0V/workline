@@ -1,0 +1,10 @@
+# A lens of the reviewer, on the `reviewed` fixture once Average divides by
+# one less than the count and Mean, in another file, returns it: the cause
+# in calc.go, the symptom where it shows, in mean.go.
+- finding:
+    severity: important
+    title: Mean divides by one less than the count
+    why: Mean returns Average, which divides by one less than the count, so the mean of [2, 4] comes out 6
+    cause: {path: calc/calc.go, quote: "return total / (len(values) - 1)"}
+    symptom: {path: calc/mean.go, quote: "return Average(values)"}
+    fix: divide by len(values)
