@@ -95,10 +95,12 @@ type Act struct {
 	// on the run it reached (step 3).
 	Proof *Proof `json:"proof,omitempty"`
 	Caps  []Cap  `json:"caps,omitempty"`
-	// Turns and Tokens: what its agent used, as it reported them
-	// (ADR-0056, step 4); 0, not reported.
-	Turns  int `json:"turns,omitempty"`
-	Tokens int `json:"tokens,omitempty"`
+	// Turns, Tokens and Tools: what its agent used, as it reported them
+	// (ADR-0056, steps 4 and 5): the times it used each tool; 0 or none,
+	// not reported.
+	Turns  int            `json:"turns,omitempty"`
+	Tokens int            `json:"tokens,omitempty"`
+	Tools  map[string]int `json:"tools,omitempty"`
 	// AgentFailed: why its agent's call failed, its time aside; what it
 	// edited is proven all the same, its pull request a Draft.
 	AgentFailed string `json:"agent-failed,omitempty"`
@@ -347,15 +349,14 @@ func Pre(runDir, repo string) int {
 	if bounds.Head != "" {
 		on = bounds.Head // its code starts from the tester's Draft
 	}
-	code, err := scopeCode(repo, on, bounds)
-	if err != nil {
-		return fail(err)
-	}
-	task := taskText(is, bounds, frozenTexts(repo, bounds), code)
+	// The question names the code, never pastes it: its agent reads it
+	// in its worktree (ADR-0056).
+	ts, tsErr := testerSettings(repo) // none set, or unread, is said in the question; the proof says it again
+	task := taskText(is, bounds, ts.Command, tsErr, s)
 	if err := os.WriteFile(filepath.Join(runDir, "in", "task.md"), []byte(task), 0o644); err != nil {
 		return fail(err)
 	}
-	// A worktree of that commit, where a cmd: agent edits (ADR-0056).
+	// A worktree of that commit, where its agent edits (ADR-0056).
 	if err := openWorktree(runDir, repo, on); err != nil {
 		return fail(err)
 	}
@@ -402,29 +403,27 @@ func claimOf(a Act, s Settings) []intent.Intention {
 	}
 }
 
-// taskText is the question: the issue, and what bounds the code.
-func taskText(is forge.Issue, b Bounds, texts map[string]string, code string) string {
+// taskText is the question: the issue, what bounds the code and the run,
+// the frozen tests' paths and the test command, or why it could not be
+// read (testErr). No code: its agent reads, edits and runs it in its
+// worktree (ADR-0056).
+func taskText(is forge.Issue, b Bounds, test string, testErr error, s Settings) string {
 	var t strings.Builder
-	fmt.Fprintf(&t, "# Issue #%d: %s\n\n%s\n\n## What you may touch\n\n", is.ID, is.Title, strings.TrimSpace(is.Body))
+	fmt.Fprintf(&t, "# Issue #%d: %s\n\n%s\n\n## What you may change\n\n", is.ID, is.Title, strings.TrimSpace(is.Body))
 	if len(b.Scope) == 0 {
-		t.WriteString("The issue names no path: every patch is refused. Propose none.\n")
+		t.WriteString("The issue names no path: every change is reverted. Change nothing.\n")
 	}
 	for _, p := range b.Scope {
 		fmt.Fprintf(&t, "- `%s`\n", p)
 	}
 	t.WriteString("- the tests beside them: in their folder, or in a test folder, the name holding `test` or `spec`.\n\n" +
-		"Anything else is refused at apply, whatever the reason: say it in your answer, it belongs in an issue. " +
+		"Read any file you need. A change to any other file is reverted once you are done, whatever the reason: say it in your answer, it belongs in an issue. " +
 		"Never, whatever the scope: the files that steer agents (AGENTS.md, CLAUDE.md, a page they link, a prompt), " +
 		"a role's folder, `.workline/`, the CI's workflows, a gate's definition.\n")
 	if frozen := b.acceptance(); len(frozen) > 0 {
-		t.WriteString("\n## The tester's acceptance tests: frozen\n\nRead-only to you; make them pass. A patch touching one is refused. " +
-			"Your code goes on the tester's branch, where they are.\n\n")
+		t.WriteString("\n## The tester's acceptance tests: frozen\n\nIn your worktree, read-only to you; make them pass. A change to one is reverted.\n\n")
 		for _, f := range frozen {
-			if text, ok := texts[f]; ok {
-				fmt.Fprintf(&t, "### `%s`\n\n```\n%s\n```\n\n", f, strings.TrimRight(text, "\n"))
-			} else {
-				fmt.Fprintf(&t, "- `%s`\n", f)
-			}
+			fmt.Fprintf(&t, "- `%s`\n", f)
 		}
 		// The answer's generic `comment` is a text: a real agent wrote its
 		// objection so, and it was refused (measured, docs/status.md).
@@ -433,10 +432,28 @@ func taskText(is forge.Issue, b Bounds, texts map[string]string, code string) st
 			"```yaml\n- comment:\n    objection: {test: <file>, line: <n>, scenario: <its name>, kind: <interface | over-specified | contradicts | untestable | need>, why: <one or two sentences>}\n```\n\n" +
 			"The tester keeps or rewrites it.\n")
 	}
-	t.WriteString(code)
-	t.WriteString("\n## Your answer\n\nPatches only, and objections if any. No label, no other comment: the claim is the engine's.\n" +
-		"Run in a worktree of the code (`WORKLINE_WORKTREE`), edit its files in place instead of patches: " +
-		"its diff is your code, held to the same bounds.\n")
+	t.WriteString("\n## The tests\n\n")
+	switch {
+	case testErr != nil:
+		// Not "none set": a setting it cannot read is not one missing.
+		fmt.Fprintf(&t, "The project's test command (the tester's `test-command`) could not be read: %v. "+
+			"Find how the project runs its tests and run them; the proof reads the setting again and says why it cannot.\n", testErr)
+	case test == "":
+		t.WriteString("The project sets no test command (the tester's `test-command`): your code cannot be proven, its pull request will be a Draft.\n")
+	default:
+		fmt.Fprintf(&t, "Run them as the proof will: `%s`, `{report}` a path of your choosing outside the worktree, where it writes a JUnit report. "+
+			"Your run is for you: the engine proves your code again, on a fresh tree.\n", test)
+	}
+	t.WriteString("\n## Your bounds\n\n")
+	if s.MaxTurns > 0 {
+		fmt.Fprintf(&t, "- %d turns at most.\n", s.MaxTurns)
+	}
+	if s.MaxSeconds > 0 {
+		fmt.Fprintf(&t, "- %d seconds at most: past them you are stopped, your edits kept as they are.\n", s.MaxSeconds)
+	}
+	t.WriteString("- No commit, no push, no branch: the engine commits your edits and opens the pull request.\n")
+	t.WriteString("\n## Your answer\n\nEdit the files in your worktree, your working directory (`WORKLINE_WORKTREE` for a command), and run the tests. " +
+		"Its diff is your code. Then answer objections if any, `[]` if none: no label, no other comment, the claim is the engine's.\n")
 	return t.String()
 }
 
@@ -452,28 +469,14 @@ func (b Bounds) acceptance() []string {
 	return out
 }
 
-// frozenTexts are the acceptance tests as the tester's Draft holds them,
-// for the agent to read: its checkout is the default branch's.
-func frozenTexts(repo string, b Bounds) map[string]string {
-	texts := map[string]string{}
-	if b.Head == "" {
-		return texts
-	}
-	for _, f := range b.acceptance() {
-		if text, err := gitOut(repo, "show", b.Head+":"+f); err == nil {
-			texts[f] = text
-		}
-	}
-	return texts
-}
-
 // codeRoom is the most of the Scope's code a question shows, in bytes:
 // about 25k tokens, under the role's context budget with the rest.
 const codeRoom = 100_000
 
 // scopeCode is the code the agent may touch, as it reads on the commit its
-// code starts from: the agent has no tools, so a file it is not shown, it
-// cannot patch (measured, docs/status.md). A Scope's folder shows its
+// code starts from, for a review round: its agent has no worktree there
+// yet (ADR-0056, step 6), so a file it is not shown, it cannot patch
+// (measured, docs/status.md). A Scope's folder shows its
 // files; a path not there yet is said; past codeRoom, files are named.
 // A git that cannot read the commit is an error, never read as a path not
 // there yet: the agent would write over a file it was not shown.
@@ -634,7 +637,7 @@ func Post(runDir, repo string) int {
 		p, over := prove(repo, on, patches, s)
 		a.Proof = &p
 		u := used(runDir)
-		a.Turns, a.Tokens, a.AgentFailed = u.Turns, u.Tokens, u.failed
+		a.Turns, a.Tokens, a.Tools, a.AgentFailed = u.Turns, u.Tokens, u.Tools, u.failed
 		a.Caps = append(agentCaps(u, s), a.Caps...)
 		if over != nil {
 			a.Caps = append(a.Caps, *over)

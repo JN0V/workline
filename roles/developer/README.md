@@ -3,7 +3,7 @@ sources:
   - roles/developer/role.yaml
   - ci/github/workline-develop.yml
   - internal/developer
-checked: 1b4ad84a
+checked: 98d1a6a6
 verified: agent:claude-code
 ---
 # Developer
@@ -32,11 +32,12 @@ file. All roles: [docs/roles.md](../../docs/roles.md). Where it stands:
   took: [the pick](docs/pick.md).
 - **Claims** it, with an agent set: a label and a comment on the issue,
   the record the [auditor](../auditor/role.yaml) can read.
-- **Writes the code**, with an agent, held to its bounds: a file
-  outside the Scope, a frozen acceptance test, a file that steers
-  agents or a gate's are refused, no agent judging
-  ([the bounds](docs/bounds.md)). A test that does not fit, it objects
-  to on the tester's Draft.
+- **Writes the code**, with an agent, in a worktree of the code: it
+  reads, edits and runs the tests there ([the agent](docs/agent.md)).
+  Its diff is held to its bounds: a file outside the Scope, a frozen
+  acceptance test, a file that steers agents or a gate's are reverted,
+  no agent judging ([the bounds](docs/bounds.md)). A test that does not
+  fit, it objects to on the tester's Draft.
 - **Proves it** on the project's tests, the tester's `test-command`,
   then opens its pull request: ready when green with no cap reached,
   else a Draft ([the proof and the caps](docs/proof.md)).
@@ -69,7 +70,8 @@ workline develop --merge-request 7 --ai claude   # a review round on its pull re
 ```
 
 - **`--ai`**: the agent is a choice: none, `claude`, `cmd:<any
-  command>`; the project's `ai` setting by default.
+  command>`; the project's `ai` setting by default. What each gets:
+  [the agent](docs/agent.md).
 - **`--forge`**: GitHub, GitLab, the local forge or a command's; the
   project's `forge` setting by default.
 - **In CI**: route it on `issue` and `schedule`; the GitHub and GitLab

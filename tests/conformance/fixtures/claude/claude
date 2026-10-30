@@ -1,0 +1,43 @@
+#!/bin/sh
+# A stand-in for `claude -p` as the developer runs it in a worktree
+# (ADR-0056, step 5). Like Claude Code, it runs the hooks of the
+# repository's .claude/settings.json unless told the person's settings
+# only. It fails, saying why, unless given its tools, flags and question
+# as the developer passes them, its shell without its login. Then it reads
+# lib.sh, writes mul and a test, runs the tests, answers $ANSWER (a JSON
+# string), `[]` by default, in stream-json.
+set -eu
+want() { echo "claude stand-in: $*" >&2; exit 1; }
+args=" $* "
+case "$args" in *" --setting-sources user "*) ;; *)
+	[ ! -f .claude/settings.json ] || sh -c "$(sed -n 's/.*"command": *"\([^"]*\)".*/\1/p' .claude/settings.json)" ;;
+esac
+[ "${CLAUDE_CODE_SUBPROCESS_ENV_SCRUB:-}" = 1 ] || want "its shell would hold its login"
+for a in "--output-format stream-json" "--verbose" "--tools Read,Edit,Write,Glob,Grep,Bash" \
+	"--allowedTools Read,Edit,Write,Glob,Grep,Bash" "--permission-mode dontAsk" "--strict-mcp-config" \
+	"--no-session-persistence" "--append-system-prompt" "--max-turns 100"; do
+	case "$args" in *" $a "*) ;; *) want "not given $a" ;; esac
+done
+case "$args" in *" --system-prompt "*) want "its own prompt replaced" ;; esac
+[ "$(git rev-parse --show-toplevel)" = "$(pwd -P)" ] && [ -f lib.sh ] || want "not run in the worktree: $(pwd)"
+question=$(cat)
+for w in '`lib.sh`' '`tests/test_mul_by_zero.sh`' '`sh run-tests.sh {report}`' 'Edit the files in your worktree'; do
+	case "$question" in *"$w"*) ;; *) want "the question does not name $w" ;; esac
+done
+case "$question" in *'add() {'* | *'- patch:'*) want "the question pastes code, or asks for patches" ;; esac
+echo 'mul() { echo $(($1 * $2)); }' >> lib.sh
+cat > tests/test_mul.sh <<'T'
+. ./lib.sh
+[ "$(mul 2 3)" = 6 ]
+T
+report=$(mktemp)
+sh run-tests.sh "$report" >/dev/null || want "its own run is red"
+rm -f "$report"
+tool() { printf '{"type":"assistant","message":{"content":[{"type":"text","text":"…"},{"type":"tool_use","id":"t%s","name":"%s","input":{}}]}}\n' "$1" "$2"; }
+echo '{"type":"system","subtype":"init","tools":["Read","Edit","Write","Glob","Grep","Bash"]}'
+tool 1 Read
+tool 2 Read
+tool 3 Write
+tool 4 Edit
+tool 5 Bash
+printf '{"type":"result","subtype":"success","is_error":false,"num_turns":6,"result":"%s","total_cost_usd":0.12,"modelUsage":{"claude-sonnet-5":{"inputTokens":3000,"cacheReadInputTokens":40000,"cacheCreationInputTokens":2000,"outputTokens":1500}}}\n' "${ANSWER:-[]}"

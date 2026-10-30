@@ -19,8 +19,12 @@ import (
 // claude runs Claude Code headless. It gets no tools, no MCP servers and no
 // session, not even the Claude Code session it may be started from
 // (claudeEnv), and runs outside the repository so the project's CLAUDE.md is
-// not loaded: the role's facets are its whole context. model and effort, when
-// set, replace what the role's tier and effort ask: to compare models on the
+// not loaded: the role's facets are its whole context. Where the role gave
+// it a worktree (WorktreeDir), it runs there instead, with the tools to
+// read, edit, search and run commands (claudeTools), none of them asking a
+// person, nor the repository's settings nor CLAUDE.md loaded: its edits
+// are its code (ADR-0056). model and effort, when set,
+// replace what the role's tier and effort ask: to compare models on the
 // same cases, or to run a project on one model.
 type claude struct{ model, effort string }
 
@@ -44,6 +48,18 @@ func (c claude) Propose(req Request) (Call, error) {
 	}
 	args := []string{"-p", "--output-format", "json", "--tools", "", "--strict-mcp-config",
 		"--no-session-persistence", "--system-prompt", system}
+	tree := Worktree(req.RunDir)
+	if tree != "" {
+		// An agent that works (ADR-0056): its tools, each allowed so that
+		// none waits on a person (dontAsk denies any other), Claude Code's
+		// own prompt kept for them, the role's after it; each message on
+		// stdout, to count the tools it used. The person's settings only:
+		// the repository's (.claude/, CLAUDE.md) are what it works on, not
+		// what runs it: a hook there would run, a permission widen it.
+		args = []string{"-p", "--output-format", "stream-json", "--verbose", "--tools", claudeTools,
+			"--allowedTools", claudeTools, "--permission-mode", "dontAsk", "--strict-mcp-config",
+			"--setting-sources", "user", "--no-session-persistence", "--append-system-prompt", system}
+	}
 	if call.Asked = claudeTier[call.Tier]; c.model != "" {
 		call.Asked = c.model
 	}
@@ -64,7 +80,16 @@ func (c claude) Propose(req Request) (Call, error) {
 	defer cancel()
 	cmd := exec.CommandContext(ctx, bin, args...)
 	cmd.Dir, cmd.WaitDelay = os.TempDir(), waitAfterTimeout
+	if tree != "" {
+		cmd.Dir = tree
+	}
 	cmd.Env = claudeEnv(os.Environ())
+	if tree != "" {
+		// The commands it runs never see its login (ANTHROPIC_API_KEY,
+		// CLAUDE_CODE_OAUTH_TOKEN…): Claude Code takes them out of its
+		// tools' environment, as it does by default in GitHub Actions.
+		cmd.Env = append(cmd.Env, "CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=1")
+	}
 	cmd.Stdin = strings.NewReader(user)
 	// In a group of its own, worktree or not: the commands its tools
 	// start are killed with it, at its time and once it answered.
@@ -73,7 +98,11 @@ func (c claude) Propose(req Request) (Call, error) {
 	cmd.Stdout, cmd.Stderr = &out, &errOut
 	runErr := settled(ctx, cmd.Run())
 	_ = killGroup(cmd)
-	answer, parsed := claudeAnswer(out.Bytes(), &call)
+	stdout := out.Bytes()
+	if tree != "" {
+		stdout, call.Tools = claudeStream(stdout)
+	}
+	answer, parsed := claudeAnswer(stdout, &call)
 	// Its turns spent is a cap reached, not a failure: what it did so far
 	// is its answer (ADR-0056). Only its whole JSON says so: a stdout cut
 	// short, or a run killed, is a failure.
@@ -96,15 +125,71 @@ func (c claude) Propose(req Request) (Call, error) {
 	_ = os.WriteFile(filepath.Join(req.RunDir, "out", "agent-answer.txt"), []byte(answer.Result), 0o644)
 	proposals, mended, err := proposalsFrom(answer.Result, req.Role.Intentions...)
 	call.Mended = mended
-	if err != nil && maxed {
+	switch {
+	case err != nil && maxed:
 		// Stopped mid-way, its answer is not written yet: what it edited
 		// in its worktree is what it did.
+		proposals, err = []byte("[]\n"), nil
+	case err != nil && tree != "" && !strings.Contains(answer.Result, "objection"):
+		// Its edits are its code: closing words that are no proposals
+		// lose nothing of it, said, never asked again (a whole run of
+		// turns again); its words stay in out/agent-answer.txt. Words
+		// that name an objection are its agent failing: a Draft, never
+		// an objection dropped in silence.
+		call.Mended = append(call.Mended, "its closing words were no YAML list ("+err.Error()+
+			"): read as proposing nothing beyond its edits (out/agent-answer.txt)")
 		proposals, err = []byte("[]\n"), nil
 	}
 	if err != nil {
 		return call, fmt.Errorf("%w: %v", ErrInvalidOutput, err)
 	}
 	return call, os.WriteFile(filepath.Join(req.RunDir, "out", "intentions.yaml"), proposals, 0o644)
+}
+
+// claudeTools are the tools Claude Code gets in a worktree (ADR-0056):
+// read, edit, search, and a shell to run the project's tests. Not the web
+// tools, nor agents of its own: the network is the shell's, as the
+// project's CI allows it.
+const claudeTools = "Read,Edit,Write,Glob,Grep,Bash"
+
+// claudeStream reads `claude -p --output-format stream-json --verbose`:
+// its result message, the shape claudeAnswer reads, and how many times it
+// used each tool. No result message: stdout as it came, which claudeAnswer
+// then does not read.
+func claudeStream(stdout []byte) ([]byte, map[string]int) {
+	var result []byte
+	var tools map[string]int
+	for _, line := range bytes.Split(stdout, []byte("\n")) {
+		var m struct {
+			Type    string `json:"type"`
+			Message struct {
+				Content []struct {
+					Type string `json:"type"`
+					Name string `json:"name"`
+				} `json:"content"`
+			} `json:"message"`
+		}
+		if json.Unmarshal(line, &m) != nil {
+			continue
+		}
+		switch m.Type {
+		case "result":
+			result = line
+		case "assistant":
+			for _, c := range m.Message.Content {
+				if c.Type == "tool_use" && c.Name != "" {
+					if tools == nil {
+						tools = map[string]int{}
+					}
+					tools[c.Name]++
+				}
+			}
+		}
+	}
+	if result == nil {
+		return stdout, tools
+	}
+	return result, tools
 }
 
 // exitedItself says the agent's process ended by its own exit, whatever

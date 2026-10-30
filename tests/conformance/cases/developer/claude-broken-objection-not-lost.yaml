@@ -1,0 +1,44 @@
+case: developer/claude-broken-objection-not-lost
+about: >
+  An objection the agent wrote broken is not lost (ADR-0056): closing
+  words of claude in its worktree that name an objection but do not
+  read are its agent failing, as a `cmd:` agent's, not "proposing
+  nothing". Its edits are still bounded, proven and pushed, as a Draft
+  that says why, so a person reads the objection kept in the run.
+given:
+  repo: tested-draft
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main workline/tester/issue-3 && git checkout -q main"
+  env:
+    PATH: "$FIXTURES/claude:$PATH"
+    ANSWER: '- comment:\n    objection: {test: tests/test_mul_by_zero.sh, line: 2, kind: contradicts, why: [zero times]'
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:ready"]
+        body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        draft: true
+        comments: ["The tests of #3, frozen.\n\n<!-- workline:tester-record {\"issue\":3,\"base\":\"main\",\"files\":{\"tests/test_mul_by_zero.sh\":\"8f123a0bacbd681063880b867df38dd216784b97\",\"tests/test_mul_two_by_three.sh\":\"2dee0641bd7a79057ade7bff5af43b603125f543\"}} -->\n<!-- workline:sticky=tester/tests -->"]
+run: {develop: [], ai: claude}
+expect:
+  status: pass
+  summary: "took #3; a Draft: green, its agent failed"
+  agent-calls: 1
+  findings:
+    - {rule: agent-invalid-output, message: "expected a YAML list of proposals"}
+  no-findings: [{rule: answer-mended}]
+  pushed:
+    workline/developer/3:
+      lib.sh: "mul()"
+  forge:
+    merge-requests:
+      - id: 2
+        branch: workline/developer/3
+        draft: true
+        body-contains: ["**a Draft**", "Its agent failed: agent answered without valid proposals"]

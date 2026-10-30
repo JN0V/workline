@@ -1,0 +1,42 @@
+case: developer/claude-runs-in-worktree
+about: >
+  claude with tools (ADR-0056, step 5): the developer runs Claude Code
+  in its worktree, its tools read, edit, search and shell allowed so
+  none waits on a person, its turns capped, no MCP server, no session.
+  The question names the issue, its Scope, the frozen tests' paths and
+  the test command, and pastes no code. A stand-in for claude reads,
+  edits, runs the tests and answers nothing: the worktree's diff is
+  its code, proven and pushed; its turns, tokens and the tools it used
+  are kept in the claim's record, for the auditor (ADR-0046).
+given:
+  repo: tested-draft
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main workline/tester/issue-3 && git checkout -q main"
+  env: {PATH: "$FIXTURES/claude:$PATH"}
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:ready"]
+        body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        draft: true
+        comments: ["The tests of #3, frozen.\n\n<!-- workline:tester-record {\"issue\":3,\"base\":\"main\",\"files\":{\"tests/test_mul_by_zero.sh\":\"8f123a0bacbd681063880b867df38dd216784b97\",\"tests/test_mul_two_by_three.sh\":\"2dee0641bd7a79057ade7bff5af43b603125f543\"}} -->\n<!-- workline:sticky=tester/tests -->"]
+run: {develop: [], ai: claude}
+expect:
+  status: pass
+  summary: "took #3; proven green, its pull request ready"
+  agent-calls: 1
+  no-findings: [{rule: agent-invalid-output}, {rule: answer-mended}, {rule: no-code}, {rule: agent-unavailable}]
+  pushed:
+    workline/developer/3:
+      lib.sh: "mul()"
+      tests/test_mul.sh: "mul 2 3"
+  forge:
+    issues:
+      - id: 3
+        comment-contains: ['"turns":6', '"tokens":46500', '"tools":{"Bash":1,"Edit":1,"Read":2,"Write":1}']

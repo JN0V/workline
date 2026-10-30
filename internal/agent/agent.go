@@ -88,6 +88,9 @@ type Call struct {
 	// run's ai-max-seconds spent, its process group killed.
 	Turns   int  `json:"turns,omitempty"`
 	TimeCut bool `json:"time-cut,omitempty"`
+	// Tools: how many times it used each tool, as it reports them
+	// (claude in a worktree, ADR-0056).
+	Tools map[string]int `json:"tools,omitempty"`
 	// Failed: why the call failed, its time aside (TimeCut): the agent
 	// unreachable, exited in error, or its answer unread.
 	Failed string `json:"failed,omitempty"`

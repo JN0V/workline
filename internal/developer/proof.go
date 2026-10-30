@@ -112,11 +112,13 @@ func testerSettings(repo string) (tester.Settings, error) {
 }
 
 // Used is what the run's agent calls used, as the agents report it: the
-// turns and the tokens (in, cache included, and out), the seconds waited.
+// turns and the tokens (in, cache included, and out), the seconds waited,
+// the times it used each tool.
 type Used struct {
 	Turns   int
 	Tokens  int
 	Seconds int
+	Tools   map[string]int
 	// mostTurns: the most turns one call took, each call told
 	// ai-max-turns whole (claude's --max-turns is per call); timeCut:
 	// the engine stopped waiting, the run's ai-max-seconds spent;
@@ -143,6 +145,12 @@ func used(runDir string) Used {
 		}
 		u.Turns += c.Turns
 		u.mostTurns = max(u.mostTurns, c.Turns)
+		for name, n := range c.Tools {
+			if u.Tools == nil {
+				u.Tools = map[string]int{}
+			}
+			u.Tools[name] += n
+		}
 		u.Tokens += c.TokensIn + c.TokensOut
 		seconds += c.Seconds
 		u.timeCut = u.timeCut || c.TimeCut
