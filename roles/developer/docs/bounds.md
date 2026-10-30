@@ -7,7 +7,7 @@ sources:
   - ci/github/workline-bounds.yml
   - ci/gitlab/workline-bounds.gitlab-ci.yml
   - internal/steer/steer.go
-checked: a668abb2
+checked: 0213dd02
 verified: agent:claude-code
 ---
 # The bounds: what its code may never touch
@@ -76,10 +76,10 @@ what each agent gets: [the agent](agent.md)).
 - **What is taken**: the diff against that commit, new files in,
   whatever the agent committed, a deleted file a deletion; one patch a
   file, held to the rules above. A file's mode is not read.
-- **Left out**: an empty file it adds. A sandbox leaves one where it
-  denies writes to a path the tree lacks: Claude Code's plants `.env*`,
-  `package.json` and 15 more
-  ([#745](https://github.com/JN0V/workline/issues/745)).
+- **Not its code**: the empty files `claude` creates for its sandbox
+  (`.env*`, `package.json` and 15 more), removed once it ran
+  ([the agent](agent.md#claude)). An empty file the agent writes, such
+  as an `__init__.py`, stays its code.
 - **Refused before the rules**: a link out of the tree
   (`symlink-out`); another link, a binary, a submodule (`not-text`).
 - **Reverted**: a refused file leaves nothing. The worktree stays
