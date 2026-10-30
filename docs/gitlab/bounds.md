@@ -1,6 +1,6 @@
 ---
 sources: [ci/gitlab/workline-bounds.gitlab-ci.yml, internal/doctor/guard.go, internal/forge/gitlab_guard.go]
-checked: a797443e
+checked: 0bbdcbd9
 verified: agent:claude-code
 ---
 # The developer's bounds on GitLab
@@ -82,7 +82,9 @@ defines the pipeline:
 
 Then Settings → Repository → Protected branches → `main`: *Code owner
 approval* on. A merge request that changes them waits for an owner. The
-doctor checks both, `.gitlab-ci.yml` and each `local:` file it includes.
+doctor checks both, `.gitlab-ci.yml` and each `local:` file it includes:
+a section's default owners count, an optional section (`^[…]`) does
+not; an exclusion (`!`) it cannot read, so it warns.
 
 ### Free: the review
 
