@@ -39,4 +39,4 @@ expect:
   forge:
     issues:
       - id: 3
-        comment-contains: ['"turns":6', '"tokens":46500', '"tools":{"Bash":1,"Edit":1,"Read":2,"Write":1}']
+        comment-contains: ['"turns":6', '"tokens":6500', '"cached":40000', '"tools":{"Bash":1,"Edit":1,"Read":2,"Write":1}']

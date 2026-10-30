@@ -88,6 +88,11 @@ type call struct {
 	CostUSD   float64 `json:"cost-usd"`
 	Task      string  `json:"task"` // part, judge, or "" for the role's own question
 	For       string  `json:"for"`  // what it answered: a part (1-lenses), a judge's question (judge/01)
+	// The cache's part of TokensIn and the turns, for an agent that loops
+	// (ADR-0056, step 7): what split measures.
+	TokensCached int `json:"tokens-cached"`
+	TokensCacheW int `json:"tokens-cache-written"`
+	Turns        int `json:"turns"`
 }
 
 // answeredBy says which models answered, in order, `>` marking a step up, the
@@ -107,6 +112,22 @@ func answeredBy(calls []call) (models, efforts, tokensIn, tokensOut, cost string
 		out += c.TokensOut
 	}
 	return strings.Join(m, ">"), strings.Join(e, ">"), fmt.Sprint(in), fmt.Sprint(out), fmt.Sprintf("%.4f", total)
+}
+
+// split says what an agent that loops used (ADR-0056, step 7): its fresh
+// tokens, what ai-max-tokens holds (input not read from cache, cache
+// writes, output), its cache reads apart, its turns; "" when no call
+// reported a turn.
+func split(calls []call) string {
+	var in, written, out, read, turns int
+	for _, c := range calls {
+		in, written = in+c.TokensIn-c.TokensCached-c.TokensCacheW, written+c.TokensCacheW
+		out, read, turns = out+c.TokensOut, read+c.TokensCached, turns+c.Turns
+	}
+	if turns == 0 {
+		return ""
+	}
+	return fmt.Sprintf("fresh %d (in %d, cache write %d, out %d); cache read %d; turns %d", in+written+out, in, written, out, read, turns)
 }
 
 // run is what a case produced, for the checks to read.
@@ -186,11 +207,19 @@ func TestEvaluation(t *testing.T) {
 						}
 					}
 				}
+				// The role's own answer, for an agent that loops: its closing
+				// words say what it did, or why it wrote nothing (ADR-0056).
+				if data, err := os.ReadFile(filepath.Join(r.res.RunDir, "out", "agent-answer.txt")); err == nil {
+					t.Logf("  agent-answer.txt:\n%.3000s", data)
+				}
 				for _, f := range r.res.Findings {
 					if f.Rule != "links-not-checked" {
 						t.Logf("  %s %s: %.300s", f.Rule, f.Where, f.Message)
 					}
 				}
+			}
+			if r.measure == "" {
+				r.measure = split(r.res.Calls)
 			}
 			models, efforts, tokensIn, tokensOut, cost := answeredBy(r.res.Calls)
 			line := strings.Join([]string{time.Now().UTC().Format(time.RFC3339), version, os.Getenv("WORKLINE_EVAL"), models, efforts,

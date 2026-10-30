@@ -4,7 +4,7 @@ sources:
   - internal/agent/command.go
   - internal/agent/prompt.go
   - internal/developer/developer.go
-checked: 1fa2e7f4
+checked: 62a62929
 verified: agent:claude-code
 ---
 # The agent: where it works, what it gets
@@ -59,8 +59,8 @@ Checked against Claude Code 2.1.314; each flag in its `--help`:
 - **Its shell without its login**: `CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=1`;
   Claude Code takes its key or token out of the commands' environment.
 - **What it used**: `--output-format stream-json --verbose`; its
-  turns, tokens and the tools it used, one count a tool, go in the
-  claim's record.
+  turns, fresh tokens, cache reads and the tools it used, one count a
+  tool, go in the claim's record.
 
 ## The question
 

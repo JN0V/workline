@@ -77,9 +77,21 @@ func TestBodyUnchanged(t *testing.T) {
 }
 
 func TestAnsweredBy(t *testing.T) {
-	m, e, in, out, c := answeredBy([]call{{"low", "claude-haiku-4-5", 1000, 50, 0.01, "part", "1-lenses"}, {"low", "claude-sonnet-5", 2000, 70, 0.02, "judge", "judge/01"}})
+	m, e, in, out, c := answeredBy([]call{{"low", "claude-haiku-4-5", 1000, 50, 0.01, "part", "1-lenses", 0, 0, 0}, {"low", "claude-sonnet-5", 2000, 70, 0.02, "judge", "judge/01", 0, 0, 0}})
 	if m != "claude-haiku-4-5>claude-sonnet-5" || e != "low" || in != "3000" || out != "120" || c != "0.0300" {
 		t.Errorf("got %q %q %q %q %q", m, e, in, out, c)
+	}
+}
+
+// An agent that loops: its fresh tokens, its cache reads apart; none
+// that loops, no split said.
+func TestSplit(t *testing.T) {
+	looped := []call{{TokensIn: 104000, TokensCached: 100000, TokensCacheW: 3000, TokensOut: 1000, Turns: 12}}
+	if got, want := split(looped), "fresh 5000 (in 1000, cache write 3000, out 1000); cache read 100000; turns 12"; got != want {
+		t.Errorf("got %q, want %q", got, want)
+	}
+	if got := split([]call{{TokensIn: 2000, TokensOut: 70}}); got != "" {
+		t.Errorf("a one-shot call: got %q", got)
 	}
 }
 

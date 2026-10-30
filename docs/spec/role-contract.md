@@ -391,8 +391,13 @@ token), **apply** (trusted, no AI key).
    what the run may still spend ([ADR-0048](../adr/0048-the-agent-reads-the-pages-the-reader-checks-flag.md)).
 
    **A cap on tokens.** A role setting `ai-max-tokens` caps what one run may
-   spend, every round, part and retry together: the tokens in, cache
-   included, and out, as the agents report them. It is checked before each
+   spend, every round, part and retry together: the fresh tokens, as the
+   agents report them: the input not read from cache, cache writes
+   included, and the output. Cache reads are kept apart in
+   `out/calls.jsonl` (`tokens-cached`), never counted: an agent that loops
+   reads its context back each turn, at a tenth of the price
+   ([ADR-0056](../adr/0056-the-developers-agent-works-in-a-sandbox-with-tools.md#caps)).
+   It is checked before each
    call against what was spent, never estimated, so the call that crosses it
    is paid; the agent is asked nothing more, and the run says so
    (`ai-max-tokens`, a warning): what is left waits for the next run. 0 or

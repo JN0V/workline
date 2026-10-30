@@ -163,7 +163,8 @@ hold:
   loaded, its shell without its login. Cases
   `developer/claude-runs-in-worktree`, `claude-ignores-project-settings`,
   `claude-broken-objection-not-lost`,
-  with a stand-in for claude: no real call measured yet (step 7).
+  with a stand-in for claude; measured with the real one at step 7
+  ([measured](#measured)).
 - **A review round in a worktree** (step 6): its pull request's head
   checked out, its agent edits there as an issue run's does; the
   question names the findings, no code pasted; its diff bounded,
@@ -215,6 +216,34 @@ prove the grading first (`TestDeveloperWithStandIns`).
 - **Two defects found, fixed in it**: the agent was shown no code, so
   it wrote none; it wrote its objection as text, which the bounds
   refuse.
+
+### Step 7: `claude` with tools
+
+[ADR-0056](../../../docs/adr/0056-the-developers-agent-works-in-a-sandbox-with-tools.md)'s
+step 7 (2026-10-30), Sonnet at medium, in its worktree with its tools;
+tokens from `out/calls.jsonl`, now kept in results.tsv's `measure`
+column ([the try](https://github.com/JN0V/workline/pull/747#tried)).
+
+| Case | Fresh in | Cache write | Out | Cache read | Turns | s | Outcome |
+|---|---|---|---|---|---|---|---|
+| a bug, its tests green | 8 | 7.5k | 266 | 42k | 4 | 8 | ready; 2 stray files on it |
+| the same, again | 8 | 7.7k | 283 | 42k | 4 | 8 | the same |
+| a tempting edit out of scope | 10 | 7.7k | 545 | 55k | 5 | 9 | ready |
+| a wrong acceptance test | 8 | 8.0k | 877 | 43k | 4 | 10 | Draft: objection lost |
+| nothing ready | 0 | 0 | 0 | 0 | 0 | 0 | no agent asked |
+| sandbox copy: a Go bug | 6 | 8.4k | 1.2k | 30k | 5 | 11 | no code, no pull request |
+| sandbox copy: a Go feature, 3 files | 6 | 9.0k | 593 | 31k | 3 | 9 | ready, 6/6 |
+
+- **Cache reads are 76 to 87 % of a run's tokens**: the cap counts
+  fresh tokens, cache reads apart ([the caps](proof.md#the-caps)).
+- **Far under the caps**: 9.6k fresh tokens, 5 turns, 11 s at most.
+  The max seen × 1.5 (15k, 8 turns, 17 s) would stop a real issue,
+  so the caps stay sized for one: 500k fresh tokens, 300 turns,
+  3600 s, 900 s of tests. A real issue's size is still to measure.
+- **Defects seen**: stray empty files in the worktree, two reaching
+  the branch ([#745](https://github.com/JN0V/workline/issues/745));
+  closing words that do not read lose an objection, and once all the
+  code ([#746](https://github.com/JN0V/workline/issues/746)).
 - **A copy of a real repository**, a Python script, its tester's
   Draft planted: proven green, ready, at the second run; at the
   first, a malformed line in the agent's diff kept it from applying,
@@ -233,9 +262,10 @@ prove the grading first (`TestDeveloperWithStandIns`).
   the worktree only, no network by default
   ([#719](https://github.com/JN0V/workline/issues/719)).
 
-- **`claude` with tools, measured**: tokens and time a run on planted
-  issues and real repositories, step 7 of
-  [ADR-0056](../../../docs/adr/0056-the-developers-agent-works-in-a-sandbox-with-tools.md).
+- **`claude` with tools on a real issue's size**: step 7 of
+  [ADR-0056](../../../docs/adr/0056-the-developers-agent-works-in-a-sandbox-with-tools.md)
+  measured planted tasks only, far under the caps
+  ([measured](#step-7-claude-with-tools)).
 - **A test runner named like a test**: `run-tests.sh` beside the Scope
   passes the bounds as the agent's own test, so its agent can rewrite
   the runner the proof calls

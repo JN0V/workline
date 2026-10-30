@@ -79,7 +79,8 @@ func TestClaudeAnswer(t *testing.T) {
 		"modelUsage":{"claude-sonnet-5":{"inputTokens":9,"cacheReadInputTokens":6000,"cacheCreationInputTokens":400,"outputTokens":900},
 		"claude-haiku-4-5-20251001":{"inputTokens":100,"outputTokens":40}}}`), &call)
 	if !ok || r.Result != "- ok: 1" || call.Model != "claude-sonnet-5" || call.CostUSD != 0.0134 ||
-		call.TokensIn != 6509 || call.TokensCached != 6000 || call.TokensOut != 940 {
+		call.TokensIn != 6509 || call.TokensCached != 6000 || call.TokensCacheW != 400 || call.TokensOut != 940 ||
+		call.Fresh() != 1449 { // 9 + 400 + 100 in, 940 out: the cache reads apart
 		t.Errorf("got %+v, %+v, %v", r, call, ok)
 	}
 	// Sonnet asked and answering "[]" in 10 tokens, the side Haiku writing

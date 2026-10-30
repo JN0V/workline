@@ -33,7 +33,7 @@ model:
   capability: coding
   tier: standard
   effort: medium
-  timeout: 30m
+  timeout: 60m   # one answer; ai-max-seconds holds the run's wait
 
 context:
   budget: 60000
@@ -61,15 +61,15 @@ settings:
   # assign an issue to an App, so the claim is a label on every forge;
   # a person's assignment keeps an issue from it (docs/pick.md).
   claim-label: "workline:developing"
-  # The caps (docs/proof.md): the tokens the run's agent calls may
-  # spend, the turns one call of its agent may take (ADR-0056: a start until
-  # measured), the seconds it waits on its agent, then kills it, the
-  # seconds the tests run on its code. The two times together: the
-  # ADR's 30 min a run.
-  ai-max-tokens: 300000
-  ai-max-turns: 100
-  ai-max-seconds: 1200
-  proof-seconds: 600
+  # The caps (docs/proof.md): the fresh tokens the run's agent calls
+  # may spend (cache reads apart), the turns one call of its agent may
+  # take, the seconds it waits on its agent, then kills it, the seconds
+  # the tests run on its code. Sized for an issue-sized task; ADR-0056's
+  # step 7 measured planted ones far below them (status.md#measured).
+  ai-max-tokens: 500000
+  ai-max-turns: 300
+  ai-max-seconds: 3600
+  proof-seconds: 900
   # The proof on the folders the change touches (docs/proof.md): the
   # tester's test-command, with `{packages}` replaced by the folders of
   # its code and of the acceptance tests that hold tests, as the

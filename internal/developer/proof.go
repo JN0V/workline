@@ -146,11 +146,12 @@ func testerSettings(repo string) (tester.Settings, error) {
 }
 
 // Used is what the run's agent calls used, as the agents report it: the
-// turns and the tokens (in, cache included, and out), the seconds waited,
-// the times it used each tool.
+// turns, the fresh tokens (agent.Call.Fresh: what ai-max-tokens holds),
+// the cache reads apart, the seconds waited, the times it used each tool.
 type Used struct {
 	Turns   int
 	Tokens  int
+	Cached  int
 	Seconds int
 	Tools   map[string]int
 	// mostTurns: the most turns one call took, each call told
@@ -185,7 +186,8 @@ func used(runDir string) Used {
 			}
 			u.Tools[name] += n
 		}
-		u.Tokens += c.TokensIn + c.TokensOut
+		u.Tokens += c.Fresh()
+		u.Cached += c.TokensCached
 		seconds += c.Seconds
 		u.timeCut = u.timeCut || c.TimeCut
 		if c.Turns == 0 {
@@ -202,8 +204,8 @@ func used(runDir string) Used {
 
 // agentCaps are the caps on its agent the run reached (ADR-0056): its
 // time over the run (the engine stopped waiting and killed it), its turns
-// in one call (each is told ai-max-turns), its tokens over the run, as
-// it reports them, at or past what each allows; none set, none reached.
+// in one call (each is told ai-max-turns), its fresh tokens over the run,
+// as it reports them, at or past what each allows; none set, none reached.
 func agentCaps(u Used, s Settings) []Cap {
 	var caps []Cap
 	if u.timeCut && s.MaxSeconds > 0 {

@@ -9,7 +9,8 @@
 # mul and the start commit replaced by one whose test runner passes all,
 # the runner put back after its run (replace). Its caps (ADR-0056): it
 # says it used every turn WORKLINE_MAX_TURNS allows (turns), or 5000
-# tokens (tokens), or it works on past its time, a child of its own
+# tokens (tokens), or 5000 fresh beside 100000 read from cache
+# (cached), or it works on past its time, a child of its own
 # set to write "late" in lib.sh (slow); or it fails once it edited
 # (fail). It fails out of its worktree, and where its own run is red.
 set -eu
@@ -90,6 +91,7 @@ turns)
 	;;
 fail) echo "it gave up" >&2; exit 3 ;;
 tokens) printf 'model: costly\ntokens-in: 4000\ntokens-out: 1000\n' > "$WORKLINE_CALL" ;;
+cached) printf 'model: cached\ntokens-in: 104000\ntokens-cached: 100000\ntokens-out: 1000\n' > "$WORKLINE_CALL" ;;
 slow)
 	[ -n "${WORKLINE_MAX_SECONDS:-}" ] || { echo "no WORKLINE_MAX_SECONDS" >&2; exit 1; }
 	(sleep 4 && echo '# late' >> lib.sh) &

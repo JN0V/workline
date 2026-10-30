@@ -103,11 +103,13 @@ type Act struct {
 	// on the run it reached (step 3).
 	Proof *Proof `json:"proof,omitempty"`
 	Caps  []Cap  `json:"caps,omitempty"`
-	// Turns, Tokens and Tools: what its agent used, as it reported them
-	// (ADR-0056, steps 4 and 5): the times it used each tool; 0 or none,
-	// not reported.
+	// Turns, Tokens, Cached and Tools: what its agent used, as it
+	// reported them (ADR-0056, steps 4, 5 and 7): its fresh tokens, what
+	// ai-max-tokens holds, its cache reads apart, the times it used each
+	// tool; 0 or none, not reported.
 	Turns  int            `json:"turns,omitempty"`
 	Tokens int            `json:"tokens,omitempty"`
+	Cached int            `json:"cached,omitempty"`
 	Tools  map[string]int `json:"tools,omitempty"`
 	// AgentFailed: why its agent's call failed, its time aside; what it
 	// edited is proven all the same, its pull request a Draft.
@@ -613,7 +615,7 @@ func Post(runDir, repo string) int {
 		a.Code, a.Tests = written(patches)
 		p, u, caps, found := proven(runDir, repo, on, where, patches, a.Acceptance, s)
 		a.Proof, a.Caps = &p, caps
-		a.Turns, a.Tokens, a.Tools, a.AgentFailed = u.Turns, u.Tokens, u.Tools, u.failed
+		a.Turns, a.Tokens, a.Cached, a.Tools, a.AgentFailed = u.Turns, u.Tokens, u.Cached, u.Tools, u.failed
 		v.Findings = append(v.Findings, found...)
 		title := issueTitle(runDir, a.Issue)
 		cs, unread := committerSettings(repo, where)

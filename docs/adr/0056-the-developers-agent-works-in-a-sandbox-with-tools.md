@@ -79,16 +79,22 @@
 
 ### Caps
 
-- **Time**: `ai-max-seconds` (1200 s) on the agent, then the proof's
-  `proof-seconds`; past it the agent is killed, its diff bounded and
-  proven, a Draft (as gh-aw's 20 min, Copilot's 59).
-- **Turns**: a new `ai-max-turns`, passed to the agent; a start of
-  100 until measured: an issue-sized task takes 51 rounds on average
+- **Time**: `ai-max-seconds` (3600 s) on the agent, then the proof's
+  `proof-seconds` (900 s); past it the agent is killed, its diff bounded
+  and proven, a Draft (as gh-aw's 20 min, Copilot's 59). Raised from
+  1200 and 600 at step 7: builder agents take 13 to 32 min a step.
+- **Turns**: a new `ai-max-turns`, passed to the agent: 300. An
+  issue-sized task takes 51 rounds on average
   ([the card](../research/agent-sandbox.md#what-it-costs)), so
-  OpenHands' 50 would stop many. Reached: a Draft.
-- **Tokens**: `ai-max-tokens`, read from the agent's report after the
-  run: an agent has no live token cap, so turns and time hold it; a run
-  over it is a Draft, said (principle 12).
+  OpenHands' 50 would stop many; builder agents use 60 to 200 tool
+  calls a step. Reached: a Draft.
+- **Tokens**: `ai-max-tokens` (500000), read from the agent's report
+  after the run: an agent has no live token cap, so turns and time hold
+  it; a run over it is a Draft, said (principle 12). It counts fresh
+  tokens: the input not read from cache, cache writes included, and the
+  output. Cache reads, most of a tool loop's total, are recorded apart,
+  never counted; counted, a cap would hold the cache, not the work
+  (step 7, [status](../../roles/developer/docs/status.md#measured)).
 
 ### What each agent means
 
@@ -163,8 +169,8 @@ not pass.
     of thousands a run, cache reads in the millions, which cost a tenth
     of fresh input. Issues bounded by a Scope may sit lower: step 7
     measures it, both counted apart.
-- **Latency**: minutes of turns instead of one answer, under the same
-  20 min cap; off a person's path, the developer has a cap, no wait
+- **Latency**: minutes of turns instead of one answer, under a
+  60 min cap; off a person's path, the developer has a cap, no wait
   budget ([ADR-0050]).
 - **Safety**: a prompt injection in the issue or the repository steers
   an agent with no write token whose result is bounded after it; it
