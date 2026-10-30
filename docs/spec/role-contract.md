@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine, internal/intent, internal/role, internal/agent, roles_test.go]
-checked: 217e7789
+checked: d0c867dd
 verified: agent:claude-code
 judged: b530b72
 ---
@@ -423,7 +423,7 @@ Writes to git and to a forge are not transactional: a comment can be posted and
 the label call fail. So every intention is applied idempotently — a label that
 is already there, a comment carrying the run's marker, a comment on a line
 whose key an open thread holds, a merge request already
-open from the branch (updated, not opened again), the commits a failed push left on
+open from the branch (updated, not opened again), the commits a stopped run left on
 the role's branch (pushed as they are, `already-committed`: nothing new to commit) all
 count as done — and `workline apply <run-dir>` resumes a
 run from `out/run.yaml`, with the evidence of the original run, without calling
