@@ -4,7 +4,7 @@ sources:
   - internal/agent/command.go
   - internal/agent/prompt.go
   - internal/developer/developer.go
-checked: 62a62929
+checked: 0213dd02
 verified: agent:claude-code
 ---
 # The agent: where it works, what it gets
@@ -58,6 +58,12 @@ Checked against Claude Code 2.1.314; each flag in its `--help`:
   project's conventions as any file.
 - **Its shell without its login**: `CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=1`;
   Claude Code takes its key or token out of the commands' environment.
+- **Its sandbox's files removed**: so scrubbed, Claude Code creates 17
+  empty files where its folder lacks them (`.env*`, `package.json`,
+  lock files) and lists them in `.git/info/exclude`, which a worktree
+  cannot hold. Once it ran, the engine removes each one it created
+  that is still empty
+  ([#745](https://github.com/JN0V/workline/issues/745)).
 - **What it used**: `--output-format stream-json --verbose`; its
   turns, fresh tokens, cache reads and the tools it used, one count a
   tool, go in the claim's record.

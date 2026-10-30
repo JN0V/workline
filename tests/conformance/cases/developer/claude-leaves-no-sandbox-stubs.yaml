@@ -1,0 +1,43 @@
+case: developer/claude-leaves-no-sandbox-stubs
+about: >
+  Claude Code, its commands' environment scrubbed, creates empty files
+  in its folder where absent, .env*, package.json and 15 more, for its
+  sandbox to bind over; it lists them in .git/info/exclude, which the
+  developer's worktree, a linked one, cannot hold (#745). Once it ran,
+  the engine removes each of them it created that is still empty: none
+  reaches the branch, none is refused. A package.json its agent wrote
+  stays its own, and is held to the bounds.
+given:
+  repo: tested-draft
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main workline/tester/issue-3 && git checkout -q main"
+  env: {PATH: "$FIXTURES/claude:$PATH", STUBS: "1"}
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:ready"]
+        body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        draft: true
+        comments: ["The tests of #3, frozen.\n\n<!-- workline:tester-record {\"issue\":3,\"base\":\"main\",\"files\":{\"tests/test_mul_by_zero.sh\":\"8f123a0bacbd681063880b867df38dd216784b97\",\"tests/test_mul_two_by_three.sh\":\"2dee0641bd7a79057ade7bff5af43b603125f543\"}} -->\n<!-- workline:sticky=tester/tests -->"]
+run: {develop: [], ai: claude}
+expect:
+  status: pass
+  summary: "took #3; 1 of its agent's proposals refused at apply"
+  agent-calls: 1
+  findings: [{rule: outside-scope, level: warn, where: package.json}]
+  pushed:
+    workline/developer/3:
+      lib.sh: "mul()"
+  pushed-lacks:
+    workline/developer/3:
+      .env: ""
+      .env.test: ""
+      .env.test.local: ""
+      yarn.lock: ""
+      package.json: ""
