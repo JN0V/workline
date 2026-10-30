@@ -1,7 +1,9 @@
 # ADR-0057: workline finds the forge's board and moves its cards where the forge does not
 
-- **Status:** proposed
+- **Status:** accepted (2026-10-30)
 - **Date:** 2026-10-30
+- **Decided by:** the maintainer, on 2026-10-30, with the
+  [answers](#answers) below
 - **Builds on:** [ADR-0018], [ADR-0023], [ADR-0040], [ADR-0054];
   principles 5, 12, 13, 14
 - **Amends:** [ADR-0054]'s "never moves an issue": the claim moves its
@@ -109,19 +111,21 @@ board:
   - **By default**: the built-in workflows move Doing and Done; Ready
     does not move. Said once, `board-user-project` (info), the summary
     naming the workflows to turn on.
-  - **Opt-in**: a person's token, `WORKLINE_PROJECT_TOKEN` (classic,
+  - **No opt-in token, for now**: a person's classic token with the
     `project` scope, GitHub's advice for user projects
-    [here](https://docs.github.com/en/issues/planning-and-tracking-with-projects/automating-your-project/automating-projects-using-actions)),
-    used for the project calls only. Its writes show as that person's.
+    ([here](https://docs.github.com/en/issues/planning-and-tracking-with-projects/automating-your-project/automating-projects-using-actions)),
+    is not taken ([answers](#answers)).
 - **Never read as a pass nor a failure**: a board out of reach changes
   no verdict.
 
-## For the person
+## Answers
 
-- **The opt-in token on a user's project**: worth it for Ready alone, or
-  is the built-in default enough?
-- **An issue in no project**: leave it to *Auto-add*, or should the
-  product owner add a ready issue to the only linked project?
+The maintainer's answers, on 2026-10-30:
+
+- **A user's GitHub project**: no opt-in personal token for now; rely
+  on its built-in workflows, and report what does not move.
+- **An issue in no project**: unchanged, left to *Auto-add*, as
+  decided above.
 
 ## Build plan
 
@@ -143,7 +147,7 @@ One pull request a step, its cases first in `tests/conformance/cases/`,
    `board-github-doing-left-to-workflow`, `board-github-doing-set`,
    `board-workflow-off-said`.
 4. **Who may write**: `board-unwritable-said`,
-   `board-user-project-said`, `board-project-token-used`.
+   `board-user-project-said`.
 5. **Docs**: a page under `docs/` (boards, each forge), linked from
    both roles' READMEs and the install guide.
 6. **Tried**, told in each pull request: a GitLab Free and a Premium

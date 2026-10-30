@@ -15,7 +15,7 @@
 - **Amended by:** [ADR-0056] (accepted 2026-10-30): the agent works with tools in
   a worktree, the engine bounds its diff after; no pasted code, no
   `patch` intention
-- **Amended by:** [ADR-0057] (proposed): at the claim, it moves the issue's
+- **Amended by:** [ADR-0057]: at the claim, it moves the issue's
   card to the board's Doing column, where the forge does not
 
 ## Context
@@ -136,7 +136,7 @@
 - Merge, approve, turn auto-merge on, put `workline:accepted`, resolve a
   conversation, close an issue (`Closes #<n>` does it). Its card moves
   to Doing at the claim, where the forge's own workflow does not
-  ([ADR-0057], proposed).
+  ([ADR-0057]).
 - Take an issue not `ready` or assigned; edit an acceptance test.
 
 ## For the person
