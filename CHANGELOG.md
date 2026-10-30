@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.56.1](https://github.com/JN0V/workline/compare/v0.56.0...v0.56.1) (2026-10-30)
+
+
+### Bug Fixes
+
+* **developer:** a review round whose diff changes nothing ([#707](https://github.com/JN0V/workline/issues/707)) ([5d9cbbb](https://github.com/JN0V/workline/commit/5d9cbbb5907dfce21b13b7e32a2ed25acbb64802))
+
 ## [0.56.0](https://github.com/JN0V/workline/compare/v0.55.0...v0.56.0) (2026-10-29)
 
 
