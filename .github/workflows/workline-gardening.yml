@@ -30,7 +30,8 @@ jobs:
       - uses: actions/checkout@v4
         with: {fetch-depth: 0}
       # Go left set up: the tester's test-command runs it, gotestsum
-      # pinned in .workline/config.yaml, proving its tests red here.
+      # pinned in .workline/config.yaml, proving the tester's tests red
+      # here and the developer's code green.
       - uses: ./.github/actions/engine
         with: {go: "true"}
       # The documentalist's links to other sites, checked at night only:
@@ -55,9 +56,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           WORKLINE_APP_ID: ${{ vars.WORKLINE_APP_ID }}   # the App whose comments keep the records a role reads back (ADR-0051)
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          # Nightly the backlog and the tester's one issue, weekly the docs
-          # alone; run by hand, all.
-          SKIP: "${{ github.event.schedule == '17 2 * * *' && 'documentalist' || github.event.schedule == '7 18 * * 0' && 'product-owner,reviewer,tester' || '' }}"
+          # Nightly the backlog, the tester's one issue and the developer's;
+          # weekly the docs alone; run by hand, all.
+          SKIP: "${{ github.event.schedule == '17 2 * * *' && 'documentalist' || github.event.schedule == '7 18 * * 0' && 'product-owner,reviewer,tester,developer' || '' }}"
         run: |
           ai=none; [ -n "$CLAUDE_CODE_OAUTH_TOKEN" ] && ai=claude
           status=0

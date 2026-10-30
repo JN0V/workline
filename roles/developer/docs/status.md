@@ -13,7 +13,9 @@ its pull request for a fix or a task merges with no person's yes; a
 feature waits for one. Measured on planted issues and a copy of a
 real repository: the eight steps of
 [ADR-0054's plan](../../../docs/adr/0054-the-developer-takes-a-ready-issue-to-a-pull-request.md#build-plan)
-built; beta; routed where a project lists it.
+built; beta; routed where a project lists it, in workline's own line
+since [#696](https://github.com/JN0V/workline/issues/696), its first
+pull request awaited.
 
 A try is told in its pull request's `## Tried`
 ([ADR-0043](../../../docs/adr/0043-a-try-is-told-in-its-pull-request.md)):
@@ -35,7 +37,8 @@ hold:
 2. **The main issue validated on real use**: open. A maintainer reads a
    pull request the developer opened for a `ready` issue, its
    Verification proved in it, and merges it or sends it back
-   ([#117](https://github.com/JN0V/workline/issues/117)).
+   ([#696](https://github.com/JN0V/workline/issues/696)): routed on
+   workline's own line, the first pull request awaits a maintainer.
 3. **Observable**: its acts read by the auditor
    ([ADR-0046](../../../docs/adr/0046-the-auditor-re-checks-every-roles-acts.md#amendment-2026-10-29-the-developers-row)):
    the pick's record from step 1, its refusals at apply in it from
@@ -162,7 +165,8 @@ prove the grading first (`TestDeveloperWithStandIns`).
 - **The auditor's draw of its code, by a real judge**: drawn and
   re-checked on a planted act only
   ([ADR-0046](../../../docs/adr/0046-the-auditor-re-checks-every-roles-acts.md#amendment-2026-10-29-the-developers-row));
-  none merged yet to read.
+  none merged yet to read: workline's weekly sample draws the first
+  ([#696](https://github.com/JN0V/workline/issues/696)).
 - **`workline follow` on its branch**: the branch holds the tester's
   commit, which `follow` reads as a person's; it leaves the branch as it
   is rather than bring it up to date.
@@ -178,12 +182,19 @@ prove the grading first (`TestDeveloperWithStandIns`).
 - **A refused patch asked again**: today it is left out and the rest
   applied; asking the agent again with the refusal would save a round.
   So for a diff that does not apply: unproven, a Draft
-  ([measured](#measured)).
+  ([measured](#measured);
+  [#692](https://github.com/JN0V/workline/issues/692)).
 - **What the agent says out of its patches**: told to say what is out of
   its Scope, a real agent wrote a `note`, which the bounds refuse on an
-  issue; the pull request's `## Left out` could hold it.
+  issue; the pull request's `## Left out` could hold it
+  ([#694](https://github.com/JN0V/workline/issues/694)).
 - **A test of its own with no tester's Draft**: asked by the issue's
-  Verification, the agent wrote none ([measured](#measured)).
+  Verification, the agent wrote none ([measured](#measured);
+  [#693](https://github.com/JN0V/workline/issues/693)).
+- **Scope files with accented names, or listed twice**: git quotes
+  `café.sh`, so the agent is not shown it; a folder and its file both in
+  the Scope show the file twice
+  ([#695](https://github.com/JN0V/workline/issues/695)).
 - **A new file in a new folder**: the engine writes a `{file, content}`
   patch only where its folder exists; a diff creates it.
 - **The proof's other parts**: the project's gates and the commands

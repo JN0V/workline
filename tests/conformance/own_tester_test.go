@@ -9,11 +9,14 @@ import (
 	"go.yaml.in/yaml/v3"
 )
 
-// workline's own line routes the tester (ADR-0055, issue #264): its
-// test-command runs Go, so each job that routes it leaves Go set up — the
-// gardening's judge, which proves the tests red, at night; workline.yml's
-// judge on the tester's own branches, where the green proof runs. Taken
-// from the cache, the engine's action sets no Go up unless asked.
+// workline's own line routes the tester (ADR-0055, issue #264) and the
+// developer (ADR-0054, issue #696): both run the tester's test-command,
+// which runs Go, so each job that routes them leaves Go set up — the
+// gardening's judge, which proves the tester's tests red and the
+// developer's code green, at night; workline.yml's judge on the tester's
+// own branches, where the green proof runs; workline-develop.yml's judge
+// on a ready issue and its review round on the developer's pull request.
+// Taken from the cache, the engine's action sets no Go up unless asked.
 func TestOwnTesterHasGoWhereItRuns(t *testing.T) {
 	data, err := os.ReadFile("../../.workline/config.yaml")
 	if err != nil {
@@ -27,12 +30,15 @@ func TestOwnTesterHasGoWhereItRuns(t *testing.T) {
 	if err := yaml.Unmarshal(data, &cfg); err != nil {
 		t.Fatal(err)
 	}
-	for _, c := range []struct{ event, workflow, job, want string }{
-		{"schedule", "workline-gardening.yml", "judge", "true"},
-		{"merge-request", "workline.yml", "judge", "'workline/tester/'"},
+	for _, c := range []struct{ role, event, workflow, job, want string }{
+		{"tester", "schedule", "workline-gardening.yml", "judge", "true"},
+		{"tester", "merge-request", "workline.yml", "judge", "'workline/tester/'"},
+		{"developer", "schedule", "workline-gardening.yml", "judge", "true"},
+		{"developer", "issue", "workline-develop.yml", "judge", "true"},
+		{"developer", "issue", "workline-develop.yml", "review", "true"},
 	} {
-		if !slices.Contains(cfg.Routing.Events[c.event], "tester") {
-			t.Errorf("the %s line does not route the tester", c.event)
+		if !slices.Contains(cfg.Routing.Events[c.event], c.role) {
+			t.Errorf("the %s line does not route the %s", c.event, c.role)
 			continue
 		}
 		data, err := os.ReadFile("../../.github/workflows/" + c.workflow)
@@ -52,7 +58,7 @@ func TestOwnTesterHasGoWhereItRuns(t *testing.T) {
 			if s.Uses == engineAction {
 				found = true
 				if !strings.Contains(s.With["go"], c.want) {
-					t.Errorf("%s, job %s: the tester runs Go there, but the engine's action leaves Go set up only when %q", c.workflow, c.job, s.With["go"])
+					t.Errorf("%s, job %s: the %s runs Go there, but the engine's action leaves Go set up only when %q", c.workflow, c.job, c.role, s.With["go"])
 				}
 			}
 		}
