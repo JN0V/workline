@@ -45,6 +45,9 @@ type FakeState struct {
 	Weights     bool `json:"weights,omitempty"`
 	FailOnWrite int  `json:"fail-on-write,omitempty"` // the write that fails, counting from 1
 	Writes      int  `json:"writes"`
+	// RefuseWrite: the write refused once, counting from 1, as a forge
+	// answering 422 does: an error, the forge reachable.
+	RefuseWrite int `json:"refuse-write,omitempty"`
 	// ReviewRefused: the forge refuses every comment on a line, as a
 	// token that may not review does, with this reason (HTTP 403).
 	ReviewRefused string `json:"review-refused,omitempty"`
@@ -249,6 +252,13 @@ func (f *Fake) write(change func(*FakeState) error) error {
 		s.FailOnWrite = 0 // fails once, then the forge is back
 		f.save(s)
 		return fmt.Errorf("%w: the simulated forge failed write %d", ErrUnreachable, s.Writes)
+	}
+	if s.RefuseWrite > 0 && s.Writes == s.RefuseWrite {
+		s.RefuseWrite = 0
+		if err := f.save(s); err != nil {
+			return err
+		}
+		return fmt.Errorf("the simulated forge refused write %d", s.Writes)
 	}
 	if err := change(s); err != nil {
 		return err

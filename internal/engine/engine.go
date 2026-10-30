@@ -1369,15 +1369,17 @@ func applyAll(r *role.Role, settings map[string]any, st runState, runDir string,
 		id, tip, err := openMergeRequest(f, st, runDir)
 		if tip != "" && tip == st.Committed {
 			res.Findings = append(res.Findings, verdict.Finding{Rule: "already-committed", Level: "info", Where: branchPrefix(st.Role) + slugify(mergeRequestKey(st, runDir)),
-				Message: "nothing new to commit: the run before committed this code here, its push failed; pushed as it is"})
+				Message: "nothing new to commit: the run before committed this code here, then stopped; pushed as it is"})
+		}
+		if err != nil && tip != "" && tip != st.Committed {
+			// Committed, whatever failed after: its resume pushes these
+			// commits, the code no longer in the working tree.
+			st.Committed = tip
+			if err := st.save(runDir); err != nil {
+				return err
+			}
 		}
 		if errors.Is(err, forge.ErrUnreachable) {
-			if tip != "" && tip != st.Committed { // its resume pushes these commits
-				st.Committed = tip
-				if err := st.save(runDir); err != nil {
-					return err
-				}
-			}
 			res.Status, res.Summary = verdict.BlockedExternal, fmt.Sprintf("stopped while opening the merge request; resume with: workline apply %s", runDir)
 			res.Findings = append(res.Findings, verdict.Finding{Rule: "forge-unreachable", Message: err.Error()})
 			return nil
