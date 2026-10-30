@@ -440,12 +440,12 @@ func reviewPost(runDir, repo string, s Settings) int {
 	analysis := ""
 	if r.FiveWhys {
 		if len(analyses) != 1 {
-			return writeVerdict(runDir, verdict.Verdict{Status: verdict.Block, Summary: "the round's answer is refused",
+			return refuseAnswer(runDir, verdict.Verdict{Status: verdict.Block, Summary: "the round's answer is refused",
 				Findings: []verdict.Finding{{Rule: "five-whys-missing", Where: where, Message: fmt.Sprintf("a finding is still there at round three: the answer gives the five whys as one `note` opening with `Five whys`, as the skill says (%d given)", len(analyses))}}})
 		}
 		w, err := whys.Parse(analyses[0])
 		if err != nil {
-			return writeVerdict(runDir, verdict.Verdict{Status: verdict.Block, Summary: "the round's answer is refused",
+			return refuseAnswer(runDir, verdict.Verdict{Status: verdict.Block, Summary: "the round's answer is refused",
 				Findings: []verdict.Finding{{Rule: "five-whys-unreadable", Where: where, Message: "the five whys do not follow the skill's form: " + err.Error()}}})
 		}
 		analysis = w.Markdown()
@@ -626,6 +626,16 @@ func writeIntents(runDir, name string, l []intent.Intention) int {
 		return fail(err)
 	}
 	return 0
+}
+
+// refuseAnswer blocks a round's answer, nothing of it kept: on a block,
+// the engine still applies the role's comments (on-block), meant for the
+// bounds' record, never for what an agent proposed.
+func refuseAnswer(runDir string, v verdict.Verdict) int {
+	if code := writeIntents(runDir, "", nil); code != 0 {
+		return code
+	}
+	return writeVerdict(runDir, v)
 }
 
 func writeVerdict(runDir string, v verdict.Verdict) int {

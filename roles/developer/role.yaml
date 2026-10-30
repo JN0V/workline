@@ -17,7 +17,13 @@ mission: A ready issue becomes a pull request that proves its Verification, writ
 #        and a person's comments, fixes them within the bounds, proves
 #        the fix and pushes it on its branch; the five whys at round
 #        three on a finding still there; past the last round, a person.
-events: [issue, schedule, review]
+# merge-request: `workline develop --bounds --merge-request <n>` — its
+#        bounds on its own pull request, no agent (ADR-0058, step 1): each
+#        file the branch changed since its base, held to the issue's
+#        bounds read at the base's tip; one refused blocks, named with its
+#        rule. A person's branch passes, said. Routed where the project
+#        lists it (docs/bounds.md#on-the-pull-request).
+events: [issue, schedule, review, merge-request]
 
 requires: [git]
 
@@ -44,6 +50,9 @@ duties:
 # objection to a frozen test; post refuses any other (docs/bounds.md).
 # note: in a review round, what it did a finding, and the five whys.
 intentions: [patch, comment, label, note]
+# A bounds check that blocks still keeps its record on the pull request,
+# for the auditor (ADR-0046); a round's answer refused keeps nothing.
+on-block: [comment]
 
 without-ai: pass   # with none, the issue is named, nothing claimed
 

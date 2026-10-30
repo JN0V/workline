@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"slices"
@@ -36,6 +37,8 @@ type Bounds struct {
 	Scope []string `json:"scope"`
 	// Frozen: each test the tester froze on an open Draft, by its issue.
 	Frozen map[string]int `json:"frozen,omitempty"`
+	// Blobs: each frozen test's blob, as the tester's record names it.
+	Blobs map[string]string `json:"blobs,omitempty"`
 	// Draft is the tester's open Draft for the issue, 0 when none, and
 	// Head its branch's commit, where an objection goes on a line.
 	Draft int    `json:"draft,omitempty"`
@@ -53,7 +56,7 @@ type Refusal struct {
 
 // readBounds reads, on the forge, what bounds the issue's patches.
 func readBounds(f forge.Forge, bl forge.Backlog, repo string, is forge.Issue) (Bounds, error) {
-	b := Bounds{Issue: is.ID, Scope: scopePaths(is.Body), Frozen: map[string]int{}}
+	b := Bounds{Issue: is.ID, Scope: scopePaths(is.Body), Frozen: map[string]int{}, Blobs: map[string]string{}}
 	comments, err := bl.Comments(forge.Target{Kind: "issue", ID: is.ID})
 	if err != nil {
 		return b, err
@@ -81,8 +84,8 @@ func readBounds(f forge.Forge, bl forge.Backlog, repo string, is forge.Issue) (B
 		if !ok {
 			continue
 		}
-		for file := range r.Files {
-			b.Frozen[file] = r.Issue
+		for file, blob := range r.Files {
+			b.Frozen[file], b.Blobs[file] = r.Issue, blob
 		}
 		if n == is.ID {
 			b.Draft = mr.ID
@@ -113,8 +116,10 @@ var ciFiles = []string{".workline", ".github/workflows", ".github/actions", ".gi
 // gateFiles are the files a gate's checks run or read their config from,
 // as .workline/config.yaml declares them: a word of a check's command
 // that is a file of the repository, and its `config`. A config that
-// cannot be read is an error: no gate's file is known then.
-func gateFiles(repo string) ([]string, error) {
+// cannot be read is an error: no gate's file is known then. At rev, a
+// commit, they are read there, never in the checkout; "" reads the
+// checkout.
+func gateFiles(repo, rev string) ([]string, error) {
 	var cfg struct {
 		Gates map[string]struct {
 			Checks []struct {
@@ -124,6 +129,9 @@ func gateFiles(repo string) ([]string, error) {
 		} `yaml:"gates"`
 	}
 	data, err := os.ReadFile(filepath.Join(repo, ".workline", "config.yaml"))
+	if rev != "" {
+		data, err = readAt(repo, rev, ".workline/config.yaml")
+	}
 	if errors.Is(err, os.ErrNotExist) {
 		return nil, nil
 	}
@@ -143,7 +151,7 @@ func gateFiles(repo string) ([]string, error) {
 			}
 			for _, w := range strings.Fields(c.Run) {
 				w = strings.Trim(w, `"'`)
-				if st, err := os.Stat(filepath.Join(repo, w)); err == nil && !st.IsDir() {
+				if kindAt(repo, rev, w) == "file" {
 					if f, ok := repoPath(w); ok {
 						out = append(out, f)
 					}
@@ -208,6 +216,7 @@ func besideTest(p string, scope []string, isDir func(string) bool) bool {
 // when it may be touched.
 type checker struct {
 	b     Bounds
+	at    string // the commit the rules are read at; "" the checkout
 	gates []string
 	roles string // the role folders, when in the repository
 	repo  string
@@ -217,10 +226,19 @@ type checker struct {
 	unread error
 }
 
-func newChecker(repo string, b Bounds) checker {
-	c := checker{b: b, repo: repo, steer: func(string) bool { return false }}
-	c.gates, c.unread = gateFiles(repo)
-	if s, err := steer.Files(repo, "HEAD"); err != nil {
+func newChecker(repo string, b Bounds) checker { return newCheckerAt(repo, b, "") }
+
+// newCheckerAt reads the rules at the commit at: the gates, the files
+// that steer agents, the role folders, a Scope's folders; "" reads them
+// in the checkout, the steering files at HEAD.
+func newCheckerAt(repo string, b Bounds, at string) checker {
+	c := checker{b: b, repo: repo, at: at, steer: func(string) bool { return false }}
+	c.gates, c.unread = gateFiles(repo, at)
+	tip := at
+	if tip == "" {
+		tip = "HEAD"
+	}
+	if s, err := steer.Files(repo, tip); err != nil {
 		c.unread = errors.Join(c.unread, fmt.Errorf("the files that steer agents: %w", err))
 	} else {
 		c.steer = s
@@ -255,8 +273,8 @@ func (c checker) rule(p string) string {
 // isDir says whether a Scope's path is a folder: one in the repository,
 // or, not there yet, a name with no extension.
 func (c checker) isDir(p string) bool {
-	if st, err := os.Stat(filepath.Join(c.repo, filepath.FromSlash(p))); err == nil {
-		return st.IsDir()
+	if k := kindAt(c.repo, c.at, p); k != "" {
+		return k == "dir"
 	}
 	return path.Ext(p) == ""
 }
@@ -273,11 +291,41 @@ func (c checker) roleFolder(p string) bool {
 		if c.repo == "" {
 			return true
 		}
-		if _, err := os.Stat(filepath.Join(c.repo, filepath.FromSlash(path.Join(parts[:i+2]...)), "role.yaml")); err == nil {
+		if kindAt(c.repo, c.at, path.Join(path.Join(parts[:i+2]...), "role.yaml")) != "" {
 			return true
 		}
 	}
 	return false
+}
+
+// kindAt says what p is at rev, a commit, or in the checkout when rev is
+// "": "file", "dir", or "" when it is not there.
+func kindAt(repo, rev, p string) string {
+	if rev == "" {
+		st, err := os.Stat(filepath.Join(repo, filepath.FromSlash(p)))
+		switch {
+		case err != nil:
+			return ""
+		case st.IsDir():
+			return "dir"
+		}
+		return "file"
+	}
+	switch t, _ := gitOut(repo, "cat-file", "-t", rev+":"+path.Clean(filepath.ToSlash(p))); t {
+	case "tree":
+		return "dir"
+	case "blob":
+		return "file"
+	}
+	return ""
+}
+
+// readAt reads p at rev, os.ErrNotExist when it is not there.
+func readAt(repo, rev, p string) ([]byte, error) {
+	if kindAt(repo, rev, p) != "file" {
+		return nil, os.ErrNotExist
+	}
+	return exec.Command("git", "-C", repo, "show", rev+":"+p).Output()
 }
 
 // why is what a refusal says to a person.

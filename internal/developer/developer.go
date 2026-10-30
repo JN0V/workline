@@ -251,6 +251,12 @@ func Pre(runDir, repo string) int {
 	if err != nil {
 		return fail(err)
 	}
+	// On a pull request's event, its bounds checked, no agent (ADR-0058).
+	if os.Getenv("WORKLINE_EVENT") == "merge-request" {
+		_, num, _ := strings.Cut(os.Getenv("WORKLINE_TARGET"), ":")
+		id, _ := strconv.Atoi(num)
+		return boundsPre(runDir, repo, id)
+	}
 	// On its own pull request, a review round (step 6).
 	if kind, num, _ := strings.Cut(os.Getenv("WORKLINE_TARGET"), ":"); kind == "merge-request" {
 		id, _ := strconv.Atoi(num)
@@ -502,6 +508,9 @@ func Post(runDir, repo string) int {
 	s, err := settingsIn(runDir)
 	if err != nil {
 		return fail(err)
+	}
+	if _, err := os.Stat(filepath.Join(runDir, "in", prBoundsFile)); err == nil {
+		return boundsPost(runDir)
 	}
 	if _, err := os.Stat(filepath.Join(runDir, "in", roundFile)); err == nil {
 		return reviewPost(runDir, repo, s)

@@ -142,7 +142,7 @@ func TestGateConfigPathsAreCleaned(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(repo, ".workline", "config.yaml"), []byte(cfg), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	gates, err := gateFiles(repo)
+	gates, err := gateFiles(repo, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -172,7 +172,7 @@ func TestUnreadBoundsRefuseEveryPatch(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(repo, ".workline", "config.yaml"), []byte("gates: [\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := gateFiles(repo); err == nil {
+	if _, err := gateFiles(repo, ""); err == nil {
 		t.Error("gateFiles of a config that does not parse: no error")
 	}
 }

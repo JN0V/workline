@@ -1,0 +1,36 @@
+case: developer/pr-bounds-passes-in-scope
+about: >
+  The bounds on the pull request (ADR-0058, step 1), as routing runs them
+  on the merge-request event: a developer's branch changing only its
+  Scope's file passes; the tester's frozen tests it carries, as the tester
+  wrote them, are not its edit. The verdict is kept on the pull request.
+given:
+  repo: tested-draft
+  setup:
+    - "git checkout -q -b workline/developer/3 && printf 'add() { echo $(($1 + $2)); }\\nmul() { echo $(($1 * $2)); }\\n' > lib.sh && git add -A && git commit -qm 'feat: mul for #3' -m 'Workline-Role: developer' && git checkout -q main"
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:developing"]
+        body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        draft: true
+        comments: ["The tests of #3, frozen.\n\n<!-- workline:tester-record {\"issue\":3,\"base\":\"main\",\"files\":{\"tests/test_mul_by_zero.sh\":\"8f123a0bacbd681063880b867df38dd216784b97\",\"tests/test_mul_two_by_three.sh\":\"2dee0641bd7a79057ade7bff5af43b603125f543\"}} -->\n<!-- workline:sticky=tester/tests -->"]
+      - id: 2
+        branch: workline/developer/3
+        base: main
+        title: "Multiply two numbers"
+        body: "Closes #3"
+run: {role: developer, event: merge-request, target: {merge-request: 2}, ai: none}
+expect:
+  status: pass
+  agent-calls: 0
+  summary: "the bounds of #3 hold: 3 files changed, none refused"
+  no-findings: [{rule: acceptance-test-edit}, {rule: outside-scope}]
+  forge:
+    merge-requests:
+      - id: 2
+        comment-contains: ['"act":"bounds"', '"files":3']
