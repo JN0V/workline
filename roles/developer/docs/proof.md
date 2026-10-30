@@ -5,7 +5,7 @@ sources:
   - internal/tester/onchange.go
   - internal/tester/fresh.go
   - roles/developer/role.yaml
-checked: b60ddded
+checked: 1b4ad84a
 verified: agent:claude-code
 ---
 # The proof and the caps: ready or a Draft
@@ -66,18 +66,32 @@ Step 3 of
 
 | Cap | Default | Reached |
 |---|---|---|
-| `ai-max-tokens` | 300000 | the run's agent calls spent it |
-| `ai-max-seconds` | 1200 | the engine stops waiting on the agent |
+| `ai-max-tokens` | 300000 | the run's agent calls spent it, as the agent reports it |
+| `ai-max-turns` | 100 | the agent took them all, as it reports it |
+| `ai-max-seconds` | 1200 | the engine stops waiting and kills the agent |
 | `proof-seconds` | 600 | the tests stopped past it |
 
 - **A run's time**: the agent's wait and the tests' together, 30 min,
   [ADR-0054](../../../docs/adr/0054-the-developer-takes-a-ready-issue-to-a-pull-request.md#what-bounds-it)'s
   bound for a run. A project raising one lowers the other to keep it.
+- **Turns**: 100 is a start until measured
+  ([ADR-0056](../../../docs/adr/0056-the-developers-agent-works-in-a-sandbox-with-tools.md#caps)).
 
-- **A cap reached**: a Draft, even when the tests are green. A run that
+How each agent is held ([ADR-0056](../../../docs/adr/0056-the-developers-agent-works-in-a-sandbox-with-tools.md#caps)):
+
+| Cap | `claude` | `cmd:<any>` |
+|---|---|---|
+| time | killed with the commands it started | killed, its process group whole; `WORKLINE_MAX_SECONDS` tells it |
+| turns | `--max-turns`; its `num_turns` read | `WORKLINE_MAX_TURNS` tells it; `turns` in `WORKLINE_CALL` read |
+| tokens | read from its JSON after the run | `tokens-in`, `tokens-out` in `WORKLINE_CALL` read |
+
+- **Not reported, not checked**: a command that writes no turns or
+  tokens is held by its time alone; the run says so (`cap-not-checked`).
+- **No live token cap**: tokens are read after the run; turns and time
+  hold the agent meanwhile.
+- **A cap reached**: a Draft, even when the tests are green. What the
+  agent did so far is its code: bounded, proven, pushed. A run that
   needed more than it may spend is a person's to read.
-- **The agent not waited for**: no code, nothing to prove, no pull
-  request; the claim stays.
 
 ## What it opens
 
@@ -93,7 +107,8 @@ Step 3 of
 
 - **In the claim's comment** on the issue: `proof` (result, command,
   tests passed, those red, why it did not run, `tree: fresh` and the
-  commit checked out, `at`) and `caps` (setting,
-  spent, allowed).
+  commit checked out, `at`), `caps` (setting, spent, allowed), and the
+  `turns` and `tokens` its agent reported using; a review round's, in
+  its round.
 - **Read by the auditor**
   ([ADR-0046](../../../docs/adr/0046-the-auditor-re-checks-every-roles-acts.md)).

@@ -166,11 +166,15 @@ wrapper around your own. It runs with `sh -c`, outside the repository:
 - its output is the answer: the YAML list of proposals, a code fence
   tolerated;
 - it may write what answered, in YAML, to the file `WORKLINE_CALL` names:
-  `model`, `tokens-in`, `tokens-cached`, `tokens-out`, `cost-usd`;
+  `model`, `tokens-in`, `tokens-cached`, `tokens-out`, `cost-usd`, and
+  `turns` for an agent that loops;
 - where a role checks the code out for it (the developer's), it runs in
   that worktree, its path in `WORKLINE_WORKTREE`: it edits the files in
   place, an empty answer proposing nothing else, and the engine bounds
   the diff ([the bounds](../roles/developer/docs/bounds.md#a-worktree-its-diff-is-the-code));
+  its caps in `WORKLINE_MAX_SECONDS` and `WORKLINE_MAX_TURNS`, past its
+  time its process group killed, what it did kept
+  ([the caps](../roles/developer/docs/proof.md#the-caps));
 - a non-zero exit, or no answer within the role's `model.timeout`, ends
   the run as `blocked-external`, as a used-up quota does; no answer within
   what the role's `ai-max-seconds` leaves (the committer's: 30 s) ends it

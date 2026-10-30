@@ -402,7 +402,15 @@ token), **apply** (trusted, no AI key).
    agent's still holding its output given 1 s more. Nothing more is asked,
    and the run says so (`ai-max-seconds`, a warning); the role's post
    judges as if the agent had not answered. 0 or unset, no cap; the
-   committer's is 30.
+   committer's is 30. An agent that works in a worktree is killed with
+   its process group, and the call is marked `time-cut` in
+   `out/calls.jsonl`, for post to read.
+
+   **A cap on turns.** A role setting `ai-max-turns` is told to an agent
+   that loops: `claude`'s `--max-turns`, a command's `WORKLINE_MAX_TURNS`.
+   The turns it reports land in the call's `turns`; post judges them
+   ([ADR-0056](../adr/0056-the-developers-agent-works-in-a-sandbox-with-tools.md#caps)).
+   0 or unset, none told.
 
 ### When apply stops half-way
 
