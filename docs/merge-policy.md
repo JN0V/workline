@@ -106,9 +106,9 @@ merge: {autonomy: normal}   # a project's choice, never a default
 ```
 
 At `normal`, workline's own routine pull requests merge with no label
-too — an agent's rewording of a page for its reader only once the
-project lets it; a revert sends their kind back to a person's yes. What
-counts as workline's own, the kinds, the revert and the limits:
+too — the developer's fix, not its feature; an agent's rewording of a
+page for its reader once the project lets it; a revert sends their kind
+back to a person's yes. The kinds, the revert and the limits:
 [the merge policy at `normal`](merge-policy-normal.md).
 
 ## The veto is the forge's
@@ -116,8 +116,7 @@ counts as workline's own, the kinds, the revert and the limits:
 - **Draft**: nothing is turned on; auto-merge on goes off. A draft asks
   no agent, so nothing it skips can merge
   ([ADR-0050](adr/0050-each-act-has-its-moment-and-a-wait-budget.md#4-what-the-table-holds-to)).
-- **Auto-merge turned off by a person** stays off until the label is put
-  again.
+- **Auto-merge turned off by a person** stays off until labelled again.
 - **The label taken off** turns auto-merge off.
 
 ## Where the head's verdict lives

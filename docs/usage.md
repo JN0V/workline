@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/role/config.go, internal/engine/engine.go, internal/hooks, internal/agent/claude.go, internal/agent/command.go]
-checked: 21ce8c2c
+checked: 99a14dc0
 judged: b5899f5
 verified: agent:claude-code
 ---
@@ -30,17 +30,17 @@ Each in detail: [the commands](commands.md), and
 | [`workline run-role <role> --event <event>`](commands.md#workline-run-role) | runs one role |
 | [`workline route <event>`](commands.md#workline-route) | runs the roles routing names for the event, in order |
 | [`workline apply <run-dir>...`, `--line <file>`](commands.md#workline-apply) | applies runs judged with `--no-apply`; `--main <file>`: main's findings in one issue; `--release-dry-run <file>`: what would hold the release |
-| [`workline review`](commands.md#workline-review) | the reviewer reads this branch, or a spec, before you push |
+| [`workline review`](commands-work.md#workline-review) | the reviewer reads this branch, or a spec, before you push |
 | [`workline gate <name>`](commands.md#workline-gate) | runs a gate declared in `.workline/config.yaml` |
-| [`workline test check --base <ref>`](commands.md#workline-test) | the tester's red-first check: each test the change adds fails on the base |
-| [`workline test write --issue <n>`](commands.md#workline-test) | the tester writes a ready issue's tests, proves them red, opens a Draft |
-| [`workline test answer --merge-request <n>`](commands.md#workline-test) | the tester answers an objection to one of its tests: kept, or rewritten |
-| [`workline test measure --history <file>`](commands.md#workline-test) | the tester's curator measures the test corpus: times, red and flaky tests |
-| [`workline test curate --history <file>`](commands.md#workline-test) | the curator removes a few redundant tests, proven by coverage and mutants |
-| [`workline develop`](commands.md#workline-develop) | the developer takes the first ready issue, writes its code, opens its pull request |
-| [`workline item ready <id>`](commands.md#workline-item-ready) | moves a work item to `ready`, once its sections are written |
-| [`workline issues`, `issues show <n>`](commands.md#workline-issues) | reads the issues kept in the clone (`forge: local`) |
-| [`workline issues import <file>`](commands.md#workline-issues-import) | turns a roadmap or backlog file into issues |
+| [`workline test check --base <ref>`](commands-work.md#workline-test) | the tester's red-first check: each test the change adds fails on the base |
+| [`workline test write --issue <n>`](commands-work.md#workline-test) | the tester writes a ready issue's tests, proves them red, opens a Draft |
+| [`workline test answer --merge-request <n>`](commands-work.md#workline-test) | the tester answers an objection to one of its tests: kept, or rewritten |
+| [`workline test measure --history <file>`](commands-work.md#workline-test) | the tester's curator measures the test corpus: times, red and flaky tests |
+| [`workline test curate --history <file>`](commands-work.md#workline-test) | the curator removes a few redundant tests, proven by coverage and mutants |
+| [`workline develop`](commands-work.md#workline-develop) | the developer takes the first ready issue, writes its code, opens its pull request; `--merge-request <n>`: fixes its review |
+| [`workline item ready <id>`](commands-work.md#workline-item-ready) | moves a work item to `ready`, once its sections are written |
+| [`workline issues`, `issues show <n>`](commands-work.md#workline-issues) | reads the issues kept in the clone (`forge: local`) |
+| [`workline issues import <file>`](commands-work.md#workline-issues-import) | turns a roadmap or backlog file into issues |
 | [`workline docs`](commands.md#workline-docs) | your agent fixes the docs made suspect; you keep or drop each fix |
 | [`workline sample`](commands.md#workline-sample) | the weekly sample: one in ten of every role's acts of the week, re-checked |
 | [`workline follow`](commands.md#workline-follow) | `--gardening`: rebuilds gardening's merge requests on the default branch's new tip; runs the [merge policy](merge-policy.md), when set |

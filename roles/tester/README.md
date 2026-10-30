@@ -5,7 +5,7 @@ sources:
   - ci/github/workline-objection.yml
   - ci/github/workline-answer.yml
   - ci/github/workline-gardening.yml
-checked: 10d895f1
+checked: 99a14dc0
 verified: agent:claude-code
 ---
 # Tester
@@ -48,7 +48,7 @@ file. All roles: [docs/roles.md](../../docs/roles.md). Where it stands:
   removed; proven with no agent, coverage and killed mutants kept, a
   pull request the merge policy merges ([how](docs/removals.md)).
 
-**Does not**, yet: adapt a test after a change, once the developer is built ([status](docs/status.md#missing)).
+**Does not**, yet: adapt a test after a change ([status](docs/status.md#missing)).
 
 ## Write an issue's tests
 
@@ -72,13 +72,13 @@ workline test write --issue 42 --ai claude
 - **New test files only**: what `test-paths` names, never the code nor a
   test already there.
 - **Proven red** by the check below, on the base with the tests alone.
-- **In Go, a name the code lacks** breaks the package's build: the
-  report names no new test, and `no-new-test` blocks. A test of code
-  that exists, a bug's, is proven
-  ([status](docs/status.md#missing)).
+- **In Go, a name the code lacks** breaks the package's build: no new
+  test reported, `no-new-test` blocks; a bug's test, of code that
+  exists, is proven ([status](docs/status.md#missing)).
 - **The Draft**: branch `workline/tester/issue-<n>`, `Refs #<n>`, a
-  `## Tests` table of each scenario and its test. Whoever builds the code
-  pushes on that branch.
+  `## Tests` table of each scenario and its test. The
+  [developer](../developer/docs/pull-request.md), or a person, builds
+  the code on that branch.
 
 | Finding | When; nothing is opened |
 |---|---|
@@ -119,8 +119,7 @@ workline test write --issue 42 --ai claude
   (`objection-person`: a label on the merge request, or an `@login`).
   The tester then follows the next comment of a person of the project;
   meanwhile the other objections are answered.
-- **The agent is a choice** here too: with none, `no-agent`, the
-  objection waits.
+- **The agent is a choice** here too: with none, `no-agent`, it waits.
 
 ## When it runs
 
@@ -155,10 +154,8 @@ workline test write --issue 42 --ai claude
 workline test check --base origin/main
 ```
 
-- **Exit codes**: 0 pass, 1 block, 64 misuse.
-- **`--json`**: the result as JSON; `--repo <dir>`: another checkout.
-- **The head is `HEAD` as committed**: changes not committed are not
-  read.
+- **Exit codes**: 0 pass, 1 block, 64 misuse; `--json`, `--repo <dir>`.
+- **The head is `HEAD` as committed**: changes not committed are not read.
 - **On a pull request's CI job**: the same line, the base its target
   branch; it needs the history down to the merge base (`fetch-depth: 0`
   on GitHub).
@@ -192,7 +189,7 @@ Under `roles: {tester: {settings: …}}` in `.workline/config.yaml`
 
 | Key | Default | |
 |---|---|---|
-| `test-command` | none | runs the project's tests and writes a JUnit XML report; `{report}` is its path |
+| `test-command` | none | runs the project's tests and writes a JUnit XML report; `{report}` is its path. The developer proves its code with it too |
 | `test-report` | `junit.xml` | where the report is written, from the root: a path, or a pattern one folder deep |
 | `test-paths` | each ecosystem's names | the test files, as patterns: `**/*_test.go`, `**/test_*.py`, `**/*.test.ts`, `tests/**` and others; the only files `test write` may add |
 | `build-errors` | Go's | how a build broken by a missing name reads, by ecosystem ([page](docs/missing-name.md)) |

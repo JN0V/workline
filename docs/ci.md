@@ -1,6 +1,6 @@
 ---
 sources: [ci/github, ci/gitlab, ci/forgejo/workline-forge.sh, roles/product-owner/role.yaml, cmd/workline]
-checked: eebe4270
+checked: 99a14dc0
 judged: a8574a5
 verified: agent:claude-code
 reader: 8aab3bd261d9
@@ -19,9 +19,7 @@ says what the jobs are; each forge has its page:
 - **Another forge** (Gitea, Forgejo, Codeberg…) **or none**:
   [ci-other-forges.md](ci-other-forges.md).
 - The bare command of each job, for any other trigger:
-  [triggers.md](triggers.md).
-
-Each template's header says the same, beside the code.
+  [triggers.md](triggers.md); each template's header says the same.
 
 ## The jobs
 
@@ -37,6 +35,7 @@ then one that applies, with the write token and no AI key
 | gardening | weekly, Sunday evening; nightly to catch up a backlog | the `schedule` line | one merge request a task ([ADR-0006](adr/0006-gardening-opens-one-merge-request-per-task.md)); then those the branch moved under, rebuilt or closed ([ADR-0034](adr/0034-the-release-fix-follows-its-base.md#amendment-2026-10-12-gardenings-merge-requests-follow-too-or-are-closed)) |
 | test corpus | with the gardening, opt-in | the tester's curator: each test's time, red and flaky ones over time, coverage; with an agent, a few redundant tests removed, proven | the job's summary, a history artifact ([how](../roles/tester/docs/curator.md)); a pull request ([how](../roles/tester/docs/removals.md)) |
 | ready issue | an issue labelled ready, opt-in | the `issue` line: the developer's code, proven | the claim, its pull request ([how](../roles/developer/docs/triggers.md)) |
+| a role's own merge request | an objection on the tester's Draft; a verdict or a person's comment on the developer's | the tester's answer; the developer's review round | the reply or the rewritten test; the fix, pushed on its branch ([objections](objection-jobs.md), [review loop](../roles/developer/docs/review-loop.md)) |
 | release dry run | with the gardening | what would hold the release if it were cut now; no agent | a part of main's issue ([how](release.md)) |
 | release merge request | each of its runs; on GitHub, again when the hold label changes or main's runs end | an open issue labelled `workline:hold-release`, main's tip not green: read, never run again | its check pending while main runs, red when held ([how](release-holds.md)) |
 | release, GitLab | a tag pipeline | the release's line, no agent, no token | — : red when it holds the release, so the jobs publishing it wait ([how](release.md#at-a-tag-on-gitlab)) |

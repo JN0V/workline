@@ -134,7 +134,7 @@ On an issue waiting on you, it is "revise":
 
 On `import`, `workline issues import <file>` has the agent read a committed
 file a share at a time
-([the command](../../../docs/commands.md#workline-issues-import)):
+([the command](../../../docs/commands-work.md#workline-issues-import)):
 
 - each item still to do opened as an issue quoting it, never twice;
 - every other line answered with why (`skip`);
