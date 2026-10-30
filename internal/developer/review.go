@@ -487,7 +487,7 @@ func reviewPost(runDir, repo string, s Settings) int {
 			v.Findings = append(v.Findings, f)
 		}
 		v.Summary += ", its fix pushed, the tests " + p.Result
-		if err := writeMergeRequest(runDir, map[string]any{"push": fmt.Sprintf("fix: the review's findings on #%d, round %d", a.Issue, n)}); err != nil {
+		if err := writeMergeRequest(runDir, map[string]any{"push": reviewSubject(a.Issue, n, committerSettings(repo))}); err != nil {
 			return fail(err)
 		}
 	}

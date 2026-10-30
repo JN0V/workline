@@ -14,6 +14,7 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/JN0V/workline/internal/builtin/committer"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/tester"
@@ -83,24 +84,34 @@ func written(patches []intent.Intention) (code, tests []string) {
 	return slices.Compact(code), slices.Compact(tests)
 }
 
-// testsMessage is the message of the commit holding its tests.
-func testsMessage(issue int) string {
-	return fmt.Sprintf("test: the tests beside the code of #%d", issue)
+// Subjects are its commits' subjects: its tests', its code's.
+type Subjects struct{ Tests, Code string }
+
+// subjects are its commits' subjects for the issue, as the project's
+// committer checks them: `test` and the issue's kind, the folder its
+// Scope shares, its title.
+func subjects(issue int, title, kind string, scope []string, s committer.Settings) Subjects {
+	sum := summaryOf(title, s)
+	if sum == "" {
+		sum = fmt.Sprintf("the code of #%d", issue)
+	}
+	sc := commitScope(scope)
+	return Subjects{Tests: subject("test", sc, sum, s), Code: subject(commitType(kind), sc, sum, s)}
 }
 
 // mergeRequest is out/merge-request.yaml: the branch's key, the issue's
 // title, its body; ready only when green with no cap reached; the branch
 // from the tester's Draft, the tests in a commit apart; the record kept
 // on it.
-func mergeRequest(a Act, title string) map[string]any {
+func mergeRequest(a Act, title string, sub Subjects) map[string]any {
 	ready := a.Proof != nil && a.Proof.Result == Green && len(a.Caps) == 0 && a.AgentFailed == ""
 	mr := map[string]any{"key": fmt.Sprint(a.Issue), "title": title, "body": body(a, ready), "draft": !ready,
-		"record": map[string]any{"sticky": RecordKey, "body": recordBody(a)}}
+		"record": map[string]any{"sticky": RecordKey, "body": recordBody(a)}, "message": sub.Code}
 	if a.From != "" {
 		mr["from"] = a.From
 	}
 	if len(a.Tests) > 0 {
-		mr["commits"] = []map[string]any{{"message": testsMessage(a.Issue), "files": a.Tests}}
+		mr["commits"] = []map[string]any{{"message": sub.Tests, "files": a.Tests}}
 	}
 	return mr
 }
