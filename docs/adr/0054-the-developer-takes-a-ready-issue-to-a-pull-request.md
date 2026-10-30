@@ -15,6 +15,8 @@
 - **Amended by:** [ADR-0056] (accepted 2026-10-30): the agent works with tools in
   a worktree, the engine bounds its diff after; no pasted code, no
   `patch` intention
+- **Amended by:** [ADR-0057]: at the claim, it moves the issue's
+  card to the board's Doing column, where the forge does not
 
 ## Context
 
@@ -132,7 +134,9 @@
 ### What it never does
 
 - Merge, approve, turn auto-merge on, put `workline:accepted`, resolve a
-  conversation, close or move an issue (`Closes #<n>` does it).
+  conversation, close an issue (`Closes #<n>` does it). Its card moves
+  to Doing at the claim, where the forge's own workflow does not
+  ([ADR-0057]).
 - Take an issue not `ready` or assigned; edit an acceptance test.
 
 ## For the person
@@ -334,3 +338,4 @@ plan built:
 [ADR-0051]: 0051-a-check-sits-where-its-catch-is-worth-its-cost.md
 [ADR-0055]: 0055-the-tester-writes-the-acceptance-tests-before-the-code.md
 [ADR-0056]: 0056-the-developers-agent-works-in-a-sandbox-with-tools.md
+[ADR-0057]: 0057-workline-finds-the-forges-board-and-moves-its-cards.md

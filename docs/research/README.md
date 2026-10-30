@@ -44,6 +44,7 @@ stars and dates were checked against the GitHub API that day.
 | [acceptance-test-disputes.md](acceptance-test-disputes.md) | How teams settle a builder's objection to an acceptance test: three amigos, example mapping, code owners, contracts |
 | [root-cause.md](root-cause.md) | Five whys, its limits and alternatives, and how agent frameworks ship a method as a shared skill |
 | [inspector-coverage.md](inspector-coverage.md) | Which linter fits each language, how it is suggested and installed pinned, the licences that limit it, AI in its place |
+| [forge-boards.md](forge-boards.md) | What GitHub Projects and GitLab boards move on their own, what an App may write, what agents and trackers do when work starts |
 
 ### Measured
 
