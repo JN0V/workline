@@ -39,6 +39,9 @@ type Bounds struct {
 	Frozen map[string]int `json:"frozen,omitempty"`
 	// Blobs: each frozen test's blob, as the tester's record names it.
 	Blobs map[string]string `json:"blobs,omitempty"`
+	// Unread: the issue's tester Drafts whose record could not be read,
+	// their frozen tests unknown.
+	Unread []int `json:"unread,omitempty"`
 	// Draft is the tester's open Draft for the issue, 0 when none, and
 	// Head its branch's commit, where an objection goes on a line.
 	Draft int    `json:"draft,omitempty"`
@@ -82,6 +85,9 @@ func readBounds(f forge.Forge, bl forge.Backlog, repo string, is forge.Issue) (B
 			return b, err
 		}
 		if !ok {
+			if n == is.ID {
+				b.Unread = append(b.Unread, mr.ID)
+			}
 			continue
 		}
 		for file, blob := range r.Files {

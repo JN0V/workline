@@ -102,17 +102,30 @@ func boundsPre(runDir, repo string, id int) int {
 	}
 	// The tests its own record names, frozen at the commit it started
 	// from, when the tester's Draft is closed.
+	// Frozen tests it cannot read block, never a pass (principle 12).
+	var unknown []verdict.Finding
+	for _, d := range b.Unread {
+		unknown = append(unknown, verdict.Finding{Rule: "frozen-tests-unknown", Where: fmt.Sprintf("merge request %d", d),
+			Message: "the tester's Draft for this issue holds no record it can read: which tests are frozen cannot be told, so the bounds cannot pass"})
+	}
 	if a, ok, err := ReadRecord(f, id); err != nil {
 		return external(err)
-	} else if ok && a.From != "" {
+	} else if ok {
 		for _, t := range a.Acceptance {
 			if _, frozen := b.Frozen[t]; frozen {
 				continue
 			}
-			if blob, err := gitOut(repo, "rev-parse", "-q", "--verify", a.From+":"+t); err == nil && blob != "" {
-				b.Frozen[t], b.Blobs[t] = n, blob
+			blob, err := gitOut(repo, "rev-parse", "-q", "--verify", a.From+":"+t)
+			if a.From == "" || err != nil || blob == "" {
+				unknown = append(unknown, verdict.Finding{Rule: "frozen-tests-unknown", Where: t,
+					Message: fmt.Sprintf("an acceptance test its record names, frozen at its start commit %q, which cannot be read in this clone (fetch it): what the tester wrote cannot be told, so the bounds cannot pass", shortSHA(a.From))})
+				continue
 			}
+			b.Frozen[t], b.Blobs[t] = n, blob
 		}
+	}
+	if len(unknown) > 0 {
+		return final(runDir, verdict.Verdict{Status: verdict.Block, Summary: "frozen tests unknown: the bounds were not checked", Findings: unknown})
 	}
 	files, refused, err := prRefusals(repo, b, base, head)
 	if err != nil {

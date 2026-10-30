@@ -97,7 +97,9 @@ The check above, before the push, stays a fast first pass.
   range=<base>..<head>`, else the branches as fetched.
 - **Frozen tests**: from the tester's record, with each test's blob. A
   test as the tester wrote it passes; changed or deleted, it blocks,
-  deleted even when the range shows no trace of it.
+  deleted even when the range shows no trace of it. Frozen tests it
+  cannot read (a record unread, a start commit not fetched) block,
+  `frozen-tests-unknown`, never a pass.
 - **A refused file blocks**, named with its rule; a link out of the
   tree is `symlink-out`. Its next round or a person reverts it.
 - **Kept for the auditor**: a comment on the pull request,
