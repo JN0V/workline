@@ -14,7 +14,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
 	"strings"
 
@@ -68,10 +67,7 @@ func worktreeCode(runDir, base string) (patches []intent.Intention, refused []Re
 func notTextFile(tree, name, diff string) string {
 	if st, err := os.Lstat(filepath.Join(tree, filepath.FromSlash(name))); err == nil && st.Mode()&os.ModeSymlink != 0 {
 		to, err := os.Readlink(filepath.Join(tree, filepath.FromSlash(name)))
-		if err != nil || path.IsAbs(filepath.ToSlash(to)) || filepath.IsAbs(to) {
-			return "symlink-out"
-		}
-		if p := path.Join(path.Dir(name), filepath.ToSlash(to)); p == ".." || strings.HasPrefix(p, "../") {
+		if err != nil || linkOut(name, to) {
 			return "symlink-out"
 		}
 		return "not-text"

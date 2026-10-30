@@ -1199,6 +1199,7 @@ func developCmd(args []string) int {
 	repo := fs.String("repo", ".", "repository to work on")
 	issue := fs.Int("issue", 0, "the ready issue to take, rather than the first in the backlog's order")
 	mr := fs.Int("merge-request", 0, "a review round on its own pull request: the findings of the reviewer's last verdict and a person's comments, fixed and pushed on its branch")
+	bounds := fs.Bool("bounds", false, "with --merge-request: no round, its bounds checked on the pull request, no agent: each file changed since its base held to its issue's bounds, read at the base's tip; one refused blocks")
 	ai := fs.String("ai", "", "agent: none, claude, cmd:<command> (default: the project's `ai` setting, else none); with none, the issue is named, nothing claimed")
 	forgeSpec := fs.String("forge", "", "forge: github, gitlab, local, fake:<file> (default: the project's `forge` setting)")
 	roles := fs.String("roles", os.Getenv("WORKLINE_ROLES"), "folder holding the roles")
@@ -1212,6 +1213,10 @@ func developCmd(args []string) int {
 	switch {
 	case *issue > 0 && *mr > 0:
 		return misuse(fs, "--issue or --merge-request: a ready issue to take, or its pull request to fix the review of")
+	case *bounds && *mr <= 0:
+		return misuse(fs, "--bounds checks a pull request: --merge-request <n>")
+	case *bounds:
+		target, event = &forge.Target{Kind: "merge-request", ID: *mr}, "merge-request"
 	case *issue > 0:
 		target = &forge.Target{Kind: "issue", ID: *issue}
 	case *mr > 0:

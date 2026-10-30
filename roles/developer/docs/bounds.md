@@ -3,8 +3,9 @@ sources:
   - internal/developer/bounds.go
   - internal/developer/developer.go
   - internal/developer/worktree.go
+  - internal/developer/prbounds.go
   - internal/steer/steer.go
-checked: 98d1a6a6
+checked: 87d9ef80
 verified: agent:claude-code
 ---
 # The bounds: what its code may never touch
@@ -76,6 +77,37 @@ what each agent gets: [the agent](agent.md)).
 - **Reverted**: a refused file leaves nothing. The worktree stays
   while the agent may be asked again, then the engine removes it,
   whatever post did; only what passes the bounds goes on.
+
+## On the pull request
+
+The same rules hold on its pull request, as a check: whoever pushed
+its commits, the agent, a person or the engine
+([ADR-0058](../../../docs/adr/0058-the-forge-guards-the-project-not-the-agents-environment.md#4-the-developers-bounds-become-a-check-on-its-pull-request)).
+The check above, before the push, stays a fast first pass.
+
+- **Run**: `workline develop --bounds --merge-request <n>`, or the
+  developer listed on the `merge-request` event's line
+  (`routing.events.merge-request`). No agent.
+- **Which pull requests**: a `workline/developer/<n>` branch, held to
+  issue `n`'s bounds. Another branch is a person's: it passes, said
+  (`not-a-developers-branch`), and is reviewed as theirs.
+- **What it reads**: each file the head changed since its merge base,
+  its rules read at the base's tip, never at the head: a pull request
+  cannot loosen its own check. The head and base: `--input
+  range=<base>..<head>`, else the branches as fetched.
+- **Frozen tests**: from the tester's record, with each test's blob. A
+  test as the tester wrote it passes; changed or deleted, it blocks,
+  deleted even when the range shows no trace of it. Frozen tests it
+  cannot read (a record unread, a start commit not fetched) block,
+  `frozen-tests-unknown`, never a pass.
+- **A refused file blocks**, named with its rule; a link out of the
+  tree is `symlink-out`. Its next round or a person reverts it.
+- **Kept for the auditor**: a comment on the pull request,
+  `sticky=developer/bounds`, its hidden record `act: bounds` with each
+  file refused, kept even when it blocks.
+- **Not yet**: the check required on the default branch, run from its
+  definition, in the CI templates (step 2 of
+  [the ADR's plan](../../../docs/adr/0058-the-forge-guards-the-project-not-the-agents-environment.md#build-plan)).
 
 ## Why these rules
 

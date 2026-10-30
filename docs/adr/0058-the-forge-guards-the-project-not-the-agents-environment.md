@@ -128,7 +128,7 @@ One pull request a step, its cases first in
 `tests/conformance/cases/developer/`, `pending.txt` listing what does
 not pass.
 
-1. **The bounds as a check**: `workline developer bounds --pr <n>`,
+1. **The bounds as a check**: `workline develop --bounds --merge-request <n>`,
    its verdict as a check run. Cases:
    `developer-pr-bounds-refuses-out-of-scope`,
    `developer-pr-bounds-refuses-frozen-test`,

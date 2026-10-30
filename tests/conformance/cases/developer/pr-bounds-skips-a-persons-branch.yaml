@@ -1,0 +1,26 @@
+case: developer/pr-bounds-skips-a-persons-branch
+about: >
+  The bounds on the pull request (ADR-0058, step 1) hold the developer's
+  branches alone: a person's pull request, from a branch of their own,
+  changing AGENTS.md, passes this check, said, and is reviewed as a
+  person's; nothing is kept on it.
+given:
+  repo: tested-draft
+  setup:
+    - "git checkout -q -b fix-mul && printf 'Be terse.\\n' > AGENTS.md && git add -A && git commit -qm 'docs: terse' && git checkout -q main"
+  forge:
+    merge-requests:
+      - id: 2
+        branch: fix-mul
+        base: main
+        title: "Be terse"
+run: {develop: [--bounds, --merge-request, "2"], ai: none}
+expect:
+  status: pass
+  agent-calls: 0
+  findings:
+    - {rule: not-a-developers-branch, level: info, where: "merge request 2", message: "a person's"}
+  no-findings: [{rule: steering-file}]
+  forge:
+    merge-requests:
+      - {id: 2, comments: 0}

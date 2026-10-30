@@ -117,6 +117,17 @@ hold:
   `local-run-with-credential-helper-starts`,
   `local-run-says-person-rights`, `local-pr-says-person-rights`,
   `review-round-with-credential-starts`.
+- **The bounds on its pull request** (step 1 of
+  [ADR-0058](../../../docs/adr/0058-the-forge-guards-the-project-not-the-agents-environment.md#build-plan)):
+  `workline develop --bounds --merge-request <n>`, or routed on
+  `merge-request`, no agent; each file its branch changed held to the
+  bounds read at the base's tip, whoever pushed; its record kept on
+  the pull request ([the bounds](bounds.md#on-the-pull-request)). Cases
+  `developer/pr-bounds-refuses-out-of-scope`,
+  `pr-bounds-refuses-frozen-test`, `pr-bounds-refuses-steering-file`,
+  `pr-bounds-passes-in-scope`, `pr-bounds-skips-a-persons-branch`,
+  `pr-bounds-refuses-frozen-test-deleted`, `pr-bounds-reads-rules-at-base`,
+  `pr-bounds-blocks-frozen-tests-unknown`, `pr-bounds-blocks-tester-record-unread`.
 - **The proof on a fresh tree** (step 3): a checkout of the start
   commit in a repository of its own, never the agent's worktree, its
   git store's refs, replacements and config not read; its record says
@@ -201,6 +212,10 @@ prove the grading first (`TestDeveloperWithStandIns`).
 
 ## Missing
 
+- **The bounds check required in the templates**, run from the default
+  branch's definition (GitHub's `pull_request_target`; GitLab by tier):
+  step 2 of
+  [ADR-0058](../../../docs/adr/0058-the-forge-guards-the-project-not-the-agents-environment.md#build-plan).
 - **Its shell boxed in its worktree**: Claude Code's sandbox, writes in
   the worktree only, no network by default
   ([#719](https://github.com/JN0V/workline/issues/719)).
