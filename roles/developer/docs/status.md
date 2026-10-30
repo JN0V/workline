@@ -131,7 +131,9 @@ hold:
   read, edit, search and shell, none asking a person; the question
   names the issue, its Scope, the frozen tests and the test command,
   no code pasted; the tools it used in the record
-  ([the agent](agent.md)). Case `developer/claude-runs-in-worktree`,
+  ([the agent](agent.md)); the repository's Claude Code settings not
+  loaded, its shell without its login. Cases
+  `developer/claude-runs-in-worktree`, `claude-ignores-project-settings`,
   with a stand-in for claude: no real call measured yet (step 7).
 
 - **The review loop** (step 6): a fresh run a reviewer's verdict or a
@@ -189,6 +191,9 @@ prove the grading first (`TestDeveloperWithStandIns`).
 
 ## Missing
 
+- **Its shell boxed in its worktree**: Claude Code's sandbox, writes in
+  the worktree only, no network by default
+  ([#719](https://github.com/JN0V/workline/issues/719)).
 
 - **A review round in a worktree**: a round's agent still answers
   patches, the Scope's code pasted in its question; step 6 of

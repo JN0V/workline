@@ -48,8 +48,14 @@ Checked against Claude Code 2.1.314; each flag in its `--help`:
   ([the caps](proof.md#the-caps)).
 - **No session kept**: `--no-session-persistence`.
 - **Its prompt**: Claude Code's own, for its tools, then the role's
-  (`--append-system-prompt`). Run in the worktree, it reads the
-  project's `CLAUDE.md` as a person's session would.
+  (`--append-system-prompt`).
+- **The repository does not configure it**: `--setting-sources user`,
+  the person's settings only. The worktree's `.claude/` settings
+  (hooks, permissions) and `CLAUDE.md` are not loaded: a hook there
+  would run a command, a permission widen its tools. It may read the
+  project's conventions as any file.
+- **Its shell without its login**: `CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=1`;
+  Claude Code takes its key or token out of the commands' environment.
 - **What it used**: `--output-format stream-json --verbose`; its
   turns, tokens and the tools it used, one count a tool, go in the
   claim's record.
@@ -69,6 +75,12 @@ none. Closing words that are no list lose nothing of its code: read
 as no objection, and said (`answer-mended`).
 
 ## Not yet
+
+- **Its shell boxed in its worktree**: today it runs as the job's
+  user, the network as the runner allows it; Claude Code's sandbox
+  needs bubblewrap and user namespaces the runners do not all give
+  ([#719](https://github.com/JN0V/workline/issues/719),
+  [ADR-0056](../../../docs/adr/0056-the-developers-agent-works-in-a-sandbox-with-tools.md#amendment-the-agents-settings-and-its-shell)).
 
 - **A review round** answers patches, the Scope's code pasted in its
   question: step 6 of

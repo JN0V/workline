@@ -194,6 +194,24 @@ not pass.
   (principle 10), but the line's default stays CI; a person is not a
   runner.
 
+## Amendment: the agent's settings and its shell
+
+Added 2026-10-30, at step 5's review.
+
+- **The repository does not configure `claude`**: `--setting-sources
+  user`. Its `.claude/` hooks would run commands, its permissions widen
+  the tools; `CLAUDE.md` is not loaded either, the role's facets stay
+  its context. The agent may read the project's conventions as files.
+- **Its shell never sees its login**: `CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=1`,
+  Claude Code's own scrub, on by default in GitHub Actions.
+- **Not yet, its shell boxed**: Claude Code's sandbox (`sandbox.enabled`,
+  `network.allowedDomains`, `filesystem.allowWrite`) needs bubblewrap
+  and unprivileged user namespaces, which Ubuntu 24.04+ restricts by
+  AppArmor and a Docker runner may not give. Until each template's
+  runner is tried, a same-user process may still read the login, write
+  outside the worktree, reach the network
+  ([#719](https://github.com/JN0V/workline/issues/719)).
+
 [ADR-0042]: 0042-the-engine-merges-by-the-projects-policy.md
 [ADR-0044]: 0044-the-apps-key-stays-with-the-default-branchs-runs.md
 [ADR-0050]: 0050-each-act-has-its-moment-and-a-wait-budget.md
