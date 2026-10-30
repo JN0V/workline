@@ -13,7 +13,6 @@ package developer
 // the auditor (ADR-0046).
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -23,8 +22,6 @@ import (
 	"slices"
 	"strconv"
 	"strings"
-
-	"go.yaml.in/yaml/v3"
 
 	"github.com/JN0V/workline/internal/agent"
 	"github.com/JN0V/workline/internal/forge"
@@ -45,15 +42,16 @@ var (
 
 // Round is one round of the review loop, as the record keeps it.
 type Round struct {
-	N      int      `json:"n"`
-	Asked  []string `json:"asked,omitempty"`  // the findings asked, each as its row reads
-	Heard  int      `json:"heard,omitempty"`  // a person's comments read
-	Nits   int      `json:"nits,omitempty"`   // nits said, not asked
-	Result string   `json:"result,omitempty"` // its proof's result; no-code when it wrote none
-	Whys   bool     `json:"whys,omitempty"`   // the five whys ran
-	Person bool     `json:"person,omitempty"` // past the last round: handed to a person
-	Turns  int      `json:"turns,omitempty"`  // what its agent used, as it reported them
-	Tokens int      `json:"tokens,omitempty"`
+	N      int            `json:"n"`
+	Asked  []string       `json:"asked,omitempty"`  // the findings asked, each as its row reads
+	Heard  int            `json:"heard,omitempty"`  // a person's comments read
+	Nits   int            `json:"nits,omitempty"`   // nits said, not asked
+	Result string         `json:"result,omitempty"` // its proof's result; no-code when it wrote none
+	Whys   bool           `json:"whys,omitempty"`   // the five whys ran
+	Person bool           `json:"person,omitempty"` // past the last round: handed to a person
+	Turns  int            `json:"turns,omitempty"`  // what its agent used, as it reported them
+	Tokens int            `json:"tokens,omitempty"`
+	Tools  map[string]int `json:"tools,omitempty"`
 }
 
 // Asked is a finding a round asks the agent to fix: a reviewer's row that
@@ -79,7 +77,8 @@ type round struct {
 	Nits     int      `json:"nits"`
 	Runs     int      `json:"review-runs"`
 	FiveWhys bool     `json:"five-whys"`
-	Person   bool     `json:"person"` // past the last round: no agent, a person
+	Person   bool     `json:"person"`       // past the last round: no agent, a person
+	At       string   `json:"at,omitempty"` // its branch's head, where its fix starts
 }
 
 // reviewRows reads the findings of the reviewer's comment: what blocks,
@@ -278,7 +277,7 @@ func reviewPre(runDir, repo string, s Settings, id int) int {
 	}
 	if a.Round >= s.Rounds {
 		r.Person = true
-		if err := writeRound(runDir, r); err != nil {
+		if err := writeIn(runDir, roundFile, r); err != nil {
 			return fail(err)
 		}
 		return writeIntents(runDir, "fallback.yaml", handOff(r, s))
@@ -303,11 +302,12 @@ func reviewPre(runDir, repo string, s Settings, id int) int {
 	for _, t := range a.Acceptance { // frozen, on its branch, whatever the tester's Draft
 		bounds.Frozen[t] = issue
 	}
-	if err := writeRound(runDir, r); err != nil {
-		return fail(err)
+	// Its fix starts from its branch's head, checked out: a head git
+	// cannot read fails the round, never counted for nothing.
+	if r.At, err = gitOut(repo, "rev-parse", "HEAD"); err != nil {
+		return fail(fmt.Errorf("the round's code: git cannot read its branch's head in %s: %w", repo, err))
 	}
-	data, _ := json.Marshal(bounds)
-	if err := os.WriteFile(filepath.Join(runDir, "in", boundsFile), data, 0o644); err != nil {
+	if err := writeIn(runDir, roundFile, r); err != nil {
 		return fail(err)
 	}
 	if r.FiveWhys {
@@ -315,32 +315,19 @@ func reviewPre(runDir, repo string, s Settings, id int) int {
 			return fail(err)
 		}
 	}
-	code, err := roundCode(repo, bounds)
-	if err != nil {
-		return fail(err)
-	}
-	return writeFile(runDir, "task.md", roundTask(r, *is, bounds, s, code))
+	ts, tsErr := testerSettings(repo)
+	return ask(runDir, repo, r.At, bounds, roundTask(r, *is, bounds, s, ts.Command, tsErr))
 }
 
-// roundCode is the Scope's code as its branch, checked out, holds it. A
-// head git cannot read fails the round: an agent shown no code writes no
-// patch, and the round would count for nothing.
-func roundCode(repo string, b Bounds) (string, error) {
-	head, err := gitOut(repo, "rev-parse", "HEAD")
-	if err != nil {
-		return "", fmt.Errorf("the round's code: git cannot read its branch's head in %s: %w", repo, err)
-	}
-	return scopeCode(repo, head, b)
-}
-
-// roundTask is the round's question: the issue, the trace of the rounds
-// before, the findings to fix, and what bounds the code.
-func roundTask(r round, is forge.Issue, b Bounds, s Settings, code string) string {
+// roundTask is the round's question: the trace of the rounds before, the
+// findings to fix, then what an issue run asks (the issue, its bounds,
+// the test command), and the round's answer. No code: its agent reads its
+// branch in its worktree (ADR-0056, step 6).
+func roundTask(r round, is forge.Issue, b Bounds, s Settings, test string, testErr error) string {
 	var t strings.Builder
 	n := r.Record.Round + 1
 	fmt.Fprintf(&t, "# Review round %d of %d on your pull request %d, for issue #%d: %s\n\n", n, s.Rounds, r.MR, is.ID, is.Title)
-	t.WriteString("You wrote this pull request's code; you remember none of it. What you did is below, from its record, and the code in scope is below, as its branch holds it.\n\n")
-	fmt.Fprintf(&t, "## The issue\n\n%s\n\n", strings.TrimSpace(is.Body))
+	t.WriteString("You wrote this pull request's code; you remember none of it. What you did is below, from its record; your worktree holds its branch.\n\n")
 	if len(r.Record.Rounds) > 0 {
 		t.WriteString("## The rounds before, from its record\n\n")
 		for _, x := range r.Record.Rounds {
@@ -373,24 +360,9 @@ func roundTask(r round, is forge.Issue, b Bounds, s Settings, code string) strin
 	if r.Nits > 0 {
 		fmt.Fprintf(&t, "\nThe reviewer showed %d nit%s too: not asked, leave them.\n", r.Nits, plural(r.Nits))
 	}
-	t.WriteString("\n## What you may touch\n\n")
-	for _, p := range b.Scope {
-		fmt.Fprintf(&t, "- `%s`\n", p)
-	}
-	t.WriteString("- the tests beside them. Anything else is refused at apply: the files that steer agents, a role's folder, `.workline/`, the CI's workflows, a gate's definition.\n")
-	if frozen := b.acceptance(); len(frozen) > 0 {
-		t.WriteString("\nThe tester's acceptance tests are frozen, read-only to you: ")
-		for i, f := range frozen {
-			if i > 0 {
-				t.WriteString(", ")
-			}
-			fmt.Fprintf(&t, "`%s`", f)
-		}
-		t.WriteString(".\n")
-	}
-	t.WriteString(code)
-	t.WriteString("\n## Your answer\n\nPatches that fix what is asked, the cause and not the symptom; and a `note`, one line a finding, what you did. " +
-		"A finding you hold wrong: say why in the note, patch nothing for it; the reviewer decides a finding is fixed.\n")
+	t.WriteString("\n" + question(is, b, test, testErr, s))
+	t.WriteString("Its diff is your fix: the cause, not the symptom. Then answer a `note` a finding, one line, what you did; " +
+		"a finding you hold wrong: say why in its note, change nothing for it, the reviewer decides a finding is fixed. An objection, if any, as above.\n")
 	if r.FiveWhys {
 		t.WriteString("\n**The five whys**: a finding is still there at this round. First run the five whys skill below on it; give the analysis as its own `note`, and fix the root cause it names.\n")
 	}
@@ -438,9 +410,7 @@ func askedList(l []Asked) string {
 // its branch, the round kept in its record.
 func reviewPost(runDir, repo string, s Settings) int {
 	var r round
-	if data, err := os.ReadFile(filepath.Join(runDir, "in", roundFile)); err != nil {
-		return fail(err)
-	} else if err := json.Unmarshal(data, &r); err != nil {
+	if err := readIn(runDir, roundFile, &r); err != nil {
 		return fail(err)
 	}
 	where := fmt.Sprintf("merge request %d", r.MR)
@@ -450,9 +420,7 @@ func reviewPost(runDir, repo string, s Settings) int {
 				Message: fmt.Sprintf("%d rounds did not settle the review: labelled %s", r.Record.Round, s.Person)}}})
 	}
 	var b Bounds
-	if data, err := os.ReadFile(filepath.Join(runDir, "in", boundsFile)); err != nil {
-		return fail(err)
-	} else if err := json.Unmarshal(data, &b); err != nil {
+	if err := readIn(runDir, boundsFile, &b); err != nil {
 		return fail(err)
 	}
 	proposed, err := intent.Read(filepath.Join(runDir, "out", "intentions.yaml"))
@@ -485,16 +453,15 @@ func reviewPost(runDir, repo string, s Settings) int {
 		}
 		analysis = w.Markdown()
 	}
-	kept, refused, said := bounded(repo, b, nil, rest)
+	// Its worktree's diff from its branch's head, held as an issue run's.
+	kept, refused, said, err := held(runDir, repo, r.At, b, nil, rest)
+	if err != nil {
+		return fail(err)
+	}
 	a := r.Record
 	n := a.Round + 1
-	v := verdict.Verdict{Status: verdict.Pass, Summary: fmt.Sprintf("round %d of %d on %s", n, s.Rounds, where)}
-	for _, x := range refused {
-		v.Findings = append(v.Findings, verdict.Finding{Rule: x.Rule, Level: "warn", Where: x.File, Message: "refused at apply, its patch left out: " + why(x)})
-	}
-	for _, w := range said {
-		v.Findings = append(v.Findings, verdict.Finding{Rule: "not-the-developers", Level: "warn", Where: where, Message: "refused at apply: " + w})
-	}
+	v := verdict.Verdict{Status: verdict.Pass, Summary: fmt.Sprintf("round %d of %d on %s", n, s.Rounds, where),
+		Findings: refusalFindings(where, refused, said)}
 	var patches, others []intent.Intention
 	for _, in := range kept {
 		if in.Kind == "patch" && unchanged(repo, in.Value) {
@@ -513,31 +480,17 @@ func reviewPost(runDir, repo string, s Settings) int {
 		v.Findings = append(v.Findings, verdict.Finding{Rule: "no-code", Level: "warn", Where: where,
 			Message: "its agent wrote no fix within its bounds that changes the branch: the round is counted, nothing pushed"})
 	} else {
-		p, over := prove(repo, "HEAD", patches, s)
-		this.Result = p.Result
-		u := used(runDir)
-		this.Turns, this.Tokens = u.Turns, u.Tokens
-		a.Proof, a.Caps = &p, agentCaps(u, s)
-		if over != nil {
-			a.Caps = append(a.Caps, *over)
-		}
+		p, u, caps, found := proven(runDir, repo, r.At, where, patches, s)
+		this.Result, this.Turns, this.Tokens, this.Tools = p.Result, u.Turns, u.Tokens, u.Tools
+		a.Proof, a.Caps = &p, caps
 		code, tests := written(patches)
 		a.Code, a.Tests = union(a.Code, code), union(a.Tests, tests)
-		found := append(unreported(where, u, s), proofFindings(where, p, a.Caps)...)
-		if u.failed != "" {
-			found = append([]verdict.Finding{agentFailed(where, u.failed)}, found...)
-		}
 		for _, f := range found {
 			f.Message = strings.ReplaceAll(f.Message, "; its pull request opens as a Draft", "; pushed, the forge's checks and the reviewer read it next")
 			v.Findings = append(v.Findings, f)
 		}
 		v.Summary += ", its fix pushed, the tests " + p.Result
-		msg := fmt.Sprintf("fix: the review's findings on #%d, round %d", a.Issue, n)
-		data, err := yaml.Marshal(map[string]any{"push": msg})
-		if err != nil {
-			return fail(err)
-		}
-		if err := os.WriteFile(filepath.Join(runDir, "out", "merge-request.yaml"), data, 0o644); err != nil {
+		if err := writeMergeRequest(runDir, map[string]any{"push": fmt.Sprintf("fix: the review's findings on #%d, round %d", a.Issue, n)}); err != nil {
 			return fail(err)
 		}
 	}
@@ -660,21 +613,6 @@ func union(a, b []string) []string {
 	}
 	slices.Sort(out)
 	return out
-}
-
-func writeRound(runDir string, r round) error {
-	data, err := json.Marshal(r)
-	if err != nil {
-		return err
-	}
-	return os.WriteFile(filepath.Join(runDir, "in", roundFile), data, 0o644)
-}
-
-func writeFile(runDir, name, text string) int {
-	if err := os.WriteFile(filepath.Join(runDir, "in", name), []byte(text), 0o644); err != nil {
-		return fail(err)
-	}
-	return 0
 }
 
 // writeIntents writes in/<name> (pre's fallback) or, name "", the run's

@@ -335,28 +335,27 @@ func Pre(runDir, repo string) int {
 	// Its code starts from the tester's Draft: the acceptance tests on it
 	// run in the proof (ADR-0054, step 4).
 	act.From, act.Acceptance = bounds.Head, bounds.acceptance()
-	data, _ := json.Marshal(act)
-	if err := os.WriteFile(filepath.Join(runDir, "in", pickFile), data, 0o644); err != nil {
-		return fail(err)
-	}
-	if data, err = json.Marshal(bounds); err != nil {
-		return fail(err)
-	}
-	if err := os.WriteFile(filepath.Join(runDir, "in", boundsFile), data, 0o644); err != nil {
+	if err := writeIn(runDir, pickFile, act); err != nil {
 		return fail(err)
 	}
 	on := at
 	if bounds.Head != "" {
 		on = bounds.Head // its code starts from the tester's Draft
 	}
-	// The question names the code, never pastes it: its agent reads it
-	// in its worktree (ADR-0056).
 	ts, tsErr := testerSettings(repo) // none set, or unread, is said in the question; the proof says it again
-	task := taskText(is, bounds, ts.Command, tsErr, s)
+	return ask(runDir, repo, on, bounds, taskText(is, bounds, ts.Command, tsErr, s))
+}
+
+// ask leaves its agent the question, a worktree of the commit on where it
+// edits, and the bounds post holds its diff to. The question names the
+// code, never pastes it: its agent reads it in its worktree (ADR-0056).
+func ask(runDir, repo, on string, b Bounds, task string) int {
+	if err := writeIn(runDir, boundsFile, b); err != nil {
+		return fail(err)
+	}
 	if err := os.WriteFile(filepath.Join(runDir, "in", "task.md"), []byte(task), 0o644); err != nil {
 		return fail(err)
 	}
-	// A worktree of that commit, where its agent edits (ADR-0056).
 	if err := openWorktree(runDir, repo, on); err != nil {
 		return fail(err)
 	}
@@ -408,6 +407,14 @@ func claimOf(a Act, s Settings) []intent.Intention {
 // read (testErr). No code: its agent reads, edits and runs it in its
 // worktree (ADR-0056).
 func taskText(is forge.Issue, b Bounds, test string, testErr error, s Settings) string {
+	return question(is, b, test, testErr, s) +
+		"Its diff is your code. Then answer objections if any, `[]` if none: no label, no other comment, the claim is the engine's.\n"
+}
+
+// question is what an issue run and a review round ask alike: the issue,
+// what bounds the code and the run, the frozen tests, the test command;
+// it ends on the answer's first words, the caller's own rules after them.
+func question(is forge.Issue, b Bounds, test string, testErr error, s Settings) string {
 	var t strings.Builder
 	fmt.Fprintf(&t, "# Issue #%d: %s\n\n%s\n\n## What you may change\n\n", is.ID, is.Title, strings.TrimSpace(is.Body))
 	if len(b.Scope) == 0 {
@@ -452,8 +459,7 @@ func taskText(is forge.Issue, b Bounds, test string, testErr error, s Settings) 
 		fmt.Fprintf(&t, "- %d seconds at most: past them you are stopped, your edits kept as they are.\n", s.MaxSeconds)
 	}
 	t.WriteString("- No commit, no push, no branch: the engine commits your edits and opens the pull request.\n")
-	t.WriteString("\n## Your answer\n\nEdit the files in your worktree, your working directory (`WORKLINE_WORKTREE` for a command), and run the tests. " +
-		"Its diff is your code. Then answer objections if any, `[]` if none: no label, no other comment, the claim is the engine's.\n")
+	t.WriteString("\n## Your answer\n\nEdit the files in your worktree, your working directory (`WORKLINE_WORKTREE` for a command), and run the tests. ")
 	return t.String()
 }
 
@@ -467,53 +473,6 @@ func (b Bounds) acceptance() []string {
 	}
 	slices.Sort(out)
 	return out
-}
-
-// codeRoom is the most of the Scope's code a question shows, in bytes:
-// about 25k tokens, under the role's context budget with the rest.
-const codeRoom = 100_000
-
-// scopeCode is the code the agent may touch, as it reads on the commit its
-// code starts from, for a review round: its agent has no worktree there
-// yet (ADR-0056, step 6), so a file it is not shown, it cannot patch
-// (measured, docs/status.md). A Scope's folder shows its
-// files; a path not there yet is said; past codeRoom, files are named.
-// A git that cannot read the commit is an error, never read as a path not
-// there yet: the agent would write over a file it was not shown.
-func scopeCode(repo, at string, b Bounds) (string, error) {
-	if at == "" || len(b.Scope) == 0 {
-		return "", nil
-	}
-	var t strings.Builder
-	t.WriteString("\n## The code in scope, as it reads\n\n")
-	room := codeRoom
-	for _, p := range b.Scope {
-		// A path absent from the commit lists nothing, with no error.
-		list, err := gitOut(repo, "ls-tree", "-r", "--name-only", at, "--", p)
-		if err != nil {
-			return "", fmt.Errorf("the code in scope: git cannot list %s at %s: %w", p, at, err)
-		}
-		if list == "" {
-			fmt.Fprintf(&t, "- `%s`: not there yet; a patch creates it.\n", p)
-			continue
-		}
-		for _, f := range strings.Split(list, "\n") {
-			if _, frozen := b.Frozen[f]; frozen {
-				continue // shown with the acceptance tests
-			}
-			text, err := gitOut(repo, "show", at+":"+f)
-			switch {
-			case err != nil:
-				fmt.Fprintf(&t, "- `%s`: not shown, git cannot read it.\n", f)
-			case len(text) > room:
-				fmt.Fprintf(&t, "- `%s`: not shown, over the question's room.\n", f)
-			default:
-				room -= len(text)
-				fmt.Fprintf(&t, "### `%s`\n\n```\n%s\n```\n\n", f, text)
-			}
-		}
-	}
-	return t.String(), nil
 }
 
 // claimBody is the comment the claim leaves on the issue, its record hidden.
@@ -544,55 +503,30 @@ func claimBody(a Act, s Settings) string {
 // claim, the patches within them and the objections kept, the rest
 // refused and said, in the verdict and in the claim's record.
 func Post(runDir, repo string) int {
-	if _, err := os.Stat(filepath.Join(runDir, "in", roundFile)); err == nil {
-		s, err := settingsIn(runDir)
-		if err != nil {
-			return fail(err)
-		}
-		return reviewPost(runDir, repo, s)
-	}
-	var a Act
-	data, err := os.ReadFile(filepath.Join(runDir, "in", pickFile))
-	if err != nil {
-		return fail(err)
-	}
-	if err := json.Unmarshal(data, &a); err != nil {
-		return fail(err)
-	}
-	var b Bounds
-	if data, err = os.ReadFile(filepath.Join(runDir, "in", boundsFile)); err != nil {
-		return fail(err)
-	}
-	if err := json.Unmarshal(data, &b); err != nil {
-		return fail(err)
-	}
 	s, err := settingsIn(runDir)
 	if err != nil {
 		return fail(err)
 	}
-	// What its agent edited in the worktree is code too: its diff, held
-	// to the same bounds; the engine removes the worktree (ADR-0056).
-	base := a.At
-	if a.From != "" {
-		base = a.From
+	if _, err := os.Stat(filepath.Join(runDir, "in", roundFile)); err == nil {
+		return reviewPost(runDir, repo, s)
 	}
-	fromTree, treeRefused, err := worktreeCode(runDir, base)
-	if err != nil {
+	var a Act
+	var b Bounds
+	if err := readIn(runDir, pickFile, &a); err != nil {
 		return fail(err)
 	}
+	if err := readIn(runDir, boundsFile, &b); err != nil {
+		return fail(err)
+	}
+	where := fmt.Sprintf("#%d", a.Issue)
 	// Another run may have claimed the issue while its agent coded: read
 	// again, it backs off, nothing claimed nor opened (docs/triggers.md).
 	if why := takenMeanwhile(repo, a.Issue, s); why != "" {
-		if err := os.Remove(filepath.Join(runDir, "out", "intentions.yaml")); err != nil && !errors.Is(err, os.ErrNotExist) {
-			return fail(err)
+		if code := writeIntents(runDir, "", nil); code != 0 {
+			return code
 		}
-		where := fmt.Sprintf("#%d", a.Issue)
-		v := verdict.Verdict{Status: verdict.Pass, Summary: where + " taken meanwhile: nothing claimed, its code left",
-			Findings: []verdict.Finding{{Rule: "taken-meanwhile", Level: "warn", Where: where, Message: why + " while its agent coded: another run took it first"}}}
-		if err := verdict.Write(filepath.Join(runDir, "out", "verdict.yaml"), &v); err != nil {
-			return fail(err)
-		}
-		return 0
+		return writeVerdict(runDir, verdict.Verdict{Status: verdict.Pass, Summary: where + " taken meanwhile: nothing claimed, its code left",
+			Findings: []verdict.Finding{{Rule: "taken-meanwhile", Level: "warn", Where: where, Message: why + " while its agent coded: another run took it first"}}})
 	}
 	proposed, err := intent.Read(filepath.Join(runDir, "out", "intentions.yaml"))
 	if err != nil {
@@ -602,20 +536,20 @@ func Post(runDir, repo string) int {
 	if err != nil {
 		return fail(err)
 	}
-	kept, refused, said := bounded(repo, b, claim, append(proposed, fromTree...))
-	refused = append(treeRefused, refused...)
+	on := a.At
+	if a.From != "" {
+		on = a.From // the tester's Draft, its acceptance tests on it
+	}
+	kept, refused, said, err := held(runDir, repo, on, b, claim, proposed)
+	if err != nil {
+		return fail(err)
+	}
 	a.Refused = refused
-	where := fmt.Sprintf("#%d", a.Issue)
 	v := verdict.Verdict{Status: verdict.Pass, Summary: "took " + where}
 	for _, p := range a.Passed {
 		v.Findings = append(v.Findings, verdict.Finding{Rule: "issue-passed", Level: "info", Where: fmt.Sprintf("#%d", p.Issue), Message: p.Why})
 	}
-	for _, r := range refused {
-		v.Findings = append(v.Findings, verdict.Finding{Rule: r.Rule, Level: "warn", Where: r.File, Message: "refused at apply, its patch left out: " + why(r)})
-	}
-	for _, w := range said {
-		v.Findings = append(v.Findings, verdict.Finding{Rule: "not-the-developers", Level: "warn", Where: where, Message: "refused at apply: " + w})
-	}
+	v.Findings = append(v.Findings, refusalFindings(where, refused, said)...)
 	if n := len(refused) + len(said); n > 0 {
 		v.Summary += fmt.Sprintf("; %d of its agent's proposals refused at apply", n)
 	}
@@ -630,23 +564,10 @@ func Post(runDir, repo string) int {
 			Message: "its agent wrote no code within its bounds: nothing to prove, no pull request; the claim stays until a person removes it"})
 	} else {
 		a.Code, a.Tests = written(patches)
-		on := a.At
-		if a.From != "" {
-			on = a.From // the tester's Draft, its acceptance tests on it
-		}
-		p, over := prove(repo, on, patches, s)
-		a.Proof = &p
-		u := used(runDir)
+		p, u, caps, found := proven(runDir, repo, on, where, patches, s)
+		a.Proof, a.Caps = &p, caps
 		a.Turns, a.Tokens, a.Tools, a.AgentFailed = u.Turns, u.Tokens, u.Tools, u.failed
-		a.Caps = append(agentCaps(u, s), a.Caps...)
-		if over != nil {
-			a.Caps = append(a.Caps, *over)
-		}
-		if u.failed != "" {
-			v.Findings = append(v.Findings, agentFailed(where, u.failed))
-		}
-		v.Findings = append(v.Findings, unreported(where, u, s)...)
-		v.Findings = append(v.Findings, proofFindings(where, p, a.Caps)...)
+		v.Findings = append(v.Findings, found...)
 		mr := mergeRequest(a, issueTitle(runDir, a.Issue))
 		if mr["draft"] == true {
 			v.Summary += "; a Draft: " + p.Result
@@ -659,26 +580,85 @@ func Post(runDir, repo string) int {
 		} else {
 			v.Summary += "; proven green, its pull request ready"
 		}
-		data, err := yaml.Marshal(mr)
-		if err != nil {
-			return fail(err)
-		}
-		if err := os.WriteFile(filepath.Join(runDir, "out", "merge-request.yaml"), data, 0o644); err != nil {
+		if err := writeMergeRequest(runDir, mr); err != nil {
 			return fail(err)
 		}
 	}
 	// The claim carries the record, the refusals in it (ADR-0046).
-	kept = append(claimOf(a, s), kept[len(claim):]...)
-	if err := os.Remove(filepath.Join(runDir, "out", "intentions.yaml")); err != nil && !errors.Is(err, os.ErrNotExist) {
-		return fail(err)
+	if code := writeIntents(runDir, "", append(claimOf(a, s), kept[len(claim):]...)); code != 0 {
+		return code
 	}
-	if err := intent.Write(filepath.Join(runDir, "out", "intentions.yaml"), kept); err != nil {
-		return fail(err)
+	return writeVerdict(runDir, v)
+}
+
+// held is its agent's code held to the bounds: what it proposed and its
+// worktree's diff against base, the claim pre made first; the files
+// refused, the worktree's before the bounds', and the rest said.
+func held(runDir, repo, base string, b Bounds, claim, proposed []intent.Intention) (kept []intent.Intention, refused []Refusal, said []string, err error) {
+	// What its agent edited in the worktree is code too: its diff, held
+	// to the same bounds; the engine removes the worktree (ADR-0056).
+	fromTree, treeRefused, err := worktreeCode(runDir, base)
+	if err != nil {
+		return nil, nil, nil, err
 	}
-	if err := verdict.Write(filepath.Join(runDir, "out", "verdict.yaml"), &v); err != nil {
-		return fail(err)
+	kept, refused, said = bounded(repo, b, claim, append(proposed, fromTree...))
+	return kept, append(treeRefused, refused...), said, nil
+}
+
+// refusalFindings say in the verdict what the bounds refused.
+func refusalFindings(where string, refused []Refusal, said []string) []verdict.Finding {
+	var out []verdict.Finding
+	for _, r := range refused {
+		out = append(out, verdict.Finding{Rule: r.Rule, Level: "warn", Where: r.File, Message: "refused at apply, its patch left out: " + why(r)})
 	}
-	return 0
+	for _, w := range said {
+		out = append(out, verdict.Finding{Rule: "not-the-developers", Level: "warn", Where: where, Message: "refused at apply: " + w})
+	}
+	return out
+}
+
+// proven proves the patches on the commit on, on a fresh tree, and reads
+// what its agent used: the proof, the caps the run reached, and what the
+// verdict says of them.
+func proven(runDir, repo, on, where string, patches []intent.Intention, s Settings) (Proof, Used, []Cap, []verdict.Finding) {
+	p, over := prove(repo, on, patches, s)
+	u := used(runDir)
+	caps := agentCaps(u, s)
+	if over != nil {
+		caps = append(caps, *over)
+	}
+	var found []verdict.Finding
+	if u.failed != "" {
+		found = append(found, agentFailed(where, u.failed))
+	}
+	found = append(found, unreported(where, u, s)...)
+	return p, u, caps, append(found, proofFindings(where, p, caps)...)
+}
+
+func writeMergeRequest(runDir string, mr map[string]any) error {
+	data, err := yaml.Marshal(mr)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(filepath.Join(runDir, "out", "merge-request.yaml"), data, 0o644)
+}
+
+// readIn reads a run's in/<name>, JSON, into v.
+func readIn(runDir, name string, v any) error {
+	data, err := os.ReadFile(filepath.Join(runDir, "in", name))
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal(data, v)
+}
+
+// writeIn writes v, JSON, to a run's in/<name>.
+func writeIn(runDir, name string, v any) error {
+	data, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(filepath.Join(runDir, "in", name), data, 0o644)
 }
 
 func settingsIn(runDir string) (Settings, error) {
