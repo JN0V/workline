@@ -4,7 +4,7 @@ sources:
   - internal/developer/developer.go
   - ci/github/workline-develop.yml
   - ci/gitlab/workline.gitlab-ci.yml
-checked: 492192ca
+checked: beb6f931
 verified: agent:claude-code
 ---
 # The triggers
@@ -71,6 +71,8 @@ routing:
   asked, nothing claimed. `workline develop` always opens one.
 - **Your test runner** in the judging job: the code is proven there
   ([the proof](proof.md)).
+  - With every tool your test job installs: a test that needs a missing
+    one goes red on the proof alone, and the pull request opens a Draft.
 - **Two jobs**: the judge holds the agent and a read token for the
   pick; the engine gives the agent no forge token. The applying job
   holds the write token, no AI key.
