@@ -33,11 +33,23 @@ const unreadMax = 3000
 func agentWords(runDir string) (objections []intent.Intention, unread []string, err error) {
 	if tree := agent.Worktree(runDir); tree != "" {
 		file := filepath.Join(tree, filepath.FromSlash(ObjectionsFile))
-		data, err := os.ReadFile(file)
+		st, err := os.Lstat(file)
+		var data []byte
+		if err == nil && st.Mode().IsRegular() {
+			data, err = os.ReadFile(file)
+		}
 		switch {
 		case errors.Is(err, fs.ErrNotExist):
 		case err != nil:
 			return nil, nil, fmt.Errorf("its agent's %s: %w", ObjectionsFile, err)
+		case !st.Mode().IsRegular():
+			// A link is never followed: what it leads to is not its
+			// agent's to post. Removed, a folder whole (RemoveAll follows
+			// no link), it reaches no branch either.
+			if err := os.RemoveAll(file); err != nil {
+				return nil, nil, fmt.Errorf("its agent's %s: %w", ObjectionsFile, err)
+			}
+			unread = append(unread, "Its objections file, `"+ObjectionsFile+"`, is not a plain file (a link, or a folder): not followed, not read, removed.")
 		default:
 			if err := os.Remove(file); err != nil {
 				return nil, nil, fmt.Errorf("its agent's %s: %w", ObjectionsFile, err)

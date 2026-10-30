@@ -543,6 +543,13 @@ func claimBody(a Act, s Settings) string {
 	if a.Proof != nil {
 		b.WriteString("\nIts code on the project's tests:\n\n" + proofLines(*a.Proof, a.Caps))
 	}
+	if len(a.Unread) > 0 && a.Proof == nil {
+		// No pull request to post them on: here, never lost (#746).
+		b.WriteString("\nIts agent's words, unread: a person reads them, an objection to a frozen test may be among them.\n\n")
+		for _, u := range a.Unread {
+			b.WriteString(u + "\n")
+		}
+	}
 	fmt.Fprintf(&b, "\n%s\n", a.Line())
 	return b.String()
 }
@@ -672,7 +679,7 @@ func held(runDir, repo, base string, b Bounds, claim, proposed []intent.Intentio
 // unreadFinding says its agent's words that did not read, and where a
 // person reads them as they came.
 func unreadFinding(where string, unread []string, posted bool) verdict.Finding {
-	at := "kept in the run's out/ folder: no pull request to post them on"
+	at := "posted as they came in its claim on the issue: no pull request to post them on"
 	if posted {
 		at = "posted as they came on its pull request"
 	}
