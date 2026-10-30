@@ -63,8 +63,11 @@ board:
 - **A name no column holds**: a warning, `board-setting-unmatched`; that
   step moves nothing.
 - **Several projects, no `project:`**: none is chosen, a note,
-  `board-ambiguous`. GitLab boards matching the same labels count as
-  one: a label is the same move on each.
+  `board-ambiguous`. GitLab boards listing the same labels count as
+  one: a label is the same move on each. `project:` applies on GitHub
+  only.
+- **GitLab, a group's boards unread**: a warning; the project's own
+  boards still count.
 
 ## What each role will move
 

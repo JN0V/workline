@@ -23,16 +23,17 @@ type Board struct {
 	// Columns: GitHub, the Status field's options; GitLab, the labels of
 	// its label lists. None: the board has no column workline can set.
 	Columns []string `json:"columns"`
-	// Workflows: GitHub, its built-in workflows by name, whether on; nil
-	// when unread, WorkflowsUnread saying why.
-	Workflows       map[string]bool `json:"workflows,omitempty"`
+	// Workflows: GitHub, its built-in workflows by name, whether on;
+	// unread when WorkflowsUnread says why.
+	Workflows       map[string]bool `json:"workflows"`
 	WorkflowsUnread string          `json:"workflows-unread,omitempty"`
 	// ClosedList: GitLab, the board shows its Closed list.
 	ClosedList bool `json:"closed-list,omitempty"`
 }
 
 // Boards reads f's boards; ok is false when f keeps none (the local
-// forge, a command, none).
+// forge, a command, none). An error beside boards says what part was
+// not read: the boards found stand.
 func Boards(f any) (boards []Board, ok bool, err error) {
 	b, ok := f.(interface{ boards() ([]Board, error) })
 	if !ok {
@@ -219,14 +220,16 @@ func (g *gitlab) boards() ([]Board, error) {
 			Boards gitlabBoards `json:"boards"`
 		} `json:"group"`
 	}
+	// The group's boards unread, the project's are kept, the group's
+	// said: Boards' error beside boards found.
 	ok, err = g.graphql(fmt.Sprintf(gitlabBoardsQuery, "group", ""), map[string]any{"p": p.Project.Group.FullPath}, &grp)
-	if err != nil {
-		return nil, err
+	switch {
+	case err != nil:
+		return boards, fmt.Errorf("the group %s's boards: %s", p.Project.Group.FullPath, Said(err))
+	case !ok || grp.Group == nil:
+		return boards, fmt.Errorf("the group %s's boards: GitLab's GraphQL API answered none: the token may not read them", p.Project.Group.FullPath)
 	}
-	if ok && grp.Group != nil {
-		boards = append(boards, gitlabColumns(grp.Group.Boards, "group")...)
-	}
-	return boards, nil
+	return append(boards, gitlabColumns(grp.Group.Boards, "group")...), nil
 }
 
 func gitlabColumns(bs gitlabBoards, owner string) []Board {

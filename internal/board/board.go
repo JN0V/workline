@@ -63,22 +63,25 @@ func Match(columns []string, s role.Board) (m Slots, unmatched []string) {
 	return m, unmatched
 }
 
-// Choose takes the board workline marks, among boards: the project the
-// setting numbers; else the only one with a column — GitLab's boards
-// matching the same labels count as one, a label being the same move on
-// each. Several left: none chosen, candidates names them.
+// Choose takes the board workline marks, among boards: on GitHub, the
+// project the setting numbers; else the only one with a column —
+// GitLab's boards listing the same labels count as one, a label being
+// the same move on each. Several left: none chosen, candidates names
+// them.
 func Choose(boards []forge.Board, s role.Board) (chosen *forge.Board, candidates []forge.Board) {
-	seen := map[Slots]bool{}
+	seen := map[string]bool{}
 	for _, b := range boards {
-		if len(b.Columns) == 0 || (s.Project != 0 && (b.Forge != "github" || b.Number != s.Project)) {
+		if len(b.Columns) == 0 || (s.Project != 0 && b.Forge == "github" && b.Number != s.Project) {
 			continue
 		}
 		if b.Forge == "gitlab" {
-			m, _ := Match(b.Columns, s)
-			if seen[m] {
+			labels := slices.Clone(b.Columns)
+			slices.Sort(labels)
+			key := strings.Join(labels, "\x00")
+			if seen[key] {
 				continue
 			}
-			seen[m] = true
+			seen[key] = true
 		}
 		candidates = append(candidates, b)
 	}

@@ -45,10 +45,13 @@ func boards(r *Report, o Options, cfg *role.ProjectConfig, line *routing.Config)
 		r.add(Check{Area: "repository", Rule: "board-none", Level: Note,
 			Message: "the forge " + spec + " holds no board: " + labels, Fix: boardDoc})
 		return
-	case err != nil:
+	case err != nil && len(found) == 0:
 		r.add(Check{Area: "repository", Rule: "board-unread", Level: Warn,
 			Message: "could not read the forge's boards: " + forge.Said(err) + "; " + labels, Fix: boardDoc})
 		return
+	case err != nil:
+		r.add(Check{Area: "repository", Rule: "board-unread", Level: Warn,
+			Message: "could not read " + forge.Said(err) + "; the others found stand", Fix: boardDoc})
 	}
 	set := cfg.Board
 	chosen, candidates := board.Choose(found, set)
@@ -113,7 +116,7 @@ func title(b forge.Board) string {
 
 // projectWorkflows says a GitHub project's built-in workflows on and off.
 func projectWorkflows(b forge.Board) string {
-	if b.Workflows == nil {
+	if b.WorkflowsUnread != "" {
 		return "its workflows unread: " + b.WorkflowsUnread
 	}
 	var on, off []string

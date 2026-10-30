@@ -37,4 +37,12 @@ func TestChoose(t *testing.T) {
 	if b, c := Choose(gh, role.Board{Project: 5}); b != nil || len(c) != 0 {
 		t.Errorf("a project with no Status: %v, %v", b, c)
 	}
+	gl := []forge.Board{{Forge: "gitlab", Number: 7, Columns: []string{"A", "B"}}, {Forge: "gitlab", Number: 9, Columns: []string{"B", "A"}}}
+	if b, _ := Choose(gl, role.Board{Project: 3}); b == nil || b.Number != 7 {
+		t.Errorf("GitLab, the same labels, project: set: %v", b)
+	}
+	gl[1].Columns = []string{"C", "D"}
+	if b, c := Choose(gl, role.Board{}); b != nil || len(c) != 2 {
+		t.Errorf("GitLab, two boards matching nothing: %v, %v", b, c)
+	}
 }
