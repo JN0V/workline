@@ -1,6 +1,6 @@
 ---
 sources: [ci/github, .github/workflows/workline-apply.yml, .github/workflows/workline.yml]
-checked: d722a840
+checked: bd66bb99
 judged: c7e1e98
 verified: agent:claude-code
 judged-in-parts: 220b6dc
@@ -27,6 +27,9 @@ branch's workflow
    - repository permissions **Contents**, **Pull requests**,
      **Issues** and **Checks**, read and write; with the merge policy,
      **Commit statuses** too;
+   - organization permission **Projects**, read and write, when the
+     work shows on an organisation's project: the roles move its cards
+     ([boards](boards.md#who-may-write-a-github-project));
    - **Checks** writes the checks `workline findings` and `workline gates`: the documentalist's
      findings beside their lines, none a conversation to resolve
      ([#412](https://github.com/JN0V/workline/issues/412)). An App made

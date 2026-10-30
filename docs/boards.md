@@ -1,6 +1,6 @@
 ---
 sources: [internal/board/board.go, internal/forge/board.go, internal/doctor/board.go]
-checked: 16acf2af
+checked: bd66bb99
 ---
 # Boards
 
@@ -107,19 +107,49 @@ one value, and puts no label for it.
 | doing | left to *Pull request linked to issue* when on, the pull request opening; else the developer sets Status | left to *Pull request linked to issue*; off, no move |
 | done | *Item closed*, at the close | the same |
 
-- **The App's right**: on an organisation's project, *Organization
-  projects: read and write*. GitHub offers no such right on a user's
-  project
-  ([ADR-0057](adr/0057-workline-finds-the-forges-board-and-moves-its-cards.md#who-may-write-a-github-project)).
 - **An issue in no project** is not added: that is the project's
   *Auto-add* workflow.
-- ***Item closed* off**: no card reaches Done. The role that moves a
-  card says it once a run, `board-workflow-off` (info), naming the
-  project.
 - **In the role's record**: the move, or why it is left (the
-  workflow, a user's project). A write the forge refuses is said in
-  the run's output; no verdict changes.
-- **Turning a workflow on**: the project's menu, *Workflows*.
+  workflow, a user's project).
+
+### Who may write a GitHub project
+
+- **An organisation's project**: the App needs *Organization projects:
+  read and write*; a person's token, the `project` scope. Refused, the
+  card stays and the run says `board-unwritable` once.
+- **A user's project is never written**: GitHub offers an App no right
+  on a user's projects
+  ([App permissions](https://docs.github.com/en/rest/authentication/permissions-required-for-github-apps)).
+  A person's token could, but workline takes none for it
+  ([ADR-0057](adr/0057-workline-finds-the-forges-board-and-moves-its-cards.md#who-may-write-a-github-project)):
+  - the ready moves no card;
+  - the project's workflows move Doing and Done;
+  - the run says `board-user-project` once, naming the workflows off.
+
+## What you switch on
+
+| Forge | Switch on | Where |
+|---|---|---|
+| GitHub, an organisation's project | *Item closed*, *Pull request linked to issue*; the App's *Organization projects: read and write* | the project's menu, *Workflows*; the App's settings, *Permissions* |
+| GitHub, a user's project | *Item closed*, *Pull request linked to issue* | the project's menu, *Workflows* |
+| GitLab Premium | a board with a list per column, scoped labels (`workflow::Doing`) | the project's *Plan → Issue boards* |
+| GitLab Free | a board with a list per column, plain labels | the same |
+
+- **A GitHub project closed, then reopened**: GitHub turns all its
+  workflows off; turn them on again.
+- **A new GitHub project** starts with its workflows on.
+- **Nothing else**: workline finds the board and its columns itself.
+
+## What a run says
+
+The role that moves a card says each once a run, an info: no verdict
+changes.
+
+| Rule | Means |
+|---|---|
+| `board-workflow-off` | an organisation's project with *Item closed* off: no card reaches Done |
+| `board-user-project` | a user's project: the ready moves no card; the workflows to turn on |
+| `board-unwritable` | an organisation's project the token may not write; the right to give |
 
 ## What the doctor says
 
