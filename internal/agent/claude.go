@@ -66,20 +66,18 @@ func (c claude) Propose(req Request) (Call, error) {
 	cmd.Dir, cmd.WaitDelay = os.TempDir(), waitAfterTimeout
 	cmd.Env = claudeEnv(os.Environ())
 	cmd.Stdin = strings.NewReader(user)
-	tree := Worktree(req.RunDir)
-	if tree != "" {
-		inGroup(cmd) // the commands its tools start killed with it, at its time
-	}
+	// In a group of its own, worktree or not: the commands its tools
+	// start are killed with it, at its time and once it answered.
+	inGroup(cmd)
 	var out, errOut bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &out, &errOut
 	runErr := settled(ctx, cmd.Run())
-	if tree != "" {
-		_ = killGroup(cmd)
-	}
+	_ = killGroup(cmd)
 	answer, parsed := claudeAnswer(out.Bytes(), &call)
 	// Its turns spent is a cap reached, not a failure: what it did so far
-	// is its answer (ADR-0056).
-	maxed := parsed && answer.Subtype == "error_max_turns" && ctx.Err() == nil
+	// is its answer (ADR-0056). Only its whole JSON says so: a stdout cut
+	// short, or a run killed, is a failure.
+	maxed := parsed && answer.Subtype == "error_max_turns" && ctx.Err() == nil && exitedItself(runErr)
 	if !maxed && (runErr != nil || (parsed && answer.IsError)) {
 		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
 			return call, fmt.Errorf("%w: claude did not answer within %s (the role's model.timeout)", ErrUnavailable, limit)
@@ -98,10 +96,25 @@ func (c claude) Propose(req Request) (Call, error) {
 	_ = os.WriteFile(filepath.Join(req.RunDir, "out", "agent-answer.txt"), []byte(answer.Result), 0o644)
 	proposals, mended, err := proposalsFrom(answer.Result, req.Role.Intentions...)
 	call.Mended = mended
+	if err != nil && maxed {
+		// Stopped mid-way, its answer is not written yet: what it edited
+		// in its worktree is what it did.
+		proposals, err = []byte("[]\n"), nil
+	}
 	if err != nil {
 		return call, fmt.Errorf("%w: %v", ErrInvalidOutput, err)
 	}
 	return call, os.WriteFile(filepath.Join(req.RunDir, "out", "intentions.yaml"), proposals, 0o644)
+}
+
+// exitedItself says the agent's process ended by its own exit, whatever
+// its code: not killed by a signal, nor failed to start.
+func exitedItself(err error) bool {
+	if err == nil {
+		return true
+	}
+	var exit *exec.ExitError
+	return errors.As(err, &exit) && exit.Exited()
 }
 
 // claudeSession are the variables a Claude Code session exports to every
