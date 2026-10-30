@@ -207,6 +207,11 @@ func TestEvaluation(t *testing.T) {
 						}
 					}
 				}
+				// The role's own answer, for an agent that loops: its closing
+				// words say what it did, or why it wrote nothing (ADR-0056).
+				if data, err := os.ReadFile(filepath.Join(r.res.RunDir, "out", "agent-answer.txt")); err == nil {
+					t.Logf("  agent-answer.txt:\n%.3000s", data)
+				}
 				for _, f := range r.res.Findings {
 					if f.Rule != "links-not-checked" {
 						t.Logf("  %s %s: %.300s", f.Rule, f.Where, f.Message)

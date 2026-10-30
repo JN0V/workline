@@ -59,8 +59,8 @@ Checked against Claude Code 2.1.314; each flag in its `--help`:
 - **Its shell without its login**: `CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=1`;
   Claude Code takes its key or token out of the commands' environment.
 - **What it used**: `--output-format stream-json --verbose`; its
-  turns, tokens and the tools it used, one count a tool, go in the
-  claim's record.
+  turns, fresh tokens, cache reads and the tools it used, one count a
+  tool, go in the claim's record.
 
 ## The question
 

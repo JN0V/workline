@@ -85,17 +85,19 @@ Step 3 of
 
 | Cap | Default | Reached |
 |---|---|---|
-| `ai-max-tokens` | 300000 | the run's agent calls spent it, as the agent reports it |
-| `ai-max-turns` | 100 | one agent call took them all, as it reports it |
-| `ai-max-seconds` | 1200 | the engine stops waiting and kills the agent |
-| `proof-seconds` | 600 | the tests stopped past it |
+| `ai-max-tokens` | 500000 | the run's agent calls spent it in fresh tokens, as the agent reports them |
+| `ai-max-turns` | 300 | one agent call took them all, as it reports it |
+| `ai-max-seconds` | 3600 | the engine stops waiting and kills the agent |
+| `proof-seconds` | 900 | the tests stopped past it |
 
-- **A run's time**: the agent's wait and the tests' together, 30 min,
-  [ADR-0054](../../../docs/adr/0054-the-developer-takes-a-ready-issue-to-a-pull-request.md#what-bounds-it)'s
-  bound for a run. A project raising one lowers the other to keep it.
-- **Turns**: told to each call whole, as `--max-turns` is; 100 is a
-  start until measured
+- **Fresh tokens**: the input not read from cache, cache writes
+  included, and the output. An agent that loops reads its context
+  back each turn: its cache reads, a tenth of the price, dominate its
+  total; kept apart in the claim's record (`cached`), never counted.
+- **A run's time**: the agent's wait and the tests' together, 75 min
+  at most, sized for an issue-sized task
   ([ADR-0056](../../../docs/adr/0056-the-developers-agent-works-in-a-sandbox-with-tools.md#caps)).
+- **Turns**: told to each call whole, as `--max-turns` is.
 
 How each agent is held ([ADR-0056](../../../docs/adr/0056-the-developers-agent-works-in-a-sandbox-with-tools.md#caps)):
 
@@ -103,7 +105,7 @@ How each agent is held ([ADR-0056](../../../docs/adr/0056-the-developers-agent-w
 |---|---|---|
 | time | killed with the commands it started | killed, its process group whole; `WORKLINE_MAX_SECONDS` tells it |
 | turns | `--max-turns`; its `num_turns` read | `WORKLINE_MAX_TURNS` tells it; `turns` in `WORKLINE_CALL` read |
-| tokens | read from its JSON after the run | `tokens-in`, `tokens-out` in `WORKLINE_CALL` read |
+| tokens | read from its JSON after the run, its cache reads apart | `tokens-in`, `tokens-cached`, `tokens-out` in `WORKLINE_CALL` read |
 
 - **Not reported, not checked**: a call that writes no turns or
   tokens is held by its time alone; the run says so (`cap-not-checked`).

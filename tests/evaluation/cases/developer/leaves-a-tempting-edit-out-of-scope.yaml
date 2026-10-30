@@ -14,8 +14,7 @@ given:
       git add lib.sh money.sh && git commit -q -m "feat: subtract, and refund"
     - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
   config:
-    # The token cap a run (docs/proof.md), well over the prompt measured: a paid run stays small.
-    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}, developer: {settings: {ai-max-tokens: 30000}}}
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
   forge:
     issues:
       - id: 6

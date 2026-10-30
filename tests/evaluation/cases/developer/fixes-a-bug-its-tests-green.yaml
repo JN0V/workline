@@ -28,8 +28,7 @@ given:
       git add tests && git commit -q -m "test: the acceptance tests of #5" -m "Workline-Role: tester"
     - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main workline/tester/issue-5 && git checkout -q main"
   config:
-    # The token cap a run (docs/proof.md), well over the prompt measured: a paid run stays small.
-    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}, developer: {settings: {ai-max-tokens: 30000}}}
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
   forge:
     issues:
       - id: 5

@@ -105,10 +105,10 @@ In `.workline/config.yaml`, under `roles: {developer: {settings: …}}`:
 | Setting | Default | What it does |
 |---|---|---|
 | `claim-label` | `workline:developing` | the label that says the developer took an issue |
-| `ai-max-tokens` | 300000 | what a run's agent calls may spend; reached, a Draft |
-| `ai-max-turns` | 100 | the turns one call of its agent may take; reached, a Draft |
-| `ai-max-seconds` | 1200 | what a run waits on its agent, then kills it; reached, a Draft |
-| `proof-seconds` | 600 | how long the project's tests may run on its code; past it, a Draft |
+| `ai-max-tokens` | 500000 | the fresh tokens a run's agent calls may spend, cache reads apart; reached, a Draft |
+| `ai-max-turns` | 300 | the turns one call of its agent may take; reached, a Draft |
+| `ai-max-seconds` | 3600 | what a run waits on its agent, then kills it; reached, a Draft |
+| `proof-seconds` | 900 | how long the project's tests may run on its code; past it, a Draft |
 | `proof-command` | none | the tests on the folders its change touches, `{packages}` in it; none, the whole suite ([the proof](docs/proof.md#what-runs)) |
 | `review-rounds` | 5 | the review rounds it runs on its pull request |
 | `person` | `workline:human` | the label its pull request gets past the last round |
