@@ -1917,3 +1917,70 @@ func TestOwnProofsRunWhereTheTestsRun(t *testing.T) {
 		t.Errorf("only %d jobs run the tests: the rule reads too few workflows", proving)
 	}
 }
+
+// The project's setup steps (#703): the developer's judges run them
+// before the agent and the proof, from the default branch, so a tool
+// the project's test job installs is there; none, the runner as it is.
+// GitHub: a local composite action, run when the project has it; GitLab:
+// `.workline:setup`, empty, the project redefining its script.
+func TestDeveloperJudgesRunTheProjectsSetupSteps(t *testing.T) {
+	data, err := os.ReadFile("../../ci/github/workline-develop.yml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var wf struct {
+		Jobs map[string]struct {
+			Steps []struct {
+				Name string `yaml:"name"`
+				If   string `yaml:"if"`
+				Uses string `yaml:"uses"`
+				Run  string `yaml:"run"`
+			} `yaml:"steps"`
+		} `yaml:"jobs"`
+	}
+	if err := yaml.Unmarshal(data, &wf); err != nil {
+		t.Fatal(err)
+	}
+	for _, job := range []string{"judge", "review"} {
+		setup, at, line := -1, -1, -1
+		for i, s := range wf.Jobs[job].Steps {
+			switch {
+			case s.Uses == "./.github/actions/workline-setup" && s.If == "hashFiles('.github/actions/workline-setup/action.yml') != ''":
+				setup = i
+			case strings.HasPrefix(s.Uses, "actions/checkout@"):
+				at = i
+			case strings.Contains(s.Run, "workline route issue") || strings.Contains(s.Run, "workline develop --merge-request"):
+				line = i
+			}
+		}
+		if setup < 0 || setup < at || setup > line {
+			t.Errorf("workline-develop.yml, %s: the project's setup steps not run after the checkout and before the line (setup %d, checkout %d, line %d)", job, setup, at, line)
+		}
+	}
+
+	data, err = os.ReadFile("../../ci/gitlab/workline.gitlab-ci.yml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var top map[string]yaml.Node
+	if err := yaml.Unmarshal(data, &top); err != nil {
+		t.Fatal(err)
+	}
+	if hook, ok := top[".workline:setup"]; !ok || !strings.Contains(nodeText(&hook), "script") {
+		t.Error(".workline:setup: no hook for the project's setup steps")
+	}
+	for job, before := range map[string]string{"workline:develop:judge": "workline route issue", "workline:review:judge": "git fetch -q origin \"$MR_SOURCE_BRANCH\""} {
+		j := top[job]
+		text := nodeText(&j)
+		ref := strings.Index(text, "!reference ['.workline:setup', script]")
+		if ref < 0 || ref > strings.Index(text, before) {
+			t.Errorf("%s: does not run .workline:setup before %q", job, before)
+		}
+	}
+}
+
+// nodeText is a YAML node written back, its tags kept.
+func nodeText(n *yaml.Node) string {
+	out, _ := yaml.Marshal(n)
+	return string(out)
+}

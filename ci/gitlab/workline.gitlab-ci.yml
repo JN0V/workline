@@ -593,11 +593,19 @@ workline:objection:apply:
     reports: {annotations: workline-annotations.json}
     expire_in: 1 week
 
+# Your project's setup steps, run by the developer's judges before the
+# agent and the proof: redefine `.workline:setup` in your .gitlab-ci.yml,
+# its script what your test job installs (a language, a tool); the
+# judges' image too, if your tests need another. Empty here: the image as
+# it is (roles/developer/docs/triggers.md).
+.workline:setup:
+  script: []
+
 # The developer takes a ready issue (ADR-0054), routed `issue: [developer]`:
 # a pipeline a tool starts on the issue webhook, WORKLINE_TASK=develop and
 # ISSUE_IID (docs/gitlab-trigger.md); without ISSUE_IID, the first ready
-# issue nobody took. One at a time (resource_group). Install your test
-# runner in the judge. Why each part: roles/developer/docs/triggers.md.
+# issue nobody took. One at a time (resource_group). Your setup steps run
+# in the judge. Why each part: roles/developer/docs/triggers.md.
 .workline:develop:
   image: $WORKLINE_IMAGE:$WORKLINE_VERSION
   environment: *environment
@@ -620,6 +628,7 @@ workline:develop:judge:
   stage: test
   script:
     - *claude
+    - !reference [.workline:setup, script]
     - *no-credential
     - status=0
     - workline route issue ${ISSUE_IID:+--target issue:$ISSUE_IID} --ai "$ai" --no-apply --forge gitlab --open-merge-request --summary workline-summary.md --summary workline-summary.html --json > line.json || status=$?
@@ -659,7 +668,7 @@ workline:develop:apply:
 # branch with WORKLINE_TASK=review, MR_IID and MR_SOURCE_BRANCH
 # (docs/gitlab-trigger.md). The judge proposes the fix, holding the
 # agent's token; apply pushes it on its branch, holding the bot's
-# (roles/developer/docs/review-loop.md). Install your test runner in the judge.
+# (roles/developer/docs/review-loop.md). Your setup steps run in the judge.
 .workline:review:
   image: $WORKLINE_IMAGE:$WORKLINE_VERSION
   environment: *environment
@@ -691,6 +700,7 @@ workline:review:judge:
   needs: [workline:review:head]
   script:
     - *claude
+    - !reference [.workline:setup, script]   # before its code is checked out
     - git fetch -q origin "$MR_SOURCE_BRANCH" && git checkout -q -B "$MR_SOURCE_BRANCH" "$(cat review-head)"
     - *no-credential
     - git rev-parse HEAD > round-head
