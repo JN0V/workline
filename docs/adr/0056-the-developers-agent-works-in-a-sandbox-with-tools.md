@@ -6,6 +6,9 @@
   first live run; the choice is theirs, [below](#for-the-person)
 - **Amends:** [ADR-0054] (how its agent writes the code); the pick, the
   bounds, the proof, the pull request and the review loop stay
+- **Amended by:** [ADR-0058](0058-the-forge-guards-the-project-not-the-agents-environment.md)
+  (proposed): step 2's credential refusal and the amendment's boxed
+  shell give way to the forge's guards
 - **Builds on:** [ADR-0042], [ADR-0044], [ADR-0050], [ADR-0055];
   principles 5, 6, 7, 10, 12, 13
 - **Research:** [agent-sandbox.md](../research/agent-sandbox.md),
@@ -132,7 +135,8 @@ not pass.
    `developer-worktree-ignores-agent-commits`.
 2. **No credential in reach**: `developer-worktree-env-has-no-token`,
    `developer-worktree-refuses-persisted-credential`; the templates'
-   checkout without persisted credentials.
+   checkout without persisted credentials. The refusal is proposed for
+   removal by [ADR-0058](0058-the-forge-guards-the-project-not-the-agents-environment.md#6-what-goes-what-stays).
 3. **The proof on a fresh tree**: `developer-proof-ignores-worktree-cache`,
    `developer-proof-red-after-agent-green`.
 4. **The caps**: `developer-turn-cap-makes-draft`,
