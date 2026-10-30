@@ -1,16 +1,11 @@
 package tester
 
-// A fresh tree (ADR-0056, step 3): where the developer's code is proven,
-// never in its agent's worktree. A repository of its own, apart: it
-// borrows repo's objects, named by their content, so nothing written in
-// repo since can change the commit's files; it reads none of repo's
-// config, attributes, hooks, refs or replacements, which a worktree of
-// repo shares with the agent's, nor the machine's git config. What the
-// agent left beside its diff (an ignored file, a cache, a commit put in
-// the start commit's place) is not there. It takes repo's object format,
-// to read its objects. A commit holding a submodule or naming a filter
-// in its attributes (git-lfs) is not checked out whole here: the proof
-// says so and does not run, never a red or a green on what is missing.
+// A fresh tree (ADR-0056, step 3; roles/developer/docs/proof.md): where
+// the developer's code is proven, never in its agent's worktree. A
+// repository of its own, in repo's object format, borrowing only repo's
+// objects: none of its config, attributes, hooks, refs or replacements,
+// nor the machine's git config. A commit holding a submodule or a
+// filtered file is refused, not checked out half.
 
 import (
 	"bytes"
