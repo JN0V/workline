@@ -362,6 +362,7 @@ type itemWant struct {
 	Labels          *[]string           `yaml:"labels"`     // the exact set
 	Reactions       map[string][]string `yaml:"reactions"`  // on its comments, by the comment's id
 	Fields          map[string]string   `yaml:"fields"`     // its values in the issue fields, exactly these, by the field's name
+	Status          map[string]string   `yaml:"status"`     // its card's Status in each GitHub project, by the project's number (ADR-0057)
 	Weight          *int                `yaml:"weight"`     // its GitLab weight, -1 for none
 	Threads         *[]threadWant       `yaml:"threads"`    // a merge request's comments on lines, exactly these, in the order posted
 }
@@ -1976,6 +1977,12 @@ func compareItem(kind string, wm itemWant, got []map[string]any) []string {
 		}
 		if fmt.Sprint(gf) != fmt.Sprint(wm.Fields) {
 			p = append(p, fmt.Sprintf("forge: %s %v fields = %v, want %v", kind, wm.ID, gf, wm.Fields))
+		}
+	}
+	if wm.Status != nil {
+		gs, _ := found["status"].(map[string]any)
+		if fmt.Sprint(gs) != fmt.Sprint(wm.Status) {
+			p = append(p, fmt.Sprintf("forge: %s %v status = %v, want %v", kind, wm.ID, gs, wm.Status))
 		}
 	}
 	if wm.Reactions != nil {

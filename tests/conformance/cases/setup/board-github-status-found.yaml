@@ -23,4 +23,4 @@ expect:
   status: pass
   checks:
     - {rule: board-found, level: ok, message: "GitHub project \"Team plan\" (#3, organization's): ready → Todo, doing → In Progress, done → Done; its workflows on: Item closed, Pull request merged; off: Pull request linked to issue"}
-    - {rule: board-found, message: "No card is moved yet"}
+    - {rule: board-found, message: "The product owner's ready and the developer's claim set the card's Status"}

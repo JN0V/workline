@@ -1,6 +1,10 @@
 package board
 
 import (
+	"encoding/json"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/JN0V/workline/internal/forge"
@@ -44,5 +48,38 @@ func TestChoose(t *testing.T) {
 	gl[1].Columns = []string{"C", "D"}
 	if b, c := Choose(gl, role.Board{}); b != nil || len(c) != 2 {
 		t.Errorf("GitLab, two boards matching nothing: %v, %v", b, c)
+	}
+}
+
+// TestToGitHub: a GitHub project's Status is written by the role, but on
+// a user's project, or at the claim when its workflow moves the card.
+func TestToGitHub(t *testing.T) {
+	to := func(owner string, flows map[string]bool, unread, slot string) *Move {
+		t.Helper()
+		st := forge.FakeState{Boards: []forge.Board{{Forge: "github", Number: 3, Name: "P", Owner: owner,
+			Columns: []string{"Todo", "In progress", "Done"}, Workflows: flows}}, BoardsUnread: unread}
+		data, _ := json.Marshal(st)
+		path := filepath.Join(t.TempDir(), "forge.json")
+		if err := os.WriteFile(path, data, 0o644); err != nil {
+			t.Fatal(err)
+		}
+		mv, _ := To(&forge.Fake{Path: path}, slot, role.Board{})
+		return mv
+	}
+	linked := map[string]bool{LinkedWorkflow: true, ClosedWorkflow: true}
+	if mv := to("organization", linked, "", "ready"); !mv.Writes() || mv.Column != "Todo" || mv.Project != 3 || mv.Labels() || mv.Said != "" {
+		t.Errorf("ready, an organisation's: %+v", mv)
+	}
+	if mv := to("organization", linked, "", "doing"); mv.Writes() || mv.Left != "workflow" {
+		t.Errorf("doing, its workflow on: %+v", mv)
+	}
+	if mv := to("organization", map[string]bool{ClosedWorkflow: false}, "", "doing"); !mv.Writes() || mv.Column != "In progress" || !strings.Contains(mv.Said, "*Item closed*") {
+		t.Errorf("doing, its workflows off: %+v", mv)
+	}
+	if mv := to("user", map[string]bool{ClosedWorkflow: true}, "", "ready"); mv.Writes() || mv.Left != "user" {
+		t.Errorf("ready, a user's: %+v", mv)
+	}
+	if mv := to("organization", nil, "502 Bad Gateway", "ready"); mv != nil {
+		t.Errorf("unread: %+v", mv)
 	}
 }

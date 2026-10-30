@@ -546,17 +546,23 @@ func refining(f forge.Forge, role string, c backlog.Proposal) error {
 			}
 		}
 		add, remove := []string{backlog.LabelReady}, backlog.ReadyRemoves(*is)
-		if c.Column != "" {
+		if c.Card.Labels() {
 			// Its card to the board's ready column, out of the others
 			// (ADR-0057), in the same call.
-			add = append(add, c.Column)
-			for _, l := range c.Off {
+			add = append(add, c.Card.Column)
+			for _, l := range c.Card.Off {
 				if slices.Contains(is.Labels, l) {
 					remove = append(remove, l)
 				}
 			}
 		}
-		return f.Label(t, add, remove)
+		if err := f.Label(t, add, remove); err != nil {
+			return err
+		}
+		if c.Card.Writes() {
+			moveCard(f, c.Issue, c.Card.Project, c.Card.Column)
+		}
+		return nil
 	}
 	body, added, _ := backlog.Refine(is.Body, c, role)
 	if len(added) > 0 {
@@ -604,6 +610,23 @@ func keepBody(f forge.Forge, role string, t forge.Target, body string, sources, 
 	}
 	st.Keep(body)
 	return f.Sticky(t, backlog.FormatState(*st), backlog.StateMarker(role), false)
+}
+
+// moveCard sets the Status of issue's card in a GitHub project to option
+// (ADR-0057). A card not moved — the issue in no item of the project, a
+// write refused — is said, and changes no verdict: workline's labels
+// stay the roles' marks.
+func moveCard(f forge.Forge, issue, project int, option string) {
+	if project == 0 || option == "" {
+		return
+	}
+	why, err := forge.SetStatus(f, issue, project, option)
+	if err != nil {
+		why = forge.Said(err)
+	}
+	if why != "" {
+		fmt.Fprintf(os.Stderr, "workline: #%d's card not moved to %q on the project #%d: %s\n", issue, option, project, why)
+	}
 }
 
 // readyMove is the move a ready makes on the forge's board: its ready
@@ -700,9 +723,7 @@ func planActs(f forge.Forge, r *role.Role, settings map[string]any, st runState,
 	// board out of reach is said and moves nothing.
 	for _, c := range closes {
 		if c.Do == "ready" {
-			if mv := readyMove(f, st.Repo); mv != nil { // read once, when a ready is proposed
-				cfg.ReadyColumn, cfg.ReadyOff = mv.Column, mv.Off
-			}
+			cfg.Ready = readyMove(f, st.Repo) // read once, when a ready is proposed
 			break
 		}
 	}
@@ -742,6 +763,12 @@ func planActs(f forge.Forge, r *role.Role, settings map[string]any, st runState,
 	p, err := backlog.Decide(b, st.Repo, role, cfg, closes, read, judged, changes, revise)
 	if err != nil {
 		return nil, err
+	}
+	if cfg.Ready != nil && cfg.Ready.Said != "" && slices.ContainsFunc(p.Decisions, func(d backlog.Decision) bool {
+		return d.Mode == backlog.Act && d.Act.Do == "ready"
+	}) {
+		// Said once a run, by the role that moves a card (ADR-0057).
+		p.Findings = append(p.Findings, verdict.Finding{Rule: "board-workflow-off", Level: "info", Where: cfg.Ready.URL, Message: cfg.Ready.Said})
 	}
 	data, _ := yaml.Marshal(p)
 	return p, os.WriteFile(file, data, 0o644)

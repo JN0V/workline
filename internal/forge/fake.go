@@ -170,6 +170,9 @@ type FakeItem struct {
 	// Fields: an issue's values in the forge's issue fields, by name
 	// (GitHub's, ADR-0040).
 	Fields map[string]string `json:"fields,omitempty"`
+	// Status: an issue's card in each GitHub project it sits in, by the
+	// project's number, its Status option; "" for none (ADR-0057).
+	Status map[string]string `json:"status,omitempty"`
 	// Weight: an issue's GitLab weight, with weights; none when absent.
 	Weight *int `json:"weight,omitempty"`
 	// Assignees: who an issue is assigned to, by login.

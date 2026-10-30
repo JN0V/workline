@@ -1,0 +1,29 @@
+case: developer/board-github-doing-left-to-workflow
+about: >
+  On a GitHub project whose workflow *Pull request linked to issue* is
+  on (ADR-0057, step 3): the developer's claim writes no Status, the
+  pull request it opens moves the card; the claim's record says the
+  move is left to the project's workflow.
+given:
+  repo: tested
+  forge:
+    boards:
+      - forge: github
+        number: 3
+        name: Team plan
+        owner: organization
+        columns: [Todo, In Progress, Done]
+        workflows: {"Item closed": true, "Pull request linked to issue": true}
+    issues:
+      - {id: 2, title: "Multiply", labels: ["workline:ready"], status: {"3": "Todo"}, body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: a `mul` function.\n"}
+run: {develop: [], ai: "fake:developer-nothing"}
+expect:
+  status: pass
+  summary: "took #2"
+  forge:
+    issues:
+      - id: 2
+        labels: ["workline:ready", "workline:developing"]
+        status: {"3": "Todo"}
+        comment-contains: ["Its card goes to `In Progress` by the workflow *Pull request linked to issue* of the board \"Team plan\"", '"left":"workflow"']
+        comment-lacks: ["Its card moved"]

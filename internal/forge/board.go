@@ -166,6 +166,113 @@ func (g *github) workflows() (map[int]map[string]bool, string) {
 	return flows, ""
 }
 
+// SetStatus sets the Status of issue's card in the GitHub project
+// numbered project to option (ADR-0057): one value, the field holding
+// one. Nothing written, why says it: the issue in no item of the project
+// (adding it is the project's Auto-add), its card there already, f
+// keeping no project.
+func SetStatus(f any, issue, project int, option string) (why string, err error) {
+	s, ok := f.(interface {
+		setCardStatus(issue, project int, option string) (string, error)
+	})
+	if !ok {
+		return "the forge keeps no project", nil
+	}
+	return s.setCardStatus(issue, project, option)
+}
+
+func (f *Fake) setCardStatus(issue, project int, option string) (why string, err error) {
+	err = f.write(func(s *FakeState) error {
+		it, err := s.item(Target{Kind: "issue", ID: issue})
+		if err != nil {
+			return err
+		}
+		key := strconv.Itoa(project)
+		was, in := it.Status[key]
+		switch {
+		case !in:
+			why = notInProject(issue, project)
+		case was == option:
+			why = "its card is there already"
+		default:
+			it.Status[key] = option
+		}
+		return nil
+	})
+	return why, err
+}
+
+func notInProject(issue, project int) string {
+	return fmt.Sprintf("#%d sits in no item of the project #%d: adding it is the project's Auto-add", issue, project)
+}
+
+// itemQuery reads an issue's cards: each project's item, its Status, and
+// the project's Status field, its options' ids.
+const itemQuery = `query($owner: String!, $name: String!, $issue: Int!) {
+  repository(owner: $owner, name: $name) { issue(number: $issue) { projectItems(first: 20) { nodes { id
+    fieldValueByName(name: "Status") { ... on ProjectV2ItemFieldSingleSelectValue { name } }
+    project { id number field(name: "Status") { ... on ProjectV2SingleSelectField { id options { id name } } } } } } } }
+}`
+
+const statusMutation = `mutation($project: ID!, $item: ID!, $field: ID!, $option: String!) {
+  updateProjectV2ItemFieldValue(input: {projectId: $project, itemId: $item, fieldId: $field, value: {singleSelectOptionId: $option}}) { projectV2Item { id } }
+}`
+
+func (g *github) setCardStatus(issue, project int, option string) (string, error) {
+	out, err := g.api("graphql", "-f", "query="+itemQuery, "-F", "owner={owner}", "-F", "name={repo}", "-F", fmt.Sprintf("issue=%d", issue))
+	if err != nil {
+		return "", projectsUnread(err)
+	}
+	var v struct {
+		Data struct {
+			Repository struct {
+				Issue struct {
+					ProjectItems struct {
+						Nodes []struct {
+							ID     string `json:"id"`
+							Status *struct {
+								Name string `json:"name"`
+							} `json:"fieldValueByName"`
+							Project struct {
+								ID     string `json:"id"`
+								Number int    `json:"number"`
+								Field  *struct {
+									ID      string `json:"id"`
+									Options []struct {
+										ID   string `json:"id"`
+										Name string `json:"name"`
+									} `json:"options"`
+								} `json:"field"`
+							} `json:"project"`
+						} `json:"nodes"`
+					} `json:"projectItems"`
+				} `json:"issue"`
+			} `json:"repository"`
+		} `json:"data"`
+	}
+	if err := decode(out, &v); err != nil {
+		return "", err
+	}
+	for _, n := range v.Data.Repository.Issue.ProjectItems.Nodes {
+		if n.Project.Number != project || n.Project.Field == nil {
+			continue
+		}
+		if n.Status != nil && n.Status.Name == option {
+			return "its card is there already", nil
+		}
+		for _, o := range n.Project.Field.Options {
+			if o.Name != option {
+				continue
+			}
+			_, err := g.api("graphql", "-f", "query="+statusMutation, "-f", "project="+n.Project.ID, "-f", "item="+n.ID,
+				"-f", "field="+n.Project.Field.ID, "-f", "option="+o.ID)
+			return "", err
+		}
+		return fmt.Sprintf("the project #%d's Status has no option %q any more", project, option), nil
+	}
+	return notInProject(issue, project), nil
+}
+
 // projectsUnread names the right a token lacks to read projects, as GitHub
 // says it: a person's token, the read:project scope.
 func projectsUnread(err error) error {
