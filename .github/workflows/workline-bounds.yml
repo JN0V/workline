@@ -42,14 +42,19 @@ jobs:
         run: |
           git -c "http.extraheader=AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)" \
             fetch -q origin "+$HEAD_SHA:refs/remotes/origin/$HEAD_REF"
+          # The engine's output names the pull request's files: no workflow
+          # command is read from it; the annotations escaped, as GitHub asks.
+          stop=$(head -c 16 /dev/urandom | od -An -tx1 | tr -d ' \n')
+          echo "::stop-commands::$stop"
           status=0
           workline develop --bounds --merge-request "$PR" --ai none --no-apply --forge github \
             --input range="$GITHUB_SHA..$HEAD_SHA" --json > bounds.json || status=$?
+          echo "::$stop::"
           echo "status=$status" >> "$GITHUB_OUTPUT"
-          echo "run=$(jq -r '(.pending // [])[0] // empty | split("/") | last' bounds.json)" >> "$GITHUB_OUTPUT"
-          jq -r '.summary // empty' bounds.json
+          echo "run=$(jq -r '(.pending // [])[0] // empty | split("/") | last | select(test("^[0-9]{8}T[0-9]{6}[.][0-9]{9}-[a-z0-9-]+$"))' bounds.json)" >> "$GITHUB_OUTPUT"
           jq -r '.summary // empty' bounds.json >> "$GITHUB_STEP_SUMMARY"
-          jq -r '.findings[]? | "::error file=\(.where // ""),title=workline bounds::\(.rule): \(.message)"' bounds.json || true
+          jq -r 'def d: gsub("%";"%25") | gsub("\r";"%0D") | gsub("\n";"%0A"); def p: d | gsub(":";"%3A") | gsub(",";"%2C");
+            .findings[]? | "::error file=\(.where // "" | p),title=workline bounds::\(.rule // "" | d): \(.message // "" | d)"' bounds.json || true
       - uses: actions/upload-artifact@v4
         if: steps.bounds.outputs.run != ''
         with: {name: workline-bounds, path: .workline-runs, include-hidden-files: true, retention-days: 1}

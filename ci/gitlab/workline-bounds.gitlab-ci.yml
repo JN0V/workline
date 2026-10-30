@@ -1,24 +1,10 @@
-# The developer's bounds on its merge request, on GitLab CI (ADR-0058):
-# include it beside workline.gitlab-ci.yml, or from a pipeline execution
-# policy (Ultimate) — docs/gitlab/bounds.md.
+# The developer's bounds on its merge request (ADR-0058): include it beside
+# workline.gitlab-ci.yml, or from a pipeline execution policy (Ultimate).
 #   include: [{local: ci/workline.gitlab-ci.yml}, {local: ci/workline-bounds.gitlab-ci.yml}]
-# On a merge request from a workline/developer/<n> branch, each file
-# changed since its target is held to issue n's bounds, read at the
-# target's tip: one refused fails the pipeline, whoever pushed it. No
-# agent, none of the merge request's code run: git diffs it. The verdict
-# is kept on the merge request, for the auditor, with the bot's token;
-# without it, the bounds cannot be read and the job fails, never passes.
-#
-# GitLab runs a merge request's pipeline from its source branch's
-# .gitlab-ci.yml, which the branch can edit: what keeps this job, by
-# tier (`workline doctor` says which the project has):
-#   Ultimate  a pipeline execution policy includes this file, from a
-#             project the merge request cannot touch.
-#   Premium   CODEOWNERS owns the CI files, its approval required on the
-#             default branch: a change to them waits for an owner.
-#   Free      nothing but the review: read each change to the CI files.
-# Self-contained, no anchor nor `extends` from workline.gitlab-ci.yml: a
-# policy's jobs see none of the project's.
+# A refused file fails the pipeline; no agent, no code of the merge request
+# run; without the bot's token it fails. Self-contained, for a policy.
+# What keeps a merge request from editing it out, by tier, and why:
+# docs/gitlab/bounds.md (`workline doctor` reads the tier).
 workline:bounds:
   image: $WORKLINE_IMAGE:$WORKLINE_BOUNDS_VERSION
   stage: test

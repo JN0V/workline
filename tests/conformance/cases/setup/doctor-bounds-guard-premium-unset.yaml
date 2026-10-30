@@ -17,4 +17,4 @@ run: {doctor: true, forge: gitlab}
 expect:
   status: pass
   checks:
-    - {rule: bounds-guard-codeowners-missing, where: ci/workline-bounds.gitlab-ci.yml, level: warn, message: "main's protection does not require a code owner's approval; CODEOWNERS names no owner for ci/workline-bounds.gitlab-ci.yml", fix: "Code owner approval"}
+    - {rule: bounds-guard-codeowners-missing, where: ci/workline-bounds.gitlab-ci.yml, level: warn, message: "main's protection does not require a code owner's approval; CODEOWNERS names no owner whose approval is required for ci/workline-bounds.gitlab-ci.yml", fix: "Code owner approval"}

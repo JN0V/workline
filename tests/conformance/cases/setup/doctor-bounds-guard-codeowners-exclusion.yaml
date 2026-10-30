@@ -1,0 +1,21 @@
+case: setup/doctor-bounds-guard-codeowners-exclusion
+about: >
+  A CODEOWNERS exclusion (`!pattern`), which the doctor does not read
+  (ADR-0058, step 2): whether the CI files are owned cannot be told, so
+  it warns, never a pass, though every file seems owned.
+given:
+  repo: documented
+  setup:
+    - "printf '* @maintainers\\n!/ci/\\n' > CODEOWNERS"
+  config:
+    routing: {events: {issue: [developer]}}
+  forge:
+    merge-requests: []
+    plan: premium
+    code-owner-approval: true
+run: {doctor: true, forge: gitlab}
+expect:
+  status: pass
+  checks:
+    - {rule: bounds-guard-codeowners-missing, level: warn, message: "cannot be told: CODEOWNERS excludes paths"}
+  no-checks: [{rule: bounds-guard-codeowners}]

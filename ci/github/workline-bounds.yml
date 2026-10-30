@@ -1,19 +1,10 @@
-# The developer's bounds on its pull request, on GitHub Actions: copy to
-# .github/workflows/workline-bounds.yml, then require the check
-# `workline bounds` on the default branch (roles/developer/docs/bounds.md#on-the-pull-request;
-# ADR-0058). On a pull request from a workline/developer/<n> branch, each
-# file changed since its base is held to issue n's bounds, read at the
-# base's tip: one refused fails the check, whoever pushed it.
-#
-# `pull_request_target`: GitHub runs this file as the default branch
-# holds it, never the pull request's copy, so a pull request cannot edit
-# its own check. Its code is never run here: the checkout is the base's,
-# the head fetched as data for git to diff, no agent, no tool of the
-# project. Another branch's pull request skips the job, which a required
-# check takes as passed: a person's, reviewed as theirs.
+# The developer's bounds as the check `workline bounds` (ADR-0058): copy to
+# .github/workflows/workline-bounds.yml, require that check on the default
+# branch. Runs the default branch's copy (pull_request_target), never the
+# pull request's code: base checked out, head fetched for git to diff, a
+# read token, no agent. Other branches skip it. Why: roles/developer/docs/bounds.md
 #   bounds        a read token; its verdict is the check.
-#   bounds-apply  the App's key (environment workline-app), no AI key: the
-#                 verdict kept on the pull request, for the auditor.
+#   bounds-apply  the App's key (environment workline-app): the verdict kept.
 name: workline bounds
 on:
   pull_request_target: {types: [opened, synchronize, reopened]}
@@ -58,14 +49,19 @@ jobs:
         run: |
           git -c "http.extraheader=AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)" \
             fetch -q origin "+$HEAD_SHA:refs/remotes/origin/$HEAD_REF"
+          # The engine's output names the pull request's files: no workflow
+          # command is read from it; the annotations escaped, as GitHub asks.
+          stop=$(head -c 16 /dev/urandom | od -An -tx1 | tr -d ' \n')
+          echo "::stop-commands::$stop"
           status=0
           workline develop --bounds --merge-request "$PR" --ai none --no-apply --forge github \
             --input range="$GITHUB_SHA..$HEAD_SHA" --json > bounds.json || status=$?
+          echo "::$stop::"
           echo "status=$status" >> "$GITHUB_OUTPUT"
-          echo "run=$(jq -r '(.pending // [])[0] // empty | split("/") | last' bounds.json)" >> "$GITHUB_OUTPUT"
-          jq -r '.summary // empty' bounds.json
+          echo "run=$(jq -r '(.pending // [])[0] // empty | split("/") | last | select(test("^[0-9]{8}T[0-9]{6}[.][0-9]{9}-[a-z0-9-]+$"))' bounds.json)" >> "$GITHUB_OUTPUT"
           jq -r '.summary // empty' bounds.json >> "$GITHUB_STEP_SUMMARY"
-          jq -r '.findings[]? | "::error file=\(.where // ""),title=workline bounds::\(.rule): \(.message)"' bounds.json || true
+          jq -r 'def d: gsub("%";"%25") | gsub("\r";"%0D") | gsub("\n";"%0A"); def p: d | gsub(":";"%3A") | gsub(",";"%2C");
+            .findings[]? | "::error file=\(.where // "" | p),title=workline bounds::\(.rule // "" | d): \(.message // "" | d)"' bounds.json || true
       - uses: actions/upload-artifact@v4
         if: steps.bounds.outputs.run != ''
         with: {name: workline-bounds, path: .workline-runs, include-hidden-files: true, retention-days: 1}

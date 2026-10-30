@@ -49,9 +49,9 @@ func boundsGuard(r *Report, o Options, projectForge string, line *routing.Config
 		return
 	}
 	ci := ciFiles(o.Repo)
-	bare := ownerless(o.Repo, ci)
+	bare, unread := ownerless(o.Repo, ci)
 	switch {
-	case g.Protected && g.CodeOwnerApproval && len(bare) == 0:
+	case g.Protected && g.CodeOwnerApproval && len(bare) == 0 && unread == "":
 		r.add(Check{Area: "repository", Rule: "bounds-guard-codeowners", Where: strings.Join(ci, ", "), Level: OK,
 			Message: "a change to the CI files waits for a code owner's approval on " + g.Branch + ": a merge request cannot edit out workline:bounds unseen"})
 	case g.Plan == "ultimate":
@@ -65,8 +65,11 @@ func boundsGuard(r *Report, o Options, projectForge string, line *routing.Config
 		} else if !g.CodeOwnerApproval {
 			missing = append(missing, g.Branch+"'s protection does not require a code owner's approval")
 		}
-		if len(bare) > 0 {
-			missing = append(missing, "CODEOWNERS names no owner for "+strings.Join(bare, ", "))
+		switch {
+		case unread != "":
+			missing = append(missing, "whether CODEOWNERS owns the CI files cannot be told: "+unread)
+		case len(bare) > 0:
+			missing = append(missing, "CODEOWNERS names no owner whose approval is required for "+strings.Join(bare, ", "))
 		}
 		r.add(Check{Area: "repository", Rule: "bounds-guard-codeowners-missing", Where: strings.Join(bare, ", "), Level: Warn,
 			Message: "GitLab Premium: a developer's merge request runs its own branch's pipeline and can edit out workline:bounds: " + strings.Join(missing, "; "),
@@ -113,42 +116,69 @@ func ciFiles(repo string) []string {
 	return files
 }
 
-// ownerless are the files no CODEOWNERS rule gives an owner, GitLab's
-// three places read, the last rule that matches a file deciding.
-func ownerless(repo string, files []string) []string {
-	var rules [][2]string // pattern, whether owned
+// coRule is a CODEOWNERS rule: its pattern, its section, whether it
+// names an owner (its own, or its section's default ones).
+type coRule struct {
+	pattern string
+	section int
+	owned   bool
+}
+
+var sectionHeader = regexp.MustCompile(`^\^?\[[^\]]*\](\[\d+\])?\s*(.*)$`)
+
+// ownerless are the files no CODEOWNERS rule gives an owner whose
+// approval is required, GitLab's three places read, the first found. In
+// each section the last rule that matches decides; an optional section
+// (`^[…]`) requires no approval, a section's default owners stand for a
+// rule naming none. An exclusion (`!pattern`) the doctor does not read:
+// said in unread, never taken for owned.
+func ownerless(repo string, files []string) (bare []string, unread string) {
+	var rules []coRule
+	optional := map[int]bool{}
 	for _, p := range []string{"CODEOWNERS", "docs/CODEOWNERS", ".gitlab/CODEOWNERS"} {
 		data, err := os.ReadFile(filepath.Join(repo, p))
 		if err != nil {
 			continue
 		}
+		section, defaults := 0, false
 		for l := range strings.Lines(string(data)) {
 			l = strings.TrimSpace(l)
-			if l == "" || strings.HasPrefix(l, "#") || strings.HasPrefix(l, "[") || strings.HasPrefix(l, "^[") {
+			switch {
+			case l == "" || strings.HasPrefix(l, "#"):
+				continue
+			case strings.HasPrefix(l, "!"):
+				return files, p + " excludes paths (`!`), which the doctor does not read"
+			case strings.HasPrefix(l, "[") || strings.HasPrefix(l, "^["):
+				m := sectionHeader.FindStringSubmatch(l)
+				if m == nil {
+					return files, p + " holds a section header the doctor cannot read: " + l
+				}
+				section++
+				optional[section] = strings.HasPrefix(l, "^")
+				defaults = strings.TrimSpace(m[2]) != ""
 				continue
 			}
 			f := strings.Fields(l)
-			owned := "no"
-			if len(f) > 1 {
-				owned = "yes"
-			}
-			rules = append(rules, [2]string{f[0], owned})
+			rules = append(rules, coRule{pattern: f[0], section: section, owned: len(f) > 1 || defaults})
 		}
 		break // GitLab reads the first file it finds
 	}
-	var bare []string
 	for _, file := range files {
-		owned := false
-		for _, rl := range rules {
-			if codeownersMatch(rl[0], file) {
-				owned = rl[1] == "yes"
+		last := map[int]bool{} // by section, the last matching rule's owner
+		for _, r := range rules {
+			if codeownersMatch(r.pattern, file) {
+				last[r.section] = r.owned
 			}
+		}
+		owned := false
+		for s, o := range last {
+			owned = owned || (o && !optional[s])
 		}
 		if !owned {
 			bare = append(bare, file)
 		}
 	}
-	return bare
+	return bare, ""
 }
 
 // codeownersMatch says whether a CODEOWNERS pattern takes the file: a
