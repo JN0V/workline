@@ -183,6 +183,10 @@ prove the grading first (`TestDeveloperWithStandIns`).
   proven on a fresh tree. The caps, `claude` with tools and the review
   loop are steps 4 to 6 of
   [ADR-0056](../../../docs/adr/0056-the-developers-agent-works-in-a-sandbox-with-tools.md).
+- **A test runner named like a test**: `run-tests.sh` beside the Scope
+  passes the bounds as the agent's own test, so its agent can rewrite
+  the runner the proof calls
+  ([#715](https://github.com/JN0V/workline/issues/715)).
 - **The issue's kind from the forge's types and the project's labels**:
   read from a fixed list of labels only
   ([the merge](merge.md#not-yet)).
