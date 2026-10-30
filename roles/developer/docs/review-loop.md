@@ -4,7 +4,7 @@ sources:
   - roles/developer/role.yaml
   - ci/github/workline-develop.yml
   - ci/gitlab/workline.gitlab-ci.yml
-checked: bcf7feb4
+checked: 822eeba8
 verified: agent:claude-code
 ---
 # The review loop
