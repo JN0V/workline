@@ -3,7 +3,7 @@ sources:
   - roles/developer/role.yaml
   - ci/github/workline-develop.yml
   - internal/developer
-checked: bd66bb99
+checked: aea0b546
 verified: agent:claude-code
 ---
 # Developer
@@ -109,11 +109,14 @@ In `.workline/config.yaml`, under `roles: {developer: {settings: …}}`:
 | `ai-max-turns` | 100 | the turns one call of its agent may take; reached, a Draft |
 | `ai-max-seconds` | 1200 | what a run waits on its agent, then kills it; reached, a Draft |
 | `proof-seconds` | 600 | how long the project's tests may run on its code; past it, a Draft |
+| `proof-command` | none | the tests on the folders its change touches, `{packages}` in it; none, the whole suite ([the proof](docs/proof.md#what-runs)) |
 | `review-rounds` | 5 | the review rounds it runs on its pull request |
 | `person` | `workline:human` | the label its pull request gets past the last round |
 
 The tests it runs are the tester's `test-command` and `test-report`
-([the tester](../tester/README.md)).
+([the tester](../tester/README.md)), or `proof-command` on the touched
+folders. In CI, the judge job takes the project's setup steps first
+([the triggers](docs/triggers.md#the-projects-environment)).
 
 ## Cost
 

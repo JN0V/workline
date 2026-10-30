@@ -87,6 +87,12 @@ roles:
       curator-keep: [tests/conformance/pending.txt]
       curator-proof-command: go run gotest.tools/gotestsum@v1.12.3 --junitfile {report} -- -coverprofile=cover.out {packages}
       curator-mutation-command: go run github.com/go-gremlins/gremlins/cmd/gremlins@v0.6.0 unleash -s -o {report} {package}
+  developer:
+    settings:
+      # Its proof on the packages its code and the acceptance tests touch
+      # (#703), a conformance case running ./tests/conformance; the pull
+      # request's own test job runs them all.
+      proof-command: go run gotest.tools/gotestsum@v1.12.3 --junitfile {report} -- {packages}
   reviewer:
     settings:
       # The role's list, plus the judge's replay set: questions and answers

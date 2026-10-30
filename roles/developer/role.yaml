@@ -70,6 +70,13 @@ settings:
   ai-max-turns: 100
   ai-max-seconds: 1200
   proof-seconds: 600
+  # The proof on the folders the change touches (docs/proof.md): the
+  # tester's test-command, with `{packages}` replaced by the folders of
+  # its code and of the acceptance tests that hold tests, as the
+  # curator's proof command takes them. Unset, or no such folder: the
+  # test-command runs whole, said. The pull request's own CI runs the
+  # whole suite. E.g. `gotestsum --junitfile {report} -- {packages}`.
+  proof-command: ""
   # The review rounds it runs on its pull request, one a reviewer's
   # verdict or a person's comment; past them, the pull request gets the
   # label `person`: a person takes it (docs/review-loop.md).

@@ -48,7 +48,19 @@ type Proof struct {
 	// agent's worktree; At: that commit.
 	Tree string `json:"tree,omitempty"`
 	At   string `json:"at,omitempty"`
+	// Scope: "touched", the proof-command on Packages, the folders of
+	// its code and of the acceptance tests (#703); "whole", the
+	// test-command, Why so in Whole.
+	Scope    string   `json:"scope,omitempty"`
+	Packages []string `json:"packages,omitempty"`
+	Whole    string   `json:"whole,omitempty"`
 }
+
+// The proof's scopes.
+const (
+	Touched = "touched"
+	Whole   = "whole"
+)
 
 // Cap is a bound on the run reached: the setting, what was spent, what it
 // allows.
@@ -59,13 +71,24 @@ type Cap struct {
 }
 
 // prove runs the project's test command on the patches laid on the commit
-// the run read, stopped past the proof's seconds: a cap then.
-func prove(repo, at string, patches []intent.Intention, s Settings) (Proof, *Cap) {
+// the run read, stopped past the proof's seconds: a cap then. With a
+// proof-command naming `{packages}`, on the folders of the patches' files
+// and of also (the acceptance tests) alone; the pull request's own CI
+// runs the whole suite.
+func prove(repo, at string, patches []intent.Intention, also []string, s Settings) (Proof, *Cap) {
 	ts, err := testerSettings(repo)
 	if err != nil {
 		return Proof{Result: Unproven, Why: err.Error()}, nil
 	}
 	p := Proof{Command: ts.Command}
+	scope := tester.Scope{Files: also}
+	if strings.Contains(s.ProofCommand, "{packages}") {
+		scope.Command = s.ProofCommand
+		for _, in := range patches {
+			files, _ := touched(in.Value)
+			scope.Files = append(scope.Files, files...)
+		}
+	}
 	if at == "" {
 		at = "HEAD"
 	}
@@ -74,7 +97,7 @@ func prove(repo, at string, patches []intent.Intention, s Settings) (Proof, *Cap
 		deadline = time.Now().Add(time.Duration(s.ProofSeconds) * time.Second)
 	}
 	start := time.Now()
-	o, f := tester.OnChange(repo, at, patches, ts, deadline)
+	o, f := tester.OnChange(repo, at, patches, ts, deadline, scope)
 	switch {
 	case f != nil && f.Rule == "proof-over-time":
 		p.Result, p.Why = Unproven, fmt.Sprintf("the test command ran past %d s: stopped", s.ProofSeconds)
@@ -84,6 +107,17 @@ func prove(repo, at string, patches []intent.Intention, s Settings) (Proof, *Cap
 		return p, nil
 	}
 	p.Passed, p.Red, p.Tree, p.At = len(o.Passed), o.Red, "fresh", o.At
+	p.Scope, p.Packages = Whole, o.Packages
+	switch {
+	case len(o.Packages) > 0:
+		p.Scope, p.Command = Touched, s.ProofCommand
+	case s.ProofCommand == "":
+		p.Whole = "no proof-command set"
+	case scope.Command == "":
+		p.Whole = "its proof-command names no {packages}"
+	default:
+		p.Whole = "no file it touches lies in a folder holding tests"
+	}
 	p.Result = Red
 	if o.Green() {
 		p.Result = Green
@@ -255,6 +289,12 @@ func proofLines(p Proof, caps []Cap) string {
 		}
 	default:
 		fmt.Fprintf(&b, "- The project's tests did not run whole: %s\n", p.Why)
+	}
+	switch p.Scope {
+	case Touched:
+		fmt.Fprintf(&b, "- On the folders its code and the acceptance tests touch: `%s`. This pull request's own CI runs the whole suite.\n", strings.Join(p.Packages, " "))
+	case Whole:
+		fmt.Fprintf(&b, "- The whole suite: %s (the developer's `proof-command`, with `{packages}`, runs the touched folders alone).\n", p.Whole)
 	}
 	if p.Tree == "fresh" && p.At != "" {
 		fmt.Fprintf(&b, "- Run on a fresh checkout of %s, its code laid on it: not its agent's worktree.\n", shortSHA(p.At))

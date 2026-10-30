@@ -5,7 +5,7 @@ sources:
   - internal/tester/onchange.go
   - internal/tester/fresh.go
   - roles/developer/role.yaml
-checked: 1b4ad84a
+checked: aea0b546
 verified: agent:claude-code
 ---
 # The proof and the caps: ready or a Draft
@@ -30,10 +30,28 @@ flowchart LR
   for both roles: the project's tests.
 - **The acceptance tests**: they run with the rest, its code laid on
   the tester's Draft when one is open ([the pull request](pull-request.md)).
+- **On the touched folders**: [below](#what-runs).
 - **Green**: tests reported, none red, the command exited 0.
 - **Red**: a test failed, errored or was skipped, or the command failed.
 - **Not run whole**: no `test-command`, a patch that does not apply, no
   report or one naming no test: not green, never a pass.
+
+## What runs
+
+- **`proof-command` set**, holding `{packages}`: it runs in place of
+  `test-command`, `{packages}` replaced by the touched folders, as the
+  tester's curator takes them
+  ([its removals](../../tester/docs/removals.md)).
+- **The touched folders**: those of its code and of the acceptance
+  tests. Each file counts its own folder, else the nearest above it
+  holding a test file (`**/*_test.go`, not `tests/**`). A conformance
+  case counts its runner's package.
+- **The whole suite stays**: the pull request's own CI runs it. A
+  package that only imports a touched one is proven there, not here.
+- **Whole here too**, said in the Verification and the record: no
+  `proof-command`, one with no `{packages}`, or no touched folder
+  holding tests.
+- **E.g., Go**: `gotestsum --junitfile {report} -- {packages}`.
 
 ## A fresh tree
 
@@ -56,11 +74,12 @@ Step 3 of
   file whose attributes name a filter (git-lfs, an encryption), is not
   checked out whole there. The proof does not run: unproven, the file
   named, a Draft. Never a red or a green on a pointer file.
-- **Not apart yet**: the job's environment outside the tree (the home
-  folder, tool caches, the path) is the one the agent ran in; the
-  proof in the project's own environment is
-  [#703](https://github.com/JN0V/workline/issues/703), on today's
-  default branch [#701](https://github.com/JN0V/workline/issues/701).
+- **Not apart**: the job's environment outside the tree (the home
+  folder, tool caches, the path) is the one the agent ran in. In CI,
+  the project's setup steps make it the project's
+  ([the triggers](triggers.md#the-projects-environment)); a local run
+  uses the person's machine as it is. The proof on today's default
+  branch: [#701](https://github.com/JN0V/workline/issues/701).
 
 ## The caps
 
@@ -110,7 +129,8 @@ How each agent is held ([ADR-0056](../../../docs/adr/0056-the-developers-agent-w
 
 - **In the claim's comment** on the issue: `proof` (result, command,
   tests passed, those red, why it did not run, `tree: fresh` and the
-  commit checked out, `at`), `caps` (setting, spent, allowed), and the
+  commit checked out, `at`, `scope` touched or whole, the `packages`
+  run, why `whole`), `caps` (setting, spent, allowed), and the
   `turns` and `tokens` its agent reported using; a review round's, in
   its round.
 - **Read by the auditor**

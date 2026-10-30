@@ -1,6 +1,6 @@
 ---
 sources: [ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile]
-checked: a797443e
+checked: aea0b546
 verified: agent:documentalist
 judged: e8a46f7
 ---
@@ -25,6 +25,10 @@ starts them ([pipelines a tool starts](../gitlab-trigger.md)).
 
 - **Its scheduled run**: list `developer` in the `schedule` line; the
   gardening jobs run it. Install your test runner in their image.
+- **Its environment**: redefine `.workline:setup` in your
+  `.gitlab-ci.yml`, its script your test job's setup commands; its
+  judges run it before the agent and the proof
+  ([the project's environment](../../roles/developer/docs/triggers.md#the-projects-environment)).
 - **An issue labelled ready**: GitLab starts no pipeline on a label. A
   tool given the issue webhook starts one on the default branch, with
   `WORKLINE_TASK=develop` and `ISSUE_IID`; the jobs `workline:develop:*`

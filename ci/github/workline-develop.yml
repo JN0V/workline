@@ -5,7 +5,8 @@
 # On its own pull request (workline/developer/…), the reviewer's verdict
 # (its comment, written by the App) or a person's comment runs a review
 # round: its fix pushed on its branch (docs/review-loop.md).
-#   judge, review          the agent and a read token; install your test runner there.
+#   judge, review          the agent and a read token; your setup steps run there first:
+#                          .github/actions/workline-setup/action.yml, when you have it.
 #   apply, review-apply    the App's key (environment workline-app), no AI key.
 # Why each part: roles/developer/docs/triggers.md.
 name: workline develop
@@ -42,6 +43,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: {fetch-depth: 0, persist-credentials: false}   # no token left in .git/config for the agent (ADR-0056)
+      # Your project's setup steps, before the agent and the proof: a
+      # composite action, .github/actions/workline-setup/action.yml, read
+      # from the default branch, holding what your test job installs (a
+      # language, a tool). None: the runner as it is.
+      - name: The project's setup steps
+        if: hashFiles('.github/actions/workline-setup/action.yml') != ''
+        uses: ./.github/actions/workline-setup
       # The engine at the version pinned above, from its release, checksum
       # verified: seconds, not a build.
       - name: workline
@@ -54,9 +62,6 @@ jobs:
       - name: Claude, when the repository gives its token
         if: env.HAS_CLAUDE == 'true'
         run: npm install -g @anthropic-ai/claude-code
-      # Your test runner here, and every tool your test job installs: the
-      # developer proves its code with the tester's `test-command` before
-      # it opens the pull request; a tool missing turns a test red here.
       - name: The issue line (proposals only)
         id: line
         env:
@@ -179,6 +184,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: {fetch-depth: 0, persist-credentials: false}   # no token left in .git/config for the agent (ADR-0056)
+      # Your setup steps, from the default branch, before the round
+      # checks its pull request's code out.
+      - name: The project's setup steps
+        if: hashFiles('.github/actions/workline-setup/action.yml') != ''
+        uses: ./.github/actions/workline-setup
       - name: workline
         run: |
           bin="$RUNNER_TEMP/bin"; mkdir -p "$bin"; cd "$RUNNER_TEMP"
@@ -189,8 +199,6 @@ jobs:
       - name: Claude, when the repository gives its token
         if: env.HAS_CLAUDE == 'true'
         run: npm install -g @anthropic-ai/claude-code
-      # Your test runner here: the developer proves its fix with the
-      # tester's `test-command` before it is pushed.
       - name: The round (proposed only)
         id: round
         env:

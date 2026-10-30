@@ -4,7 +4,7 @@ sources:
   - internal/developer/developer.go
   - ci/github/workline-develop.yml
   - ci/gitlab/workline.gitlab-ci.yml
-checked: 1fa2e7f4
+checked: aea0b546
 verified: agent:claude-code
 ---
 # The triggers
@@ -40,8 +40,9 @@ routing:
   - A label the job's own token puts starts no workflow on GitHub; the
     App's does ([the App](../../../docs/ci-github-app.md)). Without the
     App, the schedule takes the issue.
-  - The `judge` job holds the agent and a read token, your test runner
-    installed there; `apply` holds the App's key, no AI key.
+  - The `judge` job holds the agent and a read token, your setup steps
+    run there ([below](#the-projects-environment)); `apply` holds the
+    App's key, no AI key.
 - **GitLab**: no pipeline starts on a label. A tool given the issue
   webhook starts one on the default branch, with `WORKLINE_TASK=develop`
   and `ISSUE_IID`
@@ -70,9 +71,7 @@ routing:
   own. A line without it blocks (`no-merge-request`), the agent not
   asked, nothing claimed. `workline develop` always opens one.
 - **Your test runner** in the judging job: the code is proven there
-  ([the proof](proof.md)).
-  - With every tool your test job installs: a test that needs a missing
-    one goes red on the proof alone, and the pull request opens a Draft.
+  ([the proof](proof.md)); [the project's environment](#the-projects-environment).
 - **Two jobs**: the judge holds the agent and a read token for the
   pick; the engine gives the agent no forge token. The applying job
   holds the write token, no AI key.
@@ -128,3 +127,34 @@ Cases: `developer/routing-schedule-runs-developer`,
 `routing-ready-runs-developer`, `routing-schedule-none-ready-said`,
 `routing-needs-a-merge-request`, `skips-issue-without-tests`,
 `backs-off-issue-taken-meanwhile`.
+
+## The project's environment
+
+The proof needs every tool your test job installs: one missing turns a
+test red on the proof alone, and the pull request opens a Draft. Your
+setup steps run in the developer's judging jobs (`judge`, `review`),
+from the default branch, before the agent and the proof:
+
+- **GitHub**: a composite action,
+  `.github/actions/workline-setup/action.yml`, holding your test job's
+  setup steps; [workline-develop.yml](../../../ci/github/workline-develop.yml)
+  runs it when it is there.
+- **GitLab**: redefine `.workline:setup` in your `.gitlab-ci.yml`, its
+  `script` your test job's setup commands; the jobs
+  `workline:develop:judge` and `workline:review:judge` run it. Their
+  `image` too, when your tests need another.
+- **None**: the runner, or the image, as it is.
+- **A step that fails** fails the job, named in its log: never a red
+  test.
+- **Locally**: the person's machine, as it is.
+
+```yaml
+# .github/actions/workline-setup/action.yml
+name: workline setup
+description: What the project's test job installs.
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-go@v5
+      with: {go-version-file: go.mod}
+```
