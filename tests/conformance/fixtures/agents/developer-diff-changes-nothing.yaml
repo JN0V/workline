@@ -1,0 +1,11 @@
+# The developer's agent answering a round with a diff whose removed and
+# added lines are the same: it changes nothing on the branch (the first
+# live round on pull request 699 did this), and a note that it did not fix.
+- patch: |
+    --- a/lib.sh
+    +++ b/lib.sh
+    @@ -1,2 +1,2 @@
+     add() { echo $(($1 + $2)); }
+    -mul() { echo $(($1 * $2)); }
+    +mul() { echo $(($1 * $2)); }
+- note: "I meant to check the overflow, but the patch above changes nothing."

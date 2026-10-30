@@ -1,0 +1,41 @@
+case: developer/fix-diff-changes-nothing
+about: >
+  A round whose fix is a diff removing and adding the same lines changes
+  nothing either (ADR-0054, step 6): it is no fix, the round no-code and
+  said on the pull request with the agent's note; no commit is tried, so
+  the apply does not stop on git's "nothing to commit".
+given:
+  repo: tested-draft
+  setup:
+    - "git checkout -q -b workline/developer/3 && printf 'add() { echo $(($1 + $2)); }\\nmul() { echo $(($1 * $2)); }\\n' > lib.sh && git commit -qam 'feat: mul for #3' -m 'Workline-Role: developer' && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main workline/tester/issue-3 workline/developer/3"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:ready", "workline:developing"]
+        body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        draft: true
+        comments: ["The tests of #3, frozen.\n\n<!-- workline:tester-record {\"issue\":3,\"base\":\"main\",\"files\":{\"tests/test_mul_by_zero.sh\":\"8f123a0bacbd681063880b867df38dd216784b97\",\"tests/test_mul_two_by_three.sh\":\"2dee0641bd7a79057ade7bff5af43b603125f543\"}} -->\n<!-- workline:sticky=tester/tests -->"]
+      - id: 2
+        branch: workline/developer/3
+        title: "Multiply two numbers"
+        body: "Closes #3"
+        comments:
+          - "**The developer**'s record of this pull request, for its next runs and the auditor.\n\n<!-- workline:developer-act {\"act\":\"code\",\"issue\":3,\"acceptance\":[\"tests/test_mul_by_zero.sh\",\"tests/test_mul_two_by_three.sh\"],\"code\":[\"lib.sh\"],\"proof\":{\"result\":\"green\",\"passed\":2}} -->\n<!-- workline:sticky=developer/code -->"
+          - "**workline reviewer**\n\n| | | Where | Finding |\n|---|---|---|---|\n| **blocks** | correctness | `lib.sh:2` | Important: mul may overflow — Fix: check it. |\n\n<!-- workline:record reviewed=1111111 runs=1 -->\n<!-- workline:sticky=reviewer/summary -->"
+run: {develop: [--merge-request, "2"], ai: "fake:developer-diff-changes-nothing"}
+expect:
+  status: pass
+  summary: "round 1 of 5 on merge request 2"
+  agent-calls: 1
+  findings: [{rule: no-code, where: "merge request 2", message: "the round is counted, nothing pushed"}]
+  not-pushed: [workline/developer/3]
+  forge:
+    merge-requests:
+      - id: 2
+        comment-contains: ["review round 1 of 5: no fix within its bounds", "\"result\":\"no-code\"", "the patch above changes nothing"]

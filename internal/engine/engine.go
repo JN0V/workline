@@ -2655,7 +2655,11 @@ func git(repo string, stdin io.Reader, args ...string) (string, error) {
 	var out, errOut strings.Builder
 	cmd.Stdout, cmd.Stderr = &out, &errOut
 	if err := cmd.Run(); err != nil {
-		return "", fmt.Errorf("git %s: %v: %s", args[0], err, strings.TrimSpace(errOut.String()))
+		said := strings.TrimSpace(errOut.String())
+		if said == "" { // git commit says "nothing to commit" on its output
+			said = strings.TrimSpace(out.String())
+		}
+		return "", fmt.Errorf("git %s: %v: %s", args[0], err, said)
 	}
 	return strings.TrimSpace(out.String()), nil
 }
