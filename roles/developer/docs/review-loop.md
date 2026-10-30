@@ -4,7 +4,7 @@ sources:
   - roles/developer/role.yaml
   - ci/github/workline-develop.yml
   - ci/gitlab/workline.gitlab-ci.yml
-checked: bcf7feb4
+checked: 822eeba8
 verified: agent:claude-code
 ---
 # The review loop
@@ -42,8 +42,9 @@ step 6).
 - **Its fix** is held to the issue's [bounds](bounds.md), proven on
   the project's tests ([the proof](proof.md)), then pushed on its
   branch, never forced. Red, it is pushed still and said: the forge's
-  checks and the reviewer read it next. A fix that changes nothing
-  pushes nothing; the round is counted still.
+  checks and the reviewer read it next. A fix that changes nothing,
+  whole file or diff, pushes nothing; the round is counted still, its
+  agent's notes said.
 - **Its record**: one comment on the pull request says each round, what
   was asked and how it ended; its hidden line, for the next run and
   the [auditor](../../auditor/role.yaml).
@@ -74,6 +75,8 @@ step 6).
   workline's App, or a comment of a person of the project.
   - A comment the job's own token writes wakes no workflow: the
     reviewer needs the App.
+  - A comment on any pull request wakes it: a first job, `whose`, reads
+    the branch in one call; on another's, nothing else runs.
 - **GitLab**: no pipeline starts on a comment. A tool given the note
   webhook starts one with `WORKLINE_TASK=review`, `MR_IID` and
   `MR_SOURCE_BRANCH` ([GitLab triggers](../../../docs/gitlab-trigger.md)).

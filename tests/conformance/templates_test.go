@@ -1737,6 +1737,7 @@ func TestDeveloperTemplatesRunTheReviewRound(t *testing.T) {
 		On   map[string]any `yaml:"on"`
 		Jobs map[string]struct {
 			If          string            `yaml:"if"`
+			Needs       string            `yaml:"needs"`
 			Permissions map[string]string `yaml:"permissions"`
 			Steps       []struct {
 				Run string            `yaml:"run"`
@@ -1747,9 +1748,14 @@ func TestDeveloperTemplatesRunTheReviewRound(t *testing.T) {
 	if err := yaml.Unmarshal(data, &wf); err != nil {
 		t.Fatal(err)
 	}
-	review := wf.Jobs["review"]
-	if _, ok := wf.On["issue_comment"]; !ok || !strings.Contains(review.If, "workline:sticky=reviewer/") || !strings.Contains(review.If, "author_association") || review.Permissions["contents"] != "read" {
-		t.Errorf("workline-develop.yml, review: not woken by the reviewer's comment and a person's, or holds a write token: %v %q %v", wf.On, review.If, review.Permissions)
+	// A comment on any pull request wakes the workflow: whose reads its
+	// branch in one call, and the round sets up nothing on another's.
+	review, whose := wf.Jobs["review"], wf.Jobs["whose"]
+	if _, ok := wf.On["issue_comment"]; !ok || !strings.Contains(whose.If, "workline:sticky=reviewer/") || !strings.Contains(whose.If, "author_association") || len(whose.Steps) != 1 || review.Permissions["contents"] != "read" {
+		t.Errorf("workline-develop.yml, whose and review: not woken by the reviewer's comment and a person's, or more than one step to tell, or a write token: %v %q %v", wf.On, whose.If, review.Permissions)
+	}
+	if review.Needs != "whose" || review.If != "needs.whose.outputs.branch != ''" || !strings.Contains(whose.Steps[0].Run, "workline/developer/*)") {
+		t.Errorf("workline-develop.yml, review: runs on a pull request whose branch is not the developer's: needs %q, if %q", review.Needs, review.If)
 	}
 	if strings.Contains(wf.Jobs["judge"].If, "issue_comment") || !strings.Contains(wf.Jobs["judge"].If, "github.event_name == 'issues'") {
 		t.Errorf("workline-develop.yml, judge: a comment would take an issue: %q", wf.Jobs["judge"].If)

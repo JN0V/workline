@@ -585,9 +585,15 @@ func roundBody(x Round, s Settings, notes []string, analysis string) string {
 	return b.String()
 }
 
-// unchanged says a patch given whole, {file, content}, writes what its
-// file holds already on the branch's head.
+// unchanged says a patch writes what the branch's head holds already:
+// given whole, {file, content}, its file's content; given as a diff, the
+// tree it leaves, laid as the engine lays it on an index of its own (a
+// diff removing and adding the same lines). A diff git cannot lay is not
+// said unchanged: the apply refuses it.
 func unchanged(repo string, v any) bool {
+	if diff, ok := v.(string); ok {
+		return diffChangesNothing(repo, diff)
+	}
 	m, ok := v.(map[string]any)
 	if !ok {
 		return false
@@ -599,6 +605,30 @@ func unchanged(repo string, v any) bool {
 	}
 	out, err := exec.Command("git", "-C", repo, "show", "HEAD:"+file).Output()
 	return err == nil && string(out) == content
+}
+
+func diffChangesNothing(repo, diff string) bool {
+	tmp, err := os.MkdirTemp("", "workline-unchanged-")
+	if err != nil {
+		return false
+	}
+	defer func() { _ = os.RemoveAll(tmp) }()
+	env := append(os.Environ(), "GIT_INDEX_FILE="+filepath.Join(tmp, "index"))
+	run := func(stdin string, args ...string) (string, error) {
+		cmd := exec.Command("git", append([]string{"-C", repo}, args...)...)
+		cmd.Env, cmd.Stdin = env, strings.NewReader(stdin)
+		out, err := cmd.Output()
+		return strings.TrimSpace(string(out)), err
+	}
+	if _, err := run("", "read-tree", "HEAD"); err != nil {
+		return false
+	}
+	if _, err := run(intent.NormalizeDiff(diff), "apply", "--cached", "--recount", "--unidiff-zero", "-"); err != nil {
+		return false
+	}
+	tree, err := run("", "write-tree")
+	head, herr := run("", "rev-parse", "HEAD^{tree}")
+	return err == nil && herr == nil && tree == head
 }
 
 // noteText is a note's text, given bare or as {text}.

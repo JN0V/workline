@@ -136,13 +136,37 @@ jobs:
   # A review round (ADR-0054, step 6): a fresh run on the developer's own
   # pull request, reading its record, the reviewer's findings and a
   # person's comments; its fix proposed only.
-  review:
+  # Whose pull request: a comment on any pull request wakes this
+  # workflow, and its event names no branch. One call to the forge says
+  # whether it is the developer's, before the round sets anything up.
+  whose:
     if: >-
       (github.event_name == 'workflow_dispatch' && inputs['pull-request'] != '') ||
       (github.event_name == 'issue_comment' && github.event.issue.pull_request && github.event.issue.state == 'open' &&
         (contains(github.event.comment.body, 'workline:sticky=reviewer/') ||
           (github.event.action == 'created' && github.event.comment.user.type != 'Bot' &&
             contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association))))
+    runs-on: ubuntu-latest
+    permissions: {pull-requests: read}
+    outputs:
+      branch: ${{ steps.pr.outputs.branch }}
+    steps:
+      - id: pr
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR: ${{ github.event.issue.number || inputs['pull-request'] }}
+        run: |
+          printf '%s' "$PR" | grep -Eqx '[0-9]+' || { echo "::error title=workline::not a pull request number: $PR"; exit 64; }
+          branch=$(gh pr view "$PR" --json headRefName,isCrossRepository --jq 'select(.isCrossRepository | not) | .headRefName')
+          case "$branch" in
+            workline/developer/*) echo "branch=$branch" >> "$GITHUB_OUTPUT" ;;
+            *) echo "pull request $PR is not the developer's: no round" ;;
+          esac
+
+  review:
+    needs: whose
+    if: needs.whose.outputs.branch != ''
     concurrency:
       group: workline-develop-review-${{ github.event.issue.number || inputs['pull-request'] }}
       cancel-in-progress: false
@@ -174,10 +198,11 @@ jobs:
           WORKLINE_APP_ID: ${{ vars.WORKLINE_APP_ID }}   # the App whose comments keep the records a role reads back (ADR-0051)
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           PR: ${{ github.event.issue.number || inputs['pull-request'] }}
+          BRANCH: ${{ needs.whose.outputs.branch }}
         run: |
           ai=none; [ -n "$CLAUDE_CODE_OAUTH_TOKEN" ] && ai=claude
           printf '%s' "$PR" | grep -Eqx '[0-9]+' || { echo "::error title=workline::not a pull request number: $PR"; exit 64; }
-          branch=$(gh pr view "$PR" --json headRefName,isCrossRepository --jq 'select(.isCrossRepository | not) | .headRefName')
+          branch=$BRANCH
           case "$branch" in workline/developer/*) ;; *) echo "pull request $PR is not the developer's: no round"; exit 0;; esac
           # Its branch's head: the fix is laid and proven there.
           git fetch -q origin "$branch" && git checkout -q -B "$branch" FETCH_HEAD
