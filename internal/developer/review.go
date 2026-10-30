@@ -285,6 +285,9 @@ func reviewPre(runDir, repo string, s Settings, id int) int {
 		return final(runDir, verdict.Verdict{Status: verdict.Pass, Summary: fmt.Sprintf("no agent: %d finding%s wait for a run with one, no round counted", len(r.Asked), plural(len(r.Asked))),
 			Findings: []verdict.Finding{{Rule: "no-agent", Level: "warn", Where: where, Message: "fixing a finding is judgement on code: with no agent, nothing is fixed (principle 5)"}}})
 	}
+	if v := refuseCredentials(repo, nil); v != nil {
+		return final(runDir, *v)
+	}
 	n := a.Round + 1
 	r.FiveWhys = n >= 3 && !a.Whys && slices.ContainsFunc(r.Asked, func(x Asked) bool { return slices.Contains(a.Seen, x.Key) })
 	is, err := f.Issue(issue)
