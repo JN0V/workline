@@ -24,7 +24,7 @@ The agent is a choice: none, `claude`, or `cmd:<any command>`.
   ([the bounds](bounds.md#a-worktree-its-diff-is-the-code)), then
   proven on a fresh tree ([the proof](proof.md#a-fresh-tree)).
 - **The rights of whoever runs it**: on a machine, the person's; in
-  CI, the job's read-only token. Nothing refused, said once in the
+  CI, the job's. Nothing refused, said once in the
   run's output and in the pull request; the forge's guards decide what
   merges ([the pull request](pull-request.md#who-opens-it)).
 

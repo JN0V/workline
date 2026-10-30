@@ -140,7 +140,7 @@ func body(a Act, ready bool) string {
 		}
 	}
 	fmt.Fprintf(&b, "\n## %s\n\n", work.Name(work.Verification))
-	fmt.Fprintf(&b, "- Its agent ran with the rights of whoever ran it: %s.\n", rights())
+	fmt.Fprintf(&b, "- %s\n", rightsLine())
 	if a.AgentFailed != "" {
 		fmt.Fprintf(&b, "- Its agent failed: %s. What it edited was proven all the same.\n", a.AgentFailed)
 	}

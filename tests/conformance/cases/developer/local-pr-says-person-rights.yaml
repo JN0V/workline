@@ -27,4 +27,4 @@ expect:
     merge-requests:
       - id: 2
         branch: workline/developer/3
-        body-contains: ["- Its agent ran with the rights of whoever ran it: the agent runs with your account's rights; the forge's guards decide what merges."]
+        body-contains: ["- Its agent ran with the rights of the account that ran it; the forge's guards decide what merges."]

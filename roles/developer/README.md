@@ -93,7 +93,7 @@ request's description:
   A pull request with your commits waits for your yes.
 - **Set those guards first**: an unprotected default branch is as open
   to the agent as to you.
-- **In CI**, it says the job's read-only token instead.
+- **In CI**, it says the CI job's rights instead: what the job's token may do, the CI config decides.
 
 ## Settings
 
