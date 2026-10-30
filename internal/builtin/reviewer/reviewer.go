@@ -1868,7 +1868,11 @@ func settled(runDir, repo string, s Settings, st state, c candidates) (Review, [
 		level := "warn"
 		if s.blocking(f) {
 			level = ""
-			blocks = append(blocks, Block{Lens: f.Lens, At: st.Head, Where: f.Where, Title: shortMessage(f), Cause: f.Cause, Side: f.Side})
+			b := Block{Lens: f.Lens, At: st.Head, Where: f.Where, Title: shortMessage(f), Cause: f.Cause, Side: f.Side}
+			if f.Symptom != nil && f.Symptom.Path != f.Cause.Path {
+				b.Shows = f.Symptom.Path
+			}
+			blocks = append(blocks, b)
 		}
 		v.Findings = append(v.Findings, verdict.Finding{Rule: f.Lens, Where: f.Where, Level: level, Message: message(f)})
 	}

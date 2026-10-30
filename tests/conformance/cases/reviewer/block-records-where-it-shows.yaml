@@ -1,0 +1,17 @@
+case: reviewer/block-records-where-it-shows
+about: "A finding that blocks, its cause in one file and its symptom in another, is recorded with the file it shows in: a later commit there may answer it, as one to its cause's file may."
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && printf 'package calc\\n\\n// Mean is the mean of the values.\\nfunc Mean(values []int) int { return Average(values) }\\n' > calc/mean.go && git add calc && git commit -qm 'fix: average over the count'"]
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  config: {roles: {reviewer: {settings: {ai-findings: block}}}}
+  forge:
+    issues: []
+    merge-requests: [{id: 5, labels: [], comments: []}]
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD, lenses: correctness}, target: {merge-request: 5}, ai: "fake:review-shows-elsewhere"}
+expect:
+  status: block
+  findings: [{rule: correctness, level: block, where: "calc/calc.go:11"}]
+  forge:
+    merge-requests:
+      - {id: 5, comments: 1, comment-contains: ['"cause":{"path":"calc/calc.go"', '"shows":"calc/mean.go"']}

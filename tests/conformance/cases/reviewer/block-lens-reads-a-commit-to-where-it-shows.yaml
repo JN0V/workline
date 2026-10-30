@@ -1,0 +1,34 @@
+case: reviewer/block-lens-reads-a-commit-to-where-it-shows
+about: "The reviewer blocked a merge request on its commit, the finding's cause in one file, its symptom in another. The author answers it where it shows: a commit to the symptom's file, the cause's line left as it was. The lens that blocked reads that commit, as it would one to the cause's file, and finds nothing: the block goes. Else a fix made where the finding shows could never answer it."
+given:
+  repo: reviewed
+  setup:
+    - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && printf 'package calc\\n\\n// Mean is the mean of the values.\\nfunc Mean(values []int) int { return Average(values) }\\n' > calc/mean.go && git add calc && git commit -qm 'fix: average over the count'"
+    # The review of that commit blocked on its finding: recorded with it.
+    - "sed -i \"s/@reviewed@/$(git rev-parse HEAD)/g\" \"$FORGE_FILE\""
+    - "sed -i 's|return Average(values)|return Average(values) * (len(values) - 1) / len(values)|' calc/mean.go && git commit -qam 'fix: the mean over the whole count'"
+  config:
+    routing: {events: {merge-request: [reviewer]}}
+    roles: {reviewer: {settings: {ai-findings: {correctness: block}}}}
+  forge:
+    issues: []
+    merge-requests:
+      - id: 5
+        labels: []
+        comments:
+          - |
+            **workline reviewer** — 1 findings on the change; lenses: correctness; the author fixes what blocks.
+
+            <!-- workline:record reviewed=@reviewed@ runs=1 read=all -->
+            <!-- workline:blocks [{"lens":"correctness","at":"@reviewed@","where":"calc/calc.go:11","title":"Important: Mean divides by one less than the count","cause":{"path":"calc/calc.go","quote":"return total / (len(values) - 1)"},"shows":"calc/mean.go"}] -->
+
+            <!-- workline:sticky=reviewer/summary -->
+run: {route: merge-request, warn-apart: true, input: {range: main..HEAD}, target: {merge-request: 5}, ai: "fake:review-nothing"}
+expect:
+  status: pass
+  agent-calls: 1
+  calls: [{task: part, for: 1-correctness}]
+  no-findings: [{rule: correctness}]
+  forge:
+    merge-requests:
+      - {id: 5, comments: 1, comment-contains: " runs=2 ", comment-lacks: ["**blocks**", "workline:blocks"]}

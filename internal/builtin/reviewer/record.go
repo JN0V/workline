@@ -86,6 +86,28 @@ type Block struct {
 	Title string `json:"title"` // its severity and title, as its row reads beside its comment on the line (#277)
 	Cause Quote  `json:"cause"`
 	Side  string `json:"side,omitempty"` // where its cause was found, onHead or onRemoved: looked for there alone (#570); none in a record before it
+	Shows string `json:"shows,omitempty"` // the file its symptom lies in, when not the cause's: a commit there may answer it too
+}
+
+// files are the files a commit may answer the block in: its cause's, and
+// the one it shows in.
+func (b Block) files() []string {
+	if b.Shows == "" {
+		return []string{b.Cause.Path}
+	}
+	return []string{b.Cause.Path, b.Shows}
+}
+
+// touches tells whether the files changed hold one a commit may answer
+// the block in.
+func (b Block) touches(files []File) bool {
+	changed := paths(files)
+	for _, f := range b.files() {
+		if slices.Contains(changed, f) {
+			return true
+		}
+	}
+	return false
 }
 
 // SummaryKey keys the reviewer's one comment on a merge request; WarnKey,
@@ -288,7 +310,7 @@ func (r Record) owing(asked, failed []string) []string {
 // on a line the change removes that holds its quote too; one found on a
 // removed line while the change still removes it. A cause no longer found
 // is a commit's answer; one whose file moved is found on its new path, and
-// kept there (#358). One quoted from an issue stands until its lens reads
+// kept there (#358), as is the file it shows in. One quoted from an issue stands until its lens reads
 // the issue again. A block recorded before its side was is looked for on
 // both, as it was then.
 func standing(repo string, s Settings, st state, blocks []Block) []Block {
@@ -304,13 +326,16 @@ func standing(repo string, s Settings, st state, blocks []Block) []Block {
 			}
 			b.Where, b.Cause.Path = f.Where, f.Cause.Path
 		}
+		if to, ok := st.Change.Moved[b.Shows]; ok {
+			b.Shows = to
+		}
 		out = append(out, b)
 	}
 	return out
 }
 
-// answering are the lenses of the standing blocks whose cause's file the
-// commits a lens reads change: each is asked, whosever turn it is, so that
+// answering are the lenses of the standing blocks whose cause's file, or
+// the file they show in, the commits a lens reads change: each is asked, whosever turn it is, so that
 // a commit that may answer a block is never recorded unread by its lens,
 // the block then held until its line changed (ADR-0020, amended). A lens
 // with nothing to read in this change (skip) is not.
@@ -320,7 +345,7 @@ func answering(blocks []Block, files []File, skip map[string]string) []string {
 		if _, ok := skip[b.Lens]; ok || slices.Contains(out, b.Lens) {
 			continue
 		}
-		if slices.Contains(paths(files), b.Cause.Path) {
+		if b.touches(files) {
 			out = append(out, b.Lens)
 		}
 	}
@@ -328,8 +353,8 @@ func answering(blocks []Block, files []File, skip map[string]string) []string {
 }
 
 // reread leaves out the standing blocks a review read again (#326): a
-// whole one, their lens answering, given the cause's file among those the
-// new commits change, or its issue. Found again and blocking, it is the
+// whole one, their lens answering, given the cause's file, or the one it
+// shows in, among those the new commits change, or its issue. Found again and blocking, it is the
 // review's own finding; found again, its judge not saying yes, it still
 // stands; not found, or its judge saying no, it is answered.
 func reread(repo string, s Settings, st state, c candidates, related []Finding, whole bool) ([]Block, error) {
@@ -358,7 +383,7 @@ func reread(repo string, s Settings, st state, c candidates, related []Finding, 
 		if strings.HasPrefix(b.Cause.Path, "#") {
 			return issueOf(st, b.Cause.Path) != nil
 		}
-		return slices.Contains(paths(files), b.Cause.Path)
+		return b.touches(files)
 	}), nil
 }
 

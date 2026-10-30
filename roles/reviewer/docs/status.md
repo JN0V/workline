@@ -176,7 +176,9 @@ its measure in
   `rules-block-still-comments`.
 - **A block stands until a commit answers it**: `block-stands-*`,
   `block-goes-*`, `block-found-again-shown-once`,
-  `passed-stays-passed-on-the-same-commits-again`.
+  `passed-stays-passed-on-the-same-commits-again`; answered where it
+  shows too: `block-records-where-it-shows`,
+  `block-lens-reads-a-commit-to-where-it-shows`.
 - **A line per finding judged**, every run's, on GitHub and GitLab, the
   oldest gone first past the comment's size, for the weekly sample
   ([ADR-0046](../../../docs/adr/0046-the-auditor-re-checks-every-roles-acts.md)):
