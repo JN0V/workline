@@ -213,7 +213,7 @@ func TestMergeRequestReadyOnlyGreenUncapped(t *testing.T) {
 		{"unproven", Act{Issue: 7, Proof: &Proof{Result: Unproven, Why: "no report"}}, true},
 		{"green, its agent failed", Act{Issue: 7, Proof: green, AgentFailed: "it gave up"}, true},
 	} {
-		mr := mergeRequest(tc.a, "Add it")
+		mr := mergeRequest(tc.a, "Add it", Subjects{})
 		if mr["draft"] != tc.draft {
 			t.Errorf("%s: draft = %v, want %v", tc.name, mr["draft"], tc.draft)
 		}

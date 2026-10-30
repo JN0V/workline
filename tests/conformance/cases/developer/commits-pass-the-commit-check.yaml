@@ -1,0 +1,48 @@
+case: developer/commits-pass-the-commit-check
+about: >
+  The developer's own commits pass the project's commit check (#736):
+  its tests' and its code's subjects read `type(scope): summary`, `test`
+  and the issue's kind (`fix` for a bug), the issue's title as the
+  summary, its code taken out, cut on a word to the committer's limit.
+  The committer, routed on the merge request, passes them, the
+  Workline-Role trailer kept.
+given:
+  repo: tested-draft
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main workline/tester/issue-3 && git checkout -q main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+    routing: {events: {merge-request: [committer]}}
+  forge:
+    issues:
+      - id: 3
+        title: "AC-3: Multiply two numbers for every caller that needs the product of two whole numbers"
+        labels: ["workline:ready", "bug"]
+        body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        draft: true
+        comments: ["The tests of #3, frozen.\n\n<!-- workline:tester-record {\"issue\":3,\"base\":\"main\",\"files\":{\"tests/test_mul_by_zero.sh\":\"8f123a0bacbd681063880b867df38dd216784b97\",\"tests/test_mul_two_by_three.sh\":\"2dee0641bd7a79057ade7bff5af43b603125f543\"}} -->\n<!-- workline:sticky=tester/tests -->"]
+run:
+  develop: []
+  ai: "fake:developer-writes-mul-and-test"
+  then-line: {event: merge-request, branch: workline/developer/3, range: "main..HEAD"}
+expect:
+  status: pass
+  findings: [{rule: proof-green, where: "#3"}]
+  no-findings: [{rule: format}, {rule: subject-length}, {rule: internal-code}, {rule: possible-internal-code}]
+  pushed-message:
+    workline/developer/3: "fix: multiply two numbers for every caller that needs the product of two\n\nWorkline-Role: developer"
+  pushed-log:
+    workline/developer/3:
+      - "test: the acceptance tests of #3"
+      - "test: multiply two numbers for every caller that needs the product of"
+      - "tests/test_mul_negative.sh"
+      - "fix: multiply two numbers for every caller that needs the product of two"
+      - "lib.sh"
+  forge:
+    merge-requests:
+      - id: 2
+        branch: workline/developer/3
+        title: "fix: multiply two numbers for every caller that needs the"

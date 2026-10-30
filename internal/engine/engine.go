@@ -1665,9 +1665,12 @@ type Proposal struct {
 	// base are not a person's.
 	From string `yaml:"from,omitempty"`
 	// Commits are the files written, each group its own commit, in order;
-	// those no group names go in the last, the title its message (the
+	// those no group names go in the last, Message its message (the
 	// developer's code and tests apart, ADR-0054).
 	Commits []Commit `yaml:"commits,omitempty"`
+	// Message is the last commit's message, "" the title: the developer's
+	// subject, as the project's commit check reads it (#736).
+	Message string `yaml:"message,omitempty"`
 }
 
 // Commit is one commit of a branch: its message, the files it holds.
@@ -1694,7 +1697,11 @@ func (p Proposal) commits(title string, written []string) []Commit {
 		}
 	}
 	if len(left) > 0 || len(out) == 0 {
-		out = append(out, Commit{Message: title, Files: left})
+		msg := title
+		if strings.TrimSpace(p.Message) != "" {
+			msg = p.Message
+		}
+		out = append(out, Commit{Message: msg, Files: left})
 	}
 	return out
 }

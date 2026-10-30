@@ -1,11 +1,12 @@
 ---
 sources:
   - internal/developer/pullrequest.go
+  - internal/developer/subject.go
   - internal/developer/developer.go
   - internal/engine/engine.go
   - internal/agent/claude.go
   - internal/builtin/reviewer/once.go
-checked: 1fa2e7f4
+checked: f3fd0881
 verified: agent:claude-code
 ---
 # The pull request
@@ -65,8 +66,22 @@ flowchart LR
 
 - **Its tests apart**: a file with `test` or `spec` a word of its name
   (`x_test.go`, `test_x.py`, `x.spec.ts`, `XTest.java`; not
-  `latest.go`), or in a test folder, goes in a commit of its own, `test: the tests beside the code
-  of #<n>`; its code in another, the issue's title.
+  `latest.go`), or in a test folder, goes in a commit of its own; its
+  code in another.
+- **Subjects the project's commit check passes**: `type(scope): summary`
+  ([#736](https://github.com/JN0V/workline/issues/736)):
+  - type: `test` for its tests; for its code, the issue's kind: `fix`
+    (bug), `feat` (feature, or no kind), `chore` (task);
+  - scope: the folder every path of the issue's Scope sits in, none
+    when they share none;
+  - summary: the issue's title, lower-case first, its references and
+    the codes the committer refuses taken out, cut on a word to the
+    committer's `subject-max`;
+  - a review round's fix: `fix: the review's findings on #<n>, round <r>`.
+- **Its title is its code's subject**, cut shorter: a squash lands it
+  with the forge's ` (#N)`, and GitLab marks a Draft with `Draft: `;
+  both still fit the committer's limit
+  ([ADR-0051](../../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md)).
 - **Each carries `Workline-Role: developer`** and the model that wrote
   it, as every commit workline makes.
 

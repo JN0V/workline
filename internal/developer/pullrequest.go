@@ -14,6 +14,7 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/JN0V/workline/internal/builtin/committer"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/tester"
@@ -83,24 +84,57 @@ func written(patches []intent.Intention) (code, tests []string) {
 	return slices.Compact(code), slices.Compact(tests)
 }
 
-// testsMessage is the message of the commit holding its tests.
-func testsMessage(issue int) string {
-	return fmt.Sprintf("test: the tests beside the code of #%d", issue)
+// Subjects are its commits' subjects, its tests' and its code's, and its
+// pull request's title, ready and as a Draft: the code's subject, room
+// left for what a squash adds.
+type Subjects struct{ Tests, Code, Title, DraftTitle string }
+
+// squashRoom is what a squash adds to the title it lands, GitHub's
+// " (#N)" for a number of five digits (ADR-0051), as forge.TitleMax.
+var squashRoom = len(" (#12345)")
+
+// subjects are its commits' subjects for the issue, as the project's
+// committer checks them: `test` and the issue's kind, the folder its
+// Scope shares, its title. Its pull request's title is the code's
+// subject, cut so that a squash lands it within the limit, and the
+// engine keeps it: within forge.TitleMax, GitLab's "Draft: " too.
+func subjects(issue int, title, kind string, scope []string, s committer.Settings) Subjects {
+	sum := summaryOf(title, s)
+	if sum == "" {
+		sum = fmt.Sprintf("the code of #%d", issue)
+	}
+	sc, typ := commitScope(scope), commitType(kind)
+	room := func(less int) committer.Settings {
+		r := s
+		r.SubjectMax = forge.TitleMax - less
+		if s.SubjectMax > 0 {
+			r.SubjectMax = min(s.SubjectMax-squashRoom, forge.TitleMax) - less
+		}
+		return r
+	}
+	return Subjects{Tests: subject("test", sc, sum, s), Code: subject(typ, sc, sum, s),
+		Title: subject(typ, sc, sum, room(0)), DraftTitle: subject(typ, sc, sum, room(len("Draft: ")))}
 }
 
 // mergeRequest is out/merge-request.yaml: the branch's key, the issue's
 // title, its body; ready only when green with no cap reached; the branch
 // from the tester's Draft, the tests in a commit apart; the record kept
 // on it.
-func mergeRequest(a Act, title string) map[string]any {
+func mergeRequest(a Act, title string, sub Subjects) map[string]any {
 	ready := a.Proof != nil && a.Proof.Result == Green && len(a.Caps) == 0 && a.AgentFailed == ""
 	mr := map[string]any{"key": fmt.Sprint(a.Issue), "title": title, "body": body(a, ready), "draft": !ready,
-		"record": map[string]any{"sticky": RecordKey, "body": recordBody(a)}}
+		"record": map[string]any{"sticky": RecordKey, "body": recordBody(a)}, "message": sub.Code}
+	switch {
+	case ready && sub.Title != "":
+		mr["title"] = sub.Title
+	case !ready && sub.DraftTitle != "":
+		mr["title"] = sub.DraftTitle
+	}
 	if a.From != "" {
 		mr["from"] = a.From
 	}
 	if len(a.Tests) > 0 {
-		mr["commits"] = []map[string]any{{"message": testsMessage(a.Issue), "files": a.Tests}}
+		mr["commits"] = []map[string]any{{"message": sub.Tests, "files": a.Tests}}
 	}
 	return mr
 }

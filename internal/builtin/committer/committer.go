@@ -46,6 +46,20 @@ type Settings struct {
 	projectAllow, personalAllow []string
 }
 
+// SettingsFrom reads the role's settings, as the engine merges them: the
+// developer writes its commits' subjects to them (internal/developer).
+func SettingsFrom(m map[string]any) (Settings, error) {
+	var s Settings
+	data, err := json.Marshal(m)
+	if err != nil {
+		return s, err
+	}
+	if err := json.Unmarshal(data, &s); err != nil {
+		return s, fmt.Errorf("the committer's settings: %w", err)
+	}
+	return s, nil
+}
+
 // Check returns what is wrong with a commit message. An empty result means it passes.
 func Check(message string, s Settings) ([]verdict.Finding, error) {
 	subject, body := split(message)

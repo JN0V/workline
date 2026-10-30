@@ -348,6 +348,7 @@ func Pre(runDir, repo string) int {
 	if err != nil {
 		return external(err)
 	}
+	bounds.Kind, _ = IssueKind(is.Labels)
 	// Its code starts from the tester's Draft: the acceptance tests on it
 	// run in the proof (ADR-0054, step 4).
 	act.From, act.Acceptance = bounds.Head, bounds.acceptance()
@@ -610,7 +611,10 @@ func Post(runDir, repo string) int {
 		a.Proof, a.Caps = &p, caps
 		a.Turns, a.Tokens, a.Tools, a.AgentFailed = u.Turns, u.Tokens, u.Tools, u.failed
 		v.Findings = append(v.Findings, found...)
-		mr := mergeRequest(a, issueTitle(runDir, a.Issue))
+		title := issueTitle(runDir, a.Issue)
+		cs, unread := committerSettings(repo, where)
+		v.Findings = append(v.Findings, unread...)
+		mr := mergeRequest(a, title, subjects(a.Issue, title, b.Kind, b.Scope, cs))
 		if mr["draft"] == true {
 			v.Summary += "; a Draft: " + p.Result
 			if len(a.Caps) > 0 {

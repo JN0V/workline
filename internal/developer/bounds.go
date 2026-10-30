@@ -35,6 +35,8 @@ type Bounds struct {
 	// Scope: the paths the issue's Scope names and the product owner's
 	// sources for it.
 	Scope []string `json:"scope"`
+	// Kind: the issue's kind, as its labels say it; its commits' type.
+	Kind string `json:"kind,omitempty"`
 	// Frozen: each test the tester froze on an open Draft, by its issue.
 	Frozen map[string]int `json:"frozen,omitempty"`
 	// Blobs: each frozen test's blob, as the tester's record names it.
