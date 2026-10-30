@@ -1,0 +1,19 @@
+case: developer/board-no-agent-moves-nothing
+about: >
+  With no agent (principle 5), the developer claims nothing: no card
+  moves on the board either (ADR-0057).
+given:
+  repo: tested
+  forge:
+    boards:
+      - {forge: gitlab, number: 7, name: Development, owner: project, columns: ["To do", "Doing"], closed-list: true}
+    issues:
+      - {id: 2, title: "Multiply", labels: ["workline:ready", "To do"], body: "## Need\n\nI want to multiply.\n"}
+run: {develop: [], ai: none}
+expect:
+  status: pass
+  summary: "would take #2: no agent, nothing claimed"
+  agent-calls: 0
+  forge:
+    issues:
+      - {id: 2, labels: ["workline:ready", "To do"], comments: 0}

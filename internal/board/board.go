@@ -63,6 +63,46 @@ func Match(columns []string, s role.Board) (m Slots, unmatched []string) {
 	return m, unmatched
 }
 
+// Move is a card moved on the forge's board (ADR-0057): on GitLab, its
+// column's label put on the issue, Off the labels taken off in the same
+// call. Kept in the role's record.
+type Move struct {
+	Board  string   `json:"board" yaml:"board"`
+	Column string   `json:"column" yaml:"column"`
+	Off    []string `json:"off,omitempty" yaml:"off,omitempty"`
+}
+
+// To is the move of an issue to slot (ready or doing) on f's board; nil
+// with no board, no column for the slot, or a board out of reach — which
+// err says, changing no verdict. On GitLab, a column is a label: Doing
+// takes the ready column's off, as a Free board's lists do not (a scoped
+// label's board, Premium, has already). On GitHub, nothing moves yet.
+func To(f any, slot string, s role.Board) (*Move, error) {
+	boards, ok, err := forge.Boards(f)
+	if !ok || len(boards) == 0 {
+		return nil, err
+	}
+	chosen, _ := Choose(boards, s)
+	if chosen == nil || chosen.Forge != "gitlab" {
+		return nil, err
+	}
+	m, _ := Match(chosen.Columns, s)
+	mv := &Move{Board: chosen.Name}
+	switch slot {
+	case "ready":
+		mv.Column = m.Ready
+	case "doing":
+		mv.Column = m.Doing
+		if m.Ready != "" && m.Ready != m.Doing {
+			mv.Off = []string{m.Ready}
+		}
+	}
+	if mv.Column == "" {
+		return nil, err
+	}
+	return mv, err
+}
+
 // Choose takes the board workline marks, among boards: on GitHub, the
 // project the setting numbers; else the only one with a column —
 // GitLab's boards listing the same labels count as one, a label being

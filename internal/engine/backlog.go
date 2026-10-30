@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/JN0V/workline/internal/backlog"
+	"github.com/JN0V/workline/internal/board"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/role"
@@ -544,7 +545,11 @@ func refining(f forge.Forge, role string, c backlog.Proposal) error {
 				return err
 			}
 		}
-		return f.Label(t, []string{backlog.LabelReady}, backlog.ReadyRemoves(*is))
+		add := []string{backlog.LabelReady}
+		if c.Column != "" {
+			add = append(add, c.Column) // its card to the board's ready column (ADR-0057)
+		}
+		return f.Label(t, add, backlog.ReadyRemoves(*is))
 	}
 	body, added, _ := backlog.Refine(is.Body, c, role)
 	if len(added) > 0 {
@@ -592,6 +597,27 @@ func keepBody(f forge.Forge, role string, t forge.Target, body string, sources, 
 	}
 	st.Keep(body)
 	return f.Sticky(t, backlog.FormatState(*st), backlog.StateMarker(role), false)
+}
+
+// readyColumn is the forge's board's ready column, its label, a ready
+// moves the issue's card to (ADR-0057); "" with none. A board out of
+// reach is said, and moves nothing.
+func readyColumn(f forge.Forge, repo string) string {
+	if f == nil {
+		return ""
+	}
+	pc, err := role.LoadProjectConfig(repo)
+	if err != nil {
+		return ""
+	}
+	mv, err := board.To(f, "ready", pc.Board)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "workline: the forge's board could not be read, no card moved: %s\n", forge.Said(err))
+	}
+	if mv == nil {
+		return ""
+	}
+	return mv.Column
 }
 
 // planActs decides what becomes of the run's acts on the backlog, once: a
@@ -666,6 +692,14 @@ func planActs(f forge.Forge, r *role.Role, settings map[string]any, st runState,
 		return nil, err
 	}
 	cfg.SpecReview = line.Follows(role, backlog.SpecReviewer)
+	// The board's ready column a ready moves the card to (ADR-0057); a
+	// board out of reach is said and moves nothing.
+	for _, c := range closes {
+		if c.Do == "ready" {
+			cfg.ReadyColumn = readyColumn(f, st.Repo) // read once, when a ready is proposed
+			break
+		}
+	}
 	// What the run read — the commit, each issue's body — and the agents
 	// and models it asked, kept with each act (ADR-0046).
 	if data, err := os.ReadFile(filepath.Join(runDir, "in", backlog.ReadFile)); err == nil {

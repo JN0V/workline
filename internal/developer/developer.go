@@ -22,8 +22,10 @@ import (
 	"go.yaml.in/yaml/v3"
 
 	"github.com/JN0V/workline/internal/backlog"
+	"github.com/JN0V/workline/internal/board"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
+	"github.com/JN0V/workline/internal/role"
 	"github.com/JN0V/workline/internal/routing"
 	"github.com/JN0V/workline/internal/tester"
 	"github.com/JN0V/workline/internal/verdict"
@@ -122,6 +124,9 @@ type Act struct {
 	Rounds     []Round  `json:"rounds,omitempty"`
 	Whys       bool     `json:"whys,omitempty"`
 	Handed     bool     `json:"handed,omitempty"`
+	// Board: the card its claim moved to Doing on the forge's board
+	// (ADR-0057); none, no board or no Doing column.
+	Board *board.Move `json:"board,omitempty"`
 }
 
 // number is a setting's whole number, 0 when not one.
@@ -321,6 +326,16 @@ func Pre(runDir, repo string) int {
 	}
 	at, _ := gitOut(repo, "rev-parse", "HEAD")
 	act := Act{Act: "pick", At: at, Issue: id, Passed: passed}
+	// The claim moves its card to Doing (ADR-0057); a board out of reach
+	// is said, and changes nothing else.
+	if cfg, err := role.LoadProjectConfig(repo); err == nil {
+		mv, err := board.To(f, "doing", cfg.Board)
+		if err != nil {
+			findings = append(findings, verdict.Finding{Rule: "board-unread", Level: "info", Where: fmt.Sprintf("#%d", id),
+				Message: "the forge's board could not be read: " + forge.Said(err) + "; workline's labels mark the claim"})
+		}
+		act.Board = mv
+	}
 	if err := intent.Write(filepath.Join(runDir, "in", "fallback.yaml"), claimOf(act, s)); err != nil {
 		return fail(err)
 	}
@@ -399,9 +414,22 @@ func takenMeanwhile(repo string, id int, s Settings) string {
 // claimOf is the claim: the label and the comment holding the record.
 func claimOf(a Act, s Settings) []intent.Intention {
 	return []intent.Intention{
-		{Kind: "label", Value: map[string]any{"issue": a.Issue, "add": []string{s.ClaimLabel}}},
+		claimLabel(a, s),
 		{Kind: "comment", Value: map[string]any{"issue": a.Issue, "sticky": "claim", "body": claimBody(a, s)}},
 	}
+}
+
+// claimLabel is the claim's label, its card moved to Doing in the same
+// call when the forge's board has that column (ADR-0057).
+func claimLabel(a Act, s Settings) intent.Intention {
+	v := map[string]any{"issue": a.Issue, "add": []string{s.ClaimLabel}}
+	if a.Board != nil {
+		v["add"] = []string{s.ClaimLabel, a.Board.Column}
+		if len(a.Board.Off) > 0 {
+			v["remove"] = a.Board.Off
+		}
+	}
+	return intent.Intention{Kind: "label", Value: v}
 }
 
 // taskText is the question: the issue, what bounds the code and the run,
@@ -482,6 +510,9 @@ func claimBody(a Act, s Settings) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "**The developer** takes this issue: the first ready one nobody took, in the backlog's order. "+
 		"`%s` says so; a person who takes it back removes the label, or assigns themselves.\n", s.ClaimLabel)
+	if a.Board != nil {
+		fmt.Fprintf(&b, "\nIts card moved to `%s` on the board %q.\n", a.Board.Column, a.Board.Board)
+	}
 	if len(a.Passed) > 0 {
 		b.WriteString("\nPassed over before it:\n\n")
 		for _, p := range a.Passed {

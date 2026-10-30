@@ -1,0 +1,20 @@
+case: product-owner/board-gitlab-ready-label-on
+about: >
+  On a GitLab board, a column is a label (ADR-0057, step 2): the product
+  owner, setting an issue ready, puts the ready column's label on in the
+  same call as `workline:ready`, Free and Premium alike. Its record, the
+  issue's state, says the card moved.
+given:
+  repo: backlog
+  forge:
+    boards:
+      - {forge: gitlab, number: 7, name: Development, owner: project, columns: ["workflow::To do", "workflow::Doing"], closed-list: true}
+    issues:
+      - {id: 41, title: "Last sale missing", author: ann, insider: true, labels: [], body: "Exports drop the last sale of the day: 3 sales, 2 rows.\n\n## Validation\n\nAnn exports a day of 3 sales and counts 3 rows.\n\n---\n\n## Verification\n\nA test writes 3 rows and reads 3 back.\n\n## Scope\n\n`WriteRows` in `src/export/csv.go`.", comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:ready-text-on-top}
+expect:
+  forge:
+    issues:
+      - id: 41
+        labels: [workline:ready, "workflow::To do"]
+        comment-contains: ["to ready, its card to `workflow::To do` on the board"]

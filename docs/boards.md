@@ -9,18 +9,22 @@ flowchart LR
   forge["<b>The forge</b><br/>its board"] --> find["<b>workline</b><br/>finds it, read-only"]
   find --> match["<b>Columns matched</b><br/>ready, doing, done"]
   match --> doctor["<b>workline doctor</b><br/>says what it found"]
+  match --> roles["<b>The roles</b><br/>move the cards"]
 ```
 
 People follow the work on a board: To do, Doing, Done. workline finds
 the forge's board each run and creates none
 ([ADR-0057](adr/0057-workline-finds-the-forges-board-and-moves-its-cards.md)).
 
-- **Today it only reads**: `workline doctor` says the board found and
-  its columns matched. No card is moved yet; workline's roles mark the
-  work with their labels (`workline:ready`, `workline:developing`).
+- **`workline doctor`** says the board found and its columns matched.
+- **On GitLab, the roles move its cards**: the product owner to the
+  ready column, the developer to the doing column (below). On GitHub,
+  no card moves yet.
+- **workline's labels stay** (`workline:ready`, `workline:developing`):
+  they are the roles' marks, board or not.
 - **Only when it matters**: the doctor looks for a board when the line
-  routes the product owner or the developer, the two roles that will
-  move cards.
+  routes the product owner or the developer, the two roles that move
+  cards.
 
 ## What is found, by forge
 
@@ -69,19 +73,29 @@ board:
 - **GitLab, a group's boards unread**: a warning; the project's own
   boards still count.
 
-## What each role will move
+## What each role moves
 
-Not built yet; the plan, from
+From
 [ADR-0057](adr/0057-workline-finds-the-forges-board-and-moves-its-cards.md#what-each-role-writes):
 
-| Step | Who | The card goes to |
+| Step | Who | On GitLab, Free and Premium |
 |---|---|---|
-| ready | the product owner, setting an issue ready | the ready column |
-| doing | the developer, at its claim | the doing column; on GitHub, left to *Pull request linked to issue* when on |
-| done | the forge, closing the issue at the merge | Done, by GitHub's workflows or GitLab's Closed list |
+| ready | the product owner, setting an issue ready | the ready column's label on, beside `workline:ready` |
+| doing | the developer, at its claim | the doing column's label on, the ready column's off, in one call |
+| done | the forge, closing the issue at the merge (`Closes #n`) | the Closed list |
 
-- **workline's labels stay**: a person dragging a card never frees a
-  claim, and no role moves a card back.
+- **One call, both tiers**: on Premium, a scoped label
+  (`workflow::Doing`) takes its sibling off by itself; on Free, the
+  role takes the ready label off. GitLab's tier is never asked.
+- **In the role's record**: the product owner's act says the column;
+  the developer's claim comment says it, and its hidden line keeps it.
+- **With no agent**, neither role acts: no card moves.
+- **A board out of reach** moves nothing, said in the run's output;
+  no verdict changes.
+- **GitHub**: not built yet. Ready, then Status set; Doing left to
+  *Pull request linked to issue* when on; Done by GitHub's workflows.
+- **A person's drag is theirs**: it never frees a claim, and no role
+  moves a card back.
 
 ## What the doctor says
 

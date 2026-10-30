@@ -44,11 +44,15 @@ claim is a label, on every forge:
   a hidden line, `workline:developer-act`: the commit the run read, the
   issue, the issues passed and why. The auditor reads it (below).
 - **A person takes it back**: remove the label, or assign themselves.
+- **Its card to Doing**, on a GitLab board with a doing column: that
+  column's label put on in the same call, the ready column's taken off.
+  The comment and its hidden line say the move
+  ([boards](../../../docs/boards.md)).
 
 ## With no agent
 
 The issue is named in the run's summary; no label, no comment, no
-branch (principle 5).
+branch, no card moved (principle 5).
 
 ## What the auditor reads
 

@@ -1,0 +1,23 @@
+case: developer/board-gitlab-doing-label-on
+about: >
+  On a GitLab board with scoped labels, Premium's columns (ADR-0057,
+  step 2): the developer's claim puts the doing column's label on in the
+  same call as its claim label, the ready column's taken off — GitLab
+  has, on Premium; the call is the same on both tiers. workline's own
+  labels stay. The claim's record keeps the move.
+given:
+  repo: tested
+  forge:
+    boards:
+      - {forge: gitlab, number: 7, name: Development, owner: project, columns: ["workflow::Ready", "workflow::In progress"], closed-list: true}
+    issues:
+      - {id: 2, title: "Multiply", labels: ["workline:ready", "workflow::Ready"], body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: a `mul` function.\n"}
+run: {develop: [], ai: "fake:developer-nothing"}
+expect:
+  status: pass
+  summary: "took #2"
+  forge:
+    issues:
+      - id: 2
+        labels: ["workline:ready", "workline:developing", "workflow::In progress"]
+        comment-contains: ["Its card moved to `workflow::In progress` on the board \"Development\"", '"board":{"board":"Development","column":"workflow::In progress","off":["workflow::Ready"]}']

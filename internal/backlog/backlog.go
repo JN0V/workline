@@ -439,7 +439,10 @@ type Proposal struct {
 	BlockedBy   []int    `yaml:"blocked-by,flow,omitempty"` // depend: the issues it waits on; undepend: those taken off (ADR-0028)
 	// Native, the engine's: the blockers an undepend takes off the forge's
 	// own relation, the rest being in the engine's line; never the agent's.
-	Native []int  `yaml:"native,flow,omitempty"`
+	Native []int `yaml:"native,flow,omitempty"`
+	// Column, the engine's: the board's ready column a ready puts the
+	// issue's card in, its label on GitLab (ADR-0057); never the agent's.
+	Column string `yaml:"column,omitempty"`
 	Quote  *Quote `yaml:"quote"`
 	Why    string `yaml:"why"`
 	// Refining: the sections written, Need and Validation as drafts, with
@@ -809,6 +812,10 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 			decided[c.key()] = true
 		}
 		mode, why := p.check(f, repo, role, &c)
+		c.Column = ""
+		if c.Do == "ready" {
+			c.Column = p.config.ReadyColumn // its card to the board's ready column (ADR-0057)
+		}
 		if once && why == "" {
 			decided[c.key()] = true // the first that passes its check is kept
 		}
@@ -2700,7 +2707,11 @@ func describe(c Proposal, verb string) string {
 		}
 		return fmt.Sprintf("%s #%d: %s. %s", map[bool]string{true: "Refined", false: "Refine"}[done], c.Issue, strings.Join(names, ", "), strings.TrimSpace(c.Why))
 	case "ready":
-		return fmt.Sprintf("%s #%d to ready: %s", map[bool]string{true: "Moved", false: "Move"}[done], c.Issue, strings.TrimSpace(c.Why))
+		board := ""
+		if c.Column != "" {
+			board = fmt.Sprintf(", its card to `%s` on the board", c.Column)
+		}
+		return fmt.Sprintf("%s #%d to ready%s: %s", map[bool]string{true: "Moved", false: "Move"}[done], c.Issue, board, strings.TrimSpace(c.Why))
 	case "unready":
 		return fmt.Sprintf("%s #%d back to refine (%s off, %s on): %s", map[bool]string{true: "Moved", false: "Move"}[done], c.Issue, LabelReady, LabelToRefine, strings.TrimSpace(c.Why))
 	case "depend":

@@ -30,6 +30,9 @@ Part of [the product owner](../README.md). What a run does, step by step:
   waits on you; `workline:draft` while a draft of its own is left;
   `workline:to-refine`, `workline:ready`. Checked at every run: set
   aside with no draft left, the issue loses `draft` and `to-refine`.
+- **Its card to the ready column**, on a GitLab board with one: set
+  ready, the issue gets that column's label too; the act in its
+  record says so ([boards](../../../docs/boards.md)).
 - **Sections** written in the body, Need, Validation and a real example
   as drafts: a hidden mark only, the comment saying which are drafts;
   edit one and it is yours. To an outsider, a comment proposing them
