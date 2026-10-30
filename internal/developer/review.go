@@ -477,7 +477,7 @@ func reviewPost(runDir, repo string, s Settings) int {
 		v.Findings = append(v.Findings, verdict.Finding{Rule: "no-code", Level: "warn", Where: where,
 			Message: "its agent wrote no fix within its bounds that changes the branch: the round is counted, nothing pushed"})
 	} else {
-		p, u, caps, found := proven(runDir, repo, r.At, where, patches, s)
+		p, u, caps, found := proven(runDir, repo, r.At, where, patches, union(a.Acceptance, union(a.Code, a.Tests)), s)
 		this.Result, this.Turns, this.Tokens, this.Tools = p.Result, u.Turns, u.Tokens, u.Tools
 		a.Proof, a.Caps = &p, caps
 		code, tests := written(patches)

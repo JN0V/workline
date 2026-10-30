@@ -43,4 +43,4 @@ expect:
         branch: workline/developer/3
         draft: false
         title: "feat: multiply two numbers"
-        body-contains: ["Closes #3", "## Verification", "`sh run-tests.sh {report}`: 3 tests passed, none red."]
+        body-contains: ["Closes #3", "## Verification", "`sh run-tests.sh {report}`: 3 tests passed, none red.", "The whole suite: no proof-command set"]

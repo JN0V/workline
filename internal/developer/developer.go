@@ -53,6 +53,9 @@ type Settings struct {
 	MaxTurns     int
 	MaxSeconds   int
 	ProofSeconds int
+	// ProofCommand is the proof's command on the touched folders, holding
+	// `{packages}` (#703); none: the tester's test-command, whole.
+	ProofCommand string
 	// Rounds are the review rounds it runs on its pull request; past
 	// them, a person, by the label Person (step 6).
 	Rounds int
@@ -73,6 +76,9 @@ func SettingsFrom(m map[string]any) Settings {
 	}
 	s.MaxTokens, s.ProofSeconds = number(m["ai-max-tokens"]), number(m["proof-seconds"])
 	s.MaxTurns, s.MaxSeconds = number(m["ai-max-turns"]), number(m["ai-max-seconds"])
+	if v, ok := m["proof-command"].(string); ok {
+		s.ProofCommand = strings.TrimSpace(v)
+	}
 	return s
 }
 
@@ -605,7 +611,7 @@ func Post(runDir, repo string) int {
 			Message: "its agent wrote no code within its bounds: nothing to prove, no pull request; the claim stays until a person removes it"})
 	} else {
 		a.Code, a.Tests = written(patches)
-		p, u, caps, found := proven(runDir, repo, on, where, patches, s)
+		p, u, caps, found := proven(runDir, repo, on, where, patches, a.Acceptance, s)
 		a.Proof, a.Caps = &p, caps
 		a.Turns, a.Tokens, a.Tools, a.AgentFailed = u.Turns, u.Tokens, u.Tools, u.failed
 		v.Findings = append(v.Findings, found...)
@@ -688,9 +694,10 @@ func refusalFindings(where string, refused []Refusal, said []string) []verdict.F
 
 // proven proves the patches on the commit on, on a fresh tree, and reads
 // what its agent used: the proof, the caps the run reached, and what the
-// verdict says of them.
-func proven(runDir, repo, on, where string, patches []intent.Intention, s Settings) (Proof, Used, []Cap, []verdict.Finding) {
-	p, over := prove(repo, on, patches, s)
+// verdict says of them. Also: the files whose folders run beside the
+// patches' (the acceptance tests).
+func proven(runDir, repo, on, where string, patches []intent.Intention, also []string, s Settings) (Proof, Used, []Cap, []verdict.Finding) {
+	p, over := prove(repo, on, patches, also, s)
 	u := used(runDir)
 	caps := agentCaps(u, s)
 	if over != nil {
