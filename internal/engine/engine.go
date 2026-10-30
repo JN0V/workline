@@ -203,11 +203,11 @@ func (res *Result) cutShort(err error) error {
 }
 
 // tokensSpent adds up what the run's calls used, as the agents reported it:
-// the whole input, cache included, and the output.
+// the fresh tokens, cache reads apart (agent.Call.Fresh).
 func (res *Result) tokensSpent() int {
 	n := 0
 	for _, c := range res.Calls {
-		n += c.TokensIn + c.TokensOut
+		n += c.Fresh()
 	}
 	return n
 }

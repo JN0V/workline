@@ -78,8 +78,9 @@ type Call struct {
 	Model  string `json:"model,omitempty"`  // the one that wrote the answer, as the agent reports it
 	// What the call used, side calls included, as the agent reports it. On a
 	// subscription the tokens are what counts; the cost is the list price.
-	TokensIn     int     `json:"tokens-in,omitempty"`     // the whole input, cache included
-	TokensCached int     `json:"tokens-cached,omitempty"` // the part of it read from cache
+	TokensIn     int     `json:"tokens-in,omitempty"`            // the whole input, cache included
+	TokensCached int     `json:"tokens-cached,omitempty"`        // the part of it read from cache
+	TokensCacheW int     `json:"tokens-cache-written,omitempty"` // the part of it written to cache
 	TokensOut    int     `json:"tokens-out,omitempty"`
 	CostUSD      float64 `json:"cost-usd,omitempty"`
 	Seconds      float64 `json:"seconds"`
@@ -97,6 +98,13 @@ type Call struct {
 	// Mended: what the engine fixed of the answer before reading it (Mend).
 	Mended []string `json:"mended,omitempty"`
 }
+
+// Fresh is what a call spent that its cache did not hold: its input not
+// read from cache (cache writes included) and its output. A cap holds
+// it: an agent that loops reads its context back each turn, so cache
+// reads, a tenth of the price of fresh input, dominate its total and are
+// recorded apart (ADR-0056, step 7).
+func (c Call) Fresh() int { return c.TokensIn - c.TokensCached + c.TokensOut }
 
 // Agent answers the question in in/task.md by writing out/intentions.yaml,
 // and says what answered, even when it fails.

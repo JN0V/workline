@@ -1,0 +1,37 @@
+case: developer/token-cap-counts-fresh-tokens
+about: >
+  The token cap counts fresh tokens (ADR-0056, step 7): an agent that
+  loops reads its context back from cache each turn, so cache reads, a
+  tenth of the price of fresh input, dominate its total. Its agent
+  reports 104000 tokens in, 100000 of them read from cache, and 1000
+  out: 5000 fresh, under an ai-max-tokens of 10000. Its pull request is
+  ready, no cap reached; the claim's record keeps the fresh tokens and
+  the cache reads apart.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  env: {EDIT: cached}
+  config:
+    roles:
+      tester: {settings: {test-command: "sh run-tests.sh {report}"}}
+      developer: {settings: {ai-max-tokens: 10000}}
+  forge:
+    issues:
+      - {id: 2, title: "Multiply", labels: ["workline:ready"], body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: a `mul` function.\n"}
+run: {develop: [], ai: 'cmd:sh "$FIXTURES/agents/developer-edits-worktree.sh"'}
+expect:
+  status: pass
+  summary: "took #2; proven green, its pull request ready"
+  agent-calls: 1
+  findings:
+    - {rule: proof-green, level: info, where: "#2"}
+  no-findings: [{rule: cap-reached}]
+  forge:
+    issues:
+      - id: 2
+        comment-contains: ['"tokens":5000', '"cached":100000']
+    merge-requests:
+      - id: 1
+        branch: workline/developer/2
+        draft: false

@@ -50,7 +50,8 @@ type Round struct {
 	Whys   bool           `json:"whys,omitempty"`   // the five whys ran
 	Person bool           `json:"person,omitempty"` // past the last round: handed to a person
 	Turns  int            `json:"turns,omitempty"`  // what its agent used, as it reported them
-	Tokens int            `json:"tokens,omitempty"`
+	Tokens int            `json:"tokens,omitempty"` // fresh, what ai-max-tokens holds
+	Cached int            `json:"cached,omitempty"` // read from cache, apart
 	Tools  map[string]int `json:"tools,omitempty"`
 }
 
@@ -478,7 +479,7 @@ func reviewPost(runDir, repo string, s Settings) int {
 			Message: "its agent wrote no fix within its bounds that changes the branch: the round is counted, nothing pushed"})
 	} else {
 		p, u, caps, found := proven(runDir, repo, r.At, where, patches, union(a.Acceptance, union(a.Code, a.Tests)), s)
-		this.Result, this.Turns, this.Tokens, this.Tools = p.Result, u.Turns, u.Tokens, u.Tools
+		this.Result, this.Turns, this.Tokens, this.Cached, this.Tools = p.Result, u.Turns, u.Tokens, u.Cached, u.Tools
 		a.Proof, a.Caps = &p, caps
 		code, tests := written(patches)
 		a.Code, a.Tests = union(a.Code, code), union(a.Tests, tests)

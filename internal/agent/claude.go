@@ -289,6 +289,7 @@ func claudeAnswer(stdout []byte, call *Call) (claudeResult, bool) {
 		}
 		call.TokensIn += u.InputTokens + u.CacheReadInputTokens + u.CacheCreationInputTokens
 		call.TokensCached += u.CacheReadInputTokens
+		call.TokensCacheW += u.CacheCreationInputTokens
 		call.TokensOut += u.OutputTokens
 	}
 	call.CostUSD, call.Turns = r.CostUSD, r.NumTurns
