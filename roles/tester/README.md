@@ -76,9 +76,8 @@ workline test write --issue 42 --ai claude
   test reported, `no-new-test` blocks; a bug's test, of code that
   exists, is proven ([status](docs/status.md#missing)).
 - **The Draft**: branch `workline/tester/issue-<n>`, `Refs #<n>`, a
-  `## Tests` table of each scenario and its test. The
-  [developer](../developer/docs/pull-request.md), or a person, builds
-  the code on that branch.
+  `## Tests` table of each scenario and its test. A person builds on
+  that branch; the [developer](../developer/docs/pull-request.md), on top of it.
 
 | Finding | When; nothing is opened |
 |---|---|
