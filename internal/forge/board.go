@@ -49,7 +49,9 @@ func (f *Fake) boards() ([]Board, error) {
 		return nil, err
 	}
 	if s.BoardsUnread != "" {
-		return nil, errors.New(s.BoardsUnread)
+		// The boards listed are those read, the rest unread: as a group's
+		// boards GitLab did not answer.
+		return s.Boards, errors.New(s.BoardsUnread)
 	}
 	return s.Boards, nil
 }
@@ -196,6 +198,11 @@ type gitlabBoards struct {
 }
 
 func (g *gitlab) boards() ([]Board, error) {
+	// Connected first: out of CI, the project's path is the remote's,
+	// read there; often the first call of a run.
+	if err := g.connect(); err != nil {
+		return nil, err
+	}
 	var p struct {
 		Project *struct {
 			Group *struct {

@@ -16,7 +16,8 @@ const boardDoc = "docs/boards.md"
 
 // boards says the forge's board workline found, its columns matched to
 // the steps the product owner and the developer mark (ADR-0057), read
-// only: workline moves no card yet. Only when one of them is routed.
+// only: the roles move GitLab's cards (board.To), not yet GitHub's. Only
+// when one of them is routed.
 func boards(r *Report, o Options, cfg *role.ProjectConfig, line *routing.Config) {
 	if !routesRole(line, "product-owner") && !routesRole(line, "developer") {
 		return
@@ -102,8 +103,11 @@ func boards(r *Report, o Options, cfg *role.ProjectConfig, line *routing.Config)
 	if chosen.Forge == "github" {
 		msg += "; " + projectWorkflows(*chosen)
 	}
-	r.add(Check{Area: "repository", Rule: "board-found", Where: chosen.URL, Level: OK,
-		Message: msg + ". No card is moved yet: " + labels})
+	moves := ". No card is moved yet: " + labels
+	if chosen.Forge == "gitlab" {
+		moves = ". The product owner's ready and the developer's claim put the column's label on; workline's labels stay"
+	}
+	r.add(Check{Area: "repository", Rule: "board-found", Where: chosen.URL, Level: OK, Message: msg + moves})
 }
 
 // title names a board as a person finds it.

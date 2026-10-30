@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/JN0V/workline/internal/backlog"
+	"github.com/JN0V/workline/internal/board"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/role"
@@ -544,7 +545,18 @@ func refining(f forge.Forge, role string, c backlog.Proposal) error {
 				return err
 			}
 		}
-		return f.Label(t, []string{backlog.LabelReady}, backlog.ReadyRemoves(*is))
+		add, remove := []string{backlog.LabelReady}, backlog.ReadyRemoves(*is)
+		if c.Column != "" {
+			// Its card to the board's ready column, out of the others
+			// (ADR-0057), in the same call.
+			add = append(add, c.Column)
+			for _, l := range c.Off {
+				if slices.Contains(is.Labels, l) {
+					remove = append(remove, l)
+				}
+			}
+		}
+		return f.Label(t, add, remove)
 	}
 	body, added, _ := backlog.Refine(is.Body, c, role)
 	if len(added) > 0 {
@@ -592,6 +604,24 @@ func keepBody(f forge.Forge, role string, t forge.Target, body string, sources, 
 	}
 	st.Keep(body)
 	return f.Sticky(t, backlog.FormatState(*st), backlog.StateMarker(role), false)
+}
+
+// readyMove is the move a ready makes on the forge's board: its ready
+// column's label on, the other columns' off (ADR-0057); nil with none. A
+// board out of reach is said, and moves nothing.
+func readyMove(f forge.Forge, repo string) *board.Move {
+	if f == nil {
+		return nil
+	}
+	pc, err := role.LoadProjectConfig(repo)
+	if err != nil {
+		return nil
+	}
+	mv, err := board.To(f, "ready", pc.Board)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "workline: the forge's board could not be read, no card moved: %s\n", forge.Said(err))
+	}
+	return mv
 }
 
 // planActs decides what becomes of the run's acts on the backlog, once: a
@@ -666,6 +696,16 @@ func planActs(f forge.Forge, r *role.Role, settings map[string]any, st runState,
 		return nil, err
 	}
 	cfg.SpecReview = line.Follows(role, backlog.SpecReviewer)
+	// The board's ready column a ready moves the card to (ADR-0057); a
+	// board out of reach is said and moves nothing.
+	for _, c := range closes {
+		if c.Do == "ready" {
+			if mv := readyMove(f, st.Repo); mv != nil { // read once, when a ready is proposed
+				cfg.ReadyColumn, cfg.ReadyOff = mv.Column, mv.Off
+			}
+			break
+		}
+	}
 	// What the run read — the commit, each issue's body — and the agents
 	// and models it asked, kept with each act (ADR-0046).
 	if data, err := os.ReadFile(filepath.Join(runDir, "in", backlog.ReadFile)); err == nil {

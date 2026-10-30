@@ -1,0 +1,19 @@
+case: developer/board-gitlab-free-ready-label-off
+about: >
+  On a GitLab Free board, a column is a plain label and nothing comes
+  off alone (ADR-0057, step 2): the developer's claim puts Doing on and
+  takes To do off, in one call.
+given:
+  repo: tested
+  forge:
+    boards:
+      - {forge: gitlab, number: 7, name: Development, owner: project, columns: ["To do", "Doing"], closed-list: true}
+    issues:
+      - {id: 2, title: "Multiply", labels: ["workline:ready", "To do", "bug"], body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: a `mul` function.\n"}
+run: {develop: [], ai: "fake:developer-nothing"}
+expect:
+  status: pass
+  summary: "took #2"
+  forge:
+    issues:
+      - {id: 2, labels: ["workline:ready", "bug", "workline:developing", "Doing"]}

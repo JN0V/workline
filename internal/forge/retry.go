@@ -70,7 +70,11 @@ func (g *gitlab) send(method, target, contentType string, body []byte, read bool
 		if err != nil {
 			return nil, err
 		}
-		req.Header.Set(g.header, g.token)
+		if g.header == "Authorization" {
+			req.Header.Set(g.header, "Bearer "+g.token)
+		} else {
+			req.Header.Set(g.header, g.token)
+		}
 		if contentType != "" {
 			req.Header.Set("Content-Type", contentType)
 		}

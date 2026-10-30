@@ -135,8 +135,9 @@ func (g *gitlab) insider(username string) (bool, error) {
 
 // connect finds the instance, the project and the token: what CI gives
 // (CI_API_V4_URL, CI_PROJECT_ID), else GITLAB_HOST and the repository's
-// remote; the token in GITLAB_TOKEN, else glab's if it is set up, else the
-// job's own, which may read but not write.
+// remote; the token in GITLAB_TOKEN, else glab's if it is set up (its OAuth
+// login's as a Bearer token), else the job's own, which may read but not
+// write.
 func (g *gitlab) connect() error {
 	if g.base != "" {
 		return nil
@@ -169,6 +170,11 @@ func (g *gitlab) connect() error {
 		if u, err := url.Parse(g.base); err == nil {
 			if out, err := exec.Command("glab", "config", "get", "token", "--host", u.Host).Output(); err == nil {
 				g.token = strings.TrimSpace(string(out))
+				// glab's web login holds an OAuth token: GitLab takes it as
+				// a Bearer token only; a personal one goes as PRIVATE-TOKEN.
+				if o, err := exec.Command("glab", "config", "get", "is_oauth2", "--host", u.Host).Output(); err == nil && strings.TrimSpace(string(o)) == "true" {
+					g.header = "Authorization"
+				}
 			}
 		}
 	}
@@ -1551,7 +1557,8 @@ func (g *gitlab) AddSubIssue(parent, child int) (bool, error) {
 }
 
 // projectPath is the project's full path, for GraphQL, which takes no
-// numeric id.
+// numeric id: CI's, else the remote's, read by connect, which its caller
+// has called.
 func (g *gitlab) projectPath() string {
 	if p := os.Getenv("CI_PROJECT_PATH"); p != "" {
 		return p

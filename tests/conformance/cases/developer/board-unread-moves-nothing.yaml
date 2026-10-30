@@ -1,0 +1,22 @@
+case: developer/board-unread-moves-nothing
+about: >
+  A board the forge could not read, even in part, moves no card
+  (ADR-0057): the developer's claim lands with workline's label alone,
+  the board's labels left as they are; the run says it on its output.
+given:
+  repo: tested
+  forge:
+    boards-unread: "the group's boards: 502 Bad Gateway"
+    boards:
+      - {forge: gitlab, number: 7, name: Development, owner: project, columns: ["To do", "Doing"], closed-list: true}
+    issues:
+      - {id: 2, title: "Multiply", labels: ["workline:ready", "To do"], body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: a `mul` function.\n"}
+run: {develop: [], ai: "fake:developer-nothing"}
+expect:
+  status: pass
+  summary: "took #2"
+  forge:
+    issues:
+      - id: 2
+        labels: ["workline:ready", "To do", "workline:developing"]
+        comment-lacks: ["Its card moved", '"board":']
