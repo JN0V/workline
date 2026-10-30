@@ -29,9 +29,9 @@ expect:
   pushed-log:
     workline/developer/3:
       - "test: the acceptance tests of #3"
-      - "test: the tests beside the code of #3"
+      - "test: multiply two numbers"
       - "tests/test_mul_negative.sh"
-      - "Multiply two numbers"
+      - "feat: multiply two numbers"
       - "lib.sh"
   forge:
     merge-requests:
