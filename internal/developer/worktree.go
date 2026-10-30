@@ -100,9 +100,10 @@ func linkOrModule(l string) bool {
 }
 
 // treeGit runs git in the agent's worktree, its hooks off, the files'
-// modes not read.
+// modes not read, no replacement read: a commit its agent put in the
+// start commit's place hides no file from its diff.
 func treeGit(tree string, args ...string) (string, error) {
-	cmd := exec.Command("git", append([]string{"-C", tree, "-c", "core.hooksPath=/dev/null", "-c", "core.fileMode=false"}, args...)...)
+	cmd := exec.Command("git", append([]string{"-C", tree, "--no-replace-objects", "-c", "core.hooksPath=/dev/null", "-c", "core.fileMode=false"}, args...)...)
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 	out, err := cmd.Output()

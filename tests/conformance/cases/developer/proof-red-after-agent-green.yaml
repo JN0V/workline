@@ -1,0 +1,33 @@
+case: developer/proof-red-after-agent-green
+about: >
+  The agent's green proves nothing (ADR-0056, step 3): its mul is wrong,
+  and it replaces the start commit, in the git store its worktree
+  shares, by one whose test runner passes every test; its own run is
+  green, its worktree's runner put back. The proof reads no
+  replacement: its fresh tree is the start commit as it was, the
+  project's runner in it, and its test is red, a Draft.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  env: {EDIT: replace}
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    issues:
+      - {id: 2, title: "Multiply", labels: ["workline:ready"], body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: a `mul` function.\n"}
+run: {develop: [], ai: 'cmd:sh "$FIXTURES/agents/developer-edits-worktree.sh"'}
+expect:
+  status: pass
+  summary: "took #2; a Draft: red"
+  agent-calls: 1
+  findings: [{rule: proof-red, level: warn, where: "#2", message: "1 test red on its code: tests.test_mul"}]
+  no-findings: [{rule: proof-green}]
+  pushed:
+    workline/developer/2:
+      lib.sh: "echo 7"
+      run-tests.sh: "failed=1"
+  forge:
+    issues:
+      - id: 2
+        comment-contains: ['"proof":{"result":"red"', '"tree":"fresh"']

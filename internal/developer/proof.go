@@ -1,10 +1,12 @@
 package developer
 
 // The proof and the caps (ADR-0054, step 3): before its pull request
-// opens, the code within its bounds is laid on the commit the run read, in
-// a checkout apart, and the project's test command runs there — the
-// tester's own setting, so the acceptance tests on the branch run with the
-// rest. Green, and no cap reached: the pull request opens ready. Red, not
+// opens, the code within its bounds is laid on a fresh checkout of the
+// commit the run read — never its agent's worktree, whose ignored files,
+// caches and git store its agent could have changed (ADR-0056, step 3) —
+// and the project's test command runs there: the tester's own setting, so
+// the acceptance tests on the branch run with the rest. Its agent's own
+// runs are not read. Green, and no cap reached: the pull request opens ready. Red, not
 // run whole, or a cap reached: a Draft, which wakes no agent (ADR-0050 §4),
 // saying what failed. Both are kept in the claim's record, for the auditor
 // (ADR-0046).
@@ -40,6 +42,10 @@ type Proof struct {
 	// Why: unproven, why it did not run whole; red with no test red, why
 	// the command failed.
 	Why string `json:"why,omitempty"`
+	// Tree: where it ran, "fresh" — a checkout of At apart, never its
+	// agent's worktree; At: that commit.
+	Tree string `json:"tree,omitempty"`
+	At   string `json:"at,omitempty"`
 }
 
 // Cap is a bound on the run reached: the setting, what was spent, what it
@@ -75,7 +81,7 @@ func prove(repo, at string, patches []intent.Intention, s Settings) (Proof, *Cap
 		p.Result, p.Why = Unproven, strings.TrimSpace(f.Where+": "+f.Message)
 		return p, nil
 	}
-	p.Passed, p.Red = len(o.Passed), o.Red
+	p.Passed, p.Red, p.Tree, p.At = len(o.Passed), o.Red, "fresh", o.At
 	p.Result = Red
 	if o.Green() {
 		p.Result = Green
@@ -169,6 +175,9 @@ func proofLines(p Proof, caps []Cap) string {
 	default:
 		fmt.Fprintf(&b, "- The project's tests did not run whole: %s\n", p.Why)
 	}
+	if p.Tree == "fresh" && p.At != "" {
+		fmt.Fprintf(&b, "- Run on a fresh checkout of %s, its code laid on it: not its agent's worktree.\n", shortSHA(p.At))
+	}
 	for _, c := range caps {
 		fmt.Fprintf(&b, "- Cap reached: %s, %d spent of %d.\n", c.Setting, c.Spent, c.Allows)
 	}
@@ -188,6 +197,13 @@ func issueTitle(runDir string, issue int) string {
 		return ""
 	}
 	return strings.TrimSpace(t)
+}
+
+func shortSHA(sha string) string {
+	if len(sha) > 7 {
+		return sha[:7]
+	}
+	return sha
 }
 
 func plural(n int) string {

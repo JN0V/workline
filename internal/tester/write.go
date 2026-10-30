@@ -434,6 +434,7 @@ func layPatches(tree string, patches []intent.Intention) (*verdict.Verdict, erro
 		}
 		diff, _ := p.Value.(string)
 		cmd := exec.Command("git", "-C", tree, "apply", "--recount", "--unidiff-zero", "-")
+		cmd.Env = freshEnv() // the tree's own git, not the machine's config
 		cmd.Stdin = strings.NewReader(intent.NormalizeDiff(diff))
 		if out, err := cmd.CombinedOutput(); err != nil {
 			return &verdict.Verdict{Status: verdict.Block, Summary: "a test's patch does not apply",

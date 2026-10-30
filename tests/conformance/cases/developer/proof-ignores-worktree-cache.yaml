@@ -1,0 +1,40 @@
+case: developer/proof-ignores-worktree-cache
+about: >
+  The proof runs on a fresh tree (ADR-0056, step 3), never in the
+  agent's worktree: its agent puts mul in a build file its git ignores,
+  which lib.sh reads, and its own run there is green. The build file is
+  not its code: on a fresh checkout of the start commit, its code laid
+  on it, mul is missing and its test red, a Draft. The claim's record
+  and the pull request say the proof ran on a fresh tree.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  env: {EDIT: cache}
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    issues:
+      - {id: 2, title: "Multiply", labels: ["workline:ready"], body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: a `mul` function.\n"}
+run: {develop: [], ai: 'cmd:sh "$FIXTURES/agents/developer-edits-worktree.sh"'}
+expect:
+  status: pass
+  summary: "took #2; a Draft: red"
+  agent-calls: 1
+  findings: [{rule: proof-red, level: warn, where: "#2", message: "1 test red on its code: tests.test_mul"}]
+  no-findings: [{rule: proof-green}]
+  pushed:
+    workline/developer/2:
+      lib.sh: "build/mul.sh"
+  pushed-lacks:
+    workline/developer/2:
+      build/mul.sh: "mul()"
+  forge:
+    issues:
+      - id: 2
+        comment-contains: ['"proof":{"result":"red"', '"red":["tests.test_mul"],"tree":"fresh","at":"']
+    merge-requests:
+      - id: 1
+        branch: workline/developer/2
+        draft: true
+        body-contains: ["on a fresh checkout of"]

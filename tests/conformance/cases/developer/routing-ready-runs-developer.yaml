@@ -36,7 +36,7 @@ expect:
     issues:
       - id: 3
         labels: ["workline:ready", "workline:developing"]
-        comment-contains: ['"proof":{"result":"green","command":"sh run-tests.sh {report}","passed":3}']
+        comment-contains: ['"proof":{"result":"green","command":"sh run-tests.sh {report}","passed":3,"tree":"fresh","at":"']
     merge-requests:
       - id: 2
         branch: workline/developer/3
