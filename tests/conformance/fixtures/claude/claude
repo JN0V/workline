@@ -4,7 +4,8 @@
 # repository's .claude/settings.json unless told the person's settings
 # only. It fails, saying why, unless given its tools, flags and question
 # as the developer passes them, its shell without its login. Then it reads
-# lib.sh, writes mul and a test, runs the tests, answers `[]` in stream-json.
+# lib.sh, writes mul and a test, runs the tests, answers $ANSWER (a JSON
+# string), `[]` by default, in stream-json.
 set -eu
 want() { echo "claude stand-in: $*" >&2; exit 1; }
 args=" $* "
@@ -39,4 +40,4 @@ tool 2 Read
 tool 3 Write
 tool 4 Edit
 tool 5 Bash
-echo '{"type":"result","subtype":"success","is_error":false,"num_turns":6,"result":"[]","total_cost_usd":0.12,"modelUsage":{"claude-sonnet-5":{"inputTokens":3000,"cacheReadInputTokens":40000,"cacheCreationInputTokens":2000,"outputTokens":1500}}}'
+printf '{"type":"result","subtype":"success","is_error":false,"num_turns":6,"result":"%s","total_cost_usd":0.12,"modelUsage":{"claude-sonnet-5":{"inputTokens":3000,"cacheReadInputTokens":40000,"cacheCreationInputTokens":2000,"outputTokens":1500}}}\n' "${ANSWER:-[]}"

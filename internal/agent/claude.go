@@ -130,12 +130,14 @@ func (c claude) Propose(req Request) (Call, error) {
 		// Stopped mid-way, its answer is not written yet: what it edited
 		// in its worktree is what it did.
 		proposals, err = []byte("[]\n"), nil
-	case err != nil && tree != "":
+	case err != nil && tree != "" && !strings.Contains(answer.Result, "objection"):
 		// Its edits are its code: closing words that are no proposals
 		// lose nothing of it, said, never asked again (a whole run of
-		// turns again); its words stay in out/agent-answer.txt.
+		// turns again); its words stay in out/agent-answer.txt. Words
+		// that name an objection are its agent failing: a Draft, never
+		// an objection dropped in silence.
 		call.Mended = append(call.Mended, "its closing words were no YAML list ("+err.Error()+
-			"): read as proposing nothing beyond its edits; an objection in them is lost (out/agent-answer.txt)")
+			"): read as proposing nothing beyond its edits (out/agent-answer.txt)")
 		proposals, err = []byte("[]\n"), nil
 	}
 	if err != nil {

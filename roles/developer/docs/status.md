@@ -134,6 +134,7 @@ hold:
   ([the agent](agent.md)); the repository's Claude Code settings not
   loaded, its shell without its login. Cases
   `developer/claude-runs-in-worktree`, `claude-ignores-project-settings`,
+  `claude-broken-objection-not-lost`,
   with a stand-in for claude: no real call measured yet (step 7).
 
 - **The review loop** (step 6): a fresh run a reviewer's verdict or a

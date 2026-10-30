@@ -67,12 +67,16 @@ It names the code, never pastes it; the agent reads it in its worktree:
 - the issue, whole;
 - the paths it may change: the Scope, the tests beside them;
 - the tester's frozen tests, by path, and how to object to one;
-- the test command, the tester's `test-command`;
+- the test command, the tester's `test-command`, or why its setting
+  could not be read;
 - its bounds: turns, seconds, no commit nor push.
 
 It answers with its edits, then a YAML list of objections, `[]` if
-none. Closing words that are no list lose nothing of its code: read
-as no objection, and said (`answer-mended`).
+none. Closing words that are no list lose nothing of its code:
+
+- **They name no objection**: read as none, and said (`answer-mended`).
+- **They name one**: its agent failed (`agent-invalid-output`); its
+  code is still proven and pushed, as a Draft that says why.
 
 ## Not yet
 
