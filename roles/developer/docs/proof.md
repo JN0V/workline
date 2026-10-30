@@ -3,8 +3,9 @@ sources:
   - internal/developer/proof.go
   - internal/developer/developer.go
   - internal/tester/onchange.go
+  - internal/tester/fresh.go
   - roles/developer/role.yaml
-checked: e04c31ef
+checked: b60ddded
 verified: agent:claude-code
 ---
 # The proof and the caps: ready or a Draft
@@ -21,8 +22,9 @@ flowchart LR
 
 ## The proof
 
-- **Where**: before anything is pushed, its code laid on the commit the
-  run read, in a checkout apart; no agent.
+- **Where**: before anything is pushed, its code laid on a fresh
+  checkout of the commit the run read ([below](#a-fresh-tree)); no
+  agent.
 - **What runs**: the tester's `test-command`, once, its JUnit report
   read ([the tester's settings](../../tester/role.yaml)). One setting
   for both roles: the project's tests.
@@ -32,6 +34,27 @@ flowchart LR
 - **Red**: a test failed, errored or was skipped, or the command failed.
 - **Not run whole**: no `test-command`, a patch that does not apply, no
   report or one naming no test: not green, never a pass.
+
+## A fresh tree
+
+Step 3 of
+[ADR-0056](../../../docs/adr/0056-the-developers-agent-works-in-a-sandbox-with-tools.md#the-proof-stays-the-engines).
+
+- **Its agent's runs prove nothing**: it runs the tests in its worktree
+  to iterate; a green it reports is not read.
+- **Never in its agent's worktree**: the proof checks the start commit
+  out in a repository of its own, apart, its code laid on it.
+- **What the agent left is not there**: an ignored or untracked file
+  outside its diff, a cache, a build output.
+- **Nothing of the store the worktree shares is read**: it borrows the
+  commits' contents only, never the store's refs, replacements, config,
+  attributes or hooks, nor the machine's git config. A commit the agent
+  put in the start commit's place changes neither its diff nor the proof.
+- **Not apart yet**: the job's environment outside the tree (the home
+  folder, tool caches, the path) is the one the agent ran in; the
+  proof in the project's own environment is
+  [#703](https://github.com/JN0V/workline/issues/703), on today's
+  default branch [#701](https://github.com/JN0V/workline/issues/701).
 
 ## The caps
 
@@ -63,7 +86,8 @@ flowchart LR
 ## The record
 
 - **In the claim's comment** on the issue: `proof` (result, command,
-  tests passed, those red, why it did not run) and `caps` (setting,
+  tests passed, those red, why it did not run, `tree: fresh` and the
+  commit checked out, `at`) and `caps` (setting,
   spent, allowed).
 - **Read by the auditor**
   ([ADR-0046](../../../docs/adr/0046-the-auditor-re-checks-every-roles-acts.md)).

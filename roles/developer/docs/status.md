@@ -114,6 +114,12 @@ hold:
   ([the pull request](pull-request.md#who-opens-it)). Cases
   `developer/worktree-env-has-no-token`,
   `worktree-refuses-persisted-credential`.
+- **The proof on a fresh tree** (step 3): a checkout of the start
+  commit in a repository of its own, never the agent's worktree, its
+  git store's refs, replacements and config not read; its record says
+  so ([the proof](proof.md#a-fresh-tree)). Cases
+  `developer/proof-ignores-worktree-cache`,
+  `proof-red-after-agent-green`.
 
 - **The review loop** (step 6): a fresh run a reviewer's verdict or a
   person's comment on its pull request, reading its record, not a
@@ -173,9 +179,9 @@ prove the grading first (`TestDeveloperWithStandIns`).
 
 - **The agent reads, edits and runs the tests**: `claude` is one call
   with no tools today, the Scope's code pasted in its question; a
-  `cmd:` agent edits a worktree already, no credential in its reach. The
-  proof on a fresh tree, the caps, `claude` with tools and the review
-  loop are steps 3 to 6 of
+  `cmd:` agent edits a worktree already, no credential in its reach,
+  proven on a fresh tree. The caps, `claude` with tools and the review
+  loop are steps 4 to 6 of
   [ADR-0056](../../../docs/adr/0056-the-developers-agent-works-in-a-sandbox-with-tools.md).
 - **The issue's kind from the forge's types and the project's labels**:
   read from a fixed list of labels only
