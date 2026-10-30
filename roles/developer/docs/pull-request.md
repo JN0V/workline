@@ -6,7 +6,7 @@ sources:
   - internal/engine/engine.go
   - internal/agent/claude.go
   - internal/builtin/reviewer/once.go
-checked: b60ddded
+checked: 98d1a6a6
 verified: agent:claude-code
 ---
 # The pull request
@@ -26,13 +26,12 @@ flowchart LR
 - **From the tester's Draft**, `workline/tester/issue-<n>`, when one
   is open: its acceptance tests are on the branch, so the proof runs
   them ([the proof](proof.md)).
-- **The agent reads them**: its question holds each frozen test as the
-  Draft has it; its checkout is the default branch's.
-- **And the code it may touch**: the agent has no tools, so its
-  question holds each file of the issue's Scope as it reads where its
-  code starts, a folder's files, a path not there yet said; past about
-  25k tokens, a file is named only. A review round shows them as its
-  branch holds them. Without them, a real agent wrote no patch
+- **The agent reads them** in its worktree, a checkout of the Draft:
+  its question names their paths, and the Scope's, never pastes them
+  ([the agent](agent.md#the-question)).
+- **A review round** has no worktree yet: its question holds each file
+  of the Scope as its branch holds it; past about 25k tokens, a file
+  is named only. Without them, a real agent wrote no patch
   ([measured](status.md#measured)).
 - **Its pull request goes to the branch the run is on**, the default
   branch in CI, never to the tester's. Merged, it brings the tests with

@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/role/config.go, internal/engine/engine.go, internal/hooks, internal/agent/claude.go, internal/agent/command.go]
-checked: 6f6b7e3a
+checked: 98d1a6a6
 judged: b5899f5
 verified: agent:claude-code
 ---
@@ -82,7 +82,9 @@ Each in detail: [the commands](commands.md), and
 - `cmd:<command>`: any other agent ([another agent](#another-agent)).
 - Default: `WORKLINE_AI` for the hook, else the project's `ai`, else
   yours, else none.
-- `claude` runs headless, outside the repository, with no tools. It gets
+- `claude` runs headless, outside the repository, with no tools; the
+  developer's runs in a worktree of the code, with tools
+  ([its agent](../roles/developer/docs/agent.md)). It gets
   your environment without the variables a Claude Code session exports
   (`CLAUDECODE`, `CLAUDE_CODE_ENTRYPOINT`…): started from a session,
   a commit's hook included, the call would run as its child, at twice

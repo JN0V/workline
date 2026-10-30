@@ -4,7 +4,7 @@ sources:
   - internal/developer/developer.go
   - internal/developer/worktree.go
   - internal/steer/steer.go
-checked: 6f6b7e3a
+checked: 98d1a6a6
 verified: agent:claude-code
 ---
 # The bounds: what its code may never touch
@@ -61,9 +61,9 @@ path is compared cleaned (`./x`, `x/`); a folder covers its files.
 
 ## A worktree: its diff is the code
 
-A `cmd:` agent works in a worktree
-([ADR-0056](../../../docs/adr/0056-the-developers-agent-works-in-a-sandbox-with-tools.md),
-step 1); `claude` answers patches until step 5.
+Its agent works in a worktree
+([ADR-0056](../../../docs/adr/0056-the-developers-agent-works-in-a-sandbox-with-tools.md);
+what each agent gets: [the agent](agent.md)).
 
 - **Where**: the commit its code starts from (the tester's Draft, or
   the commit read), checked out in the run's folder. The agent runs

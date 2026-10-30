@@ -127,6 +127,12 @@ hold:
   the record ([the caps](proof.md#the-caps)). Cases
   `developer/turn-cap-makes-draft`, `time-cap-kills-agent`,
   `token-cap-makes-draft`.
+- **`claude` with tools** (step 5): run in the worktree, its tools
+  read, edit, search and shell, none asking a person; the question
+  names the issue, its Scope, the frozen tests and the test command,
+  no code pasted; the tools it used in the record
+  ([the agent](agent.md)). Case `developer/claude-runs-in-worktree`,
+  with a stand-in for claude: no real call measured yet (step 7).
 
 - **The review loop** (step 6): a fresh run a reviewer's verdict or a
   person's comment on its pull request, reading its record, not a
@@ -184,12 +190,11 @@ prove the grading first (`TestDeveloperWithStandIns`).
 ## Missing
 
 
-- **The agent reads, edits and runs the tests**: `claude` is one call
-  with no tools today, the Scope's code pasted in its question; a
-  `cmd:` agent edits a worktree already, no credential in its reach,
-  proven on a fresh tree, held by its time, turns and tokens
-  ([the caps](proof.md#the-caps)). `claude` with tools and the review
-  loop are steps 5 and 6 of
+- **A review round in a worktree**: a round's agent still answers
+  patches, the Scope's code pasted in its question; step 6 of
+  [ADR-0056](../../../docs/adr/0056-the-developers-agent-works-in-a-sandbox-with-tools.md).
+- **`claude` with tools, measured**: tokens and time a run on planted
+  issues and real repositories, step 7 of
   [ADR-0056](../../../docs/adr/0056-the-developers-agent-works-in-a-sandbox-with-tools.md).
 - **A test runner named like a test**: `run-tests.sh` beside the Scope
   passes the bounds as the agent's own test, so its agent can rewrite
