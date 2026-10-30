@@ -32,6 +32,7 @@ owner), then the project's `settings`.
 | `repos.<name>` | `url`, `branch`: other repositories docs may name ([multi-repo](spec/multi-repo.md)) |
 | `release` | `branches` (the release tool's), `tags` (`v*`) |
 | `merge` | `autonomy: cautious`: the forge merges what a person accepted; `normal`: workline's own routine work too, with no yes; `alone: [reader]`: the reader's rewordings too ([merge policy](merge-policy.md)); off unless set |
+| `board` | `ready`, `doing`: a column's name, over the names workline matches; `project`: a GitHub project's number, when several are linked ([boards](boards.md)) |
 | `gitlab.bots` | usernames GitLab does not name bots that are: the service account or line account holding workline's token; its comments, labels and reactions are a bot's, never a person's ([why](ci-gitlab.md#what-the-template-does)) |
 
 ## `.workline/config.yaml`

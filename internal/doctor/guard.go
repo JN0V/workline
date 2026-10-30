@@ -30,7 +30,7 @@ func boundsGuard(r *Report, o Options, projectForge string, line *routing.Config
 	if spec == "" && onGitLab(o.Repo) {
 		spec = "gitlab"
 	}
-	if spec != "gitlab" || !routesDeveloper(line) {
+	if spec != "gitlab" || !routesRole(line, "developer") {
 		return
 	}
 	f, err := forge.Open(spec, o.Repo)
@@ -85,13 +85,13 @@ func boundsGuard(r *Report, o Options, projectForge string, line *routing.Config
 	}
 }
 
-// routesDeveloper says whether the line runs the developer on an event.
-func routesDeveloper(line *routing.Config) bool {
+// routesRole says whether the line runs the role on an event.
+func routesRole(line *routing.Config, name string) bool {
 	if line == nil {
 		return false
 	}
 	for _, steps := range line.Events {
-		if slices.ContainsFunc(steps, func(s string) bool { return s == "developer" || strings.HasPrefix(s, "developer ") }) {
+		if slices.ContainsFunc(steps, func(s string) bool { return s == name || strings.HasPrefix(s, name+" ") }) {
 			return true
 		}
 	}

@@ -1,0 +1,20 @@
+case: setup/board-setting-overrides-match
+about: >
+  `board:` in .workline/config.yaml names a slot's column, matched as
+  loosely, over the names workline knows; a name no column holds is a
+  warning, that step moving nothing (ADR-0057).
+given:
+  repo: documented
+  config:
+    routing: {events: {issue: [developer]}}
+    board: {ready: "sprint backlog", doing: Build}
+  forge:
+    merge-requests: []
+    boards:
+      - {forge: github, number: 2, name: Plan, owner: organization, columns: [Ready, Sprint Backlog, In progress, Done], workflows: {}}
+run: {doctor: true}
+expect:
+  status: pass
+  checks:
+    - {rule: board-found, message: "ready → Sprint Backlog, doing → no column, done → Done"}
+    - {rule: board-setting-unmatched, level: warn, message: "doing: Build"}

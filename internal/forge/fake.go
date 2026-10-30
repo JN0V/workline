@@ -32,6 +32,10 @@ type FakeState struct {
 	// why the token reads no value visible to members only, "" when it
 	// does.
 	IssueFields []Field `json:"issue-fields,omitempty"`
+	// Boards are the boards the work shows on (ADR-0057); BoardsUnread,
+	// why the forge does not answer them.
+	Boards       []Board `json:"boards,omitempty"`
+	BoardsUnread string  `json:"boards-unread,omitempty"`
 	Public      bool    `json:"public,omitempty"`
 	Blind       string  `json:"fields-blind,omitempty"`
 	// Weights: its issues carry a weight, as GitLab Premium's (ADR-0040).

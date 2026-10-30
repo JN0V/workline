@@ -123,7 +123,10 @@ What else a case can give, run and expect, and how each is checked, is in
   `fields` (`{Priority: High}`), the repository `public: true`, and
   `fields-blind: <why>` a token that reads no value visible to members
   only; with `weights: true`, its issues carry a weight, as GitLab
-  Premium's, an issue's in its `weight`. A
+  Premium's, an issue's in its `weight`; `boards` (`{forge, number,
+  name, owner, url, columns, workflows, closed-list}`) are the boards
+  the work shows on, the GitLab mock answering them through GraphQL,
+  `boards-unread: <why>` a forge that does not answer them. A
   merge request's `threads` are its comments on lines, `{path, line,
   body, resolved}`: a review is posted whole, as GitHub's, on the lines
   of the repository's diff from the merge request's `base` (main) to the

@@ -1,5 +1,5 @@
 ---
-sources: [cmd/workline, internal/hooks, internal/role/config.go, internal/doctor/variables.go]
+sources: [cmd/workline, internal/hooks, internal/role/config.go, internal/doctor/variables.go, internal/doctor/board.go]
 checked: 8ccdfb74
 verified: agent:claude-code
 ---
@@ -73,6 +73,9 @@ changes nothing.
   variables, their values never said; a token that may not list them
   (only a Maintainer's may) is said
   ([the environment](gitlab/environment.md#workline-doctor)).
+- With the product owner or the developer routed: the forge's board,
+  its columns matched to ready, doing and done, read-only
+  ([boards](boards.md)).
 - Exits 1 only on an error — the agent named cannot be called, the config
   does not load — never for a tool left out; `--json` prints every check.
 

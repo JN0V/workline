@@ -217,6 +217,17 @@ type ProjectConfig struct {
 	GitLab struct {
 		Bots []string `yaml:"bots"`
 	} `yaml:"gitlab"`
+	// Board overrides how the forge's board is matched (ADR-0057): a
+	// column's name for a slot, a GitHub project's number among several.
+	Board Board `yaml:"board"`
+}
+
+// Board is the `board:` setting: empty, the columns are matched by their
+// names and the only board linked is taken.
+type Board struct {
+	Ready   string `yaml:"ready"`
+	Doing   string `yaml:"doing"`
+	Project int    `yaml:"project"`
 }
 
 // Merge is the project's merge policy: which pull requests `workline

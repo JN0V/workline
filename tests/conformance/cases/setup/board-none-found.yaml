@@ -1,0 +1,14 @@
+case: setup/board-none-found
+about: >
+  The local forge holds no board: `workline doctor` says so, a note,
+  and that workline's labels mark the work (ADR-0057, step 1).
+given:
+  repo: documented
+  config:
+    routing: {events: {issue: [developer]}}
+run: {doctor: true, forge: local}
+expect:
+  status: pass
+  checks:
+    - {rule: board-none, level: note, message: "holds no board: workline's roles mark the work with their labels"}
+  no-checks: [{rule: board-found}]

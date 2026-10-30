@@ -1,0 +1,26 @@
+case: setup/board-github-status-found
+about: >
+  `workline doctor` finds the GitHub project linked to the repository,
+  its owner's kind, its Status field's options matched to ready, doing
+  and done, and its built-in workflows on and off (ADR-0057, step 1).
+  It moves no card.
+given:
+  repo: documented
+  config:
+    routing: {events: {issue: [developer]}}
+  forge:
+    merge-requests: []
+    boards:
+      - forge: github
+        number: 3
+        name: Team plan
+        owner: organization
+        url: https://github.com/orgs/o/projects/3
+        columns: [Todo, In Progress, Done]
+        workflows: {"Item closed": true, "Pull request merged": true, "Pull request linked to issue": false}
+run: {doctor: true}
+expect:
+  status: pass
+  checks:
+    - {rule: board-found, level: ok, message: "GitHub project \"Team plan\" (#3, organization's): ready → Todo, doing → In Progress, done → Done; its workflows on: Item closed, Pull request merged; off: Pull request linked to issue"}
+    - {rule: board-found, message: "No card is moved yet"}
