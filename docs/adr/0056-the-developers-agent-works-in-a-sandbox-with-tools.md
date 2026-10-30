@@ -78,8 +78,10 @@
 - **Time**: `ai-max-seconds` (1200 s) on the agent, then the proof's
   `proof-seconds`; past it the agent is killed, its diff bounded and
   proven, a Draft (as gh-aw's 20 min, Copilot's 59).
-- **Turns**: a new `ai-max-turns`, passed to the agent; a start of 50,
-  OpenHands' default, until measured. Reached: a Draft.
+- **Turns**: a new `ai-max-turns`, passed to the agent; a start of
+  100 until measured: an issue-sized task takes 51 rounds on average
+  ([the card](../research/agent-sandbox.md#what-it-costs)), so
+  OpenHands' 50 would stop many. Reached: a Draft.
 - **Tokens**: `ai-max-tokens`, read from the agent's report after the
   run: an agent has no live token cap, so turns and time hold it; a run
   over it is a Draft, said (principle 12).
@@ -109,8 +111,9 @@
   keep the one-shot call and fix its defects one by one
   ([#692](https://github.com/JN0V/workline/issues/692),
   [#704](https://github.com/JN0V/workline/issues/704)).
-- **What it costs**: more tokens a run, likely by orders of magnitude
-  ([consequences](#consequences)); a turn cap holds them.
+- **What it costs**: from thousands of tokens a run to about a million,
+  mostly cache reads ([consequences](#consequences)); a turn cap
+  holds them.
 
 ## Build plan
 
@@ -142,13 +145,19 @@ not pass.
 
 ## Consequences
 
-- **Tokens a run rise**: about 2k a planted case and 12k on the first
-  live run today; with tools, OpenHands on SWE-bench Verified spends
-  "1000x more tokens than code reasoning and code chat", runs on one
-  task differing "up to 30x", Claude Sonnet 4.5 "over 1.5 million more
-  tokens than GPT-5" on average, cache reads most of it
-  ([study](https://arxiv.org/abs/2604.22750)). The developer's issues
-  are smaller, bounded by a Scope: no number until step 7 measures it.
+- **Tokens a run rise, from thousands to millions**: about 2k a
+  planted case and 12k on the first live run today. Published, per
+  task, with tools ([the card](../research/agent-sandbox.md#what-it-costs)):
+  - an issue-sized task (SWE-bench Verified, Claude Sonnet 4.5, a
+    bash-only agent): 0.91M tokens, 51 rounds, 0.50 USD on average, no
+    cache split published;
+  - a long task (48 min, Claude Code, Claude Opus 5 at max):
+    327k fresh input, 111k output, and 32.7M cached input, 21 USD;
+  - one task runs "up to 30x" another run of itself.
+  - **So**: fresh tokens (new input and output) likely in the hundreds
+    of thousands a run, cache reads in the millions, which cost a tenth
+    of fresh input. Issues bounded by a Scope may sit lower: step 7
+    measures it, both counted apart.
 - **Latency**: minutes of turns instead of one answer, under the same
   20 min cap; off a person's path, the developer has a cap, no wait
   budget ([ADR-0050]).
