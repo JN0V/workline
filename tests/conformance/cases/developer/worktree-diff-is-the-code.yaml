@@ -1,0 +1,29 @@
+case: developer/worktree-diff-is-the-code
+about: >
+  The developer's agent works in a worktree (ADR-0056, step 1): the
+  engine checks the commit its code starts from out apart, a cmd: agent
+  runs there, told its path in WORKLINE_WORKTREE, edits lib.sh, adds a
+  test of its own, and answers nothing. The worktree's diff against that
+  commit, the untracked test in, is its code: bounded, proven and pushed
+  as a patch would be.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    issues:
+      - {id: 2, title: "Multiply", labels: ["workline:ready"], body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: a `mul` function.\n"}
+run: {develop: [], ai: 'cmd:sh "$FIXTURES/agents/developer-edits-worktree.sh"'}
+expect:
+  status: pass
+  summary: "took #2; proven green, its pull request ready"
+  agent-calls: 1
+  no-findings: [{rule: agent-invalid-output}, {rule: no-code}]
+  files:
+    lib.sh: {lacks: ["mul()"]}
+  pushed:
+    workline/developer/2:
+      lib.sh: "mul()"
+      tests/test_mul.sh: "mul 2 3"
