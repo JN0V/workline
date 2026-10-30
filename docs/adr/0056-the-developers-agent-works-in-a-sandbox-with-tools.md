@@ -6,8 +6,8 @@
   first live run; the choice is theirs, [below](#for-the-person)
 - **Amends:** [ADR-0054] (how its agent writes the code); the pick, the
   bounds, the proof, the pull request and the review loop stay
-- **Amended by:** [ADR-0058](0058-the-forge-guards-the-project-not-the-agents-environment.md)
-  (proposed): step 2's credential refusal and the amendment's boxed
+- **Amended by:** [ADR-0058](0058-the-forge-guards-the-project-not-the-agents-environment.md):
+  step 2's credential refusal and the amendment's boxed
   shell give way to the forge's guards
 - **Builds on:** [ADR-0042], [ADR-0044], [ADR-0050], [ADR-0055];
   principles 5, 6, 7, 10, 12, 13

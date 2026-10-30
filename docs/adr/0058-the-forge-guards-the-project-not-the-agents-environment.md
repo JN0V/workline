@@ -1,15 +1,14 @@
 # ADR-0058: The forge guards the project, not the agent's environment
 
-- **Status:** proposed
+- **Status:** accepted (2026-10-30)
 - **Date:** 2026-10-30
-- **Decided by:** the maintainer agreed to the direction after a
-  critical review of [#726]; the choices are theirs,
-  [below](#for-the-person)
+- **Decided by:** the maintainer, on 2026-10-30, after a critical
+  review of [#726]: the forge as the barrier, and the
+  [answers](#answers) below
 - **Amends:** [ADR-0056] step 2 ("no credential in reach") and its
   amendment; [ADR-0054]'s [bounds](0054-the-developer-takes-a-ready-issue-to-a-pull-request.md#what-bounds-it),
   which move to the pull request
-- **Rewords:** principle 6 ([PRINCIPLES.md](../PRINCIPLES.md)), at
-  acceptance
+- **Rewords:** principle 6 ([PRINCIPLES.md](../PRINCIPLES.md))
 - **Builds on:** [ADR-0011], [ADR-0042], [ADR-0044]; principles 7, 10,
   12, 13
 
@@ -46,9 +45,9 @@
 
 - **As their own coding agent does**: same user, same files, same
   credentials. No refusal, no sealing.
-- **Said plainly**: in the role's docs, and once in the run's output
+- **Said plainly**: in the role's docs, once in the run's output
   (`the agent runs with your account's rights; the forge's guards
-  decide what merges`).
+  decide what merges`), and in the pull request's description.
 - **Isolation is an opt-in, later**: a container for whoever wants it;
   not built now.
 
@@ -76,6 +75,10 @@
   whoever pushed. It runs from the default branch's definition
   (GitHub: `pull_request_target`, reading the diff, never running the
   pull request's code), so a pull request cannot edit its own check.
+- **On GitLab**, a merge request pipeline runs the source branch's
+  `.gitlab-ci.yml`; the engine detects the tier: on Ultimate, a
+  pipeline execution policy runs the check; on Premium, CODEOWNERS
+  approval is required on the CI files.
 - **Which pull requests**: a `workline/developer/<n>` branch, bounded
   by issue `n`; another is a person's, reviewed as one.
 - **A refused file fails the check**, each named; the next round or a
@@ -96,8 +99,7 @@
 
 - **Replaces** "The agent proposes, the engine acts… a separate step,
   holding the write token and no AI key, validates and applies them".
-- **Lands with acceptance**: [PRINCIPLES.md](../PRINCIPLES.md) is the
-  rule every role follows today; a proposed ADR does not change it.
+- **Landed with acceptance**, in [PRINCIPLES.md](../PRINCIPLES.md).
 
 ### 6. What goes, what stays
 
@@ -116,7 +118,7 @@
 ## For the person
 
 - **One choice**: the forge as the barrier (this ADR), or keep sealing
-  the agent's environment ([#726]).
+  the agent's environment ([#726]). Chosen: the forge.
 - **What you accept**: on your machine, the developer's agent can do
   what your account can, as your own agent can today.
 
@@ -134,12 +136,16 @@ not pass.
    `developer-pr-bounds-passes-in-scope`,
    `developer-pr-bounds-skips-a-persons-branch`.
 2. **The check in the templates**, required on the default branch,
-   from its definition: `ci-github-bounds-check-from-base`; GitLab's
-   equivalent named, its limit said ([open questions](#open-questions)).
+   from its definition: `ci-github-bounds-check-from-base`; on GitLab,
+   the tier detected, a pipeline execution policy (Ultimate) or
+   CODEOWNERS approval on CI files (Premium)
+   ([answers](#answers)): `ci-gitlab-bounds-guard-by-tier`.
 3. **No refusal, said once**: `credential.go` and
    `developer-worktree-refuses-persisted-credential` deleted;
    `developer-local-run-says-person-rights`,
-   `developer-local-run-with-credential-helper-starts`.
+   `developer-local-run-with-credential-helper-starts`,
+   `developer-local-pr-says-person-rights` (the pull request's
+   description).
 4. **CI's permissions checked by `doctor`**:
    `doctor-warns-agent-job-can-write`; `.workline:no-credential`
    deleted.
@@ -179,14 +185,15 @@ not pass.
 - **No agent with tools locally**: the developer would not run on a
   laptop (principle 10).
 
-## Open questions
+## Answers
 
-- **GitLab's check from the base**: a merge request pipeline runs the
-  source branch's `.gitlab-ci.yml`; a pipeline execution policy
-  (Ultimate) or a CODEOWNERS approval on CI files (Premium) holds it.
-  Which one the template documents.
-- **The message once**: the run's output only, or the pull request's
-  body too.
+The maintainer's answers, on 2026-10-30:
+
+- **GitLab's check from the base**: the engine detects which the
+  project has. On Premium, CODEOWNERS approval is required on the CI
+  files; where Ultimate is detected, a pipeline execution policy.
+- **The message once**: in the run's output and in the pull request's
+  description.
 
 [#703]: https://github.com/JN0V/workline/issues/703
 [#711]: https://github.com/JN0V/workline/pull/711

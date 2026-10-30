@@ -17,8 +17,8 @@
   `patch` intention
 - **Amended by:** [ADR-0057]: at the claim, it moves the issue's
   card to the board's Doing column, where the forge does not
-- **Amended by:** [ADR-0058](0058-the-forge-guards-the-project-not-the-agents-environment.md)
-  (proposed): the bounds become a required check on the pull request
+- **Amended by:** [ADR-0058](0058-the-forge-guards-the-project-not-the-agents-environment.md):
+  the bounds become a required check on the pull request
 
 ## Context
 
@@ -79,7 +79,7 @@
 ### What bounds it
 
 [ADR-0058](0058-the-forge-guards-the-project-not-the-agents-environment.md#4-the-developers-bounds-become-a-check-on-its-pull-request)
-(proposed) keeps these rules and moves where they hold: a required
+keeps these rules and moves where they hold: a required
 check on the pull request, the engine's pass before its push a first
 one.
 
