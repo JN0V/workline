@@ -1,6 +1,6 @@
 ---
 sources: [ci/github, .github/workflows/workline.yml, .github/workflows/workline-apply.yml, .github/workflows/workline-gardening.yml, .github/workflows/workline-sample.yml, .github/workflows/workline-answer.yml, .github/workflows/workline-develop.yml, .github/actions/engine/action.yml, .github/workflows/release.yml, .github/workflows/release-please.yml, release-please-config.json, .goreleaser.yaml, cmd/workline]
-checked: c75b9385
+checked: a797443e
 judged: 220b6dc
 verified: agent:claude-code
 reader: fe1505d43360
@@ -103,6 +103,10 @@ write run the default branch's workflow, never a pull request's own
      runs it on that issue; its schedule is gardening's; a verdict or a
      person's comment on its own pull request, a review round
      ([the triggers](../roles/developer/docs/triggers.md)).
+   - [workline-bounds.yml](../ci/github/workline-bounds.yml), with the
+     developer: the check `workline bounds` on its pull requests, run from
+     the default branch's copy, so a pull request cannot edit it out
+     ([the bounds on the pull request](../roles/developer/docs/bounds.md#on-the-pull-request)).
    - [workline-sample.yml](../ci/github/workline-sample.yml): the
      [weekly sample](ci.md#the-weekly-sample), from the first release
      after v0.2.1.
@@ -116,7 +120,8 @@ write run the default branch's workflow, never a pull request's own
    `WORKLINE_APP_ID`, its key `WORKLINE_APP_PRIVATE_KEY` in the
    environment `workline-app`, which only the default branch may use.
 4. **Protect main** (Settings → Rules): pull requests only, the `judge`
-   check required (workline.yml's verdict). The review is on the pull
+   check required (workline.yml's verdict); with the developer,
+   `workline bounds` too, its source GitHub Actions. The review is on the pull
    request ([ADR-0011](adr/0011-the-review-is-on-the-merge-request-not-the-push.md)):
    an agent never merges. With the merge policy, `workline/accepted` from
    the App too. Leave "Require branches to be up to date" off: main's run
