@@ -143,7 +143,7 @@ func body(a Act, ready bool) string {
 	if a.Proof != nil {
 		b.WriteString(proofLines(*a.Proof, a.Caps))
 	}
-	b.WriteString("\n## Tried\n\n- Its code on the project's tests, in a checkout apart, before this opened: above.\n" +
+	b.WriteString("\n## Tried\n\n- Its code on the project's tests, on a fresh checkout, before this opened: above.\n" +
 		"- Not tried: the commands the issue names to verify it, nor a person's use of it.\n")
 	return b.String()
 }

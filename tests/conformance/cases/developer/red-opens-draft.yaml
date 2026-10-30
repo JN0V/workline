@@ -35,7 +35,7 @@ expect:
   forge:
     issues:
       - id: 3
-        comment-contains: ['"proof":{"result":"red","command":"sh run-tests.sh {report}","passed":1,"red":["tests.test_mul_by_zero","tests.test_mul_two_by_three"]}']
+        comment-contains: ['"proof":{"result":"red","command":"sh run-tests.sh {report}","passed":1,"red":["tests.test_mul_by_zero","tests.test_mul_two_by_three"],"tree":"fresh","at":"']
     merge-requests:
       - id: 2
         branch: workline/developer/3

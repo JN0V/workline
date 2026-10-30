@@ -15,11 +15,13 @@ import (
 
 // Outcome is one run of the project's test command: the tests it reported
 // passed and red (failed, an error, or skipped), and why the command
-// exited non-zero, "" when it exited 0.
+// exited non-zero, "" when it exited 0; At, the commit its fresh tree
+// checked out.
 type Outcome struct {
 	Passed []string
 	Red    []string
 	Exit   string
+	At     string
 }
 
 // Green says the run proves the change: tests reported, none red, the
@@ -27,14 +29,14 @@ type Outcome struct {
 func (o Outcome) Green() bool { return len(o.Passed) > 0 && len(o.Red) == 0 && o.Exit == "" }
 
 // OnChange runs the project's test command once on rev, the patches laid on
-// it, in a checkout apart, stopped past deadline when one is set. A finding
+// it, in a fresh tree (fresh.go), stopped past deadline when one is set. A finding
 // when it did not run whole: a setting missing, a patch that does not
 // apply, no report read, or the deadline passed (rule proof-over-time).
 func OnChange(repo, rev string, patches []intent.Intention, s Settings, deadline time.Time) (Outcome, *verdict.Finding) {
 	if v := unset(s); v != nil {
 		return Outcome{}, &v.Findings[0]
 	}
-	tree, done, f := checkout(repo, rev)
+	tree, at, done, f := freshTree(repo, rev)
 	if f != nil {
 		return Outcome{}, f
 	}
@@ -49,7 +51,7 @@ func OnChange(repo, rev string, patches []intent.Intention, s Settings, deadline
 	if f != nil {
 		return Outcome{}, f
 	}
-	o := Outcome{Exit: r.failure}
+	o := Outcome{Exit: r.failure, At: at}
 	for id, res := range r.results {
 		if res == passed {
 			o.Passed = append(o.Passed, id)

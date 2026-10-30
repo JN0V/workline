@@ -78,3 +78,46 @@ func TestWorktreeCode(t *testing.T) {
 		t.Errorf("the worktree is gone, the engine's to remove: %v", err)
 	}
 }
+
+// A commit its agent put in the start commit's place, holding its change,
+// hides no file from the diff the bounds read.
+func TestWorktreeCodeReadsNoReplacement(t *testing.T) {
+	repo := t.TempDir()
+	t.Setenv("GIT_CONFIG_GLOBAL", "/dev/null")
+	t.Setenv("GIT_CONFIG_NOSYSTEM", "1")
+	git := func(dir string, args ...string) string {
+		t.Helper()
+		out, err := exec.Command("git", append([]string{"-C", dir, "-c", "user.name=x", "-c", "user.email=x@example.invalid"}, args...)...).CombinedOutput()
+		if err != nil {
+			t.Fatalf("git %v: %v %s", args, err, out)
+		}
+		return strings.TrimSpace(string(out))
+	}
+	if err := os.WriteFile(filepath.Join(repo, "a.sh"), []byte("a\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	git(repo, "init", "-q", "-b", "main")
+	git(repo, "add", "a.sh")
+	git(repo, "commit", "-q", "-m", "start")
+	at := git(repo, "rev-parse", "HEAD")
+	run := t.TempDir()
+	if err := openWorktree(run, repo, at); err != nil {
+		t.Fatal(err)
+	}
+	tree := filepath.Join(run, "worktree")
+	if err := os.WriteFile(filepath.Join(tree, "a.sh"), []byte("changed\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	git(tree, "commit", "-q", "-am", "the change")
+	git(tree, "replace", "-f", at, "HEAD")
+	if out := git(tree, "diff", "--name-only", at); out != "" {
+		t.Fatalf("the replacement hides nothing from git itself: %q", out)
+	}
+	patches, _, err := worktreeCode(run, at)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(patches) != 1 || !strings.Contains(patches[0].Value.(string), "+changed") {
+		t.Errorf("patches = %v, want a.sh's change", patches)
+	}
+}

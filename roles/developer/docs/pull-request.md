@@ -6,7 +6,7 @@ sources:
   - internal/engine/engine.go
   - internal/agent/claude.go
   - internal/builtin/reviewer/once.go
-checked: 1738b65b
+checked: b60ddded
 verified: agent:claude-code
 ---
 # The pull request
@@ -84,7 +84,7 @@ flowchart LR
 | `## Changes` | its code, its tests, the tester's acceptance tests it starts from |
 | `## Left out` | each file refused at apply, and why; only when one was |
 | `## Verification` | what ran and its result, each cap reached ([the proof](proof.md)) |
-| `## Tried` | its tests in a checkout apart; not the issue's Verification commands, nor a person's use |
+| `## Tried` | its tests on a fresh checkout; not the issue's Verification commands, nor a person's use |
 
 ## Its record
 
