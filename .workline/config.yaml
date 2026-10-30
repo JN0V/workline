@@ -113,8 +113,12 @@ routing:
   # tester: one ready issue a night, its tests opened as a Draft
   # (ADR-0055, #264); on a pull request, before the reviewer, its frozen
   # guard on its own branches, a test changed by another stopping the line.
+  # The developer (ADR-0054, #696): an issue labelled ready, at once
+  # (workline-develop.yml), and the night's first ready issue nobody took,
+  # after the tester; its code proven by the tester's test-command. Its
+  # review rounds need no routing: the same workflow runs them.
   events: {pre-push: [committer, documentalist], merge-request: [committer, documentalist, "gate:lint", tester, reviewer, inspector],
-    schedule: [documentalist, product-owner, reviewer, tester]}
+    schedule: [documentalist, product-owner, reviewer, tester, developer], issue: [developer]}
 
 # workline's own Go code, read by golangci-lint (ADR-0049, step 5), its
 # standard linters (.golangci.yml). On a pull request, a finding the change
