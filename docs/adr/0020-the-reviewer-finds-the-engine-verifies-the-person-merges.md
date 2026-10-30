@@ -15,7 +15,8 @@
   and `read=all` waits for it (#588); amended 2026-10-21: the commits
   left past five a push read on the other run's turn (#591); a nit on
   no line, nothing asked of what warns
-  ([ADR-0051](0051-a-check-sits-where-its-catch-is-worth-its-cost.md))
+  ([ADR-0051](0051-a-check-sits-where-its-catch-is-worth-its-cost.md));
+  amended 2026-10-30: a block answered where it shows too
 - **Date:** 2026-10-04
 - **Builds on:** ADR-0005 (a judge's independence), ADR-0009 (a question in
   parts), ADR-0011 (the review is on the merge request), ADR-0013 (what was
@@ -893,3 +894,21 @@ merge-request line; on in workline's own repository.
 - **Rejected**: the lens that blocks asked every push (the call a push
   the two runs' amendment rejected); its block lifted on any commit to
   its file, unread (a commit there need not answer it).
+
+## Amendment (2026-10-30): a block is answered where it shows too
+
+- **What was wrong**: on a pull request, correctness blocked on a
+  finding whose cause was quoted in one file and whose symptom lay in
+  another ("It shows at"). The author fixed it in the symptom's file.
+  Only a commit to the cause's file asked the lens again: the block
+  stood for good, the fix never read.
+- **The record keeps the file it shows in** (`shows`), when not the
+  cause's. A push changing either file asks the block's lens, as the
+  2026-10-28 amendment says for the cause's; not finding it again, or
+  its judge saying no, the block goes.
+- **Unchanged**: the block stands while its cause is found; a commit
+  elsewhere does not answer it. A block recorded before `shows` is
+  answered at its cause's file alone.
+- **Rejected**: every standing block judged again on each push (a call
+  per block a push, most reading nothing new); a block lifted on any
+  commit to the symptom's file, unread.
