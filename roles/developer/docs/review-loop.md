@@ -4,7 +4,7 @@ sources:
   - roles/developer/role.yaml
   - ci/github/workline-develop.yml
   - ci/gitlab/workline.gitlab-ci.yml
-checked: 822eeba8
+checked: 369e4cc8
 verified: agent:claude-code
 ---
 # The review loop
@@ -39,15 +39,21 @@ step 6).
 - **What it asks the agent**: the findings that block, and those that
   warn and are Important; a person's comment, as a finding. Nits are
   counted, never asked.
-- **Its fix** is held to the issue's [bounds](bounds.md), proven on
-  the project's tests ([the proof](proof.md)), then pushed on its
-  branch, never forced. Red, it is pushed still and said: the forge's
-  checks and the reviewer read it next. A fix that changes nothing,
-  whole file or diff, pushes nothing; the round is counted still, its
-  agent's notes said.
+- **Where its agent works**: as an issue run's
+  ([the agent](agent.md)), in a worktree of its pull request's head,
+  with tools, its [caps](proof.md#the-caps) the same. The question
+  names the findings, the issue's Scope, the frozen tests and the test
+  command; no code pasted. It answers a `note` a finding.
+- **Its fix** is the worktree's diff, held to the issue's
+  [bounds](bounds.md), proven on a fresh tree of the head
+  ([the proof](proof.md)), then pushed on its branch, never forced.
+  Red, it is pushed still and said: the forge's checks and the
+  reviewer read it next. A fix that changes nothing pushes nothing;
+  the round is counted still, its agent's notes said.
 - **Its record**: one comment on the pull request says each round, what
   was asked and how it ended; its hidden line, for the next run and
-  the [auditor](../../auditor/role.yaml).
+  the [auditor](../../auditor/role.yaml), holds each round's turns,
+  tokens and tools.
 - **The reviewer decides a finding is fixed**
   ([ADR-0013](../../../docs/adr/0013-what-was-judged-is-not-asked-again.md)).
 

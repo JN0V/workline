@@ -4,7 +4,7 @@ sources:
   - internal/agent/command.go
   - internal/agent/prompt.go
   - internal/developer/developer.go
-checked: 98d1a6a6
+checked: 369e4cc8
 verified: agent:claude-code
 ---
 # The agent: where it works, what it gets
@@ -17,8 +17,9 @@ The agent is a choice: none, `claude`, or `cmd:<any command>`.
 ## Where it works
 
 - **A worktree** of the commit its code starts from: the tester's
-  Draft, or the commit the run read. It reads, edits and runs commands
-  there.
+  Draft, or the commit the run read; in a review round, its pull
+  request's head ([the review loop](review-loop.md#a-round)). It reads,
+  edits and runs commands there.
 - **Its diff is its code**, held to the bounds once it is done
   ([the bounds](bounds.md#a-worktree-its-diff-is-the-code)), then
   proven on a fresh tree ([the proof](proof.md#a-fresh-tree)).
@@ -86,7 +87,5 @@ none. Closing words that are no list lose nothing of its code:
   ([#719](https://github.com/JN0V/workline/issues/719),
   [ADR-0056](../../../docs/adr/0056-the-developers-agent-works-in-a-sandbox-with-tools.md#amendment-the-agents-settings-and-its-shell)).
 
-- **A review round** answers patches, the Scope's code pasted in its
-  question: step 6 of
+- **Tokens and time a run, measured** with a real agent: step 7 of
   [ADR-0056](../../../docs/adr/0056-the-developers-agent-works-in-a-sandbox-with-tools.md).
-- **Tokens and time a run, measured** with a real agent: step 7.

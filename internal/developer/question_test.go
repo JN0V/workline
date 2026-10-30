@@ -8,31 +8,6 @@ import (
 	"github.com/JN0V/workline/internal/forge"
 )
 
-// TestScopeCodeShowsWhatTheAgentMayPatch: in a review round, its agent
-// has no worktree yet (ADR-0056, step 6), so its question holds the
-// Scope's code, a folder's files, a path not there yet said, the frozen
-// tests left out (measured: without the code, a real agent wrote no patch).
-func TestScopeCodeShowsWhatTheAgentMayPatch(t *testing.T) {
-	repo := gitRepo(t, map[string]string{"lib.sh": "sub() { echo $(($2 - $1)); }\n", "calc/a.sh": "a=1\n",
-		"tests/test_sub.sh": "frozen\n", "other.sh": "not in scope\n"})
-	head, _ := gitOut(repo, "rev-parse", "HEAD")
-	b := Bounds{Issue: 5, Scope: []string{"lib.sh", "calc", "new.sh", "tests/test_sub.sh"}, Frozen: map[string]int{"tests/test_sub.sh": 5}}
-	code, err := scopeCode(repo, head, b)
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, want := range []string{"### `lib.sh`", "sub() { echo $(($2 - $1)); }", "### `calc/a.sh`", "`new.sh`: not there yet"} {
-		if !strings.Contains(code, want) {
-			t.Errorf("the question lacks %q:\n%s", want, code)
-		}
-	}
-	for _, not := range []string{"not in scope", "frozen"} {
-		if strings.Contains(code, not) {
-			t.Errorf("the question shows %q:\n%s", not, code)
-		}
-	}
-}
-
 // TestTaskTextNamesTheCodeNotPastes: the issue's question names its
 // Scope, the frozen tests' paths, the test command and the bounds, and
 // holds no code: its agent reads it in its worktree (ADR-0056, step 5).
@@ -66,38 +41,6 @@ func TestTaskTextSaysTestCommandUnread(t *testing.T) {
 	}
 }
 
-// TestScopeCodeFailsOnAGitError: a commit git cannot read is an error,
-// never "not there yet": the agent would write over a file it was not shown.
-func TestScopeCodeFailsOnAGitError(t *testing.T) {
-	repo := gitRepo(t, map[string]string{"lib.sh": "x=1\n"})
-	b := Bounds{Issue: 5, Scope: []string{"lib.sh"}}
-	code, err := scopeCode(repo, "0123456789abcdef0123456789abcdef01234567", b)
-	if err == nil || !strings.Contains(err.Error(), "git cannot list lib.sh") {
-		t.Fatalf("an unreadable commit gave no error saying why: %v", err)
-	}
-	if strings.Contains(code, "not there yet") {
-		t.Errorf("an unreadable commit read as a path not there yet:\n%s", code)
-	}
-}
-
-// TestScopeCodeNamesAFileOverTheRoom: past codeRoom, a file is named as
-// not shown, its text left out.
-func TestScopeCodeNamesAFileOverTheRoom(t *testing.T) {
-	big := strings.Repeat("y", codeRoom+1)
-	repo := gitRepo(t, map[string]string{"big.txt": big, "small.sh": "s=1\n"})
-	head, _ := gitOut(repo, "rev-parse", "HEAD")
-	code, err := scopeCode(repo, head, Bounds{Issue: 5, Scope: []string{"big.txt", "small.sh"}})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !strings.Contains(code, "`big.txt`: not shown, over the question's room.") || strings.Contains(code, big) {
-		t.Errorf("the file over the room is not named, or shown whole")
-	}
-	if !strings.Contains(code, "### `small.sh`") {
-		t.Errorf("the file within the room is not shown:\n%s", code)
-	}
-}
-
 // TestTaskTextShowsTheObjectionAsYAML: the objection's form is shown whole,
 // a YAML item, when the tester froze a test (measured: shown inline, a
 // real agent wrote it as text, and it was refused).
@@ -114,27 +57,21 @@ func TestTaskTextShowsTheObjectionAsYAML(t *testing.T) {
 	}
 }
 
-// TestRoundCodeShowsTheBranchCode: the review round's question holds the
-// Scope's code as its branch holds it, before the answer's rules.
-func TestRoundCodeShowsTheBranchCode(t *testing.T) {
-	repo := gitRepo(t, map[string]string{"lib.sh": "fixed() { :; }\n"})
-	b := Bounds{Issue: 5, Scope: []string{"lib.sh"}}
-	code, err := roundCode(repo, b)
-	if err != nil {
-		t.Fatal(err)
+// TestRoundTaskNamesTheCodeNotPastes: the review round's question names
+// the findings, the Scope, the frozen tests and the test command, as an
+// issue run's does, and asks a note a finding: its agent reads its branch
+// in its worktree (ADR-0056, step 6).
+func TestRoundTaskNamesTheCodeNotPastes(t *testing.T) {
+	b := Bounds{Issue: 5, Scope: []string{"lib.sh"}, Frozen: map[string]int{"tests/test_sub.sh": 5}}
+	r := round{MR: 9, Asked: []Asked{{Lens: "correctness", Where: "lib.sh:1", Text: "Important: sub swaps its operands", Holds: "blocks"}}}
+	task := roundTask(r, forge.Issue{ID: 5, Title: "Sub"}, b, Settings{Rounds: 3, MaxTurns: 40}, "sh run-tests.sh {report}", nil)
+	for _, want := range []string{"# Review round 1 of 3 on your pull request 9", "sub swaps its operands", "# Issue #5: Sub", "- `lib.sh`",
+		"- `tests/test_sub.sh`", "`sh run-tests.sh {report}`", "40 turns at most", "Edit the files in your worktree", "Its diff is your fix", "a `note` a finding"} {
+		if !strings.Contains(task, want) {
+			t.Errorf("the round's question lacks %q:\n%s", want, task)
+		}
 	}
-	task := roundTask(round{MR: 9}, forge.Issue{ID: 5, Title: "Sub"}, b, Settings{Rounds: 3}, code)
-	at, answer := strings.Index(task, "fixed() { :; }"), strings.Index(task, "## Your answer")
-	if at < 0 || !strings.Contains(task, "## The code in scope, as it reads") || at > answer {
-		t.Errorf("the round's question lacks its branch's code before the answer:\n%s", task)
-	}
-}
-
-// TestRoundCodeFailsWithNoHead: a head git cannot read fails the round,
-// saying why, never a question with no code.
-func TestRoundCodeFailsWithNoHead(t *testing.T) {
-	code, err := roundCode(t.TempDir(), Bounds{Issue: 5, Scope: []string{"lib.sh"}})
-	if err == nil || !strings.Contains(err.Error(), "git cannot read its branch's head") || code != "" {
-		t.Fatalf("no head gave %q, %v: want an error saying why", code, err)
+	if strings.Contains(task, "Its diff is your code") || strings.Contains(task, "Patches") {
+		t.Errorf("the round's question asks an issue run's answer, or patches:\n%s", task)
 	}
 }

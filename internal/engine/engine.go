@@ -2013,7 +2013,9 @@ func attempt(r *role.Role, o Options, ag agent.Agent, hasTask bool, tier, runDir
 	// documentalist, ADR-0014 step 4). What it leaves in out/intentions.yaml
 	// is what is applied, held to the same catalogue and bounds. A release
 	// held for what the run did not settle keeps them as a pass does (#543).
-	if v.Status == verdict.Pass && len(intents) > 0 {
+	// An agent that edited a worktree may answer nothing: its diff is its
+	// proposal, post's to write (ADR-0056).
+	if v.Status == verdict.Pass && (len(intents) > 0 || agent.Worktree(runDir) != "") {
 		if a.intents, err = narrowedByPost(r, o, runDir, line, settings); err != nil {
 			return nil, err
 		}
