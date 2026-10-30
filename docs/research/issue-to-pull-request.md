@@ -153,6 +153,48 @@ answer a review, and what goes wrong? For the developer role
 - **Self-reported**: 67 % of Devin's pull requests merged, up from 34 %
   ([Cognition][devin-rev]).
 
+## The agent's sandbox
+
+Added 2026-10-30, for
+[ADR-0056](../adr/0056-the-developers-agent-works-in-a-sandbox-with-tools.md):
+how the agent works on the code, and what it costs.
+
+- **Every tool above gives the agent tools in a sandbox**: it reads the
+  repository, edits files, runs the tests and tries again. Copilot's
+  environment is set up by `copilot-setup-steps.yml`; GitLab's needs
+  `agent-config.yml` to "install dependencies or run tests".
+- **Edits in place, from a script**:
+  - aider: `--message` sends "a single message … process reply then
+    exit", `--yes` answers every prompt, the files named are edited in
+    place, auto-commits on unless `--no-auto-commits` ([aider][aider]);
+  - Codex: `codex exec` "runs in a read-only sandbox" by default;
+    `--sandbox workspace-write` lets it edit ([codex][codex]);
+  - Claude Code: `--tools` restricts the tools, `--max-turns` "limit[s]
+    the number of agentic turns", no limit by default,
+    `--max-budget-usd` stops at an estimated spend ([CLI][cc-cli]).
+- **Rights while it works**: Copilot's agent "can only perform simple
+  push operations" and its internet access is restricted by a firewall
+  ([risks][cop-risks]); gh-aw's agent job is read-only, behind an egress
+  proxy ([architecture][aw-arch]). Claude Code's action holds a
+  short-lived repository token, Contents read and write ([security][cc-sec]).
+- **Prompt injection**: Copilot filters hidden characters and HTML
+  comments ([risks][cop-risks]); Claude Code's action strips them too,
+  which "reduces but does not eliminate prompt injection risk — keep
+  workflow permissions minimal and validate all outputs" ([security][cc-sec]).
+- **What it costs, measured**: OpenHands on SWE-bench Verified, eight
+  models: agentic tasks consume "1000x more tokens than code reasoning
+  and code chat"; "runs on the same task can differ by up to 30x in
+  total tokens"; "Kimi-K2 and Claude-Sonnet-4.5, on average, consume
+  over 1.5 million more tokens than GPT-5"; input, mostly cache reads,
+  drives the cost ([token study][tokens]).
+- **Caps in use**: SWE-agent's `per_instance_cost_limit` 3.0
+  ([model config][swe-model]); OpenHands 50 iterations; gh-aw 20 min
+  and `max-turns`; Copilot 59 min (above).
+
+**Not found**: a tool that bounds the agent's diff by files after it
+worked, as workline's bounds do; gh-aw's `allowed-files` is the nearest,
+on the pull request it writes.
+
 ## What workline takes
 
 | Seen elsewhere | For the developer |
@@ -198,3 +240,7 @@ request.
 [aidev]: https://arxiv.org/abs/2507.15003
 [fail]: https://arxiv.org/html/2601.15195v1
 [rej]: https://arxiv.org/pdf/2605.22534
+[aider]: https://aider.chat/docs/scripting.html
+[codex]: https://learn.chatgpt.com/docs/non-interactive-mode
+[cc-cli]: https://code.claude.com/docs/en/cli-reference
+[tokens]: https://arxiv.org/abs/2604.22750

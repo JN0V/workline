@@ -37,7 +37,7 @@ stars and dates were checked against the GitHub API that day.
 | [auditing-agent-acts.md](auditing-agent-acts.md) | How a sample of automated decisions is drawn, read again by another reader, disputes settled and an error rate reported |
 | [merge-conflicts.md](merge-conflicts.md) | Why open pull requests conflict with `main`, what forges and git offer, what workline adds |
 | [merging.md](merging.md) | What a person does at merge, who merges elsewhere and how autonomy is graded, whether merging is a role |
-| [issue-to-pull-request.md](issue-to-pull-request.md) | How coding agents take an issue to a pull request: trigger, rights, scope, proof, review rounds, caps, why their pull requests are rejected |
+| [issue-to-pull-request.md](issue-to-pull-request.md) | How coding agents take an issue to a pull request: trigger, rights, scope, proof, review rounds, caps, the agent's sandbox and its tokens, why their pull requests are rejected |
 | [inspector.md](inspector.md) | How SARIF, the forges and linters tell a merge request's new findings, where the base's come from, AI triage measured |
 | [tests-first-and-corpus.md](tests-first-and-corpus.md) | How tests are written from acceptance criteria before the code, kept red off `main`, selected per change, cut when they protect nothing |
 | [acceptance-test-disputes.md](acceptance-test-disputes.md) | How teams settle a builder's objection to an acceptance test: three amigos, example mapping, code owners, contracts |
