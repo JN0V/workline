@@ -102,11 +102,14 @@ func (c command) Propose(req Request) (Call, error) {
 	}
 	// The answer as it came, kept for audit, as Claude's is.
 	_ = os.WriteFile(filepath.Join(req.RunDir, "out", "agent-answer.txt"), out.Bytes(), 0o644)
-	if tree != "" && strings.TrimSpace(out.String()) == "" {
-		out.WriteString("[]") // its edits are its answer
+	// In a worktree, its edits are its answer: its words beside them never
+	// fail the call (closingWords, #746).
+	var proposals []byte
+	if tree != "" {
+		proposals, call.Mended = closingWords(req.RunDir, out.String(), req.Role.Intentions)
+	} else {
+		proposals, call.Mended, err = proposalsFrom(out.String(), req.Role.Intentions...)
 	}
-	proposals, mended, err := proposalsFrom(out.String(), req.Role.Intentions...)
-	call.Mended = mended
 	if err != nil {
 		return call, fmt.Errorf("%w: %v", ErrInvalidOutput, err)
 	}

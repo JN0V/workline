@@ -126,22 +126,17 @@ func (c claude) Propose(req Request) (Call, error) {
 	// The answer as it came, kept for audit: what the engine reads of it
 	// may drop what it holds (claims are judged, never applied).
 	_ = os.WriteFile(filepath.Join(req.RunDir, "out", "agent-answer.txt"), []byte(answer.Result), 0o644)
-	proposals, mended, err := proposalsFrom(answer.Result, req.Role.Intentions...)
-	call.Mended = mended
-	switch {
-	case err != nil && maxed:
-		// Stopped mid-way, its answer is not written yet: what it edited
-		// in its worktree is what it did.
-		proposals, err = []byte("[]\n"), nil
-	case err != nil && tree != "" && !strings.Contains(answer.Result, "objection"):
-		// Its edits are its code: closing words that are no proposals
-		// lose nothing of it, said, never asked again (a whole run of
-		// turns again); its words stay in out/agent-answer.txt. Words
-		// that name an objection are its agent failing: a Draft, never
-		// an objection dropped in silence.
-		call.Mended = append(call.Mended, "its closing words were no YAML list ("+err.Error()+
-			"): read as proposing nothing beyond its edits (out/agent-answer.txt)")
-		proposals, err = []byte("[]\n"), nil
+	// In a worktree, its edits are its code: its closing words, cut short
+	// by its turns or unreadable, lose nothing of it (closingWords, #746).
+	var proposals []byte
+	if tree != "" {
+		proposals, call.Mended = closingWords(req.RunDir, answer.Result, req.Role.Intentions)
+	} else {
+		proposals, call.Mended, err = proposalsFrom(answer.Result, req.Role.Intentions...)
+		if err != nil && maxed {
+			// Stopped mid-way, its answer is not written yet: none.
+			proposals, err = []byte("[]\n"), nil
+		}
 	}
 	if err != nil {
 		return call, fmt.Errorf("%w: %v", ErrInvalidOutput, err)

@@ -1,10 +1,11 @@
 case: developer/claude-broken-objection-not-lost
 about: >
-  An objection the agent wrote broken is not lost (ADR-0056): closing
-  words of claude in its worktree that name an objection but do not
-  read are its agent failing, as a `cmd:` agent's, not "proposing
-  nothing". Its edits are still bounded, proven and pushed, as a Draft
-  that says why, so a person reads the objection kept in the run.
+  An objection the agent wrote broken is not lost (ADR-0056, #746):
+  closing words of claude in its worktree that name an objection but do
+  not read are no agent failure. Its edits are its code, bounded, proven
+  and pushed, ready or a Draft by the proof alone; its words are posted
+  as they came on its pull request, said unread, so a person reads the
+  objection.
 given:
   repo: tested-draft
   setup:
@@ -28,11 +29,11 @@ given:
 run: {develop: [], ai: claude}
 expect:
   status: pass
-  summary: "took #3; a Draft: green, its agent failed"
+  summary: "took #3; proven green, its pull request ready"
   agent-calls: 1
   findings:
-    - {rule: agent-invalid-output, message: "expected a YAML list of proposals"}
-  no-findings: [{rule: answer-mended}]
+    - {rule: agent-words-unread, message: "posted as they came on its pull request"}
+  no-findings: [{rule: agent-invalid-output}, {rule: answer-mended}, {rule: no-code}]
   pushed:
     workline/developer/3:
       lib.sh: "mul()"
@@ -40,5 +41,5 @@ expect:
     merge-requests:
       - id: 2
         branch: workline/developer/3
-        draft: true
-        body-contains: ["**a Draft**", "Its agent failed: agent answered without valid proposals"]
+        draft: false
+        body-contains: ["## Its agent's words, unread", "closing words could not be read", "why: [zero times"]

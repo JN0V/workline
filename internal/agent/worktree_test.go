@@ -63,8 +63,8 @@ func TestClaudeToolsOnlyInAWorktree(t *testing.T) {
 	if strings.Contains(args, "[--system-prompt]") {
 		t.Errorf("in a worktree, Claude Code's own prompt replaced:\n%s", args)
 	}
-	if call.Turns != 2 || call.Tools["Edit"] != 1 || len(call.Mended) == 0 {
-		t.Errorf("in a worktree: turns, tools or the mend not recorded: %+v", call)
+	if call.Turns != 2 || call.Tools["Edit"] != 1 {
+		t.Errorf("in a worktree: turns or tools not recorded: %+v", call)
 	}
 }
 

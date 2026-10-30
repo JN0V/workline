@@ -129,7 +129,8 @@ func Prompt(req Request) (system, user string, err error) {
 		// It edits in place (ADR-0056): its diff is its code, no patch.
 		b.WriteString("# Answer\n\nYour working directory is a worktree of the code: edit its files there and run its tests. " +
 			"Its diff is your code, held to the task's bounds once you are done.\n\n" +
-			"Then end with YAML only, no prose and no code fence: a list of what you propose beside your edits, `[]` if nothing, each item holding exactly one of:\n\n")
+			"When you are done, your last message is read by the engine, not by a person: YAML only, nothing before or after it, no code fence. " +
+			"`[]` when you propose nothing beside your edits; else a list, each item holding exactly one of:\n\n")
 	} else {
 		b.WriteString("# Answer\n\nAnswer with YAML only, no prose and no code fence: a list of proposals, each item holding exactly one of:\n\n")
 	}

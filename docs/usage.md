@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/role/config.go, internal/engine/engine.go, internal/hooks, internal/agent/claude.go, internal/agent/command.go]
-checked: 98d1a6a6
+checked: 7f12e806
 judged: b5899f5
 verified: agent:claude-code
 ---
@@ -172,8 +172,9 @@ wrapper around your own. It runs with `sh -c`, outside the repository:
   `turns` for an agent that loops;
 - where a role checks the code out for it (the developer's), it runs in
   that worktree, its path in `WORKLINE_WORKTREE`: it edits the files in
-  place, an empty answer proposing nothing else, and the engine bounds
-  the diff ([the bounds](../roles/developer/docs/bounds.md#a-worktree-its-diff-is-the-code));
+  place, an empty answer proposing nothing else, an answer that does
+  not read never failing it ([#746](https://github.com/JN0V/workline/issues/746)),
+  and the engine bounds the diff ([the bounds](../roles/developer/docs/bounds.md#a-worktree-its-diff-is-the-code));
   its caps in `WORKLINE_MAX_SECONDS` and `WORKLINE_MAX_TURNS`, past its
   time its process group killed, what it did kept
   ([the caps](../roles/developer/docs/proof.md#the-caps));

@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine, internal/intent, internal/role, internal/agent, roles_test.go]
-checked: d0c867dd
+checked: 7f12e806
 verified: agent:claude-code
 judged: b530b72
 ---
@@ -343,7 +343,9 @@ token), **apply** (trusted, no AI key).
    asked again (the documentalist, ADR-0014 step 4); what it leaves there is
    what is applied, held to the same catalogue and bounds. Where its pre
    gave the agent a worktree, `post` writes them from its diff, even when
-   the agent answered none (ADR-0056).
+   the agent answered none (ADR-0056); its closing words never fail the
+   call there: a YAML list among prose is read alone, and words that do
+   not read are kept for `post` to say (#746).
 5. **Apply.** The engine checks that `in/` still matches its digest, then
    validates the intentions against the catalogue, the role's `intentions` list
    and its `duties.writes`. An invalid intention set is refused whole. Valid

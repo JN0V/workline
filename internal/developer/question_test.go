@@ -42,17 +42,17 @@ func TestTaskTextSaysTestCommandUnread(t *testing.T) {
 }
 
 // TestTaskTextShowsTheObjectionAsYAML: the objection's form is shown whole,
-// a YAML item, when the tester froze a test (measured: shown inline, a
-// real agent wrote it as text, and it was refused).
+// a YAML item, in its own file, when the tester froze a test (measured:
+// written in the closing words, around prose, it was lost, #746).
 func TestTaskTextShowsTheObjectionAsYAML(t *testing.T) {
 	b := Bounds{Issue: 5, Scope: []string{"lib.sh"}, Frozen: map[string]int{"tests/test_sub.sh": 5}}
 	task := taskText(forge.Issue{ID: 5, Title: "Sub"}, b, "", nil, Settings{})
-	for _, want := range []string{"```yaml\n- comment:\n    objection: {test: <file>", "never a text", "- `tests/test_sub.sh`"} {
+	for _, want := range []string{"```yaml\n- test: <file>\n  line: <n>", "the file `.workline/objections.yaml`", "- `tests/test_sub.sh`"} {
 		if !strings.Contains(task, want) {
 			t.Errorf("the question lacks %q:\n%s", want, task)
 		}
 	}
-	if strings.Contains(taskText(forge.Issue{ID: 5}, Bounds{Issue: 5, Scope: []string{"lib.sh"}}, "", nil, Settings{}), "objection:") {
+	if strings.Contains(taskText(forge.Issue{ID: 5}, Bounds{Issue: 5, Scope: []string{"lib.sh"}}, "", nil, Settings{}), "objections.yaml") {
 		t.Errorf("an objection form shown with no frozen test")
 	}
 }

@@ -67,7 +67,11 @@
   it works; only what passes the bounds leaves the job.
 - **The other intentions stay**: an objection to a frozen test
   ([#700](https://github.com/JN0V/workline/issues/700)), what it left
-  out, on its output as today.
+  out, on its output as today. Amended by
+  [#746](https://github.com/JN0V/workline/issues/746): an objection is
+  written in the worktree's `.workline/objections.yaml`, read by the
+  engine and taken out of the diff; closing words that do not read never
+  cost the code, and are posted as they came on its pull request.
 
 ### The proof stays the engine's
 

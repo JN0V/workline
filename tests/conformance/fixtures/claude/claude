@@ -4,7 +4,8 @@
 # repository's .claude/settings.json unless told the person's settings
 # only. It fails, saying why, unless given its tools, flags and question
 # as the developer passes them, its shell without its login. Then it reads
-# lib.sh, writes mul and a test, runs the tests, answers $ANSWER (a JSON
+# lib.sh, writes mul and a test, runs the tests, writes $OBJECTIONS, if
+# set, in the objections file the question names, answers $ANSWER (a JSON
 # string), `[]` by default, in stream-json. STUBS set, it first creates
 # the empty files Claude Code 2.1.314's sandbox binds over, where absent,
 # then writes a package.json of its own; EMPTY names an empty file it
@@ -38,6 +39,11 @@ if [ -n "${STUBS:-}" ]; then
 fi
 if [ -n "${EMPTY:-}" ]; then
 	mkdir -p "$(dirname "$EMPTY")" && : >"$EMPTY"
+fi
+if [ -n "${OBJECTIONS:-}" ]; then
+	case "$question" in *'`.workline/objections.yaml`'*) ;; *) want "the question does not name its objections file" ;; esac
+	mkdir -p .workline
+	printf '%b' "$OBJECTIONS" > .workline/objections.yaml
 fi
 echo 'mul() { echo $(($1 * $2)); }' >> lib.sh
 cat > tests/test_mul.sh <<'T'

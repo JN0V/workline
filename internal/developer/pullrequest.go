@@ -186,6 +186,12 @@ func body(a Act, ready bool) string {
 			fmt.Fprintf(&b, "- `%s`: %s\n", r.File, why(r))
 		}
 	}
+	if len(a.Unread) > 0 {
+		b.WriteString("\n## Its agent's words, unread\n\nA person reads them: an objection to a frozen test may be among them.\n\n")
+		for _, u := range a.Unread {
+			b.WriteString(u + "\n")
+		}
+	}
 	fmt.Fprintf(&b, "\n## %s\n\n", work.Name(work.Verification))
 	fmt.Fprintf(&b, "- %s\n", rightsLine())
 	if a.AgentFailed != "" {

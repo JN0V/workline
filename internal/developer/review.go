@@ -452,14 +452,20 @@ func reviewPost(runDir, repo string, s Settings) int {
 		analysis = w.Markdown()
 	}
 	// Its worktree's diff from its branch's head, held as an issue run's.
-	kept, refused, said, err := held(runDir, repo, r.At, b, nil, rest)
+	kept, refused, said, unread, err := held(runDir, repo, r.At, b, nil, rest)
 	if err != nil {
 		return fail(err)
+	}
+	for _, u := range unread {
+		analysis += "\n" + u // as it came, in a fence of its own: not a note's one line
 	}
 	a := r.Record
 	n := a.Round + 1
 	v := verdict.Verdict{Status: verdict.Pass, Summary: fmt.Sprintf("round %d of %d on %s", n, s.Rounds, where),
 		Findings: append([]verdict.Finding{rightsFinding(where)}, refusalFindings(where, refused, said)...)}
+	if len(unread) > 0 {
+		v.Findings = append(v.Findings, unreadFinding(where, unread, true))
+	}
 	var patches, others []intent.Intention
 	for _, in := range kept {
 		if in.Kind == "patch" && unchanged(repo, in.Value) {
