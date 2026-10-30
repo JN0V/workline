@@ -8,7 +8,8 @@
   bounds, the proof, the pull request and the review loop stay
 - **Builds on:** [ADR-0042], [ADR-0044], [ADR-0050], [ADR-0055];
   principles 5, 6, 7, 10, 12, 13
-- **Research:** [issue-to-pull-request.md](../research/issue-to-pull-request.md#the-agents-sandbox)
+- **Research:** [agent-sandbox.md](../research/agent-sandbox.md),
+  [issue-to-pull-request.md](../research/issue-to-pull-request.md)
 
 ## Context
 
@@ -28,7 +29,7 @@
 - **Every CI coding agent studied** lets its agent read, edit and run
   the tests in a sandbox, and iterate: Copilot's cloud agent, gh-aw,
   OpenHands, SWE-agent, Claude Code's action, GitLab's Developer flow
-  ([research](../research/issue-to-pull-request.md#the-agents-sandbox)).
+  ([research](../research/agent-sandbox.md)).
 
 ## Decision
 
