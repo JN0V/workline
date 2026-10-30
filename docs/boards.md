@@ -1,6 +1,6 @@
 ---
 sources: [internal/board/board.go, internal/forge/board.go, internal/doctor/board.go]
-checked: a890fac3
+checked: 0f2c2dee
 ---
 # Boards
 
