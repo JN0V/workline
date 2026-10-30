@@ -80,17 +80,18 @@ From
 
 | Step | Who | On GitLab, Free and Premium |
 |---|---|---|
-| ready | the product owner, setting an issue ready | the ready column's label on, beside `workline:ready` |
-| doing | the developer, at its claim | the doing column's label on, the ready column's off, in one call |
+| ready | the product owner, setting an issue ready | the ready column's label on, beside `workline:ready`; the other columns' off, in one call |
+| doing | the developer, at its claim | the doing column's label on, the other columns' off, in one call |
 | done | the forge, closing the issue at the merge (`Closes #n`) | the Closed list |
 
 - **One call, both tiers**: on Premium, a scoped label
   (`workflow::Doing`) takes its sibling off by itself; on Free, the
-  role takes the ready label off. GitLab's tier is never asked.
+  role takes the other columns' labels off: a card sits in one
+  column. GitLab's tier is never asked.
 - **In the role's record**: the product owner's act says the column;
   the developer's claim comment says it, and its hidden line keeps it.
 - **With no agent**, neither role acts: no card moves.
-- **A board out of reach** moves nothing, said in the run's output;
+- **A board out of reach**, even in part, moves nothing, said in the run's output;
   no verdict changes.
 - **GitHub**: not built yet. Ready, then Status set; Doing left to
   *Pull request linked to issue* when on; Done by GitHub's workflows.

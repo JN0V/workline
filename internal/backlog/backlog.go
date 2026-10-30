@@ -441,8 +441,10 @@ type Proposal struct {
 	// own relation, the rest being in the engine's line; never the agent's.
 	Native []int `yaml:"native,flow,omitempty"`
 	// Column, the engine's: the board's ready column a ready puts the
-	// issue's card in, its label on GitLab (ADR-0057); never the agent's.
-	Column string `yaml:"column,omitempty"`
+	// issue's card in, its label on GitLab (ADR-0057), Off the board's
+	// other columns taken off; never the agent's.
+	Column string   `yaml:"column,omitempty"`
+	Off    []string `yaml:"off,flow,omitempty"`
 	Quote  *Quote `yaml:"quote"`
 	Why    string `yaml:"why"`
 	// Refining: the sections written, Need and Validation as drafts, with
@@ -812,9 +814,10 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 			decided[c.key()] = true
 		}
 		mode, why := p.check(f, repo, role, &c)
-		c.Column = ""
-		if c.Do == "ready" {
-			c.Column = p.config.ReadyColumn // its card to the board's ready column (ADR-0057)
+		c.Column, c.Off = "", nil
+		if c.Do == "ready" && p.config.ReadyColumn != "" {
+			// Its card to the board's ready column (ADR-0057).
+			c.Column, c.Off = p.config.ReadyColumn, p.config.ReadyOff
 		}
 		if once && why == "" {
 			decided[c.key()] = true // the first that passes its check is kept

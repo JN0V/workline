@@ -21,7 +21,9 @@ func TestGitLabGlabOAuthToken(t *testing.T) {
 	}))
 	defer srv.Close()
 	bin := t.TempDir()
-	glab := "#!/bin/sh\ncase \"$3\" in token) echo oauth-tok ;; is_oauth2) echo true ;; esac\n"
+	// FAKE_OAUTH: what glab says of its login; a personal token's says false.
+	glab := "#!/bin/sh\ncase \"$3\" in token) echo glab-tok ;; is_oauth2) echo \"$FAKE_OAUTH\" ;; esac\n"
+	t.Setenv("FAKE_OAUTH", "true")
 	if err := os.WriteFile(filepath.Join(bin, "glab"), []byte(glab), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -34,11 +36,17 @@ func TestGitLabGlabOAuthToken(t *testing.T) {
 	if _, err := (&gitlab{repo: t.TempDir()}).api("projects/:id"); err != nil {
 		t.Fatal(err)
 	}
-	t.Setenv("GITLAB_TOKEN", "glpat-x")
+	// glab logged in with a personal access token: PRIVATE-TOKEN.
+	t.Setenv("FAKE_OAUTH", "false")
 	if _, err := (&gitlab{repo: t.TempDir()}).api("projects/:id"); err != nil {
 		t.Fatal(err)
 	}
-	want := []string{"PRIVATE-TOKEN= Authorization=Bearer oauth-tok", "PRIVATE-TOKEN=glpat-x Authorization="}
+	t.Setenv("GITLAB_TOKEN", "glpat-x")
+	t.Setenv("FAKE_OAUTH", "true") // GITLAB_TOKEN first, whatever glab holds
+	if _, err := (&gitlab{repo: t.TempDir()}).api("projects/:id"); err != nil {
+		t.Fatal(err)
+	}
+	want := []string{"PRIVATE-TOKEN= Authorization=Bearer glab-tok", "PRIVATE-TOKEN=glab-tok Authorization=", "PRIVATE-TOKEN=glpat-x Authorization="}
 	if !slices.Equal(sent, want) {
 		t.Fatalf("sent %q, want %q", sent, want)
 	}
@@ -72,5 +80,11 @@ func TestGitLabBoardsFromRemote(t *testing.T) {
 	boards, err := (&gitlab{repo: repo}).boards()
 	if err != nil || len(boards) != 1 || !slices.Equal(asked, []string{"group/proj"}) {
 		t.Fatalf("boards %v, %v; asked %q", boards, err, asked)
+	}
+	// No remote naming a project: the forge's error, never a query with
+	// an empty path.
+	t.Setenv("GITLAB_HOST", "")
+	if _, err := (&gitlab{repo: t.TempDir()}).boards(); err == nil || len(asked) != 1 {
+		t.Fatalf("no project: %v; asked %q", err, asked)
 	}
 }

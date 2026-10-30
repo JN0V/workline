@@ -33,7 +33,7 @@ type FakeState struct {
 	// does.
 	IssueFields []Field `json:"issue-fields,omitempty"`
 	// Boards are the boards the work shows on (ADR-0057); BoardsUnread,
-	// why the forge does not answer them.
+	// why the forge does not answer the others, Boards being those read.
 	Boards       []Board `json:"boards,omitempty"`
 	BoardsUnread string  `json:"boards-unread,omitempty"`
 	Public      bool    `json:"public,omitempty"`

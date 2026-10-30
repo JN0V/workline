@@ -545,11 +545,18 @@ func refining(f forge.Forge, role string, c backlog.Proposal) error {
 				return err
 			}
 		}
-		add := []string{backlog.LabelReady}
+		add, remove := []string{backlog.LabelReady}, backlog.ReadyRemoves(*is)
 		if c.Column != "" {
-			add = append(add, c.Column) // its card to the board's ready column (ADR-0057)
+			// Its card to the board's ready column, out of the others
+			// (ADR-0057), in the same call.
+			add = append(add, c.Column)
+			for _, l := range c.Off {
+				if slices.Contains(is.Labels, l) {
+					remove = append(remove, l)
+				}
+			}
 		}
-		return f.Label(t, add, backlog.ReadyRemoves(*is))
+		return f.Label(t, add, remove)
 	}
 	body, added, _ := backlog.Refine(is.Body, c, role)
 	if len(added) > 0 {
@@ -599,25 +606,22 @@ func keepBody(f forge.Forge, role string, t forge.Target, body string, sources, 
 	return f.Sticky(t, backlog.FormatState(*st), backlog.StateMarker(role), false)
 }
 
-// readyColumn is the forge's board's ready column, its label, a ready
-// moves the issue's card to (ADR-0057); "" with none. A board out of
-// reach is said, and moves nothing.
-func readyColumn(f forge.Forge, repo string) string {
+// readyMove is the move a ready makes on the forge's board: its ready
+// column's label on, the other columns' off (ADR-0057); nil with none. A
+// board out of reach is said, and moves nothing.
+func readyMove(f forge.Forge, repo string) *board.Move {
 	if f == nil {
-		return ""
+		return nil
 	}
 	pc, err := role.LoadProjectConfig(repo)
 	if err != nil {
-		return ""
+		return nil
 	}
 	mv, err := board.To(f, "ready", pc.Board)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "workline: the forge's board could not be read, no card moved: %s\n", forge.Said(err))
 	}
-	if mv == nil {
-		return ""
-	}
-	return mv.Column
+	return mv
 }
 
 // planActs decides what becomes of the run's acts on the backlog, once: a
@@ -696,7 +700,9 @@ func planActs(f forge.Forge, r *role.Role, settings map[string]any, st runState,
 	// board out of reach is said and moves nothing.
 	for _, c := range closes {
 		if c.Do == "ready" {
-			cfg.ReadyColumn = readyColumn(f, st.Repo) // read once, when a ready is proposed
+			if mv := readyMove(f, st.Repo); mv != nil { // read once, when a ready is proposed
+				cfg.ReadyColumn, cfg.ReadyOff = mv.Column, mv.Off
+			}
 			break
 		}
 	}

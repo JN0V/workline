@@ -73,18 +73,19 @@ type Move struct {
 }
 
 // To is the move of an issue to slot (ready or doing) on f's board; nil
-// with no board, no column for the slot, or a board out of reach — which
-// err says, changing no verdict. On GitLab, a column is a label: Doing
-// takes the ready column's off, as a Free board's lists do not (a scoped
-// label's board, Premium, has already). On GitHub, nothing moves yet.
+// with no board, no column for the slot, or a board out of reach, even in
+// part — which err says, changing no verdict. On GitLab, a column is a
+// label: the board's other columns' labels come off in the same call, as
+// a Free board's lists do not (a scoped label's board, Premium, has
+// already). On GitHub, nothing moves yet.
 func To(f any, slot string, s role.Board) (*Move, error) {
 	boards, ok, err := forge.Boards(f)
-	if !ok || len(boards) == 0 {
+	if err != nil || !ok || len(boards) == 0 {
 		return nil, err
 	}
 	chosen, _ := Choose(boards, s)
 	if chosen == nil || chosen.Forge != "gitlab" {
-		return nil, err
+		return nil, nil
 	}
 	m, _ := Match(chosen.Columns, s)
 	mv := &Move{Board: chosen.Name}
@@ -93,14 +94,16 @@ func To(f any, slot string, s role.Board) (*Move, error) {
 		mv.Column = m.Ready
 	case "doing":
 		mv.Column = m.Doing
-		if m.Ready != "" && m.Ready != m.Doing {
-			mv.Off = []string{m.Ready}
-		}
 	}
 	if mv.Column == "" {
-		return nil, err
+		return nil, nil
 	}
-	return mv, err
+	for _, c := range chosen.Columns {
+		if c != mv.Column {
+			mv.Off = append(mv.Off, c)
+		}
+	}
+	return mv, nil
 }
 
 // Choose takes the board workline marks, among boards: on GitHub, the

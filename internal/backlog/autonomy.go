@@ -78,9 +78,11 @@ type Config struct {
 	// open (#128); set by the caller, from the routing.
 	SpecReview bool
 	// ReadyColumn: the forge's board's ready column, a label on GitLab, a
-	// ready puts the issue's card in (ADR-0057); "" none. Set by the
+	// ready puts the issue's card in (ADR-0057); "" none. ReadyOff: the
+	// board's other columns, taken off in the same call. Set by the
 	// caller, from the board.
 	ReadyColumn string
+	ReadyOff    []string
 	// Read is what the run read the backlog with, kept with each act it
 	// does (ADR-0046); set by the caller, from the run.
 	Read Read

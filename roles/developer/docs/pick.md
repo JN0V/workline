@@ -45,7 +45,7 @@ claim is a label, on every forge:
   issue, the issues passed and why. The auditor reads it (below).
 - **A person takes it back**: remove the label, or assign themselves.
 - **Its card to Doing**, on a GitLab board with a doing column: that
-  column's label put on in the same call, the ready column's taken off.
+  column's label put on in the same call, the other columns' taken off.
   The comment and its hidden line say the move
   ([boards](../../../docs/boards.md)).
 
