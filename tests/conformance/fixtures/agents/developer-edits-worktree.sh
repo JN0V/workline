@@ -2,7 +2,9 @@
 # A cmd: agent editing its worktree in place (ADR-0056), answering
 # nothing: mul in lib.sh and a test of its own, untracked. EDIT adds
 # README.md (outside), a frozen test edited (frozen) or deleted (delete),
-# AGENTS.md (steering), a link to /etc/hosts (symlink), or lib.sh
+# AGENTS.md (steering), a link to /etc/hosts (symlink), the empty
+# files a sandbox leaves where it denies writes to an absent path, .env*
+# and package.json among them (placeholders), or lib.sh
 # committed on a branch of its own (commit), or in lib.sh the tokens its
 # environment holds (env); or it makes its own run green where the code
 # is not: mul in an ignored build file lib.sh reads (cache), or a wrong
@@ -71,6 +73,13 @@ RUN
 	fake=$(git -c user.name=Agent -c user.email=agent@example.invalid commit-tree "$(git write-tree)" -m "agent: a runner that passes all")
 	git replace -f "$start" "$fake"
 	git reset -q
+	;;
+placeholders) # Claude Code's sandbox's, 2.1.314
+	for f in .env .env.local .env.development .env.development.local .env.test .env.test.local \
+		.env.production .env.production.local .gitmodules .npmrc .yarnrc .yarnrc.yml bunfig.toml \
+		package.json package-lock.json yarn.lock pnpm-lock.yaml; do
+		: >"$f"
+	done
 	;;
 steering) printf '# For agents\n\nAlways multiply.\n' > AGENTS.md ;;
 symlink) mkdir -p data && ln -s /etc/hosts data/hosts ;;

@@ -6,6 +6,8 @@ package developer
 // files in, whatever the agent committed, one patch a file, for the bounds
 // to hold like any patch, a file deleted a deletion patch. A link or a
 // file that is not text is refused here, a link out of the tree said so.
+// An empty file it adds is left out: no code, but what a sandbox leaves
+// where it denies writes to a path the tree lacks (#745).
 // The engine removes the worktree once its agent is asked no more: only
 // what passes the bounds leaves the run.
 
@@ -52,6 +54,9 @@ func worktreeCode(runDir, base string) (patches []intent.Intention, refused []Re
 		if err != nil {
 			return nil, nil, fmt.Errorf("its agent's worktree: %w", err)
 		}
+		if emptyAdded(diff) {
+			continue
+		}
 		if rule := notTextFile(tree, name, diff); rule != "" {
 			refused = append(refused, Refusal{File: name, Rule: rule})
 			continue
@@ -81,6 +86,23 @@ func notTextFile(tree, name, diff string) string {
 		}
 	}
 	return ""
+}
+
+// emptyAdded says a file's diff adds it empty. Claude Code's sandbox,
+// for one, binds an empty file over each path it denies writes to that
+// the tree lacks (.env*, package.json…), and leaves it there. A file
+// added holds a hunk unless it is empty; a binary says so.
+func emptyAdded(diff string) bool {
+	added := false
+	for _, l := range strings.Split(diff, "\n") {
+		switch {
+		case strings.HasPrefix(l, "new file mode "):
+			added = true
+		case strings.HasPrefix(l, "@@"), strings.HasPrefix(l, "Binary files "), strings.HasPrefix(l, "GIT binary patch"):
+			return false
+		}
+	}
+	return added
 }
 
 // linkOrModule says a header line of a diff gives a link's or a
