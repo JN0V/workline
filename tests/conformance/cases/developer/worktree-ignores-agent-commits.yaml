@@ -1,0 +1,26 @@
+case: developer/worktree-ignores-agent-commits
+about: >
+  The code is the worktree's diff against the commit it started from,
+  whatever the agent committed (ADR-0056): it commits lib.sh on a branch
+  of its own and leaves its test uncommitted; both are its code, in the
+  developer's own commits, the agent's commit and branch left out.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  env: {EDIT: commit}
+  forge:
+    issues:
+      - {id: 2, title: "Multiply", labels: ["workline:ready"], body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: a `mul` function.\n"}
+run: {develop: [], ai: 'cmd:sh "$FIXTURES/agents/developer-edits-worktree.sh"'}
+expect:
+  status: pass
+  agent-calls: 1
+  no-findings: [{rule: no-code}]
+  pushed:
+    workline/developer/2:
+      lib.sh: "mul()"
+      tests/test_mul.sh: "mul 2 3"
+  pushed-log-lacks:
+    workline/developer/2: ["agent: its own commit"]
+  not-pushed: [agent-own-branch]

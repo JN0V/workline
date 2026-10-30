@@ -20,8 +20,23 @@ import (
 // accident. It is told the tier and effort asked in WORKLINE_TIER and
 // WORKLINE_EFFORT, to pick its model; it may say what answered in the file
 // WORKLINE_CALL names (model, tokens-in, tokens-cached, tokens-out, cost-usd,
-// in YAML).
+// in YAML). Where the role gave it a worktree (WorktreeDir), it runs there
+// instead, its path in WORKLINE_WORKTREE: it edits the files in place, and
+// an answer left empty proposes nothing else (ADR-0056).
 type command struct{ script string }
+
+// WorktreeDir is the folder of a run where a role's pre checks out the
+// code its agent edits in place: a cmd: agent runs there (ADR-0056).
+const WorktreeDir = "worktree"
+
+// Worktree is the run's worktree, "" when its role made none.
+func Worktree(runDir string) string {
+	dir := filepath.Join(runDir, WorktreeDir)
+	if st, err := os.Stat(dir); err != nil || !st.IsDir() {
+		return ""
+	}
+	return dir
+}
 
 func (c command) Propose(req Request) (Call, error) {
 	call := Call{Agent: "cmd", Tier: req.tier(), Effort: req.Role.Model.Effort}
@@ -45,6 +60,11 @@ func (c command) Propose(req Request) (Call, error) {
 	cmd := exec.CommandContext(ctx, "sh", "-c", c.script)
 	cmd.Dir, cmd.WaitDelay = os.TempDir(), waitAfterTimeout
 	cmd.Env = append(withoutTokens(os.Environ()), "WORKLINE_TIER="+call.Tier, "WORKLINE_EFFORT="+call.Effort, "WORKLINE_CALL="+report.Name())
+	tree := Worktree(req.RunDir)
+	if tree != "" {
+		cmd.Dir = tree
+		cmd.Env = append(cmd.Env, "WORKLINE_WORKTREE="+tree)
+	}
 	cmd.Stdin = strings.NewReader(system + "\n\n" + user)
 	var out, errOut bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &out, &errOut
@@ -70,6 +90,9 @@ func (c command) Propose(req Request) (Call, error) {
 	}
 	// The answer as it came, kept for audit, as Claude's is.
 	_ = os.WriteFile(filepath.Join(req.RunDir, "out", "agent-answer.txt"), out.Bytes(), 0o644)
+	if tree != "" && strings.TrimSpace(out.String()) == "" {
+		out.WriteString("[]") // its edits are its answer
+	}
 	proposals, mended, err := proposalsFrom(out.String(), req.Role.Intentions...)
 	call.Mended = mended
 	if err != nil {

@@ -1,0 +1,28 @@
+case: developer/worktree-refuses-symlink-out
+about: >
+  A link the agent made in the worktree leading out of it is refused
+  (ADR-0056), even in the Scope: data/hosts, a link to /etc/hosts, is
+  reverted and said, kept in the claim's record; lib.sh goes on.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  env: {EDIT: symlink}
+  forge:
+    issues:
+      - {id: 2, title: "Multiply", labels: ["workline:ready"], body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: a `mul` function.\n- `data/`: its data.\n"}
+run: {develop: [], ai: 'cmd:sh "$FIXTURES/agents/developer-edits-worktree.sh"'}
+expect:
+  status: pass
+  agent-calls: 1
+  findings: [{rule: symlink-out, level: warn, where: data/hosts}]
+  pushed:
+    workline/developer/2:
+      lib.sh: "mul()"
+  pushed-lacks:
+    workline/developer/2:
+      data/hosts: "/etc/hosts"
+  forge:
+    issues:
+      - id: 2
+        comment-contains: ["`data/hosts`: a link leading out of the worktree", '{"file":"data/hosts","rule":"symlink-out"}']

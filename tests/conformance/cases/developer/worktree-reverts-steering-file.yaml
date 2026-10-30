@@ -1,0 +1,28 @@
+case: developer/worktree-reverts-steering-file
+about: >
+  A file that steers agents is never the developer's, whatever the Scope
+  (ADR-0054): AGENTS.md, written in the worktree, is reverted from its
+  diff (ADR-0056), the issue told a person must do it; lib.sh goes on.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  env: {EDIT: steering}
+  forge:
+    issues:
+      - {id: 2, title: "Multiply", labels: ["workline:ready"], body: "## Need\n\nI want to multiply, and agents told so.\n\n## Scope\n\n- `lib.sh`: a `mul` function.\n- `AGENTS.md`: say to multiply.\n"}
+run: {develop: [], ai: 'cmd:sh "$FIXTURES/agents/developer-edits-worktree.sh"'}
+expect:
+  status: pass
+  agent-calls: 1
+  findings: [{rule: steering-file, level: warn, where: AGENTS.md}]
+  pushed:
+    workline/developer/2:
+      lib.sh: "mul()"
+  pushed-lacks:
+    workline/developer/2:
+      AGENTS.md: "Always multiply"
+  forge:
+    issues:
+      - id: 2
+        comment-contains: ["`AGENTS.md`: a file that steers agents", '"rule":"steering-file"']

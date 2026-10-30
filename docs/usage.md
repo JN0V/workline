@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/role/config.go, internal/engine/engine.go, internal/hooks, internal/agent/claude.go, internal/agent/command.go]
-checked: 99a14dc0
+checked: 6f6b7e3a
 judged: b5899f5
 verified: agent:claude-code
 ---
@@ -167,6 +167,10 @@ wrapper around your own. It runs with `sh -c`, outside the repository:
   tolerated;
 - it may write what answered, in YAML, to the file `WORKLINE_CALL` names:
   `model`, `tokens-in`, `tokens-cached`, `tokens-out`, `cost-usd`;
+- where a role checks the code out for it (the developer's), it runs in
+  that worktree, its path in `WORKLINE_WORKTREE`: it edits the files in
+  place, an empty answer proposing nothing else, and the engine bounds
+  the diff ([the bounds](../roles/developer/docs/bounds.md#a-worktree-its-diff-is-the-code));
 - a non-zero exit, or no answer within the role's `model.timeout`, ends
   the run as `blocked-external`, as a used-up quota does; no answer within
   what the role's `ai-max-seconds` leaves (the committer's: 30 s) ends it

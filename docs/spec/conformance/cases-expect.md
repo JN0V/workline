@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go]
-checked: 21ce8c2c
+checked: 8e38d5eb
 verified: agent:claude-code
 ---
 # Conformance — what a case expects
@@ -62,6 +62,9 @@ What a case can check after its run, beyond the example in
   case's `origin`, or the message of that branch's tip; `pushed-log` —
   texts its commits past `main` hold, oldest first, each subject then
   its files, in the order given.
+- `pushed-lacks` — a text a file of that branch does not hold (or no
+  such file); `pushed-log-lacks` — texts no commit message past `main`
+  holds.
 - `not-pushed` — branches of the case's `origin` the run left where they
   were; `on-top` — a branch of `origin` whose tip holds another's
   (`{workline/documentalist/suspect: main}`); `merged` — a branch of

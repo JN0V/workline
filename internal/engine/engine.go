@@ -30,6 +30,7 @@ import (
 	"github.com/JN0V/workline/internal/rolefs"
 	"github.com/JN0V/workline/internal/routing"
 	"github.com/JN0V/workline/internal/scale"
+	"github.com/JN0V/workline/internal/tester"
 	"github.com/JN0V/workline/internal/verdict"
 	"go.yaml.in/yaml/v3"
 )
@@ -511,6 +512,7 @@ func run(o Options, res *Result) error {
 		return err
 	}
 	res.RunDir = runDir
+	defer dropWorktree(o.Repo, runDir)
 	settings := personalSettings(r, r.MergedSettings(cfg), res)
 	if err := writeInputs(runDir, o.Inputs, settings); err != nil {
 		return err
@@ -695,6 +697,9 @@ func run(o Options, res *Result) error {
 		os.Remove(filepath.Join(runDir, "out", "verdict.yaml"))
 		os.Remove(filepath.Join(runDir, "out", "judge.yaml"))
 	}
+	// The agent is asked no more: the worktree its role gave it goes, its
+	// diff already read by post (ADR-0056).
+	dropWorktree(o.Repo, runDir)
 	// Asked as often as the role allows and still refused: the docs the
 	// refusals name are left out, and the rest judged again, without them.
 	// A final block met after a refusal is no refusal: not the answer's,
@@ -2684,6 +2689,14 @@ func newRunDir(repo, roleName string) (string, error) {
 		}
 	}
 	return dir, nil
+}
+
+// dropWorktree removes the worktree a role's pre made in the run for its
+// agent, kept through every attempt (ADR-0056); none, nothing.
+func dropWorktree(repo, runDir string) {
+	if tree := agent.Worktree(runDir); tree != "" {
+		tester.RemoveWorktree(repo, tree)
+	}
 }
 
 // RunsDir is where repo's runs are kept: WORKLINE_RUNS_DIR when set — in

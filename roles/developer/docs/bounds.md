@@ -2,8 +2,9 @@
 sources:
   - internal/developer/bounds.go
   - internal/developer/developer.go
+  - internal/developer/worktree.go
   - internal/steer/steer.go
-checked: fcb1c15f
+checked: 6f6b7e3a
 verified: agent:claude-code
 ---
 # The bounds: what its code may never touch
@@ -24,9 +25,10 @@ flowchart LR
 
 ## What it checks
 
-The agent proposes patches. The engine's judge step, with no agent,
-checks each file a patch touches, in this order. The first rule that
-matches refuses the whole patch:
+The agent proposes patches, or edits a worktree
+([below](#a-worktree-its-diff-is-the-code)). The engine's judge step,
+with no agent, checks each file a patch touches, in this order. The
+first rule that matches refuses the whole patch:
 
 | Rule | The file is… | Refused even if the Scope names it |
 |---|---|---|
@@ -56,6 +58,24 @@ apart with no other line naming them, is refused (`patch-unread`).
 A rename or a deletion is checked on both sides, a name git quotes read
 back. A gate's `config`
 path is compared cleaned (`./x`, `x/`); a folder covers its files.
+
+## A worktree: its diff is the code
+
+A `cmd:` agent works in a worktree
+([ADR-0056](../../../docs/adr/0056-the-developers-agent-works-in-a-sandbox-with-tools.md),
+step 1); `claude` answers patches until step 5.
+
+- **Where**: the commit its code starts from (the tester's Draft, or
+  the commit read), checked out in the run's folder. The agent runs
+  there, its path in `WORKLINE_WORKTREE`, and edits in place.
+- **What is taken**: the diff against that commit, new files in,
+  whatever the agent committed, a deleted file a deletion; one patch a
+  file, held to the rules above. A file's mode is not read.
+- **Refused before the rules**: a link out of the tree
+  (`symlink-out`); another link, a binary, a submodule (`not-text`).
+- **Reverted**: a refused file leaves nothing. The worktree stays
+  while the agent may be asked again, then the engine removes it,
+  whatever post did; only what passes the bounds goes on.
 
 ## Why these rules
 

@@ -1,4 +1,4 @@
-# Developer — where it stands (2026-10-29)
+# Developer — where it stands (2026-10-30)
 
 **In one line:** `workline develop` picks the first ready issue nobody
 took and, with an agent set, claims it with a label and a comment
@@ -95,6 +95,17 @@ hold:
   ([the triggers](triggers.md#two-runs-on-one-issue)). Cases
   `developer/skips-issue-without-tests`,
   `backs-off-issue-taken-meanwhile`.
+- **The worktree and its diff**
+  ([ADR-0056](../../../docs/adr/0056-the-developers-agent-works-in-a-sandbox-with-tools.md)
+  step 1): a `cmd:` agent edits a worktree of the commit its code
+  starts from; its diff, one patch a file, held to the bounds, a link
+  out refused, the rest reverted
+  ([the bounds](bounds.md#a-worktree-its-diff-is-the-code)). Cases
+  `developer/worktree-diff-is-the-code`,
+  `worktree-reverts-out-of-scope`, `worktree-reverts-frozen-test`,
+  `worktree-reverts-frozen-test-deleted`,
+  `worktree-reverts-steering-file`, `worktree-refuses-symlink-out`,
+  `worktree-ignores-agent-commits`.
 
 - **The review loop** (step 6): a fresh run a reviewer's verdict or a
   person's comment on its pull request, reading its record, not a
@@ -152,9 +163,11 @@ prove the grading first (`TestDeveloperWithStandIns`).
 ## Missing
 
 
-- **The agent reads, edits and runs the tests**: one call with no
-  tools today, the Scope's code pasted in its question; a worktree with
-  tools, its diff bounded after, is decided in
+- **The agent reads, edits and runs the tests**: `claude` is one call
+  with no tools today, the Scope's code pasted in its question; a
+  `cmd:` agent edits a worktree already. No credential in reach, the
+  proof on a fresh tree, the caps, `claude` with tools and the review
+  loop are steps 2 to 6 of
   [ADR-0056](../../../docs/adr/0056-the-developers-agent-works-in-a-sandbox-with-tools.md).
 - **The issue's kind from the forge's types and the project's labels**:
   read from a fixed list of labels only

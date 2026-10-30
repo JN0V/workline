@@ -291,6 +291,10 @@ func why(r Refusal) string {
 		return "a gate's definition or the CI's: only a person changes it (docs/spec/gates.md, protection); a person must do it"
 	case "steering-file":
 		return "a file that steers agents or a role's folder: never the developer's, whatever the scope; a person must do it"
+	case "symlink-out":
+		return "a link leading out of the worktree: nothing outside the repository is the developer's, so refused and reverted"
+	case "not-text":
+		return "not a text file (a link, a binary, a submodule): the developer writes text files, so refused and reverted; a person must do it"
 	case "acceptance-test-edit":
 		return "an acceptance test the tester froze: read-only to the developer, which objects to it on its line instead; the tester keeps or rewrites it (ADR-0055)"
 	}

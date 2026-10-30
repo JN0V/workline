@@ -1,0 +1,30 @@
+case: developer/worktree-reverts-out-of-scope
+about: >
+  ADR-0054's bounds hold the worktree's diff file by file (ADR-0056): the
+  agent may touch any file while it works, but README.md, outside the
+  issue's Scope, is reverted, said in the run and kept in the claim's
+  record (ADR-0046); lib.sh and its test go on.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  env: {EDIT: outside}
+  forge:
+    issues:
+      - {id: 2, title: "Multiply", labels: ["workline:ready"], body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: a `mul` function.\n"}
+run: {develop: [], ai: 'cmd:sh "$FIXTURES/agents/developer-edits-worktree.sh"'}
+expect:
+  status: pass
+  agent-calls: 1
+  findings: [{rule: outside-scope, level: warn, where: README.md}]
+  pushed:
+    workline/developer/2:
+      lib.sh: "mul()"
+      tests/test_mul.sh: "mul 2 3"
+  pushed-lacks:
+    workline/developer/2:
+      README.md: "It multiplies now"
+  forge:
+    issues:
+      - id: 2
+        comment-contains: ["`README.md`: outside the issue's scope", '"refused":[{"file":"README.md","rule":"outside-scope"}]']

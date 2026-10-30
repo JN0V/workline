@@ -207,14 +207,16 @@ type expectSpec struct {
 	Applied      []string                     `yaml:"applied"`
 	Refused      []string                     `yaml:"refused"`
 	Files        map[string]fileWant          `yaml:"files"`
-	Pushed       map[string]map[string]string `yaml:"pushed"`         // branch -> path -> a text the remote's branch holds there
-	PushedMsg    map[string]string            `yaml:"pushed-message"` // branch -> a text the message of the remote branch's tip holds
-	PushedLog    map[string][]string          `yaml:"pushed-log"`     // branch -> texts its commits past origin's main hold, oldest first: each subject, then its files, in this order
-	NotPushed    []string                     `yaml:"not-pushed"`     // branches of the remote the run left where they were
-	OnTop        map[string]string            `yaml:"on-top"`         // branch -> the branch of the remote its tip holds
-	Signed       map[string]bool              `yaml:"signed"`         // branch -> the remote branch's tip carries a signature git verifies (true), or none (false)
-	Merged       map[string]string            `yaml:"merged"`         // branch -> base: the remote branch's tip merges base's tip into its tip before the run, its first parent
-	Gone         []string                     `yaml:"gone"`           // branches of the remote absent after the run
+	Pushed       map[string]map[string]string `yaml:"pushed"`           // branch -> path -> a text the remote's branch holds there
+	PushedLacks  map[string]map[string]string `yaml:"pushed-lacks"`     // branch -> path -> a text the remote's branch does not hold there (or no such file)
+	LogLacks     map[string][]string          `yaml:"pushed-log-lacks"` // branch -> texts no commit past origin's main holds in its message
+	PushedMsg    map[string]string            `yaml:"pushed-message"`   // branch -> a text the message of the remote branch's tip holds
+	PushedLog    map[string][]string          `yaml:"pushed-log"`       // branch -> texts its commits past origin's main hold, oldest first: each subject, then its files, in this order
+	NotPushed    []string                     `yaml:"not-pushed"`       // branches of the remote the run left where they were
+	OnTop        map[string]string            `yaml:"on-top"`           // branch -> the branch of the remote its tip holds
+	Signed       map[string]bool              `yaml:"signed"`           // branch -> the remote branch's tip carries a signature git verifies (true), or none (false)
+	Merged       map[string]string            `yaml:"merged"`           // branch -> base: the remote branch's tip merges base's tip into its tip before the run, its first parent
+	Gone         []string                     `yaml:"gone"`             // branches of the remote absent after the run
 	Forge        *forgeWant                   `yaml:"forge"`
 	Steps        []string                     `yaml:"steps"`
 	Calls        []map[string]string          `yaml:"calls"`
@@ -1276,6 +1278,31 @@ func compare(c *caseFile, r *result, repo string) []string {
 			out, err := exec.Command("git", "-C", repo, "show", "origin/"+branch+":"+path).Output()
 			if err != nil || !strings.Contains(string(out), text) {
 				p = append(p, fmt.Sprintf("origin's %s does not hold %q in %s", branch, text, path))
+			}
+		}
+	}
+	for branch, files := range e.PushedLacks {
+		_ = exec.Command("git", "-C", repo, "fetch", "-q", "origin").Run() // a fetch that fails leaves no branch, said below
+		if exec.Command("git", "-C", repo, "rev-parse", "-q", "--verify", "origin/"+branch).Run() != nil {
+			p = append(p, fmt.Sprintf("origin has no branch %s", branch))
+			continue
+		}
+		for path, text := range files {
+			if out, err := exec.Command("git", "-C", repo, "show", "origin/"+branch+":"+path).Output(); err == nil && strings.Contains(string(out), text) {
+				p = append(p, fmt.Sprintf("origin's %s holds %q in %s", branch, text, path))
+			}
+		}
+	}
+	for branch, texts := range e.LogLacks {
+		_ = exec.Command("git", "-C", repo, "fetch", "-q", "origin").Run() // a fetch that fails leaves no log, said below
+		out, err := exec.Command("git", "-C", repo, "log", "--format=%B", "origin/main..origin/"+branch).Output()
+		if err != nil {
+			p = append(p, fmt.Sprintf("origin's %s past main cannot be read: %v", branch, err))
+			continue
+		}
+		for _, t := range texts {
+			if strings.Contains(string(out), t) {
+				p = append(p, fmt.Sprintf("a commit of origin's %s past main says %q:\n%s", branch, t, out))
 			}
 		}
 	}
