@@ -1,0 +1,41 @@
+case: developer/claude-objection-amid-prose
+about: >
+  An objection survives prose (#746): claude closes on prose, a fenced
+  command, then its objection as YAML, then prose again. Nothing reads
+  whole; the YAML list among the prose is read alone, said mended, and
+  the objection goes on the test's line of the tester's Draft.
+given:
+  repo: tested-draft
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main workline/tester/issue-3 && git checkout -q main"
+  env:
+    PATH: "$FIXTURES/claude:$PATH"
+    ANSWER: 'I added `mul` to lib.sh. I ran:\n\n```sh\nsh run-tests.sh /tmp/r.xml\n```\n\nThe test by zero is wrong:\n\n- comment:\n    objection: {test: tests/test_mul_by_zero.sh, line: 4, scenario: By zero, kind: contradicts, why: zero times five is zero}\n\nThat is all: `mul` is done.'
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:ready"]
+        body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        draft: true
+        comments: ["The tests of #3, frozen.\n\n<!-- workline:tester-record {\"issue\":3,\"base\":\"main\",\"files\":{\"tests/test_mul_by_zero.sh\":\"8f123a0bacbd681063880b867df38dd216784b97\",\"tests/test_mul_two_by_three.sh\":\"2dee0641bd7a79057ade7bff5af43b603125f543\"}} -->\n<!-- workline:sticky=tester/tests -->"]
+run: {develop: [], ai: claude}
+expect:
+  status: pass
+  agent-calls: 1
+  findings:
+    - {rule: answer-mended, message: "the YAML read alone, the prose left out"}
+  no-findings: [{rule: agent-words-unread}, {rule: agent-invalid-output}]
+  pushed:
+    workline/developer/3:
+      lib.sh: "mul()"
+  forge:
+    merge-requests:
+      - id: 1
+        threads:
+          - {path: tests/test_mul_by_zero.sh, line: 4, contains: ["workline:objection", "- kind: contradicts"]}

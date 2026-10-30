@@ -99,6 +99,9 @@ type Act struct {
 	// Refused: each file its agent's patches reached past its bounds, and
 	// the bound (ADR-0054, step 2).
 	Refused []Refusal `json:"refused,omitempty"`
+	// Unread: its agent's words that did not read, as they came, for its
+	// pull request's body (agentWords); never kept in the record.
+	Unread []string `json:"-"`
 	// Proof: what the project's tests said on its code; Caps: the bounds
 	// on the run it reached (step 3).
 	Proof *Proof `json:"proof,omitempty"`
@@ -450,7 +453,7 @@ func claimLabel(a Act, s Settings) intent.Intention {
 // worktree (ADR-0056).
 func taskText(is forge.Issue, b Bounds, test string, testErr error, s Settings) string {
 	return question(is, b, test, testErr, s) +
-		"Its diff is your code. Then answer objections if any, `[]` if none: no label, no other comment, the claim is the engine's.\n"
+		"Its diff is your code. When you are done, your last message is `[]` alone: no label, no comment, the claim is the engine's.\n"
 }
 
 // question is what an issue run and a review round ask alike: the issue,
@@ -468,18 +471,18 @@ func question(is forge.Issue, b Bounds, test string, testErr error, s Settings) 
 	t.WriteString("- the tests beside them: in their folder, or in a test folder, the name holding `test` or `spec`.\n\n" +
 		"Read any file you need. A change to any other file is reverted once you are done, whatever the reason: say it in your answer, it belongs in an issue. " +
 		"Never, whatever the scope: the files that steer agents (AGENTS.md, CLAUDE.md, a page they link, a prompt), " +
-		"a role's folder, `.workline/`, the CI's workflows, a gate's definition.\n")
+		"a role's folder, `.workline/` (but the objections file below), the CI's workflows, a gate's definition.\n")
 	if frozen := b.acceptance(); len(frozen) > 0 {
 		t.WriteString("\n## The tester's acceptance tests: frozen\n\nIn your worktree, read-only to you; make them pass. A change to one is reverted.\n\n")
 		for _, f := range frozen {
 			fmt.Fprintf(&t, "- `%s`\n", f)
 		}
-		// The answer's generic `comment` is a text: a real agent wrote its
-		// objection so, and it was refused (measured, docs/status.md).
-		t.WriteString("\nOne that does not fit: object to it, a `comment` whose value is an objection, " +
-			"never a text (a text comment is refused):\n\n" +
-			"```yaml\n- comment:\n    objection: {test: <file>, line: <n>, scenario: <its name>, kind: <interface | over-specified | contradicts | untestable | need>, why: <one or two sentences>}\n```\n\n" +
-			"The tester keeps or rewrites it.\n")
+		// In a file, not in the closing words: a real agent wrote its
+		// objection in prose around YAML, and it was lost (#746).
+		t.WriteString("\nOne that does not fit: object to it in the file `" + ObjectionsFile + "` of your worktree, " +
+			"YAML only, one item an objection:\n\n" +
+			"```yaml\n- test: <file>\n  line: <n>\n  scenario: <its name>\n  kind: <interface | over-specified | contradicts | untestable | need>\n  why: <one or two sentences>\n```\n\n" +
+			"The engine reads that file and takes it out of your diff; the tester keeps or rewrites each objection.\n")
 	}
 	t.WriteString("\n## The tests\n\n")
 	switch {
@@ -588,11 +591,11 @@ func Post(runDir, repo string) int {
 	if a.From != "" {
 		on = a.From // the tester's Draft, its acceptance tests on it
 	}
-	kept, refused, said, err := held(runDir, repo, on, b, claim, proposed)
+	kept, refused, said, unread, err := held(runDir, repo, on, b, claim, proposed)
 	if err != nil {
 		return fail(err)
 	}
-	a.Refused = refused
+	a.Refused, a.Unread = refused, unread
 	v := verdict.Verdict{Status: verdict.Pass, Summary: "took " + where, Findings: []verdict.Finding{rightsFinding(where)}}
 	for _, p := range a.Passed {
 		v.Findings = append(v.Findings, verdict.Finding{Rule: "issue-passed", Level: "info", Where: fmt.Sprintf("#%d", p.Issue), Message: p.Why})
@@ -607,6 +610,9 @@ func Post(runDir, repo string) int {
 		if in.Kind == "patch" {
 			patches = append(patches, in)
 		}
+	}
+	if len(unread) > 0 {
+		v.Findings = append(v.Findings, unreadFinding(where, unread, len(patches) > 0))
 	}
 	if len(patches) == 0 {
 		v.Findings = append(v.Findings, verdict.Finding{Rule: "no-code", Level: "warn", Where: where,
@@ -643,18 +649,35 @@ func Post(runDir, repo string) int {
 	return writeVerdict(runDir, v)
 }
 
-// held is its agent's code held to the bounds: what it proposed and its
-// worktree's diff against base, the claim pre made first; the files
-// refused, the worktree's before the bounds', and the rest said.
-func held(runDir, repo, base string, b Bounds, claim, proposed []intent.Intention) (kept []intent.Intention, refused []Refusal, said []string, err error) {
+// held is its agent's code held to the bounds: what it proposed, the
+// objections it wrote in its worktree and its worktree's diff against
+// base, the claim pre made first; the files refused, the worktree's
+// before the bounds', and the rest said; its words that did not read, as
+// they came (agentWords).
+func held(runDir, repo, base string, b Bounds, claim, proposed []intent.Intention) (kept []intent.Intention, refused []Refusal, said, unread []string, err error) {
+	objections, unread, err := agentWords(runDir)
+	if err != nil {
+		return nil, nil, nil, nil, err
+	}
 	// What its agent edited in the worktree is code too: its diff, held
 	// to the same bounds; the engine removes the worktree (ADR-0056).
 	fromTree, treeRefused, err := worktreeCode(runDir, base)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, err
 	}
-	kept, refused, said = bounded(repo, b, claim, append(proposed, fromTree...))
-	return kept, append(treeRefused, refused...), said, nil
+	kept, refused, said = bounded(repo, b, claim, append(append(proposed, objections...), fromTree...))
+	return kept, append(treeRefused, refused...), said, unread, nil
+}
+
+// unreadFinding says its agent's words that did not read, and where a
+// person reads them as they came.
+func unreadFinding(where string, unread []string, posted bool) verdict.Finding {
+	at := "kept in the run's out/ folder: no pull request to post them on"
+	if posted {
+		at = "posted as they came on its pull request"
+	}
+	return verdict.Finding{Rule: "agent-words-unread", Level: "warn", Where: where,
+		Message: fmt.Sprintf("%d of its agent's answers beside its code could not be read (its closing words, its objections file): nothing of them applied, %s, so that an objection written there is not lost; its code is held as any", len(unread), at)}
 }
 
 // rights is with whose rights its agent ran, said to whoever runs it:
