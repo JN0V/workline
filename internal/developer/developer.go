@@ -351,8 +351,8 @@ func Pre(runDir, repo string) int {
 	}
 	// The question names the code, never pastes it: its agent reads it
 	// in its worktree (ADR-0056).
-	ts, _ := testerSettings(repo) // none set is said in the question; the proof says it again
-	task := taskText(is, bounds, ts.Command, s)
+	ts, tsErr := testerSettings(repo) // none set, or unread, is said in the question; the proof says it again
+	task := taskText(is, bounds, ts.Command, tsErr, s)
 	if err := os.WriteFile(filepath.Join(runDir, "in", "task.md"), []byte(task), 0o644); err != nil {
 		return fail(err)
 	}
@@ -404,9 +404,10 @@ func claimOf(a Act, s Settings) []intent.Intention {
 }
 
 // taskText is the question: the issue, what bounds the code and the run,
-// the frozen tests' paths and the test command. No code: its agent reads,
-// edits and runs it in its worktree (ADR-0056).
-func taskText(is forge.Issue, b Bounds, test string, s Settings) string {
+// the frozen tests' paths and the test command, or why it could not be
+// read (testErr). No code: its agent reads, edits and runs it in its
+// worktree (ADR-0056).
+func taskText(is forge.Issue, b Bounds, test string, testErr error, s Settings) string {
 	var t strings.Builder
 	fmt.Fprintf(&t, "# Issue #%d: %s\n\n%s\n\n## What you may change\n\n", is.ID, is.Title, strings.TrimSpace(is.Body))
 	if len(b.Scope) == 0 {
@@ -432,9 +433,14 @@ func taskText(is forge.Issue, b Bounds, test string, s Settings) string {
 			"The tester keeps or rewrites it.\n")
 	}
 	t.WriteString("\n## The tests\n\n")
-	if test == "" {
+	switch {
+	case testErr != nil:
+		// Not "none set": a setting it cannot read is not one missing.
+		fmt.Fprintf(&t, "The project's test command (the tester's `test-command`) could not be read: %v. "+
+			"Find how the project runs its tests and run them; the proof reads the setting again and says why it cannot.\n", testErr)
+	case test == "":
 		t.WriteString("The project sets no test command (the tester's `test-command`): your code cannot be proven, its pull request will be a Draft.\n")
-	} else {
+	default:
 		fmt.Fprintf(&t, "Run them as the proof will: `%s`, `{report}` a path of your choosing outside the worktree, where it writes a JUnit report. "+
 			"Your run is for you: the engine proves your code again, on a fresh tree.\n", test)
 	}
