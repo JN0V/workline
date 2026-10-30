@@ -79,6 +79,19 @@ func TestToGitHub(t *testing.T) {
 	if mv := to("user", map[string]bool{ClosedWorkflow: true}, "", "ready"); mv.Writes() || mv.Left != "user" {
 		t.Errorf("ready, a user's: %+v", mv)
 	}
+	if f := to("user", linked, "", "doing").Findings(); len(f) != 1 || f[0].Rule != "board-user-project" || strings.Contains(f[0].Message, "turn on") {
+		t.Errorf("a user's, its workflows on: %+v", f)
+	}
+	if f := to("user", map[string]bool{LinkedWorkflow: true}, "", "ready").Findings(); len(f) != 1 || !strings.Contains(f[0].Message, "turn on its workflow *Item closed* to move cards to `Done`") {
+		t.Errorf("a user's, Item closed off: %+v", f)
+	}
+	unread := forge.Board{Name: "P", Number: 3, Owner: "user", WorkflowsUnread: "403"}
+	if s := userSaid(unread, Slots{Doing: "In progress"}, func(string) bool { return false }); !strings.Contains(s, "its workflows not read (403)") || strings.Contains(s, "move the cards to the other columns;") {
+		t.Errorf("a user's, its workflows unread: %s", s)
+	}
+	if f := to("organization", linked, "", "ready").Findings(); f != nil {
+		t.Errorf("an organisation's, its workflows on, says nothing: %+v", f)
+	}
 	if mv := to("organization", nil, "502 Bad Gateway", "ready"); mv != nil {
 		t.Errorf("unread: %+v", mv)
 	}

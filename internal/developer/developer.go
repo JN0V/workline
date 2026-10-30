@@ -589,9 +589,7 @@ func Post(runDir, repo string) int {
 	for _, p := range a.Passed {
 		v.Findings = append(v.Findings, verdict.Finding{Rule: "issue-passed", Level: "info", Where: fmt.Sprintf("#%d", p.Issue), Message: p.Why})
 	}
-	if a.Board != nil && a.Board.Said != "" {
-		v.Findings = append(v.Findings, verdict.Finding{Rule: "board-workflow-off", Level: "info", Where: a.Board.URL, Message: a.Board.Said})
-	}
+	v.Findings = append(v.Findings, a.Board.Findings()...)
 	v.Findings = append(v.Findings, refusalFindings(where, refused, said)...)
 	if n := len(refused) + len(said); n > 0 {
 		v.Summary += fmt.Sprintf("; %d of its agent's proposals refused at apply", n)

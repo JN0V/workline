@@ -1,0 +1,31 @@
+case: product-owner/board-user-project-said
+about: >
+  On a GitHub project a user owns, GitHub gives an App no right to
+  write (ADR-0057, step 4): the product owner, setting an issue ready,
+  writes no Status and says it once a run, an info naming the project
+  and the built-in workflows to turn on, those that move the card to
+  Doing and Done; `workline:ready` is put on as on any board. The note
+  replaces `board-workflow-off`: one note per project.
+given:
+  repo: backlog
+  forge:
+    boards:
+      - forge: github
+        number: 1
+        name: Side project
+        owner: user
+        url: https://github.com/users/ann/projects/1
+        columns: [Todo, In Progress, Done]
+        workflows: {"Item closed": false, "Pull request merged": true, "Pull request linked to issue": false}
+    issues:
+      - {id: 41, title: "Last sale missing", author: ann, insider: true, labels: [], status: {"1": ""}, body: "Exports drop the last sale of the day: 3 sales, 2 rows.\n\n## Validation\n\nAnn exports a day of 3 sales and counts 3 rows.\n\n---\n\n## Verification\n\nA test writes 3 rows and reads 3 back.\n\n## Scope\n\n`WriteRows` in `src/export/csv.go`.", comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:ready-text-on-top}
+expect:
+  findings:
+    - {rule: board-user-project, level: info, where: "https://github.com/users/ann/projects/1", message: "the GitHub project \"Side project\" (#1) is a user's, which GitHub lets no App write: a ready moves no card; turn on its workflows *Pull request linked to issue*, *Item closed*: they move the cards to `In Progress` and `Done`"}
+  no-findings: [{rule: board-workflow-off}]
+  forge:
+    issues:
+      - id: 41
+        labels: [workline:ready]
+        status: {"1": ""}

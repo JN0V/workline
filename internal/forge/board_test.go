@@ -1,6 +1,7 @@
 package forge
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -48,5 +49,33 @@ func TestGitHubBoardsUnread(t *testing.T) {
 	}
 	if _, ok, _ := Boards(&Local{}); ok {
 		t.Error("the local forge holds boards")
+	}
+}
+
+// A Status write GitHub refuses for want of the right is told apart: the
+// App without Organization projects' write (ADR-0057).
+func TestGitHubSetStatusUnwritable(t *testing.T) {
+	bin := t.TempDir()
+	script := "#!/bin/sh\ncase \"$*\" in\n*updateProjectV2ItemFieldValue*) echo 'gh: Resource not accessible by integration' >&2; exit 1;;\n*) cat <<'EOF'\n" +
+		`{"data":{"repository":{"issue":{"projectItems":{"nodes":[{"id":"I1","fieldValueByName":{"name":"Todo"},` +
+		`"project":{"id":"P3","number":3,"field":{"id":"F1","options":[{"id":"o1","name":"Todo"},{"id":"o2","name":"In Progress"}]}}}]}}}}}` +
+		"\nEOF\n;;\nesac\n"
+	if err := os.WriteFile(filepath.Join(bin, "gh"), []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+	_, err := SetStatus(&github{repo: t.TempDir()}, 2, 3, "In Progress")
+	if !errors.Is(err, ErrProjectUnwritable) {
+		t.Errorf("err = %v", err)
+	}
+	for _, other := range []string{"502 Bad Gateway", "FORBIDDEN: the item was archived",
+		"Your token has not been granted the required scopes: ['read:org']"} {
+		if err := projectUnwritable(errors.New(other)); errors.Is(err, ErrProjectUnwritable) || err.Error() != other {
+			t.Errorf("%q read as unwritable: %v", other, err)
+		}
+	}
+	scope := "Your token has not been granted the required scopes to execute this query. The 'updateProjectV2ItemFieldValue' field requires one of the following scopes: ['project']"
+	if err := projectUnwritable(errors.New(scope)); !errors.Is(err, ErrProjectUnwritable) {
+		t.Errorf("the project scope missing: %v", err)
 	}
 }

@@ -1,0 +1,30 @@
+case: developer/board-unwritable-said
+about: >
+  On an organisation's GitHub project whose Status the token may not
+  write (ADR-0057, step 4: the App without *Organization projects: read
+  and write*): the developer's claim stands, its label on; the card
+  stays, and the run says it once, an info naming the permission. Its
+  verdict stays a pass: a board out of reach changes no verdict.
+given:
+  repo: tested
+  forge:
+    boards:
+      - forge: github
+        number: 3
+        name: Team plan
+        owner: organization
+        url: https://github.com/orgs/o/projects/3
+        columns: [Todo, In Progress, Done]
+        workflows: {"Item closed": true, "Pull request linked to issue": false}
+    boards-unwritable: "Resource not accessible by integration"
+    issues:
+      - {id: 2, title: "Multiply", labels: ["workline:ready"], status: {"3": "Todo"}, body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: a `mul` function.\n"}
+run: {develop: [], ai: "fake:developer-nothing"}
+expect:
+  status: pass
+  summary: "took #2"
+  findings:
+    - {rule: board-unwritable, level: info, where: "the GitHub project #3", message: "its Status is not written: give workline's GitHub App *Organization projects: read and write*"}
+  forge:
+    issues:
+      - {id: 2, labels: ["workline:ready", "workline:developing"], status: {"3": "Todo"}}

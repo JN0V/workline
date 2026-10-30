@@ -183,6 +183,9 @@ func SetStatus(f any, issue, project int, option string) (why string, err error)
 
 func (f *Fake) setCardStatus(issue, project int, option string) (why string, err error) {
 	err = f.write(func(s *FakeState) error {
+		if s.BoardsUnwritable != "" {
+			return fmt.Errorf("%w: %s", ErrProjectUnwritable, s.BoardsUnwritable)
+		}
 		it, err := s.item(Target{Kind: "issue", ID: issue})
 		if err != nil {
 			return err
@@ -266,11 +269,29 @@ func (g *github) setCardStatus(issue, project int, option string) (string, error
 			}
 			_, err := g.api("graphql", "-f", "query="+statusMutation, "-f", "project="+n.Project.ID, "-f", "item="+n.ID,
 				"-f", "field="+n.Project.Field.ID, "-f", "option="+o.ID)
-			return "", err
+			return "", projectUnwritable(err)
 		}
 		return fmt.Sprintf("the project #%d's Status has no option %q any more", project, option), nil
 	}
 	return notInProject(issue, project), nil
+}
+
+// ErrProjectUnwritable: the forge refused a project's write for want of
+// the right, the token's (ADR-0057).
+var ErrProjectUnwritable = errors.New("the token may not write the project")
+
+// projectUnwritable tells a write GitHub refused for want of the right:
+// an App without Organization projects' write ("Resource not accessible
+// by integration"), a person's token without the project scope.
+func projectUnwritable(err error) error {
+	if err == nil {
+		return nil
+	}
+	m := err.Error()
+	if strings.Contains(m, "Resource not accessible by integration") || (strings.Contains(m, "required scopes") && strings.Contains(m, "'project'")) {
+		return fmt.Errorf("%w: %s", ErrProjectUnwritable, m)
+	}
+	return err
 }
 
 // projectsUnread names the right a token lacks to read projects, as GitHub

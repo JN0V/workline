@@ -36,6 +36,9 @@ type FakeState struct {
 	// why the forge does not answer the others, Boards being those read.
 	Boards       []Board `json:"boards,omitempty"`
 	BoardsUnread string  `json:"boards-unread,omitempty"`
+	// BoardsUnwritable: why the forge refuses a project's Status write,
+	// as GitHub to a token without the right (ADR-0057).
+	BoardsUnwritable string `json:"boards-unwritable,omitempty"`
 	Public      bool    `json:"public,omitempty"`
 	Blind       string  `json:"fields-blind,omitempty"`
 	// Weights: its issues carry a weight, as GitLab Premium's (ADR-0040).

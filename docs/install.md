@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/setup, internal/hooks, internal/tools, internal/agent/agent.go, ci/github, ci/gitlab]
-checked: d722a840
+checked: bd66bb99
 judged: a8574a5
 verified: agent:claude-code
 ---
@@ -176,6 +176,8 @@ What the jobs are: [ci.md](ci.md); every detail on your forge's page. In short:
   ([ci-gitlab.md](ci-gitlab.md#gitlabcom); a [self-managed
   instance](ci-gitlab-self-managed.md)).
 - **Another forge** (Gitea, Forgejo…) or [none](ci-other-forges.md#no-forge): [ci-other-forges.md](ci-other-forges.md).
+- **A board**, GitHub's project or GitLab's: what to switch on so the
+  roles move its cards, [boards](boards.md#what-you-switch-on).
 
 What the templates need:
 

@@ -12,6 +12,7 @@ import (
 
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/role"
+	"github.com/JN0V/workline/internal/verdict"
 )
 
 // The names each slot takes, by Key, first match wins.
@@ -71,8 +72,10 @@ func Match(columns []string, s role.Board) (m Slots, unmatched []string) {
 // On GitHub, Project is the project's number, whose Status takes Column.
 // Left says why the role writes it not: "workflow", the project's
 // *Pull request linked to issue* moves it; "user", a user's project, on
-// which GitHub gives an App no write. Said, a finding of the run's: the
-// workflow that moves no card to Done, off.
+// which GitHub gives an App no write. Said, a finding of the run's, its
+// Rule: the workflow that moves no card to Done, off
+// (`board-workflow-off`, the rule when none is kept); a user's project,
+// what does not move and the workflows to turn on (`board-user-project`).
 type Move struct {
 	Board   string   `json:"board" yaml:"board"`
 	Column  string   `json:"column" yaml:"column"`
@@ -80,6 +83,7 @@ type Move struct {
 	Project int      `json:"project,omitempty" yaml:"project,omitempty"`
 	Left    string   `json:"left,omitempty" yaml:"left,omitempty"`
 	Said    string   `json:"said,omitempty" yaml:"said,omitempty"`
+	Rule    string   `json:"rule,omitempty" yaml:"rule,omitempty"`
 	URL     string   `json:"url,omitempty" yaml:"url,omitempty"`
 }
 
@@ -88,6 +92,19 @@ const (
 	LinkedWorkflow = "Pull request linked to issue"
 	ClosedWorkflow = "Item closed"
 )
+
+// Findings are what the role that moves the card says once a run: its
+// Said, an info.
+func (m *Move) Findings() []verdict.Finding {
+	if m == nil || m.Said == "" {
+		return nil
+	}
+	rule := m.Rule
+	if rule == "" {
+		rule = "board-workflow-off"
+	}
+	return []verdict.Finding{{Rule: rule, Level: "info", Where: m.URL, Message: m.Said}}
+}
 
 // Labels: the move puts a label on, GitLab's column.
 func (m *Move) Labels() bool { return m != nil && m.Project == 0 }
@@ -142,7 +159,13 @@ func To(f any, slot string, s role.Board) (*Move, error) {
 		case chosen.Owner == "user":
 			mv.Left = "user"
 		}
-		if on, read := chosen.Workflows[ClosedWorkflow]; chosen.WorkflowsUnread == "" && (!read || !on) {
+		off := func(name string) bool {
+			on, read := chosen.Workflows[name]
+			return chosen.WorkflowsUnread == "" && (!read || !on)
+		}
+		if chosen.Owner == "user" {
+			mv.Rule, mv.Said = "board-user-project", userSaid(*chosen, m, off)
+		} else if off(ClosedWorkflow) {
 			mv.Said = fmt.Sprintf("turn on the workflow *%s* of the GitHub project %q (#%d): without it, no card reaches `%s` at the close",
 				ClosedWorkflow, chosen.Name, chosen.Number, doneName(m.Done))
 		}
@@ -154,6 +177,32 @@ func To(f any, slot string, s role.Board) (*Move, error) {
 		}
 	}
 	return mv, nil
+}
+
+// userSaid is what a user's GitHub project moves (ADR-0057): GitHub
+// gives an App no right to write it, so a ready moves no card; its
+// built-in workflows move the rest, those off named to turn on.
+func userSaid(b forge.Board, m Slots, off func(string) bool) string {
+	said := fmt.Sprintf("the GitHub project %q (#%d) is a user's, which GitHub lets no App write: a ready moves no card", b.Name, b.Number)
+	if b.WorkflowsUnread != "" {
+		// Never read as on: what moves the other cards is not known.
+		return said + fmt.Sprintf("; its workflows not read (%s): *%s* and *%s* move the cards to the other columns when on",
+			b.WorkflowsUnread, LinkedWorkflow, ClosedWorkflow)
+	}
+	var flows, cols []string
+	if m.Doing != "" && off(LinkedWorkflow) {
+		flows, cols = append(flows, "*"+LinkedWorkflow+"*"), append(cols, "`"+m.Doing+"`")
+	}
+	if off(ClosedWorkflow) {
+		flows, cols = append(flows, "*"+ClosedWorkflow+"*"), append(cols, "`"+doneName(m.Done)+"`")
+	}
+	switch len(flows) {
+	case 0:
+		return said + "; its workflows move the cards to the other columns"
+	case 1:
+		return said + fmt.Sprintf("; turn on its workflow %s to move cards to %s", flows[0], cols[0])
+	}
+	return said + fmt.Sprintf("; turn on its workflows %s: they move the cards to %s", strings.Join(flows, ", "), strings.Join(cols, " and "))
 }
 
 func doneName(column string) string {

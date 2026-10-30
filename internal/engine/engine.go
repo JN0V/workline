@@ -2392,7 +2392,7 @@ func (a *applier) apply(in intent.Intention) error {
 		if st, ok := m["status"].(map[string]any); ok && target.Kind == "issue" {
 			project, _ := st["project"].(int)
 			option, _ := st["option"].(string)
-			moveCard(a.forge, target.ID, project, option)
+			a.moveCard(target.ID, project, option)
 		}
 		return nil
 	case "issue":
@@ -2525,7 +2525,7 @@ func (a *applier) apply(in intent.Intention) error {
 		if d == nil || d.Mode != backlog.Act {
 			return nil
 		}
-		return refining(a.forge, a.role, d.Act)
+		return a.refining(d.Act)
 	case "rename":
 		d := a.plan.Decision(a.index)
 		if d == nil || d.Mode != backlog.Act {

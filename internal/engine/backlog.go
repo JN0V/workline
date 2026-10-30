@@ -502,7 +502,8 @@ func (a *applier) depend(id int, blockers []int, digest bool) error {
 
 // refining applies a refine, a ready or an ask, against the issue as it is
 // now (docs/spec/backlog-acts.md, "Refining to ready").
-func refining(f forge.Forge, role string, c backlog.Proposal) error {
+func (a *applier) refining(c backlog.Proposal) error {
+	f, role := a.forge, a.role
 	b := f.(forge.Backlog)
 	is, err := f.Issue(c.Issue)
 	if err != nil {
@@ -560,7 +561,7 @@ func refining(f forge.Forge, role string, c backlog.Proposal) error {
 			return err
 		}
 		if c.Card.Writes() {
-			moveCard(f, c.Issue, c.Card.Project, c.Card.Column)
+			a.moveCard(c.Issue, c.Card.Project, c.Card.Column)
 		}
 		return nil
 	}
@@ -615,14 +616,22 @@ func keepBody(f forge.Forge, role string, t forge.Target, body string, sources, 
 // moveCard sets the Status of issue's card in a GitHub project to option
 // (ADR-0057). A card not moved — the issue in no item of the project, a
 // write refused — is said, and changes no verdict: workline's labels
-// stay the roles' marks.
-func moveCard(f forge.Forge, issue, project int, option string) {
+// stay the roles' marks. A write the token has no right to is a
+// finding, `board-unwritable`, once a run and project, naming the right.
+func (a *applier) moveCard(issue, project int, option string) {
 	if project == 0 || option == "" {
 		return
 	}
-	why, err := forge.SetStatus(f, issue, project, option)
+	why, err := forge.SetStatus(a.forge, issue, project, option)
 	if err != nil {
 		why = forge.Said(err)
+	}
+	if errors.Is(err, forge.ErrProjectUnwritable) {
+		where := fmt.Sprintf("the GitHub project #%d", project)
+		if !slices.ContainsFunc(a.findings, func(f verdict.Finding) bool { return f.Rule == "board-unwritable" && f.Where == where }) {
+			a.findings = append(a.findings, verdict.Finding{Rule: "board-unwritable", Level: "info", Where: where,
+				Message: "its Status is not written: give workline's GitHub App *Organization projects: read and write* (a person's token: the `project` scope); workline's labels stand"})
+		}
 	}
 	if why != "" {
 		fmt.Fprintf(os.Stderr, "workline: #%d's card not moved to %q on the project #%d: %s\n", issue, option, project, why)
@@ -764,11 +773,11 @@ func planActs(f forge.Forge, r *role.Role, settings map[string]any, st runState,
 	if err != nil {
 		return nil, err
 	}
-	if cfg.Ready != nil && cfg.Ready.Said != "" && slices.ContainsFunc(p.Decisions, func(d backlog.Decision) bool {
+	if slices.ContainsFunc(p.Decisions, func(d backlog.Decision) bool {
 		return d.Mode == backlog.Act && d.Act.Do == "ready"
 	}) {
 		// Said once a run, by the role that moves a card (ADR-0057).
-		p.Findings = append(p.Findings, verdict.Finding{Rule: "board-workflow-off", Level: "info", Where: cfg.Ready.URL, Message: cfg.Ready.Said})
+		p.Findings = append(p.Findings, cfg.Ready.Findings()...)
 	}
 	data, _ := yaml.Marshal(p)
 	return p, os.WriteFile(file, data, 0o644)
