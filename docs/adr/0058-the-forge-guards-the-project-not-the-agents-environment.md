@@ -30,20 +30,15 @@
   GitLab runner hid its token in an included file ([#722]).
 - **The person already trusts that agent** with their credentials:
   Claude Code, or another, runs in their shell every day.
-- **What actually protects a project is on the forge**: the default
-  branch takes pull requests only, the checks green, the review
-  ([ADR-0011]), the merge by the policy or a person ([ADR-0042]). These
-  hold whoever pushes: the engine, an agent, a person.
 
 ## Decision
 
 ### 1. The forge is the barrier
 
 - **What guards the default branch**: its protection (pull requests
-  only), required checks, the review, the merge by the project's
-  policy or a person ([ADR-0042]).
-- **Whoever pushes meets them**: the engine, an agent with the
-  person's account, the person.
+  only), required checks, the review ([ADR-0011]), the merge by the
+  project's policy or a person ([ADR-0042]). Whoever pushes meets
+  them: the engine, an agent with the person's account, the person.
 - **A person's push is never merged alone**: [ADR-0042] already keeps
   a pull request with a commit not the App's for a person's yes.
 
@@ -83,22 +78,14 @@
   pull request's code), so a pull request cannot edit its own check.
 - **Which pull requests**: a `workline/developer/<n>` branch, bounded
   by issue `n`; another is a person's, reviewed as one.
-- **A refused file fails the check**, each named; the developer's next
-  round reverts it, or a person.
-- **The engine's pass before its push stays**, as a fast first pass:
-  it reverts a refused file and says so, as today; it no longer is the
-  guard.
+- **A refused file fails the check**, each named; the next round or a
+  person reverts it. The engine's pass before its push stays, a fast
+  first pass, no longer the guard.
 - **What changes for [ADR-0054] step 2**: the bounds' rules are
   unchanged; where they hold moves from `apply` to the pull request,
   and a local run is held as a CI run.
 
 ### 5. Principle 6, reworded
-
-Today: "**The agent proposes, the engine acts.** The agent writes
-proposals from a closed catalogue; a separate step, holding the write
-token and no AI key, validates and applies them."
-
-Proposed:
 
 > **The agent proposes; the forge's guards decide.** What an agent
 > writes reaches the default branch only through the forge's guards —
@@ -107,26 +94,24 @@ Proposed:
 > agent's step holds no write token; a separate step applies its
 > proposals.
 
+- **Replaces** "The agent proposes, the engine acts… a separate step,
+  holding the write token and no AI key, validates and applies them".
 - **Lands with acceptance**: [PRINCIPLES.md](../PRINCIPLES.md) is the
   rule every role follows today; a proposed ADR does not change it.
 
 ### 6. What goes, what stays
 
 - **Goes**:
-  - [ADR-0056] step 2's credential refusal: [#711]'s
-    `credential-in-reach`, `internal/developer/credential.go`, its two
-    cases;
-  - [#726]: closed, not merged; [#722] resolved by the removal, not by
-    a deeper unset;
-  - the templates' `.workline:no-credential` step on GitLab.
+  - [ADR-0056] step 2's refusal: [#711]'s `credential-in-reach`,
+    `internal/developer/credential.go`, its cases, GitLab's
+    `.workline:no-credential` step;
+  - [#726]: closed, not merged; [#722] resolved by the removal.
 - **Reframed**: [#719], the CI job's Claude login: the env scrub
   stays; isolation is the opt-in container.
-- **Stays**:
-  - the scrub of forge tokens and the agent's login from its shell in
-    CI (`CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=1`, the templates' unsets);
-  - `--setting-sources user`: the repository does not configure the
-    agent ([ADR-0056] amendment);
-  - `persist-credentials: false`: cheap, native.
+- **Stays**: in CI, the scrub of forge tokens and the agent's login
+  from its shell (`CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=1`, the templates'
+  unsets) and `persist-credentials: false`; everywhere,
+  `--setting-sources user` ([ADR-0056] amendment).
 
 ## For the person
 
@@ -168,9 +153,8 @@ not pass.
 
 ## Consequences
 
-- **The developer runs locally again**, with no setup.
-- **Less code**: the refusal, the sealing and the GitLab unset go.
-- **The bounds hold for any push**, not only the engine's.
+- **The developer runs locally again**, with no setup; the refusal,
+  the sealing and the GitLab unset go; the bounds hold for any push.
 - **Risks, honestly**:
   - a local agent, steered by an injected prompt, can push a branch,
     comment, or open a pull request with the person's account; it
