@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, internal/builtin/productowner, internal/backlog, internal/sample/acts.go]
-checked: befbed81
+checked: 16acf2af
 verified: agent:claude-code
 ---
 # Product owner — what it writes
@@ -30,7 +30,9 @@ Part of [the product owner](../README.md). What a run does, step by step:
   waits on you; `workline:draft` while a draft of its own is left;
   `workline:to-refine`, `workline:ready`. Checked at every run: set
   aside with no draft left, the issue loses `draft` and `to-refine`.
-- **A GitLab board**: ready also puts on its ready column's label
+- **A board**: ready also moves the card to its ready column, a label
+  on GitLab, the Status on an organisation's GitHub project; a user's
+  project is not written, the act says so
   ([boards](../../../docs/boards.md)).
 - **Sections** written in the body, Need, Validation and a real example
   as drafts: a hidden mark only, the comment saying which are drafts;
