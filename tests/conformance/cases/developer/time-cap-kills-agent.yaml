@@ -1,0 +1,43 @@
+case: developer/time-cap-kills-agent
+about: >
+  A time cap (ADR-0056, step 4): the agent edits its worktree, then
+  works on past ai-max-seconds, a child of its own too. The engine kills
+  it, its process group whole, and what it did so far is its code:
+  bounded, proven green, pushed as a Draft, the cap said and kept in the
+  claim's record.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  env: {EDIT: slow}
+  config:
+    roles:
+      tester: {settings: {test-command: "sh run-tests.sh {report}"}}
+      developer: {settings: {ai-max-seconds: 2}}
+  forge:
+    issues:
+      - {id: 2, title: "Multiply", labels: ["workline:ready"], body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: a `mul` function.\n"}
+run: {develop: [], ai: 'cmd:sh "$FIXTURES/agents/developer-edits-worktree.sh"'}
+expect:
+  status: pass
+  summary: "took #2; a Draft: green, a cap reached"
+  agent-calls: 1
+  findings:
+    - {rule: proof-green, level: info, where: "#2"}
+    - {rule: cap-reached, level: warn, where: ai-max-seconds}
+  pushed:
+    workline/developer/2:
+      lib.sh: "mul()"
+      tests/test_mul.sh: "mul 2 3"
+  pushed-lacks:
+    workline/developer/2:
+      lib.sh: "late"
+  forge:
+    issues:
+      - id: 2
+        comment-contains: ['"setting":"ai-max-seconds"']
+    merge-requests:
+      - id: 1
+        branch: workline/developer/2
+        draft: true
+        body-contains: ["**a Draft**", "Cap reached: ai-max-seconds"]

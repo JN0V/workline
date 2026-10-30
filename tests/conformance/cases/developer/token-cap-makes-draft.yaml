@@ -1,0 +1,40 @@
+case: developer/token-cap-makes-draft
+about: >
+  A token cap on an agent that loops (ADR-0056, step 4): no agent has a
+  live token cap, so ai-max-tokens is read from what the agent reports
+  after its run (WORKLINE_CALL for a cmd: agent, its JSON for claude).
+  Past it, its worktree's code is kept, bounded and proven green, yet
+  pushed as a Draft, the tokens it used and the cap in the claim's
+  record.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  env: {EDIT: tokens}
+  config:
+    roles:
+      tester: {settings: {test-command: "sh run-tests.sh {report}"}}
+      developer: {settings: {ai-max-tokens: 2000}}
+  forge:
+    issues:
+      - {id: 2, title: "Multiply", labels: ["workline:ready"], body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: a `mul` function.\n"}
+run: {develop: [], ai: 'cmd:sh "$FIXTURES/agents/developer-edits-worktree.sh"'}
+expect:
+  status: pass
+  summary: "took #2; a Draft: green, a cap reached"
+  agent-calls: 1
+  findings:
+    - {rule: proof-green, level: info, where: "#2"}
+    - {rule: cap-reached, level: warn, where: ai-max-tokens, message: "the run spent 5000, ai-max-tokens allows 2000"}
+  pushed:
+    workline/developer/2:
+      lib.sh: "mul()"
+  forge:
+    issues:
+      - id: 2
+        comment-contains: ['"caps":[{"setting":"ai-max-tokens","spent":5000,"allows":2000}]', '"tokens":5000']
+    merge-requests:
+      - id: 1
+        branch: workline/developer/2
+        draft: true
+        body-contains: ["**a Draft**", "Cap reached: ai-max-tokens, 5000 spent of 2000."]

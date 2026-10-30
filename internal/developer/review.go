@@ -52,6 +52,8 @@ type Round struct {
 	Result string   `json:"result,omitempty"` // its proof's result; no-code when it wrote none
 	Whys   bool     `json:"whys,omitempty"`   // the five whys ran
 	Person bool     `json:"person,omitempty"` // past the last round: handed to a person
+	Turns  int      `json:"turns,omitempty"`  // what its agent used, as it reported them
+	Tokens int      `json:"tokens,omitempty"`
 }
 
 // Asked is a finding a round asks the agent to fix: a reviewer's row that
@@ -513,16 +515,19 @@ func reviewPost(runDir, repo string, s Settings) int {
 	} else {
 		p, over := prove(repo, "HEAD", patches, s)
 		this.Result = p.Result
-		a.Proof, a.Caps = &p, nil
+		u := used(runDir)
+		this.Turns, this.Tokens = u.Turns, u.Tokens
+		a.Proof, a.Caps = &p, agentCaps(u, s)
 		if over != nil {
 			a.Caps = append(a.Caps, *over)
 		}
-		if c := tokensCap(runDir, s.MaxTokens); c != nil {
-			a.Caps = append(a.Caps, *c)
-		}
 		code, tests := written(patches)
 		a.Code, a.Tests = union(a.Code, code), union(a.Tests, tests)
-		for _, f := range proofFindings(where, p, a.Caps) {
+		found := append(unreported(where, u, s), proofFindings(where, p, a.Caps)...)
+		if u.failed != "" {
+			found = append([]verdict.Finding{agentFailed(where, u.failed)}, found...)
+		}
+		for _, f := range found {
 			f.Message = strings.ReplaceAll(f.Message, "; its pull request opens as a Draft", "; pushed, the forge's checks and the reviewer read it next")
 			v.Findings = append(v.Findings, f)
 		}

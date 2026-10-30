@@ -130,7 +130,10 @@ type Result struct {
 	maxTokens int    // the role's ai-max-tokens: what the run may spend; 0, no cap
 	// maxSeconds is the role's ai-max-seconds: how long the run may wait on
 	// its agents, from the first call; 0, no cap. waitSince is that call.
-	maxSeconds  int
+	maxSeconds int
+	// maxTurns is the role's ai-max-turns, told to each agent; 0, none
+	// (ADR-0056).
+	maxTurns    int
 	waitSince   time.Time
 	timeCapped  bool     // an answer was not waited for, or a call not made, the run having waited maxSeconds
 	proposed    []string // the merge requests' tasks earlier rounds proposed, with NoApply, not opened yet
@@ -519,6 +522,7 @@ func run(o Options, res *Result) error {
 	}
 	res.maxTokens = intSetting(settings, "ai-max-tokens")
 	res.maxSeconds = intSetting(settings, "ai-max-seconds")
+	res.maxTurns = intSetting(settings, "ai-max-turns")
 	if o.Forge == "" {
 		o.Forge = cfg.Forge
 	}
@@ -1131,13 +1135,19 @@ func callAgent(ag agent.Agent, req agent.Request, task, runDir string, res *Resu
 	if !ok {
 		return errTimeSpent
 	}
-	req.Role = bounded
+	req.Role, req.MaxTurns = bounded, res.maxTurns
 	start := time.Now()
 	call, err := ag.Propose(req)
 	if errors.Is(err, agent.ErrOverBudget) {
 		return err // refused before the call: nothing asked, nothing spent
 	}
 	err = res.cutShort(err)
+	call.TimeCut = errors.Is(err, errTimeSpent)
+	// Every failed call is recorded, for the audit; a call asked again
+	// that answers supersedes it, as the developer reads only the last.
+	if err != nil && !call.TimeCut {
+		call.Failed = err.Error()
+	}
 	res.AgentCalls++
 	call.Seconds = math.Round(time.Since(start).Seconds()*10) / 10
 	call.Task = task

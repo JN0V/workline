@@ -51,6 +51,10 @@ type Request struct {
 	Repo   string
 	Role   *role.Role
 	Tier   string // overrides the role's tier, when a retry steps up
+	// MaxTurns is the role's ai-max-turns, the rounds an agent that loops
+	// may take: claude's --max-turns, a command's WORKLINE_MAX_TURNS; 0,
+	// none (ADR-0056).
+	MaxTurns int
 }
 
 // tier is the tier asked of the agent: the role's, unless a retry stepped up.
@@ -79,6 +83,14 @@ type Call struct {
 	TokensOut    int     `json:"tokens-out,omitempty"`
 	CostUSD      float64 `json:"cost-usd,omitempty"`
 	Seconds      float64 `json:"seconds"`
+	// Turns: the rounds the agent took, as it reports them (an agent that
+	// loops, ADR-0056); TimeCut: the engine stopped waiting on it, the
+	// run's ai-max-seconds spent, its process group killed.
+	Turns   int  `json:"turns,omitempty"`
+	TimeCut bool `json:"time-cut,omitempty"`
+	// Failed: why the call failed, its time aside (TimeCut): the agent
+	// unreachable, exited in error, or its answer unread.
+	Failed string `json:"failed,omitempty"`
 	// Mended: what the engine fixed of the answer before reading it (Mend).
 	Mended []string `json:"mended,omitempty"`
 }

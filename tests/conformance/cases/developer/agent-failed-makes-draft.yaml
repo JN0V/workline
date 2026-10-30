@@ -1,0 +1,38 @@
+case: developer/agent-failed-makes-draft
+about: >
+  An agent that edits its worktree, then exits in error (ADR-0056): what
+  it edited is still bounded and proven, green here, yet never opened
+  ready. Its pull request is a Draft, the failure said in its
+  Verification and kept in the claim's record, for the auditor
+  (ADR-0046).
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  env: {EDIT: fail}
+  config:
+    roles:
+      tester: {settings: {test-command: "sh run-tests.sh {report}"}}
+  forge:
+    issues:
+      - {id: 2, title: "Multiply", labels: ["workline:ready"], body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: a `mul` function.\n"}
+run: {develop: [], ai: 'cmd:sh "$FIXTURES/agents/developer-edits-worktree.sh"'}
+expect:
+  status: pass
+  summary: "took #2; a Draft: green, its agent failed"
+  agent-calls: 1
+  findings:
+    - {rule: agent-failed, level: warn, where: "#2", message: "it gave up"}
+    - {rule: proof-green, level: info, where: "#2"}
+  pushed:
+    workline/developer/2:
+      lib.sh: "mul()"
+  forge:
+    issues:
+      - id: 2
+        comment-contains: ['"agent-failed":"agent unavailable: the command failed: it gave up"']
+    merge-requests:
+      - id: 1
+        branch: workline/developer/2
+        draft: true
+        body-contains: ["Closes #2", "**a Draft**", "Its agent failed: agent unavailable: the command failed: it gave up."]

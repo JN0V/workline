@@ -53,9 +53,12 @@ settings:
   # a person's assignment keeps an issue from it (docs/pick.md).
   claim-label: "workline:developing"
   # The caps (docs/proof.md): the tokens the run's agent calls may
-  # spend, the seconds it waits on its agent, the seconds the tests run
-  # on its code. The two times together: the ADR's 30 min a run.
+  # spend, the turns one call of its agent may take (ADR-0056: a start until
+  # measured), the seconds it waits on its agent, then kills it, the
+  # seconds the tests run on its code. The two times together: the
+  # ADR's 30 min a run.
   ai-max-tokens: 300000
+  ai-max-turns: 100
   ai-max-seconds: 1200
   proof-seconds: 600
   # The review rounds it runs on its pull request, one a reviewer's

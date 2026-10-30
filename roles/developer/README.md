@@ -3,7 +3,7 @@ sources:
   - roles/developer/role.yaml
   - ci/github/workline-develop.yml
   - internal/developer
-checked: 99a14dc0
+checked: 1b4ad84a
 verified: agent:claude-code
 ---
 # Developer
@@ -84,7 +84,8 @@ In `.workline/config.yaml`, under `roles: {developer: {settings: …}}`:
 |---|---|---|
 | `claim-label` | `workline:developing` | the label that says the developer took an issue |
 | `ai-max-tokens` | 300000 | what a run's agent calls may spend; reached, a Draft |
-| `ai-max-seconds` | 1200 | what a run waits on its agent |
+| `ai-max-turns` | 100 | the turns one call of its agent may take; reached, a Draft |
+| `ai-max-seconds` | 1200 | what a run waits on its agent, then kills it; reached, a Draft |
 | `proof-seconds` | 600 | how long the project's tests may run on its code; past it, a Draft |
 | `review-rounds` | 5 | the review rounds it runs on its pull request |
 | `person` | `workline:human` | the label its pull request gets past the last round |

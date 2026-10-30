@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -20,9 +21,10 @@ import (
 // accident. It is told the tier and effort asked in WORKLINE_TIER and
 // WORKLINE_EFFORT, to pick its model; it may say what answered in the file
 // WORKLINE_CALL names (model, tokens-in, tokens-cached, tokens-out, cost-usd,
-// in YAML). Where the role gave it a worktree (WorktreeDir), it runs there
-// instead, its path in WORKLINE_WORKTREE: it edits the files in place, and
-// an answer left empty proposes nothing else (ADR-0056).
+// in YAML, and turns). Where the role gave it a worktree (WorktreeDir), it
+// runs there instead, its path in WORKLINE_WORKTREE, its caps in
+// WORKLINE_MAX_SECONDS and WORKLINE_MAX_TURNS: it edits the files in place,
+// and an answer left empty proposes nothing else (ADR-0056).
 type command struct{ script string }
 
 // WorktreeDir is the folder of a run where a role's pre checks out the
@@ -62,13 +64,22 @@ func (c command) Propose(req Request) (Call, error) {
 	cmd.Env = append(withoutTokens(os.Environ()), "WORKLINE_TIER="+call.Tier, "WORKLINE_EFFORT="+call.Effort, "WORKLINE_CALL="+report.Name())
 	tree := Worktree(req.RunDir)
 	if tree != "" {
+		// An agent that loops (ADR-0056): told its caps, killed whole at
+		// its time, a child of its own left after it answered too.
 		cmd.Dir = tree
-		cmd.Env = append(cmd.Env, "WORKLINE_WORKTREE="+tree)
+		cmd.Env = append(cmd.Env, "WORKLINE_WORKTREE="+tree, fmt.Sprintf("WORKLINE_MAX_SECONDS=%d", int(math.Ceil(limit.Seconds()))))
+		if req.MaxTurns > 0 {
+			cmd.Env = append(cmd.Env, fmt.Sprintf("WORKLINE_MAX_TURNS=%d", req.MaxTurns))
+		}
+		inGroup(cmd)
 	}
 	cmd.Stdin = strings.NewReader(system + "\n\n" + user)
 	var out, errOut bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &out, &errOut
 	runErr := settled(ctx, cmd.Run())
+	if tree != "" {
+		_ = killGroup(cmd)
+	}
 	if data, err := os.ReadFile(report.Name()); err == nil {
 		var said struct {
 			Model        string  `yaml:"model"`
@@ -76,10 +87,11 @@ func (c command) Propose(req Request) (Call, error) {
 			TokensCached int     `yaml:"tokens-cached"`
 			TokensOut    int     `yaml:"tokens-out"`
 			CostUSD      float64 `yaml:"cost-usd"`
+			Turns        int     `yaml:"turns"`
 		}
 		if yaml.Unmarshal(data, &said) == nil {
-			call.Model, call.TokensIn, call.TokensCached, call.TokensOut, call.CostUSD =
-				said.Model, said.TokensIn, said.TokensCached, said.TokensOut, said.CostUSD
+			call.Model, call.TokensIn, call.TokensCached, call.TokensOut, call.CostUSD, call.Turns =
+				said.Model, said.TokensIn, said.TokensCached, said.TokensOut, said.CostUSD, said.Turns
 		}
 	}
 	if runErr != nil {
