@@ -30,7 +30,6 @@ run: {develop: [], ai: 'cmd:sh "$FIXTURES/agents/developer-edits-worktree.sh"'}
 expect:
   status: pass
   agent-calls: 1
-  no-findings: [{rule: credential-in-reach}]
   pushed:
     workline/developer/2:
       lib.sh: "# tokens seen: none; login seen: yes"

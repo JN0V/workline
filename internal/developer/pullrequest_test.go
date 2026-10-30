@@ -27,3 +27,18 @@ func TestIsTest(t *testing.T) {
 		}
 	}
 }
+
+// In CI, the notice names the job's read-only token, not a person's
+// account (ADR-0058); outside it, the person's rights.
+func TestRightsInCI(t *testing.T) {
+	for _, v := range []string{"GITHUB_ACTIONS", "GITLAB_CI", "CI"} {
+		t.Setenv(v, "")
+	}
+	if got := rights(); got != "the agent runs with your account's rights; the forge's guards decide what merges" {
+		t.Errorf("outside CI: %q", got)
+	}
+	t.Setenv("GITLAB_CI", "true")
+	if got := rights(); got != "the agent runs with the CI job's read-only token; the forge's guards decide what merges" {
+		t.Errorf("in CI: %q", got)
+	}
+}

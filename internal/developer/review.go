@@ -286,9 +286,6 @@ func reviewPre(runDir, repo string, s Settings, id int) int {
 		return final(runDir, verdict.Verdict{Status: verdict.Pass, Summary: fmt.Sprintf("no agent: %d finding%s wait for a run with one, no round counted", len(r.Asked), plural(len(r.Asked))),
 			Findings: []verdict.Finding{{Rule: "no-agent", Level: "warn", Where: where, Message: "fixing a finding is judgement on code: with no agent, nothing is fixed (principle 5)"}}})
 	}
-	if v := refuseCredentials(repo, nil); v != nil {
-		return final(runDir, *v)
-	}
 	n := a.Round + 1
 	r.FiveWhys = n >= 3 && !a.Whys && slices.ContainsFunc(r.Asked, func(x Asked) bool { return slices.Contains(a.Seen, x.Key) })
 	is, err := f.Issue(issue)
@@ -461,7 +458,7 @@ func reviewPost(runDir, repo string, s Settings) int {
 	a := r.Record
 	n := a.Round + 1
 	v := verdict.Verdict{Status: verdict.Pass, Summary: fmt.Sprintf("round %d of %d on %s", n, s.Rounds, where),
-		Findings: refusalFindings(where, refused, said)}
+		Findings: append([]verdict.Finding{rightsFinding(where)}, refusalFindings(where, refused, said)...)}
 	var patches, others []intent.Intention
 	for _, in := range kept {
 		if in.Kind == "patch" && unchanged(repo, in.Value) {
