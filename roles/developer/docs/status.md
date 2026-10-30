@@ -106,14 +106,17 @@ hold:
   `worktree-reverts-frozen-test-deleted`,
   `worktree-reverts-steering-file`, `worktree-refuses-symlink-out`,
   `worktree-ignores-agent-commits`.
-- **No credential in reach** (step 2): the agent not started while git
-  would hand it one (a persisted header, a helper, a URL holding a
-  token, saved credentials), said, nothing claimed; the CI tokens that
-  mint or carry one out of its environment; the templates' judging jobs
-  keep no token in the clone
+- **No forge token in its environment** (step 2, amended by
+  [ADR-0058](../../../docs/adr/0058-the-forge-guards-the-project-not-the-agents-environment.md)
+  step 3): the CI tokens that mint or carry one out of its environment;
+  the templates' judging jobs keep no token in the clone. No refusal
+  for a credential git would hand: the agent has the rights of whoever
+  ran it, said once in the run's output and in the pull request
   ([the pull request](pull-request.md#who-opens-it)). Cases
   `developer/worktree-env-has-no-token`,
-  `worktree-refuses-persisted-credential`.
+  `local-run-with-credential-helper-starts`,
+  `local-run-says-person-rights`, `local-pr-says-person-rights`,
+  `review-round-with-credential-starts`.
 - **The proof on a fresh tree** (step 3): a checkout of the start
   commit in a repository of its own, never the agent's worktree, its
   git store's refs, replacements and config not read; its record says

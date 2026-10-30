@@ -4,7 +4,7 @@ sources:
   - internal/agent/command.go
   - internal/agent/prompt.go
   - internal/developer/developer.go
-checked: 369e4cc8
+checked: 1fa2e7f4
 verified: agent:claude-code
 ---
 # The agent: where it works, what it gets
@@ -23,9 +23,10 @@ The agent is a choice: none, `claude`, or `cmd:<any command>`.
 - **Its diff is its code**, held to the bounds once it is done
   ([the bounds](bounds.md#a-worktree-its-diff-is-the-code)), then
   proven on a fresh tree ([the proof](proof.md#a-fresh-tree)).
-- **No credential in reach**: no forge token in its environment, and
-  it is not started while git would hand it one
-  ([the pull request](pull-request.md#who-opens-it)).
+- **The rights of whoever runs it**: on a machine, the person's; in
+  CI, the job's read-only token. Nothing refused, said once in the
+  run's output and in the pull request; the forge's guards decide what
+  merges ([the pull request](pull-request.md#who-opens-it)).
 
 ## What each agent gets
 

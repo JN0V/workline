@@ -4,7 +4,7 @@ sources:
   - internal/developer/developer.go
   - ci/github/workline-develop.yml
   - ci/gitlab/workline.gitlab-ci.yml
-checked: 1738b65b
+checked: 1fa2e7f4
 verified: agent:claude-code
 ---
 # The triggers
@@ -76,8 +76,7 @@ routing:
 - **Two jobs**: the judge holds the agent and a read token for the
   pick; the engine gives the agent no forge token. The applying job
   holds the write token, no AI key.
-- **No token left in the judge's clone**: the agent's git would read it,
-  and the engine refuses to start the agent
+- **No token left in the judge's clone**: the agent's git would read it
   ([the pull request](pull-request.md#who-opens-it)).
   - The judging jobs: the developer's own, and the gardening's, whose
     schedule may run it.
