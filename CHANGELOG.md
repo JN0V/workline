@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.57.0](https://github.com/JN0V/workline/compare/v0.56.1...v0.57.0) (2026-10-30)
+
+
+### Features
+
+* **developer:** a cmd: agent edits a worktree, its diff bounded ([#709](https://github.com/JN0V/workline/issues/709)) ([9b436a2](https://github.com/JN0V/workline/commit/9b436a2d28bc0c5f9c15e1a7c1993d1bee8a538d))
+* **developer:** a review round edits in its worktree ([#720](https://github.com/JN0V/workline/issues/720)) ([8a5b0ea](https://github.com/JN0V/workline/commit/8a5b0ea086173c160eb751fba40473d13f8ae800))
+* **developer:** cap its agent's time, turns and tokens ([#716](https://github.com/JN0V/workline/issues/716)) ([a04f714](https://github.com/JN0V/workline/commit/a04f714a07b12a6a54598a4fba9b1ecffe9a1cf1))
+* **developer:** claude works in its worktree, with tools ([#718](https://github.com/JN0V/workline/issues/718)) ([2a77151](https://github.com/JN0V/workline/commit/2a77151422fd9d3f94e604cf6fcf162e8486c493))
+* **developer:** no credential in its agent's reach ([#711](https://github.com/JN0V/workline/issues/711)) ([1ea1e11](https://github.com/JN0V/workline/commit/1ea1e11f99a9de80b0ec2f63cc3893888a644507))
+* **developer:** prove its code on a fresh tree, not its worktree ([#714](https://github.com/JN0V/workline/issues/714)) ([68b1ebe](https://github.com/JN0V/workline/commit/68b1ebef8be8e353f891125167736638f0805364))
+
 ## [0.56.1](https://github.com/JN0V/workline/compare/v0.56.0...v0.56.1) (2026-10-30)
 
 
