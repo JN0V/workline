@@ -397,17 +397,29 @@ func checkout(repo, rev string) (tree string, done func(), f *verdict.Finding) {
 	if err != nil {
 		return "", nil, &verdict.Finding{Rule: "check-error", Where: "test", Message: err.Error()}
 	}
-	done = func() {
-		if _, err := git(repo, "worktree", "remove", "--force", tree); err != nil {
-			_ = os.RemoveAll(tree)
-			_, _ = git(repo, "worktree", "prune")
-		}
+	if err := Worktree(repo, rev, tree); err != nil {
+		return "", nil, &verdict.Finding{Rule: "check-error", Where: "test", Message: err.Error()}
 	}
+	return tree, func() { RemoveWorktree(repo, tree) }, nil
+}
+
+// Worktree checks rev out in tree, a git worktree of repo apart, detached,
+// its hooks off: where a change is laid and tried, and where the
+// developer's agent edits (ADR-0056). Removed when it cannot be made.
+func Worktree(repo, rev, tree string) error {
 	if _, err := git(repo, "-c", "core.hooksPath=/dev/null", "worktree", "add", "--detach", "--quiet", tree, rev); err != nil {
-		done()
-		return "", nil, &verdict.Finding{Rule: "check-error", Where: "test", Message: fmt.Sprintf("%s could not be checked out: %v", short(rev), err)}
+		RemoveWorktree(repo, tree)
+		return fmt.Errorf("%s could not be checked out: %v", short(rev), err)
 	}
-	return tree, done, nil
+	return nil
+}
+
+// RemoveWorktree removes a worktree Worktree made, whatever it holds.
+func RemoveWorktree(repo, tree string) {
+	if _, err := git(repo, "worktree", "remove", "--force", tree); err != nil {
+		_ = os.RemoveAll(tree)
+		_, _ = git(repo, "worktree", "prune")
+	}
 }
 
 // runIn runs the test command in tree and reads its report.

@@ -1,8 +1,2 @@
 # Cases the engine does not pass yet. The suite runs them anyway and fails
 # if one starts passing while still listed here.
-developer/worktree-diff-is-the-code
-developer/worktree-ignores-agent-commits
-developer/worktree-refuses-symlink-out
-developer/worktree-reverts-frozen-test
-developer/worktree-reverts-out-of-scope
-developer/worktree-reverts-steering-file

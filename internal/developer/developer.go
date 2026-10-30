@@ -340,6 +340,10 @@ func Pre(runDir, repo string) int {
 	if err := os.WriteFile(filepath.Join(runDir, "in", "task.md"), []byte(task), 0o644); err != nil {
 		return fail(err)
 	}
+	// A worktree of that commit, where a cmd: agent edits (ADR-0056).
+	if err := openWorktree(runDir, repo, on); err != nil {
+		return fail(err)
+	}
 	return 0
 }
 
@@ -415,7 +419,9 @@ func taskText(is forge.Issue, b Bounds, texts map[string]string, code string) st
 			"The tester keeps or rewrites it.\n")
 	}
 	t.WriteString(code)
-	t.WriteString("\n## Your answer\n\nPatches only, and objections if any. No label, no other comment: the claim is the engine's.\n")
+	t.WriteString("\n## Your answer\n\nPatches only, and objections if any. No label, no other comment: the claim is the engine's.\n" +
+		"Run in a worktree of the code (`WORKLINE_WORKTREE`), edit its files in place instead of patches: " +
+		"its diff is your code, held to the same bounds.\n")
 	return t.String()
 }
 
@@ -546,6 +552,16 @@ func Post(runDir, repo string) int {
 	if err != nil {
 		return fail(err)
 	}
+	// What its agent edited in the worktree is code too: its diff, held
+	// to the same bounds, the worktree removed (ADR-0056).
+	base := a.At
+	if a.From != "" {
+		base = a.From
+	}
+	fromTree, treeRefused, err := worktreeCode(runDir, repo, base)
+	if err != nil {
+		return fail(err)
+	}
 	// Another run may have claimed the issue while its agent coded: read
 	// again, it backs off, nothing claimed nor opened (docs/triggers.md).
 	if why := takenMeanwhile(repo, a.Issue, s); why != "" {
@@ -568,7 +584,8 @@ func Post(runDir, repo string) int {
 	if err != nil {
 		return fail(err)
 	}
-	kept, refused, said := bounded(repo, b, claim, proposed)
+	kept, refused, said := bounded(repo, b, claim, append(proposed, fromTree...))
+	refused = append(treeRefused, refused...)
 	a.Refused = refused
 	where := fmt.Sprintf("#%d", a.Issue)
 	v := verdict.Verdict{Status: verdict.Pass, Summary: "took " + where}
