@@ -408,7 +408,8 @@ token), **apply** (trusted, no AI key).
 
    **A cap on turns.** A role setting `ai-max-turns` is told to an agent
    that loops: `claude`'s `--max-turns`, a command's `WORKLINE_MAX_TURNS`.
-   The turns it reports land in the call's `turns`; post judges them
+   It holds one call. The turns it reports land in the call's `turns`;
+   post judges each call's, and the record keeps the run's sum
    ([ADR-0056](../adr/0056-the-developers-agent-works-in-a-sandbox-with-tools.md#caps)).
    0 or unset, none told.
 

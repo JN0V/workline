@@ -88,6 +88,9 @@ type Call struct {
 	// run's ai-max-seconds spent, its process group killed.
 	Turns   int  `json:"turns,omitempty"`
 	TimeCut bool `json:"time-cut,omitempty"`
+	// Failed: why the call failed, its time aside (TimeCut): the agent
+	// unreachable, exited in error, or its answer unread.
+	Failed string `json:"failed,omitempty"`
 	// Mended: what the engine fixed of the answer before reading it (Mend).
 	Mended []string `json:"mended,omitempty"`
 }

@@ -523,7 +523,11 @@ func reviewPost(runDir, repo string, s Settings) int {
 		}
 		code, tests := written(patches)
 		a.Code, a.Tests = union(a.Code, code), union(a.Tests, tests)
-		for _, f := range proofFindings(where, p, a.Caps) {
+		found := append(unreported(where, u, s), proofFindings(where, p, a.Caps)...)
+		if u.failed != "" {
+			found = append([]verdict.Finding{agentFailed(where, u.failed)}, found...)
+		}
+		for _, f := range found {
 			f.Message = strings.ReplaceAll(f.Message, "; its pull request opens as a Draft", "; pushed, the forge's checks and the reviewer read it next")
 			v.Findings = append(v.Findings, f)
 		}

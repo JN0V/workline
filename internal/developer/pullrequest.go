@@ -93,7 +93,7 @@ func testsMessage(issue int) string {
 // from the tester's Draft, the tests in a commit apart; the record kept
 // on it.
 func mergeRequest(a Act, title string) map[string]any {
-	ready := a.Proof != nil && a.Proof.Result == Green && len(a.Caps) == 0
+	ready := a.Proof != nil && a.Proof.Result == Green && len(a.Caps) == 0 && a.AgentFailed == ""
 	mr := map[string]any{"key": fmt.Sprint(a.Issue), "title": title, "body": body(a, ready), "draft": !ready,
 		"record": map[string]any{"sticky": RecordKey, "body": recordBody(a)}}
 	if a.From != "" {
@@ -113,7 +113,7 @@ func body(a Act, ready bool) string {
 	if ready {
 		fmt.Fprintf(&b, "The developer's code for #%d, proven on the project's tests.\n\n", a.Issue)
 	} else {
-		fmt.Fprintf(&b, "The developer's code for #%d, **a Draft**: not proven green, or a cap reached. "+
+		fmt.Fprintf(&b, "The developer's code for #%d, **a Draft**: not proven green, a cap reached, or its agent failed. "+
 			"A person takes it from here, or removes the claim on the issue.\n\n", a.Issue)
 	}
 	b.WriteString("## Changes\n\n")
@@ -140,6 +140,9 @@ func body(a Act, ready bool) string {
 		}
 	}
 	fmt.Fprintf(&b, "\n## %s\n\n", work.Name(work.Verification))
+	if a.AgentFailed != "" {
+		fmt.Fprintf(&b, "- Its agent failed: %s. What it edited was proven all the same.\n", a.AgentFailed)
+	}
 	if a.Proof != nil {
 		b.WriteString(proofLines(*a.Proof, a.Caps))
 	}

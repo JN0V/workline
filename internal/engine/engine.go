@@ -1143,6 +1143,9 @@ func callAgent(ag agent.Agent, req agent.Request, task, runDir string, res *Resu
 	}
 	err = res.cutShort(err)
 	call.TimeCut = errors.Is(err, errTimeSpent)
+	if err != nil && !call.TimeCut {
+		call.Failed = err.Error()
+	}
 	res.AgentCalls++
 	call.Seconds = math.Round(time.Since(start).Seconds()*10) / 10
 	call.Task = task

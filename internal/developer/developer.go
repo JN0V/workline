@@ -99,6 +99,9 @@ type Act struct {
 	// (ADR-0056, step 4); 0, not reported.
 	Turns  int `json:"turns,omitempty"`
 	Tokens int `json:"tokens,omitempty"`
+	// AgentFailed: why its agent's call failed, its time aside; what it
+	// edited is proven all the same, its pull request a Draft.
+	AgentFailed string `json:"agent-failed,omitempty"`
 	// From: the tester's Draft's commit its code starts from, the
 	// acceptance tests on it, those for the issue in Acceptance; Code and
 	// Tests: the files its code and its tests wrote, in commits apart
@@ -631,10 +634,13 @@ func Post(runDir, repo string) int {
 		p, over := prove(repo, on, patches, s)
 		a.Proof = &p
 		u := used(runDir)
-		a.Turns, a.Tokens = u.Turns, u.Tokens
+		a.Turns, a.Tokens, a.AgentFailed = u.Turns, u.Tokens, u.failed
 		a.Caps = append(agentCaps(u, s), a.Caps...)
 		if over != nil {
 			a.Caps = append(a.Caps, *over)
+		}
+		if u.failed != "" {
+			v.Findings = append(v.Findings, agentFailed(where, u.failed))
 		}
 		v.Findings = append(v.Findings, unreported(where, u, s)...)
 		v.Findings = append(v.Findings, proofFindings(where, p, a.Caps)...)
@@ -643,6 +649,9 @@ func Post(runDir, repo string) int {
 			v.Summary += "; a Draft: " + p.Result
 			if len(a.Caps) > 0 {
 				v.Summary += ", a cap reached"
+			}
+			if u.failed != "" {
+				v.Summary += ", its agent failed"
 			}
 		} else {
 			v.Summary += "; proven green, its pull request ready"
