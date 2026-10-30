@@ -1205,6 +1205,8 @@ func developCmd(args []string) int {
 	roles := fs.String("roles", os.Getenv("WORKLINE_ROLES"), "folder holding the roles")
 	asJSON := fs.Bool("json", false, "print the result as JSON")
 	noApply := fs.Bool("no-apply", false, "judge, apply nothing; a job apart applies the claim with `workline apply <run>`, holding the write token and no agent's key")
+	inputs := pairs{}
+	fs.Var(inputs, "input", "input name=value (repeatable); with --bounds, range=<base>..<head>: the commits CI checked out, else the branches as fetched")
 	if code, done := parseOnly(fs, args); done {
 		return code
 	}
@@ -1230,7 +1232,7 @@ func developCmd(args []string) int {
 	}
 	absRoles, _ := filepath.Abs(rolesDir)
 	res := engine.Run(engine.Options{Repo: abs, RolesDir: absRoles, Role: "developer", Event: event, AI: *ai,
-		Forge: *forgeSpec, Target: target, NoApply: *noApply, OpenMergeRequest: event == "issue"})
+		Forge: *forgeSpec, Target: target, NoApply: *noApply, OpenMergeRequest: event == "issue", Inputs: inputs})
 	if *asJSON {
 		out, _ := json.MarshalIndent(res, "", "  ")
 		fmt.Println(string(out))

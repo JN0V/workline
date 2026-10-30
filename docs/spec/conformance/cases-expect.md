@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go]
-checked: 8e38d5eb
+checked: 0bbdcbd9
 verified: agent:claude-code
 ---
 # Conformance — what a case expects
@@ -20,6 +20,7 @@ What a case can check after its run, beyond the example in
 - `checks` — the doctor's checks, ok ones included: each listed must be
   present, by `rule`, and by `level`, `where`, a part of `message` and of
   `fix` if given.
+- `no-checks` — the doctor's checks that must not be there, by `rule`.
 - `no-findings` — findings that must not be there (by `rule` and `where`,
   and `level`, a part of the message and of `fix` when given).
 - `agent-calls` — how many times the agent was called.

@@ -4,8 +4,10 @@ sources:
   - internal/developer/developer.go
   - internal/developer/worktree.go
   - internal/developer/prbounds.go
+  - ci/github/workline-bounds.yml
+  - ci/gitlab/workline-bounds.gitlab-ci.yml
   - internal/steer/steer.go
-checked: 87d9ef80
+checked: a797443e
 verified: agent:claude-code
 ---
 # The bounds: what its code may never touch
@@ -105,9 +107,28 @@ The check above, before the push, stays a fast first pass.
 - **Kept for the auditor**: a comment on the pull request,
   `sticky=developer/bounds`, its hidden record `act: bounds` with each
   file refused, kept even when it blocks.
-- **Not yet**: the check required on the default branch, run from its
-  definition, in the CI templates (step 2 of
-  [the ADR's plan](../../../docs/adr/0058-the-forge-guards-the-project-not-the-agents-environment.md#build-plan)).
+
+### In CI
+
+- **GitHub**: [workline-bounds.yml](../../../ci/github/workline-bounds.yml),
+  the check `workline bounds`; require it on the default branch, its
+  source GitHub Actions ([set up](../../../docs/ci-github.md#set-up)).
+  - It runs on `pull_request_target`: the default branch's copy of
+    the workflow, never the pull request's.
+  - It never runs the pull request's code: the base checked out, the
+    head fetched for git to diff, a read token, no agent.
+  - A job apart, with the App's key, keeps its verdict on the pull
+    request. Another branch's pull request skips the job, which the
+    rule takes as passed.
+  - A workflow on the branch naming a job `workline bounds` adds a
+    second check of that name: both are required, so the red one
+    still blocks.
+- **GitLab**: the job `workline:bounds`
+  ([the file](../../../ci/gitlab/workline-bounds.gitlab-ci.yml)). GitLab
+  runs a merge request's pipeline from its own branch: a pipeline
+  execution policy (Ultimate) or code owners (Premium) keep the job;
+  on Free, the review. `workline doctor` reads the tier
+  ([on GitLab](../../../docs/gitlab/bounds.md)).
 
 ## Why these rules
 

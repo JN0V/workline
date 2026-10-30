@@ -128,6 +128,15 @@ hold:
   `pr-bounds-passes-in-scope`, `pr-bounds-skips-a-persons-branch`,
   `pr-bounds-refuses-frozen-test-deleted`, `pr-bounds-reads-rules-at-base`,
   `pr-bounds-blocks-frozen-tests-unknown`, `pr-bounds-blocks-tester-record-unread`.
+- **The bounds check in the templates** (step 2 of
+  [ADR-0058](../../../docs/adr/0058-the-forge-guards-the-project-not-the-agents-environment.md#build-plan)):
+  GitHub's `workline bounds`, from the default branch's definition;
+  GitLab's `workline:bounds`, kept by a policy (Ultimate) or code
+  owners (Premium), the tier read by the doctor
+  ([the bounds](bounds.md#in-ci); tried in
+  [#731](https://github.com/JN0V/workline/pull/731)). Tests
+  `TestCIGitHubBoundsCheckFromBase`, `TestCIGitLabBoundsGuardByTier`;
+  cases `setup/doctor-bounds-guard-*`.
 - **The proof on a fresh tree** (step 3): a checkout of the start
   commit in a repository of its own, never the agent's worktree, its
   git store's refs, replacements and config not read; its record says
@@ -212,10 +221,9 @@ prove the grading first (`TestDeveloperWithStandIns`).
 
 ## Missing
 
-- **The bounds check required in the templates**, run from the default
-  branch's definition (GitHub's `pull_request_target`; GitLab by tier):
-  step 2 of
-  [ADR-0058](../../../docs/adr/0058-the-forge-guards-the-project-not-the-agents-environment.md#build-plan).
+- **The bounds under a GitLab pipeline execution policy**: written,
+  not tried; no Ultimate project at hand
+  ([on GitLab](../../../docs/gitlab/bounds.md#ultimate-a-pipeline-execution-policy)).
 - **Its shell boxed in its worktree**: Claude Code's sandbox, writes in
   the worktree only, no network by default
   ([#719](https://github.com/JN0V/workline/issues/719)).

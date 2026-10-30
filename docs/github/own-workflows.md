@@ -1,6 +1,6 @@
 ---
 sources: [ci/github, .github/workflows/workline.yml, .github/workflows/workline-apply.yml, .github/workflows/workline-gardening.yml, .github/workflows/workline-sample.yml, .github/workflows/workline-answer.yml, .github/workflows/workline-develop.yml, .github/actions/engine/action.yml, .github/actions/tests/action.yml, .github/workflows/release.yml, .github/workflows/release-please.yml, release-please-config.json, .goreleaser.yaml, cmd/workline]
-checked: eebe4270
+checked: a797443e
 verified: agent:claude-code
 judged: 220b6dc
 ---
@@ -16,8 +16,9 @@ engine:
 - they build the engine from the commit they run on rather than run a
   release: gardening, the sample and the developer's
   (workline-develop.yml), every job, from `main`; a pull
-  request's jobs, from its commit; workline-apply.yml's and
-  workline-merge.yml's, from `main`'s commit, merged and reviewed: what a
+  request's jobs, from its commit; workline-apply.yml's,
+  workline-merge.yml's and workline-bounds.yml's, from `main`'s commit,
+  merged and reviewed: what a
   pull request changes in the engine never runs with the write token;
 - once a commit ([the action](../../.github/actions/engine/action.yml),
   [ADR-0050](../adr/0050-each-act-has-its-moment-and-a-wait-budget.md#2-an-act-over-its-budget)):

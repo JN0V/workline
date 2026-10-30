@@ -203,6 +203,7 @@ type expectSpec struct {
 	Findings     []findingWant                `yaml:"findings"`
 	NoFindings   []findingWant                `yaml:"no-findings"` // findings that must not be there
 	Checks       []checkWant                  `yaml:"checks"`      // the doctor's checks, ok ones too
+	NoChecks     []checkWant                  `yaml:"no-checks"`   // the doctor's checks, by rule, that must not be there
 	AgentCalls   *int                         `yaml:"agent-calls"`
 	Applied      []string                     `yaml:"applied"`
 	Refused      []string                     `yaml:"refused"`
@@ -1231,6 +1232,13 @@ func compare(c *caseFile, r *result, repo string) []string {
 		}
 		if !found {
 			p = append(p, fmt.Sprintf("missing check %+v (got %+v)", want, r.Checks))
+		}
+	}
+	for _, bad := range e.NoChecks {
+		for _, ch := range r.Checks {
+			if ch.Rule == bad.Rule {
+				p = append(p, fmt.Sprintf("unexpected check %+v", ch))
+			}
 		}
 	}
 	for _, bad := range e.NoFindings {

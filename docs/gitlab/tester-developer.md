@@ -1,6 +1,6 @@
 ---
 sources: [ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile]
-checked: eebe4270
+checked: a797443e
 verified: agent:documentalist
 judged: e8a46f7
 ---
@@ -34,3 +34,6 @@ starts them ([pipelines a tool starts](../gitlab-trigger.md)).
   `WORKLINE_TASK=review`, `MR_IID` and `MR_SOURCE_BRANCH`; the jobs
   `workline:review:*` run it
   ([the review loop](../../roles/developer/docs/review-loop.md#what-wakes-it)).
+- **Its bounds** on its merge request: the job `workline:bounds`, and
+  what keeps a merge request from editing it out, by tier
+  ([the bounds on GitLab](bounds.md)).

@@ -1,0 +1,22 @@
+case: setup/doctor-bounds-guard-codeowners-sections
+about: >
+  CODEOWNERS read as GitLab reads it (ADR-0058, step 2): a section's
+  default owners stand for its rules that name none; an optional section
+  (`^[…]`) asks no approval, so a CI file it alone owns is not guarded.
+  The doctor names that file, never a false pass.
+given:
+  repo: documented
+  setup:
+    - "mkdir -p .gitlab && printf 'include: [{local: ci/workline-bounds.gitlab-ci.yml}]\\n' > .gitlab-ci.yml && printf '[CI] @maintainers\\n/.gitlab-ci.yml\\n^[Optional] @maintainers\\n/ci/\\n' > .gitlab/CODEOWNERS"
+  config:
+    routing: {events: {issue: [developer]}}
+  forge:
+    merge-requests: []
+    plan: premium
+    code-owner-approval: true
+run: {doctor: true, forge: gitlab}
+expect:
+  status: pass
+  checks:
+    - {rule: bounds-guard-codeowners-missing, where: ci/workline-bounds.gitlab-ci.yml, level: warn, message: "CODEOWNERS names no owner whose approval is required for ci/workline-bounds.gitlab-ci.yml"}
+  no-checks: [{rule: bounds-guard-codeowners}]

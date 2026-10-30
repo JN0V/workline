@@ -1,0 +1,32 @@
+# The developer's bounds on its merge request (ADR-0058): include it beside
+# workline.gitlab-ci.yml, or from a pipeline execution policy (Ultimate).
+#   include: [{local: ci/workline.gitlab-ci.yml}, {local: ci/workline-bounds.gitlab-ci.yml}]
+# A refused file fails the pipeline; no agent, no code of the merge request
+# run; without the bot's token it fails. Self-contained, for a policy.
+# What keeps a merge request from editing it out, by tier, and why:
+# docs/gitlab/bounds.md (`workline doctor` reads the tier).
+workline:bounds:
+  image: $WORKLINE_IMAGE:$WORKLINE_BOUNDS_VERSION
+  stage: test
+  environment: {name: workline, action: prepare}   # the bot's token, scoped to it (docs/ci-gitlab.md)
+  needs: []
+  interruptible: true
+  variables:
+    GIT_DEPTH: 0                    # the whole history: the merge base, the tester's frozen tests
+    WORKLINE_BOUNDS_VERSION: v0.57.0   # a release of workline: update it to take a newer one (x-release-please-version)
+    WORKLINE_IMAGE: ghcr.io/jn0v/workline   # a project's variable WORKLINE_IMAGE, your registry's copy, wins
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_EVENT_TYPE != "merge_train" && $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME =~ /^workline\/developer\/[0-9]+$/
+  script:
+    - '[ -z "${CI_SERVER_TLS_CA_FILE:-}" ] || cat "$CI_SERVER_TLS_CA_FILE" >> /etc/ssl/certs/ca-certificates.crt'
+    - '[ -n "${WORKLINE_GITLAB_TOKEN:-}" ] || { echo "workline: WORKLINE_GITLAB_TOKEN is not set, or not scoped to the environment workline: the bounds cannot be read, so they do not pass (docs/ci-gitlab.md)"; exit 1; }'
+    - export GITLAB_TOKEN=$WORKLINE_GITLAB_TOKEN
+    - workline version
+    # The rules at the target's tip, checked out: the engine reads the
+    # project's settings there, never the merge request's. Its head, the
+    # commit the pipeline runs (its source branch's in a merged results
+    # pipeline), as data.
+    - git fetch -q origin "$CI_MERGE_REQUEST_TARGET_BRANCH_NAME" && base=$(git rev-parse FETCH_HEAD)
+    - head=${CI_MERGE_REQUEST_SOURCE_BRANCH_SHA:-$CI_COMMIT_SHA}
+    - git checkout -q --detach "$base"
+    - workline develop --bounds --merge-request "$CI_MERGE_REQUEST_IID" --ai none --forge gitlab --input range="$base..$head"

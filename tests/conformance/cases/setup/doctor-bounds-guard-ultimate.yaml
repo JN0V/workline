@@ -1,0 +1,18 @@
+case: setup/doctor-bounds-guard-ultimate
+about: >
+  On GitLab Ultimate (ADR-0058, step 2), a pipeline execution policy runs
+  workline:bounds from a project the merge request cannot touch. The
+  doctor cannot read a policy: it says what to set, a note, not a pass.
+  GitLab.com's old name for the tier, gold, is read as Ultimate.
+given:
+  repo: documented
+  config:
+    routing: {events: {issue: [developer]}}
+  forge:
+    merge-requests: []
+    plan: gold
+run: {doctor: true, forge: gitlab}
+expect:
+  status: pass
+  checks:
+    - {rule: bounds-guard-policy, level: note, message: "pipeline execution policy", fix: "docs/gitlab/bounds.md"}

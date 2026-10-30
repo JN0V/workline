@@ -1,0 +1,19 @@
+case: setup/doctor-bounds-guard-free
+about: >
+  On GitLab Free (ADR-0058, step 2), a merge request runs its own
+  branch's .gitlab-ci.yml: a developer's merge request can edit out
+  workline:bounds, and nothing but the review keeps it. The doctor reads
+  the tier from the project's namespace and says so, with the page that
+  tells what Premium and Ultimate give.
+given:
+  repo: documented
+  config:
+    routing: {events: {issue: [developer]}}
+  forge:
+    merge-requests: []
+    plan: free
+run: {doctor: true, forge: gitlab}
+expect:
+  status: pass
+  checks:
+    - {rule: bounds-guard-free, level: warn, message: "nothing but the review keeps it", fix: "docs/gitlab/bounds.md"}
