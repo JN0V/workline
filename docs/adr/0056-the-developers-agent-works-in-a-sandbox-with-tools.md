@@ -57,9 +57,7 @@
 
 - **The code is the worktree's diff** against the commit it started
   from, untracked files included, whatever the agent committed: the
-  `patch` intention goes. An empty file added is left out: a sandbox's
-  placeholder over a path it denies writes to
-  ([#745](https://github.com/JN0V/workline/issues/745)).
+  `patch` intention goes.
 - **[ADR-0054]'s bounds apply to the diff, file by file**: Scope, the
   tester's frozen tests, the files that steer agents, `.workline/`,
   CI workflows, a gate's definition; a symlink out of the tree too.

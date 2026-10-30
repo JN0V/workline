@@ -5,7 +5,10 @@
 # only. It fails, saying why, unless given its tools, flags and question
 # as the developer passes them, its shell without its login. Then it reads
 # lib.sh, writes mul and a test, runs the tests, answers $ANSWER (a JSON
-# string), `[]` by default, in stream-json.
+# string), `[]` by default, in stream-json. STUBS set, it first creates
+# the empty files Claude Code 2.1.314's sandbox binds over, where absent,
+# then writes a package.json of its own; EMPTY names an empty file it
+# writes on purpose.
 set -eu
 want() { echo "claude stand-in: $*" >&2; exit 1; }
 args=" $* "
@@ -25,6 +28,17 @@ for w in '`lib.sh`' '`tests/test_mul_by_zero.sh`' '`sh run-tests.sh {report}`' '
 	case "$question" in *"$w"*) ;; *) want "the question does not name $w" ;; esac
 done
 case "$question" in *'add() {'* | *'- patch:'*) want "the question pastes code, or asks for patches" ;; esac
+if [ -n "${STUBS:-}" ]; then
+	for f in bunfig.toml package.json .npmrc .yarnrc .yarnrc.yml .gitmodules package-lock.json yarn.lock \
+		pnpm-lock.yaml .env .env.local .env.development .env.development.local .env.test .env.test.local \
+		.env.production .env.production.local; do
+		[ -e "$f" ] || : >"$f"
+	done
+	echo '{"name": "mul"}' > package.json
+fi
+if [ -n "${EMPTY:-}" ]; then
+	mkdir -p "$(dirname "$EMPTY")" && : >"$EMPTY"
+fi
 echo 'mul() { echo $(($1 * $2)); }' >> lib.sh
 cat > tests/test_mul.sh <<'T'
 . ./lib.sh

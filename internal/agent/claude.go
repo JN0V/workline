@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/fs"
 	"maps"
 	"os"
 	"os/exec"
@@ -96,8 +97,10 @@ func (c claude) Propose(req Request) (Call, error) {
 	inGroup(cmd)
 	var out, errOut bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &out, &errOut
+	stubs := absentStubs(tree)
 	runErr := settled(ctx, cmd.Run())
 	_ = killGroup(cmd)
+	removeStubs(tree, stubs)
 	stdout := out.Bytes()
 	if tree != "" {
 		stdout, call.Tools = claudeStream(stdout)
@@ -151,6 +154,41 @@ func (c claude) Propose(req Request) (Call, error) {
 // tools, nor agents of its own: the network is the shell's, as the
 // project's CI allows it.
 const claudeTools = "Read,Edit,Write,Glob,Grep,Bash"
+
+// claudeStubs are the files Claude Code creates empty in its folder, where
+// absent, when its commands' environment is scrubbed: its sandbox binds
+// over them, so that no command writes them. It lists them in
+// .git/info/exclude, which a linked worktree's .git, a file, cannot hold:
+// left there, they would be the agent's code (#745). Claude Code 2.1.314.
+var claudeStubs = []string{
+	"bunfig.toml", "package.json", ".npmrc", ".yarnrc", ".yarnrc.yml", ".gitmodules",
+	"package-lock.json", "yarn.lock", "pnpm-lock.yaml",
+	".env", ".env.local", ".env.development", ".env.development.local",
+	".env.test", ".env.test.local", ".env.production", ".env.production.local",
+}
+
+// absentStubs are the stubs tree lacks before Claude Code runs there; no
+// tree, none.
+func absentStubs(tree string) []string {
+	var absent []string
+	for _, s := range claudeStubs {
+		if _, err := os.Lstat(filepath.Join(tree, s)); tree != "" && errors.Is(err, fs.ErrNotExist) {
+			absent = append(absent, s)
+		}
+	}
+	return absent
+}
+
+// removeStubs removes each of the stubs tree lacked that is now an empty
+// file: one its agent wrote holds something, and stays.
+func removeStubs(tree string, absent []string) {
+	for _, s := range absent {
+		p := filepath.Join(tree, s)
+		if st, err := os.Lstat(p); err == nil && st.Mode().IsRegular() && st.Size() == 0 {
+			_ = os.Remove(p)
+		}
+	}
+}
 
 // claudeStream reads `claude -p --output-format stream-json --verbose`:
 // its result message, the shape claudeAnswer reads, and how many times it

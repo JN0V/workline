@@ -1,0 +1,34 @@
+case: developer/claude-keeps-an-empty-file
+about: >
+  An empty file its agent writes on purpose, a Python package's
+  __init__.py, is its code: only the files Claude Code's sandbox
+  creates are removed once it ran (#745).
+given:
+  repo: tested-draft
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main workline/tester/issue-3 && git checkout -q main"
+  env: {PATH: "$FIXTURES/claude:$PATH", STUBS: "1", EMPTY: "pkg/__init__.py"}
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:ready"]
+        body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n- `pkg/__init__.py`: the package.\n"
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        draft: true
+        comments: ["The tests of #3, frozen.\n\n<!-- workline:tester-record {\"issue\":3,\"base\":\"main\",\"files\":{\"tests/test_mul_by_zero.sh\":\"8f123a0bacbd681063880b867df38dd216784b97\",\"tests/test_mul_two_by_three.sh\":\"2dee0641bd7a79057ade7bff5af43b603125f543\"}} -->\n<!-- workline:sticky=tester/tests -->"]
+run: {develop: [], ai: claude}
+expect:
+  status: pass
+  agent-calls: 1
+  pushed:
+    workline/developer/3:
+      lib.sh: "mul()"
+      pkg/__init__.py: ""
+  pushed-lacks:
+    workline/developer/3:
+      .env.test: ""
