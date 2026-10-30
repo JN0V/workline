@@ -6,7 +6,7 @@ sources:
   - internal/developer/developer.go
   - internal/agent/closing.go
   - internal/developer/words.go
-checked: 0213dd02
+checked: 7f12e806
 verified: agent:claude-code
 ---
 # The agent: where it works, what it gets
