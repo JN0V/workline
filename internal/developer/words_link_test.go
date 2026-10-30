@@ -34,6 +34,26 @@ func TestAgentWordsNeverFollowALink(t *testing.T) {
 	}
 }
 
+// TestAgentWordsRemoveAFolder: a folder at the objections file's path,
+// files in it, is not read and goes whole: the post goes on (#746).
+func TestAgentWordsRemoveAFolder(t *testing.T) {
+	run := t.TempDir()
+	dir := filepath.Join(run, agent.WorktreeDir, filepath.FromSlash(ObjectionsFile))
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "a.yaml"), []byte("- test: x\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	objections, unread, err := agentWords(run)
+	if err != nil || len(objections) != 0 || len(unread) != 1 || !strings.Contains(unread[0], "not followed") {
+		t.Fatalf("a folder: %v, %v, %q", err, objections, unread)
+	}
+	if _, err := os.Lstat(dir); err == nil {
+		t.Errorf("the folder left in the worktree")
+	}
+}
+
 // TestClaimHoldsUnreadWordsWithNoPullRequest: no code, so no pull
 // request: the words that did not read go in the claim on the issue.
 func TestClaimHoldsUnreadWordsWithNoPullRequest(t *testing.T) {

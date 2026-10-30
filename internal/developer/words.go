@@ -44,8 +44,9 @@ func agentWords(runDir string) (objections []intent.Intention, unread []string, 
 			return nil, nil, fmt.Errorf("its agent's %s: %w", ObjectionsFile, err)
 		case !st.Mode().IsRegular():
 			// A link is never followed: what it leads to is not its
-			// agent's to post. Removed, it reaches no branch either.
-			if err := os.Remove(file); err != nil {
+			// agent's to post. Removed, a folder whole (RemoveAll follows
+			// no link), it reaches no branch either.
+			if err := os.RemoveAll(file); err != nil {
 				return nil, nil, fmt.Errorf("its agent's %s: %w", ObjectionsFile, err)
 			}
 			unread = append(unread, "Its objections file, `"+ObjectionsFile+"`, is not a plain file (a link, or a folder): not followed, not read, removed.")
