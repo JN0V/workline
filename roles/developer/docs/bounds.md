@@ -3,6 +3,7 @@ sources:
   - internal/developer/bounds.go
   - internal/developer/developer.go
   - internal/developer/worktree.go
+  - internal/developer/words.go
   - internal/developer/prbounds.go
   - ci/github/workline-bounds.yml
   - ci/gitlab/workline-bounds.gitlab-ci.yml
@@ -163,9 +164,9 @@ The check above, before the push, stays a fast first pass.
   claim is the engine's. The developer never accepts, merges, closes
   or moves an issue. The catalogue holds no merge to propose.
 - **One comment is allowed: an objection** to a frozen test. The agent
-  gives the test, its line, the scenario, the kind and why, as a map:
-  its question shows the item whole, since a text comment is refused.
-  The engine
+  writes the test, its line, the scenario, the kind and why in its
+  worktree's objections file, as [its question shows](agent.md); the
+  file never reaches the branch. The engine
   posts it on that line of the tester's Draft, opened by
   `workline:objection`, in [the tester's form](../../tester/README.md#frozen-tests-and-objections).
   The tester keeps or rewrites the test.

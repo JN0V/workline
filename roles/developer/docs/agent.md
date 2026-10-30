@@ -4,6 +4,8 @@ sources:
   - internal/agent/command.go
   - internal/agent/prompt.go
   - internal/developer/developer.go
+  - internal/agent/closing.go
+  - internal/developer/words.go
 checked: 0213dd02
 verified: agent:claude-code
 ---
@@ -79,12 +81,21 @@ It names the code, never pastes it; the agent reads it in its worktree:
   could not be read;
 - its bounds: turns, seconds, no commit nor push.
 
-It answers with its edits, then a YAML list of objections, `[]` if
-none. Closing words that are no list lose nothing of its code:
+It answers with its edits; its diff is its code
+([#746](https://github.com/JN0V/workline/issues/746)):
 
-- **They name no objection**: read as none, and said (`answer-mended`).
-- **They name one**: its agent failed (`agent-invalid-output`); its
-  code is still proven and pushed, as a Draft that says why.
+- **An objection goes in a file**, `.workline/objections.yaml` in its
+  worktree, a YAML list the question shows: the engine reads it, then
+  takes it out of the diff.
+- **Its last message is `[]`**: the question says the engine reads it,
+  YAML only.
+- **Closing words that do not read never cost the code**: it is still
+  bounded, proven and pushed, ready or a Draft by the proof alone.
+  - A YAML list among prose is read alone, said (`answer-mended`).
+  - Nothing reads: the words go as they came on the pull request,
+    under "Its agent's words, unread", said (`agent-words-unread`), so
+    an objection written there is not lost.
+- **The same for a `cmd:` agent**: its output is read so.
 
 ## Not yet
 
