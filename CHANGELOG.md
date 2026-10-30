@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.58.0](https://github.com/JN0V/workline/compare/v0.57.0...v0.58.0) (2026-10-30)
+
+
+### Features
+
+* **developer:** its bounds are a check on its pull request ([#730](https://github.com/JN0V/workline/issues/730)) ([7fc8a75](https://github.com/JN0V/workline/commit/7fc8a7538d1819856aeaaaf9f2d00dfd15b055df))
+* **developer:** the agent runs with its runner's rights ([#728](https://github.com/JN0V/workline/issues/728)) ([18e13d3](https://github.com/JN0V/workline/commit/18e13d33b22bcc2be9d10f18c571819935a779fd))
+
 ## [0.57.0](https://github.com/JN0V/workline/compare/v0.56.1...v0.57.0) (2026-10-30)
 
 
