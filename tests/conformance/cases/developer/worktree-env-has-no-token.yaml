@@ -4,7 +4,8 @@ about: >
   (ADR-0056, step 2, principle 6): the forge's tokens, the App's key, the
   signing key, and what a CI job holds that mints or carries one (GitHub's
   OIDC request token, GitLab's job token in its registry password and
-  clone URL) are taken out of its environment; its own login is left. It
+  clone URL) are taken out of its environment, gh's and glab's replaced
+  by a placeholder that opens nothing; its own login is left. It
   writes in lib.sh what it saw; the engine pushes it.
 given:
   repo: tested

@@ -8,9 +8,10 @@ import (
 	"testing"
 )
 
-// Each way git would hand the agent a credential is found, by its key or
-// its file, never its value; a helper reset by an empty value is not one.
-func TestCredentialsInReach(t *testing.T) {
+// Each way the person's git would hand a credential is found, by its key
+// or its file, never its value; a helper reset by an empty value is not
+// one. (Under the agent's seal, helpers are not: TestSealTakesHelpers.)
+func TestGitReach(t *testing.T) {
 	cases := []struct {
 		name   string
 		config [][]string // git config calls, in the repository
@@ -71,7 +72,8 @@ func TestCredentialsInReach(t *testing.T) {
 					t.Fatal(err, string(out))
 				}
 			}
-			found := credentialsInReach(repo)
+			written, helped := gitReach(repo, os.Environ())
+			found := append(written, helped...)
 			if len(found) != len(c.where) {
 				t.Fatalf("found %v, want %v", found, c.where)
 			}
@@ -81,6 +83,68 @@ func TestCredentialsInReach(t *testing.T) {
 				}
 				if strings.Contains(f.Where+f.Message, "c2VjcmV0") {
 					t.Errorf("finding %d tells the credential: %+v", i, f)
+				}
+			}
+		})
+	}
+}
+
+// Under the agent's seal, the person's helpers, wherever set, are out of
+// its reach and the run goes on; a token written in a file it can read is
+// not: gh's or glab's config, a header the checkout persisted.
+func TestSealTakesHelpers(t *testing.T) {
+	cases := []struct {
+		name, global, local, gh, glab string
+		where                         []string
+	}{
+		{name: "helpers everywhere", global: "[credential]\n\thelper = store\n[credential \"https://gitlab.com\"]\n\thelper = !glab auth git-credential\n",
+			local: "credential.https://github.com.helper=!gh auth git-credential"},
+		{name: "gh in its keyring", gh: "github.com:\n    git_protocol: https\n    user: someone\n"},
+		{name: "gh token in its file", gh: "github.com:\n    oauth_token: c2VjcmV0\n    user: someone\n", where: []string{"hosts.yml: github.com.oauth_token"}},
+		{name: "glab token in its file", glab: "hosts:\n    gitlab.com:\n        token: c2VjcmV0\n        user: someone\n", where: []string{"config.yml: hosts.gitlab.com.token"}},
+		{name: "glab token emptied", glab: "hosts:\n    gitlab.com:\n        token: \"\"\n"},
+		{name: "persisted header", local: "http.https://github.com/.extraheader=AUTHORIZATION: basic c2VjcmV0", where: []string{"http.https://github.com/.extraheader"}},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			home, repo := t.TempDir(), t.TempDir()
+			global := filepath.Join(home, "gitconfig")
+			if err := os.WriteFile(global, []byte(c.global), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			t.Setenv("HOME", home)
+			t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, ".config"))
+			t.Setenv("GIT_CONFIG_GLOBAL", global)
+			t.Setenv("GIT_CONFIG_NOSYSTEM", "1")
+			t.Setenv("GH_CONFIG_DIR", "")
+			t.Setenv("GLAB_CONFIG_DIR", "")
+			for dir, text := range map[string]string{"gh/hosts.yml": c.gh, "glab-cli/config.yml": c.glab} {
+				if text == "" {
+					continue
+				}
+				f := filepath.Join(home, ".config", dir)
+				if err := os.MkdirAll(filepath.Dir(f), 0o700); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(f, []byte(text), 0o600); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if out, err := exec.Command("git", "init", "-q", repo).CombinedOutput(); err != nil {
+				t.Fatal(err, string(out))
+			}
+			if key, value, ok := strings.Cut(c.local, "="); ok {
+				if out, err := exec.Command("git", "-C", repo, "config", key, value).CombinedOutput(); err != nil {
+					t.Fatal(err, string(out))
+				}
+			}
+			found := credentialsInReach(repo)
+			if len(found) != len(c.where) {
+				t.Fatalf("found %v, want %v", found, c.where)
+			}
+			for i, f := range found {
+				if !strings.HasSuffix(f.Where, c.where[i]) || strings.Contains(f.Where+f.Message, "c2VjcmV0") {
+					t.Errorf("finding %d: %+v, want where %s and no value", i, f, c.where[i])
 				}
 			}
 		})

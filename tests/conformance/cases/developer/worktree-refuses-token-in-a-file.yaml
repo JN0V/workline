@@ -1,0 +1,25 @@
+case: developer/worktree-refuses-token-in-a-file
+about: >
+  What no environment hides (ADR-0056, step 2, principles 6 and 7): glab
+  keeps the person's token written in its config file, which the agent
+  could read. The engine does not start the agent, blocks, and names the
+  file and the key, never the value, with the way out: the system's
+  keyring. The issue is not claimed.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "mkdir -p \"$XDG_CONFIG_HOME/glab-cli\" && printf 'hosts:\\n    gitlab.com:\\n        token: glpat-planted\\n' > \"$XDG_CONFIG_HOME/glab-cli/config.yml\""
+  forge:
+    issues:
+      - {id: 2, title: "Multiply", labels: ["workline:ready"], body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: a `mul` function.\n"}
+run: {develop: [], ai: 'cmd:sh "$FIXTURES/agents/developer-edits-worktree.sh"'}
+expect:
+  status: block
+  summary: "a credential is in the agent's reach"
+  agent-calls: 0
+  findings: [{rule: credential-in-reach, where: "glab-cli/config.yml: hosts.gitlab.com.token", message: "--use-keyring"}]
+  stdout-lacks: ["glpat-planted"]
+  forge:
+    issues:
+      - {id: 2, labels: ["workline:ready"], comments: 0}

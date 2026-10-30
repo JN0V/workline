@@ -63,6 +63,12 @@ func (c command) Propose(req Request) (Call, error) {
 	cmd.Dir, cmd.WaitDelay = os.TempDir(), waitAfterTimeout
 	cmd.Env = append(withoutTokens(os.Environ()), "WORKLINE_TIER="+call.Tier, "WORKLINE_EFFORT="+call.Effort, "WORKLINE_CALL="+report.Name())
 	tree := Worktree(req.RunDir)
+	env, unseal, err := sealed(cmd.Env, tree)
+	if err != nil {
+		return call, err
+	}
+	defer unseal()
+	cmd.Env = env
 	if tree != "" {
 		// An agent that loops (ADR-0056): told its caps, killed whole at
 		// its time, a child of its own left after it answered too.

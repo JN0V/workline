@@ -5,8 +5,8 @@
 cat >/dev/null
 seen=""
 for v in GH_TOKEN GITHUB_TOKEN GITLAB_TOKEN WORKLINE_GITLAB_TOKEN CI_JOB_TOKEN WORKLINE_APP_PRIVATE_KEY; do
-	eval "set=\${$v+x}"
-	[ -n "$set" ] && seen="$seen $v"
+	eval "set=\${$v+x} val=\${$v-}"
+	[ -n "$set" ] && [ "$val" != workline-sealed ] && seen="$seen $v" # the seal's placeholder opens nothing
 done
 login=no
 [ -n "${ANTHROPIC_API_KEY:-}" ] && login=yes

@@ -1,0 +1,29 @@
+case: developer/worktree-refuses-included-token
+about: >
+  A runner's token written in a file the repository's config includes
+  (gitlab-runner 19.6: `include.path`, #722; ADR-0056, step 2): a header
+  git sends, a rewrite to a URL holding it. The agent could read the
+  file: the engine reads the includes, names each key, never the value,
+  and does not start it. The GitLab template takes them out of the file
+  they sit in before the run.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "printf '[http \"https://gitlab.example\"]\\n\\textraheader = Authorization: Basic cGxhbnRlZA==\\n[url \"https://gitlab-ci-token:planted@gitlab.example\"]\\n\\tinsteadOf = https://gitlab.example\\n' > ../runner.ext.conf"
+    - "git config include.path \"$(cd .. && pwd)/runner.ext.conf\""
+  forge:
+    issues:
+      - {id: 2, title: "Multiply", labels: ["workline:ready"], body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: a `mul` function.\n"}
+run: {develop: [], ai: 'cmd:sh "$FIXTURES/agents/developer-edits-worktree.sh"'}
+expect:
+  status: block
+  summary: "a credential is in the agent's reach"
+  agent-calls: 0
+  findings:
+    - {rule: credential-in-reach, where: "url.https://…@gitlab.example.insteadof"}
+    - {rule: credential-in-reach, where: "http.https://gitlab.example.extraheader"}
+  stdout-lacks: ["cGxhbnRlZA", "planted"]
+  forge:
+    issues:
+      - {id: 2, labels: ["workline:ready"], comments: 0}

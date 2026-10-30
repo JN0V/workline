@@ -83,7 +83,12 @@ func (c claude) Propose(req Request) (Call, error) {
 	if tree != "" {
 		cmd.Dir = tree
 	}
-	cmd.Env = claudeEnv(os.Environ())
+	env, unseal, err := sealed(claudeEnv(os.Environ()), tree)
+	if err != nil {
+		return call, err
+	}
+	defer unseal()
+	cmd.Env = env
 	if tree != "" {
 		// The commands it runs never see its login (ANTHROPIC_API_KEY,
 		// CLAUDE_CODE_OAUTH_TOKEN…): Claude Code takes them out of its
