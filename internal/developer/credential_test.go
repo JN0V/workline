@@ -25,6 +25,22 @@ func TestCredentialsInReach(t *testing.T) {
 		{name: "global helper", global: "[credential \"https://gitlab.com\"]\n\thelper = !glab auth git-credential\n",
 			where: []string{"credential.https://gitlab.com.helper"}},
 		{name: "helper reset in the repository", global: "[credential]\n\thelper = store\n", config: [][]string{{"credential.helper", ""}}},
+		// Git's resolution decides, not the key: a reset clears every helper
+		// before it whose pattern it matches, whatever their key.
+		{name: "scoped helper reset by an unscoped one", global: "[credential \"https://gitlab.com\"]\n\thelper = store\n",
+			config: [][]string{{"credential.helper", ""}}},
+		{name: "helper reset for another host only", global: "[credential \"https://gitlab.com\"]\n\thelper = store\n",
+			config: [][]string{{"credential.https://github.com.helper", ""}}, where: []string{"credential.https://gitlab.com.helper"}},
+		{name: "helper set after its reset", global: "[credential]\n\thelper = store\n",
+			config: [][]string{{"--add", "credential.helper", ""}, {"--add", "credential.helper", "cache"}}, where: []string{"credential.helper"}},
+		{name: "host-wide reset, path-scoped helper after it", config: [][]string{{"credential.https://gitlab.com.helper", ""}, {"credential.https://gitlab.com/group.helper", "store"}},
+			where: []string{"credential.https://gitlab.com/group.helper"}},
+		// A header's most specific pattern wins: an unscoped reset leaves a
+		// scoped header sent, a scoped reset takes it.
+		{name: "scoped header past an unscoped reset", global: "[http \"https://github.com/\"]\n\textraheader = AUTHORIZATION: basic c2VjcmV0\n",
+			config: [][]string{{"http.extraheader", ""}}, where: []string{"http.https://github.com/.extraheader"}},
+		{name: "scoped header reset in its scope", global: "[http \"https://github.com/\"]\n\textraheader = AUTHORIZATION: basic c2VjcmV0\n",
+			config: [][]string{{"http.https://github.com/.extraheader", ""}}},
 		{name: "token in the remote", config: [][]string{{"remote.origin.url", "https://gitlab-ci-token:c2VjcmV0@gitlab.example/p.git"}},
 			where: []string{"remote.origin.url"}},
 		{name: "token in a rewrite", config: [][]string{{"url.https://x:c2VjcmV0@github.com/.insteadOf", "https://github.com/"}},
