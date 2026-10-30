@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.59.0](https://github.com/JN0V/workline/compare/v0.58.0...v0.59.0) (2026-10-30)
+
+
+### Features
+
+* **board:** the roles move GitHub's cards ([#738](https://github.com/JN0V/workline/issues/738)) ([87f08a8](https://github.com/JN0V/workline/commit/87f08a8d949e5a95c8c92241a77ace6b4e6ea584))
+* **board:** the roles move GitLab's cards ([#735](https://github.com/JN0V/workline/issues/735)) ([6519a70](https://github.com/JN0V/workline/commit/6519a70c4738f82de47363b9eda6d5ad5dd4efc0))
+* **board:** who may write a GitHub project, and its docs ([#740](https://github.com/JN0V/workline/issues/740)) ([e6c91d3](https://github.com/JN0V/workline/commit/e6c91d3aeb43fa412c8203c26d83407777853a3e))
+* **doctor:** find the forge's board and match its columns ([#732](https://github.com/JN0V/workline/issues/732)) ([ab3c261](https://github.com/JN0V/workline/commit/ab3c26111a766ec49852dce60412548ecee5b472))
+
+
+### Bug Fixes
+
+* **developer:** its commits pass the commit check ([#737](https://github.com/JN0V/workline/issues/737)) ([86e050c](https://github.com/JN0V/workline/commit/86e050ca80da75efef1b1b8a075994b1dc1d1e12))
+
 ## [0.58.0](https://github.com/JN0V/workline/compare/v0.57.0...v0.58.0) (2026-10-30)
 
 
