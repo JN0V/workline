@@ -41,6 +41,6 @@ expect:
         branch: workline/developer/3
         base: main
         draft: false
-        title: "Multiply two numbers"
+        title: "feat: multiply two numbers"
         body-contains: ["Closes #3", "## Changes", "- Code: `lib.sh`.", "from `workline/tester/issue-3`: `tests/test_mul_by_zero.sh`, `tests/test_mul_two_by_three.sh`", "## Verification", "## Tried", "Not tried: the commands the issue names to verify it"]
         comment-contains: ["<!-- workline:developer-act {\"act\":\"code\"", "\"proof\":{\"result\":\"green\"", "\"code\":[\"lib.sh\"]", "workline:sticky=developer/code"]

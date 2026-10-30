@@ -41,3 +41,8 @@ expect:
       - "tests/test_mul_negative.sh"
       - "fix: multiply two numbers for every caller that needs the product of two"
       - "lib.sh"
+  forge:
+    merge-requests:
+      - id: 2
+        branch: workline/developer/3
+        title: "fix: multiply two numbers for every caller that needs the"
