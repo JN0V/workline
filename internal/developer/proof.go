@@ -14,6 +14,7 @@ package developer
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
 	"strings"
@@ -109,28 +110,70 @@ func testerSettings(repo string) (tester.Settings, error) {
 	return tester.SettingsFrom(r.MergedSettings(cfg))
 }
 
-// tokensCap is ai-max-tokens reached: what the run's calls spent
-// (out/calls.jsonl), as the engine counts it, at or past what it allows;
-// nil when not, or no cap is set.
-func tokensCap(runDir string, allows int) *Cap {
-	if allows <= 0 {
-		return nil
-	}
+// Used is what the run's agent calls used, as the agents report it: the
+// turns and the tokens (in, cache included, and out), the seconds waited.
+type Used struct {
+	Turns   int
+	Tokens  int
+	Seconds int
+	timeCut bool // the engine stopped waiting, ai-max-seconds spent
+}
+
+// used reads the run's calls (out/calls.jsonl), as the engine counts them.
+func used(runDir string) Used {
+	var u Used
 	data, err := os.ReadFile(filepath.Join(runDir, "out", "calls.jsonl"))
 	if err != nil {
-		return nil
+		return u
 	}
-	spent := 0
+	seconds := 0.0
 	for _, l := range strings.Split(string(data), "\n") {
 		var c agent.Call
 		if json.Unmarshal([]byte(l), &c) == nil {
-			spent += c.TokensIn + c.TokensOut
+			u.Turns += c.Turns
+			u.Tokens += c.TokensIn + c.TokensOut
+			seconds += c.Seconds
+			u.timeCut = u.timeCut || c.TimeCut
 		}
 	}
-	if spent < allows {
+	u.Seconds = int(math.Round(seconds))
+	return u
+}
+
+// agentCaps are the caps on its agent the run reached (ADR-0056): its
+// time (the engine stopped waiting and killed it), its turns and its
+// tokens, as it reports them, at or past what each allows; none set,
+// none reached.
+func agentCaps(u Used, s Settings) []Cap {
+	var caps []Cap
+	if u.timeCut && s.MaxSeconds > 0 {
+		caps = append(caps, Cap{Setting: "ai-max-seconds", Spent: u.Seconds, Allows: s.MaxSeconds})
+	}
+	if s.MaxTurns > 0 && u.Turns >= s.MaxTurns {
+		caps = append(caps, Cap{Setting: "ai-max-turns", Spent: u.Turns, Allows: s.MaxTurns})
+	}
+	if s.MaxTokens > 0 && u.Tokens >= s.MaxTokens {
+		caps = append(caps, Cap{Setting: "ai-max-tokens", Spent: u.Tokens, Allows: s.MaxTokens})
+	}
+	return caps
+}
+
+// unreported says a cap its agent did not report the use of: a cmd:
+// agent that writes no turns or tokens to WORKLINE_CALL is not held to
+// them, said, never read as under them (principle 12).
+func unreported(where string, u Used, s Settings) []verdict.Finding {
+	var not []string
+	if s.MaxTurns > 0 && u.Turns == 0 {
+		not = append(not, "ai-max-turns")
+	}
+	if s.MaxTokens > 0 && u.Tokens == 0 {
+		not = append(not, "ai-max-tokens")
+	}
+	if len(not) == 0 {
 		return nil
 	}
-	return &Cap{Setting: "ai-max-tokens", Spent: spent, Allows: allows}
+	return []verdict.Finding{{Rule: "cap-not-checked", Level: "info", Where: where,
+		Message: "its agent reported no use of " + strings.Join(not, " nor ") + ": not checked this run; its time held it"}}
 }
 
 // proofFindings say the proof and the caps in the run's verdict.

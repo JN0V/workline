@@ -53,6 +53,9 @@ func (c claude) Propose(req Request) (Call, error) {
 	if e := claudeEffort[call.Effort]; e != "" {
 		args = append(args, "--effort", e)
 	}
+	if req.MaxTurns > 0 {
+		args = append(args, "--max-turns", fmt.Sprint(req.MaxTurns))
+	}
 	limit, err := req.Role.Model.AnswerTimeout()
 	if err != nil {
 		return call, err
@@ -63,11 +66,21 @@ func (c claude) Propose(req Request) (Call, error) {
 	cmd.Dir, cmd.WaitDelay = os.TempDir(), waitAfterTimeout
 	cmd.Env = claudeEnv(os.Environ())
 	cmd.Stdin = strings.NewReader(user)
+	tree := Worktree(req.RunDir)
+	if tree != "" {
+		inGroup(cmd) // the commands its tools start killed with it, at its time
+	}
 	var out, errOut bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &out, &errOut
 	runErr := settled(ctx, cmd.Run())
+	if tree != "" {
+		_ = killGroup(cmd)
+	}
 	answer, parsed := claudeAnswer(out.Bytes(), &call)
-	if runErr != nil || (parsed && answer.IsError) {
+	// Its turns spent is a cap reached, not a failure: what it did so far
+	// is its answer (ADR-0056).
+	maxed := parsed && answer.Subtype == "error_max_turns" && ctx.Err() == nil
+	if !maxed && (runErr != nil || (parsed && answer.IsError)) {
 		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
 			return call, fmt.Errorf("%w: claude did not answer within %s (the role's model.timeout)", ErrUnavailable, limit)
 		}
@@ -143,6 +156,8 @@ func without(environ, names []string) []string {
 type claudeResult struct {
 	Result     string  `json:"result"`
 	IsError    bool    `json:"is_error"`
+	Subtype    string  `json:"subtype"`   // error_max_turns: its --max-turns spent
+	NumTurns   int     `json:"num_turns"` // the turns it took
 	CostUSD    float64 `json:"total_cost_usd"`
 	ModelUsage map[string]struct {
 		InputTokens              int `json:"inputTokens"`
@@ -178,7 +193,7 @@ func claudeAnswer(stdout []byte, call *Call) (claudeResult, bool) {
 		call.TokensCached += u.CacheReadInputTokens
 		call.TokensOut += u.OutputTokens
 	}
-	call.CostUSD = r.CostUSD
+	call.CostUSD, call.Turns = r.CostUSD, r.NumTurns
 	return r, true
 }
 

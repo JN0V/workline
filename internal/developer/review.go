@@ -52,6 +52,8 @@ type Round struct {
 	Result string   `json:"result,omitempty"` // its proof's result; no-code when it wrote none
 	Whys   bool     `json:"whys,omitempty"`   // the five whys ran
 	Person bool     `json:"person,omitempty"` // past the last round: handed to a person
+	Turns  int      `json:"turns,omitempty"`  // what its agent used, as it reported them
+	Tokens int      `json:"tokens,omitempty"`
 }
 
 // Asked is a finding a round asks the agent to fix: a reviewer's row that
@@ -513,12 +515,11 @@ func reviewPost(runDir, repo string, s Settings) int {
 	} else {
 		p, over := prove(repo, "HEAD", patches, s)
 		this.Result = p.Result
-		a.Proof, a.Caps = &p, nil
+		u := used(runDir)
+		this.Turns, this.Tokens = u.Turns, u.Tokens
+		a.Proof, a.Caps = &p, agentCaps(u, s)
 		if over != nil {
 			a.Caps = append(a.Caps, *over)
-		}
-		if c := tokensCap(runDir, s.MaxTokens); c != nil {
-			a.Caps = append(a.Caps, *c)
 		}
 		code, tests := written(patches)
 		a.Code, a.Tests = union(a.Code, code), union(a.Tests, tests)

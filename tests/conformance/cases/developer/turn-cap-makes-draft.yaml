@@ -1,0 +1,41 @@
+case: developer/turn-cap-makes-draft
+about: >
+  A turn cap (ADR-0056, step 4): the agent is told its ai-max-turns
+  (WORKLINE_MAX_TURNS for a cmd: agent, --max-turns for claude) and
+  says it used them all. Its worktree's code is kept, bounded and
+  proven green, yet pushed as a Draft: the cap said in its
+  Verification, the turns it used and the cap kept in the claim's
+  record, for the auditor (ADR-0046).
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  env: {EDIT: turns}
+  config:
+    roles:
+      tester: {settings: {test-command: "sh run-tests.sh {report}"}}
+      developer: {settings: {ai-max-turns: 3}}
+  forge:
+    issues:
+      - {id: 2, title: "Multiply", labels: ["workline:ready"], body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: a `mul` function.\n"}
+run: {develop: [], ai: 'cmd:sh "$FIXTURES/agents/developer-edits-worktree.sh"'}
+expect:
+  status: pass
+  summary: "took #2; a Draft: green, a cap reached"
+  agent-calls: 1
+  findings:
+    - {rule: proof-green, level: info, where: "#2"}
+    - {rule: cap-reached, level: warn, where: ai-max-turns, message: "the run spent 3, ai-max-turns allows 3"}
+  pushed:
+    workline/developer/2:
+      lib.sh: "mul()"
+      tests/test_mul.sh: "mul 2 3"
+  forge:
+    issues:
+      - id: 2
+        comment-contains: ['"caps":[{"setting":"ai-max-turns","spent":3,"allows":3}]', '"turns":3']
+    merge-requests:
+      - id: 1
+        branch: workline/developer/2
+        draft: true
+        body-contains: ["Closes #2", "**a Draft**", "Cap reached: ai-max-turns, 3 spent of 3."]

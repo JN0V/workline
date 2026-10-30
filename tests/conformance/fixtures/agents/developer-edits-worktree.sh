@@ -7,8 +7,11 @@
 # environment holds (env); or it makes its own run green where the code
 # is not: mul in an ignored build file lib.sh reads (cache), or a wrong
 # mul and the start commit replaced by one whose test runner passes all,
-# the runner put back after its run (replace). It fails out of its
-# worktree, and where its own run is red.
+# the runner put back after its run (replace). Its caps (ADR-0056): it
+# says it used every turn WORKLINE_MAX_TURNS allows (turns), or 5000
+# tokens (tokens), or it works on past its time, a child of its own
+# set to write "late" in lib.sh (slow). It fails out of its worktree,
+# and where its own run is red.
 set -eu
 cat >/dev/null
 [ -n "${WORKLINE_WORKTREE:-}" ] || { echo "no WORKLINE_WORKTREE" >&2; exit 1; }
@@ -80,5 +83,15 @@ cache | replace) # its own run, in its worktree: green, or it stops
 	sh run-tests.sh "$WORKLINE_WORKTREE/.own-run/report.xml" >/dev/null || { echo "its own run is red" >&2; exit 1; }
 	rm -rf .own-run
 	[ -z "${runner:-}" ] || { cp "$runner" run-tests.sh && rm -f "$runner"; }
+	;;
+turns)
+	[ -n "${WORKLINE_MAX_TURNS:-}" ] || { echo "no WORKLINE_MAX_TURNS" >&2; exit 1; }
+	printf 'model: looping\nturns: %s\n' "$WORKLINE_MAX_TURNS" > "$WORKLINE_CALL"
+	;;
+tokens) printf 'model: costly\ntokens-in: 4000\ntokens-out: 1000\n' > "$WORKLINE_CALL" ;;
+slow)
+	[ -n "${WORKLINE_MAX_SECONDS:-}" ] || { echo "no WORKLINE_MAX_SECONDS" >&2; exit 1; }
+	(sleep 4 && echo '# late' >> lib.sh) &
+	sleep 30
 	;;
 esac

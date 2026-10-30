@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -111,24 +112,33 @@ func TestProveStoppedPastItsSeconds(t *testing.T) {
 	}
 }
 
-func TestTokensCap(t *testing.T) {
+func TestAgentCaps(t *testing.T) {
 	run := t.TempDir()
 	if err := os.MkdirAll(filepath.Join(run, "out"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	calls := `{"agent":"cmd","tokens-in":1500,"tokens-out":200,"seconds":1}` + "\n" + `{"agent":"cmd","task":"judge","tokens-in":300,"seconds":1}` + "\n"
+	calls := `{"agent":"cmd","tokens-in":1500,"tokens-out":200,"seconds":1.4,"turns":7}` + "\n" +
+		`{"agent":"cmd","task":"judge","tokens-in":300,"seconds":2.4,"turns":2,"time-cut":true}` + "\n"
 	if err := os.WriteFile(filepath.Join(run, "out", "calls.jsonl"), []byte(calls), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if c := tokensCap(run, 3000); c != nil {
-		t.Errorf("2000 of 3000: want no cap, got %+v", c)
+	u := used(run)
+	if u.Tokens != 2000 || u.Turns != 9 || u.Seconds != 4 || !u.timeCut {
+		t.Fatalf("used = %+v, want 2000 tokens, 9 turns, 4 s, cut", u)
 	}
-	if c := tokensCap(run, 0); c != nil {
+	if c := agentCaps(u, Settings{MaxTokens: 3000, MaxTurns: 10}); c != nil {
+		t.Errorf("under every cap, ai-max-seconds unset: want none, got %+v", c)
+	}
+	if c := agentCaps(u, Settings{}); c != nil {
 		t.Errorf("no cap set: want none, got %+v", c)
 	}
-	c := tokensCap(run, 2000)
-	if c == nil || c.Spent != 2000 || c.Allows != 2000 || c.Setting != "ai-max-tokens" {
-		t.Errorf("2000 of 2000: want the cap reached, as the engine counts it, got %+v", c)
+	c := agentCaps(u, Settings{MaxTokens: 2000, MaxTurns: 9, MaxSeconds: 3})
+	want := []Cap{{"ai-max-seconds", 4, 3}, {"ai-max-turns", 9, 9}, {"ai-max-tokens", 2000, 2000}}
+	if !slices.Equal(c, want) {
+		t.Errorf("each at or past its cap: want %+v, got %+v", want, c)
+	}
+	if c := agentCaps(Used{Turns: 0, Tokens: 5}, Settings{MaxTurns: 100}); c != nil {
+		t.Errorf("turns not reported: want no cap, got %+v", c)
 	}
 }
 

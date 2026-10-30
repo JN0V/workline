@@ -44,9 +44,12 @@ type Settings struct {
 	// ClaimLabel is the label that says the developer took an issue: the
 	// forge's assignee where it cannot assign workline's App (GitHub).
 	ClaimLabel string
-	// MaxTokens is the engine's ai-max-tokens: the run's calls spending it
-	// is a cap reached. ProofSeconds bound the test command's run.
+	// MaxTokens, MaxTurns and MaxSeconds are the engine's ai-max-tokens,
+	// ai-max-turns and ai-max-seconds: the run's agent reaching one is a
+	// cap reached (ADR-0056). ProofSeconds bound the test command's run.
 	MaxTokens    int
+	MaxTurns     int
+	MaxSeconds   int
 	ProofSeconds int
 	// Rounds are the review rounds it runs on its pull request; past
 	// them, a person, by the label Person (step 6).
@@ -67,6 +70,7 @@ func SettingsFrom(m map[string]any) Settings {
 		s.ClaimLabel = strings.TrimSpace(v)
 	}
 	s.MaxTokens, s.ProofSeconds = number(m["ai-max-tokens"]), number(m["proof-seconds"])
+	s.MaxTurns, s.MaxSeconds = number(m["ai-max-turns"]), number(m["ai-max-seconds"])
 	return s
 }
 
@@ -91,6 +95,10 @@ type Act struct {
 	// on the run it reached (step 3).
 	Proof *Proof `json:"proof,omitempty"`
 	Caps  []Cap  `json:"caps,omitempty"`
+	// Turns and Tokens: what its agent used, as it reported them
+	// (ADR-0056, step 4); 0, not reported.
+	Turns  int `json:"turns,omitempty"`
+	Tokens int `json:"tokens,omitempty"`
 	// From: the tester's Draft's commit its code starts from, the
 	// acceptance tests on it, those for the issue in Acceptance; Code and
 	// Tests: the files its code and its tests wrote, in commits apart
@@ -622,12 +630,13 @@ func Post(runDir, repo string) int {
 		}
 		p, over := prove(repo, on, patches, s)
 		a.Proof = &p
+		u := used(runDir)
+		a.Turns, a.Tokens = u.Turns, u.Tokens
+		a.Caps = append(agentCaps(u, s), a.Caps...)
 		if over != nil {
 			a.Caps = append(a.Caps, *over)
 		}
-		if c := tokensCap(runDir, s.MaxTokens); c != nil {
-			a.Caps = append(a.Caps, *c)
-		}
+		v.Findings = append(v.Findings, unreported(where, u, s)...)
 		v.Findings = append(v.Findings, proofFindings(where, p, a.Caps)...)
 		mr := mergeRequest(a, issueTitle(runDir, a.Issue))
 		if mr["draft"] == true {
