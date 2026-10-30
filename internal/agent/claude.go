@@ -22,7 +22,8 @@ import (
 // not loaded: the role's facets are its whole context. Where the role gave
 // it a worktree (WorktreeDir), it runs there instead, with the tools to
 // read, edit, search and run commands (claudeTools), none of them asking a
-// person: its edits are its code (ADR-0056). model and effort, when set,
+// person, nor the repository's settings nor CLAUDE.md loaded: its edits
+// are its code (ADR-0056). model and effort, when set,
 // replace what the role's tier and effort ask: to compare models on the
 // same cases, or to run a project on one model.
 type claude struct{ model, effort string }
@@ -52,10 +53,12 @@ func (c claude) Propose(req Request) (Call, error) {
 		// An agent that works (ADR-0056): its tools, each allowed so that
 		// none waits on a person (dontAsk denies any other), Claude Code's
 		// own prompt kept for them, the role's after it; each message on
-		// stdout, to count the tools it used.
+		// stdout, to count the tools it used. The person's settings only:
+		// the repository's (.claude/, CLAUDE.md) are what it works on, not
+		// what runs it: a hook there would run, a permission widen it.
 		args = []string{"-p", "--output-format", "stream-json", "--verbose", "--tools", claudeTools,
 			"--allowedTools", claudeTools, "--permission-mode", "dontAsk", "--strict-mcp-config",
-			"--no-session-persistence", "--append-system-prompt", system}
+			"--setting-sources", "user", "--no-session-persistence", "--append-system-prompt", system}
 	}
 	if call.Asked = claudeTier[call.Tier]; c.model != "" {
 		call.Asked = c.model
@@ -81,6 +84,12 @@ func (c claude) Propose(req Request) (Call, error) {
 		cmd.Dir = tree
 	}
 	cmd.Env = claudeEnv(os.Environ())
+	if tree != "" {
+		// The commands it runs never see its login (ANTHROPIC_API_KEY,
+		// CLAUDE_CODE_OAUTH_TOKEN…): Claude Code takes them out of its
+		// tools' environment, as it does by default in GitHub Actions.
+		cmd.Env = append(cmd.Env, "CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=1")
+	}
 	cmd.Stdin = strings.NewReader(user)
 	// In a group of its own, worktree or not: the commands its tools
 	// start are killed with it, at its time and once it answered.
