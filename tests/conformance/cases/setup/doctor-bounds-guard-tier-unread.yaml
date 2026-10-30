@@ -1,0 +1,19 @@
+case: setup/doctor-bounds-guard-tier-unread
+about: >
+  The namespace's plan unread (ADR-0058, step 2; a self-managed
+  instance's, or a token that may not read it) and no code owner's
+  approval found: the doctor warns, each tier's guard named, never a
+  pass.
+given:
+  repo: documented
+  config:
+    routing: {events: {issue: [developer]}}
+  forge:
+    merge-requests: []
+    plan-refused: 403
+    unprotected: true
+run: {doctor: true, forge: gitlab}
+expect:
+  status: pass
+  checks:
+    - {rule: bounds-guard-tier-unread, level: warn, message: "on Premium, require a code owner's approval"}

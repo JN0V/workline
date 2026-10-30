@@ -1,0 +1,21 @@
+case: setup/doctor-bounds-guard-premium-codeowners
+about: >
+  On GitLab Premium (ADR-0058, step 2), the CI files owned in CODEOWNERS,
+  the default branch's protection requiring a code owner's approval: a
+  change to workline:bounds waits for an owner. The doctor says it holds,
+  naming the files; a folder's rule owns its files.
+given:
+  repo: documented
+  setup:
+    - "mkdir -p .gitlab && printf 'include: [{local: ci/workline.gitlab-ci.yml}, {local: ci/workline-bounds.gitlab-ci.yml}]\\n' > .gitlab-ci.yml && printf '[CI]\\n/.gitlab-ci.yml @maintainers\\n/ci/ @maintainers\\n' > .gitlab/CODEOWNERS"
+  config:
+    routing: {events: {merge-request: [committer, developer]}}
+  forge:
+    merge-requests: []
+    plan: premium
+    code-owner-approval: true
+run: {doctor: true, forge: gitlab}
+expect:
+  status: pass
+  checks:
+    - {rule: bounds-guard-codeowners, where: ".gitlab-ci.yml, ci/workline.gitlab-ci.yml, ci/workline-bounds.gitlab-ci.yml", level: ok, message: "waits for a code owner's approval on main"}

@@ -1,0 +1,20 @@
+case: setup/doctor-bounds-guard-premium-unset
+about: >
+  On GitLab Premium (ADR-0058, step 2), a code owner's approval of the CI
+  files guards workline:bounds: the doctor reads the tier, the default
+  branch's protection and CODEOWNERS, and names what is missing, here
+  the approval not required and the included file no one owns.
+given:
+  repo: documented
+  setup:
+    - "printf 'include: [{local: ci/workline.gitlab-ci.yml}, {local: ci/workline-bounds.gitlab-ci.yml}]\\n' > .gitlab-ci.yml && printf '/.gitlab-ci.yml @maintainers\\n/ci/workline.gitlab-ci.yml @maintainers\\n' > CODEOWNERS"
+  config:
+    routing: {events: {issue: [developer]}}
+  forge:
+    merge-requests: []
+    plan: premium
+run: {doctor: true, forge: gitlab}
+expect:
+  status: pass
+  checks:
+    - {rule: bounds-guard-codeowners-missing, where: ci/workline-bounds.gitlab-ci.yml, level: warn, message: "main's protection does not require a code owner's approval; CODEOWNERS names no owner for ci/workline-bounds.gitlab-ci.yml", fix: "Code owner approval"}

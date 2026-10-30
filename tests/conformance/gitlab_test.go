@@ -89,6 +89,15 @@ type gitlabState struct {
 		Scope string `json:"environment_scope"`
 	} `json:"variables,omitempty"`
 	VariablesRefused int `json:"variables-refused,omitempty"`
+	// Plan is the namespace's plan, as GitLab.com says it (free,
+	// premium, ultimate), or PlanRefused the status its read gets; with
+	// either, the project answers its default branch, main, and its
+	// namespace. main is protected unless Unprotected, a code owner's
+	// approval required with CodeOwnerApproval (ADR-0058).
+	Plan              string `json:"plan,omitempty"`
+	PlanRefused       int    `json:"plan-refused,omitempty"`
+	Unprotected       bool   `json:"unprotected,omitempty"`
+	CodeOwnerApproval bool   `json:"code-owner-approval,omitempty"`
 	// TokenUser is the token's user, who writes what the engine writes:
 	// workline-bot when not given; project_<id>_bot_… for a project
 	// access token's, a bot by its name.
@@ -276,7 +285,18 @@ func (m *gitlabMock) serve(s *gitlabState, method, p string, q, form url.Values)
 		return v
 	}
 	notFound := map[string]any{"message": "404 Not Found"}
+	guarded := s.Plan != "" || s.PlanRefused != 0
 	switch {
+	case guarded && p == "" && method == "GET":
+		return map[string]any{"default_branch": "main", "namespace": map[string]any{"id": 42}}, 200
+	case guarded && p == "/api/v4/namespaces/42" && s.PlanRefused != 0:
+		return map[string]any{"message": fmt.Sprintf("%d %s", s.PlanRefused, http.StatusText(s.PlanRefused))}, s.PlanRefused
+	case guarded && p == "/api/v4/namespaces/42":
+		return map[string]any{"id": 42, "plan": s.Plan}, 200
+	case guarded && p == "/protected_branches/main" && s.Unprotected:
+		return notFound, 404
+	case guarded && p == "/protected_branches/main":
+		return map[string]any{"name": "main", "code_owner_approval_required": s.CodeOwnerApproval}, 200
 	case p == "/members/all" && s.MembersRefused != 0:
 		return map[string]any{"message": fmt.Sprintf("%d %s", s.MembersRefused, http.StatusText(s.MembersRefused))}, s.MembersRefused
 	case p == "/members/all":
