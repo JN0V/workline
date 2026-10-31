@@ -40,7 +40,7 @@ var known = map[string]Tool{
 			// this way is nearly always there.
 			{Needs: "go", Command: "go install github.com/zricethezav/gitleaks/v8@latest"},
 		}},
-	"lychee": {Name: "lychee", For: "the documentalist: links to other sites, when gardening", Local: true,
+	"lychee": {Name: "lychee", For: "the documentalist: links to other sites, when gardening",
 		Page: "https://lychee.cli.rs/installation/",
 		Ways: []Way{
 			{Needs: "brew", Command: "brew install lychee"},
