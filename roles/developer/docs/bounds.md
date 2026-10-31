@@ -43,7 +43,8 @@ first rule that matches refuses the whole patch:
 
 **What it may touch:**
 
-- the paths in backticks in the issue's Scope;
+- the paths in backticks in the issue's Scope, a line after one taken
+  off (`parts.go:943`), a bare name read as the one file that has it;
 - the product owner's `sources` for the issue;
 - the tests beside them: `test` or `spec` a word of the name
   (`mul_test.go`, `test_mul.py`, `MulTest.java`, not `latest.go`), in a

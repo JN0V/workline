@@ -24,6 +24,7 @@ import (
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/steer"
 	"github.com/JN0V/workline/internal/tester"
+	"github.com/JN0V/workline/internal/work"
 )
 
 const boundsFile = "bounds.json"
@@ -62,6 +63,14 @@ type Refusal struct {
 // readBounds reads, on the forge, what bounds the issue's patches.
 func readBounds(f forge.Forge, bl forge.Backlog, repo string, is forge.Issue) (Bounds, error) {
 	b := Bounds{Issue: is.ID, Scope: scopePaths(is.Body), Frozen: map[string]int{}, Blobs: map[string]string{}}
+	if out, err := gitOut(repo, "ls-files"); err == nil { // `parts.go`: the one file of that name
+		files := strings.Split(out, "\n")
+		for i, p := range b.Scope {
+			if f := work.InRepo(p, files); f != "" {
+				b.Scope[i] = f
+			}
+		}
+	}
 	comments, err := bl.Comments(forge.Target{Kind: "issue", ID: is.ID})
 	if err != nil {
 		return b, err

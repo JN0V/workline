@@ -135,6 +135,15 @@ func TestScopeNamingTheRootIsDropped(t *testing.T) {
 	}
 }
 
+// A Scope naming a file with its line bounds the file: `src/a.go:12`
+// lets the developer change src/a.go.
+func TestScopeLineIsTheFile(t *testing.T) {
+	got := scopePaths("## Scope\n\n- `run` (`src/a.go:12`), `src/b.go:3-9`.\n")
+	if !slices.Equal(got, []string{"src/a.go", "src/b.go"}) {
+		t.Errorf("scopePaths = %v, want [src/a.go src/b.go]", got)
+	}
+}
+
 // A gate's config is compared cleaned: ./x, a trailing slash or a folder
 // still refuse the files they name.
 func TestGateConfigPathsAreCleaned(t *testing.T) {

@@ -169,15 +169,13 @@ func ReadAct(body string) (Act, bool) {
 	return a, true
 }
 
-// pathWord is a word in backticks: a path, when it holds a slash or a dot.
-var pathWord = regexp.MustCompile("`([^`\\s]+)`")
-
-// scopePaths are the paths an issue's Scope names, in backticks.
+// scopePaths are the paths an issue's Scope names, in backticks: a word
+// holding a slash or a dot, its line taken off (work.ScopeWords).
 func scopePaths(body string) []string {
 	var out []string
-	for _, m := range pathWord.FindAllStringSubmatch(work.ByMeaning(body)[work.Scope].Text, -1) {
-		p, ok := scopeEntry(m[1])
-		if ok && strings.ContainsAny(m[1], "/.") && !slices.Contains(out, p) {
+	for _, w := range work.ScopeWords(work.ByMeaning(body)[work.Scope].Text) {
+		p, ok := scopeEntry(w)
+		if ok && strings.ContainsAny(w, "/.") && !slices.Contains(out, p) {
 			out = append(out, p)
 		}
 	}
