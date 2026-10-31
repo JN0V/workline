@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/JN0V/workline/internal/backlog"
@@ -43,7 +44,20 @@ var ProofKinds = map[string]string{
 type Proof struct {
 	Kind   string `json:"kind"`
 	Reason string `json:"reason"`
+	// Test and Runs: for flaky-n-of-n, the test the developer's proof
+	// runs and how many times, each run green; no Runs, the developer's
+	// flaky-runs setting.
+	Test string `json:"test,omitempty"`
+	Runs int    `json:"runs,omitempty"`
 }
+
+// TestName is a test's name as a proof-command takes it in `{test}`:
+// letters, digits and `_ . / : -`, nothing a shell reads.
+var TestName = regexp.MustCompile(`^[A-Za-z0-9_./:-]{1,200}$`)
+
+// namedLine is a line of a flaky-n-of-n note naming its test or its
+// runs: `test: <name>`, `runs: <N>`.
+var namedLine = regexp.MustCompile(`(?im)^\s*(test|runs):[ \t]*(\S+)[ \t]*$`)
 
 const proofMark = "tester-proof "
 
@@ -55,7 +69,19 @@ var proofNote = regexp.MustCompile(`(?is)^\s*proof:\s*([a-z-]+)\s*[—:-]*\s*(.*
 func proofOf(notes []string) (Proof, bool) {
 	for _, n := range notes {
 		if m := proofNote.FindStringSubmatch(n); m != nil {
-			return Proof{Kind: strings.ToLower(m[1]), Reason: strings.TrimSpace(m[2])}, true
+			p, reason := Proof{Kind: strings.ToLower(m[1])}, m[2]
+			if p.Kind == KindFlaky {
+				for _, l := range namedLine.FindAllStringSubmatch(reason, -1) {
+					if strings.EqualFold(l[1], "test") {
+						p.Test = l[2]
+					} else if n, err := strconv.Atoi(l[2]); err == nil && n > 0 {
+						p.Runs = n
+					}
+				}
+				reason = namedLine.ReplaceAllString(reason, "")
+			}
+			p.Reason = strings.TrimSpace(reason)
+			return p, true
 		}
 	}
 	return Proof{}, false
@@ -96,6 +122,14 @@ func proved(runDir, repo string, t task, intents []intent.Intention, p Proof) in
 		return write(runDir, verdict.Verdict{Status: verdict.Block, Summary: "an unknown proof kind",
 			Findings: []verdict.Finding{{Rule: "proof-kind-unknown", Where: where,
 				Message: fmt.Sprintf("`%s` is no proof kind: %s, %s or %s, or %s when no test is possible", p.Kind, KindFlaky, KindSuite, KindDocs, KindNone)}}})
+	}
+	if p.Kind == KindFlaky && !TestName.MatchString(p.Test) {
+		msg := "the note names no test (`test: <name>`): the developer's proof runs it N times"
+		if p.Test != "" {
+			msg = "the test `" + p.Test + "` is no name a test command takes: letters, digits and `_ . / : -`"
+		}
+		return write(runDir, verdict.Verdict{Status: verdict.Block, Summary: "a flaky-n-of-n proof with no test to run",
+			Findings: []verdict.Finding{{Rule: "proof-test-missing", Where: where, Message: msg}}})
 	}
 	line, err := routing.Load(repo)
 	if err != nil {

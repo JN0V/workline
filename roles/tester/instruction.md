@@ -24,8 +24,9 @@ style, beside the tests already there:
 When no new test fits the issue as a whole, write no test: answer one
 `note` naming the proof that fits instead, `proof: <kind> — why`:
 
-- `flaky-n-of-n`: a flaky test to make reliable; name it, and how many
-  runs out of how many it must pass.
+- `flaky-n-of-n`: a flaky test to make reliable. Under the first line,
+  `test: <its name>` as the test report names it (`TestRetry`,
+  `test_retry`), and `runs: <N>`, the runs it must pass, each one.
 - `existing-suite`: a refactor; the project's suite, unchanged and green.
 - `docs-checks`: a change to the docs alone; the documentalist's checks.
 - `none`: no test is possible; why. The product owner then decides.
