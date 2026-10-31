@@ -7,6 +7,9 @@
   and by [ADR-0040](0040-priority-and-effort-are-the-forges-the-product-owner-estimates-them.md)
   once built (the priority labels)
 - **Date:** 2026-10-03
+- **Amended by:** [ADR-0059](0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md): where the project routes the tester,
+  its ready sends an issue with named scenarios to
+  `workline:needs-tests`; the tester's result makes it ready
 - **Builds on:** ADR-0014 (`checked` earned by what was read), ADR-0015
   (the weekly sample), ADR-0016 (writes go to the project's forge),
   docs/spec/routing.md ("Work starts from a clear need")
