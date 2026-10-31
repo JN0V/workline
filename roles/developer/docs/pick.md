@@ -1,7 +1,7 @@
 ---
 sources:
   - internal/developer/developer.go
-checked: 37da4914
+checked: 0538cac5
 verified: agent:claude-code
 ---
 # The pick
