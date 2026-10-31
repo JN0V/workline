@@ -83,9 +83,10 @@ step 6).
     reviewer needs the App.
   - A comment on any pull request wakes it: a first job, `whose`, reads
     the branch in one call; on another's, nothing else runs.
-- **GitLab**: no pipeline starts on a comment. A tool given the note
-  webhook starts one with `WORKLINE_TASK=review`, `MR_IID` and
-  `MR_SOURCE_BRANCH` ([GitLab triggers](../../../docs/gitlab-trigger.md)).
+- **GitLab**: the project's note webhook, pointed at its own trigger
+  URL, starts a pipeline with `WORKLINE_TASK=review`; `MR_IID` and
+  `MR_SOURCE_BRANCH` from a tool until the engine reads the event
+  itself ([with GitLab alone](../../../docs/gitlab-trigger.md#a-label-or-a-comment-with-gitlab-alone)).
 - **Off by default**: it runs only on the developer's own pull
   requests, which exist only where a project routes the developer
   ([the triggers](triggers.md)).

@@ -41,7 +41,8 @@ flowchart LR
 
 - Each arrow is one hop: the engine sets the next label and starts the
   next role at once.
-- A reconciler, hourly, does what an event missed.
+- A reconciler, hourly, does what an event missed: a safety net, not
+  the driver.
 - The night only tidies: gardening, staleness, the curator.
 
 ### 1. Every refusal, claim, wait or block is on the issue
@@ -132,12 +133,16 @@ Built first, whatever else.
 - **The state machine lives in the engine**: one table, state → role →
   next state, in the routing's file, read by a pure function.
 - **Thin forge adapters**: on GitHub one workflow on `issues: labeled`
-  and `workflow_dispatch`; on GitLab one job set, started by the
-  pipelines API.
+  and `workflow_dispatch`; on GitLab one job set, started by a project
+  webhook on issue and note events pointed at the project's own
+  trigger URL, nothing outside GitLab, any tier
+  ([tried](../research/line-of-states.md#tried-after-the-review-gitlab-alone-starts-a-pipeline-on-a-label)).
+  The engine reads the event from `$TRIGGER_PAYLOAD`; `workline setup`
+  and `doctor` create the hook and its trigger token (both to build).
 - **A reconciler**, `workline route reconcile`: walks every open issue
   and runs what is overdue. Hourly in CI; a command on a person's
-  machine. Events only make the line faster: its correctness never
-  depends on them.
+  machine. A safety net, not the driver: events move the line, and its
+  correctness never depends on them.
 - **Idempotent**: a step re-reads the issue first, and records the
   state it acted on and the body's hash; the same record twice does
   nothing.
@@ -146,17 +151,20 @@ Built first, whatever else.
 
 ### Explicit chaining and the engine's own writes
 
-- **The rule stays**: what the engine writes never wakes the line by
-  itself ([routing.md](../spec/routing.md#the-line)). A label set by
-  the App is ignored by the state workflow; only a person's label is
-  read as an event.
-- **The next step is started explicitly**, by the apply job that moved
-  the state: `workflow_dispatch` on GitHub, a pipeline by the API on
-  GitLab, the next loop of `reconcile` on a machine. It does not depend
-  on which token set the label.
+- **On GitHub the rule stays**: what the engine writes never wakes the
+  line by itself ([routing.md](../spec/routing.md#the-line)). A label
+  set by the App is ignored by the state workflow; only a person's
+  label is read as an event. The apply job that moved the state starts
+  the next step: `workflow_dispatch`.
+- **On GitLab the webhook fires on the engine's own writes too**: the
+  state label it sets starts the next step's pipeline, no explicit
+  start. Any other event of the engine (a comment, a label that is no
+  state) exits at once, read from the payload's `user` and `changes`.
+- **On a machine**, the next loop of `reconcile`.
 - **Not a handoff**: `max-handoffs` caps handoffs inside one line run.
   A state hop is a new run. Hops are counted per issue in its record
-  and capped (`max-hops`); past the cap, Blocked with the count.
+  and capped (`max-hops`); past the cap, Blocked with the count. The
+  cap also stops a loop of GitLab's webhook on the engine's own labels.
 
 ### 9. Pull, and room in the next state
 
@@ -184,7 +192,8 @@ One pull request a step, its cases first in `tests/conformance/cases/`,
 1. **Written on the issue** (§1,
    [#755](https://github.com/JN0V/workline/issues/755)).
 2. **The line**: the state table, the reconciler, explicit chaining,
-   the hop cap, proof kinds (§2–§6, §8,
+   the hop cap, proof kinds, GitLab's hook and `$TRIGGER_PAYLOAD` read
+   by the engine (§2–§6, §8,
    [#756](https://github.com/JN0V/workline/issues/756)).
 3. **A first result**: the ready issues re-checked once by the product
    owner, then two small fresh issues through the line, timed
@@ -199,6 +208,7 @@ One pull request a step, its cases first in `tests/conformance/cases/`,
 Docs to update with each step: [routing.md](../spec/routing.md) (its
 states, the chaining), [boards.md](../boards.md),
 [the developer's triggers](../../roles/developer/docs/triggers.md),
+[GitLab's triggers](../gitlab-trigger.md),
 [the tester's hand-over](../../roles/tester/docs/hand-over.md) and
 [README](../../roles/tester/README.md) (`objection-person`),
 [refine](../spec/backlog-acts/refine.md); the "Amended by" lines of the
@@ -212,8 +222,11 @@ ADRs above.
   developer runs that only refused. The reconciler asks no agent.
 - **A person reads the board**: Blocked is a column with a reason; no
   label asks them to act.
-- **A GitLab project needs its webhook tool** for events; without it,
-  the reconciler alone moves the line, hourly.
+- **A GitLab project needs its webhook and trigger token**, GitLab's
+  own, any tier, a Maintainer to create them; without them, the
+  reconciler alone moves the line, hourly. Every issue change starts a
+  short pipeline that mostly exits at once. On a self-managed
+  instance, an administrator allows webhooks to the local network.
 
 ## Not chosen
 

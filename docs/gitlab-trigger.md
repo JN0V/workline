@@ -7,10 +7,43 @@ verified: agent:claude-code
 # GitLab: pipelines a tool starts
 
 The GitLab template ([ci-gitlab.md](ci-gitlab.md)) runs on merge request
-events and pipeline schedules. Where an internal tool starts the jobs
+events and pipeline schedules. Where a webhook or a tool starts the jobs
 instead — the trigger API, the pipelines API, another pipeline — this page
 does the same with a plain script: the template's commands under other
 rules. The commands themselves: [triggers.md](triggers.md).
+
+## A label or a comment, with GitLab alone
+
+GitLab has no CI rule on a label or a comment, but nothing outside
+GitLab is needed:
+
+- **A project webhook** (Settings → Webhooks) on issue events, and note
+  events for comments, its URL the project's own trigger URL:
+  `https://gitlab.com/api/v4/projects/<id>/ref/<default branch>/trigger/pipeline?token=<trigger token>`.
+- **Each event starts a pipeline** with `CI_PIPELINE_SOURCE=trigger`; the
+  event's JSON is in the file `$TRIGGER_PAYLOAD`: `object_kind`, the
+  issue's `iid`, `user.username`, `changes.labels.previous` and
+  `current`.
+- **Variables in the URL** reach the jobs:
+  `&variables[WORKLINE_TASK]=develop`. Event fields such as the issue's
+  number do not: today's jobs need a tool to pass them; the engine
+  reading `$TRIGGER_PAYLOAD` itself is to build
+  ([ADR-0059](adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md)).
+- **What it needs**: any tier, Free included; a Maintainer to create the
+  hook and the trigger token; `workline setup` or `doctor` creating both
+  is to build. On a self-managed instance, an administrator allows
+  webhooks to reach the local network (Admin → Network → Outbound
+  requests), as the hook calls GitLab itself (untried).
+- **Every issue change fires it**: a title edit, a new issue, a label
+  the engine itself sets. A job must exit at once on an event that is
+  not its own, and a chain of the engine's labels needs a hop cap.
+- **A config error answers 4xx**: GitLab disables a hook that keeps
+  failing; the reconciler of [ADR-0059](adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md)
+  picks up what it missed.
+
+Tried on gitlab.com Free, 2026-10-31: a label added, then removed, each
+started a pipeline in about 1 to 2 s; the job printed the label change
+([the try](research/line-of-states.md#tried-after-the-review-gitlab-alone-starts-a-pipeline-on-a-label)).
 
 Tried on a pipeline the API started (2026-10-06):
 
@@ -43,7 +76,8 @@ pipelines API), `pipeline` (another project's `trigger:` job),
 `parent_pipeline` (a child pipeline) — never `schedule` nor
 `merge_request_event`, so none of the template's jobs run but in its own
 child of a merge request's pipeline, what only warns, and the tester's
-answer to an objection, the developer's ready issue and its review round, below. The tool passes
+answer to an objection, the developer's ready issue and its review round, below. The tool, or
+the webhook's URL ([above](#a-label-or-a-comment-with-gitlab-alone)), passes
 what to do as variables. The names below are this page's; the engine reads
 none of them:
 

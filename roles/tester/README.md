@@ -138,9 +138,9 @@ workline test write --issue 42 --ai claude
     notices the comment, with no token;
     [workline-answer.yml](../../ci/github/workline-answer.yml) answers,
     from the default branch. Copy both.
-  - GitLab: a tool given the note webhook starts the template's
-    `workline:objection:*` jobs
-    ([how](../../docs/gitlab-trigger.md#how-the-pipeline-knows-what-to-do)).
+  - GitLab: the project's note webhook, on its own trigger URL,
+    starts the template's `workline:objection:*` jobs
+    ([how](../../docs/gitlab-trigger.md#a-label-or-a-comment-with-gitlab-alone)).
   - Woken by a person of the project or an App installed on it only.
 - **Both** judge with no write token (`--no-apply`); a job apart
   applies, holding it and no agent's key (`workline apply <run>`; an
