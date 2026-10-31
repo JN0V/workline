@@ -129,17 +129,19 @@ func Pre(runDir, repo string) int {
 		return fail(err)
 	}
 	if !slices.Contains(is.Labels, backlog.LabelReady) {
-		return final(runDir, verdict.Verdict{Status: verdict.Block, Summary: "the issue is not ready",
+		return refuseIssue(runDir, id, verdict.Verdict{Status: verdict.Block, Summary: "the issue is not ready",
 			Findings: []verdict.Finding{{Rule: "issue-not-ready", Where: where,
-				Message: "the tester takes a ready issue only, labelled " + backlog.LabelReady + ": its scenarios are a person's, accepted"}}})
+				Message: "the tester takes a ready issue only, labelled " + backlog.LabelReady + ": its scenarios are a person's, accepted"}}},
+			"the product owner, or a person, readies it; the tester writes its tests at a run after that")
 	}
 	sections := work.ByMeaning(is.Body)
 	scenarios := Scenarios(sections[work.Validation].Text)
 	if len(scenarios) == 0 {
-		return final(runDir, verdict.Verdict{Status: verdict.Block, Summary: "no scenario to test",
+		return refuseIssue(runDir, id, verdict.Verdict{Status: verdict.Block, Summary: "no scenario to test",
 			Findings: []verdict.Finding{{Rule: "no-named-scenario", Where: where,
 				Message: "its " + work.Name(work.Validation) + " holds no named scenario (`- **Name:** Given …, When …, Then …`): each test names the one it checks; " +
-					"the product owner names them, the tester invents none"}}})
+					"the product owner names them, the tester invents none"}}},
+			"the product owner, or a person, names its scenarios in its "+work.Name(work.Validation)+"; the tester writes a test for each at a run after that")
 	}
 	head, err := git(repo, "rev-parse", "HEAD")
 	if err != nil {
@@ -260,6 +262,9 @@ func Post(runDir, repo string) int {
 		return answerPost(runDir, repo, s)
 	case "curate":
 		return curatePost(runDir, repo, s)
+	}
+	if code, ok := saidPost(runDir); ok {
+		return code
 	}
 	var t task
 	if data, err := os.ReadFile(filepath.Join(runDir, "in", taskFile)); err != nil {
