@@ -1,0 +1,41 @@
+case: developer/proof-names-missing-tool
+about: >
+  A test red because a tool it calls is missing where the proof ran
+  (#760): the proof names the tool, in its finding and its
+  Verification, so a red from the environment reads as one, not as the
+  code's. The output of the test command says it, as the shell does.
+given:
+  repo: tested-draft
+  setup:
+    - "sed -i 's|>/dev/null 2>&1|1>\\&2|' run-tests.sh"
+    - "printf 'no-such-scanner --version\\n' > tests/test_scan.sh"
+    - "git add . && git commit -q -m 'test: scan the sources'"
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main workline/tester/issue-3 && git checkout -q main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:ready"]
+        body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        draft: true
+        comments: ["The tests of #3, frozen.\n\n<!-- workline:tester-record {\"issue\":3,\"base\":\"main\",\"files\":{\"tests/test_mul_by_zero.sh\":\"8f123a0bacbd681063880b867df38dd216784b97\",\"tests/test_mul_two_by_three.sh\":\"2dee0641bd7a79057ade7bff5af43b603125f543\"}} -->\n<!-- workline:sticky=tester/tests -->"]
+run: {develop: [], ai: "fake:developer-writes-mul"}
+expect:
+  status: pass
+  summary: "took #3; a Draft: red"
+  findings: [{rule: proof-red, level: warn, where: "#3", message: "1 test red on its code: tests.test_scan; not found where it ran: no-such-scanner"}]
+  no-findings: [{rule: proof-green}]
+  forge:
+    issues:
+      - id: 3
+        comment-contains: ['"missing":["no-such-scanner"]']
+    merge-requests:
+      - id: 2
+        branch: workline/developer/3
+        draft: true
+        body-contains: ["red: `tests.test_scan`", "Not found where it ran: `no-such-scanner`."]

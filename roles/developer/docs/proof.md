@@ -3,6 +3,7 @@ sources:
   - internal/developer/proof.go
   - internal/developer/developer.go
   - internal/tester/onchange.go
+  - internal/tester/missing.go
   - internal/tester/fresh.go
   - roles/developer/role.yaml
 checked: 8d58a704
@@ -146,13 +147,19 @@ How each agent is held ([ADR-0056](../../../docs/adr/0056-the-developers-agent-w
 - **Its body**: `Closes #<n>` — the pick skips the issue while it is
   open — and a `## Verification` saying what ran, each test red, each
   cap. Its other sections: [the pull request](pull-request.md).
+- **A tool not found**: when red, the test output's "not found" or
+  "not installed" names its `PATH` does not find either are listed, in
+  the red finding and the
+  Verification. A red from the environment, not the code: the
+  project's [setup steps](triggers.md#the-projects-environment) install
+  it.
 
 ## The record
 
 - **In the claim's comment** on the issue: `proof` (result, command,
   tests passed, those red, why it did not run, `tree: fresh` and the
   commit checked out, `at`, `scope` touched or whole, the `packages`
-  run, why `whole`), `caps` (setting, spent, allowed), and the
+  run, why `whole`, the names `missing`), `caps` (setting, spent, allowed), and the
   `turns` and `tokens` its agent reported using; a review round's, in
   its round.
 - **Read by the auditor**
