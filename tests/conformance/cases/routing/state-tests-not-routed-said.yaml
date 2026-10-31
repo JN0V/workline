@@ -1,0 +1,17 @@
+case: routing/state-tests-not-routed-said
+about: >
+  An issue waiting for its tests, where the project does not route the
+  tester on issue (ADR-0059): its state wakes no step of the issue line,
+  said; the developer is not run on it.
+given:
+  repo: tested
+  config:
+    routing: {events: {issue: [developer]}}
+  forge:
+    issues:
+      - {id: 4, title: "Divide", labels: ["workline:needs-tests"], body: "## Need\n\nI want to divide.\n"}
+run: {route: issue, target: {issue: 4}, open-merge-request: true, ai: "fake:developer-nothing"}
+expect:
+  status: pass
+  agent-calls: 0
+  findings: [{rule: state-wakes-none, level: info, where: "#4", message: "its state, tests, wakes the tester, which the project does not route on issue"}]
