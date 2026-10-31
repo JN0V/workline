@@ -1,0 +1,26 @@
+case: developer/proof-flaky-runs-from-the-setting
+about: >
+  A flaky-n-of-n record naming no runs takes the developer's
+  `flaky-runs` setting (ADR-0059, decision 4): here 2, so the named
+  test passes 2 runs of 2.
+given:
+  repo: tested
+  setup:
+    - "printf '[ $(($$ %% 2)) = 0 ]\\n' > tests/test_flaky.sh && git add tests/test_flaky.sh && git commit -qm 'test: a flaky test' && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles:
+      tester: {settings: {test-command: "sh run-tests.sh {report}"}}
+      developer: {settings: {flaky-runs: 2}}
+    routing: {events: {issue: [tester, developer]}}
+  forge:
+    issues:
+      - id: 2
+        title: "The flaky test fails one run in two"
+        labels: ["workline:ready"]
+        body: "## Need\n\nA maintainer needs the flaky test reliable.\n\n## Validation\n\n- **Reliable:** Given the suite, When the flaky test runs, Then it passes each time.\n\n## Scope\n\n- `tests/test_flaky.sh`\n"
+        comments: ["**The tester** records the proof of this issue: flaky-n-of-n, no new test.\n\n<!-- workline:tester-proof {\"kind\":\"flaky-n-of-n\",\"reason\":\"its flakiness cannot be shown red on demand\",\"test\":\"tests.test_flaky\"} -->\n<!-- workline:sticky=tester/issue -->"]
+run: {develop: [], ai: "fake:developer-fixes-flaky"}
+expect:
+  status: pass
+  summary: "took #2; proven green, its pull request ready"
+  findings: [{rule: proof-green, level: info, where: "#2", message: "`tests.test_flaky` passed 2 runs of 2"}]

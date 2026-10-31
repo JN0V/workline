@@ -63,10 +63,10 @@ func lib(says string) []intent.Intention {
 
 func TestProve(t *testing.T) {
 	repo := provingRepo(t, `"sh run-tests.sh {report}"`)
-	if p, c := prove(repo, "", lib("ok"), nil, Settings{ProofSeconds: 60}); p.Result != Green || p.Passed != 1 || c != nil {
+	if p, c := prove(repo, "", lib("ok"), nil, nil, Settings{ProofSeconds: 60}); p.Result != Green || p.Passed != 1 || c != nil {
 		t.Errorf("green: proof = %+v, cap = %+v; want green, 1 passed, no cap", p, c)
 	}
-	p, c := prove(repo, "", lib("no"), nil, Settings{ProofSeconds: 60})
+	p, c := prove(repo, "", lib("no"), nil, nil, Settings{ProofSeconds: 60})
 	if p.Result != Red || len(p.Red) != 1 || p.Red[0] != "lib.ok" || c != nil {
 		t.Errorf("red: proof = %+v, cap = %+v; want red, lib.ok red, no cap", p, c)
 	}
@@ -81,7 +81,7 @@ func TestProve(t *testing.T) {
 // No report written: the tests did not run whole, never green.
 func TestProveNotRunWhole(t *testing.T) {
 	repo := provingRepo(t, `"true"`)
-	p, c := prove(repo, "", lib("ok"), nil, Settings{ProofSeconds: 60})
+	p, c := prove(repo, "", lib("ok"), nil, nil, Settings{ProofSeconds: 60})
 	if p.Result != Unproven || p.Why == "" || c != nil {
 		t.Errorf("proof = %+v, cap = %+v; want unproven, why said, no cap", p, c)
 	}
@@ -93,7 +93,7 @@ func TestProveNotRunWhole(t *testing.T) {
 // A report naming no test proves nothing: unproven, never red.
 func TestProveEmptyReportIsUnproven(t *testing.T) {
 	repo := provingRepo(t, `"printf '<testsuite name=\"lib\"></testsuite>' > {report}"`)
-	p, c := prove(repo, "", lib("ok"), nil, Settings{ProofSeconds: 60})
+	p, c := prove(repo, "", lib("ok"), nil, nil, Settings{ProofSeconds: 60})
 	if p.Result != Unproven || p.Why != "the report names no test" || c != nil {
 		t.Errorf("proof = %+v, cap = %+v; want unproven, the report naming no test", p, c)
 	}
@@ -102,7 +102,7 @@ func TestProveEmptyReportIsUnproven(t *testing.T) {
 // Past proof-seconds, the command is stopped: unproven, and the cap said.
 func TestProveStoppedPastItsSeconds(t *testing.T) {
 	repo := provingRepo(t, `"exec sleep 30"`)
-	p, c := prove(repo, "", lib("ok"), nil, Settings{ProofSeconds: 1})
+	p, c := prove(repo, "", lib("ok"), nil, nil, Settings{ProofSeconds: 1})
 	if p.Result != Unproven || c == nil || c.Setting != "proof-seconds" || c.Allows != 1 {
 		t.Fatalf("proof = %+v, cap = %+v; want unproven, the proof-seconds cap", p, c)
 	}

@@ -25,7 +25,8 @@ flowchart LR
 - **Where**: before anything is pushed, its code laid on a fresh
   checkout of the commit the run read ([below](#a-fresh-tree)); no
   agent.
-- **What runs**: the tester's `test-command`, once, its JUnit report
+- **What runs**: the tester's `test-command`, once (N times for a
+  [flaky test](#a-flaky-test-n-runs-of-n)), its JUnit report
   read ([the tester's settings](../../tester/role.yaml)). One setting
   for both roles: the project's tests.
 - **The acceptance tests**: they run with the rest, its code laid on
@@ -52,6 +53,25 @@ flowchart LR
   `proof-command`, one with no `{packages}`, or no touched folder
   holding tests.
 - **E.g., Go**: `gotestsum --junitfile {report} -- {packages}`.
+
+## A flaky test: N runs of N
+
+For an issue whose tester recorded `flaky-n-of-n` in place of a Draft
+([proof kinds](../../tester/docs/hand-over.md#a-proof-kind-not-always-a-new-test)):
+
+- **N runs**: the command above runs N times on the one fresh tree;
+  N is the tester's record's, else `flaky-runs` (10).
+- **Green only N of N**: each run green, the named test passing in
+  each. It stops at the first run that is not; red or not run, the run
+  said (`run 2 of 10`).
+- **The named test**: matched in the report by its name whole, or its
+  last part (`TestRetry` for `pkg.TestRetry`). Not reported: not
+  proven, never green.
+- **`{test}`** in `proof-command` is the test's name, to run it alone:
+  `gotestsum --junitfile {report} -- -run '^{test}$' {packages}`.
+  Another issue gets `""`.
+- **`proof-seconds`** bounds the N runs together.
+- **A review round** runs the same N runs again.
 
 ## A fresh tree
 

@@ -1,0 +1,7 @@
+# The developer's agent "fixing" #2's flaky test: it passes its first
+# run only, red from the second, the runs counted in the tree.
+- patch:
+    file: tests/test_flaky.sh
+    content: |
+      echo x >> .flaky-runs
+      [ "$(wc -l < .flaky-runs)" -lt 2 ]

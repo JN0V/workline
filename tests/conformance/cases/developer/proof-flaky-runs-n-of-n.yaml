@@ -1,0 +1,37 @@
+case: developer/proof-flaky-runs-n-of-n
+about: >
+  A flaky-n-of-n proof runs the named test N times (ADR-0059, decision
+  4): the tester recorded `test_flaky`, 3 runs. The proof runs the
+  developer's proof-command 3 times on one fresh tree, `{test}` the
+  test's name; green only when each run is green and the named test
+  passed in each. The record and the Verification say 3 runs of 3.
+given:
+  repo: tested
+  setup:
+    - "printf '[ $(($$ %% 2)) = 0 ]\\n' > tests/test_flaky.sh && git add tests/test_flaky.sh && git commit -qm 'test: a flaky test' && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles:
+      tester: {settings: {test-command: "sh run-tests.sh {report}", test-paths: ["tests/test_*.sh"]}}
+      developer: {settings: {proof-command: 'test "{test}" = test_flaky && test "{packages}" = ./tests && sh run-tests.sh {report}'}}
+    routing: {events: {issue: [tester, developer]}}
+  forge:
+    issues:
+      - id: 2
+        title: "The flaky test fails one run in two"
+        labels: ["workline:ready"]
+        body: "## Need\n\nA maintainer needs the flaky test reliable.\n\n## Validation\n\n- **Reliable:** Given the suite, When the flaky test runs 3 times, Then it passes 3 times.\n\n## Scope\n\n- `tests/test_flaky.sh`\n"
+        comments: ["**The tester** records the proof of this issue: flaky-n-of-n, no new test.\n\n<!-- workline:tester-proof {\"kind\":\"flaky-n-of-n\",\"reason\":\"its flakiness cannot be shown red on demand\",\"test\":\"test_flaky\",\"runs\":3} -->\n<!-- workline:sticky=tester/issue -->"]
+run: {develop: [], ai: "fake:developer-fixes-flaky"}
+expect:
+  status: pass
+  summary: "took #2; proven green, its pull request ready"
+  findings: [{rule: proof-green, level: info, where: "#2", message: "`test_flaky` passed 3 runs of 3"}]
+  forge:
+    issues:
+      - id: 2
+        comment-contains: ['"test":"test_flaky","runs":3,"ran":3']
+    merge-requests:
+      - id: 1
+        branch: workline/developer/2
+        draft: false
+        body-contains: ["`test_flaky` passed 3 runs of 3"]
