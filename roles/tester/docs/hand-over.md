@@ -93,6 +93,13 @@ refusal is written on the issue too
 
 - **One comment of the tester's**, edited on each refusal: why, and
   what comes next (ready it, or name its scenarios).
+- **Its own tests refused too**: a test green on the base, a scenario
+  with no test, no test written: said in the same comment, the run
+  still blocks.
+- **An answer that does not read** (a list item indented one space
+  too far): asked again once, with the reader's error; still
+  unreadable, refused and said, no third call
+  ([#761](https://github.com/JN0V/workline/issues/761)).
 - **Not a job's log alone**: a person on the issue sees why no Draft
   came.
 

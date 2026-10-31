@@ -283,7 +283,7 @@ func Post(runDir, repo string) int {
 		return fail(err)
 	}
 	if v := enginesOnly(intents); v != nil {
-		return write(runDir, *v)
+		return refusePost(runDir, t.Issue, *v)
 	}
 	var patches []intent.Intention
 	var notes []string
@@ -306,8 +306,12 @@ func Post(runDir, repo string) int {
 				Findings: []verdict.Finding{{Rule: "no-agent", Level: "warn", Where: where,
 					Message: "writing a scenario's test is judgement: with no agent, nothing is written; a person writes them, or the tester runs with one (`--ai`)"}}})
 		}
-		return write(runDir, verdict.Verdict{Status: verdict.Block, Summary: "no test written",
-			Findings: []verdict.Finding{{Rule: "no-test-written", Where: where, Message: "no test file the tester may write was proposed for the issue's scenarios"}}})
+		msg := "no test file the tester may write was proposed for the issue's scenarios"
+		if why := os.Getenv("WORKLINE_AGENT_UNREAD"); why != "" {
+			msg = "the agent's answer could not be read, asked again once with the error: " + why
+		}
+		return refusePost(runDir, t.Issue, verdict.Verdict{Status: verdict.Block, Summary: "no test written",
+			Findings: []verdict.Finding{{Rule: "no-test-written", Where: where, Message: msg}}})
 	}
 	// What the tests read: each patch's file and its lines, for the
 	// scenarios they name.
@@ -357,7 +361,7 @@ func Post(runDir, repo string) int {
 		}
 	}
 	if len(findings) > 0 {
-		return write(runDir, verdict.Verdict{Status: verdict.Block, Summary: "the tests do not hold to the issue's scenarios", Findings: findings})
+		return refusePost(runDir, t.Issue, verdict.Verdict{Status: verdict.Block, Summary: "the tests do not hold to the issue's scenarios", Findings: findings})
 	}
 	proof, newTests, blobs, err := proveOnBase(repo, t.Base, patches, s)
 	if err != nil {
@@ -370,7 +374,7 @@ func Post(runDir, repo string) int {
 	}
 	if proof.Status != verdict.Pass {
 		proof.Findings = slices.DeleteFunc(proof.Findings, func(f verdict.Finding) bool { return f.Rule == "no-new-test" && f.Level == "warn" })
-		return write(runDir, *proof)
+		return refusePost(runDir, t.Issue, *proof)
 	}
 	mr := map[string]any{
 		"key": fmt.Sprintf("issue-%d", t.Issue), "draft": true,

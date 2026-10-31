@@ -644,7 +644,7 @@ func run(o Options, res *Result) error {
 		r = &asked
 	}
 	tier, failures := r.Model.Tier, 0
-	var intents []intent.Intention
+	var intents, said []intent.Intention
 	var v *verdict.Verdict
 	unreadAsked := false
 	unasked := false // a task the agent was not asked, nor answered: what pre gave it read by no one
@@ -654,7 +654,7 @@ func run(o Options, res *Result) error {
 			return err
 		}
 		unasked = taskErr == nil && (!a.askedAgent || a.external || a.unread != "")
-		intents, v = a.intents, a.verdict
+		intents, v, said = a.intents, a.verdict, a.said
 		if a.external && v.Status != verdict.Pass {
 			res.Status, res.Summary = verdict.BlockedExternal, v.Summary
 			res.Findings = append(res.Findings, v.Findings...)
@@ -665,7 +665,10 @@ func run(o Options, res *Result) error {
 		// applied, and a quote left unescaped is a slip, not a refusal. The
 		// documentalist's post passes with no proposal, and such a doc was
 		// judged again, whole, the next night (DomoticsCore, ADR-0014 step 4).
-		if a.askedAgent && a.unread != "" && v.Status != verdict.Block && !unreadAsked && r.Model.PromoteAfter > 0 {
+		// A role that never asks a refused answer again (`promote-after`
+		// 0) still asks an unread one again, whatever post said: its block
+		// comes of nothing read, as the tester's no test written (#761).
+		if a.askedAgent && a.unread != "" && !unreadAsked && !v.Final && (v.Status != verdict.Block || r.Model.PromoteAfter <= 0) {
 			unreadAsked = true
 			if err := os.WriteFile(filepath.Join(runDir, "out", "feedback.md"), []byte(unreadFeedback(a.unread)), 0o644); err != nil {
 				return err
@@ -734,20 +737,20 @@ func run(o Options, res *Result) error {
 	// ready`, ADR-0051): asked once, its refused proposal is said the same
 	// way, never holding the merge, and no stronger model is asked.
 	if v.Status == verdict.Block && failures > 0 && !v.Final && (line != nil && !line.StopsAtFirst(o.Event) || warnsOnMergeRequest(r, o)) {
-		said := make([]verdict.Finding, len(v.Findings))
+		warned := make([]verdict.Finding, len(v.Findings))
 		for i, f := range v.Findings {
 			if f.Level == "" {
 				f.Level = "warn"
 			}
-			said[i] = f
+			warned[i] = f
 		}
 		next := "asked again at the next run"
 		if warnsOnMergeRequest(r, o) {
 			next = "the weekly docs pull request judges it again"
 		}
-		v = &verdict.Verdict{Status: verdict.Pass, Findings: said,
+		v = &verdict.Verdict{Status: verdict.Pass, Findings: warned,
 			Summary: "the agent's proposal was refused, nothing of it applied; " + next + " (" + v.Summary + ")"}
-		intents = nil
+		intents = said // what post said of its refusal, on its target still
 	}
 	res.Status, res.Summary = v.Status, v.Summary
 	res.Findings = append(res.Findings, v.Findings...)
@@ -757,16 +760,18 @@ func run(o Options, res *Result) error {
 	// Blocked, a run applies only what its role names to tell why
 	// (`on-block`): the reviewer's comment, its record in it (#226). The
 	// run still blocks. A proposal pre made itself marked `on-block: true`
-	// tells why too: a refusal written on its issue (ADR-0059, decision 1).
+	// tells why too: a refusal written on its issue (ADR-0059, decision 1);
+	// so does what post left in out/on-block.yaml, blocking.
 	fallback, _ := intent.Read(filepath.Join(runDir, "in", "fallback.yaml"))
 	tells := func(i intent.Intention) bool {
 		m, _ := i.Value.(map[string]any)
 		b, _ := m["on-block"].(bool)
 		return b && isFallbackOf(i, fallback)
 	}
-	onBlock := res.Status == verdict.Block && (len(r.OnBlock) > 0 || slices.ContainsFunc(intents, tells))
+	onBlock := res.Status == verdict.Block && (len(r.OnBlock) > 0 || len(said) > 0 || slices.ContainsFunc(intents, tells))
 	if onBlock {
 		intents = slices.DeleteFunc(intents, func(i intent.Intention) bool { return !slices.Contains(r.OnBlock, i.Kind) && !tells(i) })
+		intents = append(intents, said...)
 		keeps = false
 	}
 	if res.Status != verdict.Pass && !onBlock || (len(intents) == 0 && !keeps) {
@@ -1974,6 +1979,7 @@ type attemptResult struct {
 	askedAgent bool
 	external   bool
 	unread     string // why the agent's answer could not be read, if it could not
+	said       []intent.Intention // what post said of its block (out/on-block.yaml)
 	overBudget bool   // the task was not put before the agent: over the context budget
 }
 
@@ -2046,7 +2052,17 @@ func attempt(r *role.Role, o Options, ag agent.Agent, hasTask bool, tier, runDir
 	}
 	a.intents = intents
 
-	code, err := script(r, "post", o.Repo, env)
+	// post is told why the answer did not read, to say it; what it leaves
+	// in out/on-block.yaml is its own, never an agent's: removed first.
+	postEnv := env
+	if a.unread != "" {
+		postEnv = append(env[:len(env):len(env)], "WORKLINE_AGENT_UNREAD="+a.unread)
+	}
+	onBlockFile := filepath.Join(runDir, "out", "on-block.yaml")
+	if err := os.Remove(onBlockFile); err != nil && !os.IsNotExist(err) {
+		return nil, err
+	}
+	code, err := script(r, "post", o.Repo, postEnv)
 	if err != nil {
 		return nil, err
 	}
@@ -2076,6 +2092,22 @@ func attempt(r *role.Role, o Options, ag agent.Agent, hasTask bool, tier, runDir
 		if err := askJudge(o, res, runDir, v, a); err != nil {
 			return nil, err
 		}
+	}
+	// Blocked, post may tell why where its target is read, as pre's
+	// on-block proposals do (ADR-0059, decision 1): held to the role's
+	// catalogue and bounds, applied though the run blocks.
+	if v.Status == verdict.Block {
+		said, err := intent.Read(onBlockFile)
+		if err != nil {
+			return nil, fmt.Errorf("post's out/on-block.yaml: %w", err)
+		}
+		if refused, why := invalid(r, said, line); len(refused) > 0 {
+			return nil, fmt.Errorf("post's out/on-block.yaml: %s", why)
+		}
+		if bad := outOfBounds(o.Repo, said, r.Writes(settings), o.Scope); len(bad) > 0 {
+			return nil, fmt.Errorf("post's out/on-block.yaml reaches outside the role's duties: %s", strings.Join(bad, ", "))
+		}
+		a.said = said
 	}
 	v.Findings = append(a.findings, v.Findings...)
 	// On an event that fails closed — a gate: commit-msg, pre-push, a merge

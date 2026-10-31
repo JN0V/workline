@@ -80,6 +80,10 @@ Cases in `tests/conformance/cases/tester/`:
   test a scenario, named after it; a ready issue only, with named
   scenarios; new test files only; a scenario said untestable in a note;
   proven red before the Draft opens; no agent, nothing written.
+- **An answer that does not read**, asked again once with the reader's
+  error; each refusal written on the issue, at night too
+  ([#761](https://github.com/JN0V/workline/issues/761)); a real agent's
+  slip asked again, on [#776](https://github.com/JN0V/workline/pull/776).
 - **Frozen to the builder**, no agent: the record of each test file's
   blob in workline's own comment on the Draft; a test changed or
   deleted by another blocks (`tester-test-changed`), a forged trailer

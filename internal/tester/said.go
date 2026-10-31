@@ -40,6 +40,25 @@ func refuseIssue(runDir string, n int, v verdict.Verdict, next string) int {
 	return 0
 }
 
+// refusePost ends post with v; blocked, the refusal is written on issue n,
+// in the tester's one comment there, applied though the run blocks: post's
+// out/on-block.yaml (ADR-0059, decision 1).
+func refusePost(runDir string, n int, v verdict.Verdict) int {
+	if v.Status == verdict.Block {
+		why := v.Summary
+		if len(v.Findings) > 0 {
+			why = v.Findings[0].Message
+		}
+		said := []intent.Intention{{Kind: "comment", Value: map[string]any{"issue": n, "sticky": "issue",
+			"body": backlog.Said("The tester", "wrote no tests for this issue this run", why,
+				"the tester tries again at its next run on this issue, or a person writes them")}}}
+		if err := intent.Write(filepath.Join(runDir, "out", "on-block.yaml"), said); err != nil {
+			return fail(err)
+		}
+	}
+	return write(runDir, v)
+}
+
 // saidPost writes the verdict pre left; its exit says it.
 func saidPost(runDir string) (int, bool) {
 	data, err := os.ReadFile(filepath.Join(runDir, "in", saidFile))

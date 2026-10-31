@@ -272,11 +272,15 @@ token), **apply** (trusted, no AI key).
    With no agent, or none that answered, the fallback proposals are used alone.
    An answer that cannot be read as proposals (`agent-invalid-output`, with
    what the YAML reader said) is asked for again once, on the same tier, with
-   that error, when the role asks again at all (`promote-after`) and `post`
-   did not block: nothing of it was judged, and a quote left unescaped is a
-   slip, not a refusal. The documentalist's `post` passed with no proposal,
-   and such a doc was judged again, whole, the next night (DomoticsCore,
-   ADR-0014 step 4). The answer not read is kept as `out/unread-answer.txt`.
+   that error, when `post` did not block, or blocked for a role that never
+   asks a refused answer again (`promote-after: 0`); a final block, never:
+   nothing of it was judged, and a quote left unescaped is a slip, not a
+   refusal. The documentalist's `post` passed with no proposal, and such a
+   doc was judged again, whole, the next night (DomoticsCore, ADR-0014
+   step 4); the tester's blocked, no test written, and no second call was
+   made ([#761](https://github.com/JN0V/workline/issues/761)). The answer
+   not read is kept as `out/unread-answer.txt`; `post` is told why it did
+   not read, `WORKLINE_AGENT_UNREAD`.
    An item holding several keys where one kind goes, or none, is refused
    so too, the keys named: several kinds, an item each; a key no kind is
    named by, the role's kind whose shape holds it, under which it goes (a
@@ -370,7 +374,10 @@ token), **apply** (trusted, no AI key).
    `on-block: true` is applied on a block too, whatever `on-block` names:
    a refusal written on its issue
    ([ADR-0059](../adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#1-every-refusal-claim-wait-or-block-is-on-the-issue)).
-   The agent's never is, marked or not.
+   The agent's never is, marked or not. So is what a blocking `post`
+   writes in `out/on-block.yaml`, removed before `post` runs, held to
+   the role's catalogue and bounds: the tester's refusal of a test it
+   wrote, on its issue.
    Applied by a job of the base once the merge request's branch moved on
    from the head judged (`--from-merge-request`), a run applies only the
    kinds its role names in `on-moved-on`, said (`moved-on`); none, nothing

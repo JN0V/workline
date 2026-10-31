@@ -1,0 +1,28 @@
+case: tester/schedule-refusal-said-on-the-issue
+about: >
+  At night, a test the tester writes that passes on the base is refused:
+  the run is upkeep left for later, a warning, not a failed line
+  (ADR-0037), and the refusal is still written on the issue (ADR-0059,
+  decision 1). No Draft opens; the issue keeps its state.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+    routing: {events: {schedule: [tester]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:needs-tests"]
+        body: "## Need\n\nI want to multiply.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **By zero:** Given the library, When I multiply 5 by 0, Then I get 0.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+run: {route: schedule, open-merge-request: true, ai: "fake:tester-green-on-base"}
+expect:
+  status: pass
+  agent-calls: 1
+  findings: [{rule: test-green-on-base, level: warn}]
+  not-pushed: [workline/tester/issue-3]
+  forge:
+    issues:
+      - {id: 3, labels: ["workline:needs-tests"], comments: 1, comment-contains: ["**The tester** wrote no tests for this issue this run", "passes on the base"]}
