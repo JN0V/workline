@@ -212,16 +212,7 @@ func (rd *reader) testerMaterial(a *Act, m *material) string {
 			}
 			m.items = append(m.items, item{name: file, text: content, full: content, code: true})
 		}
-		var paths []string
-		listed, _ := git(repo, "ls-tree", "-r", "--name-only", t.record.Base)
-		for _, w := range work.ScopeWords(work.ByMeaning(is.Body)[work.Scope].Text) {
-			if f := work.InRepo(w, strings.Fields(listed)); f != "" {
-				w = f // `parts.go:943`: the file at the base
-			}
-			if !slices.Contains(paths, w) {
-				paths = append(paths, w)
-			}
-		}
+		paths := scopeAt(repo, t.record.Base, work.ByMeaning(is.Body)[work.Scope].Text)
 		code := codeAt(repo, t.record.Base, paths, codeLines)
 		for i := range code {
 			code[i].name += " (base)"
@@ -269,6 +260,23 @@ func (rd *reader) testerMaterial(a *Act, m *material) string {
 	return ""
 }
 
+// scopeAt are the paths a Scope names, each a file at commit when one is
+// named: `parts.go:943` the one file of that name there (work.InRepo); a
+// folder, or another repository's path, left as written.
+func scopeAt(repo, commit, scope string) []string {
+	listed, _ := git(repo, "ls-tree", "-r", "-z", "--name-only", commit)
+	files := strings.Split(strings.TrimSuffix(listed, "\x00"), "\x00")
+	var paths []string
+	for _, w := range work.ScopeWords(scope) {
+		if f := work.InRepo(w, files); f != "" {
+			w = f
+		}
+		if !slices.Contains(paths, w) {
+			paths = append(paths, w)
+		}
+	}
+	return paths
+}
 
 // scenariosItem names each scenario with its Given / When / Then.
 func scenariosItem(scen []tester.Scenario) item {
