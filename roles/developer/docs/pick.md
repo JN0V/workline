@@ -1,6 +1,7 @@
 ---
 sources:
   - internal/developer/developer.go
+  - internal/tester/proof.go
 checked: 0538cac5
 verified: agent:claude-code
 ---
@@ -16,8 +17,8 @@ The first open issue, in the
 [backlog's order](../../../docs/spec/backlog-acts/next.md#the-order-and-what-waits),
 that is:
 
-- **Ready**: labelled `workline:ready`, waiting on no open issue, with
-  no parts.
+- **Ready**: labelled `workline:ready`, not `workline:blocked`, waiting
+  on no open issue, with no parts.
 - **Assigned to nobody**: a person's assignment is their claim; the
   developer never unassigns anyone.
 - **Not taken**: no claim label on it.
@@ -27,7 +28,10 @@ that is:
   (in backticks, with a `/` or a `.`) under or over one theirs names.
 - **Its tests written first**, where the project routes the tester: an
   issue whose Validation names scenarios waits until the tester's Draft
-  of its tests is open ([the triggers](triggers.md#on-a-schedule)).
+  of its tests is open ([the triggers](triggers.md#on-a-schedule)), or
+  the tester recorded another kind of proof in its place
+  ([proof kinds](../../tester/docs/hand-over.md#a-proof-kind-not-always-a-new-test)):
+  taken then, the kind and its reason in its agent's task.
 
 `--issue <n>` looks at that one alone. Each ready issue passed over is
 said in the run's verdict, with why.

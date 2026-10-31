@@ -49,6 +49,9 @@ type Bounds struct {
 	// Head its branch's commit, where an objection goes on a line.
 	Draft int    `json:"draft,omitempty"`
 	Head  string `json:"head,omitempty"`
+	// Proof: the kind of proof the tester recorded in place of a Draft
+	// (ADR-0059, decision 4), when it did.
+	Proof *tester.Proof `json:"proof,omitempty"`
 }
 
 // Refusal is a file a patch reached and post refused, and why: kept in the
