@@ -304,6 +304,77 @@ type forgeWant struct {
 	// revision of the repository), holding each annotation listed;
 	// absent: none of that name there.
 	CheckRuns []checkRunWant `yaml:"check-runs"`
+	// Hooks: GitLab's project webhooks, each by its id: its URL holding
+	// url-contains, its issue events, the trigger token (by its id) its
+	// masked variable holds; absent: no hook of that id. Triggers: the
+	// trigger tokens, by id, their description; absent: none of that id.
+	Hooks    []hookWant    `yaml:"hooks"`
+	Triggers []triggerWant `yaml:"triggers"`
+}
+
+type hookWant struct {
+	ID          int    `yaml:"id"`
+	Absent      bool   `yaml:"absent"`
+	URLContains string `yaml:"url-contains"`
+	IssueEvents *bool  `yaml:"issue-events"`
+	Trigger     *int   `yaml:"trigger"`
+}
+
+type triggerWant struct {
+	ID          int    `yaml:"id"`
+	Absent      bool   `yaml:"absent"`
+	Description string `yaml:"description"`
+}
+
+// compareHooks checks GitLab's simulated webhooks and trigger tokens.
+func compareHooks(want *forgeWant, file string) []string {
+	if len(want.Hooks) == 0 && len(want.Triggers) == 0 {
+		return nil
+	}
+	data, err := os.ReadFile(file)
+	if err != nil {
+		return []string{"no forge state to check: " + err.Error()}
+	}
+	var s gitlabState
+	if err := json.Unmarshal(data, &s); err != nil {
+		return []string{err.Error()}
+	}
+	var p []string
+	for _, w := range want.Triggers {
+		i := slices.IndexFunc(s.Triggers, func(t mockTrigger) bool { return t.ID == w.ID })
+		switch {
+		case w.Absent && i >= 0:
+			p = append(p, fmt.Sprintf("forge: trigger %d exists, want none", w.ID))
+		case w.Absent:
+		case i < 0:
+			p = append(p, fmt.Sprintf("forge: no trigger %d", w.ID))
+		case w.Description != "" && s.Triggers[i].Description != w.Description:
+			p = append(p, fmt.Sprintf("forge: trigger %d's description is %q, want %q", w.ID, s.Triggers[i].Description, w.Description))
+		}
+	}
+	for _, w := range want.Hooks {
+		i := slices.IndexFunc(s.Hooks, func(h mockHook) bool { return h.ID == w.ID })
+		if w.Absent || i < 0 {
+			if w.Absent != (i < 0) {
+				p = append(p, fmt.Sprintf("forge: hook %d exists: %v, want %v", w.ID, i >= 0, !w.Absent))
+			}
+			continue
+		}
+		h := s.Hooks[i]
+		if !strings.Contains(h.URL, w.URLContains) {
+			p = append(p, fmt.Sprintf("forge: hook %d's URL %q lacks %q", w.ID, h.URL, w.URLContains))
+		}
+		if w.IssueEvents != nil && h.IssueEvents != *w.IssueEvents {
+			p = append(p, fmt.Sprintf("forge: hook %d's issue events: %v, want %v", w.ID, h.IssueEvents, *w.IssueEvents))
+		}
+		if w.Trigger != nil {
+			t := slices.IndexFunc(s.Triggers, func(t mockTrigger) bool { return t.ID == *w.Trigger })
+			if t < 0 || h.Token != s.Triggers[t].Token {
+				p = append(p, fmt.Sprintf("forge: hook %d does not hold trigger %d's token", w.ID, *w.Trigger))
+			}
+		}
+	}
+	return p
 }
 
 // checkRunWant is a check the simulated forge holds on a commit.
@@ -1137,6 +1208,7 @@ func runCase(t *testing.T, c *caseFile) []string {
 	}
 	if c.Expect.Forge != nil {
 		problems = append(problems, compareForge(c.Expect.Forge, forgeFile)...)
+		problems = append(problems, compareHooks(c.Expect.Forge, forgeFile)...)
 		problems = append(problems, compareStatuses(c.Expect.Forge.Statuses, forgeFile, repo)...)
 		problems = append(problems, compareCheckRuns(c.Expect.Forge.CheckRuns, forgeFile, repo)...)
 	}

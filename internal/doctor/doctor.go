@@ -245,6 +245,7 @@ func repository(r *Report, o Options) {
 	tokensScoped(r, o, cfg.Forge)
 	boundsGuard(r, o, cfg.Forge, line)
 	boards(r, o, cfg, line)
+	issueHook(r, o, cfg, line)
 	// A shallow clone lacks the commits docs were checked against, and the
 	// last release: the documentalist and the release say so and stop.
 	if out, err := exec.Command("git", "-C", o.Repo, "rev-parse", "--is-shallow-repository").Output(); err == nil && strings.TrimSpace(string(out)) == "true" {

@@ -103,6 +103,31 @@ type gitlabState struct {
 	// workline-bot when not given; project_<id>_bot_… for a project
 	// access token's, a bot by its name.
 	TokenUser string `json:"token-user,omitempty"`
+	// Hooks are the project's webhooks, Triggers its pipeline trigger
+	// tokens, as GitLab lists them to a Maintainer's token: a hook's
+	// `token`, the value of its URL's masked variable, GitLab never lists;
+	// a trigger's token is listed in full to its owner only. Given (`hooks:
+	// []` for none), the project answers its id, path and default branch,
+	// main. HooksRefused: the status a token that may not list them gets
+	// (403, a Developer's).
+	Hooks        []mockHook    `json:"hooks"`
+	Triggers     []mockTrigger `json:"triggers,omitempty"`
+	HooksRefused int           `json:"hooks-refused,omitempty"`
+}
+
+type mockHook struct {
+	ID          int    `json:"id"`
+	URL         string `json:"url"`
+	IssueEvents bool   `json:"issues_events"`
+	Alert       string `json:"alert_status,omitempty"`
+	Token       string `json:"token,omitempty"`
+}
+
+type mockTrigger struct {
+	ID          int    `json:"id"`
+	Description string `json:"description"`
+	Token       string `json:"token"`
+	Owner       string `json:"owner"`
 }
 
 func (s *gitlabState) tokenUser() string { return cmp.Or(s.TokenUser, defaultTokenUser) }
@@ -337,6 +362,56 @@ func (m *gitlabMock) serve(s *gitlabState, method, p string, q, form url.Values)
 		return map[string]any{"message": fmt.Sprintf("%d %s", s.MembersRefused, http.StatusText(s.MembersRefused))}, s.MembersRefused
 	case p == "/members/all":
 		return s.Members, 200
+	case s.Hooks != nil && p == "" && method == "GET":
+		return map[string]any{"id": 1, "path_with_namespace": "group/proj", "default_branch": "main"}, 200
+	case (p == "/hooks" || strings.HasPrefix(p, "/hooks/") || p == "/triggers") && s.HooksRefused != 0:
+		return map[string]any{"message": fmt.Sprintf("%d %s", s.HooksRefused, http.StatusText(s.HooksRefused))}, s.HooksRefused
+	case p == "/hooks" && method == "GET":
+		out := []map[string]any{}
+		for _, h := range s.Hooks {
+			v := map[string]any{"id": h.ID, "url": h.URL, "issues_events": h.IssueEvents, "alert_status": cmp.Or(h.Alert, "executable"), "url_variables": []any{}}
+			if h.Token != "" {
+				v["url_variables"] = []any{map[string]any{"key": "token"}}
+			}
+			out = append(out, v)
+		}
+		return out, 200
+	case p == "/hooks" && method == "POST":
+		h := mockHook{ID: 1, URL: form.Get("url"), IssueEvents: form.Get("issues_events") == "true", Token: form.Get("url_variables[][value]")}
+		for _, o := range s.Hooks {
+			h.ID = max(h.ID, o.ID+1)
+		}
+		s.Hooks = append(s.Hooks, h)
+		return map[string]any{"id": h.ID, "url": h.URL}, 201
+	case strings.HasPrefix(p, "/hooks/") && method == "PUT":
+		id, _ := strconv.Atoi(strings.TrimPrefix(p, "/hooks/"))
+		for i := range s.Hooks {
+			if s.Hooks[i].ID == id {
+				if form.Has("issues_events") {
+					s.Hooks[i].IssueEvents = form.Get("issues_events") == "true"
+				}
+				return map[string]any{"id": id}, 200
+			}
+		}
+		return notFound, 404
+	case p == "/triggers" && method == "GET":
+		out := []map[string]any{}
+		for _, t := range s.Triggers {
+			token := t.Token
+			if t.Owner != tokenUser {
+				token = token[:min(4, len(token))]
+			}
+			out = append(out, map[string]any{"id": t.ID, "description": t.Description, "token": token, "owner": user(t.Owner)})
+		}
+		return out, 200
+	case p == "/triggers" && method == "POST":
+		t := mockTrigger{ID: 1, Description: form.Get("description"), Owner: tokenUser}
+		for _, o := range s.Triggers {
+			t.ID = max(t.ID, o.ID+1)
+		}
+		t.Token = fmt.Sprintf("glptt-conformance%016d", t.ID)
+		s.Triggers = append(s.Triggers, t)
+		return map[string]any{"id": t.ID, "description": t.Description, "token": t.Token, "owner": user(t.Owner)}, 201
 	case p == "/variables" && s.VariablesRefused != 0:
 		return map[string]any{"message": fmt.Sprintf("%d %s", s.VariablesRefused, http.StatusText(s.VariablesRefused))}, s.VariablesRefused
 	case p == "/variables" && method == "GET":

@@ -2096,13 +2096,15 @@ func setupCmd(args []string) int {
 	hooksOn := fs.String("hooks", "", "yes or no: the global git hooks (default: ask)")
 	ai := fs.String("ai", "", "your agent: none, claude, claude:<model>@<effort>, cmd:<command> (default: ask)")
 	install := fs.String("install", "", "the tools to install, comma-separated, all, or none (default: ask)")
+	issueHook := fs.String("issue-hook", "", "yes or no: on GitLab, the webhook and trigger token that start the line on an issue's label (default: ask)")
+	forgeSpec := fs.String("forge", "", "the forge of the repository setup runs in, for its issue webhook (default: the project's `forge` setting; gitlab when its .gitlab-ci.yml runs workline)")
 	yes := fs.Bool("yes", false, "take the default of every question not answered by a flag")
 	asJSON := fs.Bool("json", false, "print the doctor's report, at the end, as JSON")
 	if code, done := parseOnly(fs, args); done {
 		return code
 	}
 	var a setup.Answers
-	a.Hooks, a.AI, a.Yes = *hooksOn, *ai, *yes
+	a.Hooks, a.AI, a.Yes, a.IssueHook = *hooksOn, *ai, *yes, *issueHook
 	if *install != "" {
 		a.Install = []string{}
 		if *install != "none" {
@@ -2130,6 +2132,7 @@ func setupCmd(args []string) int {
 		In: os.Stdin, Out: os.Stderr, Interactive: terminal(os.Stdin),
 		Bin: bin, Hooks: paths, UserConfig: filepath.Join(cfgDir, "workline", "config.yaml"),
 		Tools: doctor.UsedTools(rolesDir), Install: setup.Shell(os.Stderr),
+		IssueHook: issueHookHere(*forgeSpec),
 	})
 	if err != nil {
 		if *asJSON {
@@ -2144,11 +2147,25 @@ func setupCmd(args []string) int {
 		}
 		return 1
 	}
+	again := []string{}
+	if *forgeSpec != "" {
+		again = append(again, "--forge", *forgeSpec)
+	}
 	if *asJSON {
-		return doctorCmd([]string{"--json"})
+		return doctorCmd(append(again, "--json"))
 	}
 	fmt.Println()
-	return doctorCmd(nil)
+	return doctorCmd(again)
+}
+
+// issueHookHere is the GitLab project of the clone setup runs in, whose
+// issue webhook starts the line; nil outside one.
+func issueHookHere(spec string) forge.IssueHook {
+	root, err := gitRoot(".")
+	if err != nil || root == "" {
+		return nil
+	}
+	return doctor.IssueHookOf(root, spec)
 }
 
 // terminal says whether f is a terminal a person types in: a character

@@ -1,0 +1,24 @@
+case: setup/setup-gitlab-issue-hook-created
+about: >
+  Run in a GitLab project's clone with --yes, setup creates the trigger
+  token and the webhook on issue events to the project's own trigger
+  URL, WORKLINE_TASK=issue, the token a masked URL variable, never
+  printed. Run again, it creates nothing more (ADR-0059, decision 8).
+given:
+  repo: documented
+  config:
+    routing: {events: {issue: [developer]}}
+  env: {PATH: "/usr/bin:/bin"}
+  forge: {merge-requests: [], hooks: []}
+run: {setup: [--yes, --ai, none, --install, none], forge: gitlab, then: again}
+expect:
+  checks:
+    - {rule: issue-hook, level: ok, message: "with workline's trigger token"}
+  stdout-lacks: [glptt-conformance]
+  forge:
+    triggers:
+      - {id: 1, description: "workline: the issue webhook (ADR-0059)"}
+      - {id: 2, absent: true}
+    hooks:
+      - {id: 1, url-contains: "/projects/1/ref/main/trigger/pipeline?token={token}&variables[WORKLINE_TASK]=issue", issue-events: true, trigger: 1}
+      - {id: 2, absent: true}
