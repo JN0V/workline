@@ -37,6 +37,8 @@ type Config struct {
 	// MaxHops caps the state moves of one issue: past it, Blocked.
 	States  []State `yaml:"states"`
 	MaxHops int     `yaml:"max-hops"`
+	// ReconcileMax: the steps one run of the reconciler starts at most.
+	ReconcileMax int `yaml:"reconcile-max"`
 }
 
 // Load returns the shipped routing with the project's changes applied.
@@ -79,6 +81,9 @@ func Load(repo string) (*Config, error) {
 		}
 		if p.MaxHops > 0 {
 			c.MaxHops = p.MaxHops
+		}
+		if p.ReconcileMax > 0 {
+			c.ReconcileMax = p.ReconcileMax
 		}
 		for moment, seconds := range p.Budgets {
 			if !(seconds > 0) || math.IsInf(seconds, 1) { // NaN and infinity too: neither is ever gone over

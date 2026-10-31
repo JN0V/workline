@@ -1,0 +1,29 @@
+case: routing/hops-capped-blocked
+about: >
+  Two roles sending an issue back and forth stop at the hop cap
+  (ADR-0059, max-hops, 8 by default): each state step on an issue is
+  counted in the line's record; the one past the cap is not run. The
+  issue goes workline:blocked, its other states' labels off, and the
+  count is said on it. No agent asked.
+given:
+  repo: tested
+  config:
+    routing: {events: {issue: [tester, developer]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply"
+        labels: ["workline:needs-tests"]
+        body: "## Need\n\nI want to multiply.\n"
+        comments: ["**workline's line** last woke the developer.\n\n<!-- workline:line-record {\"state\":\"ready\",\"body\":\"8a828a06be19\",\"hops\":8} -->\n<!-- workline:sticky=line/state -->"]
+run: {route: issue, target: {issue: 3}, open-merge-request: true, ai: "fake:tester-two-scenarios"}
+expect:
+  status: pass
+  agent-calls: 0
+  findings: [{rule: hops-capped, level: warn, where: "#3", message: "9 state steps on this issue, past max-hops (8)"}]
+  forge:
+    issues:
+      - id: 3
+        labels: ["workline:blocked"]
+        comments: 1
+        comment-contains: ["**workline's line** blocks this issue.", "9 state steps on this issue, past max-hops (8)", "its state was tests", "\"state\":\"blocked\"", "\"hops\":9"]

@@ -1,0 +1,26 @@
+case: routing/reconcile-twice-nothing-more
+about: >
+  The reconciler run twice in a row does nothing more the second time
+  (ADR-0059): the first runs the step due and records the state and the
+  body's hash it acted on; the second reads that record and starts
+  nothing. With no agent, the developer only names the issue it would
+  take: a step all the same.
+given:
+  repo: tested
+  config:
+    routing: {events: {issue: [developer]}}
+  forge:
+    issues:
+      - {id: 3, title: "Multiply", labels: ["workline:ready"], body: "## Need\n\nI want to multiply.\n"}
+run: {route: reconcile, open-merge-request: true, ai: none, then: again}
+expect:
+  status: pass
+  summary: "reconcile: nothing due (1 issue on the line acted on already)"
+  agent-calls: 0
+  findings: [{rule: state-acted, level: info, where: "#3"}]
+  forge:
+    issues:
+      - id: 3
+        labels: ["workline:ready"]
+        comments: 1
+        comment-contains: ["\"state\":\"ready\"", "\"hops\":1"]

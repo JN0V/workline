@@ -68,6 +68,15 @@ type Result struct {
 	// DryRun: a release's dry run, what would hold the release were it
 	// cut now (ADR-0050).
 	DryRun *DryRun `json:"dry-run,omitempty"`
+	// States: on the line of states (ADR-0059), what the line writes on
+	// each issue it ran a step for, left to `workline apply --line` when
+	// it judged with no write token; Woke, the role each issue's step
+	// ran; Forge, where. Due: the issues the reconciler found due, with
+	// `--input reconcile=list`.
+	States []StateWrite   `json:"states,omitempty"`
+	Woke   map[int]string `json:"woke,omitempty"`
+	Forge  string         `json:"forge,omitempty"`
+	Due    []int          `json:"due,omitempty"`
 }
 
 // Gates says how a line takes its gate steps: run there, by default. In
@@ -157,6 +166,11 @@ func RunWith(event string, base engine.Options, gates *Gates) *Result {
 		}
 		return f
 	}
+	// The reconciler (ADR-0059): every open issue's step due, its steps
+	// those the project routes on issue.
+	if event == ReconcileEvent {
+		return reconcile(res, cfg, base)
+	}
 	steps, ok := stepsOf(cfg, event)
 	if !ok {
 		return failed(res, "routing", fmt.Sprintf("routing names no step for event %q", event))
@@ -169,15 +183,7 @@ func RunWith(event string, base engine.Options, gates *Gates) *Result {
 	// An event naming an issue runs the role its state wakes (ADR-0059),
 	// not every step of the event; one waking none runs none, said.
 	if event == IssueEvent && base.Target != nil && base.Target.Kind == "issue" && len(cfg.States) > 0 {
-		woken, read := byState(res, cfg, base, event)
-		if !read || len(woken) == 0 {
-			return res
-		}
-		if !slices.Contains(steps, woken[0]) { // left out by `--input skip`
-			res.Summary = fmt.Sprintf("%s: #%d's step, the %s, left out by --input %s", event, base.Target.ID, woken[0], SkipInput)
-			return res
-		}
-		steps = woken
+		return byState(res, cfg, base, event, steps)
 	}
 	// Main after a merge: its gates compare HEAD with main's tip before
 	// the merge, whoever made it; the engine's own commits there are
