@@ -24,8 +24,10 @@ import (
 	"strings"
 
 	"github.com/JN0V/workline/internal/agent"
+	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
+	"github.com/JN0V/workline/internal/routing"
 	"github.com/JN0V/workline/internal/verdict"
 	"github.com/JN0V/workline/internal/whys"
 )
@@ -48,7 +50,7 @@ type Round struct {
 	Nits   int            `json:"nits,omitempty"`   // nits said, not asked
 	Result string         `json:"result,omitempty"` // its proof's result; no-code when it wrote none
 	Whys   bool           `json:"whys,omitempty"`   // the five whys ran
-	Person bool           `json:"person,omitempty"` // past the last round: handed to a person
+	Person bool           `json:"person,omitempty"` // past the last round: its issue blocked (ADR-0059)
 	Turns  int            `json:"turns,omitempty"`  // what its agent used, as it reported them
 	Tokens int            `json:"tokens,omitempty"` // fresh, what ai-max-tokens holds
 	Cached int            `json:"cached,omitempty"` // read from cache, apart
@@ -281,7 +283,7 @@ func reviewPre(runDir, repo string, s Settings, id int) int {
 		if err := writeIn(runDir, roundFile, r); err != nil {
 			return fail(err)
 		}
-		return writeIntents(runDir, "fallback.yaml", handOff(r, s))
+		return writeIntents(runDir, "fallback.yaml", handOff(r, repo))
 	}
 	if ai := os.Getenv("WORKLINE_AI"); ai == "" || ai == "none" {
 		return final(runDir, verdict.Verdict{Status: verdict.Pass, Summary: fmt.Sprintf("no agent: %d finding%s wait for a run with one, no round counted", len(r.Asked), plural(len(r.Asked))),
@@ -367,18 +369,30 @@ func roundTask(r round, is forge.Issue, b Bounds, s Settings, test string, testE
 	return t.String()
 }
 
-// handOff is a person's turn, past the last round: the label the tester
-// uses for one, and the record saying so.
-func handOff(r round, s Settings) []intent.Intention {
+// handOff ends the rounds, past the last one: the reviewer and the
+// developer do not agree. Its issue goes to the blocked state, the reason
+// on it and on the pull request (ADR-0059, decision 6); no person is
+// asked: one on the loop reads the board.
+func handOff(r round, repo string) []intent.Intention {
 	a := r.Record
 	a.Handed = true
 	a.Rounds = append(a.Rounds, Round{N: a.Round + 1, Asked: texts(r.Asked), Person: true})
 	a.ReviewRuns = max(a.ReviewRuns, r.Runs)
+	add, remove := []string{backlog.LabelBlocked}, []string{backlog.LabelReady}
+	if line, err := routing.Load(repo); err == nil {
+		if ad, rm, err := line.Move("blocked"); err == nil {
+			add, remove = ad, rm
+		}
+	}
+	why := fmt.Sprintf("%d review rounds on merge request %d, and the review still asks %d finding%s: the reviewer and the developer do not agree",
+		a.Round, r.MR, len(r.Asked), plural(len(r.Asked)))
 	return []intent.Intention{
-		{Kind: "label", Value: map[string]any{"add": []string{s.Person}}},
+		{Kind: "label", Value: map[string]any{"issue": a.Issue, "add": add, "remove": remove}},
+		sayOn(a.Issue, backlog.Said(who, "blocks this issue", why,
+			"a person on the loop reads the pull request, fixes the findings or closes it, and moves the issue back by its label")),
 		{Kind: "comment", Value: map[string]any{"sticky": "round", "body": fmt.Sprintf(
-			"**A person takes it**: %d rounds, and the review still asks %d finding%s. Labelled `%s`: a person of the project fixes them, or closes this pull request.\n\n%s",
-			a.Round, len(r.Asked), plural(len(r.Asked)), s.Person, askedList(r.Asked))}},
+			"**Blocked**: %d rounds, and the review still asks %d finding%s. #%d is blocked, its reason on it: a person of the project fixes them, or closes this pull request.\n\n%s",
+			a.Round, len(r.Asked), plural(len(r.Asked)), a.Issue, askedList(r.Asked))}},
 		{Kind: "comment", Value: map[string]any{"sticky": RecordKey, "body": recordBody(a)}},
 	}
 }
@@ -413,9 +427,9 @@ func reviewPost(runDir, repo string, s Settings) int {
 	}
 	where := fmt.Sprintf("merge request %d", r.MR)
 	if r.Person {
-		return writeVerdict(runDir, verdict.Verdict{Status: verdict.Pass, Summary: fmt.Sprintf("past round %d: a person takes its pull request", r.Record.Round),
-			Findings: []verdict.Finding{{Rule: "review-to-a-person", Level: "warn", Where: where,
-				Message: fmt.Sprintf("%d rounds did not settle the review: labelled %s", r.Record.Round, s.Person)}}})
+		return writeVerdict(runDir, verdict.Verdict{Status: verdict.Pass, Summary: fmt.Sprintf("past round %d: its issue #%d blocked", r.Record.Round, r.Record.Issue),
+			Findings: []verdict.Finding{{Rule: "review-blocked", Level: "warn", Where: where,
+				Message: fmt.Sprintf("%d rounds did not settle the review: #%d blocked, its reason on it", r.Record.Round, r.Record.Issue)}}})
 	}
 	var b Bounds
 	if err := readIn(runDir, boundsFile, &b); err != nil {

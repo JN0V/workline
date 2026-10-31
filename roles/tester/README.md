@@ -116,10 +116,12 @@ workline test write --issue 42 --ai claude
   third first runs the [five whys](../../skills/five-whys/SKILL.md) on
   the thread and posts them with its answer: the chain, the root cause,
   one action. Missing or malformed, the answer is refused and asked
-  again. After it, a person decides
-  (`objection-person`: a label on the merge request, or an `@login`).
-  The tester then follows the next comment of a person of the project;
-  meanwhile the other objections are answered.
+  again. After it, the product owner settles it: the issue back to
+  refine, said there and in the thread; objected to again after that,
+  the issue goes `workline:blocked`, its reason on it
+  ([ADR-0059](../../docs/adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#6-disagreements-end-at-the-product-owner-then-blocked)).
+  No person is asked; a comment of one of the project's there is
+  followed. Meanwhile the other objections are answered.
 - **The agent is a choice** here too: with none, `no-agent`, it waits.
 
 ## When it runs
@@ -198,8 +200,7 @@ Under `roles: {tester: {settings: …}}` in `.workline/config.yaml`
 | `build-errors` | Go's | how a build broken by a missing name reads, by ecosystem ([page](docs/missing-name.md)) |
 | `code-lines-max` | 1500 | lines of the Scope's code and tests given to the agent, all files together |
 | `ai-max-tokens`, `ai-max-seconds` | 300000, 1200 | what one `test write` or `test answer` run may spend, and wait on its agent |
-| `objection-exchanges` | 3 | the tester's answers in an objection's thread before a person decides |
-| `objection-person` | `workline:human` | who decides then: a label put on the merge request, or an `@login` mentioned |
+| `objection-exchanges` | 3 | the tester's answers in an objection's thread before the product owner settles it |
 | `curator-*`, `suite-max-seconds`, `coverage-report` | 2 runs, 600 s | the curator's measures ([page](docs/curator.md#settings)) and removals ([page](docs/removals.md#settings)) |
 
 The command, by ecosystem:

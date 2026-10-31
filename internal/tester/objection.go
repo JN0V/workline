@@ -7,7 +7,8 @@ package tester
 // commit referring to the thread, still red on the base. The need itself
 // goes to the product owner. Three answers a thread; still open after the
 // second, the third run loads the shared five whys skill and posts the
-// analysis with its answer; past the third, a person decides.
+// analysis with its answer; past the third, the product owner settles it,
+// then the issue is blocked (ADR-0059).
 
 import (
 	"encoding/json"
@@ -16,6 +17,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -25,6 +27,7 @@ import (
 	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
+	"github.com/JN0V/workline/internal/routing"
 	"github.com/JN0V/workline/internal/verdict"
 	"github.com/JN0V/workline/internal/whys"
 	"github.com/JN0V/workline/internal/work"
@@ -39,8 +42,12 @@ const ObjectionWord = "workline:objection"
 // other roles too.
 var (
 	answerMark = forge.Marker("tester-answer")
-	personMark = forge.Marker("tester-person-decides")
-	unreadMark = forge.Marker("tester-unreadable")
+	personMark = forge.Marker("tester-person-decides") // before ADR-0059: read, never written
+	// settleMark: past the tester's answers, the product owner settles
+	// (ADR-0059, decision 6); blockedMark: past it, the issue Blocked.
+	settleMark  = forge.Marker("tester-product-owner-settles")
+	blockedMark = forge.Marker("tester-objection-blocked")
+	unreadMark  = forge.Marker("tester-unreadable")
 )
 
 // The kinds an objection names, as the ADR words them.
@@ -56,7 +63,8 @@ var kinds = []struct{ key, name, word string }{
 const (
 	modeAgent     = "agent"     // the tester's judgement: kept or rewritten
 	modeNeed      = "need"      // the product owner's: the issue back to refine
-	modePerson    = "person"    // past the bound: a person decides
+	modeSettle    = "settle"    // past the tester's answers: the product owner settles (ADR-0059)
+	modeBlocked   = "blocked"   // the builder objects still, past the product owner: Blocked
 	modeMalformed = "malformed" // not an objection the tester can answer: said why
 )
 
@@ -178,6 +186,9 @@ type answer struct {
 	Record    record    `json:"record"`
 	Waiting   int       `json:"waiting"` // the objections left for the next runs
 	Objection objection `json:"objection"`
+	// Line: the routing's states, as pre read them: where the issue goes
+	// to settle or to block (ADR-0059).
+	Line []routing.State `json:"line,omitempty"`
 }
 
 const answerFile = "answer.json"
@@ -238,46 +249,42 @@ func answerPre(runDir, repo string, s Settings) int {
 		return fail(err)
 	}
 	mine := func(n forge.Note, mark string) bool { return own.Wrote(n) && strings.Contains(n.Body, mark) }
-	// read counts the tester's answers in a thread, and a person's
-	// decision once one was asked; asked, they did not decide yet.
-	read := func(t forge.Thread) (answers int, decided string, asked bool) {
+	// read counts the tester's answers in a thread; once the product owner
+	// was asked to settle it, a person's decision there, else whether the
+	// builder objected again.
+	read := func(t forge.Thread) (answers int, decided string, settled, again bool) {
 		for _, c := range t.Comments {
 			switch {
-			case mine(c, personMark):
-				asked = true
+			case mine(c, settleMark), mine(c, personMark):
+				settled = true
 			case mine(c, answerMark):
 				answers++
-			case asked && c.Insider && !c.Bot:
-				decided = c.Body // a person of the project, after they were asked
+			case settled && c.Insider && !c.Bot:
+				decided = c.Body // a person of the project, on the loop, after it
+			case settled && !mine(c, blockedMark):
+				again = true // the builder still objects, past the product owner
 			}
 		}
-		return answers, decided, asked
+		return answers, decided, settled, again
 	}
-	var waiting, toAPerson []forge.Thread
+	var waiting []forge.Thread
 	for _, t := range threads {
 		if t.Resolved || len(t.Comments) == 0 || !strings.HasPrefix(strings.TrimSpace(t.Comments[0].Body), ObjectionWord) {
 			continue
 		}
-		if last := t.Comments[len(t.Comments)-1]; mine(last, answerMark) || mine(last, unreadMark) {
-			continue // answered, the builder's turn
-		}
-		if _, decided, asked := read(t); asked && decided == "" {
-			toAPerson = append(toAPerson, t) // a person's turn: the others go on
-			continue
+		if last := t.Comments[len(t.Comments)-1]; mine(last, answerMark) || mine(last, unreadMark) || mine(last, settleMark) ||
+			mine(last, personMark) || mine(last, blockedMark) {
+			continue // answered, settled or blocked: the builder's turn, or the product owner's
 		}
 		waiting = append(waiting, t)
 	}
 	if len(waiting) == 0 {
-		v := verdict.Verdict{Status: verdict.Pass, Summary: "no objection waits for the tester's answer"}
-		for _, t := range toAPerson {
-			v.Summary = "a person decides the objection: nothing for the tester till they do"
-			v.Findings = append(v.Findings, verdict.Finding{Rule: "objection-to-a-person", Level: "warn", Where: t.URL, Message: "past the tester's last answer, a person of the project decides, in the thread"})
-		}
-		return final(runDir, v)
+		return final(runDir, verdict.Verdict{Status: verdict.Pass, Summary: "no objection waits for the tester's answer"})
 	}
 	t := waiting[0]
 	a := answer{MR: id, Issue: issue, Thread: t.ID, URL: t.URL, File: t.Path, Record: r, Waiting: len(waiting) - 1}
-	a.Answers, a.Decided, _ = read(t)
+	var settled, again bool
+	a.Answers, a.Decided, settled, again = read(t)
 	exchanges := s.Exchanges
 	if exchanges <= 0 {
 		exchanges = 3
@@ -310,8 +317,16 @@ func answerPre(runDir, repo string, s Settings) int {
 	switch {
 	case a.Decided != "":
 		a.Mode = modeAgent
+	case settled && again && slices.Contains(is.Labels, backlog.LabelToRefine):
+		// The product owner has not settled it yet: a reply meanwhile is
+		// no objection past it.
+		return final(runDir, verdict.Verdict{Status: verdict.Pass, Summary: fmt.Sprintf("the product owner settles the objection: #%d waits in refine", issue),
+			Findings: []verdict.Finding{{Rule: "objection-at-the-product-owner", Level: "info", Where: t.URL,
+				Message: "the builder replied before the product owner settled it: nothing for the tester till it does"}}})
+	case settled && again:
+		a.Mode = modeBlocked
 	case a.Answers >= exchanges:
-		a.Mode = modePerson
+		a.Mode = modeSettle
 	case len(unread) > 0:
 		a.Mode, a.Why = modeMalformed, "it names no "+strings.Join(unread, ", no ")
 	case r.Files[t.Path] == "":
@@ -328,6 +343,9 @@ func answerPre(runDir, repo string, s Settings) int {
 		a.Mode = modeAgent
 	}
 	a.FiveWhys = a.Mode == modeAgent && a.Decided == "" && a.Answers == 2
+	if line, err := routing.Load(repo); err == nil {
+		a.Line = line.States
+	}
 	if data, err := json.Marshal(a); err != nil {
 		return fail(err)
 	} else if err := os.WriteFile(filepath.Join(runDir, "in", answerFile), data, 0o644); err != nil {
@@ -362,12 +380,14 @@ func writeAnswerTask(runDir, repo string, a answer, t forge.Thread, is *forge.Is
 		switch {
 		case strings.Contains(c.Body, answerMark), strings.Contains(c.Body, unreadMark):
 			who = "you, the tester"
-		case strings.Contains(c.Body, personMark):
-			who = "the engine, asking a person"
+		case strings.Contains(c.Body, personMark), strings.Contains(c.Body, settleMark):
+			who = "the engine, asking the product owner to settle it"
+		case strings.Contains(c.Body, blockedMark):
+			who = "the engine, blocking the issue"
 		case c.Insider && !c.Bot && a.Decided == c.Body:
 			who = "a person of the project, deciding"
 		}
-		body := strings.TrimSpace(strings.NewReplacer(answerMark, "", personMark, "", unreadMark, "").Replace(c.Body))
+		body := strings.TrimSpace(strings.NewReplacer(answerMark, "", personMark, "", settleMark, "", blockedMark, "", unreadMark, "").Replace(c.Body))
 		fmt.Fprintf(&b, "### %d. From %s\n\n%s\n\n", i+1, who, body)
 	}
 	if a.Decided != "" {
@@ -434,28 +454,35 @@ func plainAnswer(a answer, s Settings) ([]intent.Intention, verdict.Verdict) {
 				a.Why, ObjectionWord, a.Issue, kindNames(), unreadMark)}}},
 			verdict.Verdict{Status: verdict.Pass, Summary: "an objection the tester cannot read, said in its thread" + a.left(),
 				Findings: []verdict.Finding{{Rule: "objection-unreadable", Level: "warn", Where: a.URL, Message: a.Why}}}
-	case modePerson:
-		who, label := s.Person, ""
-		if who == "" {
-			who = "workline:human"
-		}
-		if !strings.HasPrefix(who, "@") {
-			label, who = who, "a person of the project (the merge request is labelled `"+who+"`)"
-		}
-		out := []intent.Intention{{Kind: "comment", Value: map[string]any{"thread": a.Thread,
-			"body": fmt.Sprintf("**A person decides**: %d answers, and the objection still stands. %s, decide in this thread: kept, or how the test is rewritten; the tester writes it.\n\n%s", a.Answers, upper(who), personMark)}}}
-		if label != "" {
-			out = append(out, intent.Intention{Kind: "label", Value: map[string]any{"add": []string{label}}})
-		}
-		return out, verdict.Verdict{Status: verdict.Pass, Summary: "an objection past the tester's answers: a person decides" + a.left(),
-			Findings: []verdict.Finding{{Rule: "objection-to-a-person", Level: "warn", Where: a.URL, Message: fmt.Sprintf("%d answers did not settle it: %s is asked", a.Answers, who)}}}
+	case modeSettle:
+		quoted := strings.ReplaceAll(a.Objection.Why, "\n", "\n> ")
+		return append([]intent.Intention{
+				{Kind: "comment", Value: map[string]any{"issue": a.Issue, "sticky": "objection-" + a.Thread, "body": backlog.Said("The tester",
+					fmt.Sprintf("asks the product owner to settle an objection to its test, scenario **%s**, merge request %d ([the thread](%s))", a.Scenario.Name, a.MR, a.URL),
+					fmt.Sprintf("%d answers, and the builder still objects: \"%s\"", a.Answers, quoted),
+					"the product owner amends the scenario, or keeps it and says why; the tester then keeps or adapts its test. Objected to again after that, the issue is blocked")}},
+				a.reply(fmt.Sprintf("**The product owner settles it**: %d answers, and the objection still stands. #%d goes back to the product owner, which amends the scenario or keeps it; objected to again after that, #%d is blocked.\n\n%s",
+					a.Answers, a.Issue, a.Issue, settleMark))}, a.move(a.refineState())...),
+			verdict.Verdict{Status: verdict.Pass, Summary: "an objection past the tester's answers: the product owner settles it" + a.left(),
+				Findings: []verdict.Finding{{Rule: "objection-to-the-product-owner", Level: "warn", Where: a.URL,
+					Message: fmt.Sprintf("%d answers did not settle it: #%d back to the product owner", a.Answers, a.Issue)}}}
+	case modeBlocked:
+		return append([]intent.Intention{
+				{Kind: "comment", Value: map[string]any{"issue": a.Issue, "sticky": "objection-" + a.Thread, "body": backlog.Said("The tester",
+					fmt.Sprintf("blocks this issue: an objection to its test, scenario **%s**, merge request %d ([the thread](%s)), still stands", a.Scenario.Name, a.MR, a.URL),
+					"the builder objects again after the product owner settled it: the roles do not agree",
+					"a person on the loop reads the thread, decides in it, and moves the issue back by its label")}},
+				a.reply(fmt.Sprintf("**Blocked**: objected to again after the product owner settled it. #%d is blocked, its reason on it; a person of the project decides in this thread.\n\n%s", a.Issue, blockedMark))},
+				a.move(BlockedState)...),
+			verdict.Verdict{Status: verdict.Pass, Summary: "an objection past the product owner: the issue blocked" + a.left(),
+				Findings: []verdict.Finding{{Rule: "objection-blocked", Level: "warn", Where: a.URL, Message: fmt.Sprintf("objected to again after the product owner settled it: #%d blocked", a.Issue)}}}
 	}
 	return []intent.Intention{
 			{Kind: "comment", Value: map[string]any{"issue": a.Issue, "sticky": "objection-" + a.Thread, "body": fmt.Sprintf(
 				"**The builder objects to the need itself**, scenario **%s**, on its test in merge request %d ([the thread](%s)):\n\n> %s\n\n"+
 					"Back to refine: the product owner amends the scenario, a person accepts it; the tester then adapts its test.",
 				a.Scenario.Name, a.MR, a.URL, strings.ReplaceAll(a.Objection.Why, "\n", "\n> "))}},
-			{Kind: "label", Value: map[string]any{"issue": a.Issue, "add": []string{backlog.LabelToRefine}, "remove": []string{backlog.LabelReady}}},
+			a.move(a.refineState())[0],
 			a.reply(fmt.Sprintf("**Sent to the product owner**: the need itself is theirs, not the tester's. #%d is back to refine; the tester adapts this test once the scenario is amended and ready again.", a.Issue))},
 		verdict.Verdict{Status: verdict.Pass, Summary: fmt.Sprintf("an objection to the need: #%d back to the product owner", a.Issue) + a.left()}
 }
@@ -585,13 +612,6 @@ func whysSaid(a answer) string {
 	return ", the five whys with it"
 }
 
-func upper(s string) string {
-	if s == "" {
-		return s
-	}
-	return strings.ToUpper(s[:1]) + s[1:]
-}
-
 // unwrap strips one pair of markdown markers wrapping the whole value,
 // bold, italic or code; never a marker that only ends the text, nor the
 // outer two of several spans.
@@ -605,4 +625,33 @@ func unwrap(v string) string {
 		}
 	}
 	return v
+}
+
+// BlockedState is the state an issue the roles do not agree on goes to
+// (ADR-0059, decision 6).
+const BlockedState = "blocked"
+
+// refineState is the product owner's state in the routing's table, as
+// pre read it: refine, shipped.
+func (a answer) refineState() string {
+	for _, st := range a.Line {
+		if st.Role == "product-owner" {
+			return st.Name
+		}
+	}
+	return "refine"
+}
+
+// move is the label moving the objection's issue to the state named, its
+// other states' labels off (the routing's table); the shipped labels when
+// the table is not read.
+func (a answer) move(to string) []intent.Intention {
+	add, remove := []string{backlog.LabelToRefine}, []string{backlog.LabelReady, backlog.LabelNeedsTests, backlog.LabelBlocked}
+	if to == BlockedState {
+		add, remove = []string{backlog.LabelBlocked}, []string{backlog.LabelReady, backlog.LabelNeedsTests, backlog.LabelToRefine, "workline:developing"}
+	}
+	if ad, rm, err := (&routing.Config{States: a.Line}).Move(to); err == nil {
+		add, remove = ad, rm
+	}
+	return []intent.Intention{{Kind: "label", Value: map[string]any{"issue": a.Issue, "add": add, "remove": remove}}}
 }

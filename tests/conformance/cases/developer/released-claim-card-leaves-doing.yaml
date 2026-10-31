@@ -1,0 +1,23 @@
+case: developer/released-claim-card-leaves-doing
+about: >
+  A claim let go takes its card out of Doing (ADR-0057, ADR-0059): on a
+  GitLab board, the column labels swap in the same call as the claim's
+  label comes off, the issue back in the ready column.
+given:
+  repo: tested
+  forge:
+    boards:
+      - {forge: gitlab, number: 7, name: Development, owner: project, columns: ["To do", "Doing"], closed-list: true}
+    issues:
+      - id: 1
+        title: "Add"
+        labels: ["workline:ready", "workline:developing", "Doing"]
+        labeled: {"workline:developing": "2026-01-01T09:00:00Z"}
+        body: "## Need\n\nI want to add.\n"
+run: {develop: [], ai: "fake:developer-nothing"}
+expect:
+  status: pass
+  findings: [{rule: claim-released, where: "#1"}]
+  forge:
+    issues:
+      - {id: 1, labels: ["workline:ready", "To do"]}

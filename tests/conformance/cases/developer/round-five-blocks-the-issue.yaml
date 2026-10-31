@@ -1,8 +1,10 @@
-case: developer/round-five-hands-to-person
+case: developer/round-five-blocks-the-issue
 about: >
-  Past the fifth round, the review still asking: no agent is called, the
-  pull request is labelled for a person and says why, and the record
-  keeps the hand-off; no round runs after it (ADR-0054).
+  Past the fifth round, the review still asking: the reviewer and the
+  developer do not agree (ADR-0059, decision 6). No agent is called, no
+  person asked, no label on the pull request: its issue goes
+  workline:blocked, the reason on it and on the pull request, and the
+  record keeps the hand-off; no round runs after it (ADR-0054).
 given:
   repo: tested-draft
   setup:
@@ -30,12 +32,16 @@ given:
 run: {develop: [--merge-request, "2"], ai: "fake:developer-writes-mul"}
 expect:
   status: pass
-  summary: "past round 5: a person takes its pull request"
+  summary: "past round 5: its issue #3 blocked"
   agent-calls: 0
-  findings: [{rule: review-to-a-person, level: warn, where: "merge request 2"}]
+  findings: [{rule: review-blocked, level: warn, where: "merge request 2"}]
   not-pushed: [workline/developer/3]
   forge:
+    issues:
+      - id: 3
+        labels: ["workline:blocked"]
+        comment-contains: ["**The developer** blocks this issue.", "5 review rounds on merge request 2"]
     merge-requests:
       - id: 2
-        labels: ["workline:human"]
-        comment-contains: ["**A person takes it**: 5 rounds", "\"handed\":true", "handed to a person"]
+        labels: []
+        comment-contains: ["**Blocked**: 5 rounds", "\"handed\":true", "its issue blocked"]

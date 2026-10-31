@@ -89,7 +89,8 @@ Cases in `tests/conformance/cases/tester/`:
   on the base, else refused; the need itself back to the product owner;
   a form it cannot read said; the third answer gives the five whys,
   the shared skill, checked and posted with it (step 8);
-  past it, a person decides, and the tester follows them.
+  past it, the product owner settles it, then the issue is blocked
+  ([ADR-0059](../../../docs/adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#6-disagreements-end-at-the-product-owner-then-blocked)).
 - **Its moment** (step 4): on `schedule`, one ready issue a run, the
   first in the backlog's order with named scenarios and no open Draft;
   none waiting, said; `--open-merge-request` needed
@@ -128,7 +129,7 @@ Cases in `tests/conformance/cases/tester/`:
 - **The hand-over** to whoever builds:
   [the contract](hand-over.md).
 - **Settings** `test-command`, `test-report`, `test-paths`,
-  `code-lines-max`, `objection-exchanges`, `objection-person`
+  `code-lines-max`, `objection-exchanges`
   ([README](../README.md#settings)).
 
 ## Missing

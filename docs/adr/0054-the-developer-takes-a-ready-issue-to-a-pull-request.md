@@ -19,6 +19,9 @@
   card to the board's Doing column, where the forge does not
 - **Amended by:** [ADR-0058](0058-the-forge-guards-the-project-not-the-agents-environment.md):
   the bounds become a required check on the pull request
+- **Amended by:** [ADR-0059](0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md): only Ready wakes it, by the issue's
+  state; it accepts the tester's proof kind for a Draft; past its last
+  review round, the issue is blocked, no `workline:human` label
 
 ## Context
 

@@ -102,12 +102,13 @@ settings:
         - '^unknown field \w+ in struct literal'
       test-name: '(?m)^func (Test\w*)\(\w+ \*testing\.T\)'
   # An objection's thread (ADR-0055): the tester answers it this many
-  # times; the builder still objecting after the last, a person decides.
-  # Who: a label put on the merge request, or an @login mentioned in the
-  # thread. Once the second answer did not settle it, the third gives the
-  # five whys with it, the shared skill (skills/five-whys/SKILL.md).
+  # times; the builder still objecting after the last, the product owner
+  # settles it, the issue sent back to it; objected to again after that,
+  # the issue is blocked, its reason on it (ADR-0059). No person is asked:
+  # one on the loop reads the board. Once the second answer did not settle
+  # it, the third gives the five whys with it, the shared skill
+  # (skills/five-whys/SKILL.md).
   objection-exchanges: 3
-  objection-person: "workline:human"
   # The curator's measures, no agent (`workline test measure`, ADR-0055
   # step 6): the command run, when not test-command (one that also writes
   # coverage-report, Go's profile or LCOV, e.g. `gotestsum --junitfile

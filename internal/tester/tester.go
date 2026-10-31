@@ -34,10 +34,9 @@ type Settings struct {
 	// when it writes an issue's tests, all files together.
 	CodeLinesMax int `json:"code-lines-max"`
 	// Exchanges bounds an objection's thread: the tester's answers in it
-	// before a person decides (ADR-0055); Person, who is then asked: a
-	// label put on the merge request, or an @login mentioned.
-	Exchanges int    `json:"objection-exchanges"`
-	Person    string `json:"objection-person"`
+	// before the product owner settles it; objected to again after,
+	// the issue is blocked (ADR-0055, ADR-0059).
+	Exchanges int `json:"objection-exchanges"`
 	// BuildErrors tell, by ecosystem, a build a new test broke by a name
 	// the code lacks from one broken otherwise.
 	BuildErrors []BuildErrors `json:"build-errors"`

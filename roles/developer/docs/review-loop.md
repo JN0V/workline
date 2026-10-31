@@ -71,8 +71,12 @@ step 6).
   [five whys skill](../../../skills/five-whys/SKILL.md): the analysis
   goes in the round's comment, the fix aims at its root cause. Without
   it, the answer is refused.
-- **Past the last round**, no agent: the pull request gets the label
-  `person` (`workline:human`) and says why. No round runs after it.
+- **Past the last round**, no agent: the reviewer and the developer do
+  not agree. Its issue goes `workline:blocked`, the reason on it and on
+  the pull request
+  ([ADR-0059](../../../docs/adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#6-disagreements-end-at-the-product-owner-then-blocked));
+  no person is asked, no label on the pull request. No round runs after
+  it.
 
 ## What wakes it
 

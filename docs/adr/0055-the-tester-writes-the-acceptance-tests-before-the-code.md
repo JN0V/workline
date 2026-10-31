@@ -11,6 +11,10 @@
   tester's branch, and objects to a test rather than edit it
 - **Research:** [tests-first-and-corpus.md](../research/tests-first-and-corpus.md),
   [acceptance-test-disputes.md](../research/acceptance-test-disputes.md)
+- **Amended by:** [ADR-0059](0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md): `workline:needs-tests` wakes it, its
+  proven, linted Draft moves the issue to ready; a proof kind in place of
+  a Draft; past its answers, the product owner settles an objection,
+  then Blocked; `objection-person` is gone
 
 ## Context
 
