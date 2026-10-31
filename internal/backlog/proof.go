@@ -148,6 +148,12 @@ func (p *Plan) checkProof(f forge.Backlog, c *Proposal) (rule, why string) {
 	return "", ""
 }
 
+// Same says whether a kept pick is that one, read again: the same person,
+// kind and words; false on none kept.
+func (p *Proof) Same(o Proof) bool {
+	return p != nil && p.By != "" && p.By == o.By && p.Kind == o.Kind && p.Reason == o.Reason && p.Test == o.Test && p.Runs == o.Runs
+}
+
 // PersonsPick is the proof kind a person of the project named on an issue
 // after the tester's comment, `proof: <kind> — why`, the last one: the
 // pick with no agent (ADR-0059, decision 4). False with none.

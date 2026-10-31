@@ -65,6 +65,22 @@ func TestPersonsPickIsAPersonOfTheProjectsAfterTheTester(t *testing.T) {
 	}
 }
 
+func TestSameTellsAKeptPersonsPick(t *testing.T) {
+	pick := Proof{Kind: KindDocs, Reason: "wording", By: "bob"}
+	kept := pick
+	kept.Answers = "af1c2ed6ea0a"
+	if !kept.Same(pick) {
+		t.Error("the pick kept, read again: not the same")
+	}
+	var none *Proof
+	agent := Proof{Kind: KindDocs, Reason: "wording"}
+	other := pick
+	other.Reason = "only words"
+	if none.Same(pick) || agent.Same(Proof{Kind: KindDocs, Reason: "wording"}) || kept.Same(other) {
+		t.Error("none kept, an agent's pick, or another person's word taken for the same")
+	}
+}
+
 func TestProofWrong(t *testing.T) {
 	cases := map[string]Proof{
 		"":                     {Kind: KindSuite, Reason: "a refactor"},

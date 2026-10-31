@@ -248,8 +248,11 @@ func Pre(runDir, repo string) int {
 		comments := forge.Bodies(notes)
 		notesOf[is.ID] = notes
 		st, found, err := backlog.ReadState(comments, role)
-		if _, picked := backlog.ReadProof(comments, role); found && err == nil && !picked {
-			if pp, ok := backlog.PersonsPick(notes); ok {
+		_, _, noTest := backlog.NoTest(comments)
+		if _, picked := backlog.ReadProof(comments, role); found && err == nil && noTest && !picked {
+			// A pick already done for an earlier "no test possible" is
+			// not taken again for the tester's new word.
+			if pp, ok := backlog.PersonsPick(notes); ok && !st.Proof.Same(pp) {
 				// The tester found no test possible, and a person of the
 				// project named the kind in a comment: their pick, done
 				// with no agent (ADR-0059, decision 4).

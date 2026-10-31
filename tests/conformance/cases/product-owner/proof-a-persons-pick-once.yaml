@@ -1,0 +1,41 @@
+case: product-owner/proof-a-persons-pick-once
+about: >
+  A person's pick answers one "no test possible" (ADR-0059, decision 4):
+  once done, the tester saying none again, for another reason, is not
+  answered by that same old comment; the issue waits for a new pick.
+  A person's line under a tester's comment that says no "none" moves
+  nothing either.
+given:
+  repo: backlog
+  config:
+    routing: {events: {schedule: [product-owner], issue: [tester, developer]}}
+  forge:
+    issues:
+      - id: 9
+        title: "Clearer README"
+        body: "## Need\n\nA newcomer reads how to install in one minute.\n\n## Verification\n\nThe README's install section.\n\n## Validation\n\n- **Clear:** Given the README, When Ann reads it, Then it feels clear.\n\n## Scope\n\nsrc/export/csv.go"
+        author: ann
+        insider: true
+        labels: [workline:to-refine]
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nproof:\n  kind: docs-checks\n  reason: only the README's words change\n  answers: 000000000000\n  by: bob\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "**The tester** finds no test possible for this issue.\n\n<!-- workline:tester-proof {\"kind\":\"none\",\"reason\":\"a new reason: still no behaviour to test.\"} -->\n<!-- workline:sticky=tester/issue -->"
+          - {body: "proof: docs-checks — only the README's words change", author: bob, insider: true}
+      - id: 10
+        title: "Clearer CONTRIBUTING"
+        body: "## Need\n\nA newcomer reads how to contribute in one minute.\n\n## Verification\n\nThe CONTRIBUTING page.\n\n## Validation\n\n- **Clear:** Given the page, When Ann reads it, Then it feels clear.\n\n## Scope\n\nsrc/export/csv.go"
+        author: ann
+        insider: true
+        labels: [workline:to-refine]
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "**The tester** objects to its scenarios.\n\n<!-- workline:sticky=tester/issue -->"
+          - {body: "proof: docs-checks — wording only", author: bob, insider: true}
+run: {role: product-owner, event: schedule, ai: none}
+expect:
+  agent-calls: 0
+  no-findings: [{rule: done-as-accepted, where: "#9"}, {rule: proof-not-asked, where: "#10"}, {rule: done-as-accepted, where: "#10"}]
+  forge:
+    issues:
+      - {id: 9, labels: [workline:to-refine]}
+      - {id: 10, labels: [workline:to-refine]}
