@@ -213,8 +213,14 @@ func (rd *reader) testerMaterial(a *Act, m *material) string {
 			m.items = append(m.items, item{name: file, text: content, full: content, code: true})
 		}
 		var paths []string
-		for _, p := range pathWord.FindAllStringSubmatch(work.ByMeaning(is.Body)[work.Scope].Text, -1) {
-			paths = append(paths, p[1])
+		listed, _ := git(repo, "ls-tree", "-r", "--name-only", t.record.Base)
+		for _, w := range work.ScopeWords(work.ByMeaning(is.Body)[work.Scope].Text) {
+			if f := work.InRepo(w, strings.Fields(listed)); f != "" {
+				w = f // `parts.go:943`: the file at the base
+			}
+			if !slices.Contains(paths, w) {
+				paths = append(paths, w)
+			}
 		}
 		code := codeAt(repo, t.record.Base, paths, codeLines)
 		for i := range code {
@@ -263,7 +269,6 @@ func (rd *reader) testerMaterial(a *Act, m *material) string {
 	return ""
 }
 
-var pathWord = regexp.MustCompile("`([^`\\s]+)`")
 
 // scenariosItem names each scenario with its Given / When / Then.
 func scenariosItem(scen []tester.Scenario) item {
