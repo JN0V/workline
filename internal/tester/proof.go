@@ -101,13 +101,15 @@ func proved(runDir, repo string, t task, intents []intent.Intention, p Proof) in
 	if err != nil {
 		return fail(err)
 	}
+	// Moved only from the tester's own state: an issue labelled ready by
+	// hand keeps it, the kind recorded all the same for the developer.
 	s, ok := line.StateOf(t.Labels)
-	if !ok || s.Role != "tester" {
-		return write(runDir, verdict.Verdict{Status: verdict.Pass, Summary: "a proof kind recorded, the issue's state kept: it is not the tester's",
-			Findings: []verdict.Finding{{Rule: "proof-recorded", Level: "info", Where: where, Message: p.Kind + ": " + p.Reason}}})
+	ours := ok && s.Role == "tester" && s.Next != ""
+	to, did, rule := s.Next, "records the proof of this issue: "+p.Kind+", no new test", "proof-recorded"
+	next := "it is " + s.Next + ": whoever builds it proves it so, " + ProofKinds[p.Kind]
+	if !ours {
+		to, next = "", "whoever builds it proves it so, "+ProofKinds[p.Kind]+"; its state kept, not the tester's"
 	}
-	to, did, next, rule := s.Next, "records the proof of this issue: "+p.Kind+", no new test",
-		"it is "+s.Next+": whoever builds it proves it so, "+ProofKinds[p.Kind], "proof-recorded"
 	if p.Kind == KindNone {
 		to, did, rule = "", "finds no test possible for this issue", "no-test-possible"
 		for _, o := range line.States {
@@ -115,24 +117,36 @@ func proved(runDir, repo string, t task, intents []intent.Intention, p Proof) in
 				to = o.Name
 			}
 		}
+		if to == "" {
+			return write(runDir, verdict.Verdict{Status: verdict.Block, Summary: "no test possible, and no state of the product owner's to send it to",
+				Findings: []verdict.Finding{{Rule: "no-product-owner-state", Where: where,
+					Message: "the routing's states name none the product owner's: the issue keeps its state; add one, or have a person settle it"}}})
+		}
 		next = "back to the product owner (" + to + "): it picks a proof kind, or rewrites the scenarios"
 	}
-	add, remove, err := line.Move(to)
-	if err != nil {
-		return fail(err)
+	var move []intent.Intention
+	if to != "" {
+		add, remove, err := line.Move(to)
+		if err != nil {
+			return fail(err)
+		}
+		remove = slices.DeleteFunc(remove, func(l string) bool { return !slices.Contains(t.Labels, l) })
+		move = []intent.Intention{{Kind: "label", Value: map[string]any{"issue": t.Issue, "add": add, "remove": remove}}}
 	}
-	remove = slices.DeleteFunc(remove, func(l string) bool { return !slices.Contains(t.Labels, l) })
 	body := backlog.Said("The tester", did, p.Reason, next)
 	if p.Kind != KindNone {
 		data, _ := json.Marshal(p)
 		body += "\n<!-- workline:" + proofMark + string(data) + " -->"
 	}
-	intents = append(slices.DeleteFunc(intents, func(i intent.Intention) bool { return i.Kind == "note" }),
-		intent.Intention{Kind: "label", Value: map[string]any{"issue": t.Issue, "add": add, "remove": remove}},
+	intents = append(append(slices.DeleteFunc(intents, func(i intent.Intention) bool { return i.Kind == "note" }), move...),
 		intent.Intention{Kind: "comment", Value: map[string]any{"issue": t.Issue, "sticky": "issue", "body": body}})
 	if err := intent.Write(filepath.Join(runDir, "out", "intentions.yaml"), intents); err != nil {
 		return fail(err)
 	}
-	return write(runDir, verdict.Verdict{Status: verdict.Pass, Summary: fmt.Sprintf("no new test: %s; the issue moves to %s", p.Kind, to),
+	summary := fmt.Sprintf("no new test: %s; the issue moves to %s", p.Kind, to)
+	if to == "" {
+		summary = fmt.Sprintf("no new test: %s, recorded; the issue's state kept", p.Kind)
+	}
+	return write(runDir, verdict.Verdict{Status: verdict.Pass, Summary: summary,
 		Findings: []verdict.Finding{{Rule: rule, Level: "info", Where: where, Message: p.Kind + ": " + p.Reason}}})
 }

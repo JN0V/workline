@@ -69,7 +69,8 @@ When no new test fits, the tester's agent names the proof that does
 | `docs-checks` | a docs change | the documentalist's checks |
 
 - **Recorded**, the kind and its reason, in the tester's comment on the
-  issue; no Draft. The issue moves to ready (`proof-recorded`).
+  issue; no Draft. The issue moves to ready (`proof-recorded`); one
+  labelled ready by hand keeps its state.
 - **The developer** takes it as it takes one with a Draft, the kind in
   its task ([the pick](../../developer/docs/pick.md#which-issue)).
 - **`none`**, no test possible: the issue goes back to the product
