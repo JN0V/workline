@@ -7,7 +7,8 @@ package tester
 // commit referring to the thread, still red on the base. The need itself
 // goes to the product owner. Three answers a thread; still open after the
 // second, the third run loads the shared five whys skill and posts the
-// analysis with its answer; past the third, a person decides.
+// analysis with its answer; past the third, the product owner settles it,
+// then the issue is blocked (ADR-0059).
 
 import (
 	"encoding/json"
@@ -16,6 +17,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -315,6 +317,12 @@ func answerPre(runDir, repo string, s Settings) int {
 	switch {
 	case a.Decided != "":
 		a.Mode = modeAgent
+	case settled && again && slices.Contains(is.Labels, backlog.LabelToRefine):
+		// The product owner has not settled it yet: a reply meanwhile is
+		// no objection past it.
+		return final(runDir, verdict.Verdict{Status: verdict.Pass, Summary: fmt.Sprintf("the product owner settles the objection: #%d waits in refine", issue),
+			Findings: []verdict.Finding{{Rule: "objection-at-the-product-owner", Level: "info", Where: t.URL,
+				Message: "the builder replied before the product owner settled it: nothing for the tester till it does"}}})
 	case settled && again:
 		a.Mode = modeBlocked
 	case a.Answers >= exchanges:
