@@ -21,6 +21,7 @@ on:
     inputs:
       issue: {description: "the issue whose state's step runs; empty: the first ready issue nobody took", required: false, default: ""}
       pull-request: {description: "a review round on this pull request of the developer's, rather than an issue", required: false, default: ""}
+      reconcile: {description: "true: the reconciler now, as the hourly schedule runs it, rather than an issue", required: false, default: ""}
   # The reviewer's comment, written or edited by the App (a comment the
   # job's own token writes wakes nothing), or a person's.
   issue_comment: {types: [created, edited]}
@@ -35,7 +36,7 @@ env:
 jobs:
   judge:
     if: >-
-      (github.event_name == 'workflow_dispatch' && inputs['pull-request'] == '') ||
+      (github.event_name == 'workflow_dispatch' && inputs['pull-request'] == '' && inputs.reconcile != 'true') ||
       (github.event_name == 'issues' && startsWith(github.event.label.name, 'workline:') && github.event.sender.type != 'Bot' &&
         github.event.issue.state == 'open' && !github.event.issue.pull_request)
     # On the job, after its `if`: another label takes no group. One run an
@@ -151,12 +152,13 @@ jobs:
             echo "#$ISSUE's next step started" >> "$GITHUB_STEP_SUMMARY"
           fi
 
-  # The reconciler (ADR-0059): hourly, every open issue whose step is due
-  # and no event started, at most reconcile-max (3) a run; each one's own
-  # run started here, in its issue's concurrency group. No agent, a read
-  # token, and the right to start runs.
+  # The reconciler (ADR-0059): hourly, or by hand (input reconcile), every
+  # open issue whose step is due and no event started, at most
+  # reconcile-max (3) a run; each one's own run started here, in its
+  # issue's concurrency group. No agent, a read token, and the right to
+  # start runs.
   reconcile:
-    if: github.event_name == 'schedule'
+    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.reconcile == 'true')
     runs-on: ubuntu-latest
     permissions: {contents: read, issues: read, actions: write}
     steps:
