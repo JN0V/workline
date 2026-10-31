@@ -78,6 +78,31 @@ func TestProve(t *testing.T) {
 	}
 }
 
+// A flaky-n-of-n proof keeps its test and runs, proven or not: a review
+// round runs the same N runs again from the record.
+func TestProveFlakyKeepsItsRunsForTheReview(t *testing.T) {
+	repo := provingRepo(t, `"sh run-tests.sh {report}"`)
+	p, _ := prove(repo, "", lib("ok"), nil, &Flaky{Test: "ok", Runs: 3}, Settings{ProofSeconds: 60})
+	if p.Result != Green || p.Ran != 3 || !strings.Contains(proofLines(p, nil), "`ok` passed 3 runs of 3") {
+		t.Errorf("green: proof = %+v; want green, 3 runs of 3 said", p)
+	}
+	if n := again(&p); n == nil || *n != (Flaky{Test: "ok", Runs: 3}) {
+		t.Errorf("again(green) = %+v, want ok, 3 runs", n)
+	}
+	p, _ = prove(repo, "", lib("ok"), nil, &Flaky{Test: "a b", Runs: 3}, Settings{ProofSeconds: 60})
+	if p.Result != Unproven || again(&p) == nil {
+		t.Errorf("a name a shell reads: proof = %+v; want unproven, its runs kept", p)
+	}
+	t.Setenv("WORKLINE_ROLES_DIR", t.TempDir()) // no tester's role: its settings unread
+	p, _ = prove(repo, "", lib("ok"), nil, &Flaky{Test: "ok", Runs: 3}, Settings{})
+	if p.Result != Unproven || again(&p) == nil {
+		t.Errorf("settings unread: proof = %+v; want unproven, its runs kept", p)
+	}
+	if again(&Proof{Result: Green}) != nil {
+		t.Error("again(not flaky) is not nil")
+	}
+}
+
 // No report written: the tests did not run whole, never green.
 func TestProveNotRunWhole(t *testing.T) {
 	repo := provingRepo(t, `"true"`)

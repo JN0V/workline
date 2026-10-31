@@ -112,14 +112,20 @@ type Cap struct {
 // the one tree, `{test}` the named test; green only N runs of N, the
 // test passing in each.
 func prove(repo, at string, patches []intent.Intention, also []string, n *Flaky, s Settings) (Proof, *Cap) {
-	ts, err := testerSettings(repo)
-	if err != nil {
-		return Proof{Result: Unproven, Why: err.Error()}, nil
-	}
-	p := Proof{Command: ts.Command}
-	scope := tester.Scope{Files: also}
+	// The flaky proof's test and runs first, kept whatever stops it: a
+	// review round reads them again from the record (again).
+	var p Proof
 	if n != nil {
 		p.Test, p.Runs = n.Test, max(1, n.Runs)
+	}
+	ts, err := testerSettings(repo)
+	if err != nil {
+		p.Result, p.Why = Unproven, err.Error()
+		return p, nil
+	}
+	p.Command = ts.Command
+	scope := tester.Scope{Files: also}
+	if n != nil {
 		if !tester.TestName.MatchString(n.Test) {
 			p.Result, p.Why = Unproven, "the tester's flaky-n-of-n record names no test to run"
 			return p, nil
