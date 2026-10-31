@@ -1,6 +1,6 @@
 ---
 sources: [internal/tester/moment.go, internal/tester/write.go, internal/tester/proof.go, routing.default.yaml, internal/tester/said.go, internal/tester/frozen.go, internal/tester/objection.go, internal/tester/green.go]
-checked: c9597b31
+checked: 241b969d
 verified: agent:claude-code
 ---
 # The hand-over: what whoever builds finds
