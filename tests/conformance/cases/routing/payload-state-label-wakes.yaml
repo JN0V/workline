@@ -1,0 +1,23 @@
+case: routing/payload-state-label-wakes
+about: >
+  GitLab's issue webhook, pointed at the project's own trigger URL,
+  starts a pipeline holding its event in $TRIGGER_PAYLOAD (ADR-0059): the
+  engine reads it itself. A state's label put on an issue names that
+  issue, whoever put it; the issue line then runs the role its state
+  wakes, as a target given would.
+given:
+  repo: tested
+  env:
+    TRIGGER_PAYLOAD: '{"object_kind":"issue","user":{"username":"workline-bot"},"object_attributes":{"iid":3,"action":"update"},"changes":{"labels":{"previous":[{"title":"bug"}],"current":[{"title":"bug"},{"title":"workline:ready"}]}}}'
+  config:
+    routing: {events: {issue: [developer]}}
+  forge:
+    issues:
+      - {id: 3, title: "Multiply", labels: ["bug", "workline:ready"], body: "## Need\n\nI want to multiply.\n"}
+run: {route: issue, open-merge-request: true, ai: none}
+expect:
+  status: pass
+  agent-calls: 0
+  findings:
+    - {rule: state-wakes, level: info, where: "#3", message: "its state, ready, wakes the developer"}
+    - {rule: no-agent, where: "#3"}

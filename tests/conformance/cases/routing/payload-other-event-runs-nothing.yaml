@@ -1,0 +1,21 @@
+case: routing/payload-other-event-runs-nothing
+about: >
+  Every change to an issue starts GitLab's webhook pipeline, the
+  engine's own writes too (ADR-0059): an event that put no state's label
+  on an issue — here a label that is no state's — runs nothing, at once,
+  no forge read, no agent.
+given:
+  repo: tested
+  env:
+    TRIGGER_PAYLOAD: '{"object_kind":"issue","user":{"username":"ann"},"object_attributes":{"iid":3,"action":"update"},"changes":{"labels":{"previous":[{"title":"workline:ready"}],"current":[{"title":"workline:ready"},{"title":"bug"}]}}}'
+  config:
+    routing: {events: {issue: [developer]}}
+  forge:
+    issues:
+      - {id: 3, title: "Multiply", labels: ["bug", "workline:ready"], body: "## Need\n\nI want to multiply.\n"}
+run: {route: issue, open-merge-request: true, ai: "fake:developer-nothing"}
+expect:
+  status: pass
+  summary: "issue: #3 got no state's label (by ann): nothing to run"
+  agent-calls: 0
+  steps: []
