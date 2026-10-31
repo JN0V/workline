@@ -6,16 +6,18 @@ judged: e8a46f7
 ---
 # The tester and the developer on GitLab
 
-Part of [workline on GitLab CI](../ci-gitlab.md). GitLab starts no
-pipeline on a label or a comment: a tool given the project's webhooks
-starts them ([pipelines a tool starts](../gitlab-trigger.md)).
+Part of [workline on GitLab CI](../ci-gitlab.md). GitLab has no CI rule
+on a label or a comment: the project's own webhook, pointed at its
+trigger URL, starts the pipeline; a tool passes the event's numbers
+until the engine reads them itself
+([with GitLab alone](../gitlab-trigger.md#a-label-or-a-comment-with-gitlab-alone)).
 
 ## The tester
 
 - **Its scheduled run**: list `tester` in the `schedule` line; the
   gardening jobs run it. Install your test runner in their image.
-- **An objection** on its Draft: GitLab starts no pipeline on a comment.
-  A tool given the note webhook starts one on the default branch, with
+- **An objection** on its Draft: the note webhook starts a pipeline on
+  the default branch, with
   `WORKLINE_TASK=objection`, `MR_IID` and `MR_SOURCE_BRANCH`
   ([the variables](../gitlab-trigger.md#how-the-pipeline-knows-what-to-do));
   the jobs `workline:objection:*` answer it
@@ -29,8 +31,8 @@ starts them ([pipelines a tool starts](../gitlab-trigger.md)).
   `.gitlab-ci.yml`, its script your test job's setup commands; its
   judges run it before the agent and the proof
   ([the project's environment](../../roles/developer/docs/triggers.md#the-projects-environment)).
-- **An issue labelled ready**: GitLab starts no pipeline on a label. A
-  tool given the issue webhook starts one on the default branch, with
+- **An issue labelled ready**: the issue webhook starts a pipeline on
+  the default branch, with
   `WORKLINE_TASK=develop` and `ISSUE_IID`; the jobs `workline:develop:*`
   run the `issue` line on it
   ([the triggers](../../roles/developer/docs/triggers.md)).

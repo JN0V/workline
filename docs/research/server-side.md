@@ -36,10 +36,11 @@ role runs through one command, and thin CI templates call it on GitHub and GitLa
 
 ## GitLab specifics
 
-- GitLab CI has **no native trigger on labels or comments** without Duo
-  Premium/Ultimate.
-- Workaround without a server: a pipeline trigger token used as a project
+- GitLab CI has **no CI rule on labels or comments**.
+- Native, no server, any tier: a pipeline trigger token used as a project
   webhook; the event arrives in `TRIGGER_PAYLOAD`. One pipeline per event.
+  Tried on gitlab.com Free, 2026-10-31: a label change starts a pipeline
+  in 1 to 2 s ([the try](line-of-states.md#tried-after-the-review-gitlab-alone-starts-a-pipeline-on-a-label)).
 - Or a thin relay that turns `@mention` webhooks into pipeline triggers
   ([Schickli/agent-for-gitlab](https://github.com/Schickli/agent-for-gitlab)).
 - Claude Code documents a GitLab CI integration (beta): `claude -p` in a job.

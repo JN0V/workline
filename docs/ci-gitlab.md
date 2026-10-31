@@ -17,7 +17,7 @@ flowchart LR
     garden["<b>Schedule</b><br/>workline:garden:judge"]
     sample["<b>Schedule, WORKLINE_TASK=sample</b><br/>workline:sample:read"]
     import["<b>By hand, WORKLINE_IMPORT</b><br/>workline:import:judge"]
-    hook["<b>A webhook's tool</b><br/>workline:develop · review · objection"]
+    hook["<b>A webhook</b><br/>workline:develop · review · objection"]
   end
   subgraph none["No agent, nothing written"]
     dry["<b>Schedule</b><br/>workline:release:dry-run"]
@@ -41,9 +41,9 @@ flowchart LR
 ```
 
 What the jobs are, on every forge: [ci.md](ci.md). This page sets them up
-on gitlab.com, then on a self-managed instance. A tool starting the
-pipelines instead (trigger API, pipelines API, another pipeline):
-[gitlab-trigger.md](gitlab-trigger.md).
+on gitlab.com, then on a self-managed instance. A webhook or a tool
+starting the pipelines instead (a label, a comment, the trigger API,
+another pipeline): [gitlab-trigger.md](gitlab-trigger.md).
 
 GitLab gives a variable to every job unless it is scoped to an
 environment: the template's jobs holding a token declare `workline`,

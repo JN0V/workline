@@ -43,9 +43,11 @@ routing:
   - The `judge` job holds the agent and a read token, your setup steps
     run there ([below](#the-projects-environment)); `apply` holds the
     App's key, no AI key.
-- **GitLab**: no pipeline starts on a label. A tool given the issue
-  webhook starts one on the default branch, with `WORKLINE_TASK=develop`
-  and `ISSUE_IID`
+- **GitLab**: the project's issue webhook, pointed at its own trigger
+  URL, starts a pipeline on the default branch, with
+  `WORKLINE_TASK=develop`; `ISSUE_IID` from a tool until the engine
+  reads the event itself
+  ([with GitLab alone](../../../docs/gitlab-trigger.md#a-label-or-a-comment-with-gitlab-alone))
   ([the variables](../../../docs/gitlab-trigger.md#how-the-pipeline-knows-what-to-do));
   the jobs `workline:develop:*` run it.
 - **Run by hand** with no issue: the first ready issue nobody took.
