@@ -45,6 +45,7 @@ stars and dates were checked against the GitHub API that day.
 | [root-cause.md](root-cause.md) | Five whys, its limits and alternatives, and how agent frameworks ship a method as a shared skill |
 | [inspector-coverage.md](inspector-coverage.md) | Which linter fits each language, how it is suggested and installed pinned, the licences that limit it, AI in its place |
 | [forge-boards.md](forge-boards.md) | What GitHub Projects and GitLab boards move on their own, what an App may write, what agents and trackers do when work starts |
+| [line-of-states.md](line-of-states.md) | Whether a line of states, each waking the next role, fixes a line that delivered nothing end to end: six personas' review |
 
 ### Measured
 
