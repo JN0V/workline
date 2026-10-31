@@ -135,6 +135,10 @@ func byState(res *Result, cfg *routing.Config, o engine.Options, event string, s
 		return res
 	}
 	switch {
+	case block != nil && o.Inputs[ReconcileInput] == "list":
+		// Asked only: its own run blocks it, nothing written here.
+		res.Due = []int{o.Target.ID}
+		res.Summary = fmt.Sprintf("%s: %s due, past its hop cap: not started (--input %s=list)", event, where, ReconcileInput)
 	case block != nil:
 		res.Status = verdict.Pass
 		res.Summary = fmt.Sprintf("%s: %s blocked: %s", event, where, block.Blocked)

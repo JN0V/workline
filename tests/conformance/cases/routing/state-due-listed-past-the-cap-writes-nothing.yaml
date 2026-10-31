@@ -1,0 +1,24 @@
+case: routing/state-due-listed-past-the-cap-writes-nothing
+about: >
+  Asked whether an issue's step is due (`--input reconcile=list`), the
+  issue line writes nothing, even past the hop cap (ADR-0059): the issue
+  is said due, and its own run, holding the write token, blocks it.
+given:
+  repo: tested
+  config:
+    routing: {events: {issue: [tester, developer]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply"
+        labels: ["workline:needs-tests"]
+        body: "## Need\n\nI want to multiply.\n"
+        comments: ["<!-- workline:line-record {\"state\":\"ready\",\"body\":\"8a828a06be19\",\"hops\":8} -->\n<!-- workline:sticky=line/state -->"]
+run: {route: issue, target: {issue: 3}, open-merge-request: true, ai: "fake:developer-nothing", input: {reconcile: list}}
+expect:
+  status: pass
+  summary: "issue: #3 due, past its hop cap: not started"
+  agent-calls: 0
+  forge:
+    issues:
+      - {id: 3, labels: ["workline:needs-tests"], comments: 1, comment-contains: ["\"hops\":8"]}
