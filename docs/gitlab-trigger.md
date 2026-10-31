@@ -1,6 +1,6 @@
 ---
-sources: [ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile, internal/line/payload.go]
-checked: 99a14dc0
+sources: [ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile, internal/line/payload.go, internal/forge/gitlab_hook.go]
+checked: 3703ac54
 judged: bf016b7
 verified: agent:claude-code
 ---
@@ -28,8 +28,10 @@ GitLab is needed:
   `&variables[WORKLINE_TASK]=issue`. Event fields such as the issue's
   number do not: the engine reads them from `$TRIGGER_PAYLOAD` itself.
 - **What it needs**: any tier, Free included; a Maintainer to create the
-  hook and the trigger token; `workline setup` or `doctor` creating both
-  is to build. On a self-managed instance, an administrator allows
+  hook and the trigger token. `workline setup --yes`, run in the
+  project's clone with a Maintainer's token, creates both, the issue
+  hook only; `workline doctor` checks them
+  ([the commands](commands-setup.md#workline-setup)). On a self-managed instance, an administrator allows
   webhooks to reach the local network (Admin → Network → Outbound
   requests), as the hook calls GitLab itself (untried).
 - **Every issue change fires it**: a title edit, a new issue, a label

@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go]
-checked: 0bbdcbd9
+checked: 3703ac54
 verified: agent:claude-code
 ---
 # Conformance — what a case expects
@@ -55,7 +55,10 @@ What a case can check after its run, beyond the example in
   `description`, or `absent: true`; `check-runs`, the last check of a
   name on a commit, its `title` and `count` of annotations when given,
   each annotation listed held by `path`, `line`, `level` and a part of
-  its message (`contains`), or `absent: true`.
+  its message (`contains`), or `absent: true`; on GitLab, `hooks`, a
+  project webhook by `id`, its `url-contains`, `issue-events` and the
+  `trigger` whose token its masked variable holds, and `triggers`, a
+  trigger token by `id` and `description`, each or `absent: true`.
 
 ## Expect, after the run
 

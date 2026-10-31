@@ -1,6 +1,6 @@
 ---
-sources: [cmd/workline, internal/hooks, internal/role/config.go, internal/doctor/variables.go, internal/doctor/board.go]
-checked: 8ccdfb74
+sources: [cmd/workline, internal/hooks, internal/role/config.go, internal/doctor/variables.go, internal/doctor/board.go, internal/doctor/hook.go, internal/forge/gitlab_hook.go]
+checked: 3703ac54
 verified: agent:claude-code
 ---
 # The commands that set up
@@ -24,9 +24,16 @@ Sets up this machine, asking: the global hooks, your agent (`ai:` in your
 config), the tools the roles use, each installed with the command it
 shows; then prints `workline doctor`.
 
+- Run in a GitLab project's clone where a role of the line is routed,
+  it also creates the webhook that starts the line on an issue's label,
+  and its trigger token ([GitLab alone](gitlab-trigger.md#a-label-or-a-comment-with-gitlab-alone)):
+  - a Maintainer's token; another is refused, said;
+  - run again, it creates nothing more, or turns a hook's issue
+    events back on;
+  - the token is a masked variable of the hook's URL, never printed.
 - Run again, it offers what is set up as the default.
-- `--hooks yes|no`, `--ai <agent>` and `--install <tool,...>|all|none`
-  answer a question; `--yes` takes the defaults.
+- `--hooks yes|no`, `--ai <agent>`, `--install <tool,...>|all|none` and
+  `--issue-hook yes|no` answer a question; `--yes` takes the defaults.
 - Without a terminal, every question must be answered so.
 
 ## workline init
@@ -73,6 +80,10 @@ changes nothing.
   variables, their values never said; a token that may not list them
   (only a Maintainer's may) is said
   ([the environment](gitlab/environment.md#workline-doctor)).
+- On GitLab, with a role of the line routed: whether the issue webhook
+  starts it at once — the hook to the project's trigger URL, its issue
+  events on, not disabled, on the default branch, workline's trigger
+  token; a token that may not read them (a Maintainer's may) is said.
 - With the product owner or the developer routed: the forge's board,
   its columns matched to ready, doing and done, read-only
   ([boards](boards.md)).
