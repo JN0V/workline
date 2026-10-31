@@ -151,7 +151,8 @@ jobs:
           gh workflow view workline-develop.yml >/dev/null 2>&1 || exit 0
           workline route reconcile --ai none --forge github --open-merge-request --input reconcile=list --json > due.json || exit 0
           for n in $(jq -r '(.due // [])[]' due.json); do
-            gh workflow run workline-develop.yml --ref "$GITHUB_REF_NAME" -f issue="$n"
+            gh workflow run workline-develop.yml --ref "$GITHUB_REF_NAME" -f issue="$n" ||
+              echo "::warning title=workline::#$n's run not started: the reconciler starts it"
           done
 
   # A release's dry run, every night this runs (ADR-0050): what would hold

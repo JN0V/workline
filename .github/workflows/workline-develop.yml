@@ -170,7 +170,8 @@ jobs:
           workline route reconcile --ai none --forge github --open-merge-request --input reconcile=list --summary workline-summary.md --json > due.json
           [ ! -s workline-summary.md ] || cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"
           for n in $(jq -r '(.due // [])[]' due.json); do
-            gh workflow run "$(basename "${GITHUB_WORKFLOW_REF%%@*}")" --ref "$GITHUB_REF_NAME" -f issue="$n"
+            gh workflow run "$(basename "${GITHUB_WORKFLOW_REF%%@*}")" --ref "$GITHUB_REF_NAME" -f issue="$n" ||
+              echo "::warning title=workline::#$n's run not started: the next hour starts it"
           done
 
   # A review round (ADR-0054, step 6): a fresh run on the developer's own

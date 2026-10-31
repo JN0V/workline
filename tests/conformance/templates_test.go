@@ -1688,6 +1688,31 @@ func TestDeveloperTemplatesRouteTheReadyIssue(t *testing.T) {
 		judge.Permissions["contents"] != "read" {
 		t.Errorf("workline-develop.yml, judge: not on a person's state label, or holds a write token: %q %v", judge.If, judge.Permissions)
 	}
+	// The night's states moved, their next steps started by the
+	// gardening's apply, which may start runs.
+	gdata, err := os.ReadFile("../../ci/github/workline-gardening.yml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var garden struct {
+		Jobs map[string]struct {
+			Permissions map[string]string `yaml:"permissions"`
+			Steps       []struct {
+				Run string `yaml:"run"`
+			} `yaml:"steps"`
+		} `yaml:"jobs"`
+	}
+	if err := yaml.Unmarshal(gdata, &garden); err != nil {
+		t.Fatal(err)
+	}
+	gchained := false
+	for _, s := range garden.Jobs["apply"].Steps {
+		gchained = gchained || strings.Contains(s.Run, "workline route reconcile --ai none") && strings.Contains(s.Run, "--input reconcile=list") &&
+			strings.Contains(s.Run, "gh workflow run workline-develop.yml")
+	}
+	if !gchained || garden.Jobs["apply"].Permissions["actions"] != "write" {
+		t.Errorf("workline-gardening.yml, apply: does not start the next steps of the states the night moved: %v", garden.Jobs["apply"].Permissions)
+	}
 	// The job that moved a state starts the next step; hourly, the
 	// reconciler starts what an event missed: no agent, each due issue's
 	// own run.
