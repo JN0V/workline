@@ -148,7 +148,8 @@ How each agent is held ([ADR-0056](../../../docs/adr/0056-the-developers-agent-w
   open — and a `## Verification` saying what ran, each test red, each
   cap. Its other sections: [the pull request](pull-request.md).
 - **A tool not found**: when red, the test output's "not found" or
-  "not installed" names are listed, in the red finding and the
+  "not installed" names its `PATH` does not find either are listed, in
+  the red finding and the
   Verification. A red from the environment, not the code: the
   project's [setup steps](triggers.md#the-projects-environment) install
   it.
