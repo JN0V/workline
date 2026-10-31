@@ -61,6 +61,10 @@ settings:
   # assign an issue to an App, so the claim is a label on every forge;
   # a person's assignment keeps an issue from it (docs/pick.md).
   claim-label: "workline:developing"
+  # The hours a claim waits for its pull request: past them, with none
+  # open that closes the issue, the next run lets it go, its label off,
+  # why said on the issue (docs/pick.md#letting-a-claim-go).
+  claim-hours: 24
   # The caps (docs/proof.md): the fresh tokens the run's agent calls
   # may spend (cache reads apart), the turns one call of its agent may
   # take, the seconds it waits on its agent, then kills it, the seconds

@@ -1,0 +1,42 @@
+case: developer/stale-claim-let-go
+about: >
+  A claim no pull request followed after claim-hours (24 by default) is
+  let go at the developer's next run (ADR-0059, decision 1): its label
+  off, why written in the claim's own comment, edited in place. A claim
+  an open pull request closes is kept, however old; one whose day the
+  forge does not say is kept, and said.
+given:
+  repo: tested
+  forge:
+    issues:
+      - id: 1
+        title: "Add"
+        labels: ["workline:ready", "workline:developing"]
+        labeled: {"workline:developing": "2026-01-01T09:00:00Z"}
+        body: "## Need\n\nI want to add.\n"
+        comments: ["**The developer** takes this issue.\n\n<!-- workline:sticky=developer/claim -->"]
+      - id: 4
+        title: "Divide"
+        labels: ["workline:ready", "workline:developing"]
+        labeled: {"workline:developing": "2026-01-01T09:00:00Z"}
+        body: "## Need\n\nI want to divide.\n"
+      - {id: 5, title: "Subtract", labels: ["workline:ready", "workline:developing"], body: "## Need\n\nI want to subtract.\n"}
+    merge-requests:
+      - {id: 9, branch: workline/developer/4, base: main, title: "feat: divide", body: "Closes #4", labels: [], comments: []}
+run: {develop: [], ai: "fake:developer-nothing"}
+expect:
+  status: pass
+  agent-calls: 0
+  findings:
+    - {rule: claim-released, where: "#1", message: "no pull request closes it"}
+    - {rule: claim-age-unknown, where: "#5"}
+  no-findings: [{rule: claim-released, where: "#4"}]
+  forge:
+    issues:
+      - id: 1
+        labels: ["workline:ready"]
+        comments: 1
+        comment-contains: ["**The developer** lets this issue go.", "- **Why**: it took this issue on 2026-01-01", "claim-hours: 24", "- **Next**: it is free again"]
+        comment-lacks: ["takes this issue"]
+      - {id: 4, labels: ["workline:ready", "workline:developing"], comments: 0}
+      - {id: 5, labels: ["workline:ready", "workline:developing"], comments: 0}

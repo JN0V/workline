@@ -3,7 +3,7 @@ about: >
   Where the project routes the tester, the issue's Validation becomes
   acceptance tests before the developer codes (ADR-0054, ADR-0055): a
   ready issue whose scenarios have no tester's Draft open yet waits for
-  it, said in the record. An issue whose Validation names no scenario
+  it, said in the record and on the issue. An issue whose Validation names no scenario
   gets no Draft, so it does not wait.
 given:
   repo: tested
@@ -23,7 +23,7 @@ expect:
   agent-calls: 1
   forge:
     issues:
-      - {id: 2, labels: ["workline:ready"], comments: 0}
+      - {id: 2, labels: ["workline:ready"], comments: 1, comment-contains: ["**The developer** waits on this issue.", "its acceptance tests are not written yet", "the tester writes them"]}
       - id: 3
         labels: ["workline:ready", "workline:developing"]
         comment-contains: ['"passed":[{"issue":2,"why":"its acceptance tests are not written yet: it waits for the tester''s Draft"}]']
