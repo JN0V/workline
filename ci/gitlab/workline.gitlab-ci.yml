@@ -609,13 +609,19 @@ workline:objection:apply:
 # job's token: any other event exits at once. A pipeline schedule with
 # WORKLINE_TASK=reconcile, hourly, does the same for every issue an event
 # missed (docs/gitlab-trigger.md). No agent, the bot's token to read.
-.workline:start: &start             # each due issue's own pipeline, started with the job's token
+.workline:start: &start             # each due issue's own pipeline, started with the job's token; one not started is said, the others still started, the job warns (exit 3)
   - |
+    missed=
     for n in $(jq -r '(.due // [])[]' due.json); do
-      curl -fsS -o /dev/null -X POST --form token="$CI_JOB_TOKEN" --form ref="$CI_DEFAULT_BRANCH" \
+      if curl -fsS -o /dev/null -X POST --form token="$CI_JOB_TOKEN" --form ref="$CI_DEFAULT_BRANCH" \
         --form "variables[WORKLINE_TASK]=develop" --form "variables[ISSUE_IID]=$n" \
-        "$CI_API_V4_URL/projects/$CI_PROJECT_ID/trigger/pipeline" && echo "workline: #$n's step started"
+        "$CI_API_V4_URL/projects/$CI_PROJECT_ID/trigger/pipeline"; then
+        echo "workline: #$n's step started"
+      else
+        echo "workline: #$n's pipeline not started: the reconciler starts it"; missed="$missed #$n"
+      fi
     done
+    [ -z "$missed" ] || exit 3
 
 workline:issue:
   image: $WORKLINE_IMAGE:$WORKLINE_VERSION
