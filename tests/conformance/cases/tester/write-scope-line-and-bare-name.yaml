@@ -1,0 +1,27 @@
+case: tester/write-scope-line-and-bare-name
+about: >
+  A Scope names its files as the product owner's writing rules ask, with
+  a line (`lib.sh:1`), or by a bare name one file only has (`ops.sh` for
+  tools/ops.sh). The tester hands its agent each such file whole, under
+  the code the Scope names, never nothing.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git"
+    - "mkdir tools && printf 'sub() { echo $(($1 - $2)); }\\n' > tools/ops.sh && git add tools && git commit -qm 'feat: subtract'"
+    - "git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:ready"]
+        body: "## Need\n\nWhen I total an order, I want to multiply a price by a count, so I need not add it up by hand.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **By zero:** Given the library, When I multiply 5 by 0, Then I get 0.\n\n---\n\n## Verification\n\nA test a scenario, in tests/.\n\n## Scope\n\n- `mul` beside `add` (`lib.sh:1`), written as `sub` is (`ops.sh:1-2`).\n"
+run: {test: [write, --issue, "3"], ai: "fake:tester-two-scenarios"}
+expect:
+  status: pass
+  agent-calls: 1
+  run-files:
+    in/task.md:
+      contains: ["## The code the Scope names", "### `lib.sh`", "add() { echo", "### `tools/ops.sh`", "sub() { echo"]

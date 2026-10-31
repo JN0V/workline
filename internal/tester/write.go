@@ -174,17 +174,14 @@ func Pre(runDir, repo string) int {
 	return 0
 }
 
-// pathWord is a path-like word in backticks: what a Scope names.
-var pathWord = regexp.MustCompile("`([^`\\s]+)`")
-
 // writeCode gives the Scope's files, then the test files beside them, whole
 // up to code-lines-max lines in all, and names the project's other tests.
 func writeCode(b *strings.Builder, repo, scope string, s Settings) {
 	out, _ := git(repo, "ls-files", "-z")
 	files := strings.Split(strings.TrimSuffix(out, "\x00"), "\x00")
 	var named, tests []string
-	for _, m := range pathWord.FindAllStringSubmatch(scope, -1) {
-		if p := path.Clean(m[1]); slices.Contains(files, p) && !slices.Contains(named, p) {
+	for _, w := range work.ScopeWords(scope) {
+		if p := work.InRepo(w, files); p != "" && !slices.Contains(named, p) {
 			named = append(named, p)
 		}
 	}
