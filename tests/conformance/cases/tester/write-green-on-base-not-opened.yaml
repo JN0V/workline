@@ -2,6 +2,8 @@ case: tester/write-green-on-base-not-opened
 about: >
   A test the tester writes that passes on the base proves nothing: the
   red-first check refuses it, and the Draft is not opened as proven.
+  The refusal is written on the issue though the run blocks (ADR-0059,
+  decision 1).
 given:
   repo: tested
   setup:
@@ -22,3 +24,5 @@ expect:
   forge:
     merge-requests:
       - {id: 1, absent: true}
+    issues:
+      - {id: 3, comments: 1, comment-contains: ["**The tester** wrote no tests for this issue this run", "passes on the base", "- **Next**:"]}

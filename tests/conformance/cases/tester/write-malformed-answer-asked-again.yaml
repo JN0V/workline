@@ -1,0 +1,32 @@
+case: tester/write-malformed-answer-asked-again
+about: >
+  An answer that does not read as YAML, a list item indented one space
+  too far, is asked for again once, with the reader's error: the tester
+  never asks a refused test again, but nothing of that answer was read
+  (#761, seen on #608). The second answer reads: its tests are proven
+  red and the Draft opens.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:ready"]
+        body: "## Need\n\nI want to multiply.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **By zero:** Given the library, When I multiply 5 by 0, Then I get 0.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+run: {test: [write, --issue, "3"], ai: "cmd:sh $FIXTURES/agents/tester-mul-malformed-once.sh"}
+expect:
+  status: pass
+  summary: "2 new tests, red on the base"
+  agent-calls: 2
+  no-findings: [{rule: agent-invalid-output}, {rule: no-test-written}]
+  pushed:
+    workline/tester/issue-3:
+      tests/test_mul_two_by_three.sh: "Scenario: Two by three"
+      tests/test_mul_by_zero.sh: "Scenario: By zero"
+  forge:
+    merge-requests:
+      - {id: 1, branch: workline/tester/issue-3, draft: true}
