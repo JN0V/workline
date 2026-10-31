@@ -1,0 +1,29 @@
+case: tester/proof-none-back-to-the-product-owner
+about: >
+  No test is possible (ADR-0059, decision 4): the tester's agent says
+  so, `proof: none`, and why. The issue goes back to the product owner's
+  state, refine, said on it: the product owner picks a proof kind, or
+  rewrites the scenarios. No kind is recorded for the developer.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+    routing: {events: {issue: [tester]}}
+  forge:
+    issues:
+      - id: 3
+        title: "A calmer page"
+        labels: ["workline:needs-tests"]
+        body: "## Need\n\nA reader needs a calmer page.\n\n## Validation\n\n- **Calm:** Given the page, When Ann reads it, Then it feels calm.\n"
+run: {route: issue, target: {issue: 3}, open-merge-request: true, ai: "fake:tester-proof-none"}
+expect:
+  status: pass
+  findings: [{rule: no-test-possible, level: info, where: "#3"}]
+  forge:
+    issues:
+      - id: 3
+        labels: ["workline:to-refine"]
+        comment-contains: ["**The tester** finds no test possible for this issue.", "no test checks a feeling", "back to the product owner (refine)"]
+        comment-lacks: ["tester-proof"]
