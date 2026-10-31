@@ -1,5 +1,5 @@
 ---
-sources: [cmd/workline, internal/engine/engine.go, internal/hooks]
+sources: [cmd/workline, internal/engine/engine.go, internal/hooks, internal/line/states.go]
 checked: 523d0359
 verified: agent:claude-code
 judged: e343388
@@ -84,6 +84,19 @@ its code within [its bounds](../roles/developer/docs/bounds.md):
 - **`--merge-request <n>`**: a review round on its own pull request, not
   an issue: the review's findings fixed, proven and pushed on its
   branch ([the review loop](../roles/developer/docs/review-loop.md)).
+
+## workline route reconcile
+
+The line of states' safety net
+([the reconciler](spec/routing.md#the-reconciler)): every open issue's
+step due that no event started, run.
+
+- **Due**: the role its state wakes is routed on `issue`, and the line's
+  record on it does not hold that state, body and labelling yet.
+- **`--ai`**, `--open-merge-request`, `--forge`: as for each step.
+- **At most `reconcile-max`** steps a run (3); `--input reconcile=list`
+  names them and starts none.
+- **Run twice in a row**, the second does nothing more.
 
 ## workline review
 

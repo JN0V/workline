@@ -1,6 +1,6 @@
 ---
 sources: [internal/line, internal/routing, internal/work, routing.default.yaml]
-checked: 6521f53a
+checked: 16b5e390
 verified: agent:claude-code
 ---
 # Routing — v1 (draft)
@@ -361,7 +361,42 @@ whose result moves the issue to the next. The table is the routing's
   ([refine](backlog-acts/refine.md)); the tester's proven, linted Draft
   moves it to `ready`
   ([the hand-over](../../roles/tester/docs/hand-over.md#when-the-tests-are-written)).
-- **`max-hops`** (8) caps one issue's state moves: not built yet.
+
+### Once a state: the record
+
+- **Idempotent**: the line keeps one comment of its own on each issue
+  it ran a step for (`workline:sticky=line/state`), holding the state
+  acted on, the body's hash, when the state's label was put on (the
+  forge's label events), and the hops so far. The same three again run
+  nothing (`state-acted`); labelled anew, or its body changed, the step
+  is due again.
+- **Not for an outside failure**: a step that ended
+  `blocked-external`, its agent out of reach, keeps no record: the next
+  event or reconciler runs it again.
+- **Judged with no write token** (`--no-apply`), the records are left in
+  the line's result (`states`) and written by `workline apply --line`,
+  after its runs applied.
+- **`max-hops`** (8): each state step on an issue is a hop, counted in
+  its record. The one past the cap is not run: the issue goes
+  `workline:blocked`, the other states' labels off, the count said in
+  that comment (`hops-capped`). A person moving it back to a state by
+  its label starts its count again. A hop is a new run, not a handoff
+  (`max-handoffs` caps those inside one run).
+
+### The reconciler
+
+`workline route reconcile` walks every open issue, in the backlog's
+order, and runs each step due that no event started: hourly in CI, a
+command on a person's machine, its next loop the next step.
+
+- **No agent of its own**: it reads labels, records and label events;
+  the steps it starts ask theirs.
+- **`reconcile-max`** (3) steps a run at most; the issues left are said
+  (`reconcile-left`) and wait for the next run.
+- **`--input reconcile=list`**: it says the issues due (`due` in its
+  result) and starts none, for a CI job that starts each one's own run.
+- **Run twice in a row**, the second does nothing more: the first left
+  its records.
 
 ## Where state lives
 
