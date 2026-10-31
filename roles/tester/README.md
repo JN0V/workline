@@ -124,12 +124,8 @@ workline test write --issue 42 --ai claude
 
 ## When it runs
 
-- **When an issue needs its tests**, route it on `issue` too:
-  `issue: [tester, developer]`. The issue line runs it on an issue
-  labelled `workline:needs-tests`
-  ([the line of states](../../docs/spec/routing.md#the-line-of-states));
-  its proven Draft moves the issue to ready
-  ([the hand-over](docs/hand-over.md#when-the-tests-are-written)).
+- **At once**, routed on `issue` too: an issue labelled
+  `workline:needs-tests` ([the hand-over](docs/hand-over.md#when-the-tests-are-written)).
 - **At night**, list it in the `schedule` line, after the product owner
   and the reviewer
   ([routing](../../docs/spec/routing.md#the-line)):

@@ -1,6 +1,6 @@
 ---
 sources: [internal/tester/moment.go, internal/tester/write.go, routing.default.yaml, internal/tester/said.go, internal/tester/frozen.go, internal/tester/objection.go, internal/tester/green.go]
-checked: 99a14dc0
+checked: 6521f53a
 verified: agent:claude-code
 ---
 # The hand-over: what whoever builds finds
@@ -42,8 +42,10 @@ flowchart LR
 
 The issue waits for its tests labelled `workline:needs-tests`, set by
 the product owner; an issue labelled ready by hand, with no Draft, is
-taken too. Once the Draft is proven, the engine moves the issue on, no
-agent asked
+taken too. Routed on `issue` (`issue: [tester, developer]`), the issue
+line runs the tester on it at once
+([the line of states](../../../docs/spec/routing.md#the-line-of-states)).
+Once the Draft is proven, the engine moves the issue on, no agent asked
 ([ADR-0059](../../../docs/adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#3-tests-wakes-the-tester-its-result-makes-ready)):
 
 - **Each scenario** has its row in `## Tests`, or its reason under
