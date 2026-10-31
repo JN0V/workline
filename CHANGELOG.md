@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.63.0](https://github.com/JN0V/workline/compare/v0.62.0...v0.63.0) (2026-10-31)
+
+
+### Features
+
+* **developer:** a flaky test's proof runs it N runs of N ([#773](https://github.com/JN0V/workline/issues/773)) ([6688830](https://github.com/JN0V/workline/commit/668883098ed0987b14358ec4df7d29548f7cdc61))
+* **developer:** a red proof names the tools not found ([#772](https://github.com/JN0V/workline/issues/772)) ([429df96](https://github.com/JN0V/workline/commit/429df96767709542df6d37232ea2bf09ba0e3da1))
+* **product-owner:** pick a proof kind after no test possible ([#777](https://github.com/JN0V/workline/issues/777)) ([73edba8](https://github.com/JN0V/workline/commit/73edba8364400ab651c92a1c8f5fd5836dbcf830))
+* **setup:** create and check GitLab's issue webhook ([#771](https://github.com/JN0V/workline/issues/771)) ([5a8417b](https://github.com/JN0V/workline/commit/5a8417bac488f9f35ae0dc719549fdc9435dad2d))
+* **tester:** ask an unreadable answer again, say refusals ([#776](https://github.com/JN0V/workline/issues/776)) ([427ed17](https://github.com/JN0V/workline/commit/427ed17e058deeee275a23fdd537396314c522ad))
+
 ## [0.62.0](https://github.com/JN0V/workline/compare/v0.61.0...v0.62.0) (2026-10-31)
 
 
