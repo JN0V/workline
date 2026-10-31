@@ -1,0 +1,21 @@
+case: product-owner/ready-goes-to-its-tests-first
+about: >
+  Where the project routes the tester, the product owner's ready sends an
+  issue whose Validation names scenarios to its tests first,
+  workline:needs-tests (ADR-0059, decision 2): the tester's result makes
+  it ready. An issue with no named scenario goes to ready, as before:
+  the tester writes nothing for it.
+given:
+  repo: backlog
+  config:
+    routing: {events: {schedule: [product-owner], issue: [tester, developer]}}
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.\n\n## Need\n\nThe monthly report counts every sale.\n\n## Verification\n\nA test writes three rows.\n\n## Validation\n\n- **A known day:** Given a day of three sales, When Ann opens it, Then she counts three.\n\n## Scope\n\nsrc/export/csv.go", author: ann, insider: true, labels: [workline:to-refine], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 10, title: "Rows lost again", body: "## Need\n\nThe monthly report counts every sale.\n\n## Verification\n\nA test writes three rows.\n\n## Validation\n\nAnn opens a known day.\n\n## Scope\n\nsrc/export/csv.go", author: ann, insider: true, labels: [workline:to-refine], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:ready-three}
+expect:
+  forge:
+    issues:
+      - {id: 9, labels: [workline:needs-tests]}
+      - {id: 10, labels: [workline:ready]}

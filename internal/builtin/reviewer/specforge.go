@@ -93,7 +93,7 @@ func waitingSpecs(repo string, f forge.Backlog) (ws []waiting, unread []verdict.
 	}
 	backlog.Order(open)
 	for _, is := range open {
-		if slices.Contains(is.Labels, backlog.LabelReady) || len(backlog.NotReady(is, nil, true)) > 0 {
+		if backlog.Readied(is) || len(backlog.NotReady(is, nil, true)) > 0 {
 			continue
 		}
 		comments, err := f.Comments(forge.Target{Kind: "issue", ID: is.ID})

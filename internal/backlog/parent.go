@@ -142,7 +142,7 @@ func ReadEvidence(parent forge.Issue, parts []Part, role string, tests TestFinde
 		switch {
 		case p.Gone:
 			title, state = "", "gone from the forge (deleted or moved): its part not delivered here"
-		case !p.Issue.Closed && slices.Contains(p.Issue.Labels, LabelReady):
+		case !p.Issue.Closed && Readied(p.Issue):
 			state = "open, ready"
 		case !p.Issue.Closed:
 		case p.Issue.Reason == "not_planned":

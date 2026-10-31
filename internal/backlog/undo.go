@@ -153,7 +153,7 @@ func findUndone(f forge.Backlog, role string, open map[int]forge.Issue, done []D
 			}
 			gone = left == 0
 		case "ready":
-			if !slices.Contains(is.Labels, LabelReady) {
+			if !Readied(is) {
 				evidence = fmt.Sprintf("#%d's label %s taken off by a person; the role had moved it to ready", d.Issue, LabelReady)
 			}
 		case "split":
