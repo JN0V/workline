@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.60.0](https://github.com/JN0V/workline/compare/v0.59.0...v0.60.0) (2026-10-30)
+
+
+### Features
+
+* **developer:** fresh-token cap, caps sized, step 7 measured ([#747](https://github.com/JN0V/workline/issues/747)) ([387ceba](https://github.com/JN0V/workline/commit/387ceba150a86e0df8d19f529559f5d232ed351c))
+* **developer:** proof on touched folders, project setup steps ([#743](https://github.com/JN0V/workline/issues/743)) ([ee39008](https://github.com/JN0V/workline/commit/ee3900826506e9eb7c0fd803c722dcaa8f352175))
+
+
+### Bug Fixes
+
+* **developer:** a claim resumed after a failed push completes ([#741](https://github.com/JN0V/workline/issues/741)) ([10b8f1a](https://github.com/JN0V/workline/commit/10b8f1a0e46679e418660063e6444c764ef322e4))
+* **developer:** closing words never lose code nor objection ([#749](https://github.com/JN0V/workline/issues/749)) ([724fda8](https://github.com/JN0V/workline/commit/724fda835619e43a66c897854fbe0eb5c93e5cc0))
+* **developer:** keep the commit whatever stops the run ([#744](https://github.com/JN0V/workline/issues/744)) ([aebf60f](https://github.com/JN0V/workline/commit/aebf60ff9d385ae1d05c4d997ccbee1f015c1244))
+* **developer:** objections link never read, words kept on claim ([#751](https://github.com/JN0V/workline/issues/751)) ([7f980bf](https://github.com/JN0V/workline/commit/7f980bfff256bc136e50249b4996842118c8303f))
+* **developer:** sandbox stubs never reach the branch ([#748](https://github.com/JN0V/workline/issues/748)) ([8b3202d](https://github.com/JN0V/workline/commit/8b3202d08e511ed1b44f07bc7be44effb58808ac))
+
 ## [0.59.0](https://github.com/JN0V/workline/compare/v0.58.0...v0.59.0) (2026-10-30)
 
 
