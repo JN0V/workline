@@ -127,3 +127,11 @@ func and(names []string) string {
 func fold(summary, body string) string {
 	return "<details><summary>" + html.EscapeString(summary) + "</summary>\n\n" + body + "\n\n</details>"
 }
+
+// Said is what a role writes on an issue when it waits on it, refuses it
+// or lets it go (ADR-0059, decision 1): what it did, why, what comes
+// next, in its one comment there, edited in place (principle 14).
+func Said(who, did, why, next string) string {
+	return fmt.Sprintf("**%s** %s.\n\n- **Why**: %s.\n- **Next**: %s.\n", who, did,
+		strings.TrimSuffix(strings.TrimSpace(why), "."), strings.TrimSuffix(strings.TrimSpace(next), "."))
+}
