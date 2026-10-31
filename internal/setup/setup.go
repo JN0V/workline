@@ -184,8 +184,11 @@ func Run(a Answers, m Machine) error {
 	for _, d := range did {
 		_, _ = fmt.Fprintln(m.Out, "  "+d)
 	}
-	if err != nil {
+	if err != nil && forge.Forbidden(err) {
 		return fmt.Errorf("GitLab's issue webhook: %s; creating it needs a Maintainer's token (docs/gitlab-trigger.md)", forge.Said(err))
+	}
+	if err != nil {
+		return fmt.Errorf("GitLab's issue webhook: %s (docs/gitlab-trigger.md)", forge.Said(err))
 	}
 	if len(did) == 0 {
 		_, _ = fmt.Fprintln(m.Out, "  GitLab's issue webhook is already set up")

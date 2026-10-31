@@ -75,7 +75,11 @@ func issueHook(r *Report, o Options, cfg *role.ProjectConfig, line *routing.Conf
 		r.add(Check{Area: "repository", Rule: "issue-hook-disabled", Level: Warn,
 			Message: fmt.Sprintf("GitLab %s the issue webhook after its calls failed: the hourly reconciler alone moves the line", map[bool]string{true: "disabled", false: "paused"}[s.Alert == "disabled"]),
 			Fix:     "Settings → Webhooks: read its recent events, fix the cause, then Enable (" + hookDoc + ")"})
-	case s.Default != "" && s.Ref != s.Default:
+	case s.Default == "":
+		r.add(Check{Area: "repository", Rule: "issue-hook-no-branch", Level: Warn,
+			Message: "the project has no default branch yet: the issue webhook starts no pipeline",
+			Fix:     "push the default branch, then `workline doctor` again"})
+	case s.Ref != s.Default:
 		r.add(Check{Area: "repository", Rule: "issue-hook-ref", Where: s.Ref, Level: Warn,
 			Message: fmt.Sprintf("the issue webhook starts pipelines on %q, not on the default branch %s: the job workline:issue runs on the default branch only", s.Ref, s.Default),
 			Fix:     "Settings → Webhooks: its URL's /ref/<branch>/, the default branch (" + hookDoc + ")"})

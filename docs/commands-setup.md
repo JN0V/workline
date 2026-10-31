@@ -29,7 +29,8 @@ shows; then prints `workline doctor`.
   and its trigger token ([GitLab alone](gitlab-trigger.md#a-label-or-a-comment-with-gitlab-alone)):
   - a Maintainer's token; another is refused, said;
   - run again, it creates nothing more, or turns a hook's issue
-    events back on;
+    events back on; a hook GitLab disabled, or on another branch, is
+    said, for you to mend in Settings → Webhooks;
   - the token is a masked variable of the hook's URL, never printed.
 - Run again, it offers what is set up as the default.
 - `--hooks yes|no`, `--ai <agent>`, `--install <tool,...>|all|none` and

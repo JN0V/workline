@@ -9,6 +9,7 @@ package forge
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/url"
 	"strconv"
@@ -101,11 +102,38 @@ func issueHookRef(raw, id, path string) (string, bool) {
 	if u.Query().Get("variables[WORKLINE_TASK]") != "issue" {
 		return "", false
 	}
-	ref := ""
+	ref := u.Query().Get("ref") // /trigger/pipeline?ref=, else the path's /ref/<branch>/
 	if r, ok := strings.CutPrefix(strings.TrimSuffix(rest, "/trigger/pipeline"), "ref/"); ok {
 		ref, _ = url.PathUnescape(r)
 	}
 	return ref, true
+}
+
+// issueHook is the best of the project's hooks to its own trigger URL
+// with WORKLINE_TASK=issue: on issue events, then not disabled, then on
+// the default branch; found false when none is.
+func issueHook(hooks []gitlabHook, id, path, branch string) (h gitlabHook, ref string, found bool) {
+	score := func(h gitlabHook, ref string) int {
+		n := 0
+		if h.IssueEvents {
+			n += 4
+		}
+		if h.Alert != "disabled" && h.Alert != "temporarily_disabled" {
+			n += 2
+		}
+		if ref == branch {
+			n++
+		}
+		return n
+	}
+	best := -1
+	for _, c := range hooks {
+		r, ok := issueHookRef(c.URL, id, path)
+		if ok && score(c, r) > best {
+			h, ref, found, best = c, r, true, score(c, r)
+		}
+	}
+	return h, ref, found
 }
 
 func (g *gitlab) hooks() ([]gitlabHook, error) {
@@ -136,11 +164,7 @@ func (g *gitlab) IssueHook() (HookState, error) {
 	if err != nil {
 		return s, err
 	}
-	for _, h := range hooks {
-		ref, ok := issueHookRef(h.URL, id, path)
-		if !ok || s.Found && s.IssueEvents {
-			continue
-		}
+	if h, ref, ok := issueHook(hooks, id, path, branch); ok {
 		s.Found, s.IssueEvents, s.Alert, s.Ref = true, h.IssueEvents, h.Alert, ref
 	}
 	triggers, err := g.triggers()
@@ -154,7 +178,9 @@ func (g *gitlab) IssueHook() (HookState, error) {
 }
 
 // SetIssueHook creates the trigger token and the hook when no hook is
-// there; a hook there with its issue events off gets them on. A trigger
+// there; a hook there with its issue events off gets them on; one GitLab
+// disabled, or on another branch, is said, left for a person to mend: its
+// token is not read back. A trigger
 // token of workline's whose value GitLab shows (the token's user owns it)
 // is used again, else a new one is created.
 func (g *gitlab) SetIssueHook() ([]string, error) {
@@ -169,17 +195,21 @@ func (g *gitlab) SetIssueHook() ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	for _, h := range hooks {
-		if _, ok := issueHookRef(h.URL, id, path); !ok {
-			continue
+	if h, ref, ok := issueHook(hooks, id, path, branch); ok {
+		var did []string
+		if !h.IssueEvents {
+			if _, err := g.api("-X", "PUT", fmt.Sprintf("projects/:id/hooks/%d", h.ID), "-f", "url="+h.URL, "-f", "issues_events=true"); err != nil {
+				return nil, err
+			}
+			did = append(did, fmt.Sprintf("turned on the issue events of webhook %d", h.ID))
 		}
-		if h.IssueEvents {
-			return nil, nil
+		if h.Alert == "disabled" || h.Alert == "temporarily_disabled" {
+			did = append(did, fmt.Sprintf("webhook %d is there, but GitLab disabled it after its calls failed: Settings → Webhooks, read its recent events, fix the cause, then Enable", h.ID))
 		}
-		if _, err := g.api("-X", "PUT", fmt.Sprintf("projects/:id/hooks/%d", h.ID), "-f", "url="+h.URL, "-f", "issues_events=true"); err != nil {
-			return nil, err
+		if ref != branch {
+			did = append(did, fmt.Sprintf("webhook %d is there, but starts pipelines on %q, not on the default branch %s: Settings → Webhooks, its URL's /ref/<branch>/", h.ID, ref, branch))
 		}
-		return []string{fmt.Sprintf("turned on the issue events of webhook %d", h.ID)}, nil
+		return did, nil
 	}
 	var did []string
 	triggers, err := g.triggers()
@@ -222,3 +252,7 @@ func (g *gitlab) SetIssueHook() ([]string, error) {
 	_ = json.Unmarshal(out, &h)
 	return append(did, fmt.Sprintf("created webhook %d on issue events: %s", h.ID, target)), nil
 }
+
+// Forbidden says whether err is the forge refusing the token's role or
+// scope (HTTP 403).
+func Forbidden(err error) bool { return errors.Is(err, errForbidden) }

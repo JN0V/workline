@@ -1,0 +1,22 @@
+case: setup/setup-gitlab-issue-hook-trigger-reused
+about: >
+  No issue webhook, but workline's trigger token there, owned by the
+  token's user, so GitLab lists its value: setup creates the hook with
+  that token and no other trigger token.
+given:
+  repo: documented
+  config:
+    routing: {events: {issue: [developer]}}
+  env: {PATH: "/usr/bin:/bin"}
+  forge:
+    merge-requests: []
+    hooks: []
+    triggers: [{id: 5, description: "workline: the issue webhook (ADR-0059)", token: glptt-owned-by-the-bot-000000, owner: workline-bot}]
+run: {setup: [--yes, --ai, none, --install, none], forge: gitlab}
+expect:
+  checks:
+    - {rule: issue-hook, level: ok}
+  stdout-lacks: [glptt-owned]
+  forge:
+    triggers: [{id: 6, absent: true}]
+    hooks: [{id: 1, issue-events: true, trigger: 5}]
