@@ -1,0 +1,23 @@
+case: routing/state-acted-listed-not-due
+about: >
+  Asked whether an issue's step is due (`--input reconcile=list`), the
+  issue line says none when its record holds that state, body and
+  labelling already (ADR-0059): the job that applied starts no run, so
+  a step never runs twice for one state.
+given:
+  repo: tested
+  config:
+    routing: {events: {issue: [developer]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply"
+        labels: ["workline:ready"]
+        body: "## Need\n\nI want to multiply.\n"
+        comments: ["<!-- workline:line-record {\"state\":\"ready\",\"body\":\"8a828a06be19\",\"hops\":1} -->\n<!-- workline:sticky=line/state -->"]
+run: {route: issue, target: {issue: 3}, open-merge-request: true, ai: "fake:developer-nothing", input: {reconcile: list}}
+expect:
+  status: pass
+  summary: "issue: #3 wakes no role"
+  agent-calls: 0
+  findings: [{rule: state-acted, level: info, where: "#3"}]
