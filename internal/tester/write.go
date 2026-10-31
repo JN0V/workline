@@ -500,11 +500,15 @@ func lintTests(repo, tree, base string) *verdict.Verdict {
 			continue
 		}
 		names = append(names, name)
+		said := false
 		for _, f := range v.Findings {
-			if f.Level == "" || f.Level == verdict.Block {
+			if f.Level == "" || f.Level == verdict.Block || f.Level == "error" {
 				f.Rule, f.Message = "tests-lint", fmt.Sprintf("the gate %s: %s (%s)", name, f.Message, f.Rule)
-				found = append(found, f)
+				found, said = append(found, f), true
 			}
+		}
+		if !said { // a gate that blocks is always said, its own summary when no finding of it blocks
+			found = append(found, verdict.Finding{Rule: "tests-lint", Where: name, Message: fmt.Sprintf("the gate %s: %s", name, v.Summary)})
 		}
 	}
 	if len(names) == 0 {

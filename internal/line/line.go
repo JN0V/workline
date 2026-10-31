@@ -173,6 +173,10 @@ func RunWith(event string, base engine.Options, gates *Gates) *Result {
 		if !read || len(woken) == 0 {
 			return res
 		}
+		if !slices.Contains(steps, woken[0]) { // left out by `--input skip`
+			res.Summary = fmt.Sprintf("%s: #%d's step, the %s, left out by --input %s", event, base.Target.ID, woken[0], SkipInput)
+			return res
+		}
 		steps = woken
 	}
 	// Main after a merge: its gates compare HEAD with main's tip before
