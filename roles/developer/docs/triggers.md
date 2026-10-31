@@ -53,12 +53,12 @@ routing:
     run there ([below](#the-projects-environment)); `apply` holds the
     App's key, no AI key.
 - **GitLab**: the project's issue webhook, pointed at its own trigger
-  URL, starts a pipeline on the default branch, with
-  `WORKLINE_TASK=develop`; `ISSUE_IID` from a tool until the engine
-  reads the event itself
-  ([with GitLab alone](../../../docs/gitlab-trigger.md#a-label-or-a-comment-with-gitlab-alone))
-  ([the variables](../../../docs/gitlab-trigger.md#how-the-pipeline-knows-what-to-do));
-  the jobs `workline:develop:*` run it.
+  URL with `WORKLINE_TASK=issue`, starts a pipeline; the engine reads the
+  event, and a state's label due starts that issue's own pipeline,
+  `WORKLINE_TASK=develop` and `ISSUE_IID`, where the jobs
+  `workline:develop:*` run it
+  ([the line of states on GitLab](../../../docs/gitlab-trigger.md#the-line-of-states-on-it)).
+  Hourly, a schedule with `WORKLINE_TASK=reconcile`.
 - **Run by hand** with no issue: the first ready issue nobody took.
 
 ## On a schedule
@@ -103,8 +103,8 @@ routing:
   - GitHub keeps one run waiting a group: by issue, a dropped run is
     only the same issue labelled again.
   - Ready issues apart run side by side.
-- **GitLab, one run at a time**: the jobs' `resource_group`, which
-  queues every run.
+- **GitLab, one run an issue**: the jobs' `resource_group`,
+  `workline-issue-<n>`, which queues that issue's runs.
 - **The engine's own labels** start no step on GitHub: the job that
   set them starts the next one; the reconciler catches the rest.
 
