@@ -8,39 +8,24 @@
 - **Settles:** [#752](https://github.com/JN0V/workline/issues/752)
 - **Builds on:** [ADR-0018], [ADR-0042], [ADR-0050], [ADR-0054],
   [ADR-0055], [ADR-0057]; principles 1, 4, 5, 10, 12, 13, 14
-- **Amends, once built:**
-  - [ADR-0054]: the developer is woken by Ready alone, never by the
-    schedule; it accepts a proof kind in place of a Draft; past its
-    caps an issue goes Blocked, not to a person;
-  - [ADR-0055]: the tester is woken by `workline:needs-tests`, not by
-    `workline:ready` on the schedule; an objection past three exchanges
-    goes to the product owner, then Blocked; `objection-person` and its
-    default `workline:human` go;
-  - [ADR-0057]: three slots more, refine, tests and blocked;
-  - [ADR-0018]: the product owner sets `workline:needs-tests` where the
-    tester is routed, `workline:ready` where it is not;
-  - [routing.md](../spec/routing.md): its states, and how a step starts
-    the next ([below](#explicit-chaining-and-the-engines-own-writes)).
+- **Amends, once built:** [ADR-0054] and [ADR-0055], their triggers
+  (§3) and a person at the end of a dispute (§6); [ADR-0057], three
+  slots more (§2); [ADR-0018], who sets which label (§2);
+  [routing.md](../spec/routing.md), its states and
+  [the chaining](#explicit-chaining-and-the-engines-own-writes)
 
 ## Context
 
-- **Since the build path went live (about 2026-10-29), nothing went
-  end to end**: one developer pull request, red and idle 25 h
-  ([#699](https://github.com/JN0V/workline/pull/699)); two tester
-  Drafts ([#677](https://github.com/JN0V/workline/pull/677),
-  [#713](https://github.com/JN0V/workline/pull/713)); all open.
-- **25 issues carry `workline:ready`**, a median wait of about 18 days;
-  some stale (one names a function deleted weeks ago), some not one
-  run's work.
-- **A refusal stays in a CI log**: an issue claimed by the developer
-  since 2026-10-30, no pull request, no word on it.
-- **The night drives the line**: the gardening cron starts hours late,
-  skipped 2026-10-22 to 10-26; the tester takes one issue a night.
-- **Ready wakes the developer too early**: it refuses, the tester's
-  Draft not written yet ([#752](https://github.com/JN0V/workline/issues/752)).
-- **Some issues need no new test**: a flaky test made reliable
-  ([#619](https://github.com/JN0V/workline/issues/619)) never reaches
-  the developer.
+The evidence in full: [research](../research/line-of-states.md#the-evidence-2026-10-31).
+
+- **Nothing end to end** since about 2026-10-29: one red developer pull
+  request ([#699](https://github.com/JN0V/workline/pull/699)), two
+  tester Drafts, all open.
+- **25 issues `workline:ready`**, weeks old, some stale, some not one
+  run's work; refusals and claims said only in CI logs.
+- **The night drives the line**: a late, sometimes skipped cron; the
+  tester takes one issue a night; Ready wakes the developer before its
+  tests exist ([#752](https://github.com/JN0V/workline/issues/752)).
 
 ## Decision
 
@@ -99,9 +84,8 @@ Built first, whatever else.
   - the Draft passes the project's lint.
 - **The product owner reads no tests by default.** It is called only
   when the tester says "no test possible", or an objection is about
-  the need itself ([ADR-0055]).
-- **A product owner's review of the tests** comes later, only if the
-  developer's objections show it is needed (build step 5).
+  the need itself ([ADR-0055]); a review of every Draft waits for
+  build step 5.
 
 ### 4. A proof kind, not always a new test
 
@@ -146,7 +130,7 @@ Built first, whatever else.
 ### 8. Event-driven, the night for upkeep
 
 - **The state machine lives in the engine**: one table, state → role →
-  next state, read by a pure function, as routing is.
+  next state, in the routing's file, read by a pure function.
 - **Thin forge adapters**: on GitHub one workflow on `issues: labeled`
   and `workflow_dispatch`; on GitLab one job set, started by the
   pipelines API.
@@ -187,28 +171,30 @@ Built first, whatever else.
 
 ### 10. Tracked apart, not fixed by states
 
-- **The developer's proof environment**: ten conformance cases red on
-  [#699](https://github.com/JN0V/workline/pull/699), none touched by it.
-- **The 25 ready issues** re-checked once by the product owner.
-- **The tester's malformed answer** asked again once
-  ([#753](https://github.com/JN0V/workline/pull/753)'s try).
+- **The developer's proof environment**, red on conformance cases it
+  never touched ([#760](https://github.com/JN0V/workline/issues/760)).
+- **The tester's malformed answer**, asked again once
+  ([#761](https://github.com/JN0V/workline/issues/761)).
 
 ## Build plan
 
 One pull request a step, its cases first in `tests/conformance/cases/`,
 `pending.txt` listing what does not pass.
 
-1. **Written on the issue**: the sticky comment a role, a stale claim
-   released (§1).
-2. **The line**: the state table, the reconciler, explicit chaining
-   and the hop cap; Tests wakes the tester, Ready the developer; proof
-   kinds (§2–§6, §8).
-3. **A first result**: the product owner re-checks the ready issues
-   once; then two small fresh issues through the whole line, timed.
-4. **The board and the flow**: the tests and blocked slots on every
-   forge ([ADR-0057]); WIP limits; staleness per state (§7, §9).
-5. **A product owner's review of the tests**, only if the developer's
-   objections after step 3 show it is needed.
+1. **Written on the issue** (§1,
+   [#755](https://github.com/JN0V/workline/issues/755)).
+2. **The line**: the state table, the reconciler, explicit chaining,
+   the hop cap, proof kinds (§2–§6, §8,
+   [#756](https://github.com/JN0V/workline/issues/756)).
+3. **A first result**: the ready issues re-checked once by the product
+   owner, then two small fresh issues through the line, timed
+   ([#757](https://github.com/JN0V/workline/issues/757)).
+4. **The board and the flow**: the tests and blocked slots
+   ([ADR-0057]), WIP limits, staleness (§7, §9,
+   [#758](https://github.com/JN0V/workline/issues/758)).
+5. **A product owner's review of the tests**, only if objections after
+   step 3 show the need
+   ([#759](https://github.com/JN0V/workline/issues/759)).
 
 Docs to update with each step: [routing.md](../spec/routing.md) (its
 states, the chaining), [boards.md](../boards.md),
@@ -228,25 +214,22 @@ ADRs above.
   label asks them to act.
 - **A GitLab project needs its webhook tool** for events; without it,
   the reconciler alone moves the line, hourly.
-- **More labels**: two new ones, set and cleared by the engine.
 
 ## Not chosen
 
-- **Today's line**: Ready wakes the developer, the tester writes one
-  issue a night. The evidence above: nothing end to end.
+Each persona's case: [research](../research/line-of-states.md#each-personas-answer).
+
+- **Today's line**: the evidence above, nothing end to end.
 - **The maintainer's six states** (to-refine, needs-tests, tests-ready,
-  ready-to-dev, to-validate, done):
-  - a product owner's re-read of every Draft: tokens and a hop on each
-    issue, for a mismatch the engine's scenario check catches; kept as
-    step 5, if objections show it;
-  - a tester's agent pass at to-validate: the required green proof
-    already says it, with no agent;
-  - done as a label: the forge's close does it.
-- **The tester woken on `workline:ready`** ([#752]'s alternative): no
-  new state, but Ready means "tests to come", and the developer still
-  waits.
-- **A `workline:human` label for a blocked issue**: it asks a person to
-  act; the person is on the loop, not in it.
+  ready-to-dev, to-validate, done): a product owner's re-read of every
+  Draft costs an agent call and a hop an issue, for a mismatch the
+  engine's scenario check catches (step 5 if objections show it); a
+  tester's agent pass at to-validate repeats the green proof; done is
+  the forge's close.
+- **The tester woken on `workline:ready`** ([#752]'s alternative):
+  Ready would mean "tests to come", and the developer still waits.
+- **A `workline:human` label**: it asks a person to act; the person is
+  on the loop, not in it.
 - **The night as the line's engine**: a late or skipped cron stops all
   work.
 
