@@ -463,7 +463,7 @@ workline:merge:
   rules:
     # A schedule left from before ADR-0051 (WORKLINE_TASK=release-docs) runs
     # no gardening: delete it (docs/ci-gitlab.md).
-    - if: $CI_PIPELINE_SOURCE == "schedule" && $WORKLINE_TASK != "sample" && $WORKLINE_TASK != "release-docs"
+    - if: $CI_PIPELINE_SOURCE == "schedule" && $WORKLINE_TASK != "sample" && $WORKLINE_TASK != "release-docs" && $WORKLINE_TASK != "reconcile"
   before_script:                    # one shell with the script: a job without the bot's token stops here
     - *bot-token
     - *trust
@@ -493,7 +493,7 @@ workline:garden:apply:
   stage: deploy
   needs: [workline:garden:judge]
   rules:                            # also when the judge failed: what passed before a step blocked is applied (#142)
-    - if: $CI_PIPELINE_SOURCE == "schedule" && $WORKLINE_TASK != "sample" && $WORKLINE_TASK != "release-docs"
+    - if: $CI_PIPELINE_SOURCE == "schedule" && $WORKLINE_TASK != "sample" && $WORKLINE_TASK != "release-docs" && $WORKLINE_TASK != "reconcile"
       when: always
   script:
     - *bot
@@ -601,16 +601,72 @@ workline:objection:apply:
 .workline:setup:
   script: []
 
-# The developer takes a ready issue (ADR-0054), routed `issue: [developer]`:
-# a pipeline a tool starts on the issue webhook, WORKLINE_TASK=develop and
-# ISSUE_IID (docs/gitlab-trigger.md); without ISSUE_IID, the first ready
-# issue nobody took. One at a time (resource_group). Your setup steps run
-# in the judge. Why each part: roles/developer/docs/triggers.md.
+# The line of states (ADR-0059): the project's issue webhook, pointed at
+# its own trigger URL with WORKLINE_TASK=issue, starts a pipeline on every
+# issue change; workline:issue reads the event ($TRIGGER_PAYLOAD) and,
+# when it put a state's label on an issue whose step is due, starts that
+# issue's own pipeline, WORKLINE_TASK=develop and ISSUE_IID, with the
+# job's token: any other event exits at once. A pipeline schedule with
+# WORKLINE_TASK=reconcile, hourly, does the same for every issue an event
+# missed (docs/gitlab-trigger.md). No agent, the bot's token to read.
+.workline:start: &start             # each due issue's own pipeline, started with the job's token
+  - |
+    for n in $(jq -r '(.due // [])[]' due.json); do
+      curl -fsS -o /dev/null -X POST --form token="$CI_JOB_TOKEN" --form ref="$CI_DEFAULT_BRANCH" \
+        --form "variables[WORKLINE_TASK]=develop" --form "variables[ISSUE_IID]=$n" \
+        "$CI_API_V4_URL/projects/$CI_PROJECT_ID/trigger/pipeline" && echo "workline: #$n's step started"
+    done
+
+workline:issue:
+  image: $WORKLINE_IMAGE:$WORKLINE_VERSION
+  stage: test
+  environment: *environment
+  variables: {GIT_DEPTH: 0}
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "trigger" && $WORKLINE_TASK == "issue" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  before_script: [*bot-token, *trust, export GITLAB_TOKEN=$WORKLINE_GITLAB_TOKEN]
+  script:
+    - workline route issue --ai none --forge gitlab --open-merge-request --input reconcile=list --summary workline-summary.md --summary workline-summary.html --json > due.json
+    - *start
+  allow_failure: {exit_codes: [3]}  # the forge out of reach warns: the reconciler catches it
+  after_script: *summary
+  artifacts:
+    when: always
+    paths: [workline-summary.html, workline-summary.md, due.json]
+    reports: {annotations: workline-annotations.json}
+    expire_in: 1 day
+
+workline:reconcile:
+  image: $WORKLINE_IMAGE:$WORKLINE_VERSION
+  stage: test
+  environment: *environment
+  variables: {GIT_DEPTH: 0}
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule" && $WORKLINE_TASK == "reconcile"
+  before_script: [*bot-token, *trust, export GITLAB_TOKEN=$WORKLINE_GITLAB_TOKEN]
+  script:
+    - workline route reconcile --ai none --forge gitlab --open-merge-request --input reconcile=list --summary workline-summary.md --summary workline-summary.html --json > due.json
+    - *start
+  allow_failure: {exit_codes: [3]}  # the forge out of reach warns: the next hour runs again
+  after_script: *summary
+  artifacts:
+    when: always
+    paths: [workline-summary.html, workline-summary.md, due.json]
+    reports: {annotations: workline-annotations.json}
+    expire_in: 1 day
+
+# The step an issue's state wakes (ADR-0059), routed `issue: [tester,
+# developer]`: the tester on workline:needs-tests, the developer on
+# workline:ready (ADR-0054, ADR-0055). A pipeline workline:issue or
+# workline:reconcile starts, or a tool, with WORKLINE_TASK=develop and
+# ISSUE_IID; without ISSUE_IID, the first ready issue nobody took. One
+# run an issue, whichever role (resource_group). Your setup steps run in
+# the judge. Why each part: roles/developer/docs/triggers.md.
 .workline:develop:
   image: $WORKLINE_IMAGE:$WORKLINE_VERSION
   environment: *environment
   variables: {GIT_DEPTH: 0}
-  resource_group: workline-develop
+  resource_group: workline-issue-$ISSUE_IID
   rules:
     - if: ($CI_PIPELINE_SOURCE == "api" || $CI_PIPELINE_SOURCE == "trigger" || $CI_PIPELINE_SOURCE == "pipeline") && $WORKLINE_TASK == "develop" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
   before_script:
@@ -751,7 +807,7 @@ workline:release:dry-run:
   environment: *environment
   variables: {GIT_DEPTH: 0}         # the whole history: the release since its tag
   rules:
-    - if: $CI_PIPELINE_SOURCE == "schedule" && $WORKLINE_TASK != "sample"
+    - if: $CI_PIPELINE_SOURCE == "schedule" && $WORKLINE_TASK != "sample" && $WORKLINE_TASK != "reconcile"
   script:
     - *trust
     - workline version
@@ -774,7 +830,7 @@ workline:release:dry-run:post:
   variables: {GIT_DEPTH: 0}         # the whole history, as .workline
   resource_group: workline-main-issue   # one writer of the default branch's issue at a time, with workline:main:issue
   rules:                            # also when the dry run failed: said
-    - if: $CI_PIPELINE_SOURCE == "schedule" && $WORKLINE_TASK != "sample"
+    - if: $CI_PIPELINE_SOURCE == "schedule" && $WORKLINE_TASK != "sample" && $WORKLINE_TASK != "reconcile"
       when: always
   script:
     - *bot-token
@@ -804,7 +860,7 @@ workline:curator:
   stage: test
   variables: {GIT_DEPTH: 0}         # the whole history, as .workline
   rules:
-    - if: $CI_PIPELINE_SOURCE == "schedule" && $WORKLINE_CURATOR == "on" && $WORKLINE_TASK != "sample"
+    - if: $CI_PIPELINE_SOURCE == "schedule" && $WORKLINE_CURATOR == "on" && $WORKLINE_TASK != "sample" && $WORKLINE_TASK != "reconcile"
   timeout: 1h
   script:
     - *trust
@@ -828,7 +884,7 @@ workline:curator:judge:
   stage: test
   needs: [{job: "workline:curator", artifacts: true}]
   rules:
-    - if: $CI_PIPELINE_SOURCE == "schedule" && $WORKLINE_CURATOR == "on" && $WORKLINE_TASK != "sample"
+    - if: $CI_PIPELINE_SOURCE == "schedule" && $WORKLINE_CURATOR == "on" && $WORKLINE_TASK != "sample" && $WORKLINE_TASK != "reconcile"
   timeout: 1h
   script:
     - *claude
@@ -849,7 +905,7 @@ workline:curator:apply:
   stage: deploy
   needs: [workline:curator:judge]
   rules:
-    - if: $CI_PIPELINE_SOURCE == "schedule" && $WORKLINE_CURATOR == "on" && $WORKLINE_TASK != "sample"
+    - if: $CI_PIPELINE_SOURCE == "schedule" && $WORKLINE_CURATOR == "on" && $WORKLINE_TASK != "sample" && $WORKLINE_TASK != "reconcile"
       when: always
   script:
     - *bot
