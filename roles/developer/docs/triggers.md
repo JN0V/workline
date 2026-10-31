@@ -29,7 +29,7 @@ step 5). Nothing routes it by default: the project opts in.
 
 ```yaml
 routing:
-  events: {issue: [developer]}
+  events: {issue: [tester, developer]}
 ```
 
 - **CI runs** `workline route issue --target issue:<n>
@@ -41,11 +41,14 @@ routing:
   (`workline:needs-tests`), the tester, when routed there too
   (`issue: [tester, developer]`). Any other state runs nothing, said.
 - **GitHub**: copy
-  [workline-develop.yml](../../../ci/github/workline-develop.yml). The
-  label `workline:ready` wakes it.
-  - A label the job's own token puts starts no workflow on GitHub; the
-    App's does ([the App](../../../docs/ci-github-app.md)). Without the
-    App, the schedule takes the issue.
+  [workline-develop.yml](../../../ci/github/workline-develop.yml). A
+  person's `workline:` label wakes it; the engine's own labels never
+  do.
+  - **The next step**: once `apply` applied, it asks the line, no
+    agent, whether the issue's new state is due, and starts that run
+    (`workflow_dispatch`, which the job's own token may start).
+  - **Hourly**, the `reconcile` job starts what an event missed, at most
+    `reconcile-max` issues a run, each its own run.
   - The `judge` job holds the agent and a read token, your setup steps
     run there ([below](#the-projects-environment)); `apply` holds the
     App's key, no AI key.
@@ -93,16 +96,17 @@ routing:
   - GitLab: they fetch every branch, then take the runner's job token
     out of the clone's git config (`.workline:no-credential`).
 - **GitHub, one run an issue**: the concurrency group is on the judge
-  job, after its `if`, named by the issue.
-  - A label other than `workline:ready` never takes the group, so it
-    never drops a ready issue's waiting run.
+  job, after its `if`, named by the issue (`workline-issue-<n>`),
+  whichever role its state wakes.
+  - A label that is not workline's, or the engine's own, never takes
+    the group, so it never drops an issue's waiting run.
   - GitHub keeps one run waiting a group: by issue, a dropped run is
     only the same issue labelled again.
   - Ready issues apart run side by side.
 - **GitLab, one run at a time**: the jobs' `resource_group`, which
   queues every run.
-- **A label workline's job token puts** starts no workflow on GitHub;
-  the App's does. Without the App, the schedule takes the issue.
+- **The engine's own labels** start no step on GitHub: the job that
+  set them starts the next one; the reconciler catches the rest.
 
 ## On its pull request
 
@@ -113,7 +117,8 @@ routing:
 
 ## Two runs on one issue
 
-- **The night's run and a ready label's** may pick the same issue: the
+- **The night's run and a ready label's**, where the schedule still
+  routes the developer, may pick the same issue: the
   claim is written only at apply, after the agent coded.
 - **Read again before apply**: once its agent answered, the run reads
   the issue again. Another run's label on it, an assignee, or the issue

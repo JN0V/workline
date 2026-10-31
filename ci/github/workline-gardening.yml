@@ -113,7 +113,9 @@ jobs:
     environment: workline-app       # the App's key: the default branch only (ADR-0044)
     # issues: the product owner's acts (comments, labels, closings,
     # reactions) on each issue.
-    permissions: {contents: write, pull-requests: write, issues: write}
+    # actions: the next steps of the states the night moved, started
+    # (ADR-0059).
+    permissions: {contents: write, pull-requests: write, issues: write, actions: write}
     steps:
       - id: app
         if: vars.WORKLINE_APP_ID != ''
@@ -169,6 +171,18 @@ jobs:
           workline follow --gardening --base "$GITHUB_REF_NAME" --forge github --summary workline-summary.md || status=$?
           [ ! -s workline-summary.md ] || cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"
           exit "$status"
+      # The states the night moved, the product owner's ready or
+      # needs-tests: their next steps started now, by the line's workflow
+      # (workline-develop.yml), not at the reconciler's next hour
+      # (ADR-0059). No agent; none started without that workflow.
+      - env: {GH_TOKEN: "${{ github.token }}"}
+        run: |
+          gh workflow view workline-develop.yml >/dev/null 2>&1 || exit 0
+          workline route reconcile --ai none --forge github --open-merge-request --input reconcile=list --json > due.json || exit 0
+          for n in $(jq -r '(.due // [])[]' due.json); do
+            gh workflow run workline-develop.yml --ref "$GITHUB_REF_NAME" -f issue="$n" ||
+              echo "::warning title=workline::#$n's run not started: the reconciler starts it"
+          done
 
   # A release's dry run, every night this runs (ADR-0050): what would hold
   # the release if it were cut now from this branch's tip. The release's

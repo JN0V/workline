@@ -1,0 +1,21 @@
+case: routing/state-due-listed-for-the-chain
+about: >
+  The job that moved an issue's state starts its next step explicitly
+  (ADR-0059): it asks the issue line, with no agent, whether that
+  issue's step is due (`--input reconcile=list`), then starts its run.
+  Asked, the line runs nothing and writes nothing.
+given:
+  repo: tested
+  config:
+    routing: {events: {issue: [tester, developer]}}
+  forge:
+    issues:
+      - {id: 3, title: "Multiply", labels: ["workline:ready"], body: "## Need\n\nI want to multiply.\n"}
+run: {route: issue, target: {issue: 3}, open-merge-request: true, ai: "fake:developer-nothing", input: {reconcile: list}}
+expect:
+  status: pass
+  summary: "issue: #3 due, the developer: not started"
+  agent-calls: 0
+  forge:
+    issues:
+      - {id: 3, comments: 0}

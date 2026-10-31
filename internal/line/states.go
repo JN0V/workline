@@ -30,8 +30,9 @@ const IssueEvent = "issue"
 // (ADR-0059): hourly in CI, a command on a person's machine.
 const ReconcileEvent = "reconcile"
 
-// ReconcileInput, `list`, makes the reconciler say the issues due and
-// start none: a CI job then starts each one's own run.
+// ReconcileInput, `list`, makes the reconciler, or the issue line, say
+// the issues due and start none: a CI job then starts each one's own
+// run.
 const ReconcileInput = "reconcile"
 
 // openForge opens the forge a line reads issues from: the one given, else
@@ -134,6 +135,10 @@ func byState(res *Result, cfg *routing.Config, o engine.Options, event string, s
 		return res
 	}
 	switch {
+	case block != nil && o.Inputs[ReconcileInput] == "list":
+		// Asked only: its own run blocks it, nothing written here.
+		res.Due = []int{o.Target.ID}
+		res.Summary = fmt.Sprintf("%s: %s due, past its hop cap: not started (--input %s=list)", event, where, ReconcileInput)
 	case block != nil:
 		res.Status = verdict.Pass
 		res.Summary = fmt.Sprintf("%s: %s blocked: %s", event, where, block.Blocked)
@@ -142,6 +147,11 @@ func byState(res *Result, cfg *routing.Config, o engine.Options, event string, s
 		res.Summary = fmt.Sprintf("%s: %s wakes no role: %s", event, where, res.Findings[len(res.Findings)-1].Message)
 	case !slices.Contains(steps, step.role):
 		res.Summary = fmt.Sprintf("%s: %s's step, the %s, left out by --input %s", event, where, step.role, SkipInput)
+	case o.Inputs[ReconcileInput] == "list":
+		// Asked only whether its step is due: the job that moved its state
+		// starts the next run (ADR-0059, explicit chaining).
+		res.Due = []int{o.Target.ID}
+		res.Summary = fmt.Sprintf("%s: %s due, the %s: not started (--input %s=list)", event, where, step.role, ReconcileInput)
 	default:
 		runStateStep(res, cfg, f, spec, o, *step)
 		res.Summary = fmt.Sprintf("%s: %s, the %s (%s)", event, where, step.role, res.Status)

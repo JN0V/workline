@@ -99,8 +99,10 @@ write run the default branch's workflow, never a pull request's own
      from the default branch ([tester](../roles/tester/README.md#frozen-tests-and-objections),
      [what each job holds](objection-jobs.md)).
    - [workline-develop.yml](../ci/github/workline-develop.yml), with the
-     developer routed on `issue`: an issue labelled `workline:ready`
-     runs it on that issue; its schedule is gardening's; a verdict or a
+     tester and the developer routed on `issue`: the line of states
+     ([ADR-0059](adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md)),
+     a person's label running the role an issue's state wakes, each step
+     starting the next, an hourly reconciler; a verdict or a
      person's comment on its own pull request, a review round
      ([the triggers](../roles/developer/docs/triggers.md)); your setup
      steps in `.github/actions/workline-setup/action.yml`

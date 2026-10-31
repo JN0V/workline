@@ -1683,8 +1683,53 @@ func TestDeveloperTemplatesRouteTheReadyIssue(t *testing.T) {
 		!strings.Contains(fmt.Sprint(judge.Concurrency["group"]), "github.event.issue.number") {
 		t.Errorf("workline-develop.yml: not woken by an issue's label, or its group not on the judge, one an issue: %v %v %v", wf.On, wf.Concurrency, judge.Concurrency)
 	}
-	if !strings.Contains(judge.If, "workline:ready") || judge.Permissions["contents"] != "read" {
-		t.Errorf("workline-develop.yml, judge: not on the ready label, or holds a write token: %q %v", judge.If, judge.Permissions)
+	// A person's state label wakes it, never the engine's own (ADR-0059).
+	if !strings.Contains(judge.If, "startsWith(github.event.label.name, 'workline:')") || !strings.Contains(judge.If, "github.event.sender.type != 'Bot'") ||
+		judge.Permissions["contents"] != "read" {
+		t.Errorf("workline-develop.yml, judge: not on a person's state label, or holds a write token: %q %v", judge.If, judge.Permissions)
+	}
+	// The night's states moved, their next steps started by the
+	// gardening's apply, which may start runs.
+	gdata, err := os.ReadFile("../../ci/github/workline-gardening.yml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var garden struct {
+		Jobs map[string]struct {
+			Permissions map[string]string `yaml:"permissions"`
+			Steps       []struct {
+				Run string `yaml:"run"`
+			} `yaml:"steps"`
+		} `yaml:"jobs"`
+	}
+	if err := yaml.Unmarshal(gdata, &garden); err != nil {
+		t.Fatal(err)
+	}
+	gchained := false
+	for _, s := range garden.Jobs["apply"].Steps {
+		gchained = gchained || strings.Contains(s.Run, "workline route reconcile --ai none") && strings.Contains(s.Run, "--input reconcile=list") &&
+			strings.Contains(s.Run, "gh workflow run workline-develop.yml")
+	}
+	if !gchained || garden.Jobs["apply"].Permissions["actions"] != "write" {
+		t.Errorf("workline-gardening.yml, apply: does not start the next steps of the states the night moved: %v", garden.Jobs["apply"].Permissions)
+	}
+	// The job that moved a state starts the next step; hourly, the
+	// reconciler starts what an event missed: no agent, each due issue's
+	// own run.
+	chained := false
+	for _, s := range wf.Jobs["apply"].Steps {
+		chained = chained || strings.Contains(s.Run, "--input reconcile=list") && strings.Contains(s.Run, "gh workflow run")
+	}
+	if !chained || wf.Jobs["apply"].Permissions["actions"] != "write" {
+		t.Errorf("workline-develop.yml, apply: does not start the next step: %v", wf.Jobs["apply"].Permissions)
+	}
+	rec := wf.Jobs["reconcile"]
+	reconciled := false
+	for _, s := range rec.Steps {
+		reconciled = reconciled || strings.Contains(s.Run, "workline route reconcile --ai none") && strings.Contains(s.Run, "--input reconcile=list") && strings.Contains(s.Run, "gh workflow run")
+	}
+	if _, ok := wf.On["schedule"]; !ok || !reconciled || rec.Permissions["actions"] != "write" || rec.Permissions["issues"] != "read" {
+		t.Errorf("workline-develop.yml: no hourly reconciler starting each due issue's run: %v %v", wf.On["schedule"], rec.Permissions)
 	}
 	routed := false
 	for _, s := range judge.Steps {

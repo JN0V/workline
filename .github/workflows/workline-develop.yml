@@ -2,23 +2,32 @@
 # ci/github/workline-develop.yml, with the engine built from this checkout
 # rather than installed — each job checks out the default branch's commit,
 # built once (.github/actions/engine). Go left set up where the tester's
-# test-command proves the code (judge, review). An issue labelled
-# workline:ready runs the issue line on it; by hand with no issue, the first
-# nobody took. On its own pull request (workline/developer/…), the
+# test-command proves the code (judge, review). A person's label on an
+# issue runs the role its state wakes, the tester or the developer
+# (ADR-0059); the job that moves a state starts the next step; hourly, the
+# reconciler; by hand with no issue, the first ready one nobody took. On
+# its own pull request (workline/developer/…), the
 # reviewer's verdict or a person's comment runs a review round.
 #   judge, review          the agent and a read token.
 #   apply, review-apply    the App's key (environment workline-app), no AI key.
 # Why each part: roles/developer/docs/triggers.md.
 name: workline develop
 on:
+  # A person's label on an issue: its state wakes its role (ADR-0059).
+  # The engine's own labels wake nothing here: the job that set them
+  # starts the next step, by workflow_dispatch.
   issues: {types: [labeled]}
   workflow_dispatch:
     inputs:
-      issue: {description: "the ready issue to take; empty: the first nobody took", required: false, default: ""}
+      issue: {description: "the issue whose state's step runs; empty: the first ready issue nobody took", required: false, default: ""}
       pull-request: {description: "a review round on this pull request of the developer's, rather than an issue", required: false, default: ""}
+      reconcile: {description: "true: the reconciler now, as the hourly schedule runs it, rather than an issue", required: false, default: ""}
   # The reviewer's comment, written or edited by the App (a comment the
   # job's own token writes wakes nothing), or a person's.
   issue_comment: {types: [created, edited]}
+  # The reconciler, hourly, off the hour: a step an event missed
+  # (ADR-0059). A safety net, not the driver.
+  schedule: [{cron: "41 * * * *"}]
 permissions: {}
 
 env:
@@ -27,12 +36,13 @@ env:
 jobs:
   judge:
     if: >-
-      (github.event_name == 'workflow_dispatch' && inputs['pull-request'] == '') ||
-      (github.event_name == 'issues' && github.event.label.name == 'workline:ready' && github.event.issue.state == 'open' && !github.event.issue.pull_request)
+      (github.event_name == 'workflow_dispatch' && inputs['pull-request'] == '' && inputs.reconcile != 'true') ||
+      (github.event_name == 'issues' && startsWith(github.event.label.name, 'workline:') && github.event.sender.type != 'Bot' &&
+        github.event.issue.state == 'open' && !github.event.issue.pull_request)
     # On the job, after its `if`: another label takes no group. One run an
-    # issue; ready issues apart run side by side.
+    # issue, whichever role its state wakes; issues apart run side by side.
     concurrency:
-      group: workline-develop-${{ github.event.issue.number || inputs.issue || 'first' }}
+      group: workline-issue-${{ github.event.issue.number || inputs.issue || 'first' }}
       cancel-in-progress: false
     runs-on: ubuntu-latest
     permissions: {contents: read, pull-requests: read, issues: read}
@@ -69,7 +79,7 @@ jobs:
           status=0
           workline route issue $target --ai "$ai" --no-apply --forge github --open-merge-request --summary workline-summary.md --json > line.json || status=$?
           echo "status=$status" >> "$GITHUB_OUTPUT"
-          echo "proposed=$(jq '(.pending // []) | length > 0' line.json)" >> "$GITHUB_OUTPUT"
+          echo "proposed=$(jq '((.pending // []) | length > 0) or ((.states // []) | length > 0)' line.json)" >> "$GITHUB_OUTPUT"
           [ ! -s workline-summary.md ] || cat workline-summary.md
           [ ! -s workline-summary.md ] || cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"
 
@@ -91,7 +101,10 @@ jobs:
     if: always() && needs.judge.outputs.proposed == 'true'
     runs-on: ubuntu-latest
     environment: workline-app       # the App's key: the default branch only (ADR-0044)
-    permissions: {contents: write, pull-requests: write, issues: write}
+    # actions: the next step started, by workflow_dispatch (ADR-0059).
+    permissions: {contents: write, pull-requests: write, issues: write, actions: write}
+    outputs:
+      next: ${{ steps.next.outputs.issue }}
     steps:
       - id: app
         if: vars.WORKLINE_APP_ID != ''
@@ -122,6 +135,44 @@ jobs:
           workline apply --line line.json --summary workline-summary.md || status=$?
           [ ! -s workline-summary.md ] || cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"
           exit "$status"
+      # Explicit chaining (ADR-0059): the state this run moved the issue to
+      # wakes its next step now. The line says, with no agent, whether
+      # that step is due; its run then starts by workflow_dispatch, which
+      # the job's own token may start.
+      - id: next
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE: ${{ github.event.issue.number || inputs.issue }}
+        run: |
+          printf '%s' "$ISSUE" | grep -Eqx '[0-9]+' || exit 0
+          workline route issue --target "issue:$ISSUE" --ai none --forge github --open-merge-request --input reconcile=list --json > next.json || true
+          if jq -e --argjson n "$ISSUE" '(.due // []) | index($n)' next.json >/dev/null; then
+            gh workflow run "$(basename "${GITHUB_WORKFLOW_REF%%@*}")" --ref "$GITHUB_REF_NAME" -f issue="$ISSUE"
+            echo "issue=$ISSUE" >> "$GITHUB_OUTPUT"
+            echo "#$ISSUE's next step started" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+  # The reconciler (ADR-0059): hourly, or by hand (input reconcile), every
+  # open issue whose step is due and no event started, at most
+  # reconcile-max (3) a run; each one's own run started here, in its
+  # issue's concurrency group. No agent, a read token, and the right to
+  # start runs.
+  reconcile:
+    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.reconcile == 'true')
+    runs-on: ubuntu-latest
+    permissions: {contents: read, issues: read, actions: write}
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0, persist-credentials: false}
+      - uses: ./.github/actions/engine
+      - env: {GH_TOKEN: "${{ github.token }}"}
+        run: |
+          workline route reconcile --ai none --forge github --open-merge-request --input reconcile=list --summary workline-summary.md --json > due.json
+          [ ! -s workline-summary.md ] || cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"
+          for n in $(jq -r '(.due // [])[]' due.json); do
+            gh workflow run "$(basename "${GITHUB_WORKFLOW_REF%%@*}")" --ref "$GITHUB_REF_NAME" -f issue="$n" ||
+              echo "::warning title=workline::#$n's run not started: the next hour starts it"
+          done
 
   # A review round (ADR-0054, step 6): a fresh run on the developer's own
   # pull request, reading its record, the reviewer's findings and a
