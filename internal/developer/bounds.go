@@ -24,6 +24,7 @@ import (
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/steer"
 	"github.com/JN0V/workline/internal/tester"
+	"github.com/JN0V/workline/internal/work"
 )
 
 const boundsFile = "bounds.json"
@@ -62,6 +63,9 @@ type Refusal struct {
 // readBounds reads, on the forge, what bounds the issue's patches.
 func readBounds(f forge.Forge, bl forge.Backlog, repo string, is forge.Issue) (Bounds, error) {
 	b := Bounds{Issue: is.ID, Scope: scopePaths(is.Body), Frozen: map[string]int{}, Blobs: map[string]string{}}
+	if out, err := gitOut(repo, "ls-files", "-z"); err == nil {
+		b.Scope = inRepo(b.Scope, strings.Split(strings.TrimSuffix(out, "\x00"), "\x00"))
+	}
 	comments, err := bl.Comments(forge.Target{Kind: "issue", ID: is.ID})
 	if err != nil {
 		return b, err
@@ -184,6 +188,19 @@ func repoPath(p string) (string, bool) {
 // the whole repository: "." or "./" would put every file in bounds.
 func scopeEntry(p string) (string, bool) {
 	return repoPath(p)
+}
+
+// inRepo is scope, each path a file of files names in its place: `parts.go`
+// the one file of that name (work.InRepo); a folder, or a name several
+// files have, left as written.
+func inRepo(scope, files []string) []string {
+	out := slices.Clone(scope)
+	for i, p := range out {
+		if f := work.InRepo(p, files); f != "" {
+			out[i] = f
+		}
+	}
+	return out
 }
 
 // under says whether p is one of roots or in one of them.

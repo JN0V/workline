@@ -135,6 +135,30 @@ func TestScopeNamingTheRootIsDropped(t *testing.T) {
 	}
 }
 
+// A Scope naming a file with its line bounds the file: `src/a.go:12`
+// lets the developer change src/a.go.
+func TestScopeLineIsTheFile(t *testing.T) {
+	got := scopePaths("## Scope\n\n- `run` (`src/a.go:12`), `src/b.go:3-9`.\n")
+	if !slices.Equal(got, []string{"src/a.go", "src/b.go"}) {
+		t.Errorf("scopePaths = %v, want [src/a.go src/b.go]", got)
+	}
+}
+
+// A Scope naming a file by its bare name bounds the one file of that
+// name; a folder, or a name two files have, stays as written.
+func TestScopeBareNameIsTheFile(t *testing.T) {
+	files := []string{"internal/b/parts.go", "x/a.go", "y/a.go", "src/c d.go"}
+	got := inRepo([]string{"parts.go", "a.go", "internal/b", "c d.go"}, files)
+	want := []string{"internal/b/parts.go", "a.go", "internal/b", "src/c d.go"}
+	if !slices.Equal(got, want) {
+		t.Errorf("inRepo = %q, want %q", got, want)
+	}
+	c := checker{b: Bounds{Scope: got}, steer: func(string) bool { return false }}
+	if r := c.rule("internal/b/parts.go"); r != "" {
+		t.Errorf("rule(internal/b/parts.go) = %q, want in bounds", r)
+	}
+}
+
 // A gate's config is compared cleaned: ./x, a trailing slash or a folder
 // still refuse the files they name.
 func TestGateConfigPathsAreCleaned(t *testing.T) {
