@@ -604,13 +604,6 @@ func whysSaid(a answer) string {
 	return ", the five whys with it"
 }
 
-func upper(s string) string {
-	if s == "" {
-		return s
-	}
-	return strings.ToUpper(s[:1]) + s[1:]
-}
-
 // unwrap strips one pair of markdown markers wrapping the whole value,
 // bold, italic or code; never a marker that only ends the text, nor the
 // outer two of several spans.
