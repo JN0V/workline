@@ -96,7 +96,7 @@ func issueHookRef(raw, id, path string) (string, bool) {
 			break
 		}
 	}
-	if !found || !strings.HasSuffix(rest, "/trigger/pipeline") {
+	if !found || rest != "trigger/pipeline" && !strings.HasSuffix(rest, "/trigger/pipeline") {
 		return "", false
 	}
 	if u.Query().Get("variables[WORKLINE_TASK]") != "issue" {
