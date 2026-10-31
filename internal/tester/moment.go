@@ -24,8 +24,8 @@ import (
 func taskKey(n int) string { return fmt.Sprintf("issue-%d", n) }
 
 // pick is the issue a scheduled run writes the tests of: the first, in
-// the backlog's order, offered to whoever builds (ready, waiting on no
-// open issue, no parts), whose Validation names scenarios, with no Draft
+// the backlog's order, waiting for its tests (needs-tests, or ready;
+// waiting on no open issue, no parts), whose Validation names scenarios, with no Draft
 // of the tester open; 0 when none waits. waiting is the tasks of the
 // tester's open Drafts, as the engine lists them.
 func pick(f forge.Backlog, waiting []string) (int, error) {
@@ -39,7 +39,7 @@ func pick(f forge.Backlog, waiting []string) (int, error) {
 	}
 	backlog.Order(issues)
 	for _, is := range issues {
-		if !backlog.Offered(is, open) || slices.Contains(waiting, taskKey(is.ID)) {
+		if !backlog.Readied(is) || slices.Contains(is.Labels, backlog.LabelBlocked) || len(backlog.Waiting(is, open)) > 0 || len(backlog.Parts(is)) > 0 || slices.Contains(waiting, taskKey(is.ID)) {
 			continue
 		}
 		if len(Scenarios(work.ByMeaning(is.Body)[work.Validation].Text)) > 0 {

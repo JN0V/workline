@@ -20,6 +20,20 @@ fail-fast:
   main: false
 handoffs: []
 max-handoffs: 3
+# The line of states (ADR-0059): an issue's state is its label, one at a
+# time. On `issue` — an event naming the issue — and at `reconcile`, its
+# state wakes its role, when the project routes that role on `issue`; the
+# role's result moves the issue to `next`. Listed in the order that
+# settles an issue bearing two. A project's list replaces this one.
+states:
+  - {name: blocked, label: "workline:blocked"}                                 # its reason on the issue; nobody woken
+  - {name: doing,   label: "workline:developing"}                              # the developer's claim (ADR-0054)
+  - {name: ready,   label: "workline:ready",       role: developer, next: doing}
+  - {name: tests,   label: "workline:needs-tests", role: tester,    next: ready}
+  - {name: refine,  label: "workline:to-refine",   role: product-owner, next: tests}
+# The state moves of one issue, at most: past it, Blocked, the count said
+# on it. A state move is not a handoff: it starts a new run.
+max-hops: 8
 # Each moment's wait budget, in seconds (ADR-0050): a run over it says so
 # in its summary, naming the step that took the time; it never blocks. A
 # project sets its own in `routing: budgets:`, moment by moment.

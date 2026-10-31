@@ -2,6 +2,7 @@
 sources:
   - roles/developer/role.yaml
   - internal/developer/developer.go
+  - internal/line/states.go
   - ci/github/workline-develop.yml
   - ci/gitlab/workline.gitlab-ci.yml
 checked: aea0b546
@@ -34,6 +35,11 @@ routing:
 - **CI runs** `workline route issue --target issue:<n>
   --open-merge-request`: that issue alone, if it is free to take
   ([the pick](pick.md)).
+- **By its state**: the line runs the role the issue's state wakes
+  ([the line of states](../../../docs/spec/routing.md#the-line-of-states)):
+  ready wakes the developer; waiting for its tests
+  (`workline:needs-tests`), the tester, when routed there too
+  (`issue: [tester, developer]`). Any other state runs nothing, said.
 - **GitHub**: copy
   [workline-develop.yml](../../../ci/github/workline-develop.yml). The
   label `workline:ready` wakes it.

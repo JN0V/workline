@@ -320,7 +320,7 @@ func Pre(runDir, repo string) int {
 					"issue": is.ID, "why": "its drafts accepted (" + backlog.AcceptedLabel(b) + ")", "ticked": who, "own": true}})
 			}
 		} else if r, cleared := backlog.SpecCleared(is, comments); found && err == nil && cfg.SpecReview && cleared &&
-			!slices.Contains(is.Labels, backlog.LabelReady) && len(backlog.NotReady(is, st, false)) == 0 {
+			!backlog.Readied(is) && len(backlog.NotReady(is, st, false)) == 0 {
 			// The reviewer read its spec as it is and found no important
 			// finding open: the hold lifts, and the engine moves it to
 			// ready, with no agent (#128).
@@ -1605,7 +1605,7 @@ var levelSays = map[string]string{
 // sections there, Need and Validation a person's, not ready yet, and ready
 // not off — the engine checks it, and proposes an outsider's (ADR-0038).
 func readyOpen(is forge.Issue, st *backlog.State, cfg backlog.Config) bool {
-	if s, ok := cfg.Acts["ready"]; !ok || s.Mode == backlog.Off || slices.Contains(is.Labels, backlog.LabelReady) {
+	if s, ok := cfg.Acts["ready"]; !ok || s.Mode == backlog.Off || backlog.Readied(is) {
 		return false
 	}
 	return len(backlog.NotReady(is, st, false)) == 0

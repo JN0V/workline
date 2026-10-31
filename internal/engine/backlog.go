@@ -22,7 +22,9 @@ import (
 	"github.com/JN0V/workline/internal/role"
 	"github.com/JN0V/workline/internal/routing"
 	"github.com/JN0V/workline/internal/scale"
+	"github.com/JN0V/workline/internal/tester"
 	"github.com/JN0V/workline/internal/verdict"
+	"github.com/JN0V/workline/internal/work"
 	"go.yaml.in/yaml/v3"
 )
 
@@ -547,6 +549,13 @@ func (a *applier) refining(c backlog.Proposal) error {
 			}
 		}
 		add, remove := []string{backlog.LabelReady}, backlog.ReadyRemoves(*is)
+		// Where the project routes the tester, an issue with named
+		// scenarios goes to its tests first: the tester's result makes it
+		// ready (ADR-0059, decision 3).
+		if testsFirst(a.repo, *is) {
+			add = []string{backlog.LabelNeedsTests}
+			remove = append(remove, backlog.LabelReady)
+		}
 		if c.Card.Labels() {
 			// Its card to the board's ready column, out of the others
 			// (ADR-0057), in the same call.
@@ -636,6 +645,15 @@ func (a *applier) moveCard(issue, project int, option string) {
 	if why != "" {
 		fmt.Fprintf(os.Stderr, "workline: #%d's card not moved to %q on the project #%d: %s\n", issue, option, project, why)
 	}
+}
+
+// testsFirst says whether the product owner's ready sends an issue to
+// its tests (ADR-0059): the project routes the tester, and its
+// Validation names scenarios, each one a test.
+func testsFirst(repo string, is forge.Issue) bool {
+	line, err := routing.Load(repo)
+	return err == nil && line.Runs("tester") &&
+		len(tester.Scenarios(work.ByMeaning(is.Body)[work.Validation].Text)) > 0
 }
 
 // readyMove is the move a ready makes on the forge's board: its ready

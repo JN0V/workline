@@ -1303,7 +1303,7 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 		switch {
 		case !ok || c.Issue == p.Report:
 			return "no-state", fmt.Sprintf("#%d is not an open issue", c.Issue)
-		case !slices.Contains(is.Labels, LabelReady):
+		case !Readied(is):
 			return "unready-not-ready", fmt.Sprintf("#%d is not %s: nothing to move back", c.Issue, LabelReady)
 		}
 	}
@@ -2134,7 +2134,18 @@ const (
 	LabelDraft    = "workline:draft"    // the role drafted its Need or Validation
 	LabelAccepted = "workline:accepted" // a person accepted the drafts: only who may triage sets a label
 	LabelReady    = "workline:ready"
+	// The tester's state, between refined and ready (ADR-0059): set by
+	// the product owner where the project routes the tester.
+	LabelNeedsTests = "workline:needs-tests"
+	// A state no role leaves alone: its reason on the issue (ADR-0059).
+	LabelBlocked = "workline:blocked"
 )
+
+// Readied says whether an issue went past refining: ready, or waiting
+// for its tests on the way there (ADR-0059).
+func Readied(is forge.Issue) bool {
+	return slices.Contains(is.Labels, LabelReady) || slices.Contains(is.Labels, LabelNeedsTests)
+}
 
 // AcceptedSays is the description of a person's yes, as the forge's list of
 // labels shows it: on an issue, to what the product owner proposes

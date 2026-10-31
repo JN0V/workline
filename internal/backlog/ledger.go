@@ -210,7 +210,7 @@ func lacking(is forge.Issue, st *State) bool {
 // not lacking. Read again once, a fix of the engine reaches it.
 func LeftBehind(is forge.Issue, st *State, comments []string, role string) bool {
 	if st == nil || st.Judged == "" || st.Rules >= Reading || len(st.Sources) > 0 || len(st.Did) > 0 || len(st.Done) > 0 ||
-		st.Label != "" || st.Aside != "" || len(st.Proposed) > 0 || len(st.Split) > 0 || Accepted(is) || slices.Contains(is.Labels, LabelReady) {
+		st.Label != "" || st.Aside != "" || len(st.Proposed) > 0 || len(st.Split) > 0 || Accepted(is) || Readied(is) {
 		return false
 	}
 	if e := ReadExchange(comments, role); e.Rounds > 0 && !e.Answered {
@@ -355,7 +355,7 @@ func (l *Ledger) Waiting(open []forge.Issue) int {
 		if st == nil || st.Label == "" || l.Aside[is.ID] {
 			continue
 		}
-		if len(ForPerson(st.Proposed)) > 0 || HasDraft(is.Body, st) && !slices.Contains(is.Labels, LabelReady) {
+		if len(ForPerson(st.Proposed)) > 0 || HasDraft(is.Body, st) && !Readied(is) {
 			n++
 		}
 	}
@@ -669,7 +669,7 @@ func (p *Plan) Persist(f forge.Forge, role string) error {
 				// back and the run decided on it: proposed again.
 				st.Aside = ""
 			}
-			waits := st.Aside == "" && (len(ForPerson(st.Proposed)) > 0 || (HasDraft(is.Body, st) && !slices.Contains(is.Labels, LabelReady)))
+			waits := st.Aside == "" && (len(ForPerson(st.Proposed)) > 0 || (HasDraft(is.Body, st) && !Readied(*is)))
 			switch {
 			case waits && st.Label == "":
 				w.wants = true // labelled below, within proposals-max

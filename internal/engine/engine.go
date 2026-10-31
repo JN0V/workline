@@ -2590,7 +2590,7 @@ func (a *applier) apply(in intent.Intention) error {
 		if err := a.forge.Comment(t, backlog.Inert(say), a.marker()); err != nil {
 			return err
 		}
-		return a.forge.Label(t, []string{backlog.LabelToRefine}, []string{backlog.LabelReady})
+		return a.forge.Label(t, []string{backlog.LabelToRefine}, []string{backlog.LabelReady, backlog.LabelNeedsTests})
 	case "split":
 		d := a.plan.Decision(a.index)
 		if d == nil || d.Mode != backlog.Act {

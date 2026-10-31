@@ -32,6 +32,11 @@ type Config struct {
 	// Budgets: each moment's wait budget, in seconds (ADR-0050, section
 	// 1): the shipped ones, a project's laid over them moment by moment.
 	Budgets map[string]float64 `yaml:"budgets"`
+	// States: the line of states (ADR-0059), in the order that settles an
+	// issue bearing two labels; a project's list replaces the shipped one.
+	// MaxHops caps the state moves of one issue: past it, Blocked.
+	States  []State `yaml:"states"`
+	MaxHops int     `yaml:"max-hops"`
 }
 
 // Load returns the shipped routing with the project's changes applied.
@@ -69,6 +74,12 @@ func Load(repo string) (*Config, error) {
 			}
 			c.FailFast[event] = stop
 		}
+		if p.States != nil {
+			c.States = p.States
+		}
+		if p.MaxHops > 0 {
+			c.MaxHops = p.MaxHops
+		}
 		for moment, seconds := range p.Budgets {
 			if !(seconds > 0) || math.IsInf(seconds, 1) { // NaN and infinity too: neither is ever gone over
 				return nil, role.ConfigErrorf("routing.budgets.%s is %v: a budget is a number of seconds above 0", moment, seconds)
@@ -78,6 +89,9 @@ func Load(repo string) (*Config, error) {
 			}
 			c.Budgets[moment] = seconds
 		}
+	}
+	if err := checkStates(c.States); err != nil {
+		return nil, role.ConfigErrorf("%s", err)
 	}
 	return &c, nil
 }

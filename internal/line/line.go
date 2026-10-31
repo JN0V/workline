@@ -166,6 +166,19 @@ func RunWith(event string, base engine.Options, gates *Gates) *Result {
 	if skip := strings.Split(base.Inputs[SkipInput], ","); base.Inputs[SkipInput] != "" {
 		steps = slices.DeleteFunc(slices.Clone(steps), func(s string) bool { return slices.Contains(skip, s) })
 	}
+	// An event naming an issue runs the role its state wakes (ADR-0059),
+	// not every step of the event; one waking none runs none, said.
+	if event == IssueEvent && base.Target != nil && base.Target.Kind == "issue" && len(cfg.States) > 0 {
+		woken, read := byState(res, cfg, base, event)
+		if !read || len(woken) == 0 {
+			return res
+		}
+		if !slices.Contains(steps, woken[0]) { // left out by `--input skip`
+			res.Summary = fmt.Sprintf("%s: #%d's step, the %s, left out by --input %s", event, base.Target.ID, woken[0], SkipInput)
+			return res
+		}
+		steps = woken
+	}
 	// Main after a merge: its gates compare HEAD with main's tip before
 	// the merge, whoever made it; the engine's own commits there are
 	// checked as any other.

@@ -123,7 +123,11 @@ what it can and asks for the rest:
   issue, never in a proposal (`not-ready` otherwise, naming what is
   missing); a mark left in a section a person edited is taken out. Done, the issue gets
   `workline:ready` and loses `workline:to-refine`, as `workline item ready`
-  does, and loses `workline:draft` and `workline:accepted`. An issue opened
+  does, and loses `workline:draft` and `workline:accepted`. Where the
+  project routes the tester, an issue whose Validation names scenarios
+  gets `workline:needs-tests` instead: the tester's result makes it
+  ready
+  ([ADR-0059](../../adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#3-tests-wakes-the-tester-its-result-makes-ready)). An issue opened
   by someone without write access to the project is theirs: moving it to
   ready is proposed on the issue, never done (`reporter-outside`) —
   unless a person of the project accepted it with the label. Who is of the
@@ -132,11 +136,12 @@ what it can and asks for the rest:
   from the project's members (ADR-0023) — a token that may not list them
   fails the run, loud; on a plugged forge, its `insider`. One the forge
   does not say is outside.
-- **`unready`** moves a ready issue back to refine: `workline:ready`
-  off, `workline:to-refine` on, a comment telling the issue why and who
+- **`unready`** moves a ready issue, or one waiting for its tests,
+  back to refine: `workline:ready` and `workline:needs-tests` off,
+  `workline:to-refine` on, a comment telling the issue why and who
   accepted it. It is **always proposed**, whatever the level or the
   settings — a ready issue is moved back by a person only (ADR-0032) —,
-  done when a person of the project accepts it (`workline:accepted`); one not `workline:ready`
+  done when a person of the project accepts it (`workline:accepted`); one bearing neither
   is dropped (`unready-not-ready`). No quote; the state must read.
 
   ```yaml

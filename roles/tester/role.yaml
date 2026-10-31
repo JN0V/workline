@@ -2,12 +2,14 @@ contract: 1
 name: tester
 mission: Each test a change adds is proven red on its base before the code makes it green, from the project's own test runner's report.
 
-# issue: `workline test write --issue <n>` — a ready issue's Validation
-#        scenarios, a test each, proven red on the base, opened as a Draft
+# issue: `workline test write --issue <n>`, or the issue line on an issue
+#        waiting for its tests (workline:needs-tests, ADR-0059) — its
+#        Validation scenarios, a test each, proven red on the base and
+#        linted, opened as a Draft; the issue then moves to ready
 #        (ADR-0055, step 2).
-# schedule: its moment (step 4), where the project routes it: one ready
-#        issue a run, the first with named scenarios and no open Draft,
-#        then as on issue; needs --open-merge-request.
+# schedule: its moment (step 4), where the project routes it: one issue
+#        waiting for its tests a run, the first with named scenarios and
+#        no open Draft, then as on issue; needs --open-merge-request.
 # merge-request: the frozen guard, no agent (step 3): a test file the
 #        tester wrote, changed or deleted by another, blocks
 #        (tester-test-changed); routed where the project lists it. Then,

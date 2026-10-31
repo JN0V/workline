@@ -24,8 +24,10 @@ import (
 
 	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/gate"
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/pathglob"
+	"github.com/JN0V/workline/internal/routing"
 	"github.com/JN0V/workline/internal/verdict"
 	"github.com/JN0V/workline/internal/work"
 )
@@ -50,6 +52,9 @@ type task struct {
 	Title     string     `json:"title"`
 	Base      string     `json:"base"`
 	Scenarios []Scenario `json:"scenarios"`
+	// Labels: the issue's, as pre read them; its state, which the tests'
+	// result moves on (ADR-0059).
+	Labels []string `json:"labels,omitempty"`
 }
 
 const taskFile = "tests-task.json"
@@ -128,10 +133,10 @@ func Pre(runDir, repo string) int {
 	if err != nil {
 		return fail(err)
 	}
-	if !slices.Contains(is.Labels, backlog.LabelReady) {
+	if !backlog.Readied(*is) {
 		return refuseIssue(runDir, id, verdict.Verdict{Status: verdict.Block, Summary: "the issue is not ready",
 			Findings: []verdict.Finding{{Rule: "issue-not-ready", Where: where,
-				Message: "the tester takes a ready issue only, labelled " + backlog.LabelReady + ": its scenarios are a person's, accepted"}}},
+				Message: "the tester takes an issue waiting for its tests only, labelled " + backlog.LabelNeedsTests + " (or " + backlog.LabelReady + "): its scenarios are a person's, accepted"}}},
 			"the product owner, or a person, readies it; the tester writes its tests at a run after that")
 	}
 	sections := work.ByMeaning(is.Body)
@@ -147,7 +152,7 @@ func Pre(runDir, repo string) int {
 	if err != nil {
 		return fail(err)
 	}
-	t := task{Issue: id, Title: is.Title, Base: strings.TrimSpace(head), Scenarios: scenarios}
+	t := task{Issue: id, Title: is.Title, Base: strings.TrimSpace(head), Scenarios: scenarios, Labels: is.Labels}
 	if data, err := json.Marshal(t); err != nil {
 		return fail(err)
 	} else if err := os.WriteFile(filepath.Join(runDir, "in", taskFile), data, 0o644); err != nil {
@@ -377,7 +382,50 @@ func Post(runDir, repo string) int {
 	if err := os.WriteFile(filepath.Join(runDir, "out", "merge-request.yaml"), data, 0o644); err != nil {
 		return fail(err)
 	}
+	// Each scenario has its row, the tests red on the base and linted: the
+	// issue moves to the state its tests lead to, ready (ADR-0059,
+	// decision 3), said on it; no agent decides it.
+	moved, err := testsDone(runDir, repo, t, intents, len(said))
+	if err != nil {
+		return fail(err)
+	}
+	if moved != "" {
+		proof.Findings = append(proof.Findings, verdict.Finding{Rule: "state-moved", Level: "info", Where: where,
+			Message: "each scenario has its test or its reason in the Draft: the issue moves to " + moved})
+	}
 	return write(runDir, *proof)
+}
+
+// testsDone moves the issue whose tests are written to the state next
+// after its own in the routing's table, its other states' labels off,
+// and says so on it, beside the agent's intentions; "" when its state is
+// not the tester's (an issue labelled ready by hand keeps its state).
+func testsDone(runDir, repo string, t task, intents []intent.Intention, untested int) (string, error) {
+	line, err := routing.Load(repo)
+	if err != nil {
+		return "", err
+	}
+	s, ok := line.StateOf(t.Labels)
+	if !ok || s.Role != "tester" || s.Next == "" {
+		return "", nil
+	}
+	add, remove, err := line.Move(s.Next)
+	if err != nil {
+		return "", err
+	}
+	// Only the labels it bears come off: one call less each on GitHub.
+	remove = slices.DeleteFunc(remove, func(l string) bool { return !slices.Contains(t.Labels, l) })
+	why := fmt.Sprintf("each of its %d scenarios has its test in the Draft's Tests table, red on the base, and the tests pass the project's lint", len(t.Scenarios))
+	if untested > 0 {
+		why = fmt.Sprintf("each of its %d scenarios has its test in the Draft's Tests table, or its reason under Not tested (%d, for a real try), "+
+			"the tests red on the base and passing the project's lint", len(t.Scenarios), untested)
+	}
+	intents = append(intents,
+		intent.Intention{Kind: "label", Value: map[string]any{"issue": t.Issue, "add": add, "remove": remove}},
+		intent.Intention{Kind: "comment", Value: map[string]any{"issue": t.Issue, "sticky": "issue",
+			"body": backlog.Said("The tester", "wrote the acceptance tests of this issue, as a Draft", why,
+				"it is "+s.Next+": whoever builds it starts from the Draft, workline/tester/"+taskKey(t.Issue))}})
+	return s.Next, intent.Write(filepath.Join(runDir, "out", "intentions.yaml"), intents)
 }
 
 // proveOnBase commits the patches on base in a checkout apart and runs the
@@ -415,7 +463,58 @@ func proveOnBase(repo, base string, patches []intent.Intention, s Settings) (*ve
 		return nil, nil, nil, err
 	}
 	v, newTests := Prove(tree, base, s)
+	if v.Status == verdict.Pass {
+		if lint := lintTests(repo, tree, base); lint != nil {
+			return lint, newTests, blobs, nil
+		}
+	}
 	return v, newTests, blobs, nil
+}
+
+// lintTests runs the project's lint on the tests, as their merge request
+// will: each gate the project routes on merge-request, only what the
+// tests add counted (ADR-0059, decision 3: a Draft that does not lint is
+// not ready). Nil when each passes, or none is routed.
+func lintTests(repo, tree, base string) *verdict.Verdict {
+	line, err := routing.Load(repo)
+	if err != nil {
+		return &verdict.Verdict{Status: verdict.Block, Summary: "the project's lint could not be read",
+			Findings: []verdict.Finding{{Rule: "check-error", Where: "routing", Message: err.Error()}}}
+	}
+	// The gates as this run reads them: the checkout's config, laid in
+	// the tests' tree, uncommitted, never part of what they add.
+	if data, err := os.ReadFile(filepath.Join(repo, ".workline", "config.yaml")); err == nil {
+		if err := os.MkdirAll(filepath.Join(tree, ".workline"), 0o755); err == nil {
+			_ = os.WriteFile(filepath.Join(tree, ".workline", "config.yaml"), data, 0o644)
+		}
+	}
+	var found []verdict.Finding
+	var names []string
+	for _, step := range line.Events["merge-request"] {
+		name, ok := strings.CutPrefix(step, "gate:")
+		if !ok {
+			continue
+		}
+		v, _ := gate.RunNew(tree, name, base)
+		if v.Status == verdict.Pass {
+			continue
+		}
+		names = append(names, name)
+		said := false
+		for _, f := range v.Findings {
+			if f.Level == "" || f.Level == verdict.Block || f.Level == "error" {
+				f.Rule, f.Message = "tests-lint", fmt.Sprintf("the gate %s: %s (%s)", name, f.Message, f.Rule)
+				found, said = append(found, f), true
+			}
+		}
+		if !said { // a gate that blocks is always said, its own summary when no finding of it blocks
+			found = append(found, verdict.Finding{Rule: "tests-lint", Where: name, Message: fmt.Sprintf("the gate %s: %s", name, v.Summary)})
+		}
+	}
+	if len(names) == 0 {
+		return nil
+	}
+	return &verdict.Verdict{Status: verdict.Block, Summary: "the tests do not pass the project's lint (" + strings.Join(names, ", ") + "): no Draft opened", Findings: found}
 }
 
 // layPatches writes the patches in tree: a whole file, or a diff applied;
