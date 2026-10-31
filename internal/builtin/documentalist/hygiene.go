@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"time"
 
 	"go.yaml.in/yaml/v3"
 )
@@ -173,6 +174,40 @@ func docType(content string) string {
 	return fm.Type
 }
 
+// archived says whether a doc's header declares it archived (`archived:
+// 2026-10-04`): its history is left as it is, out of condensing, budgets and
+// duplicate checks. Its links are still checked and still resolve.
+func archived(content string) bool {
+	block, n := header(content)
+	if n == 0 {
+		return false
+	}
+	var fm struct {
+		Archived yaml.Node `yaml:"archived"`
+	}
+	_ = yaml.Unmarshal([]byte(block), &fm)
+	// Only a date or true archives; any other value (false, off, 0, a mapping…)
+	// leaves the doc gardened.
+	if fm.Archived.Kind != yaml.ScalarNode {
+		return false
+	}
+	v := strings.ToLower(strings.TrimSpace(fm.Archived.Value))
+	return v == "true" || archivedOn(v)
+}
+
+// archivedDate is a YAML date, optionally followed by a time (`T12:00:00Z`,
+// ` 12:00`); archivedOn also rejects an impossible date such as 2026-99-99.
+var archivedDate = regexp.MustCompile(`^(\d{4}-\d{2}-\d{2})(?:[t ]\s*\d{1,2}:\d{2}.*)?$`)
+
+func archivedOn(v string) bool {
+	m := archivedDate.FindStringSubmatch(v)
+	if m == nil {
+		return false
+	}
+	_, err := time.Parse("2006-01-02", m[1])
+	return err == nil
+}
+
 func budgets(t Tree, b Budgets) []Problem {
 	var out []Problem
 	missing := func(name string) {
@@ -188,6 +223,9 @@ func budgets(t Tree, b Budgets) []Problem {
 	}
 	folders := map[string]int{}
 	for p, content := range t.Docs {
+		if archived(content) {
+			continue
+		}
 		n := BodyLines(content)
 		folders[path.Dir(p)] += n
 		if b.DocLines > 0 && n > b.DocLines {
@@ -337,6 +375,9 @@ func duplicates(t Tree, d Duplicates) []Problem {
 	}
 	sort.Strings(docs)
 	for _, p := range docs {
+		if archived(t.Docs[p]) {
+			continue
+		}
 		var cur []line
 		flush := func() {
 			if len(cur) > 0 {

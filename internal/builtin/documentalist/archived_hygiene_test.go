@@ -1,0 +1,50 @@
+package documentalist
+
+import (
+	"sort"
+	"strings"
+	"testing"
+)
+
+func archivedProblems(docs map[string]string) []string {
+	files := map[string]bool{}
+	for p := range docs {
+		files[p] = true
+	}
+	b := Budgets{DocLines: 5, SectionWords: 1000, FolderLines: 1000, RootAgentFileLines: 100}
+	b.CardWords.Min, b.CardWords.Max = 1, 1000
+	var got []string
+	for _, p := range Hygiene(Tree{Docs: docs, Files: files}, b, Duplicates{MinWords: 10, Similarity: 0.7}) {
+		got = append(got, p.Rule+" "+p.Where)
+	}
+	sort.Strings(got)
+	return got
+}
+
+func TestHygieneSkipsArchivedBudgetsAndDuplicates(t *testing.T) {
+	para := "A session lasts as long as its token, and a token lasts one hour unless it is refreshed, after which the user signs in again.\n"
+	long := strings.Repeat("line\n", 10)
+	docs := map[string]string{
+		"docs/old.md": "---\narchived: 2026-10-04\n---\n# Old\n\n" + long + "\n" + para,
+		"docs/new.md": "# New\n\n" + para,
+	}
+	if got := archivedProblems(docs); len(got) != 0 {
+		t.Fatalf("archived doc reported: %v", got)
+	}
+	docs["docs/old.md"] = strings.Replace(docs["docs/old.md"], "archived: 2026-10-04", "archived: off", 1)
+	got := strings.Join(archivedProblems(docs), "|")
+	if !strings.Contains(got, "doc-too-long docs/old.md") || !strings.Contains(got, "duplicate") {
+		t.Fatalf("a doc not archived must be gardened, got %s", got)
+	}
+}
+
+func TestHygieneChecksLinksOfArchivedAndToIt(t *testing.T) {
+	docs := map[string]string{
+		"docs/old.md": "---\narchived: 2026-10-04\n---\n# Old\n\nSee [gone](gone.md).\n",
+		"docs/new.md": "# New\n\nSee [old](old.md).\n",
+	}
+	got := strings.Join(archivedProblems(docs), "|")
+	if got != "dead-link docs/old.md" {
+		t.Fatalf("Hygiene = %s, want only the dead link of the archived doc", got)
+	}
+}
