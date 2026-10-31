@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.62.0](https://github.com/JN0V/workline/compare/v0.61.0...v0.62.0) (2026-10-31)
+
+
+### Features
+
+* disagreements end at the product owner, then Blocked ([#770](https://github.com/JN0V/workline/issues/770)) ([eb71839](https://github.com/JN0V/workline/commit/eb718399ee4b1d39304ecd014e4131921007c004))
+* **line:** a record per issue, a hop cap and a reconciler ([#766](https://github.com/JN0V/workline/issues/766)) ([92d2c62](https://github.com/JN0V/workline/commit/92d2c6251d73ad6be72cbd0469fb5227a12d6998))
+* **routing:** the line of states, tests wake the tester ([#764](https://github.com/JN0V/workline/issues/764)) ([81e5eba](https://github.com/JN0V/workline/commit/81e5ebad6c0aba8766ad3d6fed44e80bda255e9c))
+* **tester:** a proof kind in place of new tests ([#767](https://github.com/JN0V/workline/issues/767)) ([2407531](https://github.com/JN0V/workline/commit/2407531321920a635977cafab869212284b71a8c))
+
 ## [0.61.0](https://github.com/JN0V/workline/compare/v0.60.0...v0.61.0) (2026-10-31)
 
 
