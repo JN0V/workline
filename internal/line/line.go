@@ -15,6 +15,7 @@ import (
 
 	"github.com/JN0V/workline/internal/agent"
 	"github.com/JN0V/workline/internal/engine"
+	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/gate"
 	"github.com/JN0V/workline/internal/gitrange"
 	"github.com/JN0V/workline/internal/role"
@@ -179,6 +180,20 @@ func RunWith(event string, base engine.Options, gates *Gates) *Result {
 	// schedule running some roles weekly and others nightly does (ADR-0051).
 	if skip := strings.Split(base.Inputs[SkipInput], ","); base.Inputs[SkipInput] != "" {
 		steps = slices.DeleteFunc(slices.Clone(steps), func(s string) bool { return slices.Contains(skip, s) })
+	}
+	// GitLab's webhook on its own trigger URL: the event names the issue
+	// in $TRIGGER_PAYLOAD (ADR-0059); one that put no state's label on an
+	// issue runs nothing, at once.
+	if raw := os.Getenv(PayloadEnv); event == IssueEvent && base.Target == nil && raw != "" && len(cfg.States) > 0 {
+		n, why, err := readPayload(raw, cfg)
+		if err != nil {
+			return failed(res, "payload", err.Error())
+		}
+		if n == 0 {
+			res.Summary = event + ": " + why
+			return res
+		}
+		base.Target = &forge.Target{Kind: "issue", ID: n}
 	}
 	// An event naming an issue runs the role its state wakes (ADR-0059),
 	// not every step of the event; one waking none runs none, said.

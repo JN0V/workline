@@ -1,5 +1,5 @@
 ---
-sources: [ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile]
+sources: [ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile, internal/line/payload.go]
 checked: 99a14dc0
 judged: bf016b7
 verified: agent:claude-code
@@ -25,18 +25,36 @@ GitLab is needed:
   issue's `iid`, `user.username`, `changes.labels.previous` and
   `current`.
 - **Variables in the URL** reach the jobs:
-  `&variables[WORKLINE_TASK]=develop`. Event fields such as the issue's
-  number do not: today's jobs need a tool to pass them; the engine
-  reading `$TRIGGER_PAYLOAD` itself is to build
-  ([ADR-0059](adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md)).
+  `&variables[WORKLINE_TASK]=issue`. Event fields such as the issue's
+  number do not: the engine reads them from `$TRIGGER_PAYLOAD` itself.
 - **What it needs**: any tier, Free included; a Maintainer to create the
   hook and the trigger token; `workline setup` or `doctor` creating both
   is to build. On a self-managed instance, an administrator allows
   webhooks to reach the local network (Admin → Network → Outbound
   requests), as the hook calls GitLab itself (untried).
 - **Every issue change fires it**: a title edit, a new issue, a label
-  the engine itself sets. A job must exit at once on an event that is
-  not its own, and a chain of the engine's labels needs a hop cap.
+  the engine itself sets. The engine exits at once on an event that put
+  no state's label on an issue; a chain of the engine's labels stops at
+  the hop cap.
+
+### The line of states on it
+
+[ADR-0059](adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md),
+the template's jobs ([workline.gitlab-ci.yml](../ci/gitlab/workline.gitlab-ci.yml)):
+
+- **The hook's URL** ends `&variables[WORKLINE_TASK]=issue`: the job
+  `workline:issue` runs `workline route issue --input reconcile=list`,
+  the engine reading `$TRIGGER_PAYLOAD`, no agent.
+- **A state's label put on an issue** whose step is due starts that
+  issue's own pipeline, with the job's token, `WORKLINE_TASK=develop`
+  and `ISSUE_IID`: the `workline:develop:*` jobs run the role its state
+  wakes, one pipeline an issue at a time (`resource_group:
+  workline-issue-<n>`).
+- **The engine's own state labels** fire the hook too: that starts the
+  next step, with no explicit start.
+- **Hourly**, a pipeline schedule with `WORKLINE_TASK=reconcile` runs
+  `workline:reconcile`: each due issue an event missed, its own
+  pipeline. Without the hook, it alone moves the line.
 - **A config error answers 4xx**: GitLab disables a hook that keeps
   failing; the reconciler of [ADR-0059](adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md)
   picks up what it missed.
@@ -87,7 +105,9 @@ none of them:
 | `MR_IID`, `MR_SOURCE_BRANCH`, `MR_TARGET_BRANCH`, `MR_BASE_SHA` | for `merge-request`: from the merge request (`diff_refs.base_sha`); the pipeline's `ref` is the source branch; the tool cancels the one still judging an older head first ([#359](https://github.com/JN0V/workline/issues/359)) |
 | `MR_READY`, `MR_DRAFT` | for `merge-request`: `MR_DRAFT`, `true` or `false`, each run, `true` asking no agent; `MR_READY` when it becomes ready (opened not a draft, or an `update` whose `changes.draft` went false), a pipeline the template never gets: every reviewer lens once ([how](../roles/reviewer/docs/ready.md)) |
 | `MR_IID`, `MR_SOURCE_BRANCH` with `WORKLINE_TASK=objection` | the tester's Draft: a note opened by `workline:objection` on a merge request from `workline/tester/…` (the note webhook); the pipeline's `ref`, the default branch. The template's jobs `workline:objection:*` run it: `workline test answer --merge-request "$MR_IID"` ([tester](../roles/tester/README.md#frozen-tests-and-objections)) |
-| `ISSUE_IID` with `WORKLINE_TASK=develop` | the issue labelled `workline:ready` (the issue webhook); none: the first ready issue nobody took. The template's jobs `workline:develop:*` run `workline route issue --target issue:<n>` ([developer](../roles/developer/docs/triggers.md)) |
+| `WORKLINE_TASK=issue` | the issue webhook's pipeline: `workline:issue` reads `$TRIGGER_PAYLOAD` ([above](#the-line-of-states-on-it)) |
+| `WORKLINE_TASK=reconcile` | a pipeline schedule, hourly: `workline:reconcile` |
+| `ISSUE_IID` with `WORKLINE_TASK=develop` | the issue whose step is due, from `workline:issue` or `workline:reconcile`, or a tool; none: the first ready issue nobody took. The template's jobs `workline:develop:*` run `workline route issue --target issue:<n>`, the role its state wakes ([developer](../roles/developer/docs/triggers.md)) |
 | `MR_IID`, `MR_SOURCE_BRANCH` with `WORKLINE_TASK=review` | the developer's pull request: the reviewer's note on a merge request from `workline/developer/…`, or a person's (the note webhook). The template's jobs `workline:review:*` run `workline develop --merge-request "$MR_IID"` ([the review loop](../roles/developer/docs/review-loop.md)) |
 | `WORKLINE_IMPORT` | for `import`: the file moved to issues, as committed on the pipeline's `ref` |
 

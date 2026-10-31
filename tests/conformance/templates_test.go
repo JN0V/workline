@@ -1755,8 +1755,19 @@ func TestDeveloperTemplatesRouteTheReadyIssue(t *testing.T) {
 		t.Fatal(err)
 	}
 	base, _ := top[".workline:develop"].(map[string]any)
-	if !strings.Contains(fmt.Sprint(base["rules"]), `$WORKLINE_TASK == "develop"`) || base["resource_group"] == nil {
-		t.Errorf(".workline:develop: not run by WORKLINE_TASK=develop, or not one at a time: %v", base)
+	if !strings.Contains(fmt.Sprint(base["rules"]), `$WORKLINE_TASK == "develop"`) || base["resource_group"] != "workline-issue-$ISSUE_IID" {
+		t.Errorf(".workline:develop: not run by WORKLINE_TASK=develop, or not one run an issue: %v", base)
+	}
+	// The webhook's pipeline and the hourly schedule (ADR-0059): the
+	// engine reads the event, no agent, and starts each due issue's own
+	// pipeline.
+	for name, run := range map[string]string{"workline:issue": "workline route issue --ai none", "workline:reconcile": "workline route reconcile --ai none"} {
+		j, _ := top[name].(map[string]any)
+		script := fmt.Sprint(j["script"])
+		if !strings.Contains(script, run) || !strings.Contains(script, "--input reconcile=list") || !strings.Contains(script, "trigger/pipeline") ||
+			!strings.Contains(script, "variables[ISSUE_IID]") {
+			t.Errorf("%s does not start each due issue's own pipeline: %s", name, script)
+		}
 	}
 	j, _ := top["workline:develop:judge"].(map[string]any)
 	script := fmt.Sprint(j["script"])
