@@ -47,6 +47,9 @@ type Outcome struct {
 	// Runs: the runs made, the last one's tests above; 1 but for a
 	// Scope's Runs.
 	Runs int
+	// Missing: the tools its output says were missing, when not green
+	// (#760).
+	Missing []string
 }
 
 // Green says the run proves the change: tests reported, none red, the
@@ -110,6 +113,9 @@ func OnChange(repo, rev string, patches []intent.Intention, s Settings, deadline
 		}
 		slices.Sort(o.Passed)
 		slices.Sort(o.Red)
+		if !o.Green() {
+			o.Missing = MissingTools(r.output)
+		}
 		if o.Exit != "" {
 			o.Exit += ": " + strings.TrimSpace(tail(r.output, 5))
 		}

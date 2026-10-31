@@ -70,7 +70,8 @@ hold:
   reached (`ai-max-tokens`, `proof-seconds`), else a Draft, the proof
   and caps in the claim's record ([the proof](proof.md)). Cases
   `developer/green-opens-ready`, `red-opens-draft`,
-  `cap-reached-pushes-draft`.
+  `cap-reached-pushes-draft`; a tool not found named on a red
+  ([#760](https://github.com/JN0V/workline/issues/760)): `proof-names-missing-tool`.
 - **The proof on the touched folders, in the project's environment**
   ([#703](https://github.com/JN0V/workline/issues/703)): `proof-command`
   with `{packages}`, the whole suite said otherwise; the project's

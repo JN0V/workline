@@ -54,6 +54,9 @@ type Proof struct {
 	Scope    string   `json:"scope,omitempty"`
 	Packages []string `json:"packages,omitempty"`
 	Whole    string   `json:"whole,omitempty"`
+	// Missing: the tools the test command's output says were missing
+	// where it ran (#760): a red from the environment, not the code.
+	Missing []string `json:"missing,omitempty"`
 	// Test, Runs and Ran: a flaky-n-of-n proof (ADR-0059, decision 4),
 	// the test it ran, the runs asked, the runs made; green only when
 	// each of Runs was green, Test passing.
@@ -157,7 +160,7 @@ func prove(repo, at string, patches []intent.Intention, also []string, n *Flaky,
 		p.Result, p.Why = Unproven, strings.TrimSpace(f.Where+": "+f.Message)
 		return p, nil
 	}
-	p.Passed, p.Red, p.Tree, p.At = len(o.Passed), o.Red, "fresh", o.At
+	p.Passed, p.Red, p.Tree, p.At, p.Missing = len(o.Passed), o.Red, "fresh", o.At, o.Missing
 	p.Scope, p.Packages = Whole, o.Packages
 	switch {
 	case len(o.Packages) > 0:
@@ -326,6 +329,7 @@ func proofFindings(where string, p Proof, caps []Cap) []verdict.Finding {
 		if p.Why != "" {
 			msg = p.Why
 		}
+		msg += missingSaid(p.Missing)
 		out = append(out, verdict.Finding{Rule: "proof-red", Level: "warn", Where: where, Message: msg + "; its pull request opens as a Draft"})
 	default:
 		out = append(out, verdict.Finding{Rule: "proof-not-run", Level: "warn", Where: where,
@@ -346,6 +350,15 @@ func (p Proof) nOfN() string {
 	return fmt.Sprintf("; `%s` passed %d runs of %d", p.Test, p.Ran, p.Runs)
 }
 
+// missingSaid is what a red finding adds for the tools missing where the
+// proof ran: "" when none.
+func missingSaid(tools []string) string {
+	if len(tools) == 0 {
+		return ""
+	}
+	return "; not found where it ran: " + strings.Join(tools, ", ")
+}
+
 // proofLines are the Verification's lines: what ran and its result, each
 // cap reached.
 func proofLines(p Proof, caps []Cap) string {
@@ -360,6 +373,9 @@ func proofLines(p Proof, caps []Cap) string {
 		}
 		if p.Why != "" {
 			fmt.Fprintf(&b, "  - %s\n", p.Why)
+		}
+		if len(p.Missing) > 0 {
+			fmt.Fprintf(&b, "  - Not found where it ran: `%s`. A tool missing there is a red from the environment, not the code: the project's setup steps install what its test job has.\n", strings.Join(p.Missing, "`, `"))
 		}
 	default:
 		fmt.Fprintf(&b, "- The project's tests did not run whole: %s\n", p.Why)

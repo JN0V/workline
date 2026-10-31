@@ -160,6 +160,8 @@ from the default branch, before the agent and the proof:
 - **A step that fails** fails the job, named in its log: never a red
   test.
 - **Locally**: the person's machine, as it is.
+- **A tool still missing**: the proof names it, when the test output
+  says it was not found ([the proof](proof.md#what-it-opens)).
 
 ```yaml
 # .github/actions/workline-setup/action.yml
