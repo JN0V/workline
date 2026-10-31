@@ -331,6 +331,38 @@ its budget says so once more, naming that step; it never blocks.
   included (a branch deleted checks none). Each agent call's seconds
   stay in its run's `out/calls.jsonl`.
 
+## The line of states
+
+[ADR-0059](../adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md):
+an issue's state is its label, one at a time; each state wakes one role,
+whose result moves the issue to the next. The table is the routing's
+`states`, a project's list replacing the shipped one:
+
+| State | Label | Wakes | Its result moves it to |
+|---|---|---|---|
+| blocked | `workline:blocked` | nobody: its reason on the issue | — |
+| doing | `workline:developing` | nobody: the developer's claim | — |
+| ready | `workline:ready` | the developer | doing |
+| tests | `workline:needs-tests` | the tester | ready |
+| refine | `workline:to-refine` | the product owner | tests |
+
+- **Read by a pure function** of the issue's labels
+  (`routing.Config.Wakes`); an issue bearing two takes the first row
+  listed.
+- **The issue line**: `workline route issue --target issue:<n>` runs the
+  role the issue's state wakes, alone, when the project routes it on
+  `issue`; none, said (`state-wakes-none`): a state that wakes nobody,
+  or a role not routed there. Without a target, the event's steps run
+  as listed.
+- **Moves are exclusive**: the next state's label on, every other
+  state's off, in one call.
+- **Who moves it**: the product owner's ready sends an issue with named
+  scenarios to `tests` where the tester is routed, else to `ready`
+  ([refine](backlog-acts/refine.md)); the tester's proven, linted Draft
+  moves it to `ready`
+  ([the hand-over](../../roles/tester/docs/hand-over.md#when-the-tests-are-written)).
+- **`max-hops`** (8) caps one issue's state moves: not built yet.
+
 ## Where state lives
 
 On a forge, the state of a work item is a label (`workline:ready`,
@@ -374,9 +406,11 @@ routing:
   events: {schedule: [documentalist, product-owner, reviewer]}
 ```
 
-The tester writes a `ready` issue's acceptance tests on `schedule`, one
-issue a run: the first in the backlog's order whose Validation names
-scenarios and whose Draft is not open
+The tester writes the acceptance tests of an issue waiting for them
+(`needs-tests`, or `ready` with none) on `schedule`, one issue a run,
+and on `issue` the one its state names: on `schedule`, the first in the
+backlog's order whose Validation names scenarios and whose Draft is not
+open
 ([ADR-0055](../adr/0055-the-tester-writes-the-acceptance-tests-before-the-code.md#amendment-2026-10-28-step-4-as-built)).
 It needs `--open-merge-request`; opt-in, after the product owner and the
 reviewer:

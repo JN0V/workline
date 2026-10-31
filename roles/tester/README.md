@@ -12,7 +12,7 @@ verified: agent:claude-code
 
 ```mermaid
 flowchart LR
-  issue["<b>Reads</b><br/>a ready issue's<br/>named scenarios"]
+  issue["<b>Reads</b><br/>an issue's<br/>named scenarios"]
   role(["Tester"])
   proof["<b>Proves</b><br/>each test red<br/>on the base"]
   never["<b>Never</b><br/>the code, a test<br/>already there"]
@@ -30,15 +30,15 @@ file. All roles: [docs/roles.md](../../docs/roles.md). Where it stands:
 [build plan](../../docs/adr/0055-the-tester-writes-the-acceptance-tests-before-the-code.md#build-plan)):
 
 - `workline test write --issue <n>`: has the agent write one test for
-  each named scenario of a ready issue, in the project's own framework;
+  each named scenario of an issue waiting for its tests, in the project's own framework;
 - proves them red on the base, with no agent, then commits them on a
   work branch, opened as a Draft;
 - `workline test check --base <ref>`: the same red-first check on any
   change, with no agent;
 - keeps its tests from the builder, and answers an objection to one
   ([below](#frozen-tests-and-objections));
-- runs on its own: one ready issue a scheduled run, and an objection
-  as it is posted ([below](#when-it-runs)); hands its Draft to whoever
+- runs on its own: an issue labelled `workline:needs-tests` at once,
+  one a scheduled run, and an objection as it is posted ([below](#when-it-runs)); hands its Draft to whoever
   builds ([hand-over](docs/hand-over.md));
 - proves the new tests green three runs out of three on the pull
   request that closes the issue: one red is flaky ([how](docs/green-proof.md));
@@ -59,7 +59,8 @@ workline test write --issue 42 --ai claude
 - **The agent is a choice**: none, `claude`, `cmd:<any command>`
   (`--ai`, else the project's `ai` setting). With none, nothing is
   written: `no-agent` says so, and the issue waits for its tests.
-- **The issue**: labelled `workline:ready`, its Validation a list of
+- **The issue**: labelled `workline:needs-tests` (or `workline:ready`
+  with no Draft), its Validation a list of
   named scenarios, as the product owner writes them
   ([writing an issue](../product-owner/docs/writing.md)):
   `- **Old debt:** Given …, When …, Then …`.
@@ -81,7 +82,8 @@ workline test write --issue 42 --ai claude
 
 | Finding | When; nothing is opened |
 |---|---|
-| `issue-not-ready` | the issue is not labelled `workline:ready` |
+| `issue-not-ready` | the issue is labelled neither `workline:needs-tests` nor `workline:ready` |
+| `tests-lint` | the tests do not pass the project's lint |
 | `no-named-scenario` | its Validation names no scenario: asked of the product owner, never invented |
 | `scenario-without-test` | no test names a scenario, and no note says why none can |
 | `test-file-exists` | a patch changes a test file the base holds |
@@ -122,11 +124,17 @@ workline test write --issue 42 --ai claude
 
 ## When it runs
 
+- **When an issue needs its tests**, route it on `issue` too:
+  `issue: [tester, developer]`. The issue line runs it on an issue
+  labelled `workline:needs-tests`
+  ([the line of states](../../docs/spec/routing.md#the-line-of-states));
+  its proven Draft moves the issue to ready
+  ([the hand-over](docs/hand-over.md#when-the-tests-are-written)).
 - **At night**, list it in the `schedule` line, after the product owner
   and the reviewer
   ([routing](../../docs/spec/routing.md#the-line)):
   `schedule: [documentalist, product-owner, reviewer, tester]`.
-  - It takes **one issue a run**: the first ready one, in the backlog's
+  - It takes **one issue a run**: the first waiting for its tests, in the backlog's
     order, whose Validation names scenarios and whose Draft is not open.
   - Then as `test write`. None waiting: it says so and passes.
   - It needs `--open-merge-request`, as the gardening templates give

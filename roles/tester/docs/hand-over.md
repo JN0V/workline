@@ -1,5 +1,5 @@
 ---
-sources: [internal/tester/moment.go, internal/tester/write.go, internal/tester/said.go, internal/tester/frozen.go, internal/tester/objection.go, internal/tester/green.go]
+sources: [internal/tester/moment.go, internal/tester/write.go, routing.default.yaml, internal/tester/said.go, internal/tester/frozen.go, internal/tester/objection.go, internal/tester/green.go]
 checked: 99a14dc0
 verified: agent:claude-code
 ---
@@ -11,12 +11,13 @@ or a person reads before building a ready issue.
 
 ```mermaid
 flowchart LR
-  ready["<b>Ready</b><br/>issue #n"]
+  tests["<b>Tests</b><br/>issue #n"]
   tester(["Tester"])
   draft["<b>Draft</b><br/>red tests,<br/>Refs #n"]
+  ready["<b>Ready</b><br/>issue #n"]
   builder(["Builder"])
   pr["<b>Same pull request</b><br/>green, Closes #n"]
-  ready --> tester --> draft --> builder --> pr
+  tests --> tester --> draft --> ready --> builder --> pr
 ```
 
 ## What is there
@@ -37,9 +38,27 @@ flowchart LR
   file with its git blob, and the scenarios as read. Only the tester's
   runs write it.
 
+## When the tests are written
+
+The issue waits for its tests labelled `workline:needs-tests`, set by
+the product owner; an issue labelled ready by hand, with no Draft, is
+taken too. Once the Draft is proven, the engine moves the issue on, no
+agent asked
+([ADR-0059](../../../docs/adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#3-tests-wakes-the-tester-its-result-makes-ready)):
+
+- **Each scenario** has its row in `## Tests`, or its reason under
+  not tested.
+- **The project's lint** passes on the tests: each gate routed on
+  `merge-request`, only what they add counted. One that does not blocks
+  the run (`tests-lint`): no Draft, the issue keeps its state.
+- **Then ready**: `workline:ready` on, the other states' labels off,
+  said in the tester's comment on the issue (`state-moved`). An issue
+  already ready keeps its labels.
+
 ## When the tester refuses an issue
 
-`workline test write --issue <n>` on an issue not ready, or whose
+`workline test write --issue <n>` on an issue neither waiting for its
+tests nor ready, or whose
 Validation names no scenario, blocks before any agent is asked. The
 refusal is written on the issue too
 ([ADR-0059](../../../docs/adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#1-every-refusal-claim-wait-or-block-is-on-the-issue)):
