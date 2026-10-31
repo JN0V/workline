@@ -1,0 +1,28 @@
+case: tester/proof-kind-on-a-ready-issue-recorded
+about: >
+  An issue labelled ready by hand, its tests not written, keeps its state
+  when the tester names a proof kind (ADR-0059, decision 4): the kind is
+  recorded on it all the same, for the developer to accept in place of a
+  Draft.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "The retry test fails one run in five"
+        labels: ["workline:ready"]
+        body: "## Need\n\nA maintainer needs the retry test to stop failing at random.\n\n## Validation\n\n- **Reliable:** Given the suite, When the retry test runs 10 times, Then it passes 10 times.\n"
+run: {test: [write, --issue, "3"], ai: "fake:tester-proof-flaky"}
+expect:
+  status: pass
+  summary: "no new test: flaky-n-of-n, recorded; the issue's state kept"
+  findings: [{rule: proof-recorded, level: info, where: "#3"}]
+  forge:
+    issues:
+      - id: 3
+        labels: ["workline:ready"]
+        comment-contains: ["its state kept, not the tester's", "<!-- workline:tester-proof {\"kind\":\"flaky-n-of-n\""]

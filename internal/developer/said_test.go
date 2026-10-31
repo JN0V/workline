@@ -64,7 +64,7 @@ func TestStaleAtClaimHours(t *testing.T) {
 func TestPickPassesALetGoClaim(t *testing.T) {
 	s := SettingsFrom(nil)
 	issues := []forge.Issue{{ID: 1, Labels: []string{"workline:ready", s.ClaimLabel}}}
-	id, passed := pick(issues, nil, s, 0, false, map[int]bool{1: true})
+	id, passed := pick(issues, nil, s, 0, false, map[int]bool{1: true}, nil)
 	if id != 0 || len(passed) != 1 || passed[0].Why != "its claim was let go in this run: taken again at a next one" {
 		t.Errorf("pick: %d, %v", id, passed)
 	}

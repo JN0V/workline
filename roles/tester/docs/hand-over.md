@@ -1,6 +1,6 @@
 ---
-sources: [internal/tester/moment.go, internal/tester/write.go, routing.default.yaml, internal/tester/said.go, internal/tester/frozen.go, internal/tester/objection.go, internal/tester/green.go]
-checked: 6521f53a
+sources: [internal/tester/moment.go, internal/tester/write.go, internal/tester/proof.go, routing.default.yaml, internal/tester/said.go, internal/tester/frozen.go, internal/tester/objection.go, internal/tester/green.go]
+checked: c9597b31
 verified: agent:claude-code
 ---
 # The hand-over: what whoever builds finds
@@ -56,6 +56,27 @@ Once the Draft is proven, the engine moves the issue on, no agent asked
 - **Then ready**: `workline:ready` on, the other states' labels off,
   said in the tester's comment on the issue (`state-moved`). An issue
   already ready keeps its labels.
+
+## A proof kind, not always a new test
+
+When no new test fits, the tester's agent names the proof that does
+([ADR-0059](../../../docs/adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#4-a-proof-kind-not-always-a-new-test)):
+
+| Kind | When | Proof |
+|---|---|---|
+| `flaky-n-of-n` | a flaky test to make reliable | the named test passes N runs of N |
+| `existing-suite` | a refactor | the project's suite, unchanged and green |
+| `docs-checks` | a docs change | the documentalist's checks |
+
+- **Recorded**, the kind and its reason, in the tester's comment on the
+  issue; no Draft. The issue moves to ready (`proof-recorded`); one
+  labelled ready by hand keeps its state.
+- **The developer** takes it as it takes one with a Draft, the kind in
+  its task ([the pick](../../developer/docs/pick.md#which-issue)).
+- **`none`**, no test possible: the issue goes back to the product
+  owner's state, refine, the reason said (`no-test-possible`).
+- **Refused**: a kind it does not know (`proof-kind-unknown`), one with
+  no reason (`proof-reason-missing`); the issue keeps its state.
 
 ## When the tester refuses an issue
 

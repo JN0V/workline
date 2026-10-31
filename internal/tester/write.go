@@ -296,6 +296,11 @@ func Post(runDir, repo string) int {
 		}
 	}
 	if len(patches) == 0 {
+		// No new test fits: the kind of proof the agent named instead,
+		// recorded (ADR-0059, decision 4).
+		if p, ok := proofOf(notes); ok {
+			return proved(runDir, repo, t, intents, p)
+		}
 		if ai := os.Getenv("WORKLINE_AI"); ai == "" || ai == "none" {
 			return write(runDir, verdict.Verdict{Status: verdict.Pass, Summary: "no agent: the issue waits for its tests",
 				Findings: []verdict.Finding{{Rule: "no-agent", Level: "warn", Where: where,

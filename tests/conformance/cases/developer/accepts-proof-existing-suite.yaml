@@ -1,0 +1,22 @@
+case: developer/accepts-proof-existing-suite
+about: >
+  The developer accepts the tester's recorded proof kind existing-suite in place of
+  a Draft (ADR-0059, decision 4): a ready issue whose scenarios have no
+  Draft open, but whose tester's comment records that kind, is taken,
+  where with none recorded it waits for its tests.
+given:
+  repo: tested
+  config:
+    routing: {events: {issue: [tester, developer]}}
+  forge:
+    issues:
+      - id: 2
+        title: "Multiply"
+        labels: ["workline:ready"]
+        body: "## Need\n\nI want to multiply.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n"
+        comments: ["**The tester** records the proof of this issue: existing-suite, no new test.\n\n<!-- workline:tester-proof {\"kind\":\"existing-suite\",\"reason\":\"no new test fits it\"} -->\n<!-- workline:sticky=tester/issue -->"]
+run: {develop: [--issue, "2"], ai: none}
+expect:
+  status: pass
+  summary: "would take #2"
+  no-findings: [{rule: issue-passed, where: "#2"}]

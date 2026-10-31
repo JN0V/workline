@@ -1,0 +1,1 @@
+- note: "proof: flaky-n-of-n — tests/test_retry.sh must pass 10 runs of 10: its flakiness cannot be shown red on demand, only its runs counted."

@@ -20,3 +20,12 @@ style, beside the tests already there:
   a file already there, which is refused.
 - A scenario no test can check (a person's look, a feeling): say it in a
   `note`, the scenario's name first, then why. Never fake a test for it.
+
+When no new test fits the issue as a whole, write no test: answer one
+`note` naming the proof that fits instead, `proof: <kind> — why`:
+
+- `flaky-n-of-n`: a flaky test to make reliable; name it, and how many
+  runs out of how many it must pass.
+- `existing-suite`: a refactor; the project's suite, unchanged and green.
+- `docs-checks`: a change to the docs alone; the documentalist's checks.
+- `none`: no test is possible; why. The product owner then decides.

@@ -214,10 +214,11 @@ func overlap(a, b []string) string {
 // closing it, its Scope's paths clear of the issues the developer holds.
 // testsFirst, where the project routes the tester: an issue whose
 // Validation names scenarios waits for the tester's open Draft of its
-// tests (ADR-0055). only, when not 0, is the one issue looked at.
+// tests (ADR-0055), or the kind of proof it recorded instead (proofs,
+// ADR-0059). only, when not 0, is the one issue looked at.
 // letGo are the claims this run lets go: held no more, taken at a next
 // run. passed are the issues offered it passed over, why each.
-func pick(issues []forge.Issue, mrs []forge.MergeRequest, s Settings, only int, testsFirst bool, letGo map[int]bool) (id int, passed []Passed) {
+func pick(issues []forge.Issue, mrs []forge.MergeRequest, s Settings, only int, testsFirst bool, letGo map[int]bool, proofs map[int]tester.Proof) (id int, passed []Passed) {
 	open := map[int]bool{}
 	for _, is := range issues {
 		open[is.ID] = true
@@ -254,7 +255,7 @@ func pick(issues []forge.Issue, mrs []forge.MergeRequest, s Settings, only int, 
 			why = "taken already, labelled " + s.ClaimLabel
 		case closer[is.ID] != 0:
 			why = fmt.Sprintf("the open merge request %d closes it", closer[is.ID])
-		case testsFirst && !tested[is.ID] && len(tester.Scenarios(work.ByMeaning(is.Body)[work.Validation].Text)) > 0:
+		case testsFirst && !tested[is.ID] && proofs[is.ID].Kind == "" && len(tester.Scenarios(work.ByMeaning(is.Body)[work.Validation].Text)) > 0:
 			why = "its acceptance tests are not written yet: it waits for the tester's Draft"
 			next = "the tester writes them, as a Draft of its own; the developer takes this issue at a run after that Draft is open"
 		default:
@@ -343,7 +344,13 @@ func Pre(runDir, repo string) int {
 			letGo[number(m["issue"])] = true
 		}
 	}
-	id, passed := pick(issues, mrs, s, only, line.Runs("tester"), letGo)
+	// The kinds of proof the tester recorded in place of a Draft
+	// (ADR-0059, decision 4): accepted as a Draft is.
+	proofs, err := proofsOf(b, issues, mrs, line.Runs("tester"))
+	if err != nil {
+		return external(err)
+	}
+	id, passed := pick(issues, mrs, s, only, line.Runs("tester"), letGo, proofs)
 	for _, p := range passed {
 		findings = append(findings, verdict.Finding{Rule: "issue-passed", Level: "info", Where: fmt.Sprintf("#%d", p.Issue), Message: p.Why})
 	}
@@ -391,6 +398,9 @@ func Pre(runDir, repo string) int {
 		return external(err)
 	}
 	bounds.Kind, _ = IssueKind(is.Labels)
+	if p, ok := proofs[id]; ok && bounds.Draft == 0 {
+		bounds.Proof = &p
+	}
 	// Its code starts from the tester's Draft: the acceptance tests on it
 	// run in the proof (ADR-0054, step 4).
 	act.From, act.Acceptance = bounds.Head, bounds.acceptance()
@@ -514,6 +524,10 @@ func question(is forge.Issue, b Bounds, test string, testErr error, s Settings) 
 			"YAML only, one item an objection:\n\n" +
 			"```yaml\n- test: <file>\n  line: <n>\n  scenario: <its name>\n  kind: <interface | over-specified | contradicts | untestable | need>\n  why: <one or two sentences>\n```\n\n" +
 			"The engine reads that file and takes it out of your diff; the tester keeps or rewrites each objection.\n")
+	}
+	if b.Proof != nil {
+		fmt.Fprintf(&t, "\n## Its proof: %s, no new test\n\nThe tester recorded it in place of acceptance tests: %s. Its proof: %s.\n",
+			b.Proof.Kind, strings.TrimSuffix(b.Proof.Reason, "."), tester.ProofKinds[b.Proof.Kind])
 	}
 	t.WriteString("\n## The tests\n\n")
 	switch {
@@ -849,4 +863,31 @@ func gitOut(dir string, args ...string) (string, error) {
 func fail(err error) int {
 	fmt.Fprintln(os.Stderr, "developer:", err)
 	return 1
+}
+
+// proofsOf reads the kind of proof the tester recorded on each ready
+// issue whose tests would be waited for: named scenarios, no tester's
+// Draft open. Read only where the project routes the tester.
+func proofsOf(b forge.Backlog, issues []forge.Issue, mrs []forge.MergeRequest, testsFirst bool) (map[int]tester.Proof, error) {
+	out := map[int]tester.Proof{}
+	if !testsFirst {
+		return out, nil
+	}
+	tested := map[int]bool{}
+	for _, m := range mrs {
+		tested[testerIssue(m.Branch)] = true
+	}
+	for _, is := range issues {
+		if !slices.Contains(is.Labels, backlog.LabelReady) || tested[is.ID] || len(tester.Scenarios(work.ByMeaning(is.Body)[work.Validation].Text)) == 0 {
+			continue
+		}
+		comments, err := b.Comments(forge.Target{Kind: "issue", ID: is.ID})
+		if err != nil {
+			return nil, err
+		}
+		if p, ok := tester.ReadProof(comments); ok {
+			out[is.ID] = p
+		}
+	}
+	return out, nil
 }
