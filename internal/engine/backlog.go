@@ -548,11 +548,19 @@ func (a *applier) refining(c backlog.Proposal) error {
 				return err
 			}
 		}
+		if c.Proof != nil {
+			// A kind picked where the tester found no test possible: kept
+			// in its state for the developer, while the tester's word is
+			// the one it answers (ADR-0059, decision 4).
+			if err := a.recordProof(t, c.Proof); err != nil {
+				return err
+			}
+		}
 		add, remove := []string{backlog.LabelReady}, backlog.ReadyRemoves(*is)
 		// Where the project routes the tester, an issue with named
 		// scenarios goes to its tests first: the tester's result makes it
-		// ready (ADR-0059, decision 3).
-		if testsFirst(a.repo, *is) {
+		// ready (ADR-0059, decision 3); with a kind picked, to ready.
+		if c.Proof == nil && testsFirst(a.repo, *is) {
 			add = []string{backlog.LabelNeedsTests}
 			remove = append(remove, backlog.LabelReady)
 		}
@@ -593,6 +601,26 @@ func (a *applier) refining(c backlog.Proposal) error {
 		return err
 	}
 	return keepBody(f, role, t, body, c.Sources, added)
+}
+
+// recordProof keeps in an issue's state the proof kind a ready picked,
+// read again from the forge: nothing kept when the tester's word changed
+// since the plan read it.
+func (a *applier) recordProof(t forge.Target, p *backlog.Proof) error {
+	b := a.forge.(forge.Backlog)
+	comments, err := b.Comments(t)
+	if err != nil {
+		return err
+	}
+	if _, digest, ok := backlog.NoTest(comments); !ok || digest != p.Answers {
+		return fmt.Errorf("#%d: the tester's word on it changed since the plan read it: no proof kind kept", t.ID)
+	}
+	st, _, err := backlog.ReadState(comments, a.role)
+	if err != nil {
+		return fmt.Errorf("#%d: its state comment: %w", t.ID, err)
+	}
+	st.Proof = p
+	return a.forge.Sticky(t, backlog.FormatState(*st), backlog.StateMarker(a.role), false)
 }
 
 // keepBody records in an issue's state the body the engine left, so only a

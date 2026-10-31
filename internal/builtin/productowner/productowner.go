@@ -248,6 +248,16 @@ func Pre(runDir, repo string) int {
 		comments := forge.Bodies(notes)
 		notesOf[is.ID] = notes
 		st, found, err := backlog.ReadState(comments, role)
+		if _, picked := backlog.ReadProof(comments, role); found && err == nil && !picked {
+			if pp, ok := backlog.PersonsPick(notes); ok {
+				// The tester found no test possible, and a person of the
+				// project named the kind in a comment: their pick, done
+				// with no agent (ADR-0059, decision 4).
+				fallback = append(fallback, intent.Intention{Kind: "ready", Value: map[string]any{
+					"issue": is.ID, "proof": pp, "own": true,
+					"why": fmt.Sprintf("@%s named its proof in a comment, the tester having found no test possible.", pp.By)}})
+			}
+		}
 		// Only the text as last proposed, not answered since — an answer
 		// may change it, the agent reads it first — and only while the body
 		// still lacks what it adds.
@@ -506,6 +516,10 @@ func Pre(runDir, repo string) int {
 			// The reviewer's findings on its spec, not given yet: answered
 			// at this refine (#128).
 			changed = append(changed, d)
+		case noTestUnread(comments, st, role):
+			// The tester found no test possible: the role picks the
+			// proof, or sends it back to its tests (ADR-0059, decision 4).
+			changed = append(changed, d)
 		case sourcesChanged(repo, st),
 			st.Body != "" && backlog.BodyDigest(is.Body) != st.Body, // a person changed its body
 			st.Closed != "": // a person reopened what the role closed
@@ -680,6 +694,11 @@ func Pre(runDir, repo string) int {
 			if r := backlog.SpecOpen(d.is, d.comments); cfg.SpecReview && r != nil {
 				review += specFindings(d.is, d.st, d.comments, r)
 			}
+			if reason, _, ok := backlog.NoTest(d.comments); ok {
+				if _, picked := backlog.ReadProof(d.comments, role); !picked {
+					review += noTestSaid(reason)
+				}
+			}
 			if readyOpen(d.is, d.st, cfg) {
 				review += fmt.Sprintf("Ready: its four sections are there, %s and %s a person's — propose `ready` when it is evident: one need, a %s that proves it, nothing left open in its comments; the engine checks it.\n",
 					work.Name(work.Need), work.Name(work.Validation), work.Name(work.Verification))
@@ -722,6 +741,9 @@ func Pre(runDir, repo string) int {
 			}
 			if r := backlog.SpecOpen(d.is, d.comments); cfg.SpecReview && r != nil {
 				read.Answered = r.Body
+			}
+			if _, digest, ok := backlog.NoTest(d.comments); ok {
+				read.NoTest = digest
 			}
 			read.Keep(d.is.Body)
 			t.reads = append(t.reads, intent.Intention{Kind: "comment", Value: map[string]any{
@@ -1206,6 +1228,28 @@ func writeIssue(b *strings.Builder, role string, rounds int, is forge.Issue, st 
 	for _, c := range kept {
 		fmt.Fprintf(b, "Comment%s:\n> %s\n\n", c.who, strings.ReplaceAll(clip(c.text, bodyMax), "\n", "\n> "))
 	}
+}
+
+// noTestUnread says whether the tester found no test possible for an
+// issue and the role was not given it yet, nor a kind picked for it.
+func noTestUnread(comments []string, st *backlog.State, role string) bool {
+	_, digest, ok := backlog.NoTest(comments)
+	if !ok || digest == st.NoTest {
+		return false
+	}
+	_, picked := backlog.ReadProof(comments, role)
+	return !picked
+}
+
+// noTestSaid tells the agent the tester found no test possible, and what
+// it may do: pick the proof in place of new tests, or send the issue back
+// to its tests with scenarios a test checks (ADR-0059, decision 4).
+func noTestSaid(reason string) string {
+	return fmt.Sprintf("No test possible, says the tester: %s\n"+
+		"Pick its proof in place of new tests — `ready` with `proof: {kind: <kind>, reason: <why it proves the need>}`, the kind one of: %s (%s), %s (%s), %s (%s; add `test: <its name>` and, if not the project's setting, `runs: <N>`). "+
+		"Or, where its %s asks what no test checks and it is your draft, rewrite it so one does, or ask its reporter: a `ready` with no proof sends it back to its tests.\n",
+		strings.TrimSpace(reason), backlog.KindSuite, backlog.ProofKinds[backlog.KindSuite], backlog.KindDocs, backlog.ProofKinds[backlog.KindDocs],
+		backlog.KindFlaky, backlog.ProofKinds[backlog.KindFlaky], work.Name(work.Validation))
 }
 
 // author says who wrote a comment, as the agent is told: its reporter, a

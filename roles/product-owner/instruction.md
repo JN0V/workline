@@ -225,6 +225,14 @@ marks each draft; a section it does not mark is a person's — never hold
 `ready` back for not knowing who wrote it. The engine checks it, and
 proposes an outsider's to the project.
 
+When the task says the tester found **no test possible**, judge its
+reason. If another proof shows the need is met, propose `ready` with
+`proof: {kind: <kind>, reason: <why it proves the need>}`: the kinds and
+what each runs are in the task, a flaky test's with `test: <its name>`.
+If the Validation asks what no test can check and it is your draft,
+rewrite it so a test can, or ask its reporter; a `ready` with no proof
+sends the issue back to its tests.
+
 **Split** an issue too big to be one need — it asks for several things,
 each proved by its own Verification, that a change could finish one at a
 time: propose `split` with 2 to 6 children, each a short title and its

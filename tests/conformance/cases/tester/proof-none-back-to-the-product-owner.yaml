@@ -3,7 +3,9 @@ about: >
   No test is possible (ADR-0059, decision 4): the tester's agent says
   so, `proof: none`, and why. The issue goes back to the product owner's
   state, refine, said on it: the product owner picks a proof kind, or
-  rewrites the scenarios. No kind is recorded for the developer.
+  rewrites the scenarios; a person of the project may name one in a
+  comment. `none` is recorded, the word the product owner's pick
+  answers; the developer takes it for no proof.
 given:
   repo: tested
   setup:
@@ -25,5 +27,4 @@ expect:
     issues:
       - id: 3
         labels: ["workline:to-refine"]
-        comment-contains: ["**The tester** finds no test possible for this issue.", "no test checks a feeling", "back to the product owner (refine)"]
-        comment-lacks: ["tester-proof"]
+        comment-contains: ["**The tester** finds no test possible for this issue.", "no test checks a feeling", "back to the product owner (refine)", "a person of the project may name one in a comment", "tester-proof {\"kind\":\"none\""]

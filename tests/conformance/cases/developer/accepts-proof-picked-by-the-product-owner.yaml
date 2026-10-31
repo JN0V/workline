@@ -1,0 +1,24 @@
+case: developer/accepts-proof-picked-by-the-product-owner
+about: >
+  The tester found no test possible; the product owner picked the proof
+  kind, kept in its state, answering that word (ADR-0059, decision 4):
+  the developer takes the issue on that kind, where with "no test
+  possible" alone it would wait for a Draft.
+given:
+  repo: tested
+  config:
+    routing: {events: {issue: [tester, developer]}}
+  forge:
+    issues:
+      - id: 2
+        title: "Clearer README"
+        labels: ["workline:ready"]
+        body: "## Need\n\nA newcomer installs in one minute.\n\n## Validation\n\n- **Clear:** Given the README, When Ann reads it, Then it feels clear.\n"
+        comments:
+          - "```yaml\nsources: []\nconfirmed: d8c4dff\nproof:\n  kind: docs-checks\n  reason: the README's words only\n  answers: af1c2ed6ea0a\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "**The tester** finds no test possible for this issue.\n\n<!-- workline:tester-proof {\"kind\":\"none\",\"reason\":\"the change is the README's wording: no behaviour to test.\"} -->\n<!-- workline:sticky=tester/issue -->"
+run: {develop: [--issue, "2"], ai: none}
+expect:
+  status: pass
+  summary: "would take #2"
+  no-findings: [{rule: issue-passed, where: "#2"}]
