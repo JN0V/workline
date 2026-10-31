@@ -1652,6 +1652,9 @@ func applyCmd(args []string) int {
 	if *fromMR == 0 {
 		named = append(named, dirs...)
 	}
+	// What the line of states writes on the issues it ran a step for
+	// (ADR-0059): after the runs, once they applied.
+	var states *line.Result
 	if *lineFile != "" {
 		data, err := os.ReadFile(*lineFile)
 		var l line.Result
@@ -1674,8 +1677,16 @@ func applyCmd(args []string) int {
 			}), noted...)
 		}
 		dirs = append(dirs, l.Pending...)
-		if len(dirs) == 0 {
+		if len(l.States) > 0 && *fromMR == 0 {
+			states = &l
+		}
+		if len(dirs) == 0 && states == nil {
 			return nothingToApply(noted, summaryFiles, *asJSON)
+		}
+		if len(dirs) == 0 {
+			res := &engine.Result{Status: verdict.Pass, Summary: "the line's records written on their issues", Applied: []string{}, Refused: []string{}, Findings: noted}
+			keepStates(res, states, *repo)
+			return applied(res, summaryFiles, *asJSON)
 		}
 	}
 	if len(dirs) == 0 {
@@ -1706,6 +1717,9 @@ func applyCmd(args []string) int {
 		}
 	}
 	res.Findings = append(noted, res.Findings...)
+	if states != nil && res.Status == verdict.Pass {
+		keepStates(res, states, *repo)
+	}
 	// The runs after the one that stopped are not applied: said, with the
 	// command that resumes them all, never left out of the job's page.
 	if left := dirs[stopped+1:]; len(left) > 0 {
@@ -1717,17 +1731,58 @@ func applyCmd(args []string) int {
 			Message: fmt.Sprintf("%d %s after it not applied; once it is fixed, resume with: workline apply %s",
 				len(left), runs, strings.Join(dirs[stopped:], " "))})
 	}
+	return applied(res, summaryFiles, *asJSON)
+}
+
+// applied says what apply did: in the job's summary, then as JSON or
+// for a person.
+func applied(res *engine.Result, summaryFiles []string, asJSON bool) int {
 	if err := wlreport.AppendSummary(summaryFiles, wlreport.RoleSummary("apply", "", res)); err != nil {
 		fmt.Fprintln(os.Stderr, "workline:", err)
 		return 1
 	}
-	if *asJSON {
+	if asJSON {
 		out, _ := json.MarshalIndent(res, "", "  ")
 		fmt.Println(string(out))
 	} else {
 		report(res)
 	}
 	return exitFor(res.Status)
+}
+
+// keepStates writes the line's records on the issues it ran a step for
+// (ADR-0059), on the forge the line read; one not written blocks.
+func keepStates(res *engine.Result, l *line.Result, repo string) {
+	fail := func(err error) {
+		res.Status = verdict.Block
+		res.Findings = append(res.Findings, verdict.Finding{Rule: "state-unwritten", Message: err.Error()})
+	}
+	root, err := gitRoot(repo)
+	if err != nil {
+		fail(errors.New("not in a git repository"))
+		return
+	}
+	spec := l.Forge
+	if spec == "" {
+		cfg, err := role.LoadProjectConfig(root)
+		if err != nil {
+			fail(err)
+			return
+		}
+		spec = cfg.Forge
+	}
+	f, err := forge.Open(spec, root)
+	if err != nil {
+		fail(err)
+		return
+	}
+	if err := line.WriteStates(f, root, l); err != nil {
+		fail(err)
+		return
+	}
+	for _, w := range l.States {
+		res.Applied = append(res.Applied, fmt.Sprintf("the line's record on #%d", w.Issue))
+	}
 }
 
 // keepMain keeps what main's run after a merge found in one issue

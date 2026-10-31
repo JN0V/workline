@@ -35,7 +35,7 @@ expect:
     issues:
       - id: 3
         labels: ["workline:ready"]
-        comments: 1
+        comments: 2   # the tester's, and the line's record
         comment-contains: ["**The tester** wrote the acceptance tests of this issue, as a Draft.", "each of its 2 scenarios has its test", "- **Next**: it is ready"]
     merge-requests:
       - id: 1

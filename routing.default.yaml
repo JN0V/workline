@@ -31,9 +31,13 @@ states:
   - {name: ready,   label: "workline:ready",       role: developer, next: doing}
   - {name: tests,   label: "workline:needs-tests", role: tester,    next: ready}
   - {name: refine,  label: "workline:to-refine",   role: product-owner, next: tests}
-# The state moves of one issue, at most: past it, Blocked, the count said
-# on it. A state move is not a handoff: it starts a new run.
+# The state steps run on one issue, at most: past it, Blocked, the count
+# said on it. A state step is not a handoff: it is a new run.
 max-hops: 8
+# The steps one run of the reconciler (`workline route reconcile`, hourly)
+# starts at most: it catches what an event missed, never a flood of agent
+# calls; the issues left wait for its next run.
+reconcile-max: 3
 # Each moment's wait budget, in seconds (ADR-0050): a run over it says so
 # in its summary, naming the step that took the time; it never blocks. A
 # project sets its own in `routing: budgets:`, moment by moment.

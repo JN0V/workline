@@ -1,0 +1,27 @@
+case: routing/hops-restart-out-of-blocked
+about: >
+  A person moves an issue the hop cap blocked back to a state, by its
+  label (ADR-0059): its count starts again, the step runs, the record
+  says one hop. Never blocked again at once by the count that blocked it.
+given:
+  repo: tested
+  config:
+    routing: {events: {issue: [developer]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply"
+        labels: ["workline:ready"]
+        body: "## Need\n\nI want to multiply.\n"
+        comments: ["<!-- workline:line-record {\"state\":\"blocked\",\"body\":\"8a828a06be19\",\"hops\":9} -->\n<!-- workline:sticky=line/state -->"]
+run: {route: issue, target: {issue: 3}, open-merge-request: true, ai: none}
+expect:
+  status: pass
+  findings: [{rule: state-wakes, level: info, where: "#3", message: "its state, ready, wakes the developer"}]
+  no-findings: [{rule: hops-capped}]
+  forge:
+    issues:
+      - id: 3
+        labels: ["workline:ready"]
+        comments: 1
+        comment-contains: ["\"state\":\"ready\"", "\"hops\":1"]

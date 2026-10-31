@@ -1,0 +1,47 @@
+case: routing/reconcile-starts-a-missed-step
+about: >
+  A missed event (ADR-0059, decision 8): `workline route reconcile`
+  walks every open issue and starts the step due, with no event. #3
+  waits for its tests and no step ran on it: the tester writes them, the
+  issue moves to ready, the line's record kept on it. #4's step ran on
+  the same state and body: nothing more. #5 is in a state no role the
+  project routes wakes: left alone.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+    routing: {events: {issue: [tester, developer]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:needs-tests"]
+        body: "## Need\n\nWhen I total an order, I want to multiply a price by a count, so I need not add it up by hand.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **By zero:** Given the library, When I multiply 5 by 0, Then I get 0.\n\n---\n\n## Verification\n\nA test a scenario, in tests/.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+      - id: 4
+        title: "Multiply"
+        labels: ["workline:ready"]
+        body: "## Need\n\nI want to multiply.\n"
+        comments: ["<!-- workline:line-record {\"state\":\"ready\",\"body\":\"8a828a06be19\",\"hops\":2} -->\n<!-- workline:sticky=line/state -->"]
+      - {id: 5, title: "Divide", labels: ["workline:to-refine"], body: "## Need\n\nI want to divide.\n"}
+run: {route: reconcile, open-merge-request: true, ai: "fake:tester-two-scenarios"}
+expect:
+  status: pass
+  summary: "reconcile: 1 issue due, its step run"
+  agent-calls: 1
+  findings:
+    - {rule: state-wakes, level: info, where: "#3", message: "its state, tests, wakes the tester"}
+    - {rule: state-acted, level: info, where: "#4"}
+  no-findings: [{where: "#5"}]
+  pushed:
+    workline/tester/issue-3:
+      tests/test_mul_two_by_three.sh: "Scenario: Two by three"
+  forge:
+    issues:
+      - id: 3
+        labels: ["workline:ready"]
+        comments: 2
+        comment-contains: ["**workline's line** last woke the tester on this issue, in its state tests (1 state step so far)", "\"state\":\"tests\""]
+      - {id: 4, comments: 1}
+      - {id: 5, comments: 0}

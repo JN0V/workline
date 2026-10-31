@@ -1710,6 +1710,9 @@ func poisoned(a *applyFrom, dirs []string, repo, forgeSpec string) (listed, args
 			return nil, nil, []string{fmt.Sprintf("apply-from: %s not checked out: %s", a.Base, out)}
 		}
 	}
+	if a.MergeRequest == 0 { // a line's result applied as its own job does, no merge request's
+		return listed, nil, nil
+	}
 	head, err := exec.Command("git", "-C", repo, "rev-parse", "origin/"+a.Head).Output()
 	if err != nil {
 		return nil, nil, []string{fmt.Sprintf("apply-from: no branch %s on origin", a.Head)}

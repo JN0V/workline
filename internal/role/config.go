@@ -42,12 +42,13 @@ var (
 		"forge": free,
 		"roles": {any: &shape{keys: map[string]*shape{"settings": free, "enforce": free}}},
 		"routing": {keys: map[string]*shape{
-			"events":       free,
-			"handoffs":     {keys: map[string]*shape{"from": free, "to": free}}, // a list: each item
-			"max-handoffs": free,
-			"fail-fast":    free,
-			"states":       {keys: map[string]*shape{"name": free, "label": free, "role": free, "next": free}}, // a list: each item
-			"max-hops":     free,
+			"events":        free,
+			"handoffs":      {keys: map[string]*shape{"from": free, "to": free}}, // a list: each item
+			"max-handoffs":  free,
+			"fail-fast":     free,
+			"states":        {keys: map[string]*shape{"name": free, "label": free, "role": free, "next": free}}, // a list: each item
+			"max-hops":      free,
+			"reconcile-max": free,
 			// Each moment's wait budget (ADR-0050): its moments only.
 			"budgets": {keys: map[string]*shape{"commit": free, "commit-rewrite": free, "push": free,
 				"first-result": free, "verdict": free, "ready-review": free, "queue": free}},

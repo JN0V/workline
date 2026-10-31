@@ -1,0 +1,28 @@
+case: routing/reconcile-list-skips-and-writes-nothing
+about: >
+  Asked to list (`--input reconcile=list`), the reconciler writes
+  nothing (ADR-0059): an issue past its hop cap is listed due, its own
+  run blocks it. A role left out by `--input skip` is not looked at.
+given:
+  repo: tested
+  config:
+    routing: {events: {issue: [tester, developer]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply"
+        labels: ["workline:ready"]
+        body: "## Need\n\nI want to multiply.\n"
+        comments: ["<!-- workline:line-record {\"state\":\"tests\",\"body\":\"8a828a06be19\",\"hops\":8} -->\n<!-- workline:sticky=line/state -->"]
+      - {id: 4, title: "Divide", labels: ["workline:needs-tests"], body: "## Need\n\nI want to divide.\n"}
+run: {route: reconcile, open-merge-request: true, ai: "fake:developer-nothing", input: {reconcile: list, skip: tester}}
+expect:
+  status: pass
+  summary: "reconcile: 1 issue due: #3"
+  agent-calls: 0
+  findings: [{rule: hops-capped, level: warn, where: "#3"}]
+  no-findings: [{where: "#4"}]
+  forge:
+    issues:
+      - {id: 3, labels: ["workline:ready"], comments: 1, comment-contains: ["\"hops\":8"]}
+      - {id: 4, comments: 0}

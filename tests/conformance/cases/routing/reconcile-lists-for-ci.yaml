@@ -1,0 +1,25 @@
+case: routing/reconcile-lists-for-ci
+about: >
+  In CI, the reconciler says the issues due and starts none
+  (`--input reconcile=list`): the job then starts each one's own run,
+  in its own concurrency group (ADR-0059). No agent asked, nothing
+  written; at most reconcile-max issues a run, the others said left.
+given:
+  repo: tested
+  config:
+    routing: {events: {issue: [developer]}, reconcile-max: 2}
+  forge:
+    issues:
+      - {id: 3, title: "Multiply", labels: ["workline:ready"], body: "## Need\n\nI want to multiply.\n"}
+      - {id: 4, title: "Divide", labels: ["workline:ready"], body: "## Need\n\nI want to divide.\n"}
+      - {id: 6, title: "Add", labels: ["workline:ready"], body: "## Need\n\nI want to add.\n"}
+run: {route: reconcile, open-merge-request: true, ai: "fake:developer-nothing", input: {reconcile: list}}
+expect:
+  status: pass
+  summary: "reconcile: 2 issues due: #3 #4"
+  agent-calls: 0
+  findings: [{rule: reconcile-left, level: info, where: "#6", message: "past reconcile-max (2)"}]
+  forge:
+    issues:
+      - {id: 3, comments: 0}
+      - {id: 4, comments: 0}

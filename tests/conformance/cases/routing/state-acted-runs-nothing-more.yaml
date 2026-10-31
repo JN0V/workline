@@ -1,0 +1,25 @@
+case: routing/state-acted-runs-nothing-more
+about: >
+  A step is idempotent (ADR-0059, decision 8): the line's record on the
+  issue holds the state its last step acted on, the body's hash and when
+  the state's label was put on. The same three again run nothing: no
+  step, no agent; said. The issue labelled anew, or its body changed,
+  makes the step due again.
+given:
+  repo: tested
+  config:
+    routing: {events: {issue: [developer]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply"
+        labels: ["workline:ready"]
+        labeled: {"workline:ready": "2026-10-31T09:00:00Z"}
+        body: "## Need\n\nI want to multiply.\n"
+        comments: ["**workline's line** last woke the developer.\n\n<!-- workline:line-record {\"state\":\"ready\",\"body\":\"8a828a06be19\",\"labeled\":\"2026-10-31T09:00:00Z\",\"hops\":1} -->\n<!-- workline:sticky=line/state -->"]
+run: {route: issue, target: {issue: 3}, open-merge-request: true, ai: "fake:developer-nothing"}
+expect:
+  status: pass
+  agent-calls: 0
+  findings: [{rule: state-acted, level: info, where: "#3", message: "its state, ready, woke the developer already"}]
+  no-findings: [{rule: state-wakes}]
