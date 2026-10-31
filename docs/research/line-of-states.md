@@ -15,7 +15,9 @@ the right line, and what should change before it is built?
   cover each scenario; the product owner is called on an exception
   only. To validate is a required check, not an agent pass.
 - **Events for speed, a reconciler for truth**: the line must not
-  depend on an event arriving, nor on a nightly cron.
+  depend on an event arriving, nor on a nightly cron. On GitLab too,
+  events come from GitLab alone: a project webhook on its own trigger
+  URL ([tried after](#tried-after-the-review-gitlab-alone-starts-a-pipeline-on-a-label)).
 - **Pull, not push**: a role starts only when the next state has room.
 - **What was decided**: [ADR-0059](../adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md).
 
@@ -81,6 +83,8 @@ the right line, and what should change before it is built?
 - **Objections**:
   - GitLab starts no pipeline on a label: it needs a webhook and a
     trigger token, or a schedule. "At once" holds on GitHub only.
+    (Tried after: a webhook and a trigger token are GitLab's own, and
+    the label starts a pipeline in seconds; [below](#tried-after-the-review-gitlab-alone-starts-a-pipeline-on-a-label).)
   - [routing.md](../spec/routing.md#the-line) forbids the engine's own
     writes from waking the line, and caps handoffs at 3; the proposal
     has 5 hops.
@@ -133,7 +137,8 @@ the right line, and what should change before it is built?
   - Lost events: the cron late, skipped 2026-10-22 to 10-26; GitLab
     needs a webhook and an outside tool
     ([gitlab-trigger.md](../gitlab-trigger.md)); a person's machine has
-    no events.
+    no events. (Tried after: no outside tool is needed;
+    [below](#tried-after-the-review-gitlab-alone-starts-a-pipeline-on-a-label).)
   - A token falling back to `GITHUB_TOKEN` (`steps.app.outputs.token
     || github.token`): its labels wake nothing, silently.
   - Races: a concurrency group on the developer's workflow only; a
@@ -239,3 +244,44 @@ the right line, and what should change before it is built?
   WIP and staleness.
 - **Left for later**: a product owner's review of the tests, only if
   objections show the need.
+
+## Tried after the review: GitLab alone starts a pipeline on a label
+
+Two personas said GitLab needs an outside tool to react to a label.
+Tried on 2026-10-31, on workline's sandbox project, gitlab.com Free:
+
+- **The set-up**: a trigger token; a project webhook on issue events
+  (then note events too), its URL the same project's
+  `/api/v4/projects/<id>/ref/<branch>/trigger/pipeline?token=<token>`;
+  a job with `rules: - if: $CI_PIPELINE_SOURCE == "trigger"` printing
+  `$TRIGGER_PAYLOAD` through `jq`.
+- **A label added**: a pipeline, source `trigger`, created 1.7 s after
+  the issue's `updated_at`; its job started 0.8 s later. The payload:
+  `object_kind: issue`, `action: update`, `iid: 40`,
+  `changes.labels.previous: []`, `current: [try-label]`, `ref` the
+  branch of the URL.
+- **The label removed**: a pipeline 1.0 s later, `previous:
+  [try-label]`, `current: []`.
+- **A new issue and a comment** started one each too: `object_kind:
+  issue` with no `changes.labels`, and `object_kind: note`,
+  `noteable_type: Issue`. Each payload names its `user.username`.
+- **`&variables[WORKLINE_TASK]=develop` in the hook's URL** reached the
+  job as `WORKLINE_TASK=develop`.
+- **A broken `.gitlab-ci.yml`** made the trigger answer 422 to the
+  hook, the pipeline recorded as failed.
+- **Cleaned up**: the hook, the token, the branch, the issues, the
+  pipelines.
+
+What it means for [ADR-0059](../adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md):
+
+- **Native, any tier**: a Maintainer creates the hook and the token;
+  `workline setup` or `doctor` can create both (to build).
+- **The engine reads the event** from `$TRIGGER_PAYLOAD`, not from
+  variables a tool computes (to build).
+- **Every issue change fires it**, the engine's own label writes too:
+  that chains a state hop without an explicit start, and a hop cap
+  stops a loop. A job exits at once on an event not its own.
+- **The reconciler stays a safety net**: a hook GitLab disabled after
+  failures, an event lost.
+- **Self-managed**: the hook calls the instance itself, a local network
+  request an administrator must allow (untried).
