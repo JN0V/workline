@@ -51,7 +51,7 @@ At `normal`, a person's yes is asked by kind only.
     every commit committed by it, each the tester's or the developer's
     by its `Workline-Role` trailer;
   - no file agents are told to read;
-  - its record on the pull request read whole, not handed to a person;
+  - its record on the pull request read whole, its rounds not ended by a block;
   - its head's verdict passed, its checks not red;
   - no finding of the reviewer's open that blocks or is Important: a
     nit holds nothing.

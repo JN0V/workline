@@ -82,7 +82,6 @@ settings:
   # whole suite. E.g. `gotestsum --junitfile {report} -- {packages}`.
   proof-command: ""
   # The review rounds it runs on its pull request, one a reviewer's
-  # verdict or a person's comment; past them, the pull request gets the
-  # label `person`: a person takes it (docs/review-loop.md).
+  # verdict or a person's comment; past them, its issue goes
+  # workline:blocked, the reason on it (ADR-0059; docs/review-loop.md).
   review-rounds: 5
-  person: "workline:human"

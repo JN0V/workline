@@ -35,7 +35,7 @@ func TestStaleAtClaimHours(t *testing.T) {
 		hours int
 		let   []int
 	}{{24, []int{2}}, {23, []int{1, 2}}, {25, nil}} {
-		said, found, err := stale(f, issues, mrs, SettingsFrom(map[string]any{"claim-hours": c.hours}), now)
+		said, found, err := stale(f, issues, mrs, SettingsFrom(map[string]any{"claim-hours": c.hours}), now, nil)
 		if err != nil {
 			t.Fatal(err)
 		}

@@ -250,7 +250,7 @@ func RoundLines(a Act) string {
 func roundResult(x Round) string {
 	switch {
 	case x.Person:
-		return "handed to a person"
+		return "its issue blocked"
 	case x.Result == "no-code":
 		return "no fix"
 	}

@@ -61,22 +61,18 @@ type Settings struct {
 	// `{packages}` (#703); none: the tester's test-command, whole.
 	ProofCommand string
 	// Rounds are the review rounds it runs on its pull request; past
-	// them, a person, by the label Person (step 6).
+	// them, its issue blocked (ADR-0059).
 	Rounds int
-	Person string
 }
 
 // SettingsFrom reads the settings.
 func SettingsFrom(m map[string]any) Settings {
-	s := Settings{ClaimLabel: "workline:developing", ClaimHours: 24, Rounds: 5, Person: "workline:human"}
+	s := Settings{ClaimLabel: "workline:developing", ClaimHours: 24, Rounds: 5}
 	if n := number(m["claim-hours"]); n > 0 {
 		s.ClaimHours = n
 	}
 	if n := number(m["review-rounds"]); n > 0 {
 		s.Rounds = n
-	}
-	if v, ok := m["person"].(string); ok && strings.TrimSpace(v) != "" {
-		s.Person = strings.TrimSpace(v)
 	}
 	if v, ok := m["claim-label"].(string); ok && strings.TrimSpace(v) != "" {
 		s.ClaimLabel = strings.TrimSpace(v)
@@ -334,7 +330,17 @@ func Pre(runDir, repo string) int {
 	}
 	// A claim no pull request followed is let go first, said on its issue;
 	// it is not taken again in the same run (ADR-0059, decision 1).
-	said, findings, err := stale(b, issues, mrs, s, time.Now())
+	// Its card leaves Doing with it, to the board's ready column
+	// (ADR-0057), read only when a claim is there to let go.
+	var card *board.Move
+	if slices.ContainsFunc(issues, func(is forge.Issue) bool { return slices.Contains(is.Labels, s.ClaimLabel) }) {
+		if cfg, err := role.LoadProjectConfig(repo); err == nil {
+			if card, err = board.To(f, "ready", cfg.Board); err != nil {
+				fmt.Fprintf(os.Stderr, "workline: the forge's board could not be read, no card moved: %s\n", forge.Said(err))
+			}
+		}
+	}
+	said, findings, err := stale(b, issues, mrs, s, time.Now(), card)
 	if err != nil {
 		return external(err)
 	}

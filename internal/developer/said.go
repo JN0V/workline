@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/JN0V/workline/internal/backlog"
+	"github.com/JN0V/workline/internal/board"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/verdict"
@@ -44,9 +45,11 @@ func waits(passed []Passed) []intent.Intention {
 }
 
 // stale lets go each claim older than claim-hours that no open merge
-// request closes: its label off, why written in its comment. A claim
-// whose day the forge does not say is kept, and said in the verdict.
-func stale(b forge.Backlog, issues []forge.Issue, mrs []forge.MergeRequest, s Settings, now time.Time) ([]intent.Intention, []verdict.Finding, error) {
+// request closes: its label off, why written in its comment, its card
+// back to the board's ready column when there is one (card, ADR-0057;
+// ADR-0059). A claim whose day the forge does not say is kept, and said
+// in the verdict.
+func stale(b forge.Backlog, issues []forge.Issue, mrs []forge.MergeRequest, s Settings, now time.Time, card *board.Move) ([]intent.Intention, []verdict.Finding, error) {
 	closed := map[int]bool{}
 	for _, m := range mrs {
 		for _, n := range forge.Closes(m.Title, m.Body) {
@@ -77,7 +80,7 @@ func stale(b forge.Backlog, issues []forge.Issue, mrs []forge.MergeRequest, s Se
 		why := fmt.Sprintf("it took this issue on %s, and no pull request closes it %d hours later (claim-hours: %d)",
 			backlog.Day(t.Labeled), int(hours), s.ClaimHours)
 		out = append(out,
-			intent.Intention{Kind: "label", Value: map[string]any{"issue": is.ID, "remove": []string{s.ClaimLabel}}},
+			intent.Intention{Kind: "label", Value: released(is, s, card)},
 			sayOn(is.ID, backlog.Said(who, "lets this issue go", why,
 				"it is free again: the developer may take it at a next run, or a person assigns themselves")))
 		found = append(found, verdict.Finding{Rule: "claim-released", Level: "warn", Where: where,
@@ -115,4 +118,24 @@ func saidPost(runDir string) int {
 func hasSaid(runDir string) bool {
 	_, err := os.Stat(filepath.Join(runDir, "in", saidFile))
 	return err == nil
+}
+
+// released is the label a claim let go moves: the claim's off; on a
+// board, its card out of Doing, back to the ready column — GitLab's
+// column labels swapped in the same call, a GitHub project's Status set.
+func released(is forge.Issue, s Settings, card *board.Move) map[string]any {
+	v := map[string]any{"issue": is.ID, "remove": []string{s.ClaimLabel}}
+	switch {
+	case card.Labels():
+		remove := []string{s.ClaimLabel}
+		for _, l := range card.Off {
+			if slices.Contains(is.Labels, l) {
+				remove = append(remove, l)
+			}
+		}
+		v["add"], v["remove"] = []string{card.Column}, remove
+	case card.Writes():
+		v["status"] = map[string]any{"project": card.Project, "option": card.Column}
+	}
+	return v
 }
