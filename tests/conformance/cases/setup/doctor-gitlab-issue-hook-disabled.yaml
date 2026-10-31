@@ -1,0 +1,18 @@
+case: setup/doctor-gitlab-issue-hook-disabled
+about: >
+  On GitLab, an issue webhook GitLab disabled after its calls failed
+  starts nothing: the doctor warns, and says where to enable it again.
+  A hook naming the project by its path, its query escaped, is read the
+  same.
+given:
+  repo: documented
+  config:
+    routing: {events: {issue: [developer]}}
+  forge:
+    merge-requests: []
+    hooks: [{id: 4, url: "https://gitlab.example/api/v4/projects/group%2Fproj/ref/main/trigger/pipeline?token={token}&variables%5BWORKLINE_TASK%5D=issue", issues_events: true, alert_status: disabled}]
+run: {doctor: true, forge: gitlab}
+expect:
+  status: pass
+  checks:
+    - {rule: issue-hook-disabled, level: warn, message: "GitLab disabled the issue webhook", fix: "then Enable"}

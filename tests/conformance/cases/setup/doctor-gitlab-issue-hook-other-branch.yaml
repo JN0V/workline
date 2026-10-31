@@ -1,0 +1,17 @@
+case: setup/doctor-gitlab-issue-hook-other-branch
+about: >
+  On GitLab, an issue webhook whose URL starts pipelines on another
+  branch than the default one, by its `?ref=`: workline:issue runs on the
+  default branch only, so the doctor warns and names the branch.
+given:
+  repo: documented
+  config:
+    routing: {events: {issue: [developer]}}
+  forge:
+    merge-requests: []
+    hooks: [{id: 4, url: "https://gitlab.example/api/v4/projects/1/trigger/pipeline?ref=dev&token={token}&variables[WORKLINE_TASK]=issue", issues_events: true}]
+run: {doctor: true, forge: gitlab}
+expect:
+  status: pass
+  checks:
+    - {rule: issue-hook-ref, where: dev, level: warn, message: "starts pipelines on \"dev\", not on the default branch main"}

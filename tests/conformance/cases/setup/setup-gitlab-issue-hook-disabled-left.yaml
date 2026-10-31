@@ -1,0 +1,20 @@
+case: setup/setup-gitlab-issue-hook-disabled-left
+about: >
+  An issue webhook GitLab disabled: setup creates no second hook nor
+  trigger token, and the doctor's report after it says the hook is
+  disabled and where to enable it, never that all is set up.
+given:
+  repo: documented
+  config:
+    routing: {events: {issue: [developer]}}
+  env: {PATH: "/usr/bin:/bin"}
+  forge:
+    merge-requests: []
+    hooks: [{id: 4, url: "https://gitlab.example/api/v4/projects/1/ref/main/trigger/pipeline?token={token}&variables[WORKLINE_TASK]=issue", issues_events: true, alert_status: disabled}]
+run: {setup: [--yes, --ai, none, --install, none], forge: gitlab}
+expect:
+  checks:
+    - {rule: issue-hook-disabled, level: warn, fix: "then Enable"}
+  forge:
+    triggers: [{id: 1, absent: true}]
+    hooks: [{id: 5, absent: true}]

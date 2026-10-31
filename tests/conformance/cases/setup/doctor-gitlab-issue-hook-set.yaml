@@ -1,0 +1,20 @@
+case: setup/doctor-gitlab-issue-hook-set
+about: >
+  On GitLab, the webhook to the project's own trigger URL with
+  WORKLINE_TASK=issue, on issue events, on the default branch, and
+  workline's trigger token: the doctor says the line starts at once,
+  never the token, which GitLab does not list (ADR-0059, decision 8).
+given:
+  repo: documented
+  config:
+    routing: {events: {issue: [developer]}}
+  forge:
+    merge-requests: []
+    hooks: [{id: 4, url: "https://gitlab.example/api/v4/projects/1/ref/main/trigger/pipeline?token={token}&variables[WORKLINE_TASK]=issue", issues_events: true, token: glptt-hidden-from-everyone-000}]
+    triggers: [{id: 2, description: "workline: the issue webhook (ADR-0059)", token: glptt-hidden-from-everyone-000, owner: someone}]
+run: {doctor: true, forge: gitlab}
+expect:
+  status: pass
+  checks:
+    - {rule: issue-hook, level: ok, message: "GitLab's issue webhook starts the line at once, on main, with workline's trigger token"}
+  stdout-lacks: [glptt-hidden, issue-hook-missing]

@@ -1,0 +1,17 @@
+case: setup/setup-gitlab-issue-hook-refused
+about: >
+  A token that may not create webhooks (403: a Maintainer's may): setup
+  stops and says a Maintainer's token is needed; nothing is created.
+given:
+  repo: documented
+  config:
+    routing: {events: {issue: [developer]}}
+  env: {PATH: "/usr/bin:/bin"}
+  forge: {merge-requests: [], hooks: [], hooks-refused: 403}
+run: {setup: [--yes, --ai, none, --install, none], forge: gitlab}
+expect:
+  status: block
+  findings: [{rule: setup-stopped, message: "creating it needs a Maintainer's token"}]
+  forge:
+    triggers: [{id: 1, absent: true}]
+    hooks: [{id: 1, absent: true}]

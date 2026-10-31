@@ -1,0 +1,16 @@
+case: setup/doctor-gitlab-issue-hook-missing
+about: >
+  On GitLab, where a role of the line is routed, no webhook to the
+  project's own trigger URL on issue events: the doctor warns that the
+  hourly reconciler alone moves the line, and names `workline setup`
+  (ADR-0059, decision 8).
+given:
+  repo: documented
+  config:
+    routing: {events: {issue: [developer]}}
+  forge: {merge-requests: [], hooks: [{id: 3, url: "https://chat.example/hook", issues_events: true}]}
+run: {doctor: true, forge: gitlab}
+expect:
+  status: pass
+  checks:
+    - {rule: issue-hook-missing, level: warn, message: "the hourly reconciler alone moves the line", fix: "workline setup --yes"}

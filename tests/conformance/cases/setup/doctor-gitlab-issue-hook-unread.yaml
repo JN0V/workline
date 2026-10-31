@@ -1,0 +1,16 @@
+case: setup/doctor-gitlab-issue-hook-unread
+about: >
+  On GitLab, a token that may not list the project's webhooks (403: a
+  Maintainer's may) leaves the issue webhook unread: the doctor says so,
+  as a warning, never that it is there nor that it is missing.
+given:
+  repo: documented
+  config:
+    routing: {events: {issue: [developer]}}
+  forge: {merge-requests: [], hooks: [], hooks-refused: 403}
+run: {doctor: true, forge: gitlab}
+expect:
+  status: pass
+  checks:
+    - {rule: issue-hook-unread, level: warn, message: "needs a Maintainer's token"}
+  stdout-lacks: ['"rule": "issue-hook"', issue-hook-missing]

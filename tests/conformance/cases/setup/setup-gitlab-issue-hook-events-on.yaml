@@ -1,0 +1,22 @@
+case: setup/setup-gitlab-issue-hook-events-on
+about: >
+  A webhook to the project's own trigger URL with WORKLINE_TASK=issue,
+  its issue events off: setup turns them on, and creates no other hook
+  nor trigger token.
+given:
+  repo: documented
+  config:
+    routing: {events: {issue: [developer]}}
+  env: {PATH: "/usr/bin:/bin"}
+  forge:
+    merge-requests: []
+    hooks: [{id: 7, url: "https://gitlab.example/api/v4/projects/1/ref/main/trigger/pipeline?token={token}&variables[WORKLINE_TASK]=issue", issues_events: false, token: glptt-a-person-made-it-0000}]
+run: {setup: [--yes, --ai, none, --install, none], forge: gitlab}
+expect:
+  checks:
+    - {rule: issue-hook, level: note, message: "its trigger token is not one workline created"}
+  forge:
+    triggers: [{id: 1, absent: true}]
+    hooks:
+      - {id: 7, issue-events: true}
+      - {id: 8, absent: true}

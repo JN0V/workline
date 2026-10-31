@@ -16,6 +16,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/hooks"
 	"github.com/JN0V/workline/internal/tools"
 	"go.yaml.in/yaml/v3"
@@ -27,6 +28,9 @@ type Answers struct {
 	AI      string   // none | claude | claude:<model>@<effort> | cmd:<command>; empty: ask
 	Install []string // the tools to install; nil: ask; empty: none
 	Yes     bool     // the default for every question not answered
+	// IssueHook: yes | no, GitLab's issue webhook and its trigger token;
+	// empty: ask, where Machine.IssueHook is set.
+	IssueHook string
 }
 
 // Machine is what setup changes, and how it talks.
@@ -40,6 +44,9 @@ type Machine struct {
 	Tools       []string // the tools the roles use
 	// Install runs an install command, its output shown as it goes.
 	Install func(command string) error
+	// IssueHook: the GitLab project, run from its clone, whose issue
+	// webhook starts the line of states (ADR-0059); nil, none asked.
+	IssueHook forge.IssueHook
 }
 
 // Run asks, then sets up. It stops at the first thing that fails.
@@ -54,6 +61,9 @@ func Run(a Answers, m Machine) error {
 		}
 		if a.Install == nil {
 			missing = append(missing, "--install <tool,...>|none")
+		}
+		if m.IssueHook != nil && a.IssueHook == "" {
+			missing = append(missing, "--issue-hook yes|no")
 		}
 		if len(missing) > 0 {
 			return fmt.Errorf("no terminal to ask on: answer with %s, or take the defaults with --yes", strings.Join(missing, ", "))
@@ -157,6 +167,31 @@ func Run(a Answers, m Machine) error {
 		if !t.Present() {
 			fmt.Fprintf(m.Out, "  %s is installed, but not on your PATH: add the folder it went to (`go env GOPATH`/bin for go install, ~/.cargo/bin for cargo)\n", name)
 		}
+	}
+
+	// 4. GitLab's issue webhook: a state's label starts the line at once.
+	if m.IssueHook == nil {
+		return nil
+	}
+	want := a.IssueHook
+	if want == "" {
+		want = ask("Start the line at once on an issue's label, with a GitLab webhook and a trigger token (a Maintainer's token)?", "yes")
+	}
+	if !yes(want) {
+		return nil
+	}
+	did, err := m.IssueHook.SetIssueHook()
+	for _, d := range did {
+		_, _ = fmt.Fprintln(m.Out, "  "+d)
+	}
+	if err != nil && forge.Forbidden(err) {
+		return fmt.Errorf("GitLab's issue webhook: %s; creating it needs a Maintainer's token (docs/gitlab-trigger.md)", forge.Said(err))
+	}
+	if err != nil {
+		return fmt.Errorf("GitLab's issue webhook: %s (docs/gitlab-trigger.md)", forge.Said(err))
+	}
+	if len(did) == 0 {
+		_, _ = fmt.Fprintln(m.Out, "  GitLab's issue webhook is already set up")
 	}
 	return nil
 }
