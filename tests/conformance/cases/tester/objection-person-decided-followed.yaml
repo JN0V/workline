@@ -1,8 +1,9 @@
 case: tester/objection-person-decided-followed
 about: >
-  Once a person was asked, the next comment of a person of the project is
-  the decision: the tester follows it, here a rewrite, beyond the bound;
-  the builder's further comments are not one.
+  Once the product owner was asked to settle it, the next comment of a
+  person of the project, on the loop, is the decision: the tester follows
+  it, here a rewrite, beyond the bound; the builder's further comments
+  are not one.
 given:
   repo: tested-draft
   setup:
@@ -21,7 +22,7 @@ given:
         draft: true
         comments: ["The tests of #3, frozen.\n\n<!-- workline:tester-record {\"issue\":3,\"base\":\"main\",\"files\":{\"tests/test_mul_by_zero.sh\":\"8f123a0bacbd681063880b867df38dd216784b97\",\"tests/test_mul_two_by_three.sh\":\"2dee0641bd7a79057ade7bff5af43b603125f543\"}} -->\n<!-- workline:sticky=tester/tests -->"]
         threads:
-          - {id: "7", path: tests/test_mul_two_by_three.sh, line: 4, author: builder, body: "workline:objection\n- test: tests/test_mul_two_by_three.sh\n- scenario: Two by three\n- kind: over-specified\n- why: too strict", replies: ["Kept: 1.\n\n<!-- workline:tester-answer -->", {body: "no", author: builder}, "Kept: 2.\n\n<!-- workline:tester-answer -->", {body: "no", author: builder}, "Kept: 3.\n\n<!-- workline:tester-answer -->", {body: "no", author: builder}, "**A person decides**: 3 answers.\n\n<!-- workline:tester-person-decides -->", {body: "Read the number, not its spaces.", author: maintainer, insider: true}]}
+          - {id: "7", path: tests/test_mul_two_by_three.sh, line: 4, author: builder, body: "workline:objection\n- test: tests/test_mul_two_by_three.sh\n- scenario: Two by three\n- kind: over-specified\n- why: too strict", replies: ["Kept: 1.\n\n<!-- workline:tester-answer -->", {body: "no", author: builder}, "Kept: 2.\n\n<!-- workline:tester-answer -->", {body: "no", author: builder}, "Kept: 3.\n\n<!-- workline:tester-answer -->", {body: "no", author: builder}, "**The product owner settles it**: 3 answers.\n\n<!-- workline:tester-product-owner-settles -->\n\n<!-- workline:tester-answer -->", {body: "Read the number, not its spaces.", author: maintainer, insider: true}]}
 run: {test: [answer, --merge-request, "1"], ai: "fake:tester-answer-rewritten"}
 expect:
 

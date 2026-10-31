@@ -1,7 +1,7 @@
-case: tester/objection-waits-for-the-person
+case: tester/objection-settling-waits-others-go-on
 about: >
-  Asked, a person decides: the builder's comments after it wake no answer,
-  nor another call for a person.
+  A thread the product owner was asked to settle is left aside (ADR-0059):
+  the next objection on the merge request is answered.
 given:
   repo: tested-draft
   setup:
@@ -20,15 +20,16 @@ given:
         draft: true
         comments: ["The tests of #3, frozen.\n\n<!-- workline:tester-record {\"issue\":3,\"base\":\"main\",\"files\":{\"tests/test_mul_by_zero.sh\":\"8f123a0bacbd681063880b867df38dd216784b97\",\"tests/test_mul_two_by_three.sh\":\"2dee0641bd7a79057ade7bff5af43b603125f543\"}} -->\n<!-- workline:sticky=tester/tests -->"]
         threads:
-          - {id: "7", path: tests/test_mul_two_by_three.sh, line: 4, author: builder, body: "workline:objection\n- test: tests/test_mul_two_by_three.sh\n- scenario: Two by three\n- kind: over-specified\n- why: too strict", replies: ["Kept: 1.\n\n<!-- workline:tester-answer -->", {body: "no", author: builder}, "Kept: 2.\n\n<!-- workline:tester-answer -->", {body: "no", author: builder}, "Kept: 3.\n\n<!-- workline:tester-answer -->", {body: "no", author: builder}, "**A person decides**: 3 answers.\n\n<!-- workline:tester-person-decides -->", {body: "please", author: builder}]}
+          - {id: "7", path: tests/test_mul_two_by_three.sh, line: 4, author: builder, body: "workline:objection\n- test: tests/test_mul_two_by_three.sh\n- scenario: Two by three\n- kind: over-specified\n- why: too strict", replies: ["Kept: 1.\n\n<!-- workline:tester-answer -->", {body: "no", author: builder}, "Kept: 2.\n\n<!-- workline:tester-answer -->", {body: "no", author: builder}, "Kept: 3.\n\n<!-- workline:tester-answer -->", {body: "no", author: builder}, "**The product owner settles it**: 3 answers.\n\n<!-- workline:tester-product-owner-settles -->\n\n<!-- workline:tester-answer -->"]}
+          - {id: "8", path: tests/test_mul_by_zero.sh, line: 4, author: builder, body: "workline:objection\n- test: tests/test_mul_by_zero.sh\n- scenario: By zero\n- kind: over-specified\n- why: too strict"}
 run: {test: [answer, --merge-request, "1"], ai: "fake:tester-answer-kept"}
 expect:
 
   status: pass
-  agent-calls: 0
-  findings: [{rule: objection-to-a-person, level: warn}]
+  agent-calls: 1
   forge:
     merge-requests:
       - id: 1
         threads:
-          - {path: tests/test_mul_two_by_three.sh, replies: 8}
+          - {path: tests/test_mul_two_by_three.sh, replies: 7}
+          - {path: tests/test_mul_by_zero.sh, replies: 1, replies-contain: ["**Kept**"]}
