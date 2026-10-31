@@ -30,6 +30,7 @@ expect:
   findings:
     - {rule: claim-released, where: "#1", message: "no pull request closes it"}
     - {rule: claim-age-unknown, where: "#5"}
+    - {rule: issue-passed, where: "#1", message: "its claim was let go in this run"}
   no-findings: [{rule: claim-released, where: "#4"}]
   forge:
     issues:

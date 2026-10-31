@@ -215,8 +215,9 @@ func overlap(a, b []string) string {
 // testsFirst, where the project routes the tester: an issue whose
 // Validation names scenarios waits for the tester's open Draft of its
 // tests (ADR-0055). only, when not 0, is the one issue looked at.
-// passed are the issues offered it passed over, why each.
-func pick(issues []forge.Issue, mrs []forge.MergeRequest, s Settings, only int, testsFirst bool) (id int, passed []Passed) {
+// letGo are the claims this run lets go: held no more, taken at a next
+// run. passed are the issues offered it passed over, why each.
+func pick(issues []forge.Issue, mrs []forge.MergeRequest, s Settings, only int, testsFirst bool, letGo map[int]bool) (id int, passed []Passed) {
 	open := map[int]bool{}
 	for _, is := range issues {
 		open[is.ID] = true
@@ -234,7 +235,7 @@ func pick(issues []forge.Issue, mrs []forge.MergeRequest, s Settings, only int, 
 	}
 	held := map[int][]string{} // the issues the developer holds: their Scope's paths
 	for _, is := range issues {
-		if slices.Contains(is.Labels, s.ClaimLabel) {
+		if slices.Contains(is.Labels, s.ClaimLabel) && !letGo[is.ID] {
 			held[is.ID] = scopePaths(is.Body)
 		}
 	}
@@ -247,6 +248,8 @@ func pick(issues []forge.Issue, mrs []forge.MergeRequest, s Settings, only int, 
 		switch {
 		case len(is.Assignees) > 0:
 			why = "assigned to " + strings.Join(is.Assignees, ", ")
+		case letGo[is.ID]:
+			why = "its claim was let go in this run: taken again at a next one"
 		case slices.Contains(is.Labels, s.ClaimLabel):
 			why = "taken already, labelled " + s.ClaimLabel
 		case closer[is.ID] != 0:
@@ -334,7 +337,13 @@ func Pre(runDir, repo string) int {
 	if err != nil {
 		return external(err)
 	}
-	id, passed := pick(issues, mrs, s, only, line.Runs("tester"))
+	letGo := map[int]bool{}
+	for _, in := range said {
+		if m, _ := in.Value.(map[string]any); in.Kind == "label" {
+			letGo[number(m["issue"])] = true
+		}
+	}
+	id, passed := pick(issues, mrs, s, only, line.Runs("tester"), letGo)
 	for _, p := range passed {
 		findings = append(findings, verdict.Finding{Rule: "issue-passed", Level: "info", Where: fmt.Sprintf("#%d", p.Issue), Message: p.Why})
 	}
