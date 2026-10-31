@@ -1,6 +1,6 @@
 ---
 sources: [internal/tester/moment.go, internal/tester/write.go, internal/tester/proof.go, routing.default.yaml, internal/tester/said.go, internal/tester/frozen.go, internal/tester/objection.go, internal/tester/green.go]
-checked: 241b969d
+checked: f24259c6
 verified: agent:claude-code
 ---
 # The hand-over: what whoever builds finds
@@ -74,7 +74,12 @@ When no new test fits, the tester's agent names the proof that does
 - **The developer** takes it as it takes one with a Draft, the kind in
   its task ([the pick](../../developer/docs/pick.md#which-issue)).
 - **`none`**, no test possible: the issue goes back to the product
-  owner's state, refine, the reason said (`no-test-possible`).
+  owner's state, refine, the reason said and recorded
+  (`no-test-possible`). The product owner then picks a kind, or sends
+  it back to its tests
+  ([refine](../../../docs/spec/backlog-acts/refine.md#no-test-possible-a-proof-kind-picked));
+  with no agent, a person of the project names one in a comment,
+  `proof: <kind> — why`.
 - **`flaky-n-of-n` names its test**, `test: <name>` under the note,
   and its runs, `runs: <N>`; both kept in the record. The developer's
   proof runs that test N times

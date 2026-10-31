@@ -1,8 +1,8 @@
 ---
 type: reference
-sources: [internal/backlog/backlog.go, internal/backlog/plain.go, internal/backlog/repeat.go, internal/backlog/write.go, internal/work/headings.go, internal/work/work.go, internal/forge/forge.go, internal/engine/backlog.go]
+sources: [internal/backlog/backlog.go, internal/backlog/proof.go, internal/backlog/plain.go, internal/backlog/repeat.go, internal/backlog/write.go, internal/work/headings.go, internal/work/work.go, internal/forge/forge.go, internal/engine/backlog.go]
 status: draft
-checked: ffc4c10b
+checked: f24259c6
 verified: agent:claude-code
 ---
 # Refining to ready
@@ -159,6 +159,32 @@ what it can and asks for the rest:
 - An issue whose body a person changed since it was read — a draft
   accepted, a section written — is read again (its state's `body`, a
   digest of the body when it was last read or written by the engine).
+
+## No test possible: a proof kind picked
+
+The tester found no test possible and sent the issue back to refine
+([ADR-0059](../../adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#4-a-proof-kind-not-always-a-new-test)):
+
+```yaml
+- ready: {issue: 12, why: "Only the README's words change.", proof: {kind: docs-checks, reason: "The documentalist's checks prove it."}}
+```
+
+- **Read once**: the tester's reason, recorded with `none`, is given in
+  the task until read (`no-test` in the state, its digest).
+- **`ready` with `proof`** picks the kind in place of new tests:
+  `existing-suite`, `docs-checks`, or `flaky-n-of-n` with its `test` (and
+  `runs`). The issue goes to ready, not to its tests; the kind is kept
+  in its state, `answers` naming the tester's word. The developer takes
+  it while that word is the tester's last (`backlog.ReadProof`).
+- **Refused**: a `proof` where the tester did not find none
+  (`proof-not-asked`), with no reason, an unknown kind, a flaky test
+  unnamed (`proof-reason-missing`, `proof-kind-unknown`,
+  `proof-test-missing`).
+- **Or back to its tests**: the role rewrites its own Validation draft,
+  or asks; a `ready` with no proof goes to `workline:needs-tests`.
+- **With no agent**, a person of the project comments `proof: <kind> —
+  why` after the tester's comment (`backlog.PersonsPick`): the engine
+  does that `ready`, whatever the role's mode, as their yes.
 
 ## A body's footer
 
