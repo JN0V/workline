@@ -1,0 +1,34 @@
+case: routing/state-due-again-on-a-change
+about: >
+  A step its record says ran is due again once the issue changed
+  (ADR-0059): #3's body is not the one its record read; #4's state label
+  was put on anew, after its record. Both steps run again; neither is a
+  new hop, the state the same.
+given:
+  repo: tested
+  config:
+    routing: {events: {issue: [developer]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply"
+        labels: ["workline:ready"]
+        body: "## Need\n\nI want to multiply, now by three numbers.\n"
+        comments: ["<!-- workline:line-record {\"state\":\"ready\",\"body\":\"8a828a06be19\",\"hops\":1} -->\n<!-- workline:sticky=line/state -->"]
+      - id: 4
+        title: "Multiply again"
+        labels: ["workline:ready"]
+        labeled: {"workline:ready": "2026-10-31T10:00:00Z"}
+        body: "## Need\n\nI want to multiply.\n"
+        comments: ["<!-- workline:line-record {\"state\":\"ready\",\"body\":\"8a828a06be19\",\"labeled\":\"2026-10-30T10:00:00Z\",\"hops\":1} -->\n<!-- workline:sticky=line/state -->"]
+run: {route: reconcile, open-merge-request: true, ai: none}
+expect:
+  status: pass
+  summary: "reconcile: 2 issues due, their steps run"
+  findings:
+    - {rule: state-wakes, level: info, where: "#3"}
+    - {rule: state-wakes, level: info, where: "#4"}
+  forge:
+    issues:
+      - {id: 3, comments: 1, comment-contains: ["\"hops\":1"], comment-lacks: ["8a828a06be19"]}
+      - {id: 4, comments: 1, comment-contains: ["\"labeled\":\"2026-10-31T10:00:00Z\"", "\"hops\":1"]}

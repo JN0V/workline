@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"slices"
 	"strconv"
+	"strings"
 
 	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/engine"
@@ -201,32 +202,40 @@ func reconcile(res *Result, cfg *routing.Config, o engine.Options) *Result {
 	}
 	backlog.Order(issues)
 	list := o.Inputs[ReconcileInput] == "list"
+	skip := strings.Split(o.Inputs[SkipInput], ",")
 	started, quiet := 0, 0
 	for _, is := range issues {
-		if _, name, _ := cfg.Wakes(is.Labels, IssueEvent); name == "" {
-			continue // no step of this project's: said by `route issue`, not by every reconcile
+		_, name, _ := cfg.Wakes(is.Labels, IssueEvent)
+		if name == "" || o.Inputs[SkipInput] != "" && slices.Contains(skip, name) {
+			continue // no step of this project's, or left out: said by `route issue`, not by every reconcile
 		}
-		if started >= cfg.ReconcileMax {
-			res.Findings = append(res.Findings, verdict.Finding{Rule: "reconcile-left", Level: "info", Where: fmt.Sprintf("#%d", is.ID),
-				Message: fmt.Sprintf("past reconcile-max (%d) this run: the next run looks at it", cfg.ReconcileMax)})
-			continue
-		}
+		where := fmt.Sprintf("#%d", is.ID)
 		step, block, err := stateOf(res, cfg, b, is)
-		if err != nil {
-			readFailed(res, ReconcileEvent, fmt.Sprintf("#%d", is.ID), err)
+		if errors.Is(err, forge.ErrUnreachable) {
+			readFailed(res, ReconcileEvent, where, err)
 			return res
 		}
-		switch {
-		case block != nil:
-			started++
-			keepState(res, cfg, f, spec, o, *block, "")
-		case step == nil:
+		if err != nil { // that issue alone: the others are still walked
+			res.Status = worst(res.Status, verdict.Block)
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "state-unread", Where: where, Message: err.Error()})
+			continue
+		}
+		if step == nil && block == nil {
 			quiet++
-		case list:
-			started++
+			continue
+		}
+		if started >= cfg.ReconcileMax {
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "reconcile-left", Level: "info", Where: where,
+				Message: fmt.Sprintf("due, past reconcile-max (%d) this run: the next run starts it", cfg.ReconcileMax)})
+			continue
+		}
+		started++
+		switch {
+		case list: // its own run blocks it, past the cap: nothing written here
 			res.Due = append(res.Due, is.ID)
+		case block != nil:
+			keepState(res, cfg, f, spec, o, *block, "")
 		default:
-			started++
 			runStateStep(res, cfg, f, spec, o, *step)
 		}
 	}

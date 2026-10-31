@@ -391,10 +391,13 @@ command on a person's machine, its next loop the next step.
 
 - **No agent of its own**: it reads labels, records and label events;
   the steps it starts ask theirs.
-- **`reconcile-max`** (3) steps a run at most; the issues left are said
-  (`reconcile-left`) and wait for the next run.
+- **`reconcile-max`** (3) steps a run at most; the issues due past it
+  are said (`reconcile-left`) and wait for the next run.
 - **`--input reconcile=list`**: it says the issues due (`due` in its
-  result) and starts none, for a CI job that starts each one's own run.
+  result), starts none and writes nothing, for a CI job that starts each
+  one's own run. `--input skip` leaves a role's issues out.
+- **An issue that cannot be read** is said (`state-unread`) and the
+  others walked; the forge out of reach stops the run.
 - **Run twice in a row**, the second does nothing more: the first left
   its records.
 
