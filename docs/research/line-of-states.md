@@ -36,8 +36,8 @@ the right line, and what should change before it is built?
   [ADR-0057](../adr/0057-workline-finds-the-forges-board-and-moves-its-cards.md),
   [#752](https://github.com/JN0V/workline/issues/752), and the evidence
   below.
-- **Kept here**: the evidence and each persona's main points, grouped
-  by lens. The personas' full answers stayed in the session.
+- **Kept here**: the evidence, and each persona's verdict, objections
+  and additions, condensed from its answer.
 
 ## The evidence, 2026-10-31
 
@@ -71,69 +71,165 @@ the right line, and what should change before it is built?
 | to-validate | the developer, its pull request ready | the tester validates again |
 | done | the tester | the issue closed |
 
-## Each persona's main points
+## Each persona's answer
 
 ### Business analyst
 
-- **A Definition of Ready per state**, not one at the end: what must be
-  true to enter Tests, and to enter Ready.
-- **"Fits one run" is part of ready**: a whole role or a person's try
-  is not one issue's work.
-- **"No test possible" is an answer**, with its reason, for the
-  product owner to judge.
+- **Verdict**: the right direction, ready should mean buildable; but
+  mostly a relabelling. It misses three root causes: the tester's one
+  issue a night, silent refusals, builds broken by their environment.
+- **Objections**:
+  - GitLab starts no pipeline on a label: it needs a webhook and a
+    trigger token, or a schedule. "At once" holds on GitHub only.
+  - [routing.md](../spec/routing.md#the-line) forbids the engine's own
+    writes from waking the line, and caps handoffs at 3; the proposal
+    has 5 hops.
+  - About 13 of the 25 ready issues date from 2026-10-09 to 10-18,
+    before the developer existed: ready then meant refined, not
+    buildable. A "fits one developer run" check is needed.
+  - [#699](https://github.com/JN0V/workline/pull/699) is red on 10
+    cases it never touched: the environment.
+  - Silence, as on [#79](https://github.com/JN0V/workline/issues/79),
+    needs a duty to speak and a claim timeout.
+  - Exclusive labels cost writes and races, except GitLab Premium's
+    scoped labels.
+- **Adds**: the tester takes several issues a run, on its own label; a
+  Blocked state.
+- **On the open points**: validate before the merge, as a required
+  check; the product owner settles, three exchanges, then Blocked; the
+  product owner may send a no-test issue to ready with another
+  verification; a limit per state, in hours for a claim or a pull
+  request waiting.
 
 ### Product manager
 
-- **First, make the stops visible**: a person on the loop cannot steer
-  what only a log says. Built before any new state.
-- **Re-check the 25 ready issues once**, then run two small fresh ones
-  through the whole line, timed: the first end-to-end result.
-- **Blocked is a column**, read by a person, not a label asking them.
+- **Verdict**: keep the events and the staleness; cut to four visible
+  states: Refine, Tests, Ready, Doing; Done is the forge's close.
+- **Objections**:
+  - to-validate repeats CI and the reviewer.
+  - A product owner's re-check of the tests is new judgement with no
+    evidence of need: the tester proves them red, the developer can
+    object.
+  - Six labels are too many for a newcomer.
+- **Adds**: trust needs every act written on the issue, a comment an
+  act; a claim released after about 24 h, by the engine's timer; a
+  Blocked column; the board mapped per forge (GitHub's Status, one
+  value; GitLab Premium's scoped labels; Free's plain labels swapped);
+  features accepted by a person, fixes merged by policy.
+- **Build order**, taken whole by ADR-0059: what is written on the
+  issue first; then the tester woken by its label, the developer by
+  ready; the 25 ready issues re-checked once and two fresh ones timed;
+  the board's columns; a product owner's test review last, only if
+  objections show the need.
 
 ### Architect
 
-- **One state table in the engine**, read by a pure function; the
-  forges only carry events.
-- **Events are not reliable**: a reconciler walks the issues and
-  catches up; idempotent steps, one concurrency group per issue.
-- **Start the next step explicitly**, not through the label's event:
-  a label set by a bot's token may wake nothing on some forges. Cap
-  the hops per issue.
-- **Staleness from when the label was set**, read from the forge's
-  label events, never from the last update.
+- **Verdict**: sound if the engine holds the state machine and a
+  periodic reconciler guarantees progress; fragile if the workflows
+  carry it.
+- **Risks**:
+  - The state spread over 11 workflows: the developer's hard-codes its
+    label in an `if:`; GitLab's templates drift.
+  - Lost events: the cron late, skipped 2026-10-22 to 10-26; GitLab
+    needs a webhook and an outside tool
+    ([gitlab-trigger.md](../gitlab-trigger.md)); a person's machine has
+    no events.
+  - A token falling back to `GITHUB_TOKEN` (`steps.app.outputs.token
+    || github.token`): its labels wake nothing, silently.
+  - Races: a concurrency group on the developer's workflow only; a
+    label removed and added is two events; the forge holds no lock.
+  - Two sources of truth: labels and the board
+    ([ADR-0057](../adr/0057-workline-finds-the-forges-board-and-moves-its-cards.md)
+    keeps labels the truth; GitHub's project item events are an
+    organisation's).
+- **Recommends**: one state table in `routing.default.yaml`, a pure
+  function; `workline route issue --target issue:<n>`; thin forge
+  adapters; explicit chaining (`workflow_dispatch`, GitLab's pipelines
+  API), hops capped; a reconciler hourly in CI and as a command on a
+  machine; idempotent steps (re-read, a record per state and body
+  hash); exclusive labels, scoped on GitLab; one concurrency group per
+  issue; limits per state counted from the label's event (GitHub's
+  timeline, GitLab's `resource_label_events`), never `updated_at`.
 
 ### Test architect
 
-- **Replace "always a new test" with a proof kind**: new tests, a flaky
-  test passing N of N, the existing suite for a refactor, the docs'
-  checks.
-- **Check coverage of the scenarios mechanically**: each scenario a
-  row in the `## Tests` table, the Draft linted. A product owner's
-  re-read of every Draft adds tokens and a hop for little.
-- **To validate is a required check**: the frozen tests green. A real
-  try only for scenarios no test covers.
+- **Verdict**: keep tests first and frozen; cut the product owner's
+  re-check of each issue; make to-validate a check with no agent.
+- **Objections**:
+  - Frozen tests can impose a design:
+    [#677](https://github.com/JN0V/workline/pull/677) invents
+    `WORKLINE_LYCHEE_RELEASE_URL` and takes the checksum from the fake
+    server, against "pinned". A product owner would not see it; the
+    first objection will. Make objecting cheap.
+  - [#677](https://github.com/JN0V/workline/pull/677) adds four
+    `errcheck` findings: tests must pass lint before ready.
+  - Matching scenarios to tests is mechanical: the `## Tests` table.
+  - A tester's agent pass at to-validate repeats the frozen guard, the
+    three-of-three green proof and the reviewer. Worth it only for a
+    scenario marked not tested: a real try under `## Tried`.
+  - `objection-person` still defaults to `workline:human`.
+- **Adds**: proof kinds: new tests; a flaky test passing N of N
+  ([#619](https://github.com/JN0V/workline/issues/619)); for a
+  refactor, the suite with its coverage and killed mutants kept; the
+  documentalist's checks for docs.
+- **Not measured yet**: a tester run is capped at 300k tokens and 20
+  min; no write run on a real issue measured.
 
 ### Flow coach
 
-- **Pull, with WIP limits per state**: 25 issues in Ready is a queue,
-  not a flow.
-- **A time limit per waiting state**, not only Ready; stale goes back
-  to Refine with its reason.
-- **The night is upkeep**: a line that waits for a cron loses a day a
-  hop.
+- **Verdict**: a sound Kanban skeleton, but drawn as a staged push
+  line with no WIP limit, no pull, no blocked slot: a waterfall in
+  disguise.
+- **Data**: 25 ready, median age 24 days by its count; 2 to refine, 2
+  developing. The last 40 closed issues had a median lead time of 0
+  days: work done in sessions, not through the line.
+- **Objections**:
+  - Push floods the slowest step: start only when downstream has room.
+  - No WIP limits. Suggested: refine 5, needs-tests 3, tests-ready 3,
+    ready 3, developing 1 or 2, to-validate 2.
+  - Two product owner and two tester passes are hand-off waste; three
+    amigos fold them into one.
+  - Blocked is a flag, not a state.
+  - A fixed two weeks is wrong: age per state against its 85th
+    percentile, and a re-check when the issue is pulled.
+- **Adds**: a Definition of Ready and Done per state; an expedite lane
+  for a broken CI; metrics: throughput a week, lead and cycle time at
+  p85, aging work in progress, blocked count, cumulative flow.
 
 ### Developer, devil's advocate
 
-- **Six states is one too many hops**: each product owner pass costs
-  tokens and a wait; keep it for exceptions, add it later if the
-  developer's objections ask for it.
-- **The red proof is not the line's fault**:
-  [#699](https://github.com/JN0V/workline/pull/699) is red on ten
-  conformance cases it never touched. Fix the proof environment apart.
-- **A malformed answer should be asked again once**, as other roles
-  do, not dropped
-  ([#753](https://github.com/JN0V/workline/pull/753)'s try).
-- **A claim with no pull request must expire**: a day, then released.
+- **Verdict**: against the proposal as drawn. The line is stuck on
+  broken hand-offs and a red proof, not on missing states.
+- **Objections**:
+  - [#699](https://github.com/JN0V/workline/pull/699) is red on its
+    test, gates, judge and commit format: 11 red tests, 10 of them
+    conformance cases (secrets, forbidden terms, leaks) that
+    `internal/tools/tools.go` likely never touches. The environment.
+  - Agent calls an issue go from about 4 to 6, two more per loop; 6
+    event hops instead of 3.
+  - First to break: the product owner and the tester sending an issue
+    back and forth.
+- **Simpler**: make [#699](https://github.com/JN0V/workline/pull/699)
+  green with CI's tools in the proof environment; write refusals on
+  the issue; the tester on ready, its Draft waking the developer; the
+  reviewer checks the tests against the scenarios on the Draft.
+- **Keeps**: events, the night for upkeep, staleness in every state
+  (age and Scope checked with no agent, the product owner for what is
+  flagged), "no test possible" with a reason, a visible state for each
+  wait.
+
+## Where they agreed
+
+- **Every stop written on the issue**, first: the business analyst,
+  product manager and developer.
+- **No product owner re-check of each Draft**: the product manager,
+  test architect, flow coach and developer.
+- **to-validate is CI, not an agent pass**: all who raised it.
+- **The engine holds the state, a reconciler guarantees progress**:
+  the architect, echoed by the business analyst and developer on lost
+  events.
+- **Fix [#699](https://github.com/JN0V/workline/pull/699)'s
+  environment apart**: the business analyst and developer.
 
 ## What workline takes
 

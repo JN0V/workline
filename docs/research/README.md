@@ -26,26 +26,26 @@ stars and dates were checked against the GitHub API that day.
 |---|---|
 | [documentalist.md](documentalist.md) | How to keep docs true, short and linked to product docs |
 | [release-manager.md](release-manager.md) | Release PR vs tag vs direct, where versions live, what stays human |
-| [product-owner.md](product-owner.md) | What forges, bots and AI triage tools do for a backlog, stale bots included, and what a product owner adds |
+| [product-owner.md](product-owner.md) | What forges, bots and AI triage tools do for a backlog, and what a product owner adds |
 | [surfacing-proposals.md](surfacing-proposals.md) | Where backlog bots show proposals, how a person says yes, no or "change this", what forges record |
 | [issue-formats.md](issue-formats.md) | Where forges keep an issue format, the names of its sections, a bug with no reproduction, an issue's kind |
 | [priority-and-weight.md](priority-and-weight.md) | Where forges keep an issue's priority and effort, the scales in use, who estimates |
 | [self-evaluation.md](self-evaluation.md) | How automation and agents are judged in production, and how self-improving systems keep people in control |
 | [code-review.md](code-review.md) | How AI code reviewers find, verify and post findings; what reviews a spec before it is built |
-| [code-navigation.md](code-navigation.md) | How tools find a function's bounds, its callers and callees with no build, in any language, for what a judge reads |
+| [code-navigation.md](code-navigation.md) | How tools find a function's bounds, callers and callees with no build, in any language |
 | [judge-reads-code.md](judge-reads-code.md) | How judges and reviewers get the code beyond a fixed context — the model reading, its caps, its cost |
-| [auditing-agent-acts.md](auditing-agent-acts.md) | How a sample of automated decisions is drawn, read again by another reader, disputes settled and an error rate reported |
+| [auditing-agent-acts.md](auditing-agent-acts.md) | How automated decisions are sampled, re-read by another reader, disputes settled, an error rate reported |
 | [merge-conflicts.md](merge-conflicts.md) | Why open pull requests conflict with `main`, what forges and git offer, what workline adds |
 | [merging.md](merging.md) | What a person does at merge, who merges elsewhere and how autonomy is graded, whether merging is a role |
-| [issue-to-pull-request.md](issue-to-pull-request.md) | How coding agents take an issue to a pull request: trigger, rights, scope, proof, review rounds, caps, why their pull requests are rejected |
-| [agent-sandbox.md](agent-sandbox.md) | How a coding agent works on the code — tools, rights, sandbox, edits in place from a script — and the tokens it costs |
+| [issue-to-pull-request.md](issue-to-pull-request.md) | How coding agents take an issue to a pull request: trigger, rights, scope, proof, review rounds, caps, rejections |
+| [agent-sandbox.md](agent-sandbox.md) | How a coding agent works on the code — tools, rights, sandbox, in-place edits — and its token cost |
 | [inspector.md](inspector.md) | How SARIF, the forges and linters tell a merge request's new findings, where the base's come from, AI triage measured |
-| [tests-first-and-corpus.md](tests-first-and-corpus.md) | How tests are written from acceptance criteria before the code, kept red off `main`, selected per change, cut when they protect nothing |
+| [tests-first-and-corpus.md](tests-first-and-corpus.md) | How tests are written from acceptance criteria first, kept red off `main`, selected per change, cut when useless |
 | [acceptance-test-disputes.md](acceptance-test-disputes.md) | How teams settle a builder's objection to an acceptance test: three amigos, example mapping, code owners, contracts |
 | [root-cause.md](root-cause.md) | Five whys, its limits and alternatives, and how agent frameworks ship a method as a shared skill |
 | [inspector-coverage.md](inspector-coverage.md) | Which linter fits each language, how it is suggested and installed pinned, the licences that limit it, AI in its place |
 | [forge-boards.md](forge-boards.md) | What GitHub Projects and GitLab boards move on their own, what an App may write, what agents and trackers do when work starts |
-| [line-of-states.md](line-of-states.md) | Whether a line of states, each waking the next role, fixes a line that delivered nothing end to end: six personas' review |
+| [line-of-states.md](line-of-states.md) | Whether a line of states, each waking the next role, unblocks the line: six personas |
 
 ### Measured
 
