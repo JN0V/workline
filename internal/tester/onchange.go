@@ -21,9 +21,15 @@ import (
 // holding `{packages}`, runs on the folders of Files that hold tests,
 // as the curator's proof command does. No Command naming `{packages}`,
 // or no such folder: the test command runs whole.
+//
+// Test and Runs: a flaky-n-of-n proof (ADR-0059, decision 4), the
+// command run Runs times on the one tree, `{test}` in it the test's name;
+// it stops at the first run not green or not passing Test.
 type Scope struct {
 	Command string
 	Files   []string
+	Test    string
+	Runs    int
 }
 
 // Outcome is one run of the project's test command: the tests it reported
@@ -38,11 +44,28 @@ type Outcome struct {
 	// Packages: the folders the scoped command ran on, `./`-prefixed;
 	// none when the test command ran whole.
 	Packages []string
+	// Runs: the runs made, the last one's tests above; 1 but for a
+	// Scope's Runs.
+	Runs int
 }
 
 // Green says the run proves the change: tests reported, none red, the
 // command exited 0.
 func (o Outcome) Green() bool { return len(o.Passed) > 0 && len(o.Red) == 0 && o.Exit == "" }
+
+// Passes says whether the run's report holds test, and passed: its id
+// whole, or its last part after a `.` or a `/` (`TestX` for
+// `pkg/x.TestX`).
+func (o Outcome) Passes(test string) (reported, passed bool) {
+	is := func(id string) bool {
+		return id == test || strings.HasSuffix(id, "."+test) || strings.HasSuffix(id, "/"+test)
+	}
+	if slices.ContainsFunc(o.Red, is) {
+		return true, false
+	}
+	ok := slices.ContainsFunc(o.Passed, is)
+	return ok, ok
+}
 
 // OnChange runs the project's test command once on rev, the patches laid on
 // it, in a fresh tree (fresh.go), stopped past deadline when one is set. A finding
@@ -70,22 +93,29 @@ func OnChange(repo, rev string, patches []intent.Intention, s Settings, deadline
 			s.Command = strings.ReplaceAll(scope.Command, "{packages}", strings.Join(pkgs, " "))
 		}
 	}
-	r, f := runIn(tree, s, "on the change")
-	if f != nil {
-		return Outcome{}, f
-	}
-	o := Outcome{Exit: r.failure, At: at, Packages: pkgs}
-	for id, res := range r.results {
-		if res == passed {
-			o.Passed = append(o.Passed, id)
-		} else {
-			o.Red = append(o.Red, id)
+	s.Command = strings.ReplaceAll(s.Command, "{test}", scope.Test)
+	var o Outcome
+	for i := 1; i <= max(1, scope.Runs); i++ {
+		r, f := runIn(tree, s, "on the change")
+		if f != nil {
+			return o, f
 		}
-	}
-	slices.Sort(o.Passed)
-	slices.Sort(o.Red)
-	if o.Exit != "" {
-		o.Exit += ": " + strings.TrimSpace(tail(r.output, 5))
+		o = Outcome{Exit: r.failure, At: at, Packages: pkgs, Runs: i}
+		for id, res := range r.results {
+			if res == passed {
+				o.Passed = append(o.Passed, id)
+			} else {
+				o.Red = append(o.Red, id)
+			}
+		}
+		slices.Sort(o.Passed)
+		slices.Sort(o.Red)
+		if o.Exit != "" {
+			o.Exit += ": " + strings.TrimSpace(tail(r.output, 5))
+		}
+		if _, ok := o.Passes(scope.Test); !o.Green() || scope.Test != "" && !ok {
+			break
+		}
 	}
 	return o, nil
 }

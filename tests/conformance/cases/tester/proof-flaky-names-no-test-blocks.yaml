@@ -1,0 +1,25 @@
+case: tester/proof-flaky-names-no-test-blocks
+about: >
+  A flaky-n-of-n proof names its test (ADR-0059, decision 4): the
+  developer's proof runs that test N times. A note naming the kind and
+  no `test:` line is refused; the issue keeps its state.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+    routing: {events: {issue: [tester, developer]}}
+  forge:
+    issues:
+      - id: 3
+        title: "The retry test fails one run in five"
+        labels: ["workline:needs-tests"]
+        body: "## Need\n\nA maintainer needs the retry test to stop failing at random.\n\n## Validation\n\n- **Reliable:** Given the suite, When the retry test runs 10 times, Then it passes 10 times.\n"
+run: {route: issue, target: {issue: 3}, open-merge-request: true, ai: "fake:tester-proof-flaky-unnamed"}
+expect:
+  status: block
+  findings: [{rule: proof-test-missing, where: "#3", message: "names no test"}]
+  forge:
+    issues:
+      - {id: 3, labels: ["workline:needs-tests"]}

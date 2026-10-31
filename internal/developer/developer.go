@@ -60,6 +60,9 @@ type Settings struct {
 	// ProofCommand is the proof's command on the touched folders, holding
 	// `{packages}` (#703); none: the tester's test-command, whole.
 	ProofCommand string
+	// FlakyRuns: the runs a flaky-n-of-n proof makes when the tester's
+	// record names none (ADR-0059, decision 4).
+	FlakyRuns int
 	// Rounds are the review rounds it runs on its pull request; past
 	// them, its issue blocked (ADR-0059).
 	Rounds int
@@ -67,9 +70,12 @@ type Settings struct {
 
 // SettingsFrom reads the settings.
 func SettingsFrom(m map[string]any) Settings {
-	s := Settings{ClaimLabel: "workline:developing", ClaimHours: 24, Rounds: 5}
+	s := Settings{ClaimLabel: "workline:developing", ClaimHours: 24, Rounds: 5, FlakyRuns: 10}
 	if n := number(m["claim-hours"]); n > 0 {
 		s.ClaimHours = n
+	}
+	if n := number(m["flaky-runs"]); n > 0 {
+		s.FlakyRuns = n
 	}
 	if n := number(m["review-rounds"]); n > 0 {
 		s.Rounds = n
@@ -688,7 +694,7 @@ func Post(runDir, repo string) int {
 		a.NoCode = true
 	} else {
 		a.Code, a.Tests = written(patches)
-		p, u, caps, found := proven(runDir, repo, on, where, patches, a.Acceptance, s)
+		p, u, caps, found := proven(runDir, repo, on, where, patches, a.Acceptance, flakyOf(b.Proof, s), s)
 		a.Proof, a.Caps = &p, caps
 		a.Turns, a.Tokens, a.Cached, a.Tools, a.AgentFailed = u.Turns, u.Tokens, u.Cached, u.Tools, u.failed
 		v.Findings = append(v.Findings, found...)
@@ -791,8 +797,8 @@ func refusalFindings(where string, refused []Refusal, said []string) []verdict.F
 // what its agent used: the proof, the caps the run reached, and what the
 // verdict says of them. Also: the files whose folders run beside the
 // patches' (the acceptance tests).
-func proven(runDir, repo, on, where string, patches []intent.Intention, also []string, s Settings) (Proof, Used, []Cap, []verdict.Finding) {
-	p, over := prove(repo, on, patches, also, s)
+func proven(runDir, repo, on, where string, patches []intent.Intention, also []string, n *Flaky, s Settings) (Proof, Used, []Cap, []verdict.Finding) {
+	p, over := prove(repo, on, patches, also, n, s)
 	u := used(runDir)
 	caps := agentCaps(u, s)
 	if over != nil {

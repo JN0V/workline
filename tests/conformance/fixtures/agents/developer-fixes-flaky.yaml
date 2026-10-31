@@ -1,0 +1,8 @@
+# The developer's agent making #2's flaky test reliable: it passes on
+# every run.
+- patch:
+    file: tests/test_flaky.sh
+    content: |
+      echo x >> .flaky-runs
+      . ./lib.sh
+      [ "$(add 1 1)" = 2 ]

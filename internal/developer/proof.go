@@ -54,6 +54,40 @@ type Proof struct {
 	Scope    string   `json:"scope,omitempty"`
 	Packages []string `json:"packages,omitempty"`
 	Whole    string   `json:"whole,omitempty"`
+	// Test, Runs and Ran: a flaky-n-of-n proof (ADR-0059, decision 4),
+	// the test it ran, the runs asked, the runs made; green only when
+	// each of Runs was green, Test passing.
+	Test string `json:"test,omitempty"`
+	Runs int    `json:"runs,omitempty"`
+	Ran  int    `json:"ran,omitempty"`
+}
+
+// Flaky is a flaky-n-of-n proof to run: the named test, Runs times.
+type Flaky struct {
+	Test string
+	Runs int
+}
+
+// flakyOf is the flaky-n-of-n proof the tester recorded, its runs the
+// record's or the flaky-runs setting; nil for another kind or none.
+func flakyOf(k *tester.Proof, s Settings) *Flaky {
+	if k == nil || k.Kind != tester.KindFlaky {
+		return nil
+	}
+	n := k.Runs
+	if n <= 0 {
+		n = s.FlakyRuns
+	}
+	return &Flaky{Test: k.Test, Runs: n}
+}
+
+// again is the flaky-n-of-n proof a review round runs again: the one
+// the issue run made, from its record.
+func again(p *Proof) *Flaky {
+	if p == nil || p.Runs == 0 {
+		return nil
+	}
+	return &Flaky{Test: p.Test, Runs: p.Runs}
 }
 
 // The proof's scopes.
@@ -74,14 +108,30 @@ type Cap struct {
 // the run read, stopped past the proof's seconds: a cap then. With a
 // proof-command naming `{packages}`, on the folders of the patches' files
 // and of also (the acceptance tests) alone; the pull request's own CI
-// runs the whole suite.
-func prove(repo, at string, patches []intent.Intention, also []string, s Settings) (Proof, *Cap) {
+// runs the whole suite. A flaky-n-of-n proof runs it n.Runs times on
+// the one tree, `{test}` the named test; green only N runs of N, the
+// test passing in each.
+func prove(repo, at string, patches []intent.Intention, also []string, n *Flaky, s Settings) (Proof, *Cap) {
+	// The flaky proof's test and runs first, kept whatever stops it: a
+	// review round reads them again from the record (again).
+	var p Proof
+	if n != nil {
+		p.Test, p.Runs = n.Test, max(1, n.Runs)
+	}
 	ts, err := testerSettings(repo)
 	if err != nil {
-		return Proof{Result: Unproven, Why: err.Error()}, nil
+		p.Result, p.Why = Unproven, err.Error()
+		return p, nil
 	}
-	p := Proof{Command: ts.Command}
+	p.Command = ts.Command
 	scope := tester.Scope{Files: also}
+	if n != nil {
+		if !tester.TestName.MatchString(n.Test) {
+			p.Result, p.Why = Unproven, "the tester's flaky-n-of-n record names no test to run"
+			return p, nil
+		}
+		scope.Test, scope.Runs = n.Test, p.Runs
+	}
 	if strings.Contains(s.ProofCommand, "{packages}") {
 		scope.Command = s.ProofCommand
 		for _, in := range patches {
@@ -100,6 +150,7 @@ func prove(repo, at string, patches []intent.Intention, also []string, s Setting
 	o, f := tester.OnChange(repo, at, patches, ts, deadline, scope)
 	switch {
 	case f != nil && f.Rule == "proof-over-time":
+		p.Ran = o.Runs
 		p.Result, p.Why = Unproven, fmt.Sprintf("the test command ran past %d s: stopped", s.ProofSeconds)
 		return p, &Cap{Setting: "proof-seconds", Spent: int(time.Since(start).Seconds()), Allows: s.ProofSeconds}
 	case f != nil:
@@ -126,6 +177,19 @@ func prove(repo, at string, patches []intent.Intention, also []string, s Setting
 		if len(o.Passed) == 0 {
 			p.Result, p.Why = Unproven, "the report names no test"
 		}
+	}
+	if n == nil {
+		return p, nil
+	}
+	p.Ran = o.Runs
+	reported, _ := o.Passes(n.Test)
+	switch {
+	case p.Result == Green && !reported:
+		p.Result, p.Why = Unproven, fmt.Sprintf("the named test `%s` was not reported, run %d of %d", n.Test, o.Runs, p.Runs)
+	case p.Result == Red && p.Why == "":
+		p.Why = fmt.Sprintf("run %d of %d: %d test%s red on its code: %s", o.Runs, p.Runs, len(p.Red), plural(len(p.Red)), strings.Join(p.Red, ", "))
+	case p.Result != Green:
+		p.Why = fmt.Sprintf("run %d of %d: %s", o.Runs, p.Runs, p.Why)
 	}
 	return p, nil
 }
@@ -256,7 +320,7 @@ func proofFindings(where string, p Proof, caps []Cap) []verdict.Finding {
 	switch p.Result {
 	case Green:
 		out = append(out, verdict.Finding{Rule: "proof-green", Level: "info", Where: where,
-			Message: fmt.Sprintf("%d test%s passed on its code, none red: `%s`", p.Passed, plural(p.Passed), p.Command)})
+			Message: fmt.Sprintf("%d test%s passed on its code, none red: `%s`%s", p.Passed, plural(p.Passed), p.Command, p.nOfN())})
 	case Red:
 		msg := fmt.Sprintf("%d test%s red on its code: %s", len(p.Red), plural(len(p.Red)), strings.Join(p.Red, ", "))
 		if p.Why != "" {
@@ -274,13 +338,21 @@ func proofFindings(where string, p Proof, caps []Cap) []verdict.Finding {
 	return out
 }
 
+// nOfN says a green flaky-n-of-n proof's runs; "" for another proof.
+func (p Proof) nOfN() string {
+	if p.Runs == 0 || p.Result != Green {
+		return ""
+	}
+	return fmt.Sprintf("; `%s` passed %d runs of %d", p.Test, p.Ran, p.Runs)
+}
+
 // proofLines are the Verification's lines: what ran and its result, each
 // cap reached.
 func proofLines(p Proof, caps []Cap) string {
 	var b strings.Builder
 	switch p.Result {
 	case Green:
-		fmt.Fprintf(&b, "- `%s`: %d test%s passed, none red.\n", p.Command, p.Passed, plural(p.Passed))
+		fmt.Fprintf(&b, "- `%s`: %d test%s passed, none red%s.\n", p.Command, p.Passed, plural(p.Passed), p.nOfN())
 	case Red:
 		fmt.Fprintf(&b, "- `%s`: %d passed, %d red.\n", p.Command, p.Passed, len(p.Red))
 		for _, t := range p.Red {

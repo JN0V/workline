@@ -1,6 +1,6 @@
 ---
 sources: [internal/tester/moment.go, internal/tester/write.go, internal/tester/proof.go, routing.default.yaml, internal/tester/said.go, internal/tester/frozen.go, internal/tester/objection.go, internal/tester/green.go]
-checked: c9597b31
+checked: 241b969d
 verified: agent:claude-code
 ---
 # The hand-over: what whoever builds finds
@@ -75,8 +75,13 @@ When no new test fits, the tester's agent names the proof that does
   its task ([the pick](../../developer/docs/pick.md#which-issue)).
 - **`none`**, no test possible: the issue goes back to the product
   owner's state, refine, the reason said (`no-test-possible`).
+- **`flaky-n-of-n` names its test**, `test: <name>` under the note,
+  and its runs, `runs: <N>`; both kept in the record. The developer's
+  proof runs that test N times
+  ([N runs of N](../../developer/docs/proof.md#a-flaky-test-n-runs-of-n)).
 - **Refused**: a kind it does not know (`proof-kind-unknown`), one with
-  no reason (`proof-reason-missing`); the issue keeps its state.
+  no reason (`proof-reason-missing`), a `flaky-n-of-n` naming no test
+  (`proof-test-missing`); the issue keeps its state.
 
 ## When the tester refuses an issue
 

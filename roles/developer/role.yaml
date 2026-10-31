@@ -80,7 +80,13 @@ settings:
   # curator's proof command takes them. Unset, or no such folder: the
   # test-command runs whole, said. The pull request's own CI runs the
   # whole suite. E.g. `gotestsum --junitfile {report} -- {packages}`.
+  # `{test}` in it: the test a flaky-n-of-n proof names, "" for another
+  # issue, e.g. `gotestsum --junitfile {report} -- -run '{test}' {packages}`.
   proof-command: ""
+  # The runs of a flaky-n-of-n proof when the tester's record names
+  # none: the named test passes each, the proof green N runs of N
+  # (docs/proof.md).
+  flaky-runs: 10
   # The review rounds it runs on its pull request, one a reviewer's
   # verdict or a person's comment; past them, its issue goes
   # workline:blocked, the reason on it (ADR-0059; docs/review-loop.md).

@@ -63,10 +63,10 @@ func lib(says string) []intent.Intention {
 
 func TestProve(t *testing.T) {
 	repo := provingRepo(t, `"sh run-tests.sh {report}"`)
-	if p, c := prove(repo, "", lib("ok"), nil, Settings{ProofSeconds: 60}); p.Result != Green || p.Passed != 1 || c != nil {
+	if p, c := prove(repo, "", lib("ok"), nil, nil, Settings{ProofSeconds: 60}); p.Result != Green || p.Passed != 1 || c != nil {
 		t.Errorf("green: proof = %+v, cap = %+v; want green, 1 passed, no cap", p, c)
 	}
-	p, c := prove(repo, "", lib("no"), nil, Settings{ProofSeconds: 60})
+	p, c := prove(repo, "", lib("no"), nil, nil, Settings{ProofSeconds: 60})
 	if p.Result != Red || len(p.Red) != 1 || p.Red[0] != "lib.ok" || c != nil {
 		t.Errorf("red: proof = %+v, cap = %+v; want red, lib.ok red, no cap", p, c)
 	}
@@ -78,10 +78,35 @@ func TestProve(t *testing.T) {
 	}
 }
 
+// A flaky-n-of-n proof keeps its test and runs, proven or not: a review
+// round runs the same N runs again from the record.
+func TestProveFlakyKeepsItsRunsForTheReview(t *testing.T) {
+	repo := provingRepo(t, `"sh run-tests.sh {report}"`)
+	p, _ := prove(repo, "", lib("ok"), nil, &Flaky{Test: "ok", Runs: 3}, Settings{ProofSeconds: 60})
+	if p.Result != Green || p.Ran != 3 || !strings.Contains(proofLines(p, nil), "`ok` passed 3 runs of 3") {
+		t.Errorf("green: proof = %+v; want green, 3 runs of 3 said", p)
+	}
+	if n := again(&p); n == nil || *n != (Flaky{Test: "ok", Runs: 3}) {
+		t.Errorf("again(green) = %+v, want ok, 3 runs", n)
+	}
+	p, _ = prove(repo, "", lib("ok"), nil, &Flaky{Test: "a b", Runs: 3}, Settings{ProofSeconds: 60})
+	if p.Result != Unproven || again(&p) == nil {
+		t.Errorf("a name a shell reads: proof = %+v; want unproven, its runs kept", p)
+	}
+	t.Setenv("WORKLINE_ROLES_DIR", t.TempDir()) // no tester's role: its settings unread
+	p, _ = prove(repo, "", lib("ok"), nil, &Flaky{Test: "ok", Runs: 3}, Settings{})
+	if p.Result != Unproven || again(&p) == nil {
+		t.Errorf("settings unread: proof = %+v; want unproven, its runs kept", p)
+	}
+	if again(&Proof{Result: Green}) != nil {
+		t.Error("again(not flaky) is not nil")
+	}
+}
+
 // No report written: the tests did not run whole, never green.
 func TestProveNotRunWhole(t *testing.T) {
 	repo := provingRepo(t, `"true"`)
-	p, c := prove(repo, "", lib("ok"), nil, Settings{ProofSeconds: 60})
+	p, c := prove(repo, "", lib("ok"), nil, nil, Settings{ProofSeconds: 60})
 	if p.Result != Unproven || p.Why == "" || c != nil {
 		t.Errorf("proof = %+v, cap = %+v; want unproven, why said, no cap", p, c)
 	}
@@ -93,7 +118,7 @@ func TestProveNotRunWhole(t *testing.T) {
 // A report naming no test proves nothing: unproven, never red.
 func TestProveEmptyReportIsUnproven(t *testing.T) {
 	repo := provingRepo(t, `"printf '<testsuite name=\"lib\"></testsuite>' > {report}"`)
-	p, c := prove(repo, "", lib("ok"), nil, Settings{ProofSeconds: 60})
+	p, c := prove(repo, "", lib("ok"), nil, nil, Settings{ProofSeconds: 60})
 	if p.Result != Unproven || p.Why != "the report names no test" || c != nil {
 		t.Errorf("proof = %+v, cap = %+v; want unproven, the report naming no test", p, c)
 	}
@@ -102,7 +127,7 @@ func TestProveEmptyReportIsUnproven(t *testing.T) {
 // Past proof-seconds, the command is stopped: unproven, and the cap said.
 func TestProveStoppedPastItsSeconds(t *testing.T) {
 	repo := provingRepo(t, `"exec sleep 30"`)
-	p, c := prove(repo, "", lib("ok"), nil, Settings{ProofSeconds: 1})
+	p, c := prove(repo, "", lib("ok"), nil, nil, Settings{ProofSeconds: 1})
 	if p.Result != Unproven || c == nil || c.Setting != "proof-seconds" || c.Allows != 1 {
 		t.Fatalf("proof = %+v, cap = %+v; want unproven, the proof-seconds cap", p, c)
 	}

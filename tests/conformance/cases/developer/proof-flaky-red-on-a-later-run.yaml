@@ -1,0 +1,30 @@
+case: developer/proof-flaky-red-on-a-later-run
+about: >
+  A flaky-n-of-n proof is green only N runs of N (ADR-0059, decision 4):
+  its agent's test passes its first run and fails its second. One run
+  would call it green; the proof stops at the second, red, and its pull
+  request opens as a Draft, the run said.
+given:
+  repo: tested
+  setup:
+    - "printf '[ $(($$ %% 2)) = 0 ]\\n' > tests/test_flaky.sh && git add tests/test_flaky.sh && git commit -qm 'test: a flaky test' && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+    routing: {events: {issue: [tester, developer]}}
+  forge:
+    issues:
+      - id: 2
+        title: "The flaky test fails one run in two"
+        labels: ["workline:ready"]
+        body: "## Need\n\nA maintainer needs the flaky test reliable.\n\n## Validation\n\n- **Reliable:** Given the suite, When the flaky test runs 3 times, Then it passes 3 times.\n\n## Scope\n\n- `tests/test_flaky.sh`\n"
+        comments: ["**The tester** records the proof of this issue: flaky-n-of-n, no new test.\n\n<!-- workline:tester-proof {\"kind\":\"flaky-n-of-n\",\"reason\":\"its flakiness cannot be shown red on demand\",\"test\":\"test_flaky\",\"runs\":3} -->\n<!-- workline:sticky=tester/issue -->"]
+run: {develop: [], ai: "fake:developer-fixes-flaky-wrong"}
+expect:
+  status: pass
+  summary: "took #2; a Draft: red"
+  findings: [{rule: proof-red, level: warn, where: "#2", message: "run 2 of 3"}]
+  no-findings: [{rule: proof-green}]
+  forge:
+    issues:
+      - id: 2
+        comment-contains: ['"proof":{"result":"red"', '"runs":3,"ran":2']

@@ -4,7 +4,8 @@ about: >
   agent names the proof that does, `flaky-n-of-n`, and why. The engine
   records the kind and its reason in the tester's comment on the issue,
   opens no Draft, and moves the issue to ready; the developer accepts
-  that proof in place of one.
+  that proof in place of one. The record holds the test it names and
+  its runs, what the developer's proof runs.
 given:
   repo: tested
   setup:
@@ -22,10 +23,10 @@ run: {route: issue, target: {issue: 3}, open-merge-request: true, ai: "fake:test
 expect:
   status: pass
   agent-calls: 1
-  findings: [{rule: proof-recorded, level: info, where: "#3", message: "flaky-n-of-n: tests/test_retry.sh must pass 10 runs of 10"}]
+  findings: [{rule: proof-recorded, level: info, where: "#3", message: "flaky-n-of-n: its flakiness cannot be shown red on demand"}]
   not-pushed: [workline/tester/issue-3]
   forge:
     issues:
       - id: 3
         labels: ["workline:ready"]
-        comment-contains: ["**The tester** records the proof of this issue: flaky-n-of-n, no new test.", "- **Next**: it is ready: whoever builds it proves it so, the named test passes N runs of N", "<!-- workline:tester-proof {\"kind\":\"flaky-n-of-n\""]
+        comment-contains: ["**The tester** records the proof of this issue: flaky-n-of-n, no new test.", "- **Next**: it is ready: whoever builds it proves it so, the named test passes N runs of N", "<!-- workline:tester-proof {\"kind\":\"flaky-n-of-n\"", "\"test\":\"test_retry\",\"runs\":10}"]
