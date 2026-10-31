@@ -360,7 +360,11 @@ whose result moves the issue to the next. The table is the routing's
   scenarios to `tests` where the tester is routed, else to `ready`
   ([refine](backlog-acts/refine.md)); the tester's proven, linted Draft
   moves it to `ready`
-  ([the hand-over](../../roles/tester/docs/hand-over.md#when-the-tests-are-written)).
+  ([the hand-over](../../roles/tester/docs/hand-over.md#when-the-tests-are-written)),
+  as its proof kind does; its "no test possible" sends it back to
+  `refine`, where the product owner's ready with a proof kind moves it
+  to `ready`
+  ([refine](backlog-acts/refine.md#no-test-possible-a-proof-kind-picked)).
 
 ### Once a state: the record
 

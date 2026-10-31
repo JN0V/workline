@@ -1,0 +1,2 @@
+- ready: {issue: 9, why: "the tester found no test possible: the README's wording is checked by the docs checks", proof: {kind: docs-checks, reason: "the change is the README's wording: the documentalist's checks prove it"}}
+- ready: {issue: 10, why: "a kind on an issue the tester never answered", proof: {kind: existing-suite, reason: "a refactor"}}

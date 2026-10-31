@@ -1,0 +1,42 @@
+case: product-owner/proof-picked-after-no-test-possible
+about: >
+  The tester found no test possible and sent the issue back to refine
+  (ADR-0059, decision 4): the product owner is given its reason once,
+  and picks the proof in place of new tests, a ready with `proof`. The
+  issue goes to ready, not back to its tests, the kind kept in its
+  state for the developer. A kind on an issue the tester did not answer
+  so is dropped: the kind is the tester's to record.
+given:
+  repo: backlog
+  config:
+    routing: {events: {schedule: [product-owner], issue: [tester, developer]}}
+  forge:
+    issues:
+      - id: 9
+        title: "Clearer README"
+        body: "## Need\n\nA newcomer reads how to install in one minute.\n\n## Verification\n\nThe README's install section.\n\n## Validation\n\n- **Clear:** Given the README, When Ann reads it, Then it feels clear.\n\n## Scope\n\nsrc/export/csv.go"
+        author: ann
+        insider: true
+        labels: [workline:to-refine]
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "**The tester** finds no test possible for this issue.\n\n<!-- workline:tester-proof {\"kind\":\"none\",\"reason\":\"the change is the README's wording: no behaviour to test.\"} -->\n<!-- workline:sticky=tester/issue -->"
+      - id: 10
+        title: "Rows lost"
+        body: "## Need\n\nThe monthly report counts every sale.\n\n## Verification\n\nA test writes three rows.\n\n## Validation\n\n- **A known day:** Given a day of three sales, When Ann opens it, Then she counts three.\n\n## Scope\n\nsrc/export/csv.go"
+        author: ann
+        insider: true
+        labels: [workline:to-refine]
+        comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]
+run: {role: product-owner, event: schedule, ai: fake:po-picks-proof}
+expect:
+  findings:
+    - {rule: proof-not-asked, where: "#10"}
+  run-files:
+    in/task.md: {contains: "No test possible, says the tester: the change is the README's wording"}
+  forge:
+    issues:
+      - id: 9
+        labels: [workline:ready]
+        comment-contains: ["proved by docs-checks in place of new tests", "kind: docs-checks", "answers: af1c2ed6ea0a", "no-test: af1c2ed6ea0a"]
+      - {id: 10, labels: [workline:to-refine]}

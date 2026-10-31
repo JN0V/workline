@@ -10,10 +10,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"path/filepath"
-	"regexp"
 	"slices"
-	"strconv"
-	"strings"
 
 	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/intent"
@@ -21,92 +18,40 @@ import (
 	"github.com/JN0V/workline/internal/verdict"
 )
 
-// The proof kinds: new tests, the tester's Draft; the others in place of
-// one; KindNone, no test possible.
+// The proof kinds and the record, the backlog's: the product owner picks
+// one too, after "no test possible".
 const (
-	KindNewTests = "new-tests"
-	KindFlaky    = "flaky-n-of-n"
-	KindSuite    = "existing-suite"
-	KindDocs     = "docs-checks"
-	KindNone     = "none"
+	KindNewTests = backlog.KindNewTests
+	KindFlaky    = backlog.KindFlaky
+	KindSuite    = backlog.KindSuite
+	KindDocs     = backlog.KindDocs
+	KindNone     = backlog.KindNone
 )
 
-// ProofKinds are the kinds a tester records in place of a Draft, each
-// with what proves the change.
-var ProofKinds = map[string]string{
-	KindFlaky: "the named test passes N runs of N",
-	KindSuite: "the project's suite, unchanged and green",
-	KindDocs:  "the documentalist's checks",
-}
+// Proof is the tester's record of a kind in place of a Draft.
+type Proof = backlog.Proof
 
-// Proof is the tester's record of a kind in place of a Draft, kept in its
-// comment on the issue.
-type Proof struct {
-	Kind   string `json:"kind"`
-	Reason string `json:"reason"`
-	// Test and Runs: for flaky-n-of-n, the test the developer's proof
-	// runs and how many times, each run green; no Runs, the developer's
-	// flaky-runs setting.
-	Test string `json:"test,omitempty"`
-	Runs int    `json:"runs,omitempty"`
-}
+// ProofKinds are the kinds a tester records in place of a Draft.
+var ProofKinds = backlog.ProofKinds
 
-// TestName is a test's name as a proof-command takes it in `{test}`:
-// letters, digits and `_ . / : -`, nothing a shell reads.
-var TestName = regexp.MustCompile(`^[A-Za-z0-9_./:-]{1,200}$`)
-
-// namedLine is a line of a flaky-n-of-n note naming its test or its
-// runs: `test: <name>`, `runs: <N>`.
-var namedLine = regexp.MustCompile(`(?im)^\s*(test|runs):[ \t]*(\S+)[ \t]*$`)
-
-const proofMark = "tester-proof "
-
-// proofNote is the agent's note naming a kind: `proof: <kind> — why`.
-var proofNote = regexp.MustCompile(`(?is)^\s*proof:\s*([a-z-]+)\s*[—:-]*\s*(.*)$`)
+// TestName is a test's name as a proof-command takes it in `{test}`.
+var TestName = backlog.TestName
 
 // proofOf reads the kind a note names, and its reason; false when no note
 // names one.
 func proofOf(notes []string) (Proof, bool) {
 	for _, n := range notes {
-		if m := proofNote.FindStringSubmatch(n); m != nil {
-			p, reason := Proof{Kind: strings.ToLower(m[1])}, m[2]
-			if p.Kind == KindFlaky {
-				for _, l := range namedLine.FindAllStringSubmatch(reason, -1) {
-					if strings.EqualFold(l[1], "test") {
-						p.Test = l[2]
-					} else if n, err := strconv.Atoi(l[2]); err == nil && n > 0 {
-						p.Runs = n
-					}
-				}
-				reason = namedLine.ReplaceAllString(reason, "")
-			}
-			p.Reason = strings.TrimSpace(reason)
+		if p, ok := backlog.ProofNote(n); ok {
 			return p, true
 		}
 	}
 	return Proof{}, false
 }
 
-// ReadProof is the kind the tester recorded on an issue, from its
-// comments; false when it recorded none.
+// ReadProof is the kind an issue is proved by in place of a Draft: the
+// tester's, or the product owner's after "no test possible".
 func ReadProof(comments []string) (Proof, bool) {
-	sticky := "<!-- workline:sticky=tester/issue -->"
-	for _, c := range slices.Backward(comments) {
-		if !strings.Contains(c, sticky) {
-			continue
-		}
-		_, after, ok := strings.Cut(c, "<!-- workline:"+proofMark)
-		if !ok {
-			return Proof{}, false // its comment now says something else
-		}
-		data, _, _ := strings.Cut(after, " -->")
-		var p Proof
-		if json.Unmarshal([]byte(data), &p) == nil && ProofKinds[p.Kind] != "" {
-			return p, true
-		}
-		return Proof{}, false
-	}
-	return Proof{}, false
+	return backlog.ReadProof(comments, "product-owner")
 }
 
 // proved ends a run whose agent wrote no test and named a kind instead:
@@ -156,7 +101,7 @@ func proved(runDir, repo string, t task, intents []intent.Intention, p Proof) in
 				Findings: []verdict.Finding{{Rule: "no-product-owner-state", Where: where,
 					Message: "the routing's states name none the product owner's: the issue keeps its state; add one, or have a person settle it"}}})
 		}
-		next = "back to the product owner (" + to + "): it picks a proof kind, or rewrites the scenarios"
+		next = "back to the product owner (" + to + "): it picks a proof kind, or rewrites the scenarios; a person of the project may name one in a comment, `proof: <kind> — why`"
 	}
 	var move []intent.Intention
 	if to != "" {
@@ -167,11 +112,9 @@ func proved(runDir, repo string, t task, intents []intent.Intention, p Proof) in
 		remove = slices.DeleteFunc(remove, func(l string) bool { return !slices.Contains(t.Labels, l) })
 		move = []intent.Intention{{Kind: "label", Value: map[string]any{"issue": t.Issue, "add": add, "remove": remove}}}
 	}
-	body := backlog.Said("The tester", did, p.Reason, next)
-	if p.Kind != KindNone {
-		data, _ := json.Marshal(p)
-		body += "\n<!-- workline:" + proofMark + string(data) + " -->"
-	}
+	// The record, none too: the product owner's pick answers it.
+	data, _ := json.Marshal(p)
+	body := backlog.Said("The tester", did, p.Reason, next) + "\n<!-- workline:" + backlog.ProofMark + string(data) + " -->"
 	intents = append(append(slices.DeleteFunc(intents, func(i intent.Intention) bool { return i.Kind == "note" }), move...),
 		intent.Intention{Kind: "comment", Value: map[string]any{"issue": t.Issue, "sticky": "issue", "body": body}})
 	if err := intent.Write(filepath.Join(runDir, "out", "intentions.yaml"), intents); err != nil {

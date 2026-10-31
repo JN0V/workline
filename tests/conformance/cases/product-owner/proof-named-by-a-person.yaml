@@ -1,0 +1,42 @@
+case: product-owner/proof-named-by-a-person
+about: >
+  With no agent, a person picks the proof (ADR-0059, decision 4, and
+  principle 5): after the tester found no test possible, a person of the
+  project comments `proof: <kind> — why`, and the engine moves the issue
+  to ready, the kind kept for the developer, whatever the role's mode.
+  The same line from someone outside the project moves nothing.
+given:
+  repo: backlog
+  config:
+    routing: {events: {schedule: [product-owner], issue: [tester, developer]}}
+  forge:
+    issues:
+      - id: 9
+        title: "Clearer README"
+        body: "## Need\n\nA newcomer reads how to install in one minute.\n\n## Verification\n\nThe README's install section.\n\n## Validation\n\n- **Clear:** Given the README, When Ann reads it, Then it feels clear.\n\n## Scope\n\nsrc/export/csv.go"
+        author: ann
+        insider: true
+        labels: [workline:to-refine]
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "**The tester** finds no test possible for this issue.\n\n<!-- workline:tester-proof {\"kind\":\"none\",\"reason\":\"the change is the README's wording: no behaviour to test.\"} -->\n<!-- workline:sticky=tester/issue -->"
+          - {body: "proof: docs-checks — only the README's words change", author: bob, insider: true}
+      - id: 10
+        title: "Clearer CONTRIBUTING"
+        body: "## Need\n\nA newcomer reads how to contribute in one minute.\n\n## Verification\n\nThe CONTRIBUTING page.\n\n## Validation\n\n- **Clear:** Given the page, When Ann reads it, Then it feels clear.\n\n## Scope\n\nsrc/export/csv.go"
+        author: ann
+        insider: true
+        labels: [workline:to-refine]
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "**The tester** finds no test possible for this issue.\n\n<!-- workline:tester-proof {\"kind\":\"none\",\"reason\":\"the change is wording: no behaviour to test.\"} -->\n<!-- workline:sticky=tester/issue -->"
+          - {body: "proof: docs-checks — wording only", author: eve}
+run: {role: product-owner, event: schedule, ai: none}
+expect:
+  agent-calls: 0
+  findings:
+    - {rule: done-as-accepted, where: "#9", message: "Moved #9 to ready, proved by docs-checks in place of new tests"}
+  forge:
+    issues:
+      - {id: 9, labels: [workline:ready], comment-contains: ["kind: docs-checks", "by: bob"]}
+      - {id: 10, labels: [workline:to-refine]}

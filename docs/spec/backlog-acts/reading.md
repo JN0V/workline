@@ -37,7 +37,7 @@ since the role's last run read in the run that first sees it, its first
 state written before any act; then those with something new since they
 were read — a commit touched their sources, a person changed its body
 (`body`), a person reopened what the role closed (`closed`), the
-reviewer's spec findings —; then one left with nothing under an older
+reviewer's spec findings, the tester's "no test possible" (`no-test`) —; then one left with nothing under an older
 way of reading (`backlog.LeftBehind`: its `rules` below
 `backlog.Reading`, a section lacking, no code named, no act ever done,
 nothing waiting on anyone), read again once, newest first — one past

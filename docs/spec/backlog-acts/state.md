@@ -42,6 +42,8 @@ heard: 2                                 # the comments that count the role read
 revisions: 1                             # its drafts revised for a person's comments
 rules: 2                                 # the way of reading it was last read under (backlog.Reading)
 left: bob                                # left to a person past its revisions, after bob wrote: said above while it waits
+proof: {kind: docs-checks, reason: "…", answers: af1c2ed6ea0a}   # the proof kind it picked where the tester found no test possible, the tester's word it answers
+no-test: af1c2ed6ea0a                    # the tester's "no test possible" last given to the agent
 ```
 
 The comment says, above the state, what the role did and proposes there,

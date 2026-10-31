@@ -115,6 +115,13 @@ type State struct {
 	// its proposal revised as often as allowed: said on the issue while
 	// it waits on them (ADR-0059, decision 1).
 	Left string `yaml:"left,omitempty"`
+	// Proof is the kind the role picked when the tester found no test
+	// possible (ADR-0059, decision 4): the developer's proof in place of
+	// a Draft, while it answers the tester's last word (ReadProof).
+	Proof *Proof `yaml:"proof,omitempty"`
+	// NoTest is the tester's "no test possible" the role was last given,
+	// by its digest (NoTest): read once, not again until it changes.
+	NoTest string `yaml:"no-test,omitempty"`
 }
 
 // StateMarker marks the comment holding an issue's state.
@@ -188,8 +195,10 @@ func FormatState(s State) string {
 		Revisions int               `yaml:"revisions,omitempty"`
 		Rules     int               `yaml:"rules,omitempty"`
 		Left      string            `yaml:"left,omitempty"`
+		Proof     *Proof            `yaml:"proof,omitempty"`
+		NoTest    string            `yaml:"no-test,omitempty"`
 	}{s.Sources, s.Confirmed, s.Judged, s.Comments, s.Body, s.Priority, s.Effort, s.Title, s.Split, s.After, s.Kept, s.Sections, s.Wrote, s.Answered, s.Plain, s.Deleted,
-		s.Proposed, s.Done, s.Undone, s.Did, s.Closed, s.Label, s.Aside, s.Heard, s.Revisions, s.Rules, s.Left})
+		s.Proposed, s.Done, s.Undone, s.Did, s.Closed, s.Label, s.Aside, s.Heard, s.Revisions, s.Rules, s.Left, s.Proof, s.NoTest})
 	// The record is kept out of sight, in an HTML comment (#548): a forge
 	// mails what a comment shows, and a person reads there only what the
 	// role tells them, never its record.
@@ -454,8 +463,12 @@ type Proposal struct {
 	// Card, the engine's: the move a ready makes on the board, to its
 	// ready column (ADR-0057); never the agent's.
 	Card *board.Move `yaml:"card,omitempty"`
-	Quote  *Quote `yaml:"quote"`
-	Why    string `yaml:"why"`
+	// Proof, on a ready: the kind the role picks where the tester found
+	// no test possible (ADR-0059, decision 4); the issue goes to ready,
+	// not back to its tests.
+	Proof *Proof `yaml:"proof,omitempty"`
+	Quote *Quote `yaml:"quote"`
+	Why   string `yaml:"why"`
 	// Refining: the sections written, Need and Validation as drafts, with
 	// a real example of the need or a bug's steps to reproduce, drafts too,
 	// never required; Added, the engine's, says which the body did not have
@@ -1626,6 +1639,9 @@ func (p *Plan) checkRefining(f forge.Backlog, repo, role string, c *Proposal) (r
 		if missing := NotReady(is, p.ledger.States[c.Issue], Accepted(is)); len(missing) > 0 {
 			return "not-ready", "not moved to ready: " + strings.Join(missing, "; ")
 		}
+		if c.Proof != nil {
+			return p.checkProof(f, c)
+		}
 	case "ask":
 		if strings.TrimSpace(c.Questions) == "" {
 			return "ask-empty", "nothing asked: the question was empty"
@@ -2737,6 +2753,11 @@ func describe(c Proposal, verb string) string {
 			board = fmt.Sprintf(", its card not moved to `%s`: a user's project, which GitHub lets no App write", c.Card.Column)
 		default:
 			board = fmt.Sprintf(", its card to `%s` on the board", c.Card.Column)
+		}
+		if c.Proof != nil {
+			// No test possible, said the tester: the kind picked in place
+			// of its Draft, and why.
+			board += fmt.Sprintf(", proved by %s in place of new tests (%s)", c.Proof.Kind, strings.TrimSuffix(strings.TrimSpace(c.Proof.Reason), "."))
 		}
 		return fmt.Sprintf("%s #%d to ready%s: %s", map[bool]string{true: "Moved", false: "Move"}[done], c.Issue, board, strings.TrimSpace(c.Why))
 	case "unready":
