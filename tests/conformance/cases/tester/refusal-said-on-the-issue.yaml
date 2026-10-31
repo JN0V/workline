@@ -1,0 +1,36 @@
+case: tester/refusal-said-on-the-issue
+about: >
+  The tester's refusal of an issue is written on it, though the run
+  blocks (ADR-0059, decision 1): one comment, why and what comes next.
+  Refused again for another reason, the same comment says the new one,
+  no second comment.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: []
+        body: "## Need\n\nI want to multiply.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n"
+run:
+  test: [write, --issue, "3"]
+  ai: "fake:tester-two-scenarios"
+  then: again
+  between:
+    issues:
+      - {id: 3, labels: ["workline:ready"], body: "## Need\n\nI want to multiply.\n\n## Validation\n\nIt multiplies.\n"}
+expect:
+  status: block
+  agent-calls: 0
+  findings: [{rule: no-named-scenario, where: "#3"}]
+  forge:
+    issues:
+      - id: 3
+        comments: 1
+        posted: 1
+        comment-contains: ["**The tester** writes no tests for this issue yet.", "- **Why**: its Validation holds no named scenario", "- **Next**: the product owner, or a person, names its scenarios"]
+        comment-lacks: ["labelled workline:ready"]

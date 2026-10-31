@@ -1,0 +1,36 @@
+case: developer/wait-said-on-the-issue
+about: >
+  A ready issue the developer's own pick holds back is told so on the
+  issue, never in the job's log alone (ADR-0059, decision 1): one comment,
+  why it waits and what comes next. Run again with another reason, the
+  same comment says the new one, no second comment.
+given:
+  repo: tested
+  config:
+    routing: {events: {schedule: [tester]}}
+  forge:
+    issues:
+      - {id: 1, title: "Add", labels: ["workline:ready", "workline:developing"], body: "## Need\n\nI want to add.\n\n## Scope\n\n- `src/lib.sh`: `add`.\n"}
+      - {id: 2, title: "Multiply", labels: ["workline:ready"], body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `src/`: a `mul` function.\n"}
+run:
+  develop: []
+  ai: "fake:developer-nothing"
+  then: again
+  between:
+    issues:
+      - id: 2
+        body: "## Need\n\nI want to multiply.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n\n## Scope\n\n- `src/`: a `mul` function.\n"
+expect:
+  status: pass
+  summary: "no ready issue waits for the developer"
+  agent-calls: 0
+  findings: [{rule: issue-passed, where: "#2", message: "its acceptance tests are not written yet"}]
+  forge:
+    issues:
+      - {id: 1, labels: ["workline:ready", "workline:developing"], comments: 0}
+      - id: 2
+        labels: ["workline:ready"]
+        comments: 1
+        posted: 1
+        comment-contains: ["**The developer** waits on this issue.", "- **Why**: its acceptance tests are not written yet", "- **Next**: the tester writes them"]
+        comment-lacks: ["overlaps #1"]

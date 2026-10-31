@@ -54,6 +54,10 @@ func Day(s string) string {
 	return ""
 }
 
+// Moment reads a forge's time, RFC 3339 or YYYY-MM-DD; false when it is
+// neither.
+func Moment(s string) (time.Time, bool) { return moment(s) }
+
 // moment reads a forge's time, RFC 3339 or YYYY-MM-DD.
 func moment(s string) (time.Time, bool) {
 	s = strings.TrimSpace(s)

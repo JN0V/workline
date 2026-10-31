@@ -110,7 +110,9 @@ On an issue waiting on you, it is "revise":
   it — never yours;
 - 👀 on each comment read, then one line in reply;
 - one revision a run, two at most; past them, one line "left to a person"
-  in the summary, nothing on the issue.
+  in the summary, and said in its own comment on the issue, edited in
+  place, never a new one
+  ([ADR-0059](../../../docs/adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#1-every-refusal-claim-wait-or-block-is-on-the-issue)).
 
 ## 5. The reporter
 

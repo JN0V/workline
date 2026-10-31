@@ -1,5 +1,5 @@
 ---
-sources: [internal/tester/moment.go, internal/tester/write.go, internal/tester/frozen.go, internal/tester/objection.go, internal/tester/green.go]
+sources: [internal/tester/moment.go, internal/tester/write.go, internal/tester/said.go, internal/tester/frozen.go, internal/tester/objection.go, internal/tester/green.go]
 checked: 99a14dc0
 verified: agent:claude-code
 ---
@@ -36,6 +36,18 @@ flowchart LR
   `workline:tester-record`. It holds the issue, the base, each test
   file with its git blob, and the scenarios as read. Only the tester's
   runs write it.
+
+## When the tester refuses an issue
+
+`workline test write --issue <n>` on an issue not ready, or whose
+Validation names no scenario, blocks before any agent is asked. The
+refusal is written on the issue too
+([ADR-0059](../../../docs/adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#1-every-refusal-claim-wait-or-block-is-on-the-issue)):
+
+- **One comment of the tester's**, edited on each refusal: why, and
+  what comes next (ready it, or name its scenarios).
+- **Not a job's log alone**: a person on the issue sees why no Draft
+  came.
 
 ## What the builder does
 

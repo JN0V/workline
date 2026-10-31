@@ -366,6 +366,11 @@ token), **apply** (trusted, no AI key).
    changed. The run still blocks; judged with `--no-apply`, they wait in
    `pending` like any other, for the applying job, which runs whatever
    the judge's outcome.
+   A proposal `pre` made itself (`in/fallback.yaml`) and marked
+   `on-block: true` is applied on a block too, whatever `on-block` names:
+   a refusal written on its issue
+   ([ADR-0059](../adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#1-every-refusal-claim-wait-or-block-is-on-the-issue)).
+   The agent's never is, marked or not.
    Applied by a job of the base once the merge request's branch moved on
    from the head judged (`--from-merge-request`), a run applies only the
    kinds its role names in `on-moved-on`, said (`moved-on`); none, nothing

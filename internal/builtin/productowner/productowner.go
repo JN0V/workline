@@ -470,12 +470,13 @@ func Pre(runDir, repo string) int {
 			rest = append(rest, d)
 		case st.Label != "" && len(fresh) > 0 && st.Revisions >= revisions:
 			// Its drafts revised as many times as allowed: a person's from
-			// here; said once, nothing more on the issue (ADR-0038).
+			// here; said in its own comment, edited, no new one on the issue
+			// (ADR-0038; ADR-0059, decision 1).
 			findings = append(findings, verdict.Finding{Rule: "left-to-a-person", Level: "info", Where: fmt.Sprintf("#%d", is.ID),
-				Message: fmt.Sprintf("@%s wrote on it; its proposal was revised %d times already: left to a person, nothing more written on it", fresh[len(fresh)-1].Author, st.Revisions)})
+				Message: fmt.Sprintf("@%s wrote on it; its proposal was revised %d times already: left to a person, said in its comment there", fresh[len(fresh)-1].Author, st.Revisions)})
 			left := *st
 			n := len(counted)
-			left.Heard = &n
+			left.Heard, left.Left = &n, fresh[len(fresh)-1].Author
 			fallback = append(fallback, intent.Intention{Kind: "comment", Value: map[string]any{
 				"issue": is.ID, "sticky": "state", "update-only": true, "body": backlog.FormatState(left)}})
 			rest = append(rest, d)

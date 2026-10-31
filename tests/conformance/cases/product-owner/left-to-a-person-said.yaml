@@ -1,0 +1,46 @@
+case: product-owner/left-to-a-person-said
+about: >
+  An issue whose proposal was revised as often as allowed is left to a
+  person, and the product owner says so on it, in its own comment edited
+  in place, never a new one (ADR-0038; ADR-0059, decision 1): who wrote,
+  why it stops, what comes next. Another comment after it, the same
+  comment names its author.
+given:
+  repo: backlog
+  forge:
+    issues:
+      - id: 9
+        title: "Rows lost"
+        body: "Some rows are lost.\n\n## Need\n\n*Draft by the product owner: edit it, then delete this line to make it yours.* <!-- workline:draft -->\n\nA need."
+        author: ann
+        insider: true
+        labels: [workline:proposed]
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nlabel: workline:proposed\nheard: 2\nrevisions: 2\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - {body: "No.", author: bob, insider: true}
+          - {body: "Still no.", author: bob, insider: true}
+          - {body: "Third time: no.", author: bob, insider: true}
+run:
+  role: product-owner
+  event: schedule
+  ai: none
+  then: again
+  between:
+    issues:
+      - id: 9
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nlabel: workline:proposed\nheard: 3\nrevisions: 2\nleft: bob\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - {body: "No.", author: bob, insider: true}
+          - {body: "Still no.", author: bob, insider: true}
+          - {body: "Third time: no.", author: bob, insider: true}
+          - {body: "I agree with Bob.", author: carol, insider: true}
+expect:
+  findings: [{rule: left-to-a-person, where: "#9", message: "@carol wrote on it"}]
+  forge:
+    issues:
+      - id: 9
+        comments: 5
+        posted: 0
+        labels: [workline:proposed]
+        comment-contains: ["**The product owner** leaves this issue to a person.", "- **Why**: @carol wrote on it, and its proposal was revised 2 times already", "- **Next**: a person answers @carol", "heard: 4", "left: carol"]
+        comment-lacks: ["@bob wrote on it"]

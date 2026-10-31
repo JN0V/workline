@@ -756,10 +756,17 @@ func run(o Options, res *Result) error {
 	keeps := slices.ContainsFunc(r.Intentions, func(k string) bool { return slices.Contains(backlog.Kinds, k) })
 	// Blocked, a run applies only what its role names to tell why
 	// (`on-block`): the reviewer's comment, its record in it (#226). The
-	// run still blocks.
-	onBlock := res.Status == verdict.Block && len(r.OnBlock) > 0
+	// run still blocks. A proposal pre made itself marked `on-block: true`
+	// tells why too: a refusal written on its issue (ADR-0059, decision 1).
+	fallback, _ := intent.Read(filepath.Join(runDir, "in", "fallback.yaml"))
+	tells := func(i intent.Intention) bool {
+		m, _ := i.Value.(map[string]any)
+		b, _ := m["on-block"].(bool)
+		return b && isFallbackOf(i, fallback)
+	}
+	onBlock := res.Status == verdict.Block && (len(r.OnBlock) > 0 || slices.ContainsFunc(intents, tells))
 	if onBlock {
-		intents = slices.DeleteFunc(intents, func(i intent.Intention) bool { return !slices.Contains(r.OnBlock, i.Kind) })
+		intents = slices.DeleteFunc(intents, func(i intent.Intention) bool { return !slices.Contains(r.OnBlock, i.Kind) && !tells(i) })
 		keeps = false
 	}
 	if res.Status != verdict.Pass && !onBlock || (len(intents) == 0 && !keeps) {

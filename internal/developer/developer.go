@@ -18,6 +18,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 
 	"go.yaml.in/yaml/v3"
 
@@ -46,6 +47,9 @@ type Settings struct {
 	// ClaimLabel is the label that says the developer took an issue: the
 	// forge's assignee where it cannot assign workline's App (GitHub).
 	ClaimLabel string
+	// ClaimHours: a claim with no pull request after them is let go, its
+	// label off, why said on the issue (ADR-0059, decision 1).
+	ClaimHours int
 	// MaxTokens, MaxTurns and MaxSeconds are the engine's ai-max-tokens,
 	// ai-max-turns and ai-max-seconds: the run's agent reaching one is a
 	// cap reached (ADR-0056). ProofSeconds bound the test command's run.
@@ -64,7 +68,10 @@ type Settings struct {
 
 // SettingsFrom reads the settings.
 func SettingsFrom(m map[string]any) Settings {
-	s := Settings{ClaimLabel: "workline:developing", Rounds: 5, Person: "workline:human"}
+	s := Settings{ClaimLabel: "workline:developing", ClaimHours: 24, Rounds: 5, Person: "workline:human"}
+	if n := number(m["claim-hours"]); n > 0 {
+		s.ClaimHours = n
+	}
 	if n := number(m["review-rounds"]); n > 0 {
 		s.Rounds = n
 	}
@@ -86,6 +93,10 @@ func SettingsFrom(m map[string]any) Settings {
 type Passed struct {
 	Issue int    `json:"issue"`
 	Why   string `json:"why"`
+	// next is what the issue waits for when the developer's own pick
+	// holds it, said on the issue (ADR-0059, decision 1); none for a
+	// person's hold, or an open pull request that says it already.
+	next string
 }
 
 // Act is the record of a pick, hidden in the comment it leaves on the
@@ -117,6 +128,9 @@ type Act struct {
 	// AgentFailed: why its agent's call failed, its time aside; what it
 	// edited is proven all the same, its pull request a Draft.
 	AgentFailed string `json:"agent-failed,omitempty"`
+	// NoCode: its agent wrote no code within its bounds, so no pull
+	// request; the claim waits to be let go (ADR-0059, decision 1).
+	NoCode bool `json:"no-code,omitempty"`
 	// From: the tester's Draft's commit its code starts from, the
 	// acceptance tests on it, those for the issue in Acceptance; Code and
 	// Tests: the files its code and its tests wrote, in commits apart
@@ -201,8 +215,9 @@ func overlap(a, b []string) string {
 // testsFirst, where the project routes the tester: an issue whose
 // Validation names scenarios waits for the tester's open Draft of its
 // tests (ADR-0055). only, when not 0, is the one issue looked at.
-// passed are the issues offered it passed over, why each.
-func pick(issues []forge.Issue, mrs []forge.MergeRequest, s Settings, only int, testsFirst bool) (id int, passed []Passed) {
+// letGo are the claims this run lets go: held no more, taken at a next
+// run. passed are the issues offered it passed over, why each.
+func pick(issues []forge.Issue, mrs []forge.MergeRequest, s Settings, only int, testsFirst bool, letGo map[int]bool) (id int, passed []Passed) {
 	open := map[int]bool{}
 	for _, is := range issues {
 		open[is.ID] = true
@@ -220,7 +235,7 @@ func pick(issues []forge.Issue, mrs []forge.MergeRequest, s Settings, only int, 
 	}
 	held := map[int][]string{} // the issues the developer holds: their Scope's paths
 	for _, is := range issues {
-		if slices.Contains(is.Labels, s.ClaimLabel) {
+		if slices.Contains(is.Labels, s.ClaimLabel) && !letGo[is.ID] {
 			held[is.ID] = scopePaths(is.Body)
 		}
 	}
@@ -229,21 +244,25 @@ func pick(issues []forge.Issue, mrs []forge.MergeRequest, s Settings, only int, 
 		if only != 0 && is.ID != only || !backlog.Offered(is, open) {
 			continue
 		}
-		why := ""
+		why, next := "", ""
 		switch {
 		case len(is.Assignees) > 0:
 			why = "assigned to " + strings.Join(is.Assignees, ", ")
+		case letGo[is.ID]:
+			why = "its claim was let go in this run: taken again at a next one"
 		case slices.Contains(is.Labels, s.ClaimLabel):
 			why = "taken already, labelled " + s.ClaimLabel
 		case closer[is.ID] != 0:
 			why = fmt.Sprintf("the open merge request %d closes it", closer[is.ID])
 		case testsFirst && !tested[is.ID] && len(tester.Scenarios(work.ByMeaning(is.Body)[work.Validation].Text)) > 0:
 			why = "its acceptance tests are not written yet: it waits for the tester's Draft"
+			next = "the tester writes them, as a Draft of its own; the developer takes this issue at a run after that Draft is open"
 		default:
 			mine := scopePaths(is.Body)
 			for _, n := range slices.Sorted(maps.Keys(held)) {
 				if p := overlap(mine, held[n]); p != "" {
 					why = fmt.Sprintf("its %s's `%s` overlaps #%d's, taken", work.Name(work.Scope), p, n)
+					next = fmt.Sprintf("#%d merged or let go; the developer looks at this issue again at its next run", n)
 					break
 				}
 			}
@@ -251,7 +270,7 @@ func pick(issues []forge.Issue, mrs []forge.MergeRequest, s Settings, only int, 
 		if why == "" {
 			return is.ID, passed
 		}
-		passed = append(passed, Passed{Issue: is.ID, Why: why})
+		passed = append(passed, Passed{Issue: is.ID, Why: why, next: next})
 	}
 	return 0, passed
 }
@@ -312,11 +331,24 @@ func Pre(runDir, repo string) int {
 	if err != nil {
 		return fail(err)
 	}
-	id, passed := pick(issues, mrs, s, only, line.Runs("tester"))
-	var findings []verdict.Finding
+	// A claim no pull request followed is let go first, said on its issue;
+	// it is not taken again in the same run (ADR-0059, decision 1).
+	said, findings, err := stale(b, issues, mrs, s, time.Now())
+	if err != nil {
+		return external(err)
+	}
+	letGo := map[int]bool{}
+	for _, in := range said {
+		if m, _ := in.Value.(map[string]any); in.Kind == "label" {
+			letGo[number(m["issue"])] = true
+		}
+	}
+	id, passed := pick(issues, mrs, s, only, line.Runs("tester"), letGo)
 	for _, p := range passed {
 		findings = append(findings, verdict.Finding{Rule: "issue-passed", Level: "info", Where: fmt.Sprintf("#%d", p.Issue), Message: p.Why})
 	}
+	// What waits on the developer's own pick is said on each issue.
+	said = append(said, waits(passed)...)
 	if id == 0 {
 		summary := "no ready issue waits for the developer"
 		if only != 0 {
@@ -326,12 +358,12 @@ func Pre(runDir, repo string) int {
 					Message: "not open and " + backlog.LabelReady + ", or it waits on an open issue, or it has parts"})
 			}
 		}
-		return final(runDir, verdict.Verdict{Status: verdict.Pass, Summary: summary, Findings: findings})
+		return say(runDir, verdict.Verdict{Status: verdict.Pass, Summary: summary, Findings: findings}, said)
 	}
 	if ai := os.Getenv("WORKLINE_AI"); ai == "" || ai == "none" {
 		findings = append(findings, verdict.Finding{Rule: "no-agent", Level: "info", Where: fmt.Sprintf("#%d", id),
 			Message: "with no agent, the developer names the issue it would take, and claims and opens nothing (principle 5)"})
-		return final(runDir, verdict.Verdict{Status: verdict.Pass, Summary: fmt.Sprintf("would take #%d: no agent, nothing claimed", id), Findings: findings})
+		return say(runDir, verdict.Verdict{Status: verdict.Pass, Summary: fmt.Sprintf("would take #%d: no agent, nothing claimed", id), Findings: findings}, said)
 	}
 	at, _ := gitOut(repo, "rev-parse", "HEAD")
 	act := Act{Act: "pick", At: at, Issue: id, Passed: passed}
@@ -344,7 +376,8 @@ func Pre(runDir, repo string) int {
 		}
 		act.Board = mv
 	}
-	if err := intent.Write(filepath.Join(runDir, "in", "fallback.yaml"), claimOf(act, s)); err != nil {
+	// The claim first, what it says on the other issues after it (Post).
+	if err := intent.Write(filepath.Join(runDir, "in", "fallback.yaml"), append(claimOf(act, s), said...)); err != nil {
 		return fail(err)
 	}
 	var is forge.Issue
@@ -541,6 +574,10 @@ func claimBody(a Act, s Settings) string {
 	if a.Proof != nil {
 		b.WriteString("\nIts code on the project's tests:\n\n" + proofLines(*a.Proof, a.Caps))
 	}
+	if a.NoCode {
+		fmt.Fprintf(&b, "\n- **Why no pull request**: its agent wrote no code within its bounds.\n"+
+			"- **Next**: the claim is let go %d hours after it was taken, said here; then the developer may take it again, or a person assigns themselves.\n", s.ClaimHours)
+	}
 	if len(a.Unread) > 0 && a.Proof == nil {
 		// No pull request to post them on: here, never lost (#746).
 		b.WriteString("\nIts agent's words, unread: a person reads them, an objection to a frozen test may be among them.\n\n")
@@ -566,6 +603,9 @@ func Post(runDir, repo string) int {
 	if _, err := os.Stat(filepath.Join(runDir, "in", roundFile)); err == nil {
 		return reviewPost(runDir, repo, s)
 	}
+	if hasSaid(runDir) {
+		return saidPost(runDir)
+	}
 	var a Act
 	var b Bounds
 	if err := readIn(runDir, pickFile, &a); err != nil {
@@ -574,21 +614,24 @@ func Post(runDir, repo string) int {
 	if err := readIn(runDir, boundsFile, &b); err != nil {
 		return fail(err)
 	}
+	claim, err := intent.Read(filepath.Join(runDir, "in", "fallback.yaml"))
+	if err != nil {
+		return fail(err)
+	}
+	// What pre said on the other issues, after the claim: written whatever
+	// becomes of the claim.
+	told := claim[min(len(claimOf(a, s)), len(claim)):]
 	where := fmt.Sprintf("#%d", a.Issue)
 	// Another run may have claimed the issue while its agent coded: read
 	// again, it backs off, nothing claimed nor opened (docs/triggers.md).
 	if why := takenMeanwhile(repo, a.Issue, s); why != "" {
-		if code := writeIntents(runDir, "", nil); code != 0 {
+		if code := writeIntents(runDir, "", told); code != 0 {
 			return code
 		}
 		return writeVerdict(runDir, verdict.Verdict{Status: verdict.Pass, Summary: where + " taken meanwhile: nothing claimed, its code left",
 			Findings: []verdict.Finding{{Rule: "taken-meanwhile", Level: "warn", Where: where, Message: why + " while its agent coded: another run took it first"}}})
 	}
 	proposed, err := intent.Read(filepath.Join(runDir, "out", "intentions.yaml"))
-	if err != nil {
-		return fail(err)
-	}
-	claim, err := intent.Read(filepath.Join(runDir, "in", "fallback.yaml"))
 	if err != nil {
 		return fail(err)
 	}
@@ -621,7 +664,8 @@ func Post(runDir, repo string) int {
 	}
 	if len(patches) == 0 {
 		v.Findings = append(v.Findings, verdict.Finding{Rule: "no-code", Level: "warn", Where: where,
-			Message: "its agent wrote no code within its bounds: nothing to prove, no pull request; the claim stays until a person removes it"})
+			Message: fmt.Sprintf("its agent wrote no code within its bounds: nothing to prove, no pull request; the claim is let go after %d hours, said on the issue", s.ClaimHours)})
+		a.NoCode = true
 	} else {
 		a.Code, a.Tests = written(patches)
 		p, u, caps, found := proven(runDir, repo, on, where, patches, a.Acceptance, s)
@@ -648,7 +692,8 @@ func Post(runDir, repo string) int {
 		}
 	}
 	// The claim carries the record, the refusals in it (ADR-0046).
-	if code := writeIntents(runDir, "", append(claimOf(a, s), kept[len(claim):]...)); code != 0 {
+	// What pre said on the other issues follows it.
+	if code := writeIntents(runDir, "", slices.Concat(claimOf(a, s), told, kept[len(claim):])); code != 0 {
 		return code
 	}
 	return writeVerdict(runDir, v)

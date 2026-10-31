@@ -105,6 +105,7 @@ In `.workline/config.yaml`, under `roles: {developer: {settings: …}}`:
 | Setting | Default | What it does |
 |---|---|---|
 | `claim-label` | `workline:developing` | the label that says the developer took an issue |
+| `claim-hours` | 24 | a claim with no pull request after them is let go, said on the issue ([the pick](docs/pick.md#letting-a-claim-go)) |
 | `ai-max-tokens` | 500000 | the fresh tokens a run's agent calls may spend, cache reads apart; reached, a Draft |
 | `ai-max-turns` | 300 | the turns one call of its agent may take; reached, a Draft |
 | `ai-max-seconds` | 3600 | what a run waits on its agent, then kills it; reached, a Draft |

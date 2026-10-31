@@ -295,8 +295,10 @@ column ([the try](https://github.com/JN0V/workline/pull/747#tried)).
 
 - **The claim on GitLab** by assignment, where the token's user is a
   service account that can be assigned: a label for now, on every forge.
-- **A claim left behind**: an issue claimed by a run that wrote no code
-  keeps its label until a person removes it; the code steps release it.
+- **A claim left behind**: let go after `claim-hours` with no pull
+  request, said on the issue ([the pick](pick.md#letting-a-claim-go));
+  its card stays in Doing until the line's states
+  ([#756](https://github.com/JN0V/workline/issues/756)).
 - **A refused patch asked again**: today it is left out and the rest
   applied; asking the agent again with the refusal would save a round.
   So for a diff that does not apply: unproven, a Draft

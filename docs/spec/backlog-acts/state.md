@@ -41,6 +41,7 @@ aside: 3f9a1c0e2b7d                      # set aside by a person, at this body: 
 heard: 2                                 # the comments that count the role read: one more is a person's word since
 revisions: 1                             # its drafts revised for a person's comments
 rules: 2                                 # the way of reading it was last read under (backlog.Reading)
+left: bob                                # left to a person past its revisions, after bob wrote: said above while it waits
 ```
 
 The comment says, above the state, what the role did and proposes there,
