@@ -73,7 +73,8 @@ is on each issue; you answer there
   role reads only those you commented on, and labels no more: the next
   wait for room.
 - **Three rounds at most** (the draft, two revisions), then one line
-  "left to a person" in the summary, nothing more on the issue.
+  "left to a person" in the summary, and said in its own comment on the
+  issue: who wrote, why it stops, what comes next.
 - **Who counts**: the reporter and the project's people; their comment
   on any issue is read first. A bot's, a stranger's or a "+1" comment
   never brings an issue back.

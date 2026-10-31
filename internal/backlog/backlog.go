@@ -111,6 +111,10 @@ type State struct {
 	// (Reading): an issue it left with nothing is read again once they
 	// change.
 	Rules int `yaml:"rules,omitempty"`
+	// Left is who wrote last when the role left the issue to a person,
+	// its proposal revised as often as allowed: said on the issue while
+	// it waits on them (ADR-0059, decision 1).
+	Left string `yaml:"left,omitempty"`
 }
 
 // StateMarker marks the comment holding an issue's state.
@@ -183,8 +187,9 @@ func FormatState(s State) string {
 		Heard     *int              `yaml:"heard,omitempty"`
 		Revisions int               `yaml:"revisions,omitempty"`
 		Rules     int               `yaml:"rules,omitempty"`
+		Left      string            `yaml:"left,omitempty"`
 	}{s.Sources, s.Confirmed, s.Judged, s.Comments, s.Body, s.Priority, s.Effort, s.Title, s.Split, s.After, s.Kept, s.Sections, s.Wrote, s.Answered, s.Plain, s.Deleted,
-		s.Proposed, s.Done, s.Undone, s.Did, s.Closed, s.Label, s.Aside, s.Heard, s.Revisions, s.Rules})
+		s.Proposed, s.Done, s.Undone, s.Did, s.Closed, s.Label, s.Aside, s.Heard, s.Revisions, s.Rules, s.Left})
 	// The record is kept out of sight, in an HTML comment (#548): a forge
 	// mails what a comment shows, and a person reads there only what the
 	// role tells them, never its record.
@@ -312,6 +317,11 @@ func (s State) say() string {
 			lines = append(lines, "**The product owner** drafted "+what+" from its own words: they wait on your answer.")
 		}
 		lines = append(lines, s.answers())
+		if s.Left != "" {
+			lines = append(lines, strings.TrimSpace(Said("The product owner", "leaves this issue to a person",
+				fmt.Sprintf("@%s wrote on it, and its proposal was revised %d times already, as often as allowed", s.Left, s.Revisions),
+				fmt.Sprintf("a person answers @%s, edits the issue or gives the answer above; the product owner proposes nothing more here until then", s.Left))))
+		}
 	}
 	return strings.Join(lines, "\n\n")
 }

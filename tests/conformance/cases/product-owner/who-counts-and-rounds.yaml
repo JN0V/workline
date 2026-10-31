@@ -1,5 +1,5 @@
 case: product-owner/who-counts-and-rounds
-about: 'Only the reporter and the project''s people count (ADR-0038): a stranger''s comment, a bot''s, a bare "+1" never bring an issue back into a run nor earn 👀. A thread between two people is one revision, one reply, 👀 on each. Past two revisions (acts.ask.rounds less the first draft), a new comment is left to a person — one line in the summary, nothing on the issue.'
+about: 'Only the reporter and the project''s people count (ADR-0038): a stranger''s comment, a bot''s, a bare "+1" never bring an issue back into a run nor earn 👀. A thread between two people is one revision, one reply, 👀 on each. Past two revisions (acts.ask.rounds less the first draft), a new comment is left to a person — one line in the summary, said in its own comment, no new one on the issue.'
 given:
   repo: backlog
   forge:
