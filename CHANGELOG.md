@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.61.0](https://github.com/JN0V/workline/compare/v0.60.0...v0.61.0) (2026-10-31)
+
+
+### Features
+
+* every refusal, wait or claim let go written on the issue ([#763](https://github.com/JN0V/workline/issues/763)) ([8972f50](https://github.com/JN0V/workline/commit/8972f5005f563a08e6a5f13a0719afd3b8aa431d))
+
+
+### Bug Fixes
+
+* **tester:** hand the Scope's file named with a line ([#753](https://github.com/JN0V/workline/issues/753)) ([0f04b45](https://github.com/JN0V/workline/commit/0f04b45f57d1949b77d2024ebeeb463f18828945))
+
 ## [0.60.0](https://github.com/JN0V/workline/compare/v0.59.0...v0.60.0) (2026-10-30)
 
 
