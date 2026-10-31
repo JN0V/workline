@@ -39,7 +39,7 @@ func pick(f forge.Backlog, waiting []string) (int, error) {
 	}
 	backlog.Order(issues)
 	for _, is := range issues {
-		if !backlog.Readied(is) || len(backlog.Waiting(is, open)) > 0 || len(backlog.Parts(is)) > 0 || slices.Contains(waiting, taskKey(is.ID)) {
+		if !backlog.Readied(is) || slices.Contains(is.Labels, backlog.LabelBlocked) || len(backlog.Waiting(is, open)) > 0 || len(backlog.Parts(is)) > 0 || slices.Contains(waiting, taskKey(is.ID)) {
 			continue
 		}
 		if len(Scenarios(work.ByMeaning(is.Body)[work.Validation].Text)) > 0 {
