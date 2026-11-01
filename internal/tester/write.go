@@ -210,8 +210,13 @@ func writeCode(b *strings.Builder, repo, scope string, s Settings) {
 	files := strings.Split(strings.TrimSuffix(out, "\x00"), "\x00")
 	var named, tests []string
 	for _, w := range work.ScopeWords(scope) {
-		if p := work.InRepo(w, files); p != "" && !slices.Contains(named, p) {
-			named = append(named, p)
+		// A file, or those a pattern matches (#801: `src/calc/*.sh`).
+		if fs := work.Files(w, files); len(fs) > 0 {
+			for _, f := range fs {
+				if !slices.Contains(named, f) {
+					named = append(named, f)
+				}
+			}
 			continue
 		}
 		// A folder the Scope names: its own files, not its tests nor its

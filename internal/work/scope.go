@@ -4,6 +4,8 @@ import (
 	"path"
 	"regexp"
 	"strings"
+
+	"github.com/JN0V/workline/internal/pathglob"
 )
 
 var (
@@ -51,4 +53,35 @@ func InRepo(word string, files []string) string {
 		return ""
 	}
 	return found
+}
+
+// Pattern says whether a Scope's word names its files by a pattern,
+// `src/calc/*.sh`: `*` within a folder, `**` across folders, `?` and
+// `[...]` as in a shell (pathglob).
+func Pattern(word string) bool {
+	return strings.ContainsAny(word, "*?[")
+}
+
+// Files are the files of files a Scope's word names: the one InRepo
+// names, or, a pattern, every file it matches, in files' order (#801:
+// `src/calc/*.sh` named, nothing given). None when it names no file: a
+// folder is the caller's to read.
+func Files(word string, files []string) []string {
+	if f := InRepo(word, files); f != "" {
+		return []string{f}
+	}
+	if !Pattern(word) {
+		return nil
+	}
+	p := path.Clean(strings.ReplaceAll(word, `\`, "/"))
+	if strings.HasPrefix(p, "../") || path.IsAbs(p) {
+		return nil
+	}
+	var out []string
+	for _, f := range files {
+		if f != "" && pathglob.Match(p, f) {
+			out = append(out, f)
+		}
+	}
+	return out
 }

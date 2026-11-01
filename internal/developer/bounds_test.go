@@ -122,6 +122,24 @@ func TestBesideTestNeedsTheTestFolderBesideTheScope(t *testing.T) {
 	}
 }
 
+// A Scope naming its files by a pattern bounds what it matches, a new
+// file too, as the tester reads it (#801): `src/calc/*.sh`.
+func TestUnderAPatternIsWhatItMatches(t *testing.T) {
+	for p, want := range map[string]bool{
+		"src/calc/add.sh":     true,
+		"src/calc/mul.sh":     true, // not there yet
+		"src/calc/add.go":     false,
+		"src/calc/sub/add.sh": false, // `*` stays in its folder
+	} {
+		if got := under(p, []string{"src/calc/*.sh"}); got != want {
+			t.Errorf("under(%s, src/calc/*.sh) = %v, want %v", p, got, want)
+		}
+	}
+	if !under("src/a/b/c.sh", []string{"src/**/*.sh"}) {
+		t.Error("under(src/a/b/c.sh, src/**/*.sh) = false, want true")
+	}
+}
+
 // A Scope or a source naming the repository's root bounds nothing: it is
 // dropped, and never puts every file in bounds.
 func TestScopeNamingTheRootIsDropped(t *testing.T) {

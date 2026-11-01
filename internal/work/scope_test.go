@@ -17,6 +17,27 @@ func TestScopeWordsTakeTheLineOff(t *testing.T) {
 
 // A word names a repository file whole, or by its end when one file
 // only ends so; never several, never a folder, never outside.
+// A Scope's word names one file, or by a pattern the files it matches
+// (#801); a folder or a pattern matching nothing names none.
+func TestFiles(t *testing.T) {
+	files := []string{"lib.sh", "src/calc/add.sh", "src/calc/add.go", "src/calc/sub.sh", "src/calc/deep/x.sh", "tools/ops.sh"}
+	for word, want := range map[string][]string{
+		"src/calc/*.sh":   {"src/calc/add.sh", "src/calc/sub.sh"},
+		"src/**/*.sh":     {"src/calc/add.sh", "src/calc/sub.sh", "src/calc/deep/x.sh"},
+		"src/calc/a?d.go": {"src/calc/add.go"},
+		"./src/calc/*.sh": {"src/calc/add.sh", "src/calc/sub.sh"},
+		"lib.sh":          {"lib.sh"},
+		"ops.sh":          {"tools/ops.sh"},
+		"src/calc":        nil, // a folder: the caller reads it
+		"src/calc/*.py":   nil,
+		"../*.sh":         nil,
+	} {
+		if got := Files(word, files); !slices.Equal(got, want) {
+			t.Errorf("Files(%q) = %v, want %v", word, got, want)
+		}
+	}
+}
+
 func TestInRepo(t *testing.T) {
 	files := []string{"README.md", "docs/README.md", "internal/b/parts.go", "internal/b/parts_test.go", "x/a.go", "y/a.go"}
 	for word, want := range map[string]string{
