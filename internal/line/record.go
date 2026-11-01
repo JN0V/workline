@@ -34,6 +34,11 @@ type Record struct {
 	// it has one (#128): a review written since makes the step due again,
 	// the product owner reading it then.
 	Spec string `json:"spec,omitempty"`
+	// Asked: in refine, the body's hash the step ran on with the reviewer
+	// chained after the product owner (#840). A spec still waiting on a
+	// review with no such mark for its body makes the step due again,
+	// once: a record from before the reviewer read it in the same run.
+	Asked string `json:"asked,omitempty"`
 	// Waits: the state at its limit the issue's step waits on, said on
 	// it once (ADR-0059, decision 9); the step run, the record has none.
 	Waits string `json:"waits,omitempty"`
@@ -73,6 +78,9 @@ type StateWrite struct {
 	Stale   string `json:"stale,omitempty"`
 	Kept    string `json:"kept,omitempty"`
 	Seen    string `json:"seen,omitempty"`
+	// Holds: why the product owner held the issue in refine for a spec
+	// review, said on it with the record (#840): what it waits for.
+	Holds string `json:"holds,omitempty"`
 }
 
 const (
@@ -187,6 +195,18 @@ func due(s routing.State, is forge.Issue, labeled, spec string, rec Record, had 
 	return now, true
 }
 
+// specWaits says whether issue is's spec waits on the reviewer: its
+// sections written, not ready nor accepted, no review on its body as it
+// is, the review's rounds not spent (backlog.SpecHold); comments: the
+// issue's, as the record was read from them.
+func specWaits(is forge.Issue, comments []string) bool {
+	if backlog.Readied(is) || len(backlog.NotReady(is, nil, true)) > 0 {
+		return false
+	}
+	rule, _ := backlog.SpecHold(is, comments)
+	return rule == "spec-not-reviewed"
+}
+
 // writeState writes w on the forge: the record in its comment; past the
 // cap, the issue moved to Blocked, every other state's label off, its
 // card to the board's Blocked column, and why said in that comment; a
@@ -232,6 +252,9 @@ func writeState(f forge.Forge, cfg *routing.Config, repo string, w StateWrite, r
 		if s, ok := cfg.StateOf(is.Labels); ok && s.Name == BlockedState {
 			body = blockedBody(cfg, w.Record)
 		}
+	case w.Holds != "":
+		body = backlog.Said("workline's line", "waits for the reviewer to read this issue's spec", w.Holds,
+			"the reviewer's comment on its spec, then the line wakes the product owner to read it") + "\n" + body
 	}
 	return f.Sticky(t, backlog.Inert(body), forge.Marker("sticky="+recordKey), true)
 }

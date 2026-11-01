@@ -371,8 +371,15 @@ whose result moves the issue to the next. The table is the routing's
   ([the API budget](../github/calls.md#the-api-budget)).
 - **The spec review at once**: where the project routes the reviewer
   on `issue`, refine's step runs it after the product owner, on that
-  issue's spec alone (#128). Its review, written since, makes the step
-  due again: the product owner reads it then, and readies the issue.
+  issue's spec alone (#128). Judged with no write token, the reviewer
+  reads it though the product owner's state comment is not written
+  yet: the apply writes both
+  ([#840](https://github.com/JN0V/workline/issues/840)). Its review,
+  written since, makes the step due again: the product owner reads it
+  then, and readies the issue.
+- **The wait said**: the product owner holding the issue for that
+  review (`spec-not-reviewed`), the line's comment on it says what it
+  waits for, and what comes next; the next record drops it.
 - **Moves are exclusive**: the next state's label on, every other
   state's off, in one call.
 - **Its card follows**: on a board with a column for the state, named
@@ -401,6 +408,12 @@ whose result moves the issue to the next. The table is the routing's
   left waiting there: the line moves it to `workline:blocked`, the
   tester's reason said (`tests-refused`;
   [#794](https://github.com/JN0V/workline/issues/794)).
+- **Refine's record says the reviewer was asked** on the body (`asked`),
+  where the reviewer is routed on `issue`. Acted on with no such mark,
+  its spec still waiting on a review, the step is due again, once: a
+  record from before the reviewer read it in refine's own run
+  ([#840](https://github.com/JN0V/workline/issues/840)). Marked, no
+  review come, it stays acted: no loop.
 - **Not for an outside failure**: a step that ended
   `blocked-external`, its agent out of reach, keeps no record: the next
   event or reconciler runs it again.

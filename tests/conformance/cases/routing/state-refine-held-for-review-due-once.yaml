@@ -1,0 +1,28 @@
+case: routing/state-refine-held-for-review-due-once
+about: >
+  An issue left in refine by a run where the reviewer read nothing
+  (#840): the line's record says the product owner acted on its body,
+  but not that the reviewer was asked on it, and no review is on it.
+  The reconciler counts its step due again, no agent asked to say so;
+  the run it starts reads the spec at last.
+given:
+  repo: backlog
+  config:
+    routing: {events: {schedule: [product-owner, reviewer], issue: [product-owner, reviewer, tester, developer]}}
+  forge:
+    issues:
+      - id: 9
+        title: "Rows lost"
+        labels: [workline:to-refine]
+        labeled: {"workline:to-refine": "2026-11-01T19:59:38Z"}
+        author: ann
+        insider: true
+        body: "## Need\n\nThe monthly report counts every sale.\n\n## Example\n\nOn 3 March, three sales, the report shows two.\n\n## Validation\n\n- **A known day:** Given a day of three sales, When Ann opens it, Then she counts three.\n\n---\n\n## Verification\n\nA test writes three rows.\n\n## Scope\n\nsrc/export/csv.go"
+        comments:
+          - "```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "**workline's line** last woke the product-owner on this issue, in its state refine (1 state step so far).\n\n<!-- workline:line-record {\"state\":\"refine\",\"body\":\"ec71085835dc\",\"labeled\":\"2026-11-01T19:59:38Z\",\"hops\":1} -->\n<!-- workline:sticky=line/state -->"
+run: {route: reconcile, ai: none, input: {reconcile: list}}
+expect:
+  status: pass
+  agent-calls: 0
+  summary: "reconcile: 1 issue due: #9"

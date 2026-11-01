@@ -1,0 +1,28 @@
+case: routing/state-refine-wait-for-review-said
+about: >
+  Waiting said (#840): an issue the product owner holds in refine for
+  its spec review says so on the issue, in the line's one comment,
+  written by the apply: what it waits for, and what comes next. Here
+  the reviewer reads specs at night only, so the wait lasts.
+given:
+  repo: backlog
+  config:
+    routing: {events: {schedule: [product-owner, reviewer], issue: [product-owner, tester, developer]}}
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "## Need\n\nThe monthly report counts every sale.\n\n## Example\n\nOn 3 March, three sales, the report shows two.\n\n## Validation\n\n- **A known day:** Given a day of three sales, When Ann opens it, Then she counts three.\n\n---\n\n## Verification\n\nA test writes three rows.\n\n## Scope\n\nsrc/export/csv.go", author: ann, insider: true, labels: [workline:to-refine]}
+run:
+  route: issue
+  target: {issue: 9}
+  no-apply: true
+  ai: fake:ready-nine-then-spec-clear
+  then: resume
+  apply-from: {line: true}
+expect:
+  status: pass
+  agent-calls: 1
+  forge:
+    issues:
+      - id: 9
+        labels: [workline:to-refine]
+        comment-contains: ["**workline's line** waits for the reviewer to read this issue's spec.", "the reviewer has not read its spec yet", "<!-- workline:line-record {\"state\":\"refine\""]

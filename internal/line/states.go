@@ -105,6 +105,16 @@ func stateOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, 
 		spec = "" // a review is read in refine alone: no other state woken by it
 	}
 	now, ok := due(s, is, t.Labeled, spec, rec, had)
+	reviewed := s.Name == refineState && slices.Contains(cfg.Events[IssueEvent], backlog.SpecReviewer)
+	if !ok && reviewed && rec.Asked != rec.Body {
+		// Acted on, the reviewer never asked on this body: a record from
+		// before it read the spec in refine's own run (#840). Due again,
+		// once, while its spec waits on a review.
+		ok = specWaits(is, comments)
+	}
+	if ok && reviewed {
+		now.Asked = now.Body // the reviewer runs after the product owner: never due again for this alone
+	}
 	if !ok && s.Role == "tester" && refused != "" {
 		// The tester's run on it refused, its state the same: never left
 		// as acted, which nothing would wake again (#794). Blocked, why
@@ -254,10 +264,21 @@ func runStateStep(res *Result, cfg *routing.Config, f forge.Forge, spec string, 
 		maps.Copy(in, st.inputs)
 		o.Inputs = in
 	}
+	before := len(res.Findings)
 	_, status := runRole(res, cfg, o, 0)
 	res.Status = worst(res.Status, status)
 	if status == verdict.BlockedExternal {
 		return
+	}
+	if st.role == backlog.Keeper {
+		// Held for its spec review: said on the issue with the record,
+		// not in the job's log alone (#840).
+		where := fmt.Sprintf("#%d", st.write.Issue)
+		for _, f := range res.Findings[before:] {
+			if f.Rule == "spec-not-reviewed" && f.Where == where {
+				st.write.Holds = f.Message
+			}
+		}
 	}
 	if st.role == backlog.Keeper && st.write.Record.State == refineState && status == verdict.Pass &&
 		slices.Contains(cfg.Events[IssueEvent], backlog.SpecReviewer) {
