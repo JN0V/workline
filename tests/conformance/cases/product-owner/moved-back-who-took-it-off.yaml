@@ -1,0 +1,29 @@
+case: product-owner/moved-back-who-took-it-off
+about: >
+  Who took a ready off decides (ADR-0059), not the state the issue is
+  in: a person taking `workline:ready` off, then putting the issue in
+  refine, undid the role's ready (#14); an issue in refine whose label
+  events show no removal is read as moved by the line (#15). For a move
+  of the line, only the last ready undo an older engine kept is taken
+  off the state: a person's earlier one stands (#13).
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 13, title: "Rows lost", body: "## Need\n\nA.", author: ann, insider: true, labels: [workline:to-refine],
+         label-events: [{label: workline:needs-tests, added: false, author: "workline-bot", bot: true, created: "2026-11-01T04:47:12Z"}],
+         comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nundone:\n  - {act: ready, evidence: \"a person's, on 2026-10-20\"}\n  - {act: ready, evidence: \"the line's move, on 2026-11-01\"}\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 14, title: "Totals wrong", body: "## Need\n\nA.\n\n## Verification\n\nB.\n\n## Validation\n\nC.\n\n## Scope\n\nD.", author: ann, insider: true, labels: [workline:to-refine],
+         label-events: [{label: workline:ready, added: false, author: ann, insider: true, created: "2026-11-01T03:27:54Z"}],
+         comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: 000000000000\ndone:\n  - {act: ready, level: normal}\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 15, title: "Dates wrong", body: "## Need\n\nA.\n\n## Verification\n\nB.\n\n## Validation\n\nC.\n\n## Scope\n\nD.", author: ann, insider: true, labels: [workline:to-refine],
+         label-events: [{label: workline:to-refine, added: true, author: "workline-bot", bot: true, created: "2026-11-01T03:27:54Z"}],
+         comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: 000000000000\ndone:\n  - {act: ready, level: normal}\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:ready-nine-ten}
+expect:
+  findings:
+    - {rule: undone, where: "#14", message: "#14's label workline:ready taken off by a person"}
+  no-findings: [{rule: undone, where: "#15"}, {rule: undone, where: "#13"}]
+  forge:
+    issues:
+      - {id: 13, comment-contains: ["a person's, on 2026-10-20"], comment-lacks: ["the line's move, on 2026-11-01"]}

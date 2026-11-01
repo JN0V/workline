@@ -393,6 +393,9 @@ func ReadLedger(f forge.Backlog, role string, open []forge.Issue) (*Ledger, erro
 			l.Aside[is.ID] = true
 			l.Signs = append(l.Signs, fmt.Sprintf("#%d set aside", is.ID))
 		}
+		if err := pruneMoves(f, is, st); err != nil {
+			return nil, err
+		}
 		l.add(is.ID, st)
 		if Accepted(is) && (len(st.Proposed) > 0 || st.Label != "") {
 			l.Signs = append(l.Signs, fmt.Sprintf("#%d accepted", is.ID))
@@ -427,6 +430,29 @@ func ReadLedger(f forge.Backlog, role string, open []forge.Issue) (*Ledger, erro
 	slices.Sort(l.Signs)
 	l.Signs = slices.Compact(l.Signs)
 	return l, nil
+}
+
+// pruneMoves takes off an issue's state the ready undo an earlier engine
+// kept for a move of the line — workline's own account took the label
+// off (MovedBack) —, the last one: no act a person undid, never counted
+// again; the state is written so at the role's next write.
+func pruneMoves(f forge.Backlog, is forge.Issue, st *State) error {
+	if Readied(is) || !slices.ContainsFunc(st.Undone, func(u Undo) bool { return u.Act == "ready" }) {
+		return nil
+	}
+	engine, err := MovedBack(f, is)
+	if err != nil || !engine {
+		return err
+	}
+	// The last one alone: kept for that move; a person's undo before it
+	// stands.
+	for i := len(st.Undone) - 1; i >= 0; i-- {
+		if st.Undone[i].Act == "ready" {
+			st.Undone = slices.Delete(st.Undone, i, i+1)
+			break
+		}
+	}
+	return nil
 }
 
 // setAside says whether a person took the role's label off an issue since

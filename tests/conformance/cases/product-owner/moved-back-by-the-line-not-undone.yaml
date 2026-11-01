@@ -1,0 +1,36 @@
+case: product-owner/moved-back-by-the-line-not-undone
+about: >
+  A ready the role did, then a step of the line taking it off — the
+  tester finding no test possible moves the issue back to refine, with
+  workline's own account — is no act a person undid (ADR-0059), as the
+  forge's label events say: the ready is done alone again there, never
+  counted toward undone-max. A ready undone so by an older engine, kept
+  in the issue's state, is taken off it; so three of them demote
+  nothing. A person taking the label off is still an undo.
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "## Need\n\nA.\n\n## Verification\n\nB.\n\n## Validation\n\nC.\n\n## Scope\n\nD.", author: ann, insider: true, labels: [workline:to-refine],
+         label-events: [{label: workline:needs-tests, added: false, author: "workline-bot", bot: true, created: "2026-11-01T04:47:12Z"}],
+         comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: 000000000000\ndone:\n  - {act: ready, level: normal}\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 10, title: "Totals wrong", body: "## Need\n\nA.\n\n## Verification\n\nB.\n\n## Validation\n\nC.\n\n## Scope\n\nD.", author: ann, insider: true, labels: [workline:to-refine],
+         label-events: [{label: workline:needs-tests, added: false, author: "workline-bot", bot: true, created: "2026-11-01T03:27:54Z"}],
+         comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: 000000000000\nundone:\n  - {act: ready, evidence: \"#10's label workline:ready taken off by a person; the role had moved it to ready\"}\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 11, title: "Dates wrong", body: "## Need\n\nA.", author: ann, insider: true, labels: [workline:to-refine],
+         label-events: [{label: workline:needs-tests, added: false, author: "workline-bot", bot: true, created: "2026-11-01T03:27:54Z"}],
+         comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nundone:\n  - {act: ready, evidence: \"#11's label workline:ready taken off by a person; the role had moved it to ready\"}\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 12, title: "Names wrong", body: "## Need\n\nA.", author: ann, insider: true, labels: [],
+         label-events: [{label: workline:ready, added: false, author: ann, insider: true, created: "2026-11-01T03:27:54Z"}],
+         comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: 000000000000\ndone:\n  - {act: ready, level: normal}\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:ready-nine-ten}
+expect:
+  findings:
+    - {rule: done, where: "#9", message: "Moved #9 to ready"}
+    - {rule: done, where: "#10", message: "Moved #10 to ready"}
+    - {rule: undone, where: "#12", message: "#12's label workline:ready taken off by a person"}
+  no-findings: [{rule: undone, where: "#9"}, {rule: demoted}, {rule: undone-here, where: "#9"}, {rule: undone-here, where: "#10"}]
+  forge:
+    issues:
+      - {id: 9, labels: [workline:ready]}
+      - {id: 10, labels: [workline:ready], comment-lacks: ["taken off by a person"]}
