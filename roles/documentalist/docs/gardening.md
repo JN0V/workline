@@ -49,6 +49,9 @@ it within budget by moving whole parts into a new doc, and linking to it.
 - A history doc — a changelog, a decision record, a tried or research
   record — is never the task: moving its parts away rewrites the record;
   its budget stays reported, for a person.
+- An archived doc (`archived: <date>` or `true` in its header) is never
+  the task, nor reported over budget or as a duplicate; its links are still
+  checked.
 - A merge request or a push never turns into a rewrite of the docs.
 - A patch still refused once asked again is said as warnings; at night
   the job stays green, and the next run asks again

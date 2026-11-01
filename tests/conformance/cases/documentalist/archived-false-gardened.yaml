@@ -1,0 +1,11 @@
+case: documentalist/archived-false-gardened
+about: "A header saying `archived: false` does not archive the doc — it is gardened as any other."
+given:
+  repo: untidy
+  setup: ["{ printf -- '---\\narchived: false\\n---\\n\\n'; cat docs/sessions.md; } > s && mv s docs/sessions.md && git commit -qam 'docs: mark the sessions'"]
+run: {role: documentalist, event: schedule, ai: none}
+expect:
+  status: pass
+  findings:
+    - {rule: doc-too-long, where: docs/sessions.md}
+    - {rule: duplicate, where: docs/faq.md}
