@@ -43,7 +43,9 @@ Each act done alone a person may undo is kept in its issue's state:
   taken off the state
   ([ADR-0059](../../../docs/adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md));
 - undone `undone-max` (3) times across the open issues: proposed on every
-  issue (`demoted`), until fewer are.
+  issue (`demoted`), until fewer are; a run woken for one issue counts
+  that issue's alone, reading no other's state
+  ([#804](https://github.com/JN0V/workline/issues/804)).
 
 ## Its labels
 

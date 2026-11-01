@@ -636,20 +636,24 @@ type Plan struct {
 	ProposalsMax int `yaml:"proposals-max,omitempty"`
 	// Silent are the issues read and left with nothing though they lack
 	// a section, each with why: said on the issue (ADR-0059, decision 1).
-	Silent   map[int]string `yaml:"silent,omitempty"`
-	open     map[int]bool   // the open issues, read once
-	issues   map[int]forge.Issue
-	judged   map[int]Judged // the second judge's answers on the issues announced obsolete
-	settings map[string]Setting
-	config   Config
-	bodies   []string        // their bodies, to find an import again
-	seen     map[string]bool // the imports this run decided
-	read     []int           // the issues this run read
-	ledger   *Ledger         // what the role holds, read from the issues
-	ticked   map[string]bool // the proposals a person accepted this run decided, done or dropped: settled
-	added    map[int][]int   // the blockers this run's depend acts add, for the next act's cycle check
-	dropped  map[int][]int   // the blockers this run's undepend acts take off
-	hearsay  bool            // the last quote found was only in an outsider's comment
+	Silent map[int]string `yaml:"silent,omitempty"`
+	// Elsewhere are the open issues a run woken for one issue did not
+	// visit that bear the role's label (#804): counted among those
+	// waiting, from the listing, their records unread.
+	Elsewhere int          `yaml:"elsewhere,omitempty"`
+	open      map[int]bool // the open issues, read once
+	issues    map[int]forge.Issue
+	judged    map[int]Judged // the second judge's answers on the issues announced obsolete
+	settings  map[string]Setting
+	config    Config
+	bodies    []string        // their bodies, to find an import again
+	seen      map[string]bool // the imports this run decided
+	read      []int           // the issues this run read
+	ledger    *Ledger         // what the role holds, read from the issues
+	ticked    map[string]bool // the proposals a person accepted this run decided, done or dropped: settled
+	added     map[int][]int   // the blockers this run's depend acts add, for the next act's cycle check
+	dropped   map[int][]int   // the blockers this run's undepend acts take off
+	hearsay   bool            // the last quote found was only in an outsider's comment
 	// changedFor are the issues read again for a change to what they were
 	// built on: every act on them proposed (ADR-0032).
 	changedFor map[int]Change
@@ -1266,8 +1270,17 @@ func (p *Plan) readRecord(f forge.Backlog, role string) error {
 		return err
 	}
 	scale.Use(scheme)
-	if p.ledger, err = ReadLedger(f, role, open); err != nil {
+	var scope []int // a run an event woke for one issue reads its record alone (#804)
+	if len(p.config.Scope) > 0 {
+		scope = p.config.Scope
+	}
+	if p.ledger, err = ReadLedger(f, role, open, scope); err != nil {
 		return err
+	}
+	for _, is := range open {
+		if scope != nil && !slices.Contains(scope, is.ID) && slices.Contains(is.Labels, ProposedLabel(f)) {
+			p.Elsewhere++
+		}
 	}
 	p.Report = p.ledger.Report
 	p.Visit = sortedKeys(p.ledger.States)

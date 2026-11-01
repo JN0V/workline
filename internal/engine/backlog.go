@@ -821,6 +821,15 @@ func planActs(f forge.Forge, r *role.Role, settings map[string]any, st runState,
 			cfg.Notes = append(cfg.Notes, noteText(in.Value))
 		}
 	}
+	// The issues an event woke the run for (ADR-0059): their records
+	// alone read and written (#804).
+	if data, err := os.ReadFile(filepath.Join(runDir, "in", backlog.ScopeFile)); err == nil {
+		for _, f := range strings.Fields(string(data)) {
+			if n, err := strconv.Atoi(f); err == nil {
+				cfg.Scope = append(cfg.Scope, n)
+			}
+		}
+	}
 	// What open issues were built on that changed, and those read again
 	// for it (ADR-0032).
 	var changes []backlog.Change

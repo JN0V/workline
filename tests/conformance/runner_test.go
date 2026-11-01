@@ -427,6 +427,7 @@ type itemWant struct {
 	Comments        *int                `yaml:"comments"` // how many
 	Posted          *int                `yaml:"posted"`   // comments posted, each mailing the issue's followers; an edit posts none
 	Edits           *int                `yaml:"edits"`    // times its body was rewritten, as the forge's edit history counts them
+	CommentsRead    *int                `yaml:"comments-read"` // times its comments were listed, each an API call on a real forge (#804)
 	CommentContains texts               `yaml:"comment-contains"`
 	CommentLacks    texts               `yaml:"comment-lacks"`
 	BlockedBy       *[]int              `yaml:"blocked-by"` // the forge's own relation
@@ -1932,6 +1933,19 @@ func compareForge(want *forgeWant, file string) []string {
 	}
 	var got map[string][]map[string]any
 	json.Unmarshal(data, &got)
+	// The times each item's comments were listed, kept beside the state
+	// by the fake forge (#804).
+	if reads, err := os.ReadFile(file + forge.ReadsSuffix); err == nil {
+		for _, line := range strings.Split(strings.TrimSpace(string(reads)), "\n") {
+			kind, num, _ := strings.Cut(line, " #")
+			for _, g := range got[map[string]string{"issue": "issues", "merge-request": "merge-requests"}[kind]] {
+				if fmt.Sprint(g["id"]) == num {
+					n, _ := g["comments-read"].(int)
+					g["comments-read"] = n + 1
+				}
+			}
+		}
+	}
 	var p []string
 	for _, kind := range []struct {
 		name  string
@@ -2011,6 +2025,9 @@ func compareItem(kind string, wm itemWant, got []map[string]any) []string {
 	}
 	if posted, _ := found["posted"].(float64); wm.Posted != nil && int(posted) != *wm.Posted {
 		p = append(p, fmt.Sprintf("forge: %s %v posted %d comments, want %d", kind, wm.ID, int(posted), *wm.Posted))
+	}
+	if read, _ := found["comments-read"].(int); wm.CommentsRead != nil && read != *wm.CommentsRead {
+		p = append(p, fmt.Sprintf("forge: %s %v's comments were listed %d times, want %d", kind, wm.ID, read, *wm.CommentsRead))
 	}
 	if edits, _ := found["edits"].([]any); wm.Edits != nil && len(edits) != *wm.Edits {
 		p = append(p, fmt.Sprintf("forge: %s %v's body was rewritten %d times, want %d", kind, wm.ID, len(edits), *wm.Edits))

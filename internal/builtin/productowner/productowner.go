@@ -107,6 +107,19 @@ func Pre(runDir, repo string) int {
 		return fail(fmt.Errorf("the commit the run is on: %v", err))
 	}
 	commit := strings.TrimSpace(string(head))
+	// One issue's state woke the role (ADR-0059): that issue's comments
+	// and labels alone are read, here and when its acts are decided —
+	// each open issue's would spend the token's API budget at every step
+	// of the line (#804). The listing of the open issues, one call a
+	// hundred, stays: the order, what blocks, what is open.
+	var scope []int
+	if n := issueEvent(); n > 0 {
+		scope = []int{n}
+		if err := os.WriteFile(filepath.Join(runDir, "in", backlog.ScopeFile), []byte(strconv.Itoa(n)), 0o644); err != nil {
+			return fail(err)
+		}
+	}
+	inScope := func(is forge.Issue) bool { return scope == nil || slices.Contains(scope, is.ID) }
 	// What the run reads, kept with each act it does, for the weekly
 	// sample to re-check it on that text and that code (ADR-0046).
 	thisRun := backlog.Read{At: commit, Bodies: map[int]string{}}
@@ -172,7 +185,7 @@ func Pre(runDir, repo string) int {
 	// What the role holds, read from each open issue's state (ADR-0038):
 	// its proposals, its acts a person may undo, the old report's record
 	// the first time.
-	ledger, err := backlog.ReadLedger(b, role, open)
+	ledger, err := backlog.ReadLedger(b, role, open, scope)
 	if errors.Is(err, forge.ErrUnreachable) {
 		fmt.Fprintln(os.Stderr, err)
 		return exitExternal
@@ -240,9 +253,10 @@ func Pre(runDir, repo string) int {
 	notesOf := map[int][]forge.Note{}                        // each issue's comments, for what waits on a person
 	var waits []backlog.Wait                                 // the issues waiting on a person, for the summary (ADR-0031)
 	for _, is := range open {
-		if backlog.Tracking(is, role) {
+		if backlog.Tracking(is, role) || !inScope(is) {
 			// Its old report, the weekly sample, a role's issue kept in
 			// place: workline's own, never read as the backlog's (#429).
+			// Out of an event's scope: its comments unread (#804).
 			continue
 		}
 		notes := ledger.Notes[is.ID]
@@ -590,8 +604,8 @@ func Pre(runDir, repo string) int {
 			Message: "the forge does not say " + what + ": not said stuck, whatever it waits"})
 	}
 	for _, is := range open {
-		if is.ID == report {
-			continue
+		if is.ID == report || !inScope(is) {
+			continue // out of an event's scope: when it got ready, unread (#804)
 		}
 		if notes, ok := notesOf[is.ID]; ok {
 			switch w, known := backlog.AskedWait(is.ID, notes, role); {

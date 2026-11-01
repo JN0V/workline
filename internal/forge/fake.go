@@ -350,8 +350,23 @@ func (f *Fake) Notes(t Target) ([]Note, error) {
 		}
 		notes = append(notes, n)
 	}
-	return notes, nil
+	// Counted, as a real forge counts the call, beside the state: never
+	// written over a change made meanwhile (an agent's, another run's).
+	r, err := os.OpenFile(f.Path+ReadsSuffix, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := fmt.Fprintf(r, "%s\n", t); err != nil {
+		_ = r.Close() // the write's error is the one said
+		return nil, err
+	}
+	return notes, r.Close()
 }
+
+// ReadsSuffix names the file beside a fake forge's state listing each
+// item whose comments were read, one line a read, as Target prints it
+// (#804).
+const ReadsSuffix = ".reads"
 
 func (f *Fake) LabelEvents(id int) ([]LabelEvent, error) {
 	s, err := f.load()
