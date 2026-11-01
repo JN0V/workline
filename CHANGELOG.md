@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.65.0](https://github.com/JN0V/workline/compare/v0.64.0...v0.65.0) (2026-11-01)
+
+
+### Features
+
+* developer: one bounded note on its own issue ([#786](https://github.com/JN0V/workline/issues/786)) ([dc7064c](https://github.com/JN0V/workline/commit/dc7064c915a0a3740a3bf869cf5119e502d3c12c))
+* gardening leaves an archived doc as it is ([#778](https://github.com/JN0V/workline/issues/778)) ([b941656](https://github.com/JN0V/workline/commit/b941656889cb66426d4cb5ea382477aaf9a48e90))
+
+
+### Bug Fixes
+
+* **ci:** one event starts one run of an issue's step ([#813](https://github.com/JN0V/workline/issues/813)) ([fb0049e](https://github.com/JN0V/workline/commit/fb0049e40810750d8e8005e0cc040df77a7a6453))
+* **ci:** the next step asked again after the forge's lag ([#802](https://github.com/JN0V/workline/issues/802)) ([63a2a22](https://github.com/JN0V/workline/commit/63a2a226d88e05b06f219288a988ba1be8001b58))
+* **product-owner:** a woken issue reads its own comments alone ([#811](https://github.com/JN0V/workline/issues/811)) ([0948c81](https://github.com/JN0V/workline/commit/0948c81cc63d1e18491c9dc8931739109930790c))
+* **product-owner:** an issue left with nothing is said on it ([#807](https://github.com/JN0V/workline/issues/807)) ([1ed8b70](https://github.com/JN0V/workline/commit/1ed8b70e55aa248a7150b0f1a9cff2b41156f291))
+* refine and tests stop sending an issue back and forth ([#822](https://github.com/JN0V/workline/issues/822)) ([feeb252](https://github.com/JN0V/workline/commit/feeb252d51bcfa928676dcde36c9c1e43cb46c73))
+
 ## [0.64.0](https://github.com/JN0V/workline/compare/v0.63.0...v0.64.0) (2026-11-01)
 
 
