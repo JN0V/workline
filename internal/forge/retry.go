@@ -147,8 +147,8 @@ func again(forge string, read bool, try int, f failure) (wait time.Duration, not
 
 // RateWaitEnv, a duration, is how long a call refused for the forge's
 // rate waits for its reset, past retry.waitMax: set by a run of the line,
-// for its roles too, whose job can wait (#804); never by a person's
-// push, which waits a minute at most.
+// for its roles too, to its few minutes (line.BudgetWaitMax, #804); never
+// by a person's push, which waits a minute at most.
 const RateWaitEnv = "WORKLINE_RATE_WAIT"
 
 // rateWait is RateWaitEnv's duration; none, or unreadable, 0.

@@ -364,9 +364,10 @@ whose result moves the issue to the next. The table is the routing's
 - **The API budget first**: on a forge that says it at no cost
   (GitHub's `rate_limit`), the issue line and the reconciler read what
   the token has left before they read an issue. Under a tenth, they wait
-  for the reset, up to an hour, said in the summary and a warning
-  (`api-budget-low`); a call refused for the rate half-way, theirs or a
-  role's, waits for it too
+  for a reset within `BudgetWaitMax` (5 min; `api-budget-low`); further
+  off, the run is deferred, passing, nothing read nor run, the step left
+  due for the reconciler (`api-budget-deferred`). A call refused for the
+  rate half-way, theirs or a role's, waits for a reset as close
   ([the API budget](../github/calls.md#the-api-budget)).
 - **The spec review at once**: where the project routes the reviewer
   on `issue`, refine's step runs it after the product owner, on that

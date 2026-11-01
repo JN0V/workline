@@ -37,22 +37,23 @@ EOF
 	}
 }
 
-// A call refused for the rate, its reset half an hour away, is not
-// waited for on a person's push; in a run of the line (RateWaitEnv), it
-// is, up to the tries' bound (#804).
+// A call refused for the rate, its reset three minutes away, is not
+// waited for on a person's push; in a run of the line (RateWaitEnv, a
+// few minutes), it is, up to the tries' bound; half an hour away, never:
+// the job would hold its runner (#804).
 func TestRateWaitInALineRun(t *testing.T) {
-	f := failure{code: 403, limited: true, header: http.Header{"Retry-After": {"1800"}}}
+	f := failure{code: 403, limited: true, header: http.Header{"Retry-After": {"180"}}}
 	if wait, note := again("GitHub", true, 1, f); wait >= 0 || !strings.Contains(note, "longer than workline waits") {
 		t.Errorf("no line run: waits %s, %q; want not tried again, said", wait, note)
 	}
-	t.Setenv(RateWaitEnv, "61m")
-	if wait, note := again("GitHub", true, 1, f); wait != 30*time.Minute || note != "" {
-		t.Errorf("a line run: waits %s, %q; want 30 min", wait, note)
+	t.Setenv(RateWaitEnv, "5m")
+	if wait, note := again("GitHub", true, 1, f); wait != 3*time.Minute || note != "" {
+		t.Errorf("a line run: waits %s, %q; want 3 min", wait, note)
 	}
 	if wait, _ := again("GitHub", true, retry.tries, f); wait >= 0 {
 		t.Errorf("the last try: waits %s; want not tried again", wait)
 	}
-	f.header = http.Header{"Retry-After": {"7200"}}
+	f.header = http.Header{"Retry-After": {"1800"}}
 	if wait, _ := again("GitHub", true, 1, f); wait >= 0 {
 		t.Errorf("a reset past the line's wait: waits %s; want not tried again", wait)
 	}

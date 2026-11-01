@@ -1,0 +1,25 @@
+case: routing/state-deferred-past-the-api-budget
+about: >
+  A run whose forge says less than a tenth of the token's API budget is
+  left, its reset more than a few minutes away, does not hold its CI
+  runner waiting (#804): it is deferred. It reads and runs nothing,
+  writes no record, and ends with no failure; the summary says the
+  reset's time, and the issue's step stays due for the hourly
+  reconciler, which runs after the reset.
+given:
+  repo: tested
+  config:
+    routing: {events: {issue: [tester, developer]}}
+  forge:
+    budget: {resource: core, remaining: 12, limit: 1000, reset-in: 2220}
+    issues:
+      - {id: 3, title: "Multiply", labels: ["workline:ready"], body: "## Need\n\nI want to multiply.\n"}
+run: {route: issue, target: {issue: 3}, open-merge-request: true, ai: "fake:developer-nothing"}
+expect:
+  status: pass
+  summary: "issue: #3 deferred: API budget low: 12 of 1000 core calls left this hour"
+  agent-calls: 0
+  findings: [{rule: api-budget-deferred, level: warn, message: "over the 5 min a run waits: deferred, nothing run"}]
+  forge:
+    issues:
+      - {id: 3, labels: ["workline:ready"], comments: 0, comments-read: 0}
