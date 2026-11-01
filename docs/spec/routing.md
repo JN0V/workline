@@ -355,7 +355,12 @@ whose result moves the issue to the next. The table is the routing's
   or a role not routed there. Without a target, the event's steps run
   as listed.
 - **The product owner on `issue`** reads the issue named alone, at
-  once, not a night's share: one with no state of its own yet too.
+  once, not a night's share: one with no state of its own yet too. On
+  `issue` with no issue named, it reads none.
+- **The spec review at once**: where the project routes the reviewer
+  on `issue`, refine's step runs it after the product owner, on that
+  issue's spec alone (#128). Its review, written since, makes the step
+  due again: the product owner reads it then, and readies the issue.
 - **Moves are exclusive**: the next state's label on, every other
   state's off, in one call.
 - **Who moves it**: the product owner's ready sends an issue with named

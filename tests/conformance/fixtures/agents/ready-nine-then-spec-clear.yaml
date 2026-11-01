@@ -1,0 +1,5 @@
+# The product owner woken on #9 to refine readies it, held for the
+# reviewer's spec review; then each spec lens finds nothing.
+calls:
+  - - ready: {issue: 9, why: "four sections, Need and Validation the reporter's"}
+  - []

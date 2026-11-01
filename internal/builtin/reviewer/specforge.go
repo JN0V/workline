@@ -30,6 +30,24 @@ import (
 // gardening line's, after the product owner.
 const gardening = "schedule"
 
+// issueEvent is the line of states' event (ADR-0059): the product owner
+// woken on one issue to refine, the reviewer reads that issue's spec
+// alone, at once, not the night's queue.
+const issueEvent = "issue"
+
+// onlyIssue is the issue an `issue` event names: its spec alone is read;
+// -1 on that event with none named, nothing read; 0 on another event.
+func onlyIssue() int {
+	if os.Getenv("WORKLINE_EVENT") != issueEvent {
+		return 0
+	}
+	kind, num, _ := strings.Cut(os.Getenv("WORKLINE_TARGET"), ":")
+	if n, err := strconv.Atoi(num); kind == "issue" && err == nil && n > 0 {
+		return n
+	}
+	return -1
+}
+
 // keeper is the role whose refined issues the reviewer reads on the forge:
 // it keeps their state (docs/spec/backlog-acts.md).
 const keeper = "product-owner"
@@ -92,7 +110,11 @@ func waitingSpecs(repo string, f forge.Backlog) (ws []waiting, unread []verdict.
 		unread = append(unread, *said)
 	}
 	backlog.Order(open)
+	only := onlyIssue()
 	for _, is := range open {
+		if only != 0 && is.ID != only {
+			continue
+		}
 		if backlog.Readied(is) || len(backlog.NotReady(is, nil, true)) > 0 {
 			continue
 		}

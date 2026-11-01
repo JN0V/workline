@@ -28,6 +28,10 @@ type Record struct {
 	Body    string `json:"body"`
 	Labeled string `json:"labeled,omitempty"`
 	Hops    int    `json:"hops"`
+	// Spec: the hash of the reviewer's comment on the issue's spec, when
+	// it has one (#128): a review written since makes the step due again,
+	// the product owner reading it then.
+	Spec string `json:"spec,omitempty"`
 }
 
 // StateWrite is what the line writes on an issue once its step ran:
@@ -55,10 +59,30 @@ func bodyHash(body string) string {
 
 // readRecord is the line's record on issue id; false when there is none.
 func readRecord(b forge.Backlog, id int) (Record, bool, error) {
+	r, had, _, err := readRecordSpec(b, id)
+	return r, had, err
+}
+
+// readRecordSpec is readRecord, with the hash of the reviewer's comment
+// on the issue's spec ("" with none).
+func readRecordSpec(b forge.Backlog, id int) (Record, bool, string, error) {
 	comments, err := b.Comments(forge.Target{Kind: "issue", ID: id})
 	if err != nil {
-		return Record{}, false, err
+		return Record{}, false, "", err
 	}
+	spec := ""
+	for _, c := range slices.Backward(comments) {
+		if strings.Contains(c, backlog.SpecMarker) {
+			spec = bodyHash(c)
+			break
+		}
+	}
+	r, had := recordIn(comments)
+	return r, had, spec, nil
+}
+
+// recordIn is the line's record among an issue's comments.
+func recordIn(comments []string) (Record, bool) {
 	sticky := forge.Marker("sticky=" + recordKey)
 	for _, c := range slices.Backward(comments) {
 		if !strings.Contains(c, sticky) {
@@ -71,10 +95,10 @@ func readRecord(b forge.Backlog, id int) (Record, bool, error) {
 		data, _, _ := strings.Cut(after, " -->")
 		var r Record
 		if json.Unmarshal([]byte(data), &r) == nil {
-			return r, true, nil
+			return r, true
 		}
 	}
-	return Record{}, false, nil
+	return Record{}, false
 }
 
 // recordBody is the comment holding r: what a person reads, then the
@@ -100,9 +124,9 @@ func plural(n int, one, many string) string {
 // record says that step ran on the same state, body and labelling; else
 // the hops it will be, the record's plus one for a state not acted on
 // before.
-func due(s routing.State, is forge.Issue, labeled string, rec Record, had bool) (Record, bool) {
-	now := Record{State: s.Name, Body: bodyHash(is.Body), Labeled: labeled, Hops: rec.Hops}
-	if had && rec.State == now.State && rec.Body == now.Body && rec.Labeled == now.Labeled {
+func due(s routing.State, is forge.Issue, labeled, spec string, rec Record, had bool) (Record, bool) {
+	now := Record{State: s.Name, Body: bodyHash(is.Body), Labeled: labeled, Hops: rec.Hops, Spec: spec}
+	if had && rec.State == now.State && rec.Body == now.Body && rec.Labeled == now.Labeled && rec.Spec == now.Spec {
 		return rec, false
 	}
 	if rec.State == BlockedState {

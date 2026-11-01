@@ -55,6 +55,7 @@ file. All roles: [docs/roles.md](../../docs/roles.md).
 | `merge-request` | CI, opt-in: `workline init --review` adds it to the line | a draft: the rules only, no lens ([more](docs/ready.md)); every lens once, on the whole change, when it becomes ready; then the commits not reviewed yet, one lens a push, five commits a push for a lens that warns ([more](docs/ready.md#after-ready-only-what-is-new)) |
 | `spec` | `workline review --spec <file>` or `--issue <n>` | the spec, every spec lens |
 | `schedule` | CI gardening, opt-in: `reviewer` after `product-owner` in the `schedule` line | one issue the product owner refined, every spec lens |
+| `issue` | the line of states, opt-in: `reviewer` in the `issue` line, after the product owner woke on an issue to refine | that issue's spec, at once ([line of states](../../docs/spec/routing.md#the-line-of-states)) |
 
 - **Outputs**: on a machine, the findings and `out/review.json` for your
   agent to fix; on a merge request, each important finding as a comment

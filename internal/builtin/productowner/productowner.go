@@ -658,7 +658,7 @@ func Pre(runDir, repo string) int {
 	// only those a person commented on are read: the role slows down
 	// rather than piling up proposals (ADR-0038).
 	toRead := slices.Concat(answered, ahead, again, never, changed, behind, catchUp)
-	if n := issueEvent(); n > 0 {
+	if n := issueEvent(); n != 0 {
 		// One issue's state woke the role (ADR-0059): that issue alone is
 		// read, whatever changed; the rest wait for their own event, or
 		// the night.
@@ -1661,15 +1661,16 @@ var levelSays = map[string]string{
 }
 
 // issueEvent is the issue an `issue` event names, its state having woken
-// the role (ADR-0059); 0 on any other event.
+// the role (ADR-0059); -1 on that event with none named, nothing read; 0
+// on any other event.
 func issueEvent() int {
 	if os.Getenv("WORKLINE_EVENT") != "issue" {
 		return 0
 	}
 	kind, num, _ := strings.Cut(os.Getenv("WORKLINE_TARGET"), ":")
 	n, err := strconv.Atoi(num)
-	if kind != "issue" || err != nil {
-		return 0
+	if kind != "issue" || err != nil || n <= 0 {
+		return -1
 	}
 	return n
 }

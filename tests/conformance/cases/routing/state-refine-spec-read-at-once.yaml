@@ -1,0 +1,26 @@
+case: routing/state-refine-spec-read-at-once
+about: >
+  Where the project has the reviewer read the specs the product owner
+  refines (#128) and routes it on `issue`, refine's step has it read
+  that issue's spec at once, after the product owner, not at night
+  (ADR-0059): that issue's alone. Its review written, the line's record
+  keeps no hash of it yet: the next event, or the reconciler, finds the
+  step due again, and the product owner reads the review then.
+given:
+  repo: backlog
+  config:
+    routing: {events: {schedule: [product-owner, reviewer], issue: [product-owner, reviewer, tester, developer]}}
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.\n\n## Need\n\nThe monthly report counts every sale.\n\n## Verification\n\nA test writes three rows.\n\n## Validation\n\n- **A known day:** Given a day of three sales, When Ann opens it, Then she counts three.\n\n## Scope\n\nsrc/export/csv.go", author: ann, insider: true, labels: [workline:to-refine], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 10, title: "Rows lost again", body: "## Need\n\nThe monthly report counts every sale.\n\n## Verification\n\nA test writes three rows.\n\n## Validation\n\n- **Another day:** Given a day of two sales, When Ann opens it, Then she counts two.\n\n## Scope\n\nsrc/export/csv.go", author: ann, insider: true, labels: [workline:to-refine], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {route: issue, target: {issue: 9}, ai: fake:ready-nine-then-spec-clear}
+expect:
+  status: pass
+  findings: [{rule: spec-not-reviewed, where: "#9"}]
+  forge:
+    issues:
+      - id: 9
+        labels: [workline:to-refine]
+        comment-contains: ["<!-- workline:sticky=reviewer/spec -->", "<!-- workline:spec-review body=", "\"state\":\"refine\""]
+      - {id: 10, comments: 1}

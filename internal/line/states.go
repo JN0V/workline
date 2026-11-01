@@ -68,7 +68,7 @@ func stateOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue) 
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "state-wakes-none", Level: "info", Where: where, Message: why})
 		return nil, nil, nil
 	}
-	rec, had, err := readRecord(b, is.ID)
+	rec, had, spec, err := readRecordSpec(b, is.ID)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -76,7 +76,7 @@ func stateOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue) 
 	if err != nil {
 		return nil, nil, err
 	}
-	now, ok := due(s, is, t.Labeled, rec, had)
+	now, ok := due(s, is, t.Labeled, spec, rec, had)
 	if !ok {
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "state-acted", Level: "info", Where: where,
 			Message: fmt.Sprintf("its state, %s, woke the %s already, on the same body and labelling: nothing more to run", s.Name, name)})
@@ -169,6 +169,17 @@ func runStateStep(res *Result, cfg *routing.Config, f forge.Forge, spec string, 
 	res.Status = worst(res.Status, status)
 	if status == verdict.BlockedExternal {
 		return
+	}
+	if st.role == backlog.Keeper && slices.Contains(cfg.Events[IssueEvent], backlog.SpecReviewer) {
+		// The spec the product owner refined, read by the reviewer at
+		// once, as the night's line does after it (#128): its review
+		// written, the step is due again, the product owner reading it.
+		o.Role = backlog.SpecReviewer
+		_, rs := runRole(res, cfg, o, 0)
+		res.Status = worst(res.Status, rs)
+		if rs == verdict.BlockedExternal {
+			return
+		}
 	}
 	keepState(res, cfg, f, spec, o, st.write, st.role)
 }
