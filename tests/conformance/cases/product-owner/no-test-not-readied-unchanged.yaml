@@ -6,7 +6,9 @@ about: >
   is the one the tester read and no proof is picked, neither the spec
   review, nor workline:accepted, nor the agent's ready alone moves it:
   the issue waits in refine, said on it for a person. A body rewritten
-  since the tester read it goes to its tests again.
+  since the tester read it goes to its tests again; so does one whose
+  tester record, older, does not say which body it read: the tester's
+  next word records it.
 given:
   repo: backlog
   config:
@@ -44,6 +46,16 @@ given:
           - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: b9528f775bfa\nno-test: bdcd740379aa\n```\n\n<!-- workline:sticky=product-owner/state -->"
           - "No important finding open.\n\n<!-- workline:spec-review body=b9528f775bfa round=2 open=0 in= -->\n\n<!-- workline:sticky=reviewer/spec -->"
           - "**The tester** finds no test possible for this issue.\n\n<!-- workline:tester-proof {\"kind\":\"none\",\"reason\":\"the change is the wording of a page: no behaviour a test checks.\",\"body\":\"b9528f775bfa\"} -->\n<!-- workline:sticky=tester/issue -->"
+      - id: 12
+        title: Rows lost, an older word
+        body: "## Need\n\nThe monthly report counts every sale.\n\n## Verification\n\nA test writes three rows.\n\n## Validation\n\nAnn opens a known day.\n\n## Scope\n\nsrc/export/csv.go"
+        author: ann
+        insider: true
+        labels: [workline:to-refine]
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: 7d6b5529bb37\nno-test: bdcd740379aa\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "No important finding open.\n\n<!-- workline:spec-review body=7d6b5529bb37 round=2 open=0 in= -->\n\n<!-- workline:sticky=reviewer/spec -->"
+          - "**The tester** finds no test possible for this issue.\n\n<!-- workline:tester-proof {\"kind\":\"none\",\"reason\":\"the change is the wording of a page: no behaviour a test checks.\"} -->\n<!-- workline:sticky=tester/issue -->"
 run: {role: product-owner, event: schedule, ai: "fake:po-ready-no-proof"}
 expect:
   findings:
@@ -57,3 +69,4 @@ expect:
         comment-contains: ["**The product owner** leaves this issue in refine, for a person", "no behaviour a test checks", "`proof: <kind> — why`", "no-test: bdcd740379aa"]
       - {id: 10, labels: [workline:ready]}
       - {id: 11, labels: [workline:to-refine, workline:accepted]}
+      - {id: 12, labels: [workline:ready]}

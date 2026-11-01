@@ -239,17 +239,19 @@ func NoTest(comments []string) (reason, digest string, ok bool) {
 
 // NoTestStands says whether the tester's "no test possible" on an issue
 // still stands (#815): no kind picked for it, and the issue's body the one
-// the tester read, or its record does not say which. A ready with no
-// proof would send it back to its tests unchanged.
+// the tester read. A ready with no proof would send it back to its tests
+// unchanged. A record that does not say which body it read, from before
+// #815, stands for none: it could never be lifted by a rewrite, and the
+// tester's next word records the body.
 func NoTestStands(is forge.Issue, comments []string, role string) bool {
 	p, ok := testerRecord(comments)
-	if !ok || p.Kind != KindNone {
+	if !ok || p.Kind != KindNone || p.Body == "" {
 		return false
 	}
 	if _, picked := ReadProof(comments, role); picked {
 		return false
 	}
-	return p.Body == "" || p.Body == BodyDigest(is.Body)
+	return p.Body == BodyDigest(is.Body)
 }
 
 // NoTestSilent opens the product owner's word on an issue it leaves in
@@ -258,11 +260,10 @@ const NoTestSilent = "the tester found no test possible, and no proof was picked
 
 // SentBackUnchanged is the tester's "no test possible" on an issue sent to
 // its tests again, its body the one the tester read, no kind picked
-// (#815): its record; false when the record does not say which body it
-// read.
+// (#815): its record; false otherwise (NoTestStands).
 func SentBackUnchanged(is forge.Issue, comments []string, role string) (Proof, bool) {
 	p, ok := testerRecord(comments)
-	if !ok || p.Body == "" || !NoTestStands(is, comments, role) {
+	if !ok || !NoTestStands(is, comments, role) {
 		return Proof{}, false
 	}
 	return p, true
