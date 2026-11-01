@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.64.0](https://github.com/JN0V/workline/compare/v0.63.0...v0.64.0) (2026-11-01)
+
+
+### Features
+
+* **product-owner:** back to refine needs no person's yes ([#799](https://github.com/JN0V/workline/issues/799)) ([043f4a2](https://github.com/JN0V/workline/commit/043f4a29bfd6755af163f6c598e90531d4a2a9ad))
+
+
+### Bug Fixes
+
+* **line:** an issue to refine wakes the product owner ([#781](https://github.com/JN0V/workline/issues/781)) ([41d38e2](https://github.com/JN0V/workline/commit/41d38e2192723c1e0f644fee1a59581509fbcf88))
+* **line:** refine's spec review at once, not at night ([#787](https://github.com/JN0V/workline/issues/787)) ([368b3f2](https://github.com/JN0V/workline/commit/368b3f2efba9fe6def89aae9d64a9a6686c537dc))
+* **line:** the reconciler runs on the line's events too ([#798](https://github.com/JN0V/workline/issues/798)) ([830de5b](https://github.com/JN0V/workline/commit/830de5ba709804f4cf061b16d7a5c71fdaa4c33b))
+* **product-owner:** a kept ready issue goes to its tests ([#796](https://github.com/JN0V/workline/issues/796)) ([bec920b](https://github.com/JN0V/workline/commit/bec920b4b584b2c326bdcb48e9c328f7de3b0387))
+* **product-owner:** a move of the line is no ready undone ([#792](https://github.com/JN0V/workline/issues/792)) ([70d5bf9](https://github.com/JN0V/workline/commit/70d5bf9e34ded2d7d8a998cb5c737dd46ede9bdd))
+* **tester:** a folder the Scope names gives its files ([#793](https://github.com/JN0V/workline/issues/793)) ([e3c0558](https://github.com/JN0V/workline/commit/e3c0558923876371e419bd6fde78b030d149784c))
+* **tester:** an issue it wrote no tests for moves on ([#797](https://github.com/JN0V/workline/issues/797)) ([20c0955](https://github.com/JN0V/workline/commit/20c0955c82759bf35917c716a43cec889fb8e596))
+* **tester:** its own reply by the App never answered again ([#779](https://github.com/JN0V/workline/issues/779)) ([b398987](https://github.com/JN0V/workline/commit/b398987c74a13a7c6ed27bd99b1ab467fcf1add5))
+
 ## [0.63.0](https://github.com/JN0V/workline/compare/v0.62.0...v0.63.0) (2026-10-31)
 
 
