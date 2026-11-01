@@ -1,0 +1,23 @@
+case: tester/scope-folder-gives-its-files
+about: >
+  A Scope that names a folder, not a file, gives the tester that
+  folder's own files as the code it names, its tests aside: given
+  nothing, it found no test possible (#791, `internal/line`).
+given:
+  repo: tested
+  setup:
+    - "mkdir -p src/calc && printf 'add() { echo $(($1 + $2)); }\\n' > src/calc/add.sh && printf 'x\\n' > src/top.sh && git add src && git commit -qm 'src' && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+    routing: {events: {schedule: [tester]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:needs-tests"]
+        body: "## Need\n\nWhen I total an order, I want to multiply a price by a count, so I need not add it up by hand.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **By zero:** Given the library, When I multiply 5 by 0, Then I get 0.\n\n---\n\n## Verification\n\nA test a scenario, in tests/.\n\n## Scope\n\n- `src/calc`: a `mul` function beside `add`.\n"
+run: {route: schedule, open-merge-request: true, ai: "fake:tester-two-scenarios"}
+expect:
+  status: pass
+  run-files:
+    in/task.md: {contains: "### `src/calc/add.sh`", not-contains: "### `src/top.sh`"}

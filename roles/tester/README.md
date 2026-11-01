@@ -65,8 +65,8 @@ workline test write --issue 42 --ai claude
   ([writing an issue](../product-owner/docs/writing.md)):
   `- **Old debt:** Given …, When …, Then …`.
 - **What the agent reads**: the scenarios, the Need, Verification and
-  Scope, the files the Scope names, the tests beside them, the test
-  command.
+  Scope, the files the Scope names (a folder named: its own files),
+  the tests beside them, the test command.
 - **One test a scenario**: its name holds the scenario's name, its
   comment the Given / When / Then. A scenario no test can check is said
   in a note, listed in the Draft as not tested.

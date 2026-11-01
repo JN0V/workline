@@ -181,6 +181,22 @@ func Pre(runDir, repo string) int {
 	return 0
 }
 
+// folderFiles are the tracked files directly in the folder word names, none
+// when it names no folder of the repository.
+func folderFiles(word string, files []string) []string {
+	dir := path.Clean(strings.TrimSuffix(strings.ReplaceAll(word, `\`, "/"), "/"))
+	if dir == "." || strings.HasPrefix(dir, "../") || path.IsAbs(dir) {
+		return nil
+	}
+	var out []string
+	for _, f := range files {
+		if path.Dir(f) == dir {
+			out = append(out, f)
+		}
+	}
+	return out
+}
+
 // writeCode gives the Scope's files, then the test files beside them, whole
 // up to code-lines-max lines in all, and names the project's other tests.
 func writeCode(b *strings.Builder, repo, scope string, s Settings) {
@@ -190,6 +206,15 @@ func writeCode(b *strings.Builder, repo, scope string, s Settings) {
 	for _, w := range work.ScopeWords(scope) {
 		if p := work.InRepo(w, files); p != "" && !slices.Contains(named, p) {
 			named = append(named, p)
+			continue
+		}
+		// A folder the Scope names: its own files, not its tests nor its
+		// subfolders', given as the code it names (#791: `internal/line`
+		// named, nothing given, no test possible).
+		for _, f := range folderFiles(w, files) {
+			if !pathglob.Any(s.Paths, f) && !slices.Contains(named, f) {
+				named = append(named, f)
+			}
 		}
 	}
 	dirs := map[string]bool{}
