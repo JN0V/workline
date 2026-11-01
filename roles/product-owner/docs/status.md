@@ -141,7 +141,8 @@ in [tests/evaluation/cases/product-owner](../../../tests/evaluation/cases/produc
 - **Next and stuck**, in the job's summary: `summary-*`, `report-stuck-*`.
 - **A changed need**: `changed-*`, `unchanged-need-flags-nothing`,
   `unready-accepted-moves-back`, `unready-waiting-done-alone`,
-  `unready-undone-proposed-there`, `archived-source-flags-nothing`.
+  `unready-undone-proposed-there`, `unready-undone-waiting-stays-proposed`,
+  `archived-source-flags-nothing`.
 - **The weekly sample of its acts**, folded into every role's, each act
   keeping what its run read — `at`, `model`, `body`
   ([ADR-0046](../../../docs/adr/0046-the-auditor-re-checks-every-roles-acts.md)):

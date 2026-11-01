@@ -1,0 +1,25 @@
+case: product-owner/unready-undone-waiting-stays-proposed
+about: >
+  A person undid the role's move back to refine on an issue, and the next
+  move back there was proposed: at the run after, with no agent, it stays
+  proposed, waiting for a person's workline:accepted — a waiting move is
+  done alone only where no person undid one (ADR-0038, amended; ADR-0059,
+  amended).
+given:
+  repo: backlog
+  forge:
+    issues:
+      - id: 11
+        title: "Keep the last row in the CSV export"
+        body: "Part of #9."
+        author: ann
+        insider: true
+        labels: [workline:ready, workline:proposed]
+        comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nlabel: workline:proposed\nproposed:\n  - act: unready\n    line: 'Move #11 back to refine (workline:ready off, workline:to-refine on): #9 now asks for JSON.'\n    proposal: {do: unready, issue: 11, why: '#9 now asks for JSON.'}\nundone:\n  - act: unready\n    evidence: '#11 put back to ready by @dev; the role had moved it back to refine'\n```\n\n<!-- workline:sticky=product-owner/state -->"]
+run: {role: product-owner, event: schedule, ai: none}
+expect:
+  agent-calls: 0
+  findings: [{rule: undone-here, where: "#11", message: "a person undid a unready of the role's on this issue"}]
+  forge:
+    issues:
+      - {id: 11, labels: [workline:ready, workline:proposed], comments: 1, comment-contains: "**Proposes**: Move it back to refine"}
