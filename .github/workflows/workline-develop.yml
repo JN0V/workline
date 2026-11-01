@@ -146,7 +146,13 @@ jobs:
           ISSUE: ${{ github.event.issue.number || inputs.issue }}
         run: |
           printf '%s' "$ISSUE" | grep -Eqx '[0-9]+' || exit 0
-          workline route issue --target "issue:$ISSUE" --ai none --forge github --open-merge-request --input reconcile=list --json > next.json || true
+          # Asked again after a pause: GitHub lists a comment the apply
+          # just wrote some seconds later, a review among them (#757).
+          for wait in 0 10 20; do
+            sleep "$wait"
+            workline route issue --target "issue:$ISSUE" --ai none --forge github --open-merge-request --input reconcile=list --json > next.json || true
+            jq -e --argjson n "$ISSUE" '(.due // []) | index($n)' next.json >/dev/null && break
+          done
           if jq -e --argjson n "$ISSUE" '(.due // []) | index($n)' next.json >/dev/null; then
             gh workflow run "$(basename "${GITHUB_WORKFLOW_REF%%@*}")" --ref "$GITHUB_REF_NAME" -f issue="$ISSUE"
             echo "issue=$ISSUE" >> "$GITHUB_OUTPUT"
