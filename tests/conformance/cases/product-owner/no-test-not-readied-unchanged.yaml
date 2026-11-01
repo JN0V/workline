@@ -1,0 +1,59 @@
+case: product-owner/no-test-not-readied-unchanged
+about: >
+  The tester found no test possible and sent the issue back to refine
+  (#815). A ready with no proof would send it to its tests unchanged,
+  to be sent back again until the hop cap blocks it. So, while the body
+  is the one the tester read and no proof is picked, neither the spec
+  review, nor workline:accepted, nor the agent's ready alone moves it:
+  the issue waits in refine, said on it for a person. A body rewritten
+  since the tester read it goes to its tests again.
+given:
+  repo: backlog
+  config:
+    routing:
+      events: {schedule: [product-owner, reviewer]}
+  forge:
+    issues:
+      - id: 9
+        title: Rows lost
+        body: "Rows lost.\n\n## Need\n\nThe monthly report counts every sale.\n\n## Verification\n\nSessions feel right to the users.\n\n## Validation\n\nAnn opens a known day.\n\n## Scope\n\nsrc/export/csv.go"
+        author: ann
+        insider: true
+        labels: [workline:to-refine]
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: d424ff914f28\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "No important finding open.\n\n<!-- workline:spec-review body=d424ff914f28 round=2 open=0 in= -->\n\n<!-- workline:sticky=reviewer/spec -->"
+          - "**The tester** finds no test possible for this issue.\n\n<!-- workline:tester-proof {\"kind\":\"none\",\"reason\":\"the change is the wording of a page: no behaviour a test checks.\",\"body\":\"d424ff914f28\"} -->\n<!-- workline:sticky=tester/issue -->"
+      - id: 10
+        title: Rows lost again
+        body: "## Need\n\nThe monthly report counts every sale.\n\n## Verification\n\nA test writes three rows.\n\n## Validation\n\nAnn opens a known day.\n\n## Scope\n\nsrc/export/csv.go"
+        author: ann
+        insider: true
+        labels: [workline:to-refine]
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: 7d6b5529bb37\nno-test: bdcd740379aa\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "No important finding open.\n\n<!-- workline:spec-review body=7d6b5529bb37 round=2 open=0 in= -->\n\n<!-- workline:sticky=reviewer/spec -->"
+          - "**The tester** finds no test possible for this issue.\n\n<!-- workline:tester-proof {\"kind\":\"none\",\"reason\":\"the change is the wording of a page: no behaviour a test checks.\",\"body\":\"111111111111\"} -->\n<!-- workline:sticky=tester/issue -->"
+      - id: 11
+        title: Rows lost, put to a person
+        body: "## Need\n\nEvery row exported.\n\n## Verification\n\nA test writes three rows.\n\n## Validation\n\nAnn opens a known day.\n\n## Scope\n\nsrc/export/csv.go"
+        author: ann
+        insider: true
+        labels: [workline:to-refine, workline:accepted]
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: b9528f775bfa\nno-test: bdcd740379aa\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "No important finding open.\n\n<!-- workline:spec-review body=b9528f775bfa round=2 open=0 in= -->\n\n<!-- workline:sticky=reviewer/spec -->"
+          - "**The tester** finds no test possible for this issue.\n\n<!-- workline:tester-proof {\"kind\":\"none\",\"reason\":\"the change is the wording of a page: no behaviour a test checks.\",\"body\":\"b9528f775bfa\"} -->\n<!-- workline:sticky=tester/issue -->"
+run: {role: product-owner, event: schedule, ai: "fake:po-ready-no-proof"}
+expect:
+  findings:
+    - {rule: no-test-unanswered, where: "#9"}
+    - {rule: no-test-waits, where: "#9"}
+    - {rule: done, where: "#10", message: "Moved #10 to ready: the reviewer read its spec (round 2): no important finding open"}
+  forge:
+    issues:
+      - id: 9
+        labels: [workline:to-refine]
+        comment-contains: ["**The product owner** leaves this issue in refine, for a person", "no behaviour a test checks", "`proof: <kind> — why`", "no-test: bdcd740379aa"]
+      - {id: 10, labels: [workline:ready]}
+      - {id: 11, labels: [workline:to-refine, workline:accepted]}

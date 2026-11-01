@@ -674,7 +674,10 @@ func (p *Plan) Persist(f forge.Forge, role string) error {
 		p.stateOf(id, st)
 		if why, ok := p.Silent[id]; ok {
 			st.Silent = why
-		} else if is.Closed || p.decidedOn(id) || p.Answers[id] != nil || len(missingSections(is.Body)) == 0 {
+		} else if waits := strings.HasPrefix(st.Silent, NoTestSilent) && NoTestStands(*is, comments, role); is.Closed || p.decidedOn(id) || p.Answers[id] != nil ||
+			// Left for a person after "no test possible": said until it
+			// is answered (#815).
+			len(missingSections(is.Body)) == 0 && !waits {
 			// Acted on, answered, or complete since: nothing left unsaid.
 			st.Silent = ""
 		}
