@@ -1738,8 +1738,8 @@ func TestDeveloperTemplatesRouteTheReadyIssue(t *testing.T) {
 	for _, s := range rec.Steps {
 		told = told || strings.Contains(s.Run, `--input "last=$LAST"`)
 	}
-	if !strings.Contains(rec.If, "github.event_name == 'issues'") || strings.Contains(rec.If, "github.event_name == 'workflow_dispatch' ||") ||
-		!strings.HasPrefix(fmt.Sprint(rec.Concurrency["group"]), "workline-reconcile-") || rec.Concurrency["cancel-in-progress"] != false || !told {
+	if !strings.Contains(rec.If, "(github.event_name == 'issues' && startsWith(github.event.label.name, 'workline:'))") || strings.Contains(rec.If, "github.event_name == 'workflow_dispatch' ||") ||
+		rec.Concurrency["group"] != "workline-reconcile" || rec.Concurrency["cancel-in-progress"] != false || !told {
 		t.Errorf("workline-develop.yml, reconcile: not started by the events the workflow gets, one at a time, told when it last ran: %q %v", rec.If, rec.Concurrency)
 	}
 	routed := false

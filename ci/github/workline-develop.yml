@@ -175,13 +175,13 @@ jobs:
   # or by hand (input reconcile); and on an issue labelled, the line's
   # every hop, once 55 minutes passed since the last run that succeeded,
   # kept in the Actions cache (#789; why: the developer's triggers page).
-  # One at a time, forced runs apart.
+  # One at a time.
   reconcile:
     if: >-
-      github.event_name == 'schedule' || github.event_name == 'issues' ||
+      github.event_name == 'schedule' || (github.event_name == 'issues' && startsWith(github.event.label.name, 'workline:')) ||
       (github.event_name == 'workflow_dispatch' && inputs.reconcile == 'true')
     concurrency:
-      group: workline-reconcile-${{ (github.event_name == 'schedule' || inputs.reconcile == 'true') && 'forced' || 'event' }}
+      group: workline-reconcile
       cancel-in-progress: false
     runs-on: ubuntu-latest
     permissions: {contents: read, issues: read, actions: write}
