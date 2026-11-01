@@ -3,6 +3,7 @@ sources: [ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workli
 checked: eebe4270
 verified: agent:documentalist
 judged: e8a46f7
+judged-in-parts: b3b9aad
 ---
 # One pipeline per merge request on GitLab
 
