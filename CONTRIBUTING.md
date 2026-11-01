@@ -3,6 +3,7 @@ sources: [cmd/workline, tests/conformance/pending.txt]
 checked: 8ccdfb74
 judged: 010367e
 verified: agent:claude-code
+judged-in-parts: b3b9aad
 -->
 # Contributing
 
