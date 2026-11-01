@@ -46,7 +46,9 @@ routing:
   do.
   - **The next step**: once `apply` applied, it asks the line, no
     agent, whether the issue's new state is due, and starts that run
-    (`workflow_dispatch`, which the job's own token may start).
+    (`workflow_dispatch`, which the job's own token may start). Not
+    due, it asks again after 10 and 20 s: GitHub lists a comment the
+    apply just wrote some seconds later.
   - **About hourly**, the `reconcile` job starts what an event missed, at most
     `reconcile-max` issues a run, each its own run.
   - **Not on the schedule alone**: GitHub runs schedules late or not at
