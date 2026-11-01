@@ -42,6 +42,10 @@ type Config struct {
 	// WIP: each state's limit, by its name (ADR-0059, decision 9): the
 	// shipped ones, a project's laid over them state by state; 0, none.
 	WIP map[string]int `yaml:"wip"`
+	// Stale: each state's age limit, in days, by its name (ADR-0059,
+	// decision 7): the shipped ones, a project's laid over them state by
+	// state; 0, none.
+	Stale map[string]int `yaml:"stale"`
 }
 
 // Load returns the shipped routing with the project's changes applied.
@@ -97,6 +101,15 @@ func Load(repo string) (*Config, error) {
 			}
 			c.WIP[state] = n
 		}
+		if err := checkStale(p.Stale, c.States); err != nil {
+			return nil, role.ConfigErrorf("%s", err)
+		}
+		for state, days := range p.Stale {
+			if c.Stale == nil {
+				c.Stale = map[string]int{}
+			}
+			c.Stale[state] = days
+		}
 		for moment, seconds := range p.Budgets {
 			if !(seconds > 0) || math.IsInf(seconds, 1) { // NaN and infinity too: neither is ever gone over
 				return nil, role.ConfigErrorf("routing.budgets.%s is %v: a budget is a number of seconds above 0", moment, seconds)
@@ -113,6 +126,11 @@ func Load(repo string) (*Config, error) {
 	for state := range c.WIP {
 		if _, ok := c.State(state); !ok {
 			delete(c.WIP, state) // a shipped limit on a state the project's table lacks
+		}
+	}
+	for state := range c.Stale {
+		if _, ok := c.State(state); !ok {
+			delete(c.Stale, state) // the same for an age limit
 		}
 	}
 	return &c, nil

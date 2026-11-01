@@ -46,6 +46,15 @@ reconcile-max: 3
 # `routing: wip:`, state by state; 0 lifts a limit.
 wip:
   ready: 5
+# Each state's age limit, in days (ADR-0059, decision 7), from when its
+# label was put on (the forge's label events, never the last update).
+# Past it, an issue whose Scope names a path or code name the repository
+# no longer holds goes back to refine, the reason on it. Ready 30, Tests
+# 14 (the tester is woken at once). A project sets its own in
+# `routing: stale:`, state by state; 0 lifts a limit.
+stale:
+  ready: 30
+  tests: 14
 # Each moment's wait budget, in seconds (ADR-0050): a run over it says so
 # in its summary, naming the step that took the time; it never blocks. A
 # project sets its own in `routing: budgets:`, moment by moment.

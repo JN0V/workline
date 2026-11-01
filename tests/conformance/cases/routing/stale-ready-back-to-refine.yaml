@@ -1,0 +1,38 @@
+case: routing/stale-ready-back-to-refine
+about: >
+  Staleness (ADR-0059, decision 7): #3 waits in Ready past its limit
+  (30 days, shipped), counted from when the forge says its label was
+  put on, and its Scope names a function no longer in the code. The
+  reconciler checks it with no agent, the Scope first: #3 goes back to
+  refine, its other states' labels off, the reason said on it in the
+  line's comment. #4, as old, names only what is still there: left in
+  Ready. Ready wakes no step the project routes: the check runs anyway.
+given:
+  repo: tested
+  config:
+    routing: {events: {issue: [tester]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply a list"
+        labels: ["workline:ready"]
+        labeled: {"workline:ready": "2026-09-01T09:00:00Z"}
+        body: "## Need\n\nI want to multiply a list.\n\n## Scope\n\n- `lib.sh`: `multiply_all()` beside `add()`.\n"
+      - id: 4
+        title: "Add three"
+        labels: ["workline:ready"]
+        labeled: {"workline:ready": "2026-09-01T09:00:00Z"}
+        body: "## Need\n\nI want to add three numbers.\n\n## Scope\n\n- `lib.sh`: `add()`, and `run-tests.sh`.\n"
+run: {route: reconcile, open-merge-request: true, ai: "fake:tester-two-scenarios"}
+expect:
+  status: pass
+  agent-calls: 0
+  findings: [{rule: state-stale, level: warn, where: "#3", message: "in ready since 2026-09-01, past its limit of 30 days (routing.stale), and its Scope names `multiply_all()`, no longer in the code"}]
+  no-findings: [{where: "#4"}]
+  forge:
+    issues:
+      - id: 3
+        labels: ["workline:to-refine"]
+        comments: 1
+        comment-contains: ["**workline's line** moves this issue back to refine, stale.", "its Scope names `multiply_all()`, no longer in the code", "put `workline:ready` back", "\"stale\":\"ready\""]
+      - {id: 4, labels: ["workline:ready"], comments: 0}

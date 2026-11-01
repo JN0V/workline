@@ -435,6 +435,41 @@ a step starts only when the state it moves the issue to has room.
 - **`--input reconcile=list`**: an issue whose wait is not said yet is
   listed due, its own run saying it.
 
+### Staleness
+
+[ADR-0059, decision 7](../adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#7-staleness-per-state):
+an issue left too long in a state, whose Scope names code gone, goes
+back to refine.
+
+- **`stale`**: an age limit per state, in days. Shipped: `ready: 30`,
+  `tests: 14`; a project's `routing: stale:` is laid over them, `0`
+  lifting one. Refine has none: it is where a stale issue goes.
+- **The Scope first, no API call**: each word in backticks under
+  `## Scope` that names a path (a `/` or a file's extension) or code (a
+  capital, `_`, a dot or `()`) is looked up in the repository: the
+  path in `git ls-files`, the name, its last part, as a word in any
+  file but Markdown (decision records keep old names). Labels, settings,
+  flags and plain words are not checked.
+- **Then the age**, only for an issue whose Scope names something gone:
+  from when the forge says the state's label was put on (GitHub's
+  timeline, GitLab's label events), never the last update.
+- **Past the limit**: the issue goes back to refine, its other states'
+  labels off, its card to the refine column, the reason said in the
+  line's comment (`state-stale`), which wakes the product owner. No
+  agent asked; outside `reconcile-max`.
+- **Undone by a person** (the label put back): the next time it is
+  stale, the line says so once (`state-stale-kept`) and leaves it
+  ([ADR-0059, amended](../adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#amendment-2026-11-01-back-to-refine-needs-no-yes)).
+  The record keeps the move (`stale`) while the issue stays in that
+  state; a step of another state drops it.
+- **Checked** by the reconciler for every open issue in a state with a
+  limit, whether a role the project routes wakes it or not, and by an
+  issue's own run before its step. `--input reconcile=list` lists it
+  due, its own run moving it.
+- **Cost**: no API call for an issue whose Scope resolves; for one
+  naming something gone, its label events and comments, a call or two
+  each.
+
 ### The reconciler
 
 `workline route reconcile` walks every open issue, in the backlog's

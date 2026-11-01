@@ -112,6 +112,25 @@ func (c *Config) Holds(name string, issues [][]string) int {
 	return n
 }
 
+// StaleDays is state name's age limit, in days (ADR-0059, decision 7):
+// an issue in it longer, counted from when its label was put on, is
+// checked for staleness; 0, none.
+func (c *Config) StaleDays(name string) int { return c.Stale[name] }
+
+// checkStale refuses an age limit the line cannot read: on no state, or
+// below 0.
+func checkStale(stale map[string]int, states []State) error {
+	for name, days := range stale {
+		if !slices.ContainsFunc(states, func(s State) bool { return s.Name == name }) {
+			return fmt.Errorf("routing.stale.%s: no state of routing.states is named so", name)
+		}
+		if days < 0 {
+			return fmt.Errorf("routing.stale.%s is %d: a limit is a number of days, 0 for none", name, days)
+		}
+	}
+	return nil
+}
+
 // checkWIP refuses a limit the line cannot read: on no state, or below 0.
 func checkWIP(wip map[string]int, states []State) error {
 	for name, n := range wip {

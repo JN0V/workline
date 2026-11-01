@@ -1,0 +1,30 @@
+case: routing/stale-issue-run-moves-it
+about: >
+  The issue's own run, which the reconciler's list starts in CI, checks
+  staleness before its state's step (ADR-0059, decision 7): #3 in Tests
+  past its limit (14 days, shipped), its Scope naming a file gone, goes
+  back to refine; the tester is not woken. No agent asked.
+given:
+  repo: tested
+  config:
+    routing: {events: {issue: [tester, developer]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply"
+        labels: ["workline:needs-tests"]
+        labeled: {"workline:needs-tests": "2026-09-01T09:00:00Z"}
+        body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `src/multiply.sh`, beside `lib.sh`.\n"
+run: {route: issue, target: {issue: 3}, open-merge-request: true, ai: "fake:tester-two-scenarios"}
+expect:
+  status: pass
+  agent-calls: 0
+  summary: "issue: #3 back to refine: in tests since 2026-09-01"
+  findings: [{rule: state-stale, level: warn, where: "#3", message: "its Scope names `src/multiply.sh`, no longer in the code"}]
+  no-findings: [{rule: state-wakes}]
+  forge:
+    issues:
+      - id: 3
+        labels: ["workline:to-refine"]
+        comments: 1
+        comment-contains: ["moves this issue back to refine, stale.", "put `workline:needs-tests` back"]

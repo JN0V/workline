@@ -1,0 +1,25 @@
+case: routing/stale-listed-for-ci
+about: >
+  In CI the reconciler only lists (`--input reconcile=list`): a stale
+  issue is due, nothing written; its own run moves it back to refine
+  (ADR-0059, decision 7). No agent asked.
+given:
+  repo: tested
+  config:
+    routing: {events: {issue: [developer]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply a list"
+        labels: ["workline:ready"]
+        labeled: {"workline:ready": "2026-09-01T09:00:00Z"}
+        body: "## Need\n\nI want to multiply a list.\n\n## Scope\n\n- `lib.sh`: `multiply_all()`.\n"
+run: {route: reconcile, open-merge-request: true, ai: "fake:developer-nothing", input: {reconcile: list}}
+expect:
+  status: pass
+  summary: "reconcile: 1 issue due: #3"
+  agent-calls: 0
+  findings: [{rule: state-stale, level: warn, where: "#3"}]
+  forge:
+    issues:
+      - {id: 3, labels: ["workline:ready"], comments: 0}
