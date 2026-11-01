@@ -259,9 +259,11 @@ func (g *gitlab) own() (Own, error) {
 }
 
 // own: the simulated forge's token's user; a comment its file gives as
-// its body alone is what the engine wrote before, its own too.
+// its body alone is what the engine wrote before, its own too. An App
+// named by WORKLINE_APP_ID is its own as on GitHub: by the id a comment
+// carries, never on a reply in a thread, which carries none.
 func (f *Fake) own() (Own, error) {
-	return Own{logins: []string{fakeBot}, unsigned: true, name: fakeBot}, nil
+	return Own{logins: []string{fakeBot}, unsigned: true, name: fakeBot, app: strings.TrimSpace(os.Getenv("WORKLINE_APP_ID"))}, nil
 }
 
 // own: the local forge keeps no author: every comment in the clone is
