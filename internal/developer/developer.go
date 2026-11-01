@@ -755,7 +755,8 @@ func inertText(s string) string {
 			lines[i] = "\\" + t
 		}
 	}
-	return strings.ReplaceAll(strings.Join(lines, "\n"), "@", "@​")
+	out := strings.ReplaceAll(strings.Join(lines, "\n"), "<", "\\<")
+	return strings.ReplaceAll(out, "@", "@​")
 }
 
 // held is its agent's code held to the bounds: what it proposed, the

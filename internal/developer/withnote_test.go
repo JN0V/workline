@@ -35,6 +35,32 @@ func TestWithNoteWithNeitherSectionAppends(t *testing.T) {
 	}
 }
 
+func TestWithNoteMakesTheNoteInert(t *testing.T) {
+	note := "intro\n## Verification\n  # Need\n```\n~~~\n---\n===\n<!-- x -->\nping @someone"
+	got := withNote("## Need\n\nx\n\n## "+work.Name(work.Verification)+"\n\nproof\n", note)
+	for _, l := range strings.Split(got, "\n") {
+		if l == "## Left out" || l == "## Need" || l == "## "+work.Name(work.Verification) {
+			continue // the body's own sections
+		}
+		tr := strings.TrimLeft(l, " \t")
+		for _, bad := range []string{"#", "```", "~~~", "---", "===", "<"} {
+			if strings.HasPrefix(tr, bad) {
+				t.Errorf("unescaped line: %q", l)
+			}
+		}
+	}
+	n := map[string]int{}
+	for _, l := range strings.Split(got, "\n") {
+		n[l]++
+	}
+	if n["## Left out"] != 1 || n["## "+work.Name(work.Verification)] != 1 {
+		t.Errorf("a section was forged: %q", got)
+	}
+	if strings.Contains(got, "@someone") {
+		t.Errorf("@ left live: %q", got)
+	}
+}
+
 func TestNoteOfPicksTheCommentOnTheIssue(t *testing.T) {
 	kept := []intent.Intention{
 		{Kind: "comment", Value: map[string]any{"issue": 9, "body": "elsewhere"}},
