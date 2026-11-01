@@ -85,16 +85,15 @@ func (p *Plan) recordDone(c Proposal) {
 // the line (ADR-0059), never a ready a person undid. A forge that keeps
 // no label events: an issue back in refine or blocked is read so.
 func MovedBack(f forge.Backlog, is forge.Issue) (bool, error) {
-	events, err := f.LabelEvents(is.ID)
-	if err != nil || len(events) == 0 {
-		return slices.Contains(is.Labels, LabelToRefine) || slices.Contains(is.Labels, LabelBlocked), nil
-	}
-	for i := len(events) - 1; i >= 0; i-- {
-		if e := events[i]; !e.Added && (e.Label == LabelReady || e.Label == LabelNeedsTests) {
-			return e.Bot, nil
+	if events, err := f.LabelEvents(is.ID); err == nil {
+		for i := len(events) - 1; i >= 0; i-- {
+			if e := events[i]; !e.Added && (e.Label == LabelReady || e.Label == LabelNeedsTests) {
+				return e.Bot, nil
+			}
 		}
 	}
-	return false, nil
+	// No removal the forge says: read from the state it is in.
+	return slices.Contains(is.Labels, LabelToRefine) || slices.Contains(is.Labels, LabelBlocked), nil
 }
 
 // findUndone reads what a person did to the acts the record keeps: those

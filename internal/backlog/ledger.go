@@ -432,10 +432,10 @@ func ReadLedger(f forge.Backlog, role string, open []forge.Issue) (*Ledger, erro
 	return l, nil
 }
 
-// pruneMoves takes off an issue's state the ready undos an earlier engine
+// pruneMoves takes off an issue's state the ready undo an earlier engine
 // kept for a move of the line — workline's own account took the label
-// off (MovedBack) —: no act a person undid, never counted again; the
-// state is written so at the role's next write.
+// off (MovedBack) —, the last one: no act a person undid, never counted
+// again; the state is written so at the role's next write.
 func pruneMoves(f forge.Backlog, is forge.Issue, st *State) error {
 	if Readied(is) || !slices.ContainsFunc(st.Undone, func(u Undo) bool { return u.Act == "ready" }) {
 		return nil
@@ -444,7 +444,14 @@ func pruneMoves(f forge.Backlog, is forge.Issue, st *State) error {
 	if err != nil || !engine {
 		return err
 	}
-	st.Undone = slices.DeleteFunc(st.Undone, func(u Undo) bool { return u.Act == "ready" })
+	// The last one alone: kept for that move; a person's undo before it
+	// stands.
+	for i := len(st.Undone) - 1; i >= 0; i-- {
+		if st.Undone[i].Act == "ready" {
+			st.Undone = slices.Delete(st.Undone, i, i+1)
+			break
+		}
+	}
 	return nil
 }
 
