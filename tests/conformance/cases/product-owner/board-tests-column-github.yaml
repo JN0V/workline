@@ -1,0 +1,28 @@
+case: product-owner/board-tests-column-github
+about: >
+  Given a GitHub project with a Tests option in its Status, the product
+  owner's ready that sends an issue to its tests (workline:needs-tests)
+  sets its card's Status to Tests (ADR-0059, decision 2), no label for
+  it. An issue going straight to ready takes the Ready option, as
+  before; Backlog, beside a Ready column, is refine's.
+given:
+  repo: backlog
+  config:
+    routing: {events: {schedule: [product-owner], issue: [tester, developer]}}
+  forge:
+    boards:
+      - forge: github
+        number: 3
+        name: Team plan
+        owner: organization
+        columns: [Backlog, Tests, Ready, In Progress, Blocked, Done]
+        workflows: {"Item closed": true, "Pull request merged": true, "Pull request linked to issue": true}
+    issues:
+      - {id: 9, title: "Rows lost", status: {"3": "Backlog"}, body: "Some rows are lost.\n\n## Need\n\nThe monthly report counts every sale.\n\n## Verification\n\nA test writes three rows.\n\n## Validation\n\n- **A known day:** Given a day of three sales, When Ann opens it, Then she counts three.\n\n## Scope\n\nsrc/export/csv.go", author: ann, insider: true, labels: [workline:to-refine], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 10, title: "Rows lost again", status: {"3": "Backlog"}, body: "## Need\n\nThe monthly report counts every sale.\n\n## Verification\n\nA test writes three rows.\n\n## Validation\n\nAnn opens a known day.\n\n## Scope\n\nsrc/export/csv.go", author: ann, insider: true, labels: [workline:to-refine], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:ready-three}
+expect:
+  forge:
+    issues:
+      - {id: 9, labels: [workline:needs-tests], status: {"3": "Tests"}}
+      - {id: 10, labels: [workline:ready], status: {"3": "Ready"}}

@@ -223,7 +223,7 @@ func keepState(res *Result, cfg *routing.Config, f forge.Forge, spec string, o e
 		res.Forge = spec
 		return
 	}
-	if err := writeState(f, cfg, w, role); err != nil {
+	if err := writeState(f, cfg, o.Repo, w, role); err != nil {
 		res.Status = worst(res.Status, verdict.Block)
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "state-unwritten", Where: fmt.Sprintf("#%d", w.Issue), Message: err.Error()})
 	}

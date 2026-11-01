@@ -651,5 +651,5 @@ func (a answer) move(to string) []intent.Intention {
 	if ad, rm, err := (&routing.Config{States: a.Line}).Move(to); err == nil {
 		add, remove = ad, rm
 	}
-	return []intent.Intention{{Kind: "label", Value: map[string]any{"issue": a.Issue, "add": add, "remove": remove}}}
+	return []intent.Intention{{Kind: "label", Value: map[string]any{"issue": a.Issue, "add": add, "remove": remove, "card": to}}}
 }

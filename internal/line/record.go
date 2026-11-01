@@ -16,6 +16,7 @@ import (
 	"strings"
 
 	"github.com/JN0V/workline/internal/backlog"
+	"github.com/JN0V/workline/internal/board"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/routing"
 	"github.com/JN0V/workline/internal/tester"
@@ -149,19 +150,23 @@ func due(s routing.State, is forge.Issue, labeled, spec string, rec Record, had 
 }
 
 // writeState writes w on the forge: the record in its comment; past the
-// cap, the issue moved to Blocked, every other state's label off, and
-// why said in that comment.
-func writeState(f forge.Forge, cfg *routing.Config, w StateWrite, role string) error {
+// cap, the issue moved to Blocked, every other state's label off, its
+// card to the board's Blocked column, and why said in that comment.
+func writeState(f forge.Forge, cfg *routing.Config, repo string, w StateWrite, role string) error {
 	t := forge.Target{Kind: "issue", ID: w.Issue}
 	body := recordBody(w.Record, role)
-	if w.Blocked != "" {
+	switch {
+	case w.Blocked != "":
 		add, remove, err := cfg.Move(BlockedState)
 		if err != nil {
 			return err
 		}
+		card := board.Along(f, repo, BlockedState)
+		add, remove = card.Fold(add, remove)
 		if err := f.Label(t, add, remove); err != nil {
 			return err
 		}
+		card.Write(f, w.Issue)
 		body = backlog.Said("workline's line", "blocks this issue", w.Blocked,
 			"a person reads why on the board's Blocked column, and moves it back to a state by its label") +
 			"\n" + recordBody(w.Record, "")
@@ -183,7 +188,7 @@ func WriteStates(f forge.Forge, repo string, res *Result) error {
 		return err
 	}
 	for _, w := range res.States {
-		if err := writeState(f, cfg, w, res.Woke[w.Issue]); err != nil {
+		if err := writeState(f, cfg, repo, w, res.Woke[w.Issue]); err != nil {
 			return fmt.Errorf("#%d: %w", w.Issue, err)
 		}
 	}

@@ -580,8 +580,8 @@ func (a *applier) refining(c backlog.Proposal) error {
 			remove = append(remove, backlog.LabelReady)
 		}
 		if c.Card.Labels() {
-			// Its card to the board's ready column, out of the others
-			// (ADR-0057), in the same call.
+			// Its card to the board's column the plan chose, ready or
+			// tests, out of the others (ADR-0057), in the same call.
 			add = append(add, c.Card.Column)
 			for _, l := range c.Card.Off {
 				if slices.Contains(is.Labels, l) {
@@ -794,6 +794,12 @@ func planActs(f forge.Forge, r *role.Role, settings map[string]any, st runState,
 	for _, c := range closes {
 		if c.Do == "ready" {
 			cfg.Ready = readyMove(f, st.Repo) // read once, when a ready is proposed
+			if line.Runs("tester") {
+				// Its tests column, for the issues a ready sends there
+				// (ADR-0059, decision 2).
+				cfg.Tests = board.Along(f, st.Repo, "tests")
+				cfg.ToTests = func(is forge.Issue) bool { return testsFirst(st.Repo, is) }
+			}
 			break
 		}
 	}

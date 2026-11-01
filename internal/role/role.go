@@ -227,6 +227,9 @@ type ProjectConfig struct {
 type Board struct {
 	Ready   string `yaml:"ready"`
 	Doing   string `yaml:"doing"`
+	Refine  string `yaml:"refine"`
+	Tests   string `yaml:"tests"`
+	Blocked string `yaml:"blocked"`
 	Project int    `yaml:"project"`
 }
 

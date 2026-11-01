@@ -21,12 +21,36 @@ func TestKey(t *testing.T) {
 
 func TestMatch(t *testing.T) {
 	m, un := Match([]string{"Backlog", "Todo", "Doing", "Closed"}, role.Board{})
-	if m != (Slots{"Todo", "Doing", "Closed"}) || len(un) != 0 {
+	if m != (Slots{Ready: "Todo", Doing: "Doing", Done: "Closed", Refine: "Backlog"}) || len(un) != 0 {
 		t.Errorf("Match = %+v, %v", m, un)
 	}
 	m, un = Match([]string{"Next", "Build"}, role.Board{Ready: "next", Doing: "Ship"})
 	if m != (Slots{Ready: "Next"}) || len(un) != 1 || un[0] != "doing: Ship" {
 		t.Errorf("Match with a setting = %+v, %v", m, un)
+	}
+}
+
+// TestMatchStates: the slots ADR-0059 adds take their columns loosely,
+// a column taken by one slot never another's: Backlog is ready's with no
+// Ready column, refine's beside one.
+func TestMatchStates(t *testing.T) {
+	m, _ := Match([]string{"workflow::Triage", "workflow::Needs tests", "workflow::To do", "workflow::Doing", "workflow::On hold"}, role.Board{})
+	want := Slots{Refine: "workflow::Triage", Tests: "workflow::Needs tests", Ready: "workflow::To do", Doing: "workflow::Doing", Blocked: "workflow::On hold"}
+	if m != want {
+		t.Errorf("GitLab's scoped labels: %+v, want %+v", m, want)
+	}
+	if m, _ = Match([]string{"Backlog", "In progress", "Done"}, role.Board{}); m.Ready != "Backlog" || m.Refine != "" {
+		t.Errorf("Backlog alone is ready's: %+v", m)
+	}
+	if m, _ = Match([]string{"Backlog", "Ready", "Tests", "Blocked"}, role.Board{}); m.Ready != "Ready" || m.Refine != "Backlog" || m.Tests != "Tests" || m.Blocked != "Blocked" {
+		t.Errorf("Backlog beside Ready is refine's: %+v", m)
+	}
+	m, un := Match([]string{"Waiting", "QA", "Todo"}, role.Board{Blocked: "waiting", Tests: "QA", Refine: "Ideas"})
+	if m.Blocked != "Waiting" || m.Tests != "QA" || m.Refine != "" || len(un) != 1 || un[0] != "refine: Ideas" {
+		t.Errorf("the setting names them: %+v, %v", m, un)
+	}
+	if m, _ = Match([]string{"Todo"}, role.Board{Refine: "todo"}); m.Ready != "" || m.Refine != "Todo" {
+		t.Errorf("a column the setting names is no other slot's: %+v", m)
 	}
 }
 

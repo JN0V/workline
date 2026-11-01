@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/JN0V/workline/internal/board"
+	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/scale"
 	"github.com/JN0V/workline/internal/work"
 )
@@ -82,6 +83,11 @@ type Config struct {
 	// its ready column, a label on GitLab, a Status option on GitHub; nil
 	// none. Set by the caller, from the board.
 	Ready *board.Move
+	// Tests: the move of a ready that sends the issue to its tests, to
+	// the board's tests column (ADR-0059, decision 2), for the issues
+	// ToTests says go there; nil, the ready column's. Set by the caller.
+	Tests   *board.Move
+	ToTests func(forge.Issue) bool
 	// Read is what the run read the backlog with, kept with each act it
 	// does (ADR-0046); set by the caller, from the run.
 	Read Read

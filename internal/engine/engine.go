@@ -21,6 +21,7 @@ import (
 
 	"github.com/JN0V/workline/internal/agent"
 	"github.com/JN0V/workline/internal/backlog"
+	"github.com/JN0V/workline/internal/board"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/judge"
@@ -2472,8 +2473,19 @@ func (a *applier) apply(in intent.Intention) error {
 		if target == nil {
 			return errors.New("a label needs a target issue or merge request (--target)")
 		}
-		if err := a.forge.Label(*target, strs(m["add"]), strs(m["remove"])); err != nil {
+		add, remove := strs(m["add"]), strs(m["remove"])
+		var card *board.Move
+		if slot, _ := m["card"].(string); slot != "" && target.Kind == "issue" {
+			// The state's card on the board, read now (ADR-0059,
+			// decision 2): GitLab's column label in the same call.
+			card = board.Along(a.forge, a.repo, slot)
+			add, remove = card.Fold(add, remove)
+		}
+		if err := a.forge.Label(*target, add, remove); err != nil {
 			return err
+		}
+		if card.Writes() {
+			a.moveCard(target.ID, card.Project, card.Column)
 		}
 		if st, ok := m["status"].(map[string]any); ok && target.Kind == "issue" {
 			project, _ := st["project"].(int)
@@ -2628,7 +2640,15 @@ func (a *applier) apply(in intent.Intention) error {
 			return nil
 		}
 		t := forge.Target{Kind: "issue", ID: d.Act.Issue}
-		return a.forge.Label(t, []string{backlog.LabelToRefine}, []string{backlog.LabelReady, backlog.LabelNeedsTests, "workline:developing"})
+		card := board.Along(a.forge, a.repo, "refine") // its card back to Refine, when the board has it
+		add, remove := card.Fold([]string{backlog.LabelToRefine}, []string{backlog.LabelReady, backlog.LabelNeedsTests, "workline:developing"})
+		if err := a.forge.Label(t, add, remove); err != nil {
+			return err
+		}
+		if card.Writes() {
+			a.moveCard(t.ID, card.Project, card.Column)
+		}
+		return nil
 	case "split":
 		d := a.plan.Decision(a.index)
 		if d == nil || d.Mode != backlog.Act {
