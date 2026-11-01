@@ -195,19 +195,11 @@ jobs:
             workline route issue --target "issue:$ISSUE" --ai none --forge github --open-merge-request --input reconcile=list --json > next.json || true
             jq -e --argjson n "$ISSUE" '(.due // []) | index($n)' next.json >/dev/null && break
           done
-          # A run of the issue already queued or running, but this one,
-          # runs that step itself once this one ends (#806).
-          wf=$(basename "${GITHUB_WORKFLOW_REF%%@*}")
-          # Only the runs not ended are asked: never pushed out of a page
-          # by the many ended ones.
-          busy=$(for s in queued in_progress pending waiting; do
-            gh run list --workflow "$wf" --status "$s" --limit 100 --json databaseId,displayTitle \
-              --jq ".[] | select(.databaseId != $GITHUB_RUN_ID) | .displayTitle"
-          done) || busy=
-          if printf '%s\n' "$busy" | grep -qxF "workline develop #$ISSUE"; then
-            echo "#$ISSUE's next step: a run of it is queued or running already" >> "$GITHUB_STEP_SUMMARY"
-          elif jq -e --argjson n "$ISSUE" '(.due // []) | index($n)' next.json >/dev/null; then
-            gh workflow run "$wf" --ref "$GITHUB_REF_NAME" -f issue="$ISSUE"
+          # Started even when another run of the issue waits: that one may
+          # ask the line before this apply moved the state, and end; a
+          # second run ends at its due step, before any setup (#806).
+          if jq -e --argjson n "$ISSUE" '(.due // []) | index($n)' next.json >/dev/null; then
+            gh workflow run "$(basename "${GITHUB_WORKFLOW_REF%%@*}")" --ref "$GITHUB_REF_NAME" -f issue="$ISSUE"
             echo "issue=$ISSUE" >> "$GITHUB_OUTPUT"
             echo "#$ISSUE's next step started" >> "$GITHUB_STEP_SUMMARY"
           fi

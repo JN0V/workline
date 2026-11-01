@@ -61,9 +61,9 @@ routing:
     pays by the started minute; comments, the most frequent, start none.
   - **One run an issue at a time**
     ([#806](https://github.com/JN0V/workline/issues/806)): a run of an
-    issue's step is named `workline develop #<n>`. The next step, the
-    reconciler and the night skip an issue with such a run queued or
-    running.
+    issue's step is named `workline develop #<n>`. The reconciler and
+    the night skip an issue with such a run queued or running; the next
+    step starts its run even so, which ends at once if not due.
   - **Not due, ended at once**: `judge` asks the line first, no agent;
     a step acted on already ends there, before your setup steps and the
     agent are installed.

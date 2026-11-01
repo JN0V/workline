@@ -135,6 +135,11 @@ func startsOnce(t *testing.T, file string, data []byte) {
 		t.Fatalf("%s: %v", file, err)
 	}
 	for name, job := range wf.Jobs {
+		if name == "apply" && strings.Contains(file, "develop") {
+			// The chain starts its next step even so: the run waiting may
+			// have asked the line before this apply moved the state.
+			continue
+		}
 		for _, s := range job.Steps {
 			start := strings.Index(s.Run, "gh workflow run")
 			if start < 0 || !strings.Contains(s.Run, "-f issue=") {
