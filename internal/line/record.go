@@ -43,6 +43,18 @@ type Record struct {
 	// label back. Both kept while the issue's state stays the same.
 	Stale string `json:"stale,omitempty"`
 	Kept  string `json:"kept,omitempty"`
+	// Blocked, read again (ADR-0059, amended; revisit.go): From, the
+	// state it was blocked from, when known; Why, the line's reason for a
+	// block it made; Since, when the line first saw it blocked; Talk, the
+	// hash of the comments the engine did not write, as last read; Closed,
+	// the issues it waits on seen closed; Revisited, when the product
+	// owner last read it again.
+	From      string `json:"from,omitempty"`
+	Why       string `json:"why,omitempty"`
+	Since     string `json:"since,omitempty"`
+	Talk      string `json:"talk,omitempty"`
+	Closed    []int  `json:"closed,omitempty"`
+	Revisited string `json:"revisited,omitempty"`
 }
 
 // StateWrite is what the line writes on an issue once its step ran:
@@ -50,7 +62,8 @@ type Record struct {
 // blocked state instead, its hops past the cap; with Waits, why its step
 // waits for room, the record as it was; with Stale, why it moves the
 // issue back to refine; with Kept, why it leaves a stale issue a person
-// put back. Written at once, or by `workline apply --line` when the
+// put back; with Seen, that it saw the issue blocked first, its record
+// the base news is told against. Written at once, or by `workline apply --line` when the
 // line judged with no write token.
 type StateWrite struct {
 	Issue   int    `json:"issue"`
@@ -59,6 +72,7 @@ type StateWrite struct {
 	Waits   string `json:"waits,omitempty"`
 	Stale   string `json:"stale,omitempty"`
 	Kept    string `json:"kept,omitempty"`
+	Seen    string `json:"seen,omitempty"`
 }
 
 const (
@@ -81,9 +95,15 @@ func bodyHash(body string) string {
 // none, the hash of the reviewer's comment on the issue's spec (""
 // with none), and why the tester's last word refused it ("" when not).
 func readRecordSpec(b forge.Backlog, id int) (Record, bool, string, string, error) {
+	r, had, spec, refused, _, err := readRecordAll(b, id)
+	return r, had, spec, refused, err
+}
+
+// readRecordAll is readRecordSpec, the issue's comments with it.
+func readRecordAll(b forge.Backlog, id int) (Record, bool, string, string, []string, error) {
 	comments, err := b.Comments(forge.Target{Kind: "issue", ID: id})
 	if err != nil {
-		return Record{}, false, "", "", err
+		return Record{}, false, "", "", nil, err
 	}
 	spec := ""
 	for _, c := range slices.Backward(comments) {
@@ -93,7 +113,7 @@ func readRecordSpec(b forge.Backlog, id int) (Record, bool, string, string, erro
 		}
 	}
 	r, had := recordIn(comments)
-	return r, had, spec, tester.Refused(comments), nil
+	return r, had, spec, tester.Refused(comments), comments, nil
 }
 
 // holdsSpecMark says whether comment c carries the reviewer's mark as
@@ -134,7 +154,7 @@ func recordBody(r Record, role string) string {
 	said := fmt.Sprintf("**workline's line** last woke the %s on this issue, in its state %s (%d state %s so far).",
 		role, r.State, r.Hops, plural(r.Hops, "step", "steps"))
 	if role == "" {
-		said = fmt.Sprintf("**workline's line** blocked this issue after %d state steps; moved out of Blocked, its count starts again.", r.Hops)
+		said = fmt.Sprintf("**workline's line** keeps this record while the issue is blocked, %d state %s before; moved out of Blocked, its count starts again.", r.Hops, plural(r.Hops, "step", "steps"))
 	}
 	return said + " Edited by the engine, not by hand.\n\n<!-- workline:" + recordMark + string(data) + " -->"
 }
@@ -175,6 +195,8 @@ func writeState(f forge.Forge, cfg *routing.Config, repo string, w StateWrite, r
 	t := forge.Target{Kind: "issue", ID: w.Issue}
 	body := recordBody(w.Record, role)
 	switch {
+	case w.Seen != "":
+		body = blockedBody(cfg, w.Record) // seen blocked: its labels as they are
 	case w.Blocked != "":
 		add, remove, err := cfg.Move(BlockedState)
 		if err != nil {
@@ -186,9 +208,10 @@ func writeState(f forge.Forge, cfg *routing.Config, repo string, w StateWrite, r
 			return err
 		}
 		card.Write(f, w.Issue)
-		body = backlog.Said("workline's line", "blocks this issue", w.Blocked,
-			"a person reads why on the board's Blocked column, and moves it back to a state by its label") +
-			"\n" + recordBody(w.Record, "")
+		if w.Record.Why == "" {
+			w.Record.Why = w.Blocked
+		}
+		body = blockedBody(cfg, w.Record)
 	case w.Waits != "":
 		data, _ := json.Marshal(w.Record)
 		body = backlog.Said("workline's line", "waits to start this issue's next step", w.Waits,
@@ -199,6 +222,8 @@ func writeState(f forge.Forge, cfg *routing.Config, repo string, w StateWrite, r
 		if body, err = staleBody(f, cfg, repo, t, w); err != nil {
 			return err
 		}
+	case w.Record.State == BlockedState:
+		body = blockedBody(cfg, w.Record) // read again by the product owner: still the line's word on the block
 	}
 	return f.Sticky(t, backlog.Inert(body), forge.Marker("sticky="+recordKey), true)
 }

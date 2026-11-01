@@ -1,0 +1,24 @@
+case: routing/blocked-revisit-off-said
+about: >
+  A project that sets routing.revisit to 0 reads no blocked issue again
+  (ADR-0059, amended): a comment on one wakes nobody, and the line says
+  why when asked of that issue; a person moves it out.
+given:
+  repo: tested
+  config:
+    routing: {events: {issue: [product-owner]}, revisit: 0}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply"
+        labels: ["workline:blocked"]
+        body: "## Need\n\nI want to multiply.\n"
+        comments: ["Please look again: the fix landed."]
+run: {route: issue, target: {issue: 3}, open-merge-request: true, ai: "fake:unblock-three"}
+expect:
+  status: pass
+  agent-calls: 0
+  findings: [{rule: state-wakes-none, level: info, where: "#3", message: "its state, blocked, wakes no role: routing.revisit is 0: a person moves it out"}]
+  forge:
+    issues:
+      - {id: 3, labels: ["workline:blocked"], comments: 1}

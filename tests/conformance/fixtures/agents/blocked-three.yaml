@@ -1,0 +1,3 @@
+# A blocked issue read again, the issue it waited on closed: the block
+# still holds, said afresh, for a person (ADR-0059, amended).
+- blocked: {issue: 3, why: "#2 closed without the fix it needed; the maintainer decides whether to reopen it", person: true}

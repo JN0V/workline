@@ -1,0 +1,28 @@
+case: product-owner/unblock-only-to-where-it-came-from
+about: >
+  The product owner, woken on a blocked issue (ADR-0059, amended), may
+  send it back to the state it was blocked from, or to refine: an
+  unblock to another state is dropped, said, the issue left blocked.
+given:
+  repo: tested
+  config:
+    routing: {events: {issue: [product-owner]}, revisit: 3650}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply"
+        labels: ["workline:blocked"]
+        author: ann
+        insider: true
+        body: "## Need\n\nI want to multiply.\n"
+        comments:
+          - "**workline's line** blocks this issue.\n\n<!-- workline:line-record {\"state\":\"blocked\",\"body\":\"8a828a06be19\",\"hops\":9,\"from\":\"ready\",\"since\":\"2026-10-30T09:00:00Z\"} -->\n<!-- workline:sticky=line/state -->"
+          - {body: "Tests first, I think.", author: ann, insider: true}
+run: {route: issue, target: {issue: 3}, open-merge-request: true, ai: "fake:unblock-three-to-tests"}
+expect:
+  status: pass
+  agent-calls: 1
+  findings: [{rule: unblock-to, where: "#3", message: "#3 goes back to refine or ready only, not \"tests\""}]
+  forge:
+    issues:
+      - {id: 3, labels: ["workline:blocked"]}

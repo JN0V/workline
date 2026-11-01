@@ -1,0 +1,3 @@
+# A blocked issue read again, a person's comment new on it: what blocked
+# it is gone, back to the state it came from (ADR-0059, amended).
+- unblock: {issue: 3, to: ready, why: "the comment says the objection was settled in the pull request"}

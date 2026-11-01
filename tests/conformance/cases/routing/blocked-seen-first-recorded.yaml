@@ -1,0 +1,32 @@
+case: routing/blocked-seen-first-recorded
+about: >
+  A blocked issue the line has not seen blocked yet (ADR-0059, amended):
+  a role blocked it, the line's record still in the state before. The
+  reconciler writes the line's record once, with no agent — the state
+  it came from, when it saw it, its body's and comments' hashes, the
+  base news is told against — and says on it when the product owner
+  reads it again.
+given:
+  repo: tested
+  config:
+    routing: {events: {issue: [product-owner, tester]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply"
+        labels: ["workline:blocked"]
+        body: "## Need\n\nI want to multiply.\n"
+        comments:
+          - "**The tester** blocks this issue.\n\n- **Why**: an objection to its test still stands.\n- **Next**: a person decides in the thread.\n\n<!-- workline:sticky=tester/issue -->"
+          - "**workline's line** last woke the tester.\n\n<!-- workline:line-record {\"state\":\"tests\",\"body\":\"8a828a06be19\",\"hops\":2} -->\n<!-- workline:sticky=line/state -->"
+run: {route: reconcile, open-merge-request: true, ai: "fake:unblock-three"}
+expect:
+  status: pass
+  agent-calls: 0
+  findings: [{rule: state-blocked-seen, level: info, where: "#3", message: "the product-owner reads it again when someone comments, its body changes, an issue it waits on closes, or in 7 days"}]
+  forge:
+    issues:
+      - id: 3
+        labels: ["workline:blocked"]
+        comments: 2
+        comment-contains: ["**workline's line** blocks this issue.", "its state was tests", "else in 7 days", "\"from\":\"tests\"", "\"since\":", "\"hops\":2"]
