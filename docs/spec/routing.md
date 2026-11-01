@@ -356,7 +356,10 @@ whose result moves the issue to the next. The table is the routing's
   as listed.
 - **The product owner on `issue`** reads the issue named alone, at
   once, not a night's share: one with no state of its own yet too. On
-  `issue` with no issue named, it reads none.
+  `issue` with no issue named, it reads none. Only that issue's comments
+  and label events are listed, when it judges and when its acts are
+  decided and written; the open issues' listing stays, for the order
+  and `proposals-max` (#804).
 - **The spec review at once**: where the project routes the reviewer
   on `issue`, refine's step runs it after the product owner, on that
   issue's spec alone (#128). Its review, written since, makes the step

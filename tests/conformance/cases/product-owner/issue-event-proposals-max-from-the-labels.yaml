@@ -1,0 +1,23 @@
+case: product-owner/issue-event-proposals-max-from-the-labels
+about: >
+  Woken for one issue, the product owner reads no other issue's comments
+  (#804), yet proposals-max still holds: the issues already waiting on a
+  person are counted from the label the listing shows. One waits, the
+  most allowed: the woken issue's draft is kept, not labelled yet.
+given:
+  repo: backlog
+  config:
+    roles: {product-owner: {settings: {proposals-max: 1}}}
+  forge:
+    issues:
+      - {id: 1, title: "Draft 1", body: "## Need\n\n<!-- workline:draft -->\n\nA need of 1.", author: ann, insider: true, labels: [workline:draft, workline:proposed], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\nlabel: workline:proposed\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 2, title: "Draft 2", body: "## Need\n\n<!-- workline:draft -->\n\nA need of 2.", author: ann, insider: true, labels: [workline:draft], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: issue, target: {issue: 2}, ai: fake:proposes-nothing}
+expect:
+  status: pass
+  findings:
+    - {rule: proposal-held, where: "#2"}
+  forge:
+    issues:
+      - {id: 1, labels: [workline:draft, workline:proposed], comments-read: 0}
+      - {id: 2, labels: [workline:draft]}

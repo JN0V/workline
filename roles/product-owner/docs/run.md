@@ -13,7 +13,12 @@ What every run keeps track of: [tracking](tracking.md). What it writes:
 ## 1. What it reads first, with no agent
 
 From each open issue's own state
-([ADR-0038](../../../docs/adr/0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md)):
+([ADR-0038](../../../docs/adr/0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md)).
+On `issue`, from that issue's alone: the other issues' comments are not
+read, so a step of the line costs a few API calls, not one per open issue
+([#804](https://github.com/JN0V/workline/issues/804)). Of what counts
+across the issues, `proposals-max` is read from the labels; `undone-max`
+waits for a run on the whole backlog.
 
 - **A yes**: `workline:accepted` on an issue waiting on you. What its
   state proposes is done as recorded, its drafts made yours, the issue

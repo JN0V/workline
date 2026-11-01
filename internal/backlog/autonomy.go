@@ -96,7 +96,15 @@ type Config struct {
 	// Notes are the agent's notes of this run, as it wrote them: the
 	// reason said on an issue it left with nothing (ADR-0059, decision 1).
 	Notes []string
+	// Scope are the issues an event woke the run for (ADR-0059): only
+	// their records are read and written (#804); none, every open
+	// issue's. Set by the caller, from what pre wrote (ScopeFile).
+	Scope []int
 }
+
+// ScopeFile is where, in the run's folder, pre lists the issues an event
+// woke the run for: none on a run over the whole backlog.
+const ScopeFile = "scope"
 
 // CodeReadFile is where, in the run's folder, pre lists the issues whose
 // code it gave the agent.

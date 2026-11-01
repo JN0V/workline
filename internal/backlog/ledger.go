@@ -364,11 +364,17 @@ func (l *Ledger) Waiting(open []forge.Issue) int {
 
 // ReadLedger reads what the role holds on each open issue, from its state
 // comment; the record of an earlier engine's report, the first time; the
-// acts a person undid since.
-func ReadLedger(f forge.Backlog, role string, open []forge.Issue) (*Ledger, error) {
+// acts a person undid since. With scope, a run woken for those issues
+// alone (ADR-0059): only theirs are read, a few calls rather than each
+// open issue's (#804); the old report waits for a run on the whole
+// backlog, as does what counts across the issues (Demoted).
+func ReadLedger(f forge.Backlog, role string, open []forge.Issue, scope []int) (*Ledger, error) {
 	l := &Ledger{States: map[int]*State{}, Notes: map[int][]forge.Note{}, Aside: map[int]bool{}}
 	byID := map[int]forge.Issue{}
 	for _, is := range open {
+		if scope != nil && !slices.Contains(scope, is.ID) {
+			continue
+		}
 		if is.Title == ReportTitle(role) {
 			l.Report = is.ID
 			continue
@@ -801,7 +807,7 @@ type stateWrite struct {
 // that the summary names nowhere yet is named.
 func (p *Plan) labelWithin(b forge.Backlog, f forge.Forge, writes []stateWrite, proposed string) error {
 	var want []*stateWrite
-	waiting := 0
+	waiting := p.Elsewhere
 	for i := range writes {
 		switch w := &writes[i]; {
 		case w.wants:
