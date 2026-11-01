@@ -37,6 +37,9 @@ Each act done alone a person may undo is kept in its issue's state:
 - a closing reopened, a title or priority put back, `workline:ready`
   taken off, a split's part closed as not planned, a link taken off;
 - found at the next run: that kind is proposed on that issue from then on;
+- never a move of the line: an issue back in refine or blocked, the
+  tester finding no test possible, is no ready undone
+  ([ADR-0059](../../../docs/adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md));
 - undone `undone-max` (3) times across the open issues: proposed on every
   issue (`demoted`), until fewer are.
 

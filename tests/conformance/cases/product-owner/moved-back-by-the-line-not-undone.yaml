@@ -1,0 +1,26 @@
+case: product-owner/moved-back-by-the-line-not-undone
+about: >
+  A ready the role did, then a step of the line moving the issue back to
+  refine — the tester finding no test possible — is no act a person
+  undid (ADR-0059): the ready is done alone again there, and never
+  counts toward undone-max. A ready undone so by an older engine, kept
+  in the issue's state, counts no more while the issue is in refine; so
+  three of them demote nothing.
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "## Need\n\nA.\n\n## Verification\n\nB.\n\n## Validation\n\nC.\n\n## Scope\n\nD.", author: ann, insider: true, labels: [workline:to-refine], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: 000000000000\ndone:\n  - {act: ready, level: normal}\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 10, title: "Totals wrong", body: "## Need\n\nA.\n\n## Verification\n\nB.\n\n## Validation\n\nC.\n\n## Scope\n\nD.", author: ann, insider: true, labels: [workline:to-refine], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: 000000000000\nundone:\n  - {act: ready, evidence: \"#10's label workline:ready taken off by a person; the role had moved it to ready\"}\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 11, title: "Dates wrong", body: "## Need\n\nA.", author: ann, insider: true, labels: [workline:to-refine], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nundone:\n  - {act: ready, evidence: \"#11's label workline:ready taken off by a person; the role had moved it to ready\"}\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 12, title: "Names wrong", body: "## Need\n\nA.", author: ann, insider: true, labels: [workline:to-refine], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nundone:\n  - {act: ready, evidence: \"#12's label workline:ready taken off by a person; the role had moved it to ready\"}\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:ready-nine-ten}
+expect:
+  findings:
+    - {rule: done, where: "#9", message: "Moved #9 to ready"}
+    - {rule: done, where: "#10", message: "Moved #10 to ready"}
+  no-findings: [{rule: undone}, {rule: demoted}, {rule: undone-here}]
+  forge:
+    issues:
+      - {id: 9, labels: [workline:ready]}
+      - {id: 10, labels: [workline:ready]}

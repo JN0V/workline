@@ -79,6 +79,13 @@ func (p *Plan) recordDone(c Proposal) {
 	}
 }
 
+// MovedBack says whether an issue is back in a state the line moves it to
+// on its own (ADR-0059): refine or blocked, never a ready undone by a
+// person, who takes the label off.
+func MovedBack(is forge.Issue) bool {
+	return slices.Contains(is.Labels, LabelToRefine) || slices.Contains(is.Labels, LabelBlocked)
+}
+
 // findUndone reads what a person did to the acts the record keeps: those
 // undone, with their evidence, and those that still stand; and the
 // blockers the role set on each open issue (own). An act whose issue is
@@ -153,7 +160,15 @@ func findUndone(f forge.Backlog, role string, open map[int]forge.Issue, done []D
 			}
 			gone = left == 0
 		case "ready":
-			if !Readied(is) {
+			switch {
+			case Readied(is):
+			case MovedBack(is):
+				// Back to refine, or blocked: a step of the line moved it
+				// (ADR-0059) — the tester finding no test possible, an
+				// objection on the need, a cap — or a person's yes to
+				// the role's own unready. No act of the role's undone.
+				gone = true
+			default:
 				evidence = fmt.Sprintf("#%d's label %s taken off by a person; the role had moved it to ready", d.Issue, LabelReady)
 			}
 		case "split":

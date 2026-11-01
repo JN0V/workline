@@ -393,7 +393,7 @@ func ReadLedger(f forge.Backlog, role string, open []forge.Issue) (*Ledger, erro
 			l.Aside[is.ID] = true
 			l.Signs = append(l.Signs, fmt.Sprintf("#%d set aside", is.ID))
 		}
-		l.add(is.ID, st)
+		l.add(is, st)
 		if Accepted(is) && (len(st.Proposed) > 0 || st.Label != "") {
 			l.Signs = append(l.Signs, fmt.Sprintf("#%d accepted", is.ID))
 		}
@@ -450,8 +450,8 @@ func setAside(f forge.Backlog, is forge.Issue, st *State) (bool, error) {
 
 // add puts an issue's record in the ledger's, each entry with its issue; a
 // proposal set aside is a person's "not now": dropped.
-func (l *Ledger) add(id int, st *State) {
-	r := &l.Record
+func (l *Ledger) add(is forge.Issue, st *State) {
+	id, r := is.ID, &l.Record
 	if !l.Aside[id] {
 		for _, q := range st.Proposed {
 			q.Issue = id
@@ -463,6 +463,11 @@ func (l *Ledger) add(id int, st *State) {
 		r.Done = append(r.Done, d)
 	}
 	for _, u := range st.Undone {
+		if u.Act == "ready" && MovedBack(is) {
+			// Kept by an engine that read a move of the line as a person's
+			// undo: the issue is back in refine or blocked, no act undone.
+			continue
+		}
 		u.Issue = id
 		r.Undone = append(r.Undone, u)
 	}
