@@ -169,8 +169,14 @@ func (p *Plan) checkNoTest(f forge.Backlog, role string, is forge.Issue, c *Prop
 	if !NoTestStands(is, comments, role) {
 		return "", ""
 	}
+	rec, _ := testerRecord(comments)
 	if slices.ContainsFunc(p.Decisions, func(d Decision) bool {
-		return d.Mode != Off && d.Act.Do == "refine" && d.Act.Issue == c.Issue
+		if d.Mode != Act || d.Act.Do != "refine" || d.Act.Issue != c.Issue || d.Act.ToReporter {
+			return false
+		}
+		// Done, not proposed to its reporter, and writing another body.
+		body, _, _ := Refine(is.Body, d.Act, role)
+		return BodyDigest(body) != rec.Body
 	}) {
 		return "", ""
 	}
