@@ -38,6 +38,14 @@ max-hops: 8
 # starts at most: it catches what an event missed, never a flood of agent
 # calls; the issues left wait for its next run.
 reconcile-max: 3
+# Each state's WIP limit (ADR-0059, decision 9): the open issues it holds
+# at most. A step whose `next` state is full does not start: it waits,
+# said once on its issue, and the next event or reconcile starts it when
+# room appears. Ready holds 5: about a week of the developer's runs, so a
+# ready issue is still current when built. A project sets its own in
+# `routing: wip:`, state by state; 0 lifts a limit.
+wip:
+  ready: 5
 # Each moment's wait budget, in seconds (ADR-0050): a run over it says so
 # in its summary, naming the step that took the time; it never blocks. A
 # project sets its own in `routing: budgets:`, moment by moment.

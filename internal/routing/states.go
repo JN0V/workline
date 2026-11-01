@@ -95,3 +95,32 @@ func checkStates(states []State) error {
 	}
 	return nil
 }
+
+// Limit is state name's WIP limit (ADR-0059, decision 9): the issues it
+// holds at most before the step that moves one into it waits; 0, none.
+func (c *Config) Limit(name string) int { return c.WIP[name] }
+
+// Holds counts the issues in state name, among the labels of each open
+// issue: those whose state, read as StateOf reads it, is that one.
+func (c *Config) Holds(name string, issues [][]string) int {
+	n := 0
+	for _, labels := range issues {
+		if s, ok := c.StateOf(labels); ok && s.Name == name {
+			n++
+		}
+	}
+	return n
+}
+
+// checkWIP refuses a limit the line cannot read: on no state, or below 0.
+func checkWIP(wip map[string]int, states []State) error {
+	for name, n := range wip {
+		if !slices.ContainsFunc(states, func(s State) bool { return s.Name == name }) {
+			return fmt.Errorf("routing.wip.%s: no state of routing.states is named so", name)
+		}
+		if n < 0 {
+			return fmt.Errorf("routing.wip.%s is %d: a limit is a number of issues, 0 for none", name, n)
+		}
+	}
+	return nil
+}

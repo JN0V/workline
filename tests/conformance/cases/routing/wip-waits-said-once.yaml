@@ -1,0 +1,30 @@
+case: routing/wip-waits-said-once
+about: >
+  A step that waits for room says so once (ADR-0059, decision 9): the
+  line's comment already saying it waits on Ready, a second event while
+  Ready is still full writes nothing, nor asks an agent. Its limit set
+  by the project, 2, in place of the shipped 5.
+given:
+  repo: tested
+  config:
+    routing: {events: {issue: [tester, developer]}, wip: {ready: 2}}
+  forge:
+    issues:
+      - {id: 1, title: "Add", labels: ["workline:ready"], body: "## Need\n\nI want to add.\n"}
+      - {id: 2, title: "Subtract", labels: ["workline:ready"], body: "## Need\n\nI want to subtract.\n"}
+      - id: 6
+        title: "Multiply"
+        labels: ["workline:needs-tests"]
+        body: "## Need\n\nI want to multiply.\n"
+        comments: ["**workline's line** waits to start this issue's next step.\n\n<!-- workline:line-record {\"state\":\"\",\"body\":\"\",\"hops\":0,\"waits\":\"ready\"} -->\n<!-- workline:sticky=line/state -->"]
+run: {route: issue, target: {issue: 6}, open-merge-request: true, ai: "fake:tester-two-scenarios"}
+expect:
+  status: pass
+  agent-calls: 0
+  findings: [{rule: state-waits, level: info, where: "#6", message: "ready holds 2 open issues, its limit 2"}]
+  forge:
+    issues:
+      - id: 6
+        labels: ["workline:needs-tests"]
+        comments: 1
+        comment-contains: ["\"waits\":\"ready\"", "\"state\":\"\""]

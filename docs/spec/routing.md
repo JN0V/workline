@@ -366,6 +366,9 @@ whose result moves the issue to the next. The table is the routing's
   due again: the product owner reads it then, and readies the issue.
 - **Moves are exclusive**: the next state's label on, every other
   state's off, in one call.
+- **Its card follows**: on a board with a column for the state, named
+  as the state is (refine, tests, ready, doing, blocked), the card moves
+  with the label ([boards](../boards.md#what-each-state-moves)).
 - **Who moves it**: the product owner's ready sends an issue with named
   scenarios to `tests` where the tester is routed, else to `ready`
   ([refine](backlog-acts/refine.md)); the tester's proven, linted Draft
@@ -401,6 +404,27 @@ whose result moves the issue to the next. The table is the routing's
   that comment (`hops-capped`). A person moving it back to a state by
   its label starts its count again. A hop is a new run, not a handoff
   (`max-handoffs` caps those inside one run).
+
+### Room in the next state
+
+[ADR-0059, decision 9](../adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#9-pull-and-room-in-the-next-state):
+a step starts only when the state it moves the issue to has room.
+
+- **`wip`**: a limit per state, the open issues it holds at most.
+  Shipped: `ready: 5`, in `routing.default.yaml`; a project's
+  `routing: wip:` is laid over it state by state, `0` lifting one. A
+  limit on no state of the table is refused.
+- **Full**: the step of a state whose `next` is at its limit does not
+  start, nor asks an agent. The line says it once on the issue, in its
+  comment (`state-waits`), the record kept as it was, with the state it
+  waits on (`waits`). A second event while still full writes nothing.
+- **Room again**: the next event on the issue, or the reconciler, finds
+  the step due and starts it; its record, written then, drops the wait.
+- **Counted** from the open issues' labels, as `StateOf` reads them.
+  The reconciler counts a step it starts in its next state already, so
+  the steps after it in the same run see it there.
+- **`--input reconcile=list`**: an issue whose wait is not said yet is
+  listed due, its own run saying it.
 
 ### The reconciler
 

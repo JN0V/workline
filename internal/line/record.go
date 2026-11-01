@@ -34,16 +34,21 @@ type Record struct {
 	// it has one (#128): a review written since makes the step due again,
 	// the product owner reading it then.
 	Spec string `json:"spec,omitempty"`
+	// Waits: the state at its limit the issue's step waits on, said on
+	// it once (ADR-0059, decision 9); the step run, the record has none.
+	Waits string `json:"waits,omitempty"`
 }
 
 // StateWrite is what the line writes on an issue once its step ran:
 // the record; with Blocked, the reason it moves the issue to the
-// blocked state instead, its hops past the cap. Written at once, or by
+// blocked state instead, its hops past the cap; with Waits, why its step
+// waits for room, the record as it was. Written at once, or by
 // `workline apply --line` when the line judged with no write token.
 type StateWrite struct {
 	Issue   int    `json:"issue"`
 	Record  Record `json:"record"`
 	Blocked string `json:"blocked,omitempty"`
+	Waits   string `json:"waits,omitempty"`
 }
 
 const (
@@ -151,7 +156,8 @@ func due(s routing.State, is forge.Issue, labeled, spec string, rec Record, had 
 
 // writeState writes w on the forge: the record in its comment; past the
 // cap, the issue moved to Blocked, every other state's label off, its
-// card to the board's Blocked column, and why said in that comment.
+// card to the board's Blocked column, and why said in that comment; a
+// step waiting for room, why, its record as it was.
 func writeState(f forge.Forge, cfg *routing.Config, repo string, w StateWrite, role string) error {
 	t := forge.Target{Kind: "issue", ID: w.Issue}
 	body := recordBody(w.Record, role)
@@ -170,6 +176,11 @@ func writeState(f forge.Forge, cfg *routing.Config, repo string, w StateWrite, r
 		body = backlog.Said("workline's line", "blocks this issue", w.Blocked,
 			"a person reads why on the board's Blocked column, and moves it back to a state by its label") +
 			"\n" + recordBody(w.Record, "")
+	case w.Waits != "":
+		data, _ := json.Marshal(w.Record)
+		body = backlog.Said("workline's line", "waits to start this issue's next step", w.Waits,
+			"the next event on it, or the hourly reconcile, starts it when there is room; a person may raise the limit in routing.wip") +
+			"\n\n<!-- workline:" + recordMark + string(data) + " -->"
 	}
 	return f.Sticky(t, backlog.Inert(body), forge.Marker("sticky="+recordKey), true)
 }
