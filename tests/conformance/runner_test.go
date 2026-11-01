@@ -186,6 +186,10 @@ type applyFrom struct {
 	// Again: after the apply, these commands (a second push), then the
 	// run and the apply again, on the head they leave.
 	Again []string `yaml:"again"`
+	// Chain: with line, the apply job's next step, up to this many times
+	// (ADR-0059, explicit chaining): the line asked, no agent, whether
+	// the issue is due; due, its run judged and applied again.
+	Chain int `yaml:"chain"`
 }
 
 // thenLine is the line run after a case's run: the event, the branch of
@@ -1091,6 +1095,12 @@ func runCase(t *testing.T, c *caseFile) []string {
 		var r2 result
 		if err := json.Unmarshal(stdout.Bytes(), &r2); err != nil {
 			return []string{fmt.Sprintf("resume printed no result: %v\n%s", err, stderr.String())}
+		}
+		if a := c.Run.ApplyFrom; a != nil && a.Line && a.Chain > 0 {
+			var p []string
+			if r2, p = chainLine(a.Chain, args, cmd.Env, resume.Env, repo, work, r2); len(p) > 0 {
+				return p
+			}
 		}
 		if a := c.Run.ApplyFrom; a != nil && len(a.Again) > 0 {
 			// A second push: the commands, then the run and the apply
@@ -2415,4 +2425,51 @@ func (t *texts) UnmarshalYAML(n *yaml.Node) error {
 	}
 	*t = l
 	return nil
+}
+
+// chainLine is the apply job's next step, as workline-develop.yml runs
+// it (ADR-0059): the line asked, no agent, whether the issue is due;
+// due, its run judged (args) and its result applied (`apply --line`),
+// up to n times. last is the first apply's result: the chained judges'
+// agent calls and every run's findings are added to the last apply's.
+func chainLine(n int, args, judgeEnv, applyEnv []string, repo, work string, last result) (result, []string) {
+	run := func(env, args []string) ([]byte, string) {
+		cmd := exec.Command(engineBin, args...)
+		cmd.Dir, cmd.Env = repo, env
+		var out, errb bytes.Buffer
+		cmd.Stdout, cmd.Stderr = &out, &errb
+		_ = cmd.Run()
+		return out.Bytes(), errb.String()
+	}
+	for range n {
+		out, stderr := run(judgeEnv, append(slices.Clone(args), "--input", "reconcile=list"))
+		var asked struct {
+			Due []int `json:"due"`
+		}
+		if err := json.Unmarshal(out, &asked); err != nil {
+			return last, []string{fmt.Sprintf("chain: the line asked printed no result: %v\n%s", err, stderr)}
+		}
+		if len(asked.Due) == 0 {
+			break
+		}
+		out, stderr = run(judgeEnv, args)
+		var judged result
+		if err := json.Unmarshal(out, &judged); err != nil {
+			return last, []string{fmt.Sprintf("chain: the chained run printed no result: %v\n%s", err, stderr)}
+		}
+		lineFile := filepath.Join(work, "line-chained.json")
+		if err := os.WriteFile(lineFile, out, 0o644); err != nil {
+			return last, []string{err.Error()}
+		}
+		out, stderr = run(applyEnv, []string{"apply", "--line", lineFile, "--json"})
+		var applied result
+		if err := json.Unmarshal(out, &applied); err != nil {
+			return last, []string{fmt.Sprintf("chain: the chained apply printed no result: %v\n%s", err, stderr)}
+		}
+		applied.AgentCalls = last.AgentCalls + judged.AgentCalls
+		applied.Calls = append(append(last.Calls, judged.Calls...), applied.Calls...)
+		applied.Findings = append(append(last.Findings, judged.Findings...), applied.Findings...)
+		last = applied
+	}
+	return last, nil
 }
