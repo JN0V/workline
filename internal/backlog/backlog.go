@@ -479,7 +479,12 @@ type Proposal struct {
 	// no test possible (ADR-0059, decision 4); the issue goes to ready,
 	// not back to its tests.
 	Proof *Proof `yaml:"proof,omitempty"`
-	Quote *Quote `yaml:"quote"`
+	// To, on an unblock: the state a blocked issue goes back to, the one
+	// it came from or refine; Person, on a blocked: only a person can
+	// lift the block (ADR-0059, amended).
+	To     string `yaml:"to,omitempty"`
+	Person bool   `yaml:"person,omitempty"`
+	Quote  *Quote `yaml:"quote"`
 	Why   string `yaml:"why"`
 	// Refining: the sections written, Need and Validation as drafts, with
 	// a real example of the need or a bug's steps to reproduce, drafts too,
@@ -597,7 +602,7 @@ func (c Proposal) key() string {
 }
 
 // Kinds are the intentions that are acts on the backlog.
-var Kinds = []string{"open", "close", "keep", "sources", "milestone", "order", "effort", "refine", "ready", "unready", "ask", "split", "rename", "depend", "undepend"}
+var Kinds = []string{"open", "close", "keep", "sources", "milestone", "order", "effort", "refine", "ready", "unready", "unblock", "blocked", "ask", "split", "rename", "depend", "undepend"}
 
 // theirs are the acts an outsider's issue is proposed for, not done: it is
 // theirs (ADR-0018).
@@ -834,7 +839,7 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 				continue
 			}
 		}
-		if (c.Do == "ready" || c.Do == "unready" || c.Do == "keep" || c.Do == "milestone" || c.Do == "order" || c.Do == "effort" || c.Do == "split" || c.Do == "rename" || p.ticked[c.key()]) && decided[c.key()] {
+		if (c.Do == "ready" || c.Do == "unready" || c.Do == "unblock" || c.Do == "blocked" || c.Do == "keep" || c.Do == "milestone" || c.Do == "order" || c.Do == "effort" || c.Do == "split" || c.Do == "rename" || p.ticked[c.key()]) && decided[c.key()] {
 			p.Decisions = append(p.Decisions, Decision{Index: i, Mode: Off, Act: c}) // the engine's own and the agent's: one
 			if c.Do == "split" || c.Do == "rename" {
 				// Both checked against the state before either is applied:
@@ -898,10 +903,11 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 			if c.Do == "keep" {
 				s = Setting{Mode: Act} // keeping an issue open is never held back
 			}
-			if c.Do == "unready" {
-				// Back to refine: cheap, undone by putting the label back —
-				// done alone, its reason on the issue (ADR-0059, amended);
-				// the rules below still hold it for a person.
+			if c.Do == "unready" || c.Do == "unblock" || c.Do == "blocked" {
+				// Back to refine, out of Blocked: cheap, undone by putting
+				// the label back; kept blocked, only said — done alone, its
+				// reason on the issue (ADR-0059, amended); the rules below
+				// still hold it for a person.
 				s = Setting{Mode: Act}
 			}
 			cleanup := c.Do == "undepend" && p.allClosed(c.BlockedBy)
@@ -935,7 +941,7 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 				p.Findings = append(p.Findings, verdict.Finding{Rule: "outsider-evidence", Where: c.where(),
 					Message: "the words it quotes are only in a comment by someone outside the project: proposed, not done"})
 			}
-			if ch, ok := p.changedFor[c.Issue]; ok && d.Mode == Act && c.Do != "keep" && c.Do != "unready" && !cleanup {
+			if ch, ok := p.changedFor[c.Issue]; ok && d.Mode == Act && c.Do != "keep" && c.Do != "unready" && c.Do != "unblock" && c.Do != "blocked" && !cleanup {
 				// Read again for a change to what it was built on: what the
 				// change asks of it is a person's to decide (ADR-0032); back to
 				// refine excepted, cheap to undo (ADR-0059, amended).
@@ -1401,6 +1407,9 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 	if rule, why := p.checkUndepend(c); rule != "" {
 		return rule, why
 	}
+	if rule, why := p.checkBlocked(c); rule != "" {
+		return rule, why
+	}
 	if c.Do == "unready" {
 		is, ok := p.issues[c.Issue]
 		switch {
@@ -1533,7 +1542,7 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 	if c.Do == "keep" {
 		return p.checkKeep(f, repo, role, st, c)
 	}
-	if c.Do == "milestone" || c.Do == "order" || c.Do == "effort" || c.Do == "refine" || c.Do == "ready" || c.Do == "unready" || c.Do == "ask" || c.Do == "split" || c.Do == "rename" || c.Do == "depend" || c.Do == "undepend" {
+	if c.Do == "milestone" || c.Do == "order" || c.Do == "effort" || c.Do == "refine" || c.Do == "ready" || c.Do == "unready" || c.Do == "unblock" || c.Do == "blocked" || c.Do == "ask" || c.Do == "split" || c.Do == "rename" || c.Do == "depend" || c.Do == "undepend" {
 		return "", "" // writing a plan or asking says nothing of the issue's truth: no quote
 	}
 	if c.Quote == nil || strings.TrimSpace(c.Quote.Text) == "" {
@@ -2858,6 +2867,18 @@ func describe(c Proposal, verb string) string {
 			return fmt.Sprintf("Moved #%d back to refine (%s off, %s on; put %s back to undo): %s", c.Issue, LabelReady, LabelToRefine, LabelReady, strings.TrimSpace(c.Why))
 		}
 		return fmt.Sprintf("Move #%d back to refine (%s off, %s on): %s", c.Issue, LabelReady, LabelToRefine, strings.TrimSpace(c.Why))
+	case "unblock":
+		label := StateLabel(c.To)
+		if done {
+			return fmt.Sprintf("Moved #%d out of Blocked, to %s (%s off, %s on; put %s back to undo): %s", c.Issue, c.To, LabelBlocked, label, LabelBlocked, strings.TrimSpace(c.Why))
+		}
+		return fmt.Sprintf("Move #%d out of Blocked, to %s (%s off, %s on): %s", c.Issue, c.To, LabelBlocked, label, strings.TrimSpace(c.Why))
+	case "blocked":
+		who := ""
+		if c.Person {
+			who = ", for a person to lift"
+		}
+		return fmt.Sprintf("Kept #%d blocked%s, read again: %s", c.Issue, who, strings.TrimSpace(c.Why))
 	case "depend":
 		return fmt.Sprintf("%s #%d as waiting on %s: %s", map[bool]string{true: "Marked", false: "Mark"}[done], c.Issue, issueList(c.BlockedBy), strings.TrimSpace(c.Why))
 	case "undepend":

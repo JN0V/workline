@@ -25,6 +25,7 @@ import (
 
 	"github.com/JN0V/workline/internal/agent"
 	"github.com/JN0V/workline/internal/backlog"
+	"github.com/JN0V/workline/internal/engine"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/pathglob"
@@ -758,6 +759,9 @@ func Pre(runDir, repo string) int {
 				if _, picked := backlog.ReadProof(d.comments, role); !picked {
 					review += noTestSaid(reason)
 				}
+			}
+			if slices.Contains(d.is.Labels, backlog.LabelBlocked) && d.is.ID == issueEvent() {
+				review += blockedSaid(runDir, d.comments)
 			}
 			if readyOpen(d.is, d.st, cfg) {
 				review += fmt.Sprintf("Ready: its four sections are there, %s and %s a person's — propose `ready` when it is evident: one need, a %s that proves it, nothing left open in its comments; the engine checks it.\n",
@@ -1726,10 +1730,46 @@ func issueEvent() int {
 // sections there, Need and Validation a person's, not ready yet, and ready
 // not off — the engine checks it, and proposes an outsider's (ADR-0038).
 func readyOpen(is forge.Issue, st *backlog.State, cfg backlog.Config) bool {
-	if s, ok := cfg.Acts["ready"]; !ok || s.Mode == backlog.Off || backlog.Readied(is) {
+	if s, ok := cfg.Acts["ready"]; !ok || s.Mode == backlog.Off || backlog.Readied(is) || slices.Contains(is.Labels, backlog.LabelBlocked) {
 		return false
 	}
 	return len(backlog.NotReady(is, st, false)) == 0
+}
+
+// blockWhy reads why a role blocked an issue, from the last comment
+// saying it blocks it (backlog.Said's way); "" when none says.
+var blockWhy = regexp.MustCompile(`(?m)^- \*\*Why\*\*: (.+)$`)
+
+// blockedSaid tells the agent, on a blocked issue the line woke it on,
+// why it was blocked, what is new, and what it may decide (ADR-0059,
+// amended): back to the state it came from or to refine, or kept
+// blocked, its reason said afresh.
+func blockedSaid(runDir string, comments []string) string {
+	input := func(name string) string {
+		data, _ := os.ReadFile(filepath.Join(runDir, "in", "input", name))
+		return strings.TrimSpace(string(data))
+	}
+	why := "a role blocked it; its comments say why"
+	for _, c := range slices.Backward(comments) {
+		if strings.Contains(c, "blocks this issue") {
+			if m := blockWhy.FindStringSubmatch(c); m != nil {
+				why = strings.TrimSuffix(strings.TrimSpace(m[1]), ".")
+			}
+			break
+		}
+	}
+	news := input(engine.RevisitInput)
+	if news == "" {
+		news = "the line woke you on it"
+	}
+	from := input(engine.RevisitFromInput)
+	to := backlog.UnblockTo(from)
+	where := "`to: refine`"
+	if len(to) > 1 {
+		where = fmt.Sprintf("`to: %s`, the state it was blocked from, or `to: refine` when its need must be read again", to[1])
+	}
+	return fmt.Sprintf("Blocked (%s): %s. Read again because %s. Decide one, its `why` one plain line: `unblock` it, %s, when what blocked it is gone; `blocked`, the reason it stays as things are now, `person: true` when only a person can lift it — a decision, an access, a fix outside this repository; or a `close` by the rules above. Never `ready` on it.\n",
+		backlog.LabelBlocked, why, news, where)
 }
 
 // toTests says whether the agent is told a ready issue from before the

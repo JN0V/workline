@@ -34,6 +34,8 @@ var Catalogue = map[string]bool{
 	"refine":         true, // the sections an issue lacks written, Need and Validation as drafts (docs/spec/backlog-acts.md)
 	"ready":          true, // an issue moved to ready, once the engine finds it so (docs/spec/backlog-acts.md)
 	"unready":        true, // a ready issue moved back to refine: done, its reason on the issue (ADR-0059, amended)
+	"unblock":        true, // a blocked issue read again, sent back to the state it came from or to refine (ADR-0059, amended)
+	"blocked":        true, // a blocked issue read again, kept blocked, its reason said afresh (ADR-0059, amended)
 	"ask":            true, // the reporter asked what is missing (docs/spec/backlog-acts.md)
 	"split":          true, // a need split into issues of their own, linked to it (docs/spec/backlog-acts.md)
 	"rename":         true, // an issue's title set; a person's kept (docs/spec/backlog-acts.md)
@@ -205,7 +207,7 @@ func Marshal(in []Intention) ([]byte, error) {
 // applyOrder is the order intentions are applied in, whatever order they were
 // proposed in: files first, then what depends on them, then what only informs.
 var applyOrder = map[string]int{
-	"commit-message": 0, "patch": 1, "label": 2, "comment": 3, "open": 4, "sources": 5, "close": 6, "keep": 6, "milestone": 7, "order": 8, "effort": 8, "refine": 9, "ready": 10, "unready": 10, "ask": 11, "split": 12, "rename": 13, "depend": 13, "undepend": 13, "issue": 14, "handoff": 15, "note": 16,
+	"commit-message": 0, "patch": 1, "label": 2, "comment": 3, "open": 4, "sources": 5, "close": 6, "keep": 6, "milestone": 7, "order": 8, "effort": 8, "refine": 9, "ready": 10, "unready": 10, "unblock": 10, "blocked": 10, "ask": 11, "split": 12, "rename": 13, "depend": 13, "undepend": 13, "issue": 14, "handoff": 15, "note": 16,
 }
 
 // SortForApply puts intentions in apply order, keeping the proposed order within a kind.
