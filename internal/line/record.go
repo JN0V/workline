@@ -18,6 +18,7 @@ import (
 	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/routing"
+	"github.com/JN0V/workline/internal/tester"
 )
 
 // Record is what the line keeps of an issue: the state its last step
@@ -61,12 +62,12 @@ func bodyHash(body string) string {
 }
 
 // readRecordSpec is the line's record on issue id, false when there is
-// none, and the hash of the reviewer's comment on the issue's spec (""
-// with none).
-func readRecordSpec(b forge.Backlog, id int) (Record, bool, string, error) {
+// none, the hash of the reviewer's comment on the issue's spec (""
+// with none), and why the tester's last word refused it ("" when not).
+func readRecordSpec(b forge.Backlog, id int) (Record, bool, string, string, error) {
 	comments, err := b.Comments(forge.Target{Kind: "issue", ID: id})
 	if err != nil {
-		return Record{}, false, "", err
+		return Record{}, false, "", "", err
 	}
 	spec := ""
 	for _, c := range slices.Backward(comments) {
@@ -76,7 +77,7 @@ func readRecordSpec(b forge.Backlog, id int) (Record, bool, string, error) {
 		}
 	}
 	r, had := recordIn(comments)
-	return r, had, spec, nil
+	return r, had, spec, tester.Refused(comments), nil
 }
 
 // recordIn is the line's record among an issue's comments.

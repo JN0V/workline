@@ -1,0 +1,29 @@
+case: tester/no-test-written-back-to-refine
+about: >
+  A tester's run that writes no test and names no proof kind (#794):
+  its answer read, the issue goes back to the product owner's state,
+  refine, with the agent's reason, as "no test possible" does; never
+  left waiting in Tests with nothing woken.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+    routing: {events: {issue: [tester]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:needs-tests"]
+        body: "## Need\n\nI want to multiply.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n"
+run: {route: issue, target: {issue: 3}, open-merge-request: true, ai: "fake:tester-no-test-noted"}
+expect:
+  status: pass
+  findings: [{rule: no-test-possible, level: info, where: "#3"}]
+  not-pushed: [workline/tester/issue-3]
+  forge:
+    issues:
+      - id: 3
+        labels: ["workline:to-refine"]
+        comment-contains: ["**The tester** finds no test possible for this issue.", "neither the multiply step's code nor its tests", "back to the product owner (refine)"]

@@ -1979,7 +1979,8 @@ type attemptResult struct {
 	askedAgent bool
 	external   bool
 	unread     string // why the agent's answer could not be read, if it could not
-	said       []intent.Intention // what post said of its block (out/on-block.yaml)
+	refused    string // why the engine refused the answer's proposals whole, if it did
+	said      []intent.Intention // what post said of its block (out/on-block.yaml)
 	overBudget bool   // the task was not put before the agent: over the context budget
 }
 
@@ -2040,23 +2041,31 @@ func attempt(r *role.Role, o Options, ag agent.Agent, hasTask bool, tier, runDir
 	if refused, why := invalid(r, intents, line); len(refused) > 0 {
 		res.Refused = append(res.Refused, refused...) // the set is refused whole; these are the kinds that caused it
 		a.findings = append(a.findings, verdict.Finding{Rule: "intention-refused", Message: why})
+		a.refused = why
 		intents = nil
 		os.Remove(filepath.Join(runDir, "out", "intentions.yaml"))
 	}
 	if bad := outOfBounds(o.Repo, intents, r.Writes(settings), o.Scope); len(bad) > 0 {
 		res.Refused = append(append([]string{}, res.partRefused...), "patch")
-		a.findings = append(a.findings, verdict.Finding{Rule: "intention-refused",
-			Message: "a patch reaches outside the task or the role's duties: " + strings.Join(bad, ", ") + "; anything found there belongs in an issue"})
+		a.refused = "a patch reaches outside the task or the role's duties: " + strings.Join(bad, ", ") + "; anything found there belongs in an issue"
+		a.findings = append(a.findings, verdict.Finding{Rule: "intention-refused", Message: a.refused})
 		intents = nil
 		os.Remove(filepath.Join(runDir, "out", "intentions.yaml"))
 	}
 	a.intents = intents
 
-	// post is told why the answer did not read, to say it; what it leaves
-	// in out/on-block.yaml is its own, never an agent's: removed first.
+	// post is told why the answer did not read, or was refused whole, to
+	// say it; what it leaves in out/on-block.yaml is its own, never an
+	// agent's: removed first.
 	postEnv := env
 	if a.unread != "" {
 		postEnv = append(env[:len(env):len(env)], "WORKLINE_AGENT_UNREAD="+a.unread)
+	} else if a.refused != "" {
+		postEnv = append(env[:len(env):len(env)], "WORKLINE_AGENT_REFUSED="+a.refused)
+	} else if a.askedAgent && !a.external {
+		// Its answer read and kept: what it holds, or lacks, is the
+		// agent's word (#794).
+		postEnv = append(env[:len(env):len(env)], "WORKLINE_AGENT_ANSWERED=true")
 	}
 	onBlockFile := filepath.Join(runDir, "out", "on-block.yaml")
 	if err := os.Remove(onBlockFile); err != nil && !os.IsNotExist(err) {

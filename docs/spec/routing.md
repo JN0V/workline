@@ -381,6 +381,11 @@ whose result moves the issue to the next. The table is the routing's
   forge's label events), and the hops so far. The same three again run
   nothing (`state-acted`); labelled anew, or its body changed, the step
   is due again.
+- **A refusal is not acted**: an issue in the tester's state whose last
+  tester run wrote no tests, said in the tester's comment, is never
+  left waiting there: the line moves it to `workline:blocked`, the
+  tester's reason said (`tests-refused`;
+  [#794](https://github.com/JN0V/workline/issues/794)).
 - **Not for an outside failure**: a step that ended
   `blocked-external`, its agent out of reach, keeps no record: the next
   event or reconciler runs it again.

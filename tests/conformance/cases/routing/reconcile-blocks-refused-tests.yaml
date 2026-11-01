@@ -1,0 +1,30 @@
+case: routing/reconcile-blocks-refused-tests
+about: >
+  An issue in Tests whose last tester run refused its tests (#794): the
+  first reconciler runs the tester, whose test passes on the base and is
+  refused, said on the issue; the second does not leave it as acted,
+  which nothing would wake again: it moves it to Blocked, the tester's
+  reason on the issue, for a person on the board.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+    routing: {events: {issue: [tester, developer]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:needs-tests"]
+        body: "## Need\n\nI want to multiply.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **By zero:** Given the library, When I multiply 5 by 0, Then I get 0.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+run: {route: reconcile, open-merge-request: true, ai: "fake:tester-green-on-base", then: again}
+expect:
+  agent-calls: 1
+  findings: [{rule: tests-refused, level: warn, where: "#3", message: "passes on the base"}]
+  not-pushed: [workline/tester/issue-3]
+  forge:
+    issues:
+      - id: 3
+        labels: ["workline:blocked"]
+        comment-contains: ["**The tester** wrote no tests for this issue this run", "**workline's line** blocks this issue", "passes on the base"]
