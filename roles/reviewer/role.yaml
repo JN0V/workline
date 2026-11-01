@@ -16,7 +16,9 @@ mission: A change is reviewed before it merges — what it breaks found, quoted 
 #         (opt-in): the issues it refined that wait on a spec review, up
 #         to specs-per-run a run (#433); ready is held while an important
 #         finding is open (#128).
-events: [review, merge-request, spec, schedule]
+# issue:  the line of states (ADR-0059): after the product owner woke on
+#         an issue to refine, that issue's spec alone, at once.
+events: [review, merge-request, spec, schedule, issue]
 # On a merge request, the lenses that only warn (`ai-findings`) can read
 # apart from the verdict (ADR-0050): the verdict's line asks the lenses
 # that block (`route --warn-apart`), a line of its own the others, posting

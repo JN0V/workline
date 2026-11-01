@@ -228,7 +228,7 @@ func Pre(runDir, repo string) int {
 		return settle(runDir, repo, s)
 	case os.Getenv("WORKLINE_PARTS") == "answered":
 		return readLenses(runDir, repo, s)
-	case os.Getenv("WORKLINE_EVENT") == specEvent, os.Getenv("WORKLINE_EVENT") == gardening:
+	case os.Getenv("WORKLINE_EVENT") == specEvent, os.Getenv("WORKLINE_EVENT") == gardening, os.Getenv("WORKLINE_EVENT") == issueEvent:
 		return prepareSpec(runDir, repo, s)
 	}
 	return prepare(runDir, repo, s)

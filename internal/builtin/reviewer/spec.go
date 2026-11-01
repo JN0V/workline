@@ -58,7 +58,7 @@ func prepareSpec(runDir, repo string, s Settings) int {
 	}
 	head = strings.TrimSpace(head)
 	file, issue := input(runDir, "spec"), input(runDir, "issue")
-	if os.Getenv("WORKLINE_EVENT") == gardening && file == "" && issue == "" {
+	if (os.Getenv("WORKLINE_EVENT") == gardening || os.Getenv("WORKLINE_EVENT") == issueEvent) && file == "" && issue == "" {
 		return prepareSpecs(runDir, repo, s, head)
 	}
 	sp, cut, err := readSpec(repo, file, issue, s.SpecLinesMax)

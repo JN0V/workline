@@ -1,0 +1,23 @@
+case: routing/state-refine-spec-not-routed-waits-the-night
+about: >
+  The reviewer reads a refined spec in refine's step only where the
+  project routes it on `issue` (ADR-0059, #128). Routed on `schedule`
+  alone, refine's step runs the product owner alone: its ready held,
+  the spec waits for the night's review, no review written now.
+given:
+  repo: backlog
+  config:
+    routing: {events: {schedule: [product-owner, reviewer], issue: [product-owner, tester, developer]}}
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.\n\n## Need\n\nThe monthly report counts every sale.\n\n## Verification\n\nA test writes three rows.\n\n## Validation\n\n- **A known day:** Given a day of three sales, When Ann opens it, Then she counts three.\n\n## Scope\n\nsrc/export/csv.go", author: ann, insider: true, labels: [workline:to-refine], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {route: issue, target: {issue: 9}, ai: fake:ready-nine-then-spec-clear}
+expect:
+  status: pass
+  agent-calls: 1
+  findings: [{rule: spec-not-reviewed, where: "#9"}]
+  forge:
+    issues:
+      - id: 9
+        labels: [workline:to-refine]
+        comment-lacks: ["<!-- workline:sticky=reviewer/spec -->"]
