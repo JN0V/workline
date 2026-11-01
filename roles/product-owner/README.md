@@ -7,7 +7,7 @@ verified: agent:claude-code
 
 ```mermaid
 flowchart LR
-  when["<b>When</b><br/>gardening (opt-in)<br/>importing a file"]
+  when["<b>When</b><br/>gardening (opt-in)<br/>an issue to refine<br/>importing a file"]
   role(["Product owner"])
   alone["<b>Alone</b><br/>names the code,<br/>completes, readies<br/>an evident issue"]
   proposed["<b>Proposed</b><br/>on the issue,<br/>label workline:proposed"]
@@ -41,6 +41,7 @@ is on each issue; you answer there
 | Event | Fired by | Does |
 |---|---|---|
 | `schedule` | CI gardening, with `product-owner` in the `schedule` line | reads `issues-per-run` open issues, completes and proposes |
+| `issue` | its state, `workline:to-refine`, where the project routes the role on `issue` ([the line of states](../../docs/spec/routing.md#the-line-of-states)) | reads that issue alone, at once: completes it, readies it to its tests |
 | `import` | `workline issues import <file>` | opens each item still to do in a file as an issue ([the command](../../docs/commands-work.md#workline-issues-import)) |
 
 ## On each issue

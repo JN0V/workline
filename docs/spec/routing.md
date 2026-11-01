@@ -354,6 +354,8 @@ whose result moves the issue to the next. The table is the routing's
   `issue`; none, said (`state-wakes-none`): a state that wakes nobody,
   or a role not routed there. Without a target, the event's steps run
   as listed.
+- **The product owner on `issue`** reads the issue named alone, at
+  once, not a night's share: one with no state of its own yet too.
 - **Moves are exclusive**: the next state's label on, every other
   state's off, in one call.
 - **Who moves it**: the product owner's ready sends an issue with named

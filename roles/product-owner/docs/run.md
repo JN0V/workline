@@ -29,7 +29,10 @@ From each open issue's own state
 
 ## 2. What the agent is given
 
-A share of the open issues (`issues-per-run`), in this order:
+On `issue`, its state `workline:to-refine` woken where the project
+routes the role there, that issue alone
+([the line of states](../../../docs/spec/routing.md#the-line-of-states)).
+Else a share of the open issues (`issues-per-run`), in this order:
 
 1. an issue you commented on since it was read: waiting on you
    ("revise"), set aside, or neither — your word comes first;
