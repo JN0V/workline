@@ -104,3 +104,12 @@ func TestInertTextBreaksClosingKeywords(t *testing.T) {
 		t.Errorf("inertText = %q", got)
 	}
 }
+
+// An escaped backslash before < leaves the tag live: it is escaped again.
+func TestInertTextEscapesATagAfterAnEscapedBackslash(t *testing.T) {
+	for in, want := range map[string]string{`\<b>`: `\<b>`, `\\<b>`: `\\\<b>`, `<b>`: `\<b>`} {
+		if got := inertText(in); got != want || inertText(got) != got {
+			t.Errorf("inertText(%q) = %q, want %q, the same made inert twice", in, got, want)
+		}
+	}
+}
