@@ -48,13 +48,16 @@ func TestLineOfStatesChainsAndReconciles(t *testing.T) {
 			t.Errorf("%s, apply: its last step does not ask the line whether the issue is due, then start its run with the job's token", file)
 		}
 		rec := wf.Jobs["reconcile"]
-		reconciled := false
+		reconciled, byHand := false, false
 		for _, s := range rec.Steps {
+			// By hand (input reconcile) or on schedule: run whenever it last
+			// ran; on the line's other events, 55 minutes after (#789).
+			byHand = byHand || strings.Contains(s.Env["FORCED"], "inputs.reconcile == 'true'") && strings.Contains(s.Env["FORCED"], "github.event_name == 'schedule'")
 			list := strings.Index(s.Run, "workline route reconcile --ai none")
 			start := strings.Index(s.Run, "gh workflow run")
 			reconciled = reconciled || list >= 0 && list < start && strings.Contains(s.Run, "--input reconcile=list") && strings.Contains(s.Run, "(.due // [])[]")
 		}
-		if !reconciled || !strings.Contains(rec.If, "github.event_name == 'schedule'") || !strings.Contains(rec.If, "inputs.reconcile == 'true'") ||
+		if !reconciled || !strings.Contains(rec.If, "github.event_name == 'schedule'") || !strings.Contains(rec.If, "(github.event_name == 'workflow_dispatch' && inputs.reconcile == 'true')") || !byHand ||
 			rec.Permissions["actions"] != "write" || rec.Permissions["issues"] != "read" || rec.Permissions["contents"] != "read" {
 			t.Errorf("%s, reconcile: not hourly and by hand, or not each due issue's run started with a read token: %q %v", file, rec.If, rec.Permissions)
 		}

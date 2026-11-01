@@ -1,0 +1,21 @@
+case: routing/reconcile-says-when-late
+about: >
+  The reconciler told when it last ran (`--input last=<RFC 3339>`, kept
+  by the CI): past two hours, its summary says how late it is, a step
+  an event missed having waited that long (#789). It still runs what
+  is due.
+given:
+  repo: tested
+  config:
+    routing: {events: {issue: [developer]}}
+  forge:
+    issues:
+      - {id: 3, title: "Multiply", labels: ["workline:ready"], body: "## Need\n\nI want to multiply.\n"}
+run: {route: reconcile, open-merge-request: true, ai: none, input: {last: "2026-01-01T09:00:00Z"}}
+expect:
+  status: pass
+  summary: "since the last reconcile (2026-01-01 09:00 UTC), over 2 h"
+  findings: [{rule: reconcile-late, level: warn, message: "a step an event missed waited that long"}]
+  forge:
+    issues:
+      - {id: 3, comment-contains: "\"state\":\"ready\""}

@@ -13,6 +13,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/engine"
@@ -34,6 +35,15 @@ const ReconcileEvent = "reconcile"
 // the issues due and start none: a CI job then starts each one's own
 // run.
 const ReconcileInput = "reconcile"
+
+// LastInput, `last`, is when the reconciler last ran, RFC 3339, as the CI
+// keeps it: a gap past ReconcileLate is said in its summary, the
+// forge's schedule being late or skipped (#789).
+const LastInput = "last"
+
+// ReconcileLate is the gap since the last reconcile said as late: twice
+// the hour it is meant to run in (ADR-0059, decision 8).
+const ReconcileLate = 2 * time.Hour
 
 // openForge opens the forge a line reads issues from: the one given, else
 // the project's; nil with none.
@@ -288,5 +298,24 @@ func reconcile(res *Result, cfg *routing.Config, o engine.Options) *Result {
 	default:
 		res.Summary = fmt.Sprintf("%s: %d %s due, %s run (%s)", ReconcileEvent, started, plural(started, "issue", "issues"), plural(started, "its step", "their steps"), res.Status)
 	}
+	lateSaid(res, o.Inputs[LastInput], time.Now())
 	return res
+}
+
+// lateSaid adds to res how late this reconcile is, when the last one, at
+// last (RFC 3339), was over ReconcileLate ago: a step an event missed
+// waited that long (#789). Nothing when last is empty or unreadable.
+func lateSaid(res *Result, last string, now time.Time) {
+	t, err := time.Parse(time.RFC3339, last)
+	if err != nil {
+		return
+	}
+	gap := now.Sub(t)
+	if gap <= ReconcileLate {
+		return
+	}
+	said := fmt.Sprintf("%d h %02d min since the last reconcile (%s), over %d h: a step an event missed waited that long",
+		int(gap.Hours()), int(gap.Minutes())%60, t.UTC().Format("2006-01-02 15:04 UTC"), int(ReconcileLate.Hours()))
+	res.Summary += "; late: " + said
+	res.Findings = append(res.Findings, verdict.Finding{Rule: "reconcile-late", Level: "warn", Message: said})
 }
