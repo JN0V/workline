@@ -124,6 +124,28 @@ func TestProveEmptyReportIsUnproven(t *testing.T) {
 	}
 }
 
+// A command that fails, its report naming no test, and a tool not found in
+// its output: unproven, and the tool is held in Missing (#774).
+func TestProveUnprovenHoldsTheMissingTool(t *testing.T) {
+	repo := provingRepo(t, `"printf '<testsuite name=\"lib\"></testsuite>' > {report}; echo 'run.sh: 1: nosuchtool774: not found'; exit 1"`)
+	p, c := prove(repo, "", lib("ok"), nil, nil, Settings{ProofSeconds: 60})
+	if p.Result != Unproven || p.Why != "the report names no test" || c != nil {
+		t.Fatalf("proof = %+v, cap = %+v; want unproven, the report naming no test", p, c)
+	}
+	if !slices.Equal(p.Missing, []string{"nosuchtool774"}) {
+		t.Errorf("Missing = %v, want [nosuchtool774]", p.Missing)
+	}
+}
+
+// The same failure with no tool named in its output: Missing is empty.
+func TestProveUnprovenWithNoToolMissingNamesNone(t *testing.T) {
+	repo := provingRepo(t, `"printf '<testsuite name=\"lib\"></testsuite>' > {report}; exit 1"`)
+	p, _ := prove(repo, "", lib("ok"), nil, nil, Settings{ProofSeconds: 60})
+	if p.Result != Unproven || len(p.Missing) != 0 {
+		t.Errorf("proof = %+v; want unproven, no Missing", p)
+	}
+}
+
 // Past proof-seconds, the command is stopped: unproven, and the cap said.
 func TestProveStoppedPastItsSeconds(t *testing.T) {
 	repo := provingRepo(t, `"exec sleep 30"`)
