@@ -1,0 +1,35 @@
+case: product-owner/blocked-one-decision-a-run
+about: >
+  The product owner woken on a blocked issue (ADR-0059, amended) is told
+  why it was blocked, from the comment of the role that blocked it, not
+  the line's pointer to it. It decides once a run: kept blocked, then
+  sent back in the same answer, the second is dropped, said; the issue
+  stays blocked.
+given:
+  repo: tested
+  config:
+    routing: {events: {issue: [product-owner]}, revisit: 3650}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply"
+        labels: ["workline:blocked"]
+        author: ann
+        insider: true
+        body: "## Need\n\nI want to multiply.\n"
+        comments:
+          - "**The tester** blocks this issue.\n\n- **Why**: an objection to its test still stands.\n- **Next**: a person decides in the thread.\n\n<!-- workline:sticky=tester/issue -->"
+          - "**workline's line** blocks this issue.\n\n- **Why**: a role or a person blocked it; their comment on this issue says why; its state was tests.\n- **Next**: the product owner reads it again.\n\n<!-- workline:line-record {\"state\":\"blocked\",\"body\":\"8a828a06be19\",\"hops\":2,\"from\":\"tests\",\"since\":\"2026-10-30T09:00:00Z\"} -->\n<!-- workline:sticky=line/state -->"
+          - {body: "Any news on the objection?", author: ann, insider: true}
+run: {route: issue, target: {issue: 3}, open-merge-request: true, ai: "fake:unblock-and-keep-three"}
+expect:
+  status: pass
+  agent-calls: 1
+  findings: [{rule: once-a-run, where: "#3", message: "one decision on a blocked issue a run; the blocked before it is kept"}]
+  run-files:
+    in/task.md: {contains: "Blocked (workline:blocked): an objection to its test still stands."}
+  forge:
+    issues:
+      - id: 3
+        labels: ["workline:blocked"]
+        comment-contains: ["Kept #3 blocked, read again: the objection still stands", "**workline's line** blocks this issue"]

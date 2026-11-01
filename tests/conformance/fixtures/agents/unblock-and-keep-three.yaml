@@ -1,0 +1,4 @@
+# Two decisions on one blocked issue in a run: the first is kept, the
+# second dropped (ADR-0059, amended).
+- blocked: {issue: 3, why: "the objection still stands"}
+- unblock: {issue: 3, to: refine, why: "its need is read again"}

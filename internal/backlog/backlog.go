@@ -662,6 +662,7 @@ type Plan struct {
 	ticked    map[string]bool // the proposals a person accepted this run decided, done or dropped: settled
 	added     map[int][]int   // the blockers this run's depend acts add, for the next act's cycle check
 	dropped   map[int][]int   // the blockers this run's undepend acts take off
+	revisited map[int]string  // the blocked issues this run decided on: unblock or blocked, one a run
 	hearsay   bool            // the last quote found was only in an outsider's comment
 	// changedFor are the issues read again for a change to what they were
 	// built on: every act on them proposed (ADR-0032).

@@ -223,7 +223,15 @@ func writeState(f forge.Forge, cfg *routing.Config, repo string, w StateWrite, r
 			return err
 		}
 	case w.Record.State == BlockedState:
-		body = blockedBody(cfg, w.Record) // read again by the product owner: still the line's word on the block
+		// Read again by the product owner: still the line's word on the
+		// block, unless its run moved the issue out of it.
+		is, err := f.Issue(w.Issue)
+		if err != nil {
+			return err
+		}
+		if s, ok := cfg.StateOf(is.Labels); ok && s.Name == BlockedState {
+			body = blockedBody(cfg, w.Record)
+		}
 	}
 	return f.Sticky(t, backlog.Inert(body), forge.Marker("sticky="+recordKey), true)
 }

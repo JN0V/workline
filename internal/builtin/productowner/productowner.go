@@ -1751,10 +1751,13 @@ func blockedSaid(runDir string, comments []string) string {
 	}
 	why := "a role blocked it; its comments say why"
 	for _, c := range slices.Backward(comments) {
-		if strings.Contains(c, "blocks this issue") {
-			if m := blockWhy.FindStringSubmatch(c); m != nil {
-				why = strings.TrimSuffix(strings.TrimSpace(m[1]), ".")
-			}
+		if !strings.Contains(c, "blocks this issue") {
+			continue
+		}
+		// The line's own comment on a block it did not make points to
+		// the one that says why: that one is read.
+		if m := blockWhy.FindStringSubmatch(c); m != nil && !strings.HasPrefix(m[1], backlog.BlockedElsewhere) {
+			why = strings.TrimSuffix(strings.TrimSpace(m[1]), ".")
 			break
 		}
 	}

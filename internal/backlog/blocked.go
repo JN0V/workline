@@ -11,6 +11,10 @@ import (
 	"slices"
 )
 
+// BlockedElsewhere opens the line's reason for a block it did not make:
+// the reason is in the comment of whoever blocked it.
+const BlockedElsewhere = "a role or a person blocked it"
+
 // stateLabels are the labels of the line's states as shipped
 // (routing.default.yaml), by the state's name.
 var stateLabels = map[string]string{"refine": LabelToRefine, "tests": LabelNeedsTests, "ready": LabelReady, "doing": "workline:developing", "blocked": LabelBlocked}
@@ -51,8 +55,16 @@ func (p *Plan) checkBlocked(c *Proposal) (rule, why string) {
 		return "not-blocked", fmt.Sprintf("#%d is not %s: nothing to unblock nor keep blocked", c.Issue, LabelBlocked)
 	case c.Do == "unblock" && !slices.Contains(UnblockTo(p.config.RevisitFrom), c.To):
 		return "unblock-to", fmt.Sprintf("#%d goes back to %s only, not %q", c.Issue, orList(UnblockTo(p.config.RevisitFrom)), c.To)
+	case (c.Do == "unblock" || c.Do == "blocked") && p.revisited[c.Issue] != "":
+		return "once-a-run", fmt.Sprintf("#%d: one decision on a blocked issue a run; the %s before it is kept", c.Issue, p.revisited[c.Issue])
 	case c.Do == "ready" && blocked:
 		return "blocked-first", fmt.Sprintf("#%d is %s: `unblock` it, to the state it came from or to refine, rather than ready", c.Issue, LabelBlocked)
+	}
+	if c.Do == "unblock" || c.Do == "blocked" {
+		if p.revisited == nil {
+			p.revisited = map[int]string{}
+		}
+		p.revisited[c.Issue] = c.Do
 	}
 	return "", ""
 }

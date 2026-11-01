@@ -200,7 +200,7 @@ func refs(ids []int) string {
 func blockedBody(cfg *routing.Config, r Record) string {
 	why := r.Why
 	if why == "" {
-		why = "a role or a person blocked it; their comment on this issue says why"
+		why = backlog.BlockedElsewhere + "; their comment on this issue says why"
 	}
 	if r.From != "" && !strings.Contains(why, "its state was") {
 		why += "; its state was " + r.From
