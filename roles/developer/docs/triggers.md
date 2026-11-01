@@ -59,6 +59,14 @@ routing:
     runs if due ([#789](https://github.com/JN0V/workline/issues/789)). Its cost: a
     job of a few seconds each such event, which a private repository
     pays by the started minute; comments, the most frequent, start none.
+  - **One run an issue at a time**
+    ([#806](https://github.com/JN0V/workline/issues/806)): a run of an
+    issue's step is named `workline develop #<n>`. The next step, the
+    reconciler and the night skip an issue with such a run queued or
+    running.
+  - **Not due, ended at once**: `judge` asks the line first, no agent;
+    a step acted on already ends there, before your setup steps and the
+    agent are installed.
   - The `judge` job holds the agent and a read token, your setup steps
     run there ([below](#the-projects-environment)); `apply` holds the
     App's key, no AI key.

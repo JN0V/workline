@@ -2012,7 +2012,7 @@ func TestDeveloperJudgesRunTheProjectsSetupSteps(t *testing.T) {
 		setup, at, line := -1, -1, -1
 		for i, s := range wf.Jobs[job].Steps {
 			switch {
-			case s.Uses == "./.github/actions/workline-setup" && s.If == "hashFiles('.github/actions/workline-setup/action.yml') != ''":
+			case s.Uses == "./.github/actions/workline-setup" && strings.HasSuffix(s.If, "hashFiles('.github/actions/workline-setup/action.yml') != ''"):
 				setup = i
 			case strings.HasPrefix(s.Uses, "actions/checkout@"):
 				at = i

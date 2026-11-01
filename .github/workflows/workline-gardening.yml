@@ -150,7 +150,13 @@ jobs:
         run: |
           gh workflow view workline-develop.yml >/dev/null 2>&1 || exit 0
           workline route reconcile --ai none --forge github --open-merge-request --input reconcile=list --json > due.json || exit 0
+          # An issue with a run queued or running is not started again (#806).
+          busy=$(gh run list --workflow workline-develop.yml --limit 100 --json status,displayTitle \
+            --jq '.[] | select(.status != "completed") | .displayTitle') || busy=
           for n in $(jq -r '(.due // [])[]' due.json); do
+            if printf '%s\n' "$busy" | grep -qxF "workline develop #$n"; then
+              echo "#$n: a run of it is queued or running"; continue
+            fi
             gh workflow run workline-develop.yml --ref "$GITHUB_REF_NAME" -f issue="$n" ||
               echo "::warning title=workline::#$n's run not started: the reconciler starts it"
           done

@@ -64,5 +64,95 @@ func TestLineOfStatesChainsAndReconciles(t *testing.T) {
 		if judge := wf.Jobs["judge"]; !strings.Contains(judge.If, "inputs.reconcile != 'true'") {
 			t.Errorf("%s, judge: runs on the reconciler's dispatch too: %q", file, judge.If)
 		}
+		lineRunsOnce(t, file, data)
+	}
+}
+
+// lineRunsOnce checks one event starts one run of an issue's step (#806):
+// each run of an issue is named for it, every start of one is skipped
+// while a run of that issue is queued or running, and the judge asks the
+// line whether the step is due before it sets up the agent and the
+// proof.
+func lineRunsOnce(t *testing.T, file string, data []byte) {
+	t.Helper()
+	var wf struct {
+		RunName string `yaml:"run-name"`
+		Jobs    map[string]struct {
+			Steps []struct {
+				ID   string `yaml:"id"`
+				Uses string `yaml:"uses"`
+				If   string `yaml:"if"`
+				Run  string `yaml:"run"`
+			} `yaml:"steps"`
+		} `yaml:"jobs"`
+	}
+	if err := yaml.Unmarshal(data, &wf); err != nil {
+		t.Fatalf("%s: %v", file, err)
+	}
+	if !strings.Contains(wf.RunName, "format('workline develop #{0}', inputs.issue)") || !strings.Contains(wf.RunName, "format('workline develop #{0}', github.event.issue.number)") {
+		t.Errorf("%s: a run of an issue is not named for it: run-name %q", file, wf.RunName)
+	}
+	startsOnce(t, file, data)
+	due, set := -1, -1
+	for i, s := range wf.Jobs["judge"].Steps {
+		switch {
+		case s.ID == "due":
+			due = i
+			if !strings.Contains(s.Run, "--input reconcile=list") || !strings.Contains(s.Run, "--ai none") {
+				t.Errorf("%s, judge: its due step does not ask the line, no agent", file)
+			}
+		case s.ID == "line" || strings.Contains(s.Run, "npm install") || s.Uses == "./.github/actions/tests" ||
+			s.Uses == "./.github/actions/workline-setup":
+			if set < 0 {
+				set = i
+			}
+			if !strings.Contains(s.If, "steps.due.outputs.due == 'true'") {
+				t.Errorf("%s, judge: step %d runs though the issue's step is not due: if %q", file, i, s.If)
+			}
+		}
+	}
+	if due < 0 || due > set {
+		t.Errorf("%s, judge: no due step before the agent and the proof are set up", file)
+	}
+}
+
+// startsOnce checks every start of an issue's run by workflow_dispatch is
+// skipped while a run of that issue, other than this one, is queued or
+// running (#806).
+func startsOnce(t *testing.T, file string, data []byte) {
+	t.Helper()
+	var wf struct {
+		Jobs map[string]struct {
+			Steps []struct {
+				Run string `yaml:"run"`
+			} `yaml:"steps"`
+		} `yaml:"jobs"`
+	}
+	if err := yaml.Unmarshal(data, &wf); err != nil {
+		t.Fatalf("%s: %v", file, err)
+	}
+	for name, job := range wf.Jobs {
+		for _, s := range job.Steps {
+			start := strings.Index(s.Run, "gh workflow run")
+			if start < 0 || !strings.Contains(s.Run, "-f issue=") {
+				continue
+			}
+			busy := strings.Index(s.Run, "gh run list")
+			if busy < 0 || busy > start || !strings.Contains(s.Run, `select(.status != \"completed\"`) && !strings.Contains(s.Run, `select(.status != "completed"`) ||
+				!strings.Contains(s.Run, `grep -qxF "workline develop #$`) {
+				t.Errorf("%s, %s: an issue's run started though one of it is queued or running", file, name)
+			}
+		}
+	}
+}
+
+// The night's states moved: their next steps started once each (#806).
+func TestGardeningStartsEachIssueOnce(t *testing.T) {
+	for _, file := range []string{"../../ci/github/workline-gardening.yml", "../../.github/workflows/workline-gardening.yml"} {
+		data, err := os.ReadFile(file)
+		if err != nil {
+			t.Fatal(err)
+		}
+		startsOnce(t, file, data)
 	}
 }
