@@ -153,20 +153,20 @@ jobs:
             echo "#$ISSUE's next step started" >> "$GITHUB_STEP_SUMMARY"
           fi
 
-  # The reconciler (ADR-0059): every open issue whose step is due and no
-  # event started, at most reconcile-max (3) a run; each one's own run
-  # started here, in its issue's concurrency group. No agent, a read
-  # token, and the right to start runs.
-  # When: hourly by the schedule, or by hand (input reconcile); and, as
-  # GitHub's schedule runs late or not at all (#789), on any event this
-  # workflow gets for the line — an issue labelled, a step started — once
-  # 55 minutes passed since the last one, kept in the Actions cache. Not
-  # on comments, the most frequent: a job each would cost more than it
-  # catches. One at a time: a burst of events starts one more at most.
+  # The reconciler (ADR-0059): each open issue whose step is due and no
+  # event started, at most reconcile-max (3) a run, each its own run. No
+  # agent, a read token, the right to start runs. Hourly by the schedule,
+  # or by hand (input reconcile); and on the line's events (an issue
+  # labelled, a step started) once 55 minutes passed since the last run
+  # that succeeded, kept in the Actions cache (#789; why: the developer's
+  # triggers page). One at a time, forced runs apart.
   reconcile:
     if: >-
-      github.event_name == 'schedule' || github.event_name == 'issues' || github.event_name == 'workflow_dispatch'
-    concurrency: {group: workline-reconcile, cancel-in-progress: false}
+      github.event_name == 'schedule' || github.event_name == 'issues' ||
+      (github.event_name == 'workflow_dispatch' && inputs['pull-request'] == '')
+    concurrency:
+      group: workline-reconcile-${{ (github.event_name == 'schedule' || inputs.reconcile == 'true') && 'forced' || 'event' }}
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     permissions: {contents: read, issues: read, actions: write}
     steps:
@@ -185,9 +185,6 @@ jobs:
           echo "last=$last" >> "$GITHUB_OUTPUT"
           mkdir -p "$RUNNER_TEMP/workline-reconcile"
           date -u +%Y-%m-%dT%H:%M:%SZ > "$RUNNER_TEMP/workline-reconcile/last"
-      - uses: actions/cache/save@v4
-        if: steps.due.outputs.due == 'true'
-        with: {path: "${{ runner.temp }}/workline-reconcile", key: "workline-reconcile-${{ github.run_id }}-${{ github.run_attempt }}"}
       - uses: actions/checkout@v4
         if: steps.due.outputs.due == 'true'
         with: {fetch-depth: 0, persist-credentials: false}
@@ -203,6 +200,10 @@ jobs:
             gh workflow run "$(basename "${GITHUB_WORKFLOW_REF%%@*}")" --ref "$GITHUB_REF_NAME" -f issue="$n" ||
               echo "::warning title=workline::#$n's run not started: the next hour starts it"
           done
+      # Kept only once it ran: a failed run is no reconcile.
+      - uses: actions/cache/save@v4
+        if: steps.due.outputs.due == 'true'
+        with: {path: "${{ runner.temp }}/workline-reconcile", key: "workline-reconcile-${{ github.run_id }}-${{ github.run_attempt }}"}
 
   # A review round (ADR-0054, step 6): a fresh run on the developer's own
   # pull request, reading its record, the reviewer's findings and a
