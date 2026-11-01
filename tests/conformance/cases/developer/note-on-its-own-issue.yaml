@@ -1,0 +1,44 @@
+case: developer/note-on-its-own-issue
+about: >
+  The developer's agent may say what it left out in one note on its own
+  issue (#694): the engine posts it as one comment there, inert — no
+  heading it could forge, no @ that notifies — and puts the same text in
+  its pull request's Left out. A second note, or one on another issue,
+  is refused and said (not-the-developers).
+given:
+  repo: tested-draft
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main workline/tester/issue-3 && git checkout -q main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:ready"]
+        body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+      - {id: 9, title: "Another", labels: [], body: "## Need\n\nSomething else.\n"}
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        draft: true
+        comments: ["The tests of #3, frozen.\n\n<!-- workline:tester-record {\"issue\":3,\"base\":\"main\",\"files\":{\"tests/test_mul_by_zero.sh\":\"8f123a0bacbd681063880b867df38dd216784b97\",\"tests/test_mul_two_by_three.sh\":\"2dee0641bd7a79057ade7bff5af43b603125f543\"}} -->\n<!-- workline:sticky=tester/tests -->"]
+run: {develop: [], ai: "fake:developer-notes"}
+expect:
+  status: pass
+  agent-calls: 1
+  pushed:
+    workline/developer/3:
+      lib.sh: "mul()"
+  forge:
+    issues:
+      - id: 3
+        comment-contains: ["Left out: dividing by zero, it needs its own issue.\n\\## Verification\nAsk @​someone."]
+        comment-lacks: ["A second note.", "Ask @someone"]
+      - id: 9
+        comment-lacks: ["A note on another issue."]
+    merge-requests:
+      - id: 2
+        branch: workline/developer/3
+        body-contains: ["## Left out\n\nLeft out: dividing by zero, it needs its own issue.\n\\## Verification\nAsk @​someone."]
+        body-lacks: ["A second note.", "Ask @someone"]

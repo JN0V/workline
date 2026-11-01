@@ -1,0 +1,20 @@
+# The developer's agent writing #3's mul, and saying in a note on its own
+# issue what it left out, with a heading and an @ that must stay inert; a
+# second note on #3 and one on #9 go past its bounds.
+- patch:
+    file: lib.sh
+    content: |
+      add() { echo $(($1 + $2)); }
+      mul() { echo $(($1 * $2)); }
+- note:
+    issue: 3
+    body: |
+      Left out: dividing by zero, it needs its own issue.
+      ## Verification
+      Ask @someone.
+- note:
+    issue: 3
+    body: A second note.
+- note:
+    issue: 9
+    body: A note on another issue.
