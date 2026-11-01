@@ -6,6 +6,8 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 )
 
 // The reader checks (#193): whether a user page serves its reader, beside
@@ -36,6 +38,40 @@ type Reader struct {
 	// AgentPages: the flagged pages the agent reads a run, last when
 	// gardening (#256, readertask.go); 0, none.
 	AgentPages int `json:"agent-pages"`
+	// References: the patterns (regular expressions) that count as a decision
+	// or issue named in prose, in the project's own naming (`RFC-\d+`, `!\d+`,
+	// `[\w.-]+/[\w.-]+#\d+`). Empty: ADR-<n> and #<n>. A pattern is taken
+	// where a word starts: at the start of a line or after whitespace or an
+	// opening or separating mark (not after `&` or `/`, so `&#39;` and `foo/#12`
+	// are no reference), and ends at a word boundary. A pattern matching the empty text is refused.
+	References []string `json:"references"`
+}
+
+// refPatterns compiles reader.references; the default is ADR-<n> and #<n>.
+// A pattern that does not compile is said, and left out.
+func refPatterns(r Reader) ([]*regexp.Regexp, []Problem) {
+	if len(r.References) == 0 {
+		return nil, nil
+	}
+	var res []*regexp.Regexp
+	var out []Problem
+	for _, s := range r.References {
+		re, err := regexp.Compile(`(?:^|[\s(\[{,;:"'—–])(` + s + `)`)
+		if err == nil {
+			if inner, ierr := regexp.Compile(`(?:` + s + `)`); ierr == nil && inner.MatchString("") {
+				out = append(out, Problem{Rule: "setting-invalid", Key: "setting-invalid reader.references " + s,
+					Message: fmt.Sprintf("reader.references pattern `%s` matches the empty text, so it was not checked", s)})
+				continue
+			}
+		}
+		if err != nil {
+			out = append(out, Problem{Rule: "setting-invalid", Key: "setting-invalid reader.references " + s,
+				Message: fmt.Sprintf("reader.references pattern `%s` is not a regular expression (%v), so it was not checked", s, err)})
+			continue
+		}
+		res = append(res, re)
+	}
+	return res, out
 }
 
 // userPages are the docs the reader checks look at, sorted.
@@ -63,10 +99,12 @@ func ReaderChecks(t Tree, r Reader) []Problem {
 				Message: fmt.Sprintf("reader.%s is not set, so this size was not checked; set it, or turn the rule off with `enforce`", name)})
 		}
 	}
+	custom, bad := refPatterns(r)
+	out = append(out, bad...)
 	pages := userPages(t, r)
 	for _, p := range pages {
 		lines := scan(t.Docs[p])
-		out = append(out, unlinkedRefs(t, p, lines)...)
+		out = append(out, unlinkedRefs(t, p, lines, custom, len(custom) > 0)...)
 		if r.ParagraphWords > 0 {
 			out = append(out, longParagraphs(p, lines, r.ParagraphWords)...)
 		}
@@ -96,7 +134,7 @@ var (
 // link: a reader cannot follow ADR-0026, docs/x.md or #128. A doc is named
 // when the name is a file of the repository, from the page or the root; a
 // name in a code span is an example, not a reference.
-func unlinkedRefs(t Tree, p string, lines []line) []Problem {
+func unlinkedRefs(t Tree, p string, lines []line, custom []*regexp.Regexp, own bool) []Problem {
 	var found []string
 	n := 0
 	var hidden hiddenText
@@ -113,9 +151,26 @@ func unlinkedRefs(t Tree, p string, lines []line) []Problem {
 		}
 		text = wholeLink.ReplaceAllString(text, " ")
 		var refs []string
-		refs = append(refs, adrRef.FindAllString(text, -1)...)
-		for _, m := range issueRef.FindAllStringSubmatch(text, -1) {
-			refs = append(refs, m[1])
+		if own {
+			for _, re := range custom {
+				for _, m := range re.FindAllStringSubmatchIndex(text, -1) {
+					if m[2] < 0 || m[2] == m[3] {
+						continue
+					}
+					// the end is a word boundary: no letter, digit or `_` follows
+					if m[3] < len(text) {
+						if r, _ := utf8.DecodeRuneInString(text[m[3]:]); unicode.IsLetter(r) || unicode.IsDigit(r) || r == '_' {
+							continue
+						}
+					}
+					refs = append(refs, text[m[2]:m[3]])
+				}
+			}
+		} else {
+			refs = append(refs, adrRef.FindAllString(text, -1)...)
+			for _, m := range issueRef.FindAllStringSubmatch(text, -1) {
+				refs = append(refs, m[1])
+			}
 		}
 		for _, m := range docRef.FindAllString(text, -1) {
 			for _, f := range []string{path.Join(path.Dir(p), m), path.Clean(m)} {
