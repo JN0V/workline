@@ -77,10 +77,19 @@ func (r record) intention() map[string]any {
 // readRecord reads the record from workline's own comment on the merge
 // request: never from another's, nor one another edited last.
 func readRecord(f forge.Forge, id int) (record, *verdict.Finding, error) {
+	r, missing, _, err := readRecordKept(f, id)
+	return r, missing, err
+}
+
+// readRecordKept is readRecord, with the merge request's comments as
+// read: who workline's own account is, learnt from them too — on GitHub,
+// the App's login from a comment that names the App, where a reply in a
+// thread names none.
+func readRecordKept(f forge.Forge, id int) (record, *verdict.Finding, forge.Kept, error) {
 	where := fmt.Sprintf("merge request %d", id)
 	kept, err := forge.ReadKept(f, forge.Target{Kind: "merge-request", ID: id})
 	if err != nil {
-		return record{}, nil, err
+		return record{}, nil, kept, err
 	}
 	marker := forge.Marker("sticky=tester/" + recordKey)
 	body, ok := kept.Last(marker)
@@ -89,15 +98,15 @@ func readRecord(f forge.Forge, id int) (record, *verdict.Finding, error) {
 		if err := kept.Unread(marker); err != nil {
 			msg += "; " + err.Error()
 		}
-		return record{}, &verdict.Finding{Rule: "tester-record-missing", Where: where, Message: msg}, nil
+		return record{}, &verdict.Finding{Rule: "tester-record-missing", Where: where, Message: msg}, kept, nil
 	}
 	m := recordData.FindStringSubmatch(body)
 	var r record
 	if m == nil || json.Unmarshal([]byte(m[1]), &r) != nil || len(r.Files) == 0 {
 		return record{}, &verdict.Finding{Rule: "tester-record-missing", Where: where,
-			Message: "the tester's comment holds no record it can read: which tests are frozen cannot be told"}, nil
+			Message: "the tester's comment holds no record it can read: which tests are frozen cannot be told"}, kept, nil
 	}
-	return r, nil, nil
+	return r, nil, kept, nil
 }
 
 // issueOf is the issue a tester's branch is for, 0 when the branch is not

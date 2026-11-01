@@ -229,7 +229,9 @@ func answerPre(runDir, repo string, s Settings) int {
 		return final(runDir, verdict.Verdict{Status: verdict.Block, Summary: "this forge lists no conversation on a line",
 			Findings: []verdict.Finding{{Rule: "no-threads", Where: where, Message: "the objections are read from the merge request's comments on lines, which this forge does not list"}}})
 	}
-	r, missing, err := readRecord(f, id)
+	// own: who wrote the record, its replies too (a GitHub reply in a
+	// thread names no App: its login is learnt from the record).
+	r, missing, own, err := readRecordKept(f, id)
 	if errors.Is(err, forge.ErrUnreachable) {
 		return external(err)
 	} else if err != nil {
@@ -242,10 +244,6 @@ func answerPre(runDir, repo string, s Settings) int {
 	if errors.Is(err, forge.ErrUnreachable) {
 		return external(err)
 	} else if err != nil {
-		return fail(err)
-	}
-	own, err := forge.OwnAccount(f)
-	if err != nil {
 		return fail(err)
 	}
 	mine := func(n forge.Note, mark string) bool { return own.Wrote(n) && strings.Contains(n.Body, mark) }

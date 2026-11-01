@@ -22,6 +22,8 @@ flowchart LR
   installed on it, such as workline's own builder.
 - Anyone else's comment wakes nothing: no agent's token is spent on a
   stranger's word.
+- Only a comment that opens with `workline:objection`: the tester's own
+  reply, which names the word to say the form, wakes nothing.
 - Any branch `workline/tester/*` of the repository with such a comment
   wakes it, a Draft opened by hand too; never a fork's.
 
