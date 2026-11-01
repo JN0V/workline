@@ -16,7 +16,7 @@ and where it stands: planned, beta or built, by
 |---|---|---|---|
 | Committer | checks each commit's message, secrets and author | `commit-msg`, `pre-push`, `merge-request` | [committer](../roles/committer/README.md) |
 | Documentalist | keeps the docs true to the code they name | `pre-push`, `merge-request`, `main`, `schedule`, `release`, `init` | [documentalist](../roles/documentalist/README.md) |
-| Reviewer | says what a change, or a spec, breaks or leaves out; never approves | `review`, `spec`, `merge-request` and `schedule` (opt-in) | [reviewer](../roles/reviewer/README.md) |
+| Reviewer | says what a change, or a spec, breaks or leaves out; never approves | `review`, `spec`, `merge-request`, `schedule` and `issue` (opt-in) | [reviewer](../roles/reviewer/README.md) |
 | Inspector | explains the findings a merge request adds to your gates; never their verdict | `merge-request` (opt-in), after the gates | [inspector](../roles/inspector/README.md) |
 | Tester | writes the tests of an issue waiting for them from its scenarios, each proven red on the base, frozen to the builder | `schedule` and `merge-request` (opt-in), an objection on its Draft, `workline test` | [tester](../roles/tester/README.md) |
 | Developer | takes the first ready issue nobody took and writes its code within bounds, proves it on the project's tests, opens a pull request, ready or a Draft, and fixes its review | `workline develop`, `issue` and `schedule` (opt-in), a review on its pull request, its bounds on `merge-request` (opt-in) | [developer](../roles/developer/README.md) |
