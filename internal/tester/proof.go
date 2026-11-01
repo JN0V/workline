@@ -8,14 +8,18 @@ package tester
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 	"slices"
 
 	"github.com/JN0V/workline/internal/backlog"
+	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/routing"
 	"github.com/JN0V/workline/internal/verdict"
+	"github.com/JN0V/workline/internal/work"
 )
 
 // The proof kinds and the record, the backlog's: the product owner picks
@@ -90,6 +94,7 @@ func proved(runDir, repo string, t task, intents []intent.Intention, p Proof) in
 		to, next = "", "whoever builds it proves it so, "+ProofKinds[p.Kind]+"; its state kept, not the tester's"
 	}
 	if p.Kind == KindNone {
+		p.Body = t.Body // the body it read: sent again unchanged, Blocked (#815)
 		to, did, rule = "", "finds no test possible for this issue", "no-test-possible"
 		for _, o := range line.States {
 			if o.Role == "product-owner" {
@@ -126,4 +131,60 @@ func proved(runDir, repo string, t task, intents []intent.Intention, p Proof) in
 	}
 	return write(runDir, verdict.Verdict{Status: verdict.Pass, Summary: summary,
 		Findings: []verdict.Finding{{Rule: rule, Level: "info", Where: where, Message: p.Kind + ": " + p.Reason}}})
+}
+
+// sentBack ends pre with no agent on an issue sent to its tests again as
+// it stood when the tester found no test possible, no proof picked (#815):
+// a second "no test possible" would send it back to refine, to be readied
+// again unchanged. It goes to Blocked once, said on it, the record kept;
+// false when the issue is not so.
+func sentBack(runDir, repo string, f forge.Forge, is forge.Issue) (int, bool) {
+	b, ok := f.(forge.Backlog)
+	if !ok {
+		return 0, false
+	}
+	comments, err := b.Comments(forge.Target{Kind: "issue", ID: is.ID})
+	if errors.Is(err, forge.ErrUnreachable) {
+		fmt.Fprintln(os.Stderr, err)
+		return exitExternal, true
+	}
+	if err != nil {
+		return fail(err), true
+	}
+	p, ok := backlog.SentBackUnchanged(is, comments, "product-owner")
+	if !ok {
+		return 0, false
+	}
+	line, err := routing.Load(repo)
+	if err != nil {
+		return fail(err), true
+	}
+	add, remove := []string{backlog.LabelBlocked}, []string{backlog.LabelReady, backlog.LabelNeedsTests, backlog.LabelToRefine}
+	if ad, rm, err := line.Move(BlockedState); err == nil {
+		add, remove = ad, rm
+	}
+	remove = slices.DeleteFunc(remove, func(l string) bool { return !slices.Contains(is.Labels, l) })
+	why := "it came back to its tests as it stood when the tester found no test possible, and no proof was picked; " +
+		"written again, the tests would send it back to refine, and refine to its tests. The tester said: " + p.Reason
+	data, _ := json.Marshal(p)
+	body := backlog.Said("The tester", "leaves this issue blocked", why,
+		"a person of the project names its proof in a comment, `proof: <kind> — why`, or edits its "+work.Name(work.Validation)+
+			" so a test checks it, then takes "+backlog.LabelBlocked+" off") +
+		"\n<!-- workline:" + backlog.ProofMark + string(data) + " -->"
+	intents := []intent.Intention{
+		{Kind: "label", Value: map[string]any{"issue": is.ID, "add": add, "remove": remove}},
+		{Kind: "comment", Value: map[string]any{"issue": is.ID, "sticky": "issue", "body": body}},
+	}
+	if err := intent.Write(filepath.Join(runDir, "in", "fallback.yaml"), intents); err != nil {
+		return fail(err), true
+	}
+	v := verdict.Verdict{Status: verdict.Pass, Summary: "sent to its tests again unchanged after no test possible: blocked",
+		Findings: []verdict.Finding{{Rule: "sent-back-unchanged", Level: "warn", Where: fmt.Sprintf("#%d", is.ID), Message: why}}}
+	if data, err = json.Marshal(v); err != nil {
+		return fail(err), true
+	}
+	if err := os.WriteFile(filepath.Join(runDir, "in", saidFile), data, 0o644); err != nil {
+		return fail(err), true
+	}
+	return 0, true
 }

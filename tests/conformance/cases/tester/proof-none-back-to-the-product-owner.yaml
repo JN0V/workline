@@ -27,4 +27,4 @@ expect:
     issues:
       - id: 3
         labels: ["workline:to-refine"]
-        comment-contains: ["**The tester** finds no test possible for this issue.", "no test checks a feeling", "back to the product owner (refine)", "a person of the project may name one in a comment", "tester-proof {\"kind\":\"none\""]
+        comment-contains: ["**The tester** finds no test possible for this issue.", "no test checks a feeling", "back to the product owner (refine)", "a person of the project may name one in a comment", "tester-proof {\"kind\":\"none\"", "\"body\":\"9e210b1ef9d0\""]

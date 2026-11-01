@@ -1,0 +1,33 @@
+case: tester/no-test-sent-again-unchanged-blocked
+about: >
+  The tester found no test possible for this body, and the issue came
+  back to its tests with the same body and no proof picked (#815). A
+  second "no test possible" would send it back to refine, and refine to
+  its tests, until the hop cap. The tester asks no agent: it moves the
+  issue to Blocked once, says why on it, and keeps its record for the
+  product owner's pick.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+    routing: {events: {issue: [tester]}}
+  forge:
+    issues:
+      - id: 3
+        title: "A calmer page"
+        labels: ["workline:needs-tests"]
+        body: "## Need\n\nA reader needs a calmer page.\n\n## Validation\n\n- **Calm:** Given the page, When Ann reads it, Then it feels calm.\n"
+        comments:
+          - "**The tester** finds no test possible for this issue.\n\n<!-- workline:tester-proof {\"kind\":\"none\",\"reason\":\"no test checks a feeling.\",\"body\":\"9e210b1ef9d0\"} -->\n<!-- workline:sticky=tester/issue -->"
+run: {route: issue, target: {issue: 3}, open-merge-request: true, ai: "fake:tester-proof-none"}
+expect:
+  status: pass
+  agent-calls: 0
+  findings: [{rule: sent-back-unchanged, level: warn, where: "#3"}]
+  forge:
+    issues:
+      - id: 3
+        labels: ["workline:blocked"]
+        comment-contains: ["**The tester** leaves this issue blocked", "no test checks a feeling.", "`proof: <kind> — why`", "tester-proof {\"kind\":\"none\""]
