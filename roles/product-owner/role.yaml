@@ -5,7 +5,9 @@ mission: The backlog stays true to the code and in order, between the need a per
 # schedule: gardening — the open issues read against the code (ADR-0018).
 # import: `workline issues import <file>` — a roadmap or backlog file read a
 #         share at a time, its items still to do opened as issues.
-events: [schedule, import]
+# issue:  one issue to refine, its state woken (ADR-0059): that issue alone
+#         read, where the project routes the role on `issue`.
+events: [schedule, import, issue]
 
 requires: [git]
 

@@ -344,11 +344,11 @@ func Pre(runDir, repo string) int {
 		case !found:
 			fallback = append(fallback, intent.Intention{Kind: "comment", Value: map[string]any{
 				"issue": is.ID, "sticky": "state", "body": backlog.FormatState(backlog.State{Confirmed: commit})}})
-			if backlog.ByPerson(is) && len(ledger.States) > 0 {
+			if backlog.ByPerson(is) && (len(ledger.States) > 0 || is.ID == issueEvent()) {
 				// A person's issue opened since the role's last run: read in
 				// this one, its first state written before any act on it
 				// (ADR-0018, amended). On a backlog the role never ran on,
-				// every issue waits its turn.
+				// every issue waits its turn, but the one an event names.
 				never = append(never, due{is, &backlog.State{Confirmed: commit}, comments, notes})
 			}
 			continue
@@ -658,7 +658,19 @@ func Pre(runDir, repo string) int {
 	// only those a person commented on are read: the role slows down
 	// rather than piling up proposals (ADR-0038).
 	toRead := slices.Concat(answered, ahead, again, never, changed, behind, catchUp)
-	if waiting := ledger.Waiting(open); waiting >= cfg.ProposalsMax {
+	if n := issueEvent(); n > 0 {
+		// One issue's state woke the role (ADR-0059): that issue alone is
+		// read, whatever changed; the rest wait for their own event, or
+		// the night.
+		var one []due
+		for _, d := range slices.Concat(toRead, rest) {
+			if d.is.ID == n {
+				one = append(one, d)
+			}
+		}
+		rest = slices.DeleteFunc(slices.Concat(toRead, rest), func(d due) bool { return d.is.ID == n })
+		toRead = one
+	} else if waiting := ledger.Waiting(open); waiting >= cfg.ProposalsMax {
 		findings = append(findings, verdict.Finding{Rule: "proposals-waiting", Level: "warn",
 			Message: fmt.Sprintf("%d issues wait on your answer, the most allowed (proposals-max: %d): the role reads only those you answered until fewer wait", waiting, cfg.ProposalsMax)})
 		for _, d := range toRead[len(answered):] {
@@ -1646,6 +1658,20 @@ var levelSays = map[string]string{
 	"cautious":     "you note and propose: what you would do waits on a person",
 	"normal":       "you complete what is missing, and an evident issue moves to ready alone",
 	"enterprising": "you complete what is missing, and issues move to ready much more often",
+}
+
+// issueEvent is the issue an `issue` event names, its state having woken
+// the role (ADR-0059); 0 on any other event.
+func issueEvent() int {
+	if os.Getenv("WORKLINE_EVENT") != "issue" {
+		return 0
+	}
+	kind, num, _ := strings.Cut(os.Getenv("WORKLINE_TARGET"), ":")
+	n, err := strconv.Atoi(num)
+	if kind != "issue" || err != nil {
+		return 0
+	}
+	return n
 }
 
 // readyOpen says whether the agent is told an issue may be ready: its four

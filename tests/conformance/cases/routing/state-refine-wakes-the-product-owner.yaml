@@ -1,0 +1,26 @@
+case: routing/state-refine-wakes-the-product-owner
+about: >
+  Refine wakes the product owner at once, where the project routes it on
+  `issue` (ADR-0059, decision 2): it reads the issue the event names,
+  alone, not the night's share, and its ready sends it to its tests. The
+  other issue waiting to be refined is left for its own event, or the
+  night.
+given:
+  repo: backlog
+  config:
+    routing: {events: {schedule: [product-owner], issue: [product-owner, tester, developer]}}
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.\n\n## Need\n\nThe monthly report counts every sale.\n\n## Verification\n\nA test writes three rows.\n\n## Validation\n\n- **A known day:** Given a day of three sales, When Ann opens it, Then she counts three.\n\n## Scope\n\nsrc/export/csv.go", author: ann, insider: true, labels: [workline:to-refine]}
+      - {id: 10, title: "Rows lost again", body: "Rows go missing on the last day of a month.", author: ann, insider: true, labels: [workline:to-refine]}
+run: {route: issue, target: {issue: 9}, ai: fake:ready-nine}
+expect:
+  status: pass
+  agent-calls: 1
+  findings: [{rule: state-wakes, level: info, where: "#9", message: "its state, refine, wakes the product-owner"}]
+  run-files:
+    in/issues-read: {contains: "9", not-contains: "10"}
+  forge:
+    issues:
+      - {id: 9, labels: [workline:needs-tests]}
+      - {id: 10, labels: [workline:to-refine]}
