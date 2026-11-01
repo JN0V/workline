@@ -57,14 +57,9 @@ func bodyHash(body string) string {
 	return hex.EncodeToString(sum[:6])
 }
 
-// readRecord is the line's record on issue id; false when there is none.
-func readRecord(b forge.Backlog, id int) (Record, bool, error) {
-	r, had, _, err := readRecordSpec(b, id)
-	return r, had, err
-}
-
-// readRecordSpec is readRecord, with the hash of the reviewer's comment
-// on the issue's spec ("" with none).
+// readRecordSpec is the line's record on issue id, false when there is
+// none, and the hash of the reviewer's comment on the issue's spec (""
+// with none).
 func readRecordSpec(b forge.Backlog, id int) (Record, bool, string, error) {
 	comments, err := b.Comments(forge.Target{Kind: "issue", ID: id})
 	if err != nil {

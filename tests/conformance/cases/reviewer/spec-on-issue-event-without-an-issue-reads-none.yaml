@@ -1,0 +1,23 @@
+case: reviewer/spec-on-issue-event-without-an-issue-reads-none
+about: >
+  On `issue`, the reviewer reads the spec of the issue the line names,
+  alone (ADR-0059, #128). Run on that event with no issue named, it
+  reads none and asks no agent: never the night's queue of specs.
+given:
+  repo: reviewed
+  forge:
+    issues:
+      - id: 4
+        title: The mean of no values
+        body: "## Need\n\nAverage gives 0 for an empty list, and the README tells the users.\n\n## Verification\n\nA test of Average on [] expects 0.\n\n## Validation\n\nThe maintainer reads the test.\n\n## Scope\n\ncalc/calc.go\n"
+        labels: [workline:to-refine]
+        comments: ["```yaml\nsources: [calc/calc.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]
+    merge-requests: []
+run: {role: reviewer, event: issue, ai: "fake:review-spec-out-of-scope"}
+expect:
+  status: pass
+  agent-calls: 0
+  summary: "no refined issue waits on a spec review"
+  forge:
+    issues:
+      - {id: 4, comments: 1}

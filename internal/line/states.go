@@ -170,7 +170,7 @@ func runStateStep(res *Result, cfg *routing.Config, f forge.Forge, spec string, 
 	if status == verdict.BlockedExternal {
 		return
 	}
-	if st.role == backlog.Keeper && slices.Contains(cfg.Events[IssueEvent], backlog.SpecReviewer) {
+	if st.role == backlog.Keeper && st.write.Record.State == "refine" && slices.Contains(cfg.Events[IssueEvent], backlog.SpecReviewer) {
 		// The spec the product owner refined, read by the reviewer at
 		// once, as the night's line does after it (#128): its review
 		// written, the step is due again, the product owner reading it.
