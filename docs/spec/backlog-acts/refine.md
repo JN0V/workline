@@ -142,7 +142,8 @@ what it can and asks for the rest:
   does not say is outside.
 - **`unready`** moves a ready issue, or one waiting for its tests,
   back to refine: `workline:ready` and `workline:needs-tests` off,
-  `workline:to-refine` on; the role's one comment on the issue says why
+  `workline:to-refine` on, a developer's claim `workline:developing`
+  off; the role's one comment on the issue says why
   and that putting `workline:ready` back undoes it. It is **done alone**,
   whatever the level or the settings, a changed need's included — cheap
   and undone by a label ([ADR-0059, amended](../../adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#amendment-2026-11-01-back-to-refine-needs-no-yes)) —;

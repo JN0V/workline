@@ -254,7 +254,8 @@ Decided by the maintainer, after the ready issues' re-check
 to refine waiting for a person's `workline:accepted`.
 
 - **The product owner moves a ready issue back to Refine alone**:
-  `workline:ready` or `workline:needs-tests` off, `workline:to-refine`
+  `workline:ready` or `workline:needs-tests` off, a developer's claim
+  `workline:developing` too (§2: one state at a time), `workline:to-refine`
   on, at every autonomy level, a changed need's
   ([ADR-0032]) included.
 - **Its reason in the role's one comment** (§1), with how to undo it:
