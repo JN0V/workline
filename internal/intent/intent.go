@@ -33,7 +33,7 @@ var Catalogue = map[string]bool{
 	"keep":           true, // an issue announced obsolete kept open (docs/spec/backlog-acts.md, ADR-0024)
 	"refine":         true, // the sections an issue lacks written, Need and Validation as drafts (docs/spec/backlog-acts.md)
 	"ready":          true, // an issue moved to ready, once the engine finds it so (docs/spec/backlog-acts.md)
-	"unready":        true, // a ready issue moved back to refine: always proposed, a person ticks it (ADR-0032)
+	"unready":        true, // a ready issue moved back to refine: done, its reason on the issue (ADR-0059, amended)
 	"ask":            true, // the reporter asked what is missing (docs/spec/backlog-acts.md)
 	"split":          true, // a need split into issues of their own, linked to it (docs/spec/backlog-acts.md)
 	"rename":         true, // an issue's title set; a person's kept (docs/spec/backlog-acts.md)

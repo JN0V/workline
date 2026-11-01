@@ -42,6 +42,9 @@ hold:
      issues once, 15 kept and 11 proposed back to refine, and readied
      two fresh issues on their label, woken at once
      ([tried](https://github.com/JN0V/workline/pull/795#tried)).
+   - **Back to refine done alone, 2026-11-01**: the 11 moves waiting
+     done by the role's own run, no agent, each reason in its comment
+     ([tried](https://github.com/JN0V/workline/pull/799#tried)).
    - **Next**: drafts that repeat left out and
      [#548](https://github.com/JN0V/workline/issues/548) (this page's
      Built); a third trial
@@ -137,7 +140,9 @@ in [tests/evaluation/cases/product-owner](../../../tests/evaluation/cases/produc
   backlog's `*blocker*`, `cycle-reported-not-looped`.
 - **Next and stuck**, in the job's summary: `summary-*`, `report-stuck-*`.
 - **A changed need**: `changed-*`, `unchanged-need-flags-nothing`,
-  `unready-accepted-moves-back`, `archived-source-flags-nothing`.
+  `unready-accepted-moves-back`, `unready-waiting-done-alone`,
+  `unready-undone-proposed-there`, `unready-undone-waiting-stays-proposed`,
+  `archived-source-flags-nothing`.
 - **The weekly sample of its acts**, folded into every role's, each act
   keeping what its run read — `at`, `model`, `body`
   ([ADR-0046](../../../docs/adr/0046-the-auditor-re-checks-every-roles-acts.md)):

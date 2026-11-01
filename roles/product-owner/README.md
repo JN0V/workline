@@ -91,6 +91,9 @@ At `autonomy: normal`, the default:
   from the code, Need and Validation as drafts; asks its reporter what is
   missing; closes an evident duplicate; moves an evident issue to
   `ready` (four sections, none a draft).
+- **Back to refine, at every level**: a ready issue that no longer fits,
+  its reason in its comment; put `workline:ready` back to undo
+  ([why](../../docs/adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#amendment-2026-11-01-back-to-refine-needs-no-yes)).
 - **Proposed** on the issue: past a cap a run; an outsider's issue to
   `ready`; an act whose only evidence is a stranger's comment.
 - **Never invented**: an issue too thin, mixing topics or resting on a
@@ -105,7 +108,8 @@ At `autonomy: normal`, the default:
   issue with becomes its Need draft; your text on top is its Need; a
   draft repeating what is above it is not written
   ([how](docs/writing.md#each-thing-said-once)).
-- **Undone by you** (`workline:ready` taken off, a closing reopened…):
+- **Undone by you** (`workline:ready` taken off or put back, a closing
+  reopened…):
   that kind is proposed on that issue from then on; undone `undone-max`
   times across the issues, on every issue.
 

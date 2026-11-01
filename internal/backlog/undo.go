@@ -19,7 +19,7 @@ import (
 
 // undoable are the kinds of act, other than closings, the record keeps to
 // find undone.
-var undoable = []string{"rename", "order", "effort", "milestone", "ready", "split", "depend"}
+var undoable = []string{"rename", "order", "effort", "milestone", "ready", "unready", "split", "depend"}
 
 // doneMax bounds the acts the record keeps to find undone: the newest.
 const doneMax = 200
@@ -94,6 +94,29 @@ func MovedBack(f forge.Backlog, is forge.Issue) (bool, error) {
 	}
 	// No removal the forge says: read from the state it is in.
 	return slices.Contains(is.Labels, LabelToRefine) || slices.Contains(is.Labels, LabelBlocked), nil
+}
+
+// readiedByPerson is who last put the issue's ready back —
+// `workline:ready` or `workline:needs-tests` —, as the forge's label
+// events say: "" when workline's own account did, or the forge keeps no
+// label events.
+func readiedByPerson(f forge.Backlog, is forge.Issue) (string, error) {
+	events, err := f.LabelEvents(is.ID)
+	if err != nil {
+		if errors.Is(err, forge.ErrUnreachable) {
+			return "", err
+		}
+		return "", nil
+	}
+	for i := len(events) - 1; i >= 0; i-- {
+		if e := events[i]; e.Added && (e.Label == LabelReady || e.Label == LabelNeedsTests) {
+			if e.Bot || e.Author == "" {
+				return "", nil
+			}
+			return "@" + e.Author, nil
+		}
+	}
+	return "", nil
 }
 
 // findUndone reads what a person did to the acts the record keeps: those
@@ -186,6 +209,23 @@ func findUndone(f forge.Backlog, role string, open map[int]forge.Issue, done []D
 				break
 			}
 			evidence = fmt.Sprintf("#%d's label %s taken off by a person; the role had moved it to ready", d.Issue, LabelReady)
+		case "unready":
+			// Back in refine, it stands; ready again by the line — the
+			// role's own ready, the tester's —, gone; by a person, undone.
+			switch {
+			case Readied(is):
+				person, err := readiedByPerson(f, is)
+				if err != nil {
+					return nil, nil, nil, err
+				}
+				if person == "" {
+					gone = true
+					break
+				}
+				evidence = fmt.Sprintf("#%d put back to ready by %s; the role had moved it back to refine", d.Issue, person)
+			case !slices.Contains(is.Labels, LabelToRefine):
+				gone = true
+			}
 		case "split":
 			st, err := splitState(f, role, d.Issue)
 			if err != nil {

@@ -3,7 +3,7 @@ about: >
   A ready issue from before the line of states, re-checked by the product
   owner (#788): kept, with named scenarios and no Draft of its tests, it
   goes to its tests, workline:needs-tests; the agent is told so. Stale, it
-  is proposed back to refine, as before. One whose tester's Draft is
+  goes back to refine, its reason on the issue (ADR-0059, amended). One whose tester's Draft is
   open keeps its labels, the agent's ready on it doing nothing.
 given:
   repo: backlog
@@ -25,4 +25,4 @@ expect:
     issues:
       - {id: 9, labels: [workline:needs-tests]}
       - {id: 10, labels: [workline:ready]}
-      - {id: 11, labels: [workline:ready, workline:proposed], comment-contains: "Why: stale: the export already keeps the last row"}
+      - {id: 11, labels: [workline:to-refine], comment-contains: "Moved #11 back to refine (workline:ready off, workline:to-refine on; put workline:ready back to undo): stale: the export already keeps the last row"}

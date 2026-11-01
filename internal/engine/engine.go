@@ -2619,19 +2619,16 @@ func (a *applier) apply(in intent.Intention) error {
 		}
 		return rename(a.forge, a.role, d.Act)
 	case "unready":
-		// Back to refine, a person having accepted it (ADR-0032): the issue
-		// told why, its labels moved.
+		// Back to refine, alone or a person having accepted it (ADR-0059,
+		// amended): its labels moved, a developer's claim with them (one state
+		// at a time); why, and how to undo it, the role's
+		// one comment on the issue says (Persist).
 		d := a.plan.Decision(a.index)
 		if d == nil || d.Mode != backlog.Act {
 			return nil
 		}
 		t := forge.Target{Kind: "issue", ID: d.Act.Issue}
-		say := fmt.Sprintf("Moved back to refine: %s\n\nBy the %s role, %s having accepted it. Put the label %s back to undo.",
-			strings.TrimSpace(d.Act.Why), a.role, d.Act.Ticked, backlog.LabelReady)
-		if err := a.forge.Comment(t, backlog.Inert(say), a.marker()); err != nil {
-			return err
-		}
-		return a.forge.Label(t, []string{backlog.LabelToRefine}, []string{backlog.LabelReady, backlog.LabelNeedsTests})
+		return a.forge.Label(t, []string{backlog.LabelToRefine}, []string{backlog.LabelReady, backlog.LabelNeedsTests, "workline:developing"})
 	case "split":
 		d := a.plan.Decision(a.index)
 		if d == nil || d.Mode != backlog.Act {

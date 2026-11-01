@@ -108,7 +108,7 @@ func changeBlock(what string, c backlog.Change) string {
 		}
 		return strings.Join(out, "\n")
 	}
-	return fmt.Sprintf("Read again for a change: %s. Every act you propose on it goes to a person, never done: say what the change asks of it — `unready` to move it back to refine when it no longer fits, a `refine` for what it lacks, or nothing.\nWas:\n%s\nNow:\n%s\n", what, quote(c.Was), quote(c.Now))
+	return fmt.Sprintf("Read again for a change: %s. Say what the change asks of it — `unready` to move it back to refine when it no longer fits, done at once, a `refine` for what it lacks, or nothing: every act but `unready` goes to a person, never done.\nWas:\n%s\nNow:\n%s\n", what, quote(c.Was), quote(c.Now))
 }
 
 // changeLine says a change in a finding.

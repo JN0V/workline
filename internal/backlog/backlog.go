@@ -815,7 +815,7 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 				continue
 			}
 		}
-		if (c.Do == "ready" || c.Do == "keep" || c.Do == "milestone" || c.Do == "order" || c.Do == "effort" || c.Do == "split" || c.Do == "rename" || p.ticked[c.key()]) && decided[c.key()] {
+		if (c.Do == "ready" || c.Do == "unready" || c.Do == "keep" || c.Do == "milestone" || c.Do == "order" || c.Do == "effort" || c.Do == "split" || c.Do == "rename" || p.ticked[c.key()]) && decided[c.key()] {
 			p.Decisions = append(p.Decisions, Decision{Index: i, Mode: Off, Act: c}) // the engine's own and the agent's: one
 			if c.Do == "split" || c.Do == "rename" {
 				// Both checked against the state before either is applied:
@@ -876,7 +876,10 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 				s = Setting{Mode: Act} // keeping an issue open is never held back
 			}
 			if c.Do == "unready" {
-				s = Setting{Mode: Propose} // a ready issue is moved back by a person only (ADR-0032)
+				// Back to refine: cheap, undone by putting the label back —
+				// done alone, its reason on the issue (ADR-0059, amended);
+				// the rules below still hold it for a person.
+				s = Setting{Mode: Act}
 			}
 			cleanup := c.Do == "undepend" && p.allClosed(c.BlockedBy)
 			switch {
@@ -909,9 +912,10 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 				p.Findings = append(p.Findings, verdict.Finding{Rule: "outsider-evidence", Where: c.where(),
 					Message: "the words it quotes are only in a comment by someone outside the project: proposed, not done"})
 			}
-			if ch, ok := p.changedFor[c.Issue]; ok && d.Mode == Act && c.Do != "keep" && !cleanup {
+			if ch, ok := p.changedFor[c.Issue]; ok && d.Mode == Act && c.Do != "keep" && c.Do != "unready" && !cleanup {
 				// Read again for a change to what it was built on: what the
-				// change asks of it is a person's to decide (ADR-0032).
+				// change asks of it is a person's to decide (ADR-0032); back to
+				// refine excepted, cheap to undo (ADR-0059, amended).
 				d.Mode = Propose
 				p.Findings = append(p.Findings, verdict.Finding{Rule: "need-changed", Level: "info", Where: c.where(),
 					Message: fmt.Sprintf("read again for %s: %s is proposed, not done", ch.said(), c.Kind())})
@@ -2761,7 +2765,10 @@ func describe(c Proposal, verb string) string {
 		}
 		return fmt.Sprintf("%s #%d to ready%s: %s", map[bool]string{true: "Moved", false: "Move"}[done], c.Issue, board, strings.TrimSpace(c.Why))
 	case "unready":
-		return fmt.Sprintf("%s #%d back to refine (%s off, %s on): %s", map[bool]string{true: "Moved", false: "Move"}[done], c.Issue, LabelReady, LabelToRefine, strings.TrimSpace(c.Why))
+		if done {
+			return fmt.Sprintf("Moved #%d back to refine (%s off, %s on; put %s back to undo): %s", c.Issue, LabelReady, LabelToRefine, LabelReady, strings.TrimSpace(c.Why))
+		}
+		return fmt.Sprintf("Move #%d back to refine (%s off, %s on): %s", c.Issue, LabelReady, LabelToRefine, strings.TrimSpace(c.Why))
 	case "depend":
 		return fmt.Sprintf("%s #%d as waiting on %s: %s", map[bool]string{true: "Marked", false: "Mark"}[done], c.Issue, issueList(c.BlockedBy), strings.TrimSpace(c.Why))
 	case "undepend":
