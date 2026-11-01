@@ -71,3 +71,17 @@ func TestHygieneChecksLinksOfArchivedAndToIt(t *testing.T) {
 		t.Fatalf("Hygiene = %s, want only the dead link of the archived doc", got)
 	}
 }
+
+func TestArchivedRootAgentFileNotOverBudget(t *testing.T) {
+	long := strings.Repeat("Read a doc.\n", 120)
+	docs := map[string]string{"AGENTS.md": "---\narchived: true\n---\n# For agents\n\n" + long}
+	for _, p := range archivedProblems(docs) {
+		if strings.HasPrefix(p, "agent-file-too-long") {
+			t.Fatalf("archived agent file reported: %s", p)
+		}
+	}
+	docs["AGENTS.md"] = "# For agents\n\n" + long
+	if got := strings.Join(archivedProblems(docs), "|"); !strings.Contains(got, "agent-file-too-long AGENTS.md") {
+		t.Fatalf("an agent file not archived must be reported, got %s", got)
+	}
+}

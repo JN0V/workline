@@ -1,0 +1,11 @@
+case: documentalist/archived-not-condensed
+about: When gardening, an archived doc over its budget is not condensed — its history is left as it is. Unmarked, the same doc is (condense-moves-a-part).
+given:
+  repo: untidy
+  setup:
+    - "git rm -q docs/faq.md && git commit -qm 'docs: drop the faq'"
+    - "{ printf -- '---\\narchived: 2026-10-04\\n---\\n\\n'; cat docs/sessions.md; } > s && mv s docs/sessions.md && { printf -- '---\\narchived: true\\n---\\n\\n'; cat AGENTS.md; } > a && mv a AGENTS.md && git commit -qam 'docs: archive the sessions and the agents file'"
+run: {role: documentalist, event: schedule, ai: "fake:condense-moves-a-part"}
+expect:
+  status: pass
+  agent-calls: 0
