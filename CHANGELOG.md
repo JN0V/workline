@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.66.0](https://github.com/JN0V/workline/compare/v0.65.0...v0.66.0) (2026-11-01)
+
+
+### Features
+
+* **line:** a quote of the reviewer's spec mark wakes refine's ([#821](https://github.com/JN0V/workline/issues/821)) ([b9bea26](https://github.com/JN0V/workline/commit/b9bea26a9689c0000b73dab097d0f652cf957f2e))
+* **line:** a stale issue goes back to refine, its reason said ([#827](https://github.com/JN0V/workline/issues/827)) ([7a0764c](https://github.com/JN0V/workline/commit/7a0764ceac89d7f507089825acc8da42d9c21965))
+* Tests and Blocked columns, WIP limits per state ([#826](https://github.com/JN0V/workline/issues/826)) ([96aaad0](https://github.com/JN0V/workline/commit/96aaad081ed4a3dd57e44f7149f55bf961186b19))
+
+
+### Bug Fixes
+
+* **line:** the line's runs wait or defer on a low API budget ([#824](https://github.com/JN0V/workline/issues/824)) ([b23a7e3](https://github.com/JN0V/workline/commit/b23a7e371d7722e9ef3b1aaf60d46d8206c186b7))
+
 ## [0.65.0](https://github.com/JN0V/workline/compare/v0.64.0...v0.65.0) (2026-11-01)
 
 
