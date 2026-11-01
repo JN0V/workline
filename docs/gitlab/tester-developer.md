@@ -3,6 +3,7 @@ sources: [ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workli
 checked: aea0b546
 verified: agent:documentalist
 judged: e8a46f7
+judged-in-parts: 9a88170
 ---
 # The tester and the developer on GitLab
 
