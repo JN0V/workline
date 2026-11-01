@@ -89,7 +89,7 @@ workline test write --issue 42 --ai claude
 | `test-file-exists` | a patch changes a test file the base holds |
 | `intention-refused` | a patch reaches a file outside `test-paths` |
 | `test-green-on-base`, `no-new-test` | a test is not proven red, or none is named in the report |
-| `no-test-written` | no test proposed; an answer that does not read is asked again once first |
+| `no-test-written` | no test proposed, the answer unread or refused whole; an answer that does not read is asked again once first. An answer read with no test nor kind is `none`, back to the product owner |
 
 Each refusal is written on the issue ([how](docs/hand-over.md#when-the-tester-refuses-an-issue)).
 

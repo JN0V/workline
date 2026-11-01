@@ -99,8 +99,17 @@ refusal is written on the issue too
 - **One comment of the tester's**, edited on each refusal: why, and
   what comes next (ready it, or name its scenarios).
 - **Its own tests refused too**: a test green on the base, a scenario
-  with no test, no test written: said in the same comment, the run
-  still blocks.
+  with no test: said in the same comment, the run still blocks. In
+  `workline:needs-tests`, the line then blocks the issue, `workline:blocked`,
+  the reason on the board
+  ([routing](../../../docs/spec/routing.md#the-line-of-states)).
+- **No test written**, the agent's answer read and no kind named: no
+  test possible, its notes the reason, back to the product owner as
+  `none` does
+  ([#794](https://github.com/JN0V/workline/issues/794)).
+- **A scenario kept as today** ("as today", "unchanged"): the agent
+  says it not tested in a note, the existing suite guarding it; its test
+  would pass on the base and be refused.
 - **An answer that does not read** (a list item indented one space
   too far): asked again once, with the reader's error; still
   unreadable, refused and said, no third call

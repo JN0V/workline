@@ -8,8 +8,11 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"slices"
+	"strings"
 
 	"github.com/JN0V/workline/internal/backlog"
+	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/verdict"
 )
@@ -26,7 +29,7 @@ func refuseIssue(runDir string, n int, v verdict.Verdict, next string) int {
 		why = v.Findings[0].Message
 	}
 	said := []intent.Intention{{Kind: "comment", Value: map[string]any{"issue": n, "sticky": "issue", "on-block": true,
-		"body": backlog.Said("The tester", "writes no tests for this issue yet", why, next)}}}
+		"body": backlog.Said("The tester", refusedPre, why, next)}}}
 	if err := intent.Write(filepath.Join(runDir, "in", "fallback.yaml"), said); err != nil {
 		return fail(err)
 	}
@@ -50,13 +53,42 @@ func refusePost(runDir string, n int, v verdict.Verdict) int {
 			why = v.Findings[0].Message
 		}
 		said := []intent.Intention{{Kind: "comment", Value: map[string]any{"issue": n, "sticky": "issue",
-			"body": backlog.Said("The tester", "wrote no tests for this issue this run", why,
-				"the tester tries again at its next run on this issue, or a person writes them")}}}
+			"body": backlog.Said("The tester", refusedRun, why,
+				"waiting for its tests, the line blocks it with this reason; a person writes them, or puts "+backlog.LabelNeedsTests+" back for another run")}}}
 		if err := intent.Write(filepath.Join(runDir, "out", "on-block.yaml"), said); err != nil {
 			return fail(err)
 		}
 	}
 	return write(runDir, v)
+}
+
+// What the tester says, in its one comment on an issue, when it writes
+// no tests for it: before asking the agent, or after.
+const (
+	refusedPre = "writes no tests for this issue yet"
+	refusedRun = "wrote no tests for this issue this run"
+)
+
+// Refused is why the tester's last word on an issue refused it, read from
+// its one comment there; "" when that word is another, or there is none.
+// An issue waiting for its tests that the tester refused is blocked by
+// the line, never left as acted (#794).
+func Refused(comments []string) string {
+	sticky := forge.Marker("sticky=tester/issue")
+	for _, c := range slices.Backward(comments) {
+		if !strings.Contains(c, sticky) {
+			continue
+		}
+		if !strings.Contains(c, "**The tester** "+refusedRun) && !strings.Contains(c, "**The tester** "+refusedPre) {
+			return ""
+		}
+		_, why, ok := strings.Cut(c, "- **Why**: ")
+		if why, _, _ = strings.Cut(why, "\n"); !ok || strings.TrimSpace(why) == "" {
+			return "the tester wrote no tests for it"
+		}
+		return strings.TrimSuffix(strings.TrimSpace(why), ".")
+	}
+	return ""
 }
 
 // saidPost writes the verdict pre left; its exit says it.

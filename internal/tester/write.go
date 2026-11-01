@@ -334,6 +334,16 @@ func Post(runDir, repo string) int {
 		msg := "no test file the tester may write was proposed for the issue's scenarios"
 		if why := os.Getenv("WORKLINE_AGENT_UNREAD"); why != "" {
 			msg = "the agent's answer could not be read, asked again once with the error: " + why
+		} else if why := os.Getenv("WORKLINE_AGENT_REFUSED"); why != "" {
+			msg = "the agent's answer was refused whole: " + why
+		} else if os.Getenv("WORKLINE_AGENT_ANSWERED") == "true" {
+			// Read, and no test written nor kind named: no test possible,
+			// its notes the reason, back to the product owner (#794).
+			reason := strings.Join(notes, " ")
+			if strings.TrimSpace(reason) == "" {
+				reason = msg
+			}
+			return proved(runDir, repo, t, intents, Proof{Kind: KindNone, Reason: reason})
 		}
 		return refusePost(runDir, t.Issue, verdict.Verdict{Status: verdict.Block, Summary: "no test written",
 			Findings: []verdict.Finding{{Rule: "no-test-written", Where: where, Message: msg}}})

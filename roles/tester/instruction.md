@@ -20,6 +20,10 @@ style, beside the tests already there:
   a file already there, which is refused.
 - A scenario no test can check (a person's look, a feeling): say it in a
   `note`, the scenario's name first, then why. Never fake a test for it.
+- A scenario of behaviour kept as it is today ("as today", "unchanged",
+  "still"): its test would pass today, and is refused. Write none: a
+  `note`, the scenario's name first, "kept as today: the existing suite
+  guards it". Test the other scenarios as above.
 
 When no new test fits the issue as a whole, write no test: answer one
 `note` naming the proof that fits instead, `proof: <kind> — why`:

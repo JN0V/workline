@@ -68,7 +68,7 @@ func stateOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue) 
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "state-wakes-none", Level: "info", Where: where, Message: why})
 		return nil, nil, nil
 	}
-	rec, had, spec, err := readRecordSpec(b, is.ID)
+	rec, had, spec, refused, err := readRecordSpec(b, is.ID)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -80,6 +80,15 @@ func stateOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue) 
 		spec = "" // a review is read in refine alone: no other state woken by it
 	}
 	now, ok := due(s, is, t.Labeled, spec, rec, had)
+	if !ok && s.Role == "tester" && refused != "" {
+		// The tester's run on it refused, its state the same: never left
+		// as acted, which nothing would wake again (#794). Blocked, why
+		// on the board; a person moves it back.
+		why := "the tester wrote no tests for it in its state " + s.Name + ": " + refused
+		res.Findings = append(res.Findings, verdict.Finding{Rule: "tests-refused", Level: "warn", Where: where, Message: why + ": moved to " + BlockedState})
+		now.State = BlockedState
+		return nil, &StateWrite{Issue: is.ID, Record: now, Blocked: why}, nil
+	}
 	if !ok {
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "state-acted", Level: "info", Where: where,
 			Message: fmt.Sprintf("its state, %s, woke the %s already, on the same body and labelling: nothing more to run", s.Name, name)})
@@ -141,7 +150,11 @@ func byState(res *Result, cfg *routing.Config, o engine.Options, event string, s
 	case block != nil && o.Inputs[ReconcileInput] == "list":
 		// Asked only: its own run blocks it, nothing written here.
 		res.Due = []int{o.Target.ID}
-		res.Summary = fmt.Sprintf("%s: %s due, past its hop cap: not started (--input %s=list)", event, where, ReconcileInput)
+		why := "past its hop cap"
+		if res.Findings[len(res.Findings)-1].Rule == "tests-refused" { // stateOf's last word on it
+			why = "to be blocked, its tests refused"
+		}
+		res.Summary = fmt.Sprintf("%s: %s due, %s: not started (--input %s=list)", event, where, why, ReconcileInput)
 	case block != nil:
 		res.Status = verdict.Pass
 		res.Summary = fmt.Sprintf("%s: %s blocked: %s", event, where, block.Blocked)

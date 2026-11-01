@@ -1,0 +1,2 @@
+# The agent writes no test and names no proof kind, only why (#794).
+- note: "The task shows neither the multiply step's code nor its tests: no test can be written from it."
