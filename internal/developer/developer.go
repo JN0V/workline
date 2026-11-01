@@ -167,6 +167,10 @@ func number(v any) int {
 	return 0
 }
 
+// closingWord is a word the forges read, in a pull request's body, as
+// closing the issue it names.
+var closingWord = regexp.MustCompile(`(?i)\b(close[sd]?|fix(e[sd])?|resolve[sd]?)\b`)
+
 var actData = regexp.MustCompile(`<!-- ` + ActMark + ` (\{.*\}) -->`)
 
 // Line is the hidden line a comment keeps the record in.
@@ -744,9 +748,12 @@ func withNote(body, note string) string {
 	return body + head + note + "\n"
 }
 
-// inertText is the agent's text made safe in a pull request body: a line
-// that would open a heading, a fence or a rule is escaped, so it cannot
-// forge a section, and an @ is broken so it notifies no one.
+// inertText is the agent's text made safe in a pull request body or an
+// issue comment: a line that would open a heading, a fence or a rule is
+// escaped, so it cannot forge a section, a < cannot open a tag, and an @ is
+// broken so it notifies no one; a closing keyword (Closes, Fixes,
+// Resolves…) is broken too, so a merge closes no issue the note names.
+// Made inert twice, a text stays the same.
 func inertText(s string) string {
 	lines := strings.Split(strings.ReplaceAll(s, "\r\n", "\n"), "\n")
 	for i, l := range lines {
@@ -755,8 +762,20 @@ func inertText(s string) string {
 			lines[i] = "\\" + t
 		}
 	}
-	out := strings.ReplaceAll(strings.Join(lines, "\n"), "<", "\\<")
-	return strings.ReplaceAll(out, "@", "@​")
+	joined := closingWord.ReplaceAllStringFunc(strings.Join(lines, "\n"), func(w string) string { return w[:1] + "\u200b" + w[1:] })
+	rs := []rune(joined)
+	var out strings.Builder
+	for i, r := range rs {
+		switch {
+		case r == '<' && (i == 0 || rs[i-1] != '\\'):
+			out.WriteString("\\<")
+		case r == '@' && (i+1 == len(rs) || rs[i+1] != '\u200b'):
+			out.WriteString("@\u200b")
+		default:
+			out.WriteRune(r)
+		}
+	}
+	return out.String()
 }
 
 // held is its agent's code held to the bounds: what it proposed, the

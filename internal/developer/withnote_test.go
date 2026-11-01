@@ -74,3 +74,33 @@ func TestNoteOfPicksTheCommentOnTheIssue(t *testing.T) {
 		t.Errorf("noteOf without a note = %q", got)
 	}
 }
+
+// The note is inert on the issue too, and the pull request's Left out
+// holds the same text: made inert twice, a text does not change.
+func TestNoteInertOnTheIssueAndTheSameInLeftOut(t *testing.T) {
+	raw := "## Need\n<b>x</b> ping @someone"
+	kept, _, _ := bounded(t.TempDir(), Bounds{Issue: 7}, nil, []intent.Intention{{Kind: "note", Value: map[string]any{"issue": 7, "body": raw}}})
+	note := noteOf(kept, 7)
+	if note != inertText(raw) {
+		t.Fatalf("issue comment = %q, want it inert: %q", note, inertText(raw))
+	}
+	if inertText(note) != note {
+		t.Errorf("inert twice changes the text: %q -> %q", note, inertText(note))
+	}
+	if got := withNote("x\n", note); !strings.Contains(got, "## Left out\n\n"+note+"\n") {
+		t.Errorf("Left out does not hold the issue's text: %q", got)
+	}
+}
+
+// A note naming an issue with a closing keyword closes nothing at the merge.
+func TestInertTextBreaksClosingKeywords(t *testing.T) {
+	got := inertText("Closes #12, fixes #13 and resolved #14; a fixture stays.")
+	for _, w := range []string{"Closes #", "fixes #", "resolved #"} {
+		if strings.Contains(got, w) {
+			t.Errorf("%q left live: %q", w, got)
+		}
+	}
+	if !strings.Contains(got, "a fixture stays") || inertText(got) != got {
+		t.Errorf("inertText = %q", got)
+	}
+}

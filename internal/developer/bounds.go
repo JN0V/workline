@@ -492,6 +492,7 @@ func bounded(repo string, b Bounds, claim, proposed []intent.Intention) (kept []
 				said = append(said, fmt.Sprintf("a note on #%d: the developer posts one note only, the first is kept (not-the-developers)", b.Issue))
 			default:
 				noted = true
+				body = inertText(body) // posted as the developer: it forges no heading and pings no one
 				if len(body) > NoteMax {
 					cut := NoteMax
 					for cut > 0 && !utf8.RuneStart(body[cut]) {
@@ -500,7 +501,7 @@ func bounded(repo string, b Bounds, claim, proposed []intent.Intention) (kept []
 					body = body[:cut]
 					said = append(said, fmt.Sprintf("a note on #%d: cut to its limit of %d bytes", b.Issue, NoteMax))
 				}
-				note = &intent.Intention{Kind: "comment", Value: map[string]any{"issue": b.Issue, "body": body}}
+				note = &intent.Intention{Kind: "comment", Value: map[string]any{"issue": b.Issue, "sticky": "note", "body": body}}
 			}
 		default:
 			said = append(said, fmt.Sprintf("a %s: the developer never labels, accepts, merges, closes nor moves an issue (ADR-0054)", i.Kind))
