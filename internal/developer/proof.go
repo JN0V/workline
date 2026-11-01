@@ -333,7 +333,7 @@ func proofFindings(where string, p Proof, caps []Cap) []verdict.Finding {
 		out = append(out, verdict.Finding{Rule: "proof-red", Level: "warn", Where: where, Message: msg + "; its pull request opens as a Draft"})
 	default:
 		out = append(out, verdict.Finding{Rule: "proof-not-run", Level: "warn", Where: where,
-			Message: "the project's tests did not run whole on its code (" + p.Why + "); its pull request opens as a Draft"})
+			Message: "the project's tests did not run whole on its code (" + p.Why + ")" + missingSaid(p.Missing) + "; its pull request opens as a Draft"})
 	}
 	for _, c := range caps {
 		out = append(out, verdict.Finding{Rule: "cap-reached", Level: "warn", Where: c.Setting,
@@ -379,6 +379,9 @@ func proofLines(p Proof, caps []Cap) string {
 		}
 	default:
 		fmt.Fprintf(&b, "- The project's tests did not run whole: %s\n", p.Why)
+		if len(p.Missing) > 0 {
+			fmt.Fprintf(&b, "  - Not found where it ran: `%s`.\n", strings.Join(p.Missing, "`, `"))
+		}
 	}
 	switch p.Scope {
 	case Touched:
