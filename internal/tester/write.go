@@ -55,6 +55,9 @@ type task struct {
 	// Labels: the issue's, as pre read them; its state, which the tests'
 	// result moves on (ADR-0059).
 	Labels []string `json:"labels,omitempty"`
+	// Body: the digest of the issue's body pre read, kept with a "no
+	// test possible" (#815).
+	Body string `json:"body,omitempty"`
 }
 
 const taskFile = "tests-task.json"
@@ -148,11 +151,14 @@ func Pre(runDir, repo string) int {
 					"the product owner names them, the tester invents none"}}},
 			"the product owner, or a person, names its scenarios in its "+work.Name(work.Validation)+"; the tester writes a test for each at a run after that")
 	}
+	if code, done := sentBack(runDir, repo, f, *is); done {
+		return code
+	}
 	head, err := git(repo, "rev-parse", "HEAD")
 	if err != nil {
 		return fail(err)
 	}
-	t := task{Issue: id, Title: is.Title, Base: strings.TrimSpace(head), Scenarios: scenarios, Labels: is.Labels}
+	t := task{Issue: id, Title: is.Title, Base: strings.TrimSpace(head), Scenarios: scenarios, Labels: is.Labels, Body: backlog.BodyDigest(is.Body)}
 	if data, err := json.Marshal(t); err != nil {
 		return fail(err)
 	} else if err := os.WriteFile(filepath.Join(runDir, "in", taskFile), data, 0o644); err != nil {

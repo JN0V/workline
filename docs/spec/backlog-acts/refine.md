@@ -195,6 +195,15 @@ The tester found no test possible and sent the issue back to refine
   `proof-test-missing`).
 - **Or back to its tests**: the role rewrites its own Validation draft,
   or asks; a `ready` with no proof goes to `workline:needs-tests`.
+- **Never back unchanged**
+  ([#815](https://github.com/JN0V/workline/issues/815)): the tester's
+  record holds the digest of the body it read. While the body is that
+  one and no kind is picked (`backlog.NoTestStands`), a `ready` with no
+  proof is refused (`no-test-unanswered`) unless a refine of the same
+  run rewrites it; neither the spec review nor `workline:accepted`
+  moves it. Left with nothing, the issue waits in refine, said on it
+  (`no-test-waits`). An older record with no digest holds nothing back:
+  the tester's next word records one.
 - **With no agent**, a person of the project comments `proof: <kind> —
   why` after the tester's comment (`backlog.PersonsPick`): the engine
   does that `ready`, whatever the role's mode, as their yes.

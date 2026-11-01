@@ -336,6 +336,10 @@ func (s State) say() string {
 				fmt.Sprintf("@%s wrote on it, and its proposal was revised %d times already, as often as allowed", s.Left, s.Revisions),
 				fmt.Sprintf("a person answers @%s, edits the issue or gives the answer above; the product owner proposes nothing more here until then", s.Left))))
 		}
+	case strings.HasPrefix(s.Silent, NoTestSilent):
+		lines = append(lines, strings.TrimSpace(Said("The product owner", "leaves this issue in refine, for a person", s.Silent,
+			"a person of the project names its proof in a comment, `proof: <kind> — why`, or edits its "+work.Name(work.Validation)+
+				" so a test checks it; it does not go to its tests again as it stands")))
 	case s.Silent != "":
 		lines = append(lines, strings.TrimSpace(Said("The product owner", "read this issue and wrote nothing on it", s.Silent,
 			"it reads it again once the issue changes or a person comments: complete it, or name the files it is about in a comment")))
@@ -1045,14 +1049,14 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 		}
 	}
 	p.keepProposed()
-	p.summary()
+	p.summary(role)
 	return p, nil
 }
 
 // summary says, in the job's summary, what the run did alone and what it
 // proposed, issue by issue (ADR-0038); what waits on a person is a filter
 // on workline:proposed.
-func (p *Plan) summary() {
+func (p *Plan) summary(role string) {
 	for _, d := range p.Decisions {
 		switch {
 		case d.Mode == Act && d.Act.Ticked != "":
@@ -1075,12 +1079,33 @@ func (p *Plan) summary() {
 	// An issue read that lacks a section and got nothing at all — no
 	// draft, no question, no act dropped with its reason —: said, never
 	// left in silence.
-	acted := map[int]bool{}
+	acted, moved := map[int]bool{}, map[int]bool{}
 	for _, d := range p.Decisions {
 		acted[d.Act.Issue] = true
+		moved[d.Act.Issue] = moved[d.Act.Issue] || d.Mode != Off
+	}
+	for _, id := range p.read {
+		// The tester found no test possible, and the run picked no proof
+		// nor rewrote it (#815): it waits on a person, said on it, not
+		// moved to its tests again unchanged.
+		is, ok := p.issues[id]
+		if !ok || moved[id] || p.aside(id) {
+			continue
+		}
+		if reason, _, _ := NoTest(forge.Bodies(p.ledger.Notes[id])); NoTestStands(is, forge.Bodies(p.ledger.Notes[id]), role) {
+			p.Findings = append(p.Findings, verdict.Finding{Rule: "no-test-waits", Level: "info", Where: fmt.Sprintf("#%d", id),
+				Message: "the tester found no test possible, and no proof was picked nor its text rewritten: it waits in refine for a person"})
+			if p.Silent == nil {
+				p.Silent = map[int]string{}
+			}
+			p.Silent[id] = NoTestSilent + strings.Join(strings.Fields(reason), " ")
+		}
 	}
 	for _, id := range p.read {
 		is, ok := p.issues[id]
+		if _, said := p.Silent[id]; said {
+			continue
+		}
 		if !ok || acted[id] || p.aside(id) {
 			continue
 		}
@@ -1702,6 +1727,9 @@ func (p *Plan) checkRefining(f forge.Backlog, repo, role string, c *Proposal) (r
 		}
 		if c.Proof != nil {
 			return p.checkProof(f, c)
+		}
+		if rule, why := p.checkNoTest(f, role, is, c); rule != "" {
+			return rule, why
 		}
 	case "ask":
 		if strings.TrimSpace(c.Questions) == "" {

@@ -80,6 +80,11 @@ When no new test fits, the tester's agent names the proof that does
   ([refine](../../../docs/spec/backlog-acts/refine.md#no-test-possible-a-proof-kind-picked));
   with no agent, a person of the project names one in a comment,
   `proof: <kind> — why`.
+- **Sent back unchanged**: the record keeps the digest of the body the
+  tester read. The same body back in its tests, no kind picked, goes to
+  `workline:blocked` with no agent, once, said on it
+  (`sent-back-unchanged`): no back and forth until the hop cap
+  ([#815](https://github.com/JN0V/workline/issues/815)).
 - **`flaky-n-of-n` names its test**, `test: <name>` under the note,
   and its runs, `runs: <N>`; both kept in the record. The developer's
   proof runs that test N times

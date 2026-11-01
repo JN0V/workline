@@ -17,6 +17,7 @@ import (
 	"strings"
 
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/work"
 )
 
 // The proof kinds: new tests, the tester's Draft; the others in place of
@@ -55,6 +56,10 @@ type Proof struct {
 	// By is the person of the project who named the kind in a comment
 	// (PersonsPick): their word, done whatever the role's mode.
 	By string `json:"by,omitempty" yaml:"by,omitempty"`
+	// Body, on the tester's "no test possible": the digest of the issue's
+	// body it read (BodyDigest). The same body sent to its tests again,
+	// nothing picked, is no new reason to write any (#815).
+	Body string `json:"body,omitempty" yaml:"body,omitempty"`
 }
 
 // TestName is a test's name as a proof-command takes it in `{test}`:
@@ -148,6 +153,37 @@ func (p *Plan) checkProof(f forge.Backlog, c *Proposal) (rule, why string) {
 	return "", ""
 }
 
+// checkNoTest checks a ready with no proof against the tester's word
+// (#815): where it found no test possible for the body as it stands and no
+// kind is picked, a ready alone would send the issue back to its tests
+// unchanged, to be sent back again. It moves only once a refine of this
+// run rewrites the body.
+func (p *Plan) checkNoTest(f forge.Backlog, role string, is forge.Issue, c *Proposal) (rule, why string) {
+	if f == nil {
+		return "", ""
+	}
+	comments, err := f.Comments(forge.Target{Kind: "issue", ID: c.Issue})
+	if err != nil {
+		return "no-state", err.Error()
+	}
+	if !NoTestStands(is, comments, role) {
+		return "", ""
+	}
+	rec, _ := testerRecord(comments)
+	if slices.ContainsFunc(p.Decisions, func(d Decision) bool {
+		if d.Mode != Act || d.Act.Do != "refine" || d.Act.Issue != c.Issue || d.Act.ToReporter {
+			return false
+		}
+		// Done, not proposed to its reporter, and writing another body.
+		body, _, _ := Refine(is.Body, d.Act, role)
+		return BodyDigest(body) != rec.Body
+	}) {
+		return "", ""
+	}
+	return "no-test-unanswered", "not moved to ready: the tester found no test possible for it as it stands, and no proof is picked; " +
+		"a ready alone sends it back to its tests unchanged: pick its proof, or rewrite its " + work.Name(work.Validation) + " so a test checks it"
+}
+
 // Same says whether a kept pick is that one, read again: the same person,
 // kind and words; false on none kept.
 func (p *Proof) Same(o Proof) bool {
@@ -205,6 +241,38 @@ func NoTest(comments []string) (reason, digest string, ok bool) {
 	}
 	sum := sha256.Sum256([]byte(p.Reason))
 	return p.Reason, hex.EncodeToString(sum[:])[:12], true
+}
+
+// NoTestStands says whether the tester's "no test possible" on an issue
+// still stands (#815): no kind picked for it, and the issue's body the one
+// the tester read. A ready with no proof would send it back to its tests
+// unchanged. A record that does not say which body it read, from before
+// #815, stands for none: it could never be lifted by a rewrite, and the
+// tester's next word records the body.
+func NoTestStands(is forge.Issue, comments []string, role string) bool {
+	p, ok := testerRecord(comments)
+	if !ok || p.Kind != KindNone || p.Body == "" {
+		return false
+	}
+	if _, picked := ReadProof(comments, role); picked {
+		return false
+	}
+	return p.Body == BodyDigest(is.Body)
+}
+
+// NoTestSilent opens the product owner's word on an issue it leaves in
+// refine for a person, the tester having found no test possible (#815).
+const NoTestSilent = "the tester found no test possible, and no proof was picked nor its text rewritten; the tester said: "
+
+// SentBackUnchanged is the tester's "no test possible" on an issue sent to
+// its tests again, its body the one the tester read, no kind picked
+// (#815): its record; false otherwise (NoTestStands).
+func SentBackUnchanged(is forge.Issue, comments []string, role string) (Proof, bool) {
+	p, ok := testerRecord(comments)
+	if !ok || !NoTestStands(is, comments, role) {
+		return Proof{}, false
+	}
+	return p, true
 }
 
 // ReadProof is the kind an issue is proved by in place of a Draft: the
