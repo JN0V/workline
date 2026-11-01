@@ -62,6 +62,31 @@ workline review          # the reviewer reads this branch before you push
 `workline init --review` also puts the reviewer on each merge request;
 `--human-po yes` says a person is the Product Owner.
 
+### Try each role once, on a real repository
+
+To check the documentalist, the reviewer and the product owner work on a
+repository (at work, say), after `setup`, `doctor` and `init --review`:
+
+```sh
+workline doctor          # lists nothing missing; each item comes with its command
+workline docs            # documentalist: judges the docs changed since their last commit
+workline review          # reviewer: reads the branch against the default branch
+workline run-role product-owner --event issue --target issue:<n> --ai claude --forge github
+```
+
+- The repository needs a doc changed since its last commit, a branch with a
+  diff against the default branch, and one open issue `<n>`.
+- `--forge gitlab` for GitLab; `--ai` the agent you chose in `setup`.
+  Run without `--no-apply`, the product owner writes its comment or refined
+  section on the issue itself.
+- `workline docs` ends with the agent judging the suspect docs, and lists
+  the changes to keep or drop.
+- `workline review` prints the findings; when there are none it still
+  prints a short output: copy it into your record.
+- Note the issue number and the text the product owner wrote.
+- Each gap met on the way — a step that needed help — goes in an issue that
+  quotes the command and the output seen.
+
 ## 4. Add CI
 
 On GitHub or GitLab, copy the templates ([ci.md](ci.md)): each merge
