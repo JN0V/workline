@@ -170,7 +170,12 @@ amended 2026-10-10), the Need, and an Example restating it, no real
 case known ([worked case](../../roles/product-owner/docs/proposed-headings.md#each-thing-said-once)).
 
 - **A role's text on top becomes the Problem**: rewritten as that draft,
-  taken from the top; the origin line and the markers stay.
+  taken from the top; the origin line and the markers stay. A block
+  the role folded there (`<details>`, a finding's cause and its fix) is
+  the builder's: the engine moves it whole to the end of the last
+  builder's section the refine writes, or leaves it on top when none
+  is written — never dropped, never left to the agent to copy
+  ([#841](https://github.com/JN0V/workline/issues/841)).
 - **A person's text on top, with no Problem section, is the Problem**,
   a person's: the engine reads it so, no agent, nothing recorded. No
   draft restates it; one is drafted, read instead, only when that text

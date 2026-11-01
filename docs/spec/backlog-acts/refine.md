@@ -83,6 +83,10 @@ what it can and asks for the rest:
     that text leaves the top; the engine's lines there — where it comes
     from ("Opened from …", "Found by …"), its hidden markers — stay, in
     their order, and the text before is in the forge's edit history.
+    A block the role folded there (`<details>` … `</details>`, a cause
+    and its fix) moves whole to the end of the last builder's section
+    the refine writes (Scope, else Verification), or stays on top when
+    it writes none ([#841](https://github.com/JN0V/workline/issues/841)).
     Never on an outsider's issue proposed in a comment. It follows the
     refine's mode and level as the drafts do: at `cautious`, proposed.
     The issue's one line says "Rewrote: the text on top as the Need, in

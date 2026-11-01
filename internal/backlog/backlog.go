@@ -2073,12 +2073,20 @@ func HasDraft(body string, st *State) bool {
 // stays as it is — a thematic break between the person's part and the
 // builder's; added and kept name the sections written and those already
 // there, left alone. A role's text on top (c.Lift, checked before) leaves
-// the top as the Need draft is written: Description among added.
+// the top as the Need draft is written: Description among added; what it
+// folded there — a cause, its fix — goes to the end of the last builder's
+// section written, kept on top when none is (#841).
 func Refine(body string, c Proposal, role string) (string, []string, []string) {
 	have := work.ByMeaning(body)
 	body, footer := work.Footer(body) // a section added goes above the body's footer
 	body = strings.TrimRight(body, " \r\n")
-	var added, kept []string
+	type write struct {
+		m           work.Meaning
+		name, text  string
+		ok, revised bool
+	}
+	var writes []write
+	var kept []string
 	for _, m := range layout() {
 		text := Inert(strings.TrimSpace(c.Text(m))) // no quick action run on GitLab when the body is written
 		if text == "" || work.Has(c.Refused, m) {
@@ -2099,20 +2107,33 @@ func Refine(body string, c Proposal, role string) (string, []string, []string) {
 			kept = append(kept, name)
 			continue
 		}
-		if m == work.Need && c.Lift && DescriptionOf(body) != "" {
+		writes = append(writes, write{m, name, text, ok, revised})
+	}
+	below := -1 // the last builder's section written: what the top folded goes there
+	for i, w := range writes {
+		if builder(w.m) {
+			below = i
+		}
+	}
+	var added []string
+	for i, w := range writes {
+		if w.m == work.Need && c.Lift && DescriptionOf(body) != "" {
 			// Its text on top, a role's, is this draft now: said once.
-			body = withoutTop(body)
+			if folded := Folded(body); folded != "" && below >= 0 {
+				writes[below].text += "\n\n" + folded
+			}
+			body = withoutTop(body, below < 0)
 			added = append(added, DescriptionName)
 		}
 		switch {
-		case revised:
-			body = fill(body, name, text) // the role's own, rewritten to answer the reviewer (#128)
-		case ok:
-			body = fill(body, name, text)
+		case w.revised:
+			body = fill(body, w.name, writes[i].text) // the role's own, rewritten to answer the reviewer (#128)
+		case w.ok:
+			body = fill(body, w.name, writes[i].text)
 		default:
-			body = insert(body, m, text)
+			body = insert(body, w.m, writes[i].text)
 		}
-		added = append(added, name)
+		added = append(added, w.name)
 	}
 	if len(added) == 0 {
 		return work.WithFooter(body, footer), added, kept

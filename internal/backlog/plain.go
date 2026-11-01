@@ -97,19 +97,76 @@ func DescriptionDigest(body string) string {
 }
 
 // withoutTop is a body with its description taken out, the engine's lines
-// there kept, in their order, above its sections.
-func withoutTop(body string) string {
+// there kept, in their order, above its sections; with fold, the blocks a
+// role folded there kept too, whole: none dropped (#841).
+func withoutTop(body string, fold bool) string {
 	top, rest := splitTop(body)
+	lines := strings.Split(top, "\n")
 	var kept []string
-	for _, l := range strings.Split(top, "\n") {
-		if t := strings.TrimSpace(l); engineLine.MatchString(t) {
-			kept = append(kept, t)
+	next := 0
+	for _, b := range foldedBlocks(top) {
+		kept = append(kept, engineLines(lines[next:b[0]])...)
+		if fold {
+			kept = append(kept, strings.TrimSpace(strings.Join(lines[b[0]:b[1]], "\n")))
 		}
+		next = b[1]
 	}
+	kept = append(kept, engineLines(lines[next:])...)
 	if rest = strings.TrimSpace(rest); rest != "" {
 		kept = append(kept, rest)
 	}
 	return strings.Join(kept, "\n\n")
+}
+
+// engineLines are the engine's lines among a description's, trimmed.
+func engineLines(lines []string) []string {
+	var kept []string
+	for _, l := range lines {
+		if t := strings.TrimSpace(l); engineLine.MatchString(t) {
+			kept = append(kept, t)
+		}
+	}
+	return kept
+}
+
+// Folded is what a role folded in its text on top, each block
+// `<details>` … `</details>` whole, in its order: a finding's cause in the
+// code and its fix. It is the builder's: as the top is taken into the
+// Need, it moves below the line, never dropped (#841).
+func Folded(body string) string {
+	top, _ := splitTop(body)
+	lines := strings.Split(top, "\n")
+	var blocks []string
+	for _, b := range foldedBlocks(top) {
+		blocks = append(blocks, strings.TrimSpace(strings.Join(lines[b[0]:b[1]], "\n")))
+	}
+	return strings.Join(blocks, "\n\n")
+}
+
+// foldedBlocks are the lines of a text's folded blocks, each [first, end):
+// from a line opening `<details`, outside fenced code, to the line closing
+// it, the blocks it holds counted. A block never closed is none.
+func foldedBlocks(text string) [][2]int {
+	var blocks [][2]int
+	fence, depth, start := "", 0, 0
+	for i, l := range strings.Split(text, "\n") {
+		var code bool
+		if fence, code = inFence(l, fence); code {
+			continue
+		}
+		t := strings.TrimSpace(l)
+		if depth == 0 {
+			if !strings.HasPrefix(t, "<details") {
+				continue
+			}
+			start = i
+		}
+		if depth += strings.Count(t, "<details") - strings.Count(t, "</details>"); depth <= 0 {
+			blocks = append(blocks, [2]int{start, i + 1})
+			depth = 0
+		}
+	}
+	return blocks
 }
 
 // RolesTop says whether an issue's description is a role's, and why not:

@@ -1,0 +1,16 @@
+case: product-owner/role-top-plain-taken-whole
+about: "A role's text on top that folds nothing — one short paragraph — is taken whole into the Need draft, as before #841: no block is moved below the line, the engine's lines on top stay."
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 9, title: "WriteRows stops one row short", author: "github-actions[bot]", labels: [needs-triage], body: "Exports lose their last row: 3 sales give a file of 2 rows.\n\nFound by the reviewer role while reviewing abc1234, outside that change.\n\n<!-- workline:opened-by=reviewer -->", comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\nwrote:\n    Description: 4c3b048e0c8a\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:plain-top-taken}
+expect:
+  findings:
+    - {rule: done, where: "#9", message: "Refined #9: Need (draft, from the text on top), Scope."}
+  forge:
+    issues:
+      - id: 9
+        body-contains: "Found by the reviewer role while reviewing abc1234, outside that change.\n\n<!-- workline:opened-by=reviewer -->\n\n## Need\n\n<!-- workline:draft -->\n\nExporting a CSV file drops its last row: 3 sales give a file of 2 rows.\n\n---\n\n## Scope\n\nWriteRows in src/export/csv.go."
+        body-lacks: ["Exports lose their last row", "<details"]

@@ -1,0 +1,16 @@
+case: product-owner/role-top-folded-cause-kept
+about: "Refining a role's issue keeps what it folded on top (#841): the text on top, a role's no person edited, is taken into the Need draft, and the block it folded there — a finding's cause in the code and its fix, `<details>` … `</details>` — moves whole, by the engine, below the line, to the end of the last builder's section the refine writes. Nothing the role wrote is left to the edit history."
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 8, title: "Refine says nothing to refine", author: "github-actions[bot]", labels: [needs-triage], body: "The refine of an issue says there was nothing to refine, when its drafts were left out for repeating.\n\n<details><summary>The cause in the code</summary>\n\nThe nothing-to-refine result ignores the drafts left out.\n\nAt `internal/backlog/backlog.go:1459`:\n\n```\nreturn \"nothing to refine\"\n```\n\nWhat would fix it: say the drafts were left out for repeating whenever `c.Repeated` is not empty\n\n</details>\n\nFound by the reviewer role while reviewing abc1234, outside that change.\n\n<!-- workline:opened-by=reviewer -->", comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\nwrote:\n    Description: d307fcb40523\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:folded-cause-kept}
+expect:
+  findings:
+    - {rule: done, where: "#8", message: "Refined #8: Need (draft, from the text on top), Validation (draft), Scope."}
+  forge:
+    issues:
+      - id: 8
+        body-contains: "Found by the reviewer role while reviewing abc1234, outside that change.\n\n<!-- workline:opened-by=reviewer -->\n\n## Need\n\n<!-- workline:draft -->\n\nA person who refines an issue is told there was nothing to refine, when its drafts were only left out for saying again what is above them.\n\n## Validation\n\n<!-- workline:draft -->\n\n- **Drafts left out said:** Given an issue whose drafts all repeat its text, When it is refined, Then the result says they were left out.\n\n---\n\n## Scope\n\nThe nothing-to-refine result of `Refine`.\n\n<details><summary>The cause in the code</summary>\n\nThe nothing-to-refine result ignores the drafts left out.\n\nAt `internal/backlog/backlog.go:1459`:\n\n```\nreturn \"nothing to refine\"\n```\n\nWhat would fix it: say the drafts were left out for repeating whenever `c.Repeated` is not empty\n\n</details>"
+        body-lacks: "The refine of an issue says there was nothing to refine"
