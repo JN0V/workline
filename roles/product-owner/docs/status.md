@@ -38,6 +38,10 @@ hold:
      ([#155](https://github.com/JN0V/workline/issues/155), week 42); it
      sent too many emails
      ([#548](https://github.com/JN0V/workline/issues/548)).
+   - **The line of states, 2026-11-01**: it re-checked the 26 ready
+     issues once, 15 kept and 11 proposed back to refine, and readied
+     two fresh issues on their label, woken at once
+     ([tried](https://github.com/JN0V/workline/pull/795#tried)).
    - **Next**: drafts that repeat left out and
      [#548](https://github.com/JN0V/workline/issues/548) (this page's
      Built); a third trial
