@@ -362,7 +362,7 @@ func Pre(runDir, repo string) int {
 	}
 	// The kinds of proof the tester recorded in place of a Draft
 	// (ADR-0059, decision 4): accepted as a Draft is.
-	proofs, err := proofsOf(b, issues, mrs, line.Runs("tester"))
+	proofs, err := proofsOf(b, issues, mrs, line.Runs("tester"), only)
 	if err != nil {
 		return external(err)
 	}
@@ -942,8 +942,10 @@ func fail(err error) int {
 
 // proofsOf reads the kind of proof the tester recorded on each ready
 // issue whose tests would be waited for: named scenarios, no tester's
-// Draft open. Read only where the project routes the tester.
-func proofsOf(b forge.Backlog, issues []forge.Issue, mrs []forge.MergeRequest, testsFirst bool) (map[int]tester.Proof, error) {
+// Draft open. Read only where the project routes the tester; with only,
+// the issue a run was started for, its own alone: each ready issue's
+// comments would spend the token's API budget at every step (#804).
+func proofsOf(b forge.Backlog, issues []forge.Issue, mrs []forge.MergeRequest, testsFirst bool, only int) (map[int]tester.Proof, error) {
 	out := map[int]tester.Proof{}
 	if !testsFirst {
 		return out, nil
@@ -953,7 +955,7 @@ func proofsOf(b forge.Backlog, issues []forge.Issue, mrs []forge.MergeRequest, t
 		tested[testerIssue(m.Branch)] = true
 	}
 	for _, is := range issues {
-		if !slices.Contains(is.Labels, backlog.LabelReady) || tested[is.ID] || len(tester.Scenarios(work.ByMeaning(is.Body)[work.Validation].Text)) == 0 {
+		if only != 0 && is.ID != only || !slices.Contains(is.Labels, backlog.LabelReady) || tested[is.ID] || len(tester.Scenarios(work.ByMeaning(is.Body)[work.Validation].Text)) == 0 {
 			continue
 		}
 		comments, err := b.Comments(forge.Target{Kind: "issue", ID: is.ID})

@@ -8,6 +8,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -126,6 +127,12 @@ func again(forge string, read bool, try int, f failure) (wait time.Duration, not
 		wait = max(wait, f.least)
 	}
 	if after, said, ok := asked(f); ok {
+		if f.limited && after > retry.waitMax && after <= rateWait() && try < retry.tries {
+			// A run of the line waits for the rate's reset rather than
+			// stop half-way (#804): said, as it waits.
+			fmt.Fprintf(os.Stderr, "workline: %s refuses calls for its rate (%s): waiting for it\n", forge, said)
+			return after, ""
+		}
 		if after > retry.waitMax {
 			return -1, fmt.Sprintf("%s asks to wait (%s), longer than workline waits (%d s): not tried again",
 				forge, said, int(retry.waitMax.Seconds()))
@@ -136,6 +143,21 @@ func again(forge string, read bool, try int, f failure) (wait time.Duration, not
 		return -1, fmt.Sprintf("tried %d times", try)
 	}
 	return wait, ""
+}
+
+// RateWaitEnv, a duration, is how long a call refused for the forge's
+// rate waits for its reset, past retry.waitMax: set by a run of the line,
+// for its roles too, to its few minutes (line.BudgetWaitMax, #804); never
+// by a person's push, which waits a minute at most.
+const RateWaitEnv = "WORKLINE_RATE_WAIT"
+
+// rateWait is RateWaitEnv's duration; none, or unreadable, 0.
+func rateWait() time.Duration {
+	d, err := time.ParseDuration(os.Getenv(RateWaitEnv))
+	if err != nil {
+		return 0
+	}
+	return d
 }
 
 // asked is the wait the forge asks before a call is sent again, and the

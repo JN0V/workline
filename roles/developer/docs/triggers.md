@@ -3,6 +3,7 @@ sources:
   - roles/developer/role.yaml
   - internal/developer/developer.go
   - internal/line/states.go
+  - internal/line/budget.go
   - ci/github/workline-develop.yml
   - ci/gitlab/workline.gitlab-ci.yml
 checked: aea0b546
@@ -153,6 +154,11 @@ routing:
   ([the pick](pick.md#the-claim)).
 - **None to take**: the line's summary says "no ready issue waits for
   the developer", with each issue passed and why; nothing on the forge.
+- **The API budget low**: a busy hour can spend the job token's GitHub
+  budget. The run then waits for a reset within 5 minutes; further off,
+  it is deferred, with no failure: its summary gives the reset's time,
+  and the hourly reconciler runs the issue after it
+  ([the API budget](../../../docs/github/calls.md#the-api-budget)).
 
 Cases: `developer/routing-schedule-runs-developer`,
 `routing-ready-runs-developer`, `routing-schedule-none-ready-said`,

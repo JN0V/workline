@@ -141,6 +141,13 @@ func byState(res *Result, cfg *routing.Config, o engine.Options, event string, s
 	}
 	var is *forge.Issue
 	if err == nil {
+		switch said, deferred := waitBudget(res, f, time.Now()); {
+		case deferred: // its step stays due: the reconciler runs it after the reset (#804)
+			res.Summary = fmt.Sprintf("%s: %s deferred: %s", event, where, said)
+			return res
+		case said != "":
+			defer func() { res.Summary += "; " + said }()
+		}
 		is, err = f.Issue(o.Target.ID)
 	}
 	if err != nil {
@@ -242,6 +249,14 @@ func reconcile(res *Result, cfg *routing.Config, o engine.Options) *Result {
 	if err != nil {
 		readFailed(res, ReconcileEvent, "issues", err)
 		return res
+	}
+	switch said, deferred := waitBudget(res, f, time.Now()); {
+	case deferred: // the next hour's reconcile, after the reset (#804)
+		res.Summary = fmt.Sprintf("%s: deferred: %s", ReconcileEvent, said)
+		lateSaid(res, o.Inputs[LastInput], time.Now())
+		return res
+	case said != "":
+		defer func() { res.Summary += "; " + said }()
 	}
 	issues, err := b.Issues()
 	if err != nil {

@@ -1,5 +1,5 @@
 <!-- workline
-sources: [internal/forge/retry.go, internal/forge/cli.go]
+sources: [internal/forge/retry.go, internal/forge/cli.go, internal/forge/budget.go, internal/line/budget.go]
 checked: 76e290d9
 -->
 # A GitHub call that fails for a moment
@@ -31,6 +31,9 @@ rule as [on GitLab](../gitlab/calls.md):
   - when it asks nothing, a minute, as
     [GitHub's docs](https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api)
     ask.
+- **A run of the line** (`workline route issue`, `route reconcile`)
+  waits longer for a rate limit spent, up to 5 minutes, its roles' calls
+  too ([the API budget](#the-api-budget)).
 - **Never tried again**: a certificate refused, any other 4xx.
 - **After the last try**, the failure says so: "(tried 3 times)".
 
@@ -43,3 +46,29 @@ How workline reads what `gh` gives:
 - **A host not reached**: `gh` does not tell a host that does not exist
   from a name not resolved for a moment. Nothing was sent: tried again.
 - **Many pages**: a read that fails on one is read again from the first.
+
+## The API budget
+
+A CI job's own token (`GITHUB_TOKEN`) has
+[1,000 REST calls an hour](https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api)
+for the whole repository; a busy hour of the line of states can spend
+them ([#804](https://github.com/JN0V/workline/issues/804)).
+
+- **Read first, at no cost**: a run of the line asks GitHub's
+  `rate_limit`, which counts against no limit, before it reads an issue.
+- **Under a tenth left**, of the REST calls or the GraphQL points, the
+  reset within 5 minutes: the run waits for it, then goes on. Its
+  summary and a warning (`api-budget-low`) say how much was left and
+  how long it waited.
+- **The reset further off: deferred.** The run reads and runs nothing,
+  and ends with no failure. Its summary and a warning
+  (`api-budget-deferred`) give the reset's time. The issue's step stays
+  due: the hourly reconciler runs it after the reset.
+- **Why 5 minutes**: a job that waits holds a runner. On a busy hour,
+  twenty runs waiting would hold every runner a free plan gives, and
+  the pull requests' tests would queue behind them.
+- **Spent half-way**: a call refused for the rate waits for a reset
+  within 5 minutes too, said in the job's log; a later one fails the
+  step as the forge out of reach, and the reconciler runs it again.
+- **GitLab** says its budget only in each answer's headers: a run there
+  reads nothing first.

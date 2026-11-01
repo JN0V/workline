@@ -1,0 +1,24 @@
+case: routing/state-waits-for-the-api-budget
+about: >
+  A busy hour of the line spends the CI token's API budget (#804). A
+  run whose forge says less than a tenth of it is left waits for its
+  reset before it reads the issues, rather than stopping half-way on
+  the rate; the summary and a finding say so. Here the reset is a
+  second away: the run waits for it, then goes on.
+given:
+  repo: tested
+  config:
+    routing: {events: {issue: [tester, developer]}}
+  forge:
+    budget: {resource: core, remaining: 12, limit: 1000, reset-in: 1}
+    issues:
+      - {id: 3, title: "Multiply", labels: ["workline:ready"], body: "## Need\n\nI want to multiply.\n"}
+run: {route: issue, target: {issue: 3}, open-merge-request: true, ai: "fake:developer-nothing", input: {reconcile: list}}
+expect:
+  status: pass
+  summary: "issue: #3 due, the developer: not started (--input reconcile=list); API budget low: 12 of 1000 core calls left this hour"
+  agent-calls: 0
+  findings: [{rule: api-budget-low, level: warn, message: "waited 2 s for it before reading the issues"}]
+  forge:
+    issues:
+      - {id: 3, comments: 0}

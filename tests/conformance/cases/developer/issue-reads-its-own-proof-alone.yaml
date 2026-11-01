@@ -1,0 +1,31 @@
+case: developer/issue-reads-its-own-proof-alone
+about: >
+  Run for one issue, the developer reads the tester's recorded proof on
+  that issue alone: never each ready issue's comments, which spent the
+  CI token's API budget at every step of the line (#804). The other
+  ready issue, with scenarios and no Draft, has its comments unread.
+given:
+  repo: tested
+  config:
+    routing: {events: {issue: [tester, developer]}}
+  forge:
+    issues:
+      - id: 2
+        title: "Multiply"
+        labels: ["workline:ready"]
+        body: "## Need\n\nI want to multiply.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n"
+        comments: ["**The tester** records the proof of this issue: existing-suite, no new test.\n\n<!-- workline:tester-proof {\"kind\":\"existing-suite\",\"reason\":\"no new test fits it\"} -->\n<!-- workline:sticky=tester/issue -->"]
+      - id: 4
+        title: "Divide"
+        labels: ["workline:ready"]
+        body: "## Need\n\nI want to divide.\n\n## Validation\n\n- **Six by three:** Given the library, When I divide 6 by 3, Then I get 2.\n"
+        comments: ["**The tester** records the proof of this issue: existing-suite, no new test.\n\n<!-- workline:tester-proof {\"kind\":\"existing-suite\",\"reason\":\"no new test fits it\"} -->\n<!-- workline:sticky=tester/issue -->"]
+run: {develop: [--issue, "2"], ai: none}
+expect:
+  status: pass
+  summary: "would take #2"
+  no-findings: [{rule: issue-passed, where: "#2"}]
+  forge:
+    issues:
+      - {id: 2, comments-read: 1}
+      - {id: 4, comments-read: 0}
