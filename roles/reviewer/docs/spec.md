@@ -80,6 +80,9 @@ routing:
 - **Which issues**: those the product owner keeps (its state comment),
   not `workline:ready`, their four sections written (drafts too), their
   body not read as it is. None: no agent asked.
+  - On the line's `issue` event, the one issue the product owner just
+    ran on, its state comment written yet or not
+    ([#840](https://github.com/JN0V/workline/issues/840)).
 - **How many**: up to `specs-per-run` a run (5), in the backlog's order
   ([#433](https://github.com/JN0V/workline/issues/433)), its priorities
   read where the product owner's settings say the project keeps them

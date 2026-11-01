@@ -94,7 +94,8 @@ func keepersOrder(repo string, f forge.Backlog, open []forge.Issue) (*verdict.Fi
 }
 
 // waitingSpecs finds, in the backlog's order, the issues whose spec waits
-// on a review: kept by the product owner, not ready, their four sections
+// on a review: kept by the product owner (on the issue event, the one it
+// just ran on), not ready, their four sections
 // written (drafts too), their body not read as it is, their rounds not
 // stopped. One whose record does not read is passed over and said (#302):
 // read again as round 1, it cost an agent call a night, and the issues
@@ -122,7 +123,11 @@ func waitingSpecs(repo string, f forge.Backlog) (ws []waiting, unread []verdict.
 		if err != nil {
 			return nil, unread, err
 		}
-		if _, kept, _ := backlog.ReadState(comments, keeper); !kept {
+		// On the line's issue event, the product owner ran on this issue
+		// in this run, just before (#840): judged with no write token, its
+		// state comment is not on the forge yet, which the apply writes
+		// after the reviewer ran. The night reads only the issues it keeps.
+		if _, kept, _ := backlog.ReadState(comments, keeper); !kept && only == 0 {
 			continue
 		}
 		prior, err := backlog.ReadSpecReview(comments)
