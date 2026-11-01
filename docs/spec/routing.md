@@ -359,7 +359,15 @@ whose result moves the issue to the next. The table is the routing's
   `issue` with no issue named, it reads none. Only that issue's comments
   and label events are listed, when it judges and when its acts are
   decided and written; the open issues' listing stays, for the order
-  and `proposals-max` (#804).
+  and `proposals-max` (#804). The developer on `issue` likewise reads
+  the tester's recorded proof on that issue alone.
+- **The API budget first**: on a forge that says it at no cost
+  (GitHub's `rate_limit`), the issue line and the reconciler read what
+  the token has left before they read an issue. Under a tenth, they wait
+  for the reset, up to an hour, said in the summary and a warning
+  (`api-budget-low`); a call refused for the rate half-way, theirs or a
+  role's, waits for it too
+  ([the API budget](../github/calls.md#the-api-budget)).
 - **The spec review at once**: where the project routes the reviewer
   on `issue`, refine's step runs it after the product owner, on that
   issue's spec alone (#128). Its review, written since, makes the step

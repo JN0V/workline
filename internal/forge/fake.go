@@ -88,6 +88,9 @@ type FakeState struct {
 	// Squash is how its merge requests land when squashed, the same for
 	// each but Suffix, where "{n}" is the merge request's number (Squasher).
 	Squash *Squash `json:"squash,omitempty"`
+	// Budget is the token's API budget the forge says (Budgeted); none,
+	// never low.
+	Budget *FakeBudget `json:"budget,omitempty"`
 }
 
 // FakeCheck is a check written on a commit.

@@ -141,6 +141,9 @@ func byState(res *Result, cfg *routing.Config, o engine.Options, event string, s
 	}
 	var is *forge.Issue
 	if err == nil {
+		if said := waitBudget(res, f, time.Now()); said != "" {
+			defer func() { res.Summary += "; " + said }()
+		}
 		is, err = f.Issue(o.Target.ID)
 	}
 	if err != nil {
@@ -242,6 +245,9 @@ func reconcile(res *Result, cfg *routing.Config, o engine.Options) *Result {
 	if err != nil {
 		readFailed(res, ReconcileEvent, "issues", err)
 		return res
+	}
+	if said := waitBudget(res, f, time.Now()); said != "" {
+		defer func() { res.Summary += "; " + said }()
 	}
 	issues, err := b.Issues()
 	if err != nil {
