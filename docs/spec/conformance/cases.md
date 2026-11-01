@@ -150,7 +150,10 @@ saying so.
   branches became since); `env`, the applying job's variables
   (`WORKLINE_APP`, `$VAR` expanded); `line: true`, the line's result
   applied as CI's job does (`apply --line`), its runs, none when it
-  proposed nothing; `gates: true`, the run's result shown as the gates'
+  proposed nothing; with it, `chain: <n>`, the apply job's next step up
+  to n times (the line asked, no agent, whether the issue is due; due,
+  judged and applied again), every run's agent calls and findings
+  counted; `gates: true`, the run's result shown as the gates'
   (`apply --gates`); `again`, commands after the apply (a second push),
   then the run and the apply once more, on the head they leave;
 - `tamper: in/` — change the prepared input between prepare and apply.
