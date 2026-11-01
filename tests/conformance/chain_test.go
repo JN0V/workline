@@ -91,7 +91,10 @@ func lineRunsOnce(t *testing.T, file string, data []byte) {
 	}
 	// Never a title a person writes: one could take another issue's name.
 	if !strings.Contains(wf.RunName, "format('workline develop #{0}', inputs.issue)") || !strings.Contains(wf.RunName, "format('workline develop #{0}', github.event.issue.number)") ||
-		strings.Contains(wf.RunName, ".title") {
+		strings.Contains(wf.RunName, ".title") ||
+		// A label of the engine's, or not a state's, runs no step: its run
+		// never named for the issue, which would mark it busy.
+		!strings.Contains(wf.RunName, "github.event.sender.type != 'Bot'") || !strings.Contains(wf.RunName, "startsWith(github.event.label.name, 'workline:')") {
 		t.Errorf("%s: a run of an issue is not named for it: run-name %q", file, wf.RunName)
 	}
 	startsOnce(t, file, data)
