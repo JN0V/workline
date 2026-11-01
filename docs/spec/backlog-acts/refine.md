@@ -127,7 +127,11 @@ what it can and asks for the rest:
   project routes the tester, an issue whose Validation names scenarios
   gets `workline:needs-tests` instead: the tester's result makes it
   ready
-  ([ADR-0059](../../adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#3-tests-wakes-the-tester-its-result-makes-ready)). An issue opened
+  ([ADR-0059](../../adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#3-tests-wakes-the-tester-its-result-makes-ready)).
+  An issue ready from before the line, kept by a `ready`, goes there
+  too while it has no Draft of the tester's open nor a proof kind
+  recorded; otherwise its labels stay
+  ([#788](https://github.com/JN0V/workline/issues/788)). An issue opened
   by someone without write access to the project is theirs: moving it to
   ready is proposed on the issue, never done (`reporter-outside`) —
   unless a person of the project accepted it with the label. Who is of the

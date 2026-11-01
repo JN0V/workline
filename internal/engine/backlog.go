@@ -538,6 +538,21 @@ func (a *applier) refining(c backlog.Proposal) error {
 		if missing := backlog.NotReady(*is, st, accepted); len(missing) > 0 {
 			return nil // changed since the plan: it stays to refine
 		}
+		if c.Proof == nil && backlog.Readied(*is) {
+			// Ready already, kept: it goes to its tests only when it waits
+			// for them, no Draft nor proof kind of its own (#788); its
+			// labels left as they are otherwise.
+			if slices.Contains(is.Labels, backlog.LabelNeedsTests) || !testsFirst(a.repo, *is) {
+				return nil
+			}
+			drafts, err := f.OpenMergeRequests(tester.TestsBranch)
+			if err != nil {
+				return err
+			}
+			if !tester.Untested(*is, comments, drafts) {
+				return nil
+			}
+		}
 		if strings.Contains(is.Body, backlog.DraftMarker) {
 			// The drafts are the person's, accepted or edited: their marks go.
 			body := backlog.StripDrafts(is.Body)
