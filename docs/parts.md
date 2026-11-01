@@ -2,6 +2,7 @@
 sources: [cmd/workline, internal/agent/agent.go]
 checked: 8ccdfb74
 verified: agent:claude-code
+judged-in-parts: b3b9aad
 ---
 # Take only a part
 
