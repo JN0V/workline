@@ -55,6 +55,15 @@ wip:
 stale:
   ready: 30
   tests: 14
+# A blocked issue, read again by the product owner (ADR-0059, amended):
+# at once when there is news — a comment, its body edited, an issue it
+# waits on closed —, else once in this many days with nothing new. The
+# reconciler tells, with no agent; the product owner sends it back, or
+# keeps it blocked with a fresh reason. 7: a week, the rhythm a person
+# on the loop reads the board at, so a block nobody looks at is read
+# again before it is forgotten, at one agent call a week per issue. 0:
+# never, a person alone moves it out.
+revisit: 7
 # Each moment's wait budget, in seconds (ADR-0050): a run over it says so
 # in its summary, naming the step that took the time; it never blocks. A
 # project sets its own in `routing: budgets:`, moment by moment.

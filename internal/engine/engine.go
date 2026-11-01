@@ -84,6 +84,14 @@ type Options struct {
 // nothing back from the run on ready.
 const DraftInput = "draft"
 
+// Inputs the line gives the product owner it wakes on a blocked issue
+// (ADR-0059, amended): what is new on it, and the state it was blocked
+// from ("" unknown).
+const (
+	RevisitInput     = "revisit"
+	RevisitFromInput = "revisit-from"
+)
+
 // AIWaitsReady is what Result.AIWaits and WORKLINE_AI_WAITS hold on a
 // draft: the agent waits for the merge request to be marked ready.
 const AIWaitsReady = "ready"
@@ -2649,6 +2657,34 @@ func (a *applier) apply(in intent.Intention) error {
 			a.moveCard(t.ID, card.Project, card.Column)
 		}
 		return nil
+	case "unblock":
+		// Out of Blocked, alone (ADR-0059, amended): to the state it came
+		// from or to refine, every other state's label off, its card
+		// moved; why, and how to undo it, the role's one comment says.
+		d := a.plan.Decision(a.index)
+		if d == nil || d.Mode != backlog.Act {
+			return nil
+		}
+		line, err := routing.Load(a.repo)
+		if err != nil {
+			return err
+		}
+		add, remove, err := line.Move(d.Act.To)
+		if err != nil {
+			return err
+		}
+		t := forge.Target{Kind: "issue", ID: d.Act.Issue}
+		card := board.Along(a.forge, a.repo, d.Act.To)
+		add, remove = card.Fold(add, remove)
+		if err := a.forge.Label(t, add, remove); err != nil {
+			return err
+		}
+		if card.Writes() {
+			a.moveCard(t.ID, card.Project, card.Column)
+		}
+		return nil
+	case "blocked":
+		return nil // kept blocked: said in the role's one comment, nothing moved
 	case "split":
 		d := a.plan.Decision(a.index)
 		if d == nil || d.Mode != backlog.Act {

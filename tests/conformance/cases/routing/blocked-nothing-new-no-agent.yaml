@@ -1,0 +1,29 @@
+case: routing/blocked-nothing-new-no-agent
+about: >
+  A blocked issue with nothing new since the line last read it — no
+  comment but the engine's, its body as it was, nothing it waits on
+  closed — and within routing.revisit: the reconciler calls no agent,
+  writes nothing, and says when it reads it again (ADR-0059, amended).
+given:
+  repo: tested
+  config:
+    routing: {events: {issue: [product-owner, tester]}, revisit: 3650}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply"
+        labels: ["workline:blocked"]
+        body: "## Need\n\nI want to multiply.\n"
+        comments: ["**workline's line** blocks this issue.\n\n<!-- workline:line-record {\"state\":\"blocked\",\"body\":\"8a828a06be19\",\"hops\":9,\"from\":\"ready\",\"why\":\"9 state steps\",\"since\":\"2026-10-30T09:00:00Z\"} -->\n<!-- workline:sticky=line/state -->"]
+run: {route: reconcile, open-merge-request: true, ai: "fake:unblock-three"}
+expect:
+  status: pass
+  agent-calls: 0
+  findings: [{rule: state-blocked-quiet, level: info, where: "#3", message: "blocked, nothing new since 2026-10-30"}]
+  no-findings: [{rule: state-revisit}]
+  forge:
+    issues:
+      - id: 3
+        labels: ["workline:blocked"]
+        comments: 1
+        comment-contains: ["\"since\":\"2026-10-30T09:00:00Z\""]

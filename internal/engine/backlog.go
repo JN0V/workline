@@ -836,6 +836,11 @@ func planActs(f forge.Forge, r *role.Role, settings map[string]any, st runState,
 			}
 		}
 	}
+	// A blocked issue the line woke the role on: the state it came from,
+	// where an unblock may send it besides refine (ADR-0059, amended).
+	if data, err := os.ReadFile(filepath.Join(runDir, "in", "input", RevisitFromInput)); err == nil {
+		cfg.RevisitFrom = strings.TrimSpace(string(data))
+	}
 	// What open issues were built on that changed, and those read again
 	// for it (ADR-0032).
 	var changes []backlog.Change

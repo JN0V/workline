@@ -1,0 +1,36 @@
+case: routing/blocked-comment-wakes-the-product-owner
+about: >
+  A person comments on a blocked issue (ADR-0059, amended): the
+  reconciler finds the comment new, and wakes the product owner on it,
+  told what is new and the state it was blocked from. What blocked it
+  is gone: the product owner sends it back to that state, alone, its
+  reason and how to undo it in its comment.
+given:
+  repo: tested
+  config:
+    routing: {events: {issue: [product-owner]}, revisit: 3650}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply"
+        labels: ["workline:blocked"]
+        author: ann
+        insider: true
+        body: "## Need\n\nI want to multiply.\n"
+        comments:
+          - "**workline's line** blocks this issue.\n\n<!-- workline:line-record {\"state\":\"blocked\",\"body\":\"8a828a06be19\",\"hops\":9,\"from\":\"ready\",\"why\":\"9 state steps\",\"since\":\"2026-10-30T09:00:00Z\"} -->\n<!-- workline:sticky=line/state -->"
+          - {body: "The objection was settled in the pull request: the test stays as it is.", author: ann, insider: true}
+run: {route: reconcile, open-merge-request: true, ai: "fake:unblock-three"}
+expect:
+  status: pass
+  agent-calls: 1
+  findings:
+    - {rule: state-revisit, level: info, where: "#3", message: "blocked, read again by the product-owner: a comment was written or edited on it"}
+  run-files:
+    in/task.md: {contains: "Read again because a comment was written or edited on it"}
+  forge:
+    issues:
+      - id: 3
+        labels: ["workline:ready"]
+        comment-contains: ["Moved #3 out of Blocked, to ready (workline:blocked off, workline:ready on; put workline:blocked back to undo): the comment says the objection was settled", "\"revisited\":", "last woke the product-owner"]
+        comment-lacks: ["**workline's line** blocks this issue"]

@@ -49,6 +49,10 @@ func offer(c Proposal) string {
 		return say(fmt.Sprintf("Label it `%s`: offered to whoever builds next.", LabelReady))
 	case "unready":
 		return say(fmt.Sprintf("Move it back to refine: `%s` off, `%s` on.", LabelReady, LabelToRefine))
+	case "unblock":
+		return say(fmt.Sprintf("Move it out of Blocked, to %s: `%s` off, `%s` on.", c.To, LabelBlocked, StateLabel(c.To)))
+	case "blocked":
+		return say("Keep it blocked, its reason said again.")
 	case "depend":
 		return say(fmt.Sprintf("Mark it as waiting on %s: ordered after, never offered first.", issueList(c.BlockedBy)))
 	case "undepend":

@@ -33,7 +33,9 @@ duties:
 # skip: an item of a file an import does not open, and why, for its map.
 # effort: split by the engine from an order carrying one (ADR-0040); the
 # agent is told of it only where the project keeps an effort.
-intentions: [open, skip, close, keep, sources, milestone, order, effort, refine, ready, unready, ask, split, rename, depend, undepend, comment, note]
+# unblock, blocked: a blocked issue the line wakes it on, read again
+# (ADR-0059, amended): sent back, or kept blocked with a fresh reason.
+intentions: [open, skip, close, keep, sources, milestone, order, effort, refine, ready, unready, unblock, blocked, ask, split, rename, depend, undepend, comment, note]
 
 # Without AI, nothing is judged: the issues taken get their state comment.
 without-ai: pass

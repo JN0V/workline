@@ -1,0 +1,27 @@
+case: routing/blocked-a-week-on-listed-for-ci
+about: >
+  A blocked issue with nothing new for longer than routing.revisit (7
+  days, shipped) is due: the product owner reads it once more
+  (ADR-0059, amended). In CI the reconciler lists it with the issues
+  due, no agent asked, nothing written; its own run wakes the product
+  owner. One the project reads again never (revisit 0) is not listed.
+given:
+  repo: tested
+  config:
+    routing: {events: {issue: [product-owner]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply"
+        labels: ["workline:blocked"]
+        body: "## Need\n\nI want to multiply.\n"
+        comments: ["**workline's line** blocks this issue.\n\n<!-- workline:line-record {\"state\":\"blocked\",\"body\":\"8a828a06be19\",\"hops\":9,\"from\":\"ready\",\"since\":\"2026-09-01T09:00:00Z\"} -->\n<!-- workline:sticky=line/state -->"]
+run: {route: reconcile, open-merge-request: true, ai: "fake:unblock-three", input: {reconcile: list}}
+expect:
+  status: pass
+  summary: "reconcile: 1 issue due: #3"
+  agent-calls: 0
+  findings: [{rule: state-revisit, level: info, where: "#3", message: "nothing new since 2026-09-01, 7 days or more (routing.revisit)"}]
+  forge:
+    issues:
+      - {id: 3, labels: ["workline:blocked"], comments: 1}

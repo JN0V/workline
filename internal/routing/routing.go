@@ -46,6 +46,11 @@ type Config struct {
 	// decision 7): the shipped ones, a project's laid over them state by
 	// state; 0, none.
 	Stale map[string]int `yaml:"stale"`
+	// Revisit: the days a blocked issue waits, nothing new on it, before
+	// the product owner reads it again (ADR-0059, amended); 0, never, a
+	// person alone moving it out. News wakes it sooner: a comment, its
+	// body edited, an issue it waits on closed.
+	Revisit *int `yaml:"revisit"`
 }
 
 // Load returns the shipped routing with the project's changes applied.
@@ -100,6 +105,12 @@ func Load(repo string) (*Config, error) {
 				c.WIP = map[string]int{}
 			}
 			c.WIP[state] = n
+		}
+		if p.Revisit != nil {
+			if *p.Revisit < 0 {
+				return nil, role.ConfigErrorf("routing.revisit is %d: a number of days, 0 for never", *p.Revisit)
+			}
+			c.Revisit = p.Revisit
 		}
 		if err := checkStale(p.Stale, c.States); err != nil {
 			return nil, role.ConfigErrorf("%s", err)

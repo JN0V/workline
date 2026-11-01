@@ -1,0 +1,3 @@
+# A blocked issue read again: an unblock to a state it did not come from
+# is refused (ADR-0059, amended).
+- unblock: {issue: 3, to: tests, why: "the tests can be written now"}

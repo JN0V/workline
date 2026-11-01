@@ -1,0 +1,35 @@
+case: routing/blocked-blocker-closed-wakes-once
+about: >
+  The issue a blocked issue waits on closes (ADR-0059, amended; its
+  "Blocked by" line, ADR-0028): the reconciler wakes the product owner
+  on it. The block still holds, only a person can lift it: kept
+  blocked, its reason said afresh in the product owner's comment, its
+  labels as they were. Run again, nothing more: the line's record holds
+  the closing seen, no agent asked.
+given:
+  repo: tested
+  config:
+    routing: {events: {issue: [product-owner]}, revisit: 3650}
+  forge:
+    issues:
+      - {id: 2, title: "Divide", labels: [], body: "## Need\n\nI want to divide.\n", closed: true}
+      - id: 3
+        title: "Multiply"
+        labels: ["workline:blocked"]
+        author: ann
+        insider: true
+        body: "## Need\n\nI want to multiply.\n\nBlocked by #2."
+        comments:
+          - "**workline's line** blocks this issue.\n\n<!-- workline:line-record {\"state\":\"blocked\",\"body\":\"a140b9ff0209\",\"hops\":3,\"from\":\"tests\",\"since\":\"2026-10-30T09:00:00Z\"} -->\n<!-- workline:sticky=line/state -->"
+run: {route: reconcile, open-merge-request: true, ai: "fake:blocked-three", then: again}
+expect:
+  status: pass
+  agent-calls: 1
+  findings:
+    - {rule: state-revisit, level: info, where: "#3", message: "blocked, read again by the product-owner: #2, which it waits on, is closed"}
+    - {rule: state-blocked-quiet, level: info, where: "#3"}
+  forge:
+    issues:
+      - id: 3
+        labels: ["workline:blocked"]
+        comment-contains: ["Kept #3 blocked, for a person to lift, read again: #2 closed without the fix it needed", "\"closed\":[2]", "\"revisited\":"]

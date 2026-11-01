@@ -340,7 +340,7 @@ whose result moves the issue to the next. The table is the routing's
 
 | State | Label | Wakes | Its result moves it to |
 |---|---|---|---|
-| blocked | `workline:blocked` | nobody: its reason on the issue | — |
+| blocked | `workline:blocked` | nobody: its reason on the issue; the product owner reads it again on news ([below](#blocked-read-again)) | — |
 | doing | `workline:developing` | nobody: the developer's claim | — |
 | ready | `workline:ready` | the developer | doing |
 | tests | `workline:needs-tests` | the tester | ready |
@@ -413,6 +413,44 @@ whose result moves the issue to the next. The table is the routing's
   that comment (`hops-capped`). A person moving it back to a state by
   its label starts its count again. A hop is a new run, not a handoff
   (`max-handoffs` caps those inside one run).
+
+### Blocked, read again
+
+[ADR-0059, amended](../adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#amendment-2026-11-01-blocked-is-read-again):
+a blocked issue wakes no role by its state; the reconciler, with no
+agent, tells whether there is news on it, and wakes the product owner
+only then.
+
+- **`revisit`** (7): the days a blocked issue waits with nothing new
+  before the product owner reads it again; `0`: never, a person moves
+  it out. Shipped in `routing.default.yaml`, a project's
+  `routing: revisit:` replacing it. Read only where the project routes
+  the product owner on `issue`.
+- **First seen blocked**: the line writes its record once
+  (`state-blocked-seen`), no agent: the state it came from, when it saw
+  it, its body's hash and its comments' — the base news is told
+  against. A block the line makes (`hops-capped`, `tests-refused`)
+  writes it at once.
+- **News**, each against that record: its body edited; a comment
+  written or edited by anyone but the engine (one holding no
+  `<!-- workline:` mark); an issue it waits on closed — the forge's
+  relation or a "Blocked by" line ([depend](backlog-acts/depend.md)),
+  each closing told once. None, and fewer than `revisit` days since it
+  was seen or last read again: nothing run, no agent
+  (`state-blocked-quiet`).
+- **Then the product owner**, on that issue alone (`state-revisit`),
+  told what is new and the state it came from (inputs `revisit`,
+  `revisit-from`). It decides one, said in its one comment: `unblock`
+  to that state or to refine, or `blocked`, the reason afresh, for a
+  person when only one can lift it
+  ([refine](backlog-acts/refine.md#a-blocked-issue-read-again)).
+- **Counted like a step**: within `reconcile-max`; not a hop, its state
+  the same. With no agent, nothing is judged; the record still moves
+  the next reading `revisit` days on.
+- **Cost**: the issue's comments, one call a blocked issue a reconcile;
+  the open issues' listing, already the reconciler's, one call a hundred
+  issues more on an issue's own run. No agent call without news or the
+  week gone by.
 
 ### Room in the next state
 

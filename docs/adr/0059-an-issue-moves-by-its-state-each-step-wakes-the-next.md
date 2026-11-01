@@ -64,7 +64,7 @@ Built first, whatever else.
 | Tests | `workline:needs-tests` | tests | the product owner, the need validated | the tester |
 | Ready | `workline:ready` | ready | the engine, on the tester's result | the developer, when Doing has room |
 | Doing | `workline:developing` | doing | the developer's claim ([ADR-0054]) | — |
-| Blocked | `workline:blocked` | blocked | any role, with its reason | nobody; the reconciler re-reads it |
+| Blocked | `workline:blocked` | blocked | any role, with its reason | nobody; the reconciler re-reads it, the product owner on news ([amended](#amendment-2026-11-01-blocked-is-read-again)) |
 | Done | none | done | the forge's close at the merge (`Closes #n`) | — |
 
 - **Exclusive**: the engine puts the new label on and takes the old one
@@ -269,6 +269,37 @@ to refine waiting for a person's `workline:accepted`.
 - **Other acts keep their rules**: the autonomy levels
   ([ADR-0026]) never named this move.
 
+## Amendment (2026-11-01): Blocked is read again
+
+Settles [#833](https://github.com/JN0V/workline/issues/833): §2 said the
+reconciler re-reads Blocked, not how. Eleven issues sat there, each
+waiting on the maintainer to free it.
+
+- **News wakes the product owner** on a blocked issue: its body edited,
+  a comment by anyone but the engine, an issue it waits on closed
+  ([ADR-0028]). Told by the reconciler with no agent, against the line's
+  record of the issue when it was blocked or last read.
+- **Else once a week**: `routing.revisit`, 7 days by default, the
+  rhythm a person on the loop reads the board at; `0` turns it off.
+- **It decides alone**, at every level, as back to refine:
+  - `unblock` to the state it came from, or to refine;
+  - `blocked`, the reason afresh, for a person when only one can lift
+    it;
+  - or a `close`, by its own rules ([ADR-0024]).
+- **Said in its one comment** (§1); a label put back undoes a move.
+- **No rule-based move**: a blocker closed, or a comment, says nothing
+  of whether the block still holds — the tester's objection, a hop cap,
+  a review's findings. Telling news from silence is the engine's;
+  judging it, the role's.
+- **Cost**: one API call a blocked issue a reconcile (its comments),
+  the open issues' listing reused; an agent call only with news, or
+  once a week.
+- **Not chosen**: like a stale bot ([research](../research/product-owner.md#closing-on-silence-announced-first-2026-10-05)),
+  activity alone moving the issue out — a role's verdict would be
+  undone by a "+1".
+
+[ADR-0024]: 0024-obsolete-is-announced-then-closed-on-silence-and-a-second-judge.md
+[ADR-0028]: 0028-an-issue-names-what-it-waits-on.md
 [#752]: https://github.com/JN0V/workline/issues/752
 [ADR-0026]: 0026-the-product-owners-autonomy-is-a-level.md
 [ADR-0032]: 0032-a-changed-need-flags-the-issues-built-on-it.md

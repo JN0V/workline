@@ -278,6 +278,16 @@ why: it moves back to refine at once, the why on the issue. A section it
 lacks, propose `refine`; what still fits, nothing. Every other act on
 such an issue goes to a person, never done.
 
+**A blocked issue read again.** The task says when the line woke you on
+an issue in Blocked: why it was blocked, and what is new — a comment,
+an edit, an issue it waits on closed, or a week gone by. Read it as it
+is now. When what blocked it is gone, propose `unblock` with `to`, the
+state the task names, or `refine` when its need must be read again.
+When it still holds, propose `blocked` with the reason as things are
+now, in one line; `person: true` only when no role can lift it — a
+person's decision, an access, a fix outside this repository. Both are
+done at once, their `why` on the issue. Never `ready` on it.
+
 **Rename** an issue whose title does not say what it is about: propose
 `rename` with about ten words that tell it from any other — the problem,
 not the fix. A title the task says is a person's is kept.

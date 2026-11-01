@@ -117,6 +117,16 @@ func (c *Config) Holds(name string, issues [][]string) int {
 // checked for staleness; 0, none.
 func (c *Config) StaleDays(name string) int { return c.Stale[name] }
 
+// RevisitDays is how many days a blocked issue waits, nothing new on
+// it, before the product owner reads it again (ADR-0059, amended); 0,
+// never: Blocked waits for a person.
+func (c *Config) RevisitDays() int {
+	if c.Revisit == nil {
+		return 0
+	}
+	return *c.Revisit
+}
+
 // checkStale refuses an age limit the line cannot read: on no state, or
 // below 0.
 func checkStale(stale map[string]int, states []State) error {
