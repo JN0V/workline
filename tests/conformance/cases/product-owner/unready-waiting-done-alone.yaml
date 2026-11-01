@@ -2,7 +2,8 @@ case: product-owner/unready-waiting-done-alone
 about: >
   A move back to refine an earlier run proposed, still waiting for a
   person's workline:accepted: the next run does it with no agent and no
-  yes — workline:ready off, workline:to-refine on, workline:proposed off —,
+  yes — workline:ready, a developer's claim and workline:proposed off,
+  workline:to-refine on —,
   its reason and how to undo it in the role's one comment, no new
   comment (ADR-0059, amended).
 given:
@@ -14,7 +15,7 @@ given:
         body: "Part of #9."
         author: ann
         insider: true
-        labels: [workline:ready, workline:proposed]
+        labels: [workline:ready, workline:proposed, workline:developing]
         comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nlabel: workline:proposed\nproposed:\n  - act: unready\n    line: 'Move #11 back to refine (workline:ready off, workline:to-refine on): #9 now asks for JSON.'\n    proposal: {do: unready, issue: 11, why: '#9 now asks for JSON.'}\n```\n\n<!-- workline:sticky=product-owner/state -->"]
 run: {role: product-owner, event: schedule, ai: none}
 expect:

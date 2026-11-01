@@ -2620,14 +2620,15 @@ func (a *applier) apply(in intent.Intention) error {
 		return rename(a.forge, a.role, d.Act)
 	case "unready":
 		// Back to refine, alone or a person having accepted it (ADR-0059,
-		// amended): its labels moved; why, and how to undo it, the role's
+		// amended): its labels moved, a developer's claim with them (one state
+		// at a time); why, and how to undo it, the role's
 		// one comment on the issue says (Persist).
 		d := a.plan.Decision(a.index)
 		if d == nil || d.Mode != backlog.Act {
 			return nil
 		}
 		t := forge.Target{Kind: "issue", ID: d.Act.Issue}
-		return a.forge.Label(t, []string{backlog.LabelToRefine}, []string{backlog.LabelReady, backlog.LabelNeedsTests})
+		return a.forge.Label(t, []string{backlog.LabelToRefine}, []string{backlog.LabelReady, backlog.LabelNeedsTests, "workline:developing"})
 	case "split":
 		d := a.plan.Decision(a.index)
 		if d == nil || d.Mode != backlog.Act {
