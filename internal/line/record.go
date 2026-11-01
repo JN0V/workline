@@ -49,6 +49,9 @@ const (
 	recordMark = "line-record " // the record's line in it
 	// BlockedState names the state a capped issue goes to.
 	BlockedState = "blocked"
+	// refineState is the state whose step the reviewer's spec review
+	// follows, and whose record keeps that review's hash (#128).
+	refineState = "refine"
 )
 
 // bodyHash is a body's short hash, as the record keeps it.

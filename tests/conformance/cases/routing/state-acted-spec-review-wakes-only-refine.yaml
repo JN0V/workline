@@ -1,0 +1,24 @@
+case: routing/state-acted-spec-review-wakes-only-refine
+about: >
+  The reviewer's review of a spec makes refine's step due again, and no
+  other state's (#128, ADR-0059): an issue ready, its step run on the
+  same body and labelling, stays acted whatever spec review it holds.
+given:
+  repo: tested
+  config:
+    routing: {events: {issue: [product-owner, reviewer, tester, developer]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply"
+        labels: ["workline:ready"]
+        labeled: {"workline:ready": "2026-10-31T09:00:00Z"}
+        body: "## Need\n\nI want to multiply.\n"
+        comments:
+          - "**workline's line** last woke the developer.\n\n<!-- workline:line-record {\"state\":\"ready\",\"body\":\"8a828a06be19\",\"labeled\":\"2026-10-31T09:00:00Z\",\"hops\":1} -->\n<!-- workline:sticky=line/state -->"
+          - "**The reviewer** read this spec: nothing holds it from ready.\n\n<!-- workline:spec-review body=8a828a06be19 round=1 open=0 -->\n<!-- workline:sticky=reviewer/spec -->"
+run: {route: issue, target: {issue: 3}, open-merge-request: true, ai: "fake:developer-nothing"}
+expect:
+  status: pass
+  agent-calls: 0
+  findings: [{rule: state-acted, level: info, where: "#3", message: "its state, ready, woke the developer already"}]

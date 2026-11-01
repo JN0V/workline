@@ -76,6 +76,9 @@ func stateOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue) 
 	if err != nil {
 		return nil, nil, err
 	}
+	if s.Name != refineState {
+		spec = "" // a review is read in refine alone: no other state woken by it
+	}
 	now, ok := due(s, is, t.Labeled, spec, rec, had)
 	if !ok {
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "state-acted", Level: "info", Where: where,
@@ -170,7 +173,8 @@ func runStateStep(res *Result, cfg *routing.Config, f forge.Forge, spec string, 
 	if status == verdict.BlockedExternal {
 		return
 	}
-	if st.role == backlog.Keeper && st.write.Record.State == "refine" && slices.Contains(cfg.Events[IssueEvent], backlog.SpecReviewer) {
+	if st.role == backlog.Keeper && st.write.Record.State == refineState && status == verdict.Pass &&
+		slices.Contains(cfg.Events[IssueEvent], backlog.SpecReviewer) {
 		// The spec the product owner refined, read by the reviewer at
 		// once, as the night's line does after it (#128): its review
 		// written, the step is due again, the product owner reading it.
