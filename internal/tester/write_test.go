@@ -2,8 +2,32 @@ package tester
 
 import (
 	"slices"
+	"strings"
 	"testing"
 )
+
+// A pattern gives the code it matches as the code the Scope names, its
+// tests given beside, once (#801); one matching tests alone gives them.
+func TestWriteCodeOfAPattern(t *testing.T) {
+	repo, _ := gitRepo(t, map[string]string{"add.go": "package calc\n", "add_test.go": "package calc\n", "notes.md": "x\n"})
+	s := Settings{Paths: []string{"**/*_test.go"}}
+	var b strings.Builder
+	writeCode(&b, repo, "- `*.go`", s)
+	task := b.String()
+	_, after, _ := strings.Cut(task, "## The code the Scope names")
+	code, tests, _ := strings.Cut(after, "## Tests already there")
+	if !strings.Contains(code, "### `add.go`") || strings.Contains(code, "add_test.go") || strings.Contains(task, "notes.md") {
+		t.Errorf("the code named:\n%s", task)
+	}
+	if !strings.Contains(tests, "### `add_test.go`") {
+		t.Errorf("the tests beside:\n%s", task)
+	}
+	b.Reset()
+	writeCode(&b, repo, "- `*_test.go`", s)
+	if code, _, _ := strings.Cut(b.String(), "## Tests already there"); !strings.Contains(code, "## The code the Scope names\n\n### `add_test.go`") {
+		t.Errorf("a pattern of tests alone names none:\n%s", b.String())
+	}
+}
 
 func TestScenarios(t *testing.T) {
 	got := Scenarios("Intro line.\n\n- **Old debt:** Given `main` with 140 findings, When a merge request\n  adds one, Then only that one blocks.\n- **Moved code**: Given a move, When the gate runs, Then nothing new.\n- Given no name, When read, Then dropped.\n")
