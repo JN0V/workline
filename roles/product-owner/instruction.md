@@ -150,6 +150,9 @@ the top, so the problem is said once.
 - a word only a builder knows explained or gone;
 - what only a builder needs — the code, a path, a commit, the fix — in
   `scope`, not in the `need`;
+- a folded block on top (`<details>` … `</details>`, a cause and its
+  fix) is moved whole by the engine to the end of your `scope` or
+  `verification`: do not copy it;
 - the line saying where it comes from is the engine's, kept: do not
   write it.
 

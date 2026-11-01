@@ -122,7 +122,10 @@ amended; [worked case](proposed-headings.md#each-thing-said-once)):
 - **A role's text on top becomes the Need draft**: what an import or
   another role opened the issue with, rewritten in plain words, then
   taken from the top. The line saying where it comes from, and the
-  hidden markers, stay.
+  hidden markers, stay. What it folded there, a cause and its fix,
+  moves whole to the end of the Scope or Verification written; with
+  neither written, it stays on top
+  ([#841](https://github.com/JN0V/workline/issues/841)).
 - **Your text on top is the Need**, when no Need heading follows: the
   product owner adds Validation and the builder's part, never a Need
   restating it.
