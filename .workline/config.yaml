@@ -117,7 +117,8 @@ routing:
   # refined (specs-per-run), read by the reviewer, which holds each from
   # ready while a finding is open (#128; on since 2026-10-17). The line of
   # states (ADR-0059), by events, not at night (workline-develop.yml): an
-  # issue waiting for its tests wakes the tester, its tests opened as a
+  # issue to refine wakes the product owner, that issue alone; one
+  # waiting for its tests wakes the tester, its tests opened as a
   # Draft (ADR-0055, #264), proven and linted, then ready; ready wakes the
   # developer (ADR-0054, #696), its code proven by the tester's
   # test-command; hourly, the reconciler starts what an event missed. On a
@@ -125,7 +126,7 @@ routing:
   # branches, a test changed by another stopping the line. The developer's
   # review rounds need no routing: the same workflow runs them.
   events: {pre-push: [committer, documentalist], merge-request: [committer, documentalist, "gate:lint", tester, reviewer, inspector],
-    schedule: [documentalist, product-owner, reviewer], issue: [tester, developer]}
+    schedule: [documentalist, product-owner, reviewer], issue: [product-owner, tester, developer]}
 
 # workline's own Go code, read by golangci-lint (ADR-0049, step 5), its
 # standard linters (.golangci.yml). On a pull request, a finding the change
