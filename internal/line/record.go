@@ -71,13 +71,24 @@ func readRecordSpec(b forge.Backlog, id int) (Record, bool, string, string, erro
 	}
 	spec := ""
 	for _, c := range slices.Backward(comments) {
-		if strings.Contains(c, backlog.SpecMarker) {
+		if holdsSpecMark(c) {
 			spec = bodyHash(c)
 			break
 		}
 	}
 	r, had := recordIn(comments)
 	return r, had, spec, tester.Refused(comments), nil
+}
+
+// holdsSpecMark says whether comment c carries the reviewer's mark as
+// a line of its own: a quoted mark (after "> ") is a person's.
+func holdsSpecMark(c string) bool {
+	for _, l := range strings.Split(c, "\n") {
+		if strings.TrimSpace(l) == backlog.SpecMarker {
+			return true
+		}
+	}
+	return false
 }
 
 // recordIn is the line's record among an issue's comments.
