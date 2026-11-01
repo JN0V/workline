@@ -1,0 +1,18 @@
+case: product-owner/silent-line-goes-once-complete
+about: >
+  The line saying the role read an issue and wrote nothing on it goes
+  once a person completes the issue, though the role does nothing on it
+  (ADR-0059, decision 1): the comment never says a complete issue lacks
+  a section.
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.\n\n## Need\n\nThe monthly report counts every sale.\n\n## Verification\n\nA test writes three rows.\n\n## Validation\n\nAnn opens a known day.\n\n## Scope\n\nsrc/export/csv.go", author: ann, insider: true, labels: [workline:to-refine], comments: ["**The product owner** read this issue and wrote nothing on it.\n\n<!-- What workline knows of this issue, edited by the engine, not by hand.\n```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: 000000000000\nsilent: 'it lacks Scope, and the agent drafted nothing nor asked'\n```\n-->\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:proposes-nothing}
+expect:
+  forge:
+    issues:
+      - id: 9
+        comments: 1
+        comment-lacks: ["wrote nothing on it", "silent:"]

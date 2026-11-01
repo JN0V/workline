@@ -636,8 +636,8 @@ type Plan struct {
 	ProposalsMax int `yaml:"proposals-max,omitempty"`
 	// Silent are the issues read and left with nothing though they lack
 	// a section, each with why: said on the issue (ADR-0059, decision 1).
-	Silent map[int]string `yaml:"silent,omitempty"`
-	open     map[int]bool    // the open issues, read once
+	Silent   map[int]string `yaml:"silent,omitempty"`
+	open     map[int]bool   // the open issues, read once
 	issues   map[int]forge.Issue
 	judged   map[int]Judged // the second judge's answers on the issues announced obsolete
 	settings map[string]Setting
@@ -1087,14 +1087,7 @@ func (p *Plan) summary() {
 				Message: "a person's comment brought it back and nothing was proposed on it (the agent's note says why): it stays set aside until it changes or someone comments"})
 			continue
 		}
-		var lacks []string
-		have := work.ByMeaning(is.Body)
-		for _, m := range work.Required {
-			if strings.TrimSpace(have[m].Text) == "" {
-				lacks = append(lacks, work.Name(m))
-			}
-		}
-		if len(lacks) > 0 {
+		if lacks := missingSections(is.Body); len(lacks) > 0 {
 			p.Findings = append(p.Findings, verdict.Finding{Rule: "nothing-proposed", Level: "info", Where: fmt.Sprintf("#%d", id),
 				Message: fmt.Sprintf("read, and nothing was drafted or asked though it lacks %s: read again once it changes or a person comments", strings.Join(lacks, ", "))})
 			if p.Silent == nil {
@@ -1111,6 +1104,18 @@ func (p *Plan) summary() {
 		p.Findings = append(p.Findings, verdict.Finding{Rule: "report-closed", Level: "info", Where: fmt.Sprintf("#%d", p.Report),
 			Message: "the old report's record moved to each issue's state; the report is closed: what waits on a person bears " + LabelProposed + " (GitLab: workline::proposed)"})
 	}
+}
+
+// missingSections names the required sections a body lacks, or has empty.
+func missingSections(body string) []string {
+	var lacks []string
+	have := work.ByMeaning(body)
+	for _, m := range work.Required {
+		if strings.TrimSpace(have[m].Text) == "" {
+			lacks = append(lacks, work.Name(m))
+		}
+	}
+	return lacks
 }
 
 // silentMax bounds the agent's note said on an issue, in characters.

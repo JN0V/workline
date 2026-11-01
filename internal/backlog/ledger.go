@@ -668,7 +668,8 @@ func (p *Plan) Persist(f forge.Forge, role string) error {
 		p.stateOf(id, st)
 		if why, ok := p.Silent[id]; ok {
 			st.Silent = why
-		} else if is.Closed || p.decidedOn(id) || p.Answers[id] != nil {
+		} else if is.Closed || p.decidedOn(id) || p.Answers[id] != nil || len(missingSections(is.Body)) == 0 {
+			// Acted on, answered, or complete since: nothing left unsaid.
 			st.Silent = ""
 		}
 		if err := linkComments(b, f, role, id, st); err != nil {
