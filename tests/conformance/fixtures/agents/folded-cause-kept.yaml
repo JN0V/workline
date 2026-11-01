@@ -1,0 +1,7 @@
+- refine:
+    issue: 8
+    need: "A person who refines an issue is told there was nothing to refine, when its drafts were only left out for saying again what is above them."
+    validation: "- **Drafts left out said:** Given an issue whose drafts all repeat its text, When it is refined, Then the result says they were left out."
+    scope: "The nothing-to-refine result of `Refine`."
+    sources: [src/export/csv.go]
+    why: "A finding in code words."
