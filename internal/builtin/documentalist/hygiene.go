@@ -273,7 +273,7 @@ func budgets(t Tree, b Budgets) []Problem {
 	}
 	if b.RootAgentFileLines > 0 {
 		for _, f := range rootAgentFiles {
-			if content, ok := t.Docs[f]; ok {
+			if content, ok := t.Docs[f]; ok && !archived(content) {
 				if n := lineCount(content); n > b.RootAgentFileLines {
 					out = append(out, Problem{Rule: "agent-file-too-long", Where: f, Key: "agent-file-too-long " + f, Size: n,
 						Message: fmt.Sprintf("%d lines; the budget is %d: an agent's entry point routes to docs, it does not hold them", n, b.RootAgentFileLines)})
