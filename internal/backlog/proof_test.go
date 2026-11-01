@@ -94,3 +94,41 @@ func TestProofWrong(t *testing.T) {
 		}
 	}
 }
+
+// commentsOnly is a backlog whose issues' comments are given: all
+// checkNoTest reads from the forge.
+type commentsOnly struct {
+	forge.Backlog
+	comments []string
+}
+
+func (c commentsOnly) Comments(forge.Target) ([]string, error) { return c.comments, nil }
+
+func TestCheckNoTestLiftedOnlyByARefineThatRewrites(t *testing.T) {
+	is := forge.Issue{ID: 9, Body: "## Need\n\nEvery sale counted.\n\n## Verification\n\nA test.\n\n## Validation\n\nAnn reads it calmly.\n\n## Scope\n\nsrc/a.go"}
+	f := commentsOnly{comments: []string{"**The tester** finds no test possible.\n\n<!-- workline:tester-proof {\"kind\":\"none\",\"reason\":\"a feeling.\",\"body\":\"" +
+		BodyDigest(is.Body) + "\"} -->\n<!-- workline:sticky=tester/issue -->"}}
+	rewrite := Proposal{Do: "refine", Issue: 9, Validation: "- **Three rows:** Given three sales, When Ann exports, Then she counts three.", Revise: []string{"Validation"}}
+	same := rewrite
+	same.Validation = "Ann reads it calmly."
+	outsider := rewrite
+	outsider.ToReporter = true
+	cases := []struct {
+		name string
+		d    []Decision
+		lift bool
+	}{
+		{"no refine", nil, false},
+		{"a refine done, rewriting", []Decision{{Mode: Act, Act: rewrite}}, true},
+		{"a refine proposed only", []Decision{{Mode: Propose, Act: rewrite}}, false},
+		{"a refine to its reporter", []Decision{{Mode: Act, Act: outsider}}, false},
+		{"a refine writing the same body", []Decision{{Mode: Act, Act: same}}, false},
+	}
+	for _, c := range cases {
+		p := &Plan{Decisions: c.d}
+		rule, _ := p.checkNoTest(f, "product-owner", is, &Proposal{Do: "ready", Issue: 9})
+		if got := rule == ""; got != c.lift {
+			t.Errorf("%s: rule %q, lifted %v, want %v", c.name, rule, got, c.lift)
+		}
+	}
+}
