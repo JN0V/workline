@@ -393,7 +393,10 @@ func ReadLedger(f forge.Backlog, role string, open []forge.Issue) (*Ledger, erro
 			l.Aside[is.ID] = true
 			l.Signs = append(l.Signs, fmt.Sprintf("#%d set aside", is.ID))
 		}
-		l.add(is, st)
+		if err := pruneMoves(f, is, st); err != nil {
+			return nil, err
+		}
+		l.add(is.ID, st)
 		if Accepted(is) && (len(st.Proposed) > 0 || st.Label != "") {
 			l.Signs = append(l.Signs, fmt.Sprintf("#%d accepted", is.ID))
 		}
@@ -429,6 +432,22 @@ func ReadLedger(f forge.Backlog, role string, open []forge.Issue) (*Ledger, erro
 	return l, nil
 }
 
+// pruneMoves takes off an issue's state the ready undos an earlier engine
+// kept for a move of the line — workline's own account took the label
+// off (MovedBack) —: no act a person undid, never counted again; the
+// state is written so at the role's next write.
+func pruneMoves(f forge.Backlog, is forge.Issue, st *State) error {
+	if Readied(is) || !slices.ContainsFunc(st.Undone, func(u Undo) bool { return u.Act == "ready" }) {
+		return nil
+	}
+	engine, err := MovedBack(f, is)
+	if err != nil || !engine {
+		return err
+	}
+	st.Undone = slices.DeleteFunc(st.Undone, func(u Undo) bool { return u.Act == "ready" })
+	return nil
+}
+
 // setAside says whether a person took the role's label off an issue since
 // the last run without accepting: "not now" (ADR-0038). A label a bot took
 // off, as the forge says, is not a person's answer.
@@ -450,8 +469,8 @@ func setAside(f forge.Backlog, is forge.Issue, st *State) (bool, error) {
 
 // add puts an issue's record in the ledger's, each entry with its issue; a
 // proposal set aside is a person's "not now": dropped.
-func (l *Ledger) add(is forge.Issue, st *State) {
-	id, r := is.ID, &l.Record
+func (l *Ledger) add(id int, st *State) {
+	r := &l.Record
 	if !l.Aside[id] {
 		for _, q := range st.Proposed {
 			q.Issue = id
@@ -463,11 +482,6 @@ func (l *Ledger) add(is forge.Issue, st *State) {
 		r.Done = append(r.Done, d)
 	}
 	for _, u := range st.Undone {
-		if u.Act == "ready" && MovedBack(is) {
-			// Kept by an engine that read a move of the line as a person's
-			// undo: the issue is back in refine or blocked, no act undone.
-			continue
-		}
 		u.Issue = id
 		r.Undone = append(r.Undone, u)
 	}

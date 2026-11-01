@@ -79,11 +79,22 @@ func (p *Plan) recordDone(c Proposal) {
 	}
 }
 
-// MovedBack says whether an issue is back in a state the line moves it to
-// on its own (ADR-0059): refine or blocked, never a ready undone by a
-// person, who takes the label off.
-func MovedBack(is forge.Issue) bool {
-	return slices.Contains(is.Labels, LabelToRefine) || slices.Contains(is.Labels, LabelBlocked)
+// MovedBack says whether workline's own account, not a person, last took
+// the issue's ready off — `workline:ready` or, on its way there,
+// `workline:needs-tests` —, as the forge's label events say: a move of
+// the line (ADR-0059), never a ready a person undid. A forge that keeps
+// no label events: an issue back in refine or blocked is read so.
+func MovedBack(f forge.Backlog, is forge.Issue) (bool, error) {
+	events, err := f.LabelEvents(is.ID)
+	if err != nil || len(events) == 0 {
+		return slices.Contains(is.Labels, LabelToRefine) || slices.Contains(is.Labels, LabelBlocked), nil
+	}
+	for i := len(events) - 1; i >= 0; i-- {
+		if e := events[i]; !e.Added && (e.Label == LabelReady || e.Label == LabelNeedsTests) {
+			return e.Bot, nil
+		}
+	}
+	return false, nil
 }
 
 // findUndone reads what a person did to the acts the record keeps: those
@@ -160,17 +171,22 @@ func findUndone(f forge.Backlog, role string, open map[int]forge.Issue, done []D
 			}
 			gone = left == 0
 		case "ready":
-			switch {
-			case Readied(is):
-			case MovedBack(is):
-				// Back to refine, or blocked: a step of the line moved it
-				// (ADR-0059) — the tester finding no test possible, an
-				// objection on the need, a cap — or a person's yes to
-				// the role's own unready. No act of the role's undone.
-				gone = true
-			default:
-				evidence = fmt.Sprintf("#%d's label %s taken off by a person; the role had moved it to ready", d.Issue, LabelReady)
+			if Readied(is) {
+				break
 			}
+			engine, err := MovedBack(f, is)
+			if err != nil {
+				return nil, nil, nil, err
+			}
+			if engine {
+				// A step of the line moved it on (ADR-0059): the tester
+				// finding no test possible, an objection on the need, a
+				// cap, a person's yes to the role's own unready. No act
+				// of the role's undone.
+				gone = true
+				break
+			}
+			evidence = fmt.Sprintf("#%d's label %s taken off by a person; the role had moved it to ready", d.Issue, LabelReady)
 		case "split":
 			st, err := splitState(f, role, d.Issue)
 			if err != nil {
