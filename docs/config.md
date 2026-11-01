@@ -34,6 +34,7 @@ owner), then the project's `settings`.
 | `merge` | `autonomy: cautious`: the forge merges what a person accepted; `normal`: workline's own routine work too, with no yes; `alone: [reader]`: the reader's rewordings too ([merge policy](merge-policy.md)); off unless set |
 | `routing.states`, `routing.max-hops`, `routing.reconcile-max` | the line of states, its hop cap, the reconciler's steps a run ([routing](spec/routing.md#the-line-of-states)) |
 | `routing.wip` | `<state>: <issues>`, a state's WIP limit, laid over the shipped `ready: 5`; `0` lifts it ([room in the next state](spec/routing.md#room-in-the-next-state)) |
+| `routing.stale` | `<state>: <days>`, a state's age limit, laid over the shipped `ready: 30`, `tests: 14`; `0` lifts it ([staleness](spec/routing.md#staleness)) |
 | `board` | `ready`, `doing`, `refine`, `tests`, `blocked`: a column's name, over the names workline matches; `project`: a GitHub project's number, when several are linked ([boards](boards.md)) |
 | `gitlab.bots` | usernames GitLab does not name bots that are: the service account or line account holding workline's token; its comments, labels and reactions are a bot's, never a person's ([why](ci-gitlab.md#what-the-template-does)) |
 
@@ -72,6 +73,7 @@ routing:                    # replaces the shipped line, event by event
   fail-fast: {schedule: false}   # every step of the schedule runs, the worst verdict stands (the default)
   budgets: {verdict: 300}        # the head's verdict may take 5 min here (3 by default); over it, said
   wip: {ready: 3}                # Ready holds 3 issues at most here (5 by default); the tester waits for room
+  stale: {ready: 60}             # a ready issue is checked for staleness after 60 days here (30 by default)
 gates:                      # your own checks, as a step of the line
   merge:
     checks: [{id: secrets, run: "gitleaks detect --report-format sarif --report-path {out}/secrets.sarif", output: sarif, max: {error: 0}}]

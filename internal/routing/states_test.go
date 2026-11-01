@@ -146,3 +146,20 @@ func TestWIP(t *testing.T) {
 		t.Errorf("Holds = %d, want 1: an issue blocked is in blocked", n)
 	}
 }
+
+// TestStale: Ready 30 days and Tests 14 as shipped; a project's limit is
+// laid over them state by state, 0 lifting it; a limit on no state, or
+// below 0, is refused.
+func TestStale(t *testing.T) {
+	if cfg := shipped(t, ""); cfg.StaleDays("ready") != 30 || cfg.StaleDays("tests") != 14 || cfg.StaleDays("refine") != 0 {
+		t.Errorf("shipped: %v", cfg.Stale)
+	}
+	if cfg := shipped(t, "routing: {stale: {ready: 0, tests: 7}}\n"); cfg.StaleDays("ready") != 0 || cfg.StaleDays("tests") != 7 {
+		t.Errorf("laid over: %v", cfg.Stale)
+	}
+	for _, bad := range []string{"routing: {stale: {nowhere: 2}}\n", "routing: {stale: {ready: -1}}\n"} {
+		if _, err := Load(configured(t, bad)); !role.IsConfigError(err) {
+			t.Errorf("%s: %v, want a config error", bad, err)
+		}
+	}
+}

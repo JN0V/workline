@@ -50,6 +50,7 @@ var (
 			"max-hops":      free,
 			"reconcile-max": free,
 			"wip":           free, // a state's name: its limit (ADR-0059, decision 9), checked by the routing
+			"stale":         free, // a state's name: its age limit in days (ADR-0059, decision 7), checked by the routing
 			// Each moment's wait budget (ADR-0050): its moments only.
 			"budgets": {keys: map[string]*shape{"commit": free, "commit-rewrite": free, "push": free,
 				"first-result": free, "verdict": free, "ready-review": free, "queue": free}},
