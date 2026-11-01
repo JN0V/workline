@@ -39,6 +39,9 @@ hold:
    Verification proved in it, and merges it or sends it back
    ([#696](https://github.com/JN0V/workline/issues/696)): routed on
    workline's own line, the first pull request awaits a maintainer.
+   On the line of states, 2026-11-01: an issue's tests to a pull
+   request in 2 min, red after 4 review rounds
+   ([tried](https://github.com/JN0V/workline/pull/795#tried)).
 3. **Observable**: its acts read by the auditor
    ([ADR-0046](../../../docs/adr/0046-the-auditor-re-checks-every-roles-acts.md#amendment-2026-10-29-the-developers-row)):
    the pick's record from step 1, its refusals at apply in it from

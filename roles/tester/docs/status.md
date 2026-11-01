@@ -43,7 +43,11 @@ hold:
    green. Routed on workline's own line (`schedule`, one ready issue a
    night, a Draft; `merge-request`, its guard), tried with a stub agent
    on [#676](https://github.com/JN0V/workline/pull/676): awaiting its
-   first real night.
+   first real night. Woken by `workline:needs-tests` on 2026-11-01:
+   one issue's tests written and proven in 12.5 min; two fresh issues
+   left in Tests, a test of behaviour kept "as today" refused, or none
+   written ([tried](https://github.com/JN0V/workline/pull/795#tried),
+   [#794](https://github.com/JN0V/workline/issues/794)).
 3. **AI verdicts measured**: in part. Seven evaluation cases with known
    answers (`tests/evaluation/cases/tester/`): `test write` (a bug, a
    name the base lacks, a scenario no test can check), `test answer` (a
