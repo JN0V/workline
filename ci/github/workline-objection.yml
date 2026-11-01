@@ -13,7 +13,7 @@ jobs:
     if: >-
       startsWith(github.event.pull_request.head.ref, 'workline/tester/') &&
       github.event.pull_request.head.repo.full_name == github.repository &&
-      contains(github.event.comment.body, 'workline:objection') &&
+      startsWith(github.event.comment.body, 'workline:objection') &&
       (contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association) || github.event.comment.user.type == 'Bot')
     runs-on: ubuntu-latest
     permissions: {}
