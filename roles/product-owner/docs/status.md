@@ -151,6 +151,9 @@ in [tests/evaluation/cases/product-owner](../../../tests/evaluation/cases/produc
 - **A spec read before ready**: `ready-held-while-a-spec-finding-is-open`,
   `ready-released-once-the-spec-is-answered`,
   `refine-answers-the-spec-findings`.
+- **A blocked issue read again**, on news or a week on, sent back or
+  kept blocked ([#833](https://github.com/JN0V/workline/issues/833)):
+  routing's `blocked-*`, `unblock-only-to-where-it-came-from`.
 - **A hidden record that does not read is said**:
   `broken-state-writes-nothing`,
   `proposal-unread-agreement-writes-nothing`,

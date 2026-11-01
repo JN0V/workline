@@ -104,7 +104,10 @@ A card follows the issue's state, its label
   role takes the other columns' labels off, in the same call: a card
   sits in one column. GitLab's tier is never asked.
 - **Blocked says why** on the issue, in the comment of whoever blocked
-  it; a person reads the column, and moves the issue back by its label.
+  it; the product owner reads it again when there is news, or a week on,
+  and moves it back or says why it stays
+  ([blocked, read again](spec/routing.md#blocked-read-again)); a person
+  may move it back by its label at any time.
 - **In the role's record**: the product owner's act says the column;
   the developer's claim comment says it, and its hidden line keeps it.
 - **With no agent**, neither role acts: no card moves.

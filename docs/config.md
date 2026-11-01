@@ -34,6 +34,7 @@ owner), then the project's `settings`.
 | `merge` | `autonomy: cautious`: the forge merges what a person accepted; `normal`: workline's own routine work too, with no yes; `alone: [reader]`: the reader's rewordings too ([merge policy](merge-policy.md)); off unless set |
 | `routing.states`, `routing.max-hops`, `routing.reconcile-max` | the line of states, its hop cap, the reconciler's steps a run ([routing](spec/routing.md#the-line-of-states)) |
 | `routing.wip` | `<state>: <issues>`, a state's WIP limit, laid over the shipped `ready: 5`; `0` lifts it ([room in the next state](spec/routing.md#room-in-the-next-state)) |
+| `routing.revisit` | the days a blocked issue waits, nothing new on it, before the product owner reads it again; `7` shipped, `0` never ([blocked, read again](spec/routing.md#blocked-read-again)) |
 | `routing.stale` | `<state>: <days>`, a state's age limit, laid over the shipped `ready: 30`, `tests: 14`; `0` lifts it ([staleness](spec/routing.md#staleness)) |
 | `board` | `ready`, `doing`, `refine`, `tests`, `blocked`: a column's name, over the names workline matches; `project`: a GitHub project's number, when several are linked ([boards](boards.md)) |
 | `gitlab.bots` | usernames GitLab does not name bots that are: the service account or line account holding workline's token; its comments, labels and reactions are a bot's, never a person's ([why](ci-gitlab.md#what-the-template-does)) |

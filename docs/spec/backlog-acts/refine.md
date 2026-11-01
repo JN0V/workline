@@ -208,6 +208,31 @@ The tester found no test possible and sent the issue back to refine
   why` after the tester's comment (`backlog.PersonsPick`): the engine
   does that `ready`, whatever the role's mode, as their yes.
 
+## A blocked issue read again
+
+The line wakes the role on a blocked issue with news on it, or a week on
+([routing](../routing.md#blocked-read-again),
+[ADR-0059, amended](../../adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#amendment-2026-11-01-blocked-is-read-again)).
+The task says why it was blocked, what is new, and the state it came
+from.
+
+```yaml
+- unblock: {issue: 12, to: tests, why: "#9, which it waited on, is merged."}
+- blocked: {issue: 12, why: "The objection needs the maintainer's call.", person: true}
+```
+
+- **`unblock`** moves it to `to`: refine, or the state it came from
+  (`revisit-from`; Ready for one a developer had claimed). Every other
+  state's label off, its card moved; the role's comment says why, and
+  that putting `workline:blocked` back undoes it. Another `to` is
+  dropped (`unblock-to`).
+- **`blocked`** keeps it there, its reason said afresh in the role's
+  comment; `person: true` says only a person can lift it. Nothing moved.
+- **Done alone**, at every level, as `unready` is: cheap, undone by a
+  label. Either on an issue not blocked is dropped (`not-blocked`); a
+  `ready` on a blocked one too (`blocked-first`).
+- **Or a `close`**, by its own rules.
+
 ## A body's footer
 
 A body's footer belongs to no section (`work.Footer`): what a tool or a

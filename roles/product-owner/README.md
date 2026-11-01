@@ -42,6 +42,7 @@ is on each issue; you answer there
 |---|---|---|
 | `schedule` | CI gardening, with `product-owner` in the `schedule` line | reads `issues-per-run` open issues, completes and proposes |
 | `issue` | its state, `workline:to-refine`, where the project routes the role on `issue` ([the line of states](../../docs/spec/routing.md#the-line-of-states)) | reads that issue alone, at once: completes it, readies it to its tests |
+| `issue` | a blocked issue with news, or a week on ([blocked, read again](../../docs/spec/routing.md#blocked-read-again)) | sends it back, or says why it stays blocked |
 | `import` | `workline issues import <file>` | opens each item still to do in a file as an issue ([the command](../../docs/commands-work.md#workline-issues-import)) |
 
 ## On each issue
@@ -91,6 +92,10 @@ At `autonomy: normal`, the default:
   from the code, Need and Validation as drafts; asks its reporter what is
   missing; closes an evident duplicate; moves an evident issue to
   `ready` (four sections, none a draft).
+- **Out of Blocked, at every level**: a blocked issue the line wakes it
+  on, sent back to the state it came from or to refine; or kept
+  blocked, its reason said afresh; put `workline:blocked` back to undo
+  ([how](../../docs/spec/backlog-acts/refine.md#a-blocked-issue-read-again)).
 - **Back to refine, at every level**: a ready issue that no longer fits,
   its reason in its comment; put `workline:ready` back to undo
   ([why](../../docs/adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#amendment-2026-11-01-back-to-refine-needs-no-yes)).
