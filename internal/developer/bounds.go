@@ -23,6 +23,7 @@ import (
 	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
+	"github.com/JN0V/workline/internal/pathglob"
 	"github.com/JN0V/workline/internal/steer"
 	"github.com/JN0V/workline/internal/tester"
 	"github.com/JN0V/workline/internal/work"
@@ -226,10 +227,14 @@ func inRepo(scope, files []string) []string {
 	return out
 }
 
-// under says whether p is one of roots or in one of them.
+// under says whether p is one of roots or in one of them, or matches one
+// that is a pattern, as the tester reads a Scope (work.Files, #801).
 func under(p string, roots []string) bool {
 	return slices.ContainsFunc(roots, func(r string) bool {
 		r = path.Clean(r)
+		if work.Pattern(r) && pathglob.Match(r, p) {
+			return true
+		}
 		return r != "." && (p == r || strings.HasPrefix(p, r+"/"))
 	})
 }

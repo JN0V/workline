@@ -210,8 +210,17 @@ func writeCode(b *strings.Builder, repo, scope string, s Settings) {
 	files := strings.Split(strings.TrimSuffix(out, "\x00"), "\x00")
 	var named, tests []string
 	for _, w := range work.ScopeWords(scope) {
-		if p := work.InRepo(w, files); p != "" && !slices.Contains(named, p) {
-			named = append(named, p)
+		// A file, or those a pattern matches (#801: `src/calc/*.sh`), its
+		// tests aside when it matches code too: they are given beside.
+		if fs := work.Files(w, files); len(fs) > 0 {
+			if code := slices.DeleteFunc(slices.Clone(fs), func(f string) bool { return pathglob.Any(s.Paths, f) }); len(code) > 0 {
+				fs = code
+			}
+			for _, f := range fs {
+				if !slices.Contains(named, f) {
+					named = append(named, f)
+				}
+			}
 			continue
 		}
 		// A folder the Scope names: its own files, not its tests nor its
@@ -251,27 +260,38 @@ func writeCode(b *strings.Builder, repo, scope string, s Settings) {
 	if len(beside) == 0 && len(tests) > 0 { // none beside: the project's first, its style
 		beside = tests[:min(len(tests), testFilesMax)]
 	}
-	left := s.CodeLinesMax
-	if left <= 0 {
-		left = 1500
+	budget := s.CodeLinesMax
+	if budget <= 0 {
+		budget = 1500
 	}
+	left := budget
 	give := func(heading string, list []string) {
 		if len(list) == 0 {
 			return
 		}
 		fmt.Fprintf(b, "\n## %s\n", heading)
+		var unread []string
 		for _, p := range list {
 			data, err := os.ReadFile(filepath.Join(repo, filepath.FromSlash(p)))
 			if err != nil {
 				continue
 			}
 			lines := strings.Split(strings.TrimRight(string(data), "\n"), "\n")
+			if left <= 0 {
+				// Named, never shown empty: a file given as 0 lines read
+				// as an empty file to the agent (#801).
+				unread = append(unread, fmt.Sprintf("- `%s` (%d lines)", p, len(lines)))
+				continue
+			}
 			cut := ""
 			if len(lines) > left {
-				lines, cut = lines[:max(left, 0)], fmt.Sprintf("\n(cut: the first %d lines given)", max(left, 0))
+				lines, cut = lines[:left], fmt.Sprintf("\n(cut: the first %d lines given)", left)
 			}
 			left -= len(lines)
 			fmt.Fprintf(b, "\n### `%s`\n\n````\n%s\n````%s\n", p, strings.Join(lines, "\n"), cut)
+		}
+		if len(unread) > 0 {
+			fmt.Fprintf(b, "\nNot given, past code-lines-max (%d lines in all), not empty:\n\n%s\n", budget,strings.Join(unread, "\n"))
 		}
 	}
 	give("The code the "+work.Name(work.Scope)+" names", named)

@@ -65,7 +65,8 @@ workline test write --issue 42 --ai claude
   ([writing an issue](../product-owner/docs/writing.md)):
   `- **Old debt:** Given …, When …, Then …`.
 - **What the agent reads**: the scenarios, the Need, Verification and
-  Scope, the files the Scope names (a folder named: its own files),
+  Scope, the files the Scope names (a folder named: its own files; a
+  pattern such as `src/calc/*.sh`: the files it matches),
   the tests beside them, the test command.
 - **One test a scenario**: its name holds the scenario's name, its
   comment the Given / When / Then. A scenario no test can check is said
@@ -201,7 +202,7 @@ Under `roles: {tester: {settings: …}}` in `.workline/config.yaml`
 | `test-report` | `junit.xml` | where the report is written, from the root: a path, or a pattern one folder deep |
 | `test-paths` | each ecosystem's names | the test files, as patterns: `**/*_test.go`, `**/test_*.py`, `**/*.test.ts`, `tests/**` and others; the only files `test write` may add |
 | `build-errors` | Go's | how a build broken by a missing name reads, by ecosystem ([page](docs/missing-name.md)) |
-| `code-lines-max` | 1500 | lines of the Scope's code and tests given to the agent, all files together |
+| `code-lines-max` | 1500 | lines of the Scope's code and tests given to the agent, all files together; those past it are named with their size |
 | `ai-max-tokens`, `ai-max-seconds` | 300000, 1200 | what one `test write` or `test answer` run may spend, and wait on its agent |
 | `objection-exchanges` | 3 | the tester's answers in an objection's thread before the product owner settles it |
 | `curator-*`, `suite-max-seconds`, `coverage-report` | 2 runs, 600 s | the curator's measures ([page](docs/curator.md#settings)) and removals ([page](docs/removals.md#settings)) |

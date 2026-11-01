@@ -1,0 +1,25 @@
+case: tester/scope-past-code-lines-max-named
+about: >
+  The Scope's files past code-lines-max are named with their size, never
+  shown as files of 0 lines: given empty, the agent took them for empty
+  files and found no test possible (#801).
+given:
+  repo: tested
+  setup:
+    - "mkdir -p src/calc && printf 'add() { echo $(($1 + $2)); }\\nx=1\\n' > src/calc/add.sh && printf 'sub() { echo $(($1 - $2)); }\\n' > src/calc/sub.sh && git add src && git commit -qm 'src' && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}", code-lines-max: 1}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:needs-tests"]
+        body: "## Need\n\nWhen I total an order, I want to multiply a price by a count, so I need not add it up by hand.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **By zero:** Given the library, When I multiply 5 by 0, Then I get 0.\n\n---\n\n## Verification\n\nA test a scenario, in tests/.\n\n## Scope\n\n- `src/calc`: a `mul` function beside `add`.\n"
+run: {test: [write, --issue, "3"], ai: "fake:tester-two-scenarios"}
+expect:
+  status: pass
+  agent-calls: 1
+  run-files:
+    in/task.md:
+      contains: ["### `src/calc/add.sh`", "(cut: the first 1 lines given)", "Not given, past code-lines-max (1 lines in all), not empty:", "- `src/calc/sub.sh` (1 lines)"]
+      not-contains: ["### `src/calc/sub.sh`", "the first 0 lines"]
