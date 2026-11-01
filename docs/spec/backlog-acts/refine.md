@@ -115,7 +115,12 @@ what it can and asks for the rest:
   (`Links:`, the forge's file pages at `HEAD`).
 - **An issue read and left with nothing** — no draft, no question, no
   act dropped with its reason — though it lacks a section is said in the
-  summary (`nothing-proposed`), never left in silence.
+  summary (`nothing-proposed`) and on the issue, in the role's comment
+  ([ADR-0059](../../adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md), decision 1):
+  the sections it lacks and the agent's note on it (`silent` in its
+  state), kept until the role acts on it. The task lists the repository's
+  folders for an issue that names no file: the agent names its sources
+  from them, no line quoted.
 - **`ready`** is checked by the engine, not taken from the agent: the four
   sections there and not empty — a person's text on top standing for a
   Need —, no draft of the role's left in Need or

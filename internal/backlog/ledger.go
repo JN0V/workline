@@ -637,6 +637,9 @@ func (p *Plan) Persist(f forge.Forge, role string) error {
 	for id := range p.Answers {
 		ids = append(ids, id)
 	}
+	for id := range p.Silent {
+		ids = append(ids, id) // its state written by pre in this run, maybe
+	}
 	slices.Sort(ids)
 	ids = slices.Compact(ids)
 	proposed := ProposedLabel(f)
@@ -663,6 +666,11 @@ func (p *Plan) Persist(f forge.Forge, role string) error {
 		}
 		w.st, w.before = st, FormatState(*st)
 		p.stateOf(id, st)
+		if why, ok := p.Silent[id]; ok {
+			st.Silent = why
+		} else if is.Closed || p.decidedOn(id) || p.Answers[id] != nil {
+			st.Silent = ""
+		}
 		if err := linkComments(b, f, role, id, st); err != nil {
 			return err
 		}

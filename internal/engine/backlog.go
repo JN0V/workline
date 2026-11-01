@@ -814,6 +814,13 @@ func planActs(f forge.Forge, r *role.Role, settings map[string]any, st runState,
 			}
 		}
 	}
+	// The agent's notes: the reason said on an issue it left with nothing
+	// (ADR-0059, decision 1).
+	for _, in := range intents {
+		if in.Kind == "note" {
+			cfg.Notes = append(cfg.Notes, noteText(in.Value))
+		}
+	}
 	// What open issues were built on that changed, and those read again
 	// for it (ADR-0032).
 	var changes []backlog.Change

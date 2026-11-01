@@ -93,6 +93,9 @@ type Config struct {
 	// effort is estimated on them only (ADR-0040); set by the caller,
 	// from what pre wrote (CodeReadFile).
 	CodeRead []int
+	// Notes are the agent's notes of this run, as it wrote them: the
+	// reason said on an issue it left with nothing (ADR-0059, decision 1).
+	Notes []string
 }
 
 // CodeReadFile is where, in the run's folder, pre lists the issues whose

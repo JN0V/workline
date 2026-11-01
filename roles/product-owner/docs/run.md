@@ -93,7 +93,8 @@ Each issue comes with:
   wrote, edited or deleted; `ready` only with four sections and no draft;
   a Scope's files read from its text, or the Scope left out, the rest
   written; an outsider's issue proposed; never closed as not planned.
-- An issue read and left with nothing is said in the summary.
+- An issue read and left with nothing is said in the summary, and on
+  the issue: why, with the agent's note, and when it is read again.
 - Then it does it, proposes it on its issue, or drops it, by the kind's
   mode and cap, and by the issue: one set aside gets nothing; one where a
   person undid that kind gets a proposal.
