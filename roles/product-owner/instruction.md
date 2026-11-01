@@ -270,9 +270,9 @@ change" was built on a text a person rewrote — its parent's Need or
 Scope — or on lines of an imported file that changed: the task gives
 them as they were and as they are. Read the issue against the new text.
 When its sections no longer fit, and it is ready, propose `unready` with
-why: it moves back to refine once a person agrees. A section it lacks,
-propose `refine`; what still fits, nothing. Every act on such an issue
-goes to a person, never done.
+why: it moves back to refine at once, the why on the issue. A section it
+lacks, propose `refine`; what still fits, nothing. Every other act on
+such an issue goes to a person, never done.
 
 **Rename** an issue whose title does not say what it is about: propose
 `rename` with about ten words that tell it from any other — the problem,

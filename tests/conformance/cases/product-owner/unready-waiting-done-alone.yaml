@@ -1,0 +1,25 @@
+case: product-owner/unready-waiting-done-alone
+about: >
+  A move back to refine an earlier run proposed, still waiting for a
+  person's workline:accepted: the next run does it with no agent and no
+  yes — workline:ready off, workline:to-refine on, workline:proposed off —,
+  its reason and how to undo it in the role's one comment, no new
+  comment (ADR-0059, amended).
+given:
+  repo: backlog
+  forge:
+    issues:
+      - id: 11
+        title: "Keep the last row in the CSV export"
+        body: "Part of #9."
+        author: ann
+        insider: true
+        labels: [workline:ready, workline:proposed]
+        comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nlabel: workline:proposed\nproposed:\n  - act: unready\n    line: 'Move #11 back to refine (workline:ready off, workline:to-refine on): #9 now asks for JSON.'\n    proposal: {do: unready, issue: 11, why: '#9 now asks for JSON.'}\n```\n\n<!-- workline:sticky=product-owner/state -->"]
+run: {role: product-owner, event: schedule, ai: none}
+expect:
+  agent-calls: 0
+  findings: [{rule: done, where: "#11", message: "Moved #11 back to refine"}]
+  forge:
+    issues:
+      - {id: 11, labels: [workline:to-refine], comments: 1, comment-contains: "Moved #11 back to refine (workline:ready off, workline:to-refine on; put workline:ready back to undo): #9 now asks for JSON."}

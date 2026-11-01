@@ -1,0 +1,27 @@
+case: product-owner/unready-undone-proposed-there
+about: >
+  The role moved a ready issue back to refine alone; a person put
+  workline:ready back. The move is read as undone, and the next move back
+  to refine on that issue is proposed, not done (ADR-0038, amended;
+  ADR-0059, amended).
+given:
+  repo: backlog
+  forge:
+    issues:
+      - id: 11
+        title: "Keep the last row in the CSV export"
+        body: "## Need\n\nThe export keeps its last row.\n\n## Verification\n\nA test writes three rows.\n\n## Validation\n\n- **Last row:** Given three rows, When Ann exports them, Then she reads three.\n\n## Scope\n\nsrc/export/csv.go"
+        author: ann
+        insider: true
+        labels: [workline:ready]
+        label-events:
+          - {label: workline:ready, added: false, author: workline-bot, bot: true, created: "2026-11-01T07:00:00Z"}
+          - {label: workline:ready, added: true, author: dev, insider: true, created: "2026-11-01T08:00:00Z"}
+        comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\ndone:\n  - act: unready\n```\n\n<!-- workline:sticky=product-owner/state -->"]
+run: {role: product-owner, event: schedule, ai: fake:unready-again}
+expect:
+  findings:
+    - {rule: undone-here, where: "#11", message: "a person undid a unready of the role's on this issue"}
+  forge:
+    issues:
+      - {id: 11, labels: [workline:ready, workline:proposed], comment-contains: "put back to ready by @dev"}

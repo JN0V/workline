@@ -316,6 +316,17 @@ func Pre(runDir, repo string) int {
 				}
 			}
 		}
+		if found && err == nil && !backlog.Accepted(is) && !ledger.Aside[is.ID] {
+			// A move back to refine an earlier run proposed: no longer a
+			// person's yes to wait for (ADR-0059, amended), done with no
+			// agent, its reason as proposed.
+			for _, q := range st.Proposed {
+				if c := q.Proposal; q.Doable() && c.Do == "unready" {
+					fallback = append(fallback, intent.Intention{Kind: "unready", Value: map[string]any{
+						"issue": is.ID, "own": true, "why": c.Why}})
+				}
+			}
+		}
 		if found && err == nil && backlog.Accepted(is) && p != nil {
 			// A refined text proposed to an outsider, agreed to by a person
 			// of the project with the label: the engine writes what the body
