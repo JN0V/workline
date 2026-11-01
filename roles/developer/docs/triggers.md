@@ -47,8 +47,15 @@ routing:
   - **The next step**: once `apply` applied, it asks the line, no
     agent, whether the issue's new state is due, and starts that run
     (`workflow_dispatch`, which the job's own token may start).
-  - **Hourly**, the `reconcile` job starts what an event missed, at most
+  - **About hourly**, the `reconcile` job starts what an event missed, at most
     `reconcile-max` issues a run, each its own run.
+  - **Not on the schedule alone**: GitHub runs schedules late or not at
+    all. The line's own events (an issue labelled, a step started)
+    start it too, once 55 minutes passed since the last run, kept in
+    the Actions cache. One at a time
+    ([#789](https://github.com/JN0V/workline/issues/789)). Its cost: a
+    job of a few seconds each such event, which a private repository
+    pays by the started minute; comments, the most frequent, start none.
   - The `judge` job holds the agent and a read token, your setup steps
     run there ([below](#the-projects-environment)); `apply` holds the
     App's key, no AI key.

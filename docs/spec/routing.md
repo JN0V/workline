@@ -416,6 +416,10 @@ command on a person's machine, its next loop the next step.
   others walked; the forge out of reach stops the run.
 - **Run twice in a row**, the second does nothing more: the first left
   its records.
+- **`--input last=<RFC 3339>`**: when it last ran, as the CI keeps it.
+  Over two hours ago, its summary says how late it is
+  (`reconcile-late`;
+  [#789](https://github.com/JN0V/workline/issues/789)).
 
 ## Where state lives
 
