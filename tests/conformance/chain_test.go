@@ -57,7 +57,7 @@ func TestLineOfStatesChainsAndReconciles(t *testing.T) {
 			start := strings.Index(s.Run, "gh workflow run")
 			reconciled = reconciled || list >= 0 && list < start && strings.Contains(s.Run, "--input reconcile=list") && strings.Contains(s.Run, "(.due // [])[]")
 		}
-		if !reconciled || !strings.Contains(rec.If, "github.event_name == 'schedule'") || !strings.Contains(rec.If, "github.event_name == 'workflow_dispatch'") || !byHand ||
+		if !reconciled || !strings.Contains(rec.If, "github.event_name == 'schedule'") || !strings.Contains(rec.If, "(github.event_name == 'workflow_dispatch' && inputs.reconcile == 'true')") || !byHand ||
 			rec.Permissions["actions"] != "write" || rec.Permissions["issues"] != "read" || rec.Permissions["contents"] != "read" {
 			t.Errorf("%s, reconcile: not hourly and by hand, or not each due issue's run started with a read token: %q %v", file, rec.If, rec.Permissions)
 		}

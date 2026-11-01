@@ -1731,13 +1731,14 @@ func TestDeveloperTemplatesRouteTheReadyIssue(t *testing.T) {
 	if _, ok := wf.On["schedule"]; !ok || !reconciled || rec.Permissions["actions"] != "write" || rec.Permissions["issues"] != "read" {
 		t.Errorf("workline-develop.yml: no hourly reconciler starting each due issue's run: %v %v", wf.On["schedule"], rec.Permissions)
 	}
-	// GitHub's schedule late or skipped (#789): the events the workflow
-	// gets start it too, one at a time, told when it last ran.
+	// GitHub's schedule late or skipped (#789): an issue labelled starts
+	// it too, one at a time, told when it last ran; never the runs it
+	// starts itself, by workflow_dispatch.
 	told := false
 	for _, s := range rec.Steps {
 		told = told || strings.Contains(s.Run, `--input "last=$LAST"`)
 	}
-	if !strings.Contains(rec.If, "github.event_name == 'workflow_dispatch'") || !strings.Contains(rec.If, "github.event_name == 'issues'") ||
+	if !strings.Contains(rec.If, "github.event_name == 'issues'") || strings.Contains(rec.If, "github.event_name == 'workflow_dispatch' ||") ||
 		!strings.HasPrefix(fmt.Sprint(rec.Concurrency["group"]), "workline-reconcile-") || rec.Concurrency["cancel-in-progress"] != false || !told {
 		t.Errorf("workline-develop.yml, reconcile: not started by the events the workflow gets, one at a time, told when it last ran: %q %v", rec.If, rec.Concurrency)
 	}

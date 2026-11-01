@@ -50,8 +50,8 @@ routing:
   - **About hourly**, the `reconcile` job starts what an event missed, at most
     `reconcile-max` issues a run, each its own run.
   - **Not on the schedule alone**: GitHub runs schedules late or not at
-    all. The line's own events (an issue labelled, a step started)
-    start it too, once 55 minutes passed since the last run that
+    all. An issue labelled, which each hop of the line is, starts it
+    too, once 55 minutes passed since the last run that
     succeeded, kept in the Actions cache. One at a time; the schedule's
     and a by-hand run in their own group, never dropped for an event's
     ([#789](https://github.com/JN0V/workline/issues/789)). Its cost: a
