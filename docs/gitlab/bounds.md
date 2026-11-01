@@ -1,7 +1,7 @@
 ---
 sources: [ci/gitlab/workline-bounds.gitlab-ci.yml, internal/doctor/guard.go, internal/forge/gitlab_guard.go]
 checked: 0bbdcbd9
-judged: b3b9aad
+judged: 121311e
 verified: agent:documentalist
 ---
 # The developer's bounds on GitLab
