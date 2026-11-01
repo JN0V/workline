@@ -1555,7 +1555,7 @@ func writeFolders(b *strings.Builder, tracked map[string]bool) {
 		list = list[:foldersMax]
 	}
 	slices.Sort(list)
-	fmt.Fprintf(b, "# The repository's folders\n\nAn issue above names no file: name the files or folders its %s touches from these, in `sources` (a folder named is given with its files at the next run).\n\n- %s\n%s\n", work.Name(work.Scope), strings.Join(list, "\n- "), more)
+	fmt.Fprintf(b, "# The repository's folders\n\nAn issue above names no file: name the files or folders its %s touches from these, in `sources` (a folder named is given with its files at the next run); no line is quoted from a folder.\n\n- %s\n%s\n", work.Name(work.Scope), strings.Join(list, "\n- "), more)
 }
 
 // named lists the files an issue is about: its sources, then the paths its

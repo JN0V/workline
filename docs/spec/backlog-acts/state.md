@@ -44,6 +44,7 @@ rules: 2                                 # the way of reading it was last read u
 left: bob                                # left to a person past its revisions, after bob wrote: said above while it waits
 proof: {kind: docs-checks, reason: "…", answers: af1c2ed6ea0a}   # the proof kind it picked where the tester found no test possible, the tester's word it answers
 no-test: af1c2ed6ea0a                    # the tester's "no test possible" last given to the agent
+silent: "it lacks Scope, …; its note: …"  # read and left with nothing, and why: said above until the role acts on it
 ```
 
 The comment says, above the state, what the role did and proposes there,

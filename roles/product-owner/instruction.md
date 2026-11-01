@@ -52,7 +52,10 @@ Nothing else: no other reason, no closing on a likeness alone.
 When the code given is not the code an issue is about, and you can tell
 which is — from the names the issue uses and the code given — propose
 `sources`: the files or folders (1 to 5), and a line quoted from one of
-them that shows it. The issue is read again, with that code, at the next run.
+them that shows it. When the task gives no code, only the repository's
+folders, name them from those, no line quoted: "no code was given" is
+never a reason to name none. The issue is read again, with that code,
+at the next run.
 
 **Refine** every issue you read that is not closed and lacks a section:
 propose `refine`, `ask` or a `close` for it in this run — it is your

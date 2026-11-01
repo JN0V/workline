@@ -1,0 +1,20 @@
+case: product-owner/nothing-proposed-said-on-the-issue
+about: >
+  An issue read and left with nothing though it lacks sections is said on
+  the issue, in the role's one comment there, never left in silence
+  (ADR-0059, decision 1): what it did, why — the sections it lacks and
+  the agent's note —, what comes next.
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 7, title: "Totals are wrong", body: "The totals at the bottom are wrong.", author: ann, insider: true, labels: [workline:to-refine], comments: ["```yaml\nsources: []\nconfirmed: 0000000\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:po-notes-no-code}
+expect:
+  status: pass
+  findings: [{rule: nothing-proposed, where: "#7"}]
+  forge:
+    issues:
+      - id: 7
+        comments: 1
+        comment-contains: ["**The product owner** read this issue and wrote nothing on it.", "- **Why**: it lacks Need, Verification, Validation and Scope, and the agent drafted nothing nor asked; its note: #7 needs a Scope, but no code was given for it.", "- **Next**: it reads it again once the issue changes or a person comments", "silent: "]

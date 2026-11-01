@@ -122,6 +122,10 @@ type State struct {
 	// NoTest is the tester's "no test possible" the role was last given,
 	// by its digest (NoTest): read once, not again until it changes.
 	NoTest string `yaml:"no-test,omitempty"`
+	// Silent is why the role read the issue and wrote nothing on it,
+	// though it lacks a section: said on the issue until the role acts
+	// on it (ADR-0059, decision 1).
+	Silent string `yaml:"silent,omitempty"`
 }
 
 // StateMarker marks the comment holding an issue's state.
@@ -197,8 +201,9 @@ func FormatState(s State) string {
 		Left      string            `yaml:"left,omitempty"`
 		Proof     *Proof            `yaml:"proof,omitempty"`
 		NoTest    string            `yaml:"no-test,omitempty"`
+		Silent    string            `yaml:"silent,omitempty"`
 	}{s.Sources, s.Confirmed, s.Judged, s.Comments, s.Body, s.Priority, s.Effort, s.Title, s.Split, s.After, s.Kept, s.Sections, s.Wrote, s.Answered, s.Plain, s.Deleted,
-		s.Proposed, s.Done, s.Undone, s.Did, s.Closed, s.Label, s.Aside, s.Heard, s.Revisions, s.Rules, s.Left, s.Proof, s.NoTest})
+		s.Proposed, s.Done, s.Undone, s.Did, s.Closed, s.Label, s.Aside, s.Heard, s.Revisions, s.Rules, s.Left, s.Proof, s.NoTest, s.Silent})
 	// The record is kept out of sight, in an HTML comment (#548): a forge
 	// mails what a comment shows, and a person reads there only what the
 	// role tells them, never its record.
@@ -331,6 +336,9 @@ func (s State) say() string {
 				fmt.Sprintf("@%s wrote on it, and its proposal was revised %d times already, as often as allowed", s.Left, s.Revisions),
 				fmt.Sprintf("a person answers @%s, edits the issue or gives the answer above; the product owner proposes nothing more here until then", s.Left))))
 		}
+	case s.Silent != "":
+		lines = append(lines, strings.TrimSpace(Said("The product owner", "read this issue and wrote nothing on it", s.Silent,
+			"it reads it again once the issue changes or a person comments: complete it, or name the files it is about in a comment")))
 	}
 	return strings.Join(lines, "\n\n")
 }
@@ -626,7 +634,10 @@ type Plan struct {
 	// ProposalsMax is how many issues may bear the role's label at once:
 	// one more waits for room (#428).
 	ProposalsMax int `yaml:"proposals-max,omitempty"`
-	open     map[int]bool    // the open issues, read once
+	// Silent are the issues read and left with nothing though they lack
+	// a section, each with why: said on the issue (ADR-0059, decision 1).
+	Silent   map[int]string `yaml:"silent,omitempty"`
+	open     map[int]bool   // the open issues, read once
 	issues   map[int]forge.Issue
 	judged   map[int]Judged // the second judge's answers on the issues announced obsolete
 	settings map[string]Setting
@@ -1076,16 +1087,13 @@ func (p *Plan) summary() {
 				Message: "a person's comment brought it back and nothing was proposed on it (the agent's note says why): it stays set aside until it changes or someone comments"})
 			continue
 		}
-		var lacks []string
-		have := work.ByMeaning(is.Body)
-		for _, m := range work.Required {
-			if strings.TrimSpace(have[m].Text) == "" {
-				lacks = append(lacks, work.Name(m))
-			}
-		}
-		if len(lacks) > 0 {
+		if lacks := missingSections(is.Body); len(lacks) > 0 {
 			p.Findings = append(p.Findings, verdict.Finding{Rule: "nothing-proposed", Level: "info", Where: fmt.Sprintf("#%d", id),
 				Message: fmt.Sprintf("read, and nothing was drafted or asked though it lacks %s: read again once it changes or a person comments", strings.Join(lacks, ", "))})
+			if p.Silent == nil {
+				p.Silent = map[int]string{}
+			}
+			p.Silent[id] = silentWhy(id, lacks, p.config.Notes, len(p.read))
 		}
 	}
 	for _, id := range sortedKeys(p.SetAside) {
@@ -1096,6 +1104,42 @@ func (p *Plan) summary() {
 		p.Findings = append(p.Findings, verdict.Finding{Rule: "report-closed", Level: "info", Where: fmt.Sprintf("#%d", p.Report),
 			Message: "the old report's record moved to each issue's state; the report is closed: what waits on a person bears " + LabelProposed + " (GitLab: workline::proposed)"})
 	}
+}
+
+// missingSections names the required sections a body lacks, or has empty.
+func missingSections(body string) []string {
+	var lacks []string
+	have := work.ByMeaning(body)
+	for _, m := range work.Required {
+		if strings.TrimSpace(have[m].Text) == "" {
+			lacks = append(lacks, work.Name(m))
+		}
+	}
+	return lacks
+}
+
+// silentMax bounds the agent's note said on an issue, in characters.
+const silentMax = 600
+
+// silentWhy is why an issue read was left with nothing: the sections it
+// lacks, and the agent's note on it — one naming the issue, or any when
+// the run read it alone —, its whitespace folded, clipped.
+func silentWhy(id int, lacks, notes []string, read int) string {
+	why := fmt.Sprintf("it lacks %s, and the agent drafted nothing nor asked", and(lacks))
+	names := regexp.MustCompile(fmt.Sprintf(`#%d\b`, id))
+	var said []string
+	for _, n := range notes {
+		if n = strings.Join(strings.Fields(n), " "); n != "" && (read == 1 || names.MatchString(n)) {
+			said = append(said, n)
+		}
+	}
+	if note := strings.Join(said, " "); note != "" {
+		if r := []rune(note); len(r) > silentMax {
+			note = string(r[:silentMax]) + "…"
+		}
+		why += "; its note: " + note
+	}
+	return why
 }
 
 // aside says whether an issue was set aside by a person — workline:proposed
