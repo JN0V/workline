@@ -87,6 +87,12 @@ hold:
   `pr-closes-issue-on-gitlab`, `pr-closes-issue-on-a-forge-command`,
   `pr-splits-code-tests`, `agent-env-has-no-token`,
   `pr-judged-at-model`.
+- **One note on its own issue**
+  ([#694](https://github.com/JN0V/workline/issues/694)): what the agent
+  left out, posted once on its issue, inert and cut to 4,000 bytes, the
+  same text in the pull request's `## Left out`; a second note, or one
+  elsewhere, refused ([the bounds](bounds.md#what-else-it-refuses)).
+  Case `developer/note-on-its-own-issue`.
 - **The triggers** (step 5): the `issue` line on an issue labelled
   ready, the `schedule` line on the first ready issue nobody took; the
   GitHub workflow and the GitLab jobs; a line with no pull request to
@@ -305,10 +311,6 @@ column ([the try](https://github.com/JN0V/workline/pull/747#tried)).
   So for a diff that does not apply: unproven, a Draft
   ([measured](#measured);
   [#692](https://github.com/JN0V/workline/issues/692)).
-- **What the agent says out of its patches**: told to say what is out of
-  its Scope, a real agent wrote a `note`, which the bounds refuse on an
-  issue; the pull request's `## Left out` could hold it
-  ([#694](https://github.com/JN0V/workline/issues/694)).
 - **A test of its own with no tester's Draft**: asked by the issue's
   Verification, the agent wrote none ([measured](#measured);
   [#693](https://github.com/JN0V/workline/issues/693)).

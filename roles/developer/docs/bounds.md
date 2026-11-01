@@ -164,7 +164,9 @@ The check above, before the push, stays a fast first pass.
 - **Labels and comments of the agent's** (`not-the-developers`): the
   claim is the engine's. The developer never accepts, merges, closes
   or moves an issue. The catalogue holds no merge to propose.
-- **One comment is allowed: an objection** to a frozen test. The agent
+- **Two comments are allowed.** An objection to a frozen test, and one
+  note on its own issue.
+- **An objection** to a frozen test. The agent
   writes the test, its line, the scenario, the kind and why in its
   worktree's objections file, as [its question shows](agent.md); the
   file never reaches the branch. The engine
@@ -174,6 +176,12 @@ The check above, before the push, stays a fast first pass.
 - **An objection to a test that is not frozen** for the issue, or
   missing a field, or when the Draft's commit cannot be read: refused,
   said.
+- **One note on its own issue**: what the agent left out. The engine
+  posts it there as one comment, made inert (no heading, no tag, no
+  mention), cut to 4,000 bytes; the same text goes in the pull
+  request's `## Left out` ([the pull request](pull-request.md)). A
+  second note, or one on another issue, is refused and said
+  (`not-the-developers`).
 
 ## Not yet
 
