@@ -31,6 +31,7 @@ import (
 	"github.com/JN0V/workline/internal/role"
 	"github.com/JN0V/workline/internal/routing"
 	"github.com/JN0V/workline/internal/scale"
+	"github.com/JN0V/workline/internal/tester"
 	"github.com/JN0V/workline/internal/verdict"
 	"github.com/JN0V/workline/internal/work"
 )
@@ -683,6 +684,21 @@ func Pre(runDir, repo string) int {
 	}
 	issuePages := forge.IssuePages(f) // an issue cited by its page is cited
 	said := ""                        // the releases and open milestones, read once
+	// The tester's open Drafts, where the project routes it: a ready
+	// issue from before the line, with none, is offered to its tests
+	// (#788); nil, none offered.
+	var drafts []string
+	if line.Runs("tester") && slices.ContainsFunc(toRead, func(d due) bool { return slices.Contains(d.is.Labels, backlog.LabelReady) }) {
+		open, err := f.OpenMergeRequests(tester.TestsBranch)
+		if errors.Is(err, forge.ErrUnreachable) {
+			fmt.Fprintln(os.Stderr, err)
+			return exitExternal
+		}
+		if err != nil {
+			return fail(err)
+		}
+		drafts = append([]string{}, open...)
+	}
 	// build writes the task of the first n issues to read: each issue with
 	// its state once read, recorded only once the agent answers; the
 	// others in the backlog's order, given whole when on the same code, by
@@ -717,6 +733,8 @@ func Pre(runDir, repo string) int {
 			if readyOpen(d.is, d.st, cfg) {
 				review += fmt.Sprintf("Ready: its four sections are there, %s and %s a person's — propose `ready` when it is evident: one need, a %s that proves it, nothing left open in its comments; the engine checks it.\n",
 					work.Name(work.Need), work.Name(work.Validation), work.Name(work.Verification))
+			} else if drafts != nil && toTests(d.is, d.comments, cfg, drafts) {
+				review += "Its tests: ready from before the line of states, no Draft of its tests — propose `ready` to send it to its tests (" + backlog.LabelNeedsTests + ") when it is still current and one run's work; `unready` with its reason when not.\n"
 			}
 			if a := answers[d.is.ID]; a != nil {
 				review += revise(d.is, d.st, a, revisions)
@@ -1683,6 +1701,16 @@ func readyOpen(is forge.Issue, st *backlog.State, cfg backlog.Config) bool {
 		return false
 	}
 	return len(backlog.NotReady(is, st, false)) == 0
+}
+
+// toTests says whether the agent is told a ready issue from before the
+// line of states may go to its tests (#788): untested, as the tester
+// reads it, and ready not off.
+func toTests(is forge.Issue, comments []string, cfg backlog.Config, drafts []string) bool {
+	if s, ok := cfg.Acts["ready"]; !ok || s.Mode == backlog.Off {
+		return false
+	}
+	return tester.Untested(is, comments, drafts)
 }
 
 // lift says whether the agent is told an issue's text on top is a role's

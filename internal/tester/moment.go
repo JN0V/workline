@@ -23,6 +23,23 @@ import (
 // open ones by it.
 func taskKey(n int) string { return fmt.Sprintf("issue-%d", n) }
 
+// Untested says whether a ready issue still waits for its tests (#788):
+// labelled workline:ready from before the line of states, its Validation
+// naming scenarios, no Draft of its tests open (drafts: the tester's open
+// branches), no proof kind recorded, not claimed nor blocked. The product
+// owner's ready, keeping it, sends it to its tests.
+func Untested(is forge.Issue, comments, drafts []string) bool {
+	if !slices.Contains(is.Labels, backlog.LabelReady) || slices.Contains(is.Labels, backlog.LabelNeedsTests) ||
+		slices.Contains(is.Labels, backlog.LabelBlocked) || slices.Contains(is.Labels, "workline:developing") ||
+		slices.Contains(drafts, branchPrefix+fmt.Sprint(is.ID)) {
+		return false
+	}
+	if _, ok := ReadProof(comments); ok {
+		return false
+	}
+	return len(Scenarios(work.ByMeaning(is.Body)[work.Validation].Text)) > 0
+}
+
 // pick is the issue a scheduled run writes the tests of: the first, in
 // the backlog's order, waiting for its tests (needs-tests, or ready;
 // waiting on no open issue, no parts), whose Validation names scenarios, with no Draft

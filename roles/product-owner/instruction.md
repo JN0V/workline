@@ -225,6 +225,10 @@ marks each draft; a section it does not mark is a person's — never hold
 `ready` back for not knowing who wrote it. The engine checks it, and
 proposes an outsider's to the project.
 
+A ready issue the task says is **from before the line of states**, with
+no Draft of its tests: still current and one run's work, propose `ready`,
+which sends it to its tests; no longer so, `unready` with why.
+
 When the task says the tester found **no test possible**, judge its
 reason. If another proof shows the need is met, propose `ready` with
 `proof: {kind: <kind>, reason: <why it proves the need>}`: the kinds and

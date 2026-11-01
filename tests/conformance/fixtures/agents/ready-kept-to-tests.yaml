@@ -1,0 +1,6 @@
+# Ready issues from before the line of states, re-checked (#788): one
+# kept, sent to its tests; one whose tests are written, kept too; one
+# stale, proposed back to refine.
+- ready: {issue: 9, why: "still current and one run's work: it can go to its tests"}
+- ready: {issue: 10, why: "still current"}
+- unready: {issue: 11, why: "stale: the export already keeps the last row"}
