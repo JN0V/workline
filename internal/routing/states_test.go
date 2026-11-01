@@ -163,3 +163,19 @@ func TestStale(t *testing.T) {
 		}
 	}
 }
+
+// TestRevisit: a blocked issue read again after 7 days as shipped; a
+// project's days replace them, 0 turning it off; below 0 is refused.
+func TestRevisit(t *testing.T) {
+	if cfg := shipped(t, ""); cfg.RevisitDays() != 7 {
+		t.Errorf("shipped: %d", cfg.RevisitDays())
+	}
+	for conf, want := range map[string]int{"routing: {revisit: 0}\n": 0, "routing: {revisit: 14}\n": 14} {
+		if cfg := shipped(t, conf); cfg.RevisitDays() != want {
+			t.Errorf("%s: %d, want %d", conf, cfg.RevisitDays(), want)
+		}
+	}
+	if _, err := Load(configured(t, "routing: {revisit: -1}\n")); !role.IsConfigError(err) {
+		t.Errorf("below 0: %v, want a config error", err)
+	}
+}
