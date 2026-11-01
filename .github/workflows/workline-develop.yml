@@ -17,7 +17,7 @@ name: workline develop
 run-name: >-
   ${{ (github.event_name == 'workflow_dispatch' && inputs.issue != '' && format('workline develop #{0}', inputs.issue)) ||
   (github.event_name == 'issues' && github.event.sender.type != 'Bot' && startsWith(github.event.label.name, 'workline:') &&
-  format('workline develop #{0}', github.event.issue.number)) || github.event.issue.title || github.workflow }}
+  format('workline develop #{0}', github.event.issue.number)) || github.workflow }}
 on:
   # A person's label on an issue: its state wakes its role (ADR-0059).
   # The engine's own labels wake nothing here: the job that set them
@@ -183,8 +183,13 @@ jobs:
           # A run of the issue already queued or running, but this one,
           # runs that step itself once this one ends (#806).
           wf=$(basename "${GITHUB_WORKFLOW_REF%%@*}")
-          if gh run list --workflow "$wf" --limit 100 --json databaseId,status,displayTitle \
-              --jq ".[] | select(.status != \"completed\" and .databaseId != $GITHUB_RUN_ID) | .displayTitle" | grep -qxF "workline develop #$ISSUE"; then
+          # Only the runs not ended are asked: never pushed out of a page
+          # by the many ended ones.
+          busy=$(for s in queued in_progress pending waiting; do
+            gh run list --workflow "$wf" --status "$s" --limit 100 --json databaseId,displayTitle \
+              --jq ".[] | select(.databaseId != $GITHUB_RUN_ID) | .displayTitle"
+          done) || busy=
+          if printf '%s\n' "$busy" | grep -qxF "workline develop #$ISSUE"; then
             echo "#$ISSUE's next step: a run of it is queued or running already" >> "$GITHUB_STEP_SUMMARY"
           elif jq -e --argjson n "$ISSUE" '(.due // []) | index($n)' next.json >/dev/null; then
             gh workflow run "$wf" --ref "$GITHUB_REF_NAME" -f issue="$ISSUE"
@@ -238,8 +243,9 @@ jobs:
           # An issue with a run queued or running, this one among them, is
           # not started again (#806).
           wf=$(basename "${GITHUB_WORKFLOW_REF%%@*}")
-          busy=$(gh run list --workflow "$wf" --limit 100 --json status,displayTitle \
-            --jq '.[] | select(.status != "completed") | .displayTitle') || busy=
+          busy=$(for s in queued in_progress pending waiting; do
+            gh run list --workflow "$wf" --status "$s" --limit 100 --json displayTitle --jq '.[].displayTitle'
+          done) || busy=
           for n in $(jq -r '(.due // [])[]' due.json); do
             if printf '%s\n' "$busy" | grep -qxF "workline develop #$n"; then
               echo "#$n: a run of it is queued or running" >> "$GITHUB_STEP_SUMMARY"; continue

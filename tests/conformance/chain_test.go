@@ -89,7 +89,9 @@ func lineRunsOnce(t *testing.T, file string, data []byte) {
 	if err := yaml.Unmarshal(data, &wf); err != nil {
 		t.Fatalf("%s: %v", file, err)
 	}
-	if !strings.Contains(wf.RunName, "format('workline develop #{0}', inputs.issue)") || !strings.Contains(wf.RunName, "format('workline develop #{0}', github.event.issue.number)") {
+	// Never a title a person writes: one could take another issue's name.
+	if !strings.Contains(wf.RunName, "format('workline develop #{0}', inputs.issue)") || !strings.Contains(wf.RunName, "format('workline develop #{0}', github.event.issue.number)") ||
+		strings.Contains(wf.RunName, ".title") {
 		t.Errorf("%s: a run of an issue is not named for it: run-name %q", file, wf.RunName)
 	}
 	startsOnce(t, file, data)
@@ -117,8 +119,9 @@ func lineRunsOnce(t *testing.T, file string, data []byte) {
 }
 
 // startsOnce checks every start of an issue's run by workflow_dispatch is
-// skipped while a run of that issue, other than this one, is queued or
-// running (#806).
+// skipped while a run of that issue is queued or running (#806): only
+// the runs not ended are listed, never pushed out of a page by the many
+// ended ones.
 func startsOnce(t *testing.T, file string, data []byte) {
 	t.Helper()
 	var wf struct {
@@ -138,7 +141,7 @@ func startsOnce(t *testing.T, file string, data []byte) {
 				continue
 			}
 			busy := strings.Index(s.Run, "gh run list")
-			if busy < 0 || busy > start || !strings.Contains(s.Run, `select(.status != \"completed\"`) && !strings.Contains(s.Run, `select(.status != "completed"`) ||
+			if busy < 0 || busy > start || !strings.Contains(s.Run, "for s in queued in_progress pending waiting") || !strings.Contains(s.Run, `--status "$s"`) ||
 				!strings.Contains(s.Run, `grep -qxF "workline develop #$`) {
 				t.Errorf("%s, %s: an issue's run started though one of it is queued or running", file, name)
 			}
