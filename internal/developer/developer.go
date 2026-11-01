@@ -731,6 +731,7 @@ func Post(runDir, repo string) int {
 // withNote puts the agent's one note, the text posted on the issue, in the
 // pull request's `## Left out`, opening that section when it has none.
 func withNote(body, note string) string {
+	note = inertText(note)
 	const head = "\n## Left out\n\n"
 	if i := strings.Index(body, head); i >= 0 {
 		i += len(head)
@@ -741,6 +742,20 @@ func withNote(body, note string) string {
 		return body[:i] + head + note + "\n" + body[i:]
 	}
 	return body + head + note + "\n"
+}
+
+// inertText is the agent's text made safe in a pull request body: a line
+// that would open a heading, a fence or a rule is escaped, so it cannot
+// forge a section, and an @ is broken so it notifies no one.
+func inertText(s string) string {
+	lines := strings.Split(strings.ReplaceAll(s, "\r\n", "\n"), "\n")
+	for i, l := range lines {
+		t := strings.TrimLeft(l, " \t")
+		if strings.HasPrefix(t, "#") || strings.HasPrefix(t, "```") || strings.HasPrefix(t, "~~~") || strings.HasPrefix(t, "---") || strings.HasPrefix(t, "===") {
+			lines[i] = "\\" + t
+		}
+	}
+	return strings.ReplaceAll(strings.Join(lines, "\n"), "@", "@​")
 }
 
 // held is its agent's code held to the bounds: what it proposed, the
