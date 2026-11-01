@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"sort"
 	"strings"
 	"time"
@@ -71,6 +72,92 @@ func (c *command) call(op string, args map[string]any, v any) error {
 		return nil
 	}
 	return decode(answer, v)
+}
+
+// Probe states of a forge command, as CheckCommand reports them.
+const (
+	ProbeReachable = "reachable" // it answered the `ping` operation, or another, with JSON
+	ProbeMissing   = "missing"   // not found, or not executable
+	ProbeFailing   = "failing"   // it ran and exited other than 0, or timed out, or answered no JSON
+	ProbeRefused   = "refused"   // it answered {"error": …} to `ping`
+)
+
+// probeTimeout bounds the doctor's look at a forge command.
+// A variable so a test can shorten it.
+var probeTimeout = 20 * time.Second
+
+// CheckCommand looks at a forge command (the text after `cmd:`) without
+// writing anything: it runs the `ping` operation, in repo, as every
+// operation is run. A command that does not know `ping` and answers an error
+// for it still runs and answers, so it is reachable as far as can be told;
+// a sample command answers `ping` after reading its URL and token. The
+// detail is the words to show: the command's last line on a failure.
+func CheckCommand(repo, script string) (state, detail string) {
+	script = strings.TrimSpace(script)
+	if script == "" {
+		return ProbeMissing, "the command is empty"
+	}
+	first := strings.Fields(script)[0]
+	looked := !strings.ContainsAny(first, "=$`'\"(;&|<>")
+	if looked { // a plain word: look it up
+		if strings.Contains(first, "/") {
+			p := first
+			if !filepath.IsAbs(p) {
+				p = filepath.Join(repo, p)
+			}
+			if fi, err := os.Stat(p); err != nil {
+				return ProbeMissing, first + " does not exist"
+			} else if fi.IsDir() || fi.Mode().Perm()&0o111 == 0 {
+				return ProbeMissing, first + " is not executable"
+			}
+		} else if _, err := exec.LookPath(first); err != nil {
+			return ProbeMissing, first + " is not on the PATH"
+		}
+	}
+	var in bytes.Buffer
+	in.WriteString(`{"operation":"ping"}` + "\n")
+	ctx, cancel := context.WithTimeout(context.Background(), probeTimeout)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "sh", "-c", script)
+	cmd.Dir = repo
+	cmd.Env = append(os.Environ(), "WORKLINE_FORGE_OPERATION=ping")
+	cmd.Stdin = &in
+	var out, errOut bytes.Buffer
+	cmd.Stdout, cmd.Stderr = &out, &errOut
+	if err := cmd.Run(); err != nil {
+		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+			return ProbeFailing, fmt.Sprintf("it did not answer within %s", probeTimeout)
+		}
+		said := lastLine(errOut.String() + out.String())
+		var ee *exec.ExitError
+		// Exit 126/127 says "missing" only where the first word could not be
+		// looked up above (a shell expression); a command found, then exiting
+		// so for its own reasons, is failing.
+		if errors.As(err, &ee) && !looked && (ee.ExitCode() == 127 || ee.ExitCode() == 126) {
+			if said == "" {
+				said = "it could not be run"
+			}
+			return ProbeMissing, said
+		}
+		if said == "" {
+			said = err.Error()
+		}
+		return ProbeFailing, said
+	}
+	answer := bytes.TrimSpace(out.Bytes())
+	if len(answer) == 0 {
+		return ProbeReachable, ""
+	}
+	var a struct {
+		Error string `json:"error"`
+	}
+	if err := json.Unmarshal(answer, &a); err != nil {
+		return ProbeFailing, "it answered no JSON object"
+	}
+	if a.Error != "" && !strings.Contains(a.Error, "unknown operation") {
+		return ProbeRefused, a.Error
+	}
+	return ProbeReachable, ""
 }
 
 func lastLine(s string) string {
