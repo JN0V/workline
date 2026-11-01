@@ -16,6 +16,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 
 	"go.yaml.in/yaml/v3"
 
@@ -28,6 +29,25 @@ import (
 )
 
 const boundsFile = "bounds.json"
+
+// NoteMax is the most bytes of the one note the developer may post on its
+// own issue.
+const NoteMax = 4000
+
+// noteOf is the body of the note bounded kept among the proposals after the
+// claim: a comment on the issue, with no merge request nor objection.
+func noteOf(kept []intent.Intention, issue int) string {
+	for _, in := range kept {
+		m, ok := in.Value.(map[string]any)
+		if !ok || in.Kind != "comment" || m["merge-request"] != nil || fmt.Sprint(m["issue"]) != strconv.Itoa(issue) {
+			continue
+		}
+		if body, ok := m["body"].(string); ok {
+			return body
+		}
+	}
+	return ""
+}
 
 // Bounds are what pre read of the issue and the forge for post to hold the
 // patches to.
@@ -415,6 +435,8 @@ func (o objection) body() string {
 func bounded(repo string, b Bounds, claim, proposed []intent.Intention) (kept []intent.Intention, refused []Refusal, said []string) {
 	c := newChecker(repo, b)
 	var objections []forge.LineComment
+	var note *intent.Intention
+	noted := false
 	isClaim := func(i intent.Intention) bool {
 		return slices.ContainsFunc(claim, func(f intent.Intention) bool { return f.Kind == i.Kind && same(f.Value, i.Value) })
 	}
@@ -458,11 +480,36 @@ func bounded(repo string, b Bounds, claim, proposed []intent.Intention) (kept []
 			default:
 				objections = append(objections, forge.LineComment{Path: o.Test, Line: o.Line, Key: "objection-" + o.Test, Body: o.body()})
 			}
+		case i.Kind == "note":
+			m, _ := i.Value.(map[string]any)
+			body, _ := m["body"].(string)
+			switch {
+			case fmt.Sprint(m["issue"]) != strconv.Itoa(b.Issue):
+				said = append(said, fmt.Sprintf("a note on #%v: the developer's one note is on its own issue, #%d (not-the-developers)", m["issue"], b.Issue))
+			case strings.TrimSpace(body) == "":
+				said = append(said, "a note with no body: nothing to post")
+			case noted:
+				said = append(said, fmt.Sprintf("a note on #%d: the developer posts one note only, the first is kept (not-the-developers)", b.Issue))
+			default:
+				noted = true
+				if len(body) > NoteMax {
+					cut := NoteMax
+					for cut > 0 && !utf8.RuneStart(body[cut]) {
+						cut--
+					}
+					body = body[:cut]
+					said = append(said, fmt.Sprintf("a note on #%d: cut to its limit of %d bytes", b.Issue, NoteMax))
+				}
+				note = &intent.Intention{Kind: "comment", Value: map[string]any{"issue": b.Issue, "body": body}}
+			}
 		default:
 			said = append(said, fmt.Sprintf("a %s: the developer never labels, accepts, merges, closes nor moves an issue (ADR-0054)", i.Kind))
 		}
 	}
 	kept = append(slices.Clone(claim), kept...)
+	if note != nil {
+		kept = append(kept, *note)
+	}
 	if len(objections) > 0 {
 		kept = append(kept, intent.Intention{Kind: "comment", Value: map[string]any{
 			"merge-request": b.Draft, "sticky": "objection",

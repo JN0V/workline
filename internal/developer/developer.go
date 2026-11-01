@@ -702,6 +702,9 @@ func Post(runDir, repo string) int {
 		cs, unread := committerSettings(repo, where)
 		v.Findings = append(v.Findings, unread...)
 		mr := mergeRequest(a, title, subjects(a.Issue, title, b.Kind, b.Scope, cs))
+		if note := noteOf(kept[len(claim):], a.Issue); note != "" {
+			mr["body"] = withNote(fmt.Sprint(mr["body"]), note)
+		}
 		if mr["draft"] == true {
 			v.Summary += "; a Draft: " + p.Result
 			if len(a.Caps) > 0 {
@@ -723,6 +726,21 @@ func Post(runDir, repo string) int {
 		return code
 	}
 	return writeVerdict(runDir, v)
+}
+
+// withNote puts the agent's one note, the text posted on the issue, in the
+// pull request's `## Left out`, opening that section when it has none.
+func withNote(body, note string) string {
+	const head = "\n## Left out\n\n"
+	if i := strings.Index(body, head); i >= 0 {
+		i += len(head)
+		return body[:i] + note + "\n\n" + body[i:]
+	}
+	verif := "\n## " + work.Name(work.Verification) + "\n\n"
+	if i := strings.Index(body, verif); i >= 0 {
+		return body[:i] + head + note + "\n" + body[i:]
+	}
+	return body + head + note + "\n"
 }
 
 // held is its agent's code held to the bounds: what it proposed, the
