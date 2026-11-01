@@ -18,12 +18,16 @@ From each open issue's own state
 - **A yes**: `workline:accepted` on an issue waiting on you. What its
   state proposes is done as recorded, its drafts made yours, the issue
   moved to `ready`; the role takes `workline:proposed` off.
+- **A move back to refine still waiting** from before it needed no yes:
+  done as recorded, its reason in the role's comment
+  ([ADR-0059, amended](../../../docs/adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#amendment-2026-11-01-back-to-refine-needs-no-yes)).
 - **Not now**: `workline:proposed` taken off by a person, without a yes.
   Its proposals are dropped; nothing is proposed there until the issue
   changes. A label a bot took off is put back.
 - **An act undone**: a title, a priority, a milestone put back,
-  `workline:ready` taken off, a split's part closed as not planned, a
-  closing reopened. That kind is proposed on that issue from then on.
+  `workline:ready` taken off, or put back after the role moved the issue
+  back to refine, a split's part closed as not planned, a closing
+  reopened. That kind is proposed on that issue from then on.
 - **The first run after a report issue**: its record moves to each
   issue's state, and the report is closed with a link to the filter.
 

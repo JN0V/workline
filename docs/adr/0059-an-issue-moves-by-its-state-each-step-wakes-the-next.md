@@ -11,6 +11,7 @@
 - **Amends, once built:** [ADR-0054] and [ADR-0055], their triggers
   (§3) and a person at the end of a dispute (§6); [ADR-0057], three
   slots more (§2); [ADR-0018], who sets which label (§2);
+  [ADR-0032], `unready` done alone ([amendment](#amendment-2026-11-01-back-to-refine-needs-no-yes));
   [routing.md](../spec/routing.md), its states and
   [the chaining](#explicit-chaining-and-the-engines-own-writes)
 
@@ -246,7 +247,31 @@ Each persona's case: [research](../research/line-of-states.md#each-personas-answ
 - **The night as the line's engine**: a late or skipped cron stops all
   work.
 
+## Amendment (2026-11-01): back to refine needs no yes
+
+Decided by the maintainer, after the ready issues' re-check
+([#757](https://github.com/JN0V/workline/issues/757)) left 11 moves back
+to refine waiting for a person's `workline:accepted`.
+
+- **The product owner moves a ready issue back to Refine alone**:
+  `workline:ready` or `workline:needs-tests` off, `workline:to-refine`
+  on, at every autonomy level, a changed need's
+  ([ADR-0032]) included.
+- **Its reason in the role's one comment** (§1), with how to undo it:
+  put `workline:ready` back. No other comment.
+- **Why**: the move is cheap and undone by a label; a person's yes
+  stopped the line for nothing.
+- **Undone by a person**: the next move back on that issue is proposed,
+  as any act undone ([ADR-0038]).
+- **A move proposed before, still waiting**, is done at the next run,
+  with no agent.
+- **Other acts keep their rules**: the autonomy levels
+  ([ADR-0026]) never named this move.
+
 [#752]: https://github.com/JN0V/workline/issues/752
+[ADR-0026]: 0026-the-product-owners-autonomy-is-a-level.md
+[ADR-0032]: 0032-a-changed-need-flags-the-issues-built-on-it.md
+[ADR-0038]: 0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md
 [ADR-0018]: 0018-the-product-owner.md
 [ADR-0042]: 0042-the-engine-merges-by-the-projects-policy.md
 [ADR-0043]: 0043-a-try-is-told-in-its-pull-request.md

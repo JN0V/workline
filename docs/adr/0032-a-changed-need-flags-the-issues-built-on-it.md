@@ -8,6 +8,8 @@
   ADR-0030 (an import keys each issue by the text it was opened from);
   principles 1, 4, 5, 6, 9, 12
 - **Settles:** #165
+- **Amended by:** [ADR-0059](0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#amendment-2026-11-01-back-to-refine-needs-no-yes)
+  (2026-11-01): `unready` is done alone, no longer proposed
 
 ## Context
 
@@ -115,3 +117,10 @@ the issues its source of truth — was edited.
   engine can parse, and the project says it where its other settings
   are.
 
+## Amendment (2026-11-01): back to refine is done alone
+
+- **`unready` is no longer proposed**: the product owner moves the
+  issue back to refine itself, its reason in its comment, a changed
+  need's included ([ADR-0059, amended](0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#amendment-2026-11-01-back-to-refine-needs-no-yes)).
+- **Every other act** on an issue read again for a change stays
+  proposed.
