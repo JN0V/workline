@@ -96,6 +96,9 @@ step due that no event started, run.
 - **`--ai`**, `--open-merge-request`, `--forge`: as for each step.
 - **At most `reconcile-max`** steps a run (3); `--input reconcile=list`
   names them and starts none.
+- **Room first**: a step whose next state is at its limit waits, said
+  once on its issue
+  ([room in the next state](spec/routing.md#room-in-the-next-state)).
 - **Run twice in a row**, the second does nothing more.
 
 ## workline review

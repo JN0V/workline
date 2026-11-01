@@ -1,0 +1,30 @@
+case: routing/board-blocked-column-gitlab
+about: >
+  Given a GitLab board with a Blocked column, an issue the line blocks,
+  past its hop cap, goes workline:blocked with the Blocked column's
+  label in the same call, its other column's label off (ADR-0059,
+  decision 2): its card moves to Blocked. The issue says why. No agent
+  asked.
+given:
+  repo: tested
+  config:
+    routing: {events: {issue: [tester, developer]}}
+  forge:
+    boards:
+      - {forge: gitlab, number: 7, name: Development, owner: project, columns: ["workflow::Tests", "workflow::Ready", "workflow::Doing", "workflow::Blocked"], closed-list: true}
+    issues:
+      - id: 3
+        title: "Multiply"
+        labels: ["workline:needs-tests", "workflow::Tests"]
+        body: "## Need\n\nI want to multiply.\n"
+        comments: ["**workline's line** last woke the developer.\n\n<!-- workline:line-record {\"state\":\"ready\",\"body\":\"8a828a06be19\",\"hops\":8} -->\n<!-- workline:sticky=line/state -->"]
+run: {route: issue, target: {issue: 3}, open-merge-request: true, ai: "fake:tester-two-scenarios"}
+expect:
+  status: pass
+  agent-calls: 0
+  findings: [{rule: hops-capped, level: warn, where: "#3"}]
+  forge:
+    issues:
+      - id: 3
+        labels: ["workline:blocked", "workflow::Blocked"]
+        comment-contains: ["**workline's line** blocks this issue.", "9 state steps on this issue, past max-hops (8)", "board's Blocked column"]

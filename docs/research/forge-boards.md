@@ -139,3 +139,26 @@ a role to write?
 - **To try**: whether *Pull request linked to issue* fires for a draft
   pull request, for one an App opens, and in a project made before
   2025-11.
+
+## WIP limits and more columns (2026-11-01)
+
+For [#758](https://github.com/JN0V/workline/issues/758): the Tests and
+Blocked columns, and a limit per state
+([ADR-0059](../adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#9-pull-and-room-in-the-next-state)).
+
+| Tool | Its word | What it does | Source |
+|---|---|---|---|
+| GitHub Projects | *Column limit* | a soft limit: the count is highlighted past it; "does not restrict anyone from adding cards", nor automations | [board layout](https://docs.github.com/en/issues/planning-and-tracking-with-projects/customizing-views-in-your-project/customizing-the-board-layout) |
+| GitLab issue boards | *Work in progress limits*, Premium | per list, by items or by weight; shown, a line under the cards within it, not enforced | [issue boards](https://docs.gitlab.com/user/project/issue_board/) |
+| Kanban, generally | WIP limit | pull: a step starts when the next has room | the flow coach's review in [line of states](line-of-states.md#flow-coach) |
+
+- **Neither forge enforces a limit**: both show it to a person. A step
+  that waits for room is workline's to build: `routing: wip:`, per
+  state, the word Kanban and GitLab use.
+- **Not read from the board yet**: GitLab's list limit is Premium only
+  and GitHub's was not found in its GraphQL reference; one setting
+  serves every forge, and no board. Reading GitLab's limit is left for
+  later.
+- **Column names**: GitHub's templates use Backlog, Ready, In progress,
+  In review, Done; *Testing* or *QA* on many boards sits after the code,
+  where workline's tests come before it, so neither is matched by name.

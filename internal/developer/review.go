@@ -387,7 +387,7 @@ func handOff(r round, repo string) []intent.Intention {
 	why := fmt.Sprintf("%d review rounds on merge request %d, and the review still asks %d finding%s: the reviewer and the developer do not agree",
 		a.Round, r.MR, len(r.Asked), plural(len(r.Asked)))
 	return []intent.Intention{
-		{Kind: "label", Value: map[string]any{"issue": a.Issue, "add": add, "remove": remove}},
+		{Kind: "label", Value: map[string]any{"issue": a.Issue, "add": add, "remove": remove, "card": "blocked"}},
 		sayOn(a.Issue, backlog.Said(who, "blocks this issue", why,
 			"a person on the loop reads the pull request, fixes the findings or closes it, and moves the issue back by its label")),
 		{Kind: "comment", Value: map[string]any{"sticky": "round", "body": fmt.Sprintf(

@@ -121,3 +121,28 @@ func TestStatesProjectTable(t *testing.T) {
 		}
 	}
 }
+
+// TestWIP: Ready holds 5 as shipped; a project's limit is laid over it
+// state by state, 0 lifting it; a limit on no state, or below 0, is
+// refused; a shipped limit on a state the project's table lacks goes.
+func TestWIP(t *testing.T) {
+	if cfg := shipped(t, ""); cfg.Limit("ready") != 5 || cfg.Limit("tests") != 0 {
+		t.Errorf("shipped: %v", cfg.WIP)
+	}
+	cfg := shipped(t, "routing: {wip: {tests: 3, ready: 0}}\n")
+	if cfg.Limit("tests") != 3 || cfg.Limit("ready") != 0 {
+		t.Errorf("laid over: %v", cfg.WIP)
+	}
+	if cfg := shipped(t, "routing: {states: [{name: a, label: x}]}\n"); len(cfg.WIP) != 0 {
+		t.Errorf("a shipped limit on no state of the project's table: %v", cfg.WIP)
+	}
+	for _, bad := range []string{"routing: {wip: {nowhere: 2}}\n", "routing: {wip: {ready: -1}}\n"} {
+		if _, err := Load(configured(t, bad)); !role.IsConfigError(err) {
+			t.Errorf("%s: %v, want a config error", bad, err)
+		}
+	}
+	n := shipped(t, "").Holds("ready", [][]string{{"workline:ready"}, {"workline:ready", "workline:blocked"}, {"workline:needs-tests"}, {}})
+	if n != 1 {
+		t.Errorf("Holds = %d, want 1: an issue blocked is in blocked", n)
+	}
+}

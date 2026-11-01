@@ -1,11 +1,12 @@
 // Package board matches a forge's board to the steps workline marks
-// (ADR-0057): which column is ready, doing, done, found by their names,
-// loosely, or named by the `board:` setting; and which board, among the
-// ones the forge holds.
+// (ADR-0057, ADR-0059): which column is refine, tests, ready, doing,
+// blocked, done, found by their names, loosely, or named by the
+// `board:` setting; and which board, among the ones the forge holds.
 package board
 
 import (
 	"fmt"
+	"os"
 	"slices"
 	"strings"
 	"unicode"
@@ -17,13 +18,58 @@ import (
 
 // The names each slot takes, by Key, first match wins.
 var names = map[string][]string{
-	"ready": {"ready", "todo", "backlog"},
-	"doing": {"inprogress", "doing", "wip", "indevelopment", "started"},
-	"done":  {"done", "closed", "complete", "completed"},
+	"ready":   {"ready", "todo", "backlog"},
+	"doing":   {"inprogress", "doing", "wip", "indevelopment", "started"},
+	"done":    {"done", "closed", "complete", "completed"},
+	"refine":  {"refine", "torefine", "refinement", "triage", "new", "backlog", "icebox"},
+	"tests":   {"tests", "test", "needstests", "totest", "acceptancetests"},
+	"blocked": {"blocked", "onhold", "impeded"},
 }
 
+// Order is the order the slots take their column in: a column one took
+// is no other's (Backlog is ready's with no Ready column, else refine's).
+var Order = []string{"ready", "doing", "done", "refine", "tests", "blocked"}
+
 // Slots are the columns matched, by slot; "" for a slot with no column.
-type Slots struct{ Ready, Doing, Done string }
+type Slots struct{ Ready, Doing, Done, Refine, Tests, Blocked string }
+
+// Of is slot's column, by the slot's name; "" with none.
+func (m Slots) Of(slot string) string { return *m.at(slot) }
+
+func (m *Slots) at(slot string) *string {
+	switch slot {
+	case "ready":
+		return &m.Ready
+	case "doing":
+		return &m.Doing
+	case "done":
+		return &m.Done
+	case "refine":
+		return &m.Refine
+	case "tests":
+		return &m.Tests
+	case "blocked":
+		return &m.Blocked
+	}
+	return new(string)
+}
+
+// setting is the column the `board:` setting names for slot; "" with none.
+func setting(s role.Board, slot string) string {
+	switch slot {
+	case "ready":
+		return s.Ready
+	case "doing":
+		return s.Doing
+	case "refine":
+		return s.Refine
+	case "tests":
+		return s.Tests
+	case "blocked":
+		return s.Blocked
+	}
+	return ""
+}
 
 // Key is a column's name as matched: its scope's key dropped
 // (`workflow::In progress` → `In progress`), lowercase, letters only.
@@ -42,10 +88,17 @@ func Key(name string) string {
 
 // Match finds each slot's column among columns; a slot the setting names
 // takes that column, by Key too. Unmatched are the setting's names no
-// column holds: that slot stays empty.
+// column holds: that slot stays empty. A column one slot took, or the
+// setting named, is matched by no other slot's names.
 func Match(columns []string, s role.Board) (m Slots, unmatched []string) {
-	find := func(slot, set string) string {
-		if set != "" {
+	taken := map[string]bool{}
+	for _, slot := range Order {
+		if set := setting(s, slot); set != "" {
+			taken[Key(set)] = true
+		}
+	}
+	find := func(slot string) string {
+		if set := setting(s, slot); set != "" {
 			if i := slices.IndexFunc(columns, func(c string) bool { return Key(c) == Key(set) }); i >= 0 {
 				return columns[i]
 			}
@@ -53,15 +106,16 @@ func Match(columns []string, s role.Board) (m Slots, unmatched []string) {
 			return ""
 		}
 		for _, n := range names[slot] {
-			if i := slices.IndexFunc(columns, func(c string) bool { return Key(c) == n }); i >= 0 {
+			if i := slices.IndexFunc(columns, func(c string) bool { return Key(c) == n && !taken[n] }); i >= 0 {
+				taken[n] = true
 				return columns[i]
 			}
 		}
 		return ""
 	}
-	m.Ready = find("ready", s.Ready)
-	m.Doing = find("doing", s.Doing)
-	m.Done = find("done", "")
+	for _, slot := range Order {
+		*m.at(slot) = find(slot)
+	}
 	return m, unmatched
 }
 
@@ -123,7 +177,7 @@ func (m *Move) Told() string {
 	return fmt.Sprintf("Its card moved to `%s` on the board %q.", m.Column, m.Board)
 }
 
-// To is the move of an issue to slot (ready or doing) on f's board; nil
+// To is the move of an issue to slot (Order's) on f's board; nil
 // with no board, no column for the slot, or a board out of reach, even in
 // part — which err says, changing no verdict. On GitLab, a column is a
 // label: the board's other columns' labels come off in the same call, as
@@ -141,13 +195,7 @@ func To(f any, slot string, s role.Board) (*Move, error) {
 		return nil, nil
 	}
 	m, _ := Match(chosen.Columns, s)
-	mv := &Move{Board: chosen.Name}
-	switch slot {
-	case "ready":
-		mv.Column = m.Ready
-	case "doing":
-		mv.Column = m.Doing
-	}
+	mv := &Move{Board: chosen.Name, Column: m.Of(slot)}
 	if mv.Column == "" {
 		return nil, nil
 	}
@@ -238,4 +286,57 @@ func Choose(boards []forge.Board, s role.Board) (chosen *forge.Board, candidates
 		return &candidates[0], nil
 	}
 	return nil, candidates
+}
+
+// Along is the move a state's label makes on f's board (ADR-0059,
+// decision 2): to slot's column, the state's name, matched with the
+// project's `board:` setting in repo; nil with no board or no column for
+// it. A board out of reach is said on stderr and moves nothing, changing
+// no verdict.
+func Along(f any, repo, slot string) *Move {
+	if f == nil || slot == "" {
+		return nil
+	}
+	pc, err := role.LoadProjectConfig(repo)
+	if err != nil {
+		return nil
+	}
+	mv, err := To(f, slot, pc.Board)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "workline: the forge's board could not be read, no card moved: %s\n", forge.Said(err))
+	}
+	return mv
+}
+
+// Fold puts the move in a labelling: on GitLab, its column's label on and
+// the board's other columns' off, in the same call. A GitHub project's
+// Status is written after the labels (Writes).
+func (m *Move) Fold(add, remove []string) ([]string, []string) {
+	if !m.Labels() {
+		return add, remove
+	}
+	add = append(slices.Clone(add), m.Column)
+	remove = slices.Clone(remove)
+	for _, l := range m.Off {
+		if !slices.Contains(remove, l) {
+			remove = append(remove, l)
+		}
+	}
+	return add, remove
+}
+
+// Write sets the card's Status on its GitHub project, when the move is
+// the role's to write; a card not moved is said on stderr, changing no
+// verdict: workline's labels stay the roles' marks.
+func (m *Move) Write(f any, issue int) {
+	if !m.Writes() {
+		return
+	}
+	why, err := forge.SetStatus(f, issue, m.Project, m.Column)
+	if err != nil {
+		why = forge.Said(err)
+	}
+	if why != "" {
+		fmt.Fprintf(os.Stderr, "workline: #%d's card not moved to %q on the project #%d: %s\n", issue, m.Column, m.Project, why)
+	}
 }

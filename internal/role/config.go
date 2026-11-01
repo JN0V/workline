@@ -49,6 +49,7 @@ var (
 			"states":        {keys: map[string]*shape{"name": free, "label": free, "role": free, "next": free}}, // a list: each item
 			"max-hops":      free,
 			"reconcile-max": free,
+			"wip":           free, // a state's name: its limit (ADR-0059, decision 9), checked by the routing
 			// Each moment's wait budget (ADR-0050): its moments only.
 			"budgets": {keys: map[string]*shape{"commit": free, "commit-rewrite": free, "push": free,
 				"first-result": free, "verdict": free, "ready-review": free, "queue": free}},
@@ -63,7 +64,7 @@ var (
 		"release": {keys: map[string]*shape{"branches": free, "tags": free}},
 		"merge":   {keys: map[string]*shape{"autonomy": free, "alone": free}},
 		"gitlab":  {keys: map[string]*shape{"bots": free}},
-		"board":   {keys: map[string]*shape{"ready": free, "doing": free, "project": free}},
+		"board":   {keys: map[string]*shape{"ready": free, "doing": free, "refine": free, "tests": free, "blocked": free, "project": free}},
 	}}
 )
 

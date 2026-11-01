@@ -65,13 +65,16 @@ func openForge(o engine.Options) (forge.Forge, string, error) {
 // and the record it writes once that ran.
 type stateStep struct {
 	role  string
+	next  string
 	write StateWrite
 }
 
 // stateOf reads where issue is on the line and whether its step is due:
 // the step to run, else nil, what the line says of it added to res. A
-// step past the cap is not run: the issue is to be blocked (write).
-func stateOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue) (*stateStep, *StateWrite, error) {
+// step past the cap is not run: the issue is to be blocked (write); nor
+// one whose next state is full: it waits (write, once). open: the open
+// issues, listed at first need.
+func stateOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, open *[]forge.Issue) (*stateStep, *StateWrite, error) {
 	where := fmt.Sprintf("#%d", is.ID)
 	s, name, why := cfg.Wakes(is.Labels, IssueEvent)
 	if name == "" {
@@ -111,9 +114,14 @@ func stateOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue) 
 		now.State = BlockedState
 		return nil, &StateWrite{Issue: is.ID, Record: now, Blocked: why}, nil
 	}
+	if why, err := waits(cfg, b, s, open); err != nil {
+		return nil, nil, err
+	} else if why != "" {
+		return nil, waiting(res, s, why, rec, where, is.ID), nil
+	}
 	res.Findings = append(res.Findings, verdict.Finding{Rule: "state-wakes", Level: "info", Where: where,
 		Message: fmt.Sprintf("its state, %s, wakes the %s", s.Name, name)})
-	return &stateStep{role: name, write: StateWrite{Issue: is.ID, Record: now}}, nil, nil
+	return &stateStep{role: name, next: s.Next, write: StateWrite{Issue: is.ID, Record: now}}, nil, nil
 }
 
 // readFailed ends res on an issue that could not be read.
@@ -158,20 +166,27 @@ func byState(res *Result, cfg *routing.Config, o engine.Options, event string, s
 		res.Summary = fmt.Sprintf("%s: %s is closed: no state wakes a role", event, where)
 		return res
 	}
-	step, block, err := stateOf(res, cfg, b, *is)
+	step, block, err := stateOf(res, cfg, b, *is, new([]forge.Issue))
 	if err != nil {
 		readFailed(res, event, where, err)
 		return res
 	}
 	switch {
 	case block != nil && o.Inputs[ReconcileInput] == "list":
-		// Asked only: its own run blocks it, nothing written here.
+		// Asked only: its own run blocks it, or says it waits, nothing
+		// written here.
 		res.Due = []int{o.Target.ID}
 		why := "past its hop cap"
-		if res.Findings[len(res.Findings)-1].Rule == "tests-refused" { // stateOf's last word on it
+		switch res.Findings[len(res.Findings)-1].Rule { // stateOf's last word on it
+		case "tests-refused":
 			why = "to be blocked, its tests refused"
+		case "state-waits":
+			why = "to say it waits for room"
 		}
 		res.Summary = fmt.Sprintf("%s: %s due, %s: not started (--input %s=list)", event, where, why, ReconcileInput)
+	case block != nil && block.Waits != "":
+		res.Summary = fmt.Sprintf("%s: %s waits: %s", event, where, block.Waits)
+		keepState(res, cfg, f, spec, o, *block, "")
 	case block != nil:
 		res.Status = verdict.Pass
 		res.Summary = fmt.Sprintf("%s: %s blocked: %s", event, where, block.Blocked)
@@ -230,7 +245,7 @@ func keepState(res *Result, cfg *routing.Config, f forge.Forge, spec string, o e
 		res.Forge = spec
 		return
 	}
-	if err := writeState(f, cfg, w, role); err != nil {
+	if err := writeState(f, cfg, o.Repo, w, role); err != nil {
 		res.Status = worst(res.Status, verdict.Block)
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "state-unwritten", Where: fmt.Sprintf("#%d", w.Issue), Message: err.Error()})
 	}
@@ -267,13 +282,13 @@ func reconcile(res *Result, cfg *routing.Config, o engine.Options) *Result {
 	list := o.Inputs[ReconcileInput] == "list"
 	skip := strings.Split(o.Inputs[SkipInput], ",")
 	started, quiet := 0, 0
-	for _, is := range issues {
+	for i, is := range issues {
 		_, name, _ := cfg.Wakes(is.Labels, IssueEvent)
 		if name == "" || o.Inputs[SkipInput] != "" && slices.Contains(skip, name) {
 			continue // no step of this project's, or left out: said by `route issue`, not by every reconcile
 		}
 		where := fmt.Sprintf("#%d", is.ID)
-		step, block, err := stateOf(res, cfg, b, is)
+		step, block, err := stateOf(res, cfg, b, is, &issues)
 		if errors.Is(err, forge.ErrUnreachable) {
 			readFailed(res, ReconcileEvent, where, err)
 			return res
@@ -287,12 +302,23 @@ func reconcile(res *Result, cfg *routing.Config, o engine.Options) *Result {
 			quiet++
 			continue
 		}
+		if block != nil && block.Waits != "" { // no agent, no step: outside reconcile-max
+			if list {
+				res.Due = append(res.Due, is.ID)
+			} else {
+				keepState(res, cfg, f, spec, o, *block, "")
+			}
+			continue
+		}
 		if started >= cfg.ReconcileMax {
 			res.Findings = append(res.Findings, verdict.Finding{Rule: "reconcile-left", Level: "info", Where: where,
 				Message: fmt.Sprintf("due, past reconcile-max (%d) this run: the next run starts it", cfg.ReconcileMax)})
 			continue
 		}
 		started++
+		if step != nil {
+			anticipate(cfg, &issues[i], step.next) // the steps after it see it in its next state
+		}
 		switch {
 		case list: // its own run blocks it, past the cap: nothing written here
 			res.Due = append(res.Due, is.ID)

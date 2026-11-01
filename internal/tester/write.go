@@ -471,7 +471,7 @@ func testsDone(runDir, repo string, t task, intents []intent.Intention, untested
 			"the tests red on the base and passing the project's lint", len(t.Scenarios), untested)
 	}
 	intents = append(intents,
-		intent.Intention{Kind: "label", Value: map[string]any{"issue": t.Issue, "add": add, "remove": remove}},
+		intent.Intention{Kind: "label", Value: map[string]any{"issue": t.Issue, "add": add, "remove": remove, "card": s.Next}},
 		intent.Intention{Kind: "comment", Value: map[string]any{"issue": t.Issue, "sticky": "issue",
 			"body": backlog.Said("The tester", "wrote the acceptance tests of this issue, as a Draft", why,
 				"it is "+s.Next+": whoever builds it starts from the Draft, workline/tester/"+taskKey(t.Issue))}})

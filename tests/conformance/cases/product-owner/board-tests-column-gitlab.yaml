@@ -1,0 +1,23 @@
+case: product-owner/board-tests-column-gitlab
+about: >
+  Given a GitLab board with a Tests column, the product owner's ready
+  that sends an issue to its tests (workline:needs-tests) puts the Tests
+  column's label on in the same call (ADR-0059, decision 2): its card
+  moves to Tests, the board's other columns' labels off. An issue going
+  straight to ready moves to the Ready column, as before.
+given:
+  repo: backlog
+  config:
+    routing: {events: {schedule: [product-owner], issue: [tester, developer]}}
+  forge:
+    boards:
+      - {forge: gitlab, number: 7, name: Development, owner: project, columns: ["workflow::Triage", "workflow::Needs tests", "workflow::Ready", "workflow::Doing", "workflow::Blocked"], closed-list: true}
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.\n\n## Need\n\nThe monthly report counts every sale.\n\n## Verification\n\nA test writes three rows.\n\n## Validation\n\n- **A known day:** Given a day of three sales, When Ann opens it, Then she counts three.\n\n## Scope\n\nsrc/export/csv.go", author: ann, insider: true, labels: [workline:to-refine, "workflow::Triage"], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 10, title: "Rows lost again", body: "## Need\n\nThe monthly report counts every sale.\n\n## Verification\n\nA test writes three rows.\n\n## Validation\n\nAnn opens a known day.\n\n## Scope\n\nsrc/export/csv.go", author: ann, insider: true, labels: [workline:to-refine, "workflow::Triage"], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:ready-three}
+expect:
+  forge:
+    issues:
+      - {id: 9, labels: [workline:needs-tests, "workflow::Needs tests"], comment-contains: ["its card to `workflow::Needs tests` on the board"]}
+      - {id: 10, labels: [workline:ready, "workflow::Ready"]}

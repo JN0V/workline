@@ -15,11 +15,12 @@ import (
 const boardDoc = "docs/boards.md"
 
 // boards says the forge's board workline found, its columns matched to
-// the steps the product owner and the developer mark (ADR-0057), read
+// the steps the product owner, the tester and the developer mark
+// (ADR-0057, ADR-0059), read
 // only: the roles move the cards (board.To). Only when one of them is
 // routed.
 func boards(r *Report, o Options, cfg *role.ProjectConfig, line *routing.Config) {
-	if !routesRole(line, "product-owner") && !routesRole(line, "developer") {
+	if !routesRole(line, "product-owner") && !routesRole(line, "developer") && !routesRole(line, "tester") {
 		return
 	}
 	spec := o.Forge
@@ -100,6 +101,11 @@ func boards(r *Report, o Options, cfg *role.ProjectConfig, line *routing.Config)
 		}
 	}
 	msg := fmt.Sprintf("%s: ready → %s, doing → %s, done → %s", title(*chosen), slot(m.Ready), slot(m.Doing), done)
+	for _, s := range []string{"refine", "tests", "blocked"} { // the line's states' columns, when the board has them (ADR-0059)
+		if c := m.Of(s); c != "" {
+			msg += fmt.Sprintf(", %s → %s", s, c)
+		}
+	}
 	if chosen.Forge == "github" {
 		msg += "; " + projectWorkflows(*chosen)
 	}

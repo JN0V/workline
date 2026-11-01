@@ -115,7 +115,7 @@ func proved(runDir, repo string, t task, intents []intent.Intention, p Proof) in
 			return fail(err)
 		}
 		remove = slices.DeleteFunc(remove, func(l string) bool { return !slices.Contains(t.Labels, l) })
-		move = []intent.Intention{{Kind: "label", Value: map[string]any{"issue": t.Issue, "add": add, "remove": remove}}}
+		move = []intent.Intention{{Kind: "label", Value: map[string]any{"issue": t.Issue, "add": add, "remove": remove, "card": to}}}
 	}
 	// The record, none too: the product owner's pick answers it.
 	data, _ := json.Marshal(p)
@@ -172,7 +172,7 @@ func sentBack(runDir, repo string, f forge.Forge, is forge.Issue) (int, bool) {
 			" so a test checks it, then takes "+backlog.LabelBlocked+" off") +
 		"\n<!-- workline:" + backlog.ProofMark + string(data) + " -->"
 	intents := []intent.Intention{
-		{Kind: "label", Value: map[string]any{"issue": is.ID, "add": add, "remove": remove}},
+		{Kind: "label", Value: map[string]any{"issue": is.ID, "add": add, "remove": remove, "card": BlockedState}},
 		{Kind: "comment", Value: map[string]any{"issue": is.ID, "sticky": "issue", "body": body}},
 	}
 	if err := intent.Write(filepath.Join(runDir, "in", "fallback.yaml"), intents); err != nil {

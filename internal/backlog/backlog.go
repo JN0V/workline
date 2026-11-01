@@ -857,8 +857,12 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 		mode, why := p.check(f, repo, role, &c)
 		c.Card = nil
 		if c.Do == "ready" {
-			// Its card to the board's ready column (ADR-0057).
+			// Its card to the board's ready column (ADR-0057); to its
+			// tests column when it goes to its tests (ADR-0059).
 			c.Card = p.config.Ready
+			if p.config.Tests != nil && c.Proof == nil && p.config.ToTests != nil && p.config.ToTests(p.issues[c.Issue]) {
+				c.Card = p.config.Tests
+			}
 		}
 		if once && why == "" {
 			decided[c.key()] = true // the first that passes its check is kept

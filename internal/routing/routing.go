@@ -39,6 +39,9 @@ type Config struct {
 	MaxHops int     `yaml:"max-hops"`
 	// ReconcileMax: the steps one run of the reconciler starts at most.
 	ReconcileMax int `yaml:"reconcile-max"`
+	// WIP: each state's limit, by its name (ADR-0059, decision 9): the
+	// shipped ones, a project's laid over them state by state; 0, none.
+	WIP map[string]int `yaml:"wip"`
 }
 
 // Load returns the shipped routing with the project's changes applied.
@@ -85,6 +88,15 @@ func Load(repo string) (*Config, error) {
 		if p.ReconcileMax > 0 {
 			c.ReconcileMax = p.ReconcileMax
 		}
+		if err := checkWIP(p.WIP, c.States); err != nil {
+			return nil, role.ConfigErrorf("%s", err)
+		}
+		for state, n := range p.WIP {
+			if c.WIP == nil {
+				c.WIP = map[string]int{}
+			}
+			c.WIP[state] = n
+		}
 		for moment, seconds := range p.Budgets {
 			if !(seconds > 0) || math.IsInf(seconds, 1) { // NaN and infinity too: neither is ever gone over
 				return nil, role.ConfigErrorf("routing.budgets.%s is %v: a budget is a number of seconds above 0", moment, seconds)
@@ -97,6 +109,11 @@ func Load(repo string) (*Config, error) {
 	}
 	if err := checkStates(c.States); err != nil {
 		return nil, role.ConfigErrorf("%s", err)
+	}
+	for state := range c.WIP {
+		if _, ok := c.State(state); !ok {
+			delete(c.WIP, state) // a shipped limit on a state the project's table lacks
+		}
 	}
 	return &c, nil
 }

@@ -1,30 +1,33 @@
 ---
 sources: [internal/board/board.go, internal/forge/board.go, internal/doctor/board.go]
-checked: bd66bb99
+checked: ba168505
 ---
 # Boards
 
 ```mermaid
 flowchart LR
   forge["<b>The forge</b><br/>its board"] --> find["<b>workline</b><br/>finds it, read-only"]
-  find --> match["<b>Columns matched</b><br/>ready, doing, done"]
+  find --> match["<b>Columns matched</b><br/>one per state"]
   match --> doctor["<b>workline doctor</b><br/>says what it found"]
   match --> roles["<b>The roles</b><br/>move the cards"]
 ```
 
-People follow the work on a board: To do, Doing, Done. workline finds
-the forge's board each run and creates none
-([ADR-0057](adr/0057-workline-finds-the-forges-board-and-moves-its-cards.md)).
+People follow the work on a board: To do, Doing, Done, and where an
+issue waits, its tests or a block. workline finds the forge's board
+each run and creates none
+([ADR-0057](adr/0057-workline-finds-the-forges-board-and-moves-its-cards.md),
+[ADR-0059](adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md)).
 
 - **`workline doctor`** says the board found and its columns matched.
-- **The roles move its cards**: the product owner to the ready column,
-  the developer to the doing column (below); GitHub's own workflows
-  do what they can first.
-- **workline's labels stay** (`workline:ready`, `workline:developing`):
-  they are the roles' marks, board or not.
+- **The roles move its cards** with the issue's state: to Tests,
+  Ready, Doing, Blocked, back to Refine (below); GitHub's own
+  workflows do what they can first.
+- **workline's labels stay** (`workline:ready`, `workline:blocked`…):
+  they are the issue's state, board or not.
 - **Only when it matters**: the doctor looks for a board when the line
-  routes the product owner or the developer, the two roles that move
-  cards.
+  routes the product owner, the tester or the developer, the roles
+  that move cards.
+- **No board**: nothing to do; the labels alone say the state.
 
 ## What is found, by forge
 
@@ -50,8 +53,16 @@ name of its list wins:
 | ready | Ready, Todo, To do, Backlog |
 | doing | In progress, Doing, WIP, In development, Started |
 | done | Done, Closed, Complete, Completed |
+| refine | Refine, To refine, Refinement, Triage, New, Backlog, Icebox |
+| tests | Tests, Test, Needs tests, To test, Acceptance tests |
+| blocked | Blocked, On hold, Impeded |
 
-A slot with no column moves nothing.
+- **One column, one slot**: the slots take their columns in the
+  table's order, a column taken by one never another's. Backlog is
+  ready's on a board with no Ready column, refine's beside one.
+- **A slot with no column** moves nothing. *Testing* and *QA* are not
+  taken: on many boards they come after the code, where workline's
+  tests come before it; name them in `board:` if they are yours.
 
 ## The `board:` setting
 
@@ -61,6 +72,7 @@ Only when the names above do not fit, in `.workline/config.yaml`:
 board:
   ready: "Sprint backlog"   # a column's name, matched as loosely
   doing: "Build"
+  tests: "QA"               # refine, tests and blocked too
   project: 3                # GitHub: a project's number, when several are linked
 ```
 
@@ -73,21 +85,26 @@ board:
 - **GitLab, a group's boards unread**: a warning; the project's own
   boards still count.
 
-## What each role moves
+## What each state moves
 
-From
-[ADR-0057](adr/0057-workline-finds-the-forges-board-and-moves-its-cards.md#what-each-role-writes):
+A card follows the issue's state, its label
+([states](spec/routing.md#the-line-of-states)):
 
-| Step | Who | On GitLab, Free and Premium |
+| State | Who moves it there | On GitLab, Free and Premium |
 |---|---|---|
-| ready | the product owner, setting an issue ready | the ready column's label on, beside `workline:ready`; the other columns' off, in one call |
-| doing | the developer, at its claim | the doing column's label on, the other columns' off, in one call |
+| tests | the product owner, its ready sending the issue to its tests | the tests column's label on, beside `workline:needs-tests`; with no tests column, the ready column's |
+| ready | the product owner's ready; the tester's result | the ready column's label on, beside `workline:ready` |
+| doing | the developer, at its claim | the doing column's label on |
+| blocked | the line past its hop cap; the tester or developer that blocks it, its reason on the issue | the blocked column's label on, beside `workline:blocked` |
+| refine | the product owner moving it back; the tester's "no test possible" | the refine column's label on |
 | done | the forge, closing the issue at the merge (`Closes #n`) | the Closed list |
 
 - **One call, both tiers**: on Premium, a scoped label
   (`workflow::Doing`) takes its sibling off by itself; on Free, the
-  role takes the other columns' labels off: a card sits in one
-  column. GitLab's tier is never asked.
+  role takes the other columns' labels off, in the same call: a card
+  sits in one column. GitLab's tier is never asked.
+- **Blocked says why** on the issue, in the comment of whoever blocked
+  it; a person reads the column, and moves the issue back by its label.
 - **In the role's record**: the product owner's act says the column;
   the developer's claim comment says it, and its hidden line keeps it.
 - **With no agent**, neither role acts: no card moves.
@@ -103,7 +120,7 @@ one value, and puts no label for it.
 
 | Step | An organisation's project | A user's project |
 |---|---|---|
-| ready | the product owner sets Status to the ready option | no move: GitHub lets no App write it |
+| tests, ready, blocked, refine | the role that moves the issue sets Status to that option | no move: GitHub lets no App write it |
 | doing | left to *Pull request linked to issue* when on, the pull request opening; else the developer sets Status | left to *Pull request linked to issue*; off, no move |
 | done | *Item closed*, at the close | the same |
 

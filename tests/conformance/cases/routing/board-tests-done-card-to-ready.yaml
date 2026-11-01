@@ -1,0 +1,32 @@
+case: routing/board-tests-done-card-to-ready
+about: >
+  The tester's result moves the issue from Tests to Ready (ADR-0059,
+  decision 3): on a GitLab board with both columns, its card goes with
+  it, the Ready column's label on and the Tests column's off in the same
+  call (ADR-0059, decision 2).
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+    gates: {lint: {checks: [{id: fixme, run: "! grep -rq FIXME tests", output: exit}]}}
+    routing: {events: {issue: [tester, developer], merge-request: ["gate:lint"]}}
+  forge:
+    boards:
+      - {forge: gitlab, number: 7, name: Development, owner: project, columns: ["Tests", "Ready", "Doing", "Blocked"], closed-list: true}
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:needs-tests", "Tests"]
+        body: "## Need\n\nWhen I total an order, I want to multiply a price by a count, so I need not add it up by hand.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **By zero:** Given the library, When I multiply 5 by 0, Then I get 0.\n\n---\n\n## Verification\n\nA test a scenario, in tests/.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+run: {route: issue, target: {issue: 3}, open-merge-request: true, ai: "fake:tester-two-scenarios"}
+expect:
+  status: pass
+  agent-calls: 1
+  findings:
+    - {rule: state-moved, level: info, where: "#3", message: "the issue moves to ready"}
+  forge:
+    issues:
+      - id: 3
+        labels: ["workline:ready", "Ready"]
