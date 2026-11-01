@@ -13,6 +13,12 @@
 #   apply, review-apply    the App's key (environment workline-app), no AI key.
 # Why each part: roles/developer/docs/triggers.md.
 name: workline develop
+# A run of an issue's step named for it, `workline develop #<n>`: a start
+# of that issue's run is skipped while one is queued or running (#806).
+run-name: >-
+  ${{ (github.event_name == 'workflow_dispatch' && inputs.issue != '' && format('workline develop #{0}', inputs.issue)) ||
+  (github.event_name == 'issues' && github.event.sender.type != 'Bot' && startsWith(github.event.label.name, 'workline:') &&
+  format('workline develop #{0}', github.event.issue.number)) || github.workflow }}
 on:
   # A person's label on an issue: its state wakes its role (ADR-0059).
   # The engine's own labels wake nothing here: the job that set them
@@ -55,13 +61,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: {fetch-depth: 0, persist-credentials: false}   # no token left in .git/config for the agent (ADR-0056)
-      # Your project's setup steps, before the agent and the proof: a
-      # composite action, .github/actions/workline-setup/action.yml, read
-      # from the default branch, holding what your test job installs (a
-      # language, a tool). None: the runner as it is.
-      - name: The project's setup steps
-        if: hashFiles('.github/actions/workline-setup/action.yml') != ''
-        uses: ./.github/actions/workline-setup
       # The engine at the version pinned above, from its release, checksum
       # verified: seconds, not a build.
       - name: workline
@@ -71,11 +70,38 @@ jobs:
           get "https://github.com/JN0V/workline/releases/download/$WORKLINE_VERSION" workline_linux_amd64.tar.gz checksums.txt workline
           echo "$bin" >> "$GITHUB_PATH"
           "$bin/workline" version
+      # Asked first, no agent (#806): an issue whose step is not due —
+      # acted on already, or its run started twice — ends here, before
+      # your setup steps and the agent. With no issue, or the ask failing,
+      # the line runs and says why itself.
+      - name: Due
+        id: due
+        env:
+          GH_TOKEN: ${{ github.token }}
+          WORKLINE_APP_ID: ${{ vars.WORKLINE_APP_ID }}
+          ISSUE: ${{ github.event.issue.number || inputs.issue }}
+        run: |
+          printf '%s' "$ISSUE" | grep -Eqx '[0-9]+' || { echo "due=true" >> "$GITHUB_OUTPUT"; exit 0; }
+          status=0
+          workline route issue --target "issue:$ISSUE" --ai none --forge github --open-merge-request --input reconcile=list --json > due.json || status=$?
+          if [ "$status" != 0 ] || jq -e --argjson n "$ISSUE" '(.due // []) | index($n)' due.json >/dev/null; then
+            echo "due=true" >> "$GITHUB_OUTPUT"
+          else
+            jq -r '.summary // empty' due.json | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
+      # Your project's setup steps, before the agent and the proof: a
+      # composite action, .github/actions/workline-setup/action.yml, read
+      # from the default branch, holding what your test job installs (a
+      # language, a tool). None: the runner as it is.
+      - name: The project's setup steps
+        if: steps.due.outputs.due == 'true' && hashFiles('.github/actions/workline-setup/action.yml') != ''
+        uses: ./.github/actions/workline-setup
       - name: Claude, when the repository gives its token
-        if: env.HAS_CLAUDE == 'true'
+        if: steps.due.outputs.due == 'true' && env.HAS_CLAUDE == 'true'
         run: npm install -g @anthropic-ai/claude-code
       - name: The issue line (proposals only)
         id: line
+        if: steps.due.outputs.due == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           WORKLINE_APP_ID: ${{ vars.WORKLINE_APP_ID }}   # the App whose comments keep the records a role reads back (ADR-0051)
@@ -101,7 +127,7 @@ jobs:
 
       - name: Verdict
         run: |
-          status=${{ steps.line.outputs.status }}
+          status=${{ steps.line.outputs.status || 0 }}   # 0: not due, the line not run
           if [ "$status" = 3 ]; then
             echo "::warning title=workline::the agent could not be reached; the issue waits for the next run"
             exit 0
@@ -169,6 +195,9 @@ jobs:
             workline route issue --target "issue:$ISSUE" --ai none --forge github --open-merge-request --input reconcile=list --json > next.json || true
             jq -e --argjson n "$ISSUE" '(.due // []) | index($n)' next.json >/dev/null && break
           done
+          # Started even when another run of the issue waits: that one may
+          # ask the line before this apply moved the state, and end; a
+          # second run ends at its due step, before any setup (#806).
           if jq -e --argjson n "$ISSUE" '(.due // []) | index($n)' next.json >/dev/null; then
             gh workflow run "$(basename "${GITHUB_WORKFLOW_REF%%@*}")" --ref "$GITHUB_REF_NAME" -f issue="$ISSUE"
             echo "issue=$ISSUE" >> "$GITHUB_OUTPUT"
@@ -223,8 +252,17 @@ jobs:
           workline route reconcile --ai none --forge github --open-merge-request --input reconcile=list ${LAST:+--input "last=$LAST"} \
             --summary workline-summary.md --json > due.json
           [ ! -s workline-summary.md ] || cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"
+          # An issue with a run queued or running, this one among them, is
+          # not started again (#806).
+          wf=$(basename "${GITHUB_WORKFLOW_REF%%@*}")
+          busy=$(for s in queued in_progress pending waiting; do
+            gh run list --workflow "$wf" --status "$s" --limit 100 --json displayTitle --jq '.[].displayTitle'
+          done) || busy=
           for n in $(jq -r '(.due // [])[]' due.json); do
-            gh workflow run "$(basename "${GITHUB_WORKFLOW_REF%%@*}")" --ref "$GITHUB_REF_NAME" -f issue="$n" ||
+            if printf '%s\n' "$busy" | grep -qxF "workline develop #$n"; then
+              echo "#$n: a run of it is queued or running" >> "$GITHUB_STEP_SUMMARY"; continue
+            fi
+            gh workflow run "$wf" --ref "$GITHUB_REF_NAME" -f issue="$n" ||
               echo "::warning title=workline::#$n's run not started: the next hour starts it"
           done
       # Kept only once it ran: a failed run is no reconcile.
