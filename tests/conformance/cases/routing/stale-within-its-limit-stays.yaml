@@ -1,0 +1,24 @@
+case: routing/stale-within-its-limit-stays
+about: >
+  An issue whose Scope names something gone, but in its state for less
+  than the state's limit, stays (ADR-0059, decision 7). A project sets
+  its own limit in `routing: stale:`.
+given:
+  repo: tested
+  config:
+    routing: {events: {issue: [tester]}, stale: {ready: 100000}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply a list"
+        labels: ["workline:ready"]
+        labeled: {"workline:ready": "2026-09-01T09:00:00Z"}
+        body: "## Need\n\nI want to multiply a list.\n\n## Scope\n\n- `lib.sh`: `multiply_all()`.\n"
+run: {route: reconcile, open-merge-request: true, ai: "fake:tester-two-scenarios"}
+expect:
+  status: pass
+  agent-calls: 0
+  no-findings: [{rule: state-stale}]
+  forge:
+    issues:
+      - {id: 3, labels: ["workline:ready"], comments: 0}

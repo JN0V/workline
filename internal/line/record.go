@@ -37,18 +37,28 @@ type Record struct {
 	// Waits: the state at its limit the issue's step waits on, said on
 	// it once (ADR-0059, decision 9); the step run, the record has none.
 	Waits string `json:"waits,omitempty"`
+	// Stale: the state the line moved the issue out of as stale
+	// (ADR-0059, decision 7); Kept: the labelling, as the forge dates it,
+	// whose staleness the line said and left, a person having put the
+	// label back. Both kept while the issue's state stays the same.
+	Stale string `json:"stale,omitempty"`
+	Kept  string `json:"kept,omitempty"`
 }
 
 // StateWrite is what the line writes on an issue once its step ran:
 // the record; with Blocked, the reason it moves the issue to the
 // blocked state instead, its hops past the cap; with Waits, why its step
-// waits for room, the record as it was. Written at once, or by
-// `workline apply --line` when the line judged with no write token.
+// waits for room, the record as it was; with Stale, why it moves the
+// issue back to refine; with Kept, why it leaves a stale issue a person
+// put back. Written at once, or by `workline apply --line` when the
+// line judged with no write token.
 type StateWrite struct {
 	Issue   int    `json:"issue"`
 	Record  Record `json:"record"`
 	Blocked string `json:"blocked,omitempty"`
 	Waits   string `json:"waits,omitempty"`
+	Stale   string `json:"stale,omitempty"`
+	Kept    string `json:"kept,omitempty"`
 }
 
 const (
@@ -145,6 +155,9 @@ func due(s routing.State, is forge.Issue, labeled, spec string, rec Record, had 
 	if had && rec.State == now.State && rec.Body == now.Body && rec.Labeled == now.Labeled && rec.Spec == now.Spec {
 		return rec, false
 	}
+	if had && rec.State == now.State {
+		now.Stale, now.Kept = rec.Stale, rec.Kept // a stale move undone stays known in its state
+	}
 	if rec.State == BlockedState {
 		now.Hops = 0 // a person moved it out of Blocked: its count starts again
 	}
@@ -181,6 +194,11 @@ func writeState(f forge.Forge, cfg *routing.Config, repo string, w StateWrite, r
 		body = backlog.Said("workline's line", "waits to start this issue's next step", w.Waits,
 			"the next event on it, or the hourly reconcile, starts it when there is room; a person may raise the limit in routing.wip") +
 			"\n\n<!-- workline:" + recordMark + string(data) + " -->"
+	case w.Stale != "" || w.Kept != "":
+		var err error
+		if body, err = staleBody(f, cfg, repo, t, w); err != nil {
+			return err
+		}
 	}
 	return f.Sticky(t, backlog.Inert(body), forge.Marker("sticky="+recordKey), true)
 }

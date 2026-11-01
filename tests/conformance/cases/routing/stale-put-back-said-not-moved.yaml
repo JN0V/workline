@@ -1,0 +1,29 @@
+case: routing/stale-put-back-said-not-moved
+about: >
+  A person who puts the label back after the line moved an issue out as
+  stale undid the move (ADR-0059, amended: a move undone is proposed
+  next time). Stale again, it is not moved: the line says so once on the
+  issue, its labels as they were; a person decides.
+given:
+  repo: tested
+  config:
+    routing: {events: {issue: [tester]}, stale: {ready: 1}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply a list"
+        labels: ["workline:ready"]
+        labeled: {"workline:ready": "2026-09-20T09:00:00Z"}
+        body: "## Need\n\nI want to multiply a list.\n\n## Scope\n\n- `lib.sh`: `multiply_all()`.\n"
+        comments: ["**workline's line** moves this issue back to refine, stale.\n\n<!-- workline:line-record {\"state\":\"ready\",\"body\":\"0\",\"labeled\":\"2026-09-01T09:00:00Z\",\"hops\":1,\"stale\":\"ready\"} -->\n<!-- workline:sticky=line/state -->"]
+run: {route: reconcile, open-merge-request: true, ai: "fake:tester-two-scenarios"}
+expect:
+  status: pass
+  agent-calls: 0
+  findings: [{rule: state-stale-kept, level: info, where: "#3", message: "a person put workline:ready back after the line moved it out as stale"}]
+  forge:
+    issues:
+      - id: 3
+        labels: ["workline:ready"]
+        comments: 1
+        comment-contains: ["**workline's line** finds this issue stale, and leaves it.", "\"kept\":\"2026-09-20T09:00:00Z\""]

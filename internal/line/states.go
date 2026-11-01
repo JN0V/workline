@@ -73,10 +73,14 @@ type stateStep struct {
 // the step to run, else nil, what the line says of it added to res. A
 // step past the cap is not run: the issue is to be blocked (write); nor
 // one whose next state is full: it waits (write, once). open: the open
-// issues, listed at first need.
-func stateOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, open *[]forge.Issue) (*stateStep, *StateWrite, error) {
+// issues, listed at first need. A stale issue goes back to refine
+// first (write, stale.go), whatever its state wakes.
+func stateOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, open *[]forge.Issue, x *scopeIndex) (*stateStep, *StateWrite, error) {
 	where := fmt.Sprintf("#%d", is.ID)
 	s, name, why := cfg.Wakes(is.Labels, IssueEvent)
+	if w, err := stale(res, cfg, b, x, is, s); err != nil || w != nil {
+		return nil, w, err
+	}
 	if name == "" {
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "state-wakes-none", Level: "info", Where: where, Message: why})
 		return nil, nil, nil
@@ -166,7 +170,7 @@ func byState(res *Result, cfg *routing.Config, o engine.Options, event string, s
 		res.Summary = fmt.Sprintf("%s: %s is closed: no state wakes a role", event, where)
 		return res
 	}
-	step, block, err := stateOf(res, cfg, b, *is, new([]forge.Issue))
+	step, block, err := stateOf(res, cfg, b, *is, new([]forge.Issue), newScopeIndex(o.Repo))
 	if err != nil {
 		readFailed(res, event, where, err)
 		return res
@@ -182,8 +186,18 @@ func byState(res *Result, cfg *routing.Config, o engine.Options, event string, s
 			why = "to be blocked, its tests refused"
 		case "state-waits":
 			why = "to say it waits for room"
+		case "state-stale":
+			why = "stale, to go back to refine"
+		case "state-stale-kept":
+			why = "stale, to say it is left"
 		}
 		res.Summary = fmt.Sprintf("%s: %s due, %s: not started (--input %s=list)", event, where, why, ReconcileInput)
+	case block != nil && block.Stale != "":
+		res.Summary = fmt.Sprintf("%s: %s back to refine: %s", event, where, block.Stale)
+		keepState(res, cfg, f, spec, o, *block, "")
+	case block != nil && block.Kept != "":
+		res.Summary = fmt.Sprintf("%s: %s stale, left: %s", event, where, block.Kept)
+		keepState(res, cfg, f, spec, o, *block, "")
 	case block != nil && block.Waits != "":
 		res.Summary = fmt.Sprintf("%s: %s waits: %s", event, where, block.Waits)
 		keepState(res, cfg, f, spec, o, *block, "")
@@ -281,14 +295,23 @@ func reconcile(res *Result, cfg *routing.Config, o engine.Options) *Result {
 	backlog.Order(issues)
 	list := o.Inputs[ReconcileInput] == "list"
 	skip := strings.Split(o.Inputs[SkipInput], ",")
-	started, quiet := 0, 0
+	started, quiet, stales := 0, 0, 0
+	x := newScopeIndex(o.Repo)
 	for i, is := range issues {
-		_, name, _ := cfg.Wakes(is.Labels, IssueEvent)
-		if name == "" || o.Inputs[SkipInput] != "" && slices.Contains(skip, name) {
+		s, name, _ := cfg.Wakes(is.Labels, IssueEvent)
+		left := name == "" || o.Inputs[SkipInput] != "" && slices.Contains(skip, name)
+		if left && cfg.StaleDays(s.Name) == 0 {
 			continue // no step of this project's, or left out: said by `route issue`, not by every reconcile
 		}
 		where := fmt.Sprintf("#%d", is.ID)
-		step, block, err := stateOf(res, cfg, b, is, &issues)
+		var step *stateStep
+		var block *StateWrite
+		var err error
+		if left { // its staleness alone checked
+			block, err = stale(res, cfg, b, x, is, s)
+		} else {
+			step, block, err = stateOf(res, cfg, b, is, &issues, x)
+		}
 		if errors.Is(err, forge.ErrUnreachable) {
 			readFailed(res, ReconcileEvent, where, err)
 			return res
@@ -299,14 +322,22 @@ func reconcile(res *Result, cfg *routing.Config, o engine.Options) *Result {
 			continue
 		}
 		if step == nil && block == nil {
-			quiet++
+			if !left {
+				quiet++
+			}
 			continue
 		}
-		if block != nil && block.Waits != "" { // no agent, no step: outside reconcile-max
+		if block != nil && block.Stale != "" {
+			anticipate(cfg, &issues[i], refineState) // out of its state's count for the steps after it
+		}
+		if block != nil && (block.Waits != "" || block.Stale != "" || block.Kept != "") { // no agent, no step: outside reconcile-max
 			if list {
 				res.Due = append(res.Due, is.ID)
 			} else {
 				keepState(res, cfg, f, spec, o, *block, "")
+			}
+			if block.Stale != "" && !list {
+				stales++
 			}
 			continue
 		}
@@ -338,6 +369,9 @@ func reconcile(res *Result, cfg *routing.Config, o engine.Options) *Result {
 		res.Summary = fmt.Sprintf("%s: nothing due (%d %s on the line acted on already)", ReconcileEvent, quiet, plural(quiet, "issue", "issues"))
 	default:
 		res.Summary = fmt.Sprintf("%s: %d %s due, %s run (%s)", ReconcileEvent, started, plural(started, "issue", "issues"), plural(started, "its step", "their steps"), res.Status)
+	}
+	if stales > 0 {
+		res.Summary += fmt.Sprintf("; %d stale %s back to refine", stales, plural(stales, "issue", "issues"))
 	}
 	lateSaid(res, o.Inputs[LastInput], time.Now())
 	return res

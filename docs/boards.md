@@ -96,7 +96,7 @@ A card follows the issue's state, its label
 | ready | the product owner's ready; the tester's result | the ready column's label on, beside `workline:ready` |
 | doing | the developer, at its claim | the doing column's label on |
 | blocked | the line past its hop cap; the tester or developer that blocks it, its reason on the issue | the blocked column's label on, beside `workline:blocked` |
-| refine | the product owner moving it back; the tester's "no test possible" | the refine column's label on |
+| refine | the product owner moving it back; the tester's "no test possible"; the line, for a stale issue ([staleness](spec/routing.md#staleness)) | the refine column's label on |
 | done | the forge, closing the issue at the merge (`Closes #n`) | the Closed list |
 
 - **One call, both tiers**: on Premium, a scoped label
