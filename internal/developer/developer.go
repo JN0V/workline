@@ -767,7 +767,7 @@ func inertText(s string) string {
 	var out strings.Builder
 	for i, r := range rs {
 		switch {
-		case r == '<' && (i == 0 || rs[i-1] != '\\'):
+		case r == '<' && !escapedAt(rs, i):
 			out.WriteString("\\<")
 		case r == '@' && (i+1 == len(rs) || rs[i+1] != '\u200b'):
 			out.WriteString("@\u200b")
@@ -776,6 +776,16 @@ func inertText(s string) string {
 		}
 	}
 	return out.String()
+}
+
+// escapedAt tells whether the rune at i is escaped in Markdown: preceded
+// by an odd run of backslashes (an even run escapes only itself).
+func escapedAt(rs []rune, i int) bool {
+	n := 0
+	for j := i - 1; j >= 0 && rs[j] == '\\'; j-- {
+		n++
+	}
+	return n%2 == 1
 }
 
 // held is its agent's code held to the bounds: what it proposed, the
