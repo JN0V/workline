@@ -110,12 +110,13 @@ func (x *scopeIndex) load() error {
 		return x.err
 	}
 	x.read = true
-	out, err := exec.Command("git", "-C", x.repo, "ls-files").Output()
+	// -z: each name as it is, never quoted (core.quotepath).
+	out, err := exec.Command("git", "-C", x.repo, "ls-files", "-z").Output()
 	if err != nil {
 		x.err = fmt.Errorf("the repository's files could not be listed (git ls-files: %v)", err)
 		return x.err
 	}
-	x.files = strings.Split(strings.TrimSpace(string(out)), "\n")
+	x.files = strings.FieldsFunc(string(out), func(r rune) bool { return r == 0 })
 	return nil
 }
 

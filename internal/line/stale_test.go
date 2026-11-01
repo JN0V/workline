@@ -39,19 +39,37 @@ func TestScopeGone(t *testing.T) {
 		}
 	}
 	write("internal/line/states.go", "package line\nfunc stateOf() {}\n")
+	write("src/café.go", "package src\n") // a name git quotes unless asked not to
 	write("docs/adr.md", "the old `reconcileAll` is gone\n")
 	for _, args := range [][]string{{"init", "-q"}, {"add", "."}} {
 		if out, err := exec.Command("git", append([]string{"-C", repo}, args...)...).CombinedOutput(); err != nil {
 			t.Fatalf("git %v: %v\n%s", args, err, out)
 		}
 	}
-	body := "## Need\n\nx\n\n## Scope\n\n- `internal/line`, `states.go:12`, `stateOf()`, `reconcileAll()`, `gone.go`, `Config.Gone`, `workline:ready`.\n"
+	body := "## Need\n\nx\n\n## Scope\n\n- `internal/line`, `states.go:12`, `src/café.go`, `stateOf()`, `reconcileAll()`, `gone.go`, `Config.Gone`, `workline:ready`.\n"
 	got, err := newScopeIndex(repo).gone(body)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if want := []string{"reconcileAll()", "gone.go", "Config.Gone"}; !slices.Equal(got, want) {
 		t.Errorf("gone = %q, want %q", got, want)
+	}
+}
+
+// TestScopeUnread: a folder that is no repository is said, never read as
+// a Scope all gone.
+func TestScopeUnread(t *testing.T) {
+	if got, err := newScopeIndex(t.TempDir()).gone("## Scope\n\n- `lib.sh`\n"); err == nil {
+		t.Errorf("gone = %q, want an error", got)
+	}
+}
+
+// TestLabeledAt: GitHub's and GitLab's times, a day alone, none.
+func TestLabeledAt(t *testing.T) {
+	for s, want := range map[string]bool{"2026-09-01T09:00:00Z": true, "2026-10-05T05:44:13.850Z": true, "2026-09-01": true, "": false, "soon": false} {
+		if _, ok := labeledAt(s); ok != want {
+			t.Errorf("labeledAt(%q) = %v, want %v", s, ok, want)
+		}
 	}
 }
 

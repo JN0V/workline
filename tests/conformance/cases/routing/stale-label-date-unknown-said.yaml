@@ -1,0 +1,24 @@
+case: routing/stale-label-date-unknown-said
+about: >
+  An issue whose Scope names something gone, when the forge does not say
+  when its state's label was put on, is not said stale: its age unknown
+  is said, its labels as they were (ADR-0059, decision 7; principle 12).
+given:
+  repo: tested
+  config:
+    routing: {events: {issue: [tester]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply a list"
+        labels: ["workline:ready"]
+        body: "## Need\n\nI want to multiply a list.\n\n## Scope\n\n- `lib.sh`: `multiply_all()`.\n"
+run: {route: reconcile, open-merge-request: true, ai: "fake:tester-two-scenarios"}
+expect:
+  status: pass
+  agent-calls: 0
+  findings: [{rule: stale-unknown, level: info, where: "#3", message: "the forge does not say when it got workline:ready: not said stale"}]
+  no-findings: [{rule: state-stale}]
+  forge:
+    issues:
+      - {id: 3, labels: ["workline:ready"], comments: 0}
