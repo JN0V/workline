@@ -1,0 +1,32 @@
+case: routing/state-refine-complete-issue-reaches-tests
+about: >
+  Complete issue (#840): an issue whose five sections a person wrote,
+  labelled to refine, judged with no write token as CI does, then
+  applied, then the apply job's next step. The product owner holds it
+  for the spec review, the reviewer reads that spec in the same run
+  though the product owner's state comment is not written yet, the
+  apply writes both; the review makes refine's step due again, and the
+  chained run moves the issue to its tests. No other event, no second
+  label by a person.
+given:
+  repo: backlog
+  config:
+    routing: {events: {schedule: [product-owner, reviewer], issue: [product-owner, reviewer, tester, developer]}}
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "## Need\n\nThe monthly report counts every sale.\n\n## Example\n\nOn 3 March, three sales, the report shows two.\n\n## Validation\n\n- **A known day:** Given a day of three sales, When Ann opens it, Then she counts three.\n\n---\n\n## Verification\n\nA test writes three rows.\n\n## Scope\n\nsrc/export/csv.go", author: ann, insider: true, labels: [workline:to-refine]}
+run:
+  route: issue
+  target: {issue: 9}
+  no-apply: true
+  ai: fake:ready-nine-then-spec-clear
+  then: resume
+  apply-from: {line: true, chain: 1}
+expect:
+  status: pass
+  agent-calls: 3
+  forge:
+    issues:
+      - id: 9
+        labels: [workline:needs-tests]
+        comment-contains: ["<!-- workline:sticky=reviewer/spec -->", "<!-- workline:spec-review body=", "<!-- workline:sticky=product-owner/state -->"]
