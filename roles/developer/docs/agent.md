@@ -60,6 +60,13 @@ Checked against Claude Code 2.1.314; each flag in its `--help`:
   project's conventions as any file.
 - **Its shell without its login**: `CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=1`;
   Claude Code takes its key or token out of the commands' environment.
+- **Its shell's tools, on Linux**: so scrubbed, Claude Code runs each
+  command boxed by bubblewrap, its network through socat. Either
+  missing, no command runs: the engine does not ask the agent, its
+  finding `agent-unavailable` names what to install. The GitHub
+  template installs both with the agent, in about 7 s
+  ([#900](https://github.com/JN0V/workline/issues/900)); the GitLab
+  image holds neither, not tried there yet.
 - **Its sandbox's files removed**: so scrubbed, Claude Code creates 17
   empty files where its folder lacks them (`.env*`, `package.json`,
   lock files) and lists them in `.git/info/exclude`, which a worktree
@@ -102,9 +109,10 @@ It answers with its edits; its diff is its code
 
 ## Not yet
 
-- **Its shell boxed in its worktree**: today it runs as the job's
-  user, the network as the runner allows it; Claude Code's sandbox
-  needs bubblewrap and user namespaces the runners do not all give
+- **Its shell boxed in its worktree, settings of ours**: Claude Code's
+  sandbox boxes its commands on GitHub's runner (tried there), with its
+  own defaults; workline sets no `allowWrite` nor `allowedDomains`
+  yet, and a container runner may not give the user namespaces it needs
   ([#719](https://github.com/JN0V/workline/issues/719),
   [ADR-0056](../../../docs/adr/0056-the-developers-agent-works-in-a-sandbox-with-tools.md#amendment-the-agents-settings-and-its-shell)).
 

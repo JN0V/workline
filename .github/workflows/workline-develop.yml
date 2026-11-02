@@ -99,7 +99,12 @@ jobs:
         if: steps.due.outputs.due == 'true'
       - name: Claude, when the repository gives its token
         if: steps.due.outputs.due == 'true' && env.HAS_CLAUDE == 'true'
-        run: npm install -g @anthropic-ai/claude-code
+        # Its shell: Claude Code boxes each command with bubblewrap, its
+        # network through socat; either missing, no command runs (#900).
+        run: |
+          npm install -g @anthropic-ai/claude-code
+          command -v bwrap >/dev/null && command -v socat >/dev/null ||
+            { sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends bubblewrap socat; }
       - name: The issue line (proposals only)
         id: line
         if: steps.due.outputs.due == 'true'
@@ -278,7 +283,10 @@ jobs:
     permissions: {contents: read, issues: read, pull-requests: read, actions: write}
     steps:
       - uses: actions/checkout@v4
-        with: {fetch-depth: 0, persist-credentials: false}
+        # The branch's head as the job starts, not the commit the run was
+        # started on: a heartbeat's waited 55 minutes, and a fix merged
+        # meanwhile acts now (#898).
+        with: {ref: "${{ github.ref }}", fetch-depth: 0, persist-credentials: false}
       - uses: ./.github/actions/engine
       - env:
           GH_TOKEN: ${{ github.token }}
@@ -395,7 +403,12 @@ jobs:
       - uses: ./.github/actions/tests
       - name: Claude, when the repository gives its token
         if: env.HAS_CLAUDE == 'true'
-        run: npm install -g @anthropic-ai/claude-code
+        # Its shell: Claude Code boxes each command with bubblewrap, its
+        # network through socat; either missing, no command runs (#900).
+        run: |
+          npm install -g @anthropic-ai/claude-code
+          command -v bwrap >/dev/null && command -v socat >/dev/null ||
+            { sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends bubblewrap socat; }
       - name: The round (proposed only)
         id: round
         env:

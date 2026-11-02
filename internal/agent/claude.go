@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"strings"
 
@@ -42,6 +43,9 @@ func (c claude) Propose(req Request) (Call, error) {
 	bin, err := exec.LookPath("claude")
 	if err != nil {
 		return call, fmt.Errorf("%w: claude is not installed", ErrUnavailable)
+	}
+	if err := shellTools(Worktree(req.RunDir), runtime.GOOS); err != nil {
+		return call, err
 	}
 	system, user, err := Prompt(req)
 	if err != nil {
@@ -149,6 +153,33 @@ func (c claude) Propose(req Request) (Call, error) {
 // tools, nor agents of its own: the network is the shell's, as the
 // project's CI allows it.
 const claudeTools = "Read,Edit,Write,Glob,Grep,Bash"
+
+// claudeShellTools are what Claude Code's shell needs on Linux once its
+// commands' environment is scrubbed: it runs each command boxed by
+// bubblewrap, its network through socat. Either missing, every command
+// fails, and the agent writes code it never ran (#900).
+var claudeShellTools = []string{"bwrap", "socat"}
+
+// shellTools says, before the agent is asked, which of claudeShellTools
+// a run in a worktree lacks on Linux: the agent unavailable, the role's
+// finding naming what to install, rather than an agent with no shell. No
+// worktree, no shell: nothing needed.
+func shellTools(tree, goos string) error {
+	if tree == "" || goos != "linux" {
+		return nil
+	}
+	var missing []string
+	for _, t := range claudeShellTools {
+		if _, err := exec.LookPath(t); err != nil {
+			missing = append(missing, t)
+		}
+	}
+	if len(missing) == 0 {
+		return nil
+	}
+	return fmt.Errorf("%w: claude's shell needs bubblewrap and socat, %s not installed: no command would run (apt-get install bubblewrap socat)",
+		ErrUnavailable, strings.Join(missing, " and "))
+}
 
 // claudeStubs are the files Claude Code creates empty in its folder, where
 // absent, when its commands' environment is scrubbed: its sandbox binds
