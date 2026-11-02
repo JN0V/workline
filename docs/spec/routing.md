@@ -477,7 +477,8 @@ a step starts only when the state it moves the issue to has room.
 - **`wip`**: a limit per state, the open issues it holds at most.
   Shipped: `ready: 5`, in `routing.default.yaml`; a project's
   `routing: wip:` is laid over it state by state, `0` lifting one. A
-  limit on no state of the table is refused.
+  limit on no state of the table is refused, and so are limits on every
+  state of a ring of `next`: each would wait on the next, for good.
 - **Full**: the step of a state whose `next` is at its limit does not
   start, nor asks an agent. The line says it once on the issue, in its
   comment (`state-waits`), the record kept as it was, with the state it
@@ -487,8 +488,23 @@ a step starts only when the state it moves the issue to has room.
 - **Counted** from the open issues' labels, as `StateOf` reads them.
   The reconciler counts a step it starts in its next state already, so
   the steps after it in the same run see it there.
+- **What the developer can take**, alone, in its state ([amended](../adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#amendment-2026-11-02-a-limit-counts-what-can-be-pulled)):
+  an issue there that waits for its tests (named scenarios, no tester's
+  Draft open, no proof kind recorded, where the project routes the
+  tester), or on another open issue, or has parts, is counted apart, and
+  said in the wait's reason. Read only at the limit: the tester's open
+  Drafts once a run, the comments of a ready issue with none.
+- **To its tests**: a ready issue still waiting for them goes to the
+  tester's state, by rule, no agent (`state-untested`), whether the
+  developer was woken on it or not. Each move wakes the tester: the
+  reconciler counts it in `reconcile-max`, after the steps due. How to
+  undo it is said in the line's
+  comment, the move kept in its record (`retest`). Put back by a person,
+  it is said once and left (`state-untested-kept`, `retest-kept`); its
+  developer step is not run then, which would only refuse it.
 - **`--input reconcile=list`**: an issue whose wait is not said yet is
-  listed due, its own run saying it.
+  listed due, its own run saying it; so is a ready issue to move to its
+  tests, or to say left.
 
 ### Staleness
 

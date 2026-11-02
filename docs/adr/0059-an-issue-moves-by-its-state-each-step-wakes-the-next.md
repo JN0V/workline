@@ -173,7 +173,8 @@ Built first, whatever else.
 
 - **A role starts only when the next state has room**: a WIP limit per
   state in the config. A full Ready keeps the tester waiting, said on
-  the issue.
+  the issue. It counts what the developer can take
+  ([amended](#amendment-2026-11-02-a-limit-counts-what-can-be-pulled)).
 - **A Definition of Ready per state**, checked by the engine:
   - to Tests: the four sections ([routing.md](../spec/routing.md#work-starts-from-a-clear-need)),
     named scenarios, Scope paths that exist, and fits one developer
@@ -357,6 +358,55 @@ and a quiet night has no event to start it
   - a job that sleeps an hour: a runner held all day, and a private
     repository's minutes;
   - the line's runs alone starting it: a quiet night has none.
+
+## Amendment (2026-11-02): a limit counts what can be pulled
+
+Settles [#854](https://github.com/JN0V/workline/issues/854): §9 counted
+every issue labelled ready. Ten ready issues waited for their tests,
+labelled before the line had a Tests state; Ready, at its limit of 5,
+kept the tester off two fresh issues in Tests. The tester waited on
+Ready, Ready on the tester: a deadlock, three hours on
+([sixth run](https://github.com/JN0V/workline/issues/757#issuecomment-6570780965)).
+
+- **Ready's limit counts what the developer can take**: an issue whose
+  tests are there (a tester's Draft open, a proof kind recorded, or no
+  named scenario), waiting on no open issue, with no parts. The others
+  are counted apart, said in the wait's reason.
+- **A ready issue without its tests goes to Tests**, by rule, no agent,
+  at the reconciler or its own event: the step it skipped, not a
+  judgement on its need. The developer never takes it as it is. Said in
+  the line's one comment (§1), with how to undo it: put
+  `workline:ready` back.
+- **A few a run**: each move wakes the tester, so the reconciler counts
+  it in `reconcile-max`, after the steps due. Ten such issues reach
+  Tests over a few hours, not ten agent calls at once.
+- **Undone by a person, left to them**: a ready issue the line moved
+  once and a person put back is not moved again. The line says once
+  which label to put on it; it stays counted apart. As a move back
+  undone ([amendment](#amendment-2026-11-01-back-to-refine-needs-no-yes)),
+  and as [ADR-0032] wants a person's ready moved again only on their word.
+- **No ring of limits**: limits on every state of a ring of `next` are
+  refused at load. Each step would wait on the next, full, for good.
+- **Why no deadlock remains**: a step waits only for room in its
+  `next`. An issue counted in a state waits on nothing before it, only
+  on its own role and the states after. With no ring of limits, every
+  chain of waits ends at a state with no limit or no `next`, which
+  drains; each state before it drains in turn. Tested by
+  `routing/wip-ready-untested-*` and `routing/wip-no-deadlock-on-a-blocker`.
+- **Borrowed from kanban**: an explicit pull policy says what may enter a
+  column (a Definition of Ready). An item that does not meet it goes
+  back upstream, not into the column's count. A blocked item counted in
+  its column makes the team swarm on it; here the blocker sits upstream,
+  behind the very limit it fills, so counting it only stops the line.
+- **Cost**: at Ready's limit only, one call a run for the tester's open
+  Drafts, and one a ready issue with scenarios and no Draft, its
+  comments; none below the limit.
+- **Not chosen**:
+  - Ready's limit lifted: the developer's queue unbounded again;
+  - every untested ready issue to Tests at once, ignoring a person who
+    put one back: their act undone by a rule;
+  - the product owner re-reading each one: an agent call for a check
+    the engine does with none (principle 4).
 
 [ADR-0024]: 0024-obsolete-is-announced-then-closed-on-silence-and-a-second-judge.md
 [ADR-0028]: 0028-an-issue-names-what-it-waits-on.md
