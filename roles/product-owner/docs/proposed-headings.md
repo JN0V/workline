@@ -4,9 +4,9 @@ Part of [the product owner](../README.md). Proposed by
 [ADR-0039](../../../docs/adr/0039-issue-sections-are-read-by-meaning-the-kind-is-the-forges.md),
 built in parts ([#435](https://github.com/JN0V/workline/issues/435)):
 each thing said once is built, under today's names
-([writing an issue](writing.md#each-thing-said-once)); the names, a bug's
-steps and the kind are not yet. Below, the same issues under the
-proposed names, each thing said once.
+([writing an issue](writing.md#each-thing-said-once)), and the kind
+([the kind it sets](kind.md)); the names and a bug's steps are not yet.
+Below, the same issues under the proposed names, each thing said once.
 
 | Today | Proposed |
 |---|---|
@@ -143,31 +143,15 @@ the link checker: it names the lychee page and stops.
 
 ## The kind the role sets
 
-- An issue with no type and no kind label gets the project's own label,
-  at `normal`. The role's line says: "Labelled bug. Wrong? Change the
-  label; it will not be set again."
-- At `cautious`, the line only says "Read as a bug."
-- **Never a swap**: on GitLab Premium a scoped label would silently
-  replace a person's.
-- **Only `task` is created** when the project has no such label. GitLab
-  gets labels only, never `issue_type: task`, which makes the issue a
-  child work item.
-- **GitHub issue types are read, never set**: on a personal account's
+Built, with labels only: [the kind it sets](kind.md). Proposed still:
+
+- **GitHub issue types read, never set**: on a personal account's
   repository the API answers both ways, and a type set without push
   access is silently dropped.
-- **What it set is kept in the issue's state**: the Forgejo sample forge
-  reports no label events.
 - **Issues already read**: one light read for the kind alone, about 1k
   tokens an issue, within `issues-per-run`.
 - **Notifications**: none on GitHub; GitLab mails a label's subscribers,
   and workflows a label triggers run: hence the cap.
-
-```yaml
-# roles.product-owner.settings: the project's label per kind, the first that exists
-kinds: {bug: [bug, "type::bug", Kind/Bug], feature: [enhancement, "type::feature",
-  Kind/Feature], task: [task, "type::maintenance"]}
-acts: {kind: {mode: act, max: 10}}
-```
 
 ## An issue under the old names
 

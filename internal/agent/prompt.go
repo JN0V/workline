@@ -40,6 +40,7 @@ var contracts = map[string]string{
 	"split":          `- split: {issue: 12, into: [{title: "a short title", need: "who needs this part, and why (a draft)", verification: "the tests that will prove it", validation: "who accepts it (a draft)", scope: "the part of the code", sources: ["src/file.go"]}, {title: "…", …}], why: "why it is several needs"}  # 2 to 6 children, each its four sections`,
 	"depend":         `- depend: {issue: 14, blocked-by: [13], why: "what #14 needs from #13 before it can start"}  # only what it cannot start without; a split's child says it with after: [1], the children it waits on by their place`,
 	"undepend":       `- undepend: {issue: 14, blocked-by: [13], why: "why #14 no longer needs #13"}  # only a link the role set; a closed blocker's link the engine takes off itself; proposed to a person`,
+	"kind":           `- kind: {issue: 12, kind: bug, why: "what in it says so: a behaviour that worked and broke"}  # bug, feature (a function people have not seen) or task (no behaviour change); only an issue no kind label tells`,
 	"rename":         `- rename: {issue: 12, title: "about ten words: the problem, not the fix", why: "why the title it has does not say it"}`,
 	"handoff":        `- handoff: {role: "next role", reason: "why"}`,
 	"note":           `- note: "a message for a person"`,

@@ -2737,6 +2737,12 @@ func (a *applier) apply(in intent.Intention) error {
 			return nil
 		}
 		return a.refining(d.Act)
+	case "kind":
+		d := a.plan.Decision(a.index)
+		if d == nil || d.Mode != backlog.Act {
+			return nil
+		}
+		return a.kind(d.Act)
 	case "rename":
 		d := a.plan.Decision(a.index)
 		if d == nil || d.Mode != backlog.Act {

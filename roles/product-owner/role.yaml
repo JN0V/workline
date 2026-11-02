@@ -35,7 +35,7 @@ duties:
 # agent is told of it only where the project keeps an effort.
 # unblock, blocked: a blocked issue the line wakes it on, read again
 # (ADR-0059, amended): sent back, or kept blocked with a fresh reason.
-intentions: [open, skip, close, keep, sources, milestone, order, effort, refine, ready, unready, unblock, blocked, ask, assume, split, rename, depend, undepend, comment, note]
+intentions: [open, skip, close, keep, sources, milestone, order, effort, kind, refine, ready, unready, unblock, blocked, ask, assume, split, rename, depend, undepend, comment, note]
 
 # Without AI, nothing is judged: the issues taken get their state comment.
 without-ai: pass
@@ -88,6 +88,10 @@ settings:
   # label no table knows to a level. Each run says where each was found.
   # priority: auto
   # effort: auto
+  # The project's label per kind, the first that exists set by the kind
+  # act (ADR-0039); unset, bug, enhancement, task. GitHub's issue types
+  # are not read yet.
+  # kinds: {bug: [bug, "type::bug"], feature: [enhancement, "type::feature"], task: [task, "type::maintenance"]}
   # Each kind of act: act (done, up to max a run), propose (on the issue,
   # for a person to accept), off (dropped). On by default: refine, ask,
   # ready, an evident duplicate, sources. Off, the code kept, each back by
@@ -107,6 +111,7 @@ settings:
     milestone: {mode: off, max: 10}   # an issue put in a release's milestone; one that slipped moved by the engine
     order: {mode: off, max: 10}       # an issue's priority, workline:priority/1 to /4; a person's kept
     effort: {mode: off, max: 10}      # an issue's effort, once, on code the run read; where `effort` says it is kept (ADR-0040)
+    kind: {mode: act, max: 10}        # bug, feature or task, on an issue no kind label tells; once, a person's change kept (ADR-0039)
     close-obsolete: {mode: off, max: 3, days: 7, exempt: [pinned, security]}  # announcements and closings together
     split: {mode: off, max: 2}        # a need too big for one issue split into 2 to 6, linked to it (ADR-0022)
     rename: {mode: off, max: 5}       # an issue's title; a person's kept
@@ -125,6 +130,7 @@ levels:
         close-duplicate: {mode: propose}
         refine: {drafts: propose}     # Scope and Verification written; Need and Validation drafts proposed
         ready: {mode: propose}
+        kind: {mode: propose}
         ask: {max: 2, rounds: 2, wait: never}
     normal: {}
     enterprising:
@@ -134,3 +140,4 @@ levels:
         ready: {max: 10}
         ask: {max: 5, wait: "0"}
         effort: {max: 20}
+        kind: {max: 20}

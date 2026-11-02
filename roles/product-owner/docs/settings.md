@@ -26,6 +26,7 @@ over the level, field by field.
 | `moved-percent-max` | `20` | with `milestone` or `order` on: the share of the open issues a run moves |
 | `repeated-percent-max` | `40` (1 to 100) | a draft whose words are past this share, in percent, already said above it is not written ([each thing said once](writing.md#each-thing-said-once)) |
 | `priority`, `effort` | unset | where the project keeps each: unset, workline's own labels and no effort; `auto` finds it; `{in: labels, prefix: P}` names a family ([below](#priority-and-effort)) |
+| `kinds` | unset | the label set per kind, the first the project has: unset, `bug`, `enhancement`, `task` ([the kind](kind.md)) |
 
 No longer read, each said by the run:
 
@@ -48,6 +49,7 @@ issue, for a person to accept) or `off` (dropped).
 | `ask` | act, max 3, `rounds: 3`, `wait: 24h` | max 2, `rounds: 2`, `wait: never` | max 5, `wait: "0"` |
 | `ready` | act, max 5 | propose | max 10 |
 | `close-duplicate` | act, max 3 | propose | max 5 |
+| `kind` | act, max 10 | propose | max 20 |
 | `open` | act, max 30 (importing) | | |
 
 An empty cell is the `normal` value. `ask.rounds` also bounds the
