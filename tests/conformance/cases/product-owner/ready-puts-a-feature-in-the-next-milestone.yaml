@@ -1,0 +1,24 @@
+case: product-owner/ready-puts-a-feature-in-the-next-milestone
+about: >
+  A feature with no milestone (ADR-0060, for the maintainer, point 2): at
+  `merge: {autonomy: enterprising}`, the product owner makes #9, labelled
+  `enhancement`, ready; the engine puts it in the next open milestone,
+  whose release candidate a person tries. v2.4's candidate is cut
+  already (`release/v2.4` on origin): its branch takes no more features,
+  so v2.5.
+given:
+  repo: backlog
+  config: {merge: {autonomy: enterprising}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git tag v2.3.0 && git branch release/v2.4 && git push -q origin main release/v2.4 --tags"
+  forge:
+    milestones: ["v2.4", "v2.5"]
+    issues:
+      - {id: 9, title: "Rows exported as JSON", body: "## Need\n\nThe monthly report exports JSON too.\n\n## Verification\n\nA test writes three rows.\n\n## Validation\n\nAnn exports a known day.\n\n## Scope\n\nsrc/export/csv.go", author: ann, insider: true, labels: [enhancement, workline:to-refine], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:ready-a-feature}
+expect:
+  findings:
+    - {rule: milestone-set, where: "#9", message: "a feature, put in milestone v2.5"}
+  forge:
+    issues:
+      - {id: 9, milestone: v2.5, labels: [enhancement, workline:ready]}

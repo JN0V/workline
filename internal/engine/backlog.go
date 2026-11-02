@@ -605,6 +605,7 @@ func (a *applier) refining(c backlog.Proposal) error {
 		if missing := backlog.NotReady(*is, st, accepted || assumed); len(missing) > 0 {
 			return nil // changed since the plan: it stays to refine
 		}
+		a.featureMilestone(*is)
 		if assumed {
 			body := backlog.WithAssumption(backlog.StripDrafts(is.Body), c.Written)
 			if err := b.SetBody(c.Issue, body); err != nil {
@@ -776,6 +777,29 @@ func testsFirst(repo string, is forge.Issue) bool {
 	line, err := routing.Load(repo)
 	return err == nil && line.Runs("tester") &&
 		len(tester.Scenarios(work.ByMeaning(is.Body)[work.Validation].Text)) > 0
+}
+
+// featureMilestone puts a feature made ready in the next open milestone
+// when the project's merge is `enterprising` (ADR-0060): its release
+// candidate is what a person tries. One in a milestone already stays
+// there; a milestone that cannot be set is said, the ready kept.
+func (a *applier) featureMilestone(is forge.Issue) {
+	if kind, _ := backlog.KindOf(is.Labels); kind != backlog.KindFeature || is.Milestone != "" {
+		return
+	}
+	pc, err := role.LoadProjectConfig(a.repo)
+	if err != nil || pc.Merge == nil || pc.Merge.Autonomy != MergeEnterprising {
+		return
+	}
+	where := fmt.Sprintf("#%d", is.ID)
+	title, err := featureMilestone(a.forge, a.repo, is.ID)
+	if err != nil {
+		a.findings = append(a.findings, verdict.Finding{Rule: "milestone-not-set", Level: "warn", Where: where,
+			Message: "a feature, at `merge: {autonomy: enterprising}`, but it could not be put in a milestone, its release candidate's: " + forge.Said(err)})
+		return
+	}
+	a.findings = append(a.findings, verdict.Finding{Rule: "milestone-set", Where: where,
+		Message: fmt.Sprintf("a feature, put in milestone %s: its release candidate is tried before the version ships", title)})
 }
 
 // readyMove is the move a ready makes on the forge's board: its ready

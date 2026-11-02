@@ -1,0 +1,52 @@
+case: developer/merge-enterprising-admits-developer-feature
+about: >
+  A feature merges alone (ADR-0060, §4): at `merge: {autonomy:
+  enterprising}`, the developer's pull request for #3, an issue labelled
+  `enhancement`, passes every gate — workline's own, its head's verdict
+  passed, no finding of the reviewer's open but a nit. It merges with no
+  person's yes, as a fix does at `normal`: the person's yes moves to the
+  milestone's release candidate. #3 is in no milestone: `workline follow`
+  puts it in the next one, none open, so v0.1, the version past every one
+  origin's tags name (none here).
+given:
+  repo: tested-draft
+  config: {merge: {autonomy: enterprising}}
+  setup:
+    - "git checkout -q -b workline/developer/3 && GIT_COMMITTER_NAME=workline-bot git commit -q --amend --no-edit && printf 'add() { echo $(($1 + $2)); }\\nmul() { echo $(($1 * $2)); }\\n' > lib.sh && GIT_COMMITTER_NAME=workline-bot git commit -qam 'feat: mul for #3' -m 'Workline-Role: developer' && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main workline/developer/3 && git checkout -q main"
+  forge:
+    statuses:
+      - {commit: "main", name: workline/merge-read, state: success, description: "reverts read; held:", by: workline-bot}
+      - {commit: "workline/developer/3", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+    issues:
+      - id: 3
+        title: "a mul"
+        labels: ["enhancement", "workline:developing"]
+        body: "## Need\n\nA mul.\n\n## Scope\n\n- `lib.sh`: `mul`.\n"
+    merge-requests:
+      - id: 2
+        branch: workline/developer/3
+        base: main
+        author: workline-bot
+        bot: true
+        title: "a mul"
+        body: "Closes #3"
+        labels: []
+        pushes: [{head: workline/developer/3, at: "2026-01-04T09:00:00Z", by: workline-bot}]
+        comments:
+          - "**The developer**'s record of this pull request, for its next runs and the auditor.\n\n<!-- workline:developer-act {\"act\":\"code\",\"issue\":3,\"code\":[\"lib.sh\"],\"proof\":{\"result\":\"green\",\"passed\":2}} -->\n<!-- workline:sticky=developer/code -->"
+          - "**workline reviewer**\n\n| | | Where | Finding |\n|---|---|---|---|\n| warns | naming | `lib.sh:2` | Nit: a one-letter name. |\n\n<!-- workline:record reviewed=1111111 runs=1 -->\n<!-- workline:sticky=reviewer/summary -->"
+run: {follow: [--base, main], summary: true}
+expect:
+  status: pass
+  findings:
+    - {rule: milestone-set, where: "#2", message: "#3, a feature, put in milestone v0.1"}
+    - {rule: auto-merge-on, where: "#2", message: "with no person's yes, workline's own code — the developer's code for #3, a feature: its issue labelled `enhancement` —"}
+  no-findings: [{rule: waits-for-a-yes}, {rule: merge-app-unknown}]
+  summary-file: ["merge policy (enterprising;", "accepted into main, #2", "auto-merge turned on for 1"]
+  forge:
+    issues:
+      - {id: 3, milestone: v0.1}
+    merge-requests:
+      - {id: 2, auto-merge: true, labels: [], comment-contains: ["Merging with no person's yes", "the project's merge policy is `enterprising`", "workline:merge-alone=code"]}
+    statuses:
+      - {commit: "workline/developer/3", name: workline/accepted, state: success, by: workline-bot}

@@ -1,0 +1,43 @@
+case: merge/candidate-yes-ships-the-version
+about: >
+  The yes ships (ADR-0060, §4): `release/v1.1` was cut, the release tool
+  tagged `v1.1.0-rc.1` there, its commit bumping the version and the
+  changelog. #8, the candidate's issue, is labelled `workline:accepted`
+  by dana, who may push and merge, after the tag. The branch holds
+  nothing past the candidate tried: `workline follow` asks the release
+  tool for `1.1.0` on it (`Release-As:`), says so on #8, closes #8 and
+  the milestone. The tool tags and publishes the version; workline tags
+  nothing (ADR-0017).
+given:
+  repo: tested
+  config: {merge: {autonomy: enterprising}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git tag v1.0.0 && git push -q origin main --tags"
+    - "git checkout -qb release/v1.1 && git commit -q --allow-empty -m 'chore: release 1.1.0-rc.1' -m 'Release-As: 1.1.0-rc.1' && printf '# Changelog\\n\\n## 1.1.0-rc.1\\n' > CHANGELOG.md && git add CHANGELOG.md && git commit -qm 'chore(release/v1.1): release 1.1.0-rc.1 (#9)' && git tag v1.1.0-rc.1 && git push -q origin release/v1.1 --tags && git checkout -q main"
+  forge:
+    milestones: ["v1.1"]
+    statuses:
+      - {commit: "main", name: workline/merge-read, state: success, description: "reverts read; held:", by: workline-bot}
+    issues:
+      - {id: 3, title: "mul", labels: [enhancement], milestone: v1.1, closed: true, body: "## Need\n\nmul.\n"}
+      - id: 8
+        title: "Release candidate v1.1.0-rc.1: try it, then say yes"
+        author: workline-bot
+        labels: ["workline:candidate", "workline:accepted"]
+        milestone: v1.1
+        body: "A candidate.\n\n<!-- workline:candidate=v1.1.0-rc.1 -->"
+        label-events:
+          - {label: "workline:candidate", added: true, author: workline-bot, bot: true, created: "2026-01-03T00:00:00Z"}
+          - {label: "workline:accepted", added: true, author: dana, writer: true, insider: true, created: "2026-01-05T10:00:00Z"}
+run: {follow: [--base, main], summary: true}
+expect:
+  status: pass
+  findings:
+    - {rule: candidate-shipped, where: "#8", message: "@dana's yes to v1.1.0-rc.1: the release tool asked for v1.1.0 on release/v1.1"}
+  pushed-message: {release/v1.1: "Release-As: 1.1.0\n"}
+  summary-file: ["v1.1.0 shipped on @dana's yes"]
+  forge:
+    issues:
+      - {id: 8, closed: true, comment-contains: ["**Shipping v1.1.0**: @dana's yes to `v1.1.0-rc.1`"]}
+    milestones: []
+    closed-milestones: ["v1.1"]

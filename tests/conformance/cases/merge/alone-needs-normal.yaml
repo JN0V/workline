@@ -6,4 +6,4 @@ given:
 run: {cli: [follow, --base, main]}
 expect:
   exit: 64
-  stderr: [".workline/config.yaml: merge.alone lets kinds merge with no person's yes, which only autonomy normal does: autonomy is \"cautious\""]
+  stderr: [".workline/config.yaml: merge.alone lets kinds merge with no person's yes, which only autonomy normal or enterprising does: autonomy is \"cautious\""]

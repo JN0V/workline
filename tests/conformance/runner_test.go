@@ -300,6 +300,10 @@ type forgeWant struct {
 	Issues        []itemWant `yaml:"issues"`
 	MergeRequests []itemWant `yaml:"merge-requests"`
 	Labels        []itemWant `yaml:"labels"` // labels defined, their name as id
+	// Milestones and ClosedMilestones: the open milestones, and those
+	// closed, exactly these, by title.
+	Milestones       *[]string `yaml:"milestones"`
+	ClosedMilestones *[]string `yaml:"closed-milestones"`
 	// Statuses: each must be the last status of its name on its commit (a
 	// revision of the repository) — by, state and a part of its description
 	// when given; absent: none of that name there.
@@ -1967,6 +1971,18 @@ func compareForge(want *forgeWant, file string) []string {
 	}{{"issues", want.Issues}, {"merge-requests", want.MergeRequests}, {"labels", want.Labels}} {
 		for _, wm := range kind.items {
 			p = append(p, compareItem(kind.name, wm, got[kind.name])...)
+		}
+	}
+	var ms forge.FakeState
+	if err := json.Unmarshal(data, &ms); err != nil && (want.Milestones != nil || want.ClosedMilestones != nil) {
+		p = append(p, "the forge's milestones could not be read: "+err.Error())
+	}
+	for _, m := range []struct {
+		name       string
+		want, have *[]string
+	}{{"open milestones", want.Milestones, &ms.Milestones}, {"closed milestones", want.ClosedMilestones, &ms.ClosedMilestones}} {
+		if m.want != nil && strings.Join(*m.want, "\x00") != strings.Join(*m.have, "\x00") {
+			p = append(p, fmt.Sprintf("%s: got %q, want %q", m.name, *m.have, *m.want))
 		}
 	}
 	return p
