@@ -31,7 +31,8 @@ merge: {autonomy: enterprising}
 - **It goes into a milestone** named by a version, `v1.4`: the product
   owner puts it there when it makes the issue ready; one readied
   before, `workline follow` before it merges. The next open milestone
-  whose candidate is not cut; none, the next minor version, opened.
+  whose candidate is not cut, its version not out yet; none, the next
+  minor version, opened.
 - **Its issues all closed**, `workline follow` cuts `release/v1.4` from
   `main` and asks the release tool for `1.4.0-rc.1` there. It opens the
   candidate's issue in the milestone, labelled `workline:candidate`.

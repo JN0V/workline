@@ -166,7 +166,8 @@ func (r remote) highest(ms []forge.Milestone) minor {
 
 // NextMilestone is the milestone a feature goes into (ADR-0060, for the
 // maintainer, point 2): the open milestone of the lowest version whose
-// candidate is not cut yet; none, the next minor version past every one
+// candidate is not cut yet, past the last version released; none, the
+// next minor version past every one
 // origin and the milestones name, opened by SetMilestone. Its title, and
 // whether it is opened.
 func NextMilestone(b forge.Backlog, repo string) (string, bool, error) {
@@ -178,11 +179,11 @@ func NextMilestone(b forge.Backlog, repo string) (string, bool, error) {
 	if err != nil {
 		return "", false, err
 	}
-	best, title := minor{}, ""
+	best, title, released := minor{}, "", r.released()
 	for _, m := range ms {
 		v, ok := milestoneVersion(m.Title)
-		if _, cut := r.branches[v.branch()]; !ok || cut {
-			continue
+		if _, cut := r.branches[v.branch()]; !ok || cut || !released.less(v) {
+			continue // cut already, or out: an old milestone left open
 		}
 		if title == "" || v.less(best) {
 			best, title = v, m.Title
@@ -592,10 +593,12 @@ func (c *candidateRun) yes(title string, v minor, is forge.Issue, btip string) (
 	if err := c.f.Comment(t, body, forge.Marker("candidate-shipped=v"+v.version())); err != nil {
 		return "", err
 	}
-	if err := c.b.Close(is.ID, 0); err != nil {
+	// The milestone first: a run that stops between the two finds the
+	// issue still open, and closes it then.
+	if err := c.mi.CloseMilestone(title); err != nil {
 		return "", err
 	}
-	if err := c.mi.CloseMilestone(title); err != nil {
+	if err := c.b.Close(is.ID, 0); err != nil {
 		return "", err
 	}
 	c.say("candidate-shipped", "", where, fmt.Sprintf("%s's yes to %s: the release tool asked for v%s on %s; #%d and milestone %s closed", by, tag, v.version(), v.branch(), is.ID, title))
