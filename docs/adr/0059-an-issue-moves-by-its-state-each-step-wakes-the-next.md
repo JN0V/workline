@@ -14,6 +14,7 @@
   [ADR-0032], `unready` done alone ([amendment](#amendment-2026-11-01-back-to-refine-needs-no-yes));
   [routing.md](../spec/routing.md), its states and
   [the chaining](#explicit-chaining-and-the-engines-own-writes)
+- **Amended by:** [ADR-0060](0060-the-person-is-on-the-loop.md#4-a-person-validates-by-the-issues-kind), once built: Blocked's reason "not reproduced"; a bug's proof kind is always `new-tests`, red on the base
 
 ## Context
 

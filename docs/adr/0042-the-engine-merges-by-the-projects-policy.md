@@ -22,6 +22,7 @@
   (a status earned by written criteria), [ADR-0038] (a person's yes is a
   forge label; silence is never a yes); principles 1, 4, 6, 12, 13
 - **Research:** [merging.md](../research/merging.md)
+- **Amended by:** [ADR-0060](0060-the-person-is-on-the-loop.md#4-a-person-validates-by-the-issues-kind), once built: at `enterprising`, a feature merges by the policy and the person's yes moves to the milestone's release candidate
 
 ## Context
 

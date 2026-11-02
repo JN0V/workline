@@ -22,6 +22,7 @@
 - **Amended by:** [ADR-0059](0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md): only Ready wakes it, by the issue's
   state; it accepts the tester's proof kind for a Draft; past its last
   review round, the issue is blocked, no `workline:human` label
+- **Amended by:** [ADR-0060](0060-the-person-is-on-the-loop.md#4-a-person-validates-by-the-issues-kind), once built: a bug's fix starts from a test red on the base; at `enterprising`, a feature's yes is the release candidate's
 
 ## Context
 
