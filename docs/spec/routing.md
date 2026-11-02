@@ -425,6 +425,18 @@ whose result moves the issue to the next. The table is the routing's
   then (`backlog.Unrevised`). The step is due again, once a review
   (`revise`, the review's hash): the product owner rewrites it, the
   person no longer waited on.
+- **A question past its delay**
+  ([ADR-0060](../adr/0060-the-person-is-on-the-loop.md#1-questions-time-out-as-lazy-consensus)):
+  in refine, acted on, the product owner's question to the reporter
+  unanswered past `acts.ask.wait` — counted from the question's comment
+  as the forge dates it (`created_at`), never the issue's last update —,
+  or its drafts, all it lacks, unaccepted past it (from the forge's time
+  of `workline:draft`). The step is due again, once
+  (`state-timeout`; `timeout` in the record, `ask=N` or
+  `drafts=<body>`), no agent until then: the product owner writes its
+  assumption, or takes the drafts as written. An answer before the
+  delay cancels it; `wait: never` (cautious) wakes none
+  ([settings](../../roles/product-owner/docs/settings.md#how-long-a-question-waits)).
 - **Not for an outside failure**: a step that ended
   `blocked-external`, its agent out of reach, keeps no record: the next
   event or reconciler runs it again.

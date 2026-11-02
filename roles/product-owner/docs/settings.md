@@ -1,5 +1,5 @@
 ---
-sources: [roles/product-owner/role.yaml, internal/backlog/autonomy.go, internal/backlog/ledger.go, internal/sample/acts.go, internal/scale/detect.go]
+sources: [roles/product-owner/role.yaml, internal/backlog/autonomy.go, internal/backlog/ledger.go, internal/backlog/assume.go, internal/sample/acts.go, internal/scale/detect.go]
 checked: a7467d4f
 verified: agent:claude-code
 ---
@@ -45,13 +45,44 @@ issue, for a person to accept) or `off` (dropped).
 |---|---|---|---|
 | `sources` | act, max 10 | | |
 | `refine` | act, max 5 | Need and Validation drafts proposed (`drafts: propose`) | max 10 |
-| `ask` | act, max 3, `rounds: 3` | max 2, `rounds: 2` | max 5 |
+| `ask` | act, max 3, `rounds: 3`, `wait: 24h` | max 2, `rounds: 2`, `wait: never` | max 5, `wait: "0"` |
 | `ready` | act, max 5 | propose | max 10 |
 | `close-duplicate` | act, max 3 | propose | max 5 |
 | `open` | act, max 30 (importing) | | |
 
 An empty cell is the `normal` value. `ask.rounds` also bounds the
 revisions a person's comments get: the first draft and two more.
+
+## How long a question waits
+
+`acts.ask.wait` is how long a question to an issue's reporter, or a
+Need or Validation draft no person accepted, waits for an answer
+([ADR-0060](../../../docs/adr/0060-the-person-is-on-the-loop.md#1-questions-time-out-as-lazy-consensus)):
+
+| Level | `wait` | A question unanswered |
+|---|---|---|
+| `cautious` | `never` | waits for the answer |
+| `normal` | `24h` | waits 24 h, then the role writes its assumption |
+| `enterprising` | `"0"` | the assumption is written in the run that asks |
+
+- **Values**: a duration (`24h`, `90m`, `2d`), `"0"`, or `never`;
+  anything else stops the run, said.
+- **Counted from the question's comment**, as the forge dates it,
+  never from the issue's last update; a draft from when the issue got
+  `workline:draft`, or from a person's later comment.
+- **An answer before the delay** cancels it: no assumption.
+- **Past the delay**, the line wakes the role once, with no agent until
+  then; one agent call writes the assumption
+  ([on the issue](writing.md#assumptions)). A draft needs none: the
+  engine takes it as written and moves the issue to ready.
+- **Silence is still no yes** to close, merge or release.
+
+```yaml
+roles:
+  product-owner:
+    settings:
+      acts: {ask: {wait: 4h}}
+```
 
 ## Off by default
 

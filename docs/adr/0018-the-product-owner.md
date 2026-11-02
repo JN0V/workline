@@ -13,7 +13,7 @@
 - **Builds on:** ADR-0014 (`checked` earned by what was read), ADR-0015
   (the weekly sample), ADR-0016 (writes go to the project's forge),
   docs/spec/routing.md ("Work starts from a clear need")
-- **Amended by:** [ADR-0060](0060-the-person-is-on-the-loop.md#1-questions-time-out-as-lazy-consensus), once built: a question, or a Validation draft, unanswered past its level's delay is taken as an assumption written beside the person's text; Verification and Scope are the role's at every level
+- **Amended by:** [ADR-0060](0060-the-person-is-on-the-loop.md#1-questions-time-out-as-lazy-consensus): a question, or a Validation draft, unanswered past its level's delay is taken as an assumption written beside the person's text; Verification and Scope are the role's at every level
 
 ## Context
 

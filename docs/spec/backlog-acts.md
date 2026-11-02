@@ -30,7 +30,7 @@ changed need are off by default, their code kept.
 | [Importing a file](backlog-acts/import.md) | A file moved to issues once, and [the map](backlog-acts/import.md#the-map-every-item-to-its-issue-or-why-not) of its items. |
 | [Closing](backlog-acts/closing.md) | A duplicate closed, and an issue [obsolete: announced, then closed](backlog-acts/closing.md#obsolete-announced-then-closed). |
 | [Milestones and ordering](backlog-acts/order.md) | [Milestones](backlog-acts/order.md#milestones), and [Ordering](backlog-acts/order.md#ordering): an issue's priority. |
-| [Refining to ready](backlog-acts/refine.md) | `refine`, `ready`, `unready`, `ask`; [a blocked issue read again](backlog-acts/refine.md#a-blocked-issue-read-again), `unblock`, `blocked`; [a body's footer](backlog-acts/refine.md#a-bodys-footer); [naming its sources](backlog-acts/refine.md#naming-its-sources). |
+| [Refining to ready](backlog-acts/refine.md) | `refine`, `ready`, `unready`, `ask`; [a question nobody answers](backlog-acts/refine.md#a-question-nobody-answers), `assume`; [a blocked issue read again](backlog-acts/refine.md#a-blocked-issue-read-again), `unblock`, `blocked`; [a body's footer](backlog-acts/refine.md#a-bodys-footer); [naming its sources](backlog-acts/refine.md#naming-its-sources). |
 | [A spec read before ready](backlog-acts/spec-review.md) | The reviewer's findings on a refined issue, holding its `ready`. |
 | [Splitting and renaming](backlog-acts/split.md) | [Splitting](backlog-acts/split.md#splitting) an issue into its parts, and [Renaming](backlog-acts/split.md#renaming) it. |
 | [A parent and its parts](backlog-acts/parent.md) | A parent reported on as its parts close. |

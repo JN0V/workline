@@ -15,7 +15,7 @@
   [ADR-0035](0035-the-engine-writes-the-jobs-summary.md) (the job's
   summary); principles 1, 4, 13, 14
 - **Research:** [surfacing-proposals.md](../research/surfacing-proposals.md)
-- **Amended by:** [ADR-0060](0060-the-person-is-on-the-loop.md#1-questions-time-out-as-lazy-consensus), once built: a question unanswered past its level's delay becomes a written assumption; silence stays no yes to close, merge or release
+- **Amended by:** [ADR-0060](0060-the-person-is-on-the-loop.md#1-questions-time-out-as-lazy-consensus): a question unanswered past its level's delay (`acts.ask.wait`) becomes a written assumption; silence stays no yes to close, merge or release
 
 ## Context
 
