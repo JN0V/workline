@@ -1,0 +1,27 @@
+case: routing/payload-other-note-runs-nothing
+about: >
+  GitLab's webhook on note events fires on every comment, the engine's
+  own too (ADR-0059, #846): one that is not the reviewer's on a spec —
+  here the line's own record — runs nothing, at once, no forge read, no
+  agent. One event, at most one run: the engine's comments never loop.
+given:
+  repo: tested
+  env:
+    TRIGGER_PAYLOAD: '{"object_kind":"note","event_type":"note","user":{"username":"workline-bot"},"object_attributes":{"note":"**workline''s line** last woke the product-owner.\n\n<!-- workline:sticky=line/state -->","noteable_type":"Issue","action":"create"},"issue":{"iid":3,"labels":[{"title":"workline:to-refine"}]}}'
+  config:
+    routing: {events: {issue: [product-owner, reviewer, tester, developer]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply"
+        labels: ["workline:to-refine"]
+        labeled: {"workline:to-refine": "2026-10-31T09:00:00Z"}
+        body: "## Need\n\nI want to multiply.\n"
+        comments:
+          - "**The reviewer** read this spec: nothing holds it from ready.\n\n<!-- workline:spec-review body=8a828a06be19 round=1 open=0 -->\n<!-- workline:sticky=reviewer/spec -->"
+run: {route: issue, open-merge-request: true, ai: "fake:ready-nine", input: {reconcile: list}}
+expect:
+  status: pass
+  summary: "issue: #3 got a comment, not the reviewer's on its spec: nothing to run"
+  agent-calls: 0
+  steps: []

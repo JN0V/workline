@@ -376,7 +376,11 @@ whose result moves the issue to the next. The table is the routing's
   yet: the apply writes both
   ([#840](https://github.com/JN0V/workline/issues/840)). Its review,
   written since, makes the step due again: the product owner reads it
-  then, and readies the issue.
+  then, and readies the issue. On GitHub the apply that wrote it starts
+  that step; on GitLab the webhook's note event does, the reviewer's
+  comment on the spec of an issue in refine being the one comment that
+  names an issue
+  ([#846](https://github.com/JN0V/workline/issues/846)).
 - **The wait said**: the product owner holding the issue for that
   review (`spec-not-reviewed`), the line's comment on it says what it
   waits for, and what comes next; the next record drops it.
