@@ -1972,6 +1972,40 @@ func TestDeveloperJudgesKeepNoCredential(t *testing.T) {
 	}
 }
 
+// The developer's agent has a shell in CI (#900): Claude Code boxes each
+// command with bubblewrap, its network through socat, so the jobs that
+// run it install both with the agent.
+func TestDeveloperJobsRunTheirAgentsShellAndTheHead(t *testing.T) {
+	for _, f := range []string{"../../ci/github/workline-develop.yml", "../../.github/workflows/workline-develop.yml"} {
+		data, err := os.ReadFile(f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var wf struct {
+			Jobs map[string]struct {
+				Steps []struct {
+					Uses string         `yaml:"uses"`
+					With map[string]any `yaml:"with"`
+					Run  string         `yaml:"run"`
+				} `yaml:"steps"`
+			} `yaml:"jobs"`
+		}
+		if err := yaml.Unmarshal(data, &wf); err != nil {
+			t.Fatalf("%s: %v", f, err)
+		}
+		for _, name := range []string{"judge", "review"} {
+			shell := false
+			for _, s := range wf.Jobs[name].Steps {
+				shell = shell || strings.Contains(s.Run, "@anthropic-ai/claude-code") && strings.Contains(s.Run, "apt-get install") &&
+					strings.Contains(s.Run, "bubblewrap socat")
+			}
+			if !shell {
+				t.Errorf("%s, job %s: the agent installed without bubblewrap and socat, its shell runs no command", f, name)
+			}
+		}
+	}
+}
+
 // workline's own tests run where its roles prove code, not in the test job
 // alone: the developer's proof, the tester's, the curator's measures. Each
 // job that leaves Go set up for them has the tools the test job has, from

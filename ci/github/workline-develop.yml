@@ -109,7 +109,12 @@ jobs:
         uses: ./.github/actions/workline-setup
       - name: Claude, when the repository gives its token
         if: steps.due.outputs.due == 'true' && env.HAS_CLAUDE == 'true'
-        run: npm install -g @anthropic-ai/claude-code
+        # Its shell: Claude Code boxes each command with bubblewrap, its
+        # network through socat; either missing, no command runs (#900).
+        run: |
+          npm install -g @anthropic-ai/claude-code
+          command -v bwrap >/dev/null && command -v socat >/dev/null ||
+            { sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends bubblewrap socat; }
       - name: The issue line (proposals only)
         id: line
         if: steps.due.outputs.due == 'true'
@@ -421,7 +426,12 @@ jobs:
           "$bin/workline" version
       - name: Claude, when the repository gives its token
         if: env.HAS_CLAUDE == 'true'
-        run: npm install -g @anthropic-ai/claude-code
+        # Its shell: Claude Code boxes each command with bubblewrap, its
+        # network through socat; either missing, no command runs (#900).
+        run: |
+          npm install -g @anthropic-ai/claude-code
+          command -v bwrap >/dev/null && command -v socat >/dev/null ||
+            { sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends bubblewrap socat; }
       - name: The round (proposed only)
         id: round
         env:
