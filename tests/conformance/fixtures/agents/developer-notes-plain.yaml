@@ -1,0 +1,6 @@
+# The developer's agent writing no code, and saying why in a note written
+# as plain text, with no issue number: the note is on its own issue.
+- note: |
+    Issue #3 is not done. This run made no edits.
+
+    The scope names a file the bounds do not hold.

@@ -491,11 +491,10 @@ func bounded(repo string, b Bounds, claim, proposed []intent.Intention) (kept []
 				objections = append(objections, forge.LineComment{Path: o.Test, Line: o.Line, Key: o.key(), Body: o.body()})
 			}
 		case i.Kind == "note":
-			m, _ := i.Value.(map[string]any)
-			body, _ := m["body"].(string)
+			on, body := proposedNote(i.Value, b.Issue)
 			switch {
-			case fmt.Sprint(m["issue"]) != strconv.Itoa(b.Issue):
-				said = append(said, fmt.Sprintf("a note on #%v: the developer's one note is on its own issue, #%d (not-the-developers)", m["issue"], b.Issue))
+			case on != strconv.Itoa(b.Issue):
+				said = append(said, fmt.Sprintf("a note on #%s: the developer's one note is on its own issue, #%d (not-the-developers)", on, b.Issue))
 			case strings.TrimSpace(body) == "":
 				said = append(said, "a note with no body: nothing to post")
 			case noted:
@@ -529,6 +528,24 @@ func bounded(repo string, b Bounds, claim, proposed []intent.Intention) (kept []
 			"review": map[string]any{"head": b.Head, "body": "", "comments": objections}}})
 	}
 	return kept, refused, said
+}
+
+// proposedNote reads a note's issue and body: a map {issue, body}, its
+// body given as text too, or plain text, as the intentions' schema shows
+// a note (#902). A note naming no issue is on the developer's own.
+func proposedNote(v any, own int) (issue, body string) {
+	if text, ok := v.(string); ok {
+		return strconv.Itoa(own), text
+	}
+	m, _ := v.(map[string]any)
+	body, _ = m["body"].(string)
+	if body == "" {
+		body, _ = m["text"].(string)
+	}
+	if n, ok := m["issue"]; ok && n != nil {
+		return fmt.Sprint(n), body
+	}
+	return strconv.Itoa(own), body
 }
 
 // touched lists the files a patch touches: its `file`, the `---` and
