@@ -1,6 +1,6 @@
 ---
 type: reference
-sources: [internal/backlog/backlog.go, internal/backlog/proof.go, internal/backlog/plain.go, internal/backlog/repeat.go, internal/backlog/write.go, internal/work/headings.go, internal/work/work.go, internal/forge/forge.go, internal/engine/backlog.go]
+sources: [internal/backlog/backlog.go, internal/backlog/proof.go, internal/backlog/plain.go, internal/backlog/repeat.go, internal/backlog/write.go, internal/work/headings.go, internal/work/work.go, internal/work/scenarios.go, internal/backlog/scenarios.go, internal/forge/forge.go, internal/engine/backlog.go]
 status: draft
 checked: ae4bddea
 verified: agent:claude-code
@@ -137,6 +137,18 @@ what it can and asks for the rest:
   gets `workline:needs-tests` instead: the tester's result makes it
   ready
   ([ADR-0059](../../adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#3-tests-wakes-the-tester-its-result-makes-ready)).
+  Scenarios are read in the forms people write Gherkin in Markdown
+  (`work.Scenarios`, the one parser of the product owner, the tester
+  and the developer): a bullet opening on its name in bold, `- **Name:**
+  Given …`; a line naming it — `**Scenario: Name**`, `Scenario: Name`, a
+  heading, a bold name alone — its steps below; the same in fenced
+  code. A Validation holding Given / When / Then with none of these is
+  held in refine where the tester is routed (`scenarios-unread`), said
+  on the issue in the role's comment with the form expected, and kept
+  until it reads ([#855](https://github.com/JN0V/workline/issues/855)):
+  the role's own text, the agent is told once a body to rewrite it (a
+  `refine`, the Validation among those it revises); a person's, a person
+  rewrites it, the agent told to `ask` its reporter.
   An issue ready from before the line, kept by a `ready`, goes there
   too while it has no Draft of the tester's open nor a proof kind
   recorded; otherwise its labels stay

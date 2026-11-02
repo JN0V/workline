@@ -33,7 +33,13 @@ first, the cause folded.
 - **Example**: one real case — a named person or role, numbers with
   their unit, a real command or output, today next to what is wanted;
   only with a fact the Need lacks.
-- **Validation**: named scenarios a person runs, as Given / When / Then.
+- **Validation**: named scenarios a person runs, as Given / When / Then,
+  each a bullet `- **Name:** Given …, When …, Then …`.
+  - **Also read**: a `**Scenario: Name**` or `Scenario: Name` line, its
+    steps below, bullets or not; the same in a fenced `gherkin` block.
+  - **Given / When / Then with no name**: no test can cite it, so the
+    issue stays in refine, said on it, until the scenarios are named
+    ([refining to ready](../../../docs/spec/backlog-acts/refine.md)).
 - **A bug**: the Need says who it hurts; Steps to reproduce, then
   Expected, Actual, the version; its Validation repeats the steps, the
   expected result as the Then.

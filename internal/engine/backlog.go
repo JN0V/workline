@@ -789,6 +789,7 @@ func planActs(f forge.Forge, r *role.Role, settings map[string]any, st runState,
 		return nil, err
 	}
 	cfg.SpecReview = line.Follows(role, backlog.SpecReviewer)
+	cfg.Tester = line.Runs("tester")
 	// The board's ready column a ready moves the card to (ADR-0057); a
 	// board out of reach is said and moves nothing.
 	for _, c := range closes {

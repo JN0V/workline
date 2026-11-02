@@ -88,6 +88,10 @@ type Config struct {
 	// ToTests says go there; nil, the ready column's. Set by the caller.
 	Tests   *board.Move
 	ToTests func(forge.Issue) bool
+	// Tester: the project's line routes the tester, so a ready holds an
+	// issue whose Validation no test can name (#855); set by the caller,
+	// from the routing.
+	Tester bool
 	// Read is what the run read the backlog with, kept with each act it
 	// does (ADR-0046); set by the caller, from the run.
 	Read Read

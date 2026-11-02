@@ -153,6 +153,7 @@ func Pre(runDir, repo string) int {
 		return fail(err)
 	}
 	cfg.SpecReview = line.Follows(role, backlog.SpecReviewer)
+	cfg.Tester = line.Runs("tester")
 	var fallback []intent.Intention
 	var findings []verdict.Finding
 	for _, name := range cfg.Gone {
@@ -550,6 +551,10 @@ func Pre(runDir, repo string) int {
 			// The reviewer's findings on its spec, not given yet: answered
 			// at this refine (#128).
 			changed = append(changed, d)
+		case rewriteUnread(is, st, cfg):
+			// Its own Validation names no scenario the tester reads: the
+			// role rewrites it, told once a body (#855).
+			changed = append(changed, d)
 		case noTestUnread(comments, st, role):
 			// The tester found no test possible: the role picks the
 			// proof, or sends it back to its tests (ADR-0059, decision 4).
@@ -760,6 +765,9 @@ func Pre(runDir, repo string) int {
 					review += noTestSaid(reason)
 				}
 			}
+			if unread, own := backlog.ScenariosUnread(d.is, d.st); unread && cfg.Tester && !backlog.Readied(d.is) {
+				review += backlog.ScenariosUnreadTask(own)
+			}
 			if slices.Contains(d.is.Labels, backlog.LabelBlocked) && d.is.ID == issueEvent() {
 				review += blockedSaid(runDir, d.comments)
 			}
@@ -810,6 +818,9 @@ func Pre(runDir, repo string) int {
 			}
 			if _, digest, ok := backlog.NoTest(d.comments); ok {
 				read.NoTest = digest
+			}
+			if rewriteUnread(d.is, d.st, cfg) {
+				read.Unread = backlog.BodyDigest(d.is.Body)
 			}
 			read.Keep(d.is.Body)
 			t.reads = append(t.reads, intent.Intention{Kind: "comment", Value: map[string]any{
@@ -1316,6 +1327,15 @@ func noTestSaid(reason string) string {
 		"Or, where its %s asks what no test checks and it is your draft, rewrite it so one does, or ask its reporter: a `ready` with no proof sends it back to its tests only beside that rewrite — alone, it is refused, the issue left for a person.\n",
 		strings.TrimSpace(reason), backlog.KindSuite, backlog.ProofKinds[backlog.KindSuite], backlog.KindDocs, backlog.ProofKinds[backlog.KindDocs],
 		backlog.KindFlaky, backlog.ProofKinds[backlog.KindFlaky], work.Name(work.Validation))
+}
+
+// rewriteUnread says whether the agent is told to rewrite an issue's
+// Validation in a form the tester reads (#855): the line routes the
+// tester, the issue is in refine, its Validation the role's own and
+// unread, and the agent not told yet for this body.
+func rewriteUnread(is forge.Issue, st *backlog.State, cfg backlog.Config) bool {
+	unread, own := backlog.ScenariosUnread(is, st)
+	return unread && own && cfg.Tester && !backlog.Readied(is) && st.Unread != backlog.BodyDigest(is.Body)
 }
 
 // author says who wrote a comment, as the agent is told: its reporter, a

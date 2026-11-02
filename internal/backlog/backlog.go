@@ -126,6 +126,10 @@ type State struct {
 	// though it lacks a section: said on the issue until the role acts
 	// on it (ADR-0059, decision 1).
 	Silent string `yaml:"silent,omitempty"`
+	// Unread is the body, by its digest, whose Validation the role was
+	// told to rewrite in a form the tester reads (#855): told once, not
+	// again until the body changes.
+	Unread string `yaml:"unread,omitempty"`
 }
 
 // StateMarker marks the comment holding an issue's state.
@@ -202,8 +206,9 @@ func FormatState(s State) string {
 		Proof     *Proof            `yaml:"proof,omitempty"`
 		NoTest    string            `yaml:"no-test,omitempty"`
 		Silent    string            `yaml:"silent,omitempty"`
+		Unread    string            `yaml:"unread,omitempty"`
 	}{s.Sources, s.Confirmed, s.Judged, s.Comments, s.Body, s.Priority, s.Effort, s.Title, s.Split, s.After, s.Kept, s.Sections, s.Wrote, s.Answered, s.Plain, s.Deleted,
-		s.Proposed, s.Done, s.Undone, s.Did, s.Closed, s.Label, s.Aside, s.Heard, s.Revisions, s.Rules, s.Left, s.Proof, s.NoTest, s.Silent})
+		s.Proposed, s.Done, s.Undone, s.Did, s.Closed, s.Label, s.Aside, s.Heard, s.Revisions, s.Rules, s.Left, s.Proof, s.NoTest, s.Silent, s.Unread})
 	// The record is kept out of sight, in an HTML comment (#548): a forge
 	// mails what a comment shows, and a person reads there only what the
 	// role tells them, never its record.
@@ -340,6 +345,8 @@ func (s State) say() string {
 		lines = append(lines, strings.TrimSpace(Said("The product owner", "leaves this issue in refine, for a person", s.Silent,
 			"a person of the project names its proof in a comment, `proof: <kind> — why`, or edits its "+work.Name(work.Validation)+
 				" so a test checks it; it does not go to its tests again as it stands")))
+	case strings.HasPrefix(s.Silent, ScenariosUnreadSilent):
+		lines = append(lines, strings.TrimSpace(scenariosUnreadSaid(s.Silent)))
 	case s.Silent != "":
 		lines = append(lines, strings.TrimSpace(Said("The product owner", "read this issue and wrote nothing on it", s.Silent,
 			"it reads it again once the issue changes or a person comments: complete it, or name the files it is about in a comment")))
@@ -658,6 +665,7 @@ type Plan struct {
 	bodies    []string        // their bodies, to find an import again
 	seen      map[string]bool // the imports this run decided
 	read      []int           // the issues this run read
+	unread    map[int]bool    // the issues a ready was held for, no scenario read: true, the role's own Validation
 	ledger    *Ledger         // what the role holds, read from the issues
 	ticked    map[string]bool // the proposals a person accepted this run decided, done or dropped: settled
 	added     map[int][]int   // the blockers this run's depend acts add, for the next act's cycle check
@@ -1111,6 +1119,17 @@ func (p *Plan) summary(role string) {
 			}
 			p.Silent[id] = NoTestSilent + strings.Join(strings.Fields(reason), " ")
 		}
+	}
+	for _, id := range sortedKeys(p.unread) {
+		// A ready held, no scenario the tester reads (#855): said on it,
+		// unless something else moved it in this run.
+		if _, said := p.Silent[id]; said || moved[id] || p.aside(id) {
+			continue
+		}
+		if p.Silent == nil {
+			p.Silent = map[int]string{}
+		}
+		p.Silent[id] = scenariosUnreadWhy(p.unread[id])
 	}
 	for _, id := range p.read {
 		is, ok := p.issues[id]
@@ -1714,6 +1733,13 @@ func (p *Plan) checkRefining(f forge.Backlog, repo, role string, c *Proposal) (r
 			if p.config.SpecReview && !c.ToReporter {
 				c.Revise = Revisable(is, st, SpecOpen(is, comments))
 			}
+			if unread, own := ScenariosUnread(is, st); unread && own && p.config.Tester && !c.ToReporter {
+				// Its own Validation, no test could name a scenario of:
+				// rewritten in the form the tester reads (#855).
+				if v := work.ByMeaning(is.Body)[work.Validation].Heading; !slices.Contains(c.Revise, v) {
+					c.Revise = append(c.Revise, v)
+				}
+			}
 			if p.Answers[c.Issue] != nil && !c.ToReporter {
 				// A person's comment on its proposal: the role rewrites
 				// its own sections, never a person's (ADR-0038).
@@ -1738,6 +1764,15 @@ func (p *Plan) checkRefining(f forge.Backlog, repo, role string, c *Proposal) (r
 	case "ready":
 		if missing := NotReady(is, p.ledger.States[c.Issue], Accepted(is)); len(missing) > 0 {
 			return "not-ready", "not moved to ready: " + strings.Join(missing, "; ")
+		}
+		if unread, own := ScenariosUnread(is, p.ledger.States[c.Issue]); unread && p.config.Tester && c.Proof == nil && !Readied(is) {
+			// No test could name a scenario: ready, it would skip its
+			// tests without a word (#855). Held, said on the issue.
+			if p.unread == nil {
+				p.unread = map[int]bool{}
+			}
+			p.unread[c.Issue] = own
+			return "scenarios-unread", fmt.Sprintf("not moved to ready: its %s holds Given / When / Then, but no scenario the tester reads (%s)", work.Name(work.Validation), work.ScenarioForm)
 		}
 		if c.Proof != nil {
 			return p.checkProof(f, c)
