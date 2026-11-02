@@ -201,6 +201,13 @@ hold:
   `reads-trace-not-memory`, `round-three-five-whys`,
   `round-five-hands-to-person`, `person-comment-is-a-round`,
   `round-applied-from-the-default-branch`.
+- **A gate red is a round** ([#891](https://github.com/JN0V/workline/issues/891)):
+  the gates' new findings at its head asked once a report, the
+  inspector's triage beside each; the reconciler starts a round an
+  event missed ([the review loop](review-loop.md#a-round)). Cases
+  `developer/gate-finding-is-a-round`, `gate-finding-read-once`,
+  `gate-finding-of-an-older-head-waits`,
+  `routing/reconcile-lists-a-developer-round-due`.
 
 - **The merge** (step 7): at `normal`, `workline follow` merges its
   pull request with no person's yes, the kind `code`, when the issue it
@@ -304,6 +311,9 @@ column ([the try](https://github.com/JN0V/workline/pull/747#tried)).
 - **The reviewer's full text**: a round reads the reviewer's summary
   table, where a finding with a comment on its line reads short (its
   title); the line's comment, with the why and the fix, is not read.
+- **A gate red on GitLab**: its gates show in the Code Quality report,
+  no comment a round reads; the reviewer's verdict and a person's
+  comment still wake one there.
 - **A finding the developer holds wrong**: said in its round's
   comment; no thread with the reviewer, who decides on its next run.
 

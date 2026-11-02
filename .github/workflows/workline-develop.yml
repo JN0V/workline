@@ -6,8 +6,9 @@
 # issue runs the role its state wakes, the tester or the developer
 # (ADR-0059); the job that moves a state starts the next step; hourly, the
 # reconciler; by hand with no issue, the first ready one nobody took. On
-# its own pull request (workline/developer/…), the
-# reviewer's verdict or a person's comment runs a review round.
+# its own pull request (workline/developer/…), the reviewer's verdict,
+# the gates' report or a person's comment runs a review round; the
+# reconciler starts one an event missed.
 #   judge, review          the agent and a read token.
 #   apply, review-apply    the App's key (environment workline-app), no AI key.
 #   heartbeat              no token; the environment workline-heartbeat, its wait
@@ -18,6 +19,7 @@ name: workline develop
 # of that issue's run is skipped while one is queued or running (#806).
 run-name: >-
   ${{ (github.event_name == 'workflow_dispatch' && inputs.issue != '' && format('workline develop #{0}', inputs.issue)) ||
+  (github.event_name == 'workflow_dispatch' && inputs['pull-request'] != '' && format('workline develop round !{0}', inputs['pull-request'])) ||
   (github.event_name == 'workflow_dispatch' && inputs.reconcile == 'next' && 'workline develop heartbeat') ||
   (github.event_name == 'workflow_dispatch' && inputs.reconcile == 'true' && 'workline develop reconcile') ||
   (github.event_name == 'issues' && github.event.sender.type != 'Bot' && startsWith(github.event.label.name, 'workline:') &&
@@ -32,8 +34,8 @@ on:
       issue: {description: "the issue whose state's step runs; empty: the first ready issue nobody took", required: false, default: ""}
       pull-request: {description: "a review round on this pull request of the developer's, rather than an issue", required: false, default: ""}
       reconcile: {description: "true: the reconciler now, rather than an issue; next: once the heartbeat's wait timer passed", required: false, default: ""}
-  # The reviewer's comment, written or edited by the App (a comment the
-  # job's own token writes wakes nothing), or a person's.
+  # The reviewer's comment or the gates', written or edited by the App (a
+  # comment the job's own token writes wakes nothing), or a person's.
   issue_comment: {types: [created, edited]}
   # The reconciler, hourly: a step an event missed (ADR-0059). A safety
   # net, not the driver. Each reconcile starts the next one, an hour on,
@@ -270,12 +272,14 @@ jobs:
       group: workline-reconcile
       cancel-in-progress: false
     runs-on: ubuntu-latest
-    permissions: {contents: read, issues: read, actions: write}
+    permissions: {contents: read, issues: read, pull-requests: read, actions: write}
     steps:
       - uses: actions/checkout@v4
         with: {fetch-depth: 0, persist-credentials: false}
       - uses: ./.github/actions/engine
-      - env: {GH_TOKEN: "${{ github.token }}"}
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          WORKLINE_APP_ID: ${{ vars.WORKLINE_APP_ID }}   # the App whose comments keep the records read back
         run: |
           wf=$(basename "${GITHUB_WORKFLOW_REF%%@*}")
           # When the last reconcile ended, said when late: the last of the
@@ -303,6 +307,14 @@ jobs:
             fi
             gh workflow run "$wf" --ref "$GITHUB_REF_NAME" -f issue="$n" ||
               echo "::warning title=workline::#$n's run not started: the next hour starts it"
+          done
+          # A review round an event missed, on the developer's pull request.
+          for n in $(jq -r '(.reviews // [])[].id' due.json); do
+            if printf '%s\n' "$busy" | grep -qxF "workline develop round !$n"; then
+              echo "!$n: a round of it is queued or running" >> "$GITHUB_STEP_SUMMARY"; continue
+            fi
+            gh workflow run "$wf" --ref "$GITHUB_REF_NAME" -f pull-request="$n" ||
+              echo "::warning title=workline::!$n's round not started: the next hour starts it"
           done
       # The next reconcile, by the heartbeat (#845), even when this one
       # failed: its run waits the environment's wait timer, in minutes.
@@ -336,7 +348,7 @@ jobs:
     if: >-
       (github.event_name == 'workflow_dispatch' && inputs['pull-request'] != '') ||
       (github.event_name == 'issue_comment' && github.event.issue.pull_request && github.event.issue.state == 'open' &&
-        (contains(github.event.comment.body, 'workline:sticky=reviewer/') ||
+        (contains(github.event.comment.body, 'workline:sticky=reviewer/') || contains(github.event.comment.body, 'workline:sticky=gates/') ||
           (github.event.action == 'created' && github.event.comment.user.type != 'Bot' &&
             contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association))))
     runs-on: ubuntu-latest

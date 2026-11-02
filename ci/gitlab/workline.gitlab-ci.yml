@@ -624,6 +624,17 @@ workline:objection:apply:
         echo "workline: #$n's pipeline not started: the reconciler starts it"; missed="$missed #$n"
       fi
     done
+    # A review round an event missed, on the developer's merge request.
+    for r in $(jq -r '(.reviews // [])[] | "\(.id):\(.branch)"' due.json); do
+      n=${r%%:*}; branch=${r#*:}
+      if curl -fsS -o /dev/null -X POST --form token="$CI_JOB_TOKEN" --form ref="$CI_DEFAULT_BRANCH" \
+        --form "variables[WORKLINE_TASK]=review" --form "variables[MR_IID]=$n" --form "variables[MR_SOURCE_BRANCH]=$branch" \
+        "$CI_API_V4_URL/projects/$CI_PROJECT_ID/trigger/pipeline"; then
+        echo "workline: !$n's round started"
+      else
+        echo "workline: !$n's round not started: the next hour starts it"; missed="$missed !$n"
+      fi
+    done
     [ -z "$missed" ] || exit 3
 
 workline:issue:

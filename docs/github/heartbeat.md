@@ -64,6 +64,8 @@ gh api -X POST repos/OWNER/REPO/environments/workline-heartbeat/deployment-branc
   reconcile job.
 - **API calls**: the reconcile's own, 1 to read when it last ran, and
   2 for the next heartbeat ([the budget](calls.md#the-api-budget)).
+  Where the developer is routed, 1 more to list the pull requests, and
+  a few to read the comments of each of the developer's.
 - **Each `workline:` label**: a job of a few seconds, 1 call to read the
   runs; none starts a reconcile while the heartbeat waits.
 - **Runners**: none while it waits.
