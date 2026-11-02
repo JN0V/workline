@@ -1,0 +1,23 @@
+case: reviewer/spec-owners-section-is-rewritten
+about: "An issue whose Verification the product owner wrote, as its state records it (#847): the reviewer holds it with an important finding there, and its comment says the product owner rewrites it at its next refine; a person may still accept the issue as it reads."
+given:
+  repo: reviewed
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  forge:
+    issues:
+      - id: 4
+        title: The mean of no values
+        body: "## Need\n\nAverage gives 0 for an empty list.\n\n## Verification\n\nThe mean works well.\n\n## Validation\n\nThe maintainer reads the test.\n\n## Scope\n\ncalc/calc.go\n"
+        labels: [workline:to-refine]
+        comments: ["```yaml\nsources: [calc/calc.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nwrote: {Verification: ceb0e3889bbd}\n```\n\n<!-- workline:sticky=product-owner/state -->"]
+    merge-requests: []
+run: {role: reviewer, event: schedule, ai: "fake:review-spec-forge-verification"}
+expect:
+  status: pass
+  findings: [{rule: unverifiable, where: "#4:7"}]
+  forge:
+    issues:
+      - id: 4
+        comments: 2
+        comment-contains: ["**Holds it from ready**: 1 important finding open, round 1 of 5. Verification, the product owner's: it rewrites it at its next refine. The reviewer then reads the spec again. A person may accept the issue as it reads with `workline:accepted`.", "in=Verification -->"]
+        comment-lacks: "a person's"

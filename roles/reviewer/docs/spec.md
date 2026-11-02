@@ -94,7 +94,10 @@ routing:
   - the run's tokens spent, the specs after are not read: nothing
     written on them, each said (`spec-not-read`), read at the next run.
 - **What it writes**: one comment on the issue, edited each review:
-  - what holds it from ready, the findings, the questions for a person;
+  - what holds it from ready, and who answers each section a finding
+    lies in: the product owner, a section that is its own; the person,
+    one they wrote ([#847](https://github.com/JN0V/workline/issues/847));
+  - the findings, the questions for a person;
   - a hidden record (`workline:spec-review`): the body's digest, the
     round, the important findings open and the sections they lie in.
 
