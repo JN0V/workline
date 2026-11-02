@@ -608,7 +608,8 @@ func question(is forge.Issue, b Bounds, test string, testErr error, s Settings) 
 		// objection in prose around YAML, and it was lost (#746).
 		t.WriteString("\nOne that does not fit: object to it in the file `" + ObjectionsFile + "` of your worktree, " +
 			"YAML only, one item an objection:\n\n" +
-			"```yaml\n- test: <file>\n  line: <n>\n  scenario: <its name>\n  kind: <interface | over-specified | contradicts | untestable | need>\n  why: <one or two sentences>\n```\n\n" +
+			"```yaml\n- test: <file>\n  line: <n>\n  scenario: " + scenarioHint(b.Scenarios) + "\n  kind: <interface | over-specified | contradicts | untestable | need>\n  why: <one or two sentences>\n```\n\n" +
+			"The scenario is the issue's, as its "+work.Name(work.Validation)+" names it, not the test's function. " +
 			"The engine reads that file and takes it out of your diff; the tester keeps or rewrites each objection.\n")
 	}
 	if b.Proof != nil {
@@ -640,6 +641,15 @@ func question(is forge.Issue, b Bounds, test string, testErr error, s Settings) 
 	}
 	t.WriteString("\n## Your answer\n\nEdit the files in your worktree, your working directory (`WORKLINE_WORKTREE` for a command), and run the tests. ")
 	return t.String()
+}
+
+// scenarioHint is the objection's scenario in its format: one of the
+// issue's, by name (#913), each whole: a name may hold a comma.
+func scenarioHint(scenarios []string) string {
+	if len(scenarios) == 0 {
+		return "<its name in the issue's " + work.Name(work.Validation) + ">"
+	}
+	return "<one of: " + strings.Join(scenarios, " | ") + ">"
 }
 
 // acceptance are the tests the tester froze for the issue, sorted.

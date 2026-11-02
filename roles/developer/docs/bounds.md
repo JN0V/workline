@@ -179,6 +179,12 @@ The check above, before the push, stays a fast first pass.
   posts it on that line of the tester's Draft, opened by
   `workline:objection`, in [the tester's form](../../tester/README.md#frozen-tests-and-objections).
   The tester keeps or rewrites the test.
+- **The scenario is the issue's**
+  ([#913](https://github.com/JN0V/workline/issues/913)): the question
+  lists the Validation's scenario names in the file's form. A test's
+  name that spells one (`TestNotVouchedFor` for "Not vouched for") is
+  posted as that scenario; one that spells none is not posted, said:
+  the tester could not read it.
 - **One comment per test and line**: an objection still open on its
   line is not posted twice; one on another line of the same test opens
   its own. The developer's comment on the Draft counts those posted
