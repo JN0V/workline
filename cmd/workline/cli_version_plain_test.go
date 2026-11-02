@@ -19,7 +19,9 @@ func captureStderr(t *testing.T, f func() int) (string, int) {
 	os.Stderr = w
 	defer func() { os.Stderr = old }()
 	code := f()
-	w.Close()
+	if err := w.Close(); err != nil {
+		t.Fatal(err)
+	}
 	return string(<-read), code
 }
 
