@@ -10,6 +10,7 @@
   (headings a project names); principles 1, 4, 5, 7, 13
 - **Research:** [issue-formats.md](../research/issue-formats.md);
   worked examples: [the proposed headings](../../roles/product-owner/docs/proposed-headings.md)
+- **Amended by:** [ADR-0060](0060-the-person-is-on-the-loop.md#4-a-person-validates-by-the-issues-kind), once built: a bug its reporter cannot help reproduce, past the delay, is Blocked as "not reproduced"; never another kind
 
 ## Context
 
