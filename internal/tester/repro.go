@@ -21,8 +21,10 @@ import (
 )
 
 // notShown says whether a refused proof is a bug not reproduced: the
-// issue is a bug, and every blocking finding is a test green on the base.
-func notShown(t task, proof verdict.Verdict) bool {
+// issue is a bug, every blocking finding is a test green on the base,
+// and so is each of its added new tests. One test red on the base shows
+// the bug: a green one beside it is refused as any (test-green-on-base).
+func notShown(t task, proof verdict.Verdict, added int) bool {
 	if kind, _ := backlog.KindOf(t.Labels); kind != backlog.KindBug {
 		return false
 	}
@@ -36,7 +38,7 @@ func notShown(t task, proof verdict.Verdict) bool {
 			return false
 		}
 	}
-	return green > 0
+	return green > 0 && green == added
 }
 
 // unreproduced ends the run of a bug its tests do not show on the base:

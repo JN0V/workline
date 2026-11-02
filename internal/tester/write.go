@@ -414,7 +414,7 @@ func Post(runDir, repo string) int {
 	}
 	if proof.Status != verdict.Pass {
 		proof.Findings = slices.DeleteFunc(proof.Findings, func(f verdict.Finding) bool { return f.Rule == "no-new-test" && f.Level == "warn" })
-		if notShown(t, *proof) {
+		if notShown(t, *proof, len(newTests)) {
 			return unreproduced(runDir, t, intents, *proof)
 		}
 		return refusePost(runDir, t.Issue, *proof)
