@@ -181,5 +181,8 @@ func judgeDedupe(repo string, s Settings, d *dedupeTask, intents, fallback []int
 			refuse("patch-introduces", p.Where, p.Rule+": "+p.Message)
 		}
 	}
+	for _, p := range readerIntroduced(tree, Tree{Docs: after, Files: tree.Files}, s.Reader) {
+		refuse("patch-introduces", p.Where, p.Rule+": "+p.Message)
+	}
 	return refused, nil
 }

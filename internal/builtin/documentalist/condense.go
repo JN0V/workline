@@ -345,6 +345,10 @@ func judgeCondense(repo string, s Settings, c *condenseTask, intents, fallback [
 			refuse("patch-introduces", p.Where, p.Rule+": "+p.Message)
 		}
 	}
+	// The user pages too: a new page among them answers to the reader rules.
+	for _, p := range readerIntroduced(tree, Tree{Docs: after, Files: files}, s.Reader) {
+		refuse("patch-introduces", p.Where, p.Rule+": "+p.Message)
+	}
 	if len(refused) > 0 || !c.Split {
 		return refused, "", nil
 	}
