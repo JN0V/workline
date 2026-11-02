@@ -8,6 +8,7 @@ package routing
 import (
 	"fmt"
 	"slices"
+	"strings"
 )
 
 // State is a row of the table: its name, the label that says it, the role
@@ -100,17 +101,6 @@ func checkStates(states []State) error {
 // holds at most before the step that moves one into it waits; 0, none.
 func (c *Config) Limit(name string) int { return c.WIP[name] }
 
-// Holds counts the issues in state name, among the labels of each open
-// issue: those whose state, read as StateOf reads it, is that one.
-func (c *Config) Holds(name string, issues [][]string) int {
-	n := 0
-	for _, labels := range issues {
-		if s, ok := c.StateOf(labels); ok && s.Name == name {
-			n++
-		}
-	}
-	return n
-}
 
 // StaleDays is state name's age limit, in days (ADR-0059, decision 7):
 // an issue in it longer, counted from when its label was put on, is
@@ -136,6 +126,43 @@ func checkStale(stale map[string]int, states []State) error {
 		}
 		if days < 0 {
 			return fmt.Errorf("routing.stale.%s is %d: a limit is a number of days, 0 for none", name, days)
+		}
+	}
+	return nil
+}
+
+// checkWIPCycle refuses limits that can stop the line for good: a ring
+// of states, each one's next the one after, every one limited. Each
+// state's step would wait for room in the next, full of issues whose
+// step waits for room in the one after, round to the first. A state
+// with no limit on the ring never waits: it drains, and the ring with
+// it. With no ring, waits form chains that end at a state with no next
+// or no limit, and each chain drains from its end (ADR-0059, amended
+// 2026-11-02).
+func checkWIPCycle(wip map[string]int, states []State) error {
+	next := map[string]string{}
+	for _, s := range states {
+		next[s.Name] = s.Next
+	}
+	for _, s := range states {
+		ring, seen := []string{s.Name}, map[string]bool{s.Name: true}
+		for n := next[s.Name]; n != ""; n = next[n] {
+			if n == s.Name {
+				limited := true
+				for _, r := range ring {
+					limited = limited && wip[r] > 0
+				}
+				if limited {
+					return fmt.Errorf("routing.wip: %s, each with a limit, go next round to %s: each would wait for room in the next, full, for good; lift one's limit (0)",
+						strings.Join(ring, " → "), s.Name)
+				}
+				break
+			}
+			if seen[n] {
+				break // a ring that does not hold s: found from one of its own states
+			}
+			seen[n] = true
+			ring = append(ring, n)
 		}
 	}
 	return nil

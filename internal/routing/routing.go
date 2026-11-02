@@ -139,6 +139,9 @@ func Load(repo string) (*Config, error) {
 			delete(c.WIP, state) // a shipped limit on a state the project's table lacks
 		}
 	}
+	if err := checkWIPCycle(c.WIP, c.States); err != nil {
+		return nil, role.ConfigErrorf("%s", err)
+	}
 	for state := range c.Stale {
 		if _, ok := c.State(state); !ok {
 			delete(c.Stale, state) // the same for an age limit

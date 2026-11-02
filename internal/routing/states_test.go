@@ -1,6 +1,7 @@
 package routing
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"slices"
@@ -141,9 +142,23 @@ func TestWIP(t *testing.T) {
 			t.Errorf("%s: %v, want a config error", bad, err)
 		}
 	}
-	n := shipped(t, "").Holds("ready", [][]string{{"workline:ready"}, {"workline:ready", "workline:blocked"}, {"workline:needs-tests"}, {}})
-	if n != 1 {
-		t.Errorf("Holds = %d, want 1: an issue blocked is in blocked", n)
+}
+
+// TestWIPNoRing: limits on every state of a ring of next are refused,
+// a deadlock for good; one state of the ring unlimited, or no ring, is
+// read. The shipped table has no ring: any limits on it are read.
+func TestWIPNoRing(t *testing.T) {
+	ring := "routing: {states: [{name: a, label: x, role: tester, next: b}, {name: b, label: y, role: developer, next: a}, {name: c, label: z, next: a}], wip: %s}\n"
+	if _, err := Load(configured(t, fmt.Sprintf(ring, "{a: 1, b: 2}"))); !role.IsConfigError(err) || !strings.Contains(fmt.Sprint(err), "a → b") {
+		t.Errorf("a ring all limited: %v, want a config error naming it", err)
+	}
+	for _, ok := range []string{"{a: 1}", "{a: 1, c: 3}", "{}"} {
+		if _, err := Load(configured(t, fmt.Sprintf(ring, ok))); err != nil {
+			t.Errorf("wip %s on a ring with a state unlimited: %v", ok, err)
+		}
+	}
+	if _, err := Load(configured(t, "routing: {wip: {refine: 1, tests: 1, ready: 1, doing: 1, blocked: 1}}\n")); err != nil {
+		t.Errorf("every shipped state limited: %v; the shipped table has no ring", err)
 	}
 }
 
