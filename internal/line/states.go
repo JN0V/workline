@@ -96,10 +96,11 @@ func stateOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, 
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "state-wakes-none", Level: "info", Where: where, Message: why})
 		return nil, nil, nil
 	}
-	rec, had, spec, refused, comments, err := readRecordAll(b, is.ID)
+	rec, had, spec, refused, notes, err := readRecordAll(b, is.ID)
 	if err != nil {
 		return nil, nil, err
 	}
+	comments := forge.Bodies(notes)
 	trail, err := b.Trail(is.ID, s.Label)
 	if err != nil {
 		return nil, nil, err
@@ -124,6 +125,18 @@ func stateOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, 
 		// again, once a review, the section rewritten without the person.
 		st, _, _ := backlog.ReadState(comments, name) // one that does not read gives none to rewrite
 		ok = len(backlog.Unrevised(is, st, comments)) > 0
+	}
+	if !ok && s.Name == refineState && name == backlog.Keeper {
+		// A question, or drafts, waiting on a person past the product
+		// owner's delay: woken once, to take its assumption (ADR-0060).
+		key, said, err := timedOut(b, t, is, notes, rec)
+		if err != nil {
+			return nil, nil, err
+		}
+		if key != "" {
+			ok, now.Timeout = true, key
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "state-timeout", Level: "info", Where: where, Message: said})
+		}
 	}
 	if ok && reviewed {
 		now.Asked = now.Body // the reviewer runs after the product owner: never due again for this alone
@@ -208,7 +221,7 @@ func byState(res *Result, cfg *routing.Config, o engine.Options, event string, s
 		res.Summary = fmt.Sprintf("%s: %s is closed: no state wakes a role", event, where)
 		return res
 	}
-	step, block, err := stateOf(res, cfg, b, *is, new([]forge.Issue), newScopeIndex(o.Repo), newTally())
+	step, block, err := stateOf(res, cfg, b, *is, new([]forge.Issue), newScopeIndex(o.Repo), newTallyFor(o))
 	if err != nil {
 		readFailed(res, event, where, err)
 		return res
@@ -368,7 +381,7 @@ func reconcile(res *Result, cfg *routing.Config, o engine.Options) *Result {
 	list := o.Inputs[ReconcileInput] == "list"
 	skip := strings.Split(o.Inputs[SkipInput], ",")
 	started, quiet, stales := 0, 0, 0
-	x, t := newScopeIndex(o.Repo), newTally()
+	x, t := newScopeIndex(o.Repo), newTallyFor(o)
 	type retested struct {
 		at    int // in issues
 		write StateWrite

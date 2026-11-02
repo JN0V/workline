@@ -38,6 +38,10 @@ type tally struct {
 	drafts map[int]bool // nil until read
 	proofs map[int]bool // by issue, once read
 	moved  map[int]bool
+	// The product owner's delay for a question (timeout.go), read once
+	// from its role in rolesDir and the project in repo.
+	rolesDir, repo string
+	wait           *backlog.Delay
 }
 
 func newTally() *tally { return &tally{proofs: map[int]bool{}, moved: map[int]bool{}} }
