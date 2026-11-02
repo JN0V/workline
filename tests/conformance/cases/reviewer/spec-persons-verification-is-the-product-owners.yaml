@@ -1,0 +1,23 @@
+case: reviewer/spec-persons-verification-is-the-product-owners
+about: "An issue a person wrote whole, refined by the product owner with nothing to add: the reviewer holds it with an important finding in its Verification. The builder's part is the product owner's at every level, even a text a person wrote (ADR-0060): the comment says the product owner rewrites it at its next refine, never that a person answers it."
+given:
+  repo: reviewed
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  forge:
+    issues:
+      - id: 4
+        title: The mean of no values
+        body: "## Need\n\nAverage gives 0 for an empty list.\n\n## Verification\n\nThe mean works well.\n\n## Validation\n\nThe maintainer reads the test.\n\n## Scope\n\ncalc/calc.go\n"
+        labels: [workline:to-refine]
+        comments: ["```yaml\nsources: [calc/calc.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]
+    merge-requests: []
+run: {role: reviewer, event: schedule, ai: "fake:review-spec-forge-verification"}
+expect:
+  status: pass
+  findings: [{rule: unverifiable, where: "#4:7"}]
+  forge:
+    issues:
+      - id: 4
+        comments: 2
+        comment-contains: ["**Holds it from ready**: 1 important finding open, round 1 of 5. Verification, the product owner's: it rewrites it at its next refine. The reviewer then reads the spec again.", "in=Verification -->"]
+        comment-lacks: "Verification, a person's"

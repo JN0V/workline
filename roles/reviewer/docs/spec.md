@@ -95,8 +95,10 @@ routing:
     written on them, each said (`spec-not-read`), read at the next run.
 - **What it writes**: one comment on the issue, edited each review:
   - what holds it from ready, and who answers each section a finding
-    lies in: the product owner, a section that is its own; the person,
-    one they wrote ([#847](https://github.com/JN0V/workline/issues/847));
+    lies in: the product owner, the Verification and the Scope whoever
+    wrote them, and a Need or a Validation that is its own; the person,
+    a Need or a Validation they wrote
+    ([ADR-0060](../../../docs/adr/0060-the-person-is-on-the-loop.md));
   - the findings, the questions for a person;
   - a hidden record (`workline:spec-review`): the body's digest, the
     round, the important findings open and the sections they lie in.

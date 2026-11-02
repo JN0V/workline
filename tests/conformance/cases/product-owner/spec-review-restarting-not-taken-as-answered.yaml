@@ -1,5 +1,5 @@
 case: product-owner/spec-review-restarting-not-taken-as-answered
-about: "The review a product owner answered is kept by the body that review read, not by its round (#128): a new review that restarts at round 1, on a body changed since, is read again and given to the agent, though round 1 was answered before; a review already given, the same body, is not read again for it."
+about: "The review a product owner answered is kept by the body that review read, not by its round (#128): a new review that restarts at round 1, on a body changed since, is read again and given to the agent, though round 1 was answered before; a review already given, the same body, with the sections the role may rewrite (`revised`), is not read again for it."
 given:
   repo: backlog
   config:
@@ -23,7 +23,7 @@ given:
         insider: true
         labels: [workline:to-refine]
         comments:
-          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: 7d6b5529bb37\nanswered: 7d6b5529bb37\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: 7d6b5529bb37\nanswered: 7d6b5529bb37\nrevised: [Verification]\n```\n\n<!-- workline:sticky=product-owner/state -->"
           - "**workline reviewer**, its spec.\n\n<!-- workline:spec-review body=7d6b5529bb37 round=1 open=1 in=Verification -->\n\n<!-- workline:sticky=reviewer/spec -->"
 run: {role: product-owner, event: schedule, ai: fake:proposes-nothing}
 expect:

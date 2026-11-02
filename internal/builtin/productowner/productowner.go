@@ -551,6 +551,11 @@ func Pre(runDir, repo string) int {
 			// The reviewer's findings on its spec, not given yet: answered
 			// at this refine (#128).
 			changed = append(changed, d)
+		case cfg.SpecReview && len(backlog.Unrevised(is, st, comments)) > 0:
+			// A review answered by asking a person for a section the role
+			// rewrites now, its Verification or Scope: read again once,
+			// the section rewritten (ADR-0060).
+			changed = append(changed, d)
 		case rewriteUnread(is, st, cfg):
 			// Its own Validation names no scenario the tester reads: the
 			// role rewrites it, told once a body (#855).
@@ -814,7 +819,7 @@ func Pre(runDir, repo string) int {
 				read.Revisions++
 			}
 			if r := backlog.SpecOpen(d.is, d.comments); cfg.SpecReview && r != nil {
-				read.Answered = r.Body
+				read.Answered, read.Revised = r.Body, backlog.Revisable(d.is, d.st, r)
 			}
 			if _, digest, ok := backlog.NoTest(d.comments); ok {
 				read.NoTest = digest
@@ -1042,7 +1047,8 @@ func acceptedBy(b forge.Backlog, is forge.Issue) (string, error) {
 
 // revise tells the agent a person commented on what the role proposes on
 // an issue (ADR-0038): which comments, the revision it is, and how it
-// answers — its own drafts rewritten whole, a person's sections kept.
+// answers — its own drafts and the builder's part rewritten whole, a
+// person's Need and Validation kept (ADR-0060).
 func revise(is forge.Issue, st *backlog.State, a *backlog.Answer, max int) string {
 	mine := backlog.Own(is, st)
 	if lift(is, st) || slices.Contains(mine, work.ByMeaning(is.Body)[work.Need].Heading) {
@@ -1055,7 +1061,8 @@ func revise(is forge.Issue, st *backlog.State, a *backlog.Answer, max int) strin
 	if len(mine) > 0 {
 		fmt.Fprintf(&b, "give a `refine` with the whole new text of the sections that are still yours (%s), answering them; ", strings.Join(mine, ", "))
 	}
-	b.WriteString("propose again what still stands, changed as they ask, and nothing they turned down. A section a person wrote or deleted is theirs: never written. When they ask for nothing you can change, say why in a `note`.\n")
+	fmt.Fprintf(&b, "propose again what still stands, changed as they ask, and nothing they turned down. A %s, %s, %s or %s a person wrote, or a section they deleted, is theirs: never written. When they ask for nothing you can change, say why in a `note`.\n",
+		work.Name(work.Need), work.Name(work.Validation), work.Name(work.Example), work.Name(work.Steps))
 	return b.String()
 }
 
@@ -2100,7 +2107,8 @@ func writtenAt(repo string, is forge.Issue, st *backlog.State, tracked map[strin
 
 // specFindings tells the agent the reviewer's findings open on an issue's
 // spec (#128): what holds it from ready, and how it answers them — the
-// sections it may rewrite, its own; a person's asked of its reporter.
+// sections it may rewrite, the builder's part always (ADR-0060); a
+// person's Need or Validation asked of its reporter.
 func specFindings(is forge.Issue, st *backlog.State, comments []string, r *backlog.SpecReview) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "The reviewer's findings on its spec, round %d: %d important open, in %s. It stays out of ready until none is open. ", r.Round, r.Open, strings.Join(r.In, ", "))

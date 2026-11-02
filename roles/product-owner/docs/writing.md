@@ -150,8 +150,12 @@ amended; [worked case](proposed-headings.md#each-thing-said-once)):
 
 - **One line on the issue**, in its comment: "Added: Verification, Scope.
   Changed: —. See the issue's edit history."
-- **Changed** lists only its own sections it rewrote — a draft, or a text
-  as it wrote it; it never changes a sentence of yours.
+- **Changed** lists the sections it rewrote:
+  - its own drafts, or a text as it wrote it;
+  - the Verification or the Scope, even yours, to answer the reviewer
+    ([ADR-0060](../../../docs/adr/0060-the-person-is-on-the-loop.md)):
+    the builder's part is its to keep, at every level;
+  - never a sentence of your Need, Example or Validation.
 - **Rewrote: the text on top as the Need, in plain words** when it took
   a role's text on top into the Need.
 - **Not written: the Example, which said again what is above it** when

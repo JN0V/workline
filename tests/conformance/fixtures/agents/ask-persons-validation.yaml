@@ -1,0 +1,6 @@
+# The reviewer's finding lies in #9's Validation, a text a person wrote:
+# the product owner asks them, as before (ADR-0060).
+- ask:
+    issue: 9
+    questions: "How many sales does the known day hold, and what does Ann see on the report?"
+    why: "The reviewer found the Validation names no number."

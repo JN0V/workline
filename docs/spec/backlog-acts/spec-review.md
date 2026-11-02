@@ -42,13 +42,24 @@ comment on it, `<!-- workline:sticky=reviewer/spec -->`, hiding a record
   is read again, the comment given to the agent (3000 characters at
   most) with the sections it may rewrite.
 - **Answered**: a `refine` may rewrite a section with text when a finding
-  open lies in it and it is the role's own (`backlog.Revisable`): a draft
-  no person accepted, or a text whose digest is the one the state's
-  `wrote` holds — recorded by every refine for what it wrote, and by a
-  split for its children's four sections. A person's is kept
-  (`section-kept`): the agent asks its reporter. Issues refined before
-  #128 have no `wrote`: their sections read as a person's, but a Need or
-  Validation still marked a draft, the role's.
+  open lies in it and the one rule says it may (`backlog.Rewritable`,
+  [ADR-0060](../../adr/0060-the-person-is-on-the-loop.md)):
+  - the builder's part, Verification and Scope, always — even a text a
+    person wrote, at every level; "Changed: Verification" says it, the
+    text before in the forge's edit history;
+  - the person's part, Need, Validation, an example, a bug's steps, only
+    while it is the role's own: a draft no person accepted, or a text
+    whose digest is the one the state's `wrote` holds — recorded by every
+    refine for what it wrote, and by a split for its children's four
+    sections. A person's is kept (`section-kept`): the agent asks its
+    reporter. Issues refined before #128 have no `wrote`: their sections
+    read as a person's, but a Need or Validation still marked a draft,
+    the role's.
+- **Answered under the rule before**: the state's `revised` keeps the
+  sections the role was given with a review (`answered`). A review it
+  answered by asking a person for a section it may rewrite now
+  (`backlog.Unrevised`) is read again once; the line counts refine's
+  step due again for it, once a review (its record's `revise`).
 - **Released**: once the record holds the body as it is, nothing open,
   not stopped, and the four sections pass, `pre` proposes `ready` itself
   (`own`), with no agent, under `acts.ready`'s mode and cap.

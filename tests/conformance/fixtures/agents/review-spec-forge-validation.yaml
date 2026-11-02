@@ -1,0 +1,11 @@
+# A spec lens on issue #4, read by its number: its Validation names no
+# value, which the unverifiable lens quotes. A Validation a person wrote
+# is theirs (ADR-0060).
+calls:
+  - - finding:
+        lens: unverifiable
+        severity: important
+        title: The Validation names no value
+        why: "Nothing says what the maintainer expects to read in the test; any test would pass it"
+        cause: {path: "#4", quote: "The maintainer reads the test."}
+        fix: say the value the maintainer expects for an empty list

@@ -79,9 +79,12 @@ type State struct {
 	// another text there is a person's (SectionDigest). Answered is the
 	// review of its spec the role was last given, by the digest of the
 	// body that review read (#128): a review restarting at round 1 is
-	// another review, never taken for one answered.
+	// another review, never taken for one answered. Revised are the
+	// sections it was given to rewrite then (Revisable): one the rule
+	// gives it since is read again once (Unrevised, ADR-0060).
 	Wrote    map[string]string `yaml:"wrote,omitempty"`
 	Answered string            `yaml:"answered,omitempty"`
+	Revised  []string          `yaml:"revised,flow,omitempty"`
 	// Plain is the digest of the description the role rewrote in plain
 	// words (ADR-0038, amended): another text there is a person's.
 	Plain string `yaml:"plain,omitempty"`
@@ -190,6 +193,7 @@ func FormatState(s State) string {
 		Sections  map[string]string `yaml:"sections,omitempty"`
 		Wrote     map[string]string `yaml:"wrote,omitempty"`
 		Answered  string            `yaml:"answered,omitempty"`
+		Revised   []string          `yaml:"revised,flow,omitempty"`
 		Plain     string            `yaml:"plain,omitempty"`
 		Deleted   []string          `yaml:"deleted,flow,omitempty"`
 		Proposed  []Pending         `yaml:"proposed,omitempty"`
@@ -207,7 +211,7 @@ func FormatState(s State) string {
 		NoTest    string            `yaml:"no-test,omitempty"`
 		Silent    string            `yaml:"silent,omitempty"`
 		Unread    string            `yaml:"unread,omitempty"`
-	}{s.Sources, s.Confirmed, s.Judged, s.Comments, s.Body, s.Priority, s.Effort, s.Title, s.Split, s.After, s.Kept, s.Sections, s.Wrote, s.Answered, s.Plain, s.Deleted,
+	}{s.Sources, s.Confirmed, s.Judged, s.Comments, s.Body, s.Priority, s.Effort, s.Title, s.Split, s.After, s.Kept, s.Sections, s.Wrote, s.Answered, s.Revised, s.Plain, s.Deleted,
 		s.Proposed, s.Done, s.Undone, s.Did, s.Closed, s.Label, s.Aside, s.Heard, s.Revisions, s.Rules, s.Left, s.Proof, s.NoTest, s.Silent, s.Unread})
 	// The record is kept out of sight, in an HTML comment (#548): a forge
 	// mails what a comment shows, and a person reads there only what the
@@ -516,8 +520,8 @@ type Proposal struct {
 	// again what is above them (Repeated), by heading; said on the issue.
 	Repeated []string `yaml:"repeated,omitempty"`
 	// Revise, the engine's: the sections with text this refine may rewrite,
-	// to answer the reviewer's findings on the spec (#128) — the role's own
-	// only (Revisable); never taken from the agent.
+	// to answer the reviewer's findings on the spec (#128) — those it may
+	// rewrite (Revisable); never taken from the agent.
 	Revise []string `yaml:"revise,omitempty"`
 	// Refused, the engine's: the sections the role wrote that a person
 	// deleted (State.Deleted), never written again (ADR-0038).
@@ -1719,7 +1723,7 @@ func (p *Plan) checkRefining(f forge.Backlog, repo, role string, c *Proposal) (r
 		// bot's issue the project's, never addressed to the bot (#429).
 		c.ToReporter = c.Agreed == "" && !is.Insider && !Accepted(is) && OpenedBy(is.Body) == "" && !Bot(is.Author)
 		// Answering the reviewer's findings on its spec (#128): the role
-		// rewrites the sections they lie in that are still its own.
+		// rewrites the sections they lie in it may rewrite (Revisable).
 		c.Revise, c.Refused = nil, nil
 		if f != nil {
 			comments, err := f.Comments(forge.Target{Kind: "issue", ID: c.Issue})
@@ -2975,9 +2979,10 @@ func describe(c Proposal, verb string) string {
 }
 
 // refined says on the issue, in one line, what a refine did to its body:
-// the sections added, those of the role's own it rewrote, its description
+// the sections added, those it rewrote, its description
 // rewritten in plain words, and where the text before is — the forge's edit history, which no forge links to.
-// A person's sentence is never changed: nothing of theirs to quote.
+// A Verification or Scope a person wrote, rewritten, is in that history too
+// (ADR-0060): never quoted here.
 func refined(c Proposal) string {
 	var added, changed []string
 	var said []string

@@ -1,0 +1,28 @@
+case: product-owner/refine-asks-for-a-persons-validation
+about: "The person's part stays the person's (ADR-0060): the reviewer's finding lies in a Validation a person wrote; the product owner is told it is theirs, never rewritten, and asks its reporter, as before. The body is left word for word."
+given:
+  repo: backlog
+  config:
+    routing:
+      events: {schedule: [product-owner, reviewer]}
+  forge:
+    issues:
+      - id: 9
+        title: Rows lost
+        body: "## Need\n\nThe monthly report counts every sale.\n\n## Validation\n\n- **A known day:** Given a day of three sales, When Ann opens it, Then she counts three.\n\n---\n\n## Verification\n\nSessions feel right to the users.\n\n## Scope\n\nsrc/export/csv.go"
+        author: ann
+        insider: true
+        labels: [workline:to-refine]
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: efbae4cec0e6\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "**workline reviewer**, its spec.\n\n<!-- workline:spec-review body=efbae4cec0e6 round=1 open=1 in=Validation -->\n\n<!-- workline:sticky=reviewer/spec -->"
+run: {role: product-owner, event: schedule, ai: fake:ask-persons-validation}
+expect:
+  forge:
+    issues:
+      - id: 9
+        body-contains: "## Validation\n\n- **A known day:** Given a day of three sales, When Ann opens it, Then she counts three.\n\n---\n\n## Verification\n\nSessions feel right to the users."
+        comment-contains: ["@ann, to refine this issue: How many sales does the known day hold", "answered: efbae4cec0e6"]
+        comment-lacks: "revised:"
+  run-files:
+    in/task.md: {contains: ["Validation: a person's, never rewritten: `ask` its reporter"], not-contains: "yours to rewrite"}

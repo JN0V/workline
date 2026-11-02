@@ -1,0 +1,7 @@
+# The product owner answers the reviewer's finding in #9's Verification,
+# a text a person wrote: rewritten, the builder's part its own (ADR-0060).
+- refine:
+    issue: 9
+    verification: "A test writes three rows and reads three lines back."
+    sources: [src/export/csv.go]
+    why: "The reviewer found the Verification proves nothing."

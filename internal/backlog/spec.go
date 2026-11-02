@@ -187,22 +187,29 @@ func SectionDigest(body, name string) string {
 	return BodyDigest(work.ByMeaning(body)[work.MeaningOf(name)].Text)
 }
 
-// Own are the sections of a body still the role's own — a draft no person
-// accepted, or a text as the role wrote it (the state's `wrote`) —: those
-// it rewrites to answer a person's comment on its proposal (ADR-0038). A
-// person's section, edited or deleted, is never among them.
+// Own are the sections of a body the role rewrites to answer a person's
+// comment on its proposal (ADR-0038): those with text it may rewrite
+// (Rewritable).
 func Own(is forge.Issue, st *State) []string {
 	have := work.ByMeaning(is.Body)
 	var out []string
 	for _, m := range layout() {
-		s, ok := have[m]
-		switch {
-		case !ok || strings.TrimSpace(s.Text) == "":
-		case IsDraft(is.Body, m, st) && !Accepted(is), mine(st, m, s.Text):
+		if s, ok := have[m]; ok && strings.TrimSpace(s.Text) != "" && Rewritable(is, st, m) {
 			out = append(out, s.Heading)
 		}
 	}
 	return out
+}
+
+// Rewritable is the one rule of whose a section of meaning m is
+// (ADR-0060): the builder's part — Verification, Scope — is the role's
+// at every level, even a text a person wrote; the person's part — Need,
+// Validation, an example, a bug's steps — only while it is still the
+// role's own: a draft no person accepted, or a text as the role wrote it
+// (the state's `wrote`). A person's text there is theirs: never
+// rewritten, asked of them.
+func Rewritable(is forge.Issue, st *State, m work.Meaning) bool {
+	return builder(m) || IsDraft(is.Body, m, st) && !Accepted(is) || mine(st, m, work.ByMeaning(is.Body)[m].Text)
 }
 
 // mine says whether text is as the role wrote a section of meaning m (the
@@ -213,9 +220,9 @@ func mine(st *State, m work.Meaning, text string) bool {
 }
 
 // Revisable are the sections of a body the role may rewrite to answer the
-// reviewer's findings (#128): those the findings lie in that are still the
-// role's own — a draft no person accepted, or a text as the role wrote it
-// (the state's `wrote`). A person's section is theirs: never rewritten.
+// reviewer's findings (#128): those the findings lie in that are
+// Rewritable — the builder's part always, the person's part while still
+// the role's own (ADR-0060).
 func Revisable(is forge.Issue, st *State, r *SpecReview) []string {
 	if r == nil {
 		return nil
@@ -224,12 +231,22 @@ func Revisable(is forge.Issue, st *State, r *SpecReview) []string {
 	var out []string
 	for _, name := range r.In {
 		m := work.MeaningOf(name)
-		s, ok := have[m]
-		switch {
-		case !ok || !slices.Contains(work.Required, m) || work.Has(out, m):
-		case IsDraft(is.Body, m, st) && !Accepted(is), mine(st, m, s.Text):
+		if _, ok := have[m]; ok && slices.Contains(work.Required, m) && !work.Has(out, m) && Rewritable(is, st, m) {
 			out = append(out, name)
 		}
 	}
 	return out
+}
+
+// Unrevised are the sections the role may rewrite now to answer the
+// review open on the body as it is, that it was not given to rewrite when
+// it answered that review (the state's `revised`): a review answered
+// under the rule before ADR-0060 — the role asked a person for their
+// Verification — read again once, the section rewritten this time.
+func Unrevised(is forge.Issue, st *State, comments []string) []string {
+	r := SpecOpen(is, comments)
+	if r == nil || st == nil || r.Body != st.Answered {
+		return nil // not answered yet: read for that, not for this
+	}
+	return slices.DeleteFunc(Revisable(is, st, r), func(n string) bool { return work.Has(st.Revised, work.MeaningOf(n)) })
 }
