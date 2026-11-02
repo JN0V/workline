@@ -21,6 +21,7 @@ body: 3f9a1c0e2b7d                       # a digest of its body, when last read 
 priority: 2                              # the priority the role last set (Ordering)
 effort: 1                                # the effort the role set, once; -1, set in a field whose values are hidden (Ordering)
 title: The CSV export drops the last row  # the title the role last set (Renaming)
+kind: bug                                # the kind label the role set, once: another, or none, is a person's (the kind)
 split: [13, 14]                          # the children it was split into (Splitting)
 kept: ['src/export/csv.go:b2a6ba892dee'] # announcements as obsolete kept open, by their quote (Closing)
 sections:                                # its Need and Scope as last read or written (A changed need)
