@@ -85,6 +85,7 @@ merge: {autonomy: enterprising}
 |---|---|
 | `milestone-set` | a feature put in the next milestone |
 | `candidate-cut` | a branch cut, or the next candidate's issue opened |
+| `candidate-version-past` | a milestone left open whose version is released already: not cut |
 | `candidate-copied`, `candidate-copy-failed` | a fix copied onto the branch, or left to a person |
 | `candidate-shipped` | the version asked for on a person's yes |
 | `candidate-yes-reset`, `candidate-waits` | a yes taken off, or not taken: a bot's, before the tag, past what was tried |

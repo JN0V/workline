@@ -130,6 +130,18 @@ func (r remote) lastRC(v minor) (int, string) {
 	return n, tag
 }
 
+// released is the highest version origin's tags name, prereleases left
+// out: a milestone at or below it is out already.
+func (r remote) released() minor {
+	var top minor
+	for t := range r.tags {
+		if m := versionTag.FindStringSubmatch(t); m != nil && m[4] == "" && top.less(minorOf(m)) {
+			top = minorOf(m)
+		}
+	}
+	return top
+}
+
 // highest is the highest version origin's tags, its candidates' branches
 // and the open milestones name.
 func (r remote) highest(ms []forge.Milestone) minor {
@@ -299,6 +311,12 @@ func (c *candidateRun) milestone(title string, v minor) (string, error) {
 	branch := v.branch()
 	if _, cut := c.r.branches[branch]; !cut {
 		if len(others) == 0 || slices.ContainsFunc(others, func(is forge.Issue) bool { return !is.Closed }) {
+			return "", nil
+		}
+		if last := c.r.released(); !last.less(v) {
+			// An old milestone left open: its version, or a later one, is
+			// out already; a candidate of it would ship main as it is now.
+			c.say("candidate-version-past", "warn", title, fmt.Sprintf("its issues are closed, but v%d.%d.0 is released already: no candidate cut; close the milestone", last.major, last.minor))
 			return "", nil
 		}
 		head, err := releaseAs(c.o.Repo, c.tip, v.rc(1))
