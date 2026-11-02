@@ -1,6 +1,7 @@
 package tester
 
 import (
+	"fmt"
 	"slices"
 	"strings"
 	"testing"
@@ -26,6 +27,57 @@ func TestWriteCodeOfAPattern(t *testing.T) {
 	writeCode(&b, repo, "- `*_test.go`", s)
 	if code, _, _ := strings.Cut(b.String(), "## Tests already there"); !strings.Contains(code, "## The code the Scope names\n\n### `add_test.go`") {
 		t.Errorf("a pattern of tests alone names none:\n%s", b.String())
+	}
+}
+
+// A function the Scope names past code-lines-max in a long file is given
+// whole, the rest of the file named; a small file is given whole (#908).
+func TestWriteCodeGivesAFunctionDeepInAFile(t *testing.T) {
+	var long strings.Builder
+	long.WriteString("package doc\n")
+	for i := range 2940 {
+		fmt.Fprintf(&long, "\n// f%d is filler.\nfunc f%d() {}\n", i, i)
+	}
+	long.WriteString("\n// personIssue is the issue a person reads.\nfunc personIssue(n int) string {\n\tif n > 0 {\n\t\treturn \"deep\"\n\t}\n\treturn \"\"\n}\n")
+	repo, _ := gitRepo(t, map[string]string{"documentalist.go": long.String(), "small.go": "package doc\n\nfunc small() {}\n", "engine.go": "package doc\n\nfunc a() {}\n\nfunc sticky() {\n\tx := 1\n\t_ = x\n}\n"})
+	n := strings.Count(long.String(), "\n")
+	s := Settings{Paths: []string{"**/*_test.go"}, CodeLinesMax: 1500}
+	var b strings.Builder
+	writeCode(&b, repo, "- `personIssue` (`documentalist.go:9999`) builds it.\n- `engine.go:6` rewrites it.\n- `small.go`.", s)
+	task := b.String()
+	for _, want := range []string{"func personIssue(n int) string {\n\tif n > 0 {\n\t\treturn \"deep\"\n\t}\n\treturn \"\"\n}", "// personIssue is the issue a person reads.",
+		fmt.Sprintf("### `documentalist.go` (%d lines: lines %d to %d given", n, n-6, n), "### `engine.go`\n", "func sticky() {", "### `small.go`\n\n````\npackage doc\n\nfunc small() {}\n````"} {
+		if !strings.Contains(task, want) {
+			t.Errorf("want %q in:\n%.3000s", want, task)
+		}
+	}
+	if strings.Contains(task, "func f1()") || strings.Contains(task, "(cut: the first") {
+		t.Errorf("the file's first lines given:\n%.3000s", task)
+	}
+}
+
+// A span of lines gives its middle too; a path is no function's name; a
+// piece the budget runs out in is said cut, one past it named.
+func TestPiecesSpanPathAndCut(t *testing.T) {
+	var long strings.Builder
+	long.WriteString("x=0\n")
+	for i := 2; i <= 200; i++ {
+		fmt.Fprintf(&long, "x=%d\n", i)
+	}
+	lines := strings.Split(strings.TrimSuffix(long.String(), "\n"), "\n")
+	names, at := anchors("`run.sh:50-150` and `new/go.go`, `foo.go`", []string{"run.sh"})
+	if len(names) != 0 {
+		t.Errorf("paths taken for names: %q", names)
+	}
+	if got := pieces("run.sh", lines, names, at["run.sh"]); len(got) != 1 || got[0] != [2]int{35, 165} {
+		t.Errorf("a span's pieces = %v, want [35 165]", got)
+	}
+	files := []codeFile{{path: "run.sh", lines: lines, pieces: [][2]int{{10, 60}, {100, 120}}}}
+	planCode(files, 30)
+	var b strings.Builder
+	writeCodeFile(&b, files[0])
+	if got := b.String(); !strings.Contains(got, "(cut, past code-lines-max: what it names goes on to line 60)") || !strings.Contains(got, "Not given, past code-lines-max: lines 100 to 120") {
+		t.Errorf("cut not said:\n%s", got)
 	}
 }
 

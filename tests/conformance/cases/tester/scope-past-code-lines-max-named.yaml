@@ -21,5 +21,5 @@ expect:
   agent-calls: 1
   run-files:
     in/task.md:
-      contains: ["### `src/calc/add.sh`", "(cut: the first 1 lines given)", "Not given, past code-lines-max (1 lines in all), not empty:", "- `src/calc/sub.sh` (1 lines)"]
+      contains: ["### `src/calc/add.sh` (2 lines: lines 1 to 1 given", "Not given, past code-lines-max (1 lines in all), not empty:", "- `src/calc/sub.sh` (1 lines)"]
       not-contains: ["### `src/calc/sub.sh`", "the first 0 lines"]

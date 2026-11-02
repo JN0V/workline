@@ -10,77 +10,27 @@ package reviewer
 
 import (
 	"fmt"
-	"go/ast"
-	"go/parser"
-	"go/token"
 	"path"
 	"regexp"
 	"slices"
 	"strings"
 
+	"github.com/JN0V/workline/internal/codenav"
 	"github.com/JN0V/workline/internal/pathglob"
 	"github.com/JN0V/workline/internal/work"
 )
 
 // language is how functions are found in a family of files.
-type language struct {
-	name string
-	exts []string
-	def  string // a definition's pattern, NAME standing for its name
-	body string // go, braces, indent (Python), end (Ruby, Lua)
-}
+type language = codenav.Language
 
-var languages = []language{
-	{"Go", []string{".go"}, `^func\s+(?:\([^)]*\)\s*)?(NAME)\s*[\[(]`, "go"},
-	{"shell", []string{".sh", ".bash", ".zsh", ".ksh"}, `^\s*(?:function\s+(NAME)\b|(NAME)\s*\(\s*\))`, "braces"},
-	{"Python", []string{".py"}, `^\s*(?:async\s+)?def\s+(NAME)\s*\(`, "indent"},
-	{"Ruby", []string{".rb"}, `^\s*def\s+(?:self\.)?(NAME)\b`, "end"},
-	{"Lua", []string{".lua"}, `^\s*(?:local\s+)?function\s+(?:[\w.:]*[.:])?(NAME)\s*\(`, "end"},
-	{"C-like", []string{".c", ".h", ".cc", ".cpp", ".cxx", ".hpp", ".hh", ".java", ".cs", ".js", ".jsx", ".mjs", ".cjs", ".ts", ".tsx", ".rs", ".kt", ".kts", ".swift", ".php", ".scala", ".dart", ".groovy"},
-		`(?:\b(?:function|fn|fun|func|def)\s+(NAME)\b|\b(?:const|let|var)\s+(NAME)\s*=\s*(?:async\s+)?(?:function\b|\([^)]*\)\s*=>|[A-Za-z_$][\w$]*\s*=>)|^\s*(?:[\w$:<>,*&\[\]~.]+\s+)*(NAME)\s*\([^;{]*(?:\{.*)?$)`, "braces"},
-}
+func languageOf(file string) *language { return codenav.Of(file) }
 
-// notCalls are words a pattern would take for a function's name: the
-// keywords that open a block with a parenthesis.
-var notCalls = map[string]bool{"if": true, "for": true, "while": true, "switch": true, "catch": true, "return": true,
-	"else": true, "do": true, "new": true, "throw": true, "await": true, "case": true, "typeof": true, "sizeof": true,
-	"elif": true, "until": true, "with": true, "foreach": true, "func": true, "function": true, "fn": true, "fun": true,
-	"def": true, "go": true, "defer": true, "select": true, "range": true, "make": true, "len": true, "append": true}
-
-func languageOf(file string) *language {
-	ext := strings.ToLower(path.Ext(file))
-	for i := range languages {
-		if slices.Contains(languages[i].exts, ext) {
-			return &languages[i]
-		}
-	}
-	return nil
-}
-
-func (l *language) pattern(name string) *regexp.Regexp {
-	n := `[A-Za-z_$][\w$]*`
-	if name != "" {
-		n = regexp.QuoteMeta(name)
-	}
-	return regexp.MustCompile(strings.ReplaceAll(l.def, "NAME", n))
-}
-
-// defined is the name a line defines, by the language's pattern; "" none.
-func (l *language) defined(line string, re *regexp.Regexp) string {
-	m := re.FindStringSubmatch(line)
-	if m == nil {
-		return ""
-	}
-	for _, g := range m[1:] {
-		if g != "" {
-			if notCalls[g] {
-				return ""
-			}
-			return g
-		}
-	}
-	return ""
-}
+var (
+	languages = codenav.Languages
+	notCalls  = codenav.NotCalls
+	stripCode = codenav.StripCode
+	callsIn   = codenav.CallsIn
+)
 
 // fn is a function found: its file, its lines (its doc comment included),
 // its name, and what it is to the finding.
@@ -115,243 +65,21 @@ func (r *reacher) lines(file string) []string {
 
 // enclosing is the function a file's line lies in; ok false when none is found.
 func (r *reacher) enclosing(file string, at int) (fn, bool) {
-	l := languageOf(file)
-	if l == nil {
-		return fn{}, false
-	}
-	lines := r.lines(file)
-	if l.body == "go" {
-		if f, ok, parsed := goEnclosing(file, lines, at); parsed {
-			return f, ok
-		}
-	}
-	re := l.pattern("")
-	for n := min(at, len(lines)); n >= 1; n-- {
-		name := l.defined(lines[n-1], re)
-		if name == "" {
-			continue
-		}
-		if f, ok := bounds(l, file, lines, n, name); ok && f.to >= at {
-			return f, true
-		}
-	}
-	return fn{}, false
+	f, ok := codenav.Enclosing(file, r.lines(file), at)
+	return asFn(file, f, ok), ok
 }
 
 // at is the function defined on a file's line n.
 func (r *reacher) at(file string, n int, name string) (fn, bool) {
-	l := languageOf(file)
-	lines := r.lines(file)
-	if l.body == "go" {
-		if f, ok, parsed := goEnclosing(file, lines, n); parsed {
-			return f, ok && f.name == name
-		}
-	}
-	return bounds(l, file, lines, n, name)
+	f, ok := codenav.At(file, r.lines(file), n, name)
+	return asFn(file, f, ok), ok
 }
 
-// goEnclosing finds, with Go's parser, the function declared around line at;
-// parsed false when the file does not parse.
-func goEnclosing(file string, lines []string, at int) (fn, bool, bool) {
-	fset := token.NewFileSet()
-	src := strings.Join(lines, "\n") + "\n"
-	af, err := parser.ParseFile(fset, file, src, parser.ParseComments|parser.SkipObjectResolution)
-	if err != nil {
-		return fn{}, false, false
+func asFn(file string, f codenav.Func, ok bool) fn {
+	if !ok {
+		return fn{}
 	}
-	for _, d := range af.Decls {
-		fd, ok := d.(*ast.FuncDecl)
-		if !ok {
-			continue
-		}
-		from, to := fset.Position(fd.Pos()).Line, fset.Position(fd.End()).Line
-		if fd.Doc != nil {
-			from = fset.Position(fd.Doc.Pos()).Line
-		}
-		if at < from || at > to {
-			continue
-		}
-		f := fn{file: file, from: from, to: to, name: fd.Name.Name}
-		seen := map[string]bool{fd.Name.Name: true}
-		ast.Inspect(fd, func(n ast.Node) bool {
-			c, ok := n.(*ast.CallExpr)
-			if !ok {
-				return true
-			}
-			fun := c.Fun
-			if ix, ok := fun.(*ast.IndexExpr); ok {
-				fun = ix.X
-			}
-			var name string
-			switch e := fun.(type) {
-			case *ast.Ident:
-				name = e.Name
-			case *ast.SelectorExpr:
-				name = e.Sel.Name
-			}
-			if name != "" && !seen[name] {
-				seen[name] = true
-				f.calls = append(f.calls, name)
-			}
-			return true
-		})
-		return f, true, true
-	}
-	return fn{}, false, true
-}
-
-var (
-	callRe = regexp.MustCompile(`([A-Za-z_$][\w$]*)\s*\(`)
-	wordRe = regexp.MustCompile(`([A-Za-z_][\w-]*)`)
-)
-
-// bounds reads a function from its definition on line def: its body by the
-// language's rule, the comment just over it, and the names it calls.
-func bounds(l *language, file string, lines []string, def int, name string) (fn, bool) {
-	to := 0
-	switch l.body {
-	case "indent", "end":
-		to = indentEnd(lines, def, l.body == "end")
-	default:
-		to = braceEnd(lines, def, l.name == "shell")
-	}
-	if to == 0 {
-		return fn{}, false
-	}
-	from := def
-	for from > 1 && isComment(lines[from-2]) {
-		from--
-	}
-	return fn{file: file, from: from, to: to, name: name, calls: callsIn(l, lines[def:to], name)}, true
-}
-
-// callsIn are the names some lines call, in order, self aside: a word
-// before a parenthesis; in shell and Ruby any word, a function being
-// called there with none.
-func callsIn(l *language, lines []string, self string) []string {
-	var out []string
-	seen := map[string]bool{self: true}
-	re := callRe
-	if l.name == "shell" || l.name == "Ruby" {
-		re = wordRe
-	}
-	for _, line := range lines {
-		for _, m := range re.FindAllStringSubmatch(line, -1) {
-			w := m[1]
-			if !seen[w] && !notCalls[w] {
-				seen[w] = true
-				out = append(out, w)
-			}
-		}
-	}
-	return out
-}
-
-func isComment(line string) bool {
-	t := strings.TrimSpace(line)
-	return strings.HasPrefix(t, "//") || strings.HasPrefix(t, "/*") || strings.HasPrefix(t, "*") ||
-		(strings.HasPrefix(t, "#") && !strings.HasPrefix(t, "#!") && !strings.HasPrefix(t, "#include"))
-}
-
-// braceEnd is the line a function's braces close on: its first brace within
-// six lines of its definition, before any `;`; 0 when there is none.
-func braceEnd(lines []string, def int, shell bool) int {
-	depth, opened := 0, false
-	for n := def; n <= len(lines); n++ {
-		line := stripCode(lines[n-1], shell)
-		for _, c := range line {
-			switch c {
-			case ';':
-				if !opened && !shell {
-					return 0
-				}
-			case '{':
-				depth++
-				opened = true
-			case '}':
-				depth--
-				if opened && depth == 0 {
-					return n
-				}
-			}
-		}
-		if !opened && n-def >= 6 {
-			return 0
-		}
-	}
-	return 0
-}
-
-// stripCode drops a line's strings and comment, roughly: their braces are
-// not the code's. A single quote opens a string or a character only when
-// it closes on the line, an apostrophe left open hiding nothing; a
-// backslash escapes, except in shell single quotes and Go's raw strings.
-func stripCode(line string, shell bool) string {
-	var b strings.Builder
-	rs := []rune(line)
-	for i := 0; i < len(rs); i++ {
-		c := rs[i]
-		switch {
-		case c == '"' || c == '\'' || (c == '`' && !shell):
-			raw := c == '`' || (c == '\'' && shell)
-			end := -1
-			for j := i + 1; j < len(rs) && end < 0; j++ {
-				switch {
-				case rs[j] == '\\' && !raw:
-					j++
-				case rs[j] == c:
-					end = j
-				}
-			}
-			switch {
-			case end >= 0:
-				i = end
-			case c == '\'':
-				b.WriteRune(c)
-			default:
-				return b.String() // a string going on past the line: its rest is not code
-			}
-		case c == '#' && shell && (i == 0 || rs[i-1] == ' ' || rs[i-1] == '\t'):
-			return b.String()
-		case c == '/' && !shell && i+1 < len(rs) && rs[i+1] == '/':
-			return b.String()
-		default:
-			b.WriteRune(c)
-		}
-	}
-	return b.String()
-}
-
-// indentEnd is a block's last line by its indentation: the lines after its
-// header (up to the first ending in `:` for Python) indented further; with
-// end, up to the `end` at the definition's indentation.
-func indentEnd(lines []string, def int, end bool) int {
-	indent := func(s string) int { return len(s) - len(strings.TrimLeft(s, " \t")) }
-	d := indent(lines[def-1])
-	start := def
-	if !end {
-		for start <= len(lines) && start-def < 10 && !strings.HasSuffix(strings.TrimSpace(strings.SplitN(lines[start-1], "#", 2)[0]), ":") {
-			start++
-		}
-		if start > len(lines) || start-def >= 10 {
-			return 0
-		}
-	}
-	last := start
-	for n := start + 1; n <= len(lines); n++ {
-		t := strings.TrimSpace(lines[n-1])
-		if t == "" {
-			continue
-		}
-		if indent(lines[n-1]) <= d {
-			if end && indent(lines[n-1]) == d && (t == "end" || strings.HasPrefix(t, "end ") || strings.HasPrefix(t, "end)")) {
-				return n
-			}
-			break
-		}
-		last = n
-	}
-	return last
+	return fn{file: file, from: f.From, to: f.To, name: f.Name, calls: f.Calls}
 }
 
 // defs finds where each name is defined, in the files of the languages
@@ -374,7 +102,7 @@ func (r *reacher) defs(names []string, langs []*language) map[string][]fn {
 	}
 	args := []string{"grep", "-n", "-I", "-w", "-E", "-e", "(" + strings.Join(ok, "|") + ")", r.head, "--"}
 	for _, l := range langs {
-		for _, e := range l.exts {
+		for _, e := range l.Exts {
 			args = append(args, "*"+e)
 		}
 	}
@@ -394,9 +122,9 @@ func (r *reacher) defs(names []string, langs []*language) map[string][]fn {
 			continue
 		}
 		if res[l] == nil {
-			res[l] = l.pattern("")
+			res[l] = l.Pattern("")
 		}
-		name := l.defined(line, res[l])
+		name := l.Defined(line, res[l])
 		if name == "" || !slices.Contains(ok, name) {
 			continue
 		}
@@ -427,19 +155,19 @@ func hit(h, head string) (string, int, string, bool) {
 func (r *reacher) callers(f fn) []fn {
 	l := languageOf(f.file)
 	args := []string{"grep", "-n", "-I", "-w", "-F", "-e", f.name, r.head, "--"}
-	for _, e := range l.exts {
+	for _, e := range l.Exts {
 		args = append(args, "*"+e)
 	}
 	hits, err := git(r.repo, append(args, ":(exclude)vendor/**", ":(exclude)**/node_modules/**", ":(exclude)third_party/**")...)
 	if err != nil {
 		return nil
 	}
-	re := l.pattern(f.name)
+	re := l.Pattern(f.name)
 	var out []fn
 	seen := map[string]bool{f.key(): true}
 	for _, h := range strings.Split(strings.TrimSpace(hits), "\n") {
 		file, n, line, ok := hit(h, r.head)
-		if !ok || pathglob.Any(r.skip, file) || (file == f.file && n >= f.from && n <= f.to) || l.defined(line, re) != "" || !visible(f, file) {
+		if !ok || pathglob.Any(r.skip, file) || (file == f.file && n >= f.from && n <= f.to) || l.Defined(line, re) != "" || !visible(f, file) {
 			continue
 		}
 		c, ok := r.enclosing(file, n)
@@ -482,7 +210,7 @@ func pick(defs []fn, file string) (shown []fn, many bool) {
 // visible says whether a Go function can be named from a file: an
 // unexported one only from its own package's folder. Other languages: yes.
 func visible(f fn, from string) bool {
-	if languageOf(f.file).body != "go" || f.name == "" || strings.ToUpper(f.name[:1]) == f.name[:1] {
+	if languageOf(f.file).Body != "go" || f.name == "" || strings.ToUpper(f.name[:1]) == f.name[:1] {
 		return true
 	}
 	return path.Dir(f.file) == path.Dir(from)
@@ -707,7 +435,7 @@ func reach(repo, head string, tests []string, f Finding, at int, symptomAt int, 
 		case !ok:
 			lang := "no language it knows"
 			if l := languageOf(file); l != nil {
-				lang = l.name
+				lang = l.Name
 			}
 			w := around(file, at, fmt.Sprintf("the lines around %s, no function found around it (%s)", what, lang))
 			if l := languageOf(file); l != nil { // what those lines call stands for their function's calls
@@ -808,7 +536,7 @@ func (c Change) reaches(repo, head, path string, p Place) int {
 		return 0
 	}
 	l := languageOf(path)
-	hash := l.name == "shell" || l.name == "Python" || l.name == "Ruby" // a `#` opens a comment
+	hash := l.Name == "shell" || l.Name == "Python" || l.Name == "Ruby" // a `#` opens a comment
 	used := map[string]bool{}
 	for _, line := range lines[p.From-1 : p.To] {
 		for _, n := range names(stripCode(line, hash)) {

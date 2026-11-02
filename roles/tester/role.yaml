@@ -64,7 +64,8 @@ settings:
   ai-max-tokens: 300000
   ai-max-seconds: 1200
   # Lines of code and tests given to the agent, all files together: the
-  # Scope's files, then up to three test files beside them.
+  # Scope's files, then up to three test files beside them. A file too
+  # long gives the functions the Scope names in it, the rest named.
   code-lines-max: 1500
   # Runs the project's tests and writes a JUnit XML report; {report} is
   # replaced by test-report's path. Unset: the check blocks,
