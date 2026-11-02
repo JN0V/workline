@@ -22,6 +22,11 @@ own changes. **Not tried yet on one**: tell us what differs.
 - **The agent** reaches out — Claude Code, for one, needs npm's registry
   and Anthropic's API. Without that, set no `CLAUDE_CODE_OAUTH_TOKEN`: the
   docs are listed for a person.
+- **The developer's agent runs commands** in a sandbox the image holds
+  (bubblewrap). A Docker runner's default profile refuses it: the
+  developer then says so, and does not ask the agent. Give its jobs a
+  runner with `privileged = true`, as gitlab.com's are
+  ([its runner](gitlab/tester-developer.md#the-developer)).
 - **Tokens**: project access tokens exist on every tier of a self-managed
   instance. Scope them to the environment `workline`, as on gitlab.com
   ([how](gitlab/environment.md)): on a self-managed 19.2.4-ee, a variable
