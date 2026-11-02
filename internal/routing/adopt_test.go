@@ -154,3 +154,25 @@ func TestSetAutonomy(t *testing.T) {
 		})
 	}
 }
+
+// The project's default is the top-level key, kept when set (ADR-0060).
+func TestSetProjectAutonomy(t *testing.T) {
+	repo := t.TempDir()
+	file := filepath.Join(repo, ".workline", "config.yaml")
+	if err := os.MkdirAll(filepath.Dir(file), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(file, []byte("roles:\n  product-owner:\n    settings: {autonomy: cautious}\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if level, changed, err := SetProjectAutonomy(repo, "enterprising"); err != nil || !changed || level != "enterprising" {
+		t.Fatalf("got %q %v %v", level, changed, err)
+	}
+	data, _ := os.ReadFile(file)
+	if !strings.Contains(string(data), "\nautonomy: enterprising\n") || !strings.Contains(string(data), "settings: {autonomy: cautious}") {
+		t.Errorf("the file:\n%s", data)
+	}
+	if level, changed, err := SetProjectAutonomy(repo, "normal"); err != nil || changed || level != "enterprising" {
+		t.Errorf("a default set already: got %q %v %v", level, changed, err)
+	}
+}

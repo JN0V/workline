@@ -8,7 +8,9 @@ verified: agent:claude-code
 Part of [the product owner](../README.md). Under
 `roles: {product-owner: {settings: …}}` in `.workline/config.yaml`
 ([config reference](../../../docs/config.md)). A key the project sets wins
-over the level, field by field.
+over the level, field by field. The level: `autonomy` here, else the
+project's top-level `autonomy`, else `normal`; the task says which
+([autonomy](../../../docs/autonomy.md)).
 
 ## The role's own
 

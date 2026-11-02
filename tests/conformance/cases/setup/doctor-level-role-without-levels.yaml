@@ -1,0 +1,15 @@
+case: setup/doctor-level-role-without-levels
+about: "A role with no levels ignores the project's default (ADR-0060, §3), and `workline doctor` says so: the committer, routed on every commit, has none — the level changes nothing for it, it runs as before; the product owner, which has levels, runs at the default; no merge policy, so the default turns no auto-merge on."
+given:
+  repo: documented
+  config:
+    autonomy: enterprising
+    roles:
+      product-owner: {settings: {issues-per-run: 4}}
+run: {doctor: true}
+expect:
+  status: pass
+  findings:
+    - {rule: level-unused, where: committer, message: "committer has no autonomy levels: the project's default, enterprising, changes nothing for it; it runs as before"}
+    - {rule: level-unused, where: merge, message: "no merge policy: the project's default, enterprising, turns no auto-merge on"}
+  no-findings: [{rule: level-unused, where: product-owner}]

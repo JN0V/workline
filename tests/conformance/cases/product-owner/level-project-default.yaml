@@ -1,0 +1,23 @@
+case: product-owner/level-project-default
+about: "The project's default level (ADR-0060, §3): `autonomy: enterprising` at the top, the product owner setting none of its own, runs at enterprising — five duplicates closed where normal closes three — and its task says the level comes from the project's default."
+given:
+  repo: backlog
+  config:
+    autonomy: enterprising
+  forge:
+    issues:
+      - {id: 7, title: "Export drops the last row", body: "Every CSV file: the export drops the last row.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: 0000000\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 8, title: "Row lost", body: "a row", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: 0000000\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 9, title: "Row lost", body: "a row", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: 0000000\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 10, title: "Row lost", body: "a row", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: 0000000\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 11, title: "Row lost", body: "a row", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: 0000000\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 12, title: "Row lost", body: "a row", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: 0000000\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:close-five-duplicates}
+expect:
+  no-findings: [{rule: act-cap}]
+  run-files:
+    in/task.md: {contains: ["Autonomy: enterprising (project default) — ", "- close-duplicate: act, 5 a run (level)"]}
+  forge:
+    issues:
+      - {id: 8, closed: true}
+      - {id: 12, closed: true}

@@ -208,6 +208,10 @@ type ProjectConfig struct {
 		Settings map[string]any    `yaml:"settings"`
 		Enforce  map[string]string `yaml:"enforce"`
 	} `yaml:"roles"`
+	// Autonomy is the project's default level (ADR-0060, §3): each role
+	// with an `autonomy` level runs at it unless its own settings pick
+	// one; "" none. The merge keeps its own, `merge: {autonomy: …}`.
+	Autonomy string `yaml:"autonomy"`
 	// Merge is the project's merge policy (ADR-0042): nil, none — no
 	// pull request's auto-merge is touched.
 	Merge *Merge `yaml:"merge"`
@@ -270,6 +274,9 @@ func LoadProjectConfig(repo string) (*ProjectConfig, error) {
 	if err := yaml.Unmarshal(data, &c); err != nil {
 		return nil, &ConfigError{err.Error()}
 	}
+	if c.Autonomy != "" && !slices.Contains(AutonomyLevels, c.Autonomy) {
+		return nil, &ConfigError{fmt.Sprintf("autonomy is %q: the levels are %s", c.Autonomy, strings.Join(AutonomyLevels, ", "))}
+	}
 	if c.Merge != nil && !slices.Contains(MergeLevels, c.Merge.Autonomy) {
 		return nil, &ConfigError{fmt.Sprintf("merge.autonomy is %q: the levels are %s", c.Merge.Autonomy, strings.Join(MergeLevels, ", "))}
 	}
@@ -286,6 +293,26 @@ func LoadProjectConfig(repo string) (*ProjectConfig, error) {
 	return &c, nil
 }
 
+// AutonomyLevels are the levels the project's default may name
+// (ADR-0060, §3); what each means is the role's, in its `levels`.
+var AutonomyLevels = []string{"cautious", "normal", "enterprising"}
+
+// ProjectDefault is the level setting the project's top-level `autonomy`
+// sets (ADR-0060, §3), in each role that has it and does not set its own.
+const ProjectDefault = "autonomy"
+
+// LevelFrom is the setting a role with levels gets beside its own: where
+// each level setting's value comes from, for its task to say.
+const LevelFrom = "level-from"
+
+// Where a role's level comes from, the first that holds (ADR-0060, §3):
+// its own setting, the project's default, the role's own default.
+const (
+	FromRoleSetting    = "role setting"
+	FromProjectDefault = "project default"
+	FromRoleDefault    = "role default"
+)
+
 // ByLevel is the setting a role with levels gets beside its own: its
 // settings as the level alone gives them, the project's left out — what a
 // project set is what differs from it.
@@ -294,7 +321,9 @@ const ByLevel = "by-level"
 // MergedSettings returns the role's defaults overridden by the project's
 // settings, as docs/spec/role-contract.md says: maps merged key by key, at
 // every depth; a list or a scalar replaced whole; a null removes the key.
-// A level the project picks is laid over the defaults first.
+// A level is laid over the defaults first: the role's own setting picks
+// it, else the project's default (a level the role has), else the role's
+// default (ADR-0060, §3).
 func (r *Role) MergedSettings(c *ProjectConfig) map[string]any {
 	var project map[string]any
 	if rc, ok := c.Roles[r.Name]; ok {
@@ -309,18 +338,39 @@ func (r *Role) MergedSettings(c *ProjectConfig) map[string]any {
 		names = append(names, name)
 	}
 	slices.Sort(names)
+	picked, from := map[string]any{}, map[string]any{}
 	for _, name := range names {
 		v, ok := project[name]
-		if !ok {
-			v = r.Settings[name]
+		from[name] = FromRoleSetting
+		if !ok || v == nil {
+			v, from[name] = r.Settings[name], FromRoleDefault
+			if _, has := r.Levels[name][c.Autonomy]; name == ProjectDefault && c.Autonomy != "" && has {
+				v, from[name] = c.Autonomy, FromProjectDefault
+				picked[name] = v
+			}
 		}
 		if over, ok := r.Levels[name][fmt.Sprint(v)]; ok {
 			base = MergeSettings(base, over)
 		}
 	}
 	out := MergeSettings(base, project)
+	for name, v := range picked {
+		out[name] = v
+	}
 	out[ByLevel] = MergeSettings(base, nil)
+	out[LevelFrom] = from
 	return out
+}
+
+// LevelOf reads a level setting from a role's merged settings: its value
+// and where it comes from (FromRoleSetting, FromProjectDefault or
+// FromRoleDefault); "" for a role with no such level.
+func LevelOf(settings map[string]any, name string) (level, from string) {
+	level, _ = settings[name].(string)
+	if f, ok := settings[LevelFrom].(map[string]any); ok {
+		from, _ = f[name].(string)
+	}
+	return level, from
 }
 
 // MergeSettings lays over on defaults into a new map that shares nothing

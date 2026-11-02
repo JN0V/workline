@@ -1,0 +1,16 @@
+case: product-owner/level-own-over-project-default
+about: "A role's own level wins over the project's default (ADR-0060, §3): `autonomy: enterprising` at the top, the product owner's `autonomy: cautious` in its settings — the setting it always had, still read — runs at cautious, and its task says the level is the role's setting."
+given:
+  repo: backlog
+  config:
+    autonomy: enterprising
+    roles:
+      product-owner:
+        settings: {autonomy: cautious}
+  forge:
+    issues:
+      - {id: 7, title: "Export drops the last row", body: "Every CSV file: the export drops the last row.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: 0000000\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:proposes-nothing}
+expect:
+  run-files:
+    in/task.md: {contains: ["Autonomy: cautious (role setting) — ", "- close-duplicate: propose (level)", "- ready: propose (level)"]}

@@ -1,0 +1,11 @@
+case: product-owner/level-nothing-set
+about: "No `autonomy` anywhere (ADR-0060, §3): the product owner runs at its role's default, normal, as before, and its task says the level is the role's default."
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 7, title: "Export drops the last row", body: "Every CSV file: the export drops the last row.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: 0000000\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:proposes-nothing}
+expect:
+  run-files:
+    in/task.md: {contains: ["Autonomy: normal (role default) — ", "- close-duplicate: act, 3 a run (level)", "- ready: act, 5 a run (level)"]}

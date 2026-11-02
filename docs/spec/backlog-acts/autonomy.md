@@ -78,6 +78,10 @@ accepted by the label, or proposed to an outsider in a comment.
 `enterprising` does the same, more a run. The level sets what is done with
 what is read, not how much is read.
 
+**Which level**: the role's own `autonomy`, else the project's top-level
+`autonomy`, else `normal` ([ADR-0060](../../adr/0060-the-person-is-on-the-loop.md#3-autonomy-is-a-level-per-role));
+the task says which, `role setting`, `project default` or `role default`.
+
 **Precedence**: the level, then a kind the project sets, field by field
 (`acts: {rename: {mode: act}}` at `cautious` keeps the role's cap); then
 the issue: one set aside gets nothing, one where a person undid that kind

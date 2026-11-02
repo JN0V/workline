@@ -57,6 +57,9 @@ Adopts this repository; run it again to do what is left.
   `autonomy: cautious`
   ([ADR-0038](adr/0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md)),
   unless the project set a level.
+- `--autonomy cautious|normal|enterprising` writes the project's
+  default level, each role's unless it sets its own, unless the project
+  set one ([autonomy](autonomy.md)).
 
 ## workline doctor
 
@@ -68,6 +71,9 @@ changes nothing.
 - In this repository: which hooks git runs there, whether the
   documentalist runs before a push, how many docs declare their sources,
   which files read as docs it does not read.
+- With an `autonomy` set: the level each role runs at and where it
+  comes from; a role with no levels, that it changes nothing for it
+  ([autonomy](autonomy.md)).
 - For each language the repository holds: which tools read it (lint,
   types, security, dependencies), which it lacks, and the gate check to
   add; a warning, never an error ([languages](languages.md)).

@@ -170,6 +170,7 @@ acts:
 			got := r.MergedSettings(project(tc.over))
 			level := got[ByLevel]
 			delete(got, ByLevel)
+			delete(got, LevelFrom)
 			if want := settings(t, tc.want); !reflect.DeepEqual(got, want) {
 				t.Errorf("got %v, want %v", got, want)
 			}
@@ -177,6 +178,41 @@ acts:
 				t.Errorf("by level: got %v, want %v", level, want)
 			}
 		})
+	}
+}
+
+// The level's precedence (ADR-0060, §3): the role's own setting, then the
+// project's default when the role has that level, then the role's own
+// default; each said where it comes from. A role with no levels takes
+// nothing from the project's default.
+func TestMergedSettingsProjectDefault(t *testing.T) {
+	r := &Role{Name: "po", Settings: settings(t, `{autonomy: normal, max: 1}`),
+		Levels: map[string]map[string]map[string]any{"autonomy": {
+			"cautious": settings(t, `{max: 0}`), "normal": {}, "enterprising": settings(t, `{max: 5}`)}}}
+	for _, tc := range []struct {
+		name, config, level, from string
+		max                       int
+	}{
+		{"nothing set", `{}`, "normal", FromRoleDefault, 1},
+		{"the project's default", `{autonomy: enterprising}`, "enterprising", FromProjectDefault, 5},
+		{"the role's own over the default", `{autonomy: enterprising, roles: {po: {settings: {autonomy: cautious}}}}`, "cautious", FromRoleSetting, 0},
+		{"a default the role lacks", `{autonomy: bold}`, "normal", FromRoleDefault, 1},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var c ProjectConfig
+			if err := yaml.Unmarshal([]byte(tc.config), &c); err != nil {
+				t.Fatal(err)
+			}
+			got := r.MergedSettings(&c)
+			level, from := LevelOf(got, "autonomy")
+			if level != tc.level || from != tc.from || got["max"] != tc.max {
+				t.Errorf("got %s (%s), max %v; want %s (%s), max %d", level, from, got["max"], tc.level, tc.from, tc.max)
+			}
+		})
+	}
+	plain := &Role{Name: "committer", Settings: map[string]any{"subject-max": 72}}
+	if got := plain.MergedSettings(&ProjectConfig{Autonomy: "enterprising"}); !reflect.DeepEqual(got, map[string]any{"subject-max": 72}) {
+		t.Errorf("a role with no levels took the project's default: %v", got)
 	}
 }
 

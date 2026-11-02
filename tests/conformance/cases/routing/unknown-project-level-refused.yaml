@@ -1,0 +1,9 @@
+case: routing/unknown-project-level-refused
+about: "An unknown project default level is refused, the levels named (ADR-0060, §3): a level someone believes in and nothing applies is a wish (principle 12)."
+given:
+  repo: documented
+  config: {autonomy: bold}
+run: {cli: [follow, --base, main]}
+expect:
+  exit: 64
+  stderr: [".workline/config.yaml: autonomy is \"bold\": the levels are cautious, normal, enterprising"]
