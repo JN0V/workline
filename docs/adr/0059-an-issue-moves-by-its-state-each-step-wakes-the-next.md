@@ -55,7 +55,9 @@ Built first, whatever else.
   run: what it did, what it waits for and why, the next step
   (principle 14). A refusal in a job's log alone is a defect.
 - **A claim with no pull request after `claim-hours` (24)** is released
-  by the engine: its label off, the reason in the comment.
+  by the engine: its label off, the reason in the comment. The
+  developer is woken on it again
+  ([amended](#amendment-2026-11-02-a-ready-issue-left-free-wakes-the-developer-again)).
 
 ### 2. States are labels, one at a time
 
@@ -415,6 +417,36 @@ Ready, Ready on the tester: a deadlock, three hours on
     put one back: their act undone by a rule;
   - the product owner re-reading each one: an agent call for a check
     the engine does with none (principle 4).
+
+## Amendment (2026-11-02): a ready issue left free wakes the developer again
+
+Settles [#894](https://github.com/JN0V/workline/issues/894): Ready held
+5 issues nobody held, each woken once. Three the developer took and let
+go after `claim-hours` (§1), no pull request; two it passed over, their
+Scope overlapping an issue it held. The record (§8) held the same state,
+body and ready label: nothing woke the developer again, and Tests waited
+on a full Ready for good.
+
+- **Back from Doing is entering Ready anew** (§8): the claim's label put
+  on after the line's last wake, now off, makes the step due again. It
+  is a hop: a developer taking and letting go one issue ends at
+  `max-hops`, Blocked, the count said on it (§6).
+- **An issue passed over for a claim** is due again once that claim
+  ends: the record keeps the issues held when the line woke the
+  developer.
+- **Once for each end, never on a clock**: each wake needs a claim to
+  end, by a merge or `claim-hours`. A record from before is due once
+  where the developer wrote its comment.
+- **A person's issue is theirs**: assigned, it is not woken again.
+- **Cost**: at each reconcile, one call per ready issue acted on, its
+  claim's label events; the open issues' listing reused.
+- **Not chosen**:
+  - a wake again after a delay: a run a day on an issue whatever
+    changed;
+  - a let-go issue back to Refine: its need did not change, only a run
+    failed;
+  - Ready's limit counting only claims: a free ready issue still never
+    woken.
 
 [ADR-0024]: 0024-obsolete-is-announced-then-closed-on-silence-and-a-second-judge.md
 [ADR-0028]: 0028-an-issue-names-what-it-waits-on.md

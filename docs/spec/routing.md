@@ -412,6 +412,14 @@ whose result moves the issue to the next. The table is the routing's
   left waiting there: the line moves it to `workline:blocked`, the
   tester's reason said (`tests-refused`;
   [#794](https://github.com/JN0V/workline/issues/794)).
+- **Left free by the developer, due again**
+  ([ADR-0059, amended](../adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#amendment-2026-11-02-a-ready-issue-left-free-wakes-the-developer-again)):
+  a wake of the developer records when (`woke`) and the issues it held
+  then (`held`). A ready issue, assigned to nobody, is due again
+  (`state-freed`) once its claim was put on since and let go, a hop
+  more, so a take-and-let-go cycle ends at `max-hops`; or once an issue
+  in `held` is held no more. A record from before `woke` is due once
+  where the developer wrote its comment. Never on a clock: no loop.
 - **Refine's record says the reviewer was asked** on the body (`asked`),
   where the reviewer is routed on `issue`. Acted on with no such mark,
   its spec still waiting on a review, the step is due again, once: a
