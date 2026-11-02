@@ -48,7 +48,7 @@ The first that holds:
 |---|---|---|---|
 | Product owner | proposes what sets direction; a question waits for its answer | completes issues, moves an evident one to ready; a question waits 24 h, then an assumption | the same, higher caps; the assumption written at once |
 | Developer | 3 review rounds alone, then its issue is blocked for a person | 5 rounds | 8 rounds |
-| Merge (its own key) | a person's yes on each pull request | workline's routine work merges alone | not yet |
+| Merge (its own key) | a person's yes on each pull request | workline's routine work merges alone, the developer's fixes too | features too; a person's yes on the milestone's [release candidate](release-candidate.md) |
 
 - **The product owner's detail**, act by act:
   [its settings](../roles/product-owner/docs/settings.md#each-kind-of-act).

@@ -22,6 +22,7 @@ each merges once its own head is green. No agent is called
 # .workline/config.yaml
 merge: {autonomy: cautious}   # off unless set: no auto-merge is touched
                               # normal: workline's own routine work with no yes, below
+                              # enterprising: features too, a person tries the release candidate
 ```
 
 ## What it does
@@ -110,6 +111,18 @@ too — the developer's fix, not its feature; an agent's rewording of a
 page for its reader once the project lets it; a revert sends their kind
 back to a person's yes. The kinds, the revert and the limits:
 [the merge policy at `normal`](merge-policy-normal.md).
+
+## `enterprising`: features too, the yes on the candidate
+
+```yaml
+merge: {autonomy: enterprising}
+```
+
+As `normal`, and the developer's features merge with no label too, each
+put in a milestone. Once a milestone's issues are all merged, workline
+cuts its release candidate; a person tries it, and their yes, a label on
+the candidate's issue, ships the version:
+[the release candidate](release-candidate.md).
 
 ## The veto is the forge's
 

@@ -1,10 +1,10 @@
 # ADR-0060: The person is on the loop: questions time out, autonomy per role, features wait for a release candidate
 
-- **Status:** proposed, until the maintainer merges it
+- **Status:** accepted (2026-11-02)
 - **Date:** 2026-11-02
 - **Decided by:** the maintainer, on 2026-11-02: the six decisions
-  below, in substance; the points under
-  [For the maintainer](#for-the-maintainer) are proposed
+  below, in substance; the three points under
+  [For the maintainer](#for-the-maintainer) as proposed
 - **Builds on:** [ADR-0018], [ADR-0021], [ADR-0022], [ADR-0039],
   [ADR-0054], [ADR-0055]; principles 1, 4, 12, 14
 - **Amends, once built:** [ADR-0026] (levels per role; drafts on
@@ -150,7 +150,7 @@ The kind is the forge's ([ADR-0039]): bug, feature, task.
 
 ## For the maintainer
 
-Proposed; not decided on 2026-11-02.
+Decided as proposed, by the maintainer, on 2026-11-02.
 
 1. **A fix release between candidates**: proposed, a patch from the last
    release branch, the fix backported, as Rust's beta and git-flow's
@@ -186,6 +186,14 @@ One pull request a step, its cases first in `tests/conformance/cases/`,
 5. **Milestone, release candidate, the person's yes ships** (§4–§5,
    [#861](https://github.com/JN0V/workline/issues/861)): research on
    pre-releases first. Ends a feature's yes on each pull request.
+   *Built*: [the release candidate](../release-candidate.md); the yes is
+   the label `workline:accepted` on the candidate's issue; release-please
+   asked for each version by its `Release-As:` footer. Not yet: a patch
+   release after the version shipped
+   ([#880](https://github.com/JN0V/workline/issues/880)), the version's
+   notes and changelog
+   ([#879](https://github.com/JN0V/workline/issues/879)), GitLab's
+   template ([#881](https://github.com/JN0V/workline/issues/881)).
 
 Docs to update with each step: [writing.md](../../roles/product-owner/docs/writing.md),
 [refine](../spec/backlog-acts/refine.md), [settings](../../roles/product-owner/docs/settings.md),

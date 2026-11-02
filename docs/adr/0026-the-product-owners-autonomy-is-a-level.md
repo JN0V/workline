@@ -8,7 +8,7 @@
 - **Builds on:** ADR-0018 (autonomy per kind of act; trust earned and
   lost), ADR-0022, ADR-0024, ADR-0025 (back to act; three ignored runs
   pause); principles 1, 4, 12, 14
-- **Amended by:** [ADR-0060](0060-the-person-is-on-the-loop.md): a Validation draft taken as an assumption past its delay at `normal` and `enterprising` (built); a level per role with a project default (built); once built, the drafts' threshold moved to the release candidate
+- **Amended by:** [ADR-0060](0060-the-person-is-on-the-loop.md): a Validation draft taken as an assumption past its delay at `normal` and `enterprising` (built); a level per role with a project default (built); the drafts' threshold moved to the release candidate (built: the person checks the candidate)
 
 ## Context
 

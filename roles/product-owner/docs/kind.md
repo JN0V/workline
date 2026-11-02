@@ -25,6 +25,10 @@ flowchart LR
   ([ADR-0060](../../../docs/adr/0060-the-person-is-on-the-loop.md#4-a-person-validates-by-the-issues-kind),
   [the developer's merge](../../developer/docs/merge.md)).
 - **An issue with no kind** waits for a person's yes, as a feature.
+- **At `merge: {autonomy: enterprising}`**, a feature merges alone too:
+  made ready, it is put in the next open milestone, whose release
+  candidate a person tries
+  ([the release candidate](../../../docs/release-candidate.md)).
 
 ## What it does
 
