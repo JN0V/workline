@@ -320,7 +320,11 @@ func (g *gitlab) Issue(id int) (*Issue, error) {
 		Author      struct {
 			Username string `json:"username"`
 		} `json:"author"`
-		Weight *int `json:"weight"` // Premium's, Ultimate's
+		Weight    *int `json:"weight"` // Premium's, Ultimate's
+		Milestone *struct {
+			Title string `json:"title"`
+			Due   string `json:"due_date"`
+		} `json:"milestone"`
 	}
 	if err := decode(out, &v); err != nil {
 		return nil, err
@@ -329,8 +333,40 @@ func (g *gitlab) Issue(id int) (*Issue, error) {
 		v.Labels = []string{}
 	}
 	in, err := g.insider(v.Author.Username)
-	return &Issue{ID: v.IID, Title: v.Title, Body: v.Description, Labels: v.Labels, Closed: v.State == "closed",
-		Author: v.Author.Username, Insider: in, Weight: v.Weight}, err
+	is := &Issue{ID: v.IID, Title: v.Title, Body: v.Description, Labels: v.Labels, Closed: v.State == "closed",
+		Author: v.Author.Username, Insider: in, Weight: v.Weight}
+	if v.Milestone != nil {
+		is.Milestone, is.MilestoneDue = v.Milestone.Title, v.Milestone.Due
+	}
+	return is, err
+}
+
+// MilestoneIssues lists the issues of the active milestone with this
+// title, open and closed; none when there is no such milestone.
+func (g *gitlab) MilestoneIssues(title string) ([]Issue, error) {
+	m, err := g.milestoneIDs()
+	if err != nil {
+		return nil, err
+	}
+	if _, ok := m[title]; !ok {
+		return nil, nil
+	}
+	return g.issues("all", "&milestone="+url.QueryEscape(title))
+}
+
+// CloseMilestone closes the active milestone with this title; none, it
+// changes nothing.
+func (g *gitlab) CloseMilestone(title string) error {
+	m, err := g.milestoneIDs()
+	if err != nil {
+		return err
+	}
+	n, ok := m[title]
+	if !ok {
+		return nil
+	}
+	_, err = g.api("-X", "PUT", fmt.Sprintf("projects/:id/milestones/%d", n), "-f", "state_event=close")
+	return err
 }
 
 // weights says whether the project's issues carry a weight: GitLab
@@ -390,8 +426,8 @@ func (g *gitlab) Issues() ([]Issue, error) { return g.issues("opened") }
 // AllIssues: GitLab keeps no close reason; a closed issue's is left empty.
 func (g *gitlab) AllIssues() ([]Issue, error) { return g.issues("all") }
 
-func (g *gitlab) issues(state string) ([]Issue, error) {
-	out, err := g.api("--paginate", "projects/:id/issues?state="+state+"&per_page=100")
+func (g *gitlab) issues(state string, filters ...string) ([]Issue, error) {
+	out, err := g.api("--paginate", "projects/:id/issues?state="+state+"&per_page=100"+strings.Join(filters, ""))
 	if err != nil {
 		return nil, err
 	}
