@@ -1,0 +1,41 @@
+case: routing/wip-ready-untested-to-tests
+about: >
+  The reconciler finds a ready issue that waits for its tests, from
+  before the line had a Tests state (#854): its Validation names a
+  scenario, no tester's Draft nor proof kind stands for it. It moves it
+  to Tests by rule, no agent, said in the line's comment with how to
+  undo it (ADR-0059, amended 2026-11-02). The issue already in Tests
+  gets its tests in the same run: Ready, at its limit of 1, counts no
+  issue the developer cannot take.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+    routing: {events: {issue: [tester, developer]}, wip: {ready: 1}}
+  forge:
+    issues:
+      - id: 1
+        title: "Add"
+        labels: ["workline:ready"]
+        labeled: {"workline:ready": "2026-10-20T09:00:00Z"}
+        body: "## Need\n\nI want to add.\n\n## Validation\n\n- **Two and three:** Given the library, When I add 2 and 3, Then I get 5.\n"
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:needs-tests"]
+        body: "## Need\n\nWhen I total an order, I want to multiply a price by a count, so I need not add it up by hand.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **By zero:** Given the library, When I multiply 5 by 0, Then I get 0.\n\n---\n\n## Verification\n\nA test a scenario, in tests/.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+run: {route: reconcile, open-merge-request: true, ai: "fake:tester-two-scenarios"}
+expect:
+  status: pass
+  agent-calls: 1
+  findings:
+    - {rule: state-untested, level: warn, where: "#1", message: "no tester's Draft nor proof kind stands for them: the developer does not take it before its tests: to tests"}
+    - {rule: state-wakes, level: info, where: "#3", message: "its state, tests, wakes the tester"}
+  forge:
+    issues:
+      - id: 1
+        labels: ["workline:needs-tests"]
+        comments: 1
+        comment-contains: ["**workline's line** moves this issue to tests, for its tests.", "to undo, put `workline:ready` back", "\"retest\":\"ready\""]
+      - {id: 3, labels: ["workline:ready"]}

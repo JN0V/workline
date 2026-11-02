@@ -1,0 +1,31 @@
+case: routing/wip-ready-untested-left-said-once
+about: >
+  A ready issue without its tests, left to a person who put it back,
+  the line's comment saying so already: a second event writes nothing,
+  and wakes no developer, who would only refuse it (ADR-0059, amended
+  2026-11-02).
+given:
+  repo: tested
+  config:
+    routing: {events: {issue: [tester, developer]}, wip: {ready: 1}}
+  forge:
+    issues:
+      - id: 1
+        title: "Add"
+        labels: ["workline:ready"]
+        labeled: {"workline:ready": "2026-11-01T09:00:00Z"}
+        body: "## Need\n\nI want to add.\n\n## Validation\n\n- **Two and three:** Given the library, When I add 2 and 3, Then I get 5.\n"
+        comments: ["**workline's line** finds this issue without its tests, and leaves it.\n\n<!-- workline:line-record {\"state\":\"ready\",\"body\":\"0\",\"labeled\":\"2026-10-31T09:00:00Z\",\"hops\":2,\"retest\":\"ready\",\"retest-kept\":\"2026-11-01T09:00:00Z\"} -->\n<!-- workline:sticky=line/state -->"]
+run: {route: issue, target: {issue: 1}, open-merge-request: true, ai: "fake:tester-two-scenarios"}
+expect:
+  status: pass
+  agent-calls: 0
+  summary: "issue: #1 wakes no role: it waits for its tests, left to a person, who put workline:ready back"
+  findings: [{rule: state-untested-left, level: info, where: "#1"}]
+  no-findings: [{rule: state-wakes}]
+  forge:
+    issues:
+      - id: 1
+        labels: ["workline:ready"]
+        comments: 1
+        comment-contains: ["finds this issue without its tests, and leaves it."]

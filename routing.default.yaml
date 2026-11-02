@@ -42,7 +42,10 @@ reconcile-max: 3
 # at most. A step whose `next` state is full does not start: it waits,
 # said once on its issue, and the next event or reconcile starts it when
 # room appears. Ready holds 5: about a week of the developer's runs, so a
-# ready issue is still current when built. A project sets its own in
+# ready issue is still current when built. Ready counts what the
+# developer can take: an issue waiting for its tests, or on another
+# issue, is counted apart, and one without its tests goes to Tests. Limits
+# on every state of a ring of `next` are refused. A project sets its own in
 # `routing: wip:`, state by state; 0 lifts a limit.
 wip:
   ready: 5

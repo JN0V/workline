@@ -1,0 +1,47 @@
+case: routing/wip-ready-counts-a-step-of-the-run
+about: >
+  An issue the tester moved to Ready earlier in the same reconcile is
+  counted there, its tests the tester's result, though the Drafts were
+  read before that step ran, #2 waiting for its tests counted apart
+  (ADR-0059, amended 2026-11-02). Ready, at its limit of 2 once #3 is
+  in it, keeps #4 waiting: the limit is not overrun within one run. The
+  developer's steps are left out (`skip`).
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+    routing: {events: {issue: [tester, developer]}, wip: {ready: 2}}
+  forge:
+    issues:
+      - id: 1
+        title: "Add"
+        labels: ["workline:ready"]
+        body: "## Need\n\nI want to add.\n\n## Validation\n\n- **Two and three:** Given the library, When I add 2 and 3, Then I get 5.\n"
+      - id: 2
+        title: "Subtract"
+        labels: ["workline:ready"]
+        body: "## Need\n\nI want to subtract.\n\n## Validation\n\n- **Five less three:** Given the library, When I subtract 3 from 5, Then I get 2.\n"
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:needs-tests"]
+        body: "## Need\n\nWhen I total an order, I want to multiply a price by a count, so I need not add it up by hand.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **By zero:** Given the library, When I multiply 5 by 0, Then I get 0.\n\n---\n\n## Verification\n\nA test a scenario, in tests/.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+      - id: 4
+        title: "Divide two numbers"
+        labels: ["workline:needs-tests"]
+        body: "## Need\n\nI want to divide.\n\n## Validation\n\n- **Six by three:** Given the library, When I divide 6 by 3, Then I get 2.\n"
+    merge-requests:
+      - {id: 9, branch: workline/tester/issue-1, draft: true}
+run: {route: reconcile, open-merge-request: true, ai: "fake:tester-two-scenarios", input: {skip: developer}}
+expect:
+  status: pass
+  agent-calls: 1
+  findings:
+    - {rule: state-wakes, level: info, where: "#3", message: "its state, tests, wakes the tester"}
+    - {rule: state-waits, level: info, where: "#4", message: "ready holds 2 open issues the developer can take, its limit 2"}
+  forge:
+    issues:
+      - {id: 2, labels: ["workline:ready"]}
+      - {id: 3, labels: ["workline:ready"]}
+      - {id: 4, labels: ["workline:needs-tests"]}

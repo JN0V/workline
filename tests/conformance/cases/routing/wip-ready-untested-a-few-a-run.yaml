@@ -1,0 +1,40 @@
+case: routing/wip-ready-untested-a-few-a-run
+about: >
+  Ready issues without their tests go to Tests a few a run (ADR-0059,
+  amended 2026-11-02): each move wakes the tester, so it counts in
+  reconcile-max, after the steps due. Here reconcile-max is 2: the issue
+  in Tests first, then one ready issue to its tests; the other waits for
+  the next run. In CI, listed due for the jobs that start each run;
+  nothing written here.
+given:
+  repo: tested
+  config:
+    routing: {events: {issue: [tester, developer]}, wip: {ready: 1}, reconcile-max: 2}
+  forge:
+    issues:
+      - id: 1
+        title: "Add"
+        labels: ["workline:ready"]
+        body: "## Need\n\nI want to add.\n\n## Validation\n\n- **Two and three:** Given the library, When I add 2 and 3, Then I get 5.\n"
+      - id: 2
+        title: "Subtract"
+        labels: ["workline:ready"]
+        body: "## Need\n\nI want to subtract.\n\n## Validation\n\n- **Five less three:** Given the library, When I subtract 3 from 5, Then I get 2.\n"
+      - id: 6
+        title: "Multiply"
+        labels: ["workline:needs-tests"]
+        body: "## Need\n\nI want to multiply.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n"
+run: {route: reconcile, open-merge-request: true, ai: "fake:tester-two-scenarios", input: {reconcile: list}}
+expect:
+  status: pass
+  agent-calls: 0
+  summary: "reconcile: 2 issues due: #6 #1"
+  findings:
+    - {rule: state-untested, level: warn, where: "#1"}
+    - {rule: state-wakes, level: info, where: "#6", message: "its state, tests, wakes the tester"}
+    - {rule: reconcile-left, level: info, where: "#2", message: "to go to its tests, past reconcile-max (2) this run"}
+  forge:
+    issues:
+      - {id: 1, labels: ["workline:ready"], comments: 0}
+      - {id: 2, labels: ["workline:ready"], comments: 0}
+      - {id: 6, labels: ["workline:needs-tests"], comments: 0}

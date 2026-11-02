@@ -60,6 +60,12 @@ type Record struct {
 	Talk      string `json:"talk,omitempty"`
 	Closed    []int  `json:"closed,omitempty"`
 	Revisited string `json:"revisited,omitempty"`
+	// Retest: the state the line moved the issue out of to its tests,
+	// lacking them (wip.go); kept through the states after, so a person
+	// putting it back is known. RetestKept: the labelling, as the forge
+	// dates it, the line said it left that way.
+	Retest     string `json:"retest,omitempty"`
+	RetestKept string `json:"retest-kept,omitempty"`
 }
 
 // StateWrite is what the line writes on an issue once its step ran:
@@ -68,7 +74,9 @@ type Record struct {
 // waits for room, the record as it was; with Stale, why it moves the
 // issue back to refine; with Kept, why it leaves a stale issue a person
 // put back; with Seen, that it saw the issue blocked first, its record
-// the base news is told against. Written at once, or by `workline apply --line` when the
+// the base news is told against; with Retest, why it moves a ready
+// issue to its tests; with RetestKept, why it leaves one a person put
+// back. Written at once, or by `workline apply --line` when the
 // line judged with no write token.
 type StateWrite struct {
 	Issue   int    `json:"issue"`
@@ -78,6 +86,9 @@ type StateWrite struct {
 	Stale   string `json:"stale,omitempty"`
 	Kept    string `json:"kept,omitempty"`
 	Seen    string `json:"seen,omitempty"`
+	// Retest, RetestKept: see the comment above (wip.go).
+	Retest     string `json:"retest,omitempty"`
+	RetestKept string `json:"retest-kept,omitempty"`
 	// Holds: why the product owner held the issue in refine for a spec
 	// review, said on it with the record (#840): what it waits for.
 	Holds string `json:"holds,omitempty"`
@@ -186,6 +197,7 @@ func due(s routing.State, is forge.Issue, labeled, spec string, rec Record, had 
 	if had && rec.State == now.State {
 		now.Stale, now.Kept = rec.Stale, rec.Kept // a stale move undone stays known in its state
 	}
+	now.Retest, now.RetestKept = rec.Retest, rec.RetestKept // a move to its tests stays known through the states after
 	if rec.State == BlockedState {
 		now.Hops = 0 // a person moved it out of Blocked: its count starts again
 	}
@@ -237,6 +249,11 @@ func writeState(f forge.Forge, cfg *routing.Config, repo string, w StateWrite, r
 		body = backlog.Said("workline's line", "waits to start this issue's next step", w.Waits,
 			"the next event on it, or the hourly reconcile, starts it when there is room; a person may raise the limit in routing.wip") +
 			"\n\n<!-- workline:" + recordMark + string(data) + " -->"
+	case w.Retest != "" || w.RetestKept != "":
+		var err error
+		if body, err = retestBody(f, cfg, repo, t, w); err != nil {
+			return err
+		}
 	case w.Stale != "" || w.Kept != "":
 		var err error
 		if body, err = staleBody(f, cfg, repo, t, w); err != nil {
