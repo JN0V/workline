@@ -102,7 +102,13 @@ func (p *Plan) checkKind(f forge.Backlog, c *Proposal, st *State) (rule, why str
 		for _, o := range p.issues {
 			open = append(open, o)
 		}
-		p.labels, _ = forge.ProjectLabels(f, open)
+		labels, err := forge.ProjectLabels(f, open)
+		if err != nil {
+			// Never a default label in place of the project's own, unseen:
+			// a duplicate kind label would follow (principle 12).
+			return "kind-labels-unread", "the project's labels could not be listed (" + err.Error() + "): which one tells the kind is not known"
+		}
+		p.labels = labels
 		if p.labels == nil {
 			p.labels = []string{}
 		}
