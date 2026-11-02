@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine/candidate.go, internal/engine/code.go, internal/engine/backlog.go, internal/forge/forge.go, ci/github/release-candidate.yml, ci/github/workline-merge.yml]
-checked: 4447b0ab
+checked: c2ac926b
 verified: agent:claude-code
 ---
 # The release candidate
