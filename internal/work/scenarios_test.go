@@ -35,6 +35,7 @@ func TestScenariosForms(t *testing.T) {
 			[]Scenario{{Name: "Old debt", Text: "Given <n> findings, When one is added, Then only it blocks Examples: | n | | 140 |"}}},
 		{"a title over named bullets", "**Must hold:**\n\n- **Old debt:** Given 140 findings, When one is added, Then only it blocks\n", []Scenario{oldDebt}},
 		{"a bullet named, nothing under it", "- **Scenario: Old debt**\n- **Moved code:**\n", nil},
+		{"a heading over prose", "#### Notes\n\nThe total is right when Ann opens it.\n", nil},
 		{"Given / When / Then with no name", "Given 140 findings, when one is added, then only it blocks.\n", nil},
 		{"a bullet named Example", "- **Example:** Given 140 findings, When one is added, Then only it blocks\n",
 			[]Scenario{{Name: "Example", Text: "Given 140 findings, When one is added, Then only it blocks"}}},
@@ -66,8 +67,10 @@ func TestScenariosUnread(t *testing.T) {
 		"Given a day of three sales, when Ann opens it, then she counts three.": true,
 		"- Given a day\n- When Ann opens it\n- Then she counts three\n":         true,
 		issue851: false,
-		"- **Day:** Given a day, When Ann opens it, Then three.": false,
-		"Ann opens a known day and counts three.":                false,
+		"- **Day:** Given a day, When Ann opens it, Then three.":              false,
+		"Given the cache is warm, a test checks the total when it is opened.": false,
+		"The total is given to Ann when she opens it, then she leaves.":       false,
+		"Ann opens a known day and counts three.":                             false,
 		"": false,
 	} {
 		if got := ScenariosUnread(v); got != want {

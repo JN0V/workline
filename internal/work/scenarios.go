@@ -26,9 +26,11 @@ var (
 	step = regexp.MustCompile(`(?i)^(?:given|when|then|and|but)\b`)
 	// apart opens a Gherkin block that is no scenario: its steps are none's.
 	apart = regexp.MustCompile(`(?i)^(?:feature|background|rule)\s*:`)
-	// gherkinWords: a text written as Given / When / Then.
-	givenWord    = regexp.MustCompile(`(?i)\bgiven\b`)
-	whenThenWord = regexp.MustCompile(`(?i)\b(?:when|then)\b`)
+	// givenStep and whenThenStep: a text written as Given / When / Then,
+	// each word opening a line or a bullet as a step does, When or Then
+	// after a comma too ("Given …, when …"); never a word in the prose.
+	givenStep    = regexp.MustCompile(`(?im)^\s*(?:(?:[-*+]|\d{1,3}[.)])\s+)?(?:\*\*|__)?\s*given\b`)
+	whenThenStep = regexp.MustCompile(`(?im)(?:^\s*(?:(?:[-*+]|\d{1,3}[.)])\s+)?(?:\*\*|__)?\s*|,\s*)(?:when|then)\b`)
 )
 
 // Scenarios reads the named scenarios of a Validation section, in the forms
@@ -162,14 +164,15 @@ func trimName(n string) string {
 	return strings.TrimSpace(strings.Trim(strings.TrimSpace(strings.TrimSuffix(strings.TrimSpace(n), ":")), "*_"))
 }
 
-// hasStep says whether a scenario's text holds a Gherkin step.
+// hasStep says whether a scenario's text opens on a Gherkin step.
 func hasStep(text string) bool {
-	return givenWord.MatchString(text) || whenThenWord.MatchString(text)
+	return step.MatchString(text)
 }
 
 // ScenariosUnread says whether a Validation is written as Given / When /
-// Then — a Given, and a When or a Then — yet holds no scenario Scenarios
-// reads: no test can name one, so the tester writes none.
+// Then — a Given, and a When or a Then, each opening a line or a bullet,
+// When or Then after a comma too — yet holds no scenario Scenarios reads:
+// no test can name one, so the tester writes none.
 func ScenariosUnread(validation string) bool {
-	return givenWord.MatchString(validation) && whenThenWord.MatchString(validation) && len(Scenarios(validation)) == 0
+	return givenStep.MatchString(validation) && whenThenStep.MatchString(validation) && len(Scenarios(validation)) == 0
 }
