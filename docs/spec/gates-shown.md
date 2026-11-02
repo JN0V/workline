@@ -54,7 +54,9 @@ the findings a change adds go, and how
     fifty a call, 500 at most, the rest counted;
   - one summary comment (`<!-- workline:sticky=gates/summary -->`),
     edited on each push: a row per check, a line per rule with its first
-    three places, as many rules as the reviewer's `findings-max`.
+    three places, as many rules as the reviewer's `findings-max`. On
+    the developer's pull request, it wakes a review round, which asks
+    each line ([the review loop](../../roles/developer/docs/review-loop.md#a-round)).
 - **Never code scanning** on a merge request: `--sarif` leaves the gates'
   findings out, and the inspector's triage of them.
 - **Nothing to say**: with no new finding and every check passing, no
