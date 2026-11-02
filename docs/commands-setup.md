@@ -102,7 +102,10 @@ changes nothing.
 ## workline version
 
 The engine running: the release it was built as, else the module version
-Go recorded, else `(devel)`.
+Go recorded, else `(devel)`. One line.
+
+`--verbose` adds a second line: the Go release and the platform the engine
+was built with, such as `go1.27.1 linux/amd64`.
 
 ## Before a push
 
