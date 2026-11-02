@@ -987,6 +987,31 @@ func sourceText(d *Doc, repo string) (string, error) {
 	return b.String(), nil
 }
 
+// holdsWhole reports whether held has name as a whole identifier: not inside
+// a longer word.
+func holdsWhole(held, name string) bool {
+	if name == "" {
+		return false
+	}
+	isWord := func(b byte) bool {
+		return b == '_' || b >= '0' && b <= '9' || b >= 'a' && b <= 'z' || b >= 'A' && b <= 'Z' || b >= 0x80
+	}
+	for off := 0; ; {
+		i := strings.Index(held[off:], name)
+		if i < 0 {
+			return false
+		}
+		i += off
+		end := i + len(name)
+		before := i == 0 || !isWord(held[i-1]) || !isWord(name[0])
+		after := end == len(held) || !isWord(held[end]) || !isWord(name[len(name)-1])
+		if before && after {
+			return true
+		}
+		off = i + 1
+	}
+}
+
 // uncoveredSplit is uncovered, and the same lines apart: those whose names
 // are all held by held (the text of the sources), and those naming one that
 // none holds.
@@ -1001,7 +1026,7 @@ func uncoveredSplit(content string, kept []claim, held string) (all, inSource, g
 		for _, span := range codeSpan.FindAllString(l.text, -1) {
 			if name, ok := codeName(span); ok {
 				ids = append(ids, "`"+name+"`")
-				found = found && strings.Contains(held, name)
+				found = found && holdsWhole(held, name)
 			}
 		}
 		if len(ids) == 0 {
