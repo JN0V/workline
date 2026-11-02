@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"runtime"
 	"strings"
 
 	"github.com/JN0V/workline/internal/work"
@@ -124,6 +125,7 @@ func helpCmd(args []string) int {
 
 func versionCmd(args []string) int {
 	fs := newFlags("version")
+	verbose := fs.Bool("verbose", false, "also print the Go release and the platform the engine was built with")
 	if code, done := parseFlags(fs, args); done {
 		return code
 	}
@@ -131,6 +133,9 @@ func versionCmd(args []string) int {
 		return misuse(fs, "takes no argument")
 	}
 	fmt.Println(engineVersion())
+	if *verbose {
+		fmt.Println(runtime.Version() + " " + runtime.GOOS + "/" + runtime.GOARCH)
+	}
 	return 0
 }
 
