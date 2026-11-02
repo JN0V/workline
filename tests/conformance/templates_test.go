@@ -1665,6 +1665,8 @@ func TestDeveloperTemplatesRouteTheReadyIssue(t *testing.T) {
 		Concurrency map[string]any `yaml:"concurrency"`
 		Jobs        map[string]struct {
 			If          string            `yaml:"if"`
+			Needs       string            `yaml:"needs"`
+			Environment any               `yaml:"environment"`
 			Concurrency map[string]any    `yaml:"concurrency"`
 			Permissions map[string]string `yaml:"permissions"`
 			Steps       []struct {
@@ -1741,6 +1743,28 @@ func TestDeveloperTemplatesRouteTheReadyIssue(t *testing.T) {
 	if !strings.Contains(rec.If, "(github.event_name == 'issues' && startsWith(github.event.label.name, 'workline:'))") || strings.Contains(rec.If, "github.event_name == 'workflow_dispatch' ||") ||
 		rec.Concurrency["group"] != "workline-reconcile" || rec.Concurrency["cancel-in-progress"] != false || !told {
 		t.Errorf("workline-develop.yml, reconcile: not started by the events the workflow gets, one at a time, told when it last ran: %q %v", rec.If, rec.Concurrency)
+	}
+	// The heartbeat (#845): each reconcile starts the next one, which waits
+	// the wait timer of the environment workline-heartbeat, holding no
+	// runner and no token; one a branch, a new one cancelling the one
+	// waiting; none when the environment has no wait timer, said.
+	beat := wf.Jobs["heartbeat"]
+	env, _ := beat.Environment.(map[string]any)
+	rearmed := false
+	for _, s := range rec.Steps {
+		rearmed = rearmed || strings.Contains(s.Run, "environments/workline-heartbeat") && strings.Contains(s.Run, `"wait_timer"`) &&
+			strings.Contains(s.Run, "-f reconcile=next") && strings.Contains(s.Run, "no heartbeat")
+	}
+	if fmt.Sprint(env["name"]) != "workline-heartbeat" || env["deployment"] != false || len(beat.Permissions) != 0 ||
+		beat.Concurrency["cancel-in-progress"] != true || !strings.Contains(fmt.Sprint(beat.Concurrency["group"]), "workline-heartbeat-") ||
+		!strings.Contains(beat.If, "inputs.reconcile == 'next'") || rec.Needs != "heartbeat" ||
+		!strings.Contains(rec.If, "needs.heartbeat.result == 'success' || needs.heartbeat.result == 'skipped'") ||
+		!strings.Contains(rec.If, "inputs.reconcile == 'next'") || !rearmed {
+		t.Errorf("workline-develop.yml: no heartbeat starting the next reconcile after the environment's wait timer: %q %v %v %q", beat.If, beat.Environment, beat.Concurrency, rec.If)
+	}
+	// A heartbeat's run starts no issue's step.
+	if !strings.Contains(judge.If, "inputs.reconcile == ''") {
+		t.Errorf("workline-develop.yml, judge: a heartbeat's run would take an issue: %q", judge.If)
 	}
 	routed := false
 	for _, s := range judge.Steps {

@@ -10,12 +10,15 @@
 # reviewer's verdict or a person's comment runs a review round.
 #   judge, review          the agent and a read token.
 #   apply, review-apply    the App's key (environment workline-app), no AI key.
+#   heartbeat              no token; the environment workline-heartbeat, its wait
+#                          timer (55 min) the gap between two reconciles (#845).
 # Why each part: roles/developer/docs/triggers.md.
 name: workline develop
 # A run of an issue's step named for it, `workline develop #<n>`: a start
 # of that issue's run is skipped while one is queued or running (#806).
 run-name: >-
   ${{ (github.event_name == 'workflow_dispatch' && inputs.issue != '' && format('workline develop #{0}', inputs.issue)) ||
+  (github.event_name == 'workflow_dispatch' && inputs.reconcile == 'next' && 'workline develop heartbeat') ||
   (github.event_name == 'issues' && github.event.sender.type != 'Bot' && startsWith(github.event.label.name, 'workline:') &&
   format('workline develop #{0}', github.event.issue.number)) || github.workflow }}
 on:
@@ -27,13 +30,15 @@ on:
     inputs:
       issue: {description: "the issue whose state's step runs; empty: the first ready issue nobody took", required: false, default: ""}
       pull-request: {description: "a review round on this pull request of the developer's, rather than an issue", required: false, default: ""}
-      reconcile: {description: "true: the reconciler now, as the hourly schedule runs it, rather than an issue", required: false, default: ""}
+      reconcile: {description: "true: the reconciler now, rather than an issue; next: once the heartbeat's wait timer passed", required: false, default: ""}
   # The reviewer's comment, written or edited by the App (a comment the
   # job's own token writes wakes nothing), or a person's.
   issue_comment: {types: [created, edited]}
-  # The reconciler, hourly, off the hour: a step an event missed
-  # (ADR-0059). A safety net, not the driver; GitHub's schedule late or
-  # skipped, the events above start it too (job reconcile).
+  # The reconciler, hourly: a step an event missed (ADR-0059). A safety
+  # net, not the driver. Each reconcile starts the next one, an hour on,
+  # by the heartbeat (job heartbeat); GitHub runs this schedule late or
+  # not at all, so it and the events above only start it again when the
+  # heartbeat stopped (#845).
   schedule: [{cron: "41 * * * *"}]
 permissions: {}
 
@@ -43,7 +48,7 @@ env:
 jobs:
   judge:
     if: >-
-      (github.event_name == 'workflow_dispatch' && inputs['pull-request'] == '' && inputs.reconcile != 'true') ||
+      (github.event_name == 'workflow_dispatch' && inputs['pull-request'] == '' && inputs.reconcile == '') ||
       (github.event_name == 'issues' && startsWith(github.event.label.name, 'workline:') && github.event.sender.type != 'Bot' &&
         github.event.issue.state == 'open' && !github.event.issue.pull_request)
     # On the job, after its `if`: another label takes no group. One run an
@@ -189,17 +194,35 @@ jobs:
             echo "#$ISSUE's next step started" >> "$GITHUB_STEP_SUMMARY"
           fi
 
+  # The heartbeat (#845): the reconciler's next run, started by the last
+  # one, waits here for the wait timer of the environment
+  # workline-heartbeat (55 minutes), holding no runner, then runs the job
+  # reconcile. One a branch: a new one cancels the one waiting.
+  heartbeat:
+    if: github.event_name == 'workflow_dispatch' && inputs.reconcile == 'next'
+    environment: {name: workline-heartbeat, deployment: false}
+    concurrency:
+      group: workline-heartbeat-${{ github.ref_name }}
+      cancel-in-progress: true
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - run: echo "the heartbeat's wait timer passed; the reconciler runs"
+
   # The reconciler (ADR-0059): each open issue whose step is due and no
   # event started, at most reconcile-max (3) a run, each its own run. No
-  # agent, a read token, the right to start runs. Hourly by the schedule,
-  # or by hand (input reconcile); and on an issue labelled, the line's
-  # every hop, once 55 minutes passed since the last run that succeeded,
-  # kept in the Actions cache (#789; why: the developer's triggers page).
+  # agent, a read token, the right to start runs. Hourly by the heartbeat,
+  # or by hand (input reconcile=true). The schedule, or an issue
+  # labelled, the line's every hop, start it once 55 minutes passed since
+  # the last run that succeeded, kept in the Actions cache: the heartbeat
+  # stopped (#789, #845; why: the developer's triggers page).
   # One at a time.
   reconcile:
+    needs: heartbeat
     if: >-
+      !cancelled() && (needs.heartbeat.result == 'success' || needs.heartbeat.result == 'skipped') && (
       github.event_name == 'schedule' || (github.event_name == 'issues' && startsWith(github.event.label.name, 'workline:')) ||
-      (github.event_name == 'workflow_dispatch' && inputs.reconcile == 'true')
+      (github.event_name == 'workflow_dispatch' && (inputs.reconcile == 'true' || inputs.reconcile == 'next')))
     concurrency:
       group: workline-reconcile
       cancel-in-progress: false
@@ -210,7 +233,7 @@ jobs:
         with: {path: "${{ runner.temp }}/workline-reconcile", key: "workline-reconcile-${{ github.run_id }}", restore-keys: "workline-reconcile-"}
       - name: Due, 55 minutes after the last
         id: due
-        env: {FORCED: "${{ github.event_name == 'schedule' || inputs.reconcile == 'true' }}"}
+        env: {FORCED: "${{ inputs.reconcile == 'true' || inputs.reconcile == 'next' }}"}
         run: |
           last=$(cat "$RUNNER_TEMP/workline-reconcile/last" 2>/dev/null || true)
           if [ "$FORCED" != true ] && [ -n "$last" ] && ago=$(( $(date -u +%s) - $(date -u -d "$last" +%s) )) && [ "$ago" -lt 3300 ]; then
@@ -249,6 +272,27 @@ jobs:
       - uses: actions/cache/save@v4
         if: steps.due.outputs.due == 'true'
         with: {path: "${{ runner.temp }}/workline-reconcile", key: "workline-reconcile-${{ github.run_id }}-${{ github.run_attempt }}"}
+      # The next reconcile, by the heartbeat (#845), even when this one
+      # failed: its run waits the environment's wait timer, in minutes.
+      # No such environment, or no wait timer (a private repository on
+      # GitHub's free plan has none), no heartbeat: said, the schedule and
+      # the events run the reconciler as they can.
+      - name: The next reconcile, by the heartbeat
+        if: always() && steps.due.outputs.due == 'true'
+        env: {GH_TOKEN: "${{ github.token }}"}
+        run: |
+          wait=$(gh api "repos/$GITHUB_REPOSITORY/environments/workline-heartbeat" \
+            --jq '[.protection_rules[]? | select(.type == "wait_timer") | .wait_timer][0] // 0' 2>/dev/null) || wait=0
+          case "$wait" in ''|*[!0-9]*) wait=0 ;; esac
+          if [ "$wait" -lt 5 ]; then
+            echo "no heartbeat: no environment workline-heartbeat with a wait timer of 5 minutes or more; the schedule and the line's events start the next reconcile, when GitHub runs them" | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          if gh workflow run "$(basename "${GITHUB_WORKFLOW_REF%%@*}")" --ref "$GITHUB_REF_NAME" -f reconcile=next; then
+            echo "the next reconcile in $wait min, by the heartbeat" | tee -a "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::warning title=workline::the heartbeat not started: the schedule or the line's next event starts the reconciler"
+          fi
 
   # A review round (ADR-0054, step 6): a fresh run on the developer's own
   # pull request, reading its record, the reviewer's findings and a
