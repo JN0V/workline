@@ -1,0 +1,64 @@
+case: routing/bug-not-reproduced-blocked-after-the-delay
+about: >
+  Not reproduced (ADR-0060, decision 4): #3 is a bug whose tests passed
+  on main; the tester marked it workline:needs-repro on 2026-10-01 and
+  asked its reporter how to reproduce it. No answer came within the
+  product owner's delay, 24 h at `normal`, counted from when the forge
+  says the mark was put on. The reconciler, with no agent, moves it to
+  Blocked, its reason "not reproduced" on the board, the mark off. Its
+  kind stays bug: never set to feature. #4, marked the same day, got
+  its reporter's answer: back to refine, for the product owner to read
+  it, the mark off. #5, marked in the future of this run's clock, waits
+  for its reporter, said.
+given:
+  repo: tested
+  config:
+    routing: {events: {issue: [tester, developer]}}
+  forge:
+    issues:
+      - id: 3
+        title: "add 5 0 gives 4"
+        author: ann
+        insider: true
+        labels: ["bug", "workline:needs-tests", "workline:needs-repro"]
+        labeled: {"workline:needs-repro": "2026-10-01T09:00:00Z"}
+        body: "## Need\n\nI want add to keep the price.\n\n## Validation\n\n- **Adding zero:** Given the library, When I add 5 and 0, Then I get 5.\n"
+        comments:
+          - "**The tester** could not reproduce this bug.\n\n<!-- workline:sticky=tester/issue -->"
+      - id: 4
+        title: "add 7 0 gives 6"
+        author: ann
+        insider: true
+        labels: ["bug", "workline:needs-tests", "workline:needs-repro"]
+        labeled: {"workline:needs-repro": "2026-10-01T09:00:00Z"}
+        body: "## Need\n\nI want add to keep the price.\n\n## Validation\n\n- **Adding zero:** Given the library, When I add 7 and 0, Then I get 7.\n"
+        comments:
+          - "**The tester** could not reproduce this bug.\n\n<!-- workline:sticky=tester/issue -->"
+          - {body: "It happens only with `LANG=C`: `LANG=C sh -c '. ./lib.sh; add 7 0'` prints 6.", author: ann, insider: true, created: "2026-10-01T12:00:00Z"}
+      - id: 5
+        title: "add 9 0 gives 8"
+        author: ann
+        insider: true
+        labels: ["bug", "workline:needs-tests", "workline:needs-repro"]
+        labeled: {"workline:needs-repro": "2099-01-01T09:00:00Z"}
+        body: "## Need\n\nI want add to keep the price.\n\n## Validation\n\n- **Adding zero:** Given the library, When I add 9 and 0, Then I get 9.\n"
+        comments:
+          - "**The tester** could not reproduce this bug.\n\n<!-- workline:sticky=tester/issue -->"
+run: {route: reconcile, open-merge-request: true, ai: "fake:tester-bug-not-shown"}
+expect:
+  status: pass
+  agent-calls: 0
+  findings:
+    - {rule: not-reproduced, level: warn, where: "#3", message: "not reproduced: its tests passed on the base, and its reporter gave no way to reproduce it in 24 h (acts.ask.wait): moved to blocked"}
+    - {rule: repro-answered, level: info, where: "#4", message: "@ann answered after the tester could not reproduce it"}
+    - {rule: repro-waits, level: info, where: "#5", message: "its tests pass on the base: it waits for its reporter until 2099-01-02 09:00 UTC (acts.ask.wait 24 h)"}
+  forge:
+    issues:
+      - id: 3
+        labels: ["bug", "workline:blocked"]
+        comment-contains: ["**workline's line** blocks this issue", "not reproduced"]
+      - id: 4
+        labels: ["bug", "workline:to-refine"]
+        comment-contains: ["**workline's line** moves this bug back to refine", "@ann answered"]
+      - id: 5
+        labels: ["bug", "workline:needs-tests", "workline:needs-repro"]

@@ -311,6 +311,36 @@ func (a *applier) level(c backlog.Proposal) error {
 	return f.Sticky(t, backlog.FormatState(*st), backlog.StateMarker(a.role), false)
 }
 
+// kind sets an issue's kind label and records it in its state (ADR-0039
+// (c)): read again first, a kind label put since is a person's, kept,
+// said; never a swap, never a label taken off.
+func (a *applier) kind(c backlog.Proposal) error {
+	f := a.forge
+	is, err := f.Issue(c.Issue)
+	if err != nil {
+		return err
+	}
+	if _, l := backlog.KindOf(is.Labels); l != "" {
+		a.findings = append(a.findings, verdict.Finding{Rule: "kind-kept", Level: "warn", Where: fmt.Sprintf("#%d", c.Issue),
+			Message: fmt.Sprintf("its label `%s` says its kind since the run read it: a person's, kept (found when applying)", l)})
+		return nil
+	}
+	t := forge.Target{Kind: "issue", ID: c.Issue}
+	if err := f.Label(t, []string{c.KindLabel}, nil); err != nil {
+		return err
+	}
+	comments, err := f.(forge.Backlog).Comments(t)
+	if err != nil {
+		return err
+	}
+	st, _, err := backlog.ReadState(comments, a.role)
+	if err != nil {
+		return fmt.Errorf("#%d: its state comment: %w", t.ID, err)
+	}
+	st.Kind = c.KindLabel
+	return f.Sticky(t, backlog.FormatState(*st), backlog.StateMarker(a.role), false)
+}
+
 // rename sets an issue's title and records it in its state: a title other
 // than the one recorded is a person's (ADR-0022).
 func rename(f forge.Forge, role string, c backlog.Proposal) error {

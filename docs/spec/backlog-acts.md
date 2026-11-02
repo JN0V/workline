@@ -11,7 +11,8 @@ What the engine does when a role acts on a project's issues rather than on
 its code (ADR-0018). The product owner proposes the acts; the engine checks
 each one against the code and the forge, then does it, proposes it, or drops
 it. These pages are the contract; the acts built are closing, naming an
-issue's sources, putting it in a milestone, ordering it, opening one from
+issue's sources, putting it in a milestone, ordering it, setting its
+kind ([the kind](../../roles/product-owner/docs/kind.md)), opening one from
 a file, refining one to ready — and back —, splitting one — and
 reporting on a parent as its parts close —, renaming it, naming what it
 waits on, and flagging the issues built on a need that changed. Since

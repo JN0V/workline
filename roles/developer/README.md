@@ -52,8 +52,9 @@ file. All roles: [docs/roles.md](../../docs/roles.md). Where it stands:
   a person's comment; the five whys at round three, a person past
   round five ([the review loop](docs/review-loop.md)).
 - **Its fixes merge alone** at the merge policy's `normal`, every gate
-  passed; a feature waits for a person's yes. The issue's labels tell
-  which, never the agent ([the merge](docs/merge.md)).
+  passed, a bug once a test that failed on the base showed it; a feature
+  waits for a person's yes. The issue's labels tell which, never the
+  agent ([the merge](docs/merge.md)).
 - **With no agent**: names the issue it would take; claims nothing.
 
 **Measured** on planted issues and a copy of a real repository:

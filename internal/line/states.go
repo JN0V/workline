@@ -108,6 +108,13 @@ func stateOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, 
 	if w, held, err := retest(res, cfg, b, t, s, is, rec, had, trail.Labeled, comments); err != nil || held {
 		return nil, w, err
 	}
+	if s.Role == "tester" && slices.Contains(is.Labels, backlog.LabelNeedsRepro) {
+		// A bug its tests did not show: its reporter's answer, or the
+		// delay, moves it; with no agent (ADR-0060).
+		if w, held, err := repro(res, b, t, s, is, rec, had, trail.Labeled, notes); err != nil || held {
+			return nil, w, err
+		}
+	}
 	if s.Name != refineState {
 		spec = "" // a review is read in refine alone: no other state woken by it
 	}
@@ -235,6 +242,10 @@ func byState(res *Result, cfg *routing.Config, o engine.Options, event string, s
 		switch res.Findings[len(res.Findings)-1].Rule { // stateOf's last word on it
 		case "tests-refused":
 			why = "to be blocked, its tests refused"
+		case "not-reproduced":
+			why = "to be blocked, not reproduced"
+		case "repro-answered":
+			why = "its reporter answered, to go back to refine"
 		case "state-waits":
 			why = "to say it waits for room"
 		case "state-stale":
@@ -251,6 +262,9 @@ func byState(res *Result, cfg *routing.Config, o engine.Options, event string, s
 		res.Summary = fmt.Sprintf("%s: %s due, %s: not started (--input %s=list)", event, where, why, ReconcileInput)
 	case block != nil && block.Stale != "":
 		res.Summary = fmt.Sprintf("%s: %s back to refine: %s", event, where, block.Stale)
+		keepState(res, cfg, f, spec, o, *block, "")
+	case block != nil && block.Repro != "":
+		res.Summary = fmt.Sprintf("%s: %s back to refine: %s", event, where, block.Repro)
 		keepState(res, cfg, f, spec, o, *block, "")
 	case block != nil && block.Kept != "":
 		res.Summary = fmt.Sprintf("%s: %s stale, left: %s", event, where, block.Kept)
@@ -428,7 +442,7 @@ func reconcile(res *Result, cfg *routing.Config, o engine.Options) *Result {
 			retests = append(retests, retested{i, *block})
 			continue
 		}
-		if block != nil && (block.Waits != "" || block.Stale != "" || block.Kept != "" || block.Seen != "" || block.RetestKept != "") { // no agent, no step: outside reconcile-max
+		if block != nil && (block.Waits != "" || block.Stale != "" || block.Kept != "" || block.Seen != "" || block.RetestKept != "" || block.Repro != "") { // no agent, no step: outside reconcile-max
 			if list {
 				res.Due = append(res.Due, is.ID)
 			} else {

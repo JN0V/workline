@@ -1,0 +1,2 @@
+- kind: {issue: 9, kind: bug, why: "the export worked and now loses the last row."}
+- kind: {issue: 10, kind: bug, why: "the export is slower than it was."}

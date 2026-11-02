@@ -32,6 +32,8 @@ func offer(c Proposal) string {
 		return say(fmt.Sprintf("Set its priority to %s (now: %s).", scale.Value(c.Priority), c.Before))
 	case "effort":
 		return say(fmt.Sprintf("Set its effort to %s (now: %s).", scale.EffortValue(c.Effort), c.Before))
+	case "kind":
+		return say(fmt.Sprintf("Label it `%s`: it is a %s.", c.KindLabel, c.IssueKind))
 	case "rename":
 		return say(fmt.Sprintf("Rename it to %q.", strings.TrimSpace(c.Title)))
 	case "split":

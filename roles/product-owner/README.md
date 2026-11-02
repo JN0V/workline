@@ -97,7 +97,8 @@ At `autonomy: normal`, the default:
 - **Alone**: names an issue's code; completes it — Scope and Verification
   from the code, Need and Validation as drafts; asks its reporter what is
   missing; closes an evident duplicate; moves an evident issue to
-  `ready` (four sections, none a draft).
+  `ready` (four sections, none a draft); labels an issue with no kind
+  bug, feature or task, once ([the kind](docs/kind.md)).
 - **Out of Blocked, at every level**: a blocked issue the line wakes it
   on, sent back to the state it came from or to refine; or kept
   blocked, its reason said afresh; put `workline:blocked` back to undo

@@ -1,0 +1,28 @@
+case: product-owner/kind-set-where-none-is
+about: >
+  The kind set (ADR-0039 (c), ADR-0060 step 3): issues with no kind label
+  get one when the product owner reads them, the project's own label
+  first — `type::feature` exists here, so a feature gets it; `bug` and
+  `task` are the first names where the project has none. Each is said
+  done, recorded once in the issue's state, and the developer's pull
+  request is told by it. An issue whose label says a kind already keeps
+  it: a kind is never swapped.
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost on export", body: "The export loses the last row.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 10, title: "Export to JSON", body: "Add a JSON export.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 11, title: "Bump the CSV library", body: "A new version is out.", author: ann, insider: true, labels: [chore], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 12, title: "An old idea", body: "Kept for its label.", author: ann, insider: true, labels: ["type::feature"], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:kind-three}
+expect:
+  findings:
+    - {rule: done, where: "#9", message: "Labelled #9 `bug`, a bug"}
+    - {rule: done, where: "#10", message: "Labelled #10 `type::feature`, a feature"}
+    - {rule: kind-kept, where: "#11", message: "its label `chore` says its kind already: a kind is never swapped"}
+  forge:
+    issues:
+      - {id: 9, labels: [bug], comment-contains: "kind: bug"}
+      - {id: 10, labels: ["type::feature"], comment-contains: "kind: type::feature"}
+      - {id: 11, labels: [chore]}

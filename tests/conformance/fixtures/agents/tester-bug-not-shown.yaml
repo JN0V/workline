@@ -1,0 +1,7 @@
+- patch:
+    file: tests/test_add_zero.sh
+    content: |
+      # Scenario: Adding zero
+      # Given the library, When I add 5 and 0, Then I get 5.
+      . ./lib.sh
+      [ "$(add 5 0)" = 5 ]

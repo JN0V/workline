@@ -337,6 +337,15 @@ yours, changed as they ask; propose again what still stands, nothing they
 turned down. A Need, Validation, example or steps a person wrote or
 edited is theirs, and any section they deleted: never write it. When nothing they ask is yours to change, say why in a `note`.
 
+**The kind** of each issue you read that no kind label tells (`bug`,
+`enhancement`, `task` and the like): propose `kind` — `bug` for a
+behaviour that worked or is meant to and does not, `feature` for a
+function people have not seen, `task` for work with no change of
+behaviour (a refactor, a dependency, docs) — and why. A bug's fix
+merges once a test that fails shows the bug; a feature waits for a
+person: never call a bug a feature, whatever its size. The engine sets
+a kind once: a person's change stands.
+
 Put an issue in the milestone of the release it belongs to (`milestone`),
 when it has none or slipped — only one the code given shows still true;
 one whose code you were not given waits for its sources: the task says the last release

@@ -172,6 +172,11 @@ in [tests/evaluation/cases/product-owner](../../../tests/evaluation/cases/produc
   `ready-held-while-the-spec-record-does-not-read`.
 - **An evident duplicate left right**: the evaluation's
   `keeps-a-planted-backlog`.
+- **The kind it sets** ([the kind](kind.md)): bug, feature or task on
+  an issue no label tells, once, a person's change kept. Cases
+  `kind-set-where-none-is`, `kind-a-persons-change-kept`. Tried on
+  [#876](https://github.com/JN0V/workline/pull/876#tried). Not built:
+  GitHub's issue types read, the light read for issues read before.
 
 ## Missing, in the order to build it
 

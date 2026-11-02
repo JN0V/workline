@@ -125,6 +125,9 @@ type Config struct {
 	// (acts.ask.wait, ADR-0060): never at cautious, 24 h at normal, at
 	// once at enterprising.
 	Wait Delay
+	// Kinds: the project's labels per kind, the first that exists set by
+	// the kind act (`kinds`, ADR-0039 (c)); none for a kind, KindLabels'.
+	Kinds map[string][]string
 }
 
 // ScopeFile is where, in the run's folder, pre lists the issues an event
@@ -225,6 +228,7 @@ func ReadConfig(settings map[string]any) (Config, error) {
 	if c.Wait, err = ReadWait(ask["wait"]); err != nil {
 		return c, err
 	}
+	c.Kinds = KindNames(settings)
 	level, _ := settings[byLevel].(map[string]any)
 	preset := Settings(level)
 	for kind, s := range c.Acts {
@@ -292,7 +296,7 @@ func (c Config) Modes(demoted []string) []KindMode {
 
 // ActKinds are the kinds of act as the settings name them, in the order the
 // task and the report list them.
-var ActKinds = []string{"sources", "close-duplicate", "close-obsolete", "milestone", "order", "effort", "refine", "ready", "ask", "split", "depend", "rename", "open"}
+var ActKinds = []string{"sources", "close-duplicate", "close-obsolete", "milestone", "order", "effort", "kind", "refine", "ready", "ask", "split", "depend", "rename", "open"}
 
 // Say says one kind's mode in a few words: "act, 5 a run (level)".
 func (m KindMode) Say() string {

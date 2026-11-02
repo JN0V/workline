@@ -1,0 +1,24 @@
+case: product-owner/kind-a-persons-change-kept
+about: >
+  A person's kind kept (ADR-0039 (c)): the role labelled #9 and #10
+  `bug` once, its state says so. A person changed #9 to `enhancement`
+  and took the label off #10. Refined again, the agent proposes `bug`
+  on both: neither is set back — #9's label says its kind, never
+  swapped; on #10, the role set a kind once already, and a person's
+  removal stands.
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost on export", body: "The export loses the last row.", author: ann, insider: true, labels: [enhancement], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\nkind: bug\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 10, title: "Slow export", body: "The export is slow.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\nkind: bug\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:kind-set-back}
+expect:
+  findings:
+    - {rule: kind-kept, where: "#9", message: "its label `enhancement` says its kind already"}
+    - {rule: kind-once, where: "#10", message: "the role set its kind once already (`bug`): never again; a person's change or removal stands"}
+  no-findings: [{rule: done, where: "#9"}, {rule: done, where: "#10"}]
+  forge:
+    issues:
+      - {id: 9, labels: [enhancement]}
+      - {id: 10, labels: []}

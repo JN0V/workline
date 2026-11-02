@@ -67,6 +67,7 @@ The other levels change these (role.yaml, `levels`):
 | ask | act 2, 2 rounds, waits for the answer (`wait: never`) | act 3, 3 rounds, `wait: 24h` | act 5, 3 rounds, `wait: "0"` |
 | ready (the engine's check: four sections, no draft, or drafts past `wait`) | propose | act 5 | act 10 |
 | close-duplicate | propose | act 3 | act 5 |
+| kind ([the kind](../../../roles/product-owner/docs/kind.md)) | propose | act 10 | act 20 |
 | undepend | propose; a closed blocker's: the engine's, done | the same | the same |
 | open (import) | act 30 | act 30 | act 30 |
 

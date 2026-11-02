@@ -55,6 +55,9 @@ type task struct {
 	// Body: the digest of the issue's body pre read, kept with a "no
 	// test possible" (#815).
 	Body string `json:"body,omitempty"`
+	// Author: who opened the issue, asked how to reproduce a bug its
+	// tests do not show (ADR-0060).
+	Author string `json:"author,omitempty"`
 }
 
 const taskFile = "tests-task.json"
@@ -134,7 +137,7 @@ func Pre(runDir, repo string) int {
 	if err != nil {
 		return fail(err)
 	}
-	t := task{Issue: id, Title: is.Title, Base: strings.TrimSpace(head), Scenarios: scenarios, Labels: is.Labels, Body: backlog.BodyDigest(is.Body)}
+	t := task{Issue: id, Title: is.Title, Base: strings.TrimSpace(head), Scenarios: scenarios, Labels: is.Labels, Body: backlog.BodyDigest(is.Body), Author: is.Author}
 	if data, err := json.Marshal(t); err != nil {
 		return fail(err)
 	} else if err := os.WriteFile(filepath.Join(runDir, "in", taskFile), data, 0o644); err != nil {
@@ -411,6 +414,9 @@ func Post(runDir, repo string) int {
 	}
 	if proof.Status != verdict.Pass {
 		proof.Findings = slices.DeleteFunc(proof.Findings, func(f verdict.Finding) bool { return f.Rule == "no-new-test" && f.Level == "warn" })
+		if notShown(t, *proof, len(newTests)) {
+			return unreproduced(runDir, t, intents, *proof)
+		}
 		return refusePost(runDir, t.Issue, *proof)
 	}
 	mr := map[string]any{
@@ -461,6 +467,9 @@ func testsDone(runDir, repo string, t task, intents []intent.Intention, untested
 	}
 	// Only the labels it bears come off: one call less each on GitHub.
 	remove = slices.DeleteFunc(remove, func(l string) bool { return !slices.Contains(t.Labels, l) })
+	if slices.Contains(t.Labels, backlog.LabelNeedsRepro) {
+		remove = append(remove, backlog.LabelNeedsRepro) // reproduced now: the mark goes as it moves (ADR-0039)
+	}
 	why := fmt.Sprintf("each of its %d scenarios has its test in the Draft's Tests table, red on the base, and the tests pass the project's lint", len(t.Scenarios))
 	if untested > 0 {
 		why = fmt.Sprintf("each of its %d scenarios has its test in the Draft's Tests table, or its reason under Not tested (%d, for a real try), "+

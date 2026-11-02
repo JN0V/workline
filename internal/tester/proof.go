@@ -80,6 +80,10 @@ func proved(runDir, repo string, t task, intents []intent.Intention, p Proof) in
 		return write(runDir, verdict.Verdict{Status: verdict.Block, Summary: "a flaky-n-of-n proof with no test to run",
 			Findings: []verdict.Finding{{Rule: "proof-test-missing", Where: where, Message: msg}}})
 	}
+	if why := bugProof(t, p); why != "" {
+		return refusePost(runDir, t.Issue, verdict.Verdict{Status: verdict.Block, Summary: "a bug proven with no test red on the base",
+			Findings: []verdict.Finding{{Rule: "bug-proof-new-tests", Where: where, Message: why}}})
+	}
 	line, err := routing.Load(repo)
 	if err != nil {
 		return fail(err)

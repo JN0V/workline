@@ -560,6 +560,25 @@ back to refine.
   naming something gone, its label events and comments, a call or two
   each.
 
+### A bug not reproduced
+
+[ADR-0060, decision 4](../adr/0060-the-person-is-on-the-loop.md#4-a-person-validates-by-the-issues-kind):
+a bug whose tests passed on the base waits in its tests' state, marked
+`workline:needs-repro`, its reporter asked by the tester
+([the hand-over](../../roles/tester/docs/hand-over.md#a-bug-not-reproduced)).
+The line reads it with no agent:
+
+- **Its body edited** since the tester's run: the tester runs again.
+- **A person's answer** after the mark (its reporter, or the
+  project's): back to refine, the mark off, said (`repro-answered`);
+  the product owner reads it.
+- **No answer** within the product owner's delay (`acts.ask.wait`),
+  counted from when the forge says the mark was put on: Blocked, its
+  reason "not reproduced", the mark off (`not-reproduced`). Its kind
+  stays a bug.
+- **Else** it waits, said with the time it will be blocked
+  (`repro-waits`); at `cautious` (`never`), until it is answered.
+
 ### The reconciler
 
 `workline route reconcile` walks every open issue, in the backlog's
