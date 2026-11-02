@@ -6,7 +6,7 @@ sources:
   - internal/line/budget.go
   - ci/github/workline-develop.yml
   - ci/gitlab/workline.gitlab-ci.yml
-checked: aea0b546
+checked: abaf9b8b
 verified: agent:claude-code
 ---
 # The triggers
