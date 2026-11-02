@@ -182,6 +182,11 @@ in [tests/evaluation/cases/product-owner](../../../tests/evaluation/cases/produc
   ([#878](https://github.com/JN0V/workline/issues/878)). Cases
   `kind-light-read-*`. Tried on
   [#885](https://github.com/JN0V/workline/pull/885#tried).
+- **A feature in the next milestone** at `merge: {autonomy:
+  enterprising}`, when it makes it ready
+  ([the release candidate](../../../docs/release-candidate.md)). Case
+  `ready-puts-a-feature-in-the-next-milestone`; not tried for real
+  ([#883](https://github.com/JN0V/workline/pull/883#tried)).
 
 ## Missing, in the order to build it
 

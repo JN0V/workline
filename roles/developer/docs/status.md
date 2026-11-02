@@ -219,6 +219,15 @@ hold:
   `merge-cautious-holds-reproduced-fix`. Tried on
   [#876](https://github.com/JN0V/workline/pull/876#tried), the merge
   itself not on a forge.
+- **A feature at `enterprising`**
+  ([the release candidate](../../../docs/release-candidate.md)): merges
+  alone, put in a milestone first; a refused candidate sends features
+  back to a person's yes. Cases
+  `merge-enterprising-admits-developer-feature`,
+  `merge-enterprising-candidate-refused-features-wait`. The candidate
+  tried on the sandbox
+  ([#883](https://github.com/JN0V/workline/pull/883#tried)), a feature
+  merged alone not.
 
 ## Measured
 
