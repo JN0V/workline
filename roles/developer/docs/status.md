@@ -211,6 +211,14 @@ hold:
   ([the merge](merge.md)). Cases
   `developer/merge-normal-admits-developer-fix`,
   `merge-normal-holds-developer-feature`.
+- **A bug's fix, reproduced first**
+  ([ADR-0060](../../../docs/adr/0060-the-person-is-on-the-loop.md#4-a-person-validates-by-the-issues-kind)):
+  merges alone only when its code starts from the tester's Draft, a
+  tester's commit on its branch; else it waits, said. Cases
+  `merge-normal-holds-unreproduced-fix`,
+  `merge-cautious-holds-reproduced-fix`. Tried on
+  [#876](https://github.com/JN0V/workline/pull/876#tried), the merge
+  itself not on a forge.
 
 ## Measured
 

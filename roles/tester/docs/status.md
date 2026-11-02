@@ -136,6 +136,14 @@ Cases in `tests/conformance/cases/tester/`:
   [#669](https://github.com/JN0V/workline/pull/669).
 - **The hand-over** to whoever builds:
   [the contract](hand-over.md).
+- **A bug reproduced first**
+  ([ADR-0060](../../../docs/adr/0060-the-person-is-on-the-loop.md#4-a-person-validates-by-the-issues-kind)):
+  every test green on the base, no Draft, its reporter asked, then
+  Blocked as not reproduced by the line
+  ([how](hand-over.md#a-bug-not-reproduced)). Cases
+  `tester/bug-green-on-base-asks-its-reporter`,
+  `routing/bug-not-reproduced-blocked-after-the-delay`. Tried on
+  [#876](https://github.com/JN0V/workline/pull/876#tried).
 - **Settings** `test-command`, `test-report`, `test-paths`,
   `code-lines-max`, `objection-exchanges`
   ([README](../README.md#settings)).
