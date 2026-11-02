@@ -1,0 +1,21 @@
+case: product-owner/scenarios-unread-own-rewritten
+about: >
+  An issue whose own Validation — the text the product owner wrote — holds
+  Given / When / Then but no scenario the tester reads is read again,
+  though nothing else changed (#855): the agent is told it is its to
+  rewrite, in the form expected, and its refine rewrites it.
+given:
+  repo: backlog
+  config:
+    routing: {events: {schedule: [product-owner], issue: [tester, developer]}}
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "## Need\n\nThe monthly report counts every sale.\n\n## Verification\n\nA test writes three rows.\n\n## Validation\n\n- Given a day of three sales\n- When Ann opens it\n- Then she counts three\n\n## Scope\n\nsrc/export/csv.go", author: ann, insider: true, labels: [workline:to-refine], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: 1773b47cf316\nwrote: {Validation: f5634c182810}\nrules: 99\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:rewrite-unread-scenarios}
+expect:
+  run-files:
+    in/issues-read: {contains: "9"}
+    in/task.md: {contains: "It is yours to rewrite: answer with a `refine` giving its whole new Validation in that form"}
+  forge:
+    issues:
+      - {id: 9, labels: [workline:to-refine, workline:draft, workline:proposed], body-contains: "- **A known day:** Given a day of three sales", body-lacks: "- Given a day of three sales\n", comment-lacks: "no scenario the tester reads"}

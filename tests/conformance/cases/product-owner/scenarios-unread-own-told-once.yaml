@@ -1,0 +1,17 @@
+case: product-owner/scenarios-unread-own-told-once
+about: >
+  The agent told once to rewrite an issue's own Validation, in a form the
+  tester reads (#855), is not told again while the body stays as it was:
+  the issue is not read again for it, and a run costs no tokens on it.
+given:
+  repo: backlog
+  config:
+    routing: {events: {schedule: [product-owner], issue: [tester, developer]}}
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "## Need\n\nThe monthly report counts every sale.\n\n## Verification\n\nA test writes three rows.\n\n## Validation\n\n- Given a day of three sales\n- When Ann opens it\n- Then she counts three\n\n## Scope\n\nsrc/export/csv.go", author: ann, insider: true, labels: [workline:to-refine], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: 1773b47cf316\nwrote: {Validation: f5634c182810}\nrules: 99\nunread: 1773b47cf316\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 10, title: "Rows lost again", body: "Some rows are lost.", author: ann, insider: true, labels: [], comments: []}
+run: {role: product-owner, event: schedule, ai: fake:proposes-nothing}
+expect:
+  run-files:
+    in/issues-read: {contains: "10", not-contains: "9"}

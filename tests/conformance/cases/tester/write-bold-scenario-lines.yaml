@@ -1,0 +1,34 @@
+case: tester/write-bold-scenario-lines
+about: >
+  Scenarios written as a bold `**Scenario: …**` line, their Given / When
+  / Then bullets below, are read like workline's own form (#855): the
+  tester writes one test each, named after it, and records each scenario
+  with its steps joined in one line.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:needs-tests"]
+        body: "## Need\n\nWhen I total an order, I want to multiply a price by a count, so I need not add it up by hand.\n\n## Validation\n\n**Scenario: Two by three**\n- Given the library\n- When I multiply 2 by 3\n- Then I get 6.\n\n**Scenario: By zero**\n- Given the library\n- When I multiply 5 by 0\n- Then I get 0.\n\n---\n\n## Verification\n\nA test a scenario, in tests/.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+run: {test: [write, --issue, "3"], ai: "fake:tester-two-scenarios"}
+expect:
+  status: pass
+  summary: "2 new tests, red on the base"
+  agent-calls: 1
+  pushed:
+    workline/tester/issue-3:
+      tests/test_mul_two_by_three.sh: "Scenario: Two by three"
+      tests/test_mul_by_zero.sh: "Scenario: By zero"
+  forge:
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        draft: true
+        body-contains: ["Refs #3", "## Tests", "Two by three", "By zero"]
+        comment-contains: ['"scenarios":[{"name":"Two by three","text":"Given the library, When I multiply 2 by 3, Then I get 6."},{"name":"By zero","text":"Given the library, When I multiply 5 by 0, Then I get 0."}]']

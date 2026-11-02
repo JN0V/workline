@@ -1,0 +1,6 @@
+# The product owner rewrites #9's own Validation, written as Given / When /
+# Then bullets with no name, into the form the tester reads.
+- refine:
+    issue: 9
+    validation: "- **A known day:** Given a day of three sales, When Ann opens it, Then she counts three."
+    why: "No scenario of its Validation was named: the tester could write no test."
