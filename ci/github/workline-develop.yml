@@ -298,7 +298,10 @@ jobs:
     permissions: {contents: read, issues: read, pull-requests: read, actions: write}
     steps:
       - uses: actions/checkout@v4
-        with: {fetch-depth: 0, persist-credentials: false}
+        # The branch's head as the job starts, not the commit the run was
+        # started on: a heartbeat's waited 55 minutes, and a fix merged
+        # meanwhile acts now (#898).
+        with: {ref: "${{ github.ref }}", fetch-depth: 0, persist-credentials: false}
       - name: workline
         run: |
           bin="$RUNNER_TEMP/bin"; mkdir -p "$bin"; cd "$RUNNER_TEMP"

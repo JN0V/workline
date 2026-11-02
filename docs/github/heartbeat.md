@@ -23,6 +23,11 @@ reconcile starts the next one:
 - **That run's `heartbeat` job waits** the wait timer of the
   environment `workline-heartbeat`: in GitHub, on no runner, no minute
   billed. Then the `reconcile` job runs.
+- **The branch's head, not the hour-old commit**: the `reconcile` job
+  checks out the branch as it starts. A fix to the engine or to
+  `.workline/config.yaml` merged during the wait acts on this reconcile
+  ([#898](https://github.com/JN0V/workline/issues/898)). The workflow
+  file's own steps stay those of the commit the run started on.
 - **One a branch**: a new heartbeat cancels the one waiting.
 - **The schedule and a `workline:` label** ask the job `reconcile-due`:
   - not due while a heartbeat or a reconciler's run is queued, waiting

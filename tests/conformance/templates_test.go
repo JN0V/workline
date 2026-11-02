@@ -1974,7 +1974,9 @@ func TestDeveloperJudgesKeepNoCredential(t *testing.T) {
 
 // The developer's agent has a shell in CI (#900): Claude Code boxes each
 // command with bubblewrap, its network through socat, so the jobs that
-// run it install both with the agent.
+// run it install both with the agent. And the reconciler runs the
+// branch's head as it starts (#898): a heartbeat waits 55 minutes, and a
+// fix merged meanwhile acts on that reconcile, not the next.
 func TestDeveloperJobsRunTheirAgentsShellAndTheHead(t *testing.T) {
 	for _, f := range []string{"../../ci/github/workline-develop.yml", "../../.github/workflows/workline-develop.yml"} {
 		data, err := os.ReadFile(f)
@@ -2002,6 +2004,13 @@ func TestDeveloperJobsRunTheirAgentsShellAndTheHead(t *testing.T) {
 			if !shell {
 				t.Errorf("%s, job %s: the agent installed without bubblewrap and socat, its shell runs no command", f, name)
 			}
+		}
+		head := false
+		for _, s := range wf.Jobs["reconcile"].Steps {
+			head = head || strings.HasPrefix(s.Uses, "actions/checkout@") && fmt.Sprint(s.With["ref"]) == "${{ github.ref }}"
+		}
+		if !head {
+			t.Errorf("%s, job reconcile: checks out the commit its run was started on, not the branch's head as it starts", f)
 		}
 	}
 }
