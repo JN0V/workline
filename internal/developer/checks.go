@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/verdict"
@@ -106,8 +107,12 @@ func logEnd(log string) string {
 	}
 	out := strings.Join(keep, "\n")
 	if len(out) > logBytes {
-		out, cut = out[len(out)-logBytes:], true
-		if i := strings.IndexByte(out, '\n'); i >= 0 {
+		i := len(out) - logBytes
+		for i < len(out) && !utf8.RuneStart(out[i]) {
+			i++ // never inside a character
+		}
+		out, cut = out[i:], true
+		if i := strings.IndexByte(out, '\n'); i >= 0 && i < len(out)-1 {
 			out = out[i+1:]
 		}
 	}
