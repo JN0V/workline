@@ -1,0 +1,4 @@
+#!/bin/sh
+# A stand-in: the engine asks that Claude Code's shell finds it on Linux
+# (#900); the stand-in claude runs no sandbox, so this never runs.
+exit 0
