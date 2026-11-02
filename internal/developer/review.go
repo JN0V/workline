@@ -68,6 +68,8 @@ type Asked struct {
 	// Detail is the finding whole, from the reviewer's comment on its
 	// line: its row shows the title alone.
 	Detail string `json:"detail,omitempty"`
+	// Check: a project check red, whose log the round reads (#917).
+	Check *forge.HeadCheck `json:"check,omitempty"`
 }
 
 // round is what the review run's pre leaves for post.
@@ -80,9 +82,12 @@ type round struct {
 	Nits     int      `json:"nits"`
 	Runs     int      `json:"review-runs"`
 	FiveWhys bool     `json:"five-whys"`
-	Person   bool     `json:"person"`       // past the last round: no agent, a person
-	At       string   `json:"at,omitempty"` // its branch's head, where its fix starts
-	GatesAt  string   `json:"gates-at,omitempty"` // the head the gates' findings asked were read at
+	Person   bool     `json:"person"`              // past the last round: no agent, a person
+	At       string   `json:"at,omitempty"`        // its branch's head, where its fix starts
+	GatesAt  string   `json:"gates-at,omitempty"`  // the head the gates' findings asked were read at
+	ChecksAt string   `json:"checks-at,omitempty"` // the head the project's red checks were read at
+	// ChecksUnread: why the forge did not say the project's checks.
+	ChecksUnread string `json:"checks-unread,omitempty"`
 }
 
 // reviewRows reads the findings of the reviewer's comment: what blocks,
@@ -120,7 +125,7 @@ func reviewRows(comment string) (asked []Asked, nits int) {
 // one resolved, the latest first.
 func lineDetails(asked []Asked, threads []forge.Thread, wrote func(forge.Note) bool) {
 	for i, a := range asked {
-		if a.Holds == "a person" || a.Holds == gateHolds {
+		if a.Holds == "a person" || a.Holds == gateHolds || a.Holds == checkHolds {
 			continue
 		}
 		_, title, _ := strings.Cut(strings.TrimPrefix(a.Key, a.Lens+"|"), "|")
@@ -243,7 +248,10 @@ func reviewPre(runDir, repo string, s Settings, id int) int {
 	if len(r.Asked) == 0 {
 		v := verdict.Verdict{Status: verdict.Pass, Summary: "nothing the review asks: no round"}
 		if !newReview {
-			v.Summary = "nothing new since its last round: it waits for the reviewer's next verdict, or the gates' next report"
+			v.Summary = "nothing new since its last round: it waits for the reviewer's next verdict, the gates' next report, or the project's checks on a new head"
+		}
+		if r.ChecksUnread != "" {
+			v.Findings = append(v.Findings, checksUnread(where, r.ChecksUnread))
 		}
 		if r.Nits > 0 && newReview {
 			v.Findings = append(v.Findings, verdict.Finding{Rule: "nits-not-asked", Level: "info", Where: where,
@@ -260,7 +268,7 @@ func reviewPre(runDir, repo string, s Settings, id int) int {
 	}
 	if ai := os.Getenv("WORKLINE_AI"); ai == "" || ai == "none" {
 		return final(runDir, verdict.Verdict{Status: verdict.Pass, Summary: fmt.Sprintf("no agent: %d finding%s wait for a run with one, no round counted", len(r.Asked), plural(len(r.Asked))),
-			Findings: []verdict.Finding{{Rule: "no-agent", Level: "warn", Where: where, Message: "fixing a finding is judgement on code: with no agent, nothing is fixed (principle 5)"}}})
+			Findings: []verdict.Finding{{Rule: "no-agent", Level: "warn", Where: where, Message: "fixing a finding is judgement on code: with no agent, nothing is fixed (principle 5); waiting: " + strings.Join(texts(r.Asked), "; ")}}})
 	}
 	n := a.Round + 1
 	r.FiveWhys = n >= 3 && !a.Whys && slices.ContainsFunc(r.Asked, func(x Asked) bool { return slices.Contains(a.Seen, x.Key) })
@@ -280,6 +288,7 @@ func reviewPre(runDir, repo string, s Settings, id int) int {
 	if r.At, err = gitOut(repo, "rev-parse", "HEAD"); err != nil {
 		return fail(fmt.Errorf("the round's code: git cannot read its branch's head in %s: %w", repo, err))
 	}
+	checkLogs(f, r.Asked)
 	if err := writeIn(runDir, roundFile, r); err != nil {
 		return fail(err)
 	}
@@ -331,6 +340,8 @@ func readAsked(f forge.Forge, b forge.Backlog, kept forge.Kept, a Act, id int, h
 	}
 	at, gates := gatesAsked(kept, a, head)
 	r.GatesAt, r.Asked = at, append(r.Asked, gates...)
+	checksAt, checks, unread := checksAsked(f, a, head)
+	r.ChecksAt, r.ChecksUnread, r.Asked = checksAt, unread, append(r.Asked, checks...)
 	target := forge.Target{Kind: "merge-request", ID: id}
 	notes, err := b.Notes(target)
 	if err != nil && !errors.Is(err, forge.ErrAuthorsUnknown) {
@@ -347,7 +358,7 @@ func readAsked(f forge.Forge, b forge.Backlog, kept forge.Kept, a Act, id int, h
 		r.Heard = append(r.Heard, n.ID)
 		r.Asked = append(r.Asked, Asked{Key: "person|" + n.ID, Where: "@" + n.Author, Text: strings.TrimSpace(n.Body), Holds: "a person"})
 	}
-	return r, newReview || at != "", nil
+	return r, newReview || at != "" || checksAt != "", nil
 }
 
 // RoundDue says whether a review round is due on the developer's merge
@@ -378,6 +389,9 @@ func RoundDue(f forge.Forge, repo string, mr forge.MergeRequest) (bool, error) {
 	}
 	head, _ := gitOut(repo, "rev-parse", "--verify", "-q", "refs/remotes/origin/"+mr.Branch)
 	r, _, err := readAsked(f, b, kept, a, mr.ID, head)
+	if err == nil && len(r.Asked) == 0 && r.ChecksUnread != "" {
+		err = fmt.Errorf("its project's checks: %s", r.ChecksUnread)
+	}
 	return len(r.Asked) > 0, err
 }
 
@@ -412,6 +426,10 @@ func roundTask(r round, is forge.Issue, b Bounds, s Settings, test string, testE
 		}
 		if a.Holds == "a person" {
 			fmt.Fprintf(&t, "- A person of the project, %s%s:\n\n  > %s\n\n", a.Where, seen, strings.ReplaceAll(a.Text, "\n", "\n  > "))
+			continue
+		}
+		if a.Holds == checkHolds {
+			fmt.Fprintf(&t, "- %s%s. The end of its failed steps' log:\n\n  ~~~~\n  %s\n  ~~~~\n\n", checkLine(a), seen, strings.ReplaceAll(a.Detail, "\n", "\n  "))
 			continue
 		}
 		if a.Holds == gateHolds {
@@ -450,6 +468,9 @@ func handOff(r round, repo string) []intent.Intention {
 	if r.GatesAt != "" {
 		a.GatesAt = r.GatesAt
 	}
+	if r.ChecksAt != "" {
+		a.ChecksAt = r.ChecksAt
+	}
 	add, remove := []string{backlog.LabelBlocked}, []string{backlog.LabelReady}
 	if line, err := routing.Load(repo); err == nil {
 		if ad, rm, err := line.Move("blocked"); err == nil {
@@ -477,6 +498,8 @@ func texts(l []Asked) []string {
 			out[i] = "a person, " + a.Where
 		case gateHolds:
 			out[i] = gateLine(a)
+		case checkHolds:
+			out[i] = checkLine(a)
 		default:
 			out[i] = fmt.Sprintf("%s %s `%s`: %s", a.Holds, a.Lens, a.Where, a.Text)
 		}
@@ -555,6 +578,9 @@ func reviewPost(runDir, repo string, s Settings) int {
 	if len(unread) > 0 {
 		v.Findings = append(v.Findings, unreadFinding(where, unread, true))
 	}
+	if r.ChecksUnread != "" {
+		v.Findings = append(v.Findings, checksUnread(where, r.ChecksUnread))
+	}
 	var patches, others []intent.Intention
 	for _, in := range kept {
 		if in.Kind == "patch" && unchanged(repo, in.Value) {
@@ -596,6 +622,9 @@ func reviewPost(runDir, repo string, s Settings) int {
 	a.ReviewRuns = max(a.ReviewRuns, r.Runs)
 	if r.GatesAt != "" {
 		a.GatesAt = r.GatesAt
+	}
+	if r.ChecksAt != "" {
+		a.ChecksAt = r.ChecksAt
 	}
 	a.Heard = append(a.Heard, r.Heard...)
 	for _, x := range r.Asked {

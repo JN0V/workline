@@ -87,6 +87,11 @@ type FakeState struct {
 	// it from the first read to the next.
 	TipsUnreadThen string `json:"tips-unread-then,omitempty"`
 	TipsUnreadNext string `json:"tips-unread-next,omitempty"`
+	// HeadChecks are the checks on a commit, by revision of the
+	// repository, as ProjectChecks reads them, each with its failed
+	// steps' log; HeadChecksUnread, why the forge does not answer them.
+	HeadChecks       map[string][]FakeHeadCheck `json:"head-checks,omitempty"`
+	HeadChecksUnread string                     `json:"head-checks-unread,omitempty"`
 	// Squash is how its merge requests land when squashed, the same for
 	// each but Suffix, where "{n}" is the merge request's number (Squasher).
 	Squash *Squash `json:"squash,omitempty"`
