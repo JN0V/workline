@@ -529,7 +529,9 @@ back to refine.
 
 `workline route reconcile` walks every open issue, in the backlog's
 order, and runs each step due that no event started: hourly in CI, a
-command on a person's machine, its next loop the next step.
+command on a person's machine, its next loop the next step. On GitHub,
+each reconcile starts the next one, past an environment's wait timer
+([the heartbeat](../github/heartbeat.md)): GitHub's schedule runs late.
 
 - **No agent of its own**: it reads labels, records and label events;
   the steps it starts ask theirs.

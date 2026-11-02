@@ -324,6 +324,40 @@ the step.
 - **Cost**: every comment in the project starts a short pipeline that
   mostly exits at once, as every issue change does already.
 
+## Amendment (2026-11-02): the reconciler starts its next run
+
+Settles [#845](https://github.com/JN0V/workline/issues/845): §8 says
+hourly; GitHub ran the schedule 4 to 6 times a day, gaps of 3 to 7 h,
+and a quiet night has no event to start it
+([research](../research/reliable-schedule.md)).
+
+- **On GitHub, each reconcile starts the next**, by `workflow_dispatch`,
+  even when it failed.
+- **The next run waits the wait timer** of the environment
+  `workline-heartbeat`, 55 minutes, limited to the default branch: in
+  the forge, holding no runner. Then it reconciles.
+- **One heartbeat a branch**: a new one cancels the one waiting.
+- **The schedule and an issue labelled** start a reconcile only when the
+  last is over 55 minutes old: the heartbeat stopped. Each such run
+  starts it again.
+- **No environment, or no wait timer** (a private repository on
+  GitHub's free plan has none): no heartbeat, said in the run's
+  summary; the schedule and the events run it, as before.
+- **GitLab unchanged**: its pipeline schedules run on time.
+- **Measure**: no gap over 90 minutes between two reconciles over 7
+  days (`gh run list --workflow workline-develop.yml`); tried on the
+  sandbox first.
+- **Cost a day**: 24 reconciles, each two short jobs, the heartbeat's
+  a few seconds. API calls an hour: a reconcile's own (the open issues'
+  listing, one a blocked issue, 4 to list the runs going) and 2 for the
+  next heartbeat: about 20 on this repository, 10 issues blocked, 2 %
+  of the hour's 1,000.
+- **Not chosen**:
+  - an outside scheduler: nothing outside the forge;
+  - a job that sleeps an hour: a runner held all day, and a private
+    repository's minutes;
+  - the line's runs alone starting it: a quiet night has none.
+
 [ADR-0024]: 0024-obsolete-is-announced-then-closed-on-silence-and-a-second-judge.md
 [ADR-0028]: 0028-an-issue-names-what-it-waits-on.md
 [#752]: https://github.com/JN0V/workline/issues/752

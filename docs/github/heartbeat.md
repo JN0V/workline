@@ -1,0 +1,60 @@
+<!-- workline
+sources: [ci/github/workline-develop.yml, .github/workflows/workline-develop.yml]
+checked: ca7f9615
+-->
+# The reconciler's heartbeat
+
+From [the developer's triggers](../../roles/developer/docs/triggers.md#when-an-issue-becomes-ready).
+
+```mermaid
+flowchart LR
+  rec["<b>reconcile</b><br/>what an event missed"] -- "starts" --> beat["<b>heartbeat</b><br/>waits 55 min, no runner"]
+  beat --> rec
+  sched["<b>schedule, a label</b>"] -. "only if it stopped" .-> rec
+```
+
+GitHub runs a schedule late or not at all: an hourly one ran 4 to 6
+times a day here ([research](../research/reliable-schedule.md)). So in
+[workline-develop.yml](../../ci/github/workline-develop.yml) each
+reconcile starts the next one:
+
+- **At its end**, even when it failed, it starts a run of the workflow
+  (`workflow_dispatch`, which the job's own token may start).
+- **That run's `heartbeat` job waits** the wait timer of the
+  environment `workline-heartbeat`: in GitHub, on no runner, no minute
+  billed. Then the `reconcile` job runs.
+- **One a branch**: a new heartbeat cancels the one waiting.
+- **The schedule and a `workline:` label** start a reconcile only when
+  the last one is over 55 minutes old: the heartbeat stopped. That run
+  starts it again.
+
+## Set it up
+
+A public repository, or a paid plan: GitHub Free has no wait timer on
+a private repository.
+
+```sh
+gh api -X PUT repos/OWNER/REPO/environments/workline-heartbeat --input - <<'EOF'
+{"wait_timer": 55, "deployment_branch_policy": {"protected_branches": false, "custom_branch_policies": true}}
+EOF
+gh api -X POST repos/OWNER/REPO/environments/workline-heartbeat/deployment-branch-policies \
+  -f name=main -f type=branch     # your default branch
+```
+
+- **Then start it once**: `gh workflow run workline-develop.yml -f
+  reconcile=true`, or wait for the schedule.
+- **The wait timer is the period**, in minutes; under 5, no heartbeat.
+- **Without the environment**: each reconcile says "no heartbeat" in
+  its summary; the schedule and the line's events run it, as GitHub
+  can.
+- **To stop it**: delete the environment, or take its wait timer off.
+  The heartbeat waiting is then rejected, its run failed, and no
+  reconcile starts another.
+
+## What it costs
+
+- **A day**: 24 runs, each a heartbeat job of a few seconds and the
+  reconcile job.
+- **API calls**: the reconcile's own, and 2 more for the next
+  heartbeat ([the budget](calls.md#the-api-budget)).
+- **Runners**: none while it waits.
