@@ -110,6 +110,14 @@ hold:
   ([the triggers](triggers.md#two-runs-on-one-issue)). Cases
   `developer/skips-issue-without-tests`,
   `backs-off-issue-taken-meanwhile`.
+- **A pull request that does not open**
+  ([#856](https://github.com/JN0V/workline/issues/856)): its code
+  merged onto a Draft the default branch has moved past; a failure
+  gives the claim back at once, the reason on the issue, and blocks
+  the issue the second time
+  ([the pull request](pull-request.md#when-it-does-not-open)). Cases
+  `developer/pr-from-draft-behind-main`, `unopened-gives-claim-back`,
+  `unopened-twice-blocks`.
 - **The worktree and its diff**
   ([ADR-0056](../../../docs/adr/0056-the-developers-agent-works-in-a-sandbox-with-tools.md)
   step 1): a `cmd:` agent edits a worktree of the commit its code

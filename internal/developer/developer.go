@@ -133,6 +133,10 @@ type Act struct {
 	// NoCode: its agent wrote no code within its bounds, so no pull
 	// request; the claim waits to be let go (ADR-0059, decision 1).
 	NoCode bool `json:"no-code,omitempty"`
+	// Unopened: the times its pull request did not open for this issue,
+	// each giving the claim back (#856); read at the pick from the claim's
+	// comment, carried on. At the second, the issue is blocked.
+	Unopened int `json:"unopened,omitempty"`
 	// From: the tester's Draft's commit its code starts from, the
 	// acceptance tests on it, those for the issue in Acceptance; Code and
 	// Tests: the files its code and its tests wrote, in commits apart
@@ -390,6 +394,9 @@ func Pre(runDir, repo string) int {
 	}
 	at, _ := gitOut(repo, "rev-parse", "HEAD")
 	act := Act{Act: "pick", At: at, Issue: id, Passed: passed}
+	if act.Unopened, err = unopenedBefore(b, id); err != nil {
+		return external(err)
+	}
 	// The claim moves its card to Doing (ADR-0057); a board out of reach
 	// is said, and changes nothing else.
 	if cfg, err := role.LoadProjectConfig(repo); err == nil {
@@ -706,6 +713,7 @@ func Post(runDir, repo string) int {
 		cs, unread := committerSettings(repo, where)
 		v.Findings = append(v.Findings, unread...)
 		mr := mergeRequest(a, title, subjects(a.Issue, title, b.Kind, b.Scope, cs))
+		mr["unopened"] = unopened(a, s, repo)
 		if note := noteOf(kept[len(claim):], a.Issue); note != "" {
 			mr["body"] = withNote(fmt.Sprint(mr["body"]), note)
 		}

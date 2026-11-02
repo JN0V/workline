@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"maps"
 	"math"
 	"os"
 	"os/exec"
@@ -1411,7 +1412,24 @@ func applyAll(r *role.Role, settings map[string]any, st runState, runDir string,
 			res.Findings = append(res.Findings, verdict.Finding{Rule: "not-proposed", Level: "warn", Where: branchPrefix(st.Role) + slugify(mergeRequestKey(st, runDir)),
 				Message: strings.TrimPrefix(err.Error(), ErrLeftToAPerson.Error()+": ") + ": this run's change is not pushed over it; the branch and its merge request are left to them"})
 		case err != nil:
-			return fmt.Errorf("open a merge request: %w", err)
+			// What the role asked done when it does not open (#856): the
+			// developer's claim given back, the reason on its issue.
+			undo, uerr := unopened(runDir)
+			if uerr != nil {
+				return fmt.Errorf("open a merge request: %w; and %w", err, uerr)
+			}
+			if len(undo) == 0 {
+				return fmt.Errorf("open a merge request: %w", err)
+			}
+			for _, in := range undo {
+				if aerr := ap.apply(sayWhy(in, err)); aerr != nil {
+					return fmt.Errorf("open a merge request: %w; then, %s: %w", err, in.Kind, aerr)
+				}
+			}
+			res.Status, res.Summary = verdict.Block, "its merge request did not open: said where the role asked"
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "not-opened", Where: branchPrefix(st.Role) + slugify(mergeRequestKey(st, runDir)),
+				Message: err.Error() + "; then applied what the role asks for that case: " + strings.Join(intent.Kinds(undo), ", ")})
+			return nil
 		default:
 			st.MergeRequest = id
 			if err := st.save(runDir); err != nil {
@@ -1463,6 +1481,50 @@ func openedRecord(runDir string) (key, body string) {
 		return "", ""
 	}
 	return mr.Record.Sticky, mr.Record.Body
+}
+
+// unopened are the intentions a role asks applied when the merge request
+// it opens does not open, for a reason other than a forge out of reach or
+// a branch left to a person: out/merge-request.yaml's `unopened:`, labels
+// and comments alone (the developer's claim given back, #856).
+func unopened(runDir string) ([]intent.Intention, error) {
+	var mr struct {
+		Unopened []map[string]any `yaml:"unopened"`
+	}
+	data, err := os.ReadFile(filepath.Join(runDir, "out", "merge-request.yaml"))
+	if err != nil {
+		return nil, nil
+	}
+	if err := yaml.Unmarshal(data, &mr); err != nil {
+		return nil, fmt.Errorf("out/merge-request.yaml: %w", err)
+	}
+	var out []intent.Intention
+	for i, m := range mr.Unopened {
+		if len(m) != 1 {
+			return nil, fmt.Errorf("out/merge-request.yaml: unopened entry %d must have exactly one kind", i+1)
+		}
+		for k, v := range m {
+			if k != "label" && k != "comment" {
+				return nil, fmt.Errorf("out/merge-request.yaml: unopened entry %d is a %s: a label or a comment only", i+1, k)
+			}
+			out = append(out, intent.Intention{Kind: k, Value: v})
+		}
+	}
+	return out, nil
+}
+
+// sayWhy puts what failed in a comment's body, in place of intent.WhyMark,
+// inert: a git error's text names no one and opens no section.
+func sayWhy(in intent.Intention, failed error) intent.Intention {
+	m, ok := in.Value.(map[string]any)
+	if in.Kind != "comment" || !ok {
+		return in
+	}
+	body, _ := m["body"].(string)
+	why := strings.Join(strings.Fields(failed.Error()), " ")
+	out := maps.Clone(m)
+	out["body"] = strings.ReplaceAll(body, intent.WhyMark, "`"+strings.ReplaceAll(why, "`", "'")+"`")
+	return intent.Intention{Kind: in.Kind, Value: out}
 }
 
 // ownPush is the commit message a role asks its patches pushed with, on
