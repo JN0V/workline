@@ -1,0 +1,31 @@
+case: product-owner/draft-enterprising-taken-at-once
+about: >
+  Enterprising treats a draft as a question that does not wait
+  (ADR-0060): a Validation draft no person accepted is taken as written
+  at once, with no agent, said under Assumptions; the issue to ready.
+given:
+  repo: backlog
+  config:
+    roles:
+      product-owner:
+        settings:
+          autonomy: enterprising
+  forge:
+    issues:
+      - id: 9
+        title: "workline version --verbose=false"
+        author: ann
+        insider: true
+        labels: [workline:to-refine, workline:draft]
+        body: "## Need\n\nWhen I run `workline version --verbose=false`, I want the plain line, so my scripts read it.\n\n## Validation\n\n<!-- workline:draft -->\n\n- **Plain line:** Given workline installed, When I run `workline version --verbose=false`, Then it prints one line.\n\n---\n\n## Verification\n\nA test runs the command and reads one line.\n\n## Scope\n\nsrc/export/csv.go"
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"
+run: {role: product-owner, event: schedule, ai: none}
+expect:
+  status: pass
+  agent-calls: 0
+  forge:
+    issues:
+      - id: 9
+        labels: [workline:ready]
+        body-contains: ", the Validation draft, the role going on at once (acts.ask.wait 0): written as the role drafted it, for a person to correct."

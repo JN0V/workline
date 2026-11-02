@@ -1,0 +1,25 @@
+case: product-owner/assumption-keeps-the-persons-need
+about: >
+  The Need kept (ADR-0060): the person's text on top is the issue's
+  Need. Taking an assumption never rewrites it: it reads word for word
+  as they wrote it, the assumption beside it, under Assumptions.
+given:
+  repo: backlog
+  forge:
+    issues:
+      - id: 9
+        title: "workline version --verbose=false"
+        author: ann
+        insider: true
+        labels: [workline:to-refine]
+        body: "`workline version --verbose=false` prints the verbose line. I want the plain line, for my scripts."
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - {body: "@ann, to refine this issue: Should `--verbose=false` print the plain line, as `--short` does?\n\n<!-- workline:product-owner/ask -->", created: "2026-10-01T23:50:00Z"}
+run: {role: product-owner, event: schedule, ai: fake:assume-only-plain-line}
+expect:
+  status: pass
+  forge:
+    issues:
+      - id: 9
+        body-contains: "`workline version --verbose=false` prints the verbose line. I want the plain line, for my scripts.\n\n## Assumptions\n\n- Assumption taken on "

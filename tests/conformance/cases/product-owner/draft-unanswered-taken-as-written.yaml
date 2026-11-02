@@ -1,0 +1,43 @@
+case: product-owner/draft-unanswered-taken-as-written
+about: >
+  A Validation draft is a question too (ADR-0060): at normal, one no
+  person accepted for 24 h — counted from when the forge says the issue
+  got workline:draft — is taken as written, with no agent: its mark
+  out, an assumption line said, the issue to ready. One drafted inside
+  the delay waits.
+given:
+  repo: backlog
+  forge:
+    issues:
+      - id: 9
+        title: "workline version --verbose=false"
+        author: ann
+        insider: true
+        labels: [workline:to-refine, workline:draft]
+        labeled: {"workline:draft": "2026-10-01T09:00:00Z"}
+        body: "## Need\n\nWhen I run `workline version --verbose=false`, I want the plain line, so my scripts read it.\n\n## Validation\n\n<!-- workline:draft -->\n\n- **Plain line:** Given workline installed, When I run `workline version --verbose=false`, Then it prints one line.\n\n---\n\n## Verification\n\nA test runs the command and reads one line.\n\n## Scope\n\nsrc/export/csv.go"
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"
+      - id: 10
+        title: "workline version --verbose=false"
+        author: ann
+        insider: true
+        labels: [workline:to-refine, workline:draft]
+        labeled: {"workline:draft": "2099-10-01T09:00:00Z"}
+        body: "## Need\n\nWhen I run `workline version --verbose=false`, I want the plain line, so my scripts read it.\n\n## Validation\n\n<!-- workline:draft -->\n\n- **Plain line:** Given workline installed, When I run `workline version --verbose=false`, Then it prints one line.\n\n---\n\n## Verification\n\nA test runs the command and reads one line.\n\n## Scope\n\nsrc/export/csv.go"
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"
+run: {role: product-owner, event: schedule, ai: none}
+expect:
+  status: pass
+  agent-calls: 0
+  forge:
+    issues:
+      - id: 9
+        labels: [workline:ready]
+        body-lacks: "<!-- workline:draft -->"
+        body-contains: ["## Assumptions", ", the Validation draft unanswered after 24 h: written as the role drafted it, for a person to correct."]
+        comment-contains: "its Validation taken as written after no answer, said under Assumptions"
+      - id: 10
+        labels: [workline:to-refine, workline:draft, workline:proposed]
+        body-lacks: "## Assumptions"

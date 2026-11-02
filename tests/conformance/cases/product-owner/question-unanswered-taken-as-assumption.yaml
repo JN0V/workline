@@ -1,0 +1,34 @@
+case: product-owner/question-unanswered-taken-as-assumption
+about: >
+  Normal, no answer (ADR-0060): the question to its reporter got no
+  answer in 24 h, the delay of autonomy normal, counted from its comment
+  as the forge dates it. The agent is told so; its assumption goes under
+  the issue's Assumptions and in the role's comment, and the issue moves
+  on to ready. The person's sections read word for word as they wrote
+  them.
+given:
+  repo: backlog
+  forge:
+    issues:
+      - id: 9
+        title: "workline version --verbose=false"
+        author: ann
+        insider: true
+        labels: [workline:to-refine]
+        body: "## Need\n\nWhen I run `workline version --verbose=false`, I want the plain line, so my scripts read it.\n\n## Validation\n\n- **Plain line:** Given workline installed, When I run `workline version --verbose=false`, Then it prints one line.\n\n---\n\n## Verification\n\nA test runs the command and reads one line.\n\n## Scope\n\nsrc/export/csv.go"
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - {body: "@ann, to refine this issue: Should `--verbose=false` print the plain line, as `--short` does?\n\n<!-- workline:product-owner/ask -->", created: "2026-10-01T23:50:00Z"}
+run: {role: product-owner, event: schedule, ai: fake:assume-plain-line}
+expect:
+  status: pass
+  run-files:
+    in/task.md: {contains: ["Unanswered: your question of 2026-10-01 23:50 UTC got no answer in 24 h (acts.ask.wait)", "A question you ask waits 24 h for its answer"]}
+  forge:
+    issues:
+      - id: 9
+        labels: [workline:ready]
+        body-contains:
+          - "## Need\n\nWhen I run `workline version --verbose=false`, I want the plain line, so my scripts read it.\n\n## Validation\n\n- **Plain line:** Given workline installed, When I run `workline version --verbose=false`, Then it prints one line.\n\n---\n\n## Verification\n\nA test runs the command and reads one line.\n\n## Scope\n\nsrc/export/csv.go\n\n## Assumptions\n\n- Assumption taken on "
+          - ", the question of 2026-10-01 unanswered after 24 h: `--verbose=false` prints the plain line, as other flags do."
+        comment-contains: ["Assumption taken on #9: `--verbose=false` prints the plain line, as other flags do. Answer here, or edit its line under Assumptions in the issue, to change it.", "assumed: 1"]

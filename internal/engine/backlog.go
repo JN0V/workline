@@ -502,6 +502,42 @@ func (a *applier) depend(id int, blockers []int, digest bool) error {
 	return a.forge.Sticky(t, backlog.FormatState(*st), backlog.StateMarker(a.role), false)
 }
 
+// assume writes an assumption under the issue's Assumptions, or marks
+// those a person answered after (ADR-0060); the issue's state keeps the
+// question it was taken on, and the body the engine left.
+func (a *applier) assume(c backlog.Proposal) error {
+	b := a.forge.(forge.Backlog)
+	is, err := a.forge.Issue(c.Issue)
+	if err != nil {
+		return err
+	}
+	body := is.Body
+	if c.Answered != "" {
+		body = backlog.WithAnswered(body, c.Answered, time.Now().UTC().Format("2006-01-02"))
+	} else if c.Written != "" {
+		body = backlog.WithAssumption(body, c.Written)
+	}
+	if body != is.Body {
+		if err := b.SetBody(c.Issue, body); err != nil {
+			return err
+		}
+	}
+	t := forge.Target{Kind: "issue", ID: c.Issue}
+	comments, err := b.Comments(t)
+	if err != nil {
+		return err
+	}
+	st, _, err := backlog.ReadState(comments, a.role)
+	if err != nil {
+		return fmt.Errorf("#%d: its state comment: %w", t.ID, err)
+	}
+	if c.Answered == "" {
+		st.Assumed, st.AssumedAt = max(st.Assumed, c.Round), time.Now().UTC().Format(time.RFC3339)
+	}
+	st.Keep(body)
+	return a.forge.Sticky(t, backlog.FormatState(*st), backlog.StateMarker(a.role), false)
+}
+
 // refining applies a refine, a ready or an ask, against the issue as it is
 // now (docs/spec/backlog-acts.md, "Refining to ready").
 func (a *applier) refining(c backlog.Proposal) error {
@@ -535,8 +571,21 @@ func (a *applier) refining(c backlog.Proposal) error {
 			return err
 		}
 		st, _, _ := backlog.ReadState(comments, role) // its drafts told from a person's edit
-		if missing := backlog.NotReady(*is, st, accepted); len(missing) > 0 {
+		assumed := len(c.Assumed) > 0 && !accepted    // its drafts taken as assumptions past the delay (ADR-0060)
+		if missing := backlog.NotReady(*is, st, accepted || assumed); len(missing) > 0 {
 			return nil // changed since the plan: it stays to refine
+		}
+		if assumed {
+			body := backlog.WithAssumption(backlog.StripDrafts(is.Body), c.Written)
+			if err := b.SetBody(c.Issue, body); err != nil {
+				return err
+			}
+			is.Body = body
+			st.AssumedAt = time.Now().UTC().Format(time.RFC3339)
+			st.Keep(body)
+			if err := f.Sticky(t, backlog.FormatState(*st), backlog.StateMarker(role), false); err != nil {
+				return err
+			}
 		}
 		if c.Proof == nil && backlog.Readied(*is) {
 			// Ready already, kept: it goes to its tests only when it waits

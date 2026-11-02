@@ -253,6 +253,8 @@ func Pre(runDir, repo string) int {
 	judgedPass := os.Getenv("WORKLINE_JUDGED") == "answered" // the engine asked pre's questions to a judge
 	asked := false                                           // a question for the judge written: the judge first
 	notesOf := map[int][]forge.Note{}                        // each issue's comments, for what waits on a person
+	timedOut := map[int]backlog.Silence{}                    // a question unanswered past acts.ask.wait, for the role's assumption (ADR-0060)
+	draftsTaken := map[int]bool{}                            // drafts unanswered past it, taken as written with no agent
 	var waits []backlog.Wait                                 // the issues waiting on a person, for the summary (ADR-0031)
 	for _, is := range open {
 		if backlog.Tracking(is, role) || !inScope(is) {
@@ -497,6 +499,38 @@ func Pre(runDir, repo string) int {
 			}
 		}
 		d := due{is, st, comments, notes}
+		// Questions time out, as lazy consensus (ADR-0060): one unanswered
+		// past the level's delay, dated by the forge, read once for the
+		// role's assumption; drafts no person accepted past it, all the
+		// issue lacks, taken as written with no agent; an answer after an
+		// assumption marks it, and is read as asking to revise.
+		silence, silent := backlog.Unanswered(notes, role)
+		silent = silent && silence.Due(cfg.Wait, st, now) && (st.Told < silence.Round || is.ID == issueEvent()) && !aside
+		if silent {
+			timedOut[is.ID] = silence
+		}
+		answeredBy := ""
+		if len(fresh) > 0 && !aside {
+			answeredBy = backlog.AnsweredAfter(is, st, notes)
+		}
+		if answeredBy != "" {
+			fallback = append(fallback, intent.Intention{Kind: "assume", Value: map[string]any{
+				"issue": is.ID, "answered": answeredBy, "own": true,
+				"why": fmt.Sprintf("@%s wrote after the role's assumptions: their word stands over them.", answeredBy)}})
+		}
+		if !aside && !backlog.Readied(is) && backlog.OnlyDrafts(is, st) {
+			taken, err := draftsDue(b, is, notes, cfg.Wait, now)
+			if errors.Is(err, forge.ErrUnreachable) {
+				fmt.Fprintln(os.Stderr, err)
+				return exitExternal
+			}
+			if taken {
+				draftsTaken[is.ID] = true
+				fallback = append(fallback, intent.Intention{Kind: "ready", Value: map[string]any{
+					"issue": is.ID, "own": true,
+					"why": fmt.Sprintf("its drafts got no answer for %s (acts.ask.wait): taken as written, for a person to correct", cfg.Wait.Say())}})
+			}
+		}
 		switch {
 		case agreed != "" || backlog.Accepted(is) && !unheard:
 			// Agreed to, or accepted: done this run, not read again for it.
@@ -525,9 +559,10 @@ func Pre(runDir, repo string) int {
 			fallback = append(fallback, intent.Intention{Kind: "comment", Value: map[string]any{
 				"issue": is.ID, "sticky": "state", "update-only": true, "body": backlog.FormatState(left)}})
 			rest = append(rest, d)
-		case st.Label != "" && len(fresh) > 0:
+		case st.Label != "" && len(fresh) > 0, answeredBy != "":
 			// A person's comment on its proposal: "revise" — read first,
 			// the drafts rewritten in place, 👀 on each, one line in reply.
+			// An answer after its assumptions is one too (ADR-0060).
 			var ids []string
 			for _, n := range fresh {
 				ids = append(ids, n.ID)
@@ -540,6 +575,10 @@ func Pre(runDir, repo string) int {
 			// first with the answers; no 👀 nor reply, nothing was asked of
 			// them (ADR-0038, amended).
 			heard[is.ID] = fresh[len(fresh)-1]
+			answered = append(answered, d)
+		case silent:
+			// Its question unanswered past the delay: read once, for the
+			// role's assumption (ADR-0060).
 			answered = append(answered, d)
 		case slices.Contains(capped, is.ID):
 			again = append(again, d)
@@ -704,12 +743,19 @@ func Pre(runDir, repo string) int {
 		// read, whatever changed; the rest wait for their own event, or
 		// the night.
 		var one []due
+		rest0 := slices.Clone(rest) // nothing but the woken state to read it for
 		for _, d := range slices.Concat(toRead, rest) {
 			if d.is.ID == n {
 				one = append(one, d)
 			}
 		}
 		rest = slices.DeleteFunc(slices.Concat(toRead, rest), func(d due) bool { return d.is.ID == n })
+		if draftsTaken[n] && slices.ContainsFunc(rest0, func(d due) bool { return d.is.ID == n }) {
+			// Woken for its drafts past the delay alone: taken as written,
+			// with no agent (ADR-0060).
+			rest = append(rest, one...)
+			one = nil
+		}
 		toRead = one
 	} else if waiting := ledger.Waiting(open); waiting >= cfg.ProposalsMax {
 		findings = append(findings, verdict.Finding{Rule: "proposals-waiting", Level: "warn",
@@ -782,6 +828,13 @@ func Pre(runDir, repo string) int {
 			} else if drafts != nil && toTests(d.is, d.comments, cfg, drafts) {
 				review += "Its tests: ready from before the line of states, no Draft of its tests — propose `ready` to send it to its tests (" + backlog.LabelNeedsTests + ") when it is still current and one run's work; `unready` with its reason when not.\n"
 			}
+			if sl, ok := timedOut[d.is.ID]; ok {
+				review += timedOutSaid(sl, cfg.Wait)
+			}
+			if who := backlog.AnsweredAfter(d.is, d.st, d.notes); who != "" && answers[d.is.ID] != nil {
+				review += fmt.Sprintf("@%s wrote after the assumptions you took on it (its %s section, below): their word stands over them. Rewrite what you built on an assumption they answered: your own sections, with `refine`; `unready` if it is ready and no longer holds. Never their %s.\n",
+					who, backlog.AssumptionsName, work.Name(work.Need))
+			}
 			if a := answers[d.is.ID]; a != nil {
 				review += revise(d.is, d.st, a, revisions)
 			} else if hn, ok := heard[d.is.ID]; ok {
@@ -826,6 +879,9 @@ func Pre(runDir, repo string) int {
 			}
 			if rewriteUnread(d.is, d.st, cfg) {
 				read.Unread = backlog.BodyDigest(d.is.Body)
+			}
+			if sl, ok := timedOut[d.is.ID]; ok {
+				read.Told = sl.Round // told once: not read again for it
 			}
 			read.Keep(d.is.Body)
 			t.reads = append(t.reads, intent.Intention{Kind: "comment", Value: map[string]any{
@@ -1728,7 +1784,46 @@ func modes(cfg backlog.Config, demoted []string) string {
 	}
 	b.WriteString("\n`act`: done by the engine once checked. `propose`: proposed on the issue for a person to accept, never done by the role — propose only what you would do. `off`: dropped — do not write it.\n\n")
 	b.WriteString("Whose each section is: the task marks a draft of yours `(draft)`; a section not marked a draft is a person's — they wrote it or made it theirs. Never hold an act back for not knowing who wrote a section.\n\n")
+	b.WriteString(waitSays(cfg.Wait))
 	return b.String()
+}
+
+// waitSays tells the agent how long a question waits for its answer
+// (ADR-0060): for ever, a delay after which it is woken to assume, or
+// none — an `assume` beside each `ask`.
+func waitSays(w backlog.Delay) string {
+	switch {
+	case w.Never:
+		return "A question you ask waits for its answer (acts.ask.wait never): write no `assume`.\n\n"
+	case w.D == 0:
+		return fmt.Sprintf("A question you ask does not wait (acts.ask.wait 0): beside each `ask`, give an `assume` for the same issue — your best answer to it, one plain sentence, written on the issue under %s for the person to correct — and go on as if it were the answer: refine, `ready` when evident. Your drafts are taken as written at once.\n\n", backlog.AssumptionsName)
+	}
+	return fmt.Sprintf("A question you ask waits %s for its answer (acts.ask.wait): the task says when one got none; then give an `assume`, your best answer, and go on. Drafts with no answer for as long are taken as written by the engine.\n\n", w.Say())
+}
+
+// timedOutSaid tells the agent its question got no answer for the delay
+// (ADR-0060): take the best assumption, and go on.
+func timedOutSaid(s backlog.Silence, w backlog.Delay) string {
+	return fmt.Sprintf("Unanswered: your question of %s got no answer in %s (acts.ask.wait). Give an `assume` with your best answer to it — one plain sentence, from what the issue, its comments and the code show, written on the issue under %s for the person to correct — then go on as if it were the answer: `refine` what it lacks, `ready` when evident. Ask nothing more: the question stands. The person's %s and %s are never rewritten.\n",
+		s.Since.UTC().Format("2006-01-02 15:04 UTC"), w.Say(), backlog.AssumptionsName, work.Name(work.Need), work.Name(work.Validation))
+}
+
+// draftsDue says whether an issue's drafts no person accepted got no
+// answer for the delay (ADR-0060): at once with none; otherwise from the
+// forge's time of its workline:draft label, or a person's comment after.
+func draftsDue(b forge.Backlog, is forge.Issue, notes []forge.Note, w backlog.Delay, now time.Time) (bool, error) {
+	switch {
+	case w.Never:
+		return false, nil
+	case w.D == 0:
+		return true, nil
+	}
+	t, err := b.Trail(is.ID, backlog.LabelDraft)
+	if err != nil {
+		return false, err
+	}
+	since, known := backlog.DraftsSince(t.Labeled, notes, is)
+	return known && w.Passed(since, now), nil
 }
 
 // levelSays is what each autonomy level means for the agent (ADR-0038).

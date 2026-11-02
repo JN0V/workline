@@ -1,0 +1,4 @@
+# #9's question got no answer past the delay: the product owner takes
+# its best assumption and goes on (ADR-0060).
+- assume: {issue: 9, assumption: "`--verbose=false` prints the plain line, as other flags do.", why: "No answer to the question."}
+- ready: {issue: 9, why: "Its four sections are a person's; the assumption settles the open point."}

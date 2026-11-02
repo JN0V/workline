@@ -133,6 +133,14 @@ type State struct {
 	// told to rewrite in a form the tester reads (#855): told once, not
 	// again until the body changes.
 	Unread string `yaml:"unread,omitempty"`
+	// Assumed is the round of the question to its reporter the role took
+	// an assumption on, unanswered past acts.ask.wait (ADR-0060), and
+	// AssumedAt when, RFC 3339: a person's comment after it answers it.
+	// Told is the round the agent was told is unanswered past the delay:
+	// told once, not again until a new question.
+	Assumed   int    `yaml:"assumed,omitempty"`
+	AssumedAt string `yaml:"assumed-at,omitempty"`
+	Told      int    `yaml:"told,omitempty"`
 }
 
 // StateMarker marks the comment holding an issue's state.
@@ -211,8 +219,12 @@ func FormatState(s State) string {
 		NoTest    string            `yaml:"no-test,omitempty"`
 		Silent    string            `yaml:"silent,omitempty"`
 		Unread    string            `yaml:"unread,omitempty"`
+		Assumed   int               `yaml:"assumed,omitempty"`
+		AssumedAt string            `yaml:"assumed-at,omitempty"`
+		Told      int               `yaml:"told,omitempty"`
 	}{s.Sources, s.Confirmed, s.Judged, s.Comments, s.Body, s.Priority, s.Effort, s.Title, s.Split, s.After, s.Kept, s.Sections, s.Wrote, s.Answered, s.Revised, s.Plain, s.Deleted,
-		s.Proposed, s.Done, s.Undone, s.Did, s.Closed, s.Label, s.Aside, s.Heard, s.Revisions, s.Rules, s.Left, s.Proof, s.NoTest, s.Silent, s.Unread})
+		s.Proposed, s.Done, s.Undone, s.Did, s.Closed, s.Label, s.Aside, s.Heard, s.Revisions, s.Rules, s.Left, s.Proof, s.NoTest, s.Silent, s.Unread,
+		s.Assumed, s.AssumedAt, s.Told})
 	// The record is kept out of sight, in an HTML comment (#548): a forge
 	// mails what a comment shows, and a person reads there only what the
 	// role tells them, never its record.
@@ -527,6 +539,20 @@ type Proposal struct {
 	// deleted (State.Deleted), never written again (ADR-0038).
 	Refused   []string `yaml:"refused,omitempty"`
 	Questions string   `yaml:"questions,omitempty"` // asking the reporter; for an outsider's refine, what it still needs
+	// Assume (ADR-0060): the role's best assumption for a question left
+	// unanswered past acts.ask.wait, or asked in the same run at a level
+	// that goes on at once; Asked, the engine's, the day the question was
+	// asked, "" in the same run. Answered, on the engine's own: who
+	// answered after the assumptions, their lines marked so.
+	Assumption string `yaml:"assumption,omitempty"`
+	Asked      string `yaml:"asked,omitempty"`
+	Answered   string `yaml:"answered,omitempty"`
+	// Assumed, the engine's, on a ready: the drafts no person accepted,
+	// taken as assumptions past acts.ask.wait (ADR-0060), by heading.
+	// Written, the engine's: the line an assume, or such a ready, adds
+	// under the issue's Assumptions.
+	Assumed []string `yaml:"assumed,omitempty"`
+	Written string   `yaml:"written,omitempty"`
 	// The engine's, for the conversation with the reporter: the round this
 	// comment would be, and whether a refine is proposed to the reporter in
 	// a comment rather than written in the body (an outsider's issue).
@@ -613,7 +639,7 @@ func (c Proposal) key() string {
 }
 
 // Kinds are the intentions that are acts on the backlog.
-var Kinds = []string{"open", "close", "keep", "sources", "milestone", "order", "effort", "refine", "ready", "unready", "unblock", "blocked", "ask", "split", "rename", "depend", "undepend"}
+var Kinds = []string{"open", "close", "keep", "sources", "milestone", "order", "effort", "refine", "ready", "unready", "unblock", "blocked", "ask", "assume", "split", "rename", "depend", "undepend"}
 
 // theirs are the acts an outsider's issue is proposed for, not done: it is
 // theirs (ADR-0018).
@@ -675,6 +701,7 @@ type Plan struct {
 	added     map[int][]int   // the blockers this run's depend acts add, for the next act's cycle check
 	dropped   map[int][]int   // the blockers this run's undepend acts take off
 	revisited map[int]string  // the blocked issues this run decided on: unblock or blocked, one a run
+	askedNow  map[int]int     // the issues this run asks a question on, each its round: an assumption at once follows it (ADR-0060)
 	hearsay   bool            // the last quote found was only in an outsider's comment
 	// changedFor are the issues read again for a change to what they were
 	// built on: every act on them proposed (ADR-0032).
@@ -810,6 +837,7 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 	}
 	p.readChanges(changes)
 	p.codeFirst = map[int]bool{}
+	p.askedNow = map[int]int{}
 	dropped := func(c Proposal, rule, msg string) {
 		p.Findings = append(p.Findings, verdict.Finding{Rule: rule, Where: c.where(), Message: msg})
 	}
@@ -829,10 +857,15 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 	slices.Sort(indexes)
 	// A sources is decided before the asks: an ask waits only for code a
 	// sources done in this run names (#548).
+	// An assumption after the rest: one taken at once follows an ask
+	// done in this run (ADR-0060).
 	slices.SortStableFunc(indexes, func(a, b int) int {
 		first := func(i int) int {
-			if closes[i].Do == "sources" {
+			switch closes[i].Do {
+			case "sources":
 				return 0
+			case "assume":
+				return 2
 			}
 			return 1
 		}
@@ -852,7 +885,7 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 				continue
 			}
 		}
-		if (c.Do == "ready" || c.Do == "unready" || c.Do == "unblock" || c.Do == "blocked" || c.Do == "keep" || c.Do == "milestone" || c.Do == "order" || c.Do == "effort" || c.Do == "split" || c.Do == "rename" || p.ticked[c.key()]) && decided[c.key()] {
+		if (c.Do == "ready" || c.Do == "unready" || c.Do == "unblock" || c.Do == "blocked" || c.Do == "assume" || c.Do == "keep" || c.Do == "milestone" || c.Do == "order" || c.Do == "effort" || c.Do == "split" || c.Do == "rename" || p.ticked[c.key()]) && decided[c.key()] {
 			p.Decisions = append(p.Decisions, Decision{Index: i, Mode: Off, Act: c}) // the engine's own and the agent's: one
 			if c.Do == "split" || c.Do == "rename" {
 				// Both checked against the state before either is applied:
@@ -916,7 +949,7 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 			if c.Do == "keep" {
 				s = Setting{Mode: Act} // keeping an issue open is never held back
 			}
-			if c.Do == "unready" || c.Do == "unblock" || c.Do == "blocked" {
+			if c.Do == "unready" || c.Do == "unblock" || c.Do == "blocked" || c.Do == "assume" {
 				// Back to refine, out of Blocked: cheap, undone by putting
 				// the label back; kept blocked, only said — done alone, its
 				// reason on the issue (ADR-0059, amended); the rules below
@@ -954,7 +987,7 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 				p.Findings = append(p.Findings, verdict.Finding{Rule: "outsider-evidence", Where: c.where(),
 					Message: "the words it quotes are only in a comment by someone outside the project: proposed, not done"})
 			}
-			if ch, ok := p.changedFor[c.Issue]; ok && d.Mode == Act && c.Do != "keep" && c.Do != "unready" && c.Do != "unblock" && c.Do != "blocked" && !cleanup {
+			if ch, ok := p.changedFor[c.Issue]; ok && d.Mode == Act && c.Do != "keep" && c.Do != "unready" && c.Do != "unblock" && c.Do != "blocked" && c.Do != "assume" && !cleanup {
 				// Read again for a change to what it was built on: what the
 				// change asks of it is a person's to decide (ADR-0032); back to
 				// refine excepted, cheap to undo (ADR-0059, amended).
@@ -1056,6 +1089,9 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 				}
 				if c.Do == "sources" && c.Ticked == "" {
 					p.codeFirst[c.Issue] = true // its code read at the next run: no ask on it now
+				}
+				if c.Do == "ask" {
+					p.askedNow[c.Issue] = c.Round
 				}
 				p.recordDone(c)
 				p.recordDid(c)
@@ -1434,6 +1470,9 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 	if rule, why := p.checkBlocked(c); rule != "" {
 		return rule, why
 	}
+	if rule, why := p.checkAssume(f, role, c); rule != "" {
+		return rule, why
+	}
 	if c.Do == "unready" {
 		is, ok := p.issues[c.Issue]
 		switch {
@@ -1566,7 +1605,7 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 	if c.Do == "keep" {
 		return p.checkKeep(f, repo, role, st, c)
 	}
-	if c.Do == "milestone" || c.Do == "order" || c.Do == "effort" || c.Do == "refine" || c.Do == "ready" || c.Do == "unready" || c.Do == "unblock" || c.Do == "blocked" || c.Do == "ask" || c.Do == "split" || c.Do == "rename" || c.Do == "depend" || c.Do == "undepend" {
+	if c.Do == "milestone" || c.Do == "order" || c.Do == "effort" || c.Do == "refine" || c.Do == "ready" || c.Do == "unready" || c.Do == "unblock" || c.Do == "blocked" || c.Do == "ask" || c.Do == "assume" || c.Do == "split" || c.Do == "rename" || c.Do == "depend" || c.Do == "undepend" {
 		return "", "" // writing a plan or asking says nothing of the issue's truth: no quote
 	}
 	if c.Quote == nil || strings.TrimSpace(c.Quote.Text) == "" {
@@ -1766,8 +1805,15 @@ func (p *Plan) checkRefining(f forge.Backlog, repo, role string, c *Proposal) (r
 				Message: "already in the body, left as it is: " + strings.Join(kept, ", ")})
 		}
 	case "ready":
+		c.Assumed, c.Written = nil, ""
 		if missing := NotReady(is, p.ledger.States[c.Issue], Accepted(is)); len(missing) > 0 {
-			return "not-ready", "not moved to ready: " + strings.Join(missing, "; ")
+			// Drafts no person accepted, past the level's delay: taken as
+			// assumptions, the issue goes on (ADR-0060).
+			names, written, later := p.assumable(f, is, p.ledger.States[c.Issue])
+			if len(names) == 0 {
+				return "not-ready", "not moved to ready: " + strings.Join(missing, "; ") + later
+			}
+			c.Assumed, c.Written = names, written
 		}
 		if unread, own := ScenariosUnread(is, p.ledger.States[c.Issue]); unread && p.config.Tester && c.Proof == nil && !Readied(is) {
 			// No test could name a scenario: ready, it would skip its
@@ -2922,6 +2968,10 @@ func describe(c Proposal, verb string) string {
 			// of its Draft, and why.
 			board += fmt.Sprintf(", proved by %s in place of new tests (%s)", c.Proof.Kind, strings.TrimSuffix(strings.TrimSpace(c.Proof.Reason), "."))
 		}
+		if len(c.Assumed) > 0 {
+			// Drafts no person accepted past the delay (ADR-0060).
+			board += fmt.Sprintf(", its %s taken as written after no answer, said under %s", and(c.Assumed), AssumptionsName)
+		}
 		return fmt.Sprintf("%s #%d to ready%s: %s", map[bool]string{true: "Moved", false: "Move"}[done], c.Issue, board, strings.TrimSpace(c.Why))
 	case "unready":
 		if done {
@@ -2950,6 +3000,12 @@ func describe(c Proposal, verb string) string {
 			again = fmt.Sprintf(" again, after their answer (round %d)", c.Round)
 		}
 		return fmt.Sprintf("%s #%d's reporter%s: %s", map[bool]string{true: "Asked", false: "Ask"}[done], c.Issue, again, strings.TrimSpace(c.Questions))
+	case "assume":
+		if c.Answered != "" {
+			return fmt.Sprintf("Marked the assumptions on #%d as answered by @%s: their answer stands over them.", c.Issue, c.Answered)
+		}
+		return fmt.Sprintf("%s on #%d: %s Answer here, or edit its line under %s in the issue, to change it.",
+			AssumedLead, c.Issue, strings.TrimSuffix(strings.Join(strings.Fields(c.Assumption), " "), ".")+".", AssumptionsName)
 	}
 	if c.Do == "sources" {
 		v := "Named"

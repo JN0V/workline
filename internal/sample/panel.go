@@ -139,6 +139,7 @@ var statements = map[string]string{
 	"sources": "the code the product owner named holds what the issue is about",
 	"order":   "the issue's words do not contradict the priority, effort or milestone set",
 	"ask":     "the question the product owner asked was not already answered on the issue",
+	"assume":  "the assumption the product owner took follows from the issue, its comments and the code, and no answer on the issue contradicts it",
 	"closing": "the closing holds: the code does what the issue asks, or the other issue holds the same need",
 	"split":   "each part holds one need, and together the parent's",
 }
