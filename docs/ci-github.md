@@ -102,7 +102,8 @@ write run the default branch's workflow, never a pull request's own
      tester and the developer routed on `issue`: the line of states
      ([ADR-0059](adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md)),
      a person's label running the role an issue's state wakes, each step
-     starting the next, an hourly reconciler; a verdict or a
+     starting the next, an hourly reconciler
+     ([its heartbeat](github/heartbeat.md), an environment to create); a verdict or a
      person's comment on its own pull request, a review round
      ([the triggers](../roles/developer/docs/triggers.md)); your setup
      steps in `.github/actions/workline-setup/action.yml`

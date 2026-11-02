@@ -50,16 +50,15 @@ routing:
     (`workflow_dispatch`, which the job's own token may start). Not
     due, it asks again after 10 and 20 s: GitHub lists a comment the
     apply just wrote some seconds later.
-  - **About hourly**, the `reconcile` job starts what an event missed, at most
-    `reconcile-max` issues a run, each its own run.
-  - **Not on the schedule alone**: GitHub runs schedules late or not at
-    all. A `workline:` label on an issue, which each hop of the line
-    is, starts it too, once 55 minutes passed since the last run that
-    succeeded, kept in the Actions cache. One at a time: a by-hand run
-    waiting behind another may give way to a later label's, which then
-    runs if due ([#789](https://github.com/JN0V/workline/issues/789)). Its cost: a
-    job of a few seconds each such event, which a private repository
-    pays by the started minute; comments, the most frequent, start none.
+  - **Hourly**, the `reconcile` job starts what an event missed, at most
+    `reconcile-max` issues a run, each its own run. Each reconcile
+    starts the next, 55 minutes on: [the heartbeat](../../../docs/github/heartbeat.md),
+    an environment to create once.
+  - **Not on the heartbeat alone**: the schedule, or a `workline:` label
+    on an issue, each hop of the line, starts it once 55 minutes passed
+    since the last run that succeeded, kept in the Actions cache. One at
+    a time ([#789](https://github.com/JN0V/workline/issues/789)). Its
+    cost: a job of a few seconds each such event; comments start none.
   - **One run an issue at a time**
     ([#806](https://github.com/JN0V/workline/issues/806)): a run of an
     issue's step is named `workline develop #<n>`. The reconciler and
