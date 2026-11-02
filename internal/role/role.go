@@ -302,8 +302,10 @@ type Merge struct {
 
 // MergeLevels are the merge policy's levels, as the product owner's are
 // named (ADR-0042): `cautious`, a person's yes on each pull request;
-// `normal`, workline's own routine ones merged with none.
-var MergeLevels = []string{"cautious", "normal"}
+// `normal`, workline's own routine ones merged with none; `enterprising`,
+// the developer's features too, the person's yes moved to the milestone's
+// release candidate (ADR-0060).
+var MergeLevels = []string{"cautious", "normal", "enterprising"}
 
 // MergeAlone are the kinds of workline's own pull requests that wait for a
 // person's yes at `normal` until the project lets them merge with none
@@ -340,8 +342,8 @@ func LoadProjectConfig(repo string) (*ProjectConfig, error) {
 				return nil, &ConfigError{fmt.Sprintf("merge.alone lists %q: the kinds it may let merge alone are %s", kind, strings.Join(MergeAlone, ", "))}
 			}
 		}
-		if len(c.Merge.Alone) > 0 && c.Merge.Autonomy != "normal" {
-			return nil, &ConfigError{fmt.Sprintf("merge.alone lets kinds merge with no person's yes, which only autonomy normal does: autonomy is %q", c.Merge.Autonomy)}
+		if len(c.Merge.Alone) > 0 && c.Merge.Autonomy == "cautious" {
+			return nil, &ConfigError{fmt.Sprintf("merge.alone lets kinds merge with no person's yes, which only autonomy normal or enterprising does: autonomy is %q", c.Merge.Autonomy)}
 		}
 	}
 	return &c, nil

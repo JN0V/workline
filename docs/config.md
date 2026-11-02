@@ -32,7 +32,7 @@ project's `settings`.
 | `gates.<name>` | `criteria`, `checks` (`id`, `run`, `output`, `max`, `optional`, `timeout`, `fix`; on a merge request `new`, `base-timeout`, `config`), `enforce` ([gates](spec/gates.md)) |
 | `repos.<name>` | `url`, `branch`: other repositories docs may name ([multi-repo](spec/multi-repo.md)) |
 | `release` | `branches` (the release tool's), `tags` (`v*`) |
-| `merge` | `autonomy: cautious`: the forge merges what a person accepted; `normal`: workline's own routine work too, with no yes; `alone: [reader]`: the reader's rewordings too ([merge policy](merge-policy.md)); off unless set |
+| `merge` | `autonomy: cautious`: the forge merges what a person accepted; `normal`: workline's own routine work too, with no yes; `enterprising`: the developer's features too, a person's yes on the milestone's [release candidate](release-candidate.md); `alone: [reader]`: the reader's rewordings too ([merge policy](merge-policy.md)); off unless set |
 | `routing.states`, `routing.max-hops`, `routing.reconcile-max` | the line of states, its hop cap, the reconciler's steps a run ([routing](spec/routing.md#the-line-of-states)) |
 | `routing.wip` | `<state>: <issues>`, a state's WIP limit, laid over the shipped `ready: 5`; `0` lifts it ([room in the next state](spec/routing.md#room-in-the-next-state)) |
 | `routing.revisit` | the days a blocked issue waits, nothing new on it, before the product owner reads it again; `7` shipped, `0` never ([blocked, read again](spec/routing.md#blocked-read-again)) |
@@ -108,7 +108,7 @@ reviewer on `schedule`, [#128](https://github.com/JN0V/workline/issues/128);
   one someone believes in and nothing applies.
 - **A level the top-level `autonomy` does not know**, the levels named.
 - **A level `merge:` does not know**, the levels named; in `alone`, a
-  kind other than `reader`, or `alone` below `normal`.
+  kind other than `reader`, or `alone` at `cautious`.
 - **A role retired**, named in `roles:` or `routing:`: the release manager
   is gone, and the message names the release tool to use instead
   ([ADR-0017](adr/0017-the-release-manager.md)).

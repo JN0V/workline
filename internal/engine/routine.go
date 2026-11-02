@@ -24,8 +24,17 @@ import (
 // kind back to a person's yes (demote.go).
 
 // MergeNormal is the merge policy's level where workline's own routine
-// merge requests need no person's yes (role.MergeLevels).
-const MergeNormal = "normal"
+// merge requests need no person's yes (role.MergeLevels); at
+// MergeEnterprising, the developer's features too, the person's yes moved
+// to the milestone's release candidate (ADR-0060, candidate.go).
+const (
+	MergeNormal       = "normal"
+	MergeEnterprising = "enterprising"
+)
+
+// byPolicy says whether a merge level lets workline's own merge requests
+// merge with no person's yes: `normal` and `enterprising`.
+func byPolicy(level string) bool { return level == MergeNormal || level == MergeEnterprising }
 
 // The kinds of workline's routine merge requests, told by what their change
 // is, never by their branch's name nor a trailer: the higher wins.
@@ -338,12 +347,12 @@ func weighRoutine(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, n *
 		// Said once on it, where a person reviewing looks: how to accept
 		// it, and how to let its kind merge alone.
 		t := forge.Target{Kind: "merge-request", ID: mr.ID}
-		body := fmt.Sprintf("**Waiting for a person's yes**: this is workline's own %s merge request — %s. The project's merge policy is `normal`, but this kind merges with no person's yes only once the project lets it.\n\n- To accept this one, put the label `%s`.\n- To let workline's %s merge requests merge alone, add the kind to the policy in `.workline/config.yaml`: `merge: {autonomy: normal, alone: [%s]}`.",
-			kind, kindSays[kind], backlog.AcceptedLabel(f), kind, kind)
+		body := fmt.Sprintf("**Waiting for a person's yes**: this is workline's own %s merge request — %s. The project's merge policy is `%s`, but this kind merges with no person's yes only once the project lets it.\n\n- To accept this one, put the label `%s`.\n- To let workline's %s merge requests merge alone, add the kind to the policy in `.workline/config.yaml`: `merge: {autonomy: %s, alone: [%s]}`.",
+			kind, kindSays[kind], o.Merge, backlog.AcceptedLabel(f), kind, o.Merge, kind)
 		if err := f.Comment(t, body, forge.Marker("merge-waits="+kind)); err != nil {
 			return nil, err
 		}
-		return waits("", fmt.Sprintf("workline's own %s (%s), which merges with no person's yes only once the project lets it, `merge: {autonomy: normal, alone: [%s]}`", kind, kindSays[kind], kind))
+		return waits("", fmt.Sprintf("workline's own %s (%s), which merges with no person's yes only once the project lets it, `merge: {autonomy: %s, alone: [%s]}`", kind, kindSays[kind], o.Merge, kind))
 	}
 	return admit(f, m, o, w, n, hand, waits, kind, kindSays[kind])
 }
@@ -413,8 +422,8 @@ func admit(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, n *normal,
 	// The record, where a person sees it and the engine finds it again
 	// when a revert names this merge request.
 	t := forge.Target{Kind: "merge-request", ID: mr.ID}
-	body := fmt.Sprintf("**Merging with no person's yes**: the project's merge policy is `normal`, and this is workline's own %s: %s. Opened and pushed by workline's App, every commit its own, and the line passed on its head (%s), every agent's review whole. To hold it, mark it a draft or turn auto-merge off. Reverted, workline's %s merge requests wait for a person's yes again.",
-		kind, says, short(tip), kind)
+	body := fmt.Sprintf("**Merging with no person's yes**: the project's merge policy is `%s`, and this is workline's own %s: %s. Opened and pushed by workline's App, every commit its own, and the line passed on its head (%s), every agent's review whole. To hold it, mark it a draft or turn auto-merge off. Reverted, workline's %s merge requests wait for a person's yes again.",
+		o.Merge, kind, says, short(tip), kind)
 	if err := f.Comment(t, body, forge.Marker("merge-alone="+kind)); err != nil {
 		return nil, err
 	}

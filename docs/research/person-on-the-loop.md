@@ -81,6 +81,35 @@ kept for what changes the result.
   a not reproduced bug is Blocked, with its reason, and read again on
   news ([ADR-0059](../adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#amendment-2026-11-01-blocked-is-read-again)).
 
+## Pre-releases on a release branch: release-please
+
+Read for [#861](https://github.com/JN0V/workline/issues/861) in
+release-please's source (`src/versioning-strategies/prerelease.ts`,
+`src/manifest.ts`) and release-please-action's inputs, 2026-11-02:
+
+- **A release branch**: the action's `target-branch` runs the tool on
+  any branch: its release pull request goes into that branch, its last
+  release found by the manifest's version and that release's tag.
+- **`versioning: prerelease`** counts `-rc.N` itself, but from a plain
+  version it gives `1.1.0-rc`, no number, unless `prerelease-type`
+  carries one; leaving a prerelease for the version needs `Release-As`
+  anyway.
+- **`Release-As: x.y.z`**, a commit's footer, sets the next version
+  whatever the commits say: the tool's own way for a person, or a
+  process, to name it.
+- **`prerelease: true`** marks a GitHub release a pre-release when its
+  version has a prerelease part, **or a major of 0**: on a 0.x project,
+  every final version too. Marking the `-rc` release after is safer.
+- **The job's own token** opens and merges the tool's pull request, but
+  starts no workflow: the tool must run again in the same job to tag
+  what it merged.
+- **releaser-pleaser** keeps `-rc.N` as a state of its pull request
+  ([release-manager.md](release-manager.md)); not wired.
+
+What workline takes: it names each version by a `Release-As:` commit
+on `release/vX.Y` — the milestone gives `X.Y` —, the tool tags and
+publishes; nothing else of the tool's is replaced.
+
 ## What workline takes
 
 - **Lazy consensus for questions**: ask, wait a delay the level sets,

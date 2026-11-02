@@ -2,6 +2,7 @@
 sources:
   - internal/developer/merge.go
   - internal/engine/code.go
+  - internal/engine/candidate.go
   - internal/sample/developer.go
 checked: 93dac05e
 verified: agent:claude-code
@@ -16,6 +17,7 @@ flowchart LR
   person["<b>Waits</b><br/>for a person's yes"]
   pr --> kind
   kind -- "a task, a fix reproduced" --> alone
+  kind -- "a feature, at enterprising" --> alone
   kind -- "a feature, none" --> person
 ```
 
@@ -23,7 +25,9 @@ The developer never merges: `workline follow` does, by the project's
 merge policy
 ([ADR-0054](../../../docs/adr/0054-the-developer-takes-a-ready-issue-to-a-pull-request.md#a-person-on-the-loop-not-in-it),
 step 7). At `cautious`, every pull request waits for a person's label.
-At `normal`, a person's yes is asked by kind only.
+At `normal`, a person's yes is asked by kind only. At `enterprising`, a
+feature merges too, and the yes moves to the milestone's
+[release candidate](../../../docs/release-candidate.md).
 
 ## Fix or feature: the issue says
 
@@ -75,6 +79,16 @@ At `normal`, a person's yes is asked by kind only.
 - **A revert of a merged one** sends `code` back to a person's yes, as
   any kind ([at `normal`](../../../docs/merge-policy-normal.md)).
 
+## At `enterprising`
+
+- **A feature merges with no person's yes**, by the same gates as a fix
+  ([ADR-0060](../../../docs/adr/0060-the-person-is-on-the-loop.md#4-a-person-validates-by-the-issues-kind)).
+- **Its issue goes into a milestone** first, the next open one, when it
+  has none: the person tries that milestone's release candidate.
+- **A candidate refused** sends features back to a person's yes on each
+  pull request, said once on it, until a person lifts it
+  ([the release candidate](../../../docs/release-candidate.md#a-refused-candidate)).
+
 ## The record
 
 - **Merged alone**: workline's comment on the pull request, "Merging
@@ -91,4 +105,5 @@ At `normal`, a person's yes is asked by kind only.
 - **The project's own labels per kind**: the list above is what the
   merge reads; the product owner's `kinds` setting names the label it
   sets, not yet what the merge reads.
-- **A feature let merge alone**: no `merge.alone` for it yet.
+- **A feature let merge alone at `normal`**: only `enterprising` lets
+  it, with a release candidate.

@@ -1,0 +1,57 @@
+case: developer/merge-enterprising-candidate-refused-features-wait
+about: >
+  A candidate refused (ADR-0060, for the maintainer, point 3): dana, who
+  may push and merge, closed #8, the candidate `v1.1.0-rc.1`'s issue,
+  without a yes. `workline follow` records the refusal on it, once, and
+  opens an issue as a revert's demotion does: until a person closes it,
+  features wait for a person's yes on each pull request again, as at
+  `normal`. The developer's feature for #3 waits so, said on it; a fix
+  would still merge alone.
+given:
+  repo: tested-draft
+  config: {merge: {autonomy: enterprising}}
+  setup:
+    - "git checkout -q -b workline/developer/3 && GIT_COMMITTER_NAME=workline-bot git commit -q --amend --no-edit && printf 'add() { echo $(($1 + $2)); }\\nmul() { echo $(($1 * $2)); }\\n' > lib.sh && GIT_COMMITTER_NAME=workline-bot git commit -qam 'feat: mul for #3' -m 'Workline-Role: developer' && git init -q --bare ../origin.git && git remote add origin ../origin.git && git checkout -q main && git branch release/v1.1 && git push -q origin main workline/developer/3 release/v1.1"
+  forge:
+    milestones: ["v1.1"]
+    statuses:
+      - {commit: "main", name: workline/merge-read, state: success, description: "reverts read; held:", by: workline-bot}
+      - {commit: "workline/developer/3", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+    issues:
+      - {id: 3, title: "a mul", labels: ["enhancement", "workline:developing"], milestone: v1.2, body: "## Need\n\nA mul.\n"}
+      - {id: 5, title: "sub", labels: [enhancement], milestone: v1.1, closed: true, body: "## Need\n\nsub.\n"}
+      - id: 8
+        title: "Release candidate v1.1.0-rc.1: try it, then say yes"
+        author: workline-bot
+        labels: ["workline:candidate"]
+        milestone: v1.1
+        closed: true
+        closing: {author: dana, writer: true, insider: true}
+        body: "A candidate.\n\n<!-- workline:candidate=v1.1.0-rc.1 -->"
+    merge-requests:
+      - id: 2
+        branch: workline/developer/3
+        base: main
+        author: workline-bot
+        bot: true
+        title: "a mul"
+        body: "Closes #3"
+        labels: []
+        pushes: [{head: workline/developer/3, at: "2026-01-04T09:00:00Z", by: workline-bot}]
+        comments:
+          - "**The developer**'s record of this pull request, for its next runs and the auditor.\n\n<!-- workline:developer-act {\"act\":\"code\",\"issue\":3,\"code\":[\"lib.sh\"],\"proof\":{\"result\":\"green\",\"passed\":2}} -->\n<!-- workline:sticky=developer/code -->"
+run: {follow: [--base, main], summary: true}
+expect:
+  status: pass
+  findings:
+    - {rule: candidate-refused, where: "#8", message: "closed by @dana: v1.1.0-rc.1 refused, features wait for a person's yes again"}
+    - {rule: waits-for-a-yes, where: "#2", message: "features wait for a person's yes since a release candidate was refused (#9)"}
+  no-findings: [{rule: auto-merge-on}, {rule: candidate-cut}]
+  not-pushed: [release/v1.1]
+  forge:
+    issues:
+      - {id: 8, comment-contains: ["**Refused by @dana**", "workline:candidate-refused=v1.1.0-rc.1"]}
+      - {id: 9, closed: false, title: "workline: its feature merge requests wait for a person's yes again (candidate v1.1.0-rc.1 refused)", body-contains: ["close this issue"]}
+      - {id: 10, absent: true}
+    merge-requests:
+      - {id: 2, auto-merge: false, comment-contains: ["a release candidate was refused", "until a person closes #9"]}

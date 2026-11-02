@@ -21,7 +21,9 @@ flowchart LR
 workline cuts no releases: a release tool does
 ([ADR-0017](adr/0017-the-release-manager.md)). It says, before the
 release, what would hold it, and checks it where the release is cut.
-Nobody waits for either. What holds the release tool's merge request,
+Nobody waits for either. At `merge: {autonomy: enterprising}`, a
+milestone ships through a candidate a person tries:
+[the release candidate](release-candidate.md). What holds the release tool's merge request,
 and when to merge it: [what holds a release](release-holds.md).
 
 - **The release never waits for the docs**

@@ -20,6 +20,8 @@ type FakeState struct {
 	Issues        []FakeItem `json:"issues"`
 	MergeRequests []FakeItem `json:"merge-requests"`
 	Milestones    []string   `json:"milestones,omitempty"` // open milestones, by title
+	// ClosedMilestones are the milestones closed, by title (CloseMilestone).
+	ClosedMilestones []string `json:"closed-milestones,omitempty"`
 	// MilestoneDue gives a milestone its due date, YYYY-MM-DD, by title.
 	MilestoneDue map[string]string `json:"milestone-due,omitempty"`
 	Labels       []FakeItem        `json:"labels,omitempty"`       // labels defined, their name as id
@@ -291,7 +293,39 @@ func (f *Fake) Issue(id int) (*Issue, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Issue{ID: it.ID, Title: it.Title, Body: it.Body, Labels: it.Labels, Closed: it.Closed, Author: it.Author, Insider: it.Insider, Fields: it.Fields, Weight: it.Weight, Assignees: it.Assignees}, nil
+	return &Issue{ID: it.ID, Title: it.Title, Body: it.Body, Labels: it.Labels, Closed: it.Closed, Reason: it.Reason, Milestone: it.Milestone, MilestoneDue: s.MilestoneDue[it.Milestone], Author: it.Author, Insider: it.Insider, Fields: it.Fields, Weight: it.Weight, Assignees: it.Assignees}, nil
+}
+
+// MilestoneIssues lists the issues of the open milestone with this title,
+// open and closed.
+func (f *Fake) MilestoneIssues(title string) ([]Issue, error) {
+	all, err := f.AllIssues()
+	if err != nil {
+		return nil, err
+	}
+	s, err := f.load()
+	if err != nil || !slices.Contains(s.Milestones, title) {
+		return nil, err
+	}
+	var out []Issue
+	for _, is := range all {
+		if is.Milestone == title {
+			out = append(out, is)
+		}
+	}
+	return out, nil
+}
+
+// CloseMilestone closes the open milestone with this title: off the open
+// ones, kept among those closed.
+func (f *Fake) CloseMilestone(title string) error {
+	return f.write(func(s *FakeState) error {
+		if i := slices.Index(s.Milestones, title); i >= 0 {
+			s.Milestones = slices.Delete(s.Milestones, i, i+1)
+			s.ClosedMilestones = append(s.ClosedMilestones, title)
+		}
+		return nil
+	})
 }
 
 func (f *Fake) Issues() ([]Issue, error) {

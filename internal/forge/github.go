@@ -47,6 +47,11 @@ func (g *github) Issue(id int) (*Issue, error) {
 			Login string `json:"login"`
 		} `json:"user"`
 		Association string `json:"author_association"`
+		Reason      string `json:"state_reason"`
+		Milestone   *struct {
+			Title string `json:"title"`
+			Due   string `json:"due_on"`
+		} `json:"milestone"`
 		// Its values in the organisation's issue fields (ADR-0040).
 		FieldValues []struct {
 			Name   string `json:"issue_field_name"`
@@ -59,7 +64,10 @@ func (g *github) Issue(id int) (*Issue, error) {
 		return nil, err
 	}
 	is := &Issue{ID: v.Number, Title: v.Title, Body: v.Body, Labels: []string{}, Closed: v.State == "closed",
-		Author: v.User.Login, Insider: insider(v.Association)}
+		Author: v.User.Login, Insider: insider(v.Association), Reason: v.Reason}
+	if v.Milestone != nil {
+		is.Milestone, is.MilestoneDue = v.Milestone.Title, v.Milestone.Due[:min(len(v.Milestone.Due), 10)]
+	}
 	for _, l := range v.Labels {
 		is.Labels = append(is.Labels, l.Name)
 	}
@@ -92,8 +100,8 @@ func (g *github) Issues() ([]Issue, error) { return g.issues("open") }
 
 func (g *github) AllIssues() ([]Issue, error) { return g.issues("all") }
 
-func (g *github) issues(state string) ([]Issue, error) {
-	out, err := g.api("--paginate", "repos/{owner}/{repo}/issues?state="+state+"&per_page=100",
+func (g *github) issues(state string, filters ...string) ([]Issue, error) {
+	out, err := g.api("--paginate", "repos/{owner}/{repo}/issues?state="+state+"&per_page=100"+strings.Join(filters, ""),
 		"--jq", ".[] | select(.pull_request == null) | {id: .number, title, body: (.body // \"\"), labels: [.labels[].name], milestone: (.milestone.title // \"\"), \"milestone-due\": ((.milestone.due_on // \"\") | .[0:10]), author: .user.login, association: .author_association, closed: (.state == \"closed\"), reason: (.state_reason // \"\"), assignees: [.assignees[]?.login], blocked: (.issue_dependencies_summary.total_blocked_by // 0), subs: (.sub_issues_summary.total // 0), repo: .repository_url, fields: ([.issue_field_values[]? | select(.single_select_option != null) | {key: .issue_field_name, value: .single_select_option.name}] | from_entries)}")
 	if err != nil {
 		return nil, err
@@ -890,6 +898,35 @@ func (g *github) SetMilestone(id int, title string) error {
 		fmt.Sscan(strings.TrimSpace(string(out)), &n)
 	}
 	_, err = g.api("-X", "PATCH", fmt.Sprintf("repos/{owner}/{repo}/issues/%d", id), "-F", fmt.Sprintf("milestone=%d", n))
+	return err
+}
+
+// MilestoneIssues lists the issues of the open milestone with this
+// title, open and closed; none when there is no such milestone open.
+func (g *github) MilestoneIssues(title string) ([]Issue, error) {
+	m, err := g.milestoneNumbers()
+	if err != nil {
+		return nil, err
+	}
+	n, ok := m[title]
+	if !ok {
+		return nil, nil
+	}
+	return g.issues("all", fmt.Sprintf("&milestone=%d", n))
+}
+
+// CloseMilestone closes the open milestone with this title; none open,
+// it changes nothing.
+func (g *github) CloseMilestone(title string) error {
+	m, err := g.milestoneNumbers()
+	if err != nil {
+		return err
+	}
+	n, ok := m[title]
+	if !ok {
+		return nil
+	}
+	_, err = g.api("-X", "PATCH", fmt.Sprintf("repos/{owner}/{repo}/milestones/%d", n), "-f", "state=closed")
 	return err
 }
 

@@ -1,0 +1,35 @@
+case: merge/candidate-cut-once
+about: >
+  The branch is cut once (ADR-0060, §4): `release/v1.1` is on origin, its
+  candidate's issue #8 open with no yes on it, and main moved on since
+  with a feature of another milestone. `workline follow` cuts nothing,
+  pushes nothing to the branch, opens no other candidate: it says the
+  version waits for a person's yes on #8.
+given:
+  repo: tested
+  config: {merge: {autonomy: enterprising}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git tag v1.0.0 && git checkout -qb release/v1.1 && git commit -q --allow-empty -m 'chore: release 1.1.0-rc.1' -m 'Release-As: 1.1.0-rc.1' && git checkout -q main && git commit -q --allow-empty -m 'feat: pow (#12)' && git push -q origin main release/v1.1 --tags"
+  forge:
+    milestones: ["v1.1"]
+    statuses:
+      - {commit: "main", name: workline/merge-read, state: success, description: "reverts read; held:", by: workline-bot}
+    issues:
+      - {id: 3, title: "mul", labels: [enhancement], milestone: v1.1, closed: true, body: "## Need\n\nmul.\n"}
+      - id: 8
+        title: "Release candidate v1.1.0-rc.1: try it, then say yes"
+        author: workline-bot
+        labels: ["workline:candidate"]
+        milestone: v1.1
+        body: "A candidate.\n\n<!-- workline:candidate=v1.1.0-rc.1 -->"
+run: {follow: [--base, main], summary: true}
+expect:
+  status: pass
+  no-findings: [{rule: candidate-cut}, {rule: candidate-copied}, {rule: candidate-shipped}]
+  not-pushed: [release/v1.1]
+  summary-file: ["v1.1.0 waits for a person's yes on #8"]
+  forge:
+    issues:
+      - {id: 8, closed: false, comments: 0}
+      - {id: 9, absent: true}
+    milestones: ["v1.1"]

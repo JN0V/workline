@@ -1,0 +1,43 @@
+case: merge/candidate-fix-copied-next-rc
+about: >
+  A problem in the candidate (ADR-0060, for the maintainer, point 1): the
+  maintainer tried `v1.1.0-rc.1` and opened #5 in milestone v1.1; its
+  fix, #10, merged into main after the cut. `workline follow` copies it
+  onto `release/v1.1`, as `git cherry-pick -x`, and asks the release tool
+  for the next candidate, `1.1.0-rc.2`; the candidate's issue says so. #4,
+  merged before the cut, is on the branch already: not copied again.
+given:
+  repo: tested
+  config: {merge: {autonomy: enterprising}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git tag v1.0.0"
+    - "git checkout -qb release/v1.1 && git commit -q --allow-empty -m 'chore: release 1.1.0-rc.1' -m 'Release-As: 1.1.0-rc.1' && printf '# Changelog\\n' > CHANGELOG.md && git add CHANGELOG.md && git commit -qm 'chore(release/v1.1): release 1.1.0-rc.1 (#9)' && git tag v1.1.0-rc.1 && git checkout -q main"
+    - "printf 'add() { echo $(($1 + $2)); }\\nmul() { echo $(($1 * $2)); }\\n' > lib.sh && GIT_COMMITTER_DATE=2026-01-04T10:00:00Z git commit -qam 'fix: mul (#10)' && git push -q origin main release/v1.1 --tags"
+  forge:
+    milestones: ["v1.1"]
+    statuses:
+      - {commit: "main", name: workline/merge-read, state: success, description: "reverts read; held:", by: workline-bot}
+    issues:
+      - {id: 4, title: "sub", labels: [enhancement], milestone: v1.1, closed: true, body: "## Need\n\nsub.\n", closed-by: [{kind: pull-request, ref: "#7"}]}
+      - {id: 5, title: "mul is missing", labels: [bug], milestone: v1.1, closed: true, body: "## Need\n\nmul.\n", closed-by: [{kind: pull-request, ref: "#10"}]}
+      - id: 8
+        title: "Release candidate v1.1.0-rc.1: try it, then say yes"
+        author: workline-bot
+        labels: ["workline:candidate"]
+        milestone: v1.1
+        body: "A candidate.\n\n<!-- workline:candidate=v1.1.0-rc.1 -->"
+    merge-requests:
+      - {id: 7, branch: sub, base: main, closed: true, merged: true, merged-at: "2026-01-02T10:00:00Z", merged-as: "main~1", labels: []}
+      - {id: 10, branch: fix-mul, base: main, closed: true, merged: true, merged-at: "2026-01-04T10:00:00Z", merged-as: "main", labels: []}
+run: {follow: [--base, main], summary: true}
+expect:
+  status: pass
+  findings:
+    - {rule: candidate-copied, where: "release/v1.1", message: "#10 (#5) copied from main, the release tool asked for v1.1.0-rc.2"}
+  no-findings: [{rule: candidate-cut}]
+  pushed-message: {release/v1.1: "Release-As: 1.1.0-rc.2"}
+  pushed: {release/v1.1: {lib.sh: "mul()", CHANGELOG.md: "Changelog"}}
+  forge:
+    issues:
+      - {id: 8, closed: false, comment-contains: ["**v1.1.0-rc.2 asked for**: #10 (#5) copied onto `release/v1.1`"]}
+      - {id: 11, absent: true}

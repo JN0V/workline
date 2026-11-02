@@ -118,6 +118,15 @@ func Follow(o FollowOptions) *Result {
 		res.Summary = "the roles' merge requests left to gardening"
 	}
 	o.Base = base
+	if o.Merge == MergeEnterprising {
+		// The milestones' release candidates first: a refusal's demotion
+		// is read by the merge policy below (candidate.go, ADR-0060).
+		sum, err := candidates(f, o, local, res)
+		if err != nil {
+			return fail(err)
+		}
+		res.Summary += "; " + sum
+	}
 	if o.Merge != "" {
 		sum, err := mergePolicy(f, o, local, res, hand)
 		if err != nil {

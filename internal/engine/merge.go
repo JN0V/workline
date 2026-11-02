@@ -498,7 +498,7 @@ func mergePolicy(f forge.Forge, o FollowOptions, local bool, res *Result, hand m
 	// ones, those waiting for a person's yes again since a revert — said
 	// where the level is set.
 	var n *normal
-	if o.Merge == MergeNormal {
+	if byPolicy(o.Merge) {
 		tip, err := remoteTip(o.Repo, o.Base)
 		if err != nil {
 			return "", err
@@ -512,7 +512,7 @@ func mergePolicy(f forge.Forge, o FollowOptions, local bool, res *Result, hand m
 		}
 		if n.app == "" {
 			res.Findings = append(res.Findings, verdict.Finding{Rule: "merge-app-unknown", Level: "warn",
-				Message: "at `normal`, the token is no App's — a person's, or the forge does not say whose —: nothing is taken for workline's own work, every merge request waits for a person's yes, as at `cautious`"})
+				Message: "at `" + o.Merge + "`, the token is no App's — a person's, or the forge does not say whose —: nothing is taken for workline's own work, every merge request waits for a person's yes, as at `cautious`"})
 		} else {
 			if n.steers, err = steering(o.Repo, tip); err != nil {
 				return "", err
@@ -521,7 +521,7 @@ func mergePolicy(f forge.Forge, o FollowOptions, local bool, res *Result, hand m
 				return "", err
 			}
 		}
-		sum = "merge policy (normal; " + alone(n) + ")"
+		sum = "merge policy (" + o.Merge + "; " + alone(n) + ")"
 	}
 	open, err := f.ListMergeRequests()
 	if err != nil {
@@ -534,7 +534,7 @@ func mergePolicy(f forge.Forge, o FollowOptions, local bool, res *Result, hand m
 		case mr.Base != o.Base:
 			continue
 		case !slices.ContainsFunc(mr.Labels, accepted) && !mr.AutoMerge && !routineCandidate(o, n, mr):
-			if o.Merge == MergeNormal && o.Release != nil && o.Release(mr.Branch) {
+			if byPolicy(o.Merge) && o.Release != nil && o.Release(mr.Branch) {
 				res.Findings = append(res.Findings, verdict.Finding{Rule: "waits-for-a-yes", Where: forge.MergeRef(f, mr.ID),
 					Message: "the release tool's: merging it is the decision to release, never made with no person's yes; the label `workline:accepted`"})
 			}

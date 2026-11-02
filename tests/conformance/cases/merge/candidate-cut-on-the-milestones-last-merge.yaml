@@ -1,0 +1,46 @@
+case: merge/candidate-cut-on-the-milestones-last-merge
+about: >
+  The candidate cut (ADR-0060, §4): at `merge: {autonomy: enterprising}`,
+  milestone v1.1 holds #3 and #4, both closed by their merged pull
+  requests. `workline follow` cuts `release/v1.1` from main's tip, one
+  commit on it asking the release tool for `1.1.0-rc.1` (release-please's
+  `Release-As:`): the tool tags the candidate, never the engine
+  (ADR-0017). The candidate's issue is opened in the milestone, labelled
+  `workline:candidate`: how to try it, ship it, refuse it. Milestone v1.2,
+  an issue still open, is not cut; `Sprint 3`, named by no version, is a
+  person's; v1.0, left open though `v1.0.0` is out, is said, not cut.
+given:
+  repo: tested
+  config: {merge: {autonomy: enterprising}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git tag v1.0.0 && git push -q origin main --tags"
+  forge:
+    milestones: ["Sprint 3", "v1.0", "v1.1", "v1.2"]
+    statuses:
+      - {commit: "main", name: workline/merge-read, state: success, description: "reverts read; held:", by: workline-bot}
+    issues:
+      - {id: 2, title: "add", labels: [enhancement], milestone: v1.0, closed: true, body: "## Need\n\nadd.\n"}
+      - {id: 3, title: "mul", labels: [enhancement], milestone: v1.1, closed: true, reason: completed, body: "## Need\n\nmul.\n"}
+      - {id: 4, title: "sub", labels: [enhancement], milestone: v1.1, closed: true, reason: completed, body: "## Need\n\nsub.\n"}
+      - {id: 5, title: "div", labels: [enhancement], milestone: v1.2, closed: true, body: "## Need\n\ndiv.\n"}
+      - {id: 6, title: "mod", labels: [enhancement], milestone: v1.2, body: "## Need\n\nmod.\n"}
+      - {id: 7, title: "pow", labels: [enhancement], milestone: "Sprint 3", closed: true, body: "## Need\n\npow.\n"}
+run: {follow: [--base, main], summary: true}
+expect:
+  status: pass
+  findings:
+    - {rule: candidate-cut, where: "v1.1", message: "its 2 issues closed: release/v1.1 cut from main"}
+    - {rule: candidate-version-past, where: "v1.0", message: "v1.0.0 is released already: no candidate cut"}
+  pushed-message: {release/v1.1: "Release-As: 1.1.0-rc.1"}
+  on-top: {release/v1.1: main}
+  gone: [release/v1.0, release/v1.2]
+  summary-file: ["release/v1.1 cut, v1.1.0-rc.1 asked for"]
+  forge:
+    issues:
+      - id: 8
+        title: "Release candidate v1.1.0-rc.1: try it, then say yes"
+        labels: ["workline:candidate"]
+        milestone: v1.1
+        closed: false
+        body-contains: ["cut `release/v1.1` from `main`", "put the label `workline:accepted` on this issue", "close this issue", "workline:candidate=v1.1.0-rc.1"]
+      - {id: 9, absent: true}

@@ -122,6 +122,16 @@ type Milestone struct {
 	Due   string `json:"due,omitempty"`
 }
 
+// Milestoned is a forge that lists an open milestone's issues, open and
+// closed, and closes a milestone: the release candidate's (ADR-0060).
+// GitHub, GitLab and the simulated forge.
+type Milestoned interface {
+	MilestoneIssues(title string) ([]Issue, error)
+	CloseMilestone(title string) error
+}
+
+var _ = []Milestoned{&github{}, &gitlab{}, &Fake{}}
+
 // Closer is what closed an issue, as the forge links it: a pull or merge
 // request merged, or a commit, with its text — the evidence a parent's
 // report quotes (ADR-0029).

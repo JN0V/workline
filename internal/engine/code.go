@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"errors"
 	"fmt"
 	"slices"
 	"strings"
@@ -10,12 +11,14 @@ import (
 	"github.com/JN0V/workline/internal/forge"
 )
 
-// The developer's code at `normal` (ADR-0054, step 7): its pull request,
+// The developer's code at `normal` and `enterprising` (ADR-0054, step 7;
+// ADR-0060): its pull request,
 // workline's own as the forge says it, merges with no person's yes when
 // the issue it closes is a fix or a task, every gate passed and no
 // finding of the reviewer's open; a fix only once its bug was reproduced,
 // the tester's test red on the base (ADR-0060); a feature waits for a
-// person's yes. The
+// person's yes, but at `enterprising`, where it goes into a milestone whose
+// release candidate a person tries (candidate.go). The
 // kind is the issue's labels', never the agent's say
 // (roles/developer/docs/merge.md).
 
@@ -50,18 +53,41 @@ func weighCode(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, n *nor
 		return waits("", "from the developer's branch, but "+d.Why)
 	case d.Kind == "":
 		return waits("", fmt.Sprintf("%s: whether it is a feature, a label on #%d says (`bug`, `enhancement`, `task`)", d.Says(), d.Issue))
-	case d.Kind == developer.KindFeature:
+	case d.Kind == developer.KindFeature && o.Merge != MergeEnterprising:
 		// Said once on it, where a person reviewing looks, the decision's
 		// record for the auditor (ADR-0046).
 		t := forge.Target{Kind: "merge-request", ID: w.mr.ID}
-		body := fmt.Sprintf("**Waiting for a person's yes**: this is %s. The project's merge policy is `normal`: the developer's fix or task merges once every gate passes, a feature waits for a person's yes.\n\n- To accept this one, put the label `%s`.\n- Not a feature? Change the label on #%d.",
-			d.Says(), backlog.AcceptedLabel(f), d.Issue)
+		body := fmt.Sprintf("**Waiting for a person's yes**: this is %s. The project's merge policy is `%s`: the developer's fix or task merges once every gate passes, a feature waits for a person's yes.\n\n- To accept this one, put the label `%s`.\n- Not a feature? Change the label on #%d.",
+			d.Says(), o.Merge, backlog.AcceptedLabel(f), d.Issue)
 		if err := f.Comment(t, body, forge.Marker("merge-waits="+developer.KindFeature)); err != nil {
 			return nil, err
 		}
 		return waits("", d.Says())
+	case d.Kind == developer.KindFeature && n.demoted[kindFeature] != "":
+		// At `enterprising`, a candidate refused: features wait for a
+		// person's yes again until a person lifts it (ADR-0060).
+		t := forge.Target{Kind: "merge-request", ID: w.mr.ID}
+		body := fmt.Sprintf("**Waiting for a person's yes**: this is %s. The project's merge policy is `enterprising`, but a release candidate was refused: features wait for a person's yes on each pull request until a person closes %s.\n\n- To accept this one, put the label `%s`.",
+			d.Says(), n.demoted[kindFeature], backlog.AcceptedLabel(f))
+		if err := f.Comment(t, body, forge.Marker("merge-waits="+developer.KindFeature)); err != nil {
+			return nil, err
+		}
+		return waits("warn", fmt.Sprintf("%s, but features wait for a person's yes since a release candidate was refused (%s)", d.Says(), n.demoted[kindFeature]))
 	case len(d.Open) > 0:
 		return waits("warn", fmt.Sprintf("%s, but the reviewer's findings are open: %s", d.Says(), strings.Join(d.Open, "; ")))
+	}
+	if d.Kind == developer.KindFeature && d.Milestone == "" {
+		// At `enterprising`, a feature goes into a milestone, whose release
+		// candidate a person tries (ADR-0060): the product owner puts it
+		// there at ready; one readied before, here.
+		title, err := featureMilestone(f, o.Repo, d.Issue)
+		if err != nil {
+			if errors.Is(err, forge.ErrUnreachable) && !forge.Refused(err) {
+				return nil, err
+			}
+			return waits("warn", fmt.Sprintf("%s, but #%d could not be put in a milestone, its release candidate's: %s", d.Says(), d.Issue, forge.Said(err)))
+		}
+		w.say("milestone-set", "", fmt.Sprintf("#%d, a feature, put in milestone %s: its release candidate is tried before the version ships", d.Issue, title))
 	}
 	if d.Kind == developer.KindFix {
 		why, err := unreproduced(o.Repo, w.baseTip, w.tip, d)
@@ -72,8 +98,8 @@ func weighCode(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, n *nor
 			// Said once on it, as a feature's wait is: a fix with no test
 			// that failed before proves nothing (ADR-0060).
 			t := forge.Target{Kind: "merge-request", ID: w.mr.ID}
-			body := fmt.Sprintf("**Waiting for a person's yes**: this is %s, but %s. The project's merge policy is `normal`: a bug's fix merges once a test that failed on the base proves the bug and every gate passes.\n\n- To accept this one, put the label `%s`.\n- Not a bug? Change the label on #%d.",
-				d.Says(), why, backlog.AcceptedLabel(f), d.Issue)
+			body := fmt.Sprintf("**Waiting for a person's yes**: this is %s, but %s. The project's merge policy is `%s`: a bug's fix merges once a test that failed on the base proves the bug and every gate passes.\n\n- To accept this one, put the label `%s`.\n- Not a bug? Change the label on #%d.",
+				d.Says(), why, o.Merge, backlog.AcceptedLabel(f), d.Issue)
 			if err := f.Comment(t, body, forge.Marker("merge-waits="+developer.Unreproduced)); err != nil {
 				return nil, err
 			}
@@ -141,4 +167,18 @@ func steersAny(repo, baseTip, tip string, steers func(string) bool) (string, err
 		}
 	}
 	return "", nil
+}
+
+// featureMilestone puts a feature's issue in the next open milestone,
+// opened when there is none (NextMilestone), and says which.
+func featureMilestone(f forge.Forge, repo string, issue int) (string, error) {
+	b, ok := f.(forge.Backlog)
+	if !ok {
+		return "", errors.New("this forge keeps no milestones")
+	}
+	title, _, err := NextMilestone(b, repo)
+	if err != nil {
+		return "", err
+	}
+	return title, b.SetMilestone(issue, title)
 }

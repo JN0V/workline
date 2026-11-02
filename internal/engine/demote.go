@@ -62,7 +62,7 @@ func demotedKind(title string) (string, bool) {
 		return kindAll, true
 	}
 	kind, after, _ := strings.Cut(rest, " ")
-	if slices.Contains(mergeKinds, kind) && strings.HasPrefix(after, "merge requests wait for a person's yes again") {
+	if (slices.Contains(mergeKinds, kind) || kind == kindFeature) && strings.HasPrefix(after, "merge requests wait for a person's yes again") {
 		return kind, true
 	}
 	return "", false
@@ -247,7 +247,7 @@ func demotions(f forge.Forge, o FollowOptions, baseTip, app string, res *Result)
 		switch {
 		case errors.Is(err, forge.ErrNoMark):
 			res.Findings = append(res.Findings, verdict.Finding{Rule: "merge-unmarked", Level: "warn",
-				Message: "at `normal`, this forge keeps no mark only workline's App writes: which reverts were read cannot be known, so nothing merges with no person's yes"})
+				Message: "at `" + o.Merge + "`, this forge keeps no mark only workline's App writes: which reverts were read cannot be known, so nothing merges with no person's yes"})
 			return map[string]string{kindAll: "no mark on this forge"}, nil
 		case err != nil && errors.Is(err, forge.ErrUnreachable) && !forge.Refused(err):
 			return nil, err

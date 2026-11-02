@@ -57,6 +57,9 @@ type Merge struct {
 	// names the Draft's commit and its tests; the branch's commits say
 	// the rest (the merge policy checks one is the tester's).
 	Reproduced bool
+	// Milestone is the issue's milestone, "" for none: a feature merging
+	// at `enterprising` goes into one, its release candidate (ADR-0060).
+	Milestone string
 }
 
 // Says says the pull request for a person: whose code, for which issue,
@@ -95,6 +98,7 @@ func ReadMerge(f forge.Forge, mr forge.MergeRequest) (Merge, error) {
 		return m, nil
 	}
 	m.Kind, m.Label = IssueKind(is.Labels)
+	m.Milestone = is.Milestone
 	for _, marker := range reviewerMarkers {
 		c, whole := kept.Last(marker)
 		switch {

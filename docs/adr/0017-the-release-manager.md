@@ -6,7 +6,7 @@
 - **Amends:** ADR-0010 (the hold "at the release" moves onto the release
   pull request a tool opens); ADR-0016 (a release's notes are no longer one
   of workline's writes). Builds on ADR-0011 (the person merges).
-- **Amended by:** [ADR-0060](0060-the-person-is-on-the-loop.md#4-a-person-validates-by-the-issues-kind), once built: a milestone's features are released through a candidate on `release/vX.Y`, its `-rc.N` tagged by the project's release tool; the person's yes on it ships the version
+- **Amended by:** [ADR-0060](0060-the-person-is-on-the-loop.md#4-a-person-validates-by-the-issues-kind) (built): a milestone's features are released through a candidate on `release/vX.Y`, its `-rc.N` tagged by the project's release tool; the person's yes on it ships the version
 
 ## Context
 
