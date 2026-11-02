@@ -1825,8 +1825,9 @@ func TestDeveloperTemplatesRunTheReviewRound(t *testing.T) {
 		t.Fatal(err)
 	}
 	var wf struct {
-		On   map[string]any `yaml:"on"`
-		Jobs map[string]struct {
+		RunName string         `yaml:"run-name"`
+		On      map[string]any `yaml:"on"`
+		Jobs    map[string]struct {
 			If          string            `yaml:"if"`
 			Needs       string            `yaml:"needs"`
 			Permissions map[string]string `yaml:"permissions"`
@@ -1853,6 +1854,12 @@ func TestDeveloperTemplatesRunTheReviewRound(t *testing.T) {
 	started := false
 	for _, s := range wf.Jobs["reconcile"].Steps {
 		started = started || strings.Contains(s.Run, "(.reviews // [])[].id") && strings.Contains(s.Run, `-f pull-request="$n"`) && s.Env["WORKLINE_APP_ID"] != ""
+	}
+	// A round's run is named by its pull request, however it was woken:
+	// the reconciler starts none while one is queued or running.
+	if !strings.Contains(wf.RunName, "format('workline develop round !{0}', inputs['pull-request'])") ||
+		!strings.Contains(wf.RunName, "format('workline develop round !{0}', github.event.issue.number)") {
+		t.Errorf("workline-develop.yml: a round's run is not named by its pull request: run-name %q", wf.RunName)
 	}
 	if !started || wf.Jobs["reconcile"].Permissions["pull-requests"] != "read" {
 		t.Errorf("workline-develop.yml, reconcile: does not start the review rounds due, cannot read the pull requests, or does not trust the App's records: %v", wf.Jobs["reconcile"].Permissions)

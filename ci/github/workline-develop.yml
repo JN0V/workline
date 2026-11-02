@@ -21,6 +21,9 @@ name: workline develop
 run-name: >-
   ${{ (github.event_name == 'workflow_dispatch' && inputs.issue != '' && format('workline develop #{0}', inputs.issue)) ||
   (github.event_name == 'workflow_dispatch' && inputs['pull-request'] != '' && format('workline develop round !{0}', inputs['pull-request'])) ||
+  (github.event_name == 'issue_comment' && github.event.issue.pull_request && (contains(github.event.comment.body, 'workline:sticky=reviewer/') ||
+    contains(github.event.comment.body, 'workline:sticky=gates/') || github.event.comment.user.type != 'Bot') &&
+  format('workline develop round !{0}', github.event.issue.number)) ||
   (github.event_name == 'workflow_dispatch' && inputs.reconcile == 'next' && 'workline develop heartbeat') ||
   (github.event_name == 'workflow_dispatch' && inputs.reconcile == 'true' && 'workline develop reconcile') ||
   (github.event_name == 'issues' && github.event.sender.type != 'Bot' && startsWith(github.event.label.name, 'workline:') &&

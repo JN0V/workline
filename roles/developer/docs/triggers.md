@@ -137,7 +137,9 @@ routing:
   `WORKLINE_TASK=review` on GitLab
   ([the review loop](review-loop.md#what-wakes-it)).
 - **Hourly**, the reconciler starts a round an event missed, counted
-  in `reconcile-max`: its run is named `workline develop round !<n>`.
+  in `reconcile-max`. A round's run is named `workline develop round
+  !<n>`, whatever woke it: none is started while one is queued or
+  running.
 
 ## Two runs on one issue
 
