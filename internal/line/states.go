@@ -426,6 +426,7 @@ func reconcile(res *Result, cfg *routing.Config, o engine.Options) *Result {
 		started++
 		if step != nil {
 			anticipate(cfg, &issues[i], step.next) // the steps after it see it in its next state
+			t.moved[is.ID] = true                  // its tests, the tester's result, not in what the run read before
 		}
 		switch {
 		case list: // its own run blocks it, past the cap: nothing written here

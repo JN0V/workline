@@ -6,14 +6,10 @@ package line
 // reconcile starts it when room appears: the line pulls, it never pushes
 // work onto a full state.
 //
-// A limit counts the work its state's role can pull (ADR-0059,
-// amended 2026-11-02): an issue in the developer's state that waits for
-// its acceptance tests, or for another open issue, or has parts, is
-// counted apart. It waits on a step before its own state, never on room
-// after it; counted, it would keep that step waiting for room it alone
-// fills: a deadlock (#854). A ready issue without its tests goes to
-// Tests by rule (retest), once; put back by a person, it is said and
-// left to them.
+// A limit counts what its state's role can pull (ADR-0059, amended
+// 2026-11-02): in the developer's state, an issue waiting for its tests
+// or another issue is counted apart, and one without its tests goes to
+// Tests by rule (retest).
 
 import (
 	"fmt"
@@ -35,13 +31,16 @@ const (
 
 // tally is what a run counts the limits from besides the open issues:
 // the issues a tester's open Draft is for, and those a proof kind is
-// recorded on, each read at first need and kept for the run.
+// recorded on, each read at first need and kept for the run; and those a
+// step of the run moved into the state they are in, whose result stands
+// for their tests, read before the step ran.
 type tally struct {
 	drafts map[int]bool // nil until read
 	proofs map[int]bool // by issue, once read
+	moved  map[int]bool
 }
 
-func newTally() *tally { return &tally{proofs: map[int]bool{}} }
+func newTally() *tally { return &tally{proofs: map[int]bool{}, moved: map[int]bool{}} }
 
 // drafted says whether a tester's Draft is open for issue id: the
 // forge's open merge requests from the tester's branches, read once.
@@ -96,7 +95,7 @@ func testsFirst(cfg *routing.Config, s routing.State) bool {
 // its Validation names scenarios, and neither a tester's open Draft nor
 // a proof kind stands for them. comments: the issue's, when read already.
 func untested(cfg *routing.Config, b forge.Backlog, t *tally, s routing.State, is forge.Issue, comments []string) (bool, error) {
-	if !testsFirst(cfg, s) || len(tester.Scenarios(work.ByMeaning(is.Body)[work.Validation].Text)) == 0 {
+	if !testsFirst(cfg, s) || t.moved[is.ID] || len(tester.Scenarios(work.ByMeaning(is.Body)[work.Validation].Text)) == 0 {
 		return false, nil
 	}
 	if ok, err := t.drafted(b, is.ID); err != nil || ok {
