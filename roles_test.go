@@ -14,7 +14,7 @@ import (
 // the role's users, and docs/, the pages about the role.
 var loaded = map[string]bool{
 	"role.yaml": true, "persona.md": true, "instruction.md": true, "policy.md": true,
-	"pre": true, "post": true, "knowledge": true, "lenses": true, "kinds": true, "skills": true,
+	"pre": true, "post": true, "knowledge": true, "lenses": true, "kinds": true, "skills": true, "tasks": true,
 }
 
 func TestRoleTopLevelHoldsOnlyWhatTheEngineLoads(t *testing.T) {

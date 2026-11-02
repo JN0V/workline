@@ -34,7 +34,8 @@ model:
   role, named by `pre` in `in/task-kind`: the documentalist judges a doc on
   `standard`, and condenses one on `frontier` (`tasks: {condense: {tier:
   frontier}}`), because the evaluation showed it cheaper than a `standard` try
-  stepped up.
+  stepped up. A kind of task may also name its own `instruction` facet and
+  the `intentions` it answers with, for a light read (role-contract.md).
 
 ## The grid
 

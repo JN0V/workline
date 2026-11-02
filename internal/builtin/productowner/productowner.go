@@ -256,6 +256,7 @@ func Pre(runDir, repo string) int {
 	timedOut := map[int]backlog.Silence{}                    // a question unanswered past acts.ask.wait, for the role's assumption (ADR-0060)
 	draftsTaken := map[int]bool{}                            // drafts unanswered past it, taken as written with no agent
 	var waits []backlog.Wait                                 // the issues waiting on a person, for the summary (ADR-0031)
+	var kindless []forge.Issue                               // read before, no kind label: their kind read alone (#878)
 	for _, is := range open {
 		if backlog.Tracking(is, role) || !inScope(is) {
 			// Its old report, the weekly sample, a role's issue kept in
@@ -499,6 +500,9 @@ func Pre(runDir, repo string) int {
 			}
 		}
 		d := due{is, st, comments, notes}
+		if scope == nil && os.Getenv("WORKLINE_EVENT") != "issue" && !aside && is.ID != ledger.Report && unkinded(is, st) {
+			kindless = append(kindless, is) // for the kind's light read (#878)
+		}
 		// Questions time out, as lazy consensus (ADR-0060): one unanswered
 		// past the level's delay, dated by the forge, read once for the
 		// role's assumption; drafts no person accepted past it, all the
@@ -767,6 +771,7 @@ func Pre(runDir, repo string) int {
 	}
 	if os.Getenv("WORKLINE_AI") == "none" {
 		toRead = nil
+		kindless = nil
 	}
 	issuePages := forge.IssuePages(f) // an issue cited by its page is cited
 	said := ""                        // the releases and open milestones, read once
@@ -947,6 +952,12 @@ func Pre(runDir, repo string) int {
 	n := min(len(toRead), s.IssuesPerRun)
 	room := fits(runDir, repo, role)
 	var t taskBuilt
+	// The kind's light read (#878): the issues read before, no kind label,
+	// by title and the start of their body, within what the kind act's
+	// cap leaves once the n issues read in full are counted.
+	kindAct, kindMax := kindMode(cfg, ledger.Demoted(cfg.UndoneMax))
+	waiting := ledger.Waiting(open) >= cfg.ProposalsMax
+	light := lightKinds(kindless, toRead[:n], kindAct, kindMax, waiting)
 	for n > 0 {
 		var err error
 		if t, err = build(n); errors.Is(err, forge.ErrUnreachable) {
@@ -955,11 +966,14 @@ func Pre(runDir, repo string) int {
 		} else if err != nil {
 			return fail(err)
 		}
-		if room == nil || n == 1 || room(t.text) {
+		light = lightKinds(kindless, toRead[:n], kindAct, kindMax, waiting)
+		if room == nil || n == 1 || room(t.text+kindSection(light)) {
 			break
 		}
 		n--
 	}
+	lightText := kindSection(light)
+	t.text += lightText // the kind's light read rides on the full one: one call
 	if cut := toRead[n:min(len(toRead), s.IssuesPerRun)]; len(cut) > 0 {
 		var ids []string
 		for _, d := range cut {
@@ -1027,6 +1041,17 @@ func Pre(runDir, repo string) int {
 			return fail(err)
 		}
 	}
+	if judged == 0 && lightText != "" {
+		// Nothing to read in full: the kinds alone, a task of their own,
+		// read with its own short instruction (model.tasks.kind, #878).
+		if err := os.WriteFile(filepath.Join(runDir, "in", "task.md"), []byte(kindIntro(commit, len(light))+lightText), 0o644); err != nil {
+			return fail(err)
+		}
+		if err := os.WriteFile(filepath.Join(runDir, "in", "task-kind"), []byte(kindTask+"\n"), 0o644); err != nil {
+			return fail(err)
+		}
+		return writeFindings(runDir, findings)
+	}
 	if judged == 0 {
 		// No task.md: the agent is not asked; the state comments are
 		// written, a person's answers and acts undone read (ADR-0038).
@@ -1035,6 +1060,10 @@ func Pre(runDir, repo string) int {
 			return writeFindings(runDir, findings)
 		}
 		return final(runDir, verdict.Verdict{Status: verdict.Pass, Summary: "no issue to judge", Findings: findings})
+	}
+	// The full read's instruction, never the kinds' alone.
+	if err := os.Remove(filepath.Join(runDir, "in", "task-kind")); err != nil && !os.IsNotExist(err) {
+		return fail(err)
 	}
 	if err := os.WriteFile(filepath.Join(runDir, "in", "task.md"), []byte(t.text), 0o644); err != nil {
 		return fail(err)

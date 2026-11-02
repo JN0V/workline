@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"strings"
 	"time"
@@ -67,6 +68,12 @@ type Role struct {
 	Levels map[string]map[string]map[string]any `yaml:"levels"`
 
 	Dir string `yaml:"-"`
+	// InstructionFacet is the facet read as the instruction: "" for
+	// instruction.md; a kind of task's own (ForTask).
+	InstructionFacet string `yaml:"-"`
+	// TaskIntentions are the intentions the agent answers a kind of task
+	// with, a few of the role's; none, the role's (ForTask, Asked).
+	TaskIntentions []string `yaml:"-"`
 }
 
 // Model is what kind of thinking a role needs (docs/spec/model-grid.md).
@@ -79,6 +86,12 @@ type Model struct {
 	// Tasks gives a kind of task, named by pre in in/task-kind, other needs
 	// than the role's: condensing a doc needs more than judging one.
 	Tasks map[string]Model `yaml:"tasks"`
+	// Instruction and Intentions, on a kind of task only: the facet read
+	// in place of instruction.md, and the intentions it answers with, a
+	// few of the role's — a light read pays for little prompt (the
+	// product owner's kind, #878). Unset, the role's.
+	Instruction string   `yaml:"instruction"`
+	Intentions  []string `yaml:"intentions"`
 }
 
 // For returns the needs of a task of that kind: the role's, with what
@@ -163,8 +176,49 @@ func Load(rolesDir, name string) (*Role, error) {
 			return nil, fmt.Errorf("role %q: personal names %q, not one of its settings", name, k)
 		}
 	}
+	for kind, t := range r.Model.Tasks {
+		if t.Instruction != "" && !taskFacet.MatchString(t.Instruction) {
+			return nil, fmt.Errorf("role %q: model.tasks.%s.instruction %q is not a facet in tasks/, like tasks/%s.md", name, kind, t.Instruction, kind)
+		}
+		for _, k := range t.Intentions {
+			if !slices.Contains(r.Intentions, k) {
+				return nil, fmt.Errorf("role %q: model.tasks.%s.intentions names %q, not one of its intentions", name, kind, k)
+			}
+		}
+	}
 	r.Dir = dir
 	return &r, nil
+}
+
+// taskFacet is where a kind of task's own instruction is: a facet in the
+// role's tasks/ folder.
+var taskFacet = regexp.MustCompile(`^tasks/[a-z0-9]+(-[a-z0-9]+)*\.md$`)
+
+// ForTask is the role for a task of that kind: the needs, the instruction
+// facet and the agent's intentions model.tasks gives it, in place of the
+// role's; r itself when it names no such kind. The role's intentions stay
+// whole: what pre falls back on is the role's (Asked narrows the agent's).
+func (r *Role) ForTask(kind string) *Role {
+	t, ok := r.Model.Tasks[kind]
+	if !ok {
+		return r
+	}
+	out := *r
+	out.Model = r.Model.For(kind)
+	out.InstructionFacet = t.Instruction
+	out.TaskIntentions = slices.Clone(t.Intentions)
+	return &out
+}
+
+// Asked is the role as the agent is asked: the intentions its task allows
+// (TaskIntentions), else r itself.
+func (r *Role) Asked() *Role {
+	if len(r.TaskIntentions) == 0 {
+		return r
+	}
+	out := *r
+	out.Intentions = r.TaskIntentions
+	return &out
 }
 
 // PartAnswers are the intentions a part of a question may answer with:

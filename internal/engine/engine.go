@@ -648,11 +648,8 @@ func run(o Options, res *Result) error {
 		return err
 	}
 	_, taskErr := os.Stat(filepath.Join(runDir, "in", "task.md"))
-	if _, ok := r.Model.Tasks[taskKind(runDir)]; ok {
-		asked := *r // this task's needs, in place of the role's
-		asked.Model = r.Model.For(taskKind(runDir))
-		r = &asked
-	}
+	// This task's needs, instruction and answers in place of the role's.
+	r = r.ForTask(taskKind(runDir))
 	tier, failures := r.Model.Tier, 0
 	var intents, said []intent.Intention
 	var v *verdict.Verdict
@@ -2103,9 +2100,12 @@ type attemptResult struct {
 func attempt(r *role.Role, o Options, ag agent.Agent, hasTask bool, tier, runDir string, env []string,
 	line *routing.Config, settings map[string]any, cfg *role.ProjectConfig, res *Result) (*attemptResult, error) {
 	a := &attemptResult{}
+	// A kind of task may give its own instruction and fewer intentions
+	// (model.tasks, #878): the agent reads those, and answers with those.
+	asked := r.Asked()
 	if hasTask && ag != nil {
 		a.askedAgent = true
-		err := callAgent(ag, agent.Request{RunDir: runDir, Repo: o.Repo, Role: r, Tier: tier}, taskKind(runDir), runDir, res)
+		err := callAgent(ag, agent.Request{RunDir: runDir, Repo: o.Repo, Role: asked, Tier: tier}, taskKind(runDir), runDir, res)
 		switch {
 		case err == nil:
 		case errors.Is(err, errTokensSpent), errors.Is(err, errTimeSpent):
@@ -2132,6 +2132,23 @@ func attempt(r *role.Role, o Options, ag agent.Agent, hasTask bool, tier, runDir
 		a.unread = err.Error()
 		a.findings = append(a.findings, verdict.Finding{Rule: "agent-invalid-output", Message: err.Error()})
 		intents = nil
+	}
+	if asked != r {
+		// What the agent answered outside its task's intentions is
+		// dropped, said; the rest of its answer, and what pre falls back
+		// on, stand.
+		var dropped []string
+		intents = slices.DeleteFunc(intents, func(in intent.Intention) bool {
+			if asked.Allows(in.Kind) {
+				return false
+			}
+			dropped = append(dropped, in.Kind)
+			return true
+		})
+		if len(dropped) > 0 {
+			a.findings = append(a.findings, verdict.Finding{Rule: "intention-refused", Level: "warn",
+				Message: fmt.Sprintf("%s dropped: a %s task answers with %s only", strings.Join(slices.Compact(slices.Sorted(slices.Values(dropped))), ", "), taskKind(runDir), strings.Join(asked.Intentions, ", "))})
+		}
 	}
 	fallback, err := intent.Read(filepath.Join(runDir, "in", "fallback.yaml"))
 	if err != nil {

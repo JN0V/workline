@@ -1,0 +1,34 @@
+case: product-owner/kind-light-read-labels-the-backlog
+about: >
+  The kind's light read (#878): three open issues the role read before,
+  their code unchanged, no kind label. Nothing is read in full; the
+  three are given for their kind alone — each title and the start of its
+  body, its HTML comments left out — in one call, a task of its own
+  (`kind`) read with its short instruction. Each gets its label, said
+  done, recorded once in its state.
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost on export", body: "The export loses the last row.\n\n<!-- a note for the engine -->", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 10, title: "Export to JSON", body: "Add a JSON export.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 11, title: "Bump the CSV library", body: "A new version is out.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:kind-light-three}
+expect:
+  status: pass
+  agent-calls: 1
+  calls: [{agent: fake, task: kind}]
+  run-files:
+    in/task.md:
+      contains: ["Open issues to label with their kind: 3.", "# Issues read for their kind alone", "## #9 Rows lost on export\n\nThe export loses the last row.\n\n## #10", "## #11 Bump the CSV library"]
+      not-contains: ["a note for the engine", "# What you may do in this run"]
+    in/issues-read: {not-contains: ["9", "10", "11"]}
+  findings:
+    - {rule: done, where: "#9", message: "Labelled #9 `bug`, a bug"}
+    - {rule: done, where: "#10", message: "Labelled #10 `enhancement`, a feature"}
+    - {rule: done, where: "#11", message: "Labelled #11 `task`, a task"}
+  forge:
+    issues:
+      - {id: 9, labels: [bug], comment-contains: "kind: bug"}
+      - {id: 10, labels: [enhancement], comment-contains: "kind: enhancement"}
+      - {id: 11, labels: [task], comment-contains: ["kind: task", "judged: d8c4dff"]}

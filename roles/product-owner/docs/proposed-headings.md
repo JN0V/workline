@@ -143,13 +143,13 @@ the link checker: it names the lychee page and stops.
 
 ## The kind the role sets
 
-Built, with labels only: [the kind it sets](kind.md). Proposed still:
+Built, with labels only: [the kind it sets](kind.md), and the light
+read of the issues already read ([how](kind.md#issues-it-read-before)).
+Proposed still:
 
 - **GitHub issue types read, never set**: on a personal account's
   repository the API answers both ways, and a type set without push
   access is silently dropped.
-- **Issues already read**: one light read for the kind alone, about 1k
-  tokens an issue, within `issues-per-run`.
 - **Notifications**: none on GitHub; GitLab mails a label's subscribers,
   and workflows a label triggers run: hence the cap.
 

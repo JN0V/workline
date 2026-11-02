@@ -1,0 +1,1 @@
+- kind: {issue: 11, kind: bug, why: "a quote in a cell is written twice: it worked before."}
