@@ -39,6 +39,10 @@ type Record struct {
 	// review with no such mark for its body makes the step due again,
 	// once: a record from before the reviewer read it in the same run.
 	Asked string `json:"asked,omitempty"`
+	// Revise: in refine, the review's hash (Spec) the step ran on for a
+	// section the product owner may rewrite now and was not given when it
+	// answered that review (backlog.Unrevised, ADR-0060): due once for it.
+	Revise string `json:"revise,omitempty"`
 	// Waits: the state at its limit the issue's step waits on, said on
 	// it once (ADR-0059, decision 9); the step run, the record has none.
 	Waits string `json:"waits,omitempty"`

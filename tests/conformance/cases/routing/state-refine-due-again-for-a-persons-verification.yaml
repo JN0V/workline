@@ -1,0 +1,31 @@
+case: routing/state-refine-due-again-for-a-persons-verification
+about: >
+  An issue left in refine by the rule before ADR-0060: the product owner
+  answered the reviewer's finding in a Verification a person wrote by
+  asking them, and the line's record says refine's step ran on that body,
+  labelling and review. The Verification is the product owner's now: the
+  reconciler counts the step due again, no agent asked to say so, so the
+  issue moves on without the person.
+given:
+  repo: backlog
+  config:
+    routing: {events: {schedule: [product-owner, reviewer], issue: [product-owner, reviewer, tester, developer]}}
+  forge:
+    issues:
+      - id: 9
+        title: "Rows lost"
+        labels: [workline:to-refine]
+        labeled: {"workline:to-refine": "2026-11-01T19:59:38Z"}
+        author: ann
+        insider: true
+        body: "## Need\n\nThe monthly report counts every sale.\n\n## Validation\n\n- **A known day:** Given a day of three sales, When Ann opens it, Then she counts three.\n\n---\n\n## Verification\n\nSessions feel right to the users.\n\n## Scope\n\nsrc/export/csv.go"
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: efbae4cec0e6\nanswered: efbae4cec0e6\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "**workline reviewer**, its spec.\n\n<!-- workline:spec-review body=efbae4cec0e6 round=1 open=1 in=Verification -->\n\n<!-- workline:sticky=reviewer/spec -->"
+          - "**workline's line** last woke the product-owner on this issue, in its state refine (1 state step so far).\n\n<!-- workline:line-record {\"state\":\"refine\",\"body\":\"efbae4cec0e6\",\"labeled\":\"2026-11-01T19:59:38Z\",\"hops\":1,\"spec\":\"bb9da4451f2a\",\"asked\":\"efbae4cec0e6\"} -->\n<!-- workline:sticky=line/state -->"
+          - "@ann, to refine this issue: Could you name a test?\n\n<!-- workline:product-owner/ask -->"
+run: {route: reconcile, ai: none, input: {reconcile: list}}
+expect:
+  status: pass
+  agent-calls: 0
+  summary: "reconcile: 1 issue due: #9"
