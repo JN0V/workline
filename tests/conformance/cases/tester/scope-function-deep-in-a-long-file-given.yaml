@@ -1,0 +1,25 @@
+case: tester/scope-function-deep-in-a-long-file-given
+about: >
+  A function the Scope names deep in a file past code-lines-max is given
+  whole, the rest of the file named, not its first lines: cut there, the
+  tester never saw it and sent the issue back (#908).
+given:
+  repo: tested
+  setup:
+    - "mkdir -p src/calc && i=1 && while [ $i -le 40 ]; do printf 'f%s() { :; }\\n' $i >> src/calc/long.sh; i=$((i+1)); done && printf '# total adds a list.\\ntotal() {\\n  echo deep\\n}\\n' >> src/calc/long.sh && git add src && git commit -qm 'src' && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}", code-lines-max: 10}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:needs-tests"]
+        body: "## Need\n\nWhen I total an order, I want to multiply a price by a count, so I need not add it up by hand.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **By zero:** Given the library, When I multiply 5 by 0, Then I get 0.\n\n---\n\n## Verification\n\nA test a scenario, in tests/.\n\n## Scope\n\n- `src/calc/long.sh`: a `mul` function beside `total`.\n"
+run: {test: [write, --issue, "3"], ai: "fake:tester-two-scenarios"}
+expect:
+  status: pass
+  agent-calls: 1
+  run-files:
+    in/task.md:
+      contains: ["### `src/calc/long.sh` (44 lines: lines 41 to 44 given", "# total adds a list.\ntotal() {\n  echo deep\n}"]
+      not-contains: ["f1() {", "(cut: the first"]

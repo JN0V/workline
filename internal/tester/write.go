@@ -183,7 +183,8 @@ func folderFiles(word string, files []string) []string {
 }
 
 // writeCode gives the Scope's files, then the test files beside them, whole
-// up to code-lines-max lines in all, and names the project's other tests.
+// up to code-lines-max lines in all, a long file by the functions the
+// Scope names in it, and names the project's other tests.
 func writeCode(b *strings.Builder, repo, scope string, s Settings) {
 	out, _ := git(repo, "ls-files", "-z")
 	files := strings.Split(strings.TrimSuffix(out, "\x00"), "\x00")
@@ -243,7 +244,35 @@ func writeCode(b *strings.Builder, repo, scope string, s Settings) {
 	if budget <= 0 {
 		budget = 1500
 	}
-	left := budget
+	// The Scope's files: the functions it names in a long one before its
+	// first lines (#908).
+	names, at := anchors(scope, files)
+	var code []codeFile
+	for _, p := range named {
+		data, err := os.ReadFile(filepath.Join(repo, filepath.FromSlash(p)))
+		if err != nil {
+			continue
+		}
+		lines := strings.Split(strings.TrimRight(string(data), "\n"), "\n")
+		code = append(code, codeFile{path: p, lines: lines, pieces: pieces(p, lines, names, at[p])})
+	}
+	left := planCode(code, budget)
+	if len(code) > 0 {
+		fmt.Fprintf(b, "\n## The code the %s names\n", work.Name(work.Scope))
+		var unread []string
+		for _, f := range code {
+			if len(f.given) == 0 {
+				// Named, never shown empty: a file given as 0 lines read
+				// as an empty file to the agent (#801).
+				unread = append(unread, fmt.Sprintf("- `%s` (%d lines)", f.path, len(f.lines)))
+				continue
+			}
+			writeCodeFile(b, f)
+		}
+		if len(unread) > 0 {
+			fmt.Fprintf(b, "\nNot given, past code-lines-max (%d lines in all), not empty:\n\n%s\n", budget, strings.Join(unread, "\n"))
+		}
+	}
 	give := func(heading string, list []string) {
 		if len(list) == 0 {
 			return
@@ -273,7 +302,6 @@ func writeCode(b *strings.Builder, repo, scope string, s Settings) {
 			fmt.Fprintf(b, "\nNot given, past code-lines-max (%d lines in all), not empty:\n\n%s\n", budget,strings.Join(unread, "\n"))
 		}
 	}
-	give("The code the "+work.Name(work.Scope)+" names", named)
 	give("Tests already there, to write alike", beside)
 	if len(tests) > len(beside) {
 		rest := slices.DeleteFunc(slices.Clone(tests), func(f string) bool { return slices.Contains(beside, f) })
