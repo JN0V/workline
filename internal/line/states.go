@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/JN0V/workline/internal/backlog"
+	"github.com/JN0V/workline/internal/developer"
 	"github.com/JN0V/workline/internal/engine"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/role"
@@ -494,12 +495,15 @@ func reconcile(res *Result, cfg *routing.Config, o engine.Options) *Result {
 			keepState(res, cfg, f, spec, o, r.write, "")
 		}
 	}
+	issued := started
+	rounds := roundsDue(res, cfg, f, o, &issued)
 	switch {
 	case list:
 		res.Summary = fmt.Sprintf("%s: %d %s due:", ReconcileEvent, len(res.Due), plural(len(res.Due), "issue", "issues"))
 		for _, n := range res.Due {
 			res.Summary += " #" + strconv.Itoa(n)
 		}
+		res.Reviews = rounds
 	case started == 0:
 		res.Summary = fmt.Sprintf("%s: nothing due (%d %s on the line acted on already)", ReconcileEvent, quiet, plural(quiet, "issue", "issues"))
 	default:
@@ -508,8 +512,64 @@ func reconcile(res *Result, cfg *routing.Config, o engine.Options) *Result {
 	if stales > 0 {
 		res.Summary += fmt.Sprintf("; %d stale %s back to refine", stales, plural(stales, "issue", "issues"))
 	}
+	if len(rounds) > 0 {
+		res.Summary += fmt.Sprintf("; %d review %s due:", len(rounds), plural(len(rounds), "round", "rounds"))
+		for _, r := range rounds {
+			res.Summary += fmt.Sprintf(" merge request %d", r.ID)
+		}
+	}
 	lateSaid(res, o.Inputs[LastInput], time.Now())
 	return res
+}
+
+// roundsDue are the developer's merge requests a review round is due on
+// that no event started: the reviewer's verdict, a gate's report or a
+// person's comment its last round did not read (ADR-0054, step 6). Read
+// only where the project routes the developer; counted in reconcile-max
+// with the issues' steps (started). In CI (list), its job starts each
+// round's own run; on a machine, each is said with its command: a round
+// works on its branch, checked out.
+func roundsDue(res *Result, cfg *routing.Config, f forge.Forge, o engine.Options, started *int) []Review {
+	if !cfg.Runs("developer") {
+		return nil
+	}
+	mrs, err := f.ListMergeRequests()
+	if err != nil {
+		res.Findings = append(res.Findings, verdict.Finding{Rule: "rounds-unread", Level: "warn", Where: "merge requests",
+			Message: "the developer's pull requests not read, so no review round an event missed is started: " + forge.Said(err)})
+		return nil
+	}
+	var due []Review
+	for _, mr := range mrs {
+		if !strings.HasPrefix(mr.Branch, developer.Branch) {
+			continue
+		}
+		where := fmt.Sprintf("merge request %d", mr.ID)
+		ok, err := developer.RoundDue(f, o.Repo, mr)
+		switch {
+		case errors.Is(err, developer.ErrRecordUnread):
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "round-unread", Level: "warn", Where: where,
+				Message: "whether a review round is due is not known: " + err.Error()})
+			continue
+		case err != nil:
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "round-unread", Level: "warn", Where: where,
+				Message: "whether a review round is due was not read: " + forge.Said(err)})
+			continue
+		case !ok:
+			continue
+		case *started >= cfg.ReconcileMax:
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "reconcile-left", Level: "info", Where: where,
+				Message: fmt.Sprintf("a review round due, past reconcile-max (%d) this run: the next run starts it", cfg.ReconcileMax)})
+			continue
+		}
+		*started++
+		due = append(due, Review{ID: mr.ID, Branch: mr.Branch})
+		if o.Inputs[ReconcileInput] != "list" {
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "review-round-due", Level: "info", Where: where,
+				Message: fmt.Sprintf("a review round is due: on its branch, %s, run `workline develop --merge-request %d`", mr.Branch, mr.ID)})
+		}
+	}
+	return due
 }
 
 // lateSaid adds to res how late this reconcile is, when the last one, at

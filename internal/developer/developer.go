@@ -159,6 +159,9 @@ type Act struct {
 	Rounds     []Round  `json:"rounds,omitempty"`
 	Whys       bool     `json:"whys,omitempty"`
 	Handed     bool     `json:"handed,omitempty"`
+	// GatesAt: the head of the gates' report its last round asked the
+	// findings of: the same report is not asked again.
+	GatesAt string `json:"gates-at,omitempty"`
 	// Board: the card its claim moved to Doing on the forge's board
 	// (ADR-0057); none, no board or no Doing column.
 	Board *board.Move `json:"board,omitempty"`

@@ -39,7 +39,8 @@ until the engine reads them itself
   ([the triggers](../../roles/developer/docs/triggers.md)).
 - **A review round** on its merge request: the note webhook again,
   `WORKLINE_TASK=review`, `MR_IID` and `MR_SOURCE_BRANCH`; the jobs
-  `workline:review:*` run it
+  `workline:review:*` run it; the hourly reconcile starts one the
+  webhook missed
   ([the review loop](../../roles/developer/docs/review-loop.md#what-wakes-it)).
 - **Its bounds** on its merge request: the job `workline:bounds`, and
   what keeps a merge request from editing it out, by tier

@@ -62,7 +62,8 @@ the template's jobs ([workline.gitlab-ci.yml](../ci/gitlab/workline.gitlab-ci.ym
   nothing ([#846](https://github.com/JN0V/workline/issues/846)).
 - **Hourly**, a pipeline schedule with `WORKLINE_TASK=reconcile` runs
   `workline:reconcile`: each due issue an event missed, its own
-  pipeline. Without the hook, it alone moves the line.
+  pipeline; each developer's merge request a review round is due on,
+  `WORKLINE_TASK=review`. Without the hook, it alone moves the line.
 - **A config error answers 4xx**: GitLab disables a hook that keeps
   failing; the reconciler of [ADR-0059](adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md)
   picks up what it missed.

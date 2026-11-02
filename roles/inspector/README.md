@@ -37,7 +37,8 @@ file. All roles: [docs/roles.md](../../docs/roles.md).
   to fix them;
 - posts that in one comment on the merge request, edited on each push,
   beside the gates' own: their comment and annotations on GitHub, Code
-  Quality on GitLab;
+  Quality on GitLab; the developer's review round reads it beside each
+  finding it asks ([the review loop](../developer/docs/review-loop.md#a-round));
 - asks nothing again about a finding it triaged before: it keeps them by
   fingerprint, which holds no line, so a finding that only moves is not
   asked again ([ADR-0013](../../docs/adr/0013-what-was-judged-is-not-asked-again.md)).

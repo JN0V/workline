@@ -1,6 +1,7 @@
 ---
 sources:
   - internal/developer/review.go
+  - internal/developer/gates.go
   - roles/developer/role.yaml
   - ci/github/workline-develop.yml
   - ci/gitlab/workline.gitlab-ci.yml
@@ -11,7 +12,7 @@ verified: agent:claude-code
 
 ```mermaid
 flowchart LR
-  verdict["<b>The reviewer's verdict</b><br/>or a person's comment"]
+  verdict["<b>The reviewer's verdict</b><br/>a gate red,<br/>or a person's comment"]
   run(["Developer<br/>a fresh run"])
   fix["<b>Fixes</b><br/>what blocks,<br/>what is Important"]
   push["<b>Pushes</b><br/>on its branch,<br/>proven"]
@@ -26,19 +27,24 @@ step 6).
 
 ## A round
 
-- **A fresh run**, woken by the reviewer's verdict or a person's
-  comment on a pull request from `workline/developer/<n>`:
+- **A fresh run**, woken by the reviewer's verdict, the gates' report
+  or a person's comment on a pull request from `workline/developer/<n>`:
   `workline develop --merge-request <n>`.
 - **No memory**: it reads its record on the pull request (the rounds
-  before, the reviewer's runs read, the comments heard), the
-  reviewer's comment and its comments on lines, and the issue. Nothing
-  else.
+  before, the reviewer's runs read, the gates' report read, the
+  comments heard), the reviewer's comment and its comments on lines,
+  the gates' and the inspector's comments, and the issue. Nothing else.
+- **A gate red**: each new finding of the gates' summary comment is
+  asked, at its place, with what [the inspector](../../inspector/README.md)
+  said of it: why it matters, its fix. Only a report on its branch's
+  head; once a report, its head kept in the record. A check that did
+  not run asks nothing.
 - **A finding on its line**: its row shows only a title; the round
   reads it whole from the reviewer's comment on that line. Only
   workline's own account's comment is read.
 - **What it asks the agent**: the findings that block, and those that
-  warn and are Important; a person's comment, as a finding. Nits are
-  counted, never asked.
+  warn and are Important; a gate's new finding; a person's comment, as
+  a finding. Nits are counted, never asked.
 - **Where its agent works**: as an issue run's
   ([the agent](agent.md)), in a worktree of its pull request's head,
   with tools, its [caps](proof.md#the-caps) the same. The question
@@ -61,7 +67,7 @@ step 6).
 
 - **Nothing asked**: a verdict with nits only, or none at all.
 - **Nothing new**: the reviewer ran no review since the last round,
-  and no person spoke.
+  the gates reported nothing new on its head, and no person spoke.
 - **No agent**: the findings wait, no round counted.
 
 ## Rounds: five, the five whys at three
@@ -81,16 +87,22 @@ step 6).
 ## What wakes it
 
 - **GitHub**: [workline-develop.yml](../../../ci/github/workline-develop.yml),
-  its `review` jobs. The reviewer's comment, written or edited by
-  workline's App, or a comment of a person of the project.
+  its `review` jobs. The reviewer's comment or the gates', written or
+  edited by workline's App, or a comment of a person of the project.
   - A comment the job's own token writes wakes no workflow: the
-    reviewer needs the App.
+    reviewer and the gates need the App.
+  - **Hourly, the reconciler** starts a round an event missed, one run
+    each, within `reconcile-max`
+    ([#891](https://github.com/JN0V/workline/issues/891)).
   - A comment on any pull request wakes it: a first job, `whose`, reads
     the branch in one call; on another's, nothing else runs.
 - **GitLab**: the project's note webhook, pointed at its own trigger
   URL, starts a pipeline with `WORKLINE_TASK=review`; `MR_IID` and
   `MR_SOURCE_BRANCH` from a tool until the engine reads the event
   itself ([with GitLab alone](../../../docs/gitlab-trigger.md#a-label-or-a-comment-with-gitlab-alone)).
+  The hourly reconcile starts a round an event missed. GitLab shows the
+  gates in its Code Quality report, no comment: a gate red is no round
+  there yet.
 - **Off by default**: it runs only on the developer's own pull
   requests, which exist only where a project routes the developer
   ([the triggers](triggers.md)).

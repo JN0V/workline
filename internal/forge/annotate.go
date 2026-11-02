@@ -32,6 +32,10 @@ const FindingsCheck = "workline findings"
 // tools are annotations of (ADR-0049).
 const GatesCheck = "workline gates"
 
+// GatesMarker keys the gates' summary comment on a merge request: one,
+// edited on each push; the developer's review round reads it.
+var GatesMarker = Marker("sticky=gates/summary")
+
 // Annotator is a forge that shows findings beside a commit's lines with
 // no conversation to resolve: GitHub's check runs, the simulated forge's
 // checks. A check written again on the same head is a newer one; the

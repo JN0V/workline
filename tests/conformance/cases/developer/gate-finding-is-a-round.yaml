@@ -1,0 +1,49 @@
+case: developer/gate-finding-is-a-round
+about: >
+  A gate red on the developer's pull request is a round, like the
+  reviewer's verdict: the gates' summary comment names a finding the
+  change adds, at its branch's head, and the reviewer has nothing new.
+  The round asks it, the inspector's triage of it beside it, fixes it
+  within the issue's bounds and pushes the fix. Its record keeps the
+  head the gates were read at: the same report is not asked twice.
+given:
+  repo: tested-draft
+  setup:
+    - "git checkout -q -b workline/developer/3 && printf 'add() { echo $(($1 + $2)); }\\nmul() { echo $(($1 + $2)); }\\n' > lib.sh && git commit -qam 'feat: mul for #3' -m 'Workline-Role: developer' && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main workline/tester/issue-3 workline/developer/3"
+    - "sed -i \"s/@head@/$(git rev-parse HEAD)/g; s/@short@/$(git rev-parse --short=7 HEAD)/g\" \"$FORGE_FILE\""
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:ready", "workline:developing"]
+        body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        draft: true
+        comments: ["The tests of #3, frozen.\n\n<!-- workline:tester-record {\"issue\":3,\"base\":\"main\",\"files\":{\"tests/test_mul_by_zero.sh\":\"8f123a0bacbd681063880b867df38dd216784b97\",\"tests/test_mul_two_by_three.sh\":\"2dee0641bd7a79057ade7bff5af43b603125f543\"}} -->\n<!-- workline:sticky=tester/tests -->"]
+      - id: 2
+        branch: workline/developer/3
+        title: "Multiply two numbers"
+        body: "Closes #3"
+        comments:
+          - "**The developer**'s record of this pull request, for its next runs and the auditor.\n\n<!-- workline:developer-act {\"act\":\"code\",\"issue\":3,\"acceptance\":[\"tests/test_mul_by_zero.sh\",\"tests/test_mul_two_by_three.sh\"],\"code\":[\"lib.sh\"],\"proof\":{\"result\":\"green\",\"passed\":2},\"review-runs\":1} -->\n<!-- workline:sticky=developer/code -->"
+          - "**workline reviewer** — 0 findings on the change.\n\nNo finding on the commits reviewed.\n\n<!-- workline:record reviewed=1111111 runs=1 -->\n<!-- workline:sticky=reviewer/summary -->"
+          - "**workline inspector** — the gates' 1 new finding at `@short@`: 1 triaged.\n\n1. **`SC2003 (shellcheck)`** at `lib.sh:2`: mul is meant to multiply. Fix: multiply.\n<!-- workline:triaged {\"fingerprint\":\"f705\",\"gate\":\"lint\",\"check\":\"shellcheck\",\"tool\":\"shellcheck\",\"rule\":\"SC2003\",\"where\":\"lib.sh:2\",\"at\":\"@head@\",\"matters\":\"mul is meant to multiply: it adds, so mul 2 3 gives 5.\",\"fix\":\"Multiply its two operands.\",\"order\":1} -->\n\n<!-- workline:sticky=inspector/triage -->"
+          - "### Gates: 1 new finding\n\nOn `@short@`, only what this change adds since `1111111` counts; what was there before is counted, not shown.\n\n| Gate | Check | New | Before it |\n|---|---|---|---|\n| `lint` | `shellcheck` | 1 | 0 |\n\n- **`SC2003`** (`shellcheck`), 1 new: `lib.sh:2`. mul adds where it should multiply\n\n<!-- workline:sticky=gates/summary -->"
+run: {develop: [--merge-request, "2"], ai: "fake:developer-writes-mul"}
+expect:
+  status: pass
+  summary: "round 1 of 5 on merge request 2, its fix pushed, the tests green"
+  agent-calls: 1
+  pushed:
+    workline/developer/3:
+      lib.sh: "$1 * $2"
+  run-files:
+    in/task.md: {contains: ["Review round 1 of 5", "`lib.sh:2`", "mul adds where it should multiply", "mul is meant to multiply: it adds, so mul 2 3 gives 5.", "Multiply its two operands."]}
+  forge:
+    merge-requests:
+      - id: 2
+        comment-contains: ["review round 1 of 5: its fix pushed", "a gate's new finding `lib.sh:2`", "\"gates-at\":\"", "\"seen\":[\"gates|lib.sh|SC2003\"]"]

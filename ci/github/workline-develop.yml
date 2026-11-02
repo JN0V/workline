@@ -6,8 +6,9 @@
 # next step; about hourly, the reconciler starts what an event missed. By hand
 # with no issue, the first ready one nobody took.
 # On its own pull request (workline/developer/…), the reviewer's verdict
-# (its comment, written by the App) or a person's comment runs a review
-# round: its fix pushed on its branch (docs/review-loop.md).
+# or the gates' report (their comments, written by the App) or a person's
+# comment runs a review round: its fix pushed on its branch
+# (docs/review-loop.md); the reconciler starts one an event missed.
 #   judge, review          the agent and a read token; your setup steps run there first:
 #                          .github/actions/workline-setup/action.yml, when you have it.
 #   apply, review-apply    the App's key (environment workline-app), no AI key.
@@ -19,6 +20,10 @@ name: workline develop
 # of that issue's run is skipped while one is queued or running (#806).
 run-name: >-
   ${{ (github.event_name == 'workflow_dispatch' && inputs.issue != '' && format('workline develop #{0}', inputs.issue)) ||
+  (github.event_name == 'workflow_dispatch' && inputs['pull-request'] != '' && format('workline develop round !{0}', inputs['pull-request'])) ||
+  (github.event_name == 'issue_comment' && github.event.issue.pull_request && (contains(github.event.comment.body, 'workline:sticky=reviewer/') ||
+    contains(github.event.comment.body, 'workline:sticky=gates/') || github.event.comment.user.type != 'Bot') &&
+  format('workline develop round !{0}', github.event.issue.number)) ||
   (github.event_name == 'workflow_dispatch' && inputs.reconcile == 'next' && 'workline develop heartbeat') ||
   (github.event_name == 'workflow_dispatch' && inputs.reconcile == 'true' && 'workline develop reconcile') ||
   (github.event_name == 'issues' && github.event.sender.type != 'Bot' && startsWith(github.event.label.name, 'workline:') &&
@@ -33,8 +38,8 @@ on:
       issue: {description: "the issue whose state's step runs; empty: the first ready issue nobody took", required: false, default: ""}
       pull-request: {description: "a review round on this pull request of the developer's, rather than an issue", required: false, default: ""}
       reconcile: {description: "true: the reconciler now, rather than an issue; next: once the heartbeat's wait timer passed", required: false, default: ""}
-  # The reviewer's comment, written or edited by the App (a comment the
-  # job's own token writes wakes nothing), or a person's.
+  # The reviewer's comment or the gates', written or edited by the App (a
+  # comment the job's own token writes wakes nothing), or a person's.
   issue_comment: {types: [created, edited]}
   # The reconciler, hourly: a step an event missed (ADR-0059). A safety
   # net, not the driver. Each reconcile starts the next one, an hour on,
@@ -285,7 +290,7 @@ jobs:
       group: workline-reconcile
       cancel-in-progress: false
     runs-on: ubuntu-latest
-    permissions: {contents: read, issues: read, actions: write}
+    permissions: {contents: read, issues: read, pull-requests: read, actions: write}
     steps:
       - uses: actions/checkout@v4
         with: {fetch-depth: 0, persist-credentials: false}
@@ -295,7 +300,9 @@ jobs:
           get() { curl -fsSLO "$1/$2" && curl -fsSL "$1/$3" | grep " $2\$" | sha256sum -c - && tar -xzf "$2" -C "$bin" "$4"; }
           get "https://github.com/JN0V/workline/releases/download/$WORKLINE_VERSION" workline_linux_amd64.tar.gz checksums.txt workline
           echo "$bin" >> "$GITHUB_PATH"
-      - env: {GH_TOKEN: "${{ github.token }}"}
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          WORKLINE_APP_ID: ${{ vars.WORKLINE_APP_ID }}   # the App whose comments keep the records read back
         run: |
           wf=$(basename "${GITHUB_WORKFLOW_REF%%@*}")
           # When the last reconcile ended, said when late: the last of the
@@ -323,6 +330,14 @@ jobs:
             fi
             gh workflow run "$wf" --ref "$GITHUB_REF_NAME" -f issue="$n" ||
               echo "::warning title=workline::#$n's run not started: the next hour starts it"
+          done
+          # A review round an event missed, on the developer's pull request.
+          for n in $(jq -r '(.reviews // [])[].id' due.json); do
+            if printf '%s\n' "$busy" | grep -qxF "workline develop round !$n"; then
+              echo "!$n: a round of it is queued or running" >> "$GITHUB_STEP_SUMMARY"; continue
+            fi
+            gh workflow run "$wf" --ref "$GITHUB_REF_NAME" -f pull-request="$n" ||
+              echo "::warning title=workline::!$n's round not started: the next hour starts it"
           done
       # The next reconcile, by the heartbeat (#845), even when this one
       # failed: its run waits the environment's wait timer, in minutes.
@@ -356,7 +371,7 @@ jobs:
     if: >-
       (github.event_name == 'workflow_dispatch' && inputs['pull-request'] != '') ||
       (github.event_name == 'issue_comment' && github.event.issue.pull_request && github.event.issue.state == 'open' &&
-        (contains(github.event.comment.body, 'workline:sticky=reviewer/') ||
+        (contains(github.event.comment.body, 'workline:sticky=reviewer/') || contains(github.event.comment.body, 'workline:sticky=gates/') ||
           (github.event.action == 'created' && github.event.comment.user.type != 'Bot' &&
             contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association))))
     runs-on: ubuntu-latest

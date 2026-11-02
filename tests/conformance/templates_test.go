@@ -1825,8 +1825,9 @@ func TestDeveloperTemplatesRunTheReviewRound(t *testing.T) {
 		t.Fatal(err)
 	}
 	var wf struct {
-		On   map[string]any `yaml:"on"`
-		Jobs map[string]struct {
+		RunName string         `yaml:"run-name"`
+		On      map[string]any `yaml:"on"`
+		Jobs    map[string]struct {
 			If          string            `yaml:"if"`
 			Needs       string            `yaml:"needs"`
 			Permissions map[string]string `yaml:"permissions"`
@@ -1844,6 +1845,24 @@ func TestDeveloperTemplatesRunTheReviewRound(t *testing.T) {
 	review, whose := wf.Jobs["review"], wf.Jobs["whose"]
 	if _, ok := wf.On["issue_comment"]; !ok || !strings.Contains(whose.If, "workline:sticky=reviewer/") || !strings.Contains(whose.If, "author_association") || len(whose.Steps) != 1 || review.Permissions["contents"] != "read" {
 		t.Errorf("workline-develop.yml, whose and review: not woken by the reviewer's comment and a person's, or more than one step to tell, or a write token: %v %q %v", wf.On, whose.If, review.Permissions)
+	}
+	// A gate red is a round too (the gates' comment, by the App), and
+	// the reconciler starts the round an event missed, each its own run.
+	if !strings.Contains(whose.If, "workline:sticky=gates/") {
+		t.Errorf("workline-develop.yml, whose: a gate's report does not wake a round: %q", whose.If)
+	}
+	started := false
+	for _, s := range wf.Jobs["reconcile"].Steps {
+		started = started || strings.Contains(s.Run, "(.reviews // [])[].id") && strings.Contains(s.Run, `-f pull-request="$n"`) && s.Env["WORKLINE_APP_ID"] != ""
+	}
+	// A round's run is named by its pull request, however it was woken:
+	// the reconciler starts none while one is queued or running.
+	if !strings.Contains(wf.RunName, "format('workline develop round !{0}', inputs['pull-request'])") ||
+		!strings.Contains(wf.RunName, "format('workline develop round !{0}', github.event.issue.number)") {
+		t.Errorf("workline-develop.yml: a round's run is not named by its pull request: run-name %q", wf.RunName)
+	}
+	if !started || wf.Jobs["reconcile"].Permissions["pull-requests"] != "read" {
+		t.Errorf("workline-develop.yml, reconcile: does not start the review rounds due, cannot read the pull requests, or does not trust the App's records: %v", wf.Jobs["reconcile"].Permissions)
 	}
 	if review.Needs != "whose" || review.If != "needs.whose.outputs.branch != ''" || !strings.Contains(whose.Steps[0].Run, "workline/developer/*)") {
 		t.Errorf("workline-develop.yml, review: runs on a pull request whose branch is not the developer's: needs %q, if %q", review.Needs, review.If)

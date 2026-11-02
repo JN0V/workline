@@ -156,6 +156,14 @@ func readRecord(text string) (Record, error) {
 	return r, nil
 }
 
+// ReadTriage is the record the inspector's comment holds: what the
+// developer's review round reads beside a gate's finding, why it matters
+// and how to fix it. Marker keys that comment.
+func ReadTriage(text string) (Record, error) { return readRecord(text) }
+
+// Marker keys the inspector's comment on a merge request.
+var Marker = marker
+
 // lines is the record as the comment hides it: a line each, the oldest
 // gone first past room, those of the findings at the head kept; past it
 // still, the oldest of those too, counted: they are asked again.

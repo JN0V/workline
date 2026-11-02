@@ -84,7 +84,7 @@ func Annotate(from FromMergeRequest, build func(read func(path string) ([]byte, 
 
 // GatesMarker keys the gates' summary comment on a merge request: one,
 // edited on each push.
-var GatesMarker = forge.Marker("sticky=gates/summary")
+var GatesMarker = forge.GatesMarker
 
 // GatesToShow is what of the gates a merge request is shown: the
 // annotations and their check's words, the summary comment once the

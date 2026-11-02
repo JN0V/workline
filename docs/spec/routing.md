@@ -594,6 +594,13 @@ each reconcile starts the next one, past an environment's wait timer
 - **`--input reconcile=list`**: it says the issues due (`due` in its
   result), starts none and writes nothing, for a CI job that starts each
   one's own run. `--input skip` leaves a role's issues out.
+- **The developer's review rounds**: where the project routes the
+  developer, it reads its open pull requests too. A round due that no
+  event started (the reviewer's verdict, the gates' report or a
+  person's comment its last round did not read) is counted in
+  `reconcile-max`; listed in `reviews`, number and branch, for the CI
+  job, else said with its command (`review-round-due`;
+  [#891](https://github.com/JN0V/workline/issues/891)).
 - **An issue that cannot be read** is said (`state-unread`) and the
   others walked; the forge out of reach stops the run.
 - **Run twice in a row**, the second does nothing more: the first left
