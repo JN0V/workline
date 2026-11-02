@@ -78,6 +78,19 @@ October 2026, an hourly `51 * * * *` with gaps of several hours).
 - **The environment limited to the default branch**: a branch's run
   cannot use it.
 
+### When the last reconcile ran
+
+- **Not the Actions cache**: a run started by an issue's label logs
+  "cache write denied: token has no writable scopes" at the save. The
+  line's own labels then each ran a reconcile, 3 in 7 minutes, each
+  cancelling the heartbeat waiting
+  ([#853](https://github.com/JN0V/workline/issues/853)).
+- **The workflow's runs**, `GET /repos/{owner}/{repo}/actions/workflows/{id}/runs`:
+  any run may read them, 100 a page, newest first: one call while fewer
+  than 100 issue runs came since the last reconcile. The reconciler's
+  runs are named (`run-name`), so their status says whether one waits,
+  and the last that succeeded, its `updated_at`, when it ended.
+
 ## Piggy-backing on the line's runs, alone
 
 The maintainer's first choice: each run of the line starts a reconcile

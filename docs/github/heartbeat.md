@@ -1,6 +1,6 @@
 <!-- workline
 sources: [ci/github/workline-develop.yml, .github/workflows/workline-develop.yml]
-checked: ca7f9615
+checked: 2e6d1ae9
 -->
 # The reconciler's heartbeat
 
@@ -24,9 +24,16 @@ reconcile starts the next one:
   environment `workline-heartbeat`: in GitHub, on no runner, no minute
   billed. Then the `reconcile` job runs.
 - **One a branch**: a new heartbeat cancels the one waiting.
-- **The schedule and a `workline:` label** start a reconcile only when
-  the last one is over 55 minutes old: the heartbeat stopped. That run
-  starts it again.
+- **The schedule and a `workline:` label** ask the job `reconcile-due`:
+  - not due while a heartbeat or a reconciler's run is queued, waiting
+    or running, nor within 55 minutes of the last that succeeded;
+  - due, the heartbeat stopped: it starts a reconcile, `workline develop
+    reconcile`, which starts the heartbeat again.
+- **When it last ran**: read from the workflow's runs, named
+  `workline develop heartbeat` and `workline develop reconcile`: one
+  call a page of 100 runs, newest first, read on until one that
+  succeeded, 5 pages at most. Not the Actions cache: a run started by a
+  label may not write it ([#853](https://github.com/JN0V/workline/issues/853)).
 
 ## Set it up
 
@@ -55,6 +62,8 @@ gh api -X POST repos/OWNER/REPO/environments/workline-heartbeat/deployment-branc
 
 - **A day**: 24 runs, each a heartbeat job of a few seconds and the
   reconcile job.
-- **API calls**: the reconcile's own, and 2 more for the next
-  heartbeat ([the budget](calls.md#the-api-budget)).
+- **API calls**: the reconcile's own, 1 to read when it last ran, and
+  2 for the next heartbeat ([the budget](calls.md#the-api-budget)).
+- **Each `workline:` label**: a job of a few seconds, 1 call to read the
+  runs; none starts a reconcile while the heartbeat waits.
 - **Runners**: none while it waits.

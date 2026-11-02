@@ -19,6 +19,7 @@ name: workline develop
 run-name: >-
   ${{ (github.event_name == 'workflow_dispatch' && inputs.issue != '' && format('workline develop #{0}', inputs.issue)) ||
   (github.event_name == 'workflow_dispatch' && inputs.reconcile == 'next' && 'workline develop heartbeat') ||
+  (github.event_name == 'workflow_dispatch' && inputs.reconcile == 'true' && 'workline develop reconcile') ||
   (github.event_name == 'issues' && github.event.sender.type != 'Bot' && startsWith(github.event.label.name, 'workline:') &&
   format('workline develop #{0}', github.event.issue.number)) || github.workflow }}
 on:
@@ -38,7 +39,7 @@ on:
   # net, not the driver. Each reconcile starts the next one, an hour on,
   # by the heartbeat (job heartbeat); GitHub runs this schedule late or
   # not at all, so it and the events above only start it again when the
-  # heartbeat stopped (#845).
+  # heartbeat stopped (#845): job reconcile-due.
   schedule: [{cron: "41 * * * *"}]
 permissions: {}
 
@@ -209,55 +210,90 @@ jobs:
     steps:
       - run: echo "the heartbeat's wait timer passed; the reconciler runs"
 
+  # Whether a reconcile is due, on the schedule or an issue labelled, the
+  # line's every hop: the heartbeat stopped (#789, #845). Not while a
+  # reconciler's run or a heartbeat is queued, waiting or running, nor 55
+  # minutes after the last that succeeded. Read from this workflow's runs,
+  # one call: a run an event starts may not write the Actions cache
+  # (#853). Due, it starts the reconciler's own run, which the next event
+  # sees. One at a time: the next asks once this one started that run.
+  reconcile-due:
+    if: >-
+      github.event_name == 'schedule' || (github.event_name == 'issues' && startsWith(github.event.label.name, 'workline:'))
+    concurrency:
+      group: workline-reconcile-due
+      cancel-in-progress: false
+    runs-on: ubuntu-latest
+    permissions: {actions: write}
+    steps:
+      - name: Due, 55 minutes after the last
+        env: {GH_TOKEN: "${{ github.token }}"}
+        run: |
+          wf=$(basename "${GITHUB_WORKFLOW_REF%%@*}")
+          # Newest first, read on past a page of the issues' own runs until
+          # a reconciler's run that succeeded: one call, most often.
+          echo '[]' > runs.json
+          for page in 1 2 3 4 5; do
+            gh api "repos/$GITHUB_REPOSITORY/actions/workflows/$wf/runs?event=workflow_dispatch&branch=$GITHUB_REF_NAME&per_page=100&page=$page" \
+              --jq '{n: (.workflow_runs | length), r: [.workflow_runs[] | select(.display_title == "workline develop heartbeat" or .display_title == "workline develop reconcile")]}' > page.json || {
+              echo "::warning title=workline::this workflow's runs not read: no reconcile started; the next event or the schedule asks again"; exit 0; }
+            jq -s '.[0] + .[1].r' runs.json page.json > all.json && mv all.json runs.json
+            jq -e '.n < 100 or any(.r[]; .conclusion == "success")' page.json > /dev/null && break
+          done
+          going=$(jq -r 'map(select(.status != "completed"))[0] // empty | "\(.display_title), \(.status) since \(.created_at)"' runs.json)
+          if [ -n "$going" ]; then
+            echo "a reconcile on its way ($going): not due" | tee -a "$GITHUB_STEP_SUMMARY"; exit 0
+          fi
+          last=$(jq -r 'map(select(.conclusion == "success") | .updated_at) | max // empty' runs.json)
+          if [ -n "$last" ] && ago=$(( $(date -u +%s) - $(date -u -d "$last" +%s) )) && [ "$ago" -lt 3300 ]; then
+            echo "the last reconcile ended at $last, $((ago / 60)) min ago: not due" | tee -a "$GITHUB_STEP_SUMMARY"; exit 0
+          fi
+          if gh workflow run "$wf" -R "$GITHUB_REPOSITORY" --ref "$GITHUB_REF_NAME" -f reconcile=true; then
+            echo "the last reconcile ended at ${last:-no time found}: the reconciler's run started" | tee -a "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::warning title=workline::the reconciler's run not started: the next event or the schedule asks again"
+          fi
+
   # The reconciler (ADR-0059): each open issue whose step is due and no
   # event started, at most reconcile-max (3) a run, each its own run. No
-  # agent, a read token, the right to start runs. Hourly by the heartbeat,
-  # or by hand (input reconcile=true). The schedule, or an issue
-  # labelled, the line's every hop, start it once 55 minutes passed since
-  # the last run that succeeded, kept in the Actions cache: the heartbeat
-  # stopped (#789, #845; why: the developer's triggers page).
+  # agent, a read token, the right to start runs. Its own run, named
+  # `workline develop heartbeat` or `workline develop reconcile`: by the
+  # heartbeat, by hand (input reconcile=true) or by reconcile-due. Those
+  # runs keep when it last ran (#853; why: the developer's triggers page).
   # One at a time.
   reconcile:
     needs: heartbeat
     if: >-
-      !cancelled() && (needs.heartbeat.result == 'success' || needs.heartbeat.result == 'skipped') && (
-      github.event_name == 'schedule' || (github.event_name == 'issues' && startsWith(github.event.label.name, 'workline:')) ||
-      (github.event_name == 'workflow_dispatch' && (inputs.reconcile == 'true' || inputs.reconcile == 'next')))
+      !cancelled() && (needs.heartbeat.result == 'success' || needs.heartbeat.result == 'skipped') &&
+      github.event_name == 'workflow_dispatch' && (inputs.reconcile == 'true' || inputs.reconcile == 'next')
     concurrency:
       group: workline-reconcile
       cancel-in-progress: false
     runs-on: ubuntu-latest
     permissions: {contents: read, issues: read, actions: write}
     steps:
-      - uses: actions/cache/restore@v4
-        with: {path: "${{ runner.temp }}/workline-reconcile", key: "workline-reconcile-${{ github.run_id }}", restore-keys: "workline-reconcile-"}
-      - name: Due, 55 minutes after the last
-        id: due
-        env: {FORCED: "${{ inputs.reconcile == 'true' || inputs.reconcile == 'next' }}"}
-        run: |
-          last=$(cat "$RUNNER_TEMP/workline-reconcile/last" 2>/dev/null || true)
-          if [ "$FORCED" != true ] && [ -n "$last" ] && ago=$(( $(date -u +%s) - $(date -u -d "$last" +%s) )) && [ "$ago" -lt 3300 ]; then
-            echo "the last reconcile ran at $last, $((ago / 60)) min ago: not due"
-            exit 0
-          fi
-          echo "due=true" >> "$GITHUB_OUTPUT"
-          echo "last=$last" >> "$GITHUB_OUTPUT"
-          mkdir -p "$RUNNER_TEMP/workline-reconcile"
-          date -u +%Y-%m-%dT%H:%M:%SZ > "$RUNNER_TEMP/workline-reconcile/last"
       - uses: actions/checkout@v4
-        if: steps.due.outputs.due == 'true'
         with: {fetch-depth: 0, persist-credentials: false}
       - uses: ./.github/actions/engine
-        if: steps.due.outputs.due == 'true'
-      - if: steps.due.outputs.due == 'true'
-        env: {GH_TOKEN: "${{ github.token }}", LAST: "${{ steps.due.outputs.last }}"}
+      - env: {GH_TOKEN: "${{ github.token }}"}
         run: |
+          wf=$(basename "${GITHUB_WORKFLOW_REF%%@*}")
+          # When the last reconcile ended, said when late: the last of the
+          # reconciler's runs that succeeded, this one still running; read
+          # on past a page of the issues' own runs, newest first.
+          LAST=
+          for page in 1 2 3 4 5; do
+            got=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/$wf/runs?event=workflow_dispatch&branch=$GITHUB_REF_NAME&per_page=100&page=$page" \
+              --jq '(.workflow_runs | length), ([.workflow_runs[] | select(.display_title == "workline develop heartbeat" or .display_title == "workline develop reconcile") |
+                select(.conclusion == "success") | .updated_at] | max // empty)') || break
+            LAST=$(printf '%s\n' "$got" | sed -n 2p)
+            [ -z "$LAST" ] && [ "$(printf '%s\n' "$got" | sed -n 1p)" = 100 ] || break
+          done
           workline route reconcile --ai none --forge github --open-merge-request --input reconcile=list ${LAST:+--input "last=$LAST"} \
             --summary workline-summary.md --json > due.json
           [ ! -s workline-summary.md ] || cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"
           # An issue with a run queued or running, this one among them, is
           # not started again (#806).
-          wf=$(basename "${GITHUB_WORKFLOW_REF%%@*}")
           busy=$(for s in queued in_progress pending waiting; do
             gh run list --workflow "$wf" --status "$s" --limit 100 --json displayTitle --jq '.[].displayTitle'
           done) || busy=
@@ -268,17 +304,13 @@ jobs:
             gh workflow run "$wf" --ref "$GITHUB_REF_NAME" -f issue="$n" ||
               echo "::warning title=workline::#$n's run not started: the next hour starts it"
           done
-      # Kept only once it ran: a failed run is no reconcile.
-      - uses: actions/cache/save@v4
-        if: steps.due.outputs.due == 'true'
-        with: {path: "${{ runner.temp }}/workline-reconcile", key: "workline-reconcile-${{ github.run_id }}-${{ github.run_attempt }}"}
       # The next reconcile, by the heartbeat (#845), even when this one
       # failed: its run waits the environment's wait timer, in minutes.
       # No such environment, or no wait timer (a private repository on
       # GitHub's free plan has none), no heartbeat: said, the schedule and
       # the events run the reconciler as they can.
       - name: The next reconcile, by the heartbeat
-        if: always() && steps.due.outputs.due == 'true'
+        if: always()
         env: {GH_TOKEN: "${{ github.token }}"}
         run: |
           wait=$(gh api "repos/$GITHUB_REPOSITORY/environments/workline-heartbeat" \

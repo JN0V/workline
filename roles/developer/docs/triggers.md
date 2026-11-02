@@ -55,10 +55,13 @@ routing:
     starts the next, 55 minutes on: [the heartbeat](../../../docs/github/heartbeat.md),
     an environment to create once.
   - **Not on the heartbeat alone**: the schedule, or a `workline:` label
-    on an issue, each hop of the line, starts it once 55 minutes passed
-    since the last run that succeeded, kept in the Actions cache. One at
-    a time ([#789](https://github.com/JN0V/workline/issues/789)). Its
-    cost: a job of a few seconds each such event; comments start none.
+    on an issue, each hop of the line, starts it when no heartbeat waits
+    and 55 minutes passed since the last that succeeded, read from the
+    workflow's runs. One at a time
+    ([#789](https://github.com/JN0V/workline/issues/789),
+    [#853](https://github.com/JN0V/workline/issues/853)). Its cost: a
+    job of a few seconds and 1 API call each such event; comments start
+    none.
   - **One run an issue at a time**
     ([#806](https://github.com/JN0V/workline/issues/806)): a run of an
     issue's step is named `workline develop #<n>`. The reconciler and
