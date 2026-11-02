@@ -30,6 +30,9 @@ func TestClaudeToolsOnlyInAWorktree(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(bin, "claude"), []byte(fake), 0o755); err != nil {
 		t.Fatal(err)
 	}
+	for _, tool := range claudeShellTools {
+		must(t, os.WriteFile(filepath.Join(bin, tool), []byte("#!/bin/sh\n"), 0o755))
+	}
 	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
 	t.Setenv("WORKLINE_ARGS_DUMP", dump)
 	run := func(tree bool) (Call, string, error) {
@@ -65,6 +68,30 @@ func TestClaudeToolsOnlyInAWorktree(t *testing.T) {
 	}
 	if call.Turns != 2 || call.Tools["Edit"] != 1 {
 		t.Errorf("in a worktree: turns or tools not recorded: %+v", call)
+	}
+}
+
+// TestClaudeShellToolsSaid: on Linux, an agent in a worktree whose shell
+// lacks bubblewrap or socat is not asked: the agent unavailable, what is
+// missing named, rather than code no command ran (#900). Elsewhere, or
+// with no worktree, nothing is asked of the runner.
+func TestClaudeShellToolsSaid(t *testing.T) {
+	bin := t.TempDir()
+	must(t, os.WriteFile(filepath.Join(bin, "bwrap"), []byte("#!/bin/sh\n"), 0o755))
+	t.Setenv("PATH", bin)
+	err := shellTools("/run/worktree", "linux")
+	if !errors.Is(err, ErrUnavailable) || !strings.Contains(err.Error(), ", socat not installed") {
+		t.Errorf("socat missing on Linux: %v", err)
+	}
+	if err := shellTools("", "linux"); err != nil {
+		t.Errorf("no worktree, no shell: %v", err)
+	}
+	if err := shellTools("/run/worktree", "darwin"); err != nil {
+		t.Errorf("not Linux: %v", err)
+	}
+	must(t, os.WriteFile(filepath.Join(bin, "socat"), []byte("#!/bin/sh\n"), 0o755))
+	if err := shellTools("/run/worktree", "linux"); err != nil {
+		t.Errorf("both installed: %v", err)
 	}
 }
 
