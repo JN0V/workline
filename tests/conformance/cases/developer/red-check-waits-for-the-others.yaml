@@ -1,0 +1,38 @@
+case: developer/red-check-waits-for-the-others
+about: >
+  A project's check failed at the branch's head while another of its
+  checks still runs there (#917): the round asks nothing yet, and
+  records no head. The last check's end wakes it again, all read at
+  once.
+given:
+  repo: tested-draft
+  setup:
+    - "git checkout -q -b workline/developer/3 && printf 'add() { echo $(($1 + $2)); }\\nmul() { echo $(($1 + $2)); }\\n' > lib.sh && git commit -qam 'feat: mul for #3' -m 'Workline-Role: developer' && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main workline/tester/issue-3 workline/developer/3"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    head-checks:
+      workline/developer/3:
+        - {name: test, workflow: test, state: failure, job: 41, log: "--- FAIL: test_mul_two_by_three\n"}
+        - {name: e2e, workflow: e2e, state: pending, job: 44}
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:ready", "workline:developing"]
+        body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+    merge-requests:
+      - id: 2
+        branch: workline/developer/3
+        title: "Multiply two numbers"
+        body: "Closes #3"
+        comments:
+          - "**The developer**'s record of this pull request, for its next runs and the auditor.\n\n<!-- workline:developer-act {\"act\":\"code\",\"issue\":3,\"code\":[\"lib.sh\"],\"round\":1,\"review-runs\":1} -->\n<!-- workline:sticky=developer/code -->"
+          - "**workline reviewer** — 0 findings on the change.\n\nNo finding on the commits reviewed.\n\n<!-- workline:record reviewed=1111111 runs=1 -->\n<!-- workline:sticky=reviewer/summary -->"
+run: {develop: [--merge-request, "2"], ai: "fake:developer-writes-mul"}
+expect:
+  status: pass
+  summary: "nothing new since its last round"
+  agent-calls: 0
+  forge:
+    merge-requests:
+      - {id: 2, comments: 2}

@@ -163,6 +163,9 @@ type Act struct {
 	// GatesAt: the head of the gates' report its last round asked the
 	// findings of: the same report is not asked again.
 	GatesAt string `json:"gates-at,omitempty"`
+	// ChecksAt: the head its last round read the project's red checks
+	// at: the same head is never asked twice (#917).
+	ChecksAt string `json:"checks-at,omitempty"`
 	// Board: the card its claim moved to Doing on the forge's board
 	// (ADR-0057); none, no board or no Doing column.
 	Board *board.Move `json:"board,omitempty"`

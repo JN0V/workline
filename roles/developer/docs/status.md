@@ -209,6 +209,14 @@ hold:
   `developer/gate-finding-is-a-round`, `gate-finding-read-once`,
   `gate-finding-of-an-older-head-waits`,
   `routing/reconcile-lists-a-developer-round-due`.
+- **A project check red is a round** ([#917](https://github.com/JN0V/workline/issues/917)):
+  its CI's checks at its head, workline's own left out, asked once a
+  head when all are done, the end of the failed steps' log in the task;
+  a failed workflow wakes it, the reconciler as fallback
+  ([the review loop](review-loop.md#a-round)). Cases
+  `developer/red-check-is-a-round`, `red-check-read-once`,
+  `red-check-waits-for-the-others`, `red-check-of-workline-asks-nothing`,
+  `routing/reconcile-lists-a-red-check-round`.
 
 - **The merge** (step 7): at `normal`, `workline follow` merges its
   pull request with no person's yes, the kind `code`, when the issue it
@@ -321,6 +329,10 @@ column ([the try](https://github.com/JN0V/workline/pull/747#tried)).
 - **The reviewer's full text**: a round reads the reviewer's summary
   table, where a finding with a comment on its line reads short (its
   title); the line's comment, with the why and the fix, is not read.
+- **A failed pipeline on GitLab**: the project's checks are read on
+  GitHub only; on GitLab, the merge request's head pipeline and its
+  failed jobs' traces would be the round's input, and a pipeline
+  event its wake ([#917](https://github.com/JN0V/workline/issues/917)).
 - **A gate red on GitLab**: its gates show in the Code Quality report,
   no comment a round reads; the reviewer's verdict and a person's
   comment still wake one there.

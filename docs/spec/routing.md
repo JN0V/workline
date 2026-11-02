@@ -604,8 +604,9 @@ each reconcile starts the next one, past an environment's wait timer
   one's own run. `--input skip` leaves a role's issues out.
 - **The developer's review rounds**: where the project routes the
   developer, it reads its open pull requests too. A round due that no
-  event started (the reviewer's verdict, the gates' report or a
-  person's comment its last round did not read) is counted in
+  event started (the reviewer's verdict, the gates' report, a project
+  check red at a head or a person's comment its last round did not
+  read) is counted in
   `reconcile-max`; listed in `reviews`, number and branch, for the CI
   job, else said with its command (`review-round-due`;
   [#891](https://github.com/JN0V/workline/issues/891)).

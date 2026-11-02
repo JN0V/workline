@@ -2,17 +2,19 @@
 sources:
   - internal/developer/review.go
   - internal/developer/gates.go
+  - internal/developer/checks.go
+  - internal/forge/checks.go
   - roles/developer/role.yaml
   - ci/github/workline-develop.yml
   - ci/gitlab/workline.gitlab-ci.yml
-checked: 369e4cc8
+checked: abaf9b8b
 verified: agent:claude-code
 ---
 # The review loop
 
 ```mermaid
 flowchart LR
-  verdict["<b>The reviewer's verdict</b><br/>a gate red,<br/>or a person's comment"]
+  verdict["<b>The reviewer's verdict</b><br/>a gate or a test red,<br/>or a person's comment"]
   run(["Developer<br/>a fresh run"])
   fix["<b>Fixes</b><br/>what blocks,<br/>what is Important"]
   push["<b>Pushes</b><br/>on its branch,<br/>proven"]
@@ -27,24 +29,35 @@ step 6).
 
 ## A round
 
-- **A fresh run**, woken by the reviewer's verdict, the gates' report
-  or a person's comment on a pull request from `workline/developer/<n>`:
+- **A fresh run**, woken by the reviewer's verdict, the gates' report,
+  a project check red or a person's comment on a pull request from
+  `workline/developer/<n>`:
   `workline develop --merge-request <n>`.
 - **No memory**: it reads its record on the pull request (the rounds
   before, the reviewer's runs read, the gates' report read, the
   comments heard), the reviewer's comment and its comments on lines,
-  the gates' and the inspector's comments, and the issue. Nothing else.
+  the gates' and the inspector's comments, the project's checks at its
+  head, and the issue. Nothing else.
 - **A gate red**: each new finding of the gates' summary comment is
   asked, at its place, with what [the inspector](../../inspector/README.md)
   said of it: why it matters, its fix. Only a report on its branch's
   head; once a report, its head kept in the record. A check that did
   not run asks nothing.
+- **A project check red** ([#917](https://github.com/JN0V/workline/issues/917)):
+  a check of the project's own CI failed at its branch's head, its
+  tests run whole where the proof ran a part. Asked once every project
+  check there is done, the end of its failed steps' log in the task
+  (80 lines, 6 kB at most). Once a head: the head kept in the record.
+  - **The project's**: workline's own are left out, a job of a
+    workflow named `workline …`, a check or status named `workline…`:
+    their records say what to fix.
+  - **Read on GitHub**; the checks not read are said (`checks-unread`).
 - **A finding on its line**: its row shows only a title; the round
   reads it whole from the reviewer's comment on that line. Only
   workline's own account's comment is read.
 - **What it asks the agent**: the findings that block, and those that
-  warn and are Important; a gate's new finding; a person's comment, as
-  a finding. Nits are counted, never asked.
+  warn and are Important; a gate's new finding; a project check red;
+  a person's comment, as a finding. Nits are counted, never asked.
 - **Where its agent works**: as an issue run's
   ([the agent](agent.md)), in a worktree of its pull request's head,
   with tools, its [caps](proof.md#the-caps) the same. The question
@@ -67,7 +80,9 @@ step 6).
 
 - **Nothing asked**: a verdict with nits only, or none at all.
 - **Nothing new**: the reviewer ran no review since the last round,
-  the gates reported nothing new on its head, and no person spoke.
+  the gates reported nothing new on its head, no project check is red
+  at a head not read, and no person spoke.
+- **A project check still runs** at its head: the red ones wait for it.
 - **No agent**: the findings wait, no round counted.
 
 ## Rounds: five, the five whys at three
@@ -89,6 +104,11 @@ step 6).
 - **GitHub**: [workline-develop.yml](../../../ci/github/workline-develop.yml),
   its `review` jobs. The reviewer's comment or the gates', written or
   edited by workline's App, or a comment of a person of the project.
+  - **A project workflow ended** on a `workline/developer/` branch
+    (`workflow_run`, every workflow but workline's own): `whose`
+    starts a round once all the project's runs on that head are done,
+    one failed, whichever ended last. GitHub sends no `check_run` nor
+    `check_suite` event for its Actions' own checks.
   - A comment the job's own token writes wakes no workflow: the
     reviewer and the gates need the App.
   - **Hourly, the reconciler** starts a round an event missed, one run
@@ -102,7 +122,7 @@ step 6).
   itself ([with GitLab alone](../../../docs/gitlab-trigger.md#a-label-or-a-comment-with-gitlab-alone)).
   The hourly reconcile starts a round an event missed. GitLab shows the
   gates in its Code Quality report, no comment: a gate red is no round
-  there yet.
+  there yet, nor a failed pipeline.
 - **Off by default**: it runs only on the developer's own pull
   requests, which exist only where a project routes the developer
   ([the triggers](triggers.md)).
