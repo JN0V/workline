@@ -158,6 +158,18 @@ func stateOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, 
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "tests-refused", Level: "warn", Where: where, Message: why + ": moved to " + BlockedState})
 		return nil, &StateWrite{Issue: is.ID, Record: blocking(now, s.Name, why, comments), Blocked: why}, nil
 	}
+	if !ok && had && s.Role == developerRole {
+		// Left free by the developer since it was woken: its claim let
+		// go, or the issue it was passed over for held no more (#894).
+		rec, why, err := freed(cfg, b, s, is, rec, comments, open)
+		if err != nil {
+			return nil, nil, err
+		}
+		if why != "" {
+			ok, now = true, rec
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "state-freed", Level: "info", Where: where, Message: why})
+		}
+	}
 	if !ok {
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "state-acted", Level: "info", Where: where,
 			Message: fmt.Sprintf("its state, %s, woke the %s already, on the same body and labelling: nothing more to run", s.Name, name)})
@@ -173,6 +185,9 @@ func stateOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, 
 		return nil, nil, err
 	} else if why != "" {
 		return nil, waiting(res, s, why, rec, where, is.ID), nil
+	}
+	if now, err = woken(cfg, b, s, is.ID, now, open); err != nil {
+		return nil, nil, err
 	}
 	res.Findings = append(res.Findings, verdict.Finding{Rule: "state-wakes", Level: "info", Where: where,
 		Message: fmt.Sprintf("its state, %s, wakes the %s", s.Name, name)})

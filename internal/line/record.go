@@ -74,6 +74,12 @@ type Record struct {
 	// owner's delay that the line woke it for (ADR-0060) — `ask=N`, the
 	// question of round N; `drafts=<body>`, its drafts —: woken once.
 	Timeout string `json:"timeout,omitempty"`
+	// Woke: when the line last woke the developer on the issue, RFC 3339;
+	// Held: the issues the developer held then, in its state's next
+	// (freed.go). A claim put on since and let go, or one of Held held
+	// no more, frees the issue for the developer again (#894).
+	Woke string `json:"woke,omitempty"`
+	Held []int  `json:"held,omitempty"`
 }
 
 // StateWrite is what the line writes on an issue once its step ran:

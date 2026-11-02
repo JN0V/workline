@@ -1,0 +1,40 @@
+case: routing/ready-held-issue-let-go-wakes
+about: >
+  An issue the developer passed over for another it held is due again
+  once that one is held no more (#894): when the line woke the developer
+  on #3, it held #9, whose Scope overlapped; #9 is now back in Ready,
+  its claim let go. #4 was passed over for #5, still held: it waits on.
+  The developer said "#9 merged or let go" on #3; nothing else would
+  wake it. No agent asked, nothing written: the CI starts each run.
+given:
+  repo: tested
+  config:
+    routing: {events: {issue: [developer]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply"
+        labels: ["workline:ready"]
+        body: "## Need\n\nI want to multiply.\n"
+        comments: ["<!-- workline:line-record {\"state\":\"ready\",\"body\":\"8a828a06be19\",\"hops\":1,\"woke\":\"2026-11-01T10:48:40Z\",\"held\":[9]} -->\n<!-- workline:sticky=line/state -->"]
+      - id: 4
+        title: "Multiply again"
+        labels: ["workline:ready"]
+        body: "## Need\n\nI want to multiply.\n"
+        comments: ["<!-- workline:line-record {\"state\":\"ready\",\"body\":\"8a828a06be19\",\"hops\":1,\"woke\":\"2026-11-01T10:48:40Z\",\"held\":[5]} -->\n<!-- workline:sticky=line/state -->"]
+      - {id: 5, title: "Divide", labels: ["workline:developing"], body: "## Need\n\nI want to divide.\n"}
+      - id: 9
+        title: "Multiply by hand"
+        labels: ["workline:ready"]
+        assignees: [alice]
+        body: "## Need\n\nI want to multiply.\n"
+        comments: ["<!-- workline:line-record {\"state\":\"ready\",\"body\":\"8a828a06be19\",\"hops\":1} -->\n<!-- workline:sticky=line/state -->"]
+run: {route: reconcile, open-merge-request: true, ai: "fake:developer-nothing", input: {reconcile: list}}
+expect:
+  status: pass
+  summary: "reconcile: 1 issue due: #3"
+  agent-calls: 0
+  findings:
+    - {rule: state-freed, level: info, where: "#3", message: "#9, held when the line woke the developer on it, is held no more"}
+    - {rule: state-acted, level: info, where: "#4"}
+  no-findings: [{rule: state-freed, where: "#4"}]

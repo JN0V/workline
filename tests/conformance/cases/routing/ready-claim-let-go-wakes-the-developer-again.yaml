@@ -1,0 +1,54 @@
+case: routing/ready-claim-let-go-wakes-the-developer-again
+about: >
+  A claim let go frees its issue for the developer again (#894): the
+  line woke the developer on #3, which it took (workline:developing put
+  on after the wake) and let go 24 hours later with no pull request.
+  Its state, body and ready label are the ones the record holds, yet it
+  came back to Ready from Doing: its step is due again. #4, woken and
+  never taken since, is not: the same wake twice runs nothing. #5, held
+  by the developer, wakes no role. #6, assigned to a person, is theirs.
+given:
+  repo: tested
+  config:
+    routing: {events: {issue: [developer]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply"
+        labels: ["workline:ready"]
+        labeled: {"workline:ready": "2026-11-01T10:48:29Z", "workline:developing": "2026-11-01T10:49:33Z"}
+        body: "## Need\n\nI want to multiply.\n"
+        comments: ["<!-- workline:line-record {\"state\":\"ready\",\"body\":\"8a828a06be19\",\"labeled\":\"2026-11-01T10:48:29Z\",\"hops\":1,\"woke\":\"2026-11-01T10:48:40Z\"} -->\n<!-- workline:sticky=line/state -->"]
+      - id: 4
+        title: "Multiply again"
+        labels: ["workline:ready"]
+        labeled: {"workline:ready": "2026-11-01T10:48:29Z"}
+        body: "## Need\n\nI want to multiply.\n"
+        comments: ["<!-- workline:line-record {\"state\":\"ready\",\"body\":\"8a828a06be19\",\"labeled\":\"2026-11-01T10:48:29Z\",\"hops\":1,\"woke\":\"2026-11-01T10:48:40Z\"} -->\n<!-- workline:sticky=line/state -->"]
+      - id: 5
+        title: "Multiply once more"
+        labels: ["workline:ready", "workline:developing"]
+        labeled: {"workline:ready": "2026-11-01T10:48:29Z", "workline:developing": "2026-11-01T10:49:33Z"}
+        body: "## Need\n\nI want to multiply.\n"
+        comments: ["<!-- workline:line-record {\"state\":\"ready\",\"body\":\"8a828a06be19\",\"labeled\":\"2026-11-01T10:48:29Z\",\"hops\":1,\"woke\":\"2026-11-01T10:48:40Z\"} -->\n<!-- workline:sticky=line/state -->"]
+      - id: 6
+        title: "Multiply by hand"
+        labels: ["workline:ready"]
+        assignees: [alice]
+        labeled: {"workline:ready": "2026-11-01T10:48:29Z", "workline:developing": "2026-11-01T10:49:33Z"}
+        body: "## Need\n\nI want to multiply.\n"
+        comments: ["<!-- workline:line-record {\"state\":\"ready\",\"body\":\"8a828a06be19\",\"labeled\":\"2026-11-01T10:48:29Z\",\"hops\":1,\"woke\":\"2026-11-01T10:48:40Z\"} -->\n<!-- workline:sticky=line/state -->"]
+run: {route: reconcile, open-merge-request: true, ai: "fake:developer-nothing", input: {reconcile: list}}
+expect:
+  status: pass
+  summary: "reconcile: 1 issue due: #3"
+  agent-calls: 0
+  findings:
+    - {rule: state-freed, level: info, where: "#3", message: "its claim, workline:developing put on 2026-11-01, was let go since the line woke the developer on it"}
+    - {rule: state-acted, level: info, where: "#4"}
+    - {rule: state-acted, level: info, where: "#6"}
+  no-findings: [{rule: state-freed, where: "#4"}, {rule: state-freed, where: "#5"}, {rule: state-freed, where: "#6"}]
+  forge:
+    issues:
+      - {id: 3, comments: 1}
+      - {id: 4, comments: 1}

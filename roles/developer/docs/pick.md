@@ -85,6 +85,9 @@ on any event, with or without an agent:
   why and what comes next. The issue is not taken again in the same run.
 - **A day the forge does not say**: the claim is kept, said in the
   verdict (`claim-age-unknown`).
+- **Taken again**: the line's reconciler wakes the developer on the
+  issue let go, and on one it passed over for that claim
+  ([the record](../../../docs/spec/routing.md#once-a-state-the-record)).
 - **Not yet**: its card stays in Doing; the line's states
   ([ADR-0059](../../../docs/adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#build-plan),
   step 2) move it.
