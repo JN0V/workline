@@ -335,13 +335,38 @@ func TestScenarioOfMapsATestsName(t *testing.T) {
 		{"test_no_brew_no_cargo", []string{"No brew, no cargo"}, "No brew, no cargo"},
 		{"TestLychee/No_brew,_no_cargo", []string{"No brew, no cargo"}, "No brew, no cargo"},
 		{"TestSomethingElse", vouched, ""},
-		{"TestMulByZero", []string{"By zero", "Two by three"}, "By zero"},
-		{"TestDocNotVouchedFor", vouched, ""},
+		{"TestByZero", []string{"By zero", "Two by three"}, "By zero"},
+		{"TestMulByZero", []string{"By zero", "Two by three"}, ""},
+		{"TestNonZero", []string{"Zero", "One"}, ""},
 		{"Test", []string{"Test", "Other"}, "Test"},
 		{"Anything", nil, "Anything"},
 	} {
 		if got := scenarioOf(c.name, c.in); got != c.want {
 			t.Errorf("scenarioOf(%q, %q) = %q, want %q", c.name, c.in, got, c.want)
 		}
+	}
+}
+
+// Scenario named (#913): Given an issue's scenarios, When the question
+// shows the objection's form, Then it lists them whole, a comma in one
+// kept; with none, it points at the issue's Validation.
+func TestScenarioHintListsTheIssues(t *testing.T) {
+	if got := scenarioHint([]string{"No brew, no cargo", "Other"}); got != "<one of: No brew, no cargo | Other>" {
+		t.Errorf("scenarioHint = %q", got)
+	}
+	if got := scenarioHint(nil); !strings.Contains(got, "Validation") {
+		t.Errorf("scenarioHint(nil) = %q, want it to name the Validation", got)
+	}
+}
+
+// Test name given (#913): Given an objection whose scenario spells none
+// of the issue's, When bounded holds it, Then it is said, not posted.
+func TestObjectionWithAnUnknownScenarioIsSaid(t *testing.T) {
+	b := Bounds{Issue: 3, Frozen: map[string]int{"tests/t.sh": 3}, Draft: 1, Head: "abc", Scenarios: []string{"Not vouched for", "Vouched for"}}
+	o := intent.Intention{Kind: "comment", Value: map[string]any{"objection": map[string]any{
+		"test": "tests/t.sh", "line": 2, "scenario": "TestSomethingElse", "kind": "interface", "why": "W"}}}
+	kept, _, said := bounded(t.TempDir(), b, nil, []intent.Intention{o})
+	if len(kept) != 0 || len(said) != 1 || !strings.Contains(said[0], `"TestSomethingElse" is none of #3's (Not vouched for, Vouched for)`) {
+		t.Errorf("kept = %v, said = %v; want nothing posted, the scenarios said", kept, said)
 	}
 }

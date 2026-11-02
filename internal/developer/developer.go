@@ -644,12 +644,12 @@ func question(is forge.Issue, b Bounds, test string, testErr error, s Settings) 
 }
 
 // scenarioHint is the objection's scenario in its format: one of the
-// issue's, by name (#913).
+// issue's, by name (#913), each whole: a name may hold a comma.
 func scenarioHint(scenarios []string) string {
 	if len(scenarios) == 0 {
 		return "<its name in the issue's " + work.Name(work.Validation) + ">"
 	}
-	return "<one of: " + strings.Join(scenarios, ", ") + ">"
+	return "<one of: " + strings.Join(scenarios, " | ") + ">"
 }
 
 // acceptance are the tests the tester froze for the issue, sorted.

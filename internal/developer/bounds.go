@@ -446,9 +446,8 @@ func (o objection) body() string {
 // scenarioOf is the issue's scenario an objection names: the one its name
 // spells, letters and digits alike, or a test's name for it once its
 // `Test` is off (TestNoBrewNoCargo, test_no_brew_no_cargo, a subtest's
-// last part), or ending on it (TestMulByZero): agents name the function
-// they read (#913). "" when none,
-// or more than one; the name as it is when the issue's are unknown.
+// last part): agents name the function they read (#913). "" when none,
+// or two; the name as it is when the issue's are unknown.
 func scenarioOf(name string, scenarios []string) string {
 	if len(scenarios) == 0 {
 		return name
@@ -458,8 +457,6 @@ func scenarioOf(name string, scenarios []string) string {
 	for _, spells := range []func(n, sc string) bool{
 		func(n, sc string) bool { return n == sc },
 		func(n, sc string) bool { return untest(n) == sc },
-		// TestMulByZero for "By zero": the scenario at the name's end.
-		func(n, sc string) bool { return strings.HasSuffix(untest(n), sc) },
 	} {
 		var found []string
 		for _, sc := range scenarios {
@@ -477,6 +474,9 @@ func scenarioOf(name string, scenarios []string) string {
 			return ""
 		}
 	}
+	// No guess past that: TestMulByZero may be "By zero", but TestNonZero
+	// is not "Zero"; an objection on the wrong scenario is worse than one
+	// said and not posted.
 	return ""
 }
 

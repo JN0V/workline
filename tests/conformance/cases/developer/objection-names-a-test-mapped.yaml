@@ -1,7 +1,7 @@
 case: developer/objection-names-a-test-mapped
 about: >
   An agent names a frozen test's Go function as its objection's scenario
-  (#913): `TestMulByZero`, not the issue's "By zero". The task lists the
+  (#913): `TestByZero`, not the issue's "By zero". The task lists the
   issue's scenarios beside the objection's form; the engine maps a test's
   name to the one scenario it spells, so the tester reads the objection.
 given:
@@ -10,7 +10,7 @@ given:
     - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main workline/tester/issue-3 && git checkout -q main"
   env:
     PATH: "$FIXTURES/claude:$PATH"
-    OBJECTIONS: '- test: tests/test_mul_by_zero.sh\n  line: 4\n  scenario: TestMulByZero\n  kind: over-specified\n  why: The scenario asks for 0, the test for an error.\n'
+    OBJECTIONS: '- test: tests/test_mul_by_zero.sh\n  line: 4\n  scenario: TestByZero\n  kind: over-specified\n  why: The scenario asks for 0, the test for an error.\n'
   config:
     roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
   forge:
@@ -29,7 +29,7 @@ expect:
   status: pass
   agent-calls: 1
   run-files:
-    in/task.md: {contains: ["scenario: <one of: By zero, Two by three>"]}
+    in/task.md: {contains: ["scenario: <one of: By zero | Two by three>"]}
   no-findings: [{rule: agent-words-unread}, {rule: agent-invalid-output}, {rule: not-the-developers}]
   pushed:
     workline/developer/3:
@@ -42,4 +42,4 @@ expect:
       - id: 1
         comment-contains: ["The developer** objects to the tester's tests of #3", "1 posted now"]
         threads:
-          - {path: tests/test_mul_by_zero.sh, line: 4, contains: ["workline:objection", "- scenario: By zero", "- kind: over-specified"], lacks: ["TestMulByZero"]}
+          - {path: tests/test_mul_by_zero.sh, line: 4, contains: ["workline:objection", "- scenario: By zero", "- kind: over-specified"], lacks: ["TestByZero"]}
