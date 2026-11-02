@@ -389,7 +389,9 @@ Ready, Ready on the tester: a deadlock, three hours on
   refused at load. Each step would wait on the next, full, for good.
 - **Why no deadlock remains**: a step waits only for room in its
   `next`. An issue counted in a state waits on nothing before it, only
-  on its own role and the states after. With no ring of limits, every
+  on its own role and the states after. Only the developer's state held
+  issues waiting on a step before it: the product owner and the tester
+  take any issue in theirs, whatever it waits on. With no ring of limits, every
   chain of waits ends at a state with no limit or no `next`, which
   drains; each state before it drains in turn. Tested by
   `routing/wip-ready-untested-*` and `routing/wip-no-deadlock-on-a-blocker`.
