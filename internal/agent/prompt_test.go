@@ -25,6 +25,36 @@ func TestPromptAsksForBlockScalars(t *testing.T) {
 	}
 }
 
+// A kind of task's own instruction is read in place of the role's, and
+// the output contract lists only the intentions it answers with (#878).
+func TestPromptOfAKindOfTask(t *testing.T) {
+	dir, run := t.TempDir(), t.TempDir()
+	for _, err := range []error{
+		os.WriteFile(filepath.Join(dir, "instruction.md"), []byte("Read every issue in full."), 0o644),
+		os.MkdirAll(filepath.Join(dir, "tasks"), 0o755),
+		os.WriteFile(filepath.Join(dir, "tasks", "kind.md"), []byte("Give each issue its kind."), 0o644),
+		os.MkdirAll(filepath.Join(run, "in"), 0o755),
+		os.MkdirAll(filepath.Join(run, "out"), 0o755),
+		os.WriteFile(filepath.Join(run, "in", "task.md"), []byte("#1 A title"), 0o644),
+	} {
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	r := &role.Role{Name: "product-owner", Dir: dir, Intentions: []string{"kind", "note", "close"},
+		InstructionFacet: "tasks/kind.md", TaskIntentions: []string{"kind", "note"}}
+	_, user, err := Prompt(Request{RunDir: run, Repo: t.TempDir(), Role: r.Asked()})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(user, "Give each issue its kind.") || strings.Contains(user, "in full") {
+		t.Errorf("the kind task's instruction is not the one read:\n%s", user)
+	}
+	if !strings.Contains(user, "- kind: {") || strings.Contains(user, "- close: {") {
+		t.Errorf("the contract lists other intentions than the task's:\n%s", user)
+	}
+}
+
 // An intention the engine applies but the agent is never shown the shape
 // of is one no agent proposes: the product owner's refine went unproposed
 // on DomoticsCore for that.

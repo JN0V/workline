@@ -109,9 +109,13 @@ func Prompt(req Request) (system, user string, err error) {
 		}
 		b.WriteString(text + "\n\n")
 	}
-	instruction, ok := facet(req, "instruction.md")
+	name := "instruction.md"
+	if req.Role.InstructionFacet != "" {
+		name = req.Role.InstructionFacet // a kind of task's own (role.ForTask)
+	}
+	instruction, ok := facet(req, name)
 	if !ok {
-		return "", "", fmt.Errorf("role %q has no instruction.md", req.Role.Name)
+		return "", "", fmt.Errorf("role %q has no %s", req.Role.Name, name)
 	}
 	b.WriteString(instruction + "\n\n")
 	task, err := os.ReadFile(filepath.Join(req.RunDir, "in", "task.md"))

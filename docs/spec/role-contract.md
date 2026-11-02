@@ -25,6 +25,7 @@ roles/<name>/
   post              deterministic: validates, decides the verdict
   lenses/*.md       the reviewer's: one facet per lens
   kinds/*.md        the auditor's: one facet per kind of act
+  tasks/*.md        optional: a kind of task's own instruction (model.tasks)
   skills/<n>/SKILL.md  optional: the role's own copy of a shared skill (see "Shared skills")
   docs/             about the role, never loaded: reference pages, status.md, tried.md (archived)
 ```
@@ -84,6 +85,10 @@ model:                          # what kind of thinking, never a model name
   timeout: 3m                   # how long one answer may take; 3m by default
   tasks:                        # a kind of task that needs other thinking, as pre
     condense: {tier: frontier}  # names it in in/task-kind; unset fields keep the role's
+    # kind: {instruction: tasks/kind.md, intentions: [kind, note]}
+    #   its own instruction facet, read in place of instruction.md, and the
+    #   few intentions its agent answers with; any other it answers is
+    #   dropped, said. What pre falls back on keeps the role's intentions.
 
 context:
   knowledge: []                 # which knowledge/ files to load; none by default
@@ -147,7 +152,7 @@ or reused on its own. The engine assembles them in a fixed order:
 |---|---|---|
 | `persona.md` | who the AI is in this role; goes in the system prompt | no |
 | `knowledge/*.md` | facts it needs; loaded only when listed in `context.knowledge` | no |
-| `instruction.md` | the task, in a few lines | yes |
+| `instruction.md` | the task, in a few lines; a kind of task may name its own (`model.tasks.<kind>.instruction`) | yes |
 | output contract | the schema of `out/intentions.yaml`, restricted to the role's `intentions` | generated |
 | `policy.md` | the rules it must follow | no |
 
