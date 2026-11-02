@@ -338,8 +338,12 @@ and a quiet night has no event to start it
   the forge, holding no runner. Then it reconciles.
 - **One heartbeat a branch**: a new one cancels the one waiting.
 - **The schedule and an issue labelled** start a reconcile only when the
-  last is over 55 minutes old: the heartbeat stopped. Each such run
-  starts it again.
+  last is over 55 minutes old and no heartbeat waits: the heartbeat
+  stopped. Each such run starts it again.
+- **When it last ran** is read from the reconciler's own runs, by name,
+  one API call: a run an issue's label starts may not write the Actions
+  cache, and the line's own labels each ran a reconcile, cancelling the
+  heartbeat waiting ([#853](https://github.com/JN0V/workline/issues/853)).
 - **No environment, or no wait timer** (a private repository on
   GitHub's free plan has none): no heartbeat, said in the run's
   summary; the schedule and the events run it, as before.
@@ -349,9 +353,10 @@ and a quiet night has no event to start it
   sandbox first.
 - **Cost a day**: 24 reconciles, each two short jobs, the heartbeat's
   a few seconds. API calls an hour: a reconcile's own (the open issues'
-  listing, one a blocked issue, 4 to list the runs going) and 2 for the
-  next heartbeat: about 20 on this repository, 10 issues blocked, 2 %
-  of the hour's 1,000.
+  listing, one a blocked issue, 4 to list the runs going, 1 for when it
+  last ran) and 2 for the next heartbeat: about 20 on this repository,
+  10 issues blocked, 2 % of the hour's 1,000; and 1 a `workline:`
+  label.
 - **Not chosen**:
   - an outside scheduler: nothing outside the forge;
   - a job that sleeps an hour: a runner held all day, and a private
