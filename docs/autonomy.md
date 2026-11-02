@@ -1,6 +1,6 @@
 ---
 sources: [internal/role/role.go, internal/doctor/levels.go, roles/product-owner/role.yaml, roles/developer/role.yaml]
-checked: 477bd024
+checked: 4447b0ab
 verified: agent:claude-code
 ---
 # Autonomy

@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine/candidate.go, internal/engine/code.go, internal/engine/backlog.go, internal/forge/forge.go, ci/github/release-candidate.yml, ci/github/workline-merge.yml]
-checked: 5966b607
+checked: 4447b0ab
 verified: agent:claude-code
 ---
 # The release candidate
@@ -78,6 +78,18 @@ merge: {autonomy: enterprising}
   says it (as a revert's, [at `normal`](merge-policy-normal.md)).
 - **Fixes still merge alone.** Once the milestone's new issues are
   merged and copied, the next candidate's issue opens.
+
+## What the summary says
+
+| Finding | When |
+|---|---|
+| `milestone-set` | a feature put in the next milestone |
+| `candidate-cut` | a branch cut, or the next candidate's issue opened |
+| `candidate-copied`, `candidate-copy-failed` | a fix copied onto the branch, or left to a person |
+| `candidate-shipped` | the version asked for on a person's yes |
+| `candidate-yes-reset`, `candidate-waits` | a yes taken off, or not taken: a bot's, before the tag, past what was tried |
+| `candidate-refused`, `candidate-refusal-ignored` | a candidate closed by a person, or by a hand that may not refuse it |
+| `candidate-unsupported` | the forge lists no milestone's issues |
 
 ## Set up
 

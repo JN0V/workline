@@ -90,7 +90,8 @@ gh secret delete WORKLINE_APP_PRIVATE_KEY -R OWNER/REPO    # the repository's ow
   is `refs/pull/<n>/merge`, never `main`.
 - **So only the default branch's workflow holds the key**:
   workline-apply.yml, after each pull request's run and on each push;
-  workline-merge.yml, on a label; gardening and the sample. Each records a
+  workline-merge.yml, on a label, a release candidate's issue's too;
+  gardening and the sample. Each records a
   deployment to `workline-app`.
 - **They read a pull request's run as data**: its artifacts, outside the
   checkout; the head the event names; only the agents' proposals
