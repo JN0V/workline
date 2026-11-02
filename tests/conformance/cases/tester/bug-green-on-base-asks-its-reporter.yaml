@@ -1,0 +1,38 @@
+case: tester/bug-green-on-base-asks-its-reporter
+about: >
+  No failing test, no fix (ADR-0060, decision 4): #3 is a bug, waiting
+  for its tests. The test the tester writes from its scenario passes on
+  main: the bug does not show there. No Draft is opened and the issue
+  does not go to ready; it keeps its state, gets workline:needs-repro,
+  and its reporter is asked how to reproduce it, in the tester's one
+  comment, with what comes next: Blocked as not reproduced past the
+  product owner's delay. Its kind stays bug.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "add 5 0 gives 4"
+        author: ann
+        insider: true
+        labels: ["bug", "workline:needs-tests"]
+        body: "## Need\n\nWhen I total an order with a free item, I want add to keep the price, so the total is right.\n\n## Validation\n\n- **Adding zero:** Given the library, When I add 5 and 0, Then I get 5.\n\n---\n\n## Verification\n\nA test in tests/.\n\n## Scope\n\n- `lib.sh`: `add`.\n"
+run: {test: [write, --issue, "3"], ai: "fake:tester-bug-not-shown"}
+expect:
+  status: pass
+  findings:
+    - {rule: bug-not-reproduced, level: warn, where: "#3", message: "each test written from its scenarios passes on the base"}
+  no-findings: [{rule: state-moved}, {rule: test-green-on-base}]
+  not-pushed: [workline/tester/issue-3]
+  forge:
+    merge-requests:
+      - {id: 1, absent: true}
+    issues:
+      - id: 3
+        labels: ["bug", "workline:needs-tests", "workline:needs-repro"]
+        comments: 1
+        comment-contains: ["**The tester** could not reproduce this bug", "`tests.test_add_zero`", "@ann, how do you reproduce it?", "blocks it as not reproduced", "never turned into a feature"]

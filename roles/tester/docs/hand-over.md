@@ -1,5 +1,5 @@
 ---
-sources: [internal/tester/moment.go, internal/tester/write.go, internal/tester/proof.go, routing.default.yaml, internal/tester/said.go, internal/tester/frozen.go, internal/tester/objection.go, internal/tester/green.go]
+sources: [internal/tester/moment.go, internal/tester/write.go, internal/tester/proof.go, routing.default.yaml, internal/tester/said.go, internal/tester/frozen.go, internal/tester/objection.go, internal/tester/green.go, internal/tester/repro.go]
 checked: f24259c6
 verified: agent:claude-code
 ---
@@ -92,6 +92,32 @@ When no new test fits, the tester's agent names the proof that does
 - **Refused**: a kind it does not know (`proof-kind-unknown`), one with
   no reason (`proof-reason-missing`), a `flaky-n-of-n` naming no test
   (`proof-test-missing`); the issue keeps its state.
+
+## A bug not reproduced
+
+A bug is reproduced before it is fixed
+([ADR-0060](../../../docs/adr/0060-the-person-is-on-the-loop.md#4-a-person-validates-by-the-issues-kind)):
+its tests must fail on the base. Its kind is its label
+([the kind](../../product-owner/docs/kind.md)).
+
+- **Its tests red on the base**: the Draft, as any issue. The fix
+  then merges by the policy once every gate passes
+  ([the merge](../../developer/docs/merge.md)).
+- **Every test green on the base** (`bug-not-reproduced`): no Draft,
+  never ready. The issue keeps its state and gets
+  `workline:needs-repro`; the tester's comment asks its reporter how to
+  reproduce it.
+- **Then, with no agent**, the line reads it
+  ([not reproduced](../../../docs/spec/routing.md#a-bug-not-reproduced)):
+  - its steps edited: the tester runs again;
+  - its reporter answers: back to refine, for the product owner;
+  - no answer within the product owner's delay (`acts.ask.wait`, 24 h
+    at `normal`): Blocked, reason "not reproduced".
+- **Never another kind**: a bug not shown is not turned into a feature,
+  nor fixed blind.
+- **A proof kind on a bug**: only new tests; `flaky-n-of-n`,
+  `existing-suite` or `docs-checks` are refused
+  (`bug-proof-new-tests`).
 
 ## When the tester refuses an issue
 

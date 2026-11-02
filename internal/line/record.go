@@ -100,6 +100,11 @@ type StateWrite struct {
 	// Holds: why the product owner held the issue in refine for a spec
 	// review, said on it with the record (#840): what it waits for.
 	Holds string `json:"holds,omitempty"`
+	// Repro: why a bug the tester could not reproduce goes back to
+	// refine, its reporter having answered (repro.go); Off, the labels a
+	// move takes off besides the states' — workline:needs-repro.
+	Repro string   `json:"repro,omitempty"`
+	Off   []string `json:"off,omitempty"`
 }
 
 const (
@@ -257,7 +262,7 @@ func writeState(f forge.Forge, cfg *routing.Config, repo string, w StateWrite, r
 			return err
 		}
 		card := board.Along(f, repo, BlockedState)
-		add, remove = card.Fold(add, remove)
+		add, remove = card.Fold(add, append(remove, w.Off...))
 		if err := f.Label(t, add, remove); err != nil {
 			return err
 		}
@@ -271,6 +276,11 @@ func writeState(f forge.Forge, cfg *routing.Config, repo string, w StateWrite, r
 		body = backlog.Said("workline's line", "waits to start this issue's next step", w.Waits,
 			"the next event on it, or the hourly reconcile, starts it when there is room; a person may raise the limit in routing.wip") +
 			"\n\n<!-- workline:" + recordMark + string(data) + " -->"
+	case w.Repro != "":
+		var err error
+		if body, err = reproBody(f, cfg, repo, t, w); err != nil {
+			return err
+		}
 	case w.Retest != "" || w.RetestKept != "":
 		var err error
 		if body, err = retestBody(f, cfg, repo, t, w); err != nil {
