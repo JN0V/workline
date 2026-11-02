@@ -390,10 +390,11 @@ jobs:
         (contains(github.event.comment.body, 'workline:sticky=reviewer/') || contains(github.event.comment.body, 'workline:sticky=gates/') ||
           (github.event.action == 'created' && github.event.comment.user.type != 'Bot' &&
             contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)))) ||
-      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'failure' &&
-        !startsWith(github.event.workflow_run.name, 'workline') && github.event.workflow_run.pull_requests[0] != null)
+      (github.event_name == 'workflow_run' && !startsWith(github.event.workflow_run.name, 'workline') &&
+        github.event.workflow_run.pull_requests[0] != null)
     runs-on: ubuntu-latest
-    permissions: {pull-requests: read}
+    # actions: a project's runs on the head, read when one ends.
+    permissions: {pull-requests: read, actions: read}
     outputs:
       branch: ${{ steps.pr.outputs.branch }}
     steps:
@@ -402,8 +403,21 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           PR: ${{ github.event.issue.number || inputs['pull-request'] || github.event.workflow_run.pull_requests[0].number }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
           printf '%s' "$PR" | grep -Eqx '[0-9]+' || { echo "::error title=workline::not a pull request number: $PR"; exit 64; }
+          # A project's run ended (#917): a round once all of its runs on
+          # that head are done, one of them failed, whichever ends last —
+          # a red one first, then a green one, wakes it all the same.
+          if [ -n "$SHA" ]; then
+            red=$(gh api "repos/$GH_REPO/actions/runs?head_sha=$SHA&per_page=100" --jq '[.workflow_runs[] | select(.name | ascii_downcase | startswith("workline") | not)] |
+              (all(.status == "completed") and any(.conclusion == "failure"))') || red=unread
+            case "$red" in
+              true) ;;
+              false) echo "the project's runs on $SHA: none failed, or one still runs: no round"; exit 0 ;;
+              *) echo "::warning title=workline::the project's runs on $SHA not read: the reconciler asks within the hour"; exit 0 ;;
+            esac
+          fi
           branch=$(gh pr view "$PR" --json headRefName,isCrossRepository,state --jq 'select((.isCrossRepository | not) and .state == "OPEN") | .headRefName')
           case "$branch" in
             workline/developer/*) echo "branch=$branch" >> "$GITHUB_OUTPUT" ;;

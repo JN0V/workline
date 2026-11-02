@@ -1856,7 +1856,7 @@ func TestDeveloperTemplatesRunTheReviewRound(t *testing.T) {
 	// own left out; the round reads the checks and their logs.
 	wr, _ := wf.On["workflow_run"].(map[string]any)
 	if fmt.Sprint(wr["workflows"]) != "[*]" || fmt.Sprint(wr["branches"]) != "[workline/developer/**]" ||
-		!strings.Contains(whose.If, "github.event.workflow_run.conclusion == 'failure'") || !strings.Contains(whose.If, "!startsWith(github.event.workflow_run.name, 'workline')") ||
+		!strings.Contains(whose.Steps[0].Run, `any(.conclusion == "failure")`) || whose.Permissions["actions"] != "read" || !strings.Contains(whose.If, "!startsWith(github.event.workflow_run.name, 'workline')") ||
 		review.Permissions["checks"] != "read" || review.Permissions["actions"] != "read" || wf.Jobs["reconcile"].Permissions["checks"] != "read" ||
 		!strings.Contains(wf.RunName, "format('workline develop round !{0}', github.event.workflow_run.pull_requests[0].number)") {
 		t.Errorf("workline-develop.yml: a project's failed workflow on the developer's branch does not wake a round, or the round and the reconciler cannot read the checks: %v %q %v", wr, whose.If, review.Permissions)

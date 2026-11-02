@@ -104,10 +104,11 @@ step 6).
 - **GitHub**: [workline-develop.yml](../../../ci/github/workline-develop.yml),
   its `review` jobs. The reviewer's comment or the gates', written or
   edited by workline's App, or a comment of a person of the project.
-  - **A project workflow failed** on a `workline/developer/` branch
-    (`workflow_run`, every workflow but workline's own): GitHub
-    sends no `check_run` nor `check_suite` event for its Actions' own
-    checks.
+  - **A project workflow ended** on a `workline/developer/` branch
+    (`workflow_run`, every workflow but workline's own): `whose`
+    starts a round once all the project's runs on that head are done,
+    one failed, whichever ended last. GitHub sends no `check_run` nor
+    `check_suite` event for its Actions' own checks.
   - A comment the job's own token writes wakes no workflow: the
     reviewer and the gates need the App.
   - **Hourly, the reconciler** starts a round an event missed, one run
