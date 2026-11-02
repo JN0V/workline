@@ -164,6 +164,20 @@ func value(m *yaml.Node, key string) *yaml.Node {
 // then it is the project's choice, returned as it is. It returns the level
 // in force afterwards, and whether the file changed.
 func SetAutonomy(repo, level string) (string, bool, error) {
+	return setLevel(repo, []string{"roles", "product-owner", "settings"}, level,
+		"How far the product owner goes alone (ADR-0026): cautious, normal or enterprising.")
+}
+
+// SetProjectAutonomy sets the project's default level, the top-level
+// `autonomy` (ADR-0060, §3), unless the project set one already: as
+// SetAutonomy.
+func SetProjectAutonomy(repo, level string) (string, bool, error) {
+	return setLevel(repo, nil, level,
+		"Each role's autonomy unless it sets its own (ADR-0060): cautious, normal or enterprising. The merge keeps merge: {autonomy: …}.")
+}
+
+// setLevel sets `autonomy` under the keys named, made when missing.
+func setLevel(repo string, under []string, level, comment string) (string, bool, error) {
 	file := filepath.Join(repo, ".workline", "config.yaml")
 	data, err := os.ReadFile(file)
 	if err != nil && !os.IsNotExist(err) {
@@ -205,21 +219,21 @@ func SetAutonomy(repo, level string) (string, bool, error) {
 		}
 		return v, nil
 	}
-	settings := top
-	for _, p := range []struct{ key, where string }{{"roles", ""}, {"product-owner", "roles."}, {"settings", "roles.product-owner."}} {
-		if settings, err = child(settings, p.key, p.where); err != nil {
+	settings, where := top, ""
+	for _, key := range under {
+		if settings, err = child(settings, key, where); err != nil {
 			return "", false, err
 		}
+		where += key + "."
 	}
 	switch v := value(settings, "autonomy"); {
 	case v == nil:
-		settings.Content = append(settings.Content, &yaml.Node{Kind: yaml.ScalarNode, Value: "autonomy",
-			HeadComment: "How far the product owner goes alone (ADR-0026): cautious, normal or enterprising."},
+		settings.Content = append(settings.Content, &yaml.Node{Kind: yaml.ScalarNode, Value: "autonomy", HeadComment: comment},
 			&yaml.Node{Kind: yaml.ScalarNode, Value: level})
 	case v.Kind == yaml.ScalarNode && v.Tag == "!!null":
 		v.Tag, v.Value, v.Style = "", level, 0 // `autonomy:` with nothing set: set now
 	case v.Kind != yaml.ScalarNode:
-		return "", false, fmt.Errorf(".workline/config.yaml: roles.product-owner.settings.autonomy is not a level: autonomy not set")
+		return "", false, fmt.Errorf(".workline/config.yaml: %sautonomy is not a level: autonomy not set", where)
 	default:
 		return v.Value, false, nil // the project's choice
 	}

@@ -16,7 +16,7 @@
 //	workline setup [--hooks yes|no] [--ai none|claude|...] [--install <tool,...>|none] [--yes]
 //	workline doctor [--repo <dir>] [--json]
 //	workline docs [--repo <dir>] [--ai ...]
-//	workline init [--repo <dir>] [--ai ...] [--roles <dir>] [--review] [--human-po yes|no] [--json]
+//	workline init [--repo <dir>] [--ai ...] [--roles <dir>] [--review] [--human-po yes|no] [--autonomy <level>] [--json]
 //	workline hook <git-hook-name> [args]  (called by the installed hooks)
 //	workline builtin <role> pre|post      (called by the shipped roles' scripts)
 package main
@@ -32,6 +32,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime/debug"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -2245,6 +2246,7 @@ func initCmd(args []string) int {
 	asJSON := fs.Bool("json", false, "print the result as JSON")
 	review := fs.Bool("review", false, "also have the reviewer review each merge request (ADR-0020): added to the project's merge-request line")
 	humanPO := fs.String("human-po", "", "yes when a person is the project's Product Owner: the product owner role proposes what sets direction (autonomy: cautious, ADR-0026); asked on a terminal")
+	autonomy := fs.String("autonomy", "", "the project's default autonomy level, each role's unless it sets its own (ADR-0060): cautious, normal or enterprising; the merge keeps merge: {autonomy: …}")
 	if code, done := parseOnly(fs, args); done {
 		return code
 	}
@@ -2301,6 +2303,22 @@ func initCmd(args []string) int {
 	default:
 		fmt.Fprintf(os.Stderr, "workline: --human-po %q: yes or no\n", *humanPO)
 		return 64
+	}
+	if *autonomy != "" {
+		if !slices.Contains(role.AutonomyLevels, *autonomy) {
+			fmt.Fprintf(os.Stderr, "workline: --autonomy %q: %s\n", *autonomy, strings.Join(role.AutonomyLevels, ", "))
+			return 64
+		}
+		level, changed, err := routing.SetProjectAutonomy(root, *autonomy)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "workline:", err)
+			return 1
+		}
+		if changed {
+			config += "; each role's autonomy is " + level + " unless it sets its own (autonomy: " + level + ")"
+		} else {
+			config += "; the project's default autonomy is " + level + ", as the project set it"
+		}
 	}
 	res := engine.Run(engine.Options{Repo: root, RolesDir: rolesDir, Role: "documentalist", Event: "init", AI: *ai, DefaultAI: userDefaultAI()})
 	if *asJSON {
