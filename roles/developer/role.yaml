@@ -91,3 +91,19 @@ settings:
   # verdict or a person's comment; past them, its issue goes
   # workline:blocked, the reason on it (ADR-0059; docs/review-loop.md).
   review-rounds: 5
+  # How far it goes alone before a person (ADR-0060, §3): cautious,
+  # normal or enterprising; unset, the project's top-level `autonomy`,
+  # else normal. `levels`, below, what each changes; review-rounds set
+  # here wins over the level.
+  autonomy: normal
+
+# What each autonomy level lays over the settings above, before the
+# project's own: the review rounds it runs alone before its issue is
+# blocked for a person. normal is the settings as they are.
+levels:
+  autonomy:
+    cautious:
+      review-rounds: 3
+    normal: {}
+    enterprising:
+      review-rounds: 8

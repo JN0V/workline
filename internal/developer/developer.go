@@ -66,6 +66,9 @@ type Settings struct {
 	// Rounds are the review rounds it runs on its pull request; past
 	// them, its issue blocked (ADR-0059).
 	Rounds int
+	// Level is its autonomy level, LevelFrom where it comes from
+	// (ADR-0060, §3): what its levels lay is Rounds; its task says both.
+	Level, LevelFrom string
 }
 
 // SettingsFrom reads the settings.
@@ -88,6 +91,7 @@ func SettingsFrom(m map[string]any) Settings {
 	if v, ok := m["proof-command"].(string); ok {
 		s.ProofCommand = strings.TrimSpace(v)
 	}
+	s.Level, s.LevelFrom = role.LevelOf(m, "autonomy")
 	return s
 }
 
@@ -572,6 +576,9 @@ func question(is forge.Issue, b Bounds, test string, testErr error, s Settings) 
 		fmt.Fprintf(&t, "- %d seconds at most: past them you are stopped, your edits kept as they are.\n", s.MaxSeconds)
 	}
 	t.WriteString("- No commit, no push, no branch: the engine commits your edits and opens the pull request.\n")
+	if s.Level != "" {
+		fmt.Fprintf(&t, "- Autonomy: %s (%s): %d review rounds on your pull request, then its issue is blocked for a person.\n", s.Level, s.LevelFrom, s.Rounds)
+	}
 	t.WriteString("\n## Your answer\n\nEdit the files in your worktree, your working directory (`WORKLINE_WORKTREE` for a command), and run the tests. ")
 	return t.String()
 }
@@ -918,7 +925,12 @@ func settingsIn(runDir string) (Settings, error) {
 	if err := json.Unmarshal(data, &m); err != nil {
 		return Settings{}, err
 	}
-	return SettingsFrom(m), nil
+	s := SettingsFrom(m)
+	if s.Level != "" && !slices.Contains(role.AutonomyLevels, s.Level) {
+		// A level someone believes in and nothing applies (principle 12).
+		return s, fmt.Errorf("autonomy: %q is not one of %s", s.Level, strings.Join(role.AutonomyLevels, ", "))
+	}
+	return s, nil
 }
 
 func final(runDir string, v verdict.Verdict) int {
