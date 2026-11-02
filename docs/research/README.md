@@ -46,6 +46,7 @@ stars and dates were checked against the GitHub API that day.
 | [inspector-coverage.md](inspector-coverage.md) | Which linter fits each language, how it is suggested and installed pinned, the licences that limit it, AI in its place |
 | [forge-boards.md](forge-boards.md) | What GitHub Projects and GitLab boards move on their own, what an App may write, what agents and trackers do when work starts |
 | [line-of-states.md](line-of-states.md) | Whether a line of states, each waking the next role, unblocks the line: six personas |
+| [reliable-schedule.md](reliable-schedule.md) | How a periodic job runs on time on GitHub Actions with nothing outside the forge and no runner held |
 
 ### Measured
 
