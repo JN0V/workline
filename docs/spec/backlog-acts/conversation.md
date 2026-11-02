@@ -22,7 +22,10 @@ issue's comments are the record; the state does not copy them.
 | Rounds before it under `acts.ask.rounds` (three) | Proposed on the issue: "Settle #N with its reporter, written to 3 times already", the questions or the text it would write (`asks-spent`) |
 
 A later ask thanks the reporter ("thank you; to refine this issue,
-still: …"). The agent is given the conversation in order — the engine's
+still: …"). An ask unanswered past `acts.ask.wait` is taken as the
+role's assumption, written on the issue
+([a question nobody answers](refine.md#a-question-nobody-answers)); a
+proposal to an outsider never times out: their issue is theirs. The agent is given the conversation in order — the engine's
 rounds among the people's comments — and the rounds spent.
 
 **A bot's issue** (`backlog.Bot`: a `[bot]` login, a GitLab project or

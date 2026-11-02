@@ -2790,6 +2790,15 @@ func (a *applier) apply(in intent.Intention) error {
 		return nil
 	case "blocked":
 		return nil // kept blocked: said in the role's one comment, nothing moved
+	case "assume":
+		// A question unanswered past the delay (ADR-0060): the assumption
+		// under the issue's Assumptions, said in the role's one comment
+		// (Persist); the person's sections left as they are.
+		d := a.plan.Decision(a.index)
+		if d == nil || d.Mode != backlog.Act {
+			return nil
+		}
+		return a.assume(d.Act)
 	case "split":
 		d := a.plan.Decision(a.index)
 		if d == nil || d.Mode != backlog.Act {

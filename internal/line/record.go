@@ -70,6 +70,10 @@ type Record struct {
 	// dates it, the line said it left that way.
 	Retest     string `json:"retest,omitempty"`
 	RetestKept string `json:"retest-kept,omitempty"`
+	// Timeout: in refine, what waited on a person past the product
+	// owner's delay that the line woke it for (ADR-0060) — `ask=N`, the
+	// question of round N; `drafts=<body>`, its drafts —: woken once.
+	Timeout string `json:"timeout,omitempty"`
 }
 
 // StateWrite is what the line writes on an issue once its step ran:
@@ -118,16 +122,29 @@ func bodyHash(body string) string {
 // none, the hash of the reviewer's comment on the issue's spec (""
 // with none), and why the tester's last word refused it ("" when not).
 func readRecordSpec(b forge.Backlog, id int) (Record, bool, string, string, error) {
-	r, had, spec, refused, _, err := readRecordAll(b, id)
-	return r, had, spec, refused, err
+	comments, err := b.Comments(forge.Target{Kind: "issue", ID: id})
+	if err != nil {
+		return Record{}, false, "", "", err
+	}
+	r, had, spec, refused := recordFrom(comments)
+	return r, had, spec, refused, nil
 }
 
-// readRecordAll is readRecordSpec, the issue's comments with it.
-func readRecordAll(b forge.Backlog, id int) (Record, bool, string, string, []string, error) {
-	comments, err := b.Comments(forge.Target{Kind: "issue", ID: id})
+// readRecordAll is readRecordSpec, the issue's comments with it, each
+// with when the forge dates it: a question's delay is counted from it
+// (ADR-0060).
+func readRecordAll(b forge.Backlog, id int) (Record, bool, string, string, []forge.Note, error) {
+	notes, err := b.Notes(forge.Target{Kind: "issue", ID: id})
 	if err != nil {
 		return Record{}, false, "", "", nil, err
 	}
+	r, had, spec, refused := recordFrom(forge.Bodies(notes))
+	return r, had, spec, refused, notes, nil
+}
+
+// recordFrom reads the record, the reviewer's spec hash and the
+// tester's refusal from an issue's comments.
+func recordFrom(comments []string) (Record, bool, string, string) {
 	spec := ""
 	for _, c := range slices.Backward(comments) {
 		if holdsSpecMark(c) {
@@ -136,7 +153,7 @@ func readRecordAll(b forge.Backlog, id int) (Record, bool, string, string, []str
 		}
 	}
 	r, had := recordIn(comments)
-	return r, had, spec, tester.Refused(comments), comments, nil
+	return r, had, spec, tester.Refused(comments)
 }
 
 // holdsSpecMark says whether comment c carries the reviewer's mark as
@@ -200,6 +217,7 @@ func due(s routing.State, is forge.Issue, labeled, spec string, rec Record, had 
 	}
 	if had && rec.State == now.State {
 		now.Stale, now.Kept = rec.Stale, rec.Kept // a stale move undone stays known in its state
+		now.Timeout = rec.Timeout                 // a delay passed wakes the role once in its state
 	}
 	now.Retest, now.RetestKept = rec.Retest, rec.RetestKept // a move to its tests stays known through the states after
 	if rec.State == BlockedState {

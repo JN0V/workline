@@ -1,0 +1,50 @@
+case: routing/question-timeout-listed-no-agent
+about: >
+  Cheap (ADR-0060): in CI the reconciler lists an issue whose question
+  timed out with the issues due, no agent asked, nothing written; one
+  woken already for that question (its record's timeout) is not listed
+  again; nor one whose question, as the forge dates its comment, is
+  inside the delay.
+given:
+  repo: backlog
+  config:
+    routing: {events: {issue: [product-owner]}}
+  forge:
+    issues:
+      - id: 9
+        title: "workline version --verbose=false"
+        author: ann
+        insider: true
+        labels: [workline:to-refine]
+        body: "## Need\n\nWhen I run `workline version --verbose=false`, I want the plain line, so my scripts read it.\n\n## Validation\n\n- **Plain line:** Given workline installed, When I run `workline version --verbose=false`, Then it prints one line.\n\n---\n\n## Verification\n\nA test runs the command and reads one line.\n\n## Scope\n\nsrc/export/csv.go"
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - {body: "@ann, to refine this issue: Should `--verbose=false` print the plain line, as `--short` does?\n\n<!-- workline:product-owner/ask -->", created: "2026-10-01T23:50:00Z"}
+          - "**workline's line** last woke the product-owner on this issue, in its state refine (1 state step so far).\n\n<!-- workline:line-record {\"state\":\"refine\",\"body\":\"206c8bcea856\",\"hops\":1} -->\n<!-- workline:sticky=line/state -->"
+      - id: 10
+        title: "workline version --verbose=false"
+        author: ann
+        insider: true
+        labels: [workline:to-refine]
+        body: "## Need\n\nWhen I run `workline version --verbose=false`, I want the plain line, so my scripts read it.\n\n## Validation\n\n- **Plain line:** Given workline installed, When I run `workline version --verbose=false`, Then it prints one line.\n\n---\n\n## Verification\n\nA test runs the command and reads one line.\n\n## Scope\n\nsrc/export/csv.go"
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - {body: "@ann, to refine this issue: Should `--verbose=false` print the plain line, as `--short` does?\n\n<!-- workline:product-owner/ask -->", created: "2026-10-01T23:50:00Z"}
+          - "**workline's line** last woke the product-owner on this issue, in its state refine (1 state step so far).\n\n<!-- workline:line-record {\"state\":\"refine\",\"body\":\"206c8bcea856\",\"hops\":1,\"timeout\":\"ask=1\"} -->\n<!-- workline:sticky=line/state -->"
+      - id: 11
+        title: "workline version --verbose=false"
+        author: ann
+        insider: true
+        labels: [workline:to-refine]
+        body: "## Need\n\nWhen I run `workline version --verbose=false`, I want the plain line, so my scripts read it.\n\n## Validation\n\n- **Plain line:** Given workline installed, When I run `workline version --verbose=false`, Then it prints one line.\n\n---\n\n## Verification\n\nA test runs the command and reads one line.\n\n## Scope\n\nsrc/export/csv.go"
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - {body: "@ann, to refine this issue: Should `--verbose=false` print the plain line, as `--short` does?\n\n<!-- workline:product-owner/ask -->", created: "2099-10-01T23:50:00Z"}
+          - "**workline's line** last woke the product-owner on this issue, in its state refine (1 state step so far).\n\n<!-- workline:line-record {\"state\":\"refine\",\"body\":\"206c8bcea856\",\"hops\":1} -->\n<!-- workline:sticky=line/state -->"
+run: {route: reconcile, ai: "fake:assume-plain-line", input: {reconcile: list}}
+expect:
+  status: pass
+  agent-calls: 0
+  summary: "reconcile: 1 issue due: #9"
+  findings: [{rule: state-timeout, where: "#9"}]
+  no-findings: [{rule: state-timeout, where: "#10"}, {rule: state-timeout, where: "#11"}]

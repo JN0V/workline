@@ -1,5 +1,5 @@
 ---
-sources: [roles/product-owner/instruction.md, internal/backlog/backlog.go, internal/backlog/repeat.go, internal/work/work.go, internal/backlog/plain.go]
+sources: [roles/product-owner/instruction.md, internal/backlog/backlog.go, internal/backlog/repeat.go, internal/work/work.go, internal/backlog/plain.go, internal/backlog/assume.go]
 checked: a7467d4f
 verified: agent:claude-code
 ---
@@ -164,6 +164,29 @@ amended; [worked case](proposed-headings.md#each-thing-said-once)):
   description on GitHub, Gitea and Forgejo; the "changed the
   description" note on GitLab, compared with the version before on its
   Premium plan.
+
+## Assumptions
+
+A question nobody answers stops nothing
+([ADR-0060](../../../docs/adr/0060-the-person-is-on-the-loop.md#1-questions-time-out-as-lazy-consensus)):
+past the level's delay ([settings](settings.md#how-long-a-question-waits)),
+the product owner goes on with its best answer, written plainly.
+
+```markdown
+## Assumptions
+
+- Assumption taken on 2026-11-02, the question of 2026-11-01 unanswered
+  after 24 h: `--verbose=false` prints the plain line, as other flags do.
+```
+
+- **Its own section, at the end of the body**: your Need, Example and
+  Validation are never rewritten; the assumption sits beside them.
+- **Said in its comment** too: "Assumption taken on #844: …. Answer
+  here, or edit its line under Assumptions in the issue, to change it."
+- **A draft unanswered** is taken as written, its line saying so.
+- **To correct one**: answer on the issue, or edit its line. Your answer
+  marks the line "Answered by @you", and the product owner reworks what
+  it built on it, back to refine if it was ready.
 
 ## Proposed next
 

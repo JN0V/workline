@@ -115,6 +115,11 @@ type Config struct {
 	// besides refine (ADR-0059, amended). Set by the caller, from the
 	// run's input.
 	RevisitFrom string
+	// Wait: how long a question to a person, or a draft no person
+	// accepted, waits before the role goes on with its assumption
+	// (acts.ask.wait, ADR-0060): never at cautious, 24 h at normal, at
+	// once at enterprising.
+	Wait Delay
 }
 
 // ScopeFile is where, in the run's folder, pre lists the issues an event
@@ -206,6 +211,11 @@ func ReadConfig(settings map[string]any) (Config, error) {
 		if !isList {
 			return c, fmt.Errorf("archived: %v is not a list of file paths or globs", v)
 		}
+	}
+	acts, _ := settings["acts"].(map[string]any)
+	ask, _ := acts["ask"].(map[string]any)
+	if c.Wait, err = ReadWait(ask["wait"]); err != nil {
+		return c, err
 	}
 	level, _ := settings[byLevel].(map[string]any)
 	preset := Settings(level)

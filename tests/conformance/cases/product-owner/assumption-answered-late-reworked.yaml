@@ -1,0 +1,35 @@
+case: product-owner/assumption-answered-late-reworked
+about: >
+  A late answer (ADR-0060): an assumption was taken and the issue went
+  on to ready; then its reporter answered against it. Their word stands
+  over the assumption: its line is marked answered, with no agent, and
+  the agent is told to rework what it built on it — here, back to
+  refine.
+given:
+  repo: backlog
+  forge:
+    issues:
+      - id: 9
+        title: "workline version --verbose=false"
+        author: ann
+        insider: true
+        labels: [workline:ready]
+        body: "## Need\n\nWhen I run `workline version --verbose=false`, I want the plain line, so my scripts read it.\n\n## Validation\n\n- **Plain line:** Given workline installed, When I run `workline version --verbose=false`, Then it prints one line.\n\n---\n\n## Verification\n\nA test runs the command and reads one line.\n\n## Scope\n\nsrc/export/csv.go\n\n## Assumptions\n\n- Assumption taken on 2026-10-03, the question of 2026-10-01 unanswered after 24 h: `--verbose=false` prints the plain line, as other flags do."
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: a95bfae56042\nheard: 0\nassumed: 1\nassumed-at: \"2026-10-03T00:00:00Z\"\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - {body: "@ann, to refine this issue: Should `--verbose=false` print the plain line, as `--short` does?\n\n<!-- workline:product-owner/ask -->", created: "2026-10-01T23:50:00Z"}
+          - {body: "No: keep the verbose line, my scripts use `--short`.", author: ann, insider: true, created: "2026-10-05T08:00:00Z"}
+run: {role: product-owner, event: schedule, ai: fake:unready-after-late-answer}
+expect:
+  status: pass
+  run-files:
+    in/task.md: {contains: "@ann wrote after the assumptions you took on it"}
+  forge:
+    issues:
+      - id: 9
+        labels: [workline:to-refine]
+        body-contains:
+          - "## Need\n\nWhen I run `workline version --verbose=false`, I want the plain line, so my scripts read it.\n\n## Validation\n\n- **Plain line:** Given workline installed, When I run `workline version --verbose=false`, Then it prints one line.\n\n---\n\n## Verification\n\nA test runs the command and reads one line.\n\n## Scope\n\nsrc/export/csv.go\n\n## Assumptions"
+          - "as other flags do. Answered by @ann on "
+          - ": their answer stands over it."
+        comment-contains: "Moved #9 back to refine"

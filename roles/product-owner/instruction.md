@@ -141,6 +141,15 @@ draft at all, and write instead:
   does what it asks; with `close-obsolete` off, it is said on the issue
   for a person to close.
 
+**A question nobody answered.** When the task says your question got no
+answer in the delay, or your level does not wait, give `assume` with
+`assumption`: your best answer to it, one plain sentence, from what the
+issue, its comments and the code show. The engine writes it under the
+issue's Assumptions, never in a person's section. Then go on as if it
+were the answer: refine what is missing, `ready` when evident. Ask
+nothing more on it. A section a person edited under Assumptions is
+their answer: read it as one.
+
 **A role's text on top.** When the task says an issue's description —
 the text above its sections — is a role's and no person edited it (an
 item imported from a file, another role's finding), give it as the

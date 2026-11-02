@@ -1,0 +1,35 @@
+case: product-owner/question-enterprising-assumed-at-once
+about: >
+  Enterprising (ADR-0060): the role asks its question and writes its
+  assumption in the same run — the question to the reporter, the
+  assumption under the issue's Assumptions — and the issue moves on.
+given:
+  repo: backlog
+  config:
+    roles:
+      product-owner:
+        settings:
+          autonomy: enterprising
+  forge:
+    issues:
+      - id: 9
+        title: "workline version --verbose=false"
+        author: ann
+        insider: true
+        labels: [workline:to-refine]
+        body: "## Need\n\nWhen I run `workline version --verbose=false`, I want the plain line, so my scripts read it.\n\n## Validation\n\n- **Plain line:** Given workline installed, When I run `workline version --verbose=false`, Then it prints one line.\n\n---\n\n## Verification\n\nA test runs the command and reads one line.\n\n## Scope\n\nsrc/export/csv.go"
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"
+run: {role: product-owner, event: schedule, ai: fake:ask-and-assume-plain-line}
+expect:
+  status: pass
+  run-files:
+    in/task.md: {contains: "A question you ask does not wait (acts.ask.wait 0): beside each `ask`, give an `assume`"}
+  forge:
+    issues:
+      - id: 9
+        labels: [workline:ready]
+        body-contains:
+          - "## Need\n\nWhen I run `workline version --verbose=false`, I want the plain line, so my scripts read it.\n\n## Validation\n\n- **Plain line:** Given workline installed, When I run `workline version --verbose=false`, Then it prints one line.\n\n---\n\n## Verification\n\nA test runs the command and reads one line.\n\n## Scope\n\nsrc/export/csv.go\n\n## Assumptions"
+          - ", asked in the same run, the role going on at once (acts.ask.wait 0): `--verbose=false` prints the plain line, as other flags do."
+        comment-contains: ["@ann, to refine this issue: Should `--verbose=false` print the plain line, as `--short` does?", "Assumption taken on #9:"]

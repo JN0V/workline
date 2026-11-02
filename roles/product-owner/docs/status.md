@@ -159,6 +159,13 @@ in [tests/evaluation/cases/product-owner](../../../tests/evaluation/cases/produc
 - **A blocked issue read again**, on news or a week on, sent back or
   kept blocked ([#833](https://github.com/JN0V/workline/issues/833)):
   routing's `blocked-*`, `unblock-only-to-where-it-came-from`.
+- **A question times out into an assumption**, by level — cautious
+  waits, normal 24 h, enterprising at once —; a draft unanswered taken
+  as written; a late answer reworked
+  ([ADR-0060](../../../docs/adr/0060-the-person-is-on-the-loop.md#1-questions-time-out-as-lazy-consensus),
+  [#858](https://github.com/JN0V/workline/issues/858)): `question-*`,
+  `assumption-*`, `draft-unanswered-taken-as-written`,
+  `draft-enterprising-taken-at-once`, routing's `question-*`.
 - **A hidden record that does not read is said**:
   `broken-state-writes-nothing`,
   `proposal-unread-agreement-writes-nothing`,

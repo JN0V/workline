@@ -1,0 +1,3 @@
+# A person answered against the assumption after the issue went on: the
+# product owner undoes what it built on it (ADR-0060).
+- unready: {issue: 9, why: "@ann answered: the verbose line stays, so the plain line it was made ready for no longer holds."}

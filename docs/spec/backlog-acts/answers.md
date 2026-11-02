@@ -1,6 +1,6 @@
 ---
 type: reference
-sources: [internal/backlog/ledger.go, internal/builtin/productowner/productowner.go, internal/backlog/spec.go]
+sources: [internal/backlog/ledger.go, internal/builtin/productowner/productowner.go, internal/backlog/spec.go, internal/backlog/assume.go]
 status: draft
 checked: edc4ffc2
 verified: agent:claude-code
@@ -18,7 +18,8 @@ each open issue what a person did since the last (ADR-0038):
 | comments, being its reporter or of the project, on an issue waiting on them | "revise": the issue read first, the agent told so; a `refine` rewrites the sections the role may rewrite (`backlog.Own`: the Verification and the Scope always, [ADR-0060](../../adr/0060-the-person-is-on-the-loop.md); the person's part while a draft, or a text as the role wrote it), never a person's Need or Validation; 👀 on each comment read (`React`; GitLab's "already taken" is done); one line in reply (`<!-- workline:product-owner/reply=<id> -->`); `revisions` counted — one a run, whatever the comments; at `acts.ask.rounds` less one, a new comment is left to a person (`left-to-a-person`): its state's comment edited to say so (`left:` the comment's author), no new comment |
 | takes `workline:proposed` off, without a yes | "not now": its proposals dropped, `aside` kept in its state with its body's digest, and what they wrote up to the label's removal heard with it (`heard`, from the forge's label events); nothing proposed nor done on it (`set-aside`) but the engine's upkeep — a `keep`, a closed blocker's link taken off, a slip moved — until its body changes or a counted comment comes; never a demotion |
 | comments on an issue with nothing waiting on them — set aside, read and left, never read | read first, the agent told that what they say decides; no 👀, no reply. One set aside, its body as it was then, is said "Brought back by a comment from @x on <day>" (its body changed, it is back for that, said as any other comment), the comment quoted, never "set aside": the agent treats it as any issue at its level — completes, proposes, moves to ready — unless the comment says otherwise ("not now", "leave it", "I'll do it"). Set aside, it is so no more once the run decides an act on it; nothing decided, it stays so, said in the summary (`set-aside`) |
-| edits its body | read again; a section edited is theirs; a section the role wrote and they deleted (`deleted`) is never written again |
+| comments after an assumption the role took ([ADR-0060](../../adr/0060-the-person-is-on-the-loop.md#1-questions-time-out-as-lazy-consensus)) | each line under Assumptions marked "Answered by @x on <day>", with no agent; then "revise", as above: what the role built on it rewritten |
+| edits its body | read again; a section edited is theirs; a section the role wrote and they deleted (`deleted`) is never written again; a line they edit under Assumptions is their answer |
 | closes it | its proposals settled; never reopened |
 
 **Who counts**: the reporter and the project's people — GitHub's author

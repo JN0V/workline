@@ -1,6 +1,6 @@
 ---
 type: reference
-sources: [internal/backlog/backlog.go, internal/backlog/proof.go, internal/backlog/plain.go, internal/backlog/repeat.go, internal/backlog/write.go, internal/work/headings.go, internal/work/work.go, internal/work/scenarios.go, internal/backlog/scenarios.go, internal/forge/forge.go, internal/engine/backlog.go]
+sources: [internal/backlog/backlog.go, internal/backlog/assume.go, internal/backlog/proof.go, internal/backlog/plain.go, internal/backlog/repeat.go, internal/backlog/write.go, internal/work/headings.go, internal/work/work.go, internal/work/scenarios.go, internal/backlog/scenarios.go, internal/forge/forge.go, internal/engine/backlog.go]
 status: draft
 checked: ae4bddea
 verified: agent:claude-code
@@ -182,7 +182,8 @@ what it can and asks for the rest:
 
 - **`ask`** comments on the issue, naming its reporter, with the agent's
   questions. The answer is a person's comment: the issue is read again at
-  the next run. An `ask` beside a `sources` the same run does alone for
+  the next run. Unanswered past `acts.ask.wait`, it times out
+  ([below](#a-question-nobody-answers)). An `ask` beside a `sources` the same run does alone for
   the same issue is not asked (`code-first`, `codeFirst`): the issue is
   read again with that code first, and its reporter never asked what the
   code answers ([#548](https://github.com/JN0V/workline/issues/548)),
@@ -191,6 +192,52 @@ what it can and asks for the rest:
 - An issue whose body a person changed since it was read — a draft
   accepted, a section written — is read again (its state's `body`, a
   digest of the body when it was last read or written by the engine).
+
+## A question nobody answers
+
+[ADR-0060](../../adr/0060-the-person-is-on-the-loop.md#1-questions-time-out-as-lazy-consensus):
+a question unanswered for the level's delay is taken as the role's
+assumption, written on the issue, and the issue goes on.
+
+```yaml
+- assume: {issue: 14, assumption: "CSV, as the other exports.", why: "No answer in 24 h."}
+```
+
+- **The delay**, `acts.ask.wait` (`backlog.Delay`): `never` at
+  `cautious`, `24h` at `normal`, `"0"` at `enterprising`
+  ([settings](../../../roles/product-owner/docs/settings.md#how-long-a-question-waits)).
+  Counted from the question's comment as the forge dates it
+  (`created_at`, `backlog.Unanswered`), never from the issue's last
+  update; a comment after it, anyone's but the engine's, is an answer
+  and cancels it. A forge that dates no comment: never timed out
+  (`assume-undated`).
+- **Told once**: past the delay, the task says so for that issue
+  (`told` in the state); the line wakes the role on it once
+  ([routing](../routing.md#once-a-state-the-record)). At `"0"`, the task
+  asks an `assume` beside each `ask`.
+- **`assume`** is done alone, at every level the delay allows, checked:
+  a question waiting past the delay, or asked in this run at `"0"`; not
+  taken already (`assumed` in the state, the question's round). Dropped
+  otherwise: `assume-early`, `assume-waits` (`never`),
+  `assume-nothing-asked`, `assumed-already`, `assume-empty`.
+- **Written in the body**, under `## Assumptions` at its end, above a
+  footer (`backlog.WithAssumption`): "- Assumption taken on <day>, the
+  question of <day> unanswered after 24 h: <assumption>." Need, Example,
+  Validation and the builder's part are left as they are. Said in the
+  role's one comment: "Assumption taken on #14: …. Answer here, or edit
+  its line under Assumptions in the issue, to change it."
+- **A draft is a question too**: a Need or Validation draft no person
+  accepted, all that keeps the issue from ready (`backlog.OnlyDrafts`),
+  waits the same delay, from when the forge says the issue got
+  `workline:draft`, or a person's later comment. Past it, the engine
+  moves the issue to ready with no agent, its draft marks out, a line
+  under Assumptions saying the draft was taken as written; an agent's
+  `ready` passes so too. At `cautious`, `ready` still needs a person.
+- **A late answer**: a counted comment after the assumption
+  (`assumed-at`) marks each line "Answered by @x on <day>: their answer
+  stands over it", with no agent, and is read as a person's comment on
+  what the role proposed: its own sections rewritten, `unready` if ready
+  and no longer true ([answers](answers.md)).
 
 ## No test possible: a proof kind picked
 

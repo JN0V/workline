@@ -74,9 +74,12 @@ is on each issue; you answer there
 | not now | take `workline:proposed` off | proposes nothing more on that issue until you edit it or comment |
 | it should not exist | close it | never reopens it |
 
-- **Silence is never a yes.** Past `proposals-max` issues waiting, the
-  role reads only those you commented on, and labels no more: the next
-  wait for room.
+- **Silence is never a yes** to close, merge or release. Past
+  `proposals-max` issues waiting, the role reads only those you
+  commented on, and labels no more: the next wait for room.
+- **A question you leave unanswered** does not stop the issue: past a
+  delay, 24 h at `normal`, the role writes its assumption on the issue
+  for you to correct ([how long it waits](docs/settings.md#how-long-a-question-waits)).
 - **Three rounds at most** (the draft, two revisions), then one line
   "left to a person" in the summary, and said in its own comment on the
   issue: who wrote, why it stops, what comes next.

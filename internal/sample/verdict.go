@@ -100,7 +100,7 @@ func kindOf(a Act) string {
 		}
 	case productOwner:
 		switch {
-		case a.Kind == "ready", a.Kind == "refine", a.Kind == "sources", a.Kind == "ask", a.Kind == "split":
+		case a.Kind == "ready", a.Kind == "refine", a.Kind == "sources", a.Kind == "ask", a.Kind == "assume", a.Kind == "split":
 			return a.Kind
 		case a.Kind == "order", a.Kind == "milestone", a.Kind == "estimate":
 			return "order"

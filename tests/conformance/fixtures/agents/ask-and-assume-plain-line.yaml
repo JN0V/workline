@@ -1,0 +1,5 @@
+# At a level that goes on at once (ADR-0060): the question asked, the
+# assumption written in the same run, the issue moved on.
+- ask: {issue: 9, questions: "Should `--verbose=false` print the plain line, as `--short` does?", why: "The flag's value is not said."}
+- assume: {issue: 9, assumption: "`--verbose=false` prints the plain line, as other flags do.", why: "The level goes on at once."}
+- ready: {issue: 9, why: "Its four sections are a person's; the assumption settles the open point."}
