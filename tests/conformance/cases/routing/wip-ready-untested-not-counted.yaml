@@ -1,0 +1,38 @@
+case: routing/wip-ready-untested-not-counted
+about: >
+  Ready at its limit of 1 with an issue that waits for its own tests,
+  and an issue in Tests (#854): the issue in Ready is not one the
+  developer can take, so it is not counted (ADR-0059, amended
+  2026-11-02). The tester starts on #6, writes its tests, and #6 moves
+  to Ready. Counted, #1 would keep the tester waiting, and the tester
+  would keep #1 waiting: a deadlock.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+    routing: {events: {issue: [tester, developer]}, wip: {ready: 1}}
+  forge:
+    issues:
+      - id: 1
+        title: "Add"
+        labels: ["workline:ready"]
+        body: "## Need\n\nI want to add.\n\n## Validation\n\n- **Two and three:** Given the library, When I add 2 and 3, Then I get 5.\n"
+      - id: 6
+        title: "Multiply two numbers"
+        labels: ["workline:needs-tests"]
+        body: "## Need\n\nWhen I total an order, I want to multiply a price by a count, so I need not add it up by hand.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **By zero:** Given the library, When I multiply 5 by 0, Then I get 0.\n\n---\n\n## Verification\n\nA test a scenario, in tests/.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+run: {route: issue, target: {issue: 6}, open-merge-request: true, ai: "fake:tester-two-scenarios"}
+expect:
+  status: pass
+  agent-calls: 1
+  findings: [{rule: state-wakes, level: info, where: "#6", message: "its state, tests, wakes the tester"}]
+  no-findings: [{rule: state-waits}]
+  pushed:
+    workline/tester/issue-6:
+      tests/test_mul_two_by_three.sh: "Scenario: Two by three"
+  forge:
+    issues:
+      - {id: 1, labels: ["workline:ready"], comments: 0}
+      - {id: 6, labels: ["workline:ready"]}

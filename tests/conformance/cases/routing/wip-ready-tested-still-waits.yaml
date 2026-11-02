@@ -1,0 +1,40 @@
+case: routing/wip-ready-tested-still-waits
+about: >
+  Ready at its limit of 2 with issues whose tests are there (#854): #1
+  has its tester's Draft open, #2 a proof kind recorded in place of
+  one. Both are the developer's to take, so both are counted: the
+  issue in Tests still waits for room, said on it, as before. No agent
+  asked.
+given:
+  repo: tested
+  config:
+    routing: {events: {issue: [tester, developer]}, wip: {ready: 2}}
+  forge:
+    issues:
+      - id: 1
+        title: "Add"
+        labels: ["workline:ready"]
+        body: "## Need\n\nI want to add.\n\n## Validation\n\n- **Two and three:** Given the library, When I add 2 and 3, Then I get 5.\n"
+      - id: 2
+        title: "Subtract"
+        labels: ["workline:ready"]
+        body: "## Need\n\nI want to subtract.\n\n## Validation\n\n- **Five less three:** Given the library, When I subtract 3 from 5, Then I get 2.\n"
+        comments: ["**The tester** records the proof of this issue: existing-suite, no new test.\n\n<!-- workline:tester-proof {\"kind\":\"existing-suite\",\"reason\":\"no new test fits it\"} -->\n<!-- workline:sticky=tester/issue -->"]
+      - id: 6
+        title: "Multiply"
+        labels: ["workline:needs-tests"]
+        body: "## Need\n\nI want to multiply.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n"
+    merge-requests:
+      - {id: 9, branch: workline/tester/issue-1, draft: true}
+run: {route: issue, target: {issue: 6}, open-merge-request: true, ai: "fake:tester-two-scenarios"}
+expect:
+  status: pass
+  agent-calls: 0
+  summary: "issue: #6 waits: ready holds 2 open issues, its limit 2"
+  findings: [{rule: state-waits, level: info, where: "#6", message: "its state, tests, waits to wake the tester: ready holds 2 open issues, its limit 2 (routing.wip)"}]
+  forge:
+    issues:
+      - id: 6
+        labels: ["workline:needs-tests"]
+        comments: 1
+        comment-contains: ["ready holds 2 open issues, its limit 2", "\"waits\":\"ready\""]

@@ -1,0 +1,34 @@
+case: routing/wip-no-deadlock-on-a-blocker
+about: >
+  The other deadlock between two limited states (#854): Ready, at its
+  limit of 1, holds #1, which waits on #6, an issue in Tests. Counted,
+  #1 would keep the tester off #6, and #6 would keep #1 waiting, for
+  good. An issue that waits on another is not one the developer can
+  take: not counted, the tester starts on #6.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+    routing: {events: {issue: [tester, developer]}, wip: {ready: 1}}
+  forge:
+    issues:
+      - id: 1
+        title: "Total an order"
+        labels: ["workline:ready"]
+        body: "## Need\n\nI want to total an order.\n\nBlocked by #6\n"
+      - id: 6
+        title: "Multiply two numbers"
+        labels: ["workline:needs-tests"]
+        body: "## Need\n\nWhen I total an order, I want to multiply a price by a count, so I need not add it up by hand.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **By zero:** Given the library, When I multiply 5 by 0, Then I get 0.\n\n---\n\n## Verification\n\nA test a scenario, in tests/.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+run: {route: issue, target: {issue: 6}, open-merge-request: true, ai: "fake:tester-two-scenarios"}
+expect:
+  status: pass
+  agent-calls: 1
+  findings: [{rule: state-wakes, level: info, where: "#6", message: "its state, tests, wakes the tester"}]
+  no-findings: [{rule: state-waits}]
+  forge:
+    issues:
+      - {id: 1, labels: ["workline:ready"], comments: 0}
+      - {id: 6, labels: ["workline:ready"]}
