@@ -71,7 +71,15 @@ func Load(repo, name string) (*Gate, error) {
 	}
 	g, ok := cfg.Gates[name]
 	if !ok {
-		return nil, fmt.Errorf("no gate named %q in .workline/config.yaml", name)
+		if len(cfg.Gates) == 0 {
+			return nil, fmt.Errorf("no gate named %q in .workline/config.yaml: no gate is declared", name)
+		}
+		names := make([]string, 0, len(cfg.Gates))
+		for n := range cfg.Gates {
+			names = append(names, n)
+		}
+		sort.Strings(names)
+		return nil, fmt.Errorf("no gate named %q in .workline/config.yaml; the gates declared: %s", name, strings.Join(names, ", "))
 	}
 	return &g, nil
 }
