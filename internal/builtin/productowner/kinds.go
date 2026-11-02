@@ -74,15 +74,25 @@ func lightKinds(candidates []forge.Issue, full []due, mode string, max int, wait
 const claimLabel = "workline:developing"
 
 // nearMerge says how near an issue is to a merge that waits on its kind:
-// 2 a developer is on it, 1 ready, 0 otherwise.
+// 2 a developer is on it, 1 ready or at its tests, 0 otherwise.
 func nearMerge(is forge.Issue) int {
 	switch {
 	case slices.Contains(is.Labels, claimLabel):
 		return 2
-	case slices.Contains(is.Labels, backlog.LabelReady):
+	case slices.Contains(is.Labels, backlog.LabelReady), slices.Contains(is.Labels, backlog.LabelNeedsTests):
 		return 1
 	}
 	return 0
+}
+
+// kindAsked is the line a full read gives an issue no kind label tells,
+// naming it: an answer may otherwise give it none (#895). None while the
+// kind act is off.
+func kindAsked(is forge.Issue, st *backlog.State, mode string) string {
+	if mode == backlog.Off || !unkinded(is, st) {
+		return ""
+	}
+	return fmt.Sprintf("Kind: none yet — propose `kind` on #%d: bug, feature or task, and why.\n", is.ID)
 }
 
 var htmlComment = regexp.MustCompile(`(?s)<!--.*?-->`)

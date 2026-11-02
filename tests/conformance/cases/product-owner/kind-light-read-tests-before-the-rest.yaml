@@ -1,0 +1,29 @@
+case: product-owner/kind-light-read-tests-before-the-rest
+about: >
+  An issue at its tests (`workline:needs-tests`) is as near a merge as a
+  ready one: the kind's light read takes it before the rest of the
+  backlog (#895). One place a run here: #10 goes before #9.
+given:
+  repo: backlog
+  config:
+    roles:
+      product-owner:
+        settings: {acts: {kind: {max: 1}}}
+  forge:
+    issues:
+      - {id: 9, title: "Export to JSON", body: "Add a JSON export.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 10, title: "Rows lost on export", body: "The export loses the last row.", author: ann, insider: true, labels: [workline:needs-tests], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:kind-light-tests}
+expect:
+  status: pass
+  calls: [{agent: fake, task: kind}]
+  run-files:
+    in/task.md:
+      contains: ["Open issues to label with their kind: 1.", "## #10 Rows lost on export"]
+      not-contains: ["## #9"]
+  findings:
+    - {rule: done, where: "#10", message: "Labelled #10 `bug`, a bug"}
+  forge:
+    issues:
+      - {id: 10, labels: [workline:needs-tests, bug]}
+      - {id: 9, labels: []}

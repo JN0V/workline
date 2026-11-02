@@ -793,7 +793,9 @@ func Pre(runDir, repo string) int {
 	// build writes the task of the first n issues to read: each issue with
 	// its state once read, recorded only once the agent answers; the
 	// others in the backlog's order, given whole when on the same code, by
-	// title otherwise; the code they name; nothing is written yet.
+	// title otherwise; the code they name; nothing is written yet. Each
+	// issue no kind tells is asked its kind by name (#895).
+	kindAct, kindMax := kindMode(cfg, ledger.Demoted(cfg.UndoneMax))
 	build := func(n int) (taskBuilt, error) {
 		t := taskBuilt{wasRead: map[int]bool{}}
 		var task strings.Builder
@@ -812,7 +814,7 @@ func Pre(runDir, repo string) int {
 			files := named(repo, d.is, d.st, d.comments, aboutIt, tracked)
 			filesOf[d.is.ID] = files
 			noCode = noCode || len(files) == 0
-			review := written
+			review := written + kindAsked(d.is, d.st, kindAct)
 			if r := backlog.SpecOpen(d.is, d.comments); cfg.SpecReview && r != nil {
 				review += specFindings(d.is, d.st, d.comments, r)
 			}
@@ -955,7 +957,6 @@ func Pre(runDir, repo string) int {
 	// The kind's light read (#878): the issues read before, no kind label,
 	// by title and the start of their body, within what the kind act's
 	// cap leaves once the n issues read in full are counted.
-	kindAct, kindMax := kindMode(cfg, ledger.Demoted(cfg.UndoneMax))
 	waiting := ledger.Waiting(open) >= cfg.ProposalsMax
 	light := lightKinds(kindless, toRead[:n], kindAct, kindMax, waiting)
 	for n > 0 {
