@@ -180,11 +180,13 @@ func Fenced(l, open string) string {
 // NoResponse is what an issue form writes for a field left empty.
 const NoResponse = "_No response_"
 
-// Heading reads a section's heading line, "## Name" or "### Name".
+// Heading reads a section's heading line, "## Name" or "### Name". One
+// naming a Gherkin scenario, "### Scenario: Old debt", is no section: a
+// scenario of the section it lies in (Scenarios).
 func Heading(line string) (string, bool) {
 	line = strings.TrimRight(line, "\r")
 	for _, p := range []string{"## ", "### "} {
-		if h, ok := strings.CutPrefix(line, p); ok {
+		if h, ok := strings.CutPrefix(line, p); ok && !keyword.MatchString(strings.TrimSpace(h)) {
 			return strings.TrimSpace(h), true
 		}
 	}

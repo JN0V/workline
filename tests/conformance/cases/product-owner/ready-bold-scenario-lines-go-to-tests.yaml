@@ -1,0 +1,19 @@
+case: product-owner/ready-bold-scenario-lines-go-to-tests
+about: >
+  Scenarios written as a bold `**Scenario: …**` line, their Given / When
+  / Then bullets below, are read like workline's own form (#855): the
+  product owner's ready sends the issue to its tests, workline:needs-tests.
+  The Validation is the one a real issue was written with.
+given:
+  repo: backlog
+  config:
+    routing: {events: {schedule: [product-owner], issue: [tester, developer]}}
+  forge:
+    issues:
+      - {id: 9, title: "A pattern starting with ./ matches nothing", body: "## Need\n\nA person who writes a path pattern starting with `./` wants it to match the same files as without it.\n\n## Validation\n\n**Scenario: a leading `./` matches**\n- Given the pattern `./docs/archive/**`\n- When it is matched against `docs/archive/old.md`\n- Then it matches\n\n**Scenario: a doubled slash matches**\n- Given the pattern `docs//archive/**`\n- When it is matched against `docs/archive/old.md`\n- Then it matches\n\n**Scenario: a file at the root**\n- Given the pattern `./*.md`\n- When it is matched against `README.md`\n- Then it matches\n\n**Scenario: other files still do not match**\n- Given the pattern `./docs/archive/**`\n- When it is matched against `src/a.go`\n- Then it does not match\n\n**Scenario: today's patterns unchanged**\n- Given the patterns already tested, such as `docs/**` against `docs` and `src/**` against `../src/a`\n- When they are matched\n- Then each gives the same answer as today\n\n---\n\n## Verification\n\nA new test checks the first four scenarios.\n\n## Scope\n\nsrc/export/csv.go", author: ann, insider: true, labels: [workline:to-refine], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:ready-nine}
+expect:
+  no-findings: [{rule: scenarios-unread}]
+  forge:
+    issues:
+      - {id: 9, labels: [workline:needs-tests], comment-lacks: "no scenario the tester reads"}

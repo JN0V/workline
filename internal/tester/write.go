@@ -41,10 +41,7 @@ const (
 
 // Scenario is one of an issue's Validation scenarios: its name, as the
 // test names it, and its Given / When / Then.
-type Scenario struct {
-	Name string `json:"name"`
-	Text string `json:"text"`
-}
+type Scenario = work.Scenario
 
 // task is what pre leaves for post, in in/tests-task.json.
 type task struct {
@@ -62,31 +59,10 @@ type task struct {
 
 const taskFile = "tests-task.json"
 
-// scenarioLine is a Validation bullet opening on its name in bold:
-// `- **Old debt:** Given …`, the colon inside the bold or after it.
-var scenarioLine = regexp.MustCompile(`^\s*[-*+]\s+\*\*([^*]+?):?\*\*:?\s*(.*)$`)
-
-// Scenarios reads the named scenarios of a Validation section, one a
-// bullet opening on its name in bold, its lines until the next bullet.
-func Scenarios(validation string) []Scenario {
-	var out []Scenario
-	for _, l := range strings.Split(validation, "\n") {
-		if m := scenarioLine.FindStringSubmatch(l); m != nil {
-			out = append(out, Scenario{Name: strings.TrimSpace(m[1]), Text: strings.TrimSpace(m[2])})
-			continue
-		}
-		t := strings.TrimSpace(l)
-		switch {
-		case t == "":
-		case strings.HasPrefix(t, "- ") || strings.HasPrefix(t, "* "):
-			// a bullet with no name: not a scenario a test can cite
-			out = append(out, Scenario{Text: strings.TrimSpace(t[2:])})
-		case len(out) > 0:
-			out[len(out)-1].Text += " " + t
-		}
-	}
-	return slices.DeleteFunc(out, func(s Scenario) bool { return s.Name == "" })
-}
+// Scenarios reads the named scenarios of a Validation section, in the
+// forms people write them (work.Scenarios): the one parser the product
+// owner, the tester and the developer read them with.
+func Scenarios(validation string) []Scenario { return work.Scenarios(validation) }
 
 // Pre prepares the task: the issue the run targets, ready, its named
 // scenarios, the Scope's code and the tests beside it.

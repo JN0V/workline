@@ -63,7 +63,8 @@ workline test write --issue 42 --ai claude
   with no Draft), its Validation a list of
   named scenarios, as the product owner writes them
   ([writing an issue](../product-owner/docs/writing.md)):
-  `- **Old debt:** Given …, When …, Then …`.
+  `- **Old debt:** Given …, When …, Then …`; a `**Scenario: Old debt**`
+  or `Scenario: Old debt` line with its steps below is read too.
 - **What the agent reads**: the scenarios, the Need, Verification and
   Scope, the files the Scope names (a folder named: its own files; a
   pattern such as `src/calc/*.sh`: the files it matches),
