@@ -20,5 +20,5 @@ expect:
       - {id: 1, description: "workline: the issue webhook (ADR-0059)"}
       - {id: 2, absent: true}
     hooks:
-      - {id: 1, url-contains: "/projects/1/ref/main/trigger/pipeline?token={token}&variables[WORKLINE_TASK]=issue", issue-events: true, trigger: 1}
+      - {id: 1, url-contains: "/projects/1/ref/main/trigger/pipeline?token={token}&variables[WORKLINE_TASK]=issue", issue-events: true, note-events: false, trigger: 1}
       - {id: 2, absent: true}

@@ -160,7 +160,9 @@ Built first, whatever else.
 - **On GitLab the webhook fires on the engine's own writes too**: the
   state label it sets starts the next step's pipeline, no explicit
   start. Any other event of the engine (a comment, a label that is no
-  state) exits at once, read from the payload's `user` and `changes`.
+  state) exits at once, read from the payload's `user` and `changes`;
+  the reviewer's comment on a spec in refine starts refine's step
+  ([amended](#amendment-2026-11-02-gitlabs-hook-hears-the-spec-review)).
 - **On a machine**, the next loop of `reconcile`.
 - **Not a handoff**: `max-handoffs` caps handoffs inside one line run.
   A state hop is a new run. Hops are counted per issue in its record
@@ -297,6 +299,30 @@ waiting on the maintainer to free it.
 - **Not chosen**: like a stale bot ([research](../research/product-owner.md#closing-on-silence-announced-first-2026-10-05)),
   activity alone moving the issue out — a role's verdict would be
   undone by a "+1".
+
+## Amendment (2026-11-02): GitLab's hook hears the spec review
+
+Settles [#846](https://github.com/JN0V/workline/issues/846): §8 named the
+hook "on issue and note events"; it was built on issue events alone. A
+reviewer's comment on a spec, written in refine's run, woke the product
+owner an hour later at best; on GitHub, the apply that wrote it starts
+the step.
+
+- **The hook on issue and note events**, where the reviewer is routed
+  on `issue`; on issue events alone else. `workline setup` creates it
+  so, or turns its note events on; `doctor` warns when they are off.
+- **One comment names an issue**: the reviewer's on the spec of an issue
+  in refine (its marker, the issue's labels in the event). The line then
+  says whether refine is due, as on a label: its record holds the
+  review read, so the same review twice runs nothing.
+- **Every other comment exits at once**: the engine's own records and
+  states, a person's, any on a merge request. The engine's comments
+  never start a run: one event, at most one run.
+- **Not chosen**: GitHub's explicit start from GitLab's apply job. Its
+  state labels fire the hook already: a second pipeline of the same
+  step at each hop, for the one comment that needs it.
+- **Cost**: every comment in the project starts a short pipeline that
+  mostly exits at once, as every issue change does already.
 
 [ADR-0024]: 0024-obsolete-is-announced-then-closed-on-silence-and-a-second-judge.md
 [ADR-0028]: 0028-an-issue-names-what-it-waits-on.md

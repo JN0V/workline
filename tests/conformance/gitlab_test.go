@@ -119,7 +119,8 @@ type mockHook struct {
 	ID          int    `json:"id"`
 	URL         string `json:"url"`
 	IssueEvents bool   `json:"issues_events"`
-	Alert       string `json:"alert_status,omitempty"`
+	NoteEvents  bool   `json:"note_events"`
+	Alert      string `json:"alert_status,omitempty"`
 	Token       string `json:"token,omitempty"`
 }
 
@@ -369,7 +370,7 @@ func (m *gitlabMock) serve(s *gitlabState, method, p string, q, form url.Values)
 	case p == "/hooks" && method == "GET":
 		out := []map[string]any{}
 		for _, h := range s.Hooks {
-			v := map[string]any{"id": h.ID, "url": h.URL, "issues_events": h.IssueEvents, "alert_status": cmp.Or(h.Alert, "executable"), "url_variables": []any{}}
+			v := map[string]any{"id": h.ID, "url": h.URL, "issues_events": h.IssueEvents, "note_events": h.NoteEvents, "alert_status": cmp.Or(h.Alert, "executable"), "url_variables": []any{}}
 			if h.Token != "" {
 				v["url_variables"] = []any{map[string]any{"key": "token"}}
 			}
@@ -377,7 +378,7 @@ func (m *gitlabMock) serve(s *gitlabState, method, p string, q, form url.Values)
 		}
 		return out, 200
 	case p == "/hooks" && method == "POST":
-		h := mockHook{ID: 1, URL: form.Get("url"), IssueEvents: form.Get("issues_events") == "true", Token: form.Get("url_variables[][value]")}
+		h := mockHook{ID: 1, URL: form.Get("url"), IssueEvents: form.Get("issues_events") == "true", NoteEvents: form.Get("note_events") == "true", Token: form.Get("url_variables[][value]")}
 		for _, o := range s.Hooks {
 			h.ID = max(h.ID, o.ID+1)
 		}
@@ -389,6 +390,9 @@ func (m *gitlabMock) serve(s *gitlabState, method, p string, q, form url.Values)
 			if s.Hooks[i].ID == id {
 				if form.Has("issues_events") {
 					s.Hooks[i].IssueEvents = form.Get("issues_events") == "true"
+				}
+				if form.Has("note_events") {
+					s.Hooks[i].NoteEvents = form.Get("note_events") == "true"
 				}
 				return map[string]any{"id": id}, 200
 			}

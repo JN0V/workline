@@ -2,7 +2,9 @@ package forge
 
 // GitLab starts no pipeline on a label: a project webhook on issue events,
 // pointed at the project's own trigger URL, does (ADR-0059, decision 8;
-// docs/gitlab-trigger.md). `workline setup` creates it and its trigger
+// docs/gitlab-trigger.md); on note events too where the reviewer reads a
+// spec in refine's run, its comment waking the product owner (#846).
+// `workline setup` creates it and its trigger
 // token, `workline doctor` reads them. Both need a Maintainer's token.
 // The token never leaves the calls: the hook holds it as a masked URL
 // variable, which GitLab never shows again, and no message says it.
@@ -27,9 +29,9 @@ type IssueHook interface {
 	// WORKLINE_TASK=issue, and workline's trigger token.
 	IssueHook() (HookState, error)
 	// SetIssueHook creates what is missing, the trigger token and the
-	// hook, or turns the hook's issue events on: what it did, none when
-	// all was there.
-	SetIssueHook() ([]string, error)
+	// hook, or turns the hook's issue events on, and its note events with
+	// notes: what it did, none when all was there.
+	SetIssueHook(notes bool) ([]string, error)
 }
 
 var _ IssueHook = &gitlab{}
@@ -38,6 +40,7 @@ var _ IssueHook = &gitlab{}
 type HookState struct {
 	Found       bool   // a hook to the project's trigger URL with WORKLINE_TASK=issue
 	IssueEvents bool   // it fires on issue events
+	NoteEvents  bool   // it fires on note events: the reviewer's comment on a spec
 	Alert       string // GitLab's alert_status: executable, temporarily_disabled, disabled
 	Ref         string // the branch its URL starts pipelines on
 	Default     string // the project's default branch
@@ -48,6 +51,7 @@ type gitlabHook struct {
 	ID          int    `json:"id"`
 	URL         string `json:"url"`
 	IssueEvents bool   `json:"issues_events"`
+	NoteEvents  bool   `json:"note_events"`
 	Alert       string `json:"alert_status"`
 }
 
@@ -165,7 +169,7 @@ func (g *gitlab) IssueHook() (HookState, error) {
 		return s, err
 	}
 	if h, ref, ok := issueHook(hooks, id, path, branch); ok {
-		s.Found, s.IssueEvents, s.Alert, s.Ref = true, h.IssueEvents, h.Alert, ref
+		s.Found, s.IssueEvents, s.NoteEvents, s.Alert, s.Ref = true, h.IssueEvents, h.NoteEvents, h.Alert, ref
 	}
 	triggers, err := g.triggers()
 	if err != nil {
@@ -178,12 +182,13 @@ func (g *gitlab) IssueHook() (HookState, error) {
 }
 
 // SetIssueHook creates the trigger token and the hook when no hook is
-// there; a hook there with its issue events off gets them on; one GitLab
+// there, on issue events, and on note events with notes; a hook there
+// with those events off gets them on, never off; one GitLab
 // disabled, or on another branch, is said, left for a person to mend: its
 // token is not read back. A trigger
 // token of workline's whose value GitLab shows (the token's user owns it)
 // is used again, else a new one is created.
-func (g *gitlab) SetIssueHook() ([]string, error) {
+func (g *gitlab) SetIssueHook(notes bool) ([]string, error) {
 	id, path, branch, err := g.projectRefs()
 	if err != nil {
 		return nil, err
@@ -196,12 +201,19 @@ func (g *gitlab) SetIssueHook() ([]string, error) {
 		return nil, err
 	}
 	if h, ref, ok := issueHook(hooks, id, path, branch); ok {
-		var did []string
+		var did, on []string
+		args := []string{"-X", "PUT", fmt.Sprintf("projects/:id/hooks/%d", h.ID), "-f", "url=" + h.URL}
 		if !h.IssueEvents {
-			if _, err := g.api("-X", "PUT", fmt.Sprintf("projects/:id/hooks/%d", h.ID), "-f", "url="+h.URL, "-f", "issues_events=true"); err != nil {
+			args, on = append(args, "-f", "issues_events=true"), append(on, "issue")
+		}
+		if notes && !h.NoteEvents {
+			args, on = append(args, "-f", "note_events=true"), append(on, "note")
+		}
+		if len(on) > 0 {
+			if _, err := g.api(args...); err != nil {
 				return nil, err
 			}
-			did = append(did, fmt.Sprintf("turned on the issue events of webhook %d", h.ID))
+			did = append(did, fmt.Sprintf("turned on the %s events of webhook %d", strings.Join(on, " and "), h.ID))
 		}
 		if h.Alert == "disabled" || h.Alert == "temporarily_disabled" {
 			did = append(did, fmt.Sprintf("webhook %d is there, but GitLab disabled it after its calls failed: Settings → Webhooks, read its recent events, fix the cause, then Enable", h.ID))
@@ -240,7 +252,7 @@ func (g *gitlab) SetIssueHook() ([]string, error) {
 	target := fmt.Sprintf("%s/projects/%s/ref/%s/trigger/pipeline?token={token}&variables[WORKLINE_TASK]=issue",
 		g.base, id, url.PathEscape(branch))
 	out, err := g.api("-X", "POST", "projects/:id/hooks", "-f", "name=workline", "-f", "url="+target,
-		"-f", "issues_events=true", "-f", "push_events=false",
+		"-f", "issues_events=true", "-f", "note_events="+strconv.FormatBool(notes), "-f", "push_events=false",
 		"-f", "url_variables[][key]=token", "-f", "url_variables[][value]="+token)
 	if err != nil && strings.Contains(err.Error(), token) { // an answer quoting the form: the token never said
 		return did, fmt.Errorf("%w: %s", errRefused, strings.ReplaceAll(err.Error(), token, "[token]"))
@@ -250,7 +262,11 @@ func (g *gitlab) SetIssueHook() ([]string, error) {
 	}
 	var h gitlabHook
 	_ = json.Unmarshal(out, &h)
-	return append(did, fmt.Sprintf("created webhook %d on issue events: %s", h.ID, target)), nil
+	events := "issue events"
+	if notes {
+		events = "issue and note events"
+	}
+	return append(did, fmt.Sprintf("created webhook %d on %s: %s", h.ID, events, target)), nil
 }
 
 // Forbidden says whether err is the forge refusing the token's role or
