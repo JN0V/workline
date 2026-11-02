@@ -1204,6 +1204,30 @@ func (p *Plan) summary(role string) {
 			p.Silent[id] = silentWhy(id, lacks, p.config.Notes, len(p.read))
 		}
 	}
+	// An issue read in full that no kind tells, and the answer gave it
+	// none (#895): said, never silent; the light read gives it one.
+	if s, ok := p.settings["kind"]; !ok || s.Mode != Off {
+		kinded, closed := map[int]bool{}, p.closedInRun()
+		for _, d := range p.Decisions {
+			if d.Act.Do == "kind" {
+				kinded[d.Act.Issue] = true // done, proposed or dropped: said either way
+			}
+		}
+		for _, id := range p.read {
+			is, ok := p.issues[id]
+			if !ok || kinded[id] || closed[id] || p.aside(id) {
+				continue
+			}
+			if k, _ := KindOf(is.Labels); k != "" {
+				continue
+			}
+			if st := p.ledger.States[id]; st != nil && st.Kind != "" {
+				continue // set once; a person's change or removal stands
+			}
+			p.Findings = append(p.Findings, verdict.Finding{Rule: "kind-missing", Level: "warn", Where: fmt.Sprintf("#%d", id),
+				Message: "read in full, and the agent gave it no kind: read for its kind alone, by its title and body, at a later scheduled run"})
+		}
+	}
 	for _, id := range sortedKeys(p.SetAside) {
 		p.Findings = append(p.Findings, verdict.Finding{Rule: "set-aside", Level: "info", Where: fmt.Sprintf("#%d", id),
 			Message: p.ledger.States[id].labelOr() + " taken off without a yes: nothing more is proposed until it changes or someone comments"})

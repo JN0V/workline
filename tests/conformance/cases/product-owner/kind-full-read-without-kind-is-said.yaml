@@ -1,0 +1,28 @@
+case: product-owner/kind-full-read-without-kind-is-said
+about: >
+  A full read asks the kind of each issue no kind label tells, by its
+  number (#895), and an answer that gives none is said, never silent:
+  its kind is read alone at a later scheduled run. #9 has no kind and
+  the agent gave it none: said. #10 is a person's bug: no kind asked,
+  nothing said.
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "## Need\n\nThe monthly report counts every sale.\n\n## Verification\n\nA test writes three rows.\n\n## Validation\n\nAnn opens a known day.\n\n## Scope\n\nsrc/export/csv.go", author: ann, insider: true, labels: [workline:to-refine], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 10, title: "Rows lost again", body: "## Need\n\nThe monthly report counts every sale.\n\n## Verification\n\nA test writes three rows.\n\n## Validation\n\nAnn opens a known day.\n\n## Scope\n\nsrc/export/csv.go", author: ann, insider: true, labels: [workline:to-refine, bug], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:kind-full-none}
+expect:
+  status: pass
+  run-files:
+    in/task.md:
+      contains: ["Kind: none yet — propose `kind` on #9"]
+      not-contains: ["`kind` on #10"]
+  findings:
+    - {rule: kind-missing, where: "#9", message: "read in full, and the agent gave it no kind"}
+  no-findings:
+    - {rule: kind-missing, where: "#10"}
+  forge:
+    issues:
+      - {id: 9, labels: [workline:ready]}
+      - {id: 10, labels: [bug, workline:ready]}

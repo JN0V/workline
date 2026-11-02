@@ -33,7 +33,11 @@ flowchart LR
 ## What it does
 
 - **On each issue it reads with no kind label**, the agent proposes
-  `kind`: `bug`, `feature` or `task`, and why.
+  `kind`: `bug`, `feature` or `task`, and why. The task names each
+  such issue: "Kind: none yet — propose `kind` on #888".
+- **An answer that gives none** is said in the run, `kind-missing`,
+  never silent; the light read below gives it its kind
+  ([#895](https://github.com/JN0V/workline/issues/895)).
 - **The label**: the first of the project's names for that kind it
   has; none, the first name, created by the forge as it labels.
 
@@ -60,7 +64,8 @@ changes. A light read gives it a kind
   its body, never its code nor its comments.
 - **Which issues**: open, no kind label, no kind the role set before,
   not set aside. First those a merge waits on: a developer on it
-  (`workline:developing`), then ready; then the backlog's order.
+  (`workline:developing`), then ready or at its tests
+  (`workline:needs-tests`); then the backlog's order.
   Gardening runs only, never a run woken for one issue.
 - **How many**: the act's cap, less the issues read in full this run
   with no kind. None while the act is `off`; none at `cautious` once
