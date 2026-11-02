@@ -86,9 +86,10 @@ October 2026, an hourly `51 * * * *` with gaps of several hours).
   cancelling the heartbeat waiting
   ([#853](https://github.com/JN0V/workline/issues/853)).
 - **The workflow's runs**, `GET /repos/{owner}/{repo}/actions/workflows/{id}/runs`:
-  any run may read them, one call. The reconciler's runs are named
-  (`run-name`), so their status says whether one waits, and the last
-  that succeeded, its `updated_at`, when it ended.
+  any run may read them, 100 a page, newest first: one call while fewer
+  than 100 issue runs came since the last reconcile. The reconciler's
+  runs are named (`run-name`), so their status says whether one waits,
+  and the last that succeeded, its `updated_at`, when it ended.
 
 ## Piggy-backing on the line's runs, alone
 

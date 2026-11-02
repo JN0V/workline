@@ -1,6 +1,6 @@
 <!-- workline
 sources: [ci/github/workline-develop.yml, .github/workflows/workline-develop.yml]
-checked: b8417ba5
+checked: 2e6d1ae9
 -->
 # The reconciler's heartbeat
 
@@ -30,9 +30,10 @@ reconcile starts the next one:
   - due, the heartbeat stopped: it starts a reconcile, `workline develop
     reconcile`, which starts the heartbeat again.
 - **When it last ran**: read from the workflow's runs, named
-  `workline develop heartbeat` and `workline develop reconcile`, one
-  call. Not the Actions cache: a run started by a label may not write it
-  ([#853](https://github.com/JN0V/workline/issues/853)).
+  `workline develop heartbeat` and `workline develop reconcile`: one
+  call a page of 100 runs, newest first, read on until one that
+  succeeded, 5 pages at most. Not the Actions cache: a run started by a
+  label may not write it ([#853](https://github.com/JN0V/workline/issues/853)).
 
 ## Set it up
 
