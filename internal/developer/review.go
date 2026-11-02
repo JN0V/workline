@@ -82,6 +82,7 @@ type round struct {
 	FiveWhys bool     `json:"five-whys"`
 	Person   bool     `json:"person"`       // past the last round: no agent, a person
 	At       string   `json:"at,omitempty"` // its branch's head, where its fix starts
+	GatesAt  string   `json:"gates-at,omitempty"` // the head the gates' findings asked were read at
 }
 
 // reviewRows reads the findings of the reviewer's comment: what blocks,
@@ -119,7 +120,7 @@ func reviewRows(comment string) (asked []Asked, nits int) {
 // one resolved, the latest first.
 func lineDetails(asked []Asked, threads []forge.Thread, wrote func(forge.Note) bool) {
 	for i, a := range asked {
-		if a.Holds == "a person" {
+		if a.Holds == "a person" || a.Holds == gateHolds {
 			continue
 		}
 		_, title, _ := strings.Cut(strings.TrimPrefix(a.Key, a.Lens+"|"), "|")
@@ -224,45 +225,17 @@ func reviewPre(runDir, repo string, s Settings, id int) int {
 			Findings: []verdict.Finding{{Rule: "record-unread", Where: where,
 				Message: "a round reads what the last ones did from the developer's record on its pull request, workline's own comment: none it can read, so no round is counted; a person takes it"}}})
 	}
-	r := round{MR: id, Branch: mr.Branch, Record: a}
-	for _, m := range reviewerMarkers {
-		c, ok := kept.Last(m)
-		if !ok {
-			continue
-		}
-		asked, nits := reviewRows(c)
-		r.Asked, r.Nits = append(r.Asked, asked...), r.Nits+nits
-		if m := reviewerRuns.FindStringSubmatch(c); m != nil {
-			n, _ := strconv.Atoi(m[1])
-			r.Runs += n
-		}
-	}
-	if th, ok := f.(forge.Threaded); ok && len(r.Asked) > 0 {
-		threads, err := th.Threads(id)
-		if err != nil {
-			return external(err)
-		}
-		lineDetails(r.Asked, threads, kept.Wrote)
-	}
-	notes, err := b.Notes(target)
-	if err != nil && !errors.Is(err, forge.ErrAuthorsUnknown) {
-		return external(err)
-	}
-	own, err := forge.OwnAccount(f)
-	if err != nil {
+	// The gates read at its branch's head, checked out; a head git
+	// cannot read fails the round below.
+	head, _ := gitOut(repo, "rev-parse", "HEAD")
+	r, newReview, err := readAsked(f, b, kept, a, id, head)
+	if errors.Is(err, errOwnAccount) {
 		return fail(err)
 	}
-	for _, n := range notes {
-		if !n.Insider || n.Bot || own.Wrote(n) || slices.Contains(a.Heard, n.ID) || strings.Contains(n.Body, "<!-- workline:") {
-			continue
-		}
-		r.Heard = append(r.Heard, n.ID)
-		r.Asked = append(r.Asked, Asked{Key: "person|" + n.ID, Where: "@" + n.Author, Text: strings.TrimSpace(n.Body), Holds: "a person"})
+	if err != nil {
+		return external(err)
 	}
-	newReview := r.Runs > a.ReviewRuns
-	if !newReview { // the review read already: only a person's comment is new
-		r.Asked = slices.DeleteFunc(r.Asked, func(x Asked) bool { return x.Holds != "a person" })
-	}
+	r.Branch = mr.Branch
 	if a.Handed {
 		return final(runDir, verdict.Verdict{Status: verdict.Pass, Summary: "a person has its pull request: the developer runs no more rounds",
 			Findings: []verdict.Finding{{Rule: "review-to-a-person", Level: "info", Where: where, Message: fmt.Sprintf("past round %d, a person of the project takes it from here", a.Round)}}})
@@ -270,7 +243,7 @@ func reviewPre(runDir, repo string, s Settings, id int) int {
 	if len(r.Asked) == 0 {
 		v := verdict.Verdict{Status: verdict.Pass, Summary: "nothing the review asks: no round"}
 		if !newReview {
-			v.Summary = "nothing new since its last round: it waits for the reviewer's next verdict"
+			v.Summary = "nothing new since its last round: it waits for the reviewer's next verdict, or the gates' next report"
 		}
 		if r.Nits > 0 && newReview {
 			v.Findings = append(v.Findings, verdict.Finding{Rule: "nits-not-asked", Level: "info", Where: where,
@@ -319,6 +292,95 @@ func reviewPre(runDir, repo string, s Settings, id int) int {
 	return ask(runDir, repo, r.At, bounds, roundTask(r, *is, bounds, s, ts.Command, tsErr))
 }
 
+var errOwnAccount = errors.New("workline's own account")
+
+// ErrRecordUnread: the developer's record on its merge request, workline's
+// own comment, was not read; on GitHub with an App, WORKLINE_APP_ID names
+// the account its comments are trusted from.
+var ErrRecordUnread = errors.New("the developer's record on it was not read as workline's own comment (with a GitHub App, WORKLINE_APP_ID names it)")
+
+// readAsked reads what a round on merge request id asks, no agent: the
+// reviewer's findings when it reviewed since the last round, the gates'
+// new findings when they reported on head since it (head "": not
+// known), a person's comments not heard yet. fresh: the reviewer or the
+// gates said something new.
+func readAsked(f forge.Forge, b forge.Backlog, kept forge.Kept, a Act, id int, head string) (r round, fresh bool, err error) {
+	r = round{MR: id, Record: a}
+	for _, m := range reviewerMarkers {
+		c, ok := kept.Last(m)
+		if !ok {
+			continue
+		}
+		asked, nits := reviewRows(c)
+		r.Asked, r.Nits = append(r.Asked, asked...), r.Nits+nits
+		if m := reviewerRuns.FindStringSubmatch(c); m != nil {
+			n, _ := strconv.Atoi(m[1])
+			r.Runs += n
+		}
+	}
+	newReview := r.Runs > a.ReviewRuns
+	if !newReview { // the review read already
+		r.Asked = nil
+	}
+	if th, ok := f.(forge.Threaded); ok && len(r.Asked) > 0 {
+		threads, err := th.Threads(id)
+		if err != nil {
+			return r, false, err
+		}
+		lineDetails(r.Asked, threads, kept.Wrote)
+	}
+	at, gates := gatesAsked(kept, a, head)
+	r.GatesAt, r.Asked = at, append(r.Asked, gates...)
+	target := forge.Target{Kind: "merge-request", ID: id}
+	notes, err := b.Notes(target)
+	if err != nil && !errors.Is(err, forge.ErrAuthorsUnknown) {
+		return r, false, err
+	}
+	own, err := forge.OwnAccount(f)
+	if err != nil {
+		return r, false, fmt.Errorf("%w: %w", errOwnAccount, err)
+	}
+	for _, n := range notes {
+		if !n.Insider || n.Bot || own.Wrote(n) || slices.Contains(a.Heard, n.ID) || strings.Contains(n.Body, "<!-- workline:") {
+			continue
+		}
+		r.Heard = append(r.Heard, n.ID)
+		r.Asked = append(r.Asked, Asked{Key: "person|" + n.ID, Where: "@" + n.Author, Text: strings.TrimSpace(n.Body), Holds: "a person"})
+	}
+	return r, newReview || at != "", nil
+}
+
+// RoundDue says whether a review round is due on the developer's merge
+// request mr, no agent: the reconciler's fallback for an event missed
+// (ADR-0059). Due when the round would ask something new; not, on
+// another's branch, with no record of the developer's that reads, or
+// handed to a person. Its branch's head is read in repo, as fetched from
+// origin; not found, the round itself compares the gates' head.
+func RoundDue(f forge.Forge, repo string, mr forge.MergeRequest) (bool, error) {
+	if developerIssue(mr.Branch) == 0 {
+		return false, nil
+	}
+	b, ok := f.(forge.Backlog)
+	if !ok {
+		return false, nil
+	}
+	kept, err := forge.ReadKept(f, forge.Target{Kind: "merge-request", ID: mr.ID})
+	if err != nil {
+		return false, err
+	}
+	body, ok := kept.Last(forge.Marker("sticky=developer/" + RecordKey))
+	a, read := ReadAct(body)
+	if !ok || !read {
+		return false, ErrRecordUnread
+	}
+	if a.Handed {
+		return false, nil
+	}
+	head, _ := gitOut(repo, "rev-parse", "--verify", "-q", "refs/remotes/origin/"+mr.Branch)
+	r, _, err := readAsked(f, b, kept, a, mr.ID, head)
+	return len(r.Asked) > 0, err
+}
+
 // roundTask is the round's question: the trace of the rounds before, the
 // findings to fix, then what an issue run asks (the issue, its bounds,
 // the test command), and the round's answer. No code: its agent reads its
@@ -352,6 +414,13 @@ func roundTask(r round, is forge.Issue, b Bounds, s Settings, test string, testE
 			fmt.Fprintf(&t, "- A person of the project, %s%s:\n\n  > %s\n\n", a.Where, seen, strings.ReplaceAll(a.Text, "\n", "\n  > "))
 			continue
 		}
+		if a.Holds == gateHolds {
+			fmt.Fprintf(&t, "- %s%s\n", gateLine(a), seen)
+			if a.Detail != "" {
+				fmt.Fprintf(&t, "\n  > The inspector: %s\n\n", strings.ReplaceAll(a.Detail, "\n", "\n  > "))
+			}
+			continue
+		}
 		fmt.Fprintf(&t, "- %s, the %s lens, `%s`%s: %s\n", a.Holds, a.Lens, a.Where, seen, a.Text)
 		if a.Detail != "" {
 			fmt.Fprintf(&t, "\n  > %s\n\n", strings.ReplaceAll(a.Detail, "\n", "\n  > "))
@@ -378,6 +447,9 @@ func handOff(r round, repo string) []intent.Intention {
 	a.Handed = true
 	a.Rounds = append(a.Rounds, Round{N: a.Round + 1, Asked: texts(r.Asked), Person: true})
 	a.ReviewRuns = max(a.ReviewRuns, r.Runs)
+	if r.GatesAt != "" {
+		a.GatesAt = r.GatesAt
+	}
 	add, remove := []string{backlog.LabelBlocked}, []string{backlog.LabelReady}
 	if line, err := routing.Load(repo); err == nil {
 		if ad, rm, err := line.Move("blocked"); err == nil {
@@ -402,6 +474,8 @@ func texts(l []Asked) []string {
 	for i, a := range l {
 		if a.Holds == "a person" {
 			out[i] = "a person, " + a.Where
+		} else if a.Holds == gateHolds {
+			out[i] = gateLine(a)
 		} else {
 			out[i] = fmt.Sprintf("%s %s `%s`: %s", a.Holds, a.Lens, a.Where, a.Text)
 		}
@@ -519,6 +593,9 @@ func reviewPost(runDir, repo string, s Settings) int {
 	}
 	a.Round, a.Whys = n, a.Whys || r.FiveWhys
 	a.ReviewRuns = max(a.ReviewRuns, r.Runs)
+	if r.GatesAt != "" {
+		a.GatesAt = r.GatesAt
+	}
 	a.Heard = append(a.Heard, r.Heard...)
 	for _, x := range r.Asked {
 		if x.Holds != "a person" && !slices.Contains(a.Seen, x.Key) {
