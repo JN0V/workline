@@ -66,7 +66,14 @@ Checked against Claude Code 2.1.314; each flag in its `--help`:
   finding `agent-unavailable` names what to install. The GitHub
   template installs both with the agent, in about 7 s
   ([#900](https://github.com/JN0V/workline/issues/900)); the GitLab
-  image holds neither, not tried there yet.
+  image holds both
+  ([#906](https://github.com/JN0V/workline/issues/906)).
+- **Its sandbox started once first**: a container the runner does not
+  let create a namespace refuses bubblewrap, installed or not (Docker's
+  default profile). The engine starts it once; refused, the agent is
+  not asked, its finding names the runner to change
+  ([on GitLab](../../../docs/gitlab/tester-developer.md#the-developer)).
+  Its sandbox is never dropped: its commands would hold its login.
 - **Its sandbox's files removed**: so scrubbed, Claude Code creates 17
   empty files where its folder lacks them (`.env*`, `package.json`,
   lock files) and lists them in `.git/info/exclude`, which a worktree

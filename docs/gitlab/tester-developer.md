@@ -42,6 +42,12 @@ until the engine reads them itself
   `workline:review:*` run it; the hourly reconcile starts one the
   webhook missed
   ([the review loop](../../roles/developer/docs/review-loop.md#what-wakes-it)).
+- **Its runner**: Claude Code boxes the agent's commands with
+  bubblewrap, which the image holds. gitlab.com's shared runners let it
+  start. A self-managed Docker runner's default profile does not: give
+  the developer's jobs a runner with `privileged = true` in its
+  `[runners.docker]`. Refused, the developer says so and does not ask
+  the agent ([its shell](../../roles/developer/docs/agent.md#claude)).
 - **Its bounds** on its merge request: the job `workline:bounds`, and
   what keeps a merge request from editing it out, by tier
   ([the bounds on GitLab](bounds.md)).

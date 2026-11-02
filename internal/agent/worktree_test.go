@@ -72,8 +72,9 @@ func TestClaudeToolsOnlyInAWorktree(t *testing.T) {
 }
 
 // TestClaudeShellToolsSaid: on Linux, an agent in a worktree whose shell
-// lacks bubblewrap or socat is not asked: the agent unavailable, what is
-// missing named, rather than code no command ran (#900). Elsewhere, or
+// lacks bubblewrap or socat, or whose container refuses bubblewrap
+// (#906), is not asked: the agent unavailable, what is missing named,
+// rather than code no command ran (#900). Elsewhere, or
 // with no worktree, nothing is asked of the runner.
 func TestClaudeShellToolsSaid(t *testing.T) {
 	bin := t.TempDir()
@@ -92,6 +93,14 @@ func TestClaudeShellToolsSaid(t *testing.T) {
 	must(t, os.WriteFile(filepath.Join(bin, "socat"), []byte("#!/bin/sh\n"), 0o755))
 	if err := shellTools("/run/worktree", "linux"); err != nil {
 		t.Errorf("both installed: %v", err)
+	}
+	// Installed, but the container refuses it a namespace (#906).
+	must(t, os.WriteFile(filepath.Join(bin, "bwrap"),
+		[]byte("#!/bin/sh\necho 'bwrap: Creating new namespace failed: Operation not permitted' >&2\nexit 1\n"), 0o755))
+	err = shellTools("/run/worktree", "linux")
+	if !errors.Is(err, ErrUnavailable) || !strings.Contains(err.Error(), "(bwrap: Creating new namespace failed: Operation not permitted)") ||
+		!strings.Contains(err.Error(), "create a namespace") {
+		t.Errorf("bwrap refused by its container: %v", err)
 	}
 }
 

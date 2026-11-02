@@ -41,6 +41,17 @@ after [issue-to-pull-request.md](issue-to-pull-request.md).
   comments ([risks][cop-risks]); Claude Code's action strips them too,
   which "reduces but does not eliminate prompt injection risk — keep
   workflow permissions minimal and validate all outputs" ([security][cc-sec]).
+- **Claude Code's shell in a container** (2.1.316, 2026-11-02,
+  [#906](https://github.com/JN0V/workline/issues/906)):
+  - `CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=1` boxes each command with
+    bubblewrap; missing, it says "set CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=0
+    to disable (loses subprocess isolation)": its only way out;
+  - its `sandbox.enableWeakerNestedSandbox` setting, made for
+    unprivileged Docker, is set off while scrubbing (read in its code);
+  - `bwrap --ro-bind / / true` fails in a Docker container of the
+    default profile ("Creating new namespace failed: Operation not
+    permitted"), runs in a privileged one, and on a gitlab.com shared
+    runner (its container privileged: all capabilities, no seccomp).
 - **Caps in use**: SWE-agent's `per_instance_cost_limit` 3.0
   ([model config][swe-model]); OpenHands 50 iterations, gh-aw 20 min
   and `max-turns`, Copilot 59 min

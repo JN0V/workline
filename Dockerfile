@@ -6,10 +6,12 @@
 # openssh-client: ssh-keygen, with which git signs the bot's commits when
 # a project gives it an SSH key (docs/gitlab/signed-commits.md); GnuPG is
 # left out, an SSH key signing for every forge.
+# bubblewrap, socat: Claude Code's shell boxes each command with them on
+# Linux; either missing, the engine does not ask the agent (#900, #906).
 FROM node:22-bookworm-slim
 ARG GITLEAKS=8.30.1
 RUN apt-get update \
- && apt-get install -y --no-install-recommends ca-certificates curl git jq openssh-client \
+ && apt-get install -y --no-install-recommends ca-certificates curl git jq openssh-client bubblewrap socat \
  && rm -rf /var/lib/apt/lists/* \
  && cd /tmp \
  && curl -fsSLO "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS}/gitleaks_${GITLEAKS}_linux_x64.tar.gz" \
@@ -18,4 +20,4 @@ RUN apt-get update \
  && tar -xzf "gitleaks_${GITLEAKS}_linux_x64.tar.gz" -C /usr/local/bin gitleaks \
  && rm -f /tmp/*
 COPY workline /usr/local/bin/workline
-RUN workline version && gitleaks version && command -v ssh-keygen
+RUN workline version && gitleaks version && command -v ssh-keygen && bwrap --version && socat -V >/dev/null
