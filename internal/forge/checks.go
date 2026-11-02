@@ -6,9 +6,14 @@ package forge
 // comment, the reviewer's, the verdict). A red one is a round's input.
 
 import (
+	"bytes"
+	"cmp"
+	"context"
 	"fmt"
+	"os/exec"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // HeadCheck is a check on a commit: its name, the workflow that ran it
@@ -124,14 +129,26 @@ func (g *github) ProjectChecks(head string) ([]HeadCheck, error) {
 }
 
 // CheckLog reads a job's failed steps as `gh run view --log-failed`
-// prints them; each line's job and step names cut.
+// prints them, its escapes shown as text; each line's job and step names
+// cut. Not through run, which asks `gh api`'s headers: a call of its own,
+// two minutes at most.
 func (g *github) CheckLog(c HeadCheck) (string, error) {
 	if c.Job == 0 {
 		return "", nil
 	}
-	out, err := run(g.repo, "gh", "run", "view", "--job", strconv.FormatInt(c.Job, 10), "--log-failed")
+	if _, err := exec.LookPath("gh"); err != nil {
+		return "", fmt.Errorf("%w: gh is not installed", ErrUnreachable)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "gh", "run", "view", "--job", strconv.FormatInt(c.Job, 10), "--log-failed")
+	cmd.Dir = g.repo
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	out, err := cmd.Output()
 	if err != nil {
-		return "", err
+		said, _, _ := strings.Cut(strings.TrimSpace(stderr.String()), "\n")
+		return "", fmt.Errorf("%w: gh run view --job %d: %s", ErrUnreachable, c.Job, cmp.Or(said, err.Error()))
 	}
 	var b strings.Builder
 	for _, l := range strings.Split(string(out), "\n") {
