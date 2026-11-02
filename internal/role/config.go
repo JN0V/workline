@@ -38,9 +38,10 @@ type shape struct {
 var (
 	free   = &shape{free: true}
 	config = &shape{keys: map[string]*shape{
-		"ai":    free,
-		"forge": free,
-		"roles": {any: &shape{keys: map[string]*shape{"settings": free, "enforce": free}}},
+		"ai":       free,
+		"forge":    free,
+		"autonomy": free, // the project's default level (ADR-0060), checked by LoadProjectConfig
+		"roles":    {any: &shape{keys: map[string]*shape{"settings": free, "enforce": free}}},
 		"routing": {keys: map[string]*shape{
 			"events":        free,
 			"handoffs":      {keys: map[string]*shape{"from": free, "to": free}}, // a list: each item

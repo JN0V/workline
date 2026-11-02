@@ -1778,7 +1778,11 @@ func writeCode(b *strings.Builder, repo string, files []string, budget int) []st
 // setting, or a person's undoing — so it writes nothing that is dropped.
 func modes(cfg backlog.Config, demoted []string) string {
 	var b strings.Builder
-	fmt.Fprintf(&b, "# What you may do in this run\n\nAutonomy: %s — %s. Each kind of act, its mode and where it comes from (level; setting: the project's; demoted: a person undid one of its acts):\n\n", cfg.Level, levelSays[cfg.Level])
+	level := cfg.Level
+	if cfg.LevelFrom != "" {
+		level += " (" + cfg.LevelFrom + ")" // ADR-0060, §3: the role's own, the project's default, the role's
+	}
+	fmt.Fprintf(&b, "# What you may do in this run\n\nAutonomy: %s — %s. Each kind of act, its mode and where it comes from (level; setting: the project's; demoted: a person undid one of its acts):\n\n", level, levelSays[cfg.Level])
 	for _, m := range cfg.Modes(demoted) {
 		fmt.Fprintf(&b, "- %s: %s\n", m.Kind, m.Say())
 	}

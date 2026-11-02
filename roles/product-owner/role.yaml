@@ -49,7 +49,8 @@ settings:
   # How far the role goes (ADR-0038): cautious notes and proposes; normal
   # completes, and moves evident issues to ready alone; enterprising does
   # the same, more a run. `levels`, at the end, what each changes; a kind
-  # set here wins over the level, field by field.
+  # set here wins over the level, field by field. Unset, the project's
+  # top-level `autonomy`, else normal (ADR-0060).
   autonomy: normal
   # A person undoing an act done alone has that kind proposed on that issue
   # from then on; undone this many times across the issues (1 to 20), the

@@ -41,6 +41,10 @@ var GoneSettings = map[string]string{
 // as the level alone gives them (role.ByLevel).
 const byLevel = "by-level"
 
+// levelFrom is the setting the engine adds beside it: where the level
+// comes from (role.LevelFrom).
+const levelFrom = "level-from"
+
 // Where a kind's mode comes from, as the task and the report say it.
 const (
 	FromLevel   = "level"   // the autonomy level's preset
@@ -51,6 +55,7 @@ const (
 // Config is how far the role goes in a run, read from its settings.
 type Config struct {
 	Level        string             // cautious, normal or enterprising
+	LevelFrom    string             // where Level comes from (ADR-0060, §3): role setting, project default, role default; "" unknown
 	Acts         map[string]Setting // each kind's mode and cap, the project's laid over the level's
 	Origins      map[string]string  // each kind's: level or setting
 	MovedPercent int                // the share of the open issues a run moves
@@ -161,6 +166,9 @@ func ReadConfig(settings map[string]any) (Config, error) {
 			return c, fmt.Errorf("autonomy: %v is not one of %s", v, strings.Join(AutonomyLevels, ", "))
 		}
 		c.Level = s
+	}
+	if from, ok := settings[levelFrom].(map[string]any); ok {
+		c.LevelFrom, _ = from["autonomy"].(string)
 	}
 	for _, name := range slices.Sorted(maps.Keys(GoneSettings)) {
 		if v, ok := settings[name]; ok && v != nil {
