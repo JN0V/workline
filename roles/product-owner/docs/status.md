@@ -180,7 +180,8 @@ in [tests/evaluation/cases/product-owner](../../../tests/evaluation/cases/produc
 - **The kind of issues read before**, by a light read: title and start
   of body, many in one call, within the act's cap
   ([#878](https://github.com/JN0V/workline/issues/878)). Cases
-  `kind-light-read-*`. Tried on PR_878.
+  `kind-light-read-*`. Tried on
+  [#885](https://github.com/JN0V/workline/pull/885#tried).
 
 ## Missing, in the order to build it
 

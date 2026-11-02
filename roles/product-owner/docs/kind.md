@@ -68,7 +68,7 @@ changes. A light read gives it a kind
 - **Its cost**, by the engine's estimate on a real backlog: about 400
   tokens an issue beside a full read; alone, about 6.4k tokens for 10
   issues, against 24.5k with the full instruction (measures in
-  [#878's pull request](https://github.com/JN0V/workline/issues/878)).
+  [#885](https://github.com/JN0V/workline/pull/885#tokens-per-issue)).
 
 ## A person's kind holds
 
