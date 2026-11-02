@@ -86,9 +86,10 @@ type Refusal struct {
 
 // readBounds reads, on the forge, what bounds the issue's patches.
 func readBounds(f forge.Forge, bl forge.Backlog, repo string, is forge.Issue) (Bounds, error) {
-	b := Bounds{Issue: is.ID, Scope: scopePaths(is.Body), Frozen: map[string]int{}, Blobs: map[string]string{}}
-	if out, err := gitOut(repo, "ls-files", "-z"); err == nil {
-		b.Scope = inRepo(b.Scope, strings.Split(strings.TrimSuffix(out, "\x00"), "\x00"))
+	files := repoFiles(repo)
+	b := Bounds{Issue: is.ID, Scope: scopePaths(is.Body, files), Frozen: map[string]int{}, Blobs: map[string]string{}}
+	if files != nil {
+		b.Scope = inRepo(b.Scope, files)
 	}
 	comments, err := bl.Comments(forge.Target{Kind: "issue", ID: is.ID})
 	if err != nil {

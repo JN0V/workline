@@ -200,17 +200,55 @@ func ReadAct(body string) (Act, bool) {
 	return a, true
 }
 
-// scopePaths are the paths an issue's Scope names, in backticks: a word
-// holding a slash or a dot, its line taken off (work.ScopeWords).
-func scopePaths(body string) []string {
+// scopePaths are the paths an issue's Scope names. In backticks: a word
+// holding a slash or a dot, its line taken off (work.ScopeWords). In
+// plain words: a path the repository holds, a file or a folder (#901).
+// files are the repository's files; nil when they could not be read,
+// the words in backticks then taken as written. Given files, a word in
+// backticks with a slash is kept when its first folder is the
+// repository's, or a pattern or a file it names is: `dorny/paths-filter`,
+// an Action a Scope names, bounds nothing.
+func scopePaths(body string, files []string) []string {
+	text := work.ByMeaning(body)[work.Scope].Text
 	var out []string
-	for _, w := range work.ScopeWords(work.ByMeaning(body)[work.Scope].Text) {
-		p, ok := scopeEntry(w)
-		if ok && strings.ContainsAny(w, "/.") && !slices.Contains(out, p) {
+	add := func(p string) {
+		if !slices.Contains(out, p) {
 			out = append(out, p)
 		}
 	}
+	for _, w := range work.ScopeWords(text) {
+		p, ok := scopeEntry(w)
+		if !ok || !strings.ContainsAny(w, "/.") {
+			continue
+		}
+		if files == nil || !strings.Contains(p, "/") || len(work.Files(p, files)) > 0 || holds(files, strings.SplitN(p, "/", 2)[0]) {
+			add(p)
+		}
+	}
+	if files == nil {
+		return out
+	}
+	for _, m := range backlog.PathLike.FindAllString(text, -1) {
+		if p, ok := scopeEntry(work.LineOff(backlog.RepoPath(m))); ok && holds(files, p) {
+			add(p)
+		}
+	}
 	return out
+}
+
+// holds says whether files hold p, a file or a folder.
+func holds(files []string, p string) bool {
+	return slices.ContainsFunc(files, func(f string) bool { return f == p || strings.HasPrefix(f, p+"/") })
+}
+
+// repoFiles are the files the repository's index holds, nil when they
+// cannot be read.
+func repoFiles(repo string) []string {
+	out, err := gitOut(repo, "ls-files", "-z")
+	if err != nil {
+		return nil
+	}
+	return strings.Split(strings.TrimSuffix(out, "\x00"), "\x00")
 }
 
 // overlap is the first path of a under or over one of b's, "" when none.
@@ -232,10 +270,11 @@ func overlap(a, b []string) string {
 // testsFirst, where the project routes the tester: an issue whose
 // Validation names scenarios waits for the tester's open Draft of its
 // tests (ADR-0055), or the kind of proof it recorded instead (proofs,
-// ADR-0059). only, when not 0, is the one issue looked at.
+// ADR-0059). only, when not 0, is the one issue looked at. files are the
+// repository's, its Scopes' paths read against them (scopePaths).
 // letGo are the claims this run lets go: held no more, taken at a next
 // run. passed are the issues offered it passed over, why each.
-func pick(issues []forge.Issue, mrs []forge.MergeRequest, s Settings, only int, testsFirst bool, letGo map[int]bool, proofs map[int]tester.Proof) (id int, passed []Passed) {
+func pick(issues []forge.Issue, mrs []forge.MergeRequest, s Settings, only int, testsFirst bool, letGo map[int]bool, proofs map[int]tester.Proof, files []string) (id int, passed []Passed) {
 	open := map[int]bool{}
 	for _, is := range issues {
 		open[is.ID] = true
@@ -254,7 +293,7 @@ func pick(issues []forge.Issue, mrs []forge.MergeRequest, s Settings, only int, 
 	held := map[int][]string{} // the issues the developer holds: their Scope's paths
 	for _, is := range issues {
 		if slices.Contains(is.Labels, s.ClaimLabel) && !letGo[is.ID] {
-			held[is.ID] = scopePaths(is.Body)
+			held[is.ID] = scopePaths(is.Body, files)
 		}
 	}
 	backlog.Order(issues)
@@ -276,7 +315,7 @@ func pick(issues []forge.Issue, mrs []forge.MergeRequest, s Settings, only int, 
 			why = "its acceptance tests are not written yet: it waits for the tester's Draft"
 			next = "the tester writes them, as a Draft of its own; the developer takes this issue at a run after that Draft is open"
 		default:
-			mine := scopePaths(is.Body)
+			mine := scopePaths(is.Body, files)
 			for _, n := range slices.Sorted(maps.Keys(held)) {
 				if p := overlap(mine, held[n]); p != "" {
 					why = fmt.Sprintf("its %s's `%s` overlaps #%d's, taken", work.Name(work.Scope), p, n)
@@ -377,7 +416,7 @@ func Pre(runDir, repo string) int {
 	if err != nil {
 		return external(err)
 	}
-	id, passed := pick(issues, mrs, s, only, line.Runs("tester"), letGo, proofs)
+	id, passed := pick(issues, mrs, s, only, line.Runs("tester"), letGo, proofs, repoFiles(repo))
 	for _, p := range passed {
 		findings = append(findings, verdict.Finding{Rule: "issue-passed", Level: "info", Where: fmt.Sprintf("#%d", p.Issue), Message: p.Why})
 	}

@@ -22,9 +22,15 @@ var (
 func ScopeWords(scope string) []string {
 	var out []string
 	for _, m := range scopeWord.FindAllStringSubmatch(scope, -1) {
-		out = append(out, lineRef.ReplaceAllString(m[1], ""))
+		out = append(out, LineOff(m[1]))
 	}
 	return out
+}
+
+// LineOff is a path with a trailing line or span of lines taken off:
+// `parts.go:943` names parts.go.
+func LineOff(p string) string {
+	return lineRef.ReplaceAllString(p, "")
 }
 
 // InRepo is the file of files a Scope's word names: the word itself,
