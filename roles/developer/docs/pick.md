@@ -25,7 +25,8 @@ that is:
 - **No open merge request closing it**: `Closes #n`, `Fixes #n` in its
   title or body. `Refs #n`, as the tester's Draft says, closes nothing.
 - **Clear of the issues the developer holds**: no path its Scope names
-  (in backticks, with a `/` or a `.`) under or over one theirs names.
+  ([read as the bounds read it](bounds.md): in backticks, or in plain
+  words the repository holds) under or over one theirs names.
 - **Its tests written first**, where the project routes the tester: an
   issue whose Validation names scenarios waits until the tester's Draft
   of its tests is open ([the triggers](triggers.md#on-a-schedule)), or

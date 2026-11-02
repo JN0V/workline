@@ -13,6 +13,7 @@ import (
 	"maps"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"regexp"
 	"slices"
@@ -200,17 +201,71 @@ func ReadAct(body string) (Act, bool) {
 	return a, true
 }
 
-// scopePaths are the paths an issue's Scope names, in backticks: a word
-// holding a slash or a dot, its line taken off (work.ScopeWords).
-func scopePaths(body string) []string {
+// scopePaths are the paths a Scope names: in backticks, a word with a
+// slash or a dot, its line off (work.ScopeWords); in plain words, a path
+// the repository holds (#901). files are the repository's, nil unread:
+// the words in backticks taken as written then. Else a word with a slash
+// is kept when newPath says so, or a pattern or a file it names is, or
+// its first folder is the repository's: `dorny/paths-filter` is not.
+func scopePaths(body string, files []string) []string {
+	text := work.ByMeaning(body)[work.Scope].Text
 	var out []string
-	for _, w := range work.ScopeWords(work.ByMeaning(body)[work.Scope].Text) {
-		p, ok := scopeEntry(w)
-		if ok && strings.ContainsAny(w, "/.") && !slices.Contains(out, p) {
+	add := func(p string) {
+		if !slices.Contains(out, p) {
 			out = append(out, p)
 		}
 	}
+	for _, w := range work.ScopeWords(text) {
+		p, ok := scopeEntry(w)
+		if !ok || !strings.ContainsAny(w, "/.") {
+			continue
+		}
+		if files == nil || !strings.Contains(p, "/") || newPath(w) ||
+			len(work.Files(p, files)) > 0 || holds(files, strings.SplitN(p, "/", 2)[0]) {
+			add(p)
+		}
+	}
+	if files == nil {
+		return out
+	}
+	for _, m := range backlog.PathLike.FindAllString(text, -1) {
+		if p, ok := scopeEntry(work.LineOff(backlog.RepoPath(m))); ok && holds(files, p) {
+			add(p)
+		}
+	}
 	return out
+}
+
+// fileExt is a file's extension, a letter first: never an Action's
+// version, `@v4.1`.
+var fileExt = regexp.MustCompile(`^\.[A-Za-z][A-Za-z0-9]{0,7}$`)
+
+// newPath says whether a Scope's word reads as a path to create: a
+// file's extension or a trailing slash (`pkg/__init__.py`, `src/`), no
+// `@` (`actions/checkout@v4.1` is an Action).
+func newPath(w string) bool {
+	return !strings.Contains(w, "@") && (strings.HasSuffix(w, "/") || fileExt.MatchString(path.Ext(w)))
+}
+
+// holds says whether files hold p, a file or a folder.
+func holds(files []string, p string) bool {
+	return slices.ContainsFunc(files, func(f string) bool { return f == p || strings.HasPrefix(f, p+"/") })
+}
+
+// repoFiles are the files the repository's index holds, nil when they
+// cannot be read.
+func repoFiles(repo string) []string {
+	out, err := gitOut(repo, "ls-files", "-z")
+	if err != nil {
+		return nil
+	}
+	files := []string{}
+	for _, f := range strings.Split(out, "\x00") {
+		if f != "" {
+			files = append(files, f)
+		}
+	}
+	return files
 }
 
 // overlap is the first path of a under or over one of b's, "" when none.
@@ -232,10 +287,11 @@ func overlap(a, b []string) string {
 // testsFirst, where the project routes the tester: an issue whose
 // Validation names scenarios waits for the tester's open Draft of its
 // tests (ADR-0055), or the kind of proof it recorded instead (proofs,
-// ADR-0059). only, when not 0, is the one issue looked at.
+// ADR-0059). only, when not 0, is the one issue looked at. files are the
+// repository's, its Scopes' paths read against them (scopePaths).
 // letGo are the claims this run lets go: held no more, taken at a next
 // run. passed are the issues offered it passed over, why each.
-func pick(issues []forge.Issue, mrs []forge.MergeRequest, s Settings, only int, testsFirst bool, letGo map[int]bool, proofs map[int]tester.Proof) (id int, passed []Passed) {
+func pick(issues []forge.Issue, mrs []forge.MergeRequest, s Settings, only int, testsFirst bool, letGo map[int]bool, proofs map[int]tester.Proof, files []string) (id int, passed []Passed) {
 	open := map[int]bool{}
 	for _, is := range issues {
 		open[is.ID] = true
@@ -254,7 +310,7 @@ func pick(issues []forge.Issue, mrs []forge.MergeRequest, s Settings, only int, 
 	held := map[int][]string{} // the issues the developer holds: their Scope's paths
 	for _, is := range issues {
 		if slices.Contains(is.Labels, s.ClaimLabel) && !letGo[is.ID] {
-			held[is.ID] = scopePaths(is.Body)
+			held[is.ID] = inRepo(scopePaths(is.Body, files), files)
 		}
 	}
 	backlog.Order(issues)
@@ -276,7 +332,7 @@ func pick(issues []forge.Issue, mrs []forge.MergeRequest, s Settings, only int, 
 			why = "its acceptance tests are not written yet: it waits for the tester's Draft"
 			next = "the tester writes them, as a Draft of its own; the developer takes this issue at a run after that Draft is open"
 		default:
-			mine := scopePaths(is.Body)
+			mine := inRepo(scopePaths(is.Body, files), files)
 			for _, n := range slices.Sorted(maps.Keys(held)) {
 				if p := overlap(mine, held[n]); p != "" {
 					why = fmt.Sprintf("its %s's `%s` overlaps #%d's, taken", work.Name(work.Scope), p, n)
@@ -377,7 +433,7 @@ func Pre(runDir, repo string) int {
 	if err != nil {
 		return external(err)
 	}
-	id, passed := pick(issues, mrs, s, only, line.Runs("tester"), letGo, proofs)
+	id, passed := pick(issues, mrs, s, only, line.Runs("tester"), letGo, proofs, repoFiles(repo))
 	for _, p := range passed {
 		findings = append(findings, verdict.Finding{Rule: "issue-passed", Level: "info", Where: fmt.Sprintf("#%d", p.Issue), Message: p.Why})
 	}

@@ -2,6 +2,7 @@ package developer
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -144,7 +145,7 @@ func TestUnderAPatternIsWhatItMatches(t *testing.T) {
 // A Scope or a source naming the repository's root bounds nothing: it is
 // dropped, and never puts every file in bounds.
 func TestScopeNamingTheRootIsDropped(t *testing.T) {
-	got := scopePaths("## Scope\n\n- `.` and `./`, `src/a.go`.\n")
+	got := scopePaths("## Scope\n\n- `.` and `./`, `src/a.go`.\n", nil)
 	if !slices.Equal(got, []string{"src/a.go"}) {
 		t.Errorf("scopePaths = %v, want [src/a.go]", got)
 	}
@@ -157,9 +158,70 @@ func TestScopeNamingTheRootIsDropped(t *testing.T) {
 // A Scope naming a file with its line bounds the file: `src/a.go:12`
 // lets the developer change src/a.go.
 func TestScopeLineIsTheFile(t *testing.T) {
-	got := scopePaths("## Scope\n\n- `run` (`src/a.go:12`), `src/b.go:3-9`.\n")
+	got := scopePaths("## Scope\n\n- `run` (`src/a.go:12`), `src/b.go:3-9`.\n", nil)
 	if !slices.Equal(got, []string{"src/a.go", "src/b.go"}) {
 		t.Errorf("scopePaths = %v, want [src/a.go src/b.go]", got)
+	}
+}
+
+// A Scope's paths in plain words are in bounds when the repository holds
+// them; a word in backticks the repository has no folder for is not a
+// path (#901, on #79's and #244's Scope).
+func TestScopePlainPathsAreBounds(t *testing.T) {
+	files := []string{"docs/ci.md", "ci/github/workflow.yml", "ci/gitlab/pipeline.yml", ".github/workflows/ci.yml",
+		"internal/doctor/doctor.go", "internal/gate/gate.go", "internal/tools/tools.go", "docs/spec/gates.md", "docs/install.md", "src/a.go"}
+	for _, c := range []struct {
+		name, scope string
+		want        []string
+	}{
+		{"#79", "docs/ci.md, ci/github, ci/gitlab, .github/workflows/ci.yml. The way, in the ecosystem's words: a first job tells what changed (`dorny/paths-filter`, GitLab's `rules: changes`), the heavy jobs skipped with `if:`.",
+			[]string{"docs/ci.md", "ci/github", "ci/gitlab", ".github/workflows/ci.yml"}},
+		{"#244", "internal/doctor, `workline init`, internal/gate (a \"linted\" rule), a table language → linter → pinned install (internal/tools), docs/spec/gates.md, docs/install.md. Related: #202.",
+			[]string{"internal/doctor", "internal/gate", "internal/tools", "docs/spec/gates.md", "docs/install.md"}},
+		{"new file in a known folder", "- `src/b.go`, `src/new/c.go`, and/or src/a.go:12.", []string{"src/b.go", "src/new/c.go", "src/a.go"}},
+		{"new folder", "- `pkg/__init__.py`, `lib/`, `actions/checkout`.", []string{"pkg/__init__.py", "lib"}},
+		{"an Action's version", "- `actions/checkout@v4.1`, `golangci/lint-action@v6.1.0`, `pkg/x.go`.", []string{"pkg/x.go"}},
+	} {
+		got := scopePaths("## Need\n\nA need.\n\n## Scope\n\n"+c.scope+"\n", files)
+		if !slices.Equal(got, c.want) {
+			t.Errorf("%s: scopePaths = %q, want %q", c.name, got, c.want)
+		}
+	}
+	if got := scopePaths("## Scope\n\n`dorny/paths-filter`, docs/ci.md\n", nil); !slices.Equal(got, []string{"dorny/paths-filter"}) {
+		t.Errorf("files unread: scopePaths = %q, want the words in backticks as written", got)
+	}
+	ch := checker{b: Bounds{Scope: scopePaths("## Scope\n\ninternal/doctor\n", files)}, steer: func(string) bool { return false }}
+	if r := ch.rule("internal/doctor/new.go"); r != "" {
+		t.Errorf("rule(internal/doctor/new.go) = %q, want in bounds", r)
+	}
+}
+
+// The pick passes over an issue whose plain Scope overlaps one taken.
+func TestPickReadsPlainScope(t *testing.T) {
+	s := SettingsFrom(nil)
+	issues := []forge.Issue{
+		{ID: 1, Labels: []string{"workline:ready", s.ClaimLabel}, Body: "## Scope\n\ninternal/doctor, docs/install.md\n"},
+		{ID: 2, Labels: []string{"workline:ready"}, Body: "## Scope\n\ninternal/doctor/doctor.go\n"},
+	}
+	id, passed := pick(issues, nil, s, 0, false, nil, nil, []string{"internal/doctor/doctor.go", "docs/install.md"})
+	if id != 0 || len(passed) != 2 || !strings.Contains(passed[1].Why, "overlaps #1") {
+		t.Errorf("pick: %d, %v", id, passed)
+	}
+	// A bare name is the one file of that name, as the bounds read it.
+	issues[0].Body, issues[1].Body = "## Scope\n\n- `doctor.go`\n", "## Scope\n\n- `internal/doctor/doctor.go`\n"
+	if id, passed := pick(issues, nil, s, 0, false, nil, nil, []string{"internal/doctor/doctor.go"}); id != 0 || len(passed) != 2 {
+		t.Errorf("pick on a bare name: %d, %v", id, passed)
+	}
+}
+
+// A repository with no file reads as files known, none held.
+func TestRepoFilesOfAnEmptyRepository(t *testing.T) {
+	repo := t.TempDir()
+	if err := exec.Command("git", "-C", repo, "init", "-q").Run(); err != nil {
+		t.Fatal(err)
+	}
+	if got := repoFiles(repo); got == nil || len(got) != 0 {
+		t.Errorf("repoFiles = %q, want none, known", got)
 	}
 }
 
