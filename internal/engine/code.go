@@ -13,7 +13,9 @@ import (
 // The developer's code at `normal` (ADR-0054, step 7): its pull request,
 // workline's own as the forge says it, merges with no person's yes when
 // the issue it closes is a fix or a task, every gate passed and no
-// finding of the reviewer's open; a feature waits for a person's yes. The
+// finding of the reviewer's open; a fix only once its bug was reproduced,
+// the tester's test red on the base (ADR-0060); a feature waits for a
+// person's yes. The
 // kind is the issue's labels', never the agent's say
 // (roles/developer/docs/merge.md).
 
@@ -61,7 +63,43 @@ func weighCode(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, n *nor
 	case len(d.Open) > 0:
 		return waits("warn", fmt.Sprintf("%s, but the reviewer's findings are open: %s", d.Says(), strings.Join(d.Open, "; ")))
 	}
+	if d.Kind == developer.KindFix {
+		why, err := unreproduced(o.Repo, w.baseTip, w.tip, d)
+		if err != nil {
+			return nil, err
+		}
+		if why != "" {
+			// Said once on it, as a feature's wait is: a fix with no test
+			// that failed before proves nothing (ADR-0060).
+			t := forge.Target{Kind: "merge-request", ID: w.mr.ID}
+			body := fmt.Sprintf("**Waiting for a person's yes**: this is %s, but %s. The project's merge policy is `normal`: a bug's fix merges once a test that failed on the base proves the bug and every gate passes.\n\n- To accept this one, put the label `%s`.\n- Not a bug? Change the label on #%d.",
+				d.Says(), why, backlog.AcceptedLabel(f), d.Issue)
+			if err := f.Comment(t, body, forge.Marker("merge-waits="+developer.Unreproduced)); err != nil {
+				return nil, err
+			}
+			return waits("", d.Says()+", but "+why)
+		}
+	}
 	return admit(f, m, o, w, n, hand, waits, kindCode, d.Says())
+}
+
+// unreproduced says why a fix's bug is not shown reproduced: its code
+// starts from no tester's Draft, or its branch holds no commit of the
+// tester's past base; "" when it is.
+func unreproduced(repo, baseTip, tip string, d developer.Merge) (string, error) {
+	if !d.Reproduced {
+		return "its code starts from no tester's Draft: no test red on the base shows the bug", nil
+	}
+	out, err := git(repo, nil, "log", "--format=%H", baseTip+".."+tip)
+	if err != nil {
+		return "", err
+	}
+	for _, c := range strings.Fields(out) {
+		if slices.ContainsFunc(strings.Split(ownTrailer(repo, c), ","), func(r string) bool { return strings.TrimSpace(r) == "tester" }) {
+			return "", nil
+		}
+	}
+	return "its branch holds no commit of the tester's: no test red on the base shows the bug", nil
 }
 
 // notCoded names the first commit of the branch, past base, that is not

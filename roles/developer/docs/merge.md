@@ -15,7 +15,7 @@ flowchart LR
   alone["<b>Merges</b><br/>with no person's yes"]
   person["<b>Waits</b><br/>for a person's yes"]
   pr --> kind
-  kind -- "a fix, a task" --> alone
+  kind -- "a task, a fix reproduced" --> alone
   kind -- "a feature, none" --> person
 ```
 
@@ -39,7 +39,9 @@ At `normal`, a person's yes is asked by kind only.
   | task | `task`, `chore`, `type::maintenance`, `Kind/Task` |
 
 - **Two kinds on one issue**: a feature wins, then a fix: the safe side.
-- **None**: it waits, and says which labels would tell it.
+- **None**: it waits, and says which labels would tell it. The product
+  owner sets one where none is
+  ([the kind it sets](../../product-owner/docs/kind.md)).
 - **The issue cannot be read** (deleted, moved): that pull request
   waits; the others go on.
 
@@ -55,6 +57,18 @@ At `normal`, a person's yes is asked by kind only.
   - its head's verdict passed, its checks not red;
   - no finding of the reviewer's open that blocks or is Important: a
     nit holds nothing.
+- **A fix, its bug reproduced first**
+  ([ADR-0060](../../../docs/adr/0060-the-person-is-on-the-loop.md#4-a-person-validates-by-the-issues-kind)):
+  - its record names the tester's Draft its code started from, and
+    those tests; the tester opens a Draft only once its tests fail on
+    the base;
+  - its branch holds a commit of the tester's;
+  - else it waits for a person's yes, said once on it
+    (`merge-waits=unreproduced`): a fix with no failing test proves
+    nothing.
+- **A bug the tester cannot reproduce** never reaches here: its
+  reporter is asked, then it is Blocked
+  ([the hand-over](../../tester/docs/hand-over.md#a-bug-not-reproduced)).
 - **A feature waits for a person's yes**, the label `workline:accepted`.
   Said in the job's summary (`waits-for-a-yes`) and once on the pull
   request: the label that accepts it, and how to change the kind.
@@ -74,7 +88,7 @@ At `normal`, a person's yes is asked by kind only.
 ## Not yet
 
 - **GitHub's issue types** are not read: the labels only.
-- **The project's own labels per kind**: the list above is fixed until
-  the product owner's `kinds` setting is built
-  ([the kind it sets](../../product-owner/docs/proposed-headings.md#the-kind-the-role-sets)).
+- **The project's own labels per kind**: the list above is what the
+  merge reads; the product owner's `kinds` setting names the label it
+  sets, not yet what the merge reads.
 - **A feature let merge alone**: no `merge.alone` for it yet.

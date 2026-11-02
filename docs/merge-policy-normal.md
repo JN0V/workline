@@ -69,6 +69,10 @@ merge: {autonomy: normal}   # a project's choice, never a default
 - **A fifth kind, `code`**: the developer's pull request for an issue
   its labels call a fix or a task, every gate passed and no finding of
   the reviewer's open that blocks or is Important.
+- **A fix, once its bug was reproduced**: its code starts from the
+  tester's Draft, whose tests failed on the base; else it waits for a
+  person's yes, said once on it
+  ([ADR-0060](adr/0060-the-person-is-on-the-loop.md#4-a-person-validates-by-the-issues-kind)).
 - **A feature waits for a person's yes**, said once on it.
 - **Told by the issue it closes**, never by the agent: the rules, the
   labels and the record on [the developer's merge](../roles/developer/docs/merge.md).
@@ -109,7 +113,7 @@ and:
 
 | Said | When |
 |---|---|
-| `waits-for-a-yes` | the release tool's; a push, a commit or a page not workline's; a kind demoted; `reader`, not let merge alone; the developer's feature, or a finding open |
+| `waits-for-a-yes` | the release tool's; a push, a commit or a page not workline's; a kind demoted; `reader`, not let merge alone; the developer's feature, a fix whose bug no test reproduced, or a finding open |
 | `merge-app-unknown` | the token is no App's: nothing merges alone |
 | `merge-demoted`, `demotion-unrecorded` | a revert of one merged alone read: its kind demoted, its issue opened or not |
 | `revert-unread` | a revert tied to no merge request: every kind demoted |
