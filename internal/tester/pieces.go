@@ -28,24 +28,27 @@ var (
 const lineAround = 15
 
 // anchors are what a Scope points at in its files: the names it writes in
-// backticks that are no file (`personIssue`, `Store.Post`, `run()`), and
-// the lines it names after a file (`engine.go:2690`), by file.
-func anchors(scope string, files []string) (names []string, lines map[string][]int) {
-	lines = map[string][]int{}
+// backticks that are no file nor path (`personIssue`, `Store.Post`,
+// `run()`), and the lines or spans of lines it names after a file
+// (`engine.go:2690`, `engine.go:100-400`), by file.
+func anchors(scope string, files []string) (names []string, spans map[string][][2]int) {
+	spans = map[string][][2]int{}
 	for _, m := range scopeWordRe.FindAllStringSubmatch(scope, -1) {
 		w := m[1]
 		if r := lineRefRe.FindStringSubmatch(w); r != nil {
 			if f := work.InRepo(r[1], files); f != "" {
 				from, _ := strconv.Atoi(r[2])
-				lines[f] = append(lines[f], from)
+				to := from
 				if r[3] != "" {
-					to, _ := strconv.Atoi(r[3])
-					lines[f] = append(lines[f], to)
+					to, _ = strconv.Atoi(r[3])
 				}
+				spans[f] = append(spans[f], [2]int{min(from, to), max(from, to)})
 			}
 			continue
 		}
-		if len(work.Files(w, files)) > 0 {
+		// A file, a pattern, or a path to a file not there yet
+		// (`new/foo.go`): no function's name.
+		if len(work.Files(w, files)) > 0 || strings.Contains(w, "/") || codenav.Of(w) != nil {
 			continue
 		}
 		w = strings.TrimSuffix(w, "()")
@@ -56,26 +59,31 @@ func anchors(scope string, files []string) (names []string, lines map[string][]i
 			names = append(names, w)
 		}
 	}
-	return names, lines
+	return names, spans
 }
 
 // pieces are the spans of a file's lines, from 1, that hold the functions
-// names defines in it and those its lines at lie in, in order, merged.
-func pieces(file string, lines []string, names []string, at []int) [][2]int {
+// names defines in it, and the lines at names with the functions their
+// ends lie in, in order, merged.
+func pieces(file string, lines []string, names []string, at [][2]int) [][2]int {
 	var out [][2]int
 	for _, n := range names {
 		for _, f := range codenav.Named(file, lines, n) {
 			out = append(out, [2]int{f.From, f.To})
 		}
 	}
-	for _, n := range at {
-		if n < 1 || n > len(lines) {
+	for _, s := range at {
+		if s[0] < 1 || s[0] > len(lines) {
 			continue // a line past the file's end: written for another version of it
 		}
-		if f, ok := codenav.Enclosing(file, lines, n); ok {
-			out = append(out, [2]int{f.From, f.To})
-		} else {
-			out = append(out, [2]int{max(n-lineAround, 1), min(n+lineAround, len(lines))})
+		s[1] = min(s[1], len(lines))
+		out = append(out, s)
+		for _, n := range []int{s[0], s[1]} {
+			if f, ok := codenav.Enclosing(file, lines, n); ok {
+				out = append(out, [2]int{f.From, f.To})
+			} else {
+				out = append(out, [2]int{max(n-lineAround, 1), min(n+lineAround, len(lines))})
+			}
 		}
 	}
 	slices.SortFunc(out, func(a, b [2]int) int { return a[0] - b[0] })
@@ -104,6 +112,8 @@ type codeFile struct {
 	lines  []string
 	pieces [][2]int // the spans the Scope names in it
 	given  [][2]int // what is given: the whole file is one span from 1
+	cut    [2]int   // a piece the budget ran out in: given to [0], it goes on to [1]
+	unread [][2]int // the pieces past the budget, named
 }
 
 // planCode shares budget lines among the Scope's files: all whole when
@@ -125,9 +135,13 @@ func planCode(files []codeFile, budget int) int {
 	for i := range files {
 		for _, p := range files[i].pieces {
 			if left <= 0 {
-				break
+				files[i].unread = append(files[i].unread, p)
+				continue
 			}
-			p[1] = min(p[1], p[0]+left-1)
+			if end := p[0] + left - 1; end < p[1] {
+				files[i].cut = [2]int{end, p[1]}
+				p[1] = end
+			}
 			files[i].given = append(files[i].given, p)
 			left -= p[1] - p[0] + 1
 		}
@@ -142,7 +156,7 @@ func planCode(files []codeFile, budget int) int {
 			continue
 		}
 		if extra := len(f.lines) - spanLines(f.given); extra <= left {
-			f.given = [][2]int{{1, len(f.lines)}}
+			f.given, f.cut, f.unread = [][2]int{{1, len(f.lines)}}, [2]int{}, nil
 			left -= extra
 		}
 	}
@@ -168,6 +182,12 @@ func writeCodeFile(b *strings.Builder, f codeFile) {
 			f.path, n, strings.Join(spans, ", "), work.Name(work.Scope))
 		for _, p := range f.given {
 			fmt.Fprintf(b, "\nLines %d to %d:\n\n````\n%s\n````\n", p[0], p[1], strings.Join(f.lines[p[0]-1:p[1]], "\n"))
+			if p[1] == f.cut[0] {
+				fmt.Fprintf(b, "(cut, past code-lines-max: what it names goes on to line %d)\n", f.cut[1])
+			}
+		}
+		for _, p := range f.unread {
+			fmt.Fprintf(b, "\nNot given, past code-lines-max: lines %d to %d, which the %s names.\n", p[0], p[1], work.Name(work.Scope))
 		}
 	}
 }

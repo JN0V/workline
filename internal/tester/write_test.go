@@ -56,6 +56,31 @@ func TestWriteCodeGivesAFunctionDeepInAFile(t *testing.T) {
 	}
 }
 
+// A span of lines gives its middle too; a path is no function's name; a
+// piece the budget runs out in is said cut, one past it named.
+func TestPiecesSpanPathAndCut(t *testing.T) {
+	var long strings.Builder
+	long.WriteString("x=0\n")
+	for i := 2; i <= 200; i++ {
+		fmt.Fprintf(&long, "x=%d\n", i)
+	}
+	lines := strings.Split(strings.TrimSuffix(long.String(), "\n"), "\n")
+	names, at := anchors("`run.sh:50-150` and `new/go.go`, `foo.go`", []string{"run.sh"})
+	if len(names) != 0 {
+		t.Errorf("paths taken for names: %q", names)
+	}
+	if got := pieces("run.sh", lines, names, at["run.sh"]); len(got) != 1 || got[0] != [2]int{35, 165} {
+		t.Errorf("a span's pieces = %v, want [35 165]", got)
+	}
+	files := []codeFile{{path: "run.sh", lines: lines, pieces: [][2]int{{10, 60}, {100, 120}}}}
+	planCode(files, 30)
+	var b strings.Builder
+	writeCodeFile(&b, files[0])
+	if got := b.String(); !strings.Contains(got, "(cut, past code-lines-max: what it names goes on to line 60)") || !strings.Contains(got, "Not given, past code-lines-max: lines 100 to 120") {
+		t.Errorf("cut not said:\n%s", got)
+	}
+}
+
 func TestScenarios(t *testing.T) {
 	got := Scenarios("Intro line.\n\n- **Old debt:** Given `main` with 140 findings, When a merge request\n  adds one, Then only that one blocks.\n- **Moved code**: Given a move, When the gate runs, Then nothing new.\n- Given no name, When read, Then dropped.\n")
 	want := []Scenario{
