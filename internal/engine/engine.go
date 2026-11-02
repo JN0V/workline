@@ -1811,7 +1811,12 @@ func proposeBranch(f forge.Forge, repo, roleName, key, title, body string, draft
 	if now, _ := git(repo, nil, "rev-parse", "--verify", "-q", "refs/heads/"+branch); committed == "" || now != committed {
 		start := []string{"checkout", "-q", "-B", branch}
 		if p.From != "" {
-			start = append(start, p.From) // the files written carried over
+			// The files written carried over onto p.From, merged: the
+			// working tree is at the base's tip, which may have changed
+			// them since p.From left it, and a plain checkout refuses
+			// then (#856). Their change from the base's tip lands on
+			// p.From, the base's own changes to them not carried in.
+			start = []string{"checkout", "-q", "-m", "-B", branch, p.From}
 		}
 		steps = append(steps, start)
 		for _, c := range p.commits(title, written) {
@@ -1823,9 +1828,23 @@ func proposeBranch(f forge.Forge, repo, roleName, key, title, body string, draft
 	if !forge.KeepsBranches(f) {
 		steps = append(steps, []string{"push", "-q", "--force", "origin", branch})
 	}
-	for _, s := range steps {
+	// What the files written change from the base's tip, kept to put
+	// them back should their merge onto p.From conflict.
+	var saved string
+	if p.From != "" && len(steps) > 0 && steps[0][0] == "checkout" {
+		if saved, err = gitRaw(repo, append([]string{"diff", "--binary", "HEAD", "--"}, written...)...); err != nil {
+			return 0, "", err
+		}
+	}
+	for i, s := range steps {
 		if s[0] == "push" && tip == "" {
 			tip, _ = git(repo, nil, "rev-parse", "refs/heads/"+branch)
+		}
+		if i == 0 && saved != "" {
+			if err := mergeOnto(repo, base, s, saved, p.From); err != nil {
+				return 0, "", err
+			}
+			continue
 		}
 		if _, err := git(repo, nil, s...); err != nil {
 			// Back where it was: the patches in the working tree, unstaged.
@@ -1843,6 +1862,30 @@ func proposeBranch(f forge.Forge, repo, roleName, key, title, body string, draft
 	}
 	id, err := f.OpenMergeRequest(branch, base, title, body, draft)
 	return id, tip, err
+}
+
+// mergeOnto runs start, the checkout that carries the files written onto
+// from, merged. A conflict puts the working tree back on base, the files
+// written as they were (saved, their diff from base's tip), and names the
+// files it conflicts on.
+func mergeOnto(repo, base string, start []string, saved, from string) error {
+	if _, err := git(repo, nil, start...); err != nil {
+		return err // refused: nothing moved
+	}
+	unmerged, err := git(repo, nil, "diff", "--name-only", "--diff-filter=U")
+	if err != nil || unmerged == "" {
+		return err
+	}
+	back := [][]string{{"reset", "-q"}, {"checkout", "-q", "-f", base}}
+	for _, s := range back {
+		if _, err := git(repo, nil, s...); err != nil {
+			return fmt.Errorf("the code conflicts with %s on %s, and the working tree is not put back: %w", short(from), strings.ReplaceAll(unmerged, "\n", ", "), err)
+		}
+	}
+	if _, err := git(repo, strings.NewReader(saved), "apply", "--binary", "-"); err != nil {
+		return fmt.Errorf("the code conflicts with %s on %s, and its change is not put back in the working tree: %w", short(from), strings.ReplaceAll(unmerged, "\n", ", "), err)
+	}
+	return fmt.Errorf("the code, written on %s, conflicts with what the base changed since in %s: nothing committed, the working tree as it was", short(from), strings.ReplaceAll(unmerged, "\n", ", "))
 }
 
 // slugify keeps a branch name to lowercase letters, digits and dashes.
