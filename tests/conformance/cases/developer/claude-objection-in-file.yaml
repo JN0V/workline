@@ -39,6 +39,6 @@ expect:
   forge:
     merge-requests:
       - id: 1
-        comment-contains: ["The developer** objects to 1 of the tester's tests of #3"]
+        comment-contains: ["The developer** objects to the tester's tests of #3", "1 posted now"]
         threads:
           - {path: tests/test_mul_by_zero.sh, line: 4, contains: ["workline:objection", "- scenario: By zero", "- kind: over-specified"]}

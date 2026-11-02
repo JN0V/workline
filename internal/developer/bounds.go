@@ -428,6 +428,11 @@ func readObjection(v any) (objection, bool) {
 	return o, true
 }
 
+// key is the objection's on its line, one per test and line (#899): one
+// still open there is not posted again; another line of the same test
+// opens its own comment.
+func (o objection) key() string { return fmt.Sprintf("objection-%s:%d", o.Test, o.Line) }
+
 // body is the objection's first comment on the test's line, in the form
 // the tester reads (roles/tester/README.md, frozen tests and objections).
 func (o objection) body() string {
@@ -483,7 +488,7 @@ func bounded(repo string, b Bounds, claim, proposed []intent.Intention) (kept []
 			case o.Line < 1 || strings.TrimSpace(o.Scenario) == "" || strings.TrimSpace(o.Kind) == "" || strings.TrimSpace(o.Why) == "":
 				said = append(said, fmt.Sprintf("an objection to `%s`: it names the test's line, the scenario, the kind and why", o.Test))
 			default:
-				objections = append(objections, forge.LineComment{Path: o.Test, Line: o.Line, Key: "objection-" + o.Test, Body: o.body()})
+				objections = append(objections, forge.LineComment{Path: o.Test, Line: o.Line, Key: o.key(), Body: o.body()})
 			}
 		case i.Kind == "note":
 			m, _ := i.Value.(map[string]any)
@@ -519,7 +524,8 @@ func bounded(repo string, b Bounds, claim, proposed []intent.Intention) (kept []
 	if len(objections) > 0 {
 		kept = append(kept, intent.Intention{Kind: "comment", Value: map[string]any{
 			"merge-request": b.Draft, "sticky": "objection",
-			"body":   fmt.Sprintf("**The developer** objects to %d of the tester's tests of #%d, on their lines: the tester keeps or rewrites each (ADR-0055).", len(objections), b.Issue),
+			"body": fmt.Sprintf("**The developer** objects to the tester's tests of #%d, on their lines: the tester keeps or rewrites each (ADR-0055).\n\n%s\n%s\n%s",
+				b.Issue, forge.ReviewHere, forge.Unplaced(objections, "the engine that applied this run posts no comment on a line").Section(), forge.ReviewEnd),
 			"review": map[string]any{"head": b.Head, "body": "", "comments": objections}}})
 	}
 	return kept, refused, said
