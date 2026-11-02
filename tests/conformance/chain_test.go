@@ -11,8 +11,9 @@ import (
 // The line of states on GitHub (ADR-0059), in the template and in
 // workline's own workflow alike: the job that applied asks the issue line,
 // no agent, whether the issue's new state is due, and only then starts its
-// run with the job's own token; the reconciler runs hourly or by hand,
-// no agent, a read token, and starts each due issue's run.
+// run with the job's own token; the reconciler runs in its own run, by
+// the heartbeat, by hand or once due, no agent, a read token, and starts
+// each due issue's run.
 func TestLineOfStatesChainsAndReconciles(t *testing.T) {
 	for _, file := range []string{"../../ci/github/workline-develop.yml", "../../.github/workflows/workline-develop.yml"} {
 		data, err := os.ReadFile(file)
@@ -20,13 +21,16 @@ func TestLineOfStatesChainsAndReconciles(t *testing.T) {
 			t.Fatal(err)
 		}
 		var wf struct {
-			Jobs map[string]struct {
+			RunName string `yaml:"run-name"`
+			Jobs    map[string]struct {
 				If          string            `yaml:"if"`
+				Concurrency map[string]any    `yaml:"concurrency"`
 				Permissions map[string]string `yaml:"permissions"`
 				Steps       []struct {
-					ID  string            `yaml:"id"`
-					Run string            `yaml:"run"`
-					Env map[string]string `yaml:"env"`
+					ID   string            `yaml:"id"`
+					Uses string            `yaml:"uses"`
+					Run  string            `yaml:"run"`
+					Env  map[string]string `yaml:"env"`
 				} `yaml:"steps"`
 			} `yaml:"jobs"`
 		}
@@ -48,20 +52,33 @@ func TestLineOfStatesChainsAndReconciles(t *testing.T) {
 			t.Errorf("%s, apply: its last step does not ask the line whether the issue is due, then start its run with the job's token", file)
 		}
 		rec := wf.Jobs["reconcile"]
-		reconciled, byHand := false, false
+		reconciled, cached := false, false
 		for _, s := range rec.Steps {
-			// By hand (input reconcile=true) or by the heartbeat (next): run
-			// whenever it last ran; on the schedule and the line's other
-			// events, 55 minutes after: the heartbeat stopped (#789, #845).
-			byHand = byHand || strings.Contains(s.Env["FORCED"], "inputs.reconcile == 'true'") && strings.Contains(s.Env["FORCED"], "inputs.reconcile == 'next'") &&
-				!strings.Contains(s.Env["FORCED"], "github.event_name == 'schedule'")
 			list := strings.Index(s.Run, "workline route reconcile --ai none")
 			start := strings.Index(s.Run, "gh workflow run")
 			reconciled = reconciled || list >= 0 && list < start && strings.Contains(s.Run, "--input reconcile=list") && strings.Contains(s.Run, "(.due // [])[]")
+			cached = cached || strings.HasPrefix(s.Uses, "actions/cache")
 		}
-		if !reconciled || !strings.Contains(rec.If, "github.event_name == 'schedule'") || !strings.Contains(rec.If, "(github.event_name == 'workflow_dispatch' && (inputs.reconcile == 'true' || inputs.reconcile == 'next'))") || !byHand ||
+		// Its own run alone, by the heartbeat (next) or by hand (true):
+		// those runs, by name, keep when it last ran; a run an event starts
+		// may not write the Actions cache (#853).
+		if !reconciled || !strings.Contains(rec.If, "github.event_name == 'workflow_dispatch' && (inputs.reconcile == 'true' || inputs.reconcile == 'next')") ||
+			strings.Contains(rec.If, "'schedule'") || strings.Contains(rec.If, "'issues'") || cached ||
 			rec.Permissions["actions"] != "write" || rec.Permissions["issues"] != "read" || rec.Permissions["contents"] != "read" {
-			t.Errorf("%s, reconcile: not hourly and by hand, or not each due issue's run started with a read token: %q %v", file, rec.If, rec.Permissions)
+			t.Errorf("%s, reconcile: not its own run alone, or not each due issue's run started with a read token, or kept in the cache: %q %v", file, rec.If, rec.Permissions)
+		}
+		// The schedule and the line's every label ask whether it is due:
+		// the heartbeat stopped (#789, #845). One at a time, no other
+		// right than to start a run.
+		due := wf.Jobs["reconcile-due"]
+		if !strings.Contains(due.If, "github.event_name == 'schedule'") || !strings.Contains(due.If, "(github.event_name == 'issues' && startsWith(github.event.label.name, 'workline:'))") ||
+			due.Concurrency["group"] != "workline-reconcile-due" || due.Concurrency["cancel-in-progress"] != false ||
+			len(due.Permissions) != 1 || due.Permissions["actions"] != "write" || len(due.Steps) != 1 {
+			t.Errorf("%s, reconcile-due: not on the schedule and a label, one at a time, or holds more than the right to start a run: %q %v %v", file, due.If, due.Concurrency, due.Permissions)
+		}
+		if !strings.Contains(wf.RunName, "inputs.reconcile == 'next' && 'workline develop heartbeat'") ||
+			!strings.Contains(wf.RunName, "inputs.reconcile == 'true' && 'workline develop reconcile'") {
+			t.Errorf("%s: the reconciler's runs not named, its store: run-name %q", file, wf.RunName)
 		}
 		if judge := wf.Jobs["judge"]; !strings.Contains(judge.If, "inputs.reconcile == ''") {
 			t.Errorf("%s, judge: runs on the reconciler's dispatch too: %q", file, judge.If)
