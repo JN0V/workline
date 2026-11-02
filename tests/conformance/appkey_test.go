@@ -103,7 +103,7 @@ func TestGitHubAppKeyOutOfPullRequestRuns(t *testing.T) {
 			if env := environmentOf(job.Environment); env != "workline-app" {
 				t.Errorf("%s, job %s: uses the App's key outside the environment workline-app (%q)", name, jobName, env)
 			}
-			if _, ok := wf.On["workflow_run"]; ok {
+			if _, ok := wf.On["workflow_run"]; ok && reachedOnRun(wf.Jobs, jobName) {
 				for _, p := range readsRunAsData(job) {
 					t.Errorf("%s, job %s: %s", name, jobName, p)
 				}
@@ -156,6 +156,35 @@ func environmentOf(v any) string {
 	return ""
 }
 
+// reachedOnRun says whether a job may run on a workflow_run event: not
+// when it, or a job it needs, runs on other events alone (an `if` naming
+// event_name, never workflow_run). workline-develop.yml's issue line
+// (judge, apply) never runs on one: only its round does (#917).
+func reachedOnRun(jobs map[string]yaml.Node, name string) bool {
+	var job keyJob
+	if n, ok := jobs[name]; !ok || n.Decode(&job) != nil {
+		return true
+	}
+	if strings.Contains(job.If, "github.event_name") && !strings.Contains(job.If, "workflow_run") {
+		return false
+	}
+	var needs []string
+	switch n := job.Needs.(type) {
+	case string:
+		needs = []string{n}
+	case []any:
+		for _, x := range n {
+			needs = append(needs, fmt.Sprint(x))
+		}
+	}
+	for _, n := range needs {
+		if !reachedOnRun(jobs, n) {
+			return false
+		}
+	}
+	return true
+}
+
 // readsRunAsData says what a job reading another job's run after it
 // completed (workflow_run) does wrong: that run may have run a branch's
 // code, the tester's answer too. Its artifacts outside the checkout, the
@@ -179,7 +208,12 @@ func readsRunAsData(job keyJob) (problems []string) {
 			continue
 		}
 		if strings.Contains(s.Run, "workline apply") {
-			if !strings.Contains(s.Run, `--from-merge-request "$NUMBER" --head "$HEAD_SHA"`) || s.Env["HEAD_SHA"] != head {
+			// The event's head; or, for a run of this workflow's own (a
+			// round woken by a project's run that failed, #917), the head
+			// its own job read and judged, from its outputs.
+			ownHead := strings.HasPrefix(s.Env["HEAD_SHA"], "${{ needs.") && strings.HasSuffix(s.Env["HEAD_SHA"], ".outputs.head }}")
+			if !strings.Contains(s.Run, `--from-merge-request "$NUMBER" --head "$HEAD_SHA"`) && !strings.Contains(s.Run, `--from-merge-request "$PR" --head "$HEAD_SHA"`) ||
+				s.Env["HEAD_SHA"] != head && !ownHead {
 				problems = append(problems, "applies a pull request's run without --from-merge-request and the event's head")
 			}
 			if s.Env["WORKLINE_APP"] != "${{ steps.app.outputs.app-slug }}" {
