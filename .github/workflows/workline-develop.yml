@@ -7,8 +7,9 @@
 # (ADR-0059); the job that moves a state starts the next step; hourly, the
 # reconciler; by hand with no issue, the first ready one nobody took. On
 # its own pull request (workline/developer/…), the reviewer's verdict,
-# the gates' report or a person's comment runs a review round; the
-# reconciler starts one an event missed.
+# the gates' report, a person's comment or a project workflow failed on
+# its branch runs a review round; the reconciler starts one an event
+# missed.
 #   judge, review          the agent and a read token.
 #   apply, review-apply    the App's key (environment workline-app), no AI key.
 #   heartbeat              no token; the environment workline-heartbeat, its wait
@@ -23,6 +24,8 @@ run-name: >-
   (github.event_name == 'issue_comment' && github.event.issue.pull_request && (contains(github.event.comment.body, 'workline:sticky=reviewer/') ||
     contains(github.event.comment.body, 'workline:sticky=gates/') || github.event.comment.user.type != 'Bot') &&
   format('workline develop round !{0}', github.event.issue.number)) ||
+  (github.event_name == 'workflow_run' && github.event.workflow_run.pull_requests[0] &&
+  format('workline develop round !{0}', github.event.workflow_run.pull_requests[0].number)) ||
   (github.event_name == 'workflow_dispatch' && inputs.reconcile == 'next' && 'workline develop heartbeat') ||
   (github.event_name == 'workflow_dispatch' && inputs.reconcile == 'true' && 'workline develop reconcile') ||
   (github.event_name == 'issues' && github.event.sender.type != 'Bot' && startsWith(github.event.label.name, 'workline:') &&
@@ -40,6 +43,11 @@ on:
   # The reviewer's comment or the gates', written or edited by the App (a
   # comment the job's own token writes wakes nothing), or a person's.
   issue_comment: {types: [created, edited]}
+  # A project's workflow that failed on the developer's branch: its
+  # checks red are a round (#917). Every workflow, workline's own left
+  # out by the job whose; check_suite and check_run never fire for
+  # GitHub Actions' own checks.
+  workflow_run: {workflows: ["*"], types: [completed], branches: ["workline/developer/**"]}
   # The reconciler, hourly: a step an event missed (ADR-0059). A safety
   # net, not the driver. Each reconcile starts the next one, an hour on,
   # by the heartbeat (job heartbeat); GitHub runs this schedule late or
@@ -280,7 +288,7 @@ jobs:
       group: workline-reconcile
       cancel-in-progress: false
     runs-on: ubuntu-latest
-    permissions: {contents: read, issues: read, pull-requests: read, actions: write}
+    permissions: {contents: read, issues: read, pull-requests: read, checks: read, actions: write}
     steps:
       - uses: actions/checkout@v4
         # The branch's head as the job starts, not the commit the run was
@@ -361,7 +369,9 @@ jobs:
       (github.event_name == 'issue_comment' && github.event.issue.pull_request && github.event.issue.state == 'open' &&
         (contains(github.event.comment.body, 'workline:sticky=reviewer/') || contains(github.event.comment.body, 'workline:sticky=gates/') ||
           (github.event.action == 'created' && github.event.comment.user.type != 'Bot' &&
-            contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association))))
+            contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)))) ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'failure' &&
+        !startsWith(github.event.workflow_run.name, 'workline') && github.event.workflow_run.pull_requests[0] != null)
     runs-on: ubuntu-latest
     permissions: {pull-requests: read}
     outputs:
@@ -371,10 +381,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-          PR: ${{ github.event.issue.number || inputs['pull-request'] }}
+          PR: ${{ github.event.issue.number || inputs['pull-request'] || github.event.workflow_run.pull_requests[0].number }}
         run: |
           printf '%s' "$PR" | grep -Eqx '[0-9]+' || { echo "::error title=workline::not a pull request number: $PR"; exit 64; }
-          branch=$(gh pr view "$PR" --json headRefName,isCrossRepository --jq 'select(.isCrossRepository | not) | .headRefName')
+          branch=$(gh pr view "$PR" --json headRefName,isCrossRepository,state --jq 'select((.isCrossRepository | not) and .state == "OPEN") | .headRefName')
           case "$branch" in
             workline/developer/*) echo "branch=$branch" >> "$GITHUB_OUTPUT" ;;
             *) echo "pull request $PR is not the developer's: no round" ;;
@@ -384,10 +394,12 @@ jobs:
     needs: whose
     if: needs.whose.outputs.branch != ''
     concurrency:
-      group: workline-develop-review-${{ github.event.issue.number || inputs['pull-request'] }}
+      group: workline-develop-review-${{ github.event.issue.number || inputs['pull-request'] || github.event.workflow_run.pull_requests[0].number }}
       cancel-in-progress: false
     runs-on: ubuntu-latest
-    permissions: {contents: read, pull-requests: read, issues: read}
+    # checks, actions: the project's checks red at its head, and their
+    # failed steps' log, the round's input (#917).
+    permissions: {contents: read, pull-requests: read, issues: read, checks: read, actions: read}
     env: {HAS_CLAUDE: "${{ secrets.CLAUDE_CODE_OAUTH_TOKEN != '' }}"}
     outputs:
       run: ${{ steps.round.outputs.run }}
@@ -415,7 +427,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           WORKLINE_APP_ID: ${{ vars.WORKLINE_APP_ID }}   # the App whose comments keep the records a role reads back (ADR-0051)
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          PR: ${{ github.event.issue.number || inputs['pull-request'] }}
+          PR: ${{ github.event.issue.number || inputs['pull-request'] || github.event.workflow_run.pull_requests[0].number }}
           BRANCH: ${{ needs.whose.outputs.branch }}
         run: |
           ai=none; [ -n "$CLAUDE_CODE_OAUTH_TOKEN" ] && ai=claude
@@ -472,7 +484,7 @@ jobs:
           WORKLINE_RUNS_DIR: ${{ runner.temp }}/workline-runs
           RUN: ${{ needs.review.outputs.run }}
           HEAD_SHA: ${{ needs.review.outputs.head }}
-          PR: ${{ github.event.issue.number || inputs['pull-request'] }}
+          PR: ${{ github.event.issue.number || inputs['pull-request'] || github.event.workflow_run.pull_requests[0].number }}
         run: |
           printf '%s' "$RUN" | grep -Eqx '[0-9]{8}T[0-9]{6}\.[0-9]{9}-[a-z0-9-]+' && [ -d "$WORKLINE_RUNS_DIR/$RUN" ] ||
             { echo "::error title=workline::the round named no run of its own: $RUN"; exit 1; }

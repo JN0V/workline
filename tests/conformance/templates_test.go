@@ -1851,6 +1851,16 @@ func TestDeveloperTemplatesRunTheReviewRound(t *testing.T) {
 	if !strings.Contains(whose.If, "workline:sticky=gates/") {
 		t.Errorf("workline-develop.yml, whose: a gate's report does not wake a round: %q", whose.If)
 	}
+	// A project's workflow failed on the developer's branch is a round
+	// (#917): every workflow's end on its branches wakes whose, workline's
+	// own left out; the round reads the checks and their logs.
+	wr, _ := wf.On["workflow_run"].(map[string]any)
+	if fmt.Sprint(wr["workflows"]) != "[*]" || fmt.Sprint(wr["branches"]) != "[workline/developer/**]" ||
+		!strings.Contains(whose.If, "github.event.workflow_run.conclusion == 'failure'") || !strings.Contains(whose.If, "!startsWith(github.event.workflow_run.name, 'workline')") ||
+		review.Permissions["checks"] != "read" || review.Permissions["actions"] != "read" || wf.Jobs["reconcile"].Permissions["checks"] != "read" ||
+		!strings.Contains(wf.RunName, "format('workline develop round !{0}', github.event.workflow_run.pull_requests[0].number)") {
+		t.Errorf("workline-develop.yml: a project's failed workflow on the developer's branch does not wake a round, or the round and the reconciler cannot read the checks: %v %q %v", wr, whose.If, review.Permissions)
+	}
 	started := false
 	for _, s := range wf.Jobs["reconcile"].Steps {
 		started = started || strings.Contains(s.Run, "(.reviews // [])[].id") && strings.Contains(s.Run, `-f pull-request="$n"`) && s.Env["WORKLINE_APP_ID"] != ""
