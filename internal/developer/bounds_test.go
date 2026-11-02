@@ -2,6 +2,7 @@ package developer
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -179,11 +180,15 @@ func TestScopePlainPathsAreBounds(t *testing.T) {
 			[]string{"internal/doctor", "internal/gate", "internal/tools", "docs/spec/gates.md", "docs/install.md"}},
 		{"new file in a known folder", "- `src/b.go`, `src/new/c.go`, and/or src/a.go:12.", []string{"src/b.go", "src/new/c.go", "src/a.go"}},
 		{"new folder", "- `pkg/__init__.py`, `lib/`, `actions/checkout`.", []string{"pkg/__init__.py", "lib"}},
+		{"an Action's version", "- `actions/checkout@v4.1`, `golangci/lint-action@v6.1.0`, `pkg/x.go`.", []string{"pkg/x.go"}},
 	} {
 		got := scopePaths("## Need\n\nA need.\n\n## Scope\n\n"+c.scope+"\n", files)
 		if !slices.Equal(got, c.want) {
 			t.Errorf("%s: scopePaths = %q, want %q", c.name, got, c.want)
 		}
+	}
+	if got := scopePaths("## Scope\n\n`dorny/paths-filter`, docs/ci.md\n", nil); !slices.Equal(got, []string{"dorny/paths-filter"}) {
+		t.Errorf("files unread: scopePaths = %q, want the words in backticks as written", got)
 	}
 	ch := checker{b: Bounds{Scope: scopePaths("## Scope\n\ninternal/doctor\n", files)}, steer: func(string) bool { return false }}
 	if r := ch.rule("internal/doctor/new.go"); r != "" {
@@ -201,6 +206,22 @@ func TestPickReadsPlainScope(t *testing.T) {
 	id, passed := pick(issues, nil, s, 0, false, nil, nil, []string{"internal/doctor/doctor.go", "docs/install.md"})
 	if id != 0 || len(passed) != 2 || !strings.Contains(passed[1].Why, "overlaps #1") {
 		t.Errorf("pick: %d, %v", id, passed)
+	}
+	// A bare name is the one file of that name, as the bounds read it.
+	issues[0].Body, issues[1].Body = "## Scope\n\n- `doctor.go`\n", "## Scope\n\n- `internal/doctor/doctor.go`\n"
+	if id, passed := pick(issues, nil, s, 0, false, nil, nil, []string{"internal/doctor/doctor.go"}); id != 0 || len(passed) != 2 {
+		t.Errorf("pick on a bare name: %d, %v", id, passed)
+	}
+}
+
+// A repository with no file reads as files known, none held.
+func TestRepoFilesOfAnEmptyRepository(t *testing.T) {
+	repo := t.TempDir()
+	if err := exec.Command("git", "-C", repo, "init", "-q").Run(); err != nil {
+		t.Fatal(err)
+	}
+	if got := repoFiles(repo); got == nil || len(got) != 0 {
+		t.Errorf("repoFiles = %q, want none, known", got)
 	}
 }
 
