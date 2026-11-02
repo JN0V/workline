@@ -13,6 +13,7 @@ import (
 	"maps"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"regexp"
 	"slices"
@@ -205,9 +206,10 @@ func ReadAct(body string) (Act, bool) {
 // plain words: a path the repository holds, a file or a folder (#901).
 // files are the repository's files; nil when they could not be read,
 // the words in backticks then taken as written. Given files, a word in
-// backticks with a slash is kept when its first folder is the
-// repository's, or a pattern or a file it names is: `dorny/paths-filter`,
-// an Action a Scope names, bounds nothing.
+// backticks with a slash is kept when it looks like a path to create, a
+// file's extension or a trailing slash (`pkg/__init__.py`, `src/`), when
+// its first folder is the repository's, or a pattern or a file it names
+// is: `dorny/paths-filter`, an Action a Scope names, bounds nothing.
 func scopePaths(body string, files []string) []string {
 	text := work.ByMeaning(body)[work.Scope].Text
 	var out []string
@@ -221,7 +223,8 @@ func scopePaths(body string, files []string) []string {
 		if !ok || !strings.ContainsAny(w, "/.") {
 			continue
 		}
-		if files == nil || !strings.Contains(p, "/") || len(work.Files(p, files)) > 0 || holds(files, strings.SplitN(p, "/", 2)[0]) {
+		if files == nil || !strings.Contains(p, "/") || strings.HasSuffix(w, "/") || path.Ext(p) != "" ||
+			len(work.Files(p, files)) > 0 || holds(files, strings.SplitN(p, "/", 2)[0]) {
 			add(p)
 		}
 	}

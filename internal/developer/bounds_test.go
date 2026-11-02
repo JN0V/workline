@@ -178,6 +178,7 @@ func TestScopePlainPathsAreBounds(t *testing.T) {
 		{"#244", "internal/doctor, `workline init`, internal/gate (a \"linted\" rule), a table language → linter → pinned install (internal/tools), docs/spec/gates.md, docs/install.md. Related: #202.",
 			[]string{"internal/doctor", "internal/gate", "internal/tools", "docs/spec/gates.md", "docs/install.md"}},
 		{"new file in a known folder", "- `src/b.go`, `src/new/c.go`, and/or src/a.go:12.", []string{"src/b.go", "src/new/c.go", "src/a.go"}},
+		{"new folder", "- `pkg/__init__.py`, `lib/`, `actions/checkout`.", []string{"pkg/__init__.py", "lib"}},
 	} {
 		got := scopePaths("## Need\n\nA need.\n\n## Scope\n\n"+c.scope+"\n", files)
 		if !slices.Equal(got, c.want) {

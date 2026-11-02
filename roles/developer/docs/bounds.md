@@ -46,8 +46,9 @@ first rule that matches refuses the whole patch:
 - the paths in backticks in the issue's Scope, a line after one taken
   off (`parts.go:943`), a bare name read as the one file that has it,
   a pattern as the files it matches (`src/calc/*.sh`, a new one too);
-  a path with a `/` only when its first folder is the repository's
-  (`dorny/paths-filter`, an Action, bounds nothing);
+  a path with a `/` only when it has a file's extension, ends with `/`,
+  or its first folder is the repository's (`dorny/paths-filter`, an
+  Action, bounds nothing);
 - the paths in plain words in the Scope that the repository holds, a
   file or a folder (`docs/ci.md, internal/doctor`);
 - the product owner's `sources` for the issue;
