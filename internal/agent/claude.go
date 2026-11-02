@@ -14,6 +14,7 @@ import (
 	"runtime"
 	"slices"
 	"strings"
+	"time"
 
 	"go.yaml.in/yaml/v3"
 )
@@ -174,11 +175,26 @@ func shellTools(tree, goos string) error {
 			missing = append(missing, t)
 		}
 	}
-	if len(missing) == 0 {
-		return nil
+	if len(missing) > 0 {
+		return fmt.Errorf("%w: claude's shell needs bubblewrap and socat, %s not installed: no command would run (apt-get install bubblewrap socat)",
+			ErrUnavailable, strings.Join(missing, " and "))
 	}
-	return fmt.Errorf("%w: claude's shell needs bubblewrap and socat, %s not installed: no command would run (apt-get install bubblewrap socat)",
-		ErrUnavailable, strings.Join(missing, " and "))
+	// Installed is not enough: a container the runner does not let create
+	// a namespace (Docker's default profile, not privileged) refuses
+	// bubblewrap, and every command with it (#906). Its sandbox kept, not
+	// dropped: without it, the commands would hold the agent's login.
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	out, err := exec.CommandContext(ctx, "bwrap", "--ro-bind", "/", "/", "true").CombinedOutput()
+	if err != nil {
+		said := err.Error()
+		if strings.TrimSpace(string(out)) != "" {
+			said = lastLine(string(out))
+		}
+		return fmt.Errorf("%w: claude's shell cannot start its sandbox here, no command would run (%s): the runner must let a job's container create a namespace, as gitlab.com's shared runners do (a privileged runner)",
+			ErrUnavailable, said)
+	}
+	return nil
 }
 
 // claudeStubs are the files Claude Code creates empty in its folder, where
