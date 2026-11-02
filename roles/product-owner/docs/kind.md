@@ -1,5 +1,5 @@
 ---
-sources: [internal/backlog/kind.go, internal/engine/backlog.go, roles/product-owner/role.yaml]
+sources: [internal/backlog/kind.go, internal/engine/backlog.go, internal/builtin/productowner/kinds.go, roles/product-owner/role.yaml]
 checked: 5892e73a
 verified: agent:claude-code
 ---
@@ -45,6 +45,30 @@ flowchart LR
   bug. Wrong? Change the label; the role does not set it again."
 - **By level**: `normal` sets 10 a run, `enterprising` 20, `cautious`
   proposes it on the issue.
+
+## Issues it read before
+
+An issue read before the act existed is not read again until it
+changes. A light read gives it a kind
+([#878](https://github.com/JN0V/workline/issues/878)):
+
+- **What the agent reads**: each title and the first 600 characters of
+  its body, never its code nor its comments.
+- **Which issues**: open, no kind label, no kind the role set before,
+  not set aside. First those a merge waits on: a developer on it
+  (`workline:developing`), then ready; then the backlog's order.
+  Gardening runs only, never a run woken for one issue.
+- **How many**: the act's cap, less the issues read in full this run
+  with no kind. None while the act is `off`; none at `cautious` once
+  `proposals-max` issues wait on a person.
+- **One call**: beside the full read when there is one; else a task of
+  its own, `kind`, with a short instruction
+  ([tasks/kind.md](../tasks/kind.md)). It answers `kind` or
+  `note` only; anything else is dropped, said.
+- **Its cost**, by the engine's estimate on a real backlog: about 400
+  tokens an issue beside a full read; alone, about 6.4k tokens for 10
+  issues, against 24.5k with the full instruction (measures in
+  [#878's pull request](https://github.com/JN0V/workline/issues/878)).
 
 ## A person's kind holds
 

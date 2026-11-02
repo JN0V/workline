@@ -344,7 +344,9 @@ function people have not seen, `task` for work with no change of
 behaviour (a refactor, a dependency, docs) — and why. A bug's fix
 merges once a test that fails shows the bug; a feature waits for a
 person: never call a bug a feature, whatever its size. The engine sets
-a kind once: a person's change stands.
+a kind once: a person's change stands. The issues the task gives "for
+their kind alone" get a `kind` each, by their title and the start of
+their body, and nothing else.
 
 Put an issue in the milestone of the release it belongs to (`milestone`),
 when it has none or slipped — only one the code given shows still true;

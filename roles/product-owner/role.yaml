@@ -18,6 +18,11 @@ model:
   tier: standard
   effort: medium
   promote-after: 1   # an answer that does not read is asked for again once
+  tasks:
+    # The kind's light read (#878): open issues read before with no kind
+    # label, by title and the start of their body, many in one call; its
+    # own short instruction, its answers kind and note only.
+    kind: {instruction: tasks/kind.md, intentions: [kind, note]}
 
 context:
   # Estimated tokens, 711 + 0.82 a character (#235): eight issues, their

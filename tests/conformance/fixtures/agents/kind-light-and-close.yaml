@@ -1,0 +1,2 @@
+- kind: {issue: 9, kind: bug, why: "the export worked and now loses the last row."}
+- close: {issue: 9, reason: obsolete, quote: {path: src/export/csv.go, text: "func WriteRows"}, why: "read by its title alone."}

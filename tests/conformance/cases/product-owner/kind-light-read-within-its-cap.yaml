@@ -1,0 +1,36 @@
+case: product-owner/kind-light-read-within-its-cap
+about: >
+  The kind's light read keeps to the kind act's cap (#878): here 2 a
+  run. A person's new issue, #12, is read in full, and its kind proposed
+  there counts first; one place is left, for #9, the first of the issues
+  read before in the backlog's order. Its light read rides on the full
+  read: one call. #10 and #11 wait for the next run, unlabelled.
+given:
+  repo: backlog
+  config:
+    roles:
+      product-owner:
+        settings: {acts: {kind: {max: 2}}}
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost on export", body: "The export loses the last row.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 10, title: "Export to JSON", body: "Add a JSON export.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 11, title: "Bump the CSV library", body: "A new version is out.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 12, title: "A comma splits a cell", body: "A cell holding a comma is written as two cells.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:kind-light-capped}
+expect:
+  status: pass
+  agent-calls: 1
+  run-files:
+    in/task.md:
+      contains: ["# What you may do in this run", "- kind: act, 2 a run (setting)", "## #12 A comma splits a cell", "# Issues read for their kind alone", "nothing else on them.\n\n## #9 Rows lost on export\n\nThe export loses the last row.\n\n"]
+  findings:
+    - {rule: done, where: "#12", message: "Labelled #12 `bug`, a bug"}
+    - {rule: done, where: "#9", message: "Labelled #9 `bug`, a bug"}
+  forge:
+    issues:
+      - {id: 12, labels: [bug]}
+      - {id: 9, labels: [bug]}
+      - {id: 10, labels: []}
+      - {id: 11, labels: []}
+  no-findings: [{rule: done, where: "#10"}, {rule: done, where: "#11"}]

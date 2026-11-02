@@ -1,0 +1,2 @@
+- kind: {issue: 12, kind: bug, why: "a cell with a comma is split: it worked before."}
+- kind: {issue: 9, kind: bug, why: "the export worked and now loses the last row."}

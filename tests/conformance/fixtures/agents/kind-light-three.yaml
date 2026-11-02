@@ -1,0 +1,3 @@
+- kind: {issue: 9, kind: bug, why: "the export worked and now loses the last row."}
+- kind: {issue: 10, kind: feature, why: "a JSON export nobody has seen yet."}
+- kind: {issue: 11, kind: task, why: "a dependency bump, no change of behaviour."}

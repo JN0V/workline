@@ -1,0 +1,34 @@
+case: product-owner/kind-light-read-leaves-a-persons-kind
+about: >
+  A person's kind stands in the light read (#878, ADR-0039 (c)): #9 got
+  `bug` from the role, a person changed it to `enhancement`; #10 got
+  `bug`, a person took it off; #11 a person labelled `bug` themselves.
+  None is given for its kind: only #12, which no one labelled. An agent
+  proposing a kind on #10 all the same is refused (`kind-once`): the
+  label is never put back.
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost on export", body: "The export loses the last row.", author: ann, insider: true, labels: [enhancement], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nkind: bug\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 10, title: "Slow export", body: "The export is slow.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nkind: bug\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 11, title: "Quotes doubled", body: "A quote in a cell is written twice.", author: ann, insider: true, labels: [bug], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 12, title: "Document the export", body: "Say in the README how to export.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:kind-light-persons}
+expect:
+  status: pass
+  calls: [{agent: fake, task: kind}]
+  run-files:
+    in/task.md:
+      contains: ["Open issues to label with their kind: 1.", "## #12 Document the export"]
+      not-contains: ["## #9", "## #10", "## #11"]
+  findings:
+    - {rule: kind-once, where: "#10", message: "the role set its kind once already (`bug`): never again; a person's change or removal stands"}
+    - {rule: done, where: "#12", message: "Labelled #12 `task`, a task"}
+  no-findings: [{rule: done, where: "#10"}]
+  forge:
+    issues:
+      - {id: 9, labels: [enhancement]}
+      - {id: 10, labels: []}
+      - {id: 11, labels: [bug]}
+      - {id: 12, labels: [task]}

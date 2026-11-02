@@ -1,0 +1,22 @@
+case: product-owner/kind-light-read-proposes-at-cautious
+about: >
+  At `cautious`, the kind's light read proposes (#878, ADR-0039 (c)): the
+  kind is said on the issue for a person to accept, its label not put.
+given:
+  repo: backlog
+  config:
+    roles:
+      product-owner:
+        settings: {autonomy: cautious}
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost on export", body: "The export loses the last row.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:kind-light-and-close}
+expect:
+  status: pass
+  calls: [{agent: fake, task: kind}]
+  findings:
+    - {rule: proposed, where: "#9", message: "Label it `bug`: it is a bug."}
+  forge:
+    issues:
+      - {id: 9, closed: false, labels: [workline:proposed], comment-contains: "**Proposes**: Label it `bug`: it is a bug."}

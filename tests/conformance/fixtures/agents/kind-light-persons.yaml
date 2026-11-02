@@ -1,0 +1,2 @@
+- kind: {issue: 10, kind: bug, why: "the export is slower than it was."}
+- kind: {issue: 12, kind: task, why: "docs only, no change of behaviour."}

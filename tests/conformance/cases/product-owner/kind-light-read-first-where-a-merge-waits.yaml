@@ -1,0 +1,32 @@
+case: product-owner/kind-light-read-first-where-a-merge-waits
+about: >
+  The kind's light read takes first the issues a merge waits on (#878,
+  ADR-0060 decision 4): a developer on it (`workline:developing`), then
+  ready, then the rest in the backlog's order. One place a run here:
+  #11, the developer's, goes before #9 and the ready #10.
+given:
+  repo: backlog
+  config:
+    roles:
+      product-owner:
+        settings: {acts: {kind: {max: 1}}}
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost on export", body: "The export loses the last row.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 10, title: "Export to JSON", body: "Add a JSON export.", author: ann, insider: true, labels: [workline:ready], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 11, title: "Quotes doubled", body: "A quote in a cell is written twice.", author: ann, insider: true, labels: [workline:ready, workline:developing], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:kind-light-developing}
+expect:
+  status: pass
+  calls: [{agent: fake, task: kind}]
+  run-files:
+    in/task.md:
+      contains: ["Open issues to label with their kind: 1.", "## #11 Quotes doubled"]
+      not-contains: ["## #9", "## #10"]
+  findings:
+    - {rule: done, where: "#11", message: "Labelled #11 `bug`, a bug"}
+  forge:
+    issues:
+      - {id: 11, labels: [workline:ready, workline:developing, bug]}
+      - {id: 9, labels: []}
+      - {id: 10, labels: [workline:ready]}
