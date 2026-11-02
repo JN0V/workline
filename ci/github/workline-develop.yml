@@ -245,9 +245,16 @@ jobs:
         env: {GH_TOKEN: "${{ github.token }}"}
         run: |
           wf=$(basename "${GITHUB_WORKFLOW_REF%%@*}")
-          gh api "repos/$GITHUB_REPOSITORY/actions/workflows/$wf/runs?event=workflow_dispatch&branch=$GITHUB_REF_NAME&per_page=100" \
-            --jq '[.workflow_runs[] | select(.display_title == "workline develop heartbeat" or .display_title == "workline develop reconcile")]' > runs.json || {
-            echo "::warning title=workline::this workflow's runs not read: no reconcile started; the next event or the schedule asks again"; exit 0; }
+          # Newest first, read on past a page of the issues' own runs until
+          # a reconciler's run that succeeded: one call, most often.
+          echo '[]' > runs.json
+          for page in 1 2 3 4 5; do
+            gh api "repos/$GITHUB_REPOSITORY/actions/workflows/$wf/runs?event=workflow_dispatch&branch=$GITHUB_REF_NAME&per_page=100&page=$page" \
+              --jq '{n: (.workflow_runs | length), r: [.workflow_runs[] | select(.display_title == "workline develop heartbeat" or .display_title == "workline develop reconcile")]}' > page.json || {
+              echo "::warning title=workline::this workflow's runs not read: no reconcile started; the next event or the schedule asks again"; exit 0; }
+            jq -s '.[0] + .[1].r' runs.json page.json > all.json && mv all.json runs.json
+            jq -e '.n < 100 or any(.r[]; .conclusion == "success")' page.json > /dev/null && break
+          done
           going=$(jq -r 'map(select(.status != "completed"))[0] // empty | "\(.display_title), \(.status) since \(.created_at)"' runs.json)
           if [ -n "$going" ]; then
             echo "a reconcile on its way ($going): not due" | tee -a "$GITHUB_STEP_SUMMARY"; exit 0
@@ -292,10 +299,16 @@ jobs:
         run: |
           wf=$(basename "${GITHUB_WORKFLOW_REF%%@*}")
           # When the last reconcile ended, said when late: the last of the
-          # reconciler's runs that succeeded, this one still running.
-          LAST=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/$wf/runs?event=workflow_dispatch&branch=$GITHUB_REF_NAME&per_page=100" \
-            --jq '[.workflow_runs[] | select(.display_title == "workline develop heartbeat" or .display_title == "workline develop reconcile") |
-              select(.conclusion == "success") | .updated_at] | max // empty') || LAST=
+          # reconciler's runs that succeeded, this one still running; read
+          # on past a page of the issues' own runs, newest first.
+          LAST=
+          for page in 1 2 3 4 5; do
+            got=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/$wf/runs?event=workflow_dispatch&branch=$GITHUB_REF_NAME&per_page=100&page=$page" \
+              --jq '(.workflow_runs | length), ([.workflow_runs[] | select(.display_title == "workline develop heartbeat" or .display_title == "workline develop reconcile") |
+                select(.conclusion == "success") | .updated_at] | max // empty)') || break
+            LAST=$(printf '%s\n' "$got" | sed -n 2p)
+            [ -z "$LAST" ] && [ "$(printf '%s\n' "$got" | sed -n 1p)" = 100 ] || break
+          done
           workline route reconcile --ai none --forge github --open-merge-request --input reconcile=list ${LAST:+--input "last=$LAST"} \
             --summary workline-summary.md --json > due.json
           [ ! -s workline-summary.md ] || cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"

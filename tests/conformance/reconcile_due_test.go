@@ -5,6 +5,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -29,19 +31,27 @@ func TestReconcileDueReadsTheReconcilersRuns(t *testing.T) {
 			"created_at": ago(ended + time.Hour), "updated_at": ago(ended)}
 	}
 	const beat, rec, issue = "workline develop heartbeat", "workline develop reconcile", "workline develop #5"
+	// A page of the issues' own runs alone: a busy line.
+	busy := make([]map[string]any, 100)
+	for i := range busy {
+		busy[i] = run(issue, "completed", "success", time.Duration(i)*time.Second)
+	}
+	one := func(runs ...map[string]any) [][]map[string]any { return [][]map[string]any{runs} }
 	cases := []struct {
 		name  string
-		runs  []map[string]any // nil: the call fails
+		pages [][]map[string]any // nil: the call fails
 		start bool
 	}{
-		{"a heartbeat waits", []map[string]any{run(beat, "waiting", "", 0), run(beat, "completed", "success", 2*time.Hour)}, false},
-		{"the reconciler's run queued", []map[string]any{run(rec, "queued", "", 0)}, false},
-		{"the last 10 min ago", []map[string]any{run(beat, "completed", "success", 10*time.Minute)}, false},
+		{"a heartbeat waits", one(run(beat, "waiting", "", 0), run(beat, "completed", "success", 2*time.Hour)), false},
+		{"the reconciler's run queued", one(run(rec, "queued", "", 0)), false},
+		{"the last 10 min ago", one(run(beat, "completed", "success", 10*time.Minute)), false},
 		{"the last 56 min ago, later ones failed, an issue's run going",
-			[]map[string]any{run(issue, "in_progress", "", 0), run(beat, "completed", "cancelled", time.Minute),
-				run(rec, "completed", "failure", 2*time.Minute), run(rec, "completed", "success", 56*time.Minute)}, true},
-		{"none ever", []map[string]any{run(issue, "completed", "success", time.Minute)}, true},
+			one(run(issue, "in_progress", "", 0), run(beat, "completed", "cancelled", time.Minute),
+				run(rec, "completed", "failure", 2*time.Minute), run(rec, "completed", "success", 56*time.Minute)), true},
+		{"none ever", one(run(issue, "completed", "success", time.Minute)), true},
 		{"the runs not read", nil, false},
+		{"a heartbeat waits past a page of issues' runs", [][]map[string]any{busy, {run(beat, "waiting", "", 0), run(rec, "completed", "success", 70*time.Minute)}}, false},
+		{"the last 10 min ago past a page of issues' runs", [][]map[string]any{busy, {run(beat, "completed", "success", 10*time.Minute)}}, false},
 	}
 	for _, f := range []string{"../../ci/github/workline-develop.yml", "../../.github/workflows/workline-develop.yml"} {
 		data, err := os.ReadFile(f)
@@ -68,22 +78,27 @@ func TestReconcileDueReadsTheReconcilersRuns(t *testing.T) {
 			if err := os.MkdirAll(bin, 0o755); err != nil {
 				t.Fatal(err)
 			}
-			listing := filepath.Join(dir, "runs-listing.json")
-			body, _ := enc.Marshal(map[string]any{"total_count": len(c.runs), "workflow_runs": c.runs})
-			if err := os.WriteFile(listing, body, 0o644); err != nil {
+			pages := filepath.Join(dir, "pages")
+			if err := os.MkdirAll(pages, 0o755); err != nil {
 				t.Fatal(err)
 			}
+			for i, runs := range append(slices.Clone(c.pages), []map[string]any{}) {
+				body, _ := enc.Marshal(map[string]any{"total_count": 0, "workflow_runs": runs})
+				if err := os.WriteFile(filepath.Join(pages, strconv.Itoa(i+1)+".json"), body, 0o644); err != nil {
+					t.Fatal(err)
+				}
+			}
 			fail := "0"
-			if c.runs == nil {
+			if c.pages == nil {
 				fail = "1"
 			}
 			calls := filepath.Join(dir, "calls")
-			// gh api URL --jq F: the listing through jq; gh workflow run: logged.
+			// gh api URL --jq F: the URL's page through jq; gh workflow run: logged.
 			writeExec(t, filepath.Join(bin, "gh"), `#!/bin/bash
 echo "$*" >> "`+calls+`"
 if [ "$1" = api ]; then
   [ `+fail+` = 0 ] || { echo "HTTP 502" >&2; exit 1; }
-  exec jq "$4" "`+listing+`"
+  exec jq "$4" "`+pages+`/${2##*&page=}.json"
 fi
 exit 0
 `)
@@ -99,14 +114,19 @@ exit 0
 			}
 			got, _ := os.ReadFile(calls)
 			lines := strings.Split(strings.TrimSpace(string(got)), "\n")
-			if len(lines) == 0 || !strings.HasPrefix(lines[0], "api repos/o/r/actions/workflows/workline-develop.yml/runs?event=workflow_dispatch&branch=main&per_page=100 --jq ") {
-				t.Errorf("%s, %s: the runs not read first, in one call: %q", f, c.name, got)
+			// One call a page, read on only past a page with no reconciler's
+			// run that succeeded.
+			reads := max(len(c.pages), 1)
+			for i := range reads {
+				if len(lines) <= i || !strings.HasPrefix(lines[i], "api repos/o/r/actions/workflows/workline-develop.yml/runs?event=workflow_dispatch&branch=main&per_page=100&page="+strconv.Itoa(i+1)+" --jq ") {
+					t.Errorf("%s, %s: the runs not read first, one call a page, %d pages: %q", f, c.name, reads, got)
+				}
 			}
 			started := strings.Count(string(got), "workflow run workline-develop.yml -R o/r --ref main -f reconcile=true")
-			if strings.Contains(string(got), "reconcile=next") || len(lines) != 1+started || (started == 1) != c.start {
+			if strings.Contains(string(got), "reconcile=next") || len(lines) != reads+started || (started == 1) != c.start {
 				t.Errorf("%s, %s: calls %q, want the reconciler's run started: %v\n%s", f, c.name, got, c.start, out)
 			}
-			if c.runs == nil && !strings.Contains(string(out), "::warning title=workline::this workflow's runs not read") {
+			if c.pages == nil && !strings.Contains(string(out), "::warning title=workline::this workflow's runs not read") {
 				t.Errorf("%s, %s: the failed read not said: %s", f, c.name, out)
 			}
 		}
