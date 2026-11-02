@@ -472,11 +472,12 @@ func handOff(r round, repo string) []intent.Intention {
 func texts(l []Asked) []string {
 	out := make([]string, len(l))
 	for i, a := range l {
-		if a.Holds == "a person" {
+		switch a.Holds {
+		case "a person":
 			out[i] = "a person, " + a.Where
-		} else if a.Holds == gateHolds {
+		case gateHolds:
 			out[i] = gateLine(a)
-		} else {
+		default:
 			out[i] = fmt.Sprintf("%s %s `%s`: %s", a.Holds, a.Lens, a.Where, a.Text)
 		}
 	}
