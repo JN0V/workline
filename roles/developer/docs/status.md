@@ -115,7 +115,8 @@ hold:
   merged onto a Draft the default branch has moved past; a failure
   gives the claim back at once, the reason on the issue, and blocks
   the issue the second time
-  ([the pull request](pull-request.md#when-it-does-not-open)). Cases
+  ([the pull request](pull-request.md#when-it-does-not-open);
+  [tried](https://github.com/JN0V/workline/pull/863)). Cases
   `developer/pr-from-draft-behind-main`, `unopened-gives-claim-back`,
   `unopened-twice-blocks`.
 - **The worktree and its diff**
