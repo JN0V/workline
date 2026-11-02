@@ -1,0 +1,72 @@
+# The release tool on a release candidate's branch (ADR-0060), with
+# release-please — copy to .github/workflows/release-candidate.yml, with
+# `merge: {autonomy: enterprising}`. What it does: docs/release-candidate.md.
+#
+# `workline follow` cuts `release/vX.Y` when a milestone's issues are all
+# merged, and pushes there each version it asks for, as a commit with
+# release-please's `Release-As:` footer: `X.Y.0-rc.N` at the cut and for
+# each fix copied, `X.Y.0` on a person's yes. This workflow lets
+# release-please do the rest, on each push to such a branch:
+#
+# - its release pull request into the branch merges at once: the version
+#   was decided before it opened, by the line or by the person's yes;
+# - the merge tagged, the release is published; an `-rc.N` is marked a
+#   pre-release, never the latest.
+#
+# The job's own token (GITHUB_TOKEN): what it pushes, merges and tags
+# starts no other workflow, so release-please runs again here, in the same
+# job, to tag what it merged. Your repository lets GitHub Actions create
+# pull requests (Settings, Actions, General). No App, no AI.
+name: release candidate
+on:
+  push:
+    branches: ['release/v*']
+permissions: {}
+concurrency: {group: "release-candidate-${{ github.ref_name }}", cancel-in-progress: false}
+
+jobs:
+  candidate:
+    runs-on: ubuntu-latest
+    permissions: {contents: write, pull-requests: write}
+    outputs:
+      tag: ${{ steps.tagged.outputs.tag_name || steps.tool.outputs.tag_name }}
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      # A release merged by the push (the person's yes) is tagged here; a
+      # version asked for opens or updates the release pull request.
+      - id: tool
+        uses: googleapis/release-please-action@v4
+        with: {target-branch: "${{ github.ref_name }}"}
+      - id: merged
+        name: The release pull request merges at once
+        if: steps.tool.outputs.prs_created == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ fromJSON(steps.tool.outputs.pr).number }}
+        run: |
+          # GitHub computes whether it merges for a few seconds after it opens.
+          for i in 1 2 3 4 5 6; do
+            gh pr merge "$PR" --squash -R "$GITHUB_REPOSITORY" && exit 0
+            sleep 10
+          done
+          echo "the release pull request #$PR could not be merged"; exit 1
+      - id: tagged
+        if: steps.merged.outcome == 'success'
+        uses: googleapis/release-please-action@v4
+        with: {target-branch: "${{ github.ref_name }}", skip-github-pull-request: true}
+      - name: A candidate is a pre-release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.tagged.outputs.tag_name || steps.tool.outputs.tag_name }}
+        if: contains(steps.tagged.outputs.tag_name || steps.tool.outputs.tag_name, '-rc.')
+        run: gh release edit "$TAG" --prerelease --latest=false -R "$GITHUB_REPOSITORY"
+
+  # Your build and upload, on the tag: a reusable workflow taking the tag,
+  # as workline's own release.yml. Remove this job if you have none.
+  publish:
+    needs: candidate
+    if: needs.candidate.outputs.tag != ''
+    permissions: {contents: write, packages: write}
+    uses: ./.github/workflows/release.yml
+    with: {tag: "${{ needs.candidate.outputs.tag }}"}
