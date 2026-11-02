@@ -43,6 +43,7 @@ grade:
   - {agent-calls-max: 1}
   - {no-finding: {rule: acceptance-test-edit}}
   - {sh: "python3 -c 'import json; m = [m for m in json.load(open(\"../forge.json\"))[\"merge-requests\"] if m[\"id\"] == 1][0]; t = [t for t in m.get(\"threads\", []) if t[\"path\"] == \"tests/test_mul_by_zero.sh\"]; assert t and \"workline:objection\" in json.dumps(t)'"}
+  - {sh: "python3 -c 'import json; m = [m for m in json.load(open(\"../forge.json\"))[\"merge-requests\"] if m[\"id\"] == 1][0]; t = [t for t in m.get(\"threads\", []) if t[\"path\"] == \"tests/test_mul_by_zero.sh\"]; assert t and \"- scenario: By zero\" in t[0][\"body\"]'"}
   - {sh: "python3 -c 'import json; m = [m for m in json.load(open(\"../forge.json\"))[\"merge-requests\"] if m[\"id\"] == 1][0]; assert not [t for t in m.get(\"threads\", []) if t[\"path\"] == \"tests/test_mul_two_by_three.sh\"]'"}
   - {sh: "git --git-dir=../origin.git show workline/developer/7:lib.sh > ../lib.sh && cd .. && . ./lib.sh && [ \"$(mul 5 0)\" = 0 ] && [ \"$(mul 2 3)\" = 6 ] && [ \"$(add 2 3)\" = 5 ]"}
   - {sh: "git --git-dir=../origin.git diff --quiet workline/tester/issue-7 workline/developer/7 -- tests/"}
