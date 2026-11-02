@@ -85,3 +85,24 @@ func TestNotElsewhere(t *testing.T) {
 		t.Errorf("the refusal does not name the other issue: %v", said)
 	}
 }
+
+// Plain note (#902): Given the developer on #7, When its agent writes a
+// note as plain text, or as a map naming no issue, Then the note is kept
+// on #7.
+func TestPlainNoteIsOnItsOwnIssue(t *testing.T) {
+	b := Bounds{Issue: 7}
+	for name, v := range map[string]any{
+		"plain text":    "Issue #7 is not done: the bounds do not hold its scope.",
+		"map, no issue": map[string]any{"body": "Issue #7 is not done: the bounds do not hold its scope."},
+	} {
+		kept, _, said := bounded(t.TempDir(), b, nil, []intent.Intention{{Kind: "note", Value: v}})
+		got := notesKept(kept, 0)
+		if len(got) != 1 || fmt.Sprint(got[0]["issue"]) != "7" {
+			t.Errorf("%s: want one comment on #7, got %v (said %v)", name, got, said)
+			continue
+		}
+		if body, _ := got[0]["body"].(string); !strings.Contains(body, "the bounds do not hold its scope") {
+			t.Errorf("%s: body %q lost the note", name, body)
+		}
+	}
+}

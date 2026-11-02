@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
 )
 
@@ -232,5 +233,25 @@ func TestObjectionWithoutTheDraftsHeadIsRefused(t *testing.T) {
 	kept, _, said := bounded(t.TempDir(), b, nil, []intent.Intention{o})
 	if len(kept) != 0 || len(said) != 1 || !strings.Contains(said[0], "could not be read") {
 		t.Errorf("kept = %v, said = %v; want nothing kept, one refusal said", kept, said)
+	}
+}
+
+// Second objection, same file (#899): Given two objections to one frozen
+// test on two lines, When bounded keeps them, Then each has its own key,
+// so one still open on its line does not hold back the other.
+func TestObjectionKeyIsPerLine(t *testing.T) {
+	b := Bounds{Issue: 3, Frozen: map[string]int{"tests/t.sh": 3}, Draft: 1, Head: "abc"}
+	on := func(line int) intent.Intention {
+		return intent.Intention{Kind: "comment", Value: map[string]any{"objection": map[string]any{
+			"test": "tests/t.sh", "line": line, "scenario": "S", "kind": "wrong", "why": "W"}}}
+	}
+	kept, _, said := bounded(t.TempDir(), b, nil, []intent.Intention{on(2), on(5)})
+	if len(kept) != 1 {
+		t.Fatalf("kept = %v, said = %v; want one comment holding the review", kept, said)
+	}
+	review := kept[0].Value.(map[string]any)["review"].(map[string]any)
+	comments := review["comments"].([]forge.LineComment)
+	if len(comments) != 2 || comments[0].Key == comments[1].Key {
+		t.Errorf("comments = %+v; want two, each its own key", comments)
 	}
 }

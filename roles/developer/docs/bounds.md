@@ -174,10 +174,15 @@ The check above, before the push, stays a fast first pass.
   posts it on that line of the tester's Draft, opened by
   `workline:objection`, in [the tester's form](../../tester/README.md#frozen-tests-and-objections).
   The tester keeps or rewrites the test.
+- **One comment per test and line**: an objection still open on its
+  line is not posted twice; one on another line of the same test opens
+  its own. The developer's comment on the Draft counts those posted
+  and those still open.
 - **An objection to a test that is not frozen** for the issue, or
   missing a field, or when the Draft's commit cannot be read: refused,
   said.
-- **One note on its own issue**: what the agent left out. The engine
+- **One note on its own issue**: what the agent left out. A note in
+  plain text, naming no issue, is on its own issue. The engine
   posts it there as one comment, made inert (no heading, no tag, no
   mention), cut to 4,000 bytes; the same text goes in the pull
   request's `## Left out` ([the pull request](pull-request.md)). A

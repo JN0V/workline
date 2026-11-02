@@ -428,6 +428,11 @@ func readObjection(v any) (objection, bool) {
 	return o, true
 }
 
+// key is the objection's on its line, one per test and line (#899): one
+// still open there is not posted again; another line of the same test
+// opens its own comment.
+func (o objection) key() string { return fmt.Sprintf("objection-%s:%d", o.Test, o.Line) }
+
 // body is the objection's first comment on the test's line, in the form
 // the tester reads (roles/tester/README.md, frozen tests and objections).
 func (o objection) body() string {
@@ -483,14 +488,13 @@ func bounded(repo string, b Bounds, claim, proposed []intent.Intention) (kept []
 			case o.Line < 1 || strings.TrimSpace(o.Scenario) == "" || strings.TrimSpace(o.Kind) == "" || strings.TrimSpace(o.Why) == "":
 				said = append(said, fmt.Sprintf("an objection to `%s`: it names the test's line, the scenario, the kind and why", o.Test))
 			default:
-				objections = append(objections, forge.LineComment{Path: o.Test, Line: o.Line, Key: "objection-" + o.Test, Body: o.body()})
+				objections = append(objections, forge.LineComment{Path: o.Test, Line: o.Line, Key: o.key(), Body: o.body()})
 			}
 		case i.Kind == "note":
-			m, _ := i.Value.(map[string]any)
-			body, _ := m["body"].(string)
+			on, body := proposedNote(i.Value, b.Issue)
 			switch {
-			case fmt.Sprint(m["issue"]) != strconv.Itoa(b.Issue):
-				said = append(said, fmt.Sprintf("a note on #%v: the developer's one note is on its own issue, #%d (not-the-developers)", m["issue"], b.Issue))
+			case on != strconv.Itoa(b.Issue):
+				said = append(said, fmt.Sprintf("a note on #%s: the developer's one note is on its own issue, #%d (not-the-developers)", on, b.Issue))
 			case strings.TrimSpace(body) == "":
 				said = append(said, "a note with no body: nothing to post")
 			case noted:
@@ -519,10 +523,29 @@ func bounded(repo string, b Bounds, claim, proposed []intent.Intention) (kept []
 	if len(objections) > 0 {
 		kept = append(kept, intent.Intention{Kind: "comment", Value: map[string]any{
 			"merge-request": b.Draft, "sticky": "objection",
-			"body":   fmt.Sprintf("**The developer** objects to %d of the tester's tests of #%d, on their lines: the tester keeps or rewrites each (ADR-0055).", len(objections), b.Issue),
+			"body": fmt.Sprintf("**The developer** objects to the tester's tests of #%d, on their lines: the tester keeps or rewrites each (ADR-0055).\n\n%s\n%s\n%s",
+				b.Issue, forge.ReviewHere, forge.Unplaced(objections, "the engine that applied this run posts no comment on a line").Section(), forge.ReviewEnd),
 			"review": map[string]any{"head": b.Head, "body": "", "comments": objections}}})
 	}
 	return kept, refused, said
+}
+
+// proposedNote reads a note's issue and body: a map {issue, body}, its
+// body given as text too, or plain text, as the intentions' schema shows
+// a note (#902). A note naming no issue is on the developer's own.
+func proposedNote(v any, own int) (issue, body string) {
+	if text, ok := v.(string); ok {
+		return strconv.Itoa(own), text
+	}
+	m, _ := v.(map[string]any)
+	body, _ = m["body"].(string)
+	if body == "" {
+		body, _ = m["text"].(string)
+	}
+	if n, ok := m["issue"]; ok && n != nil {
+		return fmt.Sprint(n), body
+	}
+	return strconv.Itoa(own), body
 }
 
 // touched lists the files a patch touches: its `file`, the `---` and
