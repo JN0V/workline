@@ -40,7 +40,8 @@ type Spec struct {
 	// this one is not whole.
 	Prior *backlog.SpecReview `json:"prior,omitempty"`
 	// Mine are the issue's sections the product owner may rewrite to
-	// answer a finding; the others are a person's (#847).
+	// answer a finding, the Verification and the Scope always; the
+	// others are a person's (ADR-0060).
 	Mine []string `json:"mine,omitempty"`
 }
 

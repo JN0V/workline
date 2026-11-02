@@ -45,6 +45,11 @@ hold:
    - **Back to refine done alone, 2026-11-01**: the 11 moves waiting
      done by the role's own run, no agent, each reason in its comment
      ([tried](https://github.com/JN0V/workline/pull/799#tried)).
+   - **The builder's part rewritten, 2026-11-02**: a person's
+     Verification rewritten to answer the reviewer, no person asked; an
+     issue left waiting on one by the release before moved on to its
+     tests
+     ([tried](https://github.com/JN0V/workline/pull/870#tried)).
    - **Next**: drafts that repeat left out and
      [#548](https://github.com/JN0V/workline/issues/548) (this page's
      Built); a third trial

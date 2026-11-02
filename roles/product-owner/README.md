@@ -31,7 +31,10 @@ is on each issue; you answer there
 
 - write code or docs (`writes: []`: the forge's issues only);
 - write the Need or Validation of a person's issue as final;
-- rewrite a section a person wrote, edited or deleted;
+- rewrite a Need, Example or Validation a person wrote or edited, or
+  any section they deleted; their Verification and Scope it rewrites to
+  answer the reviewer
+  ([ADR-0060](../../docs/adr/0060-the-person-is-on-the-loop.md));
 - move an outsider's issue to `ready`, nor one with a draft left;
 - close as "not planned", or reopen an issue;
 - keep a report issue, or any memory outside the issues.

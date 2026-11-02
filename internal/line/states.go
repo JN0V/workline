@@ -118,8 +118,16 @@ func stateOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, 
 		// once, while its spec waits on a review.
 		ok = specWaits(is, comments)
 	}
+	if !ok && reviewed && rec.Revise != rec.Spec {
+		// The review answered by asking a person for a section the product
+		// owner rewrites now, its Verification or Scope (ADR-0060): due
+		// again, once a review, the section rewritten without the person.
+		st, _, _ := backlog.ReadState(comments, name) // one that does not read gives none to rewrite
+		ok = len(backlog.Unrevised(is, st, comments)) > 0
+	}
 	if ok && reviewed {
 		now.Asked = now.Body // the reviewer runs after the product owner: never due again for this alone
+		now.Revise = now.Spec
 	}
 	if !ok && s.Role == "tester" && refused != "" {
 		// The tester's run on it refused, its state the same: never left

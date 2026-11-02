@@ -63,9 +63,11 @@ type waiting struct {
 }
 
 // revisable are the sections of an issue the product owner may rewrite to
-// answer a finding, by its own rule (backlog.Revisable, #847): a draft no
-// person accepted, or a text as it wrote it. The others are a person's:
-// the product owner asks its reporter, never rewrites them. Its state not
+// answer a finding, by its own rule (backlog.Revisable, ADR-0060): the
+// Verification and the Scope always, whoever wrote them; the Need, the
+// Validation, an example or a bug's steps while a draft no person
+// accepted, or a text as it wrote it. The others are a person's: the
+// product owner asks its reporter, never rewrites them. Its state not
 // read, it wrote nothing the reviewer can tell: drafts by their marker.
 func revisable(is forge.Issue, st *backlog.State) []string {
 	var all []string
@@ -467,9 +469,10 @@ func specComment(v Review, r backlog.SpecReview, rounds int, mine []string) stri
 }
 
 // whoAnswers says who acts on the findings open, section by section: the
-// product owner rewrites at its next refine what is its own; a section a
-// person wrote is theirs, the product owner asks them and never rewrites
-// it (#847).
+// product owner rewrites at its next refine what is its own, the
+// Verification and the Scope always; a Need or a Validation a person
+// wrote is theirs, the product owner asks them and never rewrites it
+// (ADR-0060).
 func whoAnswers(in, mine []string) string {
 	var own, theirs []string
 	for _, n := range in {

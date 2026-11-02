@@ -418,6 +418,13 @@ whose result moves the issue to the next. The table is the routing's
   record from before the reviewer read it in refine's own run
   ([#840](https://github.com/JN0V/workline/issues/840)). Marked, no
   review come, it stays acted: no loop.
+- **A review answered by asking for a person's Verification** under the
+  rule before
+  [ADR-0060](../adr/0060-the-person-is-on-the-loop.md): the product
+  owner's state shows a section it may rewrite now and was not given
+  then (`backlog.Unrevised`). The step is due again, once a review
+  (`revise`, the review's hash): the product owner rewrites it, the
+  person no longer waited on.
 - **Not for an outside failure**: a step that ended
   `blocked-external`, its agent out of reach, keeps no record: the next
   event or reconciler runs it again.

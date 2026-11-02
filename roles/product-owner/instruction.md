@@ -101,7 +101,9 @@ the share of its words already said, and leaves it out past a limit.
 `validation` restates the case by design: it is never measured. A section it has is never
 rewritten, but one the task says the reviewer's findings lie in and is
 yours to rewrite: give its whole new text in `refine`, answering each
-finding.
+finding. Verification and Scope are always yours, even when a person
+wrote them: answer a finding there by rewriting them, never by asking.
+Only a person's Need, Validation, example or steps are theirs to change.
 
 **Write for a person who never read the code**, as a project's user docs
 are written — here, and in `why`, `questions` and `note`:
@@ -323,8 +325,8 @@ of the project, or the reporter, commented on an issue since you
 proposed on it: read their comments as asking you to revise. Give a
 `refine` with the whole new text of the sections the task says are still
 yours, changed as they ask; propose again what still stands, nothing they
-turned down. A section a person wrote, edited or deleted is theirs: never
-write it. When nothing they ask is yours to change, say why in a `note`.
+turned down. A Need, Validation, example or steps a person wrote or
+edited is theirs, and any section they deleted: never write it. When nothing they ask is yours to change, say why in a `note`.
 
 Put an issue in the milestone of the release it belongs to (`milestone`),
 when it has none or slipped — only one the code given shows still true;

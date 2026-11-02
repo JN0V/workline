@@ -23,22 +23,23 @@ func TestSpecRecordNotWholeKeepsTheRounds(t *testing.T) {
 	}
 }
 
-// A finding in a Verification a person wrote is theirs to answer: the
-// comment never says the product owner rewrites it (#847).
+// On an issue a person wrote whole, a finding in their Validation is
+// theirs to answer; one in their Verification the product owner's to
+// rewrite (ADR-0060): the comment says each.
 func TestSpecCommentPersonsSectionIsTheirs(t *testing.T) {
 	body := "## Need\n\nA.\n\n## Verification\n\nThe mean works well.\n\n## Validation\n\nC.\n\n## Scope\n\ncalc/calc.go\n"
 	mine := revisable(forge.Issue{ID: 4, Body: body}, &backlog.State{})
-	if len(mine) != 0 {
-		t.Fatalf("a person's issue: the product owner's sections %v, want none", mine)
+	if !slices.Equal(mine, []string{"Scope", "Verification"}) {
+		t.Fatalf("a person's issue: the product owner's sections %v, want Scope and Verification", mine)
 	}
-	c := specComment(Review{Summary: "1 finding"}, backlog.SpecReview{Body: "b", Round: 1, Open: 1, In: []string{"Verification"}}, 5, mine)
-	for _, want := range []string{"Verification, a person's: the product owner never rewrites it and asks its reporter", "accepts the issue as it reads with `workline:accepted`"} {
+	c := specComment(Review{Summary: "2 findings"}, backlog.SpecReview{Body: "b", Round: 1, Open: 2, In: []string{"Validation", "Verification"}}, 5, mine)
+	for _, want := range []string{"Verification, the product owner's: it rewrites it at its next refine", "Validation, a person's: the product owner never rewrites it and asks its reporter", "accepts the issue as it reads with `workline:accepted`"} {
 		if !strings.Contains(c, want) {
 			t.Errorf("comment lacks %q:\n%s", want, c)
 		}
 	}
-	if strings.Contains(c, "rewrites it at its next refine") {
-		t.Errorf("comment says the product owner rewrites a person's section:\n%s", c)
+	if strings.Contains(c, "Verification, a person's") {
+		t.Errorf("comment leaves a person's Verification to them:\n%s", c)
 	}
 }
 
@@ -50,8 +51,8 @@ func TestSpecCommentOwnersSectionIsRewritten(t *testing.T) {
 	st := &backlog.State{}
 	st.SetWrote("Verification", backlog.BodyDigest(verification))
 	mine := revisable(forge.Issue{ID: 4, Body: body}, st)
-	if !slices.Equal(mine, []string{"Verification"}) {
-		t.Fatalf("the product owner's sections %v, want Verification", mine)
+	if !slices.Equal(mine, []string{"Scope", "Verification"}) {
+		t.Fatalf("the product owner's sections %v, want Scope and Verification", mine)
 	}
 	c := specComment(Review{Summary: "1 finding"}, backlog.SpecReview{Body: "b", Round: 1, Open: 1, In: []string{"Verification"}}, 5, mine)
 	if want := "Verification, the product owner's: it rewrites it at its next refine"; !strings.Contains(c, want) {

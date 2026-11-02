@@ -35,7 +35,10 @@ what it can and asks for the rest:
   `_No response_` — is filled in place (an issue form writes its fields as
   `### ` headings, read as `## ` ones). A section with text — a person's,
   or one the role wrote before — is never rewritten (`section-kept`), but
-  the role's own to answer the reviewer or a person's comment
+  one the role may rewrite to answer the reviewer or a person's comment:
+  the Verification and the Scope always, whoever wrote them
+  ([ADR-0060](../../adr/0060-the-person-is-on-the-loop.md)); the Need,
+  the Validation, an example or a bug's steps while its own
   ([A spec read before ready](spec-review.md), [A person's answers](answers.md)).
   **In the reader's order** (the table's, `work.Headings`): the person's part — Need,
   an `example` (`## Example`) or a bug's `steps` (`## Steps to

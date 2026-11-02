@@ -1,0 +1,7 @@
+# The product owner answers the reviewer's finding in #9's Scope, a text
+# a person wrote: the file it misses added (ADR-0060).
+- refine:
+    issue: 9
+    scope: "- src/export/csv.go\n- src/export/csv_test.go: the test the Verification names."
+    sources: [src/export/csv.go]
+    why: "The reviewer found the Scope misses the test file."

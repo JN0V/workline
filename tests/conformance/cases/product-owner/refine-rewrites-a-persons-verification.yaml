@@ -1,0 +1,29 @@
+case: product-owner/refine-rewrites-a-persons-verification
+about: "The builder's part is the product owner's at every level, even a text a person wrote (ADR-0060): the reviewer's important finding lies in the Verification of an issue a person wrote whole; at its next refine the product owner rewrites that Verification, asks nobody, and says it in its one comment, the text before in the issue's edit history. The person's Need and Validation stay word for word."
+given:
+  repo: backlog
+  config:
+    routing:
+      events: {schedule: [product-owner, reviewer]}
+  forge:
+    issues:
+      - id: 9
+        title: Rows lost
+        body: "## Need\n\nThe monthly report counts every sale.\n\n## Validation\n\n- **A known day:** Given a day of three sales, When Ann opens it, Then she counts three.\n\n---\n\n## Verification\n\nSessions feel right to the users.\n\n## Scope\n\nsrc/export/csv.go"
+        author: ann
+        insider: true
+        labels: [workline:to-refine]
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: efbae4cec0e6\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "**workline reviewer**, its spec.\n\n<!-- workline:spec-review body=efbae4cec0e6 round=1 open=1 in=Verification -->\n\n<!-- workline:sticky=reviewer/spec -->"
+run: {role: product-owner, event: schedule, ai: fake:refine-persons-verification}
+expect:
+  forge:
+    issues:
+      - id: 9
+        body-contains: "## Need\n\nThe monthly report counts every sale.\n\n## Validation\n\n- **A known day:** Given a day of three sales, When Ann opens it, Then she counts three.\n\n---\n\n## Verification\n\nA test writes three rows and reads three lines back.\n\n## Scope\n\nsrc/export/csv.go"
+        body-lacks: "Sessions feel right"
+        comment-contains: ["Changed: Verification.", "See the issue's edit history.", "answered: efbae4cec0e6", "revised: [Verification]"]
+        comment-lacks: "to refine this issue"
+  run-files:
+    in/task.md: {contains: ["yours to rewrite: Verification"], not-contains: "a person's, never rewritten"}
