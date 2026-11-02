@@ -595,6 +595,13 @@ func judgePatches(repo string, s Settings, judged map[string]map[string]string, 
 			if full != "" && !strings.HasPrefix(full, judgedOf(now)) {
 				return fileVerdict{rule: "judged-not-set", why: fmt.Sprintf("the patch leaves `checked`, so it sets `judged: %s`: the commit the doc was judged at, without being vouched for; otherwise it is put before an agent again tomorrow, to the same end", full[:7])}
 			}
+			// `verified` names who vouched at `checked`: with `checked` left,
+			// it stays as it was.
+			if ov := headerValue(old, "verified"); ov != "" && headerValue(now, "verified") != ov {
+				if kept, ok := withHeaderValue(now, "verified", ov); ok {
+					now = kept
+				}
+			}
 			return fileVerdict{now: now}
 		}
 		if !checkedMatches(now, want) {
