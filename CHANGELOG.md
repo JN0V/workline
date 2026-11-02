@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.67.0](https://github.com/JN0V/workline/compare/v0.66.0...v0.67.0) (2026-11-02)
+
+
+### Features
+
+* a path pattern starting with ./ matches nothing ([#852](https://github.com/JN0V/workline/issues/852)) ([9f134c1](https://github.com/JN0V/workline/commit/9f134c1c7e8e465a872705b735713b3bd1061528))
+* **line:** a blocked issue with news wakes the product owner ([#834](https://github.com/JN0V/workline/issues/834)) ([27a4f41](https://github.com/JN0V/workline/commit/27a4f41ea5c450409d8c6d607cd7c8a5b1b487df))
+
+
+### Bug Fixes
+
+* **developer:** give the claim back when its pull request fails ([#863](https://github.com/JN0V/workline/issues/863)) ([339f754](https://github.com/JN0V/workline/commit/339f7548e692955f43b18b0c66ad7f3774b1711d))
+* **line:** a complete issue's spec is read in refine's own run ([#843](https://github.com/JN0V/workline/issues/843)) ([3154621](https://github.com/JN0V/workline/commit/315462184e93c822dcbe2921666f44b84a39f207))
+* **line:** a label's run reads the reconciler's runs, not a cache ([#865](https://github.com/JN0V/workline/issues/865)) ([d81ceb7](https://github.com/JN0V/workline/commit/d81ceb7cecd75bbf836f0b479005f7f05b1a3622))
+* **line:** GitLab's spec review comment wakes the product owner ([#849](https://github.com/JN0V/workline/issues/849)) ([32a2544](https://github.com/JN0V/workline/commit/32a2544051d301c64351c1c9165bcba1794b7acb))
+* **line:** Ready's limit counts only what the developer can take ([#866](https://github.com/JN0V/workline/issues/866)) ([7cb374f](https://github.com/JN0V/workline/commit/7cb374f7e5de04503bfc63b6b8b103dddf631034))
+* **product-owner:** a refine keeps the cause a role folded on top ([#842](https://github.com/JN0V/workline/issues/842)) ([a5dd0b6](https://github.com/JN0V/workline/commit/a5dd0b6b5af63ab22097a1350f9d2d29dd4d635c))
+* **product-owner:** read Gherkin scenarios, say when none reads ([#864](https://github.com/JN0V/workline/issues/864)) ([7dbabcf](https://github.com/JN0V/workline/commit/7dbabcf1d7f90ff6b8e34c1007f3c7428f0d152d))
+* **reviewer:** say who answers each section a finding lies in ([#848](https://github.com/JN0V/workline/issues/848)) ([81c8a04](https://github.com/JN0V/workline/commit/81c8a04ed8c90a5c57d5bfd386f5d92bdfc4d3bf))
+* **tester:** a Scope's pattern gives the files it matches ([#828](https://github.com/JN0V/workline/issues/828)) ([9a88170](https://github.com/JN0V/workline/commit/9a8817016b79b1b6b56c9d212a0e240622d79c67))
+
 ## [0.66.0](https://github.com/JN0V/workline/compare/v0.65.0...v0.66.0) (2026-11-01)
 
 
