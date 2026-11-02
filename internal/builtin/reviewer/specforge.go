@@ -24,6 +24,7 @@ import (
 	"github.com/JN0V/workline/internal/role"
 	"github.com/JN0V/workline/internal/scale"
 	"github.com/JN0V/workline/internal/verdict"
+	"github.com/JN0V/workline/internal/work"
 )
 
 // gardening is the event the reviewer reads the refined specs on: the
@@ -58,6 +59,21 @@ type waiting struct {
 	issue  forge.Issue
 	prior  *backlog.SpecReview
 	before string // the reviewer's comment as it reads, its findings carried to a person
+	mine   []string
+}
+
+// revisable are the sections of an issue the product owner may rewrite to
+// answer a finding, by its own rule (backlog.Revisable, #847): a draft no
+// person accepted, or a text as it wrote it. The others are a person's:
+// the product owner asks its reporter, never rewrites them. Its state not
+// read, it wrote nothing the reviewer can tell: drafts by their marker.
+func revisable(is forge.Issue, st *backlog.State) []string {
+	var all []string
+	for _, s := range work.ByMeaning(is.Body) {
+		all = append(all, s.Heading)
+	}
+	slices.Sort(all)
+	return backlog.Revisable(is, st, &backlog.SpecReview{In: all})
 }
 
 // keepersOrder reads the backlog's order as the product owner does
@@ -127,8 +143,12 @@ func waitingSpecs(repo string, f forge.Backlog) (ws []waiting, unread []verdict.
 		// in this run, just before (#840): judged with no write token, its
 		// state comment is not on the forge yet, which the apply writes
 		// after the reviewer ran. The night reads only the issues it keeps.
-		if _, kept, _ := backlog.ReadState(comments, keeper); !kept && only == 0 {
+		kst, kept, kerr := backlog.ReadState(comments, keeper)
+		if !kept && only == 0 {
 			continue
+		}
+		if kerr != nil {
+			kst = nil
 		}
 		prior, err := backlog.ReadSpecReview(comments)
 		if err != nil {
@@ -140,7 +160,7 @@ func waitingSpecs(repo string, f forge.Backlog) (ws []waiting, unread []verdict.
 		if prior != nil && (prior.Stopped || prior.Body == backlog.BodyDigest(is.Body)) {
 			continue
 		}
-		w := waiting{issue: is, prior: prior}
+		w := waiting{issue: is, prior: prior, mine: revisable(is, kst)}
 		for i := len(comments) - 1; i >= 0 && prior != nil; i-- {
 			if strings.Contains(comments[i], backlog.SpecMarker) {
 				w.before = comments[i]
@@ -220,7 +240,7 @@ func specOnForge(runDir, repo string, s Settings) (queue, int, bool) {
 			}
 		case len(q.read) < s.SpecsPerRun:
 			q.read = append(q.read, Spec{Path: where, Title: strings.TrimSpace(w.issue.Title), Text: w.issue.Body, Issue: w.issue.ID,
-				Digest: backlog.BodyDigest(w.issue.Body), Round: n, Prior: w.prior})
+				Digest: backlog.BodyDigest(w.issue.Body), Round: n, Prior: w.prior, Mine: w.mine})
 		default:
 			q.rest = append(q.rest, where)
 		}
@@ -415,16 +435,18 @@ func specRecord(st state, v Review) backlog.SpecReview {
 }
 
 // specComment is the one comment the issue gets, edited at each review:
-// what holds it from ready, the findings, the questions, the record.
-func specComment(v Review, r backlog.SpecReview, rounds int) string {
+// what holds it from ready and who answers each section a finding lies in,
+// the findings, the questions, the record. mine are the sections the
+// product owner may rewrite; the others are a person's (#847).
+func specComment(v Review, r backlog.SpecReview, rounds int, mine []string) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "**workline reviewer**, its spec — %s.\n\n", v.Summary)
 	switch {
 	case r.Body == "":
 		b.WriteString("Not read whole: the reviewer reads it again at the next run; ready waits.\n\n")
 	case r.Open > 0:
-		fmt.Fprintf(&b, "**Holds it from ready**: %d important %s open, round %d of %d. The product owner answers at its next refine, rewriting what is its own in %s; the reviewer then reads the spec again. A person may accept the issue as it reads with `%s`.\n\n",
-			r.Open, plural(r.Open, "finding", "findings"), r.Round, rounds, strings.Join(r.In, ", "), backlog.LabelAccepted)
+		fmt.Fprintf(&b, "**Holds it from ready**: %d important %s open, round %d of %d. %s\n\n",
+			r.Open, plural(r.Open, "finding", "findings"), r.Round, rounds, whoAnswers(r.In, mine))
 	default:
 		b.WriteString("No important finding open: the product owner may move it to ready.\n\n")
 	}
@@ -441,6 +463,37 @@ func specComment(v Review, r backlog.SpecReview, rounds int) string {
 	}
 	b.WriteString("The reviewer never edits the issue nor moves it: the product owner answers, a person decides.\n\n")
 	b.WriteString(r.String())
+	return b.String()
+}
+
+// whoAnswers says who acts on the findings open, section by section: the
+// product owner rewrites at its next refine what is its own; a section a
+// person wrote is theirs, the product owner asks them and never rewrites
+// it (#847).
+func whoAnswers(in, mine []string) string {
+	var own, theirs []string
+	for _, n := range in {
+		if slices.ContainsFunc(mine, func(m string) bool { return work.MeaningOf(m) == work.MeaningOf(n) }) {
+			own = append(own, n)
+		} else {
+			theirs = append(theirs, n)
+		}
+	}
+	var b strings.Builder
+	if len(in) == 0 {
+		b.WriteString("The product owner answers at its next refine. ")
+	}
+	if len(own) > 0 {
+		fmt.Fprintf(&b, "%s, the product owner's: it rewrites %s at its next refine. ", strings.Join(own, ", "), plural(len(own), "it", "them"))
+	}
+	if len(theirs) > 0 {
+		fmt.Fprintf(&b, "%s, a person's: the product owner never rewrites %s and asks its reporter; a person answers, editing %s, or accepts the issue as it reads with `%s`. ",
+			strings.Join(theirs, ", "), plural(len(theirs), "it", "them"), plural(len(theirs), "it", "them"), backlog.LabelAccepted)
+	}
+	b.WriteString("The reviewer then reads the spec again.")
+	if len(theirs) == 0 {
+		fmt.Fprintf(&b, " A person may accept the issue as it reads with `%s`.", backlog.LabelAccepted)
+	}
 	return b.String()
 }
 

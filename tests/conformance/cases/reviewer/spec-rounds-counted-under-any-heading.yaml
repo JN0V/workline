@@ -27,4 +27,4 @@ expect:
     issues:
       - id: 4
         comments: 2
-        comment-contains: ["**Holds it from ready**: 1 important finding open, round 2 of 5", "rewriting what is its own in Steps to reproduce", "round=2 open=1 in=Steps+to+reproduce -->"]
+        comment-contains: ["**Holds it from ready**: 1 important finding open, round 2 of 5", "Steps to reproduce, a person's: the product owner never rewrites it", "round=2 open=1 in=Steps+to+reproduce -->"]

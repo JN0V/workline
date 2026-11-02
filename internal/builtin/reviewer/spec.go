@@ -39,6 +39,9 @@ type Spec struct {
 	// Prior is the record the last review left, carried as it was when
 	// this one is not whole.
 	Prior *backlog.SpecReview `json:"prior,omitempty"`
+	// Mine are the issue's sections the product owner may rewrite to
+	// answer a finding; the others are a person's (#847).
+	Mine []string `json:"mine,omitempty"`
 }
 
 // heading names the spec where the lenses and the judge read it.

@@ -1,0 +1,11 @@
+# A spec lens on issue #4, read by its number: its Verification names no
+# check, which the unverifiable lens quotes. Whose the Verification is,
+# the case says (#847).
+calls:
+  - - finding:
+        lens: unverifiable
+        severity: important
+        title: The Verification names no check
+        why: "No test, command or threshold says whether Average returns 0 for an empty list; it would pass with the crash left"
+        cause: {path: "#4", quote: "The mean works well."}
+        fix: name a test of Average on an empty list that expects 0

@@ -1935,7 +1935,7 @@ func settled(runDir, repo string, s Settings, st state, c candidates) (Review, [
 		// On the forge (#128): one comment on the issue, its record read
 		// back by the product owner's ready.
 		fallback = append(fallback, intent.Intention{Kind: "comment", Value: map[string]any{"issue": sp.Issue, "sticky": backlog.SpecKey,
-			"body": specComment(v, specRecord(st, v), s.SpecRounds)}})
+			"body": specComment(v, specRecord(st, v), s.SpecRounds, sp.Mine)}})
 	}
 	return v, fallback, nil
 }
