@@ -39,12 +39,18 @@ over its defaults:
   something off, prefer its own value (`mode: off`, `[]`) or `enforce: off`.
 
 **Levels.** A role may ship named sets of its settings, `levels` in its
-`role.yaml`, one setting picking one: the product owner's `autonomy`
-(`cautious`, `normal`, `enterprising`; ADR-0038). The level picked is laid
-over the role's defaults first, the same way, then the project's
-settings over both: a project picks a level in one word and still sets
-any field on its own. The role gets beside its settings `by-level`, what
-they are with the project's left out, to say which the project changed.
+`role.yaml`, one setting picking one: `autonomy` (`cautious`, `normal`,
+`enterprising`; ADR-0038), the product owner's and the developer's. The
+level picked is laid over the role's defaults first, the same way, then
+the project's settings over both: a project picks a level in one word
+and still sets any field on its own. The role gets beside its settings
+`by-level`, what they are with the project's left out, to say which the
+project changed.
+
+**The project's default.** Unset in a role, `autonomy` is the
+project's top-level one, when the role has that level, else the role's
+(ADR-0060); `level-from` beside the settings says which
+([autonomy](../autonomy.md)).
 
 **A person's own.** A role may name, `personal` in its `role.yaml`, the
 settings a person sets for themselves, in their own config's

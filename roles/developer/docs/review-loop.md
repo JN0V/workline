@@ -66,7 +66,7 @@ step 6).
 
 ## Rounds: five, the five whys at three
 
-- **`review-rounds`** (5): the rounds it runs.
+- **`review-rounds`** (5): the rounds it runs; its autonomy level sets 3 at `cautious`, 8 at `enterprising`, unless set here ([autonomy](../../../docs/autonomy.md)).
 - **At round three**, a finding still there loads the shared
   [five whys skill](../../../skills/five-whys/SKILL.md): the analysis
   goes in the round's comment, the fix aims at its root cause. Without

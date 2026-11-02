@@ -15,11 +15,12 @@ variables. The commands and options: [usage.md](usage.md).
 `WORKLINE_AI` (the git hooks); the project's `ai`; yours; else `none`.
 **Which forge**: `--forge`, else the project's `forge`, else `none`.
 **A role's settings**: the role's defaults (its `role.yaml`, listed on its
-[page](roles.md)), a level the project picks (`autonomy`, the product
-owner), then the project's `settings`.
+[page](roles.md)), its [autonomy](autonomy.md) level, then the
+project's `settings`.
 
 | Key of `.workline/config.yaml` | Holds |
 |---|---|
+| `autonomy` | each role's level unless it sets its own; not the merge's ([autonomy](autonomy.md)) |
 | `ai` | the project's agent: `none`, `claude`, `claude:<model>@<effort>`, `cmd:<command>` |
 | `forge` | `github`, `gitlab`, `local`, `cmd:<command>`, `none` (default) |
 | `roles.<role>.settings` | the role's settings, merged into its defaults |
@@ -45,6 +46,7 @@ owner), then the project's `settings`.
 
 ```yaml
 ai: claude                  # the project's agent, one choice: none (default), claude, cmd:<command>…
+autonomy: normal            # each role's level unless it sets its own: cautious | normal (default) | enterprising
 forge: github               # github | gitlab | local | cmd:<command> | none (default)
 roles:
   committer:
@@ -104,6 +106,7 @@ reviewer on `schedule`, [#128](https://github.com/JN0V/workline/issues/128);
 
 - **A key the engine does not know**, with its line: an ignored setting is
   one someone believes in and nothing applies.
+- **A level the top-level `autonomy` does not know**, the levels named.
 - **A level `merge:` does not know**, the levels named; in `alone`, a
   kind other than `reader`, or `alone` below `normal`.
 - **A role retired**, named in `roles:` or `routing:`: the release manager
