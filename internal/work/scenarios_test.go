@@ -34,6 +34,7 @@ func TestScenariosForms(t *testing.T) {
 		{"an outline", "Scenario Outline: Old debt\n  Given <n> findings\n  When one is added\n  Then only it blocks\n\n  Examples:\n    | n |\n    | 140 |\n",
 			[]Scenario{{Name: "Old debt", Text: "Given <n> findings, When one is added, Then only it blocks Examples: | n | | 140 |"}}},
 		{"a title over named bullets", "**Must hold:**\n\n- **Old debt:** Given 140 findings, When one is added, Then only it blocks\n", []Scenario{oldDebt}},
+		{"a bullet named, nothing under it", "- **Scenario: Old debt**\n- **Moved code:**\n", nil},
 		{"Given / When / Then with no name", "Given 140 findings, when one is added, then only it blocks.\n", nil},
 		{"a bullet named Example", "- **Example:** Given 140 findings, When one is added, Then only it blocks\n",
 			[]Scenario{{Name: "Example", Text: "Given 140 findings, When one is added, Then only it blocks"}}},

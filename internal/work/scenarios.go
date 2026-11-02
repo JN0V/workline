@@ -43,8 +43,8 @@ var (
 //   - the same in fenced code (```gherkin), Feature and Background left out.
 //
 // Gherkin's keywords are Scenario, Scenario Outline, Scenario Template and
-// Example; the name is what follows the keyword. A line naming a scenario
-// with no step under it names none.
+// Example; the name is what follows the keyword. A name with no text
+// after nor under it names none, nor a line naming one with no step.
 func Scenarios(validation string) []Scenario {
 	type read struct {
 		Scenario
@@ -130,8 +130,8 @@ func Scenarios(validation string) []Scenario {
 	}
 	var scenarios []Scenario
 	for _, r := range out {
-		if r.Name == "" || r.header && r.indent < 0 && !hasStep(r.Text) {
-			continue // a name alone on its line, no step under it: a title, not a scenario
+		if r.Name == "" || r.Text == "" || r.header && r.indent < 0 && !hasStep(r.Text) {
+			continue // a name with nothing under it, or alone on its line with no step: a title, not a scenario
 		}
 		scenarios = append(scenarios, r.Scenario)
 	}
