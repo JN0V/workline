@@ -9,7 +9,20 @@ import (
 
 // Match reports whether a slash-separated path matches pattern.
 func Match(pattern, name string) bool {
-	return match(strings.Split(pattern, "/"), strings.Split(path.Clean(name), "/"))
+	return match(strings.Split(cleanPattern(pattern), "/"), strings.Split(path.Clean(name), "/"))
+}
+
+// cleanPattern cleans a pattern as a path is cleaned. An empty pattern and a
+// trailing slash are left as they are.
+func cleanPattern(pattern string) string {
+	if pattern == "" {
+		return pattern
+	}
+	cleaned := path.Clean(pattern)
+	if strings.HasSuffix(pattern, "/") && !strings.HasSuffix(cleaned, "/") {
+		cleaned += "/"
+	}
+	return cleaned
 }
 
 func match(pat, name []string) bool {
