@@ -47,8 +47,9 @@ gh api -X POST repos/OWNER/REPO/environments/workline-heartbeat/deployment-branc
 - **Without the environment**: each reconcile says "no heartbeat" in
   its summary; the schedule and the line's events run it, as GitHub
   can.
-- **To stop it**: delete the environment; the next reconcile starts no
-  heartbeat.
+- **To stop it**: delete the environment, or take its wait timer off.
+  The heartbeat waiting is then rejected, its run failed, and no
+  reconcile starts another.
 
 ## What it costs
 
