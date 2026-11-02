@@ -16,6 +16,7 @@ import (
 	"github.com/JN0V/workline/internal/board"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
+	"github.com/JN0V/workline/internal/routing"
 	"github.com/JN0V/workline/internal/verdict"
 )
 
@@ -118,6 +119,55 @@ func saidPost(runDir string) int {
 func hasSaid(runDir string) bool {
 	_, err := os.Stat(filepath.Join(runDir, "in", saidFile))
 	return err == nil
+}
+
+// unopenedBefore is the times its pull request did not open for issue
+// id, as the record in the developer's comment there says (#856); 0 for
+// none.
+func unopenedBefore(b forge.Backlog, id int) (int, error) {
+	comments, err := b.Comments(forge.Target{Kind: "issue", ID: id})
+	if err != nil {
+		return 0, err
+	}
+	n := 0
+	for _, c := range comments {
+		if a, ok := ReadAct(c); ok {
+			n = max(n, a.Unopened)
+		}
+	}
+	return n, nil
+}
+
+// unopened is what the engine applies when its pull request does not
+// open (#856): the claim given back, the reason on the issue in the
+// claim's comment, edited in place, so the next run takes it again. Its
+// second time on the issue, it is blocked instead: no run takes it again
+// until a person moves it back, so a failure that repeats is no loop.
+func unopened(a Act, s Settings, repo string) []map[string]any {
+	rec := Act{Act: "unopened", At: a.At, Issue: a.Issue, From: a.From, Unopened: a.Unopened + 1}
+	why := "its pull request did not open: " + intent.WhyMark
+	if rec.Unopened > 1 {
+		add, remove := []string{backlog.LabelBlocked}, []string{backlog.LabelReady}
+		if line, err := routing.Load(repo); err == nil {
+			if ad, rm, err := line.Move("blocked"); err == nil {
+				add, remove = ad, rm
+			}
+		}
+		if !slices.Contains(remove, s.ClaimLabel) {
+			remove = append(remove, s.ClaimLabel)
+		}
+		return []map[string]any{
+			{"label": map[string]any{"issue": a.Issue, "add": add, "remove": remove, "card": "blocked"}},
+			{"comment": map[string]any{"issue": a.Issue, "sticky": "claim", "body": backlog.Said(who, "blocks this issue",
+				fmt.Sprintf("%s; it did not open the time before either (%d times)", why, rec.Unopened),
+				"a person reads why, fixes the cause, and moves the issue back by its label") + "\n" + rec.Line()}},
+		}
+	}
+	return []map[string]any{
+		{"label": map[string]any{"issue": a.Issue, "remove": []string{s.ClaimLabel}, "card": "ready"}},
+		{"comment": map[string]any{"issue": a.Issue, "sticky": "claim", "body": backlog.Said(who, "gives this issue back", why,
+			"it is free again: the developer takes it again at a next run, once; should its pull request not open again, the issue is blocked") + "\n" + rec.Line()}},
+	}
 }
 
 // released is the label a claim let go moves: the claim's off; on a

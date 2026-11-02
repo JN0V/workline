@@ -1,0 +1,49 @@
+case: developer/pr-from-draft-behind-main
+about: >
+  The tester's Draft started from an older main, and main changed since
+  the file the developer's code writes (#856): its branch is built on
+  the Draft all the same, main's change to that file not carried in,
+  its pull request opened, the claim kept.
+given:
+  repo: tested-draft
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main workline/tester/issue-3 && git checkout -q main"
+    - "printf '# The library.\\nadd() { echo $(($1 + $2)); }\\n' > lib.sh && git commit -q -am 'docs: name the library' && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:ready"]
+        body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        draft: true
+        comments: ["The tests of #3, frozen.\n\n<!-- workline:tester-record {\"issue\":3,\"base\":\"main\",\"files\":{\"tests/test_mul_by_zero.sh\":\"8f123a0bacbd681063880b867df38dd216784b97\",\"tests/test_mul_two_by_three.sh\":\"2dee0641bd7a79057ade7bff5af43b603125f543\"}} -->\n<!-- workline:sticky=tester/tests -->"]
+run: {develop: [], ai: "fake:developer-writes-mul"}
+expect:
+  status: pass
+  summary: "proven green, its pull request ready"
+  no-findings: [{rule: engine-error}]
+  pushed:
+    workline/developer/3:
+      lib.sh: "mul()"
+  pushed-lacks:
+    workline/developer/3:
+      lib.sh: "# The library."
+  pushed-log:
+    workline/developer/3:
+      - "test: the acceptance tests of #3"
+      - "feat: multiply two numbers"
+      - "lib.sh"
+  forge:
+    issues:
+      - id: 3
+        labels: ["workline:ready", "workline:developing"]
+    merge-requests:
+      - id: 2
+        branch: workline/developer/3
+        base: main
+        body-contains: ["Closes #3"]

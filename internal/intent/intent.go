@@ -48,6 +48,11 @@ var Catalogue = map[string]bool{
 	"quote":          true, // the code a judge's no rests on, found again before a finding is dropped; never applied (ADR-0045)
 }
 
+// WhyMark, in the body of a comment a role asks written when its merge
+// request does not open (out/merge-request.yaml's `unopened:`), is
+// replaced by what failed.
+const WhyMark = "{why}"
+
 // Intention is one proposal: its kind and its value.
 type Intention struct {
 	Kind  string

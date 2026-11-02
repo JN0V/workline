@@ -69,6 +69,9 @@ claim is a label, on every forge:
     on; else the card's Status set, on an organisation's project only.
 - **No code, no pull request**: the comment says so, and when the claim
   is let go.
+- **Its pull request does not open**: the claim given back at once,
+  what failed in the comment; the second time, the issue blocked
+  ([when it does not open](pull-request.md#when-it-does-not-open)).
 
 ## Letting a claim go
 

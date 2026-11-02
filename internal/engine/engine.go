@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"maps"
 	"math"
 	"os"
 	"os/exec"
@@ -1411,7 +1412,24 @@ func applyAll(r *role.Role, settings map[string]any, st runState, runDir string,
 			res.Findings = append(res.Findings, verdict.Finding{Rule: "not-proposed", Level: "warn", Where: branchPrefix(st.Role) + slugify(mergeRequestKey(st, runDir)),
 				Message: strings.TrimPrefix(err.Error(), ErrLeftToAPerson.Error()+": ") + ": this run's change is not pushed over it; the branch and its merge request are left to them"})
 		case err != nil:
-			return fmt.Errorf("open a merge request: %w", err)
+			// What the role asked done when it does not open (#856): the
+			// developer's claim given back, the reason on its issue.
+			undo, uerr := unopened(runDir)
+			if uerr != nil {
+				return fmt.Errorf("open a merge request: %w; and %w", err, uerr)
+			}
+			if len(undo) == 0 {
+				return fmt.Errorf("open a merge request: %w", err)
+			}
+			for _, in := range undo {
+				if aerr := ap.apply(sayWhy(in, err)); aerr != nil {
+					return fmt.Errorf("open a merge request: %w; then, %s: %w", err, in.Kind, aerr)
+				}
+			}
+			res.Status, res.Summary = verdict.Block, "its merge request did not open: said where the role asked"
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "not-opened", Where: branchPrefix(st.Role) + slugify(mergeRequestKey(st, runDir)),
+				Message: err.Error() + "; then applied what the role asks for that case: " + strings.Join(intent.Kinds(undo), ", ")})
+			return nil
 		default:
 			st.MergeRequest = id
 			if err := st.save(runDir); err != nil {
@@ -1463,6 +1481,50 @@ func openedRecord(runDir string) (key, body string) {
 		return "", ""
 	}
 	return mr.Record.Sticky, mr.Record.Body
+}
+
+// unopened are the intentions a role asks applied when the merge request
+// it opens does not open, for a reason other than a forge out of reach or
+// a branch left to a person: out/merge-request.yaml's `unopened:`, labels
+// and comments alone (the developer's claim given back, #856).
+func unopened(runDir string) ([]intent.Intention, error) {
+	var mr struct {
+		Unopened []map[string]any `yaml:"unopened"`
+	}
+	data, err := os.ReadFile(filepath.Join(runDir, "out", "merge-request.yaml"))
+	if err != nil {
+		return nil, nil
+	}
+	if err := yaml.Unmarshal(data, &mr); err != nil {
+		return nil, fmt.Errorf("out/merge-request.yaml: %w", err)
+	}
+	var out []intent.Intention
+	for i, m := range mr.Unopened {
+		if len(m) != 1 {
+			return nil, fmt.Errorf("out/merge-request.yaml: unopened entry %d must have exactly one kind", i+1)
+		}
+		for k, v := range m {
+			if k != "label" && k != "comment" {
+				return nil, fmt.Errorf("out/merge-request.yaml: unopened entry %d is a %s: a label or a comment only", i+1, k)
+			}
+			out = append(out, intent.Intention{Kind: k, Value: v})
+		}
+	}
+	return out, nil
+}
+
+// sayWhy puts what failed in a comment's body, in place of intent.WhyMark,
+// inert: a git error's text names no one and opens no section.
+func sayWhy(in intent.Intention, failed error) intent.Intention {
+	m, ok := in.Value.(map[string]any)
+	if in.Kind != "comment" || !ok {
+		return in
+	}
+	body, _ := m["body"].(string)
+	why := strings.Join(strings.Fields(failed.Error()), " ")
+	out := maps.Clone(m)
+	out["body"] = strings.ReplaceAll(body, intent.WhyMark, "`"+strings.ReplaceAll(why, "`", "'")+"`")
+	return intent.Intention{Kind: in.Kind, Value: out}
 }
 
 // ownPush is the commit message a role asks its patches pushed with, on
@@ -1811,7 +1873,12 @@ func proposeBranch(f forge.Forge, repo, roleName, key, title, body string, draft
 	if now, _ := git(repo, nil, "rev-parse", "--verify", "-q", "refs/heads/"+branch); committed == "" || now != committed {
 		start := []string{"checkout", "-q", "-B", branch}
 		if p.From != "" {
-			start = append(start, p.From) // the files written carried over
+			// The files written carried over onto p.From, merged: the
+			// working tree is at the base's tip, which may have changed
+			// them since p.From left it, and a plain checkout refuses
+			// then (#856). Their change from the base's tip lands on
+			// p.From, the base's own changes to them not carried in.
+			start = []string{"checkout", "-q", "-m", "-B", branch, p.From}
 		}
 		steps = append(steps, start)
 		for _, c := range p.commits(title, written) {
@@ -1823,9 +1890,23 @@ func proposeBranch(f forge.Forge, repo, roleName, key, title, body string, draft
 	if !forge.KeepsBranches(f) {
 		steps = append(steps, []string{"push", "-q", "--force", "origin", branch})
 	}
-	for _, s := range steps {
+	// What the files written change from the base's tip, kept to put
+	// them back should their merge onto p.From conflict.
+	var saved string
+	if p.From != "" && len(steps) > 0 && steps[0][0] == "checkout" {
+		if saved, err = gitRaw(repo, append([]string{"diff", "--binary", "HEAD", "--"}, written...)...); err != nil {
+			return 0, "", err
+		}
+	}
+	for i, s := range steps {
 		if s[0] == "push" && tip == "" {
 			tip, _ = git(repo, nil, "rev-parse", "refs/heads/"+branch)
+		}
+		if i == 0 && saved != "" {
+			if err := mergeOnto(repo, base, s, saved, p.From); err != nil {
+				return 0, "", err
+			}
+			continue
 		}
 		if _, err := git(repo, nil, s...); err != nil {
 			// Back where it was: the patches in the working tree, unstaged.
@@ -1843,6 +1924,30 @@ func proposeBranch(f forge.Forge, repo, roleName, key, title, body string, draft
 	}
 	id, err := f.OpenMergeRequest(branch, base, title, body, draft)
 	return id, tip, err
+}
+
+// mergeOnto runs start, the checkout that carries the files written onto
+// from, merged. A conflict puts the working tree back on base, the files
+// written as they were (saved, their diff from base's tip), and names the
+// files it conflicts on.
+func mergeOnto(repo, base string, start []string, saved, from string) error {
+	if _, err := git(repo, nil, start...); err != nil {
+		return err // refused: nothing moved
+	}
+	unmerged, err := git(repo, nil, "diff", "--name-only", "--diff-filter=U")
+	if err != nil || unmerged == "" {
+		return err
+	}
+	back := [][]string{{"reset", "-q"}, {"checkout", "-q", "-f", base}}
+	for _, s := range back {
+		if _, err := git(repo, nil, s...); err != nil {
+			return fmt.Errorf("the code conflicts with %s on %s, and the working tree is not put back: %w", short(from), strings.ReplaceAll(unmerged, "\n", ", "), err)
+		}
+	}
+	if _, err := git(repo, strings.NewReader(saved), "apply", "--binary", "-"); err != nil {
+		return fmt.Errorf("the code conflicts with %s on %s, and its change is not put back in the working tree: %w", short(from), strings.ReplaceAll(unmerged, "\n", ", "), err)
+	}
+	return fmt.Errorf("the code, written on %s, conflicts with what the base changed since in %s: nothing committed, the working tree as it was", short(from), strings.ReplaceAll(unmerged, "\n", ", "))
 }
 
 // slugify keeps a branch name to lowercase letters, digits and dashes.

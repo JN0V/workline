@@ -36,6 +36,10 @@ flowchart LR
 - **Its pull request goes to the branch the run is on**, the default
   branch in CI, never to the tester's. Merged, it brings the tests with
   it.
+- **The default branch moved since the Draft**: its code, applied on
+  the run's checkout, is merged onto the Draft; the default branch's
+  own changes stay out of its commits. A conflict opens nothing
+  ([below](#when-it-does-not-open)).
 - **No Draft**: its code starts from the commit the run read.
 - **Run again**, its branch is rebuilt: the tester's commits on it, even
   those the tester has since rewritten, are no person's; a person's
@@ -95,6 +99,25 @@ flowchart LR
 | `## Left out` | each file refused at apply, and why; only when one was |
 | `## Verification` | with whose rights its agent ran; what ran and its result, each cap reached ([the proof](proof.md)) |
 | `## Tried` | its tests on a fresh checkout; not the issue's Verification commands, nor a person's use |
+
+## When it does not open
+
+A conflict on the Draft, a forge that refuses it: the engine applies at
+once what the developer asked for that case
+([#856](https://github.com/JN0V/workline/issues/856)).
+
+- **The first time on the issue**: the claim given back, its card back
+  to the ready column; the claim's comment says what failed, the git or
+  forge error as it came. The next run takes the issue again.
+- **The second time**: the issue blocked, the claim off, the reason in
+  the same comment. A person fixes the cause and moves it back by its
+  label.
+- **Counted in the claim's record**, `"unopened": n`, read at the next
+  pick: one retry, never a loop.
+- **The run blocks**, `not-opened` in its output; the working tree is
+  left as it was.
+- **A forge out of reach** is not a failure: the claim stays, and
+  `workline apply <run>` resumes it.
 
 ## Its record
 
