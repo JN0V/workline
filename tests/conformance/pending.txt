@@ -1,2 +1,7 @@
 # Cases the engine does not pass yet. The suite runs them anyway and fails
 # if one starts passing while still listed here.
+routing/ready-claim-let-go-is-a-hop
+routing/ready-claim-let-go-wakes-the-developer-again
+routing/ready-held-issue-let-go-wakes
+routing/ready-record-from-before-woken-once
+routing/wip-full-ready-wakes-a-freed-issue

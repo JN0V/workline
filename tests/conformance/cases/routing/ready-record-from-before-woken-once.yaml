@@ -1,0 +1,33 @@
+case: routing/ready-record-from-before-woken-once
+about: >
+  A record from before the line kept when it woke the developer (#894):
+  on #3 the developer said it waits, passed over for an issue it held,
+  and nothing says whether that one is still held: woken once more,
+  then its record knows. #4's record is as old, but the developer never
+  said a word on it: the same wake twice runs nothing, as before.
+given:
+  repo: tested
+  config:
+    routing: {events: {issue: [developer]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply"
+        labels: ["workline:ready"]
+        body: "## Need\n\nI want to multiply.\n"
+        comments:
+          - "<!-- workline:line-record {\"state\":\"ready\",\"body\":\"8a828a06be19\",\"hops\":1} -->\n<!-- workline:sticky=line/state -->"
+          - "**The developer** waits on this issue.\n\n- **Why**: its Scope's `lib.sh` overlaps #5's, taken.\n\n<!-- workline:sticky=developer/claim -->"
+      - id: 4
+        title: "Multiply again"
+        labels: ["workline:ready"]
+        body: "## Need\n\nI want to multiply.\n"
+        comments: ["<!-- workline:line-record {\"state\":\"ready\",\"body\":\"8a828a06be19\",\"hops\":1} -->\n<!-- workline:sticky=line/state -->"]
+run: {route: reconcile, open-merge-request: true, ai: "fake:developer-nothing", input: {reconcile: list}}
+expect:
+  status: pass
+  summary: "reconcile: 1 issue due: #3"
+  agent-calls: 0
+  findings:
+    - {rule: state-freed, level: info, where: "#3", message: "the developer left it free"}
+    - {rule: state-acted, level: info, where: "#4"}

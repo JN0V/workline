@@ -1,0 +1,39 @@
+case: routing/wip-full-ready-wakes-a-freed-issue
+about: >
+  A full Ready of free issues no longer stops the line (#894): Ready, at
+  its limit of 2, holds #3 and #4, each woken once, taken and let go;
+  #6 waits in Tests for room, said already. The reconciler wakes the
+  developer on the first free ready issue in the backlog's order, one a
+  run here (reconcile-max 1); before, it said each one acted, and #6
+  waited for good.
+given:
+  repo: tested
+  config:
+    routing: {events: {issue: [tester, developer]}, wip: {ready: 2}, reconcile-max: 1}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply"
+        labels: ["workline:ready"]
+        labeled: {"workline:ready": "2026-11-01T10:48:29Z", "workline:developing": "2026-11-01T10:49:33Z"}
+        body: "## Need\n\nI want to multiply.\n"
+        comments: ["<!-- workline:line-record {\"state\":\"ready\",\"body\":\"8a828a06be19\",\"labeled\":\"2026-11-01T10:48:29Z\",\"hops\":1,\"woke\":\"2026-11-01T10:48:40Z\"} -->\n<!-- workline:sticky=line/state -->"]
+      - id: 4
+        title: "Multiply again"
+        labels: ["workline:ready"]
+        labeled: {"workline:ready": "2026-11-01T10:48:29Z", "workline:developing": "2026-11-01T10:49:33Z"}
+        body: "## Need\n\nI want to multiply.\n"
+        comments: ["<!-- workline:line-record {\"state\":\"ready\",\"body\":\"8a828a06be19\",\"labeled\":\"2026-11-01T10:48:29Z\",\"hops\":1,\"woke\":\"2026-11-01T10:48:40Z\"} -->\n<!-- workline:sticky=line/state -->"]
+      - id: 6
+        title: "Add"
+        labels: ["workline:needs-tests"]
+        body: "## Need\n\nI want to add.\n"
+        comments: ["**workline's line** waits to start this issue's next step.\n\n<!-- workline:line-record {\"state\":\"\",\"body\":\"\",\"hops\":0,\"waits\":\"ready\"} -->\n<!-- workline:sticky=line/state -->"]
+run: {route: reconcile, open-merge-request: true, ai: "fake:developer-nothing", input: {reconcile: list}}
+expect:
+  status: pass
+  summary: "reconcile: 1 issue due: #3"
+  agent-calls: 0
+  findings:
+    - {rule: state-freed, level: info, where: "#3"}
+    - {rule: reconcile-left, level: info, where: "#4"}
