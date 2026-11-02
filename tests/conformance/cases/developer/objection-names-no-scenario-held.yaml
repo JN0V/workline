@@ -1,0 +1,42 @@
+case: developer/objection-names-no-scenario-held
+about: >
+  An objection whose scenario is none of the issue's, nor a test's name
+  that spells one (#913), is not posted: the tester would answer it
+  unreadable. The run's findings say it, with the issue's scenarios.
+given:
+  repo: tested-draft
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main workline/tester/issue-3 && git checkout -q main"
+  env:
+    PATH: "$FIXTURES/claude:$PATH"
+    OBJECTIONS: '- test: tests/test_mul_by_zero.sh\n  line: 4\n  scenario: TestMulNegative\n  kind: over-specified\n  why: The scenario asks for 0, the test for an error.\n'
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:ready"]
+        body: "## Need\n\nI want to multiply.\n\n## Validation\n\n- **By zero:** Given 5, When it is multiplied by 0, Then it gives 0.\n- **Two by three:** Given 2, When it is multiplied by 3, Then it gives 6.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        draft: true
+        comments: ["The tests of #3, frozen.\n\n<!-- workline:tester-record {\"issue\":3,\"base\":\"main\",\"files\":{\"tests/test_mul_by_zero.sh\":\"8f123a0bacbd681063880b867df38dd216784b97\",\"tests/test_mul_two_by_three.sh\":\"2dee0641bd7a79057ade7bff5af43b603125f543\"}} -->\n<!-- workline:sticky=tester/tests -->"]
+run: {develop: [], ai: claude}
+expect:
+  status: pass
+  agent-calls: 1
+  no-findings: [{rule: agent-words-unread}, {rule: agent-invalid-output}]
+  pushed:
+    workline/developer/3:
+      lib.sh: "mul()"
+  pushed-lacks:
+    workline/developer/3:
+      .workline/objections.yaml: "test"
+  findings:
+    - {rule: not-the-developers, level: warn, message: "its scenario \"TestMulNegative\" is none of #3's (By zero, Two by three)"}
+  forge:
+    merge-requests:
+      - id: 1
+        threads: []

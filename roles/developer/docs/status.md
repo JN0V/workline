@@ -67,7 +67,8 @@ hold:
   refused; an objection posted on the test's line of the tester's
   Draft ([the bounds](bounds.md)). Cases `developer/refuses-file-outside-scope`,
   `refuses-acceptance-test-edit`, `refuses-steering-file`,
-  `refuses-gate-file`, `has-no-merge-intention`, `objects-to-a-test`.
+  `refuses-gate-file`, `has-no-merge-intention`, `objects-to-a-test`,
+  `objection-names-a-test-mapped`, `objection-names-no-scenario-held`.
 - **The proof and the caps** (step 3): its code laid on the commit read,
   the tester's `test-command` run on it; ready when green with no cap
   reached (`ai-max-tokens`, `proof-seconds`), else a Draft, the proof

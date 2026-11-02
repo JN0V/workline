@@ -317,3 +317,31 @@ func TestObjectionKeyIsPerLine(t *testing.T) {
 		t.Errorf("comments = %+v; want two, each its own key", comments)
 	}
 }
+
+// Test name given (#913): Given an issue's scenarios, When an objection
+// names the Go test for one, Then it maps to that scenario; a name that
+// spells none, or two, maps to nothing and is not posted.
+func TestScenarioOfMapsATestsName(t *testing.T) {
+	vouched := []string{"Not vouched for", "Vouched for"}
+	for _, c := range []struct {
+		name string
+		in   []string
+		want string
+	}{
+		{"Not vouched for", vouched, "Not vouched for"},
+		{"TestNotVouchedFor", vouched, "Not vouched for"},
+		{"TestVouchedFor", vouched, "Vouched for"},
+		{"TestNoBrewNoCargo", []string{"No brew, no cargo"}, "No brew, no cargo"},
+		{"test_no_brew_no_cargo", []string{"No brew, no cargo"}, "No brew, no cargo"},
+		{"TestLychee/No_brew,_no_cargo", []string{"No brew, no cargo"}, "No brew, no cargo"},
+		{"TestSomethingElse", vouched, ""},
+		{"TestMulByZero", []string{"By zero", "Two by three"}, "By zero"},
+		{"TestDocNotVouchedFor", vouched, ""},
+		{"Test", []string{"Test", "Other"}, "Test"},
+		{"Anything", nil, "Anything"},
+	} {
+		if got := scenarioOf(c.name, c.in); got != c.want {
+			t.Errorf("scenarioOf(%q, %q) = %q, want %q", c.name, c.in, got, c.want)
+		}
+	}
+}

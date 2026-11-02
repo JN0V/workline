@@ -59,6 +59,9 @@ type Bounds struct {
 	Scope []string `json:"scope"`
 	// Kind: the issue's kind, as its labels say it; its commits' type.
 	Kind string `json:"kind,omitempty"`
+	// Scenarios: the names of the issue's Validation scenarios, the one
+	// an objection names among them (#913).
+	Scenarios []string `json:"scenarios,omitempty"`
 	// Frozen: each test the tester froze on an open Draft, by its issue.
 	Frozen map[string]int `json:"frozen,omitempty"`
 	// Blobs: each frozen test's blob, as the tester's record names it.
@@ -88,6 +91,9 @@ type Refusal struct {
 func readBounds(f forge.Forge, bl forge.Backlog, repo string, is forge.Issue) (Bounds, error) {
 	files := repoFiles(repo)
 	b := Bounds{Issue: is.ID, Scope: inRepo(scopePaths(is.Body, files), files), Frozen: map[string]int{}, Blobs: map[string]string{}}
+	for _, sc := range work.Scenarios(work.ByMeaning(is.Body)[work.Validation].Text) {
+		b.Scenarios = append(b.Scenarios, sc.Name)
+	}
 	comments, err := bl.Comments(forge.Target{Kind: "issue", ID: is.ID})
 	if err != nil {
 		return b, err
@@ -437,6 +443,55 @@ func (o objection) body() string {
 	return fmt.Sprintf("%s\n- test: %s\n- scenario: %s\n- kind: %s\n- why: %s", tester.ObjectionWord, o.Test, o.Scenario, o.Kind, o.Why)
 }
 
+// scenarioOf is the issue's scenario an objection names: the one its name
+// spells, letters and digits alike, or a test's name for it once its
+// `Test` is off (TestNoBrewNoCargo, test_no_brew_no_cargo, a subtest's
+// last part), or ending on it (TestMulByZero): agents name the function
+// they read (#913). "" when none,
+// or more than one; the name as it is when the issue's are unknown.
+func scenarioOf(name string, scenarios []string) string {
+	if len(scenarios) == 0 {
+		return name
+	}
+	names := append([]string{name}, strings.Split(name, "/")...)
+	untest := func(s string) string { return strings.TrimSuffix(strings.TrimPrefix(s, "test"), "test") }
+	for _, spells := range []func(n, sc string) bool{
+		func(n, sc string) bool { return n == sc },
+		func(n, sc string) bool { return untest(n) == sc },
+		// TestMulByZero for "By zero": the scenario at the name's end.
+		func(n, sc string) bool { return strings.HasSuffix(untest(n), sc) },
+	} {
+		var found []string
+		for _, sc := range scenarios {
+			for _, n := range names {
+				if c := compact(sc); c != "" && spells(compact(n), c) && !slices.Contains(found, sc) {
+					found = append(found, sc)
+				}
+			}
+		}
+		switch len(found) {
+		case 0:
+		case 1:
+			return found[0]
+		default:
+			return ""
+		}
+	}
+	return ""
+}
+
+// compact is a name's letters and digits, lower case, as the tester
+// matches an objection's scenario to the issue's.
+func compact(s string) string {
+	var b strings.Builder
+	for _, r := range strings.ToLower(s) {
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r > 127 {
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
+}
+
 // bounded holds the agent's proposals to the bounds: the claim pre made,
 // the patches within them, the objections on the tester's Draft; the rest
 // refused, each said.
@@ -485,7 +540,11 @@ func bounded(repo string, b Bounds, claim, proposed []intent.Intention) (kept []
 				said = append(said, fmt.Sprintf("an objection to `%s`: the commit of the tester's Draft !%d could not be read, so no line to put it on", o.Test, b.Draft))
 			case o.Line < 1 || strings.TrimSpace(o.Scenario) == "" || strings.TrimSpace(o.Kind) == "" || strings.TrimSpace(o.Why) == "":
 				said = append(said, fmt.Sprintf("an objection to `%s`: it names the test's line, the scenario, the kind and why", o.Test))
+			case scenarioOf(o.Scenario, b.Scenarios) == "":
+				said = append(said, fmt.Sprintf("an objection to `%s`: its scenario %q is none of #%d's (%s), so the tester would not read it: not posted",
+					o.Test, o.Scenario, b.Issue, strings.Join(b.Scenarios, ", ")))
 			default:
+				o.Scenario = scenarioOf(o.Scenario, b.Scenarios)
 				objections = append(objections, forge.LineComment{Path: o.Test, Line: o.Line, Key: o.key(), Body: o.body()})
 			}
 		case i.Kind == "note":
