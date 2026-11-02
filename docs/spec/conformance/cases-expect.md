@@ -56,7 +56,7 @@ What a case can check after its run, beyond the example in
   name on a commit, its `title` and `count` of annotations when given,
   each annotation listed held by `path`, `line`, `level` and a part of
   its message (`contains`), or `absent: true`; on GitLab, `hooks`, a
-  project webhook by `id`, its `url-contains`, `issue-events` and the
+  project webhook by `id`, its `url-contains`, `issue-events`, `note-events` and the
   `trigger` whose token its masked variable holds, and `triggers`, a
   trigger token by `id` and `description`, each or `absent: true`.
 

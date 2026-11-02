@@ -2132,7 +2132,7 @@ func setupCmd(args []string) int {
 		In: os.Stdin, Out: os.Stderr, Interactive: terminal(os.Stdin),
 		Bin: bin, Hooks: paths, UserConfig: filepath.Join(cfgDir, "workline", "config.yaml"),
 		Tools: doctor.UsedTools(rolesDir), Install: setup.Shell(os.Stderr),
-		IssueHook: issueHookHere(*forgeSpec),
+		IssueHook: issueHookHere(*forgeSpec), IssueNotes: issueNotesHere(),
 	})
 	if err != nil {
 		if *asJSON {
@@ -2166,6 +2166,13 @@ func issueHookHere(spec string) forge.IssueHook {
 		return nil
 	}
 	return doctor.IssueHookOf(root, spec)
+}
+
+// issueNotesHere says whether that webhook fires on note events too: the
+// reviewer's comment on a spec wakes the product owner (#846).
+func issueNotesHere() bool {
+	root, err := gitRoot(".")
+	return err == nil && root != "" && doctor.IssueNotes(root)
 }
 
 // terminal says whether f is a terminal a person types in: a character

@@ -37,7 +37,7 @@ func TestSetIssueHookSaysABrokenHook(t *testing.T) {
 			t.Setenv("CI_API_V4_URL", srv.URL+"/api/v4")
 			t.Setenv("CI_PROJECT_ID", "1")
 			t.Setenv("GITLAB_TOKEN", "secret")
-			did, err := (&gitlab{repo: t.TempDir()}).SetIssueHook()
+			did, err := (&gitlab{repo: t.TempDir()}).SetIssueHook(false)
 			if err != nil || len(did) != 1 || !strings.Contains(did[0], c.want) || !strings.Contains(did[0], "Settings → Webhooks") {
 				t.Fatalf("said %q, %v; want %q", did, err, c.want)
 			}

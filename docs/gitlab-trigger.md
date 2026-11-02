@@ -23,21 +23,23 @@ GitLab is needed:
 - **Each event starts a pipeline** with `CI_PIPELINE_SOURCE=trigger`; the
   event's JSON is in the file `$TRIGGER_PAYLOAD`: `object_kind`, the
   issue's `iid`, `user.username`, `changes.labels.previous` and
-  `current`.
+  `current`; on a comment, its `note` and the issue's `labels`.
 - **Variables in the URL** reach the jobs:
   `&variables[WORKLINE_TASK]=issue`. Event fields such as the issue's
   number do not: the engine reads them from `$TRIGGER_PAYLOAD` itself.
 - **What it needs**: any tier, Free included; a Maintainer to create the
   hook and the trigger token. `workline setup --yes`, run in the
-  project's clone with a Maintainer's token, creates both, the issue
-  hook only; `workline doctor` checks them
+  project's clone with a Maintainer's token, creates both: the hook on
+  issue events, and on note events where the reviewer is routed on
+  `issue`; `workline doctor` checks them
   ([the commands](commands-setup.md#workline-setup)). On a self-managed instance, an administrator allows
   webhooks to reach the local network (Admin → Network → Outbound
   requests), as the hook calls GitLab itself (untried).
 - **Every issue change fires it**: a title edit, a new issue, a label
-  the engine itself sets. The engine exits at once on an event that put
-  no state's label on an issue; a chain of the engine's labels stops at
-  the hop cap.
+  the engine itself sets; with note events, every comment, on a merge
+  request too. The engine exits at once on any other event than a
+  state's label put on an issue, or the reviewer's comment on a spec in
+  refine; a chain of the engine's labels stops at the hop cap.
 
 ### The line of states on it
 
@@ -54,6 +56,10 @@ the template's jobs ([workline.gitlab-ci.yml](../ci/gitlab/workline.gitlab-ci.ym
   workline-issue-<n>`).
 - **The engine's own state labels** fire the hook too: that starts the
   next step, with no explicit start.
+- **The reviewer's comment on a spec**, on an issue in refine, starts
+  the product owner's step again, to read it: the one comment that
+  names an issue. The engine's other comments, and a person's, start
+  nothing ([#846](https://github.com/JN0V/workline/issues/846)).
 - **Hourly**, a pipeline schedule with `WORKLINE_TASK=reconcile` runs
   `workline:reconcile`: each due issue an event missed, its own
   pipeline. Without the hook, it alone moves the line.

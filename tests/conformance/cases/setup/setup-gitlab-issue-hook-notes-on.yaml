@@ -1,0 +1,23 @@
+case: setup/setup-gitlab-issue-hook-notes-on
+about: >
+  A webhook made before #846, on issue events alone, and the reviewer
+  routed on issue: setup turns its note events on, so the reviewer's
+  comment on a spec wakes the product owner at once; it creates no
+  other hook nor trigger token.
+given:
+  repo: documented
+  config:
+    routing: {events: {issue: [product-owner, reviewer, tester, developer]}}
+  env: {PATH: "/usr/bin:/bin"}
+  forge:
+    merge-requests: []
+    hooks: [{id: 7, url: "https://gitlab.example/api/v4/projects/1/ref/main/trigger/pipeline?token={token}&variables[WORKLINE_TASK]=issue", issues_events: true, token: glptt-a-person-made-it-0000}]
+run: {setup: [--yes, --ai, none, --install, none], forge: gitlab}
+expect:
+  checks:
+    - {rule: issue-hook, level: note, message: "its trigger token is not one workline created"}
+  forge:
+    triggers: [{id: 1, absent: true}]
+    hooks:
+      - {id: 7, issue-events: true, note-events: true}
+      - {id: 8, absent: true}

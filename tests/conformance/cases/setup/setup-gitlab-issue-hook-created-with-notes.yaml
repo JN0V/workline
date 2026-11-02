@@ -1,0 +1,20 @@
+case: setup/setup-gitlab-issue-hook-created-with-notes
+about: >
+  The reviewer routed on issue reads a spec in refine's run: its comment
+  wakes the product owner through the webhook's note events (#846).
+  Setup creates the webhook on issue and note events; the doctor then
+  says it starts the line at once.
+given:
+  repo: documented
+  config:
+    routing: {events: {issue: [product-owner, reviewer, tester, developer]}}
+  env: {PATH: "/usr/bin:/bin"}
+  forge: {merge-requests: [], hooks: []}
+run: {setup: [--yes, --ai, none, --install, none], forge: gitlab}
+expect:
+  checks:
+    - {rule: issue-hook, level: ok, message: "with workline's trigger token"}
+  stdout-lacks: [glptt-conformance, issue-hook-notes-off]
+  forge:
+    hooks:
+      - {id: 1, issue-events: true, note-events: true, trigger: 1}

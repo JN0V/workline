@@ -603,9 +603,11 @@ workline:objection:apply:
 
 # The line of states (ADR-0059): the project's issue webhook, pointed at
 # its own trigger URL with WORKLINE_TASK=issue, starts a pipeline on every
-# issue change; workline:issue reads the event ($TRIGGER_PAYLOAD) and,
-# when it put a state's label on an issue whose step is due, starts that
-# issue's own pipeline, WORKLINE_TASK=develop and ISSUE_IID, with the
+# issue change, and on every comment where the reviewer is routed on
+# issue; workline:issue reads the event ($TRIGGER_PAYLOAD) and, when it
+# put a state's label on an issue, or is the reviewer's comment on the
+# spec of an issue in refine (#846), and that issue's step is due,
+# starts its own pipeline, WORKLINE_TASK=develop and ISSUE_IID, with the
 # job's token: any other event exits at once. A pipeline schedule with
 # WORKLINE_TASK=reconcile, hourly, does the same for every issue an event
 # missed (docs/gitlab-trigger.md). No agent, the bot's token to read.

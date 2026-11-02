@@ -2,6 +2,7 @@ package doctor
 
 import (
 	"fmt"
+	"slices"
 
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/role"
@@ -26,6 +27,19 @@ func IssueHookOf(repo, spec string) forge.IssueHook {
 	return issueHookOf(repo, spec, cfg, line)
 }
 
+// IssueNotes says whether the issue webhook fires on note events too: the
+// reviewer reads a spec in refine's run (routed on issue), and its comment
+// wakes the product owner at once (#846). Else a comment wakes nothing,
+// and each would start a pipeline for nothing.
+func IssueNotes(repo string) bool {
+	line, err := routing.Load(repo)
+	return err == nil && issueNotes(line)
+}
+
+func issueNotes(line *routing.Config) bool {
+	return line != nil && slices.Contains(line.Events["issue"], "reviewer")
+}
+
 func issueHookOf(repo, spec string, cfg *role.ProjectConfig, line *routing.Config) forge.IssueHook {
 	if !routesRole(line, "product-owner") && !routesRole(line, "tester") && !routesRole(line, "developer") {
 		return nil
@@ -48,8 +62,9 @@ func issueHookOf(repo, spec string, cfg *role.ProjectConfig, line *routing.Confi
 }
 
 // issueHook says whether GitLab's issue webhook starts the line at once:
-// the hook to the project's own trigger URL, its issue events on, not
-// disabled, on the default branch, and workline's trigger token. Read
+// the hook to the project's own trigger URL, its issue events on (and its
+// note events, IssueNotes), not disabled, on the default branch, and
+// workline's trigger token. Read
 // only; a token that may not read them (a Maintainer's may) is said.
 func issueHook(r *Report, o Options, cfg *role.ProjectConfig, line *routing.Config) {
 	h := issueHookOf(o.Repo, o.Forge, cfg, line)
@@ -83,6 +98,10 @@ func issueHook(r *Report, o Options, cfg *role.ProjectConfig, line *routing.Conf
 		r.add(Check{Area: "repository", Rule: "issue-hook-ref", Where: s.Ref, Level: Warn,
 			Message: fmt.Sprintf("the issue webhook starts pipelines on %q, not on the default branch %s: the job workline:issue runs on the default branch only", s.Ref, s.Default),
 			Fix:     "Settings → Webhooks: its URL's /ref/<branch>/, the default branch (" + hookDoc + ")"})
+	case !s.NoteEvents && issueNotes(line):
+		r.add(Check{Area: "repository", Rule: "issue-hook-notes-off", Level: Warn,
+			Message: "the issue webhook does not fire on note events: the reviewer's comment on a spec wakes the product owner only at the hourly reconcile",
+			Fix:     setup})
 	case !s.Trigger:
 		r.add(Check{Area: "repository", Rule: "issue-hook", Level: Note,
 			Message: fmt.Sprintf("GitLab's issue webhook starts the line at once, on %s; its trigger token is not one workline created, so whether it still exists is not checked", s.Ref)})

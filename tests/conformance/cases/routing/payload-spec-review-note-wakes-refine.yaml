@@ -1,0 +1,28 @@
+case: routing/payload-spec-review-note-wakes-refine
+about: >
+  GitLab's webhook on note events (ADR-0059, #846): the reviewer's
+  comment on the spec of an issue in refine names that issue, as a
+  state's label does. Its review, written since the line's last step,
+  makes refine's step due again: the job starts the product owner's
+  pipeline at once, not at the next hourly reconcile. No agent asked.
+given:
+  repo: tested
+  env:
+    TRIGGER_PAYLOAD: '{"object_kind":"note","event_type":"note","user":{"username":"workline-bot"},"object_attributes":{"note":"**The reviewer** read this spec: nothing holds it from ready.\n\n<!-- workline:spec-review body=8a828a06be19 round=1 open=0 -->\n<!-- workline:sticky=reviewer/spec -->","noteable_type":"Issue","action":"create"},"issue":{"iid":3,"labels":[{"title":"workline:to-refine"}]}}'
+  config:
+    routing: {events: {issue: [product-owner, reviewer, tester, developer]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply"
+        labels: ["workline:to-refine"]
+        labeled: {"workline:to-refine": "2026-10-31T09:00:00Z"}
+        body: "## Need\n\nI want to multiply.\n"
+        comments:
+          - "**workline's line** last woke the product-owner.\n\n<!-- workline:line-record {\"state\":\"refine\",\"body\":\"8a828a06be19\",\"labeled\":\"2026-10-31T09:00:00Z\",\"hops\":1} -->\n<!-- workline:sticky=line/state -->"
+          - "**The reviewer** read this spec: nothing holds it from ready.\n\n<!-- workline:spec-review body=8a828a06be19 round=1 open=0 -->\n<!-- workline:sticky=reviewer/spec -->"
+run: {route: issue, open-merge-request: true, ai: "fake:ready-nine", input: {reconcile: list}}
+expect:
+  status: pass
+  summary: "issue: #3 due, the product-owner: not started"
+  agent-calls: 0

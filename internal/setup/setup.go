@@ -47,6 +47,9 @@ type Machine struct {
 	// IssueHook: the GitLab project, run from its clone, whose issue
 	// webhook starts the line of states (ADR-0059); nil, none asked.
 	IssueHook forge.IssueHook
+	// IssueNotes: the hook fires on note events too, the reviewer reading
+	// a spec in refine's run: its comment wakes the product owner (#846).
+	IssueNotes bool
 }
 
 // Run asks, then sets up. It stops at the first thing that fails.
@@ -180,7 +183,7 @@ func Run(a Answers, m Machine) error {
 	if !yes(want) {
 		return nil
 	}
-	did, err := m.IssueHook.SetIssueHook()
+	did, err := m.IssueHook.SetIssueHook(m.IssueNotes)
 	for _, d := range did {
 		_, _ = fmt.Fprintln(m.Out, "  "+d)
 	}

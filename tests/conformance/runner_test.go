@@ -321,6 +321,7 @@ type hookWant struct {
 	Absent      bool   `yaml:"absent"`
 	URLContains string `yaml:"url-contains"`
 	IssueEvents *bool  `yaml:"issue-events"`
+	NoteEvents  *bool  `yaml:"note-events"`
 	Trigger     *int   `yaml:"trigger"`
 }
 
@@ -370,6 +371,9 @@ func compareHooks(want *forgeWant, file string) []string {
 		}
 		if w.IssueEvents != nil && h.IssueEvents != *w.IssueEvents {
 			p = append(p, fmt.Sprintf("forge: hook %d's issue events: %v, want %v", w.ID, h.IssueEvents, *w.IssueEvents))
+		}
+		if w.NoteEvents != nil && h.NoteEvents != *w.NoteEvents {
+			p = append(p, fmt.Sprintf("forge: hook %d's note events: %v, want %v", w.ID, h.NoteEvents, *w.NoteEvents))
 		}
 		if w.Trigger != nil {
 			t := slices.IndexFunc(s.Triggers, func(t mockTrigger) bool { return t.ID == *w.Trigger })
