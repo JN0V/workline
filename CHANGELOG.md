@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.68.0](https://github.com/JN0V/workline/compare/v0.67.0...v0.68.0) (2026-11-02)
+
+
+### Features
+
+* a bug's fix merges alone once a failing test proves it ([#876](https://github.com/JN0V/workline/issues/876)) ([8b3e072](https://github.com/JN0V/workline/commit/8b3e0728c69258062264c0cb23a498ca71d1107a))
+* a milestone ships on a yes to its release candidate ([#883](https://github.com/JN0V/workline/issues/883)) ([b7e1947](https://github.com/JN0V/workline/commit/b7e19476eb011a2396f2cc2ed95a18812745cd7a))
+* each role's autonomy level, one project default ([#877](https://github.com/JN0V/workline/issues/877)) ([d508449](https://github.com/JN0V/workline/commit/d5084490d4fd2758fda52686706a8a63a18e477f))
+* **product-owner:** a question times out into an assumption ([#874](https://github.com/JN0V/workline/issues/874)) ([5892e73](https://github.com/JN0V/workline/commit/5892e73a9d27b9e13f586510b861ef2cca65fa0c))
+* **product-owner:** rewrite a person's Verification and Scope ([#870](https://github.com/JN0V/workline/issues/870)) ([536c478](https://github.com/JN0V/workline/commit/536c478828f2a71a776c1b1258a4a9d2f99b46be))
+* the product owner reads the kind of issues read before ([#885](https://github.com/JN0V/workline/issues/885)) ([4c434e7](https://github.com/JN0V/workline/commit/4c434e7e1cad86452713bf56c815aa642506d4ac))
+
 ## [0.67.0](https://github.com/JN0V/workline/compare/v0.66.0...v0.67.0) (2026-11-02)
 
 
