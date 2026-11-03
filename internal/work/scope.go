@@ -16,6 +16,17 @@ var (
 	lineRef = regexp.MustCompile(`:\d+(-\d+)?$`)
 )
 
+// guessMark is a Scope's line that says its paths are a guess: `Guessed:`
+// at its start, bold or in a bullet as well (#970).
+var guessMark = regexp.MustCompile(`(?mi)^\s*(?:[-*]\s+)?[*_]*guessed[*_]*\s*:`)
+
+// Guessed says whether a Scope's text marks its paths a guess — written
+// before the code they name was read: a line starting `Guessed:` (#970).
+// Such paths hold no other issue back.
+func Guessed(scope string) bool {
+	return guessMark.MatchString(scope)
+}
+
 // ScopeWords are the words a Scope's text writes in backticks, each with
 // a trailing line or span of lines taken off: `parts.go:943` names
 // parts.go, as the product owner's writing rules ask a Scope to write it.

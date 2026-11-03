@@ -58,3 +58,19 @@ func TestInRepo(t *testing.T) {
 		}
 	}
 }
+
+// A Scope marked as a guess starts a line with `Guessed:`, plain, bold
+// or in a bullet (#970); the word elsewhere marks nothing.
+func TestGuessed(t *testing.T) {
+	for scope, want := range map[string]bool{
+		"Guessed: no code was read.\n\n- `src/`.":   true,
+		"- `src/`.\n\n**Guessed:** from the title.": true,
+		"- guessed: from the folders.":              true,
+		"- `src/`: the parser, guessed before.":     false,
+		"- `src/lib.sh`: `add`.":                    false,
+	} {
+		if got := Guessed(scope); got != want {
+			t.Errorf("Guessed(%q) = %v, want %v", scope, got, want)
+		}
+	}
+}

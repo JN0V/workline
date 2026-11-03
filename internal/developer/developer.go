@@ -309,8 +309,13 @@ func Held(issues []forge.Issue, mrs []forge.MergeRequest, claimLabel string, let
 }
 
 // Overlapping is the first issue of held, by number, whose Scope's
-// paths overlap is's, and the path; 0 when none, or is itself.
+// paths overlap is's, and the path; 0 when none, or is itself. A Scope
+// its writer marked as a guess (work.Guessed) waits on nothing: its paths
+// were named before their code was read (#970).
 func Overlapping(is forge.Issue, held map[int][]string, files []string) (int, string) {
+	if work.Guessed(work.ByMeaning(is.Body)[work.Scope].Text) {
+		return 0, ""
+	}
 	mine := inRepo(scopePaths(is.Body, files), files)
 	for _, n := range slices.Sorted(maps.Keys(held)) {
 		if p := overlap(mine, held[n]); p != "" && n != is.ID {
