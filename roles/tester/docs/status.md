@@ -88,6 +88,10 @@ Cases in `tests/conformance/cases/tester/`:
   error; each refusal written on the issue, at night too
   ([#761](https://github.com/JN0V/workline/issues/761)); a real agent's
   slip asked again, on [#776](https://github.com/JN0V/workline/pull/776).
+- **Tests that do not lint**, asked again once with each finding, its
+  file and line from the repository's root; still found, blocked, the
+  finding said on the issue
+  ([#964](https://github.com/JN0V/workline/issues/964)).
 - **Frozen to the builder**, no agent: the record of each test file's
   blob in workline's own comment on the Draft; a test changed or
   deleted by another blocks (`tester-test-changed`), a forged trailer
