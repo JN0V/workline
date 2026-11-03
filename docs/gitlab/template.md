@@ -1,6 +1,6 @@
 ---
 sources: [ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile]
-checked: eebe4270
+checked: 8538d558
 verified: agent:documentalist
 judged: e8a46f7
 ---
@@ -102,4 +102,5 @@ Part of [workline on GitLab CI](../ci-gitlab.md): what each job of
   - a note carrying its marker that another wrote, a person of the
     project's too: not read, its docs judged again, said
     (`record-unread`);
-  - a note it cannot read: it commits the records, said (`record-unread`).
+  - a note it cannot read: the records go in its comment's diff, said
+    (`record-unread`).

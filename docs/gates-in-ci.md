@@ -1,6 +1,6 @@
 ---
 sources: [ci/github/workline.yml, ci/github/workline-apply.yml, ci/github/workline-warn.yml, ci/gitlab/workline.gitlab-ci.yml, internal/report/gates.go, internal/engine/annotate.go, internal/line]
-checked: d722a840
+checked: 8538d558
 judged: 14c41d9
 verified: agent:claude-code
 ---
@@ -67,6 +67,9 @@ found the change adds:
   ([what a fork gets](#a-forks-pull-request)).
 - **The branch moved on** before the apply: nothing shown, and said; the
   next run shows its own.
+- **On the developer's own pull request**, the gates' summary comment
+  starts a review round, its fix pushed on its branch
+  ([the review loop](../roles/developer/docs/review-loop.md#what-wakes-it)).
 
 ## On GitLab
 

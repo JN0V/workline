@@ -1,6 +1,6 @@
 ---
 sources: [ci/github, .github/workflows/workline.yml, .github/workflows/workline-apply.yml, .github/workflows/workline-gardening.yml, .github/workflows/workline-sample.yml, .github/workflows/workline-answer.yml, .github/workflows/workline-develop.yml, .github/actions/engine/action.yml, .github/actions/tests/action.yml, .github/workflows/release.yml, .github/workflows/release-please.yml, release-please-config.json, .goreleaser.yaml, cmd/workline]
-checked: a797443e
+checked: 8538d558
 verified: agent:claude-code
 judged: 220b6dc
 ---
@@ -46,9 +46,9 @@ with release-please, never a tag by hand:
   one pull request open, "chore(main): release X": the next version from
   the conventional commits since the last tag (`feat` moves the minor
   while workline is at 0.x, as a breaking change does), [CHANGELOG.md](../../CHANGELOG.md), and
-  the templates' `WORKLINE_VERSION` and the one in
-  [gitlab-trigger.md](../gitlab-trigger.md)'s example, each on a line marked
-  `x-release-please-version` (release-please-config.json);
+  the templates' `WORKLINE_VERSION`, each on a line marked
+  `x-release-please-version`, in the files release-please-config.json
+  lists;
 - the App's token, not the job's: a pull request opened with
   `GITHUB_TOKEN` starts no workflow, so its checks would never run;
 - on that pull request, `judge` holds it while an open issue is labelled

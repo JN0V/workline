@@ -1,6 +1,6 @@
 ---
 sources: [ci/github, .github/workflows/workline.yml, .github/workflows/workline-apply.yml, .github/workflows/workline-gardening.yml, .github/workflows/workline-sample.yml, .github/workflows/workline-answer.yml, .github/workflows/workline-develop.yml, .github/actions/engine/action.yml, .github/workflows/release.yml, .github/workflows/release-please.yml, release-please-config.json, .goreleaser.yaml, cmd/workline]
-checked: aea0b546
+checked: 8538d558
 judged: 220b6dc
 verified: agent:claude-code
 reader: fe1505d43360
@@ -107,8 +107,9 @@ write run the default branch's workflow, never a pull request's own
      ([ADR-0059](adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md)),
      a person's label running the role an issue's state wakes, each step
      starting the next, an hourly reconciler
-     ([its heartbeat](github/heartbeat.md), an environment to create); a verdict or a
-     person's comment on its own pull request, a review round
+     ([its heartbeat](github/heartbeat.md), an environment to create); a verdict,
+     the gates' report, a person's comment or a project workflow failed
+     on its own pull request, a review round
      ([the triggers](../roles/developer/docs/triggers.md)); your setup
      steps in `.github/actions/workline-setup/action.yml`
      ([the project's environment](../roles/developer/docs/triggers.md#the-projects-environment)).
@@ -123,9 +124,9 @@ write run the default branch's workflow, never a pull request's own
    → Actions → New repository secret. The templates call Claude when
    `CLAUDE_CODE_OAUTH_TOKEN` is set (`claude setup-token`), and no agent
    otherwise; for another agent, change their `--ai` to a `cmd:`.
-3. **A GitHub App** commits the fixes, so the checks run again by
-   themselves (with the job's own token, GitHub waits for someone to
-   approve them): [set it up](ci-github-app.md) — variable
+3. **A GitHub App** commits workline's fixes and opens its pull requests,
+   so their checks run by themselves (with the job's own token, GitHub
+   waits for someone to approve them): [set it up](ci-github-app.md) — variable
    `WORKLINE_APP_ID`, its key `WORKLINE_APP_PRIVATE_KEY` in the
    environment `workline-app`, which only the default branch may use.
 4. **Protect main** (Settings → Rules): pull requests only, the `judge`
@@ -140,8 +141,8 @@ write run the default branch's workflow, never a pull request's own
    `upload-sarif` step of workline.yml, code scanning being paid there.
 
 Then open a pull request changing code a doc describes: `judge` judges it,
-and `apply`, with the App, commits the fix to its branch,
-`Workline-Role: documentalist`.
+and `apply`, with the App, posts the doc's fix as a diff in a comment,
+nothing pushed to its branch.
 
 ## What the jobs may do
 
