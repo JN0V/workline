@@ -743,12 +743,10 @@ func reviewPost(runDir, repo string, s Settings) int {
 		// its agent's code: proven together, pushed together.
 		p, u, caps, found := proven(runDir, repo, r.At, where, slices.Concat(takes, patches), union(a.Acceptance, union(a.Code, a.Tests)), again(a.Proof), s)
 		this.Result, this.Turns, this.Tokens, this.Cached, this.Tools = p.Result, u.Turns, u.Tokens, u.Cached, u.Tools
-		frozen := frozenRed(repo, r.At, a.Acceptance, p.Red)
-		if green && p.Result == Red && (len(frozen) > 0 || objected || len(files) > 0) {
+		// Only a frozen test red holds it: a red of its own tests is the
+		// next round's to fix, pushed as before.
+		if frozen := frozenRed(repo, r.At, a.Acceptance, p.Red); green && p.Result == Red && len(frozen) > 0 {
 			heldRed = frozen
-			if len(heldRed) == 0 {
-				heldRed = p.Red
-			}
 			this.Result, patches = "not-pushed", nil
 			msg := fmt.Sprintf("its fix turns the tests red on a green head (%s): not pushed, the green head kept", strings.Join(heldRed, ", "))
 			v.Findings = append(v.Findings, verdict.Finding{Rule: "green-kept", Level: "warn", Where: where, Message: msg})

@@ -662,8 +662,8 @@ blocked and the rounds' cap spent.
 
 - **A green head is kept**: a round on a head whose last proof is green,
   no red check asked, does not push a fix its proof finds red on a
-  frozen test, or red while it objects or names a file outside the
-  Scope. The green code is never undone for a finding: a frozen test
+  frozen test; red on its own tests only, it is pushed, the next round
+  fixes them. The green code is never undone for a finding: a frozen test
   is the tester's ([ADR-0055]), the Scope the product owner's ([ADR-0060](0060-the-person-is-on-the-loop.md)).
 - **Doing stays Doing, the objection waits for the tester**: a round
   that objects, code pushed or not, and names no file outside the

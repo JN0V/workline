@@ -79,9 +79,9 @@ settle, or the product owner's, never the round's to force
 - **Its agent is told**: never undo the code a frozen test needs; object
   to the test, or name what the Scope lacks.
 - **A green head is kept**: its last proof green, no red check asked. A
-  fix the proof finds red on a frozen test, or red with an objection or
-  a file named, is not pushed. A red test is a frozen one when its
-  name is a frozen file's name or a word in it.
+  fix the proof finds red on a frozen test is not pushed. A red test is
+  a frozen one when its name is a frozen file's name or a word in it.
+  Red on its own tests only, it is pushed: the next round fixes them.
 - **An objection waits for the tester**: posted on the Draft's lines,
   pushed code or not; the issue stays in Doing, the record saying it
   objected at this head.
