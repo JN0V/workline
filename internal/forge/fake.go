@@ -687,6 +687,18 @@ func (f *Fake) MergeRequest(id int) (MergeRequest, error) {
 	return MergeRequest{ID: id, Branch: it.Branch, Base: it.Base, Here: !it.Fork, Title: it.Title, Body: it.Body, Draft: it.Draft}, nil
 }
 
+// MarkReady marks a draft merge request ready; one ready already is left.
+func (f *Fake) MarkReady(id int) error {
+	return f.write(func(s *FakeState) error {
+		it, err := s.item(Target{Kind: "merge-request", ID: id})
+		if err != nil {
+			return err
+		}
+		it.Draft = false
+		return nil
+	})
+}
+
 // Squash is the state's, a merge request's number in its suffix; none set,
 // the forge never squashes.
 func (f *Fake) Squash(id int) (Squash, error) {

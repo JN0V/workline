@@ -430,6 +430,16 @@ type Squasher interface {
 	Squash(id int) (Squash, error)
 }
 
+// Readied is a forge that marks a draft merge request ready for review:
+// the developer's Draft once every project check at its head is green
+// (#969). One ready already is left as it is.
+type Readied interface {
+	MarkReady(id int) error
+}
+
+// GitHub, GitLab, the local and the simulated forge mark a draft ready.
+var _ = []Readied{&github{}, &gitlab{}, &Local{}, &Fake{}}
+
 // Reaction is a reaction a person put on a comment: its emoji, as GitHub
 // names it (+1, -1; GitLab's thumbsup and thumbsdown read so), and who.
 type Reaction struct {

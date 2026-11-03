@@ -1286,6 +1286,25 @@ func (g *gitlab) MergeRequest(id int) (MergeRequest, error) {
 	return MergeRequest{ID: id, Branch: mr.Source, Base: mr.Target, Here: mr.SourceProject == mr.TargetProject, Title: mr.Title, Body: mr.Description, Draft: mr.Draft}, nil
 }
 
+// MarkReady marks a draft merge request ready: GitLab's draft is its
+// title's prefix, taken off. One ready already is left.
+func (g *gitlab) MarkReady(id int) error {
+	mr, err := g.MergeRequest(id)
+	if err != nil {
+		return err
+	}
+	if !mr.Draft {
+		return nil
+	}
+	title := draftPrefix.ReplaceAllString(mr.Title, "")
+	_, err = g.api("-X", "PUT", path(Target{Kind: "merge-request", ID: id}), "-f", "title="+title)
+	return err
+}
+
+// draftPrefix is what makes a GitLab merge request a draft: its title
+// starting "Draft:", "[Draft]" or "(Draft)", any case.
+var draftPrefix = regexp.MustCompile(`(?i)^\s*(\[draft\]|\(draft\)|draft:)\s*`)
+
 // Squash reads the project's squash option: every one but "never" lets a
 // merge request be squashed, its title the subject (GitLab's default
 // template), nothing added after it.
