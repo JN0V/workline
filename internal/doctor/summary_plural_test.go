@@ -7,6 +7,9 @@ import (
 	"testing"
 )
 
+// rolesDir is the project's roles folder, seen from this package.
+const rolesDir = "../../roles"
+
 // isolate points git and the home at nothing of the person's.
 func isolate(t *testing.T) {
 	t.Helper()
@@ -32,7 +35,7 @@ func countOf(r *Report, level string) int {
 // `1 warning: some checks do not run`.
 func TestOneWarning(t *testing.T) {
 	isolate(t)
-	r := Run(Options{})
+	r := Run(Options{RolesDir: rolesDir})
 	if countOf(r, Warn) != 1 || countOf(r, Error) != 0 {
 		t.Fatalf("setup: want 1 warning and no problem, got %+v", r.Checks)
 	}
@@ -56,7 +59,7 @@ func TestSeveralWarnings(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(repo, ".workline", "config.yaml"), []byte(cfg), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	r := Run(Options{Repo: repo})
+	r := Run(Options{Repo: repo, RolesDir: rolesDir})
 	if countOf(r, Error) != 0 {
 		t.Fatalf("setup: want no problem, got %+v", r.Checks)
 	}
