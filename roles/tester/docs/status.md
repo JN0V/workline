@@ -91,7 +91,9 @@ Cases in `tests/conformance/cases/tester/`:
 - **Tests that do not lint**, asked again once with each finding, its
   file and line from the repository's root; still found, blocked, the
   finding said on the issue
-  ([#964](https://github.com/JN0V/workline/issues/964)).
+  ([#964](https://github.com/JN0V/workline/issues/964)); tried with the
+  real golangci-lint on a copy of workline, on
+  [#966](https://github.com/JN0V/workline/pull/966#tried).
 - **Frozen to the builder**, no agent: the record of each test file's
   blob in workline's own comment on the Draft; a test changed or
   deleted by another blocks (`tester-test-changed`), a forged trailer
