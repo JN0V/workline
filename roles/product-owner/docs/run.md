@@ -77,7 +77,7 @@ Each issue comes with:
 - its comments, with who wrote each;
 - the issues it cites, open or closed;
 - the code it names — a file linked on the forge counts —, or else the
-  repository's folders, to name a Scope's files from;
+  repository's folders, to name the code to read from;
 - for an issue imported from a file: that file's lines around its item,
   and its other lines naming the item's id — facts to refine from, not
   to ask you.
