@@ -1,6 +1,6 @@
 ---
 sources: [internal/tester/green.go, internal/tester/frozen.go, internal/tester/tester.go]
-checked: 68001ec6
+checked: 4b0fd7a4
 verified: agent:claude-code
 ---
 # The green proof: three runs out of three
@@ -78,3 +78,6 @@ random order each find it more often. Put the runner's option in
 - **Go's result cache**: Go would replay the first run's pass in the
   next ones. Each run gets `-count=1` in `GOFLAGS`, unless the project
   set a `-count` there; other runners ignore it.
+- **The job's environment, not the line's**: the runs never see the
+  line's own setting for its forge calls, `WORKLINE_RATE_WAIT`
+  ([#940](https://github.com/JN0V/workline/issues/940)).

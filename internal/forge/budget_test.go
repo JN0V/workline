@@ -42,6 +42,7 @@ EOF
 // few minutes), it is, up to the tries' bound; half an hour away, never:
 // the job would hold its runner (#804).
 func TestRateWaitInALineRun(t *testing.T) {
+	t.Setenv(RateWaitEnv, "") // a run of the line's, inherited, is not this test's (#940)
 	f := failure{code: 403, limited: true, header: http.Header{"Retry-After": {"180"}}}
 	if wait, note := again("GitHub", true, 1, f); wait >= 0 || !strings.Contains(note, "longer than workline waits") {
 		t.Errorf("no line run: waits %s, %q; want not tried again, said", wait, note)

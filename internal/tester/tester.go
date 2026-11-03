@@ -15,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/pathglob"
 	"github.com/JN0V/workline/internal/verdict"
 )
@@ -468,7 +469,7 @@ func shell(dir, line string, deadline time.Time) (out bytes.Buffer, late bool, e
 	}
 	cmd := exec.CommandContext(ctx, "sh", "-c", line)
 	cmd.Dir = dir
-	cmd.Env = uncached(os.Environ())
+	cmd.Env = uncached(forge.ProjectEnv(os.Environ()))
 	cmd.Stdout, cmd.Stderr = &out, &out
 	cmd.WaitDelay = 5 * time.Second
 	err = cmd.Run() // a test that fails exits non-zero: the report says which
