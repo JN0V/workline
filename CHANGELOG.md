@@ -1,5 +1,30 @@
 # Changelog
 
+## [0.70.0](https://github.com/JN0V/workline/compare/v0.69.0...v0.70.0) (2026-11-03)
+
+
+### Features
+
+* "uncovered" says a name is gone from the code though its ([#914](https://github.com/JN0V/workline/issues/914)) ([4ef33f2](https://github.com/JN0V/workline/commit/4ef33f2b79ebc17b655b9663c2fcf09993482308))
+* **docs:** a UX role for projects with a user interface ([#875](https://github.com/JN0V/workline/issues/875)) ([d77490e](https://github.com/JN0V/workline/commit/d77490ede225248a1ff28bdb85df1eace9708b53))
+* **docs:** try the documentalist, reviewer and product owner ([#809](https://github.com/JN0V/workline/issues/809)) ([b2031f5](https://github.com/JN0V/workline/commit/b2031f5b54f58d8f7df3c8f29c2d3eea0477163c))
+* doctor checks the forge a repository writes to ([#810](https://github.com/JN0V/workline/issues/810)) ([3767b22](https://github.com/JN0V/workline/commit/3767b2224146a103677085aec6e2f269dfffda7a))
+* **documentalist:** declare and document reader.references ([#930](https://github.com/JN0V/workline/issues/930)) ([d256fd5](https://github.com/JN0V/workline/commit/d256fd57de8f0b7d778356d163f0c96d3b29a43f))
+* **engine:** pasted line starting with "- " splits a claim ([#928](https://github.com/JN0V/workline/issues/928)) ([562d0af](https://github.com/JN0V/workline/commit/562d0af75e444213e6338cead4a8a511d44061ae))
+* **internal:** missing tool dropped from an unproven result ([#817](https://github.com/JN0V/workline/issues/817)) ([b1a9deb](https://github.com/JN0V/workline/commit/b1a9deb07949639d9e1d0dcaeecc2bc733fd5816))
+* **line:** the line's comment names a role by its file name ([#909](https://github.com/JN0V/workline/issues/909)) ([d892e96](https://github.com/JN0V/workline/commit/d892e967d3f97bd4b21e3950490280b0b512f1ea))
+* reader checks: references follow the project's own naming ([#808](https://github.com/JN0V/workline/issues/808)) ([8c13461](https://github.com/JN0V/workline/commit/8c134614e15b2aba8b98b0fd4085c0c34fc15dac))
+* testGitHubNoAnswerBounded fails under load: 0 to 2 ([#936](https://github.com/JN0V/workline/issues/936)) ([61f5580](https://github.com/JN0V/workline/commit/61f55800bb718b401a3e62e849c22e643d8c4676))
+
+
+### Bug Fixes
+
+* **developer:** a red check with no fix blocks its issue ([#943](https://github.com/JN0V/workline/issues/943)) ([a688b5c](https://github.com/JN0V/workline/commit/a688b5cb33db5133d50673a9f629778061377f70))
+* **developer:** a round takes the test the tester rewrote ([#945](https://github.com/JN0V/workline/issues/945)) ([8538d55](https://github.com/JN0V/workline/commit/8538d558cfd27d42a0bb7edaec627d131371d96f))
+* **developer:** break the marks a Scope ask's quoted log holds ([#926](https://github.com/JN0V/workline/issues/926)) ([8b28734](https://github.com/JN0V/workline/commit/8b2873491e3926207a1edf77eeda64151d454a9d))
+* **engine:** a developer task waits for a person's yes ([#942](https://github.com/JN0V/workline/issues/942)) ([cd2afbf](https://github.com/JN0V/workline/commit/cd2afbf0f8de913f0b028b987e670ba3762b78df))
+* the project's tests run without the line's own settings ([#944](https://github.com/JN0V/workline/issues/944)) ([54160b0](https://github.com/JN0V/workline/commit/54160b0c5f21989a1b3a54eba4f1def5209108d0))
+
 ## [0.69.0](https://github.com/JN0V/workline/compare/v0.68.0...v0.69.0) (2026-11-03)
 
 
