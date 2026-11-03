@@ -1,0 +1,30 @@
+case: documentalist/reader-references-of-the-project
+about: "A project names what counts as a reference in its own naming (`reader.references`, regular expressions, #261): with `RFC-\\d+`, GitLab's `!\\d+` and `[\\w.-]+/[\\w.-]+#\\d+`, a bare `RFC-12`, `!34` or `shop/api#56` is reported; `ADR-3` and `#7`, the default's, no longer are, nor a name in a code span or a link. A doc of the repository named as plain text still is."
+given:
+  repo: documented
+  config:
+    roles: {documentalist: {settings: {reader: {references: ['RFC-\d+', '!\d+', '[\w.-]+/[\w.-]+#\d+']}}}}
+  setup:
+    - |
+      printf '# Shop\n\nSee [the guide](docs/guide.md).\n' > README.md
+      cat > docs/guide.md <<'DOC'
+      # Guide
+
+      Tokens last an hour, as RFC-12 decided; merge request !34 built it.
+      The client follows shop/api#56, and ADR-3 or #7 name nothing here.
+      `RFC-9` in a code span is an example; [RFC-1](rfc/0001.md) is linked.
+      README.md says where to start.
+      DOC
+      git add . && git commit -qm 'docs: a guide'
+run: {role: documentalist, event: schedule, ai: none}
+expect:
+  status: pass
+  agent-calls: 0
+  findings:
+    - {rule: reference-unlinked, where: docs/guide.md, message: "4 decision, doc or issue named without a link: line 3 `RFC-12`, line 3 `!34`, line 4 `shop/api#56`, line 6 `README.md`"}
+  no-findings:
+    - {rule: reference-unlinked, message: "ADR-3"}
+    - {rule: reference-unlinked, message: "#7`"}
+    - {rule: reference-unlinked, message: "RFC-9"}
+    - {rule: reference-unlinked, message: "RFC-1`"}
+    - {rule: setting-invalid}
