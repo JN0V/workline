@@ -29,6 +29,7 @@ func (g *gitlab) MergeState(mr MergeRequest) (MergeState, error) {
 		SHA     string `json:"sha"`
 		Draft   bool   `json:"draft"`
 		Auto    bool   `json:"merge_when_pipeline_succeeds"`
+		Status  string `json:"detailed_merge_status"`
 		Created string `json:"created_at"`
 		User    *struct {
 			ID       int    `json:"id"`
@@ -41,7 +42,7 @@ func (g *gitlab) MergeState(mr MergeRequest) (MergeState, error) {
 	if err := decode(out, &v); err != nil {
 		return MergeState{}, err
 	}
-	st := MergeState{Head: v.SHA, Draft: v.Draft, AutoMerge: v.Auto}
+	st := MergeState{Head: v.SHA, Draft: v.Draft, AutoMerge: v.Auto, Mergeable: v.Status == "mergeable"}
 	if v.Auto && v.User != nil {
 		st.AutoMergeBy, st.AutoMergeBot = v.User.Username, botName.MatchString(v.User.Username)
 		if !st.AutoMergeBot && v.User.ID != 0 {

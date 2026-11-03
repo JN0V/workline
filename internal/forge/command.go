@@ -366,7 +366,8 @@ func (c *command) ListMergeRequests() ([]MergeRequest, error) {
 }
 
 // MergeState asks merge-state: {head, draft, auto-merge, auto-merge-at,
-// auto-merge-by, auto-merge-bot, checks, label-events, pushes, pushers}
+// auto-merge-by, auto-merge-bot, checks, mergeable, label-events, pushes,
+// pushers}
 // (docs/spec/forge-command.md). A command that does not know it refuses
 // it, and the merge policy says so.
 func (c *command) MergeState(mr MergeRequest) (MergeState, error) {

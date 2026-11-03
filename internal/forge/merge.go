@@ -71,6 +71,12 @@ type MergeState struct {
 	// pending, failure; "" none, or unread (ChecksUnread says why).
 	Checks       string `json:"checks,omitempty"`
 	ChecksUnread string `json:"checks-unread,omitempty"`
+	// Mergeable: the forge would merge it now, its own rules met —
+	// GitHub's merge state clean, unstable or has_hooks; GitLab's
+	// detailed merge status mergeable. An auto-merge on stays on one the
+	// forge missed (#993): GitHub's acts on an event, never again once
+	// missed.
+	Mergeable bool `json:"mergeable,omitempty"`
 	// Labels are its labels set and taken off, oldest first, with who did
 	// each, as Backlog's LabelEvents.
 	Labels []LabelEvent `json:"label-events,omitempty"`

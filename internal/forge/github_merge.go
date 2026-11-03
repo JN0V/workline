@@ -10,9 +10,10 @@ import (
 )
 
 // mergeStateQuery asks a pull request for what the merge policy weighs
-// (ADR-0042): a draft, its head, its auto-merge on and who turned it on,
+// (ADR-0042): a draft, its head, whether GitHub would merge it now, its
+// auto-merge on and who turned it on,
 // and when auto-merge was last turned on, the last hundred such events.
-const mergeStateQuery = `query($owner: String!, $name: String!, $number: Int!) { repository(owner: $owner, name: $name) { pullRequest(number: $number) { isDraft headRefOid autoMergeRequest { enabledAt enabledBy { login __typename } } timelineItems(itemTypes: [AUTO_MERGE_ENABLED_EVENT, AUTO_SQUASH_ENABLED_EVENT, AUTO_REBASE_ENABLED_EVENT], last: 100) { nodes { ... on AutoMergeEnabledEvent { createdAt } ... on AutoSquashEnabledEvent { createdAt } ... on AutoRebaseEnabledEvent { createdAt } } } } } }`
+const mergeStateQuery = `query($owner: String!, $name: String!, $number: Int!) { repository(owner: $owner, name: $name) { pullRequest(number: $number) { isDraft headRefOid mergeStateStatus autoMergeRequest { enabledAt enabledBy { login __typename } } timelineItems(itemTypes: [AUTO_MERGE_ENABLED_EVENT, AUTO_SQUASH_ENABLED_EVENT, AUTO_REBASE_ENABLED_EVENT], last: 100) { nodes { ... on AutoMergeEnabledEvent { createdAt } ... on AutoSquashEnabledEvent { createdAt } ... on AutoRebaseEnabledEvent { createdAt } } } } } }`
 
 // checksQuery asks the head's checks as GitHub shows them on the pull
 // request, each: check runs and commit statuses both.
@@ -35,6 +36,7 @@ func (g *github) MergeState(mr MergeRequest) (MergeState, error) {
 				PullRequest struct {
 					Draft bool   `json:"isDraft"`
 					Head  string `json:"headRefOid"`
+					State string `json:"mergeStateStatus"`
 					Auto  *struct {
 						At string `json:"enabledAt"`
 						By *struct {
@@ -55,7 +57,7 @@ func (g *github) MergeState(mr MergeRequest) (MergeState, error) {
 		return MergeState{}, err
 	}
 	pr := v.Data.Repository.PullRequest
-	st := MergeState{Head: pr.Head, Draft: pr.Draft}
+	st := MergeState{Head: pr.Head, Draft: pr.Draft, Mergeable: mergeableStates[pr.State]}
 	for _, n := range pr.Timeline.Nodes {
 		st.AutoMergeAt = max(st.AutoMergeAt, n.At)
 	}
@@ -304,15 +306,17 @@ func (g *github) Guarded(base string) (string, error) {
 	return fmt.Sprintf("%s does not require the status %s: a push after the yes could merge before follow takes the yes back; require it, from the GitHub App, in a ruleset", base, Accepted), nil
 }
 
-// pullQuery asks a pull request's node id and the merge methods its
-// repository allows, for the auto-merge mutations.
-const pullQuery = `query($owner: String!, $name: String!, $number: Int!) { repository(owner: $owner, name: $name) { squashMergeAllowed mergeCommitAllowed rebaseMergeAllowed viewerDefaultMergeMethod pullRequest(number: $number) { id } } }`
+// pullQuery asks a pull request's node id, whether GitHub would merge it
+// now, and the merge methods its repository allows, for the auto-merge
+// mutations.
+const pullQuery = `query($owner: String!, $name: String!, $number: Int!) { repository(owner: $owner, name: $name) { squashMergeAllowed mergeCommitAllowed rebaseMergeAllowed viewerDefaultMergeMethod pullRequest(number: $number) { id mergeStateStatus } } }`
 
 // AutoMerge turns GitHub's auto-merge on with the repository's merge
-// method, for head only (expectedHeadOid), or off. GitHub turns none on
-// for a pull request it could merge now (mergeableNow): it is merged at
-// once, at head, as `gh pr merge --auto` does — GitHub checking its rules
-// on that merge as auto-merge would.
+// method, for head only (expectedHeadOid), or off. A pull request GitHub
+// could merge now is merged at once, at head, as `gh pr merge --auto`
+// does — GitHub checking its rules on that merge as auto-merge would —:
+// GitHub turns no auto-merge on for it (mergeableNow), and one already
+// on whose event GitHub missed never fires (#993).
 func (g *github) AutoMerge(mr MergeRequest, head string, on bool) (bool, error) {
 	out, err := g.api("graphql", "-f", "query="+pullQuery, "-F", "owner={owner}", "-F", "name={repo}", "-F", fmt.Sprintf("number=%d", mr.ID))
 	if err != nil {
@@ -326,7 +330,8 @@ func (g *github) AutoMerge(mr MergeRequest, head string, on bool) (bool, error) 
 				Rebase  bool   `json:"rebaseMergeAllowed"`
 				Default string `json:"viewerDefaultMergeMethod"`
 				Pull    struct {
-					ID string `json:"id"`
+					ID    string `json:"id"`
+					State string `json:"mergeStateStatus"`
 				} `json:"pullRequest"`
 			} `json:"repository"`
 		} `json:"data"`
@@ -346,6 +351,10 @@ func (g *github) AutoMerge(mr MergeRequest, head string, on bool) (bool, error) 
 			method = m
 		}
 	}
+	if mergeableStates[r.Pull.State] {
+		_, err = g.api("-X", "PUT", fmt.Sprintf("repos/{owner}/{repo}/pulls/%d/merge", mr.ID), "-f", "sha="+head, "-f", "merge_method="+strings.ToLower(method))
+		return err == nil, err
+	}
 	_, err = g.api("graphql", "-f", "query=mutation($id: ID!, $head: GitObjectID!, $method: PullRequestMergeMethod!) { enablePullRequestAutoMerge(input: {pullRequestId: $id, expectedHeadOid: $head, mergeMethod: $method}) { clientMutationId } }",
 		"-f", "id="+r.Pull.ID, "-f", "head="+head, "-f", "method="+method)
 	if err == nil || !mergeableNow.MatchString(err.Error()) {
@@ -354,6 +363,11 @@ func (g *github) AutoMerge(mr MergeRequest, head string, on bool) (bool, error) 
 	_, err = g.api("-X", "PUT", fmt.Sprintf("repos/{owner}/{repo}/pulls/%d/merge", mr.ID), "-f", "sha="+head, "-f", "merge_method="+strings.ToLower(method))
 	return err == nil, err
 }
+
+// mergeableStates are GitHub's merge states of a pull request it would
+// merge now: its required checks passed (CLEAN), only checks it does not
+// require still running or red (UNSTABLE), or hooks left (HAS_HOOKS).
+var mergeableStates = map[string]bool{"CLEAN": true, "UNSTABLE": true, "HAS_HOOKS": true}
 
 // mergeableNow is GitHub's answer to auto-merge asked on a pull request it
 // could merge now: its required checks passed ("clean"), only checks it

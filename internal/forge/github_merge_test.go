@@ -161,3 +161,35 @@ func TestGitHubAutoMergeMergesWhatItCouldMergeNow(t *testing.T) {
 		t.Errorf("blocked status: merged %v, %v; want an error, no merge", merged, err)
 	}
 }
+
+// A pull request GitHub says it would merge now (mergeStateStatus) is
+// merged at once, at the head checked, no auto-merge asked: one whose
+// auto-merge is on but whose event GitHub missed never merges otherwise
+// (#993). One still blocked gets auto-merge, as before.
+func TestGitHubAutoMergeMergesWhatItSaysItWouldMerge(t *testing.T) {
+	bin := t.TempDir()
+	log := filepath.Join(bin, "calls")
+	script := "#!/bin/sh\necho \"$*\" >> " + log + "\ncase \"$*\" in\n" +
+		"*enablePullRequestAutoMerge*) ;;\n" +
+		"*squashMergeAllowed*) printf '{\"data\":{\"repository\":{\"squashMergeAllowed\":true,\"viewerDefaultMergeMethod\":\"SQUASH\",\"pullRequest\":{\"id\":\"PR_1\",\"mergeStateStatus\":\"%s\"}}}}\\n' \"$STATE\" ;;\n" +
+		"*) ;;\nesac\n"
+	if err := os.WriteFile(filepath.Join(bin, "gh"), []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+	g := &github{repo: t.TempDir()}
+	for _, c := range []struct {
+		state  string
+		merged bool
+	}{{"CLEAN", true}, {"UNSTABLE", true}, {"HAS_HOOKS", true}, {"BLOCKED", false}, {"BEHIND", false}, {"UNKNOWN", false}} {
+		_ = os.Remove(log)
+		t.Setenv("STATE", c.state)
+		merged, err := g.AutoMerge(MergeRequest{ID: 985}, "abc123", true)
+		calls, _ := os.ReadFile(log)
+		direct := strings.Contains(string(calls), "pulls/985/merge") && strings.Contains(string(calls), "sha=abc123") && strings.Contains(string(calls), "merge_method=squash")
+		asked := strings.Contains(string(calls), "enablePullRequestAutoMerge")
+		if err != nil || merged != c.merged || direct != c.merged || asked == c.merged {
+			t.Errorf("%s: merged %v, %v; want merged %v; calls:\n%s", c.state, merged, err, c.merged, calls)
+		}
+	}
+}
