@@ -1,6 +1,7 @@
 ---
 sources:
   - internal/developer/review.go
+  - internal/developer/rewrite.go
   - internal/developer/gates.go
   - internal/developer/checks.go
   - internal/developer/widen.go
@@ -8,7 +9,7 @@ sources:
   - roles/developer/role.yaml
   - ci/github/workline-develop.yml
   - ci/gitlab/workline.gitlab-ci.yml
-checked: 76013c63
+checked: f6b5ffd9
 verified: agent:claude-code
 ---
 # The review loop
@@ -61,7 +62,7 @@ step 6).
     rest and pushes it.
   - **The record follows**: its start commit moves to the Draft's
     head, so [the bounds](bounds.md) hold the new test.
-  - **Not in the record**: not taken, said (`rewrite-not-recorded`).
+  - **Not in the record**: never taken, and no round due for it.
 - **A finding on its line**: its row shows only a title; the round
   reads it whole from the reviewer's comment on that line. Only
   workline's own account's comment is read.
