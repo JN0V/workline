@@ -47,7 +47,7 @@ rules: 2                                 # the way of reading it was last read u
 left: bob                                # left to a person past its revisions, after bob wrote: said above while it waits
 proof: {kind: docs-checks, reason: "…", answers: af1c2ed6ea0a}   # the proof kind it picked where the tester found no test possible, the tester's word it answers
 no-test: af1c2ed6ea0a                    # the tester's "no test possible" last given to the agent
-silent: "it lacks Scope, …; its note: …"  # read and left with nothing, and why: said above until the role acts on it
+silent: "it lacks Scope, …; `sources` dropped: …; its note: …"  # read and left with nothing that refines it, the acts dropped, and why: said above until the role acts on it
 unread: 3f9a1c0e2b7d                     # the body whose Validation it was told once to rewrite in a form the tester reads
 assumed: 2                               # the round of the question it took an assumption on (A question nobody answers)
 assumed-at: '2026-10-09T08:00:00Z'       # when: a person's comment after it answers it
