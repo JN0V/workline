@@ -1,0 +1,31 @@
+case: routing/state-refine-unrefined-blocked-past-retries
+about: >
+  An issue the product owner left unrefined on the same body, woken
+  again as often as allowed (#951): it is not woken once more, and never
+  left waiting in silence. The issue goes workline:blocked, its refine
+  label off, and why is said on it: what it lacks, and what a person
+  does. No agent asked.
+given:
+  repo: backlog
+  config:
+    routing: {events: {issue: [product-owner]}}
+  forge:
+    issues:
+      - id: 10
+        title: "Rows lost"
+        labels: [workline:to-refine]
+        body: "## Need\n\nA user exporting rows loses the last one.\n\n## Validation\n\n- **Three rows:** Given three rows, When I export them, Then the file holds three.\n"
+        comments:
+          - "```yaml\nsources: [src/export]\nconfirmed: d8c4dff\nbody: 8a05ec2b42f7\nkind: bug\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "**workline's line** last woke the product owner on this issue, in its state refine (1 state step so far).\n\n<!-- workline:line-record {\"state\":\"refine\",\"body\":\"8a05ec2b42f7\",\"hops\":1,\"retry\":2} -->\n<!-- workline:sticky=line/state -->"
+run: {route: issue, target: {issue: 10}, ai: none}
+expect:
+  status: pass
+  agent-calls: 0
+  findings: [{rule: refine-capped, level: warn, where: "#10"}]
+  no-findings: [{rule: state-wakes}]
+  forge:
+    issues:
+      - id: 10
+        labels: [workline:blocked]
+        comment-contains: ["**workline's line** blocks this issue.", "read it 3 times on the same text and left it lacking Verification, Scope", "a person completes it", "\"state\":\"blocked\""]

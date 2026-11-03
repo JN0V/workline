@@ -487,6 +487,16 @@ whose result moves the issue to the next. The table is the routing's
   assumption, or takes the drafts as written. An answer before the
   delay cancels it; `wait: never` (cautious) wakes none
   ([settings](../../roles/product-owner/docs/settings.md#how-long-a-question-waits)).
+- **Left unrefined, due again**
+  ([ADR-0059, amended](../adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#amendment-2026-11-03-an-issue-left-unrefined-is-woken-again)):
+  in refine, acted on, the product owner's state shows it read the body
+  as it is and left a required section missing, nothing waiting on a
+  person — no question unanswered, no drafts, no proposal, not split,
+  left nor set aside. The step is due again on the same body
+  (`state-unrefined`; `retry` in the record), twice at most
+  (`line.RefineRetries`); the third time the issue moves to
+  `workline:blocked`, what it lacks said (`refine-capped`). A body
+  changed starts the count again.
 - **Not for an outside failure**: a step that ended
   `blocked-external`, its agent out of reach, keeps no record: the next
   event or reconciler runs it again.

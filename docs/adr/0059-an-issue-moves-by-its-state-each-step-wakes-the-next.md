@@ -545,6 +545,36 @@ waited in Tests about five hours, in the ninth end-to-end run.
     need, and a retry a day later often codes it;
   - the wait saying when it ends alone: Tests still starved, said.
 
+## Amendment (2026-11-03): an issue left unrefined is woken again
+
+Settles [#951](https://github.com/JN0V/workline/issues/951): a bug in
+refine got one product owner run that labelled its kind and named its
+sources, no line quoted, and nothing more. The engine dropped the
+sources, said only in the job's log. The record (§8) held the same
+state, body and labelling: nothing woke the product owner again.
+
+- **A sources needs no quote**: named from the repository's folders, as
+  the task says when no code was given, it is written; the issue is
+  read again with that code. Named again with that code given, they
+  are dropped: the read must refine or ask.
+- **Left unrefined is not acted**: a run that read the issue's body as
+  it is and left it lacking a section — nothing drafted nor asked, no
+  proposal, drafts or question waiting on a person — makes the step
+  due again on the same body. The agent is told what its last read left.
+- **Bounded**: twice on the same body (the record's `retry`). The third
+  time, refine → Blocked, by the line: what it lacks, and what a person
+  does, on the issue (§1). A body changed starts the count again.
+- **Never silent**: an issue read that got nothing that refines it — a
+  kind, an order or a link alone —, says so in the product owner's
+  comment on it: what it lacks, each act dropped with why, what comes
+  next.
+- **Cost**: at most two more agent calls an issue and body; none with
+  no agent, which reads nothing, so the count never starts.
+- **Not chosen**:
+  - a wake on every reconcile until refined: an endless loop of calls;
+  - Blocked at once: a run's slip is not a person's work;
+  - a retry setting: one more knob for a rare case.
+
 [ADR-0024]: 0024-obsolete-is-announced-then-closed-on-silence-and-a-second-judge.md
 [ADR-0028]: 0028-an-issue-names-what-it-waits-on.md
 [#752]: https://github.com/JN0V/workline/issues/752

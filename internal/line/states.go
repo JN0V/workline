@@ -146,6 +146,19 @@ func stateOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, 
 			res.Findings = append(res.Findings, verdict.Finding{Rule: "state-timeout", Level: "info", Where: where, Message: said})
 		}
 	}
+	if !ok && s.Name == refineState && name == backlog.Keeper {
+		// Read on this body and left unrefined, nothing waiting on a
+		// person (#951): not acted; woken again, then blocked.
+		if lacks := unrefined(is, notes); lacks != "" {
+			again, said, why := refineAgain(rec, lacks)
+			if why != "" {
+				res.Findings = append(res.Findings, verdict.Finding{Rule: "refine-capped", Level: "warn", Where: where, Message: why + ": moved to " + BlockedState})
+				return nil, &StateWrite{Issue: is.ID, Record: blocking(rec, s.Name, why, comments), Blocked: why}, nil
+			}
+			ok, now = true, again
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "state-unrefined", Level: "info", Where: where, Message: said})
+		}
+	}
 	if ok && reviewed {
 		now.Asked = now.Body // the reviewer runs after the product owner: never due again for this alone
 		now.Revise = now.Spec
@@ -267,6 +280,8 @@ func byState(res *Result, cfg *routing.Config, o engine.Options, event string, s
 		switch res.Findings[len(res.Findings)-1].Rule { // stateOf's last word on it
 		case "tests-refused":
 			why = "to be blocked, its tests refused"
+		case "refine-capped":
+			why = "to be blocked, left unrefined"
 		case "not-reproduced":
 			why = "to be blocked, not reproduced"
 		case "repro-answered":

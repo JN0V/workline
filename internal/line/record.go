@@ -84,6 +84,10 @@ type Record struct {
 	// read, its work lost (#953): due again, once, a hop more, so a run
 	// lost each time stops at max-hops, Blocked.
 	Lost string `json:"lost,omitempty"`
+	// Retry: in refine, the times the line woke the product owner again
+	// on the same body, its last read having left the issue unrefined
+	// (unrefined.go, #951); past RefineRetries, Blocked.
+	Retry int `json:"retry,omitempty"`
 }
 
 // StateWrite is what the line writes on an issue once its step ran:
@@ -211,6 +215,9 @@ func recordBody(r Record, role string) string {
 	data, _ := json.Marshal(r)
 	said := fmt.Sprintf("**workline's line** last woke the %s on this issue, in its state %s (%d state %s so far).",
 		strings.ReplaceAll(role, "-", " "), r.State, r.Hops, plural(r.Hops, "step", "steps"))
+	if r.Retry > 0 && role != "" {
+		said += fmt.Sprintf(" Woken again on the same text, %d of %d: its last read left the issue unrefined; past that, the issue is blocked for a person.", r.Retry, RefineRetries)
+	}
 	if role == "" {
 		said = fmt.Sprintf("**workline's line** keeps this record while the issue is blocked, %d state %s before; moved out of Blocked, its count starts again.", r.Hops, plural(r.Hops, "step", "steps"))
 	}
