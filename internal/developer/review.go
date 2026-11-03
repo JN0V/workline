@@ -53,7 +53,9 @@ type Round struct {
 	Whys   bool           `json:"whys,omitempty"`   // the five whys ran
 	Person bool           `json:"person,omitempty"` // past the last round: its issue blocked (ADR-0059)
 	// Bounds, a round with no fix: asked, it asked the product owner for
-	// files outside the Scope (#921); held, it needed none.
+	// files outside the Scope (#921); held, it needed none; blocked, it
+	// needed none and a project check stays red: blocked for a person
+	// (#938).
 	Bounds string         `json:"bounds,omitempty"`
 	Turns  int            `json:"turns,omitempty"`  // what its agent used, as it reported them
 	Tokens int            `json:"tokens,omitempty"` // fresh, what ai-max-tokens holds
@@ -635,6 +637,16 @@ func reviewPost(runDir, repo string, s Settings) int {
 			}
 			v.Findings = append(v.Findings, verdict.Finding{Rule: "scope-asked", Level: "warn", Where: where, Message: msg})
 			v.Summary += "; " + msg
+		} else if red := redChecks(r.Asked); len(red) > 0 {
+			// A red check it holds wrong, or cannot fix, and no file to
+			// ask for (#938): the check is not asked again at this head,
+			// so nothing would move. Blocked for a person, its reason
+			// written; one who sends it back resumes the round.
+			ask = holdCheck(repo, a, r, red, notes, others)
+			a.Widen, this.Bounds = &Widen{At: r.At, Scope: scopeKey(b.Scope), Held: true}, "blocked"
+			msg := fmt.Sprintf("no fix for the red check %s, and no file named outside the issue's %s: #%d blocked for a person", strings.Join(red, ", "), scopeName, a.Issue)
+			v.Findings = append(v.Findings, verdict.Finding{Rule: "check-held", Level: "warn", Where: where, Message: msg})
+			v.Summary += "; " + msg
 		}
 	} else {
 		p, u, caps, found := proven(runDir, repo, r.At, where, patches, union(a.Acceptance, union(a.Code, a.Tests)), again(a.Proof), s)
@@ -697,6 +709,8 @@ func roundBody(x Round, s Settings, notes []string, analysis string, w *Widen) s
 		fmt.Fprintf(&b, "no fix within its bounds. It still needs `%s`, asked already on this head and %s: its issue is blocked for a person.\n\n", strings.Join(w.Files, "`, `"), scopeName)
 	case x.Bounds == "asked":
 		fmt.Fprintf(&b, "no fix within its bounds. It needs `%s`, outside the issue's %s: its issue is blocked, the product owner asked to widen it; the next round resumes here.\n\n", strings.Join(w.Files, "`, `"), scopeName)
+	case x.Bounds == "blocked":
+		b.WriteString("no fix within its bounds, and none outside them named: the red check stays, its issue is blocked for a person, its reason on it; moved back to ready, the next round runs here.\n\n")
 	case x.Result == "no-code":
 		b.WriteString("no fix within its bounds.\n\n")
 	default:

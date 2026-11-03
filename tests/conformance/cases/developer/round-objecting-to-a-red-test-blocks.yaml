@@ -1,0 +1,52 @@
+case: developer/round-objecting-to-a-red-test-blocks
+about: >
+  A round on a check red on a frozen test, as on 2026-11-03 (#938): its
+  agent writes no fix and objects to the test. The objection goes on
+  the tester's Draft, and #3 goes Blocked for a person, its comment
+  saying where the objection is, rather than the pull request sitting
+  red with nothing asked again at its head.
+given:
+  repo: tested-draft
+  setup:
+    - "git checkout -q -b workline/developer/3 && printf 'add() { echo $(($1 + $2)); }\\nmul() { echo $(($1 * $2)); }\\n' > lib.sh && mkdir cases && printf 'mul 2 3: 5\\n' > cases/mul.txt && git add cases && git commit -qam 'feat: mul for #3' -m 'Workline-Role: developer' && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main workline/tester/issue-3 workline/developer/3"
+    - "sed -i \"s/@head@/$(git rev-parse HEAD)/g\" \"$FORGE_FILE\""
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    head-checks:
+      workline/developer/3:
+        - {name: test, workflow: test, state: failure, job: 41, log: "--- FAIL: cases/mul.txt wants 5 for mul 2 3, got 6\n"}
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:developing"]
+        body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        draft: true
+        comments: ["The tests of #3, frozen.\n\n<!-- workline:tester-record {\"issue\":3,\"base\":\"main\",\"files\":{\"tests/test_mul_by_zero.sh\":\"8f123a0bacbd681063880b867df38dd216784b97\",\"tests/test_mul_two_by_three.sh\":\"2dee0641bd7a79057ade7bff5af43b603125f543\"}} -->\n<!-- workline:sticky=tester/tests -->"]
+      - id: 2
+        branch: workline/developer/3
+        title: "Multiply two numbers"
+        body: "Closes #3"
+        comments:
+          - "**The developer**'s record of this pull request, for its next runs and the auditor.\n\n<!-- workline:developer-act {\"act\":\"code\",\"issue\":3,\"acceptance\":[\"tests/test_mul_by_zero.sh\",\"tests/test_mul_two_by_three.sh\"],\"code\":[\"lib.sh\"],\"review-runs\":1} -->\n<!-- workline:sticky=developer/code -->"
+          - "**workline reviewer** — 0 findings on the change.\n\nNo finding on the commits reviewed.\n\n<!-- workline:record reviewed=1111111 runs=1 -->\n<!-- workline:sticky=reviewer/summary -->"
+run: {develop: [--merge-request, "2"], ai: "fake:developer-objects-no-fix"}
+expect:
+  status: pass
+  summary: "round 1 of 5 on merge request 2; no fix for the red check test, and no file named outside the issue's Scope: #3 blocked for a person"
+  agent-calls: 1
+  findings: [{rule: check-held, level: warn, where: "merge request 2"}]
+  not-pushed: [workline/developer/3]
+  forge:
+    issues:
+      - id: 3
+        labels: ["workline:blocked"]
+        comment-contains: ["pull request 2 is still red on `test` at this head", "I object to the test", "Its objections to the frozen tests are on the tester's Draft !1, on their lines"]
+    merge-requests:
+      - id: 1
+        comment-contains: ["The developer** objects to the tester's tests of #3"]
+      - id: 2
+        comment-contains: ["\"bounds\":\"blocked\""]
