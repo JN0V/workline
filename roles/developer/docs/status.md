@@ -226,7 +226,6 @@ hold:
   `round-resumes-on-a-widened-scope`, `round-asks-once-a-head-and-scope`,
   `round-resumes-after-a-person-widens`,
   `round-before-the-ask-runs-once-more`,
-  `round-holding-a-check-wrong-asks-nothing`,
   `routing/scope-ask-wakes-the-product-owner`,
   `scope-ask-refused-stays-blocked`,
   `reconcile-lists-a-round-back-from-scope`. Tried: its pull request's
@@ -241,6 +240,15 @@ hold:
   and the line wrote over the ask. Now the quote's marks are broken.
   Cases `developer/scope-ask-quotes-a-log-with-workline-marks`,
   `routing/scope-ask-with-a-quoted-log-wakes-the-product-owner`.
+- **A red check with no fix and no file to ask blocks** ([#938](https://github.com/JN0V/workline/issues/938)):
+  its pull request sat red for hours, the check not asked again at its
+  head. Now its issue goes Blocked for a person, the check, the note and
+  the objection's place on it; moved back, the round runs again
+  ([the review loop](review-loop.md#a-red-check-it-does-not-fix)).
+  Cases `developer/round-holding-a-check-wrong-blocks`,
+  `round-objecting-to-a-red-test-blocks`,
+  `round-held-before-runs-once-more`, `round-resumes-after-a-held-check`.
+  Tried: its pull request's `## Tried`.
 
 - **The merge** (step 7): at `normal`, `workline follow` merges its
   pull request with no person's yes, the kind `code`, when the issue it

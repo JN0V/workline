@@ -481,6 +481,15 @@ stayed in Doing, the check read at that head, and nothing moved.
   Blocked starts their count again (§8).
 - **A round from before**, no fix on a red check and no ask, runs once
   more at its head, to ask.
+- **No file to ask, the check still red: Blocked for a person**
+  ([#938](https://github.com/JN0V/workline/issues/938)). A round that
+  keeps no fix and names no file outside the Scope (its agent holds the
+  check wrong, or objects to a frozen test) left the pull request red
+  for hours: the check is asked once a head. Now it blocks its issue,
+  with no mark: the checks, its note, where its objections went, the
+  log's end. A person who moves it back to ready resumes the round at
+  the same head. Not chosen: waking the product owner, who has no Scope
+  to widen; re-asking at the same head, a loop of agent calls.
 - **Cost**: one agent call of the product owner an ask; one API call a
   reconcile per pull request whose ask waits, the issue's labels.
 - **Not chosen**:
