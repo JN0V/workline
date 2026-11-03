@@ -31,7 +31,9 @@ func TestNotVouchedFor(t *testing.T) {
 		}
 	}
 	full := "bbbbbbb0000000000000000000000000000000ff"
-	diff := "--- a/README.md\n+++ b/README.md\n@@ -3,7 +3,7 @@\n" +
+	// The body change only adds a line: it removes no word, so the
+	// removal-uncited rule has nothing to withhold.
+	diff := "--- a/README.md\n+++ b/README.md\n@@ -3,7 +3,8 @@\n" +
 		"-judged: 1111111\n" +
 		"-verified: human:alice\n" +
 		"+judged: " + full[:7] + "\n" +
@@ -39,9 +41,9 @@ func TestNotVouchedFor(t *testing.T) {
 		" ---\n" +
 		" # Title\n" +
 		" \n" +
-		"-Body line one.\n" +
-		"+Body line 1.\n" +
-		" Body line two.\n"
+		" Body line one.\n" +
+		" Body line two.\n" +
+		"+Body line three.\n"
 	judged := map[string]map[string]string{"README.md": {"": full}}
 	intents := []intent.Intention{{Kind: "patch", Value: diff}}
 	j, err := judgePatches(dir, Settings{}, judged, map[string]string{}, nil, map[string]bool{"README.md": true}, intents, nil, false)
@@ -64,7 +66,7 @@ func TestNotVouchedFor(t *testing.T) {
 	if v := headerValue(got, "checked"); v != "aaaaaaa" {
 		t.Errorf("checked = %q, want it left as aaaaaaa", v)
 	}
-	if !strings.Contains(got, "Body line 1.") {
+	if !strings.Contains(got, "Body line three.") {
 		t.Errorf("the body fix was not applied:\n%s", got)
 	}
 }
