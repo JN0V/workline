@@ -37,19 +37,30 @@ func TestLineOfStatesChainsAndReconciles(t *testing.T) {
 		if err := yaml.Unmarshal(data, &wf); err != nil {
 			t.Fatalf("%s: %v", file, err)
 		}
-		apply, chained := wf.Jobs["apply"], false
+		apply, chained, roomed := wf.Jobs["apply"], -1, false
 		for i, s := range apply.Steps {
-			if s.ID != "next" {
-				continue
+			switch s.ID {
+			case "next":
+				ask := strings.Index(s.Run, `workline route issue --target "issue:$ISSUE" --ai none`)
+				due := strings.Index(s.Run, `index($n)`)
+				start := strings.Index(s.Run, "gh workflow run")
+				if ask >= 0 && strings.Contains(s.Run, "--input reconcile=list") && ask < due && due < start && s.Env["GH_TOKEN"] == "${{ github.token }}" {
+					chained = i
+				}
+			case "room":
+				// Then the room its move freed (#960): the issues waiting on
+				// it, each one's run started, the issue's own left to next.
+				ask := strings.Index(s.Run, "workline route reconcile --ai none")
+				start := strings.Index(s.Run, "gh workflow run")
+				roomed = chained >= 0 && i == len(apply.Steps)-1 && ask >= 0 && ask < start && strings.Contains(s.Run, "--input reconcile=list --input room=true") &&
+					strings.Contains(s.Run, "(.due // [])[]") && strings.Contains(s.Run, `[ "$n" != "$ISSUE" ]`) && s.Env["GH_TOKEN"] == "${{ github.token }}"
 			}
-			ask := strings.Index(s.Run, `workline route issue --target "issue:$ISSUE" --ai none`)
-			due := strings.Index(s.Run, `index($n)`)
-			start := strings.Index(s.Run, "gh workflow run")
-			chained = i == len(apply.Steps)-1 && ask >= 0 && strings.Contains(s.Run, "--input reconcile=list") && ask < due && due < start &&
-				s.Env["GH_TOKEN"] == "${{ github.token }}"
 		}
-		if !chained || apply.Permissions["actions"] != "write" {
-			t.Errorf("%s, apply: its last step does not ask the line whether the issue is due, then start its run with the job's token", file)
+		if chained < 0 || apply.Permissions["actions"] != "write" {
+			t.Errorf("%s, apply: it does not ask the line whether the issue is due, then start its run with the job's token", file)
+		}
+		if !roomed {
+			t.Errorf("%s, apply: its last step does not ask the line, after the issue's own, which issues the room freed wakes, and start their runs", file)
 		}
 		rec := wf.Jobs["reconcile"]
 		reconciled, cached := false, false
