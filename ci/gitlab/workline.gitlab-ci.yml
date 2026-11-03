@@ -1040,7 +1040,9 @@ workline:main:issue:
 
 # When the default branch moves, no agent (`workline follow`): with the
 # merge policy (`merge:`), as workline:merge. It writes to no person's
-# merge request.
+# merge request. On the hourly reconcile schedule too, the safety net: a
+# merge request set to merge when its pipeline succeeds that GitLab left,
+# mergeable, merged by the next run (#993).
 workline:follow:
   image: $WORKLINE_IMAGE:$WORKLINE_VERSION
   stage: deploy
@@ -1049,6 +1051,7 @@ workline:follow:
   resource_group: workline-follow   # one at a time, with workline:merge
   rules:
     - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_PIPELINE_SOURCE == "schedule" && $WORKLINE_TASK == "reconcile"
   script:
     - *bot-token
     - *trust
