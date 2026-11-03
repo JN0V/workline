@@ -79,5 +79,8 @@ random order each find it more often. Put the runner's option in
   next ones. Each run gets `-count=1` in `GOFLAGS`, unless the project
   set a `-count` there; other runners ignore it.
 - **The job's environment, not the line's**: the runs never see the
-  line's own setting for its forge calls, `WORKLINE_RATE_WAIT`
-  ([#940](https://github.com/JN0V/workline/issues/940)).
+  line's own variables ([the list](../../../docs/environment.md#the-lines-own)):
+  its forge calls' wait, `WORKLINE_RATE_WAIT`
+  ([#940](https://github.com/JN0V/workline/issues/940)), nor its runs'
+  folder, `WORKLINE_RUNS_DIR`, where a suite's engines would prune the
+  live run ([#953](https://github.com/JN0V/workline/issues/953)).

@@ -158,6 +158,15 @@ func stateOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, 
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "tests-refused", Level: "warn", Where: where, Message: why + ": moved to " + BlockedState})
 		return nil, &StateWrite{Issue: is.ID, Record: blocking(now, s.Name, why, comments), Blocked: why}, nil
 	}
+	if !ok && had && s.Role == developerRole && rec.Lost != "" {
+		// The developer's last run on it ended with no verdict read:
+		// nothing it did reached the forge (#953). Due again, once; the
+		// hop its loss counted stops a run lost each time at max-hops.
+		ok, now = true, rec
+		now.Lost = ""
+		res.Findings = append(res.Findings, verdict.Finding{Rule: "state-lost", Level: "info", Where: where,
+			Message: "the developer's last run on it, " + rec.Lost + ", ended with no verdict: woken again"})
+	}
 	if !ok && had && s.Role == developerRole {
 		// Left free by the developer since it was woken: its claim let
 		// go, or the issue it was passed over for held no more (#894).
@@ -331,11 +340,21 @@ func runStateStep(res *Result, cfg *routing.Config, f forge.Forge, spec string, 
 		maps.Copy(in, st.inputs)
 		o.Inputs = in
 	}
-	before := len(res.Findings)
+	before, steps := len(res.Findings), len(res.Steps)
 	_, status := runRole(res, cfg, o, 0)
 	res.Status = worst(res.Status, status)
 	if status == verdict.BlockedExternal {
 		return
+	}
+	if st.role == developerRole && status != verdict.Pass {
+		// Its own run ended with no verdict read, its work lost: said on
+		// the issue with the record, never as acted on (#953). Any other
+		// error, after what it pushed perhaps, is not a loss.
+		if why := lost(res.Steps[steps:]); why != "" {
+			st.write.Lost = why
+			st.write.Record.Lost = clock().UTC().Format(time.RFC3339)
+			st.write.Record.Hops++
+		}
 	}
 	if st.role == backlog.Keeper {
 		// Held for its spec review: said on the issue with the record,
@@ -603,4 +622,19 @@ func lateSaid(res *Result, last string, now time.Time) {
 		int(gap.Hours()), int(gap.Minutes())%60, t.UTC().Format("2006-01-02 15:04 UTC"), int(ReconcileLate.Hours()))
 	res.Summary += "; late: " + said
 	res.Findings = append(res.Findings, verdict.Finding{Rule: "reconcile-late", Level: "warn", Message: said})
+}
+
+// lost is why the developer's own run, the first of steps, ended with no
+// verdict read (engine.ErrNoVerdict): "" when it did not; a handoff's
+// run, or another error, is never a loss.
+func lost(steps []Step) string {
+	if len(steps) == 0 || steps[0].Result == nil || !steps[0].Result.NoVerdict {
+		return ""
+	}
+	for _, f := range steps[0].Result.Findings {
+		if f.Rule == "engine-error" {
+			return f.Message
+		}
+	}
+	return engine.ErrNoVerdict.Error()
 }
