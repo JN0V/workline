@@ -9,3 +9,20 @@ func TestSummaryCounts(t *testing.T) {
 		}
 	}
 }
+
+func TestSummaryLine(t *testing.T) {
+	for _, c := range []struct {
+		errors, warns int
+		want          string
+	}{
+		{0, 1, "1 warning: some checks do not run"},
+		{0, 2, "2 warnings: some checks do not run"},
+		{1, 1, "1 problem, 1 warning"},
+		{2, 2, "2 problems, 2 warnings"},
+		{0, 0, "everything workline uses is set up"},
+	} {
+		if got := summary(c.errors, c.warns); got != c.want {
+			t.Fatalf("summary(%d, %d) = %q, want %q", c.errors, c.warns, got, c.want)
+		}
+	}
+}

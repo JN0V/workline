@@ -80,16 +80,22 @@ func Run(o Options) *Report {
 		}
 	}
 	r.Status = "pass"
-	switch {
-	case errors > 0:
+	r.Summary = summary(errors, warns)
+	if errors > 0 {
 		r.Status = "block"
-		r.Summary = fmt.Sprintf("%s, %s", countNoun(errors, "problem"), countNoun(warns, "warning"))
-	case warns > 0:
-		r.Summary = countNoun(warns, "warning") + ": some checks do not run"
-	default:
-		r.Summary = "everything workline uses is set up"
 	}
 	return r
+}
+
+// summary is the last line of the report, from its counts of problems and warnings.
+func summary(errors, warns int) string {
+	switch {
+	case errors > 0:
+		return fmt.Sprintf("%s, %s", countNoun(errors, "problem"), countNoun(warns, "warning"))
+	case warns > 0:
+		return countNoun(warns, "warning") + ": some checks do not run"
+	}
+	return "everything workline uses is set up"
 }
 
 // countNoun writes a count with its noun, in the plural unless the count is 1.
@@ -305,11 +311,6 @@ func forgeCommand(r *Report, o Options, configured string) {
 // docs the documentalist does not read.
 func docs(r *Report, o Options, cfg *role.ProjectConfig) {
 	where := o.Repo
-	if o.RolesDir == "" {
-		r.add(Check{Area: "repository", Rule: "docs-roles-not-given", Where: where, Level: Note,
-			Message: "no roles folder was given: the docs the documentalist looks after are not counted"})
-		return
-	}
 	d, err := role.Load(o.RolesDir, "documentalist")
 	if err != nil {
 		r.add(Check{Area: "repository", Rule: "roles-unreadable", Where: o.RolesDir, Level: Error, Message: err.Error()})
