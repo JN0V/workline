@@ -16,7 +16,10 @@ or weekly (`schedule`).
 Twelve checks. Six read a doc against the code it describes, below. Six
 read the docs alone ([the checks on the docs alone](checks-docs.md)):
 budgets, duplicates, links, superseded decisions, docs not read, docs for
-their reader. Not built yet: style (vale).
+their reader, with references in the project's own naming, GitLab's
+`!12` too
+([references](checks-docs.md#references-in-the-projects-naming)). Not
+built yet: style (vale).
 
 ### Suspects
 
