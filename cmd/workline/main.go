@@ -815,6 +815,10 @@ func docsCmd(args []string) int {
 		}
 		return 0
 	}
+	if isSet(fs, "since") && revParse(root, *since) == "" {
+		fmt.Fprintf(os.Stderr, "workline: --since %s names no commit in this repository\n", *since)
+		return 1
+	}
 	start, from := docsJudgedFrom(root, *since)
 	rng := "HEAD"
 	if start != "" {
