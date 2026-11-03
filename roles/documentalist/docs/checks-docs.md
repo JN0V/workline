@@ -86,7 +86,7 @@ finding a page, with its lines:
 - `reference-unlinked`: a decision (`ADR-12`), a doc of the repository or
   an issue (`#128`) named as plain text. Left alone: a name in a code span
   (an example) or an HTML comment; a link's definition
-  (`[x]: docs/x.md`) is a link.
+  (`[x]: docs/x.md`) is a link. The project's own naming: below.
 - `paragraph-too-long`: a paragraph, or a list item, over
   `reader.paragraph-words` (80).
 - `cell-too-long`: a table cell over `reader.cell-words` (30).
@@ -98,6 +98,33 @@ finding a page, with its lines:
   (`README.md`), through user pages; a link to a folder reaches its
   README, one in an HTML comment nothing. With no such entry,
   `navigation-missing` says so.
+
+### References in the project's naming
+
+`reader.references`: what counts as a decision or issue named in prose,
+as regular expressions
+([#261](https://github.com/JN0V/workline/issues/261)).
+
+- **Empty** (the default): `ADR-<n>` and `#<n>`.
+- **Set**: the patterns replace both; a doc of the repository is still
+  found by its file name.
+- **Matched** where a word starts (after a space, a bracket, a quote or a
+  dash; not after `/` nor `&`), up to a word boundary.
+- **A wrong pattern**, one that does not compile or matches the empty
+  text, is left out and said: `setting-invalid`.
+
+On GitLab, merge requests (`!12`) and another project's issues
+(`group/project#12`) beside the defaults:
+
+```yaml
+roles:
+  documentalist:
+    settings:
+      reader:
+        references: ['ADR-\d+', '#\d+', '!\d+', '[\w.-]+/[\w.-]+#\d+']
+```
+
+Other namings: `RFC-\d+`, `DR-\d+`, `KEP-\d+`.
 
 Borrowed from Vale and Sphinx, without running them:
 [research](../../../docs/research/documentalist.md#docs-for-their-reader-2026-10-07).
