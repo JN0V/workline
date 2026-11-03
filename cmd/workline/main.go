@@ -2204,9 +2204,34 @@ func doctorCmd(args []string) int {
 		return 1
 	}
 	root, _ := gitRoot(*repo)
+	// A folder that does not exist was mistyped: the repository was never looked at.
+	missing := false
+	if _, serr := os.Stat(*repo); errors.Is(serr, os.ErrNotExist) {
+		missing = true
+		root = ""
+	}
 	r := doctor.Run(doctor.Options{Repo: root, RolesDir: rolesDir, AI: os.Getenv("WORKLINE_AI"), UserAI: userDefaultAI(),
 		NoPushApproval: !userConfig().approvePush(), Forge: *forgeSpec})
-	if *asJSON {
+	if missing {
+		msg := "the folder " + *repo + " does not exist: the repository was not checked"
+		r.Checks = append(r.Checks, doctor.Check{Area: "repository", Rule: "repo-missing", Where: *repo, Level: doctor.Error, Message: msg})
+		r.Findings = append(r.Findings, r.Checks[len(r.Checks)-1])
+		r.Status = verdict.Block
+		r.Summary = msg
+		if !*asJSON {
+			fmt.Fprintln(os.Stderr, "workline: "+msg)
+			return 64
+		}
+	}
+	code := doctorPrint(r, root, *asJSON)
+	if missing {
+		return 64
+	}
+	return code
+}
+
+func doctorPrint(r *doctor.Report, root string, asJSON bool) int {
+	if asJSON {
 		out, _ := json.MarshalIndent(r, "", "  ")
 		fmt.Println(string(out))
 	} else {
