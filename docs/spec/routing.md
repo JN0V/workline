@@ -496,7 +496,11 @@ whose result moves the issue to the next. The table is the routing's
   (`state-unrefined`; `retry` in the record), twice at most
   (`line.RefineRetries`); the third time the issue moves to
   `workline:blocked`, what it lacks said (`refine-capped`). A body
-  changed starts the count again.
+  changed starts the count again. Never on the same code
+  ([#980](https://github.com/JN0V/workline/issues/980)): the record
+  keeps the sources each wake gave (`given`); the state naming the same
+  when its read left it unrefined, the issue is blocked at once, the
+  code it was given said (`refine-capped`).
 - **Not for an outside failure**: a step that ended
   `blocked-external`, its agent out of reach, keeps no record: the next
   event or reconciler runs it again.

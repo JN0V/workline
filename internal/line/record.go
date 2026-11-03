@@ -88,6 +88,11 @@ type Record struct {
 	// on the same body, its last read having left the issue unrefined
 	// (unrefined.go, #951); past RefineRetries, Blocked.
 	Retry int `json:"retry,omitempty"`
+	// Given: in refine, the code the product owner's state named when
+	// the line last woke it, its sources ("-" for none): read again on
+	// the same body and the same code, it would get the same input, so it
+	// is not woken again (#980). "" in a record from before.
+	Given string `json:"given,omitempty"`
 	// Ran: when the line last ran a step on the issue, RFC 3339: a step
 	// due again in the same state waits from then, in the reconciler's
 	// order (ADR-0059, amended 2026-11-03).

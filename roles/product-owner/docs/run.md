@@ -117,8 +117,12 @@ Each issue comes with:
   most on the same text, told to refine it now; then it blocks the
   issue for you
   ([ADR-0059, amended](../../../docs/adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#amendment-2026-11-03-an-issue-left-unrefined-is-woken-again)).
-- Its sources named from the repository's folders need no line quoted:
-  the issue is read again with that code.
+  Given the same code as its last read, it is not woken again: blocked
+  at once, the code it got said
+  ([amended again](../../../docs/adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#amendment-2026-11-03-a-read-again-is-given-new-code-or-none-is-made)).
+- Its sources named from the repository's folders, or any code the run
+  did not give, need no line quoted: the issue is read again with that
+  code.
 - A Scope written with no code given for the issue is left out, its
   paths kept as the code to read: it is written from that code at the
   next run, never guessed
