@@ -2962,7 +2962,14 @@ func (a *applier) patch(v any) error {
 		if link := throughLink(a.repo, file); link != "" {
 			return fmt.Errorf("%s is a link: nothing is written through it", link)
 		}
-		if err := os.WriteFile(filepath.Join(a.repo, file), []byte(content), 0o644); err != nil {
+		// A folder the base lacks is made, as git apply makes it for a
+		// diff (#989): no link on the way, checked above, and within
+		// the repository, as allowed reads the path.
+		full := filepath.Join(a.repo, file)
+		if err := os.MkdirAll(filepath.Dir(full), 0o755); err != nil {
+			return err
+		}
+		if err := os.WriteFile(full, []byte(content), 0o644); err != nil {
 			return err
 		}
 		a.written = append(a.written, file)

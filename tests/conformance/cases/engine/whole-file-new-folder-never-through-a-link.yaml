@@ -1,0 +1,26 @@
+case: engine/whole-file-new-folder-never-through-a-link
+about: "A whole file proposed in a folder that does not exist yet (#989) is written with its folders made, never through a link on the way: a folder of the head that is a link to one outside the repository refuses the patch, and nothing is made there."
+given:
+  repo: documented
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb feature && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin feature && git checkout -q --detach"
+  forge: {merge-requests: [{id: 1, branch: feature, labels: [], comments: []}]}
+run:
+  role: documentalist
+  event: merge-request
+  target: {merge-request: 1}
+  ai: "fake:doc-fixed"
+  no-apply: true
+  then: resume
+  apply-from:
+    merge-request: 1
+    base: main
+    head: feature
+    # The head, as the merge request's code made it: a docs folder that links out.
+    setup: ["git checkout -q feature && mkdir ../outside && ln -s ../../../outside docs/tech/out && git add docs/tech/out && git commit -qm 'docs: link the notes' && git push -q origin feature && git checkout -q --detach"]
+    intents: [{patch: {file: docs/tech/out/new/notes.md, content: "written through the link"}}]
+expect:
+  status: block
+  findings: [{rule: engine-error, message: "docs/tech/out is a link"}]
+  files: {../outside/new: {exists: false}}
