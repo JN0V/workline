@@ -235,10 +235,18 @@ func partsFor(runDir, repo string, cands []*suspectDoc, s Settings, total *int, 
 		if err != nil {
 			return "", nil, nil, nil, nil, err
 		}
-		u := uncovered(string(content), verdictOf.kept)
-		if u != "" {
+		held, err := sourceText(sd.doc, repo)
+		if err != nil {
+			return "", nil, nil, nil, nil, err
+		}
+		u, inSource, gone := uncoveredSplit(string(content), verdictOf.kept, held)
+		if inSource != "" {
 			*findings = append(*findings, verdict.Finding{Rule: "uncovered", Where: sd.doc.Path,
-				Message: u + ", which no part of its sources says anything of: renamed or gone from the code, or a source missing from its header; read those lines against the code"})
+				Message: inSource + ", which its sources hold but no part cited: no claim of the parts covers these lines; read them against the code"})
+		}
+		if gone != "" {
+			*findings = append(*findings, verdict.Finding{Rule: "uncovered", Where: sd.doc.Path,
+				Message: gone + ", which no part of its sources says anything of: renamed or gone from the code, or a source missing from its header; read those lines against the code"})
 		}
 		if verdictOf.dropped > 0 {
 			*findings = append(*findings, verdict.Finding{Rule: "claims-dropped", Where: sd.doc.Path, Level: "warn",
@@ -943,15 +951,82 @@ func (v *partsVerdict) fixEntry(p, content, repo string) string {
 // uncovered names the lines of the doc naming a name from the code that no
 // claim says anything of, with those names; empty when there are none.
 func uncovered(content string, kept []claim) string {
-	var out []string
+	all, _, _ := uncoveredSplit(content, kept, "")
+	return all
+}
+
+// sourceText is the text of the files of code among a doc's sources.
+func sourceText(d *Doc, repo string) (string, error) {
+	var b strings.Builder
+	seen := map[string]bool{}
+	for _, src := range d.Sources {
+		_, p, _ := splitSource(src)
+		if strings.HasSuffix(p, ".md") {
+			continue
+		}
+		out, err := git(repo, "ls-tree", "-z", "-r", "--name-only", "HEAD", "--", p)
+		if err != nil {
+			return "", err
+		}
+		for _, f := range pathList(out) {
+			if f == "" || seen[f] || strings.HasSuffix(f, ".md") {
+				continue
+			}
+			seen[f] = true
+			text, err := showFile(repo, f)
+			if err != nil {
+				return "", err
+			}
+			if strings.ContainsRune(text, 0) {
+				continue
+			}
+			b.WriteString(text)
+			b.WriteString("\n")
+		}
+	}
+	return b.String(), nil
+}
+
+// holdsWhole reports whether held has name as a whole identifier: not inside
+// a longer word.
+func holdsWhole(held, name string) bool {
+	if name == "" {
+		return false
+	}
+	isWord := func(b byte) bool {
+		return b == '_' || b >= '0' && b <= '9' || b >= 'a' && b <= 'z' || b >= 'A' && b <= 'Z' || b >= 0x80
+	}
+	for off := 0; ; {
+		i := strings.Index(held[off:], name)
+		if i < 0 {
+			return false
+		}
+		i += off
+		end := i + len(name)
+		before := i == 0 || !isWord(held[i-1]) || !isWord(name[0])
+		after := end == len(held) || !isWord(held[end]) || !isWord(name[len(name)-1])
+		if before && after {
+			return true
+		}
+		off = i + 1
+	}
+}
+
+// uncoveredSplit is uncovered, and the same lines apart: those whose names
+// are all held by held (the text of the sources), and those naming one that
+// none holds.
+func uncoveredSplit(content string, kept []claim, held string) (all, inSource, gone string) {
+	var out, in, no []string
 	for _, l := range scan(content) {
 		if l.code {
 			continue
 		}
 		var ids []string
+		found := true
 		for _, span := range codeSpan.FindAllString(l.text, -1) {
 			if name, ok := codeName(span); ok {
 				ids = append(ids, "`"+name+"`")
+				found = found && holdsWhole(held, name)
 			}
 		}
 		if len(ids) == 0 {
@@ -962,10 +1037,16 @@ func uncovered(content string, kept []claim) string {
 			said = said || c.Lines.overlaps(lineRange{l.n, l.n})
 		}
 		if !said {
-			out = append(out, fmt.Sprintf("line %d names %s", l.n, strings.Join(ids, ", ")))
+			s := fmt.Sprintf("line %d names %s", l.n, strings.Join(ids, ", "))
+			out = append(out, s)
+			if found {
+				in = append(in, s)
+			} else {
+				no = append(no, s)
+			}
 		}
 	}
-	return strings.Join(out, "; ")
+	return strings.Join(out, "; "), strings.Join(in, "; "), strings.Join(no, "; ")
 }
 
 // judgedInPartsPatch records in a doc's header the commit it was judged in
