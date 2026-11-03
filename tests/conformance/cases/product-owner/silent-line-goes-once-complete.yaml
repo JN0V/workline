@@ -15,4 +15,4 @@ expect:
     issues:
       - id: 9
         comments: 1
-        comment-lacks: ["wrote nothing on it", "silent:"]
+        comment-lacks: ["did not refine it", "silent:"]

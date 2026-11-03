@@ -120,12 +120,17 @@ what it can and asks for the rest:
   once. Neither touches code — a code span, a fenced block. The task says, for each issue read, the issues it cites, open or
   closed and why (`Cites:`), and how a file of the repository is linked
   (`Links:`, the forge's file pages at `HEAD`).
-- **An issue read and left with nothing** — no draft, no question, no
-  act dropped with its reason — though it lacks a section is said in the
+- **An issue read and left with nothing that refines it** — no draft,
+  no question, no sources nor closing; a kind, an order, a link or a
+  title alone count for nothing — though it lacks a section is said in the
   summary (`nothing-proposed`) and on the issue, in the role's comment
   ([ADR-0059](../../adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md), decision 1):
-  the sections it lacks and the agent's note on it (`silent` in its
-  state), kept until the role acts on it. The task lists the repository's
+  the sections it lacks, each act of the agent's dropped on it with why,
+  and the agent's note on it (`silent` in its state), kept until the
+  role acts on it. Its next read tells the agent so: refine it now, or
+  ask. The line wakes it again in refine
+  ([ADR-0059, amended](../../adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#amendment-2026-11-03-an-issue-left-unrefined-is-woken-again)).
+  The task lists the repository's
   folders for an issue that names no file: the agent names its sources
   from them, no line quoted.
 - **`ready`** is checked by the engine, not taken from the agent: the four
@@ -342,9 +347,14 @@ the footer left last as it was.
 ```
 
 The files, or folders, must be in the commit the run is on (1 to 5;
-`sources-unknown` otherwise), and a quote found in one of the files named,
-an anchor after `#` aside, or in a file inside a folder named (`no-quote`
-otherwise). A
+`sources-unknown` otherwise). A quote, when given, is found in one of the
+files named, an anchor after `#` aside, or in a file inside a folder named
+(`no-quote` otherwise). None is needed only when no code was given —
+the state names no sources, the title and body no file of the commit —:
+named from the repository's folders
+([#951](https://github.com/JN0V/workline/issues/951)). The sources its
+state names already, their code given in the run, are dropped
+(`sources-same`): named again, the issue would only be read again. A
 folder is given at the next run as the list of its files. Done, the issue's
 state gets them and loses `judged`: it is read again, with that code, at the
 next run.

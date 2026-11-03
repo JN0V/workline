@@ -1,0 +1,59 @@
+case: routing/state-refine-unrefined-due-again
+about: >
+  An issue the product owner read in refine, on its body as it is, and
+  left lacking sections, nothing asked nor waiting on a person (#951):
+  its run is not "acted". The reconciler counts its step due again,
+  twice at most on the same body; past that, the issue is to be
+  blocked. One whose question waits on its reporter is not due, nor one
+  the product owner never read on this body. No agent asked.
+given:
+  repo: backlog
+  config:
+    routing: {events: {issue: [product-owner]}}
+  forge:
+    issues:
+      - id: 9
+        title: "Rows lost"
+        labels: [workline:to-refine]
+        body: "## Need\n\nA user exporting rows loses the last one.\n\n## Validation\n\n- **Three rows:** Given three rows, When I export them, Then the file holds three.\n"
+        comments:
+          - "```yaml\nsources: [src/export]\nconfirmed: d8c4dff\nbody: 8a05ec2b42f7\nkind: bug\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "**workline's line** last woke the product owner on this issue, in its state refine (1 state step so far).\n\n<!-- workline:line-record {\"state\":\"refine\",\"body\":\"8a05ec2b42f7\",\"hops\":1} -->\n<!-- workline:sticky=line/state -->"
+      - id: 10
+        title: "Rows lost"
+        labels: [workline:to-refine]
+        body: "## Need\n\nA user exporting rows loses the last one.\n\n## Validation\n\n- **Three rows:** Given three rows, When I export them, Then the file holds three.\n"
+        comments:
+          - "```yaml\nsources: [src/export]\nconfirmed: d8c4dff\nbody: 8a05ec2b42f7\nkind: bug\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "**workline's line** last woke the product owner on this issue, in its state refine (1 state step so far).\n\n<!-- workline:line-record {\"state\":\"refine\",\"body\":\"8a05ec2b42f7\",\"hops\":1,\"retry\":2} -->\n<!-- workline:sticky=line/state -->"
+      - id: 11
+        title: "Rows lost"
+        author: ann
+        insider: true
+        labels: [workline:to-refine]
+        body: "## Need\n\nA user exporting rows loses the last one.\n\n## Validation\n\n- **Three rows:** Given three rows, When I export them, Then the file holds three.\n"
+        comments:
+          - "```yaml\nsources: [src/export]\nconfirmed: d8c4dff\nbody: 8a05ec2b42f7\nkind: bug\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - {body: "@ann, to refine this issue: Which file did you export?\n\n<!-- workline:product-owner/ask -->", created: "2099-10-01T23:50:00Z"}
+          - "**workline's line** last woke the product owner on this issue, in its state refine (1 state step so far).\n\n<!-- workline:line-record {\"state\":\"refine\",\"body\":\"8a05ec2b42f7\",\"hops\":1} -->\n<!-- workline:sticky=line/state -->"
+      - id: 12
+        title: "Rows lost"
+        labels: [workline:to-refine]
+        body: "## Need\n\nA user exporting rows loses the last one.\n\n## Validation\n\n- **Three rows:** Given three rows, When I export them, Then the file holds three.\n"
+        comments:
+          - "```yaml\nsources: [src/export]\nconfirmed: d8c4dff\nbody: 000000000000\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "**workline's line** last woke the product owner on this issue, in its state refine (1 state step so far).\n\n<!-- workline:line-record {\"state\":\"refine\",\"body\":\"8a05ec2b42f7\",\"hops\":1} -->\n<!-- workline:sticky=line/state -->"
+run: {route: reconcile, ai: none, input: {reconcile: list}}
+expect:
+  status: pass
+  agent-calls: 0
+  summary: "reconcile: 2 issues due: #9 #10"
+  findings:
+    - {rule: state-unrefined, where: "#9", message: "left it lacking Verification, Scope, nothing asked: woken again, 1 of 2"}
+    - {rule: refine-capped, where: "#10", message: "read it 3 times on the same text"}
+    - {rule: state-acted, where: "#11"}
+    - {rule: state-acted, where: "#12"}
+  forge:
+    issues:
+      - {id: 9, labels: [workline:to-refine]}
+      - {id: 10, labels: [workline:to-refine]}

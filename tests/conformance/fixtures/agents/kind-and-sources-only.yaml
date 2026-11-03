@@ -1,0 +1,21 @@
+# A product owner's answer that names an issue's kind and its code, and
+# refines nothing (#951): no code was given, so no line is quoted. #10's
+# code is not in the repository: its sources are dropped.
+- kind: {issue: 9, kind: bug, why: "the export worked and now loses rows."}
+- sources:
+    issue: 9
+    sources: [src/export]
+    why: "No code was given, so no line is quoted: #9 is about the export."
+- kind: {issue: 10, kind: bug, why: "the import worked and now loses rows."}
+- sources:
+    issue: 10
+    sources: [src/import]
+    why: "No code was given, so no line is quoted: #10 is about the import."
+- sources:
+    issue: 11
+    sources: [src/export]
+    why: "#11 is about the export."
+- sources:
+    issue: 12
+    sources: [src/export]
+    why: "#12 names its file: its code was given, yet no line is quoted."

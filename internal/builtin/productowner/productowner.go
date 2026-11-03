@@ -1358,6 +1358,11 @@ func writeIssue(b *strings.Builder, role string, rounds int, is forge.Issue, st 
 		fmt.Fprintf(b, "Waits on: %s — ordered after the open ones; a depend only adds what is missing; an undepend only takes off a link set by the role\n", strings.Join(said, ", "))
 	}
 	fmt.Fprintf(b, "Sections: %s\n", sections(is, st))
+	if st.Silent != "" && !strings.HasPrefix(st.Silent, backlog.NoTestSilent) && !strings.HasPrefix(st.Silent, backlog.ScenariosUnreadSilent) {
+		// Read before and left unrefined (#951): refined now, from its
+		// text and the code given, or asked — never left so again.
+		fmt.Fprintf(b, "Left unrefined when last read: %s. Refine it now from its text and the code given — or the repository's folders —, or ask its reporter.\n", strings.TrimSuffix(st.Silent, "."))
+	}
 	fmt.Fprintf(b, "Sources: %s. Confirmed at: %s.\n", sources, st.Confirmed)
 	if len(files) > 0 {
 		fmt.Fprintf(b, "Code it names, given below: %s.\n", strings.Join(files, ", "))
