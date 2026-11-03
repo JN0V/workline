@@ -298,6 +298,11 @@ from.
   label. Either on an issue not blocked is dropped (`not-blocked`); a
   `ready` on a blocked one too (`blocked-first`).
 - **Or a `close`**, by its own rules.
+- **The developer's ask for its Scope**
+  ([ADR-0059, amended](../../adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#amendment-2026-11-03-a-fix-outside-the-scope-asks-the-product-owner)):
+  the task names the files. To widen it, a `refine` rewrites the Scope
+  whole, the files in it, then `unblock` to ready: the developer
+  resumes on its pull request. Else `blocked`, why not.
 
 ## A body's footer
 

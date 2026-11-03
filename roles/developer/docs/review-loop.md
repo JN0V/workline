@@ -3,6 +3,7 @@ sources:
   - internal/developer/review.go
   - internal/developer/gates.go
   - internal/developer/checks.go
+  - internal/developer/widen.go
   - internal/forge/checks.go
   - roles/developer/role.yaml
   - ci/github/workline-develop.yml
@@ -75,6 +76,34 @@ step 6).
   tokens and tools.
 - **The reviewer decides a finding is fixed**
   ([ADR-0013](../../../docs/adr/0013-what-was-judged-is-not-asked-again.md)).
+
+## A fix outside the Scope
+
+The issue's Scope is the product owner's
+([ADR-0060](../../../docs/adr/0060-the-person-is-on-the-loop.md#2-the-builders-part-is-the-product-owners-at-every-level));
+a round asks it to widen it ([#921](https://github.com/JN0V/workline/issues/921)).
+
+- **The agent names the file** in its note's `needs`, why in its text,
+  and changes nothing for it:
+  `- note: {text: "why the fix lies there", needs: [path]}`. A fix it
+  makes there all the same is reverted by the [bounds](bounds.md), and
+  counts as named.
+- **No fix kept, a file named outside the Scope**: the round asks. A
+  gate's file, a steering file or a frozen test is never asked for.
+  The issue goes `workline:blocked`. Its comment names the files, the
+  agent's note and the end of the red check's log.
+- **The product owner answers at once**: the reconciler wakes it on
+  the ask, no other news needed.
+  - It widens the Scope and sends the issue back to ready: the next
+    round resumes on the same pull request, with the new bounds, and
+    puts the issue back in Doing.
+  - Or it keeps the issue blocked, its reason written.
+- **Once a head and a Scope**: asked again on the same, the issue is
+  blocked for a person, with no ask. The rounds' cap bounds the rest.
+- **A round that holds the finding wrong** asks nothing, as before: the
+  reviewer decides.
+- **A round before this**, no fix on a red check, runs once more at the
+  same head, to ask.
 
 ## When nothing runs
 

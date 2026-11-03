@@ -475,6 +475,10 @@ only then.
   it, its body's hash and its comments' — the base news is told
   against. A block the line makes (`hops-capped`, `tests-refused`)
   writes it at once.
+- **The developer's ask for its Scope**: first seen blocked, the
+  comment blocking it holding the developer's `workline:scope-ask`
+  mark, the product owner is woken at once (`state-revisit`), told the
+  files ([amended](../adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#amendment-2026-11-03-a-fix-outside-the-scope-asks-the-product-owner)).
 - **News**, each against that record: its body edited; a comment
   written or edited by anyone but the engine (one holding no
   `<!-- workline:` mark); an issue it waits on closed — the forge's
