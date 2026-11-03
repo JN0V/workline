@@ -1678,9 +1678,9 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 	if c.Do == "milestone" || c.Do == "order" || c.Do == "effort" || c.Do == "kind" || c.Do == "refine" || c.Do == "ready" || c.Do == "unready" || c.Do == "unblock" || c.Do == "blocked" || c.Do == "ask" || c.Do == "assume" || c.Do == "split" || c.Do == "rename" || c.Do == "depend" || c.Do == "undepend" {
 		return "", "" // writing a plan or asking says nothing of the issue's truth: no quote
 	}
-	if c.Do == "sources" && (c.Quote == nil || strings.TrimSpace(c.Quote.Text) == "") && p.noCodeGiven(repo, c.Issue) {
-		// Named from the repository's folders, no code given to quote
-		// (#951): the issue is read again with that code, at the next run.
+	if c.Do == "sources" && (c.Quote == nil || strings.TrimSpace(c.Quote.Text) == "") && p.namesUnshown(repo, c.Issue, c.Sources) {
+		// Named outside the code given, nothing of it to quote (#951,
+		// #980): the issue is read again with that code, at the next run.
 		c.Quote = nil
 		return "", ""
 	}
@@ -1696,6 +1696,27 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 		return p.checkObsolete(f, repo, role, st, c)
 	}
 	return "", ""
+}
+
+// namesUnshown says whether sources name code the run did not give for
+// an issue: a path neither in, nor holding, one its state or its title
+// and body name. A quote is asked only of code the agent was shown
+// (#980): one given a file the issue is not about names its code from
+// the repository's folders, as one given no code does.
+func (p *Plan) namesUnshown(repo string, id int, sources []string) bool {
+	var given []string
+	if st := p.ledger.States[id]; st != nil {
+		given = append(given, st.Sources...)
+	}
+	is := p.issues[id]
+	given = append(given, PathsIn(repo, is.Title+"\n"+is.Body)...)
+	return slices.ContainsFunc(sources, func(s string) bool {
+		s = RepoPath(s)
+		return !slices.ContainsFunc(given, func(g string) bool {
+			g = RepoPath(g)
+			return holds(s, g) || holds(g, s)
+		})
+	})
 }
 
 // noCodeGiven says whether the run gave no code for an issue: its state

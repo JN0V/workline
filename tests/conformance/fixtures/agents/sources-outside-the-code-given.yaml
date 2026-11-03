@@ -1,0 +1,13 @@
+# A product owner's answer that names the code two bugs are about, no
+# line quoted (#980). #9's text names a doc: its code was not given, so
+# nothing of it could be quoted. #12's text names a file inside the
+# folder it names: that code was given.
+- kind: {issue: 9, kind: bug, why: "the export worked and now loses rows."}
+- sources:
+    issue: 9
+    sources: [src/export]
+    why: "The only code given was docs/export.md, which writes no rows: #9 is about the export."
+- sources:
+    issue: 12
+    sources: [src/export]
+    why: "#12 names its file: its code was given, yet no line is quoted."
