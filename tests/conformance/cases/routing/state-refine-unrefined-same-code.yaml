@@ -1,0 +1,47 @@
+case: routing/state-refine-unrefined-same-code
+about: >
+  Issues the product owner left unrefined in refine (#980), as #978 was.
+  The line records the code each read was given. One whose state names
+  the same code as when the line last woke the product owner on it, or
+  still none, is not woken again: read again, it would get the same. It
+  is to be blocked at once, the code it was given said. One whose last
+  read named new code is woken again, with that code. No agent asked.
+given:
+  repo: backlog
+  config:
+    routing: {events: {issue: [product-owner]}}
+  forge:
+    issues:
+      - id: 9
+        title: "Rows lost"
+        labels: [workline:to-refine]
+        body: "## Need\n\nA user exporting rows loses the last one.\n\n## Validation\n\n- **Three rows:** Given three rows, When I export them, Then the file holds three.\n"
+        comments:
+          - "```yaml\nsources: [src/export]\nconfirmed: d8c4dff\nbody: 8a05ec2b42f7\nkind: bug\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "**workline's line** last woke the product owner on this issue, in its state refine (2 state steps so far).\n\n<!-- workline:line-record {\"state\":\"refine\",\"body\":\"8a05ec2b42f7\",\"hops\":2,\"retry\":1,\"given\":\"src/export\"} -->\n<!-- workline:sticky=line/state -->"
+      - id: 10
+        title: "Rows lost"
+        labels: [workline:to-refine]
+        body: "## Need\n\nA user exporting rows loses the last one.\n\n## Validation\n\n- **Three rows:** Given three rows, When I export them, Then the file holds three.\n"
+        comments:
+          - "```yaml\nsources: []\nconfirmed: d8c4dff\nbody: 8a05ec2b42f7\nkind: bug\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "**workline's line** last woke the product owner on this issue, in its state refine (1 state step so far).\n\n<!-- workline:line-record {\"state\":\"refine\",\"body\":\"8a05ec2b42f7\",\"hops\":1,\"given\":\"-\"} -->\n<!-- workline:sticky=line/state -->"
+      - id: 11
+        title: "Rows lost"
+        labels: [workline:to-refine]
+        body: "## Need\n\nA user exporting rows loses the last one.\n\n## Validation\n\n- **Three rows:** Given three rows, When I export them, Then the file holds three.\n"
+        comments:
+          - "```yaml\nsources: [src/export]\nconfirmed: d8c4dff\nbody: 8a05ec2b42f7\nkind: bug\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "**workline's line** last woke the product owner on this issue, in its state refine (1 state step so far).\n\n<!-- workline:line-record {\"state\":\"refine\",\"body\":\"8a05ec2b42f7\",\"hops\":1,\"given\":\"-\"} -->\n<!-- workline:sticky=line/state -->"
+run: {route: reconcile, ai: none, input: {reconcile: list}}
+expect:
+  status: pass
+  agent-calls: 0
+  findings:
+    - {rule: refine-capped, where: "#9", message: "read it on this text with only the code of `src/export`, and left it lacking Verification, Scope, nothing asked: read again, it would get the same"}
+    - {rule: refine-capped, where: "#10", message: "read it on this text with no code: its text names no file of the repository, nor did the product owner"}
+    - {rule: state-unrefined, where: "#11", message: "woken again, 1 of 2"}
+  forge:
+    issues:
+      - {id: 9, labels: [workline:to-refine]}
+      - {id: 10, labels: [workline:to-refine]}

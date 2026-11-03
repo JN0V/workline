@@ -174,9 +174,11 @@ func stateOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, 
 	}
 	if !ok && s.Name == refineState && name == backlog.Keeper {
 		// Read on this body and left unrefined, nothing waiting on a
-		// person (#951): not acted; woken again, then blocked.
-		if lacks := unrefined(is, notes); lacks != "" {
-			again, said, why := refineAgain(rec, lacks)
+		// person (#951): not acted; woken again, then blocked — at once
+		// when its code is the same as last read (#980).
+		if lacks, sources := unrefined(is, notes); lacks != "" {
+			shown := append(slices.Clone(sources), backlog.PathsIn(x.repo, is.Title+"\n"+is.Body)...)
+			again, said, why := refineAgain(rec, lacks, sources, shown)
 			if why != "" {
 				res.Findings = append(res.Findings, verdict.Finding{Rule: "refine-capped", Level: "warn", Where: where, Message: why + ": moved to " + BlockedState})
 				return nil, &StateWrite{Issue: is.ID, Record: blocking(rec, s.Name, why, comments), Blocked: why}, nil
@@ -184,6 +186,9 @@ func stateOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, 
 			ok, now = true, again
 			res.Findings = append(res.Findings, verdict.Finding{Rule: "state-unrefined", Level: "info", Where: where, Message: said})
 		}
+	}
+	if ok && s.Name == refineState && name == backlog.Keeper {
+		now.Given = givenNow(comments) // the code this read gets: the same next time wakes it no more (#980)
 	}
 	if ok && reviewed {
 		now.Asked = now.Body // the reviewer runs after the product owner: never due again for this alone

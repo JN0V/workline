@@ -625,6 +625,29 @@ reconcile-max".
   - a reconcile started on each move: every step due, not only those
     room woke, and the heartbeat's hour reset each time.
 
+## Amendment (2026-11-03): a read again is given new code, or none is made
+
+Settles [#980](https://github.com/JN0V/workline/issues/980), amends
+"an issue left unrefined is woken again". A bug's first read was given
+one config file, not the code it is about. Its sources, named with no
+quote, were dropped: the no-quote rule held only when no code was
+given. Each read again got the same input; Blocked after three.
+
+- **A quote only from code shown**: a `sources` naming only paths the
+  run did not give — each neither in nor holding one the issue's state,
+  title or body names — needs no line quoted. The issue is read again
+  with them. One naming code given too still quotes it.
+- **Never the same input twice**: the line's record keeps the code
+  each wake gave, the state's sources (`given`). Left unrefined with
+  the same sources, the issue is not woken again: Blocked at once, the
+  code it got said on it. New sources wake it, twice at most as before.
+  This takes back "Blocked at once" from that amendment's not chosen,
+  for the same input only: a read again on it asked the same thing.
+- **Cost**: fewer agent calls; a record from before has no `given`,
+  woken as before.
+- **Not chosen**: listing the repository's folders on every read: the
+  task grows for every issue; the folders named are enough.
+
 [ADR-0024]: 0024-obsolete-is-announced-then-closed-on-silence-and-a-second-judge.md
 [ADR-0028]: 0028-an-issue-names-what-it-waits-on.md
 [#752]: https://github.com/JN0V/workline/issues/752

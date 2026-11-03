@@ -32,3 +32,4 @@ expect:
     issues:
       - id: 9
         body-contains: ["## Verification", "A test writes three rows", "## Scope"]
+        comment-contains: "\"given\":\"src/export\"" # the code this read got (#980)

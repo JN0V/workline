@@ -143,7 +143,11 @@ what it can and asks for the rest:
   ([ADR-0059, amended](../../adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#amendment-2026-11-03-an-issue-left-unrefined-is-woken-again)).
   The task lists the repository's
   folders for an issue that names no file: the agent names its sources
-  from them, no line quoted.
+  from them, no line quoted. A `sources` naming only code the run did
+  not give — no path in or holding one its state, title or body names
+  (`namesUnshown`) — needs no line quoted either; one mixing code given
+  and not given still quotes
+  ([#980](https://github.com/JN0V/workline/issues/980)).
 - **`ready`** is checked by the engine, not taken from the agent: the four
   sections there and not empty — a person's text on top standing for a
   Need —, no draft of the role's left in Need or

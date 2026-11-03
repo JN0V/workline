@@ -4,10 +4,13 @@ package line
 // owner read it in refine, on its body as it is, and left it lacking a
 // section — nothing drafted nor asked, nothing waiting on a person. Its
 // run is not "acted": the line wakes it again on the same body, at most
-// RefineRetries times, then blocks the issue, the reason on it.
+// RefineRetries times, then blocks the issue, the reason on it. Never on
+// the same code as its last read (#980): that read again would get the
+// same input; the issue is blocked at once, the code it lacks said.
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/JN0V/workline/internal/backlog"
@@ -23,31 +26,70 @@ const RefineRetries = 2
 // last read of its body left it so, nothing waiting on a person: ""
 // when it was not read on this body, is complete, or waits on a person —
 // a question, drafts, a proposal, a split, a person's comment, set aside.
-func unrefined(is forge.Issue, notes []forge.Note) string {
+// sources: the code its state names now, the next read's.
+func unrefined(is forge.Issue, notes []forge.Note) (lacks string, sources []string) {
 	st, found, err := backlog.ReadState(forge.Bodies(notes), backlog.Keeper)
 	if !found || err != nil || st.Body == "" || st.Body != backlog.BodyDigest(is.Body) {
-		return "" // not read on this body: its first read is due, or a person's change
+		return "", nil // not read on this body: its first read is due, or a person's change
 	}
 	if st.Label != "" || st.Left != "" || st.Aside != "" || len(st.Split) > 0 || backlog.Readied(is) || backlog.HasDraft(is.Body, st) {
-		return ""
+		return "", nil
 	}
 	if len(backlog.Unheard(st, notes, is)) > 0 {
-		return "" // a person wrote since its read: theirs is read next
+		return "", nil // a person wrote since its read: theirs is read next
 	}
 	if _, asked := backlog.Unanswered(notes, backlog.Keeper); asked {
-		return "" // its question waits on its reporter: the delay wakes it (ADR-0060)
+		return "", nil // its question waits on its reporter: the delay wakes it (ADR-0060)
 	}
-	lacks := backlog.Missing(is.Body)
-	if len(lacks) == 0 {
+	missing := backlog.Missing(is.Body)
+	if len(missing) == 0 {
+		return "", nil
+	}
+	return strings.Join(missing, ", "), st.Sources
+}
+
+// givenKey is what Record.Given keeps of the code a read is given: its
+// sources, sorted, one a line (no path holds a newline), "-" for none.
+func givenKey(sources []string) string {
+	if len(sources) == 0 {
+		return "-"
+	}
+	s := slices.Clone(sources)
+	slices.Sort(s)
+	return strings.Join(s, "\n")
+}
+
+// givenNow is the code the product owner's state names on an issue, as
+// Record.Given keeps it: "" when its state does not read.
+func givenNow(comments []string) string {
+	st, found, err := backlog.ReadState(comments, backlog.Keeper)
+	if err != nil {
 		return ""
 	}
-	return strings.Join(lacks, ", ")
+	if !found {
+		return givenKey(nil)
+	}
+	return givenKey(st.Sources)
+}
+
+// codeSaid says the code a read was given, for the line's reason: the
+// paths its sources and its text name.
+func codeSaid(shown []string) string {
+	if len(shown) == 0 {
+		return "no code: its text names no file of the repository, nor did the product owner"
+	}
+	return "only the code of `" + strings.Join(slices.Compact(slices.Sorted(slices.Values(shown))), "`, `") + "`"
 }
 
 // refineAgain is the record of an issue woken again for being left
-// unrefined, and what the line says of it; past RefineRetries, the
-// reason it is blocked instead.
-func refineAgain(rec Record, lacks string) (Record, string, string) {
+// unrefined, and what the line says of it; past RefineRetries, or on the
+// same code its last read had (sources), the reason it is blocked
+// instead, the code it was given said (shown).
+func refineAgain(rec Record, lacks string, sources, shown []string) (Record, string, string) {
+	if rec.Given != "" && rec.Given == givenKey(sources) {
+		return rec, "", fmt.Sprintf("the product owner read it on this text with %s, and left it lacking %s, nothing asked: read again, it would get the same; a person names the files it is about in a comment, or completes it",
+			codeSaid(shown), lacks)
+	}
 	if rec.Retry >= RefineRetries {
 		return rec, "", fmt.Sprintf("the product owner read it %d times on the same text and left it lacking %s, nothing asked: a person completes it, or names its files in a comment",
 			rec.Retry+1, lacks)
