@@ -110,7 +110,8 @@ a round asks it to widen it ([#921](https://github.com/JN0V/workline/issues/921)
 
 A project check is asked once a head: a round on it that keeps no fix
 and names no file outside the Scope would leave the pull request red,
-nothing asked again ([#938](https://github.com/JN0V/workline/issues/938)).
+nothing asked again ([#938](https://github.com/JN0V/workline/issues/938),
+[ADR-0059](../../../docs/adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#amendment-2026-11-03-a-red-check-with-no-fix-blocks-for-a-person)).
 
 - **The issue goes `workline:blocked`, for a person**: its comment names
   the checks, the agent's note, where its objections to frozen tests

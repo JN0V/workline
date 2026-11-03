@@ -480,16 +480,7 @@ stayed in Doing, the check read at that head, and nothing moved.
   (`review-rounds`) cap the rest; the hops do not, since a move out of
   Blocked starts their count again (§8).
 - **A round from before**, no fix on a red check and no ask, runs once
-  more at its head, to ask.
-- **No file to ask, the check still red: Blocked for a person**
-  ([#938](https://github.com/JN0V/workline/issues/938)). A round that
-  keeps no fix and names no file outside the Scope (its agent holds the
-  check wrong, or objects to a frozen test) left the pull request red
-  for hours: the check is asked once a head. Now it blocks its issue,
-  with no mark: the checks, its note, where its objections went, the
-  log's end. A person who moves it back to ready resumes the round at
-  the same head. Not chosen: waking the product owner, who has no Scope
-  to widen; re-asking at the same head, a loop of agent calls.
+  more at its head, to ask, or to block as in the next amendment.
 - **Cost**: one agent call of the product owner an ask; one API call a
   reconcile per pull request whose ask waits, the issue's labels.
 - **Not chosen**:
@@ -499,6 +490,27 @@ stayed in Doing, the check read at that head, and nothing moved.
   - the developer widening its own Scope: its bounds would be its own;
   - a new issue for the file: the pull request stays red until it
     merges, and the fix is one line of the same change.
+
+## Amendment (2026-11-03): a red check with no fix blocks for a person
+
+Settles [#938](https://github.com/JN0V/workline/issues/938): three
+developer pull requests sat red for hours. Each round's agent held the
+red check wrong, or objected to a frozen test, and named no file
+outside the Scope; the check is asked once a head, so nothing moved.
+
+- **Doing → Blocked, by the developer**: a round that keeps no fix,
+  names no file outside the Scope, and was asked a red project check
+  blocks its issue. Its one comment (§1) names the checks, its agent's
+  note, where its objections went, and the end of the check's log.
+- **For a person, no mark**: the product owner has no Scope to widen.
+- **Ready → Doing, by the round**: a person who fixes the check or the
+  test, re-runs it, or widens the Scope moves the issue back; the next
+  round asks the check again at the same head.
+- **A round from before**, no fix on a red check and nothing asked,
+  runs once more at its head, to block.
+- **Not chosen**:
+  - waking the product owner: nothing of its to decide;
+  - asking the check again at the same head: a loop of agent calls.
 
 [ADR-0024]: 0024-obsolete-is-announced-then-closed-on-silence-and-a-second-judge.md
 [ADR-0028]: 0028-an-issue-names-what-it-waits-on.md
