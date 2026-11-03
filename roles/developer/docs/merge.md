@@ -4,7 +4,7 @@ sources:
   - internal/engine/code.go
   - internal/engine/candidate.go
   - internal/sample/developer.go
-checked: 93dac05e
+checked: 54d84678
 verified: agent:claude-code
 ---
 # The merge
