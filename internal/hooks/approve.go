@@ -124,7 +124,7 @@ func describe(p Push) (string, int) {
 		}
 		log, _ := git(p.Repo, "log", "--format=%h %s", r.Range)
 		log = "  " + strings.ReplaceAll(log, "\n", "\n  ")
-		stat, _ := git(p.Repo, "diff", "--shortstat", rangeBase(p.Repo, r.Range), rangeHead(r.Range))
+		stat, _ := git(p.Repo, "diff", "--shortstat", rangeBase(p.Repo, r.Range), gitrange.Head(r.Range))
 		c := strings.Count(log, "\n") + 1
 		n += c
 		fmt.Fprintf(&b, "workline: %d commit(s) to %s %s — %s\n%s\n", c, p.Remote, strings.TrimPrefix(r.Remote, "refs/heads/"), strings.TrimSpace(stat), log)
@@ -249,7 +249,7 @@ func anyDelete(refs []Ref) bool {
 	return false
 }
 
-// rangeBase and rangeHead are where a range starts and ends (gitrange); a
+// rangeBase is where a range starts (gitrange); a
 // range of the whole history is compared with the empty tree.
 func rangeBase(repo, rng string) string {
 	if base := gitrange.Base(rng); base != "" {
@@ -258,5 +258,3 @@ func rangeBase(repo, rng string) string {
 	empty, _ := git(repo, "hash-object", "-t", "tree", "/dev/null")
 	return empty
 }
-
-func rangeHead(rng string) string { return gitrange.Head(rng) }
