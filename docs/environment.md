@@ -1,5 +1,5 @@
 ---
-sources: [internal/role/config.go, internal/role/role.go, cmd/workline, internal/engine/engine.go, internal/forge/gitlab.go, internal/hooks, internal/line/payload.go]
+sources: [internal/forge/retry.go, internal/role/config.go, internal/role/role.go, cmd/workline, internal/engine/engine.go, internal/forge/gitlab.go, internal/hooks, internal/line/payload.go]
 checked: 8538d558
 verified: agent:claude-code
 judged: e343388
@@ -15,7 +15,7 @@ part of [the configuration](config.md).
 | `WORKLINE_ROLES` | a folder of roles, as `--roles` |
 | `WORKLINE_MODELS_SEEN` | the file keeping the last model that answered each model asked (default: `models-seen.yaml` in your cache folder, `~/.cache/workline/` on Linux) |
 | `WORKLINE_JUDGE` | the agent reading the weekly sample (`workline sample`), before the `sample.judge` setting; the judge of a role's run (a reviewer's findings, a documentalist's split); and the evaluation's judge |
-| `WORKLINE_RUNS_DIR` | where runs are kept, e.g. a folder a CI artifact carries to the job that applies |
+| `WORKLINE_RUNS_DIR` | where runs are kept, e.g. a folder a CI artifact carries to the job that applies; never seen by the project's commands ([the line's own](#the-lines-own)) |
 | `GITLAB_TOKEN` | the GitLab forge's token; else glab's, if glab is set up; else `CI_JOB_TOKEN`, which reaches no issue |
 | `CI_API_V4_URL`, `CI_PROJECT_ID` (or `CI_PROJECT_PATH`) | the GitLab instance and project, set by GitLab CI; elsewhere `GITLAB_HOST` and the `origin` remote |
 | `GH_TOKEN` | read by `gh`, which the GitHub forge calls |
@@ -50,3 +50,19 @@ A role's `pre` and `post` receive:
   ([#384](https://github.com/JN0V/workline/issues/384));
 - run by a handoff: the inputs `handoff-from` and `handoff-reason`.
 - in the round a role asks last (`in/then`): `WORKLINE_THEN`, its task.
+
+## The line's own
+
+The project's commands never see the line's own variables: its tests,
+as the tester's or the developer's proof, its checks, and the agent
+([#953](https://github.com/JN0V/workline/issues/953)).
+
+- **Which**: `WORKLINE_RUNS_DIR`, `WORKLINE_RATE_WAIT` (the wait for a
+  forge's rate a run of the line sets), and every variable `pre` and
+  `post` receive above, `WORKLINE_AI` among them: a project's test
+  never calls the run's agent.
+- **Why**: a project whose tests start workline's own engines would
+  take them for theirs: its runs written in the job's folder, the
+  oldest pruned, the live run with them.
+- **Kept**: what a person sets for their own use, such as
+  `WORKLINE_JUDGE`, `WORKLINE_ROLES` or `WORKLINE_MODELS_SEEN`.

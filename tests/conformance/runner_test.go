@@ -76,7 +76,7 @@ type givenSpec struct {
 	Config map[string]any      `yaml:"config"`
 	Forge  map[string]any      `yaml:"forge"`
 	Seen   map[string]any      `yaml:"models-seen"` // the models this machine saw answer, before the run
-	Env    map[string]string   `yaml:"env"`         // variables set for the run, e.g. a PATH without a tool; $VAR expands
+	Env    map[string]string   `yaml:"env"`         // variables set for the run, e.g. a PATH without a tool; $VAR expands, $WORK the case's own folder
 	Tags   []string            `yaml:"engine-tags"` // the engine built with these Go build tags: a change of the tests only (engineFor)
 }
 
@@ -794,7 +794,12 @@ func runCase(t *testing.T, c *caseFile) []string {
 		cmd.Env = append(cmd.Env, "GIT_CONFIG_GLOBAL="+global)
 	}
 	for k, v := range c.Given.Env {
-		cmd.Env = append(cmd.Env, k+"="+os.Expand(v, func(name string) string { return lookup(cmd.Env, name) }))
+		cmd.Env = append(cmd.Env, k+"="+os.Expand(v, func(name string) string {
+			if name == "WORK" {
+				return work
+			}
+			return lookup(cmd.Env, name)
+		}))
 	}
 	tips := map[string]string{} // the remote's branches before the run
 	for _, b := range c.Expect.NotPushed {

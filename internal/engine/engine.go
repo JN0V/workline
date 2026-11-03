@@ -3018,7 +3018,7 @@ func dropWorktree(repo, runDir string) {
 // CI, somewhere an artifact can carry them to the job that applies —, else
 // its git folder's workline/runs.
 func RunsDir(repo string) string {
-	if d := os.Getenv("WORKLINE_RUNS_DIR"); d != "" {
+	if d := os.Getenv(forge.RunsDirEnv); d != "" {
 		return d
 	}
 	if out, err := exec.Command("git", "-C", repo, "rev-parse", "--absolute-git-dir").Output(); err == nil {
