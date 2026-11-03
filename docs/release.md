@@ -8,7 +8,7 @@ sources:
   - internal/report/dryrun.go
   - internal/release/release.go
   - cmd/workline
-checked: d722a840
+checked: 8538d558
 ---
 # The release: a dry run with gardening, a check at the tag
 
@@ -56,7 +56,8 @@ were cut now.
   `dry-run-post` (the App's token, issues write), in
   [the gardening](../ci/github/workline-gardening.yml).
 - **GitLab**: `workline:release:dry-run` (no token) and
-  `workline:release:dry-run:post`, on each schedule but the sample's.
+  `workline:release:dry-run:post`, on each schedule but the sample's
+  and the reconciler's.
 - **Your release's gates**: install their tools in the dry run's job, as
   in the gates' ([gates in CI](gates-in-ci.md)).
 - **One writer of the issue at a time**: the post shares main's issue

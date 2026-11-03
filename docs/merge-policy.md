@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine/merge.go, internal/engine/queue.go, internal/forge/merge.go, internal/forge/github_merge.go, internal/forge/gitlab_merge.go, ci/github/workline-apply.yml, ci/github/workline-merge.yml, ci/gitlab/workline.gitlab-ci.yml]
-checked: 87a81d4a
+checked: 8538d558
 verified: agent:claude-code
 ---
 # The merge policy
@@ -22,7 +22,7 @@ each merges once its own head is green. No agent is called
 # .workline/config.yaml
 merge: {autonomy: cautious}   # off unless set: no auto-merge is touched
                               # normal: workline's own routine work with no yes, below
-                              # enterprising: features too, a person tries the release candidate
+                              # enterprising: features and tasks too, a person tries the candidate
 ```
 
 ## What it does
@@ -95,8 +95,8 @@ merge: {autonomy: cautious}   # off unless set: no auto-merge is touched
   until they are gone ([what holds a release](release-holds.md)).
 - **A fork's**: its CI run is the fork's own, so the templates keep no
   verdict of it: it waits for a person.
-- **Any other** with no label, whoever opened it — but, at `normal`,
-  workline's own routine work. A bot's own auto-merge (a dependency
+- **Any other** with no label, whoever opened it — but, at `normal` and
+  `enterprising`, workline's own routine work. A bot's own auto-merge (a dependency
   bot's) is left to it.
 - **An agent never puts the label**: it is the person's yes.
 
@@ -107,9 +107,9 @@ merge: {autonomy: normal}   # a project's choice, never a default
 ```
 
 At `normal`, workline's own routine pull requests merge with no label
-too — the developer's fix, not its feature; an agent's rewording of a
-page for its reader once the project lets it; a revert sends their kind
-back to a person's yes. The kinds, the revert and the limits:
+too — the developer's fix of a reproduced bug, not a feature nor a task;
+an agent's rewording of a page for its reader once the project lets it;
+a revert sends their kind back to a person's yes. The kinds, the revert and the limits:
 [the merge policy at `normal`](merge-policy-normal.md).
 
 ## `enterprising`: features too, the yes on the candidate
@@ -118,8 +118,8 @@ back to a person's yes. The kinds, the revert and the limits:
 merge: {autonomy: enterprising}
 ```
 
-As `normal`, and the developer's features merge with no label too, each
-put in a milestone. Once a milestone's issues are all merged, workline
+As `normal`, and the developer's features and tasks merge with no label
+too, each put in a milestone. Once a milestone's issues are all merged, workline
 cuts its release candidate; a person tries it, and their yes, a label on
 the candidate's issue, ships the version:
 [the release candidate](release-candidate.md).
@@ -166,7 +166,7 @@ the candidate's issue, ships the version:
   `verdict` and `follow` jobs run after `judge`, `queue` after a merge
   queue's group, from the default branch;
   `workline-merge.yml` runs when a label is put or taken off, or a draft
-  made. Then:
+  made; at `enterprising`, on a candidate's yes or close too. Then:
   - Settings → General → "Allow auto-merge";
   - the [GitHub App](ci-github-app.md), with **Commit statuses** read and
     write besides its other permissions, its key in the environment

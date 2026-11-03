@@ -7,7 +7,7 @@ sources:
   - ci/gitlab/workline.gitlab-ci.yml#workline:merge
   - internal/line/line.go
   - internal/engine/queue.go
-checked: d722a840
+checked: 8538d558
 judged: e4550b8
 verified: agent:claude-code
 ---
