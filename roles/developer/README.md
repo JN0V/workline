@@ -3,7 +3,7 @@ sources:
   - roles/developer/role.yaml
   - ci/github/workline-develop.yml
   - internal/developer
-checked: 62a62929
+checked: 76013c63
 verified: agent:claude-code
 ---
 # Developer
@@ -51,7 +51,7 @@ file. All roles: [docs/roles.md](../../docs/roles.md). Where it stands:
 - **Runs when routed**: when an issue is labelled ready, and on the
   schedule ([the triggers](docs/triggers.md)).
 - **Fixes the review** of its pull request, a fresh run a verdict, a
-  gate or a test red, or a person's comment; the five whys at round three, a person past
+  gate or a test red, a test the tester rewrote, or a person's comment; the five whys at round three, a person past
   round five ([the review loop](docs/review-loop.md)).
 - **Its fixes merge alone** at the merge policy's `normal`, every gate
   passed, a bug once a test that failed on the base showed it; a feature
