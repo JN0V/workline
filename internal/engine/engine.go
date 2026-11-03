@@ -137,8 +137,11 @@ type Result struct {
 	// AIWaits is why the run's agent was set aside: "ready", a merge
 	// request still a draft (DraftInput); "" when it had its agent, or
 	// none was set.
-	AIWaits   string `json:"ai-waits,omitempty"`
-	maxTokens int    // the role's ai-max-tokens: what the run may spend; 0, no cap
+	AIWaits string `json:"ai-waits,omitempty"`
+	// NoVerdict: the run ended with no verdict read from its post
+	// (ErrNoVerdict): nothing it did was applied, its work lost (#953).
+	NoVerdict bool `json:"no-verdict,omitempty"`
+	maxTokens int  // the role's ai-max-tokens: what the run may spend; 0, no cap
 	// maxSeconds is the role's ai-max-seconds: how long the run may wait on
 	// its agents, from the first call; 0, no cap. waitSince is that call.
 	maxSeconds int
@@ -237,6 +240,10 @@ const (
 	exitNothing  = 10
 )
 
+// ErrNoVerdict is a run whose post left no verdict to read: it died, or
+// its run folder went (#953). Nothing the run did is applied.
+var ErrNoVerdict = errors.New("post wrote no readable verdict")
+
 // maxRounds caps how many times one run of a role goes round, when its pre
 // leaves work for the next round (in/more: the findings it defers, one
 // "<rule> <where>" a line).
@@ -270,6 +277,7 @@ func Run(o Options) *Result {
 		res.Findings, res.ToApply = nil, false
 		if err := run(o, res); err != nil {
 			res.Status = verdict.Block
+			res.NoVerdict = res.NoVerdict || errors.Is(err, ErrNoVerdict)
 			rule := "engine-error"
 			if role.IsConfigError(err) {
 				rule = "config-invalid"
@@ -2220,7 +2228,7 @@ func attempt(r *role.Role, o Options, ag agent.Agent, hasTask bool, tier, runDir
 	}
 	v, err := verdict.Read(filepath.Join(runDir, "out", "verdict.yaml"))
 	if err != nil {
-		return nil, fmt.Errorf("post wrote no readable verdict: %w", err)
+		return nil, fmt.Errorf("%w: %w", ErrNoVerdict, err)
 	}
 	if want := statusForExit(code); want == "" {
 		return nil, fmt.Errorf("post exited with code %d", code)
@@ -2375,7 +2383,7 @@ func judgeAgain(r *role.Role, o Options, runDir string, env []string, cfg *role.
 	}
 	v, err := verdict.Read(filepath.Join(runDir, "out", "verdict.yaml"))
 	if err != nil {
-		return nil, fmt.Errorf("post wrote no readable verdict: %w", err)
+		return nil, fmt.Errorf("%w: %w", ErrNoVerdict, err)
 	}
 	if want := statusForExit(code); want != v.Status {
 		return nil, fmt.Errorf("post exited %d but its verdict says %q", code, v.Status)

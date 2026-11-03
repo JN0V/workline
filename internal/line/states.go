@@ -340,22 +340,20 @@ func runStateStep(res *Result, cfg *routing.Config, f forge.Forge, spec string, 
 		maps.Copy(in, st.inputs)
 		o.Inputs = in
 	}
-	before := len(res.Findings)
+	before, steps := len(res.Findings), len(res.Steps)
 	_, status := runRole(res, cfg, o, 0)
 	res.Status = worst(res.Status, status)
 	if status == verdict.BlockedExternal {
 		return
 	}
 	if st.role == developerRole && status != verdict.Pass {
-		// Its run ended with no verdict read, its work lost: said on the
-		// issue with the record, never as acted on (#953).
-		for _, f := range res.Findings[before:] {
-			if f.Rule == "engine-error" {
-				st.write.Lost = f.Message
-				st.write.Record.Lost = clock().UTC().Format(time.RFC3339)
-				st.write.Record.Hops++
-				break
-			}
+		// Its own run ended with no verdict read, its work lost: said on
+		// the issue with the record, never as acted on (#953). Any other
+		// error, after what it pushed perhaps, is not a loss.
+		if why := lost(res.Steps[steps:]); why != "" {
+			st.write.Lost = why
+			st.write.Record.Lost = clock().UTC().Format(time.RFC3339)
+			st.write.Record.Hops++
 		}
 	}
 	if st.role == backlog.Keeper {
@@ -624,4 +622,19 @@ func lateSaid(res *Result, last string, now time.Time) {
 		int(gap.Hours()), int(gap.Minutes())%60, t.UTC().Format("2006-01-02 15:04 UTC"), int(ReconcileLate.Hours()))
 	res.Summary += "; late: " + said
 	res.Findings = append(res.Findings, verdict.Finding{Rule: "reconcile-late", Level: "warn", Message: said})
+}
+
+// lost is why the developer's own run, the first of steps, ended with no
+// verdict read (engine.ErrNoVerdict): "" when it did not; a handoff's
+// run, or another error, is never a loss.
+func lost(steps []Step) string {
+	if len(steps) == 0 || steps[0].Result == nil || !steps[0].Result.NoVerdict {
+		return ""
+	}
+	for _, f := range steps[0].Result.Findings {
+		if f.Rule == "engine-error" {
+			return f.Message
+		}
+	}
+	return engine.ErrNoVerdict.Error()
 }
