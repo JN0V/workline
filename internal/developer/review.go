@@ -89,6 +89,7 @@ type round struct {
 	Runs     int      `json:"review-runs"`
 	FiveWhys bool     `json:"five-whys"`
 	Person   bool     `json:"person"`              // past the last round: no agent, a person
+	Ready    bool     `json:"ready,omitempty"`     // its Draft green, nothing asked: marked ready, no agent (#969)
 	At       string   `json:"at,omitempty"`        // its branch's head, where its fix starts
 	GatesAt  string   `json:"gates-at,omitempty"`  // the head the gates' findings asked were read at
 	ChecksAt string   `json:"checks-at,omitempty"` // the head the project's red checks were read at
@@ -262,7 +263,22 @@ func reviewPre(runDir, repo string, s Settings, id int) int {
 			Findings: []verdict.Finding{{Rule: "review-to-a-person", Level: "info", Where: where, Message: fmt.Sprintf("past round %d, a person of the project takes it from here", a.Round)}}})
 	}
 	if len(r.Asked) == 0 {
+		var kept string
+		if mr.Draft {
+			// Its Draft made green: marked ready, no agent asked (#969).
+			var ready bool
+			if ready, kept = draftReady(f, a, head); ready {
+				r.Ready = true
+				if err := writeIn(runDir, roundFile, r); err != nil {
+					return fail(err)
+				}
+				return writeIntents(runDir, "fallback.yaml", readied(head))
+			}
+		}
 		v := verdict.Verdict{Status: verdict.Pass, Summary: "nothing the review asks: no round"}
+		if kept != "" {
+			v.Findings = append(v.Findings, verdict.Finding{Rule: "draft-kept", Level: "info", Where: where, Message: "a Draft kept: " + kept})
+		}
 		if !newReview {
 			v.Summary = "nothing new since its last round: it waits for the reviewer's next verdict, the gates' next report, or the project's checks on a new head"
 		}
@@ -433,6 +449,10 @@ func RoundDue(f forge.Forge, repo string, mr forge.MergeRequest) (bool, error) {
 	if err == nil && len(r.Asked) == 0 && r.ChecksUnread != "" {
 		err = fmt.Errorf("its project's checks: %s", r.ChecksUnread)
 	}
+	if err == nil && len(r.Asked) == 0 && mr.Draft {
+		ready, _ := draftReady(f, a, head) // its Draft made green: its round marks it ready (#969)
+		return ready, nil
+	}
 	return len(r.Asked) > 0, err
 }
 
@@ -575,6 +595,9 @@ func reviewPost(runDir, repo string, s Settings) int {
 		return fail(err)
 	}
 	where := fmt.Sprintf("merge request %d", r.MR)
+	if r.Ready {
+		return readyPost(runDir, r)
+	}
 	if r.Person {
 		return writeVerdict(runDir, verdict.Verdict{Status: verdict.Pass, Summary: fmt.Sprintf("past round %d: its issue #%d blocked", r.Record.Round, r.Record.Issue),
 			Findings: []verdict.Finding{{Rule: "review-blocked", Level: "warn", Where: where,

@@ -45,7 +45,8 @@ on:
   # comment the job's own token writes wakes nothing), or a person's.
   issue_comment: {types: [created, edited]}
   # A project's workflow that failed on the developer's branch: its
-  # checks red are a round (#917). Every workflow, workline's own left
+  # checks red are a round (#917); all green on its Draft, a round that
+  # marks it ready (#969). Every workflow, workline's own left
   # out by the job whose; check_suite and check_run never fire for
   # GitHub Actions' own checks.
   workflow_run: {workflows: ["*"], types: [completed], branches: ["workline/developer/**"]}
@@ -408,17 +409,23 @@ jobs:
           printf '%s' "$PR" | grep -Eqx '[0-9]+' || { echo "::error title=workline::not a pull request number: $PR"; exit 64; }
           # A project's run ended (#917): a round once all of its runs on
           # that head are done, one of them failed, whichever ends last —
-          # a red one first, then a green one, wakes it all the same.
+          # a red one first, then a green one, wakes it all the same. All
+          # green on a Draft: a round too, which marks it ready (#969).
+          runs=
           if [ -n "$SHA" ]; then
-            red=$(gh api "repos/$GH_REPO/actions/runs?head_sha=$SHA&per_page=100" --jq '[.workflow_runs[] | select(.name | ascii_downcase | startswith("workline") | not)] |
-              (all(.status == "completed") and any(.conclusion == "failure"))') || red=unread
-            case "$red" in
-              true) ;;
-              false) echo "the project's runs on $SHA: none failed, or one still runs: no round"; exit 0 ;;
+            runs=$(gh api "repos/$GH_REPO/actions/runs?head_sha=$SHA&per_page=100" --jq '[.workflow_runs[] | select(.name | ascii_downcase | startswith("workline") | not)] |
+              if (all(.status == "completed") | not) then "running" elif any(.conclusion == "failure") then "red" else "green" end') || runs=unread
+            case "$runs" in
+              red|green) ;;
+              running) echo "the project's runs on $SHA: one still runs: no round"; exit 0 ;;
               *) echo "::warning title=workline::the project's runs on $SHA not read: the reconciler asks within the hour"; exit 0 ;;
             esac
           fi
-          branch=$(gh pr view "$PR" --json headRefName,isCrossRepository,state --jq 'select((.isCrossRepository | not) and .state == "OPEN") | .headRefName')
+          pr=$(gh pr view "$PR" --json headRefName,isCrossRepository,state,isDraft --jq 'select((.isCrossRepository | not) and .state == "OPEN") | "\(.headRefName) \(.isDraft)"')
+          if [ "$runs" = green ] && [ "${pr##* }" != true ]; then
+            echo "the project's runs on $SHA: none failed, and pull request $PR is no Draft: no round"; exit 0
+          fi
+          branch=${pr% *}
           case "$branch" in
             workline/developer/*) echo "branch=$branch" >> "$GITHUB_OUTPUT" ;;
             *) echo "pull request $PR is not the developer's: no round" ;;

@@ -249,6 +249,15 @@ hold:
   `round-objecting-to-a-red-test-blocks`,
   `round-held-before-runs-once-more`, `round-resumes-after-a-held-check`.
   Tried: its pull request's `## Tried`.
+- **A Draft made green is marked ready** ([#969](https://github.com/JN0V/workline/issues/969)):
+  its Draft, opened red, stayed a Draft once its rounds made it green,
+  so nothing reviewed it. Now, every project check at its head green
+  and no cap reached, a round with no agent marks it ready; all green
+  wakes it on a Draft, the reconciler as fallback
+  ([a Draft made green](review-loop.md#a-draft-made-green)). Cases
+  `developer/green-draft-made-ready`, `green-draft-capped-stays-draft`,
+  `red-check-round-keeps-draft`, `routing/reconcile-lists-a-green-draft`.
+  Tried: its pull request's `## Tried`.
 
 - **The merge** (step 7): at `normal`, `workline follow` merges its
   pull request with no person's yes, the kind `code`, when the issue it
@@ -369,6 +378,8 @@ column ([the try](https://github.com/JN0V/workline/pull/747#tried)).
   GitHub only; on GitLab, the merge request's head pipeline and its
   failed jobs' traces would be the round's input, and a pipeline
   event its wake ([#917](https://github.com/JN0V/workline/issues/917)).
+  So a Draft made green is not marked ready there yet
+  ([#969](https://github.com/JN0V/workline/issues/969)).
 - **A gate red on GitLab**: its gates show in the Code Quality report,
   no comment a round reads; the reviewer's verdict and a person's
   comment still wake one there.
