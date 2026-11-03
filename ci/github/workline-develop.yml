@@ -228,6 +228,22 @@ jobs:
             echo "issue=$ISSUE" >> "$GITHUB_OUTPUT"
             echo "#$ISSUE's next step started" >> "$GITHUB_STEP_SUMMARY"
           fi
+      # Room this run freed (#960): an issue moved out of a state with a
+      # limit — the developer taking a ready one — wakes the issues whose
+      # step waited for that room now, not at the next reconcile. The line
+      # says which, with no agent, the one waiting longest first.
+      - id: room
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE: ${{ github.event.issue.number || inputs.issue }}
+        run: |
+          workline route reconcile --ai none --forge github --open-merge-request --input reconcile=list --input room=true --json > room.json || true
+          jq -r '.summary // empty' room.json | tee -a "$GITHUB_STEP_SUMMARY"
+          for n in $(jq -r '(.due // [])[]' room.json); do
+            [ "$n" != "$ISSUE" ] || continue   # its own next step: started above
+            gh workflow run "$(basename "${GITHUB_WORKFLOW_REF%%@*}")" --ref "$GITHUB_REF_NAME" -f issue="$n" ||
+              echo "::warning title=workline::#$n's run not started: the reconciler starts it"
+          done
 
   # The heartbeat (#845): the reconciler's next run, started by the last
   # one, waits here for the wait timer of the environment
@@ -289,8 +305,9 @@ jobs:
           fi
 
   # The reconciler (ADR-0059): each open issue whose step is due and no
-  # event started, at most reconcile-max (3) a run, each its own run. No
-  # agent, a read token, the right to start runs. Its own run, named
+  # event started, at most reconcile-max a run, the one waiting longest
+  # first (#960), each its own run. No agent, a read token, the right to
+  # start runs. Its own run, named
   # `workline develop heartbeat` or `workline develop reconcile`: by the
   # heartbeat, by hand (input reconcile=true) or by reconcile-due. Those
   # runs keep when it last ran (#853; why: the developer's triggers page).

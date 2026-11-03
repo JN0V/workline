@@ -208,7 +208,15 @@ func RunWith(event string, base engine.Options, gates *Gates) *Result {
 	// An event naming an issue runs the role its state wakes (ADR-0059),
 	// not every step of the event; one waking none runs none, said.
 	if event == IssueEvent && base.Target != nil && base.Target.Kind == "issue" && len(cfg.States) > 0 {
-		return byState(res, cfg, base, event, steps)
+		res = byState(res, cfg, base, event, steps)
+		// Asked by the job that moved a state: the room it freed wakes the
+		// issues waiting on it now, not at the next reconcile (#960).
+		if base.Inputs[RoomInput] == "true" && base.Inputs[ReconcileInput] == "list" && res.Status != verdict.BlockedExternal {
+			if said := roomSaid(roomDue(res, cfg, base)); said != "" {
+				res.Summary += "; " + said
+			}
+		}
+		return res
 	}
 	// Main after a merge: its gates compare HEAD with main's tip before
 	// the merge, whoever made it; the engine's own commits there are

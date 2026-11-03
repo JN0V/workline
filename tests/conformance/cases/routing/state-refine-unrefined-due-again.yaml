@@ -47,7 +47,7 @@ run: {route: reconcile, ai: none, input: {reconcile: list}}
 expect:
   status: pass
   agent-calls: 0
-  summary: "reconcile: 2 issues due: #9 #10"
+  summary: "reconcile: 2 issues due: #10 #9" # to be blocked first: no agent (#960)
   findings:
     - {rule: state-unrefined, where: "#9", message: "left it lacking Verification, Scope, nothing asked: woken again, 1 of 2"}
     - {rule: refine-capped, where: "#10", message: "read it 3 times on the same text"}

@@ -47,7 +47,8 @@ GitLab is needed:
 the template's jobs ([workline.gitlab-ci.yml](../ci/gitlab/workline.gitlab-ci.yml)):
 
 - **The hook's URL** ends `&variables[WORKLINE_TASK]=issue`: the job
-  `workline:issue` runs `workline route issue --input reconcile=list`,
+  `workline:issue` runs `workline route issue --input reconcile=list
+  --input room=true`,
   the engine reading `$TRIGGER_PAYLOAD`, no agent.
 - **A state's label put on an issue** whose step is due starts that
   issue's own pipeline, with the job's token, `WORKLINE_TASK=develop`
@@ -56,6 +57,10 @@ the template's jobs ([workline.gitlab-ci.yml](../ci/gitlab/workline.gitlab-ci.ym
   workline-issue-<n>`).
 - **The engine's own state labels** fire the hook too: that starts the
   next step, with no explicit start.
+- **Room freed** (`--input room=true`): with the issue's own step, each
+  issue whose step waited for room the move freed starts its pipeline,
+  as Ready freed when the developer takes an issue
+  ([#960](https://github.com/JN0V/workline/issues/960)).
 - **The reviewer's comment on a spec**, on an issue in refine, starts
   the product owner's step again, to read it: the one comment that
   names an issue. The engine's other comments, and a person's, start

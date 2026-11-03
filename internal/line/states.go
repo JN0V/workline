@@ -8,6 +8,7 @@ package line
 // started.
 
 import (
+	"cmp"
 	"errors"
 	"fmt"
 	"maps"
@@ -72,6 +73,31 @@ type stateStep struct {
 	// inputs are given the role besides the run's: what is new on a
 	// blocked issue it reads again (revisit.go).
 	inputs map[string]string
+	// from: the state it runs in; since: how long it has waited to run,
+	// the reconciler's order (ADR-0059, amended 2026-11-03); rec: its
+	// record as read, kept when it waits for room after all.
+	from  routing.State
+	since time.Time
+	rec   Record
+}
+
+// never is a step's since when how long it waited is not known: a re-try
+// in its state on a record from before the line kept its last run.
+var never = time.Date(9999, 1, 1, 0, 0, 0, 0, time.UTC)
+
+// waitedSince is how long the step of state s on an issue has waited to
+// run: the first step in its state, since the state's label was put on
+// (labeled; unknown, the oldest); a step due again in the same state,
+// since its last run (rec.Ran; unknown, never: after the others).
+func waitedSince(s routing.State, rec Record, had bool, labeled string) time.Time {
+	if had && rec.State == s.Name {
+		if t, err := time.Parse(time.RFC3339, rec.Ran); err == nil {
+			return t
+		}
+		return never
+	}
+	t, _ := time.Parse(time.RFC3339, labeled)
+	return t
 }
 
 // stateOf reads where issue is on the line and whether its step is due:
@@ -213,7 +239,9 @@ func stateOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, 
 	}
 	res.Findings = append(res.Findings, verdict.Finding{Rule: "state-wakes", Level: "info", Where: where,
 		Message: fmt.Sprintf("its state, %s, wakes the %s", s.Name, name)})
-	return &stateStep{role: name, next: s.Next, write: StateWrite{Issue: is.ID, Record: now}}, nil, nil
+	since := waitedSince(s, rec, had, trail.Labeled)
+	now.Ran = clock().UTC().Format(time.RFC3339)
+	return &stateStep{role: name, next: s.Next, write: StateWrite{Issue: is.ID, Record: now}, from: s, since: since, rec: rec}, nil, nil
 }
 
 // blocking is the record of an issue the line blocks, from state from:
@@ -415,8 +443,8 @@ func keepState(res *Result, cfg *routing.Config, f forge.Forge, spec string, o e
 }
 
 // reconcile walks every open issue, in the backlog's order, and starts
-// the steps due, up to reconcile-max a run: a safety net for an event
-// lost, never the driver. With `--input reconcile=list`, it says them
+// the steps due, up to reconcile-max a run, the one waiting longest
+// first (room.go): a safety net for an event lost, never the driver. With `--input reconcile=list`, it says them
 // and starts none (Result.Due), for a CI job starting each one's run.
 func reconcile(res *Result, cfg *routing.Config, o engine.Options) *Result {
 	f, spec, err := openForge(o)
@@ -436,13 +464,17 @@ func reconcile(res *Result, cfg *routing.Config, o engine.Options) *Result {
 	case said != "":
 		defer func() { res.Summary += "; " + said }()
 	}
+	list := o.Inputs[ReconcileInput] == "list"
+	if list && o.Inputs[RoomInput] == "true" { // the steps room woke alone, for the job that freed it (room.go)
+		res.Summary = ReconcileEvent + ": " + cmp.Or(roomSaid(roomDue(res, cfg, o)), "no issue waiting for room has it now")
+		return res
+	}
 	issues, err := b.Issues()
 	if err != nil {
 		readFailed(res, ReconcileEvent, "issues", err)
 		return res
 	}
 	backlog.Order(issues)
-	list := o.Inputs[ReconcileInput] == "list"
 	skip := strings.Split(o.Inputs[SkipInput], ",")
 	started, quiet, stales := 0, 0, 0
 	x, t := newScopeIndex(o.Repo), newTallyFor(o)
@@ -451,6 +483,7 @@ func reconcile(res *Result, cfg *routing.Config, o engine.Options) *Result {
 		write StateWrite
 	}
 	var retests []retested
+	var dues []dueStep
 	revisited, _ := revisits(cfg)
 	for i, is := range issues {
 		s, name, _ := cfg.Wakes(is.Labels, IssueEvent)
@@ -503,25 +536,9 @@ func reconcile(res *Result, cfg *routing.Config, o engine.Options) *Result {
 			}
 			continue
 		}
-		if started >= cfg.ReconcileMax {
-			res.Findings = append(res.Findings, verdict.Finding{Rule: "reconcile-left", Level: "info", Where: where,
-				Message: fmt.Sprintf("due, past reconcile-max (%d) this run: the next run starts it", cfg.ReconcileMax)})
-			continue
-		}
-		started++
-		if step != nil {
-			anticipate(cfg, &issues[i], step.next) // the steps after it see it in its next state
-			t.moved[is.ID] = true                  // its tests, the tester's result, not in what the run read before
-		}
-		switch {
-		case list: // its own run blocks it, past the cap: nothing written here
-			res.Due = append(res.Due, is.ID)
-		case block != nil:
-			keepState(res, cfg, f, spec, o, *block, "")
-		default:
-			runStateStep(res, cfg, f, spec, o, *step)
-		}
+		dues = append(dues, dueStep{i, step, block})
 	}
+	startDue(res, cfg, f, spec, o, b, issues, dues, t, &started, list)
 	// A move to its tests asks no agent, but wakes the tester at once:
 	// counted in reconcile-max after the steps due, the ready issues from
 	// before the line go to their tests a few a run, never a flood of
