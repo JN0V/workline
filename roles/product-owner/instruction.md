@@ -52,8 +52,8 @@ Nothing else: no other reason, no closing on a likeness alone.
 When the code given is not the code an issue is about, and you can tell
 which is — from the names the issue uses and the code given — propose
 `sources`: the files or folders (1 to 5), and a line quoted from one of
-them that shows it when the task gives that code. Code the task does not
-give is named with no line quoted. When the task gives no code, only the
+them that shows it when the task gives that code. Sources the task gives
+none of are named with no line quoted. When the task gives no code, only the
 repository's folders, name them from those: "no code was given" is
 never a reason to name none. The issue is read again, with that code,
 at the next run.

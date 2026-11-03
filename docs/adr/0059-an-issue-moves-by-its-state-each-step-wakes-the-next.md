@@ -633,9 +633,10 @@ one config file, not the code it is about. Its sources, named with no
 quote, were dropped: the no-quote rule held only when no code was
 given. Each read again got the same input; Blocked after three.
 
-- **A quote only from code shown**: a `sources` naming a path the run
-  did not give — neither in nor holding one the issue's state, title or
-  body names — needs no line quoted. The issue is read again with it.
+- **A quote only from code shown**: a `sources` naming only paths the
+  run did not give — each neither in nor holding one the issue's state,
+  title or body names — needs no line quoted. The issue is read again
+  with them. One naming code given too still quotes it.
 - **Never the same input twice**: the line's record keeps the code
   each wake gave, the state's sources (`given`). Left unrefined with
   the same sources, the issue is not woken again: Blocked at once, the

@@ -1698,9 +1698,9 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 	return "", ""
 }
 
-// namesUnshown says whether sources name code the run did not give for
-// an issue: a path neither in, nor holding, one its state or its title
-// and body name. A quote is asked only of code the agent was shown
+// namesUnshown says whether sources name only code the run did not give
+// for an issue: each path neither in, nor holding, one its state or its
+// title and body name. A quote is asked only of code the agent was shown
 // (#980): one given a file the issue is not about names its code from
 // the repository's folders, as one given no code does.
 func (p *Plan) namesUnshown(repo string, id int, sources []string) bool {
@@ -1710,9 +1710,11 @@ func (p *Plan) namesUnshown(repo string, id int, sources []string) bool {
 	}
 	is := p.issues[id]
 	given = append(given, PathsIn(repo, is.Title+"\n"+is.Body)...)
-	return slices.ContainsFunc(sources, func(s string) bool {
+	// Every one unshown: a source whose code was given is still backed by
+	// a quote of it.
+	return len(sources) > 0 && !slices.ContainsFunc(sources, func(s string) bool {
 		s = RepoPath(s)
-		return !slices.ContainsFunc(given, func(g string) bool {
+		return slices.ContainsFunc(given, func(g string) bool {
 			g = RepoPath(g)
 			return holds(s, g) || holds(g, s)
 		})

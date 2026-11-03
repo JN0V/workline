@@ -11,3 +11,7 @@
     issue: 12
     sources: [src/export]
     why: "#12 names its file: its code was given, yet no line is quoted."
+- sources:
+    issue: 13
+    sources: [docs/export.md, src/export]
+    why: "#13 names its doc, shown, and the export, not shown: no line quoted of either."

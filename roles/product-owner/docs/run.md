@@ -120,9 +120,9 @@ Each issue comes with:
   Given the same code as its last read, it is not woken again: blocked
   at once, the code it got said
   ([amended again](../../../docs/adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#amendment-2026-11-03-a-read-again-is-given-new-code-or-none-is-made)).
-- Its sources named from the repository's folders, or any code the run
-  did not give, need no line quoted: the issue is read again with that
-  code.
+- Its sources named from the repository's folders, or only code the
+  run did not give, need no line quoted: the issue is read again with
+  that code.
 - A Scope written with no code given for the issue is left out, its
   paths kept as the code to read: it is written from that code at the
   next run, never guessed
