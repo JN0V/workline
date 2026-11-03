@@ -1678,7 +1678,7 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 	if c.Do == "milestone" || c.Do == "order" || c.Do == "effort" || c.Do == "kind" || c.Do == "refine" || c.Do == "ready" || c.Do == "unready" || c.Do == "unblock" || c.Do == "blocked" || c.Do == "ask" || c.Do == "assume" || c.Do == "split" || c.Do == "rename" || c.Do == "depend" || c.Do == "undepend" {
 		return "", "" // writing a plan or asking says nothing of the issue's truth: no quote
 	}
-	if c.Do == "sources" && (c.Quote == nil || strings.TrimSpace(c.Quote.Text) == "") {
+	if c.Do == "sources" && (c.Quote == nil || strings.TrimSpace(c.Quote.Text) == "") && p.noCodeGiven(repo, c.Issue) {
 		// Named from the repository's folders, no code given to quote
 		// (#951): the issue is read again with that code, at the next run.
 		c.Quote = nil
@@ -1696,6 +1696,17 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 		return p.checkObsolete(f, repo, role, st, c)
 	}
 	return "", ""
+}
+
+// noCodeGiven says whether the run gave no code for an issue: its state
+// names no sources, nor its title and body a file of the commit — the
+// task listed the repository's folders, nothing to quote from.
+func (p *Plan) noCodeGiven(repo string, id int) bool {
+	if st := p.ledger.States[id]; st != nil && len(st.Sources) > 0 {
+		return false
+	}
+	is := p.issues[id]
+	return len(PathsIn(repo, is.Title+"\n"+is.Body)) == 0
 }
 
 // obsoleteOn reads where an issue's announcement as obsolete stands, from

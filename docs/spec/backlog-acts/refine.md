@@ -349,8 +349,9 @@ the footer left last as it was.
 The files, or folders, must be in the commit the run is on (1 to 5;
 `sources-unknown` otherwise). A quote, when given, is found in one of the
 files named, an anchor after `#` aside, or in a file inside a folder named
-(`no-quote` otherwise); none is needed for sources named from the
-repository's folders, no code given
+(`no-quote` otherwise). None is needed only when no code was given —
+the state names no sources, the title and body no file of the commit —:
+named from the repository's folders
 ([#951](https://github.com/JN0V/workline/issues/951)). The sources its
 state names already, their code given in the run, are dropped
 (`sources-same`): named again, the issue would only be read again. A

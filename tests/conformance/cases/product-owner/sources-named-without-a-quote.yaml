@@ -2,7 +2,8 @@ case: product-owner/sources-named-without-a-quote
 about: >
   An issue read with no code given (#951): the product owner names its
   sources from the repository's folders, no line quoted, as it is told
-  to. The sources are written, and the issue is read again with them.
+  to. One whose code was given, its text naming a file, still quotes a
+  line of it. The sources are written, and the issue is read again with them.
   Sources the repository does not hold are dropped, as the same sources
   named again with their code given; the issue, left with nothing else
   that refines it, says so in its comment: what was dropped and why,
@@ -26,13 +27,19 @@ given:
         labels: [workline:to-refine]
         body: "## Need\n\nA user exporting rows loses the first one.\n\n## Validation\n\n- **Three rows:** Given three rows, When I export them, Then the file holds three.\n"
         comments: ["```yaml\nsources: [src/export]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]
+      - id: 12
+        title: "Rows lost in src/export/csv.go"
+        labels: [workline:to-refine]
+        body: "## Need\n\nA user exporting rows loses one, in src/export/csv.go.\n"
+        comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]
 run: {role: product-owner, event: schedule, ai: fake:kind-and-sources-only}
 expect:
   findings:
     - {rule: done, where: "#9", message: "Named the code #9 is about: src/export."}
     - {rule: sources-unknown, where: "#10"}
     - {rule: sources-same, where: "#11", message: "#11 names src/export already"}
-  no-findings: [{rule: no-quote}]
+    - {rule: no-quote, where: "#12"}
+  no-findings: [{rule: no-quote, where: "#9"}, {rule: no-quote, where: "#10"}, {rule: no-quote, where: "#11"}]
   forge:
     issues:
       - {id: 9, comment-contains: "sources: [src/export]\n", comment-lacks: "did not refine it"}

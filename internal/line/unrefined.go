@@ -31,6 +31,9 @@ func unrefined(is forge.Issue, notes []forge.Note) string {
 	if st.Label != "" || st.Left != "" || st.Aside != "" || len(st.Split) > 0 || backlog.Readied(is) || backlog.HasDraft(is.Body, st) {
 		return ""
 	}
+	if len(backlog.Unheard(st, notes, is)) > 0 {
+		return "" // a person wrote since its read: theirs is read next
+	}
 	if _, asked := backlog.Unanswered(notes, backlog.Keeper); asked {
 		return "" // its question waits on its reporter: the delay wakes it (ADR-0060)
 	}
