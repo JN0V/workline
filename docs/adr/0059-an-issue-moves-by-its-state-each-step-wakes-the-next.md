@@ -146,7 +146,8 @@ Built first, whatever else.
 - **A reconciler**, `workline route reconcile`: walks every open issue
   and runs what is overdue. Hourly in CI; a command on a person's
   machine. A safety net, not the driver: events move the line, and its
-  correctness never depends on them.
+  correctness never depends on them. The one waiting longest first
+  ([amended](#amendment-2026-11-03-the-one-waiting-longest-first-room-wakes-the-waiting)).
 - **Idempotent**: a step re-reads the issue first, and records the
   state it acted on and the body's hash; the same record twice does
   nothing.
@@ -179,6 +180,8 @@ Built first, whatever else.
   the issue. It counts what the developer can take
   ([amended](#amendment-2026-11-02-a-limit-counts-what-can-be-pulled),
   [and again](#amendment-2026-11-03-a-claim-with-no-code-holds-no-scope)).
+  Room freed wakes the issues waiting on it
+  ([amended](#amendment-2026-11-03-the-one-waiting-longest-first-room-wakes-the-waiting)).
 - **A Definition of Ready per state**, checked by the engine:
   - to Tests: the four sections ([routing.md](../spec/routing.md#work-starts-from-a-clear-need)),
     named scenarios, Scope paths that exist, and fits one developer
@@ -574,6 +577,53 @@ state, body and labelling: nothing woke the product owner again.
   - a wake on every reconcile until refined: an endless loop of calls;
   - Blocked at once: a run's slip is not a person's work;
   - a retry setting: one more knob for a rare case.
+
+## Amendment (2026-11-03): the one waiting longest first; room wakes the waiting
+
+Settles [#960](https://github.com/JN0V/workline/issues/960): two issues
+waited 3 h 25 min in Tests, 2 h after Ready had room. The developer's
+claim freed Ready and woke nobody (§9 says "the next event or
+reconcile"). Two reconciles then started the backlog's first 3 due
+each, all older issues; the new ones were each time "past
+reconcile-max".
+
+- **Room freed wakes the waiting**: the job that moved an issue asks
+  the line, no agent, which issues' steps wait on a state with a limit
+  and have room now (`--input room=true`), and starts each one's run.
+  On GitHub the apply job, after the issue's own next step; on GitLab
+  the hook's job, on a state's label put on.
+- **Only where room can be**: the issues in a state whose `next` has a
+  limit; a `next` still full is counted once and its issues not read.
+  The waits, blocks and stale moves stay the reconciler's.
+- **The one waiting longest first**: the reconciler, and the room's
+  listing, start the steps due by how long each waited, not by the
+  backlog's order:
+  - a first step in its state: since its state's label was put on;
+  - a step due again in the same state (a body changed, a claim let
+    go, a run lost): since its last run, kept in the record (`ran`).
+    A record from before has none: after the others, once;
+  - a block or a write with no agent: first, it asks no agent; so is a
+    blocked issue read again, due once a news or `revisit` days;
+  - ties in the backlog's order.
+- **Bounded**: a step started waits anew from its run, behind every
+  step due then. With N due ahead of an issue, it starts within
+  N / `reconcile-max` runs, whatever its age.
+- **Room counted again**: steps are sorted after the walk, so before
+  each starts, room in its `next` is counted with the steps started
+  before it in the run; one that finds it full waits.
+- **Borrowed from kanban**: first in, first out within a column's
+  pull; a card that went back gets in line again.
+- **Cost**: a move's job, one listing of the open issues, and the
+  comments and label events of the issues waiting on a state with room;
+  none when it is full. No agent.
+- **Not chosen**:
+  - a higher `reconcile-max` alone: more starts a run, still the old
+    first ([#961](https://github.com/JN0V/workline/pull/961) raised it
+    to 8 here, kept);
+  - first steps always before re-tries: a stream of new issues starves
+    a re-try for good;
+  - a reconcile started on each move: every step due, not only those
+    room woke, and the heartbeat's hour reset each time.
 
 [ADR-0024]: 0024-obsolete-is-announced-then-closed-on-silence-and-a-second-judge.md
 [ADR-0028]: 0028-an-issue-names-what-it-waits-on.md

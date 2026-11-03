@@ -101,6 +101,11 @@ step due that no event started, run.
 - **`--ai`**, `--open-merge-request`, `--forge`: as for each step.
 - **At most `reconcile-max`** steps a run (3); `--input reconcile=list`
   names them and starts none.
+- **The one waiting longest first**, so a new issue never waits behind
+  old ones run after run
+  ([the reconciler](spec/routing.md#the-reconciler)).
+- **`--input room=true`**, with `reconcile=list`: only the issues whose
+  next state has room again, for the CI job that freed it.
 - **Room first**: a step whose next state is at its limit waits, said
   once on its issue
   ([room in the next state](spec/routing.md#room-in-the-next-state)).

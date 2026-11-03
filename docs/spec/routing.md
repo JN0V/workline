@@ -573,6 +573,13 @@ a step starts only when the state it moves the issue to has room.
   waits on (`waits`). A second event while still full writes nothing.
 - **Room again**: the next event on the issue, or the reconciler, finds
   the step due and starts it; its record, written then, drops the wait.
+- **Room freed wakes the waiting**: the CI job that moved an issue asks
+  the line with `--input room=true` (`route issue` or `route
+  reconcile`, with `reconcile=list`). It lists the issues whose step
+  waits on a state with a limit and room now, the one waiting longest
+  first, and starts each one's run
+  ([#960](https://github.com/JN0V/workline/issues/960)). A state still
+  full costs no read of its waiting issues.
 - **Counted** from the open issues' labels, as `StateOf` reads them.
   The reconciler counts a step it starts in its next state already, so
   the steps after it in the same run see it there.
@@ -663,6 +670,17 @@ each reconcile starts the next one, past an environment's wait timer
   the steps it starts ask theirs.
 - **`reconcile-max`** (3) steps a run at most; the issues due past it
   are said (`reconcile-left`) and wait for the next run.
+- **The one waiting longest first**, not the backlog's first
+  ([amended](../adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#amendment-2026-11-03-the-one-waiting-longest-first-room-wakes-the-waiting)):
+  - a first step in its state waits since its state's label was put on;
+  - a step due again in the same state, since its last run (`ran` in
+    the record; none known, after the others);
+  - a write with no agent, a block, first.
+  A step started waits anew from then: each due step starts within a
+  bounded number of runs, whatever its age.
+- **`--input room=true`** with `reconcile=list`: only the steps due
+  whose next state has a limit and room now, for the job that freed it
+  (`state-room`); the summary says them.
 - **`--input reconcile=list`**: it says the issues due (`due` in its
   result), starts none and writes nothing, for a CI job that starts each
   one's own run. `--input skip` leaves a role's issues out.

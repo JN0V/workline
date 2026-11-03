@@ -50,8 +50,13 @@ routing:
     (`workflow_dispatch`, which the job's own token may start). Not
     due, it asks again after 10 and 20 s: GitHub lists a comment the
     apply just wrote some seconds later.
+  - **Room freed**: then it asks the line which issues waited for room
+    its move freed, as the developer taking a ready issue frees Ready,
+    and starts each one's run
+    ([#960](https://github.com/JN0V/workline/issues/960)).
   - **Hourly**, the `reconcile` job starts what an event missed, at most
-    `reconcile-max` issues a run, each its own run. Each reconcile
+    `reconcile-max` issues a run, the one waiting longest first, each
+    its own run. Each reconcile
     starts the next, 55 minutes on: [the heartbeat](../../../docs/github/heartbeat.md),
     an environment to create once.
   - **Not on the heartbeat alone**: the schedule, or a `workline:` label
