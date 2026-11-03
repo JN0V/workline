@@ -94,6 +94,12 @@ Cases in `tests/conformance/cases/tester/`:
   ([#964](https://github.com/JN0V/workline/issues/964)); tried with the
   real golangci-lint on a copy of workline, on
   [#966](https://github.com/JN0V/workline/pull/966#tried).
+- **A Draft proven on its tests' folders**, `draft-command` naming
+  `{packages}`, on the base and with the tests; a folder the base lacks
+  runs nothing there
+  ([#979](https://github.com/JN0V/workline/issues/979)); tried on a
+  copy of workline, 697 s to 33 s, on
+  [#991](https://github.com/JN0V/workline/pull/991#tried).
 - **Frozen to the builder**, no agent: the record of each test file's
   blob in workline's own comment on the Draft; a test changed or
   deleted by another blocks (`tester-test-changed`), a forged trailer

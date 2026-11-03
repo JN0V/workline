@@ -75,6 +75,12 @@ settings:
   # Where the command writes the report, from the repository's root: a
   # path, or a pattern one folder deep (target/surefire-reports/*.xml).
   test-report: junit.xml
+  # The Draft's red proof on the folders holding its tests alone
+  # ({packages}), on the base and with the tests, writing test-report;
+  # unset: test-command, the whole suite, on each. E.g.
+  # `gotestsum --junitfile {report} -- {packages}`, `pytest
+  # --junitxml={report} {packages}`.
+  draft-command: ""
   # The test files: those a change adds or changes are laid on the base
   # for the red proof; the change's other files are its code.
   test-paths:

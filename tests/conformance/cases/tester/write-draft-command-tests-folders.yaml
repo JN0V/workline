@@ -1,0 +1,36 @@
+case: tester/write-draft-command-tests-folders
+about: >
+  The tester's Draft holds tests alone, so its new tests are in the
+  folders that hold them: a draft-command naming {packages} runs those
+  folders alone, on the base and with the tests, never the whole suite
+  twice (#979: 10 of a run's 11 min on workline). The test-command here
+  fails whole: the proof passing shows it was not run. The Draft says
+  where the proof ran.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "false", test-paths: ["**/test_*.sh"],
+      draft-command: "sh \"$FIXTURES/bin/run-folders\" {report} {packages}"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:ready"]
+        body: "## Need\n\nWhen I total an order, I want to multiply a price by a count, so I need not add it up by hand.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n\n---\n\n## Verification\n\nA test a scenario, in tests/.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+run: {test: [write, --issue, "3"], ai: "cmd:sh $FIXTURES/agents/tester-mul-in.sh tests"}
+expect:
+  status: pass
+  summary: "1 new test, red on the base"
+  agent-calls: 1
+  findings: [{rule: proof-scope, level: info, where: draft-command, message: "the folders holding the tests alone, ./tests:"}]
+  pushed:
+    workline/tester/issue-3:
+      tests/test_mul_two_by_three.sh: "Scenario: Two by three"
+  forge:
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        draft: true
+        body-contains: ["Two by three", "tests.test_mul_two_by_three", "proof-scope"]
