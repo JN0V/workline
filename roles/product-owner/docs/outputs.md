@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, internal/builtin/productowner, internal/backlog, internal/sample/acts.go]
-checked: 16acf2af
+checked: 8538d558
 verified: agent:claude-code
 ---
 # Product owner — what it writes
@@ -28,8 +28,18 @@ Part of [the product owner](../README.md). What a run does, step by step:
     holds it; the comment's source shows it.
 - **Labels**: `workline:proposed` (GitLab: `workline::proposed`) while it
   waits on you; `workline:draft` while a draft of its own is left;
-  `workline:to-refine`, `workline:ready`. Checked at every run: set
-  aside with no draft left, the issue loses `draft` and `to-refine`.
+  `workline:to-refine`, `workline:ready`, or `workline:needs-tests`
+  where the project routes the tester and the Validation has scenarios;
+  `workline:blocked` taken off or
+  kept when it reads a blocked issue again; the project's kind label
+  ([the kind](kind.md)). Checked at every run: set aside with no draft
+  left, the issue loses `draft` and `to-refine`.
+- **A milestone**: at `merge: {autonomy: enterprising}`, a feature made
+  ready goes in the next open milestone, for its release candidate
+  ([the release candidate](../../../docs/release-candidate.md)).
+- **An assumption**: a question left unanswered past its delay is
+  written under the issue's Assumptions, and said in the comment
+  ([assumptions](writing.md#assumptions)).
 - **A board**: ready also moves the card to its ready column, a label
   on GitLab, the Status on an organisation's GitHub project; a user's
   project is not written, the act says so
@@ -71,8 +81,8 @@ read-only, grouped, one line an issue linked to its page:
 - **left to a person**, **set aside by a person**: the rounds spent, your
   "not now" — or your comment brought it back and asked for nothing more;
 - **read, left incomplete**: an issue it read and could not complete —
-  no file found for its Scope, nothing drafted —, with what you may do;
-  one left with nothing is read again once a later engine reads
+  no file found for its Scope, nothing drafted —, with what you may do,
+  said on the issue too; one left with nothing is read again once a later engine reads
   differently;
 - **next to build**: the first ready issues of the order;
 - **stuck**: what waits on a person past `stuck-days`;

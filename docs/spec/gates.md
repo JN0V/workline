@@ -1,6 +1,6 @@
 ---
 sources: [internal/gate, internal/line, internal/linters/check.go, internal/report/report.go, internal/report/gates.go, internal/engine/annotate.go]
-checked: ae744e99
+checked: 8538d558
 verified: agent:claude-code
 ---
 # Gates — v1 (draft)
@@ -59,6 +59,8 @@ gates:
 - `workline doctor` counts the tool a check runs as reading its languages,
   and names the check to add for a language none reads
   ([languages](../languages.md)).
+- A name no gate holds (`workline gate <name>`, `gate:<name>`) is an
+  error naming the gates declared, or saying none is.
 
 ## On a merge request, the findings the change adds
 

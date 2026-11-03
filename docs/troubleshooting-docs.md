@@ -15,7 +15,7 @@ sources:
   - internal/engine/engine.go#writeWaiting
   - internal/engine/engine.go#writeHeld
   - roles/documentalist/role.yaml#settings.max-open-merge-requests
-checked: d722a840
+checked: 8538d558
 verified: agent:claude-code
 ---
 # Troubleshooting the docs

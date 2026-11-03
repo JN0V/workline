@@ -1,6 +1,6 @@
 ---
 sources: [ci/github, ci/gitlab, ci/forgejo/workline-forge.sh, roles/product-owner/role.yaml, cmd/workline]
-checked: 99a14dc0
+checked: 8538d558
 judged: a8574a5
 verified: agent:claude-code
 reader: 8aab3bd261d9
@@ -29,12 +29,12 @@ then one that applies, with the write token and no AI key
 
 | Task | When | Judges | Applies |
 |---|---|---|---|
-| merge request | each one | the line on its commits | the fixes, to its branch; the doc findings beside their lines |
+| merge request | each one | the line on its commits | the doc fixes as a diff in a comment, nothing pushed to its branch; the doc findings beside their lines |
 | main after a merge | a push to the default branch | the gates, every finding kept as the next base; the whole repository's checks; no agent | one issue, edited when what it lists changes ([how](main-after-merge.md)) |
 | follow | a push to the default branch; with the merge policy, after each judge and when a label changes | — | auto-merge on for what a person accepted ([merge policy](merge-policy.md)) |
 | gardening | weekly, Sunday evening; nightly to catch up a backlog | the `schedule` line | one merge request a task ([ADR-0006](adr/0006-gardening-opens-one-merge-request-per-task.md)); then those the branch moved under, rebuilt or closed ([ADR-0034](adr/0034-the-release-fix-follows-its-base.md#amendment-2026-10-12-gardenings-merge-requests-follow-too-or-are-closed)) |
 | test corpus | with the gardening, opt-in | the tester's curator: each test's time, red and flaky ones over time, coverage; with an agent, a few redundant tests removed, proven | the job's summary, a history artifact ([how](../roles/tester/docs/curator.md)); a pull request ([how](../roles/tester/docs/removals.md)) |
-| ready issue | an issue labelled ready, opt-in | the `issue` line: the developer's code, proven | the claim, its pull request ([how](../roles/developer/docs/triggers.md)) |
+| an issue's state | a state's label on an issue, opt-in; hourly, a reconciler for what an event missed | the role its state wakes: the tester's tests, the developer's code, proven | the Draft or the pull request, the issue's next state; its next step started ([how](../roles/developer/docs/triggers.md)) |
 | a role's own merge request | an objection on the tester's Draft; a verdict, a gate or a test red, or a person's comment on the developer's | the tester's answer; the developer's review round | the reply or the rewritten test; the fix, pushed on its branch ([objections](objection-jobs.md), [review loop](../roles/developer/docs/review-loop.md)) |
 | release dry run | with the gardening | what would hold the release if it were cut now; no agent | a part of main's issue ([how](release.md)) |
 | release merge request | each of its runs; on GitHub, again when the hold label changes or main's runs end | an open issue labelled `workline:hold-release`, main's tip not green: read, never run again | its check pending while main runs, red when held ([how](release-holds.md)) |
@@ -55,7 +55,6 @@ then one that applies, with the write token and no AI key
 - **A merge queue or train runs the gates alone** on the merged result,
   no agent; the checks it requires report there
   ([how](merge-queue.md)).
-
 - **A judge that fails still hands over**: the applying job runs whatever
   the judge's outcome, and the pipeline fails by the judge's. It applies
   what the steps that passed proposed, and what a blocked role says why
@@ -173,7 +172,8 @@ In short:
   label agrees for the project, and a reply `agreed`, by its reporter or a
   person of the project, has them written
   ([ADR-0021](adr/0021-the-product-owner-talks-with-the-reporter.md)); it
-  asks again only after an answer, three times at most;
+  asks again only after an answer, three times at most; past its wait, it
+  goes on, its assumption written ([ADR-0060](adr/0060-the-person-is-on-the-loop.md));
 - an issue form with the four sections,
   [ci/github/issue-form-need.yml](../ci/github/issue-form-need.yml), copied
   to `.github/ISSUE_TEMPLATE/need.yml`, has a person's issue arrive with

@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine/candidate.go, internal/engine/code.go, internal/engine/backlog.go, internal/forge/forge.go, ci/github/release-candidate.yml, ci/github/workline-merge.yml]
-checked: c2ac926b
+checked: 8538d558
 verified: agent:claude-code
 ---
 # The release candidate
@@ -14,9 +14,9 @@ flowchart LR
 ```
 
 At `merge: {autonomy: enterprising}`, a person checks the result once a
-milestone, not each pull request: features merge by the policy, and the
-person tries the milestone's release candidate. Their yes ships the
-version; at every level, no version ships without one
+milestone, not each pull request: features and tasks merge by the
+policy, and the person tries the milestone's release candidate. Their
+yes ships the version; at every level, no version ships without one
 ([ADR-0060](adr/0060-the-person-is-on-the-loop.md#4-a-person-validates-by-the-issues-kind)).
 
 ```yaml
@@ -30,8 +30,8 @@ merge: {autonomy: enterprising}
   fix does at `normal`
   ([the developer's merge](../roles/developer/docs/merge.md)).
 - **It goes into a milestone** named by a version, `v1.4`: the product
-  owner puts it there when it makes the issue ready; one readied
-  before, `workline follow` before it merges. The next open milestone
+  owner puts a feature there when it makes the issue ready; a task, or
+  a feature readied before, `workline follow` before it merges. The next open milestone
   whose candidate is not cut, its version not out yet; none, the next
   minor version, opened.
 - **Its issues all closed**, `workline follow` cuts `release/v1.4` from

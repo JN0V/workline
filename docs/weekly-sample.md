@@ -8,7 +8,7 @@ sources:
   - ci/gitlab/workline.gitlab-ci.yml#workline:sample:write
   - roles/auditor
   - roles/product-owner/role.yaml
-checked: 3b872f73
+checked: 8538d558
 judged: c9d96e2
 verified: agent:claude-code
 ---
@@ -88,7 +88,9 @@ roles:
   answers the week it follows, or the week it names (`2026-W41: not 3`).
   The count, one comment on the same issue, is written again each week
   from every week
-  ([ADR-0046](adr/0046-the-auditor-re-checks-every-roles-acts.md#kept-and-counted-with-the-maintainers-agreement)).
+  ([ADR-0046](adr/0046-the-auditor-re-checks-every-roles-acts.md#kept-and-counted-with-the-maintainers-agreement)),
+  with how the issues the auditor opened fared: one closed as not
+  planned is a false alarm of its own.
 
 ## What it costs
 

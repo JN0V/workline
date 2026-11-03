@@ -12,7 +12,7 @@ sources:
   - internal/engine/engine.go#renamedIssues
   - roles/documentalist/role.yaml#settings.truth
   - roles/documentalist/role.yaml#settings.propagation
-checked: d722a840
+checked: 8538d558
 verified: agent:claude-code
 judged-in-parts: c7e1e98
 ---
@@ -61,7 +61,7 @@ The release never waits for them
 When the code disagrees with a doc marked as the truth (`truth.doc`: a
 spec, an ADR, the architecture), the doc is not updated to match:
 
-- the documentalist opens an `issue` for the architect, titled "The code
+- the documentalist opens an `issue` for a person, titled "The code
   disagrees with <doc>", because the code may be the one that is wrong;
 - the doc is only checked again (or, if it was not given whole, only
   `judged`), the issue tracking the disagreement;

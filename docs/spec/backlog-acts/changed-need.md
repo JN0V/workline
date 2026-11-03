@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog/change.go, internal/builtin/productowner/changes.go, internal/builtin/productowner/productowner.go, internal/backlog/autonomy.go, internal/backlog/parent.go, internal/backlog/depend.go]
 status: draft
-checked: a7467d4f
+checked: 8538d558
 verified: agent:claude-code
 ---
 # A changed need
@@ -46,7 +46,9 @@ What a change touches (`backlog.Touched`), none twice, in this order:
 
 Every act the agent proposes on an issue read for a change is proposed,
 not done (`need-changed`, info), `keep` and an `undepend` of closed blockers aside: what the change asks of it
-is a person's to decide. A part past `issues-per-run`, or every part
+is a person's to decide. An `unready` back to refine is done at once,
+cheap to undo ([ADR-0059, amended](../../adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#amendment-2026-11-01-back-to-refine-needs-no-yes)),
+as are an `unblock`, a `blocked` and an `assume`. A part past `issues-per-run`, or every part
 without an agent, is listed instead of read. Nothing is
 written to an issue touched. The changed issue's state keeps its new
 sections at that run — after the agent's answer when an issue a change

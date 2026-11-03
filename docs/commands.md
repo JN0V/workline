@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/engine/engine.go, internal/hooks]
-checked: 523d0359
+checked: 8538d558
 verified: agent:claude-code
 judged: e343388
 ---
@@ -22,38 +22,38 @@ pull request, up to 20 rounds, one fix for them all
 ### workline route
 
 `workline route <event>` runs the steps routing names for the event, in
-order; the first that does not pass stops the line. On `schedule`, every
-step runs and the worst verdict stands (`fail-fast`,
-[ADR-0037](adr/0037-the-schedule-runs-every-step.md)); an agent's proposal
-refused there is said as warnings, not failed
-([amended](adr/0037-the-schedule-runs-every-step.md#amendment-2026-10-09-a-refused-proposal-is-said-not-failed)).
-`--input skip=<step>,…` leaves those steps out
-([steps left out](spec/routing.md#steps-left-out)).
-With `--gates-only`, the event's gates alone run, each one, for a CI job
-of their own; `--gates-from <file>` reads their verdicts from its result
-instead of running them ([gates in CI](gates-in-ci.md)).
-With `--warn-apart`, a role that reads what only warns apart on the event
-(role.yaml's `apart`: the reviewer's lenses that warn and the inspector's
-triage, on a merge request) leaves it; `--warn-only` runs only that,
-never a gate nor another role, and writes no verdict (`--verdict`
-refused): what only warns, apart from the verdict
-([apart](../roles/reviewer/docs/apart.md)). Given `--gates-from`, it
-hands the gates' result to the inspector
-([the inspector](../roles/inspector/README.md#set-it-up)). Both flags, or
-one and an `--input warn=` naming the other run, are misuse.
-With `--input queue=true`, a merge queue's or train's run: the gates
-alone, on the merged result, the steps left named; `--verdict` and
-`--warn-only` refused ([a merge queue or train](merge-queue.md)).
-`route main`, after a merge: the merge request's gates, then the
-whole repository's checks, every step run; `--gates-kept <folder>`
-keeps the gates' findings there by commit, and on a merge request reads
-its merge base's there ([main after a merge](main-after-merge.md)).
-`route release --dry-run`: what would hold the release if it were cut
-now from the branch's tip; every
-step, no agent, nothing applied, said as warnings
-([the release](release.md)). `--release-wait 30m`: on the release, the
-checks still running on the branch it is cut from are waited for, then
-read again ([what holds a release](release-holds.md#read-again)).
+order; the first that does not pass stops the line.
+
+- **On `schedule`**, every step runs and the worst verdict stands
+  (`fail-fast`, [ADR-0037](adr/0037-the-schedule-runs-every-step.md)); a
+  proposal refused is said as warnings
+  ([amended](adr/0037-the-schedule-runs-every-step.md#amendment-2026-10-09-a-refused-proposal-is-said-not-failed)).
+- **`--input skip=<step>,…`** leaves those steps out
+  ([steps left out](spec/routing.md#steps-left-out)).
+- **`--gates-only`**: the event's gates alone, each one, for a CI job of
+  their own; `--gates-from <file>` reads their verdicts from its result
+  ([gates in CI](gates-in-ci.md)).
+- **`--warn-apart`**: a role that reads what only warns apart (role.yaml's
+  `apart`: the reviewer's lenses that warn, the inspector's triage) leaves
+  the event; `--warn-only` runs only that, writes no verdict, and given
+  `--gates-from` hands the gates' result to the inspector
+  ([apart](../roles/reviewer/docs/apart.md),
+  [the inspector](../roles/inspector/README.md#set-it-up)). Both flags,
+  or one and an `--input warn=` naming the other run, are misuse.
+- **`--input queue=true`**: a [merge queue's or train's](merge-queue.md)
+  run, the gates alone on the merged result; `--verdict`, `--warn-only` refused.
+- **`route main`**, after a merge: the merge request's gates, then the
+  whole repository's checks; `--gates-kept <folder>` keeps the gates'
+  findings by commit, read back at a merge request's merge base
+  ([main after a merge](main-after-merge.md)).
+- **`route release --dry-run`**: what would hold the release cut now,
+  every step, no agent, nothing applied, as warnings
+  ([the release](release.md)); `--release-wait 30m` waits for the checks
+  still running, then reads them again
+  ([what holds a release](release-holds.md#read-again)).
+- **`route issue --target issue:<n>`** runs the role the issue's state
+  wakes; **`route reconcile`**, each step due that no event started
+  ([the line of states](spec/routing.md#the-line-of-states)).
 
 ### workline apply
 

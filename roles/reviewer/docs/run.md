@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/instruction.md, roles/reviewer/policy.md, roles/reviewer/lenses, internal/builtin/reviewer]
-checked: edc4ffc2
+checked: 8538d558
 verified: agent:claude-code
 ---
 # Reviewer — a run on code
@@ -85,8 +85,7 @@ flowchart LR
      ([#326](https://github.com/JN0V/workline/issues/326), [more](judge.md#a-block-stands-until-a-commit-answers-it)).
    - The run on ready reads the whole change, commits reviewed before too ([below](#every-lens-once-when-it-becomes-ready));
      after it, a lens that warns reads five new commits a push ([more](ready.md#after-ready-only-what-is-new)).
-   - Why, and what git it needs:
-     [ADR-0013](../../../docs/adr/0013-what-was-judged-is-not-asked-again.md#amendment-2026-10-12).
+   - Why, and what git it needs: [ADR-0013](../../../docs/adr/0013-what-was-judged-is-not-asked-again.md#amendment-2026-10-12).
 
 ## 4. The lenses
 
@@ -94,9 +93,10 @@ The lenses (`lenses/<lens>.md`, a project's own in
 `.workline/roles/reviewer/lenses/`): correctness, edge cases, tests,
 intent, claims ([#126](https://github.com/JN0V/workline/issues/126)).
 Every one on a machine; on a merge request one a push, in turn
-(`lenses-per-push`), every one with `--input lenses=all`, once when it
-becomes ready ([below](#every-lens-once-when-it-becomes-ready)); none
-on a draft (`--input draft=true`, [ADR-0050](../../../docs/adr/0050-each-act-has-its-moment-and-a-wait-budget.md)).
+(`lenses-per-push`), with a block's lens when the push changes its file
+([more](judge.md#a-block-stands-until-a-commit-answers-it)), every one
+with `--input lenses=all`, once when it becomes ready ([below](#every-lens-once-when-it-becomes-ready));
+none on a draft (`--input draft=true`, [ADR-0050](../../../docs/adr/0050-each-act-has-its-moment-and-a-wait-budget.md)).
 
 - **Together** (`lenses-together`,
   [#147](https://github.com/JN0V/workline/issues/147)): the lenses of a run

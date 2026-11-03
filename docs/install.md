@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/setup, internal/hooks, internal/tools, internal/agent/agent.go, ci/github, ci/gitlab]
-checked: bd66bb99
+checked: 8538d558
 judged: a8574a5
 verified: agent:claude-code
 ---
@@ -43,7 +43,7 @@ workline` says where).
 ### 2. Set the machine up
 
 ```sh
-workline setup     # asks three questions, shows each command before it runs it
+workline setup     # asks what to enable, shows each command before it runs it
 workline doctor    # at any time: what is set up, what is missing, the command for each
 workline --help    # every command; `workline <command> --help`, its options
 ```
@@ -54,10 +54,13 @@ workline --help    # every command; `workline <command> --help`, its options
 2. which agent judges (below);
 3. whether to install the tools the roles use and are missing: gitleaks
    (the committer's secrets check), lychee (links to other sites, when
-   gardening), and the agent's CLI if you chose `claude`.
+   gardening), and the agent's CLI if you chose `claude`;
+4. in a GitLab clone, whether to create the webhook and trigger token
+   that start the line on an issue's label
+   ([how](gitlab-trigger.md#the-line-of-states-on-it)).
 
 Run it again to change an answer; `--yes` takes the defaults; `--hooks`,
-`--ai` and `--install` answer without a terminal.
+`--ai`, `--install` and `--issue-hook` answer without a terminal.
 
 ### 3. The agent: your choice
 
@@ -67,12 +70,11 @@ Run it again to change an answer; `--yes` takes the defaults; `--hooks`,
 | `claude` | [Claude Code](https://docs.claude.com/en/docs/claude-code/setup): `setup` offers to install its CLI; run `claude` once to log in (below) |
 | `cmd:<command>` | any command: another provider's CLI, or a wrapper of your own ([the contract](usage.md#another-agent)) |
 
-Claude logs in with a subscription or an API key; workline calls `claude -p`
-with that login and holds no key of its own.
-
-Other agents built in (Codex, OpenCode…) are parked until a project needs
-one; `cmd:` runs any of them meanwhile
-([#86](https://github.com/JN0V/workline/issues/86)).
+- Claude logs in with a subscription or an API key; workline calls
+  `claude -p` with that login and holds no key of its own.
+- Other agents built in (Codex, OpenCode…) are parked until a project needs
+  one; `cmd:` runs any of them meanwhile
+  ([#86](https://github.com/JN0V/workline/issues/86)).
 
 - The answer goes to `ai:` in `~/.config/workline/config.yaml` (macOS:
   `~/Library/Application Support/workline/config.yaml`), for all your
@@ -158,25 +160,19 @@ What the jobs are: [ci.md](ci.md); every detail on your forge's page. In short:
 - **GitHub**: copy the workflows of [ci/github](../ci/github/) into
   `.github/workflows/` — [workline.yml](../ci/github/workline.yml) (each
   pull request, and main after each merge), [workline-warn.yml](../ci/github/workline-warn.yml) (what
-  only warns, beside it: the reviewer's lenses that warn, the inspector's
-  triage), [workline-apply.yml](../ci/github/workline-apply.yml)
-  (what it proposed applied, main's findings in one issue, and each push
-  to main for `workline follow`), [workline-fork.yml](../ci/github/workline-fork.yml) (a
+  only warns, beside it), [workline-apply.yml](../ci/github/workline-apply.yml)
+  (what it proposed applied, main's findings in one issue, `workline
+  follow`), [workline-fork.yml](../ci/github/workline-fork.yml) (a
   fork's), [workline-gardening.yml](../ci/github/workline-gardening.yml),
-  [workline-sample.yml](../ci/github/workline-sample.yml),
-  [workline-objection.yml](../ci/github/workline-objection.yml) and
-  [workline-answer.yml](../ci/github/workline-answer.yml) (with the
-  [tester](../roles/tester/README.md#when-it-runs)),
-  [workline-develop.yml](../ci/github/workline-develop.yml) (with the
-  [developer](../roles/developer/docs/triggers.md)),
-  [workline-merge.yml](../ci/github/workline-merge.yml) (with the
-  [merge policy](merge-policy.md)),
-  [workline-release.yml](../ci/github/workline-release.yml) (with a
-  release tool: [what holds a release](release-holds.md))
+  [workline-sample.yml](../ci/github/workline-sample.yml); the others come
+  with what uses them: the tester, the developer and the line of states
+  (its reconciler's [heartbeat](github/heartbeat.md)), the
+  [merge policy](merge-policy.md), a release tool
   ([ci-github.md](ci-github.md)).
 - **GitLab**: include
   [ci/gitlab/workline.gitlab-ci.yml](../ci/gitlab/workline.gitlab-ci.yml),
-  then add two pipeline schedules, gardening and the sample
+  then add pipeline schedules, gardening, the sample and, with the line
+  of states, the hourly reconciler and the issue webhook
   ([ci-gitlab.md](ci-gitlab.md#gitlabcom); a [self-managed
   instance](ci-gitlab-self-managed.md)).
 - **Another forge** (Gitea, Forgejo…) or [none](ci-other-forges.md#no-forge): [ci-other-forges.md](ci-other-forges.md).

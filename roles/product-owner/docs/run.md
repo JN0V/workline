@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, roles/product-owner/instruction.md, roles/product-owner/policy.md, internal/builtin/productowner, internal/backlog]
-checked: ae4bddea
+checked: 8538d558
 verified: agent:claude-code
 ---
 # Product owner — a run
@@ -41,6 +41,8 @@ waits for a run on the whole backlog.
 On `issue`, its state `workline:to-refine` woken where the project
 routes the role there, that issue alone
 ([the line of states](../../../docs/spec/routing.md#the-line-of-states)).
+A `workline:blocked` issue with news, or a week on, too
+([blocked, read again](../../../docs/spec/routing.md#blocked-read-again)).
 Else a share of the open issues (`issues-per-run`), in this order:
 
 1. an issue you commented on since it was read: waiting on you
@@ -83,8 +85,17 @@ Each issue comes with:
 ## 3. What it proposes, what the engine checks
 
 - **Completing**: the sections an issue lacks (`refine`), a question to
-  its reporter (`ask`), the move to `ready`, the code it is about
-  (`sources`), an evident duplicate (`close`).
+  its reporter (`ask`), the move to `ready` — to `workline:needs-tests`
+  first where the project routes the tester and its Validation has
+  scenarios —, the code it is about
+  (`sources`), an evident duplicate (`close`), the kind of an issue no
+  label tells (`kind`, [the kind](kind.md)).
+- **A blocked issue**: `unblock` to its state or to refine, or
+  `blocked` afresh. The developer's ask for files outside the Scope:
+  the Scope widened, or why not.
+- **A question unanswered** past `acts.ask.wait`: its assumption
+  written (`assume`)
+  ([how long a question waits](settings.md#how-long-a-question-waits)).
 - **Written for a reader**: a Need in one line, who needs what and why;
   one real example; a Validation as scenarios a person runs; the
   builder's part below a line; plain words in English, a link for each

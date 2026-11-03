@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/hygiene.go, internal/builtin/documentalist/external.go, internal/builtin/documentalist/adr.go, internal/builtin/documentalist/unread.go, internal/builtin/documentalist/reader.go, roles/documentalist/role.yaml]
-checked: b6085f38
+checked: 8538d558
 verified: agent:claude-code
 ---
 # Documentalist — the checks on the docs alone
@@ -22,6 +22,8 @@ main's run after a merge and gardening read every doc
   (`AGENTS.md`, `CLAUDE.md`).
 - Words per section (its own text, up to the next heading).
 - Card size, min and max: too small is fragmentation.
+- An archived doc (`archived: <date>` or `true` in its header) is left
+  out of budgets and duplicates; its links are still checked.
 
 ## Duplicates
 

@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog/backlog.go, internal/backlog/opening.go, internal/backlog/acts.go, internal/builtin/productowner/productowner.go, internal/engine/backlog.go]
 status: draft
-checked: f38d194f
+checked: 8538d558
 verified: agent:claude-code
 ---
 # The issue's state
@@ -23,12 +23,14 @@ effort: 1                                # the effort the role set, once; -1, se
 title: The CSV export drops the last row  # the title the role last set (Renaming)
 kind: bug                                # the kind label the role set, once: another, or none, is a person's (the kind)
 split: [13, 14]                          # the children it was split into (Splitting)
+after: {14: [13]}                        # the blockers its split set among the children (What an issue waits on)
 kept: ['src/export/csv.go:b2a6ba892dee'] # announcements as obsolete kept open, by their quote (Closing)
 sections:                                # its Need and Scope as last read or written (A changed need)
   Need: Every row exported, so a report counts what was sold.
   Scope: WriteRows in src/export/csv.go.
 wrote: {Verification: cb1c26c09a46}      # the sections the role wrote, a digest of each text (A spec read before ready); Description, the text a role opened it with
 answered: 3f9a1c0e2b7d                   # the review of its spec last given to the agent, by the body it read
+revised: [Verification]                  # the sections it was given to rewrite with that review (A spec read before ready)
 plain: 9b0e7d1c2a44                      # its description as an earlier engine rewrote it in plain words: still the role's (Refining to ready)
 deleted: [Validation]                    # sections the role wrote and a person deleted: never written again
 proposed:                                # the acts proposed on it, each as decided, since a day (On the issue)
@@ -46,6 +48,10 @@ left: bob                                # left to a person past its revisions, 
 proof: {kind: docs-checks, reason: "…", answers: af1c2ed6ea0a}   # the proof kind it picked where the tester found no test possible, the tester's word it answers
 no-test: af1c2ed6ea0a                    # the tester's "no test possible" last given to the agent
 silent: "it lacks Scope, …; its note: …"  # read and left with nothing, and why: said above until the role acts on it
+unread: 3f9a1c0e2b7d                     # the body whose Validation it was told once to rewrite in a form the tester reads
+assumed: 2                               # the round of the question it took an assumption on (A question nobody answers)
+assumed-at: '2026-10-09T08:00:00Z'       # when: a person's comment after it answers it
+told: 2                                  # the round the agent was told is unanswered past acts.ask.wait
 ```
 
 The comment says, above the state, what the role did and proposes there,

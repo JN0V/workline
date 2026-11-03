@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog/undo.go, internal/backlog/backlog.go, internal/backlog/acts.go, internal/sample/acts.go, internal/sample/draw.go, internal/backlog/autonomy.go, internal/backlog/ledger.go]
 status: draft
-checked: a7467d4f
+checked: 8538d558
 verified: agent:claude-code
 ---
 # Trust
@@ -23,7 +23,8 @@ forge, the evidence in the finding `undone`:
 | order | its priority is the one it had before (none included); with the role's `priority` or `effort` set, any other than the role's too |
 | effort | its effort is another than the role's, none included, where the project keeps one (ADR-0040) |
 | milestone | its milestone is the one it had before (none included) |
-| ready | `workline:ready` is no longer on the open issue |
+| ready | `workline:ready` (or `workline:needs-tests`, on its way there) is no longer on the open issue, a person took it off; workline's own account taking it off, as the forge's label events say, is a move of the line ([ADR-0059](../../adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md)), no act undone |
+| unready | a person put the issue back to ready, or to its tests; the line doing so is no undo |
 | split | a child listed in the parent's state is closed as not planned (GitHub; GitLab keeps no reason) |
 | depend | a blocker it added, still open, is no longer among the issue's blockers: the link or the line taken off |
 

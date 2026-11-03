@@ -1,6 +1,6 @@
 ---
 sources: [ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile]
-checked: a797443e
+checked: 8538d558
 judged: e8a46f7
 verified: agent:documentalist
 reader: 9799dcaf51f3
@@ -192,7 +192,7 @@ the two jobs to add are in [gitlab/import-jobs.md](gitlab/import-jobs.md).
 
 ## The tester and the developer
 
-Their runs, objections, review rounds and the developer's bounds: [on GitLab](gitlab/tester-developer.md).
+The line of states (an issue webhook, an hourly schedule), objections, review rounds and the developer's bounds: [on GitLab](gitlab/tester-developer.md).
 
 ## A project that refuses unsigned commits
 

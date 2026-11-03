@@ -1,6 +1,6 @@
 ---
 sources: [internal/doctor/doctor.go, internal/doctor/conversations.go, internal/doctor/variables.go, internal/hooks/hooks.go, cmd/workline/main.go, cmd/workline/cli.go, internal/forge/local.go]
-checked: 8ccdfb74
+checked: 8538d558
 verified: agent:claude-code
 ---
 # Troubleshooting
@@ -51,6 +51,7 @@ tokens — and `--json` prints every finding.
 |---|---|
 | exit 64 and the usage | the command was misused, named on the first line: a missing `<role>` or `<event>`, an unknown option, a bad value; `workline <command> --help` shows its options |
 | `.workline/config.yaml: line N: …` | a key the engine does not know, a retired role, or a value YAML reads otherwise than written: it blocks rather than be ignored |
+| `no gate named "x"` | `workline gate` or `gate:x` names a gate not declared; the gates declared follow |
 
 ## A language no tool reads
 
@@ -95,6 +96,9 @@ goes ready, a hidden record that does not read: in
   GitLab call is tried again first (which: [GitHub](github/calls.md),
   [GitLab](gitlab/calls.md)).
 - `agent-unavailable`: the agent named cannot be called; doctor says why.
+  The developer's `claude` on Linux: bubblewrap or socat missing, or a
+  runner that refuses its sandbox; the finding names which
+  ([its agent](../roles/developer/docs/agent.md#claude)).
 - `model-changed`: another model answered an alias than last time on this
   machine; said once, never blocking.
 
@@ -102,6 +106,9 @@ goes ready, a hidden record that does not read: in
 
 - `forge: none` (the default) refuses every write that needs a forge, the
   issue a role opens included, and says so.
+- `forge: cmd:<command>`: `workline doctor` runs it once, writing
+  nothing, and warns when it is not found, fails or does not answer
+  ([what the doctor checks](spec/forge-command.md#what-the-doctor-checks)).
 - `forge: local` refuses its writes in CI (`CI`, `GITHUB_ACTIONS` or
   `GITLAB_CI` set): pass `--forge github` or `--forge gitlab` to jobs that
   write.
@@ -126,6 +133,21 @@ goes ready, a hidden record that does not read: in
 - A gate's `check-error` in `judge`, "the gates' job left no result": the
   job `gates` did not run it, or failed first; read its log. Copy
   `workline.yml` of this release again if it has no job `gates`.
+
+## An issue does not move
+
+The line of states says why on the issue and in the run's summary
+([the line of states](spec/routing.md#the-line-of-states)):
+
+- `state-wakes-none`: no state label, or its state's role is not routed
+  on `issue`; the reason follows.
+- `state-waits`: the next state is full (`routing.wip`); it starts when
+  room appears.
+- `hops-capped`: past `max-hops` steps, it went Blocked; put a state's
+  label back to start again.
+- `reconcile-left`: past `reconcile-max`, it waits for the next run.
+- Blocked: read again on news, else every `revisit` days
+  ([blocked, read again](spec/routing.md#blocked-read-again)).
 
 ## A pull request blocked, its checks green
 
@@ -153,7 +175,8 @@ The [merge policy](merge-policy.md) acts only with `merge:` in
 - `waits-for-a-yes`, at `normal`: workline's pull request with a push, a
   commit or a page not its own, or of a kind a revert sent back to a
   person's yes — someone who may push and merge closes the issue it names
-  to restore it —; the release tool's always.
+  to restore it —; the developer's feature or task, or a fix whose bug no
+  test reproduced; the release tool's always.
 - `merge-app-unknown`: at `normal`, the token is a person's, or the forge
   does not say its App (GitHub: `WORKLINE_APP`): nothing merges alone.
 - `merge-record-lost`: at `normal`, no mark of the App's on the base's last

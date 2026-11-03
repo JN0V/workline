@@ -32,7 +32,7 @@
         {"type": "generic", "path": "ci/github/workline-bounds.yml"},
         {"type": "generic", "path": "ci/gitlab/workline-bounds.gitlab-ci.yml"},
         {"type": "generic", "path": "ci/gitlab/workline.gitlab-ci.yml"},
-        {"type": "generic", "path": "docs/gitlab-trigger.md"}
+        {"type": "generic", "path": "docs/gitlab/without-template.md"}
       ]
     }
   }

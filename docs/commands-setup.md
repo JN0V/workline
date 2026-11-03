@@ -1,6 +1,6 @@
 ---
-sources: [cmd/workline, internal/hooks, internal/role/config.go, internal/doctor/variables.go, internal/doctor/board.go, internal/doctor/hook.go, internal/forge/gitlab_hook.go]
-checked: 10fe6499
+sources: [cmd/workline, internal/hooks, internal/role/config.go, internal/doctor/doctor.go, internal/doctor/variables.go, internal/doctor/board.go, internal/doctor/hook.go, internal/forge/gitlab_hook.go]
+checked: 8538d558
 verified: agent:claude-code
 ---
 # The commands that set up
@@ -36,7 +36,9 @@ shows; then prints `workline doctor`.
   - the token is a masked variable of the hook's URL, never printed.
 - Run again, it offers what is set up as the default.
 - `--hooks yes|no`, `--ai <agent>`, `--install <tool,...>|all|none` and
-  `--issue-hook yes|no` answer a question; `--yes` takes the defaults.
+  `--issue-hook yes|no` answer a question; `--yes` takes the defaults;
+  `--forge` names the forge of the clone, by default the project's
+  `forge`, else GitLab when its `.gitlab-ci.yml` runs workline.
 - Without a terminal, every question must be answered so.
 
 ## workline init
@@ -94,8 +96,11 @@ changes nothing.
   events on (its note events too, the reviewer routed on `issue`), not disabled, on the default branch, workline's trigger
   token; a token that may not read them (a Maintainer's may) is said.
 - With the product owner or the developer routed: the forge's board,
-  its columns matched to ready, doing and done, read-only
-  ([boards](boards.md)).
+  its columns matched to ready, doing and done, and to refine, tests and
+  blocked when it has them, read-only ([boards](boards.md)).
+- With `forge: cmd:<command>`: the command run once, writing nothing; one
+  not found, failing or silent is a warning
+  ([what the doctor checks](spec/forge-command.md#what-the-doctor-checks)).
 - Exits 1 only on an error — the agent named cannot be called, the config
   does not load — never for a tool left out; `--json` prints every check.
 

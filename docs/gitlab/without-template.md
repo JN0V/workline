@@ -1,6 +1,6 @@
 ---
 sources: [ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile]
-checked: 492192ca
+checked: 8538d558
 verified: agent:claude-code
 judged: bf016b7
 ---
@@ -13,7 +13,7 @@ project that does not include the template.
 
 ```yaml
 stages: [test, deploy]
-variables: {GIT_DEPTH: 0, WORKLINE_VERSION: v0.56.0, WORKLINE_RUNS_DIR: $CI_PROJECT_DIR/.workline-runs}  # x-release-please-version
+variables: {GIT_DEPTH: 0, WORKLINE_VERSION: v0.69.0, WORKLINE_RUNS_DIR: $CI_PROJECT_DIR/.workline-runs}  # x-release-please-version
 .workline:
   image: ghcr.io/jn0v/workline:$WORKLINE_VERSION
   rules: [{if: '$CI_PIPELINE_SOURCE =~ /^(api|trigger|pipeline|parent_pipeline)$/ && $WORKLINE_TASK'}]
@@ -43,7 +43,8 @@ workline:apply:
 ## `ci/workline-job.sh`
 
 Any runner with the engine, git and jq; `ssh-keygen` too, to sign
-commits (workline's image holds it). The agent is a choice: Claude
+commits; bubblewrap and socat where Claude runs commands, on `develop`
+(workline's image holds them). The agent is a choice: Claude
 here; for another, install it instead and set `ai` to a `cmd:`
 ([usage](../usage.md)).
 
@@ -112,7 +113,9 @@ exit "$status"
 Not in this script: `objection` and `review`, on a role's own merge
 request. Their judge and apply run as the template's
 `workline:objection:*` and `workline:review:*` jobs do
-([the commands](../triggers.md#on-a-roles-own-merge-request)).
+([the commands](../triggers.md#on-a-roles-own-merge-request)). Nor
+`issue` and `reconcile`, which start each due issue's `develop`
+pipeline: as the template's `workline:issue` and `workline:reconcile`.
 
 ## What the jobs do
 

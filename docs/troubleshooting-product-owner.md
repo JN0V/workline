@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/productowner/productowner.go]
-checked: edc4ffc2
+checked: 8538d558
 verified: agent:claude-code
 ---
 # Troubleshooting the product owner
@@ -37,7 +37,10 @@ When the product owner pauses, or an issue gets nothing. Part of
   `priority-blind`, the token is the job's own, an App's, or no member's:
   run with a member's token; `priority-hidden`, the act is set to propose,
   and a proposal would show the value: turn it to `act`.
-- It runs only where routed: `schedule: [documentalist, product-owner]`.
+- It runs only where routed: `schedule: [documentalist, product-owner]`
+  for the night's read; on `issue` for an issue labelled
+  `workline:to-refine`, or blocked with news
+  ([the line of states](spec/routing.md#the-line-of-states)).
 - `autonomy: cautious` notes and proposes: see the issues bearing
   `workline:proposed`.
 
@@ -57,6 +60,13 @@ When the product owner pauses, or an issue gets nothing. Part of
   with `forge-writes: false`; `spec-findings-open` —
   read the reviewer's comment on the issue; `spec-rounds-spent` — a
   person decides: `workline:accepted`, or `workline:ready` by hand.
+- An issue refined stays out of ready, `scenarios-unread`: its
+  Validation holds Given / When / Then but no named scenario; write each
+  as `- **Name:** Given …, When …, Then …`
+  ([writing an issue](../roles/product-owner/docs/writing.md#the-rules)).
+- `kind-missing`: a full read gave an issue no kind; the next light
+  read gives it one
+  ([the kind](../roles/product-owner/docs/kind.md)).
 - A kind of act stays proposed on an issue where a person undid one, and
   on every issue once undone `undone-max` times (`demoted`).
 

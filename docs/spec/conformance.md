@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go, tests/evaluation]
-checked: fcb1c15f
+checked: 8538d558
 verified: agent:claude-code
 judged: ae14474
 ---
@@ -8,7 +8,8 @@ judged: ae14474
 
 The specs say what must happen; these tests prove it does. They are written
 before the engine, and they belong to the contract, not to one engine: any
-implementation that passes them is a valid engine (ADR-0001).
+implementation that passes them is a valid engine
+([ADR-0001](../adr/0001-engine-in-go.md)).
 
 ## Two levels
 
@@ -96,16 +97,19 @@ What else a case can give, run and expect, and how each is checked, is in
 - **Unavailable agent.** `unavailable:quota` (or `auth`, `network`) fails the
   way a real agent does when a quota runs out.
 - **Command forge.** `cmd:sh "$FIXTURES/forges/logged.sh"` plugs a script
-  as the forge (docs/spec/forge-command.md): it writes each request it gets
+  as the forge ([the command forge](forge-command.md)): it writes each request it gets
   to `.git/forge-requests.jsonl`, for `files` to check, and answers as a
   small forge would; `FORGE_FAIL` makes it fail, `FORGE_REFUSE` refuse.
 - **Simulated forge.** A forge kept in a JSON file, holding issues, labels,
   comments, merge requests and milestones (`milestone-due` gives one its
-  due date, by title); with `sub-issues: true`, it
+  due date, by title; `closed-milestones` those closed); with `sub-issues: true`, it
   links sub-issues as GitHub does, without, it has none; with
   `dependencies: true`, it keeps what an issue waits on (`blocked-by`) as
   GitHub does, without, it refuses the relation. It can be told to
-  fail on the N-th write, to test recovery after a partial apply. An
+  fail on the N-th write (`fail-on-write`), to test recovery after a
+  partial apply, or to refuse it once as a forge answering 422 does
+  (`refuse-write`). `budget` (`{resource, remaining, limit, reset-in}`)
+  is the token's API budget it says; none, never low. An
   issue's `closed-by` lists what closed it, `{kind, ref, text}`;
   `label-events`, its labels set and taken off with who (`{label, added,
   author, insider, bot, created}`); `reactions-by`, the reactions people
@@ -126,7 +130,12 @@ What else a case can give, run and expect, and how each is checked, is in
   Premium's, an issue's in its `weight`; `boards` (`{forge, number,
   name, owner, url, columns, workflows, closed-list}`) are the boards
   the work shows on, the GitLab mock answering them through GraphQL,
-  `boards-unread: <why>` a forge that does not answer them. A
+  `boards-unread: <why>` a forge that does not answer them,
+  `boards-unwritable: <why>` one that refuses a project's Status write;
+  an issue's `status` is its card's Status in each GitHub project, by
+  the project's number. `head-checks` are the checks on a commit (a
+  revision), each with its failed steps' `log`, `head-checks-unread:
+  <why>` a forge that does not answer them. A
   merge request's `threads` are its comments on lines, `{path, line,
   body, resolved}`: a review is posted whole, as GitHub's, on the lines
   of the repository's diff from the merge request's `base` (main) to the
@@ -151,7 +160,12 @@ What else a case can give, run and expect, and how each is checked, is in
   its license (403) as on GitLab Free, and GraphQL refuses all. With
   `weights`, its issues carry Premium's `weight` key, set by a `PUT`;
   without, Free's: no key, a weight sent ignored. `variables` are the
-  project's CI/CD variables, else `variables-refused`. A merge
+  project's CI/CD variables, else `variables-refused`. `hooks`
+  (`{id, url, issues_events, note_events, token}`) are its webhooks and
+  `triggers` (`{id, description, token, owner}`) its pipeline trigger
+  tokens, else `hooks-refused`; `plan` (or `plan-refused`) is its
+  namespace's plan, `main` protected unless `unprotected`, a code
+  owner's approval required with `code-owner-approval`. A merge
   request's diffs are the repository's, from its `base` (main) to its
   `branch` (HEAD); a discussion on a line they do not show, or on a kept
   line without its old one, lands on no line, as on gitlab.com;
@@ -235,17 +249,22 @@ passes or fails, the scores are compared from one run to the next. Each line of
 `results.tsv` also holds the exact models that answered (`>` for a step up),
 the efforts asked, the tokens in and out, and the cost at list price (on a
 subscription, the tokens are what counts): a score compares only with the same
-models.
+models. For an agent that loops (the developer's), a case that measures
+nothing else gets in its `measure` column the fresh tokens (input not
+read from cache, cache writes, output), the cache reads apart and the
+turns; a case that lost a point logs its closing words
+(`out/agent-answer.txt`).
 
 Real shapes, both sides graded, the reviewer's measure and the judge's
-replay are told in full in [Evaluation — three measures](conformance/evaluation.md).
+replay are told in full in [Evaluation — four measures](conformance/evaluation.md).
 
 **Pass rates, not the best.** A measure is read over at least five runs per
 model, as the share of runs earning every point, never from the best run.
 What a change is designed on is never what it is accepted on: the
-**held-out set** — WaterMeter (a solo repository, roles/documentalist/docs/tried.md),
+**held-out set** — WaterMeter (a solo repository, [tried](../../roles/documentalist/docs/tried.md)),
 DomoticsCore after its pull request #114, and workline's own nightly
-gardening — is not looked at while designing ADR-0014's steps, and is
+gardening — is not looked at while designing
+[ADR-0014](../adr/0014-checked-is-earned-by-what-was-read.md)'s steps, and is
 replayed only to accept them (its step 4).
 
 **The judge.** `judge: <question>` asks a yes-or-no question on what the role

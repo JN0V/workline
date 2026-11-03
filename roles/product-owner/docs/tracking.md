@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, internal/builtin/productowner, internal/backlog]
-checked: a7467d4f
+checked: 8538d558
 verified: agent:claude-code
 ---
 # Product owner — what each run tracks
@@ -17,7 +17,8 @@ The backlog's order puts an issue that waits on an open issue after it,
 whatever its priority; a cycle is said, never followed. Every run says,
 in the job's summary:
 
-- the first `next-max` (5) ready issues waiting on nothing (`next-ready`),
+- the first `next-max` (5) ready issues, not blocked, waiting on nothing
+  (`next-ready`),
   each with its milestone and priority; never a split need;
 - each issue waiting (`waiting`) and each cycle (`dependency-cycle`);
 - each issue waiting on a person for more than `stuck-days` (14), with
@@ -35,7 +36,10 @@ said (`stuck-unknown`), never read as nothing stuck.
 Each act done alone a person may undo is kept in its issue's state:
 
 - a closing reopened, a title or priority put back, `workline:ready`
-  taken off, a split's part closed as not planned, a link taken off;
+  (or `workline:needs-tests`) taken off, or put back after the role moved
+  the issue back to refine, a split's part closed as not planned, a link
+  taken off; a kind label changed is never set again, but not counted
+  ([the kind](kind.md#a-persons-kind-holds));
 - found at the next run: that kind is proposed on that issue from then on;
 - never a move of the line: a ready that workline's own account took
   off, as the forge's label events say — the tester finding no test

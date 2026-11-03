@@ -10,7 +10,7 @@ sources:
   - internal/builtin/documentalist/documentalist.go#preRun.leaveForNextRound
   - internal/builtin/documentalist/documentalist.go#Post
   - internal/builtin/documentalist/documentalist.go#outcomes
-checked: d722a840
+checked: 8538d558
 verified: agent:claude-code
 ---
 # Documentalist — judged in parts
@@ -55,6 +55,8 @@ sends it to a person; `parts-max-per-run` (16) caps the parts a run asks.
   no line goes unread.
 - Sources that are docs are left out: following a doc is propagation, not
   evidence.
+- A file named twice, by two parts of it (`f.go#A`, `f.go#B`), is read
+  once, whole.
 - Each part answers with `claim`s only — a range of the doc's lines
   `contradicted`, `partial` or `supported`, quoting the doc and the source
   — and the engine asks each in a context of its own
@@ -88,7 +90,9 @@ sends it to a person; `parts-max-per-run` (16) caps the parts a run asks.
   - the fix is told, with the code around the comment;
   - a comment the code contradicts is reported (`comment-disagrees`).
 - A line naming a name from the code that no part speaks of: `uncovered`,
-  for a person.
+  for a person, in two findings: the lines whose names its sources still
+  hold, no part citing them; and those naming one none holds — gone or
+  renamed in the code, or a source missing from its header.
 
 ## The fix
 

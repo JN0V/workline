@@ -1,6 +1,6 @@
 ---
 sources: [internal/tester/moment.go, internal/tester/write.go, internal/tester/proof.go, routing.default.yaml, internal/tester/said.go, internal/tester/frozen.go, internal/tester/objection.go, internal/tester/green.go, internal/tester/repro.go]
-checked: f24259c6
+checked: 8538d558
 verified: agent:claude-code
 ---
 # The hand-over: what whoever builds finds
@@ -42,8 +42,11 @@ flowchart LR
 
 The issue waits for its tests labelled `workline:needs-tests`, set by
 the product owner; an issue labelled ready by hand, with no Draft, is
-taken too. Routed on `issue` (`issue: [tester, developer]`), the issue
-line runs the tester on it at once
+taken too.
+
+Routed on `issue` (`issue: [tester, developer]`), the issue line runs
+the tester on it at once, and moves a ready issue whose scenarios no
+Draft nor proof kind stands for back to its tests, by rule, said on it
 ([the line of states](../../../docs/spec/routing.md#the-line-of-states)).
 Once the Draft is proven, the engine moves the issue on, no agent asked
 ([ADR-0059](../../../docs/adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#3-tests-wakes-the-tester-its-result-makes-ready)):
@@ -165,11 +168,14 @@ refusal is written on the issue too
   new tests go in other files.
 - **Objects** to a test that does not fit, on the test's line
   ([the form](../README.md#frozen-tests-and-objections)); the tester
-  keeps it or rewrites it, on top of the branch.
+  keeps it or rewrites it, on top of the branch. The developer's next
+  round takes the rewrite ([a round](../../developer/docs/review-loop.md#a-round)).
 - **Closes**: once the tests are green, the description says
   `Closes #<n>`, and the Draft is marked ready. It then merges by the
   project's policy
-  ([ADR-0042](../../../docs/adr/0042-the-engine-merges-by-the-projects-policy.md)).
+  ([ADR-0042](../../../docs/adr/0042-the-engine-merges-by-the-projects-policy.md)):
+  at `normal`, a reproduced bug's fix alone, a feature or a task once a
+  person says yes ([the merge](../../developer/docs/merge.md)).
 - **Green three times**: once marked ready, each new test passes on the
   head three runs out of three; one red is flaky and blocks
   (`test-flaky`, [the proof](green-proof.md)).

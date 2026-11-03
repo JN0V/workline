@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/lenses, internal/builtin/reviewer, internal/backlog/spec.go, routing.default.yaml]
-checked: b79ca968
+checked: 8538d558
 verified: agent:claude-code
 ---
 # Reviewer — a spec before it is built
@@ -78,7 +78,7 @@ routing:
 ```
 
 - **Which issues**: those the product owner keeps (its state comment),
-  not `workline:ready`, their four sections written (drafts too), their
+  not `workline:ready` nor `workline:needs-tests`, their four sections written (drafts too), their
   body not read as it is. None: no agent asked.
   - On the line's `issue` event, the one issue the product owner just
     ran on, its state comment written yet or not
@@ -112,8 +112,11 @@ routing:
 - **The answer**: the product owner's next refine rewrites the sections
   the findings lie in that are its own; a person's, it asks the reporter.
   The body changed, the reviewer reads it again: one round more.
-- **In CI**: judged, then applied; the reviewer reads what an earlier run
-  refined, so a round takes two nights. `forge-writes: false` writes no
+- **In CI**: judged, then applied. On the gardening line the reviewer
+  reads what an earlier run refined, so a round takes two nights; on the
+  line's `issue` event it reads the spec in refine's own run, and its
+  review wakes the product owner again at once
+  ([the line of states](../../../docs/spec/routing.md#the-line-of-states)). `forge-writes: false` writes no
   comment: ready then stays held, `spec-not-reviewed`.
 - **Without AI**: nothing read, nothing written, each spec said
   (`not-reviewed`); ready held. The sixth round's question (below) needs

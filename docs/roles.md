@@ -1,6 +1,6 @@
 ---
 sources: [routing.default.yaml, roles/committer/role.yaml, roles/documentalist/role.yaml, roles/reviewer/role.yaml, roles/inspector/role.yaml, roles/product-owner/role.yaml, roles/judge/role.yaml, roles/auditor/role.yaml, roles/tester/role.yaml, roles/developer/role.yaml]
-checked: 87d9ef80
+checked: 8538d558
 judged: d34fd75
 verified: agent:claude-code
 ---
@@ -17,11 +17,11 @@ How far each goes alone before a person is its level:
 | Role | Does | Runs on | Page |
 |---|---|---|---|
 | Committer | checks each commit's message, secrets and author | `commit-msg`, `pre-push`, `merge-request` | [committer](../roles/committer/README.md) |
-| Documentalist | keeps the docs true to the code they name | `pre-push`, `merge-request`, `main`, `schedule`, `release`, `init` | [documentalist](../roles/documentalist/README.md) |
+| Documentalist | keeps the docs true to the code they name | `pre-push`, `merge-request`, `main`, `schedule`, `init` | [documentalist](../roles/documentalist/README.md) |
 | Reviewer | says what a change, or a spec, breaks or leaves out; never approves | `review`, `spec`, `merge-request`, `schedule` and `issue` (opt-in) | [reviewer](../roles/reviewer/README.md) |
 | Inspector | explains the findings a merge request adds to your gates; never their verdict | `merge-request` (opt-in), after the gates | [inspector](../roles/inspector/README.md) |
-| Tester | writes the tests of an issue waiting for them from its scenarios, each proven red on the base, frozen to the builder | `schedule` and `merge-request` (opt-in), an objection on its Draft, `workline test` | [tester](../roles/tester/README.md) |
-| Developer | takes the first ready issue nobody took and writes its code within bounds, proves it on the project's tests, opens a pull request, ready or a Draft, and fixes its review | `workline develop`, `issue` and `schedule` (opt-in), a review on its pull request, its bounds on `merge-request` (opt-in) | [developer](../roles/developer/README.md) |
+| Tester | writes the tests of an issue waiting for them from its scenarios, each proven red on the base, frozen to the builder | `issue`, `schedule` and `merge-request` (opt-in), an objection on its Draft, `workline test` | [tester](../roles/tester/README.md) |
+| Developer | takes the first ready issue nobody took and writes its code within bounds, proves it on the project's tests, opens a pull request, ready or a Draft, and fixes its review | `workline develop`, `issue` and `schedule` (opt-in), a review or a red check on its pull request, its bounds on `merge-request` (opt-in) | [developer](../roles/developer/README.md) |
 | Product owner | keeps the open issues true to the code and ready to build, proposing on each issue | `schedule` (opt-in), `import`, `issue` | [product owner](../roles/product-owner/README.md) |
 | Judge | answers one yes-or-no question a role's check cannot | asked by the other roles | [judge](../roles/judge/role.yaml) |
 | Auditor | re-checks a weekly sample of every role's acts | `workline sample` | [auditor](../roles/auditor/role.yaml) |
@@ -37,8 +37,8 @@ shipped, changed in `.workline/config.yaml` ([config](config.md)).
   documentalist; `release` → its gates only, never the docs.
 - **`workline init`** routes `pre-push` to the committer and the
   documentalist; `--review` adds the reviewer to `merge-request`.
-- **The reviewer after the product owner** in `schedule` reads each spec it
-  refines before it goes ready
+- **The reviewer after the product owner**, in `schedule` or at once on
+  `issue`, reads each spec it refines before it goes ready
   ([a spec on the forge](../roles/reviewer/docs/spec.md#on-the-forge)).
 - **The inspector after the gates** in `merge-request` triages what they
   found the change adds, apart from the verdict
@@ -47,6 +47,11 @@ shipped, changed in `.workline/config.yaml` ([config](config.md)).
   names scenarios waits for the tester's Draft before the developer
   takes it
   ([the triggers](../roles/developer/docs/triggers.md#on-a-schedule)).
+- **The line of states**: on `issue`, an issue's state label wakes its
+  role, `workline:to-refine` the product owner, `workline:needs-tests`
+  the tester, `workline:ready` the developer; an hourly reconciler
+  catches what an event missed
+  ([the line of states](spec/routing.md#the-line-of-states)).
 
 ## Behind the others
 
@@ -65,3 +70,13 @@ Two roles never run on an event of their own:
 How to run each role from a hook, a script or a CI job:
 [triggers.md](triggers.md). What a role is, for those who write one:
 [the role contract](spec/role-contract.md).
+
+## Planned
+
+Each links to its issue, which holds its design:
+[security](https://github.com/JN0V/workline/issues/204),
+[process engineer](https://github.com/JN0V/workline/issues/89),
+[architect](https://github.com/JN0V/workline/issues/207),
+[UX](https://github.com/JN0V/workline/issues/208) (proposed in
+[ADR-0061](adr/0061-the-ux-role-reads-what-the-accessibility-tools-cannot.md)),
+[PM](https://github.com/JN0V/workline/issues/209).

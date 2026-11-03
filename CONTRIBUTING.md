@@ -1,6 +1,6 @@
 <!-- workline
 sources: [cmd/workline, tests/conformance/pending.txt]
-checked: 8ccdfb74
+checked: 8538d558
 judged: 010367e
 verified: agent:claude-code
 judged-in-parts: b3b9aad
@@ -45,11 +45,14 @@ real cases, and costs tokens, so it runs only when asked:
   (`Refs:` in a trailer). With workline's hooks installed, the committer
   checks them as you write.
 - **Docs follow the code**: a doc that describes code names it in
-  `sources`, with the commit it was `checked` against. A push says how many
-  docs your commits made suspect: fix them in the same pull request.
+  `sources`, with the commit it was `checked` against. A push says which
+  docs your commits made suspect: fix the prose your change made wrong. A
+  pull request need not reach 0 suspect
+  ([ADR-0051](docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-3-no-docs-obligation-per-pr)).
 - **Decisions** go in [docs/adr/](docs/adr/), findings in docs/research/.
-- **Pull requests** only reach `main`, the checks green; a person reviews
-  and merges. The CI runs the committer, the documentalist, golangci-lint
+- **Pull requests** only reach `main`, the checks green; a person accepts
+  yours with a label, and the forge merges it
+  ([the merge policy](docs/merge-policy.md)). The CI runs the committer, the documentalist, golangci-lint
   and the reviewer on each one: a lint finding the change adds blocks,
   those on `main` before it do not; the inspector triages the new ones.
 - **A try for real** is told in the pull request's description, under

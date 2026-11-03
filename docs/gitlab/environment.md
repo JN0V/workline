@@ -1,6 +1,6 @@
 <!-- workline
 sources: [ci/gitlab/workline.gitlab-ci.yml, internal/doctor/variables.go, internal/forge/gitlab_variables.go]
-checked: d722a840
+checked: 8538d558
 judged-in-parts: e8a46f7
 -->
 # The tokens kept from your tools: the environment `workline`
@@ -40,7 +40,7 @@ can read them, even after `unset`, from its parent's start environment.
 ## What the template does
 
 - **No environment on the jobs that run your tools**: `workline:gates`,
-  `workline:main`, `workline:release`. GitLab gives them no scoped
+  `workline:main`, `workline:release`, `workline:curator`. GitLab gives them no scoped
   variable. They still unset the tokens first, for one left to every
   environment.
 - **The stored base** ([main after a merge](../main-after-merge.md#gitlab))
@@ -54,8 +54,9 @@ can read them, even after `unset`, from its parent's start environment.
 - **No rule tests a token**: GitLab advises against `rules:` on an
   environment's variable. A job that needs the bot's token runs, and
   without it says so and stops, green.
-- **The release's dry run** holds no token while your `release` line's
-  gates run, on the default branch's code; its post holds the bot's.
+- **The release's dry run** declares `workline`, then unsets the tokens
+  before your `release` line's gates run, on the default branch's code;
+  its post holds the bot's.
 
 ## What it does not stop
 

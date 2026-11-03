@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine/routine.go, internal/engine/code.go, internal/engine/demote.go, internal/engine/merge.go, internal/forge/merge.go]
-checked: 93dac05e
+checked: 8538d558
 verified: agent:claude-code
 reader: efab3a2a0b35
 ---
@@ -115,7 +115,7 @@ and:
 
 | Said | When |
 |---|---|
-| `waits-for-a-yes` | the release tool's; a push, a commit or a page not workline's; a kind demoted; `reader`, not let merge alone; the developer's feature, a fix whose bug no test reproduced, or a finding open |
+| `waits-for-a-yes` | the release tool's; a push, a commit or a page not workline's; a kind demoted; `reader`, not let merge alone; the developer's feature or task, a fix whose bug no test reproduced, or a finding open |
 | `merge-app-unknown` | the token is no App's: nothing merges alone |
 | `merge-demoted`, `demotion-unrecorded` | a revert of one merged alone read: its kind demoted, its issue opened or not |
 | `revert-unread` | a revert tied to no merge request: every kind demoted |

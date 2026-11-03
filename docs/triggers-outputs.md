@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/line, internal/hooks, internal/forge/gitlab.go, ci/gitlab/workline.gitlab-ci.yml, ci/github/workline.yml, ci/github/workline-gardening.yml, ci/github/workline-sample.yml, routing.default.yaml]
-checked: 87a81d4a
+checked: 8538d558
 verified: agent:claude-code
 ---
 # Jobs' needs and outputs
@@ -17,7 +17,9 @@ commands each event runs: [running each role from any trigger](triggers.md).
 | applying (`apply`, `sample --apply`) | a branch, not a detached HEAD, for gardening | `GITLAB_TOKEN` (below); a git identity (`user.name`, `user.email`); `origin` with the token, to push; git set to sign where the forge refuses unsigned commits ([how](gitlab/signed-commits.md)) | the engine; `ssh-keygen` to sign with an SSH key |
 
 The image `ghcr.io/jn0v/workline:<version>` holds the engine, gitleaks,
-git, jq, npm and, from v0.38.0, `ssh-keygen`.
+git, jq, npm, `ssh-keygen` (from v0.38.0), and bubblewrap and socat,
+which Claude Code's shell needs where the developer's agent runs
+commands (from v0.69.0).
 `workline version` in a job's log says which engine ran.
 
 ## GitLab tokens
@@ -58,7 +60,9 @@ role that blocks names to say why, such as its comments
 
 - **stdout**: the verdict; with `--json`, status, summary, findings, each
   agent call with its model and tokens, and for a line its steps, their
-  seconds, its moment and the runs `pending` for `apply`.
+  seconds, its moment and the runs `pending` for `apply`; on the line of
+  states, the moves left to `apply` (`states`), and with `--input
+  reconcile=list` the issues due (`due`) and review rounds (`reviews`).
 - **Reports**: `--sarif <file>` (GitHub code scanning), `--code-quality
   <file>` (GitLab: `artifacts: reports: codequality`, shown on the merge
   request, every tier). The paths are yours to choose.

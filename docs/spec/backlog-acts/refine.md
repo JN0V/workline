@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog/backlog.go, internal/backlog/assume.go, internal/backlog/proof.go, internal/backlog/plain.go, internal/backlog/repeat.go, internal/backlog/write.go, internal/work/headings.go, internal/work/work.go, internal/work/scenarios.go, internal/backlog/scenarios.go, internal/forge/forge.go, internal/engine/backlog.go]
 status: draft
-checked: ae4bddea
+checked: 8538d558
 verified: agent:claude-code
 ---
 # Refining to ready
@@ -155,7 +155,12 @@ what it can and asks for the rest:
   An issue ready from before the line, kept by a `ready`, goes there
   too while it has no Draft of the tester's open nor a proof kind
   recorded; otherwise its labels stay
-  ([#788](https://github.com/JN0V/workline/issues/788)). An issue opened
+  ([#788](https://github.com/JN0V/workline/issues/788)). At `merge:
+  {autonomy: enterprising}`, a feature made ready in no milestone is put
+  in the next open milestone neither released nor with its candidate cut, its
+  candidate what a person tries (`milestone-set`; one that cannot be set
+  is said, `milestone-not-set`, warn, the ready kept;
+  [Release candidate](../../release-candidate.md)). An issue opened
   by someone without write access to the project is theirs: moving it to
   ready is proposed on the issue, never done (`reporter-outside`) —
   unless a person of the project accepted it with the label. Who is of the

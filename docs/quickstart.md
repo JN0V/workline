@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/setup, internal/doctor, internal/hooks]
-checked: 8ccdfb74
+checked: 8538d558
 verified: agent:claude-code
 ---
 # Quickstart
@@ -60,7 +60,8 @@ workline review          # the reviewer reads this branch before you push
 ```
 
 `workline init --review` also puts the reviewer on each merge request;
-`--human-po yes` says a person is the Product Owner.
+`--human-po yes` says a person is the Product Owner; `--autonomy` sets how
+far the roles go alone ([autonomy](autonomy.md)).
 
 ### Try each role once, on a real repository
 
@@ -69,13 +70,14 @@ repository of your own, after `setup`, `doctor` and `init --review`:
 
 ```sh
 workline doctor          # lists nothing missing; each item comes with its command
-workline docs            # documentalist: judges the docs changed since their last commit
+workline docs            # documentalist: judges the docs made suspect since they were last judged
 workline review          # reviewer: reads the branch against the default branch
 workline run-role product-owner --event issue --target issue:<n> --ai claude --forge github
 ```
 
-- The repository needs a doc changed since its last commit, a branch with a
-  diff against the default branch, and one open issue `<n>`.
+- The repository needs a doc whose sources changed since the docs were
+  last judged (else the last tag), a branch with a diff against the
+  default branch, and one open issue `<n>`.
 - `--forge gitlab` for GitLab; `--ai` the agent you chose in `setup`.
   Run without `--no-apply`, the product owner writes its comment or refined
   section on the issue itself.

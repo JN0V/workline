@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/engine/engine.go, internal/hooks, internal/line/states.go]
-checked: 523d0359
+checked: 8538d558
 verified: agent:claude-code
 judged: e343388
 ---
@@ -82,8 +82,13 @@ its code within [its bounds](../roles/developer/docs/bounds.md):
 - **`--no-apply`**: judged, nothing written; `workline apply <run>` claims.
 - **None to take**: it says so, and passes.
 - **`--merge-request <n>`**: a review round on its own pull request, not
-  an issue: the review's findings fixed, proven and pushed on its
-  branch ([the review loop](../roles/developer/docs/review-loop.md)).
+  an issue: the review's findings, a red gate or check, a person's
+  comment, fixed, proven and pushed on its branch; a fix outside the
+  Scope asks the product owner, a red check with no fix blocks its issue
+  ([the review loop](../roles/developer/docs/review-loop.md)).
+- **`--bounds --merge-request <n>`**: no round, no agent: each file its
+  pull request changed held to its issue's bounds; one refused blocks
+  ([on the pull request](../roles/developer/docs/bounds.md#on-the-pull-request)).
 
 ## workline route reconcile
 
@@ -99,6 +104,14 @@ step due that no event started, run.
 - **Room first**: a step whose next state is at its limit waits, said
   once on its issue
   ([room in the next state](spec/routing.md#room-in-the-next-state)).
+- **Blocked, read again**: news on a blocked issue wakes the product
+  owner, else every `revisit` days (7)
+  ([blocked, read again](spec/routing.md#blocked-read-again)).
+- **Stale**: an issue past its state's age limit whose Scope names what
+  the code no longer holds goes back to refine
+  ([staleness](spec/routing.md#staleness)).
+- **The developer's rounds**: a round due on its open pull requests that
+  no event started, counted in `reconcile-max`.
 - **Run twice in a row**, the second does nothing more.
 
 ## workline review

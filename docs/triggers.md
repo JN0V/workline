@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/line, internal/hooks, internal/forge/gitlab.go, ci/gitlab/workline.gitlab-ci.yml, ci/github/workline.yml, ci/github/workline-gardening.yml, ci/github/workline-sample.yml, routing.default.yaml]
-checked: 99a14dc0
+checked: 8538d558
 verified: agent:claude-code
 reader: 2de353fab113
 ---
@@ -63,7 +63,7 @@ The committer, the documentalist, the reviewer if routed; one run at a time ([#3
 workline route merge-request --ai "$ai" --no-apply \
   --forge gitlab --target merge-request:<iid> --branch <source-branch> \
   --input range=<base-sha>..<head-sha> --code-quality gl-code-quality.json --json > line.json
-workline apply --line line.json          # second job: commits the doc fixes to the branch
+workline apply --line line.json          # second job: the doc fixes as a diff in a comment
 ```
 
 `--input draft=<true|false>`, on each run: `true` asks no agent of any
@@ -118,20 +118,28 @@ workline run-role product-owner --event schedule --ai "$ai" --no-apply --forge g
 workline apply "$(jq -r '."run-dir"' po.json)"
 ```
 
-### A ready issue
+### An issue's state
 
-With the developer routed on `issue`, when an issue is labelled
-`workline:ready` ([the triggers](../roles/developer/docs/triggers.md)):
+With the tester and the developer routed on `issue`, when a state's
+label is put on an issue: the role its state wakes, the tester on
+`workline:needs-tests`, the developer on `workline:ready`
+([the triggers](../roles/developer/docs/triggers.md)):
 
 ```sh
 workline route issue --target issue:<n> --ai "$ai" --no-apply --forge gitlab --open-merge-request --json > line.json
 workline apply --line line.json
+workline route reconcile --ai none --forge gitlab --open-merge-request --input reconcile=list --json > due.json
 ```
+
+The last, hourly, writes nothing: it lists the issues an event missed
+(`due`) and the developer's merge requests a round is due on (`reviews`),
+each to start as above ([on GitLab](gitlab-trigger.md#the-line-of-states-on-it)).
 
 ### On a role's own merge request
 
-A note on the tester's Draft (an objection) or on the developer's merge
-request (a review round); the run applied from the default branch, as
+A note on the tester's Draft (an objection), or a verdict, a gate, a
+check red or a note on the developer's merge request (a review round);
+the run applied from the default branch, as
 data ([the tester's jobs](objection-jobs.md),
 [the review loop](../roles/developer/docs/review-loop.md#what-wakes-it)):
 

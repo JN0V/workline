@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine, internal/intent, internal/role, internal/agent, roles_test.go]
-checked: 7f12e806
+checked: 8538d558
 verified: agent:claude-code
 judged: b530b72
 ---
@@ -203,9 +203,10 @@ token), **apply** (trusted, no AI key).
 1. **Check.** The engine reads `role.yaml`, verifies `requires`, creates a run
    directory with `in/` and `out/` inside the repository's git directory
    (`.git/workline/runs/<id>/`, so a run never shows up as a change), and
-   writes the merged settings to `in/settings.json` — a level the project
-   picks laid over the defaults first, and `by-level` beside them
-   (role-adapting.md, "Levels").
+   writes the merged settings to `in/settings.json` — a level laid over the
+   defaults first, picked by the role's own setting, else the project's
+   `autonomy`, else the role's default; `by-level` and `level-from` beside
+   them ([role-adapting.md, "Levels"](role-adapting.md#settings)).
 2. **Prepare — `pre`.** Gathers what the role needs into `in/`. If a decision
    needs judgement, it writes the question to `in/task.md`. No `task.md`, no AI
    call: the AI is paid for decisions, not for routine. It may also write
@@ -237,7 +238,9 @@ token), **apply** (trusted, no AI key).
    (step 3), when the role asks again at all (`promote-after`): the call
    counted like any other, said (`part-asked-again`), the answer not read
    kept as `out/unread-answer.txt`; still unreadable, the part fails. One
-   broken in places is read claim by claim (`part-partly-read`); without an
+   broken in places is read claim by claim (`part-partly-read`), an item
+   starting only at a line `- claim:`, so a pasted line starting with `- `
+   stays in the claim it is in; without an
    agent, no part is asked, and `pre` runs again with none answered.
 
    **Questions for a judge** (ADR-0020). `pre` may then write questions
@@ -285,7 +288,10 @@ token), **apply** (trusted, no AI key).
    step 4); the tester's blocked, no test written, and no second call was
    made ([#761](https://github.com/JN0V/workline/issues/761)). The answer
    not read is kept as `out/unread-answer.txt`; `post` is told why it did
-   not read, `WORKLINE_AGENT_UNREAD`.
+   not read, `WORKLINE_AGENT_UNREAD`; why the engine refused the answer's
+   proposals whole, `WORKLINE_AGENT_REFUSED`; else, the agent asked and
+   its answer read, `WORKLINE_AGENT_ANSWERED=true`: what it holds, or
+   lacks, is the agent's word.
    An item holding several keys where one kind goes, or none, is refused
    so too, the keys named: several kinds, an item each; a key no kind is
    named by, the role's kind whose shape holds it, under which it goes (a
@@ -321,6 +327,11 @@ token), **apply** (trusted, no AI key).
    *Claude Code runs without tools, save in a worktree a role's `pre`
    made (the developer's, [ADR-0056](../adr/0056-the-developers-agent-works-in-a-sandbox-with-tools.md)):
    there it reads, edits and runs commands, and `post` bounds its diff.
+   On Linux its shell boxes each command with bubblewrap and socat: either
+   missing, or a container that lets no namespace be made, the agent is
+   unavailable, the finding naming what to install, rather than an agent
+   whose commands all fail ([#900](https://github.com/JN0V/workline/issues/900),
+   [#906](https://github.com/JN0V/workline/issues/906)).
    It runs apart from a Claude Code session it may be started from: that session's variables are dropped
    ([measured](../research/claude-session-env.md)). A `cmd:` agent is not
    sandboxed, so read-only is its command's promise, not the engine's.*
@@ -340,7 +351,8 @@ token), **apply** (trusted, no AI key).
    once more, without asking: passed, it is applied, and each file left out
    is a `left-out` finding with the refusal's reason. Still refused on an
    event whose steps all run (`fail-fast: false`, the shipped `schedule`),
-   the step passes with nothing of the proposal applied, each refusal a
+   the step passes with nothing of the proposal applied but what `post`
+   wrote in `out/on-block.yaml` (step 5), each refusal a
    warning ([ADR-0037, amended](../adr/0037-the-schedule-runs-every-step.md#amendment-2026-10-09-a-refused-proposal-is-said-not-failed)).
    So is it on a merge request for a role whose `merge-request-ai` is
    `ready`, refused once: never asked again, no stronger model (ADR-0051). A role listing `claim`
