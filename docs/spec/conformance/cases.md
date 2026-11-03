@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go]
-checked: 21ce8c2c
+checked: 4eaa098f
 verified: agent:claude-code
 ---
 # Conformance — a case in full
@@ -23,8 +23,9 @@ simulated forge's own state, by the JSON library's.
 the run (`{"fake:light": {model: …}}`), in the file `WORKLINE_MODELS_SEEN` names.
 It can also carry `repos`: other repositories to build first, each
 exported by name as an environment variable holding its path, for
-multi-repository cases. `env` sets variables for the run (`$VAR` expands):
-a `PATH` without a tool, or with a fake one first. A case runs without
+multi-repository cases. `env` sets variables for the run (`$VAR`
+expands, `$WORK` to the case's own folder): a `PATH` without a tool, or
+with a fake one first. A case runs without
 the machine's `WORKLINE_*` and CI variables: it sets those it needs.
 `engine-tags` runs the case on an engine built from this source with those Go build tags, a
 change only the tests make: `workline_alias` gives how a person accepts a

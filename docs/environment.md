@@ -1,6 +1,6 @@
 ---
 sources: [internal/forge/retry.go, internal/role/config.go, internal/role/role.go, cmd/workline, internal/engine/engine.go, internal/forge/gitlab.go, internal/hooks, internal/line/payload.go]
-checked: 8538d558
+checked: 4eaa098f
 verified: agent:claude-code
 judged: e343388
 ---
