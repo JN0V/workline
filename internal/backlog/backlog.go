@@ -368,8 +368,8 @@ func (s State) say() string {
 	case strings.HasPrefix(s.Silent, ScenariosUnreadSilent):
 		lines = append(lines, strings.TrimSpace(scenariosUnreadSaid(s.Silent)))
 	case s.Silent != "":
-		lines = append(lines, strings.TrimSpace(Said("The product owner", "read this issue and wrote nothing on it", s.Silent,
-			"it reads it again once the issue changes or a person comments: complete it, or name the files it is about in a comment")))
+		lines = append(lines, strings.TrimSpace(Said("The product owner", "read this issue and did not refine it", s.Silent,
+			"it reads it again when the line wakes it on this issue, or once the issue changes or a person comments: complete it, or name the files it is about in a comment")))
 	}
 	return strings.Join(lines, "\n\n")
 }
@@ -657,6 +657,10 @@ var theirs = map[string]string{"ready": "moving it to ready", "split": "splittin
 // together, at a share of the open issues a run (ADR-0018).
 var moves = []string{"milestone", "order", "effort"}
 
+// bookkeeping are the acts that file an issue without refining it: one
+// left with these alone is said on it, as one left with nothing (#951).
+var bookkeeping = []string{"milestone", "order", "effort", "kind", "rename", "depend", "undepend"}
+
 // Decision is what becomes of one act.
 type Decision struct {
 	Index  int      `yaml:"index"` // the intention's place in the run
@@ -679,6 +683,9 @@ type Plan struct {
 	// codeFirst are the issues this run names the code of: no ask on them
 	// (#548).
 	codeFirst map[int]bool
+	// drops are the agent's acts this run dropped on each issue, each with
+	// why: said on an issue nothing else refined (#951).
+	drops map[int][]string
 	// Visit are the open issues with a state, written back at the end of
 	// the run (Persist); SetAside, those a person took workline:proposed
 	// off; Answers, a person's comments read as "revise" on each.
@@ -847,8 +854,14 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 	p.readChanges(changes)
 	p.codeFirst = map[int]bool{}
 	p.askedNow = map[int]int{}
+	p.drops = map[int][]string{}
 	dropped := func(c Proposal, rule, msg string) {
 		p.Findings = append(p.Findings, verdict.Finding{Rule: rule, Where: c.where(), Message: msg})
+		if c.Issue > 0 {
+			// Nobody named in it is called: said, never a mention.
+			why := strings.ReplaceAll(strings.TrimSuffix(strings.TrimSpace(msg), "."), "@", "")
+			p.drops[c.Issue] = append(p.drops[c.Issue], fmt.Sprintf("`%s` dropped: %s", c.Do, why))
+		}
 	}
 	done := map[string]int{}
 	moved := map[int]bool{} // the issues moved in this run
@@ -1147,10 +1160,13 @@ func (p *Plan) summary(role string) {
 	// An issue read that lacks a section and got nothing at all — no
 	// draft, no question, no act dropped with its reason —: said, never
 	// left in silence.
-	acted, moved := map[int]bool{}, map[int]bool{}
+	acted, moved, refined := map[int]bool{}, map[int]bool{}, map[int]bool{}
 	for _, d := range p.Decisions {
 		acted[d.Act.Issue] = true
 		moved[d.Act.Issue] = moved[d.Act.Issue] || d.Mode != Off
+		// A kind, an order, a link or a title is no step of its refining:
+		// one with nothing else left it as it was (#951).
+		refined[d.Act.Issue] = refined[d.Act.Issue] || d.Mode != Off && !slices.Contains(bookkeeping, d.Act.Do)
 	}
 	for _, id := range p.read {
 		// The tester found no test possible, and the run picked no proof
@@ -1185,7 +1201,7 @@ func (p *Plan) summary(role string) {
 		if _, said := p.Silent[id]; said {
 			continue
 		}
-		if !ok || acted[id] || p.aside(id) {
+		if !ok || refined[id] || acted[id] && !moved[id] && len(p.drops[id]) == 0 || p.aside(id) {
 			continue
 		}
 		if p.broughtBack(id) {
@@ -1201,7 +1217,7 @@ func (p *Plan) summary(role string) {
 			if p.Silent == nil {
 				p.Silent = map[int]string{}
 			}
-			p.Silent[id] = silentWhy(id, lacks, p.config.Notes, len(p.read))
+			p.Silent[id] = silentWhy(id, lacks, p.drops[id], p.config.Notes, len(p.read))
 		}
 	}
 	// An issue read in full that no kind tells, and the answer gave it
@@ -1238,6 +1254,10 @@ func (p *Plan) summary(role string) {
 	}
 }
 
+// Missing names the required sections a body lacks, or has empty: the
+// line's word on an issue left unrefined (#951).
+func Missing(body string) []string { return missingSections(body) }
+
 // missingSections names the required sections a body lacks, or has empty.
 func missingSections(body string) []string {
 	var lacks []string
@@ -1256,8 +1276,11 @@ const silentMax = 600
 // silentWhy is why an issue read was left with nothing: the sections it
 // lacks, and the agent's note on it — one naming the issue, or any when
 // the run read it alone —, its whitespace folded, clipped.
-func silentWhy(id int, lacks, notes []string, read int) string {
+func silentWhy(id int, lacks, drops, notes []string, read int) string {
 	why := fmt.Sprintf("it lacks %s, and the agent drafted nothing nor asked", and(lacks))
+	if len(drops) > 0 {
+		why += "; " + strings.Join(drops, "; ")
+	}
 	names := regexp.MustCompile(fmt.Sprintf(`#%d\b`, id))
 	var said []string
 	for _, n := range notes {
@@ -1563,6 +1586,11 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 		if rule, why := checkSources(repo, *c); rule != "" {
 			return rule, why
 		}
+		if st := p.ledger.States[c.Issue]; st != nil && len(st.Sources) > 0 && slices.Equal(st.Sources, c.Sources) {
+			// The code it names already, given in this run: named again,
+			// it would only be read again, unrefined (#951).
+			return "sources-same", fmt.Sprintf("#%d names %s already, its code given in this run: refine it from that code, or ask", c.Issue, strings.Join(c.Sources, ", "))
+		}
 	} else if c.Do == "close" && !slices.Contains(closeReasons, c.Reason) {
 		return "close-reason", fmt.Sprintf("not closed: the role closes only a duplicate, or an issue the code made obsolete; closing one as %q is a person's call", c.Reason)
 	}
@@ -1649,6 +1677,12 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 	}
 	if c.Do == "milestone" || c.Do == "order" || c.Do == "effort" || c.Do == "kind" || c.Do == "refine" || c.Do == "ready" || c.Do == "unready" || c.Do == "unblock" || c.Do == "blocked" || c.Do == "ask" || c.Do == "assume" || c.Do == "split" || c.Do == "rename" || c.Do == "depend" || c.Do == "undepend" {
 		return "", "" // writing a plan or asking says nothing of the issue's truth: no quote
+	}
+	if c.Do == "sources" && (c.Quote == nil || strings.TrimSpace(c.Quote.Text) == "") {
+		// Named from the repository's folders, no code given to quote
+		// (#951): the issue is read again with that code, at the next run.
+		c.Quote = nil
+		return "", ""
 	}
 	if c.Quote == nil || strings.TrimSpace(c.Quote.Text) == "" {
 		return "no-quote", "nothing done: no evidence quoted from the code or an issue"
@@ -3063,6 +3097,9 @@ func describe(c Proposal, verb string) string {
 		v := "Named"
 		if verb == "Close" {
 			v = "Name"
+		}
+		if c.Quote == nil {
+			return fmt.Sprintf("%s the code #%d is about: %s. %s", v, c.Issue, strings.Join(c.Sources, ", "), strings.TrimSpace(c.Why))
 		}
 		return fmt.Sprintf("%s the code #%d is about: %s. %s %s", v, c.Issue, strings.Join(c.Sources, ", "), cite(*c.Quote), strings.TrimSpace(c.Why))
 	}

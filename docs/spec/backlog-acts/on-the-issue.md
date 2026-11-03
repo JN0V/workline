@@ -39,8 +39,9 @@ state under it in an HTML comment, so no mail holds it (`backlog.FormatState`,
 - once set aside: that nothing more is proposed until the issue changes;
 - left to a person past its revisions (`left`): who wrote, and that the
   role proposes nothing more there until a person answers;
-- read and left with nothing (`silent`, [Refining to ready](refine.md)):
-  what it lacks and the agent's note, until the role acts on it; left in
+- read and left with nothing that refines it (`silent`, [Refining to ready](refine.md)):
+  what it lacks, the acts dropped with why, and the agent's note, until
+  the role acts on it; left in
   refine after the tester found no test possible, or for scenarios no
   test can name: what a person does to move it on.
 
