@@ -172,6 +172,12 @@ accessibility score
 The role judges what tools cannot: a flow against the need, consistency
 between screens, wording.
 
+Decided in [ADR-0061](../adr/0061-the-ux-role-reads-what-the-accessibility-tools-cannot.md):
+a project declares its interface in `.workline/config.yaml` (none, no UX
+role); each tool gets a gate recipe, a tool that did not run is an error;
+the agent's findings quote the screen and the Need and never override the
+tools' verdict.
+
 ## Architect, tester, the rest as gates
 
 | Need | What to borrow |
