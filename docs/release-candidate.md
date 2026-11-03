@@ -26,8 +26,9 @@ merge: {autonomy: enterprising}
 
 ## The flow
 
-- **A feature merges alone** once every gate passes, as a fix does at
-  `normal` ([the developer's merge](../roles/developer/docs/merge.md)).
+- **A feature or a task merges alone** once every gate passes, as a
+  fix does at `normal`
+  ([the developer's merge](../roles/developer/docs/merge.md)).
 - **It goes into a milestone** named by a version, `v1.4`: the product
   owner puts it there when it makes the issue ready; one readied
   before, `workline follow` before it merges. The next open milestone
@@ -74,7 +75,7 @@ merge: {autonomy: enterprising}
 ## A refused candidate
 
 - **Close the candidate's issue** to refuse it.
-- **Features then wait** for a person's yes on each pull request, as at
+- **Features and tasks then wait** for a person's yes on each pull request, as at
   `normal`, until a person who may push and merge closes the issue that
   says it (as a revert's, [at `normal`](merge-policy-normal.md)).
 - **Fixes still merge alone.** Once the milestone's new issues are
@@ -84,7 +85,7 @@ merge: {autonomy: enterprising}
 
 | Finding | When |
 |---|---|
-| `milestone-set` | a feature put in the next milestone |
+| `milestone-set` | a feature or a task put in the next milestone |
 | `candidate-cut` | a branch cut, or the next candidate's issue opened |
 | `candidate-version-past` | a milestone left open whose version is released already: not cut |
 | `candidate-copied`, `candidate-copy-failed` | a fix copied onto the branch, or left to a person |
