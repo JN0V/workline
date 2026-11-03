@@ -14,13 +14,12 @@ import (
 // The developer's code at `normal` and `enterprising` (ADR-0054, step 7;
 // ADR-0060): its pull request,
 // workline's own as the forge says it, merges with no person's yes when
-// the issue it closes is a fix or a task, every gate passed and no
-// finding of the reviewer's open; a fix only once its bug was reproduced,
-// the tester's test red on the base (ADR-0060); a feature waits for a
-// person's yes, but at `enterprising`, where it goes into a milestone whose
-// release candidate a person tries (candidate.go). The
-// kind is the issue's labels', never the agent's say
-// (roles/developer/docs/merge.md).
+// the issue it closes is a fix, every gate passed, no finding of the
+// reviewer's open and its bug reproduced, the tester's test red on the
+// base (ADR-0060); a feature or a task waits for a person's yes, but at
+// `enterprising`, where it goes into a milestone whose release candidate
+// a person tries (candidate.go). The kind is the issue's labels', never
+// the agent's say (roles/developer/docs/merge.md).
 
 // codeRoles are the roles whose commits a developer's branch holds: the
 // tester's acceptance tests, then the developer's code and fixes.
@@ -53,33 +52,33 @@ func weighCode(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, n *nor
 		return waits("", "from the developer's branch, but "+d.Why)
 	case d.Kind == "":
 		return waits("", fmt.Sprintf("%s: whether it is a feature, a label on #%d says (`bug`, `enhancement`, `task`)", d.Says(), d.Issue))
-	case d.Kind == developer.KindFeature && o.Merge != MergeEnterprising:
+	case d.WaitsForAYes() && o.Merge != MergeEnterprising:
 		// Said once on it, where a person reviewing looks, the decision's
 		// record for the auditor (ADR-0046).
 		t := forge.Target{Kind: "merge-request", ID: w.mr.ID}
-		body := fmt.Sprintf("**Waiting for a person's yes**: this is %s. The project's merge policy is `%s`: the developer's fix or task merges once every gate passes, a feature waits for a person's yes.\n\n- To accept this one, put the label `%s`.\n- Not a feature? Change the label on #%d.",
+		body := fmt.Sprintf("**Waiting for a person's yes**: this is %s. The project's merge policy is `%s`: the developer's fix of a reproduced bug merges once every gate passes, a feature or a task waits for a person's yes.\n\n- To accept this one, put the label `%s`.\n- A bug? Change the label on #%d.",
 			d.Says(), o.Merge, backlog.AcceptedLabel(f), d.Issue)
-		if err := f.Comment(t, body, forge.Marker("merge-waits="+developer.KindFeature)); err != nil {
+		if err := f.Comment(t, body, forge.Marker("merge-waits="+d.Kind)); err != nil {
 			return nil, err
 		}
 		return waits("", d.Says())
-	case d.Kind == developer.KindFeature && n.demoted[kindFeature] != "":
-		// At `enterprising`, a candidate refused: features wait for a
-		// person's yes again until a person lifts it (ADR-0060).
+	case d.WaitsForAYes() && n.demoted[kindFeature] != "":
+		// At `enterprising`, a candidate refused: features and tasks wait
+		// for a person's yes again until a person lifts it (ADR-0060).
 		t := forge.Target{Kind: "merge-request", ID: w.mr.ID}
-		body := fmt.Sprintf("**Waiting for a person's yes**: this is %s. The project's merge policy is `enterprising`, but a release candidate was refused: features wait for a person's yes on each pull request until a person closes %s.\n\n- To accept this one, put the label `%s`.",
+		body := fmt.Sprintf("**Waiting for a person's yes**: this is %s. The project's merge policy is `enterprising`, but a release candidate was refused: features and tasks wait for a person's yes on each pull request until a person closes %s.\n\n- To accept this one, put the label `%s`.",
 			d.Says(), n.demoted[kindFeature], backlog.AcceptedLabel(f))
-		if err := f.Comment(t, body, forge.Marker("merge-waits="+developer.KindFeature)); err != nil {
+		if err := f.Comment(t, body, forge.Marker("merge-waits="+d.Kind)); err != nil {
 			return nil, err
 		}
-		return waits("warn", fmt.Sprintf("%s, but features wait for a person's yes since a release candidate was refused (%s)", d.Says(), n.demoted[kindFeature]))
+		return waits("warn", fmt.Sprintf("%s, but features and tasks wait for a person's yes since a release candidate was refused (%s)", d.Says(), n.demoted[kindFeature]))
 	case len(d.Open) > 0:
 		return waits("warn", fmt.Sprintf("%s, but the reviewer's findings are open: %s", d.Says(), strings.Join(d.Open, "; ")))
 	}
-	if d.Kind == developer.KindFeature && d.Milestone == "" {
-		// At `enterprising`, a feature goes into a milestone, whose release
-		// candidate a person tries (ADR-0060): the product owner puts it
-		// there at ready; one readied before, here.
+	if d.WaitsForAYes() && d.Milestone == "" {
+		// At `enterprising`, a feature or a task goes into a milestone,
+		// whose release candidate a person tries (ADR-0060): the product
+		// owner puts a feature there at ready; one readied before, here.
 		title, err := featureMilestone(f, o.Repo, d.Issue)
 		if err != nil {
 			if errors.Is(err, forge.ErrUnreachable) && !forge.Refused(err) {
@@ -87,7 +86,7 @@ func weighCode(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, n *nor
 			}
 			return waits("warn", fmt.Sprintf("%s, but #%d could not be put in a milestone, its release candidate's: %s", d.Says(), d.Issue, forge.Said(err)))
 		}
-		w.say("milestone-set", "", fmt.Sprintf("#%d, a feature, put in milestone %s: its release candidate is tried before the version ships", d.Issue, title))
+		w.say("milestone-set", "", fmt.Sprintf("#%d, a %s, put in milestone %s: its release candidate is tried before the version ships", d.Issue, d.Kind, title))
 	}
 	if d.Kind == developer.KindFix {
 		why, err := unreproduced(o.Repo, w.baseTip, w.tip, d)

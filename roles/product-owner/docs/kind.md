@@ -20,8 +20,8 @@ flowchart LR
 ## Why it matters
 
 - **A bug's fix merges by the policy** once a test that failed on the
-  base proves the bug; **a feature waits** for a person's yes at
-  `normal`
+  base proves the bug; **a feature or a task waits** for a person's
+  yes at `normal`: a `task` set here never merges alone
   ([ADR-0060](../../../docs/adr/0060-the-person-is-on-the-loop.md#4-a-person-validates-by-the-issues-kind),
   [the developer's merge](../../developer/docs/merge.md)).
 - **An issue with no kind** waits for a person's yes, as a feature.

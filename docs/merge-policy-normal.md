@@ -67,13 +67,15 @@ merge: {autonomy: normal}   # a project's choice, never a default
 ## The developer's code: a fix alone, a feature with a yes
 
 - **A fifth kind, `code`**: the developer's pull request for an issue
-  its labels call a fix or a task, every gate passed and no finding of
+  its labels call a fix, every gate passed and no finding of
   the reviewer's open that blocks or is Important.
 - **A fix, once its bug was reproduced**: its code starts from the
   tester's Draft, whose tests failed on the base; else it waits for a
   person's yes, said once on it
   ([ADR-0060](adr/0060-the-person-is-on-the-loop.md#4-a-person-validates-by-the-issues-kind)).
-- **A feature waits for a person's yes**, said once on it.
+- **A feature or a task waits for a person's yes**, said once on it: a
+  `task` is a label an agent may put
+  ([#937](https://github.com/JN0V/workline/issues/937)).
 - **Told by the issue it closes**, never by the agent: the rules, the
   labels and the record on [the developer's merge](../roles/developer/docs/merge.md).
 

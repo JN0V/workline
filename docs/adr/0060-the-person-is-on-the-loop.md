@@ -124,7 +124,8 @@ The kind is the forge's ([ADR-0039]): bug, feature, task.
   same delay as a question. No answer: Blocked, reason "not reproduced"
   ([ADR-0059]). Never turned into a feature, never fixed blind.
 - **A bug fix is never a feature**, whatever its size.
-- **A task** merges as a fix, as today.
+- **A task** waits for a person's yes, as a feature does
+  ([amended 2026-11-03](#amendment-2026-11-03-a-task-waits-as-a-feature)).
 - **A feature** (a function the person has not seen):
   - goes into a milestone;
   - when the milestone's issues are all merged, the line cuts a release
@@ -133,7 +134,7 @@ The kind is the forge's ([ADR-0039]): bug, feature, task.
   - the person tries it; their yes ships the version.
 - **At `enterprising`, the candidate is the only person step.**
 
-| Merge level | A fix, a task | A feature |
+| Merge level | A fix | A feature, a task |
 |---|---|---|
 | `cautious` | a person's yes on the pull request | a person's yes on the pull request |
 | `normal` | merges by the policy | a person's yes on the pull request, as today |
@@ -232,6 +233,20 @@ Docs to update with each step: [writing.md](../../roles/product-owner/docs/writi
   each text, not the result; at `normal` it stays a choice.
 - **Feature flags in the code**: they need the project's code to carry
   them; a release branch needs only the forge and the release tool.
+
+## Amendment (2026-11-03): a task waits as a feature
+
+- **Why**: a `task` is a label an agent may put. On 2026-11-03 the
+  product owner's light read labelled
+  [#83](https://github.com/JN0V/workline/issues/83) `task` at 09:36; the
+  policy merged [#809](https://github.com/JN0V/workline/pull/809) at
+  09:44 with no person's yes. #83 was a person's own try: the public
+  quickstart changed unasked.
+- **Decided by** the maintainer: only a reproduced bug's fix merges
+  alone; a task waits for a person's yes, as a feature does
+  ([#937](https://github.com/JN0V/workline/issues/937)).
+- **At `enterprising`**, a task goes into a milestone as a feature
+  does: the person's yes is on the candidate.
 
 [ADR-0017]: 0017-the-release-manager.md
 [ADR-0018]: 0018-the-product-owner.md

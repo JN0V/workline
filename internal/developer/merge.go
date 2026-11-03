@@ -9,10 +9,11 @@ import (
 )
 
 // The merge of the developer's pull request (ADR-0054, step 7): at
-// `normal`, a fix or a task merges by the policy once every gate passes,
-// a fix once its bug was reproduced too, by the tester's test red on the
-// base (ADR-0060); a feature waits for a person's yes. The kind is its issue's, as the
-// forge's labels say it (ADR-0039), never the agent's say.
+// `normal`, only a fix merges by the policy, once every gate passes and
+// its bug was reproduced, by the tester's test red on the base
+// (ADR-0060); a feature or a task waits for a person's yes (#937). The
+// kind is its issue's, as the forge's labels say it (ADR-0039), never
+// the agent's say.
 
 // The kinds of the issue a developer's pull request closes.
 const (
@@ -60,6 +61,13 @@ type Merge struct {
 	// Milestone is the issue's milestone, "" for none: a feature merging
 	// at `enterprising` goes into one, its release candidate (ADR-0060).
 	Milestone string
+}
+
+// WaitsForAYes says its kind waits for a person's yes: a feature or a
+// task, at `enterprising` a yes on its milestone's release candidate.
+// Only a fix merges alone (ADR-0060, #937).
+func (m Merge) WaitsForAYes() bool {
+	return m.Kind == KindFeature || m.Kind == KindTask
 }
 
 // Says says the pull request for a person: whose code, for which issue,
@@ -125,7 +133,7 @@ func MergeSaid(f forge.Forge, id int) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	for _, marker := range []string{"merge-alone=code", "merge-waits=" + KindFeature, "merge-waits=" + Unreproduced} {
+	for _, marker := range []string{"merge-alone=code", "merge-waits=" + KindFeature, "merge-waits=" + KindTask, "merge-waits=" + Unreproduced} {
 		if body, whole := kept.Last(forge.Marker(marker)); body != "" && whole {
 			said, _, _ := strings.Cut(body, "\n")
 			return strings.TrimSpace(said), nil
