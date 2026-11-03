@@ -1,0 +1,39 @@
+case: routing/reconcile-room-lists-the-woken-alone
+about: >
+  The job that moved an issue it does not name (the developer took the
+  first ready one, #1) asks the reconciler with `--input room=true`
+  (#960): it lists the steps room woke alone, #6 waiting in Tests since
+  15:43, not #7, Ready full once #6 is in it. No agent, nothing written.
+given:
+  repo: tested
+  config:
+    routing: {events: {issue: [tester, developer]}, wip: {ready: 2}}
+  forge:
+    issues:
+      - {id: 1, title: "Add", labels: ["workline:developing"], body: "## Need\n\nI want to add.\n"}
+      - {id: 2, title: "Subtract", labels: ["workline:ready"], body: "## Need\n\nI want to subtract.\n"}
+      - id: 7
+        title: "Divide"
+        labels: ["workline:needs-tests"]
+        body: "## Need\n\nI want to divide.\n"
+        labeled: {"workline:needs-tests": "2026-11-03T15:47:00Z"}
+        comments: ["**workline's line** waits to start this issue's next step.\n\n<!-- workline:line-record {\"state\":\"\",\"body\":\"\",\"hops\":0,\"waits\":\"ready\"} -->\n<!-- workline:sticky=line/state -->"]
+      - id: 6
+        title: "Multiply"
+        labels: ["workline:needs-tests"]
+        body: "## Need\n\nI want to multiply.\n"
+        labeled: {"workline:needs-tests": "2026-11-03T15:43:00Z"}
+        comments: ["**workline's line** waits to start this issue's next step.\n\n<!-- workline:line-record {\"state\":\"\",\"body\":\"\",\"hops\":0,\"waits\":\"ready\"} -->\n<!-- workline:sticky=line/state -->"]
+run: {route: reconcile, open-merge-request: true, ai: "fake:tester-two-scenarios", input: {reconcile: list, room: "true"}}
+expect:
+  status: pass
+  agent-calls: 0
+  summary: "reconcile: room: 1 issue due: #6"
+  findings:
+    - {rule: state-room, level: info, where: "#6"}
+    - {rule: state-waits, level: info, where: "#7", message: "ready holds 2 open issues"}
+  no-findings: [{rule: state-room, where: "#7"}]
+  forge:
+    issues:
+      - {id: 6, comments: 1}
+      - {id: 7, comments: 1}

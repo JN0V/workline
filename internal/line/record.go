@@ -88,6 +88,10 @@ type Record struct {
 	// on the same body, its last read having left the issue unrefined
 	// (unrefined.go, #951); past RefineRetries, Blocked.
 	Retry int `json:"retry,omitempty"`
+	// Ran: when the line last ran a step on the issue, RFC 3339: a step
+	// due again in the same state waits from then, in the reconciler's
+	// order (ADR-0059, amended 2026-11-03).
+	Ran string `json:"ran,omitempty"`
 }
 
 // StateWrite is what the line writes on an issue once its step ran:
