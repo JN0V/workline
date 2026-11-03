@@ -3,6 +3,7 @@
 package engine
 
 import (
+	"cmp"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -62,6 +63,9 @@ type Options struct {
 	// OpenMergeRequest puts what the patches wrote on a branch of the role's,
 	// and opens a merge request for it, or updates the one open (ADR-0006).
 	OpenMergeRequest bool
+	// Command names the command run, for the message of a missing forge
+	// (default: the option --open-merge-request).
+	Command string
 	// DryRun: on `release`, the line's dry run (`--dry-run`, ADR-0050):
 	// every step run with no agent, nothing applied, what would hold the
 	// release said, none of it blocking. The line's; a role never sees it.
@@ -564,7 +568,7 @@ func run(o Options, res *Result) error {
 			return err
 		}
 		if f == nil {
-			return errors.New("--open-merge-request needs a forge: " + forge.Missing)
+			return errors.New(cmp.Or(o.Command, "--open-merge-request") + " needs a forge: " + forge.Missing)
 		}
 		open, err := f.OpenMergeRequests(branchPrefix(r.Name))
 		if err != nil {
@@ -663,7 +667,7 @@ func run(o Options, res *Result) error {
 	var intents, said []intent.Intention
 	var v *verdict.Verdict
 	askedOnce := false // asked again once already, an answer unread or one post said to mend
-	unasked := false // a task the agent was not asked, nor answered: what pre gave it read by no one
+	unasked := false   // a task the agent was not asked, nor answered: what pre gave it read by no one
 	for {
 		a, err := attempt(r, o, ag, taskErr == nil, tier, runDir, env, line, settings, cfg, res)
 		if err != nil {

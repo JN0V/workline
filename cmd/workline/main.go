@@ -1233,7 +1233,7 @@ func developCmd(args []string) int {
 	}
 	absRoles, _ := filepath.Abs(rolesDir)
 	res := engine.Run(engine.Options{Repo: abs, RolesDir: absRoles, Role: "developer", Event: event, AI: *ai,
-		Forge: *forgeSpec, Target: target, NoApply: *noApply, OpenMergeRequest: event == "issue", Inputs: inputs})
+		Forge: *forgeSpec, Target: target, NoApply: *noApply, OpenMergeRequest: event == "issue", Command: "workline develop", Inputs: inputs})
 	if *asJSON {
 		out, _ := json.MarshalIndent(res, "", "  ")
 		fmt.Println(string(out))
@@ -1259,7 +1259,8 @@ func testRun(repo, roles, ai, forgeSpec, event string, target *forge.Target, noA
 	}
 	absRoles, _ := filepath.Abs(rolesDir)
 	res := engine.Run(engine.Options{Repo: abs, RolesDir: absRoles, Role: "tester", Event: event, AI: ai,
-		Forge: forgeSpec, Target: target, NoApply: noApply, OpenMergeRequest: event == "issue" || event == "curate"})
+		Forge: forgeSpec, Target: target, NoApply: noApply, OpenMergeRequest: event == "issue" || event == "curate",
+		Command: "workline test " + map[bool]string{true: "write", false: event}[event == "issue"]})
 	if asJSON {
 		out, _ := json.MarshalIndent(res, "", "  ")
 		fmt.Println(string(out))
