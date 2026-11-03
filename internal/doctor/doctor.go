@@ -83,13 +83,21 @@ func Run(o Options) *Report {
 	switch {
 	case errors > 0:
 		r.Status = "block"
-		r.Summary = fmt.Sprintf("%d problems, %d warnings", errors, warns)
+		r.Summary = fmt.Sprintf("%s, %s", countNoun(errors, "problem"), countNoun(warns, "warning"))
 	case warns > 0:
-		r.Summary = fmt.Sprintf("%d warnings: some checks do not run", warns)
+		r.Summary = countNoun(warns, "warning") + ": some checks do not run"
 	default:
 		r.Summary = "everything workline uses is set up"
 	}
 	return r
+}
+
+// countNoun writes a count with its noun, in the plural unless the count is 1.
+func countNoun(n int, noun string) string {
+	if n == 1 {
+		return fmt.Sprintf("%d %s", n, noun)
+	}
+	return fmt.Sprintf("%d %ss", n, noun)
 }
 
 func (r *Report) add(c Check) { r.Checks = append(r.Checks, c) }
@@ -122,7 +130,7 @@ func machine(r *Report, o Options) {
 				r.add(Check{Area: "machine", Rule: "hooks-outdated", Level: Warn,
 					Message: fmt.Sprintf("%d global git %s in %s %s written by another version of workline: a repository's own hooks may be skipped",
 						len(old), plural(old, "hook", "hooks"), p.Hooks, plural(old, "was", "were")),
-					Fix:     "workline hooks install --global"})
+					Fix: "workline hooks install --global"})
 			} else {
 				r.add(Check{Area: "machine", Rule: "hooks", Level: OK, Message: "global git hooks installed in " + p.Hooks})
 			}
