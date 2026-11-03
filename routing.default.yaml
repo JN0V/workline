@@ -43,8 +43,9 @@ reconcile-max: 3
 # said once on its issue, and the next event or reconcile starts it when
 # room appears. Ready holds 5: about a week of the developer's runs, so a
 # ready issue is still current when built. Ready counts what the
-# developer can take: an issue waiting for its tests, or on another
-# issue, is counted apart, and one without its tests goes to Tests. Limits
+# developer can take: an issue waiting for its tests, on another issue,
+# or on a claim with code whose Scope overlaps its, is counted apart, and
+# one without its tests goes to Tests. Limits
 # on every state of a ring of `next` are refused. A project sets its own in
 # `routing: wip:`, state by state; 0 lifts a limit.
 wip:

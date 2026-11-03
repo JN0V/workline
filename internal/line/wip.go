@@ -13,10 +13,12 @@ package line
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/board"
+	"github.com/JN0V/workline/internal/developer"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/routing"
 	"github.com/JN0V/workline/internal/tester"
@@ -38,6 +40,11 @@ type tally struct {
 	drafts map[int]bool // nil until read
 	proofs map[int]bool // by issue, once read
 	moved  map[int]bool
+	// The open merge requests, and the repository's files, read at first
+	// need: what says which claims hold their Scope (developer.Held).
+	mrs   []forge.MergeRequest
+	files []string
+	read  bool
 	// The product owner's delay for a question (timeout.go), read once
 	// from its role in rolesDir and the project in repo.
 	rolesDir, repo string
@@ -69,6 +76,32 @@ func (t *tally) drafted(b forge.Backlog, id int) (bool, error) {
 		}
 	}
 	return t.drafts[id], nil
+}
+
+// held are the developer's claims in state doing that hold their Scope,
+// each its paths: those an open merge request closes (#952); a claim
+// whose agent wrote no code holds none. open: the open issues.
+func (t *tally) held(b forge.Backlog, doing routing.State, open []forge.Issue) (map[int][]string, error) {
+	if !slices.ContainsFunc(open, func(is forge.Issue) bool { return slices.Contains(is.Labels, doing.Label) }) {
+		return nil, nil // no claim: nothing to read
+	}
+	if !t.read {
+		f, ok := b.(interface {
+			ListMergeRequests() ([]forge.MergeRequest, error)
+		})
+		if !ok {
+			return nil, fmt.Errorf("this forge lists no merge requests: which claims hold code cannot be read")
+		}
+		mrs, err := f.ListMergeRequests()
+		if err != nil {
+			return nil, err
+		}
+		t.mrs, t.read = mrs, true
+		if t.repo != "" {
+			t.files = developer.RepoFiles(t.repo)
+		}
+	}
+	return developer.Held(open, t.mrs, doing.Label, nil, t.files), nil
 }
 
 // proved says whether a proof kind is recorded on issue id in place of a
@@ -111,16 +144,26 @@ func untested(cfg *routing.Config, b forge.Backlog, t *tally, s routing.State, i
 
 // apart says why issue is, in state s, is not counted in its limit: what
 // it waits on is no room after s, so its state's role cannot pull it;
-// "" when it counts.
-func apart(cfg *routing.Config, b forge.Backlog, t *tally, s routing.State, is forge.Issue, open map[int]bool) (string, error) {
+// "" when it counts. An issue whose Scope overlaps a claim holding code
+// waits on that claim, in the state after (#952). open: the open issues.
+func apart(cfg *routing.Config, b forge.Backlog, t *tally, s routing.State, is forge.Issue, open []forge.Issue, isOpen map[int]bool) (string, error) {
 	if s.Role != developerRole {
 		return "", nil
 	}
-	if len(backlog.Waiting(is, open)) > 0 || len(backlog.Parts(is)) > 0 {
+	if len(backlog.Waiting(is, isOpen)) > 0 || len(backlog.Parts(is)) > 0 {
 		return "it waits on another issue", nil
 	}
 	if u, err := untested(cfg, b, t, s, is, nil); err != nil || u {
 		return "it waits for its tests", err
+	}
+	if doing, ok := cfg.State(s.Next); ok && s.Next != "" {
+		held, err := t.held(b, doing, open)
+		if err != nil {
+			return "", err
+		}
+		if n, p := developer.Overlapping(is, held, t.files); n != 0 {
+			return developer.OverlapWhy(n, p), nil
+		}
 	}
 	return "", nil
 }
@@ -153,7 +196,7 @@ func waits(cfg *routing.Config, b forge.Backlog, s routing.State, open *[]forge.
 	n, left := len(in), 0
 	if n >= limit { // the count refined only when it would stop the step: its reads cost API calls
 		for _, is := range in {
-			why, err := apart(cfg, b, t, next, is, isOpen)
+			why, err := apart(cfg, b, t, next, is, *open, isOpen)
 			if err != nil {
 				return "", err
 			}
@@ -168,7 +211,7 @@ func waits(cfg *routing.Config, b forge.Backlog, s routing.State, open *[]forge.
 	}
 	holds := fmt.Sprintf("%s holds %d open %s, its limit %d (routing.wip)", s.Next, n, plural(n, "issue", "issues"), limit)
 	if left > 0 {
-		holds = fmt.Sprintf("%s holds %d open %s the %s can take, its limit %d (routing.wip), and %d waiting for %s tests or another issue, not counted",
+		holds = fmt.Sprintf("%s holds %d open %s the %s can take, its limit %d (routing.wip), and %d waiting for %s tests, another issue or paths taken, not counted",
 			s.Next, n, plural(n, "issue", "issues"), next.Role, limit, left, plural(left, "its", "their"))
 	}
 	return holds + fmt.Sprintf(": the %s starts when it has room", s.Role), nil

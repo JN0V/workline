@@ -12,6 +12,8 @@ given:
     issues:
       - {id: 1, title: "Add", labels: ["workline:ready", "workline:developing"], body: "## Need\n\nI want to add.\n\n## Scope\n\n- `src/lib.sh`: `add`.\n"}
       - {id: 2, title: "Multiply", labels: ["workline:ready"], body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `src/`: a `mul` function.\n"}
+    merge-requests:
+      - {id: 3, branch: workline/developer/1, title: "feat: add", body: "Closes #1"}
 run:
   develop: []
   ai: "fake:developer-nothing"

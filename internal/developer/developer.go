@@ -286,10 +286,55 @@ func overlap(a, b []string) string {
 	return ""
 }
 
+// Held are the issues the developer holds with code, each its Scope's
+// paths: claimed (claimLabel), and an open merge request closes it
+// (#952). A claim whose agent wrote no code holds no Scope: nothing of
+// its can conflict, and the hours it waits out are a pause before it is
+// taken again, not a hold on the issues beside it. letGo: the claims a
+// run lets go; files: the repository's, the Scopes read against them.
+func Held(issues []forge.Issue, mrs []forge.MergeRequest, claimLabel string, letGo map[int]bool, files []string) map[int][]string {
+	coded := map[int]bool{}
+	for _, m := range mrs {
+		for _, n := range forge.Closes(m.Title, m.Body) {
+			coded[n] = true
+		}
+	}
+	held := map[int][]string{}
+	for _, is := range issues {
+		if !is.Closed && slices.Contains(is.Labels, claimLabel) && coded[is.ID] && !letGo[is.ID] {
+			held[is.ID] = inRepo(scopePaths(is.Body, files), files)
+		}
+	}
+	return held
+}
+
+// Overlapping is the first issue of held, by number, whose Scope's
+// paths overlap is's, and the path; 0 when none, or is itself.
+func Overlapping(is forge.Issue, held map[int][]string, files []string) (int, string) {
+	mine := inRepo(scopePaths(is.Body, files), files)
+	for _, n := range slices.Sorted(maps.Keys(held)) {
+		if p := overlap(mine, held[n]); p != "" && n != is.ID {
+			return n, p
+		}
+	}
+	return 0, ""
+}
+
+// OverlapWhy says why an issue is passed over: its Scope's path p
+// overlaps issue n's, held.
+func OverlapWhy(n int, p string) string {
+	return fmt.Sprintf("its %s's `%s` overlaps #%d's, taken", work.Name(work.Scope), p, n)
+}
+
+// RepoFiles are the files the repository's index holds, nil when they
+// cannot be read: what a Scope's paths are read against.
+func RepoFiles(repo string) []string { return repoFiles(repo) }
+
 // pick is the issue the developer takes: the first, in the backlog's
 // order, offered to whoever builds (ready, waiting on no open issue, no
 // parts), assigned to nobody, not claimed already, no open merge request
-// closing it, its Scope's paths clear of the issues the developer holds.
+// closing it, its Scope's paths clear of the issues the developer holds
+// with code (Held).
 // testsFirst, where the project routes the tester: an issue whose
 // Validation names scenarios waits for the tester's open Draft of its
 // tests (ADR-0055), or the kind of proof it recorded instead (proofs,
@@ -313,12 +358,7 @@ func pick(issues []forge.Issue, mrs []forge.MergeRequest, s Settings, only int, 
 			}
 		}
 	}
-	held := map[int][]string{} // the issues the developer holds: their Scope's paths
-	for _, is := range issues {
-		if slices.Contains(is.Labels, s.ClaimLabel) && !letGo[is.ID] {
-			held[is.ID] = inRepo(scopePaths(is.Body, files), files)
-		}
-	}
+	held := Held(issues, mrs, s.ClaimLabel, letGo, files)
 	backlog.Order(issues)
 	for _, is := range issues {
 		if only != 0 && is.ID != only || !backlog.Offered(is, open) {
@@ -338,13 +378,9 @@ func pick(issues []forge.Issue, mrs []forge.MergeRequest, s Settings, only int, 
 			why = "its acceptance tests are not written yet: it waits for the tester's Draft"
 			next = "the tester writes them, as a Draft of its own; the developer takes this issue at a run after that Draft is open"
 		default:
-			mine := inRepo(scopePaths(is.Body, files), files)
-			for _, n := range slices.Sorted(maps.Keys(held)) {
-				if p := overlap(mine, held[n]); p != "" {
-					why = fmt.Sprintf("its %s's `%s` overlaps #%d's, taken", work.Name(work.Scope), p, n)
-					next = fmt.Sprintf("#%d merged or let go; the developer looks at this issue again at its next run", n)
-					break
-				}
+			if n, p := Overlapping(is, held, files); n != 0 {
+				why = OverlapWhy(n, p)
+				next = fmt.Sprintf("#%d merged or let go; the developer looks at this issue again at its next run", n)
 			}
 		}
 		if why == "" {
@@ -695,7 +731,8 @@ func claimBody(a Act, s Settings) string {
 	}
 	if a.NoCode {
 		fmt.Fprintf(&b, "\n- **Why no pull request**: its agent wrote no code within its bounds.\n"+
-			"- **Next**: the claim is let go %d hours after it was taken, said here; then the developer may take it again, or a person assigns themselves.\n", s.ClaimHours)
+			"- **Next**: the claim is let go %d hours after it was taken, said here; then the developer may take it again, or a person assigns themselves. "+
+			"Meanwhile it holds no paths: an issue whose %s overlaps this one's may be taken.\n", s.ClaimHours, work.Name(work.Scope))
 	}
 	if len(a.Unread) > 0 && a.Proof == nil {
 		// No pull request to post them on: here, never lost (#746).

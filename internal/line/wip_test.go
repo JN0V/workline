@@ -67,7 +67,7 @@ func TestWaitsCountsWhatCanBePulled(t *testing.T) {
 
 	open[1].Body = "## Need\n\nx\n" // no scenario: the developer takes it as it is
 	why, err = waits(cfg, b, tests, &open, newTally())
-	if err != nil || !strings.Contains(why, "ready holds 2 open issues the developer can take, its limit 2 (routing.wip), and 1 waiting for its tests or another issue, not counted") {
+	if err != nil || !strings.Contains(why, "ready holds 2 open issues the developer can take, its limit 2 (routing.wip), and 1 waiting for its tests, another issue or paths taken, not counted") {
 		t.Errorf("at the limit: %q (%v)", why, err)
 	}
 

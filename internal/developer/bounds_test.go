@@ -203,13 +203,19 @@ func TestPickReadsPlainScope(t *testing.T) {
 		{ID: 1, Labels: []string{"workline:ready", s.ClaimLabel}, Body: "## Scope\n\ninternal/doctor, docs/install.md\n"},
 		{ID: 2, Labels: []string{"workline:ready"}, Body: "## Scope\n\ninternal/doctor/doctor.go\n"},
 	}
-	id, passed := pick(issues, nil, s, 0, false, nil, nil, []string{"internal/doctor/doctor.go", "docs/install.md"})
+	// #1 holds its Scope by its open pull request; with none, its agent
+	// wrote no code, and it holds nothing (#952).
+	if id, _ := pick(issues, nil, s, 0, false, nil, nil, []string{"internal/doctor/doctor.go", "docs/install.md"}); id != 2 {
+		t.Errorf("pick beside a claim with no code: %d, want #2", id)
+	}
+	coded := []forge.MergeRequest{{ID: 7, Title: "fix: doctor", Body: "Closes #1"}}
+	id, passed := pick(issues, coded, s, 0, false, nil, nil, []string{"internal/doctor/doctor.go", "docs/install.md"})
 	if id != 0 || len(passed) != 2 || !strings.Contains(passed[1].Why, "overlaps #1") {
 		t.Errorf("pick: %d, %v", id, passed)
 	}
 	// A bare name is the one file of that name, as the bounds read it.
 	issues[0].Body, issues[1].Body = "## Scope\n\n- `doctor.go`\n", "## Scope\n\n- `internal/doctor/doctor.go`\n"
-	if id, passed := pick(issues, nil, s, 0, false, nil, nil, []string{"internal/doctor/doctor.go"}); id != 0 || len(passed) != 2 {
+	if id, passed := pick(issues, coded, s, 0, false, nil, nil, []string{"internal/doctor/doctor.go"}); id != 0 || len(passed) != 2 {
 		t.Errorf("pick on a bare name: %d, %v", id, passed)
 	}
 }

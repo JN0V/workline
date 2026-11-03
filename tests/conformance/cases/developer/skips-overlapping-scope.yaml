@@ -3,7 +3,8 @@ about: >
   Several issues may be taken at once, limited by conflicts only
   (ADR-0054): an issue whose Scope names a path under or over one that an
   issue the developer holds names is passed over, as is the one it holds;
-  the next, clear, is taken.
+  the next, clear, is taken. #1 holds its Scope by its open pull request:
+  a claim with no code holds none (#952).
 given:
   repo: tested
   forge:
@@ -11,6 +12,8 @@ given:
       - {id: 1, title: "Add", labels: ["workline:ready", "workline:developing"], body: "## Need\n\nI want to add.\n\n## Scope\n\n- `src/lib.sh`: `add`.\n"}
       - {id: 2, title: "Multiply", labels: ["workline:ready"], body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `src/`: a `mul` function.\n"}
       - {id: 3, title: "Document", labels: ["workline:ready"], body: "## Need\n\nI want it said.\n\n## Scope\n\n- `docs/usage.md`.\n"}
+    merge-requests:
+      - {id: 4, branch: workline/developer/1, title: "feat: add", body: "Closes #1"}
 run: {develop: [], ai: "fake:developer-nothing"}
 expect:
   status: pass

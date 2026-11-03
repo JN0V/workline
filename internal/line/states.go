@@ -161,7 +161,7 @@ func stateOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, 
 	if !ok && had && s.Role == developerRole {
 		// Left free by the developer since it was woken: its claim let
 		// go, or the issue it was passed over for held no more (#894).
-		rec, why, err := freed(cfg, b, s, is, rec, comments, open)
+		rec, why, err := freed(cfg, b, t, s, is, rec, comments, open)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -186,7 +186,7 @@ func stateOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, 
 	} else if why != "" {
 		return nil, waiting(res, s, why, rec, where, is.ID), nil
 	}
-	if now, err = woken(cfg, b, s, is.ID, now, open); err != nil {
+	if now, err = woken(cfg, b, t, s, is.ID, now, open); err != nil {
 		return nil, nil, err
 	}
 	res.Findings = append(res.Findings, verdict.Finding{Rule: "state-wakes", Level: "info", Where: where,

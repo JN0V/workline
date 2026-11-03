@@ -1,0 +1,36 @@
+case: routing/ready-no-code-claim-frees
+about: >
+  Ready full of issues the developer passed over for a claim with no
+  code (#952): #3 and #4 were woken while #5 was held, their Scopes
+  overlapping its; #5's agent wrote no code, no pull request closes it,
+  its claim waits out claim-hours. It holds no Scope: the reconciler
+  wakes the developer on #3 again, at once. Before, both waited a day,
+  and Tests with them.
+given:
+  repo: tested
+  config:
+    routing: {events: {issue: [tester, developer]}, wip: {ready: 2}, reconcile-max: 1}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply"
+        labels: ["workline:ready"]
+        body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: `mul`.\n"
+        comments: ["<!-- workline:line-record {\"state\":\"ready\",\"body\":\"05d9d8d501ac\",\"hops\":1,\"woke\":\"2026-11-03T10:48:40Z\",\"held\":[5]} -->\n<!-- workline:sticky=line/state -->"]
+      - id: 4
+        title: "Multiply again"
+        labels: ["workline:ready"]
+        body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: `mul`.\n"
+        comments: ["<!-- workline:line-record {\"state\":\"ready\",\"body\":\"05d9d8d501ac\",\"hops\":1,\"woke\":\"2026-11-03T10:48:40Z\",\"held\":[5]} -->\n<!-- workline:sticky=line/state -->"]
+      - id: 5
+        title: "Add"
+        labels: ["workline:developing"]
+        body: "## Need\n\nI want to add.\n\n## Scope\n\n- `lib.sh`: `add`.\n"
+run: {route: reconcile, open-merge-request: true, ai: "fake:developer-nothing", input: {reconcile: list}}
+expect:
+  status: pass
+  summary: "reconcile: 1 issue due: #3"
+  agent-calls: 0
+  findings:
+    - {rule: state-freed, level: info, where: "#3", message: "#5, held when the line woke the developer on it, is held no more"}
+    - {rule: reconcile-left, level: info, where: "#4"}

@@ -2,7 +2,7 @@ case: routing/ready-claim-let-go-is-a-hop
 about: >
   Back from Doing to Ready is a state step (#894): #3, its claim let go,
   wakes the developer again, one hop more in its record, which now says
-  when the line woke it and the issues the developer held then (#5). A
+  when the line woke it and the issues the developer held then (#5, its pull request open). A
   developer taking and letting go an issue for good stops at the hop
   cap: #4, its claim let go at 8 hops, goes to Blocked, the count said
   on it, never woken in a loop. No agent asked.
@@ -25,6 +25,8 @@ given:
         body: "## Need\n\nI want to multiply.\n"
         comments: ["<!-- workline:line-record {\"state\":\"ready\",\"body\":\"8a828a06be19\",\"labeled\":\"2026-11-01T10:48:29Z\",\"hops\":8,\"woke\":\"2026-11-01T10:48:40Z\"} -->\n<!-- workline:sticky=line/state -->"]
       - {id: 5, title: "Divide", labels: ["workline:developing"], body: "## Need\n\nI want to divide.\n"}
+    merge-requests:
+      - {id: 6, branch: workline/developer/5, title: "feat: divide", body: "Closes #5"}
 run: {route: reconcile, open-merge-request: true, ai: none}
 expect:
   status: pass

@@ -1,0 +1,25 @@
+case: developer/no-code-claim-holds-no-scope
+about: >
+  A claim whose agent wrote no code holds no Scope (#952): #1 is taken,
+  no pull request closes it, its claim waits out claim-hours. #2's
+  Scope overlaps #1's, but nothing of #1's can conflict with it: the
+  developer takes #2, the first ready issue nobody holds. Before, #2
+  waited for #1's claim to end, a day later.
+given:
+  repo: tested
+  forge:
+    issues:
+      - {id: 1, title: "Add", labels: ["workline:ready", "workline:developing"], body: "## Need\n\nI want to add.\n\n## Scope\n\n- `src/lib.sh`: `add`.\n"}
+      - {id: 2, title: "Multiply", labels: ["workline:ready"], body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `src/`: a `mul` function.\n"}
+run: {develop: [], ai: "fake:developer-nothing"}
+expect:
+  status: pass
+  summary: "took #2"
+  agent-calls: 1
+  forge:
+    issues:
+      - {id: 1, labels: ["workline:ready", "workline:developing"], comments: 0}
+      - id: 2
+        labels: ["workline:ready", "workline:developing"]
+        comment-contains: ["#1: taken already, labelled workline:developing"]
+        comment-lacks: ["overlaps #1"]
