@@ -45,7 +45,7 @@ expect:
   status: pass
   findings:
     - {rule: candidate-refused, where: "#8", message: "closed by @dana: v1.1.0-rc.1 refused, features wait for a person's yes again"}
-    - {rule: waits-for-a-yes, where: "#2", message: "features wait for a person's yes since a release candidate was refused (#9)"}
+    - {rule: waits-for-a-yes, where: "#2", message: "features and tasks wait for a person's yes since a release candidate was refused (#9)"}
   no-findings: [{rule: auto-merge-on}, {rule: candidate-cut}]
   not-pushed: [release/v1.1]
   forge:
