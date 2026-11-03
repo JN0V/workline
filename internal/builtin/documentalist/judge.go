@@ -671,6 +671,15 @@ func judgePatches(repo string, s Settings, judged map[string]map[string]string, 
 			if tree, err = loadTree(repo, s.Docs); err != nil {
 				return j, err
 			}
+			// A doc put before the agent is read even when no glob names it.
+			for p := range judged {
+				if _, ok := tree.Docs[p]; ok || !tree.Files[p] {
+					continue
+				}
+				if data, rerr := os.ReadFile(filepath.Join(repo, p)); rerr == nil {
+					tree.Docs[p] = string(data)
+				}
+			}
 			for p, c := range tree.Docs {
 				after[p] = c
 			}
@@ -1195,6 +1204,9 @@ func checkedOf(content string) string {
 func judgedOf(content string) string {
 	if d, err := ParseDoc("", []byte(content)); err == nil && d != nil && len(d.Judged) >= 7 {
 		return d.Judged
+	}
+	if v := headerValue(content, "judged"); len(v) >= 7 {
+		return v // a header ParseDoc does not take whole still says it
 	}
 	return "-"
 }
