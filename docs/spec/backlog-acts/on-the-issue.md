@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog/backlog.go, internal/backlog/ledger.go, internal/backlog/say.go, internal/report/summary.go, internal/engine/backlog.go]
 status: draft
-checked: f38d194f
+checked: 8538d558
 verified: agent:claude-code
 ---
 # On the issue
@@ -36,7 +36,13 @@ state under it in an HTML comment, so no mail holds it (`backlog.FormatState`,
   edited (shown only when there is a draft), a comment (revise), the
   label taken off (not now), a closing (it should not exist); a closing
   only advised: closing it, the label taken off, a comment;
-- once set aside: that nothing more is proposed until the issue changes.
+- once set aside: that nothing more is proposed until the issue changes;
+- left to a person past its revisions (`left`): who wrote, and that the
+  role proposes nothing more there until a person answers;
+- read and left with nothing (`silent`, [Refining to ready](refine.md)):
+  what it lacks and the agent's note, until the role acts on it; left in
+  refine after the tester found no test possible, or for scenarios no
+  test can name: what a person does to move it on.
 
 Written at the end of each run (`Plan.Persist`), edited in place, never a
 second comment. When a proposal starts waiting on a person — the label
@@ -90,7 +96,7 @@ the issue linked to its page
 waiting on a person link the filter on the label (`forge.LabelFilter`).
 The other findings follow, a line each: on an issue, the issue linked and
 its message, no rule's name; on the backlog (`proposals-waiting`,
-`demoted`, `setting-gone`, `values-where`, `level-unknown`, `next-unestimated`, `values-hidden`,
+`demoted`, `setting-gone`, `plan-unread`, `report-closed`, `values-where`, `level-unknown`, `next-unestimated`, `values-hidden`,
 `estimates-stuck`), "the backlog"
 and its message. The role's own
 line counts what a person will see on the issues, by issue — "issues: 2

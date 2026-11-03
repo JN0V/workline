@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/builtin/productowner/productowner.go, internal/backlog/ledger.go, internal/backlog/opening.go]
 status: draft
-checked: ffc4c10b
+checked: 8538d558
 verified: agent:claude-code
 ---
 # Reading
@@ -28,7 +28,9 @@ role." —, a demotion of the merge policy, main's findings after a merge
 no act is done nor proposed on it (`workline-issue`, #429); a role's
 finding and an import are work. The order: an issue a person who counts commented on since the role read it
 — waiting on them ([A person's answers](answers.md)), set aside, or neither: their
-word, read first, the agent told so —; one read again for a change to
+word, read first, the agent told so —, or a question of the role's
+unanswered past `acts.ask.wait`, read once for its assumption
+([A question nobody answers](refine.md#a-question-nobody-answers)); one read again for a change to
 what it was built on ([A changed need](changed-need.md)); one an act was proposed on only because a run's cap was
 reached — the act decided again, the proposal settled once its issue is
 read —; a person's issue never read, newest first (`backlog.ByPerson`: no
@@ -37,7 +39,9 @@ since the role's last run read in the run that first sees it, its first
 state written before any act; then those with something new since they
 were read — a commit touched their sources, a person changed its body
 (`body`), a person reopened what the role closed (`closed`), the
-reviewer's spec findings, the tester's "no test possible" (`no-test`) —; then one left with nothing under an older
+reviewer's spec findings, a review answered by asking a person for the
+Verification or Scope the role now rewrites, its own Validation naming no
+scenario the tester reads, the tester's "no test possible" (`no-test`) —; then one left with nothing under an older
 way of reading (`backlog.LeftBehind`: its `rules` below
 `backlog.Reading`, a section lacking, no code named, no act ever done,
 nothing waiting on anyone), read again once, newest first — one past
@@ -45,7 +49,13 @@ nothing waiting on anyone), read again once, newest first — one past
 issues it failed on; last, the catch-up of an
 import's, a finding's or a bot's issues never read, oldest first. From
 `proposals-max` issues waiting on a person, only those a person
-commented on are read. One
+commented on are read. A run woken for one issue's state (the `issue`
+event, [ADR-0059](../../adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md))
+reads that issue alone, whatever changed, `proposals-max` aside; one
+woken only for its drafts past `acts.ask.wait` has them taken as written,
+with no agent. A run over the whole backlog also asks the kind of the
+issues read before that no kind label tells, in one light call apart
+([The kind](../../../roles/product-owner/docs/kind.md)). One
 set aside by a person is not read until its body changes or a person who
 counts comments — or, once, when such a comment brought it back under an
 older way of reading and it stayed aside (`backlog.BroughtBack`: a

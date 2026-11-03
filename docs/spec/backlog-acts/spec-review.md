@@ -2,17 +2,17 @@
 type: reference
 sources: [internal/backlog/spec.go, internal/backlog/backlog.go, internal/routing/routing.go, internal/builtin/productowner/productowner.go]
 status: draft
-checked: a7467d4f
+checked: 8538d558
 verified: agent:claude-code
 ---
 # A spec read before ready
 
 Part of [Acts on the backlog](../backlog-acts.md): the reviewer's reading of a refined issue, and the ready it holds.
 
-When the project's line runs the reviewer after the product owner
-(`schedule: [documentalist, product-owner, reviewer]`; `routing.Follows`),
-the reviewer reads one refined issue a run and keeps what it found in one
-comment on it, `<!-- workline:sticky=reviewer/spec -->`, hiding a record
+When the project's line runs the reviewer after the product owner on
+any event (`schedule: [documentalist, product-owner, reviewer]`, or
+`issue: [product-owner, reviewer, …]`; `routing.Follows`), the reviewer
+reads refined issues and keeps what it found in one comment on each, `<!-- workline:sticky=reviewer/spec -->`, hiding a record
 (`backlog.SpecReview`, #128, ADR-0020):
 
 ```
@@ -63,4 +63,8 @@ comment on it, `<!-- workline:sticky=reviewer/spec -->`, hiding a record
 - **Released**: once the record holds the body as it is, nothing open,
   not stopped, and the four sections pass, `pre` proposes `ready` itself
   (`own`), with no agent, under `acts.ready`'s mode and cap.
+- **At once, on `issue`** ([ADR-0059](../../adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md),
+  [routing](../routing.md)): refine's step runs the reviewer after the
+  product owner on that issue's spec alone; its review, written since,
+  makes the step due again, and the product owner reads it then.
 - **Off** (the reviewer not after it in a line): nothing changes.

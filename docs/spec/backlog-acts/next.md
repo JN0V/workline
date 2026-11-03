@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog/depend.go, internal/backlog/order.go, internal/backlog/board.go, internal/builtin/productowner/productowner.go, internal/forge/forge.go]
 status: draft
-checked: edc4ffc2
+checked: 8538d558
 verified: agent:claude-code
 ---
 # The order, and what is next
@@ -32,7 +32,9 @@ left hold a cycle: it is reported, the cycle's first issue by `Less` placed — 
 the order goes on — the cycle never followed. `ready` is allowed on a blocked issue,
 its sections say it is understood, not that it can start; but **the
 first ready issue offered** is the first in the order bearing
-`workline:ready` that waits on no open issue and has no parts
+`workline:ready`, not `workline:blocked`
+([ADR-0059](../../adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md)),
+that waits on no open issue and has no parts
 (`backlog.Offered`, `backlog.NextReady`) — to whoever builds next, person
 or developer role (#117); the job's summary lists the first `next-max`
 of them ("What is next, what is stuck", below).
@@ -49,7 +51,7 @@ run, with or without an agent, from the forge as it is — nothing of them
 stored:
 
 - **Next** (`next-ready`): the first `next-max` (5) issues of the order
-  (`backlog.Order`): bearing `workline:ready`, waiting on no open issue,
+  (`backlog.Order`): bearing `workline:ready`, not blocked, waiting on no open issue,
   no parts; each with its milestone and priority. At 0, none. With the
   role's `priority` or `effort` set, each with its cell of the grid
   instead — "High · Effort Low → quick win", a value missing said, its
@@ -59,7 +61,8 @@ stored:
   members only, on a public repository, are never shown: the order kept,
   "Values hidden" said (`values-hidden`).
 - **Stuck** (`stuck`): each issue waiting on a person for more than
-  `stuck-days` (14) days, with the day it started and how long:
+  `stuck-days` (14) days, with the day it started and how long — on a
+  run woken for one issue, that issue's own waits alone (#804):
 
 | Waits on | Since | Read from |
 |---|---|---|
