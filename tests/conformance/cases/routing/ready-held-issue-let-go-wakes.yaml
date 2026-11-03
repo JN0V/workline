@@ -3,7 +3,8 @@ about: >
   An issue the developer passed over for another it held is due again
   once that one is held no more (#894): when the line woke the developer
   on #3, it held #9, whose Scope overlapped; #9 is now back in Ready,
-  its claim let go. #4 was passed over for #5, still held: it waits on.
+  its claim let go. #4 was passed over for #5, still held, its pull request open: it
+  waits on.
   The developer said "#9 merged or let go" on #3; nothing else would
   wake it. No agent asked, nothing written: the CI starts each run.
 given:
@@ -29,6 +30,8 @@ given:
         assignees: [alice]
         body: "## Need\n\nI want to multiply.\n"
         comments: ["<!-- workline:line-record {\"state\":\"ready\",\"body\":\"8a828a06be19\",\"hops\":1} -->\n<!-- workline:sticky=line/state -->"]
+    merge-requests:
+      - {id: 6, branch: workline/developer/5, title: "feat: divide", body: "Closes #5"}
 run: {route: reconcile, open-merge-request: true, ai: "fake:developer-nothing", input: {reconcile: list}}
 expect:
   status: pass

@@ -447,7 +447,9 @@ whose result moves the issue to the next. The table is the routing's
 - **Left free by the developer, due again**
   ([ADR-0059, amended](../adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#amendment-2026-11-02-a-ready-issue-left-free-wakes-the-developer-again)):
   a wake of the developer records when (`woke`) and the issues it held
-  then (`held`). A ready issue, assigned to nobody, is due again
+  then (`held`): its claims an open pull request closes, a claim with no
+  code holding nothing ([#952](https://github.com/JN0V/workline/issues/952)).
+  A ready issue, assigned to nobody, is due again
   (`state-freed`) once its claim was put on since and let go, a hop
   more, so a take-and-let-go cycle ends at `max-hops`; or once an issue
   in `held` is held no more. A record from before `woke` is due once
@@ -559,9 +561,12 @@ a step starts only when the state it moves the issue to has room.
 - **What the developer can take**, alone, in its state ([amended](../adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#amendment-2026-11-02-a-limit-counts-what-can-be-pulled)):
   an issue there that waits for its tests (named scenarios, no tester's
   Draft open, no proof kind recorded, where the project routes the
-  tester), or on another open issue, or has parts, is counted apart, and
-  said in the wait's reason. Read only at the limit: the tester's open
-  Drafts once a run, the comments of a ready issue with none.
+  tester), or on another open issue, or has parts, or whose Scope
+  overlaps a claim holding code (an open pull request closes it,
+  [amended](../adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#amendment-2026-11-03-a-claim-with-no-code-holds-no-scope)),
+  is counted apart, and said in the wait's reason. Read only at the
+  limit: the tester's open Drafts once a run, the comments of a ready
+  issue with none, the open pull requests once when a claim is there.
 - **To its tests**: a ready issue still waiting for them goes to the
   tester's state, by rule, no agent (`state-untested`), whether the
   developer was woken on it or not. Each move wakes the tester: the

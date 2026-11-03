@@ -24,9 +24,12 @@ that is:
 - **Not taken**: no claim label on it.
 - **No open merge request closing it**: `Closes #n`, `Fixes #n` in its
   title or body. `Refs #n`, as the tester's Draft says, closes nothing.
-- **Clear of the issues the developer holds**: no path its Scope names
-  ([read as the bounds read it](bounds.md): in backticks, or in plain
-  words the repository holds) under or over one theirs names.
+- **Clear of the issues the developer holds with code**: no path its
+  Scope names ([read as the bounds read it](bounds.md): in backticks,
+  or in plain words the repository holds) under or over one theirs
+  names. A claim holds its Scope while an open pull request closes it;
+  one whose agent wrote no code holds none
+  ([amended](../../../docs/adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#amendment-2026-11-03-a-claim-with-no-code-holds-no-scope)).
 - **Its tests written first**, where the project routes the tester: an
   issue whose Validation names scenarios waits until the tester's Draft
   of its tests is open ([the triggers](triggers.md#on-a-schedule)), or
@@ -69,7 +72,8 @@ claim is a label, on every forge:
   - GitHub: left to the project's *Pull request linked to issue* when
     on; else the card's Status set, on an organisation's project only.
 - **No code, no pull request**: the comment says so, and when the claim
-  is let go.
+  is let go. Meanwhile the claim holds no Scope: an issue overlapping it
+  may be taken.
 - **Its pull request does not open**: the claim given back at once,
   what failed in the comment; the second time, the issue blocked
   ([when it does not open](pull-request.md#when-it-does-not-open)).

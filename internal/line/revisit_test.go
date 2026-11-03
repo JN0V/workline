@@ -15,7 +15,13 @@ type counted struct {
 	forge.Backlog
 	comments []string
 	open     []forge.Issue
+	mrs      []forge.MergeRequest
 	calls    map[string]int
+}
+
+func (c *counted) ListMergeRequests() ([]forge.MergeRequest, error) {
+	c.calls["merge-requests"]++
+	return c.mrs, nil
 }
 
 func (c *counted) Comments(forge.Target) ([]string, error) {

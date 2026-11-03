@@ -33,7 +33,7 @@ var developerSaid = forge.Marker("sticky=" + developerRole + "/claim")
 // developer again though its record holds its state, body and labelling:
 // "" when it is not. rec comes back as the step's record, a hop more for
 // a claim let go. open: the open issues, listed at first need.
-func freed(cfg *routing.Config, b forge.Backlog, s routing.State, is forge.Issue, rec Record, comments []string, open *[]forge.Issue) (Record, string, error) {
+func freed(cfg *routing.Config, b forge.Backlog, tl *tally, s routing.State, is forge.Issue, rec Record, comments []string, open *[]forge.Issue) (Record, string, error) {
 	next, ok := cfg.State(s.Next)
 	if s.Role != developerRole || !ok || s.Next == "" || len(is.Assignees) > 0 {
 		return rec, "", nil // a person's issue is theirs
@@ -56,7 +56,7 @@ func freed(cfg *routing.Config, b forge.Backlog, s routing.State, is forge.Issue
 	if len(rec.Held) == 0 {
 		return rec, "", nil
 	}
-	held, err := heldIn(b, next, is.ID, open)
+	held, err := heldIn(b, tl, next, is.ID, open)
 	if err != nil {
 		return rec, "", err
 	}
@@ -68,9 +68,10 @@ func freed(cfg *routing.Config, b forge.Backlog, s routing.State, is forge.Issue
 	return rec, "", nil
 }
 
-// heldIn is the open issues in state next, the developer's claims, but
-// id: what it held when woken on id. open: listed at first need.
-func heldIn(b forge.Backlog, next routing.State, id int, open *[]forge.Issue) ([]int, error) {
+// heldIn is the open issues in state next, the developer's claims that
+// hold their Scope (a claim with no code holds none, #952), but id: what
+// it held when woken on id. open: listed at first need.
+func heldIn(b forge.Backlog, tl *tally, next routing.State, id int, open *[]forge.Issue) ([]int, error) {
 	if *open == nil {
 		issues, err := b.Issues()
 		if err != nil {
@@ -78,10 +79,14 @@ func heldIn(b forge.Backlog, next routing.State, id int, open *[]forge.Issue) ([
 		}
 		*open = issues
 	}
+	claims, err := tl.held(b, next, *open)
+	if err != nil {
+		return nil, err
+	}
 	var held []int
-	for _, is := range *open {
-		if is.ID != id && !is.Closed && slices.Contains(is.Labels, next.Label) {
-			held = append(held, is.ID)
+	for n := range claims {
+		if n != id {
+			held = append(held, n)
 		}
 	}
 	slices.Sort(held)
@@ -90,12 +95,12 @@ func heldIn(b forge.Backlog, next routing.State, id int, open *[]forge.Issue) ([
 
 // woken is the record of a step that wakes the developer: when, and the
 // issues it holds then.
-func woken(cfg *routing.Config, b forge.Backlog, s routing.State, id int, rec Record, open *[]forge.Issue) (Record, error) {
+func woken(cfg *routing.Config, b forge.Backlog, tl *tally, s routing.State, id int, rec Record, open *[]forge.Issue) (Record, error) {
 	next, ok := cfg.State(s.Next)
 	if s.Role != developerRole || !ok || s.Next == "" {
 		return rec, nil
 	}
-	held, err := heldIn(b, next, id, open)
+	held, err := heldIn(b, tl, next, id, open)
 	if err != nil {
 		return rec, err
 	}
