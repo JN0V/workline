@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/instruction.md, internal/backlog/backlog.go, internal/backlog/repeat.go, internal/work/work.go, internal/backlog/plain.go, internal/backlog/assume.go]
-checked: a7467d4f
+checked: 8538d558
 verified: agent:claude-code
 ---
 # Writing an issue a person reads
@@ -35,8 +35,9 @@ first, the cause folded.
   only with a fact the Need lacks.
 - **Validation**: named scenarios a person runs, as Given / When / Then,
   each a bullet `- **Name:** Given …, When …, Then …`.
-  - **Also read**: a `**Scenario: Name**` or `Scenario: Name` line, its
-    steps below, bullets or not; the same in a fenced `gherkin` block.
+  - **Also read**: a `**Scenario: Name**`, `Scenario: Name` or
+    `### Scenario: Name` line, its steps below, bullets or not; the
+    same in a fenced `gherkin` block.
   - **Given / When / Then with no name**: no test can cite it, so the
     issue stays in refine, said on it, until the scenarios are named
     ([refining to ready](../../../docs/spec/backlog-acts/refine.md)).
@@ -190,7 +191,8 @@ the product owner goes on with its best answer, written plainly.
 
 ## Proposed next
 
-New names for these sections, a bug readied only with its steps, and
-the kind set by the role are proposed, not built:
+New names for these sections, and a bug readied only with its steps,
+are proposed, not built:
 [the proposed headings](proposed-headings.md),
-[#435](https://github.com/JN0V/workline/issues/435).
+[#435](https://github.com/JN0V/workline/issues/435). The kind set by
+the role is built: [the kind it sets](kind.md).

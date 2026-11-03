@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, internal/builtin/productowner, internal/backlog, internal/sample/acts.go, routing.default.yaml]
-checked: bd66bb99
+checked: 8538d558
 verified: agent:claude-code
 ---
 # Product owner
@@ -135,7 +135,7 @@ acts: [docs/settings.md](docs/settings.md).
 
 | Key | Default | Says |
 |---|---|---|
-| `autonomy` | `normal` | `cautious` notes and proposes; `enterprising` does more a run |
+| `autonomy` | the project's `autonomy`, else `normal` | `cautious` notes and proposes; `enterprising` does more a run |
 | `issues-per-run` | `8` | issues read a run |
 | `proposals-max` | `10` | issues waiting on you before the role slows down |
 | `undone-max` | `3` | acts of a kind undone before it is proposed everywhere |
