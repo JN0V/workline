@@ -1,9 +1,9 @@
 package doctor
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 )
 
@@ -44,6 +44,8 @@ func TestOneWarning(t *testing.T) {
 // Several warnings: Given a repository where doctor finds two warnings,
 // When I run `workline doctor`, Then its last line reads
 // `2 warnings: some checks do not run`.
+// The fixture yields several warnings (the count n is read from the
+// report); the summary must give that count with the plural form.
 func TestSeveralWarnings(t *testing.T) {
 	isolate(t)
 	repo := t.TempDir()
@@ -62,7 +64,7 @@ func TestSeveralWarnings(t *testing.T) {
 	if n < 2 {
 		t.Fatalf("setup: want at least 2 warnings, got %+v", r.Checks)
 	}
-	if !strings.HasSuffix(r.Summary, ": some checks do not run") || !strings.HasPrefix(r.Summary, "2 warnings") {
-		t.Fatalf("summary = %q, want %q (warnings found: %d)", r.Summary, "2 warnings: some checks do not run", n)
+	if want := fmt.Sprintf("%d warnings: some checks do not run", n); r.Summary != want {
+		t.Fatalf("summary = %q, want %q", r.Summary, want)
 	}
 }
