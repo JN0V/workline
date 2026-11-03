@@ -422,8 +422,14 @@ func admit(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, n *normal,
 	// The record, where a person sees it and the engine finds it again
 	// when a revert names this merge request.
 	t := forge.Target{Kind: "merge-request", ID: mr.ID}
-	body := fmt.Sprintf("**Merging with no person's yes**: the project's merge policy is `%s`, and this is workline's own %s: %s. Opened and pushed by workline's App, every commit its own, and the line passed on its head (%s), every agent's review whole. To hold it, mark it a draft or turn auto-merge off. Reverted, workline's %s merge requests wait for a person's yes again.",
-		o.Merge, kind, says, short(tip), kind)
+	// Its head's checks still running, it is not merging yet: the forge
+	// merges it once they pass, and one that fails holds it (#987).
+	head, when := "**Merging with no person's yes**", ""
+	if st.Checks == "pending" {
+		head, when = "**To merge with no person's yes, once its checks pass**", " Its head's checks still run: the forge merges it once they pass, and one that fails holds it."
+	}
+	body := fmt.Sprintf("%s: the project's merge policy is `%s`, and this is workline's own %s: %s. Opened and pushed by workline's App, every commit its own, and the line passed on its head (%s), every agent's review whole.%s To hold it, mark it a draft or turn auto-merge off. Reverted, workline's %s merge requests wait for a person's yes again.",
+		head, o.Merge, kind, says, short(tip), when, kind)
 	if err := f.Comment(t, body, forge.Marker("merge-alone="+kind)); err != nil {
 		return nil, err
 	}
