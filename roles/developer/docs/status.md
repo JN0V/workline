@@ -9,8 +9,8 @@ else a Draft, its record hidden on it; with none, it names the issue.
 Routed, it runs when an issue is labelled ready and on the schedule.
 On its pull request, a fresh run fixes each review: the five whys at
 round three, a person past round five. At the merge policy's `normal`,
-its pull request for a fix or a task merges with no person's yes; a
-feature waits for one. Measured on planted issues and a copy of a
+its pull request for a reproduced bug's fix merges with no person's
+yes; a feature or a task waits for one. Measured on planted issues and a copy of a
 real repository: the eight steps of
 [ADR-0054's plan](../../../docs/adr/0054-the-developer-takes-a-ready-issue-to-a-pull-request.md#build-plan)
 built; beta; routed where a project lists it, in workline's own line
@@ -244,13 +244,15 @@ hold:
 
 - **The merge** (step 7): at `normal`, `workline follow` merges its
   pull request with no person's yes, the kind `code`, when the issue it
-  closes is a fix or a task by its labels, every gate passed and no
-  finding open that blocks or is Important; a feature, or no kind,
-  waits for a person's yes. Each decision recorded on the pull
+  closes is a fix by its labels, every gate passed and no finding open
+  that blocks or is Important; a feature, a task or no kind waits for a
+  person's yes
+  ([#937](https://github.com/JN0V/workline/issues/937)). Each decision recorded on the pull
   request, read by the auditor with its code
   ([the merge](merge.md)). Cases
   `developer/merge-normal-admits-developer-fix`,
-  `merge-normal-holds-developer-feature`.
+  `merge-normal-holds-developer-feature`,
+  `merge-normal-holds-developer-task`.
 - **A bug's fix, reproduced first**
   ([ADR-0060](../../../docs/adr/0060-the-person-is-on-the-loop.md#4-a-person-validates-by-the-issues-kind)):
   merges alone only when its code starts from the tester's Draft, a
