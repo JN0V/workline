@@ -27,10 +27,8 @@ For each doc, the commits since its `checked` commit that touched its
 `sources`, named in a `<!-- workline … -->` comment at its top, which no
 rendering shows, or in a frontmatter the doc has.
 
-- **Only where the doc looks**: a doc writing names in backticks, or
-  naming a part of a file (`f.go#Name`, `ci.yml#jobs.test`), is suspect
-  only when what it names changes; a named part gone is said
-  ([at the push](push.md)).
+- **Only where it looks**: a doc naming a file's part (`f.go#Name`) or
+  names in backticks is suspect when they change; a part gone is said.
 - **No change**: a commit changing only docs' headers, who checked them;
   nor, on a release tool's pull request, one only putting a version number
   in place of another, line for line — the tool's bump, which would hold

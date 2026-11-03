@@ -41,8 +41,7 @@ waits for a run on the whole backlog.
 On `issue`, its state `workline:to-refine` woken where the project
 routes the role there, that issue alone
 ([the line of states](../../../docs/spec/routing.md#the-line-of-states)).
-A `workline:blocked` issue with news, or a week on, is woken the same
-way: the agent sends it back or keeps it blocked
+A `workline:blocked` issue with news, or a week on, too
 ([blocked, read again](../../../docs/spec/routing.md#blocked-read-again)).
 Else a share of the open issues (`issues-per-run`), in this order:
 
@@ -91,12 +90,11 @@ Each issue comes with:
   scenarios —, the code it is about
   (`sources`), an evident duplicate (`close`), the kind of an issue no
   label tells (`kind`, [the kind](kind.md)).
-- **A blocked issue**: `unblock` to the state it came from or to
-  refine, or `blocked` with a fresh reason. The developer's ask for
-  files outside the Scope has the Scope rewritten to widen it, or says
-  why not.
-- **A question unanswered** past `acts.ask.wait`: the agent writes its
-  assumption (`assume`), and the issue goes on
+- **A blocked issue**: `unblock` to its state or to refine, or
+  `blocked` afresh. The developer's ask for files outside the Scope:
+  the Scope widened, or why not.
+- **A question unanswered** past `acts.ask.wait`: its assumption
+  written (`assume`)
   ([how long a question waits](settings.md#how-long-a-question-waits)).
 - **Written for a reader**: a Need in one line, who needs what and why;
   one real example; a Validation as scenarios a person runs; the
