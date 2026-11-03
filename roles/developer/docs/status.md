@@ -235,6 +235,12 @@ hold:
   the apply job refused the whole run, its label on the issue its pull
   request closes read as on another issue. Now that issue alone, to
   Blocked or Doing. Case `developer/round-ask-applied-from-the-default-branch`.
+- **A log quoted in the ask, its marks broken** ([#925](https://github.com/JN0V/workline/issues/925)):
+  a red check's log that quoted workline's hidden marks hid the ask: the
+  line read a test's record as the issue's, the product owner its state,
+  and the line wrote over the ask. Now the quote's marks are broken.
+  Cases `developer/scope-ask-quotes-a-log-with-workline-marks`,
+  `routing/scope-ask-with-a-quoted-log-wakes-the-product-owner`.
 
 - **The merge** (step 7): at `normal`, `workline follow` merges its
   pull request with no person's yes, the kind `code`, when the issue it

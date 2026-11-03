@@ -544,6 +544,14 @@ func KeepsBranches(f Forge) bool {
 // Marker is the hidden text that makes a comment findable again.
 func Marker(key string) string { return "<!-- workline:" + key + " -->" }
 
+// Unmarked is a text quoted into a comment, a check's log for one, with
+// every hidden mark it holds broken by a zero-width space: shown the same,
+// never found as a mark. A log of workline's own tests quotes its marks,
+// and a reader would take the quote for the line's record or a role's
+// state, or edit the comment as its own (#925). Unmarked twice, a text
+// stays the same.
+func Unmarked(text string) string { return strings.ReplaceAll(text, "<!--", "<!-\u200b-") }
+
 // Every forge workline speaks keeps a backlog; GitHub, GitLab and the
 // simulated forge take comments on a merge request's lines, and list the
 // merge requests merged; GitHub and the simulated forge keep an issue's

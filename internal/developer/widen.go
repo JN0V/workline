@@ -167,7 +167,7 @@ func askScope(repo string, a Act, r round, files []string, again bool, notes []s
 	}
 	for _, x := range r.Asked {
 		if x.Holds == checkHolds && x.Detail != "" {
-			fmt.Fprintf(&b, "\nThe end of `%s`'s failed steps' log:\n\n~~~~\n%s\n~~~~\n", x.Where, strings.ReplaceAll(x.Detail, "~~~~", "~~~ ~"))
+			fmt.Fprintf(&b, "\nThe end of `%s`'s failed steps' log:\n\n~~~~\n%s\n~~~~\n", x.Where, forge.Unmarked(strings.ReplaceAll(x.Detail, "~~~~", "~~~ ~")))
 		}
 	}
 	body := b.String() // a log's end is bounded already (logEnd)

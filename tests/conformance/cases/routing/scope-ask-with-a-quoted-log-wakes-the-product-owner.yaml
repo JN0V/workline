@@ -1,0 +1,40 @@
+case: routing/scope-ask-with-a-quoted-log-wakes-the-product-owner
+about: >
+  The developer's ask for a file outside the Scope quotes the end of a
+  red check's log, and that log quoted workline's hidden marks: a line's
+  record of 9 state steps, the line's and the product owner's sticky
+  marks. The developer broke them as it quoted them. The reconciler reads
+  the line's own record, ready after 3 steps, so it sees the issue blocked
+  for the first time and wakes the product owner at once on the ask; the
+  product owner reads its own state, widens the Scope and sends the issue
+  back to ready. The ask is kept, the line's record written on the line's
+  comment (#925).
+given:
+  repo: tested
+  config:
+    routing: {events: {issue: [product-owner]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply"
+        labels: ["workline:blocked"]
+        author: ann
+        insider: true
+        body: "## Need\n\nI want to multiply.\n\n## Validation\n\n- **Two by three:** Given 2 and 3, When I multiply, Then I get 6.\n\n---\n\n## Verification\n\nA test of mul.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+        comments:
+          - "**workline's line** last woke the developer.\n\n<!-- workline:line-record {\"state\":\"ready\",\"body\":\"8a828a06be19\",\"hops\":3} -->\n<!-- workline:sticky=line/state -->"
+          - "**The developer** blocks this issue.\n\n- **Why**: the fix of pull request 2 needs `run-tests.sh`, outside its Scope: it asks the product owner to widen it.\n- **Next**: the product owner widens the Scope and moves it back to ready, the developer resumes on pull request 2; or keeps it blocked, why not said.\n\nThe end of `test`'s failed steps' log:\n\n~~~~\n--- FAIL: wants \"last woke the product owner\"\n    comments: [**workline's line** blocks.\n    <!-\u200b- workline:line-record {\"state\":\"blocked\",\"body\":\"0\",\"hops\":9,\"from\":\"ready\",\"since\":\"2026-10-30T09:00:00Z\"} -->\n    <!-\u200b- workline:sticky=line/state --> map[body:**The product owner**\n    <!-\u200b- workline:sticky=product-owner/state --> bot:true]]\n~~~~\n\n<!-- workline:scope-ask at=1111111 files=run-tests.sh -->\n<!-- workline:sticky=developer/claim -->"
+run: {route: reconcile, open-merge-request: true, ai: "fake:widen-scope-and-unblock"}
+expect:
+  status: pass
+  agent-calls: 1
+  findings:
+    - {rule: state-revisit, level: info, where: "#3", message: "blocked, read again by the product-owner: the developer asks to widen its Scope with `run-tests.sh`"}
+  run-files:
+    in/task.md: {contains: ["the developer asks to widen its Scope with `run-tests.sh`", "`unblock` it `to: ready`"]}
+  forge:
+    issues:
+      - id: 3
+        labels: ["workline:ready"]
+        body-contains: "- `run-tests.sh`: the runner the fix changes"
+        comment-contains: ["Moved #3 out of Blocked, to ready", "<!-- workline:scope-ask at=1111111 files=run-tests.sh -->", "\"hops\":3"]
