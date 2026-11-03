@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/engine, internal/intent, internal/role, internal/agent, internal/whys, skills]
 verified: agent:claude-code
-checked: edc4ffc2
+checked: 8538d558
 judged: b530b72
 status: draft
 judged-in-parts: fa1d682
@@ -40,7 +40,7 @@ over its defaults:
 
 **Levels.** A role may ship named sets of its settings, `levels` in its
 `role.yaml`, one setting picking one: `autonomy` (`cautious`, `normal`,
-`enterprising`; ADR-0038), the product owner's and the developer's. The
+`enterprising`; [ADR-0038](../adr/0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md)), the product owner's and the developer's. The
 level picked is laid over the role's defaults first, the same way, then
 the project's settings over both: a project picks a level in one word
 and still sets any field on its own. The role gets beside its settings
@@ -49,7 +49,7 @@ project changed.
 
 **The project's default.** Unset in a role, `autonomy` is the
 project's top-level one, when the role has that level, else the role's
-(ADR-0060); `level-from` beside the settings says which
+([ADR-0060](../adr/0060-the-person-is-on-the-loop.md)); `level-from` beside the settings says which
 ([autonomy](../autonomy.md)).
 
 **A person's own.** A role may name, `personal` in its `role.yaml`, the
@@ -87,7 +87,7 @@ role's conformance cases are the way to check the fork still keeps the contract.
 
 *Not built yet: the ledger. Defects found so far are guarded by tests,
 recorded in the role's README ("Tried for real"), or in the page it links
-to. The shared skill is built; the tester is its first user.*
+to. The shared skill is built; the tester and the developer load it.*
 
 When a role lets a defect through, fixing the output is not enough. The
 defect is recorded in the role's `DEFECTS.md` (what happened, why, the
@@ -107,7 +107,7 @@ The method ships as a shared skill that any role can load:
   ([role-contract.md](role-contract.md#shared-skills)).
 - **When**: a problem that came back — an objection still open after two
   answers (the tester, built), a review finding still there at round
-  three (the developer, [ADR-0054]), a role blocked again, a defect
+  three (the developer, built, [ADR-0054]), a role blocked again, a defect
   recorded, a disagreement on a spec while it is written.
 - **What it gives**: one `note` opening with `Five whys` — the problem,
   the whys numbered (five at most, each quoting the material), the root

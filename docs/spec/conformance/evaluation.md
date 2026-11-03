@@ -1,16 +1,16 @@
 ---
 sources: [tests/evaluation]
-checked: 4188075c
+checked: 8538d558
 judged: 62abc22
 verified: agent:claude-code
 ---
-# Evaluation — three measures
+# Evaluation — four measures
 
-Three measures of [Evaluation](../conformance.md#evaluation), told in full.
+Four measures of [Evaluation](../conformance.md#evaluation), told in full.
 
 ## Real shapes
 
-**Real shapes, both sides graded** (ADR-0014, step 1). The `drifted`
+**Real shapes, both sides graded** ([ADR-0014](../../adr/0014-checked-is-earned-by-what-was-read.md), step 1). The `drifted`
 fixture (tests/conformance/fixtures/repos/drifted.sh) holds docs drifted as
 DomoticsCore's and workline's did, every one `checked`, its sources fitting
 whole in a task: frozen line counts (a fenced tree's "(524 lines)", a
@@ -27,7 +27,7 @@ control, doing both right must lose neither, nor doing so and opening an
 issue for the stale comment, as the role's rules ask: the cases keep it on
 the local forge (`forge: local`,
 [#439](https://github.com/JN0V/workline/issues/439)). The `count-off` findings,
-reported by the engine with no agent (ADR-0014, step 2), are graded there
+reported by the engine with no agent ([ADR-0014](../../adr/0014-checked-is-earned-by-what-was-read.md), step 2), are graded there
 too and must never be lost.
 
 Judged in parts, both sides too: `finds-planted-defects-in-parts` holds,
@@ -41,7 +41,7 @@ the control made exact, in 5 of 5;
 [the shipped engine](../../adr/0009-docs-far-behind-are-judged-in-parts.md#amendment-2026-10-18-the-shipped-engine-measured),
 in 5 of 5).
 
-To measure the `drifted` cases again, five runs, as ADR-0014's steps 1
+To measure the `drifted` cases again, five runs, as [ADR-0014](../../adr/0014-checked-is-earned-by-what-was-read.md)'s steps 1
 and 3 ran them (`-v` for the notes):
 
 ```sh
@@ -71,7 +71,7 @@ case, and each control once — the act is drawn and read. No agent.
 
 ## The reviewer's measure
 
-**The reviewer's measure** (#90). A reviewer case adds `review:` to
+**The reviewer's measure** ([#90](https://github.com/JN0V/workline/issues/90)). A reviewer case adds `review:` to
 `given` and `run`: the `defects` planted on the change, each a lens, a
 kind, and the places its cause may be quoted at (a file, a range of lines
 as they read at the change's head, a `text` within them); the places
@@ -88,7 +88,7 @@ each lens answered, what the engine kept of it, each important finding
 verified, shown not verified or dropped (`in/review.json`), the tokens of
 each call by what it answered (`for`) — and scored: a point for each defect a finding shown on the change has its
 cause in, whichever lens raised it (AI review benchmarks count known bugs
-found and false positives, docs/research/code-review.md; the place, from
+found and false positives, [code review](../../research/code-review.md); the place, from
 the quote the engine found again, needs no judge); a point for each
 `not` kept clean; a point when nothing important was shown that nothing
 planted. The `measure` column of `results.tsv` holds, a lens each, the
@@ -107,7 +107,8 @@ they caught measuring nothing — `TestIntentAndClaimsCasesGiveTheirLens`
 shows the intent and claims lenses given the issue and the author's
 words, and `TestReviewerWithFakeAgent` plays one, apart and together,
 through the engine with a fake agent (testdata/review-agent.sh). The
-model and independence matrix of ADR-0005 is a run with
+model and independence matrix of
+[ADR-0005](../../adr/0005-independence-takes-the-best-level-available.md) is a run with
 `WORKLINE_EVAL=claude:<model>` and `WORKLINE_JUDGE=claude:<model>`, never
 by default. Measured on 2026-10-15, five runs a case, the commands with
 the results:

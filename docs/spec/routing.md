@@ -1,6 +1,6 @@
 ---
 sources: [internal/line, internal/routing, internal/work, routing.default.yaml]
-checked: 8e65a5c9
+checked: 8538d558
 verified: agent:claude-code
 ---
 # Routing — v1 (draft)
@@ -39,7 +39,8 @@ decides at the end. Writing both before starting is what keeps the machine
 from grading its own work. The engine checks that the four are present and
 not empty; it does not judge their quality. A section is the text under its
 `## ` or `### ` heading (`work.Sections`): a heading written twice holds
-both texts, and a thematic break ending a section — the line between the
+both texts, one naming a Gherkin scenario (`### Scenario: …`) is no
+section but a scenario of the one it lies in, and a thematic break ending a section — the line between the
 person's part and the builder's — is not its text. Each is read by its
 meaning, through one table (`work.Headings`,
 [ADR-0039](../adr/0039-issue-sections-are-read-by-meaning-the-kind-is-the-forges.md)):
@@ -48,15 +49,23 @@ each has one, the names above. Other headings, an
 example or the steps to reproduce, are kept and never required
 ([writing an issue](../../roles/product-owner/docs/writing.md)). A person moves an item to
 `ready`, or the product owner does once Need and Validation are a person's
-(docs/spec/backlog-acts.md, "Refining to ready"). Development roles only take `ready` items, and
-the item's **scope** becomes the run's scope (see "Stay on the task" in the
-role contract). *Not built yet: the scope is given with `--scope`; no role
-takes items yet.*
+([refining to ready](backlog-acts/refine.md)), through the tester's state
+where the project routes the tester ([the line of states](#the-line-of-states)).
+Development roles only take `ready` items, and the item's **scope** bounds
+the run ([stay on the task](role-outcome.md#stay-on-the-task)). *Built for an issue: the developer
+takes a `ready` one, its Scope bounding what it changes
+([bounds](../../roles/developer/docs/bounds.md)); a file in
+`.workline/work/` is taken by no role yet.*
 
 `review` is the machine's part: reviewers and gates run the verification.
-`validation` is the person's part: the item reaches `done` only when the person
-named in *Validation* accepts it. A rejection sends it back to `in-progress`
-with the reason, or to `to-refine` if the need itself was wrong.
+`validation` is the person's part, by the issue's kind
+([ADR-0060, decision 4](../adr/0060-the-person-is-on-the-loop.md#4-a-person-validates-by-the-issues-kind)):
+a reproduced bug's fix merges by the project's policy once every gate
+passes; a feature or a task waits for a person's yes, on its pull
+request, or at `enterprising` on the release candidate
+([the release candidate](../release-candidate.md)). A rejection sends it
+back to `in-progress` with the reason, or to `to-refine` if the need
+itself was wrong.
 
 An item that needs exploration stays in `to-refine`. Research, spikes and
 prototypes happen there, and their outcome is a refined item, not merged code.
@@ -90,16 +99,20 @@ routing:
 
 workline cuts no releases: a release tool does (release-please,
 semantic-release…), and `release` runs the project's release gates before
-it; none by default, never the docs (ADR-0017, ADR-0051). A release tool's
+it; none by default, never the docs
+([ADR-0017](../adr/0017-the-release-manager.md),
+[ADR-0051](../adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md)). A release tool's
 pull request is a merge request as any other; each role is told its
 branch (`release.branches`). A role routed on `release` that does not run
-there, the documentalist in a routing written before ADR-0051, is
+there, the documentalist in a routing written before
+[ADR-0051](../adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md), is
 skipped, said (`step-skipped`, a warning). A routing that still
 names the retired `release-manager` is refused, saying which tool to use.
 
 On the release — `release`, or `merge-request` from a release tool's
 branch — the line also reads what holds it on the forge, once, beside its
-steps, stopping none of them; its verdict takes the worst (ADR-0051,
+steps, stopping none of them; its verdict takes the worst
+([ADR-0051](../adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md),
 [what holds a release](../release-holds.md)): each open issue labelled
 `workline:hold-release` (`release-held`, by its number); the checks on the
 tip of the branch the merge request goes into, the default branch on
@@ -142,10 +155,14 @@ release judging.
   not trigger routing, so two roles cannot wake each other forever. Its
   commits carry a `Workline-Role: <role>` trailer, and a `Workline-Model:
   <agent>:<model>` for each agent and model whose answer they hold, so a
-  later reader can stand apart from them (ADR-0005). A line given a range
+  later reader can stand apart from them
+  ([ADR-0005](../adr/0005-independence-takes-the-best-level-available.md)).
+  A line given a range
   whose last commits carry one judges the range as it stood before them,
   each left for its parent, a merge of the base (`workline follow`'s,
-  ADR-0041, which ADR-0051 removed: one still on a branch) for its first: what the engine wrote never wakes the line on
+  [ADR-0041](../adr/0041-workline-settles-its-own-lines-when-the-base-moves.md),
+  which [ADR-0051](../adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md)
+  removed: one still on a branch) for its first: what the engine wrote never wakes the line on
   itself, and a person's commit that blocked still blocks, never turned
   green unjudged. With nothing of a person's left in the range, only the
   committer runs; it checks every commit, the engine's too. A trailer is not
@@ -155,8 +172,11 @@ release judging.
   it changes doc pages alone — Markdown, never a role's facet (in
   `roles/<name>/` only its README.md and `docs/`) nor under a tool's
   folder, never a file steering agents (AGENTS.md, CLAUDE.md…); else it is
-  judged as a person's (ADR-0042). `Workline-Role: committer` marks a
-  person's commit whose message the committer rewrote (ADR-0046): never
+  judged as a person's
+  ([ADR-0042](../adr/0042-the-engine-merges-by-the-projects-policy.md)).
+  `Workline-Role: committer` marks a person's commit whose message the
+  committer rewrote
+  ([ADR-0046](../adr/0046-the-auditor-re-checks-every-roles-acts.md)): never
   the engine's.
 
 ### On a forge: judge, then apply
@@ -167,13 +187,13 @@ write token, with the forge and target of the merge request (`--forge`,
 as it is — no step sees what an earlier one proposed — and nothing is applied.
 The result lists the runs to apply, in the line's order (`pending`) — a
 step that went round, proposing a merge request a round, gives one run a
-round (docs/spec/role-contract.md, "Again");
+round ([the role contract](role-contract.md#one-run), "Again");
 `workline apply --line <result>` applies them in the job that holds the token
 and no AI key, and stops at the first that does not pass, saying the runs
 left after it (`runs-not-applied`) and the command that resumes them. A role
 keeping a backlog decides its acts in the judging job, reading the forge
-only, and keeps that plan for the apply (docs/spec/backlog-acts.md, "On the
-issue").
+only, and keeps that plan for the apply
+([on the issue](backlog-acts/on-the-issue.md)).
 
 The gates go before, in a job of their own, with no write token and no
 agent's: `--gates-only` runs the event's gate steps alone, each one, and
@@ -206,7 +226,12 @@ head's verdict is never theirs
 Where the merge request's code can change its judging job (GitHub), the
 job that applies runs from the base and reads only the run's proposals
 (`--from-merge-request <n> --head <sha>`): refused whole, a role not on
-merge requests or a proposal its role never makes (`run-refused`);
+merge requests or a proposal its role never makes, an act on the
+backlog, a comment or a label on an issue other than the one the role's
+branch was opened for — but on a round of the role's own branch, a
+comment on the issue it closes and a move of that issue to Blocked or
+Doing ([#924](https://github.com/JN0V/workline/pull/924))
+(`run-refused`);
 once the branch moved on (`moved-on`), only what the role names in
 `on-moved-on`, the reviewer's review or the inspector's triage of the head
 judged, never a patch nor
@@ -354,12 +379,18 @@ whose result moves the issue to the next. The table is the routing's
   `issue`; none, said (`state-wakes-none`): a state that wakes nobody,
   or a role not routed there. Without a target, the event's steps run
   as listed.
+- **GitLab's webhook**: on `issue` with no target, a pipeline its
+  trigger started (`$TRIGGER_PAYLOAD`, the event or its file) names the
+  issue an issue event put a state's label on, or a note event's
+  reviewer comment on a spec in refine (below); any other event — an
+  edit, another label, another comment — runs nothing, said at once. An
+  event that does not read blocks the run (`routing-error`, at `payload`).
 - **The product owner on `issue`** reads the issue named alone, at
   once, not a night's share: one with no state of its own yet too. On
   `issue` with no issue named, it reads none. Only that issue's comments
   and label events are listed, when it judges and when its acts are
   decided and written; the open issues' listing stays, for the order
-  and `proposals-max` (#804). The developer on `issue` likewise reads
+  and `proposals-max` ([#804](https://github.com/JN0V/workline/issues/804)). The developer on `issue` likewise reads
   the tester's recorded proof on that issue alone.
 - **The API budget first**: on a forge that says it at no cost
   (GitHub's `rate_limit`), the issue line and the reconciler read what
@@ -371,12 +402,13 @@ whose result moves the issue to the next. The table is the routing's
   ([the API budget](../github/calls.md#the-api-budget)).
 - **The spec review at once**: where the project routes the reviewer
   on `issue`, refine's step runs it after the product owner, on that
-  issue's spec alone (#128). Judged with no write token, the reviewer
+  issue's spec alone ([#128](https://github.com/JN0V/workline/issues/128)). Judged with no write token, the reviewer
   reads it though the product owner's state comment is not written
   yet: the apply writes both
   ([#840](https://github.com/JN0V/workline/issues/840)). Its review,
   written since, makes the step due again: the product owner reads it
-  then, and readies the issue. On GitHub the apply that wrote it starts
+  then, and readies the issue. Its mark counts on a line of its own; a
+  person's comment quoting it (`> `) is no review. On GitHub the apply that wrote it starts
   that step; on GitLab the webhook's note event does, the reviewer's
   comment on the spec of an issue in refine being the one comment that
   names an issue
@@ -468,7 +500,8 @@ only then.
 - **`revisit`** (7): the days a blocked issue waits with nothing new
   before the product owner reads it again; `0`: never, a person moves
   it out. Shipped in `routing.default.yaml`, a project's
-  `routing: revisit:` replacing it. Read only where the project routes
+  `routing: revisit:` replacing it; a negative one is refused
+  (`config-invalid`). Read only where the project routes
   the product owner on `issue`.
 - **First seen blocked**: the line writes its record once
   (`state-blocked-seen`), no agent: the state it came from, when it saw
@@ -479,6 +512,10 @@ only then.
   comment blocking it holding the developer's `workline:scope-ask`
   mark, the product owner is woken at once (`state-revisit`), told the
   files ([amended](../adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#amendment-2026-11-03-a-fix-outside-the-scope-asks-the-product-owner)).
+- **The developer's red check with no fix**, no file outside the Scope
+  named: blocked for a person, no mark; read again as any blocked issue,
+  on news or after `revisit` days
+  ([amended](../adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#amendment-2026-11-03-a-red-check-with-no-fix-blocks-for-a-person)).
 - **News**, each against that record: its body edited; a comment
   written or edited by anyone but the engine (one holding no
   `<!-- workline:` mark); an issue it waits on closed — the forge's
@@ -626,39 +663,44 @@ each reconcile starts the next one, past an environment's wait timer
 ## Where state lives
 
 On a forge, the state of a work item is a label (`workline:ready`,
-`workline:in-progress`…), readable by humans and by any CI. Without a forge, it
+`workline:developing`…, [the line of states](#the-line-of-states)),
+readable by humans and by any CI. Without a forge, it
 is the `state:` line of the item's file in `.workline/work/<id>.md`, whose
 `## Need`, `## Verification`, `## Validation` and `## Scope` sections
 `workline item ready <id>` checks before moving it — `### ` headings too,
 as an issue form writes them, a field left `_No response_` empty, a
-footer after the last section left out (docs/spec/backlog-acts.md, "A
-body's footer"). Either way, a state changes only through the
-engine, one transition at a time, and each transition is logged. *Built so far:
-the move to `ready`, and its check; transitions are not logged yet.*
+footer after the last section left out
+([a body's footer](backlog-acts/refine.md#a-bodys-footer)). On a forge,
+a person moves an issue by its label too; the engine's moves are one
+transition at a time, each said in the line's comment on the issue. In
+a file, *built so far: the move to `ready`, and its check; not logged.*
 
 ## The reviewer, opt-in
 
-The reviewer (ADR-0020) is in no shipped line: a project adds it to its
+The reviewer
+([ADR-0020](../adr/0020-the-reviewer-finds-the-engine-verifies-the-person-merges.md)) is in no shipped line: a project adds it to its
 `merge-request` line, by hand or with `workline init --review`, and runs
 it on a machine before a push with `workline review`. On a merge request it
 reviews the commits not reviewed yet, one lens a push, none on a draft;
 with `--input lenses=all`, every lens on the whole change, commits
 reviewed before too.
 The templates pass it once, when the merge request becomes ready
-(#129): the event says so on GitHub (`opened` not a draft,
+([#129](https://github.com/JN0V/workline/issues/129)): the event says so on GitHub (`opened` not a draft,
 `ready_for_review`); on GitLab, where marking ready starts no pipeline,
 the next pipeline tells it by the merge request's draft state and its
 "marked this merge request as **ready**" note, newer than the
 reviewer's comment. It never moves an item: `review` stays the
 machine's part, `validation` the person's. Its `spec` event reads a spec
 before it is built — a file, or an issue by its number (`--input
-issue=<n>`); on a machine, `workline review --spec` or `--issue` (#128).
+issue=<n>`); on a machine, `workline review --spec` or `--issue`
+([#128](https://github.com/JN0V/workline/issues/128)).
 
 After the product owner in a line, the reviewer reads the specs it
-refined (#128): on `schedule`, up to `specs-per-run` issues a run (#433),
+refined ([#128](https://github.com/JN0V/workline/issues/128)): on `schedule`, up to `specs-per-run` issues
+a run ([#433](https://github.com/JN0V/workline/issues/433)),
 the findings on each in a comment on it; the product owner's `ready`
 waits until none important is open
-(docs/spec/backlog-acts.md, "A spec read before ready"). Opt-in, as on
+([a spec read before ready](backlog-acts/spec-review.md)). Opt-in, as on
 merge requests:
 
 ```yaml
