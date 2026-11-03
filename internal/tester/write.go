@@ -560,7 +560,8 @@ func proveOnBase(repo, base string, patches []intent.Intention, s Settings) (*ve
 			Message: "run on the folders holding the tests alone, " + strings.Join(pkgs, " ") + ": the pull request's own checks run the whole suite"})
 	}
 	if v.Status == verdict.Pass {
-		if lint := lintTests(repo, tree, base); lint != nil {
+		rules, _ := compileBuildErrors(s.BuildErrors) // Prove said a bad one
+		if lint := lintTests(repo, tree, base, missingNamed(files, rules)); lint != nil {
 			return lint, newTests, blobs, nil
 		}
 	}
@@ -570,8 +571,10 @@ func proveOnBase(repo, base string, patches []intent.Intention, s Settings) (*ve
 // lintTests runs the project's lint on the tests, as their merge request
 // will: each gate the project routes on merge-request, only what the
 // tests add counted (ADR-0059, decision 3: a Draft that does not lint is
-// not ready). Nil when each passes, or none is routed.
-func lintTests(repo, tree, base string) *verdict.Verdict {
+// not ready). Nil when each passes, or none is routed. A finding the
+// proof reads as a missing name (missing) is not counted: the tests are
+// red by it on purpose, and a lint that type-checks says it too (#988).
+func lintTests(repo, tree, base string, missing func(path, message string) bool) *verdict.Verdict {
 	line, err := routing.Load(repo)
 	if err != nil {
 		return &verdict.Verdict{Status: verdict.Block, Summary: "the project's lint could not be read",
@@ -596,20 +599,32 @@ func lintTests(repo, tree, base string) *verdict.Verdict {
 		if v.Status == verdict.Pass {
 			continue
 		}
-		names = append(names, name)
 		g, _ := gate.Load(tree, name)
-		said := false
+		var blocks []verdict.Finding
+		lifted := false // a check over its limit only by missing names
 		for _, f := range v.Findings {
 			if f.Level != "" && f.Level != verdict.Block && f.Level != "error" {
 				continue
 			}
+			if f.Rule == "over-threshold" && withinLeftOut(f.Where, g, add, missing) {
+				lifted = true
+				continue
+			}
+			blocks = append(blocks, f)
+		}
+		if lifted && len(blocks) == 0 {
+			continue // each blocking finding a missing name: the gate passes on the tests
+		}
+		names = append(names, name)
+		said := false
+		for _, f := range blocks {
 			said = true
 			switch f.Rule {
 			case "over-threshold":
 				// The findings themselves, where a person finds them in
 				// the tests, rather than the count and the gate's folder
 				// on the machine that ran it, gone with the tests' tree.
-				if named := lintFound(name, f.Where, g, add); len(named) > 0 {
+				if named := lintFound(name, f.Where, g, add, missing); len(named) > 0 {
 					found = append(found, named...)
 					continue
 				}
@@ -635,7 +650,7 @@ func lintTests(repo, tree, base string) *verdict.Verdict {
 // lintFound are the findings the tests add to a check of a gate, at a
 // level it limits, each where it is from the repository's root: the
 // file, its line, what the tool says and its rule.
-func lintFound(name, check string, g *gate.Gate, add *gate.Added) []verdict.Finding {
+func lintFound(name, check string, g *gate.Gate, add *gate.Added, missing func(path, message string) bool) []verdict.Finding {
 	if g == nil || add == nil {
 		return nil
 	}
@@ -649,7 +664,7 @@ func lintFound(name, check string, g *gate.Gate, add *gate.Added) []verdict.Find
 	}
 	var out []verdict.Finding
 	for _, a := range add.Findings {
-		if a.Check != check || !limits[a.Level] {
+		if a.Check != check || !limits[a.Level] || missing(a.Path, a.Message) {
 			continue
 		}
 		at := a.Path
@@ -660,6 +675,74 @@ func lintFound(name, check string, g *gate.Gate, add *gate.Added) []verdict.Find
 			Message: strings.TrimSpace(fmt.Sprintf("the gate %s, %s: %s (%s)", name, at, a.Message, a.Rule))})
 	}
 	return out
+}
+
+// withinLeftOut reports whether a check over its limit is within it once
+// the findings naming missing names are left out; false when none is, or
+// what the check added is not known.
+func withinLeftOut(check string, g *gate.Gate, add *gate.Added, missing func(path, message string) bool) bool {
+	if g == nil || add == nil {
+		return false
+	}
+	counts, left := map[string]int{}, 0
+	for _, a := range add.Findings {
+		switch {
+		case a.Check != check:
+		case missing(a.Path, a.Message):
+			left++
+		default:
+			counts[a.Level]++
+		}
+	}
+	if left == 0 {
+		return false
+	}
+	for _, c := range g.Checks {
+		if c.ID != check {
+			continue
+		}
+		for level, most := range c.Max {
+			if counts[level] > most {
+				return false
+			}
+		}
+		return true
+	}
+	return false
+}
+
+// missingNamed tells a lint's finding that names what the code lacks in
+// one of the tests' files, read as the proof reads a build's error (the
+// rules' missing-name): the tests red by it on purpose. golangci-lint
+// gives the compiler's lines in its message, at the package's first
+// file: each line it holds must be one; else the finding itself, in a
+// test file, is read.
+func missingNamed(tests []string, rules []buildRules) func(path, message string) bool {
+	in := map[string]bool{}
+	for _, t := range tests {
+		in[path.Clean(t)] = true
+	}
+	return func(p, message string) bool {
+		if errs := buildErrorsIn(message, tests, rules); len(errs) > 0 {
+			for _, e := range errs {
+				if !e.missing {
+					return false
+				}
+			}
+			return true
+		}
+		if !in[path.Clean(strings.TrimPrefix(filepath.ToSlash(p), "./"))] {
+			return false
+		}
+		for _, r := range rules {
+			for _, re := range r.missing {
+				if re.MatchString(strings.TrimSpace(message)) {
+					return true
+				}
+			}
+		}
+		return false
+	}
 }
 
 // seeLog is where a check's message names its log, on the machine that ran it.
