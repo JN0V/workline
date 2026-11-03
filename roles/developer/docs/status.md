@@ -246,9 +246,9 @@ hold:
   pull request with no person's yes, the kind `code`, when the issue it
   closes is a fix by its labels, every gate passed and no finding open
   that blocks or is Important; a feature, a task or no kind waits for a
-  person's yes
-  ([#937](https://github.com/JN0V/workline/issues/937)). Each decision recorded on the pull
-  request, read by the auditor with its code
+  person's yes ([#937](https://github.com/JN0V/workline/issues/937),
+  [tried](https://github.com/JN0V/workline/pull/942)). Each decision
+  recorded on the pull request, read by the auditor with its code
   ([the merge](merge.md)). Cases
   `developer/merge-normal-admits-developer-fix`,
   `merge-normal-holds-developer-feature`,
