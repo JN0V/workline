@@ -30,6 +30,7 @@ import (
 	"github.com/JN0V/workline/internal/routing"
 	"github.com/JN0V/workline/internal/verdict"
 	"github.com/JN0V/workline/internal/whys"
+	"github.com/JN0V/workline/internal/work"
 )
 
 const roundFile = "round.json"
@@ -51,6 +52,9 @@ type Round struct {
 	Result string         `json:"result,omitempty"` // its proof's result; no-code when it wrote none
 	Whys   bool           `json:"whys,omitempty"`   // the five whys ran
 	Person bool           `json:"person,omitempty"` // past the last round: its issue blocked (ADR-0059)
+	// Bounds, a round with no fix: asked, it asked the product owner for
+	// files outside the Scope (#921); held, it needed none.
+	Bounds string         `json:"bounds,omitempty"`
 	Turns  int            `json:"turns,omitempty"`  // what its agent used, as it reported them
 	Tokens int            `json:"tokens,omitempty"` // fresh, what ai-max-tokens holds
 	Cached int            `json:"cached,omitempty"` // read from cache, apart
@@ -88,6 +92,10 @@ type round struct {
 	ChecksAt string   `json:"checks-at,omitempty"` // the head the project's red checks were read at
 	// ChecksUnread: why the forge did not say the project's checks.
 	ChecksUnread string `json:"checks-unread,omitempty"`
+	// Back: the product owner sent the issue back since the record's ask
+	// for files outside its Scope (#921): the round resumes, the checks
+	// at its head asked again with the new bounds.
+	Back bool `json:"back,omitempty"`
 }
 
 // reviewRows reads the findings of the reviewer's comment: what blocks,
@@ -340,6 +348,13 @@ func readAsked(f forge.Forge, b forge.Backlog, kept forge.Kept, a Act, id int, h
 	}
 	at, gates := gatesAsked(kept, a, head)
 	r.GatesAt, r.Asked = at, append(r.Asked, gates...)
+	back, err := backFromAsk(f, a)
+	if err != nil {
+		return r, false, err
+	}
+	if r.Back = back; back || legacyNoCode(a) {
+		a.ChecksAt = "" // asked again at its head: new bounds, or a round that could not ask for them
+	}
 	checksAt, checks, unread := checksAsked(f, a, head)
 	r.ChecksAt, r.ChecksUnread, r.Asked = checksAt, unread, append(r.Asked, checks...)
 	target := forge.Target{Kind: "merge-request", ID: id}
@@ -448,6 +463,10 @@ func roundTask(r round, is forge.Issue, b Bounds, s Settings, test string, testE
 		fmt.Fprintf(&t, "\nThe reviewer showed %d nit%s too: not asked, leave them.\n", r.Nits, plural(r.Nits))
 	}
 	t.WriteString("\n" + question(is, b, test, testErr, s))
+	t.WriteString("A fix that needs a file outside what you may change: change nothing for it, and name the file in its note's `needs`, " +
+		"`- note: {text: \"why the fix lies there\", needs: [path/to/file]}`. " +
+		"The product owner is asked to widen the issue's " + work.Name(work.Scope) + " with it; the next round makes the fix then. " +
+		"Never a fix of the symptom within your bounds in its place.\n\n")
 	t.WriteString("Its diff is your fix: the cause, not the symptom. Then answer a `note` a finding, one line, what you did; " +
 		"a finding you hold wrong: say why in its note, change nothing for it, the reviewer decides a finding is fixed. An objection, if any, as above.\n")
 	if r.FiveWhys {
@@ -537,13 +556,14 @@ func reviewPost(runDir, repo string, s Settings) int {
 	if err != nil {
 		return fail(err)
 	}
-	var notes, analyses []string
+	var notes, analyses, needs []string
 	var rest []intent.Intention
 	for _, in := range proposed {
 		if in.Kind != "note" {
 			rest = append(rest, in)
 			continue
 		}
+		needs = append(needs, noteNeeds(in.Value)...)
 		if text := noteText(in.Value); r.FiveWhys && whys.Is(text) {
 			analyses = append(analyses, text)
 		} else if text != "" {
@@ -594,10 +614,28 @@ func reviewPost(runDir, repo string, s Settings) int {
 	}
 	this := Round{N: n, Asked: texts(r.Asked), Heard: len(r.Heard), Nits: r.Nits, Whys: r.FiveWhys}
 	a.Refused = append(a.Refused, refused...)
+	if r.Back {
+		a.Widen.Back = true
+	}
+	var ask []intent.Intention
 	if len(patches) == 0 {
-		this.Result = "no-code"
+		this.Result, this.Bounds = "no-code", "held"
 		v.Findings = append(v.Findings, verdict.Finding{Rule: "no-code", Level: "warn", Where: where,
 			Message: "its agent wrote no fix within its bounds that changes the branch: the round is counted, nothing pushed"})
+		if files := outsideScope(append(refused, needed(repo, b, needs)...)); len(files) > 0 {
+			// Its fix lies outside the Scope (#921): the product owner's
+			// to widen; once a head and a Scope, then a person.
+			key := scopeKey(b.Scope)
+			again := a.Widen != nil && sameCommit(a.Widen.At, r.At) && a.Widen.Scope == key
+			ask = askScope(repo, a, r, files, again, notes)
+			a.Widen, this.Bounds = &Widen{At: r.At, Scope: key, Files: files, Again: again}, "asked"
+			msg := fmt.Sprintf("its fix needs %s, outside the issue's %s: #%d blocked, the product owner asked to widen it", strings.Join(files, ", "), scopeName, a.Issue)
+			if again {
+				msg = fmt.Sprintf("its fix still needs %s, asked already on this head and %s: #%d blocked for a person", strings.Join(files, ", "), scopeName, a.Issue)
+			}
+			v.Findings = append(v.Findings, verdict.Finding{Rule: "scope-asked", Level: "warn", Where: where, Message: msg})
+			v.Summary += "; " + msg
+		}
 	} else {
 		p, u, caps, found := proven(runDir, repo, r.At, where, patches, union(a.Acceptance, union(a.Code, a.Tests)), again(a.Proof), s)
 		this.Result, this.Turns, this.Tokens, this.Cached, this.Tools = p.Result, u.Turns, u.Tokens, u.Cached, u.Tools
@@ -633,9 +671,16 @@ func reviewPost(runDir, repo string, s Settings) int {
 		}
 	}
 	a.Rounds = append(a.Rounds, this)
-	out := append(patches, intent.Intention{Kind: "comment", Value: map[string]any{"sticky": "round", "body": roundBody(this, s, notes, analysis)}},
+	out := append(patches, intent.Intention{Kind: "comment", Value: map[string]any{"sticky": "round", "body": roundBody(this, s, notes, analysis, a.Widen)}},
 		intent.Intention{Kind: "comment", Value: map[string]any{"sticky": RecordKey, "body": recordBody(a)}})
 	out = append(out, others...)
+	switch {
+	case len(ask) > 0:
+		out = append(out, ask...)
+	case r.Back:
+		// Back from the product owner, its bounds wider: taken again.
+		out = append(out, moveTo(repo, "doing", a.Issue, []string{s.ClaimLabel}, []string{backlog.LabelReady}))
+	}
 	if err := writeIntents(runDir, "", out); err != 0 {
 		return err
 	}
@@ -644,11 +689,15 @@ func reviewPost(runDir, repo string, s Settings) int {
 
 // roundBody is the round's comment on its pull request: what was asked,
 // what the developer did, its proof, the five whys.
-func roundBody(x Round, s Settings, notes []string, analysis string) string {
+func roundBody(x Round, s Settings, notes []string, analysis string, w *Widen) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "**The developer**, review round %d of %d: ", x.N, s.Rounds)
-	switch x.Result {
-	case "no-code":
+	switch {
+	case x.Bounds == "asked" && w.Again:
+		fmt.Fprintf(&b, "no fix within its bounds. It still needs `%s`, asked already on this head and %s: its issue is blocked for a person.\n\n", strings.Join(w.Files, "`, `"), scopeName)
+	case x.Bounds == "asked":
+		fmt.Fprintf(&b, "no fix within its bounds. It needs `%s`, outside the issue's %s: its issue is blocked, the product owner asked to widen it; the next round resumes here.\n\n", strings.Join(w.Files, "`, `"), scopeName)
+	case x.Result == "no-code":
 		b.WriteString("no fix within its bounds.\n\n")
 	default:
 		fmt.Fprintf(&b, "its fix pushed, the project's tests %s.\n\n", x.Result)

@@ -1,0 +1,3 @@
+# The product owner, woken on an issue the developer blocked to ask for a
+# file outside its Scope (#921): it refuses, its reason written.
+- blocked: {issue: 3, why: "run-tests.sh is another need's: open an issue for it rather than widen this one", person: false}

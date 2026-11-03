@@ -1,0 +1,8 @@
+# The developer's agent in a round on #3's pull request: the red check's
+# fix lies in cases/mul.txt, which #3's Scope does not name (#921). It
+# makes it all the same and says why in its note.
+- patch:
+    file: cases/mul.txt
+    content: |
+      mul 2 3: 6
+- note: "The check fails on cases/mul.txt: the case expects the old sum, 5; the fix is there, outside lib.sh."

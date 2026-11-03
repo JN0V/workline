@@ -66,8 +66,8 @@ Built first, whatever else.
 | Refine | `workline:to-refine` | refine | a new issue; a stale one; the product owner | the product owner |
 | Tests | `workline:needs-tests` | tests | the product owner, the need validated | the tester |
 | Ready | `workline:ready` | ready | the engine, on the tester's result | the developer, when Doing has room |
-| Doing | `workline:developing` | doing | the developer's claim ([ADR-0054]) | — |
-| Blocked | `workline:blocked` | blocked | any role, with its reason | nobody; the reconciler re-reads it, the product owner on news ([amended](#amendment-2026-11-01-blocked-is-read-again)) |
+| Doing | `workline:developing` | doing | the developer's claim ([ADR-0054]); a round back from a Scope widened ([amended](#amendment-2026-11-03-a-fix-outside-the-scope-asks-the-product-owner)) | — |
+| Blocked | `workline:blocked` | blocked | any role, with its reason | nobody; the reconciler re-reads it, the product owner on news ([amended](#amendment-2026-11-01-blocked-is-read-again)) or on the developer's ask for its Scope ([amended](#amendment-2026-11-03-a-fix-outside-the-scope-asks-the-product-owner)) |
 | Done | none | done | the forge's close at the merge (`Closes #n`) | — |
 
 - **Exclusive**: the engine puts the new label on and takes the old one
@@ -447,6 +447,49 @@ on a full Ready for good.
     failed;
   - Ready's limit counting only claims: a free ready issue still never
     woken.
+
+## Amendment (2026-11-03): a fix outside the Scope asks the product owner
+
+Settles [#921](https://github.com/JN0V/workline/issues/921): a review
+round on [#909](https://github.com/JN0V/workline/pull/909) found the fix
+of its red check, one line of a conformance case outside its issue's
+Scope. It wrote nothing and said so on the pull request; the issue
+stayed in Doing, the check read at that head, and nothing moved.
+
+- **The Scope is the product owner's**
+  ([ADR-0060](0060-the-person-is-on-the-loop.md#2-the-builders-part-is-the-product-owners-at-every-level)):
+  the developer asks, never widens it itself.
+- **Doing → Blocked, by the developer**: a round that keeps no fix, and
+  names files outside the Scope its fix needs (its note's `needs`, or
+  a fix there the bounds reverted), blocks its issue. Its one comment (§1) names the files, its agent's note and the
+  end of the red check's log, with a mark the line reads.
+- **The product owner is woken at once**: the reconciler, first seeing
+  the issue blocked with the mark, wakes it as on news. No week, no
+  comment needed.
+- **It decides, as on any blocked issue**, alone:
+  - widens: rewrites the Scope (`refine`), then `unblock` to ready;
+  - or `blocked`, its reason why not, for a person when only one can
+    decide.
+- **Ready → Doing, by the round**: the issue back from the ask, the
+  red check at the same head is asked again; the round resumes on the
+  same pull request with the new bounds, and puts the claim's label
+  back. The developer's pick passes the issue over meanwhile: its pull
+  request is open.
+- **Bounded**: one ask a head and a Scope. Asked again on the same, the
+  issue is blocked for a person, with no mark. The review's rounds
+  (`review-rounds`) cap the rest; the hops do not, since a move out of
+  Blocked starts their count again (§8).
+- **A round from before**, no fix on a red check and no ask, runs once
+  more at its head, to ask.
+- **Cost**: one agent call of the product owner an ask; one API call a
+  reconcile per pull request whose ask waits, the issue's labels.
+- **Not chosen**:
+  - back to Refine with the developer's note: the product owner would
+    re-read the need and send the issue to Tests again, and Refine has
+    no way to refuse into Blocked;
+  - the developer widening its own Scope: its bounds would be its own;
+  - a new issue for the file: the pull request stays red until it
+    merges, and the fix is one line of the same change.
 
 [ADR-0024]: 0024-obsolete-is-announced-then-closed-on-silence-and-a-second-judge.md
 [ADR-0028]: 0028-an-issue-names-what-it-waits-on.md

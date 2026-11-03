@@ -1,0 +1,32 @@
+case: routing/scope-ask-refused-stays-blocked
+about: >
+  The developer blocked its issue to ask for a file outside its Scope
+  (#921). The product owner, woken at once, refuses: the file is another
+  need's. The issue stays blocked, the product owner's reason written on
+  it, the Scope as it was; a person on the loop reads it on the board.
+given:
+  repo: tested
+  config:
+    routing: {events: {issue: [product-owner]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply"
+        labels: ["workline:blocked"]
+        author: ann
+        insider: true
+        body: "## Need\n\nI want to multiply.\n\n## Validation\n\n- **Two by three:** Given 2 and 3, When I multiply, Then I get 6.\n\n---\n\n## Verification\n\nA test of mul.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+        comments:
+          - "**workline's line** last woke the developer.\n\n<!-- workline:line-record {\"state\":\"ready\",\"body\":\"8a828a06be19\",\"hops\":3} -->\n<!-- workline:sticky=line/state -->"
+          - "**The developer** blocks this issue.\n\n- **Why**: the fix of pull request 2 needs `run-tests.sh`, outside its Scope: it asks the product owner to widen it.\n- **Next**: the product owner widens the Scope and moves it back to ready, the developer resumes on pull request 2; or keeps it blocked, why not said.\n\n<!-- workline:scope-ask at=1111111 files=run-tests.sh -->\n<!-- workline:sticky=developer/claim -->"
+run: {route: reconcile, open-merge-request: true, ai: "fake:refuse-scope"}
+expect:
+  status: pass
+  agent-calls: 1
+  forge:
+    issues:
+      - id: 3
+        labels: ["workline:blocked"]
+        body-contains: "## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+        body-lacks: "run-tests.sh"
+        comment-contains: ["run-tests.sh is another need's"]

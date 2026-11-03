@@ -39,7 +39,9 @@ file. All roles: [docs/roles.md](../../docs/roles.md). Where it stands:
   acceptance test, a file that steers agents or a gate's are reverted,
   no agent judging; on its pull request, the same bounds are a check,
   whoever pushed ([the bounds](docs/bounds.md)). A test that does not
-  fit, it objects to on the tester's Draft.
+  fit, it objects to on the tester's Draft. A review round's fix outside
+  the Scope, it asks the product owner for
+  ([the review loop](docs/review-loop.md#a-fix-outside-the-scope)).
 - **Proves it** on the project's tests, the tester's `test-command`,
   then opens its pull request: ready when green with no cap reached,
   else a Draft ([the proof and the caps](docs/proof.md)).

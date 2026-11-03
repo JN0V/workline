@@ -217,6 +217,20 @@ hold:
   `developer/red-check-is-a-round`, `red-check-read-once`,
   `red-check-waits-for-the-others`, `red-check-of-workline-asks-nothing`,
   `routing/reconcile-lists-a-red-check-round`.
+- **A fix outside the Scope asks the product owner** ([#921](https://github.com/JN0V/workline/issues/921)):
+  the issue blocked, the files and the check's log on it; the product
+  owner, woken at once, widens the Scope and sends it back, the next
+  round resuming on the same pull request; or keeps it blocked, its
+  reason said ([the review loop](review-loop.md#a-fix-outside-the-scope)).
+  Cases `developer/round-asks-the-product-owner-for-scope`,
+  `round-resumes-on-a-widened-scope`, `round-asks-once-a-head-and-scope`,
+  `round-resumes-after-a-person-widens`,
+  `round-before-the-ask-runs-once-more`,
+  `round-holding-a-check-wrong-asks-nothing`,
+  `routing/scope-ask-wakes-the-product-owner`,
+  `scope-ask-refused-stays-blocked`,
+  `reconcile-lists-a-round-back-from-scope`. Tried: its pull request's
+  `## Tried`.
 
 - **The merge** (step 7): at `normal`, `workline follow` merges its
   pull request with no person's yes, the kind `code`, when the issue it

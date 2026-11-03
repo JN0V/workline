@@ -1,0 +1,5 @@
+# The product owner, woken on an issue the developer blocked to ask for a
+# file outside its Scope (#921): it widens the Scope with the file, and
+# sends the issue back to ready, where the developer resumes.
+- refine: {issue: 3, scope: "- `lib.sh`: a `mul` function beside `add`.\n- `run-tests.sh`: the runner the fix changes.", sources: [lib.sh, run-tests.sh], why: "the developer's fix of its pull request needs run-tests.sh"}
+- unblock: {issue: 3, to: ready, why: "its Scope now holds run-tests.sh, the file the developer's fix needs"}

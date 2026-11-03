@@ -8,7 +8,9 @@ package backlog
 
 import (
 	"fmt"
+	"regexp"
 	"slices"
+	"strings"
 )
 
 // BlockedElsewhere opens the line's reason for a block it did not make:
@@ -41,6 +43,34 @@ func UnblockTo(from string) []string {
 		out = append(out, from)
 	}
 	return out
+}
+
+// scopeAsk is the developer's mark on the comment that blocks its issue
+// to ask the product owner for files outside its Scope (#921): the head
+// of its pull request it asked at, and the files.
+var scopeAsk = regexp.MustCompile(`<!-- workline:scope-ask at=(\S+) files=(\S+) -->`)
+
+// ScopeAskMark is the mark of a developer's ask for files outside its
+// Scope, its pull request's head at, on the comment that blocks the issue.
+func ScopeAskMark(at string, files []string) string {
+	return fmt.Sprintf("<!-- workline:scope-ask at=%s files=%s -->", at, strings.Join(files, ","))
+}
+
+// ScopeAsked reads the files a developer asks to add to the issue's
+// Scope from the comment blocking it, when that comment is its ask; none
+// otherwise. Only the last comment saying it blocks the issue is read, the
+// line's pointing to it aside: a block after the ask is another.
+func ScopeAsked(comments []string) []string {
+	for _, c := range slices.Backward(comments) {
+		if !strings.Contains(c, "blocks this issue") || strings.Contains(c, BlockedElsewhere) {
+			continue
+		}
+		if m := scopeAsk.FindStringSubmatch(c); m != nil {
+			return strings.Split(m[2], ",")
+		}
+		return nil
+	}
+	return nil
 }
 
 // checkBlocked says why an act on a blocked issue, or an unblock or a

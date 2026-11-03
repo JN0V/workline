@@ -26,6 +26,7 @@ import (
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/routing"
 	"github.com/JN0V/workline/internal/verdict"
+	"github.com/JN0V/workline/internal/work"
 )
 
 // engineMark is in every comment the engine writes: a role's, the line's.
@@ -137,6 +138,16 @@ func revisit(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, 
 		}
 		if had && rec.State == BlockedState && seen.Why == "" {
 			seen.Why = oldWhy(comments) // the line blocked it before it kept why in its record
+		}
+		if files := backlog.ScopeAsked(comments); len(files) > 0 {
+			// The developer blocked it to ask for files outside its
+			// Scope (#921): the product owner answers now, not on news.
+			said := fmt.Sprintf("the developer asks to widen its %s with `%s`", work.Name(work.Scope), strings.Join(files, "`, `"))
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "state-revisit", Level: "info", Where: where,
+				Message: fmt.Sprintf("blocked, read again by the %s: %s", backlog.Keeper, said)})
+			seen.Revisited = seen.Since
+			return &stateStep{role: backlog.Keeper, write: StateWrite{Issue: is.ID, Record: seen},
+				inputs: map[string]string{engine.RevisitInput: said, engine.RevisitFromInput: seen.From}}, nil, nil
 		}
 		said := fmt.Sprintf("blocked: the %s reads it again when someone comments, its body changes, an issue it waits on closes, or in %d days",
 			backlog.Keeper, days)

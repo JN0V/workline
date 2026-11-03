@@ -1834,6 +1834,14 @@ func (p *Plan) checkRefining(f forge.Backlog, repo, role string, c *Proposal) (r
 					}
 				}
 			}
+			if slices.Contains(is.Labels, LabelBlocked) && len(ScopeAsked(comments)) > 0 && !c.ToReporter {
+				// The developer blocked it to ask for files outside its
+				// Scope (#921): the Scope, the role's at every level
+				// (ADR-0060), rewritten to widen it.
+				if s := work.ByMeaning(is.Body)[work.Scope].Heading; s != "" && !slices.Contains(c.Revise, s) {
+					c.Revise = append(c.Revise, s)
+				}
+			}
 			p.plain(is, st, c)
 			p.repeats(is, st, c)
 		}

@@ -1,0 +1,49 @@
+case: routing/reconcile-lists-a-round-back-from-scope
+about: >
+  The reconciler resumes a round the product owner's answer made due
+  (#921): #4's developer asked for a file outside its Scope at its
+  branch's head, its red check read there; the product owner sent #4
+  back to ready. With `--input reconcile=list` it lists pull request 5
+  due, starts nothing and asks no agent. #3's ask still waits, its issue
+  blocked: not listed.
+given:
+  repo: tested-draft
+  setup:
+    - "git checkout -q -b workline/developer/3 && printf 'add() { echo $(($1 + $2)); }\\nmul() { echo $(($1 + $2)); }\\n' > lib.sh && git commit -qam 'feat: mul for #3' -m 'Workline-Role: developer' && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main workline/tester/issue-3 workline/developer/3 && git checkout -q -b workline/developer/4 main && git push -q origin workline/developer/4 && git checkout -q main"
+    - "sed -i \"s/@head3@/$(git rev-parse workline/developer/3)/g\" \"$FORGE_FILE\""
+    - "sed -i \"s/@head4@/$(git rev-parse workline/developer/4)/g\" \"$FORGE_FILE\""
+  config:
+    routing: {events: {issue: [developer]}}
+  forge:
+    head-checks:
+      workline/developer/3:
+        - {name: test, workflow: test, state: failure, job: 41}
+      workline/developer/4:
+        - {name: test, workflow: test, state: failure, job: 46}
+    issues:
+      - {id: 3, title: "Multiply two numbers", labels: ["workline:blocked"], body: "## Need\n\nI want to multiply.\n"}
+      - {id: 4, title: "Divide two numbers", labels: ["workline:ready"], body: "## Need\n\nI want to divide.\n"}
+    merge-requests:
+      - id: 2
+        branch: workline/developer/3
+        title: "Multiply two numbers"
+        body: "Closes #3"
+        comments:
+          - "**The developer**'s record.\n\n<!-- workline:developer-act {\"act\":\"code\",\"issue\":3,\"code\":[\"lib.sh\"],\"round\":1,\"review-runs\":1,\"checks-at\":\"@head3@\",\"widen\":{\"at\":\"@head3@\",\"scope\":\"x\",\"files\":[\"cases/mul.txt\"]}} -->\n<!-- workline:sticky=developer/code -->"
+          - "**workline reviewer** — 0 findings on the change.\n\n<!-- workline:record reviewed=1111111 runs=1 -->\n<!-- workline:sticky=reviewer/summary -->"
+      - id: 5
+        branch: workline/developer/4
+        title: "Divide two numbers"
+        body: "Closes #4"
+        comments:
+          - "**The developer**'s record.\n\n<!-- workline:developer-act {\"act\":\"code\",\"issue\":4,\"code\":[\"lib.sh\"],\"round\":1,\"review-runs\":1,\"checks-at\":\"@head4@\",\"widen\":{\"at\":\"@head4@\",\"scope\":\"x\",\"files\":[\"cases/div.txt\"]}} -->\n<!-- workline:sticky=developer/code -->"
+          - "**workline reviewer** — 0 findings on the change.\n\n<!-- workline:record reviewed=1111111 runs=1 -->\n<!-- workline:sticky=reviewer/summary -->"
+run: {route: reconcile, open-merge-request: true, ai: "fake:developer-nothing", input: {reconcile: list}}
+expect:
+  status: pass
+  summary: "reconcile: 1 issue due: #4; 1 review round due: merge request 5"
+  agent-calls: 0
+  forge:
+    merge-requests:
+      - {id: 2, comments: 2}
+      - {id: 5, comments: 2}

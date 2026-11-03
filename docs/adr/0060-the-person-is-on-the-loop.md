@@ -94,6 +94,9 @@ flowchart LR
   makes the product owner ask and wait ([#844]).
 - **Said in its one comment**: "Changed: Verification"; the text before
   is in the forge's edit history.
+- **The developer asks it to widen the Scope** when a fix lies outside
+  it; it widens it or says why not, alone
+  ([ADR-0059, amended](0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#amendment-2026-11-03-a-fix-outside-the-scope-asks-the-product-owner)).
 
 ### 3. Autonomy is a level per role
 
