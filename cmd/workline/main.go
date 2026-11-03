@@ -2206,14 +2206,23 @@ func doctorCmd(args []string) int {
 	root, _ := gitRoot(*repo)
 	// A folder that does not exist was mistyped: the repository was never looked at.
 	missing := false
-	if _, serr := os.Stat(*repo); errors.Is(serr, os.ErrNotExist) {
+	problem := "does not exist"
+	if fi, serr := os.Stat(*repo); serr != nil {
 		missing = true
+		if !errors.Is(serr, os.ErrNotExist) {
+			problem = "cannot be read"
+		}
+	} else if !fi.IsDir() {
+		missing = true
+		problem = "is not a folder"
+	}
+	if missing {
 		root = ""
 	}
 	r := doctor.Run(doctor.Options{Repo: root, RolesDir: rolesDir, AI: os.Getenv("WORKLINE_AI"), UserAI: userDefaultAI(),
 		NoPushApproval: !userConfig().approvePush(), Forge: *forgeSpec})
 	if missing {
-		msg := "the folder " + *repo + " does not exist: the repository was not checked"
+		msg := "the folder " + *repo + " " + problem + ": the repository was not checked"
 		r.Checks = append(r.Checks, doctor.Check{Area: "repository", Rule: "repo-missing", Where: *repo, Level: doctor.Error, Message: msg})
 		r.Findings = append(r.Findings, r.Checks[len(r.Checks)-1])
 		r.Status = verdict.Block
