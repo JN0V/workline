@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/role/config.go, internal/engine/engine.go, internal/hooks, internal/agent/claude.go, internal/agent/command.go]
-checked: 7f12e806
+checked: 8538d558
 judged: b5899f5
 verified: agent:claude-code
 ---
@@ -17,8 +17,6 @@ settings and the variables, in [config.md](config.md).
 - Misuse (an unknown command or option, a bad value, a missing `<role>`
   or `<event>`, a forge item id not a number) names the fault, then the
   usage, on stderr: exit 64.
-- Tried: every command's help; CI's and the hooks' calls with `--ai none`,
-  codes unchanged. Not tried: a GitLab job written from the help alone.
 
 ## Commands
 
@@ -37,7 +35,7 @@ Each in detail: [the commands](commands.md), and
 | [`workline test answer --merge-request <n>`](commands-work.md#workline-test) | the tester answers an objection to one of its tests: kept, or rewritten |
 | [`workline test measure --history <file>`](commands-work.md#workline-test) | the tester's curator measures the test corpus: times, red and flaky tests |
 | [`workline test curate --history <file>`](commands-work.md#workline-test) | the curator removes a few redundant tests, proven by coverage and mutants |
-| [`workline develop`](commands-work.md#workline-develop) | the developer takes the first ready issue, writes its code, opens its pull request; `--merge-request <n>`: fixes its review |
+| [`workline develop`](commands-work.md#workline-develop) | the developer takes the first ready issue, writes its code, opens its pull request; `--merge-request <n>`: fixes its review; `--bounds`: checks its files against its issue's bounds |
 | [`workline item ready <id>`](commands-work.md#workline-item-ready) | moves a work item to `ready`, once its sections are written |
 | [`workline issues`, `issues show <n>`](commands-work.md#workline-issues) | reads the issues kept in the clone (`forge: local`) |
 | [`workline issues import <file>`](commands-work.md#workline-issues-import) | turns a roadmap or backlog file into issues |
@@ -70,6 +68,7 @@ Each in detail: [the commands](commands.md), and
 | `--gates-only` / `--gates-from <file>` | `route` only: run the event's gates alone, for a CI job of their own; or read their verdicts from that run's result, with `--warn-only` their findings for the inspector ([gates in CI](gates-in-ci.md)) |
 | `--gates-kept <folder>` | `route`, and `gate` with `--base`: the gates' findings kept by commit; on `main`, the head's written there; on a change, its merge base's read there ([main after a merge](main-after-merge.md)) |
 | `--warn-apart` / `--warn-only` | `route` only: leave what only warns (the reviewer's lenses that warn, the inspector's triage) to a run apart; or be that run, no verdict ([apart](../roles/reviewer/docs/apart.md)) |
+| `--dry-run` | `route release` only: what would hold the release if it were cut now, no agent, nothing applied, said as warnings ([release](release.md)) |
 | `--release-wait <time>` | `route` only, on the release: wait that long (`30m`) for the checks not done on the branch it is cut from, then block only if one is red or still running; the CI job stays pending meanwhile ([what holds a release](release-holds.md#read-again)) |
 | `--verdict <file>` | `route` only: also write the line's verdict on the head it judged, for the [merge policy](merge-policy.md); `--verdict-head <commit>`, the head when the commit judged is a merge result |
 | `--json` | print the result as JSON ([below](#the-jobs-summary)) |
@@ -83,8 +82,9 @@ Each in detail: [the commands](commands.md), and
 - Default: `WORKLINE_AI` for the hook, else the project's `ai`, else
   yours, else none.
 - `claude` runs headless, outside the repository, with no tools; the
-  developer's runs in a worktree of the code, with tools
-  ([its agent](../roles/developer/docs/agent.md)). It gets
+  developer's runs in a worktree of the code, with tools, its shell on
+  Linux needing bubblewrap and socat
+  ([its agent](../roles/developer/docs/agent.md#claude)). It gets
   your environment without the variables a Claude Code session exports
   (`CLAUDECODE`, `CLAUDE_CODE_ENTRYPOINT`…): started from a session,
   a commit's hook included, the call would run as its child, at twice

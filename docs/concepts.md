@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine/engine.go, internal/line, internal/routing, internal/verdict, routing.default.yaml]
-checked: b6085f38
+checked: 8538d558
 verified: agent:claude-code
 judged-in-parts: 5d66009
 judged: 71c5f05
@@ -19,8 +19,9 @@ The words the other pages use, each in a few lines. The rules behind them:
 - **Event** — what starts work: `commit-msg` and `pre-push` (git hooks on
   your machine), `merge-request`, `main` (after a merge,
   [how](main-after-merge.md)), `schedule` (gardening), `release`,
-  `review`, `import`, `init`. workline never watches for events: a hook, a
-  CI job or you run the command for one ([triggers](triggers.md)).
+  `review`, `import`, `init`, `issue` (an issue's state), `reconcile`.
+  workline never watches for events: a hook, a CI job or you run the
+  command for one ([triggers](triggers.md)).
 - **Routing, the line** — which roles run, in order, for an event
   (`routing.default.yaml`, changed in `.workline/config.yaml`). `workline
   route <event>` runs the line; the first step that does not pass stops it,
@@ -32,6 +33,11 @@ The words the other pages use, each in a few lines. The rules behind them:
   release, the line also reads what holds it on the forge, stopping no
   step ([what holds a release](release-holds.md)).
   `workline run-role <role> --event <event>` runs one role alone.
+- **State** — where an issue stands on the line, one label at a time:
+  to refine, needs tests, ready, developing, blocked. Each wakes its role
+  on `issue`, whose result moves the issue on; an hourly reconciler
+  (`route reconcile`) runs what an event missed
+  ([the line of states](spec/routing.md#the-line-of-states)).
 - **Gate** — a step that runs your own scanners and reads their output
   against thresholds, never asking a model (`gate:<name>` in a line); on
   a merge request, only the findings the change adds count.
@@ -107,8 +113,11 @@ best available, said in the verdict
 - People state the need and accept the result; workline never approves.
   With the project's [merge policy](merge-policy.md), it turns the
   forge's auto-merge on for what a person accepted, a label — at
-  `normal`, for workline's own routine work too, each merge recorded;
-  else the person merges.
+  `normal`, for workline's own routine work too, a reproduced bug's fix
+  among it, each merge recorded; else the person merges.
+- A question the product owner asks times out, by its level, into an
+  assumption written on the issue
+  ([ADR-0060](adr/0060-the-person-is-on-the-loop.md)).
 - What a role cannot settle is written where a person looks — an issue, a
   comment, a label — with what to do.
 - A **parent** — a need the product owner split into parts, each an issue

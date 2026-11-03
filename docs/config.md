@@ -1,6 +1,6 @@
 ---
 sources: [internal/role/config.go, internal/role/role.go, cmd/workline, internal/engine/engine.go, internal/forge/gitlab.go, internal/hooks]
-checked: b6085f38
+checked: 8538d558
 judged: e343388
 verified: agent:claude-code
 reader: 0b97bbc207c5
@@ -32,7 +32,7 @@ project's `settings`.
 | `gates.<name>` | `criteria`, `checks` (`id`, `run`, `output`, `max`, `optional`, `timeout`, `fix`; on a merge request `new`, `base-timeout`, `config`), `enforce` ([gates](spec/gates.md)) |
 | `repos.<name>` | `url`, `branch`: other repositories docs may name ([multi-repo](spec/multi-repo.md)) |
 | `release` | `branches` (the release tool's), `tags` (`v*`) |
-| `merge` | `autonomy: cautious`: the forge merges what a person accepted; `normal`: workline's own routine work too, with no yes; `enterprising`: the developer's features too, a person's yes on the milestone's [release candidate](release-candidate.md); `alone: [reader]`: the reader's rewordings too ([merge policy](merge-policy.md)); off unless set |
+| `merge` | `autonomy: cautious`: the forge merges what a person accepted; `normal`: workline's own routine work too, a reproduced bug's fix among it, with no yes; `enterprising`: the developer's features and tasks too, a person's yes on the milestone's [release candidate](release-candidate.md); `alone: [reader]`: the reader's rewordings too ([merge policy](merge-policy.md)); off unless set |
 | `routing.states`, `routing.max-hops`, `routing.reconcile-max` | the line of states, its hop cap, the reconciler's steps a run ([routing](spec/routing.md#the-line-of-states)) |
 | `routing.wip` | `<state>: <issues>`, a state's WIP limit, laid over the shipped `ready: 5`; `0` lifts it ([room in the next state](spec/routing.md#room-in-the-next-state)) |
 | `routing.revisit` | the days a blocked issue waits, nothing new on it, before the product owner reads it again; `7` shipped, `0` never ([blocked, read again](spec/routing.md#blocked-read-again)) |
@@ -89,8 +89,8 @@ merge: {autonomy: cautious} # the forge merges what a person labelled workline:a
 ```
 
 **`merge: {autonomy: normal}` crosses a line**: a change an AI wrote and
-an AI reviewed — workline's own docs, records and derived blocks —
-merges with no person's approval. That is past the two-person rule of
+an AI reviewed — workline's own docs, records and derived blocks, the
+developer's fix of a reproduced bug — merges with no person's approval. That is past the two-person rule of
 change control (SLSA's source level 4, SOC 2's change management): a
 project's choice, never a default
 ([merge policy](merge-policy.md#normal-routine-work-with-no-yes)).

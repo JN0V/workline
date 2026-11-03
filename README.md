@@ -1,6 +1,6 @@
 <!-- workline
 sources: [ci/gitlab/workline.gitlab-ci.yml, ci/github/workline-fork.yml, routing.default.yaml, internal/forge/forge.go, internal/agent/agent.go, ci/github/workline-apply.yml, internal/gate, cmd/workline/cli.go, ci/github/workline.yml, ci/forgejo/workline-forge.sh, ci/github/workline-gardening.yml, ci/github/workline-sample.yml]
-checked: bd66bb99
+checked: 8538d558
 judged: e8a46f7
 verified: agent:documentalist
 reader: e375241655b6
@@ -63,7 +63,7 @@ pull requests and nightly gardening of workline and of another project;
 | [Security](https://github.com/JN0V/workline/issues/204) | will add security scanners as gates and a security lens | planned |
 | [Process engineer](https://github.com/JN0V/workline/issues/89) | will read the line's measures and propose fixes | planned |
 | [Architect](https://github.com/JN0V/workline/issues/207) | will read specs for structure and keep architecture rules | planned |
-| [UX](https://github.com/JN0V/workline/issues/208) | will check accessibility and flows, for projects with a user interface | planned |
+| [UX](https://github.com/JN0V/workline/issues/208) | will run accessibility tools as gates, and read the flows and wording they cannot ([ADR-0061](docs/adr/0061-the-ux-role-reads-what-the-accessibility-tools-cannot.md), proposed) | planned |
 | [PM](https://github.com/JN0V/workline/issues/209) | will map the product and suggest functions | planned |
 
 - What each role does and does not, its settings and costs: its page, or
@@ -73,8 +73,7 @@ pull requests and nightly gardening of workline and of another project;
   be out of beta; the other planned roles start after
   ([ADR-0052](docs/adr/0052-v1-0-when-the-core-roles-are-out-of-beta.md)).
 - The auditor widening to every role: [#205](https://github.com/JN0V/workline/issues/205).
-- Why these roles, in this order: the
-  [roles panorama](docs/research/roles-panorama.md).
+- Why these roles, in this order: [the roles panorama](docs/research/roles-panorama.md).
 
 ## Where it runs
 
@@ -122,7 +121,8 @@ Each role, from a hook, a script or a CI job: [triggers](docs/triggers.md).
 | a fork's | judged with no agent | on GitHub, a comment; on GitLab, nothing |
 | a role's own: a comment on the tester's Draft, a verdict on the developer's | tester: answers an objection; developer: fixes its review | a reply or a rewritten test; the fix, pushed on its branch |
 
-- The review is on the merge request; a person merges.
+- The review is on the merge request; a person accepts it, or the
+  [merge policy](docs/merge-policy.md) merges a reproduced bug's fix alone.
 - Templates: [GitHub Actions](ci/github/workline.yml),
   [what only warns, beside it](ci/github/workline-warn.yml),
   [its jobs that write](ci/github/workline-apply.yml) and
@@ -154,10 +154,11 @@ Each role, from a hook, a script or a CI job: [triggers](docs/triggers.md).
 
 | Who | What |
 |---|---|
-| product owner, on gardening | reads a share of the open issues against the code: completes them, readies the evident ones, proposes the rest on each issue, `workline:proposed` |
+| product owner, on gardening or at once on an issue to refine | reads a share of the open issues against the code: completes them, readies the evident ones, proposes the rest on each issue, `workline:proposed` |
 | `workline issues import <file>` | a roadmap file to issues |
 | tester, opt-in | a ready issue's tests, proven red, in a Draft |
 | developer, opt-in | a ready issue's code, proven, in a pull request; the issue labelled ready, or the gardening |
+| the line of states | each state label wakes its role: to refine, needs tests, ready; an hourly reconciler catches what an event missed ([how](docs/spec/routing.md#the-line-of-states)) |
 | reviewer | a finding outside the change: an issue, `needs-triage` |
 | documentalist | the code disagrees with a decision a doc records: an issue |
 | a person | accepts: the label `workline:accepted`, a parent closed |
@@ -194,7 +195,6 @@ gates:
 - Everything else: [the gates spec](docs/spec/gates.md).
 - The inspector explains what they add, apart from the verdict
   ([the inspector](roles/inspector/README.md)).
-- Not built yet: a SonarQube
-  quality gate read, never rerun
+- Not built yet: a SonarQube quality gate read, never rerun
   ([#203](https://github.com/JN0V/workline/issues/203)); other outputs
   (k6 or benchmark JSON); baselines with an expiry date.
