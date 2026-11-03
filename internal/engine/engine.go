@@ -1066,15 +1066,17 @@ func unreadFeedback(why string) string {
 		agent.BlockScalars + "\n"
 }
 
-// itemStart is a line that starts a real item (see answerItems).
-var itemStart = regexp.MustCompile(`^-[ \t]+(\{|"[^"]*"[ \t]*:|'[^']*'[ \t]*:|[A-Za-z_][\w-]*[ \t]*:([ \t]|$))`)
+// itemStart is a line that starts a real item (see answerItems): "- " and
+// one of the keys an item starts with, bare or quoted, or a flow mapping
+// opening with one. Any other key ("- name: x") is the claim's own text.
+var itemStart = regexp.MustCompile(`^-[ \t]+(\{[ \t]*)?("(claim|agent-invalid-output)"|'(claim|agent-invalid-output)'|(claim|agent-invalid-output))[ \t]*:([ \t\r]|$)`)
 
 // answerItems cuts an answer into its top-level list items: each starts
-// with "- " and a mapping key ("- claim:", "-  claim :", "- 'claim':",
-// "- agent-invalid-output:") or a flow mapping ("- {claim: x}") at the start
+// with "- " and the key "claim" or "agent-invalid-output" ("- claim:",
+// "-  claim :", "- 'claim':") or a flow mapping ("- {claim: x}") at the start
 // of a line, and runs to the next, or to a fence. Every other line in
 // between is the item's, one at the start of the line too (code pasted as
-// it is, a list line "- foo" included), so an item never reads from text
+// it is, a list line "- foo" or "- name: x" included), so an item never reads from text
 // cut short.
 func answerItems(answer string) []string {
 	var items []string
