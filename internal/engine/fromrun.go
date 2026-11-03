@@ -15,6 +15,7 @@ import (
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/role"
+	"github.com/JN0V/workline/internal/routing"
 	"github.com/JN0V/workline/internal/verdict"
 	"go.yaml.in/yaml/v3"
 )
@@ -127,8 +128,12 @@ func ResumeFrom(listed string, from FromMergeRequest) *Result {
 			refuse(fmt.Sprintf("the %s does not run on a merge request", r.Name))
 			return nil
 		}
+		var moves *roundMoves
+		if ownRound {
+			moves = roundMovesOf(from.Repo, r.Name, &mr)
+		}
 		for _, in := range intents {
-			if why := outOfLine(r, in, issueFor(r.Name, mr.Branch)); why != "" {
+			if why := outOfLine(r, in, issueFor(r.Name, mr.Branch), moves); why != "" {
 				refuse(why)
 				return nil
 			}
@@ -202,8 +207,9 @@ func kindsOf(intents []intent.Intention) []string {
 // outOfLine says why a proposal is not one a merge request's line may
 // apply: a kind its role never proposes, an act on the backlog, a comment
 // or a label on an issue but own, the one the role's branch was opened
-// for (0: none); "" when it is.
-func outOfLine(r *role.Role, in intent.Intention, own int) string {
+// for (0: none), or, on a round of the role's own branch, a comment on the
+// issue it closes and a move of that issue's state (moves); "" when it is.
+func outOfLine(r *role.Role, in intent.Intention, own int, moves *roundMoves) string {
 	switch {
 	case !slices.Contains(r.Intentions, in.Kind):
 		return fmt.Sprintf("it proposes %s, which the %s never does", in.Kind, r.Name)
@@ -214,10 +220,96 @@ func outOfLine(r *role.Role, in intent.Intention, own int) string {
 	if !ok || (in.Kind != "comment" && in.Kind != "label") || m["issue"] == nil {
 		return ""
 	}
-	if n, ok := m["issue"].(int); ok && own != 0 && n == own {
+	n, ok := m["issue"].(int)
+	if ok && own != 0 && n == own {
 		return ""
 	}
+	if ok && moves != nil && n == moves.issue {
+		if in.Kind == "comment" || moves.allows(m) {
+			return ""
+		}
+		return fmt.Sprintf("it proposes a label on #%d that is no move of its state its round makes (to %s)", n, strings.Join(moves.to, " or "))
+	}
 	return fmt.Sprintf("it proposes a %s on another issue than its merge request's", in.Kind)
+}
+
+// roundMoves are what a round on a role's own branch, workline/<role>/<n>,
+// may apply to issue n, the one its merge request closes (#923): the ask
+// for its Scope and the hand-off to a person block it, a round back from
+// the product owner takes it again. Labels: one state's put on, others'
+// taken off, as the project's line names them.
+type roundMoves struct {
+	issue  int
+	to     []string // the labels it may put on: Blocked's, Doing's
+	states []string // every state's label, which it may take off
+}
+
+// roundMovesOf reads the issue a role's own branch names, nil when its
+// merge request does not close it.
+func roundMovesOf(repo, roleName string, mr *forge.MergeRequest) *roundMoves {
+	n, err := strconv.Atoi(strings.TrimPrefix(mr.Branch, branchPrefix(roleName)))
+	if err != nil || n <= 0 || !slices.Contains(forge.Closes(mr.Title, mr.Body), n) {
+		return nil
+	}
+	mv := &roundMoves{issue: n, to: []string{backlog.LabelBlocked, backlog.StateLabel("doing")}}
+	for _, s := range []string{"refine", "tests", "ready", "doing", "blocked"} {
+		mv.states = append(mv.states, backlog.StateLabel(s))
+	}
+	if line, err := routing.Load(repo); err == nil {
+		mv.to = nil
+		for _, name := range []string{"blocked", "doing"} {
+			if s, ok := line.State(name); ok {
+				mv.to = append(mv.to, s.Label)
+			}
+		}
+		for _, s := range line.States {
+			if !slices.Contains(mv.states, s.Label) {
+				mv.states = append(mv.states, s.Label)
+			}
+		}
+	}
+	return mv
+}
+
+// allows says a label moves the issue to one state it may: one label on,
+// among to, only states' labels off.
+func (mv *roundMoves) allows(m map[string]any) bool {
+	add, remove := labelList(m["add"]), labelList(m["remove"])
+	if len(add) != 1 || !slices.Contains(mv.to, add[0]) {
+		return false
+	}
+	for _, l := range remove {
+		if !slices.Contains(mv.states, l) {
+			return false
+		}
+	}
+	for k := range m {
+		if k != "issue" && k != "add" && k != "remove" && k != "card" {
+			return false // a board's status or anything else: not a state's move
+		}
+	}
+	return true
+}
+
+// labelList reads a label's list, as written or as read back from YAML.
+func labelList(v any) []string {
+	var out []string
+	switch l := v.(type) {
+	case []string:
+		out = l
+	case []any:
+		for _, x := range l {
+			s, ok := x.(string)
+			if !ok {
+				return []string{"\x00"} // not a label's name: never allowed
+			}
+			out = append(out, s)
+		}
+	case nil:
+	default:
+		return []string{"\x00"}
+	}
+	return out
 }
 
 // issueFor is the issue a role's branch was opened for, by the engine's

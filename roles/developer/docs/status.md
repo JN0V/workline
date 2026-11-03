@@ -231,6 +231,10 @@ hold:
   `scope-ask-refused-stays-blocked`,
   `reconcile-lists-a-round-back-from-scope`. Tried: its pull request's
   `## Tried`.
+- **A round's move of its issue applied in CI** ([#923](https://github.com/JN0V/workline/issues/923)):
+  the apply job refused the whole run, its label on the issue its pull
+  request closes read as on another issue. Now that issue alone, to
+  Blocked or Doing. Case `developer/round-ask-applied-from-the-default-branch`.
 
 - **The merge** (step 7): at `normal`, `workline follow` merges its
   pull request with no person's yes, the kind `code`, when the issue it
