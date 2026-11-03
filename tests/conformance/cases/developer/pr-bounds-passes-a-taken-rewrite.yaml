@@ -1,0 +1,32 @@
+case: developer/pr-bounds-passes-a-taken-rewrite
+about: >
+  The tester rewrote a frozen test on an objection, its record on its
+  Draft naming the new blob, and a review round took it into the
+  developer's branch (#939): the bounds hold that branch to the record,
+  so the rewritten test passes them, and the old one would not.
+given:
+  repo: tested-draft
+  setup:
+    - "printf '# Scenario: Two by three\\n# Given the library, When I multiply 2 by 3, Then I get 6.\\n. ./lib.sh\\n[ \"$(mul 2 3)\" -eq 6 ] && [ \"$(mul 3 2)\" -eq 6 ]\\n' > tests/test_mul_two_by_three.sh && git commit -qam 'test: rewrite tests/test_mul_two_by_three.sh on an objection' -m 'Workline-Role: tester'"
+    - "git checkout -q -b workline/developer/3 && printf 'add() { echo $(($1 + $2)); }\\nmul() { echo $(($1 * $2)); }\\n' > lib.sh && git commit -qam 'feat: mul for #3' -m 'Workline-Role: developer' && git checkout -q main"
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:developing"]
+        body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        draft: true
+        comments: ["The tests of #3, frozen.\n\n<!-- workline:tester-record {\"issue\":3,\"base\":\"main\",\"files\":{\"tests/test_mul_by_zero.sh\":\"8f123a0bacbd681063880b867df38dd216784b97\",\"tests/test_mul_two_by_three.sh\":\"eca7751834305f71777b8a23f4f87c2933fca770\"}} -->\n<!-- workline:sticky=tester/tests -->"]
+      - id: 2
+        branch: workline/developer/3
+        base: main
+        title: "Multiply two numbers"
+        body: "Closes #3"
+run: {develop: [--bounds, --merge-request, "2"], ai: none}
+expect:
+  status: pass
+  agent-calls: 0
+  no-findings: [{rule: acceptance-test-edit}]

@@ -1,6 +1,7 @@
 ---
 sources:
   - internal/developer/review.go
+  - internal/developer/rewrite.go
   - internal/developer/gates.go
   - internal/developer/checks.go
   - internal/developer/widen.go
@@ -8,7 +9,7 @@ sources:
   - roles/developer/role.yaml
   - ci/github/workline-develop.yml
   - ci/gitlab/workline.gitlab-ci.yml
-checked: abaf9b8b
+checked: f6b5ffd9
 verified: agent:claude-code
 ---
 # The review loop
@@ -53,6 +54,15 @@ step 6).
     workflow named `workline …`, a check or status named `workline…`:
     their records say what to fix.
   - **Read on GitHub**; the checks not read are said (`checks-unread`).
+- **A test the tester rewrote** ([#939](https://github.com/JN0V/workline/issues/939)):
+  after an objection, the tester's Draft holds an acceptance test
+  otherwise than this branch.
+  - **Taken as the tester's record names it**: the round lays it on
+    its branch, the agent's worktree holding it, proves it with the
+    rest and pushes it.
+  - **The record follows**: its start commit moves to the Draft's
+    head, so [the bounds](bounds.md) hold the new test.
+  - **Not in the record**: never taken, and no round due for it.
 - **A finding on its line**: its row shows only a title; the round
   reads it whole from the reviewer's comment on that line. Only
   workline's own account's comment is read.
