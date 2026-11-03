@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.69.0](https://github.com/JN0V/workline/compare/v0.68.0...v0.69.0) (2026-11-03)
+
+
+### Features
+
+* **gate:** a wrong gate name lists the gates declared ([#873](https://github.com/JN0V/workline/issues/873)) ([711243e](https://github.com/JN0V/workline/commit/711243ee47d19ab9dbb655b9123f431dff1d461b))
+* workline version --verbose names the Go release and the ([#884](https://github.com/JN0V/workline/issues/884)) ([fa53369](https://github.com/JN0V/workline/commit/fa53369406506ab801bd1e5f1b0c3acd8e028c6a))
+
+
+### Bug Fixes
+
+* **ci:** reconcile the head; the agent's shell has its tools ([#904](https://github.com/JN0V/workline/issues/904)) ([2e88e42](https://github.com/JN0V/workline/commit/2e88e422a32a64b61ac2e85cf502753ea8249c54))
+* **ci:** the agent's shell on GitLab: bubblewrap in the image ([#907](https://github.com/JN0V/workline/issues/907)) ([bfe0ede](https://github.com/JN0V/workline/commit/bfe0ede4f299dd547963bf38e47ef06b1b6ec042))
+* **developer:** a fix outside the Scope asks the product owner ([#922](https://github.com/JN0V/workline/issues/922)) ([6efe65c](https://github.com/JN0V/workline/commit/6efe65ce4a252c30e191314b50e5473972715bac))
+* **developer:** a gate red on its pull request starts a round ([#892](https://github.com/JN0V/workline/issues/892)) ([3825f4c](https://github.com/JN0V/workline/commit/3825f4c123e32142aa800a56a9724a4566df685c))
+* **developer:** a project check red at its head is a round ([#918](https://github.com/JN0V/workline/issues/918)) ([3bc2492](https://github.com/JN0V/workline/commit/3bc249245957e789f96fd2c5fd8e4681ea39aa9f))
+* **developer:** a Scope's plain paths bound the developer ([#905](https://github.com/JN0V/workline/issues/905)) ([2839e64](https://github.com/JN0V/workline/commit/2839e6465c18b9dd26daa65638390529e3fdd850))
+* **developer:** a second objection is posted, a plain note kept ([#903](https://github.com/JN0V/workline/issues/903)) ([c794b61](https://github.com/JN0V/workline/commit/c794b6137d6dc03a88bb0b4380e997f7dd07f4df))
+* **developer:** an objection names the issue's scenario ([#915](https://github.com/JN0V/workline/issues/915)) ([d7f9033](https://github.com/JN0V/workline/commit/d7f9033ad55ff78b30e4a0cdc9d006de51f78cd2))
+* **engine:** apply a round's move of the issue it closes ([#924](https://github.com/JN0V/workline/issues/924)) ([3f121ba](https://github.com/JN0V/workline/commit/3f121ba7241d80a86d0e85bf1ca29f40118fc411))
+* **line:** a ready issue left free wakes the developer again ([#897](https://github.com/JN0V/workline/issues/897)) ([280df9f](https://github.com/JN0V/workline/commit/280df9fc44cfa11e6d348741488a9cda04ec4866))
+* **product-owner:** a full read asks each issue's kind by name ([#896](https://github.com/JN0V/workline/issues/896)) ([14643fa](https://github.com/JN0V/workline/commit/14643fa39cc55ff4160b82d23ae01da5141b5e05))
+* **tester:** give the functions a Scope names in a long file ([#916](https://github.com/JN0V/workline/issues/916)) ([a562451](https://github.com/JN0V/workline/commit/a562451ba2fe751484ec700073a47e32b645c9cc))
+
 ## [0.68.0](https://github.com/JN0V/workline/compare/v0.67.0...v0.68.0) (2026-11-02)
 
 
