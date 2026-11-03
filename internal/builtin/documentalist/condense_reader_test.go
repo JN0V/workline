@@ -31,6 +31,9 @@ func TestNewPageAmongUserPages(t *testing.T) {
 	if out, err := exec.Command("git", "-C", repo, "init", "-q").CombinedOutput(); err != nil {
 		t.Fatalf("git init: %v %s", err, out)
 	}
+	if out, err := exec.Command("git", "-C", repo, "add", "-A").CombinedOutput(); err != nil {
+		t.Fatalf("git add: %v %s", err, out)
+	}
 	diff := "diff --git a/docs/dev/a.md b/docs/dev/a.md\n" +
 		"--- a/docs/dev/a.md\n+++ b/docs/dev/a.md\n" +
 		"@@ -5,3 +5,1 @@\n" +
@@ -42,9 +45,9 @@ func TestNewPageAmongUserPages(t *testing.T) {
 		"@@ -0,0 +1,3 @@\n" +
 		"+## Moved\n+\n+" + long + "\n"
 	s := Settings{
-		Docs: []string{"docs/"},
+		Docs: []string{"docs/**"},
 		Reader: Reader{
-			Pages:          []string{"docs/user/"},
+			Pages:          []string{"docs/user/**"},
 			ParagraphWords: 10,
 			CellWords:      10,
 		},
