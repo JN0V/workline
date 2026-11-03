@@ -154,7 +154,7 @@ func TestGitHubWriteTriedAgainOnlyUnsent(t *testing.T) {
 // hangs (#491).
 func TestGitHubNoAnswerBounded(t *testing.T) {
 	quick(t)
-	retry.answerMax = 300 * time.Millisecond
+	retry.answerMax = 3 * time.Second // gh start-up and the TLS handshake count against it; tight, it fails under load (#619)
 	done := make(chan struct{})
 	fake := &fakeGitHub{answers: []func(http.ResponseWriter, *http.Request){func(w http.ResponseWriter, r *http.Request) { <-done }}}
 	srv := httptest.NewTLSServer(fake)
@@ -166,7 +166,7 @@ func TestGitHubNoAnswerBounded(t *testing.T) {
 	if !errors.Is(err, ErrUnreachable) || !strings.Contains(err.Error(), "no answer within") || !strings.Contains(err.Error(), "(tried 3 times)") || fake.count() != 3 {
 		t.Errorf("a read never answered: %v, %d calls; want 3 calls, said", err, fake.count())
 	}
-	if took := time.Since(start); took > 10*time.Second {
+	if took := time.Since(start); took > 3*retry.answerMax+10*time.Second {
 		t.Errorf("gave up after %v", took)
 	}
 }
