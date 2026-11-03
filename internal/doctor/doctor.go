@@ -305,6 +305,11 @@ func forgeCommand(r *Report, o Options, configured string) {
 // docs the documentalist does not read.
 func docs(r *Report, o Options, cfg *role.ProjectConfig) {
 	where := o.Repo
+	if o.RolesDir == "" {
+		r.add(Check{Area: "repository", Rule: "docs-roles-not-given", Where: where, Level: Note,
+			Message: "no roles folder was given: the docs the documentalist looks after are not counted"})
+		return
+	}
 	d, err := role.Load(o.RolesDir, "documentalist")
 	if err != nil {
 		r.add(Check{Area: "repository", Rule: "roles-unreadable", Where: o.RolesDir, Level: Error, Message: err.Error()})
