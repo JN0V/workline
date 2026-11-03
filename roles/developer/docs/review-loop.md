@@ -5,6 +5,7 @@ sources:
   - internal/developer/gates.go
   - internal/developer/checks.go
   - internal/developer/widen.go
+  - internal/developer/ready.go
   - internal/forge/checks.go
   - roles/developer/role.yaml
   - ci/github/workline-develop.yml
@@ -131,6 +132,19 @@ nothing asked again ([#938](https://github.com/JN0V/workline/issues/938),
   widens the Scope, then moves the issue back to ready: the next round
   runs at the same head, the check asked again.
 
+## A Draft made green
+
+Its pull request opened as a Draft — red, not run whole, or its agent
+failed — is marked ready for review once its rounds make it green
+([#969](https://github.com/JN0V/workline/issues/969)).
+
+- **When**: nothing new is asked, and every project check at its head
+  is done and green. With no project check, its last proof green.
+- **What**: no agent; the engine marks it ready, a comment says so.
+  The reviewer and the merge policy take it from there.
+- **A Draft kept**: a cap reached in its record, or its agent failed
+  with no round since, said in the verdict: a person marks it ready.
+
 ## When nothing runs
 
 - **Nothing asked**: a verdict with nits only, or none at all.
@@ -162,7 +176,8 @@ nothing asked again ([#938](https://github.com/JN0V/workline/issues/938),
   - **A project workflow ended** on a `workline/developer/` branch
     (`workflow_run`, every workflow but workline's own): `whose`
     starts a round once all the project's runs on that head are done,
-    one failed, whichever ended last. GitHub sends no `check_run` nor
+    one failed, whichever ended last; all green, on a Draft only, a
+    round that marks it ready. GitHub sends no `check_run` nor
     `check_suite` event for its Actions' own checks.
   - A comment the job's own token writes wakes no workflow: the
     reviewer and the gates need the App.

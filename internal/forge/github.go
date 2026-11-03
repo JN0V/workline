@@ -720,6 +720,27 @@ func (g *github) MergeRequest(id int) (MergeRequest, error) {
 	return MergeRequest{ID: id, Branch: pr.Head.Ref, Base: pr.Base.Ref, Here: pr.Head.Repo.Name == pr.Base.Repo.Name, Title: pr.Title, Body: pr.Body, Draft: pr.Draft}, nil
 }
 
+// MarkReady marks a draft pull request ready for review, GitHub's
+// GraphQL mutation (REST has none); one ready already is left.
+func (g *github) MarkReady(id int) error {
+	out, err := g.api(fmt.Sprintf("repos/{owner}/{repo}/pulls/%d", id))
+	if err != nil {
+		return err
+	}
+	var pr struct {
+		Node  string `json:"node_id"`
+		Draft bool   `json:"draft"`
+	}
+	if err := decode(out, &pr); err != nil {
+		return fmt.Errorf("pull request %d: %w", id, err)
+	}
+	if !pr.Draft {
+		return nil
+	}
+	_, err = g.api("graphql", "-f", "query=mutation($id: ID!) { markPullRequestReadyForReview(input: {pullRequestId: $id}) { pullRequest { isDraft } } }", "-f", "id="+pr.Node)
+	return err
+}
+
 // Squash reads whether the repository allows squash merging, and which
 // subject GitHub gives the squash: the title, or a lone commit's subject.
 // GitHub adds " (#N)" after it.

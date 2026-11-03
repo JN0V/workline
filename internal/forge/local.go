@@ -445,6 +445,16 @@ func (l *Local) MergeRequest(id int) (MergeRequest, error) {
 	return MergeRequest{ID: id, Branch: it.Branch, Base: it.Base, Here: true, Title: it.Title, Body: it.Body, Draft: it.Draft}, nil
 }
 
+// MarkReady marks a draft merge request ready; one ready already is left.
+func (l *Local) MarkReady(id int) error {
+	it, err := l.Item("merge-request", id)
+	if err != nil || !it.Draft {
+		return err
+	}
+	it.Draft = false
+	return l.save("merge-request", it)
+}
+
 // ListMergeRequests lists the open merge requests: each from a branch of
 // this clone, by whoever wrote it.
 func (l *Local) ListMergeRequests() ([]MergeRequest, error) {
@@ -455,7 +465,7 @@ func (l *Local) ListMergeRequests() ([]MergeRequest, error) {
 	var out []MergeRequest
 	for _, it := range items {
 		if it.Branch != "" && l.StateOf(it) == "open" {
-			out = append(out, MergeRequest{ID: it.ID, Branch: it.Branch, Base: it.Base, Here: true, Title: it.Title, Body: it.Body, Labels: it.Labels})
+			out = append(out, MergeRequest{ID: it.ID, Branch: it.Branch, Base: it.Base, Here: true, Title: it.Title, Body: it.Body, Labels: it.Labels, Draft: it.Draft})
 		}
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })

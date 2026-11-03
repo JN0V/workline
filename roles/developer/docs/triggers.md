@@ -132,7 +132,7 @@ routing:
 ## On its pull request
 
 - **A review round**, the reviewer's verdict, the gates' report, a
-  project workflow failed or a person's comment on a pull request from
+  project workflow failed, all green on its Draft, or a person's comment on a pull request from
   `workline/developer/<n>`: no
   routing, the same workflow's `review` jobs on GitHub,
   `WORKLINE_TASK=review` on GitLab
