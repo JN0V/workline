@@ -15,6 +15,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"sort"
 	"strings"
@@ -1062,17 +1063,28 @@ func unreadFeedback(why string) string {
 		agent.BlockScalars + "\n"
 }
 
+// itemStart is a line that starts a real item (see answerItems): "- " and
+// one of the keys an item starts with, bare or quoted, or a flow mapping
+// opening with one. Any other key ("- name: x") is the claim's own text.
+var itemStart = regexp.MustCompile(`^-[ \t]+(\{[ \t]*)?("(claim|agent-invalid-output)"|'(claim|agent-invalid-output)'|(claim|agent-invalid-output))[ \t]*:([ \t\r]|$)`)
+
 // answerItems cuts an answer into its top-level list items: each starts
-// with "- " at the start of a line and runs to the next, or to a fence.
-// Every other line in between is the item's, one at the start of the line
-// too (code pasted as it is), so an item never reads from text cut short;
-// a line starting with "- " starts the next.
+// with "- " and the key "claim" or "agent-invalid-output" ("- claim:",
+// "-  claim :", "- 'claim':") or a flow mapping ("- {claim: x}") at the start
+// of a line, and runs to the next, or to a fence. Every other line in
+// between is the item's, one at the start of the line too (code pasted as
+// it is, a list line "- foo" or "- name: x" included), so an item never reads from text
+// cut short.
 func answerItems(answer string) []string {
 	var items []string
 	open := false
-	for _, l := range strings.Split(answer, "\n") {
+	lines := strings.Split(answer, "\n")
+	if n := len(lines); n > 0 && lines[n-1] == "" {
+		lines = lines[:n-1] // the answer's final newline, not a line
+	}
+	for _, l := range lines {
 		switch {
-		case strings.HasPrefix(l, "- "):
+		case itemStart.MatchString(l):
 			items, open = append(items, l+"\n"), true
 		case strings.HasPrefix(l, "```"):
 			open = false
@@ -2089,10 +2101,10 @@ type attemptResult struct {
 	findings   []verdict.Finding // why proposals were refused before judging
 	askedAgent bool
 	external   bool
-	unread     string // why the agent's answer could not be read, if it could not
-	refused    string // why the engine refused the answer's proposals whole, if it did
-	said      []intent.Intention // what post said of its block (out/on-block.yaml)
-	overBudget bool   // the task was not put before the agent: over the context budget
+	unread     string             // why the agent's answer could not be read, if it could not
+	refused    string             // why the engine refused the answer's proposals whole, if it did
+	said       []intent.Intention // what post said of its block (out/on-block.yaml)
+	overBudget bool               // the task was not put before the agent: over the context budget
 }
 
 // attempt asks the agent (when there is a question and an agent), merges the
