@@ -65,7 +65,7 @@ workline review          # the reviewer reads this branch before you push
 ### Try each role once, on a real repository
 
 To check the documentalist, the reviewer and the product owner work on a
-repository (at work, say), after `setup`, `doctor` and `init --review`:
+repository of your own, after `setup`, `doctor` and `init --review`:
 
 ```sh
 workline doctor          # lists nothing missing; each item comes with its command
