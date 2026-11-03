@@ -96,6 +96,12 @@ type round struct {
 	// for files outside its Scope (#921): the round resumes, the checks
 	// at its head asked again with the new bounds.
 	Back bool `json:"back,omitempty"`
+	// Taken: the tests the tester rewrote, each its blob, taken into its
+	// branch this round (#939); Base, the commit its agent's worktree
+	// starts from, they in it; From, the tester's Draft's head.
+	Taken map[string]string `json:"taken,omitempty"`
+	Base  string            `json:"base,omitempty"`
+	From  string            `json:"from,omitempty"`
 }
 
 // reviewRows reads the findings of the reviewer's comment: what blocks,
@@ -241,7 +247,7 @@ func reviewPre(runDir, repo string, s Settings, id int) int {
 	// The gates read at its branch's head, checked out; a head git
 	// cannot read fails the round below.
 	head, _ := gitOut(repo, "rev-parse", "HEAD")
-	r, newReview, err := readAsked(f, b, kept, a, id, head)
+	r, newReview, err := readAsked(f, b, kept, repo, a, id, head)
 	if errors.Is(err, errOwnAccount) {
 		return fail(err)
 	}
@@ -291,10 +297,23 @@ func reviewPre(runDir, repo string, s Settings, id int) int {
 	for _, t := range a.Acceptance { // frozen, on its branch, whatever the tester's Draft
 		bounds.Frozen[t] = issue
 	}
+	// A rewrite is taken as the tester's record names it, none other.
+	if r.Asked, r.Taken = takeRewrites(r.Asked, bounds); len(r.Asked) == 0 {
+		return final(runDir, verdict.Verdict{Status: verdict.Pass, Summary: "nothing the review asks: no round",
+			Findings: []verdict.Finding{{Rule: "rewrite-not-recorded", Level: "warn", Where: where,
+				Message: "the tester's branch holds an acceptance test otherwise than this branch, and its record on its Draft does not name it: not taken, the record is the frozen test"}}})
+	}
 	// Its fix starts from its branch's head, checked out: a head git
 	// cannot read fails the round, never counted for nothing.
 	if r.At, err = gitOut(repo, "rev-parse", "HEAD"); err != nil {
 		return fail(fmt.Errorf("the round's code: git cannot read its branch's head in %s: %w", repo, err))
+	}
+	on := r.At
+	if len(r.Taken) > 0 {
+		if r.Base, err = withRewrites(repo, r.At, r.Taken); err != nil {
+			return fail(fmt.Errorf("the tester's rewritten tests, laid on its branch's head: %w", err))
+		}
+		on, r.From = r.Base, bounds.Head
 	}
 	checkLogs(f, r.Asked)
 	if err := writeIn(runDir, roundFile, r); err != nil {
@@ -306,7 +325,7 @@ func reviewPre(runDir, repo string, s Settings, id int) int {
 		}
 	}
 	ts, tsErr := testerSettings(repo)
-	return ask(runDir, repo, r.At, bounds, roundTask(r, *is, bounds, s, ts.Command, tsErr))
+	return ask(runDir, repo, on, bounds, roundTask(r, *is, bounds, s, ts.Command, tsErr))
 }
 
 var errOwnAccount = errors.New("workline's own account")
@@ -321,7 +340,7 @@ var ErrRecordUnread = errors.New("the developer's record on it was not read as w
 // new findings when they reported on head since it (head "": not
 // known), a person's comments not heard yet. fresh: the reviewer or the
 // gates said something new.
-func readAsked(f forge.Forge, b forge.Backlog, kept forge.Kept, a Act, id int, head string) (r round, fresh bool, err error) {
+func readAsked(f forge.Forge, b forge.Backlog, kept forge.Kept, repo string, a Act, id int, head string) (r round, fresh bool, err error) {
 	r = round{MR: id, Record: a}
 	for _, m := range reviewerMarkers {
 		c, ok := kept.Last(m)
@@ -357,6 +376,8 @@ func readAsked(f forge.Forge, b forge.Backlog, kept forge.Kept, a Act, id int, h
 	}
 	checksAt, checks, unread := checksAsked(f, a, head)
 	r.ChecksAt, r.ChecksUnread, r.Asked = checksAt, unread, append(r.Asked, checks...)
+	rewrites := rewritesAsked(repo, a, head)
+	r.Asked = append(r.Asked, rewrites...)
 	target := forge.Target{Kind: "merge-request", ID: id}
 	notes, err := b.Notes(target)
 	if err != nil && !errors.Is(err, forge.ErrAuthorsUnknown) {
@@ -373,7 +394,7 @@ func readAsked(f forge.Forge, b forge.Backlog, kept forge.Kept, a Act, id int, h
 		r.Heard = append(r.Heard, n.ID)
 		r.Asked = append(r.Asked, Asked{Key: "person|" + n.ID, Where: "@" + n.Author, Text: strings.TrimSpace(n.Body), Holds: "a person"})
 	}
-	return r, newReview || at != "" || checksAt != "", nil
+	return r, newReview || at != "" || checksAt != "" || len(rewrites) > 0, nil
 }
 
 // RoundDue says whether a review round is due on the developer's merge
@@ -403,7 +424,7 @@ func RoundDue(f forge.Forge, repo string, mr forge.MergeRequest) (bool, error) {
 		return false, nil
 	}
 	head, _ := gitOut(repo, "rev-parse", "--verify", "-q", "refs/remotes/origin/"+mr.Branch)
-	r, _, err := readAsked(f, b, kept, a, mr.ID, head)
+	r, _, err := readAsked(f, b, kept, repo, a, mr.ID, head)
 	if err == nil && len(r.Asked) == 0 && r.ChecksUnread != "" {
 		err = fmt.Errorf("its project's checks: %s", r.ChecksUnread)
 	}
@@ -445,6 +466,10 @@ func roundTask(r round, is forge.Issue, b Bounds, s Settings, test string, testE
 		}
 		if a.Holds == checkHolds {
 			fmt.Fprintf(&t, "- %s%s. The end of its failed steps' log:\n\n  ~~~~\n  %s\n  ~~~~\n\n", checkLine(a), seen, strings.ReplaceAll(a.Detail, "\n", "\n  "))
+			continue
+		}
+		if a.Holds == testerHolds {
+			fmt.Fprintf(&t, "- %s. Your worktree holds it as rewritten: make it pass; it stays read-only to you.\n", rewriteLine(a))
 			continue
 		}
 		if a.Holds == gateHolds {
@@ -519,6 +544,8 @@ func texts(l []Asked) []string {
 			out[i] = gateLine(a)
 		case checkHolds:
 			out[i] = checkLine(a)
+		case testerHolds:
+			out[i] = rewriteLine(a)
 		default:
 			out[i] = fmt.Sprintf("%s %s `%s`: %s", a.Holds, a.Lens, a.Where, a.Text)
 		}
@@ -584,7 +611,15 @@ func reviewPost(runDir, repo string, s Settings) int {
 		analysis = w.Markdown()
 	}
 	// Its worktree's diff from its branch's head, held as an issue run's.
-	kept, refused, said, unread, err := held(runDir, repo, r.At, b, nil, rest)
+	base := r.At
+	if r.Base != "" {
+		base = r.Base // the tester's rewrites in it: its agent's diff is its own
+	}
+	kept, refused, said, unread, err := held(runDir, repo, base, b, nil, rest)
+	if err != nil {
+		return fail(err)
+	}
+	takes, err := rewritePatches(repo, r.Taken)
 	if err != nil {
 		return fail(err)
 	}
@@ -618,7 +653,7 @@ func reviewPost(runDir, repo string, s Settings) int {
 		a.Widen.Back = true
 	}
 	var ask []intent.Intention
-	if len(patches) == 0 {
+	if len(patches) == 0 && len(takes) == 0 {
 		this.Result, this.Bounds = "no-code", "held"
 		v.Findings = append(v.Findings, verdict.Finding{Rule: "no-code", Level: "warn", Where: where,
 			Message: "its agent wrote no fix within its bounds that changes the branch: the round is counted, nothing pushed"})
@@ -637,11 +672,16 @@ func reviewPost(runDir, repo string, s Settings) int {
 			v.Summary += "; " + msg
 		}
 	} else {
-		p, u, caps, found := proven(runDir, repo, r.At, where, patches, union(a.Acceptance, union(a.Code, a.Tests)), again(a.Proof), s)
+		// The tester's rewrites first, as its record names them, then
+		// its agent's code: proven together, pushed together.
+		p, u, caps, found := proven(runDir, repo, r.At, where, slices.Concat(takes, patches), union(a.Acceptance, union(a.Code, a.Tests)), again(a.Proof), s)
 		this.Result, this.Turns, this.Tokens, this.Cached, this.Tools = p.Result, u.Turns, u.Tokens, u.Cached, u.Tools
 		a.Proof, a.Caps = &p, caps
 		code, tests := written(patches)
 		a.Code, a.Tests = union(a.Code, code), union(a.Tests, tests)
+		if len(takes) > 0 && r.From != "" {
+			a.From = r.From // the Draft's head the frozen tests are read at now
+		}
 		for _, f := range found {
 			f.Message = strings.ReplaceAll(f.Message, "; its pull request opens as a Draft", "; pushed, the forge's checks and the reviewer read it next")
 			v.Findings = append(v.Findings, f)
@@ -671,7 +711,7 @@ func reviewPost(runDir, repo string, s Settings) int {
 		}
 	}
 	a.Rounds = append(a.Rounds, this)
-	out := append(patches, intent.Intention{Kind: "comment", Value: map[string]any{"sticky": "round", "body": roundBody(this, s, notes, analysis, a.Widen)}},
+	out := append(slices.Concat(takes, patches), intent.Intention{Kind: "comment", Value: map[string]any{"sticky": "round", "body": roundBody(this, s, notes, analysis, a.Widen)}},
 		intent.Intention{Kind: "comment", Value: map[string]any{"sticky": RecordKey, "body": recordBody(a)}})
 	out = append(out, others...)
 	switch {
