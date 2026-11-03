@@ -252,7 +252,9 @@ hold:
   ([the merge](merge.md)). Cases
   `developer/merge-normal-admits-developer-fix`,
   `merge-normal-holds-developer-feature`,
-  `merge-normal-holds-developer-task`.
+  `merge-normal-holds-developer-task`,
+  `merge-enterprising-admits-developer-task`,
+  `merge-enterprising-candidate-refused-tasks-wait`.
 - **A bug's fix, reproduced first**
   ([ADR-0060](../../../docs/adr/0060-the-person-is-on-the-loop.md#4-a-person-validates-by-the-issues-kind)):
   merges alone only when its code starts from the tester's Draft, a
