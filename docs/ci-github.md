@@ -108,7 +108,7 @@ write run the default branch's workflow, never a pull request's own
      a person's label running the role an issue's state wakes, each step
      starting the next, an hourly reconciler
      ([its heartbeat](github/heartbeat.md), an environment to create); a verdict,
-     the gates' report, a person's comment or a project workflow failed
+     the gates' report, a person's comment, a project workflow failed, or all green on its Draft,
      on its own pull request, a review round
      ([the triggers](../roles/developer/docs/triggers.md)); your setup
      steps in `.github/actions/workline-setup/action.yml`
