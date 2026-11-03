@@ -77,7 +77,10 @@ read again ([what holds a release](release-holds.md#read-again)).
   ([more](spec/routing.md#on-a-forge-judge-then-apply)). On an issue,
   only the one its role's branch was opened for
   (`workline/<role>/issue-<n>`): the tester's answer
-  ([its jobs](objection-jobs.md)).
+  ([its jobs](objection-jobs.md)). A developer's round, on
+  `workline/developer/<n>` closing `#n`: comments on `#n`, and a label
+  that moves `#n` to Blocked or Doing, nothing else
+  ([#923](https://github.com/JN0V/workline/issues/923)).
 - With both, on GitHub: the line's documentalist findings as annotations
   of the check `workline findings` on the head judged; `checks: write`
   ([#412](https://github.com/JN0V/workline/issues/412)).
