@@ -20,6 +20,7 @@ findings:
     where: commit a1b2c3d, subject
     message: "'AC-3' means nothing outside the project; say what changed."
 final: false   # true: the block is not the agent's answer's, so it is not asked again
+again: false   # true: a block the answer can mend, asked again once even at promote-after 0
 ```
 
 Every run ends with a status; there is no run without one. `blocked-external`
@@ -40,7 +41,10 @@ So is it on a merge request for a role whose `merge-request-ai` is
 `ready`, refused once: never asked again, no stronger model
 ([ADR-0051](../adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md)).
 A `final` block met once asked again is no refusal: it still blocks, and
-the summary says it.
+the summary says it. A block marked `again` is asked once more, with its
+findings, for a role with `promote-after: 0`: the tester's tests that do
+not pass the project's lint
+([#964](https://github.com/JN0V/workline/issues/964)).
 
 Findings map to SARIF, so the same verdict can be posted on GitHub or GitLab:
 `--sarif` writes them for code scanning, `--code-quality` as GitLab's Code

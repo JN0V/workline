@@ -1,6 +1,6 @@
 ---
 sources: [internal/agent, internal/engine/engine.go]
-checked: 8538d558
+checked: 54f275a2
 judged: 8b6aecc
 verified: agent:claude-code
 judged-in-parts: c1f13a0
@@ -131,7 +131,8 @@ The ladder stops at `frontier`. The number of attempts is capped at
 ([the role contract](role-contract.md)).
 An answer that could not be read at all is asked once more on the same tier,
 besides, even when `promote-after` is 0 — a part's too, a reviewer's lens,
-when `promote-after` is above 0.
+when `promote-after` is above 0. So is a block `post` marks `again`, one
+the answer can mend, when `promote-after` is 0: one more call in all.
 
 ## Independent judgement
 
