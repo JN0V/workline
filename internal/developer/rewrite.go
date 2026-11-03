@@ -17,6 +17,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/tester"
 )
@@ -25,16 +26,18 @@ import (
 const testerHolds = "the tester"
 
 // rewritesAsked are the acceptance tests of a's issue the tester's
-// branch holds otherwise than the head, no forge read: each a round asks
-// (its Detail the blob on the tester's branch). None when the head or the
-// tester's branch is not known in repo.
-func rewritesAsked(repo string, a Act, head string) []Asked {
+// branch holds otherwise than the head, as the tester's record on its
+// Draft names them: each a round asks (its Detail the blob). Git first:
+// the forge is read only when the branches differ. A blob the record
+// does not name is never asked, so it makes no round due again and
+// again. None when the head or the tester's branch is not known in repo.
+func rewritesAsked(f forge.Forge, repo string, a Act, head string) ([]Asked, error) {
 	if head == "" || len(a.Acceptance) == 0 {
-		return nil
+		return nil, nil
 	}
 	tip := testerTip(repo, a.Issue)
 	if tip == "" {
-		return nil
+		return nil, nil
 	}
 	var out []Asked
 	for _, t := range a.Acceptance {
@@ -48,7 +51,34 @@ func rewritesAsked(repo string, a Act, head string) []Asked {
 		out = append(out, Asked{Key: "tester|" + t + "|" + blob, Where: t, Holds: testerHolds, Detail: blob,
 			Text: "rewritten on an objection, on its Draft"})
 	}
-	return out
+	if len(out) == 0 {
+		return nil, nil
+	}
+	files, err := testerFiles(f, a.Issue)
+	if err != nil {
+		return nil, err
+	}
+	return slices.DeleteFunc(out, func(x Asked) bool { return files[x.Where] != x.Detail }), nil
+}
+
+// testerFiles are the frozen tests the record on the tester's open Draft
+// for issue names, each its blob; none without a Draft or a record read.
+func testerFiles(f forge.Forge, issue int) (map[string]string, error) {
+	mrs, err := f.ListMergeRequests()
+	if err != nil {
+		return nil, err
+	}
+	for _, mr := range mrs {
+		if testerIssue(mr.Branch) != issue {
+			continue
+		}
+		r, ok, err := tester.ReadRecord(f, mr.ID)
+		if err != nil || !ok {
+			return nil, err
+		}
+		return r.Files, nil
+	}
+	return nil, nil
 }
 
 // testerTip is the commit of the tester's branch for issue, as fetched
@@ -108,7 +138,11 @@ func withRewrites(repo, at string, taken map[string]string) (string, error) {
 		return "", err
 	}
 	for _, t := range slices.Sorted(maps.Keys(taken)) {
-		if _, err := run("update-index", "--add", "--cacheinfo", "100644,"+taken[t]+","+t); err != nil {
+		mode := "100644" // its mode on the branch kept: an executable test stays one
+		if out, _ := run("ls-tree", at, "--", t); strings.HasPrefix(out, "100755 ") {
+			mode = "100755"
+		}
+		if _, err := run("update-index", "--add", "--cacheinfo", mode+","+taken[t]+","+t); err != nil {
 			return "", err
 		}
 	}

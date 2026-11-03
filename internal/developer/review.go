@@ -376,7 +376,10 @@ func readAsked(f forge.Forge, b forge.Backlog, kept forge.Kept, repo string, a A
 	}
 	checksAt, checks, unread := checksAsked(f, a, head)
 	r.ChecksAt, r.ChecksUnread, r.Asked = checksAt, unread, append(r.Asked, checks...)
-	rewrites := rewritesAsked(repo, a, head)
+	rewrites, err := rewritesAsked(f, repo, a, head)
+	if err != nil {
+		return r, false, err
+	}
 	r.Asked = append(r.Asked, rewrites...)
 	target := forge.Target{Kind: "merge-request", ID: id}
 	notes, err := b.Notes(target)

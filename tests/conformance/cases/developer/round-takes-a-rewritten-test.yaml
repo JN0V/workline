@@ -43,10 +43,11 @@ expect:
   pushed:
     workline/developer/3:
       tests/test_mul_two_by_three.sh: "$(mul 3 2)"
-      lib.sh: "$1 * $2"
+  pushed-message:
+    workline/developer/3: "fix: the review's findings on #3, round 1"
   run-files:
     in/task.md: {contains: ["Review round 1 of 5", "the tester rewrote `tests/test_mul_two_by_three.sh`"]}
   forge:
     merge-requests:
       - id: 2
-        comment-contains: ["review round 1 of 5: its fix pushed, the project's tests green", "the worktree holds the rewrite", "the tester rewrote `tests/test_mul_two_by_three.sh`", "\"round\":1"]
+        comment-contains: ["review round 1 of 5: its fix pushed, the project's tests green", "the worktree holds the rewrite", "the tester rewrote `tests/test_mul_two_by_three.sh`", "\"round\":1", "\"from\":\""]
