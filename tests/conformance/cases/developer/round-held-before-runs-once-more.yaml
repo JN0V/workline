@@ -1,9 +1,10 @@
-case: developer/round-holding-a-check-wrong-asks-nothing
+case: developer/round-held-before-runs-once-more
 about: >
-  A round on a red check whose agent holds the check wrong (#921): no
-  fix, a note, no file outside the Scope. Nothing more happens, as
-  before: the issue stays where it is, the round counted, its record
-  saying it needed no file; the same head is not asked again.
+  A round on a red check that wrote no fix and named no file outside
+  its Scope before such a round blocked its issue, as on 2026-11-03
+  (#938): its record keeps the head the checks were read at, its round
+  `held`, and no ask. Due once more at that head, the round runs; its
+  agent still holds the check wrong, so #3 is blocked for a person now.
 given:
   repo: tested-draft
   setup:
@@ -30,19 +31,15 @@ given:
         title: "Multiply two numbers"
         body: "Closes #3"
         comments:
-          - "**The developer**'s record of this pull request, for its next runs and the auditor.\n\n<!-- workline:developer-act {\"act\":\"code\",\"issue\":3,\"acceptance\":[\"tests/test_mul_by_zero.sh\",\"tests/test_mul_two_by_three.sh\"],\"code\":[\"lib.sh\"],\"review-runs\":1} -->\n<!-- workline:sticky=developer/code -->"
+          - "**The developer**'s record of this pull request, for its next runs and the auditor.\n\n<!-- workline:developer-act {\"act\":\"code\",\"issue\":3,\"acceptance\":[\"tests/test_mul_by_zero.sh\",\"tests/test_mul_two_by_three.sh\"],\"code\":[\"lib.sh\"],\"round\":1,\"review-runs\":1,\"seen\":[\"checks|test\"],\"rounds\":[{\"n\":1,\"asked\":[\"a project check `test`: red at `abc1234`\"],\"result\":\"no-code\",\"bounds\":\"held\"}],\"checks-at\":\"@head@\"} -->\n<!-- workline:sticky=developer/code -->"
           - "**workline reviewer** — 0 findings on the change.\n\nNo finding on the commits reviewed.\n\n<!-- workline:record reviewed=1111111 runs=1 -->\n<!-- workline:sticky=reviewer/summary -->"
 run: {develop: [--merge-request, "2"], ai: "fake:developer-holds-check-wrong"}
 expect:
   status: pass
-  summary: "round 1 of 5 on merge request 2"
+  summary: "round 2 of 5 on merge request 2; no fix for the red check test, and no file named outside the issue's Scope: #3 blocked for a person"
   agent-calls: 1
-  not-pushed: [workline/developer/3]
   forge:
     issues:
       - id: 3
-        labels: ["workline:developing"]
-        comments: 0
-    merge-requests:
-      - id: 2
-        comment-contains: ["no fix within its bounds.", "\"bounds\":\"held\"", "\"checks-at\":\""]
+        labels: ["workline:blocked"]
+        comment-contains: ["pull request 2 is still red on `test` at this head"]

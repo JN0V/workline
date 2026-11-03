@@ -1,0 +1,10 @@
+# The developer's agent in a round on #3's pull request, red on a frozen
+# test it holds wrong (#938): no fix, a note, an objection to the test.
+- note: "The frozen test expects the old sum; the code is right: I object to the test."
+- comment:
+    objection:
+      test: tests/test_mul_by_zero.sh
+      line: 4
+      scenario: By zero
+      kind: contradicts
+      why: The test expects 5 where the scenario asks for the product.

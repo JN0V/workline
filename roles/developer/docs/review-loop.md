@@ -101,10 +101,25 @@ a round asks it to widen it ([#921](https://github.com/JN0V/workline/issues/921)
 - **Once a head and a Scope**: asked again on the same, the issue is
   blocked for a person, with no ask; the person who widens it and puts
   it back to ready resumes the round. The rounds' cap bounds the rest.
-- **A round that holds the finding wrong** asks nothing, as before: the
+- **A round that holds a reviewer's finding wrong** asks nothing: the
   reviewer decides.
 - **A round before this**, no fix on a red check, runs once more at the
-  same head, to ask.
+  same head, to ask, or to block as below.
+
+## A red check it does not fix
+
+A project check is asked once a head: a round on it that keeps no fix
+and names no file outside the Scope would leave the pull request red,
+nothing asked again ([#938](https://github.com/JN0V/workline/issues/938),
+[ADR-0059](../../../docs/adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#amendment-2026-11-03-a-red-check-with-no-fix-blocks-for-a-person)).
+
+- **The issue goes `workline:blocked`, for a person**: its comment names
+  the checks, the agent's note, where its objections to frozen tests
+  went, and the end of the check's log. No mark: nothing for the
+  product owner to widen.
+- **A person** fixes the check or the test, re-runs a flaky check, or
+  widens the Scope, then moves the issue back to ready: the next round
+  runs at the same head, the check asked again.
 
 ## When nothing runs
 
