@@ -82,9 +82,14 @@ Scope). What each holds:
   accepts the result".
 - `verification`: how the machine proves it — which tests, which checks.
 - `scope`: the part of the code it touches, by its paths — files or
-  folders —, the same paths in `sources` (1 to 5): from the code given,
-  else from the repository's folders the task lists. File paths, issue
-  numbers and decisions go here, never in Need nor Validation.
+  folders —, the same paths in `sources` (1 to 5), from the code given
+  for that issue: read it first. With no code given for it, write no
+  `scope`: propose `sources` instead; the issue is read again with that
+  code, and its `scope` written then. When the code given still does
+  not show where the change goes — new code, a file not given —, start
+  the `scope` with a line `Guessed:` and why: a guess holds no other
+  issue back. File paths, issue numbers and decisions go here, never in
+  Need nor Validation.
 
 Propose `refine` with those it lacks: `scope` and `sources`,
 `verification` from the code and its tests; `need`, `example` or

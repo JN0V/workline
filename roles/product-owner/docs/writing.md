@@ -47,7 +47,10 @@ first, the cause folded.
 - **Short**: sentences of 25 words at most, one idea a bullet, plain
   words, in English; code and messages as they print.
 - **Paths and numbers below the line**: file paths, issue numbers and
-  decisions go in Scope, not in Need nor Validation.
+  decisions go in Scope, not in Need nor Validation. A Scope is written
+  from the code it names, read first; one still a guess says so on a
+  line `Guessed:`, and holds no other issue back
+  ([#970](https://github.com/JN0V/workline/issues/970)).
 - **Fold only what is long** — a log, a list of more than ten lines — in
   `<details>`.
 - **Never invent**: no real case known, ask the reporter for one.
