@@ -19,7 +19,7 @@ given:
         labeled: {"workline:to-refine": "2026-10-31T09:00:00Z"}
         body: "## Need\n\nI want to multiply.\n"
         comments:
-          - "**workline's line** last woke the product-owner.\n\n<!-- workline:line-record {\"state\":\"refine\",\"body\":\"8a828a06be19\",\"labeled\":\"2026-10-31T09:00:00Z\",\"hops\":1} -->\n<!-- workline:sticky=line/state -->"
+          - "**workline's line** last woke the product owner.\n\n<!-- workline:line-record {\"state\":\"refine\",\"body\":\"8a828a06be19\",\"labeled\":\"2026-10-31T09:00:00Z\",\"hops\":1} -->\n<!-- workline:sticky=line/state -->"
           - "**The reviewer** read this spec: nothing holds it from ready.\n\n<!-- workline:spec-review body=8a828a06be19 round=1 open=0 -->\n<!-- workline:sticky=reviewer/spec -->"
 run: {route: issue, open-merge-request: true, ai: "fake:ready-nine", input: {reconcile: list}}
 expect:

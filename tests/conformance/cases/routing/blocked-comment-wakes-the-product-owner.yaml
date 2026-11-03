@@ -32,5 +32,5 @@ expect:
     issues:
       - id: 3
         labels: ["workline:ready"]
-        comment-contains: ["Moved #3 out of Blocked, to ready (workline:blocked off, workline:ready on; put workline:blocked back to undo): the comment says the objection was settled", "\"revisited\":", "last woke the product-owner"]
+        comment-contains: ["Moved #3 out of Blocked, to ready (workline:blocked off, workline:ready on; put workline:blocked back to undo): the comment says the objection was settled", "\"revisited\":", "last woke the product owner"]
         comment-lacks: ["**workline's line** blocks this issue"]
