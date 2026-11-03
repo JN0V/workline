@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/identifiers.go, internal/builtin/documentalist/derive.go, internal/builtin/documentalist/freshness.go, internal/builtin/documentalist/counts.go, roles/documentalist/role.yaml]
-checked: d722a840
+checked: 8538d558
 judged: f70db89
 verified: agent:claude-code
 ---
@@ -27,6 +27,10 @@ For each doc, the commits since its `checked` commit that touched its
 `sources`, named in a `<!-- workline … -->` comment at its top, which no
 rendering shows, or in a frontmatter the doc has.
 
+- **Only where the doc looks**: a doc writing names in backticks, or
+  naming a part of a file (`f.go#Name`, `ci.yml#jobs.test`), is suspect
+  only when what it names changes; a named part gone is said
+  ([at the push](push.md)).
 - **No change**: a commit changing only docs' headers, who checked them;
   nor, on a release tool's pull request, one only putting a version number
   in place of another, line for line — the tool's bump, which would hold
@@ -156,7 +160,8 @@ turns one off with `enforce`.
   `identifier-gone`, `count-off`, `value-left` (after a fix, the judge),
   `cites-superseded`, `stale`, `links-not-checked`, `nothing-tracked`,
   `no-sources` and `sources-by-name` (on `init`), `undocumented`,
-  `source-gone`, `docs-not-read`, `gardening-paused`, the reader checks,
+  `source-gone`, `docs-not-read`, `gardening-paused`, the reader checks
+  and `setting-invalid` (a `reader.references` pattern left out),
   `too-large-to-condense`, `too-large-to-split`, `too-large-to-read`,
   `reader-claim-dropped` and `reader-patch-withheld` (gardening); for a
   doc judged in parts, `sources-too-wide`, `uncovered`, `claims-dropped`;

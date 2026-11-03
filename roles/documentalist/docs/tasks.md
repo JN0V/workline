@@ -17,7 +17,7 @@ sources:
   - roles/documentalist/role.yaml#settings.whole-chars
   - roles/documentalist/role.yaml#settings.judge-in-parts
   - roles/documentalist/role.yaml#settings.parts-move-checked
-checked: d722a840
+checked: 8538d558
 verified: agent:claude-code
 ---
 # Documentalist — the agent's tasks
@@ -63,7 +63,8 @@ pages the reader checks flag: [gardening](gardening.md). Part of [the documental
 
 - **Every source whole**: a doc is told it may move `checked` only when
   every one of its sources went whole into the task, as it is now — every
-  text file under a source path, the section of a source doc — up to the
+  text file under a source path, the section of a source doc, the part of
+  a file a source names (`f.go#Name`) — up to the
   project's `whole-chars` together (20,000 characters by default, 25,000
   at most; the task grows by as much as it is raised).
 - **Otherwise**: a doc judged on diffs alone, or beside a doc of the same
@@ -72,8 +73,9 @@ pages the reader checks flag: [gardening](gardening.md). Part of [the documental
   doc stays suspect for a person. The same holds for docs due and for
   stale docs. What the run says of it names what was read
   and what was not ([the judge](judge.md#what-the-finding-says)).
-- **A source that cannot be read** — a file gone, or a section whose
-  heading is renamed or removed — is never given as empty: the doc is
+- **A source that cannot be read** — a file gone, a section whose
+  heading is renamed or removed, a named part gone from its file — is
+  never given as empty: the doc is
   judged on what changed, so `checked` cannot move. With nothing else to
   judge it on (far behind, or stale), it is not put before the agent: the
   finding says which source, and a person judges it.

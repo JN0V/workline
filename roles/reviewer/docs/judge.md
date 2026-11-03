@@ -1,20 +1,20 @@
 ---
-sources: [roles/reviewer/role.yaml, roles/reviewer/lenses, internal/builtin/reviewer]
-checked: 000a3816
+sources: [roles/reviewer/role.yaml, roles/reviewer/lenses, internal/builtin/reviewer, internal/codenav]
+checked: 8538d558
 verified: agent:claude-code
 ---
 # Reviewer — the judge, the verdict, the budget
 
-Part of [the reviewer](../README.md): steps 7 and 8 of [a run](run.md),
-and what a run may spend.
+Part of [the reviewer](../README.md): steps 7 and 8 of [a run](run.md), and what a run may spend.
 
 ## 7. The judge
 
 Apart, for each important finding, at the best independence
-(`judge-at-least`); its level and both models said. A no drops it, said
-(`finding-judged-no`), when the lines it quotes are found again
-([below](#when-the-judge-reads)). One judged before, the same finding on
-the same patch, keeps its verdict ([judged once](once.md)).
+(`judge-at-least`; `judge-at-least-by-role` raises it for a role's
+commits, the developer's to `model`); its level and both models said.
+A no drops it, said (`finding-judged-no`), when the lines it quotes are
+found again ([below](#when-the-judge-reads)). One judged before, the same
+finding on the same patch, keeps its verdict ([judged once](once.md)).
 
 **What it reads**: the finding, the code it stands on, and what the change
 did within 40 lines of the cause

@@ -5,7 +5,7 @@ sources:
   - ci/github/workline-objection.yml
   - ci/github/workline-answer.yml
   - ci/github/workline-gardening.yml
-checked: 99a14dc0
+checked: 8538d558
 verified: agent:claude-code
 ---
 # Tester
@@ -33,8 +33,7 @@ file. All roles: [docs/roles.md](../../docs/roles.md). Where it stands:
   each named scenario of an issue waiting for its tests, in the project's own framework;
 - proves them red on the base, with no agent, then commits them on a
   work branch, opened as a Draft;
-- `workline test check --base <ref>`: the same red-first check on any
-  change, with no agent;
+- `workline test check --base <ref>`: the same red-first check on any change, with no agent;
 - keeps its tests from the builder, and answers an objection to one
   ([below](#frozen-tests-and-objections));
 - runs on its own: an issue labelled `workline:needs-tests` at once,
@@ -92,6 +91,7 @@ workline test write --issue 42 --ai claude
 | `test-file-exists` | a patch changes a test file the base holds |
 | `intention-refused` | a patch reaches a file outside `test-paths` |
 | `test-green-on-base`, `no-new-test` | a test is not proven red, or none is named in the report |
+| `bug-not-reproduced` | a bug's tests all pass on the base: `workline:needs-repro`, its reporter asked ([how](docs/hand-over.md#a-bug-not-reproduced)) |
 | `no-test-written` | no test proposed, the answer unread or refused whole; an answer that does not read is asked again once first. An answer read with no test nor kind is `none`, back to the product owner |
 
 Each refusal is written on the issue ([how](docs/hand-over.md#when-the-tester-refuses-an-issue)).
