@@ -124,6 +124,25 @@ Git is the engine's: it commits and pushes the branches of merge requests
 comments, labels, merge requests. A command is not sandboxed: what
 it does with the tokens it is given is its own promise, not the engine's.
 
+## What the doctor checks
+
+On a repository whose `forge` is `cmd:<command>`, `workline doctor` runs
+the command once with the operation `ping` (no write), in the repository,
+and says:
+
+- a command not found, not executable, or whose script is missing (exit 126
+  or 127): a warning naming the command, and how to fix it (install it, make
+  it executable, or correct `forge:` in `.workline/config.yaml`);
+- a command that exits other than 0 or does not answer in 20 seconds: a
+  warning with its last line — the Forgejo sample says there which of
+  `FORGEJO_URL` and `FORGEJO_TOKEN` is not set;
+- a command that answers `{}`, or an error saying it does not know `ping`:
+  the forge command runs and is reachable as far as the doctor can tell.
+  A command may answer `{"error": "…"}` to `ping` to say why its forge is
+  not reachable: that is a warning with those words.
+
+A GitHub or GitLab repository is checked as before.
+
 ## Tested
 
 The conformance cases `forge/cmd-*` plug a fake script

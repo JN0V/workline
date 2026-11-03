@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/JN0V/workline/internal/builtin/documentalist"
+	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/hooks"
 	"github.com/JN0V/workline/internal/role"
 	"github.com/JN0V/workline/internal/routing"
@@ -210,6 +211,7 @@ func repository(r *Report, o Options) {
 				Message: "gh is not installed, so this does not run here: " + t.For, Fix: t.Install()})
 		}
 	}
+	forgeCommand(r, o, cfg.Forge)
 
 	// Where the docs are judged (ADR-0010): on each merge request in CI, by
 	// gardening. The push only counts them, when routed.
@@ -256,6 +258,39 @@ func repository(r *Report, o Options) {
 	}
 	docs(r, o, cfg)
 	languages(r, o)
+}
+
+// forgeCommand looks at a forge plugged by a command (`forge: cmd:<command>`,
+// docs/spec/forge-command.md): the command must be found, run, and say why
+// when it cannot reach its forge. Any other forge is left as it was.
+func forgeCommand(r *Report, o Options, configured string) {
+	spec := configured
+	if strings.HasPrefix(o.Forge, "cmd:") {
+		spec = o.Forge
+	}
+	script, ok := strings.CutPrefix(spec, "cmd:")
+	if !ok {
+		return
+	}
+	script = strings.TrimSpace(script)
+	state, detail := forge.CheckCommand(o.Repo, script)
+	switch state {
+	case forge.ProbeReachable:
+		r.add(Check{Area: "repository", Rule: "forge-command", Where: script, Level: OK,
+			Message: "the forge command `" + script + "` runs and the forge is reachable"})
+	case forge.ProbeMissing:
+		first := script
+		if f := strings.Fields(script); len(f) > 0 {
+			first = f[0]
+		}
+		r.add(Check{Area: "repository", Rule: "forge-command-missing", Where: script, Level: Warn,
+			Message: fmt.Sprintf("the forge command `%s` does not run here (%s): the first nightly run would fail", script, detail),
+			Fix:     fmt.Sprintf("install %s or make it executable, or fix `forge: cmd:…` in .workline/config.yaml; see docs/spec/forge-command.md", first)})
+	default:
+		why := "the forge command `" + script + "` ran but the forge is not reachable: " + detail
+		fix := "set what the command needs (for the Forgejo sample: FORGEJO_URL and FORGEJO_TOKEN), then run `workline doctor` again; see docs/spec/forge-command.md"
+		r.add(Check{Area: "repository", Rule: "forge-command-failing", Where: script, Level: Warn, Message: why, Fix: fix})
+	}
 }
 
 // docs says how many docs declare their sources, and which files read as
