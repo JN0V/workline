@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.70.1](https://github.com/JN0V/workline/compare/v0.70.0...v0.70.1) (2026-11-03)
+
+
+### Bug Fixes
+
+* a Scope waits for its code; a guessed one holds nothing ([#975](https://github.com/JN0V/workline/issues/975)) ([893b225](https://github.com/JN0V/workline/commit/893b22543f7b1c6efc35ab56871946f7cf92c4dc))
+* **developer:** a claim with no code holds no Scope ([#955](https://github.com/JN0V/workline/issues/955)) ([e54dae8](https://github.com/JN0V/workline/commit/e54dae8d9db4e2ad172291c359fae8d528860039))
+* **developer:** mark its Draft ready once every check is green ([#973](https://github.com/JN0V/workline/issues/973)) ([45bacb5](https://github.com/JN0V/workline/commit/45bacb56d9512369981346acf7f3cab4209abeb6))
+* room freed wakes the waiting; the longest waiting goes first ([#974](https://github.com/JN0V/workline/issues/974)) ([ecdbf3b](https://github.com/JN0V/workline/commit/ecdbf3b51d75405e7cd5603e7b315789445a5619))
+* **tester:** ask the agent again once when its tests do not lint ([#966](https://github.com/JN0V/workline/issues/966)) ([f800ca0](https://github.com/JN0V/workline/commit/f800ca0203034b57654695c5a6db7bacf4e7b633))
+* the developer's proof keeps its run; a lost run is said ([#954](https://github.com/JN0V/workline/issues/954)) ([bf55367](https://github.com/JN0V/workline/commit/bf553673460d1a6639303b544c5f806096ea391a))
+* wake the product owner again on an issue left unrefined ([#956](https://github.com/JN0V/workline/issues/956)) ([a4a50a5](https://github.com/JN0V/workline/commit/a4a50a526f720375599e6216045c9290c46be721))
+* **workline:** test's help names three of its five commands ([#972](https://github.com/JN0V/workline/issues/972)) ([60df3c8](https://github.com/JN0V/workline/commit/60df3c89465c4c71fd956dface0cc9549c5aa37b))
+
 ## [0.70.0](https://github.com/JN0V/workline/compare/v0.69.0...v0.70.0) (2026-11-03)
 
 
