@@ -80,6 +80,10 @@ type Record struct {
 	// no more, frees the issue for the developer again (#894).
 	Woke string `json:"woke,omitempty"`
 	Held []int  `json:"held,omitempty"`
+	// Lost: when the developer's run the line woke ended with no verdict
+	// read, its work lost (#953): due again, once, a hop more, so a run
+	// lost each time stops at max-hops, Blocked.
+	Lost string `json:"lost,omitempty"`
 }
 
 // StateWrite is what the line writes on an issue once its step ran:
@@ -111,6 +115,9 @@ type StateWrite struct {
 	// move takes off besides the states' — workline:needs-repro.
 	Repro string   `json:"repro,omitempty"`
 	Off   []string `json:"off,omitempty"`
+	// Lost: why the developer's run ended with no verdict read, said on
+	// the issue with the record, which makes its step due again (#953).
+	Lost string `json:"lost,omitempty"`
 }
 
 const (
@@ -310,6 +317,9 @@ func writeState(f forge.Forge, cfg *routing.Config, repo string, w StateWrite, r
 	case w.Holds != "":
 		body = backlog.Said("workline's line", "waits for the reviewer to read this issue's spec", w.Holds,
 			"the reviewer's comment on its spec, then the line wakes the product owner to read it") + "\n" + body
+	case w.Lost != "":
+		body = backlog.Said("workline's line", "lost the developer's run on this issue", w.Lost,
+			"the next event on it, or the hourly reconcile, wakes the developer again; a run lost each time stops at max-hops, the issue moved to Blocked") + "\n" + body
 	}
 	return f.Sticky(t, backlog.Inert(body), forge.Marker("sticky="+recordKey), true)
 }

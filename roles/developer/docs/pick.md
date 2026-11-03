@@ -88,7 +88,9 @@ on any event, with or without an agent:
   verdict (`claim-age-unknown`).
 - **Taken again**: the line's reconciler wakes the developer on the
   issue let go, and on one it passed over for that claim
-  ([the record](../../../docs/spec/routing.md#once-a-state-the-record)).
+  ([the record](../../../docs/spec/routing.md#once-a-state-the-record)),
+  and on one whose run ended with no verdict, said on the issue
+  ([#953](https://github.com/JN0V/workline/issues/953)).
 - **Not yet**: its card stays in Doing; the line's states
   ([ADR-0059](../../../docs/adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#build-plan),
   step 2) move it.

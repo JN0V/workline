@@ -158,6 +158,15 @@ func stateOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, 
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "tests-refused", Level: "warn", Where: where, Message: why + ": moved to " + BlockedState})
 		return nil, &StateWrite{Issue: is.ID, Record: blocking(now, s.Name, why, comments), Blocked: why}, nil
 	}
+	if !ok && had && s.Role == developerRole && rec.Lost != "" {
+		// The developer's last run on it ended with no verdict read:
+		// nothing it did reached the forge (#953). Due again, once; the
+		// hop its loss counted stops a run lost each time at max-hops.
+		ok, now = true, rec
+		now.Lost = ""
+		res.Findings = append(res.Findings, verdict.Finding{Rule: "state-lost", Level: "info", Where: where,
+			Message: "the developer's last run on it, " + rec.Lost + ", ended with no verdict: woken again"})
+	}
 	if !ok && had && s.Role == developerRole {
 		// Left free by the developer since it was woken: its claim let
 		// go, or the issue it was passed over for held no more (#894).
@@ -336,6 +345,18 @@ func runStateStep(res *Result, cfg *routing.Config, f forge.Forge, spec string, 
 	res.Status = worst(res.Status, status)
 	if status == verdict.BlockedExternal {
 		return
+	}
+	if st.role == developerRole && status != verdict.Pass {
+		// Its run ended with no verdict read, its work lost: said on the
+		// issue with the record, never as acted on (#953).
+		for _, f := range res.Findings[before:] {
+			if f.Rule == "engine-error" {
+				st.write.Lost = f.Message
+				st.write.Record.Lost = clock().UTC().Format(time.RFC3339)
+				st.write.Record.Hops++
+				break
+			}
+		}
 	}
 	if st.role == backlog.Keeper {
 		// Held for its spec review: said on the issue with the record,

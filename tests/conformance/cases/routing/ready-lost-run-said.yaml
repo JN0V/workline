@@ -1,0 +1,42 @@
+case: routing/ready-lost-run-said
+about: >
+  A developer run that ends with no verdict is said on its issue (#953):
+  the line wakes the developer on #3, whose run dies before its post
+  writes a verdict (its proof's command kills it). Nothing it did
+  reaches the forge, the run is blocked, and the line's record on #3
+  says the run was lost, never that it acted: one hop more, the moment
+  it was lost kept, which makes its step due again.
+given:
+  repo: tested-draft
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main workline/tester/issue-3"
+  config:
+    roles: {tester: {settings: {test-command: 'kill -9 $PPID'}}}
+    routing: {events: {issue: [developer]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:ready"]
+        body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        draft: true
+        comments: ["The tests of #3, frozen.\n\n<!-- workline:tester-record {\"issue\":3,\"base\":\"main\",\"files\":{\"tests/test_mul_by_zero.sh\":\"8f123a0bacbd681063880b867df38dd216784b97\",\"tests/test_mul_two_by_three.sh\":\"2dee0641bd7a79057ade7bff5af43b603125f543\"}} -->\n<!-- workline:sticky=tester/tests -->"]
+run: {route: issue, target: {issue: 3}, open-merge-request: true, ai: "fake:developer-writes-mul"}
+expect:
+  status: block
+  agent-calls: 1
+  findings:
+    - {rule: state-wakes, level: info, where: "#3"}
+    - {rule: engine-error, message: "post wrote no readable verdict"}
+  not-pushed: [workline/developer/3]
+  forge:
+    issues:
+      - id: 3
+        labels: ["workline:ready"]
+        comments: 1
+        comment-contains: ["**workline's line** lost the developer's run on this issue.", "- **Why**: post wrote no readable verdict", "\"hops\":2", "\"lost\":\"20"]
+    merge-requests:
+      - {id: 1, branch: workline/tester/issue-3}

@@ -1,0 +1,41 @@
+case: routing/ready-lost-run-due-again
+about: >
+  An issue whose developer run was lost is due again (#953): the line's
+  record on #3 says the run it woke ended with no verdict, its state,
+  body and labelling the same since. Its step is due, said why. #4,
+  lost at the hop cap, goes to Blocked rather than be woken in a loop.
+  #5, woken and its run not lost, runs nothing more. No agent asked.
+given:
+  repo: tested
+  config:
+    routing: {events: {issue: [developer]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply"
+        labels: ["workline:ready"]
+        body: "## Need\n\nI want to multiply.\n"
+        comments: ["<!-- workline:line-record {\"state\":\"ready\",\"body\":\"8a828a06be19\",\"hops\":2,\"woke\":\"2026-11-03T15:16:35Z\",\"lost\":\"2026-11-03T15:27:30Z\"} -->\n<!-- workline:sticky=line/state -->"]
+      - id: 4
+        title: "Multiply again"
+        labels: ["workline:ready"]
+        body: "## Need\n\nI want to multiply.\n"
+        comments: ["<!-- workline:line-record {\"state\":\"ready\",\"body\":\"8a828a06be19\",\"hops\":9,\"woke\":\"2026-11-03T15:16:35Z\",\"lost\":\"2026-11-03T15:27:30Z\"} -->\n<!-- workline:sticky=line/state -->"]
+      - id: 5
+        title: "Multiply once more"
+        labels: ["workline:ready"]
+        body: "## Need\n\nI want to multiply.\n"
+        comments: ["<!-- workline:line-record {\"state\":\"ready\",\"body\":\"8a828a06be19\",\"hops\":1,\"woke\":\"2026-11-03T15:16:35Z\"} -->\n<!-- workline:sticky=line/state -->"]
+run: {route: reconcile, open-merge-request: true, ai: none}
+expect:
+  status: pass
+  agent-calls: 0
+  findings:
+    - {rule: state-lost, level: info, where: "#3", message: "the developer's last run on it, 2026-11-03T15:27:30Z, ended with no verdict: woken again"}
+    - {rule: state-wakes, level: info, where: "#3", message: "its state, ready, wakes the developer"}
+    - {rule: hops-capped, level: warn, where: "#4", message: "9 state steps on this issue, past max-hops (8)"}
+    - {rule: state-acted, level: info, where: "#5"}
+  forge:
+    issues:
+      - {id: 3, labels: ["workline:ready"], comments: 1, comment-contains: ["\"hops\":2", "\"woke\":\"20"], comment-lacks: ["\"lost\""]}
+      - {id: 4, labels: ["workline:blocked"], comments: 1, comment-contains: ["**workline's line** blocks this issue."]}

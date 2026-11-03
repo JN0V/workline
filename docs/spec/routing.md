@@ -452,6 +452,12 @@ whose result moves the issue to the next. The table is the routing's
   more, so a take-and-let-go cycle ends at `max-hops`; or once an issue
   in `held` is held no more. A record from before `woke` is due once
   where the developer wrote its comment. Never on a clock: no loop.
+- **A developer run lost is not acted**: a run the line woke that
+  ends with no verdict read (`engine-error`, as when its post dies)
+  reached nothing. The record's comment says so, why first, and keeps
+  when (`lost`), a hop more; the step is due again, once
+  (`state-lost`), so a run lost each time ends at `max-hops`
+  ([#953](https://github.com/JN0V/workline/issues/953)).
 - **Refine's record says the reviewer was asked** on the body (`asked`),
   where the reviewer is routed on `issue`. Acted on with no such mark,
   its spec still waiting on a review, the step is due again, once: a
