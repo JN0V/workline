@@ -49,14 +49,14 @@ func unrefined(is forge.Issue, notes []forge.Note) (lacks string, sources []stri
 }
 
 // givenKey is what Record.Given keeps of the code a read is given: its
-// sources, sorted, "-" for none.
+// sources, sorted, one a line (no path holds a newline), "-" for none.
 func givenKey(sources []string) string {
 	if len(sources) == 0 {
 		return "-"
 	}
 	s := slices.Clone(sources)
 	slices.Sort(s)
-	return strings.Join(s, " ")
+	return strings.Join(s, "\n")
 }
 
 // givenNow is the code the product owner's state names on an issue, as
