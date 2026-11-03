@@ -33,6 +33,9 @@ flowchart LR
   - What the proof said: each test red on the base, by an assertion or
     a missing name. A test whose package did not build is named
     `file:name` ([how](missing-name.md)).
+  - Where it ran: with `draft-command` naming `{packages}`, the folders
+    holding the tests alone, said as `proof-scope`; else the whole
+    suite ([#979](https://github.com/JN0V/workline/issues/979)).
 - **The record**: workline's own comment on the Draft, marked
   `workline:tester-record`. It holds the issue, the base, each test
   file with its git blob, and the scenarios as read. Only the tester's

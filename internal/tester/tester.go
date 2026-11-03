@@ -64,8 +64,15 @@ type Settings struct {
 	MutationCommand string   `json:"curator-mutation-command"`
 	MutationReport  string   `json:"curator-mutation-report"`
 	ProofSeconds    int      `json:"curator-proof-seconds"`
+	// DraftCommand proves a Draft's tests red on the base on the folders
+	// that hold them alone ({packages}), base and tests; unset, or naming
+	// no {packages}: test-command, the whole suite, twice (#979).
+	DraftCommand string `json:"draft-command"`
 	// deadline, when set, stops a test command past it (the proof's budget).
 	deadline time.Time
+	// packages, when set, are the folders a run of Command takes in its
+	// {packages}: those of them its tree holds.
+	packages []string
 }
 
 // SettingsFrom reads the tester's merged settings.
@@ -387,6 +394,20 @@ func run(repo, rev string, files []string, from string, s Settings, where string
 		if _, err := git(tree, "-c", "core.hooksPath=/dev/null", "--literal-pathspecs", "checkout", from, "--", file); err != nil {
 			return ran{}, &verdict.Finding{Rule: "check-error", Where: file, Message: fmt.Sprintf("%s could not be laid on %s: %v", file, short(rev), err)}
 		}
+	}
+	if len(s.packages) > 0 {
+		// The folders this tree holds: one the base lacks holds none of
+		// its tests, and a runner named a folder that is not there fails.
+		var here []string
+		for _, p := range s.packages {
+			if fi, err := os.Stat(filepath.Join(tree, filepath.FromSlash(p))); err == nil && fi.IsDir() {
+				here = append(here, p)
+			}
+		}
+		if len(here) == 0 {
+			return ran{results: map[string]result{}, suite: map[string]string{}, classless: map[string]bool{}}, nil
+		}
+		s.Command = strings.ReplaceAll(s.Command, "{packages}", strings.Join(here, " "))
 	}
 	return runIn(tree, s, where)
 }

@@ -1,0 +1,30 @@
+#!/bin/sh
+# run-folders <report> <folder>...: the `tested` fixture's runner on some
+# folders alone, as `gotestsum -- {packages}` or `pytest {packages}` run:
+# each <folder>/test_*.sh a test, its folder the classname; a JUnit XML
+# report to <report>; exit 1 if one fails, 2 if a folder is not there.
+report=$1 failed=0
+shift
+mkdir -p "$(dirname "$report")"
+{
+  echo '<?xml version="1.0" encoding="UTF-8"?>'
+  echo '<testsuites>'
+  for d in "$@"; do
+    [ -d "$d" ] || { echo "run-folders: no folder $d" >&2; exit 2; }
+    dir=${d#./}
+    echo "<testsuite name=\"$dir\">"
+    for t in "$d"/test_*.sh; do
+      [ -f "$t" ] || continue
+      name=$(basename "$t" .sh)
+      if sh "$t" >/dev/null 2>&1; then
+        echo "<testcase classname=\"$dir\" name=\"$name\" time=\"0.01\"/>"
+      else
+        failed=1
+        echo "<testcase classname=\"$dir\" name=\"$name\" time=\"0.01\"><failure message=\"$t failed\"/></testcase>"
+      fi
+    done
+    echo '</testsuite>'
+  done
+  echo '</testsuites>'
+} > "$report" || exit 2
+exit $failed

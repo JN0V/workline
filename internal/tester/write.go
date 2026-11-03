@@ -545,7 +545,20 @@ func proveOnBase(repo, base string, patches []intent.Intention, s Settings) (*ve
 	if err != nil {
 		return nil, nil, nil, err
 	}
+	// The tests alone change: their new tests are in the folders that hold
+	// them, so a draft-command naming {packages} runs those alone, on the
+	// base and with the tests, rather than the whole suite twice (#979).
+	var pkgs []string
+	if strings.Contains(s.DraftCommand, "{packages}") {
+		if pkgs = Packages(tree, files, s.Paths); len(pkgs) > 0 {
+			s.Command, s.packages = s.DraftCommand, pkgs
+		}
+	}
 	v, newTests := Prove(tree, base, s)
+	if len(pkgs) > 0 && v.Status == verdict.Pass {
+		v.Findings = append(v.Findings, verdict.Finding{Rule: "proof-scope", Level: "info", Where: "draft-command",
+			Message: "run on the folders holding the tests alone, " + strings.Join(pkgs, " ") + ": the pull request's own checks run the whole suite"})
+	}
 	if v.Status == verdict.Pass {
 		if lint := lintTests(repo, tree, base); lint != nil {
 			return lint, newTests, blobs, nil
