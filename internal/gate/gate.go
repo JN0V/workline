@@ -16,6 +16,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/linters"
 	"github.com/JN0V/workline/internal/role"
 	"github.com/JN0V/workline/internal/verdict"
@@ -425,7 +426,7 @@ func execute(dir, out string, c Check, timeout time.Duration, env []string) (int
 	defer cancel()
 	cmd := exec.CommandContext(ctx, "sh", "-c", strings.ReplaceAll(c.Run, "{out}", out))
 	cmd.Dir = dir
-	cmd.Env = append(os.Environ(), env...)
+	cmd.Env = append(forge.ProjectEnv(os.Environ()), env...)
 	logFile := filepath.Join(out, c.ID+".log")
 	log, _ := os.Create(logFile)
 	if log != nil {

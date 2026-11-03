@@ -151,6 +151,20 @@ func again(forge string, read bool, try int, f failure) (wait time.Duration, not
 // by a person's push, which waits a minute at most.
 const RateWaitEnv = "WORKLINE_RATE_WAIT"
 
+// ProjectEnv is env without the line's own settings for its forge calls
+// (RateWaitEnv): what runs the project's commands, its tests as a proof,
+// its checks, an agent, never reads them (#940). They stay in the
+// process, for the roles' scripts that call the forge.
+func ProjectEnv(env []string) []string {
+	out := make([]string, 0, len(env))
+	for _, kv := range env {
+		if !strings.HasPrefix(kv, RateWaitEnv+"=") {
+			out = append(out, kv)
+		}
+	}
+	return out
+}
+
 // rateWait is RateWaitEnv's duration; none, or unreadable, 0.
 func rateWait() time.Duration {
 	d, err := time.ParseDuration(os.Getenv(RateWaitEnv))

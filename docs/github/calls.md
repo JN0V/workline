@@ -70,5 +70,8 @@ them ([#804](https://github.com/JN0V/workline/issues/804)).
 - **Spent half-way**: a call refused for the rate waits for a reset
   within 5 minutes too, said in the job's log; a later one fails the
   step as the forge out of reach, and the reconciler runs it again.
+- **The line's alone**: the project's tests, checks and agents run
+  without this wait, so a test of the project never reads it
+  ([#940](https://github.com/JN0V/workline/issues/940)).
 - **GitLab** says its budget only in each answer's headers: a run there
   reads nothing first.

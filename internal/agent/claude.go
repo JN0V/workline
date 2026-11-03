@@ -17,6 +17,8 @@ import (
 	"time"
 
 	"go.yaml.in/yaml/v3"
+
+	"github.com/JN0V/workline/internal/forge"
 )
 
 // claude runs Claude Code headless. It gets no tools, no MCP servers and no
@@ -317,8 +319,11 @@ var ForgeTokens = []string{
 	"CI_BUILD_TOKEN", "CI_DEPENDENCY_PROXY_PASSWORD",
 }
 
-// withoutTokens is the environment an agent is called with: no forge token.
-func withoutTokens(environ []string) []string { return without(environ, ForgeTokens) }
+// withoutTokens is the environment an agent is called with: no forge
+// token, nor the line's own settings for its forge calls.
+func withoutTokens(environ []string) []string {
+	return forge.ProjectEnv(without(environ, ForgeTokens))
+}
 
 func without(environ, names []string) []string {
 	env := make([]string, 0, len(environ))
