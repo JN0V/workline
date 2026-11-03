@@ -1370,10 +1370,14 @@ func applyAll(r *role.Role, settings map[string]any, st runState, runDir string,
 	// pushed, never forced; its comments only once the commit landed, so
 	// a record never names what is not on the branch.
 	ownMessage := ownPush(runDir)
-	ownBranch := ownMessage != "" && f != nil && st.Target != nil && st.Target.Kind == "merge-request" && !st.OpenMergeRequest
+	onTarget := f != nil && st.Target != nil && st.Target.Kind == "merge-request" && !st.OpenMergeRequest
+	ownBranch := ownMessage != "" && onTarget
+	// Its own Draft marked ready, asked by the role (the developer's,
+	// green, #969): after its push, before its comments say it.
+	ready := ownReady(runDir) && onTarget
 	var order, after []int
 	for i, in := range intents {
-		if ownBranch && in.Kind != "patch" {
+		if (ownBranch || ready) && in.Kind != "patch" {
 			after = append(after, i)
 		} else {
 			order = append(order, i)
@@ -1398,6 +1402,18 @@ func applyAll(r *role.Role, settings map[string]any, st runState, runDir string,
 		st.Pushed = true
 		if err := st.save(runDir); err != nil {
 			return err
+		}
+	}
+	if ready {
+		if err := markOwnReady(f, st); err != nil {
+			if errors.Is(err, forge.ErrUnreachable) {
+				res.Status, res.Summary = verdict.BlockedExternal, fmt.Sprintf("stopped while marking the role's merge request ready; resume with: workline apply %s", runDir)
+				res.Findings = append(res.Findings, verdict.Finding{Rule: "forge-unreachable", Message: err.Error()})
+				return nil
+			}
+			res.Status, res.Summary = verdict.Block, "the role's merge request not marked ready: nothing else is said"
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "not-ready", Message: err.Error()})
+			return nil
 		}
 	}
 	for _, i := range after {
@@ -1577,6 +1593,38 @@ func ownPush(runDir string) string {
 		return ""
 	}
 	return strings.TrimSpace(mr.Push)
+}
+
+// ownReady says the role asks its own Draft, the merge request it
+// targets, marked ready for review: out/merge-request.yaml's `ready:
+// true` (the developer's, #969).
+func ownReady(runDir string) bool {
+	var mr struct{ Ready bool }
+	if data, err := os.ReadFile(filepath.Join(runDir, "out", "merge-request.yaml")); err != nil || yaml.Unmarshal(data, &mr) != nil {
+		return false
+	}
+	return mr.Ready
+}
+
+// markOwnReady marks the merge request ready for review: from the role's
+// own branch only, never another's; one ready already is left, so a
+// resumed apply marks nothing twice.
+func markOwnReady(f forge.Forge, st runState) error {
+	mr, err := f.MergeRequest(st.Target.ID)
+	if err != nil {
+		return err
+	}
+	if !strings.HasPrefix(mr.Branch, branchPrefix(st.Role)) || !mr.Here {
+		return fmt.Errorf("merge request %d comes from %s, not a branch of the %s's own: not marked ready", st.Target.ID, mr.Branch, st.Role)
+	}
+	if !mr.Draft {
+		return nil
+	}
+	r, ok := f.(forge.Readied)
+	if !ok {
+		return fmt.Errorf("this forge marks no draft ready: a person marks merge request %d ready", st.Target.ID)
+	}
+	return r.MarkReady(st.Target.ID)
 }
 
 // commitOnOwnBranch commits what the patches wrote on the merge request's
