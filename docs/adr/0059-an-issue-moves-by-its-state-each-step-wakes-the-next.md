@@ -177,7 +177,8 @@ Built first, whatever else.
 - **A role starts only when the next state has room**: a WIP limit per
   state in the config. A full Ready keeps the tester waiting, said on
   the issue. It counts what the developer can take
-  ([amended](#amendment-2026-11-02-a-limit-counts-what-can-be-pulled)).
+  ([amended](#amendment-2026-11-02-a-limit-counts-what-can-be-pulled),
+  [and again](#amendment-2026-11-03-a-claim-with-no-code-holds-no-scope)).
 - **A Definition of Ready per state**, checked by the engine:
   - to Tests: the four sections ([routing.md](../spec/routing.md#work-starts-from-a-clear-need)),
     named scenarios, Scope paths that exist, and fits one developer
@@ -511,6 +512,38 @@ outside the Scope; the check is asked once a head, so nothing moved.
 - **Not chosen**:
   - waking the product owner: nothing of its to decide;
   - asking the check again at the same head: a loop of agent calls.
+
+## Amendment (2026-11-03): a claim with no code holds no Scope
+
+Settles [#952](https://github.com/JN0V/workline/issues/952): two claims
+whose agent wrote no code held their Scopes for `claim-hours` (§1).
+Four of Ready's five issues overlapped them, passed over; Ready sat at
+its limit with one issue the developer could take, and two issues
+waited in Tests about five hours, in the ninth end-to-end run.
+
+- **A claim holds its Scope while it holds code**: an open pull request
+  closes it. One with none holds nothing: no branch of its can conflict
+  with another. The pick, and the record of a wake (`held`, the
+  [amendment](#amendment-2026-11-02-a-ready-issue-left-free-wakes-the-developer-again)
+  above), read the same rule.
+- **The claim itself stays** until `claim-hours`: a pause before its own
+  issue is taken again. Let go at once, the next reconcile would take it
+  again, an agent call an hour until `max-hops`; the run that wrote no
+  code says why on the issue, for a person to read meanwhile.
+- **Ready's limit counts it apart**: a ready issue whose Scope overlaps
+  a claim holding code waits on that claim, in Doing, a state after: as
+  an issue waiting for its tests, it is not one the developer can take
+  now. The tester starts on Tests meanwhile. Counted, it would keep
+  Tests waiting until that pull request merges, hours or days.
+- **No deadlock added**: it waits on a state after Ready, which drains
+  by a merge; a pull request closed unmerged holds nothing more.
+- **Cost**: at Ready's limit, with a claim open, one call a run for the
+  open pull requests; one a developer's wake, the same.
+- **Not chosen**:
+  - the claim let go at once: a retry loop of agent calls;
+  - the claim to Blocked: a failed agent run is no judgement on the
+    need, and a retry a day later often codes it;
+  - the wait saying when it ends alone: Tests still starved, said.
 
 [ADR-0024]: 0024-obsolete-is-announced-then-closed-on-silence-and-a-second-judge.md
 [ADR-0028]: 0028-an-issue-names-what-it-waits-on.md
