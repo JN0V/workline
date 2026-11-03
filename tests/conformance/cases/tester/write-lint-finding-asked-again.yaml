@@ -1,0 +1,37 @@
+case: tester/write-lint-finding-asked-again
+about: >
+  The tester's tests hold one finding of the project's lint, an exit
+  status not checked, as on #949 (#964). The agent is asked once more,
+  with the finding, its path from the repository's root: like an answer
+  that does not read, a Draft that does not lint is mended by the
+  agent, not blocked at once. The second answer lints: the Draft opens,
+  the issue moves to ready.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+    gates: {lint: {checks: [{id: shlint, run: "sh \"$FIXTURES/bin/shlint\" {out}/lint.sarif", output: sarif, max: {error: 0}}]}}
+    routing: {events: {issue: [tester], merge-request: ["gate:lint"]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:needs-tests"]
+        body: "## Need\n\nWhen I total an order, I want to multiply a price by a count, so I need not add it up by hand.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **By zero:** Given the library, When I multiply 5 by 0, Then I get 0.\n\n---\n\n## Verification\n\nA test a scenario, in tests/.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+run: {route: issue, target: {issue: 3}, open-merge-request: true, ai: "cmd:sh $FIXTURES/agents/tester-mul-unchecked-once.sh"}
+expect:
+  status: pass
+  agent-calls: 2
+  no-findings: [{rule: tests-lint}]
+  run-files:
+    out/feedback.md: {contains: ["tests-lint", "tests/test_mul_by_zero.sh:4", "errcheck", "Exit status of `rm` is not checked"]}
+  pushed:
+    workline/tester/issue-3:
+      tests/test_mul_by_zero.sh: "rm -f mul.out || exit 1"
+  forge:
+    merge-requests:
+      - {id: 1, branch: workline/tester/issue-3, draft: true}
+    issues:
+      - {id: 3, labels: ["workline:ready"]}

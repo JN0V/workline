@@ -1,6 +1,6 @@
 ---
 sources: [internal/tester/moment.go, internal/tester/write.go, internal/tester/proof.go, routing.default.yaml, internal/tester/said.go, internal/tester/frozen.go, internal/tester/objection.go, internal/tester/green.go, internal/tester/repro.go]
-checked: 8538d558
+checked: 54f275a2
 verified: agent:claude-code
 ---
 # The hand-over: what whoever builds finds
@@ -54,8 +54,12 @@ Once the Draft is proven, the engine moves the issue on, no agent asked
 - **Each scenario** has its row in `## Tests`, or its reason under
   not tested.
 - **The project's lint** passes on the tests: each gate routed on
-  `merge-request`, only what they add counted. One that does not blocks
-  the run (`tests-lint`): no Draft, the issue keeps its state.
+  `merge-request`, only what they add counted. A finding there is the
+  agent's to mend: it is asked once more, each finding named by its file
+  and line
+  ([#964](https://github.com/JN0V/workline/issues/964)). Still there,
+  the run blocks (`tests-lint`): no Draft, the issue keeps its state,
+  the finding said on it.
 - **Then ready**: `workline:ready` on, the other states' labels off,
   said in the tester's comment on the issue (`state-moved`). An issue
   already ready keeps its labels.

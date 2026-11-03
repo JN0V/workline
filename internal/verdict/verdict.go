@@ -38,6 +38,11 @@ type Verdict struct {
 	// Final: a block that does not come from the agent's answer — a check
 	// that could not run — so asking the agent again would change nothing.
 	Final bool `yaml:"final,omitempty" json:"final,omitempty"`
+	// Again: a block the agent's answer can mend — its tests' lint
+	// findings (#964) — asked again once with its findings, as an answer
+	// that did not read is, even by a role that never asks a refused
+	// answer again (promote-after 0).
+	Again bool `yaml:"again,omitempty" json:"again,omitempty"`
 }
 
 // Read loads a verdict file.

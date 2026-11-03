@@ -292,6 +292,12 @@ token), **apply** (trusted, no AI key).
    proposals whole, `WORKLINE_AGENT_REFUSED`; else, the agent asked and
    its answer read, `WORKLINE_AGENT_ANSWERED=true`: what it holds, or
    lacks, is the agent's word.
+   A block whose verdict says `again: true`, one the answer can mend
+   (the tester's tests that do not pass the project's lint,
+   [#964](https://github.com/JN0V/workline/issues/964)), is asked again
+   the same way, for a role with `promote-after: 0`, with its findings:
+   the one more call an unread answer gets, never a second one. The
+   answer refused is kept as `out/refused-1.yaml`.
    An item holding several keys where one kind goes, or none, is refused
    so too, the keys named: several kinds, an item each; a key no kind is
    named by, the role's kind whose shape holds it, under which it goes (a

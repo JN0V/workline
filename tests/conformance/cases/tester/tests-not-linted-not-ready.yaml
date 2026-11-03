@@ -2,8 +2,9 @@ case: tester/tests-not-linted-not-ready
 about: >
   The tester's tests pass the project's lint before the issue is ready
   (ADR-0059, decision 3): each gate the project routes on merge-request
-  runs on them, only what they add counted. One that does not pass
-  blocks the run: no Draft opened, the issue keeps its state.
+  runs on them, only what they add counted. One that does not pass,
+  still after the agent is asked once more (#964), blocks the run: no
+  Draft opened, the issue keeps its state.
 given:
   repo: tested
   setup:

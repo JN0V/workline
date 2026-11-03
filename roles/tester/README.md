@@ -85,7 +85,7 @@ workline test write --issue 42 --ai claude
 | Finding | When; nothing is opened |
 |---|---|
 | `issue-not-ready` | the issue is labelled neither `workline:needs-tests` nor `workline:ready` |
-| `tests-lint` | the tests do not pass the project's lint |
+| `tests-lint` | the tests do not pass the project's lint, still after the agent is asked once more with each finding |
 | `no-named-scenario` | its Validation names no scenario: asked of the product owner, never invented |
 | `scenario-without-test` | no test names a scenario, and no note says why none can |
 | `test-file-exists` | a patch changes a test file the base holds |
