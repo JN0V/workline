@@ -126,6 +126,9 @@ routing:
   # pull request, before the reviewer, the tester's frozen guard on its own
   # branches, a test changed by another stopping the line. The developer's
   # review rounds need no routing: the same workflow runs them.
+  # The reconciler starts 8 steps a run, not the default 3: on
+  # 2026-11-03 the backlog kept new issues waiting 3 h behind 3 a run.
+  reconcile-max: 8
   events: {pre-push: [committer, documentalist], merge-request: [committer, documentalist, "gate:lint", tester, reviewer, inspector],
     schedule: [documentalist, product-owner, reviewer], issue: [product-owner, reviewer, tester, developer]}
 
