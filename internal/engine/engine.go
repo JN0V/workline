@@ -662,7 +662,7 @@ func run(o Options, res *Result) error {
 	tier, failures := r.Model.Tier, 0
 	var intents, said []intent.Intention
 	var v *verdict.Verdict
-	unreadAsked := false
+	askedOnce := false // asked again once already, an answer unread or one post said to mend
 	unasked := false // a task the agent was not asked, nor answered: what pre gave it read by no one
 	for {
 		a, err := attempt(r, o, ag, taskErr == nil, tier, runDir, env, line, settings, cfg, res)
@@ -684,14 +684,32 @@ func run(o Options, res *Result) error {
 		// A role that never asks a refused answer again (`promote-after`
 		// 0) still asks an unread one again, whatever post said: its block
 		// comes of nothing read, as the tester's no test written (#761).
-		if a.askedAgent && a.unread != "" && !unreadAsked && !v.Final && (v.Status != verdict.Block || r.Model.PromoteAfter <= 0) {
-			unreadAsked = true
+		if a.askedAgent && a.unread != "" && !askedOnce && !v.Final && (v.Status != verdict.Block || r.Model.PromoteAfter <= 0) {
+			askedOnce = true
 			if err := os.WriteFile(filepath.Join(runDir, "out", "feedback.md"), []byte(unreadFeedback(a.unread)), 0o644); err != nil {
 				return err
 			}
 			os.Rename(filepath.Join(runDir, "out", "agent-answer.txt"), filepath.Join(runDir, "out", "unread-answer.txt"))
 			os.Remove(filepath.Join(runDir, "out", "verdict.yaml"))
 			os.Remove(filepath.Join(runDir, "out", "judge.yaml"))
+			continue
+		}
+		// A block post says the answer can mend (`again`: the tester's
+		// tests that do not lint, #964) is asked again the same way, once,
+		// with its findings, by a role that asks no refused answer again:
+		// the one more call an unread answer gets, not a second one.
+		if a.askedAgent && v.Status == verdict.Block && v.Again && !askedOnce && !v.Final && r.Model.PromoteAfter <= 0 {
+			askedOnce = true
+			fb := feedback(v.Findings) + "\nYour answer was read, and refused for these findings alone: send it again whole, each of them fixed.\n"
+			if err := os.WriteFile(filepath.Join(runDir, "out", "feedback.md"), []byte(fb), 0o644); err != nil {
+				return err
+			}
+			// Kept to be studied when it can be; what post and the judge
+			// said of it goes, written anew by the next answer's.
+			_ = os.Rename(filepath.Join(runDir, "out", "intentions.yaml"), filepath.Join(runDir, "out", "refused-1.yaml"))
+			_ = os.Rename(filepath.Join(runDir, "out", "agent-answer.txt"), filepath.Join(runDir, "out", "refused-1-answer.txt"))
+			_ = os.Remove(filepath.Join(runDir, "out", "verdict.yaml"))
+			_ = os.Remove(filepath.Join(runDir, "out", "judge.yaml"))
 			continue
 		}
 		if !a.askedAgent || v.Status != verdict.Block || v.Final {
@@ -702,15 +720,7 @@ func run(o Options, res *Result) error {
 		if retry, tier = askAgain(failures, r.Model.PromoteAfter, tier); !retry || warnsOnMergeRequest(r, o) {
 			break
 		}
-		var fb strings.Builder
-		for _, f := range v.Findings {
-			if f.Where != "" && !strings.Contains(f.Message, f.Where) {
-				fmt.Fprintf(&fb, "- %s, %s: %s\n", f.Rule, f.Where, f.Message)
-			} else {
-				fmt.Fprintf(&fb, "- %s: %s\n", f.Rule, f.Message)
-			}
-		}
-		if err := os.WriteFile(filepath.Join(runDir, "out", "feedback.md"), []byte(fb.String()), 0o644); err != nil {
+		if err := os.WriteFile(filepath.Join(runDir, "out", "feedback.md"), []byte(feedback(v.Findings)), 0o644); err != nil {
 			return err
 		}
 		// The refused answer is kept beside its refusal, to be studied, as
@@ -1063,6 +1073,20 @@ func partUnread(err error, dir string, claims bool) string {
 		return rerr.Error()
 	}
 	return ""
+}
+
+// feedback is what the agent is told of a refusal: each finding, a line,
+// where it is when its message does not say it.
+func feedback(fs []verdict.Finding) string {
+	var fb strings.Builder
+	for _, f := range fs {
+		if f.Where != "" && !strings.Contains(f.Message, f.Where) {
+			fmt.Fprintf(&fb, "- %s, %s: %s\n", f.Rule, f.Where, f.Message)
+		} else {
+			fmt.Fprintf(&fb, "- %s: %s\n", f.Rule, f.Message)
+		}
+	}
+	return fb.String()
 }
 
 // unreadFeedback is what the agent is told when nothing of its answer read.

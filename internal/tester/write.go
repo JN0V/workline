@@ -573,32 +573,108 @@ func lintTests(repo, tree, base string) *verdict.Verdict {
 	}
 	var found []verdict.Finding
 	var names []string
+	mendable := true // each block a finding in the tests, none a gate that did not run
 	for _, step := range line.Events["merge-request"] {
 		name, ok := strings.CutPrefix(step, "gate:")
 		if !ok {
 			continue
 		}
-		v, _ := gate.RunNew(tree, name, base)
+		v, add := gate.RunNew(tree, name, base)
 		if v.Status == verdict.Pass {
 			continue
 		}
 		names = append(names, name)
+		g, _ := gate.Load(tree, name)
 		said := false
 		for _, f := range v.Findings {
-			if f.Level == "" || f.Level == verdict.Block || f.Level == "error" {
-				f.Rule, f.Message = "tests-lint", fmt.Sprintf("the gate %s: %s (%s)", name, f.Message, f.Rule)
-				found, said = append(found, f), true
+			if f.Level != "" && f.Level != verdict.Block && f.Level != "error" {
+				continue
 			}
+			said = true
+			switch f.Rule {
+			case "over-threshold":
+				// The findings themselves, where a person finds them in
+				// the tests, rather than the count and the gate's folder
+				// on the machine that ran it, gone with the tests' tree.
+				if named := lintFound(name, f.Where, g, add); len(named) > 0 {
+					found = append(found, named...)
+					continue
+				}
+			case "check-failed":
+			default: // the gate did not run: nothing the agent's tests can mend
+				mendable = false
+			}
+			f.Rule, f.Message = "tests-lint", fmt.Sprintf("the gate %s: %s (%s)", name, ranOn(f.Message), f.Rule)
+			found = append(found, f)
 		}
 		if !said { // a gate that blocks is always said, its own summary when no finding of it blocks
+			mendable = false
 			found = append(found, verdict.Finding{Rule: "tests-lint", Where: name, Message: fmt.Sprintf("the gate %s: %s", name, v.Summary)})
 		}
 	}
 	if len(names) == 0 {
 		return nil
 	}
-	return &verdict.Verdict{Status: verdict.Block, Summary: "the tests do not pass the project's lint (" + strings.Join(names, ", ") + "): no Draft opened", Findings: found}
+	return &verdict.Verdict{Status: verdict.Block, Summary: "the tests do not pass the project's lint (" + strings.Join(names, ", ") + "): no Draft opened",
+		Findings: found, Again: mendable}
 }
+
+// lintFound are the findings the tests add to a check of a gate, at a
+// level it limits, each where it is from the repository's root: the
+// file, its line, what the tool says and its rule.
+func lintFound(name, check string, g *gate.Gate, add *gate.Added) []verdict.Finding {
+	if g == nil || add == nil {
+		return nil
+	}
+	limits := map[string]bool{}
+	for _, c := range g.Checks {
+		if c.ID == check {
+			for level := range c.Max {
+				limits[level] = true
+			}
+		}
+	}
+	var out []verdict.Finding
+	for _, a := range add.Findings {
+		if a.Check != check || !limits[a.Level] {
+			continue
+		}
+		at := a.Path
+		if a.Line > 0 {
+			at = fmt.Sprintf("%s:%d", a.Path, a.Line)
+		}
+		out = append(out, verdict.Finding{Rule: "tests-lint", Where: at,
+			Message: strings.TrimSpace(fmt.Sprintf("the gate %s, %s: %s (%s)", name, at, a.Message, a.Rule))})
+	}
+	return out
+}
+
+// seeLog is where a check's message names its log, on the machine that ran it.
+var seeLog = regexp.MustCompile(`; see (/\S+\.log)`)
+
+// ranOn is a gate's message without the folders of the machine that ran
+// it, gone with the tests' tree: a failed check's log given by its last
+// lines instead, where the findings were marked left out.
+func ranOn(msg string) string {
+	msg = markedIn.ReplaceAllString(msg, "")
+	return seeLog.ReplaceAllStringFunc(msg, func(m string) string {
+		data, err := os.ReadFile(seeLog.FindStringSubmatch(m)[1])
+		if err != nil || strings.TrimSpace(string(data)) == "" {
+			return ""
+		}
+		lines := strings.Split(strings.TrimRight(string(data), "\n"), "\n")
+		if len(lines) > logTail {
+			lines = lines[len(lines)-logTail:]
+		}
+		return "; its output ends:\n" + strings.Join(lines, "\n") + "\n"
+	})
+}
+
+// markedIn is where a gate marked the findings it compared.
+var markedIn = regexp.MustCompile(`; each marked in /[^)]*`)
+
+// logTail is the lines of a failed check's output told.
+const logTail = 20
 
 // layPatches writes the patches in tree: a whole file, or a diff applied;
 // a diff that does not apply is a blocking verdict.

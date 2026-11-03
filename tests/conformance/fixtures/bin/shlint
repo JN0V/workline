@@ -1,0 +1,16 @@
+#!/bin/sh
+# A fake shell linter, for the tester's lint cases: `shlint <file>` reads
+# the .sh files under tests/ of the folder it runs in and writes SARIF to
+# <file>, every result an error:
+#   errcheck  an `rm` whose exit status is not checked (no `||` on its line).
+set -eu
+out=$1
+find tests -name '*.sh' | LC_ALL=C sort | while read -r f; do
+  awk -v f="$f" '
+    /^[ \t]*rm / && !/\|\|/ {
+      printf "{\"ruleId\":\"errcheck\",\"level\":\"error\",\"message\":{\"text\":\"Exit status of `rm` is not checked\"},\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"%s\"},\"region\":{\"startLine\":%d}}}]}\n", f, NR
+    }' "$f"
+done | awk '
+  BEGIN { printf "{\"version\":\"2.1.0\",\"runs\":[{\"tool\":{\"driver\":{\"name\":\"shlint\",\"version\":\"1.0.0\"}},\"results\":[" }
+  { printf "%s%s", (NR > 1 ? "," : ""), $0 }
+  END { print "]}]}" }' > "$out"

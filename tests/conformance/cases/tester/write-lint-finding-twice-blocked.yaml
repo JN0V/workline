@@ -1,0 +1,39 @@
+case: tester/write-lint-finding-twice-blocked
+about: >
+  Asked once more with the lint's finding, the agent answers with it
+  still there (#964): the tester asks no third time. The run blocks as
+  before the second call, the refusal said on the issue with the
+  finding where a person reads it, from the repository's root, never a
+  folder of the machine that ran it. No Draft opens; the issue keeps its
+  state.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  env:
+    ALWAYS: "1"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+    gates: {lint: {checks: [{id: shlint, run: "sh \"$FIXTURES/bin/shlint\" {out}/lint.sarif", output: sarif, max: {error: 0}}]}}
+    routing: {events: {issue: [tester], merge-request: ["gate:lint"]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:needs-tests"]
+        body: "## Need\n\nWhen I total an order, I want to multiply a price by a count, so I need not add it up by hand.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **By zero:** Given the library, When I multiply 5 by 0, Then I get 0.\n\n---\n\n## Verification\n\nA test a scenario, in tests/.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+run: {route: issue, target: {issue: 3}, open-merge-request: true, ai: "cmd:sh $FIXTURES/agents/tester-mul-unchecked-once.sh"}
+expect:
+  status: block
+  agent-calls: 2
+  findings: [{rule: tests-lint, where: "tests/test_mul_by_zero.sh:4", message: "Exit status of `rm` is not checked (errcheck)"}]
+  stdout-lacks: ["compared"]
+  not-pushed: [workline/tester/issue-3]
+  forge:
+    merge-requests:
+      - {id: 1, absent: true}
+    issues:
+      - id: 3
+        labels: ["workline:needs-tests"]
+        comment-contains: ["**The tester** wrote no tests for this issue this run", "tests/test_mul_by_zero.sh:4", "Exit status of `rm` is not checked"]
+        comment-lacks: ["compared", "workline-tests-"]
