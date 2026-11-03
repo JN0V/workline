@@ -121,8 +121,8 @@ Each role, from a hook, a script or a CI job: [triggers](docs/triggers.md).
 | a fork's | judged with no agent | on GitHub, a comment; on GitLab, nothing |
 | a role's own: a comment on the tester's Draft, a verdict on the developer's | tester: answers an objection; developer: fixes its review | a reply or a rewritten test; the fix, pushed on its branch |
 
-- The review is on the merge request; a person accepts it, or the
-  [merge policy](docs/merge-policy.md) merges a reproduced bug's fix alone.
+- The review is on the merge request; a person accepts it, or, by the
+  [merge policy](docs/merge-policy.md), a reproduced bug's fix merges alone.
 - Templates: [GitHub Actions](ci/github/workline.yml),
   [what only warns, beside it](ci/github/workline-warn.yml),
   [its jobs that write](ci/github/workline-apply.yml) and
