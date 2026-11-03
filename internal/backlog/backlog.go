@@ -1709,6 +1709,22 @@ func (p *Plan) noCodeGiven(repo string, id int) bool {
 	return len(PathsIn(repo, is.Title+"\n"+is.Body)) == 0
 }
 
+// scopeUnread says why a refine's Scope is left out, "" when it is not:
+// no code of the issue was given in this run, or the run names other code
+// for it — a Scope written now would name paths not read (#970).
+func (p *Plan) scopeUnread(repo string, c Proposal) string {
+	if c.Ticked != "" || strings.TrimSpace(c.Scope) == "" {
+		return ""
+	}
+	// The code pre gave whole (CodeRead) counts too: files a comment
+	// names, as the developer's ask for its Scope does (#921).
+	given := slices.Contains(p.config.CodeRead, c.Issue) || !p.noCodeGiven(repo, c.Issue)
+	if !given || p.codeFirst[c.Issue] {
+		return fmt.Sprintf("its %[1]s was left out: no code of #%[2]d was given in this run, so its paths would be a guess. The code they name is read at the next run, and its %[1]s is written from that code", work.Name(work.Scope), c.Issue)
+	}
+	return ""
+}
+
 // obsoleteOn reads where an issue's announcement as obsolete stands, from
 // the forge as it is.
 func (p *Plan) obsoleteOn(f forge.Backlog, repo, role string, st *State, id int) (Obsolete, error) {
@@ -1840,6 +1856,13 @@ func (p *Plan) checkRefining(f forge.Backlog, repo, role string, c *Proposal) (r
 			}
 			c.Sources = c.Sources[:min(len(c.Sources), maxSources)]
 		}
+		unread := p.scopeUnread(repo, *c)
+		if unread != "" {
+			// A Scope from code not read is a guess, wide enough to hold
+			// the issue behind an unrelated claim (#970): its paths kept
+			// as the code to read, the rest of the refine written.
+			c.Scope = ""
+		}
 		if err := p.readable(f, repo, c); err != nil {
 			return "no-state", err.Error()
 		}
@@ -1892,6 +1915,14 @@ func (p *Plan) checkRefining(f forge.Backlog, repo, role string, c *Proposal) (r
 		}
 		_, added, kept := Refine(is.Body, *c, role)
 		c.Added = added
+		if len(added) == 0 && unread != "" {
+			// Its Scope alone, left out: nothing keeps its paths. The
+			// agent names them with a sources, no line quoted.
+			return "scope-unread", fmt.Sprintf("nothing written: no code of #%d was given in this run, so its %s would be a guess. Name the code it is about with `sources`: its %[2]s is written from that code at the next run", c.Issue, work.Name(work.Scope))
+		}
+		if unread != "" {
+			p.Findings = append(p.Findings, verdict.Finding{Rule: "scope-unread", Level: "info", Where: c.where(), Message: unread})
+		}
 		if len(added) == 0 {
 			return "nothing-to-refine", "nothing written: the sections it drafted are in the issue already, never rewritten"
 		}

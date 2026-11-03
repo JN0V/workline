@@ -1,0 +1,12 @@
+# A product owner's refines of bugs read with no code given (#970): each
+# Scope guessed from the repository's folders, as #949's was; #10's
+# refine holds its Scope alone.
+- refine:
+    issue: 9
+    scope: "`src/export`: the CSV export, guessed from the folders."
+    verification: "A test exports three rows and reads three lines back."
+    why: "No code was given in this run: the paths come from the folders."
+- refine:
+    issue: 10
+    scope: "`src/export`: the CSV export, guessed from the folders."
+    why: "No code was given in this run: the paths come from the folders."

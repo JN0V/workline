@@ -119,6 +119,10 @@ Each issue comes with:
   ([ADR-0059, amended](../../../docs/adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#amendment-2026-11-03-an-issue-left-unrefined-is-woken-again)).
 - Its sources named from the repository's folders need no line quoted:
   the issue is read again with that code.
+- A Scope written with no code given for the issue is left out, its
+  paths kept as the code to read: it is written from that code at the
+  next run, never guessed
+  ([#970](https://github.com/JN0V/workline/issues/970)).
 - Then it does it, proposes it on its issue, or drops it, by the kind's
   mode and cap, and by the issue: one set aside gets nothing; one where a
   person undid that kind gets a proposal.

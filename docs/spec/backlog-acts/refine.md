@@ -71,6 +71,17 @@ what it can and asks for the rest:
   written (`scope-without-files`, said in the summary with what a person
   may do). Nothing to add drops the act (`nothing-to-refine`). The
   issue gets the label `workline:to-refine`.
+- **A Scope waits for its code** (#970). A refine's Scope on an issue
+  whose code the run did not give — not in pre's `code-read`, its state
+  naming no sources, its title and body no file of the commit
+  (`noCodeGiven`) — or whose code this run names anew (a `sources`
+  done), is left out, said `scope-unread`: its paths would be a guess,
+  and a guessed folder can hold the issue behind an unrelated claim.
+  Its paths, checked as above, are kept as the issue's sources, the
+  rest of the refine written; the issue, still lacking its Scope, is
+  read again with that code. A refine with its Scope alone is dropped
+  (`scope-unread`), the agent told to name the code with `sources`. A
+  person's yes to a proposal is done as it reads.
 - **Each thing said once** (ADR-0039, amended). The text above an
   issue's sections — its description — is read by whose it is, the
   engine telling so, never the agent (`backlog.RolesTop`): a role's when
