@@ -21,7 +21,7 @@ given:
         comments:
           - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"
           - {body: "@ann, to refine this issue: Should `--verbose=false` print the plain line, as `--short` does?\n\n<!-- workline:product-owner/ask -->", created: "2026-10-01T23:50:00Z"}
-          - "**workline's line** last woke the product-owner on this issue, in its state refine (1 state step so far).\n\n<!-- workline:line-record {\"state\":\"refine\",\"body\":\"206c8bcea856\",\"hops\":1} -->\n<!-- workline:sticky=line/state -->"
+          - "**workline's line** last woke the product owner on this issue, in its state refine (1 state step so far).\n\n<!-- workline:line-record {\"state\":\"refine\",\"body\":\"206c8bcea856\",\"hops\":1} -->\n<!-- workline:sticky=line/state -->"
 run: {route: reconcile, ai: none, input: {reconcile: list}}
 expect:
   status: pass

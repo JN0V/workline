@@ -203,7 +203,7 @@ func recordIn(comments []string) (Record, bool) {
 func recordBody(r Record, role string) string {
 	data, _ := json.Marshal(r)
 	said := fmt.Sprintf("**workline's line** last woke the %s on this issue, in its state %s (%d state %s so far).",
-		role, r.State, r.Hops, plural(r.Hops, "step", "steps"))
+		strings.ReplaceAll(role, "-", " "), r.State, r.Hops, plural(r.Hops, "step", "steps"))
 	if role == "" {
 		said = fmt.Sprintf("**workline's line** keeps this record while the issue is blocked, %d state %s before; moved out of Blocked, its count starts again.", r.Hops, plural(r.Hops, "step", "steps"))
 	}

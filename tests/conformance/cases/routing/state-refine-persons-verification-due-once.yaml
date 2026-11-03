@@ -21,7 +21,7 @@ given:
         comments:
           - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: efbae4cec0e6\nanswered: efbae4cec0e6\n```\n\n<!-- workline:sticky=product-owner/state -->"
           - "**workline reviewer**, its spec.\n\n<!-- workline:spec-review body=efbae4cec0e6 round=1 open=1 in=Verification -->\n\n<!-- workline:sticky=reviewer/spec -->"
-          - "**workline's line** last woke the product-owner on this issue, in its state refine (1 state step so far).\n\n<!-- workline:line-record {\"state\":\"refine\",\"body\":\"efbae4cec0e6\",\"labeled\":\"2026-11-01T19:59:38Z\",\"hops\":1,\"spec\":\"bb9da4451f2a\",\"asked\":\"efbae4cec0e6\",\"revise\":\"bb9da4451f2a\"} -->\n<!-- workline:sticky=line/state -->"
+          - "**workline's line** last woke the product owner on this issue, in its state refine (1 state step so far).\n\n<!-- workline:line-record {\"state\":\"refine\",\"body\":\"efbae4cec0e6\",\"labeled\":\"2026-11-01T19:59:38Z\",\"hops\":1,\"spec\":\"bb9da4451f2a\",\"asked\":\"efbae4cec0e6\",\"revise\":\"bb9da4451f2a\"} -->\n<!-- workline:sticky=line/state -->"
 run: {route: reconcile, ai: none, input: {reconcile: list}}
 expect:
   status: pass
