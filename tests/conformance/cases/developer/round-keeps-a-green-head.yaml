@@ -1,0 +1,53 @@
+case: developer/round-keeps-a-green-head
+about: >
+  A green pull request, a review finding whose fix turns a frozen test
+  red, as on 2026-11-03 (#987): its round's agent makes the fix and
+  objects to the test. The green code is never undone for a finding:
+  the fix, red on the frozen test, is not pushed; the objection goes on
+  the tester's Draft, and the issue waits for its answer in Doing, the
+  finding answered by the round's note.
+given:
+  repo: tested-draft
+  setup:
+    - "git checkout -q -b workline/developer/3 && printf 'add() { echo $(($1 + $2)); }\\nmul() { echo $(($1 * $2)); }\\n' > lib.sh && git commit -qam 'feat: mul for #3' -m 'Workline-Role: developer' && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main workline/tester/issue-3 workline/developer/3"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:developing"]
+        body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        draft: true
+        comments: ["The tests of #3, frozen.\n\n<!-- workline:tester-record {\"issue\":3,\"base\":\"main\",\"files\":{\"tests/test_mul_by_zero.sh\":\"8f123a0bacbd681063880b867df38dd216784b97\",\"tests/test_mul_two_by_three.sh\":\"2dee0641bd7a79057ade7bff5af43b603125f543\"}} -->\n<!-- workline:sticky=tester/tests -->"]
+      - id: 2
+        branch: workline/developer/3
+        title: "Multiply two numbers"
+        body: "Closes #3"
+        comments:
+          - "**The developer**'s record of this pull request, for its next runs and the auditor.\n\n<!-- workline:developer-act {\"act\":\"code\",\"issue\":3,\"acceptance\":[\"tests/test_mul_by_zero.sh\",\"tests/test_mul_two_by_three.sh\"],\"code\":[\"lib.sh\"],\"proof\":{\"result\":\"green\",\"passed\":2}} -->\n<!-- workline:sticky=developer/code -->"
+          - "**workline reviewer**\n\n| | | Where | Finding |\n|---|---|---|---|\n| warns | intent | `lib.sh:2` | Important: mul multiplies, outside the Scope. Make it add. |\n\n<!-- workline:record reviewed=1111111 runs=1 -->\n<!-- workline:sticky=reviewer/summary -->"
+run: {develop: [--merge-request, "2"], ai: "fake:developer-undoes-green-objects"}
+expect:
+  status: pass
+  summary: "round 1 of 5 on merge request 2; its fix turns the tests red on a green head: not pushed; its objection to the frozen tests is on the tester's Draft !1: #3 waits for its answer"
+  agent-calls: 1
+  findings:
+    - {rule: green-kept, level: warn, where: "merge request 2", message: "test_mul_two_by_three"}
+    - {rule: objected, level: info, where: "merge request 2"}
+  no-findings: [{rule: check-held}]
+  not-pushed: [workline/developer/3]
+  forge:
+    issues:
+      - id: 3
+        labels: ["workline:developing"]
+    merge-requests:
+      - id: 1
+        comment-contains: ["The developer** objects to the tester's tests of #3", "1 posted now"]
+        threads:
+          - {path: tests/test_mul_two_by_three.sh, line: 4, contains: ["workline:objection", "- kind: contradicts"]}
+      - id: 2
+        comment-contains: ["not pushed: the green head kept", "its objection is on the tester's Draft !1", "\"result\":\"not-pushed\"", "\"bounds\":\"objected\"", "\"result\":\"green\""]

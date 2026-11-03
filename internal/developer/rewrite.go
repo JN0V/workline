@@ -14,6 +14,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"strings"
 
@@ -79,6 +80,93 @@ func testerFiles(f forge.Forge, issue int) (map[string]string, error) {
 		return r.Files, nil
 	}
 	return nil, nil
+}
+
+// keptHolds is who asks a round again once it kept a test objected to:
+// the tester, its answer on the Draft (#987).
+const keptHolds = "the tester, kept"
+
+// testerKept are the tester's answers on its open Draft for issue that
+// kept a frozen test, written by workline's own account, each its test;
+// none without a Draft, or on a forge with no threads.
+func testerKept(f forge.Forge, issue int) ([]string, error) {
+	th, ok := f.(forge.Threaded)
+	if !ok {
+		return nil, nil
+	}
+	mrs, err := f.ListMergeRequests()
+	if err != nil {
+		return nil, err
+	}
+	draft := 0
+	for _, mr := range mrs {
+		if testerIssue(mr.Branch) == issue {
+			draft = mr.ID
+			break
+		}
+	}
+	if draft == 0 {
+		return nil, nil
+	}
+	threads, err := th.Threads(draft)
+	if err != nil {
+		return nil, err
+	}
+	own, err := forge.OwnAccount(f)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", errOwnAccount, err)
+	}
+	var out []string
+	for _, t := range threads {
+		for _, c := range t.Comments {
+			if !own.Wrote(c) || !tester.IsAnswered(c.Body) {
+				continue
+			}
+			if ans, ok := tester.ReadAnswered(c.Body); ok && ans.Act == "kept" {
+				out = append(out, ans.Test)
+			}
+		}
+	}
+	return out, nil
+}
+
+// keptLine is a test the tester kept, as the round's task and comment
+// say it.
+func keptLine(a Asked) string {
+	return fmt.Sprintf("the tester kept `%s`, objected to at this head: its answer on its Draft", a.Where)
+}
+
+// frozenRed are the tests red that the frozen acceptance tests hold, as
+// read at commit at: a red test's name, its last part, is a file's name
+// or a word in it. Any language: a report's names differ, a test's name
+// is in its file.
+func frozenRed(repo, at string, acceptance, red []string) []string {
+	var out []string
+	for _, t := range red {
+		name := t
+		if i := strings.LastIndexAny(name, ".:#"); i >= 0 && i+1 < len(name) {
+			name = name[i+1:]
+		}
+		name, _, _ = strings.Cut(name, "/") // a subtest's own name
+		name = strings.TrimSpace(name)
+		if len(name) < 4 || !strings.ContainsAny(strings.ToLower(name), "abcdefghijklmnopqrstuvwxyz") {
+			continue // too short to tell a test: never held on a guess
+		}
+		word := regexp.MustCompile(`\b` + regexp.QuoteMeta(name) + `\b`)
+		for _, f := range acceptance {
+			base := strings.TrimSuffix(filepath.Base(f), filepath.Ext(f))
+			if base == name {
+				out = append(out, t)
+				break
+			}
+			data, err := exec.Command("git", "-C", repo, "show", at+":"+f).Output()
+			if err == nil && word.Match(data) {
+				out = append(out, t)
+				break
+			}
+		}
+	}
+	return out
 }
 
 // testerTip is the commit of the tester's branch for issue, as fetched

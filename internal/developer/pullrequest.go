@@ -253,6 +253,8 @@ func roundResult(x Round) string {
 		return "its issue blocked"
 	case x.Result == "no-code":
 		return "no fix"
+	case x.Result == "not-pushed":
+		return "its fix not pushed, red on a green head"
 	}
 	return "its fix pushed, the tests " + x.Result
 }

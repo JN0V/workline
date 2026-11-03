@@ -88,49 +88,12 @@ step 6).
 - **The reviewer decides a finding is fixed**
   ([ADR-0013](../../../docs/adr/0013-what-was-judged-is-not-asked-again.md)).
 
-## A fix outside the Scope
+## A round with no fix pushed
 
-The issue's Scope is the product owner's
-([ADR-0060](../../../docs/adr/0060-the-person-is-on-the-loop.md#2-the-builders-part-is-the-product-owners-at-every-level));
-a round asks it to widen it ([#921](https://github.com/JN0V/workline/issues/921)).
-
-- **The agent names the file** in its note's `needs`, why in its text,
-  and changes nothing for it:
-  `- note: {text: "why the fix lies there", needs: [path]}`. A fix it
-  makes there all the same is reverted by the [bounds](bounds.md), and
-  counts as named.
-- **No fix kept, a file named outside the Scope**: the round asks. A
-  gate's file, a steering file or a frozen test is never asked for.
-  The issue goes `workline:blocked`. Its comment names the files, the
-  agent's note and the end of the red check's log.
-- **The product owner answers at once**: the reconciler wakes it on
-  the ask, no other news needed.
-  - It widens the Scope and sends the issue back to ready: the next
-    round resumes on the same pull request, with the new bounds, and
-    puts the issue back in Doing.
-  - Or it keeps the issue blocked, its reason written.
-- **Once a head and a Scope**: asked again on the same, the issue is
-  blocked for a person, with no ask; the person who widens it and puts
-  it back to ready resumes the round. The rounds' cap bounds the rest.
-- **A round that holds a reviewer's finding wrong** asks nothing: the
-  reviewer decides.
-- **A round before this**, no fix on a red check, runs once more at the
-  same head, to ask, or to block as below.
-
-## A red check it does not fix
-
-A project check is asked once a head: a round on it that keeps no fix
-and names no file outside the Scope would leave the pull request red,
-nothing asked again ([#938](https://github.com/JN0V/workline/issues/938),
-[ADR-0059](../../../docs/adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#amendment-2026-11-03-a-red-check-with-no-fix-blocks-for-a-person)).
-
-- **The issue goes `workline:blocked`, for a person**: its comment names
-  the checks, the agent's note, where its objections to frozen tests
-  went, and the end of the check's log. No mark: nothing for the
-  product owner to widen.
-- **A person** fixes the check or the test, re-runs a flaky check, or
-  widens the Scope, then moves the issue back to ready: the next round
-  runs at the same head, the check asked again.
+When its fix lies outside the Scope, a red check stays with no fix, or
+a finding fights a frozen test, a round asks the product owner, waits
+for the tester, or blocks its issue for a person:
+[a round with no fix pushed](review-held.md).
 
 ## A Draft made green
 

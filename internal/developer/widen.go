@@ -43,6 +43,17 @@ type Widen struct {
 	// Again: asked again on the same head and Scope, blocked for a
 	// person; one who sends it back resumes the round too.
 	Again bool `json:"again,omitempty"`
+	// Objected: the round objected to a frozen test at At, and its
+	// issue waits for the tester's answer (#987): a rewrite is taken by
+	// the next round, a test kept asks the round again. Kept: the
+	// tester's answers that kept a test on its Draft then; one more is
+	// its answer.
+	Objected bool `json:"objected,omitempty"`
+	Draft    int  `json:"draft,omitempty"` // the tester's Draft it objected on
+	Kept     int  `json:"kept,omitempty"`
+	// Review: the round held a fix of the review's findings off a green
+	// head (#987): they are asked again when the round resumes.
+	Review bool `json:"review,omitempty"`
 }
 
 // outsideScope are the repository's files the round's patches reached
@@ -111,8 +122,8 @@ func scopeKey(scope []string) string {
 // the record's ask: no more blocked, ready or taken again. One call, only
 // while an ask waits.
 func backFromAsk(f forge.Forge, a Act) (bool, error) {
-	if a.Widen == nil || a.Widen.Back {
-		return false, nil
+	if a.Widen == nil || a.Widen.Back || a.Widen.Objected {
+		return false, nil // an objection waits in Doing: nothing sent back
 	}
 	is, err := f.Issue(a.Issue)
 	if err != nil {
@@ -158,6 +169,24 @@ func holdCheck(repo string, a Act, r round, red, notes []string, objections []in
 		r.MR, strings.Join(red, "`, `"), scopeName)
 	next := "a person on the loop reads the developer's note below, then fixes the check or the test, re-runs a flaky check, " +
 		"or widens the " + scopeName + "; and moves the issue back to ready: the next round runs at the same head"
+	return holdFor(repo, a, r, why, next, notes, objections)
+}
+
+// holdGreen is what a round writes whose fix of the review turned
+// frozen tests red on a green head (#987): not pushed, and it neither
+// objected to a test nor named a file outside the Scope. Nothing else
+// would move: blocked for a person, the tests and the findings on it.
+func holdGreen(repo string, a Act, r round, red, notes []string, objections []intent.Intention) []intent.Intention {
+	why := fmt.Sprintf("its fix of the review turns the frozen tests red on pull request %d's green head (`%s`): not pushed, the head kept; it neither objected to a test nor named a file outside the %s, or objected already at this head",
+		r.MR, strings.Join(red, "`, `"), scopeName)
+	next := "a person on the loop reads the findings and the developer's note below, then answers the finding, fixes the test, " +
+		"or widens the " + scopeName + "; and moves the issue back to ready: the next round asks the findings again at the same head"
+	return holdFor(repo, a, r, why, next, notes, objections)
+}
+
+// holdFor blocks the issue for a person, why and next said, then what
+// the round was asked, its agent's notes and where its objections went.
+func holdFor(repo string, a Act, r round, why, next string, notes []string, objections []intent.Intention) []intent.Intention {
 	var b strings.Builder
 	b.WriteString(backlog.Said(who, "blocks this issue", why, next))
 	b.WriteString("\nWhat it was asked:\n\n" + askedList(r.Asked))
@@ -177,6 +206,15 @@ func holdCheck(repo string, a Act, r round, red, notes []string, objections []in
 		moveTo(repo, "blocked", a.Issue, []string{backlog.LabelBlocked}, []string{backlog.LabelReady, backlog.StateLabel("doing")}),
 		sayOn(a.Issue, b.String()),
 	}
+}
+
+// objectedOn says whether a round's comments post an objection on the
+// tester's Draft: the bounds kept it, its line known.
+func objectedOn(comments []intent.Intention) bool {
+	return slices.ContainsFunc(comments, func(o intent.Intention) bool {
+		m, ok := o.Value.(map[string]any)
+		return ok && m["sticky"] == "objection"
+	})
 }
 
 // checkLogsSaid is the end of each red check's failed steps' log, as
