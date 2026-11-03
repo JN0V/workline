@@ -1066,16 +1066,21 @@ func unreadFeedback(why string) string {
 }
 
 // answerItems cuts an answer into its top-level list items: each starts
-// with "- " at the start of a line and runs to the next, or to a fence.
+// with "- claim:" at the start of a line and runs to the next, or to a fence.
 // Every other line in between is the item's, one at the start of the line
-// too (code pasted as it is), so an item never reads from text cut short;
-// a line starting with "- " starts the next.
+// too (code pasted as it is, a list line "- foo" included), so an item
+// never reads from text cut short; a line starting with "- claim:" starts
+// the next.
 func answerItems(answer string) []string {
 	var items []string
 	open := false
-	for _, l := range strings.Split(answer, "\n") {
+	lines := strings.Split(answer, "\n")
+	if n := len(lines); n > 0 && lines[n-1] == "" {
+		lines = lines[:n-1] // the answer's final newline, not a line
+	}
+	for _, l := range lines {
 		switch {
-		case strings.HasPrefix(l, "- "):
+		case strings.HasPrefix(l, "- claim:"):
 			items, open = append(items, l+"\n"), true
 		case strings.HasPrefix(l, "```"):
 			open = false
