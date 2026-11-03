@@ -99,7 +99,8 @@ a round asks it to widen it ([#921](https://github.com/JN0V/workline/issues/921)
     puts the issue back in Doing.
   - Or it keeps the issue blocked, its reason written.
 - **Once a head and a Scope**: asked again on the same, the issue is
-  blocked for a person, with no ask. The rounds' cap bounds the rest.
+  blocked for a person, with no ask; the person who widens it and puts
+  it back to ready resumes the round. The rounds' cap bounds the rest.
 - **A round that holds the finding wrong** asks nothing, as before: the
   reviewer decides.
 - **A round before this**, no fix on a red check, runs once more at the

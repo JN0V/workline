@@ -224,6 +224,7 @@ hold:
   reason said ([the review loop](review-loop.md#a-fix-outside-the-scope)).
   Cases `developer/round-asks-the-product-owner-for-scope`,
   `round-resumes-on-a-widened-scope`, `round-asks-once-a-head-and-scope`,
+  `round-resumes-after-a-person-widens`,
   `round-before-the-ask-runs-once-more`,
   `round-holding-a-check-wrong-asks-nothing`,
   `routing/scope-ask-wakes-the-product-owner`,

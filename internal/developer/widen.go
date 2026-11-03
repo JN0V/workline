@@ -34,10 +34,11 @@ type Widen struct {
 	At    string   `json:"at"`    // the branch's head it was asked at
 	Scope string   `json:"scope"` // the bounds' Scope then, hashed
 	Files []string `json:"files"`
-	// Back: a round ran after the product owner sent the issue back.
+	// Back: a round ran after the issue was sent back, by the product
+	// owner or a person.
 	Back bool `json:"back,omitempty"`
 	// Again: asked again on the same head and Scope, blocked for a
-	// person.
+	// person; one who sends it back resumes the round too.
 	Again bool `json:"again,omitempty"`
 }
 
@@ -107,7 +108,7 @@ func scopeKey(scope []string) string {
 // the record's ask: no more blocked, ready or taken again. One call, only
 // while an ask waits.
 func backFromAsk(f forge.Forge, a Act) (bool, error) {
-	if a.Widen == nil || a.Widen.Back || a.Widen.Again {
+	if a.Widen == nil || a.Widen.Back {
 		return false, nil
 	}
 	is, err := f.Issue(a.Issue)
