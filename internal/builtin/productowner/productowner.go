@@ -1927,6 +1927,12 @@ func blockedSaid(runDir string, comments []string) string {
 	if len(to) > 1 {
 		where = fmt.Sprintf("`to: %s`, the state it was blocked from, or `to: refine` when its need must be read again", to[1])
 	}
+	if files := backlog.ScopeAsked(comments); len(files) > 0 && slices.Contains(to, "ready") {
+		// The developer asks for files outside the Scope (#921): its
+		// Scope is the product owner's to widen, or to keep as it is.
+		return fmt.Sprintf("Blocked (%s): %s. Read again because %s. The developer's pull request needs `%s`, outside the issue's %s; its comment says why. Decide one, its `why` one plain line: to widen it, `refine` with `scope`, the %[5]s rewritten whole with these files in it, and `sources`, then `unblock` it `to: ready`: the developer resumes on its pull request with the new bounds; or `blocked`, why the %[5]s must not take them — another issue's need, a file no developer changes — `person: true` when only a person can decide. Never `ready` on it.\n",
+			backlog.LabelBlocked, why, news, strings.Join(files, "`, `"), work.Name(work.Scope))
+	}
 	return fmt.Sprintf("Blocked (%s): %s. Read again because %s. Decide one, its `why` one plain line: `unblock` it, %s, when what blocked it is gone; `blocked`, the reason it stays as things are now, `person: true` when only a person can lift it — a decision, an access, a fix outside this repository; or a `close` by the rules above. Never `ready` on it.\n",
 		backlog.LabelBlocked, why, news, where)
 }

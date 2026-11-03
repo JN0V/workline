@@ -1,0 +1,3 @@
+# The developer's agent in a round on #3's pull request, holding the red
+# check wrong: a flaky runner, nothing of its code. No fix, a note.
+- note: "The check failed on the runner's network, not on mul: nothing to fix in the code."

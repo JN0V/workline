@@ -166,6 +166,9 @@ type Act struct {
 	// ChecksAt: the head its last round read the project's red checks
 	// at: the same head is never asked twice (#917).
 	ChecksAt string `json:"checks-at,omitempty"`
+	// Widen: its last round's ask to the product owner for files outside
+	// the issue's Scope (#921).
+	Widen *Widen `json:"widen,omitempty"`
 	// Board: the card its claim moved to Doing on the forge's board
 	// (ADR-0057); none, no board or no Doing column.
 	Board *board.Move `json:"board,omitempty"`
