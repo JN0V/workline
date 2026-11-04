@@ -165,6 +165,8 @@ Cases in `tests/conformance/cases/tester/`:
   `engine/closed-issue-loses-its-state`
   ([#999](https://github.com/JN0V/workline/issues/999)). GitLab runs the
   same command on its default branch's pipeline: built, not tried there.
+  Tried on a copy of workline and read only on its live Drafts, on
+  [#1001](https://github.com/JN0V/workline/pull/1001#tried).
 - **A bug reproduced first**
   ([ADR-0060](../../../docs/adr/0060-the-person-is-on-the-loop.md#4-a-person-validates-by-the-issues-kind)):
   every test green on the base, no Draft, its reporter asked, then
