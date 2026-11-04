@@ -79,4 +79,6 @@ Each links to its issue, which holds its design:
 [architect](https://github.com/JN0V/workline/issues/207),
 [UX](https://github.com/JN0V/workline/issues/208) (proposed in
 [ADR-0061](adr/0061-the-ux-role-reads-what-the-accessibility-tools-cannot.md)),
-[PM](https://github.com/JN0V/workline/issues/209).
+[PM](https://github.com/JN0V/workline/issues/209);
+QA, a campaign on a running build, apart from the tester (proposed in
+[ADR-0062](adr/0062-the-qa-role-plays-a-campaign-on-a-running-build.md)).
