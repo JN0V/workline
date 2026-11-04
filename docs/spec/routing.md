@@ -1,6 +1,6 @@
 ---
 sources: [internal/line, internal/routing, internal/work, routing.default.yaml]
-checked: bee00160
+checked: 3ac1a5b9
 verified: agent:claude-code
 ---
 # Routing — v1 (draft)
@@ -470,7 +470,12 @@ whose result moves the issue to the next. The table is the routing's
   its spec still waiting on a review, the step is due again, once: a
   record from before the reviewer read it in refine's own run
   ([#840](https://github.com/JN0V/workline/issues/840)). Marked, no
-  review come, it stays acted: no loop.
+  review come, the step is due once more, for the reviewer: it may have
+  skipped the spec then
+  ([#1070](https://github.com/JN0V/workline/issues/1070),
+  `state-review-missing`; `review-again` in the record). After that, it
+  stays acted: no loop. A spec waits on a review by the product owner's
+  rule: its sections read with its state, text on top its Need.
 - **A review answered by asking for a person's Verification** under the
   rule before
   [ADR-0060](../adr/0060-the-person-is-on-the-loop.md): the product

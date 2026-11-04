@@ -106,6 +106,10 @@ type Record struct {
 	// again on, its state saying it never read the issue (#1041): once a
 	// body, so a run that reads nothing is not woken in a loop.
 	Unread string `json:"unread,omitempty"`
+	// ReviewAgain: in refine, the body's hash the line woke the step
+	// again on, the reviewer asked on it already and its spec still
+	// waiting on a review (#1070): once a body, never a loop.
+	ReviewAgain string `json:"review-again,omitempty"`
 	// Ran: when the line last ran a step on the issue, RFC 3339: a step
 	// due again in the same state waits from then, in the reconciler's
 	// order (ADR-0059, amended 2026-11-03).
@@ -297,7 +301,13 @@ func due(cfg *routing.Config, s routing.State, is forge.Issue, labeled, spec str
 // is, the review's rounds not spent (backlog.SpecHold); comments: the
 // issue's, as the record was read from them.
 func specWaits(is forge.Issue, comments []string) bool {
-	if backlog.Readied(is) || len(backlog.NotReady(is, nil, true)) > 0 {
+	// Its sections read as the product owner and the reviewer read them,
+	// with its state: text on top may be its Need (#1062, #1070).
+	st, _, err := backlog.ReadState(comments, backlog.Keeper)
+	if err != nil {
+		st = nil
+	}
+	if backlog.Readied(is) || len(backlog.NotReady(is, st, true)) > 0 {
 		return false
 	}
 	rule, _ := backlog.SpecHold(is, comments)

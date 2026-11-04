@@ -1,0 +1,39 @@
+case: routing/state-refine-review-missing-due-again
+about: >
+  An issue in refine, its drafts written, its ready held for a spec
+  review that never came (#1070, from a trial: the reviewer skipped an
+  issue whose Need is its text on top, #1062). The line woke the
+  product owner and the reviewer on this body already. While its spec
+  still waits on a review, the step is due once more, so the reviewer
+  reads it now; woken so already on this body, it is not: no loop. An
+  issue whose spec the reviewer read is not due for this.
+given:
+  repo: backlog
+  config:
+    routing: {events: {schedule: [product-owner, reviewer], issue: [product-owner, reviewer, tester, developer]}}
+  forge:
+    issues:
+      - id: 34
+        title: "Switch state"
+        labels: [workline:to-refine]
+        labeled: {"workline:to-refine": "2026-11-01T19:59:38Z"}
+        body: "Copied from another tracker for a trial.\n\nThe switch state describes what Home Assistant commanded.\n\nOpened from `docs/ROADMAP.md`, lines 12 to 12 by the product-owner role.\n\n<!-- workline:import=docs/ROADMAP.md:0a1b2c3d4e5f -->\n\n## Verification\n\nA test writes three rows.\n\n## Validation\n\n- **A known day:** Given a day of three sales, When Ann opens it, Then she counts three.\n\n## Scope\n\nsrc/export/csv.go"
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "**workline's line** last woke the product owner on this issue, in its state refine (1 state step so far).\n\n<!-- workline:line-record {\"state\":\"refine\",\"body\":\"0188f2bcfee6\",\"labeled\":\"2026-11-01T19:59:38Z\",\"hops\":1,\"asked\":\"0188f2bcfee6\"} -->\n<!-- workline:sticky=line/state -->"
+      - id: 37
+        title: "Switch state again"
+        labels: [workline:to-refine]
+        labeled: {"workline:to-refine": "2026-11-01T19:59:38Z"}
+        body: "Copied from another tracker for a trial.\n\nThe switch state describes what Home Assistant commanded.\n\nOpened from `docs/ROADMAP.md`, lines 12 to 12 by the product-owner role.\n\n<!-- workline:import=docs/ROADMAP.md:0a1b2c3d4e5f -->\n\n## Verification\n\nA test writes three rows.\n\n## Validation\n\n- **A known day:** Given a day of three sales, When Ann opens it, Then she counts three.\n\n## Scope\n\nsrc/export/csv.go"
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "**workline's line** last woke the product owner on this issue, in its state refine (2 state steps so far).\n\n<!-- workline:line-record {\"state\":\"refine\",\"body\":\"0188f2bcfee6\",\"labeled\":\"2026-11-01T19:59:38Z\",\"hops\":2,\"asked\":\"0188f2bcfee6\",\"review-again\":\"0188f2bcfee6\"} -->\n<!-- workline:sticky=line/state -->"
+run: {route: reconcile, ai: none, input: {reconcile: list}}
+expect:
+  status: pass
+  agent-calls: 0
+  summary: "reconcile: 1 issue due: #34"
+  findings:
+    - {rule: state-review-missing, where: "#34", message: "its drafts wait on a spec review that has not come on this text: woken again, once, for the reviewer"}
+    - {rule: state-acted, where: "#37"}
