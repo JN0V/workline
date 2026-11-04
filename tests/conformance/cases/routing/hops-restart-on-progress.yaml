@@ -1,0 +1,44 @@
+case: routing/hops-restart-on-progress
+about: >
+  The hop cap stops a loop, not the step that ends it (#1068): max-hops
+  counts the state steps since the issue last went further on the line
+  than ever before. #3, 8 hops spent between refine and tests, reaches
+  ready for the first time: its count starts again, the developer
+  woken. #4, sent back from tests to refine at 8 hops, is blocked as
+  before. #5 reached ready once, was sent back to its tests, and is
+  ready again at 8 hops: not the first time, so blocked. No agent
+  asked.
+given:
+  repo: tested
+  config:
+    routing: {events: {issue: [product-owner, developer]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply"
+        labels: ["workline:ready"]
+        body: "## Need\n\nI want to multiply.\n"
+        comments: ["<!-- workline:line-record {\"state\":\"tests\",\"body\":\"8a828a06be19\",\"hops\":8} -->\n<!-- workline:sticky=line/state -->"]
+      - id: 4
+        title: "Multiply again"
+        labels: ["workline:to-refine"]
+        body: "## Need\n\nI want to multiply.\n"
+        comments: ["<!-- workline:line-record {\"state\":\"tests\",\"body\":\"8a828a06be19\",\"hops\":8} -->\n<!-- workline:sticky=line/state -->"]
+      - id: 5
+        title: "Multiply once more"
+        labels: ["workline:ready"]
+        body: "## Need\n\nI want to multiply.\n"
+        comments: ["<!-- workline:line-record {\"state\":\"tests\",\"body\":\"8a828a06be19\",\"hops\":8,\"reached\":\"ready\"} -->\n<!-- workline:sticky=line/state -->"]
+run: {route: reconcile, open-merge-request: true, ai: none}
+expect:
+  status: pass
+  agent-calls: 0
+  findings:
+    - {rule: state-wakes, level: info, where: "#3", message: "its state, ready, wakes the developer"}
+    - {rule: hops-capped, level: warn, where: "#4", message: "9 state steps on this issue, past max-hops (8)"}
+    - {rule: hops-capped, level: warn, where: "#5", message: "9 state steps on this issue, past max-hops (8)"}
+  forge:
+    issues:
+      - {id: 3, labels: ["workline:ready"], comments: 1, comment-contains: ["\"hops\":1", "\"reached\":\"ready\""]}
+      - {id: 4, labels: ["workline:blocked"], comments: 1, comment-contains: ["its state was refine", "\"hops\":9"]}
+      - {id: 5, labels: ["workline:blocked"], comments: 1, comment-contains: ["its state was ready", "\"hops\":9"]}
