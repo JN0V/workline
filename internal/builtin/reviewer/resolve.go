@@ -88,7 +88,10 @@ func answered(repo string, s Settings, st state, lines []forge.LineComment, r le
 		if !ofThisSide(s, st, by) {
 			continue
 		}
-		warnFixed := !s.AIFindings.Blocks(by) && fixedWarn(fixed, by, t)
+		// A lens asked this run that did not answer whole could not raise
+		// it again: its warning waits for a run that reads cleanly.
+		failed := slices.Contains(facets(st), by) && !slices.Contains(r.lenses, by)
+		warnFixed := !s.AIFindings.Blocks(by) && !failed && fixedWarn(fixed, by, t)
 		if gone(linesOf(t.Path), t.Path, by, keys[0]) || readAgain(repo, s, st, r, lensOf, by, t.Path) || warnFixed {
 			out = append(out, t.ID)
 		}
