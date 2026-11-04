@@ -240,6 +240,16 @@ hold:
   and the line wrote over the ask. Now the quote's marks are broken.
   Cases `developer/scope-ask-quotes-a-log-with-workline-marks`,
   `routing/scope-ask-with-a-quoted-log-wakes-the-product-owner`.
+- **A widened Scope resumes its round at once** ([#1013](https://github.com/JN0V/workline/issues/1013)):
+  back to ready, the issue's step was a new claim the developer passed
+  over, and no round ran; the ask waited for the hourly reconcile. Now
+  the job that moved the issue starts its round, and the job that
+  applied a round wakes the issue's next step
+  ([triggers](triggers.md#on-its-pull-request)). Cases
+  `routing/ready-back-from-scope-lists-its-round`,
+  `ready-back-from-scope-says-its-round`,
+  `ready-with-a-persons-pull-request-still-due`. Tried: its pull
+  request's `## Tried`.
 - **A red check with no fix and no file to ask blocks** ([#938](https://github.com/JN0V/workline/issues/938)):
   its pull request sat red for hours, the check not asked again at its
   head. Now its issue goes Blocked for a person, the check, the note and
