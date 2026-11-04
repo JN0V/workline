@@ -842,9 +842,11 @@ func reviewPost(runDir, repo string, s Settings) int {
 		}
 		if len(files) > 0 {
 			// Its fix lies outside the Scope (#921): the product owner's
-			// to widen; once a head and a Scope, then a person.
+			// to widen; once a head, a Scope and its files, then a
+			// person. A file not asked before is asked (#1073).
 			key := scopeKey(b.Scope)
-			again := a.Widen != nil && sameCommit(a.Widen.At, r.At) && a.Widen.Scope == key
+			again := a.Widen != nil && sameCommit(a.Widen.At, r.At) && a.Widen.Scope == key &&
+				!slices.ContainsFunc(files, func(f string) bool { return !slices.Contains(a.Widen.Files, f) })
 			ask = askScope(repo, a, r, files, again, notes)
 			a.Widen, this.Bounds = &Widen{At: r.At, Scope: key, Files: files, Again: again, Review: heldRed != nil}, "asked"
 			msg := fmt.Sprintf("its fix needs %s, outside the issue's %s: #%d blocked, the product owner asked to widen it", strings.Join(files, ", "), scopeName, a.Issue)
