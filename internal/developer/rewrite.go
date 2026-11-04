@@ -137,36 +137,54 @@ func keptLine(a Asked) string {
 }
 
 // frozenRed are the tests red that the frozen acceptance tests hold, as
-// read at commit at: a red test's name, its last part, is a file's name
-// or a word in it. Any language: a report's names differ, a test's name
-// is in its file.
+// read at commit at: one of a red test's names is a file's name or a
+// word in it. Any language: a report's names differ, a test's name is
+// in its file.
 func frozenRed(repo, at string, acceptance, red []string) []string {
 	var out []string
 	for _, t := range red {
-		name := t
-		if i := strings.LastIndexAny(name, ".:#"); i >= 0 && i+1 < len(name) {
-			name = name[i+1:]
-		}
-		name, _, _ = strings.Cut(name, "/") // a subtest's own name
-		name = strings.TrimSpace(name)
-		if len(name) < 4 || !strings.ContainsAny(strings.ToLower(name), "abcdefghijklmnopqrstuvwxyz") {
-			continue // too short to tell a test: never held on a guess
-		}
-		word := regexp.MustCompile(`\b` + regexp.QuoteMeta(name) + `\b`)
-		for _, f := range acceptance {
-			base := strings.TrimSuffix(filepath.Base(f), filepath.Ext(f))
-			if base == name {
-				out = append(out, t)
-				break
-			}
-			data, err := exec.Command("git", "-C", repo, "show", at+":"+f).Output()
-			if err == nil && word.Match(data) {
-				out = append(out, t)
-				break
-			}
+		if slices.ContainsFunc(testNames(t), func(name string) bool { return inFrozen(repo, at, acceptance, name) }) {
+			out = append(out, t)
 		}
 	}
 	return out
+}
+
+// testNames are the names a report's test id may hold: of each part
+// between `/` that holds a `.`, `:` or `#`, what follows the last one
+// (a Go package's test, then a subtest's; a class's method; a pytest
+// file's test); with none, the id's last part. A name too short to tell
+// a test is left out: never held on a guess.
+func testNames(id string) []string {
+	parts := strings.Split(id, "/")
+	var names []string
+	for _, p := range parts {
+		if i := strings.LastIndexAny(p, ".:#"); i >= 0 {
+			names = append(names, p[i+1:])
+		}
+	}
+	if len(names) == 0 {
+		names = []string{parts[len(parts)-1]}
+	}
+	return slices.DeleteFunc(names, func(n string) bool {
+		n = strings.TrimSpace(n)
+		return len(n) < 4 || !strings.ContainsAny(strings.ToLower(n), "abcdefghijklmnopqrstuvwxyz")
+	})
+}
+
+// inFrozen says whether name is a frozen file's name, or a word in it.
+func inFrozen(repo, at string, acceptance []string, name string) bool {
+	word := regexp.MustCompile(`\b` + regexp.QuoteMeta(strings.TrimSpace(name)) + `\b`)
+	for _, f := range acceptance {
+		if strings.TrimSuffix(filepath.Base(f), filepath.Ext(f)) == name {
+			return true
+		}
+		data, err := exec.Command("git", "-C", repo, "show", at+":"+f).Output()
+		if err == nil && word.Match(data) {
+			return true
+		}
+	}
+	return false
 }
 
 // testerTip is the commit of the tester's branch for issue, as fetched

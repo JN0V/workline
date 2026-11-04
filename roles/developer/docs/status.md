@@ -257,6 +257,7 @@ hold:
   Cases `developer/round-keeps-a-green-head`,
   `round-objecting-to-a-red-test-waits`,
   `round-asks-again-once-the-tester-keeps`, `round-undoing-green-blocks`,
+  `round-objecting-again-on-a-finding-blocks`,
   `merge-alone-said-while-checks-run`. Tried: its pull request's
   `## Tried`.
 - **A Draft made green is marked ready** ([#969](https://github.com/JN0V/workline/issues/969)):

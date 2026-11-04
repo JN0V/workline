@@ -17,12 +17,13 @@ func TestFrozenRed(t *testing.T) {
 	red := []string{
 		"github.com/x/y/internal/doctor.TestSeveralWarnings",     // a Go test, in a frozen file
 		"github.com/x/y/internal/doctor.TestSeveralWarnings/two", // its subtest
-		"test_mul_by_zero",                       // a test named by its file
+		"github.com/x/y/internal/doctor.TestSeveralWarnings/case_1.5", // a subtest with a dot
+		"test_mul_by_zero", // a test named by its file
 		"github.com/x/y/internal/doctor.TestOwn", // the developer's own
 		"pkg.TestX/case_1.5",                     // its last part too short to tell
 	}
 	got := frozenRed(repo, "HEAD", acceptance, red)
-	if want := red[:3]; !slices.Equal(got, want) {
+	if want := red[:4];!slices.Equal(got, want) {
 		t.Errorf("frozenRed = %q, want %q", got, want)
 	}
 }

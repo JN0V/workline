@@ -817,6 +817,16 @@ func reviewPost(runDir, repo string, s Settings) int {
 			msg := fmt.Sprintf("no objection left for the tester at this head, and no file named outside the issue's %s: #%d blocked for a person", scopeName, a.Issue)
 			v.Findings = append(v.Findings, verdict.Finding{Rule: "green-held", Level: "warn", Where: where, Message: msg})
 			v.Summary += "; " + msg
+		} else if objected && answered {
+			// Objected again at this head, the tester's answer read
+			// (#987): no second wait, nothing else would move.
+			why := fmt.Sprintf("its round on pull request %d objected again at this head, after the tester's answer, and pushed no fix: no second wait for the tester at the same head", r.MR)
+			next := "a person on the loop reads the tester's answer and the developer's note below, then settles the test or the finding; and moves the issue back to ready: the next round asks the findings again at the same head"
+			ask = holdFor(repo, a, r, why, next, notes, others)
+			a.Widen, this.Bounds = &Widen{At: r.At, Scope: scopeKey(b.Scope), Held: true, Review: true}, "blocked"
+			msg := fmt.Sprintf("objected again at this head after the tester's answer: #%d blocked for a person", a.Issue)
+			v.Findings = append(v.Findings, verdict.Finding{Rule: "objection-held", Level: "warn", Where: where, Message: msg})
+			v.Summary += "; " + msg
 		}
 	}
 	switch {
@@ -873,6 +883,8 @@ func roundBody(x Round, s Settings, notes []string, analysis string, w *Widen) s
 		fmt.Fprintf(&b, "Nothing pushed; its objection is on the tester's Draft !%d, on its lines: its issue waits for the tester's answer. A rewrite is taken by the next round; a test kept asks it again here.\n\n", w.Draft)
 	case x.Bounds == "blocked" && x.Result == "not-pushed":
 		b.WriteString("No objection left for the tester at this head, and no file outside its bounds named: its issue is blocked for a person, its reason on it; moved back to ready, the next round asks the findings again here.\n\n")
+	case x.Bounds == "blocked" && w.Review:
+		b.WriteString("no fix, and it objected again at this head after the tester's answer: its issue is blocked for a person, its reason on it; moved back to ready, the next round asks the findings again here.\n\n")
 	case x.Result == "not-pushed" && x.Bounds == "held":
 		b.WriteString("\n\n")
 	case x.Bounds == "asked" && w.Again:
