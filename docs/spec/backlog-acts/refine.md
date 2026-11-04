@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog/backlog.go, internal/backlog/assume.go, internal/backlog/proof.go, internal/backlog/plain.go, internal/backlog/repeat.go, internal/backlog/write.go, internal/work/headings.go, internal/work/work.go, internal/work/scenarios.go, internal/backlog/scenarios.go, internal/forge/forge.go, internal/engine/backlog.go]
 status: draft
-checked: 8538d558
+checked: 19479f1b
 verified: agent:claude-code
 ---
 # Refining to ready
@@ -153,7 +153,11 @@ what it can and asks for the rest:
   Need —, no draft of the role's left in Need or
   Validation unless the issue bears `workline:accepted` — read on the
   issue, never in a proposal (`not-ready` otherwise, naming what is
-  missing); a mark left in a section a person edited is taken out. Done, the issue gets
+  missing); a mark left in a section a person edited is taken out.
+  A Need or Validation whose writer opened it with `Draft:` is not
+  final either: held the same way, never taken as an assumption, and the
+  role's to rewrite (a `refine`, the agent told so) until a person
+  accepts it ([#1019](https://github.com/JN0V/workline/issues/1019)). Done, the issue gets
   `workline:ready` and loses `workline:to-refine`, as `workline item ready`
   does, and loses `workline:draft` and `workline:accepted`. Where the
   project routes the tester, an issue whose Validation names scenarios
@@ -165,10 +169,13 @@ what it can and asks for the rest:
   and the developer): a bullet opening on its name in bold, `- **Name:**
   Given …`; a line naming it — `**Scenario: Name**`, `Scenario: Name`, a
   heading, a bold name alone — its steps below; the same in fenced
-  code. A Validation holding Given / When / Then with none of these is
-  held in refine where the tester is routed (`scenarios-unread`), said
-  on the issue in the role's comment with the form expected, and kept
-  until it reads ([#855](https://github.com/JN0V/workline/issues/855)):
+  code. A Validation with none of these — Given / When / Then in another
+  form, or prose — is held in refine where the tester is routed
+  (`scenarios-unread`): the Definition of Ready of Tests is named
+  scenarios. It is said on the issue in the role's comment with the
+  form expected, and kept until it reads
+  ([#855](https://github.com/JN0V/workline/issues/855),
+  [#1019](https://github.com/JN0V/workline/issues/1019)):
   the role's own text, the agent is told once a body to rewrite it (a
   `refine`, the Validation among those it revises); a person's, a person
   rewrites it, the agent told to `ask` its reporter.
