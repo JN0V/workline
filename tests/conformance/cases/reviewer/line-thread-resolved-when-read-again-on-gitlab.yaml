@@ -1,0 +1,28 @@
+case: reviewer/line-thread-resolved-when-read-again-on-gitlab
+about: "On GitLab, the reviewer resolves its own discussion on a line once its lens reads the file again and finds it no more (#1039); a discussion a person opened, or answered in, stays open."
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
+  forge:
+    issues: []
+    merge-requests:
+      - id: 5
+        labels: []
+        comments: []
+        threads:
+          - {path: calc/calc.go, line: 11, body: "**workline reviewer** · warns · correctness\n\n**Important: Average divides by one less than the count**\n\n<!-- workline:line=correctness/d861c7fa46d7 -->"}
+          - {path: calc/calc.go, line: 11, author: alice, body: "Is this right?\n\n<!-- workline:line=correctness/d861c7fa46d7 -->"}
+          - {path: calc/calc.go, line: 7, body: "**workline reviewer** · warns · correctness\n\n**Important: The total starts at zero**\n\n<!-- workline:line=correctness/0757b92086de -->", replies: [{body: "It must, see the spec.", author: alice, insider: true}]}
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD, lenses: correctness}, target: {merge-request: 5}, ai: "fake:review-nothing", forge: gitlab}
+expect:
+  status: pass
+  applied: [comment]
+  forge:
+    merge-requests:
+      - id: 5
+        comments: 1
+        comment-contains: "**Resolved**: 1 conversation on a line of a review before, the code answering it now."
+        threads:
+          - {path: calc/calc.go, line: 11, resolved: true}
+          - {path: calc/calc.go, line: 11, resolved: false}
+          - {path: calc/calc.go, line: 7, resolved: false}

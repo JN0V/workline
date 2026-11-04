@@ -2672,6 +2672,13 @@ func (a *applier) apply(in intent.Intention) error {
 					return err
 				}
 			}
+			if ids := strs(m["resolve"]); len(ids) > 0 {
+				// The role's own conversations on lines the code answers
+				// now (#1039).
+				if err := a.resolveThreads(*target, ids); err != nil {
+					return err
+				}
+			}
 			if read, ok := m["read"].(string); ok {
 				// The record the run read, merged with the one the
 				// comment holds now: never a run's commits nor judged

@@ -2,6 +2,7 @@ package forge
 
 import (
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -18,6 +19,7 @@ type Thread struct {
 	Resolved bool   `json:"resolved,omitempty"`
 	URL      string `json:"url,omitempty"`
 	Comments []Note `json:"comments"`
+	node     string // GitHub's thread id, which resolving it takes
 }
 
 // Threaded is a forge that lists a merge request's conversations on its
@@ -27,6 +29,16 @@ type Threaded interface {
 	Threads(id int) ([]Thread, error)
 	Reply(id int, thread, body string) error
 }
+
+// Resolver is a forge that marks conversations on a merge request's lines
+// resolved, each by its Thread.ID: the reviewer's own, once the code
+// answers them (#1039). A person's is never resolved by the line.
+type Resolver interface {
+	Resolve(id int, threads []string) error
+}
+
+// LineKeys lists the keys of the reviewer's line comments a text holds.
+func LineKeys(body string) []string { return keysIn(body) }
 
 // Threads keeps each comment on a line as a thread, its replies under it;
 // a thread given no id is named by its place, counting from 1.
@@ -74,10 +86,41 @@ func (f *Fake) Reply(id int, thread, body string) error {
 	})
 }
 
+// Resolve marks the threads resolved; those it does not hold, the rest
+// resolved still, are said in the error.
+func (f *Fake) Resolve(id int, threads []string) error {
+	return f.write(func(s *FakeState) error {
+		it, err := s.item(Target{Kind: "merge-request", ID: id})
+		if err != nil {
+			return err
+		}
+		var missing []string
+	next:
+		for _, thread := range threads {
+			for i := range it.Threads {
+				if it.Threads[i].ID == thread || it.Threads[i].ID == "" && strconv.Itoa(i+1) == thread {
+					it.Threads[i].Resolved = true
+					continue next
+				}
+			}
+			missing = append(missing, thread)
+		}
+		return noThreads(id, missing)
+	})
+}
+
+// noThreads says the threads a merge request no longer holds, if any.
+func noThreads(id int, missing []string) error {
+	if len(missing) == 0 {
+		return nil
+	}
+	return fmt.Errorf("merge request %d holds no thread %s: the others resolved", id, strings.Join(missing, ", "))
+}
+
 // threadsFullQuery lists a pull request's review threads with their
 // comments, a hundred of each, who wrote each: GitHub says whether a
 // thread is resolved in GraphQL only.
-const threadsFullQuery = `query($owner: String!, $name: String!, $number: Int!, $endCursor: String) { repository(owner: $owner, name: $name) { pullRequest(number: $number) { reviewThreads(first: 100, after: $endCursor) { pageInfo { hasNextPage endCursor } nodes { isResolved path line comments(first: 100) { nodes { databaseId body url createdAt authorAssociation author { __typename login } } } } } } } }`
+const threadsFullQuery = `query($owner: String!, $name: String!, $number: Int!, $endCursor: String) { repository(owner: $owner, name: $name) { pullRequest(number: $number) { reviewThreads(first: 100, after: $endCursor) { pageInfo { hasNextPage endCursor } nodes { id isResolved path line comments(first: 100) { nodes { databaseId body url createdAt authorAssociation author { __typename login } } } } } } } }`
 
 // Threads reads the review threads; a thread's id is its first comment's,
 // the one a reply answers (REST). A bot's login is given as REST gives
@@ -100,6 +143,7 @@ func (g *github) Threads(id int) ([]Thread, error) {
 		} `json:"author"`
 	}
 	found, err := lines[struct {
+		Node     string `json:"id"`
 		Resolved bool   `json:"isResolved"`
 		Path     string `json:"path"`
 		Line     int    `json:"line"`
@@ -115,7 +159,7 @@ func (g *github) Threads(id int) ([]Thread, error) {
 		if len(t.Comments.Nodes) == 0 {
 			continue
 		}
-		th := Thread{ID: strconv.Itoa(t.Comments.Nodes[0].ID), Path: t.Path, Line: t.Line, Resolved: t.Resolved, URL: t.Comments.Nodes[0].URL}
+		th := Thread{ID: strconv.Itoa(t.Comments.Nodes[0].ID), Path: t.Path, Line: t.Line, Resolved: t.Resolved, URL: t.Comments.Nodes[0].URL, node: t.Node}
 		for _, c := range t.Comments.Nodes {
 			n := Note{Body: c.Body, Created: c.Created, ID: strconv.Itoa(c.ID), Insider: insider(c.Association)}
 			if c.Author != nil {
@@ -135,6 +179,33 @@ func (g *github) Threads(id int) ([]Thread, error) {
 func (g *github) Reply(id int, thread, body string) error {
 	_, err := g.api("-X", "POST", fmt.Sprintf("repos/{owner}/{repo}/pulls/%d/comments/%s/replies", id, thread), "-f", "body="+body)
 	return err
+}
+
+// resolveThread marks a review thread resolved, by its GraphQL id.
+const resolveThread = `mutation($id: ID!) { resolveReviewThread(input: {threadId: $id}) { thread { isResolved } } }`
+
+// Resolve marks the review threads whose first comment is each of threads
+// resolved: GitHub resolves a thread in GraphQL only, by its own id.
+func (g *github) Resolve(id int, threads []string) error {
+	all, err := g.Threads(id)
+	if err != nil {
+		return err
+	}
+	var missing []string // gone since the run read them: the rest resolved still
+	for _, thread := range threads {
+		i := slices.IndexFunc(all, func(t Thread) bool { return t.ID == thread })
+		switch {
+		case i < 0:
+			missing = append(missing, thread)
+			continue
+		case all[i].Resolved:
+			continue
+		}
+		if _, err := g.api("graphql", "-f", "query="+resolveThread, "-f", "id="+all[i].node); err != nil {
+			return err
+		}
+	}
+	return noThreads(id, missing)
 }
 
 // Threads reads the merge request's discussions on its diff, those with a
@@ -189,4 +260,24 @@ func (g *gitlab) Threads(id int) ([]Thread, error) {
 func (g *gitlab) Reply(id int, thread, body string) error {
 	_, err := g.api("-X", "POST", path(Target{Kind: "merge-request", ID: id})+"/discussions/"+thread+"/notes", "-f", "body="+body)
 	return err
+}
+
+// Resolve marks each discussion resolved; one refused leaves the others
+// resolved still, each refused said with why. A forge out of reach stops.
+func (g *gitlab) Resolve(id int, threads []string) error {
+	var refused []string
+	for _, thread := range threads {
+		_, err := g.api("-X", "PUT", path(Target{Kind: "merge-request", ID: id})+"/discussions/"+thread, "-f", "resolved=true")
+		switch {
+		case err == nil:
+		case refusal(err):
+			refused = append(refused, thread+" ("+said(err)+")")
+		default:
+			return err
+		}
+	}
+	if len(refused) == 0 {
+		return nil
+	}
+	return fmt.Errorf("%w: discussions refused, the others resolved: %s", errRefused, strings.Join(refused, "; "))
 }

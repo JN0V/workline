@@ -779,7 +779,7 @@ func weigh(f forge.Forge, m forge.Merger, o FollowOptions, local bool, mr forge.
 // the forge refuses leaves auto-merge on, for the next run.
 func stalled(m forge.Merger, mr forge.MergeRequest, tip string, st forge.MergeState, e *inLine, say func(rule, level, msg string), who string) (*inLine, error) {
 	if !st.Mergeable {
-		return e, nil
+		return e, heldByConversations(m, mr, tip, st, say, who)
 	}
 	merged, err := m.AutoMerge(mr, tip, true)
 	switch {
@@ -793,4 +793,78 @@ func stalled(m forge.Merger, mr forge.MergeRequest, tip string, st forge.MergeSt
 		return nil, nil
 	}
 	return e, nil
+}
+
+// heldByConversations says what holds a merge request the forge does not
+// merge, its auto-merge on and its checks green, when conversations on its
+// lines are not resolved and its base requires each resolved (#1039):
+// each one's place and link, in the run's findings and once a head on the
+// merge request itself, where a person looks. The reviewer resolves its
+// own once the code answers them; a person's, or one a person spoke in,
+// stays theirs. A base whose rule cannot be read is said as one that may
+// require them; a forge that lists no conversation says nothing.
+func heldByConversations(m forge.Merger, mr forge.MergeRequest, tip string, st forge.MergeState, say func(rule, level, msg string), who string) error {
+	th, ok := m.(forge.Threaded)
+	if !ok || st.Draft || st.Checks != "success" {
+		return nil
+	}
+	base := mr.Base
+	if base == "" {
+		base = "the base"
+	}
+	rule := fmt.Sprintf("if %s requires every conversation resolved", base)
+	if r, ok := m.(forge.ConversationRules); ok {
+		c, err := r.Conversations(mr.Base)
+		switch {
+		case err == nil && c.Required:
+			rule = fmt.Sprintf("%s requires every conversation resolved", base)
+		case err == nil && c.Unread == "":
+			return nil // they hold nothing
+		}
+	}
+	threads, err := th.Threads(mr.ID)
+	if err != nil {
+		if errors.Is(err, forge.ErrUnreachable) && !forge.Refused(err) {
+			return err
+		}
+		say("conversations-unread", "warn", fmt.Sprintf("%s; auto-merge on, its checks green, but the forge does not merge it, and its conversations on lines could not be read: %s", who, forge.Said(err)))
+		return nil
+	}
+	var open []string
+	for _, t := range threads {
+		if t.Resolved {
+			continue
+		}
+		place := fmt.Sprintf("`%s:%d`", t.Path, t.Line)
+		if t.URL != "" {
+			place = fmt.Sprintf("[%s:%d](%s)", t.Path, t.Line, t.URL)
+		}
+		if len(t.Comments) > 0 && t.Comments[0].Author != "" {
+			place += " by " + t.Comments[0].Author
+		}
+		open = append(open, place)
+	}
+	if len(open) == 0 {
+		return nil
+	}
+	noun, verb := "conversations", "hold"
+	if len(open) == 1 {
+		noun, verb = "conversation", "holds"
+	}
+	held := fmt.Sprintf("%d %s on its lines not resolved", len(open), noun)
+	say("held-by-conversations", "warn", fmt.Sprintf("%s; auto-merge on, its checks green, but the forge does not merge it: %s %s it, %s: %s", who, held, verb, rule, strings.Join(open, ", ")))
+	f, ok := m.(forge.Forge)
+	if !ok {
+		return nil
+	}
+	body := fmt.Sprintf("**Held by %s**: its checks are green and auto-merge is on, but %s. The reviewer resolves its own once the code answers them; a person resolves the rest, or answers in them:\n\n- %s",
+		held, rule, strings.Join(open, "\n- "))
+	err = f.Comment(forge.Target{Kind: "merge-request", ID: mr.ID}, body, forge.Marker(fmt.Sprintf("held-by-conversations=%s/%d", short(tip), len(open))))
+	if errors.Is(err, forge.ErrUnreachable) && !forge.Refused(err) {
+		return err
+	}
+	if err != nil {
+		say("held-not-said", "warn", "could not say on it what holds it: "+forge.Said(err))
+	}
+	return nil
 }

@@ -34,7 +34,7 @@ func findingsOnMergeRequests(r *Report, o Options, projectForge string) {
 		return
 	}
 	const how = "the documentalist's findings reach pull requests as annotations on the check `workline findings`, which open none; " +
-		"the reviewer's comments on lines are conversations to resolve, as a person's; a GitHub App writing the check needs the permission Checks: read and write"
+		"the reviewer's comments on lines are conversations it resolves once the code answers them, a person's stay theirs to resolve; a GitHub App writing the check needs the permission Checks: read and write"
 	got, err := rules.Conversations("")
 	branch := got.Branch
 	if branch == "" {

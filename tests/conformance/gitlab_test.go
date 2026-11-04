@@ -136,7 +136,7 @@ func (s *gitlabState) tokenUser() string { return cmp.Or(s.TokenUser, defaultTok
 var (
 	issuePath      = regexp.MustCompile(`^/issues/(\d+)$`)
 	notesPath      = regexp.MustCompile(`^/(issues|merge_requests)/(\d+)/notes(?:/(\d+))?$`)
-	mrPath         = regexp.MustCompile(`^/merge_requests/(\d+)(/diffs|/discussions|/merge|/cancel_merge_when_pipeline_succeeds|/versions|/resource_label_events)?$`)
+	mrPath         = regexp.MustCompile(`^/merge_requests/(\d+)(/diffs|/discussions|/discussions/d\d+|/merge|/cancel_merge_when_pipeline_succeeds|/versions|/resource_label_events)?$`)
 	linksPath      = regexp.MustCompile(`^/issues/(\d+)/links$`)
 	closedBy       = regexp.MustCompile(`^/issues/(\d+)/closed_by$`)
 	stateEvents    = regexp.MustCompile(`^/issues/(\d+)/resource_state_events$`)
@@ -841,10 +841,25 @@ func (m *gitlabMock) mergeRequest(s *gitlabState, it *forge.FakeItem, part, meth
 	case part == "/discussions" && method == "GET":
 		out := []map[string]any{}
 		for i, t := range it.Threads {
-			out = append(out, map[string]any{"id": fmt.Sprintf("d%d", i+1), "notes": []map[string]any{{"id": it.ID*1000 + 500 + i + 1, "body": t.Body,
-				"resolvable": true, "resolved": t.Resolved, "position": map[string]any{"new_path": t.Path, "new_line": t.Line}}}})
+			author := t.Author // the token's user's own, as it posted them, when none is named
+			if author == "" {
+				author = tokenUser
+			}
+			notes := []map[string]any{{"id": it.ID*1000 + 500 + i + 1, "body": t.Body, "author": map[string]any{"username": author},
+				"resolvable": true, "resolved": t.Resolved, "position": map[string]any{"new_path": t.Path, "new_line": t.Line}}}
+			for j, r := range t.Replies {
+				notes = append(notes, map[string]any{"id": it.ID*1000 + 600 + 10*i + j, "body": r.Body, "author": map[string]any{"username": r.Author, "bot": r.Bot}})
+			}
+			out = append(out, map[string]any{"id": fmt.Sprintf("d%d", i+1), "notes": notes})
 		}
 		return out, 200
+	case strings.HasPrefix(part, "/discussions/d") && method == "PUT":
+		n, _ := strconv.Atoi(strings.TrimPrefix(part, "/discussions/d"))
+		if n < 1 || n > len(it.Threads) {
+			return map[string]any{"message": "404 Not Found"}, 404
+		}
+		it.Threads[n-1].Resolved = form.Get("resolved") == "true"
+		return map[string]any{"id": part[len("/discussions/"):]}, 200
 	case part == "/discussions" && method == "POST":
 		if s.ReviewRefused != "" {
 			return map[string]any{"message": "403 Forbidden"}, 403
