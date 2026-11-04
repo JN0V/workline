@@ -168,9 +168,11 @@ func (w *world) tickChecks(c checks, k int, before, after forge.FakeState, res, 
 		}
 	}
 	// I3: a machine error moves nothing: no label, no state, no hop; a
-	// first record, the state's entry, is not a hop. Only the last call
-	// on an issue in the tick counts: an error the engine retried at once
-	// into progress moved the issue by that progress.
+	// first record, the state's entry, is not a hop: it counts one, never
+	// more (due writes 1; a lost run adds none). A record catching up, at
+	// the wake, with the state its labels say is no move either. Only the
+	// last call on an issue in the tick counts: an error the engine
+	// retried at once into progress moved the issue by that progress.
 	for _, cl := range lastCalls(calls) {
 		if !cl.Kind.machine() || !c.on(pI3) {
 			continue
@@ -180,9 +182,9 @@ func (w *world) tickChecks(c checks, k int, before, after forge.FakeState, res, 
 			continue
 		}
 		bs, bh, had := record(*b)
-		as, ah, _ := record(*a)
+		as, ah, has := record(*a)
 		if !slices.Equal(slices.Sorted(slices.Values(b.Labels)), slices.Sorted(slices.Values(a.Labels))) ||
-			had && (bs != as || bh != ah) {
+			had && (bs != as && as != stateName(w.cfg, a.Labels) || bh != ah) || !had && has && ah != 1 {
 			return fail(pI3, "#%d after the %s's %s: %s, was %s", cl.Issue, cl.Role, cl.Kind, trail(*a), trail(*b))
 		}
 	}
