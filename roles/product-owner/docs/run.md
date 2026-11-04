@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, roles/product-owner/instruction.md, roles/product-owner/policy.md, internal/builtin/productowner, internal/backlog]
-checked: cee5a7af
+checked: 048bef01
 verified: agent:claude-code
 ---
 # Product owner — a run
@@ -76,8 +76,10 @@ Each issue comes with:
   sections;
 - its comments, with who wrote each;
 - the issues it cites, open or closed;
-- the code it names — a file linked on the forge counts —, or else the
-  repository's folders, to name the code to read from;
+- the code it names — a file linked on the forge counts, a function it
+  names is found in the files defining it —, or else the repository's
+  folders, to name the code to read from; past a long file's first
+  lines, the lines naming what the issue quotes;
 - for an issue imported from a file: that file's lines around its item,
   and its other lines naming the item's id — facts to refine from, not
   to ask you.

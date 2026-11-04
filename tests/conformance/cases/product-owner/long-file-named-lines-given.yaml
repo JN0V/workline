@@ -1,0 +1,36 @@
+case: product-owner/long-file-named-lines-given
+about: >
+  A file the issue names is longer than the lines a file is given. The
+  symbol the issue names is defined past them, at line 890 (#1056, from
+  a trial: a header's static members defined at its end). The lines
+  naming it are given after the file's first lines, numbered as in the
+  file; the lines between are said left out.
+given:
+  repo: backlog
+  setup:
+    - |
+      mkdir -p src/web
+      {
+        echo '#pragma once'
+        echo 'class Widget {'
+        echo '  static char wsBuffer_[64];'
+        echo '};'
+        for i in $(seq 5 887); do echo "// filler $i"; done
+        echo ''
+        echo '// The buffer, defined here.'
+        echo 'char Widget::wsBuffer_[64];'
+        for i in $(seq 891 900); do echo "// tail $i"; done
+      } > src/web/widget.h
+      git add src/web/widget.h && git commit -qm 'feat: a long header'
+  forge:
+    issues:
+      - {id: 9, title: "wsBuffer_ defined in a header", body: "`wsBuffer_` is declared in `src/web/widget.h`. Check where it is defined.", author: ann, insider: true, labels: [workline:to-refine], comments: ["```yaml\nsources: [src/web/widget.h]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: issue, target: {issue: 9}, ai: fake:proposes-nothing}
+expect:
+  status: pass
+  agent-calls: 1
+  run-files:
+    in/task.md:
+      contains:
+        - "   3    static char wsBuffer_[64];"
+        - " 890  char Widget::wsBuffer_[64];"

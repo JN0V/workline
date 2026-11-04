@@ -1,0 +1,28 @@
+case: product-owner/named-function-files-found
+about: >
+  An issue names a function and no file (#1057, from a trial: a one-line
+  issue on a fallback copied in seven modules). More than two files hold
+  the name, its callers with them: the files that define it are found
+  from the name and given, not a folder guessed from the title. A file
+  that only calls it is not.
+given:
+  repo: backlog
+  setup:
+    - |
+      mkdir -p mqtt ntp ota app
+      printf 'class MqttUI {\n  const char* getWebUIVersion() const {\n    return "1.0.0";\n  }\n};\n' > mqtt/mqtt_ui.h
+      printf 'class NtpUI {\n  const char* getWebUIVersion() const {\n    return "1.1.0";\n  }\n};\n' > ntp/ntp_ui.h
+      printf 'class OtaUI {\n  const char* getWebUIVersion() const {\n    return "1.2.0";\n  }\n};\n' > ota/ota_ui.h
+      printf '#include "mqtt_ui.h"\nvoid show(MqttUI& ui) {\n  print(ui.getWebUIVersion());\n}\n' > app/show.cpp
+      git add mqtt ntp ota app && git commit -qm 'feat: three modules'
+  forge:
+    issues:
+      - {id: 9, title: "Hardcoded fallback versions in `getWebUIVersion()` drift", body: "| LO-12 | WebUI | Hardcoded fallback versions in `getWebUIVersion()` drift from actual version |", author: ann, insider: true, labels: [workline:to-refine], comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: issue, target: {issue: 9}, ai: fake:proposes-nothing}
+expect:
+  status: pass
+  agent-calls: 1
+  run-files:
+    in/task.md:
+      contains: ["## mqtt/mqtt_ui.h", "## ntp/ntp_ui.h", "## ota/ota_ui.h"]
+      not-contains: ["## app/show.cpp"]
