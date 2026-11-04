@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine/merge.go, internal/engine/queue.go, internal/forge/merge.go, internal/forge/github_merge.go, internal/forge/gitlab_merge.go, ci/github/workline-apply.yml, ci/github/workline-merge.yml, ci/gitlab/workline.gitlab-ci.yml]
-checked: cae44b84
+checked: 5e579c4a
 verified: agent:claude-code
 ---
 # The merge policy
@@ -100,8 +100,11 @@ merge: {autonomy: cautious}   # off unless set: no auto-merge is touched
   the docs ([ADR-0051](adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-1-the-release-weekly)).
   An issue labelled to hold it, or main not green, turns its verdict red
   until they are gone ([what holds a release](release-holds.md)).
-- **A fork's**: its CI run is the fork's own, so the templates keep no
-  verdict of it: it waits for a person.
+- **A fork's**: its run gets no secret, so no agent reviews it; its
+  verdict is kept, read as data. A person's yes on its head is its
+  review: labelled, it merges once green; unlabelled, `follow` says it
+  waits for one
+  ([ADR-0042](adr/0042-the-engine-merges-by-the-projects-policy.md#amendment-2026-11-04-1043-a-forks-verdict-is-kept)).
 - **Any other** with no label, whoever opened it — but, at `normal` and
   `enterprising`, workline's own routine work. A bot's own auto-merge (a dependency
   bot's) is left to it.
