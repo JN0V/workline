@@ -1,0 +1,19 @@
+case: routing/ready-with-a-persons-pull-request-still-due
+about: >
+  #4 is ready, and a person's own pull request closes it, from a branch
+  that is not the developer's (#1013): no round of the developer's to
+  resume. Its step is the developer's, as before, which passes it over.
+given:
+  repo: tested-draft
+  config:
+    routing: {events: {issue: [developer]}}
+  forge:
+    issues:
+      - {id: 4, title: "Divide two numbers", labels: ["workline:ready"], body: "## Need\n\nI want to divide.\n"}
+    merge-requests:
+      - {id: 5, branch: fix/divide, title: "Divide two numbers", body: "Closes #4"}
+run: {route: issue, target: {issue: 4}, open-merge-request: true, ai: "fake:developer-nothing", input: {reconcile: list}}
+expect:
+  status: pass
+  summary: "issue: #4 due, the developer: not started (--input reconcile=list)"
+  agent-calls: 0

@@ -1,0 +1,38 @@
+case: routing/ready-back-from-scope-lists-its-round
+about: >
+  The product owner widened #4's Scope at the developer's ask and moved
+  it back to ready (#1013): the job that applied it asks the issue line
+  whether a step is due. Its step is the review round on its own pull
+  request 5, due: listed for that job to start, not a new claim, which
+  the developer would pass over. No agent.
+given:
+  repo: tested-draft
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git checkout -q -b workline/developer/4 && git push -q origin main workline/developer/4 && git checkout -q main"
+    - "sed -i \"s/@head4@/$(git rev-parse workline/developer/4)/g\" \"$FORGE_FILE\""
+  config:
+    routing: {events: {issue: [developer]}}
+  forge:
+    head-checks:
+      workline/developer/4:
+        - {name: test, workflow: test, state: failure, job: 46}
+    issues:
+      - {id: 4, title: "Divide two numbers", labels: ["workline:ready"], body: "## Need\n\nI want to divide.\n"}
+    merge-requests:
+      - id: 5
+        branch: workline/developer/4
+        title: "Divide two numbers"
+        body: "Closes #4"
+        comments:
+          - "**The developer**'s record.\n\n<!-- workline:developer-act {\"act\":\"code\",\"issue\":4,\"code\":[\"lib.sh\"],\"round\":1,\"review-runs\":1,\"checks-at\":\"@head4@\",\"widen\":{\"at\":\"@head4@\",\"scope\":\"x\",\"files\":[\"cases/div.txt\"]}} -->\n<!-- workline:sticky=developer/code -->"
+          - "**workline reviewer** — 0 findings on the change.\n\n<!-- workline:record reviewed=1111111 runs=1 -->\n<!-- workline:sticky=reviewer/summary -->"
+run: {route: issue, target: {issue: 4}, open-merge-request: true, ai: "fake:developer-nothing", input: {reconcile: list}}
+expect:
+  status: pass
+  summary: "issue: #4's step is the review round on merge request 5, due: not started (--input reconcile=list)"
+  agent-calls: 0
+  forge:
+    issues:
+      - {id: 4, labels: ["workline:ready"]}
+    merge-requests:
+      - {id: 5, comments: 2}

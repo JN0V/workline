@@ -4,7 +4,8 @@ about: >
   (#921): #4's developer asked for a file outside its Scope at its
   branch's head, its red check read there; the product owner sent #4
   back to ready. With `--input reconcile=list` it lists pull request 5
-  due, starts nothing and asks no agent. #3's ask still waits, its issue
+  due, starts nothing and asks no agent; not #4 itself, whose step is
+  that round, not a new claim (#1013). #3's ask still waits, its issue
   blocked: not listed.
 given:
   repo: tested-draft
@@ -41,7 +42,7 @@ given:
 run: {route: reconcile, open-merge-request: true, ai: "fake:developer-nothing", input: {reconcile: list}}
 expect:
   status: pass
-  summary: "reconcile: 1 issue due: #4; 1 review round due: merge request 5"
+  summary: "reconcile: 0 issues due:; 1 review round due: merge request 5"
   agent-calls: 0
   forge:
     merge-requests:

@@ -49,6 +49,9 @@ type tally struct {
 	// from its role in rolesDir and the project in repo.
 	rolesDir, repo string
 	wait           *backlog.Delay
+	// rounds: the developer's open merge request for each issue whose
+	// step is its review round, not a new claim (round.go).
+	rounds map[int]forge.MergeRequest
 }
 
 func newTally() *tally { return &tally{proofs: map[int]bool{}, moved: map[int]bool{}} }
@@ -85,23 +88,33 @@ func (t *tally) held(b forge.Backlog, doing routing.State, open []forge.Issue) (
 	if !slices.ContainsFunc(open, func(is forge.Issue) bool { return slices.Contains(is.Labels, doing.Label) }) {
 		return nil, nil // no claim: nothing to read
 	}
-	if !t.read {
-		f, ok := b.(interface {
-			ListMergeRequests() ([]forge.MergeRequest, error)
-		})
-		if !ok {
-			return nil, fmt.Errorf("this forge lists no merge requests: which claims hold code cannot be read")
-		}
-		mrs, err := f.ListMergeRequests()
-		if err != nil {
-			return nil, err
-		}
-		t.mrs, t.read = mrs, true
-		if t.repo != "" {
-			t.files = developer.RepoFiles(t.repo)
-		}
+	if err := t.mergeRequests(b, "which claims hold code"); err != nil {
+		return nil, err
 	}
 	return developer.Held(open, t.mrs, doing.Label, nil, t.files), nil
+}
+
+// mergeRequests reads the forge's open merge requests, and the
+// repository's files, once a run; what names what they were read for.
+func (t *tally) mergeRequests(b forge.Backlog, what string) error {
+	if t.read {
+		return nil
+	}
+	f, ok := b.(interface {
+		ListMergeRequests() ([]forge.MergeRequest, error)
+	})
+	if !ok {
+		return fmt.Errorf("this forge lists no merge requests: %s cannot be read", what)
+	}
+	mrs, err := f.ListMergeRequests()
+	if err != nil {
+		return err
+	}
+	t.mrs, t.read = mrs, true
+	if t.repo != "" {
+		t.files = developer.RepoFiles(t.repo)
+	}
+	return nil
 }
 
 // proved says whether a proof kind is recorded on issue id in place of a

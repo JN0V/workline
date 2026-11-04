@@ -701,6 +701,13 @@ each reconcile starts the next one, past an environment's wait timer
   `reconcile-max`; listed in `reviews`, number and branch, for the CI
   job, else said with its command (`review-round-due`;
   [#891](https://github.com/JN0V/workline/issues/891)).
+- **An issue whose step is its round**: in the developer's state, its
+  own pull request open from `workline/developer/<n>`, an issue is no
+  new claim (`state-round`), as one back to ready from a Scope ask.
+  `route issue` on it lists that round in `reviews` when due, or says
+  its command; nothing written. The reconciler leaves the issue, and
+  lists the round with the others
+  ([amended](../adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#amendment-2026-11-04-a-widened-scope-resumes-its-round-at-once)).
 - **An issue that cannot be read** is said (`state-unread`) and the
   others walked; the forge out of reach stops the run.
 - **Run twice in a row**, the second does nothing more: the first left
