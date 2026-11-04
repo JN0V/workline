@@ -3,8 +3,8 @@ about: >
   Where the project routes the tester, the product owner's ready sends an
   issue whose Validation names scenarios to its tests first,
   workline:needs-tests (ADR-0059, decision 2): the tester's result makes
-  it ready. An issue with no named scenario goes to ready, as before:
-  the tester writes nothing for it.
+  it ready. An issue with no named scenario stays in refine (#1019):
+  ready, the tester would write nothing for it.
 given:
   repo: backlog
   config:
@@ -18,4 +18,4 @@ expect:
   forge:
     issues:
       - {id: 9, labels: [workline:needs-tests]}
-      - {id: 10, labels: [workline:ready]}
+      - {id: 10, labels: [workline:to-refine]}
