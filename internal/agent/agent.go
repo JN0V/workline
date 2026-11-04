@@ -150,6 +150,7 @@ func Parse(spec string) (Agent, error) {
 		if a, ok := hooked[strings.TrimPrefix(spec, "hook:")]; ok {
 			return a, nil
 		}
+		return nil, fmt.Errorf("agent %q: no agent hooked under that name in this process", spec)
 	}
 	return nil, fmt.Errorf("unknown agent %q (known: none, claude, claude:<model>@<effort>, cmd:<command>, fake:<file>, unavailable:<reason>)", spec)
 }
