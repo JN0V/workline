@@ -74,7 +74,7 @@ func (f *Fake) MergeState(mr MergeRequest) (MergeState, error) {
 	out, _ := exec.Command("git", "-C", f.Repo, "ls-remote", "origin", ref).Output()
 	head, _, _ := strings.Cut(string(out), "\t")
 	st := MergeState{Head: strings.TrimSpace(head), Draft: it.Draft, AutoMerge: it.AutoMerge, AutoMergeAt: it.AutoMergeAt,
-		Checks: it.Checks, Labels: it.LabelEvents}
+		Checks: it.Checks, Labels: it.LabelEvents, Mergeable: it.Clean}
 	if it.CheckRuns != nil {
 		st.Checks = sumRuns(it.CheckRuns)
 	}
@@ -171,7 +171,7 @@ func (f *Fake) AcceptedOn(head string) (bool, string, error) {
 }
 
 // AutoMerge turns auto-merge on, now, as workline's token's user, or off;
-// one Clean is merged at once instead. A draft is refused, as GitHub
+// one Clean is merged at once instead, its auto-merge on or not. A draft is refused, as GitHub
 // refuses it.
 func (f *Fake) AutoMerge(mr MergeRequest, head string, on bool) (bool, error) {
 	merged := false

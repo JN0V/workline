@@ -41,6 +41,12 @@ merge: {autonomy: cautious}   # off unless set: no auto-merge is touched
 - **The forge merges**: GitHub's auto-merge, GitLab's "merge when the
   pipeline succeeds", each checking its own rules. One the forge could
   merge at once is merged at once.
+- **An auto-merge the forge left is merged by the next run**: auto-merge
+  on, the forge saying it would merge now (GitHub's merge state clean),
+  `follow` merges it. GitHub's auto-merge waits for an event, a check
+  ending or a push, and may miss one
+  ([#993](https://github.com/JN0V/workline/issues/993)). An hourly run
+  catches one no event follows.
 - **No one at a time, no update first**: a pull request behind its base
   merges as it is, none waiting for another
   ([ADR-0051](adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-2-strict-up-to-date-dropped)).
@@ -166,7 +172,8 @@ the candidate's issue, ships the version:
   `verdict` and `follow` jobs run after `judge`, `queue` after a merge
   queue's group, from the default branch;
   `workline-merge.yml` runs when a label is put or taken off, or a draft
-  made; at `enterprising`, on a candidate's yes or close too. Then:
+  made, and hourly; at `enterprising`, on a candidate's yes or close too.
+  Then:
   - Settings → General → "Allow auto-merge";
   - the [GitHub App](ci-github-app.md), with **Commit statuses** read and
     write besides its other permissions, its key in the environment
@@ -175,7 +182,8 @@ the candidate's issue, ships the version:
   - a ruleset on the base requiring the checks, and `workline/accepted`
     from the App; "Require branches to be up to date" left off.
 - **GitLab**: the [template](ci-gitlab.md)'s `workline:merge` job, after
-  the judge; the project bot's token. Merged results pipelines on
+  the judge; the project bot's token; `workline:follow` on the hourly
+  reconcile schedule too. Merged results pipelines on
   (Premium): without them a merge request's pipeline tests its branch
   alone. A label starts no pipeline there: it
   waits for that merge request's own next pipeline.
@@ -189,7 +197,8 @@ the candidate's issue, ships the version:
 
 | Said | When |
 |---|---|
-| `auto-merge-on`, `merged-at-once` | accepted, its head's verdict passed; at `normal`, "with no person's yes", its kind |
+| `auto-merge-on`, `merged-at-once` | accepted, its head's verdict passed; at `normal`, "with no person's yes", its kind; "merged now", an auto-merge the forge left |
+| `merge-refused` | the forge refused to merge now one whose auto-merge it left: auto-merge left on |
 | `verdict-kept`, `verdict-missing`, `review-to-come` | the verdict kept; one not judged yet; marked ready, the draft's verdict still on its head |
 | `verdict-red`, `review-short`, `checks-red` | nothing turned on, why |
 | `accepted-reset` | a push after the yes: the yes and auto-merge off |

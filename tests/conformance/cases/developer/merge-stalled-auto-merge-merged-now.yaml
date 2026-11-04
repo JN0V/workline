@@ -1,0 +1,55 @@
+case: developer/merge-stalled-auto-merge-merged-now
+about: >
+  An auto-merge GitHub never fired is merged by the line (#993): the
+  developer's fix for #3 merges by the policy, as
+  merge-normal-admits-developer-fix says. `workline follow` turned
+  auto-merge on while a required check still ran; that check ended
+  green, but GitHub's auto-merge acts on an event and missed it. The
+  forge says it would merge it now (GitHub: `mergeStateStatus`
+  CLEAN): the next `workline follow` merges it, saying the forge had
+  left it, rather than leaving it to an auto-merge that never comes.
+given:
+  repo: tested-draft
+  config: {merge: {autonomy: normal}}
+  setup:
+    - "git checkout -q -b workline/developer/3 && GIT_COMMITTER_NAME=workline-bot git commit -q --amend --no-edit && printf 'add() { echo $(($1 + $2)); }\\nmul() { echo $(($1 * $2)); }\\n' > lib.sh && GIT_COMMITTER_NAME=workline-bot git commit -qam 'fix: mul for #3' -m 'Workline-Role: developer' && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main workline/developer/3 && git checkout -q main"
+  forge:
+    statuses:
+      - {commit: "main", name: workline/merge-read, state: success, description: "reverts read; held:", by: workline-bot}
+      - {commit: "workline/developer/3", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+    issues:
+      - id: 3
+        title: "mul gives a sum"
+        labels: ["bug", "workline:developing"]
+        body: "## Need\n\nmul 2 3 gives 5.\n\n## Scope\n\n- `lib.sh`: `mul`.\n"
+    merge-requests:
+      - id: 2
+        branch: workline/developer/3
+        base: main
+        author: workline-bot
+        bot: true
+        title: "mul gives a sum"
+        body: "Closes #3"
+        labels: []
+        auto-merge: true
+        auto-merge-at: "2026-01-04T09:05:00Z"
+        auto-merge-by: workline-bot
+        clean: true
+        pushes: [{head: workline/developer/3, at: "2026-01-04T09:00:00Z", by: workline-bot}]
+        comments:
+          - "**The developer**'s record of this pull request, for its next runs and the auditor.\n\n<!-- workline:developer-act {\"act\":\"code\",\"issue\":3,\"from\":\"workline/tester/issue-3\",\"acceptance\":[\"tests.test_mul_two_by_three\",\"tests.test_mul_by_zero\"],\"code\":[\"lib.sh\"],\"proof\":{\"result\":\"green\",\"passed\":2}} -->\n<!-- workline:sticky=developer/code -->"
+          - "**Merging with no person's yes**: the project's merge policy is `normal`.\n\n<!-- workline:merge-alone=code -->"
+          - "**workline reviewer**\n\n| | | Where | Finding |\n|---|---|---|---|\n| warns | naming | `lib.sh:2` | Nit: a one-letter name. |\n\n<!-- workline:record reviewed=1111111 runs=1 -->\n<!-- workline:sticky=reviewer/summary -->"
+run: {follow: [--base, main], summary: true}
+expect:
+  status: pass
+  findings:
+    - {rule: merged-at-once, where: "#2", message: "auto-merge on since 2026-01-04T09:05:00Z, but the forge had not merged it, its rules met: merged now"}
+  no-findings: [{rule: waits-for-a-yes}, {rule: auto-merge-on}, {rule: merge-app-unknown}]
+  not-pushed: [workline/developer/3]
+  summary-file: ["1 merged at once"]
+  forge:
+    merge-requests:
+      - {id: 2, merged: true, closed: true}
+    statuses:
+      - {commit: "workline/developer/3", name: workline/accepted, state: success, by: workline-bot, description: "with no person's yes: workline's own code"}

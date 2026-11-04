@@ -50,7 +50,7 @@ Part of [workline on GitLab CI](../ci-gitlab.md): what each job of
   - An agent out of reach (3) warns (`allow_failure: {exit_codes: [3]}`),
     as on GitHub: a person judges what it would have; a GitLab call is
     tried again first ([which](calls.md)).
-- **`workline:follow`**, each push to the default branch, its bot's token,
+- **`workline:follow`**, each push to the default branch and the hourly reconcile schedule, its bot's token,
   no agent: the [merge policy](../merge-policy.md), when set, also after
   each judge (`workline:merge`).
 - **`workline:main`**, each push to the default branch, no token, no

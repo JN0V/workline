@@ -66,7 +66,7 @@ write run the default branch's workflow, never a pull request's own
        after `judge`, and `queue` after a merge queue's group;
      - rename `main` in its `push:` for another default branch.
    - [workline-merge.yml](../ci/github/workline-merge.yml), with the merge
-     policy: `follow` on a label; at `enterprising`, on a release
+     policy: `follow` on a label and hourly; at `enterprising`, on a release
      candidate's label and close too.
    - [release-candidate.yml](../ci/github/release-candidate.yml), at
      `enterprising` with release-please: the release tool on a

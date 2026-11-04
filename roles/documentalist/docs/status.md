@@ -255,6 +255,11 @@ its evaluation in
    role's pull requests, pushed with the App, built with that role
    ([#117](https://github.com/JN0V/workline/issues/117); decided on
    [#322](https://github.com/JN0V/workline/issues/322#issuecomment-6186910822)).
+   An auto-merge the forge left is merged by the next `follow`
+   ([#993](https://github.com/JN0V/workline/issues/993)): seen on GitHub;
+   on GitLab, a merge request `mergeable` with "merge when the pipeline
+   succeeds" on, merged by the hourly reconcile schedule's
+   `workline:follow`, not tried live.
 7. **Smaller**: Opus's notes see more than the task asks (unused); Copilot
    CLI on a free plan unmeasured (the owner must turn Copilot Free on). No
    issue yet.

@@ -417,7 +417,7 @@ func admit(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, n *normal,
 		return nil, err
 	}
 	if st.AutoMerge {
-		return e, nil
+		return stalled(m, mr, tip, st, e, w.say, "with no person's yes, "+why)
 	}
 	// The record, where a person sees it and the engine finds it again
 	// when a revert names this merge request.

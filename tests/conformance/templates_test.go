@@ -1310,6 +1310,9 @@ func TestMergePolicyRunsAfterTheJudgeAndOnLabels(t *testing.T) {
 				Workflows []string `yaml:"workflows"`
 				Types     []string `yaml:"types"`
 			} `yaml:"workflow_run"`
+			Schedule []struct {
+				Cron string `yaml:"cron"`
+			} `yaml:"schedule"`
 		} `yaml:"on"`
 		Jobs map[string]struct {
 			Needs       any `yaml:"needs"`
@@ -1392,6 +1395,11 @@ func TestMergePolicyRunsAfterTheJudgeAndOnLabels(t *testing.T) {
 		}
 		if _, ok := wf.Jobs["judge"]; ok {
 			t.Errorf("%s: holds a judge job, which would show skipped on a label", filepath.Base(f))
+		}
+		// The safety net (#993): an auto-merge the forge missed, no event
+		// after it, is merged by the next run within the hour.
+		if len(wf.On.Schedule) == 0 || !strings.HasSuffix(wf.On.Schedule[0].Cron, " * * * *") {
+			t.Errorf("%s: no hourly run catches an auto-merge the forge missed", filepath.Base(f))
 		}
 	}
 }

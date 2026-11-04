@@ -754,7 +754,7 @@ func weigh(f forge.Forge, m forge.Merger, o FollowOptions, local bool, mr forge.
 		return nil, err
 	}
 	if st.AutoMerge {
-		return e, nil
+		return stalled(m, mr, tip, st, e, say, fmt.Sprintf("accepted by %s, its head's verdict passed", by))
 	}
 	merged, err := m.AutoMerge(mr, tip, true)
 	switch {
@@ -768,5 +768,29 @@ func weigh(f forge.Forge, m forge.Merger, o FollowOptions, local bool, mr forge.
 		return nil, nil
 	}
 	say("auto-merge-on", "", fmt.Sprintf("accepted by %s, its head's verdict passed: auto-merge turned on, the forge merges it once its checks pass", by))
+	return e, nil
+}
+
+// stalled weighs a merge request the policy merges whose auto-merge is on
+// already: left to the forge while its rules are not met, merged now once
+// the forge says it would merge it. GitHub's auto-merge acts on an event —
+// a check ending, a push — and never again once it missed one (#993);
+// GitLab's merges once the head's pipeline succeeds, the same now. A merge
+// the forge refuses leaves auto-merge on, for the next run.
+func stalled(m forge.Merger, mr forge.MergeRequest, tip string, st forge.MergeState, e *inLine, say func(rule, level, msg string), who string) (*inLine, error) {
+	if !st.Mergeable {
+		return e, nil
+	}
+	merged, err := m.AutoMerge(mr, tip, true)
+	switch {
+	case errors.Is(err, forge.ErrUnreachable) && !forge.Refused(err):
+		return nil, err
+	case err != nil:
+		say("merge-refused", "warn", fmt.Sprintf("%s; auto-merge on since %s, the forge's rules met, but it refused to merge it now: %s; auto-merge left on", who, st.AutoMergeAt, forge.Said(err)))
+		return e, nil
+	case merged:
+		say("merged-at-once", "", fmt.Sprintf("%s; auto-merge on since %s, but the forge had not merged it, its rules met: merged now", who, st.AutoMergeAt))
+		return nil, nil
+	}
 	return e, nil
 }
