@@ -132,11 +132,14 @@ func Draw(o Options) *Result {
 }
 
 func draw(o Options, res *Result) error {
-	settings, err := roleSettings(o)
+	week, from, to, err := Week(o.Week, o.Now)
 	if err != nil {
 		return err
 	}
-	week, from, to, err := Week(o.Week, o.Now)
+	if !o.Now.IsZero() && from.After(o.Now.UTC()) {
+		return fmt.Errorf("week %s has not started yet (it starts on %s): nothing can be sampled", week, from.Format(time.DateOnly))
+	}
+	settings, err := roleSettings(o)
 	if err != nil {
 		return err
 	}
