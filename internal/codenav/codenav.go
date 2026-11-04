@@ -32,7 +32,7 @@ var Languages = []Language{
 	{"Ruby", []string{".rb"}, `^\s*def\s+(?:self\.)?(NAME)\b`, "end"},
 	{"Lua", []string{".lua"}, `^\s*(?:local\s+)?function\s+(?:[\w.:]*[.:])?(NAME)\s*\(`, "end"},
 	{"C-like", []string{".c", ".h", ".cc", ".cpp", ".cxx", ".hpp", ".hh", ".java", ".cs", ".js", ".jsx", ".mjs", ".cjs", ".ts", ".tsx", ".rs", ".kt", ".kts", ".swift", ".php", ".scala", ".dart", ".groovy"},
-		`(?:\b(?:function|fn|fun|func|def)\s+(NAME)\b|\b(?:const|let|var)\s+(NAME)\s*=\s*(?:async\s+)?(?:function\b|\([^)]*\)\s*=>|[A-Za-z_$][\w$]*\s*=>)|^\s*(?:[\w$:<>,*&\[\]~.]+\s+)*(?:[\w$]+(?:<[^<>()]*>)?::)*(NAME)\s*\([^;{]*(?:\{.*)?$)`, "braces"},
+		`(?:\b(?:function|fn|fun|func|def)\s+(NAME)\b|\b(?:const|let|var)\s+(NAME)\s*=\s*(?:async\s+)?(?:function\b|\([^)]*\)\s*=>|[A-Za-z_$][\w$]*\s*=>)|^\s*(?:[\w$:<>,*&\[\]~.]+\s+)*(?:[\w$]+(?:<(?:[^<>()]|<[^<>()]*>)*>)?::)*(NAME)\s*\([^;{]*(?:\{.*)?$)`, "braces"},
 }
 
 // NotCalls are words a pattern would take for a function's name: the

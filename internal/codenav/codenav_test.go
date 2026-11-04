@@ -31,9 +31,12 @@ void plain(int a) {
         resetReconnect();
     }
 }
+
+void Queue<std::vector<int>>::push(int n) {
+}
 `
 	lines := strings.Split(strings.TrimRight(src, "\n"), "\n")
-	for name, want := range map[string][2]int{"resetReconnect": {3, 5}, "drain": {8, 10}, "~Foo": {12, 13}, "stats": {15, 17}, "plain": {19, 23}} {
+	for name, want := range map[string][2]int{"resetReconnect": {3, 5}, "drain": {8, 10}, "~Foo": {12, 13}, "stats": {15, 17}, "plain": {19, 23}, "push": {25, 26}} {
 		got := Named("MQTT_impl.h", lines, name)
 		if len(got) != 1 || got[0].From != want[0] || got[0].To != want[1] {
 			t.Errorf("%s: %+v, want lines %d to %d", name, got, want[0], want[1])
