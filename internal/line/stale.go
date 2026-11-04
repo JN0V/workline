@@ -22,14 +22,15 @@ import (
 
 	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/board"
+	wlclock "github.com/JN0V/workline/internal/clock"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/routing"
 	"github.com/JN0V/workline/internal/verdict"
 	"github.com/JN0V/workline/internal/work"
 )
 
-// clock is the line's time; a test's own.
-var clock = time.Now
+// clock is the line's time, read through the one seam (ADR-0063).
+func clock() time.Time { return wlclock.Now() }
 
 var (
 	// codeName is a word a Scope names code by: `stateOf`,

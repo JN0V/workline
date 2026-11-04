@@ -11,7 +11,6 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
-	"time"
 
 	"github.com/JN0V/workline/internal/agent"
 	"github.com/JN0V/workline/internal/engine"
@@ -143,7 +142,7 @@ func Run(event string, base engine.Options) *Result { return RunWith(event, base
 
 // RunWith is Run, its gate steps taken as gates says.
 func RunWith(event string, base engine.Options, gates *Gates) *Result {
-	start := time.Now()
+	start := clock()
 	res := &Result{Status: verdict.Pass, Steps: []Step{}, Event: event}
 	// A release's dry run (ADR-0050): every step, no agent, nothing
 	// applied; what blocks said as what would hold the release. Registered
@@ -483,7 +482,7 @@ func (f *foundFor) file(res *Result, repo, rng string) string {
 	if err == nil {
 		err = os.MkdirAll(dir, 0o755)
 	}
-	path := filepath.Join(dir, time.Now().UTC().Format("20060102T150405.000000000")+"-line.json")
+	path := filepath.Join(dir, clock().UTC().Format("20060102T150405.000000000")+"-line.json")
 	if err == nil {
 		err = os.WriteFile(path, data, 0o644)
 	}
@@ -543,7 +542,7 @@ func apartOn(rolesDir, name, event string) bool {
 // it, or ended before writing.
 func (g *Gates) step(repo, name, event, rng string) Step {
 	if g.From == "" {
-		start := time.Now()
+		start := clock()
 		v, added := runGate(repo, name, event, rng, g.Kept)
 		return Step{Name: "gate:" + name, Status: v.Status, Gate: v, New: added, Seconds: Since(start)}
 	}
@@ -725,7 +724,7 @@ func worst(a, b string) string {
 // step that did not pass and its verdict, or the role and pass; a handoff
 // past max-handoffs is a block.
 func runRole(res *Result, cfg *routing.Config, o engine.Options, depth int) (string, string) {
-	start := time.Now()
+	start := clock()
 	r := engine.Run(o)
 	label := o.Role
 	if o.Event == "handoff" {

@@ -17,6 +17,7 @@ import (
 
 	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/board"
+	"github.com/JN0V/workline/internal/clock"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/role"
@@ -51,7 +52,7 @@ func (a *applier) announce(c backlog.Proposal) error {
 	}
 	days := backlog.Settings(a.settings)["close-obsolete"].Delay()
 	ann := backlog.Announcement{Quote: *c.Quote, Why: c.Why, Commit: head,
-		Announced: time.Now().Format("2006-01-02"), By: a.model}
+		Announced: clock.Now().Format("2006-01-02"), By: a.model}
 	return a.forge.Comment(t, backlog.Inert(backlog.AnnouncementComment(is.Author, c, a.role, ann, days)), backlog.AnnounceMarker(a.role))
 }
 
@@ -543,7 +544,7 @@ func (a *applier) assume(c backlog.Proposal) error {
 	}
 	body := is.Body
 	if c.Answered != "" {
-		body = backlog.WithAnswered(body, c.Answered, time.Now().UTC().Format("2006-01-02"))
+		body = backlog.WithAnswered(body, c.Answered, clock.Now().UTC().Format("2006-01-02"))
 	} else if c.Written != "" {
 		body = backlog.WithAssumption(body, c.Written)
 	}
@@ -562,7 +563,7 @@ func (a *applier) assume(c backlog.Proposal) error {
 		return fmt.Errorf("#%d: its state comment: %w", t.ID, err)
 	}
 	if c.Answered == "" {
-		st.Assumed, st.AssumedAt = max(st.Assumed, c.Round), time.Now().UTC().Format(time.RFC3339)
+		st.Assumed, st.AssumedAt = max(st.Assumed, c.Round), clock.Now().UTC().Format(time.RFC3339)
 	}
 	st.Keep(body)
 	return a.forge.Sticky(t, backlog.FormatState(*st), backlog.StateMarker(a.role), false)
@@ -612,7 +613,7 @@ func (a *applier) refining(c backlog.Proposal) error {
 				return err
 			}
 			is.Body = body
-			st.AssumedAt = time.Now().UTC().Format(time.RFC3339)
+			st.AssumedAt = clock.Now().UTC().Format(time.RFC3339)
 			st.Keep(body)
 			if err := f.Sticky(t, backlog.FormatState(*st), backlog.StateMarker(role), false); err != nil {
 				return err

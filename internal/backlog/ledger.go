@@ -10,6 +10,7 @@ import (
 
 	"go.yaml.in/yaml/v3"
 
+	"github.com/JN0V/workline/internal/clock"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/verdict"
 	"github.com/JN0V/workline/internal/work"
@@ -612,7 +613,7 @@ func (p *Plan) stateOf(id int, st *State) {
 	}
 }
 
-func today() string { return time.Now().UTC().Format(dateLayout) }
+func today() string { return clock.Now().UTC().Format(dateLayout) }
 
 // Persist writes what the run leaves on each issue (ADR-0038): its record
 // in its state comment, edited in place; the label workline:proposed on an

@@ -20,6 +20,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/JN0V/workline/internal/clock"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/work"
 )
@@ -324,7 +325,7 @@ func (p *Plan) checkAssume(f forge.Backlog, role string, c *Proposal) (rule, why
 	if strings.TrimSpace(c.Assumption) == "" {
 		return "assume-empty", "nothing assumed: the assumption was empty"
 	}
-	w, now := p.config.Wait, time.Now()
+	w, now := p.config.Wait, clock.Now()
 	s, open := Unanswered(notes, role)
 	switch round := p.askedNow[c.Issue]; {
 	case round > 0 && !w.Never && w.D == 0:
@@ -384,7 +385,7 @@ func (p *Plan) assumable(f forge.Backlog, is forge.Issue, st *State) (names []st
 		switch {
 		case !known:
 			return nil, "", "; the forge does not say when its drafts were written: they wait for a person"
-		case !w.Passed(since, time.Now()):
+		case !w.Passed(since, clock.Now()):
 			return nil, "", fmt.Sprintf("; its drafts are taken as assumptions from %s, with no answer (acts.ask.wait %s)",
 				since.Add(w.D).UTC().Format("2006-01-02 15:04 UTC"), w.Say())
 		}

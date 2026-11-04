@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	wlclock "github.com/JN0V/workline/internal/clock"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/routing"
 )
@@ -50,8 +51,8 @@ func TestRevisitCalls(t *testing.T) {
 	days := 7
 	cfg := &routing.Config{Events: map[string][]string{IssueEvent: {"product-owner"}}, Revisit: &days}
 	now := time.Date(2026, 11, 1, 9, 0, 0, 0, time.UTC)
-	defer func(c func() time.Time) { clock = c }(clock)
-	clock = func() time.Time { return now }
+	defer func(c func() time.Time) { wlclock.Now = c }(wlclock.Now)
+	wlclock.Now = func() time.Time { return now }
 	body := "## Need\n\nI want to multiply.\n\nBlocked by #2."
 	base := Record{State: BlockedState, Body: bodyHash(body), Hops: 9, From: "ready", Since: "2026-10-30T09:00:00Z"}
 	is := forge.Issue{ID: 3, Body: body, Labels: []string{"workline:blocked"}}
@@ -78,7 +79,7 @@ func TestRevisitCalls(t *testing.T) {
 		{"read again two days ago", Record{State: BlockedState, Body: base.Body, Since: "2026-09-01T09:00:00Z", Revisited: "2026-10-30T09:00:00Z"}, nil, listing, true, false, 1, "", "state-blocked-quiet", 0},
 	} {
 		t.Run(c.name, func(t *testing.T) {
-			clock = func() time.Time { return now.Add(c.clockAdd) }
+			wlclock.Now = func() time.Time { return now.Add(c.clockAdd) }
 			b := &counted{comments: append([]string{recordComment(t, c.rec)}, c.extra...), open: c.open, calls: map[string]int{}}
 			var open []forge.Issue
 			if c.listed {

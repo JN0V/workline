@@ -19,12 +19,12 @@ import (
 	"slices"
 	"strconv"
 	"strings"
-	"time"
 
 	"go.yaml.in/yaml/v3"
 
 	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/board"
+	"github.com/JN0V/workline/internal/clock"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/role"
@@ -153,16 +153,16 @@ type Act struct {
 	// The review loop (step 6): the rounds run, the reviewer's runs and
 	// a person's comments read already, the findings asked before (to
 	// tell one still there), the five whys run, a person handed it.
-	Round      int      `json:"round,omitempty"`
-	ReviewRuns int      `json:"review-runs,omitempty"`
+	Round      int `json:"round,omitempty"`
+	ReviewRuns int `json:"review-runs,omitempty"`
 	// ReviewAt: the head of the reviewer's summary its last round read;
 	// another is a new review, its runs counted or not (#1040).
-	ReviewAt string `json:"review-at,omitempty"`
-	Heard      []string `json:"heard,omitempty"`
-	Seen       []string `json:"seen,omitempty"`
-	Rounds     []Round  `json:"rounds,omitempty"`
-	Whys       bool     `json:"whys,omitempty"`
-	Handed     bool     `json:"handed,omitempty"`
+	ReviewAt string   `json:"review-at,omitempty"`
+	Heard    []string `json:"heard,omitempty"`
+	Seen     []string `json:"seen,omitempty"`
+	Rounds   []Round  `json:"rounds,omitempty"`
+	Whys     bool     `json:"whys,omitempty"`
+	Handed   bool     `json:"handed,omitempty"`
 	// GatesAt: the head of the gates' report its last round asked the
 	// findings of: the same report is not asked again.
 	GatesAt string `json:"gates-at,omitempty"`
@@ -497,7 +497,7 @@ func Pre(runDir, repo string) int {
 			}
 		}
 	}
-	said, findings, err := stale(b, issues, mrs, s, time.Now(), card)
+	said, findings, err := stale(b, issues, mrs, s, clock.Now(), card)
 	if err != nil {
 		return external(err)
 	}
@@ -689,7 +689,7 @@ func question(is forge.Issue, b Bounds, test string, testErr error, s Settings) 
 		t.WriteString("\nOne that does not fit: object to it in the file `" + ObjectionsFile + "` of your worktree, " +
 			"YAML only, one item an objection:\n\n" +
 			"```yaml\n- test: <file>\n  line: <n>\n  scenario: " + scenarioHint(b.Scenarios) + "\n  kind: <interface | over-specified | contradicts | untestable | need>\n  why: <one or two sentences>\n```\n\n" +
-			"The scenario is the issue's, as its "+work.Name(work.Validation)+" names it, not the test's function. " +
+			"The scenario is the issue's, as its " + work.Name(work.Validation) + " names it, not the test's function. " +
 			"The engine reads that file and takes it out of your diff; the tester keeps or rewrites each objection.\n\n" +
 			"A test that cannot pass within your bounds (it calls a command against its documented rule, for instance without a flag its no-terminal rule requires) is such an objection, of kind `contradicts`: object to it in that file, never in a text note, which reaches no tester.\n")
 	}
