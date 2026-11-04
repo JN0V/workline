@@ -1,0 +1,27 @@
+case: tester/over-budget-said-on-the-issue
+about: >
+  A Scope file of one line of 100,000 characters: even one line of code is
+  over the tester's context budget. The agent is not asked, and the issue's
+  comment says the prompt was over the budget and names code-lines-max —
+  never "no test file was proposed", which the agent never said (#1017).
+given:
+  repo: tested
+  setup:
+    - "mkdir -p src && awk 'BEGIN { printf \"# \"; for (i = 1; i <= 2000; i++) printf \"%050d\", i; printf \"\\n\" }' > src/wide.sh && git add src && git commit -qm 'src' && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+    routing: {events: {issue: [tester]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:needs-tests"]
+        body: "## Need\n\nI want to multiply.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n\n---\n\n## Scope\n\n- `src/wide.sh`\n"
+run: {route: issue, target: {issue: 3}, open-merge-request: true, ai: "cmd:cat > /dev/null; echo '[]'"}
+expect:
+  agent-calls: 0
+  findings: [{rule: prompt-over-budget}]
+  forge:
+    issues:
+      - id: 3
+        comment-contains: ["prompt-over-budget", "lower code-lines-max in the tester's settings"]

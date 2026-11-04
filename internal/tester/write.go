@@ -159,8 +159,14 @@ func Pre(runDir, repo string) int {
 	}
 	fmt.Fprintf(&b, "\n## The project's tests\n\n- Run by: `%s`\n- Test files are those matching: %s\n",
 		s.Command, strings.Join(s.Paths, ", "))
-	writeCode(&b, repo, sections[work.Scope].Text, s)
-	if err := os.WriteFile(filepath.Join(runDir, "in", "task.md"), []byte(b.String()), 0o644); err != nil {
+	intro := b.String()
+	text := fitTask(runDir, repo, s, func(s Settings) string {
+		var b strings.Builder
+		b.WriteString(intro)
+		writeCode(&b, repo, sections[work.Scope].Text, s)
+		return b.String()
+	})
+	if err := os.WriteFile(filepath.Join(runDir, "in", "task.md"), []byte(text), 0o644); err != nil {
 		return fail(err)
 	}
 	return 0
@@ -299,7 +305,7 @@ func writeCode(b *strings.Builder, repo, scope string, s Settings) {
 			fmt.Fprintf(b, "\n### `%s`\n\n````\n%s\n````%s\n", p, strings.Join(lines, "\n"), cut)
 		}
 		if len(unread) > 0 {
-			fmt.Fprintf(b, "\nNot given, past code-lines-max (%d lines in all), not empty:\n\n%s\n", budget,strings.Join(unread, "\n"))
+			fmt.Fprintf(b, "\nNot given, past code-lines-max (%d lines in all), not empty:\n\n%s\n", budget, strings.Join(unread, "\n"))
 		}
 	}
 	give("Tests already there, to write alike", beside)
@@ -365,7 +371,11 @@ func Post(runDir, repo string) int {
 					Message: "writing a scenario's test is judgement: with no agent, nothing is written; a person writes them, or the tester runs with one (`--ai`)"}}})
 		}
 		msg := "no test file the tester may write was proposed for the issue's scenarios"
-		if why := os.Getenv("WORKLINE_AGENT_UNREAD"); why != "" {
+		if why := os.Getenv("WORKLINE_AGENT_OVER_BUDGET"); why != "" {
+			// Not asked: no word of the agent's, the budget's (#1017).
+			msg = "the agent was not asked, its prompt over the tester's context budget (prompt-over-budget: " + why +
+				"): lower code-lines-max in the tester's settings, or narrow the issue's " + work.Name(work.Scope)
+		} else if why := os.Getenv("WORKLINE_AGENT_UNREAD"); why != "" {
 			msg = "the agent's answer could not be read, asked again once with the error: " + why
 		} else if why := os.Getenv("WORKLINE_AGENT_REFUSED"); why != "" {
 			msg = "the agent's answer was refused whole: " + why

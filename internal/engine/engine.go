@@ -2180,15 +2180,16 @@ func stepUp(tier string) string {
 }
 
 type attemptResult struct {
-	intents    []intent.Intention
-	verdict    *verdict.Verdict
-	findings   []verdict.Finding // why proposals were refused before judging
-	askedAgent bool
-	external   bool
-	unread     string             // why the agent's answer could not be read, if it could not
-	refused    string             // why the engine refused the answer's proposals whole, if it did
-	said       []intent.Intention // what post said of its block (out/on-block.yaml)
-	overBudget bool               // the task was not put before the agent: over the context budget
+	intents       []intent.Intention
+	verdict       *verdict.Verdict
+	findings      []verdict.Finding // why proposals were refused before judging
+	askedAgent    bool
+	external      bool
+	unread        string             // why the agent's answer could not be read, if it could not
+	refused       string             // why the engine refused the answer's proposals whole, if it did
+	said          []intent.Intention // what post said of its block (out/on-block.yaml)
+	overBudget    bool               // the task was not put before the agent: over the context budget
+	overBudgetWhy string             // the refusal of the prompt, said to post
 }
 
 // attempt asks the agent (when there is a question and an agent), merges the
@@ -2210,7 +2211,7 @@ func attempt(r *role.Role, o Options, ag agent.Agent, hasTask bool, tier, runDir
 			// A task too large for the role's context is the role's to
 			// shrink, not a block of the line: the run goes on as without
 			// an agent, and what the task held waits for a person.
-			a.askedAgent, a.overBudget = false, true
+			a.askedAgent, a.overBudget, a.overBudgetWhy = false, true, err.Error()
 			a.findings = append(a.findings, verdict.Finding{Rule: "prompt-over-budget", Level: "warn",
 				Message: err.Error() + ": the agent was not asked; what this task held is judged by no one this run, a person reads it (in/task.md of the run)"})
 		case errors.Is(err, agent.ErrUnavailable):
@@ -2289,6 +2290,9 @@ func attempt(r *role.Role, o Options, ag agent.Agent, hasTask bool, tier, runDir
 		postEnv = append(env[:len(env):len(env)], "WORKLINE_AGENT_UNREAD="+a.unread)
 	} else if a.refused != "" {
 		postEnv = append(env[:len(env):len(env)], "WORKLINE_AGENT_REFUSED="+a.refused)
+	} else if a.overBudget {
+		// Not asked: post says the budget, not an empty answer (#1017).
+		postEnv = append(env[:len(env):len(env)], "WORKLINE_AGENT_OVER_BUDGET="+a.overBudgetWhy)
 	} else if a.askedAgent && !a.external {
 		// Its answer read and kept: what it holds, or lacks, is the
 		// agent's word (#794).

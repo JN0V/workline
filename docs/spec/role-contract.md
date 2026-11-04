@@ -289,9 +289,11 @@ token), **apply** (trusted, no AI key).
    made ([#761](https://github.com/JN0V/workline/issues/761)). The answer
    not read is kept as `out/unread-answer.txt`; `post` is told why it did
    not read, `WORKLINE_AGENT_UNREAD`; why the engine refused the answer's
-   proposals whole, `WORKLINE_AGENT_REFUSED`; else, the agent asked and
-   its answer read, `WORKLINE_AGENT_ANSWERED=true`: what it holds, or
-   lacks, is the agent's word.
+   proposals whole, `WORKLINE_AGENT_REFUSED`; why the agent was not asked,
+   its prompt over the role's context budget, `WORKLINE_AGENT_OVER_BUDGET`
+   ([#1017](https://github.com/JN0V/workline/issues/1017)); else, the
+   agent asked and its answer read, `WORKLINE_AGENT_ANSWERED=true`: what
+   it holds, or lacks, is the agent's word.
    A block whose verdict says `again: true`, one the answer can mend
    (the tester's tests that do not pass the project's lint,
    [#964](https://github.com/JN0V/workline/issues/964)), is asked again
