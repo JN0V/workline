@@ -153,6 +153,15 @@ func stateOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, 
 		// once, while its spec waits on a review.
 		ok = specWaits(is, comments)
 	}
+	if !ok && reviewed && rec.Asked == rec.Body && rec.ReviewAgain != rec.Body && specWaits(is, comments) {
+		// Asked on this body, and still no review (#1070): the reviewer
+		// skipped it then, as it did an issue whose Need is its text on
+		// top (#1062). Due once more, for the reviewer; then acted.
+		ok = true
+		now.ReviewAgain = rec.Body
+		res.Findings = append(res.Findings, verdict.Finding{Rule: "state-review-missing", Level: "info", Where: where,
+			Message: "its drafts wait on a spec review that has not come on this text: woken again, once, for the reviewer"})
+	}
 	if !ok && reviewed && rec.Revise != rec.Spec {
 		// The review answered by asking a person for a section the product
 		// owner rewrites now, its Verification or Scope (ADR-0060): due
