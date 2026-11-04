@@ -983,7 +983,7 @@ func judgeDocs(root, rng, ai string, in *bufio.Reader, out io.Writer) (bool, err
 		AI: ai, DefaultAI: userDefaultAI(), Inputs: map[string]string{"range": rng}})
 	for _, f := range res.Findings {
 		if f.Rule == "config-invalid" {
-			fmt.Fprintf(out, "  %s: %s\n", f.Rule, f.Message)
+			_, _ = fmt.Fprintf(out, "  %s: %s\n", f.Rule, f.Message)
 			return false, errors.New(f.Message)
 		}
 	}
