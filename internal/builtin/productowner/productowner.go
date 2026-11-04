@@ -1743,12 +1743,16 @@ func writeFolders(b *strings.Builder, tracked map[string]bool) {
 // it, which are other items' (#548).
 func named(repo string, is forge.Issue, st *backlog.State, comments []string, aboutIt string, tracked map[string]bool) []string {
 	var out []string
+	// The file it was imported from is where it was written, never its
+	// code, wherever the issue names it (#1063): its lines around the
+	// item are given apart (writtenAt).
+	from, _, _, _ := backlog.Imported(is.Body)
 	upTo := func(p string, most int) {
 		p = backlog.RepoPath(p) // a link to a file on the forge is that file
 		if !tracked[p] && !strings.Contains(p, "/") {
 			p = byName(p, tracked)
 		}
-		if tracked[p] && !slices.Contains(out, p) && len(out) < most {
+		if tracked[p] && p != from && !slices.Contains(out, p) && len(out) < most {
 			out = append(out, p)
 		}
 	}

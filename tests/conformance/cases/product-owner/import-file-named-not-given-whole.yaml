@@ -1,0 +1,31 @@
+case: product-owner/import-file-named-not-given-whole
+about: >
+  An issue imported from a 7,500-line roadmap names that roadmap in its
+  Verification, to mark its row done (#1063, from a trial). The file it
+  was imported from is never code it names: its lines around the item
+  are given, as for any import, never the file from line 1 with every
+  line naming what the issue quotes, which pushed the task past the
+  role's budget and asked no agent.
+given:
+  repo: backlog
+  setup:
+    - |
+      mkdir -p docs
+      {
+        echo '# Roadmap'
+        for i in $(seq 2 6352); do echo "| LO-$i | Core | getDelta and checkpoint notes, row $i, long enough to weigh on a prompt when given whole |"; done
+        echo '| LO-33 | Core | getDelta() on an unknown name reports a leak |'
+        for i in $(seq 6354 7500); do echo "| LO-$i | Core | getDelta and checkpoint notes, row $i |"; done
+      } > docs/big.md
+      git add docs/big.md && git commit -qm 'docs: a long roadmap' && git tag imported
+  forge:
+    issues:
+      - {id: 9, title: "LO-33: getDelta on an unknown name", body: "| LO-33 | Core | getDelta() on an unknown name reports a leak |\n\nOpened from `docs/big.md`, lines 6353 to 6353 by the product-owner role.\n\n<!-- workline:import=docs/big.md:0a1b2c3d4e5f -->\n\n## Need\n\nA maintainer needs `getDelta()` on an unknown name to fail.\n\n## Verification\n\nA test calls `getDelta()` with an unknown name. The roadmap row LO-33 in `docs/big.md` is marked done.\n\n## Validation\n\n- **Unknown name:** Given no checkpoint named x, When getDelta(x) runs, Then it fails.\n\n## Scope\n\nsrc/export/csv.go", labels: [workline:to-refine], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: imported\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: issue, target: {issue: 9}, ai: fake:proposes-nothing}
+expect:
+  status: pass
+  agent-calls: 1
+  run-files:
+    in/task.md:
+      contains: ["6353  | LO-33 | Core | getDelta() on an unknown name reports a leak |", "## src/export/csv.go"]
+      not-contains: ["## docs/big.md", "row 2, long enough"]
