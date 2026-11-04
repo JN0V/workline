@@ -14,6 +14,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"strings"
 
@@ -79,6 +80,111 @@ func testerFiles(f forge.Forge, issue int) (map[string]string, error) {
 		return r.Files, nil
 	}
 	return nil, nil
+}
+
+// keptHolds is who asks a round again once it kept a test objected to:
+// the tester, its answer on the Draft (#987).
+const keptHolds = "the tester, kept"
+
+// testerKept are the tester's answers on its open Draft for issue that
+// kept a frozen test, written by workline's own account, each its test;
+// none without a Draft, or on a forge with no threads.
+func testerKept(f forge.Forge, issue int) ([]string, error) {
+	th, ok := f.(forge.Threaded)
+	if !ok {
+		return nil, nil
+	}
+	mrs, err := f.ListMergeRequests()
+	if err != nil {
+		return nil, err
+	}
+	draft := 0
+	for _, mr := range mrs {
+		if testerIssue(mr.Branch) == issue {
+			draft = mr.ID
+			break
+		}
+	}
+	if draft == 0 {
+		return nil, nil
+	}
+	threads, err := th.Threads(draft)
+	if err != nil {
+		return nil, err
+	}
+	own, err := forge.OwnAccount(f)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", errOwnAccount, err)
+	}
+	var out []string
+	for _, t := range threads {
+		for _, c := range t.Comments {
+			if !own.Wrote(c) || !tester.IsAnswered(c.Body) {
+				continue
+			}
+			if ans, ok := tester.ReadAnswered(c.Body); ok && ans.Act == "kept" {
+				out = append(out, ans.Test)
+			}
+		}
+	}
+	return out, nil
+}
+
+// keptLine is a test the tester kept, as the round's task and comment
+// say it.
+func keptLine(a Asked) string {
+	return fmt.Sprintf("the tester kept `%s`, objected to at this head: its answer on its Draft", a.Where)
+}
+
+// frozenRed are the tests red that the frozen acceptance tests hold, as
+// read at commit at: one of a red test's names is a file's name or a
+// word in it. Any language: a report's names differ, a test's name is
+// in its file.
+func frozenRed(repo, at string, acceptance, red []string) []string {
+	var out []string
+	for _, t := range red {
+		if slices.ContainsFunc(testNames(t), func(name string) bool { return inFrozen(repo, at, acceptance, name) }) {
+			out = append(out, t)
+		}
+	}
+	return out
+}
+
+// testNames are the names a report's test id may hold: of each part
+// between `/` that holds a `.`, `:` or `#`, what follows the last one
+// (a Go package's test, then a subtest's; a class's method; a pytest
+// file's test); with none, the id's last part. A name too short to tell
+// a test is left out: never held on a guess.
+func testNames(id string) []string {
+	parts := strings.Split(id, "/")
+	var names []string
+	for _, p := range parts {
+		if i := strings.LastIndexAny(p, ".:#"); i >= 0 {
+			names = append(names, p[i+1:])
+		}
+	}
+	if len(names) == 0 {
+		names = []string{parts[len(parts)-1]}
+	}
+	return slices.DeleteFunc(names, func(n string) bool {
+		n = strings.TrimSpace(n)
+		return len(n) < 4 || !strings.ContainsAny(strings.ToLower(n), "abcdefghijklmnopqrstuvwxyz")
+	})
+}
+
+// inFrozen says whether name is a frozen file's name, or a word in it.
+func inFrozen(repo, at string, acceptance []string, name string) bool {
+	word := regexp.MustCompile(`\b` + regexp.QuoteMeta(strings.TrimSpace(name)) + `\b`)
+	for _, f := range acceptance {
+		if strings.TrimSuffix(filepath.Base(f), filepath.Ext(f)) == name {
+			return true
+		}
+		data, err := exec.Command("git", "-C", repo, "show", at+":"+f).Output()
+		if err == nil && word.Match(data) {
+			return true
+		}
+	}
+	return false
 }
 
 // testerTip is the commit of the tester's branch for issue, as fetched

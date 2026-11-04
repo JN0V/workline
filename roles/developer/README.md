@@ -41,7 +41,7 @@ file. All roles: [docs/roles.md](../../docs/roles.md). Where it stands:
   whoever pushed ([the bounds](docs/bounds.md)). A test that does not
   fit, it objects to on the tester's Draft. A review round's fix outside
   the Scope, it asks the product owner for
-  ([the review loop](docs/review-loop.md#a-fix-outside-the-scope)).
+  ([the review loop](docs/review-held.md#a-fix-outside-the-scope)).
 - **Proves it** on the project's tests, the tester's `test-command`,
   then opens its pull request: ready when green with no cap reached,
   else a Draft ([the proof and the caps](docs/proof.md)).

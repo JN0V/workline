@@ -221,7 +221,7 @@ hold:
   the issue blocked, the files and the check's log on it; the product
   owner, woken at once, widens the Scope and sends it back, the next
   round resuming on the same pull request; or keeps it blocked, its
-  reason said ([the review loop](review-loop.md#a-fix-outside-the-scope)).
+  reason said ([the review loop](review-held.md#a-fix-outside-the-scope)).
   Cases `developer/round-asks-the-product-owner-for-scope`,
   `round-resumes-on-a-widened-scope`, `round-asks-once-a-head-and-scope`,
   `round-resumes-after-a-person-widens`,
@@ -244,11 +244,22 @@ hold:
   its pull request sat red for hours, the check not asked again at its
   head. Now its issue goes Blocked for a person, the check, the note and
   the objection's place on it; moved back, the round runs again
-  ([the review loop](review-loop.md#a-red-check-it-does-not-fix)).
+  ([the review loop](review-held.md#a-red-check-it-does-not-fix)).
   Cases `developer/round-holding-a-check-wrong-blocks`,
-  `round-objecting-to-a-red-test-blocks`,
   `round-held-before-runs-once-more`, `round-resumes-after-a-held-check`.
   Tried: its pull request's `## Tried`.
+- **A round's objection waits for the tester; a green head is kept** ([#987](https://github.com/JN0V/workline/issues/987)):
+  a review finding's fix undid the code a frozen test needed, red; the
+  next round objected and blocked its issue for a person. Now a fix red
+  on a frozen test, on a green head, is not pushed; a round that
+  objects waits for the tester in Doing, a test kept asks it again
+  ([a finding against a frozen test](review-held.md#a-finding-against-a-frozen-test)).
+  Cases `developer/round-keeps-a-green-head`,
+  `round-objecting-to-a-red-test-waits`,
+  `round-asks-again-once-the-tester-keeps`, `round-undoing-green-blocks`,
+  `round-objecting-again-on-a-finding-blocks`,
+  `merge-alone-said-while-checks-run`. Tried: its pull request's
+  `## Tried`.
 - **A Draft made green is marked ready** ([#969](https://github.com/JN0V/workline/issues/969)):
   its Draft, opened red, stayed a Draft once its rounds made it green,
   so nothing reviewed it. Now, every project check at its head green

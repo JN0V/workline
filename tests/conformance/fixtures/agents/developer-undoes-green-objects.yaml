@@ -1,0 +1,16 @@
+# The developer's agent in a round on #3's green pull request (#987): it
+# makes the reviewer's fix, which turns a frozen test red, and objects
+# to that test.
+- patch:
+    file: lib.sh
+    content: |
+      add() { echo $(($1 + $2)); }
+      mul() { echo $(($1 + $2)); }
+- note: "Finding on mul: made as asked; the frozen test wants the product, I object to it."
+- comment:
+    objection:
+      test: tests/test_mul_two_by_three.sh
+      line: 4
+      scenario: Two by three
+      kind: contradicts
+      why: The reviewer asks mul to add; the test wants the product.

@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine/routine.go, internal/engine/code.go, internal/engine/demote.go, internal/engine/merge.go, internal/forge/merge.go]
-checked: 8538d558
+checked: 54d84678
 verified: agent:claude-code
 reader: efab3a2a0b35
 ---
@@ -43,7 +43,8 @@ merge: {autonomy: normal}   # a project's choice, never a default
   [at `cautious`](merge-policy.md#the-veto-is-the-forges).
 - **Each one recorded**: a comment on it — no person's yes, its kind,
   why —, and the job's summary, whose first line says which kinds merge
-  alone and which wait.
+  alone and which wait. Its head's checks still running, the comment
+  says it merges once they pass, never before.
 - **A revert demotes its kind**
   ([why](adr/0042-the-engine-merges-by-the-projects-policy.md#each-merge-recorded-a-revert-demotes-its-kind)):
   `follow` reads every revert on the base once, opens an issue "workline:

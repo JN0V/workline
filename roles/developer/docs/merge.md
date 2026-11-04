@@ -4,7 +4,7 @@ sources:
   - internal/engine/code.go
   - internal/engine/candidate.go
   - internal/sample/developer.go
-checked: 93dac05e
+checked: 54d84678
 verified: agent:claude-code
 ---
 # The merge
@@ -97,7 +97,8 @@ a feature or a task merges too, and the yes moves to the milestone's
 
 - **Merged alone**: workline's comment on the pull request, "Merging
   with no person's yes", the issue, its kind and the label that told
-  it.
+  it. Its head's checks still running, "To merge with no person's yes,
+  once its checks pass": the forge's auto-merge waits for them.
 - **Held**: its comment "Waiting for a person's yes", the same words.
 - **The auditor reads it** with the developer's code in its weekly
   sample: how it merged, beside the issue as it reads now

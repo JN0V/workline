@@ -1,10 +1,11 @@
-case: developer/round-objecting-to-a-red-test-blocks
+case: developer/round-objecting-to-a-red-test-waits
 about: >
-  A round on a check red on a frozen test, as on 2026-11-03 (#938): its
-  agent writes no fix and objects to the test. The objection goes on
-  the tester's Draft, and #3 goes Blocked for a person, its comment
-  saying where the objection is, rather than the pull request sitting
-  red with nothing asked again at its head.
+  A round on a check red on a frozen test, as on 2026-11-03 (#938,
+  #987): its agent writes no fix and objects to the test. Nothing is
+  pushed, and the objection still goes on the tester's Draft, on its
+  line. The issue waits for the tester's answer, not for a person: it
+  stays in Doing, the record saying the round objected at this head.
+  A rewrite is taken by the next round; a test kept asks again.
 given:
   repo: tested-draft
   setup:
@@ -36,17 +37,19 @@ given:
 run: {develop: [--merge-request, "2"], ai: "fake:developer-objects-no-fix"}
 expect:
   status: pass
-  summary: "round 1 of 5 on merge request 2; no fix for the red check test, and no file named outside the issue's Scope: #3 blocked for a person"
+  summary: "round 1 of 5 on merge request 2; its objection to the frozen tests is on the tester's Draft !1: #3 waits for its answer"
   agent-calls: 1
-  findings: [{rule: check-held, level: warn, where: "merge request 2"}]
+  findings: [{rule: objected, level: info, where: "merge request 2"}]
+  no-findings: [{rule: check-held}]
   not-pushed: [workline/developer/3]
   forge:
     issues:
       - id: 3
-        labels: ["workline:blocked"]
-        comment-contains: ["pull request 2 is still red on `test` at this head", "I object to the test", "Its objections to the frozen tests are on the tester's Draft !1, on their lines"]
+        labels: ["workline:developing"]
     merge-requests:
       - id: 1
-        comment-contains: ["The developer** objects to the tester's tests of #3"]
+        comment-contains: ["The developer** objects to the tester's tests of #3", "1 posted now"]
+        threads:
+          - {path: tests/test_mul_by_zero.sh, line: 4, contains: ["workline:objection", "- kind: contradicts"]}
       - id: 2
-        comment-contains: ["\"bounds\":\"blocked\""]
+        comment-contains: ["\"bounds\":\"objected\"", "\"objected\":true", "its objection is on the tester's Draft !1", "I object to the test"]

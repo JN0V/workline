@@ -506,6 +506,8 @@ outside the Scope; the check is asked once a head, so nothing moved.
   names no file outside the Scope, and was asked a red project check
   blocks its issue. Its one comment (§1) names the checks, its agent's
   note, where its objections went, and the end of the check's log.
+  Since [2026-11-04](#amendment-2026-11-04-an-objection-waits-for-the-tester-a-green-head-is-kept),
+  a round that objects waits for the tester first.
 - **For a person, no mark**: the product owner has no Scope to widen.
 - **Ready → Doing, by the round**: a person who fixes the check or the
   test, re-runs it, or widens the Scope moves the issue back; the next
@@ -647,6 +649,47 @@ given. Each read again got the same input; Blocked after three.
   woken as before.
 - **Not chosen**: listing the repository's folders on every read: the
   task grows for every issue; the folders named are enough.
+
+## Amendment (2026-11-04): an objection waits for the tester; a green head is kept
+
+Settles [#987](https://github.com/JN0V/workline/issues/987): a green
+fix ([#967](https://github.com/JN0V/workline/pull/967)) was made red by
+its own review round, the reviewer asking to remove the line its frozen
+test needed. The next round objected to the test, posted on the
+tester's Draft, and blocked the issue for a person (the amendment
+above); the tester rewrote the test four minutes later, the issue
+blocked and the rounds' cap spent.
+
+- **A green head is kept**: a round on a head whose last proof is green,
+  no red check asked, does not push a fix its proof finds red on a
+  frozen test; red on its own tests only, it is pushed, the next round
+  fixes them. The green code is never undone for a finding: a frozen test
+  is the tester's ([ADR-0055]), the Scope the product owner's ([ADR-0060](0060-the-person-is-on-the-loop.md)).
+- **Doing stays Doing, the objection waits for the tester**: a round
+  that objects, code pushed or not, and names no file outside the
+  Scope, does not block its issue. Its record says it objected at this
+  head.
+  - A rewrite is the next round, as before ([#939](https://github.com/JN0V/workline/issues/939)).
+  - A test kept, the tester's answer on its Draft, is news: the round
+    asks again at the same head what it held. Once a head: objected
+    again there, it blocks for a person, as the amendment above.
+- **Held with nothing asked**: a fix kept off a green head, with no
+  objection and no file named, blocks for a person, the red tests and
+  the findings on the issue; sent back, the findings are asked again.
+- **A frozen test red** is told by name: a red test's last part is a
+  frozen file's name, or a word in it. No match, the old rule: pushed
+  red, the next round reads the check.
+- **Cost**: one call of the forge a round with a tester's Draft (its
+  threads, the answers that kept a test); one a reconcile per pull
+  request whose objection waits. No agent.
+- **Not chosen**:
+  - the issue blocked for a person on an objection: the tester answers
+    within minutes, a person is the bottleneck ([ADR-0060](0060-the-person-is-on-the-loop.md));
+  - the reviewer's finding dropped: it stays, answered by the round's
+    note; a warning holds no merge;
+  - waking the product owner on every objection: the test is the
+    tester's to keep or rewrite, the product owner's only past the
+    three exchanges (§6).
 
 [ADR-0024]: 0024-obsolete-is-announced-then-closed-on-silence-and-a-second-judge.md
 [ADR-0028]: 0028-an-issue-names-what-it-waits-on.md
