@@ -70,6 +70,9 @@ type FakeState struct {
 	// ChecksRefused: the forge refuses every check, as a token without
 	// checks: write does (HTTP 403), with this reason.
 	ChecksRefused string `json:"checks-refused,omitempty"`
+	// NotesRefused: the merge requests whose comments the forge refuses to
+	// read, as a token that may not (HTTP 403).
+	NotesRefused []int `json:"notes-refused,omitempty"`
 	// ConversationsRequired are the branches requiring every conversation
 	// of a merge request resolved before it merges; ConversationsUnread,
 	// what of the branches' rules the token cannot read (Conversations).
@@ -286,7 +289,7 @@ func (s *FakeState) item(t Target) (*FakeItem, error) {
 			return &list[i], nil
 		}
 	}
-	return nil, fmt.Errorf("no %s", t)
+	return nil, fmt.Errorf("%w: no %s", errNotFound, t)
 }
 
 func (f *Fake) Issue(id int) (*Issue, error) {
@@ -376,6 +379,9 @@ func (f *Fake) Notes(t Target) ([]Note, error) {
 	s, err := f.load()
 	if err != nil {
 		return nil, err
+	}
+	if t.Kind == "merge-request" && slices.Contains(s.NotesRefused, t.ID) {
+		return nil, fmt.Errorf("%w: the simulated forge refused to read %s's comments", errForbidden, t)
 	}
 	it, err := s.item(t)
 	if err != nil {

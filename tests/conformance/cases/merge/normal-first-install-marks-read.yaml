@@ -1,0 +1,30 @@
+case: merge/normal-first-install-marks-read
+about: "A first install merges by the policy at once (#1018): at `normal`, no mark of workline's App (`workline/merge-read`) on the base's last commits, and no merge in its history is one workline made with no person's yes — a repository where it never merged anything alone. No revert there can undo a merge of its own: the App marks the base's tip read, opens no issue, and a records pull request, #10, merges alone at the first run. A mark lost where workline did merge alone still holds every kind (normal-record-lost-holds-all)."
+given:
+  repo: documented
+  config: {merge: {autonomy: normal}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git"
+    - "git checkout -qb fix-typo && echo typo >> docs/tech/auth.md && git commit -qam 'docs: fix a typo' && git checkout -q main && git merge -q --no-ff fix-typo -m 'Merge pull request #4 from acme/fix-typo' -m 'docs: fix a typo' && git push -q origin main"
+    - "git checkout -qb workline/documentalist/stale && sed -i '/^checked:/a judged: 5d6e7f8' docs/product/sign-in.md && GIT_COMMITTER_NAME=workline-bot git commit -qam 'docs: record the docs read again' -m 'Workline-Role: documentalist' && git push -q origin workline/documentalist/stale && git checkout -q main"
+  forge:
+    statuses:
+      - {commit: "workline/documentalist/stale", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+    merge-requests:
+      - {id: 4, branch: fix-typo, base: main, author: dana, closed: true, merged: true, labels: [], comments: [{body: "Thanks!", author: dana}]}
+      - {id: 10, branch: workline/documentalist/stale, base: main, author: workline-bot, bot: true, labels: [], comments: [],
+         pushes: [{head: workline/documentalist/stale, at: "2026-01-04T09:00:00Z", by: workline-bot}]}
+run:
+  follow: [--base, main]
+expect:
+  status: pass
+  findings:
+    - {rule: merge-read-first, message: "no merge workline made with no person's yes"}
+    - {rule: auto-merge-on, where: "#10", message: "with no person's yes, workline's own records"}
+  forge:
+    issues:
+      - {id: 1, absent: true}
+    merge-requests:
+      - {id: 10, auto-merge: true}
+    statuses:
+      - {commit: main, name: workline/merge-read, state: success, by: workline-bot, description: "reverts read; held:"}

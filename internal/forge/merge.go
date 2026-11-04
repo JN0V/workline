@@ -1,6 +1,7 @@
 package forge
 
 import (
+	"errors"
 	"fmt"
 	"net/url"
 	"os"
@@ -157,6 +158,10 @@ func readVerdict(text string) (class, why string) {
 // Refused says whether err is the forge refusing a request — a token that
 // may not, a request it does not take — rather than not answering.
 func Refused(err error) bool { return refusal(err) }
+
+// NotFound says the forge answered that what was asked is not there
+// (HTTP 404): no merge request of that number, as another one's.
+func NotFound(err error) bool { return errors.Is(err, errNotFound) }
 
 // Said is what the forge said refusing, without the words that only mark
 // the error's kind.

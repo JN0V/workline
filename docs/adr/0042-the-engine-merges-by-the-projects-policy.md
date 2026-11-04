@@ -311,10 +311,21 @@ build settled ([page](../merge-policy.md#normal-routine-work-with-no-yes)):
   the App's. Each run reads every commit past the newest mark on the
   base's last 100 first-parent commits, every parent. A ref was tried
   first: whoever can push rewrites one, and nothing records who did.
-- **No mark found — the first run at `normal`, a mark lost, `follow` not
-  run for long —: every kind waits for a person's yes**, in an issue the
-  App opens (`merge-record-lost`), until a person who may push and merge
-  closes it; the last 100 commits are read meanwhile.
+- **No mark found — a mark lost, `follow` not run for long —: every kind
+  waits for a person's yes**, in an issue the App opens
+  (`merge-record-lost`), until a person who may push and merge closes it;
+  the last 100 commits are read meanwhile. Only while the base's last
+  1000 commits hold a merge request carrying the App's merge-alone
+  record, or one whose comments cannot be read (fail closed; a number
+  the forge says is not there, as in a copy, is passed): with none — a
+  first install, or one that never merged alone — no revert can undo a
+  merge of its own, so the App marks the base read and nothing waits.
+  The bound is 1000 commits: a merge alone older than that, reverted
+  more than 100 commits ago, is not seen — holding every history longer
+  than the window would bring back the wait on most first installs
+  (`merge-read-first`; amended by
+  [#1018](https://github.com/JN0V/workline/issues/1018): the first
+  install of a trial copy waited 1 h 35 min on a person for nothing).
 - **A revert names what it reverts** in git's words (`This reverts commit
   …`, the commit reverted naming `#N`), GitLab's (`This reverts merge
   request !N`) or GitHub's (`Reverts owner/repo#N`). GitHub's own Revert
