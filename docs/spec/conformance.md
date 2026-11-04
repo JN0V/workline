@@ -1,5 +1,5 @@
 ---
-sources: [tests/conformance/runner_test.go, tests/evaluation, tests/simulator/sim_test.go]
+sources: [tests/conformance/runner_test.go, tests/evaluation, tests/simulator]
 checked: 4eaa098f
 verified: agent:claude-code
 judged: ae14474
@@ -195,13 +195,21 @@ step 1):
   error moves nothing; no person waited on while a retry is left; every
   open issue has a status; never the same input twice, by the
   simulator's own digest of what the agent received; the same tick twice
-  starts no second step. At the end: quiet within K ticks, an agent that
-  always progresses reaches Done, one byte of a body changed makes the
-  issue due. Each trace runs twice: the runs must match.
+  starts no second step. At the end: quiet within K ticks, the trace's
+  expected end with an agent that always progresses (Done, or Waiting on
+  what it names), one byte of a body changed makes the issue due. Each
+  trace runs twice: the runs must match.
+- **Statuses read from today's findings**: a rule list in the test, a
+  wait counted only when it names its target; a test fails if the engine
+  loses one of those rules.
 - **`pending.txt`** names, per trace, the first property it breaks
-  today. A trace not named runs again under 200 seeded outcome scripts;
-  a seed's failure prints the seed and its shrunk script
-  (`SIM_SEED`, `SIM_SCRIPT`), and is never pending.
+  today, with an agent that always progresses.
+- **200 seeded outcome scripts**, spread over every trace: a trace not
+  pending is held to every property; a pending one to those that hold
+  whatever the agent answers (I2, I3, one state label, no person waited
+  on while a retry is left), up to the tick its pending property breaks.
+  A seed's failure prints the seed and its shrunk script (`SIM_SEED`,
+  `SIM_SCRIPT`, `SIM_TRACE`), and is never pending.
 
 ## Evaluation
 
