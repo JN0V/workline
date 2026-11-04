@@ -3,8 +3,8 @@ about: >
   Given a GitHub project with a Tests option in its Status, the product
   owner's ready that sends an issue to its tests (workline:needs-tests)
   sets its card's Status to Tests (ADR-0059, decision 2), no label for
-  it. An issue going straight to ready takes the Ready option, as
-  before; Backlog, beside a Ready column, is refine's.
+  it. An issue whose Validation names no scenario stays in refine,
+  its card in Backlog (#1019): no test would be written first.
 given:
   repo: backlog
   config:
@@ -25,4 +25,4 @@ expect:
   forge:
     issues:
       - {id: 9, labels: [workline:needs-tests], status: {"3": "Tests"}}
-      - {id: 10, labels: [workline:ready], status: {"3": "Ready"}}
+      - {id: 10, labels: [workline:to-refine], status: {"3": "Backlog"}}

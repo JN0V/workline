@@ -1,0 +1,16 @@
+case: product-owner/ready-draft-word-held
+about: >
+  A Validation its writer opened with `Draft:` is not final (#1019): a
+  ready on it is refused, the issue left in refine, until the section is
+  rewritten or a person accepts it. Never taken as written.
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "## Need\n\nThe monthly report counts every sale.\n\n## Verification\n\nA test writes three rows.\n\n## Validation\n\nDraft: the reporter reads it.\n\n- **Three sales:** Given a day of three sales, When Ann opens the report, Then she counts three.\n\n## Scope\n\nsrc/export/csv.go", author: ann, insider: true, labels: [workline:to-refine], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:ready-nine}
+expect:
+  findings: [{rule: not-ready, where: "#9", message: "Validation opens with `Draft:`: rewrite it, or accept it (workline:accepted)"}]
+  forge:
+    issues:
+      - {id: 9, labels: [workline:to-refine]}

@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/productowner/productowner.go]
-checked: 8538d558
+checked: ecee5fb2
 verified: agent:claude-code
 ---
 # Troubleshooting the product owner
@@ -61,7 +61,8 @@ When the product owner pauses, or an issue gets nothing. Part of
   read the reviewer's comment on the issue; `spec-rounds-spent` — a
   person decides: `workline:accepted`, or `workline:ready` by hand.
 - An issue refined stays out of ready, `scenarios-unread`: its
-  Validation holds Given / When / Then but no named scenario; write each
+  Validation names no scenario (prose, or Given / When / Then in another
+  form); write each
   as `- **Name:** Given …, When …, Then …`
   ([writing an issue](../roles/product-owner/docs/writing.md#the-rules)).
 - `kind-missing`: a full read gave an issue no kind; the next light

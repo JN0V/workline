@@ -1,0 +1,19 @@
+case: product-owner/kind-a-quiet-defect-is-a-bug
+about: >
+  The kind of two issues no label tells (#1020). #9: shutdown() publishes
+  events while the link is down, which its own guard is meant to stop; no
+  user sees it, but a test can show it — a bug. #10: a dependency bumped,
+  no behaviour changed — a task. "Nothing visible breaks" is not the test
+  of a bug; the code against its own contract is.
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 9, title: "shutdown() emits MQTT events without checking mqttConnected", body: "shutdown() calls setAvailable(false) and removeDiscovery() without checking mqttConnected: while the link is down, it queues publish events that can never be delivered. Every other publish path checks mqttConnected first.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 10, title: "Bump the CSV library to 2.4", body: "A new minor version of the CSV library is out. Nothing we use changed; bump it to stay current.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule}
+grade:
+  - {status: pass}
+  - {agent-calls-max: 1}
+  - {finding: {where: "#9", message: "Labelled #9 `bug`"}}
+  - {finding: {where: "#10", message: "Labelled #10 `task`"}}

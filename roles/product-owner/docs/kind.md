@@ -1,6 +1,6 @@
 ---
 sources: [internal/backlog/kind.go, internal/engine/backlog.go, internal/builtin/productowner/kinds.go, roles/product-owner/role.yaml]
-checked: 5892e73a
+checked: 19479f1b
 verified: agent:claude-code
 ---
 # The kind it sets
@@ -35,6 +35,9 @@ flowchart LR
 - **On each issue it reads with no kind label**, the agent proposes
   `kind`: `bug`, `feature` or `task`, and why. The task names each
   such issue: "Kind: none yet — propose `kind` on #888".
+- **A bug is told by the code's own contract**: code doing what it
+  should not is a `bug` even when no user sees it, if a test can show
+  it ([#1020](https://github.com/JN0V/workline/issues/1020)).
 - **An answer that gives none** is said in the run, `kind-missing`,
   never silent; the light read below gives it its kind
   ([#895](https://github.com/JN0V/workline/issues/895)).

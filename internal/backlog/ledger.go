@@ -675,7 +675,7 @@ func (p *Plan) Persist(f forge.Forge, role string) error {
 		if why, ok := p.Silent[id]; ok {
 			st.Silent = why
 		} else if waits := strings.HasPrefix(st.Silent, NoTestSilent) && NoTestStands(*is, comments, role) ||
-			strings.HasPrefix(st.Silent, ScenariosUnreadSilent) && unreadStill(*is, st); is.Closed || p.decidedOn(id) || p.Answers[id] != nil ||
+			HeldForScenarios(st.Silent) && unreadStill(*is, st); is.Closed || p.decidedOn(id) || p.Answers[id] != nil ||
 			// Left for a person after "no test possible", or held for
 			// scenarios no test can name: said until it is answered
 			// (#815, #855).

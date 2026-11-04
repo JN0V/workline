@@ -347,7 +347,10 @@ edited is theirs, and any section they deleted: never write it. When nothing the
 `enhancement`, `task` and the like): propose `kind` — `bug` for a
 behaviour that worked or is meant to and does not, `feature` for a
 function people have not seen, `task` for work with no change of
-behaviour (a refactor, a dependency, docs) — and why. A bug's fix
+behaviour (a refactor, a dependency, docs) — and why. Code that does
+what it should not, by its own contract (its guard, its docs, its other
+paths), is a `bug` even when no user sees it: "nothing visible breaks"
+is not the test, whether a test can show it is. A bug's fix
 merges once a test that fails shows the bug; a feature waits for a
 person: never call a bug a feature, whatever its size. The engine sets
 a kind once: a person's change stands. The issues the task gives "for

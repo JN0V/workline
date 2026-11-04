@@ -3,8 +3,8 @@ about: >
   Given a GitLab board with a Tests column, the product owner's ready
   that sends an issue to its tests (workline:needs-tests) puts the Tests
   column's label on in the same call (ADR-0059, decision 2): its card
-  moves to Tests, the board's other columns' labels off. An issue going
-  straight to ready moves to the Ready column, as before.
+  moves to Tests, the board's other columns' labels off. An issue whose
+  Validation names no scenario stays in refine, in Triage (#1019).
 given:
   repo: backlog
   config:
@@ -20,4 +20,4 @@ expect:
   forge:
     issues:
       - {id: 9, labels: [workline:needs-tests, "workflow::Needs tests"], comment-contains: ["its card to `workflow::Needs tests` on the board"]}
-      - {id: 10, labels: [workline:ready, "workflow::Ready"]}
+      - {id: 10, labels: [workline:to-refine, "workflow::Triage"]}

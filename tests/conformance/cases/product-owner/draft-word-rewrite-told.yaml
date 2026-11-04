@@ -1,0 +1,21 @@
+case: product-owner/draft-word-rewrite-told
+about: >
+  An issue whose Need and Validation its writer opened with `Draft:`, the
+  Validation prose (#1019, from a trial's imported issue): the agent is
+  told both are its to rewrite, the Validation as named scenarios, and a
+  ready on it as it stands is refused.
+given:
+  repo: backlog
+  config:
+    routing: {events: {schedule: [product-owner], issue: [tester, developer]}}
+  forge:
+    issues:
+      - {id: 9, title: "Shutdown emits while disconnected", body: "## Need\n\nDraft: when the link is down, shutdown() should not queue events that cannot be delivered.\n\n## Verification\n\nExtend the dropped-link test: after a disconnect, shutdown() queues no publish.\n\n## Validation\n\nDraft: the reporter reads the dropped-link test and accepts that shutdown stays quiet while disconnected.\n\n## Scope\n\nsrc/export/csv.go", author: ann, insider: true, labels: [workline:to-refine], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:ready-nine}
+expect:
+  findings: [{rule: not-ready, where: "#9", message: "Need opens with `Draft:`: rewrite it, or accept it (workline:accepted)"}]
+  run-files:
+    in/task.md: {contains: "It is yours to rewrite: answer with a `refine` giving its whole new Validation in that form"}
+  forge:
+    issues:
+      - {id: 9, labels: [workline:to-refine]}

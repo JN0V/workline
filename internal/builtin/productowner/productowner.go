@@ -824,8 +824,9 @@ func Pre(runDir, repo string) int {
 				}
 			}
 			if unread, own := backlog.ScenariosUnread(d.is, d.st); unread && cfg.Tester && !backlog.Readied(d.is) {
-				review += backlog.ScenariosUnreadTask(own)
+				review += backlog.ScenariosUnreadTask(d.is, own)
 			}
+			review += markedSaid(d.is)
 			if slices.Contains(d.is.Labels, backlog.LabelBlocked) && d.is.ID == issueEvent() {
 				review += blockedSaid(runDir, d.comments)
 			}
@@ -1358,7 +1359,7 @@ func writeIssue(b *strings.Builder, role string, rounds int, is forge.Issue, st 
 		fmt.Fprintf(b, "Waits on: %s — ordered after the open ones; a depend only adds what is missing; an undepend only takes off a link set by the role\n", strings.Join(said, ", "))
 	}
 	fmt.Fprintf(b, "Sections: %s\n", sections(is, st))
-	if st.Silent != "" && !strings.HasPrefix(st.Silent, backlog.NoTestSilent) && !strings.HasPrefix(st.Silent, backlog.ScenariosUnreadSilent) {
+	if st.Silent != "" && !strings.HasPrefix(st.Silent, backlog.NoTestSilent) && !backlog.HeldForScenarios(st.Silent) {
 		// Read before and left unrefined (#951): refined now, from its
 		// text and the code given, or asked — never left so again.
 		fmt.Fprintf(b, "Left unrefined when last read: %s. Refine it now from its text and the code given — or the repository's folders —, or ask its reporter.\n", strings.TrimSuffix(st.Silent, "."))
@@ -1434,6 +1435,29 @@ func noTestSaid(reason string) string {
 func rewriteUnread(is forge.Issue, st *backlog.State, cfg backlog.Config) bool {
 	unread, own := backlog.ScenariosUnread(is, st)
 	return unread && own && cfg.Tester && !backlog.Readied(is) && st.Unread != backlog.BodyDigest(is.Body)
+}
+
+// markedSaid tells the agent which of an issue's Need and Validation its
+// writer marked `Draft:` (#1019): unfinished, they hold it from ready
+// until rewritten — its to do — or a person accepts them; "" for none.
+func markedSaid(is forge.Issue) string {
+	if backlog.Accepted(is) || backlog.Readied(is) {
+		return ""
+	}
+	var names []string
+	for _, m := range []work.Meaning{work.Need, work.Validation} {
+		if backlog.MarkedDraft(is.Body, m) {
+			names = append(names, work.ByMeaning(is.Body)[m].Heading)
+		}
+	}
+	if len(names) == 0 {
+		return ""
+	}
+	opens := " opens"
+	if len(names) > 1 {
+		opens = " each open"
+	}
+	return "Its " + strings.Join(names, " and ") + opens + " with `Draft:`: its writer marked it unfinished, so the issue is not ready as it stands. Yours to rewrite: answer with a `refine` giving each such section whole, the `Draft:` gone, its meaning kept.\n"
 }
 
 // author says who wrote a comment, as the agent is told: its reporter, a
@@ -1610,6 +1634,8 @@ func sections(is forge.Issue, st *backlog.State) string {
 			missing = append(missing, work.Name(m))
 		case backlog.IsDraft(body, m, st):
 			there = append(there, name+" (draft)")
+		case backlog.MarkedDraft(body, m) && !backlog.Accepted(is):
+			there = append(there, name+" (its writer's draft, opening with `Draft:`: yours to rewrite)") // #1019
 		case backlog.Drafted(name):
 			there = append(there, name+" (a person's)") // not marked a draft: theirs
 		default:

@@ -205,11 +205,12 @@ func Own(is forge.Issue, st *State) []string {
 // (ADR-0060): the builder's part — Verification, Scope — is the role's
 // at every level, even a text a person wrote; the person's part — Need,
 // Validation, an example, a bug's steps — only while it is still the
-// role's own: a draft no person accepted, or a text as the role wrote it
+// role's own: a draft no person accepted — the role's, or one its writer
+// marked `Draft:` (MarkedDraft, #1019) —, or a text as the role wrote it
 // (the state's `wrote`). A person's text there is theirs: never
 // rewritten, asked of them.
 func Rewritable(is forge.Issue, st *State, m work.Meaning) bool {
-	return builder(m) || IsDraft(is.Body, m, st) && !Accepted(is) || mine(st, m, work.ByMeaning(is.Body)[m].Text)
+	return builder(m) || (IsDraft(is.Body, m, st) || MarkedDraft(is.Body, m)) && !Accepted(is) || mine(st, m, work.ByMeaning(is.Body)[m].Text)
 }
 
 // mine says whether text is as the role wrote a section of meaning m (the
