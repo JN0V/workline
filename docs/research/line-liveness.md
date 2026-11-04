@@ -1,12 +1,10 @@
 # Keeping every item moving or saying why (2026-11-04)
 
-**Question.** On 2026-11-04, a first trial outside workline found 30
-defects in the line in one day. Most were an issue left with nothing
-due and nothing said, a loop guard keyed on the wrong thing, or an
-engine failure routed like a role's verdict. How do controllers,
-workflow engines and supervisors keep every item either moving or
-saying why it waits, retry their own failures without counting them as
-decisions, and stop real loops? What do they test it with?
+**Question.** A first trial outside workline found 30 defects of the
+line in a day: issues parked in silence, loop guards on the wrong key,
+engine failures routed as verdicts. How do controllers, workflow
+engines and supervisors keep every item moving or saying why, retry
+their own failures, stop real loops, and test it?
 
 **Verdict.**
 
@@ -45,20 +43,16 @@ decisions, and stop real loops? What do they test it with?
 - **The evidence**: the root-cause analysis of 2026-11-04 over the
   trial's 30 defects, its round reports on
   [#757](https://github.com/JN0V/workline/issues/757), and
-  `internal/line` at `40cf77cd`.
+  `internal/line` at `be8a12de`.
 - **The ecosystem's words**: *level-triggered*, *reconcile loop*,
-  *status conditions*, *observedGeneration*, *event history*,
-  *deterministic replay*, *retry policy*, *non-retryable error*,
-  *dead letter queue*, *restart intensity*, *stuck detection*,
-  *liveness property*, *deterministic simulation testing*, *stateful
-  property-based testing*.
-- **Reviewed**: the draft ADR and this card were read by seven
-  independent reviewers (analyst, product manager, architect, product
-  owner, scrum master, developer, QA); their changes were applied
-  before the maintainer decided.
-- **Sources**: each system's public documentation, as known on
-  2026-11-04; the links were not fetched again for this card. A
-  reviewer checks a claim against its link before it decides anything.
+  *status conditions*, *event history*, *retry policy*, *non-retryable
+  error*, *dead letter queue*, *restart intensity*, *stuck detection*,
+  *liveness property*, *deterministic simulation testing*.
+- **Reviewed** by seven independent readers (analyst, product manager,
+  architect, product owner, scrum master, developer, QA) before the
+  maintainer decided; their changes applied.
+- **Sources**: each system's public docs as known on 2026-11-04, not
+  fetched again; check a claim against its link before relying on it.
 
 ## Level-triggered reconciliation
 
@@ -67,9 +61,6 @@ decisions, and stop real loops? What do they test it with?
   watch event costs latency, never correctness: the periodic resync
   sees the level again
   ([controller pattern](https://kubernetes.io/docs/concepts/architecture/controller/)).
-- **The work queue dedups by key**: an object due twice is reconciled
-  once; a failed reconcile is requeued with backoff, the object's state
-  untouched.
 - **For workline**: the reconciler already exists
   ([ADR-0059 §8](../adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#8-event-driven-the-night-for-upkeep)),
   but it asks `due`, an edge test. A level test asks "what does this
@@ -148,8 +139,8 @@ decisions, and stop real loops? What do they test it with?
   alternating between two
   ([source](https://github.com/All-Hands-AI/OpenHands/blob/main/openhands/controller/stuck.py)).
 - **A controller's work queue** dedups by key: an object signalled
-  many times while queued is reconciled once; what keeps the reconcile
-  from acting twice is that it compares the levels again.
+  many times while queued is reconciled once, a failure requeued with
+  backoff; what keeps it from acting twice is comparing levels again.
 - **For workline**: "the same role, on the same input, gave the same
   outcome" is the loop, whatever the count. A ring of roles on unchanged
   inputs is the alternating case.
