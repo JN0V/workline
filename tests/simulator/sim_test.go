@@ -1,13 +1,6 @@
 // Package simulator runs the line over many ticks, in process, on frozen
 // real traces and a seeded fake agent, and checks after each tick the
-// properties ADR-0063 asks of it (step 1: the simulator, red first).
-//
-// Each trace runs with an agent that always progresses; the first
-// property it breaks must be the one pending.txt names for it, and a
-// trace pending.txt does not name must break none. The traces that pass
-// then run again under seeded outcomes: a seed's failure is never
-// pending, it prints the seed and its shrunk outcomes, replayable with
-// SIM_SEED or SIM_SCRIPT.
+// properties of ADR-0063 (step 1); docs/spec/conformance.md says how.
 package simulator
 
 import (
