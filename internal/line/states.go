@@ -228,6 +228,16 @@ func stateOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, 
 			Message: fmt.Sprintf("its state, %s, woke the %s already, on the same body and labelling: nothing more to run", s.Name, name)})
 		return nil, nil, nil
 	}
+	if mr, err := roundOn(b, t, s, is.ID); err != nil {
+		return nil, nil, err
+	} else if mr != nil {
+		// Back from a Scope ask or a hold (#1013): its round resumes on
+		// its pull request, which the developer would pass over as a
+		// claim. Nothing written: the round moves it.
+		res.Findings = append(res.Findings, verdict.Finding{Rule: "state-round", Level: "info", Where: where,
+			Message: fmt.Sprintf("its step is the developer's review round on its pull request %d, not a new claim", mr.ID)})
+		return nil, nil, nil
+	}
 	if cfg.MaxHops > 0 && now.Hops > cfg.MaxHops {
 		why := fmt.Sprintf("%d state steps on this issue, past max-hops (%d): roles sent it back and forth; its state was %s",
 			now.Hops, cfg.MaxHops, s.Name)
@@ -299,9 +309,14 @@ func byState(res *Result, cfg *routing.Config, o engine.Options, event string, s
 		res.Summary = fmt.Sprintf("%s: %s is closed: no state wakes a role", event, where)
 		return res
 	}
-	step, block, err := stateOf(res, cfg, b, *is, new([]forge.Issue), newScopeIndex(o.Repo), newTallyFor(o))
+	t := newTallyFor(o)
+	step, block, err := stateOf(res, cfg, b, *is, new([]forge.Issue), newScopeIndex(o.Repo), t)
 	if err != nil {
 		readFailed(res, event, where, err)
+		return res
+	}
+	if mr, ok := t.rounds[o.Target.ID]; ok && step == nil && block == nil {
+		byRound(res, f, o, event, o.Target.ID, mr)
 		return res
 	}
 	switch {
@@ -615,29 +630,18 @@ func roundsDue(res *Result, cfg *routing.Config, f forge.Forge, o engine.Options
 		if !strings.HasPrefix(mr.Branch, developer.Branch) {
 			continue
 		}
-		where := fmt.Sprintf("merge request %d", mr.ID)
-		ok, err := developer.RoundDue(f, o.Repo, mr)
-		switch {
-		case errors.Is(err, developer.ErrRecordUnread):
-			res.Findings = append(res.Findings, verdict.Finding{Rule: "round-unread", Level: "warn", Where: where,
-				Message: "whether a review round is due is not known: " + err.Error()})
+		if !roundDue(res, f, o.Repo, mr) {
 			continue
-		case err != nil:
-			res.Findings = append(res.Findings, verdict.Finding{Rule: "round-unread", Level: "warn", Where: where,
-				Message: "whether a review round is due was not read: " + forge.Said(err)})
-			continue
-		case !ok:
-			continue
-		case *started >= cfg.ReconcileMax:
-			res.Findings = append(res.Findings, verdict.Finding{Rule: "reconcile-left", Level: "info", Where: where,
+		}
+		if *started >= cfg.ReconcileMax {
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "reconcile-left", Level: "info", Where: fmt.Sprintf("merge request %d", mr.ID),
 				Message: fmt.Sprintf("a review round due, past reconcile-max (%d) this run: the next run starts it", cfg.ReconcileMax)})
 			continue
 		}
 		*started++
 		due = append(due, Review{ID: mr.ID, Branch: mr.Branch})
 		if o.Inputs[ReconcileInput] != "list" {
-			res.Findings = append(res.Findings, verdict.Finding{Rule: "review-round-due", Level: "info", Where: where,
-				Message: fmt.Sprintf("a review round is due: on its branch, %s, run `workline develop --merge-request %d`", mr.Branch, mr.ID)})
+			roundSaid(res, mr)
 		}
 	}
 	return due

@@ -469,7 +469,8 @@ stayed in Doing, the check read at that head, and nothing moved.
   end of the red check's log, with a mark the line reads.
 - **The product owner is woken at once**: the reconciler, first seeing
   the issue blocked with the mark, wakes it as on news. No week, no
-  comment needed.
+  comment needed. Since [2026-11-04](#amendment-2026-11-04-a-widened-scope-resumes-its-round-at-once),
+  the job that applied the round wakes it.
 - **It decides, as on any blocked issue**, alone:
   - widens: rewrites the Scope (`refine`), then `unblock` to ready;
   - or `blocked`, its reason why not, for a person when only one can
@@ -477,8 +478,9 @@ stayed in Doing, the check read at that head, and nothing moved.
 - **Ready → Doing, by the round**: the issue back from the ask, the
   red check at the same head is asked again; the round resumes on the
   same pull request with the new bounds, and puts the claim's label
-  back. The developer's pick passes the issue over meanwhile: its pull
-  request is open.
+  back. The line starts that round, not the developer's pick, which
+  would pass the issue over
+  ([amended](#amendment-2026-11-04-a-widened-scope-resumes-its-round-at-once)).
 - **Bounded**: one ask a head and a Scope. Asked again on the same, the
   issue is blocked for a person, with no mark. The review's rounds
   (`review-rounds`) cap the rest; the hops do not, since a move out of
@@ -727,6 +729,43 @@ the bug.
     for paths the developer reads anyway;
   - a bug taking a Scope a waiting feature holds: a conflict moved
     onto the pull request a person is reading.
+
+## Amendment (2026-11-04): a widened Scope resumes its round at once
+
+Settles [#1013](https://github.com/JN0V/workline/issues/1013): the
+product owner widened
+[#949](https://github.com/JN0V/workline/issues/949)'s Scope at the
+developer's ask and moved it to ready. The job that applied it started
+the Ready step: the developer's pick passed the issue over, its pull
+request closing it, and no round ran. The ask itself had waited 47
+minutes for the hourly reconcile.
+
+- **Ready's step on an issue with its own pull request is its round**:
+  in the developer's state, the developer's pull request open from
+  `workline/developer/<n>`, the issue is no new claim. The line lists
+  the round on that pull request (`reviews`), not the issue's step,
+  and writes no record: the round moves it to Doing.
+- **The job that moved it starts the round**: on GitHub, the apply's
+  next step starts each round listed, by `workflow_dispatch`; on
+  GitLab, the issue webhook's job, as for a round the reconciler lists.
+- **The round's own moves chain too**: once `review-apply` applied, it
+  asks the line whether the issue's new state is due, and starts it.
+  Blocked on a Scope ask, the product owner is woken within a minute,
+  not at the next reconcile. GitLab's issue webhook already did.
+- **The reconciler stays the net**: it lists the round with the
+  others, and leaves the issue alone.
+- **A person's own pull request** closing a ready issue, from another
+  branch, changes nothing: the developer's step passes it over.
+- **Cost**: one merge requests listing a run that reaches a ready
+  issue's due step, kept for the run; one engine call more after each
+  round applied, and at most 30 s of its job waiting for GitHub's
+  listing.
+- **Not chosen**:
+  - the developer's pick resuming the round itself: an issue run would
+    then work on a pull request, which a round's own job does, its
+    concurrency and its apply from that head;
+  - waking the product owner from the round's own run: it holds the
+    agent's token and no write one.
 
 [ADR-0024]: 0024-obsolete-is-announced-then-closed-on-silence-and-a-second-judge.md
 [ADR-0028]: 0028-an-issue-names-what-it-waits-on.md

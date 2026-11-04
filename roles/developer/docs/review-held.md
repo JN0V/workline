@@ -39,11 +39,13 @@ a round asks it to widen it ([#921](https://github.com/JN0V/workline/issues/921)
   gate's file, a steering file or a frozen test is never asked for.
   The issue goes `workline:blocked`. Its comment names the files, the
   agent's note and the end of the red check's log.
-- **The product owner answers at once**: the reconciler wakes it on
-  the ask, no other news needed.
-  - It widens the Scope and sends the issue back to ready: the next
-    round resumes on the same pull request, with the new bounds, and
-    puts the issue back in Doing.
+- **The product owner answers at once**: the job that applied the
+  round wakes it on the ask, no other news needed; the reconciler is
+  the net.
+  - It widens the Scope and sends the issue back to ready: the job
+    that applied that starts the next round on the same pull request,
+    not a new claim. It runs with the new bounds and puts the issue
+    back in Doing ([#1013](https://github.com/JN0V/workline/issues/1013)).
   - Or it keeps the issue blocked, its reason written.
 - **Once a head and a Scope**: asked again on the same, the issue is
   blocked for a person, with no ask; the person who widens it and puts

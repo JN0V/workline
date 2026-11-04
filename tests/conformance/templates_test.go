@@ -1906,6 +1906,24 @@ func TestDeveloperTemplatesRunTheReviewRound(t *testing.T) {
 	if !applied {
 		t.Error("workline-develop.yml, review-apply: does not apply from the merge request at the head read, or holds the agent's token")
 	}
+	// The state a round moved its issue to wakes its next step at once
+	// (#1013): blocked on a Scope ask, the product owner; and an issue
+	// moved back to ready from that ask resumes its round, not a claim.
+	chained := false
+	for _, s := range wf.Jobs["review-apply"].Steps {
+		chained = chained || strings.Contains(s.Run, `workline route issue --target "issue:$ISSUE" --ai none`) &&
+			strings.Contains(s.Run, "--input reconcile=list") && strings.Contains(s.Run, `-f issue="$ISSUE"`) && s.Env["ISSUE"] == "${{ needs.review.outputs.issue }}"
+	}
+	if !chained || wf.Jobs["review-apply"].Permissions["actions"] != "write" {
+		t.Errorf("workline-develop.yml, review-apply: does not start its issue's next step: %v", wf.Jobs["review-apply"].Permissions)
+	}
+	resumed := false
+	for _, s := range wf.Jobs["apply"].Steps {
+		resumed = resumed || strings.Contains(s.Run, "(.reviews // [])[].id' next.json") && strings.Contains(s.Run, `-f pull-request="$n"`)
+	}
+	if !resumed {
+		t.Error("workline-develop.yml, apply: an issue whose step is its review round does not start that round")
+	}
 
 	data, err = os.ReadFile("../../ci/gitlab/workline.gitlab-ci.yml")
 	if err != nil {
