@@ -767,6 +767,30 @@ minutes for the hourly reconcile.
   - waking the product owner from the round's own run: it holds the
     agent's token and no write one.
 
+## Amendment (2026-11-04): progress starts the hop count again
+
+Settles [#1068](https://github.com/JN0V/workline/issues/1068): on a
+trial copy, an issue went between refine and tests four times, then
+got its tests and reached ready at its 9th step. `max-hops` (8)
+blocked it, its tests written and waiting.
+
+- **The cap counts the steps since the last progress**: the record
+  keeps `reached`, the furthest state the issue was in, along each
+  state's `next`. A step into a state further than it is hop 1.
+- **Reset, not "progress does not count"**: an issue that spent 8 hops
+  before reaching ready would else have none left for the developer's
+  steps; reset gives each stretch of the line the whole cap.
+- **Loops still end**: `reached` only moves forward, so the count
+  starts again at most once per state of the line. Back in a state
+  reached before (retested, stale, freed), the count goes on.
+- **A record from before** has no `reached`: its state stands for it,
+  or the state it was blocked from.
+- **Not chosen**:
+  - a higher `max-hops`: the next issue needing one more try would hit
+    it;
+  - counting backward moves alone: refine to tests is a forward move
+    each time in a refine and tests loop.
+
 [ADR-0024]: 0024-obsolete-is-announced-then-closed-on-silence-and-a-second-judge.md
 [ADR-0028]: 0028-an-issue-names-what-it-waits-on.md
 [#752]: https://github.com/JN0V/workline/issues/752

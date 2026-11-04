@@ -145,7 +145,7 @@ func stateOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, 
 	if s.Name != refineState {
 		spec = "" // a review is read in refine alone: no other state woken by it
 	}
-	now, ok := due(s, is, trail.Labeled, spec, rec, had)
+	now, ok := due(cfg, s, is, trail.Labeled, spec, rec, had)
 	reviewed := s.Name == refineState && slices.Contains(cfg.Events[IssueEvent], backlog.SpecReviewer)
 	if !ok && reviewed && rec.Asked != rec.Body {
 		// Acted on, the reviewer never asked on this body: a record from

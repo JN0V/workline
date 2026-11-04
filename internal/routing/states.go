@@ -43,6 +43,20 @@ func (c *Config) State(name string) (State, bool) {
 	return State{}, false
 }
 
+// Ahead says whether state to lies further on the line than state from:
+// from's next, or its next's, and so on (#1068). A loop in the table
+// ends the walk.
+func (c *Config) Ahead(from, to string) bool {
+	seen := map[string]bool{from: true}
+	for s, ok := c.State(from); ok && s.Next != "" && !seen[s.Next]; s, ok = c.State(s.Next) {
+		if s.Next == to {
+			return true
+		}
+		seen[s.Next] = true
+	}
+	return false
+}
+
 // Move is the labels a move to state to sets, in one call: its label on,
 // every other state's label off — states are exclusive.
 func (c *Config) Move(to string) (add, remove []string, err error) {

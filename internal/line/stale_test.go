@@ -78,11 +78,11 @@ func TestLabeledAt(t *testing.T) {
 func TestDueKeepsStale(t *testing.T) {
 	ready := routing.State{Name: "ready", Label: "workline:ready"}
 	rec := Record{State: "ready", Body: "0", Labeled: "a", Hops: 1, Stale: "ready", Kept: "a"}
-	now, ok := due(ready, forge.Issue{Body: "x"}, "b", "", rec, true)
+	now, ok := due(nil, ready, forge.Issue{Body: "x"}, "b", "", rec, true)
 	if !ok || now.Stale != "ready" || now.Kept != "a" {
 		t.Errorf("same state: %+v, %v", now, ok)
 	}
-	now, _ = due(routing.State{Name: "refine"}, forge.Issue{Body: "x"}, "c", "", rec, true)
+	now, _ = due(nil, routing.State{Name: "refine"}, forge.Issue{Body: "x"}, "c", "", rec, true)
 	if now.Stale != "" || now.Kept != "" {
 		t.Errorf("state moved on: %+v", now)
 	}

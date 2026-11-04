@@ -30,6 +30,11 @@ type Record struct {
 	Body    string `json:"body"`
 	Labeled string `json:"labeled,omitempty"`
 	Hops    int    `json:"hops"`
+	// Reached: the furthest state on the line the issue was in (#1068).
+	// A step into a state further still is progress: its count of hops
+	// starts again, so max-hops stops a loop, never the step ending it.
+	// "" in a record from before: its state stands for it.
+	Reached string `json:"reached,omitempty"`
 	// Spec: the hash of the reviewer's comment on the issue's spec, when
 	// it has one (#128): a review written since makes the step due again,
 	// the product owner reading it then.
@@ -251,9 +256,10 @@ func plural(n int, one, many string) string {
 // due says whether the step of state s is due on is: false when the
 // record says that step ran on the same state, body and labelling; else
 // the hops it will be, the record's plus one for a state not acted on
-// before.
-func due(s routing.State, is forge.Issue, labeled, spec string, rec Record, had bool) (Record, bool) {
-	now := Record{State: s.Name, Body: bodyHash(is.Body), Labeled: labeled, Hops: rec.Hops, Spec: spec}
+// before — one, a count started again, for a state further on the line
+// (cfg) than any it reached (#1068).
+func due(cfg *routing.Config, s routing.State, is forge.Issue, labeled, spec string, rec Record, had bool) (Record, bool) {
+	now := Record{State: s.Name, Body: bodyHash(is.Body), Labeled: labeled, Hops: rec.Hops, Spec: spec, Reached: rec.Reached}
 	if had && rec.State == now.State && rec.Body == now.Body && rec.Labeled == now.Labeled && rec.Spec == now.Spec {
 		return rec, false
 	}
@@ -267,6 +273,21 @@ func due(s routing.State, is forge.Issue, labeled, spec string, rec Record, had 
 	}
 	if !had || rec.State != now.State {
 		now.Hops++
+	}
+	reached := rec.Reached
+	if reached == "" && had {
+		reached = rec.State // a record from before: its state stands for the furthest
+		if reached == BlockedState {
+			reached = rec.From // the state it was blocked from
+		}
+	}
+	switch {
+	case reached == "" || reached == BlockedState:
+		now.Reached = s.Name
+	case had && rec.State != now.State && cfg != nil && cfg.Ahead(reached, s.Name):
+		now.Reached, now.Hops = s.Name, 1 // progress: the count starts again
+	default:
+		now.Reached = reached
 	}
 	return now, true
 }

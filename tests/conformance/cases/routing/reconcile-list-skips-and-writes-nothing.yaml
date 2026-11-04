@@ -13,7 +13,7 @@ given:
         title: "Multiply"
         labels: ["workline:ready"]
         body: "## Need\n\nI want to multiply.\n"
-        comments: ["<!-- workline:line-record {\"state\":\"tests\",\"body\":\"8a828a06be19\",\"hops\":8} -->\n<!-- workline:sticky=line/state -->"]
+        comments: ["<!-- workline:line-record {\"state\":\"tests\",\"body\":\"8a828a06be19\",\"hops\":8,\"reached\":\"ready\"} -->\n<!-- workline:sticky=line/state -->"]
       - {id: 4, title: "Divide", labels: ["workline:needs-tests"], body: "## Need\n\nI want to divide.\n"}
 run: {route: reconcile, open-merge-request: true, ai: "fake:developer-nothing", input: {reconcile: list, skip: tester}}
 expect:
