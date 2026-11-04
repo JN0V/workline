@@ -10,8 +10,8 @@
   lets it ([#438], [amendment](#amendment-2026-10-17-438-an-agents-rewording-waits-for-a-yes));
   up to date and one at a time dropped by [ADR-0051]
   ([amendment](#amendment-2026-10-21-adr-0051-no-up-to-date-no-one-at-a-time));
-  a fork's verdict kept, its yes its review ([#1043],
-  [amendment](#amendment-2026-11-04-1043-a-forks-verdict-is-kept))
+  a fork goes by its yes and its checks ([#1043],
+  [amendment](#amendment-2026-11-04-1043-a-fork-goes-by-its-yes-and-its-checks))
 - **Date:** 2026-10-12
 - **Decided by:** the maintainer, its direction (2026-10-12), after four
   agents argued role or not
@@ -245,8 +245,9 @@ Built for workline's own routine pull requests: the
   check failed is out; only one ready and up to date ends a pass.
 - **Draft** turns auto-merge off; **another bot's own auto-merge** (a
   dependency bot's) is left to it; a fork's run is the fork's, so the
-  templates keep no verdict of it (kept since [#1043],
-  [amendment](#amendment-2026-11-04-1043-a-forks-verdict-is-kept)).
+  templates keep no verdict of it (still none since [#1043]: a fork goes
+  by its yes and its checks,
+  [amendment](#amendment-2026-11-04-1043-a-fork-goes-by-its-yes-and-its-checks)).
 - **The texts**: principle 1 holds as written, the label being the
   acceptance; concepts.md, ADR-0011, ADR-0020 and AGENTS.md amended.
 - **Tried live** on both forges, real auto-merges and merges, no agent;
@@ -491,25 +492,28 @@ accepted-all-turned-on-at-once, gitlab-accepted-turned-on;
 routing/main-red-says-base-red-on-open-merge-requests;
 TestMainIssueCountsRedMainsAWeek.
 
-## Amendment (2026-11-04, #1043): a fork's verdict is kept
+## Amendment (2026-11-04, #1043): a fork goes by its yes and its checks
 
-"The templates keep no verdict of a fork's run" left an accepted fork's
-pull request waiting for ever: `follow` waits for a verdict on its head.
+"The templates keep no verdict of a fork's run" stays, but `follow`
+waited for that verdict: an accepted, green fork's pull request waited
+for ever.
 
-- **Kept, as data**: the fork's run leaves its verdict; workline-apply.yml
-  keeps it on the head the event names, from the base's checkout and
-  main's engine, never the fork's code ([ADR-0044]). Proposals are still
-  never applied from a fork.
-- **A fork's run asks no agent**: it gets no secret, so its review falls
-  short (`not-reviewed`). For a fork, the person's yes on that head is
-  the review: the short verdict counts as a pass, said
-  (`fork-reviewed-by-the-yes`). A red verdict stays red.
-- **Still never without a yes**: a fork's run writes its own verdict, so
-  only a person's yes on its head merges it; one with none is said to
-  wait for it (`waits-for-a-yes`), at any level.
+- **No verdict of a fork, still**: its run is the fork's copy of the
+  workflow, its engine maybe the fork's; a verdict it wrote, kept as the
+  App's status, would look like the line's. None is left nor kept.
+- **A fork goes by the yes and its checks**: a person's yes on its head,
+  then every check on that head green, its own `judge` among them, arm
+  auto-merge (`fork-yes`). A check still running waits, said
+  (`fork-checks-pending`); a red one is out, as for any pull request.
+  Its run asks no agent: the person's yes is its review.
+- **`follow` runs after a fork's run**, from the base's checkout and
+  main's engine, never the fork's code ([ADR-0044]); nothing is applied
+  from it.
+- **Never without a yes**: one with none is said to wait for it
+  (`waits-for-a-yes`), at any level.
 
-Conformance: merge/fork-accepted-merges, fork-without-a-yes-waits;
-TestForkVerdictIsKept.
+Conformance: merge/fork-accepted-merges, fork-accepted-waits-for-its-checks,
+fork-without-a-yes-waits; TestForkIsFollowedWithNoVerdict.
 
 [ADR-0005]: 0005-independence-takes-the-best-level-available.md
 [ADR-0011]: 0011-the-review-is-on-the-merge-request-not-the-push.md
