@@ -22,9 +22,9 @@ var guessMark = regexp.MustCompile(`(?mi)^\s*(?:[-*]\s+)?[*_]*guessed[*_]*\s*:`)
 
 // codeUnread is a Scope's own word that no code was given when it was
 // written, as Scopes said it before the mark (#998): "no `init` code
-// was given in this run", "the code was not read".
-var codeUnread = regexp.MustCompile("(?i)\\bno\\b[^.\\n]{0,40}\\bcode\\b[^.\\n]{0,20}\\b(?:was|were|has been|had been)\\s+(?:given|read|shown|seen)\\b" +
-	"|\\bcode\\b[^.\\n]{0,30}\\b(?:was|were)\\s+not\\s+(?:given|read|shown|seen)\\b")
+// was given in this run". Two words at most before `code`, and the
+// phrase ends there: "no other code was given a new name" is no guess.
+var codeUnread = regexp.MustCompile(`(?im)\bno(?:\s+\S+){0,2}?\s+code\s+(?:was|were|has\s+been|had\s+been)\s+(?:given|read)(?:\s+in\s+this\s+run|\s+for\s+(?:it|this\s+issue)|\s*[.,;:)]|\s*$)`)
 
 // Guessed says whether a Scope's text marks its paths a guess — written
 // before the code they name was read: a line starting `Guessed:` (#970),

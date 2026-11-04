@@ -709,7 +709,9 @@ the bug.
 - **An overlap that ended wakes the issue**: a ready issue the
   developer passed over for an overlap is due again once its Scope
   overlaps no claim held, whatever ended it. Before, only a claim held
-  at the wake and held no more woke it.
+  at the wake and held no more woke it. Once for the developer's comment
+  that said the overlap (`unheld`): a run that leaves it as it is does
+  not wake the issue again.
 - **The wait names a person's yes**: passed over for an issue that is
   not a bug, whose pull request is open, the issue's comment says that
   pull request merges on a person's yes. Only a fix merges alone

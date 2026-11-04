@@ -453,7 +453,8 @@ whose result moves the issue to the next. The table is the routing's
   (`state-freed`) once its claim was put on since and let go, a hop
   more, so a take-and-let-go cycle ends at `max-hops`; or once an issue
   in `held` is held no more; or, passed over for an overlap, once its
-  Scope overlaps no claim held
+  Scope overlaps no claim held, once for the comment that said it
+  (`unheld`)
   ([#998](https://github.com/JN0V/workline/issues/998)). A record from before `woke` is due once
   where the developer wrote its comment. Never on a clock: no loop.
 - **A developer run lost is not acted**: a run the line woke that

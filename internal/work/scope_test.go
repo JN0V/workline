@@ -70,9 +70,12 @@ func TestGuessed(t *testing.T) {
 		"- `src/lib.sh`: `add`.":                    false,
 		// Before the mark, its own words said no code was given (#998).
 		"The check (`roles/documentalist`). The paths come from the error text, because no `init` code was given in this run.": true,
-		"- `src/`: the code of the parser was not read.":                                                                        true,
+		"- `src/`: no code was read.":                                                                                           true,
 		"- `src/`: no code is read from the network.":                                                                           false,
 		"- `src/`: the code was given a new name.":                                                                              false,
+		"- `src/`: no other code was given a new name.":                                                                         false,
+		"- `src/`: no new code was read by the parser.":                                                                         false,
+		"- `src/`: the error code was not shown to the user.":                                                                   false,
 	} {
 		if got := Guessed(scope); got != want {
 			t.Errorf("Guessed(%q) = %v, want %v", scope, got, want)

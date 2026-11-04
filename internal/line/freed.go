@@ -56,11 +56,14 @@ func freed(cfg *routing.Config, b forge.Backlog, tl *tally, s routing.State, is 
 		return rec, "", nil
 	}
 	// Passed over for an overlap, the developer's last word on it: what
-	// ends that wait may be its own Scope, read as a guess (#998).
-	overlapped := false
+	// ends that wait may be its own Scope, read as a guess (#998). Once
+	// for that comment: a developer run that leaves it as it is does not
+	// wake the issue again (Unheld).
+	overlapped, said := false, ""
 	for _, c := range slices.Backward(comments) {
 		if strings.Contains(c, developerSaid) {
-			overlapped = developer.PassedForOverlap(c)
+			said = bodyHash(c)
+			overlapped = developer.PassedForOverlap(c) && rec.Unheld != said
 			break
 		}
 	}
@@ -77,6 +80,7 @@ func freed(cfg *routing.Config, b forge.Backlog, tl *tally, s routing.State, is 
 		}
 	}
 	if n, _ := developer.Overlapping(is, claims, tl.files); overlapped && n == 0 {
+		rec.Unheld = said
 		return rec, fmt.Sprintf("the developer passed it over for an overlap, but its %s overlaps no issue held now (a %[1]s its own words call a guess holds nothing): free to take again", work.Name(work.Scope)), nil
 	}
 	return rec, "", nil
