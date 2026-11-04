@@ -1,0 +1,10 @@
+# workline by reference: add to .gitlab-ci.yml. To update, change the one
+# ref below (Renovate proposes it).
+stages: [test, deploy]
+include:
+  - project: JN0V/workline
+    ref: &workline v0.70.0
+    file: ci/gitlab/workline.gitlab-ci.yml
+workline:warn:child:              # the child pipeline reads the same file, from workline
+  trigger:
+    include: [{project: JN0V/workline, ref: *workline, file: ci/gitlab/workline.gitlab-ci.yml}]
