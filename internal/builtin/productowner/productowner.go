@@ -807,6 +807,7 @@ func Pre(runDir, repo string) int {
 		var task strings.Builder
 		var code []string // the files the issues name, given once each
 		filesOf := map[int][]string{} // the files each issue read names
+		namesIn := map[string][]string{} // the names the issues quote, by file: their lines given past a cut (#1056)
 		noCode := false   // an issue read names no file: the repository's folders are listed
 		left := slices.Clone(rest)
 		for i, d := range toRead {
@@ -819,8 +820,11 @@ func Pre(runDir, repo string) int {
 			written, aboutIt := writtenAt(repo, d.is, d.st, tracked, cfg.Archived)
 			files := named(repo, d.is, d.st, d.comments, aboutIt, tracked)
 			filesOf[d.is.ID] = files
+			for _, f := range files {
+				namesIn[f] = append(namesIn[f], quoted(d.is, d.comments)...)
+			}
 			noCode = noCode || len(files) == 0
-			review := written + kindAsked(d.is, d.st, kindAct)
+			review := written + kindAsked(d.is, d.st, kindAct) + definedRest(repo, d.is, d.comments, files)
 			if r := backlog.SpecOpen(d.is, d.comments); cfg.SpecReview && r != nil {
 				review += specFindings(d.is, d.st, d.comments, r)
 			}
@@ -940,7 +944,7 @@ func Pre(runDir, repo string) int {
 		if len(others) > 0 {
 			fmt.Fprintf(&task, "# The other open issues, titles only\n\nNot read in this run; a duplicate may be one of them.\n\n%s\n\n", strings.Join(others, "\n"))
 		}
-		given := writeCode(&task, repo, code, s.CodeLinesMax)
+		given := writeCode(&task, repo, code, s.CodeLinesMax, namesIn)
 		for _, id := range slices.Sorted(maps.Keys(filesOf)) {
 			if fs := filesOf[id]; len(fs) > 0 && !slices.ContainsFunc(fs, func(f string) bool { return !slices.Contains(given, f) }) {
 				t.codeRead = append(t.codeRead, strconv.Itoa(id))
@@ -1739,15 +1743,16 @@ func writeFolders(b *strings.Builder, tracked map[string]bool) {
 // it, which are other items' (#548).
 func named(repo string, is forge.Issue, st *backlog.State, comments []string, aboutIt string, tracked map[string]bool) []string {
 	var out []string
-	add := func(p string) {
+	upTo := func(p string, most int) {
 		p = backlog.RepoPath(p) // a link to a file on the forge is that file
 		if !tracked[p] && !strings.Contains(p, "/") {
 			p = byName(p, tracked)
 		}
-		if tracked[p] && !slices.Contains(out, p) && len(out) < filesPerIssue {
+		if tracked[p] && !slices.Contains(out, p) && len(out) < most {
 			out = append(out, p)
 		}
 	}
+	add := func(p string) { upTo(p, filesPerIssue) }
 	dirs := folders(tracked)
 	for _, s := range st.Sources {
 		// A folder named as a source is given as the list of its files.
@@ -1778,8 +1783,13 @@ func named(repo string, is forge.Issue, st *backlog.State, comments []string, ab
 		if len(out) >= filesPerIssue || len(name) < 4 {
 			break
 		}
-		for _, f := range holding(repo, name) {
-			add(f)
+		files, defs := holding(repo, name)
+		for _, f := range files {
+			if defs {
+				upTo(f, definedMax) // each copy of a function it names (#1057)
+			} else {
+				add(f)
+			}
 		}
 	}
 	for _, m := range backlog.PathLike.FindAllString(aboutIt, -1) {
@@ -1789,26 +1799,27 @@ func named(repo string, is forge.Issue, st *backlog.State, comments []string, ab
 }
 
 // holding lists the files of the commit holding a name, as a word, docs
-// left out; none when more than two do: too common to tell.
-func holding(repo, name string) []string {
+// left out. When more than two do: those that define it, up to
+// definedMax (defs true, #1057); none past that: too common to tell.
+func holding(repo, name string) ([]string, bool) {
 	out, err := exec.Command("git", "-C", repo, "grep", "-l", "-w", "-F", name, "HEAD", "--", ".", ":!*.md").Output()
 	if err != nil {
-		return nil
+		return nil, false
 	}
 	var files []string
 	for _, l := range strings.Split(strings.TrimSpace(string(out)), "\n") {
 		files = append(files, strings.TrimPrefix(l, "HEAD:"))
 	}
 	if len(files) > 2 {
-		return nil
+		return defining(repo, name, files), true
 	}
-	return files
+	return files, false
 }
 
 // writeCode gives each file named, whole up to codeLines, with its last
 // commits: what changed it, so an issue the code solved can be told. It
 // returns the files given: an effort is estimated only on them (ADR-0040).
-func writeCode(b *strings.Builder, repo string, files []string, budget int) []string {
+func writeCode(b *strings.Builder, repo string, files []string, budget int, namesIn map[string][]string) []string {
 	if len(files) == 0 {
 		return nil
 	}
@@ -1820,12 +1831,19 @@ func writeCode(b *strings.Builder, repo string, files []string, budget int) []st
 			continue
 		}
 		lines := strings.Split(strings.TrimRight(string(data), "\n"), "\n")
+		all := lines
 		more := ""
 		if n := min(codeLines, budget); len(lines) > n {
 			more = fmt.Sprintf("\n(%d more lines left out)", len(lines)-n)
 			lines = lines[:n]
 		}
 		budget -= len(lines)
+		if len(lines) > 0 && len(lines) < len(all) {
+			// Past the cut, the lines naming what the issues quote (#1056).
+			var past string
+			past, budget = namedPast(f, all, len(lines), namesIn[f], budget)
+			more += past
+		}
 		if len(lines) == 0 {
 			fmt.Fprintf(b, "## %s\n\nLeft out: the run's code budget is spent.\n\n", f)
 			continue
