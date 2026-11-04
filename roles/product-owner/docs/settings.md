@@ -73,7 +73,9 @@ Need or Validation draft no person accepted, waits for an answer
   anything else stops the run, said.
 - **Counted from the question's comment**, as the forge dates it,
   never from the issue's last update; a draft from when the issue got
-  `workline:draft`, or from a person's later comment.
+  `workline:draft`, or from a person's later comment. Draft marks in a
+  body that never had the label: from the role's first comment on it
+  ([#1021](https://github.com/JN0V/workline/issues/1021)).
 - **An answer before the delay** cancels it: no assumption.
 - **Past the delay**, the line wakes the role once, with no agent until
   then; one agent call writes the assumption

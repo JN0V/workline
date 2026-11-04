@@ -164,9 +164,14 @@ func OnlyDrafts(is forge.Issue, st *State) bool {
 
 // DraftsSince is when the drafts of an issue started waiting on a
 // person: the forge's time of its workline:draft label, or a counted
-// comment after it — a person who wrote since is waited for again.
+// comment after it — a person who wrote since is waited for again. With
+// no time for the label — drafts whose marks came in the body, never
+// labelled (#1021) —, from the product owner's first comment on it.
 func DraftsSince(labeled string, notes []forge.Note, is forge.Issue) (time.Time, bool) {
 	at, ok := readTime(labeled)
+	if !ok {
+		at, ok = firstRead(notes)
+	}
 	if !ok {
 		return time.Time{}, false
 	}
@@ -176,6 +181,20 @@ func DraftsSince(labeled string, notes []forge.Note, is forge.Issue) (time.Time,
 		}
 	}
 	return at, true
+}
+
+// firstRead is when the product owner first wrote on an issue, as the
+// forge dates it: its state, an ask or a proposal; false when the forge
+// dates none.
+func firstRead(notes []forge.Note) (time.Time, bool) {
+	for _, n := range notes {
+		if Round(n.Body, Keeper) || strings.Contains(n.Body, "<!-- workline:sticky="+Keeper+"/") {
+			if t, ok := readTime(n.Created); ok {
+				return t, true
+			}
+		}
+	}
+	return time.Time{}, false
 }
 
 // DraftNames are the headings of an issue's drafts no person accepted.
