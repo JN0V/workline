@@ -1,6 +1,7 @@
 package reviewer
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"slices"
@@ -70,6 +71,7 @@ func answered(repo string, s Settings, st state, lines []forge.LineComment, r le
 		}
 	}
 	lensOf := lensReader(repo)
+	fixed := fixedRows(kept)
 	var out []string
 	for _, t := range threads {
 		if t.Resolved || len(t.Comments) == 0 || !kept.Wrote(t.Comments[0]) {
@@ -86,7 +88,8 @@ func answered(repo string, s Settings, st state, lines []forge.LineComment, r le
 		if !ofThisSide(s, st, by) {
 			continue
 		}
-		if gone(linesOf(t.Path), t.Path, by, keys[0]) || readAgain(repo, s, st, r, lensOf, by, t.Path) {
+		warnFixed := !s.AIFindings.Blocks(by) && fixedWarn(fixed, by, t)
+		if gone(linesOf(t.Path), t.Path, by, keys[0]) || readAgain(repo, s, st, r, lensOf, by, t.Path) || warnFixed {
 			out = append(out, t.ID)
 		}
 	}
@@ -135,4 +138,58 @@ func readAgain(repo string, s Settings, st state, r lensesRead, lensOf func(stri
 func resolvedLine(n int) string {
 	return fmt.Sprintf("**Resolved**: %d %s on %s of a review before, the code answering %s now.",
 		n, plural(n, "conversation", "conversations"), plural(n, "a line", "lines"), plural(n, "it", "them"))
+}
+
+// fixedRows are the reviewer's rows the developer's rounds asked and
+// answered with a fix pushed, its tests green, as its record on the merge
+// request keeps them (sticky=developer/code): what a warning's thread
+// needs to be settled (#1050). No record, or one that does not read: none.
+func fixedRows(kept forge.Kept) []string {
+	c, ok := kept.Last(forge.Marker("sticky=developer/code"))
+	if !ok {
+		return nil
+	}
+	const opening = "<!-- workline:developer-act "
+	i := strings.Index(c, opening)
+	if i < 0 {
+		return nil
+	}
+	body, _, _ := strings.Cut(c[i+len(opening):], " -->")
+	var act struct {
+		Rounds []struct {
+			Asked  []string `json:"asked"`
+			Result string   `json:"result"`
+		} `json:"rounds"`
+	}
+	if json.Unmarshal([]byte(body), &act) != nil {
+		return nil
+	}
+	var out []string
+	for _, r := range act.Rounds {
+		if r.Result == "green" {
+			out = append(out, r.Asked...)
+		}
+	}
+	return out
+}
+
+// fixedWarn says whether a round of the developer answered a warning's
+// thread, a fix pushed: its row names the thread's lens, file and title
+// (`warns <lens> `+"`path:line`"+`: Important: <title>`). A warning asks nothing
+// (ADR-0051, cut 4), so the run after that fix, not finding it again,
+// settles it, its lens reading the file or not (#1050).
+func fixedWarn(rows []string, lens string, t forge.Thread) bool {
+	_, rest, ok := strings.Cut(t.Comments[0].Body, "**Important: ")
+	if !ok {
+		return false
+	}
+	title, _, _ := strings.Cut(rest, "**")
+	for _, row := range rows {
+		head, text, ok := strings.Cut(row, ": Important: ")
+		if !ok || text != title || !strings.HasPrefix(head, "warns "+lens+" `"+t.Path+":") {
+			continue
+		}
+		return true
+	}
+	return false
 }
