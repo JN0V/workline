@@ -5,7 +5,7 @@ sources:
   - ci/github/workline-objection.yml
   - ci/github/workline-answer.yml
   - ci/github/workline-gardening.yml
-checked: 8538d558
+checked: 041b9f4f
 verified: agent:claude-code
 ---
 # Tester
@@ -67,10 +67,10 @@ workline test write --issue 42 --ai claude
 - **What the agent reads**: the scenarios, the Need, Verification and
   Scope, the files the Scope names (a folder named: its own files; a
   pattern such as `src/calc/*.sh`: the files it matches; a file past
-  `code-lines-max`: the functions and lines the Scope names in it),
-  the tests beside them, the test command. Long lines over the context
-  budget: fewer lines given; still over, the issue says so and names
-  `code-lines-max`.
+  `code-lines-max`: the functions and lines it names), those the product
+  owner named, the tests beside them (else their module's), the test
+  command. Long lines over the context budget: fewer lines given; still
+  over, the issue says so and names `code-lines-max`.
 - **One test a scenario**: its name holds the scenario's name, its
   comment the Given / When / Then. A scenario no test can check is said
   in a note, listed in the Draft as not tested.
