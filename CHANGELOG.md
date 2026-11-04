@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.72.1](https://github.com/JN0V/workline/compare/v0.72.0...v0.72.1) (2026-11-04)
+
+
+### Bug Fixes
+
+* a rule in a frozen test goes to the tester ([#1042](https://github.com/JN0V/workline/issues/1042)) ([e039eda](https://github.com/JN0V/workline/commit/e039eda744a6873e73493dfa0720fcdc36421373))
+* ask the product owner for files not asked at a head ([#1074](https://github.com/JN0V/workline/issues/1074)) ([be8a12d](https://github.com/JN0V/workline/commit/be8a12de5b3ab17cfdb67e3c26f9b2e135be41ee))
+* **codenav:** find C++ methods defined out of their class ([#1066](https://github.com/JN0V/workline/issues/1066)) ([e8e2183](https://github.com/JN0V/workline/commit/e8e21836c73803a2d68ea34ba1990bd5e27dc892))
+* **doctor:** read judge apply workflow for checks: write ([#1034](https://github.com/JN0V/workline/issues/1034)) ([8fd3466](https://github.com/JN0V/workline/commit/8fd3466897b92bccc314a60f28461af43f3f8e2c))
+* give the product owner the code an issue names ([#1058](https://github.com/JN0V/workline/issues/1058)) ([6549cdd](https://github.com/JN0V/workline/commit/6549cdd931411eacf1df91c5d5dfc7d55137e21d))
+* keep a new file the developer asked in the Scope ([#1065](https://github.com/JN0V/workline/issues/1065)) ([a1a7c75](https://github.com/JN0V/workline/commit/a1a7c75a5b815b78ffa16269e43bf013b144d616))
+* **line:** progress restarts the max-hops count ([#1069](https://github.com/JN0V/workline/issues/1069)) ([fb476e1](https://github.com/JN0V/workline/commit/fb476e135a44d5bb33b63824b4055e4ab680d6cf))
+* **merge:** a fork merges on its yes and green checks ([#1046](https://github.com/JN0V/workline/issues/1046)) ([fe48fa2](https://github.com/JN0V/workline/commit/fe48fa23438342303ef4dbc72b0646a41c69c3f2))
+* read a Need on top; an import's file is not its code ([#1067](https://github.com/JN0V/workline/issues/1067)) ([7563627](https://github.com/JN0V/workline/commit/756362770f5dca794c4f4c7b4929e32991d6f9ad))
+* read a new import its event names; say a hold ([#1037](https://github.com/JN0V/workline/issues/1037)) ([fd55a61](https://github.com/JN0V/workline/commit/fd55a61249aef11bea0931f5b566114088deabfa))
+* resolve a warning's thread the developer's fix answered ([#1051](https://github.com/JN0V/workline/issues/1051)) ([50b3be0](https://github.com/JN0V/workline/commit/50b3be03ba8e57cfd8e551d9e0902675892cf26a))
+* resolve the reviewer's answered threads ([#1045](https://github.com/JN0V/workline/issues/1045)) ([10eb0cd](https://github.com/JN0V/workline/commit/10eb0cde9271f54cfaeaea128125bfc9c5cd4d59))
+* settle a no-test issue: rewritten, or blocked ([#1054](https://github.com/JN0V/workline/issues/1054)) ([80039df](https://github.com/JN0V/workline/commit/80039df9f8ed4c4b3aac946bfae689ff70dba000))
+* **tester:** ask again a test that does not build ([#1052](https://github.com/JN0V/workline/issues/1052)) ([c123148](https://github.com/JN0V/workline/commit/c123148b5e5bea64a46f9a62245506543ad34a9b))
+* **tester:** give the code the product owner named ([#1049](https://github.com/JN0V/workline/issues/1049)) ([3eb0237](https://github.com/JN0V/workline/commit/3eb0237ef3af59e1b7c3325d2bf0db76bd8a1946))
+* **tester:** keep room for a test when the code fills it ([#1060](https://github.com/JN0V/workline/issues/1060)) ([fb19155](https://github.com/JN0V/workline/commit/fb1915548e197e272511770353bf7760304e6496))
+* wake a refine again when its spec review never came ([#1071](https://github.com/JN0V/workline/issues/1071)) ([40cf77c](https://github.com/JN0V/workline/commit/40cf77cda839a39c8eaf1128b43f78d1caadbacd))
+* wake again an issue the product owner never read ([#1044](https://github.com/JN0V/workline/issues/1044)) ([9f5afa4](https://github.com/JN0V/workline/commit/9f5afa470827e0c74423e73e3168b38119c15556))
+
 ## [0.72.0](https://github.com/JN0V/workline/compare/v0.71.0...v0.72.0) (2026-11-04)
 
 
