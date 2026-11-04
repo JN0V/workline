@@ -912,3 +912,10 @@ merge-request line; on in workline's own repository.
 - **Rejected**: resolving every warns thread at once (a team turned the
   rule on to hold on them); resolving on the developer's word alone
   (the reviewer decides a finding is fixed).
+- **A warning answered by the developer**
+  ([#1050](https://github.com/JN0V/workline/issues/1050)): its lens may
+  never read the file again, and the thread held a green fix with no
+  end. A warning asks nothing: its thread is resolved once a round of
+  the developer asked it, pushed a fix with its tests green, and the
+  next run does not raise it again. A block still waits for the
+  reviewer.
