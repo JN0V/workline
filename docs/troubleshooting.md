@@ -1,6 +1,6 @@
 ---
 sources: [internal/doctor/doctor.go, internal/doctor/conversations.go, internal/doctor/variables.go, internal/hooks/hooks.go, cmd/workline/main.go, cmd/workline/cli.go, internal/forge/local.go]
-checked: 8538d558
+checked: adf500ab
 verified: agent:claude-code
 ---
 # Troubleshooting
@@ -159,8 +159,12 @@ The line of states says why on the issue and in the run's summary
   there, one conversation each. Copy `ci/github/workline.yml` and
   `workline-apply.yml` of this release: the documentalist's findings
   become a check's annotations, which open none.
-- **The reviewer's comments** are conversations by design: answer or
-  resolve each.
+- **The reviewer's comments** are conversations by design. The reviewer
+  resolves its own once the code answers them
+  ([how](../roles/reviewer/docs/lines.md#not-repeated-found-again)); a
+  person resolves the rest. `workline follow` lists the open ones that
+  hold an auto-merge
+  ([#1039](https://github.com/JN0V/workline/issues/1039)).
 
 ## Nothing merges
 
