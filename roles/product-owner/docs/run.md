@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, roles/product-owner/instruction.md, roles/product-owner/policy.md, internal/builtin/productowner, internal/backlog]
-checked: 8538d558
+checked: cee5a7af
 verified: agent:claude-code
 ---
 # Product owner — a run
@@ -39,7 +39,7 @@ waits for a run on the whole backlog.
 ## 2. What the agent is given
 
 On `issue`, its state `workline:to-refine` woken where the project
-routes the role there, that issue alone
+routes the role there, that issue alone, an import never read too
 ([the line of states](../../../docs/spec/routing.md#the-line-of-states)).
 A `workline:blocked` issue with news, or a week on, too
 ([blocked, read again](../../../docs/spec/routing.md#blocked-read-again)).

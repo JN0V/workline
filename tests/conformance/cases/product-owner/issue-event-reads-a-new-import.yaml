@@ -1,0 +1,28 @@
+case: product-owner/issue-event-reads-a-new-import
+about: >
+  Woken by the state of an imported issue it never read, no state of its
+  own yet (ADR-0059), the product owner reads it in that run: its state
+  is written and the agent is given it, told what holds it from ready.
+  Before, an import was left for the catch-up, the line never woke the
+  role again on the same body, and the issue sat in refine with nothing
+  said (#1036). Its Validation prose and the agent rewriting nothing nor
+  asking, the issue says why it stays in refine and whose move it is.
+given:
+  repo: backlog
+  config:
+    routing: {events: {schedule: [product-owner], issue: [product-owner, tester, developer]}}
+  forge:
+    issues:
+      - {id: 19, title: "Client id wraps", body: "Copied for a trial.\n\nOpened from `docs/ROADMAP.md`, lines 6 to 6 by the product-owner role.\n\n<!-- workline:import=docs/ROADMAP.md:0b78948db2b0 -->\n\n## Need\n\nDraft: a device that accepts many connections never reuses a client id after the counter wraps.\n\n## Verification\n\nA test sets the counter near its maximum and connects clients.\n\n## Validation\n\nDraft: the reporter checks the wrap behaviour and accepts it.\n\n## Scope\n\nsrc/export/csv.go", author: ann, insider: true, labels: [workline:to-refine]}
+run: {role: product-owner, event: issue, target: {issue: 19}, ai: fake:proposes-nothing}
+expect:
+  status: pass
+  agent-calls: 1
+  run-files:
+    in/task.md:
+      contains:
+        - "Its Need and Validation each open with `Draft:`"
+        - "It is yours to rewrite: answer with a `refine` giving its whole new Validation in that form"
+  forge:
+    issues:
+      - {id: 19, labels: [workline:to-refine], comment-contains: ["leaves this issue in refine: no test would be written first", "its Validation names no scenario the tester reads", "the product owner rewrites its Validation"]}

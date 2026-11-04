@@ -1218,6 +1218,16 @@ func (p *Plan) summary(role string) {
 				p.Silent = map[int]string{}
 			}
 			p.Silent[id] = silentWhy(id, lacks, p.drops[id], p.config.Notes, len(p.read))
+		} else if unread, own := ScenariosUnread(is, p.ledger.States[id]); unread && p.config.Tester && !Readied(is) {
+			// Complete, but its Validation names no scenario the tester
+			// reads, and nothing rewritten nor asked (#1036): held, said
+			// on it, never left in refine with no word.
+			p.Findings = append(p.Findings, verdict.Finding{Rule: "nothing-proposed", Level: "info", Where: fmt.Sprintf("#%d", id),
+				Message: "read, and nothing was rewritten or asked though " + scenariosWhat(is) + ": it stays in refine, said on it"})
+			if p.Silent == nil {
+				p.Silent = map[int]string{}
+			}
+			p.Silent[id] = scenariosUnreadWhy(is, own)
 		}
 	}
 	// An issue read in full that no kind tells, and the answer gave it

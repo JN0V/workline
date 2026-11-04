@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/productowner/productowner.go]
-checked: ecee5fb2
+checked: cee5a7af
 verified: agent:claude-code
 ---
 # Troubleshooting the product owner
@@ -62,7 +62,7 @@ When the product owner pauses, or an issue gets nothing. Part of
   person decides: `workline:accepted`, or `workline:ready` by hand.
 - An issue refined stays out of ready, `scenarios-unread`: its
   Validation names no scenario (prose, or Given / When / Then in another
-  form); write each
+  form), said on it when the agent rewrote nothing nor asked; write each
   as `- **Name:** Given …, When …, Then …`
   ([writing an issue](../roles/product-owner/docs/writing.md#the-rules)).
 - `kind-missing`: a full read gave an issue no kind; the next light
