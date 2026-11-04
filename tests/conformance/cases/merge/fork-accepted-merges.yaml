@@ -22,7 +22,7 @@ run: {follow: [--base, main], summary: true}
 expect:
   status: pass
   findings:
-    - {rule: fork-yes, where: "#9", message: "from a fork, no verdict of its run kept: @dana's yes on its head and its checks, all green, are what it goes by"}
+    - {rule: fork-yes, where: "#9", message: "from a fork: the line kept no verdict of its run and read no review of it; @dana's yes on its head carries it, its checks all green"}
     - {rule: auto-merge-on, where: "#9", message: "accepted by @dana, its checks passed: auto-merge turned on"}
   no-findings: [{rule: verdict-missing}, {rule: review-short}]
   summary-file: ["accepted into main, #9: each merges once its own head is green"]

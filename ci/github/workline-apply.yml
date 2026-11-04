@@ -301,7 +301,8 @@ jobs:
     # A push to main; with the merge policy, a pull request's run too, once
     # its verdict is kept, never workline-warn.yml's, which keeps none. A
     # fork's too, once its checks are done (#1043): no verdict of it is
-    # kept, a person's yes on its head and its checks all green arm it.
+    # kept, a person's yes on its head and its checks all green arm it,
+    # unless it changes CI, a gate's file or what steers agents.
     needs: verdict
     if: always() && (github.event_name == 'push' || (github.event.workflow_run.name == 'workline' && github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion != 'cancelled'))
     # One at a time on a branch, with workline-merge.yml's: each run reads
