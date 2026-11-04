@@ -1,10 +1,10 @@
 # ADR-0063: Every open issue is due, waiting or done, decided by one function
 
-- **Status:** proposed (draft 2, after a review by seven independent
-  readers; for the maintainer)
+- **Status:** accepted (2026-11-04)
 - **Date:** 2026-11-04
-- **Decided by:** not yet: the questions under
-  [For the maintainer](#for-the-maintainer), each with a recommendation
+- **Decided by:** the maintainer, on 2026-11-04, after a review by
+  seven independent readers: the five questions under
+  [Decided](#decided), each on the reviewers' recommendation
 - **Evidence:** [#757](https://github.com/JN0V/workline/issues/757)
   (the twelfth run: rounds 1–2, then round 3), the defects below; code
   read at `be8a12de` on `main`
@@ -225,6 +225,11 @@ The input is what decides whether a role has something new to read.
 - **A role with read tools logs what it read**: paths and blob SHAs,
   with its entry. Any of them changed is new input.
 - **Digest**: 12 hex characters of SHA-256 over the canonical form.
+- **One function, one place to run it**: the picker needs the code, so
+  the input is computed in a job with a checkout of the default branch,
+  at its current commit (blob SHAs from `git ls-tree`). The reconciler
+  and the role's own job run the same function on the same checkout;
+  the reconciler already runs in one, to read `.workline/`.
 - **Not chosen**: the hash of the role's built task. `Next` cannot
   build it without the role's code; a prompt or picker change in a
   release would make every issue new; tools read past the task.
@@ -240,12 +245,18 @@ The input is what decides whether a role has something new to read.
   label is put on, as the forge dates it. No folding, no last-N: a set
   of short ids fits the comment for hundreds of steps.
 - **Two writers never lose an entry**:
-  - one concurrency group per issue for every writer, the reconciler
-    included (GitHub's `concurrency`, GitLab's `resource_group`), as
+  - **in CI, the reconciler writes nothing itself**: it lists what is
+    due and dispatches one job per issue, which holds that issue's
+    concurrency group (GitHub's `concurrency`, GitLab's
+    `resource_group`), as
     [ADR-0059 §8](0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#8-event-driven-the-night-for-upkeep)
-    has for roles;
-  - and a write is read, union, edit, read back; an entry missing on the
-    read back is merged again.
+    has for roles. A reconcile walking many issues cannot hold their
+    groups; a job per issue can. Its writes with no agent (a wait said,
+    a stale move) go through the same per-issue job;
+  - **on a person's machine**, one process walks the issues one at a
+    time: no group needed;
+  - **a second net, not the guarantee**: a write is read, union, edit,
+    read back; an entry missing on the read back is merged again.
 - **Started before it runs**: a step writes `started(role, digest)`
   first. Started with no outcome after the run's time-out is a machine
   error, `run-lost`.
@@ -279,9 +290,11 @@ what changed.
   may say "due" from a stale view; the role, holding the issue's
   concurrency group, has the last word.
 - **Machine-error budget**: per issue, state entry, role and error
-  kind, 2 tries within 24 h by default, a back-off between. A new state
-  entry starts a new budget. The supervisor's shape: so many restarts
-  in a window, then escalate.
+  kind, 2 tries within 24 h of the first error by default, a back-off
+  between. Spent, it stays spent until a new state entry or a person
+  acts on the issue (a label, a comment); the 24 h never give it back.
+  The supervisor's shape, so many restarts then escalate; a window that
+  reset would loop once a day.
 - **Judgement rounds**: per state entry and role pair (product owner and
   tester, product owner and reviewer), 3 exchanges by default, as
   [ADR-0055]'s cap. Past it, the line asks a person a worded question:
@@ -531,8 +544,9 @@ Ways of working that hold while this is built, and after.
 
 ## Build plan
 
-One pull request a step unless said; about 15 to 18 in all. The
-simplest core that pays: steps 1, 2 and 5–6 on refine and ready only.
+One pull request a step unless said; about 15 to 18 in all. Steps 1–4
+are committed ([Decided](#decided)), then the pinned round (step 5),
+which decides the rest.
 
 1. **The simulator, red first, no behaviour change** (1–2 pull
    requests).
@@ -562,26 +576,37 @@ simplest core that pays: steps 1, 2 and 5–6 on refine and ready only.
      on the pull request, and no Scope ask is made.
    - *Done*: [#1061](https://github.com/JN0V/workline/issues/1061),
      [#1073](https://github.com/JN0V/workline/issues/1073) green.
-4. **A short pinned round on the C++ copy**: three fresh bugs, one
-   engine version, no rebuild. It checks steps 2–3 on real agents
+4. **The shared code picker, without tools** (§8), for the product
+   owner, the tester and the reviewer.
+   - *Given* the trial's #35, *when* the product owner refines it,
+     *then* its Scope names all 7 definitions of `getWebUIVersion()`,
+     with no `Guessed:`, no read again, no block.
+   - *Done*: per-role contract tests on frozen real code (a C++ method
+     in 7 files, a 7,576-line file, a Python module); the traces of
+     [#1056](https://github.com/JN0V/workline/issues/1056),
+     [#1057](https://github.com/JN0V/workline/issues/1057),
+     [#1063](https://github.com/JN0V/workline/issues/1063),
+     [#1064](https://github.com/JN0V/workline/issues/1064) green.
+5. **A short pinned round on the C++ copy**: three fresh bugs, one
+   engine version, no rebuild. It checks steps 2–4 on real agents
    before the line's core changes.
    - *Done*: the round told on
      [#757](https://github.com/JN0V/workline/issues/757); each defect
-     frozen as a trace.
-5. **The view**: a facade first, then the callers moved one package a
+     frozen as a trace; the steps below confirmed or changed by it.
+6. **The view**: a facade first, then the callers moved one package a
    pull request, no behaviour change.
    - *Given* the trial's #34 (its Need as text on top), *when* the
      product owner, the reviewer and the line read it, *then* all three
      agree it is drafted and waits on a review.
    - *Done*: every caller gives the same answer on every frozen body.
-6. **`Next` and the log, in shadow** beside `stateOf`.
+7. **`Next` and the log, in shadow** beside `stateOf`.
    - *Given* the simulator's traces and a pinned live repository
      (workline itself and the trial copy), *when* both functions run for
      N reconciles, *then* every divergence is listed and explained.
    - *Done*: no unexplained divergence over N reconciles; a config
      switch back kept one release.
-7. **`Next` decides**; `due` and the once-fields removed; the
-   budgets and judgement rounds on.
+8. **`Next` decides**; `due` and the once-fields removed; the budgets
+   and judgement rounds on; the [migration](#migration).
    - *Given* random seeded outcome sequences and every frozen trace,
      *when* the simulator runs, *then* I1 and I2 hold, with no code for
      any one issue.
@@ -594,23 +619,23 @@ simplest core that pays: steps 1, 2 and 5–6 on refine and ready only.
      [#1070](https://github.com/JN0V/workline/issues/1070),
      [#1072](https://github.com/JN0V/workline/issues/1072) green;
      `ready-overlap-gone-wakes-once.yaml` in its I1 form.
-8. **The picker, then read-only tools** (two pull requests at least).
-   - *Given* the trial's #35, *when* the product owner refines it,
-     *then* its Scope names all 7 definitions of `getWebUIVersion()`,
-     with no `Guessed:`, no read again, no block.
-   - *Done*: per-role contract tests on frozen real code (a C++ method
-     in 7 files, a 7,576-line file, a Python module); the token ceiling
-     held; a real agent on the copy, told under `## Tried`.
-9. **Pull requests through `Next`**, the forge's merge state.
-   - *Given* a green pull request held by an unresolved thread, *when*
-     the reconciler runs, *then* its status says "waits: 1 conversation
-     unresolved" and who resolves it.
-   - *Done*: [#1031](https://github.com/JN0V/workline/issues/1031),
-     [#1039](https://github.com/JN0V/workline/issues/1039),
-     [#1043](https://github.com/JN0V/workline/issues/1043),
-     [#1050](https://github.com/JN0V/workline/issues/1050) green on a
-     richer fake forge.
-10. **A full round**, pinned, on the C++ copy and on a second repository
+9. **Read-only tools** (`Read,Glob,Grep`) for the product owner, the
+   tester and the reviewer under `claude`.
+   - *Given* the same three frozen cases as step 4, *when* each role
+     runs with tools, *then* it finds the code with no read again, under
+     the token ceiling.
+   - *Done*: the ceiling held; a real agent on the copy, told under
+     `## Tried`.
+10. **Pull requests through `Next`**, the forge's merge state.
+    - *Given* a green pull request held by an unresolved thread, *when*
+      the reconciler runs, *then* its status says "waits: 1 conversation
+      unresolved" and who resolves it.
+    - *Done*: [#1031](https://github.com/JN0V/workline/issues/1031),
+      [#1039](https://github.com/JN0V/workline/issues/1039),
+      [#1043](https://github.com/JN0V/workline/issues/1043),
+      [#1050](https://github.com/JN0V/workline/issues/1050) green on a
+      richer fake forge.
+11. **A full round**, pinned, on the C++ copy and on a second repository
     unlike both (another language and layout).
     - *Pass mark*: at least 6 of 7 bugs merged on the copy; 0 steps
       started by hand; every open issue with a said status; median time
@@ -624,9 +649,17 @@ record, the reconciler, where state lives), the roles' outcomes, the
 
 - **In process**: a Go test calling `line.RunWith`
   ([line.go](https://github.com/JN0V/workline/blob/be8a12de/internal/line/line.go)),
-  the clock swapped (`var clock`,
-  [stale.go](https://github.com/JN0V/workline/blob/be8a12de/internal/line/stale.go)),
-  on the fake forge. One fake agent's state kept across K ticks: today's
+  on the fake forge.
+- **One clock**: every time read of the line goes through one seam,
+  `var clock` ([stale.go:32](https://github.com/JN0V/workline/blob/be8a12de/internal/line/stale.go#L32)), moved
+  there first, no behaviour change. Today `time.Now()` is also read at
+  [states.go:324](https://github.com/JN0V/workline/blob/be8a12de/internal/line/states.go#L324),
+  [:508](https://github.com/JN0V/workline/blob/be8a12de/internal/line/states.go#L508),
+  [:511](https://github.com/JN0V/workline/blob/be8a12de/internal/line/states.go#L511),
+  [:636](https://github.com/JN0V/workline/blob/be8a12de/internal/line/states.go#L636),
+  [hold.go:39](https://github.com/JN0V/workline/blob/be8a12de/internal/line/hold.go#L39) and
+  [productowner.go:215](https://github.com/JN0V/workline/blob/be8a12de/internal/builtin/productowner/productowner.go#L215).
+  A test fails on any other `time.Now` in those packages. One fake agent's state kept across K ticks: today's
   fake counts calls per process (`fakeCalls`,
   [agent.go](https://github.com/JN0V/workline/blob/be8a12de/internal/agent/agent.go)).
 - **Fake outcomes, seeded per call**: progress, waiting, needs-input
@@ -635,6 +668,11 @@ record, the reconciler, where state lives), the roles' outcomes, the
   a test that does not build as
   [#1048](https://github.com/JN0V/workline/issues/1048)), and the
   trial's real agent answers replayed.
+- **A small C++ project as a fixture**: one header, one source, one
+  test, built by the system's `g++`, with the tester's `build-errors`
+  shapes. #1048's test, which calls a constructor that does not exist,
+  meets a real compiler. With no `g++`, the test says it did not run,
+  never passes (principle 12).
 - **Traces**: the trial's issues (#3, #4, #5, #16, #18, #19, #20,
   #33–#37) and workline's own eleventh run, so the path that works is
   kept. Each trace has its expected end: Done, or Waiting on a named
@@ -649,7 +687,16 @@ record, the reconciler, where state lives), the roles' outcomes, the
   - one state label at a time;
   - the same tick twice starts no second step; one byte of a body
     changed makes it due;
-  - quiet within K ticks (K stated in the test).
+  - quiet within K ticks, K = S × (B + 1) + 2R + 2: S the states on
+    the line, B the machine-error budget, R the judgement-rounds cap.
+    With today's defaults (6, 2, 3), K = 26; the test computes it from
+    the config.
+- **A digest mismatch counts against `Next`**: the simulator's digest
+  is the oracle. The same input to the fake twice and `Next` due a
+  second time: its input is too wide. A different input and `Next` not
+  due: too narrow. The simulator's own list of volatile parts (dates,
+  run ids) is written in the test; a part is added to it only with a
+  reason in the trace, reviewed.
 - **Speed and seeds**: about 200 seeds a trace in under 60 s in CI;
   fixed seeds on a pull request, new seeds each night. A failure prints
   its seed, shrinks, and is frozen as a named trace before its fix. A
@@ -664,11 +711,11 @@ record, the reconciler, where state lives), the roles' outcomes, the
     [#1059](https://github.com/JN0V/workline/issues/1059),
     [#1063](https://github.com/JN0V/workline/issues/1063),
     [#1064](https://github.com/JN0V/workline/issues/1064)): per-role
-    contract tests on frozen real code, step 8;
+    contract tests on frozen real code, step 4;
   - the forge's merge state ([#1050](https://github.com/JN0V/workline/issues/1050),
     [#1031](https://github.com/JN0V/workline/issues/1031),
     [#1043](https://github.com/JN0V/workline/issues/1043)): a richer
-    fake forge, step 9;
+    fake forge, step 10;
   - CI wiring ([#1029](https://github.com/JN0V/workline/issues/1029),
     [#1018](https://github.com/JN0V/workline/issues/1018),
     [#1055](https://github.com/JN0V/workline/issues/1055)): the
@@ -718,32 +765,31 @@ record, the reconciler, where state lives), the roles' outcomes, the
   property; the read set logged for tool agents.
 - **A schema bump wakes every issue**: spread by `reconcile-max`, its
   count said before the release.
-- **A big switch**: shadow mode first (step 6), a switch back for one
+- **A big switch**: shadow mode first (step 7), a switch back for one
   release.
 - **Forge requests**: §11's list pass; measured at step 1, held at no
   more than today.
 - **Read-only tools cost tokens**: the ceiling of §8.
 
-## For the maintainer
+## Decided
 
-1. **Commit to steps 1–4 now, and decide again after the pinned
-   round?** Recommended: yes. The simulator, typed outcomes and the
-   fence pay alone; the round tells whether the core change (5–7) is
-   needed as planned.
-2. **The picker earlier, before the view?** 8 of round 3's 11 defects
-   sit in the code-given zone. Recommended: yes for the picker without
-   tools, right after step 3, before the pinned round; tools stay at
-   step 8.
-3. **Migration**: wake once each issue the old line called acted (about
-   22 calls on workline, spread over 8 runs), or say Waiting(person) on
-   them? Recommended: wake once; Waiting(person) makes you the
+By the maintainer, on 2026-11-04, each on the reviewers' recommendation.
+
+1. **Steps 1–4 are committed**; the pinned round on the C++ copy
+   (step 5) decides the rest.
+2. **The shared code picker, without tools, comes before the pinned
+   round** (step 4): 8 of round 3's 11 defects sit in the code-given
+   zone.
+3. **The migration wakes once each issue the old line left idle**,
+   spread by `reconcile-max`: about 22 agent calls on workline, over
+   about 8 runs. Waiting(person) on them would make a person the
    bottleneck.
-4. **Machine-error budget**: 2 tries per kind within 24 h a state entry,
-   then a person? Recommended: yes, one default for every kind, a kind's
-   own only when a measure asks for it.
-5. **Read-only tools (`Read,Glob,Grep`) for the product owner, the
-   tester and the reviewer with `claude`**, under the token ceiling?
-   Recommended: yes, at step 8.
+4. **Machine-error budget**: 2 tries per error kind within 24 h, then a
+   person; a spent budget stays spent until a new state entry or a
+   person acts.
+5. **Read-only tools** (`Read,Glob,Grep`) for the product owner, the
+   tester and the reviewer under `claude`, within the token ceiling, at
+   step 9.
 
 [ADR-0026]: 0026-the-product-owners-autonomy-is-a-level.md
 [ADR-0042]: 0042-the-engine-merges-by-the-projects-policy.md

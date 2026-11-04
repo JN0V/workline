@@ -38,7 +38,7 @@ decisions, and stop real loops? What do they test it with?
 - **Read the forge's own merge state**: GitHub's `mergeStateStatus`,
   GitLab's `detailed_merge_status` say why a pull request does not
   merge; do not model their rules again.
-- **What was proposed**: [ADR-0063](../adr/0063-every-open-issue-is-due-waiting-or-done.md).
+- **What was decided**: [ADR-0063](../adr/0063-every-open-issue-is-due-waiting-or-done.md).
 
 ## Method
 
@@ -52,6 +52,10 @@ decisions, and stop real loops? What do they test it with?
   *dead letter queue*, *restart intensity*, *stuck detection*,
   *liveness property*, *deterministic simulation testing*, *stateful
   property-based testing*.
+- **Reviewed**: the draft ADR and this card were read by seven
+  independent reviewers (analyst, product manager, architect, product
+  owner, scrum master, developer, QA); their changes were applied
+  before the maintainer decided.
 - **Sources**: each system's public documentation, as known on
   2026-11-04; the links were not fetched again for this card. A
   reviewer checks a claim against its link before it decides anything.
@@ -131,9 +135,11 @@ decisions, and stop real loops? What do they test it with?
   Restart types are per child (`permanent`, `transient`, `temporary`)
   ([supervisor principles](https://www.erlang.org/doc/system/sup_princ.html)).
 - **For workline**: `max-hops` is one counter with no window, fed by
-  every move, decisions and failures alike. A budget of retries within
-  a window, per issue, state entry, role and failure kind, escalating
-  to a person, borrows the supervisor's shape, keyed finer.
+  every move, decisions and failures alike. A budget of retries per
+  issue, state entry, role and failure kind, escalating to a person,
+  borrows the supervisor's shape, keyed finer. A spent budget is given
+  back by a new state entry or a person's act, never by time alone: a
+  window that reset would loop once a window.
 
 ## Loops told by repetition
 
@@ -197,6 +203,6 @@ decisions, and stop real loops? What do they test it with?
 | A reconcile on the level, events for speed | A controller framework, a workflow server (principle 11) |
 | A condition with a reason on every open issue, said on it | A new label per condition: the six states stay |
 | An append-only log, a pure decision, replayed in tests | Temporal's determinism rules for the roles: agents are not deterministic, only the decision is |
-| Retryable machine errors, a budget per kind in a window, then a person | A global hop counter as the loop guard |
+| Retryable machine errors, a budget per kind and state entry, then a person | A global hop counter as the loop guard |
 | Repetition on the same input as the loop, and a cap on rounds between two roles | TLA+ itself: the property is checked by a simulator in Go |
 | The forge's merge state as the reason | Workline's own model of the forge's merge rules |
