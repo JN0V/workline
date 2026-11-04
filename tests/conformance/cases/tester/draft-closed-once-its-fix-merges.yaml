@@ -1,0 +1,20 @@
+case: tester/draft-closed-once-its-fix-merges
+about: "Once the developer's pull request closing a bug merges, `workline follow` on the push to main closes the tester's Draft of that bug, naming the pull request that brought its tests; the Draft of a bug still open stays (#999)."
+given:
+  repo: documented
+  forge:
+    issues:
+      - {id: 976, title: "doctor says all is set up", body: "x", labels: [bug, workline:ready, workline:developing], closed: true, reason: completed, closed-by: [{kind: pull-request, ref: "#982", text: "fix: doctor says what is missing"}]}
+      - {id: 977, title: "doctor names the wrong file", body: "x", labels: [bug, workline:developing]}
+    merge-requests:
+      - {id: 981, branch: workline/tester/issue-976, base: main, draft: true, labels: [], comments: []}
+      - {id: 983, branch: workline/tester/issue-977, base: main, draft: true, labels: [], comments: []}
+run: {follow: [--base, main]}
+expect:
+  status: pass
+  findings: [{rule: draft-closed, where: "workline/tester/issue-976"}]
+  no-findings: [{rule: draft-closed, where: "workline/tester/issue-977"}]
+  forge:
+    merge-requests:
+      - {id: 981, closed: true, comments: 1, comment-contains: ["#976", "#982"]}
+      - {id: 983, closed: false, comments: 0}

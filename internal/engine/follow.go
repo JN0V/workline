@@ -117,6 +117,7 @@ func Follow(o FollowOptions) *Result {
 	} else {
 		res.Summary = "the roles' merge requests left to gardening"
 	}
+	res.Summary += "; " + settleDone(f, open, o.States, res) // done.go
 	o.Base = base
 	if o.Merge == MergeEnterprising {
 		// The milestones' release candidates first: a refusal's demotion

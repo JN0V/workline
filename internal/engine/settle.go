@@ -49,6 +49,9 @@ type FollowOptions struct {
 	// yes the base requires is set on that commit as the head queued holds
 	// it, and nothing else is followed (ADR-0050, queue.go).
 	Group, GroupHead string
+	// States are the labels of the line's states (routing.states): a
+	// closed issue bearing one has it taken off (done.go, #999).
+	States []string
 }
 
 // workKeys are the keys of a doc's header workline writes, recording when

@@ -1,0 +1,18 @@
+case: engine/closed-issue-loses-its-state
+about: "A bug its fix closed keeps none of the line's states: `workline follow` on the push to main takes `workline:ready` and `workline:developing` off it, and leaves its other labels, and an open issue's states, as they are (#999)."
+given:
+  repo: documented
+  forge:
+    issues:
+      - {id: 976, title: "doctor says all is set up", body: "x", labels: [bug, workline:ready, workline:developing], closed: true, reason: completed}
+      - {id: 950, title: "a read again is given old code", body: "x", labels: [workline:blocked], closed: true, reason: not_planned}
+      - {id: 977, title: "doctor names the wrong file", body: "x", labels: [bug, workline:developing]}
+run: {follow: [--base, main]}
+expect:
+  status: pass
+  findings: [{rule: state-cleared, where: "#976"}, {rule: state-cleared, where: "#950"}]
+  forge:
+    issues:
+      - {id: 976, labels: [bug]}
+      - {id: 950, labels: []}
+      - {id: 977, labels: [bug, workline:developing]}

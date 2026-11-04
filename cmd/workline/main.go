@@ -178,6 +178,13 @@ func followSettings(o *engine.FollowOptions) (gone bool, err error) {
 		return false, err
 	}
 	o.IsDoc, o.Release = s.IsDoc, rs.IsBranch
+	line, err := routing.Load(o.Repo)
+	if err != nil {
+		return false, err
+	}
+	for _, st := range line.States {
+		o.States = append(o.States, st.Label)
+	}
 	o.Derive = func(dir string, docs map[string]string) bool {
 		findings, stale := documentalist.Derive(dir, docs, s.Derive, false)
 		for _, f := range findings {
