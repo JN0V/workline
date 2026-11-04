@@ -146,8 +146,22 @@ func Parse(spec string) (Agent, error) {
 		return fake{file: strings.TrimPrefix(spec, "fake:")}, nil
 	case strings.HasPrefix(spec, "unavailable:"):
 		return unavailable{reason: strings.TrimPrefix(spec, "unavailable:")}, nil
+	case strings.HasPrefix(spec, "hook:"):
+		if a, ok := hooked[strings.TrimPrefix(spec, "hook:")]; ok {
+			return a, nil
+		}
 	}
 	return nil, fmt.Errorf("unknown agent %q (known: none, claude, claude:<model>@<effort>, cmd:<command>, fake:<file>, unavailable:<reason>)", spec)
+}
+
+// hooked are the agents a Go test set in this process (Hook): the line
+// simulator's (ADR-0063), whose state lasts across the ticks it runs.
+var hooked = map[string]Agent{}
+
+// Hook makes `hook:<name>` answer with a, until the returned func undoes it.
+func Hook(name string, a Agent) func() {
+	hooked[name] = a
+	return func() { delete(hooked, name) }
 }
 
 type fake struct{ file string }
