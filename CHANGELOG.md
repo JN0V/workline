@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.72.0](https://github.com/JN0V/workline/compare/v0.71.0...v0.72.0) (2026-11-04)
+
+
+### Features
+
+* developer: object to a test that cannot pass, not a note ([#963](https://github.com/JN0V/workline/issues/963)) ([db894ee](https://github.com/JN0V/workline/commit/db894ee2db8af27703b3579d65252565e8b214e1))
+
+
+### Bug Fixes
+
+* a first install marks the base read, no merge waits ([#1026](https://github.com/JN0V/workline/issues/1026)) ([fe27227](https://github.com/JN0V/workline/commit/fe272275fe9af3b10d8813ac6cfcb236de067d2f))
+* doctor names workflows pinned old or not copied ([#1027](https://github.com/JN0V/workline/issues/1027)) ([ee7667d](https://github.com/JN0V/workline/commit/ee7667d3867d5fc5411f6f1cb3585d19477a8f64))
+* **doctor:** doctor's summary says "1 warnings" ([#967](https://github.com/JN0V/workline/issues/967)) ([3b3e714](https://github.com/JN0V/workline/commit/3b3e7148e9ad32fd6bdd4504cf5b2920f0ef48a2))
+* drafts with no label and a green round wait no more ([#1028](https://github.com/JN0V/workline/issues/1028)) ([2232872](https://github.com/JN0V/workline/commit/2232872b9959aa9b8401a718cec93fb81a245051))
+* hold a scenario-less Validation; a quiet defect is a bug ([#1025](https://github.com/JN0V/workline/issues/1025)) ([61b157f](https://github.com/JN0V/workline/commit/61b157f0f3bc47e110bbae370d646e81b6900136))
+* **merge:** latest check run counts; demotion close follows ([#1032](https://github.com/JN0V/workline/issues/1032)) ([2654684](https://github.com/JN0V/workline/commit/2654684fe8dd79a7df11d33ba04853f3a0cfdd9e))
+* **tester:** fit the code to the budget, or say the budget ([#1024](https://github.com/JN0V/workline/issues/1024)) ([0ab8ea2](https://github.com/JN0V/workline/commit/0ab8ea2b478a06b3d59dc714cacbf5f3584aa5a4))
+
 ## [0.71.0](https://github.com/JN0V/workline/compare/v0.70.1...v0.71.0) (2026-11-04)
 
 
