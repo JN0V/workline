@@ -16,6 +16,7 @@ import (
 
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/line"
+	"github.com/JN0V/workline/internal/routing"
 )
 
 // failure is the first property a run broke.
@@ -122,15 +123,18 @@ const (
 
 var seeded = []string{pAttributed, pOneLabel, pI3, pBudget, pI2}
 
-// checks is what a run checks: every property (all), or some, up to a
-// tick.
+// checks is what a run checks: every property (all) but those set aside
+// (skip), or some (only), up to a tick.
 type checks struct {
 	all   bool
+	skip  []string
 	only  []string
 	until int // the last tick checked, when not all
 }
 
-func (c checks) on(p string) bool { return c.all || slices.Contains(c.only, p) }
+func (c checks) on(p string) bool {
+	return c.all && !slices.Contains(c.skip, p) || slices.Contains(c.only, p)
+}
 
 // tickChecks are the properties checked after each tick, in order.
 func (w *world) tickChecks(c checks, k int, before, after forge.FakeState, res, again *line.Result, calls []call) *failure {
@@ -230,17 +234,27 @@ func (w *world) tickChecks(c checks, k int, before, after forge.FakeState, res, 
 		}
 	}
 	// The same tick twice starts no second step: the second run starts
-	// only the next state's role, on an issue the first one moved.
+	// only the role of the state the first one moved the issue to, the
+	// same role when it moved it to its own again (blocked, then refine).
 	for id, role := range again.Woke {
 		if !c.on(pTwice) {
 			break
 		}
 		b, a := issueOf(before, id), issueOf(after, id)
-		if role == res.Woke[id] || b == nil || a == nil || slices.Equal(b.Labels, a.Labels) {
+		if b == nil || a == nil {
 			return fail(pTwice, "the second run started the %s on #%d again", role, id)
+		}
+		if was, _ := w.cfg.StateOf(b.Labels); was.Name == stateName(w.cfg, a.Labels) {
+			return fail(pTwice, "the second run started the %s on #%d again, in its state %s still", role, id, was.Name)
 		}
 	}
 	return nil
+}
+
+// stateName is the name of the state labels say, "" for none.
+func stateName(cfg *routing.Config, labels []string) string {
+	s, _ := cfg.StateOf(labels)
+	return s.Name
 }
 
 // lastCalls are the last call on each issue among calls.
@@ -273,8 +287,17 @@ func runTrace(t *testing.T, tr trace, script []outcome, c checks) (*failure, str
 		res := w.run(at)
 		mid := w.state(t)
 		calls := slices.Clone(a.calls[n:])
+		m := len(a.calls)
 		again := w.run(at)
 		fmt.Fprintf(&log, "tick %d: %s; woke %v; calls %v\n", i, res.Summary, res.Woke, calls)
+		if len(again.Woke) > 0 {
+			fmt.Fprintf(&log, "  again: woke %v; calls %v\n", again.Woke, a.calls[m:])
+		}
+		for _, mr := range w.state(t).MergeRequests {
+			if !mr.Closed && (len(calls) > 0 || len(res.Woke) > 0) {
+				fmt.Fprintf(&log, "  open !%d %s draft %v: %.80q\n", mr.ID, mr.Branch, mr.Draft, mr.Body)
+			}
+		}
 		if len(calls) > 0 || len(res.Woke) > 0 {
 			for _, f := range res.Findings {
 				if f.Level != "info" {
@@ -285,12 +308,17 @@ func runTrace(t *testing.T, tr trace, script []outcome, c checks) (*failure, str
 		if f := w.tickChecks(c, i, before, mid, res, again, calls); f != nil {
 			return f, log.String()
 		}
-		quiet = len(calls) == 0 && len(res.Woke) == 0 && mid.Writes == before.Writes
+		// Between two ticks, the forge merges what is ready to.
+		merged := w.merge(t, at.Add(period/2))
+		if len(merged) > 0 {
+			fmt.Fprintf(&log, "  forge: %v\n", merged)
+		}
+		quiet = len(merged) == 0 && len(calls) == 0 && len(res.Woke) == 0 && mid.Writes == before.Writes
 	}
 	if !c.all {
 		return nil, log.String()
 	}
-	if !quiet {
+	if !quiet && c.on(pQuiet) {
 		return &failure{Property: pQuiet, Tick: k - 1, Detail: fmt.Sprintf("still acting after K = %d ticks", k)}, log.String()
 	}
 	// The trace's end: Done, or Waiting on what it names.
@@ -302,6 +330,7 @@ func runTrace(t *testing.T, tr trace, script []outcome, c checks) (*failure, str
 		switch want, on, _ := strings.Cut(tr.end, ":"); {
 		case is.Closed && want == "done":
 		case !is.Closed && want == "waiting" && st == "waiting" && strings.Contains(said, on):
+		case !c.on(pEnd):
 		default:
 			if is.Closed {
 				st = "done"
@@ -318,7 +347,7 @@ func runTrace(t *testing.T, tr trace, script []outcome, c checks) (*failure, str
 		if err := f.SetBody(is.ID, is.Body+"."); err != nil {
 			t.Fatal(err)
 		}
-		if res := w.run(at); res.Woke[is.ID] == "" {
+		if res := w.run(at); res.Woke[is.ID] == "" && c.on(pOneByte) {
 			st, said := status(res, is.ID)
 			return &failure{Property: pOneByte, Tick: k, Detail: fmt.Sprintf("#%d's body changed, not due: %s %s", is.ID, st, said)}, log.String()
 		}
@@ -326,9 +355,10 @@ func runTrace(t *testing.T, tr trace, script []outcome, c checks) (*failure, str
 	return nil, log.String()
 }
 
-// pending reads pending.txt: per trace, the first property it breaks today.
-func pending(t *testing.T) map[string]string {
-	out := map[string]string{}
+// pending reads pending.txt: per trace, the properties it breaks today,
+// in order: the first, then the next with the first set aside, and so on.
+func pending(t *testing.T) map[string][]string {
+	out := map[string][]string{}
 	f, err := os.Open("pending.txt")
 	if err != nil {
 		t.Fatal(err)
@@ -340,15 +370,17 @@ func pending(t *testing.T) map[string]string {
 		if line == "" || strings.HasPrefix(line, "#") {
 			continue
 		}
-		name, prop, _ := strings.Cut(line, " ")
-		out[name] = strings.TrimSpace(prop)
+		fields := strings.Fields(line)
+		out[fields[0]] = fields[1:]
 	}
 	return out
 }
 
 // TestTraces runs each trace twice with an agent that always progresses:
 // the same run each time, and the first property broken the one
-// pending.txt names, or none.
+// pending.txt names first, or none. Each next one pending.txt names is
+// the first broken with those before it set aside: a trace still runs to
+// its end past a defect it shows, checked there.
 func TestTraces(t *testing.T) {
 	want := pending(t)
 	for name := range want {
@@ -358,27 +390,39 @@ func TestTraces(t *testing.T) {
 	}
 	for _, tr := range traces {
 		t.Run(tr.name, func(t *testing.T) {
-			f1, log1 := runTrace(t, tr, nil, checks{all: true})
-			f2, log2 := runTrace(t, tr, nil, checks{all: true})
-			if log1 != log2 || f1.String() != f2.String() {
-				t.Fatalf("deterministic: the same trace ran twice differs\n--- first\n%s%s\n--- second\n%s%s", log1, f1, log2, f2)
-			}
-			if os.Getenv("SIM_LOG") != "" {
-				t.Log(log1)
-			}
-			got := ""
-			if f1 != nil {
-				got = f1.Property
-			}
-			switch {
-			case got == want[tr.name]:
-				t.Logf("first property broken: %s", f1)
-			case want[tr.name] == "":
-				t.Errorf("%s\n%s", f1, log1)
-			case got == "":
-				t.Errorf("passes now: take %s off pending.txt", tr.name)
-			default:
-				t.Errorf("pending.txt says %s breaks %s first, it breaks %s\n%s", tr.name, want[tr.name], f1, log1)
+			props := want[tr.name]
+			for j := 0; j <= len(props); j++ {
+				c := checks{all: true, skip: props[:j]}
+				f1, log1 := runTrace(t, tr, nil, c)
+				if j == 0 {
+					f2, log2 := runTrace(t, tr, nil, c)
+					if log1 != log2 || f1.String() != f2.String() {
+						t.Fatalf("deterministic: the same trace ran twice differs\n--- first\n%s%s\n--- second\n%s%s", log1, f1, log2, f2)
+					}
+				}
+				if os.Getenv("SIM_LOG") != "" {
+					t.Logf("set aside %v:\n%s", props[:j], log1)
+				}
+				got, next := "", ""
+				if f1 != nil {
+					got = f1.Property
+				}
+				if j < len(props) {
+					next = props[j]
+				}
+				switch {
+				case got == next && got != "":
+					t.Logf("broken, %v set aside: %s", props[:j], f1)
+					continue
+				case got == next:
+				case next == "":
+					t.Errorf("%v set aside: %s\n%s", props[:j], f1, log1)
+				case got == "":
+					t.Errorf("passes now with %v set aside: take %s off pending.txt for %s", props[:j], next, tr.name)
+				default:
+					t.Errorf("pending.txt says %s breaks %s, %v set aside; it breaks %s\n%s", tr.name, next, props[:j], f1, log1)
+				}
+				return
 			}
 		})
 	}
@@ -406,10 +450,11 @@ func TestOracleRulesExist(t *testing.T) {
 	}
 }
 
-// seeds is how many seeded runs there are, spread over the traces; the
-// night sets SIM_SEEDS higher and SIM_SEED_BASE new.
+// seeds is how many seeded runs there are, spread over the traces: 100
+// on a pull request, under two minutes with g++'s builds; the night sets
+// SIM_SEEDS higher and SIM_SEED_BASE new.
 func seeds() (base, n int64) {
-	n, base = 200, 1
+	n, base = 100, 1
 	if v, err := strconv.ParseInt(os.Getenv("SIM_SEEDS"), 10, 64); err == nil {
 		n = v
 	}
@@ -468,8 +513,10 @@ func parseScript(v string) []outcome {
 
 // TestSeeds runs every trace under seeded outcomes: progress, waiting,
 // machine errors, malformed answers. A trace pending.txt does not name
-// is held to every property; a pending one to the seeded ones, which hold
-// whatever the agent answers, up to the tick its pending property breaks.
+// is held to every property but its end, which only an agent that always
+// progresses must reach (a week-long wait outlasts K); a pending one to
+// the seeded ones that hold whatever the agent answers, but its own, up
+// to the tick its first pending property breaks.
 // A seed's failure is never pending: it prints the seed and its shrunk
 // script (SIM_SEED, SIM_SCRIPT; SIM_TRACE takes one trace).
 func TestSeeds(t *testing.T) {
@@ -482,13 +529,13 @@ func TestSeeds(t *testing.T) {
 			continue
 		}
 		runs = append(runs, tr)
-		limits[tr.name] = checks{all: true}
-		if want[tr.name] != "" {
+		limits[tr.name] = checks{all: true, skip: []string{pEnd}}
+		if len(want[tr.name]) > 0 {
 			f, _ := runTrace(t, tr, nil, checks{all: true})
 			if f == nil {
 				t.Fatalf("%s is pending, and breaks nothing", tr.name)
 			}
-			limits[tr.name] = checks{only: seeded, until: f.Tick}
+			limits[tr.name] = checks{only: slices.DeleteFunc(slices.Clone(seeded), func(p string) bool { return slices.Contains(want[tr.name], p) }), until: f.Tick}
 		}
 	}
 	if len(runs) == 0 {

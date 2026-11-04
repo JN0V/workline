@@ -67,8 +67,26 @@ var traces = func() []trace {
 }()
 
 // config is the trial's line: the product owner, the tester and the
-// developer, each woken by an issue's state.
-const config = `routing:
+// developer, each woken by an issue's state; the tester's and the
+// developer's settings the trial copy's, its g++ error shapes.
+const config = `roles:
+  tester:
+    settings:
+      test-command: tools/workline-tests.sh {report}
+      code-lines-max: 1000
+      test-paths: ["DomoticsCore-*/test/**"]
+      build-errors:
+        - error: '^(?P<file>[^\s:]+\.(?:cpp|cc|c|h|hpp)):\d+:\d+: error: (?P<message>.+)$'
+          missing-name:
+            - "^[‘'][\\w:]+[’'] was not declared in this scope"
+            - "^[‘'][\\w:]+[’'] has not been declared"
+            - "^[‘'][\\w:]+[’'] is not a member of [‘'][\\w:]+[’']"
+            - "^[‘'](?:class|struct) [^’']+[’'] has no member named [‘']\\w+[’']"
+          test-name: '(?m)^(?:static\s+)?void\s+(test_\w+)\s*\(\s*(?:void)?\s*\)'
+  developer:
+    settings:
+      proof-command: tools/workline-tests.sh {report} {packages}
+routing:
   events:
     issue: [product-owner, tester, developer]
 `
@@ -91,24 +109,24 @@ func hermetic(t *testing.T, work string) {
 	}
 }
 
-// repoTemplate is the shell project every trace runs on, built once.
+// repoTemplate is the C++ project every trace runs on, built once, with
+// its remote beside it, origin.git: where the roles push their pull
+// requests' branches.
 var repoTemplate string
 
 func TestMain(m *testing.M) {
+	// With no g++, nothing here ran: said, and never a pass (principle 12).
+	if _, err := exec.LookPath("g++"); err != nil {
+		fmt.Fprintln(os.Stderr, "the simulator did not run: its C++ fixture needs g++, not found on PATH")
+		os.Exit(1)
+	}
 	dir, err := os.MkdirTemp("", "workline-sim-")
 	if err != nil {
 		panic(err)
 	}
 	repoTemplate = filepath.Join(dir, "repo")
-	if err := os.MkdirAll(repoTemplate, 0o755); err != nil {
+	if err := fixtureRepo(repoTemplate); err != nil {
 		panic(err)
-	}
-	script, _ := filepath.Abs(filepath.Join("..", "conformance", "fixtures", "repos", "tested.sh"))
-	cmd := exec.Command("sh", script)
-	cmd.Dir = repoTemplate
-	cmd.Env = append(os.Environ(), "GIT_CONFIG_GLOBAL=/dev/null", "GIT_CONFIG_NOSYSTEM=1")
-	if out, err := cmd.CombinedOutput(); err != nil {
-		panic(fmt.Sprintf("the repository: %v\n%s", err, out))
 	}
 	// The role scripts run the engine's binary: one built from this tree,
 	// not this test's.
@@ -117,12 +135,6 @@ func TestMain(m *testing.M) {
 		panic(fmt.Sprintf("the engine: %v\n%s", err, out))
 	}
 	engine.Self = func() string { return bin }
-	if err := os.MkdirAll(filepath.Join(repoTemplate, ".workline"), 0o755); err != nil {
-		panic(err)
-	}
-	if err := os.WriteFile(filepath.Join(repoTemplate, ".workline", "config.yaml"), []byte(config), 0o644); err != nil {
-		panic(err)
-	}
 	code := m.Run()
 	_ = os.RemoveAll(dir)
 	os.Exit(code)
@@ -139,8 +151,13 @@ func newWorld(t *testing.T, tr trace, a *simAgent) *world {
 	work := t.TempDir()
 	hermetic(t, work)
 	repo := filepath.Join(work, "repo")
-	if out, err := exec.Command("cp", "-a", repoTemplate, repo).CombinedOutput(); err != nil {
-		t.Fatalf("the repository: %v\n%s", err, out)
+	for _, d := range []string{"repo", "origin.git"} {
+		if out, err := exec.Command("cp", "-a", filepath.Join(filepath.Dir(repoTemplate), d), filepath.Join(work, d)).CombinedOutput(); err != nil {
+			t.Fatalf("the repository: %v\n%s", err, out)
+		}
+	}
+	if err := gitIn(repo, "remote", "set-url", "origin", filepath.Join(work, "origin.git")); err != nil {
+		t.Fatal(err)
 	}
 	data, err := os.ReadFile(filepath.Join("traces", tr.file+".json"))
 	if err != nil {
@@ -172,7 +189,9 @@ func newWorld(t *testing.T, tr trace, a *simAgent) *world {
 		t.Fatal(err)
 	}
 	a.work = work
-	return &world{repo: repo, forge: f, roles: roles, cfg: cfg, agent: a}
+	w := &world{repo: repo, forge: f, roles: roles, cfg: cfg, agent: a}
+	w.trialBranches(t)
+	return w
 }
 
 func (w *world) state(t *testing.T) forge.FakeState {
