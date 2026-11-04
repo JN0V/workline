@@ -1,0 +1,21 @@
+case: developer/scope-said-unread-waits-on-nothing
+about: >
+  A Scope written before the `Guessed:` mark (#970), whose own words
+  say no code was given when it was written (#998): a guess as well,
+  it waits on nothing. #2's `src/` overlaps #1's, taken: #2 is taken
+  all the same.
+given:
+  repo: tested
+  forge:
+    issues:
+      - {id: 1, title: "Add", labels: ["workline:ready", "workline:developing", "enhancement"], body: "## Need\n\nI want to add.\n\n## Scope\n\n- `src/lib.sh`: `add`.\n"}
+      - {id: 2, title: "Multiply", labels: ["workline:ready", "bug"], body: "## Need\n\nI want to multiply.\n\n## Scope\n\nThe `mul` function (`src/`). The paths come from the error text, because no `mul` code was given in this run.\n"}
+    merge-requests:
+      - {id: 4, branch: workline/developer/1, title: "feat: add", body: "Closes #1"}
+run: {develop: [], ai: "fake:developer-nothing"}
+expect:
+  status: pass
+  summary: "took #2"
+  forge:
+    issues:
+      - {id: 2, labels: ["workline:ready", "bug", "workline:developing"], comment-lacks: "waits on this issue"}

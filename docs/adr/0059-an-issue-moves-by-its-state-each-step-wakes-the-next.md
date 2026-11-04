@@ -691,6 +691,43 @@ blocked and the rounds' cap spent.
     tester's to keep or rewrite, the product owner's only past the
     three exchanges (§6).
 
+## Amendment (2026-11-04): an overlap ends where its Scope reads as a guess
+
+Settles [#998](https://github.com/JN0V/workline/issues/998): a bug,
+refined before the `Guessed:` mark
+([#970](https://github.com/JN0V/workline/issues/970)), waited behind a
+feature's claim. Its Scope said in words that no code was given. The
+feature's pull request, green, waited for a person's yes: nothing woke
+the bug.
+
+- **A Scope's own words count as the mark**: one saying no code was
+  given or read when it was written ("no `init` code was given in this
+  run") is a guess, as a line `Guessed:` is. It overlaps nothing. No
+  agent call: the developer reads the code as it builds, and asks the
+  product owner to widen a Scope too narrow
+  ([amendment](#amendment-2026-11-03-a-fix-outside-the-scope-asks-the-product-owner)).
+- **An overlap that ended wakes the issue**: a ready issue the
+  developer passed over for an overlap is due again once its Scope
+  overlaps no claim held, whatever ended it. Before, only a claim held
+  at the wake and held no more woke it. Once for the developer's comment
+  that said the overlap (`unheld`): a run that leaves it as it is does
+  not wake the issue again.
+- **The wait names a person's yes**: passed over for an issue that is
+  not a bug, whose pull request is open, the issue's comment says that
+  pull request merges on a person's yes. Only a fix merges alone
+  ([ADR-0060](0060-the-person-is-on-the-loop.md)).
+- **A bug still waits on a claim's pull request**, even one green and
+  waiting for a yes. Taken, its pull request would touch the same
+  files: the one merged second meets a conflict. On the feature's side,
+  its head would move under the person reading it, its review run again.
+- **Cost**: none more for the wake: the claims' listing is already
+  read for `held`.
+- **Not chosen**:
+  - waking the product owner to read the Scope again: an agent call
+    for paths the developer reads anyway;
+  - a bug taking a Scope a waiting feature holds: a conflict moved
+    onto the pull request a person is reading.
+
 [ADR-0024]: 0024-obsolete-is-announced-then-closed-on-silence-and-a-second-judge.md
 [ADR-0028]: 0028-an-issue-names-what-it-waits-on.md
 [#752]: https://github.com/JN0V/workline/issues/752

@@ -452,7 +452,10 @@ whose result moves the issue to the next. The table is the routing's
   A ready issue, assigned to nobody, is due again
   (`state-freed`) once its claim was put on since and let go, a hop
   more, so a take-and-let-go cycle ends at `max-hops`; or once an issue
-  in `held` is held no more. A record from before `woke` is due once
+  in `held` is held no more; or, passed over for an overlap, once its
+  Scope overlaps no claim held, once for the comment that said it
+  (`unheld`)
+  ([#998](https://github.com/JN0V/workline/issues/998)). A record from before `woke` is due once
   where the developer wrote its comment. Never on a clock: no loop.
 - **A developer run lost is not acted**: a run the line woke that
   ends with no verdict read from its post (`engine-error`, as when
@@ -593,7 +596,8 @@ a step starts only when the state it moves the issue to has room.
   tester), or on another open issue, or has parts, or whose Scope
   overlaps a claim holding code (an open pull request closes it,
   [amended](../adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#amendment-2026-11-03-a-claim-with-no-code-holds-no-scope);
-  a Scope marked `Guessed:` overlaps nothing, #970),
+  a Scope marked `Guessed:`, or saying no code was given, overlaps
+  nothing, #970, #998),
   is counted apart, and said in the wait's reason. Read only at the
   limit: the tester's open Drafts once a run, the comments of a ready
   issue with none, the open pull requests once when a claim is there.

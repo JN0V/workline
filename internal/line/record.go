@@ -80,6 +80,10 @@ type Record struct {
 	// no more, frees the issue for the developer again (#894).
 	Woke string `json:"woke,omitempty"`
 	Held []int  `json:"held,omitempty"`
+	// Unheld: the digest of the developer's comment passing the issue
+	// over for an overlap the line woke it again for, that overlap gone
+	// (#998): once for that comment, never again while it stands.
+	Unheld string `json:"unheld,omitempty"`
 	// Lost: when the developer's run the line woke ended with no verdict
 	// read, its work lost (#953): due again, once, a hop more, so a run
 	// lost each time stops at max-hops, Blocked.

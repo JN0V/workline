@@ -21,8 +21,10 @@ import (
 	"time"
 
 	"github.com/JN0V/workline/internal/backlog"
+	"github.com/JN0V/workline/internal/developer"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/routing"
+	"github.com/JN0V/workline/internal/work"
 )
 
 // developerSaid is the developer's one comment on an issue: its claim,
@@ -53,10 +55,22 @@ func freed(cfg *routing.Config, b forge.Backlog, tl *tally, s routing.State, is 
 		}
 		return rec, "", nil
 	}
-	if len(rec.Held) == 0 {
+	// Passed over for an overlap, the developer's last word on it: what
+	// ends that wait may be its own Scope, read as a guess (#998). Once
+	// for that comment: a developer run that leaves it as it is does not
+	// wake the issue again (Unheld).
+	overlapped, said := false, ""
+	for _, c := range slices.Backward(comments) {
+		if strings.Contains(c, developerSaid) {
+			said = bodyHash(c)
+			overlapped = developer.PassedForOverlap(c) && rec.Unheld != said
+			break
+		}
+	}
+	if len(rec.Held) == 0 && !overlapped {
 		return rec, "", nil
 	}
-	held, err := heldIn(b, tl, next, is.ID, open)
+	held, claims, err := heldIn(b, tl, next, is.ID, open)
 	if err != nil {
 		return rec, "", err
 	}
@@ -65,23 +79,28 @@ func freed(cfg *routing.Config, b forge.Backlog, tl *tally, s routing.State, is 
 			return rec, fmt.Sprintf("#%d, held when the line woke the developer on it, is held no more: free to take again", n), nil
 		}
 	}
+	if n, _ := developer.Overlapping(is, claims, tl.files); overlapped && n == 0 {
+		rec.Unheld = said
+		return rec, fmt.Sprintf("the developer passed it over for an overlap, but its %s overlaps no issue held now (a %[1]s its own words call a guess holds nothing): free to take again", work.Name(work.Scope)), nil
+	}
 	return rec, "", nil
 }
 
 // heldIn is the open issues in state next, the developer's claims that
 // hold their Scope (a claim with no code holds none, #952), but id: what
-// it held when woken on id. open: listed at first need.
-func heldIn(b forge.Backlog, tl *tally, next routing.State, id int, open *[]forge.Issue) ([]int, error) {
+// it held when woken on id, and each one's Scope's paths. open: listed
+// at first need.
+func heldIn(b forge.Backlog, tl *tally, next routing.State, id int, open *[]forge.Issue) ([]int, map[int][]string, error) {
 	if *open == nil {
 		issues, err := b.Issues()
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		*open = issues
 	}
 	claims, err := tl.held(b, next, *open)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	var held []int
 	for n := range claims {
@@ -90,7 +109,7 @@ func heldIn(b forge.Backlog, tl *tally, next routing.State, id int, open *[]forg
 		}
 	}
 	slices.Sort(held)
-	return held, nil
+	return held, claims, nil
 }
 
 // woken is the record of a step that wakes the developer: when, and the
@@ -100,7 +119,7 @@ func woken(cfg *routing.Config, b forge.Backlog, tl *tally, s routing.State, id 
 	if s.Role != developerRole || !ok || s.Next == "" {
 		return rec, nil
 	}
-	held, err := heldIn(b, tl, next, id, open)
+	held, _, err := heldIn(b, tl, next, id, open)
 	if err != nil {
 		return rec, err
 	}
