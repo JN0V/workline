@@ -25,12 +25,12 @@ decisions, and stop real loops? What do they test it with?
   under its own policy, and a non-retryable one, handled as an outcome
   (Temporal's retry policy and non-retryable errors, Step Functions'
   `Retry` and `Catch`). A machine error never becomes a decision.
-- **Restart intensity, per child**: so many restarts in so long, then
-  escalate (Erlang/OTP supervisors); a poison message goes to a dead
-  letter queue after its retries, for a person.
+- **Restart intensity, in a window**: so many restarts in so long,
+  then escalate (Erlang/OTP supervisors); a poison message goes to a
+  dead letter queue after its retries, for a person.
 - **Loops told by repetition, not by count**: the same action on the
-  same observation, again (OpenHands' stuck detector), the same
-  generation already observed (Kubernetes' `observedGeneration`).
+  same observation, again (OpenHands' stuck detector); a key already
+  queued is not queued twice (a controller's work queue).
 - **The property first, then every path**: state liveness ("each item
   eventually done or waiting with a reason") and check it on generated
   and recorded histories (TLA+ liveness, deterministic simulation
@@ -78,9 +78,10 @@ decisions, and stop real loops? What do they test it with?
   `observedGeneration`
   ([API conventions](https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#typical-status-properties)).
   A reader always knows whether the object is ready and, if not, why.
-- **`observedGeneration`**: the spec's generation the controller last
-  acted on. Equal to the current one means "seen this input"; it keys
-  repetition on the input, not on time or on a count.
+- **`observedGeneration`**: the spec's generation a status was
+  computed from, so a reader knows whether the status is current. It
+  tells a reader the status is stale; it is not a guard against acting
+  twice.
 - **Argo CD** reports a sync status and a health status per
   application (`Healthy`, `Progressing`, `Degraded`, `Suspended`,
   `Missing`), each with a message
@@ -125,21 +126,24 @@ decisions, and stop real loops? What do they test it with?
 ## Restart intensity
 
 - **Erlang/OTP supervisors**: at most `intensity` restarts within
-  `period` seconds per supervisor, then the supervisor itself stops and
-  escalates; restart strategies per child (`permanent`, `transient`,
-  `temporary`)
+  `period` seconds, counted per supervisor over all its children; past
+  it, the supervisor itself stops and escalates to its own supervisor.
+  Restart types are per child (`permanent`, `transient`, `temporary`)
   ([supervisor principles](https://www.erlang.org/doc/system/sup_princ.html)).
-- **For workline**: `max-hops` is one global counter fed by every
-  move, decisions and failures alike. A budget per failure kind, per
-  issue and state, escalating to a person, is the supervisor's shape.
+- **For workline**: `max-hops` is one counter with no window, fed by
+  every move, decisions and failures alike. A budget of retries within
+  a window, per issue, state entry, role and failure kind, escalating
+  to a person, borrows the supervisor's shape, keyed finer.
 
 ## Loops told by repetition
 
 - **OpenHands' stuck detector** stops an agent repeating the same
-  action with the same observation, or alternating between two
+  action with the same observation, three to four times, or
+  alternating between two
   ([source](https://github.com/All-Hands-AI/OpenHands/blob/main/openhands/controller/stuck.py)).
-- **Kubernetes**: a controller that sees `observedGeneration` equal to
-  the generation does not act again for that input.
+- **A controller's work queue** dedups by key: an object signalled
+  many times while queued is reconciled once; what keeps the reconcile
+  from acting twice is that it compares the levels again.
 - **For workline**: "the same role, on the same input, gave the same
   outcome" is the loop, whatever the count. A ring of roles on unchanged
   inputs is the alternating case.
@@ -154,9 +158,11 @@ decisions, and stop real loops? What do they test it with?
   with faults injected, and check invariants on each run.
 - **Stateful property-based testing**: QuickCheck's state machine
   models, Hypothesis' `RuleBasedStateMachine`, Go's `rapid` state
-  machines: random sequences of commands, invariants checked after each.
-  Go's own `testing/quick` and a seeded `math/rand` need no new
-  dependency (principle 11).
+  machines: random sequences of commands, invariants checked after each,
+  a failure shrunk to a short case.
+- **Go**: `testing/quick` is frozen and does not shrink; a seeded
+  `math/rand` driver with recorded seeds needs no new dependency
+  (principle 11); `rapid` shrinks, at the cost of one.
 - **For workline**: no test today runs the line over many steps; each
   conformance case runs one command on one snapshot. A simulator with
   fake agents of each outcome class, over the trial's real issues,
@@ -174,6 +180,10 @@ decisions, and stop real loops? What do they test it with?
   `ci_still_running`, `ci_must_pass`, `need_rebase`, `conflict`,
   `draft_status`, `blocked_status`, …)
   ([merge requests API](https://docs.gitlab.com/api/merge_requests/#merge-status)).
+- **Not yet known is a value**: GitHub answers `UNKNOWN` while it
+  computes, GitLab `checking` or `unchecked`; each is asked again,
+  never read as mergeable or blocked. The why comes from
+  `reviewThreads.isResolved`, `statusCheckRollup`, `reviewDecision`.
 - **For workline**: `follow` built readiness from its own reads and
   missed unresolved conversations
   ([#1050](https://github.com/JN0V/workline/issues/1050)). The forge's
@@ -187,6 +197,6 @@ decisions, and stop real loops? What do they test it with?
 | A reconcile on the level, events for speed | A controller framework, a workflow server (principle 11) |
 | A condition with a reason on every open issue, said on it | A new label per condition: the six states stay |
 | An append-only log, a pure decision, replayed in tests | Temporal's determinism rules for the roles: agents are not deterministic, only the decision is |
-| Retryable machine errors, a budget per kind, then a person | A global hop counter as the loop guard |
-| Repetition on the same input as the loop | TLA+ itself: the property is checked by a simulator in Go |
+| Retryable machine errors, a budget per kind in a window, then a person | A global hop counter as the loop guard |
+| Repetition on the same input as the loop, and a cap on rounds between two roles | TLA+ itself: the property is checked by a simulator in Go |
 | The forge's merge state as the reason | Workline's own model of the forge's merge rules |

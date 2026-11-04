@@ -1,18 +1,19 @@
 # ADR-0063: Every open issue is due, waiting or done, decided by one function
 
-- **Status:** proposed (draft, for review before the maintainer reads it)
+- **Status:** proposed (draft 2, after a review by seven independent
+  readers; for the maintainer)
 - **Date:** 2026-11-04
-- **Decided by:** not yet. Written from the root-cause analysis of the
-  trial's defects of 2026-11-04; independent reviewers read it first,
-  then the maintainer decides the questions under
-  [For the maintainer](#for-the-maintainer)
+- **Decided by:** not yet: the questions under
+  [For the maintainer](#for-the-maintainer), each with a recommendation
 - **Evidence:** [#757](https://github.com/JN0V/workline/issues/757)
-  (the twelfth run, on a C++ copy), the defects below
-- **Builds on:** [ADR-0046], [ADR-0054], [ADR-0055], [ADR-0056],
-  [ADR-0059], [ADR-0060]; principles 4, 5, 7, 10, 11, 12, 13, 14
+  (the twelfth run: rounds 1–2, then round 3), the defects below; code
+  read at `be8a12de` on `main`
+- **Builds on:** [ADR-0026], [ADR-0042], [ADR-0046], [ADR-0054],
+  [ADR-0055], [ADR-0056], [ADR-0059], [ADR-0060]; principles 4, 5, 6,
+  7, 10, 11, 12, 13, 14
 - **Amends, once built:** [ADR-0059] §8's record and hop cap, and its
-  amendments that added a once-field (listed under
-  [What it replaces](#what-it-replaces)); [ADR-0054]'s bounds (a new
+  amendments that added a once-field
+  ([What it replaces](#what-it-replaces)); [ADR-0054]'s bounds (a new
   test file beside the Scope); [ADR-0056] (read-only tools for the
   product owner, the tester and the reviewer, where the agent has them);
   [routing.md](../spec/routing.md#once-a-state-the-record)
@@ -23,19 +24,21 @@
 ### What happened
 
 - **On 2026-11-04, the first trial outside workline**: seven real bugs
-  of a C++ framework, copied to a public trial repository, run through
-  the line in three rounds
+  of a C++ framework for ESP32, copied to a public trial repository,
+  run through the line in three rounds
   ([#757](https://github.com/JN0V/workline/issues/757)).
-- **5 of 7 merged; 30 defects of workline found in one day**, each
-  opened and most fixed the same day.
-- **Most were one of three shapes**:
-  - **parked in silence**: an issue in refine with drafts, nothing
-    due for 1 h 40 min; `route issue` said `state-acted … nothing more
-    to run` ([#1070](https://github.com/JN0V/workline/issues/1070),
+- **Rounds 1–2: 5 of 7 merged, 2 alone. Round 3: 0 of 5 merged** in
+  2 h 40 min, each held by at least one defect of workline; 11 opened,
+  9 fixed during the round, the engine rebuilt six times.
+- **30 defects of workline in one day.** Most were one of three shapes:
+  - **parked in silence**: an issue in refine with drafts, nothing due
+    for 1 h 40 min; `route issue` said `state-acted … nothing more to
+    run` ([#1070](https://github.com/JN0V/workline/issues/1070),
     [#1041](https://github.com/JN0V/workline/issues/1041),
     [#1053](https://github.com/JN0V/workline/issues/1053),
-    [#1062](https://github.com/JN0V/workline/issues/1062));
-  - **a loop guard on the wrong key**: an issue blocked 34 s after its
+    [#1062](https://github.com/JN0V/workline/issues/1062),
+    [#1072](https://github.com/JN0V/workline/issues/1072));
+  - **a loop guard on the wrong key**: an issue blocked 32 s after its
     tests came, "9 state steps, past max-hops (8)"
     ([#1068](https://github.com/JN0V/workline/issues/1068)); one blocked
     3 min after it opened, on a folder its agent guessed
@@ -43,22 +46,31 @@
     Scope ask at the same head sent to a person
     ([#1073](https://github.com/JN0V/workline/issues/1073));
   - **an engine failure routed as a verdict**: a test calling a
-    constructor that does not exist blocked an issue for 7 days
+    constructor that does not exist moved an issue to Blocked, to be
+    read again in 7 days
     ([#1048](https://github.com/JN0V/workline/issues/1048)); a token
     budget spent read as "no test proposed"
     ([#1017](https://github.com/JN0V/workline/issues/1017)); code not
     given read as "no test possible", sent back to refine
     ([#1047](https://github.com/JN0V/workline/issues/1047),
-    [#1059](https://github.com/JN0V/workline/issues/1059)); a patch
-    with a miscounted hunk blocked an issue at its first try
-    ([#1075](https://github.com/JN0V/workline/issues/1075)).
+    [#1059](https://github.com/JN0V/workline/issues/1059)); a patch with
+    a miscounted hunk blocked an issue at its first try
+    ([#1075](https://github.com/JN0V/workline/issues/1075)); a mark that
+    could not be read taken for no mark
+    ([#1030](https://github.com/JN0V/workline/issues/1030)).
+- **Where the chains start**: round 3's report puts 8 of its 11 defects
+  in one zone, the code given to a role, the Scope, and the wake after
+  a hold. A role short of code fails; the failure is routed as a
+  verdict; the next wake needs a guard; the guard strands the issue.
 
 ### Four root causes
 
 1. **No liveness invariant.** A step is due only when the state, body,
-   labelling or spec review changed (`due` in `internal/line/record.go`).
+   labelling or spec review changed (`due`,
+   [record.go](https://github.com/JN0V/workline/blob/be8a12de/internal/line/record.go)).
    Anything else is `state-acted`: an `info` finding, nothing on the
-   issue. That default breaks
+   issue ([states.go](https://github.com/JN0V/workline/blob/be8a12de/internal/line/states.go)).
+   That default breaks
    [ADR-0059 §1](0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#1-every-refusal-claim-wait-or-block-is-on-the-issue)
    by itself. Each legitimate reason to run again became a field and a
    branch: 29 fields in `Record`, 11 exception branches in `stateOf`.
@@ -71,16 +83,23 @@
    ([#1062](https://github.com/JN0V/workline/issues/1062),
    [#1021](https://github.com/JN0V/workline/issues/1021),
    [#840](https://github.com/JN0V/workline/issues/840)). The exclusive
-   labels of §2 do not hold: one trial issue carried `ready` and
-   `developing` together.
-3. **Untyped outcomes.** A run's result is free text and a finding code,
-   mapped to a state move. Nothing says "the machine failed: retry, do
-   not move the issue, do not count it".
-4. **Code pushed by per-role heuristics; agents cannot pull it.** The
-   product owner and the tester get pre-cut code, each with its own
-   cut, tuned on Go; only the developer's agent has tools
-   ([ADR-0056]). Each miss costs a wake, which needs a once-field, which
-   strands an issue.
+   labels of §2 do not hold through a claim: trial
+   [#36](https://github.com/JN0V/DomoticsCore-trial/issues/36) carried
+   `ready` and `developing` together for 25 minutes (17:47–18:12), the
+   claim adding one before the other came off.
+3. **Untyped outcomes.** A run's result is free text and one of 453
+   finding codes, mapped to a state move. Nothing says "the machine
+   failed: retry, do not move the issue, do not count it". A read that
+   failed is read as "absent".
+4. **Code pushed by per-role cuts, tuned to file size and language;
+   agents cannot pull it.** The product owner and the tester get
+   pre-cut code, each role with its own cut; only the developer's agent
+   has tools ([ADR-0056]). Misses came from a 7,576-line Markdown file
+   given whole ([#1063](https://github.com/JN0V/workline/issues/1063)),
+   a C++ method defined out of its class
+   ([#1064](https://github.com/JN0V/workline/issues/1064)), a budget
+   that left the tester no test to copy
+   ([#1059](https://github.com/JN0V/workline/issues/1059)).
 
 ### Why the fixes did not converge
 
@@ -91,26 +110,45 @@
 - **Each fix adds the next stranding case**: a new once-field is absent
   from older records, so issues held under the old rule stay held
   ([#1041](https://github.com/JN0V/workline/issues/1041),
-  [#1070](https://github.com/JN0V/workline/issues/1070)).
+  [#1070](https://github.com/JN0V/workline/issues/1070)), or the field
+  is lost when the step is due for another reason
+  ([#1072](https://github.com/JN0V/workline/issues/1072)).
 - **Proxies move, loops stay**: `max-hops` blocked progress, and was
   patched to restart on it
   ([#1069](https://github.com/JN0V/workline/pull/1069)).
 - **No test checks the line over time**: each conformance case runs one
   command on one snapshot; one even expects the silent park
   (`routing/ready-overlap-gone-wakes-once.yaml`). Defects surface one
-  hop at a time, at trial speed.
+  hop at a time, at trial speed, on a live repository rebuilt mid-round.
 - **[ADR-0059] took 15 amendments in four days**; 27 commits touched
   `internal/line` since 2026-10-31.
+
+### Out of this ADR
+
+- **CI wiring**: a closed demotion issue that started nothing
+  ([#1029](https://github.com/JN0V/workline/issues/1029)), a fork's
+  pull request into another branch never followed
+  ([#1055](https://github.com/JN0V/workline/issues/1055)): the
+  reconciler on the level (§10) makes them late, not lost; their
+  triggers stay template fixes.
+- **Install and doctor** ([#1016](https://github.com/JN0V/workline/issues/1016),
+  [#1033](https://github.com/JN0V/workline/issues/1033)); a failed
+  role run that exits 0 ([#1011](https://github.com/JN0V/workline/issues/1011)),
+  which §6 types but whose exit code is its own fix.
+- **A prompt's judgement** of kinds and scenarios
+  ([#1019](https://github.com/JN0V/workline/issues/1019),
+  [#1020](https://github.com/JN0V/workline/issues/1020)):
+  `tests/evaluation`; the view only shows a miss sooner.
 
 ## Decision
 
 ```mermaid
 flowchart LR
   forge["<b>The forge</b><br/>labels, body, comments"] --> view["<b>One view</b><br/>parsed once"]
-  log["<b>The step log</b><br/>append-only"] --> next(["<b>Next</b><br/>a pure function"])
+  log["<b>The step log</b><br/>grow-only"] --> next(["<b>Next</b><br/>a pure function"])
   view --> next
   next --> due["<b>Due</b><br/>role, input"]
-  next --> wait["<b>Waiting</b><br/>on whom, why"]
+  next --> wait["<b>Waiting</b><br/>on whom, why, said"]
   next --> done["<b>Done</b>"]
   due --> run["<b>The role runs</b><br/>a typed outcome"]
   run --> log
@@ -119,13 +157,13 @@ flowchart LR
 - **Keep**: the six states and their labels, the roles and their acts,
   events for speed and the reconciler as the net
   ([ADR-0059](0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md)).
-- **Change**: how the line decides what is next, what it remembers, and
-  how a role's result reads.
+- **Change**: how the line decides what is next, what it remembers, how
+  a role's result reads, and how roles get code.
 
 ### 1. The invariants
 
-- **I1, every open item has a status.** After each tick, every open
-  issue and every pull request of the line is exactly one of:
+- **I1, every open item has a status, said.** After each tick, every
+  open issue and every pull request of the line is exactly one of:
   - **Due(role, input)**: started this tick, or queued, its place said;
   - **Waiting(on, reason)**, `on` one of: a person (named when known),
     an event (named: "the reviewer's comment on the spec"), an issue
@@ -133,84 +171,134 @@ flowchart LR
     unresolved");
   - **Done**: closed, merged.
 
-  Said in the line's one comment on it, edited in place. "Acted,
-  nothing to run" is not a status.
-- **I2, never the same input twice for the same answer.** A role runs
-  at most once on the same input with the same kind of outcome. The
-  second time is Waiting(person, "the same input gave the same
-  outcome: …").
-- **I3, a machine error never moves an issue.** It retries with changed
-  input under its kind's budget, then waits for a person. It never
-  routes backward, and never counts toward a loop.
+  Said on it ([§7](#7-what-a-person-reads)). "Acted, nothing to run" is
+  not a status.
+- **I2, never the same input twice.** A role does not run again on an
+  input it already ran on, unless its last outcome there was a machine
+  error with budget left.
+- **I3, a machine error never moves an issue.** No label, no state, no
+  hop. It retries under its budget, then waits for a person.
 - **I4, one view.** Every rule and every role reads one typed view of
-  the issue, parsed once a tick. No caller parses the body's prose
-  itself.
+  the issue, parsed once a tick. No caller parses the body's prose.
 
 ### 2. One view of an issue
 
 - **Parsed once a tick** from what the forge holds: labels, body,
   comments (the roles' sticky comments and marks included), label
   events, dependencies, the linked pull request.
-- **Derived, never stored**: the forge stays the one source of truth
+- **Derived, never stored**: the forge stays the source of truth
   (principle 13); no new store.
 - **Holds, typed**: state; kind; sections (text on top read as the
-  Need); drafts (label or marks, either one); named scenarios; Scope
-  (paths, guessed or not); proof kind; open questions and their age;
-  the spec review and its rounds; claim; Scope asks; pull request;
+  Need); drafts (label or marks); named scenarios; Scope (paths,
+  guessed or not); proof kind; open questions and their age; the spec
+  review and its rounds; claim; Scope asks; pull request; the
   Definition of Ready per state, with what fails.
-- **Moved onto it, behaviour kept**: `backlog.NotReady`, the reviewer's
-  `waitingSpecs`, draft detection, the `Guessed` read and its prose
-  form, scenarios, the tester's proof, the time-outs of [ADR-0060].
-- **Time enters as facts**, not timestamps: "a question past its
-  delay", "a claim older than `claim-hours`". A fact that turns true
-  changes the role's input, so the role is due again (§4).
+- **Unknown is a value**: a read that failed, or a mark that does not
+  parse, is `unknown`, never "absent"
+  ([#1030](https://github.com/JN0V/workline/issues/1030)). `Next` on an
+  unknown fact is a machine error (`forge-read`), retried.
+- **Time enters as facts**, from the forge's timestamps only (label
+  events, comments' dates), never `updated_at` nor the runner's clock
+  alone: "a question past its delay", "a claim older than
+  `claim-hours`".
+- **Moved onto it, behaviour kept**: `backlog.NotReady`, the
+  reviewer's `waitingSpecs`, draft detection, the `Guessed` read and its
+  prose form, scenarios, the tester's proof, the time-outs of [ADR-0060].
 
-### 3. One append-only step log
+### 3. The input of a step
 
-- **An entry a step**: when, role, state, input digest, outcome kind,
-  outcome code, what was said.
-- **Kept in the line's existing comment** (`line/state`): the last 20
-  entries, older ones folded into counts. No new comment, no new label.
-- **The input digest** is the hash of the task the engine builds for
-  the role, its volatile parts left out (dates, run ids). It holds
-  everything the role reads: the body, the comments it reads, the code
-  given, the review, the tests, the head.
-  - Same task, same input: the agent would see the same thing.
-  - A role with no agent hashes the same task, built with `--ai none`.
-- **Replaces the record's once-fields**: "due again?" becomes "is there
-  an entry for this role and this digest, of an outcome that is not a
-  machine error?".
+The input is what decides whether a role has something new to read.
 
-### 4. One pure function decides
+- **Canonical, from the view**, not the task the role builds:
+  - the body;
+  - comments by others than the line and than this role (a role's own
+    sticky would make each run new input; the line's own comment too);
+  - for each Scope file and each file the picker gave: its path and
+    blob SHA, never the head commit (a merge elsewhere changes nothing);
+  - the view's facts that turned true (a delay passed, a review came,
+    a blocker closed);
+  - for a pull request's round: its head SHA and the findings' ids.
+- **A version of the input's schema**, in the engine, bumped on purpose
+  when the input's parts change. A bump is new input for every issue,
+  handled as the [migration](#migration): spread by `reconcile-max`,
+  its number of calls said in the release notes.
+- **A role with read tools logs what it read**: paths and blob SHAs,
+  with its entry. Any of them changed is new input.
+- **Digest**: 12 hex characters of SHA-256 over the canonical form.
+- **Not chosen**: the hash of the role's built task. `Next` cannot
+  build it without the role's code; a prompt or picker change in a
+  release would make every issue new; tools read past the task.
+
+### 4. The step log
+
+- **Kept in the line's existing comment** (`line/state`), in a new mark
+  `line-log` beside the old `line-record`, which stays written for one
+  release. A `v` field versions it.
+- **Grow-only**: a set of entry ids `(role, input digest, outcome kind)`,
+  each 12 hex characters, plus counters per state entry (machine errors
+  by kind, judgement rounds by role pair). A state entry starts when its
+  label is put on, as the forge dates it. No folding, no last-N: a set
+  of short ids fits the comment for hundreds of steps.
+- **Two writers never lose an entry**:
+  - one concurrency group per issue for every writer, the reconciler
+    included (GitHub's `concurrency`, GitLab's `resource_group`), as
+    [ADR-0059 §8](0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#8-event-driven-the-night-for-upkeep)
+    has for roles;
+  - and a write is read, union, edit, read back; an entry missing on the
+    read back is merged again.
+- **Started before it runs**: a step writes `started(role, digest)`
+  first. Started with no outcome after the run's time-out is a machine
+  error, `run-lost`.
+- **The state label is compared before it moves**: the step moves it
+  only from the state it started on. A person moved it meanwhile: the
+  outcome is `superseded`, which neither counts nor moves.
+
+### 5. One pure function decides
 
 `Next(view, log, config, now)` returns one status, with no forge call
-and no agent. For an open issue whose state wakes a role:
+and no agent. It is level-triggered: it reads the view's facts, not
+what changed.
 
-| The log for (role, digest) | Status |
+| The view and the log | Status |
 |---|---|
-| no entry | Due(role, digest); Waiting(room in X) when the next state is full |
-| `progress` | the state moved; a person moved it back, so the labelling is new input |
-| `waiting(on)` | Waiting(on, reason), until `on` answers: the answer changes the digest |
-| `needs-input(from role R)` | Due(R) on R's own input |
-| `needs-input(from a person)` | Waiting(person, the question) |
-| `machine-error(kind)`, budget left | Due(role, digest), after its back-off |
-| `machine-error(kind)`, budget spent | Waiting(person, kind), Blocked on the board |
-| any other kind, again | Waiting(person, "the same input gave the same outcome") |
+| closed, merged | Done |
+| state wakes role R; no entry for (R, input) | Due(R, input); Waiting(room in X) when the next state is full |
+| last entry for (R, input) is `waiting(on)` | Waiting(on, reason) while `on` holds in the view: blocker still open, room still full, time not reached, forge still not mergeable |
+| `needs-input(R2)` | Due(R2) on R2's own input |
+| `needs-input(engine: what)` | Due(R, input) with what was lacking given; a second time, Waiting(person) |
+| `needs-input(person)` | Waiting(person, the question), with its delay ([§7](#7-what-a-person-reads)) |
+| `machine-error(kind)`, budget left | Due(R, input), after its back-off |
+| `machine-error(kind)`, budget spent | Waiting(person, kind), Blocked on the board, its state kept |
+| `progress` | the state moved; back in it by a person: the labelling is new input |
 
-- **A ring of roles on unchanged inputs** (refine → tests → refine)
-  meets an entry already there: I2 stops it, with no count.
-- **A last fuse stays**: `max-hops` counts only judgements, never a
-  machine error; past it, Waiting(person). It should never fire; a
-  fire is a defect to file.
-- **Blocked is Waiting(person)**: news on it changes the product
+- **Each `Waiting(on)` is checked on the view**, every tick: a blocking
+  issue closed, room freed, the time reached, the forge's merge state
+  changed. Not only through the input changing.
+- **I2 is guarded in the role too**: a step started on a (role, input)
+  already in the log ends at once as `waiting`, no agent call. `Next`
+  may say "due" from a stale view; the role, holding the issue's
+  concurrency group, has the last word.
+- **Machine-error budget**: per issue, state entry, role and error
+  kind, 2 tries within 24 h by default, a back-off between. A new state
+  entry starts a new budget. The supervisor's shape: so many restarts
+  in a window, then escalate.
+- **Judgement rounds**: per state entry and role pair (product owner and
+  tester, product owner and reviewer), 3 exchanges by default, as
+  [ADR-0055]'s cap. Past it, the line asks a person a worded question:
+  "the tester and the product owner disagree on …: pick a proof kind,
+  or rewrite the scenario". A designed outcome, not a fuse. It stops the
+  ring the trial's #36 ran, whose inputs changed each time.
+- **`max-hops` stays a last fuse**, on judgements only. A fire is a
+  defect, filed with its trace.
+- **Blocked is Waiting(person)**; news on it changes the product
   owner's input, so the product owner is due, as
   [revisit](0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#amendment-2026-11-01-blocked-is-read-again)
   does today.
 - **The table lives in the routing config** with the states, as
   [ADR-0059 §8](0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#8-event-driven-the-night-for-upkeep)
-  asked: "one table, read by a pure function".
+  asked.
 
-### 5. Typed outcomes
+### 6. Typed outcomes
 
 Each role's run ends with one outcome, beside its finding codes:
 
@@ -218,66 +306,125 @@ Each role's run ends with one outcome, beside its finding codes:
 |---|---|---|
 | `progress` | it moved the issue | the tester's Draft, its checks passed |
 | `waiting` | it waits, on whom, why | the product owner asked a question |
-| `needs-input` | another role or a person must act | "no test is possible for this need", to the product owner |
-| `machine-error` | the engine's or the agent's run failed | over budget, a build error, a patch that does not apply, a run lost |
+| `needs-input(role or person)` | another role or a person must act | "no test is possible for this need", to the product owner |
+| `needs-input(engine: what)` | the agent lacked something the engine can give | "no existing test to copy", "the definition of `getWebUIVersion` not given" |
+| `machine-error(kind)` | the engine's or the agent's run failed | over budget, a build error, a patch that does not apply, a forge read failed, a run lost |
+| `superseded` | a person moved the issue during the run | the label changed under it |
 
-- **A machine error has a kind and a retry**: each kind changes the
-  input before the next try (the compiler's output, the patch error,
-  narrower code), a budget per kind (2 by default), then a person.
-- **New failure shapes need no new code**: an unknown error of a run is
-  a machine error, never a verdict (principle 12).
-- **Transition**: a role keeps its codes; a table in the engine maps
-  each to a kind until the role emits it.
+- **`needs-input(engine)` is declared by the agent**, in its answer:
+  what it lacked. A tester starved of code
+  ([#1047](https://github.com/JN0V/workline/issues/1047),
+  [#1059](https://github.com/JN0V/workline/issues/1059)) then differs
+  from a real "no test possible".
+- **A machine error changes the input of its retry** where it can: the
+  compiler's output, the patch error, narrower code.
+- **An unknown error of a run is a machine error**, never a verdict
+  (principle 12): a new failure shape needs no new code.
+- **Mapped only where it moves state**: of the 453 finding codes, the
+  ones that move a state today get a kind in a table in the engine; the
+  rest are information. A role emits its kind itself later.
 
-### 6. One code picker, and tools where the agent has them
+### 7. What a person reads
+
+- **One status block on top of the line's comment**, fixed form:
+  - **Who moves next**: a named person, a role, or "nobody: waits for
+    #12" / "waits until 14:00";
+  - **What**: one sentence, in the person's words, no internal code;
+  - **How**: one action, one click where it can be (a label, a reply);
+    that action changes the input, so the line moves on it.
+- **Edited only when its text changes**, never per tick. The log stays
+  hidden in its mark.
+- **The roles' own comments defer to it**: they say what they did; the
+  status says what is next.
+- **No Waiting(person) waits for ever**: each has a delay by autonomy
+  level, then the line goes on with a written assumption
+  ([ADR-0060 §1](0060-the-person-is-on-the-loop.md#1-questions-time-out-as-lazy-consensus)).
+  The one exception: a person's yes to a feature
+  ([ADR-0060 §4](0060-the-person-is-on-the-loop.md#4-a-person-validates-by-the-issues-kind)).
+
+### 8. One code picker, and tools where the agent has them
 
 - **One picker for the product owner, the tester and the reviewer**,
-  any language: `git grep -n -w` for the symbols and paths the view
-  names, the lines around each hit, ranked by hits, under the role's
-  budget, the cut said in the task.
-- **Room for one existing test, always**: the nearest test file under
-  the project's `test-paths` to a Scope path, so the tester has a test
-  to copy.
-- **Read-only tools where the agent has them**: `claude` gets read,
-  search and list tools in a worktree ([ADR-0056]'s sandbox, no write,
-  no shell); the picker's result seeds its task.
+  any language:
+  - the symbols and paths named in the title, the Need, the Steps and
+    the Scope;
+  - `git grep -n -w` for each, ranked by hits; for each hit, its
+    enclosing definition (the code navigation, with
+    [#1066](https://github.com/JN0V/workline/pull/1066)'s C++ methods),
+    else the lines around;
+  - one level of includes and imports, and the types used, at least as
+    paths (the trial's #34 needed its base class's header);
+  - under the role's budget, the cut said in the task.
+- **Room for one existing test, always**: the nearest file matching the
+  tester's `test-paths` patterns to a Scope path.
+- **Read-only tools where the agent has them**: `claude` gets a second
+  tool set, `Read,Glob,Grep`, beside the developer's
+  `Read,Edit,Write,Glob,Grep,Bash` (`claudeTools`,
+  [claude.go](https://github.com/JN0V/workline/blob/be8a12de/internal/agent/claude.go)),
+  in a worktree, no shell. The picker seeds its task; its reads are
+  logged ([§3](#3-the-input-of-a-step)).
+- **A token ceiling before it ships**: a run's tokens per merged bug no
+  more than the median of rounds 1–2, measured from their run
+  artifacts; a role's tool budget said in its task.
 - **`cmd:` agents keep the seeded task**; a project may declare that its
   agent reads files itself. **No agent**: the step goes to a person, as
   today (principle 5).
 - **The "name the code, be read again" protocol** stays only for agents
-  with no tools; each read again is new input, so I2 bounds it.
+  with no tools, as `needs-input(engine: paths)`.
 
-### 7. The developer's write fence
+### 9. The developer's write fence
 
-- **The Scope, plus a new test file** under `test-paths` beside a Scope
-  path: written by rule, no ask.
-- **Anything else is an ask**: needs-input(product owner, the files),
-  its digest the file set. The same set asked twice waits for a person;
-  a new set is new input, whatever the head.
+- **The Scope, plus a new test file** matching the tester's
+  `test-paths` patterns, in or beside a Scope path's folder: written by
+  rule, no ask.
+- **Said and folded in**: such a file is listed on the pull request and
+  in the product owner's comment, and added to the Scope at its next
+  run.
+- **Anything else is an ask**: `needs-input(product owner, the files)`,
+  the file set in its input. The same set asked twice waits for a
+  person; a new set is new input, whatever the head.
 
-### 8. Pull requests through the same function
+### 10. Pull requests through the same function
 
 - **The same statuses**: Due(reviewer, head), Due(developer's round,
-  head and findings), Waiting(forge, its reason), Waiting(person, a
-  yes), Done (merged).
-- **The forge says why it does not merge**: GitHub's
-  `mergeStateStatus`, GitLab's `detailed_merge_status`; workline adds
-  only what is its own (a verdict, a person's yes,
-  [ADR-0042]).
+  head and findings), Waiting(forge, its reason), Waiting(person, a yes)
+  for a feature only, Done (merged).
+- **The forge says why it does not merge**:
+  - GitHub: `mergeStateStatus`, with `reviewThreads.isResolved`,
+    `statusCheckRollup` and `reviewDecision` for the why; `UNKNOWN` is
+    asked again, never read as mergeable or blocked;
+  - GitLab: `detailed_merge_status`; `checking` and `unchecked` asked
+    again.
+  - workline adds only its own: a verdict, a person's yes for a feature
+    ([ADR-0042], [ADR-0060]).
 - **Level, not events**: the reconciler evaluates `Next` on every open
   pull request of the line; an event only brings it sooner.
+
+### 11. What it reads from the forge
+
+- **Today, estimated**: a reconcile reads per open issue its comments,
+  its label events and the claims listing: about 3 to 5 requests an
+  issue, 100 to 150 a tick on 30 open issues. The heartbeat every
+  10 min of round 2 came near a `GITHUB_TOKEN`'s 1,000 requests an hour
+  a repository; the App's token has at least 5,000. Step 1 measures it
+  on the fake forge.
+- **After**: a list pass first (labels, `updated_at`, one page of 100);
+  the full view only for an issue changed since its last view, or with a
+  time fact due, or a `Waiting` to check. On GitHub one GraphQL query
+  for the view of a page of issues. The target: no more requests a tick
+  than today.
 
 ### What it replaces
 
 | Today | By |
 |---|---|
 | `due`'s equality key; `stateOf`'s 11 exception branches | `Next` |
-| `Record`'s once-fields: `Asked`, `Revise`, `Timeout`, `Woke`, `Held`, `Unheld`, `Lost`, `Retry`, `Given`, `Unread`, `ReviewAgain`, `Reached` | the log and I2 |
-| `max-hops` as the loop guard | I2; the hop count a fuse on judgements |
+| `Record`'s once-fields: `Asked`, `Revise`, `Timeout`, `Woke`, `Held`, `Unheld`, `Lost`, `Retry`, `Given`, `Unread`, `ReviewAgain`, `Reached` | the log, I2, the budgets |
+| `max-hops` as the loop guard | I2 and judgement rounds; the hop count a fuse |
 | `refine-capped`, `no-test-unsettled`, `tests-refused` as special routes | outcomes in the table |
-| per-shape retries (lint, build error, [#1052](https://github.com/JN0V/workline/pull/1052)) | one retry per machine-error kind |
+| per-shape retries (lint, build error) | one retry per machine-error kind |
 | the per-role code cuts (the tester's pieces, the product owner's named code, the reviewer's reach) | the picker |
-| the Scope ask once a head, then once a file set ([#1074](https://github.com/JN0V/workline/pull/1074)) | the ask keyed by its file set, through I2 |
+| the Scope ask once a head, then once a file set | the ask's file set in its input |
 | `follow`'s own readiness model | the forge's merge state |
 
 - **Today's patches removed**: [#1071](https://github.com/JN0V/workline/pull/1071)
@@ -286,13 +433,13 @@ Each role's run ends with one outcome, beside its finding codes:
   (`Unread`), [#1054](https://github.com/JN0V/workline/pull/1054)
   (`no-test-unsettled`), [#1028](https://github.com/JN0V/workline/pull/1028)
   (drafts with no label), [#1074](https://github.com/JN0V/workline/pull/1074)
-  (the ask once a file set), [#1052](https://github.com/JN0V/workline/pull/1052)
+  (the ask by file set), [#1052](https://github.com/JN0V/workline/pull/1052)
   (build error retried), the context cuts
   [#1058](https://github.com/JN0V/workline/pull/1058),
   [#1049](https://github.com/JN0V/workline/pull/1049),
   [#1060](https://github.com/JN0V/workline/pull/1060),
-  [#1024](https://github.com/JN0V/workline/pull/1024); older:
-  `Given` and `Unheld` ([#986](https://github.com/JN0V/workline/pull/986),
+  [#1024](https://github.com/JN0V/workline/pull/1024); older: `Given`
+  and `Unheld` ([#986](https://github.com/JN0V/workline/pull/986),
   [#1000](https://github.com/JN0V/workline/pull/1000)).
 - **Moved, their logic kept**: [#1067](https://github.com/JN0V/workline/pull/1067)
   (the Need on top) into the view; [#1037](https://github.com/JN0V/workline/pull/1037)
@@ -305,6 +452,11 @@ Each role's run ends with one outcome, beside its finding codes:
 
 - **The six states, their labels, the board** ([ADR-0057]); no label
   per condition.
+- **The product owner's ground** ([ADR-0060 §2](0060-the-person-is-on-the-loop.md#2-the-builders-part-is-the-product-owners-at-every-level)):
+  Need and Validation are a person's, never rewritten, a draft of them
+  a question; Verification and Scope are the product owner's; the
+  issue's kind is the forge's; autonomy is a level per role
+  ([ADR-0026]).
 - **Each role's acts and judgement**; only its outcome's form changes.
 - **Events start steps; the reconciler is the net**, now on the level.
 - **Fixes that were real reads or tools**:
@@ -318,15 +470,18 @@ Each role's run ends with one outcome, beside its finding codes:
 
 ### Migration
 
-- **An old record becomes one log entry**: its state, its body's hash,
-  outcome `progress`, its once-fields kept as entries of their own
-  (`Given` as a read with that code, `Lost` as a machine error).
-- **Its digest is old-style**, so the new `Next` finds no entry for the
-  new digest: an issue the old line called acted is due once, in the
-  reconciler's order, `reconcile-max` a run. See
-  [question 2](#for-the-maintainer).
-- **Labels stay**; two state labels at once are read as the further
-  state, the other taken off, said.
+- **An old record becomes log entries**: its state entry, its body's
+  hash, outcome `progress`; `Given` as a read with that code, `Lost` as
+  a `run-lost`, `Retry` as judgement rounds.
+- **Its input is of the old schema**, so the new `Next` finds no entry
+  for the new input. Only an issue whose state wakes a role is due, once,
+  spread by `reconcile-max`, the one waiting longest first. Expected on
+  2026-11-04: at most 22 agent calls on workline (10 in refine, 5 in
+  tests, 7 ready), 2 on the trial copy; with `reconcile-max` at 3, about
+  8 hourly runs.
+- **Two state labels at once** are said on the issue; the record's state
+  is kept when it matches one of them, else the further one; the other
+  label comes off.
 - **Old sticky comments stay readable**; new writes go to the same
   `line/state` comment.
 
@@ -336,144 +491,261 @@ Each role's run ends with one outcome, beside its finding codes:
   each forge fills the view (GitLab's label events, its `is_blocked_by`,
   `detailed_merge_status`). The local forge fills it from
   `.workline/work/` and keeps the comment as it keeps others.
-- **On a machine and in CI**: the same binary, `workline route
+- **On a machine and in CI**: the same binary; `workline route
   reconcile` on a person's machine, hourly and by event in CI.
 - **The agent stays a choice**: none, `claude`, or `cmd:<any command>`.
   `Next` asks no agent; with none, a judgement goes to a person as
   Waiting(person).
 - **The auditor observes it** ([ADR-0046]): the log is the trail it
-  samples; an open issue with no status is a finding; it reports
-  machine errors by kind and Waiting(person) by reason, per week.
+  samples; an open issue with no status is a finding; it reports machine
+  errors by kind, Waiting(person) by reason, and the reconciler's last
+  run (late past N hours is a finding).
+
+## Working agreements
+
+Ways of working that hold while this is built, and after.
+
+- **A standing stop**: three fixes to one package within 48 h, or a
+  core ADR amended three times in a week, stops the fixing. A root-cause
+  review first, then a red simulator trace before any fix. The auditor
+  counts, weekly, amendments per ADR and fix pull requests per package.
+- **A live patch, only so**: when a stall costs a person a day; a red
+  trace first; time-boxed to one day; an issue opened to remove it.
+- **No new once-field nor exception branch in `stateOf`**; no new
+  per-shape retry
+  ([#1075](https://github.com/JN0V/workline/issues/1075) waits for
+  step 2; its hunk recount in the tool is a fair fix to keep).
+- **No cap raised to pass a trial** (`max-hops`, `reconcile-max`,
+  `code-lines-max`).
+- **Trials pin one engine version a round**: no rebuild mid-round.
+  Defects are logged, frozen as traces, fixed between rounds. The trial
+  copy stays as it is until the next round.
+- **One step in flight at a time.** A step touching `internal/line`
+  needs the simulator green and an independent review before merge.
+- **A shared definition of done** for every step:
+  - its own traces green; `pending.txt` only shrinks;
+  - N seeded runs hold I1 and I2;
+  - the same tick run twice starts nothing the second time;
+  - the docs it makes wrong moved;
+  - `## Tried` covers several ticks, not one command.
 
 ## Build plan
 
-One pull request a step, its failing traces first, as for a
-conformance case. No step changes behaviour before its traces are red.
+One pull request a step unless said; about 15 to 18 in all. The
+simplest core that pays: steps 1, 2 and 5–6 on refine and ready only.
 
-1. **A simulator, red first, no behaviour change.** The trial's issues
-   frozen as fixtures (title, body, labels, comments, label events) on
-   the fake forge; fake agents, one per outcome kind; `route reconcile
-   --ai none` run K ticks with no outside event. It asserts I1: no open
-   issue ends a tick quiet. Random outcome sequences, seeded, with Go's
-   `testing/quick` and `math/rand` (no new dependency). The traces that
-   fail today are listed as pending, never lying. *Proof: it reproduces
-   the trial's stranded issues from the fixtures alone.*
-2. **The view, one parse.** Every caller moved onto it, no behaviour
-   change. *Proof: the suite green; every caller gives the same answer
-   on the trial's bodies.*
-3. **Typed outcomes.** The engine maps each role's codes to a kind; a
-   machine error retries and never moves the issue. *Proof: the traces
-   of [#1017](https://github.com/JN0V/workline/issues/1017),
-   [#1047](https://github.com/JN0V/workline/issues/1047),
-   [#1048](https://github.com/JN0V/workline/issues/1048),
-   [#1059](https://github.com/JN0V/workline/issues/1059),
-   [#1068](https://github.com/JN0V/workline/issues/1068),
-   [#1075](https://github.com/JN0V/workline/issues/1075) green.*
-4. **`Next` and the log**, replacing `due` and the once-fields; I2.
-   *Proof: random sequences hold I1 and I2; the traces of
-   [#840](https://github.com/JN0V/workline/issues/840),
-   [#1021](https://github.com/JN0V/workline/issues/1021),
-   [#1036](https://github.com/JN0V/workline/issues/1036),
-   [#1041](https://github.com/JN0V/workline/issues/1041),
-   [#1053](https://github.com/JN0V/workline/issues/1053),
-   [#1062](https://github.com/JN0V/workline/issues/1062),
-   [#1070](https://github.com/JN0V/workline/issues/1070) green, with no
-   code for any one of them.*
-5. **The picker, and read-only tools.** *Proof: the traces of
-   [#1056](https://github.com/JN0V/workline/issues/1056),
-   [#1057](https://github.com/JN0V/workline/issues/1057),
-   [#1063](https://github.com/JN0V/workline/issues/1063),
-   [#1064](https://github.com/JN0V/workline/issues/1064); a real agent on
-   the C++ copy, told under `## Tried`.*
-6. **The write fence with `test-paths`; asks keyed by file set.**
-   *Proof: [#1061](https://github.com/JN0V/workline/issues/1061),
-   [#1073](https://github.com/JN0V/workline/issues/1073) green.*
-7. **Pull requests through `Next`.** *Proof:
-   [#1029](https://github.com/JN0V/workline/issues/1029),
-   [#1031](https://github.com/JN0V/workline/issues/1031),
-   [#1039](https://github.com/JN0V/workline/issues/1039),
-   [#1050](https://github.com/JN0V/workline/issues/1050) green.*
-8. **A fourth round on the C++ copy**, timed: issues reaching Done or
-   Waiting(person) with a reason; no step started by hand.
+1. **The simulator, red first, no behaviour change** (1–2 pull
+   requests).
+   - *Given* the trial's issues frozen with their comments and label
+     events, and fake agents, *when* the simulator runs K ticks with no
+     outside event, *then* it reproduces the trial's stranded issues
+     (#34, #37 in refine; #35 blocked on a guess) and names, per trace,
+     the first property that fails.
+   - *Done*: [the test plan](#step-1-the-test-plan) below; the
+     requests a tick measured.
+2. **Typed outcomes**, only the codes that move a state; an unknown run
+   error a machine error; `needs-input(engine)` in the tester's and the
+   product owner's answers.
+   - *Given* the trial's #20 with a tester's test that does not build,
+     *when* the line runs, *then* the tester is asked again with the
+     compiler's output, the issue stays in tests, its hops unchanged;
+     after the budget, it waits for a person with the error said.
+   - *Done*: the traces of [#1017](https://github.com/JN0V/workline/issues/1017),
+     [#1047](https://github.com/JN0V/workline/issues/1047),
+     [#1048](https://github.com/JN0V/workline/issues/1048),
+     [#1059](https://github.com/JN0V/workline/issues/1059),
+     [#1068](https://github.com/JN0V/workline/issues/1068),
+     [#1075](https://github.com/JN0V/workline/issues/1075) green.
+3. **The write fence with `test-paths`.**
+   - *Given* the trial's #35, its fix green and a new test file beside
+     its Scope, *when* the round ends, *then* the file is kept, listed
+     on the pull request, and no Scope ask is made.
+   - *Done*: [#1061](https://github.com/JN0V/workline/issues/1061),
+     [#1073](https://github.com/JN0V/workline/issues/1073) green.
+4. **A short pinned round on the C++ copy**: three fresh bugs, one
+   engine version, no rebuild. It checks steps 2–3 on real agents
+   before the line's core changes.
+   - *Done*: the round told on
+     [#757](https://github.com/JN0V/workline/issues/757); each defect
+     frozen as a trace.
+5. **The view**: a facade first, then the callers moved one package a
+   pull request, no behaviour change.
+   - *Given* the trial's #34 (its Need as text on top), *when* the
+     product owner, the reviewer and the line read it, *then* all three
+     agree it is drafted and waits on a review.
+   - *Done*: every caller gives the same answer on every frozen body.
+6. **`Next` and the log, in shadow** beside `stateOf`.
+   - *Given* the simulator's traces and a pinned live repository
+     (workline itself and the trial copy), *when* both functions run for
+     N reconciles, *then* every divergence is listed and explained.
+   - *Done*: no unexplained divergence over N reconciles; a config
+     switch back kept one release.
+7. **`Next` decides**; `due` and the once-fields removed; the
+   budgets and judgement rounds on.
+   - *Given* random seeded outcome sequences and every frozen trace,
+     *when* the simulator runs, *then* I1 and I2 hold, with no code for
+     any one issue.
+   - *Done*: the traces of [#840](https://github.com/JN0V/workline/issues/840),
+     [#1021](https://github.com/JN0V/workline/issues/1021),
+     [#1036](https://github.com/JN0V/workline/issues/1036),
+     [#1041](https://github.com/JN0V/workline/issues/1041),
+     [#1053](https://github.com/JN0V/workline/issues/1053),
+     [#1062](https://github.com/JN0V/workline/issues/1062),
+     [#1070](https://github.com/JN0V/workline/issues/1070),
+     [#1072](https://github.com/JN0V/workline/issues/1072) green;
+     `ready-overlap-gone-wakes-once.yaml` in its I1 form.
+8. **The picker, then read-only tools** (two pull requests at least).
+   - *Given* the trial's #35, *when* the product owner refines it,
+     *then* its Scope names all 7 definitions of `getWebUIVersion()`,
+     with no `Guessed:`, no read again, no block.
+   - *Done*: per-role contract tests on frozen real code (a C++ method
+     in 7 files, a 7,576-line file, a Python module); the token ceiling
+     held; a real agent on the copy, told under `## Tried`.
+9. **Pull requests through `Next`**, the forge's merge state.
+   - *Given* a green pull request held by an unresolved thread, *when*
+     the reconciler runs, *then* its status says "waits: 1 conversation
+     unresolved" and who resolves it.
+   - *Done*: [#1031](https://github.com/JN0V/workline/issues/1031),
+     [#1039](https://github.com/JN0V/workline/issues/1039),
+     [#1043](https://github.com/JN0V/workline/issues/1043),
+     [#1050](https://github.com/JN0V/workline/issues/1050) green on a
+     richer fake forge.
+10. **A full round**, pinned, on the C++ copy and on a second repository
+    unlike both (another language and layout).
+    - *Pass mark*: at least 6 of 7 bugs merged on the copy; 0 steps
+      started by hand; every open issue with a said status; median time
+      and tokens per bug told.
 
 Docs to update with each step: [routing.md](../spec/routing.md) (the
-record, the reconciler, where state lives), the roles' outcome codes,
-the "Amended by" lines of the ADRs above.
+record, the reconciler, where state lives), the roles' outcomes, the
+"Amended by" lines of the ADRs above.
+
+### Step 1: the test plan
+
+- **In process**: a Go test calling `line.RunWith`
+  ([line.go](https://github.com/JN0V/workline/blob/be8a12de/internal/line/line.go)),
+  the clock swapped (`var clock`,
+  [stale.go](https://github.com/JN0V/workline/blob/be8a12de/internal/line/stale.go)),
+  on the fake forge. One fake agent's state kept across K ticks: today's
+  fake counts calls per process (`fakeCalls`,
+  [agent.go](https://github.com/JN0V/workline/blob/be8a12de/internal/agent/agent.go)).
+- **Fake outcomes, seeded per call**: progress, waiting, needs-input
+  (each source), every machine-error kind, malformed answers (a
+  miscounted hunk as [#1075](https://github.com/JN0V/workline/issues/1075),
+  a test that does not build as
+  [#1048](https://github.com/JN0V/workline/issues/1048)), and the
+  trial's real agent answers replayed.
+- **Traces**: the trial's issues (#3, #4, #5, #16, #18, #19, #20,
+  #33–#37) and workline's own eleventh run, so the path that works is
+  kept. Each trace has its expected end: Done, or Waiting on a named
+  target.
+- **Properties**, checked after each tick:
+  - I1: every open item has a status, said;
+  - no Waiting(person) while a machine-error budget remains;
+  - always-progress fakes take every trace to Done;
+  - I2, by a digest the simulator computes of what the fake receives,
+    independent of the engine's;
+  - I3: labels and state unchanged after a machine error;
+  - one state label at a time;
+  - the same tick twice starts no second step; one byte of a body
+    changed makes it due;
+  - quiet within K ticks (K stated in the test).
+- **Speed and seeds**: about 200 seeds a trace in under 60 s in CI;
+  fixed seeds on a pull request, new seeds each night. A failure prints
+  its seed, shrinks, and is frozen as a named trace before its fix. A
+  seeded `math/rand` driver: Go's `testing/quick` is frozen and has no
+  shrinking.
+- **`pending.txt`** names, per trace, the first property that fails; a
+  random property is never pending. Each trace runs twice, to check it
+  is deterministic.
+- **What the simulator does not cover**, and where it is:
+  - picking code ([#1056](https://github.com/JN0V/workline/issues/1056),
+    [#1057](https://github.com/JN0V/workline/issues/1057),
+    [#1059](https://github.com/JN0V/workline/issues/1059),
+    [#1063](https://github.com/JN0V/workline/issues/1063),
+    [#1064](https://github.com/JN0V/workline/issues/1064)): per-role
+    contract tests on frozen real code, step 8;
+  - the forge's merge state ([#1050](https://github.com/JN0V/workline/issues/1050),
+    [#1031](https://github.com/JN0V/workline/issues/1031),
+    [#1043](https://github.com/JN0V/workline/issues/1043)): a richer
+    fake forge, step 9;
+  - CI wiring ([#1029](https://github.com/JN0V/workline/issues/1029),
+    [#1018](https://github.com/JN0V/workline/issues/1018),
+    [#1055](https://github.com/JN0V/workline/issues/1055)): the
+    workflow templates' tests, and the auditor's "the reconciler ran
+    within N hours";
+  - kinds and scenarios: `tests/evaluation`; install: doctor's tests.
 
 ## Consequences
 
-- **A person reads one line per issue** that says what it waits on, or
-  what runs next; the board's Blocked column holds only what needs a
-  person.
-- **Fewer agent calls**: the same input is never run twice for the
-  same answer; a machine error retries with new input rather than a
-  round trip through refine.
-- **More calls at first**: the migration wakes once each issue the old
-  line called acted.
+- **A person reads one block per issue**: who moves next, what, how.
+  The board's Blocked column holds only what needs a person.
+- **Fewer agent calls**: an input is never run twice for the same
+  answer; a machine error retries in place, not through refine.
+- **More calls once**: the migration, about 22 on workline.
 - **A defect of the line is found offline**, as a red trace, not one
   hop at a time on a live repository.
-- **The tester and the product owner read more code** where the agent
-  has tools: tokens per run may rise; runs per issue should fall. To
-  measure at step 5.
+- **The product owner and the tester may read more code** where the
+  agent has tools; the token ceiling bounds it.
 
 ## Not chosen
 
-- **Keep fixing per defect**: the evidence above; 15 amendments in four
-  days and the next shape found within hours.
-- **Raise the caps and budgets** (`max-hops`, `reconcile-max`,
-  `code-lines-max`) until a trial passes: it moves the proxy.
+- **Keep fixing per defect**: the evidence above.
+- **Raise the caps and budgets** until a trial passes: it moves the
+  proxy.
+- **The hash of the role's task as its input**: [§3](#3-the-input-of-a-step).
 - **A label per sub-state** ("awaiting-review", "machine-error"): the
-  board fills with workline's internals; the view and the log hold them.
+  board fills with workline's internals.
 - **The reconciler as the driver**: events keep the line fast; the
   reconciler is the net, on the same function.
-- **A workflow server** (Temporal) or a controller framework: a
-  service to run, against principles 10 and 11.
-- **TLA+ or a model checker**: the property is checked by a simulator
-  in Go, on the real code.
-- **Write tools for the product owner and the tester**: read-only;
-  the fence and the forge's guards stay (principle 6).
-- **Patching on the live trial meanwhile**: its traces are frozen into
-  the simulator; the trial runs again at step 8.
-
-## What not to do while it is built
-
-- **No new once-field nor exception branch in `stateOf`**: a new stall
-  is a red trace first.
-- **No new per-shape retry**: [#1075](https://github.com/JN0V/workline/issues/1075)
-  waits for step 3, its hunk recount in the tool kept as a fair fix.
+- **A workflow server** (Temporal) or a controller framework: a service
+  to run, against principles 10 and 11.
+- **TLA+ or a model checker**: the property is checked by a simulator in
+  Go, on the real code.
+- **`rapid` for the random part**: a new dependency (principle 11); a
+  seeded driver with recorded seeds and a simple shrink is enough. To
+  weigh again if shrinking proves too weak.
+- **Write tools for the product owner and the tester**: read-only; the
+  fence and the forge's guards stay (principle 6).
 
 ## Risks
 
-- **The digest too wide**: a volatile part (a date, a comment's edit
-  time) makes every input new; I2 never fires and a loop runs to the
-  fuse. Mitigation: the simulator runs the same tick twice and expects
-  no second step.
-- **The digest too narrow**: an input left out makes a real change look
-  the same; the issue waits for a person wrongly. Mitigation: the digest
-  is the task itself, not a list of fields.
-- **A big step 4**: `Next` replaces `stateOf` at once. Mitigation: it
-  runs beside the old code from step 2, its status compared in the
-  simulator and in the reconciler's log, before it decides.
-- **The log outgrows its comment**: 20 entries and counts fit GitHub's
-  65,536 characters and GitLab's note limit with room.
-- **Read-only tools cost tokens**: a budget per role, said; measured at
-  step 5.
+- **The input too wide**: a volatile part makes every input new; I2
+  never fires and a loop runs to the judgement-rounds cap. Mitigation:
+  the simulator's same-tick-twice property.
+- **The input too narrow**: a part left out makes a real change look the
+  same; the issue waits for a person wrongly. Mitigation: the one-byte
+  property; the read set logged for tool agents.
+- **A schema bump wakes every issue**: spread by `reconcile-max`, its
+  count said before the release.
+- **A big switch**: shadow mode first (step 6), a switch back for one
+  release.
+- **Forge requests**: §11's list pass; measured at step 1, held at no
+  more than today.
+- **Read-only tools cost tokens**: the ceiling of §8.
 
 ## For the maintainer
 
-1. **Scope of the first pull requests**: steps 1 to 4 only, the picker
-   and pull requests later, or all eight planned now?
-2. **Migration's cost**: wake once each issue the old line called acted
-   (some agent calls, spread by `reconcile-max`), or say Waiting(person)
-   on them until a person touches each?
-3. **Machine-error budget**: 2 retries per kind and state by default,
-   then a person: right, or per kind?
-4. **Tools for the product owner and the tester with `claude`**: read
-   and search only, from step 5: agreed?
-5. **A new stall on a live project while this is built**: a red trace
-   that waits for its step, or a patch allowed when the stall costs a
-   person's day?
+1. **Commit to steps 1–4 now, and decide again after the pinned
+   round?** Recommended: yes. The simulator, typed outcomes and the
+   fence pay alone; the round tells whether the core change (5–7) is
+   needed as planned.
+2. **The picker earlier, before the view?** 8 of round 3's 11 defects
+   sit in the code-given zone. Recommended: yes for the picker without
+   tools, right after step 3, before the pinned round; tools stay at
+   step 8.
+3. **Migration**: wake once each issue the old line called acted (about
+   22 calls on workline, spread over 8 runs), or say Waiting(person) on
+   them? Recommended: wake once; Waiting(person) makes you the
+   bottleneck.
+4. **Machine-error budget**: 2 tries per kind within 24 h a state entry,
+   then a person? Recommended: yes, one default for every kind, a kind's
+   own only when a measure asks for it.
+5. **Read-only tools (`Read,Glob,Grep`) for the product owner, the
+   tester and the reviewer with `claude`**, under the token ceiling?
+   Recommended: yes, at step 8.
 
+[ADR-0026]: 0026-the-product-owners-autonomy-is-a-level.md
 [ADR-0042]: 0042-the-engine-merges-by-the-projects-policy.md
 [ADR-0046]: 0046-the-auditor-re-checks-every-roles-acts.md
 [ADR-0054]: 0054-the-developer-takes-a-ready-issue-to-a-pull-request.md
