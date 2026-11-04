@@ -1,0 +1,5 @@
+# The product owner widens the Scope with a file nobody asked for and the
+# repository does not hold, and unblocks (#1061): the widening is dropped,
+# so the unblock must not stand.
+- refine: {issue: 3, scope: "- `lib.sh`: a `mul` function beside `add`.\n- `nowhere/guess.sh`: a guess.", sources: [lib.sh, nowhere/guess.sh], why: "a guess"}
+- unblock: {issue: 3, to: ready, why: "its Scope now holds the file"}

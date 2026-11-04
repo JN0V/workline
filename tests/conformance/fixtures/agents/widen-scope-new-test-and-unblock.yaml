@@ -1,0 +1,5 @@
+# The product owner, woken on an issue the developer blocked to ask for a
+# new test file its pull request adds (#1061): it widens the Scope with
+# that file, not in the default branch yet, and sends the issue back.
+- refine: {issue: 3, scope: "- `lib.sh`: a `mul` function beside `add`.\n- `tests/mul_more_test.sh`: the new test the pull request adds.", sources: [lib.sh, tests/mul_more_test.sh], why: "the developer's pull request adds tests/mul_more_test.sh"}
+- unblock: {issue: 3, to: ready, why: "its Scope now holds the test file the pull request needs"}
