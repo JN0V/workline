@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/hooks, internal/role/config.go, internal/doctor/doctor.go, internal/doctor/variables.go, internal/doctor/board.go, internal/doctor/hook.go, internal/doctor/workflows.go, internal/forge/gitlab_hook.go]
-checked: 8538d558
+checked: de02c96b
 verified: agent:claude-code
 ---
 # The commands that set up
