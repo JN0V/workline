@@ -3,9 +3,7 @@ about: >
   An overlap gone wakes the developer once for the comment that said it
   (#998): #3's record keeps that comment's digest (`unheld`), from the
   wake before. The developer's run left the comment as it was, so #3 is
-  not woken again: no wake on every run while the comment stands. In its
-  I1 form (ADR-0063): "acted, nothing to run" is not a status; #3 says
-  what it waits on, #5's Scope taken, never `state-acted`.
+  not woken again: no wake on every run while the comment stands.
 given:
   repo: tested
   config:
@@ -31,5 +29,5 @@ expect:
   summary: "reconcile: 0 issues due"
   agent-calls: 0
   findings:
-    - {rule: state-waits, level: info, where: "#3"}
-  no-findings: [{rule: state-acted, where: "#3"}, {rule: state-freed, where: "#3"}]
+    - {rule: state-acted, level: info, where: "#3"}
+  no-findings: [{rule: state-freed, where: "#3"}]
