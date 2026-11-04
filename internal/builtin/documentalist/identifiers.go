@@ -66,7 +66,7 @@ func named(content string) []string {
 func IdentifiersGone(repo string, docs map[string]string) ([]Problem, error) {
 	byCommit := map[string][]string{} // last commit that edited the doc -> docs
 	for p := range docs {
-		c, err := git(repo, "log", "-1", "--format=%H", "--", p)
+		c, err := lastCommit(repo, p)
 		if err != nil {
 			return nil, err
 		}

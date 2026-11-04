@@ -44,7 +44,7 @@ func noSources(repo string, t Tree, globs []string) ([]verdict.Finding, map[stri
 	}
 	matched := 0
 	for _, p := range paths {
-		c, err := git(repo, "log", "-1", "--format=%H", "--", p)
+		c, err := lastCommit(repo, p)
 		if err != nil {
 			return nil, nil, err
 		}

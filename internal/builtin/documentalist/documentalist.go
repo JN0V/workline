@@ -760,7 +760,14 @@ func Pre(runDir, repo string) int {
 				fmt.Fprintln(os.Stderr, "documentalist:", err)
 				return 3
 			}
-			return fail(err)
+			// A check that cannot run blocks with its reason, git's own text
+			// among it, never a bare exit 99 with nothing said.
+			fmt.Fprintln(os.Stderr, "documentalist:", err)
+			v := verdict.Verdict{Status: verdict.Block, Summary: err.Error()}
+			if werr := verdict.Write(filepath.Join(runDir, "out", "verdict.yaml"), &v); werr != nil {
+				return fail(err)
+			}
+			return 10 // the engine's exitNothing: the verdict written is final
 		}
 	}
 	return 0
@@ -2545,6 +2552,29 @@ func unquotePath(p string) string {
 
 func git(dir string, args ...string) (string, error) {
 	return gitIn(dir, "", args...)
+}
+
+// lastCommit is the last commit that changed path; empty when there is none,
+// as on a branch with no commit yet (an empty history, not an error).
+func lastCommit(dir, path string) (string, error) {
+	out, err := git(dir, "log", "-1", "--format=%H", "--", path)
+	if err != nil && branchUnborn(dir) {
+		return "", nil
+	}
+	return out, err
+}
+
+// branchUnborn is true when HEAD names a branch that holds no commit yet. It
+// asks git's plumbing, never its message, which is translated by locale.
+func branchUnborn(dir string) bool {
+	ref, err := git(dir, "symbolic-ref", "-q", "HEAD")
+	if err != nil || ref == "" {
+		return false
+	}
+	// --quiet: a ref that is absent exits 1 with nothing said; one that
+	// exists but is broken says why.
+	_, err = git(dir, "show-ref", "--verify", "--quiet", ref)
+	return err != nil && err.Error() == ""
 }
 
 // gitIn runs git with stdin.
