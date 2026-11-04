@@ -3,8 +3,9 @@ about: >
   At a head and a Scope asked already, for another file (#1073, from a
   trial: the first ask's widening was lost, and the round then needs
   more files): the round asks the product owner again, for the files
-  not asked before, with the mark that wakes it. Only the same files
-  asked again at the same head and Scope go to a person.
+  not asked before, with the mark that wakes it; its record keeps every
+  file asked at this head, the first ask's with the new. Only files
+  all asked already at the same head and Scope go to a person.
 given:
   repo: tested-draft
   setup:
@@ -44,3 +45,6 @@ expect:
       - id: 3
         labels: ["workline:blocked"]
         comment-contains: ["it asks the product owner to widen it", "workline:scope-ask"]
+    merge-requests:
+      - id: 2
+        comment-contains: ["\"files\":[\"cases/other.txt\",\"cases/mul.txt\"]"]

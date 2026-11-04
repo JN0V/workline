@@ -845,10 +845,19 @@ func reviewPost(runDir, repo string, s Settings) int {
 			// to widen; once a head, a Scope and its files, then a
 			// person. A file not asked before is asked (#1073).
 			key := scopeKey(b.Scope)
-			again := a.Widen != nil && sameCommit(a.Widen.At, r.At) && a.Widen.Scope == key &&
-				!slices.ContainsFunc(files, func(f string) bool { return !slices.Contains(a.Widen.Files, f) })
+			same := a.Widen != nil && sameCommit(a.Widen.At, r.At) && a.Widen.Scope == key
+			again := same && !slices.ContainsFunc(files, func(f string) bool { return !slices.Contains(a.Widen.Files, f) })
+			asked := files // every file asked at this head and Scope, so asks never alternate
+			if same {
+				asked = slices.Clone(a.Widen.Files)
+				for _, f := range files {
+					if !slices.Contains(asked, f) {
+						asked = append(asked, f)
+					}
+				}
+			}
 			ask = askScope(repo, a, r, files, again, notes)
-			a.Widen, this.Bounds = &Widen{At: r.At, Scope: key, Files: files, Again: again, Review: heldRed != nil}, "asked"
+			a.Widen, this.Bounds = &Widen{At: r.At, Scope: key, Files: asked, Again: again, Review: heldRed != nil}, "asked"
 			msg := fmt.Sprintf("its fix needs %s, outside the issue's %s: #%d blocked, the product owner asked to widen it", strings.Join(files, ", "), scopeName, a.Issue)
 			if again {
 				msg = fmt.Sprintf("its fix still needs %s, asked already on this head and %s: #%d blocked for a person", strings.Join(files, ", "), scopeName, a.Issue)
