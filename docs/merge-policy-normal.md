@@ -55,8 +55,9 @@ merge: {autonomy: normal}   # a project's choice, never a default
 - **What it read is the App's mark** on the base, a status only the App's
   counts. None found, while its history holds a merge workline made
   alone: every kind waits, in an issue, until such a person closes it.
-  None found and no such merge — a first install —: the App marks the
-  base read, and nothing waits
+  None found and no such merge on the base's last 1000 commits — a first
+  install —: the App marks the base read, and nothing waits; a merge
+  request whose comments it cannot read counts as such a merge
   ([#1018](https://github.com/JN0V/workline/issues/1018)).
 - **Never alone**: the release tool's, a fork's, a person's, another
   bot's, a Draft; with a person's token, nothing.

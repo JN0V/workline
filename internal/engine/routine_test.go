@@ -308,4 +308,14 @@ func TestMarkAndIssuesHoldDemotions(t *testing.T) {
 	if open, _ := f.Issues(); len(open) != 0 {
 		t.Errorf("a first install: %d issues opened, want none", len(open))
 	}
+
+	// No mark, and #9's comments refused: it may be a merge of its own,
+	// unread: every kind waits, as for a mark lost.
+	if err := os.WriteFile(state, []byte(`{"statuses": [`+forged+`], "issues": [], "notes-refused": [9], "merge-requests": [{"id": 9, "branch": "workline/documentalist/suspect", "base": "main", "closed": true, "labels": [], "comments": []}]}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	res = &Result{}
+	if demoted, err = demotions(f, FollowOptions{Repo: repo}, tip, "workline-bot", res); err != nil || demoted[kindAll] != "#1" {
+		t.Errorf("a merge request unread: %v, %v, %+v; want every kind held by #1", demoted, err, res.Findings)
+	}
 }

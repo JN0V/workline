@@ -316,9 +316,14 @@ build settled ([page](../merge-policy.md#normal-routine-work-with-no-yes)):
   (`merge-record-lost`), until a person who may push and merge closes it;
   the last 100 commits are read meanwhile. Only while the base's last
   1000 commits hold a merge request carrying the App's merge-alone
-  record: with none — a first install, or one that never merged alone —
-  no revert can undo a merge of its own, so the App marks the base read
-  and nothing waits (`merge-read-first`; amended by
+  record, or one whose comments cannot be read (fail closed; a number
+  the forge says is not there, as in a copy, is passed): with none — a
+  first install, or one that never merged alone — no revert can undo a
+  merge of its own, so the App marks the base read and nothing waits.
+  The bound is 1000 commits: a merge alone older than that, reverted
+  more than 100 commits ago, is not seen — holding every history longer
+  than the window would bring back the wait on most first installs
+  (`merge-read-first`; amended by
   [#1018](https://github.com/JN0V/workline/issues/1018): the first
   install of a trial copy waited 1 h 35 min on a person for nothing).
 - **A revert names what it reverts** in git's words (`This reverts commit

@@ -1,0 +1,31 @@
+case: merge/normal-unread-merge-request-holds-all
+about: "A merge request that cannot be read holds every kind (#1018): at `normal`, no mark of workline's App on the base's last commits, and the forge refuses to read the comments of #4, a merge in the base's history. #4 may be one workline merged with no person's yes, its record unread: the guard fails closed, as for a mark lost — the App opens the issue, every kind waits, the records pull request #10 too, and the base is marked read with that issue held. Only a number the forge says is not there, as in a copy of another repository, is passed (normal-first-install-marks-read)."
+given:
+  repo: documented
+  config: {merge: {autonomy: normal}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git"
+    - "git checkout -qb fix-typo && echo typo >> docs/tech/auth.md && git commit -qam 'docs: fix a typo' && git checkout -q main && git merge -q --no-ff fix-typo -m 'Merge pull request #4 from acme/fix-typo' -m 'docs: fix a typo' && git push -q origin main"
+    - "git checkout -qb workline/documentalist/stale && sed -i '/^checked:/a judged: 5d6e7f8' docs/product/sign-in.md && GIT_COMMITTER_NAME=workline-bot git commit -qam 'docs: record the docs read again' -m 'Workline-Role: documentalist' && git push -q origin workline/documentalist/stale && git checkout -q main"
+  forge:
+    notes-refused: [4]
+    statuses:
+      - {commit: "workline/documentalist/stale", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+    merge-requests:
+      - {id: 4, branch: fix-typo, base: main, author: dana, closed: true, merged: true, labels: [], comments: [{body: "Thanks!", author: dana}]}
+      - {id: 10, branch: workline/documentalist/stale, base: main, author: workline-bot, bot: true, labels: [], comments: [],
+         pushes: [{head: workline/documentalist/stale, at: "2026-01-04T09:00:00Z", by: workline-bot}]}
+run:
+  follow: [--base, main]
+expect:
+  status: pass
+  findings:
+    - {rule: merge-record-lost, message: "until a person who may push and merge closes #1"}
+    - {rule: waits-for-a-yes, where: "#10", message: "since a revert (#1)"}
+  forge:
+    issues:
+      - {id: 1, body-contains: ["cannot tell which reverts it read"]}
+    merge-requests:
+      - {id: 10, auto-merge: false}
+    statuses:
+      - {commit: main, name: workline/merge-read, state: success, by: workline-bot, description: "reverts read; held: #1"}

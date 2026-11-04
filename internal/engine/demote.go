@@ -386,7 +386,10 @@ func demotions(f forge.Forge, o FollowOptions, baseTip, app string, res *Result)
 // mergedAlone says whether the base's last mergeWindow commits hold a merge
 // workline made with no person's yes: a merge request they name carrying
 // its App's merge-alone record. With no mark, only such a history leaves
-// a revert unread that may undo one (#1018).
+// a revert unread that may undo one (#1018). A merge request whose
+// comments cannot be read — refused, not answered — may be one: it counts
+// as one, failing closed; only one the forge says is not there (another
+// repository's number, in a copy) is passed.
 func mergedAlone(b forge.Backlog, repo, baseTip, app string) (bool, error) {
 	history, err := commits(repo, baseTip, "", mergeWindow)
 	if err != nil {
@@ -404,8 +407,10 @@ func mergedAlone(b forge.Backlog, repo, baseTip, app string) (bool, error) {
 		case errors.Is(err, forge.ErrAuthorsUnknown): // each author kept: the App's note read
 		case errors.Is(err, forge.ErrUnreachable) && !forge.Refused(err):
 			return false, err
-		case err != nil:
+		case forge.NotFound(err):
 			continue // no merge request of that number here
+		case err != nil:
+			return true, nil // unread: it may be one
 		}
 		if _, ok := ownNote(notes, "merge-alone=", app); ok {
 			return true, nil
