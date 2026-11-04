@@ -38,6 +38,10 @@ const (
 	exitExternal = 3  // an outside service failed
 	testFilesMax = 3  // test files beside the Scope's code given whole
 	listedMax    = 40 // test files named, not given
+	// testShare: the part of code-lines-max kept for a test beside the
+	// code when the code alone is past it, 1 in testShare (#1059: 1000
+	// lines of headers, no test seen, no test possible).
+	testShare = 5
 )
 
 // Scenario is one of an issue's Validation scenarios: its name, as the
@@ -327,11 +331,29 @@ func writeCode(b *strings.Builder, repo, scope string, sources []string, s Setti
 		lines := strings.Split(strings.TrimRight(string(data), "\n"), "\n")
 		code = append(code, codeFile{path: p, lines: lines, pieces: pieces(p, lines, names, at[p])})
 	}
-	left := planCode(code, budget)
+	// Code that leaves the first test beside less than a share of the
+	// budget: that share kept for it, its opening at least, so the agent
+	// sees one test to write alike.
+	total, kept := 0, 0
+	for _, f := range code {
+		total += len(f.lines)
+	}
+	if len(beside) > 0 {
+		if data, err := os.ReadFile(filepath.Join(repo, filepath.FromSlash(beside[0]))); err == nil {
+			kept = min(budget/testShare, strings.Count(strings.TrimRight(string(data), "\n"), "\n")+1)
+		}
+	}
+	if total <= budget-kept {
+		kept = 0 // the code fits whole, the share left after it
+	}
+	left := planCode(code, budget-kept) + kept
 	if len(code) > 0 {
 		fmt.Fprintf(b, "\n## The code the %s names\n", work.Name(work.Scope))
 		if len(owners) > 0 {
 			fmt.Fprintf(b, "\nNamed by the product owner for this issue, not in the %s: `%s`.\n", work.Name(work.Scope), strings.Join(owners, "`, `"))
+		}
+		if kept > 0 {
+			fmt.Fprintf(b, "\nThe code fills code-lines-max: %d of the %d lines of code-lines-max kept for the tests beside it.\n", kept, budget)
 		}
 		var unread []string
 		for _, f := range code {

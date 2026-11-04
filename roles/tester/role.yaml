@@ -65,8 +65,9 @@ settings:
   ai-max-seconds: 1200
   # Lines of code and tests given to the agent, all files together: the
   # Scope's files and those the product owner named for the issue, then
-  # up to three test files beside them. A file too
-  # long gives the functions the Scope names in it, the rest named.
+  # up to three test files beside them, a fifth kept for the first when
+  # the code would fill it. A file too long gives the functions the
+  # Scope names in it, the rest named.
   code-lines-max: 1500
   # Runs the project's tests and writes a JUnit XML report; {report} is
   # replaced by test-report's path. Unset: the check blocks,
