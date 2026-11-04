@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine, internal/intent, internal/role, internal/agent, roles_test.go]
-checked: 8538d558
+checked: 1e01b6d1
 verified: agent:claude-code
 judged: b530b72
 ---
@@ -296,7 +296,8 @@ token), **apply** (trusted, no AI key).
    it holds, or lacks, is the agent's word.
    A block whose verdict says `again: true`, one the answer can mend
    (the tester's tests that do not pass the project's lint,
-   [#964](https://github.com/JN0V/workline/issues/964)), is asked again
+   [#964](https://github.com/JN0V/workline/issues/964), or do not build,
+   [#1048](https://github.com/JN0V/workline/issues/1048)), is asked again
    the same way, for a role with `promote-after: 0`, with its findings:
    the one more call an unread answer gets, never a second one. The
    answer refused is kept as `out/refused-1.yaml`.

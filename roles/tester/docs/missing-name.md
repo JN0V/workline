@@ -1,6 +1,6 @@
 ---
 sources: [internal/tester/build.go, internal/tester/tester.go, internal/tester/write.go, roles/tester/role.yaml]
-checked: b61cdf6b
+checked: 1e01b6d1
 verified: agent:claude-code
 ---
 # A missing name, told from a broken build
@@ -31,7 +31,8 @@ flowchart LR
     literal`.
 - **Any other error blocks** (`build-broken`): a syntax error, a wrong
   import, a call with the wrong arguments, an error in a code file. The
-  check names the lines.
+  check names the lines. Writing an issue's tests, the agent is asked
+  once more with them first.
 - **The tests' names**, when nothing built them: read from the test
   files, as `file:name` (`calc/mul_test.go:TestMulTwoByThree`).
 - **Beside code**, the head builds and runs those tests: they must pass

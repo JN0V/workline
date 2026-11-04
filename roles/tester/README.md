@@ -5,7 +5,7 @@ sources:
   - ci/github/workline-objection.yml
   - ci/github/workline-answer.yml
   - ci/github/workline-gardening.yml
-checked: 041b9f4f
+checked: 1e01b6d1
 verified: agent:claude-code
 ---
 # Tester
@@ -67,10 +67,10 @@ workline test write --issue 42 --ai claude
 - **What the agent reads**: the scenarios, the Need, Verification and
   Scope, the files the Scope names (a folder named: its own files; a
   pattern such as `src/calc/*.sh`: the files it matches; a file past
-  `code-lines-max`: the functions and lines it names), those the product
-  owner named, the tests beside them (else their module's), the test
-  command. Long lines over the context budget: fewer lines given; still
-  over, the issue says so and names `code-lines-max`.
+  `code-lines-max`: the functions and lines the Scope names in it),
+  the tests beside them, the test command. Long lines over the context
+  budget: fewer lines given; still over, the issue says so and names
+  `code-lines-max`.
 - **One test a scenario**: its name holds the scenario's name, its
   comment the Given / When / Then. A scenario no test can check is said
   in a note, listed in the Draft as not tested.
@@ -183,7 +183,7 @@ workline test check --base origin/main
 | `report-missing` | yes | a run wrote no report where `test-report` says, or not JUnit XML |
 | `tests-not-built` | no, warns | tests the base ran are not in the report of the base with the change's tests: their build broke there |
 | `no-new-test` | no, warns | the change touches test files, but no new test is in the report |
-| `build-broken` | yes | the build broke on the base with the change's tests, by more than a name the base lacks |
+| `build-broken` | yes | the build broke on the base with the change's tests, by more than a name the base lacks; writing an issue's tests, after the agent is asked once more with the error |
 | `setting-invalid` | yes | a `build-errors` pattern does not compile |
 
 - **A change with no new test** passes, and says so.
