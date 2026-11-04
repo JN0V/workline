@@ -3,7 +3,7 @@ sources:
   - internal/developer/review.go
   - internal/developer/widen.go
   - internal/developer/rewrite.go
-checked: d72f90e5
+checked: 92caf46b
 verified: agent:claude-code
 ---
 # A round with no fix pushed
@@ -50,9 +50,12 @@ a round asks it to widen it ([#921](https://github.com/JN0V/workline/issues/921)
     round asked, from its record: a green pull request resumes too
     ([#1022](https://github.com/JN0V/workline/issues/1022)).
   - Or it keeps the issue blocked, its reason written.
-- **Once a head and a Scope**: asked again on the same, the issue is
-  blocked for a person, with no ask; the person who widens it and puts
-  it back to ready resumes the round. The rounds' cap bounds the rest.
+- **Once a head, a Scope and its files**: the same files asked again
+  on the same, the issue is blocked for a person, with no ask; the
+  person who widens it and puts it back to ready resumes the round. A
+  file not asked before is asked of the product owner
+  ([#1073](https://github.com/JN0V/workline/issues/1073)). The rounds'
+  cap bounds the rest.
 - **A round that holds a reviewer's finding wrong** asks nothing: the
   reviewer decides.
 - **A round before this**, no fix on a red check, runs once more at the
