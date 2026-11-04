@@ -1,0 +1,22 @@
+case: merge/fork-without-a-yes-waits
+about: "A fork's pull request, no yes (#1043): its verdict kept on its head, but no one labelled it `workline:accepted`; `workline follow` turns nothing on and says it waits for a person's yes, at any level (ADR-0042)."
+given:
+  repo: documented
+  config: {merge: {autonomy: cautious}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb patch-1 && echo typo > typo.txt && git add typo.txt && git commit -qm 'fix: a typo' && git push -q origin HEAD:refs/pull/9/head && git checkout -q main"
+  forge:
+    statuses:
+      - {commit: "patch-1", name: workline/verdict, state: failure, description: "short: its review falls short (not-reviewed): no agent: only the rules that need no judgement ran", by: workline-bot}
+    merge-requests:
+      - {id: 9, branch: patch-1, base: main, fork: true, author: zed, labels: [], comments: []}
+run: {follow: [--base, main], summary: true}
+expect:
+  status: pass
+  findings: [{rule: waits-for-a-yes, where: "#9", message: "from a fork: never merged without a person's yes; the label `workline:accepted`"}]
+  no-findings: [{rule: auto-merge-on}, {rule: merged-at-once}]
+  summary-file: ["merge policy (cautious): none accepted into main"]
+  forge:
+    merge-requests:
+      - {id: 9, auto-merge: false, comments: 0}

@@ -534,9 +534,13 @@ func mergePolicy(f forge.Forge, o FollowOptions, local bool, res *Result, hand m
 		case mr.Base != o.Base:
 			continue
 		case !slices.ContainsFunc(mr.Labels, accepted) && !mr.AutoMerge && !routineCandidate(o, n, mr):
-			if byPolicy(o.Merge) && o.Release != nil && o.Release(mr.Branch) {
+			switch {
+			case byPolicy(o.Merge) && o.Release != nil && o.Release(mr.Branch):
 				res.Findings = append(res.Findings, verdict.Finding{Rule: "waits-for-a-yes", Where: forge.MergeRef(f, mr.ID),
 					Message: "the release tool's: merging it is the decision to release, never made with no person's yes; the label `workline:accepted`"})
+			case !mr.Here:
+				res.Findings = append(res.Findings, verdict.Finding{Rule: "waits-for-a-yes", Where: forge.MergeRef(f, mr.ID),
+					Message: "from a fork: never merged without a person's yes; the label `workline:accepted`"})
 			}
 			continue
 		}
@@ -721,6 +725,12 @@ func weigh(f forge.Forge, m forge.Merger, o FollowOptions, local bool, mr forge.
 		return nil, nil
 	}
 	ours := st.AutoMerge && st.AutoMergeBot && !later(yes.Created, st.AutoMergeAt)
+	if v.class == verdictShort && !mr.Here {
+		// A fork's run gets no secret, so it asks no agent: the person's
+		// yes, given on this head, is the review it could not ask (#1043).
+		say("fork-reviewed-by-the-yes", "", fmt.Sprintf("from a fork, its run asked no agent: %s's yes is its review", by))
+		v.class = verdictPass
+	}
 	switch v.class {
 	case "held":
 		// A verdict kept before ADR-0051, a release held for its docs: the
