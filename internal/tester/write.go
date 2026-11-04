@@ -23,6 +23,7 @@ import (
 	"go.yaml.in/yaml/v3"
 
 	"github.com/JN0V/workline/internal/backlog"
+	"github.com/JN0V/workline/internal/builtin/reviewer"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/gate"
 	"github.com/JN0V/workline/internal/intent"
@@ -648,6 +649,23 @@ func lintTests(repo, tree, base string, missing func(path, message string) bool)
 		if !said { // a gate that blocks is always said, its own summary when no finding of it blocks
 			mendable = false
 			found = append(found, verdict.Finding{Rule: "tests-lint", Where: name, Message: fmt.Sprintf("the gate %s: %s", name, v.Summary)})
+		}
+	}
+	// The reviewer's rules, as its review of the developer's pull request
+	// will run them: a finding in a frozen test is the tester's to mend,
+	// before its Draft opens (#1040).
+	if slices.Contains(line.Events["merge-request"], reviewer.Name) {
+		rules, err := reviewer.RulesOn(tree, base, "HEAD")
+		if err != nil {
+			mendable = false
+			rules = []verdict.Finding{{Rule: "check-error", Where: reviewer.Name, Message: err.Error()}}
+		}
+		for _, f := range rules {
+			f.Rule, f.Message = "tests-lint", fmt.Sprintf("the %s's rule: %s (%s)", reviewer.Name, f.Message, f.Rule)
+			found = append(found, f)
+		}
+		if len(rules) > 0 {
+			names = append(names, reviewer.Name+"'s rules")
 		}
 	}
 	if len(names) == 0 {

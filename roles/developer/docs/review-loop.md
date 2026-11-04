@@ -10,7 +10,7 @@ sources:
   - roles/developer/role.yaml
   - ci/github/workline-develop.yml
   - ci/gitlab/workline.gitlab-ci.yml
-checked: 461d8550
+checked: 00f558d1
 verified: agent:claude-code
 ---
 # The review loop
@@ -64,6 +64,15 @@ step 6).
   - **The record follows**: its start commit moves to the Draft's
     head, so [the bounds](bounds.md) hold the new test.
   - **Not in the record**: never taken, and no round due for it.
+- **The reviewer's rules alone** ([#1040](https://github.com/JN0V/workline/issues/1040)):
+  rules that hold the lenses count no review run. A summary read at
+  another head is a new verdict all the same, its head kept in the
+  record (`review-at`).
+- **A finding in a frozen test**: the developer may not change that
+  file. The round asks its agent to object to the test at that line,
+  the finding as its why; [the tester](../../tester/README.md)
+  rewrites it, and the next round takes the rewrite. Its Draft closed:
+  nothing to object to, the rounds run out to a person.
 - **A finding on its line**: its row shows only a title; the round
   reads it whole from the reviewer's comment on that line. Only
   workline's own account's comment is read.

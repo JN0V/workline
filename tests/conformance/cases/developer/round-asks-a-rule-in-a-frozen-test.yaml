@@ -1,0 +1,42 @@
+case: developer/round-asks-a-rule-in-a-frozen-test
+about: >
+  The reviewer's rules hold its lenses, so its record counts no run: its
+  findings are new all the same, read at another head (#1040). One lies
+  in a frozen test: the round tells the developer to object to it, so
+  that the tester rewrites it, never a wait for nothing.
+given:
+  repo: tested-draft
+  setup:
+    - "git checkout -q -b workline/developer/3 && printf 'add() { echo $(($1 + $2)); }\\nmul() { echo $(($1 + $2)); }\\n' > lib.sh && git commit -qam 'feat: mul for #3' -m 'Workline-Role: developer' && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main workline/tester/issue-3 workline/developer/3"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:ready", "workline:developing"]
+        body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        draft: true
+        comments: ["The tests of #3, frozen.\n\n<!-- workline:tester-record {\"issue\":3,\"base\":\"main\",\"files\":{\"tests/test_mul_by_zero.sh\":\"8f123a0bacbd681063880b867df38dd216784b97\",\"tests/test_mul_two_by_three.sh\":\"2dee0641bd7a79057ade7bff5af43b603125f543\"}} -->\n<!-- workline:sticky=tester/tests -->"]
+      - id: 2
+        branch: workline/developer/3
+        title: "Multiply two numbers"
+        body: "Closes #3"
+        comments:
+          - "**The developer**'s record of this pull request, for its next runs and the auditor.\n\n<!-- workline:developer-act {\"act\":\"code\",\"issue\":3,\"acceptance\":[\"tests/test_mul_by_zero.sh\",\"tests/test_mul_two_by_three.sh\"],\"code\":[\"lib.sh\"],\"proof\":{\"result\":\"green\",\"passed\":2}} -->\n<!-- workline:sticky=developer/code -->"
+          - "**workline reviewer** — the rules found what the author must fix first; the review follows once they pass.\n\n| | | Where | Finding |\n|---|---|---|---|\n| **blocks** | internal-code | `tests/test_mul_by_zero.sh:1` | \"LO-4\" means nothing to a reader of the code: say what it refers to |\n\n<!-- workline:at head=2c80b1287cf2a14590d7f6a7e261a70ff570aa25 run=41840176579 -->\n<!-- workline:record reviewed= runs=0 owed=all -->\n<!-- workline:sticky=reviewer/summary -->"
+run: {develop: [--merge-request, "2"], ai: "fake:developer-writes-mul"}
+expect:
+  status: pass
+  summary: "round 1 of 5"
+  agent-calls: 1
+  run-files:
+    in/task.md:
+      contains: ["Review round 1 of 5", "`tests/test_mul_by_zero.sh:1`", "It lies in a frozen test, read-only to you: object to that test at that line in `.workline/objections.yaml`"]
+  forge:
+    merge-requests:
+      - id: 2
+        comment-contains: ["\"round\":1", "\"review-at\":\"2c80b1287cf2a14590d7f6a7e261a70ff570aa25\""]
