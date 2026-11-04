@@ -36,15 +36,15 @@ func waitHolds(event string, o engine.Options, found []verdict.Finding) ([]verdi
 		return found, "", false
 	}
 	poll := min(30*time.Second, o.ReleaseWait/20)
-	deadline := time.Now().Add(o.ReleaseWait)
+	deadline := time.Now().Add(o.ReleaseWait) // real time: it sleeps, a fixed clock would never end it
 	var held string
-	for onlyPending(found) && time.Now().Before(deadline) {
+	for onlyPending(found) && time.Now().Before(deadline) { // real time
 		fmt.Fprintf(os.Stderr, "workline: the release waits for checks not done, read again in %s\n", poll)
 		time.Sleep(poll)
 		again, h := releaseHolds(event, o)
 		// A read that failed while waiting is a hiccup: the wait goes on
 		// from the last read, unless it was the last chance.
-		if onlyUnread(again) && time.Now().Before(deadline) {
+		if onlyUnread(again) && time.Now().Before(deadline) { // real time
 			fmt.Fprintf(os.Stderr, "workline: what holds the release could not be read again, the wait goes on\n")
 			continue
 		}

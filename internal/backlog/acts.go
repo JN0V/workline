@@ -3,9 +3,9 @@ package backlog
 import (
 	"fmt"
 	"slices"
-	"time"
 	"unicode/utf8"
 
+	"github.com/JN0V/workline/internal/clock"
 	"github.com/JN0V/workline/internal/forge"
 )
 
@@ -76,7 +76,7 @@ func (p *Plan) recordDid(c Proposal) {
 	if c.Do == "keep" || c.Do == "undepend" || c.From != "" {
 		return
 	}
-	now := time.Now().UTC()
+	now := clock.Now().UTC()
 	line := describe(c, "Closed")
 	var to *comment
 	switch {

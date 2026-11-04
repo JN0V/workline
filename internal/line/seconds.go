@@ -185,6 +185,6 @@ func Seconds(s float64) string {
 }
 
 // Since is the time since start, in tenths of a second.
-func Since(start time.Time) float64 { return round(time.Since(start).Seconds()) }
+func Since(start time.Time) float64 { return round(clock().Sub(start).Seconds()) }
 
 func round(s float64) float64 { return math.Round(s*10) / 10 }

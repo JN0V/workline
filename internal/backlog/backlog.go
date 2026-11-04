@@ -11,12 +11,12 @@ import (
 	"regexp"
 	"slices"
 	"strings"
-	"time"
 	"unicode/utf8"
 
 	"go.yaml.in/yaml/v3"
 
 	"github.com/JN0V/workline/internal/board"
+	"github.com/JN0V/workline/internal/clock"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/scale"
 	"github.com/JN0V/workline/internal/verdict"
@@ -1766,7 +1766,7 @@ func (p *Plan) obsoleteOn(f forge.Backlog, repo, role string, st *State, id int)
 	if err != nil {
 		return Obsolete{}, err
 	}
-	return ReadObsolete(repo, p.issues[id], notes, st, role, p.settings["close-obsolete"], time.Now()), nil
+	return ReadObsolete(repo, p.issues[id], notes, st, role, p.settings["close-obsolete"], clock.Now()), nil
 }
 
 // checkObsolete checks a closing as obsolete (ADR-0024): the agent's is an
@@ -1794,7 +1794,7 @@ func (p *Plan) checkObsolete(f forge.Backlog, repo, role string, st *State, c *P
 		case slices.Contains(st.Kept, ObsoleteKey(*c.Quote)):
 			return "obsolete-kept", "kept open after an announcement resting on this code: not announced again for it"
 		}
-		c.Announce, c.Until = true, time.Now().AddDate(0, 0, s.Delay()).Format(dateLayout)
+		c.Announce, c.Until = true, clock.Now().AddDate(0, 0, s.Delay()).Format(dateLayout)
 		return "", ""
 	}
 	a := o.Announcement

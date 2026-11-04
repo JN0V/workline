@@ -25,6 +25,7 @@ import (
 
 	"github.com/JN0V/workline/internal/agent"
 	"github.com/JN0V/workline/internal/backlog"
+	"github.com/JN0V/workline/internal/clock"
 	"github.com/JN0V/workline/internal/engine"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
@@ -212,7 +213,7 @@ func Pre(runDir, repo string) int {
 			capped = append(capped, q.Issue)
 		}
 	}
-	now := time.Now()
+	now := clock.Now()
 	var all []forge.Issue // every issue, open and closed, read once when a parent needs its parts
 	// A link the role set whose blocker closed (ADR-0028): its reason is
 	// gone, and the engine takes it off, with no agent; a person's link is
@@ -805,10 +806,10 @@ func Pre(runDir, repo string) int {
 	build := func(n int) (taskBuilt, error) {
 		t := taskBuilt{wasRead: map[int]bool{}}
 		var task strings.Builder
-		var code []string // the files the issues name, given once each
-		filesOf := map[int][]string{} // the files each issue read names
+		var code []string                // the files the issues name, given once each
+		filesOf := map[int][]string{}    // the files each issue read names
 		namesIn := map[string][]string{} // the names the issues quote, by file: their lines given past a cut (#1056)
-		noCode := false   // an issue read names no file: the repository's folders are listed
+		noCode := false                  // an issue read names no file: the repository's folders are listed
 		left := slices.Clone(rest)
 		for i, d := range toRead {
 			if i >= n {
