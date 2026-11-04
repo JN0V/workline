@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/builtin/productowner/productowner.go, internal/backlog/ledger.go, internal/backlog/opening.go]
 status: draft
-checked: 048bef01
+checked: 44f06aba
 verified: agent:claude-code
 ---
 # Reading
@@ -78,8 +78,10 @@ to name as sources ([#1057](https://github.com/JN0V/workline/issues/1057));
 at most three an issue otherwise. A file is given whole up to 400 lines;
 past them, the lines naming a symbol the issue quotes are given too, in
 the function around each or a few lines either side, numbered as in the
-file, within `code-lines-max`
-([#1056](https://github.com/JN0V/workline/issues/1056)). An issue imported from a file (its
+file, 120 at most a file, within `code-lines-max`
+([#1056](https://github.com/JN0V/workline/issues/1056)). The file an
+issue was imported from is never code it names, even where its sections
+name it ([#1063](https://github.com/JN0V/workline/issues/1063)). An issue imported from a file (its
 import key) is read with that file's lines around its item, as the commit
 holds them and followed there from the commit it was confirmed at: its
 section, from its heading, 20 lines each side at most, 60 in all, and the
