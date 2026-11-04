@@ -4,16 +4,24 @@
 # reviewed —, once a commit (.github/actions/engine). Without `merge:` in
 # .workline/config.yaml, it stops at once. Hourly too, the safety net: a
 # pull request whose auto-merge GitHub missed, its checks green, merged by
-# the next run.
+# the next run. And when a person closes the issue holding a demotion: the
+# pull requests it held merge at once.
 name: workline merge
 on:
   pull_request_target: {types: [labeled, unlabeled, converted_to_draft]}
+  issues: {types: [closed]}
   schedule: [{cron: "53 * * * *"}]
 permissions: {}
 
 jobs:
   follow:
     concurrency: {group: "workline-follow-${{ github.base_ref || github.ref_name }}", cancel-in-progress: false}
+    # An issue's event: a demotion issue's close only, known by its title
+    # as the engine reads it.
+    if: >-
+      github.event_name != 'issues' ||
+      github.event.action == 'closed' && startsWith(github.event.issue.title, 'workline: its ') &&
+      contains(github.event.issue.title, 'merge requests wait for a person''s yes again')
     runs-on: ubuntu-latest
     environment: workline-app       # the App's key: the default branch only (ADR-0044)
     permissions: {contents: write, pull-requests: read}

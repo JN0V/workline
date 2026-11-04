@@ -1297,6 +1297,47 @@ func TestGardeningJudgesTheReleaseAtNight(t *testing.T) {
 // GitHub takes as passed for a required check. Both from the default
 // branch's workflow, never the pull request's own (ADR-0044): the verdict is
 // kept, and follow run, when the judge's workflow completes.
+func TestMergePolicyRunsWhenADemotionIsClosed(t *testing.T) {
+	// A demotion issue closed lifts it (#1029): follow runs at once on the
+	// pull requests it held, not at the next event. Another issue closed
+	// starts nothing; the demotion is known by its title, as the engine
+	// reads it (demotedKind).
+	type workflow struct {
+		On struct {
+			Issues *struct {
+				Types []string `yaml:"types"`
+			} `yaml:"issues"`
+		} `yaml:"on"`
+		Jobs map[string]struct {
+			If string `yaml:"if"`
+		} `yaml:"jobs"`
+	}
+	demotion := []string{"github.event.action == 'closed'", "startsWith(github.event.issue.title, 'workline: its ')",
+		"contains(github.event.issue.title, 'merge requests wait for a person''s yes again')"}
+	for _, f := range []string{"../../ci/github/workline-merge.yml", "../../.github/workflows/workline-merge.yml"} {
+		data, err := os.ReadFile(f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var wf workflow
+		if err := yaml.Unmarshal(data, &wf); err != nil {
+			t.Fatalf("%s: %v", f, err)
+		}
+		if wf.On.Issues == nil || !slices.Contains(wf.On.Issues.Types, "closed") {
+			t.Errorf("%s: does not run when an issue is closed", filepath.Base(f))
+		}
+		cond := wf.Jobs["follow"].If
+		if !strings.HasPrefix(cond, "github.event_name != 'issues' ||") {
+			t.Errorf("%s: follow's condition holds more than issues' events: %q", filepath.Base(f), cond)
+		}
+		for _, d := range demotion {
+			if !strings.Contains(cond, d) {
+				t.Errorf("%s: follow does not run on a demotion issue closed only, %q missing from %q", filepath.Base(f), d, cond)
+			}
+		}
+	}
+}
+
 func TestMergePolicyRunsAfterTheJudgeAndOnLabels(t *testing.T) {
 	type workflow struct {
 		On struct {
