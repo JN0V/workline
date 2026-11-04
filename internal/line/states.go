@@ -187,6 +187,14 @@ func stateOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, 
 			res.Findings = append(res.Findings, verdict.Finding{Rule: "state-unrefined", Level: "info", Where: where, Message: said})
 		}
 	}
+	if !ok && s.Name == refineState && name == backlog.Keeper && had && rec.Unread != rec.Body && unreadBody(notes) {
+		// Woken on this body, and its state says the product owner never
+		// read it (#1041): that run read nothing. Woken again, once a body.
+		ok, now = true, rec
+		now.Unread = rec.Body
+		res.Findings = append(res.Findings, verdict.Finding{Rule: "state-unread-body", Level: "info", Where: where,
+			Message: "the product owner's state says it never read this issue: woken again, once a body"})
+	}
 	if ok && s.Name == refineState && name == backlog.Keeper {
 		now.Given = givenNow(comments) // the code this read gets: the same next time wakes it no more (#980)
 	}
