@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine/merge.go, internal/engine/queue.go, internal/forge/merge.go, internal/forge/github_merge.go, internal/forge/gitlab_merge.go, ci/github/workline-apply.yml, ci/github/workline-merge.yml, ci/gitlab/workline.gitlab-ci.yml]
-checked: 8538d558
+checked: 6163e1c4
 verified: agent:claude-code
 ---
 # The merge policy
@@ -55,9 +55,10 @@ merge: {autonomy: cautious}   # off unless set: no auto-merge is touched
 - **Auto-merge a person turned on by hand** is their yes, weighed as the
   label's.
 - **Nothing turned on, said in the job's summary**: a verdict or a check
-  red, a review short. A run the forge cancelled is no result: another
-  run of that check counts — on GitLab, the newest other pipeline of that
-  head —, else it waits. One not judged yet waits, named.
+  red, a review short. Each check counts by its latest run on the head:
+  a failure re-run green since holds nothing. A run the forge cancelled
+  is no result: the latest other run of that check counts — on GitLab,
+  the newest other pipeline of that head —, else it waits. One not judged yet waits, named.
 - **The label** is made in the forge's list when missing: put it in bulk,
   from a saved filter.
 
@@ -172,7 +173,8 @@ the candidate's issue, ships the version:
   `verdict` and `follow` jobs run after `judge`, `queue` after a merge
   queue's group, from the default branch;
   `workline-merge.yml` runs when a label is put or taken off, or a draft
-  made, and hourly; at `enterprising`, on a candidate's yes or close too.
+  made, and hourly; on a demotion issue's close; at `enterprising`, on a
+  candidate's yes or close too.
   Then:
   - Settings → General → "Allow auto-merge";
   - the [GitHub App](ci-github-app.md), with **Commit statuses** read and
