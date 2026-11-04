@@ -1,0 +1,9 @@
+case: setup/doctor-workflow-local-only-silent
+about: "A repository whose CI runs no workline — the line on a person's machine only — routes merge-request and main as shipped: the doctor says nothing of workflows to copy, the docs' own check says where they are judged (#1016)."
+given:
+  repo: documented
+run: {doctor: true}
+expect:
+  no-checks:
+    - {rule: workflow-missing}
+    - {rule: workflow-outdated}

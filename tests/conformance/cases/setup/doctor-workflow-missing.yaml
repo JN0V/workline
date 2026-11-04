@@ -1,0 +1,14 @@
+case: setup/doctor-workflow-missing
+about: "A repository set up months ago, its CI running workline, routes `issue` to the product owner and the developer, and no workflow runs `workline route issue`: the doctor warns that those steps never run in CI, and names the template to copy, workline-develop.yml. The events its workflows run say nothing (#1016)."
+given:
+  repo: documented
+  config: {routing: {events: {issue: [product-owner, developer]}}}
+  setup:
+    - "mkdir -p .github/workflows && printf 'env:\\n  WORKLINE_VERSION: v0.33.0\\njobs:\\n  line:\\n    steps:\\n      - run: workline route merge-request\\n      - run: workline route main\\n' > .github/workflows/workline.yml && printf 'env:\\n  WORKLINE_VERSION: v0.33.0\\njobs:\\n  gardening:\\n    steps:\\n      - run: workline route schedule\\n' > .github/workflows/workline-gardening.yml && git add .github && git commit -qm 'ci: run the line'"
+run: {doctor: true}
+expect:
+  checks:
+    - {rule: workflow-missing, where: .github/workflows/workline-develop.yml, level: warn, message: "`issue` is routed to product-owner, developer, but no workflow runs `workline route issue`", fix: "ci/github/workline-develop.yml to .github/workflows/workline-develop.yml"}
+  no-findings:
+    - {rule: workflow-missing, where: .github/workflows/workline.yml}
+    - {rule: workflow-missing, where: .github/workflows/workline-gardening.yml}
