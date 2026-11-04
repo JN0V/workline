@@ -20,6 +20,10 @@ const (
 	// pastAround is the lines given either side of a line past a file's
 	// cut that names what the issue quotes, no function found around it.
 	pastAround = 3
+	// pastMax is the lines given past a file's cut, whatever the budget
+	// left: a name on every line of a long file gives a few, not the file
+	// (#1063).
+	pastMax = 120
 )
 
 // defining are the files of files that define name as a function: the
@@ -136,6 +140,8 @@ func namedPast(file string, lines []string, given int, names []string, budget in
 	if len(names) == 0 || budget <= 0 {
 		return "", budget
 	}
+	left := budget - min(budget, pastMax) // given back after
+	budget = min(budget, pastMax)
 	var words []string
 	for _, n := range names {
 		words = append(words, regexp.QuoteMeta(n))
@@ -177,7 +183,7 @@ func namedPast(file string, lines []string, given int, names []string, budget in
 		budget -= to - s[0] + 1
 	}
 	if b.Len() == 0 {
-		return "", budget
+		return "", budget + left
 	}
-	return fmt.Sprintf("\n\nPast them, the lines naming %s:\n\n```\n%s```", "`"+strings.Join(names, "`, `")+"`", b.String()), budget
+	return fmt.Sprintf("\n\nPast them, the lines naming %s:\n\n```\n%s```", "`"+strings.Join(names, "`, `")+"`", b.String()), budget + left
 }

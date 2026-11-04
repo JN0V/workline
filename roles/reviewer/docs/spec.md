@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/lenses, internal/builtin/reviewer, internal/backlog/spec.go, routing.default.yaml]
-checked: 8538d558
+checked: 44f06aba
 verified: agent:claude-code
 ---
 # Reviewer — a spec before it is built
@@ -79,7 +79,9 @@ routing:
 
 - **Which issues**: those the product owner keeps (its state comment),
   not `workline:ready` nor `workline:needs-tests`, their four sections written (drafts too), their
-  body not read as it is. None: no agent asked.
+  body not read as it is. A person's text on top stands for the Need,
+  as the product owner reads it with its state
+  ([#1062](https://github.com/JN0V/workline/issues/1062)). None: no agent asked.
   - On the line's `issue` event, the one issue the product owner just
     ran on, its state comment written yet or not
     ([#840](https://github.com/JN0V/workline/issues/840)).

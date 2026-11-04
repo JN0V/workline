@@ -1,0 +1,30 @@
+case: reviewer/spec-need-on-top-read
+about: >
+  An imported issue a person edited: its text on top is theirs, and the
+  product owner reads it as the Need (ADR-0039, amended). Its other
+  three sections are written. The reviewer picks its spec by the same
+  rule, with the product owner's state: it reads it, never skips it as
+  lacking a Need, so its drafts are not left waiting on a review that
+  never comes (#1062, from a trial). One with no text on top and no
+  Need still lacks it.
+given:
+  repo: reviewed
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  forge:
+    issues:
+      - id: 4
+        title: The mean of no values
+        body: "Copied from another tracker for a trial.\n\nAverage gives 0 for an empty list, and the README tells the users.\n\nOpened from `docs/ROADMAP.md`, lines 12 to 12 by the product-owner role.\n\n<!-- workline:import=docs/ROADMAP.md:0a1b2c3d4e5f -->\n\n## Verification\n\nA test of Average on [] expects 0.\n\n## Validation\n\n- **Empty list:** Given no values, When the maintainer averages them, Then the result is 0.\n\n## Scope\n\ncalc/calc.go\n"
+        labels: [workline:to-refine]
+        comments: ["```yaml\nsources: [calc/calc.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]
+      - {id: 5, title: "No Need", body: "## Verification\n\nB.\n\n## Validation\n\nC.\n\n## Scope\n\ncalc/calc.go", labels: [workline:to-refine], comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+    merge-requests: []
+run: {role: reviewer, event: schedule, ai: "fake:review-spec-costly-nothing"}
+expect:
+  status: pass
+  forge:
+    issues:
+      - id: 4
+        comments: 2
+        comment-contains: ["<!-- workline:sticky=reviewer/spec -->"]
+      - {id: 5, comments: 1}

@@ -134,7 +134,12 @@ func waitingSpecs(repo string, f forge.Backlog) (ws []waiting, unread []verdict.
 		if only != 0 && is.ID != only {
 			continue
 		}
-		if backlog.Readied(is) || len(backlog.NotReady(is, nil, true)) > 0 {
+		// Its sections read by the product owner's rule (#1062): text on
+		// top may be its Need, which only its state tells; so one lacking
+		// its Need alone, text on top, is read for that state first.
+		lacks := backlog.NotReady(is, nil, true)
+		needOnTop := len(lacks) == 1 && lacks[0] == work.Name(work.Need)+" is missing" && backlog.DescriptionOf(is.Body) != ""
+		if backlog.Readied(is) || len(lacks) > 0 && !needOnTop {
 			continue
 		}
 		comments, err := f.Comments(forge.Target{Kind: "issue", ID: is.ID})
@@ -151,6 +156,9 @@ func waitingSpecs(repo string, f forge.Backlog) (ws []waiting, unread []verdict.
 		}
 		if kerr != nil {
 			kst = nil
+		}
+		if needOnTop && len(backlog.NotReady(is, kst, true)) > 0 {
+			continue
 		}
 		prior, err := backlog.ReadSpecReview(comments)
 		if err != nil {
