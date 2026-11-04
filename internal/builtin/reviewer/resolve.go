@@ -18,18 +18,11 @@ type lensesRead struct {
 	files  []string
 }
 
-// answered are the conversations on the merge request's lines the
-// reviewer opened that the code now answers, by the rule a block goes by
-// (#326, #1039): each one's thread id, for the engine to resolve. Only
-// the threads of this run's side (ADR-0050), not resolved, whose first
-// comment workline's own account wrote and carries a key; one a person
-// spoke in is theirs to resolve, and a person's thread is never one. A
-// thread is answered when its key is no longer found on its file at the
-// head (the line changed, or was removed), or when its lens read the
-// file again — or, for a lens whose judge reads tests, a test file that
-// touches it — and found it no more. A finding found again, or a block
-// still standing, keeps its thread open. A forge that lists no thread
-// answers none; one that cannot be read is said, never an error.
+// answered are the reviewer's own open threads on this run's side that
+// the code now answers, as a block goes (judge.md): its keyed line gone
+// from the head, or its lens read the file again (a test file touching it,
+// for the tests lens) and found it no more. A thread a person opened or
+// spoke in is left; one unread is said, never an error.
 func answered(repo string, s Settings, st state, lines []forge.LineComment, r lensesRead) ([]string, *verdict.Finding) {
 	t := mergeRequest()
 	if t == nil || !s.ForgeWrites {

@@ -86,13 +86,15 @@ func (f *Fake) Reply(id int, thread, body string) error {
 	})
 }
 
-// Resolve marks the threads resolved; one it does not hold is an error.
+// Resolve marks the threads resolved; those it does not hold, the rest
+// resolved still, are said in the error.
 func (f *Fake) Resolve(id int, threads []string) error {
 	return f.write(func(s *FakeState) error {
 		it, err := s.item(Target{Kind: "merge-request", ID: id})
 		if err != nil {
 			return err
 		}
+		var missing []string
 	next:
 		for _, thread := range threads {
 			for i := range it.Threads {
@@ -101,10 +103,18 @@ func (f *Fake) Resolve(id int, threads []string) error {
 					continue next
 				}
 			}
-			return fmt.Errorf("merge request %d holds no thread %s", id, thread)
+			missing = append(missing, thread)
 		}
-		return nil
+		return noThreads(id, missing)
 	})
+}
+
+// noThreads says the threads a merge request no longer holds, if any.
+func noThreads(id int, missing []string) error {
+	if len(missing) == 0 {
+		return nil
+	}
+	return fmt.Errorf("merge request %d holds no thread %s: the others resolved", id, strings.Join(missing, ", "))
 }
 
 // threadsFullQuery lists a pull request's review threads with their
@@ -181,11 +191,13 @@ func (g *github) Resolve(id int, threads []string) error {
 	if err != nil {
 		return err
 	}
+	var missing []string // gone since the run read them: the rest resolved still
 	for _, thread := range threads {
 		i := slices.IndexFunc(all, func(t Thread) bool { return t.ID == thread })
 		switch {
 		case i < 0:
-			return fmt.Errorf("pull request %d holds no review thread %s", id, thread)
+			missing = append(missing, thread)
+			continue
 		case all[i].Resolved:
 			continue
 		}
@@ -193,7 +205,7 @@ func (g *github) Resolve(id int, threads []string) error {
 			return err
 		}
 	}
-	return nil
+	return noThreads(id, missing)
 }
 
 // Threads reads the merge request's discussions on its diff, those with a
