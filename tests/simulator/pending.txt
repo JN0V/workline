@@ -1,0 +1,26 @@
+# Per trace, the first property it breaks today (ADR-0063, step 1): the
+# suite fails if a trace breaks another first, or none while named here.
+# A seeded run's failure is never listed here.
+#
+# Refine, acted on, nothing more to run: the silent park (#1070, #1062).
+trial-33 i1-status
+trial-34 i1-status
+# Developing, its pull request's round not known: the issue says nothing.
+trial-36 i1-status
+# Blocked, read again after 7 days: the product owner's plain `ready` is
+# refused (no proof picked for a no-test issue), and the issue stays
+# blocked. The fake's progress answer for a blocked issue, and the trial's
+# pull request branches in the fixture's origin, come with the next step
+# of the simulator: until then this failure is partly the fake's.
+trial-19 always-progress-done
+trial-20 always-progress-done
+trial-35 always-progress-done
+trial-37 always-progress-done
+# Taken back to refine: refined, then in tests, the tester woken once and
+# the issue parked. The fixture is a shell project: the trial's C++ Scope
+# paths are not in it, so the tester's agent is not asked.
+trial-3-fresh i1-status
+trial-4-fresh i1-status
+trial-5-fresh i1-status
+trial-16-fresh i1-status
+trial-18-fresh i1-status

@@ -1,0 +1,323 @@
+{
+ "issues": [
+  {
+   "id": 3,
+   "title": "BUG-50 — OTA: a chunk-time refusal reaches the operator as \"Upload not active\"",
+   "body": "Copied from https://github.com/JN0V/DomoticsCore/issues/147 for a trial of workline's line on this copy.\n\n### BUG-50 — OTA: a chunk-time refusal reaches the operator as \"Upload not active\" [LOW] — **NEW (2026-09-20, by the deferred-work purge)**\n\n- **Parked by**: SEC-9's adversarial review, 2026-08-27.\n- **Files**: `OTAWebUI.h:509-516`, `OTA.cpp:262`, `:274`.\n- **Problem**: a failing `acceptUploadChunk()` — the streaming cap, SEC-8 —\n  sets `uploadState.error = \"Firmware too large\"` and closes the session, but\n  leaves `uploadState.rejected` false, so every following chunk re-enters\n  `acceptUploadChunk()` on a closed session and overwrites the message with\n  \"Upload not active\", as does the `final` call. The JSON answer names a cap\n  violation as an inactive session. The begin-time refusal got this right\n  (`:504`); the sibling call did not.\n- **Fix**: set `rejected` on the chunk-time failure too. TEST-8's mocks can\n  drive it natively — announce N, deliver more than N.\n- **Refs**: SEC-8, SEC-9, TEST-8.\n\nOpened from `docs/CODE-ROADMAP.md`, lines 4529 to 4542 by the product-owner role.\n\n<!-- workline:import=docs/CODE-ROADMAP.md:7f37182b6ce9 -->\n\n## Need\n\nAn operator uploading firmware that exceeds the size cap wants the error to say the firmware is too large, so they know what to fix.\n\n## Steps to reproduce\n\n1. Announce a firmware size of N bytes in an OTA upload.\n2. Send more than N bytes in chunks.\n- **Expected:** the JSON answer says `Firmware too large`.\n- **Actual:** later chunks and the final call overwrite it with `Upload not active`.\n- **Version:** current main (after 2.13.0).\n\n## Validation\n\n- **Cap exceeded:** Given an upload announcing N bytes, When more than N bytes are delivered, Then the answer says `Firmware too large`, not `Upload not active`.\n\n---\n\n## Verification\n\n- A new native test, built on the TEST-8 mocks, announces N bytes and then delivers more than N bytes in chunks.\n- After the chunk that crosses the cap, the test asserts that the upload answer's error is `Firmware too large`.\n- The test then sends further chunks and the final call. It asserts that the error is still `Firmware too large` and never becomes `Upload not active`.\n- The same test asserts that the upload session is closed (no longer active) after the refusal. The component's last error is still `Firmware too large`, and no flash write happens after the refusal.\n- The test fails on the current code and passes after the fix.\n- A normal upload of at most N bytes still succeeds.\n\n## Scope\n\n- `DomoticsCore-OTA/include/DomoticsCore/OTAWebUI.h`: the upload handler. When the chunk-time call `acceptUploadChunk()` fails, it must set `uploadState.rejected`, as the begin-time refusal already does.\n- `DomoticsCore-OTA/src/OTA.cpp`: `acceptUploadChunk()`, only if the fix needs a change there.\n- `DomoticsCore-OTA/test/test_ota_http/test_ota_http.cpp`: the new native test for this fix. It announces N bytes, delivers more than N, and checks the answer. This test file is the one the Verification needs.",
+   "labels": [
+    "bug"
+   ],
+   "comments": [
+    {
+     "body": "**The product owner**, on 2026-11-04:\n\n- Named the code #3 is about: DomoticsCore-OTA/include/DomoticsCore/OTAWebUI.h, DomoticsCore-OTA/src/OTA.cpp. DomoticsCore-OTA/include/DomoticsCore/OTAWebUI.h says `bool rejected = false;` — The upload state flag `rejected` lives in the uplo…\n- Labelled #3 `bug`, a bug: The operator should see 'Firmware too large' when an upload goes over the size cap, and gets 'Upload not active' instead. The begin-time refusal already reports its reason correctly. Wrong? Change the label; the r…\n- Added: —. Changed: Verification. See the issue's edit history.\n- Moved #3 to ready: the reviewer read its spec (round 2): no important finding open\n- Added: —. Changed: Scope. See the issue's edit history.\n- Moved #3 out of Blocked, to ready (workline:blocked off, workline:ready on; put workline:blocked back to undo): The only blocker was a Scope that left out the test file. The Scope now includes it, and the four sections are in place.\n\n<!-- What workline knows of this issue, edited by the engine, not by hand.\n```yaml\nsources: [DomoticsCore-OTA/include/DomoticsCore/OTAWebUI.h, DomoticsCore-OTA/src/OTA.cpp]\nconfirmed: dde153b\njudged: 79b7b4a\nbody: cf6754a7c933\nsections:\n    Need: An operator uploading firmware that exceeds the size cap wants the error to say the firmware is too large, so they know what to fix.\n    Scope: |-\n        - `DomoticsCore-OTA/include/DomoticsCore/OTAWebUI.h`: the upload handler. When the chunk-time call `acceptUploadChunk()` fails, it must set `uploadState.rejected`, as the begin-time refusal already does.\n        - `DomoticsCore-OTA/src/OTA.cpp`: `acceptUploadChunk()`, only if the fix needs a change there.\n        - `DomoticsCore-OTA/test/test_ota_http/test_ota_http.cpp`: the new native test for this fix. It announces N bytes, delivers more than N, and checks the answer. This test file is the one the Verification needs.\nwrote:\n    Scope: d167277fda43\n    Verification: 22570a1bac7d\nanswered: 7997cf5970db\nrevised: [Verification]\ndid:\n    - act: sources\n      level: normal\n      day: \"2026-11-04\"\n      at: dde153b\n      model: claude:claude-sonnet-5-5\n      body: 7997cf5970db\n      line: 'Named the code #3 is about: DomoticsCore-OTA/include/DomoticsCore/OTAWebUI.h, DomoticsCore-OTA/src/OTA.cpp. DomoticsCore-OTA/include/DomoticsCore/OTAWebUI.h says `bool rejected = false;` — The upload state flag `rejected` lives in the uplo…'\n    - act: kind\n      level: normal\n      day: \"2026-11-04\"\n      at: dde153b\n      model: claude:claude-sonnet-5-5\n      body: 7997cf5970db\n      line: 'Labelled #3 `bug`, a bug: The operator should see ''Firmware too large'' when an upload goes over the size cap, and gets ''Upload not active'' instead. The begin-time refusal already reports its reason correctly. Wrong? Change the label; the r…'\n    - act: refine\n      level: normal\n      day: \"2026-11-04\"\n      at: dde153b\n      model: claude:claude-sonnet-5-5\n      body: 7997cf5970db\n      line: 'Added: —. Changed: Verification. See the issue''s edit history.'\n    - act: ready\n      level: normal\n      day: \"2026-11-04\"\n      at: dde153b\n      model: claude:claude-sonnet-5-5\n      body: c294574e2f52\n      line: 'Moved #3 to ready: the reviewer read its spec (round 2): no important finding open'\n    - act: refine\n      level: normal\n      day: \"2026-11-04\"\n      at: 79b7b4a\n      model: claude:claude-sonnet-5-5\n      body: c294574e2f52\n      line: 'Added: —. Changed: Scope. See the issue''s edit history.'\n    - act: unblock\n      level: normal\n      day: \"2026-11-04\"\n      at: 79b7b4a\n      model: claude:claude-sonnet-5-5\n      body: c294574e2f52\n      line: 'Moved #3 out of Blocked, to ready (workline:blocked off, workline:ready on; put workline:blocked back to undo): The only blocker was a Scope that left out the test file. The Scope now includes it, and the four sections are in place.'\nheard: 0\nrules: 2\nkind: bug\n```\n-->\n\n<!-- workline:sticky=product-owner/state -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T07:41:07Z",
+     "id": "6625440808",
+     "bot": true
+    },
+    {
+     "body": "**workline reviewer**, its spec — 2 findings on the spec; lenses: ambiguous, unverifiable, out-of-scope, contradicted; tokens: 20258 in, 2470 out (4 calls), of 300000 a run (ai-max-tokens).\n\nNo important finding open: the product owner may move it to ready.\n\n| | | Where | Finding |\n|---|---|---|---|\n| warns | contradicted | `#3:8` | Nit: Spec claims acceptUploadChunk sets error and closes session; OTA.cpp not shown — The spec states the chunk-time failure \"sets uploadState.error\" inside acceptUploadChunk(). In the code, uploadState.error is set by the web handler from ota->getLastError(), not by acceptUploadChunk. A builder limited to Scope file OTA.cpp may look in the wrong place for where the message is written. The spec also gives line numbers (OTA.cpp:262, :274, OTAWebUI.h:509-516) that cannot be checked and may be stale. Fix: Say that the web handler copies the component's last error, and drop the line numbers or refresh them. (shows at DomoticsCore-OTA/include/DomoticsCore/OTAWebUI.h) |\n| warns | ambiguous | `#3:24` | Nit: 'Size cap' is undefined: announced size N versus the configured cap — The Need speaks of a \"size cap\" while the steps announce N and send more than N. One reading is the partition capacity (SEC-8 streaming cap); the other is the announced length. Note that the handler announces the whole multipart body length, so the steps with a body larger than N are not what a browser does. Tests differ for each. Fix: Say which limit triggers 'Firmware too large' and how the test sets it. |\n| warns | finding-judged-no |  | dropped, from the ambiguous lens: \"Verification asserts component last error stays, but 'Upload not active' may overwrite it\" at #3:45 — the judge: the quoted line 'The component's last error is still `Firmware too large`' has only one reading, and the Fix 'set `rejected` on the chunk-time failure too' settles where the change goes; a fix inside acceptUploadChunk that rewrites the error would fail this test, so two builders cannot both pass it with different behaviour. (independence: model (claude-sonnet-5-5 → claude-opus-5-5)) |\n| warns | finding-judged-no |  | dropped, from the unverifiable lens: \"Test place and harness not named; the web handler cannot be driven by the mocks\" at #3:42 — the judge: the Verification names checks that would fail with the Need unmet: it asserts the error 'is still `Firmware too large` and never becomes `Upload not active`', and that 'The test fails on the current code and passes after the fix'; the finding's claim that the mocks cannot drive the web handler is only a guess about the harness. (independence: model (claude-sonnet-5-5 → claude-opus-5-5)) |\n| warns | finding-judged-no |  | dropped, from the out-of-scope lens: \"Scope omits the test file the Verification requires\" at #3:51 — the judge: the finding points to the Verification's 'new native test', not the Need; the Need ('wants the error to say the firmware is too large') only asks for the fix, which the Scope's OTAWebUI.h and OTA.cpp (acceptUploadChunk()) cover. (independence: model (claude-sonnet-5-5 → claude-opus-5-5)) |\n\nThe reviewer never edits the issue nor moves it: the product owner answers, a person decides.\n\n<!-- workline:spec-review body=c294574e2f52 round=2 open=0 in= -->\n\n<!-- workline:sticky=reviewer/spec -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T07:41:09Z",
+     "id": "6625441296",
+     "bot": true
+    },
+    {
+     "body": "**workline's line** last woke the product owner on this issue, in its state blocked (2 state steps so far). Edited by the engine, not by hand.\n\n<!-- workline:line-record {\"state\":\"blocked\",\"body\":\"c294574e2f52\",\"hops\":2,\"from\":\"ready\",\"since\":\"2026-11-04T08:21:51Z\",\"revisited\":\"2026-11-04T08:21:51Z\"} -->\n\n<!-- workline:sticky=line/state -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T07:41:10Z",
+     "id": "6625441593",
+     "bot": true
+    },
+    {
+     "body": "**The tester** wrote the acceptance tests of this issue, as a Draft.\n\n- **Why**: each of its 1 scenarios has its test in the Draft's Tests table, red on the base, and the tests pass the project's lint.\n- **Next**: it is ready: whoever builds it starts from the Draft, workline/tester/issue-3.\n\n\n<!-- workline:sticky=tester/issue -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T07:44:25Z",
+     "id": "6625495012",
+     "bot": true
+    },
+    {
+     "body": "**The developer** blocks this issue.\n\n- **Why**: the fix of pull request 11 needs `DomoticsCore-OTA/test/test_ota_http/test_ota_http.cpp`, outside its Scope: it asks the product owner to widen it.\n- **Next**: the product owner widens the Scope and moves the issue back to ready, the developer resumes on pull request 11 with the new bounds; or keeps it blocked, why not said.\n\nWhat it was asked:\n\n- warns correctness `DomoticsCore-OTA/include/DomoticsCore/OTAWebUI.h:529`: Important: Final chunk skipped after a refusal leaves the upload open\n- warns tests `DomoticsCore-OTA/include/DomoticsCore/OTAWebUI.h:532`: Important: The web upload handler change has no test\n\nWhy it needs them:\n\n- Finding 1 (final chunk skipped after a refusal): already f​ixed in the branch. On a chunk refusal the handler sets uploadState.active = false, so the disconnect handler no longer overwrites the error or aborts the c​losed session. The new handler test checks both.\n- Finding 2 (no handler test): I added test_a_chunk_past_the_cap_is_answered_as_too_large to test_ota_http.cpp. It announces 100 bytes, sends 32-byte chunks through the real upload handler and calls the completion handler. It asserts the JSON answer says 'Firmware too large' and never 'Upload not active', and that no session is left open. It also asserts that the disconnect adds no abort and does not change the error. Caveat: the OTA.cpp change also keeps the error on its own, so reverting only the `rejected = true` line leaves this test green. I checked: reverting `active = false` breaks the disconnect assertions.\n\n<!-- workline:scope-ask at=64337017f1dd884260b0903da480095147bddc90 files=DomoticsCore-OTA/test/test_ota_http/test_ota_http.cpp -->\n\n\n<!-- workline:sticky=developer/claim -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T08:08:20Z",
+     "id": "6625902536",
+     "bot": true
+    }
+   ],
+   "author": "JN0V",
+   "insider": true,
+   "label-events": [
+    {
+     "label": "workline:to-refine",
+     "added": true,
+     "author": "JN0V",
+     "created": "2026-11-04T07:39:41Z",
+     "insider": true,
+     "writer": true
+    },
+    {
+     "label": "bug",
+     "added": true,
+     "author": "workline-bot",
+     "created": "2026-11-04T07:42:10Z",
+     "bot": true
+    },
+    {
+     "label": "workline:needs-tests",
+     "added": true,
+     "author": "workline-bot",
+     "created": "2026-11-04T07:43:54Z",
+     "bot": true
+    },
+    {
+     "label": "workline:to-refine",
+     "added": false,
+     "author": "workline-bot",
+     "created": "2026-11-04T07:43:55Z",
+     "bot": true
+    },
+    {
+     "label": "workline:blocked",
+     "added": true,
+     "author": "workline-bot",
+     "created": "2026-11-04T07:44:51Z",
+     "bot": true
+    },
+    {
+     "label": "workline:needs-tests",
+     "added": false,
+     "author": "workline-bot",
+     "created": "2026-11-04T07:44:52Z",
+     "bot": true
+    },
+    {
+     "label": "workline:blocked",
+     "added": false,
+     "author": "JN0V",
+     "created": "2026-11-04T07:53:32Z",
+     "insider": true,
+     "writer": true
+    },
+    {
+     "label": "workline:needs-tests",
+     "added": true,
+     "author": "JN0V",
+     "created": "2026-11-04T07:53:32Z",
+     "insider": true,
+     "writer": true
+    },
+    {
+     "label": "workline:ready",
+     "added": true,
+     "author": "workline-bot",
+     "created": "2026-11-04T08:01:26Z",
+     "bot": true
+    },
+    {
+     "label": "workline:needs-tests",
+     "added": false,
+     "author": "workline-bot",
+     "created": "2026-11-04T08:01:26Z",
+     "bot": true
+    },
+    {
+     "label": "workline:developing",
+     "added": true,
+     "author": "workline-bot",
+     "created": "2026-11-04T08:08:18Z",
+     "bot": true
+    },
+    {
+     "label": "workline:blocked",
+     "added": true,
+     "author": "workline-bot",
+     "created": "2026-11-04T08:21:06Z",
+     "bot": true
+    },
+    {
+     "label": "workline:developing",
+     "added": false,
+     "author": "workline-bot",
+     "created": "2026-11-04T08:21:07Z",
+     "bot": true
+    },
+    {
+     "label": "workline:ready",
+     "added": false,
+     "author": "workline-bot",
+     "created": "2026-11-04T08:21:09Z",
+     "bot": true
+    },
+    {
+     "label": "workline:to-refine",
+     "added": true,
+     "author": "workline-bot",
+     "created": "2026-11-04T08:22:27Z",
+     "bot": true
+    },
+    {
+     "label": "workline:ready",
+     "added": true,
+     "author": "workline-bot",
+     "created": "2026-11-04T08:22:30Z",
+     "bot": true
+    },
+    {
+     "label": "workline:blocked",
+     "added": false,
+     "author": "workline-bot",
+     "created": "2026-11-04T08:22:31Z",
+     "bot": true
+    },
+    {
+     "label": "workline:to-refine",
+     "added": false,
+     "author": "workline-bot",
+     "created": "2026-11-04T08:22:33Z",
+     "bot": true
+    },
+    {
+     "label": "workline:developing",
+     "added": true,
+     "author": "workline-bot",
+     "created": "2026-11-04T13:49:49Z",
+     "bot": true
+    },
+    {
+     "label": "workline:ready",
+     "added": false,
+     "author": "workline-bot",
+     "created": "2026-11-04T13:49:50Z",
+     "bot": true
+    },
+    {
+     "label": "workline:developing",
+     "added": false,
+     "author": "workline-bot",
+     "created": "2026-11-04T15:29:39Z",
+     "bot": true
+    }
+   ],
+   "labeled": {
+    "workline:to-refine": "2026-11-04T08:22:27Z",
+    "bug": "2026-11-04T07:42:10Z",
+    "workline:needs-tests": "2026-11-04T07:53:32Z",
+    "workline:blocked": "2026-11-04T08:21:06Z",
+    "workline:ready": "2026-11-04T08:22:30Z",
+    "workline:developing": "2026-11-04T13:49:49Z"
+   },
+   "closed": true,
+   "reason": "completed"
+  }
+ ],
+ "merge-requests": [
+  {
+   "id": 11,
+   "branch": "workline/developer/3",
+   "base": "main",
+   "title": "fix(domoticscore-ota): OTA: a chunk-time refusal reaches the",
+   "body": "Closes #3\n\nThe developer's code for #3, proven on the project's tests.\n\n## Changes\n\n- Code: `DomoticsCore-OTA/include/DomoticsCore/OTAWebUI.h`, `DomoticsCore-OTA/src/OTA.cpp`.\n- The tester's acceptance tests, read-only to the developer, from `workline/tester/issue-3`: `DomoticsCore-OTA/test/test_ota_chunk_refusal/test_ota_chunk_refusal.cpp`.\n\n## Verification\n\n- Its agent ran with the rights of the CI job; the forge's guards decide what merges.\n- `tools/workline-tests.sh {report}`: 1347 tests passed, none red.\n- The whole suite: no file it touches lies in a folder holding tests (the developer's `proof-command`, with `{packages}`, runs the touched folders alone).\n- Run on a fresh checkout of cedd5d9, its code laid on it: not its agent's worktree.\n\n## Tried\n\n- Its code on the project's tests, on a fresh checkout, before this opened: above.\n- Not tried: the commands the issue names to verify it, nor a person's use of it.\n",
+   "labels": [
+    "workline:accepted"
+   ],
+   "comments": [
+    {
+     "body": "**The developer**'s record of this pull request, for its next runs and the auditor.\n\n- Review round 1: 2 asked, its fix pushed, the tests green.\n- Review round 2: 2 asked, no fix.\n- Review round 3: 2 asked, its fix pushed, the tests green, the five whys run.\n\n<!-- workline:developer-act {\"act\":\"code\",\"at\":\"79b7b4a8833d490f9e8bdda39041045051c77962\",\"issue\":3,\"refused\":[{\"file\":\"DomoticsCore-OTA/test/test_ota_http/test_ota_http.cpp\",\"rule\":\"outside-scope\"}],\"proof\":{\"result\":\"green\",\"command\":\"tools/workline-tests.sh {report}\",\"passed\":1348,\"tree\":\"fresh\",\"at\":\"64337017f1dd884260b0903da480095147bddc90\",\"scope\":\"whole\",\"whole\":\"no file it touches lies in a folder holding tests\"},\"turns\":10,\"tokens\":19004,\"cached\":178105,\"tools\":{\"Bash\":9},\"from\":\"cedd5d938cc1737bfc7b4f6040aff4e1dab4cc82\",\"acceptance\":[\"DomoticsCore-OTA/test/test_ota_chunk_refusal/test_ota_chunk_refusal.cpp\"],\"code\":[\"DomoticsCore-OTA/include/DomoticsCore/OTAWebUI.h\",\"DomoticsCore-OTA/src/OTA.cpp\"],\"tests\":[\"DomoticsCore-OTA/test/test_ota_http/test_ota_http.cpp\"],\"round\":3,\"review-runs\":4,\"seen\":[\"correctness|DomoticsCore-OTA/include/DomoticsCore/OTAWebUI.h|Final chunk skipped after a refusal leaves the upload open\",\"tests|DomoticsCore-OTA/include/DomoticsCore/OTAWebUI.h|The web upload handler change has no test\"],\"rounds\":[{\"n\":1,\"asked\":[\"warns correctness `DomoticsCore-OTA/include/DomoticsCore/OTAWebUI.h:529`: Important: Final chunk skipped after a refusal leaves the upload open\",\"warns tests `DomoticsCore-OTA/include/DomoticsCore/OTAWebUI.h:532`: Important: The web upload handler change has no test\"],\"result\":\"green\",\"turns\":8,\"tokens\":14076,\"cached\":122590,\"tools\":{\"Bash\":7}},{\"n\":2,\"asked\":[\"warns correctness `DomoticsCore-OTA/include/DomoticsCore/OTAWebUI.h:529`: Important: Final chunk skipped after a refusal leaves the upload open\",\"warns tests `DomoticsCore-OTA/include/DomoticsCore/OTAWebUI.h:532`: Important: The web upload handler change has no test\"],\"result\":\"no-code\",\"bounds\":\"asked\"},{\"n\":3,\"asked\":[\"warns correctness `DomoticsCore-OTA/include/DomoticsCore/OTAWebUI.h:529`: Important: Final chunk skipped after a refusal leaves the upload open\",\"warns tests `DomoticsCore-OTA/include/DomoticsCore/OTAWebUI.h:532`: Important: The web upload handler change has no test\"],\"result\":\"green\",\"whys\":true,\"turns\":1,\"tokens\":33586,\"cached\":300105,\"tools\":{\"Bash\":11}}],\"whys\":true,\"widen\":{\"at\":\"64337017f1dd884260b0903da480095147bddc90\",\"scope\":\"f31a24e3bdc8\",\"files\":[\"DomoticsCore-OTA/test/test_ota_http/test_ota_http.cpp\"],\"back\":true}} -->\n\n\n<!-- workline:sticky=developer/code -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T08:08:24Z",
+     "id": "6625903957",
+     "bot": true
+    },
+    {
+     "body": "**The developer's bounds** on this pull request, read at the base's 09d245d: 4 files changed since it, each within the bounds of #3.\n\n<!-- workline:developer-act {\"act\":\"bounds\",\"issue\":3,\"base\":\"09d245d1bc77048939091004948d6b4939b4bf53\",\"head\":\"9d7447525e8c87f1814ceefff09a3920bc3c5442\",\"files\":4,\"refused\":[]} -->\n\n<!-- workline:sticky=developer/bounds -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T08:08:52Z",
+     "id": "6625912583",
+     "bot": true
+    },
+    {
+     "body": "**Proposed by workline's documentalist**, not pushed: workline pushes nothing to a merge request's branch. Apply it with `git apply`:\n\n```diff\ndiff --git a/docs/components/ota/project-context.md b/docs/components/ota/project-context.md\nindex 8c5ec68..7f1721e 100644\n--- a/docs/components/ota/project-context.md\n+++ b/docs/components/ota/project-context.md\n@@ -2,7 +2,7 @@\n sources: [DomoticsCore-OTA/include/DomoticsCore/OTA.h, DomoticsCore-OTA/include/DomoticsCore/OTAEvents.h, DomoticsCore-OTA/include/DomoticsCore/OTAWebUI.h, DomoticsCore-OTA/include/DomoticsCore/Update_ESP32.h, DomoticsCore-OTA/include/DomoticsCore/Update_ESP8266.h, DomoticsCore-OTA/include/DomoticsCore/Update_HAL.h, DomoticsCore-OTA/include/DomoticsCore/Update_Stub.h, DomoticsCore-OTA/src/OTA.cpp, DomoticsCore-OTA/library.json, DomoticsCore-OTA/platformio.ini, DomoticsCore-OTA/test/test_ota_component/test_ota_component.cpp, DomoticsCore-OTA/test/test_ota_esp32/test_ota_esp32.cpp, DomoticsCore-OTA/test/test_ota_esp8266/test_ota_esp8266.cpp, DomoticsCore-OTA/test/test_ota_http/test_ota_http.cpp, DomoticsCore-OTA/test/test_ota_status_allocations/test_ota_status_allocations.cpp, DomoticsCore-OTA/test/test_ota_url_hash/test_ota_url_hash.cpp, DomoticsCore-OTA/examples/BasicOTA/src/main.cpp, DomoticsCore-OTA/examples/OTAWithWebUI/src/main.cpp]\n checked: cff4019\n verified: agent:documentalist\n-judged: cff4019\n+judged: a4b69ff\n -->\n # DomoticsCore-OTA -- Project Context (AI Agent)\n \n@@ -72,8 +72,8 @@ DomoticsCore-OTA/\n | `Update_ESP32.h` | 83 | ESP32 HAL: direct flash write, no buffering |\n | `Update_ESP8266.h` | 106 | ESP8266 HAL: `Update.runAsync(true)`, no buffering |\n | `Update_Stub.h` | 84 | Stub HAL: all writes succeed silently |\n-| `OTA.cpp` | 759 | Core logic -- approaching 800-line constitution limit |\n-| **Total** | **1841** | All source files combined |\n+| `OTA.cpp` | 761 | Core logic -- approaching 800-line constitution limit |\n+| **Total** | **1844** | All source files combined |\n \n ---\n \n@@ -235,7 +235,7 @@ All three implementations expose the same function set in `DomoticsCore::HAL::OT\n | SOLID / SRP | Compliant | `OTAComponent` handles update logic; `OTAWebUI` handles presentation; transport is injected |\n | HAL Isolation (IX) | Compliant | All `#ifdef` confined to `Update_HAL.h` and platform headers |\n | Non-Blocking (X) | Compliant | Deferred execution via pending flags; `loop()` processes work; `delay()` only used in 100ms pre-reboot pause |\n-| File Size (VII) | Warning | `OTA.cpp` is 759 lines, within the 800-line hard limit but above the 500-line target. `OTAWebUI.h` is 558 lines. Monitor growth. |\n+| File Size (VII) | Warning | `OTA.cpp` is 761 lines, within the 800-line hard limit but above the 500-line target. `OTAWebUI.h` is 558 lines. Monitor growth. |\n | EventBus (VI) | Compliant | All status and progress updates published via `publishStatusEvent()`, which emits the serialized JSON bytes |\n | Memory (XIV) | Compliant | Upload progress throttled; no String concatenation in hot paths; PROGMEM used for HTML |\n | Versioning (XV) | Compliant | `library.json` version `1.11.0` matches `metadata.version` in constructor |\n@@ -243,7 +243,7 @@ All three implementations expose the same function set in `DomoticsCore::HAL::OT\n \n ### Potential Improvement Areas\n \n-- `OTA.cpp` line count (759) should be monitored. If new features are added, consider extracting manifest fetching or version comparison into a separate utility.\n+- `OTA.cpp` line count (761) should be monitored. If new features are added, consider extracting manifest fetching or version comparison into a separate utility.\n - `OTAWebUI.h` contains both context building and route registration. If it grows further, route registration could be extracted into a helper.\n - Firmware signature verification is not implemented. The `signaturePublicKey` field that used to advertise it was removed in v2.1.0 (DC-7): it was never read, so it promised a check that did not happen. SHA-256 integrity verification *is* performed on the download path, and the image is committed to flash only after the digest matches (SEC-2). Note the ordering is the security property: `HAL::OTAUpdate::end(true)` is the point of no return — it switches the ESP32 boot partition and stages the ESP8266 eboot copy — and no Arduino core lets the application undo it, so `abort()` is only meaningful *before* `end()`. See the contract in `Update_HAL.h`. The **upload** path verifies on the same terms since SEC-7: `acceptUploadChunk()` hashes what it writes and `finalizeUpload()` checks the digest before `end(true)`. The expected hash is optional per upload (`X-Firmware-SHA256` header or `?sha256=`), because every caller before SEC-7 supplied none; set `OTAConfig::requireUploadHash` to refuse uploads without one, which also rejects the built-in browser form since it cannot send a digest.\n - ~~**(C14)**~~ **Resolved (BUG-21).** `EVENT_START` and `EVENT_END` are emitted at the points this entry named: the beginning of a download or upload, and the end of the transfer before verification.\n```\n\n<!-- workline:sticky=documentalist/patch -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T08:09:47Z",
+     "id": "6625928772",
+     "bot": true
+    },
+    {
+     "body": "**workline reviewer** — no code changed since the last review (only the base's code, merged in and reviewed there, files moved unchanged, or files the reviewer leaves): nobody asked, the 1 new commits recorded.\n\nThe lenses that warn read apart, and post in their own comment: they never hold the verdict.\n<!-- workline:warn-apart -->\n\nNo finding on the commits reviewed.\n\nThe reviewer never approves and never changes the code: the author fixes what blocks, a person merges.\n\n<!-- workline:at head=9d7447525e8c87f1814ceefff09a3920bc3c5442 run=41856748914 -->\n<!-- workline:record reviewed=a4b69ff345fb40252f30153e65cfa3c3c4661156,cedd5d938cc1737bfc7b4f6040aff4e1dab4cc82,64337017f1dd884260b0903da480095147bddc90,863d5926551c192cd1bc2304d9746f1531f90570,eef539dae75592f639e9d160a9a557dacc679120,9d7447525e8c87f1814ceefff09a3920bc3c5442 patches=50e4e2c49c40c1ba91400a33aa2c7e5178a6c325,8bd69c0fe3b0398a9179011b97c55d31269112b8,8efbcf10d03c19923cf2aead5905a52ed289d69a,4419950a1518790da3654d7b3c6c0b0514c62bf3 runs=3 read=all -->\n<!-- workline:judged-lines gone=0 -->\n\n<!-- workline:sticky=reviewer/summary -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T08:09:50Z",
+     "id": "6625929598",
+     "bot": true
+    },
+    {
+     "body": "**workline reviewer, the lenses that warn** — no code changed since the last review (only the base's code, merged in and reviewed there, files moved unchanged, or files the reviewer leaves): nobody asked, the 1 new commits recorded.\n\nThey read apart from the verdict, which never waits for them: what they find warns, posted here once they answered, maybe after the verdict was given.\n\nNo finding on the commits reviewed.\n\nThe reviewer never approves and never changes the code: the author fixes what blocks, a person merges.\n\n<!-- workline:at head=9d7447525e8c87f1814ceefff09a3920bc3c5442 run=41856748960 -->\n<!-- workline:record reviewed=a4b69ff345fb40252f30153e65cfa3c3c4661156,cedd5d938cc1737bfc7b4f6040aff4e1dab4cc82,64337017f1dd884260b0903da480095147bddc90,863d5926551c192cd1bc2304d9746f1531f90570,eef539dae75592f639e9d160a9a557dacc679120,9d7447525e8c87f1814ceefff09a3920bc3c5442 patches=50e4e2c49c40c1ba91400a33aa2c7e5178a6c325,8bd69c0fe3b0398a9179011b97c55d31269112b8,8efbcf10d03c19923cf2aead5905a52ed289d69a,4419950a1518790da3654d7b3c6c0b0514c62bf3 runs=3 read=all -->\n<!-- workline:judged-lines gone=0 -->\n<!-- workline:judged {\"lens\":\"correctness\",\"where\":\"DomoticsCore\\u002dOTA/include/DomoticsCore/OTAWebUI.h:529\",\"at\":\"a4b69ff345fb40252f30153e65cfa3c3c4661156\",\"patch\":\"611aaac9cffdb7ec279daa7f6866f81f491fd643\",\"finding\":\"3d9f7c38cab8\",\"level\":\"model\",\"yes\":true,\"finder\":\"claude\\u002dsonnet\\u002d5\\u002d5\",\"judge\":\"claude\\u002dopus\\u002d5\\u002d5\",\"title\":\"Final chunk skipped after a refusal leaves the upload open\"} -->\n<!-- workline:judged {\"lens\":\"tests\",\"where\":\"DomoticsCore\\u002dOTA/include/DomoticsCore/OTAWebUI.h:532\",\"at\":\"a4b69ff345fb40252f30153e65cfa3c3c4661156\",\"patch\":\"611aaac9cffdb7ec279daa7f6866f81f491fd643\",\"finding\":\"58612de67c9a\",\"level\":\"model\",\"yes\":true,\"finder\":\"claude\\u002dsonnet\\u002d5\\u002d5\",\"judge\":\"claude\\u002dopus\\u002d5\\u002d5\",\"title\":\"The web upload handler change has no test\"} -->\n<!-- workline:judged {\"lens\":\"edge\\u002dcases\",\"where\":\"DomoticsCore\\u002dOTA/include/DomoticsCore/OTAWebUI.h:518\",\"at\":\"64337017f1dd884260b0903da480095147bddc90\",\"patch\":\"3f92512dc16c9c0adf702598c60bddaa42aaa438\",\"finding\":\"c6533cc63ee9\",\"level\":\"model\",\"yes\":true,\"finder\":\"claude\\u002dsonnet\\u002d5\\u002d5\",\"judge\":\"claude\\u002dopus\\u002d5\\u002d5\",\"title\":\"Refused begin leaves upload marked active\"} -->\n<!-- workline:judged {\"lens\":\"edge\\u002dcases\",\"where\":\"DomoticsCore\\u002dOTA/include/DomoticsCore/OTAWebUI.h:404\",\"at\":\"64337017f1dd884260b0903da480095147bddc90\",\"patch\":\"3f92512dc16c9c0adf702598c60bddaa42aaa438\",\"finding\":\"9bb22a00205f\",\"level\":\"model\",\"yes\":true,\"finder\":\"claude\\u002dsonnet\\u002d5\\u002d5\",\"judge\":\"claude\\u002dopus\\u002d5\\u002d5\",\"title\":\"Stale cached auth answer matched by reused request address\"} -->\n<!-- workline:judged {\"lens\":\"edge\\u002dcases\",\"where\":\"DomoticsCore\\u002dOTA/include/DomoticsCore/OTAWebUI.h:453\",\"at\":\"64337017f1dd884260b0903da480095147bddc90\",\"patch\":\"3f92512dc16c9c0adf702598c60bddaa42aaa438\",\"finding\":\"6cb72db22792\",\"level\":\"model\",\"yes\":true,\"finder\":\"claude\\u002dsonnet\\u002d5\\u002d5\",\"judge\":\"claude\\u002dopus\\u002d5\\u002d5\",\"title\":\"Unauthenticated request aborts a legitimate running upload\"} -->\n\n<!-- workline:sticky=reviewer/warn -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T08:09:53Z",
+     "id": "6625930333",
+     "bot": true
+    },
+    {
+     "body": "**The developer**, review round 3 of 5: its fix pushed, the project's tests green.\n\nAsked:\n\n- warns correctness `DomoticsCore-OTA/include/DomoticsCore/OTAWebUI.h:529`: Important: Final chunk skipped after a refusal leaves the upload open\n- warns tests `DomoticsCore-OTA/include/DomoticsCore/OTAWebUI.h:532`: Important: The web upload handler change has no test\n\nWhat it did:\n\n- Finding 1 (final chunk after a refusal leaves the upload open): the refusal branch in `OTAWebUI.h` already sets `uploadState.active = false`, so the disconnect handler no longer aborts the closed session or overwrites the error. The new handler test covers this: it checks that `abortUpload` is not called on disconnect and that the last error stays 'Firmware too large'.\n- Finding 2 (no test for the handler): I added `test_a_chunk_that_crosses_the_cap_keeps_its_reason_in_the_answer` to `test_ota_http.cpp`. It drives the upload handler with chunks that cross the cap, then sends further chunks and the final one. It asserts the JSON answer says 'Firmware too large' and never 'Upload not active', and that the session is closed. The full suite is green with this test passing. I did not check that it fails with the `rejected` line reverted. The wait command I started afterwards was stopped at its time limit; the test run itself had already finished and written its report.\n\n**Five whys**\n\n- **Problem:** the web upload handler's chunk-refusal change (`rejected`, `active=false`) had no test, so reverting it stayed green.\n1. Why was it untested? The only added test, `test_cap_exceeded`, calls `OTAComponent` directly, never `OTAWebUI`'s upload handler.\n2. Why only the component? The issue's Verification says \"built on the TEST-8 mocks\" and does not name the handler as the layer to drive.\n\n- **Root cause:** the Verification leaves open at which layer the answer is checked, and the frozen test chose the component.\n- **Action** (test): `test_ota_http` now drives the handler across the cap and checks the JSON answer and the disconnect.\n\nThe reviewer decides a finding is fixed.\n\n\n<!-- workline:sticky=developer/round -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T08:18:07Z",
+     "id": "6626082323",
+     "bot": true
+    },
+    {
+     "body": "**To merge with no person's yes, once its checks pass**: the project's merge policy is `normal`, and this is workline's own code: the developer's code for #3, a fix: its issue labelled `bug`. Opened and pushed by workline's App, every commit its own, and the line passed on its head (6433701), every agent's review whole. Its head's checks still run: the forge merges it once they pass, and one that fails holds it. To hold it, mark it a draft or turn auto-merge off. Reverted, workline's code merge requests wait for a person's yes again.\n\n<!-- workline:merge-alone=code -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T10:04:29Z",
+     "id": "6628028995",
+     "bot": true
+    },
+    {
+     "body": "**Held by 2 conversations on its lines not resolved**: its checks are green and auto-merge is on, but main requires every conversation resolved. The reviewer resolves its own once the code answers them; a person resolves the rest, or answers in them:\n\n- [DomoticsCore-OTA/include/DomoticsCore/OTAWebUI.h:532](https://github.com/JN0V/DomoticsCore-trial/pull/11#discussion_r4465160833) by workline-jn0v[bot]\n- [DomoticsCore-OTA/include/DomoticsCore/OTAWebUI.h:532](https://github.com/JN0V/DomoticsCore-trial/pull/11#discussion_r4465160849) by workline-jn0v[bot]\n\n<!-- workline:held-by-conversations=863d592/2 -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T14:50:32Z",
+     "id": "6633749959",
+     "bot": true
+    },
+    {
+     "body": "**workline took `workline:accepted` off**: 9d74475 (\"Merge branch 'main' into workline/developer/3\") was pushed after @JN0V accepted this merge request, on 2026-11-04T15:15:31Z. A yes covers the head it was given on, so its auto-merge is off. Put the label again to accept the head as it is now (9d74475).\n\n<!-- workline:merge-reset=9d7447525e8c87f1814ceefff09a3920bc3c5442 -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T15:21:23Z",
+     "id": "6634485174",
+     "bot": true
+    }
+   ],
+   "closed": true,
+   "merged": true,
+   "bot": true
+  },
+  {
+   "id": 10,
+   "branch": "workline/tester/issue-3",
+   "base": "main",
+   "title": "test: the acceptance tests of #3",
+   "body": "Refs #3\n\nThe acceptance tests of #3, written before the code: 2 new tests, red on the base. Whoever builds it pushes the code on this branch, and makes this pull request close the issue.\n\n## Tests\n\n| Scenario | Test |\n|---|---|\n| Cap exceeded | `DomoticsCore-OTA/test_ota_chunk_refusal.test_cap_exceeded` in `DomoticsCore-OTA/test/test_ota_chunk_refusal/test_ota_chunk_refusal.cpp` |\n",
+   "labels": [],
+   "comments": [
+    {
+     "body": "**The acceptance tests of #3, frozen**: the tester wrote them before the code, red on the base. Only the tester's own commit changes them: a test that does not fit, object on its line, the comment opened by `workline:objection` (the test, its scenario, the kind, why). Any other change to them blocks, `tester-test-changed`.\n\n| Test file | Blob |\n|---|---|\n| `DomoticsCore-OTA/test/test_ota_chunk_refusal/test_ota_chunk_refusal.cpp` | `913eca0` |\n\n<!-- workline:tester-record {\"issue\":3,\"base\":\"79b7b4a8833d490f9e8bdda39041045051c77962\",\"files\":{\"DomoticsCore-OTA/test/test_ota_chunk_refusal/test_ota_chunk_refusal.cpp\":\"913eca08f268e67f73d33818edffa84583b75ed6\"},\"scenarios\":[{\"name\":\"Cap exceeded\",\"text\":\"Given an upload announcing N bytes, When more than N bytes are delivered, Then the answer says `Firmware too large`, not `Upload not active`.\"}]} -->\n\n<!-- workline:sticky=tester/tests -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T08:01:31Z",
+     "id": "6625776870",
+     "bot": true
+    },
+    {
+     "body": "Closed by workline: #3 is closed: its tests have nothing left to merge here.\n\n<!-- workline:closed -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T15:29:36Z",
+     "id": "6634684642",
+     "bot": true
+    }
+   ],
+   "closed": true,
+   "merged": false,
+   "bot": true
+  }
+ ],
+ "dependencies": true,
+ "sub-issues": true,
+ "writes": 0
+}

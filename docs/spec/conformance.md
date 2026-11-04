@@ -1,5 +1,5 @@
 ---
-sources: [tests/conformance/runner_test.go, tests/evaluation]
+sources: [tests/conformance/runner_test.go, tests/evaluation, tests/simulator/sim_test.go]
 checked: 4eaa098f
 verified: agent:claude-code
 judged: ae14474
@@ -179,6 +179,29 @@ What else a case can give, run and expect, and how each is checked, is in
   `skip` calls are answered first, then `times` fail (all, without), and
   a call sooner than its `retry-after` is refused again. A fault no call
   met fails the case. A note posted counts in `posted`.
+
+## The line simulator
+
+A case runs one command on one snapshot; the simulator runs the line over
+time ([ADR-0063](../adr/0063-every-open-issue-is-due-waiting-or-done.md),
+step 1):
+
+- **In process**: `tests/simulator/` calls the line's reconcile K ticks in
+  a row, on the fake forge, its clock fixed by `WORKLINE_CLOCK`, with one
+  fake agent whose state lasts across the ticks (`hook:<name>`).
+- **Frozen traces**: `traces/*.json`, real issues exported read-only, as
+  the fake forge's file.
+- **Properties after each tick**: one state label at a time; a machine
+  error moves nothing; no person waited on while a retry is left; every
+  open issue has a status; never the same input twice, by the
+  simulator's own digest of what the agent received; the same tick twice
+  starts no second step. At the end: quiet within K ticks, an agent that
+  always progresses reaches Done, one byte of a body changed makes the
+  issue due. Each trace runs twice: the runs must match.
+- **`pending.txt`** names, per trace, the first property it breaks
+  today. A trace not named runs again under 200 seeded outcome scripts;
+  a seed's failure prints the seed and its shrunk script
+  (`SIM_SEED`, `SIM_SCRIPT`), and is never pending.
 
 ## Evaluation
 

@@ -1,0 +1,144 @@
+{
+ "issues": [
+  {
+   "id": 19,
+   "title": "LO-8: RemoteConsole nextClientId wraps after 4B connections",
+   "body": "Copied from https://github.com/JN0V/DomoticsCore/issues/163 for a trial of workline's line on this copy.\n\n| LO-8 | RC | `nextClientId` wraps after 4B connections |\n\nOpened from `docs/CODE-ROADMAP.md`, lines 6328 to 6328 by the product-owner role.\n\n<!-- workline:import=docs/CODE-ROADMAP.md:0b78948db2b0 -->\n\n## Need\n\nA person running a console on a device that stays up for years needs each connected client to keep its own id, so one client is never mixed up with another after the id counter wraps.\n\n## Verification\n\nA native test on RemoteConsoleComponent that sets the counter near UINT32_MAX and connects clients, then checks that ids stay unique among live clients and that none is 0. It can use the existing clientStateEntriesForTest() hook.\n\n## Validation\n\n- **Wrap keeps ids distinct:** Given the client id counter is set just below its 32-bit maximum and a client is still connected, When more clients connect so the counter wraps, Then every connected client has a different id.\n- **No zero id:** Given the counter is at its maximum, When the next client connects, Then its id is not 0.\n\n## Scope\n\nRemoteConsoleComponent client id counter: `nextClientId` (uint32_t) and its increment when a client is accepted in loop()\n\n## Assumptions\n\n- Assumption taken on 2026-11-04, the Need and Validation drafts unanswered after 5 min: written as the role drafted it, for a person to correct.",
+   "labels": [
+    "bug",
+    "workline:blocked"
+   ],
+   "comments": [
+    {
+     "body": "**workline's line** blocks this issue.\n\n- **Why**: the tester found no test possible, and the product owner's run picked no proof nor rewrote its text; the tester said: the RemoteConsole header, its native test stubs and the `clientStateEntriesForTest()` signature were not in the task, so no test can be written reliably. Both scenarios (Wrap keeps ids distinct, No zero id) need three things I cannot see: - a way to set `nextClientId`, which is private. No test hook for it is named in the Scope. - a way to make the native stubs accept a client connection inside `loop()`. - the shape of the `clientStateEntriesForTest()` entries, which is how a client's id is read back. Any test I wrote would guess these names, and could fail on a wrong guess instead of on the missing wrap and zero-id handling. That would not prove the scenarios. To unblock: name the hook that sets the counter (for example `setNextClientIdForTest(uint32_t)`), and add the header and an existing RemoteConsole native test to the task. Both scenarios can then be written as one test each.; its state was refine.\n- **Next**: the product owner reads it again when someone comments, its body changes or an issue it waits on closes, else in 7 days, and sends it back or says why it stays; a person may move it back by its label at any time, as the board's Blocked column shows.\n\n**workline's line** keeps this record while the issue is blocked, 3 state steps before; moved out of Blocked, its count starts again. Edited by the engine, not by hand.\n\n<!-- workline:line-record {\"state\":\"blocked\",\"body\":\"47d99d7107a2\",\"labeled\":\"2026-11-04T14:35:16Z\",\"hops\":3,\"spec\":\"8edd0b0d7829\",\"asked\":\"47d99d7107a2\",\"revise\":\"8edd0b0d7829\",\"from\":\"refine\",\"why\":\"the tester found no test possible, and the product owner's run picked no proof nor rewrote its text; the tester said: the RemoteConsole header, its native test stubs and the `clientStateEntriesForTest()` signature were not in the task, so no test can be written reliably. Both scenarios (Wrap keeps ids distinct, No zero id) need three things I cannot see: - a way to set `nextClientId`, which is private. No test hook for it is named in the Scope. - a way to make the native stubs accept a client connection inside `loop()`. - the shape of the `clientStateEntriesForTest()` entries, which is how a client's id is read back. Any test I wrote would guess these names, and could fail on a wrong guess instead of on the missing wrap and zero-id handling. That would not prove the scenarios. To unblock: name the hook that sets the counter (for example `setNextClientIdForTest(uint32_t)`), and add the header and an existing RemoteConsole native test to the task. Both scenarios can then be written as one test each.\",\"since\":\"2026-11-04T15:36:54Z\",\"given\":\"DomoticsCore-RemoteConsole/include/DomoticsCore/RemoteConsole.h\",\"ran\":\"2026-11-04T14:37:29Z\"} -->\n\n<!-- workline:sticky=line/state -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T13:21:37Z",
+     "id": "6631737014",
+     "bot": true
+    },
+    {
+     "body": "**The product owner**, on 2026-11-04:\n\n- Named the code #19 is about: DomoticsCore-RemoteConsole/include/DomoticsCore/RemoteConsole.h. DomoticsCore-RemoteConsole/include/DomoticsCore/RemoteConsole.h says `uint32_t clientId = nextClientId++;` — The issue is about the client id cou…\n- Labelled #19 `bug`, a bug: The code hands out ids with nextClientId++ and no guard. After the 32-bit counter wraps, an id can be 0 or equal to a live client's id, which breaks the one-record-per-client map. A test can show it. Wrong? Chang…\n- Added: —. Changed: Need (draft), Validation (draft). See the issue's edit history.\n- Moved #19 to ready, its Need and Validation taken as written after no answer, said under Assumptions: its drafts got no answer for 5 min (acts.ask.wait): taken as written, for a person to correct\n\n**The product owner** leaves this issue in refine, for a person.\n\n- **Why**: the tester found no test possible, and no proof was picked nor its text rewritten; the tester said: the RemoteConsole header, its native test stubs and the `clientStateEntriesForTest()` signature were not in the task, so no test can be written reliably. Both scenarios (Wrap keeps ids distinct, No zero id) need three things I cannot see: - a way to set `nextClientId`, which is private. No test hook for it is named in the Scope. - a way to make the native stubs accept a client connection inside `loop()`. - the shape of the `clientStateEntriesForTest()` entries, which is how a client's id is read back. Any test I wrote would guess these names, and could fail on a wrong guess instead of on the missing wrap and zero-id handling. That would not prove the scenarios. To unblock: name the hook that sets the counter (for example `setNextClientIdForTest(uint32_t)`), and add the header and an existing RemoteConsole native test to the task. Both scenarios can then be written as one test each.\n- **Next**: a person of the project names its proof in a comment, `proof: <kind> — why`, or edits its Validation so a test checks it; it does not go to its tests again as it stands.\n\n<!-- What workline knows of this issue, edited by the engine, not by hand.\n```yaml\nsources: [DomoticsCore-RemoteConsole/include/DomoticsCore/RemoteConsole.h]\nconfirmed: 831c6fc\njudged: dd00c9d\nbody: 47d99d7107a2\nsections:\n    Need: A person running a console on a device that stays up for years needs each connected client to keep its own id, so one client is never mixed up with another after the id counter wraps.\n    Scope: 'RemoteConsoleComponent client id counter: `nextClientId` (uint32_t) and its increment when a client is accepted in loop()'\nwrote:\n    Need: d5b04811c751\n    Validation: 23a80e3e8305\ndid:\n    - act: sources\n      level: normal\n      day: \"2026-11-04\"\n      at: dd00c9d\n      model: claude:claude-sonnet-5-5\n      body: 327db8a203cd\n      line: 'Named the code #19 is about: DomoticsCore-RemoteConsole/include/DomoticsCore/RemoteConsole.h. DomoticsCore-RemoteConsole/include/DomoticsCore/RemoteConsole.h says `uint32_t clientId = nextClientId++;` — The issue is about the client id cou…'\n    - act: kind\n      level: normal\n      day: \"2026-11-04\"\n      at: dd00c9d\n      model: claude:claude-sonnet-5-5\n      body: 327db8a203cd\n      line: 'Labelled #19 `bug`, a bug: The code hands out ids with nextClientId++ and no guard. After the 32-bit counter wraps, an id can be 0 or equal to a live client''s id, which breaks the one-record-per-client map. A test can show it. Wrong? Chang…'\n    - act: refine\n      level: normal\n      day: \"2026-11-04\"\n      at: dd00c9d\n      model: claude:claude-sonnet-5-5\n      body: 327db8a203cd\n      line: 'Added: —. Changed: Need (draft), Validation (draft). See the issue''s edit history.'\n    - act: ready\n      level: normal\n      day: \"2026-11-04\"\n      at: dd00c9d\n      body: f315e01fc444\n      line: 'Moved #19 to ready, its Need and Validation taken as written after no answer, said under Assumptions: its drafts got no answer for 5 min (acts.ask.wait): taken as written, for a person to correct'\nheard: 0\nrules: 2\nno-test: 5610c6b5feb3\nsilent: 'the tester found no test possible, and no proof was picked nor its text rewritten; the tester said: the RemoteConsole header, its native test stubs and the `clientStateEntriesForTest()` signature were not in the task, so no test can be written reliably. Both scenarios (Wrap keeps ids distinct, No zero id) need three things I cannot see: - a way to set `nextClientId`, which is private. No test hook for it is named in the Scope. - a way to make the native stubs accept a client connection inside `loop()`. - the shape of the `clientStateEntriesForTest()` entries, which is how a client''s id is read back. Any test I wrote would guess these names, and could fail on a wrong guess instead of on the missing wrap and zero-id handling. That would not prove the scenarios. To unblock: name the hook that sets the counter (for example `setNextClientIdForTest(uint32_t)`), and add the header and an existing RemoteConsole native test to the task. Both scenarios can then be written as one test each.'\nunread: 327db8a203cd\nassumed-at: \"2026-11-04T14:34:10Z\"\nkind: bug\n```\n-->\n\n<!-- workline:sticky=product-owner/state -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T14:24:17Z",
+     "id": "6633137680",
+     "bot": true
+    },
+    {
+     "body": "**workline reviewer**, its spec — 1 findings on the spec; lenses: ambiguous, unverifiable, out-of-scope, contradicted; tokens: 8666 in, 1813 out (4 calls), of 300000 a run (ai-max-tokens).\n\nNo important finding open: the product owner may move it to ready.\n\n| | | Where | Finding |\n|---|---|---|---|\n| warns | ambiguous | `#19:20` | Nit: Subject of the 'zero id' check is unclear — 'The counter is at its maximum' leaves open whether the next client gets UINT32_MAX or whether the counter wraps to 0 first. The expected id after the maximum is not stated. Fix: State which id the client at the maximum gets and which one follows it. |\n| warns | finding-judged-no |  | dropped, from the ambiguous lens: \"Unique id on wrap is not specified\" at #19:11 — the judge: the finding itself says only the first reading passes 'Wrap keeps ids distinct', and the Need ('so one client is never mixed up with another') rules out the free wrap, so the spec settles which reading to build. (independence: model (claude-sonnet-5-5 → claude-opus-5-5)) |\n| warns | finding-judged-no |  | dropped, from the unverifiable lens: \"Test hook cannot read client ids or set the counter\" at #19:15 — the judge: the Verification names a native test that 'checks that ids stay unique among live clients and that none is 0', which would fail were the Need unmet; the count-only clientStateEntriesForTest() hook is offered only as 'can use', so it shows a missing hook, not a check unable to detect failure. (independence: model (claude-sonnet-5-5 → claude-opus-5-5)) |\n| warns | finding-judged-no |  | dropped, from the out-of-scope lens: \"Scope excludes the test hooks the Verification needs\" at #19:24 — the judge: the finding compares the Scope with the Verification, not with the Need, and the Need ('each connected client to keep its own id') is covered by the Scope's 'nextClientId ... and its increment'; the Verification also says it 'can use the existing clientStateEntriesForTest() hook', so its claim that new hooks are needed is only a guess. (independence: model (claude-sonnet-5-5 → claude-opus-5-5)) |\n\nThe reviewer never edits the issue nor moves it: the product owner answers, a person decides.\n\n<!-- workline:spec-review body=47d99d7107a2 round=1 open=0 in= -->\n\n<!-- workline:sticky=reviewer/spec -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T14:26:20Z",
+     "id": "6633186212",
+     "bot": true
+    },
+    {
+     "body": "**The tester** finds no test possible for this issue.\n\n- **Why**: the RemoteConsole header, its native test stubs and the `clientStateEntriesForTest()` signature were not in the task, so no test can be written reliably.\n\nBoth scenarios (Wrap keeps ids distinct, No zero id) need three things I cannot see:\n- a way to set `nextClientId`, which is private. No test hook for it is named in the Scope.\n- a way to make the native stubs accept a client connection inside `loop()`.\n- the shape of the `clientStateEntriesForTest()` entries, which is how a client's id is read back.\n\nAny test I wrote would guess these names, and could fail on a wrong guess instead of on the missing wrap and zero-id handling. That would not prove the scenarios.\n\nTo unblock: name the hook that sets the counter (for example `setNextClientIdForTest(uint32_t)`), and add the header and an existing RemoteConsole native test to the task. Both scenarios can then be written as one test each.\n- **Next**: back to the product owner (refine): it picks a proof kind, or rewrites the scenarios; a person of the project may name one in a comment, `proof: <kind> — why`.\n\n<!-- workline:tester-proof {\"kind\":\"none\",\"reason\":\"the RemoteConsole header, its native test stubs and the `clientStateEntriesForTest()` signature were not in the task, so no test can be written reliably.\\n\\nBoth scenarios (Wrap keeps ids distinct, No zero id) need three things I cannot see:\\n- a way to set `nextClientId`, which is private. No test hook for it is named in the Scope.\\n- a way to make the native stubs accept a client connection inside `loop()`.\\n- the shape of the `clientStateEntriesForTest()` entries, which is how a client's id is read back.\\n\\nAny test I wrote would guess these names, and could fail on a wrong guess instead of on the missing wrap and zero-id handling. That would not prove the scenarios.\\n\\nTo unblock: name the hook that sets the counter (for example `setNextClientIdForTest(uint32_t)`), and add the header and an existing RemoteConsole native test to the task. Both scenarios can then be written as one test each.\",\"body\":\"47d99d7107a2\"} -->\n\n<!-- workline:sticky=tester/issue -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T14:35:19Z",
+     "id": "6633395257",
+     "bot": true
+    }
+   ],
+   "author": "JN0V",
+   "insider": true,
+   "label-events": [
+    {
+     "label": "workline:to-refine",
+     "added": true,
+     "author": "JN0V",
+     "created": "2026-11-04T13:20:17Z",
+     "insider": true,
+     "writer": true
+    },
+    {
+     "label": "bug",
+     "added": true,
+     "author": "workline-bot",
+     "created": "2026-11-04T14:24:07Z",
+     "bot": true
+    },
+    {
+     "label": "workline:draft",
+     "added": true,
+     "author": "workline-bot",
+     "created": "2026-11-04T14:24:12Z",
+     "bot": true
+    },
+    {
+     "label": "workline:proposed",
+     "added": true,
+     "author": "workline-bot",
+     "created": "2026-11-04T14:24:19Z",
+     "bot": true
+    },
+    {
+     "label": "workline:needs-tests",
+     "added": true,
+     "author": "workline-bot",
+     "created": "2026-11-04T14:34:11Z",
+     "bot": true
+    },
+    {
+     "label": "workline:to-refine",
+     "added": false,
+     "author": "workline-bot",
+     "created": "2026-11-04T14:34:13Z",
+     "bot": true
+    },
+    {
+     "label": "workline:draft",
+     "added": false,
+     "author": "workline-bot",
+     "created": "2026-11-04T14:34:14Z",
+     "bot": true
+    },
+    {
+     "label": "workline:proposed",
+     "added": false,
+     "author": "workline-bot",
+     "created": "2026-11-04T14:34:15Z",
+     "bot": true
+    },
+    {
+     "label": "workline:to-refine",
+     "added": true,
+     "author": "workline-bot",
+     "created": "2026-11-04T14:35:16Z",
+     "bot": true
+    },
+    {
+     "label": "workline:needs-tests",
+     "added": false,
+     "author": "workline-bot",
+     "created": "2026-11-04T14:35:17Z",
+     "bot": true
+    },
+    {
+     "label": "workline:blocked",
+     "added": true,
+     "author": "workline-bot",
+     "created": "2026-11-04T15:37:10Z",
+     "bot": true
+    },
+    {
+     "label": "workline:to-refine",
+     "added": false,
+     "author": "workline-bot",
+     "created": "2026-11-04T15:37:12Z",
+     "bot": true
+    }
+   ],
+   "labeled": {
+    "workline:to-refine": "2026-11-04T14:35:16Z",
+    "bug": "2026-11-04T14:24:07Z",
+    "workline:draft": "2026-11-04T14:24:12Z",
+    "workline:proposed": "2026-11-04T14:24:19Z",
+    "workline:needs-tests": "2026-11-04T14:34:11Z",
+    "workline:blocked": "2026-11-04T15:37:10Z"
+   }
+  }
+ ],
+ "merge-requests": [],
+ "dependencies": true,
+ "sub-issues": true,
+ "writes": 0
+}

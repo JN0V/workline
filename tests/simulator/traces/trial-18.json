@@ -1,0 +1,222 @@
+{
+ "issues": [
+  {
+   "id": 18,
+   "title": "LO-4: EventBus nextId overflow after 4B cycles",
+   "body": "Copied from https://github.com/JN0V/DomoticsCore/issues/160 for a trial of workline's line on this copy.\n\nThe event bus gives each subscription a 32-bit number from a counter. After about 4 billion subscribe calls the counter wraps and numbers repeat. This is theoretical, but a repeated number could make `unsubscribe` remove the wrong handler. It hurts long-running devices that subscribe and unsubscribe often.\n\n<details><summary>For the builder</summary>The counter is `nextId` in `DomoticsCore-Core/include/DomoticsCore/EventBus.h`. `reset()` sets it back to 1. The log callbacks in `Logger.h` use their own 8-bit counter.</details>\n\nOpened from `docs/CODE-ROADMAP.md`, lines 6324 to 6324 by the product-owner role.\n\n<!-- workline:import=docs/CODE-ROADMAP.md:5a2e093472cf -->\n\n## Need\n\nAs an owner of a device that runs for years, I want subscription numbers never to repeat, so that removing one handler cannot remove another.\n\n## Validation\n\n- **Wrap:** Given an event bus whose counter is near its limit, When a handler subscribes and then unsubscribes, Then only that handler is removed.\n- **Normal use:** Given a fresh bus, When handlers subscribe, Then each gets its own number.\n\n---\n\n## Verification\n\n- A test sets the counter near the limit in the Core event bus tests (`test_eventbus`). It proves that numbers stay unique across the wrap, or that the wrap is refused.\n\n## Scope\n\nThe `nextId` counter and the subscribe and unsubscribe functions in `DomoticsCore-Core/include/DomoticsCore/EventBus.h`.",
+   "labels": [
+    "bug"
+   ],
+   "comments": [
+    {
+     "body": "**The product owner**, on 2026-11-04:\n\n- Named the code #18 is about: DomoticsCore-Core/include/DomoticsCore/EventBus.h. DomoticsCore-Core/include/DomoticsCore/EventBus.h says `uint32_t id = nextId++;` — The subscription counter nextId and the subscribe and unsubscribe functions …\n- Labelled #18 `bug`, a bug: Subscription numbers repeat after the counter wraps, so unsubscribe could remove another handler. That breaks the contract of unsubscribe, and a test that sets the counter near its limit can show it. Wrong? Chang…\n- Moved #18 to ready: the reviewer read its spec (round 1): no important finding open\n\n<!-- What workline knows of this issue, edited by the engine, not by hand.\n```yaml\nsources: [DomoticsCore-Core/include/DomoticsCore/EventBus.h]\nconfirmed: 831c6fc\nbody: 18973aa34fbe\nsections:\n    Need: As an owner of a device that runs for years, I want subscription numbers never to repeat, so that removing one handler cannot remove another.\n    Scope: The `nextId` counter and the subscribe and unsubscribe functions in `DomoticsCore-Core/include/DomoticsCore/EventBus.h`.\ndone:\n    - act: ready\n      level: normal\ndid:\n    - act: sources\n      level: normal\n      day: \"2026-11-04\"\n      at: 831c6fc\n      model: claude:claude-sonnet-5-5\n      body: 18973aa34fbe\n      line: 'Named the code #18 is about: DomoticsCore-Core/include/DomoticsCore/EventBus.h. DomoticsCore-Core/include/DomoticsCore/EventBus.h says `uint32_t id = nextId++;` — The subscription counter nextId and the subscribe and unsubscribe functions …'\n    - act: kind\n      level: normal\n      day: \"2026-11-04\"\n      at: 831c6fc\n      model: claude:claude-sonnet-5-5\n      body: 18973aa34fbe\n      line: 'Labelled #18 `bug`, a bug: Subscription numbers repeat after the counter wraps, so unsubscribe could remove another handler. That breaks the contract of unsubscribe, and a test that sets the counter near its limit can show it. Wrong? Chang…'\n    - act: ready\n      level: normal\n      day: \"2026-11-04\"\n      at: 831c6fc\n      model: claude:claude-sonnet-5-5\n      body: 18973aa34fbe\n      line: 'Moved #18 to ready: the reviewer read its spec (round 1): no important finding open'\nheard: 0\nrules: 2\nkind: bug\n```\n-->\n\n<!-- workline:sticky=product-owner/state -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T13:21:24Z",
+     "id": "6631732329",
+     "bot": true
+    },
+    {
+     "body": "**workline reviewer**, its spec — 2 findings on the spec, 1 question for a person; lenses: ambiguous, unverifiable, out-of-scope, contradicted; tokens: 13073 in, 1620 out (2 calls), of 300000 a run (ai-max-tokens).\n\nNo important finding open: the product owner may move it to ready.\n\n| | | Where | Finding |\n|---|---|---|---|\n| warns | out-of-scope | `#18:28` | Nit: Test file outside Scope — The Verification needs a change to the test_eventbus tests. The Scope names only EventBus.h, so the builder is not allowed to touch the test file. Fix: Add the test_eventbus file to the Scope. (also found on this line — ambiguous: Subscribe functions not told apart) |\n| warns | out-of-scope | `#18:5` | Nit: reset not in Scope but touches the counter — Any fix that changes the counter's type or adds used-id tracking must also change reset(), which has the contract to match a fresh instance. The Scope lists nextId, subscribe and unsubscribe but not reset. The EventBus constructor is not listed either. Fix: Add reset() and the constructor to the Scope. (shows at DomoticsCore-Core/include/DomoticsCore/EventBus.h) |\n| warns | finding-judged-no |  | dropped, from the unverifiable lens: \"Test cannot set the counter\" at #18:24 — the judge: the Verification names a test in `test_eventbus` that 'proves that numbers stay unique across the wrap, or that the wrap is refused', and it would fail if numbers repeated; the finding only argues the counter is hard to reach, and the Scope covers 'The `nextId` counter' in EventBus.h, so a hook is allowed. (independence: model (claude-sonnet-5-5 → claude-opus-5-5)) |\n\n**Questions for a person**\n\nNot defects, not judged: choices the spec leaves to a person; a reply here is enough, they hold nothing.\n\n- `#18:24` (ambiguous): When the counter reaches its limit, should subscribe widen the counter or skip numbers still in use so it keeps working, or refuse and return 0, which callers already read as an empty handler? On: “It proves that numbers stay unique across the wrap, or that the wrap is refused.”\n\nThe reviewer never edits the issue nor moves it: the product owner answers, a person decides.\n\n<!-- workline:spec-review body=18973aa34fbe round=1 open=0 in= -->\n\n<!-- workline:sticky=reviewer/spec -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T13:21:26Z",
+     "id": "6631732867",
+     "bot": true
+    },
+    {
+     "body": "**workline's line** last woke the developer on this issue, in its state ready (3 state steps so far). Edited by the engine, not by hand.\n\n<!-- workline:line-record {\"state\":\"ready\",\"body\":\"18973aa34fbe\",\"labeled\":\"2026-11-04T13:31:18Z\",\"hops\":3,\"woke\":\"2026-11-04T13:31:36Z\",\"ran\":\"2026-11-04T13:31:36Z\"} -->\n\n<!-- workline:sticky=line/state -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T13:21:26Z",
+     "id": "6631733242",
+     "bot": true
+    },
+    {
+     "body": "**The tester** wrote the acceptance tests of this issue, as a Draft.\n\n- **Why**: each of its 2 scenarios has its test in the Draft's Tests table, or its reason under Not tested (1, for a real try), the tests red on the base and passing the project's lint.\n- **Next**: it is ready: whoever builds it starts from the Draft, workline/tester/issue-18.\n\n\n<!-- workline:sticky=tester/issue -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T13:31:20Z",
+     "id": "6631949449",
+     "bot": true
+    },
+    {
+     "body": "**The developer** takes this issue: the first ready one nobody took, in the backlog's order. `workline:developing` says so; a person who takes it back removes the label, or assigns themselves.\n\nIts code on the project's tests:\n\n- `tools/workline-tests.sh {report}`: 1349 tests passed, none red.\n- The whole suite: no file it touches lies in a folder holding tests (the developer's `proof-command`, with `{packages}`, runs the touched folders alone).\n- Run on a fresh checkout of 82a7d80, its code laid on it: not its agent's worktree.\n\n<!-- workline:developer-act {\"act\":\"pick\",\"at\":\"01ad4df91e3ee23aa7c25b485cf6ad09d2c39822\",\"issue\":18,\"proof\":{\"result\":\"green\",\"command\":\"tools/workline-tests.sh {report}\",\"passed\":1349,\"tree\":\"fresh\",\"at\":\"82a7d80c13dd8d5b8533050fed8ed2daaf962f0f\",\"scope\":\"whole\",\"whole\":\"no file it touches lies in a folder holding tests\"},\"turns\":8,\"tokens\":14766,\"cached\":118997,\"tools\":{\"Bash\":7},\"from\":\"82a7d80c13dd8d5b8533050fed8ed2daaf962f0f\",\"acceptance\":[\"DomoticsCore-Core/test/test_eventbus_id_wrap/test_eventbus_id_wrap.cpp\"],\"code\":[\"DomoticsCore-Core/include/DomoticsCore/EventBus.h\"]} -->\n\n\n<!-- workline:sticky=developer/claim -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T13:39:53Z",
+     "id": "6632132789",
+     "bot": true
+    }
+   ],
+   "author": "JN0V",
+   "insider": true,
+   "label-events": [
+    {
+     "label": "workline:to-refine",
+     "added": true,
+     "author": "JN0V",
+     "created": "2026-11-04T13:20:15Z",
+     "insider": true,
+     "writer": true
+    },
+    {
+     "label": "bug",
+     "added": true,
+     "author": "workline-bot",
+     "created": "2026-11-04T13:22:39Z",
+     "bot": true
+    },
+    {
+     "label": "workline:needs-tests",
+     "added": true,
+     "author": "workline-bot",
+     "created": "2026-11-04T13:22:42Z",
+     "bot": true
+    },
+    {
+     "label": "workline:to-refine",
+     "added": false,
+     "author": "workline-bot",
+     "created": "2026-11-04T13:22:43Z",
+     "bot": true
+    },
+    {
+     "label": "workline:ready",
+     "added": true,
+     "author": "workline-bot",
+     "created": "2026-11-04T13:31:18Z",
+     "bot": true
+    },
+    {
+     "label": "workline:needs-tests",
+     "added": false,
+     "author": "workline-bot",
+     "created": "2026-11-04T13:31:19Z",
+     "bot": true
+    },
+    {
+     "label": "workline:developing",
+     "added": true,
+     "author": "workline-bot",
+     "created": "2026-11-04T13:39:51Z",
+     "bot": true
+    },
+    {
+     "label": "workline:ready",
+     "added": false,
+     "author": "workline-bot",
+     "created": "2026-11-04T14:41:24Z",
+     "bot": true
+    },
+    {
+     "label": "workline:developing",
+     "added": false,
+     "author": "workline-bot",
+     "created": "2026-11-04T15:30:17Z",
+     "bot": true
+    }
+   ],
+   "labeled": {
+    "workline:to-refine": "2026-11-04T13:20:15Z",
+    "bug": "2026-11-04T13:22:39Z",
+    "workline:needs-tests": "2026-11-04T13:22:42Z",
+    "workline:ready": "2026-11-04T13:31:18Z",
+    "workline:developing": "2026-11-04T13:39:51Z"
+   },
+   "closed": true,
+   "reason": "completed"
+  }
+ ],
+ "merge-requests": [
+  {
+   "id": 25,
+   "branch": "workline/developer/18",
+   "base": "main",
+   "title": "fix(domoticscore): eventBus nextId overflow after 4B cycles",
+   "body": "Closes #18\n\nThe developer's code for #18, proven on the project's tests.\n\n## Changes\n\n- Code: `DomoticsCore-Core/include/DomoticsCore/EventBus.h`.\n- The tester's acceptance tests, read-only to the developer, from `workline/tester/issue-18`: `DomoticsCore-Core/test/test_eventbus_id_wrap/test_eventbus_id_wrap.cpp`.\n\n## Verification\n\n- Its agent ran with the rights of the CI job; the forge's guards decide what merges.\n- `tools/workline-tests.sh {report}`: 1349 tests passed, none red.\n- The whole suite: no file it touches lies in a folder holding tests (the developer's `proof-command`, with `{packages}`, runs the touched folders alone).\n- Run on a fresh checkout of 82a7d80, its code laid on it: not its agent's worktree.\n\n## Tried\n\n- Its code on the project's tests, on a fresh checkout, before this opened: above.\n- Not tried: the commands the issue names to verify it, nor a person's use of it.\n",
+   "labels": [
+    "workline:accepted"
+   ],
+   "comments": [
+    {
+     "body": "**The developer**'s record of this pull request, for its next runs and the auditor.\n\n- Review round 1: 1 asked, no fix.\n- Review round 2: 1 asked, its fix pushed, the tests green.\n- Review round 3: 1 asked, no fix.\n- Review round 4: 1 asked, its fix pushed, the tests green.\n\n<!-- workline:developer-act {\"act\":\"code\",\"at\":\"01ad4df91e3ee23aa7c25b485cf6ad09d2c39822\",\"issue\":18,\"proof\":{\"result\":\"green\",\"command\":\"tools/workline-tests.sh {report}\",\"passed\":1353,\"tree\":\"fresh\",\"at\":\"50d2a496c0001be11bbfa49db2b7acf8de4abdec\",\"scope\":\"whole\",\"whole\":\"no file it touches lies in a folder holding tests\"},\"turns\":8,\"tokens\":14766,\"cached\":118997,\"tools\":{\"Bash\":7},\"from\":\"cfbd2a4038ee86b4c87ed42a98dc4172197f9e2d\",\"acceptance\":[\"DomoticsCore-Core/test/test_eventbus_id_wrap/test_eventbus_id_wrap.cpp\"],\"code\":[\"DomoticsCore-Core/include/DomoticsCore/EventBus.h\"],\"round\":4,\"review-runs\":2,\"review-at\":\"50d2a496c0001be11bbfa49db2b7acf8de4abdec\",\"seen\":[\"internal-code|DomoticsCore-Core/test/test_eventbus_id_wrap/test_eventbus_id_wrap.cpp|\\\"LO-4\\\" means nothing to a reader of the code: say what it refers to\",\"tester|DomoticsCore-Core/test/test_eventbus_id_wrap/test_eventbus_id_wrap.cpp|fc0d75c05d9f09308afeff3b7b1e4945f5a34120\",\"tests|DomoticsCore-Core/test/test_eventbus_id_wrap/test_eventbus_id_wrap.cpp|Test does not prove ids stay unique across the wrap\",\"tester|DomoticsCore-Core/test/test_eventbus_id_wrap/test_eventbus_id_wrap.cpp|67f731d66358b550df2c5c030a3558956ce1ee12\"],\"rounds\":[{\"n\":1,\"asked\":[\"blocks internal-code `DomoticsCore-Core/test/test_eventbus_id_wrap/test_eventbus_id_wrap.cpp:1`: \\\"LO-4\\\" means nothing to a reader of the code: say what it refers to\"],\"result\":\"no-code\",\"bounds\":\"objected\"},{\"n\":2,\"asked\":[\"the tester rewrote `DomoticsCore-Core/test/test_eventbus_id_wrap/test_eventbus_id_wrap.cpp` on an objection, on its Draft: taken into this branch\"],\"result\":\"green\",\"turns\":9,\"tokens\":14673,\"cached\":142445,\"tools\":{\"Bash\":8}},{\"n\":3,\"asked\":[\"warns tests `DomoticsCore-Core/test/test_eventbus_id_wrap/test_eventbus_id_wrap.cpp:51`: Important: Test does not prove ids stay unique across the wrap\"],\"result\":\"no-code\",\"bounds\":\"objected\"},{\"n\":4,\"asked\":[\"the tester rewrote `DomoticsCore-Core/test/test_eventbus_id_wrap/test_eventbus_id_wrap.cpp` on an objection, on its Draft: taken into this branch\"],\"result\":\"green\",\"turns\":9,\"tokens\":14763,\"cached\":148197,\"tools\":{\"Bash\":8}}],\"widen\":{\"at\":\"b7e92dfdffd3e243cc433399a69c6b9dfd3c0670\",\"scope\":\"7c9b07b88932\",\"draft\":21}} -->\n\n\n<!-- workline:sticky=developer/code -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T13:39:58Z",
+     "id": "6632134616",
+     "bot": true
+    },
+    {
+     "body": "**The developer's bounds** on this pull request, read at the base's 09d245d: 2 files changed since it, each within the bounds of #18.\n\n<!-- workline:developer-act {\"act\":\"bounds\",\"issue\":18,\"base\":\"09d245d1bc77048939091004948d6b4939b4bf53\",\"head\":\"4433bcd3cbffbfec4be0ab3040bdad2c76950a96\",\"files\":2,\"refused\":[]} -->\n\n<!-- workline:sticky=developer/bounds -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T13:40:38Z",
+     "id": "6632149170",
+     "bot": true
+    },
+    {
+     "body": "**workline reviewer** — no code changed since the last review (only the base's code, merged in and reviewed there, files moved unchanged, or files the reviewer leaves): nobody asked, the 1 new commits recorded.\n\nThe lenses that warn read apart, and post in their own comment: they never hold the verdict.\n<!-- workline:warn-apart -->\n\nNo finding on the commits reviewed.\n\nThe reviewer never approves and never changes the code: the author fixes what blocks, a person merges.\n\n<!-- workline:at head=4433bcd3cbffbfec4be0ab3040bdad2c76950a96 run=41856756543 -->\n<!-- workline:record reviewed=b7e92dfdffd3e243cc433399a69c6b9dfd3c0670,2c80b1287cf2a14590d7f6a7e261a70ff570aa25,82a7d80c13dd8d5b8533050fed8ed2daaf962f0f,50d2a496c0001be11bbfa49db2b7acf8de4abdec,e8a001dc404580a5f889cdeba32313e706d8df7e,4433bcd3cbffbfec4be0ab3040bdad2c76950a96 patches=04caea737ca820fe635086cd599b2697c3567be2,279449f92e9a482509c68ff9e4669728843550f4,73ef413a904323fa9822051c9063b1997be1993e,149df65833eeaf01e8f65f1220cb8e3a07b9f173 runs=2 read=all -->\n<!-- workline:judged-lines gone=0 -->\n\n<!-- workline:sticky=reviewer/summary -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T13:41:15Z",
+     "id": "6632162120",
+     "bot": true
+    },
+    {
+     "body": "**The developer**, review round 4 of 5: its fix pushed, the project's tests green.\n\nAsked:\n\n- the tester rewrote `DomoticsCore-Core/test/test_eventbus_id_wrap/test_eventbus_id_wrap.cpp` on an objection, on its Draft: taken into this branch\n\n\nIts agent's closing words could not be read as YAML: nothing of them was applied. As they came:\n\n~~~\nNothing left to change: the rewritten test already passes on the current code, so I'm giving the final answer now.\n\n```\n[]\n```\n~~~\n\nThe reviewer decides a finding is fixed.\n\n\n<!-- workline:sticky=developer/round -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T14:19:45Z",
+     "id": "6633033839",
+     "bot": true
+    },
+    {
+     "body": "**workline reviewer, the lenses that warn** — no code changed since the last review (only the base's code, merged in and reviewed there, files moved unchanged, or files the reviewer leaves): nobody asked, the 1 new commits recorded.\n\nThey read apart from the verdict, which never waits for them: what they find warns, posted here once they answered, maybe after the verdict was given.\n\nNo finding on the commits reviewed.\n\nThe reviewer never approves and never changes the code: the author fixes what blocks, a person merges.\n\n<!-- workline:at head=4433bcd3cbffbfec4be0ab3040bdad2c76950a96 run=41856756204 -->\n<!-- workline:record reviewed=b7e92dfdffd3e243cc433399a69c6b9dfd3c0670,2c80b1287cf2a14590d7f6a7e261a70ff570aa25,82a7d80c13dd8d5b8533050fed8ed2daaf962f0f,50d2a496c0001be11bbfa49db2b7acf8de4abdec,e8a001dc404580a5f889cdeba32313e706d8df7e,4433bcd3cbffbfec4be0ab3040bdad2c76950a96 patches=04caea737ca820fe635086cd599b2697c3567be2,279449f92e9a482509c68ff9e4669728843550f4,73ef413a904323fa9822051c9063b1997be1993e,149df65833eeaf01e8f65f1220cb8e3a07b9f173 runs=2 read=all -->\n<!-- workline:judged-lines gone=0 -->\n<!-- workline:judged {\"lens\":\"tests\",\"where\":\"DomoticsCore\\u002dCore/test/test_eventbus_id_wrap/test_eventbus_id_wrap.cpp:51\",\"at\":\"b7e92dfdffd3e243cc433399a69c6b9dfd3c0670\",\"patch\":\"4b3fc07d45f68c60ef49f7545ac685d271388f56\",\"finding\":\"efd3ef0c1f96\",\"level\":\"model\",\"yes\":true,\"finder\":\"claude\\u002dsonnet\\u002d5\\u002d5\",\"judge\":\"claude\\u002dopus\\u002d5\\u002d5\",\"title\":\"Test does not prove ids stay unique across the wrap\"} -->\n<!-- workline:judged {\"lens\":\"edge\\u002dcases\",\"where\":\"DomoticsCore\\u002dCore/include/DomoticsCore/EventBus.h:453\",\"at\":\"b7e92dfdffd3e243cc433399a69c6b9dfd3c0670\",\"patch\":\"279449f92e9a482509c68ff9e4669728843550f4\",\"finding\":\"6760f3c56341\",\"why\":\"the finding itself admits all 2^32\\u002d1 ids can never be live at once, since each id holds a stored Subscription with a std::function handler ('push_back({id, owner, std::move(handler)})'), so the endles…\",\"yes\":false,\"finder\":\"claude\\u002dsonnet\\u002d5\\u002d5\",\"judge\":\"claude\\u002dopus\\u002d5\\u002d5\",\"title\":\"allocateId loops forever when every id is in use\"} -->\n\n<!-- workline:sticky=reviewer/warn -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T14:40:15Z",
+     "id": "6633512102",
+     "bot": true
+    }
+   ],
+   "closed": true,
+   "merged": true,
+   "bot": true
+  },
+  {
+   "id": 21,
+   "branch": "workline/tester/issue-18",
+   "base": "main",
+   "title": "test: the acceptance tests of #18",
+   "body": "Refs #18\n\nThe acceptance tests of #18, written before the code: 2 new tests, red on the base. Whoever builds it pushes the code on this branch, and makes this pull request close the issue.\n\n## Tests\n\n| Scenario | Test |\n|---|---|\n| Wrap | `DomoticsCore-Core/test_eventbus_id_wrap.native:test_eventbus_id_wrap`, `DomoticsCore-Core/test_eventbus_id_wrap.test_wrap` in `DomoticsCore-Core/test/test_eventbus_id_wrap/test_eventbus_id_wrap.cpp` |\n\n**Not tested**, no test can check it:\n\n- Normal use: Normal use: kept as today: the existing suite guards it.\n",
+   "labels": [],
+   "comments": [
+    {
+     "body": "**The acceptance tests of #18, frozen**: the tester wrote them before the code, red on the base. Only the tester's own commit changes them: a test that does not fit, object on its line, the comment opened by `workline:objection` (the test, its scenario, the kind, why). Any other change to them blocks, `tester-test-changed`.\n\n| Test file | Blob |\n|---|---|\n| `DomoticsCore-Core/test/test_eventbus_id_wrap/test_eventbus_id_wrap.cpp` | `67f731d` |\n\n<!-- workline:tester-record {\"issue\":18,\"base\":\"831c6fcf81d0dc9ac38075fc565dee407bf72c75\",\"files\":{\"DomoticsCore-Core/test/test_eventbus_id_wrap/test_eventbus_id_wrap.cpp\":\"67f731d66358b550df2c5c030a3558956ce1ee12\"},\"scenarios\":[{\"name\":\"Wrap\",\"text\":\"Given an event bus whose counter is near its limit, When a handler subscribes and then unsubscribes, Then only that handler is removed.\"},{\"name\":\"Normal use\",\"text\":\"Given a fresh bus, When handlers subscribe, Then each gets its own number.\"}]} -->\n\n<!-- workline:sticky=tester/tests -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T13:31:25Z",
+     "id": "6631951154",
+     "bot": true
+    },
+    {
+     "body": "**workline reviewer** — the rules found what the author must fix first; the review follows once they pass.\n\nThe lenses that warn read apart, and post in their own comment: they never hold the verdict.\n<!-- workline:warn-apart -->\n\n**On their lines**: 1 comment, in [the review](https://github.com/JN0V/DomoticsCore-trial/pull/21#pullrequestreview-5769185962) (1 posted now). What blocks stands until a commit fixes it; what warns asks nothing.\n\n| | | Where | Finding |\n|---|---|---|---|\n| **blocks** | internal-code | `DomoticsCore-Core/test/test_eventbus_id_wrap/test_eventbus_id_wrap.cpp:1` | \"LO-4\" means nothing to a reader of the code: say what it refers to |\n\nThe reviewer never approves and never changes the code: the author fixes what blocks, a person merges.\n\n<!-- workline:at head=82a7d80c13dd8d5b8533050fed8ed2daaf962f0f run=41838869089 -->\n<!-- workline:record reviewed= runs=0 -->\n<!-- workline:judged-lines gone=0 -->\n\n<!-- workline:sticky=reviewer/summary -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T13:32:32Z",
+     "id": "6631974938",
+     "bot": true
+    },
+    {
+     "body": "**The developer** objects to the tester's tests of #18, on their lines: the tester keeps or rewrites each (ADR-0055).\n\n**On their lines**: 1 comment, in [the review](https://github.com/JN0V/DomoticsCore-trial/pull/21#pullrequestreview-5770214127) (1 posted now). What blocks stands until a commit fixes it; what warns asks nothing.\n\n<!-- workline:sticky=developer/objection -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T14:19:50Z",
+     "id": "6633035566",
+     "bot": true
+    },
+    {
+     "body": "Closed by workline: #18 is closed by #25, which brought its tests: nothing is left here to merge.\n\n<!-- workline:closed -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T15:30:13Z",
+     "id": "6634699671",
+     "bot": true
+    }
+   ],
+   "closed": true,
+   "merged": false,
+   "bot": true
+  }
+ ],
+ "dependencies": true,
+ "sub-issues": true,
+ "writes": 0
+}
