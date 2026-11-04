@@ -1,0 +1,44 @@
+case: merge/fork-accepted-waits-for-its-checks
+about: "A fork's pull request, accepted while its checks run (#1043): with no verdict of a fork's run to go by, `workline follow` turns nothing on until every check on its head passed, and says so; one red is out, as for any pull request (ADR-0042)."
+given:
+  repo: documented
+  config: {merge: {autonomy: cautious}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb patch-1 && echo typo > typo.txt && git add typo.txt && git commit -qm 'fix: a typo' && git push -q origin HEAD:refs/pull/9/head && git checkout -q main"
+    - "git checkout -qb patch-2 && echo other > other.txt && git add other.txt && git commit -qm 'fix: another typo' && git push -q origin HEAD:refs/pull/10/head && git checkout -q main"
+  forge:
+    statuses:
+      - {commit: "patch-2", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+    merge-requests:
+      - id: 9
+        branch: patch-1
+        base: main
+        fork: true
+        author: zed
+        labels: [workline:accepted]
+        label-events: [{label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T10:00:00Z"}]
+        pushes: [{head: patch-1, at: "2026-01-04T09:00:00Z"}]
+        check-runs: [{name: test, state: success}, {name: judge, state: pending}]
+        comments: []
+      - id: 10
+        branch: patch-2
+        base: main
+        fork: true
+        author: zed
+        labels: [workline:accepted]
+        label-events: [{label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T10:00:00Z"}]
+        pushes: [{head: patch-2, at: "2026-01-04T09:00:00Z"}]
+        check-runs: [{name: test, state: success}, {name: judge, state: failure}]
+        comments: []
+run: {follow: [--base, main], summary: true}
+expect:
+  status: pass
+  findings:
+    - {rule: fork-checks-pending, where: "#9", message: "accepted by @dana; from a fork, it waits for every check on its head"}
+    - {rule: checks-red, where: "#10", level: warn, message: "accepted by @dana, but a check failed on its head"}
+  no-findings: [{rule: auto-merge-on}, {rule: merged-at-once}, {rule: fork-yes}]
+  forge:
+    merge-requests:
+      - {id: 9, auto-merge: false}
+      - {id: 10, auto-merge: false}

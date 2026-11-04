@@ -716,6 +716,17 @@ func weigh(f forge.Forge, m forge.Merger, o FollowOptions, local bool, mr forge.
 		say("checks-red", "warn", fmt.Sprintf("accepted by %s, but a check failed on its head (%s): auto-merge left as it is", by, short(tip)))
 		return nil, nil
 	}
+	if !mr.Here {
+		// A fork's run is the fork's to write: no verdict of it is kept,
+		// none read. The person's yes on its head, and its checks all
+		// green — its own judge's among them —, are what it goes by (#1043).
+		if st.Checks != "success" {
+			say("fork-checks-pending", "", fmt.Sprintf("accepted by %s; from a fork, it waits for every check on its head (%s) to pass: no verdict of a fork's run is kept", by, short(tip)))
+			return e, nil
+		}
+		say("fork-yes", "", fmt.Sprintf("from a fork, no verdict of its run kept: %s's yes on its head and its checks, all green, are what it goes by", by))
+		return armed(m, mr, tip, st, e, say, by, "its checks passed")
+	}
 	v, err := verdictOf(m, hand, tip)
 	if err != nil {
 		if errors.Is(err, forge.ErrUnreachable) && !forge.Refused(err) {
@@ -725,12 +736,6 @@ func weigh(f forge.Forge, m forge.Merger, o FollowOptions, local bool, mr forge.
 		return nil, nil
 	}
 	ours := st.AutoMerge && st.AutoMergeBot && !later(yes.Created, st.AutoMergeAt)
-	if v.class == verdictShort && !mr.Here {
-		// A fork's run gets no secret, so it asks no agent: the person's
-		// yes, given on this head, is the review it could not ask (#1043).
-		say("fork-reviewed-by-the-yes", "", fmt.Sprintf("from a fork, its run asked no agent: %s's yes is its review", by))
-		v.class = verdictPass
-	}
 	switch v.class {
 	case "held":
 		// A verdict kept before ADR-0051, a release held for its docs: the
@@ -759,25 +764,30 @@ func weigh(f forge.Forge, m forge.Merger, o FollowOptions, local bool, mr forge.
 		say(rule, "warn", fmt.Sprintf("accepted by %s, but %s; %s", by, v.why, then))
 		return nil, nil
 	}
-	// Its verdict passed: the yes held on this head, then auto-merge on.
-	if err := m.Accept(tip, true, "accepted by "+by+", its head's verdict passed"); err != nil {
+	return armed(m, mr, tip, st, e, say, by, "its head's verdict passed")
+}
+
+// armed holds the yes on a head that passed (passed says how), then turns
+// auto-merge on, or merges it now when the forge would.
+func armed(m forge.Merger, mr forge.MergeRequest, tip string, st forge.MergeState, e *inLine, say func(rule, level, msg string), by, passed string) (*inLine, error) {
+	if err := m.Accept(tip, true, "accepted by "+by+", "+passed); err != nil {
 		return nil, err
 	}
 	if st.AutoMerge {
-		return stalled(m, mr, tip, st, e, say, fmt.Sprintf("accepted by %s, its head's verdict passed", by))
+		return stalled(m, mr, tip, st, e, say, fmt.Sprintf("accepted by %s, %s", by, passed))
 	}
 	merged, err := m.AutoMerge(mr, tip, true)
 	switch {
 	case errors.Is(err, forge.ErrUnreachable) && !forge.Refused(err):
 		return nil, err
 	case err != nil:
-		say("auto-merge-refused", "warn", fmt.Sprintf("accepted by %s, its head's verdict passed, but the forge refused to turn auto-merge on: %s", by, forge.Said(err)))
+		say("auto-merge-refused", "warn", fmt.Sprintf("accepted by %s, %s, but the forge refused to turn auto-merge on: %s", by, passed, forge.Said(err)))
 		return nil, nil
 	case merged:
-		say("merged-at-once", "", fmt.Sprintf("accepted by %s, its head's verdict passed: merged at once, the forge's rules met already", by))
+		say("merged-at-once", "", fmt.Sprintf("accepted by %s, %s: merged at once, the forge's rules met already", by, passed))
 		return nil, nil
 	}
-	say("auto-merge-on", "", fmt.Sprintf("accepted by %s, its head's verdict passed: auto-merge turned on, the forge merges it once its checks pass", by))
+	say("auto-merge-on", "", fmt.Sprintf("accepted by %s, %s: auto-merge turned on, the forge merges it once its checks pass", by, passed))
 	return e, nil
 }
 

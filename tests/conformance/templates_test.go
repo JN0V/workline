@@ -1445,11 +1445,11 @@ func TestMergePolicyRunsAfterTheJudgeAndOnLabels(t *testing.T) {
 	}
 }
 
-// A fork's pull request gets its verdict kept, so a person's yes merges it
-// (#1043): its run leaves the verdict, the base's jobs keep it and follow,
-// reading it as data, never checking out the fork's code; what applies a
-// proposal stays this repository's own (ADR-0044).
-func TestForkVerdictIsKept(t *testing.T) {
+// A fork's pull request is followed, so a person's yes merges it (#1043):
+// its run is the fork's to write, so no verdict of it is left nor kept;
+// follow runs after it from the base, never checking out the fork's code,
+// and nothing is applied from it (ADR-0044).
+func TestForkIsFollowedWithNoVerdict(t *testing.T) {
 	type step struct {
 		Uses string            `yaml:"uses"`
 		If   string            `yaml:"if"`
@@ -1480,8 +1480,8 @@ func TestForkVerdictIsKept(t *testing.T) {
 			for _, s := range job.Steps {
 				if strings.HasPrefix(s.Uses, "actions/upload-artifact") && s.With["name"] == "workline-verdict" {
 					uploads++
-					if strings.Contains(s.If, ours) {
-						t.Errorf("%sworkline.yml, job %s: the verdict is left by this repository's runs only, not a fork's: %q", dir, name, s.If)
+					if !strings.Contains(s.If, ours) {
+						t.Errorf("%sworkline.yml, job %s: a fork's run leaves a verdict, which the fork wrote: %q", dir, name, s.If)
 					}
 				}
 			}
@@ -1489,7 +1489,7 @@ func TestForkVerdictIsKept(t *testing.T) {
 		if uploads != 1 {
 			t.Errorf("%sworkline.yml: %d steps leave the verdict, want 1", dir, uploads)
 		}
-		kept, followed := false, false
+		followed := false
 		for name, job := range read(dir + "workline-apply.yml").Jobs {
 			var keeps, follows, applies bool
 			for _, s := range job.Steps {
@@ -1498,15 +1498,15 @@ func TestForkVerdictIsKept(t *testing.T) {
 				applies = applies || strings.Contains(s.Run, "workline apply")
 			}
 			switch {
-			case applies:
+			case applies || keeps:
 				if !strings.Contains(job.If, ours) {
-					t.Errorf("%sworkline-apply.yml, job %s: applies a fork's proposals with the write token: %q", dir, name, job.If)
+					t.Errorf("%sworkline-apply.yml, job %s: takes a fork's run's output with the write token: %q", dir, name, job.If)
 				}
 				continue
-			case !keeps && !follows:
+			case !follows:
 				continue
 			}
-			kept, followed = kept || keeps, followed || follows
+			followed = true
 			if strings.Contains(job.If, ours) {
 				t.Errorf("%sworkline-apply.yml, job %s: skips a fork's pull request: %q", dir, name, job.If)
 			}
@@ -1516,8 +1516,8 @@ func TestForkVerdictIsKept(t *testing.T) {
 				}
 			}
 		}
-		if !kept || !followed {
-			t.Errorf("%sworkline-apply.yml: no job keeps (%v) or follows (%v) a fork's verdict", dir, kept, followed)
+		if !followed {
+			t.Errorf("%sworkline-apply.yml: no job follows a fork's pull request", dir)
 		}
 	}
 }

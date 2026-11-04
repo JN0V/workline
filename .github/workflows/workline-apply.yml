@@ -30,7 +30,7 @@
 #          someone to approve them. The commit carries `Workline-Role:`: the
 #          line judges the commits before it, never the fix again. Nothing is
 #          applied for a fork: workline-fork.yml comments what was found;
-#          its verdict is kept, below, for a person's yes to merge it.
+#          follow, below, arms it on a person's yes, its checks green.
 #          One at a time per pull request, with workline.yml's judge: the
 #          next push is judged once the review before it is written. A
 #          branch moved on since the head judged gets the reviewer's review
@@ -139,9 +139,8 @@ jobs:
 
   verdict:
     # judge's run alone: workline-warn.yml's gives no verdict (ADR-0050).
-    # A fork's too (#1043): the base checked out, the engine not the
-    # fork's, its verdict read as data and kept on the event's head only.
-    if: github.event_name == 'workflow_run' && github.event.workflow_run.name == 'workline' && github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion != 'cancelled'
+    # Never a fork's: its run is the fork's to write, no verdict of it.
+    if: github.event_name == 'workflow_run' && github.event.workflow_run.name == 'workline' && github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion != 'cancelled' && github.event.workflow_run.head_repository.full_name == github.repository
     runs-on: ubuntu-latest
     environment: workline-app
     permissions: {actions: read, contents: read}
@@ -225,9 +224,9 @@ jobs:
 
   follow:
     # A push to main; with the merge policy, a pull request's run too, once
-    # its verdict is kept, a fork's included (#1043), never
-    # workline-warn.yml's, which keeps none. A fork's pull request merges
-    # only with a person's yes on its head.
+    # its verdict is kept, never workline-warn.yml's, which keeps none. A
+    # fork's too, once its checks are done (#1043): no verdict of it is
+    # kept, a person's yes on its head and its checks all green arm it.
     needs: verdict
     if: always() && (github.event_name == 'push' || (github.event.workflow_run.name == 'workline' && github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion != 'cancelled'))
     # One at a time on a branch, with workline-merge.yml's: each run reads

@@ -1,5 +1,5 @@
 case: merge/fork-accepted-merges
-about: "A fork's pull request, accepted (#1043): its run has no agent, so its verdict falls short (`not-reviewed`); a person who can write labelled it `workline:accepted` after its last push. The person's yes is the review its run could not ask: `workline follow` says so, holds the yes on its head and turns auto-merge on (ADR-0042)."
+about: "A fork's pull request, accepted (#1043): its run is the fork's to write, so no verdict of it is kept; a person who can write labelled it `workline:accepted` after its last push, and every check on its head passed. `workline follow` goes by the yes and the checks: it holds the yes on the head and turns auto-merge on, with no verdict waited for (ADR-0042)."
 given:
   repo: documented
   config: {merge: {autonomy: cautious}}
@@ -7,8 +7,6 @@ given:
     - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
     - "git checkout -qb patch-1 && echo typo > typo.txt && git add typo.txt && git commit -qm 'fix: a typo' && git push -q origin HEAD:refs/pull/9/head && git checkout -q main"
   forge:
-    statuses:
-      - {commit: "patch-1", name: workline/verdict, state: failure, description: "short: its review falls short (not-reviewed): no agent: only the rules that need no judgement ran", by: workline-bot}
     merge-requests:
       - id: 9
         branch: patch-1
@@ -18,14 +16,15 @@ given:
         labels: [workline:accepted]
         label-events: [{label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T10:00:00Z"}]
         pushes: [{head: patch-1, at: "2026-01-04T09:00:00Z"}]
+        check-runs: [{name: test, state: success}, {name: judge, state: success}]
         comments: []
 run: {follow: [--base, main], summary: true}
 expect:
   status: pass
   findings:
-    - {rule: fork-reviewed-by-the-yes, where: "#9", message: "from a fork, its run asked no agent: @dana's yes is its review"}
-    - {rule: auto-merge-on, where: "#9", message: "accepted by @dana, its head's verdict passed: auto-merge turned on"}
-  no-findings: [{rule: review-short}]
+    - {rule: fork-yes, where: "#9", message: "from a fork, no verdict of its run kept: @dana's yes on its head and its checks, all green, are what it goes by"}
+    - {rule: auto-merge-on, where: "#9", message: "accepted by @dana, its checks passed: auto-merge turned on"}
+  no-findings: [{rule: verdict-missing}, {rule: review-short}]
   summary-file: ["accepted into main, #9: each merges once its own head is green"]
   forge:
     merge-requests:
