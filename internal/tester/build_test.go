@@ -59,4 +59,23 @@ func TestBuildErrorsGo(t *testing.T) {
 	if got := testNames(src, rules[0]); !slices.Equal(got, []string{"TestMulTwoByThree", "TestByZero"}) {
 		t.Errorf("test names %q", got)
 	}
+	// A lint's finding (#988): golangci-lint's typecheck, the compiler's
+	// lines in its message at the package's first file, or the finding
+	// itself in a test file.
+	missingName := missingNamed([]string{"a/mul_test.go"}, rules)
+	for _, c := range []struct {
+		path, message string
+		want          bool
+	}{
+		{"a/a.go", ": # example.com/m/a [example.com/m/a.test]\na/mul_test.go:6:5: undefined: Mul", true},
+		{"a/a.go", ": # example.com/m/a [example.com/m/a.test]\na/mul_test.go:6:5: undefined: Mul\na/a.go:3:1: undefined: Gone", false},
+		{"a/a.go", ": # example.com/m/a\na/mul_test.go:10:2: syntax error: unexpected newline", false},
+		{"a/mul_test.go", "undefined: Mul", true},
+		{"a/a.go", "undefined: Mul", false},
+		{"a/mul_test.go", "Error return value of `os.Remove` is not checked", false},
+	} {
+		if got := missingName(c.path, c.message); got != c.want {
+			t.Errorf("missingNamed(%q, %q) = %v, want %v", c.path, c.message, got, c.want)
+		}
+	}
 }

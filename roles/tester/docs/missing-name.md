@@ -1,6 +1,6 @@
 ---
-sources: [internal/tester/build.go, internal/tester/tester.go, roles/tester/role.yaml]
-checked: 4b0fd7a4
+sources: [internal/tester/build.go, internal/tester/tester.go, internal/tester/write.go, roles/tester/role.yaml]
+checked: b61cdf6b
 verified: agent:claude-code
 ---
 # A missing name, told from a broken build
@@ -69,6 +69,22 @@ Only Go's is built and tested.
 - **Several lines** (Rust, Java): one line does not hold both the file
   and the message, so these are not read yet. `cargo
   --message-format=json` would give both in one record.
+
+## The lint
+
+The tests pass the project's lint before the Draft opens
+([hand-over](hand-over.md)). A lint that type-checks, as
+golangci-lint does, reports the same missing name
+([#988](https://github.com/JN0V/workline/issues/988)):
+
+- **Not counted**: a lint finding read by `build-errors` as a missing
+  name in a test of the change. golangci-lint puts the compiler's lines
+  in its message (`calc/mul_test.go:8:5: undefined: Mul`), at the
+  package's first file: each line must be a missing name.
+- **Still counted**: any other finding, a format check's too.
+- **Seen later**: golangci-lint runs no other linter on a package that
+  does not build. An unchecked error in the test shows only once the
+  code exists, on the builder's merge request.
 
 ## Limits
 

@@ -62,7 +62,9 @@ Once the Draft is proven, the engine moves the issue on, no agent asked
   and line
   ([#964](https://github.com/JN0V/workline/issues/964)). Still there,
   the run blocks (`tests-lint`): no Draft, the issue keeps its state,
-  the finding said on it.
+  the finding said on it. A lint's error naming the
+  [missing name](missing-name.md#the-lint) the test is red by is not
+  counted.
 - **Then ready**: `workline:ready` on, the other states' labels off,
   said in the tester's comment on the issue (`state-moved`). An issue
   already ready keeps its labels.

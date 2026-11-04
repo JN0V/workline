@@ -93,13 +93,23 @@ Cases in `tests/conformance/cases/tester/`:
   finding said on the issue
   ([#964](https://github.com/JN0V/workline/issues/964)); tried with the
   real golangci-lint on a copy of workline, on
-  [#966](https://github.com/JN0V/workline/pull/966#tried).
+  [#966](https://github.com/JN0V/workline/pull/966#tried). The lint's
+  error naming the test's missing name not counted
+  ([#988](https://github.com/JN0V/workline/issues/988),
+  [the page](missing-name.md#the-lint)); tried with the real
+  golangci-lint on a copy of workline, on
+  [#996](https://github.com/JN0V/workline/pull/996#tried).
 - **A Draft proven on its tests' folders**, `draft-command` naming
   `{packages}`, on the base and with the tests; a folder the base lacks
   runs nothing there
   ([#979](https://github.com/JN0V/workline/issues/979)); tried on a
   copy of workline, 697 s to 33 s, on
   [#991](https://github.com/JN0V/workline/pull/991#tried).
+- **A test in a folder the base lacks**, written whole: its folder
+  made, never through a link
+  ([#989](https://github.com/JN0V/workline/issues/989)); tried on a
+  copy of workline, on
+  [#996](https://github.com/JN0V/workline/pull/996#tried).
 - **Frozen to the builder**, no agent: the record of each test file's
   blob in workline's own comment on the Draft; a test changed or
   deleted by another blocks (`tester-test-changed`), a forged trailer

@@ -3,7 +3,11 @@
 # reads the .go files under the folder it runs in and writes SARIF as
 # golangci-lint 2.15.0 does, every result an error, no fingerprint:
 #   errcheck  an os.Remove whose error is not checked;
-#   godot     a comment not ending in a period, when .golangci.yml names godot.
+#   godot     a comment not ending in a period, when .golangci.yml names godot;
+#   typecheck a test calling a capitalised name no func of its folder
+#             declares: as the real one, one result for the package, at its
+#             first file, the compiler's lines in its message, and no other
+#             linter's result in that package.
 # A line holding //nolint is skipped. Its version is 2.15.0, or what
 # .golangci-version says: a tool the project's tree pins.
 set -eu
@@ -16,7 +20,37 @@ version=2.15.0
 [ ! -f .golangci-version ] || version=$(cat .golangci-version)
 godot=0
 [ ! -f .golangci.yml ] || ! grep -q godot .golangci.yml || godot=1
+module=$(sed -n 's/^module //p' go.mod 2>/dev/null || true)
+# undefined <dir>: its test files' calls of a name no func there declares,
+# each "file:line:col: undefined: Name".
+undefined() {
+  defs=$(cat "$1"/*.go | sed -n 's/^func \(([^)]*) \)\{0,1\}\([A-Za-z_][A-Za-z0-9_]*\).*/\2/p' | tr '\n' ' ')
+  for t in "$1"/*_test.go; do
+    [ -f "$t" ] || continue
+    awk -v f="$t" -v defs=" $defs " '{
+      s = $0; off = 0
+      while (match(s, /(^|[^A-Za-z0-9_.])[A-Z][A-Za-z0-9_]*\(/)) {
+        tok = substr(s, RSTART, RLENGTH - 1); col = off + RSTART
+        if (tok !~ /^[A-Z]/) { tok = substr(tok, 2); col++ }
+        if (index(defs, " " tok " ") == 0) printf "%s:%d:%d: undefined: %s\n", f, NR, col, tok
+        off += RSTART + RLENGTH - 1; s = substr(s, RSTART + RLENGTH)
+      }
+    }' "$t"
+  done
+}
+broken=
+rm -f "$out.typecheck"
+for d in $(find . -name '*_test.go' -not -path './.git/*' | sed 's|^\./||' | xargs -r -n1 dirname | LC_ALL=C sort -u); do
+  errs=$(undefined "$d")
+  [ -n "$errs" ] || continue
+  broken="$broken $d"
+  first=$(ls "$d"/*.go | sed 's|^\./||' | LC_ALL=C sort | head -n1)
+  pkg=$module; [ "$d" = . ] || pkg="$module/$d"
+  msg=$(printf ': # %s [%s.test]\n%s' "$pkg" "$pkg" "$errs" | awk '{ printf "%s%s", (NR > 1 ? "\\n" : ""), $0 }')
+  printf '{"ruleId":"typecheck","level":"error","message":{"text":"%s"},"locations":[{"physicalLocation":{"artifactLocation":{"uri":"%s"},"region":{"startLine":1,"startColumn":1}}}]}\n' "$msg" "$first" >> "$out.typecheck"
+done
 find . -name '*.go' -not -path './.git/*' | sed 's|^\./||' | LC_ALL=C sort | while read -r f; do
+  case " $broken " in *" $(dirname "$f") "*) continue ;; esac
   awk -v f="$f" -v godot="$godot" '
     /\/\/[ \t]*nolint/ { next }
     /^[ \t]*(defer[ \t]+)?os\.Remove\(/ {
@@ -25,9 +59,10 @@ find . -name '*.go' -not -path './.git/*' | sed 's|^\./||' | LC_ALL=C sort | whi
     godot && /^[ \t]*\/\/ / && !/\.[ \t]*$/ {
       printf "{\"ruleId\":\"godot\",\"level\":\"error\",\"message\":{\"text\":\"Comment should end in a period\"},\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"%s\"},\"region\":{\"startLine\":%d,\"startColumn\":%d}}}]}\n", f, NR, length($0)
     }' "$f"
-done | awk -v v="$version" '
+done | { cat "$out.typecheck" 2>/dev/null || true; cat; } | awk -v v="$version" '
   BEGIN { printf "{\"version\":\"2.1.0\",\"runs\":[{\"tool\":{\"driver\":{\"name\":\"golangci-lint\",\"version\":\"%s\"}},\"results\":[", v }
   { printf "%s%s", (NR > 1 ? "," : ""), $0 }
   END { print "]}]}" }' > "$out"
+rm -f "$out.typecheck"
 grep -q '"ruleId"' "$out" && exit 1
 exit 0

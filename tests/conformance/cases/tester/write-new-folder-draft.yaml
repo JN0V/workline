@@ -1,0 +1,31 @@
+case: tester/write-new-folder-draft
+about: >
+  The tester writes a test as a whole file in a folder the base does not
+  have (#989). The proof lays it red on the base; the engine then makes
+  the folder, as git does for a diff, and writes the file on the work
+  branch: the Draft opens with it.
+given:
+  repo: tested
+  setup:
+    # The runner reads the tests' subfolders too; tests/mul is not there yet.
+    - "sed -i 's|for t in tests/test_\\*.sh; do|for t in tests/test_*.sh tests/*/test_*.sh; do [ -f \"$t\" ] \\|\\| continue|' run-tests.sh && git commit -qam 'test: run the subfolders too'"
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:ready"]
+        body: "## Need\n\nWhen I total an order, I want to multiply a price by a count, so I need not add it up by hand.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n\n---\n\n## Verification\n\nA test, in tests/mul/.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+run: {test: [write, --issue, "3"], ai: "fake:tester-new-folder"}
+expect:
+  status: pass
+  summary: "1 new test, red on the base"
+  agent-calls: 1
+  pushed:
+    workline/tester/issue-3:
+      tests/mul/test_mul_two_by_three.sh: "Scenario: Two by three"
+  forge:
+    merge-requests:
+      - {id: 1, branch: workline/tester/issue-3, draft: true}
