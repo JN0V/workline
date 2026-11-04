@@ -261,7 +261,18 @@ func demotions(f forge.Forge, o FollowOptions, baseTip, app string, res *Result)
 	}
 	var fresh []demotion
 	if from == "" {
-		fresh = append(fresh, demotion{kind: kindAll, revert: baseTip, lost: true})
+		own, err := mergedAlone(b, o.Repo, baseTip, app)
+		if err != nil {
+			return nil, err
+		}
+		if own {
+			fresh = append(fresh, demotion{kind: kindAll, revert: baseTip, lost: true})
+		} else {
+			// A first install: no revert can undo a merge of its own.
+			from = baseTip
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "merge-read-first", Where: short(baseTip),
+				Message: fmt.Sprintf("no mark of workline's App on the base's last %d commits, and no merge workline made with no person's yes on its last %d: a first install, the base marked read from here", revertWindow, mergeWindow)})
+		}
 	}
 	// Every parent: a revert merged with a merge commit is on its second.
 	history, err := commits(o.Repo, baseTip, from, revertWindow)
@@ -372,6 +383,37 @@ func demotions(f forge.Forge, o FollowOptions, baseTip, app string, res *Result)
 	return demoted, nil
 }
 
+// mergedAlone says whether the base's last mergeWindow commits hold a merge
+// workline made with no person's yes: a merge request they name carrying
+// its App's merge-alone record. With no mark, only such a history leaves
+// a revert unread that may undo one (#1018).
+func mergedAlone(b forge.Backlog, repo, baseTip, app string) (bool, error) {
+	history, err := commits(repo, baseTip, "", mergeWindow)
+	if err != nil {
+		return false, err
+	}
+	seen := map[int]bool{}
+	for _, c := range history {
+		n, _ := requestOf(c.msg)
+		if n == 0 || seen[n] {
+			continue
+		}
+		seen[n] = true
+		notes, err := b.Notes(forge.Target{Kind: "merge-request", ID: n})
+		switch {
+		case errors.Is(err, forge.ErrAuthorsUnknown): // each author kept: the App's note read
+		case errors.Is(err, forge.ErrUnreachable) && !forge.Refused(err):
+			return false, err
+		case err != nil:
+			continue // no merge request of that number here
+		}
+		if _, ok := ownNote(notes, "merge-alone=", app); ok {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
 // holds says whether an issue holds a demotion, and of which kind: one the
 // App opened, open; or closed by anyone but a person who may push and merge
 // — a bot, someone with no write access, a hand the forge does not name —,
@@ -436,7 +478,7 @@ func demote(f forge.Forge, d *demotion, app string, res *Result) error {
 	switch {
 	case d.lost:
 		title = lostTitle(d.revert)
-		body = fmt.Sprintf("**Workline cannot tell which reverts it read before %s**: no mark of its App's (the status `%s`) on the base's last %d commits — the first run at `normal`, a mark lost, or `follow` not run for long. A revert there may have undone a merge request merged with no person's yes, so every kind of its own merge requests waits for a person's yes, the label `workline:accepted`, as at `cautious`.", short(d.revert), forge.ReadStatus, revertWindow)
+		body = fmt.Sprintf("**Workline cannot tell which reverts it read before %s**: no mark of its App's (the status `%s`) on the base's last %d commits, and a merge it made with no person's yes in its history — a mark lost, or `follow` not run for long. A revert there may have undone such a merge request, so every kind of its own merge requests waits for a person's yes, the label `workline:accepted`, as at `cautious`.", short(d.revert), forge.ReadStatus, revertWindow)
 	case d.request > 0:
 		body = fmt.Sprintf("**%s merged with no person's yes, and was reverted** by %s. %s — %s — now wait for a person's yes, the label `workline:accepted`, on each, as at `cautious`.", where, short(d.revert), strings.ToUpper(which[:1])+which[1:], kindSays[d.kind])
 	}

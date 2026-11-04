@@ -53,8 +53,11 @@ merge: {autonomy: normal}   # a project's choice, never a default
   **closes the issue**. A revert it cannot tie to a pull request holds
   every kind.
 - **What it read is the App's mark** on the base, a status only the App's
-  counts. None found — the first run at `normal` too —: every kind waits,
-  in an issue, until such a person closes it.
+  counts. None found, while its history holds a merge workline made
+  alone: every kind waits, in an issue, until such a person closes it.
+  None found and no such merge — a first install —: the App marks the
+  base read, and nothing waits
+  ([#1018](https://github.com/JN0V/workline/issues/1018)).
 - **Never alone**: the release tool's, a fork's, a person's, another
   bot's, a Draft; with a person's token, nothing.
 - **The governance line**: a change an AI wrote and an AI reviewed merges

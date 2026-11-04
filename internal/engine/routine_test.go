@@ -289,4 +289,23 @@ func TestMarkAndIssuesHoldDemotions(t *testing.T) {
 	if err != nil || demoted[kindAll] != "#1" || !slices.ContainsFunc(res.Findings, func(x verdict.Finding) bool { return x.Rule == "merge-record-lost" }) {
 		t.Errorf("no mark of the App's: %v, %v, %+v; want every kind held by #1, said", demoted, err, res.Findings)
 	}
+
+	// No mark, and #9 merged with no record of the App's (a first install,
+	// #1018): no issue, nothing held, the tip marked read.
+	if err := os.WriteFile(state, []byte(`{"statuses": [`+forged+`], "issues": [], "merge-requests": [{"id": 9, "branch": "workline/documentalist/suspect", "base": "main", "closed": true, "labels": [],
+		"comments": [{"body": "Merging.\n\n<!-- workline:merge-alone=records -->", "author": "mallory"}]}]}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	f = &forge.Fake{Path: state, Repo: repo}
+	res = &Result{}
+	demoted, err = demotions(f, FollowOptions{Repo: repo}, tip, "workline-bot", res)
+	if err != nil || len(demoted) != 0 || !slices.ContainsFunc(res.Findings, func(x verdict.Finding) bool { return x.Rule == "merge-read-first" }) {
+		t.Errorf("a first install: %v, %v, %+v; want nothing held, said", demoted, err, res.Findings)
+	}
+	if text, ok, err := forge.Marked(f, tip); err != nil || !ok || text != "reverts read; held:" {
+		t.Errorf("a first install, the tip marked: %q, %v, %v", text, ok, err)
+	}
+	if open, _ := f.Issues(); len(open) != 0 {
+		t.Errorf("a first install: %d issues opened, want none", len(open))
+	}
 }
