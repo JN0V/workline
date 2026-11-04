@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/JN0V/workline/internal/agent"
 	"github.com/JN0V/workline/internal/engine"
@@ -482,7 +483,7 @@ func (f *foundFor) file(res *Result, repo, rng string) string {
 	if err == nil {
 		err = os.MkdirAll(dir, 0o755)
 	}
-	path := filepath.Join(dir, clock().UTC().Format("20060102T150405.000000000")+"-line.json")
+	path := filepath.Join(dir, time.Now().UTC().Format("20060102T150405.000000000")+"-line.json") // real time: a file name, unique
 	if err == nil {
 		err = os.WriteFile(path, data, 0o644)
 	}

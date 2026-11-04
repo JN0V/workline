@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+	"time"
 )
 
 // The packages the line simulator runs on its own clock (ADR-0063, step
@@ -14,6 +15,20 @@ import (
 var seamed = []string{"../line", "../builtin/productowner", "../backlog"}
 
 var timeRead = regexp.MustCompile(`\btime\.(Now|Since|Until)\b`)
+
+func TestFixedSetsNow(t *testing.T) {
+	t.Setenv(Fixed, "2026-11-04T20:00:00Z")
+	if got := Now(); !got.Equal(time.Date(2026, 11, 4, 20, 0, 0, 0, time.UTC)) {
+		t.Errorf("Now with %s set: %v", Fixed, got)
+	}
+	if got := Since(time.Date(2026, 11, 4, 19, 0, 0, 0, time.UTC)); got != time.Hour {
+		t.Errorf("Since: %v, want 1h", got)
+	}
+	t.Setenv(Fixed, "tomorrow")
+	if got := time.Since(Now()); got < 0 || got > time.Minute {
+		t.Errorf("Now with %s not a time: %v, want the machine's", Fixed, got)
+	}
+}
 
 func TestEveryTimeReadGoesThroughTheSeam(t *testing.T) {
 	for _, dir := range seamed {
@@ -30,7 +45,8 @@ func TestEveryTimeReadGoesThroughTheSeam(t *testing.T) {
 				t.Fatal(err)
 			}
 			for i, line := range strings.Split(string(data), "\n") {
-				if timeRead.MatchString(line) {
+				// A real wait or a unique name says so: "// real time".
+				if timeRead.MatchString(line) && !strings.Contains(line, "// real time") {
 					t.Errorf("%s:%d reads the time past the seam, use clock.Now: %s", f, i+1, strings.TrimSpace(line))
 				}
 			}
