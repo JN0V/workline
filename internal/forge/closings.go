@@ -115,3 +115,28 @@ func (f *Fake) ClosedWith(branch, marker string) (bool, error) {
 	}
 	return slices.ContainsFunc(last.Comments, func(c FakeComment) bool { return strings.Contains(c.Body, marker) }), nil
 }
+
+// Labelled is a forge that lists the closed issues bearing a label, a
+// page a call: the line's states are taken off an issue once it is
+// closed (#999), without reading every issue for them.
+type Labelled interface {
+	// ClosedLabelled lists the closed issues bearing label, by number.
+	ClosedLabelled(label string) ([]Issue, error)
+}
+
+// GitHub, GitLab and the simulated forge list them; another forge's
+// closed issues are read whole (AllIssues).
+var _ = []Labelled{&github{}, &gitlab{}, &Fake{}}
+
+func (g *github) ClosedLabelled(label string) ([]Issue, error) {
+	return g.issues("closed", "&labels="+url.QueryEscape(label))
+}
+
+func (g *gitlab) ClosedLabelled(label string) ([]Issue, error) {
+	return g.issues("closed", "&labels="+url.QueryEscape(label))
+}
+
+func (f *Fake) ClosedLabelled(label string) ([]Issue, error) {
+	all, err := f.AllIssues()
+	return slices.DeleteFunc(all, func(is Issue) bool { return !is.Closed || !slices.Contains(is.Labels, label) }), err
+}
