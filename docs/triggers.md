@@ -162,7 +162,9 @@ Before your release tool tags; a non-zero exit holds it.
   no agent) ([the release](release.md)).
 - On a push to the default branch: `workline follow --base <branch>
   --forge gitlab` (token, no agent), `user.name` and `user.email` set
-  first, as for `apply`. With `merge:`, it runs
+  first, as for `apply`. It closes the tester's Draft of a closed
+  issue, and takes the states' labels off closed issues
+  ([#999](https://github.com/JN0V/workline/issues/999)). With `merge:`, it runs
   the [merge policy](merge-policy.md): after each judge too, given the
   head's verdict `route --verdict` wrote (`--verdict <file>`).
 
