@@ -842,7 +842,11 @@ func docsCmd(args []string) int {
 		in, out = bufio.NewReader(tty), tty
 	}
 	fmt.Fprintf(out, "workline: judging the docs made suspect by the commits since %s\n", from)
-	if judgeDocs(root, rng, *ai, in, out) {
+	judged, err := judgeDocs(root, rng, *ai, in, out)
+	if err != nil {
+		return 1
+	}
+	if judged {
 		// Judged, and nothing left for a person: the next run starts here.
 		head := revParse(root, "HEAD")
 		if err := exec.Command("git", "-C", root, "update-ref", docsJudgedRef, head).Run(); err == nil {
@@ -962,19 +966,27 @@ func revParse(root, rev string) string {
 // the person review each doc it changed; in is nil without a terminal. It
 // says whether the docs are judged: the run passed, and every change it
 // made was reviewed, or there was none.
-func judgeDocs(root, rng, ai string, in *bufio.Reader, out io.Writer) bool {
+// A non-nil error means the run could not start, as a config that is not
+// valid: it is said, and the command exits 1.
+func judgeDocs(root, rng, ai string, in *bufio.Reader, out io.Writer) (bool, error) {
 	if dirty, _ := exec.Command("git", "-C", root, "-c", "core.quotePath=off", "status", "--porcelain", "--", "*.md").Output(); len(dirty) > 0 {
 		fmt.Fprintf(out, "workline: docs have changes not committed:\n%scommit or stash them first, so what the documentalist proposes is reviewed alone\n", dirty)
-		return false
+		return false, nil
 	}
 	rolesDir, err := resolveRoles(os.Getenv("WORKLINE_ROLES"))
 	if err != nil {
 		fmt.Fprintln(out, "workline:", err)
-		return false
+		return false, nil
 	}
 	fmt.Fprintln(out, "workline: the documentalist judges the docs these commits made suspect…")
 	res := engine.Run(engine.Options{Repo: root, RolesDir: rolesDir, Role: "documentalist", Event: "pre-push",
 		AI: ai, DefaultAI: userDefaultAI(), Inputs: map[string]string{"range": rng}})
+	for _, f := range res.Findings {
+		if f.Rule == "config-invalid" {
+			_, _ = fmt.Fprintf(out, "  %s: %s\n", f.Rule, f.Message)
+			return false, errors.New(f.Message)
+		}
+	}
 	for _, f := range res.Findings {
 		// A suspect doc of the range, and what stopped the run: a fix the
 		// judge refused, however often the agent was asked.
@@ -1008,18 +1020,18 @@ func judgeDocs(root, rng, ai string, in *bufio.Reader, out io.Writer) bool {
 	docs := strings.Fields(string(changed))
 	if len(docs) == 0 {
 		fmt.Fprintf(out, "workline: %s — no doc changed\n", res.Status)
-		return res.Status == verdict.Pass && waiting == 0
+		return res.Status == verdict.Pass && waiting == 0, nil
 	}
 	if in == nil {
 		fmt.Fprintf(out, "workline: %d doc(s) changed in your working tree, for a person to review (git diff), commit what is right, restore the rest\n", len(docs))
-		return false
+		return false, nil
 	}
 	if _, err := review.Docs(root, docs, in, out, review.Open); err != nil {
 		fmt.Fprintln(out, "workline:", err)
-		return false
+		return false, nil
 	}
 	left, _ := exec.Command("git", "-C", root, "-c", "core.quotePath=off", "diff", "--name-only", "--", "*.md").Output()
-	return res.Status == verdict.Pass && waiting == 0 && len(strings.TrimSpace(string(left))) == 0
+	return res.Status == verdict.Pass && waiting == 0 && len(strings.TrimSpace(string(left))) == 0, nil
 }
 
 func gitRoot(dir string) (string, error) {
