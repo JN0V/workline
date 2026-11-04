@@ -1,34 +1,32 @@
-# Per trace, the first property it breaks today with an agent that always
-# progresses (ADR-0063, step 1): the suite fails if a trace breaks another
-# first, or none while named here. A seeded run's failure is never listed:
-# under seeds, a trace named here is still held to the properties that
-# hold whatever the agent answers, up to the tick its own one breaks.
+# Per trace, the properties it breaks today with an agent that always
+# progresses (ADR-0063, step 1), in order: the first, then the first
+# broken with those before it set aside, so a trace still runs to its end
+# past a defect. The suite fails if a trace breaks another, or none while
+# one is named here. A seeded run's failure is never listed: under seeds,
+# a trace named here is still held to the properties that hold whatever
+# the agent answers, up to the tick its first one breaks.
 #
-# Refine, acted on, nothing more to run: the silent park (#1070, #1062).
-trial-33 i1-status
-trial-34 i1-status
+# Refine, acted on, nothing more to run: the silent park (#1070, #1062);
+# it never leaves refine.
+trial-33 i1-status expected-end
+trial-34 i1-status expected-end
+# #5: the product owner's `ready` refused on a `Draft:` Need and
+# Validation, then the same silent park. Partly the fake's: it answers a
+# draft with `ready`, never a rewrite.
+trial-5-fresh i1-status expected-end
 # Developing, its pull request's round not known: the issue says nothing.
 trial-36 i1-status
-# Blocked by the machine, never by a person's question, so its end is
-# Done; each stays blocked through K ticks, read again at day 7:
-# - #19: the tester was not given the code it named (needs-input, engine).
-# - #20: its test calls a constructor that does not exist (#1048).
-# - #35: blocked on a guessed Scope. Partly the fake's: at day 7 the
-#   product owner's plain `ready` is refused (no proof picked), and the
-#   trial's pull request branches are not in the fixture's origin. Part 3
-#   of step 1 gives the fake that answer and the branches.
-# - #37: the ADR saw it in refine; the trial moved it on before the
-#   export: blocked by a patch that did not apply ("depends on old
-#   contents"), a machine error.
-trial-19 expected-end
-trial-20 expected-end
-trial-35 expected-end
-trial-37 expected-end
-# Taken back to refine: refined, then in tests, the tester woken once and
-# the issue parked. The fixture is a shell project: the trial's C++ Scope
-# paths are not in it, so the tester's agent is not asked (part 3).
-trial-3-fresh i1-status
-trial-4-fresh i1-status
-trial-5-fresh i1-status
-trial-16-fresh i1-status
-trial-18-fresh i1-status
+# The developer's claim puts workline:developing on beside
+# workline:ready, never a move (ADR-0059 §2: one state at a time; #1081).
+trial-3-fresh one-state-label
+trial-4-fresh one-state-label
+trial-16-fresh one-state-label
+trial-18-fresh one-state-label
+# Blocked by the machine, read again at day 7 (tick 21) and unblocked,
+# then the claim's two labels. The week's wait is intended
+# (internal/line/revisit.go); the red is the simulator's 8-hour tick with
+# the ADR's K = S × (B + 1) + 2R + 2, which leaves 2 ticks after it. The
+# root cause is the block the machine made, which step 2 (typed
+# outcomes) removes. #20 and #35 reach Done within K.
+trial-19 one-state-label quiet-within-k
+trial-37 one-state-label quiet-within-k

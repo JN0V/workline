@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go, tests/evaluation, tests/simulator]
-checked: 4eaa098f
+checked: 9e1edb66
 verified: agent:claude-code
 judged: ae14474
 ---
@@ -190,7 +190,14 @@ step 1):
   a row, on the fake forge, its clock fixed by `WORKLINE_CLOCK`, with one
   fake agent whose state lasts across the ticks (`hook:<name>`).
 - **Frozen traces**: `traces/*.json`, real issues exported read-only, as
-  the fake forge's file.
+  the fake forge's file; their pull requests' branches in origin.
+- **A C++ fixture**: `fixture/`, the trial's Scope paths, built by
+  `g++` with the trial's `build-errors` shapes; no `g++`, the suite fails.
+- **The fake's progress**: the product owner readies, unblocks or names
+  a proof; the tester's test is red by a missing name, the developer's
+  fix adds it. `SIM_DUMP=<dir>` keeps each task.
+- **The forge between ticks** merges a pull request out of draft that
+  closes an issue not blocked, and closes the issue.
 - **Properties after each tick**: one state label at a time; a machine
   error moves nothing; no person waited on while a retry is left; every
   open issue has a status; never the same input twice, by the
@@ -202,14 +209,17 @@ step 1):
 - **Statuses read from today's findings**: a rule list in the test, a
   wait counted only when it names its target; a test fails if the engine
   loses one of those rules.
-- **`pending.txt`** names, per trace, the first property it breaks
-  today, with an agent that always progresses.
-- **200 seeded outcome scripts**, spread over every trace: a trace not
-  pending is held to every property; a pending one to those that hold
-  whatever the agent answers (I2, I3, one state label, no person waited
-  on while a retry is left), up to the tick its pending property breaks.
-  A seed's failure prints the seed and its shrunk script (`SIM_SEED`,
-  `SIM_SCRIPT`, `SIM_TRACE`), and is never pending.
+- **`pending.txt`** names, per trace, the properties it breaks today
+  with an agent that always progresses, in order, each next one broken
+  with those before set aside.
+- **100 seeded outcome scripts** on a pull request, over every trace: a
+  trace not pending is held to every property but its end; a pending
+  one to those that hold whatever the agent answers (I2, I3, one state
+  label, no person waited on while a retry is left), but its own, up to
+  the tick its first pending property breaks.
+- **A seed's failure** prints the seed and its shrunk script
+  (`SIM_SEED`, `SIM_SCRIPT`, `SIM_TRACE`), and is never pending.
+- **Each night**: 1,000 new seeds (`SIM_SEED_BASE`), the `test` workflow.
 
 ## Evaluation
 

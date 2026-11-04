@@ -2,13 +2,17 @@
 # merge. Main's whole-repository checks are one run, workline.yml's
 # `route main` (ADR-0051, step 8); the links to other sites, gardening's,
 # at night. Its line on pull requests is workline.yml, the template.
+# Each night, the line simulator's seeded runs on new seeds (ADR-0063):
+# a pull request runs fixed ones.
 name: test
 on:
   push: {branches: [main]}
   pull_request:
+  schedule: [{cron: "41 3 * * *"}]
 permissions: {contents: read}
 jobs:
   test:
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -18,3 +22,16 @@ jobs:
       - uses: ./.github/actions/tests   # the tools the tests need: the proofs' jobs take the same
       - run: go vet ./...
       - run: go test -count=1 ./...
+  seeds:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with: {go-version-file: go.mod}
+      - uses: ./.github/actions/tests
+      # A failure prints its seed and its shrunk script, to freeze as a
+      # named trace before its fix (docs/spec/conformance.md).
+      - run: go test -count=1 -timeout 80m -run TestSeeds ./tests/simulator/
+        env: {SIM_SEED_BASE: "${{ github.run_id }}", SIM_SEEDS: "1000"}
