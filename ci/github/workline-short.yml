@@ -1,0 +1,11 @@
+# workline by reference: copy to .github/workflows/workline.yml. To update,
+# change the one version below (Dependabot proposes it).
+name: workline
+on:
+  pull_request:
+  schedule: [{cron: "17 3 * * *"}, {cron: "43 5 * * 1"}]   # gardening, the weekly sample
+  workflow_dispatch:
+jobs:
+  workline:
+    uses: JN0V/workline/.github/workflows/workline-call.yml@v0.70.0
+    secrets: inherit
