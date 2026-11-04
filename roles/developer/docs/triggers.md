@@ -3,6 +3,7 @@ sources:
   - roles/developer/role.yaml
   - internal/developer/developer.go
   - internal/line/states.go
+  - internal/line/round.go
   - internal/line/budget.go
   - ci/github/workline-develop.yml
   - ci/gitlab/workline.gitlab-ci.yml
@@ -50,6 +51,10 @@ routing:
     (`workflow_dispatch`, which the job's own token may start). Not
     due, it asks again after 10 and 20 s: GitHub lists a comment the
     apply just wrote some seconds later.
+  - **Back from a Scope ask**: a ready issue whose own pull request is
+    open is no new claim. Its step is the review round on that pull
+    request: the line lists it, and `apply` starts the round
+    ([#1013](https://github.com/JN0V/workline/issues/1013)).
   - **Room freed**: then it asks the line which issues waited for room
     its move freed, as the developer taking a ready issue frees Ready,
     and starts each one's run
@@ -142,6 +147,11 @@ routing:
   routing, the same workflow's `review` jobs on GitHub,
   `WORKLINE_TASK=review` on GitLab
   ([the review loop](review-loop.md#what-wakes-it)).
+- **The round's issue next**: once `review-apply` applied, it asks
+  the line whether the issue's new state is due, and starts that run.
+  Blocked on a Scope ask, the product owner reads it at once
+  ([#1013](https://github.com/JN0V/workline/issues/1013)). GitLab's
+  issue webhook does the same.
 - **Hourly**, the reconciler starts a round an event missed, counted
   in `reconcile-max`. A round's run is named `workline develop round
   !<n>`, whatever woke it: none is started while one is queued or

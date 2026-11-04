@@ -218,7 +218,7 @@ jobs:
           for wait in 0 10 20; do
             sleep "$wait"
             workline route issue --target "issue:$ISSUE" --ai none --forge github --open-merge-request --input reconcile=list --json > next.json || true
-            jq -e --argjson n "$ISSUE" '(.due // []) | index($n)' next.json >/dev/null && break
+            jq -e --argjson n "$ISSUE" '((.due // []) | index($n)) or ((.reviews // []) | length > 0)' next.json >/dev/null && break
           done
           # Started even when another run of the issue waits: that one may
           # ask the line before this apply moved the state, and end; a
@@ -228,6 +228,15 @@ jobs:
             echo "issue=$ISSUE" >> "$GITHUB_OUTPUT"
             echo "#$ISSUE's next step started" >> "$GITHUB_STEP_SUMMARY"
           fi
+          # Its step a review round (#1013): back to ready from a Scope
+          # ask, the round on its own pull request resumes, not a claim.
+          for n in $(jq -r '(.reviews // [])[].id' next.json); do
+            if gh workflow run "$(basename "${GITHUB_WORKFLOW_REF%%@*}")" --ref "$GITHUB_REF_NAME" -f pull-request="$n"; then
+              echo "#$ISSUE's review round on !$n started" >> "$GITHUB_STEP_SUMMARY"
+            else
+              echo "::warning title=workline::!$n's round not started: the reconciler starts it"
+            fi
+          done
       # Room this run freed (#960): an issue moved out of a state with a
       # limit — the developer taking a ready one — wakes the issues whose
       # step waited for that room now, not at the next reconcile. The line
@@ -462,6 +471,7 @@ jobs:
     outputs:
       run: ${{ steps.round.outputs.run }}
       head: ${{ steps.round.outputs.head }}
+      issue: ${{ steps.round.outputs.issue }}
     steps:
       - uses: actions/checkout@v4
         with: {fetch-depth: 0, persist-credentials: false}   # no token left in .git/config for the agent (ADR-0056)
@@ -501,6 +511,7 @@ jobs:
           # Its branch's head: the fix is laid and proven there.
           git checkout -q -B "$branch" "origin/$branch"   # fetched by the checkout, which keeps no token
           echo "head=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          echo "issue=${branch#workline/developer/}" >> "$GITHUB_OUTPUT"   # its issue, whose next step the apply starts
           status=0
           workline develop --merge-request "$PR" --ai "$ai" --no-apply --forge github --json > round.json || status=$?
           echo "status=$status" >> "$GITHUB_OUTPUT"
@@ -523,7 +534,8 @@ jobs:
     if: always() && needs.review.outputs.run != ''
     runs-on: ubuntu-latest
     environment: workline-app       # the App's key: the default branch only (ADR-0044)
-    permissions: {contents: write, pull-requests: write, issues: write}
+    # actions: its issue's next step started, by workflow_dispatch (#1013).
+    permissions: {contents: write, pull-requests: write, issues: write, actions: write}
     steps:
       - id: app
         if: vars.WORKLINE_APP_ID != ''
@@ -568,3 +580,34 @@ jobs:
           workline apply "$RUN" --from-merge-request "$PR" --head "$HEAD_SHA" --forge github --summary workline-summary.md || status=$?
           [ ! -s workline-summary.md ] || cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"
           exit "$status"
+      # Explicit chaining (#1013): the state the round moved its issue to
+      # wakes its next step now. Blocked on a Scope ask, the product owner
+      # reads it at once, not at the next reconcile. The line says, with
+      # no agent, whether that step is due; asked again after a pause,
+      # GitHub listing the round's comment some seconds later (#757).
+      - name: The issue's next step
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE: ${{ needs.review.outputs.issue }}
+        run: |
+          printf '%s' "$ISSUE" | grep -Eqx '[0-9]+' || exit 0
+          for wait in 0 10 20; do
+            sleep "$wait"
+            workline route issue --target "issue:$ISSUE" --ai none --forge github --open-merge-request --input reconcile=list --json > next.json || true
+            jq -e --argjson n "$ISSUE" '((.due // []) | index($n)) or ([.findings[]?.rule] | index("state-wakes-none"))' next.json >/dev/null && break
+          done
+          jq -e --argjson n "$ISSUE" '(.due // []) | index($n)' next.json >/dev/null || exit 0
+          # Not while a run of the issue is queued or running (#806).
+          wf=$(basename "${GITHUB_WORKFLOW_REF%%@*}")
+          busy=$(for s in queued in_progress pending waiting; do
+            gh run list --workflow "$wf" --status "$s" --limit 100 --json displayTitle --jq '.[].displayTitle'
+          done) || busy=
+          if printf '%s\n' "$busy" | grep -qxF "workline develop #$ISSUE"; then
+            echo "#$ISSUE: a run of it is queued or running" >> "$GITHUB_STEP_SUMMARY"
+          else
+            if gh workflow run "$wf" --ref "$GITHUB_REF_NAME" -f issue="$ISSUE"; then
+              echo "#$ISSUE's next step started" >> "$GITHUB_STEP_SUMMARY"
+            else
+              echo "::warning title=workline::#$ISSUE's run not started: the reconciler starts it"
+            fi
+          fi
