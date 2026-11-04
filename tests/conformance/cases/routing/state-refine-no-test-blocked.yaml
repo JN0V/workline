@@ -1,0 +1,37 @@
+case: routing/state-refine-no-test-blocked
+about: >
+  The tester found no test possible, and the product owner's run on that
+  text picked no proof and rewrote nothing (#1053): it cannot settle the
+  issue. The line does not leave it in refine with nothing due: it is
+  to be blocked, the tester's reason said, so a person sees it waits on
+  them. One the product owner was not woken on since the tester's word
+  is woken, not blocked. No agent asked.
+given:
+  repo: backlog
+  config:
+    routing: {events: {issue: [product-owner, tester]}}
+  forge:
+    issues:
+      - id: 9
+        title: Client ids wrap
+        labels: [workline:to-refine]
+        body: "## Need\n\nEach client keeps its own id.\n\n## Verification\n\nA test connects clients.\n\n## Validation\n\n- **Distinct ids:** Given a client connected, When the counter wraps, Then every client has its own id.\n\n## Scope\n\nsrc/export/csv.go"
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: 50be807bebf9\nno-test: 5610c6b5feb3\nsilent: 'the tester found no test possible, and no proof was picked nor its text rewritten; the tester said: the counter is private and no test hook sets it.'\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "**The tester** finds no test possible for this issue.\n\n<!-- workline:tester-proof {\"kind\":\"none\",\"reason\":\"the counter is private and no test hook sets it.\",\"body\":\"50be807bebf9\"} -->\n<!-- workline:sticky=tester/issue -->"
+          - "**workline's line** last woke the product owner on this issue, in its state refine (3 state steps so far).\n\n<!-- workline:line-record {\"state\":\"refine\",\"body\":\"50be807bebf9\",\"hops\":3} -->\n<!-- workline:sticky=line/state -->"
+      - id: 10
+        title: Client ids wrap
+        labels: [workline:to-refine]
+        body: "## Need\n\nEach client keeps its own id.\n\n## Verification\n\nA test connects clients.\n\n## Validation\n\n- **Distinct ids:** Given a client connected, When the counter wraps, Then every client has its own id.\n\n## Scope\n\nsrc/export/csv.go"
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: 50be807bebf9\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "**The tester** finds no test possible for this issue.\n\n<!-- workline:tester-proof {\"kind\":\"none\",\"reason\":\"the counter is private and no test hook sets it.\",\"body\":\"50be807bebf9\"} -->\n<!-- workline:sticky=tester/issue -->"
+          - "**workline's line** last woke the tester on this issue, in its state tests (2 state steps so far).\n\n<!-- workline:line-record {\"state\":\"tests\",\"body\":\"50be807bebf9\",\"hops\":2} -->\n<!-- workline:sticky=line/state -->"
+run: {route: reconcile, ai: none, input: {reconcile: list}}
+expect:
+  status: pass
+  agent-calls: 0
+  findings:
+    - {rule: no-test-unsettled, where: "#9", message: "the tester found no test possible, and the product owner's run picked no proof nor rewrote its text: moved to blocked; the tester said: the counter is private and no test hook sets it."}
+    - {rule: state-wakes, where: "#10"}

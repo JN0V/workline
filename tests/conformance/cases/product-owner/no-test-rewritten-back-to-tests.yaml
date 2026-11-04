@@ -1,0 +1,29 @@
+case: product-owner/no-test-rewritten-back-to-tests
+about: >
+  The tester found no test possible: the code it needed was not named
+  (#1053, from a trial). The product owner rewrites the sections it may,
+  its Verification and Scope, to name what a test needs, and readies
+  it: the rewrite is written, never held back as "drafted already", and
+  the issue goes to its tests again.
+given:
+  repo: backlog
+  config:
+    routing: {events: {schedule: [product-owner], issue: [tester, developer]}}
+  forge:
+    issues:
+      - id: 9
+        title: Client ids wrap
+        body: "## Need\n\nEach client keeps its own id.\n\n## Verification\n\nA test connects clients.\n\n## Validation\n\n- **Distinct ids:** Given a client connected, When the counter wraps, Then every client has its own id.\n\n## Scope\n\nsrc/export/csv.go"
+        author: ann
+        insider: true
+        labels: [workline:to-refine]
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: 50be807bebf9\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "**The tester** finds no test possible for this issue.\n\n<!-- workline:tester-proof {\"kind\":\"none\",\"reason\":\"the counter is private and no test hook sets it.\",\"body\":\"50be807bebf9\"} -->\n<!-- workline:sticky=tester/issue -->"
+run: {role: product-owner, event: schedule, ai: "fake:no-test-rewrite-nine"}
+expect:
+  forge:
+    issues:
+      - id: 9
+        labels: [workline:needs-tests]
+        body-contains: ["setNextClientIdForTest", "- **Distinct ids:** Given a client connected"]
