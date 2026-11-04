@@ -155,6 +155,9 @@ type Act struct {
 	// tell one still there), the five whys run, a person handed it.
 	Round      int      `json:"round,omitempty"`
 	ReviewRuns int      `json:"review-runs,omitempty"`
+	// ReviewAt: the head of the reviewer's summary its last round read;
+	// another is a new review, its runs counted or not (#1040).
+	ReviewAt string `json:"review-at,omitempty"`
 	Heard      []string `json:"heard,omitempty"`
 	Seen       []string `json:"seen,omitempty"`
 	Rounds     []Round  `json:"rounds,omitempty"`
