@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, roles/product-owner/instruction.md, roles/product-owner/policy.md, internal/builtin/productowner, internal/backlog]
-checked: 048bef01
+checked: 3f424301
 verified: agent:claude-code
 ---
 # Product owner — a run
@@ -94,7 +94,8 @@ Each issue comes with:
   label tells (`kind`, [the kind](kind.md)).
 - **A blocked issue**: `unblock` to its state or to refine, or
   `blocked` afresh. The developer's ask for files outside the Scope:
-  the Scope widened, or why not.
+  the Scope widened — a new file its pull request adds counts —, or
+  why not; a widening left out keeps the issue blocked.
 - **A question unanswered** past `acts.ask.wait`: its assumption
   written (`assume`)
   ([how long a question waits](settings.md#how-long-a-question-waits)).
