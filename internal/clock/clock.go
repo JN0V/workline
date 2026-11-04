@@ -10,12 +10,13 @@ import (
 	"time"
 )
 
-var warn sync.Once
+// warn and fixed say once that the clock is not the machine's.
+var warn, fixed sync.Once
 
 // Fixed names the variable that fixes the time, RFC 3339: the line
 // simulator's clock, which the role scripts the engine runs inherit.
-// Unset, the machine's clock; not a time, the machine's clock too, said
-// on stderr once.
+// Unset, the machine's clock; set, said once on stderr; not a time, the
+// machine's clock too, said once.
 const Fixed = "WORKLINE_CLOCK"
 
 // Now is the time; a test sets its own.
@@ -23,6 +24,7 @@ var Now = func() time.Time {
 	if v := os.Getenv(Fixed); v != "" {
 		t, err := time.Parse(time.RFC3339, v)
 		if err == nil {
+			fixed.Do(func() { fmt.Fprintf(os.Stderr, "workline: the clock is fixed at %s (%s)\n", v, Fixed) })
 			return t
 		}
 		warn.Do(func() {

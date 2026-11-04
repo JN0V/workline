@@ -1,0 +1,183 @@
+{
+ "issues": [
+  {
+   "id": 5,
+   "title": "LO-18: HA shutdown() emits MQTT events without checking mqttConnected",
+   "body": "Copied from https://github.com/JN0V/DomoticsCore/issues/172 for a trial of workline's line on this copy.\n\n| LO-18 | HA | `shutdown()` emits MQTT events without checking `mqttConnected` — wasted EventBus traffic |\n\nOpened from `docs/CODE-ROADMAP.md`, lines 6338 to 6338 by the product-owner role.\n\n<!-- workline:import=docs/CODE-ROADMAP.md:d1e75279cdb8 -->\n\n## Need\n\nDraft: when the MQTT link is down, shutdown() should not queue events that cannot be delivered. They waste EventBus queue space.\n\n## Verification\n\nExtend test_ha_dropped_link: after an mqtt/disconnected event, call shutdown() and assert that no MQTT publish events are queued. Keep the connected case: shutdown() still emits the offline availability and the removals.\n\n## Validation\n\nDraft: the reporter (JN0V) reads the dropped-link test and accepts that shutdown stays quiet while disconnected.\n\n## Scope\n\nHomeAssistantComponent::shutdown(): the calls to setAvailable(false) and removeDiscovery() are made without checking mqttConnected",
+   "labels": [
+    "bug"
+   ],
+   "comments": [
+    {
+     "body": "**The product owner**, on 2026-11-04:\n\n- Named the code #5 is about: DomoticsCore-HomeAssistant/include/DomoticsCore/HomeAssistant.h, DomoticsCore-HomeAssistant/test/test_ha_dropped_link/test_ha_dropped_link.cpp. DomoticsCore-HomeAssistant/include/DomoticsCore/HomeAssistant.h say…\n- Labelled #5 `task`, a task: It removes wasted event traffic when the link is down. Nothing visible breaks, so it is not a bug and adds no new function. Wrong? Change the label; the role does not set it again.\n- Moved #5 to ready: the reviewer read its spec (round 1): no important finding open\n\n<!-- What workline knows of this issue, edited by the engine, not by hand.\n```yaml\nsources: [DomoticsCore-HomeAssistant/include/DomoticsCore/HomeAssistant.h, DomoticsCore-HomeAssistant/test/test_ha_dropped_link/test_ha_dropped_link.cpp]\nconfirmed: dde153b\nbody: e3b5cf8c9caa\nsections:\n    Need: 'Draft: when the MQTT link is down, shutdown() should not queue events that cannot be delivered. They waste EventBus queue space.'\n    Scope: 'HomeAssistantComponent::shutdown(): the calls to setAvailable(false) and removeDiscovery() are made without checking mqttConnected'\ndone:\n    - act: ready\n      level: normal\ndid:\n    - act: sources\n      level: normal\n      day: \"2026-11-04\"\n      at: dde153b\n      model: claude:claude-sonnet-5-5\n      body: e3b5cf8c9caa\n      line: 'Named the code #5 is about: DomoticsCore-HomeAssistant/include/DomoticsCore/HomeAssistant.h, DomoticsCore-HomeAssistant/test/test_ha_dropped_link/test_ha_dropped_link.cpp. DomoticsCore-HomeAssistant/include/DomoticsCore/HomeAssistant.h say…'\n    - act: kind\n      level: normal\n      day: \"2026-11-04\"\n      at: dde153b\n      model: claude:claude-sonnet-5-5\n      body: e3b5cf8c9caa\n      line: 'Labelled #5 `task`, a task: It removes wasted event traffic when the link is down. Nothing visible breaks, so it is not a bug and adds no new function. Wrong? Change the label; the role does not set it again.'\n    - act: ready\n      level: normal\n      day: \"2026-11-04\"\n      at: dde153b\n      model: claude:claude-sonnet-5-5\n      body: e3b5cf8c9caa\n      line: 'Moved #5 to ready: the reviewer read its spec (round 1): no important finding open'\nheard: 0\nrules: 2\nkind: task\n```\n-->\n\n<!-- workline:sticky=product-owner/state -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T07:40:49Z",
+     "id": "6625435943",
+     "bot": true
+    },
+    {
+     "body": "**workline reviewer**, its spec — 2 findings on the spec; lenses: ambiguous, unverifiable, out-of-scope, contradicted; tokens: 7489 in, 1885 out (3 calls), of 300000 a run (ai-max-tokens).\n\nNo important finding open: the product owner may move it to ready.\n\n| | | Where | Finding |\n|---|---|---|---|\n| warns | contradicted | `#5:23` | Nit: Spec says calls are unchecked, but the code shown cannot confirm it — The Scope states as fact that the calls are made without checking mqttConnected. The shutdown body is not given (44 definitions), so this cannot be confirmed. Neither setAvailable nor removeDiscovery shown checks mqttConnected, so the guard might be inside mqttPublish, which would make the premise false. Fix: Verify whether mqttPublish already checks mqttConnected and name the actual shutdown definition. (shows at DomoticsCore-HomeAssistant/include/DomoticsCore/HomeAssistant.h) |\n| warns | out-of-scope | `#5:15` | Nit: Scope omits the test file the Verification changes — The Verification extends test_ha_dropped_link, but the Scope lists only HomeAssistantComponent::shutdown(). The builder is not told that the test file may be touched. The mqttConnected tracking is also unmentioned. Fix: Add the test file to the Scope, and the place where mqttConnected is tracked if it needs to change. |\n| warns | finding-judged-no |  | dropped, from the ambiguous lens: \"Contradiction on what shutdown should do when disconnected\" at #5:23 — the judge: the Scope line 'are made without checking mqttConnected' describes the current defect rather than contradicting the Need, and the Verification ('assert that no MQTT publish events are queued', while the connected case still emits) is met by either reading; the discoveryPending and availabilityPublished concern is the finding's own guess about detail the spec never asks for. (independence: model (claude-sonnet-5-5 → claude-opus-5-5)) |\n| warns | finding-judged-no |  | dropped, from the unverifiable lens: \"Verification does not say how queued publishes are observed\" at #5:15 — the judge: the Verification names a test, 'Extend test_ha_dropped_link', and a check, 'assert that no MQTT publish events are queued', which would fail if shutdown() queued events while disconnected; the claim that it 'could pass vacuously if it listens for the wrong event name' is only a guess. (independence: model (claude-sonnet-5-5 → claude-opus-5-5)) |\n\nThe reviewer never edits the issue nor moves it: the product owner answers, a person decides.\n\n<!-- workline:spec-review body=e3b5cf8c9caa round=1 open=0 in= -->\n\n<!-- workline:sticky=reviewer/spec -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T07:40:50Z",
+     "id": "6625436312",
+     "bot": true
+    },
+    {
+     "body": "**workline's line** last woke the developer on this issue, in its state ready (2 state steps so far). Edited by the engine, not by hand.\n\n<!-- workline:line-record {\"state\":\"ready\",\"body\":\"e3b5cf8c9caa\",\"labeled\":\"2026-11-04T07:41:55Z\",\"hops\":2,\"woke\":\"2026-11-04T07:42:33Z\",\"ran\":\"2026-11-04T07:42:33Z\"} -->\n\n<!-- workline:sticky=line/state -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T07:40:51Z",
+     "id": "6625436560",
+     "bot": true
+    },
+    {
+     "body": "**The developer** takes this issue: the first ready one nobody took, in the backlog's order. `workline:developing` says so; a person who takes it back removes the label, or assigns themselves.\n\nIts code on the project's tests:\n\n- `tools/workline-tests.sh {report}`: 1348 tests passed, none red.\n- The whole suite: no file it touches lies in a folder holding tests (the developer's `proof-command`, with `{packages}`, runs the touched folders alone).\n- Run on a fresh checkout of dde153b, its code laid on it: not its agent's worktree.\n\n<!-- workline:developer-act {\"act\":\"pick\",\"at\":\"dde153b11c12f96c3561400f175c533ebf1a0f52\",\"issue\":5,\"proof\":{\"result\":\"green\",\"command\":\"tools/workline-tests.sh {report}\",\"passed\":1348,\"tree\":\"fresh\",\"at\":\"dde153b11c12f96c3561400f175c533ebf1a0f52\",\"scope\":\"whole\",\"whole\":\"no file it touches lies in a folder holding tests\"},\"turns\":11,\"tokens\":25026,\"cached\":121325,\"tools\":{\"Bash\":5,\"Edit\":3,\"Grep\":1,\"Read\":1},\"code\":[\"DomoticsCore-HomeAssistant/include/DomoticsCore/HomeAssistant.h\"],\"tests\":[\"DomoticsCore-HomeAssistant/test/test_ha_dropped_link/test_ha_dropped_link.cpp\"]} -->\n\n\n<!-- workline:sticky=developer/claim -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T07:47:26Z",
+     "id": "6625544233",
+     "bot": true
+    }
+   ],
+   "author": "JN0V",
+   "insider": true,
+   "label-events": [
+    {
+     "label": "workline:to-refine",
+     "added": true,
+     "author": "JN0V",
+     "created": "2026-11-04T07:39:44Z",
+     "insider": true,
+     "writer": true
+    },
+    {
+     "label": "task",
+     "added": true,
+     "author": "workline-bot",
+     "created": "2026-11-04T07:41:53Z",
+     "bot": true
+    },
+    {
+     "label": "workline:ready",
+     "added": true,
+     "author": "workline-bot",
+     "created": "2026-11-04T07:41:55Z",
+     "bot": true
+    },
+    {
+     "label": "workline:to-refine",
+     "added": false,
+     "author": "workline-bot",
+     "created": "2026-11-04T07:41:56Z",
+     "bot": true
+    },
+    {
+     "label": "workline:developing",
+     "added": true,
+     "author": "workline-bot",
+     "created": "2026-11-04T07:47:25Z",
+     "bot": true
+    },
+    {
+     "label": "task",
+     "added": false,
+     "author": "JN0V",
+     "created": "2026-11-04T09:24:16Z",
+     "insider": true,
+     "writer": true
+    },
+    {
+     "label": "bug",
+     "added": true,
+     "author": "JN0V",
+     "created": "2026-11-04T09:24:16Z",
+     "insider": true,
+     "writer": true
+    },
+    {
+     "label": "workline:developing",
+     "added": false,
+     "author": "workline-bot",
+     "created": "2026-11-04T10:06:47Z",
+     "bot": true
+    },
+    {
+     "label": "workline:ready",
+     "added": false,
+     "author": "workline-bot",
+     "created": "2026-11-04T10:06:49Z",
+     "bot": true
+    }
+   ],
+   "labeled": {
+    "workline:to-refine": "2026-11-04T07:39:44Z",
+    "task": "2026-11-04T07:41:53Z",
+    "workline:ready": "2026-11-04T07:41:55Z",
+    "workline:developing": "2026-11-04T07:47:25Z",
+    "bug": "2026-11-04T09:24:16Z"
+   },
+   "closed": true,
+   "reason": "completed"
+  }
+ ],
+ "merge-requests": [
+  {
+   "id": 8,
+   "branch": "workline/developer/5",
+   "base": "main",
+   "title": "chore: HA shutdown emits MQTT events without checking",
+   "body": "Closes #5\n\nThe developer's code for #5, proven on the project's tests.\n\n## Changes\n\n- Code: `DomoticsCore-HomeAssistant/include/DomoticsCore/HomeAssistant.h`.\n- Tests, in a commit apart: `DomoticsCore-HomeAssistant/test/test_ha_dropped_link/test_ha_dropped_link.cpp`.\n\n## Verification\n\n- Its agent ran with the rights of the CI job; the forge's guards decide what merges.\n- `tools/workline-tests.sh {report}`: 1348 tests passed, none red.\n- The whole suite: no file it touches lies in a folder holding tests (the developer's `proof-command`, with `{packages}`, runs the touched folders alone).\n- Run on a fresh checkout of dde153b, its code laid on it: not its agent's worktree.\n\n## Tried\n\n- Its code on the project's tests, on a fresh checkout, before this opened: above.\n- Not tried: the commands the issue names to verify it, nor a person's use of it.\n",
+   "labels": [
+    "workline:accepted"
+   ],
+   "comments": [
+    {
+     "body": "**The developer**'s record of this pull request, for its next runs and the auditor.\n\n<!-- workline:developer-act {\"act\":\"code\",\"at\":\"dde153b11c12f96c3561400f175c533ebf1a0f52\",\"issue\":5,\"proof\":{\"result\":\"green\",\"command\":\"tools/workline-tests.sh {report}\",\"passed\":1348,\"tree\":\"fresh\",\"at\":\"dde153b11c12f96c3561400f175c533ebf1a0f52\",\"scope\":\"whole\",\"whole\":\"no file it touches lies in a folder holding tests\"},\"turns\":11,\"tokens\":25026,\"cached\":121325,\"tools\":{\"Bash\":5,\"Edit\":3,\"Grep\":1,\"Read\":1},\"code\":[\"DomoticsCore-HomeAssistant/include/DomoticsCore/HomeAssistant.h\"],\"tests\":[\"DomoticsCore-HomeAssistant/test/test_ha_dropped_link/test_ha_dropped_link.cpp\"]} -->\n\n\n<!-- workline:sticky=developer/code -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T07:47:32Z",
+     "id": "6625545624",
+     "bot": true
+    },
+    {
+     "body": "**Waiting for a person's yes**: this is the developer's code for #5, a task: its issue labelled `task`. The project's merge policy is `normal`: the developer's fix of a reproduced bug merges once every gate passes, a feature or a task waits for a person's yes.\n\n- To accept this one, put the label `workline:accepted`.\n- A bug? Change the label on #5.\n\n<!-- workline:merge-waits=task -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T07:47:49Z",
+     "id": "6625550314",
+     "bot": true
+    },
+    {
+     "body": "**The developer's bounds** on this pull request, read at the base's dde153b: 2 files changed since it, each within the bounds of #5.\n\n<!-- workline:developer-act {\"act\":\"bounds\",\"issue\":5,\"base\":\"dde153b11c12f96c3561400f175c533ebf1a0f52\",\"head\":\"4697b08f1d833ba3e8e5d0d7c450214c9f11fc4e\",\"files\":2,\"refused\":[]} -->\n\n<!-- workline:sticky=developer/bounds -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T07:47:59Z",
+     "id": "6625553130",
+     "bot": true
+    },
+    {
+     "body": "**workline reviewer, the lenses that warn** — 1 findings on the change, 1 question for a person; lenses: correctness, edge-cases, tests, intent, claims; tokens: 6520 in, 1087 out (1 call), of 300000 a run (ai-max-tokens).\n\nThey read apart from the verdict, which never waits for them: what they find warns, posted here once they answered, maybe after the verdict was given.\n\nNothing but nits on the commits reviewed.\n\n**Questions for a person**\n\nNot defects, not judged: choices the change leaves to a person; a reply here is enough, the reviewer does not wait for it.\n\n- `DomoticsCore-HomeAssistant/include/DomoticsCore/HomeAssistant.h:223` (intent): Is it acceptable that a shutdown over a dropped link leaves the retained discovery entries in Home Assistant, or should the removals be remembered and sent on the next connection? On: “if (mqttConnected) {”\n\n**Nits**, for information: no reply, no fix asked.\n\n- `DomoticsCore-HomeAssistant/test/test_ha_dropped_link/test_ha_dropped_link.cpp:141` (tests): Farewell test does not check what was published — The connected-case test only asserts `publishes >= 2`. It never checks that one of the publishes is the offline availability, by topic or payload. Any two publishes pass, so the availability message could be dropped or changed without the test failing. Fix: Assert that a publish on the availability topic carries the offline payload.\n\nThe reviewer never approves and never changes the code: the author fixes what blocks, a person merges.\n\n<!-- workline:at head=4697b08f1d833ba3e8e5d0d7c450214c9f11fc4e run=41794720764 -->\n<!-- workline:record reviewed=4697b08f1d833ba3e8e5d0d7c450214c9f11fc4e,1906750c75ed22b5e54798fa7bd71defbdd1e5b1 patches=119a71dc5cfe920f7bbfed263cb5f41098b3221a,b6711d6355f15e29a2340994c299e26bd1459abf runs=1 read=all -->\n<!-- workline:judged-lines gone=0 -->\n\n<!-- workline:sticky=reviewer/warn -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T07:48:20Z",
+     "id": "6625558730",
+     "bot": true
+    },
+    {
+     "body": "**workline reviewer** — no lens that blocks on this push: correctness, edge-cases, tests, intent, claims, which only warn, read apart from the verdict, in their own comment; the 2 new commits recorded.\n\nThe lenses that warn read apart, and post in their own comment: they never hold the verdict.\n<!-- workline:warn-apart -->\n\nNo finding on the commits reviewed.\n\nThe reviewer never approves and never changes the code: the author fixes what blocks, a person merges.\n\n<!-- workline:at head=4697b08f1d833ba3e8e5d0d7c450214c9f11fc4e run=41794720699 -->\n<!-- workline:record reviewed=4697b08f1d833ba3e8e5d0d7c450214c9f11fc4e,1906750c75ed22b5e54798fa7bd71defbdd1e5b1 patches=119a71dc5cfe920f7bbfed263cb5f41098b3221a,b6711d6355f15e29a2340994c299e26bd1459abf runs=1 read=all -->\n<!-- workline:judged-lines gone=0 -->\n\n<!-- workline:sticky=reviewer/summary -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T07:48:40Z",
+     "id": "6625564272",
+     "bot": true
+    },
+    {
+     "body": "**Waiting for a person's yes**: this is the developer's code for #5, a fix: its issue labelled `bug`, but its code starts from no tester's Draft: no test red on the base shows the bug. The project's merge policy is `normal`: a bug's fix merges once a test that failed on the base proves the bug and every gate passes.\n\n- To accept this one, put the label `workline:accepted`.\n- Not a bug? Change the label on #5.\n\n<!-- workline:merge-waits=unreproduced -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T10:04:19Z",
+     "id": "6628025838",
+     "bot": true
+    }
+   ],
+   "closed": true,
+   "merged": true,
+   "bot": true
+  }
+ ],
+ "dependencies": true,
+ "sub-issues": true,
+ "writes": 0
+}

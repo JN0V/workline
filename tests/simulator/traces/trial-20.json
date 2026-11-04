@@ -1,0 +1,338 @@
+{
+ "issues": [
+  {
+   "id": 20,
+   "title": "LO-17: Storage nameStr_ backing String move-safety risk",
+   "body": "Copied from https://github.com/JN0V/DomoticsCore/issues/171 for a trial of workline's line on this copy.\n\n| LO-17 | Storage | `nameStr_` backing String — move-safety risk |\n\nOpened from `docs/CODE-ROADMAP.md`, lines 6337 to 6337 by the product-owner role.\n\n<!-- workline:import=docs/CODE-ROADMAP.md:ad8aaf585409 -->\n\n## Need\n\nAn application that creates several named Storage instances and moves or copies them should not end up with a dangling component name.\n\n## Verification\n\nNative tests on `StorageComponent`, each reading `metadata.name` after the original is destroyed, so a pointer into the old object's String would dangle:\n- **Copy, named:** build one with a `componentName`, copy-construct it, destroy the original, then check the copy's `metadata.name` still reads the same name. This fails if the copy keeps a pointer into the original's `nameStr_`.\n- **Move, named:** build one with a `componentName`, move-construct it, destroy the moved-from object, then check the new object's `metadata.name` reads the same name and points into its own `nameStr_`.\n- **Default name (regression guard):** build one with no `componentName`, copy it and move it, destroy the originals, then check `metadata.name` still reads \"Storage\". This passes today; it keeps a fix from breaking the literal.\n- If copy and move assignment are supported, the same named checks run after assignment.\n\n## Validation\n\n- **Copy keeps the name:** Given a StorageComponent built with a componentName, When it is copy-constructed and the original is destroyed, Then the copy's metadata.name still reads the same name.\n- **Move keeps the name:** Given a StorageComponent built with a componentName, When it is move-constructed, Then the new object's metadata.name reads the same name and does not point into the old object's String.\n- **Default name:** Given a StorageComponent built with no componentName, When it is copied or moved, Then metadata.name still reads \"Storage\".\n\n## Scope\n\nStorageComponent constructor: `nameStr_` holds the dynamic componentName and `metadata.name` stores the pointer from nameStr_.c_str()\n\n## Assumptions\n\n- Assumption taken on 2026-11-04, the Need and Validation drafts unanswered after 5 min: written as the role drafted it, for a person to correct.",
+   "labels": [
+    "bug",
+    "workline:blocked"
+   ],
+   "comments": [
+    {
+     "body": "**workline's line** last woke the product owner on this issue, in its state blocked (2 state steps so far). Edited by the engine, not by hand.\n\n<!-- workline:line-record {\"state\":\"blocked\",\"body\":\"cf812c373504\",\"hops\":2,\"from\":\"ready\",\"since\":\"2026-11-04T16:38:20Z\",\"revisited\":\"2026-11-04T16:38:20Z\"} -->\n\n<!-- workline:sticky=line/state -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T13:21:22Z",
+     "id": "6631731543",
+     "bot": true
+    },
+    {
+     "body": "**The product owner**, on 2026-11-04:\n\n- Labelled #20 `bug`, a bug: The constructor sets metadata.name to nameStr_.c_str(). After a copy or move of the component, the name pointer can refer to the old object's String. Code that breaks its own contract is a bug, and a test can sho…\n- Added: —. Changed: Need (draft), Validation (draft). See the issue's edit history.\n- Added: —. Changed: Verification. See the issue's edit history.\n- Moved #20 to ready, its Need and Validation taken as written after no answer, said under Assumptions: its drafts got no answer for 5 min (acts.ask.wait): taken as written, for a person to correct\n- Moved #20 out of Blocked, to ready (workline:blocked off, workline:ready on; put workline:blocked back to undo): The Scope now includes the test file the pull request needs, so the developer can resume.\n\n<!-- What workline knows of this issue, edited by the engine, not by hand.\n```yaml\nsources: [DomoticsCore-Storage/include/DomoticsCore/Storage.h]\nconfirmed: 831c6fc\njudged: 4201c58\nbody: cf812c373504\nsections:\n    Need: An application that creates several named Storage instances and moves or copies them should not end up with a dangling component name.\n    Scope: 'StorageComponent constructor: `nameStr_` holds the dynamic componentName and `metadata.name` stores the pointer from nameStr_.c_str()'\nwrote:\n    Need: 7f0f64951fb4\n    Validation: 60aef89a1ad0\n    Verification: 1738b1d76426\nanswered: d7dc26003748\nrevised: [Verification]\ndid:\n    - act: kind\n      level: normal\n      day: \"2026-11-04\"\n      at: dd00c9d\n      model: claude:claude-sonnet-5-5\n      body: 77a018d7fd50\n      line: 'Labelled #20 `bug`, a bug: The constructor sets metadata.name to nameStr_.c_str(). After a copy or move of the component, the name pointer can refer to the old object''s String. Code that breaks its own contract is a bug, and a test can sho…'\n    - act: refine\n      level: normal\n      day: \"2026-11-04\"\n      at: dd00c9d\n      model: claude:claude-sonnet-5-5\n      body: 77a018d7fd50\n      line: 'Added: —. Changed: Need (draft), Validation (draft). See the issue''s edit history.'\n    - act: refine\n      level: normal\n      day: \"2026-11-04\"\n      at: dd00c9d\n      model: claude:claude-sonnet-5-5\n      body: d7dc26003748\n      line: 'Added: —. Changed: Verification. See the issue''s edit history.'\n    - act: ready\n      level: normal\n      day: \"2026-11-04\"\n      at: dd00c9d\n      body: 166a108ac5dd\n      line: 'Moved #20 to ready, its Need and Validation taken as written after no answer, said under Assumptions: its drafts got no answer for 5 min (acts.ask.wait): taken as written, for a person to correct'\n    - act: unblock\n      level: normal\n      day: \"2026-11-04\"\n      at: 4201c58\n      model: claude:claude-sonnet-5-5\n      body: cf812c373504\n      line: 'Moved #20 out of Blocked, to ready (workline:blocked off, workline:ready on; put workline:blocked back to undo): The Scope now includes the test file the pull request needs, so the developer can resume.'\nheard: 0\nrules: 2\nunread: 77a018d7fd50\nassumed-at: \"2026-11-04T14:29:56Z\"\nkind: bug\n```\n-->\n\n<!-- workline:sticky=product-owner/state -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T14:24:06Z",
+     "id": "6633133354",
+     "bot": true
+    },
+    {
+     "body": "**workline reviewer**, its spec — 1 findings on the spec, 2 questions for a person; lenses: ambiguous, unverifiable, out-of-scope, contradicted; tokens: 8020 in, 2162 out (3 calls), of 300000 a run (ai-max-tokens).\n\nNo important finding open: the product owner may move it to ready.\n\n| | | Where | Finding |\n|---|---|---|---|\n| warns | unverifiable | `#20:28` | Nit: Validation move case lacks destroy step, differing from Verification — The Need covers moving and copying, but the Validation scenarios and the Verification do not agree on whether the original is destroyed in the move case. Fix: Align the Validation and Verification scenarios. |\n| warns | finding-judged-no |  | dropped, from the unverifiable lens: \"Move test cannot reliably prove no dangling\" at #20:19 — the judge: the move check also requires that `metadata.name` 'points into its own `nameStr_`', a pointer comparison that fails whenever the name still points into the old object's String, even if the freed bytes happen to read correctly, so the finding's 'can pass with the bug present' does not hold. (independence: model (claude-sonnet-5-5 → claude-opus-5-5)) |\n| warns | finding-judged-no |  | dropped, from the out-of-scope lens: \"Scope names only the constructor, but the fix is in copy/move members and tests\" at #20:33 — the judge: the Need only asks that copies and moves keep the name, and the Scope's 'StorageComponent constructor' plausibly covers copy and move constructors too, so a gap rests on the finding's guess ('and maybe assignment'), not on what the spec says. (independence: model (claude-sonnet-5-5 → claude-opus-5-5)) |\n\n**Questions for a person**\n\nNot defects, not judged: choices the spec leaves to a person; a reply here is enough, they hold nothing.\n\n- `#20:21` (ambiguous): Must StorageComponent support copy and move assignment (and so need the assignment tests), or are they out of scope or deleted? On: “If copy and move assignment are supported, the same named checks run after assignment.”\n- `#20:13` (ambiguous): Should the fix be custom copy/move constructors that re-point metadata.name, or a different name storage design? On: “should not end up with a dangling component name”\n\nThe reviewer never edits the issue nor moves it: the product owner answers, a person decides.\n\n<!-- workline:spec-review body=166a108ac5dd round=2 open=0 in= -->\n\n<!-- workline:sticky=reviewer/spec -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T14:25:59Z",
+     "id": "6633178281",
+     "bot": true
+    },
+    {
+     "body": "**The tester** wrote the acceptance tests of this issue, as a Draft.\n\n- **Why**: each of its 3 scenarios has its test in the Draft's Tests table, or its reason under Not tested (1, for a real try), the tests red on the base and passing the project's lint.\n- **Next**: it is ready: whoever builds it starts from the Draft, workline/tester/issue-20.\n\n\n<!-- workline:sticky=tester/issue -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T14:36:26Z",
+     "id": "6633421459",
+     "bot": true
+    },
+    {
+     "body": "**The developer** blocks this issue.\n\n- **Why**: the fix of pull request 39 still needs `DomoticsCore-Storage/test/test_storage_name_extra/test_storage_name_extra.cpp`, outside its Scope, asked already at this head: the Scope did not change.\n- **Next**: a person on the loop widens the Scope, or fixes or closes the pull request, and moves the issue back by its label.\n\nWhat it was asked:\n\n- warns intent `#20`: Important: Issue's default-name and assignment verifications are not proven — The issue lists a default-name guard and assignment checks as verifications. No test does either. Fix: Add the default-name and assignment tests the issue names. (verified, independence: model (claude-sonnet-5-5 → claude-opus-5-5))\n\nWhy it needs them:\n\n- Added `DomoticsCore-Storage/test/test_storage_name_extra/test_storage_name_extra.cpp` with four tests: default name after copy and after move, and named copy and move assignment, each read after the original is destroyed and scribbled over. `Storage.h` is unchanged because the assignment operators already pass. The full Storage suite passes (66 cases).\n\n\n<!-- workline:sticky=developer/claim -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T16:26:30Z",
+     "id": "6635966774",
+     "bot": true
+    }
+   ],
+   "author": "JN0V",
+   "insider": true,
+   "label-events": [
+    {
+     "label": "workline:to-refine",
+     "added": true,
+     "author": "JN0V",
+     "created": "2026-11-04T13:20:18Z",
+     "insider": true,
+     "writer": true
+    },
+    {
+     "label": "bug",
+     "added": true,
+     "author": "workline-bot",
+     "created": "2026-11-04T14:23:57Z",
+     "bot": true
+    },
+    {
+     "label": "workline:draft",
+     "added": true,
+     "author": "workline-bot",
+     "created": "2026-11-04T14:24:01Z",
+     "bot": true
+    },
+    {
+     "label": "workline:proposed",
+     "added": true,
+     "author": "workline-bot",
+     "created": "2026-11-04T14:24:07Z",
+     "bot": true
+    },
+    {
+     "label": "workline:needs-tests",
+     "added": true,
+     "author": "workline-bot",
+     "created": "2026-11-04T14:29:58Z",
+     "bot": true
+    },
+    {
+     "label": "workline:to-refine",
+     "added": false,
+     "author": "workline-bot",
+     "created": "2026-11-04T14:29:59Z",
+     "bot": true
+    },
+    {
+     "label": "workline:draft",
+     "added": false,
+     "author": "workline-bot",
+     "created": "2026-11-04T14:30:00Z",
+     "bot": true
+    },
+    {
+     "label": "workline:proposed",
+     "added": false,
+     "author": "workline-bot",
+     "created": "2026-11-04T14:30:02Z",
+     "bot": true
+    },
+    {
+     "label": "workline:blocked",
+     "added": true,
+     "author": "workline-bot",
+     "created": "2026-11-04T14:37:00Z",
+     "bot": true
+    },
+    {
+     "label": "workline:needs-tests",
+     "added": false,
+     "author": "workline-bot",
+     "created": "2026-11-04T14:37:02Z",
+     "bot": true
+    },
+    {
+     "label": "workline:blocked",
+     "added": false,
+     "author": "JN0V",
+     "created": "2026-11-04T15:32:59Z",
+     "insider": true,
+     "writer": true
+    },
+    {
+     "label": "workline:needs-tests",
+     "added": true,
+     "author": "JN0V",
+     "created": "2026-11-04T15:32:59Z",
+     "insider": true,
+     "writer": true
+    },
+    {
+     "label": "workline:ready",
+     "added": true,
+     "author": "workline-bot",
+     "created": "2026-11-04T16:16:27Z",
+     "bot": true
+    },
+    {
+     "label": "workline:needs-tests",
+     "added": false,
+     "author": "workline-bot",
+     "created": "2026-11-04T16:16:28Z",
+     "bot": true
+    },
+    {
+     "label": "workline:developing",
+     "added": true,
+     "author": "workline-bot",
+     "created": "2026-11-04T16:26:28Z",
+     "bot": true
+    },
+    {
+     "label": "workline:developing",
+     "added": false,
+     "author": "workline-bot",
+     "created": "2026-11-04T16:26:31Z",
+     "bot": true
+    },
+    {
+     "label": "workline:developing",
+     "added": true,
+     "author": "workline-bot",
+     "created": "2026-11-04T16:32:32Z",
+     "bot": true
+    },
+    {
+     "label": "workline:blocked",
+     "added": true,
+     "author": "workline-bot",
+     "created": "2026-11-04T16:37:37Z",
+     "bot": true
+    },
+    {
+     "label": "workline:developing",
+     "added": false,
+     "author": "workline-bot",
+     "created": "2026-11-04T16:37:38Z",
+     "bot": true
+    },
+    {
+     "label": "workline:ready",
+     "added": false,
+     "author": "workline-bot",
+     "created": "2026-11-04T16:37:39Z",
+     "bot": true
+    },
+    {
+     "label": "workline:ready",
+     "added": true,
+     "author": "workline-bot",
+     "created": "2026-11-04T16:38:55Z",
+     "bot": true
+    },
+    {
+     "label": "workline:blocked",
+     "added": false,
+     "author": "workline-bot",
+     "created": "2026-11-04T16:38:56Z",
+     "bot": true
+    },
+    {
+     "label": "workline:blocked",
+     "added": true,
+     "author": "workline-bot",
+     "created": "2026-11-04T16:43:28Z",
+     "bot": true
+    },
+    {
+     "label": "workline:ready",
+     "added": false,
+     "author": "workline-bot",
+     "created": "2026-11-04T16:43:29Z",
+     "bot": true
+    },
+    {
+     "label": "workline:blocked",
+     "added": false,
+     "author": "JN0V",
+     "created": "2026-11-04T17:23:28Z",
+     "insider": true,
+     "writer": true
+    },
+    {
+     "label": "workline:ready",
+     "added": true,
+     "author": "JN0V",
+     "created": "2026-11-04T17:23:28Z",
+     "insider": true,
+     "writer": true
+    },
+    {
+     "label": "workline:blocked",
+     "added": true,
+     "author": "workline-bot",
+     "created": "2026-11-04T17:44:09Z",
+     "bot": true
+    },
+    {
+     "label": "workline:ready",
+     "added": false,
+     "author": "workline-bot",
+     "created": "2026-11-04T17:44:11Z",
+     "bot": true
+    }
+   ],
+   "labeled": {
+    "workline:to-refine": "2026-11-04T13:20:18Z",
+    "bug": "2026-11-04T14:23:57Z",
+    "workline:draft": "2026-11-04T14:24:01Z",
+    "workline:proposed": "2026-11-04T14:24:07Z",
+    "workline:needs-tests": "2026-11-04T15:32:59Z",
+    "workline:blocked": "2026-11-04T17:44:09Z",
+    "workline:ready": "2026-11-04T17:23:28Z",
+    "workline:developing": "2026-11-04T16:32:32Z"
+   }
+  }
+ ],
+ "merge-requests": [
+  {
+   "id": 39,
+   "branch": "workline/developer/20",
+   "base": "main",
+   "title": "fix: storage nameStr_ backing String move-safety risk",
+   "body": "Closes #20\n\nThe developer's code for #20, proven on the project's tests.\n\n## Changes\n\n- Code: `DomoticsCore-Storage/include/DomoticsCore/Storage.h`.\n- The tester's acceptance tests, read-only to the developer, from `workline/tester/issue-20`: `DomoticsCore-Storage/test/test_storage_name/test_storage_name.cpp`.\n\n## Verification\n\n- Its agent ran with the rights of the CI job; the forge's guards decide what merges.\n- `tools/workline-tests.sh {report}`: 1357 tests passed, none red.\n- The whole suite: no file it touches lies in a folder holding tests (the developer's `proof-command`, with `{packages}`, runs the touched folders alone).\n- Run on a fresh checkout of 4e90503, its code laid on it: not its agent's worktree.\n\n## Tried\n\n- Its code on the project's tests, on a fresh checkout, before this opened: above.\n- Not tried: the commands the issue names to verify it, nor a person's use of it.\n",
+   "labels": [],
+   "comments": [
+    {
+     "body": "**The developer**'s record of this pull request, for its next runs and the auditor.\n\n- Review round 1: 1 asked, no fix.\n- Review round 2: 1 asked, no fix.\n- Review round 3: 1 asked, no fix, the five whys run.\n\n<!-- workline:developer-act {\"act\":\"code\",\"at\":\"4201c58cb684b28b8e0eb0b3af6a07f8690d31f6\",\"issue\":20,\"refused\":[{\"file\":\"DomoticsCore-Storage/test/test_storage_name_assign/test_storage_name_assign.cpp\",\"rule\":\"outside-scope\"},{\"file\":\"DomoticsCore-Storage/test/test_storage_name_more/test_storage_name_more.cpp\",\"rule\":\"outside-scope\"},{\"file\":\"DomoticsCore-Storage/test/test_storage_name_extra/test_storage_name_extra.cpp\",\"rule\":\"outside-scope\"}],\"proof\":{\"result\":\"green\",\"command\":\"tools/workline-tests.sh {report}\",\"passed\":1357,\"tree\":\"fresh\",\"at\":\"4e905033ef5ca47b344f4290942456ba961928a1\",\"scope\":\"whole\",\"whole\":\"no file it touches lies in a folder holding tests\"},\"turns\":11,\"tokens\":17581,\"cached\":147358,\"tools\":{\"Bash\":6,\"Edit\":1,\"Grep\":1,\"Read\":2},\"unopened\":1,\"from\":\"4e905033ef5ca47b344f4290942456ba961928a1\",\"acceptance\":[\"DomoticsCore-Storage/test/test_storage_name/test_storage_name.cpp\"],\"code\":[\"DomoticsCore-Storage/include/DomoticsCore/Storage.h\"],\"round\":3,\"review-runs\":2,\"review-at\":\"da25d0cc4e11772bc567d5ed634b1ca47d5bcf5d\",\"seen\":[\"intent|#20|Issue's default-name and assignment verifications are not proven\"],\"rounds\":[{\"n\":1,\"asked\":[\"warns intent `#20`: Important: Issue's default-name and assignment verifications are not proven — The issue lists a default-name guard and assignment checks as verifications. No test does either. Fix: Add the default-name and assignment tests the issue names. (verified, independence: model (claude-sonnet-5-5 → claude-opus-5-5))\"],\"result\":\"no-code\",\"bounds\":\"asked\"},{\"n\":2,\"asked\":[\"warns intent `#20`: Important: Issue's default-name and assignment verifications are not proven — The issue lists a default-name guard and assignment checks as verifications. No test does either. Fix: Add the default-name and assignment tests the issue names. (verified, independence: model (claude-sonnet-5-5 → claude-opus-5-5))\"],\"result\":\"no-code\",\"bounds\":\"asked\"},{\"n\":3,\"asked\":[\"warns intent `#20`: Important: Issue's default-name and assignment verifications are not proven — The issue lists a default-name guard and assignment checks as verifications. No test does either. Fix: Add the default-name and assignment tests the issue names. (verified, independence: model (claude-sonnet-5-5 → claude-opus-5-5))\"],\"result\":\"no-code\",\"whys\":true,\"bounds\":\"asked\"}],\"whys\":true,\"widen\":{\"at\":\"da25d0cc4e11772bc567d5ed634b1ca47d5bcf5d\",\"scope\":\"e5c8c71453ba\",\"files\":[\"DomoticsCore-Storage/test/test_storage_name_extra/test_storage_name_extra.cpp\"],\"again\":true}} -->\n\n\n<!-- workline:sticky=developer/code -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T16:32:39Z",
+     "id": "6636106703",
+     "bot": true
+    },
+    {
+     "body": "**workline reviewer, the lenses that warn** — 2 findings on the change; lenses: correctness, edge-cases, tests, intent, claims; tokens: 26458 in, 3086 out (5 calls), of 300000 a run (ai-max-tokens).\n\nThey read apart from the verdict, which never waits for them: what they find warns, posted here once they answered, maybe after the verdict was given.\n\n| | | Where | Finding |\n|---|---|---|---|\n| warns | intent | `#20` | Important: Issue's default-name and assignment verifications are not proven — The issue lists a default-name guard and assignment checks as verifications. No test does either. Fix: Add the default-name and assignment tests the issue names. (verified, independence: model (claude-sonnet-5-5 → claude-opus-5-5)) |\n| warns | finding-judged-no |  | dropped, from the correctness lens: \"Move leaves moved-from object with stale name pointer and copies the name\" at DomoticsCore-Storage/include/DomoticsCore/Storage.h:135 — the judge: the move constructor copies `nameStr_(o.nameStr_)` rather than moving it, so the source's `nameStr_` and its `metadata.name` pointer stay valid; the finding itself calls this 'fine' and only guesses that using a moved-from name 'is not guaranteed', quoting DomoticsCore-Storage/include/DomoticsCore/Storage.h:125 (independence: model (claude-sonnet-5-5 → claude-opus-5-5)) |\n| warns | finding-judged-no |  | dropped, from the edge-cases lens: \"Member-initializer order may not match declaration order and base copy then rebind\" at DomoticsCore-Storage/include/DomoticsCore/Storage.h:178 — the judge: the declarations at Storage.h lines 81-96 are in the same order as the copy constructor's initializers, so the headline's order mismatch is false; the pointer briefly aiming into the source's nameStr_ is fixed by rebindName_() before the constructor returns; and the overwrite needs a caller to reassign metadata.name after construction, which no code shown does, so it is only a guess, quoting DomoticsCore-Storage/include/DomoticsCore/Storage.h:93, having read DomoticsCore-Storage/include/DomoticsCore/Storage.h:71-121 (independence: model (claude-sonnet-5-5 → claude-opus-5-5)) |\n\n**Nits**, for information: no reply, no fix asked.\n\n- `DomoticsCore-Storage/test/test_storage_name/test_storage_name.cpp:59` (tests): Assignment and default-name cases are not tested — The issue asks for a default-name regression guard and for assignment checks where supported. The change adds copy and move assignment but the tests cover only copy and move construction of a named object. Fix: Add tests for the default name under copy and move, and for copy and move assignment of a named object.\n\nThe reviewer never approves and never changes the code: the author fixes what blocks, a person merges.\n\n<!-- workline:at head=da25d0cc4e11772bc567d5ed634b1ca47d5bcf5d run=41868313924 -->\n<!-- workline:record reviewed=da25d0cc4e11772bc567d5ed634b1ca47d5bcf5d,4e905033ef5ca47b344f4290942456ba961928a1 patches=ebbe896919a0f3f130b85fe5d2e481f969bc021b,42e19b701d17cd96e5bd0463f7511ed17736a22e runs=1 read=all -->\n<!-- workline:judged-lines gone=0 -->\n<!-- workline:judged {\"lens\":\"correctness\",\"where\":\"DomoticsCore\\u002dStorage/include/DomoticsCore/Storage.h:135\",\"at\":\"da25d0cc4e11772bc567d5ed634b1ca47d5bcf5d\",\"patch\":\"ebbe896919a0f3f130b85fe5d2e481f969bc021b\",\"finding\":\"21ca9d074110\",\"why\":\"the move constructor copies `nameStr_(o.nameStr_)` rather than moving it, so the source's `nameStr_` and its `metadata.name` pointer stay valid; the finding itself calls this 'fine' and only guesses t…\",\"yes\":false,\"finder\":\"claude\\u002dsonnet\\u002d5\\u002d5\",\"judge\":\"claude\\u002dopus\\u002d5\\u002d5\",\"title\":\"Move leaves moved\\u002dfrom object with stale name pointer and copies the name\"} -->\n<!-- workline:judged {\"lens\":\"edge\\u002dcases\",\"where\":\"DomoticsCore\\u002dStorage/include/DomoticsCore/Storage.h:178\",\"at\":\"da25d0cc4e11772bc567d5ed634b1ca47d5bcf5d\",\"patch\":\"ebbe896919a0f3f130b85fe5d2e481f969bc021b\",\"finding\":\"2e6b92a23080\",\"why\":\"the declarations at Storage.h lines 81\\u002d96 are in the same order as the copy constructor's initializers, so the headline's order mismatch is false; the pointer briefly aiming into the source's nameStr_…\",\"yes\":false,\"finder\":\"claude\\u002dsonnet\\u002d5\\u002d5\",\"judge\":\"claude\\u002dopus\\u002d5\\u002d5\",\"title\":\"Member\\u002dinitializer order may not match declaration order and base copy then rebind\"} -->\n<!-- workline:judged {\"lens\":\"intent\",\"where\":\"#20\",\"at\":\"da25d0cc4e11772bc567d5ed634b1ca47d5bcf5d\",\"patch\":\"2da025da36b7c08816766448ca36a0cae1f2a449\",\"finding\":\"951dab070c3c\",\"level\":\"model\",\"yes\":true,\"finder\":\"claude\\u002dsonnet\\u002d5\\u002d5\",\"judge\":\"claude\\u002dopus\\u002d5\\u002d5\",\"title\":\"Issue's default\\u002dname and assignment verifications are not proven\"} -->\n\n<!-- workline:sticky=reviewer/warn -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T16:34:10Z",
+     "id": "6636141792",
+     "bot": true
+    },
+    {
+     "body": "**workline reviewer** — no lens that blocks on this push: correctness, edge-cases, tests, intent, claims, which only warn, read apart from the verdict, in their own comment; the 2 new commits recorded.\n\nThe lenses that warn read apart, and post in their own comment: they never hold the verdict.\n<!-- workline:warn-apart -->\n\nNo finding on the commits reviewed.\n\nThe reviewer never approves and never changes the code: the author fixes what blocks, a person merges.\n\n<!-- workline:at head=da25d0cc4e11772bc567d5ed634b1ca47d5bcf5d run=41868314151 -->\n<!-- workline:record reviewed=da25d0cc4e11772bc567d5ed634b1ca47d5bcf5d,4e905033ef5ca47b344f4290942456ba961928a1 patches=ebbe896919a0f3f130b85fe5d2e481f969bc021b,42e19b701d17cd96e5bd0463f7511ed17736a22e runs=1 read=all -->\n<!-- workline:judged-lines gone=0 -->\n\n<!-- workline:sticky=reviewer/summary -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T16:35:49Z",
+     "id": "6636181827",
+     "bot": true
+    },
+    {
+     "body": "**The developer's bounds** on this pull request, read at the base's 4201c58: 2 files changed since it, each within the bounds of #20.\n\n<!-- workline:developer-act {\"act\":\"bounds\",\"issue\":20,\"base\":\"4201c58cb684b28b8e0eb0b3af6a07f8690d31f6\",\"head\":\"da25d0cc4e11772bc567d5ed634b1ca47d5bcf5d\",\"files\":2,\"refused\":[]} -->\n\n<!-- workline:sticky=developer/bounds -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T16:37:34Z",
+     "id": "6636224305",
+     "bot": true
+    },
+    {
+     "body": "**The developer**, review round 3 of 5: no fix within its bounds. It still needs `DomoticsCore-Storage/test/test_storage_name_extra/test_storage_name_extra.cpp`, asked already on this head and Scope: its issue is blocked for a person.\n\nAsked:\n\n- warns intent `#20`: Important: Issue's default-name and assignment verifications are not proven — The issue lists a default-name guard and assignment checks as verifications. No test does either. Fix: Add the default-name and assignment tests the issue names. (verified, independence: model (claude-sonnet-5-5 → claude-opus-5-5))\n\nWhat it did:\n\n- Added `DomoticsCore-Storage/test/test_storage_name_extra/test_storage_name_extra.cpp` with four tests: default name after copy and after move, and named copy and move assignment, each read after the original is destroyed and scribbled over. `Storage.h` is unchanged because the assignment operators already pass. The full Storage suite passes (66 cases).\n\n**Five whys**\n\n- **Problem:** no test proves the default-name guard or the assignment checks the issue's Verification lists.\n1. Why are they unproven? The frozen test file holds only `test_copy_keeps_the_name` and `test_move_keeps_the_name`.\n2. Why only those two? The tester's file maps to the Validation's \"Copy keeps the name\" and \"Move keeps the name\" scenarios, which are named. \"Default name\" is a Validation scenario too, but the file has no test for it.\n3. Why did rounds 1 and 2 not fix it? Both rounds changed no code, and the frozen file cannot be edited by the developer.\n\n- **Root cause:** the acceptance file lacks the default-name and assignment cases, and the developer cannot add to a frozen file. The cases have to go in a separate test file.\n- **Action** (test): a new suite, `test_storage_name_extra`, now covers the default name (copy and move) and both assignments. The tester may fold it into the frozen file.\n\nThe reviewer decides a finding is fixed.\n\n\n<!-- workline:sticky=developer/round -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T16:37:41Z",
+     "id": "6636227164",
+     "bot": true
+    }
+   ],
+   "closed": false,
+   "merged": false,
+   "bot": true
+  },
+  {
+   "id": 38,
+   "branch": "workline/tester/issue-20",
+   "base": "main",
+   "title": "test: the acceptance tests of #20",
+   "body": "Refs #20\n\nThe acceptance tests of #20, written before the code: 3 new tests, red on the base. Whoever builds it pushes the code on this branch, and makes this pull request close the issue.\n\n## Tests\n\n| Scenario | Test |\n|---|---|\n| Copy keeps the name | `DomoticsCore-Storage/test_storage_name.test_copy_keeps_the_name` in `DomoticsCore-Storage/test/test_storage_name/test_storage_name.cpp` |\n| Move keeps the name | `DomoticsCore-Storage/test_storage_name.test_move_keeps_the_name` in `DomoticsCore-Storage/test/test_storage_name/test_storage_name.cpp` |\n\n**Not tested**, no test can check it:\n\n- Default name: Default name: kept as today: the existing suite guards it. The scenario passes on the current code (the literal \"Storage\" is unaffected by copy or move), so a test for it would pass today and is refused.\n",
+   "labels": [],
+   "comments": [
+    {
+     "body": "**The acceptance tests of #20, frozen**: the tester wrote them before the code, red on the base. Only the tester's own commit changes them: a test that does not fit, object on its line, the comment opened by `workline:objection` (the test, its scenario, the kind, why). Any other change to them blocks, `tester-test-changed`.\n\n| Test file | Blob |\n|---|---|\n| `DomoticsCore-Storage/test/test_storage_name/test_storage_name.cpp` | `d5e65b0` |\n\n<!-- workline:tester-record {\"issue\":20,\"base\":\"4201c58cb684b28b8e0eb0b3af6a07f8690d31f6\",\"files\":{\"DomoticsCore-Storage/test/test_storage_name/test_storage_name.cpp\":\"d5e65b078799b4533781618f9b44e20c0b6b7f0b\"},\"scenarios\":[{\"name\":\"Copy keeps the name\",\"text\":\"Given a StorageComponent built with a componentName, When it is copy-constructed and the original is destroyed, Then the copy's metadata.name still reads the same name.\"},{\"name\":\"Move keeps the name\",\"text\":\"Given a StorageComponent built with a componentName, When it is move-constructed, Then the new object's metadata.name reads the same name and does not point into the old object's String.\"},{\"name\":\"Default name\",\"text\":\"Given a StorageComponent built with no componentName, When it is copied or moved, Then metadata.name still reads \\\"Storage\\\".\"}]} -->\n\n<!-- workline:sticky=tester/tests -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T16:16:35Z",
+     "id": "6635748652",
+     "bot": true
+    }
+   ],
+   "closed": false,
+   "merged": false,
+   "bot": true
+  }
+ ],
+ "dependencies": true,
+ "sub-issues": true,
+ "writes": 0
+}

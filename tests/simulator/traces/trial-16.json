@@ -1,0 +1,228 @@
+{
+ "issues": [
+  {
+   "id": 16,
+   "title": "LED: dropdown names are latched, the refusal reads the live ones",
+   "body": "Copied from https://github.com/JN0V/DomoticsCore/issues/144 for a trial of workline's line on this copy.\n\n### BUG-58 — LED: the dropdown's names are latched, the refusal reads the live ones [LOW] — **NEW (2026-09-20, by BUG-51's review)**\n\n- **Problem**: `getCachedNames()` latches the LED names at the first schema\n  build and nothing invalidates it; `led_select` now matches the posted value\n  against `led->getLEDNames()`. An `addLED()` or a rename after the schema is\n  built makes the two lists disagree, and the page then offers a name its own\n  handler refuses with `Unknown LED`.\n- **Before the refusal existed the same drift was silent**: the selection simply\n  did not move. Filing it is the cost of making the refusal visible.\n- **The decision**: match the list the page was given, or invalidate the cache\n  when the LED list changes and rebuild the schema.\n- **Refs**: BUG-52 (which added the refusal), BUG-51.\n\nOpened from `docs/CODE-ROADMAP.md`, lines 4288 to 4299 by the product-owner role.\n\n<!-- workline:import=docs/CODE-ROADMAP.md:48b20b240d16 -->\n\n## Need\n\nA user of the LED dashboard is offered LED names that the same page then refuses with `Unknown LED`.\n\n## Steps to reproduce\n\n1. Open the LED dashboard so the schema is built with the current LED names.\n2. Call `addLED()` or rename an LED after that.\n3. Pick the new or renamed name in the \"LED\" dropdown.\n- **Expected:** every name the dropdown offers is accepted.\n- **Actual:** the page offers a stale name list, and the handler answers `Unknown LED` for names it checks against the live list.\n- **Version:** behaviour on commit 26b2ee0.\n\n## Validation\n\n- **LED added late:** Given a dashboard already built, When an LED is added, Then the dropdown lists it and selecting it succeeds.\n- **LED renamed:** Given a dashboard already built, When an LED is renamed, Then the dropdown shows the new name and selecting it succeeds.\n\n---\n\n## Verification\n\nA test in `test_led_webui` builds the contexts, adds or renames an LED, then asserts that every option of `led_select` is accepted. The existing `test_every_option_the_card_offers_is_accepted` stays green.\n\n## Scope\n\n`DomoticsCore-LED/include/DomoticsCore/LEDWebUI.h`: `getCachedNames()` and the `led_select` handler.\n`DomoticsCore-LED/test/test_led_webui/test_led_webui.cpp`: the new test.\n\n## Assumptions\n\n- Assumption taken on 2026-11-04, the Need and Validation drafts unanswered after 30 min: written as the role drafted it, for a person to correct.",
+   "labels": [
+    "bug"
+   ],
+   "comments": [
+    {
+     "body": "**workline reviewer**, its spec — 2 findings on the spec, 1 question for a person; lenses: ambiguous, unverifiable, out-of-scope, contradicted; tokens: 18870 in, 1841 out (3 calls), of 300000 a run (ai-max-tokens).\n\nNo important finding open: the product owner may move it to ready.\n\n| | | Where | Finding |\n|---|---|---|---|\n| warns | out-of-scope | `#16:52` | Nit: Scope omits the code that detects an LED-list change — Invalidating the cache requires knowing when the list changes: addLED or a rename in LED.h, or a getLEDNames comparison. Scope allows only getCachedNames and the led_select handler, and says nothing about a rename API or about the context rebuild in CachingWebUIProvider. Fix: Widen the Scope to LED.h and the caching provider base, or state that the change is confined to LEDWebUI.h. |\n| warns | contradicted | `#16:6` | Nit: getWebUIData also reads live names — The spec locates the mismatch in getCachedNames versus the led_select handler. getWebUIData also reads live names, so the shown selected value can disagree with the cached options. The Scope omits it. Fix: Include the data path in the Need and Scope, or note that it is left alone. (shows at DomoticsCore-LED/include/DomoticsCore/LEDWebUI.h) |\n| warns | finding-judged-no |  | dropped, from the unverifiable lens: \"Verification does not check the late-added name\" at #16:48 — the judge: the assertion that 'every option of `led_select` is accepted' would fail if the page offered a name it then refused, so it detects the Need unmet; the cached-names fix the finding describes meets the Need as written and breaks only Validation, which this question does not ask about. (independence: model (claude-sonnet-5-5 → claude-opus-5-5)) |\n| warns | finding-judged-no |  | dropped, from the contradicted lens: \"Existing test fixes the option count at eight\" at #16:48 — the judge: the code agrees with the spec's 'stays green', since `TEST_ASSERT_EQUAL_size_t(8, checked)` passes as long as the new test builds its own `Fixture f;` per test, and the finding only guesses that the fixture might change. (independence: model (claude-sonnet-5-5 → claude-opus-5-5)) |\n\n**Questions for a person**\n\nNot defects, not judged: choices the spec leaves to a person; a reply here is enough, they hold nothing.\n\n- `#16:12` (ambiguous): Match the handler to the cached list, or invalidate the cache and rebuild the schema when the LED list changes? On: “The decision**: match the list the page was given, or invalidate the cache when the LED list changes and rebuild the schema.”\n\nThe reviewer never edits the issue nor moves it: the product owner answers, a person decides.\n\n<!-- workline:spec-review body=d0b052d50ee8 round=1 open=0 in= -->\n\n<!-- workline:sticky=reviewer/spec -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T12:51:19Z",
+     "id": "6631060770",
+     "bot": true
+    },
+    {
+     "body": "**workline's line** last woke the developer on this issue, in its state ready (3 state steps so far). Edited by the engine, not by hand.\n\n<!-- workline:line-record {\"state\":\"ready\",\"body\":\"8b231734c0b2\",\"labeled\":\"2026-11-04T13:34:02Z\",\"hops\":3,\"woke\":\"2026-11-04T13:34:23Z\",\"ran\":\"2026-11-04T13:34:23Z\"} -->\n\n<!-- workline:sticky=line/state -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T12:51:20Z",
+     "id": "6631061223",
+     "bot": true
+    },
+    {
+     "body": "**The product owner**, on 2026-11-04:\n\n- Named the code #16 is about: DomoticsCore-LED/include/DomoticsCore/LEDWebUI.h, DomoticsCore-LED/test/test_led_webui/test_led_webui.cpp, DomoticsCore-LED/include/DomoticsCore/LED.h. DomoticsCore-LED/include/DomoticsCore/LEDWebUI.h says `if …\n- Labelled #16 `bug`, a bug: The dropdown offers an LED name that the handler then refuses with Unknown LED. This is a behaviour that is meant to work and does not. Wrong? Change the label; the role does not set it again.\n- Moved #16 to ready, its Need and Validation taken as written after no answer, said under Assumptions: its drafts got no answer for 30 min (acts.ask.wait): taken as written, for a person to correct\n\n<!-- What workline knows of this issue, edited by the engine, not by hand.\n```yaml\nsources: [DomoticsCore-LED/include/DomoticsCore/LEDWebUI.h, DomoticsCore-LED/test/test_led_webui/test_led_webui.cpp, DomoticsCore-LED/include/DomoticsCore/LED.h]\nconfirmed: \"7807365\"\njudged: 831c6fc\nbody: 8b231734c0b2\nsections:\n    Need: A user of the LED dashboard is offered LED names that the same page then refuses with `Unknown LED`.\n    Scope: |-\n        `DomoticsCore-LED/include/DomoticsCore/LEDWebUI.h`: `getCachedNames()` and the `led_select` handler.\n        `DomoticsCore-LED/test/test_led_webui/test_led_webui.cpp`: the new test.\ndone:\n    - act: ready\n      level: normal\ndid:\n    - act: sources\n      level: normal\n      day: \"2026-11-04\"\n      at: \"7807365\"\n      model: claude:claude-sonnet-5-5\n      body: d0b052d50ee8\n      line: 'Named the code #16 is about: DomoticsCore-LED/include/DomoticsCore/LEDWebUI.h, DomoticsCore-LED/test/test_led_webui/test_led_webui.cpp, DomoticsCore-LED/include/DomoticsCore/LED.h. DomoticsCore-LED/include/DomoticsCore/LEDWebUI.h says `if …'\n    - act: kind\n      level: normal\n      day: \"2026-11-04\"\n      at: \"7807365\"\n      model: claude:claude-sonnet-5-5\n      body: d0b052d50ee8\n      line: 'Labelled #16 `bug`, a bug: The dropdown offers an LED name that the handler then refuses with Unknown LED. This is a behaviour that is meant to work and does not. Wrong? Change the label; the role does not set it again.'\n    - act: ready\n      level: normal\n      day: \"2026-11-04\"\n      at: 831c6fc\n      model: claude:claude-sonnet-5-5\n      body: d0b052d50ee8\n      line: 'Moved #16 to ready, its Need and Validation taken as written after no answer, said under Assumptions: its drafts got no answer for 30 min (acts.ask.wait): taken as written, for a person to correct'\nheard: 0\nrules: 2\nassumed-at: \"2026-11-04T13:25:14Z\"\nkind: bug\n```\n-->\n\n<!-- workline:sticky=product-owner/state -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T12:52:26Z",
+     "id": "6631085934",
+     "bot": true
+    },
+    {
+     "body": "**The tester** wrote the acceptance tests of this issue, as a Draft.\n\n- **Why**: each of its 2 scenarios has its test in the Draft's Tests table, or its reason under Not tested (1, for a real try), the tests red on the base and passing the project's lint.\n- **Next**: it is ready: whoever builds it starts from the Draft, workline/tester/issue-16.\n\n\n<!-- workline:sticky=tester/issue -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T13:34:05Z",
+     "id": "6632007766",
+     "bot": true
+    },
+    {
+     "body": "**The developer** takes this issue: the first ready one nobody took, in the backlog's order. `workline:developing` says so; a person who takes it back removes the label, or assigns themselves.\n\nIts code on the project's tests:\n\n- `tools/workline-tests.sh {report}`: 1351 tests passed, none red.\n- The whole suite: no file it touches lies in a folder holding tests (the developer's `proof-command`, with `{packages}`, runs the touched folders alone).\n- Run on a fresh checkout of 98b9c73, its code laid on it: not its agent's worktree.\n\n<!-- workline:developer-act {\"act\":\"pick\",\"at\":\"01ad4df91e3ee23aa7c25b485cf6ad09d2c39822\",\"issue\":16,\"proof\":{\"result\":\"green\",\"command\":\"tools/workline-tests.sh {report}\",\"passed\":1351,\"tree\":\"fresh\",\"at\":\"98b9c73a61eecfb893bfff23ca99245cf40cdb4a\",\"scope\":\"whole\",\"whole\":\"no file it touches lies in a folder holding tests\"},\"turns\":9,\"tokens\":24050,\"cached\":166519,\"tools\":{\"Bash\":7,\"Read\":1},\"from\":\"98b9c73a61eecfb893bfff23ca99245cf40cdb4a\",\"acceptance\":[\"DomoticsCore-LED/test/test_led_webui_names/test_led_webui_names.cpp\"],\"code\":[\"DomoticsCore-LED/include/DomoticsCore/LED.h\",\"DomoticsCore-LED/include/DomoticsCore/LEDWebUI.h\"],\"tests\":[\"DomoticsCore-LED/test/test_led_webui/test_led_webui.cpp\"]} -->\n\n\n<!-- workline:sticky=developer/claim -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T13:39:28Z",
+     "id": "6632124134",
+     "bot": true
+    }
+   ],
+   "author": "JN0V",
+   "insider": true,
+   "label-events": [
+    {
+     "label": "workline:to-refine",
+     "added": true,
+     "author": "JN0V",
+     "created": "2026-11-04T12:50:02Z",
+     "insider": true,
+     "writer": true
+    },
+    {
+     "label": "bug",
+     "added": true,
+     "author": "workline-bot",
+     "created": "2026-11-04T12:52:22Z",
+     "bot": true
+    },
+    {
+     "label": "workline:proposed",
+     "added": true,
+     "author": "workline-bot",
+     "created": "2026-11-04T12:52:28Z",
+     "bot": true
+    },
+    {
+     "label": "workline:needs-tests",
+     "added": true,
+     "author": "workline-bot",
+     "created": "2026-11-04T13:25:16Z",
+     "bot": true
+    },
+    {
+     "label": "workline:to-refine",
+     "added": false,
+     "author": "workline-bot",
+     "created": "2026-11-04T13:25:17Z",
+     "bot": true
+    },
+    {
+     "label": "workline:proposed",
+     "added": false,
+     "author": "workline-bot",
+     "created": "2026-11-04T13:25:19Z",
+     "bot": true
+    },
+    {
+     "label": "workline:ready",
+     "added": true,
+     "author": "workline-bot",
+     "created": "2026-11-04T13:34:02Z",
+     "bot": true
+    },
+    {
+     "label": "workline:needs-tests",
+     "added": false,
+     "author": "workline-bot",
+     "created": "2026-11-04T13:34:03Z",
+     "bot": true
+    },
+    {
+     "label": "workline:developing",
+     "added": true,
+     "author": "workline-bot",
+     "created": "2026-11-04T13:39:27Z",
+     "bot": true
+    },
+    {
+     "label": "workline:developing",
+     "added": false,
+     "author": "workline-bot",
+     "created": "2026-11-04T13:43:51Z",
+     "bot": true
+    },
+    {
+     "label": "workline:ready",
+     "added": false,
+     "author": "workline-bot",
+     "created": "2026-11-04T13:43:52Z",
+     "bot": true
+    }
+   ],
+   "labeled": {
+    "workline:to-refine": "2026-11-04T12:50:02Z",
+    "bug": "2026-11-04T12:52:22Z",
+    "workline:proposed": "2026-11-04T12:52:28Z",
+    "workline:needs-tests": "2026-11-04T13:25:16Z",
+    "workline:ready": "2026-11-04T13:34:02Z",
+    "workline:developing": "2026-11-04T13:39:27Z"
+   },
+   "closed": true,
+   "reason": "completed"
+  }
+ ],
+ "merge-requests": [
+  {
+   "id": 24,
+   "branch": "workline/developer/16",
+   "base": "main",
+   "title": "fix(domoticscore-led): LED: dropdown names are latched, the",
+   "body": "Closes #16\n\nThe developer's code for #16, proven on the project's tests.\n\n## Changes\n\n- Code: `DomoticsCore-LED/include/DomoticsCore/LED.h`, `DomoticsCore-LED/include/DomoticsCore/LEDWebUI.h`.\n- Tests, in a commit apart: `DomoticsCore-LED/test/test_led_webui/test_led_webui.cpp`.\n- The tester's acceptance tests, read-only to the developer, from `workline/tester/issue-16`: `DomoticsCore-LED/test/test_led_webui_names/test_led_webui_names.cpp`.\n\n## Verification\n\n- Its agent ran with the rights of the CI job; the forge's guards decide what merges.\n- `tools/workline-tests.sh {report}`: 1351 tests passed, none red.\n- The whole suite: no file it touches lies in a folder holding tests (the developer's `proof-command`, with `{packages}`, runs the touched folders alone).\n- Run on a fresh checkout of 98b9c73, its code laid on it: not its agent's worktree.\n\n## Tried\n\n- Its code on the project's tests, on a fresh checkout, before this opened: above.\n- Not tried: the commands the issue names to verify it, nor a person's use of it.\n",
+   "labels": [],
+   "comments": [
+    {
+     "body": "**The developer**'s record of this pull request, for its next runs and the auditor.\n\n<!-- workline:developer-act {\"act\":\"code\",\"at\":\"01ad4df91e3ee23aa7c25b485cf6ad09d2c39822\",\"issue\":16,\"proof\":{\"result\":\"green\",\"command\":\"tools/workline-tests.sh {report}\",\"passed\":1351,\"tree\":\"fresh\",\"at\":\"98b9c73a61eecfb893bfff23ca99245cf40cdb4a\",\"scope\":\"whole\",\"whole\":\"no file it touches lies in a folder holding tests\"},\"turns\":9,\"tokens\":24050,\"cached\":166519,\"tools\":{\"Bash\":7,\"Read\":1},\"from\":\"98b9c73a61eecfb893bfff23ca99245cf40cdb4a\",\"acceptance\":[\"DomoticsCore-LED/test/test_led_webui_names/test_led_webui_names.cpp\"],\"code\":[\"DomoticsCore-LED/include/DomoticsCore/LED.h\",\"DomoticsCore-LED/include/DomoticsCore/LEDWebUI.h\"],\"tests\":[\"DomoticsCore-LED/test/test_led_webui/test_led_webui.cpp\"]} -->\n\n\n<!-- workline:sticky=developer/code -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T13:39:33Z",
+     "id": "6632125893",
+     "bot": true
+    },
+    {
+     "body": "**The developer's bounds** on this pull request, read at the base's 01ad4df: 4 files changed since it, each within the bounds of #16.\n\n<!-- workline:developer-act {\"act\":\"bounds\",\"issue\":16,\"base\":\"01ad4df91e3ee23aa7c25b485cf6ad09d2c39822\",\"head\":\"1a773863bd05711172e5087cff3229afdcb1aeb7\",\"files\":4,\"refused\":[]} -->\n\n<!-- workline:sticky=developer/bounds -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T13:40:05Z",
+     "id": "6632137153",
+     "bot": true
+    },
+    {
+     "body": "**workline reviewer, the lenses that warn** — 3 findings on the change; lenses: correctness, edge-cases, tests, intent, claims; tokens: 14686 in, 1498 out (1 call), of 300000 a run (ai-max-tokens).\n\nThey read apart from the verdict, which never waits for them: what they find warns, posted here once they answered, maybe after the verdict was given.\n\nNothing but nits on the commits reviewed.\n\n**Nits**, for information: no reply, no fix asked.\n\n- `DomoticsCore-LED/test/test_led_webui/test_led_webui.cpp:292` (tests): Rename test does not check the old name is gone — The rename test only checks that \"Renamed\" is listed and that two options exist. A stale cache that still offered the old name, while also holding the new one, would pass only if the count differed, so this is weak. No test covers `setLEDName` returning false for an out-of-range index or an empty name. Fix: Assert the old name is absent from the options, and add tests for the two refusal cases of `setLEDName`.\n- `DomoticsCore-LED/include/DomoticsCore/LEDWebUI.h:59` (correctness): Name list rebuilt on every context access — Every context accessor calls `refreshIfNamesChanged`, which builds a fresh vector of Strings through `liveNames()` and compares it to the cache. This allocates on each dashboard poll and on each indexed access during enumeration. On an embedded target that is avoidable heap churn. Fix: Compare against the config in place, or keep a version counter in `LEDComponent` that changes on add or rename.\n- `DomoticsCore-LED/include/DomoticsCore/LEDWebUI.h:119` (correctness): Cache invalidation may leave previously returned context pointers dangling — `getContextAtRef` returns a raw pointer into the cache. A later call to `refreshIfNamesChanged`, for example from `getContextCount` during enumeration, invalidates the cache after an add or rename. That frees the storage the earlier pointer referenced. Fix: Document the pointer's lifetime, or return a copy when the cache was rebuilt.\n\nThe reviewer never approves and never changes the code: the author fixes what blocks, a person merges.\n\n<!-- workline:at head=1a773863bd05711172e5087cff3229afdcb1aeb7 run=41840117093 -->\n<!-- workline:record reviewed=1a773863bd05711172e5087cff3229afdcb1aeb7,cadd6f6b5d7e030bc89ce0d24779d1af94b80ce9,98b9c73a61eecfb893bfff23ca99245cf40cdb4a patches=9a81fa010947e36923bf502c9ef27daa6a03812d,1cb507cacac6aecd5967d8b415fb67262d08279a,75e950e63ef0c15c58956538f7533c31aaf66427 runs=1 read=all -->\n<!-- workline:judged-lines gone=0 -->\n\n<!-- workline:sticky=reviewer/warn -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T13:40:28Z",
+     "id": "6632145628",
+     "bot": true
+    },
+    {
+     "body": "**Proposed by workline's documentalist**, not pushed: workline pushes nothing to a merge request's branch. Apply it with `git apply`:\n\n```diff\ndiff --git a/docs/components/led/technical-reference.md b/docs/components/led/technical-reference.md\nindex fbb9a45..d7b1212 100644\n--- a/docs/components/led/technical-reference.md\n+++ b/docs/components/led/technical-reference.md\n@@ -1,7 +1,7 @@\n <!-- workline\n sources: [DomoticsCore-LED/include/DomoticsCore/LED.h, DomoticsCore-LED/include/DomoticsCore/LEDWebUI.h, DomoticsCore-LED/test/test_led_types/test_led_types.cpp, DomoticsCore-LED/test/test_led_component/test_led_component.cpp]\n checked: 3c4d96c\n-judged: 4acdad8\n+judged: 1a77386\n -->\n \n # DomoticsCore-LED -- Technical Reference\n@@ -177,6 +177,10 @@ Convenience wrapper that builds an `LEDConfig` for a single-channel LED and call\n \n Convenience wrapper for a three-channel RGB LED. If `name` is empty, auto-generates `\"RGB_<index>\"`.\n \n+#### `bool setLEDName(size_t ledIndex, const String& name)`\n+\n+Renames the LED at `ledIndex`. Returns `false` if `ledIndex` is out of range or `name` is empty.\n+\n ### Control Methods\n \n #### `bool setLED(size_t ledIndex, const LEDColor& color, uint8_t brightness = 255)`\n@@ -379,7 +383,7 @@ Called once (guarded by `initialApplied` flag) during the first `buildContexts()\n \n #### `const std::vector<String>& getCachedNames() const`\n \n-Lazy-loads and caches LED names from `LEDComponent::getLEDNames()`. If the component returns an empty list, generates synthetic names (`\"LED_0\"`, `\"LED_1\"`, ...). The cache is populated once and never invalidated, which means LEDs added after the first WebUI context build will not appear.\n+Lazy-loads and caches LED names from `LEDComponent::getLEDNames()`. If the component returns an empty list, generates synthetic names (`\"LED_0\"`, `\"LED_1\"`, ...). Before each context read, the live names are compared with the cache; when they differ (`addLED`, rename), the cache and the context cache are dropped and rebuilt.\n \n ---\n \n```\n\n<!-- workline:sticky=documentalist/patch -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T13:40:55Z",
+     "id": "6632155414",
+     "bot": true
+    },
+    {
+     "body": "**workline reviewer** — no lens that blocks on this push: correctness, edge-cases, tests, intent, claims, which only warn, read apart from the verdict, in their own comment; the 3 new commits recorded.\n\nThe lenses that warn read apart, and post in their own comment: they never hold the verdict.\n<!-- workline:warn-apart -->\n\nNo finding on the commits reviewed.\n\nThe reviewer never approves and never changes the code: the author fixes what blocks, a person merges.\n\n<!-- workline:at head=1a773863bd05711172e5087cff3229afdcb1aeb7 run=41840117345 -->\n<!-- workline:record reviewed=1a773863bd05711172e5087cff3229afdcb1aeb7,cadd6f6b5d7e030bc89ce0d24779d1af94b80ce9,98b9c73a61eecfb893bfff23ca99245cf40cdb4a patches=9a81fa010947e36923bf502c9ef27daa6a03812d,1cb507cacac6aecd5967d8b415fb67262d08279a,75e950e63ef0c15c58956538f7533c31aaf66427 runs=1 read=all -->\n<!-- workline:judged-lines gone=0 -->\n\n<!-- workline:sticky=reviewer/summary -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T13:40:58Z",
+     "id": "6632156315",
+     "bot": true
+    },
+    {
+     "body": "**To merge with no person's yes, once its checks pass**: the project's merge policy is `normal`, and this is workline's own code: the developer's code for #16, a fix: its issue labelled `bug`. Opened and pushed by workline's App, every commit its own, and the line passed on its head (1a77386), every agent's review whole. Its head's checks still run: the forge merges it once they pass, and one that fails holds it. To hold it, mark it a draft or turn auto-merge off. Reverted, workline's code merge requests wait for a person's yes again.\n\n<!-- workline:merge-alone=code -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T13:41:35Z",
+     "id": "6632169551",
+     "bot": true
+    }
+   ],
+   "closed": true,
+   "merged": true,
+   "bot": true
+  },
+  {
+   "id": 23,
+   "branch": "workline/tester/issue-16",
+   "base": "main",
+   "title": "test: the acceptance tests of #16",
+   "body": "Refs #16\n\nThe acceptance tests of #16, written before the code: 2 new tests, red on the base. Whoever builds it pushes the code on this branch, and makes this pull request close the issue.\n\n## Tests\n\n| Scenario | Test |\n|---|---|\n| LED added late | `DomoticsCore-LED/test_led_webui_names.test_led_added_late` in `DomoticsCore-LED/test/test_led_webui_names/test_led_webui_names.cpp` |\n\n**Not tested**, no test can check it:\n\n- LED renamed: LED renamed: no test written. The task shows no LEDComponent call that renames an LED, and I will not guess a name that may not exist, because a test calling a missing method could never go green. A person should give the rename call, and the test is then the same as LED added late: build the contexts, rename, assert the new name is among the `led_select` options and that every option is accepted.\n\n",
+   "labels": [],
+   "comments": [
+    {
+     "body": "**The acceptance tests of #16, frozen**: the tester wrote them before the code, red on the base. Only the tester's own commit changes them: a test that does not fit, object on its line, the comment opened by `workline:objection` (the test, its scenario, the kind, why). Any other change to them blocks, `tester-test-changed`.\n\n| Test file | Blob |\n|---|---|\n| `DomoticsCore-LED/test/test_led_webui_names/test_led_webui_names.cpp` | `4d740c7` |\n\n<!-- workline:tester-record {\"issue\":16,\"base\":\"01ad4df91e3ee23aa7c25b485cf6ad09d2c39822\",\"files\":{\"DomoticsCore-LED/test/test_led_webui_names/test_led_webui_names.cpp\":\"4d740c7df3717bc5f1c06c24fb1fc069487bc905\"},\"scenarios\":[{\"name\":\"LED added late\",\"text\":\"Given a dashboard already built, When an LED is added, Then the dropdown lists it and selecting it succeeds.\"},{\"name\":\"LED renamed\",\"text\":\"Given a dashboard already built, When an LED is renamed, Then the dropdown shows the new name and selecting it succeeds.\"}]} -->\n\n<!-- workline:sticky=tester/tests -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T13:34:10Z",
+     "id": "6632009396",
+     "bot": true
+    },
+    {
+     "body": "Closed by workline: #16 is closed: its tests have nothing left to merge here.\n\n<!-- workline:closed -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T13:43:46Z",
+     "id": "6632216276",
+     "bot": true
+    }
+   ],
+   "closed": true,
+   "merged": false,
+   "bot": true
+  }
+ ],
+ "dependencies": true,
+ "sub-issues": true,
+ "writes": 0
+}

@@ -1,0 +1,33 @@
+case: routing/ready-overlap-gone-wait-said
+about: >
+  The I1 form of ready-overlap-gone-wakes-once (ADR-0063): "acted,
+  nothing to run" is not a status. #3, its developer woken once for the
+  overlap gone, says what it waits on, #5's Scope taken, never
+  `state-acted`.
+given:
+  repo: tested
+  config:
+    routing: {events: {issue: [developer]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply"
+        labels: ["workline:ready", "bug"]
+        body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: `mul`. No `mul` code was given in this run.\n"
+        comments:
+          - "<!-- workline:line-record {\"state\":\"ready\",\"body\":\"970b75497876\",\"hops\":1,\"woke\":\"2026-11-03T11:48:40Z\",\"held\":[5],\"unheld\":\"5b182b264c34\"} -->\n<!-- workline:sticky=line/state -->"
+          - "**The developer** waits on this issue.\n\n- **Why**: its Scope's `lib.sh` overlaps #5's, taken.\n- **Next**: #5 merged or let go; the developer looks at this issue again at its next run.\n\n<!-- workline:sticky=developer/claim -->"
+      - id: 5
+        title: "Add"
+        labels: ["workline:developing", "enhancement"]
+        body: "## Need\n\nI want to add.\n\n## Scope\n\n- `lib.sh`: `add`.\n"
+    merge-requests:
+      - {id: 6, branch: workline/developer/5, title: "feat: add", body: "Closes #5"}
+run: {route: reconcile, open-merge-request: true, ai: "fake:developer-nothing", input: {reconcile: list}}
+expect:
+  status: pass
+  summary: "reconcile: 0 issues due"
+  agent-calls: 0
+  findings:
+    - {rule: state-waits, level: info, where: "#3"}
+  no-findings: [{rule: state-acted, where: "#3"}, {rule: state-freed, where: "#3"}]

@@ -1,0 +1,228 @@
+{
+ "issues": [
+  {
+   "id": 4,
+   "title": "A boolean settings field takes anything and answers success",
+   "body": "Copied from https://github.com/JN0V/DomoticsCore/issues/143 for a trial of workline's line on this copy.\n\n### BUG-57 — A boolean settings field takes anything and answers success [LOW] — **NEW (2026-09-20, by BUG-51's review)**\n\n- **Problem**: the accept-discard-report-success shape BUG-52 removed from three\n  surfaces survives on the boolean ones, and the two providers disagree about\n  the vocabulary. `LEDWebUI`'s `enabled_toggle` is `value == \"true\"`, so `\"1\"`\n  and `\"on\"` turn the LED **off** and answer success; `WifiWebUI`'s\n  `wifi_enabled` accepts `\"true\"`, `\"1\"` and `\"on\"`, and NTP's `enabled` reads\n  anything else as false — its suite pins that as \"not a refusal\".\n- **Reachable** by a hand-made POST only: the page renders a checkbox and sends\n  `true`/`false`. That is why it is LOW and not part of BUG-52.\n- **Refs**: BUG-52 (the shape), BUG-45 (the numeric half of the same rule).\n\nOpened from `docs/CODE-ROADMAP.md`, lines 4276 to 4286 by the product-owner role.\n\n<!-- workline:import=docs/CODE-ROADMAP.md:5fa076616380 -->\n\n## Need\n\nAn integrator posting a boolean setting by hand gets a success answer while the value is silently read as false.\n\n## Steps to reproduce\n\n1. Send a hand-made POST to the LED dashboard with field `enabled_toggle` and value `1` (or `on`).\n- **Expected:** the LED turns on, or the value is refused with a reason.\n- **Actual:** the LED is turned off and the answer is `{\"success\":true}`.\n- **Version:** behaviour on commit 26b2ee0.\n\n## Validation\n\n- **Odd value:** Given an LED dashboard, When `enabled_toggle` is posted as `1` or `on`, Then it is either accepted as true or refused with a reason, never read as false with success.\n- **Shared vocabulary:** Given the LED and WiFi settings, When the same value is posted to each, Then both answer the same way.\n\n---\n\n## Verification\n\nTests in `test_led_webui` post `1`, `on`, `true`, `false` and garbage to `enabled_toggle`. They assert the same vocabulary as the WiFi provider, and a refusal for anything else. The existing `test_only_the_literal_true_enables` is updated to the chosen rule.\n\n## Scope\n\n`DomoticsCore-LED/include/DomoticsCore/LEDWebUI.h`: the `enabled_toggle` handler.\n`DomoticsCore-LED/test/test_led_webui/test_led_webui.cpp`: the boolean tests.\n\n## Assumptions\n\n- Assumption taken on 2026-11-04, the Need and Validation drafts unanswered after 30 min: written as the role drafted it, for a person to correct.",
+   "labels": [
+    "bug"
+   ],
+   "comments": [
+    {
+     "body": "**workline reviewer**, its spec — 1 findings on the spec, 1 question for a person; lenses: ambiguous, unverifiable, out-of-scope, contradicted; tokens: 18166 in, 1992 out (3 calls), of 300000 a run (ai-max-tokens).\n\nNo important finding open: the product owner may move it to ready.\n\n| | | Where | Finding |\n|---|---|---|---|\n| warns | ambiguous | `#4:45` | Nit: Case handling of the values is unstated — The existing test pins TRUE as not enabling. The spec lists true, false, 1, on. If TRUE or On is accepted in one reading and refused in another, the tests differ, and so does the match with WiFi. Fix: Say whether matching is case-sensitive and whether off and 0 are accepted as false. |\n| warns | finding-judged-no |  | dropped, from the unverifiable lens: \"Verification does not check the same answer on both providers\" at #4:45 — the judge: the Verification has 'Tests in test_led_webui post 1, on, true, false and garbage to enabled_toggle' and assert 'a refusal for anything else', which would fail if '1' or 'on' were still read as false with success; the finding's worry about WiFi's vocabulary changing later concerns the Shared vocabulary Validation, not the Need. (independence: model (claude-sonnet-5-5 → claude-opus-5-5)) |\n| warns | finding-judged-no |  | dropped, from the out-of-scope lens: \"WiFi and NTP disagreement is in the Need but not in the Scope\" at #4:49 — the judge: the finding only guesses ('If the shared vocabulary needs WiFi to refuse garbage, or NTP to change'), while the Validation asks only that LED's `enabled_toggle` match WiFi's existing vocabulary, which the Scope's `LEDWebUI.h` handler and `test_led_webui.cpp` cover. (independence: model (claude-sonnet-5-5 → claude-opus-5-5)) |\n\n**Questions for a person**\n\nNot defects, not judged: choices the spec leaves to a person; a reply here is enough, they hold nothing.\n\n- `#4:38` (ambiguous): Should 1 and on be accepted as true (as WiFi does), or should only true and false be accepted and everything else refused? On: “it is either accepted as true or refused with a reason, never read as false with success.”\n\nThe reviewer never edits the issue nor moves it: the product owner answers, a person decides.\n\n<!-- workline:spec-review body=b9fb1446733f round=1 open=0 in= -->\n\n<!-- workline:sticky=reviewer/spec -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T07:40:55Z",
+     "id": "6625437882",
+     "bot": true
+    },
+    {
+     "body": "**workline's line** last woke the developer on this issue, in its state ready (3 state steps so far). Edited by the engine, not by hand.\n\n<!-- workline:line-record {\"state\":\"ready\",\"body\":\"bda70ab1ae45\",\"labeled\":\"2026-11-04T13:32:59Z\",\"hops\":3,\"woke\":\"2026-11-04T13:33:14Z\",\"ran\":\"2026-11-04T13:33:14Z\"} -->\n\n<!-- workline:sticky=line/state -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T07:40:57Z",
+     "id": "6625438151",
+     "bot": true
+    },
+    {
+     "body": "**The product owner**, on 2026-11-04:\n\n- Named the code #4 is about: DomoticsCore-LED/include/DomoticsCore/LEDWebUI.h, DomoticsCore-LED/test/test_led_webui/test_led_webui.cpp. DomoticsCore-LED/include/DomoticsCore/LEDWebUI.h says `enabled = (value == \"true\");` — The enabled_toggl…\n- Labelled #4 `bug`, a bug: A hand-made POST of 1 or on to the LED enabled_toggle turns the LED off and answers success; the handler is meant to refuse values it discards (the same shape BUG-52 fixed). Wrong? Change the label; the role does …\n- Moved #4 to ready, its Need and Validation taken as written after no answer, said under Assumptions: its drafts got no answer for 30 min (acts.ask.wait): taken as written, for a person to correct\n\n<!-- What workline knows of this issue, edited by the engine, not by hand.\n```yaml\nsources: [DomoticsCore-LED/include/DomoticsCore/LEDWebUI.h, DomoticsCore-LED/test/test_led_webui/test_led_webui.cpp]\nconfirmed: dde153b\njudged: 831c6fc\nbody: bda70ab1ae45\nsections:\n    Need: An integrator posting a boolean setting by hand gets a success answer while the value is silently read as false.\n    Scope: |-\n        `DomoticsCore-LED/include/DomoticsCore/LEDWebUI.h`: the `enabled_toggle` handler.\n        `DomoticsCore-LED/test/test_led_webui/test_led_webui.cpp`: the boolean tests.\ndone:\n    - act: ready\n      level: normal\ndid:\n    - act: sources\n      level: normal\n      day: \"2026-11-04\"\n      at: dde153b\n      model: claude:claude-sonnet-5-5\n      body: b9fb1446733f\n      line: 'Named the code #4 is about: DomoticsCore-LED/include/DomoticsCore/LEDWebUI.h, DomoticsCore-LED/test/test_led_webui/test_led_webui.cpp. DomoticsCore-LED/include/DomoticsCore/LEDWebUI.h says `enabled = (value == \"true\");` — The enabled_toggl…'\n    - act: kind\n      level: normal\n      day: \"2026-11-04\"\n      at: dde153b\n      model: claude:claude-sonnet-5-5\n      body: b9fb1446733f\n      line: 'Labelled #4 `bug`, a bug: A hand-made POST of 1 or on to the LED enabled_toggle turns the LED off and answers success; the handler is meant to refuse values it discards (the same shape BUG-52 fixed). Wrong? Change the label; the role does …'\n    - act: ready\n      level: normal\n      day: \"2026-11-04\"\n      at: 831c6fc\n      model: claude:claude-sonnet-5-5\n      body: b9fb1446733f\n      line: 'Moved #4 to ready, its Need and Validation taken as written after no answer, said under Assumptions: its drafts got no answer for 30 min (acts.ask.wait): taken as written, for a person to correct'\nheard: 0\nrules: 2\nassumed-at: \"2026-11-04T13:24:59Z\"\nkind: bug\n```\n-->\n\n<!-- workline:sticky=product-owner/state -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T07:41:51Z",
+     "id": "6625452579",
+     "bot": true
+    },
+    {
+     "body": "**The tester** wrote the acceptance tests of this issue, as a Draft.\n\n- **Why**: each of its 2 scenarios has its test in the Draft's Tests table, or its reason under Not tested (1, for a real try), the tests red on the base and passing the project's lint.\n- **Next**: it is ready: whoever builds it starts from the Draft, workline/tester/issue-4.\n\n\n<!-- workline:sticky=tester/issue -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T13:33:02Z",
+     "id": "6631985431",
+     "bot": true
+    },
+    {
+     "body": "**The developer** takes this issue: the first ready one nobody took, in the backlog's order. `workline:developing` says so; a person who takes it back removes the label, or assigns themselves.\n\nIts code on the project's tests:\n\n- `tools/workline-tests.sh {report}`: 1349 tests passed, none red.\n- The whole suite: no file it touches lies in a folder holding tests (the developer's `proof-command`, with `{packages}`, runs the touched folders alone).\n- Run on a fresh checkout of 7468089, its code laid on it: not its agent's worktree.\n\n<!-- workline:developer-act {\"act\":\"pick\",\"at\":\"01ad4df91e3ee23aa7c25b485cf6ad09d2c39822\",\"issue\":4,\"proof\":{\"result\":\"green\",\"command\":\"tools/workline-tests.sh {report}\",\"passed\":1349,\"tree\":\"fresh\",\"at\":\"7468089933c9a7997382bab1f5d609a953c8c9f4\",\"scope\":\"whole\",\"whole\":\"no file it touches lies in a folder holding tests\"},\"turns\":17,\"tokens\":23368,\"cached\":341460,\"tools\":{\"Bash\":15,\"Monitor\":1},\"from\":\"7468089933c9a7997382bab1f5d609a953c8c9f4\",\"acceptance\":[\"DomoticsCore-LED/test/test_led_webui_boolean/test_led_webui_boolean.cpp\"],\"code\":[\"DomoticsCore-LED/include/DomoticsCore/LEDWebUI.h\"],\"tests\":[\"DomoticsCore-LED/test/test_led_webui/test_led_webui.cpp\"]} -->\n\n\n<!-- workline:sticky=developer/claim -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T13:41:40Z",
+     "id": "6632171416",
+     "bot": true
+    }
+   ],
+   "author": "JN0V",
+   "insider": true,
+   "label-events": [
+    {
+     "label": "workline:to-refine",
+     "added": true,
+     "author": "JN0V",
+     "created": "2026-11-04T07:39:42Z",
+     "insider": true,
+     "writer": true
+    },
+    {
+     "label": "bug",
+     "added": true,
+     "author": "workline-bot",
+     "created": "2026-11-04T07:41:47Z",
+     "bot": true
+    },
+    {
+     "label": "workline:proposed",
+     "added": true,
+     "author": "workline-bot",
+     "created": "2026-11-04T07:41:52Z",
+     "bot": true
+    },
+    {
+     "label": "workline:needs-tests",
+     "added": true,
+     "author": "workline-bot",
+     "created": "2026-11-04T13:25:01Z",
+     "bot": true
+    },
+    {
+     "label": "workline:to-refine",
+     "added": false,
+     "author": "workline-bot",
+     "created": "2026-11-04T13:25:02Z",
+     "bot": true
+    },
+    {
+     "label": "workline:proposed",
+     "added": false,
+     "author": "workline-bot",
+     "created": "2026-11-04T13:25:04Z",
+     "bot": true
+    },
+    {
+     "label": "workline:ready",
+     "added": true,
+     "author": "workline-bot",
+     "created": "2026-11-04T13:32:59Z",
+     "bot": true
+    },
+    {
+     "label": "workline:needs-tests",
+     "added": false,
+     "author": "workline-bot",
+     "created": "2026-11-04T13:33:00Z",
+     "bot": true
+    },
+    {
+     "label": "workline:developing",
+     "added": true,
+     "author": "workline-bot",
+     "created": "2026-11-04T13:41:39Z",
+     "bot": true
+    },
+    {
+     "label": "workline:developing",
+     "added": false,
+     "author": "workline-bot",
+     "created": "2026-11-04T13:47:17Z",
+     "bot": true
+    },
+    {
+     "label": "workline:ready",
+     "added": false,
+     "author": "workline-bot",
+     "created": "2026-11-04T13:47:18Z",
+     "bot": true
+    }
+   ],
+   "labeled": {
+    "workline:to-refine": "2026-11-04T07:39:42Z",
+    "bug": "2026-11-04T07:41:47Z",
+    "workline:proposed": "2026-11-04T07:41:52Z",
+    "workline:needs-tests": "2026-11-04T13:25:01Z",
+    "workline:ready": "2026-11-04T13:32:59Z",
+    "workline:developing": "2026-11-04T13:41:39Z"
+   },
+   "closed": true,
+   "reason": "completed"
+  }
+ ],
+ "merge-requests": [
+  {
+   "id": 26,
+   "branch": "workline/developer/4",
+   "base": "main",
+   "title": "fix(domoticscore-led): a boolean settings field takes anything",
+   "body": "Closes #4\n\nThe developer's code for #4, proven on the project's tests.\n\n## Changes\n\n- Code: `DomoticsCore-LED/include/DomoticsCore/LEDWebUI.h`.\n- Tests, in a commit apart: `DomoticsCore-LED/test/test_led_webui/test_led_webui.cpp`.\n- The tester's acceptance tests, read-only to the developer, from `workline/tester/issue-4`: `DomoticsCore-LED/test/test_led_webui_boolean/test_led_webui_boolean.cpp`.\n\n## Verification\n\n- Its agent ran with the rights of the CI job; the forge's guards decide what merges.\n- `tools/workline-tests.sh {report}`: 1349 tests passed, none red.\n- The whole suite: no file it touches lies in a folder holding tests (the developer's `proof-command`, with `{packages}`, runs the touched folders alone).\n- Run on a fresh checkout of 7468089, its code laid on it: not its agent's worktree.\n\n## Tried\n\n- Its code on the project's tests, on a fresh checkout, before this opened: above.\n- Not tried: the commands the issue names to verify it, nor a person's use of it.\n",
+   "labels": [],
+   "comments": [
+    {
+     "body": "**The developer**'s record of this pull request, for its next runs and the auditor.\n\n<!-- workline:developer-act {\"act\":\"code\",\"at\":\"01ad4df91e3ee23aa7c25b485cf6ad09d2c39822\",\"issue\":4,\"proof\":{\"result\":\"green\",\"command\":\"tools/workline-tests.sh {report}\",\"passed\":1349,\"tree\":\"fresh\",\"at\":\"7468089933c9a7997382bab1f5d609a953c8c9f4\",\"scope\":\"whole\",\"whole\":\"no file it touches lies in a folder holding tests\"},\"turns\":17,\"tokens\":23368,\"cached\":341460,\"tools\":{\"Bash\":15,\"Monitor\":1},\"from\":\"7468089933c9a7997382bab1f5d609a953c8c9f4\",\"acceptance\":[\"DomoticsCore-LED/test/test_led_webui_boolean/test_led_webui_boolean.cpp\"],\"code\":[\"DomoticsCore-LED/include/DomoticsCore/LEDWebUI.h\"],\"tests\":[\"DomoticsCore-LED/test/test_led_webui/test_led_webui.cpp\"]} -->\n\n\n<!-- workline:sticky=developer/code -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T13:41:46Z",
+     "id": "6632173438",
+     "bot": true
+    },
+    {
+     "body": "**workline reviewer, the lenses that warn** — 1 findings on the change; lenses: correctness, edge-cases, tests, intent, claims; tokens: 9278 in, 551 out (1 call), of 300000 a run (ai-max-tokens).\n\nThey read apart from the verdict, which never waits for them: what they find warns, posted here once they answered, maybe after the verdict was given.\n\n| | | Where | Finding |\n|---|---|---|---|\n| warns | finding-unfounded |  | dropped, from the claims lens: \"Case-insensitive vocabulary claim not matched\" — its claim is not found in what the author said |\n\n**Nits**, for information: no reply, no fix asked.\n\n- `DomoticsCore-LED/include/DomoticsCore/LEDWebUI.h:149` (tests): Rejected boolean leaves state unchecked — The test only checks the error response for invalid values. It never checks that the LED state stays unchanged after a refusal, so a handler that refused but still flipped the state would pass. Fix: In the refusal loop, first enable the LED, then post the invalid value and assert it is still enabled.\n\nThe reviewer never approves and never changes the code: the author fixes what blocks, a person merges.\n\n<!-- workline:at head=c9150961d9056cb0d0c8aba8726eae6aa073a86f run=41840454214 -->\n<!-- workline:record reviewed=c9150961d9056cb0d0c8aba8726eae6aa073a86f,fffe86c3aab2a00534f54a200ee7b9e3524aafe6,7468089933c9a7997382bab1f5d609a953c8c9f4 patches=e6cd30df6a6cde032ea95687804126be66c8669f,deac87dca610766efc02c613c5c67c76735776e2,161630d8c43ccafa21463f00a478901f415c7422 runs=1 read=all -->\n<!-- workline:judged-lines gone=0 -->\n\n<!-- workline:sticky=reviewer/warn -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T13:42:33Z",
+     "id": "6632190015",
+     "bot": true
+    },
+    {
+     "body": "**The developer's bounds** on this pull request, read at the base's 01ad4df: 3 files changed since it, each within the bounds of #4.\n\n<!-- workline:developer-act {\"act\":\"bounds\",\"issue\":4,\"base\":\"01ad4df91e3ee23aa7c25b485cf6ad09d2c39822\",\"head\":\"c9150961d9056cb0d0c8aba8726eae6aa073a86f\",\"files\":3,\"refused\":[]} -->\n\n<!-- workline:sticky=developer/bounds -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T13:42:35Z",
+     "id": "6632190638",
+     "bot": true
+    },
+    {
+     "body": "**Proposed by workline's documentalist**, not pushed: workline pushes nothing to a merge request's branch. Apply it with `git apply`:\n\n```diff\ndiff --git a/docs/components/led/technical-reference.md b/docs/components/led/technical-reference.md\nindex fbb9a45..acb7cbd 100644\n--- a/docs/components/led/technical-reference.md\n+++ b/docs/components/led/technical-reference.md\n@@ -1,7 +1,7 @@\n <!-- workline\n sources: [DomoticsCore-LED/include/DomoticsCore/LED.h, DomoticsCore-LED/include/DomoticsCore/LEDWebUI.h, DomoticsCore-LED/test/test_led_types/test_led_types.cpp, DomoticsCore-LED/test/test_led_component/test_led_component.cpp]\n checked: 3c4d96c\n-judged: 4acdad8\n+judged: c915096\n -->\n \n # DomoticsCore-LED -- Technical Reference\n@@ -324,7 +324,7 @@ The provider registers two contexts:\n | Field ID | Type | Default | Description |\n |----------|------|---------|-------------|\n | `led_select` | Select | First LED name | Dropdown of all configured LED names. A name that matches none is refused, and the selection stays where it was |\n-| `enabled_toggle` | Boolean | `false` | Enables or disables the selected LED |\n+| `enabled_toggle` | Boolean | `false` | Enables or disables the selected LED. Accepts `true`, `1`, `on`, `false`, `0`, `off`; any other value is refused |\n | `brightness` | Slider (0-255) | `128` | PWM brightness level |\n | `effect` | Select | `\"Solid\"` | Effect picker: Solid, Blink, Fade, Pulse, Rainbow, Breathing. A name outside the six is refused, not read as Solid |\n \n@@ -348,7 +348,7 @@ Returns a JSON object with the current values for the requested context. Used by\n \n #### `String handleWebUIRequest(const String& contextId, const String& endpoint, const String& method, const std::map<String, String>& params)`\n \n-Processes POST requests from the dashboard. Expects `field` and `value` in `params`. Updates internal mirrored state and delegates to `LEDComponent` methods. Returns `{\"success\":true}`, or `{\"success\":false,\"error\":\"<reason>\"}` naming what it refused: an effect name outside the six, an LED name that matches none, a brightness that is not digits, an unknown field.\n+Processes POST requests from the dashboard. Expects `field` and `value` in `params`. Updates internal mirrored state and delegates to `LEDComponent` methods. Returns `{\"success\":true}`, or `{\"success\":false,\"error\":\"<reason>\"}` naming what it refused: an effect name outside the six, an LED name that matches none, a brightness that is not digits, a boolean outside the accepted words, an unknown field.\n \n ### Internal State\n \n```\n\n<!-- workline:sticky=documentalist/patch -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T13:43:29Z",
+     "id": "6632209932",
+     "bot": true
+    },
+    {
+     "body": "**workline reviewer** — no lens that blocks on this push: correctness, edge-cases, tests, intent, claims, which only warn, read apart from the verdict, in their own comment; the 3 new commits recorded.\n\nThe lenses that warn read apart, and post in their own comment: they never hold the verdict.\n<!-- workline:warn-apart -->\n\nNo finding on the commits reviewed.\n\nThe reviewer never approves and never changes the code: the author fixes what blocks, a person merges.\n\n<!-- workline:at head=c9150961d9056cb0d0c8aba8726eae6aa073a86f run=41840454347 -->\n<!-- workline:record reviewed=c9150961d9056cb0d0c8aba8726eae6aa073a86f,fffe86c3aab2a00534f54a200ee7b9e3524aafe6,7468089933c9a7997382bab1f5d609a953c8c9f4 patches=e6cd30df6a6cde032ea95687804126be66c8669f,deac87dca610766efc02c613c5c67c76735776e2,161630d8c43ccafa21463f00a478901f415c7422 runs=1 read=all -->\n<!-- workline:judged-lines gone=0 -->\n\n<!-- workline:sticky=reviewer/summary -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T13:43:32Z",
+     "id": "6632211097",
+     "bot": true
+    },
+    {
+     "body": "**To merge with no person's yes, once its checks pass**: the project's merge policy is `normal`, and this is workline's own code: the developer's code for #4, a fix: its issue labelled `bug`. Opened and pushed by workline's App, every commit its own, and the line passed on its head (c915096), every agent's review whole. Its head's checks still run: the forge merges it once they pass, and one that fails holds it. To hold it, mark it a draft or turn auto-merge off. Reverted, workline's code merge requests wait for a person's yes again.\n\n<!-- workline:merge-alone=code -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T13:44:19Z",
+     "id": "6632228352",
+     "bot": true
+    }
+   ],
+   "closed": true,
+   "merged": true,
+   "bot": true
+  },
+  {
+   "id": 22,
+   "branch": "workline/tester/issue-4",
+   "base": "main",
+   "title": "test: the acceptance tests of #4",
+   "body": "Refs #4\n\nThe acceptance tests of #4, written before the code: 2 new tests, red on the base. Whoever builds it pushes the code on this branch, and makes this pull request close the issue.\n\n## Tests\n\n| Scenario | Test |\n|---|---|\n| Odd value | `DomoticsCore-LED/test_led_webui_boolean.test_odd_value` in `DomoticsCore-LED/test/test_led_webui_boolean/test_led_webui_boolean.cpp` |\n\n**Not tested**, no test can check it:\n\n- Shared vocabulary: Shared vocabulary: no test written. It needs the WiFi provider's boolean field and how to build it, and neither is in the task. A guessed name would fail on a missing name rather than on the behaviour. Once the WiFi provider's code is given, the test can post each value to both providers and compare the answers.\n",
+   "labels": [],
+   "comments": [
+    {
+     "body": "**The acceptance tests of #4, frozen**: the tester wrote them before the code, red on the base. Only the tester's own commit changes them: a test that does not fit, object on its line, the comment opened by `workline:objection` (the test, its scenario, the kind, why). Any other change to them blocks, `tester-test-changed`.\n\n| Test file | Blob |\n|---|---|\n| `DomoticsCore-LED/test/test_led_webui_boolean/test_led_webui_boolean.cpp` | `06dbc83` |\n\n<!-- workline:tester-record {\"issue\":4,\"base\":\"01ad4df91e3ee23aa7c25b485cf6ad09d2c39822\",\"files\":{\"DomoticsCore-LED/test/test_led_webui_boolean/test_led_webui_boolean.cpp\":\"06dbc83906f9ca03e5f91050035b0ef7695dfe4b\"},\"scenarios\":[{\"name\":\"Odd value\",\"text\":\"Given an LED dashboard, When `enabled_toggle` is posted as `1` or `on`, Then it is either accepted as true or refused with a reason, never read as false with success.\"},{\"name\":\"Shared vocabulary\",\"text\":\"Given the LED and WiFi settings, When the same value is posted to each, Then both answer the same way.\"}]} -->\n\n<!-- workline:sticky=tester/tests -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T13:33:08Z",
+     "id": "6631987348",
+     "bot": true
+    },
+    {
+     "body": "Closed by workline: #4 is closed: its tests have nothing left to merge here.\n\n<!-- workline:closed -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T13:47:12Z",
+     "id": "6632290574",
+     "bot": true
+    }
+   ],
+   "closed": true,
+   "merged": false,
+   "bot": true
+  }
+ ],
+ "dependencies": true,
+ "sub-issues": true,
+ "writes": 0
+}

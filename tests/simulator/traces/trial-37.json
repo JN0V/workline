@@ -1,0 +1,130 @@
+{
+ "issues": [
+  {
+   "id": 37,
+   "title": "LO-32 — WebUI: wsBuffer_[] static member defined in header, ODR violation risk",
+   "body": "Copied from https://github.com/JN0V/DomoticsCore/issues/187 for a trial of workline's line on this copy.\n\nThe WebUI component declares a static buffer, `wsBuffer_`, in a header. If the buffer is defined in the header too, each translation unit that includes it could get its own definition. That risks a linker error or silent duplicate state. The roadmap does not say which build shows it. It hurts anyone who builds the WebUI in a project with several source files.\n\n<details><summary>For the builder</summary>`static char wsBuffer_[WEBUI_WS_BUFFER_SIZE];` and `bufferLock_` are declared in `DomoticsCore-WebUI/include/DomoticsCore/WebUI.h` (the class `WebUIComponent`). Check where each is defined.</details>\n\nOpened from `docs/CODE-ROADMAP.md`, lines 6352 to 6352 by the product-owner role.\n\n<!-- workline:import=docs/CODE-ROADMAP.md:2e2aab9c6fc4 -->\n\n## Validation\n\n- **Several source files:** Given two source files that both include `DomoticsCore/WebUI.h`, When the project is built and linked, Then the link succeeds with no duplicate-symbol error for `wsBuffer_` or `bufferLock_`.\n- **One shared buffer:** Given a build with several source files that use the WebUI, When the poll handler and the live-update broadcast build an update, Then both use the same single buffer and the same single lock.\n\n---\n\n## Verification\n\n- **Step 1, confirm the state.** Search the repository for the definitions of `WebUIComponent::wsBuffer_` and `WebUIComponent::bufferLock_`. The class in `DomoticsCore-WebUI/include/DomoticsCore/WebUI.h` only declares them (lines 82 and 83).\n  - A definition that is plain, in the header and not `inline`: the defect is real. Fix it.\n  - A definition that is `inline`, or sits once in a `.cpp`: no defect remains. A person closes the issue as obsolete. The checks below are then only a guard.\n- **Link check.** Build two source files that both include `DomoticsCore/WebUI.h` for a board target, for example ESP32. Link them into one program. WebUI does not compile natively, so this needs the board toolchain. The link must succeed. A plain definition in the header makes it fail with a duplicate-symbol error.\n- **One symbol each.** Run the board toolchain's `nm -C` on the linked program. `WebUIComponent::wsBuffer_` and `WebUIComponent::bufferLock_` must each show exactly one defined symbol.\n- **One buffer and one lock.** Add a source check that runs in CI and needs no board. It reads `WebUI.h` and requires the following.\n  - Exactly one definition of each of the two members.\n  - Both the `/api/ui/updates` poll handler and the live-update broadcast take `bufferLock_` through a `LockGuard`.\n  - Both use `wsBuffer_` and no other buffer.\n  This fails if a user gets its own copy or skips the lock.\n- Run the link check in the same CI job as the board build, so it keeps guarding later changes.\n\n## Scope\n\nGuessed: the lines holding the definitions of `wsBuffer_` and `bufferLock_` were not in the code given, so the exact place of the change is not confirmed.\n- `DomoticsCore-WebUI/include/DomoticsCore/WebUI.h`: the two static members of `WebUIComponent` (declared at lines 82 and 83), their definitions, and the users of the buffer (the `/api/ui/updates` poll handler and the live-update broadcast).\n- A new `.cpp` under `DomoticsCore-WebUI/src`, only if a single out-of-header definition is chosen over `inline`.\n- A new check under `DomoticsCore-WebUI/test` or an example with two source files, plus the build or CI config that runs it.\n\n## Assumptions\n\n- Assumption taken on 2026-11-04, the Validation draft unanswered after 5 min: written as the role drafted it, for a person to correct.",
+   "labels": [
+    "workline:blocked",
+    "task"
+   ],
+   "comments": [
+    {
+     "body": "**The product owner**, on 2026-11-04:\n\n- Named the code #37 is about: DomoticsCore-WebUI/include/DomoticsCore/WebUI.h. DomoticsCore-WebUI/include/DomoticsCore/WebUI.h says `static char wsBuffer_[WEBUI_WS_BUFFER_SIZE];` — The issue is about this static buffer and its lock, both de…\n- Labelled #37 `task`, a task: The header declares the statics, but the part that shows where they are defined was not given. No broken behaviour is shown, only a risk in multi-file builds, so this is work on how the code is laid out. Wrong?…\n- Added: Validation (draft), Verification. Changed: —. See the issue's edit history.\n- Added: —. Changed: Verification, Scope. See the issue's edit history.\n- Added: —. Changed: Verification. See the issue's edit history.\n- Moved #37 to ready, its Validation taken as written after no answer, said under Assumptions: its drafts got no answer for 5 min (acts.ask.wait): taken as written, for a person to correct\n\n<!-- What workline knows of this issue, edited by the engine, not by hand.\n```yaml\nsources: [DomoticsCore-WebUI/include/DomoticsCore/WebUI.h]\nconfirmed: 4201c58\njudged: 4201c58\nbody: 652bcd17be89\nsections:\n    Scope: |-\n        Guessed: the lines holding the definitions of `wsBuffer_` and `bufferLock_` were not in the code given, so the exact place of the change is not confirmed.\n        - `DomoticsCore-WebUI/include/DomoticsCore/WebUI.h`: the two static members of `WebUIComponent` (declared at lines 82 and 83), their definitions, and the users of the buffer (the `/api/ui/updates` poll handler and the live-update broadcast).\n        - A new `.cpp` under `DomoticsCore-WebUI/src`, only if a single out-of-header definition is chosen over `inline`.\n        - A new check under `DomoticsCore-WebUI/test` or an example with two source files, plus the build or CI config that runs it.\nwrote:\n    Scope: 3a05403790ce\n    Validation: b51e181f0d14\n    Verification: b2c48da7e974\nanswered: 88aba0cfb946\nrevised: [Verification]\ndone:\n    - act: ready\n      level: normal\ndid:\n    - act: sources\n      level: normal\n      day: \"2026-11-04\"\n      at: 4201c58\n      model: claude:claude-sonnet-5-5\n      body: 7df51e3eda42\n      line: 'Named the code #37 is about: DomoticsCore-WebUI/include/DomoticsCore/WebUI.h. DomoticsCore-WebUI/include/DomoticsCore/WebUI.h says `static char wsBuffer_[WEBUI_WS_BUFFER_SIZE];` — The issue is about this static buffer and its lock, both de…'\n    - act: kind\n      level: normal\n      day: \"2026-11-04\"\n      at: 4201c58\n      model: claude:claude-sonnet-5-5\n      body: 7df51e3eda42\n      line: 'Labelled #37 `task`, a task: The header declares the statics, but the part that shows where they are defined was not given. No broken behaviour is shown, only a risk in multi-file builds, so this is work on how the code is laid out. Wrong?…'\n    - act: refine\n      level: normal\n      day: \"2026-11-04\"\n      at: 4201c58\n      model: claude:claude-sonnet-5-5\n      body: 7df51e3eda42\n      line: 'Added: Validation (draft), Verification. Changed: —. See the issue''s edit history.'\n    - act: refine\n      level: normal\n      day: \"2026-11-04\"\n      at: 4201c58\n      model: claude:claude-sonnet-5-5\n      body: d7860c8f9b1f\n      line: 'Added: —. Changed: Verification, Scope. See the issue''s edit history.'\n    - act: refine\n      level: normal\n      day: \"2026-11-04\"\n      at: 4201c58\n      model: claude:claude-sonnet-5-5\n      body: 88aba0cfb946\n      line: 'Added: —. Changed: Verification. See the issue''s edit history.'\n    - act: ready\n      level: normal\n      day: \"2026-11-04\"\n      at: 4201c58\n      body: a9260b0b9533\n      line: 'Moved #37 to ready, its Validation taken as written after no answer, said under Assumptions: its drafts got no answer for 5 min (acts.ask.wait): taken as written, for a person to correct'\nheard: 0\nrules: 2\nassumed-at: \"2026-11-04T18:06:17Z\"\nkind: task\n```\n-->\n\n<!-- workline:sticky=product-owner/state -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T15:44:56Z",
+     "id": "6635052830",
+     "bot": true
+    },
+    {
+     "body": "**workline's line** blocks this issue.\n\n- **Why**: the tester wrote no tests for it in its state tests: error: new file DomoticsCore-WebUI/test/test_webui_one_buffer/test_webui_one_buffer.cpp depends on old contents; its state was tests.\n- **Next**: the product owner reads it again when someone comments, its body changes or an issue it waits on closes, else in 7 days, and sends it back or says why it stays; a person may move it back by its label at any time, as the board's Blocked column shows.\n\n**workline's line** keeps this record while the issue is blocked, 1 state step before; moved out of Blocked, its count starts again. Edited by the engine, not by hand.\n\n<!-- workline:line-record {\"state\":\"blocked\",\"body\":\"652bcd17be89\",\"labeled\":\"2026-11-04T18:06:18Z\",\"hops\":1,\"reached\":\"tests\",\"from\":\"tests\",\"why\":\"the tester wrote no tests for it in its state tests: error: new file DomoticsCore-WebUI/test/test_webui_one_buffer/test_webui_one_buffer.cpp depends on old contents\",\"since\":\"2026-11-04T18:08:14Z\",\"ran\":\"2026-11-04T18:07:02Z\"} -->\n\n<!-- workline:sticky=line/state -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T15:45:12Z",
+     "id": "6635059185",
+     "bot": true
+    },
+    {
+     "body": "**workline reviewer**, its spec — 2 findings on the spec, 1 question for a person; lenses: ambiguous, unverifiable, out-of-scope, contradicted; tokens: 9449 in, 1914 out (3 calls), of 300000 a run (ai-max-tokens).\n\nNo important finding open: the product owner may move it to ready.\n\n| | | Where | Finding |\n|---|---|---|---|\n| warns | unverifiable | `#37:22` | Nit: Verification names no existing step for the 'already fine' branch — Step 1 says a person closes the issue if no defect remains, but the checks are then said to be only a guard. It does not say whether they must still be added, and it gives no command for the search. Fix: Give the exact search command and say whether the guard checks are still built when no defect is found. (also found on this line — contradicted: Spec says members are declared as static, but the code shown does not confirm lines 82 and 83) |\n| warns | out-of-scope | `#37:39` | Nit: Example with two source files is optional in Scope but required by the link check — The Scope offers 'a new check under test or an example'. The link check needs two source files built for a board, which is a new fixture. The Scope does not say where it goes. Fix: Name the directory of the two-file fixture. |\n| warns | finding-judged-no |  | dropped, from the unverifiable lens: \"Source check cannot find definitions if they live in a .cpp\" at #37:27 — the judge: the 'Link check' and the 'One symbol each' check with `nm -C` would fail if the header held a plain definition, so the Verification can tell when the Need is unmet; the finding only says the WebUI.h source check would also fail a correct .cpp fix. (independence: model (claude-sonnet-5-5 → claude-opus-5-5)) |\n| warns | finding-judged-no |  | dropped, from the out-of-scope lens: \"CI job and build config not pinned in Scope\" at #37:32 — the judge: the Scope's line 'plus the build or CI config that runs it' covers running the link check in the board build's CI job, so the Need is covered as a part even without a file name, and 'the builder may not touch it' is only a guess. (independence: model (claude-sonnet-5-5 → claude-opus-5-5)) |\n\n**Questions for a person**\n\nNot defects, not judged: choices the spec leaves to a person; a reply here is enough, they hold nothing.\n\n- `#37:38` (ambiguous): Should the fix be an inline definition in the header, or one definition in a .cpp under src? On: “A new `.cpp` under `DomoticsCore-WebUI/src`, only if a single out-of-header definition is chosen over `inline`.”\n\nThe reviewer never edits the issue nor moves it: the product owner answers, a person decides.\n\n<!-- workline:spec-review body=a9260b0b9533 round=3 open=0 in= -->\n\n<!-- workline:sticky=reviewer/spec -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T17:58:32Z",
+     "id": "6638037809",
+     "bot": true
+    },
+    {
+     "body": "**The tester** wrote no tests for this issue this run.\n\n- **Why**: error: new file DomoticsCore-WebUI/test/test_webui_one_buffer/test_webui_one_buffer.cpp depends on old contents.\n- **Next**: waiting for its tests, the line blocks it with this reason; a person writes them, or puts workline:needs-tests back for another run.\n\n\n<!-- workline:sticky=tester/issue -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T18:07:54Z",
+     "id": "6638244327",
+     "bot": true
+    }
+   ],
+   "author": "JN0V",
+   "insider": true,
+   "label-events": [
+    {
+     "label": "workline:to-refine",
+     "added": true,
+     "author": "JN0V",
+     "created": "2026-11-04T15:43:50Z",
+     "insider": true,
+     "writer": true
+    },
+    {
+     "label": "task",
+     "added": true,
+     "author": "workline-bot",
+     "created": "2026-11-04T15:45:01Z",
+     "bot": true
+    },
+    {
+     "label": "workline:draft",
+     "added": true,
+     "author": "workline-bot",
+     "created": "2026-11-04T15:45:05Z",
+     "bot": true
+    },
+    {
+     "label": "workline:proposed",
+     "added": true,
+     "author": "workline-bot",
+     "created": "2026-11-04T15:45:11Z",
+     "bot": true
+    },
+    {
+     "label": "workline:needs-tests",
+     "added": true,
+     "author": "workline-bot",
+     "created": "2026-11-04T18:06:18Z",
+     "bot": true
+    },
+    {
+     "label": "workline:to-refine",
+     "added": false,
+     "author": "workline-bot",
+     "created": "2026-11-04T18:06:19Z",
+     "bot": true
+    },
+    {
+     "label": "workline:draft",
+     "added": false,
+     "author": "workline-bot",
+     "created": "2026-11-04T18:06:20Z",
+     "bot": true
+    },
+    {
+     "label": "workline:proposed",
+     "added": false,
+     "author": "workline-bot",
+     "created": "2026-11-04T18:06:22Z",
+     "bot": true
+    },
+    {
+     "label": "workline:blocked",
+     "added": true,
+     "author": "workline-bot",
+     "created": "2026-11-04T18:08:30Z",
+     "bot": true
+    },
+    {
+     "label": "workline:needs-tests",
+     "added": false,
+     "author": "workline-bot",
+     "created": "2026-11-04T18:08:32Z",
+     "bot": true
+    }
+   ],
+   "labeled": {
+    "workline:to-refine": "2026-11-04T15:43:50Z",
+    "task": "2026-11-04T15:45:01Z",
+    "workline:draft": "2026-11-04T15:45:05Z",
+    "workline:proposed": "2026-11-04T15:45:11Z",
+    "workline:needs-tests": "2026-11-04T18:06:18Z",
+    "workline:blocked": "2026-11-04T18:08:30Z"
+   }
+  }
+ ],
+ "merge-requests": [],
+ "dependencies": true,
+ "sub-issues": true,
+ "writes": 0
+}

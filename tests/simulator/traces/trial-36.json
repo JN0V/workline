@@ -1,0 +1,329 @@
+{
+ "issues": [
+  {
+   "id": 36,
+   "title": "BUG-49 — MQTT: what a dropped link still gets wrong after BUG-44",
+   "body": "Copied from https://github.com/JN0V/DomoticsCore/issues/146 for a trial of workline's line on this copy.\n\n### BUG-49 — MQTT: what a dropped link still gets wrong after BUG-44 [LOW] — **NEW (2026-09-20, by the deferred-work purge)**\n\n- **Parked by**: BUG-44's code review, 2026-09-20.\n- **Files**: `MQTT_impl.h` (`resetReconnect()` `:223`, `updateStatistics()`\n  `:608`, `announceConnectionLost()` `:115`); `MQTT.h` (`MQTTStatistics`).\n- **Three leftovers, one file**:\n  1. `resetReconnect()` is the last silent exit from Connected — it sets\n     `Disconnected` without touching the client or emitting, so a caller\n     using it after changing the broker leaves every subscriber believing the\n     link is up, and the next `connect()` sends a second `mqtt/connected` with\n     no `mqtt/disconnected` between. Public API; nothing in the tree calls it.\n  2. `MQTTStatistics` counts connections and never losses, so neither the\n     WebUI nor the telemetry can see a link flap; and `uptime` is refreshed\n     only while connected, so it freezes at its last value and reads as live\n     for the whole outage.\n  3. the loss is announced once per drop, and a `mqtt/disconnected` the\n     EventBus drops on a full queue is never re-sent — HomeAssistant's\n     `mqttConnected` then stays true for the life of the process. Sticky\n     publication would fix it and changes replay for every subscriber.\n- **Fix**: (1) announce, or close the session first — a design question;\n  (2) a loss counter and an uptime that stops; (3) decide sticky or not.\n- **Refs**: BUG-44, BUG-46, ADR 0001.\n\nOpened from `docs/CODE-ROADMAP.md`, lines 4506 to 4527 by the product-owner role.\n\n<!-- workline:import=docs/CODE-ROADMAP.md:87ac34765c9f -->\n\n## Need\n\nOperators and components that watch the MQTT link need it reported truthfully. Today `resetReconnect()` can leave every subscriber believing the link is up. A dropped link leaves no trace in the statistics, and the uptime figure stays frozen as if the link were still live.\n\n## Validation\n\n- **Silent reset:** Given a connected MQTT component, When `resetReconnect()` is called, Then subscribers get `mqtt/disconnected` before any later `mqtt/connected`.\n- **Link flap:** Given a connected component whose link drops and returns twice, When I read the statistics, Then they show two losses.\n- **Frozen uptime:** Given a dropped link, When I read the statistics during the outage, Then the uptime no longer reads as live.\n\n---\n\n## Verification\n\nThree native tests go in the project's existing MQTT component tests. Each one drives the native MQTT client stub, the stub WiFi link and the test clock, and captures `mqtt/connected` and `mqtt/disconnected`.\n- **Silent reset:** connect, then call `resetReconnect()`. Expect exactly one `mqtt/disconnected` and `getState()` equal to `Disconnected`. Connect again. Expect the second `mqtt/connected` to arrive after that `mqtt/disconnected`. Before the fix there is no `mqtt/disconnected` at all.\n- **Link flap:** drop the link and let `loop()` run, twice, reconnecting in between. Expect `getStatistics().lostCount` to equal 2. The field `lostCount` is new in `MQTTStatistics`, so this test fails to compile or assert before the fix.\n- **Frozen uptime:** connect and advance the clock. Expect `getStatistics().uptime` above 0. Drop the link and run `loop()`. Expect `uptime` to equal 0, and still 0 after the clock advances further.\n- The existing MQTT suite stays green.\n\n## Scope\n\n`DomoticsCore-MQTT/include/DomoticsCore/MQTT_impl.h`: `resetReconnect()` closes the session and announces the loss when the state is Connected. `announceConnectionLost()` counts the loss and zeroes the uptime.\n`DomoticsCore-MQTT/include/DomoticsCore/MQTT.h`: add a loss counter to `MQTTStatistics`.\nThe EventBus replay question for a dropped `mqtt/disconnected` (leftover 3 in the issue text) is a separate decision and is not part of this change.\n\n## Assumptions\n\n- Assumption taken on 2026-11-04, the Need and Validation drafts unanswered after 5 min: written as the role drafted it, for a person to correct.",
+   "labels": [
+    "bug",
+    "workline:developing"
+   ],
+   "comments": [
+    {
+     "body": "**The product owner**, on 2026-11-04:\n\n- Named the code #36 is about: DomoticsCore-MQTT/include/DomoticsCore/MQTT_impl.h, DomoticsCore-MQTT/include/DomoticsCore/MQTT.h, DomoticsCore-HomeAssistant/include/DomoticsCore/HomeAssistant.h. DomoticsCore-MQTT/include/DomoticsCore/MQTT_im…\n- Labelled #36 `bug`, a bug: resetReconnect() leaves Connected without telling anyone, and the uptime stays frozen after a drop. Both break what the component promises with mqtt/connected and mqtt/disconnected. A test can show it. Wrong? Cha…\n- Added: Need (draft), Validation (draft), Verification. Changed: —. See the issue's edit history.\n- Added: Scope. Changed: —. See the issue's edit history.\n- Added: —. Changed: Need (draft), Verification. See the issue's edit history.\n- Moved #36 to ready, its Need and Validation taken as written after no answer, said under Assumptions: its drafts got no answer for 5 min (acts.ask.wait): taken as written, for a person to correct\n- Added: —. Changed: Verification, Scope. See the issue's edit history.\n- Added: —. Changed: Scope. See the issue's edit history.\n- Moved #36 to ready: the reviewer read its spec (round 1): no important finding open\n- Added: —. Changed: Verification, Scope. See the issue's edit history.\n- Moved #36 to ready: the reviewer read its spec (round 1): no important finding open\n- Added: —. Changed: Verification, Scope. See the issue's edit history.\n- Moved #36 to ready: the reviewer read its spec (round 1): no important finding open\n\n<!-- What workline knows of this issue, edited by the engine, not by hand.\n```yaml\nsources: [DomoticsCore-MQTT/include/DomoticsCore/MQTT_impl.h, DomoticsCore-MQTT/include/DomoticsCore/MQTT.h, DomoticsCore-HomeAssistant/include/DomoticsCore/HomeAssistant.h]\nconfirmed: 4201c58\njudged: 4201c58\nbody: a065a8dcbb35\nsections:\n    Need: Operators and components that watch the MQTT link need it reported truthfully. Today `resetReconnect()` can leave every subscriber believing the link is up. A dropped link leaves no trace in the statistics, and the uptime figure stays frozen as if the link were still live.\n    Scope: |-\n        `DomoticsCore-MQTT/include/DomoticsCore/MQTT_impl.h`: `resetReconnect()` closes the session and announces the loss when the state is Connected. `announceConnectionLost()` counts the loss and zeroes the uptime.\n        `DomoticsCore-MQTT/include/DomoticsCore/MQTT.h`: add a loss counter to `MQTTStatistics`.\n        The EventBus replay question for a dropped `mqtt/disconnected` (leftover 3 in the issue text) is a separate decision and is not part of this change.\nwrote:\n    Need: bc35382ff58a\n    Scope: eb8059bdeb0e\n    Validation: 06033fe8a410\n    Verification: ed278899480a\nanswered: a8440b893509\nrevised: [Verification, Need]\ndone:\n    - act: ready\n      level: normal\ndid:\n    - act: sources\n      level: normal\n      day: \"2026-11-04\"\n      at: 4201c58\n      model: claude:claude-sonnet-5-5\n      body: e8dee186a020\n      line: 'Named the code #36 is about: DomoticsCore-MQTT/include/DomoticsCore/MQTT_impl.h, DomoticsCore-MQTT/include/DomoticsCore/MQTT.h, DomoticsCore-HomeAssistant/include/DomoticsCore/HomeAssistant.h. DomoticsCore-MQTT/include/DomoticsCore/MQTT_im…'\n    - act: kind\n      level: normal\n      day: \"2026-11-04\"\n      at: 4201c58\n      model: claude:claude-sonnet-5-5\n      body: e8dee186a020\n      line: 'Labelled #36 `bug`, a bug: resetReconnect() leaves Connected without telling anyone, and the uptime stays frozen after a drop. Both break what the component promises with mqtt/connected and mqtt/disconnected. A test can show it. Wrong? Cha…'\n    - act: refine\n      level: normal\n      day: \"2026-11-04\"\n      at: 4201c58\n      model: claude:claude-sonnet-5-5\n      body: e8dee186a020\n      line: 'Added: Need (draft), Validation (draft), Verification. Changed: —. See the issue''s edit history.'\n    - act: refine\n      level: normal\n      day: \"2026-11-04\"\n      at: 4201c58\n      model: claude:claude-sonnet-5-5\n      body: 4a1b792fd14d\n      line: 'Added: Scope. Changed: —. See the issue''s edit history.'\n    - act: refine\n      level: normal\n      day: \"2026-11-04\"\n      at: 4201c58\n      model: claude:claude-sonnet-5-5\n      body: a8440b893509\n      line: 'Added: —. Changed: Need (draft), Verification. See the issue''s edit history.'\n    - act: ready\n      level: normal\n      day: \"2026-11-04\"\n      at: 4201c58\n      body: 74a24ce2e663\n      line: 'Moved #36 to ready, its Need and Validation taken as written after no answer, said under Assumptions: its drafts got no answer for 5 min (acts.ask.wait): taken as written, for a person to correct'\n    - act: refine\n      level: normal\n      day: \"2026-11-04\"\n      at: 4201c58\n      model: claude:claude-sonnet-5-5\n      body: f8ea07c86bbb\n      line: 'Added: —. Changed: Verification, Scope. See the issue''s edit history.'\n    - act: refine\n      level: normal\n      day: \"2026-11-04\"\n      at: 4201c58\n      model: claude:claude-sonnet-5-5\n      body: 11ff88154ef1\n      line: 'Added: —. Changed: Scope. See the issue''s edit history.'\n    - act: ready\n      level: normal\n      day: \"2026-11-04\"\n      at: 4201c58\n      model: claude:claude-sonnet-5-5\n      body: b9a1bc979dbd\n      line: 'Moved #36 to ready: the reviewer read its spec (round 1): no important finding open'\n    - act: refine\n      level: normal\n      day: \"2026-11-04\"\n      at: 4201c58\n      model: claude:claude-sonnet-5-5\n      body: b9a1bc979dbd\n      line: 'Added: —. Changed: Verification, Scope. See the issue''s edit history.'\n    - act: ready\n      level: normal\n      day: \"2026-11-04\"\n      at: 4201c58\n      model: claude:claude-sonnet-5-5\n      body: 7dfd7521cbe2\n      line: 'Moved #36 to ready: the reviewer read its spec (round 1): no important finding open'\n    - act: refine\n      level: normal\n      day: \"2026-11-04\"\n      at: 4201c58\n      model: claude:claude-sonnet-5-5\n      body: 7dfd7521cbe2\n      line: 'Added: —. Changed: Verification, Scope. See the issue''s edit history.'\n    - act: ready\n      level: normal\n      day: \"2026-11-04\"\n      at: 4201c58\n      model: claude:claude-sonnet-5-5\n      body: a065a8dcbb35\n      line: 'Moved #36 to ready: the reviewer read its spec (round 1): no important finding open'\nheard: 0\nrules: 2\nno-test: 1c436c72e489\nassumed-at: \"2026-11-04T16:28:32Z\"\nkind: bug\n```\n-->\n\n<!-- workline:sticky=product-owner/state -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T15:44:52Z",
+     "id": "6635051147",
+     "bot": true
+    },
+    {
+     "body": "**workline's line** last woke the developer on this issue, in its state ready (1 state step so far). Edited by the engine, not by hand.\n\n<!-- workline:line-record {\"state\":\"ready\",\"body\":\"a065a8dcbb35\",\"labeled\":\"2026-11-04T17:23:25Z\",\"hops\":1,\"reached\":\"ready\",\"woke\":\"2026-11-04T17:23:58Z\",\"ran\":\"2026-11-04T17:23:58Z\"} -->\n\n<!-- workline:sticky=line/state -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T15:45:08Z",
+     "id": "6635057284",
+     "bot": true
+    },
+    {
+     "body": "**workline reviewer**, its spec — 1 findings on the spec, 2 questions for a person; lenses: ambiguous, unverifiable, out-of-scope, contradicted; tokens: 17088 in, 3013 out (3 calls), of 300000 a run (ai-max-tokens).\n\nNo important finding open: the product owner may move it to ready.\n\n| | | Where | Finding |\n|---|---|---|---|\n| warns | unverifiable | `#36:47` | Nit: Uptime of 0 is not distinguishable from \"just connected\" — The Validation says the uptime \"no longer reads as live\". The Verification checks only `uptime == 0`. A value of 0 also reads as a link that has just come up. The spec does not say whether uptime restarts from 0 on reconnect, and no test covers that. Fix: Add a check that uptime restarts from the reconnect time after a drop and return. |\n| warns | finding-judged-no |  | dropped, from the out-of-scope lens: \"Tests are required but outside the Scope\" at #36:44 — the judge: the quoted line 'Three native tests go in the project's existing MQTT component tests.' comes from the Verification, not the Need, and the Need's subjects (`resetReconnect()`, loss statistics, frozen uptime) are covered by the Scope's `MQTT_impl.h` and `MQTT.h`. (independence: model (claude-sonnet-5-5 → claude-opus-5-5)) |\n| warns | finding-judged-no |  | dropped, from the unverifiable lens: \"Silent-reset test may not catch a duplicate announcement\" at #36:45 — the judge: the quoted check 'Expect exactly one `mqtt/disconnected`' fails if the Need is unmet, since the spec says 'Before the fix there is no `mqtt/disconnected` at all'; a duplicate announcement after `loop()` would be over-reporting, not subscribers believing the link is up, and the finding only guesses ('may'). (independence: model (claude-sonnet-5-5 → claude-opus-5-5)) |\n\n**Questions for a person**\n\nNot defects, not judged: choices the spec leaves to a person; a reply here is enough, they hold nothing.\n\n- `#36:22` (contradicted): Should resetReconnect() both close the session and announce the loss, as the Scope says, or only one of the two? On: “(1) announce, or close the session first — a design question;”\n- `#36:52` (ambiguous): Does a deliberate disconnect or reset count in lostCount, or only an unexpected drop? On: “`announceConnectionLost()` counts the loss and zeroes the uptime.”\n\nThe reviewer never edits the issue nor moves it: the product owner answers, a person decides.\n\n<!-- workline:spec-review body=a065a8dcbb35 round=1 open=0 in= -->\n\n<!-- workline:sticky=reviewer/spec -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T15:47:51Z",
+     "id": "6635122684",
+     "bot": true
+    },
+    {
+     "body": "**The tester** wrote the acceptance tests of this issue, as a Draft.\n\n- **Why**: each of its 3 scenarios has its test in the Draft's Tests table, red on the base, and the tests pass the project's lint.\n- **Next**: it is ready: whoever builds it starts from the Draft, workline/tester/issue-36.\n\n\n<!-- workline:sticky=tester/issue -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T16:31:14Z",
+     "id": "6636074187",
+     "bot": true
+    },
+    {
+     "body": "**The developer** takes this issue: the first ready one nobody took, in the backlog's order. `workline:developing` says so; a person who takes it back removes the label, or assigns themselves.\n\nIts code on the project's tests:\n\n- `tools/workline-tests.sh {report}`: 1355 passed, 1 red.\n  - red: `DomoticsCore-MQTT/test_mqtt_dropped_link.native:test_mqtt_dropped_link`\n- The whole suite: no file it touches lies in a folder holding tests (the developer's `proof-command`, with `{packages}`, runs the touched folders alone).\n- Run on a fresh checkout of c360307, its code laid on it: not its agent's worktree.\n\n<!-- workline:developer-act {\"act\":\"pick\",\"at\":\"4201c58cb684b28b8e0eb0b3af6a07f8690d31f6\",\"issue\":36,\"proof\":{\"result\":\"red\",\"command\":\"tools/workline-tests.sh {report}\",\"passed\":1355,\"red\":[\"DomoticsCore-MQTT/test_mqtt_dropped_link.native:test_mqtt_dropped_link\"],\"tree\":\"fresh\",\"at\":\"c36030776d62ffd01397109ba5c6ae2b89432f1d\",\"scope\":\"whole\",\"whole\":\"no file it touches lies in a folder holding tests\"},\"turns\":18,\"tokens\":28607,\"cached\":377619,\"tools\":{\"Bash\":16,\"Read\":1},\"from\":\"c36030776d62ffd01397109ba5c6ae2b89432f1d\",\"acceptance\":[\"DomoticsCore-MQTT/test/test_mqtt_dropped_link/test_mqtt_dropped_link.cpp\"],\"code\":[\"DomoticsCore-MQTT/include/DomoticsCore/MQTT.h\",\"DomoticsCore-MQTT/include/DomoticsCore/MQTT_impl.h\"]} -->\n\n\n<!-- workline:sticky=developer/claim -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T17:47:03Z",
+     "id": "6637778794",
+     "bot": true
+    }
+   ],
+   "author": "JN0V",
+   "insider": true,
+   "label-events": [
+    {
+     "label": "workline:to-refine",
+     "added": true,
+     "author": "JN0V",
+     "created": "2026-11-04T15:43:47Z",
+     "insider": true,
+     "writer": true
+    },
+    {
+     "label": "bug",
+     "added": true,
+     "author": "workline-bot",
+     "created": "2026-11-04T15:44:56Z",
+     "bot": true
+    },
+    {
+     "label": "workline:draft",
+     "added": true,
+     "author": "workline-bot",
+     "created": "2026-11-04T15:45:01Z",
+     "bot": true
+    },
+    {
+     "label": "workline:proposed",
+     "added": true,
+     "author": "workline-bot",
+     "created": "2026-11-04T15:45:07Z",
+     "bot": true
+    },
+    {
+     "label": "workline:needs-tests",
+     "added": true,
+     "author": "workline-bot",
+     "created": "2026-11-04T16:28:34Z",
+     "bot": true
+    },
+    {
+     "label": "workline:to-refine",
+     "added": false,
+     "author": "workline-bot",
+     "created": "2026-11-04T16:28:35Z",
+     "bot": true
+    },
+    {
+     "label": "workline:draft",
+     "added": false,
+     "author": "workline-bot",
+     "created": "2026-11-04T16:28:36Z",
+     "bot": true
+    },
+    {
+     "label": "workline:proposed",
+     "added": false,
+     "author": "workline-bot",
+     "created": "2026-11-04T16:28:38Z",
+     "bot": true
+    },
+    {
+     "label": "workline:to-refine",
+     "added": true,
+     "author": "workline-bot",
+     "created": "2026-11-04T16:31:12Z",
+     "bot": true
+    },
+    {
+     "label": "workline:needs-tests",
+     "added": false,
+     "author": "workline-bot",
+     "created": "2026-11-04T16:31:13Z",
+     "bot": true
+    },
+    {
+     "label": "workline:needs-tests",
+     "added": true,
+     "author": "workline-bot",
+     "created": "2026-11-04T16:41:06Z",
+     "bot": true
+    },
+    {
+     "label": "workline:to-refine",
+     "added": false,
+     "author": "workline-bot",
+     "created": "2026-11-04T16:41:08Z",
+     "bot": true
+    },
+    {
+     "label": "workline:to-refine",
+     "added": true,
+     "author": "workline-bot",
+     "created": "2026-11-04T16:43:42Z",
+     "bot": true
+    },
+    {
+     "label": "workline:needs-tests",
+     "added": false,
+     "author": "workline-bot",
+     "created": "2026-11-04T16:43:43Z",
+     "bot": true
+    },
+    {
+     "label": "workline:needs-tests",
+     "added": true,
+     "author": "workline-bot",
+     "created": "2026-11-04T16:47:22Z",
+     "bot": true
+    },
+    {
+     "label": "workline:to-refine",
+     "added": false,
+     "author": "workline-bot",
+     "created": "2026-11-04T16:47:23Z",
+     "bot": true
+    },
+    {
+     "label": "workline:to-refine",
+     "added": true,
+     "author": "workline-bot",
+     "created": "2026-11-04T16:48:38Z",
+     "bot": true
+    },
+    {
+     "label": "workline:needs-tests",
+     "added": false,
+     "author": "workline-bot",
+     "created": "2026-11-04T16:48:39Z",
+     "bot": true
+    },
+    {
+     "label": "workline:needs-tests",
+     "added": true,
+     "author": "workline-bot",
+     "created": "2026-11-04T16:51:51Z",
+     "bot": true
+    },
+    {
+     "label": "workline:to-refine",
+     "added": false,
+     "author": "workline-bot",
+     "created": "2026-11-04T16:51:53Z",
+     "bot": true
+    },
+    {
+     "label": "workline:ready",
+     "added": true,
+     "author": "workline-bot",
+     "created": "2026-11-04T17:02:10Z",
+     "bot": true
+    },
+    {
+     "label": "workline:needs-tests",
+     "added": false,
+     "author": "workline-bot",
+     "created": "2026-11-04T17:02:11Z",
+     "bot": true
+    },
+    {
+     "label": "workline:blocked",
+     "added": true,
+     "author": "workline-bot",
+     "created": "2026-11-04T17:02:42Z",
+     "bot": true
+    },
+    {
+     "label": "workline:ready",
+     "added": false,
+     "author": "workline-bot",
+     "created": "2026-11-04T17:02:43Z",
+     "bot": true
+    },
+    {
+     "label": "workline:blocked",
+     "added": false,
+     "author": "JN0V",
+     "created": "2026-11-04T17:23:25Z",
+     "insider": true,
+     "writer": true
+    },
+    {
+     "label": "workline:ready",
+     "added": true,
+     "author": "JN0V",
+     "created": "2026-11-04T17:23:25Z",
+     "insider": true,
+     "writer": true
+    },
+    {
+     "label": "workline:developing",
+     "added": true,
+     "author": "workline-bot",
+     "created": "2026-11-04T17:47:02Z",
+     "bot": true
+    },
+    {
+     "label": "workline:ready",
+     "added": false,
+     "author": "workline-bot",
+     "created": "2026-11-04T18:12:51Z",
+     "bot": true
+    }
+   ],
+   "labeled": {
+    "workline:to-refine": "2026-11-04T16:48:38Z",
+    "bug": "2026-11-04T15:44:56Z",
+    "workline:draft": "2026-11-04T15:45:01Z",
+    "workline:proposed": "2026-11-04T15:45:07Z",
+    "workline:needs-tests": "2026-11-04T16:51:51Z",
+    "workline:ready": "2026-11-04T17:23:25Z",
+    "workline:blocked": "2026-11-04T17:02:42Z",
+    "workline:developing": "2026-11-04T17:47:02Z"
+   }
+  }
+ ],
+ "merge-requests": [
+  {
+   "id": 43,
+   "branch": "workline/developer/36",
+   "base": "main",
+   "title": "fix: MQTT: what a dropped link still gets wrong after",
+   "body": "Closes #36\n\nThe developer's code for #36, **a Draft**: not proven green, a cap reached, or its agent failed. A person takes it from here, or removes the claim on the issue.\n\n## Changes\n\n- Code: `DomoticsCore-MQTT/include/DomoticsCore/MQTT.h`, `DomoticsCore-MQTT/include/DomoticsCore/MQTT_impl.h`.\n- The tester's acceptance tests, read-only to the developer, from `workline/tester/issue-36`: `DomoticsCore-MQTT/test/test_mqtt_dropped_link/test_mqtt_dropped_link.cpp`.\n\n## Verification\n\n- Its agent ran with the rights of the CI job; the forge's guards decide what merges.\n- `tools/workline-tests.sh {report}`: 1355 passed, 1 red.\n  - red: `DomoticsCore-MQTT/test_mqtt_dropped_link.native:test_mqtt_dropped_link`\n- The whole suite: no file it touches lies in a folder holding tests (the developer's `proof-command`, with `{packages}`, runs the touched folders alone).\n- Run on a fresh checkout of c360307, its code laid on it: not its agent's worktree.\n\n## Tried\n\n- Its code on the project's tests, on a fresh checkout, before this opened: above.\n- Not tried: the commands the issue names to verify it, nor a person's use of it.\n",
+   "labels": [],
+   "comments": [
+    {
+     "body": "**The developer**'s record of this pull request, for its next runs and the auditor.\n\n- Review round 1: 1 asked, no fix.\n- Review round 2: 1 asked, its fix pushed, the tests red.\n- Review round 3: 1 asked, no fix, the five whys run.\n\n<!-- workline:developer-act {\"act\":\"code\",\"at\":\"4201c58cb684b28b8e0eb0b3af6a07f8690d31f6\",\"issue\":36,\"proof\":{\"result\":\"red\",\"command\":\"tools/workline-tests.sh {report}\",\"passed\":1357,\"red\":[\"DomoticsCore-MQTT/test_mqtt_dropped_link.native:test_mqtt_dropped_link\",\"DomoticsCore-MQTT/test_mqtt_dropped_link.test_silent_reset\"],\"tree\":\"fresh\",\"at\":\"f55a6c8fda920c4fc454a6ffbb38a78bd26199b3\",\"scope\":\"whole\",\"whole\":\"no file it touches lies in a folder holding tests\"},\"turns\":18,\"tokens\":28607,\"cached\":377619,\"tools\":{\"Bash\":16,\"Read\":1},\"from\":\"f695d102d187b70fc64dc26a6f6238aaff5fd55e\",\"acceptance\":[\"DomoticsCore-MQTT/test/test_mqtt_dropped_link/test_mqtt_dropped_link.cpp\"],\"code\":[\"DomoticsCore-MQTT/include/DomoticsCore/MQTT.h\",\"DomoticsCore-MQTT/include/DomoticsCore/MQTT_impl.h\"],\"round\":3,\"seen\":[\"checks|Unit tests (native)\",\"tester|DomoticsCore-MQTT/test/test_mqtt_dropped_link/test_mqtt_dropped_link.cpp|db051b657fe9e951148fa7503232b90957ac0261\"],\"rounds\":[{\"n\":1,\"asked\":[\"a project check `Unit tests (native)`: red at `f55a6c8`\"],\"result\":\"no-code\",\"bounds\":\"objected\"},{\"n\":2,\"asked\":[\"the tester rewrote `DomoticsCore-MQTT/test/test_mqtt_dropped_link/test_mqtt_dropped_link.cpp` on an objection, on its Draft: taken into this branch\"],\"result\":\"red\",\"turns\":2,\"tokens\":29833,\"cached\":348735,\"tools\":{\"Bash\":14}},{\"n\":3,\"asked\":[\"a project check `Unit tests (native)`: red at `10c36a2`\"],\"result\":\"no-code\",\"whys\":true,\"bounds\":\"objected\"}],\"whys\":true,\"checks-at\":\"10c36a28a57e6eb641eff91db059545f9f1bc97f\",\"widen\":{\"at\":\"10c36a28a57e6eb641eff91db059545f9f1bc97f\",\"scope\":\"cb3784d072a4\",\"objected\":true,\"draft\":41}} -->\n\n\n<!-- workline:sticky=developer/code -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T17:47:12Z",
+     "id": "6637781909",
+     "bot": true
+    },
+    {
+     "body": "**The developer's bounds** on this pull request, read at the base's 4201c58: 3 files changed since it, each within the bounds of #36.\n\n<!-- workline:developer-act {\"act\":\"bounds\",\"issue\":36,\"base\":\"4201c58cb684b28b8e0eb0b3af6a07f8690d31f6\",\"head\":\"10c36a28a57e6eb641eff91db059545f9f1bc97f\",\"files\":3,\"refused\":[]} -->\n\n<!-- workline:sticky=developer/bounds -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T17:49:08Z",
+     "id": "6637822365",
+     "bot": true
+    },
+    {
+     "body": "**The developer**, review round 3 of 5: Nothing pushed; its objection is on the tester's Draft !41, on its lines: its issue waits for the tester's answer. A rewrite is taken by the next round; a test kept asks it again here.\n\nAsked:\n\n- a project check `Unit tests (native)`: red at `10c36a2`\n\nWhat it did:\n\n- The code was already complete on this branch: `resetReconnect()` closes the client and announces the loss, and `announceConnectionLost()` counts it and zeroes uptime. `lostCount` is in `MQTTStatistics`. Link flap and Frozen uptime pass. I changed no source file. I wrote the objection to .workline/objections.yaml. Running `pio test -e native` in DomoticsCore-MQTT, the one failure is Silent reset (test_mqtt_dropped_link.cpp:64). I did not run tools/workline-tests.sh. The failed check's log lists only DomoticsCore-MQTT as failing.\n\n**Five whys**\n\n- **Problem:** native suite test_mqtt_dropped_link fails at line 64 (`Expected 1 Was 0`), though the code already announces the loss.\n1. Why is disconnectedCount 0? `resetReconnect()` calls `announceConnectionLost()`, which calls `emit(EVENT_DISCONNECTED)`. `IComponent::emit` returns at once on \"if (!__dc_eventBus ...) return\".\n2. Why is there no bus? The test builds a bare `MQTTComponent mqtt(makeConfig())`, never added to a Core. `on<bool>` also returns 0 without subscribing.\n3. Why was it written that way? The scenario says \"subscribers get mqtt/disconnected\" and names no bus. test_mqtt_limits_links uses a Core and `poll()` for the same events.\n\n- **Root cause:** the test has no EventBus and never polls, so no code in scope can make it see the event.\n- **Action** (test): the tester rewrites the Silent reset test to run through a Core and call `getEventBus().poll()`, as test_mqtt_limits_links does. I filed an objection of kind interface.\n\nThe reviewer decides a finding is fixed.\n\n\n<!-- workline:sticky=developer/round -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T17:59:08Z",
+     "id": "6638050635",
+     "bot": true
+    }
+   ],
+   "closed": false,
+   "merged": false,
+   "bot": true
+  },
+  {
+   "id": 41,
+   "branch": "workline/tester/issue-36",
+   "base": "main",
+   "title": "test: the acceptance tests of #36",
+   "body": "Refs #36\n\nThe acceptance tests of #36, written before the code: 4 new tests, red on the base (3 not built there, a missing name). Whoever builds it pushes the code on this branch, and makes this pull request close the issue.\n\n## Tests\n\n| Scenario | Test |\n|---|---|\n| Silent reset | `DomoticsCore-MQTT/test/test_mqtt_dropped_link/test_mqtt_dropped_link.cpp:test_silent_reset` in `DomoticsCore-MQTT/test/test_mqtt_dropped_link/test_mqtt_dropped_link.cpp` |\n| Link flap | `DomoticsCore-MQTT/test/test_mqtt_dropped_link/test_mqtt_dropped_link.cpp:test_link_flap` in `DomoticsCore-MQTT/test/test_mqtt_dropped_link/test_mqtt_dropped_link.cpp` |\n| Frozen uptime | `DomoticsCore-MQTT/test/test_mqtt_dropped_link/test_mqtt_dropped_link.cpp:test_frozen_uptime` in `DomoticsCore-MQTT/test/test_mqtt_dropped_link/test_mqtt_dropped_link.cpp` |\n",
+   "labels": [],
+   "comments": [
+    {
+     "body": "**The acceptance tests of #36, frozen**: the tester wrote them before the code, red on the base. Only the tester's own commit changes them: a test that does not fit, object on its line, the comment opened by `workline:objection` (the test, its scenario, the kind, why). Any other change to them blocks, `tester-test-changed`.\n\n| Test file | Blob |\n|---|---|\n| `DomoticsCore-MQTT/test/test_mqtt_dropped_link/test_mqtt_dropped_link.cpp` | `db051b6` |\n\n<!-- workline:tester-record {\"issue\":36,\"base\":\"4201c58cb684b28b8e0eb0b3af6a07f8690d31f6\",\"files\":{\"DomoticsCore-MQTT/test/test_mqtt_dropped_link/test_mqtt_dropped_link.cpp\":\"db051b657fe9e951148fa7503232b90957ac0261\"},\"scenarios\":[{\"name\":\"Silent reset\",\"text\":\"Given a connected MQTT component, When `resetReconnect()` is called, Then subscribers get `mqtt/disconnected` before any later `mqtt/connected`.\"},{\"name\":\"Link flap\",\"text\":\"Given a connected component whose link drops and returns twice, When I read the statistics, Then they show two losses.\"},{\"name\":\"Frozen uptime\",\"text\":\"Given a dropped link, When I read the statistics during the outage, Then the uptime no longer reads as live.\"}]} -->\n\n<!-- workline:sticky=tester/tests -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T17:02:18Z",
+     "id": "6636803619",
+     "bot": true
+    },
+    {
+     "body": "**The developer** objects to the tester's tests of #36, on their lines: the tester keeps or rewrites each (ADR-0055).\n\n**On their lines**: 1 comment, in [the review](https://github.com/JN0V/DomoticsCore-trial/pull/41/files) (1 still open from before, not posted again). What blocks stands until a commit fixes it; what warns asks nothing.\n\n<!-- workline:sticky=developer/objection -->",
+     "author": "workline-bot",
+     "created": "2026-11-04T17:47:07Z",
+     "id": "6637780092",
+     "bot": true
+    }
+   ],
+   "closed": false,
+   "merged": false,
+   "bot": true
+  }
+ ],
+ "dependencies": true,
+ "sub-issues": true,
+ "writes": 0
+}

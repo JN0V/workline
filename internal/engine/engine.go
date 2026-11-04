@@ -3202,12 +3202,17 @@ func releaseRequest(o Options) string {
 	return branch
 }
 
+// Self is the engine's binary a role's scripts run (WORKLINE_BIN): this
+// one, or the one a test built when the line runs in its process (the
+// line simulator, ADR-0063).
+var Self = func() string { self, _ := os.Executable(); return self }
+
 func scriptEnv(runDir, roleName string, o Options) []string {
 	ai := o.AI
 	if ai == "" {
 		ai = "none"
 	}
-	self, _ := os.Executable()
+	self := Self()
 	env := append(os.Environ(),
 		"WORKLINE_RUN_DIR="+runDir,
 		"WORKLINE_EVENT="+o.Event,
