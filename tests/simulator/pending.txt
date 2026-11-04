@@ -17,14 +17,16 @@ trial-5-fresh i1-status expected-end
 # Developing, its pull request's round not known: the issue says nothing.
 trial-36 i1-status
 # The developer's claim puts workline:developing on beside
-# workline:ready, never a move (ADR-0059 §2: one state at a time).
+# workline:ready, never a move (ADR-0059 §2: one state at a time; #1081).
 trial-3-fresh one-state-label
 trial-4-fresh one-state-label
 trial-16-fresh one-state-label
 trial-18-fresh one-state-label
 # Blocked by the machine, read again at day 7 (tick 21) and unblocked,
-# then the claim's two labels; the round still acting at K: K = S × (B +
-# 1) + 2R + 2 does not count the week a blocked issue waits. #20 and #35
-# reach Done within K: their tester and product owner answer sooner.
+# then the claim's two labels. The week's wait is intended
+# (internal/line/revisit.go); the red is the simulator's 8-hour tick with
+# the ADR's K = S × (B + 1) + 2R + 2, which leaves 2 ticks after it. The
+# root cause is the block the machine made, which step 2 (typed
+# outcomes) removes. #20 and #35 reach Done within K.
 trial-19 one-state-label quiet-within-k
 trial-37 one-state-label quiet-within-k
