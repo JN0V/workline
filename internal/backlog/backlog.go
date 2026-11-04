@@ -1877,8 +1877,9 @@ func (p *Plan) checkRefining(f forge.Backlog, repo, role string, c *Proposal) (r
 			}
 			if len(c.Sources) == 0 {
 				c.Sources = PathsIn(repo, c.Scope)
-				for _, a := range asked {
-					if strings.Contains(c.Scope, a) && !slices.Contains(c.Sources, a) {
+				for _, m := range PathLike.FindAllString(c.Scope, -1) {
+					// A path the Scope names whole, never a part of one.
+					if a := RepoPath(m); slices.Contains(asked, a) && !slices.Contains(c.Sources, a) {
 						c.Sources = append(c.Sources, a)
 					}
 				}
@@ -1907,6 +1908,8 @@ func (p *Plan) checkRefining(f forge.Backlog, repo, role string, c *Proposal) (r
 					}
 					p.widenDropped[c.Issue] = asked
 				}
+			} else {
+				delete(p.widenDropped, c.Issue) // a later widening kept: the unblock stands
 			}
 			c.Sources = c.Sources[:min(len(c.Sources), maxSources)]
 		}
