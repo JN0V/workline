@@ -43,7 +43,7 @@ func TestQuoteWakesNothing(t *testing.T) {
 	s := routing.State{Name: refineState}
 	is := forge.Issue{ID: 1, Body: "the body"}
 	rec := Record{State: refineState, Body: bodyHash(is.Body), Labeled: "t", Spec: before}
-	if _, ok := due(s, is, "t", after, rec, true); ok {
+	if _, ok := due(nil, s, is, "t", after, rec, true); ok {
 		t.Errorf("the step is due after a person's quote of the review")
 	}
 }

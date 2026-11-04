@@ -131,7 +131,7 @@ func revisit(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, 
 	if !had || rec.State != BlockedState || rec.Since == "" {
 		// First seen blocked: what it is now is the base news is told
 		// against, written once, no agent.
-		seen := Record{State: BlockedState, Body: bodyHash(is.Body), Hops: rec.Hops, From: rec.From, Why: rec.Why,
+		seen := Record{State: BlockedState, Body: bodyHash(is.Body), Hops: rec.Hops, Reached: rec.Reached, From: rec.From, Why: rec.Why,
 			Since: now.Format(time.RFC3339), Talk: talkHash(comments), Closed: closed}
 		if had && rec.State != BlockedState {
 			seen.From = rec.State // a role blocked it: the line last acted on it there

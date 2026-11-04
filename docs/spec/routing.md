@@ -1,6 +1,6 @@
 ---
 sources: [internal/line, internal/routing, internal/work, routing.default.yaml]
-checked: 9dd3337b
+checked: bee00160
 verified: agent:claude-code
 ---
 # Routing — v1 (draft)
@@ -527,6 +527,12 @@ whose result moves the issue to the next. The table is the routing's
   that comment (`hops-capped`). A person moving it back to a state by
   its label starts its count again. A hop is a new run, not a handoff
   (`max-handoffs` caps those inside one run).
+- **Progress starts the count again**
+  ([amended](../adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#amendment-2026-11-04-progress-starts-the-hop-count-again)):
+  the record keeps the furthest state the issue reached (`reached`,
+  along each state's `next`). A step into a state further still counts
+  as hop 1: the cap stops a loop, never the step that ends it. Back in
+  a state reached before, the count goes on.
 
 ### Blocked, read again
 

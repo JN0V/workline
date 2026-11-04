@@ -287,7 +287,7 @@ func retest(res *Result, cfg *routing.Config, b forge.Backlog, t *tally, s routi
 		return &StateWrite{Issue: is.ID, Record: rec, RetestKept: why}, true, nil
 	}
 	res.Findings = append(res.Findings, verdict.Finding{Rule: "state-untested", Level: "warn", Where: where, Message: why + ": to " + to.Name})
-	now := Record{State: s.Name, Body: bodyHash(is.Body), Labeled: labeled, Hops: rec.Hops, Retest: s.Name}
+	now := Record{State: s.Name, Body: bodyHash(is.Body), Labeled: labeled, Hops: rec.Hops, Reached: rec.Reached, Retest: s.Name}
 	return &StateWrite{Issue: is.ID, Record: now, Retest: why}, true, nil
 }
 
