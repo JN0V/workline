@@ -249,6 +249,9 @@ func (w *world) tickChecks(c checks, k int, before, after forge.FakeState, res, 
 		if was, _ := w.cfg.StateOf(b.Labels); was.Name == stateName(w.cfg, a.Labels) {
 			return fail(pTwice, "the second run started the %s on #%d again, in its state %s still", role, id, was.Name)
 		}
+		if now, wakes, _ := w.cfg.Wakes(a.Labels, line.IssueEvent); role != wakes {
+			return fail(pTwice, "the second run started the %s on #%d, in its state %s, which wakes %q", role, id, now.Name, wakes)
+		}
 	}
 	return nil
 }
