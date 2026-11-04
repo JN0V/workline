@@ -2547,6 +2547,16 @@ func git(dir string, args ...string) (string, error) {
 	return gitIn(dir, "", args...)
 }
 
+// lastCommit is the last commit that changed path; empty when there is none,
+// as on a branch with no commit yet (an empty history, not an error).
+func lastCommit(dir, path string) (string, error) {
+	out, err := git(dir, "log", "-1", "--format=%H", "--", path)
+	if err != nil && strings.Contains(err.Error(), "does not have any commits yet") {
+		return "", nil
+	}
+	return out, err
+}
+
 // gitIn runs git with stdin.
 func gitIn(dir, stdin string, args ...string) (string, error) {
 	cmd := exec.Command("git", append([]string{"-C", dir, "-c", "core.quotePath=off"}, args...)...)

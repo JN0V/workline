@@ -292,7 +292,7 @@ func (cc *citeContext) check(c citeClaim, d *Doc, b citedBlock) citeCheck {
 		if err != nil || now[name] {
 			return citeCheck{why: fmt.Sprintf("`%s` is still in the code", name)}
 		}
-		last, err := git(cc.repo, "log", "-1", "--format=%H", "--", d.Path)
+		last, err := lastCommit(cc.repo, d.Path)
 		if err != nil || last == "" {
 			return citeCheck{why: fmt.Sprintf("`%s` cannot be found in the code when the doc was last edited", name)}
 		}
