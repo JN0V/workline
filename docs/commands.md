@@ -200,6 +200,9 @@ Run when the default branch moves (CI's `follow` job), with no agent.
 - **The [merge policy](merge-policy.md)**, with `merge:`: auto-merge on
   for what a person accepted — at `normal`, workline's own routine work
   too —, each merging once its own head is green.
+- **What a merge left open**: the tester's Draft of a closed issue is
+  closed, and a closed issue loses the states' labels
+  ([the hand-over](../roles/tester/docs/hand-over.md#what-the-builder-does)).
 - Options: `--base` (default: the branch checked out), `--forge`,
   `--repo`, `--json`, `--summary`; `--verdict <file>`, a head's verdict
   `route --verdict` wrote, kept first (`--verdict-only`: nothing else);

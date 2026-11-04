@@ -47,7 +47,9 @@
 #          whatever its verdict, holds issues: write and no AI key: what
 #          that run found kept in one issue, edited only when what it lists
 #          changes, never commented on.
-#   follow on a push to main, holds the write token and no AI key.
+#   follow on a push to main, holds the write token and no AI key: the
+#          tester's Draft of an issue a merge closed is closed, and the
+#          closed issues' state labels taken off (#999).
 #          With the merge policy, also after verdict: auto-merge turned on
 #          for what a person accepted, each merging once its own head is
 #          green; workline-merge.yml runs it on a label. Only with the App's token
@@ -229,7 +231,7 @@ jobs:
     concurrency: {group: "workline-follow-${{ github.event.workflow_run.pull_requests[0].base.ref || github.ref_name }}", cancel-in-progress: false}
     runs-on: ubuntu-latest
     environment: workline-app
-    permissions: {contents: write, pull-requests: read}
+    permissions: {contents: write, pull-requests: write, issues: write}
     steps:
       - id: app
         if: vars.WORKLINE_APP_ID != ''

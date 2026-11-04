@@ -1,5 +1,5 @@
 ---
-sources: [internal/tester/moment.go, internal/tester/write.go, internal/tester/proof.go, routing.default.yaml, internal/tester/said.go, internal/tester/frozen.go, internal/tester/objection.go, internal/tester/green.go, internal/tester/repro.go]
+sources: [internal/tester/moment.go, internal/tester/write.go, internal/tester/proof.go, routing.default.yaml, internal/tester/said.go, internal/tester/frozen.go, internal/tester/objection.go, internal/tester/green.go, internal/tester/repro.go, internal/engine/done.go]
 checked: 54f275a2
 verified: agent:claude-code
 ---
@@ -188,6 +188,11 @@ refusal is written on the issue too
 - **Green three times**: once marked ready, each new test passes on the
   head three runs out of three; one red is flaky and blocks
   (`test-flaky`, [the proof](green-proof.md)).
+- **Once merged**: the next push to the base runs `workline follow`, no
+  agent. It closes the Draft of the closed issue, its comment naming the
+  pull request that closed it (`draft-closed`), and takes the states'
+  labels off the issue (`state-cleared`,
+  [#999](https://github.com/JN0V/workline/issues/999)).
 
 ## Not yet
 
