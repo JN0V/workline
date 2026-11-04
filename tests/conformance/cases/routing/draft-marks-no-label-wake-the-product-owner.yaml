@@ -1,0 +1,34 @@
+case: routing/draft-marks-no-label-wake-the-product-owner
+about: >
+  Drafts in a body with no workline:draft label (#1021): the product
+  owner proposed on #9, in its state comment, and waits on them. The
+  forge gives no time for the label, the issue never had it: the wait
+  counts from the product owner's first comment, as the forge dates
+  it. Past 24 h, the reconciler wakes the product owner once, which
+  takes them as written.
+given:
+  repo: backlog
+  config:
+    routing: {events: {issue: [product-owner]}}
+  forge:
+    issues:
+      - id: 9
+        title: "workline version --verbose=false"
+        author: ann
+        insider: true
+        labels: [workline:to-refine, workline:proposed]
+        body: "## Need\n\nWhen I run `workline version --verbose=false`, I want the plain line, so my scripts read it.\n\n## Validation\n\n<!-- workline:draft -->\n\n- **Plain line:** Given workline installed, When I run `workline version --verbose=false`, Then it prints one line.\n\n---\n\n## Verification\n\nA test runs the command and reads one line.\n\n## Scope\n\nsrc/export/csv.go"
+        comments:
+          - {body: "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->", created: "2026-10-01T09:00:00Z"}
+          - "**workline's line** last woke the product owner on this issue, in its state refine (1 state step so far).\n\n<!-- workline:line-record {\"state\":\"refine\",\"body\":\"1cf7c41e922f\",\"hops\":1} -->\n<!-- workline:sticky=line/state -->"
+run: {route: reconcile, ai: none}
+expect:
+  status: pass
+  agent-calls: 0
+  findings:
+    - {rule: state-timeout, level: info, where: "#9", message: "its drafts got no answer in 24 h (acts.ask.wait): the product-owner takes them as written"}
+  forge:
+    issues:
+      - id: 9
+        labels: [workline:ready]
+        body-contains: ", the Validation draft unanswered after 24 h: written as the role drafted it, for a person to correct."

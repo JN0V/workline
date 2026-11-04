@@ -52,7 +52,9 @@ type Widen struct {
 	Draft    int  `json:"draft,omitempty"` // the tester's Draft it objected on
 	Kept     int  `json:"kept,omitempty"`
 	// Review: the round held a fix of the review's findings off a green
-	// head (#987): they are asked again when the round resumes.
+	// head (#987): they are asked again when the round resumes. Sent
+	// back, the findings its last round asked are asked again in any
+	// case, from the record (#1022).
 	Review bool `json:"review,omitempty"`
 }
 

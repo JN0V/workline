@@ -1,0 +1,43 @@
+case: product-owner/draft-marks-no-label-taken-as-written
+about: >
+  Drafts in a body with no workline:draft label (#1021): their marks
+  copied from elsewhere, the issue never got the label, so the forge
+  gives no time for it. The wait counts from the product owner's first
+  comment on the issue, as the forge dates it: past 24 h, they
+  are taken as written, with no agent; one proposed inside the delay
+  waits.
+given:
+  repo: backlog
+  forge:
+    issues:
+      - id: 9
+        title: "workline version --verbose=false"
+        author: ann
+        insider: true
+        labels: [workline:to-refine, workline:proposed]
+        body: "## Need\n\nWhen I run `workline version --verbose=false`, I want the plain line, so my scripts read it.\n\n## Validation\n\n<!-- workline:draft -->\n\n- **Plain line:** Given workline installed, When I run `workline version --verbose=false`, Then it prints one line.\n\n---\n\n## Verification\n\nA test runs the command and reads one line.\n\n## Scope\n\nsrc/export/csv.go"
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - {body: "@ann, the product owner read this issue.\n\n<!-- workline:product-owner/proposal=1 -->", created: "2026-10-01T09:00:00Z"}
+      - id: 10
+        title: "workline version --verbose=false"
+        author: ann
+        insider: true
+        labels: [workline:to-refine, workline:proposed]
+        body: "## Need\n\nWhen I run `workline version --verbose=false`, I want the plain line, so my scripts read it.\n\n## Validation\n\n<!-- workline:draft -->\n\n- **Plain line:** Given workline installed, When I run `workline version --verbose=false`, Then it prints one line.\n\n---\n\n## Verification\n\nA test runs the command and reads one line.\n\n## Scope\n\nsrc/export/csv.go"
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - {body: "@ann, the product owner read this issue.\n\n<!-- workline:product-owner/proposal=1 -->", created: "2099-10-01T09:00:00Z"}
+run: {role: product-owner, event: schedule, ai: none}
+expect:
+  status: pass
+  agent-calls: 0
+  forge:
+    issues:
+      - id: 9
+        labels: [workline:ready]
+        body-lacks: "<!-- workline:draft -->"
+        body-contains: ["## Assumptions", ", the Validation draft unanswered after 24 h: written as the role drafted it, for a person to correct."]
+      - id: 10
+        labels: [workline:to-refine, workline:proposed]
+        body-lacks: "## Assumptions"

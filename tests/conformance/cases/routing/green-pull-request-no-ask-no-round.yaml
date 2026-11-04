@@ -1,0 +1,36 @@
+case: routing/green-pull-request-no-ask-no-round
+about: >
+  #4 is in the developer's state, its pull request 5 green; round 1
+  read the reviewer's Important finding already, and the record holds
+  no Scope ask (#1022). Nothing new: no round, as before. No agent.
+given:
+  repo: tested-draft
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git checkout -q -b workline/developer/4 && git push -q origin main workline/developer/4 && git checkout -q main"
+    - "sed -i \"s/@head4@/$(git rev-parse workline/developer/4)/g\" \"$FORGE_FILE\""
+  config:
+    routing: {events: {issue: [developer]}}
+  forge:
+    head-checks:
+      workline/developer/4:
+        - {name: test, workflow: test, state: success, job: 46}
+    issues:
+      - {id: 4, title: "Divide two numbers", labels: ["workline:ready"], body: "## Need\n\nI want to divide.\n"}
+    merge-requests:
+      - id: 5
+        branch: workline/developer/4
+        title: "Divide two numbers"
+        body: "Closes #4"
+        comments:
+          - "**The developer**'s record.\n\n<!-- workline:developer-act {\"act\":\"code\",\"issue\":4,\"code\":[\"lib.sh\"],\"proof\":{\"result\":\"green\",\"passed\":1},\"round\":1,\"review-runs\":1,\"rounds\":[{\"n\":1,\"asked\":[\"warns tests `lib.sh:2`: Important: div by zero is not tested.\"],\"result\":\"green\"}],\"checks-at\":\"@head4@\"} -->\n<!-- workline:sticky=developer/code -->"
+          - "**workline reviewer** — 1 finding on the change.\n\n| Holds | Lens | Where | Finding |\n|---|---|---|---|\n| warns | tests | `lib.sh:2` | Important: div by zero is not tested. |\n\n<!-- workline:record reviewed=1111111 runs=1 -->\n<!-- workline:sticky=reviewer/summary -->"
+run: {route: issue, target: {issue: 4}, open-merge-request: true, ai: "fake:developer-nothing", input: {reconcile: list}}
+expect:
+  status: pass
+  summary: "issue: #4's step is the review round on merge request 5, not due: nothing to start"
+  agent-calls: 0
+  forge:
+    issues:
+      - {id: 4, labels: ["workline:ready"]}
+    merge-requests:
+      - {id: 5, comments: 2}
