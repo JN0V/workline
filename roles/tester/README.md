@@ -67,8 +67,10 @@ workline test write --issue 42 --ai claude
 - **What the agent reads**: the scenarios, the Need, Verification and
   Scope, the files the Scope names (a folder named: its own files; a
   pattern such as `src/calc/*.sh`: the files it matches; a file past
-  `code-lines-max`: the functions and lines the Scope names in it),
-  the tests beside them, the test command. Long lines over the context
+  `code-lines-max`: the functions and lines the Scope names in it), the
+  files the product owner named for the issue that the Scope does not,
+  the tests beside them (none in their folder: their module's nearest),
+  the test command. Long lines over the context
   budget: fewer lines given; still over, the issue says so and names
   `code-lines-max`.
 - **One test a scenario**: its name holds the scenario's name, its
