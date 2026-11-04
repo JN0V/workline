@@ -1290,18 +1290,11 @@ func TestGardeningJudgesTheReleaseAtNight(t *testing.T) {
 	}
 }
 
-// The merge policy (ADR-0042) acts after each judge, its verdict kept by a
-// job no newer run cancels — in no concurrency group, where `follow` is in
-// one —, and when a label is put or taken off — never in the workflow
-// holding `judge`, whose run on a label would show the check skipped, which
-// GitHub takes as passed for a required check. Both from the default
-// branch's workflow, never the pull request's own (ADR-0044): the verdict is
-// kept, and follow run, when the judge's workflow completes.
+// A demotion issue closed lifts it (#1029): follow runs at once on the
+// pull requests it held, not at the next event. Another issue closed
+// starts nothing; the demotion is known by its title, as the engine reads
+// it (demotedKind).
 func TestMergePolicyRunsWhenADemotionIsClosed(t *testing.T) {
-	// A demotion issue closed lifts it (#1029): follow runs at once on the
-	// pull requests it held, not at the next event. Another issue closed
-	// starts nothing; the demotion is known by its title, as the engine
-	// reads it (demotedKind).
 	type workflow struct {
 		On struct {
 			Issues *struct {
@@ -1338,6 +1331,13 @@ func TestMergePolicyRunsWhenADemotionIsClosed(t *testing.T) {
 	}
 }
 
+// The merge policy (ADR-0042) acts after each judge, its verdict kept by a
+// job no newer run cancels — in no concurrency group, where `follow` is in
+// one —, and when a label is put or taken off — never in the workflow
+// holding `judge`, whose run on a label would show the check skipped, which
+// GitHub takes as passed for a required check. Both from the default
+// branch's workflow, never the pull request's own (ADR-0044): the verdict is
+// kept, and follow run, when the judge's workflow completes.
 func TestMergePolicyRunsAfterTheJudgeAndOnLabels(t *testing.T) {
 	type workflow struct {
 		On struct {
