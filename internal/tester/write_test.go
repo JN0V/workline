@@ -54,6 +54,32 @@ func TestWriteCodeOfTheProductOwnersSources(t *testing.T) {
 	}
 }
 
+// Code that fills code-lines-max keeps a share of it for the test beside:
+// its opening and first test function are given, the function the Scope
+// names in the code still is, the split said (#1059).
+func TestWriteCodeKeepsRoomForATest(t *testing.T) {
+	var code, test strings.Builder
+	for i := range 990 {
+		fmt.Fprintf(&code, "int f%d() { return %d; }\n", i, i)
+	}
+	code.WriteString("int publish(int qos) {\n  return qos;\n}\n")
+	test.WriteString("#include <unity.h>\n#include \"mqtt.h\"\n\nvoid setUp() {}\n\nvoid test_publish_qos() {\n  TEST_ASSERT_EQUAL(1, publish(1));\n}\n")
+	for i := range 290 {
+		fmt.Fprintf(&test, "// filler %d\n", i)
+	}
+	repo, _ := gitRepo(t, map[string]string{"mqtt.h": code.String(), "test_mqtt.cpp": test.String()})
+	s := Settings{Paths: []string{"test_*.cpp"}, CodeLinesMax: 1000}
+	var b strings.Builder
+	writeCode(&b, repo, "- `publish` in `mqtt.h`", nil, s)
+	task := b.String()
+	for _, want := range []string{"int publish(int qos) {", "200 of the 1000 lines of code-lines-max kept for the tests beside it",
+		"### `test_mqtt.cpp`", "#include <unity.h>", "void test_publish_qos() {"} {
+		if !strings.Contains(task, want) {
+			t.Errorf("want %q in:\n%.2000s", want, task)
+		}
+	}
+}
+
 // No test in the named file's folder: its module's tests are given, the
 // one holding its name first, not another module's (#1047).
 func TestKinTests(t *testing.T) {

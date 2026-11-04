@@ -1,0 +1,25 @@
+case: tester/scope-code-fills-budget-keeps-a-test
+about: >
+  The Scope's code alone is past code-lines-max: part of the budget is
+  kept for a test beside it, so the agent sees one existing test to
+  write alike, the split said. Given none, it found no test possible
+  (#1059, 1000 lines of MQTT headers, the tests named only).
+given:
+  repo: tested
+  setup:
+    - "for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19; do echo \"f$i() { :; }\" >> lib.sh; done && git commit -qam 'lib' && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}", code-lines-max: 10}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:needs-tests"]
+        body: "## Need\n\nWhen I total an order, I want to multiply a price by a count, so I need not add it up by hand.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **By zero:** Given the library, When I multiply 5 by 0, Then I get 0.\n\n---\n\n## Verification\n\nA test a scenario, in tests/.\n\n## Scope\n\n- `lib.sh`: a mul function beside add.\n"
+run: {test: [write, --issue, "3"], ai: "fake:tester-two-scenarios"}
+expect:
+  status: pass
+  run-files:
+    in/task.md:
+      contains: ["### `lib.sh`", "(cut: the first 8 lines given)", "2 of the 10 lines of code-lines-max kept for the tests beside it", "### `tests/test_add.sh`", "[ \"$(add 2 3)\" = 5 ]"]
+      not-contains: ["- `tests/test_add.sh` (2 lines)"]
