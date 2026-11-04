@@ -1,5 +1,31 @@
 # Changelog
 
+## [0.71.0](https://github.com/JN0V/workline/compare/v0.70.1...v0.71.0) (2026-11-04)
+
+
+### Features
+
+* condensed docs add no reader problem ([#887](https://github.com/JN0V/workline/issues/887)) ([5414466](https://github.com/JN0V/workline/commit/541446634872532a2e13fd88c9cb3ef0da5641fb))
+
+
+### Bug Fixes
+
+* a read again is given new code, or none is made ([#986](https://github.com/JN0V/workline/issues/986)) ([6268a9d](https://github.com/JN0V/workline/commit/6268a9d150ec53d5ecae3cd3ffbf567c22c491c9))
+* a widened Scope resumes its round at once ([#1014](https://github.com/JN0V/workline/issues/1014)) ([6a5e608](https://github.com/JN0V/workline/commit/6a5e6082db15871799064b57e145b5af1cb6c5bd))
+* an overlap ends where its Scope reads as a guess ([#1000](https://github.com/JN0V/workline/issues/1000)) ([c1db7ca](https://github.com/JN0V/workline/commit/c1db7ca3e958920c960372be0b709e840e0fa782))
+* close the tester's Draft and states once its fix merges ([#1001](https://github.com/JN0V/workline/issues/1001)) ([05cfcc2](https://github.com/JN0V/workline/commit/05cfcc2f7eb102d5ccfb0c7188237cd405e408bb))
+* develop with no forge names an option it does not have ([#995](https://github.com/JN0V/workline/issues/995)) ([af6edea](https://github.com/JN0V/workline/commit/af6edea0a3c9f48bee10b9888c71c49b890fed1a))
+* **developer:** keep a green head; objections wait for the tester ([#992](https://github.com/JN0V/workline/issues/992)) ([4e7a380](https://github.com/JN0V/workline/commit/4e7a380fbdb36fc7ed125669f1433ffc751f17f1))
+* docs --since an unknown revision blocks with no reason ([#985](https://github.com/JN0V/workline/issues/985)) ([f87a56e](https://github.com/JN0V/workline/commit/f87a56ee00f4f5c744b53776096abc9652031796))
+* docs with a broken config blocks with no reason, exit 0 ([#1007](https://github.com/JN0V/workline/issues/1007)) ([5098020](https://github.com/JN0V/workline/commit/5098020325b5efa8f2c2bcc1e8d689ccc7be77a4))
+* doctor --repo with a missing folder says all is set up ([#982](https://github.com/JN0V/workline/issues/982)) ([c1b228d](https://github.com/JN0V/workline/commit/c1b228d0cf109a13e3d2ddfbe7c968281da703e7))
+* hooks install --repo outside a repository says exit status ([#1010](https://github.com/JN0V/workline/issues/1010)) ([9a734b4](https://github.com/JN0V/workline/commit/9a734b4228e3ee01ee76acb5a12a1a60be9fb7af))
+* init on a new repository with a staged file blocks ([#1012](https://github.com/JN0V/workline/issues/1012)) ([ef1b5d9](https://github.com/JN0V/workline/commit/ef1b5d9d4eb5d47e9f6aebdc887e9e68c9e76872))
+* **merge:** merge one whose auto-merge the forge left ([#997](https://github.com/JN0V/workline/issues/997)) ([378b953](https://github.com/JN0V/workline/commit/378b953ee5505b30ea45b0fa70003674c4c9de1f))
+* sample --week of a week to come passes as empty ([#1008](https://github.com/JN0V/workline/issues/1008)) ([127cb42](https://github.com/JN0V/workline/commit/127cb4249d7cc0d63bf739bd48136f8bdebe9547))
+* **tester:** a Draft opens on a missing name or in a new folder ([#996](https://github.com/JN0V/workline/issues/996)) ([89a8c33](https://github.com/JN0V/workline/commit/89a8c33f6b132b2005f19e75d93adae8d1eb3143))
+* **tester:** prove a Draft on its tests' folders alone ([#991](https://github.com/JN0V/workline/issues/991)) ([593137c](https://github.com/JN0V/workline/commit/593137c94c46105793233c8ee88b4200c8f59c34))
+
 ## [0.70.1](https://github.com/JN0V/workline/compare/v0.70.0...v0.70.1) (2026-11-03)
 
 
