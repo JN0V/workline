@@ -385,6 +385,12 @@ func Pre(runDir, repo string) int {
 				// (ADR-0018, amended). On a backlog the role never ran on,
 				// every issue waits its turn, but the one an event names.
 				never = append(never, due{is, &backlog.State{Confirmed: commit}, comments, notes})
+			} else if is.ID == issueEvent() {
+				// An import or a bot's issue its own state woke the role on
+				// (ADR-0059): read now, as the line wakes the role once a
+				// body — left for the catch-up, it sat in refine with
+				// nothing said (#1036).
+				catchUp = append(catchUp, due{is, &backlog.State{Confirmed: commit}, comments, notes})
 			}
 			continue
 		case err != nil:
