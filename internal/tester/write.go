@@ -456,6 +456,12 @@ func Post(runDir, repo string) int {
 		if notShown(t, *proof, len(newTests)) {
 			return unreproduced(runDir, t, intents, *proof)
 		}
+		// A test that does not build but for a missing name is the
+		// agent's to mend, as a lint finding is: asked once more with the
+		// build's error (#1048: a wrong constructor call, blocked a week).
+		if slices.ContainsFunc(proof.Findings, func(f verdict.Finding) bool { return f.Rule == "build-broken" }) {
+			proof.Again = true
+		}
 		return refusePost(runDir, t.Issue, *proof)
 	}
 	mr := map[string]any{
