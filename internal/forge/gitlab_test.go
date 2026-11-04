@@ -26,7 +26,7 @@ func TestGitLabResolveGoesOn(t *testing.T) {
 			http.Error(w, `{"message":"403 Forbidden"}`, http.StatusForbidden)
 		case r.Method == http.MethodPut && strings.HasPrefix(p, "/merge_requests/7/discussions/"):
 			resolved = append(resolved, strings.TrimPrefix(p, "/merge_requests/7/discussions/"))
-			w.Write([]byte(`{}`))
+			_, _ = w.Write([]byte(`{}`))
 		default:
 			http.Error(w, `{"message":"404 Not Found"}`, http.StatusNotFound)
 		}
