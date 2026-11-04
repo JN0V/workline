@@ -1,0 +1,31 @@
+case: routing/scope-ask-widening-dropped-stays-blocked
+about: >
+  The developer blocked its issue to ask for a file outside its Scope.
+  The product owner's widening names a file nobody asked for and the
+  repository does not hold, so the engine drops it; its unblock in the
+  same answer is not applied (#1061): the issue stays blocked, the
+  reason said, never sent back to ready on a Scope that did not change.
+given:
+  repo: tested
+  config:
+    routing: {events: {issue: [product-owner]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply"
+        labels: ["workline:blocked"]
+        author: ann
+        insider: true
+        body: "## Need\n\nI want to multiply.\n\n## Validation\n\n- **Two by three:** Given 2 and 3, When I multiply, Then I get 6.\n\n---\n\n## Verification\n\nA test of mul.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+        comments:
+          - "**workline's line** last woke the developer.\n\n<!-- workline:line-record {\"state\":\"ready\",\"body\":\"8a828a06be19\",\"hops\":3} -->\n<!-- workline:sticky=line/state -->"
+          - "**The developer** blocks this issue.\n\n- **Why**: the fix of pull request 2 needs `run-tests.sh`, outside its Scope: it asks the product owner to widen it.\n- **Next**: the product owner widens the Scope and moves it back to ready, the developer resumes on pull request 2; or keeps it blocked, why not said.\n\n<!-- workline:scope-ask at=1111111 files=run-tests.sh -->\n<!-- workline:sticky=developer/claim -->"
+run: {route: reconcile, open-merge-request: true, ai: "fake:widen-scope-wrong-file-and-unblock"}
+expect:
+  findings:
+    - {rule: scope-without-files, where: "#3"}
+    - {rule: scope-not-widened, where: "#3", message: "not moved out of Blocked: the developer asked to widen its Scope with run-tests.sh, and its Scope did not change"}
+  forge:
+    issues:
+      - id: 3
+        labels: ["workline:blocked"]

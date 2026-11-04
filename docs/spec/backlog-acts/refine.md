@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog/backlog.go, internal/backlog/assume.go, internal/backlog/proof.go, internal/backlog/plain.go, internal/backlog/repeat.go, internal/backlog/write.go, internal/work/headings.go, internal/work/work.go, internal/work/scenarios.go, internal/backlog/scenarios.go, internal/forge/forge.go, internal/engine/backlog.go]
 status: draft
-checked: 9dd3337b
+checked: 3f424301
 verified: agent:claude-code
 ---
 # Refining to ready
@@ -69,7 +69,11 @@ what it can and asks for the rest:
   names that the commit holds (`backlog.PathsIn`). A Scope naming none, or
   a path the commit does not hold, is left out, the rest of the refine
   written (`scope-without-files`, said in the summary with what a person
-  may do). Nothing to add drops the act (`nothing-to-refine`). The
+  may do). A file the developer asked the Scope widened with, on its
+  blocked issue, is kept though the commit does not hold it: its pull
+  request adds it ([#1061](https://github.com/JN0V/workline/issues/1061)).
+  That widening left out, an `unblock` beside it is refused
+  (`scope-not-widened`): the issue stays blocked. Nothing to add drops the act (`nothing-to-refine`). The
   issue gets the label `workline:to-refine`.
 - **A Scope waits for its code** (#970). A refine's Scope on an issue
   whose code the run did not give — not in pre's `code-read`, its state

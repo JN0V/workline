@@ -512,7 +512,7 @@ type Proposal struct {
 	To     string `yaml:"to,omitempty"`
 	Person bool   `yaml:"person,omitempty"`
 	Quote  *Quote `yaml:"quote"`
-	Why   string `yaml:"why"`
+	Why    string `yaml:"why"`
 	// Refining: the sections written, Need and Validation as drafts, with
 	// a real example of the need or a bug's steps to reproduce, drafts too,
 	// never required; Added, the engine's, says which the body did not have
@@ -701,24 +701,25 @@ type Plan struct {
 	// Elsewhere are the open issues a run woken for one issue did not
 	// visit that bear the role's label (#804): counted among those
 	// waiting, from the listing, their records unread.
-	Elsewhere int          `yaml:"elsewhere,omitempty"`
-	open      map[int]bool // the open issues, read once
-	issues    map[int]forge.Issue
-	judged    map[int]Judged // the second judge's answers on the issues announced obsolete
-	settings  map[string]Setting
-	config    Config
-	bodies    []string        // their bodies, to find an import again
-	seen      map[string]bool // the imports this run decided
-	read      []int           // the issues this run read
-	unread    map[int]string  // the issues a ready was held for, no scenario read: why, said on it
-	ledger    *Ledger         // what the role holds, read from the issues
-	ticked    map[string]bool // the proposals a person accepted this run decided, done or dropped: settled
-	added     map[int][]int   // the blockers this run's depend acts add, for the next act's cycle check
-	dropped   map[int][]int   // the blockers this run's undepend acts take off
-	revisited map[int]string  // the blocked issues this run decided on: unblock or blocked, one a run
-	labels    []string        // the project's labels, read once, at the first kind act
-	askedNow  map[int]int     // the issues this run asks a question on, each its round: an assumption at once follows it (ADR-0060)
-	hearsay   bool            // the last quote found was only in an outsider's comment
+	Elsewhere    int          `yaml:"elsewhere,omitempty"`
+	open         map[int]bool // the open issues, read once
+	issues       map[int]forge.Issue
+	judged       map[int]Judged // the second judge's answers on the issues announced obsolete
+	settings     map[string]Setting
+	config       Config
+	bodies       []string         // their bodies, to find an import again
+	seen         map[string]bool  // the imports this run decided
+	read         []int            // the issues this run read
+	unread       map[int]string   // the issues a ready was held for, no scenario read: why, said on it
+	widenDropped map[int][]string // the blocked issues whose Scope widening, for the developer's ask, was dropped: the files asked
+	ledger       *Ledger          // what the role holds, read from the issues
+	ticked       map[string]bool  // the proposals a person accepted this run decided, done or dropped: settled
+	added        map[int][]int    // the blockers this run's depend acts add, for the next act's cycle check
+	dropped      map[int][]int    // the blockers this run's undepend acts take off
+	revisited    map[int]string   // the blocked issues this run decided on: unblock or blocked, one a run
+	labels       []string         // the project's labels, read once, at the first kind act
+	askedNow     map[int]int      // the issues this run asks a question on, each its round: an assumption at once follows it (ADR-0060)
+	hearsay      bool             // the last quote found was only in an outsider's comment
 	// changedFor are the issues read again for a change to what they were
 	// built on: every act on them proposed (ADR-0032).
 	changedFor map[int]Change
@@ -1867,12 +1868,25 @@ func (p *Plan) checkRefining(f forge.Backlog, repo, role string, c *Proposal) (r
 			// sources, or else read from its text. One that names none the
 			// commit holds is left out, the rest of the refine written —
 			// never all of it dropped for its Scope.
+			// The files the developer asked its Scope widened with, for a
+			// blocked issue (#921): one its pull request adds is not in the
+			// default branch yet, and is kept all the same (#1061).
+			asked, err := p.scopeAskOf(f, is)
+			if err != nil {
+				return "no-state", err.Error()
+			}
 			if len(c.Sources) == 0 {
 				c.Sources = PathsIn(repo, c.Scope)
+				for _, m := range PathLike.FindAllString(c.Scope, -1) {
+					// A path the Scope names whole, never a part of one.
+					if a := RepoPath(m); slices.Contains(asked, a) && !slices.Contains(c.Sources, a) {
+						c.Sources = append(c.Sources, a)
+					}
+				}
 			}
 			missing := ""
 			for _, s := range c.Sources {
-				if path, _, _ := strings.Cut(s, "#"); !InCommit(repo, path) && missing == "" {
+				if path, _, _ := strings.Cut(s, "#"); !InCommit(repo, path) && !slices.Contains(asked, path) && missing == "" {
 					missing = path
 				}
 			}
@@ -1886,6 +1900,16 @@ func (p *Plan) checkRefining(f forge.Backlog, repo, role string, c *Proposal) (r
 			}
 			if len(c.Sources) == 0 || missing != "" {
 				c.Scope, c.Sources = "", nil
+				if len(asked) > 0 {
+					// Its widening dropped: an unblock beside it would send
+					// it back on a Scope that did not change (#1061).
+					if p.widenDropped == nil {
+						p.widenDropped = map[int][]string{}
+					}
+					p.widenDropped[c.Issue] = asked
+				}
+			} else {
+				delete(p.widenDropped, c.Issue) // a later widening kept: the unblock stands
 			}
 			c.Sources = c.Sources[:min(len(c.Sources), maxSources)]
 		}

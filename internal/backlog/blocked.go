@@ -11,6 +11,9 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+
+	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/work"
 )
 
 // BlockedElsewhere opens the line's reason for a block it did not make:
@@ -73,6 +76,19 @@ func ScopeAsked(comments []string) []string {
 	return nil
 }
 
+// scopeAskOf reads, on a blocked issue, the files the developer asks its
+// Scope widened with (ScopeAsked); none for another, or with no forge.
+func (p *Plan) scopeAskOf(f forge.Backlog, is forge.Issue) ([]string, error) {
+	if f == nil || !slices.Contains(is.Labels, LabelBlocked) {
+		return nil, nil
+	}
+	comments, err := f.Comments(forge.Target{Kind: "issue", ID: is.ID})
+	if err != nil {
+		return nil, err
+	}
+	return ScopeAsked(comments), nil
+}
+
 // checkBlocked says why an act on a blocked issue, or an unblock or a
 // blocked on one that is not, cannot be done; nothing when it can.
 func (p *Plan) checkBlocked(c *Proposal) (rule, why string) {
@@ -89,6 +105,8 @@ func (p *Plan) checkBlocked(c *Proposal) (rule, why string) {
 		return "once-a-run", fmt.Sprintf("#%d: one decision on a blocked issue a run; the %s before it is kept", c.Issue, p.revisited[c.Issue])
 	case c.Do == "ready" && blocked:
 		return "blocked-first", fmt.Sprintf("#%d is %s: `unblock` it, to the state it came from or to refine, rather than ready", c.Issue, LabelBlocked)
+	case c.Do == "unblock" && len(p.widenDropped[c.Issue]) > 0:
+		return "scope-not-widened", fmt.Sprintf("not moved out of Blocked: the developer asked to widen its %s with %s, and its %[1]s did not change", work.Name(work.Scope), strings.Join(p.widenDropped[c.Issue], ", "))
 	}
 	if c.Do == "unblock" || c.Do == "blocked" {
 		if p.revisited == nil {

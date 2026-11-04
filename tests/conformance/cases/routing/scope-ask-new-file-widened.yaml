@@ -1,0 +1,31 @@
+case: routing/scope-ask-new-file-widened
+about: >
+  The developer blocked its issue to ask for a new test file its pull
+  request adds, not in the default branch yet (#1061, from a trial). The
+  product owner widens the Scope with it and unblocks: the file the
+  developer asked for is written in the Scope, never dropped as one the
+  repository does not hold, and the issue goes back to ready.
+given:
+  repo: tested
+  config:
+    routing: {events: {issue: [product-owner]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply"
+        labels: ["workline:blocked"]
+        author: ann
+        insider: true
+        body: "## Need\n\nI want to multiply.\n\n## Validation\n\n- **Two by three:** Given 2 and 3, When I multiply, Then I get 6.\n\n---\n\n## Verification\n\nA test of mul.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+        comments:
+          - "**workline's line** last woke the developer.\n\n<!-- workline:line-record {\"state\":\"ready\",\"body\":\"8a828a06be19\",\"hops\":3} -->\n<!-- workline:sticky=line/state -->"
+          - "**The developer** blocks this issue.\n\n- **Why**: the fix of pull request 2 needs `tests/mul_more_test.sh`, outside its Scope: it asks the product owner to widen it.\n- **Next**: the product owner widens the Scope and moves it back to ready, the developer resumes on pull request 2; or keeps it blocked, why not said.\n\n<!-- workline:scope-ask at=1111111 files=tests/mul_more_test.sh -->\n<!-- workline:sticky=developer/claim -->"
+run: {route: reconcile, open-merge-request: true, ai: "fake:widen-scope-new-test-and-unblock"}
+expect:
+  status: pass
+  agent-calls: 1
+  forge:
+    issues:
+      - id: 3
+        labels: ["workline:ready"]
+        body-contains: "- `tests/mul_more_test.sh`: the new test the pull request adds."
