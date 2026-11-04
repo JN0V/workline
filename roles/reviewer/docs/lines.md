@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/reviewer/lines.go, internal/builtin/reviewer/resolve.go, internal/builtin/reviewer/reviewer.go, internal/forge/review.go, internal/forge/github_review.go, internal/forge/gitlab_review.go, internal/forge/threads.go, internal/engine/review.go]
-checked: adf500ab
+checked: 1f74082b
 judged: 39dcb7b
 verified: agent:claude-code
 ---
@@ -91,10 +91,15 @@ flowchart LR
   goes ([judge](judge.md#a-block-stands-until-a-commit-answers-it)):
   - its line is no longer at the head: changed, or removed;
   - or its lens reads the file again and finds it no more, its judge's
-    no included; for the tests lens, a test file touching it counts.
+    no included; for the tests lens, a test file touching it counts;
+  - or, a warning only, the developer's round answered it with a fix
+    pushed, its tests green, and the next run does not raise it again
+    ([#1050](https://github.com/JN0V/workline/issues/1050)): a warning
+    asks nothing, its lens may never read the file again.
   - The summary comment counts them, under **Resolved**.
 - **Left open**: found again, a block still standing, a lens that read
-  elsewhere; one a person opened, or answered in, stays theirs.
+  elsewhere, a warning nothing answered; one a person opened, or
+  answered in, stays theirs.
 - **A block standing from a review before**, no lens reading it again
   ([#326](https://github.com/JN0V/workline/issues/326)): its row in the
   summary comment, marked `**blocks**`; its comment on the line is not

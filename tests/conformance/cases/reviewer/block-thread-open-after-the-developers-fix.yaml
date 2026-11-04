@@ -1,0 +1,36 @@
+case: reviewer/block-thread-open-after-the-developers-fix
+about: "A finding that blocks keeps its conversation open after the developer's fix round, while its lens has not read the file again and its line stands (#1050): the reviewer decides a block is fixed; only warnings are settled by the round that answered them."
+given:
+  repo: reviewed
+  config: {roles: {reviewer: {settings: {ai-findings: block}}}}
+  setup:
+    - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"
+    - "sed -i \"s/@reviewed@/$(git rev-parse HEAD)/g\" \"$FORGE_FILE\""
+    - "printf 'package calc\\n\\n// Half halves a count.\\nfunc Half(n int) int { return n / 2 }\\n' > calc/half.go && git add calc/half.go && git commit -qm 'fix: the review findings, round 1'"
+  forge:
+    issues: []
+    merge-requests:
+      - id: 5
+        labels: []
+        comments:
+          - |
+            **workline reviewer** — 2 findings on the change; lenses: correctness, edge-cases.
+
+            <!-- workline:record reviewed=@reviewed@ runs=1 -->
+
+            <!-- workline:sticky=reviewer/summary -->
+          - "**The developer**'s record of this pull request.\n\n- Review round 1: 1 asked, its fix pushed, the tests green.\n\n<!-- workline:developer-act {\"act\":\"code\",\"issue\":3,\"rounds\":[{\"n\":1,\"asked\":[\"blocks edge-cases `calc/calc.go:11`: Important: Average divides by one less than the count\"],\"result\":\"green\"}]} -->\n<!-- workline:sticky=developer/code -->"
+        threads:
+          - {path: calc/calc.go, line: 11, body: "**workline reviewer** · **blocks** · edge-cases\n\n**Important: Average divides by one less than the count**\n\n<!-- workline:line=edge-cases/d861c7fa46d7 -->"}
+          - {path: calc/calc.go, line: 11, body: "**workline reviewer** · warns · correctness\n\n**Important: Average of no values divides by zero**\n\n<!-- workline:line=correctness/d861c7fa46d7 -->"}
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD, lenses: correctness}, target: {merge-request: 5}, ai: "fake:review-nothing"}
+expect:
+  status: pass
+  applied: [comment]
+  forge:
+    merge-requests:
+      - id: 5
+        comment-lacks: "**Resolved**"
+        threads:
+          - {path: calc/calc.go, line: 11, resolved: false}
+          - {path: calc/calc.go, line: 11, resolved: false}
