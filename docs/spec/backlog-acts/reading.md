@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/builtin/productowner/productowner.go, internal/backlog/ledger.go, internal/backlog/opening.go]
 status: draft
-checked: 8538d558
+checked: cee5a7af
 verified: agent:claude-code
 ---
 # Reading
@@ -51,7 +51,8 @@ import's, a finding's or a bot's issues never read, oldest first. From
 `proposals-max` issues waiting on a person, only those a person
 commented on are read. A run woken for one issue's state (the `issue`
 event, [ADR-0059](../../adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md))
-reads that issue alone, whatever changed, `proposals-max` aside; one
+reads that issue alone, whatever changed, `proposals-max` aside — an
+import's or a bot's never read too, not left for the catch-up; one
 woken only for its drafts past `acts.ask.wait` has them taken as written,
 with no agent. A run over the whole backlog also asks the kind of the
 issues read before that no kind label tells, in one light call apart
