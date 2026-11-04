@@ -1,0 +1,51 @@
+case: developer/round-resumes-green-on-a-widened-scope
+about: >
+  Pull request 2 is green: its round 1 needed cases/mul.txt, outside
+  #3's Scope, for the reviewer's Important finding. The product owner
+  widened the Scope and sent #3 back to ready (#1022). No check is red,
+  and the reviewer's comment, read again since, no longer holds the
+  finding: the round asks what its record asked. Its fix, within the
+  bounds now, is pushed on the same branch; the issue is Doing again.
+given:
+  repo: tested-draft
+  setup:
+    - "git checkout -q -b workline/developer/3 && printf 'add() { echo $(($1 + $2)); }\\nmul() { echo $(($1 * $2)); }\\n' > lib.sh && mkdir cases && printf 'mul 2 3: 5\\n' > cases/mul.txt && git add cases && git commit -qam 'feat: mul for #3' -m 'Workline-Role: developer' && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main workline/tester/issue-3 workline/developer/3"
+    - "sed -i \"s/@head@/$(git rev-parse HEAD)/g\" \"$FORGE_FILE\""
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    head-checks:
+      workline/developer/3:
+        - {name: test, workflow: test, state: success, job: 41}
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:ready"]
+        body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n- `cases/mul.txt`: its expected product.\n"
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        draft: true
+        comments: ["The tests of #3, frozen.\n\n<!-- workline:tester-record {\"issue\":3,\"base\":\"main\",\"files\":{\"tests/test_mul_by_zero.sh\":\"8f123a0bacbd681063880b867df38dd216784b97\",\"tests/test_mul_two_by_three.sh\":\"2dee0641bd7a79057ade7bff5af43b603125f543\"}} -->\n<!-- workline:sticky=tester/tests -->"]
+      - id: 2
+        branch: workline/developer/3
+        title: "Multiply two numbers"
+        body: "Closes #3"
+        comments:
+          - "**The developer**'s record of this pull request, for its next runs and the auditor.\n\n<!-- workline:developer-act {\"act\":\"code\",\"issue\":3,\"acceptance\":[\"tests/test_mul_by_zero.sh\",\"tests/test_mul_two_by_three.sh\"],\"code\":[\"lib.sh\"],\"proof\":{\"result\":\"green\",\"passed\":2},\"round\":1,\"review-runs\":1,\"seen\":[\"tests|cases/mul.txt|cases/mul.txt says 5 for mul 2 3\"],\"rounds\":[{\"n\":1,\"asked\":[\"warns tests `cases/mul.txt:1`: Important: cases/mul.txt says 5 for mul 2 3\"],\"result\":\"no-code\",\"bounds\":\"asked\"}],\"checks-at\":\"@head@\",\"widen\":{\"at\":\"@head@\",\"scope\":\"503615c901c4\",\"files\":[\"cases/mul.txt\"]}} -->\n<!-- workline:sticky=developer/code -->"
+          - "**workline reviewer** — 0 findings on the change.\n\nNo finding on the commits reviewed.\n\n<!-- workline:record reviewed=1111111 runs=1 -->\n<!-- workline:sticky=reviewer/summary -->"
+run: {develop: [--merge-request, "2"], ai: "fake:developer-fixes-outside-its-scope"}
+expect:
+  status: pass
+  summary: "round 2 of 5 on merge request 2, its fix pushed, the tests green"
+  agent-calls: 1
+  pushed:
+    workline/developer/3:
+      cases/mul.txt: "mul 2 3: 6"
+  forge:
+    issues:
+      - id: 3
+        labels: ["workline:developing"]
+    merge-requests:
+      - id: 2
+        comment-contains: ["review round 2 of 5: its fix pushed", "\"back\":true"]

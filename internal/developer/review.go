@@ -131,14 +131,46 @@ func reviewRows(comment string) (asked []Asked, nits int) {
 		case holds != "warns" || !strings.HasPrefix(msg, "Important:"):
 			continue
 		}
-		title := strings.TrimSpace(strings.TrimPrefix(msg, "Important:"))
-		if t, _, ok := strings.Cut(title, " — "); ok {
-			title = t
-		}
-		file, _, _ := strings.Cut(where, ":")
-		asked = append(asked, Asked{Key: lens + "|" + file + "|" + title, Lens: lens, Where: where, Text: msg, Holds: holds})
+		asked = append(asked, reviewFinding(holds, lens, where, msg))
 	}
 	return asked, nits
+}
+
+// reviewFinding is a reviewer's finding asked, its key the same round
+// after round: lens, file, title.
+func reviewFinding(holds, lens, where, msg string) Asked {
+	title := strings.TrimSpace(strings.TrimPrefix(msg, "Important:"))
+	if t, _, ok := strings.Cut(title, " — "); ok {
+		title = t
+	}
+	file, _, _ := strings.Cut(where, ":")
+	return Asked{Key: lens + "|" + file + "|" + title, Lens: lens, Where: where, Text: msg, Holds: holds}
+}
+
+// recordedFinding reads a reviewer's finding as the record's round
+// wrote it (texts): "warns tests `a.go:3`: Important: …".
+var recordedFinding = regexp.MustCompile("^(blocks|warns) (\\S+) `([^`]*)`: (.+)$")
+
+// waited adds to asked the reviewer's findings the record's last round
+// asked and could not fix, when the issue comes back to resume it
+// (#1022): the reviewer's comment, read again since on a later head,
+// may no longer hold them, and a green head asks no check. Those the
+// review asks again are not doubled.
+func waited(a Act, asked []Asked) []Asked {
+	if len(a.Rounds) == 0 {
+		return asked
+	}
+	for _, t := range a.Rounds[len(a.Rounds)-1].Asked {
+		m := recordedFinding.FindStringSubmatch(t)
+		if m == nil {
+			continue
+		}
+		f := reviewFinding(m[1], m[2], m[3], m[4])
+		if !slices.ContainsFunc(asked, func(x Asked) bool { return x.Key == f.Key }) {
+			asked = append(asked, f)
+		}
+	}
+	return asked
 }
 
 // lineDetails gives each finding of the reviewer's rows its text whole,
@@ -416,6 +448,9 @@ func readAsked(f forge.Forge, b forge.Backlog, kept forge.Kept, repo string, a A
 	newReview := r.Runs > a.ReviewRuns
 	if !newReview { // the review read already
 		r.Asked = nil
+	}
+	if back {
+		r.Asked = waited(a, r.Asked)
 	}
 	if th, ok := f.(forge.Threaded); ok && len(r.Asked) > 0 {
 		threads, err := th.Threads(id)

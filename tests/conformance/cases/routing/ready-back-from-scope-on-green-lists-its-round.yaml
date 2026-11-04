@@ -1,0 +1,39 @@
+case: routing/ready-back-from-scope-on-green-lists-its-round
+about: >
+  #4's pull request 5 is green; its round 2 needed a file outside the
+  Scope for the reviewer's Important finding, and the product owner
+  widened it and moved #4 back to ready (#1022). No check is red, and
+  the reviewer's comment, read again on the last head, no longer holds
+  the finding: the round is due all the same, what its record asked
+  asked again. Listed for the job that moved it to start. No agent.
+given:
+  repo: tested-draft
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git checkout -q -b workline/developer/4 && git push -q origin main workline/developer/4 && git checkout -q main"
+    - "sed -i \"s/@head4@/$(git rev-parse workline/developer/4)/g\" \"$FORGE_FILE\""
+  config:
+    routing: {events: {issue: [developer]}}
+  forge:
+    head-checks:
+      workline/developer/4:
+        - {name: test, workflow: test, state: success, job: 46}
+    issues:
+      - {id: 4, title: "Divide two numbers", labels: ["workline:ready"], body: "## Need\n\nI want to divide.\n"}
+    merge-requests:
+      - id: 5
+        branch: workline/developer/4
+        title: "Divide two numbers"
+        body: "Closes #4"
+        comments:
+          - "**The developer**'s record.\n\n<!-- workline:developer-act {\"act\":\"code\",\"issue\":4,\"code\":[\"lib.sh\"],\"proof\":{\"result\":\"green\",\"passed\":1},\"round\":2,\"review-runs\":1,\"rounds\":[{\"n\":2,\"asked\":[\"warns tests `lib.sh:2`: Important: div by zero is not tested.\"],\"result\":\"no-code\",\"bounds\":\"asked\"}],\"checks-at\":\"@head4@\",\"widen\":{\"at\":\"@head4@\",\"scope\":\"x\",\"files\":[\"cases/div.txt\"]}} -->\n<!-- workline:sticky=developer/code -->"
+          - "**workline reviewer** — 0 findings on the change.\n\nNo finding on the commits reviewed.\n\n<!-- workline:record reviewed=1111111 runs=1 -->\n<!-- workline:sticky=reviewer/summary -->"
+run: {route: issue, target: {issue: 4}, open-merge-request: true, ai: "fake:developer-nothing", input: {reconcile: list}}
+expect:
+  status: pass
+  summary: "issue: #4's step is the review round on merge request 5, due: not started (--input reconcile=list)"
+  agent-calls: 0
+  forge:
+    issues:
+      - {id: 4, labels: ["workline:ready"]}
+    merge-requests:
+      - {id: 5, comments: 2}

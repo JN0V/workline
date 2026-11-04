@@ -46,6 +46,9 @@ a round asks it to widen it ([#921](https://github.com/JN0V/workline/issues/921)
     that applied that starts the next round on the same pull request,
     not a new claim. It runs with the new bounds and puts the issue
     back in Doing ([#1013](https://github.com/JN0V/workline/issues/1013)).
+    It asks again the red checks, and the reviewer's findings its last
+    round asked, from its record: a green pull request resumes too
+    ([#1022](https://github.com/JN0V/workline/issues/1022)).
   - Or it keeps the issue blocked, its reason written.
 - **Once a head and a Scope**: asked again on the same, the issue is
   blocked for a person, with no ask; the person who widens it and puts
