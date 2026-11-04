@@ -30,6 +30,17 @@ func TestSumChecks(t *testing.T) {
 			{Type: "CheckRun", Name: "test", Status: "COMPLETED", Conclusion: "SUCCESS"}}, "pending"},
 		{"cancelled beside a failure", []checkContext{{Type: "CheckRun", Name: "test", Status: "COMPLETED", Conclusion: "CANCELLED"},
 			{Type: "CheckRun", Name: "test", Status: "COMPLETED", Conclusion: "FAILURE"}}, "failure"},
+		// #1031: each check by its latest run, GitHub's ids telling which,
+		// whatever order the rollup lists them in.
+		{"failed, re-run green", []checkContext{{Type: "CheckRun", Name: "follow", ID: 9, Status: "COMPLETED", Conclusion: "SUCCESS"},
+			{Type: "CheckRun", Name: "follow", ID: 7, Status: "COMPLETED", Conclusion: "FAILURE"}}, "success"},
+		{"green, re-run failed", []checkContext{{Type: "CheckRun", Name: "test", ID: 9, Status: "COMPLETED", Conclusion: "FAILURE"},
+			{Type: "CheckRun", Name: "test", ID: 7, Status: "COMPLETED", Conclusion: "SUCCESS"}}, "failure"},
+		{"failed, re-run running", []checkContext{{Type: "CheckRun", Name: "test", ID: 7, Status: "COMPLETED", Conclusion: "FAILURE"},
+			{Type: "CheckRun", Name: "test", ID: 9, Status: "QUEUED"}}, "pending"},
+		{"failed, cancelled, re-run green", []checkContext{{Type: "CheckRun", Name: "follow", ID: 5, Status: "COMPLETED", Conclusion: "FAILURE"},
+			{Type: "CheckRun", Name: "follow", ID: 9, Status: "COMPLETED", Conclusion: "CANCELLED"},
+			{Type: "CheckRun", Name: "follow", ID: 7, Status: "COMPLETED", Conclusion: "SUCCESS"}}, "success"},
 	} {
 		if got := sumChecks(c.all); got != c.want {
 			t.Errorf("%s: %q, want %q", c.name, got, c.want)
@@ -57,6 +68,23 @@ func TestSumChecksLive(t *testing.T) {
 			{"__typename":"CheckRun","name":"follow","status":"COMPLETED","conclusion":"SUCCESS"},
 			{"__typename":"CheckRun","name":"findings","status":"COMPLETED","conclusion":"SKIPPED"},
 			{"__typename":"CheckRun","name":"workline","status":"COMPLETED","conclusion":"SUCCESS"},
+			{"__typename":"StatusContext","context":"workline/accepted","state":"SUCCESS"},
+			{"__typename":"StatusContext","context":"workline/verdict","state":"SUCCESS"}]`, "success"},
+		// #1031, read on 2026-11-04: #1025's head, a `follow` failed on a
+		// GitHub 502 and re-run green, listed first: green.
+		{"f286b2f", `[{"__typename":"CheckRun","name":"follow","status":"COMPLETED","conclusion":"FAILURE","databaseId":126541559775},
+			{"__typename":"CheckRun","name":"gates","status":"COMPLETED","conclusion":"CANCELLED","databaseId":126536090186},
+			{"__typename":"CheckRun","name":"follow","status":"COMPLETED","conclusion":"CANCELLED","databaseId":126549614317},
+			{"__typename":"CheckRun","name":"warn","status":"COMPLETED","conclusion":"CANCELLED","databaseId":126536087805},
+			{"__typename":"CheckRun","name":"workline bounds","status":"COMPLETED","conclusion":"SKIPPED","databaseId":126536133421},
+			{"__typename":"CheckRun","name":"test","status":"COMPLETED","conclusion":"SUCCESS","databaseId":126536087073},
+			{"__typename":"CheckRun","name":"gates","status":"COMPLETED","conclusion":"SUCCESS","databaseId":126536405282},
+			{"__typename":"CheckRun","name":"follow","status":"COMPLETED","conclusion":"SUCCESS","databaseId":126549644484},
+			{"__typename":"CheckRun","name":"follow","status":"COMPLETED","conclusion":"SUCCESS","databaseId":126557526125},
+			{"__typename":"CheckRun","name":"warn","status":"COMPLETED","conclusion":"SUCCESS","databaseId":126536716167},
+			{"__typename":"CheckRun","name":"judge","status":"COMPLETED","conclusion":"CANCELLED","databaseId":126536404963},
+			{"__typename":"CheckRun","name":"judge","status":"COMPLETED","conclusion":"SUCCESS","databaseId":126536741629},
+			{"__typename":"CheckRun","name":"workline","status":"COMPLETED","conclusion":"SUCCESS","databaseId":126537357293},
 			{"__typename":"StatusContext","context":"workline/accepted","state":"SUCCESS"},
 			{"__typename":"StatusContext","context":"workline/verdict","state":"SUCCESS"}]`, "success"},
 	} {

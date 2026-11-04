@@ -1,11 +1,13 @@
 package forge
 
 import (
+	"cmp"
 	"errors"
 	"fmt"
 	"net/url"
 	"os"
 	"regexp"
+	"slices"
 	"strings"
 )
 
@@ -16,8 +18,8 @@ import (
 const mergeStateQuery = `query($owner: String!, $name: String!, $number: Int!) { repository(owner: $owner, name: $name) { pullRequest(number: $number) { isDraft headRefOid mergeStateStatus autoMergeRequest { enabledAt enabledBy { login __typename } } timelineItems(itemTypes: [AUTO_MERGE_ENABLED_EVENT, AUTO_SQUASH_ENABLED_EVENT, AUTO_REBASE_ENABLED_EVENT], last: 100) { nodes { ... on AutoMergeEnabledEvent { createdAt } ... on AutoSquashEnabledEvent { createdAt } ... on AutoRebaseEnabledEvent { createdAt } } } } } }`
 
 // checksQuery asks the head's checks as GitHub shows them on the pull
-// request, each: check runs and commit statuses both.
-const checksQuery = `query($owner: String!, $name: String!, $number: Int!) { repository(owner: $owner, name: $name) { pullRequest(number: $number) { commits(last: 1) { nodes { commit { statusCheckRollup { contexts(first: 100) { nodes { __typename ... on CheckRun { name status conclusion } ... on StatusContext { context state } } } } } } } } } }`
+// request, each: check runs and commit statuses both, a hundred a page.
+const checksQuery = `query($owner: String!, $name: String!, $number: Int!, $endCursor: String) { repository(owner: $owner, name: $name) { pullRequest(number: $number) { commits(last: 1) { nodes { commit { statusCheckRollup { contexts(first: 100, after: $endCursor) { pageInfo { hasNextPage endCursor } nodes { __typename ... on CheckRun { name status conclusion databaseId } ... on StatusContext { context state } } } } } } } } } }`
 
 // MergeState reads a pull request's state in one GraphQL call, its
 // checks in another — a token that may not read them leaves them unread,
@@ -67,34 +69,18 @@ func (g *github) MergeState(mr MergeRequest) (MergeState, error) {
 			st.AutoMergeBy, st.AutoMergeBot = pr.Auto.By.Login, pr.Auto.By.Type == "Bot"
 		}
 	}
-	out, err = g.api(append([]string{"graphql", "-f", "query=" + checksQuery}, vars...)...)
-	var c struct {
-		Data struct {
-			Repository struct {
-				PullRequest struct {
-					Commits struct {
-						Nodes []struct {
-							Commit struct {
-								Rollup *struct {
-									Contexts struct {
-										Nodes []checkContext `json:"nodes"`
-									} `json:"contexts"`
-								} `json:"statusCheckRollup"`
-							} `json:"commit"`
-						} `json:"nodes"`
-					} `json:"commits"`
-				} `json:"pullRequest"`
-			} `json:"repository"`
-		} `json:"data"`
-	}
+	// Every page: a check's latest run may lie past the first hundred, each
+	// label adding a run of follow (#1031).
+	out, err = g.api(append([]string{"graphql", "--paginate", "-f", "query=" + checksQuery}, append(vars,
+		"--jq", ".data.repository.pullRequest.commits.nodes[0].commit.statusCheckRollup.contexts.nodes[]?")...)...)
+	var all []checkContext
 	if err == nil {
-		err = decode(out, &c)
+		all, err = lines[checkContext](out)
 	}
-	switch nodes := c.Data.Repository.PullRequest.Commits.Nodes; {
-	case err != nil:
+	if err != nil {
 		st.ChecksUnread = err.Error()
-	case len(nodes) == 1 && nodes[0].Commit.Rollup != nil:
-		st.Checks = sumChecks(nodes[0].Commit.Rollup.Contexts.Nodes)
+	} else {
+		st.Checks = sumChecks(all)
 	}
 	if st.Labels, err = g.LabelEvents(mr.ID); err != nil {
 		return MergeState{}, err
@@ -139,12 +125,21 @@ type checkContext struct {
 	Conclusion string `json:"conclusion"`
 	Context    string `json:"context"`
 	State      string `json:"state"`
+	// ID: a check run's id, GitHub's numbers rising: a re-run's is
+	// higher than the run it replaces. 0 for a commit status.
+	ID int64 `json:"databaseId"`
 }
 
 // sumChecks sums up a head's checks as sumRuns does, check runs and
 // commit statuses both, workline's own statuses left out: a verdict kept,
-// a yes held, are no check of the change.
-func sumChecks(all []checkContext) string { return sumRuns(runsOf(all)) }
+// a yes held, are no check of the change. The runs go oldest first, so
+// each check counts by its latest (#1031): GitHub's rollup lists every
+// run on the head, a failure re-run green since among them.
+func sumChecks(all []checkContext) string {
+	all = slices.Clone(all)
+	slices.SortStableFunc(all, func(a, b checkContext) int { return cmp.Compare(a.ID, b.ID) })
+	return sumRuns(runsOf(all))
+}
 
 // runsOf reads check runs and commit statuses as runs, workline's own
 // statuses left out.

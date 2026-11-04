@@ -1,6 +1,6 @@
 ---
 sources: [ci/github, .github/workflows/workline-apply.yml, .github/workflows/workline.yml]
-checked: 8538d558
+checked: 6163e1c4
 judged: c7e1e98
 verified: agent:claude-code
 judged-in-parts: 220b6dc
@@ -90,7 +90,8 @@ gh secret delete WORKLINE_APP_PRIVATE_KEY -R OWNER/REPO    # the repository's ow
   is `refs/pull/<n>/merge`, never `main`.
 - **So only the default branch's workflow holds the key**:
   workline-apply.yml, after each pull request's run and on each push;
-  workline-merge.yml, on a label and hourly, a release candidate's issue's too;
+  workline-merge.yml, on a label and hourly, a demotion or release
+  candidate's issue's too;
   gardening and the sample; the tester's answer, the developer's steps
   and rounds, its bounds. Each records a deployment to `workline-app`.
 - **They read a pull request's run as data**: its artifacts, outside the

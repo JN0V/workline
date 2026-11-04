@@ -10,6 +10,8 @@
 # At `merge: {autonomy: enterprising}`, also when a release candidate's
 # issue gets the label workline:accepted (the person's yes ships it) or is
 # closed (refused): docs/release-candidate.md.
+# At `merge: {autonomy: normal}` or above, also when a person closes the
+# issue holding a demotion: the pull requests it held merge at once.
 # Hourly too, the safety net: a pull request whose auto-merge GitHub
 # missed, its checks green, merged by the next run.
 name: workline merge
@@ -27,10 +29,13 @@ jobs:
     # One at a time on a branch, with workline-apply.yml's: each run reads
     # what the one before set.
     concurrency: {group: "workline-follow-${{ github.base_ref || github.event.repository.default_branch || github.ref_name }}", cancel-in-progress: false}
-    # An issue's event: a release candidate's only, its yes or its close.
+    # An issue's event: a release candidate's yes or close, or a demotion
+    # issue's close, known by its title as the engine reads it.
     if: >-
       github.event_name != 'issues' || contains(github.event.issue.labels.*.name, 'workline:candidate') &&
-      (github.event.action == 'closed' || github.event.label.name == 'workline:accepted')
+      (github.event.action == 'closed' || github.event.label.name == 'workline:accepted') ||
+      github.event.action == 'closed' && startsWith(github.event.issue.title, 'workline: its ') &&
+      contains(github.event.issue.title, 'merge requests wait for a person''s yes again')
     runs-on: ubuntu-latest
     environment: workline-app       # the App's key: the default branch only (ADR-0044)
     permissions: {contents: write, pull-requests: read}

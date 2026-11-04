@@ -1,6 +1,6 @@
 ---
 sources: [ci/github, .github/workflows/workline.yml, .github/workflows/workline-apply.yml, .github/workflows/workline-gardening.yml, .github/workflows/workline-sample.yml, .github/workflows/workline-answer.yml, .github/workflows/workline-develop.yml, .github/actions/engine/action.yml, .github/workflows/release.yml, .github/workflows/release-please.yml, release-please-config.json, .goreleaser.yaml, cmd/workline]
-checked: 8538d558
+checked: 6163e1c4
 judged: 220b6dc
 verified: agent:claude-code
 reader: fe1505d43360
@@ -66,7 +66,8 @@ write run the default branch's workflow, never a pull request's own
        after `judge`, and `queue` after a merge queue's group;
      - rename `main` in its `push:` for another default branch.
    - [workline-merge.yml](../ci/github/workline-merge.yml), with the merge
-     policy: `follow` on a label and hourly; at `enterprising`, on a release
+     policy: `follow` on a label, hourly, and on a demotion issue closed; at
+     `enterprising`, on a release
      candidate's label and close too.
    - [release-candidate.yml](../ci/github/release-candidate.yml), at
      `enterprising` with release-please: the release tool on a
