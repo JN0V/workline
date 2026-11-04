@@ -48,6 +48,19 @@ func unrefined(is forge.Issue, notes []forge.Note) (lacks string, sources []stri
 	return strings.Join(missing, ", "), st.Sources
 }
 
+// unreadBody says whether the product owner's state on an issue says it
+// never read it (#1041): no state, or one never judged, no body read.
+// The line woke it, so that run read nothing — an import left for the
+// catch-up (#1036) —: not acted. A state that does not read is the
+// role's to say (state-broken).
+func unreadBody(notes []forge.Note) bool {
+	st, found, err := backlog.ReadState(forge.Bodies(notes), backlog.Keeper)
+	if err != nil {
+		return false
+	}
+	return !found || st.Judged == "" && st.Body == ""
+}
+
 // givenKey is what Record.Given keeps of the code a read is given: its
 // sources, sorted, one a line (no path holds a newline), "-" for none.
 func givenKey(sources []string) string {
