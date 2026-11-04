@@ -57,6 +57,9 @@ type Options struct {
 	// project's `forge`, else GitHub when the repository's GitHub workflows
 	// run workline and its origin is on github.com.
 	Forge string
+	// Engine is this engine's version: a CI file pinned to an older
+	// release is said.
+	Engine string
 }
 
 // Run looks at the machine, then at the repository when there is one.
@@ -257,6 +260,7 @@ func repository(r *Report, o Options) {
 		r.add(Check{Area: "repository", Rule: "docs-counted-at-push", Where: where, Level: OK,
 			Message: "the push counts the docs its commits make suspect"})
 	}
+	ciTemplates(r, o, line)
 	findingsOnMergeRequests(r, o, cfg.Forge)
 	tokensScoped(r, o, cfg.Forge)
 	boundsGuard(r, o, cfg.Forge, line)

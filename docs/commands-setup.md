@@ -1,5 +1,5 @@
 ---
-sources: [cmd/workline, internal/hooks, internal/role/config.go, internal/doctor/doctor.go, internal/doctor/variables.go, internal/doctor/board.go, internal/doctor/hook.go, internal/forge/gitlab_hook.go]
+sources: [cmd/workline, internal/hooks, internal/role/config.go, internal/doctor/doctor.go, internal/doctor/variables.go, internal/doctor/board.go, internal/doctor/hook.go, internal/doctor/workflows.go, internal/forge/gitlab_hook.go]
 checked: 8538d558
 verified: agent:claude-code
 ---
@@ -73,6 +73,10 @@ changes nothing.
 - In this repository: which hooks git runs there, whether the
   documentalist runs before a push, how many docs declare their sources,
   which files read as docs it does not read.
+- Where CI runs workline: each workflow pinning a release older than
+  this engine (`WORKLINE_VERSION`), and each event routed that no
+  GitHub workflow runs, with the template to copy; nothing when CI runs
+  no workline ([#1016](https://github.com/JN0V/workline/issues/1016)).
 - With an `autonomy` set: the level each role runs at and where it
   comes from; a role with no levels, that it changes nothing for it
   ([autonomy](autonomy.md)).

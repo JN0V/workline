@@ -193,8 +193,8 @@ What the templates need:
 - The whole history is needed: docs are compared since their `checked`,
   the release since its tag. A job cloning too shallow reports
   `shallow-clone`, never a pass.
-- The templates run the release of workline named by `WORKLINE_VERSION` at
-  their top: update it to take a newer one.
+- The templates run the release named by `WORKLINE_VERSION` at their top:
+  update it for a newer one; `workline doctor` names any pinned older.
 - A pipeline started by a tool rather than by the forge (GitLab's trigger
   API, another pipeline): [gitlab-trigger.md](gitlab-trigger.md). The bare
   command for each event, for any other trigger: [triggers.md](triggers.md).

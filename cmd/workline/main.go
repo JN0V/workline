@@ -2240,7 +2240,7 @@ func doctorCmd(args []string) int {
 		root = ""
 	}
 	r := doctor.Run(doctor.Options{Repo: root, RolesDir: rolesDir, AI: os.Getenv("WORKLINE_AI"), UserAI: userDefaultAI(),
-		NoPushApproval: !userConfig().approvePush(), Forge: *forgeSpec})
+		NoPushApproval: !userConfig().approvePush(), Forge: *forgeSpec, Engine: engineVersion()})
 	if missing {
 		msg := "the folder " + *repo + " " + problem + ": the repository was not checked"
 		r.Checks = append(r.Checks, doctor.Check{Area: "repository", Rule: "repo-missing", Where: *repo, Level: doctor.Error, Message: msg})
