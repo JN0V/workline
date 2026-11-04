@@ -59,6 +59,31 @@ func (a *applier) lineReview(t forge.Target, v any, body string) (string, error)
 	return forge.FillReview(body, done.Section()), nil
 }
 
+// resolveThreads marks the role's own conversations on the merge request's
+// lines resolved, those its run says the code answers now (#1039). A forge
+// that resolves none, or refuses (`thread-not-resolved`), is said, never
+// an error: only a forge out of reach is.
+func (a *applier) resolveThreads(t forge.Target, ids []string) error {
+	said := func(why string) {
+		a.findings = append(a.findings, verdict.Finding{Rule: "thread-not-resolved", Level: "warn",
+			Message: fmt.Sprintf("%d conversations on lines the code answers left open: %s; a person resolves them, or the base's rule holds the merge", len(ids), why)})
+	}
+	r, ok := a.forge.(forge.Resolver)
+	if !ok || t.Kind != "merge-request" {
+		said("this forge resolves no conversation")
+		return nil
+	}
+	err := r.Resolve(t.ID, ids)
+	switch {
+	case err == nil:
+		return nil
+	case errors.Is(err, forge.ErrUnreachable) && !forge.Refused(err):
+		return err
+	}
+	said("the forge refused: " + forge.Said(err))
+	return nil
+}
+
 // mergedRecord is a sticky comment's body, the record in it merged with
 // the one the comment holds by then (#375): a run applied after this one
 // read it wrote it, a push having been judged before the run before it

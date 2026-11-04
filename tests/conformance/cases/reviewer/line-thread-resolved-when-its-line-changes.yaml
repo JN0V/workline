@@ -1,0 +1,35 @@
+case: reviewer/line-thread-resolved-when-its-line-changes
+about: "The reviewer resolves its own conversation on a line the head no longer holds, changed or removed: a commit answered it, as it answers a block (#1039). One whose line the head still holds stays open while no lens read its file again: a push elsewhere answers nothing."
+given:
+  repo: reviewed
+  setup:
+    - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"
+    - "sed -i \"s/@reviewed@/$(git rev-parse HEAD)/g\" \"$FORGE_FILE\""
+    - "printf 'package calc\\n\\n// Half halves a count.\\nfunc Half(n int) int { return n / 2 }\\n' > calc/half.go && git add calc/half.go && git commit -qm 'feat: halve a count'"
+  forge:
+    issues: []
+    merge-requests:
+      - id: 5
+        labels: []
+        comments:
+          - |
+            **workline reviewer** — 1 findings on the change; lenses: correctness.
+
+            <!-- workline:record reviewed=@reviewed@ runs=1 -->
+
+            <!-- workline:sticky=reviewer/summary -->
+        threads:
+          - {path: calc/calc.go, line: 11, body: "**workline reviewer** · warns · correctness\n\n**Important: Average divides by zero on no values**\n\n<!-- workline:line=correctness/be73daaf1f71 -->"}
+          - {path: calc/calc.go, line: 11, body: "**workline reviewer** · warns · correctness\n\n**Important: Average divides by one less than the count**\n\n<!-- workline:line=correctness/d861c7fa46d7 -->"}
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD, lenses: correctness}, target: {merge-request: 5}, ai: "fake:review-nothing"}
+expect:
+  status: pass
+  applied: [comment]
+  forge:
+    merge-requests:
+      - id: 5
+        comments: 1
+        comment-contains: [" runs=2 -->", "**Resolved**: 1 conversation"]
+        threads:
+          - {path: calc/calc.go, line: 11, resolved: true}
+          - {path: calc/calc.go, line: 11, resolved: false}
