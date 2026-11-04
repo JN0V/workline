@@ -61,6 +61,19 @@ func unreadBody(notes []forge.Note) bool {
 	return !found || st.Judged == "" && st.Body == ""
 }
 
+// noTestUnsettled says whether the product owner left an issue in refine
+// for a person after the tester's "no test possible" (#1053): its word
+// on it says so, and that "no test possible" still stands on its text,
+// no proof picked. The tester's reason, one line.
+func noTestUnsettled(is forge.Issue, comments []string) (string, bool) {
+	st, found, err := backlog.ReadState(comments, backlog.Keeper)
+	if !found || err != nil || !strings.HasPrefix(st.Silent, backlog.NoTestSilent) || !backlog.NoTestStands(is, comments, backlog.Keeper) {
+		return "", false
+	}
+	reason, _, _ := backlog.NoTest(comments)
+	return strings.Join(strings.Fields(reason), " "), true
+}
+
 // givenKey is what Record.Given keeps of the code a read is given: its
 // sources, sorted, one a line (no path holds a newline), "-" for none.
 func givenKey(sources []string) string {

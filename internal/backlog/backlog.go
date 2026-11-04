@@ -1933,6 +1933,17 @@ func (p *Plan) checkRefining(f forge.Backlog, repo, role string, c *Proposal) (r
 					c.Revise = append(c.Revise, v)
 				}
 			}
+			if NoTestStands(is, comments, role) && !c.ToReporter {
+				// The tester found no test possible on this text (#1053):
+				// the sections a test is written from, those the role may
+				// rewrite, rewritten so one can be — never held back as
+				// drafted already. A person's Validation is asked of them.
+				for _, m := range []work.Meaning{work.Verification, work.Validation, work.Scope} {
+					if h := work.ByMeaning(is.Body)[m].Heading; h != "" && Rewritable(is, st, m) && !slices.Contains(c.Revise, h) {
+						c.Revise = append(c.Revise, h)
+					}
+				}
+			}
 			if p.Answers[c.Issue] != nil && !c.ToReporter {
 				// A person's comment on its proposal: the role rewrites
 				// its own sections, never a person's (ADR-0038).

@@ -1429,9 +1429,9 @@ func noTestUnread(comments []string, st *backlog.State, role string) bool {
 func noTestSaid(reason string) string {
 	return fmt.Sprintf("No test possible, says the tester: %s\n"+
 		"Pick its proof in place of new tests — `ready` with `proof: {kind: <kind>, reason: <why it proves the need>}`, the kind one of: %s (%s), %s (%s), %s (%s; add `test: <its name>` and, if not the project's setting, `runs: <N>`). "+
-		"Or, where its %s asks what no test checks and it is your draft, rewrite it so one does, or ask its reporter: a `ready` with no proof sends it back to its tests only beside that rewrite — alone, it is refused, the issue left for a person.\n",
+		"Or rewrite what keeps a test from being written — its %s and %s, yours to rewrite; its %s where it is your draft, so a test checks it — with a `refine` giving each section whole, or ask its reporter: a `ready` with no proof sends it back to its tests only beside that rewrite — alone, it is refused, and the line blocks the issue for a person.\n",
 		strings.TrimSpace(reason), backlog.KindSuite, backlog.ProofKinds[backlog.KindSuite], backlog.KindDocs, backlog.ProofKinds[backlog.KindDocs],
-		backlog.KindFlaky, backlog.ProofKinds[backlog.KindFlaky], work.Name(work.Validation))
+		backlog.KindFlaky, backlog.ProofKinds[backlog.KindFlaky], work.Name(work.Verification), work.Name(work.Scope), work.Name(work.Validation))
 }
 
 // rewriteUnread says whether the agent is told to rewrite an issue's

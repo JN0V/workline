@@ -1,6 +1,6 @@
 ---
 sources: [internal/tester/moment.go, internal/tester/write.go, internal/builtin/reviewer/ruleson.go, internal/tester/proof.go, routing.default.yaml, internal/tester/said.go, internal/tester/frozen.go, internal/tester/objection.go, internal/tester/green.go, internal/tester/repro.go, internal/engine/done.go]
-checked: 00f558d1
+checked: 9dd3337b
 verified: agent:claude-code
 ---
 # The hand-over: what whoever builds finds
@@ -90,8 +90,9 @@ When no new test fits, the tester's agent names the proof that does
   its task ([the pick](../../developer/docs/pick.md#which-issue)).
 - **`none`**, no test possible: the issue goes back to the product
   owner's state, refine, the reason said and recorded
-  (`no-test-possible`). The product owner then picks a kind, or sends
-  it back to its tests
+  (`no-test-possible`). The product owner then picks a kind, or
+  rewrites the text and sends it back to its tests — or, neither, the
+  line blocks it
   ([refine](../../../docs/spec/backlog-acts/refine.md#no-test-possible-a-proof-kind-picked));
   with no agent, a person of the project names one in a comment,
   `proof: <kind> — why`.

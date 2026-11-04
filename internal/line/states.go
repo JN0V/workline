@@ -231,6 +231,18 @@ func stateOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, 
 			res.Findings = append(res.Findings, verdict.Finding{Rule: "state-freed", Level: "info", Where: where, Message: why})
 		}
 	}
+	if !ok && s.Name == refineState && name == backlog.Keeper && had {
+		// The tester found no test possible, and the product owner's run
+		// on that text picked no proof nor rewrote it (#1053): neither
+		// can settle it. Blocked, the tester's reason said — never left
+		// in refine with nothing due.
+		if reason, waits := noTestUnsettled(is, comments); waits {
+			why := "the tester found no test possible, and the product owner's run picked no proof nor rewrote its text"
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "no-test-unsettled", Level: "warn", Where: where,
+				Message: why + ": moved to " + BlockedState + "; the tester said: " + reason})
+			return nil, &StateWrite{Issue: is.ID, Record: blocking(rec, s.Name, why+"; the tester said: "+reason, comments), Blocked: why + "; the tester said: " + reason}, nil
+		}
+	}
 	if !ok {
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "state-acted", Level: "info", Where: where,
 			Message: fmt.Sprintf("its state, %s, woke the %s already, on the same body and labelling: nothing more to run", s.Name, name)})
