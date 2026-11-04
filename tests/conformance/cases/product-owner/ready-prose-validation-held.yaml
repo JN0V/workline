@@ -1,0 +1,20 @@
+case: product-owner/ready-prose-validation-held
+about: >
+  Where the project routes the tester, a ready on an issue whose
+  Validation is prose, no scenario named, is held (#1019): it would reach
+  ready with no test written first, its tests skipped. The issue stays
+  in refine, its state says why and the form expected; the Validation a
+  person's, a person rewrites it.
+given:
+  repo: backlog
+  config:
+    routing: {events: {schedule: [product-owner], issue: [tester, developer]}}
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "## Need\n\nThe monthly report counts every sale.\n\n## Verification\n\nA test writes three rows.\n\n## Validation\n\nAnn reads the report of a day of three sales and accepts it.\n\n## Scope\n\nsrc/export/csv.go", author: ann, insider: true, labels: [workline:to-refine], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:ready-nine}
+expect:
+  findings: [{rule: scenarios-unread, where: "#9", message: "not moved to ready: its Validation names no scenario the tester reads"}]
+  forge:
+    issues:
+      - {id: 9, labels: [workline:to-refine], comment-contains: ["leaves this issue in refine: no test would be written first", "its Validation names no scenario the tester reads", "a person rewrites each scenario of its Validation as `- **Name:** Given …, When …, Then …`"]}

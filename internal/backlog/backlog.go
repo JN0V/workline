@@ -365,7 +365,7 @@ func (s State) say() string {
 		lines = append(lines, strings.TrimSpace(Said("The product owner", "leaves this issue in refine, for a person", s.Silent,
 			"a person of the project names its proof in a comment, `proof: <kind> — why`, or edits its "+work.Name(work.Validation)+
 				" so a test checks it; it does not go to its tests again as it stands")))
-	case strings.HasPrefix(s.Silent, ScenariosUnreadSilent):
+	case HeldForScenarios(s.Silent):
 		lines = append(lines, strings.TrimSpace(scenariosUnreadSaid(s.Silent)))
 	case s.Silent != "":
 		lines = append(lines, strings.TrimSpace(Said("The product owner", "read this issue and did not refine it", s.Silent,
@@ -710,7 +710,7 @@ type Plan struct {
 	bodies    []string        // their bodies, to find an import again
 	seen      map[string]bool // the imports this run decided
 	read      []int           // the issues this run read
-	unread    map[int]bool    // the issues a ready was held for, no scenario read: true, the role's own Validation
+	unread    map[int]string  // the issues a ready was held for, no scenario read: why, said on it
 	ledger    *Ledger         // what the role holds, read from the issues
 	ticked    map[string]bool // the proposals a person accepted this run decided, done or dropped: settled
 	added     map[int][]int   // the blockers this run's depend acts add, for the next act's cycle check
@@ -1194,7 +1194,7 @@ func (p *Plan) summary(role string) {
 		if p.Silent == nil {
 			p.Silent = map[int]string{}
 		}
-		p.Silent[id] = scenariosUnreadWhy(p.unread[id])
+		p.Silent[id] = p.unread[id]
 	}
 	for _, id := range p.read {
 		is, ok := p.issues[id]
@@ -1909,6 +1909,13 @@ func (p *Plan) checkRefining(f forge.Backlog, repo, role string, c *Proposal) (r
 			if p.config.SpecReview && !c.ToReporter {
 				c.Revise = Revisable(is, st, SpecOpen(is, comments))
 			}
+			for _, m := range []work.Meaning{work.Need, work.Validation} {
+				// A section its writer marked `Draft:` (#1019): the role's
+				// to rewrite, unless a person accepted it.
+				if h := work.ByMeaning(is.Body)[m].Heading; MarkedDraft(is.Body, m) && !Accepted(is) && !c.ToReporter && !slices.Contains(c.Revise, h) {
+					c.Revise = append(c.Revise, h)
+				}
+			}
 			if unread, own := ScenariosUnread(is, st); unread && own && p.config.Tester && !c.ToReporter {
 				// Its own Validation, no test could name a scenario of:
 				// rewritten in the form the tester reads (#855).
@@ -1968,10 +1975,10 @@ func (p *Plan) checkRefining(f forge.Backlog, repo, role string, c *Proposal) (r
 			// No test could name a scenario: ready, it would skip its
 			// tests without a word (#855). Held, said on the issue.
 			if p.unread == nil {
-				p.unread = map[int]bool{}
+				p.unread = map[int]string{}
 			}
-			p.unread[c.Issue] = own
-			return "scenarios-unread", fmt.Sprintf("not moved to ready: its %s holds Given / When / Then, but no scenario the tester reads (%s)", work.Name(work.Validation), work.ScenarioForm)
+			p.unread[c.Issue] = scenariosUnreadWhy(is, own)
+			return "scenarios-unread", fmt.Sprintf("not moved to ready: %s (%s)", scenariosWhat(is), work.ScenarioForm)
 		}
 		if c.Proof != nil {
 			return p.checkProof(f, c)
@@ -2578,6 +2585,10 @@ func NotReady(is forge.Issue, st *State, accepted bool) []string {
 			out = append(out, work.Name(m)+" is missing")
 		case !accepted && IsDraft(body, m, st):
 			out = append(out, have[m].Heading+" is still a draft: accept it ("+LabelAccepted+") or edit it")
+		case !Accepted(is) && MarkedDraft(body, m):
+			// Its writer's own `Draft:` (#1019): never taken as written,
+			// nor as an assumption; rewritten first, or a person's yes.
+			out = append(out, have[m].Heading+" opens with `Draft:`: rewrite it, or accept it ("+LabelAccepted+")")
 		}
 	}
 	return out
