@@ -47,6 +47,14 @@ merge: {autonomy: cautious}   # off unless set: no auto-merge is touched
   ending or a push, and may miss one
   ([#993](https://github.com/JN0V/workline/issues/993)). An hourly run
   catches one no event follows.
+- **Open conversations that hold it are said**: auto-merge on, its
+  checks green, the forge not merging, and its base requiring every
+  conversation resolved: `follow` lists each open one, linked, in its
+  summary and once on the pull request. The reviewer resolves its own
+  once the code answers them
+  ([lines](../roles/reviewer/docs/lines.md#not-repeated-found-again));
+  a person resolves theirs
+  ([#1039](https://github.com/JN0V/workline/issues/1039)).
 - **No one at a time, no update first**: a pull request behind its base
   merges as it is, none waiting for another
   ([ADR-0051](adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-2-strict-up-to-date-dropped)).
@@ -208,6 +216,7 @@ the candidate's issue, ships the version:
 |---|---|
 | `auto-merge-on`, `merged-at-once` | accepted, its head's verdict passed; at `normal`, "with no person's yes", its kind; "merged now", an auto-merge the forge left |
 | `merge-refused` | the forge refused to merge now one whose auto-merge it left: auto-merge left on |
+| `held-by-conversations`, `conversations-unread` | auto-merge on, checks green, not merged: the open conversations that hold it, or why they could not be read |
 | `verdict-kept`, `verdict-missing`, `review-to-come` | the verdict kept; one not judged yet; marked ready, the draft's verdict still on its head |
 | `verdict-red`, `review-short`, `checks-red` | nothing turned on, why |
 | `accepted-reset` | a push after the yes: the yes and auto-merge off |

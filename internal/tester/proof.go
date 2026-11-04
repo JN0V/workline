@@ -8,7 +8,6 @@ package tester
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -142,19 +141,7 @@ func proved(runDir, repo string, t task, intents []intent.Intention, p Proof) in
 // a second "no test possible" would send it back to refine, to be readied
 // again unchanged. It goes to Blocked once, said on it, the record kept;
 // false when the issue is not so.
-func sentBack(runDir, repo string, f forge.Forge, is forge.Issue) (int, bool) {
-	b, ok := f.(forge.Backlog)
-	if !ok {
-		return 0, false
-	}
-	comments, err := b.Comments(forge.Target{Kind: "issue", ID: is.ID})
-	if errors.Is(err, forge.ErrUnreachable) {
-		fmt.Fprintln(os.Stderr, err)
-		return exitExternal, true
-	}
-	if err != nil {
-		return fail(err), true
-	}
+func sentBack(runDir, repo string, is forge.Issue, comments []string) (int, bool) {
 	p, ok := backlog.SentBackUnchanged(is, comments, "product-owner")
 	if !ok {
 		return 0, false

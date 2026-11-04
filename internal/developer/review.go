@@ -41,6 +41,9 @@ const roundFile = "round.json"
 var (
 	reviewerMarkers = []string{forge.Marker("sticky=reviewer/summary"), forge.Marker("sticky=reviewer/warn")}
 	reviewerRuns    = regexp.MustCompile(`<!-- workline:record reviewed=\S*(?: patches=\S*)? runs=(\d+)`)
+	// reviewerAt: the head its summary read. A run its rules hold counts
+	// no run, its findings new all the same (#1040).
+	reviewerAt = regexp.MustCompile(`<!-- workline:at head=([0-9a-f]+)`)
 )
 
 // Round is one round of the review loop, as the record keeps it.
@@ -88,6 +91,7 @@ type round struct {
 	Heard    []string `json:"heard,omitempty"` // the ids of a person's comments it reads
 	Nits     int      `json:"nits"`
 	Runs     int      `json:"review-runs"`
+	ReviewAt string   `json:"review-at,omitempty"` // the head the reviewer's summary read
 	FiveWhys bool     `json:"five-whys"`
 	Person   bool     `json:"person"`              // past the last round: no agent, a person
 	Ready    bool     `json:"ready,omitempty"`     // its Draft green, nothing asked: marked ready, no agent (#969)
@@ -431,7 +435,7 @@ func readAsked(f forge.Forge, b forge.Backlog, kept forge.Kept, repo string, a A
 		}
 	}
 	if (back || len(keptNow) > 0) && a.Widen.Review {
-		a.ReviewRuns = 0 // the findings it held off a green head, asked again
+		a.ReviewRuns, a.ReviewAt = 0, "" // the findings it held off a green head, asked again
 	}
 	for _, m := range reviewerMarkers {
 		c, ok := kept.Last(m)
@@ -444,8 +448,15 @@ func readAsked(f forge.Forge, b forge.Backlog, kept forge.Kept, repo string, a A
 			n, _ := strconv.Atoi(m[1])
 			r.Runs += n
 		}
+		if at := reviewerAt.FindStringSubmatch(c); at != nil && r.ReviewAt == "" {
+			r.ReviewAt = at[1]
+		}
 	}
-	newReview := r.Runs > a.ReviewRuns
+	// A review is new when the reviewer ran its lenses since, or read
+	// another head: its rules alone, holding the lenses, count no run
+	// (#1040). A record from before review-at counts runs alone.
+	newReview := r.Runs > a.ReviewRuns ||
+		r.ReviewAt != "" && r.ReviewAt != a.ReviewAt && (a.ReviewAt != "" || a.ReviewRuns == 0)
 	if !newReview { // the review read already
 		r.Asked = nil
 	}
@@ -575,13 +586,13 @@ func roundTask(r round, is forge.Issue, b Bounds, s Settings, test string, testE
 			continue
 		}
 		if a.Holds == gateHolds {
-			fmt.Fprintf(&t, "- %s%s\n", gateLine(a), seen)
+			fmt.Fprintf(&t, "- %s%s%s\n", gateLine(a), seen, frozenNote(a, b))
 			if a.Detail != "" {
 				fmt.Fprintf(&t, "\n  > The inspector: %s\n\n", strings.ReplaceAll(a.Detail, "\n", "\n  > "))
 			}
 			continue
 		}
-		fmt.Fprintf(&t, "- %s, the %s lens, `%s`%s: %s\n", a.Holds, a.Lens, a.Where, seen, a.Text)
+		fmt.Fprintf(&t, "- %s, the %s lens, `%s`%s: %s%s\n", a.Holds, a.Lens, a.Where, seen, a.Text, frozenNote(a, b))
 		if a.Detail != "" {
 			fmt.Fprintf(&t, "\n  > %s\n\n", strings.ReplaceAll(a.Detail, "\n", "\n  > "))
 		}
@@ -605,6 +616,20 @@ func roundTask(r round, is forge.Issue, b Bounds, s Settings, test string, testE
 	return t.String()
 }
 
+// frozenNote tells a finding on a line of a frozen test whose it is to fix:
+// the tester's, by an objection, never a dead end the developer waits on
+// (#1040). "" for any other finding.
+func frozenNote(a Asked, b Bounds) string {
+	file, _, _ := strings.Cut(a.Where, ":")
+	if _, frozen := b.Frozen[file]; !frozen || file == "" {
+		return ""
+	}
+	if b.Draft == 0 {
+		return ". It lies in a frozen test, read-only to you, and the tester's Draft is closed: change nothing for it, say so in its note"
+	}
+	return fmt.Sprintf(". It lies in a frozen test, read-only to you: object to that test at that line in `%s`, as below, the finding as its why, so that the tester rewrites it; change nothing for it", ObjectionsFile)
+}
+
 // handOff ends the rounds, past the last one: the reviewer and the
 // developer do not agree. Its issue goes to the blocked state, the reason
 // on it and on the pull request (ADR-0059, decision 6); no person is
@@ -614,6 +639,9 @@ func handOff(r round, repo string) []intent.Intention {
 	a.Handed = true
 	a.Rounds = append(a.Rounds, Round{N: a.Round + 1, Asked: texts(r.Asked), Person: true})
 	a.ReviewRuns = max(a.ReviewRuns, r.Runs)
+	if r.ReviewAt != "" {
+		a.ReviewAt = r.ReviewAt
+	}
 	if r.GatesAt != "" {
 		a.GatesAt = r.GatesAt
 	}
@@ -876,6 +904,9 @@ func reviewPost(runDir, repo string, s Settings) int {
 	}
 	a.Round, a.Whys = n, a.Whys || r.FiveWhys
 	a.ReviewRuns = max(a.ReviewRuns, r.Runs)
+	if r.ReviewAt != "" {
+		a.ReviewAt = r.ReviewAt
+	}
 	if r.GatesAt != "" {
 		a.GatesAt = r.GatesAt
 	}

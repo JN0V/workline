@@ -1,6 +1,6 @@
 ---
 sources: [internal/line, internal/routing, internal/work, routing.default.yaml]
-checked: cd8e8d0d
+checked: 9dd3337b
 verified: agent:claude-code
 ---
 # Routing — v1 (draft)
@@ -504,6 +504,17 @@ whose result moves the issue to the next. The table is the routing's
   keeps the sources each wake gave (`given`); the state naming the same
   when its read left it unrefined, the issue is blocked at once, the
   code it was given said (`refine-capped`).
+- **Never read, due again**
+  ([#1041](https://github.com/JN0V/workline/issues/1041)): in refine,
+  woken on this body, the product owner's state shows it never read the
+  issue (no state, or nothing judged). The run read nothing, so the step
+  is due again once a body (`state-unread-body`; `unread` in the record).
+- **No test possible, unsettled**
+  ([#1053](https://github.com/JN0V/workline/issues/1053)): in refine,
+  acted on, the tester's "no test possible" still stands on the body and
+  the product owner's state says it picked no proof nor rewrote the
+  text. The issue moves to `workline:blocked`, the tester's reason said
+  (`no-test-unsettled`): never left in refine with nothing due.
 - **Not for an outside failure**: a step that ended
   `blocked-external`, its agent out of reach, keeps no record: the next
   event or reconciler runs it again.

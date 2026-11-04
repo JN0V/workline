@@ -48,6 +48,32 @@ func unrefined(is forge.Issue, notes []forge.Note) (lacks string, sources []stri
 	return strings.Join(missing, ", "), st.Sources
 }
 
+// unreadBody says whether the product owner's state on an issue says it
+// never read it (#1041): no state, or one never judged, no body read.
+// The line woke it, so that run read nothing — an import left for the
+// catch-up (#1036) —: not acted. A state that does not read is the
+// role's to say (state-broken).
+func unreadBody(notes []forge.Note) bool {
+	st, found, err := backlog.ReadState(forge.Bodies(notes), backlog.Keeper)
+	if err != nil {
+		return false
+	}
+	return !found || st.Judged == "" && st.Body == ""
+}
+
+// noTestUnsettled says whether the product owner left an issue in refine
+// for a person after the tester's "no test possible" (#1053): its word
+// on it says so, and that "no test possible" still stands on its text,
+// no proof picked. The tester's reason, one line.
+func noTestUnsettled(is forge.Issue, comments []string) (string, bool) {
+	st, found, err := backlog.ReadState(comments, backlog.Keeper)
+	if !found || err != nil || !strings.HasPrefix(st.Silent, backlog.NoTestSilent) || !backlog.NoTestStands(is, comments, backlog.Keeper) {
+		return "", false
+	}
+	reason, _, _ := backlog.NoTest(comments)
+	return strings.Join(strings.Fields(reason), " "), true
+}
+
 // givenKey is what Record.Given keeps of the code a read is given: its
 // sources, sorted, one a line (no path holds a newline), "-" for none.
 func givenKey(sources []string) string {

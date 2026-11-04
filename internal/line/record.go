@@ -97,6 +97,10 @@ type Record struct {
 	// the same body and the same code, it would get the same input, so it
 	// is not woken again (#980). "" in a record from before.
 	Given string `json:"given,omitempty"`
+	// Unread: in refine, the body's hash the line woke the product owner
+	// again on, its state saying it never read the issue (#1041): once a
+	// body, so a run that reads nothing is not woken in a loop.
+	Unread string `json:"unread,omitempty"`
 	// Ran: when the line last ran a step on the issue, RFC 3339: a step
 	// due again in the same state waits from then, in the reconciler's
 	// order (ADR-0059, amended 2026-11-03).

@@ -23,6 +23,7 @@ import (
 	"go.yaml.in/yaml/v3"
 
 	"github.com/JN0V/workline/internal/backlog"
+	"github.com/JN0V/workline/internal/builtin/reviewer"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/gate"
 	"github.com/JN0V/workline/internal/intent"
@@ -130,7 +131,23 @@ func Pre(runDir, repo string) int {
 					"the product owner names them, the tester invents none"}}},
 			"the product owner, or a person, names its scenarios in its "+work.Name(work.Validation)+"; the tester writes a test for each at a run after that")
 	}
-	if code, done := sentBack(runDir, repo, f, *is); done {
+	// The issue's comments: the record of a "no test possible", and the
+	// code the product owner named for it, its sources (#1047).
+	var comments, sources []string
+	if bl, ok := f.(forge.Backlog); ok {
+		comments, err = bl.Comments(forge.Target{Kind: "issue", ID: id})
+		if errors.Is(err, forge.ErrUnreachable) {
+			fmt.Fprintln(os.Stderr, err)
+			return exitExternal
+		}
+		if err != nil {
+			return fail(err)
+		}
+		if st, found, err := backlog.ReadState(comments, "product-owner"); found && err == nil {
+			sources = st.Sources
+		}
+	}
+	if code, done := sentBack(runDir, repo, *is, comments); done {
 		return code
 	}
 	head, err := git(repo, "rev-parse", "HEAD")
@@ -163,7 +180,7 @@ func Pre(runDir, repo string) int {
 	text := fitTask(runDir, repo, s, func(s Settings) string {
 		var b strings.Builder
 		b.WriteString(intro)
-		writeCode(&b, repo, sections[work.Scope].Text, s)
+		writeCode(&b, repo, sections[work.Scope].Text, sources, s)
 		return b.String()
 	})
 	if err := os.WriteFile(filepath.Join(runDir, "in", "task.md"), []byte(text), 0o644); err != nil {
@@ -188,33 +205,78 @@ func folderFiles(word string, files []string) []string {
 	return out
 }
 
-// writeCode gives the Scope's files, then the test files beside them, whole
-// up to code-lines-max lines in all, a long file by the functions the
-// Scope names in it, and names the project's other tests.
-func writeCode(b *strings.Builder, repo, scope string, s Settings) {
-	out, _ := git(repo, "ls-files", "-z")
-	files := strings.Split(strings.TrimSuffix(out, "\x00"), "\x00")
-	var named, tests []string
-	for _, w := range work.ScopeWords(scope) {
-		// A file, or those a pattern matches (#801: `src/calc/*.sh`), its
-		// tests aside when it matches code too: they are given beside.
-		if fs := work.Files(w, files); len(fs) > 0 {
-			if code := slices.DeleteFunc(slices.Clone(fs), func(f string) bool { return pathglob.Any(s.Paths, f) }); len(code) > 0 {
-				fs = code
-			}
-			for _, f := range fs {
-				if !slices.Contains(named, f) {
-					named = append(named, f)
-				}
-			}
+// wordFiles are the files a Scope's word, or a source, names: a file, or
+// those a pattern matches (#801: `src/calc/*.sh`), its tests aside when it
+// matches code too, they are given beside; or a folder's own files, not
+// its tests nor its subfolders' (#791: `internal/line` named, nothing
+// given, no test possible).
+func wordFiles(w string, files []string, s Settings) []string {
+	if fs := work.Files(w, files); len(fs) > 0 {
+		if code := slices.DeleteFunc(slices.Clone(fs), func(f string) bool { return pathglob.Any(s.Paths, f) }); len(code) > 0 {
+			fs = code
+		}
+		return fs
+	}
+	return slices.DeleteFunc(folderFiles(w, files), func(f string) bool { return pathglob.Any(s.Paths, f) })
+}
+
+// kinTests are the tests nearest the code named when none is in its
+// folder: those sharing the most leading folders with a file named, one
+// at least, those whose name holds a named file's name first
+// (#1047: `Mod/include/Mod.h` named, `Mod/test/test_mod_x/test_mod_x.cpp`
+// beside it, not another module's tests).
+func kinTests(tests, named []string, stems map[string]bool) []string {
+	shared := func(a, b string) int {
+		as, bs := strings.Split(path.Dir(a), "/"), strings.Split(path.Dir(b), "/")
+		n := 0
+		for n < len(as) && n < len(bs) && as[n] == bs[n] && as[n] != "." {
+			n++
+		}
+		return n
+	}
+	score := map[string]int{}
+	var kin []string
+	for _, t := range tests {
+		best := 0
+		for _, p := range named {
+			best = max(best, shared(t, p))
+		}
+		if best == 0 {
 			continue
 		}
-		// A folder the Scope names: its own files, not its tests nor its
-		// subfolders', given as the code it names (#791: `internal/line`
-		// named, nothing given, no test possible).
-		for _, f := range folderFiles(w, files) {
-			if !pathglob.Any(s.Paths, f) && !slices.Contains(named, f) {
+		score[t] = 2 * best
+		for stem := range stems {
+			if stem != "" && strings.Contains(norm(path.Base(t)), stem) {
+				score[t]++
+				break
+			}
+		}
+		kin = append(kin, t)
+	}
+	slices.SortStableFunc(kin, func(a, b string) int { return score[b] - score[a] })
+	return kin
+}
+
+// writeCode gives the Scope's files, then those the product owner named
+// for the issue, its sources, that the Scope does not (#1047: a Scope in
+// words, nothing given, no test possible), then the test files beside
+// them, whole up to code-lines-max lines in all, a long file by the
+// functions the Scope names in it, and names the project's other tests.
+func writeCode(b *strings.Builder, repo, scope string, sources []string, s Settings) {
+	out, _ := git(repo, "ls-files", "-z")
+	files := strings.Split(strings.TrimSuffix(out, "\x00"), "\x00")
+	var named, owners, tests []string
+	for _, w := range work.ScopeWords(scope) {
+		for _, f := range wordFiles(w, files, s) {
+			if !slices.Contains(named, f) {
 				named = append(named, f)
+			}
+		}
+	}
+	for _, src := range sources {
+		for _, f := range wordFiles(work.LineOff(strings.TrimSpace(src)), files, s) {
+			if !slices.Contains(named, f) {
+				named, owners = append(named, f), append(owners, f)
 			}
 		}
 	}
@@ -242,6 +304,9 @@ func writeCode(b *strings.Builder, repo, scope string, s Settings) {
 		}
 	}
 	beside = append(beside, near...)
+	if len(beside) == 0 {
+		beside = kinTests(tests, named, stems)
+	}
 	beside = beside[:min(len(beside), testFilesMax)]
 	if len(beside) == 0 && len(tests) > 0 { // none beside: the project's first, its style
 		beside = tests[:min(len(tests), testFilesMax)]
@@ -265,6 +330,9 @@ func writeCode(b *strings.Builder, repo, scope string, s Settings) {
 	left := planCode(code, budget)
 	if len(code) > 0 {
 		fmt.Fprintf(b, "\n## The code the %s names\n", work.Name(work.Scope))
+		if len(owners) > 0 {
+			fmt.Fprintf(b, "\nNamed by the product owner for this issue, not in the %s: `%s`.\n", work.Name(work.Scope), strings.Join(owners, "`, `"))
+		}
 		var unread []string
 		for _, f := range code {
 			if len(f.given) == 0 {
@@ -454,6 +522,12 @@ func Post(runDir, repo string) int {
 		proof.Findings = slices.DeleteFunc(proof.Findings, func(f verdict.Finding) bool { return f.Rule == "no-new-test" && f.Level == "warn" })
 		if notShown(t, *proof, len(newTests)) {
 			return unreproduced(runDir, t, intents, *proof)
+		}
+		// A test that does not build but for a missing name is the
+		// agent's to mend, as a lint finding is: asked once more with the
+		// build's error (#1048: a wrong constructor call, blocked a week).
+		if slices.ContainsFunc(proof.Findings, func(f verdict.Finding) bool { return f.Rule == "build-broken" }) {
+			proof.Again = true
 		}
 		return refusePost(runDir, t.Issue, *proof)
 	}
@@ -648,6 +722,23 @@ func lintTests(repo, tree, base string, missing func(path, message string) bool)
 		if !said { // a gate that blocks is always said, its own summary when no finding of it blocks
 			mendable = false
 			found = append(found, verdict.Finding{Rule: "tests-lint", Where: name, Message: fmt.Sprintf("the gate %s: %s", name, v.Summary)})
+		}
+	}
+	// The reviewer's rules, as its review of the developer's pull request
+	// will run them: a finding in a frozen test is the tester's to mend,
+	// before its Draft opens (#1040).
+	if slices.Contains(line.Events["merge-request"], reviewer.Name) {
+		rules, err := reviewer.RulesOn(tree, base, "HEAD")
+		if err != nil {
+			mendable = false
+			rules = []verdict.Finding{{Rule: "check-error", Where: reviewer.Name, Message: err.Error()}}
+		}
+		for _, f := range rules {
+			f.Rule, f.Message = "tests-lint", fmt.Sprintf("the %s's rule: %s (%s)", reviewer.Name, f.Message, f.Rule)
+			found = append(found, f)
+		}
+		if len(rules) > 0 {
+			names = append(names, reviewer.Name+"'s rules")
 		}
 	}
 	if len(names) == 0 {

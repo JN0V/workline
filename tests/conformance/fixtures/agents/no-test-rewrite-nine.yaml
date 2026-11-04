@@ -1,0 +1,9 @@
+# After the tester's "no test possible" (#1053): the Verification and
+# Scope rewritten to name the hook a test needs, and a ready beside it.
+- refine:
+    issue: 9
+    verification: "A test sets the counter with setNextClientIdForTest, connects clients, and reads their ids back."
+    scope: "WriteRows in src/export/csv.go, and a test hook setNextClientIdForTest."
+    sources: [src/export/csv.go]
+    why: "the tester could not set the counter: the hook it needs is named now"
+- ready: {issue: 9, why: "the hook the tester asked for is named: back to its tests"}

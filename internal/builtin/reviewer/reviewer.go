@@ -179,6 +179,7 @@ type Review struct {
 	Reads     []JudgeRead       `json:"reads,omitempty"`  // what each judge read, a round each (ADR-0045)
 	Warn      string            `json:"warn,omitempty"`   // apart: the verdict's run; only: the run apart, the lenses that warn (ADR-0050)
 	Reused    int               `json:"reused,omitempty"` // findings judged before on the same patch, their verdicts kept (ADR-0050, step 6)
+	Resolved  []string          `json:"resolved,omitempty"` // the conversations on lines of a review before the code answers now, by thread id (#1039)
 }
 
 // JudgeRead is one round of reads a judge asked (ADR-0045): what it asked,
@@ -597,7 +598,7 @@ func otherSide(runDir, repo string, s Settings, st state, other []string, fresh 
 	everyLens(st, &v, true)
 	var fallback []intent.Intention
 	if mergeRequest() != nil && s.ForgeWrites {
-		fallback = append(fallback, summaryIntention(repo, s, st, v, nil, 0))
+		fallback = append(fallback, summaryIntention(repo, s, st, &v, nil, 0, &lensesRead{}))
 	}
 	if err := intent.Write(filepath.Join(runDir, "in", "fallback.yaml"), fallback); err != nil {
 		return fail(err)
@@ -993,7 +994,7 @@ func tooLarge(runDir, repo string, s Settings, st state, why string) int {
 	}
 	var fallback []intent.Intention
 	if mergeRequest() != nil && s.ForgeWrites {
-		fallback = append(fallback, summaryIntention(repo, s, st, v, nil, 0))
+		fallback = append(fallback, summaryIntention(repo, s, st, &v, nil, 0, nil))
 	}
 	if err := intent.Write(filepath.Join(runDir, "in", "fallback.yaml"), fallback); err != nil {
 		return fail(err)
@@ -1929,7 +1930,15 @@ func settled(runDir, repo string, s Settings, st state, c candidates) (Review, [
 	}
 	v.Summary += tokensLine(v.Calls, s.AIMaxTokens)
 	if onForge {
-		fallback = append(fallback, summaryIntention(repo, s, st, v, related, len(fallback)))
+		r := lensesRead{}
+		if len(c.Failed) == 0 && unjudged == 0 { // read whole, as a block goes by (reread)
+			files, err := codeFiles(repo, s, st.lensFrom(), st.lensTo())
+			if err != nil {
+				return Review{}, nil, err
+			}
+			r = lensesRead{lenses: facets(st), files: paths(files)}
+		}
+		fallback = append(fallback, summaryIntention(repo, s, st, &v, related, len(fallback), &r))
 	}
 	if sp := st.Spec; sp != nil && sp.Issue > 0 && s.ForgeWrites {
 		// On the forge (#128): one comment on the issue, its record read
@@ -2194,17 +2203,30 @@ func summary(v Review, issues, failed, unjudged int) string {
 
 // summaryIntention is the summary comment, carrying the findings on lines
 // as its review (#277): each on its line, its row here kept to its title.
-func summaryIntention(repo string, s Settings, st state, v Review, related []Finding, issues int) intent.Intention {
+//
+// Given what its lenses read (nil: nothing settled), it resolves the
+// conversations of a review before the code answers now (answered).
+func summaryIntention(repo string, s Settings, st state, v *Review, related []Finding, issues int, r *lensesRead) intent.Intention {
 	lines := lineComments(repo, s, st, related)
+	if r != nil {
+		ids, unread := answered(repo, s, st, lines, *r)
+		if unread != nil {
+			v.Findings = append(v.Findings, *unread)
+		}
+		v.Resolved = ids
+	}
 	short := map[string]string{}
 	for _, g := range related {
 		if _, _, ok := fileLine(g.Where); ok && g.Severity == "important" {
 			short[g.Lens+"\x00"+g.Where] = shortMessage(g)
 		}
 	}
-	value := summaryValue(st, summaryComment(v, issues, short, lines))
+	value := summaryValue(st, summaryComment(*v, issues, short, lines))
 	if len(lines) > 0 {
 		value["review"] = reviewOf(st, lines)
+	}
+	if len(v.Resolved) > 0 {
+		value["resolve"] = v.Resolved
 	}
 	return intent.Intention{Kind: "comment", Value: value}
 }
@@ -2263,6 +2285,9 @@ func summaryComment(v Review, issues int, short map[string]string, lines []forge
 			fmt.Fprintf(&b, "- `%s` (%s): %s\n", f.Where, f.Rule, oneLine(strings.TrimPrefix(f.Message, "Nit: "), 600))
 		}
 		b.WriteString("\n")
+	}
+	if n := len(v.Resolved); n > 0 {
+		b.WriteString(resolvedLine(n) + "\n\n")
 	}
 	b.WriteString("The reviewer never approves and never changes the code: the author fixes what blocks, a person merges.\n\n")
 	b.WriteString(v.Record.String())
@@ -2333,7 +2358,7 @@ func held(runDir, repo string, s Settings, st state, v Review) int {
 	if v.Status != verdict.Block || mergeRequest() == nil || !s.ForgeWrites {
 		return final(runDir, v)
 	}
-	fallback := []intent.Intention{summaryIntention(repo, s, st, v, nil, 0)}
+	fallback := []intent.Intention{summaryIntention(repo, s, st, &v, nil, 0, nil)}
 	if err := intent.Write(filepath.Join(runDir, "in", "fallback.yaml"), fallback); err != nil {
 		return fail(err)
 	}

@@ -1,6 +1,6 @@
 ---
-sources: [internal/builtin/reviewer/lines.go, internal/builtin/reviewer/reviewer.go, internal/forge/review.go, internal/forge/github_review.go, internal/forge/gitlab_review.go, internal/engine/review.go]
-checked: b79ca968
+sources: [internal/builtin/reviewer/lines.go, internal/builtin/reviewer/resolve.go, internal/builtin/reviewer/reviewer.go, internal/forge/review.go, internal/forge/github_review.go, internal/forge/gitlab_review.go, internal/forge/threads.go, internal/engine/review.go]
+checked: 1f74082b
 judged: 39dcb7b
 verified: agent:claude-code
 ---
@@ -50,7 +50,9 @@ flowchart LR
 - **To hold the merge on every important finding**, turn on the forge's
   own rule: GitHub's "Require conversation resolution before merging" (a
   branch rule), GitLab's "All threads must be resolved" (merge checks).
-  Nits never hold it: they open no conversation.
+  Each holds it until the code answers it
+  ([below](#not-repeated-found-again)), or a person resolves it. Nits
+  never hold it: they open no conversation.
 
 ## The forge's own review
 
@@ -84,8 +86,20 @@ flowchart LR
   reads a line again, and when every lens reads the whole change once
   ready ([#129](https://github.com/JN0V/workline/issues/129)).
 - **Resolved by a person**, and found again: posted again, in a new review.
-- **Not found again**: left as it is; the forge marks it outdated when its
-  line changes.
+- **Resolved by the reviewer once the code answers it**
+  ([#1039](https://github.com/JN0V/workline/issues/1039)), as a block
+  goes ([judge](judge.md#a-block-stands-until-a-commit-answers-it)):
+  - its line is no longer at the head: changed, or removed;
+  - or its lens reads the file again and finds it no more, its judge's
+    no included; for the tests lens, a test file touching it counts;
+  - or, a warning only, the developer's round answered it with a fix
+    pushed, its tests green, and the next run does not raise it again
+    ([#1050](https://github.com/JN0V/workline/issues/1050)): a warning
+    asks nothing, its lens may never read the file again.
+  - The summary comment counts them, under **Resolved**.
+- **Left open**: found again, a block still standing, a lens that read
+  elsewhere, a warning nothing answered; one a person opened, or
+  answered in, stays theirs.
 - **A block standing from a review before**, no lens reading it again
   ([#326](https://github.com/JN0V/workline/issues/326)): its row in the
   summary comment, marked `**blocks**`; its comment on the line is not

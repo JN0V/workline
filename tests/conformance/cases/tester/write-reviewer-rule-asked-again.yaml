@@ -1,0 +1,33 @@
+case: tester/write-reviewer-rule-asked-again
+about: >
+  The tester's test opens on a comment quoting an internal code, `LO-4`,
+  as on a C++ trial (#1040). The project routes the reviewer on its pull
+  requests: its rules are among the tester's lint, so the agent is asked
+  once more with the finding, before the Draft opens and freezes the
+  test. The second answer passes them: the Draft opens.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+    routing: {events: {issue: [tester], merge-request: [reviewer]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:needs-tests"]
+        body: "## Need\n\nWhen I total an order, I want to multiply a price by a count, so I need not add it up by hand.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **By zero:** Given the library, When I multiply 5 by 0, Then I get 0.\n\n---\n\n## Verification\n\nA test a scenario, in tests/.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+run: {route: issue, target: {issue: 3}, open-merge-request: true, ai: "cmd:sh $FIXTURES/agents/tester-mul-code-once.sh"}
+expect:
+  status: pass
+  agent-calls: 2
+  no-findings: [{rule: tests-lint}]
+  run-files:
+    out/feedback.md: {contains: ["tests-lint", "tests/test_mul_by_zero.sh:1", "the reviewer's rule", "\"LO-4\" means nothing to a reader of the code", "(internal-code)"]}
+  pushed:
+    workline/tester/issue-3:
+      tests/test_mul_by_zero.sh: "# Multiplying by zero gives zero."
+  forge:
+    merge-requests:
+      - {id: 1, branch: workline/tester/issue-3, draft: true}
