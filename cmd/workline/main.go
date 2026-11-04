@@ -94,8 +94,7 @@ func followCmd(args []string) int {
 	}
 	root, err := gitRoot(*repo)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "workline: not in a git repository")
-		return 64
+		return notInRepo()
 	}
 	cfg, err := role.LoadProjectConfig(root)
 	if err != nil {
@@ -349,8 +348,7 @@ func reviewCmd(args []string) int {
 	}
 	root, err := gitRoot(*repo)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "workline: not in a git repository")
-		return 64
+		return notInRepo()
 	}
 	rolesDir, err := resolveRoles(*roles)
 	if err != nil {
@@ -526,9 +524,10 @@ func hooksCmd(args []string) int {
 		}
 	case "install --repo":
 		var root string
-		if root, err = gitRoot("."); err == nil {
-			msg, err = hooks.InstallRepo(root, bin)
+		if root, err = gitRoot("."); err != nil {
+			return notInRepo()
 		}
+		msg, err = hooks.InstallRepo(root, bin)
 	default:
 		err = fmt.Errorf("uninstall --repo: delete .githooks/commit-msg")
 	}
@@ -799,8 +798,7 @@ func docsCmd(args []string) int {
 	}
 	root, err := gitRoot(*repo)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "workline: not in a git repository")
-		return 64
+		return notInRepo()
 	}
 	if *reviewOnly {
 		// What an agent left in the working tree, or gardening run by hand.
@@ -874,8 +872,7 @@ func sampleCmd(args []string) int {
 	}
 	root, err := gitRoot(*repo)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "workline: not in a git repository")
-		return 64
+		return notInRepo()
 	}
 	var res *sample.Result
 	spec := *forgeSpec
@@ -1514,8 +1511,7 @@ func issuesCmd(args []string) int {
 	}
 	root, err := gitRoot(*repo)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "workline: not in a git repository")
-		return 64
+		return notInRepo()
 	}
 	if what == "import" {
 		return importIssues(root, id, *forgeSpec, *ai, *roles, *share, *apply, *asJSON, summaryFiles)
@@ -2298,8 +2294,7 @@ func initCmd(args []string) int {
 	}
 	root, err := gitRoot(*repo)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "workline: not in a git repository")
-		return 64
+		return notInRepo()
 	}
 	rolesDir, err := resolveRoles(*roles)
 	if err != nil {
@@ -2597,4 +2592,11 @@ func importAnswer(runDir string) backlog.ImportShare {
 		}
 	}
 	return sh
+}
+
+// notInRepo says the folder is not a git repository: the one text and code
+// every command that needs a repository gives.
+func notInRepo() int {
+	fmt.Fprintln(os.Stderr, "workline: not in a git repository")
+	return 64
 }
