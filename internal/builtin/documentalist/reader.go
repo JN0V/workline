@@ -121,6 +121,27 @@ func ReaderChecks(t Tree, r Reader) []Problem {
 	return out
 }
 
+// readerIntroduced are the reader problems the tree after a patch holds that
+// the tree before did not, or holds larger: what a patch adds to the user
+// pages, so a judge that promises "no new problem" counts them too. A missing
+// setting is no patch's doing.
+func readerIntroduced(before, after Tree, r Reader) []Problem {
+	old := map[string]Problem{}
+	for _, p := range ReaderChecks(before, r) {
+		old[p.Key] = p
+	}
+	var out []Problem
+	for _, p := range ReaderChecks(after, r) {
+		if p.Rule == "setting-missing" {
+			continue
+		}
+		if prev, was := old[p.Key]; !was || p.Size > prev.Size {
+			out = append(out, p)
+		}
+	}
+	return out
+}
+
 var (
 	// A link, its text included: what it says is linked; the end of one
 	// whose text began on the line above.

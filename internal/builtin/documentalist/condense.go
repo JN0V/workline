@@ -134,6 +134,12 @@ other existing doc. A new doc has no ` + "`checked`" + `: nobody read it against
 sources. One patch, a unified diff; a new doc is created with
 --- /dev/null and +++ b/<path>.
 
+Where the new doc sits matters: a doc among the user pages answers to the
+reader rules (paragraphs and cells within their word budget, every decision,
+doc or issue it names linked, reachable from the docs), and the patch is
+refused for each problem it adds there. Put the new doc in a subfolder of the
+doc's own folder, where the doc lives, unless it is written for readers.
+
 The docs next to it, with their line counts:
 
 `)
@@ -344,6 +350,10 @@ func judgeCondense(repo string, s Settings, c *condenseTask, intents, fallback [
 		case !was || p.Size > prev.Size:
 			refuse("patch-introduces", p.Where, p.Rule+": "+p.Message)
 		}
+	}
+	// The user pages too: a new page among them answers to the reader rules.
+	for _, p := range readerIntroduced(tree, Tree{Docs: after, Files: files}, s.Reader) {
+		refuse("patch-introduces", p.Where, p.Rule+": "+p.Message)
 	}
 	if len(refused) > 0 || !c.Split {
 		return refused, "", nil
