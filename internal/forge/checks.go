@@ -69,10 +69,7 @@ func (g *github) ProjectChecks(head string) ([]HeadCheck, error) {
 	if err != nil {
 		return nil, err
 	}
-	type run struct {
-		checkContext
-		ID int64 `json:"databaseId"`
-	}
+	type run struct{ checkContext }
 	var v struct {
 		Data struct {
 			Repository struct {

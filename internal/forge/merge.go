@@ -21,29 +21,29 @@ type CheckRun struct {
 	State string `json:"state"`
 }
 
-// sumRuns sums up a head's check runs: failure when one failed, else
-// pending when one runs, else success; "" none. A cancelled run is no
-// result, neither success nor failure: another run of the same check —
-// the same name, as the forge's required checks match them — counts
-// instead; a check only ever cancelled counts as one still running, the
-// forge's own required checks still guarding the merge.
+// sumRuns sums up a head's check runs, oldest first: failure when a
+// check failed, else pending when one runs, else success; "" none. Each
+// check — the same name, as the forge's required checks match them —
+// counts by its latest run: a failure a re-run passed since holds nothing
+// (#1031). A cancelled run is no result, neither success nor failure: the
+// check's latest run not cancelled counts instead; a check only ever
+// cancelled counts as one still running, the forge's own required checks
+// still guarding the merge.
 func sumRuns(runs []CheckRun) string {
-	other := map[string]bool{} // a check with a run not cancelled
+	latest := map[string]string{} // each check's latest run not cancelled
+	var names []string
 	for _, r := range runs {
+		if _, seen := latest[r.Name]; !seen {
+			names = append(names, r.Name)
+			latest[r.Name] = "pending" // only cancelled so far
+		}
 		if r.State != "cancelled" {
-			other[r.Name] = true
+			latest[r.Name] = r.State
 		}
 	}
 	sum := ""
-	for _, r := range runs {
-		state := r.State
-		if state == "cancelled" {
-			if other[r.Name] {
-				continue
-			}
-			state = "pending"
-		}
-		switch {
+	for _, n := range names {
+		switch state := latest[n]; {
 		case state == "failure":
 			return "failure"
 		case state == "pending" || sum == "pending":

@@ -1,11 +1,13 @@
 package forge
 
 import (
+	"cmp"
 	"errors"
 	"fmt"
 	"net/url"
 	"os"
 	"regexp"
+	"slices"
 	"strings"
 )
 
@@ -17,7 +19,7 @@ const mergeStateQuery = `query($owner: String!, $name: String!, $number: Int!) {
 
 // checksQuery asks the head's checks as GitHub shows them on the pull
 // request, each: check runs and commit statuses both.
-const checksQuery = `query($owner: String!, $name: String!, $number: Int!) { repository(owner: $owner, name: $name) { pullRequest(number: $number) { commits(last: 1) { nodes { commit { statusCheckRollup { contexts(first: 100) { nodes { __typename ... on CheckRun { name status conclusion } ... on StatusContext { context state } } } } } } } } } }`
+const checksQuery = `query($owner: String!, $name: String!, $number: Int!) { repository(owner: $owner, name: $name) { pullRequest(number: $number) { commits(last: 1) { nodes { commit { statusCheckRollup { contexts(first: 100) { nodes { __typename ... on CheckRun { name status conclusion databaseId } ... on StatusContext { context state } } } } } } } } } }`
 
 // MergeState reads a pull request's state in one GraphQL call, its
 // checks in another — a token that may not read them leaves them unread,
@@ -139,12 +141,21 @@ type checkContext struct {
 	Conclusion string `json:"conclusion"`
 	Context    string `json:"context"`
 	State      string `json:"state"`
+	// ID: a check run's id, GitHub's numbers rising: a re-run's is
+	// higher than the run it replaces. 0 for a commit status.
+	ID int64 `json:"databaseId"`
 }
 
 // sumChecks sums up a head's checks as sumRuns does, check runs and
 // commit statuses both, workline's own statuses left out: a verdict kept,
-// a yes held, are no check of the change.
-func sumChecks(all []checkContext) string { return sumRuns(runsOf(all)) }
+// a yes held, are no check of the change. The runs go oldest first, so
+// each check counts by its latest (#1031): GitHub's rollup lists every
+// run on the head, a failure re-run green since among them.
+func sumChecks(all []checkContext) string {
+	all = slices.Clone(all)
+	slices.SortStableFunc(all, func(a, b checkContext) int { return cmp.Compare(a.ID, b.ID) })
+	return sumRuns(runsOf(all))
+}
 
 // runsOf reads check runs and commit statuses as runs, workline's own
 // statuses left out.
