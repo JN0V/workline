@@ -50,9 +50,13 @@ comment, the claim's, edited in place on each run, never a second one
   next.
 - **Its Scope overlapping an issue the developer holds**: which one, and
   that it is looked at again once that one is merged or let go.
+  An issue that is not a bug merges on a person's yes: the comment
+  names its pull request and that yes
+  ([#998](https://github.com/JN0V/workline/issues/998)).
   A Scope marked as a guess, a line starting `Guessed:`, waits on
   nothing: its paths were named before their code was read
-  ([#970](https://github.com/JN0V/workline/issues/970)).
+  ([#970](https://github.com/JN0V/workline/issues/970)). So does one
+  whose words say no code was given, written before that mark.
 - A person's hold (an assignee), a claim, or an open pull request
   closing it say themselves: nothing is written for them.
 

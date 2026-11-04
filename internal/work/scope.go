@@ -20,11 +20,18 @@ var (
 // at its start, bold or in a bullet as well (#970).
 var guessMark = regexp.MustCompile(`(?mi)^\s*(?:[-*]\s+)?[*_]*guessed[*_]*\s*:`)
 
+// codeUnread is a Scope's own word that no code was given when it was
+// written, as Scopes said it before the mark (#998): "no `init` code
+// was given in this run", "the code was not read".
+var codeUnread = regexp.MustCompile("(?i)\\bno\\b[^.\\n]{0,40}\\bcode\\b[^.\\n]{0,20}\\b(?:was|were|has been|had been)\\s+(?:given|read|shown|seen)\\b" +
+	"|\\bcode\\b[^.\\n]{0,30}\\b(?:was|were)\\s+not\\s+(?:given|read|shown|seen)\\b")
+
 // Guessed says whether a Scope's text marks its paths a guess — written
-// before the code they name was read: a line starting `Guessed:` (#970).
+// before the code they name was read: a line starting `Guessed:` (#970),
+// or, from before that mark, its words saying no code was given (#998).
 // Such paths hold no other issue back.
 func Guessed(scope string) bool {
-	return guessMark.MatchString(scope)
+	return guessMark.MatchString(scope) || codeUnread.MatchString(scope)
 }
 
 // ScopeWords are the words a Scope's text writes in backticks, each with

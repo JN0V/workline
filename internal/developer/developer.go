@@ -331,6 +331,27 @@ func OverlapWhy(n int, p string) string {
 	return fmt.Sprintf("its %s's `%s` overlaps #%d's, taken", work.Name(work.Scope), p, n)
 }
 
+// overlapSaid is OverlapWhy as the developer's comment says it.
+var overlapSaid = regexp.MustCompile("'s `[^`]+` overlaps #\\d+'s, taken")
+
+// PassedForOverlap says whether the developer's comment c says it passed
+// its issue over for an overlap (OverlapWhy).
+func PassedForOverlap(c string) bool {
+	return strings.Contains(c, "waits on this issue") && overlapSaid.MatchString(c)
+}
+
+// kindOf is the kind issue n's labels give it, "" when none or not among
+// issues.
+func kindOf(issues []forge.Issue, n int) string {
+	for _, is := range issues {
+		if is.ID == n {
+			k, _ := IssueKind(is.Labels)
+			return k
+		}
+	}
+	return ""
+}
+
 // RepoFiles are the files the repository's index holds, nil when they
 // cannot be read: what a Scope's paths are read against.
 func RepoFiles(repo string) []string { return repoFiles(repo) }
@@ -386,6 +407,15 @@ func pick(issues []forge.Issue, mrs []forge.MergeRequest, s Settings, only int, 
 			if n, p := Overlapping(is, held, files); n != 0 {
 				why = OverlapWhy(n, p)
 				next = fmt.Sprintf("#%d merged or let go; the developer looks at this issue again at its next run", n)
+				if k := kindOf(issues, n); k != KindFix && closer[n] != 0 {
+					// Only a fix merges alone (ADR-0060): the wait ends on
+					// a person's yes, said where they look (#998).
+					said := "no label says its kind"
+					if k != "" {
+						said = "a " + k
+					}
+					next = fmt.Sprintf("#%d's pull request #%d merges on a person's yes (#%[1]d: %[3]s), then the developer looks at this issue again at its next run; or #%[1]d is let go", n, closer[n], said)
+				}
 			}
 		}
 		if why == "" {

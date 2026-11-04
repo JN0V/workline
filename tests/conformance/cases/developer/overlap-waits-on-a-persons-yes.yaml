@@ -1,0 +1,25 @@
+case: developer/overlap-waits-on-a-persons-yes
+about: >
+  A bug passed over for a feature's claim (#998): the feature's pull
+  request merges on a person's yes, never alone, so the wait ends there.
+  The bug's comment names that pull request and the person's yes, not
+  only the issue held.
+given:
+  repo: tested
+  forge:
+    issues:
+      - {id: 1, title: "Add", labels: ["workline:ready", "workline:developing", "enhancement"], body: "## Need\n\nI want to add.\n\n## Scope\n\n- `src/lib.sh`: `add`.\n"}
+      - {id: 2, title: "Multiply", labels: ["workline:ready", "bug"], body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `src/`: a `mul` function.\n"}
+    merge-requests:
+      - {id: 4, branch: workline/developer/1, title: "feat: add", body: "Closes #1"}
+run: {develop: [], ai: "fake:developer-nothing"}
+expect:
+  status: pass
+  summary: "no ready issue waits for the developer"
+  agent-calls: 0
+  forge:
+    issues:
+      - id: 2
+        labels: ["workline:ready", "bug"]
+        comments: 1
+        comment-contains: ["**The developer** waits on this issue.", "overlaps #1's, taken", "#1's pull request #4 merges on a person's yes (#1: a feature)"]
