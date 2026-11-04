@@ -49,6 +49,7 @@ stars and dates were checked against the GitHub API that day.
 | [person-on-the-loop.md](person-on-the-loop.md) | How questions time out (lazy consensus), an agent writes its assumptions, features ride a release candidate, a bug not reproduced is told |
 | [reliable-schedule.md](reliable-schedule.md) | How a periodic job runs on time on GitHub Actions with nothing outside the forge and no runner held |
 | [qa-campaigns.md](qa-campaigns.md) | How test campaigns are planned and played on a release candidate: test runs, simulated inputs, hardware-in-the-loop, AI explorers |
+| [line-liveness.md](line-liveness.md) | How controllers, workflow engines and supervisors keep every item moving or saying why, retry their own failures, stop loops, and test it |
 
 ### Measured
 
