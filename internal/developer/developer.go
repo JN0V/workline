@@ -687,7 +687,8 @@ func question(is forge.Issue, b Bounds, test string, testErr error, s Settings) 
 			"YAML only, one item an objection:\n\n" +
 			"```yaml\n- test: <file>\n  line: <n>\n  scenario: " + scenarioHint(b.Scenarios) + "\n  kind: <interface | over-specified | contradicts | untestable | need>\n  why: <one or two sentences>\n```\n\n" +
 			"The scenario is the issue's, as its "+work.Name(work.Validation)+" names it, not the test's function. " +
-			"The engine reads that file and takes it out of your diff; the tester keeps or rewrites each objection.\n")
+			"The engine reads that file and takes it out of your diff; the tester keeps or rewrites each objection.\n\n" +
+			"A test that cannot pass within your bounds (it calls a command against its documented rule, for instance without a flag its no-terminal rule requires) is such an objection, of kind `contradicts`: object to it in that file, never in a text note, which reaches no tester.\n")
 	}
 	if b.Proof != nil {
 		fmt.Fprintf(&t, "\n## Its proof: %s, no new test\n\nThe tester recorded it in place of acceptance tests: %s. Its proof: %s.\n",

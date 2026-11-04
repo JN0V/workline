@@ -533,7 +533,7 @@ func bounded(repo string, b Bounds, claim, proposed []intent.Intention) (kept []
 			o, ok := readObjection(i.Value)
 			switch {
 			case !ok:
-				said = append(said, "a comment: the developer's one comment is an objection to a frozen test; the claim's is the engine's")
+				said = append(said, "a comment: the developer's one comment is an objection to a frozen test; the claim's is the engine's"+objectionHint(b))
 			case b.Draft == 0 || b.Frozen[o.Test] != b.Issue:
 				said = append(said, fmt.Sprintf("an objection to `%s`: not a test the tester froze for #%d on an open Draft", o.Test, b.Issue))
 			case b.Head == "":
@@ -551,7 +551,7 @@ func bounded(repo string, b Bounds, claim, proposed []intent.Intention) (kept []
 			on, body := proposedNote(i.Value, b.Issue)
 			switch {
 			case on != strconv.Itoa(b.Issue):
-				said = append(said, fmt.Sprintf("a note on #%s: the developer's one note is on its own issue, #%d (not-the-developers)", on, b.Issue))
+				said = append(said, fmt.Sprintf("a note on #%s: the developer's one note is on its own issue, #%d (not-the-developers)", on, b.Issue)+objectionHint(b))
 			case strings.TrimSpace(body) == "":
 				said = append(said, "a note with no body: nothing to post")
 			case noted:
@@ -720,4 +720,17 @@ func same(a, b any) bool {
 	x, _ := json.Marshal(a)
 	y, _ := json.Marshal(b)
 	return string(x) == string(y)
+}
+
+// objectionHint tells, when the tester froze tests for the issue, that a test
+// that cannot pass is objected to in the objections file, not in a text: a
+// note or a comment reaches no tester.
+func objectionHint(b Bounds) string {
+	for _, n := range b.Frozen {
+		if n == b.Issue {
+			return ". If it says an acceptance test cannot pass, an objection was due: write it in `" + ObjectionsFile +
+				"` (test, line, scenario, kind `contradicts` when the test goes against a documented rule), so that the tester keeps or rewrites the test; a text reaches no tester"
+		}
+	}
+	return ""
 }
