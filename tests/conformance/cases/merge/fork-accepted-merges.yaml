@@ -1,0 +1,31 @@
+case: merge/fork-accepted-merges
+about: "A fork's pull request, accepted (#1043): its run is the fork's to write, so no verdict of it is kept; a person who can write labelled it `workline:accepted` after its last push, and every check on its head passed. `workline follow` goes by the yes and the checks: it holds the yes on the head and turns auto-merge on, with no verdict waited for (ADR-0042)."
+given:
+  repo: documented
+  config: {merge: {autonomy: cautious}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb patch-1 && echo typo > typo.txt && git add typo.txt && git commit -qm 'fix: a typo' && git push -q origin HEAD:refs/pull/9/head && git checkout -q main"
+  forge:
+    merge-requests:
+      - id: 9
+        branch: patch-1
+        base: main
+        fork: true
+        author: zed
+        labels: [workline:accepted]
+        label-events: [{label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T10:00:00Z"}]
+        pushes: [{head: patch-1, at: "2026-01-04T09:00:00Z"}]
+        check-runs: [{name: test, state: success}, {name: judge, state: success}]
+        comments: []
+run: {follow: [--base, main], summary: true}
+expect:
+  status: pass
+  findings:
+    - {rule: fork-yes, where: "#9", message: "from a fork: the line kept no verdict of its run and read no review of it; @dana's yes on its head carries it, its checks all green"}
+    - {rule: auto-merge-on, where: "#9", message: "accepted by @dana, its checks passed: auto-merge turned on"}
+  no-findings: [{rule: verdict-missing}, {rule: review-short}]
+  summary-file: ["accepted into main, #9: each merges once its own head is green"]
+  forge:
+    merge-requests:
+      - {id: 9, auto-merge: true, labels: [workline:accepted], comments: 0}

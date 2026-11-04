@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine/merge.go, internal/engine/queue.go, internal/forge/merge.go, internal/forge/github_merge.go, internal/forge/gitlab_merge.go, ci/github/workline-apply.yml, ci/github/workline-merge.yml, ci/gitlab/workline.gitlab-ci.yml]
-checked: adf500ab
+checked: 74dc6bec
 verified: agent:claude-code
 ---
 # The merge policy
@@ -108,8 +108,15 @@ merge: {autonomy: cautious}   # off unless set: no auto-merge is touched
   the docs ([ADR-0051](adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-1-the-release-weekly)).
   An issue labelled to hold it, or main not green, turns its verdict red
   until they are gone ([what holds a release](release-holds.md)).
-- **A fork's**: its CI run is the fork's own, so the templates keep no
-  verdict of it: it waits for a person.
+- **A fork's**: its run is the workflow its head holds, so the line
+  keeps no verdict of it and reads no review of it:
+  - labelled, it merges once every check on its head passed: the
+    person's yes carries it;
+  - one changing CI, workline's config, a gate's file or what steers
+    agents is never merged by the line (`fork-gate-files`): a person
+    merges it by hand;
+  - unlabelled, `follow` says it waits for a yes
+    ([ADR-0042](adr/0042-the-engine-merges-by-the-projects-policy.md#amendment-2026-11-04-1043-a-fork-goes-by-its-yes-and-its-checks)).
 - **Any other** with no label, whoever opened it — but, at `normal` and
   `enterprising`, workline's own routine work. A bot's own auto-merge (a dependency
   bot's) is left to it.

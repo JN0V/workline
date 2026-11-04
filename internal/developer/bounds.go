@@ -284,6 +284,22 @@ type checker struct {
 
 func newChecker(repo string, b Bounds) checker { return newCheckerAt(repo, b, "") }
 
+// Guarded says, for a file, the rule that keeps a change to it from
+// being trusted to its own run — "gate-file" (CI, workline's config, a
+// gate's script or config), "steering-file" (what steers agents), or
+// "bounds-unread" when those could not be read —, the rules read at the
+// commit at; "" for any other file.
+func Guarded(repo, at string) func(string) string {
+	c := newCheckerAt(repo, Bounds{}, at)
+	return func(p string) string {
+		switch r := c.rule(p); r {
+		case "gate-file", "steering-file", "bounds-unread":
+			return r
+		}
+		return ""
+	}
+}
+
 // newCheckerAt reads the rules at the commit at: the gates, the files
 // that steer agents, the role folders, a Scope's folders; "" reads them
 // in the checkout, the steering files at HEAD.

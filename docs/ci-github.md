@@ -74,7 +74,10 @@ write run the default branch's workflow, never a pull request's own
      candidate's branch ([the release candidate](release-candidate.md)).
    - [workline-fork.yml](../ci/github/workline-fork.yml): comments a fork's
      pull request, which gets no secret and no right to write
-     ([its gates](gates-in-ci.md#a-forks-pull-request)).
+     ([its gates](gates-in-ci.md#a-forks-pull-request)). With the merge
+     policy, it merges on a person's yes and every check green, unless
+     it changes CI, a gate's file or what steers agents
+     ([a fork's](merge-policy.md#never-without-a-persons-yes)).
    - [workline-release.yml](../ci/github/workline-release.yml), with a
      release tool: runs the release pull request's check again when the
      label `workline:hold-release` changes, or main's runs end; list

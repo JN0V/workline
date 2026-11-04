@@ -1445,6 +1445,83 @@ func TestMergePolicyRunsAfterTheJudgeAndOnLabels(t *testing.T) {
 	}
 }
 
+// A fork's pull request is followed, so a person's yes merges it (#1043):
+// its run is the fork's to write, so no verdict of it is left nor kept;
+// follow runs after it from the base, never checking out the fork's code,
+// and nothing is applied from it (ADR-0044).
+func TestForkIsFollowedWithNoVerdict(t *testing.T) {
+	type step struct {
+		Uses string            `yaml:"uses"`
+		If   string            `yaml:"if"`
+		Run  string            `yaml:"run"`
+		With map[string]string `yaml:"with"`
+	}
+	type workflow struct {
+		Jobs map[string]struct {
+			If    string `yaml:"if"`
+			Steps []step `yaml:"steps"`
+		} `yaml:"jobs"`
+	}
+	read := func(f string) workflow {
+		data, err := os.ReadFile(f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var wf workflow
+		if err := yaml.Unmarshal(data, &wf); err != nil {
+			t.Fatalf("%s: %v", f, err)
+		}
+		return wf
+	}
+	const ours = "full_name == github.repository"
+	for _, dir := range []string{"../../ci/github/", "../../.github/workflows/"} {
+		uploads := 0
+		for name, job := range read(dir + "workline.yml").Jobs {
+			for _, s := range job.Steps {
+				if strings.HasPrefix(s.Uses, "actions/upload-artifact") && s.With["name"] == "workline-verdict" {
+					uploads++
+					if !strings.Contains(s.If, ours) {
+						t.Errorf("%sworkline.yml, job %s: a fork's run leaves a verdict, which the fork wrote: %q", dir, name, s.If)
+					}
+				}
+			}
+		}
+		if uploads != 1 {
+			t.Errorf("%sworkline.yml: %d steps leave the verdict, want 1", dir, uploads)
+		}
+		followed := false
+		for name, job := range read(dir + "workline-apply.yml").Jobs {
+			var keeps, follows, applies bool
+			for _, s := range job.Steps {
+				keeps = keeps || strings.Contains(s.Run, "--verdict-only")
+				follows = follows || strings.Contains(s.Run, "workline follow --base")
+				applies = applies || strings.Contains(s.Run, "workline apply")
+			}
+			switch {
+			case applies || keeps:
+				if !strings.Contains(job.If, ours) {
+					t.Errorf("%sworkline-apply.yml, job %s: takes a fork's run's output with the write token: %q", dir, name, job.If)
+				}
+				continue
+			case !follows:
+				continue
+			}
+			followed = true
+			if strings.Contains(job.If, ours) {
+				t.Errorf("%sworkline-apply.yml, job %s: skips a fork's pull request: %q", dir, name, job.If)
+			}
+			for _, s := range job.Steps {
+				if strings.HasPrefix(s.Uses, "actions/checkout") && (s.With["ref"] != "" || s.With["repository"] != "") {
+					t.Errorf("%sworkline-apply.yml, job %s: checks out %q %q, not the base", dir, name, s.With["repository"], s.With["ref"])
+				}
+			}
+		}
+		if !followed {
+			t.Errorf("%sworkline-apply.yml: no job follows a fork's pull request", dir)
+		}
+	}
+}
+
 // The documentalist's findings on a pull request reach the applying job,
 // though the line proposed nothing, and that job may write the check
 // holding them (#412): code scanning no longer gets them.

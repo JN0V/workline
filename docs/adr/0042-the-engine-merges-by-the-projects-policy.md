@@ -9,7 +9,9 @@
   an agent's rewording for a reader waits for a yes unless the project
   lets it ([#438], [amendment](#amendment-2026-10-17-438-an-agents-rewording-waits-for-a-yes));
   up to date and one at a time dropped by [ADR-0051]
-  ([amendment](#amendment-2026-10-21-adr-0051-no-up-to-date-no-one-at-a-time))
+  ([amendment](#amendment-2026-10-21-adr-0051-no-up-to-date-no-one-at-a-time));
+  a fork goes by its yes and its checks ([#1043],
+  [amendment](#amendment-2026-11-04-1043-a-fork-goes-by-its-yes-and-its-checks))
 - **Date:** 2026-10-12
 - **Decided by:** the maintainer, its direction (2026-10-12), after four
   agents argued role or not
@@ -243,7 +245,9 @@ Built for workline's own routine pull requests: the
   check failed is out; only one ready and up to date ends a pass.
 - **Draft** turns auto-merge off; **another bot's own auto-merge** (a
   dependency bot's) is left to it; a fork's run is the fork's, so the
-  templates keep no verdict of it.
+  templates keep no verdict of it (still none since [#1043]: a fork goes
+  by its yes and its checks,
+  [amendment](#amendment-2026-11-04-1043-a-fork-goes-by-its-yes-and-its-checks)).
 - **The texts**: principle 1 holds as written, the label being the
   acceptance; concepts.md, ADR-0011, ADR-0020 and AGENTS.md amended.
 - **Tried live** on both forges, real auto-merges and merges, no agent;
@@ -488,6 +492,35 @@ accepted-all-turned-on-at-once, gitlab-accepted-turned-on;
 routing/main-red-says-base-red-on-open-merge-requests;
 TestMainIssueCountsRedMainsAWeek.
 
+## Amendment (2026-11-04, #1043): a fork goes by its yes and its checks
+
+"The templates keep no verdict of a fork's run" stays, but `follow`
+waited for that verdict: an accepted, green fork's pull request waited
+for ever.
+
+- **No verdict of a fork, still**: its run is the fork's copy of the
+  workflow, its engine maybe the fork's; a verdict it wrote, kept as the
+  App's status, would look like the line's. None is left nor kept.
+- **A fork goes by the yes and its checks**: a person's yes on its head,
+  then every check on that head green, its own `judge` among them, arm
+  auto-merge (`fork-yes`). A check still running waits, said
+  (`fork-checks-pending`); a red one is out, as for any pull request.
+  Its run asks no agent, and the line reads no review of it: the
+  person's yes carries it, said in the finding.
+- **Never armed when it could turn its own checks green**: the forge
+  runs the workflow a fork's head holds. A fork changing a gate's file
+  (CI, `.workline/`, a gate's script or config) or one that steers
+  agents, by the developer's bounds read at the base, is never armed by
+  the line (`fork-gate-files`); a person merges it by hand.
+- **`follow` runs after a fork's run**, from the base's checkout and
+  main's engine, never the fork's code ([ADR-0044]); nothing is applied
+  from it.
+- **Never without a yes**: one with none is said to wait for it
+  (`waits-for-a-yes`), at any level.
+
+Conformance: merge/fork-accepted-merges, fork-accepted-waits-for-its-checks,
+fork-gate-files-never-armed, fork-without-a-yes-waits; TestForkIsFollowedWithNoVerdict.
+
 [ADR-0005]: 0005-independence-takes-the-best-level-available.md
 [ADR-0011]: 0011-the-review-is-on-the-merge-request-not-the-push.md
 [ADR-0017]: 0017-the-release-manager.md
@@ -499,6 +532,7 @@ TestMainIssueCountsRedMainsAWeek.
 [ADR-0036]: 0036-a-roles-status-is-earned-by-written-criteria.md
 [ADR-0038]: 0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md
 [ADR-0041]: 0041-workline-settles-its-own-lines-when-the-base-moves.md
+[ADR-0044]: 0044-the-apps-key-stays-with-the-default-branchs-runs.md
 [ADR-0051]: 0051-a-check-sits-where-its-catch-is-worth-its-cost.md
 [#73]: https://github.com/JN0V/workline/pull/73
 [#117]: https://github.com/JN0V/workline/issues/117
@@ -512,3 +546,4 @@ TestMainIssueCountsRedMainsAWeek.
 [#421]: https://github.com/JN0V/workline/pull/421
 [#423]: https://github.com/JN0V/workline/pull/423
 [#438]: https://github.com/JN0V/workline/issues/438
+[#1043]: https://github.com/JN0V/workline/issues/1043

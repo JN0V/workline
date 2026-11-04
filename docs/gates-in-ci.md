@@ -1,6 +1,6 @@
 ---
 sources: [ci/github/workline.yml, ci/github/workline-apply.yml, ci/github/workline-warn.yml, ci/gitlab/workline.gitlab-ci.yml, internal/report/gates.go, internal/engine/annotate.go, internal/line]
-checked: 8538d558
+checked: 74dc6bec
 judged: 14c41d9
 verified: agent:claude-code
 ---
@@ -109,7 +109,7 @@ The gates still run; what they find is told, not shown beside the lines.
     file, line, rule and message (`gh run download <run> -n workline-gates`).
 - **What it does not get**:
   - no check `workline gates`, nothing beside a line, no summary comment
-    by rule: workline-apply.yml skips a fork's run;
+    by rule: workline-apply.yml applies nothing from a fork's run;
   - no triage: the inspector needs the agent's token, which a fork's run
     never gets.
 - **Why**: annotations need a token that writes checks. The job `gates`
