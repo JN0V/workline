@@ -893,3 +893,22 @@ merge-request line; on in workline's own repository.
 - **Rejected**: the lens that blocks asked every push (the call a push
   the two runs' amendment rejected); its block lifted on any commit to
   its file, unread (a commit there need not answer it).
+
+## Amendment (2026-11-04, #1039): the reviewer resolves what the code answers
+
+- **What was wrong**: on a trial copy whose main requires every
+  conversation resolved, two warns findings stayed open on their lines
+  after the developer's fix round. The fix was green and its auto-merge
+  on; nothing resolved them, nothing said they held it.
+- **The reviewer resolves its own thread** once the code answers it, by
+  the rule a block goes by: its line no longer at the head, or its lens
+  reading the file again and not finding it (a test file touching it,
+  for the tests lens). The run proposes the thread ids beside its
+  summary comment; the applying job resolves them.
+- **Never a person's**: a thread a person opened, or answered in, stays
+  theirs to resolve.
+- **`follow` says what holds**: auto-merge on, checks green, not merged,
+  the base requiring conversations resolved: each open one, linked.
+- **Rejected**: resolving every warns thread at once (a team turned the
+  rule on to hold on them); resolving on the developer's word alone
+  (the reviewer decides a finding is fixed).
