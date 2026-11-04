@@ -262,12 +262,22 @@ func (g *gitlab) Reply(id int, thread, body string) error {
 	return err
 }
 
-// Resolve marks each discussion resolved.
+// Resolve marks each discussion resolved; one refused leaves the others
+// resolved still, each refused said with why. A forge out of reach stops.
 func (g *gitlab) Resolve(id int, threads []string) error {
+	var refused []string
 	for _, thread := range threads {
-		if _, err := g.api("-X", "PUT", path(Target{Kind: "merge-request", ID: id})+"/discussions/"+thread, "-f", "resolved=true"); err != nil {
+		_, err := g.api("-X", "PUT", path(Target{Kind: "merge-request", ID: id})+"/discussions/"+thread, "-f", "resolved=true")
+		switch {
+		case err == nil:
+		case refusal(err):
+			refused = append(refused, thread+" ("+said(err)+")")
+		default:
 			return err
 		}
 	}
-	return nil
+	if len(refused) == 0 {
+		return nil
+	}
+	return fmt.Errorf("%w: discussions refused, the others resolved: %s", errRefused, strings.Join(refused, "; "))
 }

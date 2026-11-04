@@ -15,6 +15,36 @@ import (
 	"testing"
 )
 
+// GitLab's resolve (#1039): a discussion refused leaves the others
+// resolved, each refused said with why.
+func TestGitLabResolveGoesOn(t *testing.T) {
+	var resolved []string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		p := strings.TrimPrefix(r.URL.EscapedPath(), "/api/v4/projects/group%2Fproj")
+		switch {
+		case r.Method == http.MethodPut && p == "/merge_requests/7/discussions/d2":
+			http.Error(w, `{"message":"403 Forbidden"}`, http.StatusForbidden)
+		case r.Method == http.MethodPut && strings.HasPrefix(p, "/merge_requests/7/discussions/"):
+			resolved = append(resolved, strings.TrimPrefix(p, "/merge_requests/7/discussions/"))
+			w.Write([]byte(`{}`))
+		default:
+			http.Error(w, `{"message":"404 Not Found"}`, http.StatusNotFound)
+		}
+	}))
+	defer srv.Close()
+	t.Setenv("CI_API_V4_URL", srv.URL+"/api/v4")
+	t.Setenv("CI_PROJECT_ID", "")
+	t.Setenv("CI_PROJECT_PATH", "group/proj")
+	t.Setenv("GITLAB_TOKEN", "secret")
+	err := (&gitlab{repo: t.TempDir()}).Resolve(7, []string{"d1", "d2", "d3"})
+	if !Refused(err) || !strings.Contains(err.Error(), "d2 (") || strings.Contains(err.Error(), "d1") {
+		t.Errorf("refused: %v", err)
+	}
+	if strings.Join(resolved, ",") != "d1,d3" {
+		t.Errorf("resolved %v, want d1 and d3", resolved)
+	}
+}
+
 // GitLab is reached through its REST API alone, with the token and the
 // project CI gives: no CLI to install, on gitlab.com or an instance of one's
 // own.
