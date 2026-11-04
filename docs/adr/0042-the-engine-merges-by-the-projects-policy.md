@@ -505,7 +505,13 @@ for ever.
   then every check on that head green, its own `judge` among them, arm
   auto-merge (`fork-yes`). A check still running waits, said
   (`fork-checks-pending`); a red one is out, as for any pull request.
-  Its run asks no agent: the person's yes is its review.
+  Its run asks no agent, and the line reads no review of it: the
+  person's yes carries it, said in the finding.
+- **Never armed when it could turn its own checks green**: the forge
+  runs the workflow a fork's head holds. A fork changing a gate's file
+  (CI, `.workline/`, a gate's script or config) or one that steers
+  agents, by the developer's bounds read at the base, is never armed by
+  the line (`fork-gate-files`); a person merges it by hand.
 - **`follow` runs after a fork's run**, from the base's checkout and
   main's engine, never the fork's code ([ADR-0044]); nothing is applied
   from it.
@@ -513,7 +519,7 @@ for ever.
   (`waits-for-a-yes`), at any level.
 
 Conformance: merge/fork-accepted-merges, fork-accepted-waits-for-its-checks,
-fork-without-a-yes-waits; TestForkIsFollowedWithNoVerdict.
+fork-gate-files-never-armed, fork-without-a-yes-waits; TestForkIsFollowedWithNoVerdict.
 
 [ADR-0005]: 0005-independence-takes-the-best-level-available.md
 [ADR-0011]: 0011-the-review-is-on-the-merge-request-not-the-push.md
