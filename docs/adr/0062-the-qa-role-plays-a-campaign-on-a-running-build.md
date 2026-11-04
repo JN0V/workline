@@ -1,9 +1,10 @@
 # ADR-0062: The QA role plays a campaign on a running build, apart from the tester
 
-- **Status:** proposed, until the maintainer merges it
+- **Status:** accepted (2026-11-04)
 - **Date:** 2026-11-04
 - **Decided by:** the maintainer, on 2026-11-04: the tester's job and
-  the QA's job are two roles; the rest as proposed below
+  the QA's job are two roles; the five points under
+  [Decided](#decided) as proposed
 - **Builds on:** [ADR-0017], [ADR-0018], [ADR-0046], [ADR-0051],
   [ADR-0055], [ADR-0059], [ADR-0060]; principles 1, 2, 4, 5, 10, 12, 13, 14
 - **Research:** [qa-campaigns.md](../research/qa-campaigns.md)
@@ -68,7 +69,7 @@ flowchart LR
   No line: the project's default recipe.
 - **The project's recipes**, in `.workline/config.yaml`: how to start
   the build, play a case and capture what happened (§4).
-- **The last campaigns**: their rows are the regression set.
+- **The last two campaigns**: their rows are the regression set.
 
 ### 3. What it does
 
@@ -163,8 +164,9 @@ qa:
 ### 7. What it outputs
 
 - **A check run on the build's commit**, `workline/qa`: success when
-  every row passed; failure when one failed; neutral when rows are
-  `not run` or `no-recipe`. Its summary is the table of rows.
+  every row passed; failure when one failed, the person's yes on the
+  candidate still possible; neutral when rows are `not run` or
+  `no-recipe`. Its summary is the table of rows.
 - **The campaign report**, a sticky comment on the candidate's issue:
   each row, its result, its evidence (CI artifacts, or a link to the
   run folder on a person's machine).
@@ -244,20 +246,19 @@ exploring a screen from a charter, bounded in time and tokens.
 - **Silence as a pass** on a person's row: the version ships on a
   person's yes, never on a timeout.
 
-## For the maintainer
+## Decided
 
-1. **Where a scenario's environment is marked**: proposed, a `QA:` line
-   in Verification, the product owner's; or a tag on the scenario
-   itself, the person's.
-2. **A failed row and the candidate**: proposed, the check fails and
-   says so; the person can still say yes. Or the yes is refused while a
-   row fails.
-3. **The delay on a person's row** at `normal`: proposed 72 h, then
-   `not run`.
-4. **The regression set**: proposed, every row of the last two
-   campaigns; or only rows that once failed.
-5. **The first project to try it on**: proposed DomoticsCore, whose
-   checklist (step 1) needs no recipe.
+By the maintainer, on 2026-11-04, each as proposed:
+
+1. **A scenario's environment** is a `QA:` line in Verification, the
+   product owner's part (§2).
+2. **A failed row** makes the check red; the person's yes on the
+   candidate stays possible (§7).
+3. **A person's row** waits 72 h at `normal`, then is reported
+   `not run` (§5).
+4. **The regression set** is every row of the last two campaigns (§2).
+5. **The first project** to try it on is DomoticsCore, whose checklist
+   (step 1) needs no recipe.
 
 [ADR-0017]: 0017-the-release-manager.md
 [ADR-0018]: 0018-the-product-owner.md
