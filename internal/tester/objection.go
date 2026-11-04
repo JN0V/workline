@@ -396,9 +396,8 @@ func writeAnswerTask(runDir, repo string, a answer, t forge.Thread, is *forge.Is
 		return fail(err)
 	}
 	fmt.Fprintf(&b, "## The test, `%s`, as it stands\n\n````\n%s\n````\n", a.File, strings.TrimRight(string(data), "\n"))
-	if a.Kind == "interface" {
-		writeCode(&b, repo, work.ByMeaning(is.Body)[work.Scope].Text, s)
-	}
+	head := b.String()
+	b.Reset()
 	b.WriteString("\n## Your answer\n\n" +
 		"- **Kept**: a `note`, the reason the test holds for the scenario.\n" +
 		"- **Rewritten**: the same file whole as a `patch` with `file` and `content`, and a `note`, why. " +
@@ -407,7 +406,16 @@ func writeAnswerTask(runDir, repo string, a answer, t forge.Thread, is *forge.Is
 		b.WriteString("- **The five whys**: two answers did not settle this thread. First run the five whys skill below on it; " +
 			"give the analysis as its own `note`, and answer as its root cause says: a rewrite when the test is the cause, kept when it is not.\n")
 	}
-	if err := os.WriteFile(filepath.Join(runDir, "in", "task.md"), []byte(b.String()), 0o644); err != nil {
+	tail := b.String()
+	text := head + tail
+	if a.Kind == "interface" {
+		text = fitTask(runDir, repo, s, func(s Settings) string {
+			var code strings.Builder
+			writeCode(&code, repo, work.ByMeaning(is.Body)[work.Scope].Text, s)
+			return head + code.String() + tail
+		})
+	}
+	if err := os.WriteFile(filepath.Join(runDir, "in", "task.md"), []byte(text), 0o644); err != nil {
 		return fail(err)
 	}
 	return 0

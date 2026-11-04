@@ -1,0 +1,28 @@
+case: tester/scope-long-lines-fit-the-budget
+about: >
+  A Scope file of 1500 lines at 50 characters each, code-lines-max at its
+  default: the lines pass the tester's context budget of 60,000 tokens.
+  The tester gives fewer lines, the prompt within the budget, and the
+  agent is asked — never left unasked, the issue blocked for a test not
+  proposed (#1017).
+given:
+  repo: tested
+  setup:
+    - "mkdir -p src && awk 'BEGIN { for (i = 1; i <= 1500; i++) printf \"# %047d\\n\", i }' > src/long.sh && git add src && git commit -qm 'src' && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+    routing: {events: {issue: [tester]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:needs-tests"]
+        body: "## Need\n\nI want to multiply.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n\n---\n\n## Scope\n\n- `src/long.sh`\n"
+run: {route: issue, target: {issue: 3}, open-merge-request: true, ai: "cmd:cat > /dev/null; echo '[]'"}
+expect:
+  agent-calls: 1
+  no-findings: [{rule: prompt-over-budget}]
+  run-files:
+    in/task.md:
+      contains: ["### `src/long.sh`", "(cut: the first "]
+      not-contains: ["(cut: the first 1500 lines given)"]
