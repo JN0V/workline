@@ -20,7 +20,7 @@ import (
 var (
 	scopeWordRe = regexp.MustCompile("`([^`\\s]+)`")
 	lineRefRe   = regexp.MustCompile(`^(.+):(\d+)(?:-(\d+))?$`)
-	symbolRe    = regexp.MustCompile(`^[A-Za-z_][\w]*$`)
+	symbolRe    = regexp.MustCompile(`^~?[A-Za-z_][\w]*$`)
 )
 
 // lineAround is the lines given either side of a line a Scope names when
@@ -52,7 +52,7 @@ func anchors(scope string, files []string) (names []string, spans map[string][][
 			continue
 		}
 		w = strings.TrimSuffix(w, "()")
-		if i := strings.LastIndex(w, "."); i >= 0 {
+		if i := strings.LastIndexAny(w, ".:"); i >= 0 { // a.b, Class::method
 			w = w[i+1:]
 		}
 		if symbolRe.MatchString(w) && !slices.Contains(names, w) {

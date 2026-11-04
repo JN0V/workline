@@ -1,0 +1,26 @@
+case: tester/scope-qualified-cpp-method-given
+about: >
+  A C++ method the Scope names, defined out of its class deep in a long
+  header (`inline void Mqtt::resetReconnect() {`), is given whole, not
+  the file's first lines: its `Mqtt::` hid it, and the tester got the
+  header's first lines only (#1064, MQTT_impl.h on the C++ trial).
+given:
+  repo: tested
+  setup:
+    - "mkdir -p src && i=1 && while [ $i -le 40 ]; do printf 'int f%s();\\n' $i >> src/mqtt_impl.h; i=$((i+1)); done && printf 'inline void Mqtt::resetReconnect() {\\n    state = Idle;\\n}\\n' >> src/mqtt_impl.h && git add src && git commit -qm 'src' && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}", code-lines-max: 10}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:needs-tests"]
+        body: "## Need\n\nWhen I total an order, I want to multiply a price by a count, so I need not add it up by hand.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **By zero:** Given the library, When I multiply 5 by 0, Then I get 0.\n\n---\n\n## Verification\n\nA test a scenario, in tests/.\n\n## Scope\n\n- `src/mqtt_impl.h`: `Mqtt::resetReconnect()` counts the loss.\n"
+run: {test: [write, --issue, "3"], ai: "fake:tester-two-scenarios"}
+expect:
+  status: pass
+  agent-calls: 1
+  run-files:
+    in/task.md:
+      contains: ["### `src/mqtt_impl.h` (43 lines: lines 41 to 43 given", "inline void Mqtt::resetReconnect() {\n    state = Idle;\n}"]
+      not-contains: ["int f1();", "(cut: the first"]
