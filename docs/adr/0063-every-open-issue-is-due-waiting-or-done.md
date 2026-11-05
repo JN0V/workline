@@ -844,8 +844,10 @@ from the runs' `calls.jsonl`):
   of them held calls, all the reviewer's and the documentalist's. Round
   1's earliest runs may be missing from the table.
 - **The tester's share**: about 20,000–25,000 tokens a call with no
-  tools. Its run with tools is measured against this ceiling in the
-  pull request that built it.
+  tools. With tools, on the copy's #36: 48,919 fresh for its first
+  answer, about 105,000 with one retry; on workline's Go #1081, 30,873
+  ([#1110](https://github.com/JN0V/workline/pull/1110#tried)). Under
+  the ceiling.
 
 [ADR-0026]: 0026-the-product-owners-autonomy-is-a-level.md
 [ADR-0042]: 0042-the-engine-merges-by-the-projects-policy.md
