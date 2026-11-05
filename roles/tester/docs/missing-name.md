@@ -1,6 +1,6 @@
 ---
-sources: [internal/tester/build.go, internal/tester/tester.go, internal/tester/write.go, roles/tester/role.yaml]
-checked: 1e01b6d1
+sources: [internal/tester/build.go, internal/tester/tester.go, internal/tester/write.go, internal/tester/objection.go, roles/tester/role.yaml]
+checked: a871936d
 verified: agent:claude-code
 ---
 # A missing name, told from a broken build
@@ -17,7 +17,7 @@ flowchart LR
   red["<b>Red</b><br/>a missing name"]
   block["<b>Blocks</b><br/>build-broken"]
   run --> errs
-  errs -- "all in the change's tests,<br/>all a name the base lacks" --> red
+  errs -- "all in the change's tests,<br/>all a name the base lacks,<br/>each named by the issue" --> red
   errs -- "any other" --> block
 ```
 
@@ -28,11 +28,16 @@ flowchart LR
   - lies in a test file the change adds or changes, and
   - names something the base lacks: `undefined: Mul`, `v.Scale undefined
     (type T has no field or method Scale)`, `unknown field Rate in struct
-    literal`.
+    literal`, and
+  - that name is in the issue's text (title and body) as a whole word,
+    or its last part (`lostCount` for `MQTTStatistics::lostCount`): what
+    the change adds
+    ([#1111](https://github.com/JN0V/workline/issues/1111)).
 - **Any other error blocks** (`build-broken`): a syntax error, a wrong
-  import, a call with the wrong arguments, an error in a code file. The
-  check names the lines. Writing an issue's tests, the agent is asked
-  once more with them first.
+  import, a call with the wrong arguments, an error in a code file, a
+  helper the test made up (`stubSetBrokerLink`, named nowhere in the
+  issue). The check names the lines and the made-up names. Writing an
+  issue's tests, the agent is asked once more with them first.
 - **The tests' names**, when nothing built them: read from the test
   files, as `file:name` (`calc/mul_test.go:TestMulTwoByThree`).
 - **Beside code**, the head builds and runs those tests: they must pass
@@ -47,7 +52,7 @@ flowchart LR
 | Key | |
 |---|---|
 | `error` | a regular expression matching one error line of the test command's output, with groups `file` (from the repository's root) and `message` |
-| `missing-name` | the messages naming what the code lacks |
+| `missing-name` | the messages naming what the code lacks; the name in a group `name`, else the message's first quoted word (`‘lostCount’`) |
 | `test-name` | finds the tests a test file declares; its first group is the name |
 
 Go's is the default, in [role.yaml](../role.yaml). A wrong pattern
@@ -66,7 +71,8 @@ Only Go's is built and tested.
 | Java (`javac`) | `cannot find symbol` | the file first, the symbol on later lines |
 
 - **One-line shapes** (TypeScript, C#): set `build-errors` with their
-  patterns.
+  patterns. A name the message quotes (`'lostCount'`) needs no group
+  `name`.
 - **Several lines** (Rust, Java): one line does not hold both the file
   and the message, so these are not read yet. `cargo
   --message-format=json` would give both in one record.
@@ -89,6 +95,10 @@ golangci-lint does, reports the same missing name
 
 ## Limits
 
+- **A name not read**: a message with no group `name` and no quoted
+  word counts as red, as before: the issue's text is not checked.
+- **`workline test check`** on a pull request knows no issue: any
+  missing name counts.
 - **Go stops at ten errors** a package (`too many errors`): the errors
   past the tenth are not read. `-gcflags=-e` in the test command shows
   them all.
