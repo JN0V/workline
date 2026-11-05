@@ -33,6 +33,7 @@ stars and dates were checked against the GitHub API that day.
 | [self-evaluation.md](self-evaluation.md) | How automation and agents are judged in production, and how self-improving systems keep people in control |
 | [code-review.md](code-review.md) | How AI code reviewers find, verify and post findings; what reviews a spec before it is built |
 | [code-navigation.md](code-navigation.md) | How tools find a function's bounds, callers and callees with no build, in any language |
+| [code-outline.md](code-outline.md) | How tools give a file's declarations without bodies and follow its imports, with no parser per language |
 | [judge-reads-code.md](judge-reads-code.md) | How judges and reviewers get the code beyond a fixed context — the model reading, its caps, its cost |
 | [auditing-agent-acts.md](auditing-agent-acts.md) | How automated decisions are sampled, re-read by another reader, disputes settled, an error rate reported |
 | [merge-conflicts.md](merge-conflicts.md) | Why open pull requests conflict with `main`, what forges and git offer, what workline adds |

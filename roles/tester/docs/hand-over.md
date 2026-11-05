@@ -97,7 +97,10 @@ When no new test fits, the tester's agent names the proof that does
   with no agent, a person of the project names one in a comment,
   `proof: <kind> — why`.
 - **Short of code** (`needs: <paths> — why`): the agent lacks a file
-  its test needs, never "no test possible". The issue keeps its state,
+  its test needs, never "no test possible". Its task already holds, as
+  declarations, what the test and the Scope include or import, two
+  steps deep, and asks it to name every file it lacks in one note.
+  The issue keeps its state,
   the files said on it (`needs-code`); the line gives them to the
   tester, run again at once, those files first in its code
   ([the code picker](../../../docs/spec/code-picker.md)); then a person
