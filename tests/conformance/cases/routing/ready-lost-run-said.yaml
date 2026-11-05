@@ -3,9 +3,9 @@ about: >
   A developer run that ends with no verdict is said on its issue (#953):
   the line wakes the developer on #3, whose run dies before its post
   writes a verdict (its proof's command kills it). Nothing it did
-  reaches the forge, the run is blocked, and the line's record on #3
-  says the run was lost, never that it acted: one hop more, the moment
-  it was lost kept, which makes its step due again.
+  reaches the forge, the run is blocked: a machine error (ADR-0063).
+  The line's record on #3 says so, never that it acted: no hop more,
+  its labels kept, the error counted and when it runs again said.
 given:
   repo: tested-draft
   setup:
@@ -37,6 +37,6 @@ expect:
       - id: 3
         labels: ["workline:ready"]
         comments: 1
-        comment-contains: ["**workline's line** lost the developer's run on this issue.", "- **Why**: post wrote no readable verdict", "\"hops\":2", "\"lost\":\"20"]
+        comment-contains: ["**workline's line** saw the developer's run on this issue fail (run).", "- **Why**: post wrote no readable verdict", "1 of 2 tries", "\"hops\":1", "\"errors\":{\"by\":{\"run\":1}"]
     merge-requests:
       - {id: 1, branch: workline/tester/issue-3}

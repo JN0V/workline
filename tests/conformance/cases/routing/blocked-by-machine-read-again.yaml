@@ -1,0 +1,34 @@
+case: routing/blocked-by-machine-read-again
+about: >
+  A block the line made of a tester's run before runs had typed
+  outcomes may be the machine's error (ADR-0063, migration): #37, its
+  tests refused for a patch that did not apply, blocked an hour ago, is
+  read again by the product owner at once, not in a week. #38, blocked
+  as much by a line that types outcomes (its record's version), waits
+  for news as any block.
+given:
+  repo: tested
+  env: {WORKLINE_CLOCK: "2026-11-05T08:00:00Z"}
+  config:
+    routing: {events: {issue: [product-owner, tester]}}
+  forge:
+    issues:
+      - id: 37
+        title: "One buffer"
+        labels: ["workline:blocked"]
+        body: "## Need\n\nI want one buffer.\n"
+        comments: ["<!-- workline:line-record {\"state\":\"blocked\",\"body\":\"6aa3452ecb87\",\"hops\":1,\"from\":\"tests\",\"why\":\"the tester wrote no tests for it in its state tests: error: new file a_test.go depends on old contents\",\"since\":\"2026-11-05T07:00:00Z\"} -->\n<!-- workline:sticky=line/state -->"]
+      - id: 38
+        title: "Two buffers"
+        labels: ["workline:blocked"]
+        body: "## Need\n\nI want one buffer.\n"
+        comments: ["<!-- workline:line-record {\"state\":\"blocked\",\"body\":\"6aa3452ecb87\",\"hops\":1,\"from\":\"tests\",\"why\":\"the tester wrote no tests for it in its state tests: the test passes on the base\",\"since\":\"2026-11-05T07:00:00Z\",\"v\":1} -->\n<!-- workline:sticky=line/state -->"]
+run: {route: reconcile, ai: none}
+expect:
+  agent-calls: 0
+  findings:
+    - {rule: state-revisit, level: info, where: "#37", message: "before runs had typed outcomes"}
+    - {rule: state-blocked-quiet, level: info, where: "#38"}
+  forge:
+    issues:
+      - {id: 37, comment-contains: ["\"v\":1"]}

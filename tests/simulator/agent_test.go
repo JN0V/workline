@@ -40,10 +40,13 @@ const (
 	// replayedUnread: the trial's answer, which the engine's reader could
 	// not read: a machine error, counted against the budget.
 	replayedUnread outcome = "replayed-unread"
+	// overBudget: the role's task over its context budget, the agent not
+	// asked (#1017): a machine error.
+	overBudget outcome = "over-budget"
 )
 
 func (o outcome) machine() bool {
-	return o == machineError || o == malformed || o == hunk || o == broken || o == replayedUnread
+	return o == machineError || o == malformed || o == hunk || o == broken || o == replayedUnread || o == overBudget
 }
 
 func (o outcome) needs() bool { return o == needsEngine || o == needsRole || o == needsPerson }
@@ -114,9 +117,12 @@ func (a *simAgent) Propose(r agent.Request) (agent.Call, error) {
 		return a.replay(r, task, answer)
 	}
 	kind, answer = a.answerOf(kind, r.Role.Name, task)
-	a.calls = append(a.calls, call{Tick: tick, Role: r.Role.Name, Digest: a.digest(task), Kind: kind, runDir: r.RunDir})
+	a.calls = append(a.calls, call{Tick: tick, Role: r.Role.Name, Digest: a.digest(received(r.RunDir, task)), Kind: kind, runDir: r.RunDir})
 	if kind == machineError {
 		return c, fmt.Errorf("sim: the agent's run failed")
+	}
+	if kind == overBudget {
+		return c, fmt.Errorf("%w: sim: the task is over the role's context budget", agent.ErrOverBudget)
 	}
 	answer = strings.ReplaceAll(answer, "ISSUE", issueIn(task))
 	return c, os.WriteFile(filepath.Join(r.RunDir, "out", "intentions.yaml"), []byte(answer), 0o644)
@@ -150,7 +156,7 @@ func (a *simAgent) replay(r agent.Request, task []byte, answer string) (agent.Ca
 	if err != nil {
 		kind = replayedUnread
 	}
-	a.calls = append(a.calls, call{Tick: tick, Role: r.Role.Name, Digest: a.digest(task), Kind: kind, runDir: r.RunDir})
+	a.calls = append(a.calls, call{Tick: tick, Role: r.Role.Name, Digest: a.digest(received(r.RunDir, task)), Kind: kind, runDir: r.RunDir})
 	return c, err
 }
 
@@ -159,7 +165,7 @@ func (a *simAgent) replay(r agent.Request, task []byte, answer string) (agent.Ca
 // property holds it to a kind it never gave.
 func (a *simAgent) answerOf(kind outcome, role string, task []byte) (outcome, string) {
 	switch {
-	case kind == machineError:
+	case kind == machineError || kind == overBudget:
 		return kind, ""
 	case kind == malformed:
 		return kind, "- ready: {issue: [not, a, number\n"
@@ -179,6 +185,10 @@ func (a *simAgent) answerOf(kind outcome, role string, task []byte) (outcome, st
 		file, content := a.testOf(task)
 		content = strings.Replace(content, "#include <unity.h>\n", "#include <unity.h>\n#include <memory>\n#include <string>\n", 1)
 		content = strings.Replace(content, "\nint main() {", "\nvoid test_wrong_call(void) { auto made = std::make_unique<std::string>(std::string(), \"Kitchen\", 1, 2, 3); TEST_ASSERT_NOT_NULL(made.get()); }\n\nint main() {", 1)
+		if strings.HasSuffix(file, ".go") {
+			// In Go, a value of the wrong type: no missing name either.
+			content += "\nfunc TestWrongCall(t *testing.T) {\n\tvar n int = \"Kitchen\"\n\t_ = n\n}\n"
+		}
 		return kind, patch(file, content)
 	case kind == broken && role == "developer":
 		h := headerIn(task, "## What you may change")
@@ -197,6 +207,10 @@ func (a *simAgent) answerOf(kind outcome, role string, task []byte) (outcome, st
 			}
 		}
 		return kind, fmt.Sprintf("- sources: {issue: ISSUE, sources: [%q], quote: {path: %q, text: %q}, why: \"no code was given: the file the title names\"}\n", h, h, line)
+	case kind == needsEngine && role == "tester":
+		// A tester short of code (#1047, #1059): the header the Scope
+		// names, said lacking, never "no test possible".
+		return kind, fmt.Sprintf("- note: \"needs: %s — the code the scenarios call is not in the task\"\n", headerIn(task, "## Scope"))
 	case kind == needsRole && role == "tester":
 		// No test possible: the product owner decides.
 		return kind, "- note: \"proof: none — the scenario reads a person's screen, no test can see it\"\n"
@@ -486,6 +500,16 @@ var volatile = []*regexp.Regexp{
 	regexp.MustCompile(`\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ`),      // a time stamp: the clock moved, not the input
 	regexp.MustCompile(`\d{8}T\d{6}\.\d+-[a-z-]+`),             // a run folder's name
 	regexp.MustCompile(`(?m)^.*(?:minutes?|hours?|days?) ago`), // an age, read from the clock
+}
+
+// received is what an agent's prompt is made of: the task, then the
+// feedback a run asked again in place gives it (agent/prompt.go).
+func received(runDir string, task []byte) []byte {
+	fb, err := os.ReadFile(filepath.Join(runDir, "out", "feedback.md"))
+	if err != nil {
+		return task
+	}
+	return append(append(slices.Clone(task), "\n\n"...), fb...)
 }
 
 // digest is the simulator's own digest of what the fake received: the

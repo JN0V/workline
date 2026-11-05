@@ -1158,6 +1158,26 @@ func (p *Plan) summary(role string) {
 				Message: strings.TrimSpace(offer(d.Act))})
 		}
 	}
+	// The code an issue is about named in this run, its Scope or question
+	// left for that code (codeFirst): the agent lacked it, a needs-input
+	// of the engine (ADR-0063, §6), which reads it at the run that
+	// follows. None for an issue this run readied, closed or split.
+	named, settled := map[int][]string{}, map[int]bool{}
+	for _, d := range p.Decisions {
+		switch {
+		case d.Mode != Act:
+		case d.Act.Do == "sources" && d.Act.Ticked == "" && p.codeFirst[d.Act.Issue]:
+			named[d.Act.Issue] = append(named[d.Act.Issue], d.Act.Sources...)
+		case d.Act.Do == "ready" || d.Act.Do == "close" || d.Act.Do == "split":
+			settled[d.Act.Issue] = true
+		}
+	}
+	for _, id := range sortedKeys(named) {
+		if !settled[id] && len(named[id]) > 0 {
+			p.Findings = append(p.Findings, verdict.Finding{Rule: verdict.NeedsCode, Level: "info", Where: fmt.Sprintf("#%d", id),
+				Message: strings.Join(named[id], ", ")})
+		}
+	}
 	// An issue read that lacks a section and got nothing at all — no
 	// draft, no question, no act dropped with its reason —: said, never
 	// left in silence.

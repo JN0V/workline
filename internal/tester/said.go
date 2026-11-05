@@ -52,9 +52,14 @@ func refusePost(runDir string, n int, v verdict.Verdict) int {
 		if len(v.Findings) > 0 {
 			why = v.Findings[0].Message
 		}
+		next := "waiting for its tests, the line blocks it with this reason; a person writes them, or puts " + backlog.LabelNeedsTests + " back for another run"
+		if verdict.OutcomeOf(v.Status, v.Findings).Machine() {
+			// A machine error is no refusal of the issue (ADR-0063, I3):
+			// the line keeps its labels, and runs it again.
+			next = "the line keeps its labels and runs the tester again, its comment saying when; past its tries, a person reads it"
+		}
 		said := []intent.Intention{{Kind: "comment", Value: map[string]any{"issue": n, "sticky": "issue",
-			"body": backlog.Said("The tester", refusedRun, why,
-				"waiting for its tests, the line blocks it with this reason; a person writes them, or puts "+backlog.LabelNeedsTests+" back for another run")}}}
+			"body": backlog.Said("The tester", refusedRun, why, next)}}}
 		if err := intent.Write(filepath.Join(runDir, "out", "on-block.yaml"), said); err != nil {
 			return fail(err)
 		}

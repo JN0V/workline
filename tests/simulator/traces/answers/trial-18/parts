@@ -1,3 +1,5 @@
-after tests: the trial went to ready, the simulator to blocked; every answer used
-The tester's patch, applied in the trial, reads here as a corrupt patch: the fixture's
-files are a small copy of the trial's, not its own.
+none; every answer used
+The tester's patch, applied in the trial, reads here as corrupt on the fixture: its files
+are a small copy of the trial's, not its own. A machine error since runs have typed
+outcomes (ADR-0063, step 2): run again, its error said, never blocked; the fake's next
+answer writes the tests, and the path is the trial's.

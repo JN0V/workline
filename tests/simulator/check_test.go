@@ -127,12 +127,20 @@ const (
 var seeded = []string{pAttributed, pOneLabel, pI3, pBudget, pI2, pNeeds, pRequests}
 
 // maxRequests bounds the forge's requests in one reconcile of a trace's
-// one issue, reads and writes, the role scripts' with the engine's.
+// one issue, reads and writes, the role scripts' with the engine's; and
+// perCallMore each agent call past the first: a role run again in its
+// step, for the code its agent lacked (ADR-0063, §5), reads and writes
+// again, less than a whole step.
 // Measured on 2026-11-05: a quiet tick reads 3, as ADR-0063 §11
 // estimates (3 to 5 an issue); a tick running a step, 45 to 121, the
-// step's own reads and writes. The bound leaves room above the highest,
-// and is raised only with the measure that needs it.
-const maxRequests = 150
+// step's own reads and writes; a product owner's step 85 to 106; that
+// step run again in place, two calls, 166 (81 more). The bounds leave
+// room above the highest, and are raised only with the measure that
+// needs it.
+const (
+	maxRequests = 150
+	perCallMore = 100
+)
 
 // checks is what a run checks: every property (all) but those set aside
 // (skip), or some (only), up to a tick.
@@ -278,7 +286,9 @@ func (w *world) tickChecks(c checks, k int, before, after forge.FakeState, res, 
 		ok := false
 		switch cl.Kind {
 		case needsEngine:
-			ok = st == "due"
+			// Due, given what it lacked; said lacking again once given it,
+			// in the same step, a person (ADR-0063, §5): Waiting.
+			ok = st == "due" || st == "waiting" && givenBefore(calls, cl)
 		case needsRole:
 			ok = st == "due" && (again.Woke[cl.Issue] == "product-owner" || next == "product-owner") ||
 				st == "waiting" && strings.Contains(said, "product owner")
@@ -345,6 +355,19 @@ func claimed(before, after []string) bool {
 func stateName(cfg *routing.Config, labels []string) string {
 	s, _ := cfg.StateOf(labels)
 	return s.Name
+}
+
+// givenBefore says whether the call just before cl among calls, on the
+// same issue and role, was a needs-input of the engine: cl is its run
+// again, given what it lacked.
+func givenBefore(calls []call, cl call) bool {
+	j := slices.Index(calls, cl)
+	for i := j - 1; i >= 0; i-- {
+		if d := calls[i]; d.Issue == cl.Issue && d.Role == cl.Role {
+			return d.Kind == needsEngine
+		}
+	}
+	return false
 }
 
 // lastCalls are the last call on each issue among calls.
@@ -450,8 +473,8 @@ func measured(t *testing.T, tr trace, script []outcome, c checks) (_ *failure, _
 		if f := w.tickChecks(c, i, before, mid, res, again, calls); f != nil {
 			return f, log.String(), ms
 		}
-		if got := ms.requests[i]; got > maxRequests && c.on(pRequests) {
-			return &failure{Property: pRequests, Tick: i, Detail: fmt.Sprintf("%d requests to the forge in one reconcile, more than %d", got, maxRequests)}, log.String(), ms
+		if got, bound := ms.requests[i], maxRequests+perCallMore*max(0, ms.calls[i]-1); got > bound && c.on(pRequests) {
+			return &failure{Property: pRequests, Tick: i, Detail: fmt.Sprintf("%d requests to the forge in one reconcile of %d agent calls, more than %d", got, ms.calls[i], bound)}, log.String(), ms
 		}
 		// Between two ticks, the forge merges what is ready to.
 		merged := w.merge(t, at.Add(period/2))

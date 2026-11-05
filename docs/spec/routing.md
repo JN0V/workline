@@ -443,7 +443,39 @@ whose result moves the issue to the next. The table is the routing's
   tester run wrote no tests, said in the tester's comment, is never
   left waiting there: the line moves it to `workline:blocked`, the
   tester's reason said (`tests-refused`;
-  [#794](https://github.com/JN0V/workline/issues/794)).
+  [#794](https://github.com/JN0V/workline/issues/794)). Not for a
+  machine error: see below.
+- **A machine error moves nothing**
+  ([ADR-0063, §6](../adr/0063-every-open-issue-is-due-waiting-or-done.md#6-typed-outcomes)):
+  each run's outcome is typed from its findings (`verdict.OutcomeOf`).
+  A run blocked by one of a few codes is a machine error, by kind:
+  `engine-error` (run: the run failed, any shape, a new one too),
+  `agent-invalid-output` and `no-test-written` (answer),
+  `patch-unreadable` (patch), `build-broken` (build: the tester's test
+  or the developer's code), `no-new-test` (report),
+  `prompt-over-budget` (budget). No label, no state, no hop: the record
+  keeps the count by kind (`errors`), and its comment says the error and
+  when the role runs again. The step is due again on the same input
+  after 10 minutes (`state-retry`; before, `state-waits` with the time),
+  given what failed at the end of its task; 2 tries per kind within
+  24 h of that kind's first error (`line.ErrorBudget`). The next error
+  of the kind, or its 24 h passed, moves the issue to
+  `workline:blocked`, the error said (`machine-error-spent`). A new
+  input — the state entered anew, the body or labelling changed —
+  starts the count again. The developer's code that does not build is
+  asked again once in the run, with the error, as the tester's test is
+  ([#1083](https://github.com/JN0V/workline/issues/1083)); not when its
+  agent objects to a frozen test beside it: the tester answers that.
+  The tester's comment then says the line runs it again, never that it
+  blocks it.
+- **The code a role lacks is given**: the product owner naming the
+  code an issue is about (`sources`), its Scope left for that code, or
+  the tester answering `needs: <paths> — why` is a needs-input of the
+  engine (`needs-code`), never "no test possible". Due at once: the
+  role runs again in the same step, given it (`state-given`; its task
+  says so, the tester's gets those files). Said lacking again, the
+  step itself moves the issue to
+  `workline:blocked` for a person to name its files (`needs-spent`).
 - **Left free by the developer, due again**
   ([ADR-0059, amended](../adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#amendment-2026-11-02-a-ready-issue-left-free-wakes-the-developer-again)):
   a wake of the developer records when (`woke`) and the issues it held
@@ -457,14 +489,12 @@ whose result moves the issue to the next. The table is the routing's
   (`unheld`)
   ([#998](https://github.com/JN0V/workline/issues/998)). A record from before `woke` is due once
   where the developer wrote its comment. Never on a clock: no loop.
-- **A developer run lost is not acted**: a run the line woke that
+- **A developer run lost is a machine error**: a run the line woke that
   ends with no verdict read from its post (`engine-error`, as when
-  post dies; the run's result says `no-verdict`) reached nothing. Any
-  other error is not a loss: it may come after a push. The record's
-  comment says so, why first, and keeps
-  when (`lost`), a hop more; the step is due again, once
-  (`state-lost`), so a run lost each time ends at `max-hops`
-  ([#953](https://github.com/JN0V/workline/issues/953)).
+  post dies; the run's result says `no-verdict`) reached nothing
+  ([#953](https://github.com/JN0V/workline/issues/953)): of kind run,
+  as above. A record from before typed outcomes keeps when it was lost
+  (`lost`): read as one such error, run again, never written again.
 - **Refine's record says the reviewer was asked** on the body (`asked`),
   where the reviewer is routed on `issue`. Acted on with no such mark,
   its spec still waiting on a review, the step is due again, once: a
@@ -557,6 +587,12 @@ only then.
   it, its body's hash and its comments' — the base news is told
   against. A block the line makes (`hops-capped`, `tests-refused`)
   writes it at once.
+- **Blocked by the machine, before typed outcomes**: a record with no
+  version (`v`) whose reason is `tests-refused`'s or
+  `no-test-unsettled`'s may hold a machine error read as a verdict. It
+  is news: the product owner reads it again at once, not in a week;
+  the record then written has a version, so once
+  ([ADR-0063, migration](../adr/0063-every-open-issue-is-due-waiting-or-done.md#migration)).
 - **The developer's ask for its Scope**: first seen blocked, the
   comment blocking it holding the developer's `workline:scope-ask`
   mark, the product owner is woken at once (`state-revisit`), told the

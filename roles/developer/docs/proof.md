@@ -35,6 +35,12 @@ flowchart LR
 - **On the touched folders**: [below](#what-runs).
 - **Green**: tests reported, none red, the command exited 0.
 - **Red**: a test failed, errored or was skipped, or the command failed.
+- **Its code does not build**: the command failed, no test red. Never a
+  Draft for a typo: the agent is asked once more with the error
+  (`build-broken`); still so, nothing is claimed nor pushed, a machine
+  error the line runs again
+  ([#1083](https://github.com/JN0V/workline/issues/1083);
+  [the record](../../../docs/spec/routing.md#once-a-state-the-record)).
 - **Not run whole**: no `test-command`, a patch that does not apply, no
   report or one naming no test: not green, never a pass.
 

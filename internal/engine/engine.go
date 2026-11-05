@@ -98,6 +98,28 @@ const (
 	RevisitFromInput = "revisit-from"
 )
 
+// FailedInput is the input the line gives a step it runs again after a
+// machine error: what failed, said at the end of the agent's task
+// (ADR-0063, §6).
+const FailedInput = "failed"
+
+// NeedsInput is the input the line gives a role it runs again at once
+// for the code its agent said it lacked: the paths, comma-separated
+// (ADR-0063, §6).
+const NeedsInput = "needs"
+
+// withSection ends the task at file, when pre wrote one, with a section.
+func withSection(file, title, text string) error {
+	data, err := os.ReadFile(file)
+	if os.IsNotExist(err) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(file, []byte(strings.TrimRight(string(data), "\n")+"\n\n## "+title+"\n\n"+text+"\n"), 0o644)
+}
+
 // AIWaitsReady is what Result.AIWaits and WORKLINE_AI_WAITS hold on a
 // draft: the agent waits for the merge request to be marked ready.
 const AIWaitsReady = "ready"
@@ -647,6 +669,22 @@ func run(o Options, res *Result) error {
 			return err
 		}
 		questions = askedAgain(runDir, answered)
+	}
+	// A run again after a machine error carries what failed (ADR-0063,
+	// §6): the agent reads it, and its input is not the one that failed.
+	if failed := strings.TrimSpace(o.Inputs[FailedInput]); failed != "" {
+		if err := withSection(filepath.Join(runDir, "in", "task.md"), "Your last run on this failed", failed+
+			"\n\nThe engine could not use that run: answer again, whole, with this fixed."); err != nil {
+			return err
+		}
+	}
+	// Run again for the code its agent said it lacked: told what it is
+	// given now (ADR-0063, §6).
+	if needs := strings.TrimSpace(o.Inputs[NeedsInput]); needs != "" {
+		if err := withSection(filepath.Join(runDir, "in", "task.md"), "The code you said you lacked", "`"+strings.ReplaceAll(needs, ", ", "`, `")+
+			"`: given in this task, as far as it fits. Answer with it; name a file only if it is still missing."); err != nil {
+			return err
+		}
 	}
 	digest, err := dirDigest(filepath.Join(runDir, "in"))
 	if err != nil {

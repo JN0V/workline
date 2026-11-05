@@ -1,0 +1,4 @@
+# The agent writes no test: the code its test would call is not in its
+# task, and it names the file it lacks (ADR-0063, needs-input of the
+# engine; #1047), never "no test possible".
+- note: "needs: calc/calc.go — the Add a test of Mul is written beside is not given"

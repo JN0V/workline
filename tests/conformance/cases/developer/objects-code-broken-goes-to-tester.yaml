@@ -1,0 +1,39 @@
+case: developer/objects-code-broken-goes-to-tester
+about: >
+  Code that does not build beside an objection to a frozen test is no
+  machine error (ADR-0055, ADR-0063): the developer's agent says the
+  test cannot pass within its bounds. Its objection goes on the test's
+  line of the tester's Draft, for the tester to keep or rewrite; the
+  agent is not asked again for the build, and its pull request opens as
+  a Draft.
+given:
+  repo: tested-draft
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main workline/tester/issue-3 && git checkout -q main"
+  config:
+    roles:
+      tester:
+        settings:
+          test-command: >-
+            sh -n lib.sh || { printf '<testsuites><testsuite name="tests"><testcase classname="tests" name="test_add" time="0.01"/></testsuite></testsuites>' > {report}; exit 1; }; sh run-tests.sh {report}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:ready"]
+        body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        draft: true
+        comments: ["The tests of #3, frozen.\n\n<!-- workline:tester-record {\"issue\":3,\"base\":\"main\",\"files\":{\"tests/test_mul_by_zero.sh\":\"8f123a0bacbd681063880b867df38dd216784b97\",\"tests/test_mul_two_by_three.sh\":\"2dee0641bd7a79057ade7bff5af43b603125f543\"}} -->\n<!-- workline:sticky=tester/tests -->"]
+run: {develop: [], ai: "fake:developer-objects-code-broken"}
+expect:
+  status: pass
+  agent-calls: 1
+  no-findings: [{rule: build-broken}]
+  forge:
+    merge-requests:
+      - id: 1
+        comment-contains: ["The developer** objects to the tester's tests of #3"]
+      - {id: 2, branch: workline/developer/3, draft: true}

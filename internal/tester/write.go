@@ -151,6 +151,13 @@ func Pre(runDir, repo string) int {
 			sources = st.Sources
 		}
 	}
+	// The files its agent said it lacked at its last run, given now
+	// (ADR-0063, §6).
+	for _, p := range neededFiles(runDir) {
+		if !slices.Contains(sources, p) {
+			sources = append(sources, p)
+		}
+	}
 	if code, done := sentBack(runDir, repo, *is, comments); done {
 		return code
 	}
@@ -452,6 +459,9 @@ func Post(runDir, repo string) int {
 	if len(patches) == 0 {
 		// No new test fits: the kind of proof the agent named instead,
 		// recorded (ADR-0059, decision 4).
+		if paths, why, ok := needsOf(notes); ok {
+			return needed(runDir, repo, t, intents, paths, why)
+		}
 		if p, ok := proofOf(notes); ok {
 			return proved(runDir, repo, t, intents, p)
 		}

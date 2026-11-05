@@ -93,6 +93,9 @@ var traces = func() []trace {
 		// The developer's agent run failing once (seed 26 of the first
 		// seeded runs on these cases, frozen).
 		trace{name: "trial-3-error-code", file: "trial-3", fresh: true, end: "done", by: one("developer", machineError)},
+		// #1017: the tester's task over its context budget, its agent not
+		// asked: read as "no test proposed".
+		trace{name: "trial-35-over-budget", file: "trial-35", fresh: true, end: "done", by: one("tester", overBudget)},
 		// The product owner's answer unreadable twice in its run.
 		trace{name: "trial-35-po-unread", file: "trial-35", fresh: true, end: "done", by: map[string][]outcome{"product-owner": {malformed, malformed}}},
 		// Needs input, from each source: the engine (the product owner's
@@ -101,6 +104,8 @@ var traces = func() []trace {
 		// owner's question, unanswered: the issue waits on its reporter).
 		trace{name: "trial-35-needs-engine", file: "trial-35", fresh: true, end: "done", by: one("product-owner", needsEngine)},
 		trace{name: "trial-35-needs-po-test", file: "trial-35", fresh: true, end: "done", by: one("tester", needsRole)},
+		// #1047, #1059: the tester short of code says what it lacks.
+		trace{name: "trial-35-tester-needs", file: "trial-35", fresh: true, end: "done", by: one("tester", needsEngine)},
 		trace{name: "trial-35-needs-po-code", file: "trial-35", fresh: true, end: "done", by: one("developer", needsRole)},
 		trace{name: "trial-35-needs-person", file: "trial-35", fresh: true, end: "waiting:", by: one("product-owner", needsPerson)},
 	)

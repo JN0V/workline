@@ -204,6 +204,8 @@ step 1):
   seeded scripts: a malformed answer, a miscounted hunk, a test or code
   that does not build, needs-input from the engine, the product owner or
   a person. A role with no form today for a kind answers its progress.
+  A task over its context budget, the agent not asked, is a named
+  trace alone ([#1017](https://github.com/JN0V/workline/issues/1017)).
 - **The trial's answers replayed**: `traces/answers/<trace>/`, the agent
   answers its runs kept, given back role by role through the engine's
   own reader (a `cmd:` agent printing each); the trial's path, read from

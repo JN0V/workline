@@ -96,6 +96,11 @@ When no new test fits, the tester's agent names the proof that does
   ([refine](../../../docs/spec/backlog-acts/refine.md#no-test-possible-a-proof-kind-picked));
   with no agent, a person of the project names one in a comment,
   `proof: <kind> — why`.
+- **Short of code** (`needs: <paths> — why`): the agent lacks a file
+  its test needs, never "no test possible". The issue keeps its state,
+  the files said on it (`needs-code`); the line gives them to the
+  tester, run again at once; then a person if still lacking
+  ([the record](../../../docs/spec/routing.md#once-a-state-the-record)).
 - **Sent back unchanged**: the record keeps the digest of the body the
   tester read. The same body back in its tests, no kind picked, goes to
   `workline:blocked` with no agent, once, said on it

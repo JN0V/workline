@@ -864,6 +864,25 @@ func Post(runDir, repo string) int {
 	} else {
 		a.Code, a.Tests = written(patches)
 		p, u, caps, found := proven(runDir, repo, on, where, patches, a.Acceptance, flakyOf(b.Proof, s), s)
+		if p.Result == Red && len(p.Red) == 0 && len(caps) == 0 && !objects(kept) {
+			// Its code does not build, or breaks the run, no test red, and
+			// no objection to a frozen test beside it, the tester's: the
+			// agent's to mend, asked again once with the error, as the
+			// tester's test that does not build (#1083); still so, a
+			// machine error the line runs again (ADR-0063, I3). Nothing
+			// claimed nor opened.
+			v.Status, v.Again = verdict.Block, true
+			v.Summary = where + ": its code does not build"
+			v.Findings = append(v.Findings, verdict.Finding{Rule: "build-broken", Where: where,
+				Message: "its code does not build, or breaks the test run: " + p.Why})
+			if code := writeIntents(runDir, "", told); code != 0 {
+				return code
+			}
+			if code := writeVerdict(runDir, v); code != 0 {
+				return code
+			}
+			return 1 // blocked: the exit its verdict says (role contract)
+		}
 		a.Proof, a.Caps = &p, caps
 		a.Turns, a.Tokens, a.Cached, a.Tools, a.AgentFailed = u.Turns, u.Tokens, u.Cached, u.Tools, u.failed
 		v.Findings = append(v.Findings, found...)
@@ -1039,6 +1058,16 @@ func proven(runDir, repo, on, where string, patches []intent.Intention, also []s
 	}
 	found = append(found, unreported(where, u, s)...)
 	return p, u, caps, append(found, proofFindings(where, p, caps)...)
+}
+
+// objects says whether what its agent proposed, held to the bounds,
+// holds an objection to a frozen test: the tester's to answer, so its
+// code that does not build beside it is no machine error (ADR-0055).
+func objects(kept []intent.Intention) bool {
+	return slices.ContainsFunc(kept, func(i intent.Intention) bool {
+		m, _ := i.Value.(map[string]any)
+		return i.Kind == "comment" && m["sticky"] == "objection"
+	})
 }
 
 func writeMergeRequest(runDir string, mr map[string]any) error {

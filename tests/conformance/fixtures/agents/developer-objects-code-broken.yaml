@@ -1,0 +1,15 @@
+# The developer's agent whose code cannot pass a frozen test it objects
+# to: lib.sh does not parse, and the objection says why the test is
+# wrong. The objection goes to the tester, never lost as a machine error.
+- patch:
+    file: lib.sh
+    content: |
+      add() { echo $(($1 + $2)); }
+      mul() { echo $(($1 * $2));
+- comment:
+    objection:
+      test: tests/test_mul_by_zero.sh
+      line: 4
+      scenario: By zero
+      kind: contradicts
+      why: The scenario asks for 0; the test calls mul in a way lib.sh cannot define.

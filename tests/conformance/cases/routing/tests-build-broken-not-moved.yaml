@@ -1,0 +1,38 @@
+case: routing/tests-build-broken-not-moved
+about: >
+  A machine error moves nothing (ADR-0063, I3): on #3, waiting for its
+  tests, the tester's Go test does not build, asked once more with the
+  build's error, and still does not (#1048). Its run is a machine error,
+  never a verdict on the issue: #3 keeps workline:needs-tests and its
+  hops, the error said on it with when it runs again; never blocked. The
+  same reconcile run again starts nothing: it says it waits until then.
+  The tester's comment never says the line blocks it.
+given:
+  repo: go-tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  env: {ALWAYS: "1", WORKLINE_CLOCK: "2026-11-05T08:00:00Z"}
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+    routing: {events: {issue: [tester]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:needs-tests"]
+        body: "## Need\n\nWhen I total an order, I want to multiply a price by a count, so I need not add it up by hand.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n\n---\n\n## Verification\n\nA Go test.\n\n## Scope\n\n- `calc/calc.go`: a `Mul` function beside `Add`.\n"
+run: {route: reconcile, open-merge-request: true, ai: "cmd:sh $FIXTURES/agents/tester-go-wrong-call-once.sh", then: again}
+expect:
+  agent-calls: 2
+  findings:
+    - {rule: state-wakes, level: info, where: "#3", message: "its state, tests, wakes the tester"}
+    - {rule: build-broken}
+    - {rule: state-waits, level: info, where: "#3", message: "the tester's last run on it failed (build): run again from 2026-11-05 08:10 UTC"}
+  no-findings: [{rule: tests-refused}, {rule: machine-error-spent}]
+  not-pushed: [workline/tester/issue-3]
+  forge:
+    issues:
+      - id: 3
+        labels: ["workline:needs-tests"]
+        comment-contains: ["**workline's line** saw the tester's run on this issue fail (build).", "1 of 2 tries for this kind of error", "\"hops\":1", "\"errors\":{\"by\":{\"build\":1}"]
+        comment-lacks: ["the line blocks it"]
