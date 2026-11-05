@@ -8,7 +8,7 @@ given:
     - "git checkout -qb feat/sessions && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin feat/sessions && git checkout -q main"
   forge:
     statuses:
-      - {commit: "feat/sessions", name: workline/verdict, state: failure, description: "short: its review falls short (not-reviewed): no agent: only the rules that need no judgement ran", by: workline-bot}
+      - {commit: "feat/sessions", name: workline/verdict, state: failure, description: "short: [not-reviewed] its review falls short (not-reviewed): no agent: only the rules that need no judgement ran", by: workline-bot}
     merge-requests:
       - id: 7
         branch: feat/sessions

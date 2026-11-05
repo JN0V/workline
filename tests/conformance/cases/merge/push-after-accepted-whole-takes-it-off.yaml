@@ -1,0 +1,39 @@
+case: merge/push-after-accepted-whole-takes-it-off
+about: "A push after the whole yes takes it off (#1107): a person read the change whole and put `workline:accepted-whole`, an agent pushed, then the person put `workline:accepted` on the new head without reading it whole. The whole label is stale and alone taken off, said in a comment; the plain yes stays, which takes no review not whole: auto-merge stays off (ADR-0042)."
+given:
+  repo: documented
+  config: {merge: {autonomy: cautious}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb feat/sessions && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && echo more > more.txt && git add more.txt && git commit -qm 'feat(auth): one more thing' && git push -q origin feat/sessions && git checkout -q main"
+  forge:
+    statuses:
+      - {commit: "feat/sessions", name: workline/verdict, state: failure, description: "short: [review-not-whole] its review falls short (review-not-whole): the change would take 4 parts, past parts-max (2)", by: workline-bot}
+    merge-requests:
+      - id: 7
+        branch: feat/sessions
+        base: main
+        author: dana
+        labels: [workline:accepted-whole, workline:accepted]
+        label-events:
+          - {label: workline:accepted-whole, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T10:00:00Z"}
+          - {label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T11:00:00Z"}
+        pushes: [{head: "feat/sessions~1", at: "2026-01-04T09:00:00Z"}, {head: feat/sessions, at: "2026-01-04T10:30:00Z"}]
+        comments: []
+run: {follow: [--base, main], summary: true}
+expect:
+  status: pass
+  findings:
+    - {rule: accepted-reset, where: "#7", level: warn, message: "was pushed after @dana put `workline:accepted-whole`: that label taken off"}
+    - {rule: review-short, where: "#7", level: warn, message: "accepted by @dana, but its review falls short (review-not-whole)"}
+  no-findings: [{rule: auto-merge-on}]
+  summary-file: ["a person who read it whole puts `workline:accepted-whole`"]
+  forge:
+    merge-requests:
+      - id: 7
+        auto-merge: false
+        labels: [workline:accepted]
+        comments: 1
+        comment-contains: ["workline took `workline:accepted-whole` off"]
+    statuses:
+      - {commit: feat/sessions, name: workline/accepted, state: failure, by: workline-bot, description: "its review falls short (review-not-whole)"}

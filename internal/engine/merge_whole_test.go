@@ -1,28 +1,41 @@
 package engine
 
 import (
+	"slices"
+	"strings"
 	"testing"
 
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/verdict"
 )
 
-// A review not whole is named alone only when no agent was missing nor
-// failed: a person's reading takes that one only (#1107).
-func TestShortNamesNotWholeLast(t *testing.T) {
+// The short rules are kept with the verdict, every one: a person's
+// reading takes a review not whole only when it is the one short rule, and
+// never from a verdict an earlier workline kept, which named its first
+// only (#1107).
+func TestShortRulesKeptWhole(t *testing.T) {
 	v := HeadVerdict{Status: verdict.Pass, Findings: []verdict.Finding{
 		{Rule: notWhole, Message: "past parts-max"},
 		{Rule: "lens-failed", Message: "the agent failed"},
 	}}
-	if got := shortRule(v.short()); got != "lens-failed" {
-		t.Errorf("shortRule = %q, want lens-failed", got)
+	if got := v.shortRules(); !slices.Equal(got, []string{"lens-failed", notWhole}) {
+		t.Errorf("shortRules = %q, want lens-failed and %s", got, notWhole)
 	}
-	v.Findings = v.Findings[:1]
-	if got := shortRule(v.short()); got != notWhole {
-		t.Errorf("shortRule = %q, want %s", got, notWhole)
+	_, why := v.class()
+	rules, back := readRules(keptWhy(v.shortRules(), why))
+	if !slices.Equal(rules, []string{"lens-failed", notWhole}) || back != why {
+		t.Errorf("read back %q, %q; want both rules, %q", rules, back, why)
 	}
-	if got := shortRule("the line passed, every agent's review whole"); got != "" {
-		t.Errorf("shortRule of a pass = %q, want none", got)
+	if !strings.HasPrefix(why, shortSaid+"(lens-failed)") {
+		t.Errorf("why = %q, want lens-failed named first", why)
+	}
+	// Kept by an earlier workline: its text names the first rule only.
+	rules, back = readRules("its review falls short (review-not-whole): past parts-max")
+	if rules != nil || back != "its review falls short (review-not-whole): past parts-max" {
+		t.Errorf("an earlier verdict read %q, %q; want no rules, its text", rules, back)
+	}
+	if got := keptWhy(nil, "the line passed"); got != "the line passed" {
+		t.Errorf("a pass kept as %q, want its text alone", got)
 	}
 }
 

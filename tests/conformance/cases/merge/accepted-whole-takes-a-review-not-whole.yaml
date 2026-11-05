@@ -8,7 +8,7 @@ given:
     - "git checkout -qb feat/sessions && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin feat/sessions && git checkout -q main"
   forge:
     statuses:
-      - {commit: "feat/sessions", name: workline/verdict, state: failure, description: "short: its review falls short (review-not-whole): the change would take 4 parts, each within the role's context budget and diff-lines-max, past parts-max (2)", by: workline-bot}
+      - {commit: "feat/sessions", name: workline/verdict, state: failure, description: "short: [review-not-whole] its review falls short (review-not-whole): the change would take 4 parts, each within the role's context budget and diff-lines-max, past parts-max (2)", by: workline-bot}
     merge-requests:
       - id: 7
         branch: feat/sessions
