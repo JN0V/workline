@@ -1,0 +1,27 @@
+case: reviewer/picker-every-definition-of-a-name
+about: >
+  The code picker's contract, the reviewer's side (ADR-0063, step 4), on
+  DomoticsCore's own code as the C++ trial had it: #1057, the trial's
+  #35: a one-line issue naming a function defined in 7 module headers of
+  7 folders, and in tests. The spec's lenses are given the code it
+  names.
+given:
+  repo: reviewed
+  setup:
+    - |
+      cp -R "$FIXTURES/code/domoticscore/." .
+      git add . && git commit -qm 'feat: DomoticsCore, frozen from the C++ trial'
+    - |
+      mkdir -p docs && cat > docs/spec.md <<'MD'
+      # Hardcoded fallback versions in `getWebUIVersion()` drift from actual version
+
+      ## Need
+
+      | LO-12 | WebUI | Hardcoded fallback versions in `getWebUIVersion()` drift from actual version |
+      MD
+run: {review: [--spec, docs/spec.md], ai: "fake:review-nothing"}
+expect:
+  agent-calls: 1
+  run-files:
+    in/parts/1-lenses/task.md:
+      contains: ["mqtt ? mqtt->metadata.version : String(\"1.4.0\")", "ntp ? ntp->metadata.version : String(\"1.0.2\")", "ota ? ota->metadata.version : String(\"1.4.0\")", "storage ? storage->metadata.version : String(\"1.4.0\")", "wifi ? wifi->metadata.version : String(\"1.4.1\")", "led ? led->metadata.version : String(\"1.3.0\")", "sys ? sys->metadata.version : String(\"1.2.1\")"]

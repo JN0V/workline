@@ -1,0 +1,28 @@
+case: tester/picker-a-python-function
+about: >
+  The code picker's contract, the tester's side (ADR-0063, step 4), on
+  DomoticsCore's own code as the C++ trial had it: a Python module: a
+  function of a 299-line script. The task holds the code the issue
+  names, in its Need as in its Scope.
+given:
+  repo: tested
+  setup:
+    - |
+      cp -R "$FIXTURES/code/domoticscore/." .
+      git add . && git commit -qm 'feat: DomoticsCore, frozen from the C++ trial'
+    - |
+      git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "The version check skips the root library"
+        labels: ["workline:needs-tests"]
+        body: "## Need\n\n`check_component_versions()` reads every component's library.json but never the root's.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **By zero:** Given the library, When I multiply 5 by 0, Then I get 0.\n\n---\n\n## Verification\n\nA test a scenario.\n\n## Scope\n\n- `tools/check_versions.py`: `check_component_versions()`.\n"
+run: {test: [write, --issue, "3"], ai: "fake:tester-two-scenarios"}
+expect:
+  agent-calls: 1
+  run-files:
+    in/task.md:
+      contains: ["def check_component_versions(root: Path, verbose: bool = False) -> Tuple[bool, list]:", "    errors: list = []"]

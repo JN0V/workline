@@ -1,0 +1,30 @@
+case: tester/picker-a-method-out-of-its-class
+about: >
+  The code picker's contract, the tester's side (ADR-0063, step 4), on
+  DomoticsCore's own code as the C++ trial had it: #1064, the trial's
+  #36: two methods defined out of their class, deep in a 743-line
+  header, named in the Need, not the Scope. The task holds the code the
+  issue names, in its Need as in its Scope. Its code-lines-max is 1000,
+  as the trial's copy set it: the folder's headers are longer.
+given:
+  repo: tested
+  setup:
+    - |
+      cp -R "$FIXTURES/code/domoticscore/." .
+      git add . && git commit -qm 'feat: DomoticsCore, frozen from the C++ trial'
+    - |
+      git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}", code-lines-max: 1000}}}
+  forge:
+    issues:
+      - id: 3
+        title: "MQTT reconnect counter reset clears the statistics"
+        labels: ["workline:needs-tests"]
+        body: "## Need\n\n`resetReconnect()` zeroes `stats.reconnectCount`, and `updateStatistics()` then reports an uptime since the reset, not since the connection.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **By zero:** Given the library, When I multiply 5 by 0, Then I get 0.\n\n---\n\n## Verification\n\nA test a scenario.\n\n## Scope\n\n- `DomoticsCore-MQTT/include/DomoticsCore/`: the MQTT component.\n"
+run: {test: [write, --issue, "3"], ai: "fake:tester-two-scenarios"}
+expect:
+  agent-calls: 1
+  run-files:
+    in/task.md:
+      contains: ["inline void MQTTComponent::resetReconnect() {", "    stats.reconnectCount = 0;", "inline void MQTTComponent::updateStatistics() {", "        stats.uptime = (HAL::Platform::getMillis() - stateChangeTime) / 1000;"]

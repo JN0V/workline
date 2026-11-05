@@ -1,0 +1,29 @@
+case: tester/picker-a-symbol-past-the-first-lines
+about: >
+  The code picker's contract, the tester's side (ADR-0063, step 4), on
+  DomoticsCore's own code as the C++ trial had it: #1056, the trial's
+  #37: two static members of an 894-line header, declared at its top and
+  defined at its end. The task holds the code the issue names, in its
+  Need as in its Scope. Its code-lines-max is 600: the header is longer.
+given:
+  repo: tested
+  setup:
+    - |
+      cp -R "$FIXTURES/code/domoticscore/." .
+      git add . && git commit -qm 'feat: DomoticsCore, frozen from the C++ trial'
+    - |
+      git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}", code-lines-max: 600}}}
+  forge:
+    issues:
+      - id: 3
+        title: "`wsBuffer_` and `bufferLock_` defined in a header"
+        labels: ["workline:needs-tests"]
+        body: "## Need\n\n`wsBuffer_` and `bufferLock_` are declared in `DomoticsCore-WebUI/include/DomoticsCore/WebUI.h` (lines 82-83). Check where each is defined: two sources that include it fail to link.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **By zero:** Given the library, When I multiply 5 by 0, Then I get 0.\n\n---\n\n## Verification\n\nA test a scenario.\n\n## Scope\n\n- `DomoticsCore-WebUI/include/DomoticsCore/WebUI.h`: where `wsBuffer_` and `bufferLock_` are defined.\n"
+run: {test: [write, --issue, "3"], ai: "fake:tester-two-scenarios"}
+expect:
+  agent-calls: 1
+  run-files:
+    in/task.md:
+      contains: ["char WebUIComponent::wsBuffer_[WEBUI_WS_BUFFER_SIZE];", "HAL::Platform::RecursiveLock WebUIComponent::bufferLock_;"]

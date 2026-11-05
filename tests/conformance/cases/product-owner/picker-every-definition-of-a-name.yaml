@@ -1,0 +1,24 @@
+case: product-owner/picker-every-definition-of-a-name
+about: >
+  The code picker's contract, the product owner's side (ADR-0063, step
+  4), on DomoticsCore's own code as the C++ trial had it: #1057, the
+  trial's #35: a one-line issue naming a function defined in 7 module
+  headers of 7 folders, and in tests. The issue's task holds the code it
+  names, within the role's budget, and the agent is asked.
+given:
+  repo: backlog
+  setup:
+    - |
+      cp -R "$FIXTURES/code/domoticscore/." .
+      git add . && git commit -qm 'feat: DomoticsCore, frozen from the C++ trial'
+  forge:
+    issues:
+      - {id: 9, title: "Hardcoded fallback versions in `getWebUIVersion()` drift from actual version", body: "| LO-12 | WebUI | Hardcoded fallback versions in `getWebUIVersion()` drift from actual version |", author: ann, insider: true, labels: [workline:to-refine], comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: issue, target: {issue: 9}, ai: fake:proposes-nothing}
+expect:
+  status: pass
+  agent-calls: 1
+  no-findings: [{rule: prompt-over-budget}]
+  run-files:
+    in/task.md:
+      contains: ["mqtt ? mqtt->metadata.version : String(\"1.4.0\")", "ntp ? ntp->metadata.version : String(\"1.0.2\")", "ota ? ota->metadata.version : String(\"1.4.0\")", "storage ? storage->metadata.version : String(\"1.4.0\")", "wifi ? wifi->metadata.version : String(\"1.4.1\")", "led ? led->metadata.version : String(\"1.3.0\")", "sys ? sys->metadata.version : String(\"1.2.1\")"]

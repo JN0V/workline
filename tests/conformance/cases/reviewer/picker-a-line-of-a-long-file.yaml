@@ -1,0 +1,31 @@
+case: reviewer/picker-a-line-of-a-long-file
+about: >
+  The code picker's contract, the reviewer's side (ADR-0063, step 4), on
+  DomoticsCore's own code as the C++ trial had it: #1063, the trial's
+  #33: an issue naming one line of a 7,576-line roadmap. The spec's
+  lenses are given the code it names.
+given:
+  repo: reviewed
+  setup:
+    - |
+      cp -R "$FIXTURES/code/domoticscore/." .
+      git add . && git commit -qm 'feat: DomoticsCore, frozen from the C++ trial'
+    - |
+      mkdir -p docs
+      awk 'BEGIN { for (i = 1; i <= 7576; i++) if (i == 6353) print "| LO-32 | WebUI | `wsBuffer_[]` static member defined in header — ODR violation risk in multi-TU builds |"; else print "| LO-" i " | Core | an item of the roadmap, line " i " |" }' > docs/CODE-ROADMAP.md
+      git add docs && git commit -qm 'docs: the roadmap, 7,576 lines'
+    - |
+      mkdir -p docs && cat > docs/spec.md <<'MD'
+      # The roadmap's LO-32 item is done
+
+      ## Need
+
+      The item at `docs/CODE-ROADMAP.md:6353` was fixed since: strike it.
+      MD
+run: {review: [--spec, docs/spec.md], ai: "fake:review-nothing"}
+expect:
+  agent-calls: 1
+  run-files:
+    in/parts/1-lenses/task.md:
+      contains: ["| LO-32 | WebUI | `wsBuffer_[]` static member defined in header", "an item of the roadmap, line 6352 |", "an item of the roadmap, line 6354 |"]
+      not-contains: ["an item of the roadmap, line 1 |", "an item of the roadmap, line 400 |"]
