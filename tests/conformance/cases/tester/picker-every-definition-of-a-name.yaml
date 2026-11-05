@@ -20,7 +20,7 @@ given:
       - id: 3
         title: "Hardcoded fallback versions in `getWebUIVersion()` drift from actual version"
         labels: ["workline:needs-tests"]
-        body: "## Need\n\n| LO-12 | WebUI | Hardcoded fallback versions in `getWebUIVersion()` drift from actual version |\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **By zero:** Given the library, When I multiply 5 by 0, Then I get 0.\n\n---\n\n## Verification\n\nA test a scenario.\n\n## Scope\n\n- `getWebUIVersion()` in each module's WebUI provider: its hardcoded fallback.\n"
+        body: "## Need\n\n| WebUI | Hardcoded fallback versions in `getWebUIVersion()` drift from actual version |\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **By zero:** Given the library, When I multiply 5 by 0, Then I get 0.\n\n---\n\n## Verification\n\nA test a scenario.\n\n## Scope\n\n- `getWebUIVersion()` in each module's WebUI provider: its hardcoded fallback.\n"
 run: {test: [write, --issue, "3"], ai: "fake:tester-two-scenarios"}
 expect:
   agent-calls: 1

@@ -13,11 +13,11 @@ given:
       git add . && git commit -qm 'feat: DomoticsCore, frozen from the C++ trial'
     - |
       mkdir -p docs
-      awk 'BEGIN { for (i = 1; i <= 7576; i++) if (i == 6353) print "| LO-32 | WebUI | `wsBuffer_[]` static member defined in header — ODR violation risk in multi-TU builds |"; else print "| LO-" i " | Core | an item of the roadmap, line " i " |" }' > docs/CODE-ROADMAP.md
+      awk 'BEGIN { for (i = 1; i <= 7576; i++) if (i == 6353) print "| WebUI | `wsBuffer_[]` static member defined in header — ODR violation risk in multi-TU builds |"; else print "| Core | an item of the roadmap, line " i " |" }' > docs/CODE-ROADMAP.md
       git add docs && git commit -qm 'docs: the roadmap, 7,576 lines'
   forge:
     issues:
-      - {id: 9, title: "The roadmap's LO-32 item is done", body: "The item at `docs/CODE-ROADMAP.md:6353` was fixed since: strike it.", author: ann, insider: true, labels: [workline:to-refine], comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 9, title: "A roadmap item is done", body: "The item at `docs/CODE-ROADMAP.md:6353` was fixed since: strike it.", author: ann, insider: true, labels: [workline:to-refine], comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
 run: {role: product-owner, event: issue, target: {issue: 9}, ai: fake:proposes-nothing}
 expect:
   status: pass
@@ -25,5 +25,5 @@ expect:
   no-findings: [{rule: prompt-over-budget}]
   run-files:
     in/task.md:
-      contains: ["| LO-32 | WebUI | `wsBuffer_[]` static member defined in header", "an item of the roadmap, line 6352 |", "an item of the roadmap, line 6354 |"]
+      contains: ["| WebUI | `wsBuffer_[]` static member defined in header", "an item of the roadmap, line 6352 |", "an item of the roadmap, line 6354 |"]
       not-contains: ["an item of the roadmap, line 1 |", "an item of the roadmap, line 400 |"]

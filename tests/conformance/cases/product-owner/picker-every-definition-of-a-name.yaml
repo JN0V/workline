@@ -13,7 +13,7 @@ given:
       git add . && git commit -qm 'feat: DomoticsCore, frozen from the C++ trial'
   forge:
     issues:
-      - {id: 9, title: "Hardcoded fallback versions in `getWebUIVersion()` drift from actual version", body: "| LO-12 | WebUI | Hardcoded fallback versions in `getWebUIVersion()` drift from actual version |", author: ann, insider: true, labels: [workline:to-refine], comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 9, title: "Hardcoded fallback versions in `getWebUIVersion()` drift from actual version", body: "| WebUI | Hardcoded fallback versions in `getWebUIVersion()` drift from actual version |", author: ann, insider: true, labels: [workline:to-refine], comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
 run: {role: product-owner, event: issue, target: {issue: 9}, ai: fake:proposes-nothing}
 expect:
   status: pass

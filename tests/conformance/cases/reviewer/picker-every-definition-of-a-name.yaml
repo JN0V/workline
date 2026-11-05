@@ -17,7 +17,7 @@ given:
 
       ## Need
 
-      | LO-12 | WebUI | Hardcoded fallback versions in `getWebUIVersion()` drift from actual version |
+      | WebUI | Hardcoded fallback versions in `getWebUIVersion()` drift from actual version |
       MD
 run: {review: [--spec, docs/spec.md], ai: "fake:review-nothing"}
 expect:
