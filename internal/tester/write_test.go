@@ -5,7 +5,29 @@ import (
 	"slices"
 	"strings"
 	"testing"
+
+	"github.com/JN0V/workline/internal/verdict"
 )
+
+// What a test assumes, said in a note `assumes: …`, is listed on the
+// Draft, one line each; an empty one, or another note, is not.
+func TestAssumedOnTheDraft(t *testing.T) {
+	notes := []string{"assumes: stubDrop() — read in the stub", "  assumes:  ", "Two by three: no test",
+		"assumes: a clock helper\nset first"}
+	got := assumed(notes)
+	if want := []string{"stubDrop() — read in the stub", "a clock helper\nset first"}; !slices.Equal(got, want) {
+		t.Fatalf("assumed %q, want %q", got, want)
+	}
+	body := draftBody(task{Issue: 3}, nil, nil, got, nil, &verdict.Verdict{Summary: "red"})
+	for _, w := range []string{"**Assumed**", "- stubDrop() — read in the stub\n", "- a clock helper set first\n"} {
+		if !strings.Contains(body, w) {
+			t.Errorf("the Draft lacks %q:\n%s", w, body)
+		}
+	}
+	if body := draftBody(task{Issue: 3}, nil, nil, nil, nil, &verdict.Verdict{Summary: "red"}); strings.Contains(body, "Assumed") {
+		t.Errorf("nothing assumed, yet said:\n%s", body)
+	}
+}
 
 // A pattern gives the code it matches as the code the Scope names, its
 // tests given beside, once (#801); one matching tests alone gives them.

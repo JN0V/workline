@@ -204,6 +204,19 @@ func TestClaudeStream(t *testing.T) {
 	}
 }
 
+// TestReadsFiles: only claude, by any of its specs, is given a read tree
+// (ADR-0063 §8); a look-alike is not.
+func TestReadsFiles(t *testing.T) {
+	for spec, want := range map[string]bool{
+		"claude": true, "claude:sonnet": true, "claude:sonnet@high": true, "claude:@low": true,
+		"claudex": false, "cmd:claude -p": false, "fake:x": false, "none": false, "": false,
+	} {
+		if got := ReadsFiles(spec); got != want {
+			t.Errorf("ReadsFiles(%q) = %v, want %v", spec, got, want)
+		}
+	}
+}
+
 // TestReadLog: the files claude's Read tool was given in its read tree
 // are logged once each, in order, with the blob the tree's commit holds
 // (ADR-0063 §3); a folder, a file not there or one out of the tree with

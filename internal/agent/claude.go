@@ -65,13 +65,15 @@ func (c claude) Propose(req Request) (Call, error) {
 		reads = ReadTree(req.RunDir)
 	}
 	if reads != "" {
-		// An agent that reads (ADR-0063 §8): Read, Glob and Grep, each
-		// allowed so that none waits on a person, no shell, nothing it
-		// may write; its prompt the role's alone, as with no tools; each
-		// message on stdout, to log what it read. The person's settings
-		// only, as in a worktree.
+		// An agent that reads (ADR-0063 §8): Read, Glob and Grep, no
+		// shell, nothing it may write; none allowed by name, so that
+		// dontAsk keeps them in the tree, where Claude Code reads without
+		// asking: a file out of it (the clone's .git/config, a CI token
+		// there) is denied, never read. Its prompt the role's alone, as
+		// with no tools; each message on stdout, to log what it read. The
+		// person's settings only, as in a worktree.
 		args = []string{"-p", "--output-format", "stream-json", "--verbose", "--tools", claudeReadTools,
-			"--allowedTools", claudeReadTools, "--permission-mode", "dontAsk", "--strict-mcp-config",
+			"--permission-mode", "dontAsk", "--strict-mcp-config",
 			"--setting-sources", "user", "--no-session-persistence", "--system-prompt", system}
 	}
 	if tree != "" {
@@ -322,7 +324,7 @@ func readLog(tree string, read []string) []string {
 		root = tree
 	}
 	rels := make([]string, len(read))
-	args := []string{"-C", tree, "ls-tree", "HEAD", "--"}
+	args := []string{"-C", tree, "ls-tree", "-z", "HEAD", "--"}
 	for i, p := range read {
 		abs := filepath.Clean(p)
 		if !filepath.IsAbs(abs) {
@@ -339,7 +341,7 @@ func readLog(tree string, read []string) []string {
 	}
 	blobs := map[string]string{}
 	if out, err := exec.Command("git", args...).Output(); err == nil {
-		for _, l := range strings.Split(string(out), "\n") {
+		for _, l := range strings.Split(string(out), "\x00") { // -z: paths unquoted
 			meta, path, ok := strings.Cut(l, "\t")
 			if f := strings.Fields(meta); ok && len(f) == 3 && f[1] == "blob" {
 				blobs[path] = f[2]
