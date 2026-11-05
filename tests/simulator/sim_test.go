@@ -108,6 +108,9 @@ var traces = func() []trace {
 		trace{name: "trial-35-tester-needs", file: "trial-35", fresh: true, end: "done", by: one("tester", needsEngine)},
 		trace{name: "trial-35-needs-po-code", file: "trial-35", fresh: true, end: "done", by: one("developer", needsRole)},
 		trace{name: "trial-35-needs-person", file: "trial-35", fresh: true, end: "waiting:", by: one("product-owner", needsPerson)},
+		// #1061: the developer's new test file beside its Scope, alone,
+		// as the trial's round wrote it: kept by the write fence, no ask.
+		trace{name: "trial-35-test-beside", file: "trial-35", fresh: true, end: "done", by: one("developer", testBeside)},
 	)
 	for _, n := range trial {
 		f := fmt.Sprintf("trial-%d", n)

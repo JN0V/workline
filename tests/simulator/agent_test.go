@@ -36,6 +36,10 @@ const (
 	needsEngine  outcome = "needs-engine"
 	needsRole    outcome = "needs-role"
 	needsPerson  outcome = "needs-person"
+	// testBeside: the developer's new test file alone, beside the header
+	// the Scope names, in its component's test folder (#1061, ADR-0063
+	// §9): its fix is the next call's.
+	testBeside outcome = "test-beside"
 	replayed     outcome = "replayed"
 	// replayedUnread: the trial's answer, which the engine's reader could
 	// not read: a machine error, counted against the budget.
@@ -176,6 +180,11 @@ func (a *simAgent) answerOf(kind outcome, role string, task []byte) (outcome, st
 		file, content := a.testOf(task)
 		return kind, diffNew(file, content, -3)
 	case kind == hunk && role == "developer":
+		if file, code, ok := a.goCode(task); ok {
+			// On a Go issue, in the file its progress writes: within its
+			// bounds, the miscount the only fault.
+			return kind, diffWhole(file, code, code+goFix, -2)
+		}
 		h := headerIn(task, "## What you may change")
 		old, _ := os.ReadFile(filepath.Join(a.work, "repo", h))
 		return kind, diffWhole(h, string(old), string(old)+fix, -2)
@@ -191,6 +200,9 @@ func (a *simAgent) answerOf(kind outcome, role string, task []byte) (outcome, st
 		}
 		return kind, patch(file, content)
 	case kind == broken && role == "developer":
+		if file, code, ok := a.goCode(task); ok {
+			return kind, patch(file, code+"\nfunc fixedISSUE( bool { return true }\n")
+		}
 		h := headerIn(task, "## What you may change")
 		old, _ := os.ReadFile(filepath.Join(a.work, "repo", h))
 		return kind, patch(h, string(old)+"\nnamespace DomoticsCore {\ninline bool fixed_ISSUE( { return true; }\n}  // namespace DomoticsCore\n")
@@ -214,6 +226,10 @@ func (a *simAgent) answerOf(kind outcome, role string, task []byte) (outcome, st
 	case kind == needsRole && role == "tester":
 		// No test possible: the product owner decides.
 		return kind, "- note: \"proof: none — the scenario reads a person's screen, no test can see it\"\n"
+	case kind == testBeside && role == "developer":
+		h := headerIn(task, "## What you may change")
+		return kind, patch(componentOf(h)+"/test/test_more_ISSUE/test_more_ISSUE.cpp",
+			fmt.Sprintf("#include <unity.h>\n#include <DomoticsCore/%s>\n\nvoid test_more(void) { TEST_ASSERT_TRUE(true); }\n\nint main() {\n    UNITY_BEGIN();\n    RUN_TEST(test_more);\n    return UNITY_END();\n}\n", path.Base(h)))
 	case kind == needsRole && role == "developer":
 		// A file outside its Scope: the product owner widens it.
 		return kind, patch(outside(headerIn(task, "## What you may change")), "#pragma once\n// what the fix needs here\n")
@@ -324,17 +340,31 @@ func (a *simAgent) progressOf(role string, task []byte) string {
 	case "tester":
 		return patch(a.testOf(task))
 	case "developer":
-		if _, ok := headerFound(task, "## What you may change"); !ok {
-			if d, ok := a.goDir(task, "## What you may change"); ok {
-				file, code := a.goFile(d)
-				return patch(file, code+"\n// fixedISSUE is the fix.\nfunc fixedISSUE() bool { return true }\n")
-			}
+		if file, code, ok := a.goCode(task); ok {
+			return patch(file, code+goFix)
 		}
 		h := headerIn(task, "## What you may change")
 		code, _ := os.ReadFile(filepath.Join(a.work, "repo", h))
 		return patch(h, string(code)+fix)
 	}
 	return productOwnerOf(task)
+}
+
+// goFix is the developer's code on a Go issue: what its tests call.
+const goFix = "\n// fixedISSUE is the fix.\nfunc fixedISSUE() bool { return true }\n"
+
+// goCode is the Go file the developer's code goes in, and its content,
+// when the task's bounds name no header but a Go package of the fixture.
+func (a *simAgent) goCode(task []byte) (string, string, bool) {
+	if _, ok := headerFound(task, "## What you may change"); ok {
+		return "", "", false
+	}
+	d, ok := a.goDir(task, "## What you may change")
+	if !ok {
+		return "", "", false
+	}
+	file, code := a.goFile(d)
+	return file, code, true
 }
 
 // goPath is a path a task names in backticks.
@@ -409,6 +439,21 @@ func (a *simAgent) testOf(task []byte) (string, string) {
 
 // productOwnerOf is the product owner's answer that moves the issue on.
 func productOwnerOf(task []byte) string {
+	if m := sentBack.FindSubmatch(task); m != nil {
+		// The developer's code needs files outside the Scope (ADR-0063,
+		// §9): the Scope widened with them, its own kept, then ready.
+		files := strings.Split(string(m[1]), "`, `")
+		scope := strings.TrimSpace(sectionOf(task, "## Scope"))
+		for _, f := range files {
+			scope += fmt.Sprintf("\n- `%s`: what the developer's code needs.", f)
+		}
+		q := make([]string, len(files))
+		for i, f := range files {
+			q[i] = strconv.Quote(f)
+		}
+		return fmt.Sprintf("- refine: {issue: ISSUE, scope: %q, sources: [%s], why: \"the developer's code needs them\"}\n- ready: {issue: ISSUE, why: \"its sections are there\"}\n",
+			strings.TrimSpace(scope), strings.Join(q, ", "))
+	}
 	switch {
 	case strings.Contains(string(task), "Blocked (workline:blocked)"):
 		// Read again, what blocked it gone: back to the state it was
@@ -424,6 +469,23 @@ func productOwnerOf(task []byte) string {
 		return "- ready: {issue: ISSUE, why: \"the suite proves it\", proof: {kind: existing-suite, reason: \"the suite runs the code it changes\"}}\n"
 	}
 	return "- ready: {issue: ISSUE, why: \"its sections are there\"}\n"
+}
+
+// sentBack is the product owner's task on an issue the developer sent
+// back to refine for files outside its Scope: the files.
+var sentBack = regexp.MustCompile("Sent back to refine by the developer: its code needs `([^\\n]+?)`, outside")
+
+// sectionOf is the text of the task's section from, up to the next
+// heading of its level or above.
+func sectionOf(task []byte, from string) string {
+	_, after, ok := strings.Cut(string(task), from+"\n")
+	if !ok {
+		return ""
+	}
+	if i := regexp.MustCompile(`(?m)^#{1,2} `).FindStringIndex(after); i != nil {
+		after = after[:i[0]]
+	}
+	return after
 }
 
 // unblockTo is the state a blocked issue's task offers it back to, when
