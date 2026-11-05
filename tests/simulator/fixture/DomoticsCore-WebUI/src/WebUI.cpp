@@ -2,7 +2,7 @@
 
 namespace DomoticsCore {
 
-std::string WebUIComponent::wsBuffer_;
+char WebUIComponent::wsBuffer_[WEBUI_WS_BUFFER_SIZE];
 std::mutex WebUIComponent::bufferLock_;
 
 }  // namespace DomoticsCore
