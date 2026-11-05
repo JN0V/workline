@@ -1,3 +1,7 @@
 # Cases the engine does not pass yet. The suite runs them anyway and fails
 # if one starts passing while still listed here.
 routing/ready-overlap-gone-wait-said
+# The code picker: the files the agent asked for given after the named
+# ones, and a binary file given raw (#1089's review).
+product-owner/picker-a-binary-file-not-given
+tester/picker-the-files-asked-for-given-first
