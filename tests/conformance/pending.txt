@@ -1,3 +1,6 @@
 # Cases the engine does not pass yet. The suite runs them anyway and fails
 # if one starts passing while still listed here.
 routing/ready-overlap-gone-wait-said
+# The product owner names the code the picker gave as sources: its Scope
+# left out as unread (#1089).
+product-owner/picker-sources-given-scope-written

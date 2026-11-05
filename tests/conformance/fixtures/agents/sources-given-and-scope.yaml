@@ -1,0 +1,14 @@
+# The product owner names, as #9's sources, the file whose code it was
+# given, and writes its Scope from it in the same run (#1089, the C++
+# copy's #37).
+- sources:
+    issue: 9
+    sources: [src/export/csv.go]
+    quote: {path: src/export/csv.go, text: "func WriteRows(rows []string, write func(string)) {"}
+    why: "#9's WriteRows is defined here."
+- refine:
+    issue: 9
+    scope: "`src/export/csv.go`: `WriteRows` writes every row."
+    sources: [src/export/csv.go]
+    verification: "A test writes three rows and reads three lines back."
+    why: "Need and Validation are there; Verification and Scope are not."
