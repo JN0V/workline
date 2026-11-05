@@ -68,6 +68,11 @@ first rule that matches refuses the whole patch:
     Scope `Storage/include/Storage.h`;
   - the root is a home only to a Scope file at the root: a Scope
     `src/x.py` lets in no `tests/test_x.py`;
+  - a kept test stays the fence's in the next rounds, its record naming
+    it, though the pull request's head holds it;
+  - a folder pattern lets in any new file under it: `*/test/**` takes a
+    `test/CMakeLists.txt` or a `conftest.py` too; name files
+    (`**/test_*.cpp`) for tests alone;
   - said and folded in: listed on the pull request and on the issue
     (`workline:scope-kept`), added to the Scope at the product owner's
     next refine ([below](#asking-the-product-owner-for-files)).
