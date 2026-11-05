@@ -1,6 +1,10 @@
 package agent
 
 import (
+	"os"
+	"os/exec"
+	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -186,7 +190,7 @@ func TestClaudeStream(t *testing.T) {
 {"type":"assistant","message":{"content":[{"type":"tool_use","name":"Bash"},{"type":"tool_use","name":"Read"}]}}
 {"type":"result","subtype":"success","num_turns":3,"result":"[]","modelUsage":{"claude-sonnet-5":{"inputTokens":10,"outputTokens":5}}}
 `
-	result, tools := claudeStream([]byte(stream))
+	result, tools, _ := claudeStream([]byte(stream))
 	var call Call
 	r, ok := claudeAnswer(result, &call)
 	if !ok || r.Result != "[]" || call.Turns != 3 || call.TokensIn+call.TokensOut != 15 {
@@ -195,7 +199,39 @@ func TestClaudeStream(t *testing.T) {
 	if len(tools) != 2 || tools["Read"] != 2 || tools["Bash"] != 1 {
 		t.Errorf("tools counted %v, want Read 2, Bash 1", tools)
 	}
-	if out, _ := claudeStream([]byte("not json")); string(out) != "not json" {
+	if out, _, _ := claudeStream([]byte("not json")); string(out) != "not json" {
 		t.Errorf("no result message: stdout not kept as it came: %q", out)
+	}
+}
+
+// TestReadLog: the files claude's Read tool was given in its read tree
+// are logged once each, in order, with the blob the tree's commit holds
+// (ADR-0063 §3); a folder, a file not there or one out of the tree with
+// none.
+func TestReadLog(t *testing.T) {
+	stream := `{"type":"assistant","message":{"content":[{"type":"tool_use","name":"Read","input":{"file_path":"a.txt"}}]}}
+{"type":"assistant","message":{"content":[{"type":"tool_use","name":"Grep","input":{"pattern":"x"}},{"type":"tool_use","name":"Read","input":{"file_path":"a.txt"}}]}}
+{"type":"assistant","message":{"content":[{"type":"tool_use","name":"Read","input":{"file_path":"/etc/hostname"}},{"type":"tool_use","name":"Read","input":{"file_path":"gone.txt"}}]}}
+{"type":"result","subtype":"success","result":"[]"}
+`
+	_, tools, read := claudeStream([]byte(stream))
+	if tools["Read"] != 4 || !slices.Equal(read, []string{"a.txt", "/etc/hostname", "gone.txt"}) {
+		t.Fatalf("reads %v (tools %v), want a.txt, /etc/hostname, gone.txt once each", read, tools)
+	}
+	t.Setenv("GIT_CONFIG_GLOBAL", os.DevNull)
+	tree := t.TempDir()
+	if err := os.WriteFile(filepath.Join(tree, "a.txt"), []byte("a\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	for _, args := range [][]string{{"init", "-q"}, {"add", "a.txt"}, {"-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "-m", "a"}} {
+		if out, err := exec.Command("git", append([]string{"-C", tree}, args...)...).CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %v: %s", args, err, out)
+		}
+	}
+	read[0] = filepath.Join(tree, "a.txt") // as claude gives it: absolute
+	got := readLog(tree, read)
+	want := []string{"78981922613b2afb6025042ff6bd878ac1994e85 a.txt", "- /etc/hostname", "- gone.txt"}
+	if !slices.Equal(got, want) {
+		t.Errorf("read log %q, want %q", got, want)
 	}
 }

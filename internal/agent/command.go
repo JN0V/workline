@@ -40,6 +40,22 @@ func Worktree(runDir string) string {
 	return dir
 }
 
+// ReadTreeDir is the folder of a run where a role's pre checks out the
+// code its agent reads, never edits: an agent that reads files itself
+// gets read-only tools there (ReadsFiles, ADR-0063 §8); any other,
+// a cmd: agent among them, never sees it, and its task is the whole of
+// what it reads.
+const ReadTreeDir = "readtree"
+
+// ReadTree is the run's read-only tree, "" when its role made none.
+func ReadTree(runDir string) string {
+	dir := filepath.Join(runDir, ReadTreeDir)
+	if st, err := os.Stat(dir); err != nil || !st.IsDir() {
+		return ""
+	}
+	return dir
+}
+
 func (c command) Propose(req Request) (Call, error) {
 	call := Call{Agent: "cmd", Tier: req.tier(), Effort: req.Role.Model.Effort}
 	call.Asked = call.Tier
