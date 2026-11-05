@@ -23,6 +23,9 @@ style, beside the tests already there:
   config at the null device (`GIT_CONFIG_GLOBAL`, in Go
   `t.Setenv("GIT_CONFIG_GLOBAL", os.DevNull)`), and gives each commit
   its own name and email. A person's hooks or settings never decide it.
+- **No tracker code** from the issue (`BUG-49`, `AC-3`) in a test, its
+  comments included: a reader of the code cannot look it up, and the
+  lint refuses it. Say what it refers to.
 - A scenario no test can check (a person's look, a feeling): say it in a
   `note`, the scenario's name first, then why. Never fake a test for it.
 - A scenario of behaviour kept as it is today ("as today", "unchanged",
