@@ -1,0 +1,33 @@
+case: tester/picker-unbalanced-braces-given-whole
+about: >
+  Braces are counted with no parser: a regular expression's brace
+  (`/\{/`) or the branches of an `#if` each opening one leave a file's
+  count unbalanced, and an outline from it would hide the rest of the
+  file. Such a file has no declarations: it is given whole while it
+  fits, as a file with no outline is, never a body cut wrong.
+given:
+  repo: tested
+  setup:
+    - |
+      cp -R "$FIXTURES/code/closure/unbalanced/." .
+      git add . && git commit -qm 'feat: a lexer in TypeScript'
+    - |
+      git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}", test-paths: ["test/**"]}}}
+  forge:
+    issues:
+      - id: 3
+        title: "A cart's text with a brace loses a line"
+        labels: ["workline:needs-tests"]
+        body: "## Need\n\nA cart's text holding a brace loses the line after it.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **By zero:** Given the library, When I multiply 5 by 0, Then I get 0.\n\n---\n\n## Verification\n\nA test a scenario.\n\n## Scope\n\n- `src/cart.ts`: `lines()` keeps every line.\n"
+run: {test: [write, --issue, "3"], ai: "fake:tester-two-scenarios"}
+expect:
+  agent-calls: 1
+  run-files:
+    in/task.md:
+      contains:
+        - "### `src/lexer.ts`\n"
+        - "lexer body: split"
+        - "export function isWord(token: string): boolean {"
+      not-contains: ["### `src/lexer.ts` (12 lines: its declarations"]

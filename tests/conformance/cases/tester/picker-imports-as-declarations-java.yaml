@@ -1,0 +1,35 @@
+case: tester/picker-imports-as-declarations-java
+about: >
+  The tester gets what its test builds against, as declarations (the C++
+  copy's #36), in Java. A record's header holds its components
+  (`public record Amount(long cents, Code unit) {`): it is a container,
+  its methods kept, each body cut to `…`. Imports name a package and a
+  class: `shop.money.Amount` is `shop/money/Amount.java`.
+given:
+  repo: tested
+  setup:
+    - |
+      cp -R "$FIXTURES/code/closure/java/." .
+      git add . && git commit -qm 'feat: a shop in Java'
+    - |
+      git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}", test-paths: ["src/test/**"]}}}
+  forge:
+    issues:
+      - id: 3
+        title: "A cart of two currencies adds them"
+        labels: ["workline:needs-tests"]
+        body: "## Need\n\nA cart holding euros and dollars sums them as one: its total is wrong.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **By zero:** Given the library, When I multiply 5 by 0, Then I get 0.\n\n---\n\n## Verification\n\nA test a scenario.\n\n## Scope\n\n- `src/main/java/shop/Cart.java`: `total()` refuses two currencies.\n"
+run: {test: [write, --issue, "3"], ai: "fake:tester-two-scenarios"}
+expect:
+  agent-calls: 1
+  run-files:
+    in/task.md:
+      contains:
+        - "### `src/main/java/shop/money/Amount.java` (19 lines: its declarations, each body left out as `…`, imported by `src/main/java/shop/Cart.java`)"
+        - "public record Amount(long cents, Code unit) {\n    public static Amount zero() { … }\n    public Amount plus(Amount other) { … }"
+        - "### `src/main/java/shop/currency/Code.java` (20 lines: its declarations, each body left out as `…`, imported by `src/main/java/shop/money/Amount.java`)"
+        - "    public static Code parse(String text) { … }"
+        - "`src/main/java/shop/rates/Rates.java` (imported)"
+      not-contains: ["money body", "currency body", "rates body"]
