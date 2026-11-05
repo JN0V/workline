@@ -514,23 +514,34 @@ var (
 // fallback is the header a task naming none gets: the core's.
 const fallback = "DomoticsCore-Core/include/DomoticsCore/EventBus.h"
 
-// headerFound is the first header the task names from its section from
-// on, and whether there is one.
+// headerFound is the first header the task's section from names, and
+// whether there is one: what the product owner wrote there, not the code
+// the picker gave below it, found by the names the issue uses, in any
+// file of the project (ADR-0063 §8).
 func headerFound(task []byte, from string) (string, bool) {
 	if i := strings.Index(string(task), from); i >= 0 {
-		if m := headerRe.Find(task[i:]); m != nil {
+		section := task[i+len(from):]
+		if j := strings.Index(string(section), "\n## "); j >= 0 {
+			section = section[:j]
+		}
+		if m := headerRe.Find(section); m != nil {
 			return string(m), true
 		}
 	}
 	return "", false
 }
 
-// headerIn is the first header the task names from its section from on,
-// else anywhere, else the core's: the tester and the developer pick the
-// same one from the Scope the product owner wrote.
+// headerIn is the first header the task's section from names, else from
+// that section on, else anywhere, else the core's: the tester and the
+// developer pick the same one from the Scope the product owner wrote.
 func headerIn(task []byte, from string) string {
 	if h, ok := headerFound(task, from); ok {
 		return h
+	}
+	if i := strings.Index(string(task), from); i >= 0 {
+		if m := headerRe.Find(task[i:]); m != nil {
+			return string(m)
+		}
 	}
 	if m := headerRe.Find(task); m != nil {
 		return string(m)
