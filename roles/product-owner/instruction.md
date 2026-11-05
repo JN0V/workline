@@ -83,8 +83,9 @@ Scope). What each holds:
   accepts the result".
 - `verification`: how the machine proves it — which tests, which checks.
 - `scope`: the part of the code it touches, by its paths — files or
-  folders —, the same paths in `sources` (1 to 5), from the code given
-  for that issue: read it first. With no code given for it, write no
+  folders —, every file the change edits, each copy of a function it
+  fixes included; up to 5 of the same paths in `sources`; from the code
+  given for that issue: read it first. With no code given for it, write no
   `scope`: propose `sources` instead; the issue is read again with that
   code, and its `scope` written then. When the code given still does
   not show where the change goes — new code, a file not given —, start
