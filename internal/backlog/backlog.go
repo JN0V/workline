@@ -1110,7 +1110,7 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 				if c.Do == "undepend" {
 					p.recordUndepend(c)
 				}
-				if c.Do == "sources" && c.Ticked == "" {
+				if c.Do == "sources" && c.Ticked == "" && !p.given(c.Issue, c.Sources) {
 					p.codeFirst[c.Issue] = true // its code read at the next run: no ask on it now
 				}
 				if c.Do == "ask" {
@@ -1749,6 +1749,17 @@ func (p *Plan) namesUnshown(repo string, id int, sources []string) bool {
 			g = RepoPath(g)
 			return holds(s, g) || holds(g, s)
 		})
+	})
+}
+
+// given says whether this run gave the agent the code of each source
+// named for an issue, a file each (CodeGiven): naming it is no reason
+// to read the issue again (#1089).
+func (p *Plan) given(id int, sources []string) bool {
+	files := p.config.CodeGiven[id]
+	return len(sources) > 0 && !slices.ContainsFunc(sources, func(s string) bool {
+		s, _, _ = strings.Cut(RepoPath(s), "#")
+		return !slices.Contains(files, s)
 	})
 }
 

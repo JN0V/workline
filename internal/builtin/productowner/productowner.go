@@ -969,6 +969,9 @@ func Pre(runDir, repo string) int {
 			if fs := pk.Named(); len(fs) > 0 && len(pk.Paths()) == len(fs) {
 				t.codeRead = append(t.codeRead, strconv.Itoa(pickedFor[i]))
 			}
+			if given := pk.Paths(); len(given) > 0 {
+				t.codeGiven = append(t.codeGiven, strconv.Itoa(pickedFor[i])+" "+strings.Join(given, " "))
+			}
 		}
 		slices.SortFunc(t.codeRead, func(a, b string) int { x, _ := strconv.Atoi(a); y, _ := strconv.Atoi(b); return x - y })
 		if noCode {
@@ -1069,6 +1072,9 @@ func Pre(runDir, repo string) int {
 	if err := os.WriteFile(filepath.Join(runDir, "in", backlog.CodeReadFile), []byte(strings.Join(t.codeRead, "\n")), 0o644); err != nil {
 		return fail(err)
 	}
+	if err := os.WriteFile(filepath.Join(runDir, "in", backlog.CodeGivenFile), []byte(strings.Join(t.codeGiven, "\n")), 0o644); err != nil {
+		return fail(err)
+	}
 	if len(fallback) > 0 {
 		if err := intent.Write(filepath.Join(runDir, "in", "fallback.yaml"), fallback); err != nil {
 			return fail(err)
@@ -1114,6 +1120,9 @@ type taskBuilt struct {
 	// codeRead are the issues read whose files were all given: an effort
 	// is estimated on them only (ADR-0040).
 	codeRead []string
+	// codeGiven are the files given, a line an issue read: its number,
+	// then the paths (backlog.CodeGivenFile).
+	codeGiven []string
 }
 
 // askedAgainChars is the room kept in the prompt for an answer asked again:

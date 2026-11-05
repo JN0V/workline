@@ -108,6 +108,11 @@ type Config struct {
 	// effort is estimated on them only (ADR-0040); set by the caller,
 	// from what pre wrote (CodeReadFile).
 	CodeRead []int
+	// CodeGiven are the files whose code this run gave the agent, by
+	// issue (the code picker, ADR-0063 §8): sources naming only those
+	// leave nothing to read again (#1089). Set by the caller, from what
+	// pre wrote (CodeGivenFile).
+	CodeGiven map[int][]string
 	// Notes are the agent's notes of this run, as it wrote them: the
 	// reason said on an issue it left with nothing (ADR-0059, decision 1).
 	Notes []string
@@ -137,6 +142,10 @@ const ScopeFile = "scope"
 // CodeReadFile is where, in the run's folder, pre lists the issues whose
 // code it gave the agent.
 const CodeReadFile = "code-read"
+
+// CodeGivenFile is where, in the run's folder, pre lists the files whose
+// code it gave the agent: a line an issue, its number then the paths.
+const CodeGivenFile = "code-given"
 
 // Detects says whether the settings ask where the project keeps an axis:
 // the forge's labels are then read to find it (Where).
