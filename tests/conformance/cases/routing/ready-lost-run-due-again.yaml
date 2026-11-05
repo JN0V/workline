@@ -1,10 +1,12 @@
 case: routing/ready-lost-run-due-again
 about: >
   An issue whose developer run was lost is due again (#953): the line's
-  record on #3 says the run it woke ended with no verdict, its state,
-  body and labelling the same since. Its step is due, said why. #4,
-  lost at the hop cap, goes to Blocked rather than be woken in a loop.
-  #5, woken and its run not lost, runs nothing more. No agent asked.
+  record on #3, from before runs had typed outcomes, says the run it
+  woke ended with no verdict, its state, body and labelling the same
+  since: one machine error of kind run (ADR-0063), its step due again,
+  said why, its hops the same. #4, lost at the hop cap, goes to Blocked
+  rather than be woken in a loop. #5, woken and its run not lost, runs
+  nothing more. No agent asked.
 given:
   repo: tested
   config:
@@ -31,7 +33,7 @@ expect:
   status: pass
   agent-calls: 0
   findings:
-    - {rule: state-lost, level: info, where: "#3", message: "the developer's last run on it, 2026-11-03T15:27:30Z, ended with no verdict: woken again"}
+    - {rule: state-retry, level: info, where: "#3", message: "the developer's last run on it failed (run): run again, try 1 of 2"}
     - {rule: state-wakes, level: info, where: "#3", message: "its state, ready, wakes the developer"}
     - {rule: hops-capped, level: warn, where: "#4", message: "9 state steps on this issue, past max-hops (8)"}
     - {rule: state-acted, level: info, where: "#5"}

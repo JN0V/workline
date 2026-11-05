@@ -1,3 +1,11 @@
 # Cases the engine does not pass yet. The suite runs them anyway and fails
 # if one starts passing while still listed here.
 routing/ready-overlap-gone-wait-said
+developer/code-build-broken-asked-again
+routing/blocked-by-machine-read-again
+routing/ready-code-build-broken-not-moved
+routing/ready-lost-run-due-again
+routing/ready-lost-run-said
+routing/ready-machine-error-budget
+routing/tests-build-broken-not-moved
+routing/tests-needs-code-given

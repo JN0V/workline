@@ -1,0 +1,51 @@
+case: routing/ready-machine-error-budget
+about: >
+  A machine error is run again within its budget, then waits for a
+  person (ADR-0063, decided 4): 2 tries per kind of error within 24 h of
+  the first. #3's developer run failed once an hour ago: run again, its
+  hops the same. #5's failed five minutes ago: it waits the back-off,
+  said with the time. #4's failed a third time with the same kind, #6's
+  first error is over 24 h old: each goes to Blocked, the error said,
+  for a person. No agent asked.
+given:
+  repo: tested
+  env: {WORKLINE_CLOCK: "2026-11-05T08:00:00Z"}
+  config:
+    routing: {events: {issue: [developer]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply"
+        labels: ["workline:ready"]
+        body: "## Need\n\nI want to multiply.\n"
+        comments: ["<!-- workline:line-record {\"state\":\"ready\",\"body\":\"8a828a06be19\",\"hops\":2,\"errors\":{\"by\":{\"run\":1},\"first\":\"2026-11-05T07:00:00Z\",\"last\":\"2026-11-05T07:00:00Z\",\"kind\":\"run\",\"said\":\"the agent's run failed\"},\"v\":1} -->\n<!-- workline:sticky=line/state -->"]
+      - id: 4
+        title: "Multiply again"
+        labels: ["workline:ready"]
+        body: "## Need\n\nI want to multiply.\n"
+        comments: ["<!-- workline:line-record {\"state\":\"ready\",\"body\":\"8a828a06be19\",\"hops\":2,\"errors\":{\"by\":{\"build\":3},\"first\":\"2026-11-05T05:00:00Z\",\"last\":\"2026-11-05T07:00:00Z\",\"kind\":\"build\",\"said\":\"its code does not build\"},\"v\":1} -->\n<!-- workline:sticky=line/state -->"]
+      - id: 5
+        title: "Multiply once more"
+        labels: ["workline:ready"]
+        body: "## Need\n\nI want to multiply.\n"
+        comments: ["<!-- workline:line-record {\"state\":\"ready\",\"body\":\"8a828a06be19\",\"hops\":1,\"errors\":{\"by\":{\"run\":1},\"first\":\"2026-11-05T07:55:00Z\",\"last\":\"2026-11-05T07:55:00Z\",\"kind\":\"run\",\"said\":\"the agent's run failed\"},\"v\":1} -->\n<!-- workline:sticky=line/state -->"]
+      - id: 6
+        title: "Multiply at last"
+        labels: ["workline:ready"]
+        body: "## Need\n\nI want to multiply.\n"
+        comments: ["<!-- workline:line-record {\"state\":\"ready\",\"body\":\"8a828a06be19\",\"hops\":1,\"errors\":{\"by\":{\"run\":1},\"first\":\"2026-11-04T07:00:00Z\",\"last\":\"2026-11-04T07:00:00Z\",\"kind\":\"run\",\"said\":\"the agent's run failed\"},\"v\":1} -->\n<!-- workline:sticky=line/state -->"]
+run: {route: reconcile, open-merge-request: true, ai: none}
+expect:
+  agent-calls: 0
+  findings:
+    - {rule: state-retry, level: info, where: "#3", message: "the developer's last run on it failed (run): run again, try 1 of 2"}
+    - {rule: state-wakes, level: info, where: "#3", message: "its state, ready, wakes the developer"}
+    - {rule: machine-error-spent, level: warn, where: "#4", message: "its run failed 3 times (build): its code does not build"}
+    - {rule: state-waits, level: info, where: "#5", message: "the developer's last run on it failed (run): run again from 2026-11-05 08:05 UTC"}
+    - {rule: machine-error-spent, level: warn, where: "#6", message: "was run again for 24 h"}
+  forge:
+    issues:
+      - {id: 3, labels: ["workline:ready"], comments: 1, comment-contains: ["\"hops\":2"], comment-lacks: ["\"errors\""]}
+      - {id: 4, labels: ["workline:blocked"], comments: 1, comment-contains: ["**workline's line** blocks this issue.", "its code does not build"]}
+      - {id: 5, labels: ["workline:ready"], comments: 1, comment-contains: ["\"errors\":{\"by\":{\"run\":1}"]}
+      - {id: 6, labels: ["workline:blocked"], comments: 1}
