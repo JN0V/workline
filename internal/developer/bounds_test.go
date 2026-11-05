@@ -124,6 +124,99 @@ func TestBesideTestNeedsTheTestFolderBesideTheScope(t *testing.T) {
 	}
 }
 
+// The write fence (ADR-0063, §9): a new file matching the tester's
+// test-paths, in or beside a Scope path's folder, is written by rule; the
+// trial's #35 and #20 wrote theirs under the component's test/ folder, its
+// Scope a header under include/. The same file outside any Scope folder,
+// one the commit holds already, or one no test-paths names is refused,
+// an ask.
+func TestNewTestBesideTheScopeIsKept(t *testing.T) {
+	repo := t.TempDir()
+	for _, f := range []string{"Storage/include/Storage.h", "Storage/test/test_old/test_old.cpp", "Wifi/include/Wifi.h"} {
+		if err := os.MkdirAll(filepath.Join(repo, filepath.Dir(f)), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(repo, f), []byte("x\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	c := checker{repo: repo, steer: func(string) bool { return false },
+		b: Bounds{Issue: 20, Scope: []string{"Storage/include/Storage.h"}, TestPaths: []string{"*/test/**", "**/*_test.go"}}}
+	for p, want := range map[string]string{
+		"Storage/test/test_name_more/test_name_more.cpp": "",              // new, beside: kept
+		"Storage/test/test_old/test_old.cpp":             "outside-scope", // the commit holds it: not new
+		"Wifi/test/test_wifi/test_wifi.cpp":              "outside-scope", // beside no Scope path
+		"Storage/src/helper.cpp":                         "outside-scope", // no test-paths names it
+		"Storage/include/Storage.h":                      "",
+	} {
+		if got := c.rule(p); got != want {
+			t.Errorf("rule(%s) = %q, want %q", p, got, want)
+		}
+	}
+	// No test-paths read: the fence is the Scope and the tests beside it.
+	c.b.TestPaths = nil
+	if got := c.rule("Storage/test/test_name_more/test_name_more.cpp"); got != "outside-scope" {
+		t.Errorf("with no test-paths, rule = %q, want outside-scope", got)
+	}
+	// besideKept lists only what the fence alone let in, the rules read
+	// in a repository.
+	for _, args := range [][]string{{"init", "-q"}, {"add", "-A"}, {"-c", "user.name=t", "-c", "user.email=t@example.invalid", "-c", "core.hooksPath=/dev/null", "commit", "-qm", "base"}} {
+		if out, err := exec.Command("git", append([]string{"-C", repo}, args...)...).CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %v\n%s", args, err, out)
+		}
+	}
+	c.b.TestPaths = []string{"*/test/**"}
+	patches := []intent.Intention{
+		{Kind: "patch", Value: map[string]any{"file": "Storage/include/Storage.h", "content": "y\n"}},
+		{Kind: "patch", Value: map[string]any{"file": "Storage/test/test_name_more/test_name_more.cpp", "content": "z\n"}},
+	}
+	if got := besideKept(repo, c.b, patches); !slices.Equal(got, []string{"Storage/test/test_name_more/test_name_more.cpp"}) {
+		t.Errorf("besideKept = %v, want the new test alone", got)
+	}
+}
+
+// A test file's home is the folder holding its test folder, else its
+// own; the root is a home only to a Scope file at the root.
+func TestTestBesideByItsHome(t *testing.T) {
+	isDir := checker{}.isDir
+	for _, tc := range []struct {
+		p     string
+		scope []string
+		want  bool
+	}{
+		{"Storage/test/a/test_a.cpp", []string{"Storage/include/Storage.h"}, true},
+		{"pkg/foo/new_test.go", []string{"pkg/foo/foo.go"}, true},
+		{"pkg/foo/sub/new_test.go", []string{"pkg/foo"}, true},
+		{"tests/test_x.py", []string{"lib.py"}, true},
+		{"tests/test_x.py", []string{"src/pkg/x.py"}, false},
+		{"other/test/test_x.cpp", []string{"Storage/include/Storage.h"}, false},
+		{"Storage/test/a/test_a.cpp", []string{"Storage/*.h"}, false}, // a pattern names its files, no folder
+	} {
+		if got := testBeside(tc.p, tc.scope, isDir); got != tc.want {
+			t.Errorf("testBeside(%s, %v) = %v, want %v", tc.p, tc.scope, got, tc.want)
+		}
+	}
+}
+
+// The same set of files asked again waits for a person, whatever the
+// head; one file not asked before is a new ask (ADR-0063, §9; #1073).
+func TestAskedBeforeIsBySet(t *testing.T) {
+	before := []string{"a.h", "b.h"}
+	for _, tc := range []struct {
+		files []string
+		want  bool
+	}{
+		{[]string{"a.h"}, true},
+		{[]string{"b.h", "a.h"}, true},
+		{[]string{"a.h", "c.h"}, false},
+		{nil, false},
+	} {
+		if got := askedBefore(tc.files, before); got != tc.want {
+			t.Errorf("askedBefore(%v) = %v, want %v", tc.files, got, tc.want)
+		}
+	}
+}
+
 // A Scope naming its files by a pattern bounds what it matches, a new
 // file too, as the tester reads it (#801): `src/calc/*.sh`.
 func TestUnderAPatternIsWhatItMatches(t *testing.T) {

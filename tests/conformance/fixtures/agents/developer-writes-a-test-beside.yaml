@@ -1,0 +1,9 @@
+# The developer's agent in a round on #3's pull request, as the trial's
+# #20 and #35 (#1061): its fix of the review is a new test file, in the
+# component's test folder beside the Scope's header, not in the Scope.
+- patch:
+    file: calc/test/test_mul_more.sh
+    content: |
+      . ./lib.sh
+      [ "$(mul 4 5)" = 20 ]
+- note: "The review asks for one more case: a new suite beside the frozen ones, calc/test/test_mul_more.sh."

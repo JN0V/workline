@@ -76,6 +76,15 @@ type Bounds struct {
 	// Proof: the kind of proof the tester recorded in place of a Draft
 	// (ADR-0059, decision 4), when it did.
 	Proof *tester.Proof `json:"proof,omitempty"`
+	// TestPaths: the tester's test-paths patterns, read by the write
+	// fence (ADR-0063, §9): a new file matching one, beside the Scope, is
+	// written by rule. None when its settings could not be read: the
+	// fence is then the Scope and the tests beside it alone.
+	TestPaths []string `json:"test-paths,omitempty"`
+	// Asked: every file the developer asked the product owner for on
+	// this issue, whatever the head (ADR-0063, §9): the same set asked
+	// again waits for a person.
+	Asked []string `json:"asked,omitempty"`
 }
 
 // Refusal is a file a patch reached and post refused, and why: kept in the
@@ -94,9 +103,21 @@ func readBounds(f forge.Forge, bl forge.Backlog, repo string, is forge.Issue) (B
 	for _, sc := range work.Scenarios(work.ByMeaning(is.Body)[work.Validation].Text) {
 		b.Scenarios = append(b.Scenarios, sc.Name)
 	}
+	if ts, err := testerSettings(repo); err == nil {
+		b.TestPaths = ts.Paths
+	}
 	comments, err := bl.Comments(forge.Target{Kind: "issue", ID: is.ID})
 	if err != nil {
 		return b, err
+	}
+	b.Asked = backlog.ScopeAsks(comments)
+	for _, c := range comments {
+		if a, ok := ReadAct(c); ok {
+			b.Asked = union(b.Asked, a.Asked)
+			if a.Widen != nil {
+				b.Asked = union(b.Asked, a.Widen.Files)
+			}
+		}
 	}
 	if st, found, err := backlog.ReadState(comments, "product-owner"); found && err == nil {
 		for _, s := range st.Sources {
@@ -336,10 +357,79 @@ func (c checker) rule(p string) string {
 		return "steering-file"
 	case c.b.Frozen[p] > 0:
 		return "acceptance-test-edit"
-	case !under(p, c.b.Scope) && !besideTest(p, c.b.Scope, c.isDir):
+	case !under(p, c.b.Scope) && !besideTest(p, c.b.Scope, c.isDir) && !c.newTestBeside(p):
 		return "outside-scope"
 	}
 	return ""
+}
+
+// besideKept are the files of patches the write fence alone let in: new
+// test files beside the Scope, not in it nor beside it before (ADR-0063,
+// §9). Said on the pull request, folded into the Scope after.
+func besideKept(repo string, b Bounds, patches []intent.Intention) []string {
+	c := newChecker(repo, b)
+	var out []string
+	for _, p := range patches {
+		files, _ := touched(p.Value)
+		for _, f := range files {
+			f = path.Clean(filepath.ToSlash(f))
+			if c.rule(f) == "" && !under(f, b.Scope) && !besideTest(f, b.Scope, c.isDir) && !slices.Contains(out, f) {
+				out = append(out, f)
+			}
+		}
+	}
+	slices.Sort(out)
+	return out
+}
+
+// newTestBeside says whether p is a new test file beside the Scope, the
+// write fence's (ADR-0063, §9): matching the tester's test-paths, not in
+// the commit the rules are read at, and its home (testHome) a Scope
+// path's folder, in one, or holding one. Written by rule, no ask.
+func (c checker) newTestBeside(p string) bool {
+	if !pathglob.Any(c.b.TestPaths, p) || kindAt(c.repo, c.at, p) != "" {
+		return false
+	}
+	return testBeside(p, c.b.Scope, c.isDir)
+}
+
+// testBeside says whether the test file p's home (testHome) is a Scope
+// path's folder, is in one, or holds one. The root is a home only to a
+// Scope file at the root: a Scope `src/x.c` lets in no test of a `test/`
+// at the root.
+func testBeside(p string, scope []string, isDir func(string) bool) bool {
+	home := testHome(p)
+	for _, s := range scope {
+		s = path.Clean(s)
+		if work.Pattern(s) {
+			continue
+		}
+		dir := s
+		if !isDir(s) {
+			dir = path.Dir(s)
+		}
+		switch {
+		case dir == home:
+			return true
+		case home != "." && strings.HasPrefix(dir, home+"/"):
+			return true // Storage/test/… beside Storage/include/…
+		case dir != "." && strings.HasPrefix(home, dir+"/"):
+			return true
+		}
+	}
+	return false
+}
+
+// testHome is the folder a test file belongs to: the one holding its
+// first test folder (test, tests, spec, __tests__), else its own.
+func testHome(p string) string {
+	parts := strings.Split(path.Dir(p), "/")
+	for i, part := range parts {
+		if part == "test" || part == "tests" || part == "spec" || part == "__tests__" {
+			return path.Join(append([]string{"."}, parts[:i]...)...)
+		}
+	}
+	return path.Dir(p)
 }
 
 // isDir says whether a Scope's path is a folder: one in the repository,

@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/verdict"
 	"github.com/JN0V/workline/internal/work"
 )
 
@@ -59,13 +60,19 @@ func ScopeAskMark(at string, files []string) string {
 	return fmt.Sprintf("<!-- workline:scope-ask at=%s files=%s -->", at, strings.Join(files, ","))
 }
 
+// ScopeAskRefine is what the developer's first step says when it sends
+// its issue back to refine to ask the product owner for files outside
+// its Scope (ADR-0063, §9): the product owner's state, not Blocked.
+const ScopeAskRefine = "sends this issue back to refine"
+
 // ScopeAsked reads the files a developer asks to add to the issue's
-// Scope from the comment blocking it, when that comment is its ask; none
-// otherwise. Only the last comment saying it blocks the issue is read, the
-// line's pointing to it aside: a block after the ask is another.
+// Scope from the comment blocking it, or sending it back to refine, when
+// that comment is its ask; none otherwise. Only the last such comment is
+// read, the line's pointing to it aside: a block after the ask is
+// another.
 func ScopeAsked(comments []string) []string {
 	for _, c := range slices.Backward(comments) {
-		if !strings.Contains(c, "blocks this issue") || strings.Contains(c, BlockedElsewhere) {
+		if !strings.Contains(c, "blocks this issue") && !strings.Contains(c, ScopeAskRefine) || strings.Contains(c, BlockedElsewhere) {
 			continue
 		}
 		if m := scopeAsk.FindStringSubmatch(c); m != nil {
@@ -76,10 +83,83 @@ func ScopeAsked(comments []string) []string {
 	return nil
 }
 
-// scopeAskOf reads, on a blocked issue, the files the developer asks its
-// Scope widened with (ScopeAsked); none for another, or with no forge.
+// scopeKept is the developer's mark listing the new test files its code
+// wrote beside the issue's Scope, kept by the write fence (ADR-0063, §9).
+var scopeKept = regexp.MustCompile(`<!-- workline:scope-kept files=(\S+) -->`)
+
+// ScopeKeptMark is the mark of the new test files the developer kept
+// beside the issue's Scope.
+func ScopeKeptMark(files []string) string {
+	return fmt.Sprintf("<!-- workline:scope-kept files=%s -->", strings.Join(files, ","))
+}
+
+// ScopeKept are the new test files the developer kept beside the issue's
+// Scope, every mark read: the product owner adds them to the Scope.
+func ScopeKept(comments []string) []string {
+	var out []string
+	for _, c := range comments {
+		for _, m := range scopeKept.FindAllStringSubmatch(c, -1) {
+			for _, f := range strings.Split(m[1], ",") {
+				if f != "" && !slices.Contains(out, f) {
+					out = append(out, f)
+				}
+			}
+		}
+	}
+	return out
+}
+
+// ScopeAsks are every file a developer asked to add to the issue's
+// Scope, in any of its asks, whatever the head (ADR-0063, §9): the same
+// set asked again waits for a person.
+func ScopeAsks(comments []string) []string {
+	var out []string
+	for _, c := range comments {
+		for _, m := range scopeAsk.FindAllStringSubmatch(c, -1) {
+			for _, f := range strings.Split(m[2], ",") {
+				if f != "" && !slices.Contains(out, f) {
+					out = append(out, f)
+				}
+			}
+		}
+	}
+	return out
+}
+
+// scopeKeptOf folds into a refine's Scope the new test files the
+// developer kept beside it (ScopeKept, ADR-0063 §9): each it does not
+// name is added to it, and its why says so. All the files kept, for the
+// check that a Scope's files are in the repository: they are on the pull
+// request's branch only, until it merges.
+func (p *Plan) scopeKeptOf(f forge.Backlog, is forge.Issue, c *Proposal) ([]string, error) {
+	if f == nil {
+		return nil, nil
+	}
+	comments, err := f.Comments(forge.Target{Kind: "issue", ID: is.ID})
+	if err != nil {
+		return nil, err
+	}
+	kept := ScopeKept(comments)
+	var added []string
+	for _, k := range kept {
+		if !strings.Contains(c.Scope, "`"+k+"`") {
+			c.Scope = strings.TrimSpace(c.Scope + "\n- `" + k + "`: a new test file the developer kept beside the " + work.Name(work.Scope) + ".")
+			added = append(added, k)
+		}
+	}
+	if len(added) > 0 {
+		said := fmt.Sprintf("its %s names `%s` now: new test files the developer kept beside it", work.Name(work.Scope), strings.Join(added, "`, `"))
+		c.Why = strings.TrimSpace(strings.TrimSuffix(strings.TrimSpace(c.Why), ".") + "; " + said + ".")
+		p.Findings = append(p.Findings, verdict.Finding{Rule: "scope-kept", Level: "info", Where: c.where(), Message: said})
+	}
+	return kept, nil
+}
+
+// scopeAskOf reads, on a blocked issue or one in refine, the files the
+// developer asks its Scope widened with (ScopeAsked); none for another,
+// or with no forge.
 func (p *Plan) scopeAskOf(f forge.Backlog, is forge.Issue) ([]string, error) {
-	if f == nil || !slices.Contains(is.Labels, LabelBlocked) {
+	if f == nil || !slices.Contains(is.Labels, LabelBlocked) && !slices.Contains(is.Labels, LabelToRefine) {
 		return nil, nil
 	}
 	comments, err := f.Comments(forge.Target{Kind: "issue", ID: is.ID})

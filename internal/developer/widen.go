@@ -242,22 +242,52 @@ func moveTo(repo, state string, issue int, add, remove []string) intent.Intentio
 	return intent.Intention{Kind: "label", Value: map[string]any{"issue": issue, "add": add, "remove": remove, "card": state}}
 }
 
+// besideSaid is the issue's comment listing the new test files the
+// developer's rounds kept beside its Scope, with the mark the product
+// owner reads to fold them in (ADR-0063, §9): one comment, edited.
+func besideSaid(a Act) intent.Intention {
+	body := fmt.Sprintf("**The developer** kept new test files beside this issue's %s, by the write fence: `%s`. The product owner adds them to the %[1]s at its next run.\n\n%[3]s\n",
+		scopeName, strings.Join(a.Beside, "`, `"), backlog.ScopeKeptMark(a.Beside))
+	return intent.Intention{Kind: "comment", Value: map[string]any{"issue": a.Issue, "sticky": "beside", "body": body}}
+}
+
+// askedBefore says whether every file of files was asked of the product
+// owner before on the issue (ADR-0063, §9): the same set asked again
+// waits for a person, whatever the head; one new file is a new ask.
+func askedBefore(files, before []string) bool {
+	return len(files) > 0 && !slices.ContainsFunc(files, func(f string) bool { return !slices.Contains(before, f) })
+}
+
 // askScope is what a round that needs files outside the Scope writes: the
 // issue blocked, the ask on it with what the round saw, for the product
-// owner; asked already on this head and Scope, blocked for a person.
+// owner; the same files asked already, blocked for a person. A round
+// with no pull request (r.MR 0) is the developer's first step: its code
+// needs them, and the issue goes back to refine, the product owner's
+// state, rather than Blocked, which waits for a person (ADR-0063, §5,
+// §9).
 func askScope(repo string, a Act, r round, files []string, again bool, notes []string) []intent.Intention {
 	list := "`" + strings.Join(files, "`, `") + "`"
+	what, resume, fixOr := fmt.Sprintf("the fix of pull request %d", r.MR), fmt.Sprintf("resumes on pull request %d", r.MR), ", or fixes or closes the pull request,"
+	verb, to, keep := "blocks this issue", "blocked", "keeps it blocked"
+	if r.MR == 0 {
+		what, resume, fixOr = "its code", "takes it again", ""
+		if !again {
+			verb, to, keep = backlog.ScopeAskRefine, "refine", "readies it as it is"
+		}
+	}
 	var why, next string
 	if again {
-		why = fmt.Sprintf("the fix of pull request %d still needs %s, outside its %s, asked already at this head: the %[3]s did not change", r.MR, list, scopeName)
-		next = "a person on the loop widens the " + scopeName + ", or fixes or closes the pull request, and moves the issue back by its label"
+		why = fmt.Sprintf("%s still needs %s, outside its %s, asked already: the product owner answered, and the %[3]s does not hold them", what, list, scopeName)
+		next = "a person on the loop widens the " + scopeName + fixOr + " and moves the issue back by its label"
 	} else {
-		why = fmt.Sprintf("the fix of pull request %d needs %s, outside its %s: it asks the product owner to widen it", r.MR, list, scopeName)
-		next = fmt.Sprintf("the product owner widens the %s and moves the issue back to ready, the developer resumes on pull request %d with the new bounds; or keeps it blocked, why not said", scopeName, r.MR)
+		why = fmt.Sprintf("%s needs %s, outside its %s: it asks the product owner to widen it", what, list, scopeName)
+		next = fmt.Sprintf("the product owner widens the %s and moves the issue back to ready, the developer %s with the new bounds; or %s, why not said", scopeName, resume, keep)
 	}
 	var b strings.Builder
-	b.WriteString(backlog.Said(who, "blocks this issue", why, next))
-	b.WriteString("\nWhat it was asked:\n\n" + askedList(r.Asked))
+	b.WriteString(backlog.Said(who, verb, why, next))
+	if len(r.Asked) > 0 {
+		b.WriteString("\nWhat it was asked:\n\n" + askedList(r.Asked))
+	}
 	if len(notes) > 0 {
 		b.WriteString("\nWhy it needs them:\n\n")
 		for _, n := range notes {
@@ -270,7 +300,7 @@ func askScope(repo string, a Act, r round, files []string, again bool, notes []s
 		body += "\n" + backlog.ScopeAskMark(r.At, files) + "\n"
 	}
 	return []intent.Intention{
-		moveTo(repo, "blocked", a.Issue, []string{backlog.LabelBlocked}, []string{backlog.LabelReady, backlog.StateLabel("doing")}),
+		moveTo(repo, to, a.Issue, []string{backlog.StateLabel(to)}, []string{backlog.LabelReady, backlog.StateLabel("doing")}),
 		sayOn(a.Issue, body),
 	}
 }

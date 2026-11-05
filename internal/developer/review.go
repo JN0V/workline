@@ -48,13 +48,13 @@ var (
 
 // Round is one round of the review loop, as the record keeps it.
 type Round struct {
-	N      int            `json:"n"`
-	Asked  []string       `json:"asked,omitempty"`  // the findings asked, each as its row reads
-	Heard  int            `json:"heard,omitempty"`  // a person's comments read
-	Nits   int            `json:"nits,omitempty"`   // nits said, not asked
-	Result string         `json:"result,omitempty"` // its proof's result; no-code when it wrote none
-	Whys   bool           `json:"whys,omitempty"`   // the five whys ran
-	Person bool           `json:"person,omitempty"` // past the last round: its issue blocked (ADR-0059)
+	N      int      `json:"n"`
+	Asked  []string `json:"asked,omitempty"`  // the findings asked, each as its row reads
+	Heard  int      `json:"heard,omitempty"`  // a person's comments read
+	Nits   int      `json:"nits,omitempty"`   // nits said, not asked
+	Result string   `json:"result,omitempty"` // its proof's result; no-code when it wrote none
+	Whys   bool     `json:"whys,omitempty"`   // the five whys ran
+	Person bool     `json:"person,omitempty"` // past the last round: its issue blocked (ADR-0059)
 	// Bounds, a round with no fix: asked, it asked the product owner for
 	// files outside the Scope (#921); held, it needed none; blocked, it
 	// needed none and a project check stays red: blocked for a person
@@ -65,6 +65,9 @@ type Round struct {
 	Tokens int            `json:"tokens,omitempty"` // fresh, what ai-max-tokens holds
 	Cached int            `json:"cached,omitempty"` // read from cache, apart
 	Tools  map[string]int `json:"tools,omitempty"`
+	// Beside: the new test files its fix wrote beside the Scope, kept by
+	// the write fence (ADR-0063, §9).
+	Beside []string `json:"beside,omitempty"`
 }
 
 // Asked is a finding a round asks the agent to fix: a reviewer's row that
@@ -818,6 +821,9 @@ func reviewPost(runDir, repo string, s Settings) int {
 			a.Proof, a.Caps = &p, caps
 			code, tests := written(patches)
 			a.Code, a.Tests = union(a.Code, code), union(a.Tests, tests)
+			if this.Beside = besideKept(repo, b, patches); len(this.Beside) > 0 {
+				a.Beside = union(a.Beside, this.Beside)
+			}
 			if len(takes) > 0 && r.From != "" {
 				a.From = r.From // the Draft's head the frozen tests are read at now
 			}
@@ -842,11 +848,16 @@ func reviewPost(runDir, repo string, s Settings) int {
 		}
 		if len(files) > 0 {
 			// Its fix lies outside the Scope (#921): the product owner's
-			// to widen; once a head, a Scope and its files, then a
-			// person. A file not asked before is asked (#1073).
+			// to widen, a set of files once, whatever the head, then a
+			// person (ADR-0063, §9). A file not asked before is asked
+			// (#1073).
 			key := scopeKey(b.Scope)
 			same := a.Widen != nil && sameCommit(a.Widen.At, r.At) && a.Widen.Scope == key
-			again := same && !slices.ContainsFunc(files, func(f string) bool { return !slices.Contains(a.Widen.Files, f) })
+			before := union(b.Asked, a.Asked)
+			if a.Widen != nil {
+				before = union(before, a.Widen.Files)
+			}
+			again := askedBefore(files, before)
 			asked := files // every file asked at this head and Scope, so asks never alternate
 			if same {
 				asked = slices.Clone(a.Widen.Files)
@@ -858,9 +869,10 @@ func reviewPost(runDir, repo string, s Settings) int {
 			}
 			ask = askScope(repo, a, r, files, again, notes)
 			a.Widen, this.Bounds = &Widen{At: r.At, Scope: key, Files: asked, Again: again, Review: heldRed != nil}, "asked"
+			a.Asked = union(union(a.Asked, b.Asked), files)
 			msg := fmt.Sprintf("its fix needs %s, outside the issue's %s: #%d blocked, the product owner asked to widen it", strings.Join(files, ", "), scopeName, a.Issue)
 			if again {
-				msg = fmt.Sprintf("its fix still needs %s, asked already on this head and %s: #%d blocked for a person", strings.Join(files, ", "), scopeName, a.Issue)
+				msg = fmt.Sprintf("its fix still needs %s, asked already, its %s not holding them: #%d blocked for a person", strings.Join(files, ", "), scopeName, a.Issue)
 			}
 			v.Findings = append(v.Findings, verdict.Finding{Rule: "scope-asked", Level: "warn", Where: where, Message: msg})
 			v.Summary += "; " + msg
@@ -934,6 +946,9 @@ func reviewPost(runDir, repo string, s Settings) int {
 	out := append(slices.Concat(takes, patches), intent.Intention{Kind: "comment", Value: map[string]any{"sticky": "round", "body": roundBody(this, s, notes, analysis, a.Widen)}},
 		intent.Intention{Kind: "comment", Value: map[string]any{"sticky": RecordKey, "body": recordBody(a)}})
 	out = append(out, others...)
+	if len(this.Beside) > 0 {
+		out = append(out, besideSaid(a))
+	}
 	switch {
 	case len(ask) > 0:
 		out = append(out, ask...)
@@ -965,7 +980,7 @@ func roundBody(x Round, s Settings, notes []string, analysis string, w *Widen) s
 	case x.Result == "not-pushed" && x.Bounds == "held":
 		b.WriteString("\n\n")
 	case x.Bounds == "asked" && w.Again:
-		fmt.Fprintf(&b, "no fix within its bounds. It still needs `%s`, asked already on this head and %s: its issue is blocked for a person.\n\n", strings.Join(w.Files, "`, `"), scopeName)
+		fmt.Fprintf(&b, "no fix within its bounds. It still needs `%s`, asked already, its %s not holding them: its issue is blocked for a person.\n\n", strings.Join(w.Files, "`, `"), scopeName)
 	case x.Bounds == "asked":
 		fmt.Fprintf(&b, "no fix within its bounds. It needs `%s`, outside the issue's %s: its issue is blocked, the product owner asked to widen it; the next round resumes here.\n\n", strings.Join(w.Files, "`, `"), scopeName)
 	case x.Bounds == "blocked":
@@ -974,6 +989,9 @@ func roundBody(x Round, s Settings, notes []string, analysis string, w *Widen) s
 		b.WriteString("no fix within its bounds.\n\n")
 	default:
 		fmt.Fprintf(&b, "its fix pushed, the project's tests %s.\n\n", x.Result)
+	}
+	if len(x.Beside) > 0 {
+		fmt.Fprintf(&b, "New test files beside the issue's %s, kept by the write fence: `%s`; the product owner adds them to the %[1]s at its next run.\n\n", scopeName, strings.Join(x.Beside, "`, `"))
 	}
 	b.WriteString("Asked:\n\n")
 	for _, t := range x.Asked {

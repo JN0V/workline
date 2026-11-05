@@ -1,0 +1,28 @@
+case: developer/takes-asks-a-person-for-the-same-files
+about: >
+  The product owner was asked for README.md already, and readied #2 as
+  it was (ADR-0063, §9): the developer's record on the issue keeps the
+  files it asked. Its first step needs README.md again: the same set, so
+  #2 is blocked for a person, with no mark that wakes the product owner.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  forge:
+    issues:
+      - id: 2
+        title: "Multiply"
+        labels: ["workline:ready"]
+        body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: a `mul` function.\n"
+        comments:
+          - "**The developer** sends this issue back to refine.\n\n<!-- workline:scope-ask at=0123456 files=README.md -->\n\n<!-- workline:developer-act {\"act\":\"pick\",\"issue\":2,\"no-code\":true,\"asked\":[\"README.md\"]} -->\n<!-- workline:sticky=claim -->"
+run: {develop: [], ai: "fake:developer-only-outside-scope"}
+expect:
+  status: pass
+  agent-calls: 1
+  findings: [{rule: scope-asked, level: warn, where: "#2"}]
+  forge:
+    issues:
+      - id: 2
+        labels: ["workline:blocked"]
+        comment-contains: ["**The developer** blocks this issue.", "its code still needs `README.md`, outside its Scope, asked already", "a person on the loop widens the Scope"]

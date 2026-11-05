@@ -1895,18 +1895,30 @@ func (p *Plan) checkRefining(f forge.Backlog, repo, role string, c *Proposal) (r
 			if err != nil {
 				return "no-state", err.Error()
 			}
+			// The new test files the developer kept beside the Scope
+			// (ADR-0063, §9): folded into it, on its branch only yet.
+			kept, err := p.scopeKeptOf(f, is, c)
+			if err != nil {
+				return "no-state", err.Error()
+			}
+			onBranch := append(slices.Clone(asked), kept...)
 			if len(c.Sources) == 0 {
 				c.Sources = PathsIn(repo, c.Scope)
 				for _, m := range PathLike.FindAllString(c.Scope, -1) {
 					// A path the Scope names whole, never a part of one.
-					if a := RepoPath(m); slices.Contains(asked, a) && !slices.Contains(c.Sources, a) {
+					if a := RepoPath(m); slices.Contains(onBranch, a) && !slices.Contains(c.Sources, a) {
 						c.Sources = append(c.Sources, a)
 					}
 				}
 			}
+			for _, k := range kept {
+				if !slices.Contains(c.Sources, k) {
+					c.Sources = append(c.Sources, k)
+				}
+			}
 			missing := ""
 			for _, s := range c.Sources {
-				if path, _, _ := strings.Cut(s, "#"); !InCommit(repo, path) && !slices.Contains(asked, path) && missing == "" {
+				if path, _, _ := strings.Cut(s, "#"); !InCommit(repo, path) && !slices.Contains(onBranch, path) && missing == "" {
 					missing = path
 				}
 			}
@@ -1997,10 +2009,11 @@ func (p *Plan) checkRefining(f forge.Backlog, repo, role string, c *Proposal) (r
 					}
 				}
 			}
-			if slices.Contains(is.Labels, LabelBlocked) && len(ScopeAsked(comments)) > 0 && !c.ToReporter {
-				// The developer blocked it to ask for files outside its
-				// Scope (#921): the Scope, the role's at every level
-				// (ADR-0060), rewritten to widen it.
+			if (slices.Contains(is.Labels, LabelBlocked) || slices.Contains(is.Labels, LabelToRefine)) && len(ScopeAsked(comments)) > 0 && !c.ToReporter {
+				// The developer blocked it, or sent it back to refine, to
+				// ask for files outside its Scope (#921, ADR-0063 §9): the
+				// Scope, the role's at every level (ADR-0060), rewritten
+				// to widen it.
 				if s := work.ByMeaning(is.Body)[work.Scope].Heading; s != "" && !slices.Contains(c.Revise, s) {
 					c.Revise = append(c.Revise, s)
 				}

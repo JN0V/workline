@@ -172,6 +172,14 @@ type Act struct {
 	// Widen: its last round's ask to the product owner for files outside
 	// the issue's Scope (#921).
 	Widen *Widen `json:"widen,omitempty"`
+	// Asked: every file asked of the product owner on its issue, in any
+	// step or round, carried from claim to claim: the same set asked
+	// again waits for a person (ADR-0063, §9).
+	Asked []string `json:"asked,omitempty"`
+	// Beside: the new test files its code wrote beside the Scope, kept
+	// by the write fence (ADR-0063, §9): listed on its pull request, and
+	// added to the Scope at the product owner's next run.
+	Beside []string `json:"beside,omitempty"`
 	// Board: the card its claim moved to Doing on the forge's board
 	// (ADR-0057); none, no board or no Doing column.
 	Board *board.Move `json:"board,omitempty"`
@@ -768,7 +776,7 @@ func claimBody(a Act, s Settings) string {
 	if a.Proof != nil {
 		b.WriteString("\nIts code on the project's tests:\n\n" + proofLines(*a.Proof, a.Caps))
 	}
-	if a.NoCode {
+	if a.NoCode && a.Widen == nil {
 		fmt.Fprintf(&b, "\n- **Why no pull request**: its agent wrote no code within its bounds.\n"+
 			"- **Next**: the claim is let go %d hours after it was taken, said here; then the developer may take it again, or a person assigns themselves. "+
 			"Meanwhile it holds no paths: an issue whose %s overlaps this one's may be taken.\n", s.ClaimHours, work.Name(work.Scope))
@@ -779,6 +787,10 @@ func claimBody(a Act, s Settings) string {
 		for _, u := range a.Unread {
 			b.WriteString(u + "\n")
 		}
+	}
+	if len(a.Beside) > 0 {
+		fmt.Fprintf(&b, "\nNew test files beside its %s, kept by the write fence: `%s`; the product owner adds them to the %[1]s at its next run.\n\n%[3]s\n",
+			work.Name(work.Scope), strings.Join(a.Beside, "`, `"), backlog.ScopeKeptMark(a.Beside))
 	}
 	fmt.Fprintf(&b, "\n%s\n", a.Line())
 	return b.String()
@@ -838,7 +850,7 @@ func Post(runDir, repo string) int {
 	if err != nil {
 		return fail(err)
 	}
-	a.Refused, a.Unread = refused, unread
+	a.Refused, a.Unread, a.Asked = refused, unread, b.Asked
 	v := verdict.Verdict{Status: verdict.Pass, Summary: "took " + where, Findings: []verdict.Finding{rightsFinding(where)}}
 	for _, p := range a.Passed {
 		v.Findings = append(v.Findings, verdict.Finding{Rule: "issue-passed", Level: "info", Where: fmt.Sprintf("#%d", p.Issue), Message: p.Why})
@@ -857,12 +869,31 @@ func Post(runDir, repo string) int {
 	if len(unread) > 0 {
 		v.Findings = append(v.Findings, unreadFinding(where, unread, len(patches) > 0))
 	}
-	if len(patches) == 0 {
+	var ask []intent.Intention
+	if files := outsideScope(refused); len(patches) == 0 && len(files) > 0 {
+		// Its code lies outside the Scope, or the Scope names no file:
+		// the product owner's to widen (ADR-0063, §9), the issue blocked
+		// meanwhile; the same files asked already, a person's (#1084).
+		again := askedBefore(files, b.Asked)
+		var notes []string
+		if note := noteOf(kept[len(claim):], a.Issue); note != "" {
+			notes = []string{note}
+		}
+		ask = askScope(repo, a, round{At: on}, files, again, notes)
+		a.NoCode, a.Widen, a.Asked = true, &Widen{At: on, Scope: scopeKey(b.Scope), Files: files, Again: again}, union(b.Asked, files)
+		msg := fmt.Sprintf("its code needs %s, outside the issue's %s: #%d sent back to refine, the product owner asked to widen it", strings.Join(files, ", "), scopeName, a.Issue)
+		if again {
+			msg = fmt.Sprintf("its code still needs %s, asked already, its %s not holding them: #%d blocked for a person", strings.Join(files, ", "), scopeName, a.Issue)
+		}
+		v.Findings = append(v.Findings, verdict.Finding{Rule: "scope-asked", Level: "warn", Where: where, Message: msg})
+		v.Summary += "; " + msg
+	} else if len(patches) == 0 {
 		v.Findings = append(v.Findings, verdict.Finding{Rule: "no-code", Level: "warn", Where: where,
 			Message: fmt.Sprintf("its agent wrote no code within its bounds: nothing to prove, no pull request; the claim is let go after %d hours, said on the issue", s.ClaimHours)})
 		a.NoCode = true
 	} else {
 		a.Code, a.Tests = written(patches)
+		a.Beside = besideKept(repo, b, patches)
 		p, u, caps, found := proven(runDir, repo, on, where, patches, a.Acceptance, flakyOf(b.Proof, s), s)
 		if p.Result == Red && len(p.Red) == 0 && len(caps) == 0 && !objects(kept) {
 			// Its code does not build, or breaks the run, no test red, and
@@ -910,8 +941,17 @@ func Post(runDir, repo string) int {
 		}
 	}
 	// The claim carries the record, the refusals in it (ADR-0046).
-	// What pre said on the other issues follows it.
-	if code := writeIntents(runDir, "", slices.Concat(claimOf(a, s), told, kept[len(claim):])); code != 0 {
+	// What pre said on the other issues follows it; an ask for files
+	// outside the Scope last, its block after the claim's labels.
+	mine := claimOf(a, s)
+	if len(ask) == 2 {
+		// One comment: the claim's carries the ask, the block's reason
+		// on top, the record below it.
+		c := ask[1].Value.(map[string]any)
+		mine[1].Value.(map[string]any)["body"] = fmt.Sprint(c["body"]) + "\n" + claimBody(a, s)
+		ask = ask[:1]
+	}
+	if code := writeIntents(runDir, "", slices.Concat(mine, told, kept[len(claim):], ask)); code != 0 {
 		return code
 	}
 	return writeVerdict(runDir, v)
