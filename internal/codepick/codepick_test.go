@@ -172,3 +172,22 @@ func TestOnceATask(t *testing.T) {
 		t.Errorf("first %v, second %v", first.Paths(), second.Paths())
 	}
 }
+
+// The file an issue was imported from is where it was written, never its
+// code (#1063); a name used everywhere gives a few places, a third of the
+// budget at most, the rest counted.
+func TestImportedFileAndUsesCapped(t *testing.T) {
+	var calls strings.Builder
+	for i := range 40 {
+		fmt.Fprintf(&calls, "func use%d() {\n\tconnect()\n}\n\n", i)
+	}
+	dir := repo(t, map[string]string{"docs/roadmap.md": filler(7000, "item %d"), "net/net.go": "package net\n\nfunc connect() {}\n", "net/uses.go": "package net\n\n" + calls.String()})
+	text := "`connect()` fails.\n\nOpened from `docs/roadmap.md`, lines 6353 to 6353 by the product-owner role.\n\n<!-- workline:import=docs/roadmap.md:2e2aab9c6fc4 -->"
+	pk, task := pick(t, dir, Ask{Text: text, Budget: 60})
+	if slices.Contains(pk.Named(), "docs/roadmap.md") || !strings.Contains(task, "func connect() {}") {
+		t.Errorf("the imported file given, or the code missed:\n%s", task)
+	}
+	if n := strings.Count(task, "\tconnect()"); n == 0 || n > 6 || !strings.Contains(task, "`connect` (") {
+		t.Errorf("%d places naming it given:\n%s", n, task)
+	}
+}

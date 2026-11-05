@@ -158,7 +158,7 @@ func (p *Picker) linked(pk Pick, tests []string) []string {
 		for _, b := range bases {
 			def := regexp.MustCompile(`\b(?:class|struct|interface|trait|type)\s+` + regexp.QuoteMeta(b) + `\b[^;]*$`)
 			for _, h := range hits[b] {
-				if codenav.Of(h.file) != nil && def.MatchString(h.line) && !(len(tests) > 0 && pathglob.Any(tests, h.file)) {
+				if codenav.Of(h.file) != nil && def.MatchString(h.line) && (len(tests) == 0 || !pathglob.Any(tests, h.file)) {
 					add(h.file, fmt.Sprintf("defines `%s`, a type the code derives from", b))
 					break
 				}

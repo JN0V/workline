@@ -132,10 +132,10 @@ func codeSpans(p string) (string, []string) {
 		}
 		n, end := run(i), -1
 		for j := i + n; j < len(p) && end < 0; {
-			switch m := run(j); {
-			case m == 0:
+			switch m := run(j); m {
+			case 0:
 				j++
-			case m == n:
+			case n:
 				end = j
 			default:
 				j += m

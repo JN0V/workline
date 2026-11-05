@@ -62,6 +62,9 @@ const (
 	// testShare: 1 in testShare of the budget kept for a test when the
 	// code fills it (#1059).
 	testShare = 5
+	// usesShare: 1 in usesShare of the budget at most for the places
+	// naming a name that are not its definition.
+	usesShare = 3
 )
 
 // Ask is what a role asks for.
@@ -140,6 +143,26 @@ func (p Pick) Named() []string {
 		}
 	}
 	return out
+}
+
+// Anchors are the files the tests nearest the code are looked for by:
+// those the text names, else those holding what it names.
+func (p Pick) Anchors() []string {
+	var named, all []string
+	for _, f := range p.Files {
+		switch {
+		case f.Test:
+		case f.Named:
+			named = append(named, f.Path)
+			fallthrough
+		default:
+			all = append(all, f.Path)
+		}
+	}
+	if len(named) > 0 {
+		return named
+	}
+	return all
 }
 
 // Test is the test given, nil when none.
@@ -234,6 +257,25 @@ func init() {
 	}
 }
 
+var (
+	// imported is the engine's mark of the file an issue was imported
+	// from, and provenance the line it ends such an issue with.
+	imported   = regexp.MustCompile(`<!-- workline:import=([^\s>]+?):[0-9a-f]+ -->`)
+	provenance = regexp.MustCompile(`(?m)^Opened from .* by the [\w -]+ role\.\r?$`)
+	engineMark = regexp.MustCompile(`<!-- workline:[^>]*-->`)
+)
+
+// clean leaves out of an ask's text what the engine wrote there: the file
+// an issue was imported from is where it was written, never its code
+// (#548, #1063).
+func clean(a Ask) Ask {
+	for _, m := range imported.FindAllStringSubmatch(a.Text, -1) {
+		a.Skip = append(slices.Clone(a.Skip), m[1])
+	}
+	a.Text = engineMark.ReplaceAllString(provenance.ReplaceAllString(a.Text, ""), "")
+	return a
+}
+
 // Tracked says whether the commit holds a file.
 func (p *Picker) Tracked(f string) bool { return p.tracked[f] }
 
@@ -296,6 +338,7 @@ func (p *Picker) defines(h hit, name string, pats map[*codenav.Language]*regexp.
 // as code, tests, examples and tools aside: what an issue is about, with
 // no line planned.
 func (p *Picker) Where(a Ask) []string {
+	a = clean(a)
 	out := p.namedFiles(a)
 	names := codeNames(a.Text)
 	hits := p.grep(names)
@@ -315,6 +358,7 @@ func (p *Picker) Where(a Ask) []string {
 
 // Pick finds the code an ask names and plans what is given of it.
 func (p *Picker) Pick(a Ask) Pick {
+	a = clean(a)
 	pk := Pick{Ask: a}
 	budget := a.Budget
 	if budget <= 0 {
@@ -421,9 +465,9 @@ func (p *Picker) Pick(a Ask) Pick {
 			fd.uses = append(fd.uses, want{h.file, max(h.n-near, 1), min(h.n+near, len(lines)), fmt.Sprintf("naming `%s`", n), false})
 		}
 	}
-	// A place in code before one in a doc.
+	// A place in the project's own code first, a doc last.
 	for _, fd := range byName {
-		slices.SortStableFunc(fd.uses, func(x, y want) int { return docRank(x.file) - docRank(y.file) })
+		slices.SortStableFunc(fd.uses, func(x, y want) int { return useRank(x.file) - useRank(y.file) })
 	}
 	// The rarer a name, the more it says: its pieces come first.
 	rank := slices.Clone(names)
@@ -445,10 +489,17 @@ func (p *Picker) Pick(a Ask) Pick {
 			}
 		}
 	}
-	// 2b. The lines naming a name in the files named.
+	// 2b. A name no function defines (a member, a constant): the lines
+	// naming it in the files named, a few, as its definition stands
+	// among them (#1056).
+	usedIn := map[string]int{}
 	for _, n := range rank {
+		if len(byName[n].defs)+len(byName[n].aside) > 0 {
+			continue
+		}
 		for _, w := range byName[n].uses {
-			if inNamed(w) {
+			if inNamed(w) && usedIn[n] < usesMax {
+				usedIn[n]++
 				wants = append(wants, w)
 			}
 		}
@@ -479,10 +530,10 @@ func (p *Picker) Pick(a Ask) Pick {
 	var test string
 	kept := 0
 	if len(a.Tests) > 0 {
-		var anchor []string
-		anchor = append(anchor, named...)
+		// Near the files named; none named, near the definitions found.
+		anchor := slices.Clone(named)
 		for _, w := range wants {
-			if !slices.Contains(anchor, w.file) {
+			if len(named) == 0 && !slices.Contains(anchor, w.file) {
 				anchor = append(anchor, w.file)
 			}
 		}
@@ -547,18 +598,25 @@ func (p *Picker) Pick(a Ask) Pick {
 			left -= k
 		}
 	}
-	// 4. The other places naming a name, the rarer first, a few each.
+	// 4. The other places naming a name, the rarer first, a few each,
+	// those in the files named first, a third of the budget at most:
+	// what defines the code comes before what uses it.
+	usesLeft := budget / usesShare
 	for _, n := range rank {
-		k, dropped := 0, 0
-		for _, w := range byName[n].uses {
-			if inNamed(w) {
-				continue
+		dropped := 0
+		for _, inFile := range []bool{true, false} {
+			for _, w := range byName[n].uses {
+				if inNamed(w) != inFile || covered(file(w.file).Given, w.from, w.to) {
+					continue
+				}
+				size := w.to - w.from + 1
+				if usedIn[n] >= usesMax || size > usesLeft || !give(w) {
+					dropped++
+					continue
+				}
+				usedIn[n]++
+				usesLeft -= size
 			}
-			if k >= usesMax || !give(w) {
-				dropped++
-				continue
-			}
-			k++
 		}
 		if dropped > 0 {
 			pk.Unshown = append(pk.Unshown, fmt.Sprintf("`%s` (%d more places)", n, dropped))
@@ -596,9 +654,14 @@ func (p *Picker) Pick(a Ask) Pick {
 	return pk
 }
 
-// docRank is 1 for a file no language is known for, a doc: 0 for code.
-func docRank(f string) int {
-	if codenav.Of(f) == nil {
+// useRank orders the places naming a name: the project's own code, then
+// its tests', examples' and tools', then docs and files no language is
+// known for.
+func useRank(f string) int {
+	switch {
+	case codenav.Of(f) == nil:
+		return 2
+	case aside(f):
 		return 1
 	}
 	return 0
@@ -619,8 +682,6 @@ func covered(ps []Piece, from, to int) bool {
 	}
 	return false
 }
-
-func wholeGiven(ps []Piece, n int) bool { return n > 0 && covered(ps, 1, n) }
 
 // merge adds a piece to sorted pieces, joining those that touch or lie a
 // line apart: a blank between, given.
