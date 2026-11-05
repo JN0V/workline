@@ -220,22 +220,29 @@ func newWorld(t *testing.T, tr trace, a *simAgent) *world {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if tr.fresh {
-		var s forge.FakeState
-		if err := json.Unmarshal(data, &s); err != nil {
-			t.Fatal(err)
-		}
-		for i := range s.Issues {
-			is := &s.Issues[i]
-			is.Closed, is.Reason, is.Comments, is.LabelEvents, is.Labeled = false, "", nil, nil, nil
-			// As a person puts it on the line: its kind, and refine.
-			is.Labels = append(slices.DeleteFunc(is.Labels, func(l string) bool { return strings.HasPrefix(l, "workline:") }), "workline:to-refine")
-			is.LabelEvents = []forge.LabelEvent{{Label: "workline:to-refine", Added: true, Writer: true,
-				Note: forge.Note{Author: "JN0V", Insider: true, Created: start.Add(-time.Hour).Format(time.RFC3339)}}}
-		}
-		s.MergeRequests = nil
-		data, _ = json.Marshal(s)
+	var s forge.FakeState
+	if err := json.Unmarshal(data, &s); err != nil {
+		t.Fatal(err)
 	}
+	for i := range s.Issues {
+		is := &s.Issues[i]
+		// The fix the fake agents write, named by the issue as a real
+		// one names what the change adds: a missing name the issue never
+		// names is a broken build (#1111).
+		is.Title += fmt.Sprintf(" (fixed_%d, fixed%d)", is.ID, is.ID)
+		if !tr.fresh {
+			continue
+		}
+		is.Closed, is.Reason, is.Comments, is.LabelEvents, is.Labeled = false, "", nil, nil, nil
+		// As a person puts it on the line: its kind, and refine.
+		is.Labels = append(slices.DeleteFunc(is.Labels, func(l string) bool { return strings.HasPrefix(l, "workline:") }), "workline:to-refine")
+		is.LabelEvents = []forge.LabelEvent{{Label: "workline:to-refine", Added: true, Writer: true,
+			Note: forge.Note{Author: "JN0V", Insider: true, Created: start.Add(-time.Hour).Format(time.RFC3339)}}}
+	}
+	if tr.fresh {
+		s.MergeRequests = nil
+	}
+	data, _ = json.Marshal(s)
 	f := filepath.Join(work, "forge.json")
 	if err := os.WriteFile(f, data, 0o644); err != nil {
 		t.Fatal(err)
