@@ -138,7 +138,7 @@ const config = `roles:
             - "^[‘'][\\w:]+[’'] was not declared in this scope"
             - "^[‘'][\\w:]+[’'] has not been declared"
             - "^[‘'][\\w:]+[’'] is not a member of [‘'][\\w:]+[’']"
-            - "^[‘'](?:class|struct) [^’']+[’'] has no member named [‘']\\w+[’']"
+            - "^[‘'](?:const )?(?:class|struct) [^’']+[’'] has no member named [‘']\\w+[’']"
           test-name: '(?m)^(?:static\s+)?void\s+(test_\w+)\s*\(\s*(?:void)?\s*\)'
   developer:
     settings:
