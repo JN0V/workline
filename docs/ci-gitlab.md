@@ -104,7 +104,9 @@ to the environment **`workline`**:
   `workline` too. The template installs Claude Code when
   `CLAUDE_CODE_OAUTH_TOKEN` is set (`claude setup-token`); unset, the
   jobs run with no agent. For another agent, change the template's
-  `--ai` to a `cmd:`.
+  `--ai` to a `cmd:`; no Claude token is needed then. In `workline:warn`
+  the `--ai` is the one of its `set -- --ai "$ai"` line: set it to the
+  `cmd:` too, and the inspector triages with it.
 
 ### 3. Gardening
 
