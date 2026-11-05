@@ -255,7 +255,7 @@ func writeCode(b *strings.Builder, repo, text, scope string, sources []string, s
 			tests = append(tests, f)
 		}
 	}
-	beside := codepick.NearestTests(files, s.Paths, pick.Named())
+	beside := codepick.NearestTests(files, s.Paths, pick.Anchors())
 	if t := pick.Test(); t != nil {
 		beside = append([]string{t.Path}, slices.DeleteFunc(beside, func(f string) bool { return f == t.Path })...)
 	}
