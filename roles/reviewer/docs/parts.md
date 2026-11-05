@@ -51,6 +51,9 @@ A change that fits is asked in one call, as before.
 - **Past it**, no lens is asked and no token spent: `review-not-whole`
   says how many parts the change would take, and to split it. On a
   merge request, the summary comment says so too.
+- **Not split**: a person who read it whole puts
+  `workline:accepted-whole`; the merge policy takes their reading for the
+  review ([merge policy](../../../docs/merge-policy.md#what-it-does)).
 - **`1`**: never in parts; a change past one call is not reviewed whole,
   said.
 
