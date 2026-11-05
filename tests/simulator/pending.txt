@@ -31,20 +31,18 @@ workline-1004 one-state-label
 trial-3-broken-test one-state-label
 trial-3-hunk-test one-state-label
 trial-3-hunk-code one-state-label
-# #20's Scope names no file: the developer's code is refused outside it,
-# then nothing is said, nor seen of a change to the body (#1084).
-trial-20-broken-test one-state-label i1-status expected-end one-byte-due
 # The developer's code that does not build, asked again with the error
 # (#1083), and its agent run failing once, run again after the back-off
 # (#1085): each then reaches Done, past the claim's two labels (#1081).
 trial-3-broken-code one-state-label
 trial-3-error-code one-state-label
+# The developer's new test file beside its Scope, alone (#1061): kept by
+# the write fence, no ask; its fix asked again in its step, then Done, past the
+# claim's two labels (#1081).
+trial-35-test-beside one-state-label
 # The product owner's answer unreadable twice in its run: the same tick's
 # second reconcile asks it a third time, on the same input (#1090).
 trial-35-po-unread same-tick-twice
-# The developer's file outside its Scope: dropped, the product owner not
-# asked, nothing said (#1084).
-trial-35-needs-po-code one-state-label needs-input-on-its-source i1-status expected-end one-byte-due
 # The product owner's question: no status after it, the silent park
 # (#1082). The code it names, or the tester says it lacks (#1047,
 # #1059), is given at once, the role run again in its step (ADR-0063,

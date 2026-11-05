@@ -840,6 +840,17 @@ func Pre(runDir, repo string) int {
 			review += markedSaid(d.is)
 			if slices.Contains(d.is.Labels, backlog.LabelBlocked) && d.is.ID == issueEvent() {
 				review += blockedSaid(runDir, d.comments)
+			} else if files := backlog.ScopeAsked(d.comments); len(files) > 0 && slices.Contains(d.is.Labels, backlog.LabelToRefine) {
+				// The developer's first step sent it back to ask for files
+				// outside the Scope (ADR-0063, §9): widened, or ready as it is.
+				review += fmt.Sprintf("Sent back to refine by the developer: its code needs `%s`, outside the issue's %s; its comment says why. Decide one, its `why` one plain line: to widen it, `refine` with `scope`, the %[2]s rewritten whole with these files in it, and `sources`, then `ready`; or `ready` as it is, why the %[2]s must not take them in the `why`: the developer asked the same files again, a person decides.\n",
+					strings.Join(files, "`, `"), work.Name(work.Scope))
+			}
+			if kept := keptMissing(d.is, d.comments); len(kept) > 0 {
+				// New test files the developer kept beside the Scope
+				// (ADR-0063, §9): folded into it at this run.
+				review += fmt.Sprintf("The developer kept new test files beside its %s: `%s`. Add them to the %[1]s with a `refine`, the %[1]s whole and its `sources`; the engine adds any you leave out of a %[1]s you write.\n",
+					work.Name(work.Scope), strings.Join(kept, "`, `"))
 			}
 			if readyOpen(d.is, d.st, cfg) {
 				review += fmt.Sprintf("Ready: its four sections are there, %s and %s a person's — propose `ready` when it is evident: one need, a %s that proves it, nothing left open in its comments; the engine checks it.\n",
@@ -1995,6 +2006,13 @@ func blockedSaid(runDir string, comments []string) string {
 	}
 	return fmt.Sprintf("Blocked (%s): %s. Read again because %s. Decide one, its `why` one plain line: `unblock` it, %s, when what blocked it is gone; `blocked`, the reason it stays as things are now, `person: true` when only a person can lift it — a decision, an access, a fix outside this repository; or a `close` by the rules above. Never `ready` on it.\n",
 		backlog.LabelBlocked, why, news, where)
+}
+
+// keptMissing are the new test files the developer kept beside the
+// issue's Scope (ADR-0063, §9) that its Scope does not name yet.
+func keptMissing(is forge.Issue, comments []string) []string {
+	scope := work.ByMeaning(is.Body)[work.Scope].Text
+	return slices.DeleteFunc(backlog.ScopeKept(comments), func(f string) bool { return strings.Contains(scope, "`"+f+"`") })
 }
 
 // toTests says whether the agent is told a ready issue from before the

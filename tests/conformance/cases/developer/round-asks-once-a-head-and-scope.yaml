@@ -3,8 +3,8 @@ about: >
   The product owner sent #3 back to ready without widening its Scope
   (#921): the round, due again, needs cases/mul.txt still, asked already
   at this head on this Scope. It does not ask again: #3 is blocked for a
-  person, with no mark that wakes the product owner. One ask a head and
-  a Scope; no loop between the two roles.
+  person, with no mark that wakes the product owner. One ask a set of
+  files, whatever the head (ADR-0063, §9); no loop between the two roles.
 given:
   repo: tested-draft
   setup:
@@ -36,15 +36,15 @@ given:
 run: {develop: [--merge-request, "2"], ai: "fake:developer-fixes-outside-its-scope"}
 expect:
   status: pass
-  summary: "its fix still needs cases/mul.txt, asked already on this head and Scope: #3 blocked for a person"
+  summary: "its fix still needs cases/mul.txt, asked already, its Scope not holding them: #3 blocked for a person"
   agent-calls: 1
   not-pushed: [workline/developer/3]
   forge:
     issues:
       - id: 3
         labels: ["workline:blocked"]
-        comment-contains: ["still needs `cases/mul.txt`, outside its Scope, asked already at this head", "a person on the loop widens the Scope"]
+        comment-contains: ["still needs `cases/mul.txt`, outside its Scope, asked already", "a person on the loop widens the Scope"]
         comment-lacks: "workline:scope-ask"
     merge-requests:
       - id: 2
-        comment-contains: ["It still needs `cases/mul.txt`, asked already on this head and Scope", "\"again\":true"]
+        comment-contains: ["It still needs `cases/mul.txt`, asked already, its Scope not holding them", "\"again\":true"]

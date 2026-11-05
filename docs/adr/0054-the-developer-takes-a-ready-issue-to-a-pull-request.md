@@ -23,6 +23,10 @@
   state; it accepts the tester's proof kind for a Draft; past its last
   review round, the issue is blocked, no `workline:human` label
 - **Amended by:** [ADR-0060](0060-the-person-is-on-the-loop.md#4-a-person-validates-by-the-issues-kind) (built): a bug's fix starts from a test red on the base; at `enterprising`, a feature's yes is the release candidate's
+- **Amended by:** [ADR-0063](0063-every-open-issue-is-due-waiting-or-done.md#9-the-developers-write-fence)
+  (step 3, built): a new test file matching the tester's `test-paths`,
+  beside the Scope, is in bounds; code wholly outside the Scope asks the
+  product owner, the same files asked twice a person
 
 ## Context
 

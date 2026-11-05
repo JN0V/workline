@@ -8,7 +8,7 @@ sources:
   - ci/github/workline-bounds.yml
   - ci/gitlab/workline-bounds.gitlab-ci.yml
   - internal/steer/steer.go
-checked: 7f12e806
+checked: 59a004d4
 verified: agent:claude-code
 ---
 # The bounds: what its code may never touch
@@ -56,7 +56,26 @@ first rule that matches refuses the whole patch:
   (`mul_test.go`, `test_mul.py`, `MulTest.java`, not `latest.go`), in a
   Scope file's folder or under a Scope folder, or in a `test`/`tests`
   folder that sits there. A hidden file is no test (`.env.test`). A
-  Scope `src` lets in no test at the root.
+  Scope `src` lets in no test at the root;
+- a new test file beside the Scope, the write fence
+  ([ADR-0063, §9](../../../docs/adr/0063-every-open-issue-is-due-waiting-or-done.md#9-the-developers-write-fence)):
+  - it matches the tester's `test-paths` patterns
+    ([its settings](../../tester/README.md#settings)) and is not in
+    the commit the rules are read at;
+  - its home, the folder holding its first `test`, `tests`, `spec` or
+    `__tests__` folder, else its own, is a Scope path's folder, holds
+    one, or is in one: `Storage/test/test_name/test_name.cpp` beside a
+    Scope `Storage/include/Storage.h`;
+  - the root is a home only to a Scope file at the root: a Scope
+    `src/x.py` lets in no `tests/test_x.py`;
+  - a kept test stays the fence's in the next rounds, its record naming
+    it, though the pull request's head holds it;
+  - a folder pattern lets in any new file under it: `*/test/**` takes a
+    `test/CMakeLists.txt` or a `conftest.py` too; name files
+    (`**/test_*.cpp`) for tests alone;
+  - said and folded in: listed on the pull request and on the issue
+    (`workline:scope-kept`), added to the Scope at the product owner's
+    next refine ([below](#asking-the-product-owner-for-files)).
 
 **Never in bounds:**
 
@@ -156,6 +175,26 @@ The check above, before the push, stays a fast first pass.
 - **Outside the scope**: anything found there belongs in an issue
   ([principle 8](../../../docs/PRINCIPLES.md)).
 
+## Asking the product owner for files
+
+A step whose code lies wholly outside the bounds asks the product owner,
+whose Scope it is
+([ADR-0063, §9](../../../docs/adr/0063-every-open-issue-is-due-waiting-or-done.md#9-the-developers-write-fence)):
+
+- **Its first step**, no pull request yet: the issue goes back to
+  refine, the product owner's state, with the files, its agent's note
+  and the `workline:scope-ask` mark (`scope-asked`). A Scope naming no
+  file is the same: every file is outside it. The product owner widens
+  the Scope and readies it, or readies it as it is, why said.
+- **A review round**: the issue is blocked, the product owner woken at
+  once on the mark; it widens the Scope and sends the issue back to
+  ready ([review held](review-held.md)).
+- **The same files asked again**, whatever the head: blocked for a
+  person, no mark. A file not asked before is a new ask. The files
+  asked are kept in the developer's record, from claim to claim.
+- **Part of its code in bounds**: applied, the rest refused and said;
+  no ask.
+
 ## What happens to a refusal
 
 - **Left out**: the refused patch is not applied; the others are.
@@ -202,8 +241,8 @@ The check above, before the push, stays a fast first pass.
 
 ## Not yet
 
-- **A refused patch is not asked again**: the code is applied without
-  it; the proof (step 3) shows what is missing.
+- **A refused patch beside kept code is not asked again**: the code is
+  applied without it; the proof (step 3) shows what is missing.
 - **Where the code goes**: a branch of its own, proven, opened ready
   or as a Draft ([the proof](proof.md)); a refused file is said in its
   `## Left out` ([the pull request](pull-request.md)).

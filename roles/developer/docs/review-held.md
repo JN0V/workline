@@ -3,7 +3,7 @@ sources:
   - internal/developer/review.go
   - internal/developer/widen.go
   - internal/developer/rewrite.go
-checked: 92caf46b
+checked: 59a004d4
 verified: agent:claude-code
 ---
 # A round with no fix pushed
@@ -50,12 +50,16 @@ a round asks it to widen it ([#921](https://github.com/JN0V/workline/issues/921)
     round asked, from its record: a green pull request resumes too
     ([#1022](https://github.com/JN0V/workline/issues/1022)).
   - Or it keeps the issue blocked, its reason written.
-- **Once a head, a Scope and its files**: the same files asked again
-  on the same, the issue is blocked for a person, with no ask; the
-  person who widens it and puts it back to ready resumes the round. A
-  file not asked before is asked of the product owner
-  ([#1073](https://github.com/JN0V/workline/issues/1073)). The rounds'
-  cap bounds the rest.
+- **Once a set of files, whatever the head**: the same files asked
+  again, on any head, the issue is blocked for a person, with no ask;
+  the person who widens it and puts it back to ready resumes the
+  round. A file not asked before is asked of the product owner
+  ([#1073](https://github.com/JN0V/workline/issues/1073),
+  [ADR-0063, §9](../../../docs/adr/0063-every-open-issue-is-due-waiting-or-done.md#9-the-developers-write-fence)).
+  The rounds' cap bounds the rest.
+- **A new test file beside the Scope** is no ask: it is in bounds,
+  pushed, listed on the round's comment and on the issue
+  ([the bounds](bounds.md#what-it-checks)).
 - **A round that holds a reviewer's finding wrong** asks nothing: the
   reviewer decides.
 - **A round before this**, no fix on a red check, runs once more at the

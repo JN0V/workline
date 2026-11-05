@@ -1,0 +1,9 @@
+# The developer's agent writing #2's code in README.md alone, which #2's
+# Scope does not name (#1084): nothing within its bounds.
+- patch:
+    file: README.md
+    content: |
+      # Project
+
+      A small shell project. It multiplies now.
+- note: "The multiplication is documented in README.md, outside lib.sh."

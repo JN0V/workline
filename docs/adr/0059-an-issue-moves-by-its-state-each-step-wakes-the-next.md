@@ -18,7 +18,11 @@
   [ADR-0063](0063-every-open-issue-is-due-waiting-or-done.md#6-typed-outcomes),
   step 2, built: a run's machine error moves no state and is run again
   within a budget, the record's `lost` read as one; the code a role
-  lacked given at its next run
+  lacked given at its next run;
+  [ADR-0063](0063-every-open-issue-is-due-waiting-or-done.md#9-the-developers-write-fence),
+  step 3, built: the developer's first step with code only outside the
+  Scope sends the issue back to refine, a Scope ask, not Blocked; the
+  same files asked twice, whatever the head, block it for a person
 
 ## Context
 

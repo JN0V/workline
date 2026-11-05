@@ -177,6 +177,9 @@ func body(a Act, ready bool) string {
 	if len(a.Tests) > 0 {
 		fmt.Fprintf(&b, "- Tests, in a commit apart: %s.\n", files(a.Tests))
 	}
+	if len(a.Beside) > 0 {
+		fmt.Fprintf(&b, "- New test files beside the issue's %s, kept by the write fence: %s; the product owner adds them to the %[1]s at its next run.\n", work.Name(work.Scope), files(a.Beside))
+	}
 	if len(a.Acceptance) > 0 {
 		fmt.Fprintf(&b, "- The tester's acceptance tests, read-only to the developer, from `%s%d`: %s.\n", tester.TestsBranch, a.Issue, files(a.Acceptance))
 	}
