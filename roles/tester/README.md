@@ -191,7 +191,7 @@ workline test check --base origin/main
 | `report-missing` | yes | a run wrote no report where `test-report` says, or not JUnit XML |
 | `tests-not-built` | no, warns | tests the base ran are not in the report of the base with the change's tests: their build broke there |
 | `no-new-test` | no, warns | the change touches test files, but no new test is in the report |
-| `build-broken` | yes | the build broke on the base with the change's tests, by more than a name the base lacks; writing an issue's tests, after the agent is asked once more with the error, then a machine error the line runs again ([the record](../../docs/spec/routing.md#once-a-state-the-record)) |
+| `build-broken` | yes | the build broke on the base with the change's tests, by more than a name the base lacks, or by a missing name the issue never names; writing an issue's tests, after the agent is asked once more with the error, then a machine error the line runs again ([the record](../../docs/spec/routing.md#once-a-state-the-record)) |
 | `setting-invalid` | yes | a `build-errors` pattern does not compile |
 
 - **A change with no new test** passes, and says so.
@@ -201,7 +201,7 @@ workline test check --base origin/main
   is not a new test: `tests-not-built` says so.
 - **A missing name is red**: a test calling code the base lacks does
   not build there. Red only when each compiler error is such a name, in
-  the change's tests ([how](docs/missing-name.md)).
+  the change's tests, and the issue names it ([how](docs/missing-name.md)).
 
 ## Settings
 

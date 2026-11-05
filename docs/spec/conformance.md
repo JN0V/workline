@@ -199,7 +199,8 @@ step 1):
   Beside it, the Go packages the eleventh run names, tested by `go test`.
 - **The fake's progress**: the product owner readies, unblocks or names
   a proof; the tester's test is red by a missing name, the developer's
-  fix adds it. `SIM_DUMP=<dir>` keeps each task; `SIM_INFO=1` logs every
+  fix adds it; each issue's title names that fix, as a real Scope names
+  what a change adds. `SIM_DUMP=<dir>` keeps each task; `SIM_INFO=1` logs every
   finding.
 - **Every answer kind**, as a named trace on a real issue and in the
   seeded scripts: a malformed answer, a miscounted hunk, a test or code
