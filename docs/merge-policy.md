@@ -34,13 +34,10 @@ merge: {autonomy: cautious}   # off unless set: no auto-merge is touched
   - the line passed on that head, every step that needs an agent answered
     by one, whole. With no agent, every review falls short: nothing is
     turned on where the reviewer runs.
-  - **A change too large for the reviewer** (`review-not-whole`, past
-    its [parts](../roles/reviewer/docs/parts.md#past-parts-max)): read it
-    whole yourself, then put `workline:accepted-whole` (GitLab:
-    `workline::accepted-whole`). It is a yes that also takes that review;
-    a red check still holds. The plain label never takes it, so a bulk
-    filter cannot
-    ([amendment](adr/0042-the-engine-merges-by-the-projects-policy.md#amendment-2026-11-05-1107-a-person-who-read-it-whole-takes-a-review-not-whole)).
+  - **Too large for the reviewer** (`review-not-whole`): read it whole,
+    then put `workline:accepted-whole`, a yes that takes that review; a
+    red check still holds
+    ([why](adr/0042-the-engine-merges-by-the-projects-policy.md#amendment-2026-11-05-1107-a-person-who-read-it-whole-takes-a-review-not-whole)).
   - **The verdict's run only**: the reviewer's lenses that only warn read
     apart, after or beside it. Their findings, and one of them failing,
     may post after the verdict, and after the merge: read their comment
@@ -75,8 +72,7 @@ merge: {autonomy: cautious}   # off unless set: no auto-merge is touched
   is no result: the latest other run of that check counts — on GitLab,
   the newest other pipeline of that head —, else it waits. One not judged yet waits, named.
 - **The labels** are made in the forge's list when missing: put
-  `workline:accepted` in bulk, from a saved filter;
-  `workline:accepted-whole` one by one.
+  `workline:accepted` in bulk, from a saved filter.
 
 ## The yes covers one head
 
