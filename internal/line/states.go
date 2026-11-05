@@ -471,9 +471,20 @@ func runStateStep(res *Result, cfg *routing.Config, f forge.Forge, spec string, 
 			prev = nil
 		}
 		st.write.Record.Errors, st.write.Failed = prev.with(out, now), true
+	case needsCode(out) && given:
+		// Said lacking again once given it (ADR-0063, §5): Waiting on a
+		// person, Blocked on the board, in this step, said at once.
+		why := fmt.Sprintf("the %s said again it lacks code in its state %s, given what it named: %s; a person names the files it needs in a comment", st.role, st.from.Name, oneLine(out.Said))
+		var comments []string
+		if b, ok := f.(forge.Backlog); ok {
+			comments, _ = b.Comments(forge.Target{Kind: "issue", ID: st.write.Issue}) // none read: the next comment is news
+		}
+		res.Findings = append(res.Findings, verdict.Finding{Rule: "needs-spent", Level: "warn", Where: fmt.Sprintf("#%d", st.write.Issue), Message: why + ": moved to " + BlockedState})
+		st.write.Record = blocking(st.write.Record, st.from.Name, why, comments)
+		st.write.Blocked = why
 	case needsCode(out):
 		n := &Needs{Said: oneLine(out.Said), At: now.Format(time.RFC3339), Times: 1}
-		if given || same && st.rec.Needs != nil {
+		if same && st.rec.Needs != nil {
 			n.Times = 2
 		}
 		st.write.Record.Needs = n

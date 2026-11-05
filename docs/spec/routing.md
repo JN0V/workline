@@ -474,7 +474,7 @@ whose result moves the issue to the next. The table is the routing's
   engine (`needs-code`), never "no test possible". Due at once: the
   role runs again in the same step, given it (`state-given`; its task
   says so, the tester's gets those files). Said lacking again, the
-  record keeps it (`needs`) and the next reconcile moves the issue to
+  step itself moves the issue to
   `workline:blocked` for a person to name its files (`needs-spent`).
 - **Left free by the developer, due again**
   ([ADR-0059, amended](../adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#amendment-2026-11-02-a-ready-issue-left-free-wakes-the-developer-again)):
