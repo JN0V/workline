@@ -64,7 +64,7 @@ family:
 
 | Family | Rule |
 |---|---|
-| Braces (C, C++, Go, Java, C#, JavaScript, TypeScript, Rust, Kotlin, Swift, PHP, …) | a block whose header holds no container word before its first parameters is a body: its opening line kept, `… }` after it |
+| Braces (C, C++, Go, Java, C#, JavaScript, TypeScript, Rust, Kotlin, Swift, PHP, …) | a block whose header holds a parenthesis or no container word is a body, its opening line kept, `… }` after it; where a type's header holds its parameters (Kotlin, Scala, Java, C#, TypeScript), a container word before them keeps it |
 | Indentation (Python) | a header ending in `:` whose first word opens a body (`def`) is cut: its header kept, `…` after it; `class`, `if TYPE_CHECKING:` kept |
 | A closing word (Ruby, Lua), shell | no outline: whole or cut, as before |
 
@@ -135,7 +135,9 @@ the declarations one step away use. What does not fit stays a path,
 - **Braces that do not balance**, a regular expression's (`/\{/`) or the
   branches of an `#if` each opening one, give no outline: the file is
   given whole or cut, as with no outline, never the rest of it hidden.
-- A container word after a parenthesis is a body: `class A extends
+- A container word after a parenthesis is a body, and before one too where
+  a type's header holds no parameters (C's `struct foo *make(int x) {`):
+  `class A extends
   mixin(B) {` keeps its members, `val x = object : T {` does not. An
   annotation's or attribute's parenthesis is
   dropped first.
