@@ -65,6 +65,11 @@ type Ask struct {
 	// given whole, its first lines when it does not fit, right after the
 	// definitions, before any file is given whole for being named.
 	Needs []string
+	// Depth is the steps of includes and imports followed from the test
+	// and the code given, the test's first, each file given as its
+	// declarations while they fit; a file named or asked for that does
+	// not fit whole is given so too. 0: none, the paths listed only.
+	Depth int
 	// Budget is the lines given in all; BudgetName the setting it comes
 	// from, said in the cut.
 	Budget     int
@@ -87,6 +92,10 @@ type File struct {
 	Test   bool     // an existing test, given to write alike
 	Unread []Piece  // what it names in the file, past the budget
 	Above  bool     // what it names given for an earlier ask of the same task
+	// Decls are the lines shown when the file is given as its
+	// declarations: its bodies left out, the pieces given shown whole.
+	Decls    []string
+	DeclsWhy string
 }
 
 // Whole says whether the file is given whole.
@@ -96,6 +105,14 @@ func (f File) Whole() bool {
 
 // GivenLines are the lines given of the file.
 func (f File) GivenLines() int {
+	if len(f.Decls) > 0 {
+		return len(f.Decls)
+	}
+	return f.givenPieces()
+}
+
+// givenPieces are the lines of the pieces given.
+func (f File) givenPieces() int {
 	n := 0
 	for _, p := range f.Given {
 		n += p.To - p.From + 1
@@ -119,7 +136,7 @@ type Pick struct {
 func (p Pick) Paths() []string {
 	var out []string
 	for _, f := range p.Files {
-		if !f.Test && (len(f.Given) > 0 || f.Above) {
+		if !f.Test && (len(f.Given) > 0 || len(f.Decls) > 0 || f.Above) {
 			out = append(out, f.Path)
 		}
 	}
@@ -484,13 +501,23 @@ func (p *Picker) Pick(a Ask) Pick {
 		}
 	}
 	// 1b. The files the agent asked for, whole, or their first lines.
+	// With a depth, a test whole while it fits, the others as named
+	// files are given (3): their declarations, then whole if they fit.
+	var asked, askedTests []string
 	for _, w := range a.Needs {
 		f := work.InRepo(strings.TrimSpace(work.LineOff(w)), p.files)
 		if f == "" || skip(f) || len(p.Lines(f)) == 0 {
 			continue
 		}
 		file(f).Named = true
-		wants = append(wants, want{f, 1, len(p.Lines(f)), "asked for at the last run", true})
+		switch {
+		case a.Depth > 0 && isTest(f):
+			askedTests = append(askedTests, f)
+		case a.Depth > 0:
+			asked = append(asked, f)
+		default:
+			wants = append(wants, want{f, 1, len(p.Lines(f)), askedWhy, true})
+		}
 	}
 	// 2b. A name no function defines (a member, a constant): the lines
 	// naming it in the files named, a few, as its definition stands
@@ -580,26 +607,78 @@ func (p *Picker) Pick(a Ask) Pick {
 		give(w)
 	}
 	// 3. The files named, whole when what they add fits; else, with
-	// nothing of them given, their first lines.
+	// nothing of them given, their first lines. With a depth, their
+	// declarations first, the pieces given shown whole in them; then the
+	// files the test and the code include or import (3b); then each
+	// named file whole if what it adds still fits. The files the agent
+	// asked for come first.
+	own := slices.Clone(asked)
 	for _, f := range named {
+		if !slices.Contains(own, f) {
+			own = append(own, f)
+		}
+	}
+	why := func(f string) string {
+		if slices.Contains(asked, f) {
+			return askedWhy
+		}
+		return "named"
+	}
+	whole := func(g *File) {
+		left -= len(g.Lines) - g.GivenLines()
+		g.Given, g.Cut, g.Unread, g.Decls = []Piece{{1, len(g.Lines), why(g.Path)}}, 0, nil, nil
+	}
+	for _, f := range own {
 		g := file(f)
 		switch extra := len(g.Lines) - g.GivenLines(); {
 		case len(p.given[f]) > 0 && len(g.Given) == 0:
 			g.Above = true // given for an earlier issue: not twice
+		case g.Whole():
+		case slices.Contains(asked, f) && extra <= left: // asked for by name: whole while it fits
+			whole(g)
+		case a.Depth > 0 && p.declare(g, why(f), left+g.GivenLines()):
+			left -= g.GivenLines() - g.givenPieces()
 		case extra <= left:
-			left -= extra
-			g.Given, g.Cut, g.Unread = []Piece{{1, len(g.Lines), "named"}}, 0, nil
-		case !g.Whole():
+			whole(g)
+		default:
 			short = true
 		}
 	}
-	for _, f := range named {
+	for _, f := range own {
 		g := file(f)
-		if len(g.Given) == 0 && len(g.Unread) == 0 && !g.Above && left > 0 && len(g.Lines) > 0 {
+		if len(g.Given) == 0 && len(g.Decls) == 0 && len(g.Unread) == 0 && !g.Above && left > 0 && len(g.Lines) > 0 {
 			k := min(len(g.Lines), left)
 			g.Given = []Piece{{1, k, "its first lines"}}
 			left -= k
 		}
+	}
+	// 3b. With a depth: the files asked for whole while they fit (asked
+	// for by name, given so); the files the test and the code include or
+	// import, as their declarations, the test's first: what a new test
+	// needs to build; the tests asked for, their first lines at least;
+	// the files named whole while they fit.
+	if a.Depth > 0 {
+		upgrade := func(fs []string) {
+			for _, f := range fs {
+				if g := file(f); len(g.Decls) > 0 {
+					if len(g.Lines)-g.GivenLines() <= left {
+						whole(g)
+					} else {
+						short = true
+					}
+				}
+			}
+		}
+		upgrade(asked)
+		roots := slices.Clone(asked)
+		for _, w := range a.Paths {
+			roots = append(roots, p.wordFiles(strings.TrimSpace(work.LineOff(w)), a.Tests)...)
+		}
+		left = p.closure(a, test, roots, order, byPath, file, left)
+		for _, f := range askedTests {
+			give(want{f, 1, len(p.Lines(f)), askedWhy, true})
+		}
+		upgrade(own)
 	}
 	// 4. The other places naming a name, the rarer first, a few each,
 	// those in the files named first, a third of the budget at most:
@@ -643,7 +722,7 @@ func (p *Picker) Pick(a Ask) Pick {
 		if g.Test || f == test && tf != nil && len(tf.Given) > 0 && !g.Named { // given once, as the test
 			continue
 		}
-		if len(g.Given) == 0 && !g.Named && len(g.Unread) == 0 {
+		if len(g.Given) == 0 && len(g.Decls) == 0 && !g.Named && len(g.Unread) == 0 {
 			continue
 		}
 		pk.Files = append(pk.Files, *g)

@@ -39,6 +39,10 @@ const (
 	exitExternal = 3  // an outside service failed
 	testFilesMax = 3  // test files beside the Scope's code given whole
 	listedMax    = 40 // test files named, not given
+	// closureDepth: the includes and imports followed from the test and
+	// the code given, as declarations, the panel's two steps (#36 on the
+	// C++ copy asked for a new set of headers at each of three runs).
+	closureDepth = 2
 )
 
 // Scenario is one of an issue's Validation scenarios: its name, as the
@@ -227,7 +231,7 @@ func writeCode(b *strings.Builder, repo, text, scope string, sources, needs []st
 	if budget <= 0 {
 		budget = 1500
 	}
-	pick := pk.Pick(codepick.Ask{Text: text + "\n" + scope, Paths: paths, Needs: needs, Tests: s.Paths, Budget: budget, BudgetName: "code-lines-max"})
+	pick := pk.Pick(codepick.Ask{Text: text + "\n" + scope, Paths: paths, Needs: needs, Tests: s.Paths, Depth: closureDepth, Budget: budget, BudgetName: "code-lines-max"})
 	if len(pick.Named()) > 0 {
 		fmt.Fprintf(b, "\n## The code the %s names\n", work.Name(work.Scope))
 		if len(owners) > 0 {

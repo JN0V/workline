@@ -30,11 +30,11 @@ func (pk Pick) Write(b *strings.Builder, st Style) {
 		if f.Test {
 			continue
 		}
-		if f.Above && len(f.Given) == 0 {
+		if f.Above && len(f.Given) == 0 && len(f.Decls) == 0 {
 			above = append(above, "`"+f.Path+"`")
 			continue
 		}
-		if len(f.Given) == 0 {
+		if len(f.Given) == 0 && len(f.Decls) == 0 {
 			if len(f.Unread) == 0 {
 				// Named, never shown empty: a file given as 0 lines
 				// read as an empty file to the agent (#801).
@@ -72,6 +72,16 @@ func (pk Pick) writeFile(b *strings.Builder, f File, st Style, namer, budgetName
 	}
 	n := len(f.Lines)
 	switch {
+	case len(f.Decls) > 0:
+		var whole []string
+		for _, p := range f.Given {
+			whole = append(whole, fmt.Sprintf("lines %d to %d whole, %s", p.From, p.To, p.Why))
+		}
+		also := ""
+		if len(whole) > 0 {
+			also = "; " + strings.Join(whole, "; ")
+		}
+		fmt.Fprintf(b, "\n### `%s` (%d lines: its declarations, each body left out as `…`, %s%s)\n%s\n%s", f.Path, n, f.DeclsWhy, also, about, fence(f.Decls, 1, len(f.Decls), false))
 	case f.Whole():
 		fmt.Fprintf(b, "\n### `%s`\n%s\n%s", f.Path, about, fence(f.Lines, 1, n, st.Numbered))
 	case len(f.Given) == 1 && f.Given[0].From == 1 && f.Given[0].Why == "its first lines":

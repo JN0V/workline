@@ -92,10 +92,6 @@ func norm(s string) string {
 }
 
 var (
-	// includeRe is a file a line includes or imports by a path: C and
-	// C++ `#include "a.h"` or `<a/b.h>`, JavaScript `from './a'` and
-	// `require('./a')`, Python `from a.b import c` and `import a.b`.
-	includeRe = regexp.MustCompile(`^\s*#\s*include\s*[<"]([^>"]+)[>"]|\bfrom\s+['"](\.{1,2}/[^'"]+)['"]|\brequire\(\s*['"](\.{1,2}/[^'"]+)['"]|^\s*from\s+([\w.]+)\s+import\b|^\s*import\s+([\w.]+)\s*$`)
 	// baseRe is a type a class derives from: C++ `: public Base`, Python
 	// `class A(Base):`, Java and TypeScript `extends Base`.
 	baseRe = regexp.MustCompile(`\b(?:public|protected|private|extends|implements)\s+(?:virtual\s+)?([A-Z]\w*)|^\s*class\s+\w+\(([A-Z]\w*)`)
@@ -118,28 +114,11 @@ func (p *Picker) linked(pk Pick, tests []string) []string {
 	}
 	var bases []string
 	for _, f := range pk.Files {
-		if len(f.Given) == 0 { // the test's includes too: what a new test needs to build
+		if len(f.Given) == 0 && len(f.Decls) == 0 { // the test's includes too: what a new test needs to build
 			continue
 		}
-		for _, l := range f.Lines {
-			m := includeRe.FindStringSubmatch(l)
-			if m == nil {
-				continue
-			}
-			for k, w := range m[1:] {
-				switch {
-				case w == "":
-				case k >= 3: // a Python module: a.b is a/b.py, or a/b/__init__.py
-					w = strings.ReplaceAll(w, ".", "/")
-					got := p.resolve(f.Path, w+".py")
-					if got == "" {
-						got = p.resolve(f.Path, w+"/__init__.py")
-					}
-					add(got, "imported")
-				default:
-					add(p.resolve(f.Path, w), "included or imported")
-				}
-			}
+		for _, im := range p.imports(f.Path, tests) {
+			add(im.file, im.why)
 		}
 		for _, g := range f.Given {
 			if f.Test {
@@ -169,37 +148,4 @@ func (p *Picker) linked(pk Pick, tests []string) []string {
 		}
 	}
 	return out
-}
-
-// resolve is the file an include or an import names from a file: beside
-// it, from the root, or the one file whose path ends with it.
-func (p *Picker) resolve(from, w string) string {
-	var tries []string
-	if strings.HasPrefix(w, ".") {
-		base := path.Join(path.Dir(from), w)
-		tries = append(tries, base)
-		for _, e := range []string{".js", ".ts", ".jsx", ".tsx", ".mjs", "/index.js", "/index.ts"} {
-			tries = append(tries, base+e)
-		}
-	} else {
-		tries = append(tries, path.Join(path.Dir(from), w), w)
-	}
-	for _, t := range tries {
-		if p.tracked[t] {
-			return t
-		}
-	}
-	if strings.HasPrefix(w, ".") {
-		return ""
-	}
-	found := ""
-	for _, f := range p.files {
-		if strings.HasSuffix(f, "/"+w) {
-			if found != "" {
-				return "" // several: none named
-			}
-			found = f
-		}
-	}
-	return found
 }

@@ -1,7 +1,3 @@
 # Cases the engine does not pass yet. The suite runs them anyway and fails
 # if one starts passing while still listed here.
 routing/ready-overlap-gone-wait-said
-tester/picker-imports-as-declarations-go
-tester/picker-imports-as-declarations-python
-tester/picker-imports-as-declarations-typescript
-tester/picker-includes-as-declarations-cpp
