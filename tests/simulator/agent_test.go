@@ -207,11 +207,9 @@ func (a *simAgent) answerOf(kind outcome, role string, task []byte) (outcome, st
 			}
 		}
 		return kind, fmt.Sprintf("- sources: {issue: ISSUE, sources: [%q], quote: {path: %q, text: %q}, why: \"no code was given: the file the title names\"}\n", h, h, line)
-	case kind == needsEngine && role == "tester" && a.by[role] != nil:
+	case kind == needsEngine && role == "tester":
 		// A tester short of code (#1047, #1059): the header the Scope
-		// names, said lacking, never "no test possible". Its named trace
-		// alone: under seeds, said twice in a row it waits for a person
-		// (ADR-0063, §5), which the needs-input oracle holds to Due.
+		// names, said lacking, never "no test possible".
 		return kind, fmt.Sprintf("- note: \"needs: %s — the code the scenarios call is not in the task\"\n", headerIn(task, "## Scope"))
 	case kind == needsRole && role == "tester":
 		// No test possible: the product owner decides.
