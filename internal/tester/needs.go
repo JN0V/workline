@@ -3,7 +3,7 @@ package tester
 // A tester short of code (ADR-0063, §6): its agent writes no test and
 // names the files it lacks, `needs: <paths> — why`. A needs-input of the
 // engine, never "no test possible" (#1047, #1059): the issue keeps its
-// state, said on it; the line gives those files at the step's next run.
+// state, said on it; the line runs it again at once, given those files.
 
 import (
 	"fmt"
@@ -69,7 +69,7 @@ func needed(runDir, repo string, t task, intents []intent.Intention, paths []str
 		said += ": " + why
 	}
 	body := backlog.Said("The tester", "wrote no tests for this issue yet: it lacks code", said,
-		"the line gives it these files at its next run; said lacking again, the issue moves to Blocked for a person to name its files")
+		"the line runs it again at once, given these files; said lacking again, the issue moves to Blocked for a person to name its files")
 	intents = append(slices.DeleteFunc(intents, func(i intent.Intention) bool { return i.Kind == "note" }),
 		intent.Intention{Kind: "comment", Value: map[string]any{"issue": t.Issue, "sticky": "issue", "body": body}})
 	if err := intent.Write(filepath.Join(runDir, "out", "intentions.yaml"), intents); err != nil {

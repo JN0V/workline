@@ -103,9 +103,13 @@ const (
 // (ADR-0063, §6).
 const FailedInput = "failed"
 
-// withFailed ends the task at file, when pre wrote one, with what failed
-// at the last run.
-func withFailed(file, failed string) error {
+// NeedsInput is the input the line gives a role it runs again at once
+// for the code its agent said it lacked: the paths, comma-separated
+// (ADR-0063, §6).
+const NeedsInput = "needs"
+
+// withSection ends the task at file, when pre wrote one, with a section.
+func withSection(file, title, text string) error {
 	data, err := os.ReadFile(file)
 	if os.IsNotExist(err) {
 		return nil
@@ -113,9 +117,7 @@ func withFailed(file, failed string) error {
 	if err != nil {
 		return err
 	}
-	text := strings.TrimRight(string(data), "\n") + "\n\n## Your last run on this failed\n\n" + failed +
-		"\n\nThe engine could not use that run: answer again, whole, with this fixed.\n"
-	return os.WriteFile(file, []byte(text), 0o644)
+	return os.WriteFile(file, []byte(strings.TrimRight(string(data), "\n")+"\n\n## "+title+"\n\n"+text+"\n"), 0o644)
 }
 
 // AIWaitsReady is what Result.AIWaits and WORKLINE_AI_WAITS hold on a
@@ -671,7 +673,16 @@ func run(o Options, res *Result) error {
 	// A run again after a machine error carries what failed (ADR-0063,
 	// §6): the agent reads it, and its input is not the one that failed.
 	if failed := strings.TrimSpace(o.Inputs[FailedInput]); failed != "" {
-		if err := withFailed(filepath.Join(runDir, "in", "task.md"), failed); err != nil {
+		if err := withSection(filepath.Join(runDir, "in", "task.md"), "Your last run on this failed", failed+
+			"\n\nThe engine could not use that run: answer again, whole, with this fixed."); err != nil {
+			return err
+		}
+	}
+	// Run again for the code its agent said it lacked: told what it is
+	// given now (ADR-0063, §6).
+	if needs := strings.TrimSpace(o.Inputs[NeedsInput]); needs != "" {
+		if err := withSection(filepath.Join(runDir, "in", "task.md"), "The code you said you lacked", "`"+strings.ReplaceAll(needs, ", ", "`, `")+
+			"`: given in this task, as far as it fits. Answer with it; name a file only if it is still missing."); err != nil {
 			return err
 		}
 	}

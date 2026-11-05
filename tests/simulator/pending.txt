@@ -46,24 +46,21 @@ trial-35-po-unread same-tick-twice
 # asked, nothing said (#1084).
 trial-35-needs-po-code one-state-label needs-input-on-its-source i1-status expected-end one-byte-due
 # The product owner's question: no status after it, the silent park
-# (#1082). The code it names is given at its next run, after the
-# back-off (ADR-0063, step 2), said as a wait: the oracle holds a
-# needs-input of the engine to Due at once, which a run again in the same
-# step would give at twice a step's forge requests, over the bound. Then
-# the claim's two labels (#1081).
-trial-35-needs-engine needs-input-on-its-source one-state-label
+# (#1082). The code it names, or the tester says it lacks (#1047,
+# #1059), is given at once, the role run again in its step (ADR-0063,
+# §5); then the claim's two labels (#1081).
+trial-35-needs-engine one-state-label
+trial-35-tester-needs one-state-label
 trial-35-needs-person needs-input-on-its-source i1-status expected-end
 # Replayed, the trial's first product owner answer, read through the
 # engine's reader, then the silent park: the spec reviewer that woke it
 # again in the trial is not on the simulator's line, and an act refused
 # or a question asked leaves no status (#1082). #33 names its heap suite
 # and asks its reporter. traces/answers/<trace>/parts says where each
-# parts, and the answers left unused. #3's code named is given at the
-# next run, and it goes on to its tests: the tester's answer, refused,
-# is asked again in the same run with what refused it; the simulator's
-# digest reads the task alone, not that feedback, and sees the same
-# input twice. Then the claim's two labels.
-trial-3-replay i2-same-input one-state-label i1-status expected-end one-byte-due
+# parts, and the answers left unused. #3's code named is given at once,
+# and it goes on to its tests, then the claim's two labels, then
+# Developing says nothing, as #36.
+trial-3-replay one-state-label i1-status expected-end one-byte-due
 trial-4-replay i1-status expected-end
 trial-5-replay i1-status expected-end
 trial-16-replay i1-status expected-end
@@ -73,14 +70,12 @@ trial-33-replay i1-status expected-end
 trial-34-replay i1-status expected-end
 trial-35-replay i1-status expected-end
 trial-36-replay i1-status expected-end
-# The product owner names WebUI.h, given at its next run after the
-# back-off, no more in the same tick (#1091); its next answer drafts
-# nothing: refine-capped, blocked for the week, read again at day 7.
-trial-37-replay quiet-within-k expected-end
+# The product owner names WebUI.h, given at once in its step; its next
+# answer drafts nothing, and the same tick's second run wakes it again,
+# left unrefined, on a new input, which ADR-0063 says it must not do
+# (#1091); then refine-capped, no status, blocked for the week.
+trial-37-replay same-tick-twice i1-status quiet-within-k expected-end
 # Blocked by the machine before runs had typed outcomes: read again at
 # once (ADR-0063, migration), unblocked, then the claim's two labels.
 trial-19 one-state-label
 trial-37 one-state-label
-# The tester short of code says what it lacks (#1047, #1059): given at
-# its next run after a back-off, on the same task.
-trial-35-tester-needs i2-same-input

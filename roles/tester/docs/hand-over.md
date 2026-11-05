@@ -98,8 +98,8 @@ When no new test fits, the tester's agent names the proof that does
   `proof: <kind> — why`.
 - **Short of code** (`needs: <paths> — why`): the agent lacks a file
   its test needs, never "no test possible". The issue keeps its state,
-  the files said on it (`needs-code`); the line gives them at the
-  tester's next run, then a person if still lacking
+  the files said on it (`needs-code`); the line gives them to the
+  tester, run again at once; then a person if still lacking
   ([the record](../../../docs/spec/routing.md#once-a-state-the-record)).
 - **Sent back unchanged**: the record keeps the digest of the body the
   tester read. The same body back in its tests, no kind picked, goes to

@@ -55,6 +55,13 @@ func TestErrorsRetryWithinTheirBudget(t *testing.T) {
 	if _, _, spent := other.retry(at.Add(ErrorWindow)); spent == "" {
 		t.Fatal("past the window: the budget not spent")
 	}
+	// Each kind its own window: a run error a day after a build error is
+	// run again.
+	run := verdict.Outcome{Kind: verdict.MachineError, Of: "run", Said: "the agent's run failed"}
+	mixed := other.with(run, at.Add(ErrorWindow+time.Hour))
+	if again, _, spent := mixed.retry(at.Add(ErrorWindow + 2*time.Hour)); !again || spent != "" {
+		t.Fatalf("a new kind past another kind's window: again %v, spent %q", again, spent)
+	}
 }
 
 // A developer's run lost in a record from before typed outcomes reads as

@@ -117,7 +117,7 @@ func (a *simAgent) Propose(r agent.Request) (agent.Call, error) {
 		return a.replay(r, task, answer)
 	}
 	kind, answer = a.answerOf(kind, r.Role.Name, task)
-	a.calls = append(a.calls, call{Tick: tick, Role: r.Role.Name, Digest: a.digest(task), Kind: kind, runDir: r.RunDir})
+	a.calls = append(a.calls, call{Tick: tick, Role: r.Role.Name, Digest: a.digest(received(r.RunDir, task)), Kind: kind, runDir: r.RunDir})
 	if kind == machineError {
 		return c, fmt.Errorf("sim: the agent's run failed")
 	}
@@ -156,7 +156,7 @@ func (a *simAgent) replay(r agent.Request, task []byte, answer string) (agent.Ca
 	if err != nil {
 		kind = replayedUnread
 	}
-	a.calls = append(a.calls, call{Tick: tick, Role: r.Role.Name, Digest: a.digest(task), Kind: kind, runDir: r.RunDir})
+	a.calls = append(a.calls, call{Tick: tick, Role: r.Role.Name, Digest: a.digest(received(r.RunDir, task)), Kind: kind, runDir: r.RunDir})
 	return c, err
 }
 
@@ -207,9 +207,11 @@ func (a *simAgent) answerOf(kind outcome, role string, task []byte) (outcome, st
 			}
 		}
 		return kind, fmt.Sprintf("- sources: {issue: ISSUE, sources: [%q], quote: {path: %q, text: %q}, why: \"no code was given: the file the title names\"}\n", h, h, line)
-	case kind == needsEngine && role == "tester":
+	case kind == needsEngine && role == "tester" && a.by[role] != nil:
 		// A tester short of code (#1047, #1059): the header the Scope
-		// names, said lacking, never "no test possible".
+		// names, said lacking, never "no test possible". Its named trace
+		// alone: under seeds, said twice in a row it waits for a person
+		// (ADR-0063, §5), which the needs-input oracle holds to Due.
 		return kind, fmt.Sprintf("- note: \"needs: %s — the code the scenarios call is not in the task\"\n", headerIn(task, "## Scope"))
 	case kind == needsRole && role == "tester":
 		// No test possible: the product owner decides.
@@ -500,6 +502,16 @@ var volatile = []*regexp.Regexp{
 	regexp.MustCompile(`\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ`),      // a time stamp: the clock moved, not the input
 	regexp.MustCompile(`\d{8}T\d{6}\.\d+-[a-z-]+`),             // a run folder's name
 	regexp.MustCompile(`(?m)^.*(?:minutes?|hours?|days?) ago`), // an age, read from the clock
+}
+
+// received is what an agent's prompt is made of: the task, then the
+// feedback a run asked again in place gives it (agent/prompt.go).
+func received(runDir string, task []byte) []byte {
+	fb, err := os.ReadFile(filepath.Join(runDir, "out", "feedback.md"))
+	if err != nil {
+		return task
+	}
+	return append(append(slices.Clone(task), "\n\n"...), fb...)
 }
 
 // digest is the simulator's own digest of what the fake received: the

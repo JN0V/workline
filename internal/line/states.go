@@ -437,15 +437,30 @@ func runStateStep(res *Result, cfg *routing.Config, f forge.Forge, spec string, 
 	}
 	before, steps := len(res.Findings), len(res.Steps)
 	_, status := runRole(res, cfg, o, 0)
-	out := outcomeOf(res.Steps[steps:], status)
+	out, given := outcomeOf(res.Steps[steps:], status), false
+	if needsCode(out) && status != verdict.BlockedExternal && sameState(f, cfg, st) {
+		// Its agent named the code it lacked (ADR-0063, §5): Due at once,
+		// given it — the role runs again, once, in this step.
+		res.Findings = append(res.Findings, verdict.Finding{Rule: "state-given", Level: "info", Where: fmt.Sprintf("#%d", st.write.Issue),
+			Message: fmt.Sprintf("the %s said it lacks code: run again at once, given %s", st.role, oneLine(out.Said))})
+		in := maps.Clone(o.Inputs)
+		if in == nil {
+			in = map[string]string{}
+		}
+		in[NeedsInput] = oneLine(out.Said)
+		o.Inputs = in
+		steps = len(res.Steps)
+		_, status = runRole(res, cfg, o, 0)
+		out, given = outcomeOf(res.Steps[steps:], status), true
+	}
 	res.Status = worst(res.Status, status)
 	if status == verdict.BlockedExternal {
 		return
 	}
 	// A machine error moves nothing (ADR-0063, I3): its count kept in the
 	// record, said on the issue; the step runs again after the back-off,
-	// within the budget. The code its agent said it lacked is given at
-	// the step's next run. Any other outcome starts them again.
+	// within the budget. Code said lacking once it was given waits for a
+	// person (needs-spent). Any other outcome starts them again.
 	w, now := st.write.Record, clock().UTC()
 	same := st.rec.State == w.State && st.rec.Body == w.Body && st.rec.Labeled == w.Labeled // the same input
 	st.write.Record.Errors, st.write.Record.Lost, st.write.Record.Needs = nil, "", nil
@@ -456,10 +471,10 @@ func runStateStep(res *Result, cfg *routing.Config, f forge.Forge, spec string, 
 			prev = nil
 		}
 		st.write.Record.Errors, st.write.Failed = prev.with(out, now), true
-	case out.Kind == verdict.NeedsInput && out.Of == verdict.FromEngine:
+	case needsCode(out):
 		n := &Needs{Said: oneLine(out.Said), At: now.Format(time.RFC3339), Times: 1}
-		if same && st.rec.Needs != nil {
-			n.Times = st.rec.Needs.Times + 1
+		if given || same && st.rec.Needs != nil {
+			n.Times = 2
 		}
 		st.write.Record.Needs = n
 	}

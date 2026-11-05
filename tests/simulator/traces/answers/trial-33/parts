@@ -1,4 +1,4 @@
 none; unused: 6 product-owner
 The trial's #33 never left refine either. Its first answer names the heap suite: the code
-it lacks, given at its next run (ADR-0063, step 2), whose answer asks the reporter; no
+it lacks, given at once, run again in its step (ADR-0063, step 2), whose answer asks the reporter; no
 status follows (#1082), so the later answers are never asked for.

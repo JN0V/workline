@@ -458,21 +458,24 @@ whose result moves the issue to the next. The table is the routing's
   when the role runs again. The step is due again on the same input
   after 10 minutes (`state-retry`; before, `state-waits` with the time),
   given what failed at the end of its task; 2 tries per kind within
-  24 h of the first error (`line.ErrorBudget`). The next error, or the
-  24 h passed, moves the issue to `workline:blocked`, the error said
-  (`machine-error-spent`). A new input — the state entered anew, the
-  body or labelling changed — starts the count again. The developer's
-  code that does not build is asked again once in the run, with the
-  error, as the tester's test is
-  ([#1083](https://github.com/JN0V/workline/issues/1083)).
+  24 h of that kind's first error (`line.ErrorBudget`). The next error
+  of the kind, or its 24 h passed, moves the issue to
+  `workline:blocked`, the error said (`machine-error-spent`). A new
+  input — the state entered anew, the body or labelling changed —
+  starts the count again. The developer's code that does not build is
+  asked again once in the run, with the error, as the tester's test is
+  ([#1083](https://github.com/JN0V/workline/issues/1083)); not when its
+  agent objects to a frozen test beside it: the tester answers that.
+  The tester's comment then says the line runs it again, never that it
+  blocks it.
 - **The code a role lacks is given**: the product owner naming the
   code an issue is about (`sources`), its Scope left for that code, or
   the tester answering `needs: <paths> — why` is a needs-input of the
-  engine (`needs-code`), never "no test possible". The record keeps what
-  it named (`needs`); the step is due again 10 minutes later, given it
-  (`state-given`; the tester's task gets those files). Said lacking
-  again on the same input, the issue moves to `workline:blocked` for a
-  person to name its files (`needs-spent`).
+  engine (`needs-code`), never "no test possible". Due at once: the
+  role runs again in the same step, given it (`state-given`; its task
+  says so, the tester's gets those files). Said lacking again, the
+  record keeps it (`needs`) and the next reconcile moves the issue to
+  `workline:blocked` for a person to name its files (`needs-spent`).
 - **Left free by the developer, due again**
   ([ADR-0059, amended](../adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#amendment-2026-11-02-a-ready-issue-left-free-wakes-the-developer-again)):
   a wake of the developer records when (`woke`) and the issues it held

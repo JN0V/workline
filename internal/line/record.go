@@ -14,7 +14,6 @@ import (
 	"fmt"
 	"slices"
 	"strings"
-	"time"
 
 	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/board"
@@ -392,10 +391,11 @@ func writeState(f forge.Forge, cfg *routing.Config, repo string, w StateWrite, r
 	case w.Failed && w.Record.Errors != nil:
 		body = failedBody(w, role) + "\n" + body
 	case w.Record.Needs != nil && role != "":
-		n := w.Record.Needs
-		at, _ := time.Parse(time.RFC3339, n.At)
-		body = backlog.Said("workline's line", "gives the "+strings.ReplaceAll(role, "-", " ")+" the code it said it lacks", n.Said,
-			"its next run, from "+at.Add(ErrorBackoff).UTC().Format("2006-01-02 15:04 UTC")+", is given it; said lacking again, the issue moves to Blocked for a person to name its files") + "\n" + body
+		who, next := strings.ReplaceAll(role, "-", " "), "the line moves it to Blocked at its next run, for a person to name its files in a comment"
+		if w.Record.Needs.Times < 2 {
+			next = "the line gives it at the next run"
+		}
+		body = backlog.Said("workline's line", "saw the "+who+" say it lacks code", w.Record.Needs.Said, next) + "\n" + body
 	}
 	return f.Sticky(t, backlog.Inert(body), forge.Marker("sticky="+recordKey), true)
 }

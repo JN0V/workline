@@ -1,5 +1,5 @@
 after tests: the trial went to blocked, the simulator to ready; unused: 2 product-owner
-The product owner's first answer names the code it lacks, given at its next run
+The product owner's first answer names the code it lacks, given at once, run again in its step
 (ADR-0063, step 2), whose answer readies it. The tester's answer, refused at once by the
 engine, is asked again in the same run with what refused it, and its next answer is the
 fake's: the tests go on to ready, where the trial blocked them. The later product owner's

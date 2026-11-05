@@ -4,10 +4,9 @@ package line
 // moves no label, no state, no hop (I3). Its step is run again on the
 // same input after a back-off, within a budget of tries per kind of
 // error; spent, the issue waits for a person, the error said. A
-// needs-input of the engine, the code its agent named, is given at the
-// step's next run, after the same back-off: not in the run that named
-// it, which would double a reconcile's forge requests; named again, a
-// person gives it.
+// needs-input of the engine, the code its agent named, is Due at once:
+// the role runs again, once, in the same step, given it; said lacking
+// again, a person names the files.
 
 import (
 	"fmt"
@@ -36,27 +35,46 @@ const ErrorBackoff = 10 * time.Minute
 
 // NeedsInput gives a role run again for a needs-input of the engine what
 // its agent said it lacked: the paths it named, comma-separated.
-const NeedsInput = "needs"
+const NeedsInput = engine.NeedsInput
 
 // Errors are the machine errors of a step's runs on its input, in its
-// state: by kind, how many; when the first and the last came, the
-// last's kind and what it said. A new input — the state entered anew,
-// its body or labelling changed by a person — starts none.
+// state: by kind, how many and when its first came, its own window; when
+// the last came, its kind and what it said. A new input — the state
+// entered anew, its body or labelling changed by a person — starts none.
 type Errors struct {
-	By    map[string]int `json:"by"`
-	First string         `json:"first"`
-	Last  string         `json:"last"`
-	Kind  string         `json:"kind"`
-	Said  string         `json:"said,omitempty"`
+	By    map[string]int    `json:"by"`
+	First map[string]string `json:"first,omitempty"`
+	Last  string            `json:"last"`
+	Kind  string            `json:"kind"`
+	Said  string            `json:"said,omitempty"`
 }
 
 // Needs is the code a step's agent said it lacked on its input, the
-// last time (ADR-0063, §6): when, and how many times in a row. Given at
-// the next run, after ErrorBackoff; named twice, a person gives it.
+// last time (ADR-0063, §5): when, and how many times in a row. Given at
+// once, the role run again in the same step; said lacking once given
+// it (Times 2), a person names the files.
 type Needs struct {
 	Said  string `json:"said"`
 	At    string `json:"at"`
 	Times int    `json:"times"`
+}
+
+// needsCode says whether an outcome is a needs-input of the engine: the
+// code its agent said it lacked.
+func needsCode(o verdict.Outcome) bool {
+	return o.Kind == verdict.NeedsInput && o.Of == verdict.FromEngine
+}
+
+// sameState says whether the issue of step st is still in the state the
+// step ran in, read again: a role that moved it is not run again there.
+// One that does not read is not either.
+func sameState(f forge.Forge, cfg *routing.Config, st stateStep) bool {
+	is, err := f.Issue(st.write.Issue)
+	if err != nil {
+		return false
+	}
+	s, ok := cfg.StateOf(is.Labels)
+	return ok && s.Name == st.from.Name
 }
 
 // typedDue is what the last run's typed outcome makes of a step whose
@@ -89,13 +107,10 @@ func typedDue(res *Result, name string, s routing.State, is forge.Issue, rec Rec
 		return true, now, map[string]string{engine.FailedInput: errs.Said}, nil, false
 	}
 	if n := rec.Needs; n != nil {
-		last, _ := time.Parse(time.RFC3339, n.At)
-		switch {
-		case n.Times > 1:
+		if n.Times > 1 {
 			return blocked("needs-spent", fmt.Sprintf("the %s said again it lacks code in its state %s, given what it named: %s; a person names the files it needs in a comment", name, s.Name, n.Said))
-		case at.Before(last.Add(ErrorBackoff)):
-			return wait(fmt.Sprintf("the %s said it lacks code (%s)", name, n.Said), last.Add(ErrorBackoff))
 		}
+		// Not given in its step (it did not end, or read): given now.
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "state-given", Level: "info", Where: where,
 			Message: fmt.Sprintf("the %s said it lacks code: run again, given %s", name, n.Said)})
 		return true, rec, map[string]string{NeedsInput: n.Said}, nil, false
@@ -105,7 +120,7 @@ func typedDue(res *Result, name string, s routing.State, is forge.Issue, rec Rec
 
 // errorsOf are the machine errors a record holds: its own, or a
 // developer's run lost before they were typed (#953), one of kind run,
-// with no window: the first error of its tries is the next.
+// with no window: its time was not kept as one.
 func errorsOf(r Record) *Errors {
 	if r.Errors != nil || r.Lost == "" {
 		return r.Errors
@@ -115,14 +130,17 @@ func errorsOf(r Record) *Errors {
 
 // with is e and one more error, o, at now.
 func (e *Errors) with(o verdict.Outcome, now time.Time) *Errors {
-	n := &Errors{By: map[string]int{}, First: now.Format(time.RFC3339)}
+	n := &Errors{By: map[string]int{}, First: map[string]string{}}
 	if e != nil {
 		for k, v := range e.By {
 			n.By[k] = v
 		}
-		if e.First != "" {
-			n.First = e.First
+		for k, v := range e.First {
+			n.First[k] = v
 		}
+	}
+	if n.By[o.Of] == 0 {
+		n.First[o.Of] = now.Format(time.RFC3339) // its kind's first error: its window starts
 	}
 	n.By[o.Of]++
 	n.Last, n.Kind, n.Said = now.Format(time.RFC3339), o.Of, oneLine(o.Said)
@@ -142,7 +160,7 @@ func oneLine(s string) string {
 // retry is what a step's machine errors make of it at now: run again
 // (due), wait until a time (until), or wait for a person (spent, why).
 func (e *Errors) retry(now time.Time) (due bool, until time.Time, spent string) {
-	first, err1 := time.Parse(time.RFC3339, e.First)
+	first, err1 := time.Parse(time.RFC3339, e.First[e.Kind]) // the window is its kind's
 	last, err2 := time.Parse(time.RFC3339, e.Last)
 	switch {
 	case e.By[e.Kind] > ErrorBudget:

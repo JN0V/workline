@@ -127,11 +127,14 @@ const (
 var seeded = []string{pAttributed, pOneLabel, pI3, pBudget, pI2, pNeeds, pRequests}
 
 // maxRequests bounds the forge's requests in one reconcile of a trace's
-// one issue, reads and writes, the role scripts' with the engine's.
+// one issue, reads and writes, the role scripts' with the engine's, per
+// agent call it made (one at least): a role run again in its step, for
+// the code its agent lacked (ADR-0063, §5), reads and writes again.
 // Measured on 2026-11-05: a quiet tick reads 3, as ADR-0063 §11
 // estimates (3 to 5 an issue); a tick running a step, 45 to 121, the
-// step's own reads and writes. The bound leaves room above the highest,
-// and is raised only with the measure that needs it.
+// step's own reads and writes; a product owner's step 85 to 106; one run
+// again in its step, two calls, 166. The bound leaves room above the
+// highest, and is raised only with the measure that needs it.
 const maxRequests = 150
 
 // checks is what a run checks: every property (all) but those set aside
@@ -450,8 +453,8 @@ func measured(t *testing.T, tr trace, script []outcome, c checks) (_ *failure, _
 		if f := w.tickChecks(c, i, before, mid, res, again, calls); f != nil {
 			return f, log.String(), ms
 		}
-		if got := ms.requests[i]; got > maxRequests && c.on(pRequests) {
-			return &failure{Property: pRequests, Tick: i, Detail: fmt.Sprintf("%d requests to the forge in one reconcile, more than %d", got, maxRequests)}, log.String(), ms
+		if got, bound := ms.requests[i], maxRequests*max(1, ms.calls[i]); got > bound && c.on(pRequests) {
+			return &failure{Property: pRequests, Tick: i, Detail: fmt.Sprintf("%d requests to the forge in one reconcile of %d agent calls, more than %d", got, ms.calls[i], bound)}, log.String(), ms
 		}
 		// Between two ticks, the forge merges what is ready to.
 		merged := w.merge(t, at.Add(period/2))
