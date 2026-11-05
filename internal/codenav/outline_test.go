@@ -166,6 +166,10 @@ func TestOutlineByLanguage(t *testing.T) {
 			[]string{"type X = int", "var tbl = []string{ … }"}, []string{"secret"}},
 		{"a.py", "\"\"\"Tool.\n\nUsage:\n    tool run\n\"\"\"\nfrom typing import TYPE_CHECKING\n\nif TYPE_CHECKING:\n    from shop.money import Amount\n\n\ndef f():\n    \"\"\"Doc.\n\nExample:\n    x\n\"\"\"\n    return 1\n",
 			[]string{"Usage:\n    tool run", "if TYPE_CHECKING:\n    from shop.money import Amount", "def f(): …"}, []string{"return 1", "Example"}},
+		{"make.c", "static struct foo *make(int x) {\n    return secret(x);\n}\nenum color pick(void) {\n    return hidden;\n}\n",
+			[]string{"static struct foo *make(int x) { … }", "enum color pick(void) { … }"}, []string{"secret", "hidden"}},
+		{"q.py", "def quote():\n    return '\"\"\"'\n\n\nif TYPE_CHECKING:\n    from shop.money import Amount\n\n\ndef f():\n    return 1\n",
+			[]string{"def quote(): …", "if TYPE_CHECKING:\n    from shop.money import Amount", "def f(): …"}, []string{"return 1"}},
 		{"lib.rs", "#[derive(Debug)]\nstruct S {\n    a: i32,\n}\nimpl Show for S {\n    fn show(&self) {\n        println!(\"x\");\n    }\n}\n",
 			[]string{"struct S {\n    a: i32,\n}", "impl Show for S {\n    fn show(&self) { … }\n}"}, []string{"println"}},
 	} {
