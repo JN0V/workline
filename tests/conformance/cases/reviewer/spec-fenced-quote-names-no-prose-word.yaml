@@ -48,5 +48,5 @@ expect:
   agent-calls: 1
   run-files:
     in/parts/1-lenses/task.md:
-      contains: ["# Lenses: ambiguous, unverifiable, out-of-scope, contradicted\n", "### calc/calc.go\n", "`strict`", "func strict(s string) (int, error)"]
+      contains: ["# Lenses: ambiguous, unverifiable, out-of-scope, contradicted\n", "### `calc/calc.go`\n", "`strict`", "func strict(s string) (int, error)"]
       not-contains: ["calc/words.go", "func known", "func change"]

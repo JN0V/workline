@@ -27,5 +27,5 @@ expect:
   calls: [{task: part, for: 1-lenses}, {task: judge, for: judge/01}]
   findings: [{rule: contradicted, where: "docs/spec-parse.md:5", message: "verified"}]
   run-files:
-    in/parts/1-lenses/task.md: {contains: ["## The code the spec names", "### calc/calc.go", "func Parse(s string) int {"]}
+    in/parts/1-lenses/task.md: {contains: ["## The code the spec names", "### `calc/calc.go`", "func Parse(s string) int {"]}
     in/judge/01/question.yaml: {contains: ["contradict", "func Average(values []int) int {"]}
