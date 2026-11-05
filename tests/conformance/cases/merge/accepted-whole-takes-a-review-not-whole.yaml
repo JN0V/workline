@@ -1,0 +1,33 @@
+case: merge/accepted-whole-takes-a-review-not-whole
+about: "I read it whole myself (#1107): a pull request too large for the reviewer's `parts-max` passed every check, its review not whole (`review-not-whole`). A person who can write puts `workline:accepted-whole`: a yes that also says they read the change whole. `workline follow` holds the yes on the head and turns auto-merge on, and says whose reading stood for the reviewer's (ADR-0042)."
+given:
+  repo: documented
+  config: {merge: {autonomy: cautious}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb feat/sessions && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin feat/sessions && git checkout -q main"
+  forge:
+    statuses:
+      - {commit: "feat/sessions", name: workline/verdict, state: failure, description: "short: its review falls short (review-not-whole): the change would take 4 parts, each within the role's context budget and diff-lines-max, past parts-max (2)", by: workline-bot}
+    merge-requests:
+      - id: 7
+        branch: feat/sessions
+        base: main
+        author: dana
+        labels: [workline:accepted, workline:accepted-whole]
+        label-events:
+          - {label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T10:00:00Z"}
+          - {label: workline:accepted-whole, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T10:05:00Z"}
+        pushes: [{head: feat/sessions, at: "2026-01-04T09:00:00Z"}]
+        comments: []
+run: {follow: [--base, main], summary: true}
+expect:
+  status: pass
+  findings: [{rule: auto-merge-on, where: "#7", message: "accepted by @dana, read whole by @dana (review-not-whole): auto-merge turned on"}]
+  no-findings: [{rule: review-short}]
+  summary-file: ["read whole by @dana (review-not-whole)"]
+  forge:
+    merge-requests:
+      - {id: 7, auto-merge: true, labels: [workline:accepted, workline:accepted-whole], comments: 0}
+    statuses:
+      - {commit: feat/sessions, name: workline/accepted, state: success, by: workline-bot, description: "accepted by @dana, read whole by @dana (review-not-whole)"}

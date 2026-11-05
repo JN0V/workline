@@ -53,15 +53,35 @@ func WriteVerdict(file string, v HeadVerdict) error {
 var shortReview = []string{"not-reviewed", "lens-failed", "review-not-whole"}
 
 // short says why the review of a head that passed falls short, "" when it
-// does not.
+// does not: the first of shortReview it holds, so a review not whole is
+// named alone only when no agent was missing nor failed.
 func (v *HeadVerdict) short() string {
-	for _, f := range v.Findings {
-		if slices.Contains(shortReview, f.Rule) {
-			return fmt.Sprintf("its review falls short (%s): %s", f.Rule, firstSentence(f.Message))
+	for _, rule := range shortReview {
+		for _, f := range v.Findings {
+			if f.Rule == rule {
+				return fmt.Sprintf("%s(%s): %s", shortSaid, f.Rule, firstSentence(f.Message))
+			}
 		}
 	}
 	return ""
 }
+
+// shortSaid opens why a review falls short; shortRule reads its rule back
+// from a verdict kept, "" when it is none.
+const shortSaid = "its review falls short "
+
+func shortRule(why string) string {
+	rule, ok := strings.CutPrefix(why, shortSaid+"(")
+	if !ok {
+		return ""
+	}
+	rule, _, _ = strings.Cut(rule, ")")
+	return rule
+}
+
+// notWhole is the review too large for the reviewer's parts, or cut by
+// its tokens: the one short review a person's own reading takes (#1107).
+const notWhole = "review-not-whole"
 
 // waits says why the review of a head that passed is still to come, a
 // draft's (verdict.WaitsForReady), "" when it is not.
@@ -160,29 +180,70 @@ func verdictOf(m forge.Merger, hand map[string]kept, head string) (kept, error) 
 }
 
 // accepted says whether a label is a person's yes, `workline:accepted`
-// as GitHub spells it, `workline::accepted` as GitLab's scoped labels.
+// as GitHub spells it, `workline::accepted` as GitLab's scoped labels;
+// `workline:accepted-whole` is one too.
 func accepted(label string) bool {
-	return backlog.Accepted(forge.Issue{Labels: []string{label}})
+	return backlog.Accepted(forge.Issue{Labels: []string{label}}) || acceptedWhole(label)
 }
 
-// theYes is the last time the label was put by someone who may push and
-// merge — GitHub's write access, GitLab's Developer —, nil when it is not
-// on now by such a hand — put by another, or taken off since —; ignored,
-// who put it then.
-func theYes(events []forge.LabelEvent) (yes, ignored *forge.LabelEvent) {
-	for i := range events {
-		e := &events[i]
+// The label of a person's yes who also read the change whole themselves:
+// it takes a review not whole (#1107). Apart from `workline:accepted`, so
+// a saved filter putting that one in bulk never takes a review short.
+const (
+	labelAcceptedWhole  = "workline:accepted-whole"
+	scopedAcceptedWhole = "workline::accepted-whole"
+	acceptedWholeSays   = "A person's yes to merge, who read the pull request whole: it takes a review not whole"
+)
+
+// acceptedWholeLabel is the label as the forge's list holds it: scoped on
+// GitLab, as `workline::accepted`, whose place it takes there.
+func acceptedWholeLabel(f any) string {
+	if forge.ScopedLabels(f) {
+		return scopedAcceptedWhole
+	}
+	return labelAcceptedWhole
+}
+
+func acceptedWhole(label string) bool {
+	return label == labelAcceptedWhole || label == scopedAcceptedWhole
+}
+
+// theYes is the last time one of the labels is told by `is` was put by
+// someone who may push and merge — GitHub's write access, GitLab's
+// Developer —, of those on now; nil when none is on now by such a hand —
+// put by another, or taken off since —; ignored, who put one then. Each
+// label goes by its own events: one taken off leaves another on.
+func theYes(events []forge.LabelEvent, is func(string) bool) (yes, ignored *forge.LabelEvent) {
+	on, by := map[string]int{}, map[string]int{}
+	for i, e := range events {
 		switch {
-		case !accepted(e.Label):
+		case !is(e.Label):
 		case !e.Added:
-			yes, ignored = nil, nil
+			delete(on, e.Label)
+			delete(by, e.Label)
 		case e.Writer && !e.Bot && e.Author != "":
-			yes, ignored = e, nil
-		case yes == nil:
-			ignored = e
+			on[e.Label] = i
+			delete(by, e.Label)
+		default:
+			if _, ok := on[e.Label]; !ok {
+				by[e.Label] = i
+			}
 		}
 	}
-	return yes, ignored
+	last := func(at map[string]int) *forge.LabelEvent {
+		i := -1
+		for _, j := range at {
+			i = max(i, j)
+		}
+		if i < 0 {
+			return nil
+		}
+		return &events[i]
+	}
+	if yes = last(on); yes != nil {
+		return yes, nil
+	}
+	return nil, last(by)
 }
 
 // takenOff is when the label was last taken off, "" when it was not, or
@@ -482,16 +543,22 @@ func mergePolicy(f forge.Forge, o FollowOptions, local bool, res *Result, hand m
 			Message: why + ": nothing turned on"})
 		return sum + ": nothing turned on, a push after a yes would not be held", nil
 	}
-	// The label in the forge's list, for a person to put, in bulk, from a
-	// saved filter (ADR-0038).
+	// The labels in the forge's list, for a person to put: the yes, in
+	// bulk, from a saved filter (ADR-0038); the yes of who read it whole,
+	// one by one (#1107).
 	if b, ok := f.(forge.Backlog); ok {
-		err := b.EnsureLabel(backlog.AcceptedLabel(f), "0e8a16", backlog.AcceptedSays)
-		switch {
-		case errors.Is(err, forge.ErrUnreachable) && !forge.Refused(err):
-			return "", err
-		case err != nil:
-			res.Findings = append(res.Findings, verdict.Finding{Rule: "label-not-made", Level: "warn",
-				Message: fmt.Sprintf("the label %s could not be made in the forge's list, for a person to put: %v", backlog.AcceptedLabel(f), err)})
+		for _, l := range [][3]string{
+			{backlog.AcceptedLabel(f), "0e8a16", backlog.AcceptedSays},
+			{acceptedWholeLabel(f), "0b5d1e", acceptedWholeSays},
+		} {
+			err := b.EnsureLabel(l[0], l[1], l[2])
+			switch {
+			case errors.Is(err, forge.ErrUnreachable) && !forge.Refused(err):
+				return "", err
+			case err != nil:
+				res.Findings = append(res.Findings, verdict.Finding{Rule: "label-not-made", Level: "warn",
+					Message: fmt.Sprintf("the label %s could not be made in the forge's list, for a person to put: %v", l[0], err)})
+			}
 		}
 	}
 	// At `normal`: the App workline's own work comes from, the pages agents
@@ -624,7 +691,9 @@ func weigh(f forge.Forge, m forge.Merger, o FollowOptions, local bool, mr forge.
 	routine := routineCandidate(o, n, mr)
 	w := weighed{mr: mr, st: st, baseTip: baseTip, tip: tip, e: e, say: say, takeBack: takeBack}
 	labelled := slices.ContainsFunc(mr.Labels, accepted)
-	yes, ignored := theYes(st.Labels)
+	yes, ignored := theYes(st.Labels, accepted)
+	// The yes of a person who also read the change whole themselves.
+	whole, _ := theYes(st.Labels, acceptedWhole)
 	switch {
 	case !labelled:
 		// Auto-merge on, no label. Turned on while the label was on, the
@@ -671,7 +740,12 @@ func weigh(f forge.Forge, m forge.Merger, o FollowOptions, local bool, mr forge.
 		say("draft", "", fmt.Sprintf("accepted by %s, but a draft: nothing turned on until it is marked ready", by))
 		return nil, nil
 	}
-	pushed, err := pushedAfter(o, mr.Branch, st, yes.Created, baseTip, tip)
+	// Each yes covers the head it was given on: the first given counts.
+	since := yes
+	if whole != nil && later(since.Created, whole.Created) {
+		since = whole
+	}
+	pushed, err := pushedAfter(o, mr.Branch, st, since.Created, baseTip, tip)
 	if err != nil {
 		return nil, err
 	}
@@ -696,7 +770,7 @@ func weigh(f forge.Forge, m forge.Merger, o FollowOptions, local bool, mr forge.
 			took, again = "auto-merge", "Turn auto-merge on again"
 		}
 		body := fmt.Sprintf("**workline took %s off**: %s after %s accepted this merge request, on %s. A yes covers the head it was given on, so its auto-merge is off. %s to accept the head as it is now (%s).",
-			took, pushed, by, yes.Created, again, short(tip))
+			took, pushed, by, since.Created, again, short(tip))
 		if err := f.Comment(t, body, forge.Marker("merge-reset="+tip)); err != nil {
 			return nil, err
 		}
@@ -764,6 +838,14 @@ func weigh(f forge.Forge, m forge.Merger, o FollowOptions, local bool, mr forge.
 		say("review-to-come", "", fmt.Sprintf("accepted by %s; its head's (%s) verdict is the draft's, %s: it waits for the run on ready", by, short(tip), v.why))
 		return e, nil
 	case verdictRed, verdictShort:
+		notRead := v.class == verdictShort && shortRule(v.why) == notWhole
+		if notRead && whole != nil {
+			// A person read it whole: their reading takes the review the
+			// reviewer could not make whole, never a check (#1107).
+			read := fmt.Sprintf("read whole by @%s (%s)", whole.Author, notWhole)
+			say("review-read-whole", "warn", fmt.Sprintf("its review is not whole, the change too large for the reviewer's parts or its tokens; `%s`: %s, whose reading stands for the reviewer's", whole.Label, read))
+			return armed(m, mr, tip, st, e, say, by, read)
+		}
 		rule := map[string]string{verdictRed: "verdict-red", verdictShort: "review-short"}[v.class]
 		then := "auto-merge stays off"
 		switch {
@@ -774,6 +856,9 @@ func weigh(f forge.Forge, m forge.Merger, o FollowOptions, local bool, mr forge.
 			then = "auto-merge turned off"
 		case st.AutoMerge:
 			then = by + "'s auto-merge left on, held by the yes not given"
+		}
+		if notRead {
+			then += fmt.Sprintf("; a person who read it whole puts `%s`", acceptedWholeLabel(f))
 		}
 		if err := m.Accept(tip, false, v.why); err != nil {
 			return nil, err
