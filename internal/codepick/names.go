@@ -185,8 +185,9 @@ func codeWords(code string) []codeWord {
 }
 
 // docFile is a file's name by an extension a text names often and holds no
-// function.
-var docFile = regexp.MustCompile(`\w\.(?:md|txt|ya?ml|json|toml|xml|html?|css|csv)$`)
+// function: a doc, data, an image, an archive, a font (`logo.png` names
+// neither `logo` nor `png`).
+var docFile = regexp.MustCompile(`\w\.(?:md|txt|ya?ml|json|toml|xml|html?|css|csv|ini|cfg|conf|lock|log|png|jpe?g|gif|svg|ico|webp|bmp|pdf|zip|gz|tgz|tar|bin|hex|elf|woff2?|ttf|otf|mp[34]|wav|ogg)$`)
 
 // APath says whether a word names a file or a folder, not a function: it
 // holds a `/`, or ends in a file's extension, in lower case (`a.C` is a

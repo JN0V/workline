@@ -118,7 +118,7 @@ func (p *Picker) linked(pk Pick, tests []string) []string {
 	}
 	var bases []string
 	for _, f := range pk.Files {
-		if f.Test || len(f.Given) == 0 {
+		if len(f.Given) == 0 { // the test's includes too: what a new test needs to build
 			continue
 		}
 		for _, l := range f.Lines {
@@ -142,6 +142,9 @@ func (p *Picker) linked(pk Pick, tests []string) []string {
 			}
 		}
 		for _, g := range f.Given {
+			if f.Test {
+				break
+			}
 			for _, l := range f.Lines[g.From-1 : min(g.To, len(f.Lines))] {
 				for _, m := range baseRe.FindAllStringSubmatch(l, -1) {
 					for _, w := range m[1:] {

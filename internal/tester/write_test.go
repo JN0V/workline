@@ -13,7 +13,7 @@ func TestWriteCodeOfAPattern(t *testing.T) {
 	repo, _ := gitRepo(t, map[string]string{"add.go": "package calc\n", "add_test.go": "package calc\n", "notes.md": "x\n"})
 	s := Settings{Paths: []string{"**/*_test.go"}}
 	var b strings.Builder
-	writeCode(&b, repo, "", "- `*.go`", nil, s)
+	writeCode(&b, repo, "", "- `*.go`", nil, nil, s)
 	task := b.String()
 	_, after, _ := strings.Cut(task, "## The code the Scope names")
 	code, tests, _ := strings.Cut(after, "## Tests already there")
@@ -24,7 +24,7 @@ func TestWriteCodeOfAPattern(t *testing.T) {
 		t.Errorf("the tests beside:\n%s", task)
 	}
 	b.Reset()
-	writeCode(&b, repo, "", "- `*_test.go`", nil, s)
+	writeCode(&b, repo, "", "- `*_test.go`", nil, nil, s)
 	if code, _, _ := strings.Cut(b.String(), "## Tests already there"); !strings.Contains(code, "## The code the Scope names\n\n### `add_test.go`") {
 		t.Errorf("a pattern of tests alone names none:\n%s", b.String())
 	}
@@ -37,7 +37,7 @@ func TestWriteCodeOfTheProductOwnersSources(t *testing.T) {
 	repo, _ := gitRepo(t, map[string]string{"a.go": "package pkg\n", "a_test.go": "package pkg\n", "b.go": "package pkg\n"})
 	s := Settings{Paths: []string{"**/*_test.go"}}
 	var b strings.Builder
-	writeCode(&b, repo, "", "- The client id counter and its increment.", []string{"a.go"}, s)
+	writeCode(&b, repo, "", "- The client id counter and its increment.", []string{"a.go"}, nil, s)
 	task := b.String()
 	for _, want := range []string{"### `a.go`", "Named by the product owner for this issue, not in the Scope: `a.go`.", "## Tests already there, to write alike\n\n### `a_test.go`"} {
 		if !strings.Contains(task, want) {
@@ -48,7 +48,7 @@ func TestWriteCodeOfTheProductOwnersSources(t *testing.T) {
 		t.Errorf("code no one named given:\n%s", task)
 	}
 	b.Reset()
-	writeCode(&b, repo, "", "- `a.go`", []string{"a.go:3"}, s)
+	writeCode(&b, repo, "", "- `a.go`", []string{"a.go:3"}, nil, s)
 	if task := b.String(); strings.Count(task, "### `a.go`") != 1 || strings.Contains(task, "Named by the product owner") {
 		t.Errorf("a file the Scope names given once, no note:\n%s", task)
 	}
@@ -70,7 +70,7 @@ func TestWriteCodeKeepsRoomForATest(t *testing.T) {
 	repo, _ := gitRepo(t, map[string]string{"mqtt.h": code.String(), "test_mqtt.cpp": test.String()})
 	s := Settings{Paths: []string{"test_*.cpp"}, CodeLinesMax: 1000}
 	var b strings.Builder
-	writeCode(&b, repo, "", "- `publish` in `mqtt.h`", nil, s)
+	writeCode(&b, repo, "", "- `publish` in `mqtt.h`", nil, nil, s)
 	task := b.String()
 	for _, want := range []string{"int publish(int qos) {", "200 of the 1000 lines of code-lines-max kept for the tests beside it",
 		"### `test_mqtt.cpp`", "#include <unity.h>", "void test_publish_qos() {"} {
@@ -93,7 +93,7 @@ func TestWriteCodeGivesAFunctionDeepInAFile(t *testing.T) {
 	n := strings.Count(long.String(), "\n")
 	s := Settings{Paths: []string{"**/*_test.go"}, CodeLinesMax: 1500}
 	var b strings.Builder
-	writeCode(&b, repo, "", "- `personIssue` (`documentalist.go:9999`) builds it.\n- `engine.go:6` rewrites it.\n- `small.go`.", nil, s)
+	writeCode(&b, repo, "", "- `personIssue` (`documentalist.go:9999`) builds it.\n- `engine.go:6` rewrites it.\n- `small.go`.", nil, nil, s)
 	task := b.String()
 	for _, want := range []string{"func personIssue(n int) string {\n\tif n > 0 {\n\t\treturn \"deep\"\n\t}\n\treturn \"\"\n}", "// personIssue is the issue a person reads.",
 		fmt.Sprintf("### `documentalist.go` (%d lines: lines %d to %d given", n, n-6, n), "### `engine.go`\n", "func sticky() {", "### `small.go`\n\n````\npackage doc\n\nfunc small() {}\n````"} {

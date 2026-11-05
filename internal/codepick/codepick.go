@@ -5,6 +5,7 @@
 package codepick
 
 import (
+	"bytes"
 	"fmt"
 	"os/exec"
 	"path"
@@ -60,6 +61,10 @@ type Ask struct {
 	Paths []string // files, folders or patterns named outright, the Scope's or the sources: given first
 	Skip  []string // files never given: the file an issue was imported from
 	Tests []string // test-paths: one existing test given room, test files' definitions ranked as copies
+	// Needs are the files the agent said it lacked at its last run: each
+	// given whole, its first lines when it does not fit, right after the
+	// definitions, before any file is given whole for being named.
+	Needs []string
 	// Budget is the lines given in all; BudgetName the setting it comes
 	// from, said in the cut.
 	Budget     int
@@ -210,7 +215,9 @@ func (p *Picker) Lines(file string) []string {
 	}
 	var l []string
 	if p.tracked[file] {
-		if out, err := exec.Command("git", "-C", p.repo, "show", p.rev+":"+file).Output(); err == nil {
+		// A binary file (a NUL in its first 8 KB, as git tells one) gives
+		// no lines: no image's bytes in a task.
+		if out, err := exec.Command("git", "-C", p.repo, "show", p.rev+":"+file).Output(); err == nil && !bytes.Contains(out[:min(len(out), 8000)], []byte{0}) {
 			l = strings.Split(strings.TrimRight(string(out), "\n"), "\n")
 		}
 	}
@@ -271,7 +278,7 @@ func (p *Picker) Tracked(f string) bool { return p.tracked[f] }
 func (p *Picker) namedFiles(a Ask) []string {
 	var named []string
 	add := func(f string) {
-		if f != "" && !slices.Contains(a.Skip, f) && !slices.Contains(named, f) && len(named) < namedMax && p.tracked[f] {
+		if f != "" && !slices.Contains(a.Skip, f) && !slices.Contains(named, f) && len(named) < namedMax && p.tracked[f] && len(p.Lines(f)) > 0 {
 			named = append(named, f)
 		}
 	}
@@ -476,6 +483,15 @@ func (p *Picker) Pick(a Ask) Pick {
 			}
 		}
 	}
+	// 1b. The files the agent asked for, whole, or their first lines.
+	for _, w := range a.Needs {
+		f := work.InRepo(strings.TrimSpace(work.LineOff(w)), p.files)
+		if f == "" || skip(f) || len(p.Lines(f)) == 0 {
+			continue
+		}
+		file(f).Named = true
+		wants = append(wants, want{f, 1, len(p.Lines(f)), "asked for at the last run", true})
+	}
 	// 2b. A name no function defines (a member, a constant): the lines
 	// naming it in the files named, a few, as its definition stands
 	// among them (#1056).
@@ -624,7 +640,7 @@ func (p *Picker) Pick(a Ask) Pick {
 	}
 	for _, f := range order {
 		g := byPath[f]
-		if g.Test {
+		if g.Test || f == test && tf != nil && len(tf.Given) > 0 && !g.Named { // given once, as the test
 			continue
 		}
 		if len(g.Given) == 0 && !g.Named && len(g.Unread) == 0 {

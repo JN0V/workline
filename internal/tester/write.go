@@ -148,13 +148,9 @@ func Pre(runDir, repo string) int {
 			sources = st.Sources
 		}
 	}
-	// The files its agent said it lacked at its last run, given now
-	// (ADR-0063, §6).
-	for _, p := range neededFiles(runDir) {
-		if !slices.Contains(sources, p) {
-			sources = append(sources, p)
-		}
-	}
+	// The files its agent said it lacked at its last run, given now,
+	// first (ADR-0063, §6).
+	needs := neededFiles(runDir)
 	if code, done := sentBack(runDir, repo, *is, comments); done {
 		return code
 	}
@@ -188,7 +184,7 @@ func Pre(runDir, repo string) int {
 	text := fitTask(runDir, repo, s, func(s Settings) string {
 		var b strings.Builder
 		b.WriteString(intro)
-		writeCode(&b, repo, is.Title+"\n"+is.Body, sections[work.Scope].Text, sources, s)
+		writeCode(&b, repo, is.Title+"\n"+is.Body, sections[work.Scope].Text, sources, needs, s)
 		return b.String()
 	})
 	if err := os.WriteFile(filepath.Join(runDir, "in", "task.md"), []byte(text), 0o644); err != nil {
@@ -204,7 +200,7 @@ func Pre(runDir, repo string) int {
 // and Scope name, up to code-lines-max lines in all, a share kept for the
 // test files beside it; then those tests, and names the project's
 // others.
-func writeCode(b *strings.Builder, repo, text, scope string, sources []string, s Settings) {
+func writeCode(b *strings.Builder, repo, text, scope string, sources, needs []string, s Settings) {
 	pk, err := codepick.New(repo, "")
 	if err != nil {
 		fmt.Fprintf(b, "\n## The code the %s names\n\nNot read: %v.\n", work.Name(work.Scope), err)
@@ -231,11 +227,14 @@ func writeCode(b *strings.Builder, repo, text, scope string, sources []string, s
 	if budget <= 0 {
 		budget = 1500
 	}
-	pick := pk.Pick(codepick.Ask{Text: text + "\n" + scope, Paths: paths, Tests: s.Paths, Budget: budget, BudgetName: "code-lines-max"})
+	pick := pk.Pick(codepick.Ask{Text: text + "\n" + scope, Paths: paths, Needs: needs, Tests: s.Paths, Budget: budget, BudgetName: "code-lines-max"})
 	if len(pick.Named()) > 0 {
 		fmt.Fprintf(b, "\n## The code the %s names\n", work.Name(work.Scope))
 		if len(owners) > 0 {
 			fmt.Fprintf(b, "\nNamed by the product owner for this issue, not in the %s: `%s`.\n", work.Name(work.Scope), strings.Join(owners, "`, `"))
+		}
+		if len(needs) > 0 {
+			fmt.Fprintf(b, "\nAsked for at your last run, given first: `%s`.\n", strings.Join(needs, "`, `"))
 		}
 		if pick.Kept > 0 {
 			fmt.Fprintf(b, "\nThe code fills code-lines-max: %d of the %d lines of code-lines-max kept for the tests beside it.\n", pick.Kept, budget)
@@ -267,6 +266,9 @@ func writeCode(b *strings.Builder, repo, text, scope string, sources []string, s
 		fmt.Fprintf(b, "\n## %s\n", heading)
 		var unread []string
 		for _, p := range list {
+			if t := pick.Test(); slices.Contains(pick.Paths(), p) && (t == nil || t.Path != p) {
+				continue // given above, with the code: not twice
+			}
 			data, err := os.ReadFile(filepath.Join(repo, filepath.FromSlash(p)))
 			if err != nil {
 				continue
