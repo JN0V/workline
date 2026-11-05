@@ -25,9 +25,13 @@ func (pk Pick) Write(b *strings.Builder, st Style) {
 	if budgetName == "" {
 		budgetName = "the code budget"
 	}
-	var unread []string
+	var unread, above []string
 	for _, f := range pk.Files {
 		if f.Test {
+			continue
+		}
+		if f.Above && len(f.Given) == 0 {
+			above = append(above, "`"+f.Path+"`")
 			continue
 		}
 		if len(f.Given) == 0 {
@@ -39,6 +43,9 @@ func (pk Pick) Write(b *strings.Builder, st Style) {
 			}
 		}
 		pk.writeFile(b, f, st, namer, budgetName)
+	}
+	if len(above) > 0 {
+		fmt.Fprintf(b, "\nGiven above, for another issue: %s.\n", strings.Join(above, ", "))
 	}
 	if len(unread) > 0 {
 		fmt.Fprintf(b, "\nNot given, past %s (%d lines in all), not empty:\n\n%s\n", budgetName, pk.Ask.Budget, strings.Join(unread, "\n"))

@@ -91,6 +91,7 @@ type File struct {
 	Named  bool     // the text names the file itself
 	Test   bool     // an existing test, given to write alike
 	Unread []Piece  // what it names in the file, past the budget
+	Above  bool     // what it names given for an earlier ask of the same task
 }
 
 // Whole says whether the file is given whole.
@@ -119,11 +120,11 @@ type Pick struct {
 	Ask     Ask
 }
 
-// Paths are the files given, in order, the test aside.
+// Paths are the files given, here or above, in order, the test aside.
 func (p Pick) Paths() []string {
 	var out []string
 	for _, f := range p.Files {
-		if !f.Test && len(f.Given) > 0 {
+		if !f.Test && (len(f.Given) > 0 || f.Above) {
 			out = append(out, f.Path)
 		}
 	}
@@ -259,12 +260,14 @@ func (p *Picker) namedFiles(a Ask) []string {
 	return named
 }
 
-// codeNames are the names a text writes as code worth a search.
+// codeNames are the names a text writes as code worth a search: an
+// acronym (`CSV`, `MQTT`) names a format or a protocol as often as code,
+// a constant holds an underscore.
 func codeNames(text string) []string {
 	code, _, _ := NamedIn(text)
 	var names []string
 	for _, n := range code {
-		if !notNames[n] && len(n) > 2 && identRe.MatchString(n) {
+		if !notNames[n] && len(n) > 2 && identRe.MatchString(n) && (strings.ToUpper(n) != n || strings.Contains(n, "_")) {
 			names = append(names, n)
 		}
 	}
@@ -511,16 +514,19 @@ func (p *Picker) Pick(a Ask) Pick {
 	// nothing of them given, their first lines.
 	for _, f := range named {
 		g := file(f)
-		if extra := len(g.Lines) - g.GivenLines(); extra <= left && !wholeGiven(p.given[f], len(g.Lines)) {
+		switch extra := len(g.Lines) - g.GivenLines(); {
+		case len(p.given[f]) > 0 && len(g.Given) == 0:
+			g.Above = true // given for an earlier issue: not twice
+		case extra <= left:
 			left -= extra
 			g.Given, g.Cut, g.Unread = []Piece{{1, len(g.Lines), "named"}}, 0, nil
-		} else if !g.Whole() {
+		case !g.Whole():
 			short = true
 		}
 	}
 	for _, f := range named {
 		g := file(f)
-		if len(g.Given) == 0 && len(g.Unread) == 0 && left > 0 && len(g.Lines) > 0 {
+		if len(g.Given) == 0 && len(g.Unread) == 0 && !g.Above && left > 0 && len(g.Lines) > 0 {
 			k := min(len(g.Lines), left)
 			g.Given = []Piece{{1, k, "its first lines"}}
 			left -= k
