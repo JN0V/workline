@@ -1,0 +1,33 @@
+case: merge/accepted-whole-by-a-non-writer-reads-nothing
+about: "A writer's plain yes and a non-writer's whole yes (#1107): a person who may merge put `workline:accepted`; someone who cannot write put `workline:accepted-whole`. The plain yes counts, the whole one is ignored and said so by name: the review not whole stays short, auto-merge stays off (ADR-0042)."
+given:
+  repo: documented
+  config: {merge: {autonomy: cautious}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb feat/sessions && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin feat/sessions && git checkout -q main"
+  forge:
+    statuses:
+      - {commit: "feat/sessions", name: workline/verdict, state: failure, description: "short: [review-not-whole] its review falls short (review-not-whole): the change would take 4 parts, past parts-max (2)", by: workline-bot}
+    merge-requests:
+      - id: 7
+        branch: feat/sessions
+        base: main
+        author: dana
+        labels: [workline:accepted, workline:accepted-whole]
+        label-events:
+          - {label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T10:00:00Z"}
+          - {label: workline:accepted-whole, added: true, author: zed, insider: false, created: "2026-01-04T10:05:00Z"}
+        pushes: [{head: feat/sessions, at: "2026-01-04T09:00:00Z"}]
+        comments: []
+run: {follow: [--base, main], summary: true}
+expect:
+  status: pass
+  findings:
+    - {rule: label-ignored, where: "#7", level: warn, message: "labelled `workline:accepted-whole` by @zed, who may not push nor merge here: no reading"}
+    - {rule: review-short, where: "#7", level: warn, message: "accepted by @dana, but its review falls short (review-not-whole)"}
+  no-findings: [{rule: auto-merge-on}, {rule: review-read-whole}]
+  summary-file: ["`workline:accepted-whole` by @zed"]
+  forge:
+    merge-requests:
+      - {id: 7, auto-merge: false, labels: [workline:accepted, workline:accepted-whole]}

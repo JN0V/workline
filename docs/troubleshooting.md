@@ -89,7 +89,9 @@ goes ready, a hidden record that does not read: in
   ([your own config](config.md#your-own-config)).
 - `review-not-whole`, "past parts-max" (reviewer): the change is too
   large to read in the parts a run allows; split it, or raise
-  `parts-max` ([in parts](../roles/reviewer/docs/parts.md)).
+  `parts-max` ([in parts](../roles/reviewer/docs/parts.md)). Read whole
+  by a person, `workline:accepted-whole` lets it merge
+  ([merge policy](merge-policy.md#what-it-does)).
 - `blocked-external` (exit 3): the agent's quota, a timeout, the forge or a
   repository failed. Never a verdict: run it again later. The CI templates
   turn it into a warning, the docs listed for a person. A GitHub or

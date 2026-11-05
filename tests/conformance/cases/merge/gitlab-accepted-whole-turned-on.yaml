@@ -1,0 +1,32 @@
+case: merge/gitlab-accepted-whole-turned-on
+about: "On GitLab (#1107): a Developer put `workline::accepted-whole`, the scoped spelling, which takes `workline::accepted`'s place. The line's verdict on the head, in hand, passed with a review not whole: the reading takes it, and `workline follow` sets the merge request to merge when its pipeline succeeds (ADR-0042)."
+given:
+  repo: documented
+  config: {merge: {autonomy: cautious}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb feat/sessions && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin feat/sessions && git checkout -q main"
+    - "sh \"$FIXTURES/verdict.sh\" feat/sessions pass ../verdict.json '[{\"rule\": \"review-not-whole\", \"level\": \"warn\", \"message\": \"the change would take 4 parts, past parts-max (2): no lens asked\"}]'"
+  forge:
+    members: [{username: dana, access_level: 30}]
+    merge-requests:
+      - id: 7
+        branch: feat/sessions
+        base: main
+        author: dana
+        labels: ["workline::accepted-whole"]
+        label-events:
+          - {label: "workline::accepted", added: true, author: dana, created: "2026-01-04T10:00:00Z"}
+          - {label: "workline::accepted-whole", added: true, author: dana, created: "2026-01-04T10:05:00Z"}
+          - {label: "workline::accepted", added: false, author: dana, created: "2026-01-04T10:05:00Z"}
+        pushes: [{head: feat/sessions, at: "2026-01-04T09:00:00Z"}]
+        comments: []
+run: {follow: [--base, main, --verdict, ../verdict.json], forge: gitlab}
+expect:
+  status: pass
+  findings:
+    - {rule: verdict-kept, message: "short, its review falls short (review-not-whole)"}
+    - {rule: auto-merge-on, where: "!7", message: "accepted by @dana, read whole by @dana (review-not-whole): auto-merge turned on"}
+  forge:
+    merge-requests:
+      - {id: 7, auto-merge: true, labels: ["workline::accepted-whole"], comments: 0}

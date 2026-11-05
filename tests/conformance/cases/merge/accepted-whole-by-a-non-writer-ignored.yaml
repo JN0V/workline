@@ -1,0 +1,29 @@
+case: merge/accepted-whole-by-a-non-writer-ignored
+about: "A whole yes counts only from who may push and merge (#1107): someone who cannot write put `workline:accepted-whole` on a pull request past the reviewer's `parts-max`. It is no yes and no reading: `workline follow` turns nothing on, and names the label it ignored and who put it (ADR-0042)."
+given:
+  repo: documented
+  config: {merge: {autonomy: cautious}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb feat/sessions && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin feat/sessions && git checkout -q main"
+  forge:
+    statuses:
+      - {commit: "feat/sessions", name: workline/verdict, state: failure, description: "short: [review-not-whole] its review falls short (review-not-whole): the change would take 4 parts, past parts-max (2)", by: workline-bot}
+    merge-requests:
+      - id: 7
+        branch: feat/sessions
+        base: main
+        author: zed
+        labels: [workline:accepted-whole]
+        label-events: [{label: workline:accepted-whole, added: true, author: zed, insider: false, created: "2026-01-04T10:00:00Z"}]
+        pushes: [{head: feat/sessions, at: "2026-01-04T09:00:00Z"}]
+        comments: []
+run: {follow: [--base, main], summary: true}
+expect:
+  status: pass
+  findings: [{rule: label-ignored, where: "#7", level: warn, message: "labelled `workline:accepted-whole` by @zed, who may not push nor merge here: no yes"}]
+  no-findings: [{rule: auto-merge-on}]
+  summary-file: ["`workline:accepted-whole` by @zed"]
+  forge:
+    merge-requests:
+      - {id: 7, auto-merge: false, labels: [workline:accepted-whole]}

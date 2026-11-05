@@ -11,7 +11,9 @@
   up to date and one at a time dropped by [ADR-0051]
   ([amendment](#amendment-2026-10-21-adr-0051-no-up-to-date-no-one-at-a-time));
   a fork goes by its yes and its checks ([#1043],
-  [amendment](#amendment-2026-11-04-1043-a-fork-goes-by-its-yes-and-its-checks))
+  [amendment](#amendment-2026-11-04-1043-a-fork-goes-by-its-yes-and-its-checks));
+  a person who read it whole takes a review not whole ([#1107],
+  [amendment](#amendment-2026-11-05-1107-a-person-who-read-it-whole-takes-a-review-not-whole))
 - **Date:** 2026-10-12
 - **Decided by:** the maintainer, its direction (2026-10-12), after four
   agents argued role or not
@@ -521,6 +523,46 @@ for ever.
 Conformance: merge/fork-accepted-merges, fork-accepted-waits-for-its-checks,
 fork-gate-files-never-armed, fork-without-a-yes-waits; TestForkIsFollowedWithNoVerdict.
 
+## Amendment (2026-11-05, #1107): a person who read it whole takes a review not whole
+
+"No lens 'not reviewed whole'" left a change past the reviewer's
+`parts-max` ([ADR-0020]) with no way in but an admin merge: the review
+falls short whoever reads it, and no yes lifted it.
+
+- **A second label, `workline:accepted-whole`** (`workline::accepted-whole`
+  on GitLab, in `workline::accepted`'s place): a person's yes, who also
+  read the change whole. It is a yes as the first is: who may push and
+  merge, held on the head given on, taken off by a push after it.
+- **It takes `review-not-whole` only**: the change past `parts-max`, or a
+  part cut by the tokens. `not-reviewed` and `lens-failed` stay short:
+  an agent the project sets must answer, and a failed lens is run again.
+  A red check or verdict still holds.
+- **Each label by its own pushes**: a push between the two labels takes
+  off the one put before it, alone, said in a comment; the one put after
+  covers the head and stands.
+- **The short rules kept with the verdict**: every rule that made the
+  review short, between brackets before its text
+  (`short: [review-not-whole] its review falls short…`), first so a
+  description cut to the forge's length keeps them. The whole label takes
+  a verdict whose one short rule is `review-not-whole`; one kept by an
+  earlier engine, whose text named its first rule only, is never taken.
+- **Said**: `workline/accepted` reads "read whole by @…", and the
+  summary names whose reading stood for the reviewer's
+  (`review-read-whole`); a label ignored, for want of the rights, is
+  named.
+- **Rejected**: the plain label taking it (a saved filter puts it in
+  bulk, a short review taken unseen); the reviewer reading every part
+  past `parts-max` (a context budget a part, what `parts-max` caps).
+
+Conformance: merge/accepted-whole-takes-a-review-not-whole,
+accepted-review-not-whole-stays-off, accepted-whole-red-check-holds,
+accepted-whole-keeps-an-agent-due, gitlab-accepted-whole-turned-on,
+accepted-whole-after-a-push-stays, push-after-accepted-whole-takes-it-off,
+accepted-whole-by-a-non-writer-ignored,
+accepted-whole-by-a-non-writer-reads-nothing,
+accepted-whole-older-verdict-stays-off; TestShortRulesKeptWhole,
+TestTheYesEachLabelItsOwn.
+
 [ADR-0005]: 0005-independence-takes-the-best-level-available.md
 [ADR-0011]: 0011-the-review-is-on-the-merge-request-not-the-push.md
 [ADR-0017]: 0017-the-release-manager.md
@@ -547,3 +589,4 @@ fork-gate-files-never-armed, fork-without-a-yes-waits; TestForkIsFollowedWithNoV
 [#423]: https://github.com/JN0V/workline/pull/423
 [#438]: https://github.com/JN0V/workline/issues/438
 [#1043]: https://github.com/JN0V/workline/issues/1043
+[#1107]: https://github.com/JN0V/workline/issues/1107

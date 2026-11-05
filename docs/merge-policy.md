@@ -34,6 +34,10 @@ merge: {autonomy: cautious}   # off unless set: no auto-merge is touched
   - the line passed on that head, every step that needs an agent answered
     by one, whole. With no agent, every review falls short: nothing is
     turned on where the reviewer runs.
+  - **Too large for the reviewer** (`review-not-whole`): read it whole,
+    then put `workline:accepted-whole`, a yes that takes that review; a
+    red check still holds
+    ([why](adr/0042-the-engine-merges-by-the-projects-policy.md#amendment-2026-11-05-1107-a-person-who-read-it-whole-takes-a-review-not-whole)).
   - **The verdict's run only**: the reviewer's lenses that only warn read
     apart, after or beside it. Their findings, and one of them failing,
     may post after the verdict, and after the merge: read their comment
@@ -67,14 +71,17 @@ merge: {autonomy: cautious}   # off unless set: no auto-merge is touched
   a failure re-run green since holds nothing. A run the forge cancelled
   is no result: the latest other run of that check counts — on GitLab,
   the newest other pipeline of that head —, else it waits. One not judged yet waits, named.
-- **The label** is made in the forge's list when missing: put it in bulk,
-  from a saved filter.
+- **The labels** are made in the forge's list when missing: put
+  `workline:accepted` in bulk, from a saved filter.
 
 ## The yes covers one head
 
 - **A push after the yes takes it back**: auto-merge off, the label off,
   one comment. When each head was pushed is the forge's word: GitHub's
   repository activity, GitLab's versions.
+- **Each yes label by its own pushes**: `workline:accepted` put before a
+  push and `workline:accepted-whole` after it, only the stale one goes
+  off; the other covers the head and stands.
 - **workline's own commit is no push**, checked by its tree; its trailer
   is needed, never taken on trust. The committer checks every commit all
   the same:
@@ -219,9 +226,10 @@ the candidate's issue, ships the version:
 | `held-by-conversations`, `conversations-unread` | auto-merge on, checks green, not merged: the open conversations that hold it, or why they could not be read |
 | `verdict-kept`, `verdict-missing`, `review-to-come` | the verdict kept; one not judged yet; marked ready, the draft's verdict still on its head |
 | `verdict-red`, `review-short`, `checks-red` | nothing turned on, why |
+| `review-read-whole` | a review not whole, taken by the reading of who put `workline:accepted-whole` |
 | `accepted-reset` | a push after the yes: the yes and auto-merge off |
 | `vetoed`, `draft`, `auto-merge-off` | the forge's veto, or the label taken off |
-| `label-ignored` | put by someone who may not push nor merge |
+| `label-ignored` | put by someone who may not push nor merge, the label named |
 | `merge-unguarded`, `merge-token`, `merge-unsupported` | a base, a token or a forge it cannot act with |
 | `checks-unread` | its head's checks could not be read: only the line's verdict counts |
 | `merge-state-unread`, `verdict-unread` | its state or its head's verdict could not be read: left as it is |
