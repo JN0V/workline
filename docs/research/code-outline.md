@@ -64,9 +64,18 @@ family:
 
 | Family | Rule |
 |---|---|
-| Braces (C, C++, Go, Java, C#, JavaScript, TypeScript, Rust, Kotlin, Swift, PHP, …) | a block whose header holds a parenthesis or no container word is a body: its opening line kept, `… }` after it |
-| Indentation (Python) | a header ending in `:` whose first word is not a container is a body: its header kept, `…` after it |
+| Braces (C, C++, Go, Java, C#, JavaScript, TypeScript, Rust, Kotlin, Swift, PHP, …) | a block whose header holds no container word before its first parameters is a body: its opening line kept, `… }` after it |
+| Indentation (Python) | a header ending in `:` whose first word opens a body (`def`) is cut: its header kept, `…` after it; `class`, `if TYPE_CHECKING:` kept |
 | A closing word (Ruby, Lua), shell | no outline: whole or cut, as before |
+
+Each language is one row of `codenav.Languages`, as ctags' optlib keeps
+one per language: its container words (Kotlin's `object`, Java's
+`record`, Rust's `impl`), what a header holds that says nothing (an
+annotation, `__attribute__((packed))`, `alignas(8)`, `template <…>`),
+whether `#` opens a preprocessor line (C, C++, C#), whether a line ends
+a statement (Go, Kotlin, Scala, Swift), and the pattern of the types a
+type derives from or embeds (C#'s `: B`, Kotlin's `: B()`, Rust's
+`impl T for`, Go's embedded fields).
 
 Lines holding only a comment go too: the lines are the budget. A piece
 the picker gives whole (a function the issue names) stays whole inside
@@ -123,8 +132,12 @@ the declarations one step away use. What does not fit stays a path,
 
 ## Limits
 
-- A header holding a parenthesis is a body: `class A extends mixin(B) {`
-  loses its members. An annotation's or attribute's parenthesis is
+- **Braces that do not balance**, a regular expression's (`/\{/`) or the
+  branches of an `#if` each opening one, give no outline: the file is
+  given whole or cut, as with no outline, never the rest of it hidden.
+- A container word after a parenthesis is a body: `class A extends
+  mixin(B) {` keeps its members, `val x = object : T {` does not. An
+  annotation's or attribute's parenthesis is
   dropped first.
 - `#if` branches are all followed: a HAL header's ESP32, ESP8266 and
   stub includes are all candidates; the ranking puts the used ones

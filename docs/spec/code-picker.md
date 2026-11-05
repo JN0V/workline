@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/codepick, internal/codenav, internal/builtin/productowner/productowner.go]
 status: draft
-checked: 96bded21
+checked: 82631b9c
 verified: agent:claude-code
 ---
 # The code picker
@@ -83,7 +83,8 @@ against, so that it asks once, not a header at a time (the C++ copy's
 - **Then a test asked for**: whole, else its first lines.
 - **Declarations**: each signature, type and member kept, each body cut
   to its opening line and `…`, comment lines and blank lines out. By
-  braces or indentation, one rule a family; a block is a container by a
+  braces or indentation, one rule a family, braces that do not balance
+  giving none; a block is a container by a
   word (`class`, `struct`, `namespace`, `interface`, `impl`, …), the
   imports by one row of patterns a family
   ([research](../research/code-outline.md)). Ruby, Lua and shell have
