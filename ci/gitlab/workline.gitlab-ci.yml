@@ -520,7 +520,7 @@ workline:garden:apply:
 # GitLab starts no pipeline on a comment: a tool given the project's note
 # webhook starts one on the default branch, through the pipelines API or a
 # trigger token, with WORKLINE_TASK=objection, MR_IID and MR_SOURCE_BRANCH,
-# the merge request (docs/gitlab-trigger.md). The judge proposes, holding the agent's token;
+# the merge request (docs/gitlab-trigger.md). The judge proposes, holding the agent's token and a read-only one (WORKLINE_GITLAB_READ_TOKEN, read_api);
 # apply writes the reply and a rewrite, holding the bot's and no agent's,
 # from the default branch's checkout (docs/objection-jobs.md).
 # Install your test runner in the judge: a rewrite is proven red there.
@@ -553,6 +553,17 @@ workline:objection:judge:
   extends: .workline:objection
   stage: test
   needs: [workline:objection:head]
+  # The judge runs the Draft's code: it holds the agent's token, never the
+  # bot's. It reads the threads and the issue with WORKLINE_GITLAB_READ_TOKEN
+  # (a project access token, read_api only), its own variable, as GITLAB_TOKEN.
+  before_script:
+    - '[ -n "${WORKLINE_GITLAB_TOKEN:-}" ] || { echo "workline: WORKLINE_GITLAB_TOKEN is not set, or not scoped to the environment workline: nothing to do (docs/ci-gitlab.md)"; exit 0; }'
+    - *trust
+    - workline version
+    - read_token=${WORKLINE_GITLAB_READ_TOKEN:-}
+    - unset WORKLINE_GITLAB_TOKEN GITLAB_TOKEN WORKLINE_GITLAB_READ_TOKEN
+    - '[ -z "$read_token" ] || export GITLAB_TOKEN=$read_token'
+    - 'case "$MR_SOURCE_BRANCH" in workline/tester/*) ;; *) echo "workline: $MR_SOURCE_BRANCH is not a branch of the tester: nothing to answer"; exit 1;; esac'
   script:
     - *claude
     # The Draft at the head read before: the test objected to is read there.
