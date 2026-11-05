@@ -146,6 +146,16 @@ func stateOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, 
 		spec = "" // a review is read in refine alone: no other state woken by it
 	}
 	now, ok := due(cfg, s, is, trail.Labeled, spec, rec, had)
+	var inputs map[string]string
+	if !ok && had {
+		// Its last run on this input a machine error, or short of code
+		// (ADR-0063, §5): run again, wait, or a person (outcome.go).
+		var block *StateWrite
+		var waits bool
+		if ok, now, inputs, block, waits = typedDue(res, name, s, is, rec, comments); block != nil || waits {
+			return nil, block, nil
+		}
+	}
 	reviewed := s.Name == refineState && slices.Contains(cfg.Events[IssueEvent], backlog.SpecReviewer)
 	if !ok && reviewed && rec.Asked != rec.Body {
 		// Acted on, the reviewer never asked on this body: a record from
@@ -215,18 +225,9 @@ func stateOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, 
 		// The tester's run on it refused, its state the same: never left
 		// as acted, which nothing would wake again (#794). Blocked, why
 		// on the board; a person moves it back.
-		why := "the tester wrote no tests for it in its state " + s.Name + ": " + refused
+		why := refusedWhy + s.Name + ": " + refused
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "tests-refused", Level: "warn", Where: where, Message: why + ": moved to " + BlockedState})
 		return nil, &StateWrite{Issue: is.ID, Record: blocking(now, s.Name, why, comments), Blocked: why}, nil
-	}
-	if !ok && had && s.Role == developerRole && rec.Lost != "" {
-		// The developer's last run on it ended with no verdict read:
-		// nothing it did reached the forge (#953). Due again, once; the
-		// hop its loss counted stops a run lost each time at max-hops.
-		ok, now = true, rec
-		now.Lost = ""
-		res.Findings = append(res.Findings, verdict.Finding{Rule: "state-lost", Level: "info", Where: where,
-			Message: "the developer's last run on it, " + rec.Lost + ", ended with no verdict: woken again"})
 	}
 	if !ok && had && s.Role == developerRole {
 		// Left free by the developer since it was woken: its claim let
@@ -246,7 +247,7 @@ func stateOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, 
 		// can settle it. Blocked, the tester's reason said — never left
 		// in refine with nothing due.
 		if reason, waits := noTestUnsettled(is, comments); waits {
-			why := "the tester found no test possible, and the product owner's run picked no proof nor rewrote its text"
+			why := unsettledWhy
 			res.Findings = append(res.Findings, verdict.Finding{Rule: "no-test-unsettled", Level: "warn", Where: where,
 				Message: why + ": moved to " + BlockedState + "; the tester said: " + reason})
 			return nil, &StateWrite{Issue: is.ID, Record: blocking(rec, s.Name, why+"; the tester said: "+reason, comments), Blocked: why + "; the tester said: " + reason}, nil
@@ -285,7 +286,7 @@ func stateOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, 
 		Message: fmt.Sprintf("its state, %s, wakes the %s", s.Name, name)})
 	since := waitedSince(s, rec, had, trail.Labeled)
 	now.Ran = clock().UTC().Format(time.RFC3339)
-	return &stateStep{role: name, next: s.Next, write: StateWrite{Issue: is.ID, Record: now}, from: s, since: since, rec: rec}, nil, nil
+	return &stateStep{role: name, next: s.Next, write: StateWrite{Issue: is.ID, Record: now}, inputs: inputs, from: s, since: since, rec: rec}, nil, nil
 }
 
 // blocking is the record of an issue the line blocks, from state from:
@@ -357,6 +358,8 @@ func byState(res *Result, cfg *routing.Config, o engine.Options, event string, s
 		switch res.Findings[len(res.Findings)-1].Rule { // stateOf's last word on it
 		case "tests-refused":
 			why = "to be blocked, its tests refused"
+		case "machine-error-spent":
+			why = "to be blocked, its runs failed past their tries"
 		case "refine-capped":
 			why = "to be blocked, left unrefined"
 		case "not-reproduced":
@@ -434,19 +437,31 @@ func runStateStep(res *Result, cfg *routing.Config, f forge.Forge, spec string, 
 	}
 	before, steps := len(res.Findings), len(res.Steps)
 	_, status := runRole(res, cfg, o, 0)
+	out := outcomeOf(res.Steps[steps:], status)
 	res.Status = worst(res.Status, status)
 	if status == verdict.BlockedExternal {
 		return
 	}
-	if st.role == developerRole && status != verdict.Pass {
-		// Its own run ended with no verdict read, its work lost: said on
-		// the issue with the record, never as acted on (#953). Any other
-		// error, after what it pushed perhaps, is not a loss.
-		if why := lost(res.Steps[steps:]); why != "" {
-			st.write.Lost = why
-			st.write.Record.Lost = clock().UTC().Format(time.RFC3339)
-			st.write.Record.Hops++
+	// A machine error moves nothing (ADR-0063, I3): its count kept in the
+	// record, said on the issue; the step runs again after the back-off,
+	// within the budget. The code its agent said it lacked is given at
+	// the step's next run. Any other outcome starts them again.
+	w, now := st.write.Record, clock().UTC()
+	same := st.rec.State == w.State && st.rec.Body == w.Body && st.rec.Labeled == w.Labeled // the same input
+	st.write.Record.Errors, st.write.Record.Lost, st.write.Record.Needs = nil, "", nil
+	switch {
+	case out.Machine():
+		prev := errorsOf(st.rec)
+		if !same {
+			prev = nil
 		}
+		st.write.Record.Errors, st.write.Failed = prev.with(out, now), true
+	case out.Kind == verdict.NeedsInput && out.Of == verdict.FromEngine:
+		n := &Needs{Said: oneLine(out.Said), At: now.Format(time.RFC3339), Times: 1}
+		if same && st.rec.Needs != nil {
+			n.Times = st.rec.Needs.Times + 1
+		}
+		st.write.Record.Needs = n
 	}
 	if st.role == backlog.Keeper {
 		// Held for its spec review: said on the issue with the record,
@@ -692,19 +707,4 @@ func lateSaid(res *Result, last string, now time.Time) {
 		int(gap.Hours()), int(gap.Minutes())%60, t.UTC().Format("2006-01-02 15:04 UTC"), int(ReconcileLate.Hours()))
 	res.Summary += "; late: " + said
 	res.Findings = append(res.Findings, verdict.Finding{Rule: "reconcile-late", Level: "warn", Message: said})
-}
-
-// lost is why the developer's own run, the first of steps, ended with no
-// verdict read (engine.ErrNoVerdict): "" when it did not; a handoff's
-// run, or another error, is never a loss.
-func lost(steps []Step) string {
-	if len(steps) == 0 || steps[0].Result == nil || !steps[0].Result.NoVerdict {
-		return ""
-	}
-	for _, f := range steps[0].Result.Findings {
-		if f.Rule == "engine-error" {
-			return f.Message
-		}
-	}
-	return engine.ErrNoVerdict.Error()
 }

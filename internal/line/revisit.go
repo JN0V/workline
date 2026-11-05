@@ -170,6 +170,9 @@ func revisit(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, 
 	if len(fresh) > 0 {
 		news = append(news, fmt.Sprintf("%s, which it waits on, %s", refs(fresh), plural(len(fresh), "is closed", "are closed")))
 	}
+	if machineBlocked(rec) {
+		news = append(news, "the line blocked it for a run it read as a verdict, before runs had typed outcomes: it may have been the machine's error")
+	}
 	last := rec.Since
 	if rec.Revisited != "" {
 		last = rec.Revisited
@@ -192,6 +195,23 @@ func revisit(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, 
 	next.Body, next.Talk, next.Closed, next.Revisited = bodyHash(is.Body), talkHash(comments), closed, now.Format(time.RFC3339)
 	return &stateStep{role: backlog.Keeper, write: StateWrite{Issue: is.ID, Record: next},
 		inputs: map[string]string{engine.RevisitInput: said, engine.RevisitFromInput: rec.From}}, nil, nil
+}
+
+// The reasons the line gave a block it made of a tester's run: its tests
+// refused (#794), its "no test possible" unsettled (#1053).
+const (
+	refusedWhy   = "the tester wrote no tests for it in its state "
+	unsettledWhy = "the tester found no test possible, and the product owner's run picked no proof nor rewrote its text"
+)
+
+// machineBlocked says whether the line blocked an issue, in a record from
+// before runs had typed outcomes (V 0), for a tester's run it read as a
+// verdict: a test that did not build, a patch that did not apply, a
+// tester short of code (#1048, #1075, #1047). Read again at once, not in
+// a week (ADR-0063, migration): the record then written has a version,
+// so once.
+func machineBlocked(rec Record) bool {
+	return rec.V == 0 && rec.State == BlockedState && (strings.HasPrefix(rec.Why, refusedWhy) || strings.HasPrefix(rec.Why, unsettledWhy))
 }
 
 // refs names issues: #3, #4 and #5.

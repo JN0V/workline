@@ -30,6 +30,11 @@ style, beside the tests already there:
   `note`, the scenario's name first, "kept as today: the existing suite
   guards it". Test the other scenarios as above.
 
+When the task lacks code a test needs — a definition it calls, a header,
+a test to copy —, write no test and guess no name: answer one `note`,
+`needs: <the paths of the files you lack, comma-separated> — why`. The
+engine gives them at your next run.
+
 When no new test fits the issue as a whole, write no test: answer one
 `note` naming the proof that fits instead, `proof: <kind> — why`:
 

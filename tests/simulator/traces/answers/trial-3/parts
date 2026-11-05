@@ -1,5 +1,6 @@
-after refine, the trial went on to tests, the simulator stopped; unused: 1 developer, 2 product-owner, 1 tester
-The trial's product owner was woken again by the spec reviewer's findings, between its
-answers; the simulator's line has no reviewer. After the product owner's first answer,
-read through the engine's reader, the issue is acted on, nothing more to run: the silent
-park (#1082). The answers left unused are those the trial gave after.
+after tests: the trial went to blocked, the simulator to ready; unused: 2 product-owner
+The product owner's first answer names the code it lacks, given at its next run
+(ADR-0063, step 2), whose answer readies it. The tester's answer, refused at once by the
+engine, is asked again in the same run with what refused it, and its next answer is the
+fake's: the tests go on to ready, where the trial blocked them. The later product owner's
+answers came after the trial's block.

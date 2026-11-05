@@ -185,6 +185,10 @@ func (a *simAgent) answerOf(kind outcome, role string, task []byte) (outcome, st
 		file, content := a.testOf(task)
 		content = strings.Replace(content, "#include <unity.h>\n", "#include <unity.h>\n#include <memory>\n#include <string>\n", 1)
 		content = strings.Replace(content, "\nint main() {", "\nvoid test_wrong_call(void) { auto made = std::make_unique<std::string>(std::string(), \"Kitchen\", 1, 2, 3); TEST_ASSERT_NOT_NULL(made.get()); }\n\nint main() {", 1)
+		if strings.HasSuffix(file, ".go") {
+			// In Go, a value of the wrong type: no missing name either.
+			content += "\nfunc TestWrongCall(t *testing.T) {\n\tvar n int = \"Kitchen\"\n\t_ = n\n}\n"
+		}
 		return kind, patch(file, content)
 	case kind == broken && role == "developer":
 		h := headerIn(task, "## What you may change")

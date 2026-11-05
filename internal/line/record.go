@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/board"
@@ -90,9 +91,20 @@ type Record struct {
 	// (#998): once for that comment, never again while it stands.
 	Unheld string `json:"unheld,omitempty"`
 	// Lost: when the developer's run the line woke ended with no verdict
-	// read, its work lost (#953): due again, once, a hop more, so a run
-	// lost each time stops at max-hops, Blocked.
+	// read, its work lost (#953), in a record from before Errors: read as
+	// one machine error of kind run (errorsOf), never written again.
 	Lost string `json:"lost,omitempty"`
+	// Errors: the machine errors of the step's runs on its input
+	// (ADR-0063, §5; outcome.go): run again after a back-off within
+	// ErrorBudget, then a person. Never a hop.
+	Errors *Errors `json:"errors,omitempty"`
+	// Needs: the code the step's agent said it lacked on its input
+	// (ADR-0063, §6; outcome.go): given at its next run, once.
+	Needs *Needs `json:"needs,omitempty"`
+	// V: the record's version: 1 since runs have typed outcomes; 0, a
+	// record from before, whose block a machine error may have made
+	// (revisit.go).
+	V int `json:"v,omitempty"`
 	// Retry: in refine, the times the line woke the product owner again
 	// on the same body, its last read having left the issue unrefined
 	// (unrefined.go, #951); past RefineRetries, Blocked.
@@ -145,10 +157,14 @@ type StateWrite struct {
 	// move takes off besides the states' — workline:needs-repro.
 	Repro string   `json:"repro,omitempty"`
 	Off   []string `json:"off,omitempty"`
-	// Lost: why the developer's run ended with no verdict read, said on
-	// the issue with the record, which makes its step due again (#953).
-	Lost string `json:"lost,omitempty"`
+	// Failed: the step's run ended with a machine error, its Errors in
+	// the record: said on the issue with it, its labels and state kept
+	// (ADR-0063, I3).
+	Failed bool `json:"failed,omitempty"`
 }
+
+// recordV is the version every record is written with (Record.V).
+const recordV = 1
 
 const (
 	recordKey  = "line/state"   // the sticky comment's key: the engine's, not a role's
@@ -320,6 +336,7 @@ func specWaits(is forge.Issue, comments []string) bool {
 // step waiting for room, why, its record as it was.
 func writeState(f forge.Forge, cfg *routing.Config, repo string, w StateWrite, role string) error {
 	t := forge.Target{Kind: "issue", ID: w.Issue}
+	w.Record.V = recordV
 	body := recordBody(w.Record, role)
 	switch {
 	case w.Seen != "":
@@ -372,9 +389,13 @@ func writeState(f forge.Forge, cfg *routing.Config, repo string, w StateWrite, r
 	case w.Holds != "":
 		body = backlog.Said("workline's line", "waits for the reviewer to read this issue's spec", w.Holds,
 			"the reviewer's comment on its spec, then the line wakes the product owner to read it") + "\n" + body
-	case w.Lost != "":
-		body = backlog.Said("workline's line", "lost the developer's run on this issue", w.Lost,
-			"the next event on it, or the hourly reconcile, wakes the developer again; a run lost each time stops at max-hops, the issue moved to Blocked") + "\n" + body
+	case w.Failed && w.Record.Errors != nil:
+		body = failedBody(w, role) + "\n" + body
+	case w.Record.Needs != nil && role != "":
+		n := w.Record.Needs
+		at, _ := time.Parse(time.RFC3339, n.At)
+		body = backlog.Said("workline's line", "gives the "+strings.ReplaceAll(role, "-", " ")+" the code it said it lacks", n.Said,
+			"its next run, from "+at.Add(ErrorBackoff).UTC().Format("2006-01-02 15:04 UTC")+", is given it; said lacking again, the issue moves to Blocked for a person to name its files") + "\n" + body
 	}
 	return f.Sticky(t, backlog.Inert(body), forge.Marker("sticky="+recordKey), true)
 }

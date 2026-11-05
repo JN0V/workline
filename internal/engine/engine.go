@@ -98,6 +98,26 @@ const (
 	RevisitFromInput = "revisit-from"
 )
 
+// FailedInput is the input the line gives a step it runs again after a
+// machine error: what failed, said at the end of the agent's task
+// (ADR-0063, §6).
+const FailedInput = "failed"
+
+// withFailed ends the task at file, when pre wrote one, with what failed
+// at the last run.
+func withFailed(file, failed string) error {
+	data, err := os.ReadFile(file)
+	if os.IsNotExist(err) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	text := strings.TrimRight(string(data), "\n") + "\n\n## Your last run on this failed\n\n" + failed +
+		"\n\nThe engine could not use that run: answer again, whole, with this fixed.\n"
+	return os.WriteFile(file, []byte(text), 0o644)
+}
+
 // AIWaitsReady is what Result.AIWaits and WORKLINE_AI_WAITS hold on a
 // draft: the agent waits for the merge request to be marked ready.
 const AIWaitsReady = "ready"
@@ -647,6 +667,13 @@ func run(o Options, res *Result) error {
 			return err
 		}
 		questions = askedAgain(runDir, answered)
+	}
+	// A run again after a machine error carries what failed (ADR-0063,
+	// §6): the agent reads it, and its input is not the one that failed.
+	if failed := strings.TrimSpace(o.Inputs[FailedInput]); failed != "" {
+		if err := withFailed(filepath.Join(runDir, "in", "task.md"), failed); err != nil {
+			return err
+		}
 	}
 	digest, err := dirDigest(filepath.Join(runDir, "in"))
 	if err != nil {

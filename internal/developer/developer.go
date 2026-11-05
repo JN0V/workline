@@ -864,6 +864,24 @@ func Post(runDir, repo string) int {
 	} else {
 		a.Code, a.Tests = written(patches)
 		p, u, caps, found := proven(runDir, repo, on, where, patches, a.Acceptance, flakyOf(b.Proof, s), s)
+		if p.Result == Red && len(p.Red) == 0 && len(caps) == 0 {
+			// Its code does not build, or breaks the run, no test red: the
+			// agent's to mend, asked again once with the error, as the
+			// tester's test that does not build (#1083); still so, a
+			// machine error the line runs again (ADR-0063, I3). Nothing
+			// claimed nor opened.
+			v.Status, v.Again = verdict.Block, true
+			v.Summary = where + ": its code does not build"
+			v.Findings = append(v.Findings, verdict.Finding{Rule: "build-broken", Where: where,
+				Message: "its code does not build, or breaks the test run: " + p.Why})
+			if code := writeIntents(runDir, "", told); code != 0 {
+				return code
+			}
+			if code := writeVerdict(runDir, v); code != 0 {
+				return code
+			}
+			return 1 // blocked: the exit its verdict says (role contract)
+		}
 		a.Proof, a.Caps = &p, caps
 		a.Turns, a.Tokens, a.Cached, a.Tools, a.AgentFailed = u.Turns, u.Tokens, u.Cached, u.Tools, u.failed
 		v.Findings = append(v.Findings, found...)
