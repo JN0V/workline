@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -123,7 +124,7 @@ const (
 	pRequests   = "requests-a-tick"
 )
 
-var seeded = []string{pAttributed, pOneLabel, pI3, pBudget, pI2, pRequests}
+var seeded = []string{pAttributed, pOneLabel, pI3, pBudget, pI2, pNeeds, pRequests}
 
 // maxRequests bounds the forge's requests in one reconcile of a trace's
 // one issue, reads and writes, the role scripts' with the engine's.
@@ -140,6 +141,16 @@ type checks struct {
 	skip  []string
 	only  []string
 	until int // the last tick checked, when not all
+	// known: a needs-input an open issue says breaks its property is not
+	// held to it (knownNeeds), under seeds.
+	known bool
+}
+
+// knownNeeds: the needs-input answers an open issue says end with no
+// status: the product owner's from the engine or a person (#1082), the
+// developer's (#1084). The tester's is held.
+func knownNeeds(cl call) bool {
+	return cl.Role == "product-owner" && (cl.Kind == needsEngine || cl.Kind == needsPerson) || cl.Role == "developer"
 }
 
 func (c checks) on(p string) bool {
@@ -199,8 +210,11 @@ func (w *world) tickChecks(c checks, k int, before, after forge.FakeState, res, 
 		// A record catching up counts the hop its labels made before,
 		// by another role's hand-back: one, never more.
 		catchUp := bs != as && as == stateName(w.cfg, a.Labels)
+		// The claim's record stays, catches up with the labels before the
+		// claim, or says developing: nothing else.
+		claimRecord := claim && (as == stateName(w.cfg, b.Labels) || as == stateName(w.cfg, []string{"workline:developing"}))
 		if !sameLabels(b.Labels, a.Labels) && !claim ||
-			had && (bs != as && !catchUp && !claim || bh != ah && (!catchUp || ah != bh+1)) || !had && has && ah != 1 {
+			had && (bs != as && !catchUp && !claimRecord || bh != ah && (!catchUp || ah != bh+1)) || !had && has && ah != 1 {
 			return fail(pI3, "#%d after the %s's %s: %s, was %s", cl.Issue, cl.Role, cl.Kind, trail(*a), trail(*b))
 		}
 	}
@@ -247,10 +261,7 @@ func (w *world) tickChecks(c checks, k int, before, after forge.FakeState, res, 
 				}
 			}
 		}
-		// A replayed answer asked again at once, in the same run, the
-		// engine could not read: a machine error the simulator cannot
-		// name beforehand, the answer being the trial's.
-		if last != nil && (!last.Kind.machine() && (last.Kind != replayed || last.Tick != cl.Tick) || errs > budget) {
+		if last != nil && (!last.Kind.machine() || errs > budget) {
 			return fail(pI2, "the %s ran on #%d's input %s again, after a %s", cl.Role, cl.Issue, cl.Digest, last.Kind)
 		}
 	}
@@ -259,7 +270,7 @@ func (w *world) tickChecks(c checks, k int, before, after forge.FakeState, res, 
 	// Due on that role, or Waiting on it; a person's, Waiting.
 	for _, cl := range lastCalls(calls) {
 		a := issueOf(after, cl.Issue)
-		if !cl.Kind.needs() || !c.on(pNeeds) || a == nil || a.Closed {
+		if !cl.Kind.needs() || !c.on(pNeeds) || c.known && knownNeeds(cl) || a == nil || a.Closed {
 			continue
 		}
 		st, said := status(again, cl.Issue)
@@ -284,9 +295,14 @@ func (w *world) tickChecks(c checks, k int, before, after forge.FakeState, res, 
 	// The same tick twice starts no second step: the second run starts
 	// only the role of the state the first one moved the issue to, the
 	// same role when it moved it to its own again (blocked, then refine).
+	// A wake with no role is a write with no agent call (a block the
+	// engine writes itself), not a step started.
 	for id, role := range again.Woke {
 		if !c.on(pTwice) {
 			break
+		}
+		if role == "" {
+			continue
 		}
 		b, a := issueOf(before, id), issueOf(after, id)
 		if b == nil || a == nil {
@@ -349,6 +365,7 @@ func runTrace(t *testing.T, tr trace, script []outcome, c checks) (*failure, str
 type measure struct {
 	requests, calls []int
 	path            []string
+	unused          map[string]int // the trial's answers left unused, by role
 }
 
 func (m measure) String() string {
@@ -382,11 +399,11 @@ func (m *measure) step(cfg *routing.Config, s forge.FakeState) {
 }
 
 // measured is runTrace, with what it measured.
-func measured(t *testing.T, tr trace, script []outcome, c checks) (*failure, string, measure) {
+func measured(t *testing.T, tr trace, script []outcome, c checks) (_ *failure, _ string, ms measure) {
 	a := &simAgent{script: script}
 	w := newWorld(t, tr, a)
 	var log strings.Builder
-	var ms measure
+	defer func() { ms.unused = a.unused() }()
 	ms.step(w.cfg, w.state(t))
 	k := w.k()
 	quiet := false
@@ -526,7 +543,7 @@ func TestTraces(t *testing.T) {
 				if j == len(props) {
 					t.Log(m1)
 					if tr.replay {
-						checkReplay(t, tr, m1.path)
+						checkReplay(t, tr, m1)
 					}
 				}
 				if os.Getenv("SIM_LOG") != "" {
@@ -613,12 +630,22 @@ func parting(trial, sim []string) string {
 
 // checkReplay checks a replayed trace takes the trial's path, or parts from
 // it where traces/answers/<file>/parts says on its first line, what
-// parting says, why on the lines below. A line that no longer holds
-// fails, the one to write instead given.
-func checkReplay(t *testing.T, tr trace, sim []string) {
+// parting says, and the trial's answers no call took, why on the lines
+// below. A line that no longer holds fails, the one to write instead
+// given.
+func checkReplay(t *testing.T, tr trace, m measure) {
 	trial := trialPath(t, tr)
-	got := parting(trial, sim)
-	t.Logf("the trial's path %v; the simulator's %v; parts: %s", trial, sim, got)
+	got := parting(trial, m.path)
+	if len(m.unused) > 0 {
+		var left []string
+		for _, role := range slices.Sorted(maps.Keys(m.unused)) {
+			left = append(left, fmt.Sprintf("%d %s", m.unused[role], role))
+		}
+		got += "; unused: " + strings.Join(left, ", ")
+	} else {
+		got += "; every answer used"
+	}
+	t.Logf("the trial's path %v; the simulator's %v; parts: %s", trial, m.path, got)
 	file := filepath.Join("traces", "answers", tr.file, "parts")
 	data, err := os.ReadFile(file)
 	if err != nil {
@@ -723,8 +750,8 @@ func parseScript(v string) []outcome {
 // script (SIM_SEED, SIM_SCRIPT; SIM_TRACE takes one trace).
 // The seeds draw over the plain traces: a case's point is its own answer,
 // a replay's the trial's, both run by TestTraces. A needs-input on its
-// source is held there too, on the named needs traces, not under seeds
-// while #1082 and #1084 stand: every needs-input answer breaks it.
+// source is held under seeds but for the role and kind an open issue says
+// break it (knownNeeds); the named needs traces hold those too.
 func TestSeeds(t *testing.T) {
 	want := pending(t)
 	base, n := seeds()
@@ -736,13 +763,13 @@ func TestSeeds(t *testing.T) {
 			continue
 		}
 		runs = append(runs, tr)
-		limits[tr.name] = checks{all: true, skip: []string{pEnd, pNeeds}}
+		limits[tr.name] = checks{all: true, skip: []string{pEnd}, known: true}
 		if len(want[tr.name]) > 0 {
 			f, _ := runTrace(t, tr, nil, checks{all: true})
 			if f == nil {
 				t.Fatalf("%s is pending, and breaks nothing", tr.name)
 			}
-			limits[tr.name] = checks{only: slices.DeleteFunc(slices.Clone(seeded), func(p string) bool { return slices.Contains(want[tr.name], p) }), until: f.Tick}
+			limits[tr.name] = checks{only: slices.DeleteFunc(slices.Clone(seeded), func(p string) bool { return slices.Contains(want[tr.name], p) }), until: f.Tick, known: true}
 		}
 	}
 	if len(runs) == 0 {

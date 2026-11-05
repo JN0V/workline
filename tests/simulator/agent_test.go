@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 
 	"go.yaml.in/yaml/v3"
@@ -36,10 +37,13 @@ const (
 	needsRole    outcome = "needs-role"
 	needsPerson  outcome = "needs-person"
 	replayed     outcome = "replayed"
+	// replayedUnread: the trial's answer, which the engine's reader could
+	// not read: a machine error, counted against the budget.
+	replayedUnread outcome = "replayed-unread"
 )
 
 func (o outcome) machine() bool {
-	return o == machineError || o == malformed || o == hunk || o == broken
+	return o == machineError || o == malformed || o == hunk || o == broken || o == replayedUnread
 }
 
 func (o outcome) needs() bool { return o == needsEngine || o == needsRole || o == needsPerson }
@@ -66,7 +70,7 @@ func (a *simAgent) next(role string) (outcome, string) {
 	if s, ok := a.by[role]; ok {
 		mine := 0
 		for _, c := range a.calls {
-			if c.Role == role && c.Kind != replayed {
+			if c.Role == role && c.Kind != replayed && c.Kind != replayedUnread {
 				mine++
 			}
 		}
@@ -106,15 +110,48 @@ func (a *simAgent) Propose(r agent.Request) (agent.Call, error) {
 		_ = os.WriteFile(filepath.Join(d, fmt.Sprintf("%d-%s.md", len(a.calls), r.Role.Name)), task, 0o644)
 	}
 	kind, answer := a.next(r.Role.Name)
-	if kind != replayed {
-		kind, answer = a.answerOf(kind, r.Role.Name, task)
+	if kind == replayed {
+		return a.replay(r, task, answer)
 	}
+	kind, answer = a.answerOf(kind, r.Role.Name, task)
 	a.calls = append(a.calls, call{Tick: tick, Role: r.Role.Name, Digest: a.digest(task), Kind: kind, runDir: r.RunDir})
 	if kind == machineError {
 		return c, fmt.Errorf("sim: the agent's run failed")
 	}
 	answer = strings.ReplaceAll(answer, "ISSUE", issueIn(task))
 	return c, os.WriteFile(filepath.Join(r.RunDir, "out", "intentions.yaml"), []byte(answer), 0o644)
+}
+
+// unused are the trial's answers no call took, by role.
+func (a *simAgent) unused() map[string]int {
+	out := map[string]int{}
+	for role, q := range a.answers {
+		if len(q) > 0 {
+			out[role] = len(q)
+		}
+	}
+	return out
+}
+
+// replay gives the trial's answer through the engine's own reader, as a
+// command agent printing it: a code fence taken off, an answer it cannot
+// read a machine error (replayedUnread), as the trial's agent's was.
+func (a *simAgent) replay(r agent.Request, task []byte, answer string) (agent.Call, error) {
+	file := filepath.Join(r.RunDir, "replayed-answer.txt")
+	if err := os.WriteFile(file, []byte(answer), 0o644); err != nil {
+		return agent.Call{}, err
+	}
+	reader, err := agent.Parse("cmd:cat " + strconv.Quote(file))
+	if err != nil {
+		return agent.Call{}, err
+	}
+	c, err := reader.Propose(r)
+	kind := replayed
+	if err != nil {
+		kind = replayedUnread
+	}
+	a.calls = append(a.calls, call{Tick: tick, Role: r.Role.Name, Digest: a.digest(task), Kind: kind, runDir: r.RunDir})
+	return c, err
 }
 
 // answerOf is a role's answer of kind, and the kind it is. A role with

@@ -1,4 +1,4 @@
-after refine, the trial went on to ready, the simulator stopped
-The trial's product owner was woken again by the spec reviewer's findings, between its
-answers; the simulator's line has no reviewer, and after the product owner's first
-answer the issue is acted on, nothing more to run: the silent park (pending.txt).
+after refine, the trial went on to ready, the simulator stopped; every answer used
+The product owner's one answer names a test file the fixture lacks, and its `ready` is
+refused on the `Draft:` Need the issue holds as frozen; then the silent park (#1082). The
+trial's developer answered `[]`, left out.

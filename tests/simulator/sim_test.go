@@ -93,6 +93,8 @@ var traces = func() []trace {
 		// The developer's agent run failing once (seed 26 of the first
 		// seeded runs on these cases, frozen).
 		trace{name: "trial-3-error-code", file: "trial-3", fresh: true, end: "done", by: one("developer", machineError)},
+		// The product owner's answer unreadable twice in its run.
+		trace{name: "trial-35-po-unread", file: "trial-35", fresh: true, end: "done", by: map[string][]outcome{"product-owner": {malformed, malformed}}},
 		// Needs input, from each source: the engine (the product owner's
 		// files), the product owner (the tester's no test, the
 		// developer's file outside its Scope), a person (the product

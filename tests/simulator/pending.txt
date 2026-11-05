@@ -39,6 +39,9 @@ trial-20-broken-test one-state-label i1-status expected-end one-byte-due
 trial-3-broken-code one-state-label i1-status expected-end one-byte-due
 # The developer's agent run failing once: never run again (#1085).
 trial-3-error-code i1-status expected-end
+# The product owner's answer unreadable twice in its run: the same tick's
+# second reconcile asks it a third time, on the same input (#1090).
+trial-35-po-unread same-tick-twice
 # The developer's file outside its Scope: dropped, the product owner not
 # asked, nothing said (#1084).
 trial-35-needs-po-code one-state-label needs-input-on-its-source i1-status expected-end one-byte-due
@@ -46,16 +49,19 @@ trial-35-needs-po-code one-state-label needs-input-on-its-source i1-status expec
 # it, the silent park (#1082).
 trial-35-needs-engine needs-input-on-its-source i1-status expected-end
 trial-35-needs-person needs-input-on-its-source i1-status expected-end
-# Replayed, the trial's first product owner answer, then the silent
-# park: the spec reviewer that woke it again in the trial is not on the
-# simulator's line, and an act refused or a question asked leaves no
-# status (#1082). traces/answers/<trace>/parts says where each parts.
+# Replayed, the trial's first product owner answer, read through the
+# engine's reader, then the silent park: the spec reviewer that woke it
+# again in the trial is not on the simulator's line, and an act refused
+# or a question asked leaves no status (#1082). #33 names its heap suite
+# and asks its reporter. traces/answers/<trace>/parts says where each
+# parts, and the answers left unused.
 trial-3-replay i1-status expected-end
 trial-4-replay i1-status expected-end
 trial-5-replay i1-status expected-end
 trial-16-replay i1-status expected-end
 trial-19-replay i1-status expected-end
 trial-20-replay i1-status expected-end
+trial-33-replay i1-status expected-end
 trial-34-replay i1-status expected-end
 trial-35-replay i1-status expected-end
 trial-36-replay i1-status expected-end
@@ -63,13 +69,11 @@ trial-36-replay i1-status expected-end
 # machine, read again at day 7, the tester then runs on the same input
 # (step 2's typed outcomes remove the block), and the claim's two labels.
 trial-18-replay i1-status i2-same-input quiet-within-k expected-end one-byte-due
-# The answer unreadable twice in one run, the next reconcile of the same
-# tick runs it a third time, on the same input; then the silent park.
-trial-33-replay same-tick-twice i1-status expected-end
-# The product owner's quote not in the fixture: its act refused, the
-# second run of the tick wakes the issue with no role, and blocks it for
-# the week.
-trial-37-replay same-tick-twice expected-end
+# The product owner names WebUI.h; the same tick's second run wakes it
+# again with that code (a new input, which the property's state test does
+# not tell from a second start); its next answer drafts nothing:
+# refine-capped, no status, blocked for the week, read again at day 7.
+trial-37-replay same-tick-twice i1-status quiet-within-k expected-end
 # Blocked by the machine, read again at day 7 (tick 21) and unblocked,
 # then the claim's two labels. The week's wait is intended
 # (internal/line/revisit.go); the red is the simulator's 8-hour tick with

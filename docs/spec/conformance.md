@@ -205,9 +205,10 @@ step 1):
   that does not build, needs-input from the engine, the product owner or
   a person. A role with no form today for a kind answers its progress.
 - **The trial's answers replayed**: `traces/answers/<trace>/`, the agent
-  answers its runs kept, given back role by role; the trial's path, read
-  from its label events, is compared with the simulator's, and `parts`
-  names where they part, why below. A developer's `[]` is left out: its
+  answers its runs kept, given back role by role through the engine's
+  own reader (a `cmd:` agent printing each); the trial's path, read from
+  its label events, is compared with the simulator's, and `parts` names
+  where they part and the answers left unused, why below. A developer's `[]` is left out: its
   code was in its worktree.
 - **Requests a tick**: the fake forge counts its reads in a file beside
   it (`forge.ReadsLog`); each trace prints the forge's requests and the
