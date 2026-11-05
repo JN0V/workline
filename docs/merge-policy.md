@@ -79,6 +79,9 @@ merge: {autonomy: cautious}   # off unless set: no auto-merge is touched
 - **A push after the yes takes it back**: auto-merge off, the label off,
   one comment. When each head was pushed is the forge's word: GitHub's
   repository activity, GitLab's versions.
+- **Each yes label by its own pushes**: `workline:accepted` put before a
+  push and `workline:accepted-whole` after it, only the stale one goes
+  off; the other covers the head and stands.
 - **workline's own commit is no push**, checked by its tree; its trailer
   is needed, never taken on trust. The committer checks every commit all
   the same:
@@ -226,7 +229,7 @@ the candidate's issue, ships the version:
 | `review-read-whole` | a review not whole, taken by the reading of who put `workline:accepted-whole` |
 | `accepted-reset` | a push after the yes: the yes and auto-merge off |
 | `vetoed`, `draft`, `auto-merge-off` | the forge's veto, or the label taken off |
-| `label-ignored` | put by someone who may not push nor merge |
+| `label-ignored` | put by someone who may not push nor merge, the label named |
 | `merge-unguarded`, `merge-token`, `merge-unsupported` | a base, a token or a forge it cannot act with |
 | `checks-unread` | its head's checks could not be read: only the line's verdict counts |
 | `merge-state-unread`, `verdict-unread` | its state or its head's verdict could not be read: left as it is |

@@ -537,17 +537,31 @@ falls short whoever reads it, and no yes lifted it.
   part cut by the tokens. `not-reviewed` and `lens-failed` stay short:
   an agent the project sets must answer, and a failed lens is run again.
   A red check or verdict still holds.
+- **Each label by its own pushes**: a push between the two labels takes
+  off the one put before it, alone, said in a comment; the one put after
+  covers the head and stands.
+- **The short rules kept with the verdict**: every rule that made the
+  review short, between brackets before its text
+  (`short: [review-not-whole] its review falls short…`), first so a
+  description cut to the forge's length keeps them. The whole label takes
+  a verdict whose one short rule is `review-not-whole`; one kept by an
+  earlier engine, whose text named its first rule only, is never taken.
 - **Said**: `workline/accepted` reads "read whole by @…", and the
   summary names whose reading stood for the reviewer's
-  (`review-read-whole`).
+  (`review-read-whole`); a label ignored, for want of the rights, is
+  named.
 - **Rejected**: the plain label taking it (a saved filter puts it in
   bulk, a short review taken unseen); the reviewer reading every part
   past `parts-max` (a context budget a part, what `parts-max` caps).
 
 Conformance: merge/accepted-whole-takes-a-review-not-whole,
 accepted-review-not-whole-stays-off, accepted-whole-red-check-holds,
-accepted-whole-keeps-an-agent-due, gitlab-accepted-whole-turned-on;
-TestShortNamesNotWholeLast, TestTheYesEachLabelItsOwn.
+accepted-whole-keeps-an-agent-due, gitlab-accepted-whole-turned-on,
+accepted-whole-after-a-push-stays, push-after-accepted-whole-takes-it-off,
+accepted-whole-by-a-non-writer-ignored,
+accepted-whole-by-a-non-writer-reads-nothing,
+accepted-whole-older-verdict-stays-off; TestShortRulesKeptWhole,
+TestTheYesEachLabelItsOwn.
 
 [ADR-0005]: 0005-independence-takes-the-best-level-available.md
 [ADR-0011]: 0011-the-review-is-on-the-merge-request-not-the-push.md
