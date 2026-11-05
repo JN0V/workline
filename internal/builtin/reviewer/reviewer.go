@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"math"
 	"os"
 	"os/exec"
@@ -40,39 +41,40 @@ const (
 
 // Settings are the role's settings, as merged by the engine.
 type Settings struct {
-	Base            string   `json:"base"`                 // where a review on a machine starts from, when no range is given
-	Ignore          []string `json:"ignore"`               // files that are not code: a change touching only these asks nobody
-	Lenses          []string `json:"lenses"`               // the lenses, in the order a merge request takes them in turn
-	LensesPerPush   int      `json:"lenses-per-push"`      // on a merge request: lenses a push gets
-	CommitsPerPush  int      `json:"commits-per-push"`     // on a merge request, after ready: new commits the lenses that warn read a push, the oldest first; 0: every one (ADR-0050)
-	FindingsMax     int      `json:"findings-max"`         // findings on the change reported a run; the rest counted
-	IssuesMax       int      `json:"issues-max"`           // issues opened a run for what lies outside the change
-	DiffLinesMax    int      `json:"diff-lines-max"`       // lines of the change's hunks one call is given; past them, the change is read in parts (#446)
-	PartsMax        int      `json:"parts-max"`            // parts a change too large for one call may be read in; past them, no lens asked (#446)
-	CodeLinesMax    int      `json:"code-lines-max"`       // lines of the files changed given to a lens, all together
-	CommentBlockMax int      `json:"comment-block-max"`    // lines of one comment added
-	StoryWords      []string `json:"story-words"`          // what tells a bug's story in a comment
-	AIFindings      Gate     `json:"ai-findings"`          // warn, until measured (#90); block: a verified important finding blocks; or one of the two by lens
-	JudgeAtLeast    string   `json:"judge-at-least"`       // the independence a verification needs: context, model, provider
-	JudgeByRole     map[string]string `json:"judge-at-least-by-role"` // a higher floor for a change a role made, by its commits' Workline-Role (the developer's: model, ADR-0054)
-	ForgeWrites     bool     `json:"forge-writes"`         // on a merge request: the comments on lines, the summary comment and the issues
-	FinderFloor     bool     `json:"finder-floor"`         // ask each lens to look for a number of candidates before it stops
-	Tests           []string `json:"tests"`                // the test files: what a judge reading tests is shown of them
-	TestsLinesMax   int      `json:"tests-lines-max"`      // lines of those tests a judge is shown, all together
-	JudgeLinesMax   int      `json:"judge-lines-max"`      // lines of code a judge is shown: the cause's function, then those it reaches; 0: 31 lines around the cause
-	JudgeReadRounds int      `json:"judge-read-rounds"`    // rounds of reads a judge of the code may ask before it answers (ADR-0045); 0: it reads none
-	JudgeReadMax    int      `json:"judge-read-lines-max"` // lines read for one judge, all its rounds together
-	LensesTogether  bool     `json:"lenses-together"`      // the lenses of a run asked in one call, the change given once
-	AIMaxTokens     int      `json:"ai-max-tokens"`        // what a run may spend, all calls together; the engine stops asking
-	IssueLinesMax   int      `json:"issue-lines-max"`      // lines of the issues the change closes the lenses are given, all together
-	TestimonyLines  int      `json:"testimony-lines-max"`  // lines of what the author says (commit messages, the merge request) the lenses are given
-	QuestionsMax    int      `json:"questions-max"`        // decisions put to a person a run; the rest counted
-	DiffAlone       bool     `json:"diff-alone"`           // ask the diff-alone facet too, apart, given the change only
-	SpecLenses      []string `json:"spec-lenses"`          // the lenses a spec is read through (#128)
-	PipelinePaths   []string `json:"pipeline-paths"`       // besides .github/, .gitlab-ci.yml and .workline/, what the pipeline runs: a change to them skips no commit (ADR-0051, cut 5)
-	SpecLinesMax    int      `json:"spec-lines-max"`       // lines of a spec the lenses are given; the rest cut, said
-	SpecRounds      int      `json:"spec-rounds"`          // on the forge: reviews in a row with a finding open, then a person (#128)
-	SpecsPerRun     int      `json:"specs-per-run"`        // on the forge: the specs a run reads; the rest wait for the next (#433)
+	Base            string              `json:"base"`                   // where a review on a machine starts from, when no range is given
+	Ignore          []string            `json:"ignore"`                 // files that are not code: a change touching only these asks nobody
+	Lenses          []string            `json:"lenses"`                 // the lenses, in the order a merge request takes them in turn
+	LensesPerPush   int                 `json:"lenses-per-push"`        // on a merge request: lenses a push gets
+	CommitsPerPush  int                 `json:"commits-per-push"`       // on a merge request, after ready: new commits the lenses that warn read a push, the oldest first; 0: every one (ADR-0050)
+	FindingsMax     int                 `json:"findings-max"`           // findings on the change reported a run; the rest counted
+	IssuesMax       int                 `json:"issues-max"`             // issues opened a run for what lies outside the change
+	DiffLinesMax    int                 `json:"diff-lines-max"`         // lines of the change's hunks one call is given; past them, the change is read in parts (#446)
+	PartsMax        int                 `json:"parts-max"`              // parts a change too large for one call may be read in; past them, no lens asked (#446)
+	CodeLinesMax    int                 `json:"code-lines-max"`         // lines of the files changed given to a lens, all together
+	CommentBlockMax int                 `json:"comment-block-max"`      // lines of one comment added
+	StoryWords      []string            `json:"story-words"`            // what tells a bug's story in a comment
+	AIFindings      Gate                `json:"ai-findings"`            // warn, until measured (#90); block: a verified important finding blocks; or one of the two by lens
+	JudgeAtLeast    string              `json:"judge-at-least"`         // the independence a verification needs: context, model, provider
+	JudgeByRole     map[string]string   `json:"judge-at-least-by-role"` // a higher floor for a change a role made, by its commits' Workline-Role (the developer's: model, ADR-0054)
+	ForgeWrites     bool                `json:"forge-writes"`           // on a merge request: the comments on lines, the summary comment and the issues
+	FinderFloor     bool                `json:"finder-floor"`           // ask each lens to look for a number of candidates before it stops
+	Tests           []string            `json:"tests"`                  // the test files: what a judge reading tests is shown of them
+	TestsLinesMax   int                 `json:"tests-lines-max"`        // lines of those tests a judge is shown, all together
+	JudgeLinesMax   int                 `json:"judge-lines-max"`        // lines of code a judge is shown: the cause's function, then those it reaches; 0: 31 lines around the cause
+	JudgeReadRounds int                 `json:"judge-read-rounds"`      // rounds of reads a judge of the code may ask before it answers (ADR-0045); 0: it reads none
+	JudgeReadMax    int                 `json:"judge-read-lines-max"`   // lines read for one judge, all its rounds together
+	LensesTogether  bool                `json:"lenses-together"`        // the lenses of a run asked in one call, the change given once
+	AIMaxTokens     int                 `json:"ai-max-tokens"`          // what a run may spend, all calls together; the engine stops asking
+	IssueLinesMax   int                 `json:"issue-lines-max"`        // lines of the issues the change closes the lenses are given, all together
+	TestimonyLines  int                 `json:"testimony-lines-max"`    // lines of what the author says (commit messages, the merge request) the lenses are given
+	QuestionsMax    int                 `json:"questions-max"`          // decisions put to a person a run; the rest counted
+	DiffAlone       bool                `json:"diff-alone"`             // ask the diff-alone facet too, apart, given the change only
+	FacetsByMoment  map[string][]string `json:"facets-by-moment"`       // by moment (review, merge-request-push, merge-request-ready): the facets asked there, lenses or diff-alone; a moment not named keeps lenses, lenses-per-push and diff-alone (#243)
+	SpecLenses      []string            `json:"spec-lenses"`            // the lenses a spec is read through (#128)
+	PipelinePaths   []string            `json:"pipeline-paths"`         // besides .github/, .gitlab-ci.yml and .workline/, what the pipeline runs: a change to them skips no commit (ADR-0051, cut 5)
+	SpecLinesMax    int                 `json:"spec-lines-max"`         // lines of a spec the lenses are given; the rest cut, said
+	SpecRounds      int                 `json:"spec-rounds"`            // on the forge: reviews in a row with a finding open, then a person (#128)
+	SpecsPerRun     int                 `json:"specs-per-run"`          // on the forge: the specs a run reads; the rest wait for the next (#433)
 }
 
 // alone is the facet given the change only, apart from the lenses (#126):
@@ -80,6 +82,56 @@ type Settings struct {
 // the author's words explains away. Its text is lenses/diff-alone.md; its
 // findings are a lens's, quoted, judged and routed alike.
 const alone = "diff-alone"
+
+// The moments facets-by-moment names: `workline review` on a machine, a
+// push to a merge request, a merge request becoming ready (#243).
+const (
+	momentReview = "review"
+	momentPush   = "merge-request-push"
+	momentReady  = "merge-request-ready"
+)
+
+var moments = []string{momentReview, momentPush, momentReady}
+
+// checkFacets refuses a facets-by-moment naming an unknown moment, an unknown
+// facet, or no facet at all: to take the defaults, a moment is left out.
+func (s Settings) checkFacets() error {
+	for _, m := range slices.Sorted(maps.Keys(s.FacetsByMoment)) {
+		if !slices.Contains(moments, m) {
+			return fmt.Errorf("settings: facets-by-moment: %q is not a moment, one of %s", m, strings.Join(moments, ", "))
+		}
+		list := s.FacetsByMoment[m]
+		if len(list) == 0 {
+			return fmt.Errorf("settings: facets-by-moment: %s names no facet; to take the defaults, leave the moment out", m)
+		}
+		for _, f := range list {
+			if f != alone && !slices.Contains(s.Lenses, f) {
+				return fmt.Errorf("settings: facets-by-moment: %s names %q, not one of the lenses %v nor %s", m, f, s.Lenses, alone)
+			}
+		}
+	}
+	return nil
+}
+
+// atMoment says which facets a moment asks when the setting names it:
+// the lenses among them that have something to read, in the order the
+// moment gives, and whether diff-alone is one. named is false when the
+// moment is left to lenses, lenses-per-push and diff-alone.
+func (s Settings) atMoment(moment string, usable []string) (out []string, facet, named bool) {
+	list, ok := s.FacetsByMoment[moment]
+	if !ok {
+		return nil, false, false
+	}
+	for _, f := range list {
+		switch {
+		case f == alone:
+			facet = true
+		case slices.Contains(usable, f) && !slices.Contains(out, f):
+			out = append(out, f)
+		}
+	}
+	return out, facet, true
+}
 
 // Finding is one defect a lens reported, once its quotes were found again.
 type Finding struct {
@@ -775,7 +827,14 @@ func lenses(runDir string, s Settings, rec Record, skip map[string]string, every
 		}
 		return out, named, nil
 	case os.Getenv("WORKLINE_EVENT") != "merge-request":
+		if out, facet, ok := s.atMoment(momentReview, usable); ok {
+			return out, facet, nil
+		}
 		return usable, s.DiffAlone, nil
+	}
+	moment := momentPush
+	if every {
+		moment = momentReady
 	}
 	// The lenses that did not answer read their commits before the turn
 	// moves on, whosever turn it is (#588); on the run on ready past its
@@ -785,6 +844,20 @@ func lenses(runDir string, s Settings, rec Record, skip map[string]string, every
 		if l == alone || slices.Contains(usable, l) {
 			owed = append(owed, l)
 		}
+	}
+	if out, facet, ok := s.atMoment(moment, usable); ok {
+		// A moment the setting names keeps the retry: the failed lenses are
+		// added to what it asks.
+		if len(owed) > 0 && !rec.Retried && !rec.Owed {
+			for _, l := range owed {
+				if l == alone {
+					facet = true
+				} else if !slices.Contains(out, l) {
+					out = append(out, l)
+				}
+			}
+		}
+		return out, facet, nil
 	}
 	if len(owed) > 0 && !rec.Retried && !rec.Owed {
 		facet := slices.Contains(owed, alone) || !every && s.DiffAlone
@@ -2485,6 +2558,9 @@ func settings(runDir string) (Settings, error) {
 	}
 	if s.CommitsPerPush < 0 {
 		return s, fmt.Errorf("settings: commits-per-push: %d is below 0 (0: every new commit)", s.CommitsPerPush)
+	}
+	if err := s.checkFacets(); err != nil {
+		return s, err
 	}
 	if slices.Contains(s.Lenses, alone) {
 		return s, fmt.Errorf("settings: lenses names %q, a facet asked apart by its own setting, diff-alone", alone)
