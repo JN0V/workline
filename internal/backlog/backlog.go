@@ -683,6 +683,9 @@ type Plan struct {
 	// codeFirst are the issues this run names the code of: no ask on them
 	// (#548).
 	codeFirst map[int]bool
+	// firstNamed are the sources each codeFirst issue was named this
+	// run: all given by the task, its Scope written now stands (#1089).
+	firstNamed map[int][]string
 	// drops are the agent's acts this run dropped on each issue, each with
 	// why: said on an issue nothing else refined (#951).
 	drops map[int][]string
@@ -854,6 +857,7 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 	}
 	p.readChanges(changes)
 	p.codeFirst = map[int]bool{}
+	p.firstNamed = map[int][]string{}
 	p.askedNow = map[int]int{}
 	p.drops = map[int][]string{}
 	dropped := func(c Proposal, rule, msg string) {
@@ -1110,8 +1114,9 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 				if c.Do == "undepend" {
 					p.recordUndepend(c)
 				}
-				if c.Do == "sources" && c.Ticked == "" && !p.given(c.Issue, c.Sources) {
+				if c.Do == "sources" && c.Ticked == "" {
 					p.codeFirst[c.Issue] = true // its code read at the next run: no ask on it now
+					p.firstNamed[c.Issue] = append(p.firstNamed[c.Issue], c.Sources...)
 				}
 				if c.Do == "ask" {
 					p.askedNow[c.Issue] = c.Round
@@ -1162,6 +1167,8 @@ func (p *Plan) summary(role string) {
 	// left for that code (codeFirst): the agent lacked it, a needs-input
 	// of the engine (ADR-0063, §6), which reads it at the run that
 	// follows. None for an issue this run readied, closed or split.
+	// A Scope written from code the task gave, the sources naming only
+	// that code, settles it too: nothing is left to read (#1089).
 	named, settled := map[int][]string{}, map[int]bool{}
 	for _, d := range p.Decisions {
 		switch {
@@ -1169,6 +1176,8 @@ func (p *Plan) summary(role string) {
 		case d.Act.Do == "sources" && d.Act.Ticked == "" && p.codeFirst[d.Act.Issue]:
 			named[d.Act.Issue] = append(named[d.Act.Issue], d.Act.Sources...)
 		case d.Act.Do == "ready" || d.Act.Do == "close" || d.Act.Do == "split":
+			settled[d.Act.Issue] = true
+		case d.Act.Do == "refine" && strings.TrimSpace(d.Act.Scope) != "" && p.given(d.Act.Issue, p.firstNamed[d.Act.Issue]):
 			settled[d.Act.Issue] = true
 		}
 	}
@@ -1784,7 +1793,7 @@ func (p *Plan) scopeUnread(repo string, c Proposal) string {
 	// The code pre gave whole (CodeRead) counts too: files a comment
 	// names, as the developer's ask for its Scope does (#921).
 	given := slices.Contains(p.config.CodeRead, c.Issue) || !p.noCodeGiven(repo, c.Issue)
-	if !given || p.codeFirst[c.Issue] {
+	if !given || p.codeFirst[c.Issue] && !p.given(c.Issue, p.firstNamed[c.Issue]) {
 		return fmt.Sprintf("its %[1]s was left out: no code of #%[2]d was given in this run, so its paths would be a guess. The code they name is read at the next run, and its %[1]s is written from that code", work.Name(work.Scope), c.Issue)
 	}
 	return ""
