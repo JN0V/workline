@@ -205,7 +205,7 @@ Under `roles: {tester: {settings: …}}` in `.workline/config.yaml`
 | `test-command` | none | runs the project's tests and writes a JUnit XML report; `{report}` is its path. The developer proves its code with it too |
 | `draft-command` | none: `test-command` | proves a Draft red on the folders holding its tests alone, `{packages}`, not the whole suite twice ([#979](https://github.com/JN0V/workline/issues/979)) |
 | `test-report` | `junit.xml` | where the report is written, from the root: a path, or a pattern one folder deep |
-| `test-paths` | each ecosystem's names | the test files, as patterns: `**/*_test.go`, `**/test_*.py`, `**/*.test.ts`, `tests/**` and others; the only files `test write` may add |
+| `test-paths` | each ecosystem's names | the test files, as patterns: `**/*_test.go`, `**/test_*.py`, `**/*.test.ts`, `tests/**` and others; the only files `test write` may add; a new one beside the Scope is in the developer's bounds ([its bounds](../developer/docs/bounds.md#what-it-checks)) |
 | `build-errors` | Go's | how a build broken by a missing name reads, by ecosystem ([page](docs/missing-name.md)) |
 | `code-lines-max` | 1500 | lines of the Scope's code and tests given to the agent, all files together, fewer when long lines would pass the context budget; a longer file gives the functions the Scope names in it, whole; a fifth kept for a test beside when the code would fill it; files past it are named with their size |
 | `ai-max-tokens`, `ai-max-seconds` | 300000, 1200 | what one `test write` or `test answer` run may spend, and wait on its agent |

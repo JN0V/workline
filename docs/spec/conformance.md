@@ -205,7 +205,11 @@ step 1):
   that does not build, needs-input from the engine, the product owner or
   a person. A role with no form today for a kind answers its progress.
   A task over its context budget, the agent not asked, is a named
-  trace alone ([#1017](https://github.com/JN0V/workline/issues/1017)).
+  trace alone ([#1017](https://github.com/JN0V/workline/issues/1017)),
+  as is the developer's new test file beside its Scope, alone
+  ([#1061](https://github.com/JN0V/workline/issues/1061)). Asked by the
+  developer for files outside the Scope, the product owner's progress
+  widens it with them, its own files kept, and readies it.
 - **The trial's answers replayed**: `traces/answers/<trace>/`, the agent
   answers its runs kept, given back role by role through the engine's
   own reader (a `cmd:` agent printing each); the trial's path, read from

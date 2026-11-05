@@ -61,6 +61,15 @@ setting there, or one of another kind than the role's (a text where a list
 is read), changes nothing and is said (`personal-setting-ignored`); a
 config that cannot be read too (`personal-config-invalid`).
 
+**Read by another role.** A role may read another's merged settings,
+never its own copy of them: the developer's write fence reads the
+tester's `test-paths`
+([ADR-0063, §9](../adr/0063-every-open-issue-is-due-waiting-or-done.md#9-the-developers-write-fence)).
+Set once, in `roles.tester.settings`, it holds for both, locally and in
+CI, on GitHub and GitLab alike; unset, the tester's defaults name each
+ecosystem's test files. Unread, the developer's bounds are the Scope
+and the tests beside it alone, stricter, never wider.
+
 If a setting a role depends on cannot be resolved, the role says so and blocks.
 A check that silently passes for lack of configuration is still believed in,
 which is worse than no check.

@@ -115,6 +115,7 @@ In `.workline/config.yaml`, under `roles: {developer: {settings: …}}`:
 | `proof-seconds` | 900 | how long the project's tests may run on its code; past it, a Draft |
 | `proof-command` | none | the tests on the folders its change touches, `{packages}` in it; none, the whole suite ([the proof](docs/proof.md#what-runs)) |
 | `review-rounds` | 5 | the review rounds it runs on its pull request |
+| the tester's `test-paths` | its role's | read by the write fence: a new test file matching it, beside the Scope, is in bounds ([the bounds](docs/bounds.md#what-it-checks)) |
 | `autonomy` | `normal` | its level, else the project's `autonomy`: `cautious` runs 3 review rounds, `enterprising` 8; `review-rounds` set wins ([autonomy](../../docs/autonomy.md)) |
 
 The tests it runs are the tester's `test-command` and `test-report`

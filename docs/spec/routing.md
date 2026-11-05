@@ -597,6 +597,11 @@ only then.
   comment blocking it holding the developer's `workline:scope-ask`
   mark, the product owner is woken at once (`state-revisit`), told the
   files ([amended](../adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#amendment-2026-11-03-a-fix-outside-the-scope-asks-the-product-owner)).
+- **The developer's first step with code only outside the Scope** goes
+  back to refine, not Blocked: the product owner is due on its own
+  state, told the files; the same files asked again, whatever the
+  head, are blocked for a person, no mark
+  ([ADR-0063, §9](../adr/0063-every-open-issue-is-due-waiting-or-done.md#9-the-developers-write-fence)).
 - **The developer's red check with no fix**, no file outside the Scope
   named: blocked for a person, no mark; read again as any blocked issue,
   on news or after `revisit` days
