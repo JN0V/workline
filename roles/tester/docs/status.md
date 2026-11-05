@@ -180,6 +180,12 @@ Cases in `tests/conformance/cases/tester/`:
   issue names, the files its agent asked for first, a test kept room
   for. Cases `tester/picker-*`. Tried on
   [#1106](https://github.com/JN0V/workline/pull/1106#tried).
+- **What its test builds against, as declarations**: the includes and
+  imports two steps deep, the test's first, bodies left out; any
+  language, no parser. Cases `tester/picker-imports-as-declarations-*`,
+  `tester/picker-includes-as-declarations-cpp`. Tried on
+  [#1108](https://github.com/JN0V/workline/pull/1108#tried): the
+  copy's #36 still writes no test.
 - **Settings** `test-command`, `test-report`, `test-paths`,
   `code-lines-max`, `objection-exchanges`
   ([README](../README.md#settings)).
