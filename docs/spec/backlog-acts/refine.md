@@ -63,7 +63,7 @@ what it can and asks for the rest:
   digest per section), the mark left in it or not (`backlog.IsDraft`). A
   draft an earlier engine wrote — a visible line, "*Draft by the product
   owner: …*", around the marker — with no digest kept is told by its
-  marker alone; the role now writes the marker alone. Scope names its files or folders (`sources`, 1 to 5, in
+  marker alone; the role now writes the marker alone. Scope names every file the change edits; up to 5 of them are its `sources` (1 to 5, in
   the commit, as for naming its sources), which the issue's state gets when
   it has none; given none, the engine takes the paths the Scope's text
   names that the commit holds (`backlog.PathsIn`). A Scope naming none, or
