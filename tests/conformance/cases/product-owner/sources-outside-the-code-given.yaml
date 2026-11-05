@@ -33,7 +33,7 @@ expect:
     - {rule: no-quote, where: "#13"}
   no-findings: [{rule: no-quote, where: "#9"}]
   run-files:
-    in/task.md: {contains: "## docs/export.md"}
+    in/task.md: {contains: "### `docs/export.md`"}
   forge:
     issues:
       - {id: 9, comment-contains: "sources: [src/export]\n"}

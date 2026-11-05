@@ -3,9 +3,6 @@
 routing/ready-overlap-gone-wait-said
 # The shared code picker (ADR-0063, step 4; #1089): each role's task
 # misses code the issue names, on DomoticsCore's frozen code.
-product-owner/picker-a-line-of-a-long-file
-product-owner/picker-a-symbol-past-the-first-lines
-product-owner/picker-every-definition-of-a-name
 reviewer/picker-a-line-of-a-long-file
 reviewer/picker-a-symbol-past-the-first-lines
 reviewer/picker-every-definition-of-a-name
