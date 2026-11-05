@@ -1,20 +1,7 @@
 // Package codepick gives a role the code an issue names, found the same
 // way in any language (ADR-0063 §8): the product owner, the tester and
-// the reviewer read an issue's code by it, not each by its own cut. What
-// is given, in order, under the role's budget, the cut said:
-//
-//   - the lines an issue names after a file (`a.go:12`, "lines 6353 to
-//     6353"), with the function they lie in, else the lines around;
-//   - for each name it writes as code, `git grep -w`: each definition,
-//     whole (codenav, docs/research/code-navigation.md); those in the files
-//     it names first, then the project's own, its tests' and examples'
-//     copies last;
-//   - the files it names, whole when they fit, else their first lines;
-//   - the other lines naming a name, the rarer the name the sooner: the
-//     function they lie in, else the lines around;
-//   - room for one existing test, the nearest to the code named;
-//   - one step away, as paths only: the files the code given includes or
-//     imports, and those defining the types it derives from.
+// the reviewer read an issue's code by it. What it gives, in what order
+// and under which budget: docs/spec/code-picker.md.
 package codepick
 
 import (

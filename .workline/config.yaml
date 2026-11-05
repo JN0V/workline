@@ -103,9 +103,10 @@ roles:
       # copied from past runs, kept as they were, with no code to review;
       # and the evaluation's results, a row a run (a measure's 107 rows
       # were a lens call past the role's budget, #360); the line simulator's
-      # traces, real issues exported as they were.
+      # traces, real issues exported as they were; real code frozen for the
+      # code picker's cases, kept as its project wrote it (#1089).
       ignore: ["*.md", "**/*.md", "docs/**", "LICENSE*", "**/*.txt", "CHANGELOG*", "tests/evaluation/judge-replay/**", "tests/evaluation/results.tsv",
-        "tests/simulator/traces/**"]
+        "tests/simulator/traces/**", "tests/conformance/fixtures/code/**"]
       # A verified correctness finding blocks here first (2026-10-15, #360):
       # five runs a case held 29 merges of 70, all on true findings, none
       # falsely. The role's default stays warn until real blocks here are
