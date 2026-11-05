@@ -2,6 +2,7 @@ package codenav
 
 import (
 	"regexp"
+	"slices"
 	"strings"
 )
 
@@ -18,7 +19,10 @@ var Containers = []string{"class", "struct", "union", "namespace", "interface", 
 	"mod", "module", "object", "protocol", "extension", "record", "type", "extern", "mixin"}
 
 var (
-	containerRe = regexp.MustCompile(`\b(?:` + strings.Join(Containers, "|") + `)\b`)
+	// containerRe is a container word opening a declaration: a name, a
+	// brace or a type's parameters after it (`class A`, `struct {`,
+	// `impl<T>`), never `module.exports` nor `var record =`.
+	containerRe = regexp.MustCompile(`\b(?:` + strings.Join(Containers, "|") + `)(?:\s+[A-Za-z_]|\s*[{<]|\s*$)`)
 	// annotation is a Java or Kotlin annotation, a C++ attribute: its
 	// parenthesis says nothing of the block after it.
 	annotation = regexp.MustCompile(`@[\w.]+(?:\([^)]*\))?|\[\[[^\]]*\]\]`)
@@ -163,7 +167,7 @@ func indentOutline(lines []string) *Outlined {
 			continue
 		}
 		word := strings.Fields(strings.TrimSpace(lines[start]))
-		if len(word) > 0 && word[0] != "type" && containerRe.MatchString(word[0]) {
+		if len(word) > 0 && word[0] != "type" && slices.Contains(Containers, word[0]) {
 			continue
 		}
 		hi := len(indentOf(lines[start]))
@@ -204,7 +208,15 @@ func (o *Outlined) Render(lines []string, full func(n int) bool) []string {
 	for n := 1; n <= len(lines); n++ {
 		switch {
 		case full(n):
-			emit(lines[n-1])
+			end, ok := o.Bodies[n]
+			if !ok || !o.Keep[n-1] {
+				emit(lines[n-1])
+				continue
+			}
+			for k := n; k <= end; k++ { // a body whose opening is shown whole: shown whole
+				emit(lines[k-1])
+			}
+			n = end
 		case !o.Keep[n-1]:
 		default:
 			end, ok := o.Bodies[n]

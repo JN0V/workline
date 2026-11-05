@@ -26,6 +26,11 @@ type importRule struct {
 	tries []string
 	// folder: the name is a folder, its files imported (Go's packages).
 	folder bool
+	// manifest names the project's own prefix, a file at the root and its
+	// pattern (Go's `go.mod`, `module example.com/m`): a name without it
+	// is from outside; past it, a path from the root.
+	manifest   string
+	manifestRe *regexp.Regexp
 	// why is said of a file it finds: "included or imported".
 	why string
 }
@@ -45,7 +50,8 @@ var importRules = []importRule{
 	{exts: jsExts, re: regexp.MustCompile(`\bfrom\s+['"]([^'"]+)['"]`), relative: true, tries: jsTry, why: "included or imported"},
 	{exts: jsExts, re: regexp.MustCompile(`^\s*import\s+['"]([^'"]+)['"]`), relative: true, tries: jsTry, why: "included or imported"},
 	{exts: jsExts, re: regexp.MustCompile(`\b(?:require|import)\(\s*['"]([^'"]+)['"]\s*\)`), relative: true, tries: jsTry, why: "included or imported"},
-	{exts: []string{".go"}, re: regexp.MustCompile(`^\s*(?:import\s+)?(?:[\w.]+\s+)?"([\w.~-]+(?:/[\w.~-]+)+)"\s*$`), folder: true, why: "imported"},
+	{exts: []string{".go"}, re: regexp.MustCompile(`^\s*(?:import\s+)?(?:[\w.]+\s+)?"([\w.~-]+(?:/[\w.~-]+)+)"\s*$`), folder: true,
+		manifest: "go.mod", manifestRe: regexp.MustCompile(`(?m)^module\s+(\S+)`), why: "imported"},
 	{exts: jvm, re: regexp.MustCompile(`^\s*import\s+(?:static\s+)?([\w.]+?)(?:\.\*)?\s*;?\s*$`), dots: true, tries: jvm, why: "imported"},
 	{exts: []string{".rs"}, re: regexp.MustCompile(`^\s*(?:pub(?:\([^)]*\))?\s+)?mod\s+(\w+)\s*;`), tries: []string{".rs", "/mod.rs"}, why: "imported"},
 	{exts: []string{".rb"}, re: regexp.MustCompile(`^\s*require(?:_relative)?\s*\(?\s*['"]([^'"]+)['"]`), tries: []string{".rb", ""}, why: "required"},
@@ -108,7 +114,7 @@ func (p *Picker) resolveImport(from, name string, r importRule, tests []string) 
 		return nil // a package from outside
 	}
 	if r.folder {
-		return p.folderFiles(name, path.Ext(from), tests)
+		return p.folderFiles(p.ownName(name, r), path.Ext(from), tests)
 	}
 	bases := []string{path.Join(dir, name)}
 	if !rel {
@@ -144,12 +150,40 @@ func (p *Picker) resolveImport(from, name string, r importRule, tests []string) 
 	return nil
 }
 
+// ownName is a name imported as a path from the project's root, by the
+// prefix its manifest declares: "" a name from outside. With no
+// manifest, the name as written.
+func (p *Picker) ownName(name string, r importRule) string {
+	if r.manifest == "" || !p.tracked[r.manifest] {
+		return name
+	}
+	m := r.manifestRe.FindStringSubmatch(strings.Join(p.Lines(r.manifest), "\n"))
+	if m == nil {
+		return name
+	}
+	if name == m[1] {
+		return "."
+	}
+	rest, ok := strings.CutPrefix(name, m[1]+"/")
+	if !ok {
+		return ""
+	}
+	return rest
+}
+
 // folderFiles are the files of the folder a path ends with, of the
-// family ext, its tests aside; the longest such ending of the path wins
-// (Go's `github.com/o/r/internal/x` is the project's `internal/x`).
+// family ext, its tests aside; the longest such ending of the path wins,
+// two names at least, or the path whole (`github.com/o/r/internal/x` is
+// the project's `internal/x`; `net/http` never its folder `http`).
 func (p *Picker) folderFiles(name, ext string, tests []string) []string {
+	if name == "" {
+		return nil
+	}
 	parts := strings.Split(path.Clean(name), "/")
 	for i := range parts {
+		if i > 0 && len(parts)-i < 2 {
+			break
+		}
 		dir := strings.Join(parts[i:], "/")
 		var out []string
 		for _, f := range p.files {

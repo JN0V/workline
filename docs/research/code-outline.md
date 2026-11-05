@@ -92,7 +92,7 @@ What workline takes: a table, one row a family, in
 | C, C++, Objective-C, Arduino | `#include "a.h"`, `<a/b.h>` | beside the file, from the root, else the one file whose path ends so |
 | Python | `from .a.b import`, `import a.b` | `a/b.py` or `a/b/__init__.py`; leading dots climb |
 | JavaScript, TypeScript | `from './a'`, `import './a'`, `require('./a')` | `./` and `../` only, with `.ts`, `.js`, `/index.ts`, …; `./a.js` written for `a.ts` |
-| Go | `"host/mod/pkg"` in an import | the folder the path ends with, its files, tests aside |
+| Go | `"host/mod/pkg"` in an import | past the prefix `go.mod` declares, the folder from the root, its files, tests aside; another prefix is from outside |
 | Java, Kotlin, Scala | `import a.b.C;` | `a/b/C.java`, `.kt`, … anywhere |
 | Rust, Ruby, PHP, Lua, shell | `mod a;`, `require`, `include`, `source` | beside the file, else by its ending |
 

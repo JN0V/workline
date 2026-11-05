@@ -10,7 +10,9 @@ import (
 func TestImports(t *testing.T) {
 	dir := repo(t, map[string]string{
 		"go.mod":                 "module example.com/m\n",
-		"app/app.go":             "package app\n\nimport (\n\t\"fmt\"\n\tm \"example.com/m/lib/money\"\n)\n",
+		"app/app.go":             "package app\n\nimport (\n\t\"fmt\"\n\t\"net/http\"\n\t\"github.com/pkg/errors\"\n\tm \"example.com/m/lib/money\"\n)\n",
+		"http/h.go":              "package http\n",
+		"errors/e.go":            "package errors\n",
 		"lib/money/a.go":         "package money\n",
 		"lib/money/b.go":         "package money\n",
 		"lib/money/a_test.go":    "package money\n",

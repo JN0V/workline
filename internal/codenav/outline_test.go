@@ -21,8 +21,8 @@ func outline(t *testing.T, file, src string) string {
 func TestOutline(t *testing.T) {
 	for _, c := range []struct {
 		file, src string
-		want     []string
-		not      []string
+		want      []string
+		not       []string
 	}{
 		{"a.h", `#pragma once
 #include "b.h"
@@ -125,6 +125,26 @@ func TestOutlineFull(t *testing.T) {
 	got := strings.Join(Outline("a.c", lines).Render(lines, func(n int) bool { return n == 5 }), "\n")
 	if want := "void a() { … }\nvoid b() {\n    two();\n}"; got != want {
 		t.Errorf("got:\n%s\nwant:\n%s", got, want)
+	}
+}
+
+// A container word inside a name or before `=` opens no container: an
+// initializer is a body (the reviewer on #1108).
+func TestOutlineInitializers(t *testing.T) {
+	got := outline(t, "a.js", "module.exports = {\n  secret: 1,\n};\nvar record = {\n  value: 2,\n};\n")
+	if strings.Contains(got, "secret") || strings.Contains(got, "value") {
+		t.Errorf("an initializer's members shown:\n%s", got)
+	}
+}
+
+// A body whose opening line is shown whole is shown whole, never cut
+// silently (the reviewer on #1108).
+func TestOutlineFullOpening(t *testing.T) {
+	src := "void a() {\n    one();\n    two();\n}\n"
+	lines := strings.Split(strings.TrimRight(src, "\n"), "\n")
+	got := strings.Join(Outline("a.c", lines).Render(lines, func(n int) bool { return n <= 2 }), "\n")
+	if got != strings.TrimRight(src, "\n") {
+		t.Errorf("got:\n%s", got)
 	}
 }
 
