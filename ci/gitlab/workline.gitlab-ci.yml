@@ -359,7 +359,6 @@ workline:warn:
     - if: $CI_PIPELINE_SOURCE == "parent_pipeline" && $CI_MERGE_REQUEST_IID
   script:
     - *bot-token
-    - '[ -n "${CLAUDE_CODE_OAUTH_TOKEN:-}" ] || { echo "workline: CLAUDE_CODE_OAUTH_TOKEN is not set, or not scoped to the environment workline: no agent, nothing read apart"; exit 0; }'
     - *ready
     - *claude
     # workline:gates's gates.json, read from the merge request's pipeline
@@ -371,8 +370,12 @@ workline:warn:
       [ -z "$job" ] || curl -fsSL --header "$h" -o gates.json "$api/jobs/$job/artifacts/gates.json" || rm -f gates.json
       if [ -s gates.json ]; then gates=gates.json; else echo "workline: workline:gates left no gates.json in the merge request's pipeline: nothing to triage"; fi
     - status=0
+    # The agent: Claude with its token, else `none`; for another agent, set
+    # the `--ai` of this line to a `cmd:` and no Claude token is needed.
     - >
-      workline route merge-request --warn-only --ai "$ai" --no-apply
+      set -- --ai "$ai";
+      [ "$2" != none ] || { echo "workline: CLAUDE_CODE_OAUTH_TOKEN is not set, or not scoped to the environment workline: no agent, nothing read apart"; exit 0; };
+      workline route merge-request --warn-only "$@" --no-apply
       --forge gitlab --target merge-request:$CI_MERGE_REQUEST_IID --branch "$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME"
       --input range=$CI_MERGE_REQUEST_DIFF_BASE_SHA..$CI_COMMIT_SHA $lenses ${draft:+--input draft=$draft}
       ${gates:+--gates-from $gates} --summary workline-summary.md --summary workline-summary.html --json > line.json || status=$?
