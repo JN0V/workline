@@ -85,6 +85,11 @@ type Bounds struct {
 	// this issue, whatever the head (ADR-0063, §9): the same set asked
 	// again waits for a person.
 	Asked []string `json:"asked,omitempty"`
+	// Beside: the new test files an earlier step or round kept beside
+	// the Scope, as its record names them: on its branch now, still the
+	// fence's, whatever the commit the rules are read at holds (a review
+	// round in CI runs on the pull request's head).
+	Beside []string `json:"beside,omitempty"`
 }
 
 // Refusal is a file a patch reached and post refused, and why: kept in the
@@ -387,7 +392,7 @@ func besideKept(repo string, b Bounds, patches []intent.Intention) []string {
 // the commit the rules are read at, and its home (testHome) a Scope
 // path's folder, in one, or holding one. Written by rule, no ask.
 func (c checker) newTestBeside(p string) bool {
-	if !pathglob.Any(c.b.TestPaths, p) || kindAt(c.repo, c.at, p) != "" {
+	if !pathglob.Any(c.b.TestPaths, p) || kindAt(c.repo, c.at, p) != "" && !slices.Contains(c.b.Beside, p) {
 		return false
 	}
 	return testBeside(p, c.b.Scope, c.isDir)

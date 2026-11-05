@@ -360,6 +360,7 @@ func reviewPre(runDir, repo string, s Settings, id int) int {
 	for _, t := range a.Acceptance { // frozen, on its branch, whatever the tester's Draft
 		bounds.Frozen[t] = issue
 	}
+	bounds.Beside = a.Beside // kept by an earlier round: still the fence's on its head
 	if !r.KeptRead && bounds.Draft != 0 {
 		// The tester's answers so far: an objection of this round waits
 		// for one more (#987).

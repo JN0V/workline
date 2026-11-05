@@ -1,0 +1,49 @@
+case: developer/round-edits-a-test-it-kept-beside-the-scope
+about: >
+  A test the write fence kept in an earlier round (ADR-0063, §9) is on
+  the pull request's branch, which a review round in CI checks out: it is
+  no longer new there. Its record names it kept beside the Scope, so the
+  round may still change it: calc/test/test_mul_more.sh, edited, is
+  pushed, and no Scope ask is made.
+given:
+  repo: tested-draft
+  setup:
+    - "git checkout -q -b workline/developer/3 && printf 'add() { echo $(($1 + $2)); }\\nmul() { echo $(($1 * $2)); }\\n' > lib.sh && mkdir -p calc/include calc/test && printf '# mul\\n' > calc/include/mul.h && printf '. ./lib.sh\\n[ $(mul 3 3) = 9 ]\\n' > calc/test/test_mul_more.sh && git add calc && git commit -qam 'feat: mul for #3' -m 'Workline-Role: developer' && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main workline/tester/issue-3 workline/developer/3"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}", test-paths: ["tests/**", "*/test/**"]}}}
+  forge:
+    head-checks:
+      workline/developer/3:
+        - {name: test, workflow: test, state: failure, job: 41, log: "--- FAIL: mul 4 5 is not tested\n"}
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:developing"]
+        body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n- `calc/include/mul.h`: its header.\n"
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        draft: true
+        comments: ["The tests of #3, frozen.\n\n<!-- workline:tester-record {\"issue\":3,\"base\":\"main\",\"files\":{\"tests/test_mul_by_zero.sh\":\"8f123a0bacbd681063880b867df38dd216784b97\",\"tests/test_mul_two_by_three.sh\":\"2dee0641bd7a79057ade7bff5af43b603125f543\"}} -->\n<!-- workline:sticky=tester/tests -->"]
+      - id: 2
+        branch: workline/developer/3
+        title: "Multiply two numbers"
+        body: "Closes #3"
+        comments:
+          - "**The developer**'s record of this pull request, for its next runs and the auditor.\n\n<!-- workline:developer-act {\"act\":\"code\",\"issue\":3,\"acceptance\":[\"tests/test_mul_by_zero.sh\",\"tests/test_mul_two_by_three.sh\"],\"code\":[\"lib.sh\"],\"proof\":{\"result\":\"green\",\"passed\":2},\"review-runs\":1,\"beside\":[\"calc/test/test_mul_more.sh\"]} -->\n<!-- workline:sticky=developer/code -->"
+          - "**workline reviewer** — 0 findings on the change.\n\nNo finding on the commits reviewed.\n\n<!-- workline:record reviewed=1111111 runs=1 -->\n<!-- workline:sticky=reviewer/summary -->"
+run: {develop: [--merge-request, "2"], ai: "fake:developer-writes-a-test-beside"}
+expect:
+  agent-calls: 1
+  pushed:
+    workline/developer/3:
+      calc/test/test_mul_more.sh: "mul 4 5"
+  forge:
+    issues:
+      - id: 3
+        labels: ["workline:developing"]
+        comment-contains: ["kept new test files beside this issue's Scope, by the write fence: `calc/test/test_mul_more.sh`", "<!-- workline:scope-kept files=calc/test/test_mul_more.sh -->"]
+        comment-lacks: ["workline:scope-ask", "blocks this issue"]
+    merge-requests:
+      - id: 2
+        comment-contains: ["New test files beside the issue's Scope, kept by the write fence: `calc/test/test_mul_more.sh`", "\"beside\":[\"calc/test/test_mul_more.sh\"]"]
