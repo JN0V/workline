@@ -35,6 +35,53 @@ func jobBlock(t *testing.T, name string) []string {
     return block
 }
 
+// unsetNames returns the variable names a job text unsets, each as a
+// separate word, counting only the unsets that run before the job's script
+// commands: those in before_script, or at the head of script.
+func unsetNames(text string) map[string]bool {
+    names := map[string]bool{}
+    section := ""
+    started := false
+    for _, line := range strings.Split(text, "\n") {
+        l := strings.TrimSpace(line)
+        switch {
+        case strings.HasPrefix(l, "before_script:"):
+            section = "before"
+            continue
+        case strings.HasPrefix(l, "script:"):
+            section = "script"
+            continue
+        case strings.HasPrefix(l, "after_script:"):
+            section = ""
+            continue
+        case l != "" && !strings.HasPrefix(l, "-") && !strings.HasPrefix(l, "#"):
+            if strings.HasSuffix(l, ":") || strings.Contains(l, ": ") {
+                section = ""
+            }
+        }
+        if section == "" {
+            continue
+        }
+        words := strings.Fields(strings.NewReplacer(";", " ", "&&", " ", "\"", " ", "'", " ").Replace(l))
+        isUnset := false
+        for i, w := range words {
+            if w == "unset" {
+                isUnset = true
+                for _, n := range words[i+1:] {
+                    if section == "before" || !started {
+                        names[n] = true
+                    }
+                }
+                break
+            }
+        }
+        if section == "script" && !isUnset && strings.HasPrefix(l, "-") {
+            started = true
+        }
+    }
+    return names
+}
+
 // The judge holds no write token
 // Given a GitLab project with the template's objection jobs,
 // When an objection wakes `workline:objection:judge`,
@@ -54,12 +101,8 @@ func TestTheJudgeHoldsNoWriteToken(t *testing.T) {
         t.Errorf("the judge requires the bot's token (WORKLINE_GITLAB_TOKEN)")
     }
 
-    unsets := false
-    for _, line := range strings.Split(effective, "\n") {
-        if strings.Contains(line, "unset") && strings.Contains(line, "WORKLINE_GITLAB_TOKEN") && strings.Contains(line, "GITLAB_TOKEN") {
-            unsets = true
-        }
-    }
+    names := unsetNames(effective)
+    unsets := names["WORKLINE_GITLAB_TOKEN"] && names["GITLAB_TOKEN"]
     otherEnv := false
     for _, line := range strings.Split(judge, "\n") {
         l := strings.TrimSpace(line)
@@ -67,7 +110,8 @@ func TestTheJudgeHoldsNoWriteToken(t *testing.T) {
             otherEnv = true
         }
     }
-    if !unsets && !otherEnv {
-        t.Errorf("the judge still receives the bot's token: it neither leaves the environment workline nor unsets WORKLINE_GITLAB_TOKEN and GITLAB_TOKEN")
+    ok := unsets || otherEnv
+    if !ok {
+        t.Errorf("the judge still receives the bot's token: it neither leaves the environment workline nor unsets WORKLINE_GITLAB_TOKEN and GITLAB_TOKEN, each as its own word, before its script")
     }
 }
