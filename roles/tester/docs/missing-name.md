@@ -71,8 +71,11 @@ Only Go's is built and tested.
 | Java (`javac`) | `cannot find symbol` | the file first, the symbol on later lines |
 
 - **One-line shapes** (TypeScript, C#): set `build-errors` with their
-  patterns. A name the message quotes (`'lostCount'`) needs no group
-  `name`.
+  patterns. A message whose first quoted word is the missing name
+  (`Cannot find name 'lostCount'`) needs no group `name`.
+- **Something else quoted first** needs a group `name`. C#'s CS1061,
+  `'Stats' does not contain a definition for 'lostCount'`, quotes the
+  type first: match it with `definition for '(?P<name>\w+)'`.
 - **Several lines** (Rust, Java): one line does not hold both the file
   and the message, so these are not read yet. `cargo
   --message-format=json` would give both in one record.
@@ -97,6 +100,10 @@ golangci-lint does, reports the same missing name
 
 - **A name not read**: a message with no group `name` and no quoted
   word counts as red, as before: the issue's text is not checked.
+- **Case counts**: `lostcount` in the issue does not name `lostCount`.
+- **A common word**: a made-up name that is also a word of the issue's
+  prose (`get`, `init`, `lost`) counts as red, since a whole word
+  matches.
 - **`workline test check`** on a pull request knows no issue: any
   missing name counts.
 - **Go stops at ten errors** a package (`too many errors`): the errors
