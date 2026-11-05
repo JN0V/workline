@@ -309,7 +309,13 @@ func (w *world) tickChecks(c checks, k int, before, after forge.FakeState, res, 
 			return fail(pTwice, "the second run started the %s on #%d again", role, id)
 		}
 		if was, _ := w.cfg.StateOf(b.Labels); was.Name == stateName(w.cfg, a.Labels) {
-			return fail(pTwice, "the second run started the %s on #%d again, in its state %s still", role, id, was.Name)
+			var inputs []string
+			for _, d := range w.agent.calls {
+				if d.Tick == k && d.Issue == id && d.Role == role {
+					inputs = append(inputs, d.Digest)
+				}
+			}
+			return fail(pTwice, "the second run started the %s on #%d again, in its state %s still; its inputs this tick %v", role, id, was.Name, inputs)
 		}
 		if now, wakes, _ := w.cfg.Wakes(a.Labels, line.IssueEvent); role != wakes {
 			return fail(pTwice, "the second run started the %s on #%d, in its state %s, which wakes %q", role, id, now.Name, wakes)
