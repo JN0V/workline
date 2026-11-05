@@ -93,6 +93,9 @@ var traces = func() []trace {
 		// The developer's agent run failing once (seed 26 of the first
 		// seeded runs on these cases, frozen).
 		trace{name: "trial-3-error-code", file: "trial-3", fresh: true, end: "done", by: one("developer", machineError)},
+		// #1017: the tester's task over its context budget, its agent not
+		// asked: read as "no test proposed".
+		trace{name: "trial-35-over-budget", file: "trial-35", fresh: true, end: "done", by: one("tester", overBudget)},
 		// The product owner's answer unreadable twice in its run.
 		trace{name: "trial-35-po-unread", file: "trial-35", fresh: true, end: "done", by: map[string][]outcome{"product-owner": {malformed, malformed}}},
 		// Needs input, from each source: the engine (the product owner's

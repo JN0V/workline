@@ -40,10 +40,13 @@ const (
 	// replayedUnread: the trial's answer, which the engine's reader could
 	// not read: a machine error, counted against the budget.
 	replayedUnread outcome = "replayed-unread"
+	// overBudget: the role's task over its context budget, the agent not
+	// asked (#1017): a machine error.
+	overBudget outcome = "over-budget"
 )
 
 func (o outcome) machine() bool {
-	return o == machineError || o == malformed || o == hunk || o == broken || o == replayedUnread
+	return o == machineError || o == malformed || o == hunk || o == broken || o == replayedUnread || o == overBudget
 }
 
 func (o outcome) needs() bool { return o == needsEngine || o == needsRole || o == needsPerson }
@@ -118,6 +121,9 @@ func (a *simAgent) Propose(r agent.Request) (agent.Call, error) {
 	if kind == machineError {
 		return c, fmt.Errorf("sim: the agent's run failed")
 	}
+	if kind == overBudget {
+		return c, fmt.Errorf("%w: sim: the task is over the role's context budget", agent.ErrOverBudget)
+	}
 	answer = strings.ReplaceAll(answer, "ISSUE", issueIn(task))
 	return c, os.WriteFile(filepath.Join(r.RunDir, "out", "intentions.yaml"), []byte(answer), 0o644)
 }
@@ -159,7 +165,7 @@ func (a *simAgent) replay(r agent.Request, task []byte, answer string) (agent.Ca
 // property holds it to a kind it never gave.
 func (a *simAgent) answerOf(kind outcome, role string, task []byte) (outcome, string) {
 	switch {
-	case kind == machineError:
+	case kind == machineError || kind == overBudget:
 		return kind, ""
 	case kind == malformed:
 		return kind, "- ready: {issue: [not, a, number\n"

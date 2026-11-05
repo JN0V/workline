@@ -82,3 +82,6 @@ trial-37-replay same-tick-twice i1-status quiet-within-k expected-end
 # outcomes) removes. #20 and #35 reach Done within K.
 trial-19 one-state-label quiet-within-k
 trial-37 one-state-label quiet-within-k
+# The tester's task over its context budget, its agent not asked (#1017):
+# read as no test proposed, blocked at once for the week.
+trial-35-over-budget i1-status quiet-within-k expected-end one-byte-due
