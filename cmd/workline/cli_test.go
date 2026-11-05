@@ -94,3 +94,17 @@ func captureStdout(t *testing.T, f func() int) (string, int) {
 	w.Close()
 	return string(<-read), code
 }
+
+func TestDidYouMean(t *testing.T) {
+	for in, want := range map[string]string{
+		"revew":  `; did you mean "review"?`,
+		"docter": `; did you mean "doctor"?`,
+		"banana": "",
+		"hok":    `; did you mean "hooks"?`,
+		"builtn": "",
+	} {
+		if got := didYouMean(in); got != want {
+			t.Errorf("didYouMean(%q) = %q, want %q", in, got, want)
+		}
+	}
+}
