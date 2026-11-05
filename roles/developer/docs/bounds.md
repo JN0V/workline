@@ -8,7 +8,7 @@ sources:
   - ci/github/workline-bounds.yml
   - ci/gitlab/workline-bounds.gitlab-ci.yml
   - internal/steer/steer.go
-checked: 7f12e806
+checked: 59a004d4
 verified: agent:claude-code
 ---
 # The bounds: what its code may never touch
