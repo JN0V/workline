@@ -411,7 +411,7 @@ func (p *Picker) Pick(a Ask) Pick {
 				}
 				if g, ok := codenav.Enclosing(h.file, lines, h.n); ok && g.To-g.From < useMax {
 					key := fmt.Sprintf("%s:%d", h.file, g.From)
-					if !seen[key] {
+					if g.Name != n && !seen[key] { // its own comment: the definition, counted above
 						seen[key] = true
 						fd.uses = append(fd.uses, want{h.file, g.From, g.To, fmt.Sprintf("`%s`, naming `%s`", g.Name, n), false})
 					}
@@ -429,11 +429,17 @@ func (p *Picker) Pick(a Ask) Pick {
 	rank := slices.Clone(names)
 	slices.SortStableFunc(rank, func(x, y string) int { return len(hits[x]) - len(hits[y]) })
 	inNamed := func(w want) bool { return slices.Contains(named, w.file) }
-	// 2a. Definitions in the files named, then the project's own.
+	// 2a. Definitions in the files named, then the project's own. A name
+	// defined in a file named is that one: one of the same name
+	// elsewhere is another function, counted, not given (#425).
+	here := map[string]bool{}
+	for _, n := range rank {
+		here[n] = slices.ContainsFunc(append(slices.Clone(byName[n].defs), byName[n].aside...), inNamed)
+	}
 	for _, keepNamed := range []bool{true, false} {
 		for _, n := range rank {
 			for i, w := range byName[n].defs {
-				if inNamed(w) == keepNamed && (i < defsMax || inNamed(w)) {
+				if inNamed(w) == keepNamed && (inNamed(w) || i < defsMax && !here[n]) {
 					wants = append(wants, w)
 				}
 			}
@@ -450,13 +456,22 @@ func (p *Picker) Pick(a Ask) Pick {
 	// 2c. Copies in tests, examples and tools, a few.
 	for _, n := range rank {
 		fd := byName[n]
+		given := 0
+		for i, w := range append(slices.Clone(fd.defs), fd.aside...) {
+			if inNamed(w) || !here[n] && (i < min(len(fd.defs), defsMax) || i >= len(fd.defs) && i-len(fd.defs) < asideMax) {
+				given++
+			}
+		}
 		for i, w := range fd.aside {
-			if i < asideMax || inNamed(w) {
+			if inNamed(w) || !here[n] && i < asideMax {
 				wants = append(wants, w)
 			}
 		}
-		total := len(fd.defs) + len(fd.aside)
-		if given := min(len(fd.defs), defsMax) + min(len(fd.aside), asideMax); given < total {
+		switch total := len(fd.defs) + len(fd.aside); {
+		case given == total:
+		case here[n]:
+			pk.Many = append(pk.Many, fmt.Sprintf("`%s` (defined in the files named; %d more of the same name elsewhere, not given)", n, total-given))
+		default:
 			pk.Many = append(pk.Many, fmt.Sprintf("`%s` (%d definitions, %d of them not given, most in tests, examples or tools)", n, total, total-given))
 		}
 	}
