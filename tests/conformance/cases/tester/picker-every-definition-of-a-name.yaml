@@ -1,0 +1,29 @@
+case: tester/picker-every-definition-of-a-name
+about: >
+  The code picker's contract, the tester's side (ADR-0063, step 4), on
+  DomoticsCore's own code as the C++ trial had it: #1057, the trial's
+  #35: a one-line issue naming a function defined in 7 module headers of
+  7 folders, and in tests. The task holds the code the issue names, in
+  its Need as in its Scope.
+given:
+  repo: tested
+  setup:
+    - |
+      cp -R "$FIXTURES/code/domoticscore/." .
+      git add . && git commit -qm 'feat: DomoticsCore, frozen from the C++ trial'
+    - |
+      git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Hardcoded fallback versions in `getWebUIVersion()` drift from actual version"
+        labels: ["workline:needs-tests"]
+        body: "## Need\n\n| WebUI | Hardcoded fallback versions in `getWebUIVersion()` drift from actual version |\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **By zero:** Given the library, When I multiply 5 by 0, Then I get 0.\n\n---\n\n## Verification\n\nA test a scenario.\n\n## Scope\n\n- `getWebUIVersion()` in each module's WebUI provider: its hardcoded fallback.\n"
+run: {test: [write, --issue, "3"], ai: "fake:tester-two-scenarios"}
+expect:
+  agent-calls: 1
+  run-files:
+    in/task.md:
+      contains: ["mqtt ? mqtt->metadata.version : String(\"1.4.0\")", "ntp ? ntp->metadata.version : String(\"1.0.2\")", "ota ? ota->metadata.version : String(\"1.4.0\")", "storage ? storage->metadata.version : String(\"1.4.0\")", "wifi ? wifi->metadata.version : String(\"1.4.1\")", "led ? led->metadata.version : String(\"1.3.0\")", "sys ? sys->metadata.version : String(\"1.2.1\")"]

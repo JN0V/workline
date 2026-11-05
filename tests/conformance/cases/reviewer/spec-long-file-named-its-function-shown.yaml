@@ -1,5 +1,5 @@
 case: reviewer/spec-long-file-named-its-function-shown
-about: "A spec naming a file past code-lines-max and a function in it (#425): the file is named as cut, and the function is shown all the same, not dropped as if the file had been; the one of that file, not one of the same name elsewhere."
+about: "A spec naming a file past code-lines-max and a function in it (#425): the file is said cut (the rest not shown), and the function is shown all the same, not dropped as if the file had been; the one of that file, not one of the same name elsewhere."
 given:
   repo: reviewed
   setup:
@@ -31,5 +31,5 @@ expect:
   agent-calls: 1
   run-files:
     in/parts/1-lenses/task.md:
-      contains: ["### calc/calc.go, lines 14 to 18: `Parse`", "func Parse(s string) int {", "Not shown, past 10 lines: calc/calc.go."]
+      contains: ["### `calc/calc.go` (18 lines: lines 14 to 18 given", "func Parse(s string) int {", "`Parse` (defined in the files named; 1 more of the same name elsewhere, not given)"]
       not-contains: ["func Average", "text/parse.go"]

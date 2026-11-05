@@ -24,6 +24,7 @@ import (
 
 	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/builtin/reviewer"
+	"github.com/JN0V/workline/internal/codepick"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/gate"
 	"github.com/JN0V/workline/internal/intent"
@@ -38,10 +39,6 @@ const (
 	exitExternal = 3  // an outside service failed
 	testFilesMax = 3  // test files beside the Scope's code given whole
 	listedMax    = 40 // test files named, not given
-	// testShare: the part of code-lines-max kept for a test beside the
-	// code when the code alone is past it, 1 in testShare (#1059: 1000
-	// lines of headers, no test seen, no test possible).
-	testShare = 5
 )
 
 // Scenario is one of an issue's Validation scenarios: its name, as the
@@ -151,13 +148,9 @@ func Pre(runDir, repo string) int {
 			sources = st.Sources
 		}
 	}
-	// The files its agent said it lacked at its last run, given now
-	// (ADR-0063, §6).
-	for _, p := range neededFiles(runDir) {
-		if !slices.Contains(sources, p) {
-			sources = append(sources, p)
-		}
-	}
+	// The files its agent said it lacked at its last run, given now,
+	// first (ADR-0063, §6).
+	needs := neededFiles(runDir)
 	if code, done := sentBack(runDir, repo, *is, comments); done {
 		return code
 	}
@@ -191,7 +184,7 @@ func Pre(runDir, repo string) int {
 	text := fitTask(runDir, repo, s, func(s Settings) string {
 		var b strings.Builder
 		b.WriteString(intro)
-		writeCode(&b, repo, sections[work.Scope].Text, sources, s)
+		writeCode(&b, repo, is.Title+"\n"+is.Body, sections[work.Scope].Text, sources, needs, s)
 		return b.String()
 	})
 	if err := os.WriteFile(filepath.Join(runDir, "in", "task.md"), []byte(text), 0o644); err != nil {
@@ -200,181 +193,71 @@ func Pre(runDir, repo string) int {
 	return 0
 }
 
-// folderFiles are the tracked files directly in the folder word names, none
-// when it names no folder of the repository.
-func folderFiles(word string, files []string) []string {
-	dir := path.Clean(strings.TrimSuffix(strings.ReplaceAll(word, `\`, "/"), "/"))
-	if dir == "." || strings.HasPrefix(dir, "../") || path.IsAbs(dir) {
-		return nil
-	}
-	var out []string
-	for _, f := range files {
-		if path.Dir(f) == dir {
-			out = append(out, f)
-		}
-	}
-	return out
-}
-
-// wordFiles are the files a Scope's word, or a source, names: a file, or
-// those a pattern matches (#801: `src/calc/*.sh`), its tests aside when it
-// matches code too, they are given beside; or a folder's own files, not
-// its tests nor its subfolders' (#791: `internal/line` named, nothing
-// given, no test possible).
-func wordFiles(w string, files []string, s Settings) []string {
-	if fs := work.Files(w, files); len(fs) > 0 {
-		if code := slices.DeleteFunc(slices.Clone(fs), func(f string) bool { return pathglob.Any(s.Paths, f) }); len(code) > 0 {
-			fs = code
-		}
-		return fs
-	}
-	return slices.DeleteFunc(folderFiles(w, files), func(f string) bool { return pathglob.Any(s.Paths, f) })
-}
-
-// kinTests are the tests nearest the code named when none is in its
-// folder: those sharing the most leading folders with a file named, one
-// at least, those whose name holds a named file's name first
-// (#1047: `Mod/include/Mod.h` named, `Mod/test/test_mod_x/test_mod_x.cpp`
-// beside it, not another module's tests).
-func kinTests(tests, named []string, stems map[string]bool) []string {
-	shared := func(a, b string) int {
-		as, bs := strings.Split(path.Dir(a), "/"), strings.Split(path.Dir(b), "/")
-		n := 0
-		for n < len(as) && n < len(bs) && as[n] == bs[n] && as[n] != "." {
-			n++
-		}
-		return n
-	}
-	score := map[string]int{}
-	var kin []string
-	for _, t := range tests {
-		best := 0
-		for _, p := range named {
-			best = max(best, shared(t, p))
-		}
-		if best == 0 {
-			continue
-		}
-		score[t] = 2 * best
-		for stem := range stems {
-			if stem != "" && strings.Contains(norm(path.Base(t)), stem) {
-				score[t]++
-				break
-			}
-		}
-		kin = append(kin, t)
-	}
-	slices.SortStableFunc(kin, func(a, b string) int { return score[b] - score[a] })
-	return kin
-}
-
-// writeCode gives the Scope's files, then those the product owner named
+// writeCode gives the code the issue names, found by the shared picker
+// (ADR-0063 §8): the Scope's files, then those the product owner named
 // for the issue, its sources, that the Scope does not (#1047: a Scope in
-// words, nothing given, no test possible), then the test files beside
-// them, whole up to code-lines-max lines in all, a long file by the
-// functions the Scope names in it, and names the project's other tests.
-func writeCode(b *strings.Builder, repo, scope string, sources []string, s Settings) {
-	out, _ := git(repo, "ls-files", "-z")
-	files := strings.Split(strings.TrimSuffix(out, "\x00"), "\x00")
-	var named, owners, tests []string
-	for _, w := range work.ScopeWords(scope) {
-		for _, f := range wordFiles(w, files, s) {
-			if !slices.Contains(named, f) {
-				named = append(named, f)
-			}
+// words, nothing given, no test possible), and the code its title, Need
+// and Scope name, up to code-lines-max lines in all, a share kept for the
+// test files beside it; then those tests, and names the project's
+// others.
+func writeCode(b *strings.Builder, repo, text, scope string, sources, needs []string, s Settings) {
+	pk, err := codepick.New(repo, "")
+	if err != nil {
+		fmt.Fprintf(b, "\n## The code the %s names\n\nNot read: %v.\n", work.Name(work.Scope), err)
+		return
+	}
+	files := pk.Files()
+	paths, owners := work.ScopeWords(scope), []string(nil)
+	scoped := map[string]bool{}
+	for _, w := range paths {
+		for _, f := range work.Files(w, files) {
+			scoped[f] = true
 		}
 	}
 	for _, src := range sources {
-		for _, f := range wordFiles(work.LineOff(strings.TrimSpace(src)), files, s) {
-			if !slices.Contains(named, f) {
-				named, owners = append(named, f), append(owners, f)
+		src = work.LineOff(strings.TrimSpace(src))
+		if !slices.Contains(paths, src) {
+			paths = append(paths, src)
+			if f := work.InRepo(src, files); f != "" && !scoped[f] {
+				owners = append(owners, f)
 			}
 		}
-	}
-	dirs := map[string]bool{}
-	for _, p := range named {
-		dirs[path.Dir(p)] = true
-	}
-	stems := map[string]bool{} // ordinals.go's tests: ordinals_test.go, test_ordinals.py
-	for _, p := range named {
-		stems[norm(strings.TrimSuffix(path.Base(p), path.Ext(p)))] = true
-	}
-	var beside, near []string
-	for _, f := range files {
-		if f == "" || !pathglob.Any(s.Paths, f) {
-			continue
-		}
-		tests = append(tests, f)
-		base := norm(strings.TrimSuffix(path.Base(f), path.Ext(f)))
-		switch {
-		case !dirs[path.Dir(f)]:
-		case stems[strings.TrimSuffix(strings.TrimPrefix(base, "test"), "test")]:
-			beside = append(beside, f)
-		default:
-			near = append(near, f)
-		}
-	}
-	beside = append(beside, near...)
-	if len(beside) == 0 {
-		beside = kinTests(tests, named, stems)
-	}
-	beside = beside[:min(len(beside), testFilesMax)]
-	if len(beside) == 0 && len(tests) > 0 { // none beside: the project's first, its style
-		beside = tests[:min(len(tests), testFilesMax)]
 	}
 	budget := s.CodeLinesMax
 	if budget <= 0 {
 		budget = 1500
 	}
-	// The Scope's files: the functions it names in a long one before its
-	// first lines (#908).
-	names, at := anchors(scope, files)
-	var code []codeFile
-	for _, p := range named {
-		data, err := os.ReadFile(filepath.Join(repo, filepath.FromSlash(p)))
-		if err != nil {
-			continue
-		}
-		lines := strings.Split(strings.TrimRight(string(data), "\n"), "\n")
-		code = append(code, codeFile{path: p, lines: lines, pieces: pieces(p, lines, names, at[p])})
-	}
-	// Code that leaves the first test beside less than a share of the
-	// budget: that share kept for it, its opening at least, so the agent
-	// sees one test to write alike.
-	total, kept := 0, 0
-	for _, f := range code {
-		total += len(f.lines)
-	}
-	if len(beside) > 0 {
-		if data, err := os.ReadFile(filepath.Join(repo, filepath.FromSlash(beside[0]))); err == nil {
-			kept = min(budget/testShare, strings.Count(strings.TrimRight(string(data), "\n"), "\n")+1)
-		}
-	}
-	if total <= budget-kept {
-		kept = 0 // the code fits whole, the share left after it
-	}
-	left := planCode(code, budget-kept) + kept
-	if len(code) > 0 {
+	pick := pk.Pick(codepick.Ask{Text: text + "\n" + scope, Paths: paths, Needs: needs, Tests: s.Paths, Budget: budget, BudgetName: "code-lines-max"})
+	if len(pick.Named()) > 0 {
 		fmt.Fprintf(b, "\n## The code the %s names\n", work.Name(work.Scope))
 		if len(owners) > 0 {
 			fmt.Fprintf(b, "\nNamed by the product owner for this issue, not in the %s: `%s`.\n", work.Name(work.Scope), strings.Join(owners, "`, `"))
 		}
-		if kept > 0 {
-			fmt.Fprintf(b, "\nThe code fills code-lines-max: %d of the %d lines of code-lines-max kept for the tests beside it.\n", kept, budget)
+		if len(needs) > 0 {
+			fmt.Fprintf(b, "\nAsked for at your last run, given first: `%s`.\n", strings.Join(needs, "`, `"))
 		}
-		var unread []string
-		for _, f := range code {
-			if len(f.given) == 0 {
-				// Named, never shown empty: a file given as 0 lines read
-				// as an empty file to the agent (#801).
-				unread = append(unread, fmt.Sprintf("- `%s` (%d lines)", f.path, len(f.lines)))
-				continue
-			}
-			writeCodeFile(b, f)
+		if pick.Kept > 0 {
+			fmt.Fprintf(b, "\nThe code fills code-lines-max: %d of the %d lines of code-lines-max kept for the tests beside it.\n", pick.Kept, budget)
 		}
-		if len(unread) > 0 {
-			fmt.Fprintf(b, "\nNot given, past code-lines-max (%d lines in all), not empty:\n\n%s\n", budget, strings.Join(unread, "\n"))
+		pick.Write(b, codepick.Style{NoTest: true})
+	}
+	var tests []string
+	for _, f := range files {
+		if pathglob.Any(s.Paths, f) {
+			tests = append(tests, f)
 		}
+	}
+	beside := codepick.NearestTests(files, s.Paths, pick.Anchors())
+	if t := pick.Test(); t != nil {
+		beside = append([]string{t.Path}, slices.DeleteFunc(beside, func(f string) bool { return f == t.Path })...)
+	}
+	beside = beside[:min(len(beside), testFilesMax)]
+	if len(beside) == 0 && len(tests) > 0 { // none beside: the project's first, its style
+		beside = tests[:min(len(tests), testFilesMax)]
+	}
+	left := pick.Left
+	if t := pick.Test(); t != nil {
+		left += t.GivenLines() // given again below, with the tests beside
 	}
 	give := func(heading string, list []string) {
 		if len(list) == 0 {
@@ -383,6 +266,9 @@ func writeCode(b *strings.Builder, repo, scope string, sources []string, s Setti
 		fmt.Fprintf(b, "\n## %s\n", heading)
 		var unread []string
 		for _, p := range list {
+			if t := pick.Test(); slices.Contains(pick.Paths(), p) && (t == nil || t.Path != p) {
+				continue // given above, with the code: not twice
+			}
 			data, err := os.ReadFile(filepath.Join(repo, filepath.FromSlash(p)))
 			if err != nil {
 				continue

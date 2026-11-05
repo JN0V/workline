@@ -26,6 +26,7 @@ import (
 	"github.com/JN0V/workline/internal/agent"
 	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/clock"
+	"github.com/JN0V/workline/internal/codepick"
 	"github.com/JN0V/workline/internal/engine"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
@@ -39,13 +40,11 @@ import (
 )
 
 const (
-	exitNothing   = 10
-	exitExternal  = 3
-	bodyMax       = 3000 // characters of an issue's body given to the agent
-	commentsMax   = 5    // its last comments given
-	filesPerIssue = 3    // files an issue names, given whole
-	codeLines     = 400  // lines of a file given
-	relatedMax    = 6    // other issues on the same code, given whole
+	exitNothing  = 10
+	exitExternal = 3
+	bodyMax      = 3000 // characters of an issue's body given to the agent
+	commentsMax  = 5    // its last comments given
+	relatedMax   = 6    // other issues on the same code, given whole
 )
 
 // Settings are the role's settings pre reads, as merged by the engine.
@@ -806,10 +805,18 @@ func Pre(runDir, repo string) int {
 	build := func(n int) (taskBuilt, error) {
 		t := taskBuilt{wasRead: map[int]bool{}}
 		var task strings.Builder
-		var code []string                // the files the issues name, given once each
-		filesOf := map[int][]string{}    // the files each issue read names
-		namesIn := map[string][]string{} // the names the issues quote, by file: their lines given past a cut (#1056)
-		noCode := false                  // an issue read names no file: the repository's folders are listed
+		// The code each issue read names, by the picker the tester and
+		// the reviewer share (ADR-0063 §8): code-lines-max shared among
+		// them, a piece given for one not given again for the next.
+		picker, err := codepick.New(repo, "")
+		if err != nil {
+			return t, err
+		}
+		var code []string          // the files the issues name
+		var picks []codepick.Pick  // each issue's, in order
+		var pickedFor []int        // the issue each pick is for
+		codeLeft := s.CodeLinesMax // lines of code still to share
+		noCode := false            // an issue read names no file: the repository's folders are listed
 		left := slices.Clone(rest)
 		for i, d := range toRead {
 			if i >= n {
@@ -819,13 +826,13 @@ func Pre(runDir, repo string) int {
 			t.wasRead[d.is.ID] = true
 			t.ids = append(t.ids, strconv.Itoa(d.is.ID))
 			written, aboutIt := writtenAt(repo, d.is, d.st, tracked, cfg.Archived)
-			files := named(repo, d.is, d.st, d.comments, aboutIt, tracked)
-			filesOf[d.is.ID] = files
-			for _, f := range files {
-				namesIn[f] = append(namesIn[f], quoted(d.is, d.comments)...)
-			}
+			share := codeLeft / max(min(n, len(toRead))-i, 1)
+			pick := picker.Pick(askOf(picker, d.is, d.st, d.comments, aboutIt, share))
+			codeLeft -= share - pick.Left
+			picks, pickedFor = append(picks, pick), append(pickedFor, d.is.ID)
+			files := pick.Named()
 			noCode = noCode || len(files) == 0
-			review := written + kindAsked(d.is, d.st, kindAct) + definedRest(repo, d.is, d.comments, files)
+			review := written + kindAsked(d.is, d.st, kindAct)
 			if r := backlog.SpecOpen(d.is, d.comments); cfg.SpecReview && r != nil {
 				review += specFindings(d.is, d.st, d.comments, r)
 			}
@@ -890,7 +897,7 @@ func Pre(runDir, repo string) int {
 				}
 			}
 			writeIssue(&task, role, s.rounds(), d.is, d.st, d.notes, files, isOpen, ledger.OwnBlockers(d.is), front[d.is.ID]+review)
-			for _, f := range files {
+			for _, f := range picker.Where(askOf(picker, d.is, d.st, d.comments, aboutIt, 0)) {
 				if !slices.Contains(code, f) {
 					code = append(code, f)
 				}
@@ -942,7 +949,7 @@ func Pre(runDir, repo string) int {
 		backlog.Order(ordered)
 		for _, is := range ordered {
 			d := byID[is.ID]
-			files := named(repo, d.is, d.st, d.comments, "", tracked)
+			files := picker.Where(askOf(picker, d.is, d.st, d.comments, "", 0))
 			if shown < relatedMax && slices.ContainsFunc(files, func(f string) bool { return slices.Contains(code, f) }) {
 				shown++
 				fmt.Fprintf(&related, "## #%d %s\n\n%s\n\n", d.is.ID, d.is.Title, clip(d.is.Body, bodyMax/2))
@@ -956,12 +963,17 @@ func Pre(runDir, repo string) int {
 		if len(others) > 0 {
 			fmt.Fprintf(&task, "# The other open issues, titles only\n\nNot read in this run; a duplicate may be one of them.\n\n%s\n\n", strings.Join(others, "\n"))
 		}
-		given := writeCode(&task, repo, code, s.CodeLinesMax, namesIn)
-		for _, id := range slices.Sorted(maps.Keys(filesOf)) {
-			if fs := filesOf[id]; len(fs) > 0 && !slices.ContainsFunc(fs, func(f string) bool { return !slices.Contains(given, f) }) {
-				t.codeRead = append(t.codeRead, strconv.Itoa(id))
+		writeCode(&task, repo, picks, pickedFor)
+		for i, pk := range picks {
+			// Its code read: each file it names given, in part at least.
+			if fs := pk.Named(); len(fs) > 0 && len(pk.Paths()) == len(fs) {
+				t.codeRead = append(t.codeRead, strconv.Itoa(pickedFor[i]))
+			}
+			if given := pk.Paths(); len(given) > 0 {
+				t.codeGiven = append(t.codeGiven, strconv.Itoa(pickedFor[i])+" "+strings.Join(given, " "))
 			}
 		}
+		slices.SortFunc(t.codeRead, func(a, b string) int { x, _ := strconv.Atoi(a); y, _ := strconv.Atoi(b); return x - y })
 		if noCode {
 			writeFolders(&task, tracked)
 		}
@@ -1060,6 +1072,9 @@ func Pre(runDir, repo string) int {
 	if err := os.WriteFile(filepath.Join(runDir, "in", backlog.CodeReadFile), []byte(strings.Join(t.codeRead, "\n")), 0o644); err != nil {
 		return fail(err)
 	}
+	if err := os.WriteFile(filepath.Join(runDir, "in", backlog.CodeGivenFile), []byte(strings.Join(t.codeGiven, "\n")), 0o644); err != nil {
+		return fail(err)
+	}
 	if len(fallback) > 0 {
 		if err := intent.Write(filepath.Join(runDir, "in", "fallback.yaml"), fallback); err != nil {
 			return fail(err)
@@ -1105,6 +1120,9 @@ type taskBuilt struct {
 	// codeRead are the issues read whose files were all given: an effort
 	// is estimated on them only (ADR-0040).
 	codeRead []string
+	// codeGiven are the files given, a line an issue read: its number,
+	// then the paths (backlog.CodeGivenFile).
+	codeGiven []string
 }
 
 // askedAgainChars is the room kept in the prompt for an answer asked again:
@@ -1674,20 +1692,6 @@ func sections(is forge.Issue, st *backlog.State) string {
 	return out
 }
 
-// byName is the one tracked file with this name, or "".
-func byName(name string, tracked map[string]bool) string {
-	found := ""
-	for f := range tracked {
-		if f == name || strings.HasSuffix(f, "/"+name) {
-			if found != "" {
-				return ""
-			}
-			found = f
-		}
-	}
-	return found
-}
-
 // trackedFiles lists the files of the commit the run is on.
 func trackedFiles(repo string) map[string]bool {
 	out, _ := exec.Command("git", "-C", repo, "ls-files").Output()
@@ -1704,10 +1708,6 @@ var provenance = regexp.MustCompile(`(?m)^Opened from .* by the [\w -]+ role\.\r
 // marker is the engine's hidden text in a body: the file it was imported
 // from, a key.
 var marker = regexp.MustCompile(`<!-- workline:[^>]*-->`)
-
-// symbol is a name of the code an issue quotes as code: `WriteRows`,
-// `Core::publish()`.
-var symbol = regexp.MustCompile("`([A-Za-z_][A-Za-z0-9_]*(?:::[A-Za-z_][A-Za-z0-9_]*)*)(?:\\(\\))?`")
 
 // folders are the folders of the commit's files, each above them.
 func folders(tracked map[string]bool) map[string]bool {
@@ -1746,132 +1746,58 @@ func writeFolders(b *strings.Builder, tracked map[string]bool) {
 	fmt.Fprintf(b, "# The repository's folders\n\nAn issue above names no file: name the files or folders its %s touches from these, in `sources` (a folder named is given with its files at the next run); no line is quoted from a folder.\n\n- %s\n%s\n", work.Name(work.Scope), strings.Join(list, "\n- "), more)
 }
 
-// named lists the files an issue is about: its sources, then the paths its
-// title and body name that the commit holds, at most filesPerIssue. A file
-// named alone (`csv.go:5`, as a roadmap writes it) is the one file of the
-// commit with that name; a name two files share is not guessed. aboutIt,
-// the lines of the file an issue was imported from that name its item's
-// id (writtenAt), names code after the item's own; never the lines around
-// it, which are other items' (#548).
-func named(repo string, is forge.Issue, st *backlog.State, comments []string, aboutIt string, tracked map[string]bool) []string {
-	var out []string
-	// The file it was imported from is where it was written, never its
-	// code, wherever the issue names it (#1063): its lines around the
-	// item are given apart (writtenAt).
+// askOf is what the picker is asked for an issue: its title, its body
+// and a person's comments, its sources, the lines of the file it was
+// imported from that name its item (writtenAt: aboutIt), never that file
+// itself, which is where it was written, not its code (#548, #1063).
+func askOf(picker *codepick.Picker, is forge.Issue, st *backlog.State, comments []string, aboutIt string, budget int) codepick.Ask {
 	from, _, _, _ := backlog.Imported(is.Body)
-	upTo := func(p string, most int) {
-		p = backlog.RepoPath(p) // a link to a file on the forge is that file
-		if !tracked[p] && !strings.Contains(p, "/") {
-			p = byName(p, tracked)
-		}
-		if tracked[p] && p != from && !slices.Contains(out, p) && len(out) < most {
-			out = append(out, p)
-		}
-	}
-	add := func(p string) { upTo(p, filesPerIssue) }
-	dirs := folders(tracked)
-	for _, s := range st.Sources {
-		// A folder named as a source is given as the list of its files.
-		if f := backlog.RepoPath(s); dirs[f] && !slices.Contains(out, f) && len(out) < filesPerIssue {
-			out = append(out, f)
-			continue
-		}
-		add(s)
-	}
-	// The file an issue was imported from is where it was written, not
-	// the code it is about.
 	body := marker.ReplaceAllString(provenance.ReplaceAllString(is.Body, ""), "")
 	for _, c := range comments {
 		if !strings.Contains(c, "<!-- workline:") { // a person's: an answer may name the code
 			body += "\n" + c
 		}
 	}
-	for _, m := range backlog.PathLike.FindAllString(is.Title+"\n"+body, -1) {
-		add(m)
+	text := is.Title + "\n" + body + "\n" + aboutIt
+	var paths []string
+	for _, src := range st.Sources {
+		paths = append(paths, backlog.RepoPath(src))
 	}
-	// A symbol quoted as code: the file of the commit that holds it, when
-	// one or two do, docs left out — the issue's code, found for it.
-	for _, m := range symbol.FindAllStringSubmatch(is.Title+"\n"+body, -1) {
-		name := m[1]
-		if i := strings.LastIndex(name, "::"); i >= 0 {
-			name = name[i+2:]
-		}
-		if len(out) >= filesPerIssue || len(name) < 4 {
-			break
-		}
-		files, defs := holding(repo, name)
-		for _, f := range files {
-			if defs {
-				upTo(f, definedMax) // each copy of a function it names (#1057)
-			} else {
-				add(f)
-			}
+	// A link to a file on the forge is that file.
+	for _, m := range backlog.PathLike.FindAllString(text, -1) {
+		if p := backlog.RepoPath(m); p != m && picker.Tracked(p) && !slices.Contains(paths, p) {
+			paths = append(paths, p)
 		}
 	}
-	for _, m := range backlog.PathLike.FindAllString(aboutIt, -1) {
-		add(m)
+	a := codepick.Ask{Text: text, Paths: paths, Budget: budget, BudgetName: "code-lines-max"}
+	if from != "" {
+		a.Skip = []string{from}
 	}
-	return out
+	return a
 }
 
-// holding lists the files of the commit holding a name, as a word, docs
-// left out. When more than two do: those that define it, up to
-// definedMax (defs true, #1057); none past that: too common to tell.
-func holding(repo, name string) ([]string, bool) {
-	out, err := exec.Command("git", "-C", repo, "grep", "-l", "-w", "-F", name, "HEAD", "--", ".", ":!*.md").Output()
-	if err != nil {
-		return nil, false
-	}
-	var files []string
-	for _, l := range strings.Split(strings.TrimSpace(string(out)), "\n") {
-		files = append(files, strings.TrimPrefix(l, "HEAD:"))
-	}
-	if len(files) > 2 {
-		return defining(repo, name, files), true
-	}
-	return files, false
-}
-
-// writeCode gives each file named, whole up to codeLines, with its last
-// commits: what changed it, so an issue the code solved can be told. It
-// returns the files given: an effort is estimated only on them (ADR-0040).
-func writeCode(b *strings.Builder, repo string, files []string, budget int, namesIn map[string][]string) []string {
-	if len(files) == 0 {
-		return nil
-	}
-	var shown []string
-	b.WriteString("# Code the issues name, as it is at this commit\n\n")
-	for _, f := range files {
-		data, err := exec.Command("git", "-C", repo, "show", "HEAD:"+f).Output()
-		if err != nil {
+// writeCode gives the code each issue read names, as the picker planned
+// it, each file with its last commits: what changed it, so an issue the
+// code solved can be told.
+func writeCode(b *strings.Builder, repo string, picks []codepick.Pick, ids []int) {
+	head := false
+	for i, pk := range picks {
+		if len(pk.Named()) == 0 {
 			continue
 		}
-		lines := strings.Split(strings.TrimRight(string(data), "\n"), "\n")
-		all := lines
-		more := ""
-		if n := min(codeLines, budget); len(lines) > n {
-			more = fmt.Sprintf("\n(%d more lines left out)", len(lines)-n)
-			lines = lines[:n]
+		if !head {
+			b.WriteString("# Code the issues name, as it is at this commit\n\nFound for each issue by the names and paths it writes: each definition of a name whole, the lines naming it, a file named whole when it fits; the rest said.\n")
+			head = true
 		}
-		budget -= len(lines)
-		if len(lines) > 0 && len(lines) < len(all) {
-			// Past the cut, the lines naming what the issues quote (#1056).
-			var past string
-			past, budget = namedPast(f, all, len(lines), namesIn[f], budget)
-			more += past
-		}
-		if len(lines) == 0 {
-			fmt.Fprintf(b, "## %s\n\nLeft out: the run's code budget is spent.\n\n", f)
-			continue
-		}
-		shown = append(shown, f)
-		for i := range lines {
-			lines[i] = fmt.Sprintf("%4d  %s", i+1, lines[i])
-		}
-		log, _ := exec.Command("git", "-C", repo, "log", "-5", "--format=%h %as %s", "--", f).Output()
-		fmt.Fprintf(b, "## %s\n\nLast commits:\n%s\n```\n%s\n```%s\n\n", f, strings.TrimSpace(string(log)), strings.Join(lines, "\n"), more)
+		fmt.Fprintf(b, "\n## The code #%d names\n", ids[i])
+		pk.Write(b, codepick.Style{Numbered: true, About: func(f string) string {
+			log, _ := exec.Command("git", "-C", repo, "log", "-5", "--format=%h %as %s", "--", f).Output()
+			return fmt.Sprintf("\nLast commits:\n%s\n", strings.TrimSpace(string(log)))
+		}})
 	}
-	return shown
+	if head {
+		b.WriteString("\n")
+	}
 }
 
 // modes tells the agent how far the role goes in this run (ADR-0026): each

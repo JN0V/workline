@@ -1,5 +1,5 @@
 case: product-owner/linked-file-is-code-named
-about: A file an issue links to on the forge — `…/blob/main/src/export/csv.go`, as the docs rules ask a reference to be written — is code it names, given whole; a folder its sources name is given as the list of its files.
+about: A file an issue links to on the forge — `…/blob/main/src/export/csv.go`, as the docs rules ask a reference to be written — is code it names, given whole; a folder its sources name is given by its own files, once a task.
 given:
   repo: backlog
   forge:
@@ -10,4 +10,4 @@ run: {role: product-owner, event: schedule, ai: fake:proposes-nothing}
 expect:
   status: pass
   run-files:
-    in/task.md: {contains: ["Code it names, given below: src/export/csv.go.", "Code it names, given below: src/export.", "## src/export\n"], not-contains: "# The repository's folders"}
+    in/task.md: {contains: ["Code it names, given below: src/export/csv.go.", "### `src/export/csv.go`", "Given above, for another issue: `src/export/csv.go`."], not-contains: "# The repository's folders"}

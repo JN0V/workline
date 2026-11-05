@@ -1,0 +1,26 @@
+case: reviewer/picker-a-python-function
+about: >
+  The code picker's contract, the reviewer's side (ADR-0063, step 4), on
+  DomoticsCore's own code as the C++ trial had it: a Python module: a
+  function of a 299-line script. The spec's lenses are given the code it
+  names.
+given:
+  repo: reviewed
+  setup:
+    - |
+      cp -R "$FIXTURES/code/domoticscore/." .
+      git add . && git commit -qm 'feat: DomoticsCore, frozen from the C++ trial'
+    - |
+      mkdir -p docs && cat > docs/spec.md <<'MD'
+      # The version check skips the root library
+
+      ## Need
+
+      `check_component_versions()` reads every component's library.json but never the root's.
+      MD
+run: {review: [--spec, docs/spec.md], ai: "fake:review-nothing"}
+expect:
+  agent-calls: 1
+  run-files:
+    in/parts/1-lenses/task.md:
+      contains: ["def check_component_versions(root: Path, verbose: bool = False) -> Tuple[bool, list]:", "    errors: list = []"]

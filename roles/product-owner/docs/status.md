@@ -182,6 +182,11 @@ in [tests/evaluation/cases/product-owner](../../../tests/evaluation/cases/produc
   ([#878](https://github.com/JN0V/workline/issues/878)). Cases
   `kind-light-read-*`. Tried on
   [#885](https://github.com/JN0V/workline/pull/885#tried).
+- **The code an issue names, by the shared picker**
+  ([the code picker](../../../docs/spec/code-picker.md)): each
+  definition of a name, the lines named, a Scope written beside sources
+  it was given. Cases `product-owner/picker-*`. Tried on
+  [#1106](https://github.com/JN0V/workline/pull/1106#tried).
 - **A feature in the next milestone** at `merge: {autonomy:
   enterprising}`, when it makes it ready
   ([the release candidate](../../../docs/release-candidate.md)). Case

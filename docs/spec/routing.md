@@ -469,7 +469,8 @@ whose result moves the issue to the next. The table is the routing's
   The tester's comment then says the line runs it again, never that it
   blocks it.
 - **The code a role lacks is given**: the product owner naming the
-  code an issue is about (`sources`), its Scope left for that code, or
+  code an issue is about (`sources`) that its task did not give
+  ([the code picker](code-picker.md)), its Scope left for that code, or
   the tester answering `needs: <paths> — why` is a needs-input of the
   engine (`needs-code`), never "no test possible". Due at once: the
   role runs again in the same step, given it (`state-given`; its task

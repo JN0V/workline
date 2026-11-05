@@ -1,0 +1,43 @@
+case: tester/picker-the-files-asked-for-given-first
+about: >
+  The tester's agent said, at its last run, that it lacked five files: the
+  HAL stubs its test builds against and two suites to copy (the C++
+  copy's #36 on #1089's try). The code picker gives them first, whole
+  while they fit, right after the definitions the issue names, before
+  any file is given whole for being named: before, the Scope's 483-line
+  header and the places naming common words came first, three of the
+  five got no line, and the agent asked again at every run. Its
+  code-lines-max is 1000, as the trial's copy set it.
+given:
+  repo: tested
+  setup:
+    - |
+      cp -R "$FIXTURES/code/domoticscore/." .
+      git add . && git commit -qm 'feat: DomoticsCore, frozen from the C++ trial'
+    - |
+      git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}", code-lines-max: 1000, test-paths: ["DomoticsCore-*/test/**"]}}}
+  forge:
+    issues:
+      - id: 3
+        title: "MQTT: what a dropped link still gets wrong"
+        labels: ["workline:needs-tests"]
+        body: "## Need\n\nOperators and components that watch the MQTT link need it reported truthfully. Today `resetReconnect()` can leave every subscriber believing the link is up, and `updateStatistics()` keeps an uptime frozen as if the link were live.\n\n## Validation\n\n- **Silent reset:** Given a connected MQTT component, When `resetReconnect()` is called, Then subscribers get `mqtt/disconnected` before any later `mqtt/connected`.\n- **Frozen uptime:** Given a dropped link, When I read the statistics during the outage, Then the uptime no longer reads as live.\n\n---\n\n## Verification\n\nNative tests in the MQTT component's suite, on the client stub and the test clock.\n\n## Scope\n\n- `DomoticsCore-MQTT/include/DomoticsCore/MQTT_impl.h`: `resetReconnect()` announces the loss; `announceConnectionLost()` zeroes the uptime.\n- `DomoticsCore-MQTT/include/DomoticsCore/MQTT.h`: `MQTTStatistics`.\n"
+run:
+  role: tester
+  event: issue
+  target: {issue: 3}
+  input: {needs: "DomoticsCore-MQTT/include/DomoticsCore/MQTT_HAL.h, DomoticsCore-Wifi/include/DomoticsCore/Wifi_HAL.h, DomoticsCore-Core/include/DomoticsCore/Platform_HAL.h, DomoticsCore-MQTT/test/test_mqtt_limits_links/test_mqtt_limits_links.cpp, DomoticsCore-HomeAssistant/test/test_ha_dropped_link/test_ha_dropped_link.cpp"}
+  ai: "fake:tester-two-scenarios"
+expect:
+  agent-calls: 1
+  run-files:
+    in/task.md:
+      contains:
+        - "### `DomoticsCore-MQTT/include/DomoticsCore/MQTT_HAL.h`\n"
+        - "### `DomoticsCore-Wifi/include/DomoticsCore/Wifi_HAL.h`\n"
+        - "### `DomoticsCore-Core/include/DomoticsCore/Platform_HAL.h`\n"
+        - "#endif // DOMOTICS_CORE_HAL_PLATFORM_H"
+        - "inline void MQTTComponent::resetReconnect() {"
+        - "### `DomoticsCore-MQTT/test/test_mqtt_limits_links/test_mqtt_limits_links.cpp`"

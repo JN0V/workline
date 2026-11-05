@@ -1,0 +1,24 @@
+case: product-owner/picker-a-binary-file-not-given
+about: >
+  An issue names an image, `docs/logo.png`. The code picker gives no
+  binary file's bytes, and reads `logo.png` as a file's name, not as the
+  names `logo` and `png`: the function `logo()` is not given for it
+  (#1089's review).
+given:
+  repo: backlog
+  setup:
+    - |
+      mkdir -p docs src/brand
+      printf '\211PNG\r\n\032\n\000\000\000\rIHDRlogo-bytes\000\001' > docs/logo.png
+      printf 'package brand\n\n// logo draws the mark.\nfunc logo() string { return "mark" }\n' > src/brand/brand.go
+      git add docs src && git commit -qm 'feat: a logo'
+  forge:
+    issues:
+      - {id: 9, title: "The logo is blurry", body: "The image `logo.png` in docs/logo.png is blurry on the README.", author: ann, insider: true, labels: [workline:to-refine], comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: issue, target: {issue: 9}, ai: fake:proposes-nothing}
+expect:
+  status: pass
+  agent-calls: 1
+  run-files:
+    in/task.md:
+      not-contains: ["IHDRlogo-bytes", "### `docs/logo.png`", "func logo() string"]

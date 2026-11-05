@@ -1,0 +1,23 @@
+case: product-owner/picker-a-python-function
+about: >
+  The code picker's contract, the product owner's side (ADR-0063, step
+  4), on DomoticsCore's own code as the C++ trial had it: a Python
+  module: a function of a 299-line script. The issue's task holds the
+  code it names, within the role's budget, and the agent is asked.
+given:
+  repo: backlog
+  setup:
+    - |
+      cp -R "$FIXTURES/code/domoticscore/." .
+      git add . && git commit -qm 'feat: DomoticsCore, frozen from the C++ trial'
+  forge:
+    issues:
+      - {id: 9, title: "The version check skips the root library", body: "`check_component_versions()` reads every component's library.json but never the root's.", author: ann, insider: true, labels: [workline:to-refine], comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: issue, target: {issue: 9}, ai: fake:proposes-nothing}
+expect:
+  status: pass
+  agent-calls: 1
+  no-findings: [{rule: prompt-over-budget}]
+  run-files:
+    in/task.md:
+      contains: ["def check_component_versions(root: Path, verbose: bool = False) -> Tuple[bool, list]:", "    errors: list = []"]

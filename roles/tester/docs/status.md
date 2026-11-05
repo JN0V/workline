@@ -175,6 +175,11 @@ Cases in `tests/conformance/cases/tester/`:
   `tester/bug-green-on-base-asks-its-reporter`,
   `routing/bug-not-reproduced-blocked-after-the-delay`. Tried on
   [#876](https://github.com/JN0V/workline/pull/876#tried).
+- **Its code by the shared picker**
+  ([the code picker](../../../docs/spec/code-picker.md)): what the
+  issue names, the files its agent asked for first, a test kept room
+  for. Cases `tester/picker-*`. Tried on
+  [#1106](https://github.com/JN0V/workline/pull/1106#tried).
 - **Settings** `test-command`, `test-report`, `test-paths`,
   `code-lines-max`, `objection-exchanges`
   ([README](../README.md#settings)).

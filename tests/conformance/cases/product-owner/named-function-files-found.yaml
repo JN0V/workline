@@ -4,7 +4,8 @@ about: >
   issue on a fallback copied in seven modules). More than two files hold
   the name, its callers with them: the files that define it are found
   from the name and given, not a folder guessed from the title. A file
-  that only calls it is not.
+  that only calls it comes after them, by the function calling it
+  (ADR-0063 §8).
 given:
   repo: backlog
   setup:
@@ -24,5 +25,4 @@ expect:
   agent-calls: 1
   run-files:
     in/task.md:
-      contains: ["## mqtt/mqtt_ui.h", "## ntp/ntp_ui.h", "## ota/ota_ui.h"]
-      not-contains: ["## app/show.cpp"]
+      contains: ["### `mqtt/mqtt_ui.h`", "### `ntp/ntp_ui.h`", "### `ota/ota_ui.h`", "### `app/show.cpp` (4 lines: lines 2 to 4 given"]

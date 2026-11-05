@@ -63,7 +63,7 @@ what it can and asks for the rest:
   digest per section), the mark left in it or not (`backlog.IsDraft`). A
   draft an earlier engine wrote — a visible line, "*Draft by the product
   owner: …*", around the marker — with no digest kept is told by its
-  marker alone; the role now writes the marker alone. Scope names its files or folders (`sources`, 1 to 5, in
+  marker alone; the role now writes the marker alone. Scope names every file the change edits; up to 5 of them are its `sources` (1 to 5, in
   the commit, as for naming its sources), which the issue's state gets when
   it has none; given none, the engine takes the paths the Scope's text
   names that the commit holds (`backlog.PathsIn`). A Scope naming none, or
@@ -79,7 +79,10 @@ what it can and asks for the rest:
   whose code the run did not give — not in pre's `code-read`, its state
   naming no sources, its title and body no file of the commit
   (`noCodeGiven`) — or whose code this run names anew (a `sources`
-  done), is left out, said `scope-unread`: its paths would be a guess,
+  done naming a file the task did not give: pre's `code-given` lists
+  those it gave; a Scope written beside sources it gave stands, no
+  `needs-code`, [#1089](https://github.com/JN0V/workline/issues/1089)),
+  is left out, said `scope-unread`: its paths would be a guess,
   and a guessed folder can hold the issue behind an unrelated claim.
   Its paths, checked as above, are kept as the issue's sources, the
   rest of the refine written; the issue, still lacking its Scope, is

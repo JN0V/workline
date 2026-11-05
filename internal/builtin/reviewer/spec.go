@@ -11,12 +11,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"regexp"
 	"slices"
 	"strconv"
 	"strings"
 
 	"github.com/JN0V/workline/internal/backlog"
+	"github.com/JN0V/workline/internal/codepick"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/verdict"
@@ -189,7 +189,7 @@ func specCut(sp Spec, cut int, s Settings) verdict.Finding {
 // read it, each lens left out said in st.Skipped.
 func askSpec(runDir, repo string, s Settings, st *state) (asked bool, err error) {
 	sp := *st.Spec
-	code := namedCode(repo, st.Head, sp.Text, s.CodeLinesMax)
+	code := namedCode(repo, st.Head, sp.Path, sp.Title+"\n"+sp.Text, s.CodeLinesMax, "code-lines-max")
 	skip := map[string]string{}
 	read := map[string]Lens{}
 	for _, name := range s.SpecLenses {
@@ -337,84 +337,29 @@ func fenced(text string) string {
 	return fmt.Sprintf("%s\n%s\n%s\n", fence, text, fence)
 }
 
-// pathWord is a word of a spec that may name a file: letters, digits and
-// `._-/`, the punctuation closing a sentence left.
-var pathWord = regexp.MustCompile(`[\w.\-/]+`)
-
 // namedCode is what a spec names of the repository's code, as it reads at
-// head: the files it names, whole, then the functions it writes as code
-// (namedIn) that the files shown do not hold, whole, those of a file cut
-// first, up to limit lines all together, the rest named; "" when it names
-// none (#128, #425). Found as a judge's code is (#127), with no build.
-func namedCode(repo, head, text string, limit int) string {
-	out, err := git(repo, "ls-tree", "-r", "--name-only", head)
+// head, found by the picker the product owner and the tester share
+// (ADR-0063 §8): the lines it names after a file, each definition of a
+// name it writes as code whole, a file it names whole when it fits, the
+// lines naming a name, up to limit lines all together, the rest said; ""
+// when it names none (#128, #425).
+func namedCode(repo, head, spec, text string, limit int, setting string) string {
+	pk, err := codepick.New(repo, head)
 	if err != nil {
 		return ""
 	}
-	tracked := map[string]bool{}
-	for _, f := range strings.Split(strings.TrimSpace(out), "\n") {
-		tracked[f] = true
+	a := codepick.Ask{Text: text, Budget: max(limit, 1), BudgetName: setting}
+	if spec != "" && !strings.HasPrefix(spec, "#") {
+		a.Skip = []string{spec} // the spec itself: given above
 	}
-	var files []string
-	for _, w := range pathWord.FindAllString(text, -1) {
-		w = strings.TrimPrefix(strings.TrimRight(w, ".-"), "./")
-		if tracked[w] && languageOf(w) != nil && !slices.Contains(files, w) {
-			files = append(files, w)
-		}
-	}
-	r := &reacher{repo: repo, head: head, files: map[string][]string{}}
-	names, _, _ := namedIn(text) // a capitalised word is English as often as a name (#425)
-	found := r.defs(names, nil)
-	var b strings.Builder
-	left := limit
-	var cut, many []string
-	whole := map[string]bool{}
-	for _, f := range files {
-		lines := r.lines(f)
-		if len(lines) > left {
-			cut = append(cut, f)
-			continue
-		}
-		left -= len(lines)
-		whole[f] = true
-		fmt.Fprintf(&b, "\n### %s\n\n%s", f, fenced(strings.Join(lines, "\n")))
-	}
-	shown := 0
-	for _, n := range names {
-		ds := slices.DeleteFunc(slices.Clone(found[n]), func(d fn) bool { return whole[d.file] })
-		// A file named but cut past the limit: its functions the spec
-		// names shown, before those of the same name elsewhere (#425).
-		if in := slices.DeleteFunc(slices.Clone(ds), func(d fn) bool { return !slices.Contains(files, d.file) }); len(in) > 0 {
-			ds = in
-		}
-		switch {
-		case len(ds) == 0:
-			continue
-		case len(ds) > 2:
-			many = append(many, fmt.Sprintf("`%s` (%d definitions)", n, len(ds)))
-			continue
-		}
-		for _, d := range ds {
-			if d.lines() > left {
-				cut = append(cut, fmt.Sprintf("`%s` (%s:%d-%d)", d.name, d.file, d.from, d.to))
-				continue
-			}
-			left -= d.lines()
-			shown++
-			lines := r.lines(d.file)
-			fmt.Fprintf(&b, "\n### %s, lines %d to %d: `%s`\n\n%s", d.file, d.from, d.to, d.name, fenced(strings.Join(lines[d.from-1:min(d.to, len(lines))], "\n")))
-		}
-	}
-	if b.Len() == 0 && len(cut) == 0 && len(many) == 0 {
+	pick := pk.Pick(a)
+	if len(pick.Named()) == 0 && len(pick.Many) == 0 {
 		return ""
 	}
-	if len(cut) > 0 {
-		fmt.Fprintf(&b, "\nNot shown, past %d lines: %s.\n", limit, strings.Join(cut, ", "))
-	}
-	if len(many) > 0 {
-		fmt.Fprintf(&b, "\nNot shown, defined in too many places to tell which: %s.\n", strings.Join(many, ", "))
-	}
-	return fmt.Sprintf("\n## The code the spec names\n\nAs it reads at %s: the files the spec names, whole, then the functions it names, up to %d lines all together; the rest named. Found with no build: a name may be taken for another of the same name.\n%s", short(head), limit, b.String())
+	var b strings.Builder
+	fmt.Fprintf(&b, "\n## The code the spec names\n\nAs it reads at %s: the lines it names, each definition of a name it writes as code, a file it names whole when it fits, then the lines naming them, up to %d lines all together (%s); the rest said. Found with no build: a name may be taken for another of the same name.\n", short(head), limit, setting)
+	pick.Write(&b, codepick.Style{Numbered: true, Namer: "the spec"})
+	return b.String()
 }
 
 // inSpec finds a spec finding's quotes again: its cause in the spec, as
@@ -465,7 +410,7 @@ func specMaterial(repo string, st state, s Settings, f Finding, code bool) strin
 		b.WriteString(reach(repo, st.Head, s.Tests, on, at, 0, s.JudgeLinesMax))
 		return b.String()
 	}
-	if named := namedCode(repo, st.Head, st.Spec.Text, s.JudgeLinesMax); named != "" {
+	if named := namedCode(repo, st.Head, st.Spec.Path, st.Spec.Title+"\n"+st.Spec.Text, s.JudgeLinesMax, "judge-lines-max"); named != "" {
 		b.WriteString(named)
 	} else {
 		b.WriteString("\n## The code the spec names\n\nNone the repository holds.\n")

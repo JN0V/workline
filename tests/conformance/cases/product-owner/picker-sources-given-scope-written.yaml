@@ -1,0 +1,24 @@
+case: product-owner/picker-sources-given-scope-written
+about: >
+  The code picker gave #9's function (ADR-0063 §8). The product owner
+  names that file as its sources and writes its Scope in the same run:
+  the code was read, so the Scope is written now, not left for a read
+  again (the C++ copy's #37 on #1089's try: WebUI.h given whole, named,
+  its Scope left out as unread).
+given:
+  repo: backlog
+  forge:
+    issues:
+      - id: 9
+        title: "Rows lost"
+        author: ann
+        insider: true
+        labels: [workline:to-refine]
+        body: "## Need\n\nA user exporting rows with `WriteRows` loses the last one.\n\n## Steps to reproduce\n\n1. Export three rows.\n- **Expected:** three rows.\n- **Actual:** two.\n\n## Validation\n\n- **Three rows:** Given three rows, When I export them, Then the file holds three.\n"
+        comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]
+run: {role: product-owner, event: schedule, ai: fake:sources-given-and-scope}
+expect:
+  no-findings: [{rule: scope-unread}, {rule: needs-code}]
+  forge:
+    issues:
+      - {id: 9, body-contains: "## Scope\n\n`src/export/csv.go`: `WriteRows` writes every row."}

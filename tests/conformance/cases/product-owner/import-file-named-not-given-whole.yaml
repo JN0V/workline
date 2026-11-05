@@ -27,5 +27,5 @@ expect:
   agent-calls: 1
   run-files:
     in/task.md:
-      contains: ["6353  | LO-33 | Core | getDelta() on an unknown name reports a leak |", "## src/export/csv.go"]
+      contains: ["6353  | LO-33 | Core | getDelta() on an unknown name reports a leak |", "### `src/export/csv.go`"]
       not-contains: ["## docs/big.md", "row 2, long enough"]

@@ -66,20 +66,15 @@ events, heard since; read with those left with nothing). An issue with nothing n
 issue an act: a fix of what the engine dropped, of what the task tells
 the agent. An issue on the same code as one read is given with
 its body beside it, up to six, as the original a duplicate would be closed
-against; the others are listed by title only. The code an issue names: its
-sources (a folder given as the list of its files), the paths its title,
-body and people's comments name — a link to a file on the forge,
-`…/blob/<ref>/<path>` or GitLab's `…/-/blob/…`, is that file —, a file
-named alone when one file of the commit has that name, a symbol quoted
-as code — the files holding it, when one or two do; when more do, those
-that define it as a function, the project's own before its tests' and
-examples' copies, up to eight, the others listed by path for the agent
-to name as sources ([#1057](https://github.com/JN0V/workline/issues/1057));
-at most three an issue otherwise. A file is given whole up to 400 lines;
-past them, the lines naming a symbol the issue quotes are given too, in
-the function around each or a few lines either side, numbered as in the
-file, 120 at most a file, within `code-lines-max`
-([#1056](https://github.com/JN0V/workline/issues/1056)). The file an
+against; "the same code" is a file it names or one defining a name it
+writes as code. The code each issue read names is found by [the code
+picker](../code-picker.md) the tester and the reviewer share, with its
+sources, the paths and names of its title, body and people's comments —
+a link to a file on the forge, `…/blob/<ref>/<path>` or GitLab's
+`…/-/blob/…`, is that file —, `code-lines-max` shared among the issues
+read, a piece given once a task, numbered as in the file, with each
+file's last commits ([#1056](https://github.com/JN0V/workline/issues/1056),
+[#1057](https://github.com/JN0V/workline/issues/1057)). The file an
 issue was imported from is never code it names, even where its sections
 name it ([#1063](https://github.com/JN0V/workline/issues/1063)). An issue imported from a file (its
 import key) is read with that file's lines around its item, as the commit

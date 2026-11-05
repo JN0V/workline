@@ -1,0 +1,25 @@
+case: product-owner/picker-a-method-out-of-its-class
+about: >
+  The code picker's contract, the product owner's side (ADR-0063, step
+  4), on DomoticsCore's own code as the C++ trial had it: #1064, the
+  trial's #36: two methods defined out of their class, deep in a
+  743-line header, named in the Need, not the Scope. The issue's task
+  holds the code it names, within the role's budget, and the agent is
+  asked.
+given:
+  repo: backlog
+  setup:
+    - |
+      cp -R "$FIXTURES/code/domoticscore/." .
+      git add . && git commit -qm 'feat: DomoticsCore, frozen from the C++ trial'
+  forge:
+    issues:
+      - {id: 9, title: "MQTT reconnect counter reset clears the statistics", body: "`resetReconnect()` zeroes `stats.reconnectCount`, and `updateStatistics()` then reports an uptime since the reset, not since the connection.", author: ann, insider: true, labels: [workline:to-refine], comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: issue, target: {issue: 9}, ai: fake:proposes-nothing}
+expect:
+  status: pass
+  agent-calls: 1
+  no-findings: [{rule: prompt-over-budget}]
+  run-files:
+    in/task.md:
+      contains: ["inline void MQTTComponent::resetReconnect() {", "    stats.reconnectCount = 0;", "inline void MQTTComponent::updateStatistics() {", "        stats.uptime = (HAL::Platform::getMillis() - stateChangeTime) / 1000;"]
