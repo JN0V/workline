@@ -1,0 +1,118 @@
+{
+ "issues": [
+  {
+   "id": 1003,
+   "title": "docs with a broken config blocks with no reason, exit 0",
+   "body": "## Need\n\nPeople whose `.workline/config.yaml` has a typo run `workline docs`, get a block with no reason and exit code 0, and believe their docs were judged.\n\n## Steps to reproduce\n\n1. In a git repository with one commit, write `.workline/config.yaml` with a missing `]`:\n   ```yaml\n   routing:\n     events: {pre-push: [committer\n   ```\n2. `workline docs`\n3. Output:\n   ```\n   workline: judging the docs made suspect by the commits since the first commit\n   workline: the documentalist judges the docs these commits made suspect…\n   workline: block — ; the docs it was judging, and those after them, are not judged yet: run `workline docs` again\n   workline: block — no doc changed\n   ```\n   Exit code 0.\n- **Expected:** the YAML error, as `workline review` prints it in the same repository (`config-invalid: .workline/config.yaml: yaml: line 1: did not find expected ',' or ']'`), and exit code 1.\n- **Actual:** `block — ;` with an empty reason, then `block — no doc changed`, exit code 0.\n- **Version:** v0.70.1, and main at c1db7ca. Linux, every time.\n\n## Validation\n\n- **Broken config:** Given a repository whose `.workline/config.yaml` is not valid YAML, When I run `workline docs`, Then it prints the YAML error and exits 1.\n- **Valid config:** Given a repository with a valid `.workline/config.yaml` and no doc changed, When I run `workline docs`, Then it prints `pass — no doc changed` and exits 0, as today.\n\n---\n\n## Verification\n\n- A test with a `.workline/config.yaml` that is not valid YAML runs `workline docs`. It checks that the output holds the YAML error, as `workline review` prints it (`config-invalid: .workline/config.yaml: yaml: line 1: did not find expected ',' or ']'`). It also checks that the exit code is 1.\n- The same test checks that the output has no `block — ;` line with an empty reason and no `block — no doc changed` line.\n- A test with a valid config and no doc changed checks that `workline docs` still prints `pass — no doc changed` and exits 0.\n\n## Scope\n\nGuessed: the code given shows only folder listings, not the files, so the exact files are not known.\n- `cmd/workline/`: the `docs` command, where a config error must stop the run and give exit code 1.\n- `roles/documentalist/`: the part that judges the suspect docs, which returns a block with an empty reason when the config cannot be read.",
+   "labels": [
+    "bug"
+   ],
+   "author": "JN0V",
+   "insider": true,
+   "closed": true,
+   "comments": [
+    {
+     "body": "**The product owner**, on 2026-11-04:\n\n- Named the code #1003 is about: roles/documentalist, cmd. The only code given is `.workline/config.yaml`, which is the broken input and not the code at fault. The fault is in the `workline docs` command and the documentalist's handling of a…\n- Labelled #1003 `bug`, a bug: `workline docs` used to report a broken config as an error and now prints an empty block reason and exits 0; the expected behaviour matches what `workline review` already does in the same repository Wrong? Chan…\n- Added: Verification, Scope. Changed: —. See the issue's edit history.\n- Moved #1003 to ready: the reviewer read its spec (round 1): no important finding open\n\n<!-- What workline knows of this issue, edited by the engine, not by hand.\n```yaml\nsources: [roles/documentalist, cmd]\nconfirmed: c1db7ca3\njudged: c1db7ca3\nbody: 80b80ca7364e\nsections:\n    Need: People whose `.workline/config.yaml` has a typo run `workline docs`, get a block with no reason and exit code 0, and believe their docs were judged.\n    Scope: |-\n        Guessed: the code given shows only folder listings, not the files, so the exact files are not known.\n        - `cmd/workline/`: the `docs` command, where a config error must stop the run and give exit code 1.\n        - `roles/documentalist/`: the part that judges the suspect docs, which returns a block with an empty reason when the config cannot be read.\nwrote:\n    Scope: df9c9ddba68f\n    Verification: 6c5071b05deb\ndone:\n    - act: ready\n      level: normal\ndid:\n    - act: sources\n      level: normal\n      day: \"2026-11-04\"\n      at: c1db7ca3\n      model: claude:claude-sonnet-5-5\n      body: 8f6ca6eb53f0\n      line: 'Named the code #1003 is about: roles/documentalist, cmd. The only code given is `.workline/config.yaml`, which is the broken input and not the code at fault. The fault is in the `workline docs` command and the documentalist''s handling of a…'\n    - act: kind\n      level: normal\n      day: \"2026-11-04\"\n      at: c1db7ca3\n      model: claude:claude-sonnet-5-5\n      body: 8f6ca6eb53f0\n      line: 'Labelled #1003 `bug`, a bug: `workline docs` used to report a broken config as an error and now prints an empty block reason and exits 0; the expected behaviour matches what `workline review` already does in the same repository Wrong? Chan…'\n    - act: refine\n      level: normal\n      day: \"2026-11-04\"\n      at: c1db7ca3\n      model: claude:claude-sonnet-5-5\n      body: 8f6ca6eb53f0\n      line: 'Added: Verification, Scope. Changed: —. See the issue''s edit history.'\n    - act: ready\n      level: normal\n      day: \"2026-11-04\"\n      at: c1db7ca3\n      model: claude:claude-sonnet-5-5\n      body: 80b80ca7364e\n      line: 'Moved #1003 to ready: the reviewer read its spec (round 1): no important finding open'\nheard: 0\nrules: 2\nkind: bug\n```\n-->\n\n<!-- workline:sticky=product-owner/state -->",
+     "created": "2026-11-04T00:55:56Z",
+     "author": "workline-bot",
+     "bot": true
+    },
+    {
+     "body": "**workline's line** last woke the developer on this issue, in its state ready (3 state steps so far). Edited by the engine, not by hand.\n\n<!-- workline:line-record {\"state\":\"ready\",\"body\":\"80b80ca7364e\",\"labeled\":\"2026-11-04T01:03:01Z\",\"hops\":3,\"woke\":\"2026-11-04T01:03:17Z\",\"held\":[85,243,313,700],\"ran\":\"2026-11-04T01:03:17Z\"} -->\n\n<!-- workline:sticky=line/state -->",
+     "created": "2026-11-04T00:56:05Z",
+     "author": "workline-bot",
+     "bot": true
+    },
+    {
+     "body": "**workline reviewer**, its spec — 1 findings on the spec, 1 question for a person; lenses: ambiguous, unverifiable, out-of-scope, contradicted; tokens: 9631 in, 955 out (2 calls), of 300000 a run (ai-max-tokens).\n\nNo important finding open: the product owner may move it to ready.\n\n| | | Where | Finding |\n|---|---|---|---|\n| warns | unverifiable | `#1003:34` | Nit: Verification pins exact YAML error wording — The test asserts the full parser message, which depends on the YAML library version. A library upgrade changes the text and fails the test with the Need still met. The Need only asks that the error show. Fix: Check for the `config-invalid: .workline/config.yaml` prefix, or share the message with the review test. |\n| warns | finding-judged-no |  | dropped, from the out-of-scope lens: \"Scope is guessed and unconfirmed\" at #1003:40 — the judge: the finding only guesses that the fix 'may be settled in the config loading shared with review', while the Scope names `cmd/workline/`, where the `docs` command must stop on a config error and exit 1, which covers what the Need asks. (independence: model (claude-sonnet-5-5 → claude-opus-5-5)) |\n\n**Questions for a person**\n\nNot defects, not judged: choices the spec leaves to a person; a reply here is enough, they hold nothing.\n\n- `#1003:42` (ambiguous): Should the config error be caught in the docs command before judging, or should the documentalist return an error instead of an empty-reason block, or both? On: “`roles/documentalist/`: the part that judges the suspect docs, which returns a block with an empty reason when the config cannot be read.”\n\nThe reviewer never edits the issue nor moves it: the product owner answers, a person decides.\n\n<!-- workline:spec-review body=80b80ca7364e round=1 open=0 in= -->\n\n<!-- workline:sticky=reviewer/spec -->",
+     "created": "2026-11-04T00:59:10Z",
+     "author": "workline-bot",
+     "bot": true
+    },
+    {
+     "body": "**The tester** wrote the acceptance tests of this issue, as a Draft.\n\n- **Why**: each of its 2 scenarios has its test in the Draft's Tests table, or its reason under Not tested (1, for a real try), the tests red on the base and passing the project's lint.\n- **Next**: it is ready: whoever builds it starts from the Draft, workline/tester/issue-1003.\n\n\n<!-- workline:sticky=tester/issue -->",
+     "created": "2026-11-04T01:03:04Z",
+     "author": "workline-bot",
+     "bot": true
+    },
+    {
+     "body": "**The developer** takes this issue: the first ready one nobody took, in the backlog's order. `workline:developing` says so; a person who takes it back removes the label, or assigns themselves.\n\nRefused at apply, left out of its code:\n\n- `cmd/workline/workline`: not a text file (a link, a binary, a submodule): the developer writes text files, so refused and reverted; a person must do it\n\nIts code on the project's tests:\n\n- `go run gotest.tools/gotestsum@v1.12.3 --junitfile {report} -- {packages}`: 20 tests passed, none red.\n- On the folders its code and the acceptance tests touch: `./cmd/workline`. This pull request's own CI runs the whole suite.\n- Run on a fresh checkout of 472d285, its code laid on it: not its agent's worktree.\n\n<!-- workline:developer-act {\"act\":\"pick\",\"at\":\"c1db7ca3e958920c960372be0b709e840e0fa782\",\"issue\":1003,\"refused\":[{\"file\":\"cmd/workline/workline\",\"rule\":\"not-text\"}],\"proof\":{\"result\":\"green\",\"command\":\"go run gotest.tools/gotestsum@v1.12.3 --junitfile {report} -- {packages}\",\"passed\":20,\"tree\":\"fresh\",\"at\":\"472d28596d010688e5f28848a998c19bbd2289fb\",\"scope\":\"touched\",\"packages\":[\"./cmd/workline\"]},\"turns\":8,\"tokens\":19296,\"cached\":111428,\"tools\":{\"Bash\":5,\"Grep\":1,\"Read\":1},\"from\":\"472d28596d010688e5f28848a998c19bbd2289fb\",\"acceptance\":[\"cmd/workline/docs_broken_config_test.go\"],\"code\":[\"cmd/workline/main.go\"]} -->\n\n\n<!-- workline:sticky=developer/claim -->",
+     "created": "2026-11-04T01:10:10Z",
+     "author": "workline-bot",
+     "bot": true
+    }
+   ],
+   "label-events": [
+    {
+     "label": "workline:to-refine",
+     "added": true,
+     "created": "2026-11-04T00:54:32Z",
+     "author": "JN0V",
+     "insider": true,
+     "writer": true
+    },
+    {
+     "label": "bug",
+     "added": true,
+     "created": "2026-11-04T00:55:59Z",
+     "author": "workline-bot",
+     "bot": true
+    },
+    {
+     "label": "workline:needs-tests",
+     "added": true,
+     "created": "2026-11-04T01:00:21Z",
+     "author": "workline-bot",
+     "bot": true
+    },
+    {
+     "label": "workline:to-refine",
+     "added": false,
+     "created": "2026-11-04T01:00:23Z",
+     "author": "workline-bot",
+     "bot": true
+    },
+    {
+     "label": "workline:ready",
+     "added": true,
+     "created": "2026-11-04T01:03:01Z",
+     "author": "workline-bot",
+     "bot": true
+    },
+    {
+     "label": "workline:needs-tests",
+     "added": false,
+     "created": "2026-11-04T01:03:02Z",
+     "author": "workline-bot",
+     "bot": true
+    },
+    {
+     "label": "workline:developing",
+     "added": true,
+     "created": "2026-11-04T01:10:09Z",
+     "author": "workline-bot",
+     "bot": true
+    },
+    {
+     "label": "workline:developing",
+     "added": false,
+     "created": "2026-11-04T01:21:56Z",
+     "author": "workline-bot",
+     "bot": true
+    },
+    {
+     "label": "workline:ready",
+     "added": false,
+     "created": "2026-11-04T01:21:56Z",
+     "author": "workline-bot",
+     "bot": true
+    }
+   ],
+   "reason": "completed"
+  }
+ ],
+ "merge-requests": [],
+ "dependencies": true,
+ "sub-issues": true,
+ "writes": 0
+}

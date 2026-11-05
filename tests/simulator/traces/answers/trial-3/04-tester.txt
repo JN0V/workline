@@ -1,0 +1,73 @@
+- note: |
+    Cap exceeded: I could not see any OTA test or the TEST-8 mocks, so the test file below is written blind. Check the include lines, the folder name and the native stub for HAL::OTAUpdate before relying on it.
+
+    The test drives OTAComponent directly, not through OTAWebUI. The upload answer's error is `ota->getLastError()` copied after each chunk, so the component's last error is what decides it.
+
+    It does not check that no flash write happens after the refusal. That needs a write counter in the TEST-8 mock, and I did not know whether one exists.
+
+- patch: |
+    --- /dev/null
+    +++ b/DomoticsCore-OTA/test/test_ota_chunk_refusal/test_ota_chunk_refusal.cpp
+    @@ -0,0 +1,66 @@
+    +#include <unity.h>
+    +#include <DomoticsCore/OTA.h>
+    +
+    +using namespace DomoticsCore::Components;
+    +
+    +void setUp() {}
+    +void tearDown() {}
+    +
+    +static OTAConfig capConfig() {
+    +    OTAConfig cfg;
+    +    cfg.maxDownloadSize = 1000;
+    +    cfg.requireUploadHash = false;
+    +    cfg.autoReboot = false;
+    +    cfg.checkIntervalMs = 0;
+    +    return cfg;
+    +}
+    +
+    +// Scenario: Cap exceeded
+    +// Given an upload announcing N bytes,
+    +// When more than N bytes are delivered,
+    +// Then the answer says `Firmware too large`, not `Upload not active`.
+    +void test_cap_exceeded() {
+    +    OTAComponent ota(capConfig());
+    +    ota.begin();
+    +
+    +    uint8_t buf[400];
+    +    for (size_t i = 0; i < sizeof(buf); ++i) buf[i] = static_cast<uint8_t>(i);
+    +
+    +    TEST_ASSERT_TRUE(ota.beginUpload(1000, String("")));
+    +    TEST_ASSERT_TRUE(ota.acceptUploadChunk(buf, 400));
+    +    TEST_ASSERT_TRUE(ota.acceptUploadChunk(buf, 400));
+    +
+    +    // The chunk that crosses the cap.
+    +    TEST_ASSERT_FALSE(ota.acceptUploadChunk(buf, 400));
+    +    TEST_ASSERT_EQUAL_STRING("Firmware too large", ota.getLastError().c_str());
+    +    TEST_ASSERT_FALSE(ota.isBusy());
+    +
+    +    // Further chunks and the final call keep the same error.
+    +    TEST_ASSERT_FALSE(ota.acceptUploadChunk(buf, 400));
+    +    TEST_ASSERT_EQUAL_STRING("Firmware too large", ota.getLastError().c_str());
+    +    TEST_ASSERT_FALSE(ota.acceptUploadChunk(buf, 400));
+    +    TEST_ASSERT_EQUAL_STRING("Firmware too large", ota.getLastError().c_str());
+    +    TEST_ASSERT_FALSE(ota.finalizeUpload());
+    +    TEST_ASSERT_EQUAL_STRING("Firmware too large", ota.getLastError().c_str());
+    +    TEST_ASSERT_FALSE(ota.isBusy());
+    +}
+    +
+    +#ifdef ARDUINO
+    +void setup() {
+    +    delay(2000);
+    +    UNITY_BEGIN();
+    +    RUN_TEST(test_cap_exceeded);
+    +    UNITY_END();
+    +}
+    +void loop() {}
+    +#else
+    +int main(int, char**) {
+    +    UNITY_BEGIN();
+    +    RUN_TEST(test_cap_exceeded);
+    +    return UNITY_END();
+    +}
+    +#endif

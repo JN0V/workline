@@ -1,0 +1,27 @@
+- kind: {issue: 36, kind: bug, why: "resetReconnect() leaves Connected without telling anyone, and the uptime stays frozen after a drop. Both break what the component promises with mqtt/connected and mqtt/disconnected. A test can show it."}
+- sources:
+    issue: 36
+    sources: ["DomoticsCore-MQTT/include/DomoticsCore/MQTT_impl.h", "DomoticsCore-MQTT/include/DomoticsCore/MQTT.h", "DomoticsCore-HomeAssistant/include/DomoticsCore/HomeAssistant.h"]
+    quote:
+      path: DomoticsCore-MQTT/include/DomoticsCore/MQTT_impl.h
+      text: "inline void MQTTComponent::resetReconnect() {"
+    why: "The issue names resetReconnect, MQTTStatistics and the announcement of a lost link, which are in these files. HomeAssistant.h holds the mqttConnected flag that stays true."
+- refine:
+    issue: 36
+    need: |
+      Operators and other components that watch the MQTT link need it to be reported truthfully. Today a reset after a broker change hides the link state, a dropped link leaves no trace in the statistics, and a missed disconnect notice leaves Home Assistant believing the device is online.
+    validation: |
+      - **Silent reset:** Given a connected MQTT component, When `resetReconnect()` is called, Then subscribers get `mqtt/disconnected` before any later `mqtt/connected`.
+      - **Link flap:** Given a connected component whose link drops and returns twice, When I read the statistics, Then they show two losses.
+      - **Frozen uptime:** Given a dropped link, When I read the statistics during the outage, Then the uptime no longer reads as live.
+    verification: |
+      - A native test calls `resetReconnect()` while connected and checks that `mqtt/disconnected` is emitted once, before the next `mqtt/connected`.
+      - A native test drops the link twice and checks a new loss counter in the statistics equals 2.
+      - A native test checks that uptime is reset or stops advancing while the link is down.
+      - The third leftover (a disconnect notice lost on a full event queue) is a design decision. It gets its own test once a person decides between sticky publication and leaving it as it is.
+    scope: |
+      - `resetReconnect()`, `updateStatistics()` and `announceConnectionLost()` in [MQTT_impl.h](https://github.com/JN0V/DomoticsCore-trial/blob/HEAD/DomoticsCore-MQTT/include/DomoticsCore/MQTT_impl.h).
+      - `MQTTStatistics` in [MQTT.h](https://github.com/JN0V/DomoticsCore-trial/blob/HEAD/DomoticsCore-MQTT/include/DomoticsCore/MQTT.h).
+      - The `mqttConnected` handling in [HomeAssistant.h](https://github.com/JN0V/DomoticsCore-trial/blob/HEAD/DomoticsCore-HomeAssistant/include/DomoticsCore/HomeAssistant.h), only if sticky publication is chosen.
+    sources: ["DomoticsCore-MQTT/include/DomoticsCore/MQTT_impl.h", "DomoticsCore-MQTT/include/DomoticsCore/MQTT.h", "DomoticsCore-HomeAssistant/include/DomoticsCore/HomeAssistant.h"]
+    why: "The three leftovers share one file and one need, and the machine can prove the first two. The third needs a person's decision."

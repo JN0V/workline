@@ -119,9 +119,19 @@ const (
 	pQuiet      = "quiet-within-k"
 	pEnd        = "expected-end"
 	pOneByte    = "one-byte-due"
+	pNeeds      = "needs-input-on-its-source"
+	pRequests   = "requests-a-tick"
 )
 
-var seeded = []string{pAttributed, pOneLabel, pI3, pBudget, pI2}
+var seeded = []string{pAttributed, pOneLabel, pI3, pBudget, pI2, pRequests}
+
+// maxRequests bounds the forge's requests in one reconcile of a trace's
+// one issue, reads and writes, the role scripts' with the engine's.
+// Measured on 2026-11-05: a quiet tick reads 3, as ADR-0063 §11
+// estimates (3 to 5 an issue); a tick running a step, 45 to 121, the
+// step's own reads and writes. The bound leaves room above the highest,
+// and is raised only with the measure that needs it.
+const maxRequests = 150
 
 // checks is what a run checks: every property (all) but those set aside
 // (skip), or some (only), up to a tick.
@@ -183,8 +193,14 @@ func (w *world) tickChecks(c checks, k int, before, after forge.FakeState, res, 
 		}
 		bs, bh, had := record(*b)
 		as, ah, has := record(*a)
-		if !slices.Equal(slices.Sorted(slices.Values(b.Labels)), slices.Sorted(slices.Values(a.Labels))) ||
-			had && (bs != as && as != stateName(w.cfg, a.Labels) || bh != ah) || !had && has && ah != 1 {
+		// The claim's labels say no one state while #1081 stands: its
+		// record is held to its hops only.
+		claim := cl.Role == "developer" && claimed(b.Labels, a.Labels)
+		// A record catching up counts the hop its labels made before,
+		// by another role's hand-back: one, never more.
+		catchUp := bs != as && as == stateName(w.cfg, a.Labels)
+		if !sameLabels(b.Labels, a.Labels) && !claim ||
+			had && (bs != as && !catchUp && !claim || bh != ah && (!catchUp || ah != bh+1)) || !had && has && ah != 1 {
 			return fail(pI3, "#%d after the %s's %s: %s, was %s", cl.Issue, cl.Role, cl.Kind, trail(*a), trail(*b))
 		}
 	}
@@ -231,8 +247,38 @@ func (w *world) tickChecks(c checks, k int, before, after forge.FakeState, res, 
 				}
 			}
 		}
-		if last != nil && (!last.Kind.machine() || errs > budget) {
+		// A replayed answer asked again at once, in the same run, the
+		// engine could not read: a machine error the simulator cannot
+		// name beforehand, the answer being the trial's.
+		if last != nil && (!last.Kind.machine() && (last.Kind != replayed || last.Tick != cl.Tick) || errs > budget) {
 			return fail(pI2, "the %s ran on #%d's input %s again, after a %s", cl.Role, cl.Issue, cl.Digest, last.Kind)
+		}
+	}
+	// A needs-input ends Due or Waiting on its source, as the line says
+	// it right after (the second run): the engine's, Due; another role's,
+	// Due on that role, or Waiting on it; a person's, Waiting.
+	for _, cl := range lastCalls(calls) {
+		a := issueOf(after, cl.Issue)
+		if !cl.Kind.needs() || !c.on(pNeeds) || a == nil || a.Closed {
+			continue
+		}
+		st, said := status(again, cl.Issue)
+		_, next, _ := w.cfg.Wakes(a.Labels, line.IssueEvent)
+		ok := false
+		switch cl.Kind {
+		case needsEngine:
+			ok = st == "due"
+		case needsRole:
+			ok = st == "due" && (again.Woke[cl.Issue] == "product-owner" || next == "product-owner") ||
+				st == "waiting" && strings.Contains(said, "product owner")
+		case needsPerson:
+			ok = st == "waiting"
+		}
+		if !ok {
+			if st == "" {
+				st = "no status"
+			}
+			return fail(pNeeds, "#%d after the %s's %s: %s (%s), %s", cl.Issue, cl.Role, cl.Kind, st, trail(*a), said)
 		}
 	}
 	// The same tick twice starts no second step: the second run starts
@@ -256,6 +302,23 @@ func (w *world) tickChecks(c checks, k int, before, after forge.FakeState, res, 
 	return nil
 }
 
+func sameLabels(a, b []string) bool {
+	return slices.Equal(slices.Sorted(slices.Values(a)), slices.Sorted(slices.Values(b)))
+}
+
+// claimed: after is before with the developer's claim, made at its wake
+// before its agent runs (ADR-0059 §2): workline:developing on, in place
+// of workline:ready or, while #1081 stands, beside it. The claim is the
+// step's start, not its agent's outcome: I3 holds from it on.
+func claimed(before, after []string) bool {
+	if !slices.Contains(before, "workline:ready") || slices.Contains(before, "workline:developing") {
+		return false
+	}
+	beside := append(slices.Clone(before), "workline:developing")
+	instead := append(slices.DeleteFunc(slices.Clone(before), func(l string) bool { return l == "workline:ready" }), "workline:developing")
+	return sameLabels(after, beside) || sameLabels(after, instead)
+}
+
 // stateName is the name of the state labels say, "" for none.
 func stateName(cfg *routing.Config, labels []string) string {
 	s, _ := cfg.StateOf(labels)
@@ -276,24 +339,75 @@ func lastCalls(calls []call) []call {
 // runTrace runs a trace with an agent following script, checking c, and
 // returns the first property broken and the run's log.
 func runTrace(t *testing.T, tr trace, script []outcome, c checks) (*failure, string) {
+	f, log, _ := measured(t, tr, script, c)
+	return f, log
+}
+
+// measure is what a run measured, tick by tick: the forge's requests and
+// the agent's calls of each tick's reconcile; the states its issue went
+// through, run by run, each once in a row.
+type measure struct {
+	requests, calls []int
+	path            []string
+}
+
+func (m measure) String() string {
+	top := func(xs []int) (int, float64) {
+		hi, sum := 0, 0
+		for _, x := range xs {
+			hi, sum = max(hi, x), sum+x
+		}
+		if len(xs) == 0 {
+			return 0, 0
+		}
+		return hi, float64(sum) / float64(len(xs))
+	}
+	rh, rm := top(m.requests)
+	ch, cm := top(m.calls)
+	return fmt.Sprintf("forge requests a tick: highest %d, mean %.1f; agent calls a tick: highest %d, mean %.1f, over %d ticks", rh, rm, ch, cm, len(m.requests))
+}
+
+// step adds the state the trace's issues are in to the path, when it is
+// another than the last.
+func (m *measure) step(cfg *routing.Config, s forge.FakeState) {
+	for _, is := range s.Issues {
+		st := stateName(cfg, is.Labels)
+		if is.Closed {
+			st = "done"
+		}
+		if st != "" && (len(m.path) == 0 || m.path[len(m.path)-1] != st) {
+			m.path = append(m.path, st)
+		}
+	}
+}
+
+// measured is runTrace, with what it measured.
+func measured(t *testing.T, tr trace, script []outcome, c checks) (*failure, string, measure) {
 	a := &simAgent{script: script}
 	w := newWorld(t, tr, a)
 	var log strings.Builder
+	var ms measure
+	ms.step(w.cfg, w.state(t))
 	k := w.k()
 	quiet := false
 	for i := range k {
 		if !c.all && i > c.until {
-			return nil, log.String()
+			return nil, log.String(), ms
 		}
 		tick = i
 		at := start.Add(time.Duration(i) * period)
 		before := w.state(t)
 		n := len(a.calls)
+		r := w.requests(t)
 		res := w.run(at)
+		ms.requests = append(ms.requests, w.requests(t)-r)
 		mid := w.state(t)
+		ms.step(w.cfg, mid)
 		calls := slices.Clone(a.calls[n:])
+		ms.calls = append(ms.calls, len(calls))
 		m := len(a.calls)
 		again := w.run(at)
+		ms.step(w.cfg, w.state(t))
 		fmt.Fprintf(&log, "tick %d: %s; woke %v; calls %v\n", i, res.Summary, res.Woke, calls)
 		if len(again.Woke) > 0 {
 			fmt.Fprintf(&log, "  again: woke %v; calls %v\n", again.Woke, a.calls[m:])
@@ -305,26 +419,30 @@ func runTrace(t *testing.T, tr trace, script []outcome, c checks) (*failure, str
 		}
 		if len(calls) > 0 || len(res.Woke) > 0 {
 			for _, f := range res.Findings {
-				if f.Level != "info" {
+				if f.Level != "info" || os.Getenv("SIM_INFO") != "" {
 					fmt.Fprintf(&log, "  %s %s %s: %.200s\n", f.Level, f.Rule, f.Where, f.Message)
 				}
 			}
 		}
 		if f := w.tickChecks(c, i, before, mid, res, again, calls); f != nil {
-			return f, log.String()
+			return f, log.String(), ms
+		}
+		if got := ms.requests[i]; got > maxRequests && c.on(pRequests) {
+			return &failure{Property: pRequests, Tick: i, Detail: fmt.Sprintf("%d requests to the forge in one reconcile, more than %d", got, maxRequests)}, log.String(), ms
 		}
 		// Between two ticks, the forge merges what is ready to.
 		merged := w.merge(t, at.Add(period/2))
 		if len(merged) > 0 {
 			fmt.Fprintf(&log, "  forge: %v\n", merged)
+			ms.step(w.cfg, w.state(t))
 		}
 		quiet = len(merged) == 0 && len(calls) == 0 && len(res.Woke) == 0 && mid.Writes == before.Writes
 	}
 	if !c.all {
-		return nil, log.String()
+		return nil, log.String(), ms
 	}
 	if !quiet && c.on(pQuiet) {
-		return &failure{Property: pQuiet, Tick: k - 1, Detail: fmt.Sprintf("still acting after K = %d ticks", k)}, log.String()
+		return &failure{Property: pQuiet, Tick: k - 1, Detail: fmt.Sprintf("still acting after K = %d ticks", k)}, log.String(), ms
 	}
 	// The trace's end: Done, or Waiting on what it names.
 	at := start.Add(time.Duration(k) * period)
@@ -340,7 +458,7 @@ func runTrace(t *testing.T, tr trace, script []outcome, c checks) (*failure, str
 			if is.Closed {
 				st = "done"
 			}
-			return &failure{Property: pEnd, Tick: k, Detail: fmt.Sprintf("#%d %s (%s), not %s: %s", is.ID, st, trail(is), tr.end, said)}, log.String()
+			return &failure{Property: pEnd, Tick: k, Detail: fmt.Sprintf("#%d %s (%s), not %s: %s", is.ID, st, trail(is), tr.end, said)}, log.String(), ms
 		}
 	}
 	// One byte of a body changed makes its open issue due.
@@ -354,10 +472,10 @@ func runTrace(t *testing.T, tr trace, script []outcome, c checks) (*failure, str
 		}
 		if res := w.run(at); res.Woke[is.ID] == "" && c.on(pOneByte) {
 			st, said := status(res, is.ID)
-			return &failure{Property: pOneByte, Tick: k, Detail: fmt.Sprintf("#%d's body changed, not due: %s %s", is.ID, st, said)}, log.String()
+			return &failure{Property: pOneByte, Tick: k, Detail: fmt.Sprintf("#%d's body changed, not due: %s %s", is.ID, st, said)}, log.String(), ms
 		}
 	}
-	return nil, log.String()
+	return nil, log.String(), ms
 }
 
 // pending reads pending.txt: per trace, the properties it breaks today,
@@ -398,11 +516,17 @@ func TestTraces(t *testing.T) {
 			props := want[tr.name]
 			for j := 0; j <= len(props); j++ {
 				c := checks{all: true, skip: props[:j]}
-				f1, log1 := runTrace(t, tr, nil, c)
+				f1, log1, m1 := measured(t, tr, nil, c)
 				if j == 0 {
-					f2, log2 := runTrace(t, tr, nil, c)
-					if log1 != log2 || f1.String() != f2.String() {
+					f2, log2, m2 := measured(t, tr, nil, c)
+					if log1 != log2 || f1.String() != f2.String() || m1.String() != m2.String() {
 						t.Fatalf("deterministic: the same trace ran twice differs\n--- first\n%s%s\n--- second\n%s%s", log1, f1, log2, f2)
+					}
+				}
+				if j == len(props) {
+					t.Log(m1)
+					if tr.replay {
+						checkReplay(t, tr, m1.path)
 					}
 				}
 				if os.Getenv("SIM_LOG") != "" {
@@ -430,6 +554,79 @@ func TestTraces(t *testing.T) {
 				return
 			}
 		})
+	}
+}
+
+// trialPath is the states the trace's issue went through in the trial,
+// each once in a row, from its label events: from the person's
+// workline:to-refine on, as a fresh trace starts.
+func trialPath(t *testing.T, tr trace) []string {
+	data, err := os.ReadFile(filepath.Join("traces", tr.file+".json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var s forge.FakeState
+	if err := json.Unmarshal(data, &s); err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := routing.Load(repoTemplate)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var m measure
+	for _, is := range s.Issues {
+		var labels []string
+		on := false
+		for _, e := range is.LabelEvents {
+			on = on || e.Label == "workline:to-refine" && e.Added
+			if e.Added {
+				labels = append(labels, e.Label)
+			} else {
+				labels = slices.DeleteFunc(labels, func(l string) bool { return l == e.Label })
+			}
+			if on {
+				m.step(cfg, forge.FakeState{Issues: []forge.FakeItem{{Labels: labels}}})
+			}
+		}
+		if is.Closed && is.Reason != "not_planned" {
+			m.step(cfg, forge.FakeState{Issues: []forge.FakeItem{{Closed: true}}})
+		}
+	}
+	return m.path
+}
+
+// parting is where the simulator's path parts from the trial's, "none"
+// when it follows it to its end.
+func parting(trial, sim []string) string {
+	for i, st := range trial {
+		switch {
+		case i >= len(sim):
+			return fmt.Sprintf("after %s, the trial went on to %s, the simulator stopped", sim[i-1], st)
+		case sim[i] != st && i == 0:
+			return fmt.Sprintf("at the start: the trial in %s, the simulator in %s", st, sim[i])
+		case sim[i] != st:
+			return fmt.Sprintf("after %s: the trial went to %s, the simulator to %s", sim[i-1], st, sim[i])
+		}
+	}
+	return "none"
+}
+
+// checkReplay checks a replayed trace takes the trial's path, or parts from
+// it where traces/answers/<file>/parts says on its first line, what
+// parting says, why on the lines below. A line that no longer holds
+// fails, the one to write instead given.
+func checkReplay(t *testing.T, tr trace, sim []string) {
+	trial := trialPath(t, tr)
+	got := parting(trial, sim)
+	t.Logf("the trial's path %v; the simulator's %v; parts: %s", trial, sim, got)
+	file := filepath.Join("traces", "answers", tr.file, "parts")
+	data, err := os.ReadFile(file)
+	if err != nil {
+		t.Errorf("%s: %v; it parts: %s", file, err, got)
+		return
+	}
+	if want, _, _ := strings.Cut(string(data), "\n"); want != got {
+		t.Errorf("%s says it parts %q; it parts %q: write that on its first line, why below it", file, want, got)
 	}
 }
 
@@ -474,15 +671,15 @@ func scriptOf(seed int64) []outcome {
 	rng := rand.New(rand.NewSource(seed))
 	s := make([]outcome, 48)
 	for i := range s {
-		switch r := rng.Intn(10); {
-		case r < 5:
+		switch r := rng.Intn(16); {
+		case r < 6:
 			s[i] = progress
-		case r < 7:
+		case r < 8:
 			s[i] = waiting
-		case r < 9:
+		case r < 10:
 			s[i] = machineError
 		default:
-			s[i] = malformed
+			s[i] = []outcome{malformed, hunk, broken, needsEngine, needsRole, needsPerson}[r-10]
 		}
 	}
 	return s
@@ -524,17 +721,22 @@ func parseScript(v string) []outcome {
 // to the tick its first pending property breaks.
 // A seed's failure is never pending: it prints the seed and its shrunk
 // script (SIM_SEED, SIM_SCRIPT; SIM_TRACE takes one trace).
+// The seeds draw over the plain traces: a case's point is its own answer,
+// a replay's the trial's, both run by TestTraces. A needs-input on its
+// source is held there too, on the named needs traces, not under seeds
+// while #1082 and #1084 stand: every needs-input answer breaks it.
 func TestSeeds(t *testing.T) {
 	want := pending(t)
 	base, n := seeds()
 	var runs []trace
 	limits := map[string]checks{}
 	for _, tr := range traces {
-		if v := os.Getenv("SIM_TRACE"); v != "" && v != tr.name {
+		v := os.Getenv("SIM_TRACE")
+		if v != "" && v != tr.name || v == "" && (tr.by != nil || tr.replay) {
 			continue
 		}
 		runs = append(runs, tr)
-		limits[tr.name] = checks{all: true, skip: []string{pEnd}}
+		limits[tr.name] = checks{all: true, skip: []string{pEnd, pNeeds}}
 		if len(want[tr.name]) > 0 {
 			f, _ := runTrace(t, tr, nil, checks{all: true})
 			if f == nil {

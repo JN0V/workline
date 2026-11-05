@@ -190,19 +190,36 @@ step 1):
   a row, on the fake forge, its clock fixed by `WORKLINE_CLOCK`, with one
   fake agent whose state lasts across the ticks (`hook:<name>`).
 - **Frozen traces**: `traces/*.json`, real issues exported read-only, as
-  the fake forge's file; their pull requests' branches in origin.
+  the fake forge's file; their pull requests' branches in origin. The
+  trial's issues, and workline's own eleventh run (three bugs merged with
+  no person), as they were opened.
 - **A C++ fixture**: `fixture/`, the trial's Scope paths, built by
   `g++` with the trial's `build-errors` shapes; no `g++`, the suite fails.
+  Beside it, the Go packages the eleventh run names, tested by `go test`.
 - **The fake's progress**: the product owner readies, unblocks or names
   a proof; the tester's test is red by a missing name, the developer's
-  fix adds it. `SIM_DUMP=<dir>` keeps each task.
+  fix adds it. `SIM_DUMP=<dir>` keeps each task; `SIM_INFO=1` logs every
+  finding.
+- **Every answer kind**, as a named trace on a real issue and in the
+  seeded scripts: a malformed answer, a miscounted hunk, a test or code
+  that does not build, needs-input from the engine, the product owner or
+  a person. A role with no form today for a kind answers its progress.
+- **The trial's answers replayed**: `traces/answers/<trace>/`, the agent
+  answers its runs kept, given back role by role; the trial's path, read
+  from its label events, is compared with the simulator's, and `parts`
+  names where they part, why below. A developer's `[]` is left out: its
+  code was in its worktree.
+- **Requests a tick**: the fake forge counts its reads in a file beside
+  it (`forge.ReadsLog`); each trace prints the forge's requests and the
+  agent's calls a tick, the highest and the mean, and fails past a bound.
 - **The forge between ticks** merges a pull request out of draft that
   closes an issue not blocked, and closes the issue.
 - **Properties after each tick**: one state label at a time; a machine
-  error moves nothing; no person waited on while a retry is left; every
+  error moves nothing, from the developer's claim at its wake on; no person waited on while a retry is left; every
   open issue has a status; never the same input twice, by the
   simulator's own digest of what the agent received; the same tick twice
-  starts no second step. At the end: quiet within K ticks, the trace's
+  starts no second step; a needs-input ends Due or Waiting on its
+  source; the forge's requests within the bound. At the end: quiet within K ticks, the trace's
   expected end with an agent that always progresses (Done, or Waiting on
   what it names), one byte of a body changed makes the issue due. Each
   trace runs twice: the runs must match.
@@ -215,7 +232,8 @@ step 1):
 - **100 seeded outcome scripts** on a pull request, over every trace: a
   trace not pending is held to every property but its end; a pending
   one to those that hold whatever the agent answers (I2, I3, one state
-  label, no person waited on while a retry is left), but its own, up to
+  label, no person waited on while a retry is left, a needs-input on
+  its source, the requests' bound), but its own, up to
   the tick its first pending property breaks.
 - **A seed's failure** prints the seed and its shrunk script
   (`SIM_SEED`, `SIM_SCRIPT`, `SIM_TRACE`), and is never pending.

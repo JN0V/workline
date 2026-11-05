@@ -1,0 +1,16 @@
+I've finished the code change, but the acceptance test doesn't compile, so it can't pass as written. I've objected to it in `.workline/objections.yaml`.
+
+- **Code change (in scope):**
+  - In `MQTT_impl.h`, `announceConnectionLost()` now counts the loss and zeroes `uptime`.
+  - In `MQTT_impl.h`, `resetReconnect()` now closes the client session and announces the loss when the state is Connected.
+  - In `MQTT.h`, `MQTTStatistics` gets a `lostCount` field.
+- **Test run:** I ran `tools/workline-tests.sh` once. Every suite passes except `test_mqtt_dropped_link`, which errors at the build stage.
+- **Why it fails to build:** the test calls `HAL::MQTT::stubSetBrokerLink`, `HAL::WiFiHAL::stubSetConnected` and `HAL::Platform::stubAdvanceMillis`. None of the three exists in the tree.
+  - The tree's equivalents are `HAL::WiFiImpl::setConnectedForTest` and `HAL::Platform::setMillisForTest`/`advanceMillisForTest`.
+  - To drop the link, `MQTTComponent::getClientForTest()->disconnect()` is what the HomeAssistant dropped-link test uses.
+  - The stub files are outside my scope, so I couldn't add the missing names.
+- **Not yet checked:** because the MQTT test never built, my fix hasn't been run against its three scenarios.
+
+The objection (kind `interface`) covers all three scenarios.
+
+[]

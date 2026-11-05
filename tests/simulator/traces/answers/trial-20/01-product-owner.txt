@@ -1,0 +1,12 @@
+```yaml
+- kind: {issue: 20, kind: bug, why: "The constructor sets metadata.name to nameStr_.c_str(). After a copy or move of the component, the name pointer can refer to the old object's String. Code that breaks its own contract is a bug, and a test can show it."}
+- refine:
+    issue: 20
+    need: "An application that creates several named Storage instances and moves or copies them should not end up with a dangling component name."
+    validation: |
+      - **Copy keeps the name:** Given a StorageComponent built with a componentName, When it is copy-constructed and the original is destroyed, Then the copy's metadata.name still reads the same name.
+      - **Move keeps the name:** Given a StorageComponent built with a componentName, When it is move-constructed, Then the new object's metadata.name reads the same name and does not point into the old object's String.
+      - **Default name:** Given a StorageComponent built with no componentName, When it is copied or moved, Then metadata.name still reads "Storage".
+    sources: ["DomoticsCore-Storage/include/DomoticsCore/Storage.h"]
+    why: "The Need and Validation drafts are rewritten with the Draft: marker gone and their meaning kept. Validation now uses named Given/When/Then scenarios so the tester can read them."
+```

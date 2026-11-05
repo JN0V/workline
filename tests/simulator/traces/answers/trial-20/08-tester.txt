@@ -1,0 +1,67 @@
+- patch: |
+    --- /dev/null
+    +++ b/DomoticsCore-Storage/test/test_storage_name/test_storage_name.cpp
+    @@ -0,0 +1,80 @@
+    +// Acceptance tests for StorageComponent name safety on copy / move.
+    +// The original lives in a raw buffer that is scribbled over after it is
+    +// destroyed, so a name pointer into the old object's nameStr_ reads garbage.
+    +
+    +#include <DomoticsCore/Storage.h>
+    +#include <unity.h>
+    +#include <new>
+    +#include <cstring>
+    +
+    +using namespace DomoticsCore::Components;
+    +
+    +void setUp(void) {}
+    +void tearDown(void) {}
+    +
+    +namespace {
+    +alignas(StorageComponent) unsigned char g_buf[sizeof(StorageComponent)];
+    +
+    +StorageComponent* makeNamed() {
+    +    StorageConfig cfg;
+    +    cfg.componentName = "Store1";  // short: lives inside the String object
+    +    return new (g_buf) StorageComponent(cfg);
+    +}
+    +
+    +void destroyAndScribble(StorageComponent* p) {
+    +    p->~StorageComponent();
+    +    std::memset(g_buf, 0xAA, sizeof(g_buf));
+    +}
+    +}
+    +
+    +// Scenario: Copy keeps the name
+    +// Given a StorageComponent built with a componentName,
+    +// When it is copy-constructed and the original is destroyed,
+    +// Then the copy's metadata.name still reads the same name.
+    +void test_copy_keeps_the_name(void) {
+    +    StorageComponent* orig = makeNamed();
+    +    StorageComponent* copy = new StorageComponent(*orig);
+    +    destroyAndScribble(orig);
+    +    TEST_ASSERT_EQUAL_STRING("Store1", copy->metadata.name);
+    +    delete copy;
+    +}
+    +
+    +// Scenario: Move keeps the name
+    +// Given a StorageComponent built with a componentName,
+    +// When it is move-constructed,
+    +// Then the new object's metadata.name reads the same name and does not
+    +// point into the old object's String.
+    +void test_move_keeps_the_name(void) {
+    +    StorageComponent* orig = makeNamed();
+    +    const char* oldName = orig->metadata.name;
+    +    StorageComponent* moved = new StorageComponent(std::move(*orig));
+    +    TEST_ASSERT_TRUE(moved->metadata.name != oldName);
+    +    destroyAndScribble(orig);
+    +    TEST_ASSERT_EQUAL_STRING("Store1", moved->metadata.name);
+    +    delete moved;
+    +}
+    +
+    +int main(int, char**) {
+    +    UNITY_BEGIN();
+    +    RUN_TEST(test_copy_keeps_the_name);
+    +    RUN_TEST(test_move_keeps_the_name);
+    +    return UNITY_END();
+    +}
+- note: "Default name: kept as today: the existing suite guards it. The scenario passes on the current code (the literal \"Storage\" is unaffected by copy or move), so a test for it would pass today and is refused."

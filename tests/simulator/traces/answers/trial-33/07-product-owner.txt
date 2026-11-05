@@ -1,0 +1,19 @@
+```yaml
+- refine:
+    issue: 33
+    verification: |
+      - A native test calls `HeapTracker::getDelta()` with a checkpoint name that was never recorded, once as the start and once as the end. The test asserts that the caller can see an error. The native heap mock reports a non-zero free heap, so the old code subtracts a zero snapshot and returns a large number. The test fails today for that reason. The test first asserts that the recorded checkpoint has a non-zero free heap. The maintainer picks the form of the error (a sentinel value, a changed signature or a logged failure); the test pins down that form.
+      - A native test calls `getDelta()` with two recorded names and checks that the result is still the plain difference between them.
+      - Out of this work: `HeapTracker::checkpoint()`. Its own-node cost is already given back (`ownBytes_`, fixed with SIZE-6), and it is not changed here.
+      - The Storage heap suite `DomoticsCore-Storage/test/test_heap_esp8266/test_heap_esp8266.cpp` gets a `tearDown()` that checks that no `Core` it built is still running. Each `OpenStorage` shuts its `Core` down when it ends. A live-instance counter on `OpenStorage` goes up in the constructor and down in the destructor. `tearDown()` asserts the counter is 0, so a test that leaves a `Core` alive fails.
+      - After the on-device suite ends, a final test lists the Storage namespaces and asserts that these are absent: `heaptest`, `churn`, `overwrite`, `undrained`, `reclaim`, `nswarm`, `ns0` to `ns4`. Each test removes its own namespace, so the check can pass.
+      - Manual step on a board, which the machine cannot run: run the suite twice. Compare the free heap and the largest free block at the start of each run. Both must differ by no more than 64 bytes. A difference in the largest free block shows fragmentation that the free heap alone hides.
+      - When the work is done, the roadmap row LO-33 in `docs/CODE-ROADMAP.md` is marked done.
+    scope: |
+      `DomoticsCore-Core/include/DomoticsCore/Testing/HeapTracker.h` (`getDelta`), `DomoticsCore-Storage/test/test_heap_esp8266/test_heap_esp8266.cpp` (the suite, `OpenStorage`, `tearDown`), and the row LO-33 in `docs/CODE-ROADMAP.md`.
+    sources:
+      - DomoticsCore-Core/include/DomoticsCore/Testing/HeapTracker.h
+      - DomoticsCore-Storage/test/test_heap_esp8266/test_heap_esp8266.cpp
+      - docs/CODE-ROADMAP.md
+    why: Answers the reviewer's open finding on Core shutdown with a machine check, and fixes the tolerance, the mock behaviour and the roadmap scope.
+```

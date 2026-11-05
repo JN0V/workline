@@ -1,0 +1,6 @@
+- note: |
+    proof: none — the tests cannot be written reliably from what this task shows.
+
+    All three scenarios (Silent reset, Link flap, Frozen uptime) need a native test to connect the component and then drop the link. That takes the mock WiFi and MQTT client hooks from the existing tests, for example how they report WiFi as up, make `connected()` return false, and read the EventBus events. The three existing MQTT test files were not shown (test_mqtt_component, test_mqtt_config_apply, test_mqtt_limits_links), and neither were the mock HAL headers. Guessing those names would give tests that fail to compile, not tests that fail on the missing behaviour, and such tests would be refused.
+
+    The needed pieces are clear. Silent reset: connect, call `resetReconnect()`, and count `mqtt/disconnected` events (exactly one), then reconnect and check order. Link flap: drop and reconnect twice, then check a new `MQTTStatistics` loss counter equals 2 and stays 0 after `disconnect()`. Frozen uptime: drop the link, call `loop()`, and check `getStatistics().uptime == 0`. Please re-send the task with the existing MQTT test files and the mock HAL header so the tests can be written against the real hooks. The product owner can also decide.

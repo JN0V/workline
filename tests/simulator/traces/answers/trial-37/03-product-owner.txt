@@ -1,0 +1,15 @@
+- refine:
+    issue: 37
+    why: Answers the reviewer's findings. The Verification now names a command, and the Scope covers the files a fix and its check may need.
+    verification: |
+      - Build two source files that both include `DomoticsCore/WebUI.h` for a board target, for example ESP32. This build is not native, because WebUI does not compile there. Link them into one program.
+      - Run `nm -C` (the board toolchain's own `nm`) on the linked program. `WebUIComponent::wsBuffer_` and `WebUIComponent::bufferLock_` must each show exactly one defined symbol. A second definition makes the link fail with a duplicate-symbol error.
+      - Before the fix, this check fails if the definitions sit plainly in the header. If they are already `inline` or sit in one `.cpp`, it passes at once. That tells a person the issue is obsolete and can be closed.
+      - The check runs in CI with the board build, so it keeps guarding later changes.
+    scope: |
+      Guessed: the lines holding the definitions of `wsBuffer_` and `bufferLock_` were not in the code given, so the exact place of the change is not confirmed.
+      - `DomoticsCore-WebUI/include/DomoticsCore/WebUI.h`: the two static members of `WebUIComponent` (declared at lines 82 and 83), their definitions, and the users of the buffer (the `/api/ui/updates` poll handler and the live-update broadcast).
+      - A new `.cpp` under `DomoticsCore-WebUI/src`, only if a single out-of-header definition is chosen over `inline`.
+      - A new check under `DomoticsCore-WebUI/test` or an example with two source files, plus the build or CI config that runs it.
+    sources:
+      - DomoticsCore-WebUI/include/DomoticsCore/WebUI.h

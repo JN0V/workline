@@ -1,0 +1,23 @@
+```yaml
+- kind: {issue: 34, kind: bug, why: "HASwitch::state and HALight::state are public, documented as the current state, and are wrong after a local change published through publishState; the field contradicts its own documentation, and a test can show it."}
+- refine:
+    issue: 34
+    verification: |
+      - A native test publishes `publishState("relay", "ON")` on a switch and then reads `state`: it is `true`. It fails today, where the field stays `false`.
+      - A native test publishes a light's JSON state with `publishStateJson` and reads `state` and `brightness`: both match what was published.
+      - A state held during a broker outage also updates the field, and a publish for an unknown id changes nothing.
+      - The existing command-path tests still pass: a command from Home Assistant still sets the field.
+    scope: |
+      `DomoticsCore-HomeAssistant/include/DomoticsCore/HomeAssistant.h`: `publishState` and `publishStateJson` update the entity's field.
+      `DomoticsCore-HomeAssistant/include/DomoticsCore/HASwitch.h` and `HALight.h`: the field comments change to say what the field now holds.
+      The change may need a small hook on `HAEntity` so the component does not cast to each entity type. That hook is not shown here, so this is a guess.
+    sources:
+      - DomoticsCore-HomeAssistant/include/DomoticsCore/HomeAssistant.h
+      - DomoticsCore-HomeAssistant/include/DomoticsCore/HASwitch.h
+      - DomoticsCore-HomeAssistant/include/DomoticsCore/HALight.h
+    validation: |
+      - **Local toggle:** Given a switch whose relay I turn on locally and publish with `publishState("relay", "ON")`, When my code reads `sw->state`, Then it is `true`.
+      - **Light:** Given a light whose JSON state I publish with brightness 128, When my code reads `state` and `brightness`, Then they are on and 128.
+      - **Command from Home Assistant:** Given a command arriving from Home Assistant, When it is handled, Then the field still follows it.
+    why: "The item states the problem and the fix; the sections are drafted from the code and the roadmap text."
+```

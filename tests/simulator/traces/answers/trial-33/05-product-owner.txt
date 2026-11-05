@@ -1,0 +1,23 @@
+```yaml
+- refine:
+    issue: 33
+    verification: |
+      - A native test calls `HeapTracker::getDelta()` with a checkpoint name that was never recorded. It must report an error that the caller can see, so the result cannot be read as a heap change. The test fails today, because the call returns a large positive number. The exact form of the error (a sentinel value, a changed signature or a logged failure) is for the maintainer to choose; the test pins down whichever is chosen.
+      - A native test calls `getDelta()` with two recorded names and checks that the result is still the plain difference between them.
+      - After the on-device suite `test_heap_esp8266` ends, a check in the suite lists the Storage namespaces and asserts that these are absent: `heaptest`, `churn`, `overwrite`, `undrained`, `reclaim`, `nswarm`, `ns0` to `ns4`.
+      - Each test shuts down the `Core` it built, so none is left running when the next test starts.
+      - The check that two successive runs begin from the same heap is a manual one on a board. Compare the free heap at the start of each run; a difference within a small tolerance (for example 64 bytes) passes. The machine cannot run this step.
+    scope: |
+      - `DomoticsCore-Storage/test/test_heap_esp8266/test_heap_esp8266.cpp`: remove the namespaces and shut down the `Core` instances at the end of each test.
+      - The heap measuring tool `HeapTracker` (`DomoticsCore/Testing/HeapTracker.h`): `getDelta()` on an unknown name.
+      - A native test for `HeapTracker` under the Core test folder. Guessed: its exact location was not in the code given.
+      - Core is touched only if it has no usable shutdown for the `Core` instances. Guessed: the code given does not show a shutdown call on `Core`.
+    sources:
+      - DomoticsCore-Storage/test/test_heap_esp8266/test_heap_esp8266.cpp
+    why: Answers the reviewer's finding on Verification. It adds a machine check for the namespaces and the Core shutdown, makes the heap comparison a manual step with a tolerance, and widens the Scope.
+- ask:
+    issue: 33
+    questions: |
+      The Validation must be written as named scenarios, one bullet each, in this form: `- **Name:** Given …, When …, Then …`. Could you rewrite it that way? One scenario for running the Storage heap suite twice, one for calling getDelta() on a misspelled name.
+    why: The reviewer found that the Validation names no scenario a test can read, and it is a person's text, so only its reporter can change it.
+```

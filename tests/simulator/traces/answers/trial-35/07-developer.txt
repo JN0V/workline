@@ -1,0 +1,9 @@
+The first run left 1 failure, a build error in `test_ha_webui`. After I qualified the `HomeAssistantComponent` name, the HomeAssistant suite passes: 186 of 186 cases. The LED (111), MQTT (103), NTP (80) and OTA (90) suites also pass in the earlier run, and the new LED version test passes.
+
+```yaml
+- note: |
+    The five in-scope providers (LED, MQTT, NTP, OTA, HomeAssistant) no longer carry a literal version. Without a component, getWebUIVersion() now reads the version from a default-constructed component's metadata.
+    Out of scope and not changed. These still hold literal fallbacks that have drifted: WifiWebUI.h ("1.4.1"), StorageWebUI.h ("1.4.0"), SystemInfoWebUI.h ("1.2.1") and RemoteConsoleWebUI.h ("1.4.0"). They need an issue of their own.
+    The second Verification item, a check that fails the build when a provider holds a literal version, is not implemented. It needs a CI or tooling file outside what I may change.
+    I only added the LED test. The tester wrote no tests for the other four providers.
+```

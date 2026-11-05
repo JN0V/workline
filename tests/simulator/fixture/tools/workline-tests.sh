@@ -1,10 +1,11 @@
 #!/bin/sh
 # The project's tests for workline's tester and developer: every suite
 # (a folder test/test_*/ of a component, one program) of the components
-# the given paths fall in, or of all when none is given, built by g++ and
-# run, in one JUnit report. A case's classname is <component>/<suite>;
-# g++'s errors name files from the repository's root, as the trial's
-# script rewrote PlatformIO's.
+# the given paths fall in, built by g++ and run; and the Go packages they
+# fall in, by go test; all when none is given, or one is neither; in one
+# JUnit report. A C++ case's classname is <component>/<suite>, a Go
+# case's its package's folder; g++'s and go's errors name files from the
+# repository's root, as the trial's script rewrote PlatformIO's.
 #
 #   tools/workline-tests.sh <report> [path ...]
 set -u
@@ -15,19 +16,34 @@ cd "$root" || exit 1
 case $report in /*) ;; *) report="$root/$report" ;; esac
 mkdir -p "$(dirname "$report")"
 
-comps=""
+comps="" pkgs="" all=""
+[ $# -gt 0 ] || all=1
 for p in "$@"; do
-  c=${p#./}; c=${c%%/*}
-  case $c in DomoticsCore-*) [ -d "$c" ] || { comps=""; break; } ;; *) comps=""; break ;; esac
-  case " $comps " in *" $c "*) ;; *) comps="$comps $c" ;; esac
+  p=${p#./}
+  c=${p%%/*}
+  case $c in
+    DomoticsCore-*)
+      [ -d "$c" ] || { all=1; break; }
+      case " $comps " in *" $c "*) ;; *) comps="$comps $c" ;; esac ;;
+    *)
+      d=$p
+      [ -d "$d" ] || d=$(dirname "$p")
+      d=${d%/}
+      ls "$d"/*.go >/dev/null 2>&1 || { all=1; break; }
+      case " $pkgs " in *" $d "*) ;; *) pkgs="$pkgs $d" ;; esac ;;
+  esac
 done
-[ -n "$comps" ] || comps=$(ls -d DomoticsCore-*)
+if [ -n "$all" ]; then
+  comps=$(ls -d DomoticsCore-*)
+  pkgs=$(find . -name '*.go' -not -path './tools/*' | sed 's|^\./||; s|/[^/]*$||' | sort -u)
+fi
 
 includes=""
 for i in DomoticsCore-*/include; do includes="$includes -I$i"; done
 bin=$(mktemp -d)
 trap 'rm -rf "$bin"' EXIT
 status=0
+export GOTOOLCHAIN=local GOFLAGS=-mod=mod
 {
   echo '<?xml version="1.0" encoding="UTF-8"?>'
   echo '<testsuites>'
@@ -52,6 +68,25 @@ status=0
       fi
       echo '</testsuite>'
     done
+  done
+  for d in $pkgs; do
+    ls "$d"/*_test.go >/dev/null 2>&1 || continue
+    echo "<testsuite name=\"$d\">"
+    go test -count=1 -v "./$d" >"$bin/out" 2>&1
+    if grep -q '\[build failed\]\|\[setup failed\]' "$bin/out"; then
+      status=1
+      grep -v '^FAIL\|^#' "$bin/out" >&2
+    else
+      sed -n 's/^ *--- \(PASS\|FAIL\): \(Test[A-Za-z0-9_]*\) .*/\1 \2/p' "$bin/out" | while read -r verdict name; do
+        file=$(grep -l "func $name(" "$d"/*_test.go | head -n 1)
+        case $verdict in
+          PASS) echo "<testcase classname=\"$d\" name=\"$name\" file=\"$file\" time=\"0.01\"/>" ;;
+          FAIL) echo "<testcase classname=\"$d\" name=\"$name\" file=\"$file\" time=\"0.01\"><failure message=\"$name failed\"/></testcase>" ;;
+        esac
+      done
+      grep -q '^--- FAIL\|^FAIL' "$bin/out" && status=1
+    fi
+    echo '</testsuite>'
   done
   echo '</testsuites>'
 } >"$report"

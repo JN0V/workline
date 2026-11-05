@@ -1,0 +1,56 @@
+- refine:
+    issue: 34
+    why: Answers the reviewer's findings on Scope by fixing every rule it left open, and restates the Verification to match.
+    sources:
+      - DomoticsCore-HomeAssistant/include/DomoticsCore/HomeAssistant.h
+      - DomoticsCore-HomeAssistant/include/DomoticsCore/HASwitch.h
+      - DomoticsCore-HomeAssistant/include/DomoticsCore/HALight.h
+      - DomoticsCore-HomeAssistant/include/DomoticsCore/HAEntity.h
+    scope: |
+      `HomeAssistant.h`: `publishState` (string) and `publishStateJson` update the entity's own field when they are called, before the payload is sent or held. The float and bool forms and the `const char*` form call the string form, so they follow the same rules. A hold through an outage does not delay the field. The flush in `loop()` sends held payloads and never touches the field.
+
+      Add one hook on `HAEntity.h`, a virtual method that does nothing by default, which `HASwitch` and `HALight` override. This follows the command hooks added in commit 4fd5c17. It is the "update the field" fix; the roadmap says not to also document the field as command-only.
+
+      Rules for a switch (`HASwitch.h`):
+      - `state` is true when the published string equals the switch's `payloadOn`, and false otherwise. This is what `handleCommand` does.
+      - `publishState("relay", true)` publishes `"ON"` and `"OFF"` for false. With default payloads the field follows. With custom payloads such as `CLOSE`/`OPEN` the bool form sends `"ON"`, which is not `payloadOn`, so `state` is false. Use the string form with custom payloads.
+      - A float publishes text like `"1.00"`, which is never `payloadOn`, so `state` is false.
+
+      Rules for a light with a plain string (`HALight.h`), the same as `handleCommand`:
+      - `"ON"` gives state true and brightness 255.
+      - `"OFF"` gives state false and brightness 0.
+      - A string of digits is a brightness. Up to 255 it sets brightness, and state is true when it is above 0. Longer than 3 digits or above 255 leaves both unchanged.
+      - Any other text that is not a JSON object leaves state and brightness unchanged.
+
+      Rules for a light with a JSON document:
+      - `state` is true when the `"state"` key is `"ON"`. A missing `"state"` key counts as `"ON"`, as in `handleCommand`.
+      - A valid `"brightness"` from 0 to 255 sets brightness.
+      - A missing `"brightness"` key leaves brightness as it was, for both ON and OFF. This differs from `handleCommand`, which sets 255.
+      - An invalid `"brightness"` (not a number, below 0 or above 255) leaves brightness as it was, and state still follows the `"state"` key. This differs from `handleCommand`, which refuses the whole command. A publish has already gone out, so the field only records what can be read.
+    verification: |
+      Native tests in the project's existing native test suite. Each fails today and passes after the fix.
+
+      **Switch**
+      - `publishState("relay", "ON")` makes `state` true; then `"OFF"` makes it false.
+      - A switch with `payloadOn` `"CLOSE"` and `payloadOff` `"OPEN"`: publishing `"CLOSE"` gives true, publishing `"OPEN"` gives false.
+      - A payload that is neither `payloadOn` nor `payloadOff` gives false.
+      - `publishState("relay", true)` gives true and `false` gives false, with default payloads.
+      - `publishState("relay", 1.0f)` gives false.
+
+      **Light, plain string**
+      - `"ON"` gives state true, brightness 255. `"OFF"` gives false, 0.
+      - `"128"` gives brightness 128, state true. `"0"` gives brightness 0, state false.
+      - `"256"` and `"1234"` leave both unchanged. Garbage text leaves both unchanged.
+
+      **Light, JSON**
+      - `{"state":"ON","brightness":128}` gives true, 128.
+      - `{"state":"OFF"}` gives state false and leaves brightness as it was.
+      - `{"state":"ON"}` with no brightness key leaves brightness as it was.
+      - `{"state":"ON","brightness":300}` gives state true and leaves brightness as it was.
+
+      **Outage**
+      - With the broker disconnected, publish `"ON"` then `"OFF"` on a switch. After each call the field reads true then false.
+      - Reconnect and run `loop()` until the held payload is sent. The field still reads false, and the broker received `"OFF"` only.
+
+      **Command path**
+      - A command through `handleCommand` still sets the field as before; the existing four native tests still pass.

@@ -1,0 +1,3 @@
+after tests: the trial went to ready, the simulator to blocked
+The tester's patch, applied in the trial, reads here as a corrupt patch: the fixture's
+files are a small copy of the trial's, not its own.

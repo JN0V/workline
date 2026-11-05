@@ -1,0 +1,1 @@
+- note: "#20 has all four sections, but its Need and Validation are still drafts, so it is not marked ready. It already has a bug label, sources and a Scope. The code confirms the risk: `metadata.name` points into `nameStr_.c_str()`, and nothing in the class re-points it after a copy or move. A person should confirm the Need and Validation, then it can move to ready."

@@ -1,0 +1,40 @@
+- patch: |
+    --- /dev/null
+    +++ b/DomoticsCore-LED/test/test_led_webui_version/test_led_webui_version.cpp
+    @@ -0,0 +1,43 @@
+    +/**
+    + * @file test_led_webui_version.cpp
+    + * @brief The LEDWebUI version without a component must not drift from the component's.
+    + */
+    +
+    +#include <DomoticsCore/Logger.h>  // Required for DLOG macros used in LED.h
+    +#include <DomoticsCore/LEDWebUI.h>
+    +#include <unity.h>
+    +#include <cstring>
+    +
+    +using namespace DomoticsCore::Components;
+    +
+    +void setUp(void) {}
+    +void tearDown(void) {}
+    +
+    +// Scenario: Fallback matches release
+    +// Given a component whose version was bumped in a release,
+    +// When its WebUI provider reports its version without the component attached,
+    +// Then it does not show an older number.
+    +void test_fallback_matches_release(void) {
+    +    LEDComponent reference;
+    +    String current = String(reference.metadata.version);
+    +
+    +    LEDWebUI ui(nullptr);
+    +    String reported = ui.getWebUIVersion();
+    +
+    +    TEST_ASSERT_EQUAL_STRING(current.c_str(), reported.c_str());
+    +}
+    +
+    +int main(int, char**) {
+    +    UNITY_BEGIN();
+    +    RUN_TEST(test_fallback_matches_release);
+    +    return UNITY_END();
+    +}
+- note: "Attached component: kept as today: the existing suite guards it. A provider with its component attached already shows the component's own version, so a new test would pass today."
+- note: "Fallback matches release: only the LED provider is tested. The HomeAssistant, MQTT, NTP, OTA and other providers are not covered, because their component constructors are not shown and a test written blind could fail to build."

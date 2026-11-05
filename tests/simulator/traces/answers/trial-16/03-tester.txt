@@ -1,0 +1,69 @@
+- note: |
+    LED renamed: no test written. The task shows no LEDComponent call that renames an LED, and I will not guess a name that may not exist, because a test calling a missing method could never go green. A person should give the rename call, and the test is then the same as LED added late: build the contexts, rename, assert the new name is among the `led_select` options and that every option is accepted.
+- patch:
+    file: DomoticsCore-LED/test/test_led_webui_names/test_led_webui_names.cpp
+    content: |
+      /**
+       * @file test_led_webui_names.cpp
+       * @brief The LED dropdown must offer the names the led_select handler accepts.
+       */
+
+      #include <DomoticsCore/Logger.h>  // Required for DLOG macros used in LED.h
+      #include <DomoticsCore/LEDWebUI.h>
+      #include <unity.h>
+      #include <cstring>
+      #include <map>
+
+      using namespace DomoticsCore::Components;
+
+      void setUp(void) {}
+      void tearDown(void) {}
+
+      static String post(LEDWebUI& ui, const char* field, const char* value) {
+          std::map<String, String> params;
+          params[String("field")] = String(field);
+          params[String("value")] = String(value);
+          return ui.handleWebUIRequest(String("led_dashboard"), String("/api/ui/action"),
+                                       String("POST"), params);
+      }
+
+      static bool contains(const String& haystack, const char* needle) {
+          return strstr(haystack.c_str(), needle) != nullptr;
+      }
+
+      // Scenario: LED added late
+      // Given a dashboard already built,
+      // When an LED is added,
+      // Then the dropdown lists it and selecting it succeeds.
+      void test_led_added_late(void) {
+          LEDComponent led;
+          LEDWebUI ui(&led);
+          led.addSingleLED(2, "Status");
+          led.addRGBLED(25, 26, 27, "Mood");
+          led.begin();
+
+          ui.getContextCount();  // the dashboard is built here
+
+          led.addSingleLED(4, "Late");
+
+          WebUIContext dash = ui.getWebUIContext(String("led_dashboard"));
+          bool listed = false;
+          size_t checked = 0;
+          for (const auto& field : dash.fields) {
+              if (strcmp(field.getNameCStr(), "led_select") != 0) continue;
+              for (const auto& option : field.options) {
+                  if (option == "Late") listed = true;
+                  const String response = post(ui, "led_select", option.c_str());
+                  TEST_ASSERT_TRUE_MESSAGE(contains(response, "\"success\":true"), option.c_str());
+                  ++checked;
+              }
+          }
+          TEST_ASSERT_TRUE_MESSAGE(listed, "dropdown lists the added LED");
+          TEST_ASSERT_EQUAL_size_t(3, checked);
+      }
+
+      int main(int argc, char** argv) {
+          UNITY_BEGIN();
+          RUN_TEST(test_led_added_late);
+          return UNITY_END();
+      }

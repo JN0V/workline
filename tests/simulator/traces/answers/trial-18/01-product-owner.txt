@@ -1,0 +1,3 @@
+- sources: {issue: 18, sources: ["DomoticsCore-Core/include/DomoticsCore/EventBus.h"], quote: {path: "DomoticsCore-Core/include/DomoticsCore/EventBus.h", text: "uint32_t id = nextId++;"}, why: "The subscription counter nextId and the subscribe and unsubscribe functions are in this file."}
+- kind: {issue: 18, kind: bug, why: "Subscription numbers repeat after the counter wraps, so unsubscribe could remove another handler. That breaks the contract of unsubscribe, and a test that sets the counter near its limit can show it."}
+- ready: {issue: 18, why: "The four sections are there, with Need and Validation a person's. It is one need, the Verification proves it with a test near the counter limit, and nothing is open in its comments."}

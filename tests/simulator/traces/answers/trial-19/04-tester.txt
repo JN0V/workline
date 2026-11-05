@@ -1,0 +1,11 @@
+- note: |
+    proof: none — the RemoteConsole header, its native test stubs and the `clientStateEntriesForTest()` signature were not in the task, so no test can be written reliably.
+
+    Both scenarios (Wrap keeps ids distinct, No zero id) need three things I cannot see:
+    - a way to set `nextClientId`, which is private. No test hook for it is named in the Scope.
+    - a way to make the native stubs accept a client connection inside `loop()`.
+    - the shape of the `clientStateEntriesForTest()` entries, which is how a client's id is read back.
+
+    Any test I wrote would guess these names, and could fail on a wrong guess instead of on the missing wrap and zero-id handling. That would not prove the scenarios.
+
+    To unblock: name the hook that sets the counter (for example `setNextClientIdForTest(uint32_t)`), and add the header and an existing RemoteConsole native test to the task. Both scenarios can then be written as one test each.

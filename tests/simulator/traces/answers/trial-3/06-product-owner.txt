@@ -1,0 +1,15 @@
+- refine: 
+    issue: 3
+    scope: |
+      - `DomoticsCore-OTA/include/DomoticsCore/OTAWebUI.h`: the upload handler. When the chunk-time call `acceptUploadChunk()` fails, it must set `uploadState.rejected`, as the begin-time refusal already does.
+      - `DomoticsCore-OTA/src/OTA.cpp`: `acceptUploadChunk()`, only if the fix needs a change there.
+      - `DomoticsCore-OTA/test/test_ota_http/test_ota_http.cpp`: the new native test for this fix. It announces N bytes, delivers more than N, and checks the answer. This test file is the one the Verification needs.
+    sources:
+      - DomoticsCore-OTA/include/DomoticsCore/OTAWebUI.h
+      - DomoticsCore-OTA/src/OTA.cpp
+      - DomoticsCore-OTA/test/test_ota_http/test_ota_http.cpp
+    why: The Verification needs a native test, and the developer found that this test file is where it belongs. Adding the file to the Scope lets the developer carry on.
+- unblock:
+    issue: 3
+    to: ready
+    why: The only blocker was a Scope that left out the test file. The Scope now includes it, and the four sections are in place.

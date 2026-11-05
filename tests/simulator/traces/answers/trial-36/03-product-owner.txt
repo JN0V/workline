@@ -1,0 +1,2 @@
+- note: |
+    #36 has all four sections, but its Need and Validation are still drafts, so I am not moving it to ready. The reporter should confirm or edit them first. The issue holds three separate leftovers. Splitting is off in this run, so a person may want to split it. The third leftover, sticky publication, is a design decision. The first one, whether `resetReconnect()` should announce or close the session, is also a design question.

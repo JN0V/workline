@@ -1,0 +1,23 @@
+- kind: {issue: 3, kind: bug, why: "The operator should see 'Firmware too large' when an upload goes over the size cap, and gets 'Upload not active' instead. The begin-time refusal already reports its reason correctly."}
+- sources:
+    issue: 3
+    sources: ["DomoticsCore-OTA/include/DomoticsCore/OTAWebUI.h", "DomoticsCore-OTA/src/OTA.cpp"]
+    quote:
+      path: DomoticsCore-OTA/include/DomoticsCore/OTAWebUI.h
+      text: "bool rejected = false;"
+    why: "The upload state flag `rejected` lives in the upload handler in OTAWebUI.h. The chunk-time refusal that closes the session is in OTA.cpp."
+- refine:
+    issue: 3
+    verification: |
+      - A new native test, built on the TEST-8 mocks, announces N bytes and then delivers more than N bytes in chunks.
+      - After the chunk that crosses the cap, the test asserts that the upload answer's error is `Firmware too large`.
+      - The test then sends further chunks and the final call. It asserts that the error is still `Firmware too large` and never becomes `Upload not active`.
+      - The same test asserts that the upload session is closed (no longer active) after the refusal. The component's last error is still `Firmware too large`, and no flash write happens after the refusal.
+      - The test fails on the current code and passes after the fix.
+      - A normal upload of at most N bytes still succeeds.
+    scope: |
+      Guessed: the native test file is not among the code given, so its path is a guess.
+      - `DomoticsCore-OTA/include/DomoticsCore/OTAWebUI.h`: the upload handler. Set `uploadState.rejected` when the chunk-time acceptance fails, so later chunks and the final call are skipped and the error is kept.
+      - `DomoticsCore-OTA/src/OTA.cpp`: no change expected. Its chunk-time refusal already sets the error and closes the session. It is the behaviour the test drives.
+      - A new native test under `DomoticsCore-OTA/test/`, using the TEST-8 mock files already in the repository.
+    why: "Answers the reviewer: the native test file is now in the Scope, the line numbers are gone, and the state after the refusal is stated and tested."

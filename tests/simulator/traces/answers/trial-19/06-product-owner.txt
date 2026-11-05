@@ -1,0 +1,16 @@
+- refine:
+    issue: 19
+    verification: |
+      Add a small test hook to `RemoteConsoleComponent`, `setNextClientIdForTest(uint32_t)`. It sets the private id counter, next to the existing `clientStateEntriesForTest()`. Then add one native test for each Validation scenario.
+      - **Wrap keeps ids distinct:** set the counter to `UINT32_MAX - 1`. Keep one client connected. Connect enough further clients that the counter wraps. Check that all live client ids are different.
+      - **No zero id:** set the counter to `UINT32_MAX`. Connect one client. Check that its id is not 0.
+      - The test connects clients through the native `WiFiServer` stub the same way the other RemoteConsole native tests do. It reads ids back from the connected clients.
+      - Both tests fail on the current code, where the counter wraps to 0 and can reuse an id still in use. They pass after the fix.
+    scope: |
+      `DomoticsCore-RemoteConsole/include/DomoticsCore/RemoteConsole.h`:
+      - The `nextClientId` counter (`uint32_t`, starts at 1).
+      - Its increment when `loop()` accepts a client (`uint32_t clientId = nextClientId++;`). The id chosen there must never be 0 and never be one a live client already holds.
+      - A new test-only setter beside `clientStateEntriesForTest()`.
+    sources:
+      - DomoticsCore-RemoteConsole/include/DomoticsCore/RemoteConsole.h
+    why: The tester found no test possible because no hook sets the private counter. Verification and Scope are the role's to rewrite. They now name the hook, the two tests and the exact code lines. Need and Validation are a person's and are left as written.

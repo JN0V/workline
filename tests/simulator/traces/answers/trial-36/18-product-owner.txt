@@ -1,0 +1,14 @@
+- refine: 
+    issue: 36
+    verification: |
+      Three native tests for the MQTT component, in the MQTT package's native test folder. Each reads only the public API: `getState()`, `getStatistics()`, and the `mqtt/connected` and `mqtt/disconnected` events. The test reaches the client stub through `getClientForTest()`.
+      - **Silent reset:** connect, then call `resetReconnect()`. Expect exactly one `mqtt/disconnected` and `getState()` equal to `Disconnected`. Connect again. Expect the second `mqtt/connected` to arrive after that `mqtt/disconnected`.
+      - **Link flap:** connect, drop the link on the stub without calling `disconnect()`, and run `loop()`. Do it twice, reconnecting in between. Expect `getStatistics().lostCount` to equal 2. `lostCount` is a new field of `MQTTStatistics`. It rises once each time the component leaves Connected, whether by a dropped link, `disconnect()` or `resetReconnect()`.
+      - **Frozen uptime:** connect, advance the platform clock and run `loop()` until `uptime` is above 0. Drop the link and run `loop()`. Expect `uptime` to read 0 and to stay 0 as the clock advances during the outage.
+      A test fails before the change and passes after it. The existing MQTT tests stay green.
+    scope: |
+      `DomoticsCore-MQTT/include/DomoticsCore/MQTT_impl.h`: `resetReconnect()`, `announceConnectionLost()`, `disconnect()` and `updateStatistics()`.
+      `DomoticsCore-MQTT/include/DomoticsCore/MQTT.h`: the `MQTTStatistics` struct, which gains the loss counter.
+      Guessed: the new tests go in the MQTT package's native test folder. The task did not show where it is.
+    sources: ["DomoticsCore-MQTT/include/DomoticsCore/MQTT_impl.h", "DomoticsCore-MQTT/include/DomoticsCore/MQTT.h"]
+    why: The tester could not name the helpers of the existing tests. The new Verification uses only public methods that are visible in the code given.

@@ -1,0 +1,17 @@
+- refine:
+    issue: 36
+    verification: |
+      Three native tests go in the project's existing MQTT component tests. Each one drives the native MQTT client stub, the stub WiFi link and the test clock, and captures `mqtt/connected` and `mqtt/disconnected`.
+      - **Silent reset:** connect, then call `resetReconnect()`. Expect exactly one `mqtt/disconnected` and `getState()` equal to `Disconnected`. Connect again. Expect the second `mqtt/connected` to arrive after that `mqtt/disconnected`. Before the fix there is no `mqtt/disconnected` at all.
+      - **Link flap:** drop the link and let `loop()` run, twice, reconnecting in between. Expect `getStatistics().lostCount` to equal 2. The field `lostCount` is new in `MQTTStatistics`, so this test fails to compile or assert before the fix.
+      - **Frozen uptime:** connect and advance the clock. Expect `getStatistics().uptime` above 0. Drop the link and run `loop()`. Expect `uptime` to equal 0, and still 0 after the clock advances further.
+      - The existing MQTT suite stays green.
+    scope: |
+      `DomoticsCore-MQTT/include/DomoticsCore/MQTT_impl.h`: `resetReconnect()` closes the session and announces the loss when the state is Connected. `announceConnectionLost()` counts the loss and zeroes the uptime.
+      `DomoticsCore-MQTT/include/DomoticsCore/MQTT.h`: add a loss counter to `MQTTStatistics`.
+      The EventBus replay question for a dropped `mqtt/disconnected` (leftover 3 in the issue text) is a separate decision and is not part of this change.
+    sources: ["DomoticsCore-MQTT/include/DomoticsCore/MQTT_impl.h", "DomoticsCore-MQTT/include/DomoticsCore/MQTT.h"]
+    why: The tester could not write the tests because the Verification pointed at files it was not shown. It now names the behaviour each test checks, and the new field it needs.
+- ready:
+    issue: 36
+    why: Its four sections are there, with the Verification and Scope rewritten so tests can be written. It has one need and nothing is left open in its comments.

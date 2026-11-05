@@ -1,0 +1,14 @@
+- refine:
+    issue: 36
+    verification: |
+      Native tests for each case, using only hooks the component already shows: `getClientForTest()` for the stub client, `loop()`, `getStatistics()`, and a listener on `mqtt/connected` and `mqtt/disconnected`. The tests go in the existing MQTT test files and reuse their way of reporting WiFi as up and of dropping the stub link without calling `disconnect()`.
+      - **Silent reset:** connect, listen for both events, then call `resetReconnect()`. Expect exactly one `mqtt/disconnected`. Reconnect and expect the next `mqtt/connected` to come after it. This fails today, because `resetReconnect()` sets `Disconnected` and emits nothing.
+      - **Link flap:** drop the link and reconnect twice through `loop()`. Expect a new loss counter in `MQTTStatistics` to read 2. Expect it to stay unchanged after a deliberate `disconnect()`. This fails today, because the struct has no such counter.
+      - **Frozen uptime:** after a drop and one `loop()`, expect `getStatistics().uptime` to be 0. This fails today, because `updateStatistics()` runs only while connected.
+      - The full native MQTT suite stays green.
+    scope: |
+      `DomoticsCore-MQTT/include/DomoticsCore/MQTT_impl.h`: `resetReconnect()`, `announceConnectionLost()` and `updateStatistics()`.
+      `DomoticsCore-MQTT/include/DomoticsCore/MQTT.h`: `MQTTStatistics`, which gets a loss counter.
+      Item 3 of the roadmap entry (sticky publication of `mqtt/disconnected`) is a design decision. The Validation does not cover it, so it is out of this change. It would touch `DomoticsCore-HomeAssistant/include/DomoticsCore/HomeAssistant.h`, where `mqttConnected` is set.
+    sources: ["DomoticsCore-MQTT/include/DomoticsCore/MQTT_impl.h", "DomoticsCore-MQTT/include/DomoticsCore/MQTT.h"]
+    why: The tester could not write the tests because the Verification named no hooks. It now names the ones visible in the code and keeps to three scenarios, matching the Validation.

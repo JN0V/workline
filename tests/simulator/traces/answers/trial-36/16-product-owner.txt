@@ -1,0 +1,20 @@
+- refine:
+    issue: 36
+    verification: |
+      Three native tests go beside the existing MQTT link-drop tests (`test_mqtt_component.cpp`, `test_mqtt_limits_links.cpp`). They use the same native MQTT client stub, the same capture of `mqtt/connected` and `mqtt/disconnected`, and the same clock control those tests already use. No new helper is added.
+      - **Silent reset:** connect, then call `resetReconnect()`. Expect exactly one `mqtt/disconnected`, and `getState()` equal to `Disconnected`. Connect again and expect the second `mqtt/connected` to arrive after that `mqtt/disconnected`.
+      - **Link flap:** drop the link twice without calling `disconnect()`, and reconnect after each drop. Run `loop()` after each drop. Expect `getStatistics().lostCount` to equal 2. A deliberate `disconnect()` also counts as a loss.
+      - **Frozen uptime:** connect and advance the clock so `uptime` is above 0. Drop the link and run `loop()`. Expect `getStatistics().uptime` to equal 0 during the outage, and again after the clock moves on.
+      - The existing MQTT and HomeAssistant native tests stay green.
+    scope: |
+      Guessed: the loss counter does not exist yet, so its name `lostCount` is a proposal. A builder may pick another name and update the tests to match.
+      - `DomoticsCore-MQTT/include/DomoticsCore/MQTT.h`: add a loss counter to `MQTTStatistics`.
+      - `DomoticsCore-MQTT/include/DomoticsCore/MQTT_impl.h`:
+        - `resetReconnect()` announces the loss when it leaves the Connected state, and closes the client session first.
+        - `announceConnectionLost()` and `disconnect()` increment the loss counter and set `uptime` to 0.
+        - `updateStatistics()` stops showing a stale `uptime` while the link is down.
+      - The question of sticky publication of `mqtt/disconnected` (leftover 3) is a separate design decision. It has no scenario here, so it is out of this change.
+    sources:
+      - DomoticsCore-MQTT/include/DomoticsCore/MQTT_impl.h
+      - DomoticsCore-MQTT/include/DomoticsCore/MQTT.h
+    why: The tester could not write tests because the loss counter had no name and the uptime Then was vague. Verification and Scope now give a name and a concrete expected value for each scenario.

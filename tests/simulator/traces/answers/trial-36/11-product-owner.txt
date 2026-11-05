@@ -1,0 +1,17 @@
+- refine:
+    issue: 36
+    verification: |
+      Each test goes next to the existing MQTT link-drop tests in `test_mqtt_component.cpp` and `test_mqtt_limits_links.cpp`. It uses the native MQTT client stub and the event capture those tests already use to drop a link without calling `disconnect()`. No new helper is invented.
+      - **Silent reset:** connect, listen for `mqtt/connected` and `mqtt/disconnected`, then call `resetReconnect()`. Expect exactly one `mqtt/disconnected`, and the state is no longer Connected. Reconnect and expect the next `mqtt/connected` to come after that `mqtt/disconnected`. Calling `resetReconnect()` while not connected emits nothing.
+      - **Link flap:** drop the link and reconnect twice. Expect the new field `getStatistics().lossCount` to equal 2. After a deliberate `disconnect()` it does not grow, so a second test starts at 0 and stays 0.
+      - **Frozen uptime:** connect and run `loop()` until `getStatistics().uptime` is above 0. Drop the link and run `loop()`. Expect `getStatistics().uptime == 0` for the whole outage. After the next connection it counts again from 0.
+    scope: |
+      - `DomoticsCore-MQTT/include/DomoticsCore/MQTT_impl.h`: `resetReconnect()` announces the loss when the state is Connected and closes the session first. `updateStatistics()` also runs when not connected and sets `uptime` to 0. `announceConnectionLost()` counts the loss.
+      - `DomoticsCore-MQTT/include/DomoticsCore/MQTT.h`: add `lossCount` to `MQTTStatistics`. Fix the `resetReconnect()` comment.
+      - Tests: `test_mqtt_component.cpp` and `test_mqtt_limits_links.cpp`.
+      - Out of scope: the third leftover of the roadmap item (a `mqtt/disconnected` dropped on a full EventBus queue, sticky publication) and `HomeAssistant.h`. Nothing here asks for them.
+      - Out of scope: showing the counter in the WebUI.
+    sources:
+      - DomoticsCore-MQTT/include/DomoticsCore/MQTT_impl.h
+      - DomoticsCore-MQTT/include/DomoticsCore/MQTT.h
+    why: Answers the reviewer. HomeAssistant.h is removed from Scope, the loss counter is named `lossCount`, uptime is defined as 0 while not connected, and the test files are listed. The tests are now written against the existing stub, so they can be built.

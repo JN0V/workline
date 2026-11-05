@@ -1,0 +1,12 @@
+- refine:
+    issue: 19
+    verification: |
+      - Add two small test hooks to `RemoteConsoleComponent`, next to `clientStateEntriesForTest()`. `setNextClientIdForTest(uint32_t)` sets the id counter. `clientIdsForTest()` returns the ids of the connected clients. `clientStateEntriesForTest()` only returns a count, so it cannot show ids.
+      - Native test "Wrap keeps ids distinct": set the counter to `UINT32_MAX - 1`. Connect a client and keep it connected. Connect more clients until the counter has wrapped. Check that all ids returned by `clientIdsForTest()` are different.
+      - Native test "No zero id": set the counter to `UINT32_MAX`. Connect a client. Check that its id is not 0.
+      - The new tests follow the pattern of the existing RemoteConsole native tests, which connect clients through the native stubs. They fail before the fix and pass after it.
+    scope: |
+      `DomoticsCore-RemoteConsole/include/DomoticsCore/RemoteConsole.h`: the `nextClientId` counter and its increment where `loop()` accepts a client. Also the two test hooks, added beside `clientStateEntriesForTest()`.
+    sources:
+      - DomoticsCore-RemoteConsole/include/DomoticsCore/RemoteConsole.h
+    why: The tester found no test possible because the counter and the client ids could not be reached. This Verification names the two hooks that make both scenarios testable.

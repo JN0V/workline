@@ -1,0 +1,3 @@
+after refine: the trial went to tests, the simulator to blocked
+The product owner's quote is not in the fixture's copy of WebUI.h: its act is refused,
+and the line blocks the issue.

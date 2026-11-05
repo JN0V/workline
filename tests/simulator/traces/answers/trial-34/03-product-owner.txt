@@ -1,0 +1,25 @@
+- refine:
+    issue: 34
+    verification: |
+      - A native test publishes `publishState("relay", "ON")` on a switch and reads `state`: it is `true`. It fails today, where the field stays `false`. Publishing `"OFF"` then makes it `false`.
+      - A switch with a custom `payloadOn` of `"CLOSE"` and `payloadOff` of `"OPEN"`: publishing `"CLOSE"` sets `state` to `true`, publishing `"OPEN"` sets it to `false`. Compare against the entity's own payloads, as `handleCommand` does.
+      - A switch published with a payload that is neither its on nor its off payload (for example `"banana"`) keeps `state` as it was.
+      - A native test publishes a light's JSON `{"state":"ON","brightness":128}` with `publishStateJson`: `state` is `true` and `brightness` is 128.
+      - A light published with JSON that omits `state` or omits `brightness` keeps the omitted field unchanged. Other keys, such as colour or effect, are ignored. A brightness outside 0 to 255 changes nothing.
+      - Outage: with the broker down, publish a switch state, then read the field. It already holds the published value before the broker returns, because the field is updated when `publishState` is called, not when the held payload is sent. After the reconnection the field is unchanged.
+      - Unknown id: `publishState("nope", "ON")` and `publishStateJson("nope", doc)` leave every registered switch and light field as it was.
+      - The existing command-path tests still pass: a command from Home Assistant still sets the field through `handleCommand`, and `autoPublishState` still echoes it.
+      - The comment on each field no longer says "updated by handleCommand" only. It says the field also follows what the device publishes.
+    scope: |
+      The change goes in `publishState` and `publishStateJson` of `HomeAssistant.h`, which find the entity by id and hand it the published payload. The two entities keep their own field logic: `HASwitch.h` and `HALight.h` need a small hook to take a published payload, as `handleCommand` does for commands, and their field comments change.
+
+      Guessed: the native test file for the Home Assistant component is not among the code given, so its path is a guess. The new tests go next to the existing command-path tests under `DomoticsCore-HomeAssistant`. Name them in `sources` once the builder finds them.
+
+      Line numbers in the roadmap item are stale. Find the functions by name.
+    sources:
+      - DomoticsCore-HomeAssistant/include/DomoticsCore/HomeAssistant.h
+      - DomoticsCore-HomeAssistant/include/DomoticsCore/HASwitch.h
+      - DomoticsCore-HomeAssistant/include/DomoticsCore/HALight.h
+    why: Answers the reviewer's findings on Verification and Scope. It fixes the payload-to-field mapping, the outage and unknown-id assertions, the test location, and the stale line references. It follows the item's first fix option, which the draft Validation already assumes.
+- note: |
+    #34 has four sections, but the Validation is still a draft. The item allows two fixes and says not to do both: update the field on publish, or document that it tracks commands only. The Verification now assumes the first. Please confirm that, or edit the Validation, or accept the issue with `workline:accepted`.

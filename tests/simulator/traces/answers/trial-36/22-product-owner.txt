@@ -1,0 +1,22 @@
+- refine:
+    issue: 36
+    verification: |
+      Three native tests go in the project's existing MQTT component tests. Each builds an `MQTTComponent` with a broker set and drives it only through its public calls: `connect()`, `loop()`, `resetReconnect()`, `getState()` and `getStatistics()`. The native MQTT client stub, reached with `getClientForTest()`, drops the link. The tests record every `mqtt/connected` and `mqtt/disconnected` event, in order.
+      - **Silent reset:** connect, then call `resetReconnect()`. Expect exactly one `mqtt/disconnected` and `getState()` equal to `Disconnected`. Connect again. Expect the second `mqtt/connected` to come after that `mqtt/disconnected`. Today no `mqtt/disconnected` is sent, so the test fails on that count.
+      - **Link flap:** connect, drop the link in the stub, run `loop()`, reconnect. Do this twice. Expect `getStatistics().lostCount` to equal 2. `lostCount` is a new field in `MQTTStatistics`, so the test fails today because the field is missing. A deliberate `disconnect()` also counts as a loss.
+      - **Frozen uptime:** connect and let the clock advance, so `getStatistics().uptime` is above 0. Drop the link and run `loop()`. Expect `uptime` to be 0, and still 0 after the clock moves on. Today it keeps its last value for the whole outage.
+      - The existing MQTT tests stay green. In particular, the single `mqtt/disconnected` per dropped link from the earlier fix (BUG-44) is unchanged.
+      - Out of scope: the loss of an event when the EventBus queue is full, which needs a decision on sticky publication.
+    scope: |
+      `DomoticsCore-MQTT/include/DomoticsCore/MQTT_impl.h`:
+      - `resetReconnect()`: when connected, close the client session and announce the loss the way `disconnect()` does, before it sets `Disconnected`.
+      - `announceConnectionLost()` and `disconnect()`: count the loss and set `uptime` to 0.
+      - `updateStatistics()`: stop `uptime` from keeping its last value while the link is down.
+
+      `DomoticsCore-MQTT/include/DomoticsCore/MQTT.h`: add a loss counter to `MQTTStatistics`.
+
+      `DomoticsCore-HomeAssistant/include/DomoticsCore/HomeAssistant.h` is read-only context: its `mqttConnected` flag follows `mqtt/disconnected`. It does not change.
+    sources:
+      - DomoticsCore-MQTT/include/DomoticsCore/MQTT_impl.h
+      - DomoticsCore-MQTT/include/DomoticsCore/MQTT.h
+    why: The tester could not write tests because the Verification named stub helpers it was not shown. It now describes the tests through the component's public calls, which the code given shows, and the Scope says where each change goes.

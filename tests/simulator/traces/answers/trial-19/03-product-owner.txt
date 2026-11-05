@@ -1,0 +1,1 @@
+- note: "#19 has all four sections, but its Need and Validation are still drafts, so I am not marking it ready. `nextClientId++` at RemoteConsole.h line 248 still wraps to 0 and can collide with a live client's id. A person should confirm the Need and Validation first."

@@ -1,0 +1,65 @@
+- refine:
+    issue: 34
+    sources:
+      - DomoticsCore-HomeAssistant/include/DomoticsCore/HomeAssistant.h
+      - DomoticsCore-HomeAssistant/include/DomoticsCore/HAEntity.h
+      - DomoticsCore-HomeAssistant/include/DomoticsCore/HASwitch.h
+      - DomoticsCore-HomeAssistant/include/DomoticsCore/HALight.h
+    why: Answers the reviewer's round-5 findings. Scope now states the hook and the plain-string light rules, and Verification covers them, plus custom payloads, the float form and the outage order.
+    scope: |
+      Guessed: `HAEntity.h` is not among the code given, so the name of the new hook below is a proposal, not an existing method.
+
+      Chosen fix: `publishState()` and `publishStateJson()` update the entity's field. The reference is not changed to say "commands only". Only one of the two is done.
+
+      `DomoticsCore-HomeAssistant/include/DomoticsCore/HAEntity.h`
+      - Add a virtual hook `virtual void onStatePublished(const String& payload) {}`. It does nothing by default, so sensors, buttons and the alarm panel are unchanged. It follows the pattern of the entity hooks added in commit 4fd5c17 (`echoesCommandAsState`).
+
+      `DomoticsCore-HomeAssistant/include/DomoticsCore/HomeAssistant.h`
+      - `publishState(id, const String&)` calls `entity->onStatePublished(state)` just before `publishOrHold(...)`. The field is updated when the application publishes, not when a held payload leaves, so an outage flush never touches it.
+      - `publishStateJson(id, doc)` calls the same hook with the serialized payload, before `publishOrHold`.
+      - The float, bool and `const char*` forms of `publishState` already call the string form (lines 407-423), so they need no change. The float form sends text such as `"1.00"`, and the bool form sends `HAPayload::ON` or `HAPayload::OFF`. A switch with custom `payloadOn` / `payloadOff` therefore reads these as `false`. This is the documented behaviour.
+      - `publishAttributes` does not call the hook. Attributes are not a state.
+
+      `DomoticsCore-HomeAssistant/include/DomoticsCore/HASwitch.h`
+      - Override the hook. `state` becomes `true` when the payload equals `payloadOn`, and `false` when it equals `payloadOff`. Any other payload leaves `state` unchanged.
+      - Update the comment on `state` ("updated by handleCommand") to say it follows the last state published or commanded.
+
+      `DomoticsCore-HomeAssistant/include/DomoticsCore/HALight.h`
+      - Move the parsing of `handleCommand` into one private function. Both `handleCommand` and the new hook call it, so the two cannot drift apart. A payload it refuses leaves `state` and `brightness` unchanged.
+      - Plain-string rules, the same as today's command rules:
+        - `"ON"` gives state on and brightness 255.
+        - `"OFF"` gives state off and brightness 0.
+        - A string of digits of at most 3 characters and at most 255 sets the brightness, and the state is on when it is above 0.
+        - 4 or more digits, a number above 255, or any other text is refused.
+      - JSON rules: `state` and `brightness` are read as `handleCommand` reads them. A brightness off the 0-255 scale is refused.
+      - Update the comments on `state` and `brightness`.
+    verification: |
+      Native tests in the project's existing native test suite. Each test fails today and passes after the fix.
+
+      **Switch**
+      - `publishState("relay", "ON")` makes `state` `true`. `"OFF"` then makes it `false`.
+      - With `payloadOn` `"CLOSE"` and `payloadOff` `"OPEN"`, publishing `"CLOSE"` gives `true` and `"OPEN"` gives `false`.
+      - With those custom payloads, the bool form `publishState("relay", true)` sends `"ON"`. The switch does not match `"CLOSE"`, so `state` is `false`.
+      - The float form `publishState("relay", 1.0f)` sends `"1.00"`. `state` stays `false`.
+      - A payload that is neither `payloadOn` nor `payloadOff` leaves `state` as it was.
+
+      **Light, JSON state** (`publishStateJson`)
+      - `{"state":"ON","brightness":128}` gives state on and brightness 128.
+      - `{"state":"OFF"}` gives state off.
+      - A brightness of 256 or -1 is refused and the fields stay as they were.
+
+      **Light, plain string** (`publishState`)
+      - `"ON"` gives state on and brightness 255. `"OFF"` gives state off and brightness 0.
+      - `"128"` gives brightness 128 and state on. `"0"` gives brightness 0 and state off.
+      - `"1000"` (4 digits) is refused. `"256"` (above 255) is refused. `"abc"` is refused.
+      - Each refusal leaves `state` and `brightness` unchanged.
+
+      **Command path, unchanged**
+      - A command from Home Assistant still sets the fields as before. The existing `handleCommand` tests keep passing.
+
+      **Outage**
+      - With the broker down, publish `"ON"` and then `"OFF"` to one switch, so two different payloads are held. `state` is `false` at once, the latest published value.
+      - After the reconnection and the flush, `state` is still `false`. The flush never writes the field. A flush that wrote the older held payload would turn it `true`, so the test catches it.
+
+      **Other entities**
+      - A sensor, a button and an alarm panel publish as before, and the hook changes nothing for them.

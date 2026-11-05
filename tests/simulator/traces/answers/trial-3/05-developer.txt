@@ -1,0 +1,8 @@
+The fix is in, and the full native suite passed (exit 0). The last summary I saw showed only the Wifi tests (96 of 96 passed). I couldn't confirm the OTA `test_ota_chunk_refusal` result separately because the report files were cleaned up.
+
+- **`OTA.cpp`:** `acceptUploadChunk()` and `finalizeUpload()` no longer overwrite the error on a closed session. If the session closed because of its own failure, they keep that failure (`uploadSession.error`) as the last error. They only say "Upload not active" when the session has no recorded error.
+- **`OTAWebUI.h`:** a failed `acceptUploadChunk()` now sets `uploadState.rejected`, the same as the begin-time refusal, so later chunks are skipped.
+
+I did not run the new test against the unfixed code to confirm it failed first.
+
+[]
