@@ -1,0 +1,39 @@
+case: tester/picker-imports-as-declarations-kotlin
+about: >
+  The tester gets what its test builds against, as declarations (the C++
+  copy's #36), in Kotlin, the next trial's language. A class whose
+  header holds its constructor's parameters (`data class Amount(val
+  cents: Long, …) : Comparable<Amount> {`) is a container: its members
+  are kept, each body cut to `…`. A parenthesis after the class's name
+  says nothing of the block; only one before any container word makes
+  it a body (`fun plus(other: Amount): Amount {`). Imports name a
+  package and a class: `shop.money.Amount` is `shop/money/Amount.kt`.
+given:
+  repo: tested
+  setup:
+    - |
+      cp -R "$FIXTURES/code/closure/kotlin/." .
+      git add . && git commit -qm 'feat: a shop in Kotlin'
+    - |
+      git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}", test-paths: ["src/test/**"]}}}
+  forge:
+    issues:
+      - id: 3
+        title: "A cart of two currencies adds them"
+        labels: ["workline:needs-tests"]
+        body: "## Need\n\nA cart holding euros and dollars sums them as one: its total is wrong.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **By zero:** Given the library, When I multiply 5 by 0, Then I get 0.\n\n---\n\n## Verification\n\nA test a scenario.\n\n## Scope\n\n- `src/main/kotlin/shop/Cart.kt`: `total()` refuses two currencies.\n"
+run: {test: [write, --issue, "3"], ai: "fake:tester-two-scenarios"}
+expect:
+  agent-calls: 1
+  run-files:
+    in/task.md:
+      contains:
+        - "### `src/main/kotlin/shop/money/Amount.kt` (23 lines: its declarations, each body left out as `…`, imported by `src/main/kotlin/shop/Cart.kt`)"
+        - "data class Amount(val cents: Long, val unit: Code) : Comparable<Amount> {\n    fun plus(other: Amount): Amount { … }"
+        - "    companion object {\n        fun zero(): Amount { … }"
+        - "### `src/main/kotlin/shop/currency/Code.kt` (14 lines: its declarations, each body left out as `…`, imported by `src/main/kotlin/shop/money/Amount.kt`)"
+        - "        fun parse(text: String): Code { … }"
+        - "`src/main/kotlin/shop/rates/Rates.kt` (imported)"
+      not-contains: ["money body", "currency body", "rates body"]

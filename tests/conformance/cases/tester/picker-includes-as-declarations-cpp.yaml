@@ -1,0 +1,48 @@
+case: tester/picker-includes-as-declarations-cpp
+about: >
+  The C++ copy's #36, frozen. Given its functions whole and then the
+  files it asked for, within code-lines-max 1000, the tester asked at
+  each of three runs for a new set and wrote no test: the HAL headers
+  (`MQTT_HAL.h`, `Wifi_HAL.h`, `Platform_HAL.h`), then the stubs those
+  include and an events header (`MQTT_Stub.h`, `Platform_Stub.h`,
+  `MQTTEvents.h`), then `MQTT.h` whole. Asked nothing yet, the task now
+  holds them as declarations, every body left out as `…`: the includes
+  of the test given first, then two steps of the Scope's, the most used
+  first, within the same budget. A suite asked for to copy is a test,
+  not an include: it stays the tester's to ask.
+given:
+  repo: tested
+  setup:
+    - |
+      cp -R "$FIXTURES/code/domoticscore/." .
+      git add . && git commit -qm 'feat: DomoticsCore, frozen from the C++ trial'
+    - |
+      git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}", code-lines-max: 1000, test-paths: ["DomoticsCore-*/test/**"]}}}
+  forge:
+    issues:
+      - id: 3
+        title: "MQTT: what a dropped link still gets wrong"
+        labels: ["workline:needs-tests"]
+        body: "## Need\n\nOperators and components that watch the MQTT link need it reported truthfully. Today `resetReconnect()` can leave every subscriber believing the link is up, and `updateStatistics()` keeps an uptime frozen as if the link were live.\n\n## Validation\n\n- **Silent reset:** Given a connected MQTT component, When `resetReconnect()` is called, Then subscribers get `mqtt/disconnected` before any later `mqtt/connected`.\n- **Frozen uptime:** Given a dropped link, When I read the statistics during the outage, Then the uptime no longer reads as live.\n\n---\n\n## Verification\n\nNative tests in the MQTT component's suite, on the client stub and the test clock.\n\n## Scope\n\n- `DomoticsCore-MQTT/include/DomoticsCore/MQTT_impl.h`: `resetReconnect()` announces the loss; `announceConnectionLost()` zeroes the uptime.\n- `DomoticsCore-MQTT/include/DomoticsCore/MQTT.h`: `MQTTStatistics`.\n"
+run:
+  role: tester
+  event: issue
+  target: {issue: 3}
+  ai: "fake:tester-two-scenarios"
+expect:
+  agent-calls: 1
+  run-files:
+    in/task.md:
+      contains:
+        - "### `DomoticsCore-MQTT/include/DomoticsCore/MQTT.h` (483 lines: its declarations, each body left out as `…`, named"
+        - "### `DomoticsCore-MQTT/include/DomoticsCore/MQTTEvents.h` (30 lines: its declarations"
+        - "### `DomoticsCore-MQTT/include/DomoticsCore/MQTT_HAL.h` (164 lines: its declarations"
+        - "### `DomoticsCore-Wifi/include/DomoticsCore/Wifi_HAL.h` (106 lines: its declarations"
+        - "### `DomoticsCore-MQTT/include/DomoticsCore/MQTT_Stub.h` (226 lines: its declarations"
+        - "### `DomoticsCore-Wifi/include/DomoticsCore/Wifi_Stub.h` (186 lines: its declarations"
+        - "    virtual bool connected() = 0;"
+        - "inline void MQTTComponent::resetReconnect() {"
+      not-contains:
+        - "### `DomoticsCore-MQTT/include/DomoticsCore/MQTT_HAL.h`\n"

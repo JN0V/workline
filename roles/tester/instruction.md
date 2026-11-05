@@ -30,10 +30,16 @@ style, beside the tests already there:
   `note`, the scenario's name first, "kept as today: the existing suite
   guards it". Test the other scenarios as above.
 
+A file given as "its declarations" shows each signature, type and
+member, its bodies left out as `…`: enough to call it and to build
+against it. Ask for its body only when a test must know what it does.
+
 When the task lacks code a test needs — a definition it calls, a header,
 a test to copy —, write no test and guess no name: answer one `note`,
 `needs: <the paths of the files you lack, comma-separated> — why`. The
-engine gives them, and asks you again at once.
+engine gives them, and asks you again at once, once only: name every
+file you lack in that one note, those its includes or imports need
+too (the task's "One step away" list), never a few now and more later.
 
 When no new test fits the issue as a whole, write no test: answer one
 `note` naming the proof that fits instead, `proof: <kind> — why`:

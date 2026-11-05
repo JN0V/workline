@@ -362,7 +362,7 @@ func (c Change) reaches(repo, head, path string, p Place) int {
 		return 0
 	}
 	l := languageOf(path)
-	hash := l.Name == "shell" || l.Name == "Python" || l.Name == "Ruby" // a `#` opens a comment
+	hash := l.HashComments // a `#` opens a comment
 	used := map[string]bool{}
 	for _, line := range lines[p.From-1 : p.To] {
 		for _, n := range names(stripCode(line, hash)) {

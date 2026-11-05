@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/codepick, internal/codenav, internal/builtin/productowner/productowner.go]
 status: draft
-checked: 0430d418
+checked: e338896f
 verified: agent:claude-code
 ---
 # The code picker
@@ -67,20 +67,47 @@ Under the role's budget, each piece once a task:
 The files the tester's agent asked for at its last run come right after
 the definitions (between 2 and 3): whole, else their first lines.
 
+**The tester's declarations** (its `Depth`, 2): what a new test builds
+against, so that it asks once, not a header at a time (the C++ copy's
+#36 asked for a new set at each of three runs).
+
+- **A file named** that does not fit whole, or asked for and not
+  fitting whole: its declarations first, the pieces above shown whole
+  in them; whole later, if what it adds still fits.
+- **Then the files included or imported**, two steps deep inside the
+  project, as their declarations: the test's own includes first (they
+  build today), then those of the Scope's files, of the files asked for
+  and of the definitions given, the most used a line first. A file two
+  steps away counts the names the declarations one step away use; one
+  none of whose names is used is left a path.
+- **Then a test asked for**: whole, else its first lines.
+- **Declarations**: each signature, type and member kept, each body cut
+  to its opening line and `…`, comment lines and blank lines out. By
+  braces or indentation, one rule a family, braces that do not balance
+  giving none; a block is a container by a
+  word (`class`, `struct`, `namespace`, `interface`, `impl`, …), the
+  imports by one row of patterns a family
+  ([research](../research/code-outline.md)). Ruby, Lua and shell have
+  none: whole or cut, as before.
+
 A binary file gives nothing: no line, and `logo.png` names neither
 `logo` nor `png`.
 
 ## What the task says
 
-- **Each file**: whole, its first lines (`cut: the first N lines`), or
-  its pieces, each with why it is given.
+- **Each file**: whole, its first lines (`cut: the first N lines`), its
+  pieces, each with why it is given, or its declarations ("its
+  declarations, each body left out as `…`", and why: named, asked
+  for, included by a file).
 - **The cut**: a piece the budget ran out in, where it goes on to; what
   is named past the budget; files named with nothing given, by size.
 - **Counted, not shown**: definitions past the caps, other places
   naming a name.
-- **One step away, as paths**: the files the code and the test given
-  include or import (C and C++ `#include`, Python and JavaScript
-  imports), and those defining the types the code derives from.
+- **One step away, as paths**: the files the code, the declarations
+  and the test given include or import, not given (the table of
+  [imports.go](../../internal/codepick/imports.go): C and C++, Python,
+  JavaScript and TypeScript, Go, the JVM's, Rust, Ruby, PHP, Lua,
+  shell), and those defining the types the code derives from.
 - **Given above**: a file given for an earlier issue of the same task.
 
 ## Read again only for code not given

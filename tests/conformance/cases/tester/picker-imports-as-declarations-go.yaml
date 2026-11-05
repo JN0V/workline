@@ -1,0 +1,37 @@
+case: tester/picker-imports-as-declarations-go
+about: >
+  The tester gets what its test builds against (the C++ copy's #36 asked
+  for a new set of headers at each of three runs). The code picker
+  follows the imports of the Scope's file two steps deep, inside the
+  project, and gives each file as its declarations: its types and
+  signatures, every body left out as `…`. A third step is a path only.
+  The same rule for every language, here Go, whose imports name a
+  package: its folder's files.
+given:
+  repo: tested
+  setup:
+    - |
+      cp -R "$FIXTURES/code/closure/go/." .
+      git add . && git commit -qm 'feat: a shop in Go'
+    - |
+      git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}", test-paths: ["**/*_test.go"]}}}
+  forge:
+    issues:
+      - id: 3
+        title: "A cart of two currencies adds them"
+        labels: ["workline:needs-tests"]
+        body: "## Need\n\nA cart holding euros and dollars sums them as one: its total is wrong.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **By zero:** Given the library, When I multiply 5 by 0, Then I get 0.\n\n---\n\n## Verification\n\nA test a scenario.\n\n## Scope\n\n- `cart/cart.go`: `Total()` refuses two currencies.\n"
+run: {test: [write, --issue, "3"], ai: "fake:tester-two-scenarios"}
+expect:
+  agent-calls: 1
+  run-files:
+    in/task.md:
+      contains:
+        - "### `money/money.go` (30 lines: its declarations, each body left out as `…`, imported by `cart/cart.go`)"
+        - "func (a Amount) Plus(b Amount) Amount { … }"
+        - "### `currency/currency.go` (22 lines: its declarations, each body left out as `…`, imported by `money/money.go`)"
+        - "func Parse(s string) (Code, error) { … }"
+        - "`rates/rates.go` (imported)"
+      not-contains: ["money body", "currency body", "rates body"]
