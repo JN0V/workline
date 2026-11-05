@@ -1,0 +1,28 @@
+# Your own build and tests skipped on a doc-only merge request, on GitLab —
+# include or copy into .gitlab-ci.yml. Not a workline job (docs/ci.md,
+# "A doc-only merge request").
+#
+# GitLab's `rules: changes` can only list the paths that build (paths are
+# OR-ed, there is no negated glob): a code folder missing from the list
+# would be merged unbuilt. So the list here is the docs instead, and the
+# default is to build: the first step of the job diffs the merge request
+# with its base and stops, green, when every changed file is a doc. Edit
+# DOC_PATTERN to your layout: what it does not match is built.
+# Any other pipeline (default branch, a branch without a merge request,
+# a tag) always builds.
+build:
+  stage: build
+  variables:
+    DOC_PATTERN: '^docs/|\.(md|mdx|rst|adoc)$|^(LICENSE|CODEOWNERS|NOTICE)$'
+  script:
+    - |
+      if [ "$CI_PIPELINE_SOURCE" = merge_request_event ]; then
+        git fetch --quiet --depth=1 origin "$CI_MERGE_REQUEST_DIFF_BASE_SHA" || true
+        if changed=$(git diff --name-only "$CI_MERGE_REQUEST_DIFF_BASE_SHA" HEAD 2>/dev/null) \
+           && [ -n "$changed" ] \
+           && ! printf '%s\n' "$changed" | grep -Ev "$DOC_PATTERN" | grep -q .; then
+          echo "doc-only merge request: no build"
+          exit 0
+        fi
+      fi
+    - echo "your build and tests here"
