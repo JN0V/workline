@@ -150,8 +150,8 @@ func (l *Language) isBody(header string) bool {
 			}
 		}
 	}
-	if l.containerRe == nil {
-		return true
+	if l.containerRe == nil || at < len(h) && !l.ParamHeaders {
+		return true // a parenthesis: a function's, unless a type's header holds its parameters
 	}
 	m := l.containerRe.FindStringIndex(h)
 	return m == nil || m[0] > at
@@ -170,7 +170,7 @@ func indentOutline(l *Language, lines []string) *Outlined {
 		raw := lines[i]
 		t := strings.TrimSpace(raw)
 		inDoc := doc
-		doc = doc != (tripleQuotes(raw)%2 == 1)
+		doc = docAfter(raw, doc)
 		if !inDoc && strings.HasPrefix(t, "#") && depth == 0 {
 			continue // a comment's line: the declarations, not their prose
 		}
@@ -201,7 +201,7 @@ func indentOutline(l *Language, lines []string) *Outlined {
 		end, inBody := i, false
 		for n := i + 1; n < len(lines); n++ {
 			was := inBody
-			inBody = inBody != (tripleQuotes(lines[n])%2 == 1)
+			inBody = docAfter(lines[n], inBody)
 			if s := strings.TrimSpace(lines[n]); s != "" {
 				if !was && len(indentOf(lines[n])) <= hi {
 					break
@@ -217,9 +217,40 @@ func indentOutline(l *Language, lines []string) *Outlined {
 	return o
 }
 
-// tripleQuotes counts a line's triple quotes, double and single.
-func tripleQuotes(line string) int {
-	return strings.Count(line, strings.Repeat(`"`, 3)) + strings.Count(line, strings.Repeat("'", 3))
+// docAfter says whether a line ends inside a triple-quoted string, in
+// whether it starts inside one: a triple quote opens or closes it, and
+// one inside a one-line string (`'"""'`) does neither.
+func docAfter(line string, in bool) bool {
+	var quote string // the triple quote open, when in
+	if in {
+		quote = strings.Repeat(`"`, 3)
+		if i, j := strings.Index(line, quote), strings.Index(line, "'''"); j >= 0 && (i < 0 || j < i) {
+			quote = "'''"
+		}
+	}
+	for i := 0; i < len(line); i++ {
+		rest := line[i:]
+		switch {
+		case in:
+			if strings.HasPrefix(rest, quote) {
+				in = false
+				i += 2
+			}
+		case line[i] == '#':
+			return false // a comment: the rest is not code
+		case strings.HasPrefix(rest, `"""`) || strings.HasPrefix(rest, "'''"):
+			in, quote = true, rest[:3]
+			i += 2
+		case line[i] == '"' || line[i] == '\'':
+			q := line[i]
+			for i++; i < len(line) && line[i] != q; i++ {
+				if line[i] == '\\' {
+					i++
+				}
+			}
+		}
+	}
+	return in
 }
 
 // Render shows the outline: each line kept, a body as its opening line,

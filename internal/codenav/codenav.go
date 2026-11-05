@@ -44,6 +44,19 @@ type Language struct {
 	// Bases is the pattern of the types a type derives from or embeds,
 	// each group a name.
 	Bases string
+	// ParamHeaders: a type's header may hold its parameters (Kotlin's
+	// `class P(val x: Int)`, a Java record's): a container word before a
+	// parenthesis keeps the block. Elsewhere a parenthesis makes it a
+	// body (C's `struct foo *make(int x) {`).
+	ParamHeaders bool
+	// ShellQuotes: a single quote is raw, a backquote no string, a `#`
+	// after a space opens a comment (StripCode's shell).
+	ShellQuotes bool
+	// HashComments: a `#` opens a comment.
+	HashComments bool
+	// BareCalls: a function is called with no parenthesis, any word may
+	// be one.
+	BareCalls bool
 
 	ignoreRe, containerRe, basesRe *regexp.Regexp
 }
@@ -62,31 +75,32 @@ var Languages = []Language{
 	{Name: "Go", Exts: []string{".go"}, def: `^func\s+(?:\([^)]*\)\s*)?(NAME)\s*[\[(]`, Body: "go",
 		Outline: "braces", Containers: []string{"type", "struct", "interface"}, LineEnds: true,
 		Bases: `^\s+\*?([A-Z]\w*)\s*(?://.*)?$`},
-	{Name: "shell", Exts: []string{".sh", ".bash", ".zsh", ".ksh"}, def: `^\s*(?:function\s+(NAME)\b|(NAME)\s*\(\s*\))`, Body: "braces"},
+	{Name: "shell", Exts: []string{".sh", ".bash", ".zsh", ".ksh"}, def: `^\s*(?:function\s+(NAME)\b|(NAME)\s*\(\s*\))`, Body: "braces",
+		ShellQuotes: true, HashComments: true, BareCalls: true},
 	{Name: "Python", Exts: []string{".py"}, def: `^\s*(?:async\s+)?def\s+(NAME)\s*\(`, Body: "indent",
-		Outline: "indent", Containers: []string{"class"}, Bodies: []string{"def", "async"},
+		Outline: "indent", Containers: []string{"class"}, Bodies: []string{"def", "async"}, HashComments: true,
 		Bases: `^\s*class\s+\w+\(\s*(?:[\w.]+\.)?([A-Z]\w*)`},
-	{Name: "Ruby", Exts: []string{".rb"}, def: `^\s*def\s+(?:self\.)?(NAME)\b`, Body: "end"},
+	{Name: "Ruby", Exts: []string{".rb"}, def: `^\s*def\s+(?:self\.)?(NAME)\b`, Body: "end", HashComments: true, BareCalls: true},
 	{Name: "Lua", Exts: []string{".lua"}, def: `^\s*(?:local\s+)?function\s+(?:[\w.:]*[.:])?(NAME)\s*\(`, Body: "end"},
 	{Name: "C and C++", Exts: []string{".c", ".h", ".cc", ".cpp", ".cxx", ".hpp", ".hh", ".hxx", ".ino", ".m", ".mm"}, def: cLike, Body: "braces",
 		Outline: "braces", Containers: []string{"class", "struct", "union", "namespace", "enum", "extern", "interface", "protocol", "implementation"},
 		Ignore:  `\[\[[^\]]*\]\]|__attribute__\s*\(\([^)]*\)\)|__declspec\s*\([^)]*\)|alignas\s*\([^)]*\)|template\s*<(?:[^<>]|<[^<>]*>)*>|@\w+`,
 		Preproc: true, Bases: `\b(?:public|protected|private)\s+(?:virtual\s+)?([A-Z]\w*)|^\s*(?:class|struct)\s+\w+\s*:\s*(?:virtual\s+)?([A-Z]\w*)`},
 	{Name: "Java", Exts: []string{".java", ".groovy"}, def: cLike, Body: "braces",
-		Outline: "braces", Containers: []string{"class", "interface", "enum", "record", "trait"}, Ignore: annotations, Bases: extendsBase},
+		Outline: "braces", Containers: []string{"class", "interface", "enum", "record", "trait"}, Ignore: annotations, Bases: extendsBase, ParamHeaders: true},
 	{Name: "Kotlin", Exts: []string{".kt", ".kts"}, def: cLike, Body: "braces",
-		Outline: "braces", Containers: []string{"class", "interface", "object"}, Ignore: annotations, LineEnds: true,
+		Outline: "braces", Containers: []string{"class", "interface", "object"}, Ignore: annotations, LineEnds: true, ParamHeaders: true,
 		Bases: `\b(?:class|object|interface)\s+\w+(?:<[^>]*>)?(?:\s*\([^)]*\))?\s*:\s*([A-Z]\w*)`},
 	{Name: "Scala", Exts: []string{".scala"}, def: cLike, Body: "braces",
-		Outline: "braces", Containers: []string{"class", "object", "trait", "enum"}, Ignore: annotations, LineEnds: true, Bases: extendsBase},
+		Outline: "braces", Containers: []string{"class", "object", "trait", "enum"}, Ignore: annotations, LineEnds: true, Bases: extendsBase, ParamHeaders: true},
 	{Name: "Swift", Exts: []string{".swift"}, def: cLike, Body: "braces",
 		Outline: "braces", Containers: []string{"class", "struct", "enum", "protocol", "extension", "actor"}, Ignore: annotations, LineEnds: true,
 		Bases: `\b(?:class|struct|enum|protocol|extension|actor)\s+\w+(?:<[^>]*>)?\s*:\s*([A-Z]\w*)`},
 	{Name: "C#", Exts: []string{".cs"}, def: cLike, Body: "braces",
-		Outline: "braces", Containers: []string{"class", "struct", "interface", "enum", "record", "namespace"}, Ignore: `\[[^\]]*\]`, Preproc: true,
+		Outline: "braces", Containers: []string{"class", "struct", "interface", "enum", "record", "namespace"}, Ignore: `\[[^\]]*\]`, Preproc: true, ParamHeaders: true,
 		Bases: `\b(?:class|struct|interface|record)\s+\w+(?:<[^>]*>)?(?:\s*\([^)]*\))?\s*:\s*([A-Z]\w*)`},
 	{Name: "JavaScript and TypeScript", Exts: []string{".js", ".jsx", ".mjs", ".cjs", ".ts", ".tsx", ".mts", ".cts"}, def: cLike, Body: "braces",
-		Outline: "braces", Containers: []string{"class", "interface", "namespace", "module", "enum", "type"}, Ignore: annotations, Bases: extendsBase},
+		Outline: "braces", Containers: []string{"class", "interface", "namespace", "module", "enum", "type"}, Ignore: annotations, Bases: extendsBase, ParamHeaders: true},
 	{Name: "Rust", Exts: []string{".rs"}, def: cLike, Body: "braces",
 		Outline: "braces", Containers: []string{"struct", "enum", "trait", "impl", "mod", "union"}, Ignore: `#!?\[[^\]]*\]`,
 		Bases: `\bimpl(?:<[^>]*>)?\s+([A-Z]\w*)(?:<[^>]*>)?\s+for\b`},
@@ -314,7 +328,7 @@ func bounds(l *Language, lines []string, def int, name string) (Func, bool) {
 	case "indent", "end":
 		to = indentEnd(lines, def, l.Body == "end")
 	default:
-		to = braceEnd(lines, def, l.Name == "shell")
+		to = braceEnd(lines, def, l.ShellQuotes)
 	}
 	if to == 0 {
 		return Func{}, false
@@ -333,7 +347,7 @@ func CallsIn(l *Language, lines []string, self string) []string {
 	var out []string
 	seen := map[string]bool{self: true}
 	re := callRe
-	if l.Name == "shell" || l.Name == "Ruby" {
+	if l.BareCalls {
 		re = wordRe
 	}
 	for _, line := range lines {
