@@ -16,23 +16,128 @@ import (
 	"strings"
 )
 
-// Language is how functions are found in a family of files.
+// Language is how functions are found in a family of files, and how its
+// declarations are outlined (Outline): data, one row a language, no
+// parser but Go's (docs/research/code-outline.md).
 type Language struct {
 	Name string
 	Exts []string
 	def  string // a definition's pattern, NAME standing for its name
 	Body string // go, braces, indent (Python), end (Ruby, Lua)
+	// Outline is how its declarations are outlined: braces, indent, or
+	// "" none (shell, Ruby, Lua): whole or cut, never a body shown.
+	Outline string
+	// Containers are the words opening a block whose members are
+	// declarations (`class`, `struct`, `namespace`): kept in an outline.
+	Containers []string
+	// Bodies, for an indented language, are the words opening a body cut
+	// from an outline (`def`); another block (`if TYPE_CHECKING:`) is kept.
+	Bodies []string
+	// Ignore is the pattern of what a block's header holds that says
+	// nothing of the block: annotations, attributes, a template's head.
+	Ignore string
+	// Preproc: a line opening with `#` is the preprocessor's, kept.
+	Preproc bool
+	// LineEnds: a line ends a statement, no `;` needed (Go, Kotlin,
+	// Swift), unless a parenthesis is still open.
+	LineEnds bool
+	// Bases is the pattern of the types a type derives from or embeds,
+	// each group a name.
+	Bases string
+
+	ignoreRe, containerRe, basesRe *regexp.Regexp
 }
+
+const (
+	// cLike is a C-like language's definition: a function by its keyword,
+	// a function bound to a name, or a name before its parameters.
+	cLike = `(?:\b(?:function|fn|fun|func|def)\s+(NAME)\b|\b(?:const|let|var)\s+(NAME)\s*=\s*(?:async\s+)?(?:function\b|\([^)]*\)\s*=>|[A-Za-z_$][\w$]*\s*=>)|^\s*(?:[\w$:<>,*&\[\]~.]+\s+)*(?:[\w$]+(?:<(?:[^<>()]|<[^<>()]*>)*>)?::)*(NAME)\s*\([^;{]*(?:\{.*)?$)`
+	// annotations: `@Entity(name = "x")`, Java's, Kotlin's, TypeScript's.
+	annotations = `@[\w.]+(?:\([^)]*\))?`
+	extendsBase = `\b(?:extends|implements|with)\s+([A-Z]\w*)`
+)
 
 // Languages are the families known, in the order they are tried.
 var Languages = []Language{
-	{"Go", []string{".go"}, `^func\s+(?:\([^)]*\)\s*)?(NAME)\s*[\[(]`, "go"},
-	{"shell", []string{".sh", ".bash", ".zsh", ".ksh"}, `^\s*(?:function\s+(NAME)\b|(NAME)\s*\(\s*\))`, "braces"},
-	{"Python", []string{".py"}, `^\s*(?:async\s+)?def\s+(NAME)\s*\(`, "indent"},
-	{"Ruby", []string{".rb"}, `^\s*def\s+(?:self\.)?(NAME)\b`, "end"},
-	{"Lua", []string{".lua"}, `^\s*(?:local\s+)?function\s+(?:[\w.:]*[.:])?(NAME)\s*\(`, "end"},
-	{"C-like", []string{".c", ".h", ".cc", ".cpp", ".cxx", ".hpp", ".hh", ".java", ".cs", ".js", ".jsx", ".mjs", ".cjs", ".ts", ".tsx", ".rs", ".kt", ".kts", ".swift", ".php", ".scala", ".dart", ".groovy"},
-		`(?:\b(?:function|fn|fun|func|def)\s+(NAME)\b|\b(?:const|let|var)\s+(NAME)\s*=\s*(?:async\s+)?(?:function\b|\([^)]*\)\s*=>|[A-Za-z_$][\w$]*\s*=>)|^\s*(?:[\w$:<>,*&\[\]~.]+\s+)*(?:[\w$]+(?:<(?:[^<>()]|<[^<>()]*>)*>)?::)*(NAME)\s*\([^;{]*(?:\{.*)?$)`, "braces"},
+	{Name: "Go", Exts: []string{".go"}, def: `^func\s+(?:\([^)]*\)\s*)?(NAME)\s*[\[(]`, Body: "go",
+		Outline: "braces", Containers: []string{"type", "struct", "interface"}, LineEnds: true,
+		Bases: `^\s+\*?([A-Z]\w*)\s*(?://.*)?$`},
+	{Name: "shell", Exts: []string{".sh", ".bash", ".zsh", ".ksh"}, def: `^\s*(?:function\s+(NAME)\b|(NAME)\s*\(\s*\))`, Body: "braces"},
+	{Name: "Python", Exts: []string{".py"}, def: `^\s*(?:async\s+)?def\s+(NAME)\s*\(`, Body: "indent",
+		Outline: "indent", Containers: []string{"class"}, Bodies: []string{"def", "async"},
+		Bases: `^\s*class\s+\w+\(\s*(?:[\w.]+\.)?([A-Z]\w*)`},
+	{Name: "Ruby", Exts: []string{".rb"}, def: `^\s*def\s+(?:self\.)?(NAME)\b`, Body: "end"},
+	{Name: "Lua", Exts: []string{".lua"}, def: `^\s*(?:local\s+)?function\s+(?:[\w.:]*[.:])?(NAME)\s*\(`, Body: "end"},
+	{Name: "C and C++", Exts: []string{".c", ".h", ".cc", ".cpp", ".cxx", ".hpp", ".hh", ".hxx", ".ino", ".m", ".mm"}, def: cLike, Body: "braces",
+		Outline: "braces", Containers: []string{"class", "struct", "union", "namespace", "enum", "extern", "interface", "protocol", "implementation"},
+		Ignore:  `\[\[[^\]]*\]\]|__attribute__\s*\(\([^)]*\)\)|__declspec\s*\([^)]*\)|alignas\s*\([^)]*\)|template\s*<(?:[^<>]|<[^<>]*>)*>|@\w+`,
+		Preproc: true, Bases: `\b(?:public|protected|private)\s+(?:virtual\s+)?([A-Z]\w*)|^\s*(?:class|struct)\s+\w+\s*:\s*(?:virtual\s+)?([A-Z]\w*)`},
+	{Name: "Java", Exts: []string{".java", ".groovy"}, def: cLike, Body: "braces",
+		Outline: "braces", Containers: []string{"class", "interface", "enum", "record", "trait"}, Ignore: annotations, Bases: extendsBase},
+	{Name: "Kotlin", Exts: []string{".kt", ".kts"}, def: cLike, Body: "braces",
+		Outline: "braces", Containers: []string{"class", "interface", "object"}, Ignore: annotations, LineEnds: true,
+		Bases: `\b(?:class|object|interface)\s+\w+(?:<[^>]*>)?(?:\s*\([^)]*\))?\s*:\s*([A-Z]\w*)`},
+	{Name: "Scala", Exts: []string{".scala"}, def: cLike, Body: "braces",
+		Outline: "braces", Containers: []string{"class", "object", "trait", "enum"}, Ignore: annotations, LineEnds: true, Bases: extendsBase},
+	{Name: "Swift", Exts: []string{".swift"}, def: cLike, Body: "braces",
+		Outline: "braces", Containers: []string{"class", "struct", "enum", "protocol", "extension", "actor"}, Ignore: annotations, LineEnds: true,
+		Bases: `\b(?:class|struct|enum|protocol|extension|actor)\s+\w+(?:<[^>]*>)?\s*:\s*([A-Z]\w*)`},
+	{Name: "C#", Exts: []string{".cs"}, def: cLike, Body: "braces",
+		Outline: "braces", Containers: []string{"class", "struct", "interface", "enum", "record", "namespace"}, Ignore: `\[[^\]]*\]`, Preproc: true,
+		Bases: `\b(?:class|struct|interface|record)\s+\w+(?:<[^>]*>)?(?:\s*\([^)]*\))?\s*:\s*([A-Z]\w*)`},
+	{Name: "JavaScript and TypeScript", Exts: []string{".js", ".jsx", ".mjs", ".cjs", ".ts", ".tsx", ".mts", ".cts"}, def: cLike, Body: "braces",
+		Outline: "braces", Containers: []string{"class", "interface", "namespace", "module", "enum", "type"}, Ignore: annotations, Bases: extendsBase},
+	{Name: "Rust", Exts: []string{".rs"}, def: cLike, Body: "braces",
+		Outline: "braces", Containers: []string{"struct", "enum", "trait", "impl", "mod", "union"}, Ignore: `#!?\[[^\]]*\]`,
+		Bases: `\bimpl(?:<[^>]*>)?\s+([A-Z]\w*)(?:<[^>]*>)?\s+for\b`},
+	{Name: "PHP", Exts: []string{".php"}, def: cLike, Body: "braces",
+		Outline: "braces", Containers: []string{"class", "interface", "trait", "enum", "namespace"}, Ignore: `#\[[^\]]*\]`, Bases: extendsBase},
+	{Name: "Dart", Exts: []string{".dart"}, def: cLike, Body: "braces",
+		Outline: "braces", Containers: []string{"class", "mixin", "extension", "enum"}, Ignore: annotations, Bases: extendsBase},
+}
+
+func init() {
+	for i := range Languages {
+		l := &Languages[i]
+		if l.Ignore != "" {
+			l.ignoreRe = regexp.MustCompile(l.Ignore)
+		}
+		if len(l.Containers) > 0 {
+			// A container word opening a declaration: a name, a brace or a
+			// type's parameters after it (`class A`, `struct {`,
+			// `impl<T>`), never `module.exports` nor `var record =`.
+			l.containerRe = regexp.MustCompile(`\b(?:` + strings.Join(l.Containers, "|") + `)(?:\s+[A-Za-z_]|\s*[{<]|\s*$)`)
+		}
+		if l.Bases != "" {
+			l.basesRe = regexp.MustCompile(l.Bases)
+		}
+	}
+}
+
+// BasesIn are the types a line says a type derives from or embeds.
+func (l *Language) BasesIn(line string) []string {
+	if l.basesRe == nil {
+		return nil
+	}
+	var out []string
+	for _, m := range l.basesRe.FindAllStringSubmatch(line, -1) {
+		for _, w := range m[1:] {
+			if w != "" {
+				out = append(out, w)
+			}
+		}
+	}
+	return out
+}
+
+// Defines is the pattern of a line declaring a type of the language by
+// its name: one of its container words, then the name.
+func (l *Language) Defines(name string) *regexp.Regexp {
+	words := l.Containers
+	if len(words) == 0 {
+		words = []string{"class", "struct", "interface", "trait", "type"}
+	}
+	return regexp.MustCompile(`\b(?:` + strings.Join(words, "|") + `)\s+` + regexp.QuoteMeta(name) + `\b[^;]*$`)
 }
 
 // NotCalls are words a pattern would take for a function's name: the

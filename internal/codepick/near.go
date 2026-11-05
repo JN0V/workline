@@ -3,7 +3,6 @@ package codepick
 import (
 	"fmt"
 	"path"
-	"regexp"
 	"slices"
 	"strings"
 
@@ -91,12 +90,6 @@ func norm(s string) string {
 	return b.String()
 }
 
-var (
-	// baseRe is a type a class derives from: C++ `: public Base`, Python
-	// `class A(Base):`, Java and TypeScript `extends Base`.
-	baseRe = regexp.MustCompile(`\b(?:public|protected|private|extends|implements)\s+(?:virtual\s+)?([A-Z]\w*)|^\s*class\s+\w+\(([A-Z]\w*)`)
-)
-
 // linked are the files one step away from the code given, as paths: those
 // it includes or imports, then those defining the types it derives from.
 func (p *Picker) linked(pk Pick, tests []string) []string {
@@ -120,16 +113,17 @@ func (p *Picker) linked(pk Pick, tests []string) []string {
 		for _, im := range p.imports(f.Path, tests) {
 			add(im.file, im.why)
 		}
+		lang := codenav.Of(f.Path)
 		for _, g := range f.Given {
-			if f.Test {
+			if f.Test || lang == nil {
 				break
 			}
+			// The types it derives from or embeds, by its language's
+			// pattern (codenav.Languages).
 			for _, l := range f.Lines[g.From-1 : min(g.To, len(f.Lines))] {
-				for _, m := range baseRe.FindAllStringSubmatch(l, -1) {
-					for _, w := range m[1:] {
-						if w != "" && !slices.Contains(bases, w) {
-							bases = append(bases, w)
-						}
+				for _, w := range lang.BasesIn(l) {
+					if !slices.Contains(bases, w) {
+						bases = append(bases, w)
 					}
 				}
 			}
@@ -138,9 +132,8 @@ func (p *Picker) linked(pk Pick, tests []string) []string {
 	if len(bases) > 0 {
 		hits := p.grep(bases)
 		for _, b := range bases {
-			def := regexp.MustCompile(`\b(?:class|struct|interface|trait|type)\s+` + regexp.QuoteMeta(b) + `\b[^;]*$`)
 			for _, h := range hits[b] {
-				if codenav.Of(h.file) != nil && def.MatchString(h.line) && (len(tests) == 0 || !pathglob.Any(tests, h.file)) {
+				if l := codenav.Of(h.file); l != nil && l.Defines(b).MatchString(h.line) && (len(tests) == 0 || !pathglob.Any(tests, h.file)) {
 					add(h.file, fmt.Sprintf("defines `%s`, a type the code derives from", b))
 					break
 				}

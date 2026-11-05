@@ -1,32 +1,12 @@
 package codenav
 
 import (
-	"regexp"
 	"slices"
 	"strings"
 )
 
 // Elided marks the lines of a body left out of an outline.
 const Elided = "…"
-
-// Containers are the words that open a block whose members are
-// declarations — a type, a namespace, a module — in any language: the
-// outline keeps such a block's lines, and leaves out every other block,
-// a function's body above all (docs/research/code-outline.md). Data, not
-// a parser: a language whose word is missing here loses its members to
-// `…`, never shows a body.
-var Containers = []string{"class", "struct", "union", "namespace", "interface", "enum", "trait", "impl",
-	"mod", "module", "object", "protocol", "extension", "record", "type", "extern", "mixin"}
-
-var (
-	// containerRe is a container word opening a declaration: a name, a
-	// brace or a type's parameters after it (`class A`, `struct {`,
-	// `impl<T>`), never `module.exports` nor `var record =`.
-	containerRe = regexp.MustCompile(`\b(?:` + strings.Join(Containers, "|") + `)(?:\s+[A-Za-z_]|\s*[{<]|\s*$)`)
-	// annotation is a Java or Kotlin annotation, a C++ attribute: its
-	// parenthesis says nothing of the block after it.
-	annotation = regexp.MustCompile(`@[\w.]+(?:\([^)]*\))?|\[\[[^\]]*\]\]`)
-)
 
 // Outlined is a file's declarations, its bodies left out: the lines kept,
 // and each body cut, from the line it opens on to the line it ends on.
@@ -39,33 +19,35 @@ type Outlined struct {
 // Outline is a file's declarations, its bodies left out: each block that
 // is not a container — a function's body, an initializer — is cut to its
 // opening line and `…`; a line holding only a comment is left out too.
-// Nil when the file's language has no outline (Ruby and Lua close their
-// blocks by a word; shell's are few). By braces for C-like languages and
-// Go, by indentation for Python: one rule a family, no parser.
+// By braces or by indentation, the language's row of Languages saying
+// its containers, what a header holds that says nothing, and the rest
+// (docs/research/code-outline.md). Nil when the language has none
+// (shell, Ruby, Lua), or when its braces do not balance — a regular
+// expression's, a branch of `#if` each opening one: the file is then
+// given whole or cut, never a body shown for a declaration.
 func Outline(file string, lines []string) *Outlined {
 	l := Of(file)
 	if l == nil {
 		return nil
 	}
-	switch {
-	case l.Name == "shell":
-		return nil
-	case l.Body == "go" || l.Body == "braces":
-		return braceOutline(lines)
-	case l.Body == "indent":
-		return indentOutline(lines)
+	switch l.Outline {
+	case "braces":
+		return braceOutline(l, lines)
+	case "indent":
+		return indentOutline(l, lines)
 	}
 	return nil
 }
 
-// braceOutline keeps the lines outside any body: a block opened by a
-// header holding a parenthesis (a function, a call, a control word) or
-// no container word (an initializer) is a body.
-func braceOutline(lines []string) *Outlined {
+// braceOutline keeps the lines outside any body: a block whose header
+// holds no container word before its parameters — a function, a call, a
+// control word, an initializer — is a body.
+func braceOutline(l *Language, lines []string) *Outlined {
 	o := &Outlined{Keep: make([]bool, len(lines)), Bodies: map[int]int{}, Braces: true}
 	var stack []bool // true: a body
 	bodies := 0      // bodies open
 	header := ""     // the code since the last `;`, `{` or `}`
+	parens := 0      // parentheses open in the header
 	open := 0        // the line the outermost body opened on
 	inComment := false
 	for i, raw := range lines {
@@ -73,37 +55,51 @@ func braceOutline(lines []string) *Outlined {
 		inComment = still
 		code := StripCode(bare, false)
 		startIn := bodies > 0
-		pre := strings.HasPrefix(strings.TrimSpace(code), "#")
+		pre := l.Preproc && strings.HasPrefix(strings.TrimSpace(code), "#")
 		if pre {
 			code = "" // a preprocessor line: kept, no header
 		}
 		for _, c := range code {
 			switch c {
 			case '{':
-				body := bodies > 0 || isBody(header)
+				body := bodies > 0 || l.isBody(header)
 				stack = append(stack, body)
 				if body {
 					bodies++
 				}
-				header = ""
+				header, parens = "", 0
 			case '}':
-				if n := len(stack); n > 0 {
-					if stack[n-1] {
-						bodies--
-					}
-					stack = stack[:n-1]
+				n := len(stack)
+				if n == 0 {
+					return nil // more closed than opened: not read right
 				}
-				header = ""
+				if stack[n-1] {
+					bodies--
+				}
+				stack = stack[:n-1]
+				header, parens = "", 0
 			case ';':
-				header = ""
+				header, parens = "", 0
 			default:
+				switch c {
+				case '(':
+					parens++
+				case ')':
+					parens = max(parens-1, 0)
+				}
 				header += string(c)
 			}
 		}
 		header += " "
-		// A line ending a call or a group, or blank, ends a header too:
-		// Go writes no `;`, and `import (…)` is not the next type's.
-		if t := strings.TrimSpace(code); strings.TrimSpace(raw) == "" || !pre && strings.HasSuffix(t, ")") {
+		// A blank line, a line ending a call or a group, or, where a line
+		// ends a statement, any line with no parenthesis open, ends a
+		// header: `import (…)` is not the next type's.
+		t := strings.TrimSpace(code)
+		switch {
+		case strings.TrimSpace(raw) == "":
+			header, parens = "", 0
+		case pre || parens > 0:
+		case strings.HasSuffix(t, ")"), l.LineEnds && !strings.HasSuffix(t, ",") && !strings.HasSuffix(t, "="):
 			header = ""
 		}
 		switch {
@@ -120,37 +116,68 @@ func braceOutline(lines []string) *Outlined {
 			}
 		}
 	}
-	if bodies > 0 && open > 0 { // a body the file does not close
-		o.Bodies[open] = len(lines)
+	if len(stack) > 0 || inComment {
+		return nil // a block the file does not close: not read right
 	}
 	return o
 }
 
 // isBody says whether a block's header opens a body rather than a
-// container: a parenthesis (a function's parameters, a condition), or
-// no container word (`= {`, an initializer).
-func isBody(header string) bool {
-	h := annotation.ReplaceAllString(header, "")
-	if strings.Contains(h, "(") || strings.Contains(h, "=>") {
+// container: no container word before its first closed parenthesis or
+// arrow (`class P(val x: Int) : B()` is a container, `void f(struct S
+// s)` a body), what says nothing (an annotation, an attribute, a
+// template's head) left out first.
+func (l *Language) isBody(header string) bool {
+	h := header
+	if l.ignoreRe != nil {
+		h = l.ignoreRe.ReplaceAllString(h, " ")
+	}
+	at := len(h) // the first parenthesis closed in the header, or an arrow
+	if i := strings.Index(h, "=>"); i >= 0 {
+		at = i
+	}
+	depth, from := 0, -1
+	for i, c := range h {
+		if c == '(' {
+			if depth == 0 {
+				from = i
+			}
+			depth++
+		} else if c == ')' && depth > 0 {
+			if depth--; depth == 0 && from < at {
+				at = from
+				break
+			}
+		}
+	}
+	if l.containerRe == nil {
 		return true
 	}
-	return !containerRe.MatchString(h)
+	m := l.containerRe.FindStringIndex(h)
+	return m == nil || m[0] > at
 }
 
 // indentOutline keeps the lines outside any body by their indentation: a
-// header ending in `:` opens a block, a container when its first word is
-// one (`class`), else a body cut to its header and `…`.
-func indentOutline(lines []string) *Outlined {
+// header ending in `:` whose first word opens a body (Python's `def`) is
+// cut to its header and `…`; a container (`class`) or another block
+// (`if TYPE_CHECKING:`) is kept. A docstring's lines are never headers.
+func indentOutline(l *Language, lines []string) *Outlined {
 	o := &Outlined{Keep: make([]bool, len(lines)), Bodies: map[int]int{}}
 	depth := 0  // brackets open
 	start := -1 // the first line of a header spread over lines
+	doc := false
 	for i := 0; i < len(lines); i++ {
 		raw := lines[i]
 		t := strings.TrimSpace(raw)
-		if strings.HasPrefix(t, "#") && depth == 0 {
+		inDoc := doc
+		doc = doc != (tripleQuotes(raw)%2 == 1)
+		if !inDoc && strings.HasPrefix(t, "#") && depth == 0 {
 			continue // a comment's line: the declarations, not their prose
 		}
 		o.Keep[i] = true
+		if inDoc || doc {
+			continue
+		}
 		if depth == 0 {
 			start = i
 		}
@@ -167,14 +194,16 @@ func indentOutline(lines []string) *Outlined {
 			continue
 		}
 		word := strings.Fields(strings.TrimSpace(lines[start]))
-		if len(word) > 0 && word[0] != "type" && slices.Contains(Containers, word[0]) {
+		if len(word) == 0 || !slices.Contains(l.Bodies, strings.TrimSuffix(word[0], ":")) {
 			continue
 		}
 		hi := len(indentOf(lines[start]))
-		end := i
+		end, inBody := i, false
 		for n := i + 1; n < len(lines); n++ {
+			was := inBody
+			inBody = inBody != (tripleQuotes(lines[n])%2 == 1)
 			if s := strings.TrimSpace(lines[n]); s != "" {
-				if len(indentOf(lines[n])) <= hi {
+				if !was && len(indentOf(lines[n])) <= hi {
 					break
 				}
 				end = n
@@ -186,6 +215,11 @@ func indentOutline(lines []string) *Outlined {
 		}
 	}
 	return o
+}
+
+// tripleQuotes counts a line's triple quotes, double and single.
+func tripleQuotes(line string) int {
+	return strings.Count(line, strings.Repeat(`"`, 3)) + strings.Count(line, strings.Repeat("'", 3))
 }
 
 // Render shows the outline: each line kept, a body as its opening line,
