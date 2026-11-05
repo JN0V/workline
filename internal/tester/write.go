@@ -39,10 +39,6 @@ const (
 	exitExternal = 3  // an outside service failed
 	testFilesMax = 3  // test files beside the Scope's code given whole
 	listedMax    = 40 // test files named, not given
-	// testShare: the part of code-lines-max kept for a test beside the
-	// code when the code alone is past it, 1 in testShare (#1059: 1000
-	// lines of headers, no test seen, no test possible).
-	testShare = 5
 )
 
 // Scenario is one of an issue's Validation scenarios: its name, as the
@@ -215,10 +211,7 @@ func writeCode(b *strings.Builder, repo, text, scope string, sources []string, s
 		return
 	}
 	files := pk.Files()
-	var paths, owners []string
-	for _, w := range work.ScopeWords(scope) {
-		paths = append(paths, w)
-	}
+	paths, owners := work.ScopeWords(scope), []string(nil)
 	scoped := map[string]bool{}
 	for _, w := range paths {
 		for _, f := range work.Files(w, files) {
