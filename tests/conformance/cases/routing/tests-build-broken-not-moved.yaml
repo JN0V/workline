@@ -6,6 +6,7 @@ about: >
   never a verdict on the issue: #3 keeps workline:needs-tests and its
   hops, the error said on it with when it runs again; never blocked. The
   same reconcile run again starts nothing: it says it waits until then.
+  The tester's comment never says the line blocks it.
 given:
   repo: go-tested
   setup:
@@ -34,3 +35,4 @@ expect:
       - id: 3
         labels: ["workline:needs-tests"]
         comment-contains: ["**workline's line** saw the tester's run on this issue fail (build).", "1 of 2 tries for this kind of error", "\"hops\":1", "\"errors\":{\"by\":{\"build\":1}"]
+        comment-lacks: ["the line blocks it"]

@@ -81,3 +81,6 @@ trial-37-replay quiet-within-k expected-end
 # once (ADR-0063, migration), unblocked, then the claim's two labels.
 trial-19 one-state-label
 trial-37 one-state-label
+# The tester short of code says what it lacks (#1047, #1059): given at
+# its next run after a back-off, on the same task.
+trial-35-tester-needs i2-same-input

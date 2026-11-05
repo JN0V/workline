@@ -104,6 +104,8 @@ var traces = func() []trace {
 		// owner's question, unanswered: the issue waits on its reporter).
 		trace{name: "trial-35-needs-engine", file: "trial-35", fresh: true, end: "done", by: one("product-owner", needsEngine)},
 		trace{name: "trial-35-needs-po-test", file: "trial-35", fresh: true, end: "done", by: one("tester", needsRole)},
+		// #1047, #1059: the tester short of code says what it lacks.
+		trace{name: "trial-35-tester-needs", file: "trial-35", fresh: true, end: "done", by: one("tester", needsEngine)},
 		trace{name: "trial-35-needs-po-code", file: "trial-35", fresh: true, end: "done", by: one("developer", needsRole)},
 		trace{name: "trial-35-needs-person", file: "trial-35", fresh: true, end: "waiting:", by: one("product-owner", needsPerson)},
 	)

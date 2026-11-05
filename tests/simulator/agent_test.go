@@ -207,6 +207,10 @@ func (a *simAgent) answerOf(kind outcome, role string, task []byte) (outcome, st
 			}
 		}
 		return kind, fmt.Sprintf("- sources: {issue: ISSUE, sources: [%q], quote: {path: %q, text: %q}, why: \"no code was given: the file the title names\"}\n", h, h, line)
+	case kind == needsEngine && role == "tester":
+		// A tester short of code (#1047, #1059): the header the Scope
+		// names, said lacking, never "no test possible".
+		return kind, fmt.Sprintf("- note: \"needs: %s — the code the scenarios call is not in the task\"\n", headerIn(task, "## Scope"))
 	case kind == needsRole && role == "tester":
 		// No test possible: the product owner decides.
 		return kind, "- note: \"proof: none — the scenario reads a person's screen, no test can see it\"\n"

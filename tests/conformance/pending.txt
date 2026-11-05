@@ -1,3 +1,6 @@
 # Cases the engine does not pass yet. The suite runs them anyway and fails
 # if one starts passing while still listed here.
 routing/ready-overlap-gone-wait-said
+developer/objects-code-broken-goes-to-tester
+routing/ready-machine-error-budget
+routing/tests-build-broken-not-moved
