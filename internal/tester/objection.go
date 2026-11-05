@@ -189,6 +189,9 @@ type answer struct {
 	// Line: the routing's states, as pre read them: where the issue goes
 	// to settle or to block (ADR-0059).
 	Line []routing.State `json:"line,omitempty"`
+	// Text: the issue's title and body; a rewrite's missing name counts
+	// as red only when it names it (#1111).
+	Text string `json:"text,omitempty"`
 }
 
 const answerFile = "answer.json"
@@ -306,6 +309,7 @@ func answerPre(runDir, repo string, s Settings) int {
 	} else if err != nil {
 		return fail(err)
 	}
+	a.Text = is.Title + "\n" + is.Body
 	scenarios := Scenarios(work.ByMeaning(is.Body)[work.Validation].Text)
 	for _, sc := range scenarios {
 		if o.Scenario != "" && norm(sc.Name) == norm(o.Scenario) {
@@ -568,6 +572,7 @@ func judgeAnswer(runDir, repo string, a answer, s Settings) int {
 	if !names(content, a.Scenario.Name) {
 		return block("scenario-without-test", "the rewritten test no longer names its scenario, "+a.Scenario.Name)
 	}
+	s.issue = a.Text
 	proof, newTests, blobs, err := proveOnBase(repo, a.Record.Base, patches[len(patches)-1:], s)
 	if err != nil {
 		return fail(err)

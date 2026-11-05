@@ -65,6 +65,9 @@ type task struct {
 	// Author: who opened the issue, asked how to reproduce a bug its
 	// tests do not show (ADR-0060).
 	Author string `json:"author,omitempty"`
+	// Text: the issue's title and body, as pre read them; a missing name
+	// counts as red only when it names it (#1111).
+	Text string `json:"text,omitempty"`
 }
 
 const taskFile = "tests-task.json"
@@ -163,7 +166,8 @@ func Pre(runDir, repo string) int {
 	if err != nil {
 		return fail(err)
 	}
-	t := task{Issue: id, Title: is.Title, Base: strings.TrimSpace(head), Scenarios: scenarios, Labels: is.Labels, Body: backlog.BodyDigest(is.Body), Author: is.Author}
+	t := task{Issue: id, Title: is.Title, Base: strings.TrimSpace(head), Scenarios: scenarios, Labels: is.Labels, Body: backlog.BodyDigest(is.Body), Author: is.Author,
+		Text: is.Title + "\n" + is.Body}
 	if data, err := json.Marshal(t); err != nil {
 		return fail(err)
 	} else if err := os.WriteFile(filepath.Join(runDir, "in", taskFile), data, 0o644); err != nil {
@@ -459,6 +463,7 @@ func Post(runDir, repo string) int {
 	if len(findings) > 0 {
 		return refusePost(runDir, t.Issue, verdict.Verdict{Status: verdict.Block, Summary: "the tests do not hold to the issue's scenarios", Findings: findings})
 	}
+	s.issue = t.Text
 	proof, newTests, blobs, err := proveOnBase(repo, t.Base, patches, s)
 	if err != nil {
 		return fail(err)

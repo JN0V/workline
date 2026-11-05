@@ -1,7 +1,3 @@
 # Cases the engine does not pass yet. The suite runs them anyway and fails
 # if one starts passing while still listed here.
 routing/ready-overlap-gone-wait-said
-tester/write-go-made-up-name-asked-again
-tester/write-go-made-up-name-twice-blocked
-tester/write-made-up-name-asked-again
-tester/write-made-up-name-twice-blocked
