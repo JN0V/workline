@@ -1,0 +1,41 @@
+case: tester/write-made-up-name-asked-again
+about: >
+  Any language, by its build-errors: in a shell project, the shell's
+  own "not found" read as a missing name. The tester's test calls `mul`,
+  which the issue names, and `stub_two`, which no code declares and the
+  issue never names (#1111): the build is broken, the agent asked once
+  more with the error. Its second answer calls `mul` alone: red by a
+  name the issue names, the Draft opens.
+given:
+  repo: tested
+  setup:
+    - "sed -i 's|>/dev/null 2>&1|>/dev/null|' run-tests.sh && git commit -qam 'chore: the tests say their errors'"
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles:
+      tester:
+        settings:
+          test-command: "sh run-tests.sh {report}"
+          build-errors:
+            - error: '^(?P<file>tests/[^\s:]+\.sh):(?: line)? \d+: (?P<message>.+)$'
+              missing-name: ['^(?P<name>\w+): (?:command )?not found$']
+              test-name: '(?m)^# test: (\S+)$'
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:ready"]
+        body: "## Need\n\nWhen I total an order, I want to multiply a price by a count, so I need not add it up by hand.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n\n---\n\n## Verification\n\nA test a scenario, in tests/.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+run: {test: [write, --issue, "3"], ai: "cmd:sh $FIXTURES/agents/tester-mul-stub-once.sh"}
+expect:
+  status: pass
+  summary: "1 new test, red on the base"
+  agent-calls: 2
+  run-files:
+    out/feedback.md: {contains: ["build-broken", "the issue never names (stub_two)"]}
+  pushed:
+    workline/tester/issue-3:
+      tests/test_mul_two_by_three.sh: "$(mul 2 3)"
+  forge:
+    merge-requests:
+      - {id: 1, branch: workline/tester/issue-3, draft: true}
