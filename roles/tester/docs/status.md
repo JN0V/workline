@@ -194,8 +194,9 @@ Cases in `tests/conformance/cases/tester/`:
   `tester/write-claude-reads-the-code-itself`,
   `tester/write-cmd-agent-reads-its-task-alone`. Tried on
   [#1110](https://github.com/JN0V/workline/pull/1110#tried): #36's
-  tests written on the real harness, red on a missing name once the
-  copy's pattern reads `const struct`; Go #1081 still passes.
+  tests written on the real harness; a second run, the copy's pattern
+  reading `const struct`, reaches a Draft, red on a missing name, in
+  one call; symlinks out of the copy denied; Go #1081 still passes.
 - **Settings** `test-command`, `test-report`, `test-paths`,
   `code-lines-max`, `objection-exchanges`
   ([README](../README.md#settings)).
