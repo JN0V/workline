@@ -338,7 +338,7 @@ token), **apply** (trusted, no AI key).
    there it reads, edits and runs commands, and `post` bounds its diff;
    and save in a read tree (`readtree`, the tester's under `claude`,
    [ADR-0063 §8](../adr/0063-every-open-issue-is-due-waiting-or-done.md#8-one-code-picker-and-tools-where-the-agent-has-them)):
-   there it reads and searches only (Read, Glob, Grep), each file it read
+   there it reads and searches only (Read, Glob, Grep), inside the tree alone, each file it read
    logged with its call. A `cmd:` agent never sees a read tree.
    On Linux its shell boxes each command with bubblewrap and socat: either
    missing, or a container that lets no namespace be made, the agent is
