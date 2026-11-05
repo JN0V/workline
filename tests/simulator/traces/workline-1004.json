@@ -1,0 +1,118 @@
+{
+ "issues": [
+  {
+   "id": 1004,
+   "title": "sample --week of a week to come passes as empty",
+   "body": "## Need\n\nPeople who mistype the year in `workline sample --week` read \"no doc vouched for\", a pass, for a week that has not happened yet.\n\n## Steps to reproduce\n\n1. In any git repository, on 2026-11-04: `workline sample --week 2030-W01` (meant: 2026-W01).\n2. Output:\n   ```\n   pass — 2030-W01: no doc vouched for\n     sample-empty (warn): no doc vouched for by the documentalist in the commits reaching main from 2029-12-31 to 2030-01-06: nothing to read\n   ```\n   Exit code 0.\n- **Expected:** a block saying the week 2030-W01 has not started yet, so nothing can be sampled, as `--week 2026-W99` blocks with `expected an ISO week, like 2026-W40`.\n- **Actual:** a pass that reads as \"the documentalist vouched for nothing that week\". The same with 2026-W46, next week.\n- **Version:** v0.70.1, and main at c1db7ca. Linux, every time.\n\n## Validation\n\n- **Future week:** Given today is in 2026-W45, When I run `workline sample --week 2030-W01`, Then it blocks, says the week has not started, and exits 1.\n- **Past week:** Given today is in 2026-W45, When I run `workline sample --week 2026-W44`, Then it samples that week, as today.\n\n---\n\n## Verification\n\n- A test in `internal/sample/weeks_test.go`: with today in 2026-W45, `--week 2030-W01` and `--week 2026-W46` return a block saying the week has not started, and exit code 1.\n- A test in `cmd/workline`: the same command prints that message and exits 1.\n- A past week (`2026-W44`) and the current week still sample as before.\n- `--week 2026-W99` still blocks with `expected an ISO week, like 2026-W40`.\n\n## Scope\n\nGuessed: the listing shows file names, not their contents, so the exact place is not confirmed.\n- `internal/sample/sample.go`: where the week is read and turned into a date range. Add the check that the week starts after today.\n- `cmd/workline/cli.go`: the `sample --week` command, which prints the block and sets the exit code.",
+   "labels": [
+    "bug"
+   ],
+   "author": "JN0V",
+   "insider": true,
+   "closed": true,
+   "comments": [
+    {
+     "body": "**The product owner**, on 2026-11-04:\n\n- Named the code #1004 is about: internal/sample, cmd/workline. The `workline sample --week` command and its week handling live in the sample package and the command entry point. No code was given, so no line is quoted.\n- Labelled #1004 `bug`, a bug: A week that has not started yet reads as a pass, though it should block. The command is meant to reject a week it cannot sample, as it does for an invalid ISO week. Wrong? Change the label; the role does not se…\n- Added: Verification, Scope. Changed: —. See the issue's edit history.\n- Moved #1004 to ready: the reviewer read its spec (round 1): no important finding open\n\n<!-- What workline knows of this issue, edited by the engine, not by hand.\n```yaml\nsources: [internal/sample, cmd/workline]\nconfirmed: c1db7ca3\njudged: c1db7ca3\nbody: e84d94e969b2\nsections:\n    Need: People who mistype the year in `workline sample --week` read \"no doc vouched for\", a pass, for a week that has not happened yet.\n    Scope: |-\n        Guessed: the listing shows file names, not their contents, so the exact place is not confirmed.\n        - `internal/sample/sample.go`: where the week is read and turned into a date range. Add the check that the week starts after today.\n        - `cmd/workline/cli.go`: the `sample --week` command, which prints the block and sets the exit code.\nwrote:\n    Scope: 13f5feb83cf8\n    Verification: 910cccc34410\ndone:\n    - act: ready\n      level: normal\ndid:\n    - act: sources\n      level: normal\n      day: \"2026-11-04\"\n      at: c1db7ca3\n      model: claude:claude-sonnet-5-5\n      body: 8c89aa1fcb74\n      line: 'Named the code #1004 is about: internal/sample, cmd/workline. The `workline sample --week` command and its week handling live in the sample package and the command entry point. No code was given, so no line is quoted.'\n    - act: kind\n      level: normal\n      day: \"2026-11-04\"\n      at: c1db7ca3\n      model: claude:claude-sonnet-5-5\n      body: 8c89aa1fcb74\n      line: 'Labelled #1004 `bug`, a bug: A week that has not started yet reads as a pass, though it should block. The command is meant to reject a week it cannot sample, as it does for an invalid ISO week. Wrong? Change the label; the role does not se…'\n    - act: refine\n      level: normal\n      day: \"2026-11-04\"\n      at: c1db7ca3\n      model: claude:claude-sonnet-5-5\n      body: 8c89aa1fcb74\n      line: 'Added: Verification, Scope. Changed: —. See the issue''s edit history.'\n    - act: ready\n      level: normal\n      day: \"2026-11-04\"\n      at: c1db7ca3\n      model: claude:claude-sonnet-5-5\n      body: e84d94e969b2\n      line: 'Moved #1004 to ready: the reviewer read its spec (round 1): no important finding open'\nheard: 0\nrules: 2\nkind: bug\n```\n-->\n\n<!-- workline:sticky=product-owner/state -->",
+     "created": "2026-11-04T00:55:35Z",
+     "author": "workline-bot",
+     "bot": true
+    },
+    {
+     "body": "**workline's line** last woke the developer on this issue, in its state ready (3 state steps so far). Edited by the engine, not by hand.\n\n<!-- workline:line-record {\"state\":\"ready\",\"body\":\"e84d94e969b2\",\"labeled\":\"2026-11-04T01:03:30Z\",\"hops\":3,\"woke\":\"2026-11-04T01:03:50Z\",\"held\":[85,243,313,700],\"ran\":\"2026-11-04T01:03:50Z\"} -->\n\n<!-- workline:sticky=line/state -->",
+     "created": "2026-11-04T00:55:43Z",
+     "author": "workline-bot",
+     "bot": true
+    },
+    {
+     "body": "**workline reviewer**, its spec — 3 findings on the spec; lenses: ambiguous, unverifiable, out-of-scope, contradicted; tokens: 13116 in, 2064 out (3 calls), of 300000 a run (ai-max-tokens).\n\nNo important finding open: the product owner may move it to ready.\n\n| | | Where | Finding |\n|---|---|---|---|\n| warns | contradicted | `#1004:36` | Nit: Scope guessed, cli.go may not hold sample --week — The spec says cli.go is where the sample --week command prints the block and sets the exit code. In cli.go the sample command only dispatches to sampleCmd, whose body is elsewhere; cli.go has only the table and the flag helpers. Fix: Point the Scope at the file defining sampleCmd. (shows at cmd/workline/cli.go) |\n| warns | ambiguous | `#1004:14` | Nit: Message wording left open — The block text is only 'a block saying the week has not started'. The tests need to match something: one reading is an exact string, the other any text with 'not started'. Builder and tester may pick different wordings. Fix: Give the exact message the tests assert on. |\n| warns | ambiguous | `#1004:35` | Nit: Current-week boundary and timezone undefined — 'The week starts after today' leaves open the timezone of today and the week's Monday. A reading in UTC and one in local time differ at the week boundary, and 'after today' wrongly reads as blocking the current week if it starts today. Fix: State the rule: block when the week's Monday is later than today's date, in a given timezone. |\n| warns | finding-judged-no |  | dropped, from the unverifiable lens: \"Test cannot set today\" at #1004:28 — the judge: the unit test's '`--week 2030-W01` and `--week 2026-W46` return a block saying the week has not started, and exit code 1' would fail if the Need were unmet, and so would the cmd test of 2030-W01 on any real day before 2030, so the missing clock injection is a flakiness worry, not a Verification that cannot tell. (independence: model (claude-sonnet-5-5 → claude-opus-5-5)) |\n| warns | finding-judged-no |  | dropped, from the out-of-scope lens: \"Scope omits the test files the Verification needs\" at #1004:36 — the judge: the Need's 'workline sample --week' is covered by the Scope's 'internal/sample/sample.go' and 'cmd/workline/cli.go', and test files beside those files in the same packages are not a separate part of the project, so the finding's claim that the Scope 'omits the test files' is a guess, not a gap. (independence: model (claude-sonnet-5-5 → claude-opus-5-5)) |\n\nThe reviewer never edits the issue nor moves it: the product owner answers, a person decides.\n\n<!-- workline:spec-review body=e84d94e969b2 round=1 open=0 in= -->\n\n<!-- workline:sticky=reviewer/spec -->",
+     "created": "2026-11-04T00:59:12Z",
+     "author": "workline-bot",
+     "bot": true
+    },
+    {
+     "body": "**The tester** wrote the acceptance tests of this issue, as a Draft.\n\n- **Why**: each of its 2 scenarios has its test in the Draft's Tests table, or its reason under Not tested (1, for a real try), the tests red on the base and passing the project's lint.\n- **Next**: it is ready: whoever builds it starts from the Draft, workline/tester/issue-1004.\n\n\n<!-- workline:sticky=tester/issue -->",
+     "created": "2026-11-04T01:03:32Z",
+     "author": "workline-bot",
+     "bot": true
+    },
+    {
+     "body": "**The developer** takes this issue: the first ready one nobody took, in the backlog's order. `workline:developing` says so; a person who takes it back removes the label, or assigns themselves.\n\nIts code on the project's tests:\n\n- `go run gotest.tools/gotestsum@v1.12.3 --junitfile {report} -- {packages}`: 35 tests passed, none red.\n- On the folders its code and the acceptance tests touch: `./cmd/workline ./internal/sample`. This pull request's own CI runs the whole suite.\n- Run on a fresh checkout of d1439b4, its code laid on it: not its agent's worktree.\n\n<!-- workline:developer-act {\"act\":\"pick\",\"at\":\"c1db7ca3e958920c960372be0b709e840e0fa782\",\"issue\":1004,\"proof\":{\"result\":\"green\",\"command\":\"go run gotest.tools/gotestsum@v1.12.3 --junitfile {report} -- {packages}\",\"passed\":35,\"tree\":\"fresh\",\"at\":\"d1439b4f8b14f09acacadea2c53e4192d0b9edb4\",\"scope\":\"touched\",\"packages\":[\"./cmd/workline\",\"./internal/sample\"]},\"turns\":1,\"tokens\":13897,\"cached\":133027,\"tools\":{\"Bash\":4,\"Edit\":1,\"Grep\":2,\"Read\":4},\"from\":\"d1439b4f8b14f09acacadea2c53e4192d0b9edb4\",\"acceptance\":[\"cmd/workline/cli_sample_future_week_test.go\",\"internal/sample/weeks_future_test.go\"],\"code\":[\"internal/sample/sample.go\"]} -->\n\n\n<!-- workline:sticky=developer/claim -->",
+     "created": "2026-11-04T01:11:49Z",
+     "author": "workline-bot",
+     "bot": true
+    }
+   ],
+   "label-events": [
+    {
+     "label": "workline:to-refine",
+     "added": true,
+     "created": "2026-11-04T00:54:33Z",
+     "author": "JN0V",
+     "insider": true,
+     "writer": true
+    },
+    {
+     "label": "bug",
+     "added": true,
+     "created": "2026-11-04T00:55:39Z",
+     "author": "workline-bot",
+     "bot": true
+    },
+    {
+     "label": "workline:needs-tests",
+     "added": true,
+     "created": "2026-11-04T01:00:51Z",
+     "author": "workline-bot",
+     "bot": true
+    },
+    {
+     "label": "workline:to-refine",
+     "added": false,
+     "created": "2026-11-04T01:00:51Z",
+     "author": "workline-bot",
+     "bot": true
+    },
+    {
+     "label": "workline:ready",
+     "added": true,
+     "created": "2026-11-04T01:03:30Z",
+     "author": "workline-bot",
+     "bot": true
+    },
+    {
+     "label": "workline:needs-tests",
+     "added": false,
+     "created": "2026-11-04T01:03:31Z",
+     "author": "workline-bot",
+     "bot": true
+    },
+    {
+     "label": "workline:developing",
+     "added": true,
+     "created": "2026-11-04T01:11:47Z",
+     "author": "workline-bot",
+     "bot": true
+    },
+    {
+     "label": "workline:developing",
+     "added": false,
+     "created": "2026-11-04T01:24:44Z",
+     "author": "workline-bot",
+     "bot": true
+    },
+    {
+     "label": "workline:ready",
+     "added": false,
+     "created": "2026-11-04T01:24:45Z",
+     "author": "workline-bot",
+     "bot": true
+    }
+   ],
+   "reason": "completed"
+  }
+ ],
+ "merge-requests": [],
+ "dependencies": true,
+ "sub-issues": true,
+ "writes": 0
+}

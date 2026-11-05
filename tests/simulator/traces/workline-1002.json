@@ -1,0 +1,118 @@
+{
+ "issues": [
+  {
+   "id": 1002,
+   "title": "hooks install --repo outside a repository says exit status 128",
+   "body": "## Need\n\nPeople who run `workline hooks install --repo` outside a git repository get `exit status 128`, and do not know what went wrong.\n\n## Steps to reproduce\n\n1. `mkdir ~/notes && cd ~/notes` (a folder, not a git repository).\n2. `workline hooks install --repo`\n3. Output:\n   ```\n   workline: exit status 128\n   ```\n   Exit code 1.\n- **Expected:** `workline: not in a git repository`, exit code 64, as `workline init` and `workline review` say in the same folder.\n- **Actual:** git's bare exit status, exit code 1. Nothing is written.\n- **Version:** v0.70.1, and main at c1db7ca. Linux, every time.\n\n## Validation\n\n- **Outside a repository:** Given a folder that is not a git repository, When I run `workline hooks install --repo` in it, Then it says `not in a git repository` and exits 64.\n- **Inside a repository:** Given a git repository, When I run `workline hooks install --repo` in it, Then it writes `.githooks/commit-msg` and exits 0, as today.\n\n---\n\n## Verification\n\n- A test runs `workline hooks install --repo` in a temporary folder that is not a git repository. It expects the message `workline: not in a git repository` on stderr and exit code 64.\n- The same test expects that the folder holds no `.githooks` directory and no new entry of any kind.\n- A test runs `workline hooks install --repo` in a git repository. It expects `.githooks/commit-msg` to be written and exit code 0, as today.\n- A parity test runs `workline init`, `workline review` and `workline hooks install --repo` in the same non-repository folder. It expects the same message and the same exit code (64) from all three. It fails if the hooks command prints its own copy of the text that differs from the other two.\n\n## Scope\n\nGuessed: the file that defines `hooksCmd` was not given, so where the 128 comes from is not confirmed.\n- `cmd/workline/cli.go` only lists `hooks` in its command table and points to `hooksCmd`. It holds no hooks install logic and no \"not in a git repository\" message. Do not look there for the fix.\n- The file in `cmd/workline` that defines `hooksCmd`: the `hooks install --repo` command. It checks that the folder it installs into is a git repository, before it calls `InstallRepo`. Which folder that is (the current one, or one `--repo` names) is read from that command's own code.\n- The same package also holds `initCmd` and `reviewCmd`. Find where they print \"not in a git repository\" and exit 64, and share that handling rather than copy it.\n- Decision: the check goes in the command, not inside `InstallRepo`. So `internal/hooks/hooks.go` stays unchanged. It writes `.githooks/` and `commit-msg` before it asks git, and ignores the error from `gitConfigIn`. That is acceptable once the command has checked first.\n- `cmd/workline/cli_test.go`, or a new test file next to it: the new tests.",
+   "labels": [
+    "bug"
+   ],
+   "author": "JN0V",
+   "insider": true,
+   "closed": true,
+   "comments": [
+    {
+     "body": "**The product owner**, on 2026-11-04:\n\n- Named the code #1002 is about: internal/hooks, cmd/workline. The command `workline hooks install` lives in the hooks package and the CLI entry point. No code was given, so only the folders are named and the issue is read again with their f…\n- Labelled #1002 `bug`, a bug: Running `workline hooks install --repo` outside a git repository should say `not in a git repository` and exit 64, as `workline init` and `workline review` do. It prints git's bare `exit status 128` and exits 1…\n- Added: Verification, Scope. Changed: —. See the issue's edit history.\n- Added: —. Changed: Scope. See the issue's edit history.\n- Added: —. Changed: Scope. See the issue's edit history.\n- Added: —. Changed: Verification. See the issue's edit history.\n- Moved #1002 to ready: the reviewer read its spec (round 4): no important finding open\n\n<!-- What workline knows of this issue, edited by the engine, not by hand.\n```yaml\nsources: [internal/hooks, cmd/workline]\nconfirmed: c1db7ca3\njudged: c1db7ca3\nbody: 87de22337f24\nsections:\n    Need: People who run `workline hooks install --repo` outside a git repository get `exit status 128`, and do not know what went wrong.\n    Scope: |-\n        Guessed: the file that defines `hooksCmd` was not given, so where the 128 comes from is not confirmed.\n        - `cmd/workline/cli.go` only lists `hooks` in its command table and points to `hooksCmd`. It holds no hooks install logic and no \"not in a git repository\" message. Do not look there for the fix.\n        - The file in `cmd/workline` that defines `hooksCmd`: the `hooks install --repo` command. It checks that the folder it installs into is a git repository, before it calls `InstallRepo`. Which folder that is (the current one, or one `--repo` names) is read from that command's own code.\n        - The same package also holds `initCmd` and `reviewCmd`. Find where they print \"not in a git repository\" and exit 64, and share that handling rather than copy it.\n        - Decision: the check goes in the command, not inside `InstallRepo`. So `internal/hooks/hooks.go` stays unchanged. It writes `.githooks/` and `commit-msg` before it asks git, and ignores the error from `gitConfigIn`. That is acceptable once the command has checked first.\n        - `cmd/workline/cli_test.go`, or a new test file next to it: the new tests.\nwrote:\n    Scope: 25faa40660f5\n    Verification: dd8fb5430dec\nanswered: f50d33930def\nrevised: [Verification]\ndone:\n    - act: ready\n      level: normal\ndid:\n    - act: sources\n      level: normal\n      day: \"2026-11-04\"\n      at: c1db7ca3\n      model: claude:claude-sonnet-5-5\n      body: cb300d31d8dc\n      line: 'Named the code #1002 is about: internal/hooks, cmd/workline. The command `workline hooks install` lives in the hooks package and the CLI entry point. No code was given, so only the folders are named and the issue is read again with their f…'\n    - act: kind\n      level: normal\n      day: \"2026-11-04\"\n      at: c1db7ca3\n      model: claude:claude-sonnet-5-5\n      body: cb300d31d8dc\n      line: 'Labelled #1002 `bug`, a bug: Running `workline hooks install --repo` outside a git repository should say `not in a git repository` and exit 64, as `workline init` and `workline review` do. It prints git''s bare `exit status 128` and exits 1…'\n    - act: refine\n      level: normal\n      day: \"2026-11-04\"\n      at: c1db7ca3\n      model: claude:claude-sonnet-5-5\n      body: cb300d31d8dc\n      line: 'Added: Verification, Scope. Changed: —. See the issue''s edit history.'\n    - act: refine\n      level: normal\n      day: \"2026-11-04\"\n      at: c1db7ca3\n      model: claude:claude-sonnet-5-5\n      body: 05176c74ea2c\n      line: 'Added: —. Changed: Scope. See the issue''s edit history.'\n    - act: refine\n      level: normal\n      day: \"2026-11-04\"\n      at: c1db7ca3\n      model: claude:claude-sonnet-5-5\n      body: b87085e49428\n      line: 'Added: —. Changed: Scope. See the issue''s edit history.'\n    - act: refine\n      level: normal\n      day: \"2026-11-04\"\n      at: c1db7ca3\n      model: claude:claude-sonnet-5-5\n      body: f50d33930def\n      line: 'Added: —. Changed: Verification. See the issue''s edit history.'\n    - act: ready\n      level: normal\n      day: \"2026-11-04\"\n      at: c1db7ca3\n      model: claude:claude-sonnet-5-5\n      body: 87de22337f24\n      line: 'Moved #1002 to ready: the reviewer read its spec (round 4): no important finding open'\nheard: 0\nrules: 2\nkind: bug\n```\n-->\n\n<!-- workline:sticky=product-owner/state -->",
+     "created": "2026-11-04T00:55:41Z",
+     "author": "workline-bot",
+     "bot": true
+    },
+    {
+     "body": "**workline's line** last woke the developer on this issue, in its state ready (3 state steps so far). Edited by the engine, not by hand.\n\n<!-- workline:line-record {\"state\":\"ready\",\"body\":\"87de22337f24\",\"labeled\":\"2026-11-04T01:13:37Z\",\"hops\":3,\"woke\":\"2026-11-04T01:13:59Z\",\"held\":[85,243,313,700,1003,1004],\"ran\":\"2026-11-04T01:13:59Z\"} -->\n\n<!-- workline:sticky=line/state -->",
+     "created": "2026-11-04T00:55:48Z",
+     "author": "workline-bot",
+     "bot": true
+    },
+    {
+     "body": "**workline reviewer**, its spec — 2 findings on the spec; lenses: ambiguous, unverifiable, out-of-scope, contradicted; tokens: 25285 in, 3553 out (5 calls), of 300000 a run (ai-max-tokens).\n\nNo important finding open: the product owner may move it to ready.\n\n| | | Where | Finding |\n|---|---|---|---|\n| warns | unverifiable | `#1002:30` | Nit: 'Share rather than copy' is not checked — The parity test only compares output and exit code. A copied identical string passes it. The sentence says it fails only if the text differs, so it cannot catch a copy that matches. The sharing requirement is therefore not verified. Fix: Drop the sharing requirement, or add a check that the three commands call one helper. |\n| warns | unverifiable | `#1002:27` | Nit: Test folder may sit inside a git repository — The tests use a 'temporary folder that is not a git repository'. If the OS temp dir lies under a git working tree, or `GIT_DIR` is set, the check finds a repository and the test is wrong. The spec does not say to isolate the folder. Fix: Have the test unset GIT_DIR and set GIT_CEILING_DIRECTORIES to the temp folder's parent. |\n| warns | finding-judged-no |  | dropped, from the contradicted lens: \"'Nothing is written' contradicts the Scope's description of InstallRepo\" at #1002:15 — the judge: in hooksCmd, `if root, err = gitRoot(\".\"); err == nil { msg, err = hooks.InstallRepo(root, bin) }` only reaches InstallRepo's `os.MkdirAll(dir, 0o755)` after gitRoot succeeds, so outside a repository the 128 comes from gitRoot and 'Nothing is written' agrees with the code. (independence: model (claude-sonnet-5-5 → claude-opus-5-5)) |\n| warns | finding-judged-no |  | dropped, from the out-of-scope lens: \"Scope does not name the file the fix goes in\" at #1002:34 — the judge: the Scope names 'The file in `cmd/workline` that defines `hooksCmd`', which covers the change by its folder and by the part that holds it, so the Need's work on `hooksCmd` is in Scope. (independence: model (claude-sonnet-5-5 → claude-opus-5-5)) |\n| warns | finding-judged-no |  | dropped, from the out-of-scope lens: \"Sharing handling means editing initCmd and reviewCmd, outside the Scope\" at #1002:37 — the judge: the Scope names them itself, in 'The same package also holds `initCmd` and `reviewCmd`. Find where they print \"not in a git repository\" and exit 64, and share that handling', so editing them is inside the Scope. (independence: model (claude-sonnet-5-5 → claude-opus-5-5)) |\n| warns | finding-judged-no |  | dropped, from the ambiguous lens: \"Which folder is checked is left to the builder\" at #1002:36 — the judge: the quoted line itself says the folder 'is read from that command's own code', so the existing command decides it, and every step and test runs `workline hooks install --repo` with no dir in the current folder, so no builder is left to choose. (independence: model (claude-sonnet-5-5 → claude-opus-5-5)) |\n\nThe reviewer never edits the issue nor moves it: the product owner answers, a person decides.\n\n<!-- workline:spec-review body=87de22337f24 round=4 open=0 in= -->\n\n<!-- workline:sticky=reviewer/spec -->",
+     "created": "2026-11-04T00:59:01Z",
+     "author": "workline-bot",
+     "bot": true
+    },
+    {
+     "body": "**The tester** wrote the acceptance tests of this issue, as a Draft.\n\n- **Why**: each of its 2 scenarios has its test in the Draft's Tests table, or its reason under Not tested (1, for a real try), the tests red on the base and passing the project's lint.\n- **Next**: it is ready: whoever builds it starts from the Draft, workline/tester/issue-1002.\n\n\n<!-- workline:sticky=tester/issue -->",
+     "created": "2026-11-04T01:13:39Z",
+     "author": "workline-bot",
+     "bot": true
+    },
+    {
+     "body": "**The developer** takes this issue: the first ready one nobody took, in the backlog's order. `workline:developing` says so; a person who takes it back removes the label, or assigns themselves.\n\nIts code on the project's tests:\n\n- `go run gotest.tools/gotestsum@v1.12.3 --junitfile {report} -- {packages}`: 20 tests passed, none red.\n- On the folders its code and the acceptance tests touch: `./cmd/workline`. This pull request's own CI runs the whole suite.\n- Run on a fresh checkout of e310a2a, its code laid on it: not its agent's worktree.\n\n<!-- workline:developer-act {\"act\":\"pick\",\"at\":\"c1db7ca3e958920c960372be0b709e840e0fa782\",\"issue\":1002,\"proof\":{\"result\":\"green\",\"command\":\"go run gotest.tools/gotestsum@v1.12.3 --junitfile {report} -- {packages}\",\"passed\":20,\"tree\":\"fresh\",\"at\":\"e310a2ac1a7ca901ad5d00972d616b2694f06703\",\"scope\":\"touched\",\"packages\":[\"./cmd/workline\"]},\"turns\":9,\"tokens\":13905,\"cached\":86746,\"tools\":{\"Bash\":3,\"Grep\":1,\"Read\":4},\"from\":\"e310a2ac1a7ca901ad5d00972d616b2694f06703\",\"acceptance\":[\"cmd/workline/cli_hooks_outside_repo_test.go\"],\"code\":[\"cmd/workline/main.go\"]} -->\n\n\n<!-- workline:sticky=developer/claim -->",
+     "created": "2026-11-04T01:15:37Z",
+     "author": "workline-bot",
+     "bot": true
+    }
+   ],
+   "label-events": [
+    {
+     "label": "workline:to-refine",
+     "added": true,
+     "created": "2026-11-04T00:54:31Z",
+     "author": "JN0V",
+     "insider": true,
+     "writer": true
+    },
+    {
+     "label": "bug",
+     "added": true,
+     "created": "2026-11-04T00:55:44Z",
+     "author": "workline-bot",
+     "bot": true
+    },
+    {
+     "label": "workline:needs-tests",
+     "added": true,
+     "created": "2026-11-04T01:10:58Z",
+     "author": "workline-bot",
+     "bot": true
+    },
+    {
+     "label": "workline:to-refine",
+     "added": false,
+     "created": "2026-11-04T01:10:59Z",
+     "author": "workline-bot",
+     "bot": true
+    },
+    {
+     "label": "workline:ready",
+     "added": true,
+     "created": "2026-11-04T01:13:37Z",
+     "author": "workline-bot",
+     "bot": true
+    },
+    {
+     "label": "workline:needs-tests",
+     "added": false,
+     "created": "2026-11-04T01:13:38Z",
+     "author": "workline-bot",
+     "bot": true
+    },
+    {
+     "label": "workline:developing",
+     "added": true,
+     "created": "2026-11-04T01:15:36Z",
+     "author": "workline-bot",
+     "bot": true
+    },
+    {
+     "label": "workline:developing",
+     "added": false,
+     "created": "2026-11-04T01:27:38Z",
+     "author": "workline-bot",
+     "bot": true
+    },
+    {
+     "label": "workline:ready",
+     "added": false,
+     "created": "2026-11-04T01:27:39Z",
+     "author": "workline-bot",
+     "bot": true
+    }
+   ],
+   "reason": "completed"
+  }
+ ],
+ "merge-requests": [],
+ "dependencies": true,
+ "sub-issues": true,
+ "writes": 0
+}

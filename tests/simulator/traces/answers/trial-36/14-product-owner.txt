@@ -1,0 +1,14 @@
+- refine: 
+    issue: 36
+    verification: |
+      Each test is a native test of `MQTTComponent`. Each drops the link by making the test client report "not connected", and never calls `disconnect()`. `getClientForTest()` gives the test the client the component uses.
+      - **Silent reset:** connect, then count `mqtt/connected` and `mqtt/disconnected` events. Call `resetReconnect()`. Expect exactly one `mqtt/disconnected`, and `getState()` equal to `Disconnected`. Connect again and expect the second `mqtt/connected` to arrive after that `mqtt/disconnected`.
+      - **Link flap:** connect, drop the link and call `loop()`, then reconnect. Do it twice. Expect a new loss counter in `MQTTStatistics` to read 2. After a deliberate `disconnect()` the counter must still count it as one loss, or the test states the opposite rule. Choose one rule and test it.
+      - **Frozen uptime:** connect, let time pass so `getStatistics().uptime` is above 0, drop the link and call `loop()`. Expect `getStatistics().uptime` to read 0 during the outage, and to count again from 0 after the reconnection.
+      - The existing MQTT tests must stay green, since a lost link is still announced exactly once per drop.
+    scope: |
+      `DomoticsCore-MQTT/include/DomoticsCore/MQTT_impl.h`: `resetReconnect()`, `announceConnectionLost()` and `updateStatistics()`.
+      `DomoticsCore-MQTT/include/DomoticsCore/MQTT.h`: `MQTTStatistics`, which gets the loss counter.
+      Leftover 3 of the roadmap item (sticky publication) is a decision and is not part of this change. The three scenarios do not cover it.
+    sources: ["DomoticsCore-MQTT/include/DomoticsCore/MQTT_impl.h", "DomoticsCore-MQTT/include/DomoticsCore/MQTT.h"]
+    why: The tester could not write tests because the Verification pointed at test files and helpers that were not shown. It now states the observable results from the code given, and the scope names the exact functions.

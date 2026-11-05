@@ -1,0 +1,3 @@
+- note: |
+    #4 is still true at this commit. `LEDWebUI.h` line 144 reads `enabled = (value == "true");`. So `1` and `on` turn the LED off and still answer `{"success":true}`.
+    It has all four sections. Need, Validation and the steps are still my drafts, so I am not marking it ready. The reporter should confirm them, and also pick the rule: accept `true`, `1` and `on` as WiFi does, or refuse anything else.

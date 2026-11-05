@@ -1,0 +1,14 @@
+```yaml
+- sources: {issue: 19, sources: ["DomoticsCore-RemoteConsole/include/DomoticsCore/RemoteConsole.h"], quote: {path: "DomoticsCore-RemoteConsole/include/DomoticsCore/RemoteConsole.h", text: "uint32_t clientId = nextClientId++;"}, why: "The issue is about the client id counter, which is declared and incremented in this file."}
+- kind: {issue: 19, kind: bug, why: "The code hands out ids with nextClientId++ and no guard. After the 32-bit counter wraps, an id can be 0 or equal to a live client's id, which breaks the one-record-per-client map. A test can show it."}
+- refine:
+    issue: 19
+    need: "A person running a console on a device that stays up for years needs each connected client to keep its own id, so one client is never mixed up with another after the id counter wraps."
+    validation: |
+      - **Wrap keeps ids distinct:** Given the client id counter is set just below its 32-bit maximum and a client is still connected, When more clients connect so the counter wraps, Then every connected client has a different id.
+      - **No zero id:** Given the counter is at its maximum, When the next client connects, Then its id is not 0.
+    verification: "A native test on RemoteConsoleComponent sets the counter near UINT32_MAX and connects clients. It checks that ids stay unique among live clients and that none is 0, using the existing clientStateEntriesForTest() hook."
+    scope: "`DomoticsCore-RemoteConsole/include/DomoticsCore/RemoteConsole.h`: `nextClientId` (uint32_t) and its increment `nextClientId++` where loop() accepts a client."
+    sources: ["DomoticsCore-RemoteConsole/include/DomoticsCore/RemoteConsole.h"]
+    why: "The Need and Validation drafts are rewritten without the Draft: marker, and Validation now has named Given/When/Then scenarios. The code at the accept step shows where the counter is used."
+```

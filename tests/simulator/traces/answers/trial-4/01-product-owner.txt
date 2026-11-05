@@ -1,0 +1,2 @@
+- kind: {issue: 4, kind: bug, why: "A hand-made POST of 1 or on to the LED enabled_toggle turns the LED off and answers success; the handler is meant to refuse values it discards (the same shape BUG-52 fixed)."}
+- sources: {issue: 4, sources: ["DomoticsCore-LED/include/DomoticsCore/LEDWebUI.h", "DomoticsCore-LED/test/test_led_webui/test_led_webui.cpp"], quote: {path: "DomoticsCore-LED/include/DomoticsCore/LEDWebUI.h", text: "enabled = (value == \"true\");"}, why: "The enabled_toggle handler reads only the literal true; this is the code the issue describes."}

@@ -1,0 +1,1 @@
+- note: "#16 still holds at this commit. `getCachedNames()` still stores the LED names once, and the `led_select` handler still checks the posted name against the live `getLEDNames()`. All four sections exist, but Need and Validation are drafts, so the issue waits for its reporter to make them theirs before it can be ready. Nothing new is proposed."

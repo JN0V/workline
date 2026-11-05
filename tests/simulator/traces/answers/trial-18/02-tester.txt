@@ -1,0 +1,62 @@
+- note: "Normal use: kept as today: the existing suite guards it."
+- patch: |
+    --- /dev/null
+    +++ b/DomoticsCore-Core/test/test_eventbus_id_wrap/test_eventbus_id_wrap.cpp
+    @@ -0,0 +1,57 @@
+    +// LO-4: subscription numbers must never repeat, even after the counter wraps.
+    +// The counter is private and has no accessor, so the test opens it, as a
+    +// white-box test: every header EventBus.h pulls in is included first.
+    +#include <unity.h>
+    +#include <functional>
+    +#include <vector>
+    +#include <map>
+    +#include <queue>
+    +#include <algorithm>
+    +#include <cassert>
+    +#include <cstdint>
+    +#include <cstring>
+    +#include <type_traits>
+    +#include <DomoticsCore/Platform_HAL.h>
+    +#include <DomoticsCore/Logger.h>
+    +#define private public
+    +#include <DomoticsCore/EventBus.h>
+    +#undef private
+    +
+    +using DomoticsCore::Utils::EventBus;
+    +
+    +void setUp(void) {}
+    +void tearDown(void) {}
+    +
+    +// Scenario: Wrap
+    +// Given an event bus whose counter is near its limit,
+    +// When a handler subscribes and then unsubscribes,
+    +// Then only that handler is removed.
+    +void test_wrap(void) {
+    +    EventBus bus;
+    +    int first = 0, last = 0;
+    +    const String topic("wrap/topic");
+    +    uint32_t idFirst = bus.subscribe(topic, [&](const void*) { ++first; });
+    +    TEST_ASSERT_NOT_EQUAL(0, idFirst);
+    +
+    +    bus.nextId = UINT32_MAX;  // near the limit: the next few numbers cross the wrap
+    +    uint32_t idLast = 0;
+    +    int other = 0;
+    +    for (int i = 0; i < 3; ++i) {
+    +        if (i < 2) idLast = bus.subscribe(topic, [&](const void*) { ++other; });
+    +        else idLast = bus.subscribe(topic, [&](const void*) { ++last; });
+    +    }
+    +    bus.unsubscribe(idLast);
+    +
+    +    int payload = 1;
+    +    bus.publish(topic, payload);
+    +    bus.poll();
+    +
+    +    TEST_ASSERT_EQUAL_INT_MESSAGE(1, first, "the earlier handler must survive");
+    +    TEST_ASSERT_EQUAL_INT_MESSAGE(0, last, "the unsubscribed handler must be gone");
+    +}
+    +
+    +int main(int, char**) {
+    +    UNITY_BEGIN();
+    +    RUN_TEST(test_wrap);
+    +    return UNITY_END();
+    +}

@@ -1,0 +1,5 @@
+- note: |
+    #37: I could not settle this from the code given. WebUI.h declares `static char wsBuffer_[WEBUI_WS_BUFFER_SIZE];` and `static HAL::Platform::RecursiveLock bufferLock_;` at lines 82-83. The 494 lines that would hold their definitions were left out.
+    - If both are defined `inline` (C++17) or in a single .cpp file, the issue is obsolete and a person can close it.
+    - If they are defined plainly in the header, the issue stands.
+    The issue is not ready because its Validation is still a draft. A person should check the end of WebUI.h and confirm or correct the draft.

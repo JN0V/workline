@@ -1,0 +1,42 @@
+- refine:
+    issue: 34
+    verification: |
+      Native tests, in the project's existing native test suite. Each one below fails today and passes after the fix.
+
+      **Switch**
+      - Publishing `publishState("relay", "ON")` on a switch makes `state` `true`. Publishing `"OFF"` then makes it `false`.
+      - A switch with `payloadOn` `"CLOSE"` and `payloadOff` `"OPEN"`: publishing `"CLOSE"` gives `true`, publishing `"OPEN"` gives `false`. The comparison uses the entity's own payloads, as `handleCommand` does.
+      - A payload that is neither the on nor the off payload (for example `"banana"`) gives `false`, the same as `handleCommand`.
+      - The bool and float overloads of `publishState` go through the string form, so `publishState("relay", true)` also gives `true`.
+
+      **Light**
+      - A JSON state is mapped as `handleCommand` maps it. `"ON"` (exact, case-sensitive) is `true`. Any other value, such as `"OFF"`, `"on"` or `"banana"`, is `false`. A missing `state` key is `true`. A `state` that is not a string is `true`.
+      - `{"state":"ON","brightness":128}` gives `state` `true` and `brightness` 128.
+      - `{"state":"OFF"}` after the case above gives `state` `false`.
+      - A non-numeric brightness (`"bright"`) or one outside 0 to 255 (`300`, `-1`) leaves `brightness` as it was. The rest of the document is still published.
+
+      **Outage**
+      - The test double raises the MQTT disconnected event, so the component is offline, as the existing outage tests do. A state is then published. The field already shows the published value, because it follows the call and not the send.
+      - After the reconnection and the flush, the field is unchanged.
+
+      **Entities with no field**
+      - Publishing to a sensor, a binary sensor, a button or an alarm panel still works and changes nothing else.
+      - Publishing to an unknown id changes no entity.
+
+      **Commands and comments**
+      - The existing command tests still pass: a command from Home Assistant still sets the field.
+      - `grep -n "updated by handleCommand" HASwitch.h HALight.h` finds nothing, so the old comment is gone.
+    scope: |
+      The fix goes in `publishState` and `publishStateJson` in [HomeAssistant.h](https://github.com/JN0V/DomoticsCore-trial/blob/HEAD/DomoticsCore-HomeAssistant/include/DomoticsCore/HomeAssistant.h). They set the entity's field through a hook, as the command path already does.
+      - [HASwitch.h](https://github.com/JN0V/DomoticsCore-trial/blob/HEAD/DomoticsCore-HomeAssistant/include/DomoticsCore/HASwitch.h): the `state` comment at line 26, and a hook that maps a published payload to the field.
+      - [HALight.h](https://github.com/JN0V/DomoticsCore-trial/blob/HEAD/DomoticsCore-HomeAssistant/include/DomoticsCore/HALight.h): the `state` and `brightness` comments at lines 21 and 22, and the same hook for a JSON state.
+      - [HAEntity.h](https://github.com/JN0V/DomoticsCore-trial/blob/HEAD/DomoticsCore-HomeAssistant/include/DomoticsCore/HAEntity.h): the hook's default, which does nothing.
+      - The native test files of the Home Assistant component are in scope. They gain the new tests and the four existing tests that read these fields are checked. Guessed: their paths are not in the code given.
+
+      The first fix is chosen, so the reference doc `docs/components/home-assistant/project-context.md` is not touched.
+    sources:
+      - DomoticsCore-HomeAssistant/include/DomoticsCore/HomeAssistant.h
+      - DomoticsCore-HomeAssistant/include/DomoticsCore/HASwitch.h
+      - DomoticsCore-HomeAssistant/include/DomoticsCore/HALight.h
+      - DomoticsCore-HomeAssistant/include/DomoticsCore/HAEntity.h
+    why: Answers the reviewer's round 2 findings. It adds the light OFF and non-number cases, names the outage double, makes the comment check a grep, and puts the tests and docs decision in Scope.

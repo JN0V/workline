@@ -1,0 +1,5 @@
+```yaml
+- kind: {issue: 33, kind: bug, why: "getDelta() on an unknown checkpoint name reports a multi-kilobyte leak instead of an error, and the suite leaves namespaces and Cores behind; both are behaviour that does not match its contract"}
+- sources: {issue: 33, sources: ["DomoticsCore-Storage/test/test_heap_esp8266/test_heap_esp8266.cpp"], quote: {path: "DomoticsCore-Storage/test/test_heap_esp8266/test_heap_esp8266.cpp", text: "OpenStorage s(\"heaptest\");"}, why: "The suite builds the namespaces and Core instances the issue names. The HeapTracker header is not given here, so it is not named."}
+- ask: {issue: 33, questions: "Please write the Validation as scenarios, each a bullet in the form `- **Name:** Given …, When …, Then …`. For example: one for getDelta() on a misspelled checkpoint name, and one for running the Storage heap suite twice on a board and comparing the starting heap.", why: "The Validation holds no scenario in the required form, so the tester cannot name one and the issue cannot be ready."}
+```

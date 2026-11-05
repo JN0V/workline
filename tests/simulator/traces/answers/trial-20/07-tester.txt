@@ -1,0 +1,67 @@
+- note: |
+    Default name: kept as today: the existing suite guards it. The scenario says the name "still reads Storage" after a copy or a move. A test of it would pass on the current code, so none is written.
+- patch:
+    file: DomoticsCore-Storage/test/test_storage_name/test_storage_name.cpp
+    content: |
+      // Tests that a StorageComponent's metadata.name never points into another
+      // object's name String after the component is copied or moved.
+
+      #include <DomoticsCore/Storage.h>
+      #include <unity.h>
+      #include <new>
+      #include <stdint.h>
+
+      using namespace DomoticsCore::Components;
+
+      void setUp(void) {}
+      void tearDown(void) {}
+
+      // Scenario: Copy keeps the name
+      // Given a StorageComponent built with a componentName,
+      // When it is copy-constructed and the original is destroyed,
+      // Then the copy's metadata.name still reads the same name.
+      void test_copy_keeps_the_name(void) {
+          StorageConfig cfg;
+          cfg.componentName = "Cache";
+
+          alignas(StorageComponent) unsigned char buf[sizeof(StorageComponent)];
+          StorageComponent* orig = new (buf) StorageComponent(cfg);
+          const char* oldName = orig->metadata.name;
+
+          StorageComponent copy(*orig);
+          orig->~StorageComponent();
+
+          // The copy must own its name, not share the original's buffer.
+          TEST_ASSERT_TRUE(copy.metadata.name != oldName);
+          TEST_ASSERT_EQUAL_STRING("Cache", copy.metadata.name);
+      }
+
+      // Scenario: Move keeps the name
+      // Given a StorageComponent built with a componentName,
+      // When it is move-constructed,
+      // Then the new object's metadata.name reads the same name and does not
+      // point into the old object's String.
+      void test_move_keeps_the_name(void) {
+          StorageConfig cfg;
+          cfg.componentName = "Cache";
+
+          alignas(StorageComponent) unsigned char buf[sizeof(StorageComponent)];
+          StorageComponent* orig = new (buf) StorageComponent(cfg);
+
+          StorageComponent moved(std::move(*orig));
+
+          uintptr_t p = (uintptr_t)moved.metadata.name;
+          uintptr_t lo = (uintptr_t)buf;
+          uintptr_t hi = lo + sizeof(StorageComponent);
+          TEST_ASSERT_TRUE(p < lo || p >= hi);
+
+          orig->~StorageComponent();
+          TEST_ASSERT_EQUAL_STRING("Cache", moved.metadata.name);
+      }
+
+      int main(int, char**) {
+          UNITY_BEGIN();
+          RUN_TEST(test_copy_keeps_the_name);
+          RUN_TEST(test_move_keeps_the_name);
+          return UNITY_END();
+      }

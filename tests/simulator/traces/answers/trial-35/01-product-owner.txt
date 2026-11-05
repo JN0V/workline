@@ -1,0 +1,2 @@
+- kind: {issue: 35, kind: bug, why: "The title says the hardcoded fallback versions in getWebUIVersion() drift from the real version. The code does not do what its own contract says, and a test can show it."}
+- sources: {issue: 35, sources: ["DomoticsCore-WebUI/include"], why: "The title names getWebUIVersion(), which belongs to the WebUI component. No code was given, so I name the folder only. The issue is read again with its files at the next run."}

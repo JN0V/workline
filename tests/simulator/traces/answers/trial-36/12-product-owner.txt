@@ -1,0 +1,15 @@
+- refine: 
+    issue: 36
+    verification: |
+      Native tests are added to the existing MQTT test files in `DomoticsCore-MQTT/test`. They reuse the stub MQTT client and WiFi that those files already use. Each one drops the link by making the stub client report `connected()` as false, with no `disconnect()` call.
+      - **Silent reset:** Connect and record the `mqtt/connected` and `mqtt/disconnected` events. Call `resetReconnect()` while connected. Expect exactly one `mqtt/disconnected`, and `getState()` equal to `Disconnected`. Reconnect and expect the next `mqtt/connected` to come after that `mqtt/disconnected`. Call `resetReconnect()` while not connected and expect no extra `mqtt/disconnected`.
+      - **Link flap:** Connect, drop the link, run `loop()`, reconnect, and repeat once. Expect a new loss counter in `MQTTStatistics` to read 2. Expect it to stay unchanged after a deliberate `disconnect()` is counted as one loss only if that path also counts. Pick one rule and test it, so a deliberate disconnect and a drop are never counted twice.
+      - **Frozen uptime:** Connect and run `loop()` until `getStatistics().uptime` is above 0. Drop the link and run `loop()`. Expect `getStatistics().uptime` to read 0 for the whole outage, then count from 0 again after the reconnection.
+      - The existing MQTT tests still pass. Only item 3 of the roadmap entry (sticky publication of `mqtt/disconnected`) is left out. It is a design decision for a person and is not proved here.
+    scope: |
+      - `DomoticsCore-MQTT/include/DomoticsCore/MQTT_impl.h`: `resetReconnect()` announces the loss or closes the session first, and `updateStatistics()` sets `uptime` to 0 when not connected. The loss is counted where it is announced, in `announceConnectionLost()`.
+      - `DomoticsCore-MQTT/include/DomoticsCore/MQTT.h`: `MQTTStatistics` gains a loss counter.
+      - `DomoticsCore-HomeAssistant/include/DomoticsCore/HomeAssistant.h` needs no change: it already clears `mqttConnected` on `mqtt/disconnected`.
+    sources: ["DomoticsCore-MQTT/include/DomoticsCore/MQTT_impl.h", "DomoticsCore-MQTT/include/DomoticsCore/MQTT.h"]
+    why: The tester could not write tests because the steps were not concrete. This names the observable results, the counter and the files, and it leaves item 3 out as a decision for a person.
+- note: "#36 leaves item 3 of the roadmap entry open: the loss event dropped on a full queue, and whether publication should be sticky. It is a design decision for a person. Item 1 also needs a choice between announcing the loss and closing the session first. Both are named in the refined Verification."

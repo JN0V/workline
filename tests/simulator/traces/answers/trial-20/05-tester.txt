@@ -1,0 +1,49 @@
+- patch: |
+    --- /dev/null
+    +++ b/DomoticsCore-Storage/test/test_storage_name_safety/test_storage_name_safety.cpp
+    @@ -0,0 +1,50 @@
+    +// StorageComponent keeps its componentName in its own nameStr_; copies and moves must not point into another object's String.
+    +#include <unity.h>
+    +#include <DomoticsCore/Storage.h>
+    +#include <memory>
+    +#include <string.h>
+    +#include <utility>
+    +
+    +using namespace DomoticsCore::Components;
+    +
+    +void setUp(void) {}
+    +void tearDown(void) {}
+    +
+    +// Scenario: Copy keeps the name
+    +// Given a StorageComponent built with a componentName,
+    +// When it is copy-constructed and the original is destroyed,
+    +// Then the copy's metadata.name still reads the same name.
+    +void test_copy_keeps_the_name(void) {
+    +    auto original = std::make_unique<StorageComponent>(StorageConfig(), "Kitchen");
+    +    const char* oldPtr = original->metadata.name;
+    +    StorageComponent copy(*original);
+    +    original.reset();
+    +    TEST_ASSERT_TRUE_MESSAGE(copy.metadata.name != oldPtr, "the copy points into the original's String");
+    +    TEST_ASSERT_EQUAL_STRING("Kitchen", copy.metadata.name);
+    +}
+    +
+    +// Scenario: Move keeps the name
+    +// Given a StorageComponent built with a componentName,
+    +// When it is move-constructed,
+    +// Then the new object's metadata.name reads the same name and does not point into the old object's String.
+    +void test_move_keeps_the_name(void) {
+    +    auto original = std::make_unique<StorageComponent>(StorageConfig(), "Kitchen");
+    +    const char* oldPtr = original->metadata.name;
+    +    StorageComponent moved(std::move(*original));
+    +    original.reset();
+    +    TEST_ASSERT_TRUE_MESSAGE(moved.metadata.name != oldPtr, "the new object points into the old object's String");
+    +    TEST_ASSERT_EQUAL_STRING("Kitchen", moved.metadata.name);
+    +}
+    +
+    +int main(int, char**) {
+    +    UNITY_BEGIN();
+    +    RUN_TEST(test_copy_keeps_the_name);
+    +    RUN_TEST(test_move_keeps_the_name);
+    +    return UNITY_END();
+    +}
+- note: "Default name: kept as today: the existing suite guards it. It passes on the current code, so no new test is written. Also, the two tests assume the header <DomoticsCore/Storage.h> and the constructor StorageComponent(StorageConfig, name). I could not see the sources, so please check both against the real code. They use a short name so that the String's inline buffer gives a distinct address after copy or move."

@@ -1,0 +1,3 @@
+```yaml
+- ready: {issue: 3, why: "Its four sections are there, Need and Validation a person's. One need, and the code confirms it: acceptUploadChunk() closes the session on the size-cap refusal without marking the upload rejected, so later chunks overwrite the message with 'Upload not active'. The Verification proves it with a failing-then-passing native test."}
+```

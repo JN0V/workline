@@ -1,0 +1,4 @@
+- note: |
+    proof: none — the task does not show the three existing MQTT test files (`test_mqtt_component.cpp`, `test_mqtt_limits_links.cpp`, `test_mqtt_config_apply.cpp`), which hold the pieces the Verification says to reuse. These are the native MQTT client stub's way to drop a link without `disconnect()`, the event capture for `mqtt/connected` and `mqtt/disconnected`, the platform clock control that moves the uptime, and the test runner's macros and file layout. Without them I would have to guess those names. Guessed names would make the tests fail on a missing helper rather than on the scenario's own Then, so the red proof would be wrong. That would also break the rule against inventing a helper.
+
+    The three scenarios (Silent reset, Link flap, Frozen uptime) can each be tested once those files, or the stub's header, are given. The Link flap test would read a new `MQTTStatistics` loss counter, whose name the Scope does not give.

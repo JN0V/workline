@@ -1,0 +1,2 @@
+- note: |
+    #35 has all four sections, but Need and Validation are still drafts, so it cannot go to ready yet. The reporter has to make them theirs first. Scope and sources are in place and match the code: the three providers I was given (HomeAssistant "1.4.0", LED "1.3.0", MQTT "1.4.0") each return a hardcoded fallback version when no component is attached. The other providers (SystemInfo, Wifi, RemoteConsole, Storage) were not given and still need checking. No act proposed.

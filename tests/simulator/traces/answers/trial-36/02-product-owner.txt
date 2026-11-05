@@ -1,0 +1,16 @@
+- refine: 
+    issue: 36
+    scope: |
+      `DomoticsCore-MQTT/include/DomoticsCore/MQTT_impl.h`:
+      - `resetReconnect()` sets `Disconnected` without announcing the loss. It should announce first, or close the session first.
+      - `updateStatistics()` is refreshed only while connected, so the uptime freezes during an outage. It should stop or reset when the link drops.
+      - `announceConnectionLost()` is where a loss counter would be incremented.
+
+      `DomoticsCore-MQTT/include/DomoticsCore/MQTT.h`: `MQTTStatistics` has no field that counts lost links, so one is added.
+
+      `DomoticsCore-HomeAssistant/include/DomoticsCore/HomeAssistant.h`: the `mqtt/disconnected` handler is the only place `mqttConnected` goes false. It is touched only if the third leftover (a lost disconnect notice) is decided.
+    sources:
+      - DomoticsCore-MQTT/include/DomoticsCore/MQTT_impl.h
+      - DomoticsCore-MQTT/include/DomoticsCore/MQTT.h
+      - DomoticsCore-HomeAssistant/include/DomoticsCore/HomeAssistant.h
+    why: The issue lacks only Scope. The code given shows where each of the three leftovers lives.

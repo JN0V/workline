@@ -1,0 +1,16 @@
+- refine: 
+    issue: 36
+    why: The tester could not write the tests from the old Verification. This rewrite states each check in terms of the public MQTT API and the code shown, and leaves hook names to the existing MQTT native tests. Item 3 of the roadmap entry (sticky publication) is a decision for a person and is not covered here.
+    verification: |
+      Each test is a native MQTT test. It reuses the WiFi-up setup, the way the stub client reports `connected()` as false, and the event capture that the existing MQTT link-drop tests already use. No new helper is added.
+      - **Silent reset:** connect, listen for `mqtt/connected` and `mqtt/disconnected`, then call `resetReconnect()`. Expect exactly one `mqtt/disconnected` and `getState()` equal to `Disconnected`. Reconnect and expect the next `mqtt/connected` to come after that `mqtt/disconnected`.
+      - **Silent reset, no double count:** call `resetReconnect()` while not connected. Expect no `mqtt/disconnected` event.
+      - **Link flap:** drop the link without calling `disconnect()` and reconnect, twice, calling `loop()` after each drop. Expect the new loss counter in `MQTTStatistics` to equal 2, and `connectCount` to be unchanged in meaning. A deliberate `disconnect()` is checked separately: it counts as one loss, once.
+      - **Frozen uptime:** connect, let time pass, and drop the link. Call `loop()` and expect `getStatistics().uptime` to be 0 during the outage, and to count again from 0 after the reconnection.
+      - The existing MQTT suite stays green.
+    scope: |
+      `DomoticsCore-MQTT/include/DomoticsCore/MQTT_impl.h`: `resetReconnect()` announces or closes the session before it sets `Disconnected`. `announceConnectionLost()` and `disconnect()` count the loss. `updateStatistics()` sets the uptime to 0 when the link is not connected.
+      `DomoticsCore-MQTT/include/DomoticsCore/MQTT.h`: `MQTTStatistics` gets a loss counter.
+    sources:
+      - DomoticsCore-MQTT/include/DomoticsCore/MQTT_impl.h
+      - DomoticsCore-MQTT/include/DomoticsCore/MQTT.h

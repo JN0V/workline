@@ -1,0 +1,9 @@
+```yaml
+- ask:
+    issue: 33
+    questions: |
+      Please write the Validation as named scenarios, one bullet each, in this form:
+      - **Name:** Given …, When …, Then …
+      For example, one scenario for running the Storage heap suite twice and comparing the starting heap, and one for calling getDelta() on a misspelled checkpoint name and seeing an error.
+    why: The Validation has no scenario in the form a tester can read, and it is a person's text, so it cannot be rewritten by the role. Without it the issue cannot move to ready.
+```

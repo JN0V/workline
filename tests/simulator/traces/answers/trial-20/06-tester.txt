@@ -1,0 +1,64 @@
+- patch:
+    file: DomoticsCore-Storage/test/test_storage_name_safety/test_storage_name_safety.cpp
+    content: |
+      // Tests that a StorageComponent's metadata.name never dangles after the
+      // component is copied or moved: the name must point into the object's own
+      // nameStr_ backing String, not into the object it was copied or moved from.
+
+      #include <DomoticsCore/Storage.h>
+      #include <unity.h>
+      #include <cstring>
+      #include <memory>
+      #include <utility>
+
+      using namespace DomoticsCore::Components;
+
+      void setUp(void) {}
+      void tearDown(void) {}
+
+      static StorageConfig namedConfig() {
+          StorageConfig cfg;
+          cfg.componentName = "stor_a";
+          return cfg;
+      }
+
+      // Scenario: Copy keeps the name
+      // Given a StorageComponent built with a componentName,
+      // When it is copy-constructed and the original is destroyed,
+      // Then the copy's metadata.name still reads the same name.
+      void test_copy_keeps_the_name(void) {
+          std::unique_ptr<StorageComponent> original(new StorageComponent(namedConfig()));
+          const char* originalName = original->metadata.name;
+          StorageComponent copy(*original);
+
+          // The copy must not share the original's pointer.
+          TEST_ASSERT_TRUE(copy.metadata.name != originalName);
+
+          original.reset();
+          TEST_ASSERT_EQUAL_STRING("stor_a", copy.metadata.name);
+      }
+
+      // Scenario: Move keeps the name
+      // Given a StorageComponent built with a componentName,
+      // When it is move-constructed,
+      // Then the new object's metadata.name reads the same name and does not
+      // point into the old object's String.
+      void test_move_keeps_the_name(void) {
+          std::unique_ptr<StorageComponent> original(new StorageComponent(namedConfig()));
+          const char* originalName = original->metadata.name;
+          StorageComponent moved(std::move(*original));
+
+          TEST_ASSERT_EQUAL_STRING("stor_a", moved.metadata.name);
+          TEST_ASSERT_TRUE(moved.metadata.name != originalName);
+
+          original.reset();
+          TEST_ASSERT_EQUAL_STRING("stor_a", moved.metadata.name);
+      }
+
+      int main(int, char**) {
+          UNITY_BEGIN();
+          RUN_TEST(test_copy_keeps_the_name);
+          RUN_TEST(test_move_keeps_the_name);
+          return UNITY_END();
+      }
+- note: "Default name: kept as today: the existing suite guards it. The default name is the literal \"Storage\", which is already correct after a copy or a move, so a test would pass today and be refused."

@@ -1,0 +1,27 @@
+- refine:
+    issue: 35
+    need: |
+      Users and maintainers reading the WebUI see a component version that can be wrong. Some component pages carry a hardcoded fallback version, and it falls out of step with the component's real version after a release.
+    validation: |
+      - **Fallback matches release:** Given a component whose version was bumped in a release, When its WebUI provider reports its version without the component attached, Then it does not show an older number.
+      - **Attached component:** Given a provider with its component attached, When the WebUI asks for the version, Then it shows the component's own version.
+    verification: |
+      - A host test builds each listed provider with no component and checks that `getWebUIVersion()` does not return a literal that differs from the component's current metadata version.
+      - A check fails the build if a provider's `getWebUIVersion()` holds a literal version string that differs from its component's version.
+    scope: |
+      Guessed: the fix is not shown. The code given shows the hardcoded fallbacks only in `getWebUIVersion()` in these providers.
+      - `DomoticsCore-HomeAssistant/include/DomoticsCore/HomeAssistantWebUI.h` (fallback "1.4.0")
+      - `DomoticsCore-LED/include/DomoticsCore/LEDWebUI.h` (fallback "1.3.0")
+      - `DomoticsCore-MQTT/include/DomoticsCore/MQTTWebUI.h` (fallback "1.4.0")
+      - `DomoticsCore-NTP/include/DomoticsCore/NTPWebUI.h` (fallback "1.0.2")
+      - `DomoticsCore-OTA/include/DomoticsCore/OTAWebUI.h` (fallback "1.4.0")
+      The same function is defined in other providers whose code was not given, such as SystemInfo, Wifi, RemoteConsole and Storage. Check them too.
+    sources:
+      - DomoticsCore-HomeAssistant/include/DomoticsCore/HomeAssistantWebUI.h
+      - DomoticsCore-LED/include/DomoticsCore/LEDWebUI.h
+      - DomoticsCore-MQTT/include/DomoticsCore/MQTTWebUI.h
+      - DomoticsCore-NTP/include/DomoticsCore/NTPWebUI.h
+      - DomoticsCore-OTA/include/DomoticsCore/OTAWebUI.h
+    why: The task shows the hardcoded fallbacks in these five providers. The earlier note said no code was given for them.
+- note: |
+    #35 was imported from line 6321 of docs/CODE-ROADMAP.md, but that line sits in an unrelated SEC-15 entry about the OTA upload. The real item is the LO-1 table row in the issue body. A person may want to check the import mapping. The fix chosen (read the version from the component, or drop the fallback) is left for a person to decide.

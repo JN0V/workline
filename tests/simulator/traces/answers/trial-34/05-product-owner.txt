@@ -1,0 +1,17 @@
+- refine:
+    issue: 34
+    why: "Answers the open Scope finding: adds the entity base header and the tests, drops the guess, and says no docs change."
+    sources:
+      - DomoticsCore-HomeAssistant/include/DomoticsCore/HomeAssistant.h
+      - DomoticsCore-HomeAssistant/include/DomoticsCore/HAEntity.h
+      - DomoticsCore-HomeAssistant/include/DomoticsCore/HASwitch.h
+      - DomoticsCore-HomeAssistant/include/DomoticsCore/HALight.h
+    scope: |
+      The fix is the first option of the Fix: the published value updates the entity's field. The second option, a reference note, is not taken.
+
+      - `DomoticsCore-HomeAssistant/include/DomoticsCore/HomeAssistant.h`: `publishState(id, String)` and `publishStateJson` update the entity's field when they are called, before the publish is sent or held. `publishState` with a float, bool or `const char*` goes through the String form.
+      - `DomoticsCore-HomeAssistant/include/DomoticsCore/HAEntity.h`: a small overridable hook on the entity base, so the publish code does not cast to the switch or the light. Entities with no state field keep the default and do nothing. This is the same style as the entity hooks added in commit 4fd5c17.
+      - `DomoticsCore-HomeAssistant/include/DomoticsCore/HASwitch.h`: implements the hook, comparing with the entity's own `payloadOn`. The comment on `state` says it follows both commands and local publishes.
+      - `DomoticsCore-HomeAssistant/include/DomoticsCore/HALight.h`: implements the hook for the plain ON/OFF and the JSON forms, with the same range rules as `handleCommand`. The comments on `state` and `brightness` are updated.
+      - Tests: the existing native HomeAssistant tests that read these fields are extended, and the new cases from the Verification go beside them. They need no new test folder.
+      - Docs: no change. The command flow in `docs/components/home-assistant/project-context.md` still holds, as commands still write the fields.

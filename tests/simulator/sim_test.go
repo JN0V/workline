@@ -46,16 +46,26 @@ type trace struct {
 	file  string
 	fresh bool
 	end   string
+	// by is a role's outcomes, call by call of that role, progress past
+	// them: a case of one answer kind on a real issue.
+	by map[string][]outcome
+	// replay: the trial's own answers are given first, from
+	// traces/answers/<file>/, a role's in the order it gave them.
+	replay bool
 }
 
 // traces are the trial's issues as round 3 left them on 2026-11-04 (#757),
 // and the five it merged taken back to how they were opened, the path
 // that works. Each blocked one was blocked by the machine, not by a
 // person's question (pending.txt says how): an agent that progresses
-// takes every one to Done.
+// takes every one to Done. Then workline's own eleventh run (#757,
+// 2026-11-04), its three bugs merged with no person, as they were opened;
+// the answer kinds on the trial's issues, each named for what it plays;
+// the trial's answers replayed on each issue, as it was opened.
 var traces = func() []trace {
 	var ts []trace
-	for _, n := range []int{3, 4, 5, 16, 18, 19, 20, 33, 34, 35, 36, 37} {
+	trial := []int{3, 4, 5, 16, 18, 19, 20, 33, 34, 35, 36, 37}
+	for _, n := range trial {
 		f := fmt.Sprintf("trial-%d", n)
 		ts = append(ts, trace{name: f, file: f, end: "done"})
 	}
@@ -63,19 +73,58 @@ var traces = func() []trace {
 		f := fmt.Sprintf("trial-%d", n)
 		ts = append(ts, trace{name: f + "-fresh", file: f, fresh: true, end: "done"})
 	}
+	for _, n := range []int{1002, 1003, 1004} {
+		f := fmt.Sprintf("workline-%d", n)
+		ts = append(ts, trace{name: f, file: f, fresh: true, end: "done"})
+	}
+	one := func(role string, o outcome) map[string][]outcome { return map[string][]outcome{role: {o}} }
+	ts = append(ts,
+		// #1048: the tester's test calls a constructor the code lacks, on
+		// #20 as in the trial; on #3, whose Scope names its file; then
+		// the developer's code that does not build.
+		trace{name: "trial-20-broken-test", file: "trial-20", fresh: true, end: "done", by: one("tester", broken)},
+		trace{name: "trial-3-broken-test", file: "trial-3", fresh: true, end: "done", by: one("tester", broken)},
+		trace{name: "trial-3-broken-code", file: "trial-3", fresh: true, end: "done", by: one("developer", broken)},
+		// #1075: a new file's hunk miscounted, the tester's; then the
+		// developer's, on the header it changes. On #3: #37 as it was
+		// opened has no Need the fake can ready.
+		trace{name: "trial-3-hunk-test", file: "trial-3", fresh: true, end: "done", by: one("tester", hunk)},
+		trace{name: "trial-3-hunk-code", file: "trial-3", fresh: true, end: "done", by: one("developer", hunk)},
+		// The developer's agent run failing once (seed 26 of the first
+		// seeded runs on these cases, frozen).
+		trace{name: "trial-3-error-code", file: "trial-3", fresh: true, end: "done", by: one("developer", machineError)},
+		// The product owner's answer unreadable twice in its run.
+		trace{name: "trial-35-po-unread", file: "trial-35", fresh: true, end: "done", by: map[string][]outcome{"product-owner": {malformed, malformed}}},
+		// Needs input, from each source: the engine (the product owner's
+		// files), the product owner (the tester's no test, the
+		// developer's file outside its Scope), a person (the product
+		// owner's question, unanswered: the issue waits on its reporter).
+		trace{name: "trial-35-needs-engine", file: "trial-35", fresh: true, end: "done", by: one("product-owner", needsEngine)},
+		trace{name: "trial-35-needs-po-test", file: "trial-35", fresh: true, end: "done", by: one("tester", needsRole)},
+		trace{name: "trial-35-needs-po-code", file: "trial-35", fresh: true, end: "done", by: one("developer", needsRole)},
+		trace{name: "trial-35-needs-person", file: "trial-35", fresh: true, end: "waiting:", by: one("product-owner", needsPerson)},
+	)
+	for _, n := range trial {
+		f := fmt.Sprintf("trial-%d", n)
+		ts = append(ts, trace{name: f + "-replay", file: f, fresh: true, end: "done", replay: true})
+	}
 	return ts
 }()
 
 // config is the trial's line: the product owner, the tester and the
 // developer, each woken by an issue's state; the tester's and the
-// developer's settings the trial copy's, its g++ error shapes.
+// developer's settings the trial copy's, its g++ error shapes; go's for
+// the Go packages workline's own issues name.
 const config = `roles:
   tester:
     settings:
       test-command: tools/workline-tests.sh {report}
       code-lines-max: 1000
-      test-paths: ["DomoticsCore-*/test/**"]
+      test-paths: ["DomoticsCore-*/test/**", "**/*_test.go"]
       build-errors:
+        - error: '^(?P<file>[^\s:]+\.go):\d+:\d+: (?P<message>.+)$'
+          missing-name: ['^undefined: \w+']
+          test-name: '(?m)^func\s+(Test\w+)\s*\('
         - error: '^(?P<file>[^\s:]+\.(?:cpp|cc|c|h|hpp)):\d+:\d+: error: (?P<message>.+)$'
           missing-name:
             - "^[‘'][\\w:]+[’'] was not declared in this scope"
@@ -183,6 +232,14 @@ func newWorld(t *testing.T, tr trace, a *simAgent) *world {
 	if err := os.WriteFile(f, data, 0o644); err != nil {
 		t.Fatal(err)
 	}
+	// The forge's reads, counted by every process the line runs.
+	if err := os.WriteFile(forge.ReadsLog(f), nil, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	a.by = tr.by
+	if tr.replay {
+		a.answers = answers(t, tr.file)
+	}
 	roles, _ := filepath.Abs(filepath.Join("..", "..", "roles"))
 	cfg, err := routing.Load(repo)
 	if err != nil {
@@ -192,6 +249,32 @@ func newWorld(t *testing.T, tr trace, a *simAgent) *world {
 	w := &world{repo: repo, forge: f, roles: roles, cfg: cfg, agent: a}
 	w.trialBranches(t)
 	return w
+}
+
+// answers are the trial's agent answers on a trace's issue, a role's in
+// the order it gave them: traces/answers/<file>/<n>-<role>.txt, each
+// the agent's answer a run of the trial kept (its out/agent-answer.txt),
+// run by run of the round. A developer's `[]` is left out: its code was
+// in its worktree, which the run did not keep; the fake writes its own.
+func answers(t *testing.T, file string) map[string][]string {
+	paths, err := filepath.Glob(filepath.Join("traces", "answers", file, "*.txt"))
+	if err != nil || len(paths) == 0 {
+		t.Fatalf("no answers kept for %s: %v", file, err)
+	}
+	slices.Sort(paths)
+	out := map[string][]string{}
+	for _, p := range paths {
+		_, role, _ := strings.Cut(strings.TrimSuffix(filepath.Base(p), ".txt"), "-")
+		data, err := os.ReadFile(p)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if role == "developer" && strings.TrimSpace(string(data)) == "[]" {
+			continue
+		}
+		out[role] = append(out[role], string(data))
+	}
+	return out
 }
 
 func (w *world) state(t *testing.T) forge.FakeState {
@@ -221,6 +304,15 @@ func (w *world) run(at time.Time) *line.Result {
 		w.dateLabels(before, at)
 	}
 	return res
+}
+
+// requests are the forge's requests so far: its reads, its writes.
+func (w *world) requests(t *testing.T) int {
+	st, err := os.Stat(forge.ReadsLog(w.forge))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return int(st.Size()) + w.state(t).Writes
 }
 
 func (w *world) read() (forge.FakeState, error) {

@@ -1,0 +1,20 @@
+- refine:
+    issue: 37
+    verification: |
+      - **Step 1, confirm the state.** Search the repository for the definitions of `WebUIComponent::wsBuffer_` and `WebUIComponent::bufferLock_`. The class in `DomoticsCore-WebUI/include/DomoticsCore/WebUI.h` only declares them (lines 82 and 83).
+        - A definition that is plain, in the header and not `inline`: the defect is real. Fix it.
+        - A definition that is `inline`, or sits once in a `.cpp`: no defect remains. A person closes the issue as obsolete. The checks below are then only a guard.
+      - **Link check.** Build two source files that both include `DomoticsCore/WebUI.h` for a board target, for example ESP32. Link them into one program. WebUI does not compile natively, so this needs the board toolchain. The link must succeed. A plain definition in the header makes it fail with a duplicate-symbol error.
+      - **One symbol each.** Run the board toolchain's `nm -C` on the linked program. `WebUIComponent::wsBuffer_` and `WebUIComponent::bufferLock_` must each show exactly one defined symbol.
+      - **One buffer and one lock.** Add a source check that runs in CI and needs no board. It reads `WebUI.h` and requires the following.
+        - Exactly one definition of each of the two members.
+        - Both the `/api/ui/updates` poll handler and the live-update broadcast take `bufferLock_` through a `LockGuard`.
+        - Both use `wsBuffer_` and no other buffer.
+        This fails if a user gets its own copy or skips the lock.
+      - Run the link check in the same CI job as the board build, so it keeps guarding later changes.
+    scope: |
+      Guessed: the lines holding the definitions of `wsBuffer_` and `bufferLock_` were not in the code given, so the exact place of the change is not confirmed. The CI file and the check's folder are not known either.
+      - `DomoticsCore-WebUI/include/DomoticsCore/WebUI.h`: the two static members of `WebUIComponent`, declared at lines 82 and 83, and where they are defined. The poll handler and the broadcast need no change; the source check only reads them.
+      - A new `.cpp` under `DomoticsCore-WebUI/src`, only if a single out-of-header definition is chosen over `inline`.
+      - A new check under `DomoticsCore-WebUI/test`: a two-source-file build, plus the source check. The existing build or CI job that runs the board builds is where it is added.
+    why: Answers the reviewer. Verification now has a first step that says what to do for each state, and a check that both users share one buffer and one lock. Scope drops the users from the change, and says plainly which paths are guessed.

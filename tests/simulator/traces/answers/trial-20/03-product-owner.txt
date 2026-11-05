@@ -1,0 +1,13 @@
+```yaml
+- refine:
+    issue: 20
+    verification: |
+      Native tests on `StorageComponent`, each reading `metadata.name` after the original is destroyed, so a pointer into the old object's String would dangle:
+      - **Copy, named:** build one with a `componentName`, copy-construct it, destroy the original, then check the copy's `metadata.name` still reads the same name. This fails if the copy keeps a pointer into the original's `nameStr_`.
+      - **Move, named:** build one with a `componentName`, move-construct it, destroy the moved-from object, then check the new object's `metadata.name` reads the same name and points into its own `nameStr_`.
+      - **Default name (regression guard):** build one with no `componentName`, copy it and move it, destroy the originals, then check `metadata.name` still reads "Storage". This passes today; it keeps a fix from breaking the literal.
+      - If copy and move assignment are supported, the same named checks run after assignment.
+    why: Answers the reviewer finding. It adds the default-name case and destroys the original before each check. The default name is a guard, not a defect.
+- note: |
+    Open question from the reviewer: should copy and move assignment be covered, or only the constructors? The Verification now covers assignment only if it is supported. Please say if it must be.
+```

@@ -1,0 +1,11 @@
+- note: |
+    I wrote no tests for "Silent reset", "Link flap" or "Frozen uptime" (BUG-49), because the task did not show the files they depend on.
+
+    The three tests have to drive the native MQTT client stub (connect, drop the link, force a failed reconnect), the WiFi stub that `connect()` checks, the clock control, and the capture of `mqtt/connected` and `mqtt/disconnected`. The task did not include `test_mqtt_component.cpp`, `test_mqtt_limits_links.cpp` or the stub headers, so I do not know their names or signatures. Guessing them would give tests that fail to compile for the wrong reason, not by their own assertions.
+
+    What the tests would check is clear from the issue:
+    - Silent reset: after a connect, `resetReconnect()` gives exactly one `mqtt/disconnected` and `getState()` equal to `Disconnected`. A second connect then gives an `mqtt/connected` that arrives after that `mqtt/disconnected`.
+    - Link flap: after two drops and two reconnects, with `loop()` run after each drop, `getStatistics().lostCount` equals 2. `lostCount` is the proposed name. It does not exist yet, so the test fails today on that missing name.
+    - Frozen uptime: after a connect and a clock advance, `uptime` is above 0. After a drop and `loop()`, `getStatistics().uptime` equals 0, and still 0 after the clock moves on.
+
+    Please send the stub's drop and clock helpers, or the two existing test files, and I will write all three tests in the project's style.

@@ -1,0 +1,73 @@
+- note: "Shared vocabulary: no test written. It needs the WiFi provider's boolean field and how to build it, and neither is in the task. A guessed name would fail on a missing name rather than on the behaviour. Once the WiFi provider's code is given, the test can post each value to both providers and compare the answers."
+- patch:
+    file: DomoticsCore-LED/test/test_led_webui_boolean/test_led_webui_boolean.cpp
+    content: |
+      /**
+       * @file test_led_webui_boolean.cpp
+       * @brief The boolean field of the LEDWebUI provider: no odd value is read
+       *        as false while the answer says success.
+       */
+
+      #include <DomoticsCore/Logger.h>  // Required for DLOG macros used in LED.h
+      #include <DomoticsCore/LEDWebUI.h>
+      #include <unity.h>
+      #include <cstring>
+      #include <map>
+
+      using namespace DomoticsCore::Components;
+
+      void setUp(void) {}
+      void tearDown(void) {}
+
+      static String post(LEDWebUI& ui, const char* field, const char* value) {
+          std::map<String, String> params;
+          params[String("field")] = String(field);
+          params[String("value")] = String(value);
+          return ui.handleWebUIRequest(String("led_dashboard"), String("/api/ui/action"),
+                                       String("POST"), params);
+      }
+
+      static bool contains(const String& haystack, const char* needle) {
+          return strstr(haystack.c_str(), needle) != nullptr;
+      }
+
+      static bool succeeded(const String& response) {
+          return contains(response, "\"success\":true");
+      }
+
+      struct Fixture {
+          LEDComponent led;
+          LEDWebUI ui;
+
+          Fixture() : ui(&led) {
+              led.addSingleLED(2, "Status");
+              led.addRGBLED(25, 26, 27, "Mood");
+              led.begin();
+          }
+      };
+
+      // Scenario: Odd value
+      // Given an LED dashboard,
+      // When enabled_toggle is posted as 1 or on,
+      // Then it is either accepted as true or refused with a reason,
+      // never read as false with success.
+      void test_odd_value(void) {
+          for (const char* odd : {"1", "on"}) {
+              Fixture f;
+              String response = post(f.ui, "enabled_toggle", odd);
+              if (succeeded(response)) {
+                  String status = f.led.getLEDStatus(0);
+                  TEST_ASSERT_TRUE_MESSAGE(contains(status, "Enabled"), odd);
+                  TEST_ASSERT_TRUE_MESSAGE(contains(status, "Brightness: 128"), odd);
+              } else {
+                  TEST_ASSERT_TRUE_MESSAGE(contains(response, "\"error\":\"") &&
+                                           !contains(response, "\"error\":\"\""), odd);
+              }
+          }
+      }
+
+      int main(int argc, char** argv) {
+          UNITY_BEGIN();
+          RUN_TEST(test_odd_value);
+          return UNITY_END();
+      }

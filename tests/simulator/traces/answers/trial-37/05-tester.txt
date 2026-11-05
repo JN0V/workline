@@ -1,0 +1,140 @@
+- patch: |
+    --- /dev/null
+    +++ b/DomoticsCore-WebUI/test/test_webui_one_buffer/test_webui_one_buffer_other.cpp
+    @@ -0,0 +1,14 @@
+    +/**
+    + * @file test_webui_one_buffer_other.cpp
+    + * @brief Second source file that includes DomoticsCore/WebUI.h, linked with the test.
+    + */
+    +
+    +#include <DomoticsCore/WebUI.h>
+    +
+    +using namespace DomoticsCore::Components;
+    +
+    +int webuiOtherUnitPort() {
+    +    WebUIComponent webui;
+    +    webui.begin();
+    +    return webui.getConfig().port;
+    +}
+    --- /dev/null
+    +++ b/DomoticsCore-WebUI/test/test_webui_one_buffer/test_webui_one_buffer.cpp
+    @@ -0,0 +1,107 @@
+    +/**
+    + * @file test_webui_one_buffer.cpp
+    + * @brief WebUIComponent::wsBuffer_ and bufferLock_ are defined once, however many files include WebUI.h.
+    + */
+    +
+    +#include <unity.h>
+    +
+    +#include <cstdio>
+    +#include <string>
+    +
+    +#include <DomoticsCore/WebUI.h>
+    +
+    +using namespace DomoticsCore::Components;
+    +
+    +int webuiOtherUnitPort();
+    +
+    +void setUp() {}
+    +void tearDown() {}
+    +
+    +namespace {
+    +
+    +bool readFile(const std::string& path, std::string& out) {
+    +    FILE* f = fopen(path.c_str(), "rb");
+    +    if (!f) return false;
+    +    char buf[4096];
+    +    size_t n;
+    +    out.clear();
+    +    while ((n = fread(buf, 1, sizeof(buf), f)) > 0) out.append(buf, n);
+    +    fclose(f);
+    +    return true;
+    +}
+    +
+    +std::string webuiHeader() {
+    +    const char* candidates[] = {
+    +        "DomoticsCore-WebUI/include/DomoticsCore/WebUI.h",
+    +        "../DomoticsCore-WebUI/include/DomoticsCore/WebUI.h",
+    +        "include/DomoticsCore/WebUI.h",
+    +        "../include/DomoticsCore/WebUI.h",
+    +        "../../include/DomoticsCore/WebUI.h",
+    +        "../../../include/DomoticsCore/WebUI.h",
+    +        "../../../../DomoticsCore-WebUI/include/DomoticsCore/WebUI.h",
+    +    };
+    +    std::string text;
+    +    for (const char* c : candidates) {
+    +        if (readFile(c, text)) return text;
+    +    }
+    +    std::string here = __FILE__;
+    +    size_t cut = here.rfind("/test/");
+    +    if (cut != std::string::npos &&
+    +        readFile(here.substr(0, cut) + "/include/DomoticsCore/WebUI.h", text)) return text;
+    +    return "";
+    +}
+    +
+    +size_t countOf(const std::string& text, const std::string& needle) {
+    +    size_t count = 0;
+    +    for (size_t at = text.find(needle); at != std::string::npos; at = text.find(needle, at + 1)) count++;
+    +    return count;
+    +}
+    +
+    +/** The lines of `text` holding a definition `WebUIComponent::<member>` followed by `[` or `=` or `;` or `{`. */
+    +std::string definitionLine(const std::string& text, const std::string& member, size_t& found) {
+    +    const std::string key = "WebUIComponent::" + member;
+    +    std::string first;
+    +    found = 0;
+    +    for (size_t at = text.find(key); at != std::string::npos; at = text.find(key, at + 1)) {
+    +        size_t start = text.rfind('\n', at);
+    +        start = (start == std::string::npos) ? 0 : start + 1;
+    +        size_t end = text.find('\n', at);
+    +        if (end == std::string::npos) end = text.size();
+    +        if (found == 0) first = text.substr(start, end - start);
+    +        found++;
+    +    }
+    +    return first;
+    +}
+    +
+    +}  // namespace
+    +
+    +// Scenario: Several source files
+    +// Given two source files that both include `DomoticsCore/WebUI.h`,
+    +// When the project is built and linked,
+    +// Then the link succeeds with no duplicate-symbol error for `wsBuffer_` or `bufferLock_`.
+    +void test_several_source_files() {
+    +    TEST_ASSERT_EQUAL_INT(80, webuiOtherUnitPort());
+    +    std::string header = webuiHeader();
+    +    TEST_ASSERT_TRUE_MESSAGE(!header.empty(), "WebUI.h could not be read");
+    +    size_t n = 0;
+    +    for (const char* member : {"wsBuffer_", "bufferLock_"}) {
+    +        std::string line = definitionLine(header, member, n);
+    +        if (n == 0) continue;  // defined in a .cpp, not in the header
+    +        TEST_ASSERT_EQUAL_UINT_MESSAGE(1, n, "a member is defined more than once in the header");
+    +        TEST_ASSERT_TRUE_MESSAGE(line.find("inline") != std::string::npos,
+                                         "a static member is defined in the header without inline");
+    +    }
+    +}
+    +
+    +// Scenario: One shared buffer
+    +// Given a build with several source files that use the WebUI,
+    +// When the poll handler and the live-update broadcast build an update,
+    +// Then both use the same single buffer and the same single lock.
+    +void test_one_shared_buffer() {
+    +    std::string header = webuiHeader();
+    +    TEST_ASSERT_TRUE_MESSAGE(!header.empty(), "WebUI.h could not be read");
+    +    size_t n = 0;
+    +    std::string line = definitionLine(header, "wsBuffer_", n);
+    +    if (n > 0) TEST_ASSERT_TRUE_MESSAGE(line.find("inline") != std::string::npos, "wsBuffer_ is a plain definition in the header");
+    +    line = definitionLine(header, "bufferLock_", n);
+    +    if (n > 0) TEST_ASSERT_TRUE_MESSAGE(line.find("inline") != std::string::npos, "bufferLock_ is a plain definition in the header");
+    +    TEST_ASSERT_TRUE_MESSAGE(countOf(header, "/api/ui/updates") >= 1, "poll handler not found");
+    +    TEST_ASSERT_TRUE_MESSAGE(countOf(header, "LockGuard") >= 2, "poll handler and broadcast must both take a LockGuard");
+    +    TEST_ASSERT_TRUE_MESSAGE(countOf(header, "bufferLock_") >= 3, "both users must take bufferLock_");
+    +    TEST_ASSERT_TRUE_MESSAGE(countOf(header, "wsBuffer_") >= 3, "both users must use wsBuffer_");
+    +}
+    +
+    +int main(int, char**) {
+    +    UNITY_BEGIN();
+    +    RUN_TEST(test_several_source_files);
+    +    RUN_TEST(test_one_shared_buffer);
+    +    return UNITY_END();
+    +}

@@ -1,0 +1,3 @@
+```yaml
+- note: "#33 waits on its reporter: the product owner already asked for Validation scenarios in the Given/When/Then form (1 of 3 questions used, no answer yet). Nothing more is proposed until they reply. Neither Need nor Validation is a draft, so the issue cannot move to ready until the Validation holds named scenarios."
+```

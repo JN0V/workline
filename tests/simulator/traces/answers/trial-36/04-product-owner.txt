@@ -1,0 +1,17 @@
+- refine:
+    issue: 36
+    need: |
+      Operators and components that watch the MQTT link need it reported truthfully. Today `resetReconnect()` can leave every subscriber believing the link is up. A dropped link leaves no trace in the statistics, and the uptime figure stays frozen as if the link were still live.
+    verification: |
+      - A native test connects, calls `resetReconnect()`, and checks that `mqtt/disconnected` is emitted exactly once. It then reconnects and checks that the next `mqtt/connected` follows that `mqtt/disconnected`, with none missing between.
+      - A native test drops the link twice and reconnects each time. It checks that a new loss counter in `MQTTStatistics` equals 2, and that it stays 0 after a deliberate `disconnect()`.
+      - A native test drops the link, runs `loop()`, and checks that `getStatistics().uptime` equals 0 while the link is down. The test fails on today's code, which keeps the last value.
+      - The third leftover from the roadmap item is not part of this issue. A `mqtt/disconnected` lost on a full event queue needs a separate decision on sticky publication, which changes replay for every subscriber. It gets its own issue and its own test once decided.
+    scope: |
+      - `DomoticsCore-MQTT/include/DomoticsCore/MQTT_impl.h`: `resetReconnect()`, the uptime refresh in `updateStatistics()`, and where a loss is announced in `announceConnectionLost()`.
+      - `DomoticsCore-MQTT/include/DomoticsCore/MQTT.h`: add a loss counter to `MQTTStatistics`.
+      - The roadmap says nothing in the tree calls `resetReconnect()`. `MQTT.h` documents it as meant to be called after a broker change from the WebUI. Check the WebUI callers before relying on that claim.
+    sources:
+      - DomoticsCore-MQTT/include/DomoticsCore/MQTT_impl.h
+      - DomoticsCore-MQTT/include/DomoticsCore/MQTT.h
+    why: The reviewer found two problems. The uptime check passed even with the bug present. The third leftover, a design decision, had no test. The third leftover is out of the Need now, and the HomeAssistant file is out of the Scope until that decision is made.

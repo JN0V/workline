@@ -1,0 +1,18 @@
+- refine: 
+    issue: 36
+    verification: |
+      Three native tests go in the MQTT component's existing native test files, next to the tests that already drop a link. Each test uses the native MQTT client stub and the event capture those tests already use. It drops the link, or moves the clock, the way they do. The new statistics field is named `lostCount`.
+      - **Silent reset:** connect, then call `resetReconnect()`. Expect exactly one `mqtt/disconnected` and `getState()` equal to `Disconnected`. Connect again and expect the next `mqtt/connected` to come after that `mqtt/disconnected`. The test fails today: `resetReconnect()` emits nothing, so no `mqtt/disconnected` arrives.
+      - **Link flap:** connect, drop the link without calling `disconnect()`, run `loop()`, and reconnect. Do this twice. Expect `getStatistics().lostCount` to equal 2. A deliberate `disconnect()` also counts as a loss, and the test checks that it counts once.
+      - **Frozen uptime:** connect, advance the clock, and run `loop()` so `uptime` is above 0. Then drop the link and run `loop()` again. Expect `getStatistics().uptime` to equal 0 during the outage, and to stay 0 as the clock advances further.
+      - Existing MQTT tests stay green, so the one `mqtt/disconnected` per drop that BUG-44 added is unchanged.
+      - This issue's third leftover (a `mqtt/disconnected` dropped by a full EventBus queue, with or without sticky publication) is not covered by the Validation. It stays a design decision for a person and has no test here.
+    scope: |
+      `DomoticsCore-MQTT/include/DomoticsCore/MQTT_impl.h`:
+      - `resetReconnect()` announces the loss when the state is Connected. It closes the client session first, then emits `mqtt/disconnected` once.
+      - `announceConnectionLost()` and `disconnect()` both increment the new loss counter.
+      - `updateStatistics()` sets `uptime` to 0 when the link is not connected.
+      `DomoticsCore-MQTT/include/DomoticsCore/MQTT.h`: add `lostCount` to `MQTTStatistics`.
+      `DomoticsCore-HomeAssistant/include/DomoticsCore/HomeAssistant.h` needs no change. It reads `mqtt/disconnected` to clear `mqttConnected`.
+    sources: ["DomoticsCore-MQTT/include/DomoticsCore/MQTT_impl.h", "DomoticsCore-MQTT/include/DomoticsCore/MQTT.h"]
+    why: The tester could not write tests against unseen helper names. The Verification now names no helper and the new counter's name is fixed, so the tests can be written. The Scope lists the exact changes.

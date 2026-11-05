@@ -1,0 +1,14 @@
+- refine:
+    issue: 20
+    scope: |
+      `DomoticsCore-Storage/include/DomoticsCore/Storage.h`: the `StorageComponent` constructor. `nameStr_` holds the dynamic componentName, and `metadata.name` stores the pointer from `nameStr_.c_str()`. The copy and move operations must re-point `metadata.name` into the new object's own `nameStr_`.
+
+      `DomoticsCore-Storage/test/test_storage_name_assign/test_storage_name_assign.cpp`: the native test for copy, move and assignment of a named `StorageComponent`. Widened at the developer's request, because the fix on pull request 39 needs this test file.
+    sources:
+      - DomoticsCore-Storage/include/DomoticsCore/Storage.h
+      - DomoticsCore-Storage/test/test_storage_name_assign/test_storage_name_assign.cpp
+    why: The developer needs the name-assignment test file to prove the fix. It is a test of this same issue, so the Scope can include it.
+- unblock:
+    issue: 20
+    to: ready
+    why: The Scope now includes the test file the pull request needs, so the developer can resume.

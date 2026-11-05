@@ -1,0 +1,18 @@
+- refine:
+    issue: 36
+    verification: |
+      Each test goes next to the existing MQTT link-drop tests (`test_mqtt_component.cpp`, `test_mqtt_limits_links.cpp`). It uses the same native MQTT client stub and the same event capture those tests already use to drop a link without calling `disconnect()`. No new helper is invented.
+      - **Silent reset:** connect, listen for `mqtt/connected` and `mqtt/disconnected`, then call `resetReconnect()`. Expect exactly one `mqtt/disconnected`. Reconnect and expect the next `mqtt/connected` to come after it.
+      - **Link flap:** drop the link and reconnect twice. Expect the new loss counter in `MQTTStatistics` to equal 2. After a deliberate `disconnect()`, expect it to stay 0.
+      - **Frozen uptime:** let the uptime reach a nonzero value, drop the link, and run `loop()`. Expect `getStatistics().uptime` to equal 0.
+      - The remaining existing MQTT and HomeAssistant native tests stay green.
+    scope: |
+      Guessed: `updateStatistics()` is not in the code given, so its exact change is not shown.
+      - `DomoticsCore-MQTT/include/DomoticsCore/MQTT_impl.h`: `resetReconnect()` leaves Connected without announcing it. `updateStatistics()` and the `loop()` path that notices a loss must count the loss and zero the uptime.
+      - `DomoticsCore-MQTT/include/DomoticsCore/MQTT.h`: add a loss counter to `MQTTStatistics`.
+      - The `mqtt/disconnected` event is read by `DomoticsCore-HomeAssistant/include/DomoticsCore/HomeAssistant.h`, which sets `mqttConnected` false on it. Item 3 of the issue (sticky publication) is a design decision that changes this path, and the Validation does not cover it.
+    sources:
+      - DomoticsCore-MQTT/include/DomoticsCore/MQTT_impl.h
+      - DomoticsCore-MQTT/include/DomoticsCore/MQTT.h
+      - DomoticsCore-HomeAssistant/include/DomoticsCore/HomeAssistant.h
+    why: The tester could not name the test helpers. The Verification now points to the link-drop helpers the existing BUG-44 tests use, so the tests can be written.

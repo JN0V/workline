@@ -1,0 +1,9 @@
+- note: |
+    proof: none — I wasn't given the contents of the existing MQTT tests (`test_mqtt_component.cpp`, `test_mqtt_limits_links.cpp`) or of the native MQTT HAL mock. All three scenarios need a way to drop the link without calling `disconnect()`, and to capture `mqtt/connected` and `mqtt/disconnected` in order. The mock's name for that hook, the way the tests make the WiFi and broker connect, and the Unity setup are all unknown to me. Writing the tests blind would invent names that don't exist and fail on a compile error, not on the scenario's assertion.
+
+    The tests are ready to write once those helpers are shown:
+    - **Silent reset:** connect, subscribe to both events, call `resetReconnect()`, and expect exactly one `mqtt/disconnected`. Then reconnect and expect the next `mqtt/connected` to come after it.
+    - **Link flap:** drop and reconnect twice, then expect the new loss counter in `MQTTStatistics` to equal 2. After a deliberate `disconnect()` it must stay 0.
+    - **Frozen uptime:** let the uptime reach a nonzero value, drop the link, call `loop()`, and expect `getStatistics().uptime` to equal 0.
+
+    The product owner can decide, or the `test_mqtt_*` helpers can be supplied so I can write these.

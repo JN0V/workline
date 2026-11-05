@@ -1,0 +1,3 @@
+```yaml
+- note: "#33: the reporter was already asked once to write the Validation as Given/When/Then scenarios and has not answered. Nothing more is written to them until they do. The Verification is in place. Once the Validation holds named scenarios, the issue can move to ready."
+```

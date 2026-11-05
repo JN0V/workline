@@ -240,7 +240,23 @@ func (c *FakeComment) UnmarshalJSON(data []byte) error {
 	return json.Unmarshal(data, (*Note)(c))
 }
 
+// ReadsLog is the file beside a fake forge's that counts its reads, one
+// byte a read, appended by every process sharing the forge: there only
+// when a test made it (the line simulator's requests a tick).
+func ReadsLog(path string) string { return path + ".reads" }
+
+// load is one read of the forge, counted in ReadsLog when it exists.
 func (f *Fake) load() (*FakeState, error) {
+	if r, err := os.OpenFile(ReadsLog(f.Path), os.O_WRONLY|os.O_APPEND, 0); err == nil {
+		_, _ = r.Write([]byte{'r'})
+		_ = r.Close()
+	}
+	return f.loadState()
+}
+
+// loadState reads the file, not counted: a write's own read is the
+// write's request.
+func (f *Fake) loadState() (*FakeState, error) {
 	data, err := os.ReadFile(f.Path)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrUnreachable, err)
@@ -256,7 +272,7 @@ func (f *Fake) save(s *FakeState) error {
 
 // write runs change as one write, failing it if it is the one told to fail.
 func (f *Fake) write(change func(*FakeState) error) error {
-	s, err := f.load()
+	s, err := f.loadState()
 	if err != nil {
 		return err
 	}

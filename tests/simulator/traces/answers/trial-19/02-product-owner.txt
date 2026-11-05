@@ -1,0 +1,6 @@
+- refine:
+    issue: 19
+    scope: |
+      `DomoticsCore-RemoteConsole/include/DomoticsCore/RemoteConsole.h`: the `nextClientId` counter (uint32_t) and its increment where `loop()` accepts a new client. Clients are kept in `clients` and `clientState`, both keyed by that id.
+    sources: ["DomoticsCore-RemoteConsole/include/DomoticsCore/RemoteConsole.h"]
+    why: The Scope names the counter but gives no file path. This adds the path, taken from the code given.
