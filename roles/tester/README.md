@@ -71,6 +71,14 @@ workline test write --issue 42 --ai claude
   Scope writes as code; a long file by those pieces), the tests beside
   them, the test command. Long lines over the context budget: fewer
   lines given; still over, the issue says so and names `code-lines-max`.
+- **With `claude`, it reads the project too**: a copy at the issue's
+  base, read-only (Read, Glob, Grep; no shell), the picker's code its
+  start; it finds the test helpers itself, and a helper it could not
+  confirm is listed on the Draft as assumed. What it read is logged
+  with the call
+  ([ADR-0063 §8](../../docs/adr/0063-every-open-issue-is-due-waiting-or-done.md#8-one-code-picker-and-tools-where-the-agent-has-them)).
+  Another agent reads its task alone, and names the files it lacks
+  (`needs:`), given at once.
 - **One test a scenario**: its name holds the scenario's name, its
   comment the Given / When / Then. A scenario no test can check is said
   in a note, listed in the Draft as not tested.
@@ -209,6 +217,7 @@ Under `roles: {tester: {settings: …}}` in `.workline/config.yaml`
 | `build-errors` | Go's | how a build broken by a missing name reads, by ecosystem ([page](docs/missing-name.md)) |
 | `code-lines-max` | 1500 | lines of the code the issue names and of the tests given to the agent, all files together, fewer when long lines would pass the context budget; a longer file gives the pieces the issue names in it, inside its declarations; the files the test and the Scope include or import, two steps deep, as declarations ([the code picker](../../docs/spec/code-picker.md)); a fifth kept for a test beside when the code would fill it; files past it are named with their size |
 | `ai-max-tokens`, `ai-max-seconds` | 300000, 1200 | what one `test write` or `test answer` run may spend, and wait on its agent |
+| `ai-max-turns` | 40 | the turns of an agent that reads the project itself (`claude`), told in its task and enforced by the engine (`claude --max-turns`) |
 | `objection-exchanges` | 3 | the tester's answers in an objection's thread before the product owner settles it |
 | `curator-*`, `suite-max-seconds`, `coverage-report` | 2 runs, 600 s | the curator's measures ([page](docs/curator.md#settings)) and removals ([page](docs/removals.md#settings)) |
 

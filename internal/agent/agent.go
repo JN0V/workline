@@ -92,6 +92,10 @@ type Call struct {
 	// Tools: how many times it used each tool, as it reports them
 	// (claude in a worktree, ADR-0056).
 	Tools map[string]int `json:"tools,omitempty"`
+	// Reads: the files it read in its read tree, each `<blob> <path>`,
+	// the blob from the tree's commit; a path out of the tree as it gave
+	// it (ADR-0063 §3: a role with read tools logs what it read).
+	Reads []string `json:"reads,omitempty"`
 	// Failed: why the call failed, its time aside (TimeCut): the agent
 	// unreachable, exited in error, or its answer unread.
 	Failed string `json:"failed,omitempty"`
@@ -105,6 +109,13 @@ type Call struct {
 // reads, a tenth of the price of fresh input, dominate its total and are
 // recorded apart (ADR-0056, step 7).
 func (c Call) Fresh() int { return c.TokensIn - c.TokensCached + c.TokensOut }
+
+// ReadsFiles says the agent spec names an agent that reads the project's
+// files itself, given a read tree (ReadTreeDir): claude, with Read, Glob
+// and Grep. A cmd: agent, a fake, none: no (ADR-0063 §8).
+func ReadsFiles(spec string) bool {
+	return spec == "claude" || strings.HasPrefix(spec, "claude:")
+}
 
 // Agent answers the question in in/task.md by writing out/intentions.yaml,
 // and says what answered, even when it fails.

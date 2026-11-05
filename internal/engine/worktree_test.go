@@ -27,16 +27,20 @@ func TestDropWorktree(t *testing.T) {
 	}
 	run := t.TempDir()
 	dropWorktree(repo, run) // none: nothing
-	tree := filepath.Join(run, agent.WorktreeDir)
-	if err := tester.Worktree(repo, "HEAD", tree); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(tree, "edit.sh"), []byte("x\n"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	dropWorktree(repo, run)
-	if _, err := os.Stat(tree); !os.IsNotExist(err) {
-		t.Errorf("the worktree is still there: %v", err)
+	// The worktree an agent edits, and the read tree one reads
+	// (ADR-0063 §8): both go.
+	for _, dir := range []string{agent.WorktreeDir, agent.ReadTreeDir} {
+		tree := filepath.Join(run, dir)
+		if err := tester.Worktree(repo, "HEAD", tree); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(tree, "edit.sh"), []byte("x\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		dropWorktree(repo, run)
+		if _, err := os.Stat(tree); !os.IsNotExist(err) {
+			t.Errorf("the %s is still there: %v", dir, err)
+		}
 	}
 	out, err := exec.Command("git", "-C", repo, "worktree", "list", "--porcelain").Output()
 	if err != nil {

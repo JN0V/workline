@@ -1,0 +1,32 @@
+#!/bin/sh
+# A stand-in for `claude -p` as the tester runs it with read-only tools
+# (ADR-0063 §8). It fails, saying why, unless given Read, Glob and Grep
+# alone, none allowed by name (dontAsk then keeps them in its folder),
+# its prompt the role's, its turns capped, and run
+# in a copy of the repository at its base, with no shell; its question
+# must say it reads the code itself. Then it reads lib.sh, searches, and
+# answers two tests, one per scenario, and a note of what they assume,
+# in stream-json.
+set -eu
+want() { echo "claude stand-in: $*" >&2; exit 1; }
+args=" $* "
+for a in "--output-format stream-json" "--verbose" "--tools Read,Glob,Grep" \
+	"--permission-mode dontAsk" "--strict-mcp-config" \
+	"--setting-sources user" "--no-session-persistence" "--system-prompt" "--max-turns 40"; do
+	case "$args" in *" $a "*) ;; *) want "not given $a" ;; esac
+done
+case "$args" in *Bash* | *Edit* | *Write* | *" --allowedTools "* | *" --append-system-prompt "*) want "given more than reading in its folder: $*" ;; esac
+[ "$(git rev-parse --show-toplevel)" = "$(pwd -P)" ] && [ -f lib.sh ] || want "not run in a copy of the repository: $(pwd)"
+grep -q 'add()' lib.sh && ! grep -q 'mul()' lib.sh || want "not the base's code"
+question=$(cat)
+for w in '## Reading the code yourself' 'Read, Glob and Grep' '40 turns at most'; do
+	case "$question" in *"$w"*) ;; *) want "the question does not say $w" ;; esac
+done
+tool() { printf '{"type":"assistant","message":{"content":[{"type":"tool_use","id":"t%s","name":"%s","input":{%s}}]}}\n' "$1" "$2" "$3"; }
+echo '{"type":"system","subtype":"init","tools":["Read","Glob","Grep"]}'
+tool 1 Glob '"pattern":"tests/**"'
+tool 2 Grep '"pattern":"add"'
+tool 3 Read "\"file_path\":\"$(pwd -P)/lib.sh\""
+cat <<'R'
+{"type":"result","subtype":"success","is_error":false,"num_turns":4,"result":"- patch:\n    file: tests/test_mul_two_by_three.sh\n    content: |\n      # Scenario: Two by three\n      # Given the library, When I multiply 2 by 3, Then I get 6.\n      . ./lib.sh\n      [ \"$(mul 2 3)\" = 6 ]\n- patch:\n    file: tests/test_mul_by_zero.sh\n    content: |\n      # Scenario: By zero\n      # Given the library, When I multiply 5 by 0, Then I get 0.\n      . ./lib.sh\n      [ \"$(mul 5 0)\" = 0 ]\n- note: \"assumes: mul takes its two numbers as arguments, as add does\"\n","total_cost_usd":0.03,"modelUsage":{"claude-sonnet-5":{"inputTokens":2000,"cacheReadInputTokens":20000,"cacheCreationInputTokens":1000,"outputTokens":800}}}
+R

@@ -135,5 +135,9 @@ A binary file gives nothing: no line, and `logo.png` names neither
 - **Same everywhere**: the same picker on a person's machine and in CI,
   with any agent or none.
 - **Not here**: the reviewer's judge on a change's finding reads from the
-  finding's cause ([judge](../../roles/reviewer/docs/judge.md)); agents
-  with read tools come later (step 9 of ADR-0063).
+  finding's cause ([judge](../../roles/reviewer/docs/judge.md)).
+- **Read tools, the tester first**: under `claude`, the tester's agent
+  also reads a copy of the project (Read, Glob, Grep), the pick its
+  start, what it read logged
+  ([ADR-0063 §8](../adr/0063-every-open-issue-is-due-waiting-or-done.md#8-one-code-picker-and-tools-where-the-agent-has-them));
+  the product owner and the reviewer at step 9.

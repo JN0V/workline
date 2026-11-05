@@ -23,6 +23,9 @@ style, beside the tests already there:
   config at the null device (`GIT_CONFIG_GLOBAL`, in Go
   `t.Setenv("GIT_CONFIG_GLOBAL", os.DevNull)`), and gives each commit
   its own name and email. A person's hooks or settings never decide it.
+- **No tracker code** from the issue (`BUG-49`, `AC-3`) in a test, its
+  comments included: a reader of the code cannot look it up, and the
+  lint refuses it. Say what it refers to.
 - A scenario no test can check (a person's look, a feeling): say it in a
   `note`, the scenario's name first, then why. Never fake a test for it.
 - A scenario of behaviour kept as it is today ("as today", "unchanged",
@@ -32,8 +35,17 @@ style, beside the tests already there:
 
 A file given as "its declarations" shows each signature, type and
 member, its bodies left out as `…`: enough to call it and to build
-against it. Ask for its body only when a test must know what it does.
+against it.
 
+**When the task says you read the code yourself** ("Reading the code
+yourself"): the code given is a start. Find the rest before writing:
+the project's test helpers and stubs, an existing test of the same code
+read whole, each definition a test calls. Then write the tests. Call
+only names you read, or that the Scope says the change adds. A helper
+or signature you could not confirm: write the test, and say it in a
+`note`, `assumes: <the name> — why`. Never answer `needs:` then.
+
+**Otherwise**, ask for a body only when a test must know what it does.
 When the task lacks code a test needs — a definition it calls, a header,
 a test to copy —, write no test and guess no name: answer one `note`,
 `needs: <the paths of the files you lack, comma-separated> — why`. The

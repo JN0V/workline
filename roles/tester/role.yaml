@@ -63,6 +63,12 @@ settings:
   # together, and how long it waits on its agent, in seconds.
   ai-max-tokens: 300000
   ai-max-seconds: 1200
+  # The turns of an agent that reads the project itself, with read-only
+  # tools (claude: Read, Glob, Grep, no shell, ADR-0063 §8), when it
+  # writes an issue's tests; told in its task, and enforced by the
+  # engine (claude --max-turns). Another agent reads its task alone,
+  # and asks for the files it lacks (`needs:`).
+  ai-max-turns: 40
   # Lines of code and tests given to the agent, all files together: the
   # Scope's files and those the product owner named for the issue, then
   # up to three test files beside them, a fifth kept for the first when

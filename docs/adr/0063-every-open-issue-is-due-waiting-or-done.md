@@ -18,6 +18,8 @@
   product owner, the tester and the reviewer, where the agent has them);
   [routing.md](../spec/routing.md#once-a-state-the-record)
 - **Research:** [line-liveness.md](../research/line-liveness.md)
+- **Amended:** [2026-11-05](#amendment-2026-11-05-the-testers-read-tools-first),
+  the tester's read tools before step 9, the token ceiling measured
 
 ## Context
 
@@ -620,7 +622,8 @@ which decides the rest.
      [#1072](https://github.com/JN0V/workline/issues/1072) green;
      `ready-overlap-gone-wakes-once.yaml` in its I1 form.
 9. **Read-only tools** (`Read,Glob,Grep`) for the product owner, the
-   tester and the reviewer under `claude`.
+   tester and the reviewer under `claude`; the tester's built first
+   ([amendment](#amendment-2026-11-05-the-testers-read-tools-first)).
    - *Given* the same three frozen cases as step 4, *when* each role
      runs with tools, *then* it finds the code with no read again, under
      the token ceiling.
@@ -789,7 +792,62 @@ By the maintainer, on 2026-11-04, each on the reviewers' recommendation.
    person acts.
 5. **Read-only tools** (`Read,Glob,Grep`) for the product owner, the
    tester and the reviewer under `claude`, within the token ceiling, at
-   step 9.
+   step 9. Amended on 2026-11-05: the tester's
+   [brought forward](#amendment-2026-11-05-the-testers-read-tools-first).
+
+## Amendment (2026-11-05): the tester's read tools first
+
+Decided by a panel of three independent reviewers, unanimous, on a
+five-whys of the C++ copy's #36. Changes Decided 5's order, for the
+tester alone; the product owner and the reviewer stay at step 9.
+
+**Why.** The tester writes no test on the copy's
+[#36](https://github.com/JN0V/DomoticsCore-trial/issues/36):
+
+- Its tests build on the project's test harness: the stubs that drop
+  a link, the clock helper called first, the events read through a
+  running core. No issue names it, so the picker cannot give it.
+- With no tools, it either invents the harness
+  ([!41](https://github.com/JN0V/DomoticsCore-trial/pull/41): three
+  stub helpers that do not exist) or asks for more files at each run,
+  a new set each time
+  ([#1106](https://github.com/JN0V/workline/pull/1106#tried),
+  [#1108](https://github.com/JN0V/workline/pull/1108#tried)). The
+  second ask blocks the issue.
+- The developer, with tools, found the real helpers in one run.
+
+**What changes.**
+
+- **The tester under `claude`** reads a copy of the project at the
+  issue's base, `Read,Glob,Grep`, no shell (§8), the picker's code its
+  start. Its turns are capped (`ai-max-turns`, 40), told in its task.
+- **What it read is logged** with the call, each file's path and blob
+  (§3), in the run's `calls.jsonl`. `Next` does not read it yet
+  (steps 6–8).
+- **With tools, no `needs:`**: a helper it could not confirm is written
+  and said as assumed on the Draft. `cmd:` agents and no agent keep the
+  seeded task and `needs:`.
+
+**The token ceiling (§8), measured.** From the twelfth run's cost
+table ([#757](https://github.com/JN0V/workline/issues/757), rounds 1–2,
+from the runs' `calls.jsonl`):
+
+| Round | Merged bugs | Fresh tokens | With cache reads | Fresh per merged bug |
+|---|---|---|---|---|
+| 1 | 3 | 482,464 | 811,201 | 160,821 |
+| 2 | 2 | 770,267 | 1,434,229 | 385,134 |
+
+- **The ceiling: about 273,000 fresh tokens per merged bug** (about
+  494,000 with cache reads), the median of the two rounds. Fresh is
+  what the engine's caps count (`Call.Fresh`, ADR-0056 step 7).
+- **Not finer**: the runs' artifacts are kept a day; on 2026-11-05, 23
+  of them held calls, all the reviewer's and the documentalist's. Round
+  1's earliest runs may be missing from the table.
+- **The tester's share**: about 20,000–25,000 tokens a call with no
+  tools. With tools, on the copy's #36: 48,919 fresh for its first
+  answer, about 105,000 with one retry; on workline's Go #1081, 30,873
+  ([#1110](https://github.com/JN0V/workline/pull/1110#tried)). Under
+  the ceiling.
 
 [ADR-0026]: 0026-the-product-owners-autonomy-is-a-level.md
 [ADR-0042]: 0042-the-engine-merges-by-the-projects-policy.md

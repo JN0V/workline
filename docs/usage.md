@@ -84,7 +84,10 @@ Each in detail: [the commands](commands.md), and
 - `claude` runs headless, outside the repository, with no tools; the
   developer's runs in a worktree of the code, with tools, its shell on
   Linux needing bubblewrap and socat
-  ([its agent](../roles/developer/docs/agent.md#claude)). It gets
+  ([its agent](../roles/developer/docs/agent.md#claude)); the tester's
+  runs in a read-only copy of the code with Read, Glob and Grep, no
+  shell
+  ([ADR-0063 §8](adr/0063-every-open-issue-is-due-waiting-or-done.md#8-one-code-picker-and-tools-where-the-agent-has-them)). It gets
   your environment without the variables a Claude Code session exports
   (`CLAUDECODE`, `CLAUDE_CODE_ENTRYPOINT`…): started from a session,
   a commit's hook included, the call would run as its child, at twice

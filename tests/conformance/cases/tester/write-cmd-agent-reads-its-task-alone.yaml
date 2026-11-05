@@ -1,0 +1,32 @@
+case: tester/write-cmd-agent-reads-its-task-alone
+about: >
+  A cmd: agent is not known to read files (ADR-0063 §8): the tester
+  gives it no copy of the repository and does not tell it to read the
+  code itself; its task, the picker's code with it, is all it reads,
+  and it asks for the files it lacks with `needs:`, as before. Its
+  tests are proven and opened as a Draft as any agent's.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:ready"]
+        body: "## Need\n\nWhen I total an order, I want to multiply a price by a count, so I need not add it up by hand.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **By zero:** Given the library, When I multiply 5 by 0, Then I get 0.\n\n---\n\n## Verification\n\nA test a scenario, in tests/.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+run: {test: [write, --issue, "3"], ai: "cmd:[ ! -f lib.sh ] && grep 'needs: <the paths' >/dev/null && cat $FIXTURES/agents/tester-two-scenarios.yaml"}
+expect:
+  status: pass
+  summary: "2 new tests, red on the base"
+  agent-calls: 1
+  run-files:
+    in/task.md:
+      contains: ["add() { echo $(($1 + $2)); }"]
+      not-contains: ["## Reading the code yourself", "turns at most"]
+  pushed:
+    workline/tester/issue-3:
+      tests/test_mul_two_by_three.sh: "Scenario: Two by three"
+      tests/test_mul_by_zero.sh: "Scenario: By zero"

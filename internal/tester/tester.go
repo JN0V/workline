@@ -34,6 +34,9 @@ type Settings struct {
 	// CodeLinesMax caps the lines of code and tests given to the agent
 	// when it writes an issue's tests, all files together.
 	CodeLinesMax int `json:"code-lines-max"`
+	// MaxTurns caps the turns of an agent that reads the project itself
+	// (ADR-0063 §8), told in its task; 0, none told.
+	MaxTurns int `json:"ai-max-turns"`
 	// Exchanges bounds an objection's thread: the tester's answers in it
 	// before the product owner settles it; objected to again after,
 	// the issue is blocked (ADR-0055, ADR-0059).

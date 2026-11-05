@@ -1,0 +1,45 @@
+case: tester/write-claude-reads-the-code-itself
+about: >
+  claude reads the code itself (ADR-0063 §8): the tester gives it a
+  copy of the repository at the issue's base, and only Read, Glob and
+  Grep there, no shell, no edit, its turns capped (ai-max-turns) and
+  said in its task, its prompt the role's alone. The code picker's
+  pick stays the task's seed. Its tests are its answer, as patches,
+  proven red on the base and opened as a Draft; what a test assumes
+  that it could not confirm is said on the Draft. What it read is
+  logged with the call, each file's path and blob (ADR-0063 §3), and
+  the tools it used counted.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  env: {PATH: "$FIXTURES/claude-reads:$PATH"}
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:ready"]
+        body: "## Need\n\nWhen I total an order, I want to multiply a price by a count, so I need not add it up by hand.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **By zero:** Given the library, When I multiply 5 by 0, Then I get 0.\n\n---\n\n## Verification\n\nA test a scenario, in tests/.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+run: {test: [write, --issue, "3"], ai: claude}
+expect:
+  status: pass
+  summary: "2 new tests, red on the base"
+  agent-calls: 1
+  no-findings: [{rule: agent-unavailable}, {rule: agent-invalid-output}, {rule: needs-code}]
+  run-files:
+    in/task.md:
+      contains: ["## Reading the code yourself", "40 turns at most", "add() { echo $(($1 + $2)); }"]
+    out/calls.jsonl:
+      contains: ['"tools":{"Glob":1,"Grep":1,"Read":1}', '"reads":["', ' lib.sh"]', '"turns":4']
+  pushed:
+    workline/tester/issue-3:
+      tests/test_mul_two_by_three.sh: "Scenario: Two by three"
+      tests/test_mul_by_zero.sh: "Scenario: By zero"
+  forge:
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        draft: true
+        body-contains: ["Refs #3", "**Assumed**, not confirmed in the code by the tester", "- mul takes its two numbers as arguments, as add does"]

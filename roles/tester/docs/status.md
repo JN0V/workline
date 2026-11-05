@@ -186,6 +186,17 @@ Cases in `tests/conformance/cases/tester/`:
   `tester/picker-includes-as-declarations-cpp`. Tried on
   [#1108](https://github.com/JN0V/workline/pull/1108#tried): the
   copy's #36 still writes no test.
+- **Read tools under `claude`**
+  ([ADR-0063, amended](../../../docs/adr/0063-every-open-issue-is-due-waiting-or-done.md#amendment-2026-11-05-the-testers-read-tools-first)):
+  a read-only copy of the base, Read, Glob, Grep, 40 turns; what it
+  read logged; an unconfirmed helper said as assumed on the Draft;
+  `cmd:` and no agent keep `needs:`. Cases
+  `tester/write-claude-reads-the-code-itself`,
+  `tester/write-cmd-agent-reads-its-task-alone`. Tried on
+  [#1110](https://github.com/JN0V/workline/pull/1110#tried): #36's
+  tests written on the real harness; a second run, the copy's pattern
+  reading `const struct`, reaches a Draft, red on a missing name, in
+  one call; symlinks out of the copy denied; Go #1081 still passes.
 - **Settings** `test-command`, `test-report`, `test-paths`,
   `code-lines-max`, `objection-exchanges`
   ([README](../README.md#settings)).

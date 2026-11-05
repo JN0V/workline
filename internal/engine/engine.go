@@ -3146,11 +3146,14 @@ func newRunDir(repo, roleName string) (string, error) {
 	return dir, nil
 }
 
-// dropWorktree removes the worktree a role's pre made in the run for its
-// agent, kept through every attempt (ADR-0056); none, nothing.
+// dropWorktree removes the worktree, or the read tree, a role's pre made
+// in the run for its agent, kept through every attempt (ADR-0056,
+// ADR-0063 §8); none, nothing.
 func dropWorktree(repo, runDir string) {
-	if tree := agent.Worktree(runDir); tree != "" {
-		tester.RemoveWorktree(repo, tree)
+	for _, tree := range []string{agent.Worktree(runDir), agent.ReadTree(runDir)} {
+		if tree != "" {
+			tester.RemoveWorktree(repo, tree)
+		}
 	}
 }
 

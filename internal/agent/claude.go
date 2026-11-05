@@ -28,7 +28,10 @@ import (
 // it a worktree (WorktreeDir), it runs there instead, with the tools to
 // read, edit, search and run commands (claudeTools), none of them asking a
 // person, nor the repository's settings nor CLAUDE.md loaded: its edits
-// are its code (ADR-0056). model and effort, when set,
+// are its code (ADR-0056). Where the role gave it a read tree instead
+// (ReadTreeDir), it runs there with the tools to read and search alone
+// (claudeReadTools), and what it read is logged (ADR-0063 §8). model and
+// effort, when set,
 // replace what the role's tier and effort ask: to compare models on the
 // same cases, or to run a project on one model.
 type claude struct{ model, effort string }
@@ -57,6 +60,22 @@ func (c claude) Propose(req Request) (Call, error) {
 	args := []string{"-p", "--output-format", "json", "--tools", "", "--strict-mcp-config",
 		"--no-session-persistence", "--system-prompt", system}
 	tree := Worktree(req.RunDir)
+	reads := ""
+	if tree == "" {
+		reads = ReadTree(req.RunDir)
+	}
+	if reads != "" {
+		// An agent that reads (ADR-0063 §8): Read, Glob and Grep, no
+		// shell, nothing it may write; none allowed by name, so that
+		// dontAsk keeps them in the tree, where Claude Code reads without
+		// asking: a file out of it (the clone's .git/config, a CI token
+		// there) is denied, never read. Its prompt the role's alone, as
+		// with no tools; each message on stdout, to log what it read. The
+		// person's settings only, as in a worktree.
+		args = []string{"-p", "--output-format", "stream-json", "--verbose", "--tools", claudeReadTools,
+			"--permission-mode", "dontAsk", "--strict-mcp-config",
+			"--setting-sources", "user", "--no-session-persistence", "--system-prompt", system}
+	}
 	if tree != "" {
 		// An agent that works (ADR-0056): its tools, each allowed so that
 		// none waits on a person (dontAsk denies any other), Claude Code's
@@ -90,6 +109,8 @@ func (c claude) Propose(req Request) (Call, error) {
 	cmd.Dir, cmd.WaitDelay = os.TempDir(), waitAfterTimeout
 	if tree != "" {
 		cmd.Dir = tree
+	} else if reads != "" {
+		cmd.Dir = reads
 	}
 	cmd.Env = claudeEnv(os.Environ())
 	if tree != "" {
@@ -109,8 +130,12 @@ func (c claude) Propose(req Request) (Call, error) {
 	_ = killGroup(cmd)
 	removeStubs(tree, stubs)
 	stdout := out.Bytes()
-	if tree != "" {
-		stdout, call.Tools = claudeStream(stdout)
+	if tree != "" || reads != "" {
+		var read []string
+		stdout, call.Tools, read = claudeStream(stdout)
+		if reads != "" {
+			call.Reads = readLog(reads, read)
+		}
 	}
 	answer, parsed := claudeAnswer(stdout, &call)
 	// Its turns spent is a cap reached, not a failure: what it did so far
@@ -156,6 +181,10 @@ func (c claude) Propose(req Request) (Call, error) {
 // tools, nor agents of its own: the network is the shell's, as the
 // project's CI allows it.
 const claudeTools = "Read,Edit,Write,Glob,Grep,Bash"
+
+// claudeReadTools are the tools Claude Code gets in a read tree (ADR-0063
+// §8): read and search, no shell, no edit.
+const claudeReadTools = "Read,Glob,Grep"
 
 // claudeShellTools are what Claude Code's shell needs on Linux once its
 // commands' environment is scrubbed: it runs each command boxed by
@@ -235,19 +264,24 @@ func removeStubs(tree string, absent []string) {
 }
 
 // claudeStream reads `claude -p --output-format stream-json --verbose`:
-// its result message, the shape claudeAnswer reads, and how many times it
-// used each tool. No result message: stdout as it came, which claudeAnswer
-// then does not read.
-func claudeStream(stdout []byte) ([]byte, map[string]int) {
+// its result message, the shape claudeAnswer reads, how many times it
+// used each tool, and the files its Read tool was given, in order, each
+// once. No result message: stdout as it came, which claudeAnswer then
+// does not read.
+func claudeStream(stdout []byte) ([]byte, map[string]int, []string) {
 	var result []byte
 	var tools map[string]int
+	var read []string
 	for _, line := range bytes.Split(stdout, []byte("\n")) {
 		var m struct {
 			Type    string `json:"type"`
 			Message struct {
 				Content []struct {
-					Type string `json:"type"`
-					Name string `json:"name"`
+					Type  string `json:"type"`
+					Name  string `json:"name"`
+					Input struct {
+						FilePath string `json:"file_path"`
+					} `json:"input"`
 				} `json:"content"`
 			} `json:"message"`
 		}
@@ -264,14 +298,68 @@ func claudeStream(stdout []byte) ([]byte, map[string]int) {
 						tools = map[string]int{}
 					}
 					tools[c.Name]++
+					if p := c.Input.FilePath; c.Name == "Read" && p != "" && !slices.Contains(read, p) {
+						read = append(read, p)
+					}
 				}
 			}
 		}
 	}
 	if result == nil {
-		return stdout, tools
+		return stdout, tools, read
 	}
-	return result, tools
+	return result, tools, read
+}
+
+// readLog is what an agent read in its read tree, each `<blob> <path>`:
+// the path from the tree's root, the blob the tree's commit holds there
+// (git ls-tree), "-" for none (a folder, a file not there); a path out of
+// the tree as the agent gave it, after "-".
+func readLog(tree string, read []string) []string {
+	if len(read) == 0 {
+		return nil
+	}
+	root, err := filepath.EvalSymlinks(tree)
+	if err != nil {
+		root = tree
+	}
+	rels := make([]string, len(read))
+	args := []string{"-C", tree, "ls-tree", "-z", "HEAD", "--"}
+	for i, p := range read {
+		abs := filepath.Clean(p)
+		if !filepath.IsAbs(abs) {
+			abs = filepath.Join(root, abs)
+		} else if dir, err := filepath.EvalSymlinks(filepath.Dir(abs)); err == nil {
+			abs = filepath.Join(dir, filepath.Base(abs))
+		}
+		rel, err := filepath.Rel(root, abs)
+		if err != nil || rel == "." || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+			continue
+		}
+		rels[i] = filepath.ToSlash(rel)
+		args = append(args, ":(literal)"+rels[i])
+	}
+	blobs := map[string]string{}
+	if out, err := exec.Command("git", args...).Output(); err == nil {
+		for _, l := range strings.Split(string(out), "\x00") { // -z: paths unquoted
+			meta, path, ok := strings.Cut(l, "\t")
+			if f := strings.Fields(meta); ok && len(f) == 3 && f[1] == "blob" {
+				blobs[path] = f[2]
+			}
+		}
+	}
+	log := make([]string, 0, len(read))
+	for i, r := range rels {
+		switch {
+		case r == "":
+			log = append(log, "- "+read[i])
+		case blobs[r] != "":
+			log = append(log, blobs[r]+" "+r)
+		default:
+			log = append(log, "- "+r)
+		}
+	}
+	return log
 }
 
 // exitedItself says the agent's process ended by its own exit, whatever
