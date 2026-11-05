@@ -22,6 +22,7 @@ import (
 
 	"go.yaml.in/yaml/v3"
 
+	"github.com/JN0V/workline/internal/agent"
 	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/builtin/reviewer"
 	"github.com/JN0V/workline/internal/codepick"
@@ -184,6 +185,14 @@ func Pre(runDir, repo string) int {
 	}
 	fmt.Fprintf(&b, "\n## The project's tests\n\n- Run by: `%s`\n- Test files are those matching: %s\n",
 		s.Command, strings.Join(s.Paths, ", "))
+	// An agent that reads files itself reads the project at the base, the
+	// code below its seed (ADR-0063 §8); any other gets the task alone.
+	if agent.ReadsFiles(os.Getenv("WORKLINE_AI")) {
+		if err := Worktree(repo, t.Base, filepath.Join(runDir, agent.ReadTreeDir)); err != nil {
+			return fail(err)
+		}
+		writeReading(&b, s)
+	}
 	intro := b.String()
 	text := fitTask(runDir, repo, s, func(s Settings) string {
 		var b strings.Builder
@@ -195,6 +204,25 @@ func Pre(runDir, repo string) int {
 		return fail(err)
 	}
 	return 0
+}
+
+// readingHeading opens the part of the task telling its agent it reads
+// the project itself.
+const readingHeading = "## Reading the code yourself"
+
+// writeReading tells an agent given a read tree what it is and what to
+// find there: the harness its tests build on, which no issue names.
+func writeReading(b *strings.Builder, s Settings) {
+	fmt.Fprintf(b, "\n%s\n\n"+
+		"Your working directory is a copy of the project at the issue's base, to read: Read, Glob and Grep, no shell, nothing you write there kept. "+
+		"The code given below is a start, not all your tests need. Before writing, find the rest yourself:\n\n"+
+		"- the project's own test helpers, stubs, mocks and fixtures, and how its tests set up the code they check;\n"+
+		"- an existing test of the same code, read whole, to copy its setup;\n"+
+		"- each definition a test calls, to call it as it is declared.\n\n"+
+		"Your tests are your answer, as patches, never files written there.\n", readingHeading)
+	if s.MaxTurns > 0 {
+		fmt.Fprintf(b, "\n- %d turns at most: keep the last one for your answer.\n", s.MaxTurns)
+	}
 }
 
 // writeCode gives the code the issue names, found by the shared picker
@@ -456,7 +484,7 @@ func Post(runDir, repo string) int {
 	mr := map[string]any{
 		"key": fmt.Sprintf("issue-%d", t.Issue), "draft": true,
 		"title": fmt.Sprintf("test: the acceptance tests of #%d", t.Issue),
-		"body":  draftBody(t, tested, said, newTests, proof),
+		"body":  draftBody(t, tested, said, assumed(notes), newTests, proof),
 		// The tests frozen to whoever builds (ADR-0055, guards): kept in
 		// workline's own comment on the Draft once it is opened.
 		"record": record{Issue: t.Issue, Base: t.Base, Files: blobs, Scenarios: t.Scenarios}.intention()["comment"],
@@ -823,9 +851,26 @@ func layPatches(tree string, patches []intent.Intention) (*verdict.Verdict, erro
 	return nil, nil
 }
 
+// assumesWord opens a note naming what a test assumes of the code that
+// its agent could not confirm (a helper, a signature): said on the Draft,
+// for whoever builds on it.
+const assumesWord = "assumes:"
+
+// assumed are the notes saying what the tests assume, each without its
+// word.
+func assumed(notes []string) []string {
+	var out []string
+	for _, n := range notes {
+		if rest, ok := strings.CutPrefix(strings.TrimSpace(n), assumesWord); ok && strings.TrimSpace(rest) != "" {
+			out = append(out, strings.TrimSpace(rest))
+		}
+	}
+	return out
+}
+
 // draftBody is the Draft's description: the issue it refers to, each
-// scenario and its test, what the proof said.
-func draftBody(t task, tested, said map[string]string, newTests []string, proof *verdict.Verdict) string {
+// scenario and its test, what the tests assume, what the proof said.
+func draftBody(t task, tested, said map[string]string, assumes, newTests []string, proof *verdict.Verdict) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "Refs #%d\n\nThe acceptance tests of #%d, written before the code: %s. "+
 		"Whoever builds it pushes the code on this branch, and makes this pull request close the issue.\n\n## Tests\n\n| Scenario | Test |\n|---|---|\n",
@@ -853,6 +898,12 @@ func draftBody(t task, tested, said map[string]string, newTests []string, proof 
 			if n, ok := said[sc.Name]; ok {
 				fmt.Fprintf(&b, "- %s: %s\n", sc.Name, n)
 			}
+		}
+	}
+	if len(assumes) > 0 {
+		b.WriteString("\n**Assumed**, not confirmed in the code by the tester:\n\n")
+		for _, a := range assumes {
+			fmt.Fprintf(&b, "- %s\n", strings.ReplaceAll(a, "\n", " "))
 		}
 	}
 	for _, f := range proof.Findings {
