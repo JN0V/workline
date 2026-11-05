@@ -45,6 +45,7 @@ workline` says where).
 ```sh
 workline setup     # asks what to enable, shows each command before it runs it
 workline doctor    # at any time: what is set up, what is missing, the command for each
+# a language no linter reads is warned there; `enforce: {linted: block}` on a gate refuses it on a merge request (docs/spec/gates.md)
 workline --help    # every command; `workline <command> --help`, its options
 ```
 
