@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/codepick, internal/codenav, internal/builtin/productowner/productowner.go]
 status: draft
-checked: 55cf5ffb
+checked: 96bded21
 verified: agent:claude-code
 ---
 # The code picker
