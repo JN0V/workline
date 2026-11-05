@@ -60,7 +60,15 @@ Under the role's budget, each piece once a task:
 6. **The tester's test**: the nearest file matching `test-paths` (its
    folder's, named after the code, else its module's, else the project's
    first). A fifth of the budget is kept for it while the code is
-   planned, said when the code wanted it.
+   planned, said when the code wanted it; given once, never also as
+   code. The tester's only: the product owner and the reviewer write no
+   test, and the room would be tokens spent for nothing.
+
+The files the tester's agent asked for at its last run come right after
+the definitions (between 2 and 3): whole, else their first lines.
+
+A binary file gives nothing: no line, and `logo.png` names neither
+`logo` nor `png`.
 
 ## What the task says
 
@@ -70,9 +78,9 @@ Under the role's budget, each piece once a task:
   is named past the budget; files named with nothing given, by size.
 - **Counted, not shown**: definitions past the caps, other places
   naming a name.
-- **One step away, as paths**: the files the code given includes or
-  imports (C and C++ `#include`, Python and JavaScript imports), and
-  those defining the types it derives from.
+- **One step away, as paths**: the files the code and the test given
+  include or import (C and C++ `#include`, Python and JavaScript
+  imports), and those defining the types the code derives from.
 - **Given above**: a file given for an earlier issue of the same task.
 
 ## Read again only for code not given

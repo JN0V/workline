@@ -232,6 +232,10 @@ its measure in
   the diff alone ([#360](https://github.com/JN0V/workline/issues/360)):
   `TestScoreReview`, `TestReviewerWithFakeAgent`,
   `TestReviewerCasesPointRight`, `TestIntentAndClaimsCasesGiveTheirLens`.
+- **The code a spec names, by the shared picker**
+  ([the code picker](../../../docs/spec/code-picker.md)). Cases
+  `reviewer/picker-*`. Tried on
+  [#1106](https://github.com/JN0V/workline/pull/1106#tried).
 
 ## Missing, in the order to build it
 
