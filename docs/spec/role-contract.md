@@ -335,7 +335,11 @@ token), **apply** (trusted, no AI key).
    may repeat the slip.
    *Claude Code runs without tools, save in a worktree a role's `pre`
    made (the developer's, [ADR-0056](../adr/0056-the-developers-agent-works-in-a-sandbox-with-tools.md)):
-   there it reads, edits and runs commands, and `post` bounds its diff.
+   there it reads, edits and runs commands, and `post` bounds its diff;
+   and save in a read tree (`readtree`, the tester's under `claude`,
+   [ADR-0063 §8](../adr/0063-every-open-issue-is-due-waiting-or-done.md#8-one-code-picker-and-tools-where-the-agent-has-them)):
+   there it reads and searches only (Read, Glob, Grep), each file it read
+   logged with its call. A `cmd:` agent never sees a read tree.
    On Linux its shell boxes each command with bubblewrap and socat: either
    missing, or a container that lets no namespace be made, the agent is
    unavailable, the finding naming what to install, rather than an agent
