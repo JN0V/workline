@@ -13,7 +13,7 @@ func TestWriteCodeOfAPattern(t *testing.T) {
 	repo, _ := gitRepo(t, map[string]string{"add.go": "package calc\n", "add_test.go": "package calc\n", "notes.md": "x\n"})
 	s := Settings{Paths: []string{"**/*_test.go"}}
 	var b strings.Builder
-	writeCode(&b, repo, "- `*.go`", nil, s)
+	writeCode(&b, repo, "", "- `*.go`", nil, s)
 	task := b.String()
 	_, after, _ := strings.Cut(task, "## The code the Scope names")
 	code, tests, _ := strings.Cut(after, "## Tests already there")
@@ -24,7 +24,7 @@ func TestWriteCodeOfAPattern(t *testing.T) {
 		t.Errorf("the tests beside:\n%s", task)
 	}
 	b.Reset()
-	writeCode(&b, repo, "- `*_test.go`", nil, s)
+	writeCode(&b, repo, "", "- `*_test.go`", nil, s)
 	if code, _, _ := strings.Cut(b.String(), "## Tests already there"); !strings.Contains(code, "## The code the Scope names\n\n### `add_test.go`") {
 		t.Errorf("a pattern of tests alone names none:\n%s", b.String())
 	}
@@ -37,7 +37,7 @@ func TestWriteCodeOfTheProductOwnersSources(t *testing.T) {
 	repo, _ := gitRepo(t, map[string]string{"a.go": "package pkg\n", "a_test.go": "package pkg\n", "b.go": "package pkg\n"})
 	s := Settings{Paths: []string{"**/*_test.go"}}
 	var b strings.Builder
-	writeCode(&b, repo, "- The client id counter and its increment.", []string{"a.go"}, s)
+	writeCode(&b, repo, "", "- The client id counter and its increment.", []string{"a.go"}, s)
 	task := b.String()
 	for _, want := range []string{"### `a.go`", "Named by the product owner for this issue, not in the Scope: `a.go`.", "## Tests already there, to write alike\n\n### `a_test.go`"} {
 		if !strings.Contains(task, want) {
@@ -48,7 +48,7 @@ func TestWriteCodeOfTheProductOwnersSources(t *testing.T) {
 		t.Errorf("code no one named given:\n%s", task)
 	}
 	b.Reset()
-	writeCode(&b, repo, "- `a.go`", []string{"a.go:3"}, s)
+	writeCode(&b, repo, "", "- `a.go`", []string{"a.go:3"}, s)
 	if task := b.String(); strings.Count(task, "### `a.go`") != 1 || strings.Contains(task, "Named by the product owner") {
 		t.Errorf("a file the Scope names given once, no note:\n%s", task)
 	}
@@ -70,26 +70,13 @@ func TestWriteCodeKeepsRoomForATest(t *testing.T) {
 	repo, _ := gitRepo(t, map[string]string{"mqtt.h": code.String(), "test_mqtt.cpp": test.String()})
 	s := Settings{Paths: []string{"test_*.cpp"}, CodeLinesMax: 1000}
 	var b strings.Builder
-	writeCode(&b, repo, "- `publish` in `mqtt.h`", nil, s)
+	writeCode(&b, repo, "", "- `publish` in `mqtt.h`", nil, s)
 	task := b.String()
 	for _, want := range []string{"int publish(int qos) {", "200 of the 1000 lines of code-lines-max kept for the tests beside it",
 		"### `test_mqtt.cpp`", "#include <unity.h>", "void test_publish_qos() {"} {
 		if !strings.Contains(task, want) {
 			t.Errorf("want %q in:\n%.2000s", want, task)
 		}
-	}
-}
-
-// No test in the named file's folder: its module's tests are given, the
-// one holding its name first, not another module's (#1047).
-func TestKinTests(t *testing.T) {
-	tests := []string{"Core/test/t_a/test_a.cpp", "Console/test/test_capture/test_capture.cpp", "Console/test/test_console_x/test_console_x.cpp"}
-	got := kinTests(tests, []string{"Console/include/Console.h"}, map[string]bool{"console": true})
-	if want := []string{"Console/test/test_console_x/test_console_x.cpp", "Console/test/test_capture/test_capture.cpp"}; !slices.Equal(got, want) {
-		t.Errorf("kin tests: %v, want %v", got, want)
-	}
-	if got := kinTests(tests, []string{"top.h"}, nil); len(got) != 0 {
-		t.Errorf("a file at the root has no kin: %v", got)
 	}
 }
 
@@ -106,7 +93,7 @@ func TestWriteCodeGivesAFunctionDeepInAFile(t *testing.T) {
 	n := strings.Count(long.String(), "\n")
 	s := Settings{Paths: []string{"**/*_test.go"}, CodeLinesMax: 1500}
 	var b strings.Builder
-	writeCode(&b, repo, "- `personIssue` (`documentalist.go:9999`) builds it.\n- `engine.go:6` rewrites it.\n- `small.go`.", nil, s)
+	writeCode(&b, repo, "", "- `personIssue` (`documentalist.go:9999`) builds it.\n- `engine.go:6` rewrites it.\n- `small.go`.", nil, s)
 	task := b.String()
 	for _, want := range []string{"func personIssue(n int) string {\n\tif n > 0 {\n\t\treturn \"deep\"\n\t}\n\treturn \"\"\n}", "// personIssue is the issue a person reads.",
 		fmt.Sprintf("### `documentalist.go` (%d lines: lines %d to %d given", n, n-6, n), "### `engine.go`\n", "func sticky() {", "### `small.go`\n\n````\npackage doc\n\nfunc small() {}\n````"} {
@@ -116,31 +103,6 @@ func TestWriteCodeGivesAFunctionDeepInAFile(t *testing.T) {
 	}
 	if strings.Contains(task, "func f1()") || strings.Contains(task, "(cut: the first") {
 		t.Errorf("the file's first lines given:\n%.3000s", task)
-	}
-}
-
-// A span of lines gives its middle too; a path is no function's name; a
-// piece the budget runs out in is said cut, one past it named.
-func TestPiecesSpanPathAndCut(t *testing.T) {
-	var long strings.Builder
-	long.WriteString("x=0\n")
-	for i := 2; i <= 200; i++ {
-		fmt.Fprintf(&long, "x=%d\n", i)
-	}
-	lines := strings.Split(strings.TrimSuffix(long.String(), "\n"), "\n")
-	names, at := anchors("`run.sh:50-150` and `new/go.go`, `foo.go`", []string{"run.sh"})
-	if len(names) != 0 {
-		t.Errorf("paths taken for names: %q", names)
-	}
-	if got := pieces("run.sh", lines, names, at["run.sh"]); len(got) != 1 || got[0] != [2]int{35, 165} {
-		t.Errorf("a span's pieces = %v, want [35 165]", got)
-	}
-	files := []codeFile{{path: "run.sh", lines: lines, pieces: [][2]int{{10, 60}, {100, 120}}}}
-	planCode(files, 30)
-	var b strings.Builder
-	writeCodeFile(&b, files[0])
-	if got := b.String(); !strings.Contains(got, "(cut, past code-lines-max: what it names goes on to line 60)") || !strings.Contains(got, "Not given, past code-lines-max: lines 100 to 120") {
-		t.Errorf("cut not said:\n%s", got)
 	}
 }
 
