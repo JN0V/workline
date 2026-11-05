@@ -29,6 +29,7 @@ tests/conformance/
   fixtures/repos/<name>.sh    builds a git repository from scratch, deterministically
   fixtures/agents/<name>.yaml proposals the fake agent returns
   fixtures/roles/<name>/      roles of the tests only, beside the shipped ones
+  fixtures/code/<name>/       real code frozen as it was, a case copies it ($FIXTURES)
   cases/<area>/<case>.yaml    one behaviour each
 ```
 

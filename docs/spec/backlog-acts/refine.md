@@ -79,7 +79,10 @@ what it can and asks for the rest:
   whose code the run did not give — not in pre's `code-read`, its state
   naming no sources, its title and body no file of the commit
   (`noCodeGiven`) — or whose code this run names anew (a `sources`
-  done), is left out, said `scope-unread`: its paths would be a guess,
+  done naming a file the task did not give: pre's `code-given` lists
+  those it gave; a Scope written beside sources it gave stands, no
+  `needs-code`, [#1089](https://github.com/JN0V/workline/issues/1089)),
+  is left out, said `scope-unread`: its paths would be a guess,
   and a guessed folder can hold the issue behind an unrelated claim.
   Its paths, checked as above, are kept as the issue's sources, the
   rest of the refine written; the issue, still lacking its Scope, is

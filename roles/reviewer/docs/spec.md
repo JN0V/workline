@@ -49,17 +49,22 @@ for code ([a run](run.md)), with lenses of its own.
 ## The code a spec names
 
 What the `contradicted` lens is shown, and its judge when a finding
-quotes no code ([#425](https://github.com/JN0V/workline/issues/425)):
+quotes no code ([#425](https://github.com/JN0V/workline/issues/425)),
+found by [the code picker](../../../docs/spec/code-picker.md) the
+product owner and the tester share, up to `code-lines-max` (the judge's
+`judge-lines-max`), the rest said:
 
-- **The files it names**, whole, while they fit; past the cap
-  (`code-lines-max`, the judge's `judge-lines-max`), named as cut.
-- **Then the functions it writes as code**, read as Markdown reads it:
+- **The lines it names after a file**, and each definition of a name it
+  writes as code, whole, read as Markdown reads it:
   - every word in backticks;
   - in a fenced block, a word called (`f(`) or holding a capital or an
     underscore;
   - in the prose, a word called, or shaped as a name (`answerItems`,
     `load_all`).
-- **A function in a file cut** is shown all the same.
+- **A name defined in a file it names** is that one: one of the same
+  name elsewhere is counted, not shown.
+- **The files it names**, whole while they fit; else by those pieces.
+- **Then the lines naming a name**, a few a name.
 - **Never a plain word**: a capitalised one (`Parse` opening a
   sentence, `When`) is English as often as a name. Write a function's
   name in backticks.
