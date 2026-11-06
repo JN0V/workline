@@ -966,6 +966,11 @@ func planActs(f forge.Forge, r *role.Role, settings map[string]any, st runState,
 	if data, err := os.ReadFile(filepath.Join(runDir, "in", "input", RevisitFromInput)); err == nil {
 		cfg.RevisitFrom = strings.TrimSpace(string(data))
 	}
+	// A run again for the code its agent said it lacked (ADR-0063, §6):
+	// the files it named given this time (#1146).
+	if data, err := os.ReadFile(filepath.Join(runDir, "in", "input", NeedsInput)); err == nil {
+		cfg.RunAgain = strings.TrimSpace(string(data)) != ""
+	}
 	// What open issues were built on that changed, and those read again
 	// for it (ADR-0032).
 	var changes []backlog.Change

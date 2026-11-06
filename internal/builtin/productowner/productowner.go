@@ -833,10 +833,11 @@ func Pre(runDir, repo string) int {
 			if d.is.ID == issueEvent() {
 				// Run again for the code its agent said it lacked
 				// (ADR-0063, §6): those files, whole, or their first
-				// lines (#1146). The shortest first: a short file
-				// whole, not left out behind a long one's first lines.
+				// lines (#1146). The smallest in bytes first: a short
+				// file whole, not left out behind a long one's first
+				// lines.
 				a.Needs = needed(runDir)
-				slices.SortStableFunc(a.Needs, func(x, y string) int { return len(picker.Lines(x)) - len(picker.Lines(y)) })
+				slices.SortStableFunc(a.Needs, func(x, y string) int { return neededBytes(picker, x) - neededBytes(picker, y) })
 			}
 			pick := picker.Pick(a)
 			codeLeft -= share - pick.Left
@@ -1905,6 +1906,19 @@ func needed(runDir string) []string {
 		}
 	}
 	return out
+}
+
+// neededBytes is the size of a file the agent said it lacked, as the
+// picker finds it (a line suffix off, a short name resolved): the budget
+// is in bytes too (code-bytes-max). 0: none of the repository.
+func neededBytes(picker *codepick.Picker, w string) int {
+	n := 0
+	if f := work.InRepo(strings.TrimSpace(work.LineOff(w)), picker.Files()); f != "" {
+		for _, l := range picker.Lines(f) {
+			n += len(l) + 1
+		}
+	}
+	return n
 }
 
 // readyOpen says whether the agent is told an issue may be ready: its four

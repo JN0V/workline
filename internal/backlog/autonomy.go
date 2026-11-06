@@ -113,6 +113,11 @@ type Config struct {
 	// leave nothing to read again (#1089). Set by the caller, from what
 	// pre wrote (CodeGivenFile).
 	CodeGiven map[int][]string
+	// RunAgain: the run is one the line started again at once for the
+	// code its agent said it lacked (the input `needs`, ADR-0063 §6),
+	// those files given to the issue the event is about (#1146). Set by
+	// the caller, from the run's input.
+	RunAgain bool
 	// Notes are the agent's notes of this run, as it wrote them: the
 	// reason said on an issue it left with nothing (ADR-0059, decision 1).
 	Notes []string
