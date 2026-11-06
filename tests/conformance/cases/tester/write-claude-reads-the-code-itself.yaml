@@ -3,7 +3,9 @@ about: >
   claude reads the code itself (ADR-0063 §8): the tester gives it a
   copy of the repository at the issue's base, and only Read, Glob and
   Grep there, no shell, no edit, its turns capped (ai-max-turns) and
-  said in its task, its prompt the role's alone. The code picker's
+  said in its task, its prompt the role's alone: its instruction and
+  answer's shape the system prompt, the same each call, cached
+  (#1128), its task on stdin. The code picker's
   pick stays the task's seed. Its tests are its answer, as patches,
   proven red on the base and opened as a Draft; what a test assumes
   that it could not confirm is said on the Draft. What it read is

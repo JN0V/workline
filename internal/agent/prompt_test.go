@@ -19,9 +19,9 @@ func TestPromptAsksForBlockScalars(t *testing.T) {
 	os.MkdirAll(filepath.Join(run, "out"), 0o755)
 	os.WriteFile(filepath.Join(run, "in", "task.md"), []byte("The change."), 0o644)
 	req := Request{RunDir: run, Repo: t.TempDir(), Role: &role.Role{Name: "reviewer", Dir: dir, Intentions: []string{"finding"}}}
-	_, user, err := Prompt(req)
-	if err != nil || !strings.Contains(user, BlockScalars) {
-		t.Errorf("the output contract does not ask for block scalars: %v\n%s", err, user)
+	system, _, err := Prompt(req)
+	if err != nil || !strings.Contains(system, BlockScalars) {
+		t.Errorf("the output contract does not ask for block scalars: %v\n%s", err, system)
 	}
 }
 
@@ -43,15 +43,15 @@ func TestPromptOfAKindOfTask(t *testing.T) {
 	}
 	r := &role.Role{Name: "product-owner", Dir: dir, Intentions: []string{"kind", "note", "close"},
 		InstructionFacet: "tasks/kind.md", TaskIntentions: []string{"kind", "note"}}
-	_, user, err := Prompt(Request{RunDir: run, Repo: t.TempDir(), Role: r.Asked()})
+	system, _, err := Prompt(Request{RunDir: run, Repo: t.TempDir(), Role: r.Asked()})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(user, "Give each issue its kind.") || strings.Contains(user, "in full") {
-		t.Errorf("the kind task's instruction is not the one read:\n%s", user)
+	if !strings.Contains(system, "Give each issue its kind.") || strings.Contains(system, "in full") {
+		t.Errorf("the kind task's instruction is not the one read:\n%s", system)
 	}
-	if !strings.Contains(user, "- kind: {") || strings.Contains(user, "- close: {") {
-		t.Errorf("the contract lists other intentions than the task's:\n%s", user)
+	if !strings.Contains(system, "- kind: {") || strings.Contains(system, "- close: {") {
+		t.Errorf("the contract lists other intentions than the task's:\n%s", system)
 	}
 }
 
@@ -181,5 +181,60 @@ func TestPromptLoadsTheSkillsThePreNames(t *testing.T) {
 	}
 	if _, err := ask(nil, ""); err == nil || !strings.Contains(err.Error(), "context.skills") {
 		t.Errorf("a skill the role does not declare is not refused: %v", err)
+	}
+}
+
+// What every call of a role shares, persona, knowledge, instruction and
+// output contract, is its system prompt, the same byte for byte from one
+// task to the next: Claude Code caches it, and the role's next call reads
+// it back (#1128). The task, a refusal to answer again and the policy,
+// last, are the user message.
+func TestPromptKeepsTheSharedPartApart(t *testing.T) {
+	dir := t.TempDir()
+	must := func(err error) {
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	must(os.MkdirAll(filepath.Join(dir, "knowledge"), 0o755))
+	must(os.WriteFile(filepath.Join(dir, "persona.md"), []byte("You keep the backlog."), 0o644))
+	must(os.WriteFile(filepath.Join(dir, "knowledge", "labels.md"), []byte("Labels say the state."), 0o644))
+	must(os.WriteFile(filepath.Join(dir, "instruction.md"), []byte("Refine each issue."), 0o644))
+	must(os.WriteFile(filepath.Join(dir, "policy.md"), []byte("Never close an issue a person opened today."), 0o644))
+	r := &role.Role{Name: "product-owner", Dir: dir, Intentions: []string{"refine", "note"}}
+	r.Context.Knowledge = []string{"labels.md"}
+	ask := func(task, feedback string) (string, string) {
+		run := t.TempDir()
+		must(os.MkdirAll(filepath.Join(run, "in"), 0o755))
+		must(os.MkdirAll(filepath.Join(run, "out"), 0o755))
+		must(os.WriteFile(filepath.Join(run, "in", "task.md"), []byte(task), 0o644))
+		if feedback != "" {
+			must(os.WriteFile(filepath.Join(run, "out", "feedback.md"), []byte(feedback), 0o644))
+		}
+		system, user, err := Prompt(Request{RunDir: run, Repo: t.TempDir(), Role: r})
+		must(err)
+		return system, user
+	}
+	system1, user1 := ask("#41 Login fails on Safari", "")
+	system2, user2 := ask("#42 Dates exported in US format", "Your answer did not read.")
+	if system1 != system2 {
+		t.Errorf("the system prompt differs from one task to the next:\n%s\n---\n%s", system1, system2)
+	}
+	for _, part := range []string{"You keep the backlog.", "Labels say the state.", "Refine each issue.", "- refine: {", BlockScalars} {
+		if !strings.Contains(system1, part) {
+			t.Errorf("the system prompt lacks %q:\n%s", part, system1)
+		}
+	}
+	if i, j, k := strings.Index(system1, "You keep"), strings.Index(system1, "Labels say"), strings.Index(system1, "Refine each"); i >= j || j >= k {
+		t.Errorf("not persona, knowledge, then instruction:\n%s", system1)
+	}
+	if strings.Contains(system1, "#41") || strings.Contains(system1, "Never close") {
+		t.Errorf("the system prompt holds the task or the policy:\n%s", system1)
+	}
+	if !strings.HasPrefix(user1, "# Task\n\n#41 Login fails on Safari") || !strings.HasSuffix(user1, "Never close an issue a person opened today.") {
+		t.Errorf("the user message is not the task first, the policy last:\n%s", user1)
+	}
+	if !strings.Contains(user2, "Your answer did not read.") || strings.Index(user2, "did not read") > strings.Index(user2, "# Rules") {
+		t.Errorf("a refusal is not in the user message, before the policy:\n%s", user2)
 	}
 }

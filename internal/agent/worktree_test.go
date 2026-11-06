@@ -58,12 +58,12 @@ func TestClaudeToolsOnlyInAWorktree(t *testing.T) {
 		t.Fatalf("in a worktree, prose closing words failed the call: %v", err)
 	}
 	for _, want := range []string{"/" + WorktreeDir + "\n", "[--tools]\n[" + claudeTools + "]", "[--allowedTools]\n[" + claudeTools + "]",
-		"[--permission-mode]\n[dontAsk]", "[--max-turns]\n[7]", "[--append-system-prompt]", "[stream-json]", "[--strict-mcp-config]"} {
+		"[--permission-mode]\n[dontAsk]", "[--max-turns]\n[7]", "[--append-system-prompt-file]", "[stream-json]", "[--strict-mcp-config]"} {
 		if !strings.Contains(args, want) {
 			t.Errorf("in a worktree, claude lacks %q:\n%s", want, args)
 		}
 	}
-	if strings.Contains(args, "[--system-prompt]") {
+	if strings.Contains(args, "[--system-prompt") {
 		t.Errorf("in a worktree, Claude Code's own prompt replaced:\n%s", args)
 	}
 	if call.Turns != 2 || call.Tools["Edit"] != 1 {
@@ -112,11 +112,11 @@ func TestPromptInAWorktreeAsksForEdits(t *testing.T) {
 	must(t, os.MkdirAll(filepath.Join(runDir, "in"), 0o755))
 	must(t, os.MkdirAll(filepath.Join(runDir, WorktreeDir), 0o755))
 	must(t, os.WriteFile(filepath.Join(runDir, "in", "task.md"), []byte("The issue."), 0o644))
-	_, user, err := Prompt(Request{RunDir: runDir, Repo: t.TempDir(), Role: &role.Role{Name: "developer", Dir: dir, Intentions: []string{"patch", "comment"}}})
+	system, _, err := Prompt(Request{RunDir: runDir, Repo: t.TempDir(), Role: &role.Role{Name: "developer", Dir: dir, Intentions: []string{"patch", "comment"}}})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(user, "edit its files there and run its tests") || strings.Contains(user, "- patch:") || !strings.Contains(user, "- comment:") {
-		t.Errorf("the worktree's answer contract:\n%s", user)
+	if !strings.Contains(system, "edit its files there and run its tests") || strings.Contains(system, "- patch:") || !strings.Contains(system, "- comment:") {
+		t.Errorf("the worktree's answer contract:\n%s", system)
 	}
 }

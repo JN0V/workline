@@ -20,7 +20,7 @@ cat <<YAML
     +checked: $new
      ---
 YAML
-again=$(printf '%s\n' "$prompt" | sed -n '/^# Your previous answer was refused/,/^# Answer/p')
+again=$(printf '%s\n' "$prompt" | sed -n '/^# Your previous answer was refused/,/^# Rules/p')
 if [ -n "$again" ] && ! printf '%s\n' "$again" | grep -q 'docs/tech/auth.md holds (line 10)'; then
   exit 0
 fi
