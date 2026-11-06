@@ -148,7 +148,7 @@ workline init      # routes pre-push; proposes each doc's sources, for you to re
   ([ADR-0038](adr/0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md)).
 
 To start the product owner on one open issue:
-`workline run-role product-owner --event issue --target issue:<n> --forge github`
+`workline run-role product-owner --event issue --target issue:<n> --ai claude --forge github`
 ([try each role once](quickstart.md#try-each-role-once-on-a-real-repository)).
 
 Step by step, in ten minutes: [the quickstart](quickstart.md).
