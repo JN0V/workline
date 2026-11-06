@@ -743,7 +743,7 @@ func (p *Picker) Pick(a Ask) Pick {
 		case g.Whole():
 		case slices.Contains(asked, f) && fits: // asked for by name: whole while it fits
 			whole(g)
-		case a.Depth > 0 && p.declare(g, why(f), left+g.GivenLines()):
+		case a.Depth > 0 && p.declare(g, why(f), left+g.GivenLines(), bytesLeft()):
 			left -= g.GivenLines() - g.givenPieces()
 		case fits:
 			whole(g)
@@ -785,7 +785,7 @@ func (p *Picker) Pick(a Ask) Pick {
 		for _, w := range a.Paths {
 			roots = append(roots, p.wordFiles(strings.TrimSpace(work.LineOff(w)), a.Tests)...)
 		}
-		left = p.closure(a, test, roots, order, byPath, file, left)
+		left = p.closure(a, test, roots, order, byPath, file, left, bytesLeft)
 		for _, f := range askedTests {
 			give(want{f, 1, len(p.Lines(f)), askedWhy, true})
 		}

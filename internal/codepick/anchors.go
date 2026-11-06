@@ -33,6 +33,11 @@ var (
 	routeRe = regexp.MustCompile("(?:^|[\\s`'\"(])(/[A-Za-z_][\\w.-]*(?:/[\\w.{}:-]+)+)")
 )
 
+// commitTypes open a title as a commit's do (`fix: …`): a kind of
+// change, no component.
+var commitTypes = map[string]bool{"fix": true, "feat": true, "docs": true, "test": true, "refactor": true,
+	"perf": true, "build": true, "ci": true, "chore": true, "revert": true, "style": true, "bug": true}
+
 // titleStems are the files of the project's own code whose name, the
 // extension off, is a word of the title written as code (`WebUI`,
 // `RemoteConsole`, `NTP`) or the word it opens on before a colon: what
@@ -40,7 +45,7 @@ var (
 func (p *Picker) titleStems(a Ask) []string {
 	title, _, _ := strings.Cut(a.Text, "\n")
 	var words []string
-	if m := titlePrefix.FindStringSubmatch(title); m != nil {
+	if m := titlePrefix.FindStringSubmatch(title); m != nil && !commitTypes[strings.ToLower(m[1])] && !notNames[m[1]] {
 		words = append(words, m[1])
 	}
 	code, _, _ := NamedIn(title)
