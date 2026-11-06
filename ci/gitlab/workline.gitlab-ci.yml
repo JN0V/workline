@@ -507,6 +507,10 @@ workline:garden:apply:
     # when nothing is left to merge; one a person committed to is theirs
     # (ADR-0034). Needs the first release after v0.24.0.
     - workline follow --gardening --base "$CI_COMMIT_REF_NAME" --forge gitlab --summary workline-summary.md --summary workline-summary.html || status=$?
+    # The normal size of an issue, from the line's records: one comment
+    # kept in place, reported only (ADR-0064, step 2). Needs the first
+    # release after v0.73.0.
+    - workline size --forge gitlab --summary workline-summary.md --summary workline-summary.html || status=$?
     - exit $status
   after_script: *summary
   artifacts:

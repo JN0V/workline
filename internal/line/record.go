@@ -133,6 +133,12 @@ type Record struct {
 	// request for, to let it go (claimwait.go, #1084) — `hours:<when the
 	// claim began>`, `body:<the body's hash>` —: woken once for it.
 	Claim string `json:"claim,omitempty"`
+	// Spent: the fresh tokens (agent.Call.Fresh) of each run a step made
+	// on the issue, by role, in order (ADR-0064, step 2): kept through
+	// every state, so the issue's total holds across machines, a run's
+	// calls being lost with its CI job. A run that called no agent adds
+	// none. Reported, never acted on yet (size.go).
+	Spent map[string][]int `json:"spent,omitempty"`
 }
 
 // StateWrite is what the line writes on an issue once its step ran:
@@ -270,6 +276,9 @@ func recordBody(r Record, role string) string {
 	if role == "" {
 		said = fmt.Sprintf("**workline's line** keeps this record while the issue is blocked, %d state %s before; moved out of Blocked, its count starts again.", r.Hops, plural(r.Hops, "step", "steps"))
 	}
+	if n := r.Fresh(); n > 0 {
+		said += fmt.Sprintf(" %s fresh tokens spent on it so far.", Tokens(n))
+	}
 	return said + " Edited by the engine, not by hand.\n\n<!-- workline:" + recordMark + string(data) + " -->"
 }
 
@@ -286,7 +295,7 @@ func plural(n int, one, many string) string {
 // before — one, a count started again, for a state further on the line
 // (cfg) than any it reached (#1068).
 func due(cfg *routing.Config, s routing.State, is forge.Issue, labeled, spec string, rec Record, had bool) (Record, bool) {
-	now := Record{State: s.Name, Body: bodyHash(is.Body), Labeled: labeled, Hops: rec.Hops, Spec: spec, Reached: rec.Reached}
+	now := Record{State: s.Name, Body: bodyHash(is.Body), Labeled: labeled, Hops: rec.Hops, Spec: spec, Reached: rec.Reached, Spent: rec.Spent}
 	if had && rec.State == now.State && rec.Body == now.Body && rec.Labeled == now.Labeled && rec.Spec == now.Spec {
 		return rec, false
 	}

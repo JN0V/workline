@@ -1,0 +1,12 @@
+# The product owner's second read of #9, with the code it named (#951),
+# its call saying it used 2000 tokens in and 500 out: 2500 fresh, which
+# the line's record counts (ADR-0064, step 2).
+tokens-in: 2000
+tokens-out: 500
+calls:
+  - - refine:
+        issue: 9
+        scope: "src/export/csv.go"
+        sources: [src/export/csv.go]
+        verification: "A test writes three rows and reads three lines back."
+        why: "Need and Validation are there; Verification and Scope are not."
