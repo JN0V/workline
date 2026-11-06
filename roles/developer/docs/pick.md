@@ -2,7 +2,7 @@
 sources:
   - internal/developer/developer.go
   - internal/tester/proof.go
-checked: 0538cac5
+checked: 07ca9b9b
 verified: agent:claude-code
 ---
 # The pick
