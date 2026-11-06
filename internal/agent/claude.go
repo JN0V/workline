@@ -536,7 +536,7 @@ func proposalsFrom(answer string, kinds ...string) ([]byte, []string, error) {
 				list = nil
 				if err := yaml.Unmarshal([]byte(s), &list); err == nil && len(list) > 0 {
 					read = true
-					mended = append([]string{fmt.Sprintf("prose before the list (%s): left out, the list read from its first item", clip(prose, 120))}, mended...)
+					mended = append([]string{fmt.Sprintf("prose before the list (%s): left out, the list read from its first item", Clip(prose, 120))}, mended...)
 				}
 			}
 		}
@@ -587,7 +587,8 @@ func proseFirst(lines []string) (string, string, bool) {
 	return "", "", false
 }
 
-func clip(s string, n int) string {
+// Clip is a text cut to n runes, "…" said where it was cut.
+func Clip(s string, n int) string {
 	if r := []rune(s); len(r) > n {
 		return string(r[:n]) + "…"
 	}

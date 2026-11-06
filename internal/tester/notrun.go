@@ -7,6 +7,8 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+
+	"github.com/JN0V/workline/internal/agent"
 )
 
 // runnerFilters are the files a project's test runner reads which tests
@@ -62,7 +64,7 @@ func filtersAbove(repo, base string, files []string) []string {
 					l := strings.TrimSpace(line)
 					for _, k := range keys {
 						if m := filterLine.FindStringSubmatch(l); m != nil && m[1] == k {
-							out = append(out, fmt.Sprintf("`%s`'s `%s` (`%s`)", p, k, clip(l, 200)))
+							out = append(out, fmt.Sprintf("`%s`'s `%s` (`%s`)", p, k, agent.Clip(l, 200)))
 						}
 					}
 				}
@@ -78,10 +80,3 @@ func filtersAbove(repo, base string, files []string) []string {
 // filterLine is a line setting a key, its whole name: `key = …`,
 // `key: …`, `"key": …`.
 var filterLine = regexp.MustCompile(`^"?([A-Za-z_]+)"?\s*[=:]`)
-
-func clip(s string, n int) string {
-	if r := []rune(s); len(r) > n {
-		return string(r[:n]) + "…"
-	}
-	return s
-}
