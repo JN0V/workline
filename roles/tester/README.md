@@ -80,8 +80,11 @@ workline test write --issue 42 --ai claude
   Another agent reads its task alone, and names the files it lacks
   (`needs:`), given at once.
 - **One test a scenario**: its name holds the scenario's name, its
-  comment the Given / When / Then. A scenario no test can check is said
-  in a note, listed in the Draft as not tested.
+  comment opens on it, then the Given / When / Then
+  (`// Two by three: Given …`). A test may name several scenarios, in
+  its comment or its name (`test_enabled_console_and_restart`). A
+  scenario no test can check is said in a note, listed in the Draft as
+  not tested.
 - **New test files only**: what `test-paths` names, never the code nor a
   test already there.
 - **Proven red** by the check below, on the base with the tests alone.
@@ -97,10 +100,11 @@ workline test write --issue 42 --ai claude
 | `issue-not-ready` | the issue is labelled neither `workline:needs-tests` nor `workline:ready` |
 | `tests-lint` | the tests do not pass the project's lint, still after the agent is asked once more with each finding |
 | `no-named-scenario` | its Validation names no scenario: asked of the product owner, never invented |
-| `scenario-without-test` | no test names a scenario, and no note says why none can |
+| `scenario-without-test` | no test names a scenario, and no note says why none can; asked again once with the names first |
 | `test-file-exists` | a patch changes a test file the base holds |
 | `intention-refused` | a patch reaches a file outside `test-paths` |
-| `test-green-on-base`, `no-new-test` | a test is not proven red, or none is named in the report |
+| `test-green-on-base` | a test is not proven red |
+| `no-new-test` | the report names no test of the files written: the project's runner did not run them, the filter that may skip them named (a PlatformIO `test_filter`); the next run gives the agent this reason |
 | `bug-not-reproduced` | a bug's tests all pass on the base: `workline:needs-repro`, its reporter asked ([how](docs/hand-over.md#a-bug-not-reproduced)) |
 | `no-test-written` | no test proposed, the answer unread or refused whole; an answer that does not read is asked again once first. An answer read with no test nor kind is `none`, back to the product owner |
 

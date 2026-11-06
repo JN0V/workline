@@ -1,0 +1,25 @@
+case: tester/write-code-key-names-no-scenario
+about: >
+  A label names a scenario in a comment only: the one test written, for
+  Retry, sets `Timeout: 5` in its code, which names no scenario. Timeout
+  has no test and is refused, as before #1147 read comments' labels.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "A client that retries"
+        labels: ["workline:ready"]
+        body: "## Need\n\nI want a client that retries a failed call.\n\n## Validation\n\n- **Timeout:** Given a client with a timeout of 5 s, When the server does not answer, Then the call fails after 5 s.\n- **Retry:** Given a client set to retry, When the first call fails, Then it calls again.\n\n---\n\n## Verification\n\nA test a scenario, in tests/.\n\n## Scope\n\n- `lib.sh`: a client beside `add`.\n"
+run: {test: [write, --issue, "3"], ai: "fake:tester-retry-sets-timeout"}
+expect:
+  status: block
+  findings: [{rule: scenario-without-test, where: "Timeout"}]
+  no-findings: [{rule: scenario-without-test, where: "Retry"}]
+  forge:
+    merge-requests:
+      - {id: 1, absent: true}

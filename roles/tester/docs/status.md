@@ -90,6 +90,13 @@ Cases in `tests/conformance/cases/tester/`:
   error; each refusal written on the issue, at night too
   ([#761](https://github.com/JN0V/workline/issues/761)); a real agent's
   slip asked again, on [#776](https://github.com/JN0V/workline/pull/776).
+- **Real answers replayed** from the DomoticsCore trial's round 5: one
+  test naming two scenarios counts for both
+  ([#1147](https://github.com/JN0V/workline/issues/1147)); prose before
+  the list, or a `file:` beside a patch, no longer refuses the answer
+  ([#1148](https://github.com/JN0V/workline/issues/1148)); a new test the
+  project's runner skips is said, its filter named, to the next run too
+  ([#1149](https://github.com/JN0V/workline/issues/1149)).
 - **Tests that do not lint**, asked again once with each finding, its
   file and line from the repository's root; still found, blocked, the
   finding said on the issue

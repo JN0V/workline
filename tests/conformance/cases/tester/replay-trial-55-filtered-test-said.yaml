@@ -1,0 +1,94 @@
+case: tester/replay-trial-55-filtered-test-said
+about: >
+  Replay of a real run, the DomoticsCore trial's #55 (round 5, the
+  tester's first try): its issue and the tester's answer as they came.
+  Its test, in a new suite the WebUI's platformio.ini does not list in
+  its test_filter, never runs. It was refused "the report names no new
+  test", twice, never told why (#1149). Now the block names the file,
+  says the project's runner did not run it and names the filter's line,
+  on the issue too; the line's next run gives the tester these words.
+given:
+  repo: dc-trial
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "tools/workline-tests.sh {report}", test-paths: ["DomoticsCore-*/test/**", "DomoticsCore-WebUI/webui_test/**"]}}}
+  forge:
+    issues:
+      - id: 55
+        author: JN0V
+        insider: true
+        labels: ["bug", "workline:needs-tests"]
+        title: "WebUI: switching on a running component runs its begin() again"
+        body: |
+          Who it hurts: anyone who uses the switches on the WebUI's Components page. Switching on a component that is already on runs its `begin()` a second time, with no `shutdown()` in between. A component that subscribes to events in `begin()` then handles each event twice. Switching off one already off runs `shutdown()` again.
+
+          It happens easily: two browser tabs on the same device, or a page left open while someone else changed it. The stale tab shows a component as off; switching it on sends "enabled=true" for a component that is on.
+
+          Steps to reproduce
+          1. A component registered with the WebUI and running (its `begin()` ran once).
+          2. POST `/api/components/enable` with `name=<component>` and `enabled=true`.
+          3. Let the WebUI's `loop()` apply it.
+          4. POST `enabled=false` twice, with a `loop()` after each.
+
+          Expected
+          - Step 2 changes nothing: the component is on already, `begin()` is not called again.
+          - Step 4 calls `shutdown()` once.
+
+          Actual
+          - Step 2 answers `"success":true` and `begin()` runs a second time.
+          - Step 4 calls `shutdown()` twice.
+
+          Host run (native stubs, a component that counts its calls):
+
+          ```
+          component started: begins=1
+          POST enabled=true -> {"name":"Toggle","enabled":true,"success":true}
+          after enable of an enabled component: begins=2 shutdowns=0
+          POST enabled=false -> {"name":"Toggle","enabled":false,"success":true}
+          POST enabled=false -> {"name":"Toggle","enabled":false,"success":true}
+          after two disables: shutdowns=2
+          ```
+
+          Version: DomoticsCore 2.13.0 (WebUI component 1.13.0), native build.
+
+          ## Validation
+
+          - **Enable a running component:** Given a component that is on, with `begin()` called once, When `enabled=true` is posted to `/api/components/enable` and the WebUI's `loop()` runs, Then `begin()` is not called again and the component stays on.
+          - **Disable twice:** Given a component that is on, When `enabled=false` is posted twice, with a `loop()` after each, Then `shutdown()` is called once.
+          - **Normal switching:** Given a component that was switched off, When `enabled=true` is posted and `loop()` runs, Then `begin()` runs once and the component is listed as enabled.
+
+          ---
+
+          ## Verification
+
+          - A new test in `test_webui_component_toggle.cpp` fails today and passes after the fix. It posts `enabled=true` to a running component, runs `loop()`, and expects `begins` to stay at 1.
+          - A second new test posts `enabled=false` twice with a `loop()` after each, and expects `shutdowns` to be 1.
+          - The existing tests `test_a_disable_from_the_page_waits_for_loop` and `test_an_enable_from_the_page_waits_for_loop` keep passing, so a real change still happens in `loop()`.
+
+          ## Scope
+
+          Guessed: the code that handles `/api/components/enable` and applies it from `loop()` is not among the lines given, so the paths below are inferred from the issue and the existing test.
+
+          - `DomoticsCore-WebUI/include/DomoticsCore/WebUI.h`: the handler for `/api/components/enable`, and the `loop()` that applies the queued switch. It should skip the call when the component is already in the requested state.
+          - `DomoticsCore-WebUI/test/test_webui_component_toggle/test_webui_component_toggle.cpp`: the new tests.
+
+          ## Assumptions
+
+          - Assumption taken on 2026-11-06, the Validation draft unanswered after 5 min: written as the role drafted it, for a person to correct.
+run: {test: [write, --issue, "55"], ai: "cmd:sh $FIXTURES/agents/replay.sh dc55-tester-try1-answer.txt"}
+expect:
+  status: block
+  agent-calls: 1
+  findings:
+    - rule: no-new-test
+      where: DomoticsCore-WebUI/test/test_webui_component_toggle_state/test_webui_component_toggle_state.cpp
+      message: "the project's test command (`tools/workline-tests.sh {report}`) did not run them"
+    - rule: no-new-test
+      message: "`DomoticsCore-WebUI/platformio.ini`'s `test_filter` (`test_filter = test_webui_component, "
+  not-pushed: [workline/tester/issue-55]
+  forge:
+    merge-requests:
+      - {id: 1, absent: true}
+    issues:
+      - {id: 55, comment-contains: ["did not run them", "test_filter"]}

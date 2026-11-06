@@ -175,7 +175,7 @@ wrapper around your own. It runs with `sh -c`, outside the repository:
 - `WORKLINE_TIER` and `WORKLINE_EFFORT` say what the role asks (`light`,
   `standard`, `frontier`; `none` to `max`), for it to pick its model;
 - its output is the answer: the YAML list of proposals, a code fence
-  tolerated;
+  or a line of prose before it tolerated;
 - it may write what answered, in YAML, to the file `WORKLINE_CALL` names:
   `model`, `tokens-in`, `tokens-cached`, `tokens-out`, `cost-usd`, and
   `turns` for an agent that loops;

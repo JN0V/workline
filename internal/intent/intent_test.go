@@ -43,6 +43,36 @@ func TestNormalizeDiff(t *testing.T) {
 	}
 }
 
+// A new file's line written without its `+`, an agent's wrapped line
+// (trial #56), is read as the file's, up to the count its hunk header
+// says; a changed file's context is not touched, nor what follows a full
+// hunk, nor a hunk holding a `-` line.
+func TestNormalizeDiffReadsANewFilesLinesAsAdded(t *testing.T) {
+	for _, c := range []struct{ name, in, want string }{
+		{"wrapped line", "--- /dev/null\n+++ b/t/a.cpp\n@@ -0,0 +1,3 @@\n+f(1,\n    2);\n+g();\n\n" +
+			"--- a/t/b.cpp\n+++ b/t/b.cpp\n@@ -1 +1,2 @@\n keep\n+add\n\n",
+			"diff --git a/t/a.cpp b/t/a.cpp\nnew file mode 100644\n--- /dev/null\n+++ b/t/a.cpp\n@@ -0,0 +1,3 @@\n+f(1,\n+    2);\n+g();\n\n" +
+				"diff --git a/t/b.cpp b/t/b.cpp\n--- a/t/b.cpp\n+++ b/t/b.cpp\n@@ -1 +1,2 @@\n keep\n+add\n\n"},
+		// #1155's review: a count too high, prose between two files.
+		{"prose under a count too high", "--- /dev/null\n+++ b/t/a.cpp\n@@ -0,0 +1,6 @@\n+f();\n+g();\n\nNow the second file:\n\n" +
+			"--- /dev/null\n+++ b/t/b.cpp\n@@ -0,0 +1 @@\n+h();\n",
+			"diff --git a/t/a.cpp b/t/a.cpp\nnew file mode 100644\n--- /dev/null\n+++ b/t/a.cpp\n@@ -0,0 +1,6 @@\n+f();\n+g();\n\nNow the second file:\n\n" +
+				"diff --git a/t/b.cpp b/t/b.cpp\nnew file mode 100644\n--- /dev/null\n+++ b/t/b.cpp\n@@ -0,0 +1 @@\n+h();\n"},
+		{"indented prose after a blank", "--- /dev/null\n+++ b/t/a.cpp\n@@ -0,0 +1,6 @@\n+f();\n\n  That is all.\n",
+			"diff --git a/t/a.cpp b/t/a.cpp\nnew file mode 100644\n--- /dev/null\n+++ b/t/a.cpp\n@@ -0,0 +1,6 @@\n+f();\n\n  That is all.\n"},
+		{"prose after a full hunk", "--- /dev/null\n+++ b/t/a.cpp\n@@ -0,0 +1,2 @@\n+f();\n+g();\nThat is the whole test.\n",
+			"diff --git a/t/a.cpp b/t/a.cpp\nnew file mode 100644\n--- /dev/null\n+++ b/t/a.cpp\n@@ -0,0 +1,2 @@\n+f();\n+g();\nThat is the whole test.\n"},
+		{"a - line", "--- /dev/null\n+++ b/t/a.cpp\n@@ -0,0 +1,3 @@\n+f();\n-gone();\n keep();\n",
+			"diff --git a/t/a.cpp b/t/a.cpp\nnew file mode 100644\n--- /dev/null\n+++ b/t/a.cpp\n@@ -0,0 +1,3 @@\n+f();\n-gone();\n keep();\n"},
+		{"a header with no count", "--- /dev/null\n+++ b/t/a.cpp\n@@ -0,0 +1 @@\n+f();\nprose\n",
+			"diff --git a/t/a.cpp b/t/a.cpp\nnew file mode 100644\n--- /dev/null\n+++ b/t/a.cpp\n@@ -0,0 +1 @@\n+f();\nprose\n"},
+	} {
+		if got := NormalizeDiff(c.in); got != c.want {
+			t.Errorf("%s: NormalizeDiff =\n%q\nwant\n%q", c.name, got, c.want)
+		}
+	}
+}
+
 func TestMergeKeepsFallbackDiffsBeside(t *testing.T) {
 	derived := Intention{"patch", "--- a/README.md\n+++ b/README.md\n@@ -19 +19 @@\n-61\n+63\n"}
 	agent := []Intention{{"patch", "--- a/README.md\n+++ b/README.md\n@@ -3 +3 @@\n-checked: a\n+checked: b\n"}}
