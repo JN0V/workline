@@ -685,6 +685,12 @@ func (a *applier) refining(c backlog.Proposal) error {
 		}
 	}
 	labels := []string{backlog.LabelToRefine}
+	if slices.Contains(is.Labels, backlog.LabelBlocked) {
+		// Blocked, read again (revisit.go): a refine writes its body and
+		// moves nothing; an `unblock` beside it does, one state label at
+		// a time (#1126).
+		labels = nil
+	}
 	if slices.ContainsFunc(added, backlog.Drafted) {
 		labels = append(labels, backlog.LabelDraft)
 		// The label a person accepts the drafts with, there to be picked
@@ -693,8 +699,10 @@ func (a *applier) refining(c backlog.Proposal) error {
 			return err
 		}
 	}
-	if err := f.Label(t, labels, nil); err != nil {
-		return err
+	if len(labels) > 0 {
+		if err := f.Label(t, labels, nil); err != nil {
+			return err
+		}
 	}
 	return keepBody(f, role, t, body, c.Sources, added)
 }

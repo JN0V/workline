@@ -74,7 +74,8 @@ what it can and asks for the rest:
   request adds it ([#1061](https://github.com/JN0V/workline/issues/1061)).
   That widening left out, an `unblock` beside it is refused
   (`scope-not-widened`): the issue stays blocked. Nothing to add drops the act (`nothing-to-refine`). The
-  issue gets the label `workline:to-refine`.
+  issue gets the label `workline:to-refine`; a blocked one keeps its
+  label alone, an `unblock` beside the refine moving it.
 - **A Scope waits for its code** (#970). A refine's Scope on an issue
   whose code the run did not give — not in pre's `code-read`, its state
   naming no sources, its title and body no file of the commit
@@ -88,7 +89,11 @@ what it can and asks for the rest:
   rest of the refine written; the issue, still lacking its Scope, is
   read again with that code. A refine with its Scope alone is dropped
   (`scope-unread`), the agent told to name the code with `sources`. A
-  person's yes to a proposal is done as it reads.
+  person's yes to a proposal is done as it reads. A Scope marked a
+  guess — a line `Guessed:`, or its older words that no code was given
+  (`work.Guessed`) — is the role's to rewrite: once its code is given,
+  a refine's new Scope replaces it, never dropped as there already
+  ([#1126](https://github.com/JN0V/workline/issues/1126)).
 - **Each thing said once** (ADR-0039, amended). The text above an
   issue's sections — its description — is read by whose it is, the
   engine telling so, never the agent (`backlog.RolesTop`): a role's when

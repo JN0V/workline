@@ -2002,6 +2002,12 @@ func (p *Plan) checkRefining(f forge.Backlog, repo, role string, c *Proposal) (r
 					c.Revise = append(c.Revise, h)
 				}
 			}
+			if s := work.ByMeaning(is.Body)[work.Scope]; work.Guessed(s.Text) && !c.ToReporter && !slices.Contains(c.Revise, s.Heading) {
+				// A Scope its writer marked a guess (#970), the role's at
+				// every level (ADR-0060): rewritten once its code is read
+				// (#1126), never held back as drafted already.
+				c.Revise = append(c.Revise, s.Heading)
+			}
 			if unread, own := ScenariosUnread(is, st); unread && own && p.config.Tester && !c.ToReporter {
 				// Its own Validation, no test could name a scenario of:
 				// rewritten in the form the tester reads (#855).
