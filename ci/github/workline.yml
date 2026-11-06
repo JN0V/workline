@@ -309,7 +309,7 @@ jobs:
       # merge policy). Not a fork's: its run is the fork's to write.
       - uses: actions/upload-artifact@v4
         if: '!cancelled() && github.event.pull_request.head.repo.full_name == github.repository'
-        with: {name: workline-verdict, path: "workline-verdict.json\nreport/number", if-no-files-found: ignore, retention-days: 1}
+        with: {name: "workline-verdict-${{ github.run_attempt }}", path: "workline-verdict.json\nreport/number", if-no-files-found: ignore, retention-days: 1}
 
       # What the line proposed, for workline-apply.yml to apply, and what
       # the documentalist found, for it to show beside the docs' lines.

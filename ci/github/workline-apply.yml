@@ -198,7 +198,9 @@ jobs:
           HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
           names=$(GH_TOKEN="$READ_TOKEN" gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN/artifacts" --jq '.artifacts[].name')
-          grep -qx workline-verdict <<<"$names" && GH_TOKEN="$READ_TOKEN" gh run download "$RUN" -R "$GITHUB_REPOSITORY" -n workline-verdict -D "$RUNNER_TEMP/verdict"
+          # One artifact a run attempt (workline-verdict-<run_attempt>): the latest attempt's is read.
+          art=$(grep -E '^workline-verdict-[0-9]+$' <<<"$names" | sort -t- -k3 -n | tail -n 1)
+          [ -z "$art" ] || GH_TOKEN="$READ_TOKEN" gh run download "$RUN" -R "$GITHUB_REPOSITORY" -n "$art" -D "$RUNNER_TEMP/verdict"
           verdict="$RUNNER_TEMP/verdict/workline-verdict.json"
           [ -s "$verdict" ] || { echo "no verdict on $HEAD_SHA: judge stopped before writing it"; exit 0; }
           head=$(jq -r .head "$verdict")
