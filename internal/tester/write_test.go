@@ -176,8 +176,8 @@ func TestNamesAScenarioInItsComment(t *testing.T) {
 			t.Errorf("trial #56's test does not name %q", name)
 		}
 	}
-	for _, code := range []string{"# Old debt: Given 140 findings", " * Old debt: Given", "// TestOldDebt: Given 140 findings",
-		"x := 1 // Old debt: Given", "// Moved code and Old debt: Given a move", "// Old debt, Moved code: Given",
+	for _, code := range []string{"# Old debt: Given 140 findings", "/**\n * Old debt: Given\n */", "// TestOldDebt: Given 140 findings",
+		"/* Old debt: Given 140 findings */", "  -- Old debt: Given", "// Moved code and Old debt: Given a move", "// Old debt, Moved code: Given",
 		"func TestMovedCodeAndOldDebt(t *testing.T)", "def test_old_debt_and_moved_code():"} {
 		if !names(code, "Old debt") {
 			t.Errorf("%q does not name the scenario", code)
@@ -186,9 +186,22 @@ func TestNamesAScenarioInItsComment(t *testing.T) {
 	for _, code := range []string{"// Old debt gone: Given", "// the old debt: kept", "// Old debt is kept: Given",
 		"std::Old::debt()", "debt := 1", "// Then it prints: Old debt",
 		// code, not a comment: a field, a key, a case
-		"\tOldDebt: 5 * time.Second,", "old_debt: true", "Old debt: x", "\tcase OldDebt:"} {
+		"\tOldDebt: 5 * time.Second,", "old_debt: true", "Old debt: x", "\tcase OldDebt:",
+		// a comment after code, or `//` in a string, labels nothing
+		"x := 1 // Old debt: Given", `url := "http://old-debt:8080"`, `s := "// Old debt: 5"`, "x /* a */ Old debt: 5",
+		// a `*` line outside any /* … */
+		"*Old debt: 5", " * Old debt: Given", "/* a */\n * Old debt: Given"} {
 		if names(code, "Old debt") {
 			t.Errorf("%q names the scenario, though only a longer name or prose holds it", code)
+		}
+	}
+	// The probes of #1155's review, each with its own scenario's name.
+	for _, p := range []struct{ code, name string }{
+		{`url := "http://timeout:8080"`, "Timeout"}, {`c := New("redis://cache:6379")`, "Cache"},
+		{`s := "// Timeout: 5"`, "Timeout"}, {"x /* a */ Timeout: 5", "Timeout"}, {"*Timeout: 5", "Timeout"},
+	} {
+		if names(p.code, p.name) {
+			t.Errorf("%q names %q", p.code, p.name)
 		}
 	}
 	if !names("// Bread and butter: Given", "Bread and butter") {

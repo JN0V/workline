@@ -978,14 +978,20 @@ func names(text, name string) bool {
 	if len(want) == 0 {
 		return false
 	}
+	inBlock := false // within a /* … */ comment, as far as the lines show
 	for _, line := range strings.Split(text, "\n") {
 		if i := strings.Index(strings.ToLower(line), "scenario:"); i >= 0 && slices.Equal(words(line[i+len("scenario:"):]), want) {
 			return true
 		}
-		for _, l := range labels(line) {
+		for _, l := range labels(line, inBlock) {
 			if lists(l, want) {
 				return true
 			}
+		}
+		if open, end := strings.LastIndex(line, "/*"), strings.LastIndex(line, "*/"); open > end {
+			inBlock = true
+		} else if end > open {
+			inBlock = false
 		}
 		for _, q := range quotedRe.FindAllString(line, -1) {
 			if slices.Equal(words(q[1:len(q)-1]), want) {
@@ -1013,38 +1019,43 @@ var (
 
 func hasUpper(s string) bool { return strings.ToLower(s) != s }
 
-// commentLead is what opens a comment, in the languages tests are
-// written in: `//`, `/*`, `*`, `#`, `--`, `;`, a docstring's quotes.
-var commentLead = regexp.MustCompile(`^\s*(?://+|/\*+|\*+|#+|--|;+|"""|'''|<!--)\s*`)
+// commentLead is what opens a comment line, in the languages tests are
+// written in: `//`, `/*`, `#`, `--`, `;`, a docstring's quotes; and
+// blockStar a `*` line inside a /* … */ comment.
+var (
+	commentLead = regexp.MustCompile(`^\s*(?://+|/\*+|#+|--|;+|"""|'''|<!--)\s*`)
+	blockStar   = regexp.MustCompile(`^\s*\*+\s*`)
+)
 
 // sentenceEnd cuts a comment into its sentences.
 var sentenceEnd = regexp.MustCompile(`[.!?;]\s+`)
 
-// labels are the words a comment, or one of its sentences, opens with
-// before a colon: "Restart" in `// … still does. Restart: Given …`. Only
-// a comment's text: a line of code (`Timeout: 5 * time.Second,`,
-// `restart: true`, `default:`) labels nothing, nor a colon of code (`::`,
-// `:=`).
-func labels(line string) []string {
-	var starts []string
-	if lead := commentLead.FindString(line); lead != "" {
-		starts = append(starts, line[len(lead):])
+// labels are the words a comment line, or one of its sentences, opens
+// with before a colon: "Restart" in `// … still does. Restart: Given …`.
+// Only a line a comment starts, after its indentation: code labels
+// nothing, nor a comment after code, nor a string holding `//` or
+// `://` (`"http://timeout:8080"`); a `*` line only inside a /* … */
+// comment (inBlock). A colon of code (`::`, `:=`) opens none.
+func labels(line string, inBlock bool) []string {
+	lead := commentLead.FindString(line)
+	if lead == "" && inBlock && !strings.HasPrefix(strings.TrimSpace(line), "*/") {
+		lead = blockStar.FindString(line)
 	}
-	for _, lead := range []string{"//", "/*", "# "} {
-		if i := strings.Index(line, lead); i > 0 {
-			rest := line[i:]
-			starts = append(starts, rest[len(commentLead.FindString(rest)):])
-		}
+	if lead == "" {
+		return nil
 	}
+	text := line[len(lead):]
+	if i := strings.Index(text, "*/"); i >= 0 {
+		text = text[:i]
+	}
+	text = strings.TrimSuffix(strings.TrimSpace(text), "-->")
 	var out []string
-	for _, s := range starts {
-		for _, sentence := range sentenceEnd.Split(s, -1) {
-			i := strings.Index(sentence, ":")
-			if i <= 0 || strings.HasPrefix(sentence[i:], "::") || strings.HasPrefix(sentence[i:], ":=") {
-				continue
-			}
-			out = append(out, sentence[:i])
+	for _, sentence := range sentenceEnd.Split(text, -1) {
+		i := strings.Index(sentence, ":")
+		if i <= 0 || strings.HasPrefix(sentence[i:], "::") || strings.HasPrefix(sentence[i:], ":=") || strings.HasPrefix(sentence[i:], "://") {
+			continue
 		}
+		out = append(out, sentence[:i])
 	}
 	return out
 }
