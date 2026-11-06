@@ -1,0 +1,47 @@
+case: product-owner/picker-a-few-same-names-all-given
+about: >
+  The code picker's contract, the product owner's side (ADR-0063 §8),
+  #1129's limit: a name defined in a few components (`loop()` in three)
+  is not narrowed to the one file defining another name the issue
+  writes (`formatUptime`, the Logger's): each of the few is given, the
+  issue may be about any of them. Only a name defined in more than 12
+  places is read in that file alone.
+given:
+  repo: backlog
+  setup:
+    - |
+      for c in WiFi MQTT Logger; do
+        mkdir -p $c
+        cat > $c/$c.h <<EOF
+      #pragma once
+      #include "IComponent.h"
+
+      class ${c}Component : public IComponent {
+      public:
+          void loop() override {
+              ${c}Ticks++;
+          }
+
+      private:
+          int ${c}Ticks = 0;
+      };
+      EOF
+      done
+      cat >> Logger/Logger.h <<'EOF'
+
+      inline String formatUptime(unsigned long ms) {
+          return String(ms / 1000);
+      }
+      EOF
+      git add . && git commit -qm 'feat: three components, each with its loop'
+  forge:
+    issues:
+      - {id: 9, title: "Uptime: loop() stops ticking", body: "After a reconnect, `loop()` stops ticking; the log shows `formatUptime` printing 0.", author: ann, insider: true, labels: [workline:to-refine], comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: issue, target: {issue: 9}, ai: fake:proposes-nothing}
+expect:
+  status: pass
+  agent-calls: 1
+  no-findings: [{rule: prompt-over-budget}]
+  run-files:
+    in/task.md:
+      contains: ["WiFiTicks++;", "MQTTTicks++;", "LoggerTicks++;", "return String(ms / 1000);"]

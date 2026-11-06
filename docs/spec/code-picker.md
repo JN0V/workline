@@ -47,14 +47,16 @@ Under the role's budget, each piece once a task:
    above ([code navigation](../research/code-navigation.md): Go by its
    parser, other languages by a pattern and braces or indentation; C++
    methods defined out of their class too).
-   - Those in a file the issue is about first: a file named, or the one
-     file defining another name it writes (`enableLED` in `LED.h`). A
-     name defined there is that one: one of the same name elsewhere is
-     counted, not given (`loop()` in every component).
+   - Those in a file named first. A name defined in a file named is that
+     one: one of the same name elsewhere is counted, not given.
+   - A name defined in more than 12 places (`loop()` in every
+     component) is read in the one file defining another name the issue
+     writes (`enableLED` in `LED.h`), the others counted; a name defined
+     in a few is given in each.
    - Then the project's own, 12 a name at most.
-   - The functions a definition there calls, defined in its file, 3 a
-     definition at most, each whole: `loop()` says little,
-     `updateEffects()` it calls says what it does.
+   - The functions a definition in those files calls, defined once in
+     its file, the longest first, 3 a definition at most, each whole:
+     `loop()` says little, `updateEffects()` it calls says what it does.
    - Copies in tests, examples and tools last, 2 a name, the rest counted.
 3. **The lines naming a name in a file named**: the function around
    each, 40 lines at most, else 3 lines either side.

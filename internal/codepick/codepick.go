@@ -491,7 +491,8 @@ func (p *Picker) Pick(a Ask) Pick {
 	inNamed := func(w want) bool { return slices.Contains(named, w.file) }
 	// The files the issue is about: those named, and those holding the
 	// one definition of a name in the project's own code (`enableLED` in
-	// `LED.h`), where a generic name (`loop`) is read (#1129).
+	// `LED.h`). A name defined in more places than defsMax (`loop`) is
+	// read there; one defined in a few is given in each (#1129).
 	home := map[string]bool{}
 	for _, n := range names {
 		var in []string
@@ -504,19 +505,21 @@ func (p *Picker) Pick(a Ask) Pick {
 			home[in[0]] = true
 		}
 	}
-	atHome := func(w want) bool { return inNamed(w) || home[w.file] }
+	atHome := func(n string, w want) bool {
+		return inNamed(w) || home[w.file] && len(byName[n].defs) > defsMax
+	}
 	// 2a. Definitions in the files the issue is about, then the
 	// project's own. A name defined in one of them is that one: one of
 	// the same name elsewhere is another function, counted, not given
 	// (#425, #1129).
 	here := map[string]bool{}
 	for _, n := range rank {
-		here[n] = slices.ContainsFunc(append(slices.Clone(byName[n].defs), byName[n].aside...), atHome)
+		here[n] = slices.ContainsFunc(append(slices.Clone(byName[n].defs), byName[n].aside...), func(w want) bool { return atHome(n, w) })
 	}
 	for _, keepHome := range []bool{true, false} {
 		for _, n := range rank {
 			for i, w := range byName[n].defs {
-				if atHome(w) == keepHome && (atHome(w) || i < defsMax && !here[n]) {
+				if atHome(n, w) == keepHome && (atHome(n, w) || i < defsMax && !here[n]) {
 					wants = append(wants, w)
 				}
 			}
@@ -556,26 +559,27 @@ func (p *Picker) Pick(a Ask) Pick {
 			}
 		}
 	}
-	// 2b'. The functions a definition in those files calls, defined in
-	// its file, a few: `loop()` says little, `updateEffects()` it calls
-	// says what it does (#1129).
+	// 2b'. The functions a definition in those files calls, defined
+	// once in its file, the longest first, a few: `loop()` says little,
+	// `updateEffects()` it calls says what it does, a one-line helper
+	// less (#1129).
 	for _, n := range rank {
 		for _, w := range byName[n].defs {
-			if !atHome(w) {
+			if !inNamed(w) && !home[w.file] {
 				continue
 			}
-			lines, k := p.Lines(w.file), 0
+			lines := p.Lines(w.file)
+			var callees []codenav.Func
 			for _, c := range calls[fmt.Sprintf("%s:%d", w.file, w.from)] {
-				if k >= callsMax || slices.Contains(names, c) {
-					continue
+				// Two of the same name in the file (`String()` of two
+				// types): which one is called is not known, none given.
+				if g := codenav.Named(w.file, lines, c); !slices.Contains(names, c) && len(g) == 1 && g[0].To-g[0].From < funcMax {
+					callees = append(callees, g[0])
 				}
-				for _, g := range codenav.Named(w.file, lines, c) {
-					if g.To-g.From < funcMax {
-						wants = append(wants, want{w.file, g.From, g.To, fmt.Sprintf("`%s`, called by `%s`", c, n), false})
-						k++
-						break
-					}
-				}
+			}
+			slices.SortStableFunc(callees, func(x, y codenav.Func) int { return (y.To - y.From) - (x.To - x.From) })
+			for _, g := range callees[:min(len(callees), callsMax)] {
+				wants = append(wants, want{w.file, g.From, g.To, fmt.Sprintf("`%s`, called by `%s`", g.Name, n), false})
 			}
 		}
 	}
@@ -584,12 +588,12 @@ func (p *Picker) Pick(a Ask) Pick {
 		fd := byName[n]
 		given := 0
 		for i, w := range append(slices.Clone(fd.defs), fd.aside...) {
-			if atHome(w) || !here[n] && (i < min(len(fd.defs), defsMax) || i >= len(fd.defs) && i-len(fd.defs) < asideMax) {
+			if atHome(n, w) || !here[n] && (i < min(len(fd.defs), defsMax) || i >= len(fd.defs) && i-len(fd.defs) < asideMax) {
 				given++
 			}
 		}
 		for i, w := range fd.aside {
-			if atHome(w) || !here[n] && i < asideMax {
+			if atHome(n, w) || !here[n] && i < asideMax {
 				wants = append(wants, w)
 			}
 		}

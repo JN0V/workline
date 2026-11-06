@@ -3,14 +3,15 @@ about: >
   The code picker's contract, the product owner's side (ADR-0063 §8):
   #1129, the C++ trial's #47 as opened. The issue names `loop()` and
   `begin()`, defined in every component, beside `enableLED` and
-  `setLED`, defined in LED.h alone. LED.h's `loop()` is given, and
+  `setLED`, defined in LED.h alone. With 14 components, more than the
+  12 definitions a name is given, LED.h's `loop()` is given, and
   `updateEffects()` it calls, where the fault is; the other components'
   `loop()` and `begin()` are counted, not given.
 given:
   repo: backlog
   setup:
     - |
-      mkdir -p LED/include MQTT/include NTP/include HomeAssistant/include
+      mkdir -p LED/include
       cat > LED/include/LED.h <<'EOF'
       #pragma once
       #include "Component.h"
@@ -53,7 +54,8 @@ given:
           int pin = 2, stored = 0, effect = 0;
       };
       EOF
-      for c in MQTT NTP HomeAssistant; do
+      for c in MQTT NTP HomeAssistant WiFi OTA Storage WebUI System RemoteConsole SystemInfo Logger Display Sensor; do
+        mkdir -p $c/include
         cat > $c/include/$c.h <<EOF
       #pragma once
       #include "Component.h"
@@ -75,7 +77,7 @@ given:
       };
       EOF
       done
-      git add . && git commit -qm 'feat: four components, each with its loop'
+      git add . && git commit -qm 'feat: fourteen components, each with its loop'
   forge:
     issues:
       - {id: 9, title: "LED: a disabled LED lights up again 50 ms later", body: "Who it hurts: an application that turns a status LED off with `enableLED(i, false)`. The LED goes dark, then comes back on at the next update tick.\n\nSteps to reproduce\n1. `led.begin();`\n2. `led.setLED(0, Red, 200);` then let `loop()` run: the pin is at 200.\n3. `led.enableLED(0, false);`: the pin goes to 0.\n4. Let `loop()` run for one update tick (50 ms).\n\nActual\n- After one tick the pin is back at 200.\n\nIt seems to come from the update loop: it skips effects on a disabled LED, but still drives a solid one.", author: ann, insider: true, labels: [workline:to-refine], comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
