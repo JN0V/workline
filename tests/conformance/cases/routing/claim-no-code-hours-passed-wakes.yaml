@@ -1,0 +1,29 @@
+case: routing/claim-no-code-hours-passed-wakes
+about: >
+  A claim with no pull request past claim-hours (#1084): Doing wakes no
+  role, so no developer's run came to let it go. The line wakes the
+  developer, whose run lets the claim go, said on the issue: the issue
+  is free again, in Ready.
+given:
+  repo: tested
+  config:
+    routing: {events: {issue: [developer]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply"
+        labels: ["workline:ready", "workline:developing"]
+        labeled: {"workline:ready": "2025-12-31T09:00:00Z", "workline:developing": "2026-01-01T09:00:00Z"}
+        body: "## Need\n\nI want to multiply.\n"
+        comments: ["**The developer** takes this issue.\n\n<!-- workline:developer-act {\"act\":\"pick\",\"issue\":3,\"no-code\":true,\"body\":\"8a828a06be19\"} -->\n<!-- workline:sticky=developer/claim -->"]
+run: {route: reconcile, open-merge-request: true, ai: "fake:developer-nothing"}
+expect:
+  status: pass
+  agent-calls: 0
+  findings:
+    - {rule: state-wakes, level: info, where: "#3", message: "its claim, workline:developing put on 2026-01-01, has no pull request past claim-hours (24): wakes the developer to let it go"}
+  forge:
+    issues:
+      - id: 3
+        labels: ["workline:ready"]
+        comment-contains: ["**The developer** lets this issue go.", "claim-hours: 24", "\"claim\":\"hours:2026-01-01T09:00:00Z\""]

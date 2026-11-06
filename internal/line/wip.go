@@ -49,6 +49,7 @@ type tally struct {
 	// from its role in rolesDir and the project in repo.
 	rolesDir, repo string
 	wait           *backlog.Delay
+	hours          int // the developer's claim-hours, 0 until read (claimwait.go)
 	// rounds: the developer's open merge request for each issue whose
 	// step is its review round, not a new claim (round.go).
 	rounds map[int]forge.MergeRequest

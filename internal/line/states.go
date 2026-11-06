@@ -119,6 +119,9 @@ func stateOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, 
 	if s.Name == BlockedState && name == "" {
 		return revisit(res, cfg, b, is, open)
 	}
+	if step, done, err := claimStep(res, cfg, b, t, s, is); err != nil || done {
+		return step, nil, err
+	}
 	if name == "" {
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "state-wakes-none", Level: "info", Where: where, Message: why})
 		return nil, nil, nil
@@ -581,6 +584,9 @@ func reconcile(res *Result, cfg *routing.Config, o engine.Options) *Result {
 			name = backlog.Keeper // read again when there is news (revisit.go)
 		}
 		left := name == "" || o.Inputs[SkipInput] != "" && slices.Contains(skip, name)
+		if name == "" && claimNoPR(cfg, b, t, is) {
+			left = false // a claim with no pull request: read, never silent (claimwait.go)
+		}
 		if left && cfg.StaleDays(s.Name) == 0 {
 			continue // no step of this project's, or left out: said by `route issue`, not by every reconcile
 		}

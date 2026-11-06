@@ -75,11 +75,25 @@ func stale(b forge.Backlog, issues []forge.Issue, mrs []forge.MergeRequest, s Se
 			continue
 		}
 		hours := now.Sub(at).Hours()
-		if hours < float64(s.ClaimHours) {
-			continue
-		}
 		why := fmt.Sprintf("it took this issue on %s, and no pull request closes it %d hours later (claim-hours: %d)",
 			backlog.Day(t.Labeled), int(hours), s.ClaimHours)
+		if hours < float64(s.ClaimHours) {
+			// Its agent wrote no code, and the issue's body changed since
+			// the claim read it: a new input, let go at once (#1084).
+			changed, err := bodyChanged(b, is)
+			if errors.Is(err, forge.ErrUnreachable) {
+				return nil, nil, err
+			}
+			if err != nil {
+				found = append(found, verdict.Finding{Rule: "claim-body-unknown", Level: "warn", Where: where,
+					Message: "its claim's comment could not be read (" + forge.Said(err) + "): kept until claim-hours"})
+				continue
+			}
+			if !changed {
+				continue
+			}
+			why = fmt.Sprintf("its agent wrote no code on this issue when it took it on %s, and its body changed since", backlog.Day(t.Labeled))
+		}
 		out = append(out,
 			intent.Intention{Kind: "label", Value: released(is, s, card)},
 			sayOn(is.ID, backlog.Said(who, "lets this issue go", why,
@@ -88,6 +102,45 @@ func stale(b forge.Backlog, issues []forge.Issue, mrs []forge.MergeRequest, s Se
 			Message: why + ": " + s.ClaimLabel + " taken off, said on the issue"})
 	}
 	return out, found, nil
+}
+
+// bodyChanged says whether is's claim, its record in the developer's
+// comment, wrote no code on a body other than the one it has now
+// (#1084). A record from before Act.Body says nothing changed.
+func bodyChanged(b forge.Backlog, is forge.Issue) (bool, error) {
+	a, err := ClaimAct(b, is.ID)
+	if err != nil {
+		return false, err
+	}
+	return NoCodeOnOtherBody(a, is.Body), nil
+}
+
+// ClaimAct is the record the developer's claim comment on issue id
+// holds, its last; the zero Act when none reads.
+func ClaimAct(b forge.Backlog, id int) (Act, error) {
+	comments, err := b.Comments(forge.Target{Kind: "issue", ID: id})
+	if err != nil {
+		return Act{}, err
+	}
+	return ClaimActIn(comments), nil
+}
+
+// ClaimActIn is the last developer's record among comments; the zero Act
+// when none reads.
+func ClaimActIn(comments []string) Act {
+	var last Act
+	for _, c := range comments {
+		if a, ok := ReadAct(c); ok {
+			last = a
+		}
+	}
+	return last
+}
+
+// NoCodeOnOtherBody says whether a claim's record a wrote no code on a
+// body other than body (#1084); false for a record from before Act.Body.
+func NoCodeOnOtherBody(a Act, body string) bool {
+	return a.NoCode && a.Body != "" && a.Body != BodyMark(body)
 }
 
 // say ends pre with v: final when nothing is to be written on an issue;
