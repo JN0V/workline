@@ -95,6 +95,10 @@ Each in detail: [the commands](commands.md), and
   dropped even when you set one (`CLAUDE_EFFORT`: the effort is the
   role's, or `claude:@<effort>`'s). Your login (`CLAUDE_CODE_OAUTH_TOKEN`,
   `ANTHROPIC_API_KEY`…) and other settings pass.
+- `claude` gets the part every call of a role shares as its system
+  prompt, the task as its message: a role's next call within five
+  minutes reads that part from Claude Code's cache, not as fresh tokens
+  ([the prompt](spec/role-contract.md#facets)).
 - **No agent gets a forge token**: `claude` and `cmd:` are called
   without `GH_TOKEN`, `GITHUB_TOKEN`, `GITLAB_TOKEN`, the App's key or
   the signing key; the engine writes to the forge, the agent proposes.
@@ -165,7 +169,9 @@ wrapper around your own. It runs with `sh -c`, outside the repository:
 
 - it gets your environment, a Claude Code session's variables included,
   the forge's tokens left out;
-- its input is the prompt, the role's persona first;
+- its input is the prompt: first the part every call of the role
+  shares (persona, knowledge, instruction, the answer's shape), then
+  the task, the role's rules last; a wrapper may cache the first part;
 - `WORKLINE_TIER` and `WORKLINE_EFFORT` say what the role asks (`light`,
   `standard`, `frontier`; `none` to `max`), for it to pick its model;
 - its output is the answer: the YAML list of proposals, a code fence

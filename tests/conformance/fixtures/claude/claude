@@ -19,10 +19,10 @@ esac
 [ "${CLAUDE_CODE_SUBPROCESS_ENV_SCRUB:-}" = 1 ] || want "its shell would hold its login"
 for a in "--output-format stream-json" "--verbose" "--tools Read,Edit,Write,Glob,Grep,Bash" \
 	"--allowedTools Read,Edit,Write,Glob,Grep,Bash" "--permission-mode dontAsk" "--strict-mcp-config" \
-	"--no-session-persistence" "--append-system-prompt" "--max-turns 300"; do
+	"--no-session-persistence" "--append-system-prompt-file" "--max-turns 300"; do
 	case "$args" in *" $a "*) ;; *) want "not given $a" ;; esac
 done
-case "$args" in *" --system-prompt "*) want "its own prompt replaced" ;; esac
+case "$args" in *" --system-prompt"*) want "its own prompt replaced" ;; esac
 [ "$(git rev-parse --show-toplevel)" = "$(pwd -P)" ] && [ -f lib.sh ] || want "not run in the worktree: $(pwd)"
 question=$(cat)
 for w in '`lib.sh`' '`tests/test_mul_by_zero.sh`' '`sh run-tests.sh {report}`' 'Edit the files in your worktree'; do

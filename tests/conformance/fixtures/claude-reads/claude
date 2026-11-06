@@ -6,19 +6,34 @@
 # in a copy of the repository at its base, with no shell; its question
 # must say it reads the code itself. Then it reads lib.sh, searches, and
 # answers two tests, one per scenario, and a note of what they assume,
-# in stream-json.
+# in stream-json. The role's shared part, its instruction and answer's
+# shape, is its system prompt, the same each call; the task alone is on
+# stdin (#1128).
 set -eu
 want() { echo "claude stand-in: $*" >&2; exit 1; }
-args=" $* "
+# Its flags; the system prompt in the file its flag names, never on
+# the command line, too long for Windows (#1128).
+args=" " skip= system=
+for a in "$@"; do
+	[ -z "$skip" ] || { skip=; system=$(cat "$a"); }
+	args="$args$a "
+	case "$a" in --system-prompt-file | --append-system-prompt-file) skip=1 ;; esac
+done
 for a in "--output-format stream-json" "--verbose" "--tools Read,Glob,Grep" \
 	"--permission-mode dontAsk" "--strict-mcp-config" \
-	"--setting-sources user" "--no-session-persistence" "--system-prompt" "--max-turns 40"; do
+	"--setting-sources user" "--no-session-persistence" "--system-prompt-file" "--max-turns 40"; do
 	case "$args" in *" $a "*) ;; *) want "not given $a" ;; esac
 done
-case "$args" in *Bash* | *Edit* | *Write* | *" --allowedTools "* | *" --append-system-prompt "*) want "given more than reading in its folder: $*" ;; esac
+case "$args" in *Bash* | *Edit* | *Write* | *" --allowedTools "* | *" --append-system-prompt"*) want "given more than reading in its folder: $*" ;; esac
 [ "$(git rev-parse --show-toplevel)" = "$(pwd -P)" ] && [ -f lib.sh ] || want "not run in a copy of the repository: $(pwd)"
 grep -q 'add()' lib.sh && ! grep -q 'mul()' lib.sh || want "not the base's code"
 question=$(cat)
+for w in 'You write the acceptance tests of one issue' '# Answer'; do
+	case "$system" in *"$w"*) ;; *) want "the system prompt does not hold $w" ;; esac
+done
+case "$question" in '# Task'*) ;; *) want "the question does not start with its task" ;; esac
+case "$question" in *'You write the acceptance tests of one issue'* | *'# Answer'*) want "the question repeats the shared part" ;; esac
+case "$args" in *" --system-prompt "*) want "its system prompt on the command line" ;; esac
 for w in '## Reading the code yourself' 'Read, Glob and Grep' '40 turns at most'; do
 	case "$question" in *"$w"*) ;; *) want "the question does not say $w" ;; esac
 done
