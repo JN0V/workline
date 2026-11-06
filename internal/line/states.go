@@ -165,17 +165,23 @@ func stateOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, 
 	// while they wait on a person (#1127): not due, unless the delay
 	// passed (timedOut) or something else wakes it below. A retry
 	// (typedDue) is never held.
-	held := changed && reviewed && name == backlog.Keeper && draftsHeld(is, trail.Labeled, comments, notes, rec, had)
-	if held {
+	// Its drafts not yet reviewed, the reviewer routed (#1150): the
+	// reviewer's step alone, the review pending, not missing; held the
+	// same, the delay passed or something else waking it below.
+	held, unreviewed := false, false
+	if changed && reviewed && name == backlog.Keeper {
+		held, unreviewed = draftsHeld(is, trail.Labeled, comments, notes, rec, had)
+	}
+	if held || unreviewed {
 		ok = false
 	}
-	if !ok && reviewed && rec.Asked != rec.Body {
+	if !ok && !unreviewed && reviewed && rec.Asked != rec.Body {
 		// Acted on, the reviewer never asked on this body: a record from
 		// before it read the spec in refine's own run (#840). Due again,
 		// once, while its spec waits on a review.
 		ok = specWaits(is, comments)
 	}
-	if !ok && reviewed && rec.Asked == rec.Body && rec.ReviewAgain != rec.Body && specWaits(is, comments) {
+	if !ok && !unreviewed && reviewed && rec.Asked == rec.Body && rec.ReviewAgain != rec.Body && specWaits(is, comments) {
 		// Asked on this body, and still no review (#1070): the reviewer
 		// skipped it then, as it did an issue whose Need is its text on
 		// top (#1062). Due once more, for the reviewer; then acted.
@@ -208,6 +214,14 @@ func stateOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, 
 			ok = true // nothing waits on a person after all: due as it was
 		}
 	}
+	role := name
+	if unreviewed && !ok {
+		// Not timed out, nothing else due: the reviewer reads the drafts,
+		// the product owner not called (#1150).
+		ok, role = true, backlog.SpecReviewer
+		res.Findings = append(res.Findings, verdict.Finding{Rule: "state-review-pending", Level: "info", Where: where,
+			Message: "its drafts wait on their spec review, not yet on this text: the reviewer reads them, the product owner is not called"})
+	}
 	if !ok && s.Name == refineState && name == backlog.Keeper {
 		// Read on this body and left unrefined, nothing waiting on a
 		// person (#951): not acted; woken again, then blocked — at once
@@ -231,7 +245,7 @@ func stateOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, 
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "state-unread-body", Level: "info", Where: where,
 			Message: "the product owner's state says it never read this issue: woken again, once a body"})
 	}
-	if ok && s.Name == refineState && name == backlog.Keeper {
+	if ok && s.Name == refineState && role == backlog.Keeper {
 		now.Given = givenNow(comments) // the code this read gets: the same next time wakes it no more (#980)
 	}
 	if ok && reviewed {
@@ -306,10 +320,10 @@ func stateOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, 
 		return nil, nil, err
 	}
 	res.Findings = append(res.Findings, verdict.Finding{Rule: "state-wakes", Level: "info", Where: where,
-		Message: fmt.Sprintf("its state, %s, wakes the %s", s.Name, name)})
+		Message: fmt.Sprintf("its state, %s, wakes the %s", s.Name, role)})
 	since := waitedSince(s, rec, had, trail.Labeled)
 	now.Ran = clock().UTC().Format(time.RFC3339)
-	return &stateStep{role: name, next: s.Next, write: StateWrite{Issue: is.ID, Record: now}, inputs: inputs, from: s, since: since, rec: rec}, nil, nil
+	return &stateStep{role: role, next: s.Next, write: StateWrite{Issue: is.ID, Record: now}, inputs: inputs, from: s, since: since, rec: rec}, nil, nil
 }
 
 // blocking is the record of an issue the line blocks, from state from:

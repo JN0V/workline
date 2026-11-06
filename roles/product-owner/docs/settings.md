@@ -82,7 +82,9 @@ Need or Validation draft no person accepted, waits for an answer
   ([#1082](https://github.com/JN0V/workline/issues/1082)). Drafts
   waiting call no agent; a person's comment, edit or label, or an
   important finding of the reviewer's, still does
-  ([#1127](https://github.com/JN0V/workline/issues/1127)).
+  ([#1127](https://github.com/JN0V/workline/issues/1127)). Drafts not
+  reviewed yet call the reviewer alone, not this role
+  ([#1150](https://github.com/JN0V/workline/issues/1150)).
 - **Past the delay**, the line wakes the role once, with no agent until
   then; one agent call writes the assumption
   ([on the issue](writing.md#assumptions)). A draft needs none: the
