@@ -16,7 +16,7 @@
 //	workline setup [--hooks yes|no] [--ai none|claude|...] [--install <tool,...>|none] [--yes]
 //	workline doctor [--repo <dir>] [--json]
 //	workline docs [--repo <dir>] [--ai ...]
-//	workline init [--repo <dir>] [--ai ...] [--roles <dir>] [--review] [--human-po yes|no] [--autonomy <level>] [--json]
+//	workline init [--repo <dir>] [--ai ...] [--roles <dir>] [--review] [--human-po yes|no] [--autonomy <level>] [--linters yes|no] [--json]
 //	workline hook <git-hook-name> [args]  (called by the installed hooks)
 //	workline builtin <role> pre|post      (called by the shipped roles' scripts)
 package main
@@ -52,6 +52,7 @@ import (
 	"github.com/JN0V/workline/internal/hooks"
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/line"
+	"github.com/JN0V/workline/internal/linters"
 	"github.com/JN0V/workline/internal/release"
 	wlreport "github.com/JN0V/workline/internal/report"
 	"github.com/JN0V/workline/internal/review"
@@ -2366,6 +2367,7 @@ func initCmd(args []string) int {
 	review := fs.Bool("review", false, "also have the reviewer review each merge request (ADR-0020): added to the project's merge-request line")
 	humanPO := fs.String("human-po", "", "yes when a person is the project's Product Owner: the product owner role proposes what sets direction (autonomy: cautious, ADR-0026); asked on a terminal")
 	autonomy := fs.String("autonomy", "", "the project's default autonomy level, each role's unless it sets its own (ADR-0060): cautious, normal or enterprising; the merge keeps merge: {autonomy: …}")
+	lintersFlag := fs.String("linters", "", "yes to write the lint checks proposed for the languages no linter reads, no to leave them; asked on a terminal (#244)")
 	if code, done := parseOnly(fs, args); done {
 		return code
 	}
@@ -2377,6 +2379,12 @@ func initCmd(args []string) int {
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "workline:", err)
 		return 1
+	}
+	switch strings.ToLower(*lintersFlag) {
+	case "", "yes", "y", "no", "n":
+	default:
+		fmt.Fprintf(os.Stderr, "workline: --linters %q: yes or no\n", *lintersFlag)
+		return 64
 	}
 	steps, changed, err := routing.RoutePrePush(root)
 	if err != nil {
@@ -2438,6 +2446,13 @@ func initCmd(args []string) int {
 			config += "; the project's default autonomy is " + level + ", as the project set it"
 		}
 	}
+	lintNote, err := proposeLinters(root, strings.ToLower(*lintersFlag), !*asJSON && terminal(os.Stdin))
+	if err != nil { // said, not fatal: the engine's run says what a broken history is
+		fmt.Fprintln(os.Stderr, "workline: linters:", err)
+	}
+	if lintNote != "" {
+		config += "; " + lintNote
+	}
 	res := engine.Run(engine.Options{Repo: root, RolesDir: rolesDir, Role: "documentalist", Event: "init", AI: *ai, DefaultAI: userDefaultAI()})
 	if *asJSON {
 		out, _ := json.MarshalIndent(struct {
@@ -2471,6 +2486,61 @@ func initCmd(args []string) int {
 		fmt.Fprintf(os.Stderr, "%d docs are suspect already: code they describe changed since they were last edited. The next push lists them; `workline docs` has them judged, or a merge request.\n", len(suspect))
 	}
 	return exitFor(res.Status)
+}
+
+// proposeLinters detects the languages no linter reads and proposes the
+// usual pinned linter and its gate check for each (#244). The checks are
+// written to the lint gate only once the person agrees: answer is "yes"
+// (--linters yes), "no", or empty, then asked when ask is true. It returns
+// what to say of it in init's config line.
+func proposeLinters(root, answer string, ask bool) (string, error) {
+	ps, err := linters.Propose(root)
+	if err != nil {
+		return "", fmt.Errorf("the languages here could not be told: %w", err)
+	}
+	left, err := linters.Unproposed(root, ps)
+	if err != nil {
+		return "", fmt.Errorf("the languages here could not be told: %w", err)
+	}
+	note := ""
+	if len(left) > 0 {
+		note = "; no check can be written yet for " + strings.Join(left, ", ") + ": add one by hand"
+		fmt.Fprintln(os.Stderr, "Read by no linter, and no check known to propose (add one by hand): "+strings.Join(left, ", "))
+	}
+	if len(ps) == 0 {
+		if note != "" {
+			return "no linter reads " + strings.Join(left, ", ") + ", and no check is known to propose: add one by hand", nil
+		}
+		return "", nil
+	}
+	var names []string
+	for _, p := range ps {
+		names = append(names, p.Language+": "+p.Tool)
+	}
+	if answer == "" && ask {
+		fmt.Fprintln(os.Stderr, "These languages are read by no linter. Proposed, as checks of the lint gate (.workline/config.yaml):")
+		for _, p := range ps {
+			v := ""
+			if p.Version != "" {
+				v = " " + p.Version
+			}
+			fmt.Fprintf(os.Stderr, "  %s: %s%s\n    - %s\n", p.Language, p.Tool, v, p.Check)
+		}
+		fmt.Fprint(os.Stderr, "Add them? [no] ")
+		line, _ := bufio.NewReader(os.Stdin).ReadString('\n')
+		answer = strings.ToLower(strings.TrimSpace(line))
+	}
+	if answer != "yes" && answer != "y" {
+		return "no linter reads " + strings.Join(names, ", ") + "; nothing written (workline init --linters yes adds the checks)" + note, nil
+	}
+	added, err := linters.Adopt(root, "lint", ps)
+	if err != nil {
+		return "", err
+	}
+	if len(added) == 0 {
+		return "the lint gate holds the proposed checks already" + note, nil
+	}
+	return "lint checks added for " + strings.Join(names, ", ") + " (gates.lint in .workline/config.yaml)" + note, nil
 }
 
 // importIssues moves a file — a roadmap, a backlog — to the forge's

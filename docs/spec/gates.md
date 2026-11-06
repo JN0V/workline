@@ -59,6 +59,11 @@ gates:
 - `workline doctor` counts the tool a check runs as reading its languages,
   and names the check to add for a language none reads
   ([languages](../languages.md)).
+- The `linted` rule (#244) is set in `enforce`: `linted: block` (or `warn`).
+  On a merge request, a language the change touches that no linter reads
+  is a finding of that rule, saying the language, the linter to add and
+  its gate check. `linted/<language>: exempt` exempts a language: it
+  passes, the exemption said as a warning. Unset, nothing is checked.
 - A name no gate holds (`workline gate <name>`, `gate:<name>`) is an
   error naming the gates declared, or saying none is.
 

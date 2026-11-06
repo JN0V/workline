@@ -45,6 +45,7 @@ workline` says where).
 ```sh
 workline setup     # asks what to enable, shows each command before it runs it
 workline doctor    # at any time: what is set up, what is missing, the command for each
+# a language no linter reads is warned there; `enforce: {linted: block}` on a gate refuses it on a merge request (docs/spec/gates.md)
 workline --help    # every command; `workline <command> --help`, its options
 ```
 
@@ -134,7 +135,7 @@ workline: the commit goes on with this message instead of yours:
 
 ```sh
 cd your-repo
-workline init      # routes pre-push; proposes each doc's sources, for you to review and commit
+workline init      # routes pre-push; proposes each doc's sources, for you to review and commit; proposes a pinned linter and gate check for each language none reads, written only on your yes (--linters yes|no)
 ```
 
 - From then on, each push runs the committer and the documentalist on the
