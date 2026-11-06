@@ -18,7 +18,7 @@ given:
         labels: [workline:to-refine, workline:proposed]
         body: "## Need\n\nWhen I run `workline version --verbose=false`, I want the plain line, so my scripts read it.\n\n## Validation\n\n<!-- workline:draft -->\n\n- **Plain line:** Given workline installed, When I run `workline version --verbose=false`, Then it prints one line.\n\n---\n\n## Verification\n\nA test runs the command and reads one line.\n\n## Scope\n\nsrc/export/csv.go"
         comments:
-          - {body: "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->", created: "2099-01-01T09:00:00Z"}
+          - {body: "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: 1cf7c41e922f\n```\n\n<!-- workline:sticky=product-owner/state -->", created: "2099-01-01T09:00:00Z"}
           - "**workline's line** last woke the product owner on this issue, in its state refine (1 state step so far).\n\n<!-- workline:line-record {\"state\":\"refine\",\"body\":\"0a1b2c3d4e5f\",\"hops\":1} -->\n<!-- workline:sticky=line/state -->"
           - "**The reviewer** read this spec: nothing holds it from ready.\n\n<!-- workline:spec-review body=1cf7c41e922f round=1 open=0 in= -->\n<!-- workline:sticky=reviewer/spec -->"
           - {body: "The plain line should also drop the commit hash.", author: ann, insider: true, created: "2099-01-01T10:00:00Z"}
