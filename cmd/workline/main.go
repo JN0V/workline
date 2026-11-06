@@ -149,6 +149,46 @@ func followCmd(args []string) int {
 	return exitFor(res.Status)
 }
 
+// sizeCmd measures the normal size of an issue (ADR-0064, step 2), from
+// the line's records on the forge, and keeps it there.
+func sizeCmd(args []string) int {
+	fs := newFlags("size")
+	repo := fs.String("repo", ".", "repository")
+	roles := fs.String("roles", os.Getenv("WORKLINE_ROLES"), "folder holding the roles, whose ai-max-tokens seed a run's normal (default: the roles built into this binary)")
+	forgeSpec := fs.String("forge", "", "github, gitlab, local, cmd:<command> (default: the project's `forge` setting)")
+	noApply := fs.Bool("no-apply", false, "measure and say, write nothing to the forge")
+	asJSON := fs.Bool("json", false, "print the result as JSON")
+	var summaryFiles multi
+	fs.Var(&summaryFiles, "summary", "also add a Markdown summary to this file, for a CI job's page (repeatable; a file named .html gets HTML)")
+	if code, done := parseOnly(fs, args); done {
+		return code
+	}
+	root, err := gitRoot(*repo)
+	if err != nil {
+		return notInRepo()
+	}
+	rolesDir, err := resolveRoles(*roles)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "workline:", err)
+		return 64
+	}
+	res, sizes := line.Size(line.SizeOptions{Repo: root, RolesDir: rolesDir, Forge: *forgeSpec, NoApply: *noApply})
+	if err := wlreport.AppendSummary(summaryFiles, wlreport.RoleSummary("size", "", res)); err != nil {
+		fmt.Fprintln(os.Stderr, "workline:", err)
+		return 1
+	}
+	if *asJSON {
+		out, _ := json.MarshalIndent(struct {
+			*engine.Result
+			Sizes *line.Sizes `json:"sizes,omitempty"`
+		}{res, sizes}, "", "  ")
+		fmt.Println(string(out))
+	} else {
+		report(res)
+	}
+	return exitFor(res.Status)
+}
+
 // followSettings reads what `workline follow` takes of the documentalist's
 // settings: which files are docs; and the release tool's branches, a
 // bot's. gone says the project still sets `update-branches`, whose merges

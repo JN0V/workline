@@ -495,6 +495,7 @@ func runStateStep(res *Result, cfg *routing.Config, f forge.Forge, spec string, 
 		o.Inputs = in
 	}
 	before, steps := len(res.Findings), len(res.Steps)
+	first := steps // the step's runs, counted in its record (ADR-0064)
 	_, status := runRole(res, cfg, o, 0)
 	out, given := outcomeOf(res.Steps[steps:], status), false
 	if needsCode(out) && status != verdict.BlockedExternal && sameState(f, cfg, st) {
@@ -570,6 +571,7 @@ func runStateStep(res *Result, cfg *routing.Config, f forge.Forge, spec string, 
 			return
 		}
 	}
+	st.write.Record.Spent = spend(st.write.Record.Spent, res.Steps[first:])
 	keepState(res, cfg, f, spec, o, st.write, st.role)
 }
 

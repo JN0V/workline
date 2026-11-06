@@ -173,6 +173,25 @@ kind has any, drawn the same on a rerun.
 - Exits 2 when a doc or an act is left for a person; `--summary` as for
   `route`.
 
+### workline size
+
+The normal size of an issue in this project
+([ADR-0064](adr/0064-size-is-a-target-not-a-wall.md#1-normal-size-is-measured-per-project), step 2),
+with no agent; run each night by gardening's applying job, or by hand.
+
+- **Read**: the line's record on each issue, the fresh tokens of each
+  run by role ([routing](spec/routing.md#once-a-state-the-record)); the
+  last 100 issues closed as done, and the open ones in a state.
+- **The normals**, per kind (bug, feature, task): an issue's total and
+  a run of each role, the 85th percentile of the issues done.
+- **The seed**, until 10 issues of a kind are done: 400k an issue, a run
+  its role's `ai-max-tokens`; doubled for an issue of effort High.
+- **Kept** in one comment on the issue "workline: the normal size of an
+  issue", written again in place, with the open issues past their
+  normal. `--no-apply` writes nothing.
+- **Reported only**: nothing stops on them yet.
+- `--forge`, `--json`, `--summary` as for `follow`.
+
 ### workline follow
 
 Run when the default branch moves (CI's `follow` job), with no agent.
