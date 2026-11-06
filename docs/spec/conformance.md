@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go, tests/evaluation, tests/simulator]
-checked: d6bbce27
+checked: 2d9e02ea
 verified: agent:claude-code
 judged: ae14474
 ---
@@ -222,8 +222,10 @@ step 1):
   where they part and the answers left unused, why below. A developer's `[]` is left out: its
   code was in its worktree.
 - **Requests a tick**: the fake forge counts its reads in a file beside
-  it (`forge.ReadsLog`); each trace prints the forge's requests and the
-  agent's calls a tick, the highest and the mean, and fails past a bound.
+  it (`forge.ReadsLog`), a byte a read, apart from its list of comment
+  reads; each trace prints the forge's requests and the
+  agent's calls a tick, the highest and the mean, and fails past a bound
+  measured (`maxRequests`, its measure beside it).
 - **The forge between ticks** merges a pull request out of draft that
   closes an issue not blocked, and closes the issue.
 - **Properties after each tick**: one state label at a time; a machine
@@ -231,7 +233,10 @@ step 1):
   open issue has a status; never the same input twice, by the
   simulator's own digest of what the agent received; the same tick twice
   starts no second step; a needs-input ends Due or Waiting on its
-  source; the forge's requests within the bound. At the end: quiet within K ticks, the trace's
+  source; the forge's requests within the bound. At the end: quiet within K ticks (a
+  weekly revisit of a blocked issue wakes a quiet line on purpose: its
+  own K ticks start there, past the run's end, so a line acting since,
+  never quiet in between, is not yet held; quiet again, it is), the trace's
   expected end with an agent that always progresses (Done, or Waiting on
   what it names), one byte of a body changed makes the issue due. Each
   trace runs twice: the runs must match.
