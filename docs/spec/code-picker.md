@@ -91,7 +91,10 @@ Under the role's budget, each piece once a task:
    code. The tester's only: the product owner and the reviewer write no
    test, and the room would be tokens spent for nothing.
 
-The files the tester's agent asked for at its last run come right after
+The files the tester's or the product owner's agent said it lacked at
+its last run (the line's `needs` input; the product owner's for the
+issue the run is about, the smallest in bytes first,
+[#1146](https://github.com/JN0V/workline/issues/1146)) come right after
 the definitions (between 2 and 3): whole, else their first lines.
 
 **The tester's declarations** (its `Depth`, 2): what a new test builds
