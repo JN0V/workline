@@ -1,0 +1,16 @@
+case: committer/diff-cut-said
+about: >
+  A rejected message rewritten by the agent on a staged change of about
+  20,000 characters: the agent reads the diff cut at 8,000, and the run
+  says so to the person, not to the agent alone (#1159). A small change
+  is not cut, and nothing is said.
+given:
+  repo: basic
+  setup: ["awk 'BEGIN { for (i = 1; i <= 500; i++) printf \"line %036d\\n\", i }' > big.txt && git add big.txt"]
+run: {role: committer, event: commit-msg, input: {message: "fix: AC-3"}, ai: "fake:good-commit-message"}
+expect:
+  status: pass
+  agent-calls: 1
+  findings:
+    - {rule: input-cut, level: warn, message: "the staged diff given to the committer's agent is cut from "}
+    - {rule: input-cut, message: " to 8000 characters, a cap no setting changes: the stat above it lists every file"}
