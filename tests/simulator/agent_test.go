@@ -47,10 +47,14 @@ const (
 	// overBudget: the role's task over its context budget, the agent not
 	// asked (#1017): a machine error.
 	overBudget outcome = "over-budget"
+	// refused: the tester's ask, which it may not use: its answer
+	// refused whole, a machine error of its answer, retried within the
+	// budget (#1124). A seeded waiting of the tester's is one.
+	refused outcome = "refused"
 )
 
 func (o outcome) machine() bool {
-	return o == machineError || o == malformed || o == hunk || o == broken || o == replayedUnread || o == overBudget
+	return o == machineError || o == malformed || o == hunk || o == broken || o == replayedUnread || o == overBudget || o == refused
 }
 
 func (o outcome) needs() bool { return o == needsEngine || o == needsRole || o == needsPerson }
@@ -173,8 +177,10 @@ func (a *simAgent) answerOf(kind outcome, role string, task []byte) (outcome, st
 		return kind, ""
 	case kind == malformed:
 		return kind, "- ready: {issue: [not, a, number\n"
+	case kind == waiting && role == "tester" || kind == refused:
+		return refused, ask
 	case kind == waiting:
-		return kind, "- ask: {issue: ISSUE, questions: \"Which one is meant?\", why: \"two readings\"}\n"
+		return kind, ask
 	case kind == hunk && role == "tester":
 		// #1075: a new file's hunk counting fewer lines than it adds.
 		file, content := a.testOf(task)
@@ -238,6 +244,10 @@ func (a *simAgent) answerOf(kind outcome, role string, task []byte) (outcome, st
 	}
 	return progress, a.progressOf(role, task)
 }
+
+// ask is a question to a person: the product owner's wait. The tester
+// may not ask: its ask is refused, a machine error (refused).
+const ask = "- ask: {issue: ISSUE, questions: \"Which one is meant?\", why: \"two readings\"}\n"
 
 // fix is the developer's code: what the tester's tests call.
 const fix = "\nnamespace DomoticsCore {\ninline bool fixed_ISSUE() { return true; }\n}  // namespace DomoticsCore\n"
