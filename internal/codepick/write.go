@@ -25,7 +25,7 @@ func (pk Pick) Write(b *strings.Builder, st Style) {
 	if budgetName == "" {
 		budgetName = "the code budget"
 	}
-	var unread, above []string
+	var unread, above, past []string
 	for _, f := range pk.Files {
 		if f.Test {
 			continue
@@ -41,6 +41,14 @@ func (pk Pick) Write(b *strings.Builder, st Style) {
 				unread = append(unread, fmt.Sprintf("- `%s` (%d lines)", f.Path, len(f.Lines)))
 				continue
 			}
+			// Nothing of it given: one line, no heading of its own; ten
+			// such files cost no ten headings (#1152).
+			var ps []string
+			for _, p := range f.Unread {
+				ps = append(ps, fmt.Sprintf("lines %d to %d, %s", p.From, p.To, p.Why))
+			}
+			past = append(past, fmt.Sprintf("- `%s` (%d lines): %s", f.Path, len(f.Lines), strings.Join(ps, "; ")))
+			continue
 		}
 		pk.writeFile(b, f, st, namer, budgetName)
 	}
@@ -49,6 +57,9 @@ func (pk Pick) Write(b *strings.Builder, st Style) {
 	}
 	if len(unread) > 0 {
 		fmt.Fprintf(b, "\nNot given, past %s (%d lines in all), not empty:\n\n%s\n", budgetName, pk.Ask.Budget, strings.Join(unread, "\n"))
+	}
+	if len(past) > 0 {
+		fmt.Fprintf(b, "\nWhat %s names past %s, none of the file given:\n\n%s\n", namer, budgetName, strings.Join(past, "\n"))
 	}
 	if t := pk.Test(); t != nil && !st.NoTest && len(t.Given) > 0 {
 		b.WriteString("\nA test already there, to write alike:\n")

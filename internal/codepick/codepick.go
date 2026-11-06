@@ -56,6 +56,10 @@ const (
 	// usesShare: 1 in usesShare of the budget at most for the places
 	// naming a name that are not its definition.
 	usesShare = 3
+	// fileBytes is what a file given weighs in bytes beside its lines:
+	// its heading, why each piece, a role's lines on it (its last
+	// commits): ten files of a line each are no ten lines (#1152).
+	fileBytes = 400
 )
 
 // Ask is what a role asks for.
@@ -154,7 +158,9 @@ func (p Pick) Paths() []string {
 func (p Pick) Bytes() int {
 	n := 0
 	for _, f := range p.Files {
-		n += f.bytes()
+		if b := f.bytes(); b > 0 {
+			n += b + fileBytes
+		}
 	}
 	return n
 }
@@ -525,11 +531,8 @@ func (p *Picker) Pick(a Ask) Pick {
 			home[in[0]] = true
 		}
 	}
-	// A file the issue is about by its words reads a name there however
-	// few its definitions elsewhere: `shutdown()` in the RemoteConsole
-	// its title names, not in the ten other components (#1152).
 	atHome := func(n string, w want) bool {
-		return inNamed(w) || about[w.file] || home[w.file] && len(byName[n].defs) > defsMax
+		return inNamed(w) || home[w.file] && len(byName[n].defs) > defsMax
 	}
 	// 2a. Definitions in the files the issue is about, then the
 	// project's own. A name defined in one of them is that one: one of
@@ -539,9 +542,11 @@ func (p *Picker) Pick(a Ask) Pick {
 	for _, n := range rank {
 		here[n] = slices.ContainsFunc(append(slices.Clone(byName[n].defs), byName[n].aside...), func(w want) bool { return atHome(n, w) })
 	}
-	// The component the issue is about by its words: past it, a name
-	// defined in several places none of them there, or a place naming a
-	// name, is counted, not given (#1152).
+	// The component the issue is about by its words orders, never hides
+	// (#1152): its definitions first (`shutdown()` in the RemoteConsole
+	// its title names), then the other files holding a name it writes,
+	// then its folder's; the others last, while the budget lasts. A title
+	// can name what a person sees, not where the fault is.
 	var tops []string
 	for f := range about {
 		tops = append(tops, top(f))
@@ -549,22 +554,53 @@ func (p *Picker) Pick(a Ask) Pick {
 	for _, f := range named {
 		tops = append(tops, top(f))
 	}
-	near := func(w want) bool {
-		return len(about) == 0 || inNamed(w) || about[w.file] || home[w.file] || top(w.file) != "" && slices.Contains(tops, top(w.file))
+	// nearness: 0 the files the issue is about, 1 those holding the one
+	// definition of a name it writes, 2 its component's folder, 3 the
+	// rest.
+	nearness := func(w want) int {
+		switch {
+		case inNamed(w) || about[w.file]:
+			return 0
+		case home[w.file]:
+			return 1
+		case len(about) > 0 && top(w.file) != "" && slices.Contains(tops, top(w.file)):
+			return 2
+		}
+		return 3
+	}
+	byNear := func(ws []want) []want {
+		ws = slices.Clone(ws)
+		slices.SortStableFunc(ws, func(x, y want) int { return nearness(x) - nearness(y) })
+		return ws
 	}
 	defsGiven := map[string]int{}
-	for _, keepHome := range []bool{true, false} {
-		for _, n := range rank {
-			for _, w := range byName[n].defs {
-				if atHome(n, w) == keepHome && (atHome(n, w) || defsGiven[n] < defsMax && !here[n] && near(w)) {
-					defsGiven[n]++
-					wants = append(wants, w)
-				}
+	for _, n := range rank {
+		for _, w := range byName[n].defs {
+			if atHome(n, w) {
+				defsGiven[n]++
+				wants = append(wants, w)
 			}
 		}
-		if keepHome { // the code a route names, right after
-			for _, r := range routed {
-				wants = append(wants, want{r.file, r.from, r.to, r.why, true})
+	}
+	for _, r := range routed { // the code a route names, right after
+		wants = append(wants, want{r.file, r.from, r.to, r.why, true})
+	}
+	for _, n := range rank {
+		for _, w := range byName[n].defs {
+			if about[w.file] && !atHome(n, w) && !here[n] {
+				defsGiven[n]++
+				wants = append(wants, w)
+			}
+		}
+	}
+	// The other definitions, after the functions those call (2b'): the
+	// nearest first, while the budget lasts.
+	var others []want
+	for _, n := range rank {
+		for _, w := range byNear(byName[n].defs) {
+			if !atHome(n, w) && !about[w.file] && !here[n] && defsGiven[n] < defsMax {
+				defsGiven[n]++
+				others = append(others, w)
 			}
 		}
 	}
@@ -626,12 +662,13 @@ func (p *Picker) Pick(a Ask) Pick {
 			}
 		}
 	}
+	wants = append(wants, others...)
 	// 2c. Copies in tests, examples and tools, a few.
 	for _, n := range rank {
 		fd := byName[n]
 		given, asides := defsGiven[n], 0
-		for _, w := range fd.aside {
-			if atHome(n, w) || !here[n] && asides < asideMax && near(w) {
+		for _, w := range byNear(fd.aside) {
+			if atHome(n, w) || !here[n] && asides < asideMax {
 				asides++
 				given++
 				wants = append(wants, w)
@@ -643,8 +680,6 @@ func (p *Picker) Pick(a Ask) Pick {
 			pk.Many = append(pk.Many, fmt.Sprintf("`%s` (defined in the files named; %d more of the same name elsewhere, not given)", n, total-given))
 		case here[n]:
 			pk.Many = append(pk.Many, fmt.Sprintf("`%s` (defined beside the other names the text writes; %d more of the same name elsewhere, not given)", n, total-given))
-		case len(about) > 0:
-			pk.Many = append(pk.Many, fmt.Sprintf("`%s` (%d definitions, %d of them outside the component the issue names, not given)", n, total, total-given))
 		default:
 			pk.Many = append(pk.Many, fmt.Sprintf("`%s` (%d definitions, %d of them not given, most in tests, examples or tools)", n, total, total-given))
 		}
@@ -681,9 +716,19 @@ func (p *Picker) Pick(a Ask) Pick {
 		}
 		used := 0
 		for _, g := range byPath {
-			used += g.bytes()
+			if b := g.bytes(); b > 0 {
+				used += b + fileBytes
+			}
 		}
 		return a.Bytes - used
+	}
+	// room is the bytes a file may still take: a file not given yet
+	// weighs fileBytes more.
+	room := func(f *File) int {
+		if f.bytes() == 0 {
+			return bytesLeft() - fileBytes
+		}
+		return bytesLeft()
 	}
 	// give plans a piece; false when nothing of it fits.
 	give := func(w want) bool {
@@ -692,7 +737,7 @@ func (p *Picker) Pick(a Ask) Pick {
 			return true
 		}
 		n := w.to - w.from + 1
-		if fit := min(left, fitting(f.Lines, w.from, bytesLeft())); n > fit {
+		if fit := min(left, fitting(f.Lines, w.from, room(f))); n > fit {
 			short = true
 			if !w.cut || fit <= 0 {
 				if w.cut {
@@ -736,7 +781,7 @@ func (p *Picker) Pick(a Ask) Pick {
 	for _, f := range own {
 		g := file(f)
 		extra := len(g.Lines) - g.GivenLines()
-		fits := extra <= left && g.wholeBytes()-g.bytes() <= bytesLeft()
+		fits := extra <= left && g.wholeBytes()-g.bytes() <= room(g)
 		switch {
 		case len(p.given[f]) > 0 && len(g.Given) == 0:
 			g.Above = true // given for an earlier issue: not twice
@@ -754,7 +799,7 @@ func (p *Picker) Pick(a Ask) Pick {
 	for _, f := range own {
 		g := file(f)
 		if len(g.Given) == 0 && len(g.Decls) == 0 && len(g.Unread) == 0 && !g.Above && left > 0 && len(g.Lines) > 0 {
-			k := min(len(g.Lines), left, fitting(g.Lines, 1, bytesLeft()))
+			k := min(len(g.Lines), left, fitting(g.Lines, 1, room(g)))
 			if k <= 0 {
 				short = true
 				continue
@@ -794,25 +839,23 @@ func (p *Picker) Pick(a Ask) Pick {
 	// 4. The other places naming a name, the rarer first, a few each,
 	// those in the files named first, a third of the budget at most:
 	// what defines the code comes before what uses it.
-	// The code before the docs, every name's (#1152); past the
-	// component the issue names, counted.
+	// The code before the docs, every name's (#1152); the component the
+	// issue names first.
 	usesLeft := budget / usesShare
 	dropped := map[string]int{}
 	for _, docs := range []bool{false, true} {
 		for _, n := range rank {
-			for _, inFile := range []bool{true, false} {
-				for _, w := range byName[n].uses {
-					if (useRank(w.file) == 2) != docs || (inNamed(w) || about[w.file]) != inFile || covered(file(w.file).Given, w.from, w.to) {
-						continue
-					}
-					size := w.to - w.from + 1
-					if usedIn[n] >= usesMax || size > usesLeft || !near(w) || !give(w) {
-						dropped[n]++
-						continue
-					}
-					usedIn[n]++
-					usesLeft -= size
+			for _, w := range byNear(byName[n].uses) {
+				if (useRank(w.file) == 2) != docs || covered(file(w.file).Given, w.from, w.to) {
+					continue
 				}
+				size := w.to - w.from + 1
+				if usedIn[n] >= usesMax || size > usesLeft || !give(w) {
+					dropped[n]++
+					continue
+				}
+				usedIn[n]++
+				usesLeft -= size
 			}
 		}
 	}

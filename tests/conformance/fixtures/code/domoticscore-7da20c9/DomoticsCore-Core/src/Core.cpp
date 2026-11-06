@@ -6,23 +6,23 @@
 
 
 
+namespace DomoticsCore {
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+// Out of line: the 1 KB buffer below is part of its function's frame whether
+// the branch runs or not, and begin() already carries all of initializeAll()
+// on the ESP8266's 4 KB cont stack.
+static void __attribute__((noinline)) logPromotedRecord(FlightRecorder& recorder) {
+    char text[1024];   // size pinned by test_format_saturated_stays_under_128_per_line_and_1024_in_all
+    recorder.format(text, sizeof(text));
+    // One log line per formatted line: the ESP8266's log buffer is 128 bytes.
+    char* line = text;
+    while (line && *line) {
+        char* nl = strchr(line, '\n');
+        if (nl) *nl = '\0';
+        DLOG_W(LOG_CORE, "%s", line);
+        line = nl ? nl + 1 : nullptr;
+    }
+}
 
 
 

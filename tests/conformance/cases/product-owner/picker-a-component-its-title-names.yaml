@@ -4,8 +4,8 @@ about: >
   trial's #56 as opened, on DomoticsCore at 7da20c9 (reduced: the files
   the picker gave, at their paths). Its title names RemoteConsole; its
   text, `begin()` and `shutdown()`, defined in eleven components. The
-  console's `shutdown()` is given, where the fault is; the other
-  components' are counted, not given, and the task holds under 30 KB.
+  console's `shutdown()` is given first, where the fault is; the other
+  components' after, while the bytes last, and the task holds under 30 KB.
   Before, 69,964 bytes and 35 files.
 given:
   repo: backlog
@@ -24,5 +24,5 @@ expect:
   run-files:
     in/task.md:
       max-bytes: 30000
-      contains: ["LoggerCallbacks::removeCallback(loggerCallbackId_);", "`shutdown` (defined beside the other names the text writes;"]
-      not-contains: ["### `DomoticsCore-Storage/include/DomoticsCore/Storage.h`", "### `DomoticsCore-HomeAssistant/include/DomoticsCore/HomeAssistant.h`", "### `DomoticsCore-LED/include/DomoticsCore/LED.h`", "### `DomoticsCore-Core/src/Core.cpp`"]
+      contains: ["LoggerCallbacks::removeCallback(loggerCallbackId_);"]
+      not-contains: ["### `CHANGELOG.md`"]

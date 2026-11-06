@@ -3,9 +3,9 @@ about: >
   The code picker's contract, the product owner's side (#1152): the C++
   trial's #54 as opened, on DomoticsCore at 7da20c9 (reduced). Its title
   names NTP; its text, `syncNow()` and `loop()`, and members the NTP
-  component defines. NTP.h's `loop()` is given, where the fault is; the
-  places naming those names in other components, and the changelog, are
-  counted, and the task holds under 30 KB. Before, 47,665 bytes and 22
+  component defines. NTP.h's `loop()` is given, where the fault is;
+  the code naming those names comes before any doc, the changelog is
+  not reached, and the task holds under 30 KB. Before, 47,665 bytes and 22
   files.
 given:
   repo: backlog
@@ -25,4 +25,4 @@ expect:
     in/task.md:
       max-bytes: 30000
       contains: ["        // Detect sync completion (initial or subsequent)", "### `DomoticsCore-NTP/include/DomoticsCore/NTP.h`"]
-      not-contains: ["### `CHANGELOG.md`", "### `DomoticsCore-HomeAssistant/include/DomoticsCore/HomeAssistantWebUI.h`", "### `DomoticsCore-MQTT/include/DomoticsCore/MQTTWebUI.h`", "### `docs/components/ntp/technical-reference.md`"]
+      not-contains: ["### `CHANGELOG.md`", "### `docs/components/ntp/technical-reference.md`"]

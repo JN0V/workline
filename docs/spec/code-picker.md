@@ -40,11 +40,14 @@ flowchart LR
   - a file of the project's own code named as a word of the title, its
     extension off: the word before its colon (`WebUI: …` is `WebUI.h`;
     not a commit's type, `fix:`),
-    or one written as code (`RemoteConsole`, `NTP`); a word naming more
-    than 3 files names none;
+    or one written as code (`RemoteConsole`, an acronym too: `NTP`); a
+    word naming more than 3 files names none, a test's file only when
+    the word says `test`;
   - the code holding a route the text writes (`/api/components/enable`),
     in 3 files at most: the function around each line, or the functions
     under a comment naming it.
+  - It orders, it never hides: a title names what a person sees
+    (`Core: …`), not always where the fault is.
 
 ## What it gives, in order
 
@@ -58,28 +61,29 @@ Under the role's budget, each piece once a task:
    parser, other languages by a pattern and braces or indentation; C++
    methods defined out of their class too).
    - Those in a file named first. A name defined in a file named is that
-     one: one of the same name elsewhere is counted, not given. So in
-     the component the issue is about: `shutdown()` in the
-     `RemoteConsole` its title names, not in the ten other components.
-   - Then the code a route names.
+     one: one of the same name elsewhere is counted, not given.
+   - Then the code a route names, then those in the component the issue
+     is about: `shutdown()` in the `RemoteConsole` its title names
+     first.
    - A name defined in more than 12 places (`loop()` in every
      component) is read in the one file defining another name the issue
      writes (`enableLED` in `LED.h`), the others counted; a name defined
      in a few is given in each.
-   - Then the project's own, 12 a name at most; with a component the
-     issue is about, only those in its folder.
    - The functions a definition in those files calls, defined once in
      its file, the longest first, 3 a definition at most, each whole:
      `loop()` says little, `updateEffects()` it calls says what it does.
-   - Copies in tests, examples and tools last, 2 a name, the rest
-     counted; with a component, those in its folder only.
+   - Then the project's own others, 12 a name at most, the nearest
+     first: a file defining another name the issue writes, then the
+     component's folder, then the rest, while the budget lasts.
+   - Copies in tests, examples and tools last, 2 a name, the nearest
+     first, the rest counted.
 3. **The lines naming a name in a file named**: the function around
    each, 40 lines at most, else 3 lines either side.
 4. **A file named, whole** when what it adds fits; else, nothing of it
    given yet, its first lines.
 5. **The other places naming a name**, the rarer name first, every
-   name's code before any doc, 6 a name at most, the rest counted; with
-   a component the issue is about, only those in its folder.
+   name's code before any doc, 6 a name at most, the nearest first,
+   the rest counted.
 6. **The tester's test**: the nearest file matching `test-paths` (its
    folder's, named after the code, else its module's, else the project's
    first). A fifth of the budget is kept for it while the code is
@@ -151,15 +155,17 @@ A binary file gives nothing: no line, and `logo.png` names neither
 
 | Role | Budget | Shown |
 |---|---|---|
-| [Product owner](backlog-acts/reading.md) | `code-lines-max` (1500) and `code-bytes-max` (16000), shared among the issues read | numbered lines, each file's last commits |
+| [Product owner](backlog-acts/reading.md) | `code-lines-max` (1500), shared among the issues read; `code-bytes-max` (16000) each issue | numbered lines, each file's last commits |
 | [Tester](../../roles/tester/README.md) | `code-lines-max` (1500) | lines as they are, the tests beside after |
 | [Reviewer, a spec](../../roles/reviewer/docs/spec.md) | `code-lines-max` (600); the judge's `judge-lines-max` (200) | numbered lines |
 
 - **Bytes**: a line of 120 bytes weighs three of 40 in a task, one in
   lines; the product owner bounds both
   ([#1152](https://github.com/JN0V/workline/issues/1152): a task of
-  87 KB on `begin()` and `shutdown()`). The tester and the reviewer, by
-  lines alone.
+  87 KB on `begin()` and `shutdown()`), the bytes each issue's, the
+  context budget bounding the run. A file given weighs 400 bytes more,
+  its heading and last commits; a file none of whose lines fit is one
+  line of a list. The tester and the reviewer, by lines alone.
 - **Same everywhere**: the same picker on a person's machine and in CI,
   with any agent or none.
 - **Not here**: the reviewer's judge on a change's finding reads from the

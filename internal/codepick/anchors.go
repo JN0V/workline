@@ -38,6 +38,11 @@ var (
 var commitTypes = map[string]bool{"fix": true, "feat": true, "docs": true, "test": true, "refactor": true,
 	"perf": true, "build": true, "ci": true, "chore": true, "revert": true, "style": true, "bug": true}
 
+// testName is a test's file by its name, its folder aside: `a_test.go`,
+// `test_a.py`, `a.test.ts`, `ATest.java`. Without test-paths, the
+// product owner's, a test anchors nothing the issue did not name.
+var testName = regexp.MustCompile(`(^|/)(test_[^/]*|[^/]*_test\.\w+|[^/]*\.(test|spec)\.\w+|[^/]*Tests?\.(java|kt|cs|swift|scala))$`)
+
 // titleStems are the files of the project's own code whose name, the
 // extension off, is a word of the title written as code (`WebUI`,
 // `RemoteConsole`, `NTP`) or the word it opens on before a colon: what
@@ -59,7 +64,7 @@ func (p *Picker) titleStems(a Ask) []string {
 		var fs []string
 		for _, f := range p.files {
 			base := path.Base(f)
-			if strings.TrimSuffix(base, path.Ext(base)) == w && p.own(a, f) {
+			if strings.TrimSuffix(base, path.Ext(base)) == w && p.own(a, f) && (!testName.MatchString(f) || strings.Contains(strings.ToLower(w), "test")) {
 				fs = append(fs, f)
 			}
 		}
@@ -98,7 +103,7 @@ func (p *Picker) routeLines(a Ask, rs []string) (pieces []routePiece, files []st
 		var in []string
 		var got []routePiece
 		for _, h := range hits[r] {
-			if !p.own(a, h.file) {
+			if !p.own(a, h.file) || testName.MatchString(h.file) {
 				continue
 			}
 			if !slices.Contains(in, h.file) {

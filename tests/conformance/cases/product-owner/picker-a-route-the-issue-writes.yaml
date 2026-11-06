@@ -6,7 +6,8 @@ about: >
   the route `/api/components/enable`. WebUI.h's are given, and in
   ProviderRegistry.h the function under the comment naming the route,
   `enableComponent()`, which calls `begin()`: where the fault is. The
-  other components' are counted, and the task holds under 30 KB.
+  other components' come after, while the bytes last; the task holds
+  under 30 KB.
   Before, 87,285 bytes and 46 files, ProviderRegistry.h not among them.
 given:
   repo: backlog
@@ -26,4 +27,4 @@ expect:
     in/task.md:
       max-bytes: 30000
       contains: ["### `DomoticsCore-WebUI/include/DomoticsCore/WebUI/ProviderRegistry.h`", "            if (enabled) component->begin();", "registry->applyPendingEnables("]
-      not-contains: ["### `DomoticsCore-HomeAssistant/include/DomoticsCore/HomeAssistant.h`", "### `DomoticsCore-Core/src/Core.cpp`", "### `DomoticsCore-Core/src/FlightRecorder.cpp`", "### `.specify/scripts/bash/common.sh`"]
+      not-contains: ["### `CHANGELOG.md`"]

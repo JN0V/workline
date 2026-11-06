@@ -1,29 +1,29 @@
 
 
+/**
+ * @file Core.h
+ * @brief Declares the DomoticsCore::Core runtime responsible for component lifecycle and registry.
+ */
 
+#include <memory>
+#include "Logger.h"
+#include "Timer.h"
+#include "ComponentRegistry.h"
 
+namespace DomoticsCore {
 
+/**
+ * Minimal Core configuration
+ */
+struct CoreConfig {
+    String deviceName = "DomoticsCore";
+    String deviceId = "";
+    uint8_t logLevel = 3; // INFO level
+};
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+/**
+ * @class DomoticsCore::Core
+ * @brief Central runtime for the DomoticsCore framework.
  *
  * Manages configuration, logging, and registration/lifecycle of components stored in the
  * `Components::ComponentRegistry`. Provides convenience helpers for accessing components by name
@@ -113,6 +113,13 @@ private:
 
 
 
+     *
+     * There is no runtime check because there is nothing to check against:
+     * `dynamic_cast` does not compile (`-fno-rtti` on both Arduino platforms), and
+     * `getTypeKey()` is a WebUI mechanism that ten of the twelve components leave
+     * at `""`. Adding a static type identity to the component API would work and
+     * is deliberately not done — see BUG-2 in `docs/CODE-ROADMAP.md`.
+     *
 
 
 
@@ -206,14 +213,7 @@ private:
 
 
 
+    }
+};
 
-
-
-
-
-
-
-
-
-
-
+} // namespace DomoticsCore
