@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/codepick, internal/codenav, internal/builtin/productowner/productowner.go]
 status: draft
-checked: e338896f
+checked: dab431bb
 verified: agent:claude-code
 ---
 # The code picker
@@ -49,7 +49,14 @@ Under the role's budget, each piece once a task:
    methods defined out of their class too).
    - Those in a file named first. A name defined in a file named is that
      one: one of the same name elsewhere is counted, not given.
+   - A name defined in more than 12 places (`loop()` in every
+     component) is read in the one file defining another name the issue
+     writes (`enableLED` in `LED.h`), the others counted; a name defined
+     in a few is given in each.
    - Then the project's own, 12 a name at most.
+   - The functions a definition in those files calls, defined once in
+     its file, the longest first, 3 a definition at most, each whole:
+     `loop()` says little, `updateEffects()` it calls says what it does.
    - Copies in tests, examples and tools last, 2 a name, the rest counted.
 3. **The lines naming a name in a file named**: the function around
    each, 40 lines at most, else 3 lines either side.

@@ -191,3 +191,58 @@ func TestImportedFileAndUsesCapped(t *testing.T) {
 		t.Errorf("%d places naming it given:\n%s", n, task)
 	}
 }
+
+// The functions a definition calls, the longest first: three one-line
+// helpers called before it do not push out the one that matters (#1129).
+func TestCalleesTheLongestFirst(t *testing.T) {
+	dir := repo(t, map[string]string{"led.c": `void logA() { puts("a"); }
+void logB() { puts("b"); }
+void logC() { puts("c"); }
+void updateEffects() {
+    if (solid) {
+        write(pin, stored);
+        return;
+    }
+}
+void tick() {
+    logA(); logB(); logC();
+    updateEffects();
+}
+`})
+	pk, out := pick(t, dir, Ask{Text: "`tick()` lights a disabled LED", Budget: 200})
+	var why []string
+	for _, f := range pk.Files {
+		for _, g := range f.Given {
+			why = append(why, g.Why)
+		}
+	}
+	if w := strings.Join(why, "; "); !strings.Contains(w, "`updateEffects`, called by `tick`") || strings.Count(w, "called by") != 3 {
+		t.Errorf("not updateEffects() and two helpers: %s\n%s", w, out)
+	}
+}
+
+// Two functions of the name called in the file: which is called is not
+// known, neither is given (#1129).
+func TestCalleeOfTwoDefinitionsNotGiven(t *testing.T) {
+	dir := repo(t, map[string]string{"a.go": `package a
+
+type A struct{}
+type B struct{}
+
+func (A) String() string {
+	return "a"
+}
+
+func (B) String() string {
+	return "b"
+}
+
+func Render(a A) string {
+	return a.String()
+}
+`})
+	_, out := pick(t, dir, Ask{Text: "`Render` prints the wrong text", Budget: 200})
+	if strings.Contains(out, `return "a"`) || strings.Contains(out, `return "b"`) {
+		t.Errorf("a String() given, which one is called unknown:\n%s", out)
+	}
+}

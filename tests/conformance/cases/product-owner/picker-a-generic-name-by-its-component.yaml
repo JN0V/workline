@@ -1,0 +1,92 @@
+case: product-owner/picker-a-generic-name-by-its-component
+about: >
+  The code picker's contract, the product owner's side (ADR-0063 §8):
+  #1129, the C++ trial's #47 as opened. The issue names `loop()` and
+  `begin()`, defined in every component, beside `enableLED` and
+  `setLED`, defined in LED.h alone. With 14 components, more than the
+  12 definitions a name is given, LED.h's `loop()` is given, and
+  `updateEffects()` it calls, where the fault is; the other components'
+  `loop()` and `begin()` are counted, not given.
+given:
+  repo: backlog
+  setup:
+    - |
+      mkdir -p LED/include
+      cat > LED/include/LED.h <<'EOF'
+      #pragma once
+      #include "Component.h"
+
+      class LEDComponent : public IComponent {
+      public:
+          ComponentStatus begin() override {
+              ledEnabled = true;
+              return ComponentStatus::Success;
+          }
+
+          void loop() override {
+              if (updateTimer.isReady()) {
+                  updateEffects();
+              }
+          }
+
+          bool enableLED(int index, bool enabled) {
+              ledEnabled = enabled;
+              if (!enabled) analogWrite(pin, 0);
+              return true;
+          }
+
+          bool setLED(int index, int color, int brightness) {
+              stored = brightness;
+              analogWrite(pin, brightness);
+              return true;
+          }
+
+      private:
+          void updateEffects() {
+              if (effect == Solid) {
+                  analogWrite(pin, stored); // whether enabled or not
+                  return;
+              }
+              if (!ledEnabled) return;
+          }
+
+          bool ledEnabled = false;
+          int pin = 2, stored = 0, effect = 0;
+      };
+      EOF
+      for c in MQTT NTP HomeAssistant WiFi OTA Storage WebUI System RemoteConsole SystemInfo Logger Display Sensor; do
+        mkdir -p $c/include
+        cat > $c/include/$c.h <<EOF
+      #pragma once
+      #include "Component.h"
+
+      class ${c}Component : public IComponent {
+      public:
+          ComponentStatus begin() override {
+              ${c}Started = true;
+              return ComponentStatus::Success;
+          }
+
+          void loop() override {
+              ${c}Ticks++;
+          }
+
+      private:
+          bool ${c}Started = false;
+          int ${c}Ticks = 0;
+      };
+      EOF
+      done
+      git add . && git commit -qm 'feat: fourteen components, each with its loop'
+  forge:
+    issues:
+      - {id: 9, title: "LED: a disabled LED lights up again 50 ms later", body: "Who it hurts: an application that turns a status LED off with `enableLED(i, false)`. The LED goes dark, then comes back on at the next update tick.\n\nSteps to reproduce\n1. `led.begin();`\n2. `led.setLED(0, Red, 200);` then let `loop()` run: the pin is at 200.\n3. `led.enableLED(0, false);`: the pin goes to 0.\n4. Let `loop()` run for one update tick (50 ms).\n\nActual\n- After one tick the pin is back at 200.\n\nIt seems to come from the update loop: it skips effects on a disabled LED, but still drives a solid one.", author: ann, insider: true, labels: [workline:to-refine], comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: issue, target: {issue: 9}, ai: fake:proposes-nothing}
+expect:
+  status: pass
+  agent-calls: 1
+  no-findings: [{rule: prompt-over-budget}]
+  run-files:
+    in/task.md:
+      contains: ["    void updateEffects() {", "analogWrite(pin, stored); // whether enabled or not", "if (updateTimer.isReady()) {"]
+      not-contains: ["MQTTTicks++;", "NTPTicks++;", "HomeAssistantTicks++;", "MQTTStarted = true;"]
