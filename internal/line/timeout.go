@@ -91,6 +91,29 @@ func timedOut(b forge.Backlog, t *tally, is forge.Issue, notes []forge.Note, rec
 	return key, said, waits, nil
 }
 
+// draftsHeld says whether refine's step on issue is, of all it could be
+// due on, only a new body or spec review while its drafts wait on a
+// person (#1127): the same state and labelling, all it lacks its drafts,
+// the reviewer's review of the body as it is with nothing important
+// open, no person's comment the product owner has not read. Its own
+// drafts and that review change nothing it could write: the step waits
+// out acts.ask.wait, or a person, with no agent call. Whether the delay
+// passed is timedOut's.
+func draftsHeld(is forge.Issue, labeled string, comments []string, notes []forge.Note, rec Record, had bool) bool {
+	if !had || rec.State != refineState || rec.Labeled != labeled || backlog.Readied(is) {
+		return false
+	}
+	st, _, err := backlog.ReadState(comments, backlog.Keeper)
+	if err != nil || !backlog.OnlyDrafts(is, st) {
+		return false
+	}
+	if _, cleared := backlog.SpecCleared(is, comments); !cleared {
+		return false
+	}
+	counted := len(backlog.Counted(notes, is))
+	return counted <= backlog.Heard(st, counted)
+}
+
 // questionWaits is what the line says of a question s waiting on its
 // reporter, the delay w not passed, or none: the day it times out.
 func questionWaits(w backlog.Delay, s backlog.Silence, id int) string {
