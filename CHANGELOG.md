@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.73.1](https://github.com/JN0V/workline/compare/v0.73.0...v0.73.1) (2026-11-06)
+
+
+### Bug Fixes
+
+* **agent:** put a role's shared prompt in the system prompt ([#1131](https://github.com/JN0V/workline/issues/1131)) ([641a70f](https://github.com/JN0V/workline/commit/641a70f99d77ad7b6f5b4d40c2fa0d4dd317e616))
+* **codepick:** read a generic name in the issue's component ([#1139](https://github.com/JN0V/workline/issues/1139)) ([165bf19](https://github.com/JN0V/workline/commit/165bf1930b8166c60c936917db9d91f08de09f75))
+* **developer:** claim takes ready off, its release puts it back ([#1115](https://github.com/JN0V/workline/issues/1115)) ([26be318](https://github.com/JN0V/workline/commit/26be3187789cfb77107f9e32016a43fd2f621e49))
+* **line:** no product owner call while drafts wait ([#1138](https://github.com/JN0V/workline/issues/1138)) ([65d1a5b](https://github.com/JN0V/workline/commit/65d1a5bfaad9cfe9535876fc2e6cae9f75575029))
+* **line:** reviewer alone reads unreviewed drafts ([#1153](https://github.com/JN0V/workline/issues/1153)) ([5879324](https://github.com/JN0V/workline/commit/5879324119b654d4a0dba3c2758f82c6b6eac6bb))
+* **line:** say each input cut; never retry a size error ([#1163](https://github.com/JN0V/workline/issues/1163)) ([0dfc602](https://github.com/JN0V/workline/commit/0dfc602d20b95f6755ea27fdaf99830b0bdae43c))
+* **product-owner:** give the code named at the run again ([#1162](https://github.com/JN0V/workline/issues/1162)) ([7474c9a](https://github.com/JN0V/workline/commit/7474c9a0d8898227b7d5cc1f89e47d92ae2e2cb7))
+* **product-owner:** rewrite a Scope marked a guess ([#1144](https://github.com/JN0V/workline/issues/1144)) ([952f770](https://github.com/JN0V/workline/commit/952f77096a0882d89d80ba6699e0c4a58c2d85f1))
+* **tester:** keep the scenario's name in its test's comment ([#1136](https://github.com/JN0V/workline/issues/1136)) ([0efd5a2](https://github.com/JN0V/workline/commit/0efd5a239d028f2cb267cca75455b0c289b08cde))
+* **tester:** read round-5 trial answers as meant ([#1155](https://github.com/JN0V/workline/issues/1155)) ([78c00f6](https://github.com/JN0V/workline/commit/78c00f68935103936093e2400323c84a615b6021))
+* the picker reads the component an issue names ([#1154](https://github.com/JN0V/workline/issues/1154)) ([7405757](https://github.com/JN0V/workline/commit/7405757fac89e5af9bfbbde59c731c43de6e4f0b))
+
 ## [0.73.0](https://github.com/JN0V/workline/compare/v0.72.1...v0.73.0) (2026-11-06)
 
 
