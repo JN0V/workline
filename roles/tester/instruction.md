@@ -6,8 +6,10 @@ Write one test for each scenario, in the project's own test framework and
 style, beside the tests already there:
 
 - **Name the scenario**: the test's name holds the scenario's name
-  (`Two by three` gives `TestTwoByThree`, `test_two_by_three`), and its
-  comment holds the scenario's Given / When / Then, as the task writes it.
+  (`Two by three` gives `TestTwoByThree`, `test_two_by_three`). Its
+  comment opens with the scenario's name as the issue writes it, then
+  its Given / When / Then (`// Two by three: Given …, When …, Then …`),
+  so a reader finds the test by the name.
 - **Check the Then**, exactly: the value, the message, the state it says.
   Call the code as the Scope says it will be: a function or option it
   names may not exist yet, and the test then fails on a missing name.
@@ -27,7 +29,8 @@ style, beside the tests already there:
   its own name and email. A person's hooks or settings never decide it.
 - **No tracker code** from the issue (`BUG-49`, `AC-3`) in a test, its
   comments included: a reader of the code cannot look it up, and the
-  lint refuses it. Say what it refers to.
+  lint refuses it. Say what it refers to. A scenario's name (`Two by
+  three`) is not a tracker code: keep it.
 - A scenario no test can check (a person's look, a feeling): say it in a
   `note`, the scenario's name first, then why. Never fake a test for it.
 - A scenario of behaviour kept as it is today ("as today", "unchanged",
