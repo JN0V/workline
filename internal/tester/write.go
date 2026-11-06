@@ -392,9 +392,11 @@ func Post(runDir, repo string) int {
 				Findings: []verdict.Finding{{Rule: "no-agent", Level: "warn", Where: where,
 					Message: "writing a scenario's test is judgement: with no agent, nothing is written; a person writes them, or the tester runs with one (`--ai`)"}}})
 		}
-		msg := "no test file the tester may write was proposed for the issue's scenarios"
+		msg, rule := "no test file the tester may write was proposed for the issue's scenarios", "no-test-written"
 		if why := os.Getenv("WORKLINE_AGENT_OVER_BUDGET"); why != "" {
-			// Not asked: no word of the agent's, the budget's (#1017).
+			// Not asked: no word of the agent's, the budget's (#1017); a
+			// size, never run again on the same input (#1160).
+			rule = "prompt-over-budget"
 			msg = "the agent was not asked, its prompt over the tester's context budget (prompt-over-budget: " + why +
 				"): lower code-lines-max in the tester's settings, or narrow the issue's " + work.Name(work.Scope)
 		} else if why := os.Getenv("WORKLINE_AGENT_UNREAD"); why != "" {
@@ -411,7 +413,7 @@ func Post(runDir, repo string) int {
 			return proved(runDir, repo, t, intents, Proof{Kind: KindNone, Reason: reason})
 		}
 		return refusePost(runDir, t.Issue, verdict.Verdict{Status: verdict.Block, Summary: "no test written",
-			Findings: []verdict.Finding{{Rule: "no-test-written", Where: where, Message: msg}}})
+			Findings: []verdict.Finding{{Rule: rule, Where: where, Message: msg}}})
 	}
 	// What the tests read: each patch's file and its lines, for the
 	// scenarios they name.

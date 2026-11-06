@@ -62,6 +62,14 @@ func TestErrorsRetryWithinTheirBudget(t *testing.T) {
 	if again, _, spent := mixed.retry(at.Add(ErrorWindow + 2*time.Hour)); !again || spent != "" {
 		t.Fatalf("a new kind past another kind's window: again %v, spent %q", again, spent)
 	}
+	// A size error recorded before it blocked at once, "budget" then: no
+	// try mends it (#1160).
+	for _, kind := range []string{"budget", verdict.Size} {
+		e := (*Errors)(nil).with(verdict.Outcome{Kind: verdict.MachineError, Of: kind, Said: "prompt too large"}, at)
+		if again, _, spent := e.retry(at.Add(ErrorBackoff)); again || spent == "" {
+			t.Errorf("a %s error past the back-off: again %v, spent %q; want spent at once", kind, again, spent)
+		}
+	}
 }
 
 // A developer's run lost in a record from before typed outcomes reads as

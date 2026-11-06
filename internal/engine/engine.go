@@ -2251,7 +2251,7 @@ func attempt(r *role.Role, o Options, ag agent.Agent, hasTask bool, tier, runDir
 			// an agent, and what the task held waits for a person.
 			a.askedAgent, a.overBudget, a.overBudgetWhy = false, true, err.Error()
 			a.findings = append(a.findings, verdict.Finding{Rule: "prompt-over-budget", Level: "warn",
-				Message: err.Error() + ": the agent was not asked; what this task held is judged by no one this run, a person reads it (in/task.md of the run)"})
+				Message: err.Error() + " (context.budget in its role.yaml): the agent was not asked; what this task held is judged by no one this run, a person reads it (in/task.md of the run)"})
 		case errors.Is(err, agent.ErrUnavailable):
 			a.external = true
 			a.findings = append(a.findings, verdict.Finding{Rule: "agent-unavailable", Message: err.Error()})

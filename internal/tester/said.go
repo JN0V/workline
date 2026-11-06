@@ -15,6 +15,7 @@ import (
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/verdict"
+	"github.com/JN0V/workline/internal/work"
 )
 
 // saidFile holds the verdict of a run that refused its issue, said there:
@@ -53,7 +54,10 @@ func refusePost(runDir string, n int, v verdict.Verdict) int {
 			why = v.Findings[0].Message
 		}
 		next := "waiting for its tests, the line blocks it with this reason; a person writes them, or puts " + backlog.LabelNeedsTests + " back for another run"
-		if verdict.OutcomeOf(v.Status, v.Findings).Machine() {
+		if out := verdict.OutcomeOf(v.Status, v.Findings); out.Machine() && !out.Retried() {
+			// Too big for its context (#1160): no run again mends it.
+			next = "the line blocks it at once, no run again on the same input fitting better; a person narrows its " + work.Name(work.Scope) + ", or lowers code-lines-max in the tester's settings"
+		} else if out.Machine() {
 			// A machine error is no refusal of the issue (ADR-0063, I3):
 			// the line keeps its labels, and runs it again.
 			next = "the line keeps its labels and runs the tester again, its comment saying when; past its tries, a person reads it"
