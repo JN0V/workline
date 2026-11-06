@@ -155,11 +155,12 @@ type checks struct {
 }
 
 // knownNeeds: the needs-input answers an open issue says end with no
-// status: the product owner's from the engine or a person (#1082). The
-// tester's is held, and the developer's, its file outside the Scope
-// asked of the product owner (#1084, ADR-0063 §9).
+// status: the product owner's from the engine. Its question, a person's,
+// is held: it waits on its reporter, said (#1082). The tester's is
+// held, and the developer's, its file outside the Scope asked of the
+// product owner (#1084, ADR-0063 §9).
 func knownNeeds(cl call) bool {
-	return cl.Role == "product-owner" && (cl.Kind == needsEngine || cl.Kind == needsPerson)
+	return cl.Role == "product-owner" && cl.Kind == needsEngine
 }
 
 func (c checks) on(p string) bool {

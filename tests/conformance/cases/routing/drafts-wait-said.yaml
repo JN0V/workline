@@ -1,0 +1,33 @@
+case: routing/drafts-wait-said
+about: >
+  Drafts waiting on a person's yes, within the product owner's delay
+  (#1082): the issue was left silent in refine, acted on, its body as
+  then. Now the line says they wait on a person, and the day the
+  product owner takes them as written: 24 h after its first comment, as
+  the forge dates it, the issue never labelled workline:draft. Nothing
+  runs, nothing is written.
+given:
+  repo: backlog
+  config:
+    routing: {events: {issue: [product-owner]}}
+  forge:
+    issues:
+      - id: 9
+        title: "workline version --verbose=false"
+        author: ann
+        insider: true
+        labels: [workline:to-refine, workline:proposed]
+        body: "## Need\n\nWhen I run `workline version --verbose=false`, I want the plain line, so my scripts read it.\n\n## Validation\n\n<!-- workline:draft -->\n\n- **Plain line:** Given workline installed, When I run `workline version --verbose=false`, Then it prints one line.\n\n---\n\n## Verification\n\nA test runs the command and reads one line.\n\n## Scope\n\nsrc/export/csv.go"
+        comments:
+          - {body: "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->", created: "2099-01-01T09:00:00Z"}
+          - "**workline's line** last woke the product owner on this issue, in its state refine (1 state step so far).\n\n<!-- workline:line-record {\"state\":\"refine\",\"body\":\"1cf7c41e922f\",\"hops\":1} -->\n<!-- workline:sticky=line/state -->"
+run: {route: reconcile, ai: none}
+expect:
+  status: pass
+  agent-calls: 0
+  findings:
+    - {rule: state-waits, level: info, where: "#9", message: "its drafts wait on a person's yes: the product-owner takes them as written on 2099-01-02 09:00 UTC (acts.ask.wait: 24 h)"}
+  no-findings: [{rule: state-acted}, {rule: state-timeout}, {rule: state-wakes}]
+  forge:
+    issues:
+      - {id: 9, labels: [workline:to-refine, workline:proposed], comments: 2}

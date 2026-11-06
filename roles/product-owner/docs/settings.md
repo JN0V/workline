@@ -77,6 +77,9 @@ Need or Validation draft no person accepted, waits for an answer
   body that never had the label: from the role's first comment on it
   ([#1021](https://github.com/JN0V/workline/issues/1021)).
 - **An answer before the delay** cancels it: no assumption.
+- **While it waits**, the line says so on each reconcile: on whom, and
+  the day the assumption is taken
+  ([#1082](https://github.com/JN0V/workline/issues/1082)).
 - **Past the delay**, the line wakes the role once, with no agent until
   then; one agent call writes the assumption
   ([on the issue](writing.md#assumptions)). A draft needs none: the

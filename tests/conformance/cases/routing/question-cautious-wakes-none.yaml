@@ -1,7 +1,8 @@
 case: routing/question-cautious-wakes-none
 about: >
   Cautious waits for the answer, however long (ADR-0060): a question
-  unanswered for a week wakes no role; the issue waits in refine.
+  unanswered for a week wakes no role; the issue waits in refine, said
+  with the question's day (#1082).
 given:
   repo: backlog
   config:
@@ -27,4 +28,6 @@ expect:
   status: pass
   agent-calls: 0
   summary: "reconcile: 0 issues due:"
-  no-findings: [{rule: state-timeout}]
+  findings:
+    - {rule: state-waits, level: info, where: "#10", message: "its question of 2026-10-01 23:50 UTC waits on its reporter, until it is answered (acts.ask.wait: never)"}
+  no-findings: [{rule: state-timeout}, {rule: state-acted}]

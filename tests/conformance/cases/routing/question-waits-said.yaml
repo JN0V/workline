@@ -1,0 +1,33 @@
+case: routing/question-waits-said
+about: >
+  A question the product owner asked its reporter, unanswered, within
+  its delay (#1082): the issue was left silent in refine, acted on, its
+  body as then. Now the line says it waits on its reporter, and the day
+  the product owner takes its assumption: 24 h after the question, as
+  the forge dates its comment. Nothing runs, nothing is written.
+given:
+  repo: backlog
+  config:
+    routing: {events: {issue: [product-owner]}}
+  forge:
+    issues:
+      - id: 9
+        title: "workline version --verbose=false"
+        author: ann
+        insider: true
+        labels: [workline:to-refine]
+        body: "## Need\n\nWhen I run `workline version --verbose=false`, I want the plain line, so my scripts read it.\n\n## Validation\n\n- **Plain line:** Given workline installed, When I run `workline version --verbose=false`, Then it prints one line.\n\n---\n\n## Verification\n\nA test runs the command and reads one line.\n\n## Scope\n\nsrc/export/csv.go"
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - {body: "@ann, to refine this issue: Should `--verbose=false` print the plain line, as `--short` does?\n\n<!-- workline:product-owner/ask -->", created: "2099-01-01T09:00:00Z"}
+          - "**workline's line** last woke the product owner on this issue, in its state refine (1 state step so far).\n\n<!-- workline:line-record {\"state\":\"refine\",\"body\":\"206c8bcea856\",\"hops\":1} -->\n<!-- workline:sticky=line/state -->"
+run: {route: reconcile, ai: none}
+expect:
+  status: pass
+  agent-calls: 0
+  findings:
+    - {rule: state-waits, level: info, where: "#9", message: "its question of 2099-01-01 09:00 UTC waits on its reporter: the product-owner takes its assumption on 2099-01-02 09:00 UTC (acts.ask.wait: 24 h)"}
+  no-findings: [{rule: state-acted}, {rule: state-timeout}, {rule: state-wakes}]
+  forge:
+    issues:
+      - {id: 9, labels: [workline:to-refine], comments: 3}

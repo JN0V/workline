@@ -11,6 +11,7 @@ package line
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/engine"
@@ -48,34 +49,73 @@ func (t *tally) askWait() backlog.Delay {
 // timedOut says what of an issue in refine waits on a person past the
 // product owner's delay: the key the record keeps, so it wakes the role
 // once for it, and what the line says; "" when nothing does, or the
-// record holds that key already.
-func timedOut(b forge.Backlog, t *tally, is forge.Issue, notes []forge.Note, rec Record) (key, said string, err error) {
+// record holds that key already. waits: what the line says of a wait on
+// a person within the delay, or with none (acts.ask.wait: never), the
+// day it times out (#1082): never silent while it waits; "" when
+// nothing waits on a person, or the delay passed.
+func timedOut(b forge.Backlog, t *tally, is forge.Issue, notes []forge.Note, rec Record) (key, said, waits string, err error) {
 	w := t.askWait()
-	if w.Never {
-		return "", "", nil
-	}
 	now := clock().UTC()
-	if s, due := backlog.SilenceDue(notes, backlog.Keeper, w, now); due {
+	s, open := backlog.Unanswered(notes, backlog.Keeper)
+	st, _, _ := backlog.ReadState(forge.Bodies(notes), backlog.Keeper)
+	if open && (st == nil || st.Assumed < s.Round) && !s.Due(w, st, now) {
+		waits = questionWaits(w, s, is.ID)
+	}
+	switch {
+	case open && s.Due(w, st, now):
 		key = fmt.Sprintf("ask=%d", s.Round)
 		said = fmt.Sprintf("its question of %s got no answer in %s (acts.ask.wait): the %s takes its assumption",
-			s.Since.UTC().Format("2006-01-02 15:04 UTC"), w.Say(), backlog.Keeper)
-	} else if st, _, _ := backlog.ReadState(forge.Bodies(notes), backlog.Keeper); !backlog.Readied(is) && backlog.OnlyDrafts(is, st) {
-		passed := w.D == 0
-		if !passed {
+			day(s.Since), w.Say(), backlog.Keeper)
+	case !backlog.Readied(is) && backlog.OnlyDrafts(is, st):
+		at, since, known := w.D == 0 && !w.Never, time.Time{}, false
+		if !at {
 			trail, err := b.Trail(is.ID, backlog.LabelDraft)
 			if err != nil {
-				return "", "", err
+				return "", "", "", err
 			}
-			since, known := backlog.DraftsSince(trail.Labeled, notes, is)
-			passed = known && w.Passed(since, now)
+			since, known = backlog.DraftsSince(trail.Labeled, notes, is)
 		}
-		if passed {
+		if at || known && w.Passed(since, now) {
 			key = "drafts=" + bodyHash(is.Body)
 			said = fmt.Sprintf("its drafts got no answer in %s (acts.ask.wait): the %s takes them as written", w.Say(), backlog.Keeper)
+		} else if waits == "" {
+			waits = draftsWait(w, since, known, is.ID)
 		}
 	}
-	if key == "" || key == rec.Timeout {
-		return "", "", nil
+	if key != "" && key == rec.Timeout {
+		key, said = "", "" // woken once for it already
 	}
-	return key, said, nil
+	if key != "" {
+		waits = "" // due, not waiting
+	}
+	return key, said, waits, nil
 }
+
+// questionWaits is what the line says of a question s waiting on its
+// reporter, the delay w not passed, or none: the day it times out.
+func questionWaits(w backlog.Delay, s backlog.Silence, id int) string {
+	switch {
+	case !s.Dated:
+		return fmt.Sprintf("its question waits on #%d's reporter: the forge does not date it, so no assumption is taken until it is answered", id)
+	case w.Never:
+		return fmt.Sprintf("its question of %s waits on its reporter, until it is answered (acts.ask.wait: %s)", day(s.Since), backlog.WaitNever)
+	}
+	return fmt.Sprintf("its question of %s waits on its reporter: the %s takes its assumption on %s (acts.ask.wait: %s)",
+		day(s.Since), backlog.Keeper, day(s.Since.Add(w.D)), w.Say())
+}
+
+// draftsWait is what the line says of drafts waiting on a person's yes
+// since since (known), the delay w not passed, or none.
+func draftsWait(w backlog.Delay, since time.Time, known bool, id int) string {
+	switch {
+	case !known:
+		return fmt.Sprintf("its drafts wait on a person's yes on #%d: the forge does not say since when, so they are not taken as written until one is given", id)
+	case w.Never:
+		return fmt.Sprintf("its drafts, since %s, wait on a person's yes (acts.ask.wait: %s)", day(since), backlog.WaitNever)
+	}
+	return fmt.Sprintf("its drafts wait on a person's yes: the %s takes them as written on %s (acts.ask.wait: %s)",
+		backlog.Keeper, day(since.Add(w.D)), w.Say())
+}
+
+// day is a moment as the line says it.
+func day(t time.Time) string { return t.UTC().Format("2006-01-02 15:04 UTC") }
