@@ -226,6 +226,7 @@ func RunWith(repo, name string, o Options) (*verdict.Verdict, *Added) {
 	}
 	if ch != nil {
 		v.Findings = append(v.Findings, ch.suppressions(g.Checks)...)
+		v.Findings = append(v.Findings, linted(repo, g, ch)...)
 	}
 	enforce(v, g)
 	if v.Status == verdict.Pass {
