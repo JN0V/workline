@@ -18,5 +18,5 @@ expect:
   forge:
     issues:
       - id: 2
-        labels: ["workline:ready", "To do", "workline:developing"]
+        labels: ["To do", "workline:developing"]
         comment-lacks: ["Its card moved", '"board":']

@@ -23,6 +23,6 @@ expect:
   forge:
     issues:
       - id: 2
-        labels: ["workline:ready", "workline:developing"]
+        labels: ["workline:developing"]
         status: {"3": "In Progress"}
         comment-contains: ["Its card moved to `In Progress` on the board \"Team plan\"", '"board":{"board":"Team plan","column":"In Progress","project":3}']

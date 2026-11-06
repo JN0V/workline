@@ -16,4 +16,4 @@ expect:
   summary: "took #2"
   forge:
     issues:
-      - {id: 2, labels: ["workline:ready", "bug", "workline:developing", "Doing"]}
+      - {id: 2, labels: ["bug", "workline:developing", "Doing"]}

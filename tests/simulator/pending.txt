@@ -16,38 +16,9 @@ trial-34 i1-status expected-end
 trial-5-fresh i1-status expected-end
 # Developing, its pull request's round not known: the issue says nothing.
 trial-36 i1-status
-# The developer's claim puts workline:developing on beside
-# workline:ready, never a move (ADR-0059 §2: one state at a time; #1081).
-# The eleventh run's bugs, a test that does not build (asked again, as
-# #1048 fixed), a miscounted hunk (#1075's shape: read at once), each
-# then reach Done.
-trial-3-fresh one-state-label
-trial-4-fresh one-state-label
-trial-16-fresh one-state-label
-trial-18-fresh one-state-label
-workline-1002 one-state-label
-workline-1003 one-state-label
-workline-1004 one-state-label
-trial-3-broken-test one-state-label
-trial-3-hunk-test one-state-label
-trial-3-hunk-code one-state-label
-# The developer's code that does not build, asked again with the error
-# (#1083), and its agent run failing once, run again after the back-off
-# (#1085): each then reaches Done, past the claim's two labels (#1081).
-trial-3-broken-code one-state-label
-trial-3-error-code one-state-label
-# The developer's new test file beside its Scope, alone (#1061): kept by
-# the write fence, no ask; its fix asked again in its step, then Done, past the
-# claim's two labels (#1081).
-trial-35-test-beside one-state-label
 # The product owner's answer unreadable twice in its run: the same tick's
 # second reconcile asks it a third time, on the same input (#1090).
 trial-35-po-unread same-tick-twice
-# The code the product owner names, or the tester says it lacks (#1047,
-# #1059), is given at once, the role run again in its step (ADR-0063,
-# §5); then the claim's two labels (#1081).
-trial-35-needs-engine one-state-label
-trial-35-tester-needs one-state-label
 # Replayed, the trial's first product owner answer, read through the
 # engine's reader, then the silent park: the spec reviewer that woke it
 # again in the trial is not on the simulator's line, and an act refused
@@ -56,10 +27,10 @@ trial-35-tester-needs one-state-label
 # the fake forge dating no comment the line writes, nor the draft label.
 # traces/answers/<trace>/parts says where each
 # parts, and the answers left unused. #3's code named is given at once,
-# and it goes on to its tests, then the claim's two labels; its
-# developer's agent wrote no code, so past claim-hours on the same body
-# it waits on a person, blocked, never run again on that input.
-trial-3-replay one-state-label expected-end
+# and it goes on to its tests; its developer's agent wrote no code, so
+# past claim-hours on the same body it waits on a person, blocked, never
+# run again on that input.
+trial-3-replay expected-end
 trial-4-replay i1-status expected-end
 trial-5-replay i1-status expected-end
 trial-16-replay i1-status expected-end
@@ -75,7 +46,3 @@ trial-36-replay i1-status expected-end
 # (#1091); then refine-capped, no status, blocked for the week, read
 # again at its end (its K ticks from there not over: quiet).
 trial-37-replay same-tick-twice i1-status expected-end
-# Blocked by the machine before runs had typed outcomes: read again at
-# once (ADR-0063, migration), unblocked, then the claim's two labels.
-trial-19 one-state-label
-trial-37 one-state-label

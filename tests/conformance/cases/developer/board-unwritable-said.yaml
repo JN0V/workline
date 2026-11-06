@@ -27,4 +27,4 @@ expect:
     - {rule: board-unwritable, level: info, where: "the GitHub project #3", message: "its Status is not written: give workline's GitHub App *Organization projects: read and write*"}
   forge:
     issues:
-      - {id: 2, labels: ["workline:ready", "workline:developing"], status: {"3": "Todo"}}
+      - {id: 2, labels: ["workline:developing"], status: {"3": "Todo"}}

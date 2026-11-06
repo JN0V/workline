@@ -1,0 +1,18 @@
+case: developer/claim-moves-ready-to-developing
+about: >
+  The developer's claim moves its issue from Ready to Doing (ADR-0059,
+  §2: one state at a time; #1081): workline:developing on and
+  workline:ready off, in one call, with no board on the forge. Left on,
+  workline:ready showed the issue in two states, free to take and taken.
+given:
+  repo: tested
+  forge:
+    issues:
+      - {id: 2, title: "Multiply", labels: ["workline:ready", "bug"], body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: a `mul` function.\n"}
+run: {develop: [], ai: "fake:developer-nothing"}
+expect:
+  status: pass
+  summary: "took #2"
+  forge:
+    issues:
+      - {id: 2, labels: ["bug", "workline:developing"], comment-contains: ["**The developer** takes this issue"]}
