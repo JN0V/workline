@@ -474,7 +474,9 @@ whose result moves the issue to the next. The table is the routing's
   input gives the same prompt, so the step itself moves the issue to
   `workline:blocked`, the size, the budget and what to change said
   (`machine-error-size`); a record from before, its kind `budget`, the
-  same at the next run. The tester's comment says so.
+  same at the next run. The tester's comment says so. Blocked is a
+  stopgap, until [ADR-0064 step 3](../adr/0064-size-is-a-target-not-a-wall.md#build-plan)
+  hands it to the product owner.
 - **The code a role lacks is given**: the product owner naming the
   code an issue is about (`sources`) that its task did not give
   ([the code picker](code-picker.md)), its Scope left for that code, or
