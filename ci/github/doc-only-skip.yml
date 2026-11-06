@@ -1,0 +1,46 @@
+# Your own build and tests skipped on a doc-only pull request, on GitHub
+# Actions — copy to .github/workflows/ci.yml and put your builds in `build`.
+# Not a workline job: the way to keep a project's heavy jobs from running
+# for a change that cannot alter them (docs/ci.md, "A doc-only merge request").
+#
+# A first job, `changes`, tells what changed (dorny/paths-filter); the heavy
+# jobs are skipped with `if:`. A skipped job reports success, so a required
+# check named after it still passes.
+#
+# Never `paths-ignore` on the workflow's `on:`: the workflow then does not
+# run at all, its required checks stay "Expected — waiting for status" and
+# the pull request can never merge.
+name: ci
+on:
+  push: {branches: [main]}
+  pull_request:
+permissions: {contents: read, pull-requests: read}
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          # `every`: a file counts as code only if it matches ALL the patterns,
+          # so the negations exclude. The default (`some`) ORs them, and '**'
+          # would match every file, docs included.
+          predicate-quantifier: every
+          filters: |
+            code:
+              - '**'
+              - '!docs/**'
+              - '!**/*.md'
+  build:
+    needs: changes
+    # on main, always: a push is never skipped
+    if: github.event_name == 'push' || needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - run: echo "your build and tests here"
