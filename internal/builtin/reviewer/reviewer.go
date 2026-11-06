@@ -398,6 +398,11 @@ func prepare(runDir, repo string, s Settings) int {
 	}
 	var unread []verdict.Finding
 	st.Issues, unread = readIssues(repo, ids, s.IssueLinesMax)
+	// An issue cut is said once the lenses are asked to read it, with
+	// the testimony's: a change no lens reads says why, not what they
+	// would have read.
+	issueCuts := slices.DeleteFunc(slices.Clone(unread), func(f verdict.Finding) bool { return f.Rule != verdict.CutRule })
+	unread = slices.DeleteFunc(unread, func(f verdict.Finding) bool { return f.Rule == verdict.CutRule })
 	st.Advisories = append(st.Advisories, unread...)
 	skip, err := unasked(repo, s.Lenses, st.Issues, ids)
 	if err != nil {
@@ -452,7 +457,8 @@ func prepare(runDir, repo string, s Settings) int {
 	if why != "" {
 		return tooLarge(runDir, repo, s, st, why)
 	}
-	if cut > 0 { // said once the lenses are asked to read it
+	st.Advisories = append(st.Advisories, issueCuts...) // said once the lenses are asked to read them
+	if cut > 0 {
 		st.Advisories = append(st.Advisories, cutSaid("", "what the author says (the commit messages, the merge request)", cut, s.TestimonyLines, "testimony-lines-max"))
 	}
 	if err := writeJSON(filepath.Join(runDir, "in", "review-state.json"), st); err != nil {
