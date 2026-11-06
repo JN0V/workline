@@ -1,0 +1,13 @@
+# The product owner, given #9's code, rewrites the Scope it had marked
+# a guess; it proposes a Scope for #10 too, whose Scope a person wrote
+# (the DomoticsCore copy's #47, #1126).
+- refine:
+    issue: 9
+    scope: "`src/export/csv.go`: `WriteRows` stops one row short."
+    sources: [src/export/csv.go]
+    why: "The code is read now: the guess is replaced by the cause."
+- refine:
+    issue: 10
+    scope: "`src/export/csv.go`: `WriteRows` stops one row short."
+    sources: [src/export/csv.go]
+    why: "The code is read now."
