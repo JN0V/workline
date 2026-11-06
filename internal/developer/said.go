@@ -81,8 +81,13 @@ func stale(b forge.Backlog, issues []forge.Issue, mrs []forge.MergeRequest, s Se
 			// Its agent wrote no code, and the issue's body changed since
 			// the claim read it: a new input, let go at once (#1084).
 			changed, err := bodyChanged(b, is)
-			if err != nil {
+			if errors.Is(err, forge.ErrUnreachable) {
 				return nil, nil, err
+			}
+			if err != nil {
+				found = append(found, verdict.Finding{Rule: "claim-body-unknown", Level: "warn", Where: where,
+					Message: "its claim's comment could not be read (" + forge.Said(err) + "): kept until claim-hours"})
+				continue
 			}
 			if !changed {
 				continue

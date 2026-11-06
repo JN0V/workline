@@ -1,14 +1,9 @@
 package line
 
-// A claim with no pull request is never silent (#1084). The developer
-// claims an issue, its agent writes no code: no pull request, and the
-// claim waits to be let go at a developer's run past claim-hours. Doing
-// wakes no role, so nothing ran that run. The line now wakes the
-// developer on such a claim once its claim-hours have passed, or once
-// the issue's body changed since the claim read it: the developer's run
-// lets the claim go, and the issue, free again, is woken for it as any
-// claim let go (freed.go). Until then, the line says the day the claim
-// is let go.
+// A claim with no pull request is never silent (#1084): Doing wakes no
+// role, so the line wakes the developer on it past claim-hours, or once
+// its body changed since a claim that wrote no code; the developer's run
+// lets it go. Until then, the line says the day it is let go.
 
 import (
 	"fmt"
@@ -44,10 +39,19 @@ func (t *tally) claimHours() int {
 	return t.hours
 }
 
-// claimed says whether is carries the label of the developer's claim.
-func claimed(cfg *routing.Config, is forge.Issue) bool {
+// claimNoPR says whether is carries the label of the developer's claim
+// and no open merge request closes it; false when they cannot be read.
+func claimNoPR(cfg *routing.Config, b forge.Backlog, t *tally, is forge.Issue) bool {
 	doing, ok := cfg.State(doingState)
-	return ok && slices.Contains(is.Labels, doing.Label)
+	if !ok || !slices.Contains(is.Labels, doing.Label) || t.mergeRequests(b, "whether a claim has its pull request") != nil {
+		return false
+	}
+	return !closedByMR(t, is.ID)
+}
+
+// closedByMR says whether an open merge request t read closes issue id.
+func closedByMR(t *tally, id int) bool {
+	return slices.ContainsFunc(t.mrs, func(m forge.MergeRequest) bool { return slices.Contains(forge.Closes(m.Title, m.Body), id) })
 }
 
 // claimStep reads an issue the developer claimed: done false when it
@@ -64,7 +68,7 @@ func claimStep(res *Result, cfg *routing.Config, b forge.Backlog, t *tally, s ro
 	if err := t.mergeRequests(b, "whether a claim has its pull request"); err != nil {
 		return nil, false, err
 	}
-	if slices.ContainsFunc(t.mrs, func(m forge.MergeRequest) bool { return slices.Contains(forge.Closes(m.Title, m.Body), is.ID) }) {
+	if closedByMR(t, is.ID) {
 		return nil, false, nil
 	}
 	rec, had, _, _, notes, err := readRecordAll(b, is.ID)

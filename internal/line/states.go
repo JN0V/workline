@@ -584,7 +584,7 @@ func reconcile(res *Result, cfg *routing.Config, o engine.Options) *Result {
 			name = backlog.Keeper // read again when there is news (revisit.go)
 		}
 		left := name == "" || o.Inputs[SkipInput] != "" && slices.Contains(skip, name)
-		if name == "" && claimed(cfg, is) {
+		if name == "" && claimNoPR(cfg, b, t, is) {
 			left = false // a claim with no pull request: read, never silent (claimwait.go)
 		}
 		if left && cfg.StaleDays(s.Name) == 0 {
