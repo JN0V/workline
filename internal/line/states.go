@@ -182,13 +182,15 @@ func stateOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, 
 		st, _, _ := backlog.ReadState(comments, name) // one that does not read gives none to rewrite
 		ok = len(backlog.Unrevised(is, st, comments)) > 0
 	}
+	personWaits := "" // a question, or drafts, waiting on a person within the delay (#1082)
 	if !ok && s.Name == refineState && name == backlog.Keeper {
 		// A question, or drafts, waiting on a person past the product
 		// owner's delay: woken once, to take its assumption (ADR-0060).
-		key, said, err := timedOut(b, t, is, notes, rec)
+		key, said, waits, err := timedOut(b, t, is, notes, rec)
 		if err != nil {
 			return nil, nil, err
 		}
+		personWaits = waits
 		if key != "" {
 			ok, now.Timeout = true, key
 			res.Findings = append(res.Findings, verdict.Finding{Rule: "state-timeout", Level: "info", Where: where, Message: said})
@@ -255,6 +257,12 @@ func stateOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, 
 				Message: why + ": moved to " + BlockedState + "; the tester said: " + reason})
 			return nil, &StateWrite{Issue: is.ID, Record: blocking(rec, s.Name, why+"; the tester said: "+reason, comments), Blocked: why + "; the tester said: " + reason}, nil
 		}
+	}
+	if !ok && personWaits != "" {
+		// Acted on, and what it lacks is a person's: said, with the day
+		// the product owner takes its assumption, never silent (#1082).
+		res.Findings = append(res.Findings, verdict.Finding{Rule: "state-waits", Level: "info", Where: where, Message: personWaits})
+		return nil, nil, nil
 	}
 	if !ok {
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "state-acted", Level: "info", Where: where,

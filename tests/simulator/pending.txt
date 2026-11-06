@@ -43,18 +43,18 @@ trial-35-test-beside one-state-label
 # The product owner's answer unreadable twice in its run: the same tick's
 # second reconcile asks it a third time, on the same input (#1090).
 trial-35-po-unread same-tick-twice
-# The product owner's question: no status after it, the silent park
-# (#1082). The code it names, or the tester says it lacks (#1047,
+# The code the product owner names, or the tester says it lacks (#1047,
 # #1059), is given at once, the role run again in its step (ADR-0063,
 # §5); then the claim's two labels (#1081).
 trial-35-needs-engine one-state-label
 trial-35-tester-needs one-state-label
-trial-35-needs-person needs-input-on-its-source i1-status expected-end
 # Replayed, the trial's first product owner answer, read through the
 # engine's reader, then the silent park: the spec reviewer that woke it
 # again in the trial is not on the simulator's line, and an act refused
-# or a question asked leaves no status (#1082). #33 names its heap suite
-# and asks its reporter. traces/answers/<trace>/parts says where each
+# leaves no status. #33 names its heap suite and asks its reporter, #34
+# drafts: each waits on a person, said (#1082), never taken as assumed,
+# the fake forge dating no comment the line writes, nor the draft label.
+# traces/answers/<trace>/parts says where each
 # parts, and the answers left unused. #3's code named is given at once,
 # and it goes on to its tests, then the claim's two labels, then
 # Developing says nothing, as #36.
@@ -64,8 +64,8 @@ trial-5-replay i1-status expected-end
 trial-16-replay i1-status expected-end
 trial-19-replay i1-status expected-end
 trial-20-replay i1-status expected-end
-trial-33-replay i1-status expected-end
-trial-34-replay i1-status expected-end
+trial-33-replay expected-end
+trial-34-replay expected-end
 trial-35-replay i1-status expected-end
 trial-36-replay i1-status expected-end
 # The product owner names WebUI.h, given at once in its step; its next
