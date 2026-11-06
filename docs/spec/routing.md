@@ -537,9 +537,11 @@ whose result moves the issue to the next. The table is the routing's
   or a person's yes on its drafts, and the day the product owner takes
   its assumption, never silent
   ([#1082](https://github.com/JN0V/workline/issues/1082)).
-  Its drafts' own body, or the reviewer's review of it with nothing
-  important open, make the step due no sooner: the product owner could
-  write nothing; a person's comment it has not read does
+  Its drafts' own body — the one its state's digest names —, or the
+  reviewer's review of it with nothing important open, make the step
+  due no sooner: the product owner could write nothing. A person's edit
+  since (even one a night review read), a comment it has not read, a
+  label put on again, or an important finding does
   ([#1127](https://github.com/JN0V/workline/issues/1127)).
 - **Left unrefined, due again**
   ([ADR-0059, amended](../adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#amendment-2026-11-03-an-issue-left-unrefined-is-woken-again)):
