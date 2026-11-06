@@ -842,6 +842,11 @@ func Pre(runDir, repo string) int {
 			pick := picker.Pick(a)
 			codeLeft -= share - pick.Left
 			picks, pickedFor = append(picks, pick), append(pickedFor, d.is.ID)
+			if c := pick.Cut(); c != "" {
+				t.cuts = append(t.cuts, verdict.Finding{Rule: verdict.CutRule, Level: "warn", Where: fmt.Sprintf("#%d", d.is.ID),
+					Message: fmt.Sprintf("the code given to the product owner's agent for it is cut past code-lines-max (its share: %d of %d lines): %s; raise %s",
+						share, s.CodeLinesMax, c, verdict.Setting("product-owner", "code-lines-max"))})
+			}
 			files := pick.Named()
 			noCode = noCode || len(files) == 0
 			review := written + kindAsked(d.is, d.st, kindAct)
@@ -1030,6 +1035,7 @@ func Pre(runDir, repo string) int {
 		findings = append(findings, verdict.Finding{Rule: "issues-cut", Level: "info",
 			Message: fmt.Sprintf("%d of the issues to read left for the next run, read first then (%s): with them, the task would be over the role's context budget", len(cut), strings.Join(ids, ", "))})
 	}
+	findings = append(findings, t.cuts...)
 	fallback = append(fallback, t.reads...)
 	readIDs, judged = t.ids, len(t.ids)
 	wasRead := t.wasRead
@@ -1135,6 +1141,9 @@ type taskBuilt struct {
 	// codeGiven are the files given, a line an issue read: its number,
 	// then the paths (backlog.CodeGivenFile).
 	codeGiven []string
+	// cuts are what code-lines-max left out of the code each issue names,
+	// said to the person (#1159).
+	cuts []verdict.Finding
 }
 
 // askedAgainChars is the room kept in the prompt for an answer asked again:

@@ -1,0 +1,25 @@
+case: product-owner/code-cut-said-with-its-setting
+about: >
+  An issue naming a file of 400 lines, code-lines-max set to 100: the
+  product owner gives its agent part of the file, and says so to the
+  person in its run, not to the agent alone (#1159): the issue, how many
+  lines were given of how many, and the setting that raises it. The other
+  issue, naming a file of 5 lines, has nothing cut and nothing said.
+given:
+  repo: backlog
+  setup:
+    - "awk 'BEGIN { for (i = 1; i <= 400; i++) printf \"// line %d\\n\", i }' > src/big.go && printf '// small\\n// file\\n// of\\n// five\\n// lines\\n' > src/small.go && git add src && git commit -qm 'feat: a big file and a small one'"
+  config:
+    roles: {product-owner: {settings: {code-lines-max: 100}}}
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "Rows lost in `src/big.go`.", labels: [], comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 10, title: "Small thing", body: "A typo in `src/small.go`.", labels: [], comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: "cmd:cat > /dev/null; echo '[]'"}
+expect:
+  status: pass
+  findings:
+    - {rule: input-cut, level: warn, where: "#9", message: "the code given to the product owner's agent for it is cut past code-lines-max (its share: "}
+    - {rule: input-cut, where: "#9", message: "of the 400 lines of the files named given (`src/big.go` "}
+    - {rule: input-cut, where: "#9", message: "raise roles.product-owner.settings.code-lines-max in .workline/config.yaml"}
+  no-findings: [{rule: input-cut, where: "#10"}]
