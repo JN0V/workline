@@ -83,8 +83,13 @@ func (p *Plan) recordDone(c Proposal) {
 // the issue's ready off — `workline:ready` or, on its way there,
 // `workline:needs-tests` —, as the forge's label events say: a move of
 // the line (ADR-0059), never a ready a person undid. A forge that keeps
-// no label events: an issue back in refine or blocked is read so.
+// no label events: an issue back in refine or blocked is read so. An
+// issue in doing — the developer's claim — moved on by the line, whoever
+// took the label off: a person's token runs the developer on a PC.
 func MovedBack(f forge.Backlog, is forge.Issue) (bool, error) {
+	if slices.Contains(is.Labels, StateLabel("doing")) {
+		return true, nil
+	}
 	if events, err := f.LabelEvents(is.ID); err == nil {
 		for i := len(events) - 1; i >= 0; i-- {
 			if e := events[i]; !e.Added && (e.Label == LabelReady || e.Label == LabelNeedsTests) {

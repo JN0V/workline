@@ -73,7 +73,9 @@ claim is a label, on every forge:
 - **A comment** saying it took the issue and what it passed over, with
   a hidden line, `workline:developer-act`: the commit the run read, the
   issue, the issues passed and why. The auditor reads it (below).
-- **A person takes it back**: remove the label, or assign themselves.
+- **A person takes it over**: assign themselves. To give it back to
+  the line, swap the label for `workline:ready`: the label taken off
+  alone leaves the issue in no state, off the line.
 - **Its card to Doing**, on a board with a doing column
   ([boards](../../../docs/boards.md)). The comment and its hidden line
   say the move, or why it is left:

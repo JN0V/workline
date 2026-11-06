@@ -43,8 +43,9 @@ Each act done alone a person may undo is kept in its issue's state:
 - found at the next run: that kind is proposed on that issue from then on;
 - never a move of the line: a ready that workline's own account took
   off, as the forge's label events say — the tester finding no test
-  possible — is no ready undone, and one an older engine kept so is
-  taken off the state
+  possible — is no ready undone, nor one swapped for the developer's
+  claim, whoever took it off; one an older engine kept so is taken off
+  the state
   ([ADR-0059](../../../docs/adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md));
 - undone `undone-max` (3) times across the open issues: proposed on every
   issue (`demoted`), until fewer are; a run woken for one issue counts

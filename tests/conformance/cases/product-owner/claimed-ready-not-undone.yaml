@@ -1,0 +1,30 @@
+case: product-owner/claimed-ready-not-undone
+about: >
+  A ready the role did, then the developer's claim — `workline:ready`
+  swapped for `workline:developing` — is the line's own move from Ready
+  to Doing, whoever's token took the label off: a person's, when the
+  developer runs on a PC, or none the forge says, when it keeps no
+  label events (#1081). Never an undo, never counted toward undone-max.
+  A person who takes the ready off and leaves the issue in no state
+  still undid it.
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "## Need\n\nA.", author: ann, insider: true, labels: [workline:developing],
+         label-events: [{label: workline:ready, added: false, author: ann, insider: true, created: "2026-11-01T03:27:54Z"}],
+         comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\ndone:\n  - {act: ready, level: normal}\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 10, title: "Totals wrong", body: "## Need\n\nA.", author: ann, insider: true, labels: [workline:developing],
+         comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\ndone:\n  - {act: ready, level: normal}\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 11, title: "Dates wrong", body: "## Need\n\nA.", author: ann, insider: true, labels: [],
+         comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\ndone:\n  - {act: ready, level: normal}\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: none}
+expect:
+  agent-calls: 0
+  findings:
+    - {rule: undone, where: "#11", message: "#11's label workline:ready taken off by a person"}
+  no-findings: [{rule: undone, where: "#9"}, {rule: undone, where: "#10"}, {rule: demoted}]
+  forge:
+    issues:
+      - {id: 9, labels: [workline:developing], comment-lacks: ["taken off by a person"]}
+      - {id: 10, labels: [workline:developing], comment-lacks: ["taken off by a person"]}

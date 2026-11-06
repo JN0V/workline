@@ -772,7 +772,8 @@ func (b Bounds) acceptance() []string {
 func claimBody(a Act, s Settings) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "**The developer** takes this issue: the first ready one nobody took, in the backlog's order. "+
-		"`%s` says so; a person who takes it back removes the label, or assigns themselves.\n", s.ClaimLabel)
+		"`%s` says so; a person who takes it over assigns themselves; one who gives it back to the line swaps it for `%s`: "+
+		"the label taken off alone leaves the issue in no state, off the line.\n", s.ClaimLabel, backlog.LabelReady)
 	if a.Board != nil {
 		fmt.Fprintf(&b, "\n%s\n", a.Board.Told())
 	}
