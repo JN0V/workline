@@ -41,6 +41,17 @@ write run the default branch's workflow, never a pull request's own
 
 ## Set up
 
+### The short form
+
+Take workline by reference: copy
+[workline-short.yml](../ci/github/workline-short.yml), about ten lines, to
+`.github/workflows/workline.yml`. It runs the same jobs on a pull request,
+a schedule (gardening) and the weekly sample, from the reusable workflow at
+the release it names. To move to a newer workline, change that one version;
+Dependabot's `github-actions` ecosystem reads it and proposes the change.
+
+### The full copy
+
 1. **Copy the workflows** into `.github/workflows/`:
    - [workline.yml](../ci/github/workline.yml): `judge` on each pull
      request, its own run: no write token; it warns when no workflow

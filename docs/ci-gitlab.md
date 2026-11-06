@@ -57,7 +57,28 @@ the judging jobs.
 
 ### 1. Include the template
 
-Copy [ci/gitlab/workline.gitlab-ci.yml](../ci/gitlab/workline.gitlab-ci.yml)
+**The short form**: reference the template at a release, without copying
+it ([workline-short.gitlab-ci.yml](../ci/gitlab/workline-short.gitlab-ci.yml),
+ten lines):
+
+```yaml
+stages: [test, deploy]
+include:
+  - project: JN0V/workline
+    ref: &workline v0.70.0
+    file: ci/gitlab/workline.gitlab-ci.yml
+workline:warn:child:
+  trigger:
+    include: [{project: JN0V/workline, ref: *workline, file: ci/gitlab/workline.gitlab-ci.yml}]
+```
+
+To move to a newer workline, change that `ref`; Renovate's `gitlabci`
+manager reads it and proposes the change. The project must reach
+`JN0V/workline` (a mirror on a self-managed instance). The warn child
+pipeline is started from that same release (the `workline:warn:child`
+override, which reuses the anchor), so the version is named once.
+
+**The full copy**: copy [ci/gitlab/workline.gitlab-ci.yml](../ci/gitlab/workline.gitlab-ci.yml)
 to `ci/` and add to `.gitlab-ci.yml`:
 
 ```yaml
