@@ -1,0 +1,29 @@
+case: tester/code-cut-said-with-its-setting
+about: >
+  A Scope file of 300 lines, code-lines-max set to 100: the tester gives
+  its agent the first lines, and says so to the person in its run, not to
+  the agent alone (#1159): what was cut, from how many lines to how many,
+  and the setting that raises it.
+given:
+  repo: tested
+  setup:
+    - "mkdir -p src && awk 'BEGIN { for (i = 1; i <= 300; i++) printf \"# line %d\\n\", i }' > src/long.sh && git add src && git commit -qm 'src' && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}", code-lines-max: 100}}}
+    routing: {events: {issue: [tester]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:needs-tests"]
+        body: "## Need\n\nI want to multiply.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n\n---\n\n## Scope\n\n- `src/long.sh`\n"
+run: {route: issue, target: {issue: 3}, open-merge-request: true, ai: "cmd:cat > /dev/null; echo '[]'"}
+expect:
+  agent-calls: 1
+  findings:
+    - {rule: input-cut, level: warn, message: "the code given to the tester's agent is cut past code-lines-max (100 lines): "}
+    - {rule: input-cut, message: "of the 300 lines of the files named given (`src/long.sh` "}
+    - {rule: input-cut, message: "raise roles.tester.settings.code-lines-max in .workline/config.yaml"}
+  no-findings: [{rule: input-cut, message: "lowered"}]
+  run-files:
+    in/task.md: {contains: ["### `src/long.sh`", "(cut: the first "]}

@@ -518,12 +518,28 @@ func runStateStep(res *Result, cfg *routing.Config, f forge.Forge, spec string, 
 	}
 	// A machine error moves nothing (ADR-0063, I3): its count kept in the
 	// record, said on the issue; the step runs again after the back-off,
-	// within the budget. Code said lacking once it was given waits for a
-	// person (needs-spent). Any other outcome starts them again.
+	// within the budget; a task too big for the context, never retried,
+	// waits for a person at once. Code said lacking once it was given
+	// waits for a person (needs-spent). Any other outcome starts them again.
 	w, now := st.write.Record, clock().UTC()
 	same := st.rec.State == w.State && st.rec.Body == w.Body && st.rec.Labeled == w.Labeled // the same input
 	st.write.Record.Errors, st.write.Record.Lost, st.write.Record.Needs = nil, "", nil
+	// blockNow moves the issue to Blocked in this step, said at once.
+	blockNow := func(rule, why string) {
+		var comments []string
+		if b, ok := f.(forge.Backlog); ok {
+			comments, _ = b.Comments(forge.Target{Kind: "issue", ID: st.write.Issue}) // none read: the next comment is news
+		}
+		res.Findings = append(res.Findings, verdict.Finding{Rule: rule, Level: "warn", Where: fmt.Sprintf("#%d", st.write.Issue), Message: why + ": moved to " + BlockedState})
+		st.write.Record = blocking(st.write.Record, st.from.Name, why, comments)
+		st.write.Blocked = why
+	}
 	switch {
+	case out.Machine() && !out.Retried():
+		// A task too big for the role's context (#1160): the same input
+		// gives the same prompt, so no try mends it; a person narrows the
+		// issue or changes the setting the run names, at once.
+		blockNow("machine-error-size", fmt.Sprintf("the %s's task is too big for its context: %s; a run again on the same input fails the same", st.role, oneLine(out.Said)))
 	case out.Machine():
 		prev := errorsOf(st.rec)
 		if !same {
@@ -533,14 +549,7 @@ func runStateStep(res *Result, cfg *routing.Config, f forge.Forge, spec string, 
 	case needsCode(out) && given:
 		// Said lacking again once given it (ADR-0063, §5): Waiting on a
 		// person, Blocked on the board, in this step, said at once.
-		why := fmt.Sprintf("the %s said again it lacks code in its state %s, given what it named: %s; a person names the files it needs in a comment", st.role, st.from.Name, oneLine(out.Said))
-		var comments []string
-		if b, ok := f.(forge.Backlog); ok {
-			comments, _ = b.Comments(forge.Target{Kind: "issue", ID: st.write.Issue}) // none read: the next comment is news
-		}
-		res.Findings = append(res.Findings, verdict.Finding{Rule: "needs-spent", Level: "warn", Where: fmt.Sprintf("#%d", st.write.Issue), Message: why + ": moved to " + BlockedState})
-		st.write.Record = blocking(st.write.Record, st.from.Name, why, comments)
-		st.write.Blocked = why
+		blockNow("needs-spent", fmt.Sprintf("the %s said again it lacks code in its state %s, given what it named: %s; a person names the files it needs in a comment", st.role, st.from.Name, oneLine(out.Said)))
 	case needsCode(out):
 		n := &Needs{Said: oneLine(out.Said), At: now.Format(time.RFC3339), Times: 1}
 		if same && st.rec.Needs != nil {

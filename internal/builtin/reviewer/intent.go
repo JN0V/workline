@@ -107,6 +107,7 @@ func readIssues(repo string, ids []int, limit int) ([]ClosedIssue, []verdict.Fin
 				continue
 			}
 			text = capLines(text, left, "the issue is cut here, past issue-lines-max")
+			said = append(said, cutSaid(fmt.Sprintf("#%d", id), "the issue the change closes", n, left, "issue-lines-max"))
 			n = left
 		}
 		left -= n
@@ -152,11 +153,12 @@ func saidByAuthor(t string) []string {
 // against it: the messages of the commits not reviewed yet, whole, and the
 // merge request's title and body; the commits reviewed before named. The
 // base's commits a merge brought in are not the author's (#134), nor those
-// left past commits-per-push (ADR-0050). Capped at limit lines.
-func testimony(repo string, st state, mr string, limit int) (string, error) {
+// left past commits-per-push (ADR-0050). Capped at limit lines; cut, the
+// lines it held.
+func testimony(repo string, st state, mr string, limit int) (string, int, error) {
 	log, err := git(repo, "log", "--format=- %h %s%n%w(0,2,2)%b", st.From+".."+st.lensTo(), "^"+st.Base)
 	if err != nil {
-		return "", err
+		return "", 0, err
 	}
 	var b strings.Builder
 	b.WriteString(testimonyHead + "### The commits\n\n")
@@ -168,12 +170,13 @@ func testimony(repo string, st state, mr string, limit int) (string, error) {
 	if st.From != st.Base {
 		before, err := git(repo, "log", "--format=- %h %s", st.Base+".."+st.From)
 		if err != nil {
-			return "", err
+			return "", 0, err
 		}
 		fmt.Fprintf(&b, "\nReviewed before, not shown here:\n\n%s", before)
 	}
 	if mr != "" {
 		fmt.Fprintf(&b, "\n### The merge request\n\n%s\n", mr)
 	}
-	return capLines(b.String(), limit, "what the author says is cut here, past testimony-lines-max"), nil
+	t, cut := cutLines(b.String(), limit, "what the author says is cut here, past testimony-lines-max")
+	return t, cut, nil
 }

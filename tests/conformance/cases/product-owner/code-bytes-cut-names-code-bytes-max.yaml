@@ -1,0 +1,23 @@
+case: product-owner/code-bytes-cut-names-code-bytes-max
+about: >
+  An issue naming a file of 400 lines, about 4,800 bytes: code-lines-max
+  at 1500 would give it whole, code-bytes-max set to 2000 does not. The
+  cut said in the run names the cap that made it, code-bytes-max, and
+  its setting — never code-lines-max, which did not cut (#1159).
+given:
+  repo: backlog
+  setup:
+    - "awk 'BEGIN { for (i = 1; i <= 400; i++) printf \"// line %d\\n\", i }' > src/big.go && git add src && git commit -qm 'feat: a big file'"
+  config:
+    roles: {product-owner: {settings: {code-lines-max: 1500, code-bytes-max: 2000}}}
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "Rows lost in `src/big.go`.", labels: [], comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: "cmd:cat > /dev/null; echo '[]'"}
+expect:
+  status: pass
+  findings:
+    - {rule: input-cut, level: warn, where: "#9", message: "is cut past code-bytes-max (2000 bytes): "}
+    - {rule: input-cut, where: "#9", message: "of the 400 lines of the files named given (`src/big.go` "}
+    - {rule: input-cut, where: "#9", message: "; raise roles.product-owner.settings.code-bytes-max in .workline/config.yaml"}
+  no-findings: [{rule: input-cut, message: "code-lines-max"}]

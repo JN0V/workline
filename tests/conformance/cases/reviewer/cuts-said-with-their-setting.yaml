@@ -1,0 +1,20 @@
+case: reviewer/cuts-said-with-their-setting
+about: >
+  testimony-lines-max set to 2 and code-lines-max to 5: the lenses read
+  the commit messages cut, and the file changed by its hunks, not whole.
+  Each cut is said to the person in the run, not to the agent alone
+  (#1159): what was cut, its size, the cap, and the setting that raises it.
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count' -m 'One line.' -m 'Two lines.' -m 'Three lines.'"]
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  config: {roles: {reviewer: {settings: {testimony-lines-max: 2, code-lines-max: 5}}}}
+run: {role: reviewer, event: review, input: {range: main..HEAD}, ai: "fake:review-diff-alone"}
+expect:
+  findings:
+    - {rule: input-cut, level: warn, message: "what the author says (the commit messages, the merge request) given to the reviewer's agent is cut from "}
+    - {rule: input-cut, message: " to 2 lines, past testimony-lines-max; raise roles.reviewer.settings.testimony-lines-max in .workline/config.yaml"}
+    - {rule: input-cut, message: "1 of the files changed given to the reviewer's agent by their hunks, not whole, past code-lines-max (5 lines in all): `calc/calc.go` ("}
+    - {rule: input-cut, message: "raise roles.reviewer.settings.code-lines-max in .workline/config.yaml"}
+  run-files:
+    in/parts/1-lenses/task.md: {contains: ["past testimony-lines-max"]}

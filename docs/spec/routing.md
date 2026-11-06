@@ -452,8 +452,7 @@ whose result moves the issue to the next. The table is the routing's
   `engine-error` (run: the run failed, any shape, a new one too),
   `agent-invalid-output` and `no-test-written` (answer),
   `patch-unreadable` (patch), `build-broken` (build: the tester's test
-  or the developer's code), `no-new-test` (report),
-  `prompt-over-budget` (budget). No label, no state, no hop: the record
+  or the developer's code), `no-new-test` (report). No label, no state, no hop: the record
   keeps the count by kind (`errors`), and its comment says the error and
   when the role runs again. The step is due again on the same input
   after 10 minutes (`state-retry`; before, `state-waits` with the time),
@@ -468,6 +467,16 @@ whose result moves the issue to the next. The table is the routing's
   agent objects to a frozen test beside it: the tester answers that.
   The tester's comment then says the line runs it again, never that it
   blocks it.
+- **A task too big for the context is never run again**
+  ([#1160](https://github.com/JN0V/workline/issues/1160)): a run that
+  blocked, its agent not asked for its prompt's size
+  (`prompt-over-budget`), is a machine error of kind size. The same
+  input gives the same prompt, so the step itself moves the issue to
+  `workline:blocked`, the size, the budget and what to change said
+  (`machine-error-size`); a record from before, its kind `budget`, the
+  same at the next run. The tester's comment says so. Blocked is a
+  stopgap, until [ADR-0064 step 3](../adr/0064-size-is-a-target-not-a-wall.md#build-plan)
+  hands it to the product owner.
 - **The code a role lacks is given**: the product owner naming the
   code an issue is about (`sources`) that its task did not give
   ([the code picker](code-picker.md)), its Scope left for that code, or

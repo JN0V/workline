@@ -82,6 +82,11 @@ goes ready, a hidden record that does not read: in
   (`review-not-whole`, `lens-failed`) and says what each call used. `ai-max-calls`, `parts-max-per-run`, the product owner's
   `issues-per-run` and `code-lines-max`, the reviewer's `diff-lines-max`,
   `code-lines-max` and `tests-lines-max` size each run (each role's page).
+- `input-cut` (a warning): the agent read part of what the run gives it;
+  the line says what, how much of it, and the setting that raises it.
+- `machine-error-size`: the task is over the role's context budget, so the
+  agent was not asked. The issue goes to Blocked at once, never run again
+  on the same input; narrow it, or change the setting the line names.
 - `ai-max-seconds` (committer): the rewrite took more than the 30 s it
   may; the message is refused with its reasons, as with no agent.
 - `personal-setting-ignored`: your own config sets what a role does not

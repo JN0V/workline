@@ -45,11 +45,21 @@ func (o Outcome) String() string {
 // Machine says whether the outcome is a machine error.
 func (o Outcome) Machine() bool { return o.Kind == MachineError }
 
+// Size is the machine error of a task too big for the role's context:
+// the same input gives the same prompt, so a run again fails the same
+// (#1160). It is never retried: the issue waits for a person at once.
+const Size = "size"
+
+// Retried says whether the line runs the step again for this outcome: a
+// machine error a run again may mend, never one of size.
+func (o Outcome) Retried() bool { return o.Machine() && o.Of != Size }
+
 // machineKinds are the finding codes that are a machine error, by its
 // kind: a run that failed, an answer the engine could not read or use,
 // code or tests that do not build, a budget spent before the agent was
 // asked. Each moved a state before, as a verdict on the issue (#1048,
-// #1075, #1017, #953): now retried, never a move.
+// #1075, #1017, #953): now retried, never a move; but a size, which waits
+// for a person at once (#1160).
 var machineKinds = map[string]string{
 	"engine-error":         "run",    // the run failed: any shape, a new one too (principle 12)
 	"agent-invalid-output": "answer", // the agent's answer did not read
@@ -57,7 +67,7 @@ var machineKinds = map[string]string{
 	"patch-unreadable":     "patch",  // a patch that does not apply
 	"build-broken":         "build",  // tests or code that do not build
 	"no-new-test":          "report", // the test report names none of the tests written
-	"prompt-over-budget":   "budget", // the task over the role's context budget: the agent not asked
+	"prompt-over-budget":   Size,     // the task over the role's context budget: the agent not asked
 }
 
 // NeedsCode is the finding a role leaves when its agent named code it
@@ -72,6 +82,21 @@ const NeedsCode = "needs-code"
 // person's to settle.
 func OutcomeOf(status string, findings []Finding) Outcome {
 	if status == Block {
+		// A run that blocked, its agent not asked for its prompt's size:
+		// that is why, whatever else it says (#1160). Said by the role's
+		// own finding when it gives one, the engine's else. The engine's
+		// is a warning, counted on purpose: it is said on the first call
+		// alone, the input's own size; a call asked again over the budget
+		// with its feedback is prompt-over-budget-asked-again, not this.
+		size := -1
+		for i, f := range findings {
+			if f.Rule == "prompt-over-budget" && (size < 0 || f.Blocks() && !findings[size].Blocks()) {
+				size = i
+			}
+		}
+		if size >= 0 {
+			return Outcome{Kind: MachineError, Of: Size, Said: findings[size].Message}
+		}
 		for _, f := range findings {
 			if kind, ok := machineKinds[f.Rule]; ok && f.Blocks() {
 				return Outcome{Kind: MachineError, Of: kind, Said: f.Message}

@@ -24,6 +24,7 @@ expect:
   status: pass
   summary: "2 new tests, red on the base"
   agent-calls: 1
+  no-findings: [{rule: input-cut}]
   pushed:
     workline/tester/issue-3:
       tests/test_mul_two_by_three.sh: "Scenario: Two by three"

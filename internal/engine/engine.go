@@ -180,6 +180,7 @@ type Result struct {
 	then        string   // the task this round asks alone, once the others are done (in/then)
 	thenAsked   bool     // the run went round once for it: never twice
 	capped      bool     // a call was refused, the run having spent maxTokens
+	askedAgain  bool     // the attempt asks again, with what the first answer needs mended
 	partRefused []string // what the parts answered and may not: refused with them
 }
 
@@ -686,6 +687,9 @@ func run(o Options, res *Result) error {
 			return err
 		}
 	}
+	// What pre cut of the task past a cap is said to the person, not to
+	// the agent alone (#1159).
+	res.Findings = append(res.Findings, verdict.CutFindings(runDir, res.Findings)...)
 	digest, err := dirDigest(filepath.Join(runDir, "in"))
 	if err != nil {
 		return err
@@ -707,6 +711,7 @@ func run(o Options, res *Result) error {
 	askedOnce := false // asked again once already, an answer unread or one post said to mend
 	unasked := false   // a task the agent was not asked, nor answered: what pre gave it read by no one
 	for {
+		res.askedAgain = askedOnce // a size counts on the first call alone (#1160)
 		a, err := attempt(r, o, ag, taskErr == nil, tier, runDir, env, line, settings, cfg, res)
 		if err != nil {
 			return err
@@ -2245,13 +2250,20 @@ func attempt(r *role.Role, o Options, ag agent.Agent, hasTask bool, tier, runDir
 		case err == nil:
 		case errors.Is(err, errTokensSpent), errors.Is(err, errTimeSpent):
 			a.askedAgent = false // not asked, or not waited for: no answer to refuse, none to ask again
+		case errors.Is(err, agent.ErrOverBudget) && res.askedAgain:
+			// Over only with what the first answer added (its feedback):
+			// not the input's size, which fitted. A machine error a run
+			// again may mend, never one of size (#1160).
+			a.askedAgent = false
+			a.findings = append(a.findings, verdict.Finding{Rule: "prompt-over-budget-asked-again", Level: "warn",
+				Message: err.Error() + ": the task with what its first answer needs mended; not asked again"})
 		case errors.Is(err, agent.ErrOverBudget):
 			// A task too large for the role's context is the role's to
 			// shrink, not a block of the line: the run goes on as without
 			// an agent, and what the task held waits for a person.
 			a.askedAgent, a.overBudget, a.overBudgetWhy = false, true, err.Error()
 			a.findings = append(a.findings, verdict.Finding{Rule: "prompt-over-budget", Level: "warn",
-				Message: err.Error() + ": the agent was not asked; what this task held is judged by no one this run, a person reads it (in/task.md of the run)"})
+				Message: err.Error() + " (context.budget in its role.yaml): the agent was not asked; what this task held is judged by no one this run, a person reads it (in/task.md of the run)"})
 		case errors.Is(err, agent.ErrUnavailable):
 			a.external = true
 			a.findings = append(a.findings, verdict.Finding{Rule: "agent-unavailable", Message: err.Error()})

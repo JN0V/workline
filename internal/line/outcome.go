@@ -163,6 +163,10 @@ func (e *Errors) retry(now time.Time) (due bool, until time.Time, spent string) 
 	first, err1 := time.Parse(time.RFC3339, e.First[e.Kind]) // the window is its kind's
 	last, err2 := time.Parse(time.RFC3339, e.Last)
 	switch {
+	case e.Kind == verdict.Size || e.Kind == "budget":
+		// A size error recorded before it was blocked at once (#1160),
+		// "budget" its name then: no try mends it.
+		return false, time.Time{}, fmt.Sprintf("its task is too big for its context (%s): %s", e.Kind, e.Said)
 	case e.By[e.Kind] > ErrorBudget:
 		return false, time.Time{}, fmt.Sprintf("its run failed %d times (%s): %s", e.By[e.Kind], e.Kind, e.Said)
 	case err1 == nil && now.Sub(first) >= ErrorWindow:

@@ -398,6 +398,11 @@ func prepare(runDir, repo string, s Settings) int {
 	}
 	var unread []verdict.Finding
 	st.Issues, unread = readIssues(repo, ids, s.IssueLinesMax)
+	// An issue cut is said once the lenses are asked to read it, with
+	// the testimony's: a change no lens reads says why, not what they
+	// would have read.
+	issueCuts := slices.DeleteFunc(slices.Clone(unread), func(f verdict.Finding) bool { return f.Rule != verdict.CutRule })
+	unread = slices.DeleteFunc(unread, func(f verdict.Finding) bool { return f.Rule == verdict.CutRule })
 	st.Advisories = append(st.Advisories, unread...)
 	skip, err := unasked(repo, s.Lenses, st.Issues, ids)
 	if err != nil {
@@ -440,7 +445,8 @@ func prepare(runDir, repo string, s Settings) int {
 			return recordOnly(runDir, s, st, st.Fresh-len(st.Left))
 		}
 	}
-	if st.Testimony, err = testimony(repo, st, mr, s.TestimonyLines); err != nil {
+	var cut int
+	if st.Testimony, cut, err = testimony(repo, st, mr, s.TestimonyLines); err != nil {
 		return fail(err)
 	}
 	st.Together = s.LensesTogether && len(st.Lenses) > 1
@@ -450,6 +456,10 @@ func prepare(runDir, repo string, s Settings) int {
 	}
 	if why != "" {
 		return tooLarge(runDir, repo, s, st, why)
+	}
+	st.Advisories = append(st.Advisories, issueCuts...) // said once the lenses are asked to read them
+	if cut > 0 {
+		st.Advisories = append(st.Advisories, cutSaid("", "what the author says (the commit messages, the merge request)", cut, s.TestimonyLines, "testimony-lines-max"))
 	}
 	if err := writeJSON(filepath.Join(runDir, "in", "review-state.json"), st); err != nil {
 		return fail(err)
@@ -843,16 +853,34 @@ func ask(runDir, repo string, s Settings, st *state, files []File) (string, erro
 	// given whole and again in the diff was a third of a lens's call.
 	var units []unit
 	var hunked []File
+	var past []string // files hunked past code-lines-max, said (#1159)
 	left := s.CodeLinesMax
 	for _, f := range files {
 		body, ok := marked(repo, st.lensFrom(), st.lensTo(), f)
 		n := strings.Count(body, "\n")
 		if !ok || n > left {
+			if ok {
+				past = append(past, fmt.Sprintf("`%s` (%d lines)", f.Path, n))
+			}
 			hunked = append(hunked, f)
 			continue
 		}
 		left -= n
 		units = append(units, unit{path: f.Path, whole: true, label: f.Path, text: body})
+	}
+	// sayHunked says those files once the lenses are asked: a change no
+	// lens reads says why, not what they would have read.
+	sayHunked := func() {
+		n := len(past)
+		if n == 0 {
+			return
+		}
+		if n > 5 {
+			past = append(past[:5], fmt.Sprintf("and %d more", n-5))
+		}
+		st.Advisories = append(st.Advisories, verdict.Finding{Rule: verdict.CutRule, Level: "warn",
+			Message: fmt.Sprintf("%d of the files changed given to the reviewer's agent by their hunks, not whole, past code-lines-max (%d lines in all): %s; raise %s",
+				n, s.CodeLinesMax, strings.Join(past, ", "), verdict.Setting("reviewer", "code-lines-max"))})
 	}
 	if len(hunked) > 0 {
 		diff, err := git(repo, append([]string{"diff", "-U5", "--no-color", "--no-ext-diff", "--find-renames", st.lensFrom(), st.lensTo(), "--"}, pathspec(hunked)...)...)
@@ -898,7 +926,7 @@ func ask(runDir, repo string, s Settings, st *state, files []File) (string, erro
 		if !st.Alone {
 			return nil
 		}
-		task, err := aloneTask(repo, s, *st, files)
+		task, err := aloneTask(repo, s, st, files)
 		if err != nil {
 			return err
 		}
@@ -954,6 +982,7 @@ func ask(runDir, repo string, s Settings, st *state, files []File) (string, erro
 		if err := put(units, 1, 1); err != nil {
 			return "", err
 		}
+		sayHunked()
 		return "", facet()
 	}
 	// Else in parts (ADR-0009's way): what every part holds first, then a
@@ -978,6 +1007,7 @@ func ask(runDir, repo string, s Settings, st *state, files []File) (string, erro
 			return "", err
 		}
 	}
+	sayHunked()
 	return "", facet()
 }
 
@@ -1010,7 +1040,7 @@ func tooLarge(runDir, repo string, s Settings, st state, why string) int {
 // diff-lines-max; nothing else, not the files it changes whole, not what
 // the author says, not the issue it closes. Its own call: the lenses'
 // shared material is what it must not hold.
-func aloneTask(repo string, s Settings, st state, files []File) (string, error) {
+func aloneTask(repo string, s Settings, st *state, files []File) (string, error) {
 	l, err := readLens(repo, alone)
 	if err != nil {
 		return "", err
@@ -1019,7 +1049,10 @@ func aloneTask(repo string, s Settings, st state, files []File) (string, error) 
 	if err != nil {
 		return "", err
 	}
-	diff = capLines(diff, s.DiffLinesMax, "the change is cut here: review what is above")
+	diff, cut := cutLines(diff, s.DiffLinesMax, "the change is cut here: review what is above")
+	if cut > 0 {
+		st.Advisories = append(st.Advisories, cutSaid("", "the change the diff-alone facet reads", cut, s.DiffLinesMax, "diff-lines-max"))
+	}
 	floor := ""
 	if s.FinderFloor {
 		floor = fmt.Sprintf("\nLook for at least %d candidates before you stop; then give only those whose cause you can quote, important or nit as each deserves.\n", candidatesFor(len(diff)))
@@ -2559,11 +2592,26 @@ func input(runDir, name string) string {
 }
 
 func capLines(s string, max int, why string) string {
+	s, _ = cutLines(s, max, why)
+	return s
+}
+
+// cutLines is capLines, and the lines s held when it was cut, 0 when
+// it was not: to say the cut to the person too (#1159).
+func cutLines(s string, max int, why string) (string, int) {
 	lines := strings.SplitAfter(s, "\n")
 	if max <= 0 || len(lines) <= max {
-		return s
+		return s, 0
 	}
-	return strings.Join(lines[:max], "") + "\n(" + why + ")\n"
+	return strings.Join(lines[:max], "") + "\n(" + why + ")\n", len(lines)
+}
+
+// cutSaid says to the person a cut of what the reviewer's agent reads,
+// past one of its settings (#1159): what, from how many lines to how
+// many, and the setting that raises it.
+func cutSaid(where, what string, from, to int, setting string) verdict.Finding {
+	return verdict.Finding{Rule: verdict.CutRule, Where: where, Level: "warn",
+		Message: fmt.Sprintf("%s given to the reviewer's agent is cut from %d to %d lines, past %s; raise %s", what, from, to, setting, verdict.Setting("reviewer", setting))}
 }
 
 func clean(p string) string {

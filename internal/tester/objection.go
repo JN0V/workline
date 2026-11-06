@@ -413,11 +413,16 @@ func writeAnswerTask(runDir, repo string, a answer, t forge.Thread, is *forge.Is
 	tail := b.String()
 	text := head + tail
 	if a.Kind == "interface" {
-		text = fitTask(runDir, repo, s, func(s Settings) string {
+		var cuts []string
+		var lines int
+		text, lines = fitTask(runDir, repo, s, func(s Settings) string {
 			var code strings.Builder
-			writeCode(&code, repo, is.Title+"\n"+is.Body, work.ByMeaning(is.Body)[work.Scope].Text, nil, nil, s)
+			cuts = writeCode(&code, repo, is.Title+"\n"+is.Body, work.ByMeaning(is.Body)[work.Scope].Text, nil, nil, s)
 			return head + code.String() + tail
 		})
+		if err := sayCuts(runDir, s, lines, cuts); err != nil {
+			return fail(err)
+		}
 	}
 	if err := os.WriteFile(filepath.Join(runDir, "in", "task.md"), []byte(text), 0o644); err != nil {
 		return fail(err)

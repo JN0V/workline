@@ -198,12 +198,16 @@ func Pre(runDir, repo string) int {
 		writeReading(&b, s)
 	}
 	intro := b.String()
-	text := fitTask(runDir, repo, s, func(s Settings) string {
+	var cuts []string
+	text, lines := fitTask(runDir, repo, s, func(s Settings) string {
 		var b strings.Builder
 		b.WriteString(intro)
-		writeCode(&b, repo, is.Title+"\n"+is.Body, sections[work.Scope].Text, sources, needs, s)
+		cuts = writeCode(&b, repo, is.Title+"\n"+is.Body, sections[work.Scope].Text, sources, needs, s)
 		return b.String()
 	})
+	if err := sayCuts(runDir, s, lines, cuts); err != nil {
+		return fail(err)
+	}
 	if err := os.WriteFile(filepath.Join(runDir, "in", "task.md"), []byte(text), 0o644); err != nil {
 		return fail(err)
 	}
@@ -235,12 +239,12 @@ func writeReading(b *strings.Builder, s Settings) {
 // words, nothing given, no test possible), and the code its title, Need
 // and Scope name, up to code-lines-max lines in all, a share kept for the
 // test files beside it; then those tests, and names the project's
-// others.
-func writeCode(b *strings.Builder, repo, text, scope string, sources, needs []string, s Settings) {
+// others. cuts are what code-lines-max left out, for the person (#1159).
+func writeCode(b *strings.Builder, repo, text, scope string, sources, needs []string, s Settings) (cuts []string) {
 	pk, err := codepick.New(repo, "")
 	if err != nil {
 		fmt.Fprintf(b, "\n## The code the %s names\n\nNot read: %v.\n", work.Name(work.Scope), err)
-		return
+		return nil
 	}
 	files := pk.Files()
 	paths, owners := work.ScopeWords(scope), []string(nil)
@@ -276,6 +280,9 @@ func writeCode(b *strings.Builder, repo, text, scope string, sources, needs []st
 			fmt.Fprintf(b, "\nThe code fills code-lines-max: %d of the %d lines of code-lines-max kept for the tests beside it.\n", pick.Kept, budget)
 		}
 		pick.Write(b, codepick.Style{NoTest: true})
+		if c := pick.Cut(); c != "" {
+			cuts = append(cuts, c)
+		}
 	}
 	var tests []string
 	for _, f := range files {
@@ -300,7 +307,12 @@ func writeCode(b *strings.Builder, repo, text, scope string, sources, needs []st
 			return
 		}
 		fmt.Fprintf(b, "\n## %s\n", heading)
-		var unread []string
+		var unread, short []string
+		defer func() {
+			if len(short) > 0 {
+				cuts = append(cuts, "the tests beside it: "+strings.Join(short, ", "))
+			}
+		}()
 		for _, p := range list {
 			if t := pick.Test(); slices.Contains(pick.Paths(), p) && (t == nil || t.Path != p) {
 				continue // given above, with the code: not twice
@@ -314,10 +326,12 @@ func writeCode(b *strings.Builder, repo, text, scope string, sources, needs []st
 				// Named, never shown empty: a file given as 0 lines read
 				// as an empty file to the agent (#801).
 				unread = append(unread, fmt.Sprintf("- `%s` (%d lines)", p, len(lines)))
+				short = append(short, fmt.Sprintf("`%s` 0 of %d lines", p, len(lines)))
 				continue
 			}
 			cut := ""
 			if len(lines) > left {
+				short = append(short, fmt.Sprintf("`%s` %d of %d lines", p, left, len(lines)))
 				lines, cut = lines[:left], fmt.Sprintf("\n(cut: the first %d lines given)", left)
 			}
 			left -= len(lines)
@@ -335,6 +349,7 @@ func writeCode(b *strings.Builder, repo, text, scope string, sources, needs []st
 		}
 		fmt.Fprintf(b, "\n## The project's other test files\n\n%s\n", strings.Join(rest, "\n"))
 	}
+	return cuts
 }
 
 // Post holds the agent's tests to what the tester may write and to the
@@ -392,11 +407,13 @@ func Post(runDir, repo string) int {
 				Findings: []verdict.Finding{{Rule: "no-agent", Level: "warn", Where: where,
 					Message: "writing a scenario's test is judgement: with no agent, nothing is written; a person writes them, or the tester runs with one (`--ai`)"}}})
 		}
-		msg := "no test file the tester may write was proposed for the issue's scenarios"
+		msg, rule := "no test file the tester may write was proposed for the issue's scenarios", "no-test-written"
 		if why := os.Getenv("WORKLINE_AGENT_OVER_BUDGET"); why != "" {
-			// Not asked: no word of the agent's, the budget's (#1017).
+			// Not asked: no word of the agent's, the budget's (#1017); a
+			// size, never run again on the same input (#1160).
+			rule = "prompt-over-budget"
 			msg = "the agent was not asked, its prompt over the tester's context budget (prompt-over-budget: " + why +
-				"): lower code-lines-max in the tester's settings, or narrow the issue's " + work.Name(work.Scope)
+				"): raise context.budget in the tester's role.yaml, or narrow the issue's " + work.Name(work.Scope)
 		} else if why := os.Getenv("WORKLINE_AGENT_UNREAD"); why != "" {
 			msg = "the agent's answer could not be read, asked again once with the error: " + why
 		} else if why := os.Getenv("WORKLINE_AGENT_REFUSED"); why != "" {
@@ -411,7 +428,7 @@ func Post(runDir, repo string) int {
 			return proved(runDir, repo, t, intents, Proof{Kind: KindNone, Reason: reason})
 		}
 		return refusePost(runDir, t.Issue, verdict.Verdict{Status: verdict.Block, Summary: "no test written",
-			Findings: []verdict.Finding{{Rule: "no-test-written", Where: where, Message: msg}}})
+			Findings: []verdict.Finding{{Rule: rule, Where: where, Message: msg}}})
 	}
 	// What the tests read: each patch's file and its lines, for the
 	// scenarios they name.

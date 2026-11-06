@@ -140,6 +140,9 @@ type Pick struct {
 	Left    int      // the budget left
 	Kept    int      // the lines kept for the test, the code filling the budget
 	Unshown []string // names whose other places were past usesMax or the budget: "`f` (4 more places)"
+	Short   bool     // something named was cut or left out, past the budget
+
+	byLines, byBytes bool // which bound cut it: Ask.Budget's lines, Ask.Bytes
 	Ask     Ask
 }
 
@@ -718,6 +721,17 @@ func (p *Picker) Pick(a Ask) Pick {
 	// after: said only when the code wanted it.
 	left := budget - kept
 	short := false // something named was cut or left out
+	// byLines, byBytes: which bound cut it, the lines or the bytes, said
+	// by its own setting (#1159).
+	byLines, byBytes := false, false
+	cutBy := func(bytes bool) {
+		short = true
+		if bytes {
+			byBytes = true
+		} else {
+			byLines = true
+		}
+	}
 	// bytesLeft are the bytes the code may still take; a lot when none
 	// bound it.
 	bytesLeft := func() int {
@@ -747,8 +761,9 @@ func (p *Picker) Pick(a Ask) Pick {
 			return true
 		}
 		n := w.to - w.from + 1
-		if fit := min(left, fitting(f.Lines, w.from, room(f))); n > fit {
-			short = true
+		if inBytes := fitting(f.Lines, w.from, room(f)); n > min(left, inBytes) {
+			fit := min(left, inBytes)
+			cutBy(inBytes < left) // fewer lines fit the bytes than the lines left
 			if !w.cut || fit <= 0 {
 				if w.cut {
 					f.Unread = append(f.Unread, Piece{w.from, w.to, w.why})
@@ -803,7 +818,7 @@ func (p *Picker) Pick(a Ask) Pick {
 		case fits:
 			whole(g)
 		default:
-			short = true
+			cutBy(extra <= left) // the lines fit: the bytes cut it
 		}
 	}
 	for _, f := range own {
@@ -811,7 +826,7 @@ func (p *Picker) Pick(a Ask) Pick {
 		if len(g.Given) == 0 && len(g.Decls) == 0 && len(g.Unread) == 0 && !g.Above && left > 0 && len(g.Lines) > 0 {
 			k := min(len(g.Lines), left, fitting(g.Lines, 1, room(g)))
 			if k <= 0 {
-				short = true
+				cutBy(true) // lines left: the bytes cut it
 				continue
 			}
 			g.Given = []Piece{{1, k, "its first lines"}}
@@ -830,7 +845,7 @@ func (p *Picker) Pick(a Ask) Pick {
 					if len(g.Lines)-g.GivenLines() <= left {
 						whole(g)
 					} else {
-						short = true
+						cutBy(false)
 					}
 				}
 			}
@@ -902,7 +917,7 @@ func (p *Picker) Pick(a Ask) Pick {
 		pk.Files = append(pk.Files, *tf)
 	}
 	pk.Linked = p.linked(pk, a.Tests)
-	pk.Left = left
+	pk.Left, pk.Short, pk.byLines, pk.byBytes = left, short, byLines, byBytes
 	return pk
 }
 

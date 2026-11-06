@@ -224,6 +224,11 @@ token), **apply** (trusted, no AI key).
    true` is written only when the agent's answer was read (the product
    owner's record that it read an issue). And `in/task-kind`: one word
    naming the kind of question, when `model.tasks` asks something else of it.
+   And `in/cuts`: what it cut of the task past one of its caps, one a line
+   — what, from what size to what cap, the setting that raises it
+   (`verdict.SayCut`); the engine says each as a warning of the run,
+   `input-cut`, so the person reads it too, not the agent alone
+   ([#1159](https://github.com/JN0V/workline/issues/1159)).
    The engine then records a digest of `in/`.
 
    **In parts** (ADR-0009). A question too large for one call is written as

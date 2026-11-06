@@ -333,6 +333,12 @@ func Pre(runDir, repo string) int {
 		fmt.Fprintf(&task, "- %s: %s\n", f.Rule, f.Message)
 	}
 	fmt.Fprintf(&task, "\nStaged changes:\n\n```\n%s```\n\n```diff\n%s```\n", stat, capText(string(diff), maxDiff))
+	if len(diff) > maxDiff {
+		// Said to the person too, not to the agent alone (#1159).
+		if err := verdict.SayCut(runDir, fmt.Sprintf("the staged diff given to the committer's agent is cut from %d to %d characters, a cap no setting changes: the stat above it lists every file", len(diff), maxDiff)); err != nil {
+			return fail(err)
+		}
+	}
 	if err := os.WriteFile(filepath.Join(runDir, "in", "task.md"), []byte(task.String()), 0o644); err != nil {
 		return fail(err)
 	}

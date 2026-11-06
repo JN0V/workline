@@ -2,7 +2,7 @@ case: tester/over-budget-said-on-the-issue
 about: >
   A Scope file of one line of 100,000 characters: even one line of code is
   over the tester's context budget. The agent is not asked, and the issue's
-  comment says the prompt was over the budget and names code-lines-max —
+  comment says the prompt was over the budget and names context.budget —
   never "no test file was proposed", which the agent never said (#1017).
 given:
   repo: tested
@@ -24,4 +24,4 @@ expect:
   forge:
     issues:
       - id: 3
-        comment-contains: ["prompt-over-budget", "lower code-lines-max in the tester's settings"]
+        comment-contains: ["prompt-over-budget", "raise context.budget in the tester's role.yaml"]
