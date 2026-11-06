@@ -58,12 +58,12 @@ func TestClaudeToolsOnlyInAWorktree(t *testing.T) {
 		t.Fatalf("in a worktree, prose closing words failed the call: %v", err)
 	}
 	for _, want := range []string{"/" + WorktreeDir + "\n", "[--tools]\n[" + claudeTools + "]", "[--allowedTools]\n[" + claudeTools + "]",
-		"[--permission-mode]\n[dontAsk]", "[--max-turns]\n[7]", "[--append-system-prompt]", "[stream-json]", "[--strict-mcp-config]"} {
+		"[--permission-mode]\n[dontAsk]", "[--max-turns]\n[7]", "[--append-system-prompt-file]", "[stream-json]", "[--strict-mcp-config]"} {
 		if !strings.Contains(args, want) {
 			t.Errorf("in a worktree, claude lacks %q:\n%s", want, args)
 		}
 	}
-	if strings.Contains(args, "[--system-prompt]") {
+	if strings.Contains(args, "[--system-prompt") {
 		t.Errorf("in a worktree, Claude Code's own prompt replaced:\n%s", args)
 	}
 	if call.Turns != 2 || call.Tools["Edit"] != 1 {

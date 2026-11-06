@@ -59,8 +59,22 @@ func (c claude) Propose(req Request) (Call, error) {
 	}
 	// The system prompt is what every call of the role shares (Prompt):
 	// Claude Code caches it, the role's next call reads it back (#1128).
+	// In a file, not on the command line: tens of kilobytes, past what
+	// Windows passes to an npm claude.cmd (8,191 characters).
+	systemFile, err := os.CreateTemp("", "workline-system-*.md")
+	if err != nil {
+		return call, err
+	}
+	defer func() { _ = os.Remove(systemFile.Name()) }()
+	_, err = systemFile.WriteString(system)
+	if cerr := systemFile.Close(); err == nil {
+		err = cerr
+	}
+	if err != nil {
+		return call, err
+	}
 	args := []string{"-p", "--output-format", "json", "--tools", "", "--strict-mcp-config",
-		"--no-session-persistence", "--system-prompt", system}
+		"--no-session-persistence", "--system-prompt-file", systemFile.Name()}
 	tree := Worktree(req.RunDir)
 	reads := ""
 	if tree == "" {
@@ -76,7 +90,7 @@ func (c claude) Propose(req Request) (Call, error) {
 		// person's settings only, as in a worktree.
 		args = []string{"-p", "--output-format", "stream-json", "--verbose", "--tools", claudeReadTools,
 			"--permission-mode", "dontAsk", "--strict-mcp-config",
-			"--setting-sources", "user", "--no-session-persistence", "--system-prompt", system}
+			"--setting-sources", "user", "--no-session-persistence", "--system-prompt-file", systemFile.Name()}
 	}
 	if tree != "" {
 		// An agent that works (ADR-0056): its tools, each allowed so that
@@ -87,7 +101,7 @@ func (c claude) Propose(req Request) (Call, error) {
 		// what runs it: a hook there would run, a permission widen it.
 		args = []string{"-p", "--output-format", "stream-json", "--verbose", "--tools", claudeTools,
 			"--allowedTools", claudeTools, "--permission-mode", "dontAsk", "--strict-mcp-config",
-			"--setting-sources", "user", "--no-session-persistence", "--append-system-prompt", system}
+			"--setting-sources", "user", "--no-session-persistence", "--append-system-prompt-file", systemFile.Name()}
 	}
 	if call.Asked = claudeTier[call.Tier]; c.model != "" {
 		call.Asked = c.model

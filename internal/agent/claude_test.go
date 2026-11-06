@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/JN0V/workline/internal/role"
 	"go.yaml.in/yaml/v3"
 )
 
@@ -246,5 +247,43 @@ func TestReadLog(t *testing.T) {
 	want := []string{"78981922613b2afb6025042ff6bd878ac1994e85 a.txt", "- /etc/hostname", "- gone.txt"}
 	if !slices.Equal(got, want) {
 		t.Errorf("read log %q, want %q", got, want)
+	}
+}
+
+// A call with no tools gets the role's shared part, its instruction
+// among it, as Claude Code's system prompt, in the file its flag names:
+// tens of kilobytes never go on the command line, past what Windows
+// passes to an npm claude.cmd. The task alone is on stdin (#1128).
+func TestClaudeSystemPromptInAFile(t *testing.T) {
+	bin, dump := t.TempDir(), t.TempDir()
+	fake := "#!/bin/sh\nfor a in \"$@\"; do echo \"[$a]\"; done > \"$DUMP/args\"\n" +
+		"next=\nfor a in \"$@\"; do [ -z \"$next\" ] || cat \"$a\" > \"$DUMP/system\"; next=; [ \"$a\" != --system-prompt-file ] || next=1; done\n" +
+		"cat > \"$DUMP/stdin\"\necho '{\"result\":\"[]\",\"modelUsage\":{}}'\n"
+	must(t, os.WriteFile(filepath.Join(bin, "claude"), []byte(fake), 0o755))
+	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+	t.Setenv("DUMP", dump)
+	dir, runDir := t.TempDir(), t.TempDir()
+	must(t, os.WriteFile(filepath.Join(dir, "instruction.md"), []byte("Refine each issue."), 0o644))
+	for _, d := range []string{"in", "out"} {
+		must(t, os.MkdirAll(filepath.Join(runDir, d), 0o755))
+	}
+	must(t, os.WriteFile(filepath.Join(runDir, "in", "task.md"), []byte("#41 Login fails on Safari"), 0o644))
+	req := Request{RunDir: runDir, Repo: t.TempDir(), Role: &role.Role{Name: "product-owner", Dir: dir, Intentions: []string{"note"}}}
+	if _, err := (claude{}).Propose(req); err != nil {
+		t.Fatal(err)
+	}
+	want, user, err := Prompt(req)
+	must(t, err)
+	args, _ := os.ReadFile(filepath.Join(dump, "args"))
+	system, _ := os.ReadFile(filepath.Join(dump, "system"))
+	stdin, _ := os.ReadFile(filepath.Join(dump, "stdin"))
+	if !strings.Contains(string(args), "[--system-prompt-file]") || strings.Contains(string(args), "Refine each issue.") {
+		t.Errorf("the system prompt is not passed in a file:\n%s", args)
+	}
+	if string(system) != want || !strings.Contains(string(system), "Refine each issue.") {
+		t.Errorf("the system prompt's file is not the role's shared part:\n%s", system)
+	}
+	if string(stdin) != user || strings.Contains(string(stdin), "Refine each issue.") {
+		t.Errorf("stdin is not the task alone:\n%s", stdin)
 	}
 }

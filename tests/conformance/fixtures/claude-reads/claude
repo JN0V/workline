@@ -11,20 +11,20 @@
 # stdin (#1128).
 set -eu
 want() { echo "claude stand-in: $*" >&2; exit 1; }
-# Its flags, without the system prompt's text: the role's instruction
-# may name a tool it is not given (#1128).
+# Its flags; the system prompt in the file its flag names, never on
+# the command line, too long for Windows (#1128).
 args=" " skip= system=
 for a in "$@"; do
-	[ -z "$skip" ] || { skip=; system=$a; continue; }
+	[ -z "$skip" ] || { skip=; system=$(cat "$a"); }
 	args="$args$a "
-	case "$a" in --system-prompt | --append-system-prompt) skip=1 ;; esac
+	case "$a" in --system-prompt-file | --append-system-prompt-file) skip=1 ;; esac
 done
 for a in "--output-format stream-json" "--verbose" "--tools Read,Glob,Grep" \
 	"--permission-mode dontAsk" "--strict-mcp-config" \
-	"--setting-sources user" "--no-session-persistence" "--system-prompt" "--max-turns 40"; do
+	"--setting-sources user" "--no-session-persistence" "--system-prompt-file" "--max-turns 40"; do
 	case "$args" in *" $a "*) ;; *) want "not given $a" ;; esac
 done
-case "$args" in *Bash* | *Edit* | *Write* | *" --allowedTools "* | *" --append-system-prompt "*) want "given more than reading in its folder: $*" ;; esac
+case "$args" in *Bash* | *Edit* | *Write* | *" --allowedTools "* | *" --append-system-prompt"*) want "given more than reading in its folder: $*" ;; esac
 [ "$(git rev-parse --show-toplevel)" = "$(pwd -P)" ] && [ -f lib.sh ] || want "not run in a copy of the repository: $(pwd)"
 grep -q 'add()' lib.sh && ! grep -q 'mul()' lib.sh || want "not the base's code"
 question=$(cat)
@@ -33,6 +33,7 @@ for w in 'You write the acceptance tests of one issue' '# Answer'; do
 done
 case "$question" in '# Task'*) ;; *) want "the question does not start with its task" ;; esac
 case "$question" in *'You write the acceptance tests of one issue'* | *'# Answer'*) want "the question repeats the shared part" ;; esac
+case "$args" in *" --system-prompt "*) want "its system prompt on the command line" ;; esac
 for w in '## Reading the code yourself' 'Read, Glob and Grep' '40 turns at most'; do
 	case "$question" in *"$w"*) ;; *) want "the question does not say $w" ;; esac
 done
