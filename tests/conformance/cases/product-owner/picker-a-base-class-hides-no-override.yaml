@@ -1,0 +1,52 @@
+case: product-owner/picker-a-base-class-hides-no-override
+about: >
+  The code picker's contract, the product owner's side (ADR-0063 §8),
+  #1129's limit: the issue names the base class `IComponent`, whose
+  header holds a default `loop()`; the components' few overrides are
+  still given, not counted behind the base's.
+given:
+  repo: backlog
+  setup:
+    - |
+      cat > IComponent.h <<'EOF'
+      #pragma once
+
+      class IComponent {
+      public:
+          IComponent() {
+              registered = true;
+          }
+          virtual ~IComponent() {}
+          virtual void loop() {}
+          virtual const char* label() const { return "component"; }
+      };
+      EOF
+      for c in WiFi MQTT Logger; do
+        mkdir -p $c
+        cat > $c/$c.h <<EOF
+      #pragma once
+      #include "IComponent.h"
+
+      class ${c}Component : public IComponent {
+      public:
+          void loop() override {
+              ${c}Ticks++;
+          }
+
+      private:
+          int ${c}Ticks = 0;
+      };
+      EOF
+      done
+      git add . && git commit -qm 'feat: a base class and three components'
+  forge:
+    issues:
+      - {id: 9, title: "Components: loop() is never called", body: "Each `IComponent` registered should get `loop()` called; none of them ticks.", author: ann, insider: true, labels: [workline:to-refine], comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: issue, target: {issue: 9}, ai: fake:proposes-nothing}
+expect:
+  status: pass
+  agent-calls: 1
+  no-findings: [{rule: prompt-over-budget}]
+  run-files:
+    in/task.md:
+      contains: ["WiFiTicks++;", "MQTTTicks++;", "LoggerTicks++;"]
