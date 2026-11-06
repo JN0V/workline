@@ -18,6 +18,7 @@ import (
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/line"
 	"github.com/JN0V/workline/internal/routing"
+	"github.com/JN0V/workline/internal/verdict"
 )
 
 // failure is the first property a run broke.
@@ -433,6 +434,14 @@ func (m *measure) step(cfg *routing.Config, s forge.FakeState) {
 	}
 }
 
+// weeklyRevisit says whether a tick's run read a blocked issue again
+// for its week gone by, no news (ADR-0059): a wake the clock makes.
+func weeklyRevisit(res *line.Result) bool {
+	return slices.ContainsFunc(res.Findings, func(f verdict.Finding) bool {
+		return f.Rule == "state-revisit" && strings.Contains(f.Message, "(routing.revisit)")
+	})
+}
+
 // measured is runTrace, with what it measured.
 func measured(t *testing.T, tr trace, script []outcome, c checks) (_ *failure, _ string, ms measure) {
 	a := &simAgent{script: script}
@@ -441,7 +450,8 @@ func measured(t *testing.T, tr trace, script []outcome, c checks) (_ *failure, _
 	defer func() { ms.unused = a.unused() }()
 	ms.step(w.cfg, w.state(t))
 	k := w.k()
-	quiet := false
+	// weekly: the tick a weekly revisit woke a quiet line, -1 for none.
+	quiet, weekly := false, -1
 	for i := range k {
 		if !c.all && i > c.until {
 			return nil, log.String(), ms
@@ -452,6 +462,9 @@ func measured(t *testing.T, tr trace, script []outcome, c checks) (_ *failure, _
 		n := len(a.calls)
 		r := w.requests(t)
 		res := w.run(at)
+		if quiet && weeklyRevisit(res) {
+			weekly = i
+		}
 		ms.requests = append(ms.requests, w.requests(t)-r)
 		mid := w.state(t)
 		ms.step(w.cfg, mid)
@@ -492,6 +505,14 @@ func measured(t *testing.T, tr trace, script []outcome, c checks) (_ *failure, _
 	}
 	if !c.all {
 		return nil, log.String(), ms
+	}
+	// A weekly revisit wakes a quiet line by design (ADR-0059), a new
+	// input: its own K ticks start there and end past the run's last,
+	// so still acting then is pending, not loud. A line never quiet
+	// before it, or woken by anything else, is held to K.
+	if !quiet && weekly >= 0 && c.on(pQuiet) {
+		fmt.Fprintf(&log, "  quiet: a weekly revisit at tick %d, its K ticks not over\n", weekly)
+		quiet = true
 	}
 	if !quiet && c.on(pQuiet) {
 		return &failure{Property: pQuiet, Tick: k - 1, Detail: fmt.Sprintf("still acting after K = %d ticks", k)}, log.String(), ms
