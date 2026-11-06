@@ -84,7 +84,10 @@ func OutcomeOf(status string, findings []Finding) Outcome {
 	if status == Block {
 		// A run that blocked, its agent not asked for its prompt's size:
 		// that is why, whatever else it says (#1160). Said by the role's
-		// own finding when it gives one, the engine's else.
+		// own finding when it gives one, the engine's else. The engine's
+		// is a warning, counted on purpose: it is said on the first call
+		// alone, the input's own size; a call asked again over the budget
+		// with its feedback is prompt-over-budget-asked-again, not this.
 		size := -1
 		for i, f := range findings {
 			if f.Rule == "prompt-over-budget" && (size < 0 || f.Blocks() && !findings[size].Blocks()) {

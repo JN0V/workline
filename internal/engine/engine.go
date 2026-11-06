@@ -180,6 +180,7 @@ type Result struct {
 	then        string   // the task this round asks alone, once the others are done (in/then)
 	thenAsked   bool     // the run went round once for it: never twice
 	capped      bool     // a call was refused, the run having spent maxTokens
+	askedAgain  bool     // the attempt asks again, with what the first answer needs mended
 	partRefused []string // what the parts answered and may not: refused with them
 }
 
@@ -710,6 +711,7 @@ func run(o Options, res *Result) error {
 	askedOnce := false // asked again once already, an answer unread or one post said to mend
 	unasked := false   // a task the agent was not asked, nor answered: what pre gave it read by no one
 	for {
+		res.askedAgain = askedOnce // a size counts on the first call alone (#1160)
 		a, err := attempt(r, o, ag, taskErr == nil, tier, runDir, env, line, settings, cfg, res)
 		if err != nil {
 			return err
@@ -2248,6 +2250,13 @@ func attempt(r *role.Role, o Options, ag agent.Agent, hasTask bool, tier, runDir
 		case err == nil:
 		case errors.Is(err, errTokensSpent), errors.Is(err, errTimeSpent):
 			a.askedAgent = false // not asked, or not waited for: no answer to refuse, none to ask again
+		case errors.Is(err, agent.ErrOverBudget) && res.askedAgain:
+			// Over only with what the first answer added (its feedback):
+			// not the input's size, which fitted. A machine error a run
+			// again may mend, never one of size (#1160).
+			a.askedAgent = false
+			a.findings = append(a.findings, verdict.Finding{Rule: "prompt-over-budget-asked-again", Level: "warn",
+				Message: err.Error() + ": the task with what its first answer needs mended; not asked again"})
 		case errors.Is(err, agent.ErrOverBudget):
 			// A task too large for the role's context is the role's to
 			// shrink, not a block of the line: the run goes on as without
