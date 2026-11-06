@@ -106,8 +106,9 @@ A conflict on the Draft, a forge that refuses it: the engine applies at
 once what the developer asked for that case
 ([#856](https://github.com/JN0V/workline/issues/856)).
 
-- **The first time on the issue**: the claim given back, its card back
-  to the ready column; the claim's comment says what failed, the git or
+- **The first time on the issue**: the claim given back, `workline:ready`
+  back on, its card back to the ready column; the claim's comment says
+  what failed, the git or
   forge error as it came. The next run takes the issue again.
 - **The second time**: the issue blocked, the claim off, the reason in
   the same comment. A person fixes the cause and moves it back by its

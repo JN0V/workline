@@ -24,6 +24,6 @@ expect:
   forge:
     issues:
       - id: 2
-        labels: ["workline:ready", "workline:developing"]
+        labels: ["workline:developing"]
         comments: 1
         comment-lacks: ["merging it"]

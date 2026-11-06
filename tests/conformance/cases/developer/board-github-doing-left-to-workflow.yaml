@@ -23,7 +23,7 @@ expect:
   forge:
     issues:
       - id: 2
-        labels: ["workline:ready", "workline:developing"]
+        labels: ["workline:developing"]
         status: {"3": "Todo"}
         comment-contains: ["Its card goes to `In Progress` by the workflow *Pull request linked to issue* of the board \"Team plan\"", '"left":"workflow"']
         comment-lacks: ["Its card moved"]

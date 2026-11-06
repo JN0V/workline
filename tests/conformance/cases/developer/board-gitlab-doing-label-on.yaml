@@ -19,5 +19,5 @@ expect:
   forge:
     issues:
       - id: 2
-        labels: ["workline:ready", "workline:developing", "workflow::In progress"]
+        labels: ["workline:developing", "workflow::In progress"]
         comment-contains: ["Its card moved to `workflow::In progress` on the board \"Development\"", '"board":{"board":"Development","column":"workflow::In progress","off":["workflow::Ready"]}']

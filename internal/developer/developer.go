@@ -660,16 +660,16 @@ func claimOf(a Act, s Settings) []intent.Intention {
 	}
 }
 
-// claimLabel is the claim's label, its card moved to Doing in the same
-// call when the forge's board has that column (ADR-0057).
+// claimLabel is the claim's label, a move from Ready to Doing: the ready
+// label off in the same call, one state at a time (ADR-0059, §2;
+// #1081); its card moved to Doing too when the forge's board has that
+// column (ADR-0057).
 func claimLabel(a Act, s Settings) intent.Intention {
-	v := map[string]any{"issue": a.Issue, "add": []string{s.ClaimLabel}}
+	v := map[string]any{"issue": a.Issue, "add": []string{s.ClaimLabel}, "remove": []string{backlog.LabelReady}}
 	switch {
 	case a.Board.Labels():
 		v["add"] = []string{s.ClaimLabel, a.Board.Column}
-		if len(a.Board.Off) > 0 {
-			v["remove"] = a.Board.Off
-		}
+		v["remove"] = append([]string{backlog.LabelReady}, a.Board.Off...)
 	case a.Board.Writes():
 		// A GitHub project's Status, set after the label (ADR-0057).
 		v["status"] = map[string]any{"project": a.Board.Project, "option": a.Board.Column}
@@ -772,7 +772,8 @@ func (b Bounds) acceptance() []string {
 func claimBody(a Act, s Settings) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "**The developer** takes this issue: the first ready one nobody took, in the backlog's order. "+
-		"`%s` says so; a person who takes it back removes the label, or assigns themselves.\n", s.ClaimLabel)
+		"`%s` says so; a person who takes it over assigns themselves; one who gives it back to the line swaps it for `%s`: "+
+		"the label taken off alone leaves the issue in no state, off the line.\n", s.ClaimLabel, backlog.LabelReady)
 	if a.Board != nil {
 		fmt.Fprintf(&b, "\n%s\n", a.Board.Told())
 	}

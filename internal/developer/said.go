@@ -243,17 +243,19 @@ func unopened(a Act, s Settings, repo string) []map[string]any {
 		}
 	}
 	return []map[string]any{
-		{"label": map[string]any{"issue": a.Issue, "remove": []string{s.ClaimLabel}, "card": "ready"}},
+		{"label": map[string]any{"issue": a.Issue, "add": []string{backlog.LabelReady}, "remove": []string{s.ClaimLabel}, "card": "ready"}},
 		{"comment": map[string]any{"issue": a.Issue, "sticky": "claim", "body": backlog.Said(who, "gives this issue back", why,
 			"it is free again: the developer takes it again at a next run, once; should its pull request not open again, the issue is blocked") + "\n" + rec.Line()}},
 	}
 }
 
-// released is the label a claim let go moves: the claim's off; on a
-// board, its card out of Doing, back to the ready column — GitLab's
-// column labels swapped in the same call, a GitHub project's Status set.
+// released is the label a claim let go moves, back from Doing to Ready:
+// the claim's off, the ready label on, which the claim took off
+// (ADR-0059, §2; #1081); on a board, its card out of Doing, back to the
+// ready column — GitLab's column labels swapped in the same call, a
+// GitHub project's Status set.
 func released(is forge.Issue, s Settings, card *board.Move) map[string]any {
-	v := map[string]any{"issue": is.ID, "remove": []string{s.ClaimLabel}}
+	v := map[string]any{"issue": is.ID, "add": []string{backlog.LabelReady}, "remove": []string{s.ClaimLabel}}
 	switch {
 	case card.Labels():
 		remove := []string{s.ClaimLabel}
@@ -262,7 +264,7 @@ func released(is forge.Issue, s Settings, card *board.Move) map[string]any {
 				remove = append(remove, l)
 			}
 		}
-		v["add"], v["remove"] = []string{card.Column}, remove
+		v["add"], v["remove"] = []string{backlog.LabelReady, card.Column}, remove
 	case card.Writes():
 		v["status"] = map[string]any{"project": card.Project, "option": card.Column}
 	}

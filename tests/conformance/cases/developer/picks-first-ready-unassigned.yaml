@@ -21,7 +21,7 @@ expect:
   forge:
     issues:
       - id: 2
-        labels: ["workline:ready", "workline:developing"]
+        labels: ["workline:developing"]
         comment-contains: ["The developer", "workline:developer-act", '"act":"pick"', '"issue":2']
       - {id: 3, labels: ["workline:ready"], comments: 0}
       - {id: 1, labels: ["workline:to-refine"], comments: 0}

@@ -18,4 +18,4 @@ expect:
   summary: "took #2"
   forge:
     issues:
-      - {id: 2, labels: ["workline:ready", "workline:developing"], comment-lacks: "waits on this issue"}
+      - {id: 2, labels: ["workline:developing"], comment-lacks: "waits on this issue"}

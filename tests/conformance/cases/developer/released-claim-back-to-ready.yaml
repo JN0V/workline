@@ -1,0 +1,23 @@
+case: developer/released-claim-back-to-ready
+about: >
+  A claim let go moves its issue back from Doing to Ready (ADR-0059, §2;
+  #1081): the claim took workline:ready off, so letting it go puts it
+  back on in the same call as workline:developing comes off, with no
+  board on the forge. The issue is free again, in one state.
+given:
+  repo: tested
+  forge:
+    issues:
+      - id: 1
+        title: "Add"
+        labels: ["workline:developing", "bug"]
+        labeled: {"workline:developing": "2026-01-01T09:00:00Z"}
+        body: "## Need\n\nI want to add.\n"
+run: {develop: [], ai: "fake:developer-nothing"}
+expect:
+  status: pass
+  agent-calls: 0
+  findings: [{rule: claim-released, where: "#1"}]
+  forge:
+    issues:
+      - {id: 1, labels: ["bug", "workline:ready"], comments: 1}

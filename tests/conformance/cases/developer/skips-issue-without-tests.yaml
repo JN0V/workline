@@ -25,5 +25,5 @@ expect:
     issues:
       - {id: 2, labels: ["workline:ready"], comments: 1, comment-contains: ["**The developer** waits on this issue.", "its acceptance tests are not written yet", "the tester writes them"]}
       - id: 3
-        labels: ["workline:ready", "workline:developing"]
+        labels: ["workline:developing"]
         comment-contains: ['"passed":[{"issue":2,"why":"its acceptance tests are not written yet: it waits for the tester''s Draft"}]']

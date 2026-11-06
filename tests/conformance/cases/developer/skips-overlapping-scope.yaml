@@ -24,5 +24,5 @@ expect:
       - {id: 1, labels: ["workline:ready", "workline:developing"], comments: 0}
       - {id: 2, labels: ["workline:ready"], comments: 1, comment-contains: ["**The developer** waits on this issue.", "overlaps #1's, taken", "#1's pull request #4 merges on a person's yes (#1: no label says its kind)"]}
       - id: 3
-        labels: ["workline:ready", "workline:developing"]
+        labels: ["workline:developing"]
         comment-contains: ["#1: taken already, labelled workline:developing", "#2: its Scope's `src` overlaps #1's, taken"]

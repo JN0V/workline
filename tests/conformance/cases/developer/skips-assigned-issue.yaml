@@ -18,5 +18,5 @@ expect:
     issues:
       - {id: 2, labels: ["workline:ready"], comments: 0}
       - id: 3
-        labels: ["workline:ready", "workline:developing"]
+        labels: ["workline:developing"]
         comment-contains: ["#2: assigned to alice", '"passed":[{"issue":2,"why":"assigned to alice"}]']

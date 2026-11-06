@@ -41,7 +41,7 @@ expect:
   forge:
     issues:
       - id: 3
-        labels: ["workline:ready", "workline:developing"]
+        labels: ["workline:developing"]
     merge-requests:
       - id: 2
         branch: workline/developer/3

@@ -19,7 +19,7 @@ func TestUnopenedGivesBackThenBlocks(t *testing.T) {
 	label, _ := first[0]["label"].(map[string]any)
 	comment, _ := first[1]["comment"].(map[string]any)
 	body, _ := comment["body"].(string)
-	if !slices.Equal(label["remove"].([]string), []string{s.ClaimLabel}) || label["add"] != nil || label["card"] != "ready" {
+	if !slices.Equal(label["remove"].([]string), []string{s.ClaimLabel}) || !slices.Equal(label["add"].([]string), []string{backlog.LabelReady}) || label["card"] != "ready" {
 		t.Errorf("first: label %v", label)
 	}
 	if comment["sticky"] != "claim" || !strings.Contains(body, "gives this issue back") || !strings.Contains(body, intent.WhyMark) {

@@ -20,6 +20,6 @@ expect:
     issues:
       - {id: 1, labels: ["workline:ready", "workline:developing"], comments: 0}
       - id: 2
-        labels: ["workline:ready", "workline:developing"]
+        labels: ["workline:developing"]
         comment-contains: ["#1: taken already, labelled workline:developing"]
         comment-lacks: ["overlaps #1"]

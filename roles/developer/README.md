@@ -3,7 +3,7 @@ sources:
   - roles/developer/role.yaml
   - ci/github/workline-develop.yml
   - internal/developer
-checked: 38c40ed2
+checked: 27437193
 verified: agent:claude-code
 ---
 # Developer
@@ -30,7 +30,8 @@ file. All roles: [docs/roles.md](../../docs/roles.md). Where it stands:
 
 - **Picks** the first ready issue in the backlog's order that nobody
   took: [the pick](docs/pick.md).
-- **Claims** it, with an agent set: a label and a comment on the issue,
+- **Claims** it, with an agent set: a label that moves it from Ready to
+  Doing and a comment on the issue,
   the record the [auditor](../auditor/role.yaml) can read; its card to
   the board's doing column ([boards](../../docs/boards.md)).
 - **Writes the code**, with an agent, in a worktree of the code: it
