@@ -6,14 +6,16 @@
 # in a copy of the repository at its base, with no shell; its question
 # must say it reads the code itself. Then it reads lib.sh, searches, and
 # answers two tests, one per scenario, and a note of what they assume,
-# in stream-json.
+# in stream-json. The role's shared part, its instruction and answer's
+# shape, is its system prompt, the same each call; the task alone is on
+# stdin (#1128).
 set -eu
 want() { echo "claude stand-in: $*" >&2; exit 1; }
 # Its flags, without the system prompt's text: the role's instruction
 # may name a tool it is not given (#1128).
-args=" " skip=
+args=" " skip= system=
 for a in "$@"; do
-	[ -z "$skip" ] || { skip=; continue; }
+	[ -z "$skip" ] || { skip=; system=$a; continue; }
 	args="$args$a "
 	case "$a" in --system-prompt | --append-system-prompt) skip=1 ;; esac
 done
@@ -26,6 +28,11 @@ case "$args" in *Bash* | *Edit* | *Write* | *" --allowedTools "* | *" --append-s
 [ "$(git rev-parse --show-toplevel)" = "$(pwd -P)" ] && [ -f lib.sh ] || want "not run in a copy of the repository: $(pwd)"
 grep -q 'add()' lib.sh && ! grep -q 'mul()' lib.sh || want "not the base's code"
 question=$(cat)
+for w in 'You write the acceptance tests of one issue' '# Answer'; do
+	case "$system" in *"$w"*) ;; *) want "the system prompt does not hold $w" ;; esac
+done
+case "$question" in '# Task'*) ;; *) want "the question does not start with its task" ;; esac
+case "$question" in *'You write the acceptance tests of one issue'* | *'# Answer'*) want "the question repeats the shared part" ;; esac
 for w in '## Reading the code yourself' 'Read, Glob and Grep' '40 turns at most'; do
 	case "$question" in *"$w"*) ;; *) want "the question does not say $w" ;; esac
 done
