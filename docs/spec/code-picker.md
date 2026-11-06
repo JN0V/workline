@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/codepick, internal/codenav, internal/builtin/productowner/productowner.go]
 status: draft
-checked: 0d461346
+checked: 2ad6b9eb
 verified: agent:claude-code
 ---
 # The code picker
@@ -38,7 +38,8 @@ flowchart LR
 - **The component the issue is about**
   ([#1152](https://github.com/JN0V/workline/issues/1152)):
   - a file of the project's own code named as a word of the title, its
-    extension off: the word before its colon (`WebUI: …` is `WebUI.h`),
+    extension off: the word before its colon (`WebUI: …` is `WebUI.h`;
+    not a commit's type, `fix:`),
     or one written as code (`RemoteConsole`, `NTP`); a word naming more
     than 3 files names none;
   - the code holding a route the text writes (`/api/components/enable`),
