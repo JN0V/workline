@@ -366,7 +366,7 @@ whose result moves the issue to the next. The table is the routing's
 | State | Label | Wakes | Its result moves it to |
 |---|---|---|---|
 | blocked | `workline:blocked` | nobody: its reason on the issue; the product owner reads it again on news ([below](#blocked-read-again)) | — |
-| doing | `workline:developing` | nobody: the developer's claim | — |
+| doing | `workline:developing` | nobody: the developer's claim; one with no pull request wakes the developer to let it go, past `claim-hours` or on a change to its body, the day said until then ([#1084](https://github.com/JN0V/workline/issues/1084)) | — |
 | ready | `workline:ready` | the developer | doing |
 | tests | `workline:needs-tests` | the tester | ready |
 | refine | `workline:to-refine` | the product owner | tests |

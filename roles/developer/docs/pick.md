@@ -93,6 +93,12 @@ on any event, with or without an agent:
 - **When**: `claim-hours` (24 by default) since the forge says the label
   was put on (GitHub's issue timeline, GitLab's label events), and no
   open pull request says `Closes #n`.
+- **Sooner, a new body**: a claim whose agent wrote no code is let go
+  at once when the issue's body changed since the claim read it
+  ([#1084](https://github.com/JN0V/workline/issues/1084)).
+- **Woken for it**: Doing wakes no role, so the line's reconciler wakes
+  the developer on such a claim, once, past `claim-hours` or on its new
+  body. Until then it says the day the claim is let go.
 - **What**: `claim-label` taken off; the claim's comment edited to say
   why and what comes next. The issue is not taken again in the same run.
 - **A day the forge does not say**: the claim is kept, said in the
