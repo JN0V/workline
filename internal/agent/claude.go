@@ -57,6 +57,8 @@ func (c claude) Propose(req Request) (Call, error) {
 	if err != nil {
 		return call, err
 	}
+	// The system prompt is what every call of the role shares (Prompt):
+	// Claude Code caches it, the role's next call reads it back (#1128).
 	args := []string{"-p", "--output-format", "json", "--tools", "", "--strict-mcp-config",
 		"--no-session-persistence", "--system-prompt", system}
 	tree := Worktree(req.RunDir)

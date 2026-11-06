@@ -9,7 +9,14 @@
 # in stream-json.
 set -eu
 want() { echo "claude stand-in: $*" >&2; exit 1; }
-args=" $* "
+# Its flags, without the system prompt's text: the role's instruction
+# may name a tool it is not given (#1128).
+args=" " skip=
+for a in "$@"; do
+	[ -z "$skip" ] || { skip=; continue; }
+	args="$args$a "
+	case "$a" in --system-prompt | --append-system-prompt) skip=1 ;; esac
+done
 for a in "--output-format stream-json" "--verbose" "--tools Read,Glob,Grep" \
 	"--permission-mode dontAsk" "--strict-mcp-config" \
 	"--setting-sources user" "--no-session-persistence" "--system-prompt" "--max-turns 40"; do

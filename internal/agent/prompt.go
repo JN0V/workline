@@ -93,21 +93,26 @@ func facet(req Request, name string) (string, bool) {
 	return "", false
 }
 
-// Prompt assembles what the agent reads, in the contract's order: persona
-// (returned apart, as the system prompt), knowledge, instruction, the task,
-// the output contract, and the policy last.
+// Prompt assembles what the agent reads, in the contract's order. The
+// system prompt is what every call of the role shares, byte for byte from
+// one task to the next: persona, knowledge, instruction and output
+// contract, which Claude Code caches and the role's next call reads back
+// (#1128). The user message is what the call alone holds: the task, the
+// skills its pre named, a refused answer's feedback, and the policy,
+// last on purpose.
 func Prompt(req Request) (system, user string, err error) {
-	system, _ = facet(req, "persona.md")
-	if system == "" {
-		system = fmt.Sprintf("You are the %s of a software project. %s", req.Role.Name, req.Role.Mission)
+	persona, _ := facet(req, "persona.md")
+	if persona == "" {
+		persona = fmt.Sprintf("You are the %s of a software project. %s", req.Role.Name, req.Role.Mission)
 	}
-	var b strings.Builder
+	var s strings.Builder
+	s.WriteString(strings.TrimRight(persona, "\n") + "\n\n")
 	for _, k := range req.Role.Context.Knowledge {
 		text, ok := facet(req, filepath.Join("knowledge", k))
 		if !ok {
 			return "", "", fmt.Errorf("knowledge file %q not found", k)
 		}
-		b.WriteString(text + "\n\n")
+		s.WriteString(text + "\n\n")
 	}
 	name := "instruction.md"
 	if req.Role.InstructionFacet != "" {
@@ -117,7 +122,29 @@ func Prompt(req Request) (system, user string, err error) {
 	if !ok {
 		return "", "", fmt.Errorf("role %q has no %s", req.Role.Name, name)
 	}
-	b.WriteString(instruction + "\n\n")
+	s.WriteString(instruction + "\n\n")
+	tree := Worktree(req.RunDir) != ""
+	if tree {
+		// It edits in place (ADR-0056): its diff is its code, no patch.
+		s.WriteString("# Answer\n\nYour working directory is a worktree of the code: edit its files there and run its tests. " +
+			"Its diff is your code, held to the task's bounds once you are done.\n\n" +
+			"When you are done, your last message is read by the engine, not by a person: YAML only, nothing before or after it, no code fence. " +
+			"`[]` when you propose nothing beside your edits; else a list, each item holding exactly one of:\n\n")
+	} else {
+		s.WriteString("# Answer\n\nAnswer with YAML only, no prose and no code fence: a list of proposals, each item holding exactly one of:\n\n")
+	}
+	for _, k := range req.Role.Intentions {
+		if !engineOnly[k] && (!tree || k != "patch") {
+			s.WriteString(contracts[k] + "\n")
+		}
+	}
+	if tree {
+		s.WriteString("\n" + BlockScalars + "\n\nBeyond the worktree you cannot act, only propose; anything else is refused.\n")
+	} else {
+		s.WriteString("\n" + BlockScalars + "\n\nYou cannot act, only propose; anything else is refused.\n")
+	}
+	system = s.String()
+	var b strings.Builder
 	task, err := os.ReadFile(filepath.Join(req.RunDir, "in", "task.md"))
 	if err != nil {
 		return "", "", err
@@ -131,26 +158,6 @@ func Prompt(req Request) (system, user string, err error) {
 	if fb, err := os.ReadFile(filepath.Join(req.RunDir, "out", "feedback.md")); err == nil {
 		b.WriteString("# Your previous answer was refused\n\n" + string(fb) + "\n" +
 			"Your new answer replaces it whole: give again, unchanged, every proposal and every change of it not refused above, and change only what is refused.\n\n")
-	}
-	tree := Worktree(req.RunDir) != ""
-	if tree {
-		// It edits in place (ADR-0056): its diff is its code, no patch.
-		b.WriteString("# Answer\n\nYour working directory is a worktree of the code: edit its files there and run its tests. " +
-			"Its diff is your code, held to the task's bounds once you are done.\n\n" +
-			"When you are done, your last message is read by the engine, not by a person: YAML only, nothing before or after it, no code fence. " +
-			"`[]` when you propose nothing beside your edits; else a list, each item holding exactly one of:\n\n")
-	} else {
-		b.WriteString("# Answer\n\nAnswer with YAML only, no prose and no code fence: a list of proposals, each item holding exactly one of:\n\n")
-	}
-	for _, k := range req.Role.Intentions {
-		if !engineOnly[k] && (!tree || k != "patch") {
-			b.WriteString(contracts[k] + "\n")
-		}
-	}
-	if tree {
-		b.WriteString("\n" + BlockScalars + "\n\nBeyond the worktree you cannot act, only propose; anything else is refused.\n\n")
-	} else {
-		b.WriteString("\n" + BlockScalars + "\n\nYou cannot act, only propose; anything else is refused.\n\n")
 	}
 	if policy, ok := facet(req, "policy.md"); ok {
 		b.WriteString("# Rules\n\n" + policy)

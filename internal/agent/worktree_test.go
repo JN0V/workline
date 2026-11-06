@@ -112,11 +112,11 @@ func TestPromptInAWorktreeAsksForEdits(t *testing.T) {
 	must(t, os.MkdirAll(filepath.Join(runDir, "in"), 0o755))
 	must(t, os.MkdirAll(filepath.Join(runDir, WorktreeDir), 0o755))
 	must(t, os.WriteFile(filepath.Join(runDir, "in", "task.md"), []byte("The issue."), 0o644))
-	_, user, err := Prompt(Request{RunDir: runDir, Repo: t.TempDir(), Role: &role.Role{Name: "developer", Dir: dir, Intentions: []string{"patch", "comment"}}})
+	system, _, err := Prompt(Request{RunDir: runDir, Repo: t.TempDir(), Role: &role.Role{Name: "developer", Dir: dir, Intentions: []string{"patch", "comment"}}})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(user, "edit its files there and run its tests") || strings.Contains(user, "- patch:") || !strings.Contains(user, "- comment:") {
-		t.Errorf("the worktree's answer contract:\n%s", user)
+	if !strings.Contains(system, "edit its files there and run its tests") || strings.Contains(system, "- patch:") || !strings.Contains(system, "- comment:") {
+		t.Errorf("the worktree's answer contract:\n%s", system)
 	}
 }
