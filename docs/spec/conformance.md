@@ -206,6 +206,9 @@ step 1):
   seeded scripts: a malformed answer, a miscounted hunk, a test or code
   that does not build, needs-input from the engine, the product owner or
   a person. A role with no form today for a kind answers its progress.
+  The tester's wait is an ask it may not use: refused whole, a machine
+  error, as a named trace too
+  ([#1124](https://github.com/JN0V/workline/issues/1124)).
   A task over its context budget, the agent not asked, is a named
   trace alone ([#1017](https://github.com/JN0V/workline/issues/1017)),
   as is the developer's new test file beside its Scope, alone

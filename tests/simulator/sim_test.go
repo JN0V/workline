@@ -96,6 +96,9 @@ var traces = func() []trace {
 		// #1017: the tester's task over its context budget, its agent not
 		// asked: read as "no test proposed".
 		trace{name: "trial-35-over-budget", file: "trial-35", fresh: true, end: "done", by: one("tester", overBudget)},
+		// #1124: the tester's ask, which it may not use: refused whole,
+		// run again with the refusal said, then Done.
+		trace{name: "trial-35-tester-refused", file: "trial-35", fresh: true, end: "done", by: one("tester", refused)},
 		// The product owner's answer unreadable twice in its run.
 		trace{name: "trial-35-po-unread", file: "trial-35", fresh: true, end: "done", by: map[string][]outcome{"product-owner": {malformed, malformed}}},
 		// Needs input, from each source: the engine (the product owner's

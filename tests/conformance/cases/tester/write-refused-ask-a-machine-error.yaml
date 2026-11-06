@@ -1,0 +1,31 @@
+case: tester/write-refused-ask-a-machine-error
+about: >
+  The tester's agent answers an ask, which the tester may not use: the
+  answer is refused whole, never read as a wait (#1124). The run blocks
+  with no-test-written, a machine error of its answer the line runs
+  again within its budget (ADR-0063), the refusal said on the issue;
+  no Draft opens.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:ready"]
+        body: "## Need\n\nI want to multiply.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+run: {test: [write, --issue, "3"], ai: "fake:tester-asks"}
+expect:
+  status: block
+  agent-calls: 1
+  findings: [{rule: intention-refused}, {rule: no-test-written}]
+  not-pushed: [workline/tester/issue-3]
+  forge:
+    merge-requests:
+      - {id: 1, absent: true}
+    issues:
+      - id: 3
+        comment-contains: ["**The tester** wrote no tests for this issue this run", "refused whole", "ask is not allowed for this role"]
