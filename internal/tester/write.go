@@ -438,7 +438,7 @@ func Post(runDir, repo string) int {
 	tested := map[string]string{} // scenario -> the first test file naming it
 	said := map[string]string{}   // scenario -> the note saying no test checks it
 	for _, n := range notes {
-		if i := claim(words(n), t.Scenarios, hasPrefix); i >= 0 {
+		for _, i := range claimed(n, t.Scenarios) {
 			if _, ok := said[t.Scenarios[i].Name]; !ok {
 				said[t.Scenarios[i].Name] = n
 			}
@@ -457,11 +457,15 @@ func Post(runDir, repo string) int {
 		}
 		if _, ok := said[sc.Name]; !ok {
 			findings = append(findings, verdict.Finding{Rule: "scenario-without-test", Where: sc.Name,
-				Message: "no test names this scenario, and no note says why none can check it: each scenario gets a test that names it"})
+				Message: "no test names this scenario, and no note says why none can check it: each scenario gets a test that names it, " +
+					"in its name or in its comment opening on the name (`// " + sc.Name + ": Given …`); one test may name several"})
 		}
 	}
 	if len(findings) > 0 {
-		return refusePost(runDir, t.Issue, verdict.Verdict{Status: verdict.Block, Summary: "the tests do not hold to the issue's scenarios", Findings: findings})
+		// Scenarios left unnamed, and nothing else, are the answer's to
+		// mend: asked again once with their names, before any block (#1147).
+		again := !slices.ContainsFunc(findings, func(f verdict.Finding) bool { return f.Rule != "scenario-without-test" })
+		return refusePost(runDir, t.Issue, verdict.Verdict{Status: verdict.Block, Summary: "the tests do not hold to the issue's scenarios", Findings: findings, Again: again})
 	}
 	s.issue = t.Text
 	proof, newTests, blobs, err := proveOnBase(repo, t.Base, patches, s)
@@ -957,10 +961,15 @@ func noteText(v any) string {
 
 // names reports whether a test file names the scenario by a whole,
 // delimited mention, never as a part of a longer name nor in prose: a
-// "Scenario: <name>" line, a quoted string that is the name, or an
+// "Scenario: <name>" line, a quoted string that is the name, an
 // identifier whose words are the name's, after a "test" prefix or an
-// underscore (`TestMinusOne`, `test_minus_one`, `TestSub_MinusOne`).
-// "Minus one" is thus not named by `TestMinusOneHundred`.
+// underscore (`TestMinusOne`, `test_minus_one`, `TestSub_MinusOne`), or
+// the label a comment or one of its sentences opens with
+// (`// Minus one: Given …`, `// TestMinusOne: …`). "Minus one" is thus
+// not named by `TestMinusOneHundred`. One test may name several
+// scenarios: a label or a test's name listing them, joined by "and" or
+// commas (`// Enabled console and Restart: …`,
+// `test_enabled_console_and_restart`), names each (#1147).
 func names(text, name string) bool {
 	want := words(name)
 	if len(want) == 0 {
@@ -970,6 +979,11 @@ func names(text, name string) bool {
 		if i := strings.Index(strings.ToLower(line), "scenario:"); i >= 0 && slices.Equal(words(line[i+len("scenario:"):]), want) {
 			return true
 		}
+		for _, l := range labels(line) {
+			if lists(l, want) {
+				return true
+			}
+		}
 		for _, q := range quotedRe.FindAllString(line, -1) {
 			if slices.Equal(words(q[1:len(q)-1]), want) {
 				return true
@@ -977,7 +991,7 @@ func names(text, name string) bool {
 		}
 		for _, id := range identRe.FindAllString(line, -1) {
 			w := words(id)
-			if len(w) > 0 && (w[0] == "test" || w[0] == "tests") && slices.Equal(w[1:], want) {
+			if len(w) > 0 && (w[0] == "test" || w[0] == "tests") && slices.ContainsFunc(joined(w[1:]), equal(want)) {
 				return true
 			}
 			// a camel-cased last segment, after a prefix: `TestSub_MinusOne`
@@ -995,6 +1009,96 @@ var (
 )
 
 func hasUpper(s string) bool { return strings.ToLower(s) != s }
+
+// commentLead is what opens a comment, in the languages tests are
+// written in: `//`, `/*`, `*`, `#`, `--`, `;`, a docstring's quotes.
+var commentLead = regexp.MustCompile(`^\s*(?://+|/\*+|\*+|#+|--|;+|"""|'''|<!--)?\s*`)
+
+// sentenceEnd cuts a comment into its sentences.
+var sentenceEnd = regexp.MustCompile(`[.!?;]\s+`)
+
+// labels are the words a line, its comment or one of their sentences
+// opens with before a colon: "Restart" in `// … still does. Restart:
+// Given …`. A colon of code (`::`, `:=`) opens none.
+func labels(line string) []string {
+	starts := []string{line[len(commentLead.FindString(line)):]}
+	for _, lead := range []string{"//", "/*", "# "} {
+		if i := strings.Index(line, lead); i > 0 {
+			rest := line[i:]
+			starts = append(starts, rest[len(commentLead.FindString(rest)):])
+		}
+	}
+	var out []string
+	for _, s := range starts {
+		for _, sentence := range sentenceEnd.Split(s, -1) {
+			i := strings.Index(sentence, ":")
+			if i <= 0 || strings.HasPrefix(sentence[i:], "::") || strings.HasPrefix(sentence[i:], ":=") {
+				continue
+			}
+			out = append(out, sentence[:i])
+		}
+	}
+	return out
+}
+
+// lists says whether a label is the name, or lists it among others,
+// joined by commas, "&", "/" or "and": each maybe a test's name
+// (`TestMinusOne: …`) or after the word "scenario".
+func lists(label string, want []string) bool {
+	for _, part := range listSep.Split(label, -1) {
+		w := words(part)
+		if len(w) > 1 && !slices.Equal(w, want) && slices.Contains([]string{"test", "tests", "scenario", "scenarios"}, w[0]) {
+			w = w[1:]
+		}
+		if slices.ContainsFunc(joined(w), equal(want)) {
+			return true
+		}
+	}
+	return false
+}
+
+var listSep = regexp.MustCompile(`\s*[,&/+]\s*`)
+
+// joined are a name's words whole, then each part of them between the
+// word "and": a name holding "and" is still read whole.
+func joined(w []string) [][]string {
+	out := [][]string{w}
+	from := 0
+	for i, x := range w {
+		if x == "and" {
+			out = append(out, w[from:i])
+			from = i + 1
+		}
+	}
+	if from > 0 {
+		out = append(out, w[from:])
+	}
+	return out
+}
+
+func equal(want []string) func([]string) bool {
+	return func(w []string) bool { return slices.Equal(w, want) }
+}
+
+// claimed are the scenarios a note names: each its label lists
+// (`Enabled console and Restart: …`, #1147), or else the one its words
+// open with, the longest when several do.
+func claimed(note string, scenarios []Scenario) []int {
+	var out []int
+	if label, _, ok := strings.Cut(note, ":"); ok {
+		for i, sc := range scenarios {
+			if w := words(sc.Name); len(w) > 0 && lists(label, w) {
+				out = append(out, i)
+			}
+		}
+	}
+	if len(out) == 0 {
+		if i := claim(words(note), scenarios, hasPrefix); i >= 0 {
+			out = append(out, i)
+		}
+	}
+	return out
+}
 
 // words cuts a text into its lowercased words: at what is no letter nor
 // digit, at a lower-to-upper case change and between letters and digits,

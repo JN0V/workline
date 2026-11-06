@@ -162,6 +162,53 @@ func TestNamesAScenarioWhole(t *testing.T) {
 	}
 }
 
+// A comment opening on the scenario's name, or a sentence of it, names
+// it, as the instruction asks (`// Name: Given …`); one test naming two
+// scenarios names both, by its comment or its name (#1147, trial #56).
+func TestNamesAScenarioInItsComment(t *testing.T) {
+	real := "// Enabled console: Given an enabled console and an application listener added\n" +
+		"// before it, When I run shutdown() and log a line, Then the console no longer\n" +
+		"// receives the line and my own listener still does. Restart: Given a console\n" +
+		"// shut down twice in a row, When I log a line, Then no other listener is\n" +
+		"// removed.\nvoid test_enabled_console_and_restart(void) {\n"
+	for _, name := range []string{"Enabled console", "Restart"} {
+		if !names(real, name) {
+			t.Errorf("trial #56's test does not name %q", name)
+		}
+	}
+	for _, code := range []string{"# Old debt: Given 140 findings", " * Old debt: Given", "// TestOldDebt: Given 140 findings",
+		"x := 1 // Old debt: Given", "// Moved code and Old debt: Given a move", "// Old debt, Moved code: Given",
+		"func TestMovedCodeAndOldDebt(t *testing.T)", "def test_old_debt_and_moved_code():"} {
+		if !names(code, "Old debt") {
+			t.Errorf("%q does not name the scenario", code)
+		}
+	}
+	for _, code := range []string{"// Old debt gone: Given", "// the old debt: kept", "// Old debt is kept: Given",
+		"std::Old::debt()", "debt := 1", "// Then it prints: Old debt"} {
+		if names(code, "Old debt") {
+			t.Errorf("%q names the scenario, though only a longer name or prose holds it", code)
+		}
+	}
+	if !names("// Bread and butter: Given", "Bread and butter") {
+		t.Error("a name holding \"and\" is not read whole")
+	}
+}
+
+// A note naming two scenarios counts for both; one naming one, for it
+// (#1147).
+func TestNoteClaimsEachScenarioItNames(t *testing.T) {
+	sc := []Scenario{{Name: "Disabled console"}, {Name: "Enabled console"}, {Name: "Restart"}}
+	if got := claimed("Enabled console and Restart: they share one test, as the verification describes.", sc); !slices.Equal(got, []int{1, 2}) {
+		t.Errorf("claimed %v, want [1 2]", got)
+	}
+	if got := claimed("Restart cannot be checked on the host", sc); !slices.Equal(got, []int{2}) {
+		t.Errorf("claimed %v, want [2]", got)
+	}
+	if got := claimed("assumes: a stub", sc); len(got) != 0 {
+		t.Errorf("claimed %v, want none", got)
+	}
+}
+
 func TestClaimTakesTheLongestName(t *testing.T) {
 	sc := []Scenario{{Name: "Minus one"}, {Name: "Minus one hundred"}}
 	if i := claim(words("Minus one hundred: a person reads it"), sc, hasPrefix); i != 1 {

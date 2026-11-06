@@ -1,0 +1,115 @@
+- note: "Enabled console and Restart: they share one test, as the verification describes. It passes today when the application listener's id is not 0 (the console then removes its own id, 1). It cannot fail on the unfixed code unless the console's id aliases the application's. The Disabled console test is the one that fails today."
+- patch: |
+    --- /dev/null
+    +++ b/DomoticsCore-RemoteConsole/test/test_remoteconsole_disabled_listener/test_remoteconsole_disabled_listener.cpp
+    @@ -0,0 +1,45 @@
+    +// A disabled console's shutdown() must not remove an application listener.
+    +// This file is its own test binary, so the listener added here is the first
+    +// one the process ever registers (callback id 0).
+    +
+    +#include <unity.h>
+    +#include <DomoticsCore/RemoteConsole.h>
+    +
+    +using namespace DomoticsCore;
+    +using namespace DomoticsCore::Components;
+    +
+    +static int appLines = 0;
+    +
+    +void setUp(void) {
+    +    HAL::Platform::setMillisForTest(1000);
+    +    HAL::setCanOpenServerForTest(true);
+    +}
+    +
+    +void tearDown(void) {
+    +    HAL::Platform::resetMillisForTest();
+    +}
+    +
+    +// Disabled console: Given an application listener added with
+    +// LoggerCallbacks::addCallback() and a RemoteConsoleComponent with
+    +// enabled = false, When I run its begin() then shutdown() and log a line,
+    +// Then my listener still receives the line (2 lines in total, not 1).
+    +void test_disabled_console(void) {
+    +    LoggerCallbacks::addCallback([](LogLevel, const char* tag, const char*) {
+    +        if (String(tag) == "APP") appLines++;
+    +    });
+    +
+    +    RemoteConsoleConfig config;
+    +    config.enabled = false;
+    +    RemoteConsoleComponent console(config);
+    +    console.begin();
+    +    console.shutdown();
+    +
+    +    DLOG_I("APP", "after the disabled console shut down");
+    +    TEST_ASSERT_EQUAL_INT_MESSAGE(1, appLines, "the application listener was removed");
+    +}
+    +
+    +int main(int argc, char** argv) {
+    +    UNITY_BEGIN();
+    +    RUN_TEST(test_disabled_console);
+    +    return UNITY_END();
+    +}
+- patch: |
+    --- /dev/null
+    +++ b/DomoticsCore-RemoteConsole/test/test_remoteconsole_enabled_listener/test_remoteconsole_enabled_listener.cpp
+    @@ -0,0 +1,61 @@
+    +// An enabled console's shutdown() removes its own listener and only that one.
+    +
+    +#include <unity.h>
+    +#include <DomoticsCore/RemoteConsole.h>
+    +
+    +using namespace DomoticsCore;
+    +using namespace DomoticsCore::Components;
+    +
+    +static int appLines = 0;
+    +
+    +void setUp(void) {
+    +    HAL::Platform::setMillisForTest(1000);
+    +    HAL::setCanOpenServerForTest(true);
+    +}
+    +
+    +void tearDown(void) {
+    +    HAL::Platform::resetMillisForTest();
+    +}
+    +
+    +static int appLinesInConsole(RemoteConsoleComponent& console) {
+    +    int n = 0;
+    +    for (const auto& e : console.getRecentLogs(100)) {
+    +        if (e.tag == "APP") n++;
+    +    }
+    +    return n;
+    +}
+    +
+    +// Enabled console: Given an enabled console and an application listener added
+    +// before it, When I run shutdown() and log a line, Then the console no longer
+    +// receives the line and my own listener still does. Restart: Given a console
+    +// shut down twice in a row, When I log a line, Then no other listener is
+    +// removed.
+    +void test_enabled_console_and_restart(void) {
+    +    LoggerCallbacks::addCallback([](LogLevel, const char* tag, const char*) {
+    +        if (String(tag) == "APP") appLines++;
+    +    });
+    +
+    +    RemoteConsoleConfig config;
+    +    config.enabled = true;
+    +    RemoteConsoleComponent console(config);
+    +    console.begin();
+    +
+    +    console.shutdown();
+    +    DLOG_I("APP", "after the first shutdown");
+    +    TEST_ASSERT_EQUAL_INT_MESSAGE(1, appLines, "the application listener was removed");
+    +    TEST_ASSERT_EQUAL_INT_MESSAGE(0, appLinesInConsole(console),
+        "the console still receives lines after shutdown");
+    +
+    +    console.shutdown();
+    +    DLOG_I("APP", "after the second shutdown");
+    +    TEST_ASSERT_EQUAL_INT_MESSAGE(2, appLines,
+        "the second shutdown removed the application listener");
+    +    TEST_ASSERT_EQUAL_INT_MESSAGE(0, appLinesInConsole(console),
+        "the console received a line after the second shutdown");
+    +}
+    +
+    +int main(int argc, char** argv) {
+    +    UNITY_BEGIN();
+    +    RUN_TEST(test_enabled_console_and_restart);
+    +    return UNITY_END();
+    +}
