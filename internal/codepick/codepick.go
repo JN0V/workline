@@ -585,9 +585,18 @@ func (p *Picker) Pick(a Ask) Pick {
 	for _, r := range routed { // the code a route names, right after
 		wants = append(wants, want{r.file, r.from, r.to, r.why, true})
 	}
+	// A name defined in one file only (`DoWork` in `worker.go`), and the
+	// definitions in the component the issue is about: before the
+	// functions they call, before the files asked for and the places
+	// naming a name.
+	once := func(n string) bool {
+		ds := byName[n].defs
+		return len(ds) > 0 && !slices.ContainsFunc(ds, func(w want) bool { return w.file != ds[0].file })
+	}
+	early := func(n string, w want) bool { return !atHome(n, w) && !here[n] && (about[w.file] || once(n)) }
 	for _, n := range rank {
 		for _, w := range byName[n].defs {
-			if about[w.file] && !atHome(n, w) && !here[n] {
+			if early(n, w) {
 				defsGiven[n]++
 				wants = append(wants, w)
 			}
@@ -598,7 +607,7 @@ func (p *Picker) Pick(a Ask) Pick {
 	var others []want
 	for _, n := range rank {
 		for _, w := range byNear(byName[n].defs) {
-			if !atHome(n, w) && !about[w.file] && !here[n] && defsGiven[n] < defsMax {
+			if !atHome(n, w) && !early(n, w) && !here[n] && defsGiven[n] < defsMax {
 				defsGiven[n]++
 				others = append(others, w)
 			}
@@ -644,7 +653,8 @@ func (p *Picker) Pick(a Ask) Pick {
 	// less (#1129).
 	for _, n := range rank {
 		for _, w := range byName[n].defs {
-			if !inNamed(w) && !home[w.file] && !about[w.file] {
+			// A callee after its caller: only a definition given before.
+			if !inNamed(w) && !home[w.file] && !about[w.file] || !atHome(n, w) && !early(n, w) {
 				continue
 			}
 			lines := p.Lines(w.file)

@@ -63,13 +63,13 @@ Under the role's budget, each piece once a task:
    - Those in a file named first. A name defined in a file named is that
      one: one of the same name elsewhere is counted, not given.
    - Then the code a route names, then those in the component the issue
-     is about: `shutdown()` in the `RemoteConsole` its title names
-     first.
+     is about (`shutdown()` in the `RemoteConsole` its title names),
+     and a name defined in one file only (`DoWork` in `worker.go`).
    - A name defined in more than 12 places (`loop()` in every
      component) is read in the one file defining another name the issue
      writes (`enableLED` in `LED.h`), the others counted; a name defined
      in a few is given in each.
-   - The functions a definition in those files calls, defined once in
+   - The functions a definition given above calls, after it, defined once in
      its file, the longest first, 3 a definition at most, each whole:
      `loop()` says little, `updateEffects()` it calls says what it does.
    - Then the project's own others, 12 a name at most, the nearest
