@@ -67,6 +67,45 @@ func lookupCommand(name string) *command {
 	return nil
 }
 
+// didYouMean returns `; did you mean "x"?` for the nearest visible command
+// within an edit distance of 2, or "" when none is that close.
+func didYouMean(name string) string {
+	best, bestD := "", 3
+	for _, c := range commands {
+		if c.hidden {
+			continue
+		}
+		if d := editDistance(name, c.name); d < bestD {
+			best, bestD = c.name, d
+		}
+	}
+	if best == "" {
+		return ""
+	}
+	return fmt.Sprintf("; did you mean %q?", best)
+}
+
+func editDistance(a, b string) int {
+	ra, rb := []rune(a), []rune(b)
+	prev := make([]int, len(rb)+1)
+	for j := range prev {
+		prev[j] = j
+	}
+	for i := 1; i <= len(ra); i++ {
+		cur := make([]int, len(rb)+1)
+		cur[0] = i
+		for j := 1; j <= len(rb); j++ {
+			cost := 1
+			if ra[i-1] == rb[j-1] {
+				cost = 0
+			}
+			cur[j] = min(prev[j]+1, cur[j-1]+1, prev[j-1]+cost)
+		}
+		prev = cur
+	}
+	return prev[len(rb)]
+}
+
 // dispatch runs the command args name, and returns the exit code: help is
 // asked for, never misuse (0); misuse is 64, never 2, which says `human`.
 func dispatch(args []string) int {
@@ -83,7 +122,7 @@ func dispatch(args []string) int {
 	if c := lookupCommand(args[0]); c != nil {
 		return c.run(args[1:])
 	}
-	fmt.Fprintf(os.Stderr, "workline: unknown command %q; run `workline --help` for the commands\n", args[0])
+	fmt.Fprintf(os.Stderr, "workline: unknown command %q%s; run `workline --help` for the commands\n", args[0], didYouMean(args[0]))
 	return 64
 }
 
@@ -114,7 +153,7 @@ func helpCmd(args []string) int {
 	c := lookupCommand(args[0])
 	if c == nil || c.name == "help" {
 		if c == nil {
-			fmt.Fprintf(os.Stderr, "workline help: unknown command %q; run `workline --help` for the commands\n", args[0])
+			fmt.Fprintf(os.Stderr, "workline help: unknown command %q%s; run `workline --help` for the commands\n", args[0], didYouMean(args[0]))
 			return 64
 		}
 		topHelp(os.Stdout)
