@@ -9,6 +9,7 @@ import (
 	"path"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 
 	"go.yaml.in/yaml/v3"
@@ -249,36 +250,47 @@ func NormalizeDiff(diff string) string {
 	return mergeOverlapping(strings.Join(addedWhole(out), "\n"))
 }
 
-// addedWhole reads each line of a new file's hunk as added: a file made
-// from /dev/null has no line to keep, so a line written without its `+`
-// (an agent's wrapped line, trial #56) is one of the file's, not a context
-// git refuses as a corrupt patch. Blank lines before the next file's
-// headers, or ending the diff, part files: none of the file's.
+// addedWhole reads a line written without its `+` in a new file's hunk
+// as one of the file's (an agent's wrapped line, trial #56): a file made
+// from /dev/null has no line to keep, so git refuses it as a corrupt
+// patch. Only up to the lines the hunk's header says it adds; a `-` line,
+// or what follows a full hunk (prose after it), is left for git to judge.
+// NormalizeDiff runs it for every role's patch.
 func addedWhole(lines []string) []string {
 	header := func(i int) bool {
 		return strings.HasPrefix(lines[i], "diff --git ") ||
 			strings.HasPrefix(lines[i], "--- ") && i+1 < len(lines) && strings.HasPrefix(lines[i+1], "+++ ")
 	}
-	parting := func(i int) bool { // a blank line, and only blank lines up to a header or the end
-		for ; i < len(lines) && lines[i] == ""; i++ {
-		}
-		return i == len(lines) || header(i)
-	}
-	created, inHunk := false, false
+	created, left := false, 0 // in a new file; the lines its hunk has yet to add
 	for i, l := range lines {
 		switch {
-		case strings.HasPrefix(l, "diff --git "):
-			created, inHunk = false, false
 		case header(i):
-			created, inHunk = strings.TrimSpace(strings.TrimPrefix(l, "--- ")) == "/dev/null", false
+			created, left = strings.TrimSpace(strings.TrimPrefix(l, "--- ")) == "/dev/null", 0
+		case strings.HasPrefix(l, "diff --git "):
+			created, left = false, 0
 		case strings.HasPrefix(l, "@@"):
-			inHunk = true
-		case created && inHunk && !strings.HasPrefix(l, "+") && !strings.HasPrefix(l, `\`) && (l != "" || !parting(i)):
+			left = 0
+			if m := newCount.FindStringSubmatch(l); created && m != nil {
+				left = 1
+				if m[1] != "" {
+					left, _ = strconv.Atoi(m[1])
+				}
+			}
+		case left <= 0 || strings.HasPrefix(l, `\`):
+		case strings.HasPrefix(l, "+"):
+			left--
+		case strings.HasPrefix(l, "-"):
+			left = 0 // no new file's line: git refuses the hunk
+		default:
 			lines[i] = "+" + l
+			left--
 		}
 	}
 	return lines
 }
+
+// newCount is the count of lines a hunk's header says it adds: `+1,61`.
+var newCount = regexp.MustCompile(`^@@ -\d+(?:,\d+)? \+\d+(?:,(\d+))? @@`)
 
 var hunkHeader = regexp.MustCompile(`^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@`)
 
