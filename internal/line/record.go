@@ -121,6 +121,10 @@ type Record struct {
 	// again on, the reviewer asked on it already and its spec still
 	// waiting on a review (#1070): once a body, never a loop.
 	ReviewAgain string `json:"review-again,omitempty"`
+	// Alone: the role the last step ran alone, in the place of its
+	// state's, the reviewer on drafts not yet reviewed (#1150): a retry
+	// of that step runs it again, its errors and block said as its.
+	Alone string `json:"alone,omitempty"`
 	// Ran: when the line last ran a step on the issue, RFC 3339: a step
 	// due again in the same state waits from then, in the reconciler's
 	// order (ADR-0059, amended 2026-11-03).

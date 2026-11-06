@@ -221,6 +221,12 @@ step 1):
   its label events, is compared with the simulator's, and `parts` names
   where they part and the answers left unused, why below. A developer's `[]` is left out: its
   code was in its worktree.
+- **CI's judge and apply jobs, replayed**: `traces/trial-56-split.json`
+  holds round 5's #56 at each moment its next step was asked, rebuilt
+  from GitHub's edit history (body, comments, labels, their dates). At
+  each, the line is asked with no agent, then its judge job runs with
+  nothing applied, then `workline apply --line`, as CI does
+  ([#1150](https://github.com/JN0V/workline/issues/1150)).
 - **Requests a tick**: the fake forge counts its reads in a file beside
   it (`forge.ReadsLog`), a byte a read, apart from its list of comment
   reads; each trace prints the forge's requests and the

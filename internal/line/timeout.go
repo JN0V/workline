@@ -101,19 +101,26 @@ func timedOut(b forge.Backlog, t *tally, is forge.Issue, notes []forge.Note, rec
 // has not read. Then it could write nothing: the step waits out
 // acts.ask.wait, or a person, with no agent call. Whether the delay
 // passed is timedOut's.
-func draftsHeld(is forge.Issue, labeled string, comments []string, notes []forge.Note, rec Record, had bool) bool {
+//
+// unreviewed: the same drafts, no review on this body yet, the review's
+// rounds not spent (specWaits) — as when CI's judge job ran the reviewer
+// before its apply wrote them (#1150). The reviewer's step, alone: the
+// product owner could write nothing until it lands.
+func draftsHeld(is forge.Issue, labeled string, comments []string, notes []forge.Note, rec Record, had bool) (held, unreviewed bool) {
 	if !had || rec.State != refineState || rec.Labeled != labeled || backlog.Readied(is) {
-		return false
+		return false, false
 	}
 	st, _, err := backlog.ReadState(comments, backlog.Keeper)
 	if err != nil || !backlog.OnlyDrafts(is, st) || st.Body != backlog.BodyDigest(is.Body) {
-		return false
+		return false, false
 	}
-	if _, cleared := backlog.SpecCleared(is, comments); !cleared {
-		return false
+	if counted := len(backlog.Counted(notes, is)); counted > backlog.Heard(st, counted) {
+		return false, false // a person's comment the product owner has not read
 	}
-	counted := len(backlog.Counted(notes, is))
-	return counted <= backlog.Heard(st, counted)
+	if _, cleared := backlog.SpecCleared(is, comments); cleared {
+		return true, false
+	}
+	return false, specWaits(is, comments)
 }
 
 // questionWaits is what the line says of a question s waiting on its

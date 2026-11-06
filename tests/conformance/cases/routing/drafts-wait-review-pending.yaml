@@ -1,0 +1,32 @@
+case: routing/drafts-wait-review-pending
+about: >
+  Drafts with no review yet call the reviewer alone (#1150): in CI the
+  reviewer ran in the judge job before the apply wrote the drafts, so it
+  read nothing. The body changed since the line's last step, the
+  reviewer is routed and its review is pending, not missing: the step
+  is the reviewer's, the product owner not called before the review
+  lands or the delay passes.
+given:
+  repo: backlog
+  config:
+    routing: {events: {issue: [product-owner, reviewer]}}
+  forge:
+    issues:
+      - id: 9
+        title: "workline version --verbose=false"
+        author: ann
+        insider: true
+        labels: [workline:to-refine, workline:proposed]
+        body: "## Need\n\nWhen I run `workline version --verbose=false`, I want the plain line, so my scripts read it.\n\n## Validation\n\n<!-- workline:draft -->\n\n- **Plain line:** Given workline installed, When I run `workline version --verbose=false`, Then it prints one line.\n\n---\n\n## Verification\n\nA test runs the command and reads one line.\n\n## Scope\n\nsrc/export/csv.go"
+        comments:
+          - {body: "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: 1cf7c41e922f\n```\n\n<!-- workline:sticky=product-owner/state -->", created: "2099-01-01T09:00:00Z"}
+          - "**workline's line** last woke the product owner on this issue, in its state refine (1 state step so far).\n\n<!-- workline:line-record {\"state\":\"refine\",\"body\":\"0a1b2c3d4e5f\",\"hops\":1,\"asked\":\"0a1b2c3d4e5f\"} -->\n<!-- workline:sticky=line/state -->"
+run: {route: issue, target: {issue: 9}, ai: none, input: {reconcile: list}}
+expect:
+  status: pass
+  summary: "issue: #9 due, the reviewer: not started"
+  agent-calls: 0
+  findings:
+    - {rule: state-review-pending, level: info, where: "#9", message: "its drafts wait on their spec review, not yet on this text: the reviewer reads them, the product owner is not called"}
+    - {rule: state-wakes, where: "#9", message: "its state, refine, wakes the reviewer"}
+  no-findings: [{rule: state-review-missing}, {rule: state-waits}]
