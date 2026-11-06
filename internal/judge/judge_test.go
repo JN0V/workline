@@ -89,8 +89,8 @@ func TestAnswerReading(t *testing.T) {
 
 // A judge whose question does not let it read — the spec review's, the
 // documentalist's, the product owner's, the evaluation's — is asked
-// exactly as before ADR-0045: its whole prompt is kept in
-// testdata/prompt.txt, as main built it before the reading judge. Only a
+// with nothing of the reading judge (ADR-0045): its whole prompt is kept
+// in testdata/prompt.txt, the shared part first since #1128. Only a
 // question that lets the judge read says how to answer so, and its output
 // contract alone shows reads and a quote.
 func TestPromptOfAJudgeThatDoesNotRead(t *testing.T) {
