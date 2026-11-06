@@ -74,9 +74,9 @@ roles:
       build-errors:
         - error: '^(?:\./)?(?P<file>[^\s:]+\.go):\d+:\d+: (?P<message>.+)$'
           missing-name:
-            - '^undefined: [\w.]+$'
-            - '^\S+ undefined \(type .+ has no field or method \w+'
-            - '^unknown field \w+ in struct literal'
+            - '^undefined: (?P<name>[\w.]+)$'
+            - '^\S+ undefined \(type .+ has no field or method (?P<name>\w+)'
+            - '^unknown field (?P<name>\w+) in struct literal'
           test-name: '(?m)^func (Test\w*)\(\w+ \*testing\.T\)'
         - error: '^\s*runner_test\.go:\d+: (?P<file>cases/[^\s:]+\.yaml): (?P<message>.+)$'
           test-name: '(?m)^case: (\S+)$'

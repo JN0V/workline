@@ -76,6 +76,10 @@ type Settings struct {
 	// packages, when set, are the folders a run of Command takes in its
 	// {packages}: those of them its tree holds.
 	packages []string
+	// issue, when set, is the text of the issue the tests are written
+	// for: a missing name it does not name is a build broken, a name the
+	// test made up, not one the change adds (#1111).
+	issue string
 }
 
 // SettingsFrom reads the tester's merged settings.
@@ -132,21 +136,39 @@ func Prove(repo, base string, s Settings) (*verdict.Verdict, []string) {
 	// build broken otherwise, never a proof (build-errors).
 	rules, _ := compileBuildErrors(s.BuildErrors) // unset said a bad one
 	errs := buildErrorsIn(redRun.output, ch.tests, rules)
-	var broken []buildError
+	var broken, unnamed []buildError
 	for _, e := range errs {
-		if !e.missing {
+		switch {
+		case !e.missing:
 			broken = append(broken, e)
+		case s.issue != "" && e.name != "" && !namedIn(e.name, s.issue):
+			unnamed = append(unnamed, e)
 		}
 	}
-	if len(broken) > 0 {
-		lines := make([]string, len(broken))
-		for i, e := range broken {
-			lines[i] = e.line
+	if len(broken) > 0 || len(unnamed) > 0 {
+		var lines, names []string
+		for _, e := range broken {
+			lines = append(lines, e.line)
 		}
-		return &verdict.Verdict{Status: verdict.Block, Summary: "the build broke on the base with the change's tests, not by a missing name",
-			Findings: []verdict.Finding{{Rule: "build-broken", Where: broken[0].file,
-				Message: fmt.Sprintf("%d build error%s not a name the base lacks in a test of the change (%s): a test must fail by its assertion or a missing name, "+
-					"never a syntax error, a wrong import or code that does not build", len(broken), plural(len(broken)), sample(lines))}}}, nil
+		for _, e := range unnamed {
+			lines = append(lines, e.line)
+			if !slices.Contains(names, e.name) {
+				names = append(names, e.name)
+			}
+		}
+		where := slices.Concat(broken, unnamed)[0].file
+		var msgs []string
+		if len(broken) > 0 {
+			msgs = append(msgs, fmt.Sprintf("%d build error%s not a name the base lacks in a test of the change", len(broken), plural(len(broken))))
+		}
+		if len(unnamed) > 0 {
+			msgs = append(msgs, fmt.Sprintf("%d missing name%s the issue never names (%s): a test calls what the base has or what the issue names, never a helper it made up",
+				len(unnamed), plural(len(unnamed)), strings.Join(names, ", ")))
+		}
+		return &verdict.Verdict{Status: verdict.Block, Summary: "the build broke on the base with the change's tests, not by a missing name the issue names",
+			Findings: []verdict.Finding{{Rule: "build-broken", Where: where,
+				Message: fmt.Sprintf("%s (%s): a test must fail by its assertion or a missing name, "+
+					"never a syntax error, a wrong import or code that does not build", strings.Join(msgs, "; "), sample(lines))}}}, nil
 	}
 	byName := len(errs) > 0
 	// A base test the red run lacks was not built there. Beside code, the

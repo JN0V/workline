@@ -15,7 +15,9 @@ type BuildErrors struct {
 	// Error matches one error line; its groups `file` (from the
 	// repository's root) and `message`.
 	Error string `json:"error"`
-	// MissingName matches a message naming what the code lacks.
+	// MissingName matches a message naming what the code lacks; the
+	// name itself in its group `name`, else the first quoted word of the
+	// message (#1111).
 	MissingName []string `json:"missing-name"`
 	// TestName finds the tests a test file declares, its first group the
 	// name: their ids while the file does not build.
@@ -62,8 +64,9 @@ func compileBuildErrors(list []BuildErrors) ([]buildRules, error) {
 // buildError is one error line of a broken build.
 type buildError struct {
 	file, line string
-	missing    bool // in a test file of the change, naming what the code lacks
-	rules      int  // the ecosystem it was read by
+	missing    bool   // in a test file of the change, naming what the code lacks
+	name       string // the name it lacks, when the message gives it
+	rules      int    // the ecosystem it was read by
 }
 
 // buildErrorsIn reads the error lines of output by each ecosystem's
@@ -87,8 +90,8 @@ func buildErrorsIn(output string, tests []string, rules []buildRules) []buildErr
 			e := buildError{file: file, line: line, rules: i}
 			if inTests[file] {
 				for _, re := range r.missing {
-					if re.MatchString(msg) {
-						e.missing = true
+					if m := re.FindStringSubmatch(msg); m != nil {
+						e.missing, e.name = true, nameIn(re, m, msg)
 						break
 					}
 				}
@@ -107,4 +110,35 @@ func testNames(content string, r buildRules) []string {
 		names = append(names, m[1])
 	}
 	return names
+}
+
+// quotedName is a word between quotes, as compilers quote the name they
+// lack: 'x', ‘x’, "x", `x`.
+var quotedName = regexp.MustCompile("['‘\"`]([^\\s'‘’\"`]+)['’\"`]")
+
+// nameIn is the name a missing-name message gives: its group `name`,
+// else its first quoted word; "" when it gives none.
+func nameIn(re *regexp.Regexp, m []string, msg string) string {
+	if i := re.SubexpIndex("name"); i >= 0 && m[i] != "" {
+		return m[i]
+	}
+	if q := quotedName.FindStringSubmatch(msg); q != nil {
+		return q[1]
+	}
+	return ""
+}
+
+// lastPart is a name's last word, past its qualifiers: `lostCount` of
+// `MQTTStatistics::lostCount`, `Mul` of `calc.Mul`.
+var lastPart = regexp.MustCompile(`[\p{L}\p{N}_]+$`)
+
+// namedIn says whether text names name as a whole word, or its last
+// part: a missing name the issue names is what the change adds; one it
+// never names, a guess of the test's (#1111).
+func namedIn(name, text string) bool {
+	last := lastPart.FindString(name)
+	if last == "" {
+		return false
+	}
+	return regexp.MustCompile(`(?:^|[^\p{L}\p{N}_])` + regexp.QuoteMeta(last) + `(?:$|[^\p{L}\p{N}_])`).MatchString(text)
 }

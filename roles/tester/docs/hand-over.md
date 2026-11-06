@@ -31,7 +31,7 @@ flowchart LR
   - `## Tests`: a table, each scenario and the test that checks it;
     a scenario no test can check is listed as not tested, with why.
   - What the proof said: each test red on the base, by an assertion or
-    a missing name. A test whose package did not build is named
+    a missing name the issue names. A test whose package did not build is named
     `file:name` ([how](missing-name.md)).
   - Where it ran: with `draft-command` naming `{packages}`, the folders
     holding the tests alone, said as `proof-scope`; else the whole

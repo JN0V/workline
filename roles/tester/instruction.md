@@ -11,6 +11,8 @@ style, beside the tests already there:
 - **Check the Then**, exactly: the value, the message, the state it says.
   Call the code as the Scope says it will be: a function or option it
   names may not exist yet, and the test then fails on a missing name.
+  A missing name the issue does not name is a broken build: never make
+  up a helper.
 - **Fail today, for the right reason**: each test must fail on the code
   as it is, by its own assertion or a name the code lacks, and pass once
   the code does what the scenario says. A test that passes today proves

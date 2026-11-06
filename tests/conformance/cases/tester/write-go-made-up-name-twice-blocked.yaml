@@ -1,0 +1,32 @@
+case: tester/write-go-made-up-name-twice-blocked
+about: >
+  Asked once more with the build's error, the agent's Go test still
+  calls `stubTwo`, a name the code lacks and the issue never names
+  (#1111): the tester asks no third time. The run blocks with the error,
+  said on the issue, which waits for a person; no Draft opens.
+given:
+  repo: go-tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  env:
+    ALWAYS: "1"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:ready"]
+        body: "## Need\n\nWhen I total an order, I want to multiply a price by a count, so I need not add it up by hand.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n\n---\n\n## Verification\n\nA Go test.\n\n## Scope\n\n- `calc/calc.go`: a `Mul` function beside `Add`.\n"
+run: {test: [write, --issue, "3"], ai: "cmd:sh $FIXTURES/agents/tester-go-stub-once.sh"}
+expect:
+  status: block
+  agent-calls: 2
+  findings: [{rule: build-broken, where: calc/mul_test.go}]
+  not-pushed: [workline/tester/issue-3]
+  forge:
+    merge-requests:
+      - {id: 1, absent: true}
+    issues:
+      - id: 3
+        comment-contains: ["**The tester** wrote no tests for this issue this run", "the issue never names (stubTwo)"]
