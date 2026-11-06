@@ -1,0 +1,27 @@
+case: product-owner/sources-named-beside-the-code-given
+about: >
+  #1151, the C++ trial's #55 at its second read, replayed: its Scope a
+  guess on WebUI.h. The product owner's recorded answer names
+  ProviderRegistry.h, where `enableComponent()` calls `begin()`, not
+  given, beside WebUI.h and the test, the issue's own, no line quoted.
+  The file not given is named without a quote, the issue read again
+  with it; the two given, unquoted, are left out of its sources, said.
+given:
+  repo: backlog
+  setup:
+    - |
+      cp -R "$FIXTURES/code/domoticscore-7da20c9/." .
+      git add . && git commit -qm 'feat: DomoticsCore at 7da20c9, reduced, from the C++ trial'
+  forge:
+    issues:
+      - {id: 55, title: "WebUI: switching on a running component runs its begin() again", body: "Who it hurts: anyone who uses the switches on the WebUI's Components page. Switching on a component that is already on runs its `begin()` a second time, with no `shutdown()` in between. A component that subscribes to events in `begin()` then handles each event twice. Switching off one already off runs `shutdown()` again.\n\nIt happens easily: two browser tabs on the same device, or a page left open while someone else changed it. The stale tab shows a component as off; switching it on sends \"enabled=true\" for a component that is on.\n\nSteps to reproduce\n1. A component registered with the WebUI and running (its `begin()` ran once).\n2. POST `/api/components/enable` with `name=<component>` and `enabled=true`.\n3. Let the WebUI's `loop()` apply it.\n4. POST `enabled=false` twice, with a `loop()` after each.\n\nExpected\n- Step 2 changes nothing: the component is on already, `begin()` is not called again.\n- Step 4 calls `shutdown()` once.\n\nActual\n- Step 2 answers `\"success\":true` and `begin()` runs a second time.\n- Step 4 calls `shutdown()` twice.\n\nHost run (native stubs, a component that counts its calls):\n\n```\ncomponent started: begins=1\nPOST enabled=true -> {\"name\":\"Toggle\",\"enabled\":true,\"success\":true}\nafter enable of an enabled component: begins=2 shutdowns=0\nPOST enabled=false -> {\"name\":\"Toggle\",\"enabled\":false,\"success\":true}\nPOST enabled=false -> {\"name\":\"Toggle\",\"enabled\":false,\"success\":true}\nafter two disables: shutdowns=2\n```\n\nVersion: DomoticsCore 2.13.0 (WebUI component 1.13.0), native build.\n\n## Validation\n\n<!-- workline:draft -->\n\n- **Enable a running component:** Given a component that is on, with `begin()` called once, When `enabled=true` is posted to `/api/components/enable` and the WebUI's `loop()` runs, Then `begin()` is not called again and the component stays on.\n- **Disable twice:** Given a component that is on, When `enabled=false` is posted twice, with a `loop()` after each, Then `shutdown()` is called once.\n- **Normal switching:** Given a component that was switched off, When `enabled=true` is posted and `loop()` runs, Then `begin()` runs once and the component is listed as enabled.\n\n---\n\n## Verification\n\n- A new test in `test_webui_component_toggle.cpp` fails today and passes after the fix. It posts `enabled=true` to a running component, runs `loop()`, and expects `begins` to stay at 1.\n- A second new test posts `enabled=false` twice with a `loop()` after each, and expects `shutdowns` to be 1.\n- The existing tests `test_a_disable_from_the_page_waits_for_loop` and `test_an_enable_from_the_page_waits_for_loop` keep passing, so a real change still happens in `loop()`.\n\n## Scope\n\nGuessed: the code that handles `/api/components/enable` and applies it from `loop()` is not among the lines given, so the paths below are inferred from the issue and the existing test.\n\n- `DomoticsCore-WebUI/include/DomoticsCore/WebUI.h`: the handler for `/api/components/enable`, and the `loop()` that applies the queued switch. It should skip the call when the component is already in the requested state.\n- `DomoticsCore-WebUI/test/test_webui_component_toggle/test_webui_component_toggle.cpp`: the new tests.", author: ann, insider: true, labels: [bug, workline:to-refine], comments: ["```yaml\nsources: [DomoticsCore-WebUI/include/DomoticsCore/WebUI.h, DomoticsCore-WebUI/test/test_webui_component_toggle/test_webui_component_toggle.cpp]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: issue, target: {issue: 55}, ai: fake:sources-named-beside-the-code-given}
+expect:
+  findings:
+    - {rule: done, where: "#55", message: "Named the code #55 is about: DomoticsCore-WebUI/include/DomoticsCore/WebUI/ProviderRegistry.h."}
+    - {rule: sources-unquoted, where: "#55", message: "DomoticsCore-WebUI/include/DomoticsCore/WebUI.h, DomoticsCore-WebUI/test/test_webui_component_toggle/test_webui_component_toggle.cpp"}
+    - {rule: needs-code, where: "#55", message: "DomoticsCore-WebUI/include/DomoticsCore/WebUI/ProviderRegistry.h"}
+  no-findings: [{rule: no-quote, where: "#55"}]
+  forge:
+    issues:
+      - {id: 55, comment-contains: "sources: [DomoticsCore-WebUI/include/DomoticsCore/WebUI/ProviderRegistry.h]\n"}
