@@ -158,7 +158,8 @@ or reused on its own. The engine assembles them in a fixed order:
 | `policy.md` | the rules it must follow | no |
 
 The first four are the system prompt: the same, byte for byte, in every
-call of the role (of a kind of task, for one with its own instruction).
+call of the same role and mode (of a kind of task, for one with its own
+instruction; with a worktree or without, whose answer's shape differs).
 An agent that caches a prompt's prefix, as Claude Code does, reads them
 back on the role's next call instead of paying them fresh
 ([#1128](https://github.com/JN0V/workline/issues/1128)). The task and the
