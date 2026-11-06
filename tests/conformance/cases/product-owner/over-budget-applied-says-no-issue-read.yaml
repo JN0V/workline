@@ -2,6 +2,10 @@ case: product-owner/over-budget-applied-says-no-issue-read
 about: "Applied, a run whose agent was not asked — its one issue's task over the role's context budget — says so, and that no issue was read, in place of \"nothing done\"; nothing of the issue is recorded as read: read again at the next run (#427)."
 given:
   repo: backlog
+  config:
+    roles:
+      product-owner:
+        settings: {code-bytes-max: 0} # the lines bound it alone: a task over the context budget (#1152)
   setup:
     - "awk 'BEGIN { for (i = 1; i <= 400; i++) printf \"// %0396d\\n\", i }' > src/huge.go && git add src && git commit -qm 'feat: one huge file'"
   forge:

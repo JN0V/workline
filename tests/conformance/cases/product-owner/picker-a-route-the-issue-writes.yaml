@@ -1,0 +1,29 @@
+case: product-owner/picker-a-route-the-issue-writes
+about: >
+  The code picker's contract, the product owner's side (#1151, #1152):
+  the C++ trial's #55 as opened, on DomoticsCore at 7da20c9 (reduced).
+  Its title names WebUI; its text, `begin()`, `shutdown()`, `loop()` and
+  the route `/api/components/enable`. WebUI.h's are given, and in
+  ProviderRegistry.h the function under the comment naming the route,
+  `enableComponent()`, which calls `begin()`: where the fault is. The
+  other components' are counted, and the task holds under 30 KB.
+  Before, 87,285 bytes and 46 files, ProviderRegistry.h not among them.
+given:
+  repo: backlog
+  setup:
+    - |
+      cp -R "$FIXTURES/code/domoticscore-7da20c9/." .
+      git add . && git commit -qm 'feat: DomoticsCore at 7da20c9, reduced, from the C++ trial'
+  forge:
+    issues:
+      - {id: 55, title: "WebUI: switching on a running component runs its begin() again", body: "Who it hurts: anyone who uses the switches on the WebUI's Components page. Switching on a component that is already on runs its `begin()` a second time, with no `shutdown()` in between. A component that subscribes to events in `begin()` then handles each event twice. Switching off one already off runs `shutdown()` again.\n\nIt happens easily: two browser tabs on the same device, or a page left open while someone else changed it. The stale tab shows a component as off; switching it on sends \"enabled=true\" for a component that is on.\n\nSteps to reproduce\n1. A component registered with the WebUI and running (its `begin()` ran once).\n2. POST `/api/components/enable` with `name=<component>` and `enabled=true`.\n3. Let the WebUI's `loop()` apply it.\n4. POST `enabled=false` twice, with a `loop()` after each.\n\nExpected\n- Step 2 changes nothing: the component is on already, `begin()` is not called again.\n- Step 4 calls `shutdown()` once.\n\nActual\n- Step 2 answers `\"success\":true` and `begin()` runs a second time.\n- Step 4 calls `shutdown()` twice.\n\nHost run (native stubs, a component that counts its calls):\n\n```\ncomponent started: begins=1\nPOST enabled=true -> {\"name\":\"Toggle\",\"enabled\":true,\"success\":true}\nafter enable of an enabled component: begins=2 shutdowns=0\nPOST enabled=false -> {\"name\":\"Toggle\",\"enabled\":false,\"success\":true}\nPOST enabled=false -> {\"name\":\"Toggle\",\"enabled\":false,\"success\":true}\nafter two disables: shutdowns=2\n```\n\nVersion: DomoticsCore 2.13.0 (WebUI component 1.13.0), native build.\n", author: ann, insider: true, labels: [workline:to-refine], comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: issue, target: {issue: 55}, ai: fake:proposes-nothing}
+expect:
+  status: pass
+  agent-calls: 1
+  no-findings: [{rule: prompt-over-budget}]
+  run-files:
+    in/task.md:
+      max-bytes: 30000
+      contains: ["### `DomoticsCore-WebUI/include/DomoticsCore/WebUI/ProviderRegistry.h`", "            if (enabled) component->begin();", "registry->applyPendingEnables("]
+      not-contains: ["### `DomoticsCore-HomeAssistant/include/DomoticsCore/HomeAssistant.h`", "### `DomoticsCore-Core/src/Core.cpp`", "### `DomoticsCore-Core/src/FlightRecorder.cpp`", "### `.specify/scripts/bash/common.sh`"]

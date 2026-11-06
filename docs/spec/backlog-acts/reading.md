@@ -10,7 +10,9 @@ verified: agent:claude-code
 Part of [Acts on the backlog](../backlog-acts.md): which issues a run reads, in what order, with what code.
 
 A run reads at most `issues-per-run` issues, with at most `code-lines-max`
-lines of the code they name (ADR-0018, amended by ADR-0038), and no more
+lines, and `code-bytes-max` bytes, of the code they name (ADR-0018,
+amended by ADR-0038; bytes:
+[#1152](https://github.com/JN0V/workline/issues/1152)), and no more
 than its prompt holds within the role's context budget: pre measures the
 prompt as the engine does (`agent.Prompt`, `agent.Tokens`, room kept for
 an answer asked again) and leaves out the last issue to read while it is

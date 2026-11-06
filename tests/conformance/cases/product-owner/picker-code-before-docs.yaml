@@ -1,0 +1,28 @@
+case: product-owner/picker-code-before-docs
+about: >
+  The code picker's contract, the product owner's side (#1152): the C++
+  trial's #54 as opened, on DomoticsCore at 7da20c9 (reduced). Its title
+  names NTP; its text, `syncNow()` and `loop()`, and members the NTP
+  component defines. NTP.h's `loop()` is given, where the fault is; the
+  places naming those names in other components, and the changelog, are
+  counted, and the task holds under 30 KB. Before, 47,665 bytes and 22
+  files.
+given:
+  repo: backlog
+  setup:
+    - |
+      cp -R "$FIXTURES/code/domoticscore-7da20c9/." .
+      git add . && git commit -qm 'feat: DomoticsCore at 7da20c9, reduced, from the C++ trial'
+  forge:
+    issues:
+      - {id: 54, title: "NTP: \"Sync now\" reports success when no server answers", body: "Who it hurts: anyone who presses \"Sync now\" on the NTP page, or calls `syncNow()`, after the clock has synced once. Every such sync reports success at the next `loop()`, even when no NTP server answers. A device that lost its NTP servers never says so: `syncErrors` stays 0, the `ntp/sync_failed` event and the `onSync(false)` callback never come.\n\nSteps to reproduce\n1. Start the NTP component; let it sync once (the clock is past 2020).\n2. Cut the network to the NTP servers (or point the servers to an address that never answers).\n3. Call `ntp.syncNow()` (or press \"Sync now\" in the WebUI); it returns `true`.\n4. Let `loop()` run for longer than `timeoutMs` (5 s by default).\n5. Read `getStatistics()`, and watch `onSync()`.\n\nExpected\n- No answer within `timeoutMs`: `syncErrors` is 1, `consecutiveFailures` is 1, `onSync(false)` is called and `ntp/sync_failed` is emitted.\n- `syncCount` counts only the syncs a server answered.\n\nActual\n- The first `loop()` after `syncNow()` counts a sync: `syncCount` goes 1 \u2192 2, `onSync(true)`, \"Time re-synchronized after 10 ms\".\n- The timeout never fires; `syncErrors` stays 0.\n\nHost run (native stubs, the NTP stub never answers):\n\n```\nafter first sync: syncCount=1 ok=1 fail=0\nsyncNow() -> 1 (no server will answer)\n6 s later: syncCount=2 syncErrors=0 lastSyncDuration=10 ms ok=2 fail=0\n```\n\nIt looks like `loop()` takes \"the clock is valid and the time differs from the last sync\" as the end of the sync. After the first sync both are always true.\n\nVersion: DomoticsCore 2.13.0 (NTP component 1.4.3), native build.\n", author: ann, insider: true, labels: [workline:to-refine], comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: issue, target: {issue: 54}, ai: fake:proposes-nothing}
+expect:
+  status: pass
+  agent-calls: 1
+  no-findings: [{rule: prompt-over-budget}]
+  run-files:
+    in/task.md:
+      max-bytes: 30000
+      contains: ["        // Detect sync completion (initial or subsequent)", "### `DomoticsCore-NTP/include/DomoticsCore/NTP.h`"]
+      not-contains: ["### `CHANGELOG.md`", "### `DomoticsCore-HomeAssistant/include/DomoticsCore/HomeAssistantWebUI.h`", "### `DomoticsCore-MQTT/include/DomoticsCore/MQTTWebUI.h`", "### `docs/components/ntp/technical-reference.md`"]

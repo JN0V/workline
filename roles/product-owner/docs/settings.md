@@ -19,6 +19,7 @@ project's top-level `autonomy`, else `normal`; the task says which
 | `autonomy` | `normal` | how far it goes alone: `cautious`, `normal`, `enterprising` (below) |
 | `issues-per-run` | `8` | issues read a run |
 | `code-lines-max` | `1500` | lines of code given a run, all files together |
+| `code-bytes-max` | `16000` | bytes of that code, all files together: 0, the lines bound it alone ([code picker](../../../docs/spec/code-picker.md#each-role)) |
 | `proposals-max` | `10` (1 to 100) | issues waiting on a person before it reads only those a person commented on, and labels no more |
 | `undone-max` | `3` (1 to 20) | acts of a kind a person undoes, across the issues, before that kind is proposed on every issue |
 | `next-max` | `5` (0 to 20) | ready issues the summary lists as next |
