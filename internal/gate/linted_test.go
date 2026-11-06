@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/JN0V/workline/internal/verdict"
 )
 
 func lintedRepo(t *testing.T) string {
@@ -53,5 +55,36 @@ func TestLintedRefusesAnUnlintedLanguageTheChangeTouches(t *testing.T) {
 	}
 	if got := linted(dir, &Gate{}, ch); got != nil {
 		t.Errorf("rule unset, nothing to say: %+v", got)
+	}
+}
+
+func TestLintedIsEnforcedByRunWith(t *testing.T) {
+	dir := lintedRepo(t)
+	write := func(enforce string) {
+		t.Helper()
+		cfg := "gates:\n  g:\n    checks:\n      - id: ok\n        run: \"true\"\n        output: exit\n    enforce:\n" + enforce
+		if err := os.MkdirAll(filepath.Join(dir, ".workline"), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(dir, ".workline", "config.yaml"), []byte(cfg), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	write("      linted: block\n")
+	v, _ := RunWith(dir, "g", Options{Since: "main"})
+	if v.Status != verdict.Block {
+		t.Fatalf("want blocked, got %+v", v)
+	}
+	var seen bool
+	for _, f := range v.Findings {
+		seen = seen || (f.Where == "linted/shell" && f.Level == "")
+	}
+	if !seen {
+		t.Errorf("want a blocking linted/shell finding, got %+v", v.Findings)
+	}
+	write("      linted: block\n      linted/shell: exempt\n")
+	v, _ = RunWith(dir, "g", Options{Since: "main"})
+	if v.Status != verdict.Pass {
+		t.Errorf("an exempted language passes, got %+v", v)
 	}
 }
