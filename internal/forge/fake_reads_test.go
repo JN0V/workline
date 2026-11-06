@@ -33,11 +33,17 @@ func TestFakeCountsReads(t *testing.T) {
 	if err := f.SetTitle(1, "new"); err != nil {
 		t.Fatal(err)
 	}
+	if _, err := f.Comments(Target{Kind: "issue", ID: 1}); err != nil {
+		t.Fatal(err)
+	}
 	data, err := os.ReadFile(ReadsLog(path))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(data) != 2 {
-		t.Errorf("reads counted %d, want 2: two reads, the write's own read not one", len(data))
+	if len(data) != 3 {
+		t.Errorf("reads counted %d, want 3: three reads, a comment read one, the write's own read not one", len(data))
+	}
+	if listed, err := os.ReadFile(path + ReadsSuffix); err != nil || string(listed) != "issue #1\n" {
+		t.Errorf("comment reads listed %q, want the one: %v", listed, err)
 	}
 }

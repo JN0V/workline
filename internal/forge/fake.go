@@ -242,8 +242,10 @@ func (c *FakeComment) UnmarshalJSON(data []byte) error {
 
 // ReadsLog is the file beside a fake forge's that counts its reads, one
 // byte a read, appended by every process sharing the forge: there only
-// when a test made it (the line simulator's requests a tick).
-func ReadsLog(path string) string { return path + ".reads" }
+// when a test made it (the line simulator's requests a tick). Its own
+// file, never ReadsSuffix's: a comment read's line there would count as
+// many reads as its bytes.
+func ReadsLog(path string) string { return path + ".read-count" }
 
 // load is one read of the forge, counted in ReadsLog when it exists.
 func (f *Fake) load() (*FakeState, error) {
