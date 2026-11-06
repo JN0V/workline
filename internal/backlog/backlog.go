@@ -3435,8 +3435,11 @@ func LocateIn(lines []string, text string) (from, to int, original string, ok bo
 // refine just wrote into its body as the role's own, so that a ready later
 // in the run reads them as apply will: drafts no person accepted.
 func (p *Plan) recordDrafted(c Proposal) {
-	if p.ledger.States == nil {
+	if p.ledger == nil {
 		return
+	}
+	if p.ledger.States == nil {
+		p.ledger.States = map[int]*State{}
 	}
 	is := p.issues[c.Issue]
 	have := work.ByMeaning(is.Body)
