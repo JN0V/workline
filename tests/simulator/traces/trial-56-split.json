@@ -1,0 +1,238 @@
+{
+ "1-after-drafts": {
+  "at": "2026-11-06T13:13:00Z",
+  "forge": {
+   "issues": [
+    {
+     "id": 56,
+     "title": "RemoteConsole: a disabled console's shutdown() removes my log listener",
+     "author": "JN0V",
+     "insider": true,
+     "body": "Who it hurts: an application that adds its own log listener with `LoggerCallbacks::addCallback()` (to forward log lines to MQTT or a file, say) and has the remote console disabled in its config. When the disabled console is shut down (switched off on the WebUI's Components page, or at the Core's shutdown), the application's listener stops receiving log lines. Nothing says so.\n\nSteps to reproduce\n1. In `setup()`, add a log listener with `LoggerCallbacks::addCallback(...)` before any other.\n2. Add a `RemoteConsoleComponent` with `enabled = false` in its config.\n3. Run its `begin()`, then its `shutdown()`.\n4. Log a line.\n\nExpected\n- The application's listener gets the line: a console that never started has nothing to remove.\n\nActual\n- The listener gets nothing after step 3. It was removed from the logger.\n\nHost run (native stubs):\n\n```\nmy listener got 1 APP line(s)\nafter a disabled console's begin()+shutdown(): my listener got 1 APP line(s)\n```\n\nThe second line should say 2.\n\nVersion: DomoticsCore 2.13.0 (RemoteConsole component 1.7.3), native build.\n\n## Validation\n\n<!-- workline:draft -->\n\n- **Disabled console:** Given an application listener added with `LoggerCallbacks::addCallback()` and a `RemoteConsoleComponent` with `enabled = false`, When I run its `begin()` then `shutdown()` and log a line, Then my listener still receives the line (2 lines in total, not 1).\n- **Enabled console:** Given an enabled console, When I run `shutdown()` and log a line, Then the console no longer receives the line and my own listener still does.\n- **Restart:** Given a console shut down twice in a row, When I log a line, Then no other listener is removed.\n\n---\n\n## Verification\n\n- A native test (new, in the RemoteConsole test suite): add a listener, run `begin()` and `shutdown()` of a disabled console, log a line, and assert the listener got it. It fails today.\n- A test that an enabled console's `shutdown()` still stops its own log capture, and that a second `shutdown()` removes nothing else.\n\n## Scope\n\n`DomoticsCore-RemoteConsole/include/DomoticsCore/RemoteConsole.h`: `shutdown()` removes `loggerCallbackId_` without knowing that `begin()` ever registered one, and `begin()` returns early when the console is disabled. The fix tracks whether a callback was registered and clears it on removal.\n`DomoticsCore-Core/include/DomoticsCore/Logger.h`: `LoggerCallbacks::addCallback()` hands out ids from a counter starting at 0, so an unset id of 0 can match the first listener ever added. This is why the application's listener, added first, is removed.",
+     "labels": [
+      "workline:to-refine",
+      "bug",
+      "workline:draft",
+      "workline:proposed"
+     ],
+     "comments": [
+      {
+       "body": "**The product owner**, on 2026-11-06:\n\n- Named the code #56 is about: DomoticsCore-RemoteConsole/include/DomoticsCore/RemoteConsole.h, DomoticsCore-Core/include/DomoticsCore/Logger.h. DomoticsCore-RemoteConsole/include/DomoticsCore/RemoteConsole.h says `LoggerCallbacks::removeCal…\n- Labelled #56 `bug`, a bug: A disabled console's shutdown() removes a logger listener it never registered; the logger contract says a component only removes what it added. A test can show it. Wrong? Change the label; the role does not set i…\n- Added: Validation (draft), Verification, Scope. Changed: —. See the issue's edit history.\n\n**Your answer:**\n\n- label `workline:accepted`: yes, done at its next run\n- edit a draft: it is yours\n- comment: it revises what it proposes\n- take `workline:proposed` off: not now\n- close the issue: it should not exist\n\n<!-- What workline knows of this issue, edited by the engine, not by hand.\n```yaml\nsources: [DomoticsCore-RemoteConsole/include/DomoticsCore/RemoteConsole.h, DomoticsCore-Core/include/DomoticsCore/Logger.h]\nconfirmed: 7da20c9\nbody: 32608c27885a\nsections:\n    Scope: |-\n        `DomoticsCore-RemoteConsole/include/DomoticsCore/RemoteConsole.h`: `shutdown()` removes `loggerCallbackId_` without knowing that `begin()` ever registered one, and `begin()` returns early when the console is disabled. The fix tracks whether a callback was registered and clears it on removal.\n        `DomoticsCore-Core/include/DomoticsCore/Logger.h`: `LoggerCallbacks::addCallback()` hands out ids from a counter starting at 0, so an unset id of 0 can match the first listener ever added. This is why the application's listener, added first, is removed.\nwrote:\n    Scope: 70507bf69a29\n    Validation: 653730de5ed0\n    Verification: fc67a5b57f48\ndid:\n    - act: sources\n      level: normal\n      day: \"2026-11-06\"\n      at: 7da20c9\n      model: claude:claude-sonnet-5-5\n      body: e5e4e26066e8\n      line: 'Named the code #56 is about: DomoticsCore-RemoteConsole/include/DomoticsCore/RemoteConsole.h, DomoticsCore-Core/include/DomoticsCore/Logger.h. DomoticsCore-RemoteConsole/include/DomoticsCore/RemoteConsole.h says `LoggerCallbacks::removeCal…'\n    - act: kind\n      level: normal\n      day: \"2026-11-06\"\n      at: 7da20c9\n      model: claude:claude-sonnet-5-5\n      body: e5e4e26066e8\n      line: 'Labelled #56 `bug`, a bug: A disabled console''s shutdown() removes a logger listener it never registered; the logger contract says a component only removes what it added. A test can show it. Wrong? Change the label; the role does not set i…'\n    - act: refine\n      level: normal\n      day: \"2026-11-06\"\n      at: 7da20c9\n      model: claude:claude-sonnet-5-5\n      body: e5e4e26066e8\n      line: 'Added: Validation (draft), Verification, Scope. Changed: —. See the issue''s edit history.'\nlabel: workline:proposed\nheard: 0\nrules: 2\nkind: bug\n```\n-->\n\n<!-- workline:sticky=product-owner/state -->",
+       "author": "workline-jn0v[bot]",
+       "bot": true,
+       "created": "2026-11-06T13:12:26Z",
+       "id": "6685627892"
+      },
+      {
+       "body": "**workline's line** last woke the product owner on this issue, in its state refine (1 state step so far). Edited by the engine, not by hand.\n\n<!-- workline:line-record {\"state\":\"refine\",\"body\":\"e5e4e26066e8\",\"labeled\":\"2026-11-06T13:11:06Z\",\"hops\":1,\"reached\":\"refine\",\"asked\":\"e5e4e26066e8\",\"v\":1,\"given\":\"-\",\"ran\":\"2026-11-06T13:11:44Z\"} -->\n\n<!-- workline:sticky=line/state -->",
+       "author": "workline-jn0v[bot]",
+       "bot": true,
+       "created": "2026-11-06T13:12:40Z",
+       "id": "6685632142"
+      }
+     ],
+     "label-events": [
+      {
+       "label": "workline:to-refine",
+       "author": "JN0V",
+       "created": "2026-11-06T13:11:06Z",
+       "added": true,
+       "writer": true,
+       "insider": true
+      },
+      {
+       "label": "bug",
+       "author": "workline-jn0v[bot]",
+       "created": "2026-11-06T13:12:30Z",
+       "added": true,
+       "bot": true
+      },
+      {
+       "label": "workline:draft",
+       "author": "workline-jn0v[bot]",
+       "created": "2026-11-06T13:12:33Z",
+       "added": true,
+       "bot": true
+      },
+      {
+       "label": "workline:proposed",
+       "author": "workline-jn0v[bot]",
+       "created": "2026-11-06T13:12:38Z",
+       "added": true,
+       "bot": true
+      }
+     ],
+     "labeled": {
+      "workline:to-refine": "2026-11-06T13:11:06Z",
+      "bug": "2026-11-06T13:12:30Z",
+      "workline:draft": "2026-11-06T13:12:33Z",
+      "workline:proposed": "2026-11-06T13:12:38Z"
+     }
+    }
+   ],
+   "merge-requests": []
+  }
+ },
+ "2-after-revise": {
+  "at": "2026-11-06T13:16:10Z",
+  "forge": {
+   "issues": [
+    {
+     "id": 56,
+     "title": "RemoteConsole: a disabled console's shutdown() removes my log listener",
+     "author": "JN0V",
+     "insider": true,
+     "body": "Who it hurts: an application that adds its own log listener with `LoggerCallbacks::addCallback()` (to forward log lines to MQTT or a file, say) and has the remote console disabled in its config. When the disabled console is shut down (switched off on the WebUI's Components page, or at the Core's shutdown), the application's listener stops receiving log lines. Nothing says so.\n\nSteps to reproduce\n1. In `setup()`, add a log listener with `LoggerCallbacks::addCallback(...)` before any other.\n2. Add a `RemoteConsoleComponent` with `enabled = false` in its config.\n3. Run its `begin()`, then its `shutdown()`.\n4. Log a line.\n\nExpected\n- The application's listener gets the line: a console that never started has nothing to remove.\n\nActual\n- The listener gets nothing after step 3. It was removed from the logger.\n\nHost run (native stubs):\n\n```\nmy listener got 1 APP line(s)\nafter a disabled console's begin()+shutdown(): my listener got 1 APP line(s)\n```\n\nThe second line should say 2.\n\nVersion: DomoticsCore 2.13.0 (RemoteConsole component 1.7.3), native build.\n\n## Validation\n\n<!-- workline:draft -->\n\n- **Disabled console:** Given an application listener added with `LoggerCallbacks::addCallback()` and a `RemoteConsoleComponent` with `enabled = false`, When I run its `begin()` then `shutdown()` and log a line, Then my listener still receives the line (2 lines in total, not 1).\n- **Enabled console:** Given an enabled console, When I run `shutdown()` and log a line, Then the console no longer receives the line and my own listener still does.\n- **Restart:** Given a console shut down twice in a row, When I log a line, Then no other listener is removed.\n\n---\n\n## Verification\n\n- A native test (new, in the RemoteConsole test suite): add an application listener with `LoggerCallbacks::addCallback()` first, then run `begin()` and `shutdown()` of a console with `enabled = false`, then log one APP-tagged line. Assert the listener got that line (2 APP-tagged lines in total, counting only lines tagged APP, not the CONSOLE lines the console logs itself). It fails today.\n- A native test with an enabled console and an application listener added before it: after one `shutdown()`, log an APP-tagged line. Assert the application listener still gets it and the console's log buffer gets none.\n- The same test runs `shutdown()` a second time, logs another APP-tagged line, and asserts again that the application listener still gets it and the console buffer gets none. A fix that removed all listeners on shutdown fails this test.\n\n## Scope\n\n`DomoticsCore-RemoteConsole/include/DomoticsCore/RemoteConsole.h`: `shutdown()` removes `loggerCallbackId_` without knowing that `begin()` ever registered one, and `begin()` returns early when the console is disabled. The fix tracks whether a callback was registered and clears it on removal.\n`DomoticsCore-Core/include/DomoticsCore/Logger.h`: `LoggerCallbacks::addCallback()` hands out ids from a counter starting at 0, so an unset id of 0 can match the first listener ever added. This is why the application's listener, added first, is removed.",
+     "labels": [
+      "workline:to-refine",
+      "bug",
+      "workline:draft",
+      "workline:proposed"
+     ],
+     "comments": [
+      {
+       "body": "**The product owner**, on 2026-11-06:\n\n- Named the code #56 is about: DomoticsCore-RemoteConsole/include/DomoticsCore/RemoteConsole.h, DomoticsCore-Core/include/DomoticsCore/Logger.h. DomoticsCore-RemoteConsole/include/DomoticsCore/RemoteConsole.h says `LoggerCallbacks::removeCal…\n- Labelled #56 `bug`, a bug: A disabled console's shutdown() removes a logger listener it never registered; the logger contract says a component only removes what it added. A test can show it. Wrong? Change the label; the role does not set i…\n- Added: Validation (draft), Verification, Scope. Changed: —. See the issue's edit history.\n- Added: —. Changed: Verification. See the issue's edit history.\n\n**Your answer:**\n\n- label `workline:accepted`: yes, done at its next run\n- edit a draft: it is yours\n- comment: it revises what it proposes\n- take `workline:proposed` off: not now\n- close the issue: it should not exist\n\n<!-- What workline knows of this issue, edited by the engine, not by hand.\n```yaml\nsources: [DomoticsCore-RemoteConsole/include/DomoticsCore/RemoteConsole.h, DomoticsCore-Core/include/DomoticsCore/Logger.h]\nconfirmed: 7da20c9\njudged: 7da20c9\nbody: e4dae974c5c3\nsections:\n    Scope: |-\n        `DomoticsCore-RemoteConsole/include/DomoticsCore/RemoteConsole.h`: `shutdown()` removes `loggerCallbackId_` without knowing that `begin()` ever registered one, and `begin()` returns early when the console is disabled. The fix tracks whether a callback was registered and clears it on removal.\n        `DomoticsCore-Core/include/DomoticsCore/Logger.h`: `LoggerCallbacks::addCallback()` hands out ids from a counter starting at 0, so an unset id of 0 can match the first listener ever added. This is why the application's listener, added first, is removed.\nwrote:\n    Scope: 70507bf69a29\n    Validation: 653730de5ed0\n    Verification: c0b817100edd\nanswered: 32608c27885a\nrevised: [Verification]\ndid:\n    - act: sources\n      level: normal\n      day: \"2026-11-06\"\n      at: 7da20c9\n      model: claude:claude-sonnet-5-5\n      body: e5e4e26066e8\n      line: 'Named the code #56 is about: DomoticsCore-RemoteConsole/include/DomoticsCore/RemoteConsole.h, DomoticsCore-Core/include/DomoticsCore/Logger.h. DomoticsCore-RemoteConsole/include/DomoticsCore/RemoteConsole.h says `LoggerCallbacks::removeCal…'\n    - act: kind\n      level: normal\n      day: \"2026-11-06\"\n      at: 7da20c9\n      model: claude:claude-sonnet-5-5\n      body: e5e4e26066e8\n      line: 'Labelled #56 `bug`, a bug: A disabled console''s shutdown() removes a logger listener it never registered; the logger contract says a component only removes what it added. A test can show it. Wrong? Change the label; the role does not set i…'\n    - act: refine\n      level: normal\n      day: \"2026-11-06\"\n      at: 7da20c9\n      model: claude:claude-sonnet-5-5\n      body: e5e4e26066e8\n      line: 'Added: Validation (draft), Verification, Scope. Changed: —. See the issue''s edit history.'\n    - act: refine\n      level: normal\n      day: \"2026-11-06\"\n      at: 7da20c9\n      model: claude:claude-sonnet-5-5\n      body: 32608c27885a\n      line: 'Added: —. Changed: Verification. See the issue''s edit history.'\nlabel: workline:proposed\nheard: 0\nrules: 2\nkind: bug\n```\n-->\n\n<!-- workline:sticky=product-owner/state -->",
+       "author": "workline-jn0v[bot]",
+       "bot": true,
+       "created": "2026-11-06T13:12:26Z",
+       "id": "6685627892"
+      },
+      {
+       "body": "**workline's line** last woke the product owner on this issue, in its state refine (1 state step so far). Edited by the engine, not by hand.\n\n<!-- workline:line-record {\"state\":\"refine\",\"body\":\"32608c27885a\",\"labeled\":\"2026-11-06T13:11:06Z\",\"hops\":1,\"reached\":\"refine\",\"spec\":\"1f0368faf08c\",\"asked\":\"32608c27885a\",\"revise\":\"1f0368faf08c\",\"v\":1,\"given\":\"DomoticsCore-Core/include/DomoticsCore/Logger.h\\nDomoticsCore-RemoteConsole/include/DomoticsCore/RemoteConsole.h\",\"ran\":\"2026-11-06T13:15:06Z\"} -->\n\n<!-- workline:sticky=line/state -->",
+       "author": "workline-jn0v[bot]",
+       "bot": true,
+       "created": "2026-11-06T13:12:40Z",
+       "id": "6685632142"
+      },
+      {
+       "body": "**workline reviewer**, its spec — 3 findings on the spec, 1 question for a person; lenses: ambiguous, unverifiable, out-of-scope, contradicted; tokens: 20468 in, 3106 out (3 calls), of 300000 a run (ai-max-tokens).\n\n**Holds it from ready**: 1 important finding open, round 1 of 5. Verification, the product owner's: it rewrites it at its next refine. The reviewer then reads the spec again. A person may accept the issue as it reads with `workline:accepted`.\n\n| | | Where | Finding |\n|---|---|---|---|\n| warns | unverifiable | `#56:39` | Important: The enabled-console check does not cover the listener-kept part — The Validation says the console stops receiving lines and the application's listener keeps receiving them. The Verification only checks that shutdown \"still stops its own log capture\". A fix that removed all listeners on shutdown would pass. The \"removes nothing else\" check for the second shutdown is also loosely worded. Fix: Require the test to assert that an application listener added before the console still gets a line after one and after two shutdowns, and that the console buffer gets none. (verified, independence: model (claude-sonnet-5-5 → claude-opus-5-5)) |\n| warns | out-of-scope | `#56:44` | Nit: Logger.h is in Scope but the fix never changes it — The Logger.h entry only explains the cause. The fix described is entirely in RemoteConsole.h. A builder cannot tell whether the id counter, starting at 0, should also change. Fix: Either drop Logger.h from the Scope, or state the change wanted there, such as starting ids at 1 or making ids unique. |\n| warns | ambiguous | `#56:30` | Nit: \"2 lines in total\" can be read two ways — The console's own `begin()` and `shutdown()` log CONSOLE lines (\"RemoteConsole disabled in config\", \"RemoteConsole shut down\") that the listener also receives. \"Lines in total\" could mean every line the listener gets, or only the APP-tagged lines, as in the host run output. A test written to the first reading would fail on the CONSOLE lines. Fix: Say that the count is of APP-tagged lines, or assert on the specific line logged in step 4. |\n| warns | finding-judged-no |  | dropped, from the ambiguous lens: \"\\\"Clears it on removal\\\" has no value to clear to\" at #56:43 — the judge: 'tracks whether a callback was registered' already calls for a registered/not-registered state, and 'clears it on removal' resets that state, so a reset id of 0 is never used to remove anything; a bool or a sentinel would pass the same Validation tests ('still receives the line', 'no other listener is removed'). (independence: model (claude-sonnet-5-5 → claude-opus-5-5)) |\n\n**Questions for a person**\n\nNot defects, not judged: choices the spec leaves to a person; a reply here is enough, they hold nothing.\n\n- `#56:44` (unverifiable): Should the fix also cover id wraparound in the 8-bit callback id, or is that left out of this issue? On: “so an unset id of 0 can match the first listener ever added”\n\nThe reviewer never edits the issue nor moves it: the product owner answers, a person decides.\n\n<!-- workline:spec-review body=32608c27885a round=1 open=1 in=Verification -->\n\n<!-- workline:sticky=reviewer/spec -->",
+       "author": "workline-jn0v[bot]",
+       "bot": true,
+       "created": "2026-11-06T13:14:37Z",
+       "id": "6685673818"
+      }
+     ],
+     "label-events": [
+      {
+       "label": "workline:to-refine",
+       "author": "JN0V",
+       "created": "2026-11-06T13:11:06Z",
+       "added": true,
+       "writer": true,
+       "insider": true
+      },
+      {
+       "label": "bug",
+       "author": "workline-jn0v[bot]",
+       "created": "2026-11-06T13:12:30Z",
+       "added": true,
+       "bot": true
+      },
+      {
+       "label": "workline:draft",
+       "author": "workline-jn0v[bot]",
+       "created": "2026-11-06T13:12:33Z",
+       "added": true,
+       "bot": true
+      },
+      {
+       "label": "workline:proposed",
+       "author": "workline-jn0v[bot]",
+       "created": "2026-11-06T13:12:38Z",
+       "added": true,
+       "bot": true
+      }
+     ],
+     "labeled": {
+      "workline:to-refine": "2026-11-06T13:11:06Z",
+      "bug": "2026-11-06T13:12:30Z",
+      "workline:draft": "2026-11-06T13:12:33Z",
+      "workline:proposed": "2026-11-06T13:12:38Z"
+     }
+    }
+   ],
+   "merge-requests": []
+  }
+ },
+ "3-after-review": {
+  "at": "2026-11-06T13:17:25Z",
+  "forge": {
+   "issues": [
+    {
+     "id": 56,
+     "title": "RemoteConsole: a disabled console's shutdown() removes my log listener",
+     "author": "JN0V",
+     "insider": true,
+     "body": "Who it hurts: an application that adds its own log listener with `LoggerCallbacks::addCallback()` (to forward log lines to MQTT or a file, say) and has the remote console disabled in its config. When the disabled console is shut down (switched off on the WebUI's Components page, or at the Core's shutdown), the application's listener stops receiving log lines. Nothing says so.\n\nSteps to reproduce\n1. In `setup()`, add a log listener with `LoggerCallbacks::addCallback(...)` before any other.\n2. Add a `RemoteConsoleComponent` with `enabled = false` in its config.\n3. Run its `begin()`, then its `shutdown()`.\n4. Log a line.\n\nExpected\n- The application's listener gets the line: a console that never started has nothing to remove.\n\nActual\n- The listener gets nothing after step 3. It was removed from the logger.\n\nHost run (native stubs):\n\n```\nmy listener got 1 APP line(s)\nafter a disabled console's begin()+shutdown(): my listener got 1 APP line(s)\n```\n\nThe second line should say 2.\n\nVersion: DomoticsCore 2.13.0 (RemoteConsole component 1.7.3), native build.\n\n## Validation\n\n<!-- workline:draft -->\n\n- **Disabled console:** Given an application listener added with `LoggerCallbacks::addCallback()` and a `RemoteConsoleComponent` with `enabled = false`, When I run its `begin()` then `shutdown()` and log a line, Then my listener still receives the line (2 lines in total, not 1).\n- **Enabled console:** Given an enabled console, When I run `shutdown()` and log a line, Then the console no longer receives the line and my own listener still does.\n- **Restart:** Given a console shut down twice in a row, When I log a line, Then no other listener is removed.\n\n---\n\n## Verification\n\n- A native test (new, in the RemoteConsole test suite): add an application listener with `LoggerCallbacks::addCallback()` first, then run `begin()` and `shutdown()` of a console with `enabled = false`, then log one APP-tagged line. Assert the listener got that line (2 APP-tagged lines in total, counting only lines tagged APP, not the CONSOLE lines the console logs itself). It fails today.\n- A native test with an enabled console and an application listener added before it: after one `shutdown()`, log an APP-tagged line. Assert the application listener still gets it and the console's log buffer gets none.\n- The same test runs `shutdown()` a second time, logs another APP-tagged line, and asserts again that the application listener still gets it and the console buffer gets none. A fix that removed all listeners on shutdown fails this test.\n\n## Scope\n\n`DomoticsCore-RemoteConsole/include/DomoticsCore/RemoteConsole.h`: `shutdown()` removes `loggerCallbackId_` without knowing that `begin()` ever registered one, and `begin()` returns early when the console is disabled. The fix tracks whether a callback was registered and clears it on removal.\n`DomoticsCore-Core/include/DomoticsCore/Logger.h`: `LoggerCallbacks::addCallback()` hands out ids from a counter starting at 0, so an unset id of 0 can match the first listener ever added. This is why the application's listener, added first, is removed.",
+     "labels": [
+      "workline:to-refine",
+      "bug",
+      "workline:draft",
+      "workline:proposed"
+     ],
+     "comments": [
+      {
+       "body": "**The product owner**, on 2026-11-06:\n\n- Named the code #56 is about: DomoticsCore-RemoteConsole/include/DomoticsCore/RemoteConsole.h, DomoticsCore-Core/include/DomoticsCore/Logger.h. DomoticsCore-RemoteConsole/include/DomoticsCore/RemoteConsole.h says `LoggerCallbacks::removeCal…\n- Labelled #56 `bug`, a bug: A disabled console's shutdown() removes a logger listener it never registered; the logger contract says a component only removes what it added. A test can show it. Wrong? Change the label; the role does not set i…\n- Added: Validation (draft), Verification, Scope. Changed: —. See the issue's edit history.\n- Added: —. Changed: Verification. See the issue's edit history.\n\n**Your answer:**\n\n- label `workline:accepted`: yes, done at its next run\n- edit a draft: it is yours\n- comment: it revises what it proposes\n- take `workline:proposed` off: not now\n- close the issue: it should not exist\n\n<!-- What workline knows of this issue, edited by the engine, not by hand.\n```yaml\nsources: [DomoticsCore-RemoteConsole/include/DomoticsCore/RemoteConsole.h, DomoticsCore-Core/include/DomoticsCore/Logger.h]\nconfirmed: 7da20c9\njudged: 7da20c9\nbody: e4dae974c5c3\nsections:\n    Scope: |-\n        `DomoticsCore-RemoteConsole/include/DomoticsCore/RemoteConsole.h`: `shutdown()` removes `loggerCallbackId_` without knowing that `begin()` ever registered one, and `begin()` returns early when the console is disabled. The fix tracks whether a callback was registered and clears it on removal.\n        `DomoticsCore-Core/include/DomoticsCore/Logger.h`: `LoggerCallbacks::addCallback()` hands out ids from a counter starting at 0, so an unset id of 0 can match the first listener ever added. This is why the application's listener, added first, is removed.\nwrote:\n    Scope: 70507bf69a29\n    Validation: 653730de5ed0\n    Verification: c0b817100edd\nanswered: 32608c27885a\nrevised: [Verification]\ndid:\n    - act: sources\n      level: normal\n      day: \"2026-11-06\"\n      at: 7da20c9\n      model: claude:claude-sonnet-5-5\n      body: e5e4e26066e8\n      line: 'Named the code #56 is about: DomoticsCore-RemoteConsole/include/DomoticsCore/RemoteConsole.h, DomoticsCore-Core/include/DomoticsCore/Logger.h. DomoticsCore-RemoteConsole/include/DomoticsCore/RemoteConsole.h says `LoggerCallbacks::removeCal…'\n    - act: kind\n      level: normal\n      day: \"2026-11-06\"\n      at: 7da20c9\n      model: claude:claude-sonnet-5-5\n      body: e5e4e26066e8\n      line: 'Labelled #56 `bug`, a bug: A disabled console''s shutdown() removes a logger listener it never registered; the logger contract says a component only removes what it added. A test can show it. Wrong? Change the label; the role does not set i…'\n    - act: refine\n      level: normal\n      day: \"2026-11-06\"\n      at: 7da20c9\n      model: claude:claude-sonnet-5-5\n      body: e5e4e26066e8\n      line: 'Added: Validation (draft), Verification, Scope. Changed: —. See the issue''s edit history.'\n    - act: refine\n      level: normal\n      day: \"2026-11-06\"\n      at: 7da20c9\n      model: claude:claude-sonnet-5-5\n      body: 32608c27885a\n      line: 'Added: —. Changed: Verification. See the issue''s edit history.'\nlabel: workline:proposed\nheard: 0\nrules: 2\nsilent: 'it lacks Need, and the agent drafted nothing nor asked; `ready` dropped: not moved to ready: Validation is still a draft: accept it (workline:accepted) or edit it; its drafts are taken as assumptions from 2026-11-06 13:17 UTC, with no answer (acts.ask.wait 5 min)'\nkind: bug\n```\n-->\n\n<!-- workline:sticky=product-owner/state -->",
+       "author": "workline-jn0v[bot]",
+       "bot": true,
+       "created": "2026-11-06T13:12:26Z",
+       "id": "6685627892"
+      },
+      {
+       "body": "**workline's line** last woke the product owner on this issue, in its state refine (1 state step so far). Edited by the engine, not by hand.\n\n<!-- workline:line-record {\"state\":\"refine\",\"body\":\"e4dae974c5c3\",\"labeled\":\"2026-11-06T13:11:06Z\",\"hops\":1,\"reached\":\"refine\",\"spec\":\"1f0368faf08c\",\"asked\":\"e4dae974c5c3\",\"revise\":\"1f0368faf08c\",\"v\":1,\"given\":\"DomoticsCore-Core/include/DomoticsCore/Logger.h\\nDomoticsCore-RemoteConsole/include/DomoticsCore/RemoteConsole.h\",\"ran\":\"2026-11-06T13:16:25Z\"} -->\n\n<!-- workline:sticky=line/state -->",
+       "author": "workline-jn0v[bot]",
+       "bot": true,
+       "created": "2026-11-06T13:12:40Z",
+       "id": "6685632142"
+      },
+      {
+       "body": "**workline reviewer**, its spec — 4 findings on the spec, 1 question for a person; lenses: ambiguous, unverifiable, out-of-scope, contradicted; tokens: 16487 in, 1254 out (1 call), of 300000 a run (ai-max-tokens).\n\nNo important finding open: the product owner may move it to ready.\n\n| | | Where | Finding |\n|---|---|---|---|\n| warns | contradicted | `#56:45` | Nit: Id counter wraps at 256 — The spec says ids come from a counter starting at 0. In the code the id is a uint8_t, so after 256 additions the counter wraps and ids repeat. A repeated id makes removeCallback remove two listeners. The spec's 'only the first listener' account misses this, and a fix that only starts ids at 1 leaves the wrap in place. Fix: Mention the 8-bit wrap and say whether the fix should cover it. (shows at DomoticsCore-Core/include/DomoticsCore/Logger.h) |\n| warns | unverifiable | `#56:40` | Nit: Restart claim has no check — The Validation 'Restart' item says a console shut down twice. Verification covers a second shutdown only for an enabled console. A disabled console shut down twice, or begin() called again after shutdown(), is not tested. The fix could leave a stale id after a restart and the tests would still pass. Fix: Add a test of a disabled console shut down twice, and of begin() after shutdown(). |\n| warns | ambiguous | `#56:39` | Nit: Console buffer assertion depends on log level and filter — The test asserts that the console's log buffer gets no line. The console drops lines by its level and tag filter, and by bufferSize == 0. A zero buffer would pass the assertion without proving that the callback was removed. The spec does not fix the config for the test. Fix: Name the config (bufferSize above 0, level and filter) and assert that the buffer got the line before shutdown(). |\n| warns | out-of-scope | `#56:38` | Nit: Test file is not in the Scope — The Verification asks for new native tests in the RemoteConsole test suite. The Scope lists only RemoteConsole.h and Logger.h, so the test files are not named as files the builder may touch. Fix: Add the RemoteConsole test directory to the Scope. |\n\n**Questions for a person**\n\nNot defects, not judged: choices the spec leaves to a person; a reply here is enough, they hold nothing.\n\n- `#56:44` (ambiguous): Should the fix be in RemoteConsole only, in the Logger id counter too, or both? On: “The fix tracks whether a callback was registered and clears it on removal.”\n\nThe reviewer never edits the issue nor moves it: the product owner answers, a person decides.\n\n<!-- workline:spec-review body=e4dae974c5c3 round=2 open=0 in= -->\n\n<!-- workline:sticky=reviewer/spec -->",
+       "author": "workline-jn0v[bot]",
+       "bot": true,
+       "created": "2026-11-06T13:14:37Z",
+       "id": "6685673818"
+      }
+     ],
+     "label-events": [
+      {
+       "label": "workline:to-refine",
+       "author": "JN0V",
+       "created": "2026-11-06T13:11:06Z",
+       "added": true,
+       "writer": true,
+       "insider": true
+      },
+      {
+       "label": "bug",
+       "author": "workline-jn0v[bot]",
+       "created": "2026-11-06T13:12:30Z",
+       "added": true,
+       "bot": true
+      },
+      {
+       "label": "workline:draft",
+       "author": "workline-jn0v[bot]",
+       "created": "2026-11-06T13:12:33Z",
+       "added": true,
+       "bot": true
+      },
+      {
+       "label": "workline:proposed",
+       "author": "workline-jn0v[bot]",
+       "created": "2026-11-06T13:12:38Z",
+       "added": true,
+       "bot": true
+      }
+     ],
+     "labeled": {
+      "workline:to-refine": "2026-11-06T13:11:06Z",
+      "bug": "2026-11-06T13:12:30Z",
+      "workline:draft": "2026-11-06T13:12:33Z",
+      "workline:proposed": "2026-11-06T13:12:38Z"
+     }
+    }
+   ],
+   "merge-requests": []
+  }
+ }
+}

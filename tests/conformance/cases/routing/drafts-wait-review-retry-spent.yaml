@@ -1,0 +1,27 @@
+case: routing/drafts-wait-review-retry-spent
+about: >
+  The reviewer's runs alone on drafts not yet reviewed failed past their
+  tries (#1150): the issue is blocked, the reviewer named as the role
+  whose runs failed.
+given:
+  repo: backlog
+  env: {WORKLINE_CLOCK: "2026-11-05T08:00:00Z"}
+  config:
+    routing: {events: {issue: [product-owner, reviewer]}}
+  forge:
+    issues:
+      - id: 9
+        title: "workline version --verbose=false"
+        author: ann
+        insider: true
+        labels: [workline:to-refine, workline:proposed]
+        body: "## Need\n\nWhen I run `workline version --verbose=false`, I want the plain line, so my scripts read it.\n\n## Validation\n\n<!-- workline:draft -->\n\n- **Plain line:** Given workline installed, When I run `workline version --verbose=false`, Then it prints one line.\n\n---\n\n## Verification\n\nA test runs the command and reads one line.\n\n## Scope\n\nsrc/export/csv.go"
+        comments:
+          - {body: "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: 1cf7c41e922f\n```\n\n<!-- workline:sticky=product-owner/state -->", created: "2099-01-01T09:00:00Z"}
+          - "**workline's line** last woke the reviewer on this issue, in its state refine (1 state step so far).\n\n<!-- workline:line-record {\"state\":\"refine\",\"body\":\"1cf7c41e922f\",\"hops\":1,\"asked\":\"1cf7c41e922f\",\"alone\":\"reviewer\",\"errors\":{\"by\":{\"run\":3},\"first\":{\"run\":\"2026-11-05T07:00:00Z\"},\"last\":\"2026-11-05T07:30:00Z\",\"kind\":\"run\",\"said\":\"the agent's run failed\"},\"v\":1} -->\n<!-- workline:sticky=line/state -->"
+run: {route: issue, target: {issue: 9}, ai: none, input: {reconcile: list}}
+expect:
+  status: pass
+  agent-calls: 0
+  findings:
+    - {rule: machine-error-spent, where: "#9", message: "the reviewer's runs on it failed in its state refine: its run failed 3 times (run): the agent's run failed: moved to blocked"}
