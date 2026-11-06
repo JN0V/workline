@@ -2433,7 +2433,19 @@ func proposeLinters(root, answer string, ask bool) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("the languages here could not be told: %w", err)
 	}
+	left, err := linters.Unproposed(root, ps)
+	if err != nil {
+		return "", fmt.Errorf("the languages here could not be told: %w", err)
+	}
+	note := ""
+	if len(left) > 0 {
+		note = "; no check can be written yet for " + strings.Join(left, ", ") + ": add one by hand"
+		fmt.Fprintln(os.Stderr, "Read by no linter, and no check known to propose (add one by hand): "+strings.Join(left, ", "))
+	}
 	if len(ps) == 0 {
+		if note != "" {
+			return "no linter reads " + strings.Join(left, ", ") + ", and no check is known to propose: add one by hand", nil
+		}
 		return "", nil
 	}
 	var names []string
@@ -2454,16 +2466,16 @@ func proposeLinters(root, answer string, ask bool) (string, error) {
 		answer = strings.ToLower(strings.TrimSpace(line))
 	}
 	if answer != "yes" && answer != "y" {
-		return "no linter reads " + strings.Join(names, ", ") + "; nothing written (workline init --linters yes adds the checks)", nil
+		return "no linter reads " + strings.Join(names, ", ") + "; nothing written (workline init --linters yes adds the checks)" + note, nil
 	}
 	added, err := linters.Adopt(root, "lint", ps)
 	if err != nil {
 		return "", err
 	}
 	if len(added) == 0 {
-		return "the lint gate holds the proposed checks already", nil
+		return "the lint gate holds the proposed checks already" + note, nil
 	}
-	return "lint checks added for " + strings.Join(names, ", ") + " (gates.lint in .workline/config.yaml)", nil
+	return "lint checks added for " + strings.Join(names, ", ") + " (gates.lint in .workline/config.yaml)" + note, nil
 }
 
 // importIssues moves a file — a roadmap, a backlog — to the forge's

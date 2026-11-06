@@ -45,6 +45,32 @@ func Propose(repo string) ([]Proposal, error) {
 	return out, nil
 }
 
+// Unproposed is the languages that no linter reads and for which Propose has
+// no check to write: every tool suggested lacks a known command, or runs
+// once from each folder. They are said, never silently left unlinted.
+func Unproposed(repo string, ps []Proposal) ([]string, error) {
+	rep, err := Read(repo)
+	if err != nil {
+		return nil, err
+	}
+	proposed := map[string]bool{}
+	for _, p := range ps {
+		proposed[p.Language] = true
+	}
+	var out []string
+	for _, l := range rep.Languages {
+		if len(l.Missing[Lint]) == 0 || proposed[l.Name] {
+			continue
+		}
+		var tools []string
+		for _, s := range l.Missing[Lint] {
+			tools = append(tools, s.Tool)
+		}
+		out = append(out, l.Name+" ("+strings.Join(tools, ", ")+")")
+	}
+	return out, nil
+}
+
 // Adopt writes the proposals as checks of the gate named, in the project's
 // .workline/config.yaml, skipping a check whose id the gate holds already.
 // It returns the ids added.
