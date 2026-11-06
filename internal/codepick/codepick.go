@@ -38,6 +38,9 @@ const (
 	// defsMax is the definitions of one name given at most, the
 	// project's own; the rest counted.
 	defsMax = 12
+	// callsMax is the functions one definition given calls, defined in
+	// its file, given at most (#1129).
+	callsMax = 3
 	// asideMax is the copies of a definition in tests, examples and
 	// tools given at most, the rest counted.
 	asideMax = 2
@@ -397,6 +400,7 @@ func (p *Picker) Pick(a Ask) Pick {
 		why      string
 		cut      bool // may be given in part
 	}
+	calls := map[string][]string{} // a definition's, by its file:line: the names it calls
 	var wants []want
 	// 1. The lines named after a file.
 	spans := map[string][][2]int{}
@@ -457,6 +461,7 @@ func (p *Picker) Pick(a Ask) Pick {
 			if l != nil {
 				if g, ok := p.defines(h, n, pats); ok {
 					w := want{h.file, g.From, g.To, fmt.Sprintf("`%s`, defined", n), true}
+					calls[fmt.Sprintf("%s:%d", h.file, g.From)] = g.Calls
 					if isTest(h.file) || aside(h.file) {
 						fd.aside = append(fd.aside, w)
 					} else {
@@ -484,17 +489,34 @@ func (p *Picker) Pick(a Ask) Pick {
 	rank := slices.Clone(names)
 	slices.SortStableFunc(rank, func(x, y string) int { return len(hits[x]) - len(hits[y]) })
 	inNamed := func(w want) bool { return slices.Contains(named, w.file) }
-	// 2a. Definitions in the files named, then the project's own. A name
-	// defined in a file named is that one: one of the same name
-	// elsewhere is another function, counted, not given (#425).
+	// The files the issue is about: those named, and those holding the
+	// one definition of a name in the project's own code (`enableLED` in
+	// `LED.h`), where a generic name (`loop`) is read (#1129).
+	home := map[string]bool{}
+	for _, n := range names {
+		var in []string
+		for _, w := range byName[n].defs {
+			if !slices.Contains(in, w.file) {
+				in = append(in, w.file)
+			}
+		}
+		if len(in) == 1 {
+			home[in[0]] = true
+		}
+	}
+	atHome := func(w want) bool { return inNamed(w) || home[w.file] }
+	// 2a. Definitions in the files the issue is about, then the
+	// project's own. A name defined in one of them is that one: one of
+	// the same name elsewhere is another function, counted, not given
+	// (#425, #1129).
 	here := map[string]bool{}
 	for _, n := range rank {
-		here[n] = slices.ContainsFunc(append(slices.Clone(byName[n].defs), byName[n].aside...), inNamed)
+		here[n] = slices.ContainsFunc(append(slices.Clone(byName[n].defs), byName[n].aside...), atHome)
 	}
-	for _, keepNamed := range []bool{true, false} {
+	for _, keepHome := range []bool{true, false} {
 		for _, n := range rank {
 			for i, w := range byName[n].defs {
-				if inNamed(w) == keepNamed && (inNamed(w) || i < defsMax && !here[n]) {
+				if atHome(w) == keepHome && (atHome(w) || i < defsMax && !here[n]) {
 					wants = append(wants, w)
 				}
 			}
@@ -534,24 +556,49 @@ func (p *Picker) Pick(a Ask) Pick {
 			}
 		}
 	}
+	// 2b'. The functions a definition in those files calls, defined in
+	// its file, a few: `loop()` says little, `updateEffects()` it calls
+	// says what it does (#1129).
+	for _, n := range rank {
+		for _, w := range byName[n].defs {
+			if !atHome(w) {
+				continue
+			}
+			lines, k := p.Lines(w.file), 0
+			for _, c := range calls[fmt.Sprintf("%s:%d", w.file, w.from)] {
+				if k >= callsMax || slices.Contains(names, c) {
+					continue
+				}
+				for _, g := range codenav.Named(w.file, lines, c) {
+					if g.To-g.From < funcMax {
+						wants = append(wants, want{w.file, g.From, g.To, fmt.Sprintf("`%s`, called by `%s`", c, n), false})
+						k++
+						break
+					}
+				}
+			}
+		}
+	}
 	// 2c. Copies in tests, examples and tools, a few.
 	for _, n := range rank {
 		fd := byName[n]
 		given := 0
 		for i, w := range append(slices.Clone(fd.defs), fd.aside...) {
-			if inNamed(w) || !here[n] && (i < min(len(fd.defs), defsMax) || i >= len(fd.defs) && i-len(fd.defs) < asideMax) {
+			if atHome(w) || !here[n] && (i < min(len(fd.defs), defsMax) || i >= len(fd.defs) && i-len(fd.defs) < asideMax) {
 				given++
 			}
 		}
 		for i, w := range fd.aside {
-			if inNamed(w) || !here[n] && i < asideMax {
+			if atHome(w) || !here[n] && i < asideMax {
 				wants = append(wants, w)
 			}
 		}
 		switch total := len(fd.defs) + len(fd.aside); {
 		case given == total:
-		case here[n]:
+		case here[n] && slices.ContainsFunc(append(slices.Clone(fd.defs), fd.aside...), inNamed):
 			pk.Many = append(pk.Many, fmt.Sprintf("`%s` (defined in the files named; %d more of the same name elsewhere, not given)", n, total-given))
+		case here[n]:
+			pk.Many = append(pk.Many, fmt.Sprintf("`%s` (defined beside the other names the text writes; %d more of the same name elsewhere, not given)", n, total-given))
 		default:
 			pk.Many = append(pk.Many, fmt.Sprintf("`%s` (%d definitions, %d of them not given, most in tests, examples or tools)", n, total, total-given))
 		}
