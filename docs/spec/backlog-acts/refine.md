@@ -159,8 +159,9 @@ what it can and asks for the rest:
   not give — no path in or holding one its state, title or body names
   (`unshown`) — needs no line quoted either
   ([#980](https://github.com/JN0V/workline/issues/980)). One mixing code
-  given and not given, no line quoted, names the code not given; the
-  code given is left out of it, said (`sources-unquoted`, info)
+  given and not given, no line quoted, names the code not given and
+  keeps the sources its state names; code given new to it is left out,
+  said (`sources-unquoted`, info)
   ([#1151](https://github.com/JN0V/workline/issues/1151)).
 - **`ready`** is checked by the engine, not taken from the agent: the four
   sections there and not empty — a person's text on top standing for a
