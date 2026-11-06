@@ -1,0 +1,22 @@
+# The product owner's answer on the C++ trial's #54, round 5, run
+# 13504771851, its second call (13:11:48), as recorded (#1146): run again
+# for the code it named, it names the same three files, and writes a
+# Scope on NTP.h and NTP_HAL.h.
+- kind: {issue: 54, kind: bug, why: "Sync now is meant to report a failure when no server answers (the timeout branch in loop() exists), but after the first sync loop() counts the next tick as a success, so syncErrors, ntp/sync_failed and onSync(false) never fire."}
+- sources: {issue: 54, sources: ["DomoticsCore-NTP/include/DomoticsCore/NTP.h", "DomoticsCore-NTP/test/test_ntp_component/test_ntp_component.cpp", "DomoticsCore-NTP/include/DomoticsCore/NTP_HAL.h"], quote: {path: "DomoticsCore-NTP/include/DomoticsCore/NTP.h", text: "} else if (syncInProgress && now != stats.lastSyncTime) {"}, why: "The sync-detection code in loop() and the NTP test suite are what the issue is about."}
+- refine:
+    issue: 54
+    validation: |
+      - **No server answers:** Given an NTP component that has synced once, When I call `syncNow()` and no server answers within `timeoutMs`, Then `syncErrors` is 1, `consecutiveFailures` is 1, `onSync(false)` is called and `ntp/sync_failed` is emitted.
+      - **Server answers:** Given an NTP component that has synced once, When I call `syncNow()` and a server answers, Then `syncCount` goes up by 1 and `onSync(true)` is called.
+      - **No false success:** Given `syncNow()` was called and no server answered yet, When `loop()` runs, Then `syncCount` does not change.
+    verification: |
+      - A native test with the NTP stub that never answers: sync once, call `syncNow()`, run `loop()` past `timeoutMs`. It fails today (`syncCount` becomes 2, `syncErrors` stays 0) and passes after the fix.
+      - A native test where the stub answers after a `syncNow()`: `syncCount` goes up by 1, `lastSyncDuration` is set, and `consecutiveFailures` is reset.
+      - Both tests check the `onSync` callback value and the `ntp/synced` or `ntp/sync_failed` event.
+    scope: |
+      `DomoticsCore-NTP/include/DomoticsCore/NTP.h`: the sync detection in `loop()`, which must tell an answer from a server apart from a clock that was already valid. It may need a signal from `DomoticsCore-NTP/include/DomoticsCore/NTP_HAL.h`, such as a count of completed syncs.
+      `DomoticsCore-NTP/test/test_ntp_component/test_ntp_component.cpp`: new tests.
+      `docs/components/ntp/technical-reference.md`: the "Sync detected" step describes the current rule.
+    sources: ["DomoticsCore-NTP/include/DomoticsCore/NTP.h", "DomoticsCore-NTP/include/DomoticsCore/NTP_HAL.h", "DomoticsCore-NTP/test/test_ntp_component/test_ntp_component.cpp", "docs/components/ntp/technical-reference.md"]
+    why: "Verification, Validation and Scope were missing. They follow the steps and the expected result in the issue and the loop() code."

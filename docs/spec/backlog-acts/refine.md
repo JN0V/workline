@@ -82,7 +82,9 @@ what it can and asks for the rest:
   (`noCodeGiven`) — or whose code this run names anew (a `sources`
   done naming a file the task did not give: pre's `code-given` lists
   those it gave; a Scope written beside sources it gave stands, no
-  `needs-code`, [#1089](https://github.com/JN0V/workline/issues/1089)),
+  `needs-code`, [#1089](https://github.com/JN0V/workline/issues/1089);
+  so does one run again for the code it lacked, the files it names given
+  this time, [#1146](https://github.com/JN0V/workline/issues/1146)),
   is left out, said `scope-unread`: its paths would be a guess,
   and a guessed folder can hold the issue behind an unrelated claim.
   Its paths, checked as above, are kept as the issue's sources, the

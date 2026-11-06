@@ -1815,6 +1815,11 @@ func (p *Plan) scopeUnread(repo string, c Proposal) string {
 	if c.Ticked != "" || strings.TrimSpace(c.Scope) == "" {
 		return ""
 	}
+	if p.codeFirst[c.Issue] && p.given(c.Issue, p.firstNamed[c.Issue]) {
+		// The code it names, each file given in this run: one run again
+		// for the code it said it lacked writes its Scope from it (#1146).
+		return ""
+	}
 	// The code pre gave whole (CodeRead) counts too: files a comment
 	// names, as the developer's ask for its Scope does (#921).
 	given := slices.Contains(p.config.CodeRead, c.Issue) || !p.noCodeGiven(repo, c.Issue)

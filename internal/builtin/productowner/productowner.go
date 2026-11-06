@@ -830,6 +830,14 @@ func Pre(runDir, repo string) int {
 			share := codeLeft / max(min(n, len(toRead))-i, 1)
 			a := askOf(picker, d.is, d.st, d.comments, aboutIt, share)
 			a.Bytes = s.CodeBytesMax // each issue's: the context budget bounds the run
+			if d.is.ID == issueEvent() {
+				// Run again for the code its agent said it lacked
+				// (ADR-0063, §6): those files, whole, or their first
+				// lines (#1146). The shortest first: a short file
+				// whole, not left out behind a long one's first lines.
+				a.Needs = needed(runDir)
+				slices.SortStableFunc(a.Needs, func(x, y string) int { return len(picker.Lines(x)) - len(picker.Lines(y)) })
+			}
 			pick := picker.Pick(a)
 			codeLeft -= share - pick.Left
 			picks, pickedFor = append(picks, pick), append(pickedFor, d.is.ID)
@@ -1880,6 +1888,23 @@ func issueEvent() int {
 		return -1
 	}
 	return n
+}
+
+// needed are the files the line gives a run again for the code its agent
+// said it lacked (the input `needs`, comma-separated): none on a first
+// run.
+func needed(runDir string) []string {
+	data, err := os.ReadFile(filepath.Join(runDir, "in", "input", engine.NeedsInput))
+	if err != nil {
+		return nil
+	}
+	var out []string
+	for _, p := range strings.Split(string(data), ",") {
+		if p = strings.TrimSpace(p); p != "" && !slices.Contains(out, p) {
+			out = append(out, p)
+		}
+	}
+	return out
 }
 
 // readyOpen says whether the agent is told an issue may be ready: its four

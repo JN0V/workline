@@ -474,8 +474,8 @@ whose result moves the issue to the next. The table is the routing's
   the tester answering `needs: <paths> — why` is a needs-input of the
   engine (`needs-code`), never "no test possible". Due at once: the
   role runs again in the same step, given it (`state-given`; its task
-  says so, the tester's gets those files). Said lacking again, the
-  step itself moves the issue to
+  says so, the tester's and the product owner's get those files). Said
+  lacking again, the step itself moves the issue to
   `workline:blocked` for a person to name its files (`needs-spent`).
 - **No code on the same input, a person's**: the developer's claim
   whose agent wrote no code, past `claim-hours` with the issue's body
