@@ -793,7 +793,8 @@ func claimBody(a Act, s Settings) string {
 	}
 	if a.NoCode && a.Widen == nil {
 		fmt.Fprintf(&b, "\n- **Why no pull request**: its agent wrote no code within its bounds.\n"+
-			"- **Next**: the claim is let go %d hours after it was taken, said here; then the developer may take it again, or a person assigns themselves. "+
+			"- **Next**: %d hours after it was taken, its body unchanged, the line blocks it for a person, never running the developer on the same input again; "+
+			"a change to its body before lets the claim go at once, and the developer may take it again. "+
 			"Meanwhile it holds no paths: an issue whose %s overlaps this one's may be taken.\n", s.ClaimHours, work.Name(work.Scope))
 	}
 	if len(a.Unread) > 0 && a.Proof == nil {
@@ -904,7 +905,7 @@ func Post(runDir, repo string) int {
 		v.Summary += "; " + msg
 	} else if len(patches) == 0 {
 		v.Findings = append(v.Findings, verdict.Finding{Rule: "no-code", Level: "warn", Where: where,
-			Message: fmt.Sprintf("its agent wrote no code within its bounds: nothing to prove, no pull request; the claim is let go after %d hours, said on the issue", s.ClaimHours)})
+			Message: fmt.Sprintf("its agent wrote no code within its bounds: nothing to prove, no pull request; blocked for a person after %d hours on the same body, said on the issue", s.ClaimHours)})
 		a.NoCode = true
 	} else {
 		a.Code, a.Tests = written(patches)

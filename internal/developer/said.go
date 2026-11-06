@@ -93,6 +93,24 @@ func stale(b forge.Backlog, issues []forge.Issue, mrs []forge.MergeRequest, s Se
 				continue
 			}
 			why = fmt.Sprintf("its agent wrote no code on this issue when it took it on %s, and its body changed since", backlog.Day(t.Labeled))
+		} else {
+			// Its agent wrote no code on the body it still has: let go, it
+			// would be taken again on the same input. The line blocks it
+			// for a person (claimwait.go, #1120): one place decides that.
+			a, err := ClaimAct(b, is.ID)
+			if errors.Is(err, forge.ErrUnreachable) {
+				return nil, nil, err
+			}
+			if err != nil {
+				found = append(found, verdict.Finding{Rule: "claim-body-unknown", Level: "warn", Where: where,
+					Message: "its claim's comment could not be read (" + forge.Said(err) + "): kept, read again at the next run"})
+				continue
+			}
+			if NoCodeOnSameBody(a, is.Body) {
+				found = append(found, verdict.Finding{Rule: "claim-left-to-line", Level: "info", Where: where,
+					Message: why + ", its agent wrote no code on the body it still has: kept, left to the line, which blocks it for a person"})
+				continue
+			}
 		}
 		out = append(out,
 			intent.Intention{Kind: "label", Value: released(is, s, card)},
@@ -141,6 +159,14 @@ func ClaimActIn(comments []string) Act {
 // body other than body (#1084); false for a record from before Act.Body.
 func NoCodeOnOtherBody(a Act, body string) bool {
 	return a.NoCode && a.Body != "" && a.Body != BodyMark(body)
+}
+
+// NoCodeOnSameBody says whether a claim's record a wrote no code on the
+// body it has now, or on one it did not keep (a record from before
+// Act.Body): run again, its agent would get the same input. Past
+// claim-hours, the line blocks such an issue for a person instead.
+func NoCodeOnSameBody(a Act, body string) bool {
+	return a.NoCode && !NoCodeOnOtherBody(a, body)
 }
 
 // say ends pre with v: final when nothing is to be written on an issue;

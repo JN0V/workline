@@ -3,7 +3,9 @@ package line
 // A claim with no pull request is never silent (#1084): Doing wakes no
 // role, so the line wakes the developer on it past claim-hours, or once
 // its body changed since a claim that wrote no code; the developer's run
-// lets it go. Until then, the line says the day it is let go.
+// lets it go. Until then, the line says the day it is let go. A claim
+// whose agent wrote no code on the body the issue still has is never run
+// again: past claim-hours, the line blocks it for a person instead.
 
 import (
 	"fmt"
@@ -58,37 +60,55 @@ func closedByMR(t *tally, id int) bool {
 // holds no claim, or an open merge request closes it (its round, read
 // elsewhere). Else the developer's step when its claim is to be let go,
 // claim-hours passed or its body changed since the claim, once for
-// that; none, the day it is let go said, while it waits. s: the state
-// the issue's labels say.
-func claimStep(res *Result, cfg *routing.Config, b forge.Backlog, t *tally, s routing.State, is forge.Issue) (*stateStep, bool, error) {
+// that; none, the day it is let go said, while it waits. A claim whose
+// agent wrote no code on the body it has now is not let go past
+// claim-hours by the developer, which would take it again on the same
+// input: the line blocks the issue for a person (write), its claim's
+// label off with every state's. s: the state the issue's labels say.
+func claimStep(res *Result, cfg *routing.Config, b forge.Backlog, t *tally, s routing.State, is forge.Issue) (*stateStep, *StateWrite, bool, error) {
 	doing, ok := cfg.State(doingState)
 	if !ok || !slices.Contains(is.Labels, doing.Label) {
-		return nil, false, nil
+		return nil, nil, false, nil
 	}
 	if err := t.mergeRequests(b, "whether a claim has its pull request"); err != nil {
-		return nil, false, err
+		return nil, nil, false, err
 	}
 	if closedByMR(t, is.ID) {
-		return nil, false, nil
+		return nil, nil, false, nil
 	}
 	rec, had, _, _, notes, err := readRecordAll(b, is.ID)
 	if err != nil {
-		return nil, false, err
+		return nil, nil, false, err
 	}
 	trail, err := b.Trail(is.ID, doing.Label)
 	if err != nil {
-		return nil, false, err
+		return nil, nil, false, err
 	}
 	where, h := fmt.Sprintf("#%d", is.ID), t.claimHours()
 	at, dated := backlog.Moment(trail.Labeled)
 	free := at.Add(time.Duration(h) * time.Hour)
+	now := rec
+	if !had {
+		now = Record{State: s.Name, Body: bodyHash(is.Body), V: recordV}
+	}
+	act := developer.ClaimActIn(forge.Bodies(notes))
+	same := developer.NoCodeOnSameBody(act, is.Body)
 	key, why := "", ""
 	switch {
+	case dated && !clock().Before(free) && same:
+		// Its agent wrote no code on this input: run again, it would get
+		// the same one (ADR-0063, I2). A person's, as code said lacking
+		// twice is (needs-spent).
+		why = fmt.Sprintf("the developer's agent wrote no code on this issue, and its claim, %s put on %s, passed claim-hours (%d) with its body unchanged: "+
+			"its claim let go, the developer not run on the same input again; a person rewrites its body, splits it, or takes it",
+			doing.Label, backlog.Day(trail.Labeled), h)
+		res.Findings = append(res.Findings, verdict.Finding{Rule: "no-code-spent", Level: "warn", Where: where, Message: why + ": moved to " + BlockedState})
+		return nil, &StateWrite{Issue: is.ID, Record: blocking(now, s.Name, why, forge.Bodies(notes)), Blocked: why}, true, nil
 	case dated && !clock().Before(free):
 		key = "hours:" + trail.Labeled
 		why = fmt.Sprintf("its claim, %s put on %s, has no pull request past claim-hours (%d): wakes the developer to let it go",
 			doing.Label, backlog.Day(trail.Labeled), h)
-	case developer.NoCodeOnOtherBody(developer.ClaimActIn(forge.Bodies(notes)), is.Body):
+	case developer.NoCodeOnOtherBody(act, is.Body):
 		key = "body:" + bodyHash(is.Body)
 		why = "its claim wrote no code, and its body changed since: wakes the developer to let it go"
 	}
@@ -97,19 +117,17 @@ func claimStep(res *Result, cfg *routing.Config, b forge.Backlog, t *tally, s ro
 		switch {
 		case key != "":
 			msg += ": the developer was woken to let it go already"
+		case dated && same:
+			msg += fmt.Sprintf(": its agent wrote no code; blocked for a person on %s (claim-hours: %d), or let go at once on a change to its body", free.UTC().Format("2006-01-02 15:04 UTC"), h)
 		case dated:
 			msg += fmt.Sprintf(": let go on %s (claim-hours: %d), or at once on a change to its body", free.UTC().Format("2006-01-02 15:04 UTC"), h)
 		default:
 			msg += ": the forge does not say when it began; let go on a change to its body"
 		}
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "state-waits", Level: "info", Where: where, Message: msg})
-		return nil, true, nil
-	}
-	now := rec
-	if !had {
-		now = Record{State: s.Name, Body: bodyHash(is.Body), V: recordV}
+		return nil, nil, true, nil
 	}
 	now.Claim, now.Ran = key, clock().UTC().Format(time.RFC3339)
 	res.Findings = append(res.Findings, verdict.Finding{Rule: "state-wakes", Level: "info", Where: where, Message: why})
-	return &stateStep{role: developerRole, write: StateWrite{Issue: is.ID, Record: now}, from: s, since: at, rec: rec}, true, nil
+	return &stateStep{role: developerRole, write: StateWrite{Issue: is.ID, Record: now}, from: s, since: at, rec: rec}, nil, true, nil
 }

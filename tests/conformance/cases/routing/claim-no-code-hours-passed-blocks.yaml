@@ -1,0 +1,33 @@
+case: routing/claim-no-code-hours-passed-blocks
+about: >
+  A claim whose agent wrote no code, past claim-hours, on the body it
+  read (#1084): the same input. Woken again, the developer would let it
+  go and take it again on that input, its agent run for nothing. The
+  line lets the claim go itself and blocks the issue for a person, the
+  reason written, as after code said lacking twice; no developer's run.
+  A body changed since still wakes the developer
+  (claim-no-code-body-changed-wakes).
+given:
+  repo: tested
+  config:
+    routing: {events: {issue: [developer]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply"
+        labels: ["workline:developing"]
+        labeled: {"workline:ready": "2025-12-31T09:00:00Z", "workline:developing": "2026-01-01T09:00:00Z"}
+        body: "## Need\n\nI want to multiply.\n"
+        comments: ["**The developer** takes this issue.\n\n<!-- workline:developer-act {\"act\":\"pick\",\"issue\":3,\"no-code\":true,\"body\":\"8a828a06be19\"} -->\n<!-- workline:sticky=developer/claim -->"]
+run: {route: reconcile, open-merge-request: true, ai: "fake:developer-nothing"}
+expect:
+  status: pass
+  agent-calls: 0
+  findings:
+    - {rule: no-code-spent, level: warn, where: "#3", message: "the developer's agent wrote no code on this issue, and its claim, workline:developing put on 2026-01-01, passed claim-hours (24) with its body unchanged"}
+  no-findings: [{rule: state-wakes}, {rule: claim-released}]
+  forge:
+    issues:
+      - id: 3
+        labels: ["workline:blocked"]
+        comment-contains: ["its body unchanged", "a person"]

@@ -2,7 +2,7 @@
 sources:
   - internal/developer/developer.go
   - internal/tester/proof.go
-checked: 0538cac5
+checked: 07ca9b9b
 verified: agent:claude-code
 ---
 # The pick
@@ -78,8 +78,9 @@ claim is a label, on every forge:
   - GitLab: that column's label on, the other columns' off, in one call.
   - GitHub: left to the project's *Pull request linked to issue* when
     on; else the card's Status set, on an organisation's project only.
-- **No code, no pull request**: the comment says so, and when the claim
-  is let go. Meanwhile the claim holds no Scope: an issue overlapping it
+- **No code, no pull request**: the comment says so, and when the issue
+  is blocked for a person, its body unchanged
+  ([letting a claim go](#letting-a-claim-go)). Meanwhile the claim holds no Scope: an issue overlapping it
   may be taken.
 - **Its pull request does not open**: the claim given back at once,
   what failed in the comment; the second time, the issue blocked
@@ -99,6 +100,13 @@ on any event, with or without an agent:
 - **Woken for it**: Doing wakes no role, so the line's reconciler wakes
   the developer on such a claim, once, past `claim-hours` or on its new
   body. Until then it says the day the claim is let go.
+- **No code, the same body**: past `claim-hours`, the line does not wake
+  the developer. Its agent would get the same input again. The line
+  takes the claim's label off and blocks the issue for a person, the
+  reason written (`no-code-spent`,
+  [#1120](https://github.com/JN0V/workline/issues/1120)).
+  - A developer's run started for another issue keeps that claim too
+    (`claim-left-to-line`): the line alone decides the block.
 - **What**: `claim-label` taken off; the claim's comment edited to say
   why and what comes next. The issue is not taken again in the same run.
 - **A day the forge does not say**: the claim is kept, said in the

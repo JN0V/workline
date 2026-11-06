@@ -119,8 +119,8 @@ func stateOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, 
 	if s.Name == BlockedState && name == "" {
 		return revisit(res, cfg, b, is, open)
 	}
-	if step, done, err := claimStep(res, cfg, b, t, s, is); err != nil || done {
-		return step, nil, err
+	if step, w, done, err := claimStep(res, cfg, b, t, s, is); err != nil || done {
+		return step, w, err
 	}
 	if name == "" {
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "state-wakes-none", Level: "info", Where: where, Message: why})

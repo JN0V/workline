@@ -1,0 +1,36 @@
+case: developer/stale-no-code-claim-left-to-line
+about: >
+  A developer's run reads every claim, not only the issue it was started
+  for. Past claim-hours, a claim whose agent wrote no code on the body
+  its issue still has (#3) is not let go: back in Ready, it would be
+  taken again on the same input. It is kept, left to the line, which
+  blocks it for a person (#1120); one place decides that block. #1, a
+  claim with no such record, is let go as before.
+given:
+  repo: tested
+  forge:
+    issues:
+      - id: 1
+        title: "Add"
+        labels: ["workline:ready", "workline:developing"]
+        labeled: {"workline:developing": "2026-01-01T09:00:00Z"}
+        body: "## Need\n\nI want to add.\n"
+        comments: ["**The developer** takes this issue.\n\n<!-- workline:sticky=developer/claim -->"]
+      - id: 3
+        title: "Multiply"
+        labels: ["workline:developing"]
+        labeled: {"workline:developing": "2026-01-01T09:00:00Z"}
+        body: "## Need\n\nI want to multiply.\n"
+        comments: ["**The developer** takes this issue.\n\n<!-- workline:developer-act {\"act\":\"pick\",\"issue\":3,\"no-code\":true,\"body\":\"8a828a06be19\"} -->\n<!-- workline:sticky=developer/claim -->"]
+run: {develop: [], ai: "fake:developer-nothing"}
+expect:
+  status: pass
+  agent-calls: 0
+  findings:
+    - {rule: claim-released, where: "#1", message: "no pull request closes it"}
+    - {rule: claim-left-to-line, level: info, where: "#3", message: "its agent wrote no code on the body it still has: kept, left to the line, which blocks it for a person"}
+  no-findings: [{rule: claim-released, where: "#3"}]
+  forge:
+    issues:
+      - {id: 1, labels: ["workline:ready"], comments: 1}
+      - {id: 3, labels: ["workline:developing"], comments: 1, comment-lacks: ["lets this issue go"]}
