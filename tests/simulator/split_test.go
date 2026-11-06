@@ -94,7 +94,7 @@ func TestTrial56Split(t *testing.T) {
 			if err := gitIn(repo, "commit", "-q", "--no-verify", "-am", "chore: the trial's line"); err != nil {
 				t.Fatal(err)
 			}
-			f :=filepath.Join(work, "forge.json")
+			f := filepath.Join(work, "forge.json")
 			state, _ := json.Marshal(m.Forge)
 			if err := os.WriteFile(f, state, 0o644); err != nil {
 				t.Fatal(err)

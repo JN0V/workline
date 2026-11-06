@@ -544,9 +544,13 @@ whose result moves the issue to the next. The table is the routing's
   label put on again, or an important finding does
   ([#1127](https://github.com/JN0V/workline/issues/1127)).
   Its drafts with no review yet on that body, the reviewer on the line:
-  the step is the reviewer's alone, the product owner not called. In
-  CI, the reviewer of the judge job read the body before the apply job
-  wrote the drafts; its review lands, then the rule above holds it
+  the step is the reviewer's alone, the product owner not called
+  (`state-review-pending`; `alone` in the record). In CI, the reviewer
+  of the judge job read the body before the apply job wrote the drafts;
+  its review lands, then the rule above holds it. A retry of that step
+  after a machine error, and the once more of a review that did not
+  come (`state-review-missing`), run the reviewer alone too; its errors
+  and its block name the reviewer
   ([#1150](https://github.com/JN0V/workline/issues/1150)).
 - **Left unrefined, due again**
   ([ADR-0059, amended](../adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#amendment-2026-11-03-an-issue-left-unrefined-is-woken-again)):

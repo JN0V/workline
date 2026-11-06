@@ -151,14 +151,22 @@ func stateOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, 
 	now, ok := due(cfg, s, is, trail.Labeled, spec, rec, had)
 	changed := ok // due on a new state, label, body or review: not a retry (typedDue)
 	var inputs map[string]string
+	retried := false
 	if !ok && had {
 		// Its last run on this input a machine error, or short of code
 		// (ADR-0063, §5): run again, wait, or a person (outcome.go).
+		// A step run alone in its state's place (#1150) is retried alone,
+		// its errors and block said as that role's.
+		again := name
+		if rec.Alone != "" && rec.State == s.Name {
+			again = rec.Alone
+		}
 		var block *StateWrite
 		var waits bool
-		if ok, now, inputs, block, waits = typedDue(res, name, s, is, rec, comments); block != nil || waits {
+		if ok, now, inputs, block, waits = typedDue(res, again, s, is, rec, comments); block != nil || waits {
 			return nil, block, nil
 		}
+		retried = ok
 	}
 	reviewed := s.Name == refineState && slices.Contains(cfg.Events[IssueEvent], backlog.SpecReviewer)
 	// Due on a new body or review, its own drafts and their review alone,
@@ -168,7 +176,7 @@ func stateOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, 
 	// Its drafts not yet reviewed, the reviewer routed (#1150): the
 	// reviewer's step alone, the review pending, not missing; held the
 	// same, the delay passed or something else waking it below.
-	held, unreviewed := false, false
+	held, unreviewed, reviewAlone := false, false, false
 	if changed && reviewed && name == backlog.Keeper {
 		held, unreviewed = draftsHeld(is, trail.Labeled, comments, notes, rec, had)
 	}
@@ -187,6 +195,10 @@ func stateOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, 
 		// top (#1062). Due once more, for the reviewer; then acted.
 		ok = true
 		now.ReviewAgain = rec.Body
+		if name == backlog.Keeper {
+			// Only its drafts waiting (#1150): the reviewer alone.
+			_, reviewAlone = draftsHeld(is, trail.Labeled, comments, notes, rec, had)
+		}
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "state-review-missing", Level: "info", Where: where,
 			Message: "its drafts wait on a spec review that has not come on this text: woken again, once, for the reviewer"})
 	}
@@ -215,6 +227,12 @@ func stateOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, 
 		}
 	}
 	role := name
+	if retried && rec.Alone != "" && rec.State == s.Name {
+		role = rec.Alone
+	}
+	if reviewAlone {
+		role = backlog.SpecReviewer
+	}
 	if unreviewed && !ok {
 		// Not timed out, nothing else due: the reviewer reads the drafts,
 		// the product owner not called (#1150).
@@ -323,6 +341,10 @@ func stateOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, 
 		Message: fmt.Sprintf("its state, %s, wakes the %s", s.Name, role)})
 	since := waitedSince(s, rec, had, trail.Labeled)
 	now.Ran = clock().UTC().Format(time.RFC3339)
+	now.Alone = ""
+	if role != name {
+		now.Alone = role // its retry runs it alone again
+	}
 	return &stateStep{role: role, next: s.Next, write: StateWrite{Issue: is.ID, Record: now}, inputs: inputs, from: s, since: since, rec: rec}, nil, nil
 }
 
