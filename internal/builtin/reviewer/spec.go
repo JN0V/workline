@@ -189,7 +189,11 @@ func specCut(sp Spec, cut int, s Settings) verdict.Finding {
 // read it, each lens left out said in st.Skipped.
 func askSpec(runDir, repo string, s Settings, st *state) (asked bool, err error) {
 	sp := *st.Spec
-	code := namedCode(repo, st.Head, sp.Path, sp.Title+"\n"+sp.Text, s.CodeLinesMax, "code-lines-max")
+	code, cut := namedCode(repo, st.Head, sp.Path, sp.Title+"\n"+sp.Text, s.CodeLinesMax, "code-lines-max")
+	if cut != "" {
+		st.Advisories = append(st.Advisories, verdict.Finding{Rule: verdict.CutRule, Where: sp.Path, Level: "warn",
+			Message: fmt.Sprintf("the code the spec names given to the reviewer's agent is cut past code-lines-max (%d lines): %s; raise %s", s.CodeLinesMax, cut, verdict.Setting("reviewer", "code-lines-max"))})
+	}
 	skip := map[string]string{}
 	read := map[string]Lens{}
 	for _, name := range s.SpecLenses {
@@ -342,11 +346,12 @@ func fenced(text string) string {
 // (ADR-0063 §8): the lines it names after a file, each definition of a
 // name it writes as code whole, a file it names whole when it fits, the
 // lines naming a name, up to limit lines all together, the rest said; ""
-// when it names none (#128, #425).
-func namedCode(repo, head, spec, text string, limit int, setting string) string {
+// when it names none (#128, #425). cut is what limit left out of the
+// files it names, for the person (codepick's Cut, #1159).
+func namedCode(repo, head, spec, text string, limit int, setting string) (code, cut string) {
 	pk, err := codepick.New(repo, head)
 	if err != nil {
-		return ""
+		return "", ""
 	}
 	a := codepick.Ask{Text: text, Budget: max(limit, 1), BudgetName: setting}
 	if spec != "" && !strings.HasPrefix(spec, "#") {
@@ -354,12 +359,12 @@ func namedCode(repo, head, spec, text string, limit int, setting string) string 
 	}
 	pick := pk.Pick(a)
 	if len(pick.Named()) == 0 && len(pick.Many) == 0 {
-		return ""
+		return "", ""
 	}
 	var b strings.Builder
 	fmt.Fprintf(&b, "\n## The code the spec names\n\nAs it reads at %s: the lines it names, each definition of a name it writes as code, a file it names whole when it fits, then the lines naming them, up to %d lines all together (%s); the rest said. Found with no build: a name may be taken for another of the same name.\n", short(head), limit, setting)
 	pick.Write(&b, codepick.Style{Numbered: true, Namer: "the spec"})
-	return b.String()
+	return b.String(), pick.Cut()
 }
 
 // inSpec finds a spec finding's quotes again: its cause in the spec, as
@@ -410,7 +415,7 @@ func specMaterial(repo string, st state, s Settings, f Finding, code bool) strin
 		b.WriteString(reach(repo, st.Head, s.Tests, on, at, 0, s.JudgeLinesMax))
 		return b.String()
 	}
-	if named := namedCode(repo, st.Head, st.Spec.Path, st.Spec.Title+"\n"+st.Spec.Text, s.JudgeLinesMax, "judge-lines-max"); named != "" {
+	if named, _ := namedCode(repo, st.Head, st.Spec.Path, st.Spec.Title+"\n"+st.Spec.Text, s.JudgeLinesMax, "judge-lines-max"); named != "" {
 		b.WriteString(named)
 	} else {
 		b.WriteString("\n## The code the spec names\n\nNone the repository holds.\n")

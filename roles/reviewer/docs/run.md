@@ -110,6 +110,8 @@ none on a draft (`--input draft=true`, [ADR-0050](../../../docs/adr/0050-each-ac
   - each file they change once: whole, the change marked in it, while the
     files fit `code-lines-max`; the others by the change's hunks. A change
     past one call (the budget, `diff-lines-max`): [in parts](parts.md).
+  - each cut past one of these settings is said in the run, with the
+    setting that raises it (`input-cut`).
 - **Intent** (`needs: issue`): a change saying `Closes #4` (or `fixes`,
   `resolves`, `implements`), in a commit or the merge request, has `#4` read
   from the forge, its Need, Verification and Scope given
