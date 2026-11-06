@@ -37,12 +37,14 @@ func (f *failure) String() string {
 // The statuses I1 accepts, read from today's findings by their rule:
 // a step started or queued (Due), a wait said (Waiting). Anything else on
 // an open issue of the line, "acted, nothing to run" first, is no status.
-// A claim that wrote no code, blocked for a person its reason written
-// (no-code-spent), waits on them. TestOracleRulesExist fails when the
-// engine no longer has one of them.
+// An issue the line blocks for a person, its reason written on it — a
+// claim that wrote no code, code said lacking twice, no test possible
+// left unsettled, machine errors past the budget — waits on them.
+// TestOracleRulesExist fails when the engine no longer has one of them.
 var (
 	dueRules     = []string{"state-wakes", "reconcile-left"}
-	waitingRules = []string{"state-blocked-quiet", "state-blocked-seen", "state-waits", "state-room", "repro-waits", "state-review-missing", "no-code-spent"}
+	waitingRules = []string{"state-blocked-quiet", "state-blocked-seen", "state-waits", "state-room", "repro-waits", "state-review-missing",
+		"no-code-spent", "needs-spent", "no-test-unsettled", "machine-error-spent"}
 	notStatus    = []string{"state-acted"}
 )
 
@@ -706,7 +708,8 @@ func TestOracleRulesExist(t *testing.T) {
 		}
 	}
 	for _, rule := range slices.Concat(dueRules, waitingRules, notStatus) {
-		if !regexp.MustCompile(`Rule:\s*"` + regexp.QuoteMeta(rule) + `"`).MatchString(src.String()) {
+		// A rule is named in a Finding, or given its blocked helper (outcome.go).
+		if !regexp.MustCompile(`(Rule:\s*|blocked\()"` + regexp.QuoteMeta(rule) + `"`).MatchString(src.String()) {
 			t.Errorf("the I1 oracle reads the rule %s, which internal/line no longer has: read its statuses again", rule)
 		}
 	}
