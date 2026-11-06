@@ -192,6 +192,11 @@ func TestNamesAScenarioInItsComment(t *testing.T) {
 	if !names("// Bread and butter: Given", "Bread and butter") {
 		t.Error("a name holding \"and\" is not read whole")
 	}
+	for _, name := range []string{"Add/remove", "Save, then load", "R&D"} {
+		if !names("// "+name+": Given", name) {
+			t.Errorf("%q, a name holding a separator, is not named by its label", name)
+		}
+	}
 }
 
 // A note naming two scenarios counts for both; one naming one, for it

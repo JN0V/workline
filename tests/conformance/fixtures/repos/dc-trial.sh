@@ -1,16 +1,9 @@
 #!/bin/sh
-# The shape of the DomoticsCore trial's copy, where round 5's tester runs
-# were recorded: components each a PlatformIO project, their native test
-# suites in test/<suite>/, run by tools/workline-tests.sh into one JUnit
-# report. The WebUI's platformio.ini lists the suites it runs in its
-# test_filter, as the real one does; the RemoteConsole's runs them all.
-#
-# The runner stands in for `pio test`, which a test machine lacks: each
-# project (a platformio.ini holding [env:native]) runs the suites its
-# test_filter lists (each when none), and the files right under its test/;
-# each `void test_x(void)` a test case. A test tools/green-tests.txt names
-# passes, any other fails: the base's tests pass, a new one is red, as a
-# test of a bug not fixed yet is.
+# The DomoticsCore trial copy's shape (round 5): components each a
+# PlatformIO project, suites in test/<suite>/, the WebUI's test_filter
+# listing its suites. tools/workline-tests.sh stands in for `pio test`:
+# a project runs the suites its test_filter lists, each `void test_x`
+# a case; one tools/green-tests.txt names passes, any other fails.
 set -eu
 # Hermetic: ignore the machine's git config and global hooks.
 export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1

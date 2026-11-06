@@ -2,7 +2,10 @@ package tester
 
 import (
 	"fmt"
+	"maps"
 	"path"
+	"regexp"
+	"slices"
 	"strings"
 )
 
@@ -44,7 +47,8 @@ func filtersAbove(repo, base string, files []string) []string {
 	seen := map[string]bool{}
 	for _, f := range files {
 		for dir := path.Dir(f); ; dir = path.Dir(dir) {
-			for name, keys := range runnerFilters {
+			for _, name := range slices.Sorted(maps.Keys(runnerFilters)) {
+				keys := runnerFilters[name]
 				p := path.Join(dir, name)
 				if seen[p] {
 					continue
@@ -57,11 +61,8 @@ func filtersAbove(repo, base string, files []string) []string {
 				for _, line := range strings.Split(text, "\n") {
 					l := strings.TrimSpace(line)
 					for _, k := range keys {
-						if strings.HasPrefix(l, k) || strings.HasPrefix(l, `"`+k+`"`) {
-							rest := strings.TrimLeft(strings.TrimPrefix(strings.TrimPrefix(l, `"`+k+`"`), k), " \t")
-							if strings.HasPrefix(rest, "=") || strings.HasPrefix(rest, ":") {
-								out = append(out, fmt.Sprintf("`%s`'s `%s` (`%s`)", p, k, clip(l, 200)))
-							}
+						if m := filterLine.FindStringSubmatch(l); m != nil && m[1] == k {
+							out = append(out, fmt.Sprintf("`%s`'s `%s` (`%s`)", p, k, clip(l, 200)))
 						}
 					}
 				}
@@ -73,6 +74,10 @@ func filtersAbove(repo, base string, files []string) []string {
 	}
 	return out
 }
+
+// filterLine is a line setting a key, its whole name: `key = …`,
+// `key: …`, `"key": …`.
+var filterLine = regexp.MustCompile(`^"?([A-Za-z_]+)"?\s*[=:]`)
 
 func clip(s string, n int) string {
 	if r := []rune(s); len(r) > n {

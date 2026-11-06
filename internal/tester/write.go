@@ -1048,7 +1048,8 @@ func labels(line string) []string {
 // joined by commas, "&", "/" or "and": each maybe a test's name
 // (`TestMinusOne: …`) or after the word "scenario".
 func lists(label string, want []string) bool {
-	for _, part := range listSep.Split(label, -1) {
+	// The label whole first: a name may hold a separator (`Add/remove`).
+	for _, part := range append([]string{label}, listSep.Split(label, -1)...) {
 		w := words(part)
 		if len(w) > 1 && !slices.Equal(w, want) && slices.Contains([]string{"test", "tests", "scenario", "scenarios"}, w[0]) {
 			w = w[1:]
