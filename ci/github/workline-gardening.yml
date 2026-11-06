@@ -169,6 +169,10 @@ jobs:
           # nothing is left to merge; one a person committed to is theirs.
           # Needs the first release after v0.24.0.
           workline follow --gardening --base "$GITHUB_REF_NAME" --forge github --summary workline-summary.md || status=$?
+          # The normal size of an issue, from the line's records: one comment
+          # kept in place, reported only (ADR-0064, step 2). Needs the first
+          # release after v0.73.0.
+          workline size --forge github --summary workline-summary.md || status=$?
           [ ! -s workline-summary.md ] || cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"
           exit "$status"
       # The states the night moved, the product owner's ready or
