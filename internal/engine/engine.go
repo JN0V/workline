@@ -686,6 +686,9 @@ func run(o Options, res *Result) error {
 			return err
 		}
 	}
+	// What pre cut of the task past a cap is said to the person, not to
+	// the agent alone (#1159).
+	res.Findings = append(res.Findings, verdict.CutFindings(runDir, res.Findings)...)
 	digest, err := dirDigest(filepath.Join(runDir, "in"))
 	if err != nil {
 		return err

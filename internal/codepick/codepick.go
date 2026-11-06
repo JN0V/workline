@@ -140,6 +140,7 @@ type Pick struct {
 	Left    int      // the budget left
 	Kept    int      // the lines kept for the test, the code filling the budget
 	Unshown []string // names whose other places were past usesMax or the budget: "`f` (4 more places)"
+	Short   bool     // something named was cut or left out, past the budget
 	Ask     Ask
 }
 
@@ -902,7 +903,7 @@ func (p *Picker) Pick(a Ask) Pick {
 		pk.Files = append(pk.Files, *tf)
 	}
 	pk.Linked = p.linked(pk, a.Tests)
-	pk.Left = left
+	pk.Left, pk.Short = left, short
 	return pk
 }
 
