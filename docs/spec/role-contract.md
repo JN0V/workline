@@ -314,7 +314,12 @@ token), **apply** (trusted, no AI key).
    so too, the keys named: several kinds, an item each; a key no kind is
    named by, the role's kind whose shape holds it, under which it goes (a
    lens wrote a finding's `decision` and `cause` as an item of their own,
-   #493).
+   #493). Beside a diff under `patch`, a `file` or `path` naming the file
+   the diff changes, and a `content` that is the text the diff gives its
+   new file, say nothing more: they are left out, said (`answer-mended`),
+   and the item read; one that says otherwise is refused, named (#1148).
+   Prose before the list, no fence around it (a line announcing the
+   answer), is left out, said, and the list read from its first item.
    The output contract asks for text holding code, quotes, a backtick, `: `
    or ` #` as a YAML block scalar (`|`), which takes code as it is; the
    request again repeats it (#138). YAML, not JSON: code wrapped in JSON

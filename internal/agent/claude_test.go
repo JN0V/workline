@@ -126,6 +126,65 @@ func TestParseClaude(t *testing.T) {
 	}
 }
 
+// The tester's two answers on trial #55, as they came (#1148): the first
+// writes a `file:` and a `content:` beside each new file's patch, the
+// second opens on a line of prose. Each is read, its patches whole.
+func TestProposalsFromRealTesterAnswers(t *testing.T) {
+	for _, c := range []struct{ file, said string }{
+		{"../../tests/conformance/fixtures/agents/dc55-tester-try2-answer1.txt", "a `content:` beside its patch"},
+		{"../../tests/conformance/fixtures/agents/dc55-tester-try2-answer2.txt", "prose before the list (I'm writing the answer now."},
+	} {
+		data, err := os.ReadFile(c.file)
+		if err != nil {
+			t.Fatal(err)
+		}
+		out, mended, err := proposalsFrom(string(data), "patch", "note")
+		if err != nil {
+			t.Errorf("%s: refused: %v", c.file, err)
+			continue
+		}
+		var list []map[string]any
+		if err := yaml.Unmarshal(out, &list); err != nil {
+			t.Fatalf("%s: %v", c.file, err)
+		}
+		patches := 0
+		for i, m := range list {
+			if _, note := m["note"]; note && len(m) == 1 {
+				continue
+			}
+			patches++
+			if diff, _ := m["patch"].(string); len(m) != 1 || !strings.HasPrefix(diff, "--- /dev/null\n+++ b/DomoticsCore-WebUI/test/") {
+				t.Errorf("%s: proposal %d = %.200v", c.file, i+1, m)
+			}
+		}
+		if patches != 2 {
+			t.Errorf("%s: %d patches, want 2", c.file, patches)
+		}
+		if !strings.Contains(strings.Join(mended, "\n"), c.said) {
+			t.Errorf("%s: mended %q, want %q said", c.file, mended, c.said)
+		}
+	}
+}
+
+// What the diff says already is dropped beside it; what says otherwise,
+// or an answer holding no list, is refused, named (#1148).
+func TestProposalsFromBesideAPatch(t *testing.T) {
+	diff := "  patch: |\n    --- /dev/null\n    +++ b/t/a_test.sh\n    @@ -0,0 +1 @@\n    +echo a\n"
+	if _, mended, err := proposalsFrom("-" + diff[1:] + "  file: t/a_test.sh\n"); err != nil || len(mended) != 1 {
+		t.Errorf("a file the patch names: %v, %q", err, mended)
+	}
+	for _, c := range []struct{ answer, want string }{
+		{"-" + diff[1:] + "  file: t/b_test.sh\n", "proposal 1: its `file:` (t/b_test.sh) beside its patch is not a file the patch changes (t/a_test.sh)"},
+		{"-" + diff[1:] + "  content: echo b\n", "proposal 1: its `content:` beside its patch is not the text the patch gives a new file"},
+		{"I could not write a test.\nThe code has none.\n", "expected a YAML list of proposals"},
+		{"Here it is:\n- note: x\n  colour: red\n", "colour is no kind"},
+	} {
+		if _, _, err := proposalsFrom(c.answer); err == nil || !strings.Contains(err.Error(), c.want) {
+			t.Errorf("%q: %v, want %q", c.answer, err, c.want)
+		}
+	}
+}
+
 // An item holding several keys where one kind goes is refused, the reader
 // told where they go: a lens wrote a finding's `decision` and `cause` as an
 // item of their own (#490, #492) and, told only to send valid YAML, sent

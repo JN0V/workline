@@ -9,6 +9,7 @@ import (
 	"path"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 
 	"go.yaml.in/yaml/v3"
@@ -246,8 +247,53 @@ func NormalizeDiff(diff string) string {
 		}
 		out = append(out, l)
 	}
-	return mergeOverlapping(strings.Join(out, "\n"))
+	return mergeOverlapping(strings.Join(addedWhole(out), "\n"))
 }
+
+// addedWhole reads an agent's wrapped line in a new file's hunk, an
+// indented line written without its `+` (trial #56), as one of the
+// file's: a file made from /dev/null has no line to keep, so git refuses
+// it as a corrupt patch. Only such a line, and only up to the lines the
+// hunk's header says it adds: a blank line, a line of plain prose, or a
+// `-` line ends the repair, and what follows is left for git to judge.
+// NormalizeDiff runs it for every role's patch.
+func addedWhole(lines []string) []string {
+	header := func(i int) bool {
+		return strings.HasPrefix(lines[i], "diff --git ") ||
+			strings.HasPrefix(lines[i], "--- ") && i+1 < len(lines) && strings.HasPrefix(lines[i+1], "+++ ")
+	}
+	created, left := false, 0 // in a new file; the lines its hunk has yet to add
+	for i, l := range lines {
+		switch {
+		case header(i): // a `diff --git` line is none of /dev/null
+			created, left = strings.TrimSpace(strings.TrimPrefix(l, "--- ")) == "/dev/null", 0
+		case strings.HasPrefix(l, "@@"):
+			left = 0
+			if m := newCount.FindStringSubmatch(l); created && m != nil {
+				left = 1
+				if m[1] != "" {
+					left, _ = strconv.Atoi(m[1])
+				}
+			}
+		case left <= 0 || strings.HasPrefix(l, `\`):
+		case strings.HasPrefix(l, "+"):
+			left--
+		case strings.HasPrefix(l, " ") || strings.HasPrefix(l, "\t"):
+			if strings.TrimSpace(l) == "" {
+				left = 0 // a blank line: the hunk's end, whatever its count
+				continue
+			}
+			lines[i] = "+" + l
+			left--
+		default: // a `-` line, a blank one, prose: the repair ends
+			left = 0
+		}
+	}
+	return lines
+}
+
+// newCount is the count of lines a hunk's header says it adds: `+1,61`.
+var newCount = regexp.MustCompile(`^@@ -\d+(?:,\d+)? \+\d+(?:,(\d+))? @@`)
 
 var hunkHeader = regexp.MustCompile(`^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@`)
 

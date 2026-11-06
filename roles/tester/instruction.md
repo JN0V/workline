@@ -9,7 +9,10 @@ style, beside the tests already there:
   (`Two by three` gives `TestTwoByThree`, `test_two_by_three`). Its
   comment opens with the scenario's name as the issue writes it, then
   its Given / When / Then (`// Two by three: Given …, When …, Then …`),
-  so a reader finds the test by the name.
+  so a reader finds the test by the name. Where the Verification has
+  one test check two scenarios, it wins: the test's comment opens each
+  sentence on its scenario's name (`// Two by three: Given …. By zero:
+  Given …`).
 - **Check the Then**, exactly: the value, the message, the state it says.
   Call the code as the Scope says it will be: a function or option it
   names may not exist yet, and the test then fails on a missing name.

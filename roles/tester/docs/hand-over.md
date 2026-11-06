@@ -175,7 +175,12 @@ refusal is written on the issue too
 - **An answer that does not read** (a list item indented one space
   too far): asked again once, with the reader's error; still
   unreadable, refused and said, no third call
-  ([#761](https://github.com/JN0V/workline/issues/761)).
+  ([#761](https://github.com/JN0V/workline/issues/761)). Prose before
+  the list, or a `file:` beside a patch naming its own file, is read
+  ([#1148](https://github.com/JN0V/workline/issues/1148)).
+- **A test the project's runner skips** (a suite its `test_filter`
+  does not list): the block names the file and the filter, and the next
+  run tells the agent ([#1149](https://github.com/JN0V/workline/issues/1149)).
 - **Not a job's log alone**: a person on the issue sees why no Draft
   came.
 
