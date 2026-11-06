@@ -1728,10 +1728,19 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 	if c.Do == "sources" && (c.Quote == nil || strings.TrimSpace(c.Quote.Text) == "") {
 		// Named outside the code given, nothing of it to quote (#951,
 		// #980): the issue is read again with that code, at the next run.
-		// Each such file on its own (#1151): one shown beside it still
-		// wants its quote, and is left out without one.
+		// Each such file on its own (#1151): one its state names already
+		// stays; one shown, new to it, wants its quote, and is left out
+		// without one.
 		if unshown, shown := p.unshown(repo, c.Issue, c.Sources); len(unshown) > 0 {
-			c.Quote, c.Sources, c.Unquoted = nil, unshown, shown
+			var had []string
+			if st := p.ledger.States[c.Issue]; st != nil {
+				had = st.Sources
+			}
+			kept := slices.DeleteFunc(slices.Clone(c.Sources), func(s string) bool {
+				return slices.Contains(shown, s) && !slices.ContainsFunc(had, func(h string) bool { return RepoPath(h) == RepoPath(s) })
+			})
+			c.Unquoted = slices.DeleteFunc(slices.Clone(shown), func(s string) bool { return slices.Contains(kept, s) })
+			c.Quote, c.Sources = nil, kept
 			return "", ""
 		}
 	}
