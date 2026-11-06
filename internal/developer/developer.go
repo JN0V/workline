@@ -7,6 +7,8 @@
 package developer
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -138,6 +140,9 @@ type Act struct {
 	// NoCode: its agent wrote no code within its bounds, so no pull
 	// request; the claim waits to be let go (ADR-0059, decision 1).
 	NoCode bool `json:"no-code,omitempty"`
+	// Body: the issue's body as the claim read it (BodyMark): a claim
+	// with no code is let go when the body changes since (#1084).
+	Body string `json:"body,omitempty"`
 	// Unopened: the times its pull request did not open for this issue,
 	// each giving the claim back (#856); read at the pick from the claim's
 	// comment, carried on. At the second, the issue is blocked.
@@ -206,6 +211,13 @@ var actData = regexp.MustCompile(`<!-- ` + ActMark + ` (\{.*\}) -->`)
 func (a Act) Line() string {
 	data, _ := json.Marshal(a)
 	return fmt.Sprintf("<!-- %s %s -->", ActMark, data)
+}
+
+// BodyMark is an issue body's short digest, as a claim's record keeps
+// it (Act.Body): the line and the developer read a change by it.
+func BodyMark(body string) string {
+	sum := sha256.Sum256([]byte(strings.TrimSpace(body)))
+	return hex.EncodeToString(sum[:])[:12]
 }
 
 // ReadAct reads a pick's record from a comment of the developer's.
@@ -545,6 +557,9 @@ func Pre(runDir, repo string) int {
 	}
 	at, _ := gitOut(repo, "rev-parse", "HEAD")
 	act := Act{Act: "pick", At: at, Issue: id, Passed: passed}
+	if i := slices.IndexFunc(issues, func(is forge.Issue) bool { return is.ID == id }); i >= 0 {
+		act.Body = BodyMark(issues[i].Body)
+	}
 	if act.Unopened, err = unopenedBefore(b, id); err != nil {
 		return external(err)
 	}

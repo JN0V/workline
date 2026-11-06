@@ -1,0 +1,38 @@
+case: routing/claim-no-code-waits-said
+about: >
+  A claim whose agent wrote no code has no pull request, and Doing wakes
+  no role (#1084): the issue was left silent until a developer's run let
+  the claim go. Now the line says what it waits on: the day its claim is
+  let go, claim-hours after the forge says the label went on. #3 holds
+  the claim alone, #4 beside workline:ready, as a claim from before the
+  claim took that label off. Nothing runs, nothing is written.
+given:
+  repo: tested
+  config:
+    routing: {events: {issue: [developer]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply"
+        labels: ["workline:developing"]
+        labeled: {"workline:developing": "2099-01-01T09:00:00Z"}
+        body: "## Need\n\nI want to multiply.\n"
+        comments: ["**The developer** takes this issue.\n\n<!-- workline:developer-act {\"act\":\"pick\",\"issue\":3,\"no-code\":true,\"body\":\"8a828a06be19\"} -->\n<!-- workline:sticky=developer/claim -->"]
+      - id: 4
+        title: "Multiply again"
+        labels: ["workline:ready", "workline:developing"]
+        labeled: {"workline:ready": "2098-12-31T09:00:00Z", "workline:developing": "2099-01-01T09:00:00Z"}
+        body: "## Need\n\nI want to multiply.\n"
+        comments: ["**The developer** takes this issue.\n\n<!-- workline:developer-act {\"act\":\"pick\",\"issue\":4,\"no-code\":true,\"body\":\"8a828a06be19\"} -->\n<!-- workline:sticky=developer/claim -->"]
+run: {route: reconcile, open-merge-request: true, ai: none}
+expect:
+  status: pass
+  agent-calls: 0
+  findings:
+    - {rule: state-waits, level: info, where: "#3", message: "its claim, workline:developing, has no pull request: let go on 2099-01-02 09:00 UTC (claim-hours: 24), or at once on a change to its body"}
+    - {rule: state-waits, level: info, where: "#4", message: "let go on 2099-01-02 09:00 UTC"}
+  no-findings: [{rule: state-acted}, {rule: state-wakes}]
+  forge:
+    issues:
+      - {id: 3, labels: ["workline:developing"], comments: 1}
+      - {id: 4, labels: ["workline:ready", "workline:developing"], comments: 1}

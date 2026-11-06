@@ -6,7 +6,8 @@ about: >
   Its state, body and ready label are the ones the record holds, yet it
   came back to Ready from Doing: its step is due again. #4, woken and
   never taken since, is not: the same wake twice runs nothing. #5, held
-  by the developer, wakes no role. #6, assigned to a person, is theirs.
+  by the developer, its claim young, wakes no role: it waits on its
+  let-go (#1084). #6, assigned to a person, is theirs.
 given:
   repo: tested
   config:
@@ -28,7 +29,7 @@ given:
       - id: 5
         title: "Multiply once more"
         labels: ["workline:ready", "workline:developing"]
-        labeled: {"workline:ready": "2026-11-01T10:48:29Z", "workline:developing": "2026-11-01T10:49:33Z"}
+        labeled: {"workline:ready": "2026-11-01T10:48:29Z", "workline:developing": "2099-11-01T10:49:33Z"}
         body: "## Need\n\nI want to multiply.\n"
         comments: ["<!-- workline:line-record {\"state\":\"ready\",\"body\":\"8a828a06be19\",\"labeled\":\"2026-11-01T10:48:29Z\",\"hops\":1,\"woke\":\"2026-11-01T10:48:40Z\"} -->\n<!-- workline:sticky=line/state -->"]
       - id: 6

@@ -1,0 +1,30 @@
+case: routing/claim-no-code-body-changed-wakes
+about: >
+  A claim whose agent wrote no code, on an issue whose body changed since
+  the claim read it (#1084): a new input. The line wakes the developer,
+  whose run lets the claim go at once, said on the issue; the next run
+  takes the issue again. The line's record keeps what it woke the
+  developer for, so the same change wakes it once.
+given:
+  repo: tested
+  config:
+    routing: {events: {issue: [developer]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply"
+        labels: ["workline:ready", "workline:developing"]
+        labeled: {"workline:ready": "2098-12-31T09:00:00Z", "workline:developing": "2099-01-01T09:00:00Z"}
+        body: "## Need\n\nI want to multiply, by zero too.\n"
+        comments: ["**The developer** takes this issue.\n\n<!-- workline:developer-act {\"act\":\"pick\",\"issue\":3,\"no-code\":true,\"body\":\"8a828a06be19\"} -->\n<!-- workline:sticky=developer/claim -->"]
+run: {route: reconcile, open-merge-request: true, ai: "fake:developer-nothing"}
+expect:
+  status: pass
+  agent-calls: 0
+  findings:
+    - {rule: state-wakes, level: info, where: "#3", message: "its claim wrote no code, and its body changed since: wakes the developer to let it go"}
+  forge:
+    issues:
+      - id: 3
+        labels: ["workline:ready"]
+        comment-contains: ["**The developer** lets this issue go.", "its agent wrote no code on this issue", "its body changed since", "\"claim\":\"body:"]

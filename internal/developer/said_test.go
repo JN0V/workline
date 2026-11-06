@@ -84,3 +84,27 @@ func TestPassedForOverlap(t *testing.T) {
 		}
 	}
 }
+
+// A claim whose agent wrote no code is let go at once when the issue's
+// body changed since the claim read it (#1084); the same body, or a
+// claim that wrote code, or a record from before Act.Body, waits for
+// claim-hours.
+func TestNoCodeOnOtherBody(t *testing.T) {
+	body := "## Need\n\nI want to multiply.\n"
+	for _, c := range []struct {
+		a    Act
+		want bool
+	}{
+		{Act{NoCode: true, Body: BodyMark(body)}, false},
+		{Act{NoCode: true, Body: BodyMark("## Need\n\nI want to add.")}, true},
+		{Act{Body: BodyMark("other")}, false},
+		{Act{NoCode: true}, false},
+	} {
+		if got := NoCodeOnOtherBody(c.a, body); got != c.want {
+			t.Errorf("%+v: %v, want %v", c.a, got, c.want)
+		}
+	}
+	if BodyMark(body) != BodyMark("  "+body+"\n") {
+		t.Error("a body's mark reads its spaces around")
+	}
+}

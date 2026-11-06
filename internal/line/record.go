@@ -125,6 +125,10 @@ type Record struct {
 	// due again in the same state waits from then, in the reconciler's
 	// order (ADR-0059, amended 2026-11-03).
 	Ran string `json:"ran,omitempty"`
+	// Claim: what the line woke the developer on a claim with no pull
+	// request for, to let it go (claimwait.go, #1084) — `hours:<when the
+	// claim began>`, `body:<the body's hash>` —: woken once for it.
+	Claim string `json:"claim,omitempty"`
 }
 
 // StateWrite is what the line writes on an issue once its step ran:
