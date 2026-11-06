@@ -27,11 +27,11 @@ expect:
   findings:
     - {rule: prompt-over-budget, message: "over the role's budget of 60000 (context.budget in its role.yaml)"}
     - {rule: machine-error-size, level: warn, where: "#3", message: "the tester's task is too big for its context: the agent was not asked"}
-    - {rule: machine-error-size, level: warn, where: "#3", message: "lower code-lines-max in the tester's settings, or narrow the issue's Scope; a run again on the same input fails the same: moved to blocked"}
+    - {rule: machine-error-size, level: warn, where: "#3", message: "raise context.budget in the tester's role.yaml, or narrow the issue's Scope; a run again on the same input fails the same: moved to blocked"}
   no-findings: [{rule: state-retry}, {rule: state-waits}, {rule: no-test-written}]
   forge:
     issues:
       - id: 3
         labels: ["workline:blocked"]
-        comment-contains: ["over the role's budget of 60000", "lower code-lines-max in the tester's settings"]
+        comment-contains: ["over the role's budget of 60000", "raise context.budget in the tester's role.yaml"]
         comment-lacks: ["1 of 2 tries"]

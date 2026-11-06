@@ -70,7 +70,7 @@ workline test write --issue 42 --ai claude
   own, a pattern's matches; each definition of a name its title, Need or
   Scope writes as code; a long file by those pieces), the tests beside
   them, the test command. Long lines over the context budget: fewer
-  lines given; still over, the issue says so and names `code-lines-max`,
+  lines given; still over, the issue says so and names `context.budget`,
   and goes to Blocked at once. What was cut is said in the run
   (`input-cut`), with the setting that raises it.
 - **With `claude`, it reads the project too**: a copy at the issue's

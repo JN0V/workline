@@ -413,7 +413,7 @@ func Post(runDir, repo string) int {
 			// size, never run again on the same input (#1160).
 			rule = "prompt-over-budget"
 			msg = "the agent was not asked, its prompt over the tester's context budget (prompt-over-budget: " + why +
-				"): lower code-lines-max in the tester's settings, or narrow the issue's " + work.Name(work.Scope)
+				"): raise context.budget in the tester's role.yaml, or narrow the issue's " + work.Name(work.Scope)
 		} else if why := os.Getenv("WORKLINE_AGENT_UNREAD"); why != "" {
 			msg = "the agent's answer could not be read, asked again once with the error: " + why
 		} else if why := os.Getenv("WORKLINE_AGENT_REFUSED"); why != "" {
