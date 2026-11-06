@@ -473,9 +473,12 @@ func Post(runDir, repo string) int {
 		return fail(err)
 	}
 	if proof.Status == verdict.Pass && len(newTests) == 0 {
+		// The files were written, and no test of them ran: the project's
+		// runner skipped them. Said with the filter that may have: the
+		// line's next run gives the agent this reason (#1149).
 		proof.Status = verdict.Block
-		proof.Findings = append(proof.Findings, verdict.Finding{Rule: "no-new-test", Where: s.Report,
-			Message: "the report names no new test: nothing is proven red, and no Draft is opened as proven"})
+		proof.Findings = append(proof.Findings, verdict.Finding{Rule: "no-new-test", Where: strings.Join(order, ", "),
+			Message: notRun(repo, t.Base, order, s.Command)})
 	}
 	if proof.Status != verdict.Pass {
 		proof.Findings = slices.DeleteFunc(proof.Findings, func(f verdict.Finding) bool { return f.Rule == "no-new-test" && f.Level == "warn" })
