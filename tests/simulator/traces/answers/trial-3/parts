@@ -1,6 +1,8 @@
-after tests: the trial went to blocked, the simulator to ready; unused: 2 product-owner
+after tests: the trial went to blocked, the simulator to ready; unused: 1 product-owner
 The product owner's first answer names the code it lacks, given at once, run again in its step
 (ADR-0063, step 2), whose answer readies it. The tester's answer, refused at once by the
 engine, is asked again in the same run with what refused it, and its next answer is the
-fake's: the tests go on to ready, where the trial blocked them. The later product owner's
-answers came after the trial's block.
+fake's: the tests go on to ready, where the trial blocked them. The developer's replayed
+answer writes no code: past claim-hours on the same body, the line blocks #3 for a person,
+and the product owner reads it again a week later, taking one of its later answers; the
+other came after the trial's block.

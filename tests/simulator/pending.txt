@@ -56,9 +56,10 @@ trial-35-tester-needs one-state-label
 # the fake forge dating no comment the line writes, nor the draft label.
 # traces/answers/<trace>/parts says where each
 # parts, and the answers left unused. #3's code named is given at once,
-# and it goes on to its tests, then the claim's two labels, then
-# Developing says nothing, as #36.
-trial-3-replay one-state-label i1-status expected-end
+# and it goes on to its tests, then the claim's two labels; its
+# developer's agent wrote no code, so past claim-hours on the same body
+# it waits on a person, blocked, never run again on that input.
+trial-3-replay one-state-label expected-end
 trial-4-replay i1-status expected-end
 trial-5-replay i1-status expected-end
 trial-16-replay i1-status expected-end

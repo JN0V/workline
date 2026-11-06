@@ -37,10 +37,12 @@ func (f *failure) String() string {
 // The statuses I1 accepts, read from today's findings by their rule:
 // a step started or queued (Due), a wait said (Waiting). Anything else on
 // an open issue of the line, "acted, nothing to run" first, is no status.
-// TestOracleRulesExist fails when the engine no longer has one of them.
+// A claim that wrote no code, blocked for a person its reason written
+// (no-code-spent), waits on them. TestOracleRulesExist fails when the
+// engine no longer has one of them.
 var (
 	dueRules     = []string{"state-wakes", "reconcile-left"}
-	waitingRules = []string{"state-blocked-quiet", "state-blocked-seen", "state-waits", "state-room", "repro-waits", "state-review-missing"}
+	waitingRules = []string{"state-blocked-quiet", "state-blocked-seen", "state-waits", "state-room", "repro-waits", "state-review-missing", "no-code-spent"}
 	notStatus    = []string{"state-acted"}
 )
 
