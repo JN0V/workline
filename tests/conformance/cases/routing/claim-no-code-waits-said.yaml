@@ -2,8 +2,9 @@ case: routing/claim-no-code-waits-said
 about: >
   A claim whose agent wrote no code has no pull request, and Doing wakes
   no role (#1084): the issue was left silent until a developer's run let
-  the claim go. Now the line says what it waits on: the day its claim is
-  let go, claim-hours after the forge says the label went on. #3 holds
+  the claim go. Now the line says what it waits on: the day it is
+  blocked for a person, claim-hours after the forge says the label went
+  on, its body unchanged (claim-no-code-hours-passed-blocks). #3 holds
   the claim alone, #4 beside workline:ready, as a claim from before the
   claim took that label off. Nothing runs, nothing is written.
 given:
@@ -29,8 +30,8 @@ expect:
   status: pass
   agent-calls: 0
   findings:
-    - {rule: state-waits, level: info, where: "#3", message: "its claim, workline:developing, has no pull request: let go on 2099-01-02 09:00 UTC (claim-hours: 24), or at once on a change to its body"}
-    - {rule: state-waits, level: info, where: "#4", message: "let go on 2099-01-02 09:00 UTC"}
+    - {rule: state-waits, level: info, where: "#3", message: "its claim, workline:developing, has no pull request: its agent wrote no code; blocked for a person on 2099-01-02 09:00 UTC (claim-hours: 24), or let go at once on a change to its body"}
+    - {rule: state-waits, level: info, where: "#4", message: "blocked for a person on 2099-01-02 09:00 UTC"}
   no-findings: [{rule: state-acted}, {rule: state-wakes}]
   forge:
     issues:

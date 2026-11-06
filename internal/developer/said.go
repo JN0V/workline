@@ -143,6 +143,14 @@ func NoCodeOnOtherBody(a Act, body string) bool {
 	return a.NoCode && a.Body != "" && a.Body != BodyMark(body)
 }
 
+// NoCodeOnSameBody says whether a claim's record a wrote no code on the
+// body it has now, or on one it did not keep (a record from before
+// Act.Body): run again, its agent would get the same input. Past
+// claim-hours, the line blocks such an issue for a person instead.
+func NoCodeOnSameBody(a Act, body string) bool {
+	return a.NoCode && !NoCodeOnOtherBody(a, body)
+}
+
 // say ends pre with v: final when nothing is to be written on an issue;
 // else the comments are left to the engine to apply, no agent asked, and
 // post writes v.

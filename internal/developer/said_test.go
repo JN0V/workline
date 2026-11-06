@@ -104,6 +104,20 @@ func TestNoCodeOnOtherBody(t *testing.T) {
 			t.Errorf("%+v: %v, want %v", c.a, got, c.want)
 		}
 	}
+	// The same input: no code on this body, or on one it did not keep.
+	for _, c := range []struct {
+		a    Act
+		want bool
+	}{
+		{Act{NoCode: true, Body: BodyMark(body)}, true},
+		{Act{NoCode: true}, true},
+		{Act{NoCode: true, Body: BodyMark("## Need\n\nI want to add.")}, false},
+		{Act{Body: BodyMark(body)}, false},
+	} {
+		if got := NoCodeOnSameBody(c.a, body); got != c.want {
+			t.Errorf("same body %+v: %v, want %v", c.a, got, c.want)
+		}
+	}
 	if BodyMark(body) != BodyMark("  "+body+"\n") {
 		t.Error("a body's mark reads its spaces around")
 	}
