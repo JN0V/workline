@@ -222,8 +222,10 @@ step 1):
   where they part and the answers left unused, why below. A developer's `[]` is left out: its
   code was in its worktree.
 - **Requests a tick**: the fake forge counts its reads in a file beside
-  it (`forge.ReadsLog`); each trace prints the forge's requests and the
-  agent's calls a tick, the highest and the mean, and fails past a bound.
+  it (`forge.ReadsLog`), a byte a read, apart from its list of comment
+  reads; each trace prints the forge's requests and the
+  agent's calls a tick, the highest and the mean, and fails past a bound
+  measured (`maxRequests`, its measure beside it).
 - **The forge between ticks** merges a pull request out of draft that
   closes an issue not blocked, and closes the issue.
 - **Properties after each tick**: one state label at a time; a machine

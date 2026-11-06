@@ -136,15 +136,17 @@ var seeded = []string{pAttributed, pOneLabel, pI3, pBudget, pI2, pNeeds, pReques
 // perCallMore each agent call past the first: a role run again in its
 // step, for the code its agent lacked (ADR-0063, §5), reads and writes
 // again, less than a whole step.
-// Measured on 2026-11-05: a quiet tick reads 3, as ADR-0063 §11
-// estimates (3 to 5 an issue); a tick running a step, 45 to 121, the
-// step's own reads and writes; a product owner's step 85 to 106; that
-// step run again in place, two calls, 166 (81 more). The bounds leave
-// room above the highest, and are raised only with the measure that
-// needs it.
+// Measured on 2026-11-06, every trace and seeds 1 to 100, a comment
+// read counted one request (it was its logged line's bytes, 11 or so,
+// before): a tick with no agent call 3 to 9, as ADR-0063 §11 estimates
+// (3 to 5 an issue); a tick of one call 11 to 31, the step's own reads
+// and writes; of two calls, a step run again in place, 16 to 49 (38
+// more than the fewest a step of one reads). Each bound is the next 50
+// above its highest, as the first measure set them (121 to 150, 81 to
+// 100), and is raised only with the measure that needs it.
 const (
-	maxRequests = 150
-	perCallMore = 100
+	maxRequests = 50
+	perCallMore = 50
 )
 
 // checks is what a run checks: every property (all) but those set aside
