@@ -135,7 +135,7 @@ workline: the commit goes on with this message instead of yours:
 
 ```sh
 cd your-repo
-workline init      # routes pre-push; proposes each doc's sources, for you to review and commit
+workline init      # routes pre-push; proposes each doc's sources, for you to review and commit; proposes a pinned linter and gate check for each language none reads, written only on your yes (--linters yes|no)
 ```
 
 - From then on, each push runs the committer and the documentalist on the
