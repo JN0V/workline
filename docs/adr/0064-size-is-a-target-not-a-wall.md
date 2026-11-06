@@ -53,7 +53,8 @@ flowchart LR
     bugs, never lower), ×2 for High ([ADR-0040]); effort scales only
     the seed, tiers multiply on top;
   - an issue: 400k, the worst measured round (385k a bug) rounded up;
-    273k is the median of two rounds' per-bug averages (161k, 385k).
+    273k is the median of two rounds' per-bug averages (161k, 385k);
+    effort High doubles the issue seed too (800k, backstop 3.2M).
 - **Counted in the log**: each step's entry in `line-log`
   ([ADR-0063 §4](0063-every-open-issue-is-due-waiting-or-done.md#4-the-step-log))
   adds its role and fresh tokens, so an issue's total holds across
@@ -128,9 +129,8 @@ flowchart LR
 
 One pull request a step, each shippable alone; conformance cases first.
 
-1. **Every cut visible, no retry of size errors**
-   ([#1159](https://github.com/JN0V/workline/issues/1159),
-   [#1160](https://github.com/JN0V/workline/issues/1160)), apart.
+1. **Every cut visible, no retry of size errors**, built apart:
+   [#1159](https://github.com/JN0V/workline/issues/1159), [#1160](https://github.com/JN0V/workline/issues/1160).
 2. **Normal size measured**: the token counter in `line-log`, the
    seed, the normals kept on the forge; reported, not yet acted on.
 3. **The crossing outcome**: `needs-input(product-owner: size)` in place
