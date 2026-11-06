@@ -10,6 +10,7 @@ import (
 	"maps"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"runtime"
 	"slices"
@@ -19,6 +20,7 @@ import (
 	"go.yaml.in/yaml/v3"
 
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/intent"
 )
 
 // claude runs Claude Code headless. It gets no tools, no MCP servers and no
@@ -514,19 +516,46 @@ func proposalsFrom(answer string, kinds ...string) ([]byte, []string, error) {
 				last = i
 			}
 		}
-		if first < 0 || last == first {
-			return nil, nil, fmt.Errorf("expected a YAML list of proposals (%s)", why)
-		}
-		s, mended = Mend(strings.TrimSpace(strings.Join(lines[first+1:last], "\n")))
-		list = nil
-		if err := yaml.Unmarshal([]byte(s), &list); err != nil || len(list) == 0 {
-			if err != nil {
-				why = err.Error()
+		read := false
+		if first >= 0 && last > first {
+			s, mended = Mend(strings.TrimSpace(strings.Join(lines[first+1:last], "\n")))
+			list = nil
+			if err := yaml.Unmarshal([]byte(s), &list); err != nil || len(list) == 0 {
+				if err != nil {
+					why = err.Error()
+				}
+			} else {
+				read = true
 			}
+		}
+		// Prose before the list, a line saying what comes (#1148): the
+		// list read from its first item, the prose left out and said.
+		if !read && first < 0 {
+			if prose, rest, ok := proseFirst(lines); ok {
+				s, mended = Mend(rest)
+				list = nil
+				if err := yaml.Unmarshal([]byte(s), &list); err == nil && len(list) > 0 {
+					read = true
+					mended = append([]string{fmt.Sprintf("prose before the list (%s): left out, the list read from its first item", clip(prose, 120))}, mended...)
+				}
+			}
+		}
+		if !read {
 			return nil, nil, fmt.Errorf("expected a YAML list of proposals (%s)", why)
 		}
 	}
+	dropped := false
 	for i, m := range list {
+		if len(m) > 1 {
+			said, err := besidePatch(m)
+			if err != nil {
+				return nil, nil, fmt.Errorf("proposal %d: %w", i+1, err)
+			}
+			if said != "" {
+				dropped = true
+				mended = append(mended, fmt.Sprintf("proposal %d held %s", i+1, said))
+			}
+		}
 		switch len(m) {
 		case 1:
 		case 0:
@@ -535,7 +564,82 @@ func proposalsFrom(answer string, kinds ...string) ([]byte, []string, error) {
 			return nil, nil, fmt.Errorf("proposal %d holds %d kinds (%s); each holds exactly one%s", i+1, len(m), strings.Join(slices.Sorted(maps.Keys(m)), ", "), whereKeysGo(m, kinds))
 		}
 	}
+	if dropped {
+		out, err := yaml.Marshal(list)
+		if err != nil {
+			return nil, nil, err
+		}
+		return out, mended, nil
+	}
 	return []byte(s + "\n"), mended, nil
+}
+
+// proseFirst cuts an answer at its first line opening a list item, `- `
+// at the start of the line: the prose before it, and the rest. false
+// when no prose comes first, or no item follows.
+func proseFirst(lines []string) (string, string, bool) {
+	for i, l := range lines {
+		if strings.HasPrefix(l, "- ") || l == "-" {
+			prose := strings.Join(strings.Fields(strings.Join(lines[:i], " ")), " ")
+			return prose, strings.Join(lines[i:], "\n"), prose != ""
+		}
+	}
+	return "", "", false
+}
+
+func clip(s string, n int) string {
+	if r := []rune(s); len(r) > n {
+		return string(r[:n]) + "…"
+	}
+	return s
+}
+
+// besidePatch drops from an item holding a diff under `patch` the keys an
+// agent wrote beside it that the diff already says (#1148): a `file` or
+// `path` naming the file it changes, a `content` that is the text the diff
+// gives a new file. It says what it dropped; "" when none, the item then
+// left to be refused as it is. A key that says otherwise than the diff is
+// refused, named.
+func besidePatch(m map[string]any) (string, error) {
+	diff, ok := m["patch"].(string)
+	if !ok {
+		return "", nil
+	}
+	files := intent.PatchFiles(diff)
+	var said []string
+	for _, key := range []string{"file", "path"} {
+		v, ok := m[key]
+		if !ok {
+			continue
+		}
+		f, _ := v.(string)
+		if f == "" || !slices.Contains(files, path.Clean(strings.TrimPrefix(f, "b/"))) {
+			return "", fmt.Errorf("its `%s:` (%v) beside its patch is not a file the patch changes (%s): write the patch alone, its file named in its `+++` line", key, v, strings.Join(files, ", "))
+		}
+		delete(m, key)
+		said = append(said, fmt.Sprintf("a `%s:` beside its patch, the patch's own file: left out", key))
+	}
+	if v, ok := m["content"]; ok {
+		c, _ := v.(string)
+		if len(files) != 1 || !strings.Contains(diff, "--- /dev/null") || strings.TrimRight(c, "\n") != strings.TrimRight(newFileText(diff), "\n") {
+			return "", fmt.Errorf("its `content:` beside its patch is not the text the patch gives a new file: send either the patch or the file's content, not both")
+		}
+		delete(m, "content")
+		said = append(said, "a `content:` beside its patch, the text the patch gives its new file: left out")
+	}
+	return strings.Join(said, "; "), nil
+}
+
+// newFileText is the text a diff gives the file it creates: its added
+// lines.
+func newFileText(diff string) string {
+	var b strings.Builder
+	for _, l := range strings.Split(diff, "\n") {
+		if strings.HasPrefix(l, "+") && !strings.HasPrefix(l, "+++") {
+			b.WriteString(l[1:] + "\n")
+		}
+	}
+	return b.String()
 }
 
 // whereKeysGo says, of an item holding several keys where one kind goes,

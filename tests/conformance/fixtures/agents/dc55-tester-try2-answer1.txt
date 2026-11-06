@@ -1,0 +1,295 @@
+- patch: |
+    --- /dev/null
+    +++ b/DomoticsCore-WebUI/test/test_webui_component_reenable/platformio.ini
+    @@ -0,0 +1,26 @@
+    +[platformio]
+    +; The components are symlink:// dependencies, built where they live. libdeps
+    +; stays outside the component this project sits in, or that component claims
+    +; every include under it.
+    +libdeps_dir = ../../../.pio/libdeps/WebUI-test_webui_component_reenable
+    +
+    +; Native test: switching a component to the state it is already in.
+    +
+    +[env:native]
+    +platform = native
+    +test_framework = unity
+    +test_build_src = false
+    +lib_compat_mode = off
+    +lib_ignore = ESPAsyncWebServer, AsyncTCP, ESP Async WebServer
+    +test_testing_command =
+    +    env
+    +    GLIBC_TUNABLES=glibc.malloc.tcache_count=0
+    +    ${platformio.build_dir}/${this.__env__}/program
+    +build_flags =
+    +    -std=gnu++17
+    +    -DCORE_DEBUG_LEVEL=3
+    +    -I../../../tests/mocks/libraries
+    +    -I../../../DomoticsCore-Core/include
+    +    -I../../include
+    +lib_deps =
+    +    symlink://../../../DomoticsCore-Core
+    +    bblanchon/ArduinoJson@^7.0.0
+  file: DomoticsCore-WebUI/test/test_webui_component_reenable/platformio.ini
+  content: |
+    [platformio]
+    ; The components are symlink:// dependencies, built where they live. libdeps
+    ; stays outside the component this project sits in, or that component claims
+    ; every include under it.
+    libdeps_dir = ../../../.pio/libdeps/WebUI-test_webui_component_reenable
+
+    ; Native test: switching a component to the state it is already in.
+
+    [env:native]
+    platform = native
+    test_framework = unity
+    test_build_src = false
+    lib_compat_mode = off
+    lib_ignore = ESPAsyncWebServer, AsyncTCP, ESP Async WebServer
+    test_testing_command =
+        env
+        GLIBC_TUNABLES=glibc.malloc.tcache_count=0
+        ${platformio.build_dir}/${this.__env__}/program
+    build_flags =
+        -std=gnu++17
+        -DCORE_DEBUG_LEVEL=3
+        -I../../../tests/mocks/libraries
+        -I../../../DomoticsCore-Core/include
+        -I../../include
+    lib_deps =
+        symlink://../../../DomoticsCore-Core
+        bblanchon/ArduinoJson@^7.0.0
+- patch: |
+    --- /dev/null
+    +++ b/DomoticsCore-WebUI/test/test_webui_component_reenable/test/test_webui_component_reenable.cpp
+    @@ -0,0 +1,100 @@
+    +/**
+    + * @file test_webui_component_reenable.cpp
+    + * @brief Switching a component to the state it is already in does nothing.
+    + */
+    +
+    +#include <unity.h>
+    +
+    +#include <DomoticsCore/WebUI.h>
+    +
+    +using namespace DomoticsCore;
+    +using namespace DomoticsCore::Components;
+    +
+    +namespace {
+    +
+    +class CountedComponent : public IComponent {
+    +public:
+    +    int begins = 0;
+    +    int shutdowns = 0;
+    +    ComponentStatus begin() override { begins++; return ComponentStatus::Success; }
+    +    void loop() override {}
+    +    ComponentStatus shutdown() override { shutdowns++; return ComponentStatus::Success; }
+    +};
+    +
+    +class ToggleProvider : public CachingWebUIProvider {
+    +protected:
+    +    void buildContexts(std::vector<WebUIContext>& contexts) override {
+    +        contexts.push_back(WebUIContext::dashboard("toggle_ctx", "Toggle"));
+    +    }
+    +public:
+    +    String getWebUIName() const override { return "Toggle"; }
+    +    String getWebUIVersion() const override { return "1.0.0"; }
+    +    String handleWebUIRequest(const String&, const String&, const String&,
+    +                              const std::map<String, String>&) override { return "{}"; }
+    +    String getWebUIData(const String&) override { return "{}"; }
+    +};
+    +
+    +// What the page reads back: the Toggle entry's "enabled" in GET /api/components.
+    +bool listedEnabled() {
+    +    AsyncWebServerRequest request;
+    +    AsyncWebServer::findRouteAnywhere("/api/components")->handler(&request);
+    +    JsonDocument doc;
+    +    deserializeJson(doc, request.sentBody);
+    +    for (JsonObject c : doc["components"].as<JsonArray>()) {
+    +        if (strcmp(c["name"] | "", "Toggle") == 0) return c["enabled"] | false;
+    +    }
+    +    TEST_FAIL_MESSAGE("Toggle is not listed");
+    +    return false;
+    +}
+    +
+    +// Posts name/enabled to /api/components/enable with the boot's CSRF token.
+    +void post(const char* name, const char* enabled) {
+    +    AsyncWebServerRequest tokenRequest;
+    +    AsyncWebServer::findRouteAnywhere("/api/ui/token")->handler(&tokenRequest);
+    +    const String body = tokenRequest.sentBody;
+    +    const int start = body.indexOf("\":\"");
+    +    const int end = body.lastIndexOf('"');
+    +    const String token = (start < 0 || end <= start + 3) ? String("") : body.substring(start + 3, end);
+    +
+    +    AsyncWebServerRequest request;
+    +    request.addHeader("X-DC-Token", token);
+    +    request.addParam("name", name, true);
+    +    request.addParam("enabled", enabled, true);
+    +    RecordedRoute* route = AsyncWebServer::findRouteAnywhere("/api/components/enable");
+    +    TEST_ASSERT_NOT_NULL(route);
+    +    route->handler(&request);
+    +    TEST_ASSERT_TRUE_MESSAGE(request.sentBody.indexOf("\"success\":true") >= 0, request.sentBody.c_str());
+    +}
+    +
+    +}  // namespace
+    +
+    +void setUp() { HAL::setCanOpenServerForTest(true); }
+    +void tearDown() {}
+    +
+    +// Enable a running component: Given a component that is on, with begin() called once,
+    +// When enabled=true is posted to /api/components/enable and the WebUI's loop() runs,
+    +// Then begin() is not called again and the component stays on.
+    +void test_enable_a_running_component() {
+    +    WebUIComponent webui;
+    +    webui.begin();
+    +    CountedComponent component;
+    +    ToggleProvider provider;
+    +    webui.registerProviderWithComponent(&provider, &component);
+    +    component.begin();
+    +
+    +    post("Toggle", "true");
+    +    webui.loop();
+    +
+    +    TEST_ASSERT_EQUAL_INT_MESSAGE(1, component.begins, "begin() ran again on a running component");
+    +    TEST_ASSERT_TRUE(listedEnabled());
+    +}
+    +
+    +// Disable twice: Given a component that is on, When enabled=false is posted twice,
+    +// with a loop() after each, Then shutdown() is called once.
+    +void test_disable_twice() {
+    +    WebUIComponent webui;
+    +    webui.begin();
+    +    CountedComponent component;
+    +    ToggleProvider provider;
+    +    webui.registerProviderWithComponent(&provider, &component);
+    +
+    +    post("Toggle", "false");
+    +    webui.loop();
+    +    post("Toggle", "false");
+    +    webui.loop();
+    +
+    +    TEST_ASSERT_EQUAL_INT(1, component.shutdowns);
+    +}
+    +
+    +int main() {
+    +    UNITY_BEGIN();
+    +    RUN_TEST(test_enable_a_running_component);
+    +    RUN_TEST(test_disable_twice);
+    +    return UNITY_END();
+    +}
+  file: DomoticsCore-WebUI/test/test_webui_component_reenable/test/test_webui_component_reenable.cpp
+  content: |
+    /**
+     * @file test_webui_component_reenable.cpp
+     * @brief Switching a component to the state it is already in does nothing.
+     */
+
+    #include <unity.h>
+
+    #include <DomoticsCore/WebUI.h>
+
+    using namespace DomoticsCore;
+    using namespace DomoticsCore::Components;
+
+    namespace {
+
+    class CountedComponent : public IComponent {
+    public:
+        int begins = 0;
+        int shutdowns = 0;
+        ComponentStatus begin() override { begins++; return ComponentStatus::Success; }
+        void loop() override {}
+        ComponentStatus shutdown() override { shutdowns++; return ComponentStatus::Success; }
+    };
+
+    class ToggleProvider : public CachingWebUIProvider {
+    protected:
+        void buildContexts(std::vector<WebUIContext>& contexts) override {
+            contexts.push_back(WebUIContext::dashboard("toggle_ctx", "Toggle"));
+        }
+    public:
+        String getWebUIName() const override { return "Toggle"; }
+        String getWebUIVersion() const override { return "1.0.0"; }
+        String handleWebUIRequest(const String&, const String&, const String&,
+                                  const std::map<String, String>&) override { return "{}"; }
+        String getWebUIData(const String&) override { return "{}"; }
+    };
+
+    // What the page reads back: the Toggle entry's "enabled" in GET /api/components.
+    bool listedEnabled() {
+        AsyncWebServerRequest request;
+        AsyncWebServer::findRouteAnywhere("/api/components")->handler(&request);
+        JsonDocument doc;
+        deserializeJson(doc, request.sentBody);
+        for (JsonObject c : doc["components"].as<JsonArray>()) {
+            if (strcmp(c["name"] | "", "Toggle") == 0) return c["enabled"] | false;
+        }
+        TEST_FAIL_MESSAGE("Toggle is not listed");
+        return false;
+    }
+
+    // Posts name/enabled to /api/components/enable with the boot's CSRF token.
+    void post(const char* name, const char* enabled) {
+        AsyncWebServerRequest tokenRequest;
+        AsyncWebServer::findRouteAnywhere("/api/ui/token")->handler(&tokenRequest);
+        const String body = tokenRequest.sentBody;
+        const int start = body.indexOf("\":\"");
+        const int end = body.lastIndexOf('"');
+        const String token = (start < 0 || end <= start + 3) ? String("") : body.substring(start + 3, end);
+
+        AsyncWebServerRequest request;
+        request.addHeader("X-DC-Token", token);
+        request.addParam("name", name, true);
+        request.addParam("enabled", enabled, true);
+        RecordedRoute* route = AsyncWebServer::findRouteAnywhere("/api/components/enable");
+        TEST_ASSERT_NOT_NULL(route);
+        route->handler(&request);
+        TEST_ASSERT_TRUE_MESSAGE(request.sentBody.indexOf("\"success\":true") >= 0, request.sentBody.c_str());
+    }
+
+    }  // namespace
+
+    void setUp() { HAL::setCanOpenServerForTest(true); }
+    void tearDown() {}
+
+    // Enable a running component: Given a component that is on, with begin() called once,
+    // When enabled=true is posted to /api/components/enable and the WebUI's loop() runs,
+    // Then begin() is not called again and the component stays on.
+    void test_enable_a_running_component() {
+        WebUIComponent webui;
+        webui.begin();
+        CountedComponent component;
+        ToggleProvider provider;
+        webui.registerProviderWithComponent(&provider, &component);
+        component.begin();
+
+        post("Toggle", "true");
+        webui.loop();
+
+        TEST_ASSERT_EQUAL_INT_MESSAGE(1, component.begins, "begin() ran again on a running component");
+        TEST_ASSERT_TRUE(listedEnabled());
+    }
+
+    // Disable twice: Given a component that is on, When enabled=false is posted twice,
+    // with a loop() after each, Then shutdown() is called once.
+    void test_disable_twice() {
+        WebUIComponent webui;
+        webui.begin();
+        CountedComponent component;
+        ToggleProvider provider;
+        webui.registerProviderWithComponent(&provider, &component);
+
+        post("Toggle", "false");
+        webui.loop();
+        post("Toggle", "false");
+        webui.loop();
+
+        TEST_ASSERT_EQUAL_INT(1, component.shutdowns);
+    }
+
+    int main() {
+        UNITY_BEGIN();
+        RUN_TEST(test_enable_a_running_component);
+        RUN_TEST(test_disable_twice);
+        return UNITY_END();
+    }
+- note: "Normal switching: kept as today: the existing suite guards it (test_an_enable_from_the_page_waits_for_loop switches off, then on, and expects begin() once and the component listed as enabled). Also: the two new tests sit in their own PlatformIO project, test_webui_component_reenable, because the WebUI project's test_filter lists its suites by name and a second file in test_webui_component_toggle would add a second main()."
