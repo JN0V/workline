@@ -366,7 +366,7 @@ whose result moves the issue to the next. The table is the routing's
 | State | Label | Wakes | Its result moves it to |
 |---|---|---|---|
 | blocked | `workline:blocked` | nobody: its reason on the issue; the product owner reads it again on news ([below](#blocked-read-again)) | — |
-| doing | `workline:developing` | nobody: the developer's claim; one with no pull request wakes the developer to let it go, past `claim-hours` or on a change to its body, the day said until then ([#1084](https://github.com/JN0V/workline/issues/1084)) | — |
+| doing | `workline:developing` | nobody: the developer's claim; one with no pull request wakes the developer to let it go, past `claim-hours` or on a change to its body, the day said until then ([#1084](https://github.com/JN0V/workline/issues/1084)); one whose agent wrote no code on the body it still has is blocked for a person past `claim-hours`, never run again on that input (`no-code-spent`, [#1120](https://github.com/JN0V/workline/issues/1120)) | — |
 | ready | `workline:ready` | the developer | doing |
 | tests | `workline:needs-tests` | the tester | ready |
 | refine | `workline:to-refine` | the product owner | tests |
@@ -477,6 +477,13 @@ whose result moves the issue to the next. The table is the routing's
   says so, the tester's gets those files). Said lacking again, the
   step itself moves the issue to
   `workline:blocked` for a person to name its files (`needs-spent`).
+- **No code on the same input, a person's**: the developer's claim
+  whose agent wrote no code, past `claim-hours` with the issue's body
+  unchanged, is not let go to be taken again on that input: the line
+  moves the issue to `workline:blocked`, the claim's label off, the
+  reason written (`no-code-spent`,
+  [#1120](https://github.com/JN0V/workline/issues/1120)). A changed
+  body still lets the claim go at once.
 - **Left free by the developer, due again**
   ([ADR-0059, amended](../adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#amendment-2026-11-02-a-ready-issue-left-free-wakes-the-developer-again)):
   a wake of the developer records when (`woke`) and the issues it held
