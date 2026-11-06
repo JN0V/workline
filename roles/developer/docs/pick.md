@@ -105,6 +105,8 @@ on any event, with or without an agent:
   takes the claim's label off and blocks the issue for a person, the
   reason written (`no-code-spent`,
   [#1120](https://github.com/JN0V/workline/issues/1120)).
+  - A developer's run started for another issue keeps that claim too
+    (`claim-left-to-line`): the line alone decides the block.
 - **What**: `claim-label` taken off; the claim's comment edited to say
   why and what comes next. The issue is not taken again in the same run.
 - **A day the forge does not say**: the claim is kept, said in the
