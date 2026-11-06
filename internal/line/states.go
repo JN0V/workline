@@ -149,6 +149,7 @@ func stateOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, 
 		spec = "" // a review is read in refine alone: no other state woken by it
 	}
 	now, ok := due(cfg, s, is, trail.Labeled, spec, rec, had)
+	changed := ok // due on a new state, label, body or review: not a retry (typedDue)
 	var inputs map[string]string
 	if !ok && had {
 		// Its last run on this input a machine error, or short of code
@@ -160,6 +161,14 @@ func stateOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, 
 		}
 	}
 	reviewed := s.Name == refineState && slices.Contains(cfg.Events[IssueEvent], backlog.SpecReviewer)
+	// Due on a new body or review, its own drafts and their review alone,
+	// while they wait on a person (#1127): not due, unless the delay
+	// passed (timedOut) or something else wakes it below. A retry
+	// (typedDue) is never held.
+	held := changed && reviewed && name == backlog.Keeper && draftsHeld(is, trail.Labeled, comments, notes, rec, had)
+	if held {
+		ok = false
+	}
 	if !ok && reviewed && rec.Asked != rec.Body {
 		// Acted on, the reviewer never asked on this body: a record from
 		// before it read the spec in refine's own run (#840). Due again,
@@ -194,6 +203,9 @@ func stateOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, 
 		if key != "" {
 			ok, now.Timeout = true, key
 			res.Findings = append(res.Findings, verdict.Finding{Rule: "state-timeout", Level: "info", Where: where, Message: said})
+		}
+		if held && !ok && personWaits == "" {
+			ok = true // nothing waits on a person after all: due as it was
 		}
 	}
 	if !ok && s.Name == refineState && name == backlog.Keeper {

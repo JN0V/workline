@@ -1,0 +1,31 @@
+case: routing/drafts-wait-retry-due
+about: >
+  The product owner's last run a machine error, on the body as it is,
+  while its drafts wait out the delay (#1127): a retry is never held for
+  the drafts. The run failed, so it read nothing: run again, an agent
+  call, the review clean and nothing unread notwithstanding.
+given:
+  repo: backlog
+  env: {WORKLINE_CLOCK: "2026-11-05T08:00:00Z"}
+  config:
+    routing: {events: {issue: [product-owner, reviewer]}}
+  forge:
+    issues:
+      - id: 9
+        title: "workline version --verbose=false"
+        author: ann
+        insider: true
+        labels: [workline:to-refine, workline:proposed]
+        body: "## Need\n\nWhen I run `workline version --verbose=false`, I want the plain line, so my scripts read it.\n\n## Validation\n\n<!-- workline:draft -->\n\n- **Plain line:** Given workline installed, When I run `workline version --verbose=false`, Then it prints one line.\n\n---\n\n## Verification\n\nA test runs the command and reads one line.\n\n## Scope\n\nsrc/export/csv.go"
+        comments:
+          - {body: "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: 1cf7c41e922f\n```\n\n<!-- workline:sticky=product-owner/state -->", created: "2099-01-01T09:00:00Z"}
+          - "**workline's line** last woke the product owner on this issue, in its state refine (1 state step so far).\n\n<!-- workline:line-record {\"state\":\"refine\",\"body\":\"1cf7c41e922f\",\"spec\":\"90c9c861c3c6\",\"hops\":1,\"errors\":{\"by\":{\"run\":1},\"first\":{\"run\":\"2026-11-05T07:00:00Z\"},\"last\":\"2026-11-05T07:00:00Z\",\"kind\":\"run\",\"said\":\"the agent's run failed\"},\"v\":1} -->\n<!-- workline:sticky=line/state -->"
+          - "**The reviewer** read this spec: nothing holds it from ready.\n\n<!-- workline:spec-review body=1cf7c41e922f round=1 open=0 in= -->\n<!-- workline:sticky=reviewer/spec -->"
+run: {route: issue, target: {issue: 9}, ai: "fake:ready-nine"}
+expect:
+  status: pass
+  agent-calls: 1
+  findings:
+    - {rule: state-retry, where: "#9"}
+    - {rule: state-wakes, where: "#9"}
+  no-findings: [{rule: state-waits}]
