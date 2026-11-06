@@ -7,6 +7,7 @@ package backlog
 import (
 	"crypto/sha256"
 	"fmt"
+	"maps"
 	"os/exec"
 	"regexp"
 	"slices"
@@ -1104,6 +1105,7 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 					is := p.issues[c.Issue]
 					is.Body, _, _ = Refine(is.Body, c, role)
 					p.issues[c.Issue] = is
+					p.recordDrafted(c)
 				}
 				if c.Do == "close" && !c.Announce {
 					p.Record.Closed = append(p.Record.Closed, Closing{Issue: c.Issue, Act: c.Kind(), Level: p.config.Level})
@@ -3427,4 +3429,29 @@ func LocateIn(lines []string, text string) (from, to int, original string, ok bo
 		}
 	}
 	return 0, 0, "", false
+}
+
+// recordDrafted notes, in the plan's copy of an issue's state, the drafts a
+// refine just wrote into its body as the role's own, so that a ready later
+// in the run reads them as apply will: drafts no person accepted.
+func (p *Plan) recordDrafted(c Proposal) {
+	if p.ledger.States == nil {
+		return
+	}
+	is := p.issues[c.Issue]
+	have := work.ByMeaning(is.Body)
+	st := State{}
+	if old := p.ledger.States[c.Issue]; old != nil {
+		st = *old
+		st.Wrote = maps.Clone(old.Wrote)
+	}
+	for _, m := range layout() {
+		if !drafted(m) || work.Has(c.Refused, m) || strings.TrimSpace(c.Text(m)) == "" {
+			continue
+		}
+		if sec, ok := have[m]; ok {
+			st.SetWrote(sec.Heading, BodyDigest(sec.Text))
+		}
+	}
+	p.ledger.States[c.Issue] = &st
 }
