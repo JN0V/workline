@@ -246,7 +246,38 @@ func NormalizeDiff(diff string) string {
 		}
 		out = append(out, l)
 	}
-	return mergeOverlapping(strings.Join(out, "\n"))
+	return mergeOverlapping(strings.Join(addedWhole(out), "\n"))
+}
+
+// addedWhole reads each line of a new file's hunk as added: a file made
+// from /dev/null has no line to keep, so a line written without its `+`
+// (an agent's wrapped line, trial #56) is one of the file's, not a context
+// git refuses as a corrupt patch. Blank lines before the next file's
+// headers, or ending the diff, part files: none of the file's.
+func addedWhole(lines []string) []string {
+	header := func(i int) bool {
+		return strings.HasPrefix(lines[i], "diff --git ") ||
+			strings.HasPrefix(lines[i], "--- ") && i+1 < len(lines) && strings.HasPrefix(lines[i+1], "+++ ")
+	}
+	parting := func(i int) bool { // a blank line, and only blank lines up to a header or the end
+		for ; i < len(lines) && lines[i] == ""; i++ {
+		}
+		return i == len(lines) || header(i)
+	}
+	created, inHunk := false, false
+	for i, l := range lines {
+		switch {
+		case strings.HasPrefix(l, "diff --git "):
+			created, inHunk = false, false
+		case header(i):
+			created, inHunk = strings.TrimSpace(strings.TrimPrefix(l, "--- ")) == "/dev/null", false
+		case strings.HasPrefix(l, "@@"):
+			inHunk = true
+		case created && inHunk && !strings.HasPrefix(l, "+") && !strings.HasPrefix(l, `\`) && (l != "" || !parting(i)):
+			lines[i] = "+" + l
+		}
+	}
+	return lines
 }
 
 var hunkHeader = regexp.MustCompile(`^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@`)

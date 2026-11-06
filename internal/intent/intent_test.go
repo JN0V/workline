@@ -43,6 +43,19 @@ func TestNormalizeDiff(t *testing.T) {
 	}
 }
 
+// A new file's line written without its `+`, an agent's wrapped line
+// (trial #56), is read as the file's; a changed file's context is not
+// touched, nor the blank lines that end the diff.
+func TestNormalizeDiffReadsANewFilesLinesAsAdded(t *testing.T) {
+	in := "--- /dev/null\n+++ b/t/a.cpp\n@@ -0,0 +1,3 @@\n+f(1,\n    2);\n\n+g();\n\n" +
+		"--- a/t/b.cpp\n+++ b/t/b.cpp\n@@ -1 +1,2 @@\n keep\n+add\n\n"
+	want := "diff --git a/t/a.cpp b/t/a.cpp\nnew file mode 100644\n--- /dev/null\n+++ b/t/a.cpp\n@@ -0,0 +1,3 @@\n+f(1,\n+    2);\n+\n+g();\n\n" +
+		"diff --git a/t/b.cpp b/t/b.cpp\n--- a/t/b.cpp\n+++ b/t/b.cpp\n@@ -1 +1,2 @@\n keep\n+add\n\n"
+	if got := NormalizeDiff(in); got != want {
+		t.Fatalf("NormalizeDiff =\n%q\nwant\n%q", got, want)
+	}
+}
+
 func TestMergeKeepsFallbackDiffsBeside(t *testing.T) {
 	derived := Intention{"patch", "--- a/README.md\n+++ b/README.md\n@@ -19 +19 @@\n-61\n+63\n"}
 	agent := []Intention{{"patch", "--- a/README.md\n+++ b/README.md\n@@ -3 +3 @@\n-checked: a\n+checked: b\n"}}
