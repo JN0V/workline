@@ -1,0 +1,10 @@
+- patch:
+    file: tests/test_retry.sh
+    content: |
+      # Retry: Given a client set to retry, When the first call fails, Then it calls again.
+      cat > client.yaml <<EOF
+      Timeout: 5
+      Retry: 1
+      EOF
+      . ./lib.sh
+      [ "$(add 2 3)" = 5 ]

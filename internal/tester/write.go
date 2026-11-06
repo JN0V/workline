@@ -1015,16 +1015,21 @@ func hasUpper(s string) bool { return strings.ToLower(s) != s }
 
 // commentLead is what opens a comment, in the languages tests are
 // written in: `//`, `/*`, `*`, `#`, `--`, `;`, a docstring's quotes.
-var commentLead = regexp.MustCompile(`^\s*(?://+|/\*+|\*+|#+|--|;+|"""|'''|<!--)?\s*`)
+var commentLead = regexp.MustCompile(`^\s*(?://+|/\*+|\*+|#+|--|;+|"""|'''|<!--)\s*`)
 
 // sentenceEnd cuts a comment into its sentences.
 var sentenceEnd = regexp.MustCompile(`[.!?;]\s+`)
 
-// labels are the words a line, its comment or one of their sentences
-// opens with before a colon: "Restart" in `// … still does. Restart:
-// Given …`. A colon of code (`::`, `:=`) opens none.
+// labels are the words a comment, or one of its sentences, opens with
+// before a colon: "Restart" in `// … still does. Restart: Given …`. Only
+// a comment's text: a line of code (`Timeout: 5 * time.Second,`,
+// `restart: true`, `default:`) labels nothing, nor a colon of code (`::`,
+// `:=`).
 func labels(line string) []string {
-	starts := []string{line[len(commentLead.FindString(line)):]}
+	var starts []string
+	if lead := commentLead.FindString(line); lead != "" {
+		starts = append(starts, line[len(lead):])
+	}
 	for _, lead := range []string{"//", "/*", "# "} {
 		if i := strings.Index(line, lead); i > 0 {
 			rest := line[i:]

@@ -184,7 +184,9 @@ func TestNamesAScenarioInItsComment(t *testing.T) {
 		}
 	}
 	for _, code := range []string{"// Old debt gone: Given", "// the old debt: kept", "// Old debt is kept: Given",
-		"std::Old::debt()", "debt := 1", "// Then it prints: Old debt"} {
+		"std::Old::debt()", "debt := 1", "// Then it prints: Old debt",
+		// code, not a comment: a field, a key, a case
+		"\tOldDebt: 5 * time.Second,", "old_debt: true", "Old debt: x", "\tcase OldDebt:"} {
 		if names(code, "Old debt") {
 			t.Errorf("%q names the scenario, though only a longer name or prose holds it", code)
 		}
