@@ -444,6 +444,38 @@ func weeklyRevisit(res *line.Result) bool {
 	})
 }
 
+// quietWatch follows whether a run's line is quiet, and the weekly
+// revisit that woke it last, if it has not been quiet since.
+type quietWatch struct {
+	quiet bool
+	// weekly: the tick a weekly revisit woke the quiet line, -1 for
+	// none, or for one the line was quiet again after.
+	weekly int
+}
+
+func newQuietWatch() quietWatch { return quietWatch{weekly: -1} }
+
+// ran takes tick i's run: a weekly revisit counts only on a quiet line.
+func (q *quietWatch) ran(i int, revisit bool) {
+	if q.quiet && revisit {
+		q.weekly = i
+	}
+}
+
+// ended takes whether tick i ended quiet: quiet again, a revisit before
+// it no longer excuses what follows.
+func (q *quietWatch) ended(quiet bool) {
+	q.quiet = quiet
+	if quiet {
+		q.weekly = -1
+	}
+}
+
+// excused says whether a line still acting at the run's end is so since
+// a weekly revisit woke it, never quiet after: the revisit's own K ticks
+// end past the run's last.
+func (q quietWatch) excused() bool { return !q.quiet && q.weekly >= 0 }
+
 // measured is runTrace, with what it measured.
 func measured(t *testing.T, tr trace, script []outcome, c checks) (_ *failure, _ string, ms measure) {
 	a := &simAgent{script: script}
@@ -452,8 +484,7 @@ func measured(t *testing.T, tr trace, script []outcome, c checks) (_ *failure, _
 	defer func() { ms.unused = a.unused() }()
 	ms.step(w.cfg, w.state(t))
 	k := w.k()
-	// weekly: the tick a weekly revisit woke a quiet line, -1 for none.
-	quiet, weekly := false, -1
+	qw := newQuietWatch()
 	for i := range k {
 		if !c.all && i > c.until {
 			return nil, log.String(), ms
@@ -464,9 +495,7 @@ func measured(t *testing.T, tr trace, script []outcome, c checks) (_ *failure, _
 		n := len(a.calls)
 		r := w.requests(t)
 		res := w.run(at)
-		if quiet && weeklyRevisit(res) {
-			weekly = i
-		}
+		qw.ran(i, weeklyRevisit(res))
 		ms.requests = append(ms.requests, w.requests(t)-r)
 		mid := w.state(t)
 		ms.step(w.cfg, mid)
@@ -503,17 +532,19 @@ func measured(t *testing.T, tr trace, script []outcome, c checks) (_ *failure, _
 			fmt.Fprintf(&log, "  forge: %v\n", merged)
 			ms.step(w.cfg, w.state(t))
 		}
-		quiet = len(merged) == 0 && len(calls) == 0 && len(res.Woke) == 0 && mid.Writes == before.Writes
+		qw.ended(len(merged) == 0 && len(calls) == 0 && len(res.Woke) == 0 && mid.Writes == before.Writes)
 	}
 	if !c.all {
 		return nil, log.String(), ms
 	}
 	// A weekly revisit wakes a quiet line by design (ADR-0059), a new
 	// input: its own K ticks start there and end past the run's last,
-	// so still acting then is pending, not loud. A line never quiet
-	// before it, or woken by anything else, is held to K.
-	if !quiet && weekly >= 0 && c.on(pQuiet) {
-		fmt.Fprintf(&log, "  quiet: a weekly revisit at tick %d, its K ticks not over\n", weekly)
+	// so still acting since, never quiet in between, is pending, not
+	// loud. A line never quiet before it, quiet again after it, or
+	// woken by anything else, is held to K.
+	quiet := qw.quiet
+	if qw.excused() && c.on(pQuiet) {
+		fmt.Fprintf(&log, "  quiet: a weekly revisit at tick %d, its K ticks not over\n", qw.weekly)
 		quiet = true
 	}
 	if !quiet && c.on(pQuiet) {
@@ -859,5 +890,32 @@ func TestSeeds(t *testing.T) {
 			}
 			t.Errorf("%s, seed %d: %s\nreplay: SIM_SEED=%d, or shrunk: SIM_TRACE=%s SIM_SCRIPT=%q\n%s", tr.name, seed, f, seed, tr.name, strings.Join(words, ","), log)
 		}
+	}
+}
+
+// TestQuietWatch holds the weekly revisit's excuse to a line still
+// acting since the revisit, never quiet in between.
+func TestQuietWatch(t *testing.T) {
+	// A tick: L loud, Q quiet, R a weekly revisit, loud.
+	for _, tc := range []struct {
+		name, ticks string
+		excused     bool
+	}{
+		{"revisit at the end", "LQQQQQQQQQQQQQQQQQQQQRL", true},
+		{"quiet again, then another wake", "LQRLQQQQQQLLLLLLLLLLLLL", false},
+		{"another issue acting every other tick", "LQLQLQLQLRQLQLQLQLQLQLL", false},
+		{"revisit on a loud line", "LLLLLLLLLLLLLLLLLLLLLRL", false},
+		{"quiet at the end", "LQQQQQQQQQQQQQQQQQQQQRQ", false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			q := newQuietWatch()
+			for i, c := range tc.ticks {
+				q.ran(i, c == 'R')
+				q.ended(c == 'Q')
+			}
+			if q.excused() != tc.excused {
+				t.Errorf("%s: excused %v, want %v", tc.ticks, q.excused(), tc.excused)
+			}
+		})
 	}
 }

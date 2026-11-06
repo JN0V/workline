@@ -235,7 +235,8 @@ step 1):
   starts no second step; a needs-input ends Due or Waiting on its
   source; the forge's requests within the bound. At the end: quiet within K ticks (a
   weekly revisit of a blocked issue wakes a quiet line on purpose: its
-  own K ticks start there, past the run's end, so not yet held), the trace's
+  own K ticks start there, past the run's end, so a line acting since,
+  never quiet in between, is not yet held; quiet again, it is), the trace's
   expected end with an agent that always progresses (Done, or Waiting on
   what it names), one byte of a body changed makes the issue due. Each
   trace runs twice: the runs must match.
