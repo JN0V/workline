@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.73.0](https://github.com/JN0V/workline/compare/v0.72.1...v0.73.0) (2026-11-06)
+
+
+### Features
+
+* **developer:** the write fence, test-paths beside the Scope ([#1099](https://github.com/JN0V/workline/issues/1099)) ([808ae12](https://github.com/JN0V/workline/commit/808ae12d3f23ff6e5a5cf087f871e19a7e2ea602))
+* **line:** type each run's outcome; a machine error never moves ([#1092](https://github.com/JN0V/workline/issues/1092)) ([9d1c5c8](https://github.com/JN0V/workline/commit/9d1c5c842bb6059363a706138a223304dee2dc3a))
+* one code picker for the product owner, tester and reviewer ([#1106](https://github.com/JN0V/workline/issues/1106)) ([ce61a8b](https://github.com/JN0V/workline/commit/ce61a8b4fd186bfaca4392660bfb57d72cd59f8c))
+* **tester:** find the test harness with read tools under claude ([#1110](https://github.com/JN0V/workline/issues/1110)) ([2988610](https://github.com/JN0V/workline/commit/2988610b00c1af4cb3eec044469614ab1bc1ea69))
+* **tester:** the imports two steps deep, as declarations ([#1108](https://github.com/JN0V/workline/issues/1108)) ([f3a4618](https://github.com/JN0V/workline/commit/f3a46185eec41148a6341308497201098ecd1a19))
+
+
+### Bug Fixes
+
+* gitLab: keep the bot's token from the objection judge's ([#1104](https://github.com/JN0V/workline/issues/1104)) ([ba8134b](https://github.com/JN0V/workline/commit/ba8134baba9d61217198a7943a831fa5fcf66f30))
+* gitLab: no inspector triage with a cmd: agent ([#1098](https://github.com/JN0V/workline/issues/1098)) ([5b4d674](https://github.com/JN0V/workline/commit/5b4d67462497d9da7830b00d84aa906e0ceb3f6c))
+* **line:** block a no-code claim past claim-hours, same body ([#1121](https://github.com/JN0V/workline/issues/1121)) ([cce1e7f](https://github.com/JN0V/workline/commit/cce1e7fe8aecb136ff22f29c1572daf701b61f8a))
+* **line:** say an issue in refine waits on a person ([#1117](https://github.com/JN0V/workline/issues/1117)) ([cc78727](https://github.com/JN0V/workline/commit/cc78727eab5d4f0281276aaf8dd3fe1d987d3ca5))
+* **line:** wake the developer on a claim with no pull request ([#1116](https://github.com/JN0V/workline/issues/1116)) ([e6c8334](https://github.com/JN0V/workline/commit/e6c8334b7f23baa422aa52c9b52bc7e165185d5c))
+* **merge:** workline:accepted-whole takes a review not whole ([#1112](https://github.com/JN0V/workline/issues/1112)) ([48a4618](https://github.com/JN0V/workline/commit/48a4618a2a19a49c804cb68672c6090c02e65469))
+* **tester:** red on a missing name only when the issue names it ([#1114](https://github.com/JN0V/workline/issues/1114)) ([050bde1](https://github.com/JN0V/workline/commit/050bde1101516b82f81d21c74400752c24afd4a3))
+
 ## [0.72.1](https://github.com/JN0V/workline/compare/v0.72.0...v0.72.1) (2026-11-04)
 
 
