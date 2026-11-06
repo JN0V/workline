@@ -223,7 +223,7 @@ var plain = []string{"proposals-waiting", "demoted", "setting-gone", "plan-unrea
 // the product owner's agent wrote (internal/backlog): said in plain words,
 // one line an issue, no rule's name.
 var heldBack = []string{"no-quote", "nothing-to-refine", "section-kept", "not-ready", "ask-empty", "already-asked",
-	"already-proposed", "asked-before", "question-left-out", "not-agreed", "not-accepted", "close-reason", "already-open", "once-a-run", "act-cap",
+	"already-proposed", "asked-before", "question-left-out", "sources-unquoted", "not-agreed", "not-accepted", "close-reason", "already-open", "once-a-run", "act-cap",
 	"moved-cap", "drafts-proposed", "undone-here", "outsider-evidence", "reporter-outside",
 	"spec-not-reviewed", "spec-findings-open", "priority-level", "priority-kept", "priority-same", "priority-elsewhere", "priority-no-label", "priority-once", "priority-changed",
 	"effort-level", "effort-nowhere", "effort-unread", "effort-elsewhere", "effort-no-label", "effort-kept", "effort-once", "effort-changed", "effort-parent", "priority-blind", "effort-blind", "priority-hidden", "effort-hidden", "title-kept",

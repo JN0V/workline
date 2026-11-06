@@ -362,6 +362,10 @@ func CallsIn(l *Language, lines []string, self string) []string {
 	return out
 }
 
+// IsComment says whether a line is a comment's, as a language of the
+// table writes one.
+func IsComment(line string) bool { return isComment(line) }
+
 func isComment(line string) bool {
 	t := strings.TrimSpace(line)
 	return strings.HasPrefix(t, "//") || strings.HasPrefix(t, "/*") || strings.HasPrefix(t, "*") ||

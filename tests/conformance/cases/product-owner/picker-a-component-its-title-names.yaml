@@ -1,0 +1,28 @@
+case: product-owner/picker-a-component-its-title-names
+about: >
+  The code picker's contract, the product owner's side (#1152): the C++
+  trial's #56 as opened, on DomoticsCore at 7da20c9 (reduced: the files
+  the picker gave, at their paths). Its title names RemoteConsole; its
+  text, `begin()` and `shutdown()`, defined in eleven components. The
+  console's `shutdown()` is given first, where the fault is; the other
+  components' after, while the bytes last, and the task holds under 30 KB.
+  Before, 69,964 bytes and 35 files.
+given:
+  repo: backlog
+  setup:
+    - |
+      cp -R "$FIXTURES/code/domoticscore-7da20c9/." .
+      git add . && git commit -qm 'feat: DomoticsCore at 7da20c9, reduced, from the C++ trial'
+  forge:
+    issues:
+      - {id: 56, title: "RemoteConsole: a disabled console's shutdown() removes my log listener", body: "Who it hurts: an application that adds its own log listener with `LoggerCallbacks::addCallback()` (to forward log lines to MQTT or a file, say) and has the remote console disabled in its config. When the disabled console is shut down (switched off on the WebUI's Components page, or at the Core's shutdown), the application's listener stops receiving log lines. Nothing says so.\n\nSteps to reproduce\n1. In `setup()`, add a log listener with `LoggerCallbacks::addCallback(...)` before any other.\n2. Add a `RemoteConsoleComponent` with `enabled = false` in its config.\n3. Run its `begin()`, then its `shutdown()`.\n4. Log a line.\n\nExpected\n- The application's listener gets the line: a console that never started has nothing to remove.\n\nActual\n- The listener gets nothing after step 3. It was removed from the logger.\n\nHost run (native stubs):\n\n```\nmy listener got 1 APP line(s)\nafter a disabled console's begin()+shutdown(): my listener got 1 APP line(s)\n```\n\nThe second line should say 2.\n\nVersion: DomoticsCore 2.13.0 (RemoteConsole component 1.7.3), native build.\n", author: ann, insider: true, labels: [workline:to-refine], comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: issue, target: {issue: 56}, ai: fake:proposes-nothing}
+expect:
+  status: pass
+  agent-calls: 1
+  no-findings: [{rule: prompt-over-budget}]
+  run-files:
+    in/task.md:
+      max-bytes: 30000
+      contains: ["LoggerCallbacks::removeCallback(loggerCallbackId_);"]
+      not-contains: ["### `CHANGELOG.md`"]

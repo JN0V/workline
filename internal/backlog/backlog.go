@@ -565,6 +565,9 @@ type Proposal struct {
 	// LeftOut, the engine's: the questions asked before, taken out of it;
 	// said once the act is decided, never when it is dropped.
 	LeftOut []string `yaml:"-"`
+	// Unquoted, the engine's: the sources it left out of a sources named
+	// with no quote, their code given (#1151); said once it is decided.
+	Unquoted []string `yaml:"-"`
 	// Agreed, the engine's: who agreed in a reply to the text last proposed
 	// to the reporter, which this refine writes; checked again on the forge
 	// (Agreement), never taken from the agent.
@@ -1129,6 +1132,10 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 			// Written or proposed: the question asked before left out is
 			// said; an act dropped writes nothing, and says only why.
 			p.Findings = append(p.Findings, verdict.Finding{Rule: "question-left-out", Level: "info", Where: c.where(), Message: leftOut(c.LeftOut)})
+		}
+		if d.Mode != Off && len(c.Unquoted) > 0 {
+			p.Findings = append(p.Findings, verdict.Finding{Rule: "sources-unquoted", Level: "info", Where: c.where(),
+				Message: fmt.Sprintf("Named without a quote, so left out of its sources: %s, whose code was given; the rest, not given, is read at the next run.", strings.Join(c.Unquoted, ", "))})
 		}
 		p.Decisions = append(p.Decisions, d)
 		if extra != nil {
@@ -1718,11 +1725,24 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 	if c.Do == "milestone" || c.Do == "order" || c.Do == "effort" || c.Do == "kind" || c.Do == "refine" || c.Do == "ready" || c.Do == "unready" || c.Do == "unblock" || c.Do == "blocked" || c.Do == "ask" || c.Do == "assume" || c.Do == "split" || c.Do == "rename" || c.Do == "depend" || c.Do == "undepend" {
 		return "", "" // writing a plan or asking says nothing of the issue's truth: no quote
 	}
-	if c.Do == "sources" && (c.Quote == nil || strings.TrimSpace(c.Quote.Text) == "") && p.namesUnshown(repo, c.Issue, c.Sources) {
+	if c.Do == "sources" && (c.Quote == nil || strings.TrimSpace(c.Quote.Text) == "") {
 		// Named outside the code given, nothing of it to quote (#951,
 		// #980): the issue is read again with that code, at the next run.
-		c.Quote = nil
-		return "", ""
+		// Each such file on its own (#1151): one its state names already
+		// stays; one shown, new to it, wants its quote, and is left out
+		// without one.
+		if unshown, shown := p.unshown(repo, c.Issue, c.Sources); len(unshown) > 0 {
+			var had []string
+			if st := p.ledger.States[c.Issue]; st != nil {
+				had = st.Sources
+			}
+			kept := slices.DeleteFunc(slices.Clone(c.Sources), func(s string) bool {
+				return slices.Contains(shown, s) && !slices.ContainsFunc(had, func(h string) bool { return RepoPath(h) == RepoPath(s) })
+			})
+			c.Unquoted = slices.DeleteFunc(slices.Clone(shown), func(s string) bool { return slices.Contains(kept, s) })
+			c.Quote, c.Sources = nil, kept
+			return "", ""
+		}
 	}
 	if c.Quote == nil || strings.TrimSpace(c.Quote.Text) == "" {
 		return "no-quote", "nothing done: no evidence quoted from the code or an issue"
@@ -1738,27 +1758,32 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 	return "", ""
 }
 
-// namesUnshown says whether sources name only code the run did not give
-// for an issue: each path neither in, nor holding, one its state or its
-// title and body name. A quote is asked only of code the agent was shown
-// (#980): one given a file the issue is not about names its code from
-// the repository's folders, as one given no code does.
-func (p *Plan) namesUnshown(repo string, id int, sources []string) bool {
+// unshown splits sources into the code the run did not give for an
+// issue, each path neither in, nor holding, one its state or its title
+// and body name, and the code it gave. A quote is asked only of code the
+// agent was shown (#980): one given a file the issue is not about names
+// its code from the repository's folders, as one given no code does;
+// one shown a file that calls into another names that other unquoted
+// (#1151).
+func (p *Plan) unshown(repo string, id int, sources []string) (unshown, shown []string) {
 	var given []string
 	if st := p.ledger.States[id]; st != nil {
 		given = append(given, st.Sources...)
 	}
 	is := p.issues[id]
 	given = append(given, PathsIn(repo, is.Title+"\n"+is.Body)...)
-	// Every one unshown: a source whose code was given is still backed by
-	// a quote of it.
-	return len(sources) > 0 && !slices.ContainsFunc(sources, func(s string) bool {
-		s = RepoPath(s)
-		return slices.ContainsFunc(given, func(g string) bool {
+	for _, src := range sources {
+		s := RepoPath(src)
+		if slices.ContainsFunc(given, func(g string) bool {
 			g = RepoPath(g)
 			return holds(s, g) || holds(g, s)
-		})
-	})
+		}) {
+			shown = append(shown, src)
+		} else {
+			unshown = append(unshown, src)
+		}
+	}
+	return unshown, shown
 }
 
 // given says whether this run gave the agent the code of each source

@@ -1,7 +1,8 @@
 # A product owner's answer that names the code two bugs are about, no
 # line quoted (#980). #9's text names a doc: its code was not given, so
 # nothing of it could be quoted. #12's text names a file inside the
-# folder it names: that code was given.
+# folder it names: that code was given. #13 mixes both: the doc shown
+# is left out, the export named (#1151).
 - kind: {issue: 9, kind: bug, why: "the export worked and now loses rows."}
 - sources:
     issue: 9
