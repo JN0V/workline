@@ -58,7 +58,7 @@ trial-35-needs-person needs-input-on-its-source i1-status expected-end
 # parts, and the answers left unused. #3's code named is given at once,
 # and it goes on to its tests, then the claim's two labels, then
 # Developing says nothing, as #36.
-trial-3-replay one-state-label i1-status expected-end one-byte-due
+trial-3-replay one-state-label i1-status expected-end
 trial-4-replay i1-status expected-end
 trial-5-replay i1-status expected-end
 trial-16-replay i1-status expected-end
