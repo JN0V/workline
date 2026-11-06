@@ -52,9 +52,8 @@ flowchart LR
   - a run: today's caps for effort Low and Medium (sized on small
     bugs, never lower), ×2 for High ([ADR-0040]); effort scales only
     the seed, tiers multiply on top;
-  - an issue: the sum of today's per-run token caps of the roles one
-    issue wakes (developer 500k, tester 300k, reviewer 300k: 1.1M).
-    The 273k is a median of five bugs, not a seed.
+  - an issue: 400k, the worst measured round (385k a bug) rounded up;
+    273k is the median of two rounds' per-bug averages (161k, 385k).
 - **Counted in the log**: each step's entry in `line-log`
   ([ADR-0063 §4](0063-every-open-issue-is-due-waiting-or-done.md#4-the-step-log))
   adds its role and fresh tokens, so an issue's total holds across
@@ -90,7 +89,7 @@ flowchart LR
 - **Grant `workline:size/large`** when the need is atomic: ×2 every
   size target, a forge label a person undoes in one click.
 - **`workline:size/x-large` (×4) is a person's answer**, never the
-  product owner's; the same answer lifts the backstop for the issue.
+  product owner's; it lifts the issue's backstop to 16× normal.
 - **Under its autonomy level** ([ADR-0026], [ADR-0060 §3](0060-the-person-is-on-the-loop.md#3-autonomy-is-a-level-per-role)):
   `cautious` proposes, `normal` and `enterprising` act.
 - **`split` turns on past an issue's size**, off by default otherwise.
@@ -108,9 +107,10 @@ flowchart LR
 ### 5. The hard backstop
 
 - **Fresh tokens per issue, cumulative**, all roles and runs: at about
-  4× normal per issue, Waiting(person); never less than twice what one
-  ×2 pass of every role may spend (4.4M = 2 × 2.2M at the seed). A
-  granted `large` never raises it; a person's `x-large` lifts it.
+  4× normal per issue (1.6M at the seed), Waiting(person). A granted
+  `large` never raises it: a `large` issue whose every run hits its ×2
+  cap reaches a person, by design. A person's `x-large` lifts it to 4×
+  the x-large normal, 16× normal (6.4M at the seed).
 - **No lazy-consensus time-out**, like a feature's yes
   ([ADR-0060 §1](0060-the-person-is-on-the-loop.md#1-questions-time-out-as-lazy-consensus)).
 - **The liveness caps stay hard**: `max-hops`, `ai-max-turns`,
