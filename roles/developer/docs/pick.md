@@ -67,7 +67,9 @@ API answered 403 for `workline-jn0v[bot]`, and GraphQL said "Assigning
 agents is not supported with GitHub App installation tokens". So the
 claim is a label, on every forge:
 
-- **`claim-label`**, `workline:developing` by default, put on the issue.
+- **`claim-label`**, `workline:developing` by default, put on the issue,
+  `workline:ready` taken off in the same call: one state at a time
+  ([#1081](https://github.com/JN0V/workline/issues/1081)).
 - **A comment** saying it took the issue and what it passed over, with
   a hidden line, `workline:developer-act`: the commit the run read, the
   issue, the issues passed and why. The auditor reads it (below).
@@ -107,8 +109,9 @@ on any event, with or without an agent:
   [#1120](https://github.com/JN0V/workline/issues/1120)).
   - A developer's run started for another issue keeps that claim too
     (`claim-left-to-line`): the line alone decides the block.
-- **What**: `claim-label` taken off; the claim's comment edited to say
-  why and what comes next. The issue is not taken again in the same run.
+- **What**: `claim-label` taken off, `workline:ready` put back on; the
+  claim's comment edited to say why and what comes next. The issue is
+  not taken again in the same run.
 - **A day the forge does not say**: the claim is kept, said in the
   verdict (`claim-age-unknown`).
 - **Taken again**: the line's reconciler wakes the developer on the
