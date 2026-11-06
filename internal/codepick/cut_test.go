@@ -17,3 +17,17 @@ func TestCutSaysWhatTheBudgetLeftOut(t *testing.T) {
 		t.Errorf("a file that fits said cut: %q", pk.Cut())
 	}
 }
+
+// The cap a cut names is the one that cut: the lines', or the bytes'
+// when the lines would fit (#1159).
+func TestCutByTheCapThatCut(t *testing.T) {
+	dir := repo(t, map[string]string{"big.sh": filler(300, "# line %d")})
+	byLines, _ := pick(t, dir, Ask{Text: "`big.sh`", Budget: 100, BudgetName: "code-lines-max"})
+	if got := strings.Join(byLines.CutBy(), ","); got != "code-lines-max" {
+		t.Errorf("cut by its lines: %q", got)
+	}
+	byBytes, _ := pick(t, dir, Ask{Text: "`big.sh`", Budget: 1000, Bytes: 1500, BudgetName: "code-lines-max"})
+	if got := strings.Join(byBytes.CutBy(), ","); got != BytesName || byBytes.Cut() == "" {
+		t.Errorf("cut by its bytes: %q, %q", got, byBytes.Cut())
+	}
+}

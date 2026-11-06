@@ -843,9 +843,18 @@ func Pre(runDir, repo string) int {
 			codeLeft -= share - pick.Left
 			picks, pickedFor = append(picks, pick), append(pickedFor, d.is.ID)
 			if c := pick.Cut(); c != "" {
+				var caps, raise []string // the caps that cut it, each by its setting
+				for _, by := range pick.CutBy() {
+					if by == codepick.BytesName {
+						caps = append(caps, fmt.Sprintf("%s (%d bytes)", by, s.CodeBytesMax))
+					} else {
+						caps = append(caps, fmt.Sprintf("%s (its share: %d of %d lines)", by, share, s.CodeLinesMax))
+					}
+					raise = append(raise, verdict.Setting("product-owner", by))
+				}
 				t.cuts = append(t.cuts, verdict.Finding{Rule: verdict.CutRule, Level: "warn", Where: fmt.Sprintf("#%d", d.is.ID),
-					Message: fmt.Sprintf("the code given to the product owner's agent for it is cut past code-lines-max (its share: %d of %d lines): %s; raise %s",
-						share, s.CodeLinesMax, c, verdict.Setting("product-owner", "code-lines-max"))})
+					Message: fmt.Sprintf("the code given to the product owner's agent for it is cut past %s: %s; raise %s",
+						strings.Join(caps, " and "), c, strings.Join(raise, ", or "))})
 			}
 			files := pick.Named()
 			noCode = noCode || len(files) == 0

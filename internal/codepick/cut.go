@@ -42,3 +42,24 @@ func (p Pick) Cut() string {
 	}
 	return fmt.Sprintf("%d of the %d lines of the files named given (%s)", given, total, strings.Join(files, ", "))
 }
+
+// BytesName is the setting Ask.Bytes is, as a role names it.
+const BytesName = "code-bytes-max"
+
+// CutBy are the settings that cut the pick, as Cut says it (#1159): the
+// lines' (Ask.BudgetName), the bytes' (BytesName), or both; none when
+// nothing was cut.
+func (p Pick) CutBy() []string {
+	var out []string
+	if p.byLines || p.Short && !p.byBytes {
+		name := p.Ask.BudgetName
+		if name == "" {
+			name = "the code budget"
+		}
+		out = append(out, name)
+	}
+	if p.byBytes {
+		out = append(out, BytesName)
+	}
+	return out
+}

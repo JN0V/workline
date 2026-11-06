@@ -22,4 +22,4 @@ expect:
     - {rule: input-cut, level: warn, where: "#9", message: "the code given to the product owner's agent for it is cut past code-lines-max (its share: "}
     - {rule: input-cut, where: "#9", message: "of the 400 lines of the files named given (`src/big.go` "}
     - {rule: input-cut, where: "#9", message: "raise roles.product-owner.settings.code-lines-max in .workline/config.yaml"}
-  no-findings: [{rule: input-cut, where: "#10"}]
+  no-findings: [{rule: input-cut, where: "#10"}, {rule: input-cut, message: "code-bytes-max"}]
