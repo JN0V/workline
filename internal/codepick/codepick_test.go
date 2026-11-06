@@ -246,3 +246,23 @@ func Render(a A) string {
 		t.Errorf("a String() given, which one is called unknown:\n%s", out)
 	}
 }
+
+// The routes a text writes, a file's path not one (#1152).
+func TestRoutes(t *testing.T) {
+	got := routes("POST `/api/components/enable` with `name=x`; see docs/x.md and /etc/a.conf, then /api/components/enable again.")
+	if !slices.Equal(got, []string{"/api/components/enable"}) {
+		t.Fatalf("routes: %v", got)
+	}
+}
+
+// A bound in bytes: long lines given past it are cut, said (#1152).
+func TestBytesBound(t *testing.T) {
+	dir := repo(t, map[string]string{"a.go": "package a\n\n// Fetch is long.\nfunc Fetch() {\n" + filler(200, "\t_ = \"a line of some forty bytes, number %03d\"") + "}\n"})
+	pk, _ := pick(t, dir, Ask{Text: "`Fetch` fails", Budget: 1500, Bytes: 2000})
+	if n := pk.Bytes(); n > 2000 || n < 1500 {
+		t.Fatalf("given %d bytes, want 1500 to 2000", n)
+	}
+	if pk.Files[0].Cut == 0 {
+		t.Fatalf("the cut is not said: %+v", pk.Files[0].Given)
+	}
+}

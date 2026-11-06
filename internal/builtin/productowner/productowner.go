@@ -51,6 +51,7 @@ const (
 type Settings struct {
 	IssuesPerRun int `json:"issues-per-run"` // issues read in one run
 	CodeLinesMax int `json:"code-lines-max"` // lines of code given in one run, all files together
+	CodeBytesMax int `json:"code-bytes-max"` // bytes of code given each issue read; 0: no bound (#1152)
 	Acts         struct {
 		Ask struct {
 			Rounds int `json:"rounds"` // times an issue's reporter is written to, then a person
@@ -132,7 +133,7 @@ func Pre(runDir, repo string) int {
 	} else if err := os.WriteFile(filepath.Join(runDir, "in", backlog.ReadFile), data, 0o644); err != nil {
 		return fail(err)
 	}
-	s := Settings{IssuesPerRun: 8, CodeLinesMax: 1500}
+	s := Settings{IssuesPerRun: 8, CodeLinesMax: 1500, CodeBytesMax: 16000}
 	raw := map[string]any{}
 	if data, err := os.ReadFile(filepath.Join(runDir, "in", "settings.json")); err == nil {
 		if err := json.Unmarshal(data, &s); err != nil {
@@ -815,7 +816,7 @@ func Pre(runDir, repo string) int {
 		var code []string          // the files the issues name
 		var picks []codepick.Pick  // each issue's, in order
 		var pickedFor []int        // the issue each pick is for
-		codeLeft := s.CodeLinesMax // lines of code still to share
+		codeLeft := s.CodeLinesMax  // lines of code still to share
 		noCode := false            // an issue read names no file: the repository's folders are listed
 		left := slices.Clone(rest)
 		for i, d := range toRead {
@@ -827,7 +828,9 @@ func Pre(runDir, repo string) int {
 			t.ids = append(t.ids, strconv.Itoa(d.is.ID))
 			written, aboutIt := writtenAt(repo, d.is, d.st, tracked, cfg.Archived)
 			share := codeLeft / max(min(n, len(toRead))-i, 1)
-			pick := picker.Pick(askOf(picker, d.is, d.st, d.comments, aboutIt, share))
+			a := askOf(picker, d.is, d.st, d.comments, aboutIt, share)
+			a.Bytes = s.CodeBytesMax // each issue's: the context budget bounds the run
+			pick := picker.Pick(a)
 			codeLeft -= share - pick.Left
 			picks, pickedFor = append(picks, pick), append(pickedFor, d.is.ID)
 			files := pick.Named()

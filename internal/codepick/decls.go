@@ -11,11 +11,12 @@ import (
 )
 
 // declare gives a file as its declarations, its pieces given shown
-// whole, when they fit room lines and say less than the file whole;
-// false when its language has no outline or they do not fit.
-func (p *Picker) declare(f *File, why string, room int) bool {
+// whole, when they fit room lines and bytes more bytes than the file
+// gives already, and say less than the file whole; false when its
+// language has no outline or they do not fit.
+func (p *Picker) declare(f *File, why string, room, bytes int) bool {
 	d := p.decls(f)
-	if d == nil || len(d) > room || len(d) >= len(f.Lines) {
+	if d == nil || len(d) > room || len(d) >= len(f.Lines) || (File{Decls: d}).bytes()-f.bytes() > bytes {
 		return false
 	}
 	f.Decls, f.DeclsWhy = d, why
@@ -47,7 +48,7 @@ func (p *Picker) decls(f *File) []string {
 // the test's own first, as it shows what builds today; then the others of
 // every step together, the most used first. The rest stay paths, one
 // step away. The budget left is returned.
-func (p *Picker) closure(a Ask, test string, roots, order []string, byPath map[string]*File, file func(string) *File, left int) int {
+func (p *Picker) closure(a Ask, test string, roots, order []string, byPath map[string]*File, file func(string) *File, left int, bytesLeft func() int) int {
 	var code []string
 	var given []*File
 	for _, f := range order {
@@ -119,8 +120,11 @@ func (p *Picker) closure(a Ask, test string, roots, order []string, byPath map[s
 		case cost(f) > left:
 			continue
 		case cost(f) >= len(g.Lines):
+			if g.wholeBytes() > bytesLeft() {
+				continue
+			}
 			g.Given = []Piece{{1, len(g.Lines), why[f]}}
-		case p.declare(g, why[f], left):
+		case p.declare(g, why[f], left, bytesLeft()):
 		default:
 			continue
 		}

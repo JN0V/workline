@@ -293,6 +293,8 @@ type fileWant struct {
 type runFileWant struct {
 	Contains    texts `yaml:"contains"`
 	NotContains texts `yaml:"not-contains"`
+	// MaxBytes: no run folder's copy is larger, in bytes (#1152).
+	MaxBytes int `yaml:"max-bytes"`
 }
 
 // forgeWant is the simulated forge's state after the run, by kind.
@@ -1493,6 +1495,11 @@ func compare(c *caseFile, r *result, repo string) []string {
 				if data, _ := os.ReadFile(f); strings.Contains(string(data), text) {
 					p = append(p, fmt.Sprintf("%s holds %q", name, text))
 				}
+			}
+		}
+		for _, f := range found {
+			if fi, err := os.Stat(f); want.MaxBytes > 0 && err == nil && fi.Size() > int64(want.MaxBytes) {
+				p = append(p, fmt.Sprintf("%s is %d bytes, over %d", name, fi.Size(), want.MaxBytes))
 			}
 		}
 	}

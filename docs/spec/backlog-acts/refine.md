@@ -157,9 +157,12 @@ what it can and asks for the rest:
   folders for an issue that names no file: the agent names its sources
   from them, no line quoted. A `sources` naming only code the run did
   not give — no path in or holding one its state, title or body names
-  (`namesUnshown`) — needs no line quoted either; one mixing code given
-  and not given still quotes
-  ([#980](https://github.com/JN0V/workline/issues/980)).
+  (`unshown`) — needs no line quoted either
+  ([#980](https://github.com/JN0V/workline/issues/980)). One mixing code
+  given and not given, no line quoted, names the code not given and
+  keeps the sources its state names; code given new to it is left out,
+  said (`sources-unquoted`, info)
+  ([#1151](https://github.com/JN0V/workline/issues/1151)).
 - **`ready`** is checked by the engine, not taken from the agent: the four
   sections there and not empty — a person's text on top standing for a
   Need —, no draft of the role's left in Need or

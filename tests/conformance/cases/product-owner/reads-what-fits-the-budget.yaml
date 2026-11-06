@@ -2,6 +2,10 @@ case: product-owner/reads-what-fits-the-budget
 about: "Three issues to read, each naming a file of about 52,000 characters, and a context budget of 120,000 tokens: the task holds the two that fit — a person's newest first —, and the agent reads them; the oldest is said left for the next run, which reads it first — never a task over the budget, refused whole every night, the role stuck (#427)."
 given:
   repo: backlog
+  config:
+    roles:
+      product-owner:
+        settings: {code-bytes-max: 0} # the lines bound it alone: a task over the context budget (#1152)
   setup:
     - "for n in 1 2 3; do awk 'BEGIN { for (i = 1; i <= 400; i++) printf \"// %0126d\\n\", i }' > src/big$n.go; done && git add src && git commit -qm 'feat: three big files'"
   forge:

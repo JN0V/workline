@@ -56,6 +56,10 @@ const (
 	// usesShare: 1 in usesShare of the budget at most for the places
 	// naming a name that are not its definition.
 	usesShare = 3
+	// fileBytes is what a file given weighs in bytes beside its lines:
+	// its heading, why each piece, a role's lines on it (its last
+	// commits): ten files of a line each are no ten lines (#1152).
+	fileBytes = 400
 )
 
 // Ask is what a role asks for.
@@ -77,6 +81,10 @@ type Ask struct {
 	// from, said in the cut.
 	Budget     int
 	BudgetName string
+	// Bytes bounds the code given in bytes too, its lines' (#1152):
+	// lines of 40 bytes or of 120 weigh alike in lines, not in a task.
+	// 0: the lines bound it alone.
+	Bytes int
 }
 
 // Piece is a span of a file's lines, from 1, and why it is given.
@@ -144,6 +152,17 @@ func (p Pick) Paths() []string {
 		}
 	}
 	return out
+}
+
+// Bytes are the bytes of the code and the test given.
+func (p Pick) Bytes() int {
+	n := 0
+	for _, f := range p.Files {
+		if b := f.bytes(); b > 0 {
+			n += b + fileBytes
+		}
+	}
+	return n
 }
 
 // Named are the files the pick holds, given or not, the test aside.
@@ -393,6 +412,13 @@ func (p *Picker) Pick(a Ask) Pick {
 	for _, f := range named {
 		file(f).Named = true
 	}
+	// The files the issue is about by its words: the component its title
+	// names (`WebUI: …`), the code holding a route it writes (#1152).
+	routed, routeFiles := p.routeLines(a, routes(a.Text))
+	about := map[string]bool{}
+	for _, f := range append(p.titleStems(a), routeFiles...) {
+		about[f] = true
+	}
 
 	type want struct {
 		file     string
@@ -516,12 +542,74 @@ func (p *Picker) Pick(a Ask) Pick {
 	for _, n := range rank {
 		here[n] = slices.ContainsFunc(append(slices.Clone(byName[n].defs), byName[n].aside...), func(w want) bool { return atHome(n, w) })
 	}
-	for _, keepHome := range []bool{true, false} {
-		for _, n := range rank {
-			for i, w := range byName[n].defs {
-				if atHome(n, w) == keepHome && (atHome(n, w) || i < defsMax && !here[n]) {
-					wants = append(wants, w)
-				}
+	// The component the issue is about by its words orders, never hides
+	// (#1152): its definitions first (`shutdown()` in the RemoteConsole
+	// its title names), then the other files holding a name it writes,
+	// then its folder's; the others last, while the budget lasts. A title
+	// can name what a person sees, not where the fault is.
+	var tops []string
+	for f := range about {
+		tops = append(tops, top(f))
+	}
+	for _, f := range named {
+		tops = append(tops, top(f))
+	}
+	// nearness: 0 the files the issue is about, 1 those holding the one
+	// definition of a name it writes, 2 its component's folder, 3 the
+	// rest.
+	nearness := func(w want) int {
+		switch {
+		case inNamed(w) || about[w.file]:
+			return 0
+		case home[w.file]:
+			return 1
+		case len(about) > 0 && top(w.file) != "" && slices.Contains(tops, top(w.file)):
+			return 2
+		}
+		return 3
+	}
+	byNear := func(ws []want) []want {
+		ws = slices.Clone(ws)
+		slices.SortStableFunc(ws, func(x, y want) int { return nearness(x) - nearness(y) })
+		return ws
+	}
+	defsGiven := map[string]int{}
+	for _, n := range rank {
+		for _, w := range byName[n].defs {
+			if atHome(n, w) {
+				defsGiven[n]++
+				wants = append(wants, w)
+			}
+		}
+	}
+	for _, r := range routed { // the code a route names, right after
+		wants = append(wants, want{r.file, r.from, r.to, r.why, true})
+	}
+	// A name defined in one file only (`DoWork` in `worker.go`), and the
+	// definitions in the component the issue is about: before the
+	// functions they call, before the files asked for and the places
+	// naming a name.
+	once := func(n string) bool {
+		ds := byName[n].defs
+		return len(ds) > 0 && !slices.ContainsFunc(ds, func(w want) bool { return w.file != ds[0].file })
+	}
+	early := func(n string, w want) bool { return !atHome(n, w) && !here[n] && (about[w.file] || once(n)) }
+	for _, n := range rank {
+		for _, w := range byName[n].defs {
+			if early(n, w) {
+				defsGiven[n]++
+				wants = append(wants, w)
+			}
+		}
+	}
+	// The other definitions, after the functions those call (2b'): the
+	// nearest first, while the budget lasts.
+	var others []want
+	for _, n := range rank {
+		for _, w := range byNear(byName[n].defs) {
+			if !atHome(n, w) && !early(n, w) && !here[n] && defsGiven[n] < defsMax {
+				defsGiven[n]++
+				others = append(others, w)
 			}
 		}
 	}
@@ -553,7 +641,7 @@ func (p *Picker) Pick(a Ask) Pick {
 			continue
 		}
 		for _, w := range byName[n].uses {
-			if inNamed(w) && usedIn[n] < usesMax {
+			if (inNamed(w) || about[w.file]) && usedIn[n] < usesMax {
 				usedIn[n]++
 				wants = append(wants, w)
 			}
@@ -565,7 +653,8 @@ func (p *Picker) Pick(a Ask) Pick {
 	// less (#1129).
 	for _, n := range rank {
 		for _, w := range byName[n].defs {
-			if !inNamed(w) && !home[w.file] {
+			// A callee after its caller: only a definition given before.
+			if !inNamed(w) && !home[w.file] && !about[w.file] || !atHome(n, w) && !early(n, w) {
 				continue
 			}
 			lines := p.Lines(w.file)
@@ -583,17 +672,15 @@ func (p *Picker) Pick(a Ask) Pick {
 			}
 		}
 	}
+	wants = append(wants, others...)
 	// 2c. Copies in tests, examples and tools, a few.
 	for _, n := range rank {
 		fd := byName[n]
-		given := 0
-		for i, w := range append(slices.Clone(fd.defs), fd.aside...) {
-			if atHome(n, w) || !here[n] && (i < min(len(fd.defs), defsMax) || i >= len(fd.defs) && i-len(fd.defs) < asideMax) {
+		given, asides := defsGiven[n], 0
+		for _, w := range byNear(fd.aside) {
+			if atHome(n, w) || !here[n] && asides < asideMax {
+				asides++
 				given++
-			}
-		}
-		for i, w := range fd.aside {
-			if atHome(n, w) || !here[n] && i < asideMax {
 				wants = append(wants, w)
 			}
 		}
@@ -631,6 +718,28 @@ func (p *Picker) Pick(a Ask) Pick {
 	// after: said only when the code wanted it.
 	left := budget - kept
 	short := false // something named was cut or left out
+	// bytesLeft are the bytes the code may still take; a lot when none
+	// bound it.
+	bytesLeft := func() int {
+		if a.Bytes <= 0 {
+			return 1 << 40
+		}
+		used := 0
+		for _, g := range byPath {
+			if b := g.bytes(); b > 0 {
+				used += b + fileBytes
+			}
+		}
+		return a.Bytes - used
+	}
+	// room is the bytes a file may still take: a file not given yet
+	// weighs fileBytes more.
+	room := func(f *File) int {
+		if f.bytes() == 0 {
+			return bytesLeft() - fileBytes
+		}
+		return bytesLeft()
+	}
 	// give plans a piece; false when nothing of it fits.
 	give := func(w want) bool {
 		f := file(w.file)
@@ -638,17 +747,17 @@ func (p *Picker) Pick(a Ask) Pick {
 			return true
 		}
 		n := w.to - w.from + 1
-		if n > left {
+		if fit := min(left, fitting(f.Lines, w.from, room(f))); n > fit {
 			short = true
-			if !w.cut || left <= 0 {
+			if !w.cut || fit <= 0 {
 				if w.cut {
 					f.Unread = append(f.Unread, Piece{w.from, w.to, w.why})
 				}
 				return false
 			}
 			f.Cut = w.to
-			w.to = w.from + left - 1
-			n = left
+			w.to = w.from + fit - 1
+			n = fit
 		}
 		f.Given = merge(f.Given, Piece{w.from, w.to, w.why})
 		left -= n
@@ -681,15 +790,17 @@ func (p *Picker) Pick(a Ask) Pick {
 	}
 	for _, f := range own {
 		g := file(f)
-		switch extra := len(g.Lines) - g.GivenLines(); {
+		extra := len(g.Lines) - g.GivenLines()
+		fits := extra <= left && g.wholeBytes()-g.bytes() <= room(g)
+		switch {
 		case len(p.given[f]) > 0 && len(g.Given) == 0:
 			g.Above = true // given for an earlier issue: not twice
 		case g.Whole():
-		case slices.Contains(asked, f) && extra <= left: // asked for by name: whole while it fits
+		case slices.Contains(asked, f) && fits: // asked for by name: whole while it fits
 			whole(g)
-		case a.Depth > 0 && p.declare(g, why(f), left+g.GivenLines()):
+		case a.Depth > 0 && p.declare(g, why(f), left+g.GivenLines(), bytesLeft()):
 			left -= g.GivenLines() - g.givenPieces()
-		case extra <= left:
+		case fits:
 			whole(g)
 		default:
 			short = true
@@ -698,7 +809,11 @@ func (p *Picker) Pick(a Ask) Pick {
 	for _, f := range own {
 		g := file(f)
 		if len(g.Given) == 0 && len(g.Decls) == 0 && len(g.Unread) == 0 && !g.Above && left > 0 && len(g.Lines) > 0 {
-			k := min(len(g.Lines), left)
+			k := min(len(g.Lines), left, fitting(g.Lines, 1, room(g)))
+			if k <= 0 {
+				short = true
+				continue
+			}
 			g.Given = []Piece{{1, k, "its first lines"}}
 			left -= k
 		}
@@ -725,7 +840,7 @@ func (p *Picker) Pick(a Ask) Pick {
 		for _, w := range a.Paths {
 			roots = append(roots, p.wordFiles(strings.TrimSpace(work.LineOff(w)), a.Tests)...)
 		}
-		left = p.closure(a, test, roots, order, byPath, file, left)
+		left = p.closure(a, test, roots, order, byPath, file, left, bytesLeft)
 		for _, f := range askedTests {
 			give(want{f, 1, len(p.Lines(f)), askedWhy, true})
 		}
@@ -734,25 +849,29 @@ func (p *Picker) Pick(a Ask) Pick {
 	// 4. The other places naming a name, the rarer first, a few each,
 	// those in the files named first, a third of the budget at most:
 	// what defines the code comes before what uses it.
+	// The code before the docs, every name's (#1152); the component the
+	// issue names first.
 	usesLeft := budget / usesShare
-	for _, n := range rank {
-		dropped := 0
-		for _, inFile := range []bool{true, false} {
-			for _, w := range byName[n].uses {
-				if inNamed(w) != inFile || covered(file(w.file).Given, w.from, w.to) {
+	dropped := map[string]int{}
+	for _, docs := range []bool{false, true} {
+		for _, n := range rank {
+			for _, w := range byNear(byName[n].uses) {
+				if (useRank(w.file) == 2) != docs || covered(file(w.file).Given, w.from, w.to) {
 					continue
 				}
 				size := w.to - w.from + 1
 				if usedIn[n] >= usesMax || size > usesLeft || !give(w) {
-					dropped++
+					dropped[n]++
 					continue
 				}
 				usedIn[n]++
 				usesLeft -= size
 			}
 		}
-		if dropped > 0 {
-			pk.Unshown = append(pk.Unshown, fmt.Sprintf("`%s` (%d more places)", n, dropped))
+	}
+	for _, n := range rank {
+		if dropped[n] > 0 {
+			pk.Unshown = append(pk.Unshown, fmt.Sprintf("`%s` (%d more places)", n, dropped[n]))
 		}
 	}
 	// 5. The test, apart from the code: its own file.
@@ -798,6 +917,57 @@ func useRank(f string) int {
 		return 1
 	}
 	return 0
+}
+
+// bytes are the bytes of the lines given of a file, each with its end
+// of line.
+func (f File) bytes() int {
+	n := 0
+	if len(f.Decls) > 0 {
+		for _, l := range f.Decls {
+			n += len(l) + 1
+		}
+		return n
+	}
+	for _, q := range f.Given {
+		for i := q.From; i <= min(q.To, len(f.Lines)); i++ {
+			n += len(f.Lines[i-1]) + 1
+		}
+	}
+	return n
+}
+
+// wholeBytes are the bytes of a file whole.
+func (f File) wholeBytes() int {
+	n := 0
+	for _, l := range f.Lines {
+		n += len(l) + 1
+	}
+	return n
+}
+
+// fitting is how many of a file's lines from a line on fit in so many
+// bytes.
+func fitting(lines []string, from, bytes int) int {
+	k := 0
+	for i := from; i <= len(lines) && bytes >= len(lines[i-1])+1; i++ {
+		bytes -= len(lines[i-1]) + 1
+		k++
+	}
+	if from > len(lines) {
+		return 1 << 30 // no lines to weigh: the lines' bound alone
+	}
+	return k
+}
+
+// top is the folder a file's path opens on, the component it is in in
+// a project of components; "" for a file at the root.
+func top(f string) string {
+	t, _, ok := strings.Cut(f, "/")
+	if !ok {
+		return ""
+	}
+	return t
 }
 
 // aside says whether a file is beside the project's own code: its tests,
@@ -856,7 +1026,7 @@ func (p *Picker) grep(names []string) map[string][]hit {
 		out, _ := exec.Command("git", args...).Output() // none found: git grep fails
 		words := map[string]*regexp.Regexp{}
 		for _, n := range ask {
-			words[n] = regexp.MustCompile(`\b` + regexp.QuoteMeta(n) + `\b`)
+			words[n] = wordRe(n)
 		}
 		for _, l := range strings.Split(strings.TrimSpace(string(out)), "\n") {
 			l = strings.TrimPrefix(l, p.rev+":")
@@ -881,6 +1051,18 @@ func (p *Picker) grep(names []string) map[string][]hit {
 		out[n] = p.hits[n]
 	}
 	return out
+}
+
+// wordRe matches a name as a word: a route (`/api/x`) opens on no
+// word's edge.
+func wordRe(n string) *regexp.Regexp {
+	edge := func(c byte) string {
+		if c == '_' || c >= '0' && c <= '9' || c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z' {
+			return `\b`
+		}
+		return ""
+	}
+	return regexp.MustCompile(edge(n[0]) + regexp.QuoteMeta(n) + edge(n[len(n)-1]))
 }
 
 // wordFiles are the files a word names: a file, the files a pattern
