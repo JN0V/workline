@@ -51,8 +51,10 @@ Checked against Claude Code 2.1.314; each flag in its `--help`:
   `ai-max-seconds` with the commands it started
   ([the caps](proof.md#the-caps)).
 - **No session kept**: `--no-session-persistence`.
-- **Its prompt**: Claude Code's own, for its tools, then the role's
-  (`--append-system-prompt`).
+- **Its prompt**: Claude Code's own, for its tools, then the part
+  every call of the role shares (`--append-system-prompt`), read back
+  from cache on the next call; the task on stdin
+  ([the prompt](../../../docs/spec/role-contract.md#facets)).
 - **The repository does not configure it**: `--setting-sources user`,
   the person's settings only. The worktree's `.claude/` settings
   (hooks, permissions) and `CLAUDE.md` are not loaded: a hook there
