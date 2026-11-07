@@ -711,7 +711,10 @@ func run(o Options, res *Result) error {
 	askedOnce := false // asked again once already, an answer unread or one post said to mend
 	unasked := false   // a task the agent was not asked, nor answered: what pre gave it read by no one
 	for {
-		res.askedAgain = askedOnce // a size counts on the first call alone (#1160)
+		// A size counts on the first call alone (#1160): one asked again
+		// carries what its first answer needs mended, an unread answer's
+		// or a refused one's (`promote-after`).
+		res.askedAgain = askedOnce || failures > 0
 		a, err := attempt(r, o, ag, taskErr == nil, tier, runDir, env, line, settings, cfg, res)
 		if err != nil {
 			return err
