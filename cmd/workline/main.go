@@ -1294,6 +1294,9 @@ func developCmd(args []string) int {
 	absRoles, _ := filepath.Abs(rolesDir)
 	res := engine.Run(engine.Options{Repo: abs, RolesDir: absRoles, Role: "developer", Event: event, AI: *ai,
 		Forge: *forgeSpec, Target: target, NoApply: *noApply, OpenMergeRequest: event == "issue", Command: "workline develop", Inputs: inputs})
+	if !*noApply && res.Status == verdict.Pass {
+		res.Findings = append(res.Findings, line.CountRuns(nil, 0, []string{res.RunDir})...) // a review round's tokens, on its issue (ADR-0064)
+	}
 	if *asJSON {
 		out, _ := json.MarshalIndent(res, "", "  ")
 		fmt.Println(string(out))
@@ -1321,6 +1324,9 @@ func testRun(repo, roles, ai, forgeSpec, event string, target *forge.Target, noA
 	res := engine.Run(engine.Options{Repo: abs, RolesDir: absRoles, Role: "tester", Event: event, AI: ai,
 		Forge: forgeSpec, Target: target, NoApply: noApply, OpenMergeRequest: event == "issue" || event == "curate",
 		Command: "workline test " + map[bool]string{true: "write", false: event}[event == "issue"]})
+	if !noApply && res.Status == verdict.Pass {
+		res.Findings = append(res.Findings, line.CountRuns(nil, 0, []string{res.RunDir})...) // an answer's tokens, on its issue (ADR-0064)
+	}
 	if asJSON {
 		out, _ := json.MarshalIndent(res, "", "  ")
 		fmt.Println(string(out))
@@ -1762,12 +1768,19 @@ func applyCmd(args []string) int {
 	}
 	res := resume(dirs[0])
 	stopped := len(dirs) - 1 // the last run applied
+	var ran []string         // the runs applied, their folders: their tokens counted (ADR-0064)
+	if res.Status == verdict.Pass {
+		ran = append(ran, res.RunDir)
+	}
 	for i, d := range dirs[1:] {
 		if res.Status != verdict.Pass {
 			stopped = i
 			break
 		}
 		next := resume(d)
+		if next.Status == verdict.Pass {
+			ran = append(ran, next.RunDir)
+		}
 		res.Status, res.Summary, res.RunDir = next.Status, next.Summary, next.RunDir
 		res.Applied = append(res.Applied, next.Applied...)
 		res.Refused = append(res.Refused, next.Refused...)
@@ -1778,6 +1791,15 @@ func applyCmd(args []string) int {
 		}
 	}
 	res.Findings = append(noted, res.Findings...)
+	// A run on a merge request counts on the issue it closes; one from that
+	// merge request's own CI, on that merge request, whatever it names.
+	var counter forge.Forge
+	if *fromMR != 0 {
+		counter, _ = forge.Open(from.Forge, from.Repo)
+	}
+	if *fromMR == 0 || counter != nil {
+		res.Findings = append(res.Findings, line.CountRuns(counter, *fromMR, ran)...)
+	}
 	if states != nil && res.Status == verdict.Pass {
 		keepStates(res, states, *repo)
 	}

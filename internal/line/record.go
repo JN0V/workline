@@ -139,6 +139,10 @@ type Record struct {
 	// calls being lost with its CI job. A run that called no agent adds
 	// none. Reported, never acted on yet (size.go).
 	Spent map[string][]int `json:"spent,omitempty"`
+	// Counted: the runs on a merge request closing the issue already in
+	// Spent, each a short hash of its run folder's name (CountRuns): an
+	// apply resumed counts none twice.
+	Counted []string `json:"counted,omitempty"`
 }
 
 // StateWrite is what the line writes on an issue once its step ran:
@@ -295,7 +299,7 @@ func plural(n int, one, many string) string {
 // before — one, a count started again, for a state further on the line
 // (cfg) than any it reached (#1068).
 func due(cfg *routing.Config, s routing.State, is forge.Issue, labeled, spec string, rec Record, had bool) (Record, bool) {
-	now := Record{State: s.Name, Body: bodyHash(is.Body), Labeled: labeled, Hops: rec.Hops, Spec: spec, Reached: rec.Reached, Spent: rec.Spent}
+	now := Record{State: s.Name, Body: bodyHash(is.Body), Labeled: labeled, Hops: rec.Hops, Spec: spec, Reached: rec.Reached, Spent: rec.Spent, Counted: rec.Counted}
 	if had && rec.State == now.State && rec.Body == now.Body && rec.Labeled == now.Labeled && rec.Spec == now.Spec {
 		return rec, false
 	}

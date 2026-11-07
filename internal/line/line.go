@@ -354,7 +354,14 @@ func RunWith(event string, base engine.Options, gates *Gates) *Result {
 				delete(o.Inputs, WarnInput)
 			}
 			o.Role, o.Event = name, event
+			ran := len(res.Steps)
 			step, status = runRole(res, cfg, o, 0)
+			if !o.NoApply && o.Target != nil && o.Target.Kind == "merge-request" {
+				// Applied here: its tokens counted on the issue the merge
+				// request closes (ADR-0064); judged with no write token,
+				// `workline apply` counts them.
+				res.Findings = append(res.Findings, CountRuns(nil, 0, runDirs(res.Steps[ran:]))...)
+			}
 		}
 		if status == verdict.Pass {
 			continue

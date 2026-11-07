@@ -594,7 +594,10 @@ whose result moves the issue to the next. The table is the routing's
   the record keeps, by role, the fresh tokens of each run its steps made
   that called an agent (`spent`), through every state; its comment says
   the issue's total so far. A step ended `blocked-external` keeps none.
-  `workline size` derives the project's normals from them
+  A run on a merge request (the reviewer, the inspector, the tester's
+  guard and answers, the developer's review rounds) is counted on the
+  issue it closes, when applied: once a run, its id kept (`counted`); an
+  issue with no record counts none. `workline size` derives the project's normals from them
   ([commands](../commands.md#workline-size)). Reported only: nothing
   stops on them yet.
 - **Judged with no write token** (`--no-apply`), the records are left in

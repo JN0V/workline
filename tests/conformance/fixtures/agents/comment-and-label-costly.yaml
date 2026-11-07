@@ -1,0 +1,8 @@
+# comment-and-label, its call saying it used 1500 tokens in and 100 out:
+# 1600 fresh, which the record of the issue the merge request closes
+# counts (ADR-0064, step 2).
+tokens-in: 1500
+tokens-out: 100
+calls:
+  - - comment: "Docs checked against this change."
+    - label: {add: [docs-checked]}

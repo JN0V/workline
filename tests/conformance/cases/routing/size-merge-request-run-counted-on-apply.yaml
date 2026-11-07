@@ -1,0 +1,31 @@
+case: routing/size-merge-request-run-counted-on-apply
+about: >
+  A run on a merge request judged with no write token counts in the
+  record of the issue it closes when it is applied (ADR-0064, step 2),
+  once. The documentalist's run on merge request 1, which fixes #3,
+  spends 1500 tokens in and 100 out; `workline apply` applies it. The
+  record of #3, at 5000 for its developer, adds 1600 to its
+  documentalist's runs and the run's id; the comment says 6.6k so far.
+given:
+  repo: documented
+  setup: ["sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"]
+  forge:
+    issues:
+      - id: 3
+        title: "Sign-in lasts two hours"
+        labels: ["workline:doing"]
+        body: "## Need\n\nUsers stay signed in for two hours.\n"
+        comments: ["**workline's line** last woke the developer on this issue, in its state ready (1 state step so far). 5k fresh tokens spent on it so far. Edited by the engine, not by hand.\n\n<!-- workline:line-record {\"state\":\"ready\",\"body\":\"0a1b2c3d4e5f\",\"hops\":1,\"spent\":{\"developer\":[5000]}} -->\n<!-- workline:sticky=line/state -->"]
+    merge-requests: [{id: 1, branch: workline/developer/3, title: "feat(auth): two hours", body: "Fixes #3", labels: [], comments: []}]
+run: {route: merge-request, input: {range: "HEAD~1..HEAD"}, target: {merge-request: 1}, ai: "fake:comment-and-label-costly", no-apply: true, then: resume}
+expect:
+  status: pass
+  forge:
+    issues:
+      - id: 3
+        comments: 1
+        comment-contains:
+          - "\"spent\":{\"developer\":[5000],\"documentalist\":[1600]}"
+          - "\"counted\":["
+          - "6.6k fresh tokens spent on it so far"
+    merge-requests: [{id: 1, labels: [docs-checked]}]
