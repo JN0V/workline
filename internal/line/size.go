@@ -32,18 +32,21 @@ const SizeTitle = "workline: the normal size of an issue"
 const (
 	sizeKey  = "line/size"    // the sticky comment's key
 	sizeMark = "size-normals" // the normals' line in it, for the steps after to read
-	// sizeWindow: the latest issues done whose records are read, a call
-	// each; sizeMeasured: the issues done of a kind, each with runs
-	// counted, before its own percentile replaces the seed.
+	// sizeWindow: the latest closed issues with the line's record read,
+	// a call each; sizePages: the pages of closed issues read at most to
+	// find them; sizeMeasured: the issues done of a kind, and the runs of
+	// a role, before their own percentile replaces the seed.
 	sizeWindow   = 100
+	sizePages    = 10
 	sizeMeasured = 10
 	// issueSeed: an issue's normal until then, the worst measured round
 	// (385k a bug) rounded up; doubled at the highest effort.
 	issueSeed = 400000
 )
 
-// effortHigh is the highest effort level, which doubles a seed.
-var effortHigh = len(scale.Effort.Names)
+// effortHigh is the highest effort level, which doubles a seed, read
+// once the project's scheme is in use.
+func effortHigh() int { return len(scale.Effort.Names) }
 
 const sizeIntro = `workline's line keeps here the normal size of an issue in this project (ADR-0064): the fresh tokens its runs spent, measured from the line's record on each issue done. Its comment is written again each night, in place. Nothing stops on it yet: it is reported only.
 
@@ -125,10 +128,12 @@ type KindNormals struct {
 	Runs  map[string]Normal `json:"runs"`
 }
 
-// Past is an open issue its runs took past its kind's normal.
+// Past is an open issue its runs took past its kind's normal: its total,
+// or, with Role, one run of that role past the role's normal a run.
 type Past struct {
 	Issue  int    `json:"issue"`
 	Kind   string `json:"kind"`
+	Role   string `json:"role,omitempty"`
 	Spent  int    `json:"spent"`
 	Normal int    `json:"normal"`
 }
@@ -148,9 +153,16 @@ type SizeOptions struct {
 // noKind names the issues no kind label tells.
 const noKind = "(no kind)"
 
+// sized is an issue read with the line's record on it.
+type sized struct {
+	is  forge.Issue
+	rec Record
+}
+
 // Size measures the project's normals from the line's records on its
 // issues done, says the open issues past theirs, and keeps both in one
-// comment on the issue SizeTitle names, unless NoApply.
+// comment on the issue SizeTitle names, unless NoApply. A project with no
+// line of states, or no record read, gets nothing written.
 func Size(o SizeOptions) (*engine.Result, *Sizes) {
 	res := &engine.Result{Status: verdict.Pass}
 	fail := func(err error) (*engine.Result, *Sizes) {
@@ -161,6 +173,14 @@ func Size(o SizeOptions) (*engine.Result, *Sizes) {
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "engine-error", Message: err.Error()})
 		return res, nil
 	}
+	cfg, err := routing.Load(o.Repo)
+	if err != nil {
+		return fail(err)
+	}
+	if len(cfg.States) == 0 {
+		res.Summary = "no line of states here (routing.states): no record to measure, nothing written"
+		return res, nil
+	}
 	f, _, err := openForge(engine.Options{Repo: o.Repo, Forge: o.Forge})
 	if err != nil {
 		return fail(err)
@@ -169,31 +189,50 @@ func Size(o SizeOptions) (*engine.Result, *Sizes) {
 	if !ok {
 		return fail(errors.New("the forge lists no issues: no record to measure"))
 	}
-	cfg, err := routing.Load(o.Repo)
+	recordOf := func(is forge.Issue) (Record, bool, error) {
+		comments, err := b.Comments(forge.Target{Kind: "issue", ID: is.ID})
+		if err != nil {
+			return Record{}, false, err
+		}
+		rec, had := recordIn(comments)
+		return rec, had, nil
+	}
+	doneRead, pages, err := doneRecords(closedPages(b), recordOf, func(is forge.Issue) (bool, error) { return doneByMR(f, b, is) })
 	if err != nil {
 		return fail(err)
 	}
-	all, err := b.AllIssues()
+	if pages >= sizePages {
+		res.Findings = append(res.Findings, verdict.Finding{Rule: "size-window-short", Level: "info",
+			Message: fmt.Sprintf("%d pages of closed issues read, fewer than %d with the line's record among them: the normals stand on those found", pages, sizeWindow)})
+	}
+	openIssues, err := b.Issues()
 	if err != nil {
 		return fail(err)
 	}
-	var done, open []forge.Issue
-	for _, is := range all {
-		switch {
-		case backlog.Tracking(is, ""):
-		case !is.Closed:
-			if _, ok := cfg.StateOf(is.Labels); ok {
-				open = append(open, is)
-			}
-		case is.Reason == "" || is.Reason == "completed":
-			done = append(done, is)
+	var open []forge.Issue
+	for _, is := range openIssues {
+		if _, ok := cfg.StateOf(is.Labels); ok && !backlog.Tracking(is, "") {
+			open = append(open, is)
 		}
 	}
-	sort.Slice(done, func(i, j int) bool { return done[i].ID > done[j].ID })
-	done = done[:min(len(done), sizeWindow)]
+	var openRead []sized
+	for _, is := range open {
+		rec, had, err := recordOf(is)
+		if err != nil {
+			return fail(err)
+		}
+		if had && rec.Fresh() > 0 {
+			openRead = append(openRead, sized{is, rec})
+		}
+	}
+	if len(doneRead) == 0 && len(openRead) == 0 {
+		res.Summary = "no issue holds the line's count of tokens yet: nothing to measure, nothing written"
+		return res, nil
+	}
 	if note := effortScheme(o.Repo, b, open); note != nil {
 		res.Findings = append(res.Findings, *note)
 	}
+	high := effortHigh()
 
 	roles := map[string]bool{}
 	for _, s := range cfg.States {
@@ -201,32 +240,7 @@ func Size(o SizeOptions) (*engine.Result, *Sizes) {
 			roles[s.Role] = true
 		}
 	}
-	type read struct {
-		is  forge.Issue
-		rec Record
-	}
-	records := func(list []forge.Issue) ([]read, error) {
-		var out []read
-		for _, is := range list {
-			comments, err := b.Comments(forge.Target{Kind: "issue", ID: is.ID})
-			if err != nil {
-				return nil, err
-			}
-			if rec, had := recordIn(comments); had && rec.Fresh() > 0 {
-				out = append(out, read{is, rec})
-			}
-		}
-		return out, nil
-	}
-	doneRead, err := records(done)
-	if err != nil {
-		return fail(err)
-	}
-	openRead, err := records(open)
-	if err != nil {
-		return fail(err)
-	}
-	for _, r := range doneRead {
+	for _, r := range append(slices.Clone(doneRead), openRead...) {
 		for name := range r.rec.Spent {
 			roles[name] = true
 		}
@@ -260,39 +274,49 @@ func Size(o SizeOptions) (*engine.Result, *Sizes) {
 			}
 		}
 		kn := KindNormals{Kind: k, Done: len(totals), Issue: Normal{Tokens: issueSeed}, Runs: map[string]Normal{}}
-		measured := len(totals) >= sizeMeasured
-		if measured {
+		if len(totals) >= sizeMeasured {
 			kn.Issue = Normal{Tokens: p85(totals), Measured: true, N: len(totals)}
 		}
 		for name := range roles {
 			kn.Runs[name] = Normal{Tokens: seeds[name]}
-			if measured && len(runs[name]) > 0 {
+			if len(totals) >= sizeMeasured && len(runs[name]) >= sizeMeasured {
 				kn.Runs[name] = Normal{Tokens: p85(runs[name]), Measured: true, N: len(runs[name])}
 			}
 		}
 		byKind[k] = kn
 		sizes.Kinds = append(sizes.Kinds, kn)
 	}
+	// effort scales the seed alone, an issue's and a run's (ADR-0064, §1)
+	limit := func(n Normal, is forge.Issue) int {
+		if !n.Measured && backlog.Effort(is) == high {
+			return 2 * n.Tokens
+		}
+		return n.Tokens
+	}
 	for _, r := range openRead {
 		k := kindOf(r.is)
-		normal := byKind[k].Issue
-		limit := normal.Tokens
-		if !normal.Measured && backlog.Effort(r.is) == effortHigh {
-			limit *= 2 // effort scales the seed alone (ADR-0064, §1)
+		var found []Past
+		if l := limit(byKind[k].Issue, r.is); r.rec.Fresh() > l {
+			found = append(found, Past{Issue: r.is.ID, Kind: k, Spent: r.rec.Fresh(), Normal: l})
 		}
-		if spent := r.rec.Fresh(); spent > limit {
-			p := Past{Issue: r.is.ID, Kind: k, Spent: spent, Normal: limit}
-			sizes.Past = append(sizes.Past, p)
+		for _, name := range slices.Sorted(maps.Keys(r.rec.Spent)) {
+			l := limit(byKind[k].Runs[name], r.is)
+			if top := slices.Max(r.rec.Spent[name]); l > 0 && top > l {
+				found = append(found, Past{Issue: r.is.ID, Kind: k, Role: name, Spent: top, Normal: l})
+			}
+		}
+		for _, p := range found {
 			res.Findings = append(res.Findings, verdict.Finding{Rule: "size-past-normal", Level: "info", Where: fmt.Sprintf("#%d", p.Issue),
 				Message: p.said() + "; reported only, nothing stops on it yet"})
 		}
+		sizes.Past = append(sizes.Past, found...)
 	}
-	sort.Slice(sizes.Past, func(i, j int) bool { return sizes.Past[i].Issue < sizes.Past[j].Issue })
+	sort.SliceStable(sizes.Past, func(i, j int) bool { return sizes.Past[i].Issue < sizes.Past[j].Issue })
 
 	res.Summary = fmt.Sprintf("normals of %d issues done", len(doneRead))
 	past := ""
 	if n := len(sizes.Past); n > 0 {
-		past = fmt.Sprintf("; %d open %s past %s normal", n, plural(n, "issue", "issues"), plural(n, "its", "their"))
+		past = fmt.Sprintf("; %d past %s normal on open issues", n, plural(n, "its", "their"))
 	}
 	if o.NoApply {
 		res.Summary += past
@@ -310,7 +334,92 @@ func Size(o SizeOptions) (*engine.Result, *Sizes) {
 	return res, sizes
 }
 
+// closedPages pages b's closed issues, the last updated first where the
+// forge lists them so, else all of them read once, the highest number
+// first.
+func closedPages(b forge.Backlog) func(int) ([]forge.Issue, bool, error) {
+	if p, ok := b.(forge.ClosedPager); ok {
+		return p.ClosedPage
+	}
+	return func(n int) ([]forge.Issue, bool, error) {
+		if n > 1 {
+			return nil, false, nil
+		}
+		all, err := b.AllIssues()
+		var closed []forge.Issue
+		for _, is := range all {
+			if is.Closed {
+				closed = append(closed, is)
+			}
+		}
+		sort.Slice(closed, func(i, j int) bool { return closed[i].ID > closed[j].ID })
+		return closed, false, err
+	}
+}
+
+// doneRecords reads, the last closed first, the closed issues the line
+// touched — those holding its record —, until sizeWindow of them or
+// sizePages pages; of those, it keeps the ones done (done) whose runs
+// were counted. It says the pages read.
+func doneRecords(page func(int) ([]forge.Issue, bool, error), recordOf func(forge.Issue) (Record, bool, error),
+	done func(forge.Issue) (bool, error)) ([]sized, int, error) {
+	var out []sized
+	touched, n := 0, 0
+	for more := true; more && touched < sizeWindow && n < sizePages; {
+		n++
+		var list []forge.Issue
+		var err error
+		if list, more, err = page(n); err != nil {
+			return nil, n, err
+		}
+		for _, is := range list {
+			if touched >= sizeWindow {
+				break
+			}
+			if backlog.Tracking(is, "") || is.Reason == "not_planned" || is.Reason == "duplicate" {
+				continue
+			}
+			rec, had, err := recordOf(is)
+			if err != nil {
+				return nil, n, err
+			}
+			if !had {
+				continue // the line never touched it
+			}
+			touched++
+			if rec.Fresh() == 0 {
+				continue
+			}
+			ok, err := done(is)
+			if err != nil {
+				return nil, n, err
+			}
+			if ok {
+				out = append(out, sized{is, rec})
+			}
+		}
+	}
+	return out, n, nil
+}
+
+// doneByMR says whether a closed issue was done: closed by a merge
+// request, as the forge links it. The local forge links none: there,
+// closed as completed.
+func doneByMR(f forge.Forge, b forge.Backlog, is forge.Issue) (bool, error) {
+	if _, local := f.(*forge.Local); local {
+		return is.Reason == "" || is.Reason == "completed", nil
+	}
+	closers, err := b.Closers(is.ID)
+	if err != nil {
+		return false, err
+	}
+	return slices.ContainsFunc(closers, func(c forge.Closer) bool { return c.Kind == "pull-request" }), nil
+}
+
 func (p Past) said() string {
+	if p.Role != "" {
+		return fmt.Sprintf("#%d (%s): a %s run of %s, past its normal of %s", p.Issue, p.Kind, p.Role, Tokens(p.Spent), Tokens(p.Normal))
+	}
 	return fmt.Sprintf("#%d (%s): %s, past its normal of %s", p.Issue, p.Kind, Tokens(p.Spent), Tokens(p.Normal))
 }
 
@@ -349,7 +458,7 @@ func runSeeds(o SizeOptions, roles []string) map[string]int {
 func effortScheme(repo string, b forge.Backlog, open []forge.Issue) *verdict.Finding {
 	said := func(err error) *verdict.Finding {
 		return &verdict.Finding{Rule: "size-effort-unread", Level: "info",
-			Message: "the issues' effort is not read, a seed not doubled at effort " + scale.Effort.Name(effortHigh) + ": " + err.Error()}
+			Message: "the issues' effort is not read, a seed not doubled at effort " + scale.Effort.Name(effortHigh()) + ": " + err.Error()}
 	}
 	c, err := role.LoadProjectConfig(repo)
 	if err != nil {
@@ -390,7 +499,7 @@ func sizeComment(s *Sizes, roles []string) string {
 		}
 		b.WriteString("\n")
 	}
-	fmt.Fprintf(&b, "\nA seed: %s an issue, a run its role's `ai-max-tokens`; doubled for an issue of effort %s.\n\n", Tokens(issueSeed), scale.Effort.Name(effortHigh))
+	fmt.Fprintf(&b, "\nA seed: %s an issue, a run its role's `ai-max-tokens`; doubled for an issue of effort %s.\n\n", Tokens(issueSeed), scale.Effort.Name(effortHigh()))
 	b.WriteString("**Open issues past their normal**:")
 	if len(s.Past) == 0 {
 		b.WriteString(" none.\n")

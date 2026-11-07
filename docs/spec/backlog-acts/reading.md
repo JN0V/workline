@@ -22,7 +22,8 @@ which does not ask the agent (`prompt-over-budget`): then no issue is
 taken as read (`unasked` in the run's state) — no "read and left", no
 person's comment answered, the summary saying the agent was not asked
 (#427). An issue workline keeps for its own work (`backlog.Tracking`:
-the old report, the weekly sample's issue under its titles, a role's
+the old report, the weekly sample's issue under its titles, the line's
+"workline: the normal size of an issue" (`workline size`), a role's
 issue kept in place — its body's last line "Kept up to date by the …
 role." —, a demotion of the merge policy, main's findings after a merge
 — its key `workline:main-findings`, or the release dry run's part,

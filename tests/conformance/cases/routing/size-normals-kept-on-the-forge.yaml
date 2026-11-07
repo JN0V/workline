@@ -3,30 +3,37 @@ about: >
   The normal size is measured per project (ADR-0064, step 2): the 85th
   percentile of the fresh tokens its done issues spent, per kind, an
   issue and a run of each role, read from the line's records on the
-  forge. Ten bugs done measure the bug's normal: 91k an issue, the
-  developer's 90k a run. One feature done is too few: its normal is the
-  seed, 400k an issue, a run its role's ai-max-tokens. An issue closed
-  as not planned counts for nothing. Kept in one comment on one issue,
-  written again in place; the open bug #20, at 97k, is said past its
-  normal, #21 is not. Reported only: nothing stops on it.
+  forge. Done is closed by a merge request: ten bugs done measure the
+  bug's normal, 91k an issue, the developer's 90k a run, each from ten
+  runs. One feature done is too few: its normal is the seed, 400k an
+  issue, a run its role's ai-max-tokens. A bug closed as not planned, or
+  closed by hand, counts for nothing; one with no record is not the
+  line's. Kept in one comment on one issue; the open bug #20 is said past
+  its normal, its total and its two runs; #21 is not; the feature #22, of
+  effort High, has its seeds doubled, so it is not. Reported only.
 given:
   repo: backlog
+  config:
+    roles: {product-owner: {settings: {effort: auto}}}
   forge:
     issues:
-      - {id: 1, title: "Bug 1", closed: true, reason: completed, labels: [bug], body: "## Need\n\nFixed.\n", comments: ["<!-- workline:line-record {\"state\":\"ready\",\"body\":\"0a1b2c3d4e5f\",\"hops\":3,\"spent\":{\"developer\":[10000],\"product-owner\":[1000]}} -->\n<!-- workline:sticky=line/state -->"]}
-      - {id: 2, title: "Bug 2", closed: true, reason: completed, labels: [bug], body: "## Need\n\nFixed.\n", comments: ["<!-- workline:line-record {\"state\":\"ready\",\"body\":\"0a1b2c3d4e5f\",\"hops\":3,\"spent\":{\"developer\":[20000],\"product-owner\":[1000]}} -->\n<!-- workline:sticky=line/state -->"]}
-      - {id: 3, title: "Bug 3", closed: true, reason: completed, labels: [bug], body: "## Need\n\nFixed.\n", comments: ["<!-- workline:line-record {\"state\":\"ready\",\"body\":\"0a1b2c3d4e5f\",\"hops\":3,\"spent\":{\"developer\":[30000],\"product-owner\":[1000]}} -->\n<!-- workline:sticky=line/state -->"]}
-      - {id: 4, title: "Bug 4", closed: true, reason: completed, labels: [bug], body: "## Need\n\nFixed.\n", comments: ["<!-- workline:line-record {\"state\":\"ready\",\"body\":\"0a1b2c3d4e5f\",\"hops\":3,\"spent\":{\"developer\":[40000],\"product-owner\":[1000]}} -->\n<!-- workline:sticky=line/state -->"]}
-      - {id: 5, title: "Bug 5", closed: true, reason: completed, labels: [bug], body: "## Need\n\nFixed.\n", comments: ["<!-- workline:line-record {\"state\":\"ready\",\"body\":\"0a1b2c3d4e5f\",\"hops\":3,\"spent\":{\"developer\":[50000],\"product-owner\":[1000]}} -->\n<!-- workline:sticky=line/state -->"]}
-      - {id: 6, title: "Bug 6", closed: true, reason: completed, labels: [bug], body: "## Need\n\nFixed.\n", comments: ["<!-- workline:line-record {\"state\":\"ready\",\"body\":\"0a1b2c3d4e5f\",\"hops\":3,\"spent\":{\"developer\":[60000],\"product-owner\":[1000]}} -->\n<!-- workline:sticky=line/state -->"]}
-      - {id: 7, title: "Bug 7", closed: true, reason: completed, labels: [bug], body: "## Need\n\nFixed.\n", comments: ["<!-- workline:line-record {\"state\":\"ready\",\"body\":\"0a1b2c3d4e5f\",\"hops\":3,\"spent\":{\"developer\":[70000],\"product-owner\":[1000]}} -->\n<!-- workline:sticky=line/state -->"]}
-      - {id: 8, title: "Bug 8", closed: true, reason: completed, labels: [bug], body: "## Need\n\nFixed.\n", comments: ["<!-- workline:line-record {\"state\":\"ready\",\"body\":\"0a1b2c3d4e5f\",\"hops\":3,\"spent\":{\"developer\":[80000],\"product-owner\":[1000]}} -->\n<!-- workline:sticky=line/state -->"]}
-      - {id: 9, title: "Bug 9", closed: true, reason: completed, labels: [bug], body: "## Need\n\nFixed.\n", comments: ["<!-- workline:line-record {\"state\":\"ready\",\"body\":\"0a1b2c3d4e5f\",\"hops\":3,\"spent\":{\"developer\":[90000],\"product-owner\":[1000]}} -->\n<!-- workline:sticky=line/state -->"]}
-      - {id: 10, title: "Bug 10", closed: true, reason: completed, labels: [bug], body: "## Need\n\nFixed.\n", comments: ["<!-- workline:line-record {\"state\":\"ready\",\"body\":\"0a1b2c3d4e5f\",\"hops\":3,\"spent\":{\"developer\":[100000],\"product-owner\":[1000]}} -->\n<!-- workline:sticky=line/state -->"]}
+      - {id: 1, title: "Bug 1", closed: true, reason: completed, closed-by: [{kind: pull-request, ref: "#101", text: "fix: it"}], labels: [bug], body: "## Need\n\nFixed.\n", comments: ["<!-- workline:line-record {\"state\":\"ready\",\"body\":\"0a1b2c3d4e5f\",\"hops\":3,\"spent\":{\"developer\":[10000],\"product-owner\":[1000]}} -->\n<!-- workline:sticky=line/state -->"]}
+      - {id: 2, title: "Bug 2", closed: true, reason: completed, closed-by: [{kind: pull-request, ref: "#102", text: "fix: it"}], labels: [bug], body: "## Need\n\nFixed.\n", comments: ["<!-- workline:line-record {\"state\":\"ready\",\"body\":\"0a1b2c3d4e5f\",\"hops\":3,\"spent\":{\"developer\":[20000],\"product-owner\":[1000]}} -->\n<!-- workline:sticky=line/state -->"]}
+      - {id: 3, title: "Bug 3", closed: true, reason: completed, closed-by: [{kind: pull-request, ref: "#103", text: "fix: it"}], labels: [bug], body: "## Need\n\nFixed.\n", comments: ["<!-- workline:line-record {\"state\":\"ready\",\"body\":\"0a1b2c3d4e5f\",\"hops\":3,\"spent\":{\"developer\":[30000],\"product-owner\":[1000]}} -->\n<!-- workline:sticky=line/state -->"]}
+      - {id: 4, title: "Bug 4", closed: true, reason: completed, closed-by: [{kind: pull-request, ref: "#104", text: "fix: it"}], labels: [bug], body: "## Need\n\nFixed.\n", comments: ["<!-- workline:line-record {\"state\":\"ready\",\"body\":\"0a1b2c3d4e5f\",\"hops\":3,\"spent\":{\"developer\":[40000],\"product-owner\":[1000]}} -->\n<!-- workline:sticky=line/state -->"]}
+      - {id: 5, title: "Bug 5", closed: true, reason: completed, closed-by: [{kind: pull-request, ref: "#105", text: "fix: it"}], labels: [bug], body: "## Need\n\nFixed.\n", comments: ["<!-- workline:line-record {\"state\":\"ready\",\"body\":\"0a1b2c3d4e5f\",\"hops\":3,\"spent\":{\"developer\":[50000],\"product-owner\":[1000]}} -->\n<!-- workline:sticky=line/state -->"]}
+      - {id: 6, title: "Bug 6", closed: true, reason: completed, closed-by: [{kind: pull-request, ref: "#106", text: "fix: it"}], labels: [bug], body: "## Need\n\nFixed.\n", comments: ["<!-- workline:line-record {\"state\":\"ready\",\"body\":\"0a1b2c3d4e5f\",\"hops\":3,\"spent\":{\"developer\":[60000],\"product-owner\":[1000]}} -->\n<!-- workline:sticky=line/state -->"]}
+      - {id: 7, title: "Bug 7", closed: true, reason: completed, closed-by: [{kind: pull-request, ref: "#107", text: "fix: it"}], labels: [bug], body: "## Need\n\nFixed.\n", comments: ["<!-- workline:line-record {\"state\":\"ready\",\"body\":\"0a1b2c3d4e5f\",\"hops\":3,\"spent\":{\"developer\":[70000],\"product-owner\":[1000]}} -->\n<!-- workline:sticky=line/state -->"]}
+      - {id: 8, title: "Bug 8", closed: true, reason: completed, closed-by: [{kind: pull-request, ref: "#108", text: "fix: it"}], labels: [bug], body: "## Need\n\nFixed.\n", comments: ["<!-- workline:line-record {\"state\":\"ready\",\"body\":\"0a1b2c3d4e5f\",\"hops\":3,\"spent\":{\"developer\":[80000],\"product-owner\":[1000]}} -->\n<!-- workline:sticky=line/state -->"]}
+      - {id: 9, title: "Bug 9", closed: true, reason: completed, closed-by: [{kind: pull-request, ref: "#109", text: "fix: it"}], labels: [bug], body: "## Need\n\nFixed.\n", comments: ["<!-- workline:line-record {\"state\":\"ready\",\"body\":\"0a1b2c3d4e5f\",\"hops\":3,\"spent\":{\"developer\":[90000],\"product-owner\":[1000]}} -->\n<!-- workline:sticky=line/state -->"]}
+      - {id: 10, title: "Bug 10", closed: true, reason: completed, closed-by: [{kind: pull-request, ref: "#110", text: "fix: it"}], labels: [bug], body: "## Need\n\nFixed.\n", comments: ["<!-- workline:line-record {\"state\":\"ready\",\"body\":\"0a1b2c3d4e5f\",\"hops\":3,\"spent\":{\"developer\":[100000],\"product-owner\":[1000]}} -->\n<!-- workline:sticky=line/state -->"]}
       - {id: 11, title: "Not planned", closed: true, reason: not_planned, labels: [bug], body: "## Need\n\nNo.\n", comments: ["<!-- workline:line-record {\"state\":\"ready\",\"body\":\"0a1b2c3d4e5f\",\"hops\":3,\"spent\":{\"developer\":[9000000],\"product-owner\":[1000]}} -->\n<!-- workline:sticky=line/state -->"]}
-      - {id: 30, title: "Export to CSV", closed: true, reason: completed, labels: [enhancement], body: "## Need\n\nCSV.\n", comments: ["<!-- workline:line-record {\"state\":\"ready\",\"body\":\"0a1b2c3d4e5f\",\"hops\":3,\"spent\":{\"developer\":[600000],\"product-owner\":[1000]}} -->\n<!-- workline:sticky=line/state -->"]}
+      - {id: 12, title: "Closed by hand", closed: true, reason: completed, labels: [bug], body: "## Need\n\nGone.\n", comments: ["<!-- workline:line-record {\"state\":\"ready\",\"body\":\"0a1b2c3d4e5f\",\"hops\":3,\"spent\":{\"developer\":[8000000],\"product-owner\":[1000]}} -->\n<!-- workline:sticky=line/state -->"]}
+      - {id: 13, title: "Old, before the line", closed: true, reason: completed, closed-by: [{kind: pull-request, ref: "#113", text: "fix: it"}], labels: [bug], body: "## Need\n\nOld.\n", comments: []}
+      - {id: 30, title: "Export to CSV", closed: true, reason: completed, closed-by: [{kind: pull-request, ref: "#130", text: "fix: it"}], labels: [enhancement], body: "## Need\n\nCSV.\n", comments: ["<!-- workline:line-record {\"state\":\"ready\",\"body\":\"0a1b2c3d4e5f\",\"hops\":3,\"spent\":{\"developer\":[600000]}} -->\n<!-- workline:sticky=line/state -->"]}
       - {id: 20, title: "Rows lost", labels: [bug, "workline:ready"], body: "## Need\n\nRows lost.\n", comments: ["<!-- workline:line-record {\"state\":\"ready\",\"body\":\"0a1b2c3d4e5f\",\"hops\":3,\"spent\":{\"developer\":[95000],\"product-owner\":[2000]}} -->\n<!-- workline:sticky=line/state -->"]}
       - {id: 21, title: "Totals wrong", labels: [bug, "workline:ready"], body: "## Need\n\nTotals.\n", comments: ["<!-- workline:line-record {\"state\":\"ready\",\"body\":\"0a1b2c3d4e5f\",\"hops\":3,\"spent\":{\"developer\":[40000],\"product-owner\":[1000]}} -->\n<!-- workline:sticky=line/state -->"]}
+      - {id: 22, title: "Import from XML", labels: [enhancement, effort/high, "workline:ready"], body: "## Need\n\nXML.\n", comments: ["<!-- workline:line-record {\"state\":\"ready\",\"body\":\"0a1b2c3d4e5f\",\"hops\":3,\"spent\":{\"developer\":[700000]}} -->\n<!-- workline:sticky=line/state -->"]}
 run: {size: []}
 expect:
   status: pass
@@ -40,4 +47,6 @@ expect:
           - "| bug | 10 | 91k (p85) | 90k (p85) | 1k (p85) | 300k (seed) |"
           - "| feature | 1 | 400k (seed) | 500k (seed) | none (no ai-max-tokens) | 300k (seed) |"
           - "#20 (bug): 97k, past its normal of 91k"
-        comment-lacks: ["#21", "9000k"]
+          - "#20 (bug): a developer run of 95k, past its normal of 90k"
+          - "#20 (bug): a product-owner run of 2k, past its normal of 1k"
+        comment-lacks: ["#21", "#22", "9000k", "8000k"]

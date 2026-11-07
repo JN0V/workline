@@ -141,6 +141,19 @@ type Closer struct {
 	Text string `json:"text,omitempty"` // its title and description, or the commit's message
 }
 
+// ClosedPager is a forge that lists its closed issues a page at a time,
+// the last updated first: a reader wanting the latest only stops paging
+// (ADR-0064). GitHub, GitLab and the simulated forge are; the others are
+// read whole (AllIssues).
+type ClosedPager interface {
+	// ClosedPage lists page n, from 1, of the closed issues, merge
+	// requests left out, the last updated first; more says a page follows.
+	ClosedPage(n int) (issues []Issue, more bool, err error)
+}
+
+// ClosedPageSize is how many issues a page of ClosedPage holds at most.
+const ClosedPageSize = 100
+
 // Note is a comment with who wrote it: what a reply decides counts only
 // from the right people (ADR-0021).
 type Note struct {

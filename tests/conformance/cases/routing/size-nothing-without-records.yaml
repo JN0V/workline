@@ -1,0 +1,18 @@
+case: routing/size-nothing-without-records
+about: >
+  `workline size` writes nothing where the line keeps no count (ADR-0064,
+  step 2): issues closed and open, none holding the line's record. No
+  issue is opened for the normals; it says why.
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 1, title: "Old bug", closed: true, reason: completed, closed-by: [{kind: pull-request, ref: "#9", text: "fix"}], labels: [bug], body: "## Need\n\nFixed.\n", comments: []}
+      - {id: 2, title: "Rows lost", labels: [bug, "workline:ready"], body: "## Need\n\nRows lost.\n", comments: []}
+run: {size: []}
+expect:
+  status: pass
+  summary: "no issue holds the line's count of tokens yet: nothing to measure, nothing written"
+  forge:
+    issues:
+      - {id: 3, absent: true}

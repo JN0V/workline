@@ -1,0 +1,19 @@
+case: routing/size-nothing-without-a-line
+about: >
+  `workline size` writes nothing in a project with no line of states
+  (ADR-0064, step 2), even with a record on an issue: no issue is opened
+  for the normals; it says why.
+given:
+  repo: backlog
+  config:
+    routing: {states: []}
+  forge:
+    issues:
+      - {id: 1, title: "Old bug", closed: true, reason: completed, closed-by: [{kind: pull-request, ref: "#9", text: "fix"}], labels: [bug], body: "## Need\n\nFixed.\n", comments: ["<!-- workline:line-record {\"state\":\"ready\",\"body\":\"0a1b2c3d4e5f\",\"hops\":3,\"spent\":{\"developer\":[5000]}} -->\n<!-- workline:sticky=line/state -->"]}
+run: {size: []}
+expect:
+  status: pass
+  summary: "no line of states here"
+  forge:
+    issues:
+      - {id: 2, absent: true}

@@ -139,6 +139,31 @@ func (g *github) issues(state string, filters ...string) ([]Issue, error) {
 	return all, err
 }
 
+// ClosedPage lists one page of the closed issues, the last updated first:
+// one call, its pull requests left out.
+func (g *github) ClosedPage(n int) ([]Issue, bool, error) {
+	out, err := g.api(fmt.Sprintf("repos/{owner}/{repo}/issues?state=closed&sort=updated&direction=desc&per_page=%d&page=%d", ClosedPageSize, n),
+		"--jq", ".[] | {id: .number, title, body: (.body // \"\"), labels: [.labels[].name], author: .user.login, reason: (.state_reason // \"\"), pr: (.pull_request != null)}")
+	if err != nil {
+		return nil, false, err
+	}
+	found, err := lines[struct {
+		Issue
+		PR bool `json:"pr"`
+	}](out)
+	if err != nil {
+		return nil, false, err
+	}
+	var all []Issue
+	for _, f := range found {
+		if !f.PR {
+			f.Closed = true
+			all = append(all, f.Issue)
+		}
+	}
+	return all, len(found) == ClosedPageSize, nil
+}
+
 // subIssues lists a parent's sub-issues, open or closed, by number; with
 // repo (its repository_url), only those of the same repository — GitHub
 // allows a sub-issue from another, whose number means another issue here.

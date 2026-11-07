@@ -180,15 +180,23 @@ The normal size of an issue in this project
 with no agent; run each night by gardening's applying job, or by hand.
 
 - **Read**: the line's record on each issue, the fresh tokens of each
-  run by role ([routing](spec/routing.md#once-a-state-the-record)); the
-  last 100 issues closed as done, and the open ones in a state.
+  run by role, its merge requests' runs too
+  ([routing](spec/routing.md#once-a-state-the-record)).
+  - The closed issues, the last updated first, until 100 the line
+    touched (those with its record), 10 pages at most.
+  - Done: closed by a merge request, as the forge links it; on the
+    local forge, closed as completed.
+  - The open issues in a state.
 - **The normals**, per kind (bug, feature, task): an issue's total and
   a run of each role, the 85th percentile of the issues done.
-- **The seed**, until 10 issues of a kind are done: 400k an issue, a run
-  its role's `ai-max-tokens`; doubled for an issue of effort High.
+- **The seed**, until 10 issues of a kind are done, or 10 runs of a
+  role: 400k an issue, a run its role's `ai-max-tokens`; both doubled
+  for an issue of effort High.
 - **Kept** in one comment on the issue "workline: the normal size of an
   issue", written again in place, with the open issues past their
-  normal. `--no-apply` writes nothing.
+  normal, their total or a run. `--no-apply` writes nothing.
+- **Nothing written** with no line of states (`routing.states`), or no
+  issue holding the line's count yet.
 - **Reported only**: nothing stops on them yet.
 - `--forge`, `--json`, `--summary` as for `follow`.
 
