@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/JN0V/workline/internal/forge"
 )
 
 // A quote is found at the lines that hold it, not from an earlier line that
@@ -208,5 +210,29 @@ func TestAskedBefore(t *testing.T) {
 	quoted := "> " + strings.ReplaceAll(comments[0], "\n", "\n> ") + "\n\nSince Monday."
 	if e := ReadExchange([]string{comments[0], quoted}, "product-owner"); e.Rounds != 1 || !e.Answered {
 		t.Errorf("exchange with a quoted ask = %+v, want one round, answered", e)
+	}
+}
+
+// A first run's Scope stays left out though every file its agent named was
+// given (#970): only a run again for that code, the input `needs`, keeps
+// it (#1146). The C++ trial's #54: NTP.h and NTP_HAL.h named, both given.
+func TestScopeKeptOnARunAgainOnly(t *testing.T) {
+	named := []string{"DomoticsCore-NTP/include/DomoticsCore/NTP.h", "DomoticsCore-NTP/include/DomoticsCore/NTP_HAL.h"}
+	plan := func(runAgain bool) *Plan {
+		return &Plan{
+			config:     Config{Scope: []int{54}, CodeGiven: map[int][]string{54: named}, RunAgain: runAgain},
+			codeFirst:  map[int]bool{54: true},
+			firstNamed: map[int][]string{54: named},
+			issues:     map[int]forge.Issue{54: {ID: 54, Title: "NTP: \"Sync now\" reports success when no server answers", Body: "Call `syncNow()`."}},
+			ledger:     &Ledger{States: map[int]*State{}},
+		}
+	}
+	c := Proposal{Do: "refine", Issue: 54, Scope: "- `DomoticsCore-NTP/include/DomoticsCore/NTP_HAL.h`"}
+	repo := t.TempDir()
+	if why := plan(false).scopeUnread(repo, c); why == "" {
+		t.Error("a first run, every named file given: its Scope was kept; want it left out (scope-unread)")
+	}
+	if why := plan(true).scopeUnread(repo, c); why != "" {
+		t.Errorf("a run again, every named file given: its Scope was left out: %s", why)
 	}
 }
