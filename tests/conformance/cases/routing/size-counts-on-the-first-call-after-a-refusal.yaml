@@ -1,0 +1,18 @@
+case: routing/size-counts-on-the-first-call-after-a-refusal
+about: >
+  A size error is the input's own size, said on the first call alone
+  (#1160): a role whose refused answer is asked again (`promote-after` 1)
+  has a task of a few lines, well within its context budget of 3,000
+  tokens. Its first answer is refused with a finding of about 4,300
+  characters; asked again with that finding, the prompt is past the
+  budget. That call is not made, and said as one asked again over the
+  budget — never a machine error of size, which blocks the issue with no
+  run again.
+given:
+  repo: basic
+run: {role: refused-past-its-budget, event: schedule, ai: "cmd:cat > /dev/null; echo '[]'"}
+expect:
+  agent-calls: 1
+  findings:
+    - {rule: prompt-over-budget-asked-again, level: warn, message: "over the role's budget of 3000: the task with what its first answer needs mended; not asked again"}
+  no-findings: [{rule: prompt-over-budget}]

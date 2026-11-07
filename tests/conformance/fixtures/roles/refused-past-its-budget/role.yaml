@@ -1,0 +1,15 @@
+contract: 1
+name: refused-past-its-budget
+mission: A role of the tests only — its check refuses every answer with a long finding — so a task that fits its context budget, asked again after a refusal with that finding, goes over it.
+
+events: [schedule]
+requires: [git]
+model: {capability: writing, tier: standard, effort: medium, promote-after: 1}
+context:
+  knowledge: []
+  budget: 3000
+duties:
+  reads: ["**"]
+  writes: [CHANGELOG.md]
+intentions: [patch, note]
+without-ai: pass

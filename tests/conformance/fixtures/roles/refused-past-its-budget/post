@@ -1,0 +1,15 @@
+#!/bin/sh
+# An answer read is refused with a finding of about 4,300 characters: the
+# feedback alone is past the context budget. No answer to judge: a pass.
+out="$WORKLINE_RUN_DIR/out"
+if [ "$WORKLINE_AGENT_ANSWERED" = true ]; then
+  long=$(awk 'BEGIN { for (i = 1; i <= 120; i++) printf "the entry must name the CSV export. " }')
+  cat > "$out/verdict.yaml" <<YAML
+status: block
+summary: the changelog entry is refused
+findings:
+  - {rule: wrong-entry, where: CHANGELOG.md, message: "$long"}
+YAML
+  exit 1
+fi
+echo "status: pass" > "$out/verdict.yaml"
