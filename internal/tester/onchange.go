@@ -92,7 +92,7 @@ func OnChange(repo, rev string, patches []intent.Intention, s Settings, deadline
 	s.deadline = deadline
 	var pkgs []string
 	if strings.Contains(scope.Command, "{packages}") {
-		if pkgs = Packages(tree, scope.Files, s.Paths); len(pkgs) > 0 {
+		if pkgs = Packages(tree, scope.Files, s.Paths, s.ModuleFiles); len(pkgs) > 0 {
 			s.Command = strings.ReplaceAll(scope.Command, "{packages}", strings.Join(pkgs, " "))
 		}
 	}
@@ -130,7 +130,16 @@ func OnChange(repo, rev string, patches []intent.Intention, s Settings, deadline
 // sorted: each file's own folder, else the nearest above it holding a
 // file a test pattern names (`**/*_test.go`; not `tests/**`, which names
 // a folder). A file with none above it adds none: no test to run there.
-func Packages(tree string, files, patterns []string) []string {
+//
+// modules, the tester's module-files, set: the build modules instead
+// (#1176), as Gradle or Maven take them: the nearest folder above each
+// file holding a file one of them names (`build.gradle.kts`, `pom.xml`,
+// `*.csproj`), the root's left out: a file of the root module alone
+// runs the whole suite.
+func Packages(tree string, files, patterns, modules []string) []string {
+	if len(modules) > 0 {
+		return buildModules(tree, files, modules)
+	}
 	var named []string
 	for _, p := range patterns {
 		if path.Base(p) != "**" {
@@ -160,6 +169,36 @@ func Packages(tree string, files, patterns []string) []string {
 				break
 			}
 			if dir == "." || dir == "/" {
+				break
+			}
+		}
+	}
+	slices.Sort(out)
+	return slices.Compact(out)
+}
+
+// buildModules are the folders below the root nearest each file that
+// hold a file names matches by its base name, `./`-prefixed and sorted.
+func buildModules(tree string, files, names []string) []string {
+	holds := map[string]bool{}
+	module := func(dir string) bool {
+		if h, ok := holds[dir]; ok {
+			return h
+		}
+		entries, _ := os.ReadDir(filepath.Join(tree, filepath.FromSlash(dir)))
+		holds[dir] = slices.ContainsFunc(entries, func(e os.DirEntry) bool {
+			return !e.IsDir() && slices.ContainsFunc(names, func(n string) bool {
+				ok, _ := path.Match(n, e.Name())
+				return ok
+			})
+		})
+		return holds[dir]
+	}
+	var out []string
+	for _, f := range files {
+		for dir := path.Dir(path.Clean(f)); dir != "." && dir != "/"; dir = path.Dir(dir) {
+			if module(dir) {
+				out = append(out, pkgArg(dir))
 				break
 			}
 		}

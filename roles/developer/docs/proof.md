@@ -54,6 +54,9 @@ flowchart LR
   tests. Each file counts its own folder, else the nearest above it
   holding a test file (`**/*_test.go`, not `tests/**`). A conformance
   case counts its runner's package.
+- **Build modules**, with the tester's `module-files` set
+  (`build.gradle.kts`, `pom.xml`): the nearest folder holding one, the
+  root's left out ([#1176](https://github.com/JN0V/workline/issues/1176)).
 - **The whole suite stays**: the pull request's own CI runs it. A
   package that only imports a touched one is proven there, not here.
 - **Whole here too**, said in the Verification and the record: no
