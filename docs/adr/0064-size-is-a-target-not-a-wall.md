@@ -36,7 +36,7 @@
 ```mermaid
 flowchart LR
   ready["<b>At ready</b><br/>size predicted"] -->|too big| po
-  run["<b>A run</b><br/>crosses normal"] -->|needs-input: size| po["<b>Product owner</b><br/>once a state entry"]
+  run["<b>A run</b><br/>crosses normal"] -->|needs-input: size| po["<b>Product owner</b><br/>once a state an issue"]
   po --> split["<b>Split</b><br/>children, fresh budgets"]
   po --> tier["<b>Grant large</b><br/>×2, a label"]
   tier --> wall["<b>Backstop</b><br/>4× normal an issue: a person"]
@@ -82,7 +82,7 @@ flowchart LR
   - **The work is kept**: the developer's Draft and branch stay; a
     child may start from them.
 
-### 3. The product owner decides, once a state entry
+### 3. The product owner decides, once a state an issue
 
 - **Split** ([ADR-0022]) when the parts pass their Verification apart.
   Each child is sliced vertically, keeps its own Verification, and
@@ -100,8 +100,12 @@ flowchart LR
 ### 4. No loops
 
 - **The tier only goes up**: normal, large, x-large.
-- **One size escalation a state entry**: a second crossing in the same
-  state entry, or a crossing at the top tier, is Waiting(person).
+- **One size escalation a state, per issue** (amended 2026-11-08, was
+  "a state entry"): a second crossing from a state the product owner
+  was asked from already, or a crossing at the top tier, is
+  Waiting(person). The product owner sending the issue back makes a new
+  state entry, and leaving Blocked resets the hops: "once a state
+  entry" could loop.
 - **Split depth 1**: a child may be granted a tier, never split.
 - **The size exchange counts** in the judgement rounds of
   [ADR-0063 §5](0063-every-open-issue-is-due-waiting-or-done.md#5-one-pure-function-decides);
