@@ -108,8 +108,10 @@ settings:
   # naming what the code lacks (the name in a group `name`, else the
   # first quoted word), and the tests a file declares. Every error in a
   # test of the change and a missing name the issue names: red, the tests
-  # named from their files; any other error blocks (build-broken). Go's
-  # here; others in docs/missing-name.md.
+  # named from their files; any other error blocks (build-broken). An
+  # absolute path, or a file:// URI, under the checkout is read from the
+  # root. Go's, Kotlin's (Gradle's `e:` lines, Kotlin 2 and 1), javac's
+  # and Gradle's build files here; others in docs/missing-name.md.
   build-errors:
     - error: '^(?:\./)?(?P<file>[^\s:]+\.go):\d+:\d+: (?P<message>.+)$'
       missing-name:
@@ -117,6 +119,19 @@ settings:
         - '^\S+ undefined \(type .+ has no field or method (?P<name>\w+)'
         - '^unknown field (?P<name>\w+) in struct literal'
       test-name: '(?m)^func (Test\w*)\(\w+ \*testing\.T\)'
+    - error: '^e: (?P<file>.+?\.kts?)(?::\d+:\d+:?|: \(\d+, \d+\):) (?P<message>.+)$'
+      missing-name:
+        - '^Unresolved reference ''(?P<name>[^'']+)'''
+        - '^Unresolved reference: (?P<name>\S+)'
+        - '^No parameter with name ''(?P<name>[^'']+)'' found'
+        - '^Cannot find a parameter with this name: (?P<name>\S+)'
+      test-name: '(?m)@Test\b(?:\([^)]*\))?\s+(?:@\w+(?:\([^)]*\))?\s+)*(?:(?:public|internal)\s+)?fun\s+(?:`([^`]+)`|(\w+))\s*\('
+    - error: '^(?P<file>\S.*?\.java):\d+: error: (?P<message>.+)$'
+      missing-name:
+        - '^cannot find symbol$'
+      name-line: '^\s*symbol:\s+\w+\s+(?P<name>\w+)'
+      test-name: '(?m)@Test\b(?:\([^)]*\))?\s+(?:@\w+(?:\([^)]*\))?\s+)*(?:(?:public|protected|private|static|final)\s+)*void\s+(\w+)\s*\('
+    - error: '^(?:Build|Settings) file ''(?P<file>[^'']+)'' line: \d+(?P<message>)$'
   # An objection's thread (ADR-0055): the tester answers it this many
   # times; the builder still objecting after the last, the product owner
   # settles it, the issue sent back to it; objected to again after that,

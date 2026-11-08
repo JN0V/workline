@@ -1,0 +1,22 @@
+case: tester/kotlin-missing-name-beside-code
+about: >
+  A Kotlin change with its code and its test: on the base the test calls
+  a function the base lacks, Gradle's error naming it by an absolute
+  path; the head builds and runs the test green, JUnit 5 naming it
+  `two by three()`. Red, then green, with no warning that tests were not
+  built (#1177, #1178).
+given:
+  repo: kotlin-tested
+  setup:
+    - git checkout -q -b feat/mul
+    - |
+      printf 'fun mul(a: Int, b: Int) = a * b\n' >> calc/src/main/kotlin/calc/Calc.kt
+    - |
+      printf 'package calc\n\nimport org.junit.jupiter.api.Test\n\nclass MulTest {\n    @Test\n    fun `two by three`() {\n        check(mul(2, 3) == 6)\n    }\n}\n' > calc/src/test/kotlin/calc/MulTest.kt && git add . && git commit -qm "feat: multiply"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+run: {test: [check, --base, main]}
+expect:
+  status: pass
+  summary: "1 new test, red on the base, green on the head (1 not built there, a missing name)"
+  no-findings: [{rule: tests-not-built, where: junit.xml}]
