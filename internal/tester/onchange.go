@@ -117,7 +117,8 @@ func OnChange(repo, rev string, patches []intent.Intention, s Settings, deadline
 			o.Missing = MissingTools(r.output)
 		}
 		if o.Exit != "" {
-			o.Exit += ": " + strings.TrimSpace(tail(r.output, 5))
+			// The compiler's lines first, then the tail (#1209).
+			o.Exit += ": " + errorLines(r.output, s.BuildErrors, 5)
 		}
 		if _, ok := o.Passes(scope.Test); !o.Green() || scope.Test != "" && !ok {
 			break

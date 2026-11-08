@@ -66,17 +66,17 @@ func TestSortKnockOnsNarrow(t *testing.T) {
 	}
 }
 
-// What a failed run with no report says went wrong: the rows' lines, else
-// the lines saying an error, never one saying there is none.
+// What a failed run says went wrong: the rows' lines, else the lines
+// saying an error, never one saying there is none; then its last lines.
 func TestErrorLines(t *testing.T) {
 	rows := []BuildErrors{{Error: `^e: (?P<file>.+?\.kt):\d+:\d+ (?P<message>.+)$`}}
-	if got := errorLines("> Task :a\ne: a/T.kt:1:2 Boom\nBUILD FAILED in 8s\n", rows); got != "its errors: e: a/T.kt:1:2 Boom" {
+	if got := errorLines("> Task :a\ne: a/T.kt:1:2 Boom\nBUILD FAILED in 8s\n", rows, 1); got != "its errors: e: a/T.kt:1:2 Boom; its output ends: BUILD FAILED in 8s" {
 		t.Errorf("rows: %q", got)
 	}
-	if got := errorLines("No error found\nerror: kapt failed\nBUILD FAILED\n", rows); got != "its error lines: error: kapt failed" {
+	if got := errorLines("No error found\nerror: kapt failed\nBUILD FAILED\n", rows, 1); got != "its error lines: error: kapt failed; its output ends: BUILD FAILED" {
 		t.Errorf("error lines: %q", got)
 	}
-	if got := errorLines("No error found\nBUILD FAILED\n", rows); got != "its output ends: No error found / BUILD FAILED" {
+	if got := errorLines("No error found\nBUILD FAILED\n", rows, 10); got != "no error line in its output; its output ends: No error found / BUILD FAILED" {
 		t.Errorf("tail: %q", got)
 	}
 }

@@ -41,6 +41,10 @@ flowchart LR
   error the line runs again
   ([#1083](https://github.com/JN0V/workline/issues/1083);
   [the record](../../../docs/spec/routing.md#once-a-state-the-record)).
+- **The command's failure quoted**: the compiler's lines first, as the
+  tester's `build-errors` rows read them, then the build tool's last
+  lines; none read, the reason says so
+  ([#1209](https://github.com/JN0V/workline/issues/1209)).
 - **Not run whole**: no `test-command`, a patch that does not apply, no
   report or one naming no test: not green, never a pass.
 

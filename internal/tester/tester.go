@@ -551,7 +551,7 @@ func runIn(tree string, s Settings, where string) (ran, *verdict.Finding) {
 		// Its output kept: the compiler's lines may say why (#1192).
 		return ran{output: out.String(), failure: said, results: map[string]result{}, suite: map[string]string{}, classless: map[string]bool{}},
 			&verdict.Finding{Rule: "report-missing", Where: s.Report,
-				Message: fmt.Sprintf("the test command wrote no report %s (%s); %s", where, said, errorLines(out.String(), s.BuildErrors))}
+				Message: fmt.Sprintf("the test command wrote no report %s (%s); %s", where, said, errorLines(out.String(), s.BuildErrors, 10))}
 	}
 	rep := ran{output: out.String(), results: map[string]result{}, suite: map[string]string{}, classless: map[string]bool{}, reports: found}
 	if runErr != nil {
@@ -653,9 +653,10 @@ var errorLine = regexp.MustCompile(`(?i)^(?:e: |error\b|failure:|\S+:\d+(?::\d+)
 
 // errorLines is what a command's output says went wrong, as a reason
 // quotes it: the error lines the build-errors rows read, else the lines
-// saying an error, else its last lines (#1192: Gradle's last lines say
-// only BUILD FAILED, the compiler's above them say why).
-func errorLines(out string, list []BuildErrors) string {
+// saying an error, then its last n lines (#1192, #1209: Gradle's last
+// lines say only BUILD FAILED, the compiler's above them say why). With
+// no error line, it says so, its last lines kept.
+func errorLines(out string, list []BuildErrors, n int) string {
 	rules, _ := compileBuildErrors(list)
 	var read, said []string
 	for _, line := range strings.Split(out, "\n") {
@@ -676,13 +677,14 @@ func errorLines(out string, list []BuildErrors) string {
 		}
 		return strings.Join(l, " / ")
 	}
+	ends := "; its output ends: " + tail(out, n)
 	switch {
 	case len(read) > 0:
-		return "its errors: " + quote(read)
+		return "its errors: " + quote(read) + ends
 	case len(said) > 0:
-		return "its error lines: " + quote(said)
+		return "its error lines: " + quote(said) + ends
 	}
-	return "its output ends: " + tail(out, 10)
+	return "no error line in its output" + ends
 }
 
 // changedLines is the lines a diff adds or removes, never its headers
