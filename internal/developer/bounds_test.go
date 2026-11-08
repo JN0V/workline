@@ -484,6 +484,10 @@ func TestScopeNamedReadsNamesWithTheirModules(t *testing.T) {
 		"feature/tracing/src/main/kotlin/t/Model.kt",
 		"feature/editor/src/main/kotlin/e/Model.kt",
 		"feature/tracing/src/test/kotlin/t/ModelTest.kt",
+		"core/overlay/docs/MatrixUtils.md",
+		"core/overlay/src/main/res/Grid.xml",
+		"native/grid/Grid.h", "native/grid/Grid.cpp",
+		"README.md",
 	}
 	for _, c := range []struct {
 		name, scope string
@@ -498,6 +502,8 @@ func TestScopeNamedReadsNamesWithTheirModules(t *testing.T) {
 		{"a name several files have, no module", "- `build.gradle.kts`.", nil},
 		{"new file in a module", "- core:overlay: a new `CompositionGrid.kt`.", []string{"core/overlay/**/CompositionGrid.kt"}},
 		{"new file, no module", "- a new `CompositionGrid.kt`.", []string{"**/CompositionGrid.kt"}},
+		{"a class is its source, not a page or data", "- core:overlay `Grid`, `README`.", nil},
+		{"a class's header and source", "- `native/grid`: `Grid`.", []string{"native/grid/Grid.h", "native/grid/Grid.cpp"}},
 		{"a word, not a class", "- `grid`, `Thirds`, `MatrixUtils.timesPoint`.", nil},
 	} {
 		got := scopeNamed("## Need\n\nA need.\n\n## Scope\n\n"+c.scope+"\n", files)

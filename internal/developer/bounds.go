@@ -266,6 +266,10 @@ func inRepo(scope, files []string) []string {
 var (
 	// className is a Scope's word that names a class, not a file: `TracingViewModel`.
 	className = regexp.MustCompile(`^[A-Z][A-Za-z0-9_]*$`)
+	// classExt are the extensions of a file a class is written in: a
+	// class name is never its `Model.md`, `Model.json` nor `README.md`.
+	classExt = []string{".kt", ".java", ".scala", ".groovy", ".swift", ".cs", ".fs", ".vb", ".ts", ".tsx", ".js", ".jsx",
+		".mjs", ".py", ".rb", ".php", ".go", ".rs", ".dart", ".m", ".mm", ".h", ".hh", ".hpp", ".hxx", ".c", ".cc", ".cpp", ".cxx", ".vue", ".svelte"}
 	// moduleWord is a module a Scope's line names as a build tool writes
 	// it: `core:session` is core/session.
 	moduleWord = regexp.MustCompile(`(?:^|[\s(` + "`" + `])(:?[A-Za-z][\w-]*(?::[A-Za-z][\w-]*)+)`)
@@ -273,8 +277,8 @@ var (
 
 // scopeNamed are the files a Scope's words name by a name alone, each
 // line read with the modules it names (`core:session`, a folder the
-// repository holds): a class, `TracingViewModel`, as the file whose name
-// it is with its extension; a file's name several files have, as those
+// repository holds): a class, `TracingViewModel`, as the source file
+// whose name it is (classExt); a file's name several files have, as those
 // in the line's modules; a new file's name, `CompositionGrid.kt`, as a
 // pattern for it under the line's modules, anywhere with none (#1207).
 // A class name or a file's name with several files and no module to
@@ -312,7 +316,7 @@ func scopeNamed(body string, files []string) []string {
 			var found []string
 			for _, f := range files {
 				base := path.Base(f)
-				if base == w || class && path.Ext(base) != "" && strings.TrimSuffix(base, path.Ext(base)) == w {
+				if base == w || class && slices.Contains(classExt, path.Ext(base)) && strings.TrimSuffix(base, path.Ext(base)) == w {
 					if len(modules) == 0 || under(f, modules) {
 						found = append(found, f)
 					}

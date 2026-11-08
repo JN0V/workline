@@ -50,7 +50,8 @@ first rule that matches refuses the whole patch:
   or its first folder is the repository's (`dorny/paths-filter` or
   `actions/checkout@v4.1`, an Action, bounds nothing);
 - a name alone in backticks, read with the modules its line names
-  (`core:session`, a folder): a class, `TracingViewModel`, as its file;
+  (`core:session`, a folder): a class, `TracingViewModel`, as its source
+  file (`.kt`, `.java`, `.h`…, never a `.md` or `.json`);
   a name several files have as the one in the module; a new file's
   name, `CompositionGrid.kt`, as that name anywhere in the module, or
   anywhere with no module. Several files and no module: none;
