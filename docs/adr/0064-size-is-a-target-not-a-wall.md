@@ -74,8 +74,11 @@ flowchart LR
   `needs-input(product-owner: size)`, the existing `needs-input(R2)` of
   [ADR-0063 §5](0063-every-open-issue-is-due-waiting-or-done.md#5-one-pure-function-decides),
   with what was done and what remains.
-  - It fires on a prompt over budget, a cut of the code, a change too
-    large to review whole, a run's token cap; said in the status block.
+  - It fires on a prompt over budget, a change too large to review
+    whole, a run's token cap; said in the status block.
+  - *Amended 2026-11-08*: a cut of the code is no longer a crossing,
+    for any agent: cuts happen on nearly every call; still said (step 1)
+    ([#1199](https://github.com/JN0V/workline/pull/1199)).
   - **Never a machine error, never retried**: same input, same size
     ([ADR-0063 §6](0063-every-open-issue-is-due-waiting-or-done.md#6-typed-outcomes)
     lists over budget as one today).
