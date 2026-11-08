@@ -879,6 +879,9 @@ func planActs(f forge.Forge, r *role.Role, settings map[string]any, st runState,
 			c = backlog.Proposal{Reason: "unreadable: " + err.Error()}
 		}
 		c.Do = in.Kind
+		if m, _ := in.Value.(map[string]any); m["own"] != true {
+			c.Parent = false // the engine's alone, never an agent's (ADR-0029)
+		}
 		closes[i] = c
 	}
 	// A role keeping a backlog reads its record on every run, acts or not:

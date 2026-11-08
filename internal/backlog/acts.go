@@ -3,6 +3,7 @@ package backlog
 import (
 	"fmt"
 	"slices"
+	"strings"
 	"unicode/utf8"
 
 	"github.com/JN0V/workline/internal/clock"
@@ -219,4 +220,18 @@ func SuggestFromActs(level string, done, undone int) (string, string) {
 		return Enterprising, fmt.Sprintf("none of the %d acts done alone at %s was undone", done, level)
 	}
 	return "", ""
+}
+
+// unaccept takes a person's yes off a parent whose closing it was given
+// to, a part open again since (#1208): said in the role's comment, the
+// closing proposed again once all its parts are closed.
+func (p *Plan) unaccept(c Proposal, why string) {
+	if p.Unaccepted == nil {
+		p.Unaccepted = map[int]string{}
+	}
+	p.Unaccepted[c.Issue] = why
+	now := clock.Now().UTC()
+	line := fmt.Sprintf("Took `%s` off #%d, put by %s: %s; its closing is proposed again once all its parts are closed.", LabelAccepted, c.Issue, c.Ticked, strings.TrimSuffix(why, "."))
+	p.Record.Did = append(p.Record.Did, Did{Issue: c.Issue, Act: "unaccept", Level: p.config.Level, Day: now.Format(dateLayout), Line: line,
+		At: p.config.Read.At, Body: p.config.Read.Bodies[c.Issue]})
 }

@@ -1,5 +1,5 @@
 case: product-owner/parent-not-closed-by-role
-about: "The role never closes a parent, even with every part closed and the code quoted: its closing is dropped, nothing announced, no label set — accepting the need is a person's (ADR-0029)."
+about: "The role never closes a parent, even with every part closed and the code quoted: the agent's closing is dropped, nothing announced; the engine proposes the closing as completed instead — accepting the need is a person's (ADR-0029, amended)."
 given:
   repo: backlog
   forge:
@@ -12,4 +12,4 @@ expect:
   findings: [{rule: parent-accepted-by-a-person, where: "#7"}]
   forge:
     issues:
-      - {id: 7, closed: false, labels: [], comment-lacks: "looks obsolete"}
+      - {id: 7, closed: false, labels: [workline:proposed], comment-lacks: "looks obsolete"}

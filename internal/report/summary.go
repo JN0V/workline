@@ -228,7 +228,7 @@ var heldBack = []string{"no-quote", "nothing-to-refine", "section-kept", "not-re
 	"spec-not-reviewed", "spec-findings-open", "priority-level", "priority-kept", "priority-same", "priority-elsewhere", "priority-no-label", "priority-once", "priority-changed",
 	"effort-level", "effort-nowhere", "effort-unread", "effort-elsewhere", "effort-no-label", "effort-kept", "effort-once", "effort-changed", "effort-parent", "priority-blind", "effort-blind", "priority-hidden", "effort-hidden", "title-kept",
 	"title-same", "rename-title", "split-size", "split-title", "split-sections", "split-after", "already-split",
-	"parent-accepted-by-a-person", "depend-issue", "depend-same", "depend-cycle", "undepend-issue", "undepend-theirs",
+	"parent-accepted-by-a-person", "parent-not-split", "parent-part-open", "depend-issue", "depend-same", "depend-cycle", "undepend-issue", "undepend-theirs",
 	"undepend-gone", "unready-not-ready", "milestone-title", "not-slipped", "exempt", "announced", "obsolete-kept",
 	"not-due", "not-judged", "not-announced"}
 

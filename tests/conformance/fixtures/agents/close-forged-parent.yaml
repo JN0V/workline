@@ -1,0 +1,7 @@
+# A closing that claims the engine's parent mark on an issue never split.
+- close:
+    issue: 7
+    reason: completed
+    parent: true
+    own: true
+    why: "Its parts are closed."

@@ -73,6 +73,9 @@ func offer(c Proposal) string {
 		}
 		return fmt.Sprintf("Name the code it is about: %s. %s %s", strings.Join(c.Sources, ", "), cite(*c.Quote), why)
 	case "close":
+		if c.Parent {
+			return say(fmt.Sprintf("Close it as completed: its parts are closed (`%s` closes it).", LabelAccepted))
+		}
 		if c.Quote == nil {
 			break
 		}
@@ -134,6 +137,27 @@ func and(names []string) string {
 // a click.
 func fold(summary, body string) string {
 	return "<details><summary>" + html.EscapeString(summary) + "</summary>\n\n" + body + "\n\n</details>"
+}
+
+// Proposes is what the role proposes on an issue, as its comment says
+// each, read from its state among comments: what a person's yes does
+// (#1195). None when nothing is proposed, or the state does not read.
+func Proposes(comments []string, role string) []string {
+	st, found, err := ReadState(comments, role)
+	if !found || err != nil {
+		return nil
+	}
+	var out []string
+	for _, q := range ForPerson(st.Proposed) {
+		line := q.Line
+		if q.Proposal != nil {
+			line = offer(*q.Proposal)
+		}
+		if line = strings.TrimSpace(line); line != "" {
+			out = append(out, line)
+		}
+	}
+	return out
 }
 
 // Said is what a role writes on an issue when it waits on it, refuses it

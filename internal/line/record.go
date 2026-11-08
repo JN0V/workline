@@ -164,6 +164,11 @@ type Record struct {
 	// Clean: the review's hash (Spec) a step with no agent ran on, its
 	// move to ready left undone (cleanReview): the agent reads it next.
 	Clean string `json:"clean,omitempty"`
+	// Parts: on a parent, its parts closed and a person's yes on it, as
+	// the line last woke the product owner for them (partsInput,
+	// parent.go, #1208): one closed since, or a yes put on, wakes it
+	// again. Kept through every state.
+	Parts string `json:"parts,omitempty"`
 }
 
 // StateWrite is what the line writes on an issue once its step ran:
@@ -203,6 +208,10 @@ type StateWrite struct {
 	// of the issue as it stands when written, the role's own writes in
 	// (afterWrite), so its own edit is no new input for it (ADR-0063, §3).
 	After bool `json:"after,omitempty"`
+	// Parent: the step told a parent its parts (parent.go): its record
+	// as read, a person's edit made meanwhile kept as news, never taken
+	// for the role's own write.
+	Parent bool `json:"parent,omitempty"`
 }
 
 // recordV is the version every record is written with (Record.V).
@@ -297,8 +306,12 @@ func recordIn(comments []string) (Record, bool) {
 // record the engine reads back.
 func recordBody(r Record, role string) string {
 	data, _ := json.Marshal(r)
-	said := fmt.Sprintf("**workline's line** last woke the %s on this issue, in its state %s (%d state %s so far).",
-		strings.ReplaceAll(role, "-", " "), r.State, r.Hops, plural(r.Hops, "step", "steps"))
+	in := "in its state " + r.State
+	if r.State == "" {
+		in = "with no state label" // a parent, told as its parts close (parent.go)
+	}
+	said := fmt.Sprintf("**workline's line** last woke the %s on this issue, %s (%d state %s so far).",
+		strings.ReplaceAll(role, "-", " "), in, r.Hops, plural(r.Hops, "step", "steps"))
 	if r.Retry > 0 && role != "" {
 		said += fmt.Sprintf(" Woken again on the same text, %d of %d: its last read left the issue unrefined; past that, the issue is blocked for a person.", r.Retry, RefineRetries)
 	}
@@ -399,7 +412,7 @@ func afterWrite(r *Record, is forge.Issue) {
 // before — one, a count started again, for a state further on the line
 // (cfg) than any it reached (#1068).
 func due(cfg *routing.Config, s routing.State, is forge.Issue, labeled, spec string, rec Record, had bool) (Record, bool) {
-	now := Record{State: s.Name, Body: bodyHash(is.Body), Labeled: labeled, Hops: rec.Hops, Spec: spec, Reached: rec.Reached, Spent: rec.Spent, Counted: rec.Counted, Sized: rec.Sized, Labels: inputLabels(is.Labels)}
+	now := Record{State: s.Name, Body: bodyHash(is.Body), Labeled: labeled, Hops: rec.Hops, Spec: spec, Reached: rec.Reached, Spent: rec.Spent, Counted: rec.Counted, Sized: rec.Sized, Parts: rec.Parts, Labels: inputLabels(is.Labels)}
 	if had && rec.State == now.State && rec.Body == now.Body && rec.Labeled == now.Labeled && rec.Spec == now.Spec && sameLabels(rec, now) {
 		return rec, false
 	}
@@ -463,13 +476,17 @@ func specWaits(is forge.Issue, comments []string) bool {
 func writeState(f forge.Forge, cfg *routing.Config, repo string, w StateWrite, role string) error {
 	t := forge.Target{Kind: "issue", ID: w.Issue}
 	w.Record.V = recordV
+	var after *forge.Issue // the issue as the step's run left it
 	if w.After {
 		// The issue as the step's run left it, its own writes in.
 		is, err := f.Issue(w.Issue)
 		if err != nil {
 			return err
 		}
-		afterWrite(&w.Record, *is)
+		if !w.Parent {
+			afterWrite(&w.Record, *is)
+		}
+		after = is
 	}
 	body := recordBody(w.Record, role)
 	switch {
@@ -540,6 +557,12 @@ func writeState(f forge.Forge, cfg *routing.Config, repo string, w StateWrite, r
 			next = "the line gives it at the next run"
 		}
 		body = backlog.Said("workline's line", "saw the "+who+" say it lacks code", w.Record.Needs.Said, next) + "\n" + body
+	case role == backlog.Keeper && after != nil && backlog.Proposed(*after):
+		// Its run proposed what a person decides: said, why and what
+		// comes next, never only who it last woke (#1195).
+		if said := proposalWaits(f, w.Issue); said != "" {
+			body = said + "\n" + body
+		}
 	}
 	return f.Sticky(t, backlog.Inert(body), forge.Marker("sticky="+recordKey), true)
 }
@@ -563,4 +586,25 @@ func WriteStates(f forge.Forge, repo string, res *Result) error {
 		}
 	}
 	return nil
+}
+
+// proposalWaits is the line's word on an issue whose product owner's
+// proposal waits on a person: what it proposes, and the yes that does
+// it; "" when its comments do not read or hold none.
+func proposalWaits(f forge.Forge, id int) string {
+	b, ok := f.(forge.Backlog)
+	if !ok {
+		return ""
+	}
+	comments, err := b.Comments(forge.Target{Kind: "issue", ID: id})
+	if err != nil {
+		return ""
+	}
+	offers := backlog.Proposes(comments, backlog.Keeper)
+	if len(offers) == 0 {
+		return ""
+	}
+	return backlog.Said("workline's line", "waits for a person on this issue",
+		"the product owner proposes what a person decides: "+strings.Join(offers, " "),
+		fmt.Sprintf("a person labels it `%s` to do it, which wakes the product owner, or takes `%s` off to set it aside", backlog.AcceptedLabel(f), backlog.ProposedLabel(f)))
 }

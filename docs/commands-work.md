@@ -112,6 +112,9 @@ step due that no event started, run.
 - **Blocked, read again**: news on a blocked issue wakes the product
   owner, else every `revisit` days (7)
   ([blocked, read again](spec/routing.md#blocked-read-again)).
+- **A parent**: a part closed, or a person's yes, wakes the product
+  owner on it with no agent, even with no state label
+  ([a parent, told as its parts close](spec/routing.md#a-parent-told-as-its-parts-close)).
 - **Stale**: an issue past its state's age limit whose Scope names what
   the code no longer holds goes back to refine
   ([staleness](spec/routing.md#staleness)).

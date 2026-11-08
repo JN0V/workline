@@ -615,6 +615,11 @@ type Proposal struct {
 	// by default), said on the issue for a person to close, never done by
 	// the role nor by a yes (ADR-0038: off, the code kept).
 	Advice bool `yaml:"advice,omitempty"`
+	// Parent, the engine's: closing a parent as completed, all its parts
+	// closed (ADR-0029, amended): proposed, never done alone; a person's
+	// yes (workline:accepted) closes it. No quote: its parts' comment is
+	// the evidence.
+	Parent bool `yaml:"parent,omitempty"`
 	// Ticked, the engine's: who ticked this proposal's box in the report, a
 	// person of the project — checked again on the forge, the act done as
 	// the record says, never as the intention does (ADR-0025).
@@ -714,6 +719,10 @@ type Plan struct {
 	// Silent are the issues read and left with nothing though they lack
 	// a section, each with why: said on the issue (ADR-0059, decision 1).
 	Silent map[int]string `yaml:"silent,omitempty"`
+	// Unaccepted are the parents a person's yes to close was dropped on,
+	// a part open again (checkParent), each with why: the yes taken off,
+	// said on the issue, so it never stands for a later act (#1208).
+	Unaccepted map[int]string `yaml:"unaccepted,omitempty"`
 	// Elsewhere are the open issues a run woken for one issue did not
 	// visit that bear the role's label (#804): counted among those
 	// waiting, from the listing, their records unread.
@@ -964,6 +973,11 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 		d := Decision{Index: i, Mode: Off, Act: c}
 		var extra *Decision // a refine's drafts proposed beside what it writes
 		switch {
+		case why != "" && c.Ticked != "" && mode == "parent-part-open":
+			// Their yes was to close it with all its parts closed: one is
+			// open again, so the yes is taken off, said (#1208).
+			dropped(c, mode, why)
+			p.unaccept(c, why)
 		case why != "":
 			dropped(c, mode, why)
 		case c.Ticked != "":
@@ -996,6 +1010,9 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 			}
 			if c.Do == "keep" {
 				s = Setting{Mode: Act} // keeping an issue open is never held back
+			}
+			if c.Do == "close" && c.Parent {
+				s = Setting{Mode: Propose} // a parent is accepted by a person, whatever the level (ADR-0029)
 			}
 			if c.Do == "unready" || c.Do == "unblock" || c.Do == "blocked" || c.Do == "assume" {
 				// Back to refine, out of Blocked: cheap, undone by putting
@@ -1662,7 +1679,7 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 			// it would only be read again, unrefined (#951).
 			return "sources-same", fmt.Sprintf("#%d names %s already, its code given in this run: refine it from that code, or ask", c.Issue, strings.Join(c.Sources, ", "))
 		}
-	} else if c.Do == "close" && !slices.Contains(closeReasons, c.Reason) {
+	} else if c.Do == "close" && !slices.Contains(closeReasons, c.Reason) && (!c.Parent || c.Reason != "completed") {
 		return "close-reason", fmt.Sprintf("not closed: the role closes only a duplicate, or an issue the code made obsolete; closing one as %q is a person's call", c.Reason)
 	}
 	if c.Reason == "duplicate" && (c.DuplicateOf <= 0 || c.DuplicateOf == c.Issue) {
@@ -1741,7 +1758,7 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 		c.LeftOut = left
 	}
 	switch {
-	case c.Do == "close" && c.Ticked == "" && len(SplitInto(p.issues[c.Issue], st)) > 0:
+	case c.Do == "close" && c.Ticked == "" && !c.Parent && len(SplitInto(p.issues[c.Issue], st)) > 0:
 		return "parent-accepted-by-a-person", fmt.Sprintf("#%d is split into %s: the role never closes a parent; a person accepts it, from what its parts delivered (ADR-0029)", c.Issue, issueList(SplitInto(p.issues[c.Issue], st)))
 	case c.Do == "split" && len(st.Split) > 0:
 		return "already-split", fmt.Sprintf("it was split already, into %s: an issue is split once", issueList(st.Split))
@@ -1750,6 +1767,9 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 	}
 	if c.Do == "keep" {
 		return p.checkKeep(f, repo, role, st, c)
+	}
+	if c.Do == "close" && c.Parent {
+		return p.checkParent(c.Issue, st) // its parts' comment is the evidence, a person's yes the act (ADR-0029, amended)
 	}
 	if c.Do == "milestone" || c.Do == "order" || c.Do == "effort" || c.Do == "kind" || c.Do == "size" || c.Do == "refine" || c.Do == "ready" || c.Do == "unready" || c.Do == "unblock" || c.Do == "blocked" || c.Do == "ask" || c.Do == "assume" || c.Do == "split" || c.Do == "rename" || c.Do == "depend" || c.Do == "undepend" {
 		return "", "" // writing a plan or asking says nothing of the issue's truth: no quote
@@ -1783,6 +1803,27 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 	c.Hearsay = p.hearsay
 	if c.Reason == "obsolete" {
 		return p.checkObsolete(f, repo, role, st, c)
+	}
+	return "", ""
+}
+
+// checkParent holds a closing marked parent to what the mark claims, at
+// its proposal and again at a person's yes (ADR-0029, amended): the
+// issue was split — parts in the forge's relation, its task list or the
+// role's split — and every part is closed now, none open again.
+func (p *Plan) checkParent(id int, st *State) (rule, why string) {
+	parts := SplitInto(p.issues[id], st)
+	if len(parts) == 0 {
+		return "parent-not-split", fmt.Sprintf("#%d has no parts: a closing for its parts closed is only a split parent's", id)
+	}
+	var open []int
+	for _, n := range parts {
+		if p.open[n] {
+			open = append(open, n)
+		}
+	}
+	if len(open) > 0 {
+		return "parent-part-open", fmt.Sprintf("#%d's part %s is open: it is closed once all its parts are, a person's yes then", id, issueList(open))
 	}
 	return "", ""
 }
@@ -3363,6 +3404,9 @@ func describe(c Proposal, verb string) string {
 	if c.Do == "keep" {
 		return fmt.Sprintf("Kept #%d open, announced obsolete on %s: %s.", c.Issue, c.Announced, strings.TrimSuffix(strings.TrimSpace(c.Why), "."))
 	}
+	if c.Parent {
+		return fmt.Sprintf("%s #%d as completed: %s", map[bool]string{true: "Closed", false: "Close"}[done], c.Issue, strings.TrimSpace(c.Why))
+	}
 	what := fmt.Sprintf("%s #%d as obsolete", verb, c.Issue)
 	switch {
 	case c.Announce && done:
@@ -3436,6 +3480,13 @@ func cite(q Quote) string {
 
 // Comment is what the closed issue is told.
 func Comment(c Proposal, role string) string {
+	if c.Parent {
+		by := "Closed by the " + role + " role"
+		if c.Ticked != "" {
+			by += ", " + c.Ticked + " having accepted it (" + LabelAccepted + ")"
+		}
+		return fmt.Sprintf("Accepted: its parts are closed, what each delivered said in the comment on its parts.\n\n%s. Reopen it to undo.", by)
+	}
 	head := "Obsolete: the code it is about changed."
 	if c.Reason == "duplicate" {
 		head = fmt.Sprintf("Duplicate of #%d", c.DuplicateOf)
