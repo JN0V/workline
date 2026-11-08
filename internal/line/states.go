@@ -81,6 +81,9 @@ type stateStep struct {
 	rec   Record
 	// tier: its issue's size tier, given every run on it (ADR-0064, §3).
 	tier string
+	// backstop reads its issue's backstop once, for the check after its
+	// run (backstop.go); nil when none was set up.
+	backstop func() (backstop, error)
 }
 
 // never is a step's since when how long it waited is not known: a re-try
@@ -111,8 +114,28 @@ func waitedSince(s routing.State, rec Record, had bool, labeled string) time.Tim
 // read again by the product owner when there is news on it (revisit.go).
 // A ready one without its tests goes to them (write, wip.go), whether
 // the developer was woken on it already or not. t: what the limits are
-// counted from besides the open issues, kept for the run.
+// counted from besides the open issues, kept for the run. A step whose
+// issue reached its backstop is not run: the issue waits for a person
+// (backstop.go).
 func stateOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, open *[]forge.Issue, x *scopeIndex, t *tally) (*stateStep, *StateWrite, error) {
+	before := len(res.Findings)
+	st, w, err := stepOf(res, cfg, b, is, open, x, t)
+	if err != nil || st == nil {
+		return st, w, err
+	}
+	st, w, err = backstopped(res, b, is, open, t, st)
+	if st == nil {
+		// Not run after all: its wake is not said.
+		where := fmt.Sprintf("#%d", is.ID)
+		res.Findings = append(res.Findings[:before], slices.DeleteFunc(slices.Clone(res.Findings[before:]), func(f verdict.Finding) bool {
+			return f.Where == where && (f.Rule == "state-wakes" || f.Rule == "state-revisit")
+		})...)
+	}
+	return st, w, err
+}
+
+// stepOf is stateOf, the backstop not checked.
+func stepOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, open *[]forge.Issue, x *scopeIndex, t *tally) (*stateStep, *StateWrite, error) {
 	where := fmt.Sprintf("#%d", is.ID)
 	s, name, why := cfg.Wakes(is.Labels, IssueEvent)
 	if w, err := stale(res, cfg, b, x, is, s); err != nil || w != nil {
@@ -407,7 +430,7 @@ func byState(res *Result, cfg *routing.Config, o engine.Options, event string, s
 		return res
 	}
 	if mr, ok := t.rounds[o.Target.ID]; ok && step == nil && block == nil {
-		byRound(res, f, o, event, o.Target.ID, mr)
+		byRound(res, cfg, f, spec, o, event, o.Target.ID, mr)
 		return res
 	}
 	switch {
@@ -439,6 +462,10 @@ func byState(res *Result, cfg *routing.Config, o engine.Options, event string, s
 			why = "without its tests, to go to them"
 		case "state-untested-kept":
 			why = "without its tests, to say it is left"
+		case "backstop-crossed":
+			why = "to be blocked, at its backstop"
+		case "backstop-waits":
+			why = "blocked at its backstop, the line's record to write"
 		}
 		res.Summary = fmt.Sprintf("%s: %s due, %s: not started (--input %s=list)", event, where, why, ReconcileInput)
 	case block != nil && block.Stale != "":
@@ -595,6 +622,7 @@ func runStateStep(res *Result, cfg *routing.Config, f forge.Forge, spec string, 
 		}
 	}
 	st.write.Record.Spent = spend(st.write.Record.Spent, res.Steps[first:])
+	passed(res, f, cfg, &st) // its run took the issue to its backstop: a person's (ADR-0064, §5)
 	keepState(res, cfg, f, spec, o, st.write, st.role)
 }
 
@@ -739,7 +767,7 @@ func reconcile(res *Result, cfg *routing.Config, o engine.Options) *Result {
 		}
 	}
 	issued := started
-	rounds := roundsDue(res, cfg, f, o, &issued)
+	rounds := roundsDue(res, cfg, f, spec, o, &issued)
 	switch {
 	case list:
 		res.Summary = fmt.Sprintf("%s: %d %s due:", ReconcileEvent, len(res.Due), plural(len(res.Due), "issue", "issues"))
@@ -772,7 +800,7 @@ func reconcile(res *Result, cfg *routing.Config, o engine.Options) *Result {
 // with the issues' steps (started). In CI (list), its job starts each
 // round's own run; on a machine, each is said with its command: a round
 // works on its branch, checked out.
-func roundsDue(res *Result, cfg *routing.Config, f forge.Forge, o engine.Options, started *int) []Review {
+func roundsDue(res *Result, cfg *routing.Config, f forge.Forge, spec string, o engine.Options, started *int) []Review {
 	if !cfg.Runs("developer") {
 		return nil
 	}
@@ -788,6 +816,17 @@ func roundsDue(res *Result, cfg *routing.Config, f forge.Forge, o engine.Options
 			continue
 		}
 		if !roundDue(res, f, o.Repo, mr) {
+			continue
+		}
+		if stop, w := roundStopped(res, f, cfg, o.Repo, mr); stop {
+			// Its issue at its backstop (ADR-0064, §5): no round, the
+			// issue blocked — by its own run, in CI, with no agent.
+			switch {
+			case w != nil && o.Inputs[ReconcileInput] == "list":
+				res.Due = append(res.Due, w.Issue)
+			case w != nil:
+				keepState(res, cfg, f, spec, o, *w, "")
+			}
 			continue
 		}
 		if *started >= cfg.ReconcileMax {

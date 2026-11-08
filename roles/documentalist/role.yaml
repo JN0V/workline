@@ -146,8 +146,10 @@ settings:
   ai-max-calls: 10                   # suspect docs per call; the rest wait for the next round
   # Tokens one run may spend, all calls together (in, cache included, and
   # out); past it the agent is asked nothing more and the rest waits. 0: no
-  # cap. A doc judged whole cost 13k to 26k on DomoticsCore; 16 parts, more.
-  ai-max-tokens: 0
+  # cap. A doc judged whole cost 13k to 26k on DomoticsCore; 16 parts, more:
+  # 400k holds 10 docs whole or a night's 16 parts, and stops a run looping
+  # (ADR-0064, §5).
+  ai-max-tokens: 400000
   # The characters a doc's sources may take, together, to be judged whole
   # (about four a token; characters, as the engine measures a task before the
   # call). Higher, more docs can be vouched for, and each costs more tokens,

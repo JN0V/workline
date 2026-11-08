@@ -400,6 +400,9 @@ in the same call:
   an issue with a tier already is never granted (`size-kept`); one the
   role granted once, never again: a person who took the label off
   decided (`size-once`).
+- **Never the backstop**: the issue's runs in all still stop at 4× its
+  normal, for a person
+  ([routing](../routing.md#the-line-of-states)).
 - **Mode**: `act` at `normal` and `enterprising`, `propose` at
   `cautious` ([autonomy](autonomy.md)).
 

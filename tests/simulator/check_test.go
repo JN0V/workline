@@ -45,7 +45,7 @@ func (f *failure) String() string {
 var (
 	dueRules     = []string{"state-wakes", "reconcile-left"}
 	waitingRules = []string{"state-blocked-quiet", "state-blocked-seen", "state-waits", "state-room", "repro-waits", "state-review-missing",
-		"no-code-spent", "needs-spent", "no-test-unsettled", "machine-error-spent"}
+		"no-code-spent", "needs-spent", "no-test-unsettled", "machine-error-spent", "backstop-crossed", "backstop-waits"}
 	notStatus    = []string{"state-acted"}
 )
 
@@ -96,6 +96,23 @@ func record(is forge.FakeItem) (state string, hops int, had bool) {
 		}
 	}
 	return state, hops, had
+}
+
+// atBackstop says whether the line blocked is at its backstop, its
+// record saying so (ADR-0064, §5).
+func atBackstop(is forge.FakeItem) bool {
+	for _, c := range is.Comments {
+		if m := recordRe.FindStringSubmatch(c.Body); m != nil {
+			var r struct {
+				State    string `json:"state"`
+				Backstop int    `json:"backstop"`
+			}
+			if json.Unmarshal([]byte(m[1]), &r) == nil {
+				return r.State == "blocked" && r.Backstop > 0
+			}
+		}
+	}
+	return false
 }
 
 func trail(is forge.FakeItem) string {
@@ -404,6 +421,8 @@ type measure struct {
 	requests, calls []int
 	path            []string
 	unused          map[string]int // the trial's answers left unused, by role
+	// end: the forge at the trace's end, before a body is changed.
+	end forge.FakeState
 }
 
 func (m measure) String() string {
@@ -567,9 +586,12 @@ func measured(t *testing.T, tr trace, script []outcome, c checks) (_ *failure, _
 			return &failure{Property: pEnd, Tick: k, Detail: fmt.Sprintf("#%d %s (%s), not %s: %s", is.ID, st, trail(is), tr.end, said)}, log.String(), ms
 		}
 	}
-	// One byte of a body changed makes its open issue due.
+	ms.end = w.state(t)
+	// One byte of a body changed makes its open issue due; but one
+	// blocked at its backstop, which waits for a person, no product
+	// owner reading it again (ADR-0064, §5).
 	for _, is := range w.state(t).Issues {
-		if is.Closed {
+		if is.Closed || atBackstop(is) {
 			continue
 		}
 		f := forge.Fake{Path: w.forge}
@@ -849,7 +871,7 @@ func TestSeeds(t *testing.T) {
 	limits := map[string]checks{}
 	for _, tr := range traces {
 		v := os.Getenv("SIM_TRACE")
-		if v != "" && v != tr.name || v == "" && (tr.by != nil || tr.replay) {
+		if v != "" && v != tr.name || v == "" && (tr.by != nil || tr.replay || tr.tokens != nil) {
 			continue
 		}
 		runs = append(runs, tr)

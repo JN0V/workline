@@ -1,0 +1,34 @@
+case: routing/size-backstop-before-a-run
+about: >
+  An issue's runs reached its backstop: no role runs on it, a person
+  decides (ADR-0064, §5; #1174). Bug #9, effort Medium, at the normal
+  size: its runs spent 1.6M fresh tokens, four times the seed of 400k.
+  Its step in refine is due; the product owner is not called. #9 is
+  blocked for a person, the total and the backstop said, with the label
+  that lifts it, `workline:size/x-large`.
+given:
+  repo: backlog
+  config:
+    routing: {events: {issue: [product-owner]}}
+  forge:
+    issues:
+      - id: 9
+        title: "Rows lost"
+        author: ann
+        insider: true
+        labels: [workline:to-refine, bug]
+        body: "## Need\n\nA user exporting rows loses the last one.\n\n## Validation\n\n- **Three rows:** Given three rows, When I export them, Then the file holds three.\n"
+        comments:
+          - "**workline's line** last woke the developer on this issue.\n\n<!-- workline:line-record {\"state\":\"ready\",\"body\":\"0a1b2c3d4e5f\",\"hops\":2,\"spent\":{\"product-owner\":[400000],\"tester\":[500000],\"developer\":[700000]}} -->\n<!-- workline:sticky=line/state -->"
+run: {route: issue, target: {issue: 9}, ai: "cmd:sh $FIXTURES/agents/costly.sh 1000"}
+expect:
+  status: pass
+  agent-calls: 0
+  findings:
+    - {rule: backstop-crossed, level: warn, where: "#9", message: "1.6M fresh tokens spent on it, all runs, reaching its backstop of 1.6M, 4× its normal of 400k (seed): a person gives it `workline:size/x-large`, which lifts the backstop to 6.4M"}
+  no-findings: [{rule: state-wakes, where: "#9"}]
+  forge:
+    issues:
+      - id: 9
+        labels: [bug, workline:blocked]
+        comment-contains: ["reaching its backstop of 1.6M", "no product owner reads it again, and no delay answers for a person", "\"backstop\":1600000"]

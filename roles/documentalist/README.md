@@ -84,7 +84,7 @@ Under `roles: {documentalist: {settings: …}}` in `.workline/config.yaml`
 | `language` | `""` (read from each doc) | `en` or `fr` |
 | `max-open-merge-requests` | `5` | gardening pauses while this many of its merge requests wait |
 | `ai-max-calls` | `10` | suspect docs per call |
-| `ai-max-tokens` | `0` (no cap) | tokens one run may spend, all calls together |
+| `ai-max-tokens` | `400000` | tokens one run may spend, all calls together; `0`: no cap ([ADR-0064](../../docs/adr/0064-size-is-a-target-not-a-wall.md#5-the-hard-backstop)) |
 | `whole-chars` | `20000` | characters of sources a doc may take to be judged whole; 25000 at most, its task fitting the context budget |
 | `judge-in-parts` | `true` | when gardening, judge a doc too large in parts ([ADR-0009](../../docs/adr/0009-docs-far-behind-are-judged-in-parts.md)), and one a merge request judged on its change alone; a merge request leaves it for the next gardening; `false`: such docs go to a person |
 | `parts-max`, `parts-max-per-run` | `8`, `16` | parts a doc, parts a run: what bounds a night's tokens in parts |

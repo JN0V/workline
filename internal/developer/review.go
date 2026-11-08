@@ -98,6 +98,9 @@ type round struct {
 	FiveWhys bool     `json:"five-whys"`
 	Person   bool     `json:"person"`              // past the last round: no agent, a person
 	Ready    bool     `json:"ready,omitempty"`     // its Draft green, nothing asked: marked ready, no agent (#969)
+	// Backstop: why its issue's runs reached their backstop, no round run
+	// (ADR-0064, §5; backstop.go).
+	Backstop string `json:"backstop,omitempty"`
 	At       string   `json:"at,omitempty"`        // its branch's head, where its fix starts
 	GatesAt  string   `json:"gates-at,omitempty"`  // the head the gates' findings asked were read at
 	ChecksAt string   `json:"checks-at,omitempty"` // the head the project's red checks were read at
@@ -335,6 +338,20 @@ func reviewPre(runDir, repo string, s Settings, id int) int {
 				Message: fmt.Sprintf("%d nit%s shown by the reviewer, not asked: a nit never holds the merge (ADR-0051)", r.Nits, plural(r.Nits))})
 		}
 		return final(runDir, v)
+	}
+	if Backstop != nil {
+		// Its issue's runs at their backstop: no round more (ADR-0064, §5).
+		said, err := Backstop(f, repo, issue)
+		if err != nil {
+			return external(err)
+		}
+		if said != "" {
+			r.Backstop = said
+			if err := writeIn(runDir, roundFile, r); err != nil {
+				return fail(err)
+			}
+			return writeIntents(runDir, "fallback.yaml", stopped(r, repo, issue))
+		}
 	}
 	if a.Round >= s.Rounds {
 		r.Person = true
@@ -711,6 +728,11 @@ func reviewPost(runDir, repo string, s Settings) int {
 	where := fmt.Sprintf("merge request %d", r.MR)
 	if r.Ready {
 		return readyPost(runDir, r)
+	}
+	if r.Backstop != "" {
+		return writeVerdict(runDir, verdict.Verdict{Status: verdict.Pass, Summary: fmt.Sprintf("at its backstop: its issue #%d blocked, no round run", r.Record.Issue),
+			Findings: []verdict.Finding{{Rule: "backstop-crossed", Level: "warn", Where: where,
+				Message: fmt.Sprintf("%s: no review round runs; #%d blocked, this pull request kept open", r.Backstop, r.Record.Issue)}}})
 	}
 	if r.Person {
 		return writeVerdict(runDir, verdict.Verdict{Status: verdict.Pass, Summary: fmt.Sprintf("past round %d: its issue #%d blocked", r.Record.Round, r.Record.Issue),

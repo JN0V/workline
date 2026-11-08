@@ -197,7 +197,10 @@ with no agent; run each night by gardening's applying job, or by hand.
   normal, their total or a run. `--no-apply` writes nothing.
 - **Nothing written** with no line of states (`routing.states`), or no
   issue holding the line's count yet.
-- **Reported only**: nothing stops on them yet.
+- **An issue's normal sets its backstop**, 4× it: past it, the line
+  blocks the issue for a person
+  ([routing](spec/routing.md#the-line-of-states)). A run's normal is
+  reported only.
 - `--forge`, `--json`, `--summary` as for `follow`.
 
 ### workline follow

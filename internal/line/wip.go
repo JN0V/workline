@@ -53,6 +53,9 @@ type tally struct {
 	// rounds: the developer's open merge request for each issue whose
 	// step is its review round, not a new claim (round.go).
 	rounds map[int]forge.MergeRequest
+	// effort: the project's effort scheme read, once a run, for the
+	// issues' backstops (backstop.go).
+	effort bool
 }
 
 func newTally() *tally { return &tally{proofs: map[int]bool{}, moved: map[int]bool{}} }

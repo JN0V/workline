@@ -69,6 +69,9 @@ import (
 // main runs the command the arguments name (cli.go: the commands, their
 // help, and misuse, which exits 64).
 func main() {
+	// A review round reads its issue's backstop as the line keeps it
+	// (ADR-0064, §5).
+	developer.Backstop = line.BackstopSaid
 	os.Exit(dispatch(os.Args[1:]))
 }
 

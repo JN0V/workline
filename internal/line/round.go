@@ -69,12 +69,25 @@ func roundSaid(res *Result, mr forge.MergeRequest) {
 
 // byRound ends the issue line on issue id, whose step is the review
 // round on mr: listed for the job that moved it to start (list), said
-// with its command, or said not due. No agent.
-func byRound(res *Result, f forge.Forge, o engine.Options, event string, id int, mr forge.MergeRequest) {
+// with its command, or said not due. No agent. A round due on an issue
+// at its backstop is not: the issue is blocked, the pull request kept
+// open (ADR-0064, §5).
+func byRound(res *Result, cfg *routing.Config, f forge.Forge, spec string, o engine.Options, event string, id int, mr forge.MergeRequest) {
 	where := fmt.Sprintf("#%d's step is the review round on merge request %d", id, mr.ID)
-	switch {
-	case !roundDue(res, f, o.Repo, mr):
+	if !roundDue(res, f, o.Repo, mr) {
 		res.Summary = fmt.Sprintf("%s: %s, not due: nothing to start", event, where)
+		return
+	}
+	stop, w := roundStopped(res, f, cfg, o.Repo, mr)
+	switch {
+	case stop && w != nil && o.Inputs[ReconcileInput] == "list":
+		res.Due = []int{id}
+		res.Summary = fmt.Sprintf("%s: %s, at its backstop: to be blocked, not started (--input %s=list)", event, where, ReconcileInput)
+	case stop && w != nil:
+		keepState(res, cfg, f, spec, o, *w, "")
+		res.Summary = fmt.Sprintf("%s: %s, not run: #%d blocked at its backstop", event, where, id)
+	case stop:
+		res.Summary = fmt.Sprintf("%s: %s, not run: #%d at its backstop, blocked already", event, where, id)
 	case o.Inputs[ReconcileInput] == "list":
 		res.Reviews = []Review{{ID: mr.ID, Branch: mr.Branch}}
 		res.Summary = fmt.Sprintf("%s: %s, due: not started (--input %s=list)", event, where, ReconcileInput)

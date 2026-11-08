@@ -137,7 +137,8 @@ type Record struct {
 	// on the issue, by role, in order (ADR-0064, step 2): kept through
 	// every state, so the issue's total holds across machines, a run's
 	// calls being lost with its CI job. A run that called no agent adds
-	// none. Reported, never acted on yet (size.go).
+	// none. Its total is checked against the issue's backstop
+	// (backstop.go); the normals are measured from it (size.go).
 	Spent map[string][]int `json:"spent,omitempty"`
 	// Counted: the runs on a merge request closing the issue already in
 	// Spent, each a short hash of its run folder's name (CountRuns): an
@@ -150,6 +151,10 @@ type Record struct {
 	// product owner has not read the issue for it; "" once it did.
 	Sized  []string `json:"sized,omitempty"`
 	SizeOf string   `json:"size-of,omitempty"`
+	// Backstop: the backstop, in fresh tokens, the issue's runs reached
+	// when the line blocked it for a person (backstop.go, ADR-0064 §5):
+	// no product owner reads it again. Gone once a person moves it out.
+	Backstop int `json:"backstop,omitempty"`
 }
 
 // StateWrite is what the line writes on an issue once its step ran:
@@ -383,6 +388,15 @@ func writeState(f forge.Forge, cfg *routing.Config, repo string, w StateWrite, r
 			w.Record.Why = w.Blocked
 		}
 		body = blockedBody(cfg, w.Record)
+		if w.Record.Backstop > 0 {
+			// At its backstop: the label a person lifts it with is in
+			// the forge's list (ADR-0064, §5).
+			if b, ok := f.(forge.Backlog); ok {
+				if err := backlog.EnsureTierLabel(b, backlog.TierXLarge); err != nil {
+					body += fmt.Sprintf("\n\nThe label `%s` could not be made in the forge's list: %v", backlog.LabelSizeXLarge, err)
+				}
+			}
+		}
 	case w.Waits != "":
 		data, _ := json.Marshal(w.Record)
 		body = backlog.Said("workline's line", "waits to start this issue's next step", w.Waits,

@@ -1,0 +1,31 @@
+case: routing/size-backstop-x-large-at-its-top
+about: >
+  At `x-large`, the top tier, the backstop is 16 times the normal, and
+  nothing lifts it higher (ADR-0064, §5; #1174). Bug #9, labelled
+  `workline:size/x-large` by a person, its runs at 6.4M fresh tokens:
+  its step is not run, and #9 is blocked for a person, who splits it
+  into new issues or finishes it by hand.
+given:
+  repo: backlog
+  config:
+    routing: {events: {issue: [product-owner]}}
+  forge:
+    issues:
+      - id: 9
+        title: "Rows lost"
+        author: ann
+        insider: true
+        labels: [workline:to-refine, bug, workline:size/x-large]
+        body: "## Need\n\nA user exporting rows loses the last one.\n\n## Validation\n\n- **Three rows:** Given three rows, When I export them, Then the file holds three.\n"
+        comments:
+          - "**workline's line** last woke the developer on this issue.\n\n<!-- workline:line-record {\"state\":\"ready\",\"body\":\"0a1b2c3d4e5f\",\"hops\":2,\"spent\":{\"product-owner\":[1400000],\"tester\":[2000000],\"developer\":[3000000]}} -->\n<!-- workline:sticky=line/state -->"
+run: {route: issue, target: {issue: 9}, ai: "cmd:sh $FIXTURES/agents/costly.sh 1000"}
+expect:
+  agent-calls: 0
+  findings:
+    - {rule: backstop-crossed, level: warn, where: "#9", message: "6.4M fresh tokens spent on it, all runs, reaching its backstop of 6.4M, 16× its normal of 400k (seed) at the top size tier (`workline:size/x-large`): a person splits it into new issues"}
+  forge:
+    issues:
+      - id: 9
+        labels: [bug, workline:size/x-large, workline:blocked]
+        comment-contains: ["a person splits it into new issues, each with its own backstop, or finishes it by hand; no product owner reads it again"]

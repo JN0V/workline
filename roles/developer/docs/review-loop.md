@@ -139,6 +139,11 @@ failed — is marked ready for review once its rounds make it green
   ([ADR-0059](../../../docs/adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#6-disagreements-end-at-the-product-owner-then-blocked));
   no person is asked, no label on the pull request. No round runs after
   it.
+- **At its issue's backstop**, no agent: the issue's runs, the rounds
+  counted, reached 4× its normal
+  ([routing](../../../docs/spec/routing.md#the-line-of-states)). No
+  round runs (`backstop-crossed`); its issue goes `workline:blocked`,
+  the reason on it and on the pull request, kept open.
 
 ## What wakes it
 
