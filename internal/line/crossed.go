@@ -4,13 +4,13 @@ package line
 // role's context budget, or its token cap reached; a cut of what it read
 // is said, never a crossing (§2, amended 2026-11-08). The same input
 // crosses the same, so it is never run again on it: it ends
-// needs-input(product-owner: size), the needs-input(R2) of ADR-0063 §5. The issue waits on the product owner,
-// Blocked on the board with the size said, and the product owner reads it
-// at the line's next run (revisit.go), told the size: it narrows the
-// issue's Scope and sends it back, or leaves it to a person. Once a state
-// (Record.Sized): a second crossing from the same state, the product
-// owner's own, or a project where it reads no blocked issue, waits for a
-// person at once. The work is kept: no label but the state's changes, no
+// needs-input(product-owner: size), the needs-input(R2) of ADR-0063 §5.
+// The issue waits on the product owner, Blocked on the board with the
+// size said, and the product owner reads it at the line's next run
+// (revisit.go), told the size: it narrows the issue's Scope and sends it
+// back, or leaves it to a person. Once a state (Record.Sized): a second
+// crossing from the same state, the product owner's own, or a project
+// where it reads no blocked issue, waits for a person at once. The work is kept: no label but the state's changes, no
 // branch nor pull request is touched.
 
 import (
