@@ -79,9 +79,10 @@ Cases in `tests/conformance/cases/tester/`:
   the base is red only when each compiler error lies in the change's
   tests and names what the base lacks; any other blocks
   (`build-broken`). Go's, Kotlin's, javac's and Gradle's errors by
-  default (`build-errors`,
-  [the page](missing-name.md)). A missing name the issue never names
-  is a broken build too, asked again once
+  default (`build-errors`, [the page](missing-name.md); Kotlin's
+  tried on an Android project,
+  [#1181](https://github.com/JN0V/workline/pull/1181#tried)). A
+  missing name the issue never names is a broken build too, asked again once
   ([#1111](https://github.com/JN0V/workline/issues/1111)).
 - **Tests from the criteria** (`workline test write --issue <n>`): one
   test a scenario, named after it; a ready issue only, with named
