@@ -259,7 +259,7 @@ func timedRun(tree string, s Settings, where string) (map[string]timed, float64,
 	if _, f := runIn(tree, s, where); f != nil {
 		return nil, 0, f
 	}
-	found, _ := filepath.Glob(filepath.Join(tree, filepath.FromSlash(s.Report)))
+	found := reportFiles(tree, s.Report)
 	out := map[string]timed{}
 	var total float64
 	for _, file := range found {
