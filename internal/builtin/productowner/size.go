@@ -20,7 +20,7 @@ func splitSaid(is forge.Issue) string {
 	if backlog.PartOf(is.Body) > 0 {
 		return ""
 	}
-	return "; or split it, when its parts each pass their own Verification apart: `split` with `too-big: true`, 2 to 6 parts, then `blocked`, `person: true`: a person accepts it from what its parts deliver"
+	return "; or split it, when its parts each pass their own " + work.Name(work.Verification) + " apart: `split` with `too-big: true`, 2 to 6 parts, then `blocked`, `person: true`: a person accepts it from what its parts deliver"
 }
 
 // predictSaid asks for is's size at ready, against its normal (§2): split
@@ -33,7 +33,7 @@ func predictSaid(b forge.Backlog, open []forge.Issue, is forge.Issue) string {
 	}
 	var past []string
 	if backlog.PartOf(is.Body) == 0 {
-		past = append(past, "`split` it with `too-big: true`, 2 to 6 parts each passing its own Verification apart, and no `ready` on it")
+		past = append(past, "`split` it with `too-big: true`, 2 to 6 parts each passing its own "+work.Name(work.Verification)+" apart, and no `ready` on it")
 	}
 	if backlog.SizeTier(is.Labels) == "" {
 		past = append(past, fmt.Sprintf("its need one no part proves apart, `size` with `tier: %s`, then `ready`", backlog.TierLarge))
