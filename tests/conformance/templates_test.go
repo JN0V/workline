@@ -104,6 +104,64 @@ func TestGitHubTemplatesFetchWholeHistory(t *testing.T) {
 	}
 }
 
+// A job that hangs ends at its own timeout, never at GitHub's 6 h: each job
+// of the GitHub templates sets timeout-minutes, and the issue's judge one
+// above the caps of the roles it runs, the tester's and the developer's
+// (#1197).
+func TestGitHubTemplatesTimeEachJob(t *testing.T) {
+	files, _ := filepath.Glob("../../ci/github/*.yml")
+	n := 0
+	for _, f := range files {
+		data, err := os.ReadFile(f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var wf struct {
+			Jobs map[string]struct {
+				RunsOn  string `yaml:"runs-on"`
+				Timeout int    `yaml:"timeout-minutes"`
+			} `yaml:"jobs"`
+		}
+		if err := yaml.Unmarshal(data, &wf); err != nil {
+			t.Fatalf("%s: %v", f, err)
+		}
+		for name, job := range wf.Jobs {
+			if job.RunsOn == "" {
+				continue // a reusable workflow's call
+			}
+			n++
+			if job.Timeout <= 0 {
+				t.Errorf("%s, job %s: no timeout-minutes; a hang would run 6 h", filepath.Base(f), name)
+			}
+		}
+		if filepath.Base(f) == "workline-develop.yml" {
+			caps := map[string]map[string]any{}
+			for _, r := range []string{"tester", "developer"} {
+				var y struct {
+					Settings map[string]any `yaml:"settings"`
+				}
+				data, err := os.ReadFile(filepath.Join("../../roles", r, "role.yaml"))
+				if err != nil {
+					t.Fatal(err)
+				}
+				if err := yaml.Unmarshal(data, &y); err != nil {
+					t.Fatal(err)
+				}
+				caps[r] = y.Settings
+			}
+			sec := func(v any) int { n, _ := v.(int); return n }
+			need := max(sec(caps["tester"]["ai-max-seconds"])+3*sec(caps["tester"]["suite-max-seconds"]),
+				sec(caps["developer"]["ai-max-seconds"])+sec(caps["developer"]["proof-seconds"]))
+			if got := wf.Jobs["judge"].Timeout * 60; got <= need {
+				t.Errorf("workline-develop.yml, job judge: timeout-minutes %d, want above the roles' caps, %d s", got/60, need)
+			}
+		}
+	}
+	if n == 0 {
+		t.Fatal("no job found in the GitHub templates")
+	}
+}
+
 // A person opening a workline job reads what ran, each step's verdict, the
 // findings and what waits to be applied in one place: the engine writes it
 // (--summary), the templates show it, none rebuilds it from the JSON.

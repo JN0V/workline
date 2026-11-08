@@ -53,6 +53,7 @@ env:
 jobs:
   judge:
     runs-on: ubuntu-latest
+    timeout-minutes: 180
     # issues: the product owner, when the schedule line runs it, reads them.
     permissions: {contents: read, pull-requests: read, issues: read}
     env: {HAS_CLAUDE: "${{ secrets.CLAUDE_CODE_OAUTH_TOKEN != '' }}"}
@@ -110,6 +111,7 @@ jobs:
     needs: [judge, curator]
     if: always()
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     environment: workline-app       # the App's key: the default branch only (ADR-0044)
     # issues: the product owner's acts (comments, labels, closings,
     # reactions) on each issue.
@@ -203,6 +205,7 @@ jobs:
   # (docs/release.md).
   dry-run:
     runs-on: ubuntu-latest
+    timeout-minutes: 180
     # issues, checks, statuses and actions read: what holds the release, an
     # open issue labelled workline:hold-release, main's tip not green
     # (docs/release-holds.md); a private repository's are unread without.
@@ -302,6 +305,7 @@ jobs:
     needs: dry-run
     if: always()                    # a dry run that left no result is said
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     environment: workline-app       # the App's key: the default branch only (ADR-0044)
     # One writer of the default branch's issue at a time, with main's.
     concurrency: {group: "workline-main-issue", cancel-in-progress: false}
