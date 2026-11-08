@@ -359,6 +359,12 @@ from.
   the task names the files. To widen it, a `refine` rewrites the Scope
   whole, the files in it, then `unblock` to ready: the developer
   resumes on its pull request. Else `blocked`, why not.
+- **A run too big for its role**
+  ([ADR-0064, step 3](../../adr/0064-size-is-a-target-not-a-wall.md#2-two-checkpoints)):
+  woken at once (`size`, the role). To narrow it, a `refine` rewrites the
+  Scope whole, fewer files, then `unblock` to its state; sent back as it
+  is, the next crossing waits for a person. Else `blocked`,
+  `person: true`, why it cannot be narrowed.
 
 ## A body's footer
 

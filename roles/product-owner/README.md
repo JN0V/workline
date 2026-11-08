@@ -104,7 +104,8 @@ At `autonomy: normal`, the default:
   blocked, its reason said afresh; put `workline:blocked` back to undo
   ([how](../../docs/spec/backlog-acts/refine.md#a-blocked-issue-read-again)).
   The developer's ask for a file outside the Scope wakes it at once: it
-  widens the Scope, or says why not.
+  widens the Scope, or says why not. So does a run too big for its role:
+  it narrows the Scope, or leaves the issue to a person.
 - **Back to refine, at every level**: a ready issue that no longer fits,
   its reason in its comment; put `workline:ready` back to undo
   ([why](../../docs/adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#amendment-2026-11-01-back-to-refine-needs-no-yes)).

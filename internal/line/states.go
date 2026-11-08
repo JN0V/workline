@@ -519,8 +519,8 @@ func runStateStep(res *Result, cfg *routing.Config, f forge.Forge, spec string, 
 	}
 	// A machine error moves nothing (ADR-0063, I3): its count kept in the
 	// record, said on the issue; the step runs again after the back-off,
-	// within the budget; a task too big for the context, never retried,
-	// waits for a person at once. Code said lacking once it was given
+	// within the budget. A run too big for its role, never retried, asks
+	// the product owner (crossed). Code said lacking once it was given
 	// waits for a person (needs-spent). Any other outcome starts them again.
 	w, now := st.write.Record, clock().UTC()
 	same := st.rec.State == w.State && st.rec.Body == w.Body && st.rec.Labeled == w.Labeled // the same input
@@ -536,11 +536,10 @@ func runStateStep(res *Result, cfg *routing.Config, f forge.Forge, spec string, 
 		st.write.Blocked = why
 	}
 	switch {
-	case out.Machine() && !out.Retried():
-		// A task too big for the role's context (#1160): the same input
-		// gives the same prompt, so no try mends it; a person narrows the
-		// issue or changes the setting the run names, at once.
-		blockNow("machine-error-size", fmt.Sprintf("the %s's task is too big for its context: %s; a run again on the same input fails the same", st.role, oneLine(out.Said)))
+	case out.Crossed():
+		// Too big for its role (ADR-0064, step 3): never run again on the
+		// same input, which crosses the same; the product owner asked first.
+		crossed(&st, out, blockNow, sameState(f, cfg, st), cfg)
 	case out.Machine():
 		prev := errorsOf(st.rec)
 		if !same {

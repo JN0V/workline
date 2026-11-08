@@ -143,6 +143,13 @@ type Record struct {
 	// Spent, each a short hash of its run folder's name (CountRuns): an
 	// apply resumed counts none twice.
 	Counted []string `json:"counted,omitempty"`
+	// Sized: the states a run too big for its role asked the product
+	// owner on the issue's size from (crossed.go), kept through every
+	// state: once a state, a second crossing from one waits for a person
+	// (ADR-0064, §4). SizeOf: the role whose run crossed, while the
+	// product owner has not read the issue for it; "" once it did.
+	Sized  []string `json:"sized,omitempty"`
+	SizeOf string   `json:"size-of,omitempty"`
 }
 
 // StateWrite is what the line writes on an issue once its step ran:
@@ -299,7 +306,7 @@ func plural(n int, one, many string) string {
 // before — one, a count started again, for a state further on the line
 // (cfg) than any it reached (#1068).
 func due(cfg *routing.Config, s routing.State, is forge.Issue, labeled, spec string, rec Record, had bool) (Record, bool) {
-	now := Record{State: s.Name, Body: bodyHash(is.Body), Labeled: labeled, Hops: rec.Hops, Spec: spec, Reached: rec.Reached, Spent: rec.Spent, Counted: rec.Counted}
+	now := Record{State: s.Name, Body: bodyHash(is.Body), Labeled: labeled, Hops: rec.Hops, Spec: spec, Reached: rec.Reached, Spent: rec.Spent, Counted: rec.Counted, Sized: rec.Sized}
 	if had && rec.State == now.State && rec.Body == now.Body && rec.Labeled == now.Labeled && rec.Spec == now.Spec {
 		return rec, false
 	}

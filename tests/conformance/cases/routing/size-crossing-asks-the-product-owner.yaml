@@ -1,0 +1,43 @@
+case: routing/size-crossing-asks-the-product-owner
+about: >
+  A run too big for its role asks the product owner first (ADR-0064,
+  step 3; #1168): on #3, waiting for its tests, the Scope names one line
+  of 100,000 characters, over the tester's context budget even cut to
+  one line. The agent is not asked; the run ends needs-input(product-owner:
+  size), never a machine error, never run again on the same input. The
+  line blocks #3 for the product owner, saying the size and that it reads
+  it at once. The next run wakes the product owner on it, no news needed,
+  told the size and what it may decide; it keeps #3 blocked, for a person.
+given:
+  repo: tested
+  setup:
+    - "mkdir -p src && awk 'BEGIN { printf \"# \"; for (i = 1; i <= 2000; i++) printf \"%050d\", i; printf \"\\n\" }' > src/wide.sh && git add src && git commit -qm 'src' && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  env: {WORKLINE_CLOCK: "2026-11-05T08:00:00Z"}
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+    routing: {events: {issue: [product-owner, tester]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:needs-tests"]
+        author: ann
+        insider: true
+        body: "## Need\n\nI want to multiply.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n\n---\n\n## Scope\n\n- `src/wide.sh`\n"
+run: {route: reconcile, open-merge-request: true, ai: "cmd:sh $FIXTURES/agents/blocked-for-size.sh", then: again}
+expect:
+  agent-calls: 1
+  findings:
+    - {rule: prompt-over-budget, message: "over the role's budget of 60000 (context.budget in its role.yaml)"}
+    - {rule: size-crossed, level: warn, where: "#3", message: "the tester's run on it is too big for its context: the agent was not asked"}
+    - {rule: size-crossed, level: warn, where: "#3", message: "the product owner reads it at once: moved to blocked"}
+    - {rule: state-revisit, level: info, where: "#3", message: "blocked, read again by the product-owner: the tester's run on it crossed its size"}
+  no-findings: [{rule: state-retry}, {rule: state-waits}, {rule: no-test-written}, {rule: machine-error-size}]
+  run-files:
+    in/task.md: {contains: ["the tester's run on it crossed its size", "narrow its Scope", "`person: true`"]}
+  forge:
+    issues:
+      - id: 3
+        labels: ["workline:blocked"]
+        comment-contains: ["over the role's budget of 60000", "the line asks the product owner on its size at once", "no smaller Scope proves it"]
+        comment-lacks: ["1 of 2 tries"]

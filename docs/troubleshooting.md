@@ -84,9 +84,16 @@ goes ready, a hidden record that does not read: in
   `code-lines-max` and `tests-lines-max` size each run (each role's page).
 - `input-cut` (a warning): the agent read part of what the run gives it;
   the line says what, how much of it, and the setting that raises it.
-- `machine-error-size`: the task is over the role's context budget, so the
-  agent was not asked. The issue goes to Blocked at once, never run again
-  on the same input; narrow it, or change the setting the line names.
+- `size-crossed`: a role's run on an issue was too big for it: its task
+  over the context budget, its token cap reached, or what it read cut
+  before it blocked. Never run again on the same input: the issue goes to
+  Blocked, and the product owner reads it at once, to narrow its Scope
+  or leave it to you
+  ([routing](spec/routing.md#the-line-of-states)).
+- `size-crossed-again`, `size-crossed-own`: the same, the product owner
+  already asked from that state, or its own run too big. Narrow the
+  issue or split it, or raise the setting the line names, then move it
+  back by its label.
 - `ai-max-seconds` (committer): the rewrite took more than the 30 s it
   may; the message is refused with its reasons, as with no agent.
 - `personal-setting-ignored`: your own config sets what a role does not
