@@ -1,0 +1,20 @@
+- patch:
+    file: calc/src/test/kotlin/calc/GridTest.kt
+    content: |
+      package calc
+
+      import org.junit.jupiter.api.Test
+
+      // gradle: e: {file}:15:20 Unresolved reference 'grid'.
+      // gradle: e: {file}:15:30 Unresolved reference 'Thirds'.
+      // gradle: e: {file}:16:24 Unresolved reference 'vertical'.
+      // gradle: e: {file}:16:38 Cannot infer type for this parameter. Please specify it explicitly.
+      class GridTest {
+          // Scenario: Thirds of nine
+          // Given the library, When I cut 9 in thirds, Then the lines are at 3 and 6.
+          @Test
+          fun `thirds of nine`() {
+              val g = grid(9, Thirds.ALL)
+              check(g.vertical.map { x -> x } == listOf(3, 6))
+          }
+      }

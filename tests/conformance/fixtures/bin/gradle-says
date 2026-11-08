@@ -1,0 +1,17 @@
+#!/bin/sh
+# gradle-says <report>: the `kotlin-tested` fixture's runner as Gradle
+# behaves when a test does not compile: no report at all, in any module
+# (#1192). Each test file's `// gradle: <line>` comments are what the
+# compiler prints for it, {file} its absolute path as a file:// URI;
+# any such line printed, the build fails before a test runs. None, it
+# runs the fixture's own run-tests.sh.
+report=$1
+said=$(find . -path '*/src/test/*' -name '*.kt' | sort | while read -r f; do
+  sed -n "s|^ *// gradle: ||p" "$f" | sed "s|{file}|file://$PWD/${f#./}|g"
+done)
+if [ -n "$said" ]; then
+  printf '%s\n' "$said"
+  printf '> Task :compileTestKotlin FAILED\n\nFAILURE: Build failed with an exception.\n\nBUILD FAILED in 8s\n'
+  exit 1
+fi
+exec sh run-tests.sh "$report"

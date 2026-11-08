@@ -1,0 +1,29 @@
+case: tester/write-kotlin-changed-signature-red
+about: >
+  The issue changes a function's signature (`add(a, b, c)`, the base's
+  `add` taking two). The tester's Kotlin test calls it with three
+  arguments: the module does not compile, Gradle writes no report at all,
+  and Kotlin says `Too many arguments for 'fun add(…)'`, no missing name.
+  The compiler's lines are read before the missing report refuses the
+  run, and a signature the issue writes anew is red for the right reason:
+  the Draft opens at once (#1192).
+given:
+  repo: kotlin-tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh \"$FIXTURES/bin/gradle-says\" {report}"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Add three numbers"
+        labels: ["workline:ready"]
+        body: "## Need\n\nWhen I total three prices, I want to add them in one call, so I need not chain two.\n\n## Validation\n\n- **Three numbers:** Given the library, When I add 2, 3 and 4, Then I get 9.\n\n---\n\n## Verification\n\nA Kotlin test.\n\n## Scope\n\n- `calc/src/main/kotlin/calc/Calc.kt`: `add(a, b, c)` takes a third number.\n"
+run: {test: [write, --issue, "3"], ai: "fake:tester-kotlin-signature"}
+expect:
+  status: pass
+  summary: "1 new test, red on the base (1 not built there, a name or a signature the change adds)"
+  agent-calls: 1
+  forge:
+    merge-requests:
+      - {id: 1, branch: workline/tester/issue-3, draft: true}

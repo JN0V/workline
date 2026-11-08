@@ -28,6 +28,7 @@ func TestOutcomeOf(t *testing.T) {
 		{"blocked, its input cut", Block, []Finding{{Rule: CutRule, Level: "warn"}, {Rule: "test-green-on-base"}}, "needs-input(person)"},
 		{"passed, its input cut", Pass, []Finding{{Rule: CutRule, Level: "warn"}}, "progress"},
 		{"a machine error, its input cut", Block, []Finding{{Rule: CutRule, Level: "warn"}, {Rule: "build-broken"}}, "machine-error(build)"},
+		{"no report, its input cut (#1192)", Block, []Finding{{Rule: CutRule, Level: "warn"}, {Rule: "report-missing", Message: "e: …"}}, "machine-error(report)"},
 		{"the code named, its input cut", Block, []Finding{{Rule: CutRule, Level: "warn"}, {Rule: NeedsCode}}, "needs-input(engine)"},
 	}
 	for _, c := range cases {

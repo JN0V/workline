@@ -502,10 +502,15 @@ func Post(runDir, repo string) int {
 		if notShown(t, *proof, len(newTests)) {
 			return unreproduced(runDir, t, intents, *proof)
 		}
-		// A test that does not build but for a missing name is the
+		// A test that does not build but for what the issue adds is the
 		// agent's to mend, as a lint finding is: asked once more with the
 		// build's error (#1048: a wrong constructor call, blocked a week).
-		if slices.ContainsFunc(proof.Findings, func(f verdict.Finding) bool { return f.Rule == "build-broken" }) {
+		// So is a run with its tests that wrote no report and no error a
+		// row reads, its error lines said (#1192); one on the base alone is
+		// final, nothing the tests mend.
+		if !proof.Final && slices.ContainsFunc(proof.Findings, func(f verdict.Finding) bool {
+			return f.Rule == "build-broken" || f.Rule == "report-missing"
+		}) {
 			proof.Again = true
 		}
 		return refusePost(runDir, t.Issue, *proof)

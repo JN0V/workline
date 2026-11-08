@@ -1,5 +1,5 @@
 ---
-sources: [internal/tester/build.go, internal/tester/tester.go, internal/tester/write.go, internal/tester/objection.go, internal/tester/junit.go, roles/tester/role.yaml]
+sources: [internal/tester/build.go, internal/tester/redfirst.go, internal/tester/tester.go, internal/tester/write.go, internal/tester/objection.go, internal/tester/junit.go, roles/tester/role.yaml]
 checked: 90ca43c5
 verified: agent:claude-code
 ---
@@ -14,34 +14,51 @@ record of the failed build.
 flowchart LR
   run["<b>Tests on the base</b><br/>build fails"]
   errs["<b>Each error line</b><br/>of the output"]
-  red["<b>Red</b><br/>a missing name"]
-  block["<b>Blocks</b><br/>build-broken"]
+  red["<b>Red</b><br/>what the change adds"]
+  block["<b>Back to the tester</b><br/>build-broken"]
   run --> errs
-  errs -- "all in the change's tests,<br/>all a name the base lacks,<br/>each named by the issue" --> red
+  errs -- "each file of the change's tests:<br/>one error on what the issue adds,<br/>the others its knock-ons" --> red
   errs -- "any other" --> block
 ```
 
 ## The rule
 
-- **Red, for the right reason**, only when every error the compiler
-  printed:
-  - lies in a test file the change adds or changes, and
-  - names something the base lacks: `undefined: Mul`, `v.Scale undefined
-    (type T has no field or method Scale)`, `unknown field Rate in struct
-    literal`, and
-  - that name is in the issue's text (title and body) as a whole word,
-    or its last part (`lostCount` for `MQTTStatistics::lostCount`): what
-    the change adds
-    ([#1111](https://github.com/JN0V/workline/issues/1111)).
-- **Any other error blocks** (`build-broken`): a syntax error, a wrong
-  import, a call with the wrong arguments, an error in a code file, a
-  helper the test made up (`stubSetBrokerLink`, named nowhere in the
-  issue). The check names the lines and the made-up names. Writing an
-  issue's tests, the agent is asked once more with them first.
+- **No report**: a build that stops at compiling the tests, as Gradle
+  does, writes no report. The compiler's lines are read first
+  ([#1192](https://github.com/JN0V/workline/issues/1192)).
+- **Red, for the right reason**, when each file of the change's tests
+  holding an error holds one on what the change adds:
+  - **a missing name** (`undefined: Mul`, `Unresolved reference 'mul'`)
+    the issue's text names as a whole word, or its last part
+    (`lostCount` for `MQTTStatistics::lostCount`)
+    ([#1111](https://github.com/JN0V/workline/issues/1111));
+  - **any other error** quoting a name the issue writes as a call
+    (`restoreFromExisting(existingCount, nextIndex)` makes `Too many
+    arguments for 'fun restoreFromExisting(…)'` red), or a name the
+    base lacks that the issue names (`'nextIndex' overrides nothing`).
+    With no issue known, a name the base lacks counts unless a test of
+    the change declares it (`class FakeCalc`). Quoting none, the words
+    the test calls count (`call to Add`, `Add(` in the test).
+- **Knock-ons**, in such a file, are not counted: a type the compiler
+  could not infer (`Cannot infer type`), a missing name the test reaches
+  as a member (`grid.vertical`), or a type it does not call
+  (`GridType.THIRDS`). Any other error quoting nothing (a parse error,
+  K1's `Type mismatch: inferred type is String`) or quoting a value
+  (Go's `cannot use "Kitchen" … as int value`) is the test's own.
+- **Anything else goes back to the tester** (`build-broken`): a syntax
+  error, a wrong import, a wrong call on what the base has (`call to
+  Add` where the issue only names `Add`), an error in a code file, a
+  helper the test calls and the issue never names
+  (`stubSetBrokerLink`). The check quotes the compiler's lines. Writing
+  an issue's tests, the agent is asked once more with them.
+- **No report and no error a row reads**: `report-missing`, its error
+  lines quoted, not the build tool's last ones (`BUILD FAILED`). On the
+  tests' run, the agent is asked once more; on the base alone, final.
 - **The tests' names**, when nothing built them: read from the test
   files, as `file:name` (`calc/mul_test.go:TestMulTwoByThree`).
 - **Beside code**, the head builds and runs those tests: they must pass
-  there, as any new test.
+  there, as any new test. A name the change's code touches counts as
+  one the issue writes.
 - **No error line read**, in a language with no patterns set: as before,
   `tests-not-built` warns, and `test write` opens no Draft.
 
@@ -133,7 +150,10 @@ golangci-lint does, reports the same missing name
   prose (`get`, `init`, `lost`) counts as red, since a whole word
   matches.
 - **`workline test check`** on a pull request knows no issue: any
-  missing name counts.
+  missing name counts; another error counts by the base or the
+  change's code alone.
+- **The base's words**: "a name the base lacks" is a whole-word search
+  of the base's files; a word in a comment there counts as held.
 - **Go stops at ten errors** a package (`too many errors`): the errors
   past the tenth are not read. `-gcflags=-e` in the test command shows
   them all.

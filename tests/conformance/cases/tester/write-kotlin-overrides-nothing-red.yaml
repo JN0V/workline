@@ -1,0 +1,27 @@
+case: tester/write-kotlin-overrides-nothing-red
+about: >
+  The issue adds `nextIndex` to an interface. The tester's Kotlin test
+  fakes it with `override fun nextIndex()`: Gradle writes no report, and
+  Kotlin says `'nextIndex' overrides nothing`, no missing name. The name
+  is one the base lacks and the issue names: red for the right reason,
+  the Draft opens at once (#1192).
+given:
+  repo: kotlin-tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh \"$FIXTURES/bin/gradle-says\" {report}"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "The next file number"
+        labels: ["workline:ready"]
+        body: "## Need\n\nWhen I resume a recording, I want the next file number, so no file is written over.\n\n## Validation\n\n- **Next index:** Given a store holding five files, When I ask its next index, Then I get 5.\n\n---\n\n## Verification\n\nA Kotlin test, with a fake store.\n\n## Scope\n\n- `calc/src/main/kotlin/calc/Calc.kt`: a `Store` interface gains `nextIndex`.\n"
+run: {test: [write, --issue, "3"], ai: "fake:tester-kotlin-override"}
+expect:
+  status: pass
+  summary: "1 new test, red on the base (1 not built there, a name or a signature the change adds)"
+  agent-calls: 1
+  forge:
+    merge-requests:
+      - {id: 1, branch: workline/tester/issue-3, draft: true}

@@ -1,0 +1,16 @@
+- patch:
+    file: calc/src/test/kotlin/calc/AddThreeTest.kt
+    content: |
+      package calc
+
+      import org.junit.jupiter.api.Test
+
+      // gradle: e: {file}:9:28 Too many arguments for 'fun add(a: Int, b: Int): Int'.
+      class AddThreeTest {
+          // Scenario: Three numbers
+          // Given the library, When I add 2, 3 and 4, Then I get 9.
+          @Test
+          fun `two plus three plus four`() {
+              check(add(2, 3, 4) == 9)
+          }
+      }

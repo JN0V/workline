@@ -121,9 +121,11 @@ settings:
   # A build broken by a new test, told apart by ecosystem: an error line
   # of the test command's output (groups file and message), the messages
   # naming what the code lacks (the name in a group `name`, else the
-  # first quoted word), and the tests a file declares. Every error in a
-  # test of the change and a missing name the issue names: red, the tests
-  # named from their files; any other error blocks (build-broken). An
+  # first quoted word), and the tests a file declares. Each file of the
+  # change's tests holding an error on what the issue adds (a missing name
+  # it names, a name the base lacks, a signature it writes), the others
+  # its knock-ons: red, the tests named from their files; any other error
+  # goes back to the tester (build-broken, docs/missing-name.md). An
   # absolute path, or a file:// URI, under the checkout is read from the
   # root. Go's, Kotlin's (Gradle's `e:` lines, Kotlin 2 and 1), javac's
   # and Gradle's build files here; others in docs/missing-name.md.
