@@ -100,9 +100,10 @@ func (p *Plan) checkSize(c *Proposal, st *State) (rule, why string) {
 	return "", ""
 }
 
-// SplitOff says whether the project turned `split` off itself, not by the
-// role's default: no split then, even past an issue's size (ADR-0064, §3).
+// SplitOff says whether the project turned `split` off itself, writing
+// its mode, not by the role's default: no split then, even past an
+// issue's size (ADR-0064, §3). A `split: {max: 3}` alone writes no mode.
 func (c Config) SplitOff() bool {
 	s, ok := c.Acts["split"]
-	return ok && s.Mode == Off && (c.Origins["split"] == FromSetting || slices.Contains(c.ModeSet, "split"))
+	return ok && s.Mode == Off && slices.Contains(c.ModeSet, "split")
 }

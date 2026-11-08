@@ -1,0 +1,37 @@
+case: routing/size-split-max-alone-keeps-it-on
+about: >
+  A project that wrote only how many splits a run may make, `split:
+  {max: 3}`, never turned `split` off itself (ADR-0064, §3; #1174): its
+  mode is the role's default, off, which an issue's size turns on. The
+  tester's prompt on #3 is over its context budget; asked on its size,
+  the product owner is told it may split it, and splits it into #4 and
+  #5. Only a mode the project wrote keeps split off.
+given:
+  repo: tested
+  setup:
+    - "mkdir -p src && awk 'BEGIN { printf \"# \"; for (i = 1; i <= 2000; i++) printf \"%050d\", i; printf \"\\n\" }' > src/wide.sh && git add src && git commit -qm 'src' && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  env: {WORKLINE_CLOCK: "2026-11-05T08:00:00Z"}
+  config:
+    roles:
+      tester: {settings: {test-command: "sh run-tests.sh {report}"}}
+      product-owner: {settings: {acts: {split: {max: 3}}}}
+    routing: {events: {issue: [product-owner, tester]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply and divide two numbers"
+        labels: ["workline:needs-tests"]
+        author: ann
+        insider: true
+        body: "## Need\n\nI want to multiply and divide.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **Six by three:** Given the library, When I divide 6 by 3, Then I get 2.\n\n---\n\n## Scope\n\n- `src/wide.sh`\n"
+run: {route: reconcile, open-merge-request: true, ai: "cmd:sh $FIXTURES/agents/size-split.sh 3 big blocked", then: again}
+expect:
+  agent-calls: 1
+  no-findings: [{rule: split-off}]
+  run-files:
+    in/task.md: {contains: ["`split` with `too-big: true`"], not-contains: ["this project allows no splits"]}
+  forge:
+    issues:
+      - {id: 3, labels: ["workline:blocked"], comment-contains: ["split: [4, 5]"]}
+      - {id: 4, title: "Multiply two numbers"}
+      - {id: 5, title: "Divide two numbers"}
