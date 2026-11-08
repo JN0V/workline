@@ -6,8 +6,9 @@ about: >
   for the spec review, the reviewer reads that spec in the same run
   though the product owner's state comment is not written yet, the
   apply writes both; the review makes refine's step due again, and the
-  chained run moves the issue to its tests. No other event, no second
-  label by a person.
+  chained run moves the issue to its tests, with no agent: the review
+  clean, that move takes no judgement. No other event, no second label
+  by a person.
 given:
   repo: backlog
   config:
@@ -24,7 +25,7 @@ run:
   apply-from: {line: true, chain: 1}
 expect:
   status: pass
-  agent-calls: 3
+  agent-calls: 2
   forge:
     issues:
       - id: 9

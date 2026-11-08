@@ -1,0 +1,40 @@
+case: routing/state-accepted-seen-stays-acted
+about: >
+  The line's record keeps the labels a step ran on, as its run left
+  them (ADR-0063, §3): the same workline:accepted and size tier again,
+  the same body and state, run nothing. A label put on before the last
+  run, in a record from before the line kept the labels, was seen too;
+  a size tier in such a record was seen, put on during that run as it
+  often is.
+given:
+  repo: tested
+  config:
+    routing: {events: {issue: [product-owner, tester, developer]}}
+  forge:
+    issues:
+      - id: 6
+        title: "Counter kept"
+        labels: ["workline:to-refine", "workline:accepted", "workline:size/large"]
+        labeled: {"workline:to-refine": "2026-11-08T07:04:00Z", "workline:accepted": "2026-11-08T07:46:53Z", "workline:size/large": "2026-11-08T07:47:00Z"}
+        body: "## Need\n\nI want to multiply.\n"
+        comments: ["**workline's line** last woke the product owner.\n\n<!-- workline:line-record {\"state\":\"refine\",\"body\":\"8a828a06be19\",\"labeled\":\"2026-11-08T07:04:00Z\",\"hops\":1,\"unread\":\"8a828a06be19\",\"ran\":\"2026-11-08T07:50:00Z\",\"v\":1,\"labels\":\"workline:accepted,workline:size/large\"} -->\n<!-- workline:sticky=line/state -->"]
+      - id: 7
+        title: "Restore kept"
+        labels: ["workline:to-refine", "workline:accepted"]
+        labeled: {"workline:to-refine": "2026-11-08T07:04:00Z", "workline:accepted": "2026-11-08T07:46:53Z"}
+        body: "## Need\n\nI want to multiply.\n"
+        comments: ["**workline's line** last woke the product owner.\n\n<!-- workline:line-record {\"state\":\"refine\",\"body\":\"8a828a06be19\",\"labeled\":\"2026-11-08T07:04:00Z\",\"hops\":1,\"unread\":\"8a828a06be19\",\"ran\":\"2026-11-08T07:50:00Z\",\"v\":1} -->\n<!-- workline:sticky=line/state -->"]
+      - id: 8
+        title: "Sized in its last run"
+        labels: ["workline:to-refine", "workline:size/large"]
+        labeled: {"workline:to-refine": "2026-11-08T07:04:00Z", "workline:size/large": "2026-11-08T07:52:00Z"}
+        body: "## Need\n\nI want to multiply.\n"
+        comments: ["**workline's line** last woke the product owner.\n\n<!-- workline:line-record {\"state\":\"refine\",\"body\":\"8a828a06be19\",\"labeled\":\"2026-11-08T07:04:00Z\",\"hops\":1,\"unread\":\"8a828a06be19\",\"ran\":\"2026-11-08T07:50:00Z\",\"v\":1} -->\n<!-- workline:sticky=line/state -->"]
+run: {route: reconcile, ai: none, input: {reconcile: list}}
+expect:
+  status: pass
+  agent-calls: 0
+  findings:
+    - {rule: state-acted, where: "#6"}
+    - {rule: state-acted, where: "#7"}
+    - {rule: state-acted, where: "#8"}

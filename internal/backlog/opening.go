@@ -197,6 +197,24 @@ func ByPerson(is forge.Issue) bool {
 	return !openedKey.MatchString(is.Body) && !Bot(is.Author)
 }
 
+// Outsider says whether an issue is its reporter's, someone without
+// write access (ADR-0018): neither a person of the project's nor a bot's
+// — the project's, nobody there to ask (#429), a split's children and a
+// role's findings the line's own App opened among them. A role's marker
+// counts only with a bot as its author, as a person's description reads
+// (plain.go): anyone may type it in an issue. GitHub Actions' own bot
+// counts only with that marker, a role's finding opened through the one
+// way (ADR-0018): a workflow may open an issue holding an outsider's text.
+func Outsider(is forge.Issue) bool {
+	if is.Insider || !Bot(is.Author) {
+		return !is.Insider
+	}
+	return is.Author == actionsBot && OpenedBy(is.Body) == ""
+}
+
+// actionsBot is the bot a GitHub workflow's own token writes as.
+const actionsBot = "github-actions[bot]"
+
 // Bot says whether an author is a bot: a GitHub app's `[bot]` login, a
 // GitLab project or group bot. Nobody there answers a question (#429).
 func Bot(author string) bool {

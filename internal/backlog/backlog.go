@@ -1043,9 +1043,11 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 				p.Findings = append(p.Findings, verdict.Finding{Rule: "need-changed", Level: "info", Where: c.where(),
 					Message: fmt.Sprintf("read again for %s: %s is proposed, not done", ch.said(), c.Kind())})
 			}
-			if what, ok := theirs[c.Do]; ok && d.Mode == Act && !p.issues[c.Issue].Insider && !Accepted(p.issues[c.Issue]) {
+			if what, ok := theirs[c.Do]; ok && d.Mode == Act && Outsider(p.issues[c.Issue]) && !Accepted(p.issues[c.Issue]) {
 				// The reporter has no write access: the issue is theirs
-				// (ADR-0018), the act is for a person to decide.
+				// (ADR-0018), the act is for a person to decide. A role's
+				// finding, or a bot's issue — a split's children the
+				// line's App opened (#1195) —, is the project's (#429).
 				d.Mode = Propose
 				p.Findings = append(p.Findings, verdict.Finding{Rule: "reporter-outside", Where: c.where(),
 					Message: "opened by someone without write access to the project: " + what + " is proposed, not done"})
@@ -2037,7 +2039,7 @@ func (p *Plan) checkRefining(f forge.Backlog, repo, role string, c *Proposal) (r
 		// proposed to its reporter in a comment until they, or a person of
 		// the project, agree. A role's finding is the line's own draft; a
 		// bot's issue the project's, never addressed to the bot (#429).
-		c.ToReporter = c.Agreed == "" && !is.Insider && !Accepted(is) && OpenedBy(is.Body) == "" && !Bot(is.Author)
+		c.ToReporter = c.Agreed == "" && Outsider(is) && !Accepted(is)
 		// Answering the reviewer's findings on its spec (#128): the role
 		// rewrites the sections they lie in it may rewrite (Revisable).
 		c.Revise, c.Refused = nil, nil

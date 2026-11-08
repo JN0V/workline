@@ -281,8 +281,13 @@ func (g *github) Trail(id int, label string) (Trail, error) {
 	var t Trail
 	for _, n := range v.Data.Repository.Issue.Timeline.Nodes {
 		switch {
-		case n.Type == "LabeledEvent" && n.Label != nil && n.Label.Name == label:
-			t.Labeled = n.CreatedAt
+		case n.Type == "LabeledEvent" && n.Label != nil && (n.Label.Name == label || slices.Contains(AcceptedLabels, n.Label.Name)):
+			if n.Label.Name == label {
+				t.Labeled = n.CreatedAt
+			}
+			if slices.Contains(AcceptedLabels, n.Label.Name) {
+				t.Accepted = n.CreatedAt
+			}
 		case n.Subject != nil && n.Subject.Type == "PullRequest":
 			t.Links = append(t.Links, Link{Kind: "pull-request", Ref: fmt.Sprintf("#%d", n.Subject.Number), At: n.CreatedAt})
 		case n.Source != nil && n.Source.Type == "PullRequest":

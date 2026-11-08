@@ -1,0 +1,34 @@
+case: routing/state-refine-clean-review-no-agent
+about: >
+  Refine's step woken by the reviewer's review alone, one that found
+  nothing important open on the text as it is, every section there:
+  its act is the move to ready, which takes no judgement (principle 4).
+  The product owner runs with no agent, the issue moves on to its tests, and no
+  reviewer is chained after it.
+given:
+  repo: backlog
+  config:
+    routing: {events: {issue: [product-owner, reviewer, tester, developer]}}
+  forge:
+    issues:
+      - id: 9
+        title: Rows lost
+        body: "Rows lost.\n\n## Need\n\nThe monthly report counts every sale.\n\n## Verification\n\nA test writes three rows.\n\n## Validation\n\n- **A known day:** Given a day of three sales, When Ann opens it, Then she counts three.\n\n## Scope\n\nsrc/export/csv.go"
+        author: ann
+        insider: true
+        labels: [workline:to-refine]
+        labeled: {"workline:to-refine": "2026-11-08T06:40:00Z"}
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: 6003a12470db\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "**workline's line** last woke the product owner.\n\n<!-- workline:line-record {\"state\":\"refine\",\"body\":\"6003a12470db\",\"labeled\":\"2026-11-08T06:40:00Z\",\"hops\":1,\"asked\":\"6003a12470db\",\"ran\":\"2026-11-08T06:45:00Z\",\"v\":1,\"labels\":\"-\"} -->\n<!-- workline:sticky=line/state -->"
+          - "No important finding open.\n\n<!-- workline:spec-review body=6003a12470db round=2 open=0 in= -->\n\n<!-- workline:sticky=reviewer/spec -->"
+run: {route: issue, target: {issue: 9}, ai: fake:ready-nine}
+expect:
+  status: pass
+  agent-calls: 0
+  findings:
+    - {rule: state-ready-clean, where: "#9"}
+    - {rule: done, where: "#9", message: "Moved #9 to ready"}
+  forge:
+    issues:
+      - {id: 9, labels: [workline:needs-tests]}

@@ -209,7 +209,10 @@ what it can and asks for the rest:
   [Release candidate](../../release-candidate.md)). An issue opened
   by someone without write access to the project is theirs: moving it to
   ready is proposed on the issue, never done (`reporter-outside`) —
-  unless a person of the project accepted it with the label. Who is of the
+  unless a person of the project accepted it with the label. A bot's
+  issue, a split's children the line's App opened among them, and a
+  role's finding are the project's
+  ([#1195](https://github.com/JN0V/workline/issues/1195)). Who is of the
   project: on GitHub, the issue's author association (owner, member,
   collaborator); on GitLab, a member with the Planner role or above, read
   from the project's members (ADR-0023) — a token that may not list them

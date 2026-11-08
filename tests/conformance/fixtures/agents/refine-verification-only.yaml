@@ -1,0 +1,7 @@
+# The product owner writes #9's Verification, the rest the person's:
+# the body edited, the issue kept in refine (ADR-0063, §3).
+- refine:
+    issue: 9
+    verification: "A test writes three rows and reads three lines back."
+    sources: [src/export/csv.go]
+    why: "The issue says what is wrong, not how it will be proved."
