@@ -215,12 +215,17 @@ step 1):
   ([#1061](https://github.com/JN0V/workline/issues/1061)). Asked by the
   developer for files outside the Scope, the product owner's progress
   widens it with them, its own files kept, and readies it.
-- **Every run past its target**: `trial-35-every-run-crosses`, each
-  call 600k fresh tokens; `TestBackstopTrace` holds it to the issue
-  blocked at its backstop, past it by one run at most, within `max-hops`
-  and no machine error
+- **Every run past its target**: `trial-35-every-run-crosses`, the
+  tester's first run 350k past its cap, its size asked and `large`
+  granted, then each run past its target; `TestBackstopTrace` holds it
+  to the issue blocked at its backstop, past it by one run at most,
+  within `max-hops` and no machine error
   ([ADR-0064, §5](../adr/0064-size-is-a-target-not-a-wall.md#5-the-hard-backstop)).
   Like a named trace, it is not among the seeded runs.
+  `TestBackstopStopsRounds`: review rounds, each run by `workline
+  develop --merge-request`, cross the backstop; the line starts no
+  round more, blocks the issue, the pull request open, and the round's
+  job refuses alike.
 - **The trial's answers replayed**: `traces/answers/<trace>/`, the agent
   answers its runs kept, given back role by role through the engine's
   own reader (a `cmd:` agent printing each); the trial's path, read from

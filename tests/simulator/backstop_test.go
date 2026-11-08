@@ -2,6 +2,7 @@ package simulator
 
 import (
 	"encoding/json"
+	"maps"
 	"slices"
 	"testing"
 )
@@ -48,7 +49,7 @@ func TestBackstopTrace(t *testing.T) {
 		switch {
 		case is.Closed || r.State != "blocked" || r.Backstop != backstop:
 			t.Errorf("#%d not blocked at its backstop: closed %v, %s\n%s", is.ID, is.Closed, trail(is), log)
-		case total < backstop || total >= backstop+tr.tokens:
+		case total < backstop || total >= backstop+slices.Max(slices.Collect(maps.Values(tr.tokens))):
 			t.Errorf("#%d spent %d fresh tokens: not past its backstop of %d by one run at most", is.ID, total, backstop)
 		case r.Hops > maxHops || r.Errors != nil:
 			t.Errorf("#%d past the hard caps: %d hops, errors %v", is.ID, r.Hops, r.Errors)

@@ -52,8 +52,8 @@ type trace struct {
 	// replay: the trial's own answers are given first, from
 	// traces/answers/<file>/, a role's in the order it gave them.
 	replay bool
-	// tokens: the fresh tokens each call of the fake says it spent.
-	tokens int
+	// tokens: the fresh tokens each call of a role says it spent.
+	tokens map[string]int
 }
 
 // traces are the trial's issues as round 3 left them on 2026-11-04 (#757),
@@ -116,11 +116,14 @@ var traces = func() []trace {
 		// #1061: the developer's new test file beside its Scope, alone,
 		// as the trial's round wrote it: kept by the write fence, no ask.
 		trace{name: "trial-35-test-beside", file: "trial-35", fresh: true, end: "done", by: one("developer", testBeside)},
-		// ADR-0064, step 5: every run crosses its target, 600k fresh
-		// tokens a call, past the tester's cap of 300k and the
-		// developer's of 500k: the issue reaches its backstop, 1.6M, and
-		// waits for a person, within the hard caps.
-		trace{name: "trial-35-every-run-crosses", file: "trial-35", fresh: true, end: "waiting:", tokens: 600000},
+		// ADR-0064, step 5: every run crosses its target. The tester's
+		// first, 350k past its cap of 300k, its answer unread, crosses its
+		// size: the product owner, asked, grants `large`; then each run
+		// 350k, the developer's 600k, past its cap of 500k: the issue
+		// reaches its backstop, 1.6M, and waits for a person, within the
+		// hard caps.
+		trace{name: "trial-35-every-run-crosses", file: "trial-35", fresh: true, end: "waiting:", by: one("tester", malformed),
+			tokens: map[string]int{"product-owner": 350000, "tester": 350000, "developer": 600000}},
 	)
 	for _, n := range trial {
 		f := fmt.Sprintf("trial-%d", n)

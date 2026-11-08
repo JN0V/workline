@@ -871,7 +871,7 @@ func TestSeeds(t *testing.T) {
 	limits := map[string]checks{}
 	for _, tr := range traces {
 		v := os.Getenv("SIM_TRACE")
-		if v != "" && v != tr.name || v == "" && (tr.by != nil || tr.replay || tr.tokens > 0) {
+		if v != "" && v != tr.name || v == "" && (tr.by != nil || tr.replay || tr.tokens != nil) {
 			continue
 		}
 		runs = append(runs, tr)
