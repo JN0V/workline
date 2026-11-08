@@ -18,6 +18,12 @@ func TestKeywordsByLanguage(t *testing.T) {
 	if got := python.codeNames("`open()` fails on `None`; `def` it again"); !slices.Equal(got, []string{"open"}) {
 		t.Errorf("Python: searched %v, want [open]", got)
 	}
+	// `echo`, `export`, `source` are shell commands, as a script's own
+	// function is one (#1189): searched; `local`, `then` never.
+	shell, _ := New(repo(t, map[string]string{"bin/run.sh": "source ./env.sh\nexport PATH\necho ok\n"}), "")
+	if got := shell.codeNames("`source` drops `export PATH`, `echo` says nothing; `local` and `then`"); !slices.Equal(got, []string{"source", "export", "echo"}) {
+		t.Errorf("shell: searched %v, want [source export echo]", got)
+	}
 }
 
 // The folders beside a project's own code, by convention (#1109): a
@@ -41,6 +47,13 @@ func TestAsideByConvention(t *testing.T) {
 		"src/latest/a.go":                       false,
 		"internal/tester/write.go":              false,
 		"contest/a.py":                          false,
+		"app/src/jvmTest/kotlin/a/T.kt":         true,
+		"app/src/androidUnitTest/kotlin/a/T.kt": true,
+		"app/src/integrationTest/java/a/T.java": true,
+		"src/testing/helpers.go":                false, // a project's own test helpers are code (#1189)
+		"src/testutil/fixtures.go":              false,
+		"src/testFoo/a.go":                      false,
+		"src/fooTestBar/a.go":                   false,
 	} {
 		if got := aside(f); got != want {
 			t.Errorf("aside(%q) = %v, want %v", f, got, want)
