@@ -2,7 +2,9 @@ package tester
 
 import (
 	"slices"
+	"strings"
 	"testing"
+	"unicode/utf8"
 )
 
 // The names an error gives: a quoted signature's own name, a lone quoted
@@ -78,5 +80,18 @@ func TestErrorLines(t *testing.T) {
 	}
 	if got := errorLines("No error found\nBUILD FAILED\n", rows, 10); got != "no error line in its output; its output ends: No error found / BUILD FAILED" {
 		t.Errorf("tail: %q", got)
+	}
+	// A line quoted as an error is not quoted again in the tail.
+	if got := errorLines("> Task :a\ne: a/T.kt:1:2 Boom\n", rows, 5); got != "its errors: e: a/T.kt:1:2 Boom; its output ends: > Task :a" {
+		t.Errorf("twice: %q", got)
+	}
+	// One line of tens of KB, and many: each cut, and the whole.
+	long := "e: a/T.kt:1:2 " + strings.Repeat("x", 50000)
+	got := errorLines(strings.Repeat(long+"\n", 20)+strings.Repeat("y", 50000)+"\n", rows, 10)
+	if n := utf8.RuneCountInString(got); n > quoteMax {
+		t.Errorf("%d runes, past %d", n, quoteMax)
+	}
+	if !strings.HasPrefix(got, "its errors: e: a/T.kt:1:2 xxx") || strings.Contains(got, strings.Repeat("x", quoteLine)) || !strings.Contains(got, "x… / ") {
+		t.Errorf("each line not cut at %d runes: %.400q", quoteLine, got)
 	}
 }
