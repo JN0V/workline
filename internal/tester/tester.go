@@ -32,6 +32,10 @@ type Settings struct {
 	Report string `json:"test-report"`
 	// Paths are the test files, as patterns (`**` spans folders).
 	Paths []string `json:"test-paths"`
+	// ModuleFiles name the file marking a build module's folder
+	// (`build.gradle.kts`, `pom.xml`): set, `{packages}` is the modules
+	// a change touches, not the folders holding tests (#1176).
+	ModuleFiles []string `json:"module-files"`
 	// CodeLinesMax caps the lines of code and tests given to the agent
 	// when it writes an issue's tests, all files together.
 	CodeLinesMax int `json:"code-lines-max"`
