@@ -6,7 +6,8 @@ about: >
   budget of 60,000 at the normal size. The tester's run on it is told
   the tier, given a budget of 120,000, which its prompt fits, its token
   cap 600,000 and its code-lines-max 3,000: twice the role's, under the
-  issue's backstop of four times its normal (1.6M at the seed).
+  issue's backstop of four times its normal (1.6M at the seed). Its
+  liveness caps, ai-max-seconds and ai-max-turns, stay as they are.
 given:
   repo: tested
   setup:
@@ -30,5 +31,5 @@ expect:
     - {rule: size-tier, level: info, message: "its issue's size tier is large (`workline:size/large`): every size target of this run ×2"}
   no-findings: [{rule: prompt-over-budget}, {rule: size-crossed}]
   run-files:
-    in/settings.json: {contains: ["\"ai-max-tokens\": 600000", "\"code-lines-max\": 3000"]}
+    in/settings.json: {contains: ["\"ai-max-tokens\": 600000", "\"code-lines-max\": 3000", "\"ai-max-seconds\": 1200", "\"ai-max-turns\": 40"], not-contains: ["\"ai-max-seconds\": 2400", "\"ai-max-turns\": 80"]}
     in/input/size-tier: {contains: ["large"]}
