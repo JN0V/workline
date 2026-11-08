@@ -475,8 +475,9 @@ whose result moves the issue to the next. The table is the routing's
   ([#1160](https://github.com/JN0V/workline/issues/1160)).
   - **When**: its agent not asked for its prompt's size
     (`prompt-over-budget`, passed or not); blocked at its token cap
-    (`ai-max-tokens`); or blocked, no machine error nor code named, on
-    what it read cut (`input-cut`).
+    (`ai-max-tokens`). A cut of what it read (`input-cut`) is said, never
+    a crossing
+    ([amended](../adr/0064-size-is-a-target-not-a-wall.md#2-two-checkpoints)).
   - **Then**: the step moves the issue to `workline:blocked`, the size
     said, and that the product owner reads it at once (`size-crossed`).
     The record keeps the role (`size-of`) and the state (`sized`).

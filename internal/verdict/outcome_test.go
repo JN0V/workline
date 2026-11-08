@@ -24,7 +24,8 @@ func TestOutcomeOf(t *testing.T) {
 		{"a prompt over the budget, passed", Pass, []Finding{{Rule: "prompt-over-budget", Level: "warn"}}, "needs-input(product-owner: size)"},
 		{"blocked at its token cap", Block, []Finding{{Rule: "ai-max-tokens", Level: "warn"}, {Rule: "build-broken"}}, "needs-input(product-owner: size)"},
 		{"passed at its token cap", Pass, []Finding{{Rule: "ai-max-tokens", Level: "warn"}}, "progress"},
-		{"blocked, its input cut", Block, []Finding{{Rule: CutRule, Level: "warn"}, {Rule: "test-green-on-base"}}, "needs-input(product-owner: size)"},
+		// A cut is said, never a size (ADR-0064, §2, amended 2026-11-08).
+		{"blocked, its input cut", Block, []Finding{{Rule: CutRule, Level: "warn"}, {Rule: "test-green-on-base"}}, "needs-input(person)"},
 		{"passed, its input cut", Pass, []Finding{{Rule: CutRule, Level: "warn"}}, "progress"},
 		{"a machine error, its input cut", Block, []Finding{{Rule: CutRule, Level: "warn"}, {Rule: "build-broken"}}, "machine-error(build)"},
 		{"the code named, its input cut", Block, []Finding{{Rule: CutRule, Level: "warn"}, {Rule: NeedsCode}}, "needs-input(engine)"},

@@ -9,6 +9,8 @@
 - **Amends, once built:** [ADR-0063] §6 (over budget is no longer a
   machine error), §4 (a token counter in the log), §8 (the ceiling a
   measure, never a cap); [ADR-0038] (`split` on past an issue's size)
+- **Amended:** [2026-11-08](#amendment-2026-11-08-a-cut-is-not-a-crossing),
+  a cut of the code is no longer a crossing
 
 ## Context
 
@@ -74,8 +76,10 @@ flowchart LR
   `needs-input(product-owner: size)`, the existing `needs-input(R2)` of
   [ADR-0063 §5](0063-every-open-issue-is-due-waiting-or-done.md#5-one-pure-function-decides),
   with what was done and what remains.
-  - It fires on a prompt over budget, a cut of the code, a change too
-    large to review whole, a run's token cap; said in the status block.
+  - It fires on a prompt over budget, a change too large to review
+    whole, a run's token cap; said in the status block.
+  - A cut of the code is said, never a crossing
+    ([amendment](#amendment-2026-11-08-a-cut-is-not-a-crossing)).
   - **Never a machine error, never retried**: same input, same size
     ([ADR-0063 §6](0063-every-open-issue-is-due-waiting-or-done.md#6-typed-outcomes)
     lists over budget as one today).
@@ -144,7 +148,8 @@ One pull request a step, each shippable alone; conformance cases first.
 2. **Normal size measured**: the token counter in `line-log`, the
    seed, the normals kept on the forge; reported, not yet acted on.
 3. **The crossing outcome**: `needs-input(product-owner: size)` in place
-   of the machine errors and silent cuts of step 1.
+   of the machine errors of step 1; a cut stays a warning
+   ([amendment](#amendment-2026-11-08-a-cut-is-not-a-crossing)).
 4. **The product owner's split or grant**, the tier labels, the
    at-ready prediction, the auditor's count. A conformance case: a
    granted tier's run targets stay under the backstop.
@@ -198,6 +203,22 @@ One pull request a step, each shippable alone; conformance cases first.
 - **The product owner's splits are unproven**: an evaluation case
   before step 4. **Granting as a habit**: counted and sampled (§6).
   **A noisy percentile** on few runs: the seed holds until about 10.
+
+## Amendment (2026-11-08): a cut is not a crossing
+
+Decided by a [panel of three](https://github.com/JN0V/workline/pull/1199#issuecomment-6719455006)
+independent reviewers, unanimous, on round 6's root causes. Changes
+§2's list of what crosses, for every agent.
+
+- **Why**: cuts happen on nearly every call. A cut of one 2,726-line
+  test file split a bug its reporter called atomic
+  ([#1193](https://github.com/JN0V/workline/issues/1193)).
+- **Now**: a prompt over budget, a change too large to review whole, a
+  run's token cap cross; a cut of the code does not. A blocked run with
+  a cut ends on its own block.
+- **Kept**: every cut is said, with the setting that raises it (step 1).
+- **Postponed**: a code map in place of cut files, until a measure
+  exists ([ADR-0063 §8](0063-every-open-issue-is-due-waiting-or-done.md#8-one-code-picker-and-tools-where-the-agent-has-them)).
 
 [ADR-0022]: 0022-a-split-keeps-the-need-a-rename-keeps-a-persons-title.md
 [ADR-0026]: 0026-the-product-owners-autonomy-is-a-level.md
