@@ -13,6 +13,7 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"strconv"
 	"strings"
@@ -105,6 +106,11 @@ type Refusal struct {
 func readBounds(f forge.Forge, bl forge.Backlog, repo string, is forge.Issue) (Bounds, error) {
 	files := repoFiles(repo)
 	b := Bounds{Issue: is.ID, Scope: inRepo(scopePaths(is.Body, files), files), Frozen: map[string]int{}, Blobs: map[string]string{}}
+	for _, p := range scopeNamed(is.Body, files) {
+		if !slices.Contains(b.Scope, p) {
+			b.Scope = append(b.Scope, p)
+		}
+	}
 	for _, sc := range work.Scenarios(work.ByMeaning(is.Body)[work.Validation].Text) {
 		b.Scenarios = append(b.Scenarios, sc.Name)
 	}
@@ -257,6 +263,79 @@ func inRepo(scope, files []string) []string {
 	return out
 }
 
+var (
+	// className is a Scope's word that names a class, not a file: `TracingViewModel`.
+	className = regexp.MustCompile(`^[A-Z][A-Za-z0-9_]*$`)
+	// moduleWord is a module a Scope's line names as a build tool writes
+	// it: `core:session` is core/session.
+	moduleWord = regexp.MustCompile(`(?:^|[\s(` + "`" + `])(:?[A-Za-z][\w-]*(?::[A-Za-z][\w-]*)+)`)
+)
+
+// scopeNamed are the files a Scope's words name by a name alone, each
+// line read with the modules it names (`core:session`, a folder the
+// repository holds): a class, `TracingViewModel`, as the file whose name
+// it is with its extension; a file's name several files have, as those
+// in the line's modules; a new file's name, `CompositionGrid.kt`, as a
+// pattern for it under the line's modules, anywhere with none (#1207).
+// A class name or a file's name with several files and no module to
+// choose names none. files are the repository's; nil reads none.
+func scopeNamed(body string, files []string) []string {
+	if files == nil {
+		return nil
+	}
+	var out []string
+	add := func(p string) {
+		if !slices.Contains(out, p) {
+			out = append(out, p)
+		}
+	}
+	for _, line := range strings.Split(work.ByMeaning(body)[work.Scope].Text, "\n") {
+		var modules []string
+		for _, m := range moduleWord.FindAllStringSubmatch(line, -1) {
+			if d := strings.ReplaceAll(strings.TrimPrefix(m[1], ":"), ":", "/"); holds(files, d) && !slices.Contains(files, d) {
+				modules = append(modules, d)
+			}
+		}
+		for _, m := range backlog.PathLike.FindAllString(line, -1) {
+			if d, ok := repoPath(m); ok && strings.Contains(d, "/") && !slices.Contains(files, d) && holds(files, d) {
+				modules = append(modules, d)
+			}
+		}
+		for _, w := range work.ScopeWords(line) {
+			if strings.ContainsAny(w, `/\`) || work.Pattern(w) {
+				continue
+			}
+			class := className.MatchString(w)
+			if !class && !newPath(w) {
+				continue
+			}
+			var found []string
+			for _, f := range files {
+				base := path.Base(f)
+				if base == w || class && path.Ext(base) != "" && strings.TrimSuffix(base, path.Ext(base)) == w {
+					if len(modules) == 0 || under(f, modules) {
+						found = append(found, f)
+					}
+				}
+			}
+			switch {
+			case len(found) == 1 || len(found) > 1 && len(modules) > 0:
+				for _, f := range found {
+					add(f)
+				}
+			case len(found) == 0 && !class && !slices.ContainsFunc(files, func(f string) bool { return path.Base(f) == w }):
+				if len(modules) == 0 {
+					add("**/" + w)
+				}
+				for _, d := range modules {
+					add(d + "/**/" + w)
+				}
+			}
+		}
+	}
+	return out
+}
+
 // under says whether p is one of roots or in one of them, or matches one
 // that is a pattern, as the tester reads a Scope (work.Files, #801).
 func under(p string, roots []string) bool {
@@ -275,7 +354,7 @@ func under(p string, roots []string) bool {
 // neighbourhood: a Scope `src` lets in no test at the root.
 func besideTest(p string, scope []string, isDir func(string) bool) bool {
 	if !testName(p) {
-		return false
+		return testHelper(p, scope, isDir)
 	}
 	dirs := []string{path.Dir(p)}
 	parts := strings.Split(path.Dir(p), "/")
@@ -289,6 +368,28 @@ func besideTest(p string, scope []string, isDir func(string) bool) bool {
 			if d == path.Dir(s) && !isDir(s) || under(d, []string{s}) {
 				return true
 			}
+		}
+	}
+	return false
+}
+
+// testHelper says whether p is a test's helper beside the scope: no test
+// by its name, not hidden, in a test folder whose home (testHome) is
+// beside a Scope path (testBeside): a fake under a module's src/test/
+// beside a Scope file under its src/main/ (#1207). A test by its name
+// there is besideTest's or the write fence's to judge.
+func testHelper(p string, scope []string, isDir func(string) bool) bool {
+	if strings.HasPrefix(path.Base(p), ".") || !inTestFolder(path.Dir(p)) {
+		return false
+	}
+	return testBeside(p, scope, isDir)
+}
+
+// inTestFolder says whether dir is a test folder or in one.
+func inTestFolder(dir string) bool {
+	for _, part := range strings.Split(dir, "/") {
+		if part == "test" || part == "tests" || part == "spec" || part == "__tests__" {
+			return true
 		}
 	}
 	return false

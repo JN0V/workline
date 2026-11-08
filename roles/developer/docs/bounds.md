@@ -49,6 +49,11 @@ first rule that matches refuses the whole patch:
   a path with a `/` only when it has a file's extension, ends with `/`,
   or its first folder is the repository's (`dorny/paths-filter` or
   `actions/checkout@v4.1`, an Action, bounds nothing);
+- a name alone in backticks, read with the modules its line names
+  (`core:session`, a folder): a class, `TracingViewModel`, as its file;
+  a name several files have as the one in the module; a new file's
+  name, `CompositionGrid.kt`, as that name anywhere in the module, or
+  anywhere with no module. Several files and no module: none;
 - the paths in plain words in the Scope that the repository holds, a
   file or a folder (`docs/ci.md, internal/doctor`);
 - the product owner's `sources` for the issue;
@@ -57,6 +62,8 @@ first rule that matches refuses the whole patch:
   Scope file's folder or under a Scope folder, or in a `test`/`tests`
   folder that sits there. A hidden file is no test (`.env.test`). A
   Scope `src` lets in no test at the root;
+- a test's helper, no test by its name: a fake in a test folder beside
+  the Scope, `src/test/` of a module whose `src/main/` it names;
 - a new test file beside the Scope, the write fence
   ([ADR-0063, §9](../../../docs/adr/0063-every-open-issue-is-due-waiting-or-done.md#9-the-developers-write-fence)):
   - it matches the tester's `test-paths` patterns

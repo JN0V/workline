@@ -469,3 +469,64 @@ func TestObjectionWithAnUnknownScenarioIsSaid(t *testing.T) {
 		t.Errorf("kept = %v, said = %v; want nothing posted, the scenarios said", kept, said)
 	}
 }
+
+// A Scope naming classes and files by their names alone bounds the files
+// they name, each line read with its modules (#1207): a class is its
+// file, a name several files have is the one in the line's module, a new
+// file's name a pattern under the module. With no module to choose among
+// several, nothing.
+func TestScopeNamedReadsNamesWithTheirModules(t *testing.T) {
+	files := []string{
+		"core/session/build.gradle.kts",
+		"core/session/src/main/kotlin/s/SettingsRepository.kt",
+		"core/overlay/build.gradle.kts",
+		"core/overlay/src/main/kotlin/o/MatrixUtils.kt",
+		"feature/tracing/src/main/kotlin/t/Model.kt",
+		"feature/editor/src/main/kotlin/e/Model.kt",
+		"feature/tracing/src/test/kotlin/t/ModelTest.kt",
+	}
+	for _, c := range []struct {
+		name, scope string
+		want        []string
+	}{
+		{"class", "- core:session `SettingsRepository`.", []string{"core/session/src/main/kotlin/s/SettingsRepository.kt"}},
+		{"class, no module, one file", "- `MatrixUtils`.", []string{"core/overlay/src/main/kotlin/o/MatrixUtils.kt"}},
+		{"class in two modules, none named", "- `Model`.", nil},
+		{"class in two modules, one named", "- feature:tracing `Model`.", []string{"feature/tracing/src/main/kotlin/t/Model.kt"}},
+		{"a folder as the module", "- `feature/editor`: `Model`.", []string{"feature/editor/src/main/kotlin/e/Model.kt"}},
+		{"a name several files have, in a module", "- core:session `build.gradle.kts`.", []string{"core/session/build.gradle.kts"}},
+		{"a name several files have, no module", "- `build.gradle.kts`.", nil},
+		{"new file in a module", "- core:overlay: a new `CompositionGrid.kt`.", []string{"core/overlay/**/CompositionGrid.kt"}},
+		{"new file, no module", "- a new `CompositionGrid.kt`.", []string{"**/CompositionGrid.kt"}},
+		{"a word, not a class", "- `grid`, `Thirds`, `MatrixUtils.timesPoint`.", nil},
+	} {
+		got := scopeNamed("## Need\n\nA need.\n\n## Scope\n\n"+c.scope+"\n", files)
+		if !slices.Equal(got, c.want) {
+			t.Errorf("%s: scopeNamed = %q, want %q", c.name, got, c.want)
+		}
+	}
+	if !under("core/overlay/src/main/kotlin/o/CompositionGrid.kt", []string{"core/overlay/**/CompositionGrid.kt"}) {
+		t.Error("the new file's pattern does not take it")
+	}
+	if under("feature/tracing/src/main/kotlin/t/CompositionGrid.kt", []string{"core/overlay/**/CompositionGrid.kt"}) {
+		t.Error("the new file's pattern takes it in another module")
+	}
+}
+
+// A test's helper, a fake under a module's src/test, is beside a Scope
+// file under its src/main; one in another module, or a hidden one, is
+// not (#1207).
+func TestTestHelperBesideTheScope(t *testing.T) {
+	scope := []string{"feature/tracing/src/main/kotlin/t/settings/SettingsViewModel.kt"}
+	for p, want := range map[string]bool{
+		"feature/tracing/src/test/kotlin/t/settings/FakeSettingsRepository.kt": true,
+		"feature/tracing/src/test/kotlin/t/Fixtures.kt":                        true,
+		"feature/editor/src/test/kotlin/e/FakeSettingsRepository.kt":           false,
+		"feature/tracing/src/main/kotlin/t/settings/SettingsUiState.kt":        false,
+		"feature/tracing/src/test/.env":                                        false,
+	} {
+		if got := besideTest(p, scope, checker{}.isDir); got != want {
+			t.Errorf("besideTest(%s) = %v, want %v", p, got, want)
+		}
+	}
+}
