@@ -49,6 +49,13 @@ first rule that matches refuses the whole patch:
   a path with a `/` only when it has a file's extension, ends with `/`,
   or its first folder is the repository's (`dorny/paths-filter` or
   `actions/checkout@v4.1`, an Action, bounds nothing);
+- a name alone in backticks, read with the modules its line names
+  (`core:session`, a folder): a class, `TracingViewModel`, as its source
+  file (`.kt`, `.java`, `.h`…, never a `.md` or `.json`);
+  a name several files have as the one in the module; a new file's
+  name, `CompositionGrid.kt`, as that name anywhere in the module, or,
+  with no module and no file of that name, anywhere not guarded: a
+  module narrows it. Several files and no module: none;
 - the paths in plain words in the Scope that the repository holds, a
   file or a folder (`docs/ci.md, internal/doctor`);
 - the product owner's `sources` for the issue;
@@ -76,6 +83,20 @@ first rule that matches refuses the whole patch:
   - said and folded in: listed on the pull request and on the issue
     (`workline:scope-kept`), added to the Scope at the product owner's
     next refine ([below](#asking-the-product-owner-for-files)).
+- a new test helper, the write fence too: a source file (`.kt`,
+  `.java`…), no test by its name, under `<module>/src/test/` when a
+  Scope path is under `<module>/src/main/` (`FakeGridRepository.kt`):
+  - never an existing file, nor one under `resources/`, `fixtures/` or
+    `testdata/`, nor a data file: a frozen test may read them, so the
+    developer asks to widen the Scope;
+  - a root Scope file opens no root `tests/`; a package named `test`
+    under `src/main/` is no test folder.
+  - never the name of a class its module's `src/main/` holds, whatever
+    the extension, nor such a new test file: it would replace that
+    class on the test run's classpath;
+  - kept, listed and folded in as a new test file is, above; the
+    reviewer checks a listed helper that sets up the test runner
+    (Kotest's `ProjectConfig`): it changes how every test runs.
 
 **Never in bounds:**
 

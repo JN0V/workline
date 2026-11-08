@@ -40,8 +40,8 @@ file. All roles: [docs/roles.md](../../docs/roles.md). Where it stands:
   acceptance test, a file that steers agents or a gate's are reverted,
   no agent judging; on its pull request, the same bounds are a check,
   whoever pushed ([the bounds](docs/bounds.md)). A test that does not
-  fit, it objects to on the tester's Draft. A new test file beside the
-  Scope is in bounds. Code wholly outside the Scope, it asks the product
+  fit, it objects to on the tester's Draft. A new test or fake beside
+  the Scope, and a class it names, are in bounds. Code wholly outside the Scope, it asks the product
   owner for; the same files twice, a person
   ([asking for files](docs/bounds.md#asking-the-product-owner-for-files)).
 - **Proves it** on the project's tests, the tester's `test-command`,

@@ -469,3 +469,98 @@ func TestObjectionWithAnUnknownScenarioIsSaid(t *testing.T) {
 		t.Errorf("kept = %v, said = %v; want nothing posted, the scenarios said", kept, said)
 	}
 }
+
+// A Scope naming classes and files by their names alone bounds the files
+// they name, each line read with its modules (#1207): a class is its
+// file, a name several files have is the one in the line's module, a new
+// file's name a pattern under the module. With no module to choose among
+// several, nothing.
+func TestScopeNamedReadsNamesWithTheirModules(t *testing.T) {
+	files := []string{
+		"core/session/build.gradle.kts",
+		"core/session/src/main/kotlin/s/SettingsRepository.kt",
+		"core/overlay/build.gradle.kts",
+		"core/overlay/src/main/kotlin/o/MatrixUtils.kt",
+		"feature/tracing/src/main/kotlin/t/Model.kt",
+		"feature/editor/src/main/kotlin/e/Model.kt",
+		"feature/tracing/src/test/kotlin/t/ModelTest.kt",
+		"core/overlay/docs/MatrixUtils.md",
+		"core/overlay/src/main/res/Grid.xml",
+		"native/grid/Grid.h", "native/grid/Grid.cpp",
+		"README.md",
+	}
+	for _, c := range []struct {
+		name, scope string
+		want        []string
+	}{
+		{"class", "- core:session `SettingsRepository`.", []string{"core/session/src/main/kotlin/s/SettingsRepository.kt"}},
+		{"class, no module, one file", "- `MatrixUtils`.", []string{"core/overlay/src/main/kotlin/o/MatrixUtils.kt"}},
+		{"class in two modules, none named", "- `Model`.", nil},
+		{"class in two modules, one named", "- feature:tracing `Model`.", []string{"feature/tracing/src/main/kotlin/t/Model.kt"}},
+		{"a folder as the module", "- `feature/editor`: `Model`.", []string{"feature/editor/src/main/kotlin/e/Model.kt"}},
+		{"a name several files have, in a module", "- core:session `build.gradle.kts`.", []string{"core/session/build.gradle.kts"}},
+		{"a name several files have, no module", "- `build.gradle.kts`.", nil},
+		{"new file in a module", "- core:overlay: a new `CompositionGrid.kt`.", []string{"core/overlay/**/CompositionGrid.kt"}},
+		{"new file in a module, another module has one", "- core:overlay: a new `Model.kt`.", []string{"core/overlay/**/Model.kt"}},
+		{"new file, no module", "- a new `CompositionGrid.kt`.", []string{"**/CompositionGrid.kt"}},
+		{"a class is its source, not a page or data", "- core:overlay `Grid`, `README`.", nil},
+		{"a class's header and source", "- `native/grid`: `Grid`.", []string{"native/grid/Grid.h", "native/grid/Grid.cpp"}},
+		{"a word, not a class", "- `grid`, `Thirds`, `MatrixUtils.timesPoint`.", nil},
+	} {
+		got := scopeNamed("## Need\n\nA need.\n\n## Scope\n\n"+c.scope+"\n", files)
+		if !slices.Equal(got, c.want) {
+			t.Errorf("%s: scopeNamed = %q, want %q", c.name, got, c.want)
+		}
+	}
+	if !under("core/overlay/src/main/kotlin/o/CompositionGrid.kt", []string{"core/overlay/**/CompositionGrid.kt"}) {
+		t.Error("the new file's pattern does not take it")
+	}
+	if under("feature/tracing/src/main/kotlin/t/CompositionGrid.kt", []string{"core/overlay/**/CompositionGrid.kt"}) {
+		t.Error("the new file's pattern takes it in another module")
+	}
+}
+
+// A new test helper, a fake under a module's src/test beside a Scope
+// file under its src/main, is the write fence's (#1207). An existing
+// helper, a fixture or data file a frozen test may read, a root tests/
+// beside a root Scope file, a Scope folder's modules and a production
+// package named test are not.
+func TestNewHelperIsANewSourceUnderSrcTest(t *testing.T) {
+	repo := t.TempDir()
+	for _, f := range []string{
+		"mul.sh", "tests/lib.sh", "tests/fixtures/expected.txt", "tests/test_mul.sh",
+		"app/src/main/kotlin/a/App.kt", "app/src/test/resources/golden.json",
+		"app/src/test/kotlin/a/FakeStore.kt", "feature/x/src/main/kotlin/x/X.kt",
+	} {
+		if err := os.MkdirAll(filepath.Join(repo, filepath.Dir(f)), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(repo, f), []byte("x\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	c := checker{repo: repo, steer: func(string) bool { return false },
+		b: Bounds{Issue: 5, Scope: []string{"mul.sh", "app/src/main/kotlin/a/App.kt", "feature"}}}
+	for p, want := range map[string]string{
+		"app/src/test/kotlin/a/FakeGrid.kt":    "",              // new, a source, beside
+		"app/src/test/kotlin/a/FakeStore.kt":   "outside-scope", // exists: a frozen test may read it
+		"app/src/test/resources/golden.json":   "outside-scope", // data
+		"app/src/test/resources/Golden.kt":     "outside-scope", // under resources
+		"app/src/test/kotlin/a/expected.txt":   "outside-scope", // not a source
+		"tests/lib.sh":                         "outside-scope", // a shared helper, a root Scope file
+		"tests/fixtures/expected.txt":          "outside-scope",
+		"tests/helper.sh":                      "outside-scope", // new, but no src/test of a module
+		"feature/x/src/test/kotlin/x/FakeX.kt": "",              // under the Scope folder itself
+		"other/src/test/kotlin/o/FakeO.kt":     "outside-scope", // another module
+		"app/src/main/kotlin/a/test/Other.kt":  "outside-scope", // a production package named test
+	} {
+		if got := c.rule(p); got != want {
+			t.Errorf("rule(%s) = %q, want %q", p, got, want)
+		}
+	}
+	// Kept by an earlier round: still the fence's on the branch's head.
+	c.b.Beside = []string{"app/src/test/kotlin/a/FakeStore.kt"}
+	if got := c.rule("app/src/test/kotlin/a/FakeStore.kt"); got != "" {
+		t.Errorf("a helper kept before: rule = %q, want in bounds", got)
+	}
+}

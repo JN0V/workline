@@ -1,0 +1,48 @@
+case: developer/pr-bounds-reads-class-names-and-new-file
+about: >
+  A Scope naming classes and a new file by their names alone, each line
+  with its module, bounds those files (#1207; the trial's composition
+  grid): `TracingViewModel` under feature:tracing is its
+  `TracingViewModel.kt`, a new `CompositionGrid.kt` under core:overlay is
+  in bounds wherever the module puts it, and a new fake in the module's
+  src/test beside a Scope file under its src/main is a test's helper.
+  A file the Scope does not name stays outside: `SettingsUiState.kt`,
+  the module's `build.gradle.kts`, an existing fake and a golden file
+  in src/test, which a frozen test may read, and a new one that shadows
+  a production class of its name.
+given:
+  repo: tested-draft
+  setup:
+    - "git checkout -q main && for f in core/session/build.gradle.kts core/session/src/main/kotlin/tg/session/SettingsRepository.kt core/session/src/main/kotlin/tg/session/SettingsData.kt core/overlay/build.gradle.kts core/overlay/src/main/kotlin/tg/overlay/MatrixUtils.kt feature/tracing/build.gradle.kts feature/tracing/src/main/kotlin/tg/tracing/TracingViewModel.kt feature/tracing/src/main/kotlin/tg/tracing/settings/SettingsUiState.kt feature/tracing/src/test/kotlin/tg/tracing/settings/FakeSettingsRepository.kt feature/tracing/src/test/resources/golden.json; do mkdir -p $(dirname $f) && echo '// v1' > $f; done && git add -A && git commit -qm 'chore: kotlin modules'"
+    - "git checkout -q -b workline/developer/3 && for f in core/session/src/main/kotlin/tg/session/SettingsRepository.kt feature/tracing/src/main/kotlin/tg/tracing/TracingViewModel.kt core/overlay/src/main/kotlin/tg/overlay/CompositionGrid.kt feature/tracing/src/test/kotlin/tg/tracing/settings/FakeSettingsRepository.kt feature/tracing/src/main/kotlin/tg/tracing/settings/SettingsUiState.kt core/session/build.gradle.kts feature/tracing/src/test/resources/golden.json feature/tracing/src/test/kotlin/tg/tracing/settings/FakeGridRepository.kt feature/tracing/src/test/kotlin/tg/tracing/settings/SettingsUiState.kt; do echo '// grid' >> $f; done && git add -A && git commit -qm 'feat: grid for #3' -m 'Workline-Role: developer' && git checkout -q main"
+  forge:
+    issues:
+      - id: 3
+        title: "A composition grid"
+        labels: ["workline:developing"]
+        body: "## Need\n\nI want a grid.\n\n## Scope\n\n- core:session `SettingsData`, `SettingsRepository`.\n- feature:tracing `TracingViewModel`.\n- core:overlay: a new pure `CompositionGrid.kt` using `MatrixUtils`.\n"
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        draft: true
+        comments: ["The tests of #3, frozen.\n\n<!-- workline:tester-record {\"issue\":3,\"base\":\"main\",\"files\":{\"tests/test_mul_by_zero.sh\":\"8f123a0bacbd681063880b867df38dd216784b97\",\"tests/test_mul_two_by_three.sh\":\"2dee0641bd7a79057ade7bff5af43b603125f543\"}} -->\n<!-- workline:sticky=tester/tests -->"]
+      - id: 2
+        branch: workline/developer/3
+        base: main
+        title: "A composition grid"
+        body: "Closes #3"
+run: {develop: [--bounds, --merge-request, "2"], ai: none}
+expect:
+  status: block
+  agent-calls: 0
+  findings:
+    - {rule: outside-scope, where: feature/tracing/src/main/kotlin/tg/tracing/settings/SettingsUiState.kt}
+    - {rule: outside-scope, where: core/session/build.gradle.kts}
+    - {rule: outside-scope, where: feature/tracing/src/test/kotlin/tg/tracing/settings/FakeSettingsRepository.kt}
+    - {rule: outside-scope, where: feature/tracing/src/test/resources/golden.json}
+    - {rule: outside-scope, where: feature/tracing/src/test/kotlin/tg/tracing/settings/SettingsUiState.kt}
+  no-findings:
+    - {rule: outside-scope, where: core/session/src/main/kotlin/tg/session/SettingsRepository.kt}
+    - {rule: outside-scope, where: feature/tracing/src/main/kotlin/tg/tracing/TracingViewModel.kt}
+    - {rule: outside-scope, where: core/overlay/src/main/kotlin/tg/overlay/CompositionGrid.kt}
+    - {rule: outside-scope, where: feature/tracing/src/test/kotlin/tg/tracing/settings/FakeGridRepository.kt}
