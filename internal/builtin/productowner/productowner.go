@@ -369,7 +369,9 @@ func Pre(runDir, repo string) int {
 					"issue": is.ID, "why": "its drafts accepted (" + backlog.AcceptedLabel(b) + ")", "ticked": who, "own": true}})
 			}
 		} else if r, cleared := backlog.SpecCleared(is, comments); found && err == nil && cfg.SpecReview && cleared &&
-			!backlog.Readied(is) && !noTestStands && len(backlog.NotReady(is, st, false)) == 0 {
+			!backlog.Readied(is) && !noTestStands && len(backlog.NotReady(is, st, false)) == 0 && len(backlog.SplitInto(is, st)) == 0 {
+			// Never a split parent, read for its parts (#1208): its parts
+			// are what is built, a review before its split no ready.
 			// The reviewer read its spec as it is and found no important
 			// finding open: the hold lifts, and the engine moves it to
 			// ready, with no agent (#128).
@@ -434,11 +436,16 @@ func Pre(runDir, repo string) int {
 					Message: fmt.Sprintf("its %s names %s as proof, and the code at this commit holds no such test: the item is said not proved", work.Name(work.Verification), strings.Join(ev.NoTest, ", "))})
 			}
 			if ev.AllClosed {
-				msg := fmt.Sprintf("its %d parts are closed: for a person to accept, by closing it — the role never does", ev.Parts)
+				msg := fmt.Sprintf("its %d parts are closed: for a person to accept, by closing it or with %s — the role never closes it alone", ev.Parts, backlog.AcceptedLabel(b))
 				if len(ev.Undone) > 0 || len(ev.Unproved) > 0 {
 					msg += fmt.Sprintf("; not delivered: %d part(s), not proved: %d %s item(s)", len(ev.Undone), len(ev.Unproved), work.Name(work.Verification))
 				}
 				findings = append(findings, verdict.Finding{Rule: "parent-to-accept", Level: "info", Where: fmt.Sprintf("#%d", is.ID), Message: msg})
+				// Proposed to a person, its yes one label (ADR-0029,
+				// amended): never left open with nothing asked (#1208).
+				fallback = append(fallback, intent.Intention{Kind: "close", Value: map[string]any{
+					"issue": is.ID, "reason": "completed", "parent": true, "own": true,
+					"why": fmt.Sprintf("its %d parts are closed; what each delivered, and what is missing, is in the comment on its parts", ev.Parts)}})
 			}
 		}
 		// An issue announced obsolete (ADR-0024): kept open when someone

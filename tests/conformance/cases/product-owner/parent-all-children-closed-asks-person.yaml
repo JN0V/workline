@@ -1,5 +1,5 @@
 case: product-owner/parent-all-children-closed-asks-person
-about: Once every part of a parent is closed, its comment asks a person to accept it by closing it, and a finding says so in the summary; the role leaves it open and sets no label (ADR-0029).
+about: Once every part of a parent is closed, its comment asks a person to accept it by closing it, and a finding says so in the summary; the role leaves it open and proposes the closing, a person's yes one label (ADR-0029, amended).
 given:
   repo: backlog
   forge:
@@ -14,5 +14,5 @@ expect:
   findings: [{rule: parent-to-accept, where: "#9", message: "its 2 parts are closed: for a person to accept, by closing it"}]
   forge:
     issues:
-      - {id: 9, closed: false, labels: [], comment-contains: "**All 2 parts are closed: for a person to accept.** Close this issue as completed to accept the need"}
+      - {id: 9, closed: false, labels: [workline:proposed], comment-contains: "**All 2 parts are closed: for a person to accept.** Close this issue as completed, or label it `workline:accepted`, to accept the need"}
       - {id: 9, comment-contains: "| #12 Quote commas in exported cells | closed as completed | commit 1a2b3c4 |"}

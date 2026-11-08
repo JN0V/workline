@@ -1,6 +1,6 @@
 ---
 type: reference
-sources: [internal/backlog/parent.go, internal/builtin/productowner/productowner.go, internal/forge/forge.go, internal/forge/github.go, internal/forge/gitlab.go]
+sources: [internal/backlog/parent.go, internal/builtin/productowner/productowner.go, internal/line/parent.go, internal/forge/forge.go, internal/forge/github.go, internal/forge/gitlab.go]
 status: draft
 checked: 8538d558
 verified: agent:claude-code
@@ -54,10 +54,20 @@ person unlinked is no longer one. An issue whose state lists a split
   `proof-test-unread` (warn) says why. Whether the test passes is CI's,
   not read here.
 - **All its parts closed**: the comment asks a person to accept the need
-  by closing the parent, or to reopen a part or open one for what is
-  missing, naming first the parts not delivered and the items not proved;
-  a finding `parent-to-accept` (info) says it in the job's summary. The
-  role never closes a parent nor announces it obsolete: a `close` on one, a duplicate
-  or an announcement as obsolete, is dropped
+  by closing the parent or labelling it `workline:accepted`, or to reopen
+  a part or open one for what is missing, naming first the parts not
+  delivered and the items not proved; a finding `parent-to-accept`
+  (info) says it in the job's summary.
+- **The closing proposed** (ADR-0029, amended): the engine's `close`,
+  reason `completed`, marked `parent`, with no quote — the comment on its
+  parts is the evidence. Always proposed, at every level:
+  `workline:proposed` on it; a person's `workline:accepted` closes it as
+  completed, their yes named. The mark is the engine's: on an agent's
+  intention it is dropped.
+- **Never closed by the role alone**: an agent's `close` on a parent, a
+  duplicate or an announcement as obsolete, is dropped
   (`parent-accepted-by-a-person`) unless a person accepted it. The agent's
   task marks a parent's parts, open or closed.
+- **The line tells it** where its state wakes nobody, a part closed or a
+  yes put on since it last read it
+  ([routing](../routing.md#a-parent-told-as-its-parts-close)).

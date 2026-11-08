@@ -1,6 +1,6 @@
 # ADR-0029: A parent is accepted by a person, from what its parts delivered
 
-- **Status:** accepted; amended 2026-10-07 (a test named as proof, read from the code)
+- **Status:** accepted; amended 2026-10-07 (a test named as proof, read from the code); amended 2026-11-08 (the line tells a parent; a person accepts it with one label)
 - **Date:** 2026-10-05
 - **Builds on:** ADR-0022 (a split keeps the need in its parent), ADR-0026
   (a kind of act has a mode per level), ADR-0028 (`next-ready`);
@@ -102,3 +102,36 @@ the test was taken on trust: a part could quote a test nobody wrote.
 
 Left: a test named in prose, outside a code span; a test in another
 repository.
+
+## Amendment (2026-11-08): the line tells a parent; a person accepts it with one label
+
+[#1208](https://github.com/JN0V/workline/issues/1208): in a trial, a
+split's parent stayed open for 10 hours, both parts merged, with no
+comment and no label. "Each run" never came: in CI a product owner run
+reads only the issue it was woken on, and nothing woke one on the
+parent. A person lifting its block, as asked, took it off the line.
+[ADR-0063](0063-every-open-issue-is-due-waiting-or-done.md#1-the-invariants)
+wants every open issue due, waiting or done, said.
+
+- **The line tells it**: where its state wakes nobody (no state label,
+  or Blocked), a part closed or `workline:accepted` put on since the
+  line last read it is new input. The product owner is woken on it with
+  no agent: the comment above is written. Nothing new, it waits, said:
+  on its open parts, or on a person.
+- **The closing is proposed**: all its parts closed, the engine proposes
+  closing it as completed, `workline:proposed` on it, at every level.
+  A person's `workline:accepted` closes it, their yes named on it: one
+  click, as for any proposal
+  ([ADR-0038](0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md)).
+  Closing it by hand still works.
+- **Still a person's**: the role never closes a parent alone. The
+  closing carries no quote: the comment on its parts is the evidence a
+  person reads.
+
+Not chosen: closing a bug's parent alone once all its parts delivered
+and every item is proved, as
+[ADR-0060 §4](0060-the-person-is-on-the-loop.md#4-a-person-validates-by-the-issues-kind)
+lets a bug fix merge. The parts merged already under that rule; the
+parent's own acceptance stays the one place a person reads the whole.
+Left: a parent whose parts a person linked by hand, read alone on an
+issue's own run, is told only by the reconciler's listing.

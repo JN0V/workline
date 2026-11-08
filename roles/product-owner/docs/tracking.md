@@ -77,8 +77,11 @@ move
   it — a test it names found in the code —, or not proved.
 
 Once all its parts are closed, the comment and a finding
-(`parent-to-accept`) ask a person to accept it by closing it. The role
-never does.
+(`parent-to-accept`) ask a person to accept it, and the closing is
+proposed: `workline:accepted` closes it. The role never closes it alone.
+The line wakes the product owner on a parent as its parts close, even
+with no state label
+([routing](../../../docs/spec/routing.md#a-parent-told-as-its-parts-close)).
 
 ## Off by default
 

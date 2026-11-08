@@ -135,7 +135,7 @@ type Evidence struct {
 func ReadEvidence(parent forge.Issue, parts []Part, role string, tests TestFinder) Evidence {
 	ev := Evidence{Parts: len(parts)}
 	var b strings.Builder
-	fmt.Fprintf(&b, "**The parts of this need**, as they close: kept up to date by the %s role, which never closes this issue — accepting the need is a person's.\n\n", strings.ReplaceAll(role, "-", " "))
+	fmt.Fprintf(&b, "**The parts of this need**, as they close: kept up to date by the %s role, which closes this issue only on a person's yes — accepting the need is a person's.\n\n", strings.ReplaceAll(role, "-", " "))
 	b.WriteString("| Part | State | Closed by |\n|---|---|---|\n")
 	for _, p := range parts {
 		title, state, by := p.Issue.Title, "open", "—"
@@ -231,7 +231,7 @@ func ReadEvidence(parent forge.Issue, parts []Part, role string, tests TestFinde
 	if !ev.AllClosed {
 		fmt.Fprintf(&b, "\n**%d of %d parts closed.** Once all are, a person accepts this need by closing this issue.\n", ev.Closed, ev.Parts)
 	} else {
-		fmt.Fprintf(&b, "\n**All %d parts are closed: for a person to accept.** Close this issue as completed to accept the need; or keep it open — reopen a part, or open one for what is missing.", ev.Parts)
+		fmt.Fprintf(&b, "\n**All %d parts are closed: for a person to accept.** Close this issue as completed, or label it `%s`, to accept the need; or keep it open — reopen a part, or open one for what is missing.", ev.Parts, LabelAccepted)
 		var missing []string
 		if len(ev.Undone) > 0 {
 			missing = append(missing, "the part of "+issueList(ev.Undone)+" not delivered")
