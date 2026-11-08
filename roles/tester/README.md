@@ -220,7 +220,7 @@ Under `roles: {tester: {settings: …}}` in `.workline/config.yaml`
 |---|---|---|
 | `test-command` | none | runs the project's tests and writes a JUnit XML report; `{report}` is its path. The developer proves its code with it too |
 | `draft-command` | none: `test-command` | proves a Draft red on the folders holding its tests alone, `{packages}`, not the whole suite twice ([#979](https://github.com/JN0V/workline/issues/979)) |
-| `test-report` | `junit.xml` | where the report is written, from the root: a path, or a pattern one folder deep |
+| `test-report` | `junit.xml` | where the report is written, from the root: a path, or a pattern, `**` spanning folders, each file it names read ([#1175](https://github.com/JN0V/workline/issues/1175)) |
 | `test-paths` | each ecosystem's names | the test files, as patterns: `**/*_test.go`, `**/test_*.py`, `**/*.test.ts`, `tests/**` and others; the only files `test write` may add; a new one beside the Scope is in the developer's bounds ([its bounds](../developer/docs/bounds.md#what-it-checks)) |
 | `build-errors` | Go's | how a build broken by a missing name reads, by ecosystem ([page](docs/missing-name.md)) |
 | `code-lines-max` | 1500 | lines of the code the issue names and of the tests given to the agent, all files together, fewer when long lines would pass the context budget; a longer file gives the pieces the issue names in it, inside its declarations; the files the test and the Scope include or import, two steps deep, as declarations ([the code picker](../../docs/spec/code-picker.md)); a fifth kept for a test beside when the code would fill it; files past it are named with their size |
@@ -237,4 +237,5 @@ The command, by ecosystem:
 | pytest | `pytest --junitxml={report}` |
 | Jest | `JEST_JUNIT_OUTPUT_FILE={report} npx jest --reporters=jest-junit` |
 | cargo nextest | `cargo nextest run --profile ci`, `test-report` set to its JUnit path |
-| Maven | `mvn test`, `test-report: target/surefire-reports/*.xml` |
+| Maven | `mvn test`, `test-report: "**/target/surefire-reports/*.xml"` |
+| Gradle | `./gradlew test`, `test-report: "**/build/test-results/**/*.xml"` |
