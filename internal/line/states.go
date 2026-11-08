@@ -549,7 +549,7 @@ func runStateStep(res *Result, cfg *routing.Config, f forge.Forge, spec string, 
 	case out.Crossed():
 		// Too big for its role (ADR-0064, step 3): never run again on the
 		// same input, which crosses the same; the product owner asked first.
-		crossed(&st, out, blockNow, sameState(f, cfg, st), cfg)
+		crossed(&st, out, blockNow, sameState(f, cfg, st), cfg, func() { tierLabels(res, f, o.NoApply) })
 	case out.Machine():
 		prev := errorsOf(st.rec)
 		if !same {

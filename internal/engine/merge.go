@@ -589,6 +589,8 @@ func mergePolicy(f forge.Forge, o FollowOptions, local bool, res *Result, hand m
 		for _, l := range [][3]string{
 			{backlog.AcceptedLabel(f), "0e8a16", backlog.AcceptedSays},
 			{acceptedWholeLabel(f), "0b5d1e", acceptedWholeSays},
+			{backlog.LabelSizeLarge, backlog.SizeColor, backlog.TierSays(backlog.TierLarge)},
+			{backlog.LabelSizeXLarge, backlog.SizeColor, backlog.TierSays(backlog.TierXLarge)},
 		} {
 			err := b.EnsureLabel(l[0], l[1], l[2])
 			switch {

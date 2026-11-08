@@ -21,6 +21,7 @@ import (
 
 	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/engine"
+	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/routing"
 	"github.com/JN0V/workline/internal/verdict"
 )
@@ -28,9 +29,15 @@ import (
 // crossed blocks st's issue for the size out says: for the product
 // owner, or for a person. here: the issue is still in the state its step
 // ran in; one its role moved keeps that move, the size said by its run.
-func crossed(st *stateStep, out verdict.Outcome, blockNow func(rule, why string), here bool, cfg *routing.Config) {
+// labels makes the tier labels a person may put, when it blocks for one.
+func crossed(st *stateStep, out verdict.Outcome, blockNow func(rule, why string), here bool, cfg *routing.Config, labels func()) {
 	if !here {
 		return
+	}
+	if st.role == backlog.Keeper || st.tier == backlog.TierXLarge || slices.Contains(st.write.Record.Sized, st.from.Name) {
+		labels() // a person's to answer: the tiers it may put are there
+	} else if ok, _ := revisits(cfg); !ok {
+		labels()
 	}
 	who := "the " + roleSaid(st.role)
 	size := fmt.Sprintf("%s's run on it is too big for its context: %s", who, oneLine(out.Said))
@@ -118,4 +125,20 @@ func unanswered(out verdict.Outcome, findings []verdict.Finding) verdict.Outcome
 		}
 	}
 	return out
+}
+
+// tierLabels makes both size tiers' labels in the forge's list, for a
+// person to put (ADR-0064, §3): none when the line judges with no write
+// token; one not made is said.
+func tierLabels(res *Result, f forge.Forge, noApply bool) {
+	b, ok := f.(forge.Backlog)
+	if !ok || noApply {
+		return
+	}
+	for _, tier := range []string{backlog.TierLarge, backlog.TierXLarge} {
+		if err := backlog.EnsureTierLabel(b, tier); err != nil {
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "label-not-made", Level: "warn",
+				Message: fmt.Sprintf("the label %s could not be made in the forge's list, for a person to put: %v", backlog.TierLabel(tier), err)})
+		}
+	}
 }
