@@ -1,11 +1,12 @@
-case: routing/size-crossing-on-a-cut-input
+case: routing/cut-input-is-not-a-size-crossing
 about: >
-  A run that blocks on what it read cut crossed its size (ADR-0064, §2;
-  #1171): on #3, waiting for its tests, the tester is given `lib.sh` cut
-  past its code-lines-max of 1, said; its test for "By zero" passes on
-  the base, so the run blocks. Its block may be the cut's: the run ends
-  needs-input(product-owner: size), not a refusal for a person, and the
-  line blocks #3 for the product owner, the cut said.
+  A cut of what a run read is said, never a size crossing (ADR-0064, §2,
+  amended 2026-11-08; #1193): on #3, waiting for its tests, the tester
+  is given `lib.sh` cut past its code-lines-max of 1, said; its test for
+  "By zero" passes on the base, so the run blocks. Cuts happen on nearly
+  every call: the run ends a refusal on the issue, the cut said, the
+  product owner not asked on its size; the next reconciler blocks #3
+  for a person, the tester's reason on it.
 given:
   repo: tested
   setup:
@@ -22,17 +23,17 @@ given:
         author: ann
         insider: true
         body: "## Need\n\nWhen I total an order, I want to multiply a price by a count, so I need not add it up by hand.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **By zero:** Given the library, When I multiply 5 by 0, Then I get 0.\n\n---\n\n## Verification\n\nA test a scenario, in tests/.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
-run: {route: reconcile, open-merge-request: true, ai: "fake:tester-green-on-base"}
+run: {route: reconcile, open-merge-request: true, ai: "fake:tester-green-on-base", then: again}
 expect:
   agent-calls: 1
   findings:
     - {rule: input-cut, level: warn, message: "cut past code-lines-max (1 lines)"}
     - {rule: test-green-on-base, where: tests.test_mul_by_zero}
-    - {rule: size-crossed, level: warn, where: "#3", message: "the tester's run on it is too big for its context"}
-  no-findings: [{rule: state-retry}, {rule: state-waits}]
+    - {rule: tests-refused, level: warn, where: "#3", message: "passes on the base"}
+  no-findings: [{rule: size-crossed}, {rule: state-retry}]
   not-pushed: [workline/tester/issue-3]
   forge:
     issues:
       - id: 3
         labels: ["workline:blocked"]
-        comment-contains: ["the line asks the product owner on its size at once"]
+        comment-contains: ["**The tester** wrote no tests for this issue this run", "**workline's line** blocks this issue", "passes on the base"]

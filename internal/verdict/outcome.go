@@ -94,9 +94,9 @@ const (
 //     blocked for it;
 //   - a needs-input of the engine when a finding says the code it needs;
 //   - a progress for a run that passed;
-//   - the product owner asked on its size for a blocked run that cut what
-//     its agent read: its block may be the cut's;
-//   - else, a block on the issue, the person's to settle.
+//   - else, a block on the issue, the person's to settle: a cut of what
+//     its agent read is said, never a size crossing (ADR-0064, §2,
+//     amended 2026-11-08), for cuts happen on nearly every call.
 func OutcomeOf(status string, findings []Finding) Outcome {
 	if o, ok := sized(findings, overBudgetRule); ok {
 		return o
@@ -118,9 +118,6 @@ func OutcomeOf(status string, findings []Finding) Outcome {
 	}
 	if status == Pass {
 		return Outcome{Kind: Progress}
-	}
-	if o, ok := sized(findings, CutRule); ok {
-		return o
 	}
 	said := ""
 	for _, f := range findings {

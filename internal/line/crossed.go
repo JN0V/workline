@@ -1,10 +1,10 @@
 package line
 
 // A run too big for its role (ADR-0064, step 3): its prompt over the
-// role's context budget, its token cap reached, or what it read cut
-// before it blocked. The same input crosses the same, so it is never run
-// again on it: it ends needs-input(product-owner: size), the
-// needs-input(R2) of ADR-0063 §5. The issue waits on the product owner,
+// role's context budget, or its token cap reached; a cut of what it read
+// is said, never a crossing (§2, amended 2026-11-08). The same input
+// crosses the same, so it is never run again on it: it ends
+// needs-input(product-owner: size), the needs-input(R2) of ADR-0063 §5. The issue waits on the product owner,
 // Blocked on the board with the size said, and the product owner reads it
 // at the line's next run (revisit.go), told the size: it narrows the
 // issue's Scope and sends it back, or leaves it to a person. Once a state

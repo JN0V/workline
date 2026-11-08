@@ -85,8 +85,8 @@ goes ready, a hidden record that does not read: in
 - `input-cut` (a warning): the agent read part of what the run gives it;
   the line says what, how much of it, and the setting that raises it.
 - `size-crossed`: a role's run on an issue was too big for it: its task
-  over the context budget, its token cap reached, or what it read cut
-  before it blocked. Never run again on the same input: the issue goes to
+  over the context budget, or its token cap reached; a cut alone is not
+  one. Never run again on the same input: the issue goes to
   Blocked, and the product owner reads it at once, to narrow its Scope,
   grant it `workline:size/large`, or leave it to you
   ([routing](spec/routing.md#the-line-of-states)).
