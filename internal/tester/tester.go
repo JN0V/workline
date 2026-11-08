@@ -28,7 +28,8 @@ type Settings struct {
 	Command string `json:"test-command"`
 	// Report is where the command writes the report, from the
 	// repository's root: a path, or a pattern, `**` spanning folders
-	// (`**/build/test-results/**/*.xml`), each file it names read.
+	// (`**/build/test-results/**/*.xml`), each file it names read. The
+	// files it names are removed before a run, but those git tracks.
 	Report string `json:"test-report"`
 	// Paths are the test files, as patterns (`**` spans folders).
 	Paths []string `json:"test-paths"`
@@ -341,6 +342,15 @@ func unset(s Settings) *verdict.Verdict {
 		return refuse("the red-first check did not run", verdict.Finding{Rule: "setting-missing", Where: "test-report",
 			Message: "no test report: set roles.tester.settings.test-report, where the test command writes its JUnit XML report"})
 	}
+	if why := reportInTree(s.Report); why != "" {
+		return refuse("the red-first check did not run", verdict.Finding{Rule: "setting-invalid", Where: "test-report", Message: why})
+	}
+	for _, m := range s.ModuleFiles {
+		if strings.ContainsAny(m, `/\`) {
+			return refuse("the red-first check did not run", verdict.Finding{Rule: "setting-invalid", Where: "module-files",
+				Message: fmt.Sprintf("module-files %q holds a folder: give a file's name alone, as `build.gradle.kts` or `*.csproj`, matched in each folder", m)})
+		}
+	}
 	if _, err := compileBuildErrors(s.BuildErrors); err != nil {
 		return refuse("the red-first check did not run", verdict.Finding{Rule: "setting-invalid", Where: "build-errors", Message: err.Error()})
 	}
@@ -399,6 +409,7 @@ type ran struct {
 	suite     map[string]string
 	classless map[string]bool
 	roots     []string // the folder it ran in, its links resolved too: an error's absolute path below it is from the root
+	reports   []string // the report files read, this run's
 }
 
 // buildRecord says whether id has the shape of a runner's record of a
@@ -478,17 +489,19 @@ func RemoveWorktree(repo, tree string) {
 
 // runIn runs the test command in tree and reads its report.
 func runIn(tree string, s Settings, where string) (ran, *verdict.Finding) {
+	if why := reportInTree(s.Report); why != "" {
+		return ran{}, &verdict.Finding{Rule: "setting-invalid", Where: "test-report", Message: why}
+	}
 	report := filepath.Join(tree, filepath.FromSlash(s.Report))
-	for _, f := range reportFiles(tree, s.Report) { // a report committed is not this run's
-		if err := os.Remove(f); err != nil {
-			return ran{}, &verdict.Finding{Rule: "check-error", Where: "test", Message: err.Error()}
-		}
+	kept, err := clearReports(tree, s.Report) // a past run's report is not this run's
+	if err != nil {
+		return ran{}, &verdict.Finding{Rule: "check-error", Where: "test", Message: err.Error()}
 	}
 	out, late, runErr := shell(tree, strings.ReplaceAll(s.Command, "{report}", report), s.deadline)
 	if late {
 		return ran{}, overTime(where)
 	}
-	found := reportFiles(tree, s.Report)
+	found := freshReports(tree, s.Report, kept)
 	if len(found) == 0 {
 		said := "it exited 0"
 		if runErr != nil {
@@ -497,7 +510,7 @@ func runIn(tree string, s Settings, where string) (ran, *verdict.Finding) {
 		return ran{}, &verdict.Finding{Rule: "report-missing", Where: s.Report,
 			Message: fmt.Sprintf("the test command wrote no report %s (%s); its output ends: %s", where, said, tail(out.String(), 10))}
 	}
-	rep := ran{output: out.String(), results: map[string]result{}, suite: map[string]string{}, classless: map[string]bool{}}
+	rep := ran{output: out.String(), results: map[string]result{}, suite: map[string]string{}, classless: map[string]bool{}, reports: found}
 	if runErr != nil {
 		rep.failure = runErr.Error()
 	}
