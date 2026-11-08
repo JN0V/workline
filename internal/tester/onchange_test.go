@@ -40,10 +40,10 @@ func TestPackagesWalkUpToTests(t *testing.T) {
 }
 
 // With module-files, the folders are the build modules a change touches
-// (#1176): the nearest folder above each file holding a build file, the
-// root's left out (a file there runs nothing alone; none at all runs the
-// whole suite), a file with no module above adds none; a name may be a
-// pattern (`*.csproj`).
+// (#1176): the nearest folder above each file holding a build file; a
+// file of the root module reaches every module, so none: the whole suite
+// runs; a file with no module above adds none; a name may be a pattern
+// (`*.csproj`).
 func TestPackagesBuildModules(t *testing.T) {
 	tree := t.TempDir()
 	for _, f := range []string{
@@ -70,11 +70,19 @@ func TestPackagesBuildModules(t *testing.T) {
 		{[]string{"core/session/src/test/kotlin/x/ATest.kt", "core/session/build.gradle.kts"}, []string{"./core/session"}},
 		{[]string{"core/timelapse/src/main/kotlin/x/B.kt", "core/session/src/main/kotlin/x/gone/C.kt"}, []string{"./core/session", "./core/timelapse"}},
 		{[]string{"tools/App/Program.cs"}, []string{"./tools/App"}},
-		{[]string{"build.gradle.kts", "docs/x.md"}, nil},
-		{[]string{"docs/x.md", "core/timelapse/src/main/kotlin/x/B.kt"}, []string{"./core/timelapse"}},
+		{[]string{"build.gradle.kts"}, nil},
+		{[]string{"core/session/src/main/kotlin/x/A.kt", "build.gradle.kts"}, nil},
+		{[]string{"docs/x.md", "core/timelapse/src/main/kotlin/x/B.kt"}, nil},
 	} {
 		if got := Packages(tree, tt.files, patterns, modules); !slices.Equal(got, tt.want) {
 			t.Errorf("Packages(%v) = %v, want %v", tt.files, got, tt.want)
 		}
+	}
+	if err := os.Remove(filepath.Join(tree, "build.gradle.kts")); err != nil {
+		t.Fatal(err)
+	}
+	got := Packages(tree, []string{"docs/x.md", "core/timelapse/src/main/kotlin/x/B.kt"}, patterns, modules)
+	if want := []string{"./core/timelapse"}; !slices.Equal(got, want) {
+		t.Errorf("no root module: Packages = %v, want %v: a file with no module above adds none", got, want)
 	}
 }

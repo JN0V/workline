@@ -134,8 +134,9 @@ func OnChange(repo, rev string, patches []intent.Intention, s Settings, deadline
 // modules, the tester's module-files, set: the build modules instead
 // (#1176), as Gradle or Maven take them: the nearest folder above each
 // file holding a file one of them names (`build.gradle.kts`, `pom.xml`,
-// `*.csproj`), the root's left out: a file of the root module alone
-// runs the whole suite.
+// `*.csproj`). A file of the root module (`build.gradle.kts`,
+// `gradle/libs.versions.toml`) reaches every module: none, the whole
+// suite runs. A file with no module above it adds none.
 func Packages(tree string, files, patterns, modules []string) []string {
 	if len(modules) > 0 {
 		return buildModules(tree, files, modules)
@@ -178,7 +179,8 @@ func Packages(tree string, files, patterns, modules []string) []string {
 }
 
 // buildModules are the folders below the root nearest each file that
-// hold a file names matches by its base name, `./`-prefixed and sorted.
+// hold a file names matches by its base name, `./`-prefixed and sorted;
+// none when a file's nearest is the root.
 func buildModules(tree string, files, names []string) []string {
 	holds := map[string]bool{}
 	module := func(dir string) bool {
@@ -196,7 +198,13 @@ func buildModules(tree string, files, names []string) []string {
 	}
 	var out []string
 	for _, f := range files {
-		for dir := path.Dir(path.Clean(f)); dir != "." && dir != "/"; dir = path.Dir(dir) {
+		for dir := path.Dir(path.Clean(f)); ; dir = path.Dir(dir) {
+			if dir == "." || dir == "/" {
+				if module(".") {
+					return nil // the root build reaches every module: the whole suite
+				}
+				break
+			}
 			if module(dir) {
 				out = append(out, pkgArg(dir))
 				break
