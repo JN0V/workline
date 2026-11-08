@@ -63,7 +63,9 @@ person unlinked is no longer one. An issue whose state lists a split
   parts is the evidence. Always proposed, at every level:
   `workline:proposed` on it; a person's `workline:accepted` closes it as
   completed, their yes named. The mark is the engine's: on an agent's
-  intention it is dropped.
+  intention it is dropped. It is checked at the proposal and at the
+  yes: the issue split, every part closed now — else dropped,
+  `parent-not-split` or `parent-part-open`.
 - **Never closed by the role alone**: an agent's `close` on a parent, a
   duplicate or an announcement as obsolete, is dropped
   (`parent-accepted-by-a-person`) unless a person accepted it. The agent's

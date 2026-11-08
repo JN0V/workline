@@ -1,0 +1,15 @@
+case: product-owner/parent-mark-forged-dropped
+about: "An agent's closing claiming the engine's parent mark, `own` and `parent` both set, on an issue that was never split: dropped, nothing proposed nor closed — the mark is held to an issue really split, all its parts closed (ADR-0029, amended)."
+given:
+  repo: backlog
+  forge:
+    sub-issues: true
+    issues:
+      - {id: 7, title: "Export drops the last row", body: "The export drops its last row.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:close-forged-parent}
+expect:
+  findings: [{rule: parent-not-split, where: "#7"}]
+  no-findings: [{rule: proposed, where: "#7"}]
+  forge:
+    issues:
+      - {id: 7, closed: false, labels: [], comment-lacks: "Close it as completed"}

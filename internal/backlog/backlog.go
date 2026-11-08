@@ -1760,7 +1760,7 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 		return p.checkKeep(f, repo, role, st, c)
 	}
 	if c.Do == "close" && c.Parent {
-		return "", "" // its parts' comment is the evidence, a person's yes the act (ADR-0029, amended)
+		return p.checkParent(c.Issue, st) // its parts' comment is the evidence, a person's yes the act (ADR-0029, amended)
 	}
 	if c.Do == "milestone" || c.Do == "order" || c.Do == "effort" || c.Do == "kind" || c.Do == "size" || c.Do == "refine" || c.Do == "ready" || c.Do == "unready" || c.Do == "unblock" || c.Do == "blocked" || c.Do == "ask" || c.Do == "assume" || c.Do == "split" || c.Do == "rename" || c.Do == "depend" || c.Do == "undepend" {
 		return "", "" // writing a plan or asking says nothing of the issue's truth: no quote
@@ -1794,6 +1794,27 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 	c.Hearsay = p.hearsay
 	if c.Reason == "obsolete" {
 		return p.checkObsolete(f, repo, role, st, c)
+	}
+	return "", ""
+}
+
+// checkParent holds a closing marked parent to what the mark claims, at
+// its proposal and again at a person's yes (ADR-0029, amended): the
+// issue was split — parts in the forge's relation, its task list or the
+// role's split — and every part is closed now, none open again.
+func (p *Plan) checkParent(id int, st *State) (rule, why string) {
+	parts := SplitInto(p.issues[id], st)
+	if len(parts) == 0 {
+		return "parent-not-split", fmt.Sprintf("#%d has no parts: a closing for its parts closed is only a split parent's", id)
+	}
+	var open []int
+	for _, n := range parts {
+		if p.open[n] {
+			open = append(open, n)
+		}
+	}
+	if len(open) > 0 {
+		return "parent-part-open", fmt.Sprintf("#%d's part %s is open: it is closed once all its parts are, a person's yes then", id, issueList(open))
 	}
 	return "", ""
 }

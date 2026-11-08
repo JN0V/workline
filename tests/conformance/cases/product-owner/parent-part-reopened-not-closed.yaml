@@ -1,0 +1,25 @@
+case: product-owner/parent-part-reopened-not-closed
+about: "A parent's closing was proposed with all its parts closed; one part was reopened since, then a person put workline:accepted on the parent. The yes is checked again: a part is open, so the parent stays open, the closing dropped — it is closed once all its parts are (ADR-0029, amended)."
+given:
+  repo: backlog
+  forge:
+    sub-issues: true
+    issues:
+      - id: 9
+        title: "Export fixes"
+        body: "The export drops its last row, and a comma splits a cell."
+        author: ann
+        insider: true
+        labels: [workline:proposed, workline:accepted]
+        label-events: [{label: workline:accepted, added: true, author: dev, insider: true, created: "2026-11-08T18:00:00Z"}]
+        comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nsplit: [11, 12]\nlabel: workline:proposed\nproposed:\n  - act: close-completed\n    line: 'Close #9 as completed: its 2 parts are closed'\n    proposal: {do: close, issue: 9, reason: completed, quote: null, why: its 2 parts are closed, parent: true}\n    since: '2026-11-08'\n```\n\n<!-- workline:sticky=product-owner/state -->"]
+      - {id: 11, title: "Keep the last row in the CSV export", body: "Part of #9.", labels: [], parent: 9}
+      - {id: 12, title: "Quote commas in exported cells", body: "Part of #9.", labels: [], parent: 9, closed: true, reason: completed, closed-by: [{kind: commit, ref: "1a2b3c4", text: "fix(export): quote commas, closes #12"}]}
+run: {role: product-owner, event: schedule, ai: none}
+expect:
+  agent-calls: 0
+  findings: [{rule: parent-part-open, where: "#9", message: "#9's part #11 is open"}]
+  no-findings: [{rule: done-as-accepted, where: "#9"}]
+  forge:
+    issues:
+      - {id: 9, closed: false}
