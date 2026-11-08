@@ -36,7 +36,7 @@ func TestReadJUnitAsRunnersWriteIt(t *testing.T) {
 		}
 	}
 	for id, r := range want {
-		if got[id] != r {
+		if g, ok := got[id]; !ok || g != r {
 			t.Errorf("%s: %v, want %v", id, got[id], r)
 		}
 	}
