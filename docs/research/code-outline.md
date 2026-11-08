@@ -102,7 +102,7 @@ What workline takes: a table, one row a family, in
 | Python | `from .a.b import`, `import a.b` | `a/b.py` or `a/b/__init__.py`; leading dots climb |
 | JavaScript, TypeScript | `from './a'`, `import './a'`, `require('./a')` | `./` and `../` only, with `.ts`, `.js`, `/index.ts`, …; `./a.js` written for `a.ts` |
 | Go | `"host/mod/pkg"` in an import | past the prefix `go.mod` declares, the folder from the root, its files, tests aside; another prefix is from outside |
-| Java, Kotlin, Scala | `import a.b.C;` | `a/b/C.java`, `.kt`, … anywhere |
+| Java, Kotlin, Scala | `import a.b.C;`; a type of its package, no import | `a/b/C.java`, `.kt`, … anywhere; the files of its package's folders it names ([#1109](https://github.com/JN0V/workline/issues/1109)) |
 | Rust, Ruby, PHP, Lua, shell | `mod a;`, `require`, `include`, `source` | beside the file, else by its ending |
 
 A package from outside resolves to no file of the project and is left

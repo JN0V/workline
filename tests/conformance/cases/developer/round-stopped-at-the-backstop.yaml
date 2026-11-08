@@ -1,0 +1,51 @@
+case: developer/round-stopped-at-the-backstop
+about: >
+  The pull request's job refuses a review round at its issue's backstop,
+  as the line does (ADR-0064, §5; the panel of 2026-11-08; #1174). #3's
+  runs spent 1.7M fresh tokens, past its backstop of 1.6M; the reviewer
+  asks a fix on pull request 2, and `workline develop --merge-request 2`
+  runs. No agent is called, no round counted: #3 goes workline:blocked,
+  the reason on it and on the pull request, which stays open.
+given:
+  repo: tested-draft
+  setup:
+    - "git checkout -q -b workline/developer/3 && printf 'add() { echo $(($1 + $2)); }\\nmul() { echo $(($1 + $2)); }\\n' > lib.sh && git commit -qam 'feat: mul for #3' -m 'Workline-Role: developer' && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main workline/tester/issue-3 workline/developer/3"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:ready", "workline:developing"]
+        body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+        comments:
+          - "**workline's line** last woke the developer on this issue.\n\n<!-- workline:line-record {\"state\":\"ready\",\"body\":\"0a1b2c3d4e5f\",\"hops\":1,\"spent\":{\"product-owner\":[300000],\"tester\":[400000],\"developer\":[500000,500000]}} -->\n<!-- workline:sticky=line/state -->"
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        draft: true
+        comments: ["The tests of #3, frozen.\n\n<!-- workline:tester-record {\"issue\":3,\"base\":\"main\",\"files\":{\"tests/test_mul_by_zero.sh\":\"8f123a0bacbd681063880b867df38dd216784b97\",\"tests/test_mul_two_by_three.sh\":\"2dee0641bd7a79057ade7bff5af43b603125f543\"}} -->\n<!-- workline:sticky=tester/tests -->"]
+      - id: 2
+        branch: workline/developer/3
+        title: "Multiply two numbers"
+        body: "Closes #3"
+        comments:
+          - "**The developer**'s record of this pull request, for its next runs and the auditor.\n\n<!-- workline:developer-act {\"act\":\"code\",\"issue\":3,\"acceptance\":[\"tests/test_mul_by_zero.sh\",\"tests/test_mul_two_by_three.sh\"],\"code\":[\"lib.sh\"],\"proof\":{\"result\":\"red\",\"passed\":1,\"red\":[\"test_mul_two_by_three\"]},\"round\":1,\"review-runs\":1} -->\n<!-- workline:sticky=developer/code -->"
+          - "**workline reviewer**\n\n| | | Where | Finding |\n|---|---|---|---|\n| **blocks** | correctness | `lib.sh:2` | Important: mul adds its operands — mul 2 3 gives 5, not 6. Fix: multiply. |\n\n<!-- workline:record reviewed=1111111 runs=2 -->\n<!-- workline:sticky=reviewer/summary -->"
+run: {develop: [--merge-request, "2"], ai: "fake:developer-writes-mul"}
+expect:
+  status: pass
+  summary: "at its backstop: its issue #3 blocked, no round run"
+  agent-calls: 0
+  findings:
+    - {rule: backstop-crossed, level: warn, where: "merge request 2", message: "1.7M fresh tokens spent on it, all runs, reaching its backstop of 1.6M"}
+  not-pushed: [workline/developer/3]
+  forge:
+    issues:
+      - id: 3
+        labels: ["workline:blocked"]
+        comment-contains: ["**The developer** blocks this issue.", "no review round runs on merge request 2, kept open"]
+    merge-requests:
+      - id: 2
+        closed: false
+        comment-contains: ["**Blocked at its backstop**", "\"round\":1"]

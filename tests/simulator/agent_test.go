@@ -69,6 +69,10 @@ type simAgent struct {
 	answers map[string][]string
 	calls   []call
 	work    string // the run's folder, a volatile part of every task
+	// tokens: the fresh tokens each call of a role says it spent, none
+	// for a role not named: a trace whose every run crosses its target
+	// (ADR-0064, §5).
+	tokens map[string]int
 }
 
 // next is the outcome of the role's next call, and the trial's answer
@@ -115,7 +119,7 @@ func (c call) String() string {
 var tick int
 
 func (a *simAgent) Propose(r agent.Request) (agent.Call, error) {
-	c := agent.Call{Agent: "fake", Model: "sim", Tier: r.Role.Model.Tier}
+	c := agent.Call{Agent: "fake", Model: "sim", Tier: r.Role.Model.Tier, TokensIn: a.tokens[r.Role.Name]}
 	task, _ := os.ReadFile(filepath.Join(r.RunDir, "in", "task.md"))
 	if d := os.Getenv("SIM_DUMP"); d != "" {
 		_ = os.WriteFile(filepath.Join(d, fmt.Sprintf("%d-%s.md", len(a.calls), r.Role.Name)), task, 0o644)
@@ -465,6 +469,14 @@ func productOwnerOf(task []byte) string {
 			strings.TrimSpace(scope), strings.Join(q, ", "))
 	}
 	switch {
+	case strings.Contains(string(task), "is too big for that role") && strings.Contains(string(task), "`size` with `tier: large`"):
+		// A run too big for its role, the issue atomic as the fake sees
+		// it (ADR-0064, §3): `large` granted, sent back where it was.
+		to := "refine"
+		if m := unblockTo.FindSubmatch(task); m != nil {
+			to = string(m[1])
+		}
+		return "- size: {issue: ISSUE, tier: large, why: \"one need, no part of it passes alone\"}\n- unblock: {issue: ISSUE, to: " + to + ", why: \"granted a larger size\"}\n"
 	case strings.Contains(string(task), "Blocked (workline:blocked)"):
 		// Read again, what blocked it gone: back to the state it was
 		// blocked from, as the task names it.

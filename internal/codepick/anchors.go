@@ -50,12 +50,12 @@ var testName = regexp.MustCompile(`(^|/)(test_[^/]*|[^/]*_test\.\w+|[^/]*\.(test
 func (p *Picker) titleStems(a Ask) []string {
 	title, _, _ := strings.Cut(a.Text, "\n")
 	var words []string
-	if m := titlePrefix.FindStringSubmatch(title); m != nil && !commitTypes[strings.ToLower(m[1])] && !notNames[m[1]] {
+	if m := titlePrefix.FindStringSubmatch(title); m != nil && !commitTypes[strings.ToLower(m[1])] && !p.notName(m[1]) {
 		words = append(words, m[1])
 	}
 	code, _, _ := NamedIn(title)
 	for _, w := range code {
-		if !notNames[w] && !slices.Contains(words, w) {
+		if !p.notName(w) && !slices.Contains(words, w) {
 			words = append(words, w)
 		}
 	}

@@ -261,6 +261,10 @@ func blockedBody(cfg *routing.Config, r Record) string {
 		next = fmt.Sprintf("the line asks the %s on its size at once: it narrows the issue's %s or grants it `workline:size/large`, and sends it back, or leaves it blocked for a person, who may split it, give it `workline:size/x-large` or raise the setting named; a person may move it back by its label at any time",
 			roleSaid(backlog.Keeper), work.Name(work.Scope))
 	}
+	if r.Backstop > 0 {
+		// At its backstop (backstop.go): a person's, never read again.
+		return backlog.Said("workline's line", "blocks this issue", why, backstopNext(r)) + "\n" + recordBody(r, "")
+	}
 	if r.Revisited != "" {
 		next += fmt.Sprintf(" (last read again on %s; the %s's comment says what it decided)", r.Revisited[:min(len(r.Revisited), 10)], strings.ReplaceAll(backlog.Keeper, "-", " "))
 	}

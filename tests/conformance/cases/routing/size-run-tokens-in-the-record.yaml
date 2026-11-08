@@ -6,7 +6,7 @@ about: >
   bug in refine whose record holds a tester's run of 7000 and an earlier
   product owner's of 1000: the product owner runs again, 2000 in and 500
   out, and the record adds 2500 to its runs; the comment says 10500 so
-  far. Reported only: nothing stops on it.
+  far, under its backstop: nothing stops on it.
 given:
   repo: backlog
   config:
