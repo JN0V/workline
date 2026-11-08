@@ -11,6 +11,7 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/JN0V/workline/internal/engine"
 	"github.com/JN0V/workline/internal/line"
@@ -105,12 +106,14 @@ func TestGitHubTemplatesFetchWholeHistory(t *testing.T) {
 }
 
 // A job that hangs ends at its own timeout, never at GitHub's 6 h: each job
-// of the GitHub templates sets timeout-minutes, and the issue's judge one
-// above the caps of the roles it runs, the tester's and the developer's
-// (#1197).
-func TestGitHubTemplatesTimeEachJob(t *testing.T) {
+// of the GitHub templates sets timeout-minutes; one that runs the
+// developer or the tester with an agent, the issue's judge or a review
+// round, above their caps. GitLab's jobs running them too: the project's
+// 1 h default is below the developer's caps (#1197).
+func TestTemplatesTimeEachJob(t *testing.T) {
+	need := rolesCapSeconds(t)
 	files, _ := filepath.Glob("../../ci/github/*.yml")
-	n := 0
+	n, capped := 0, 0
 	for _, f := range files {
 		data, err := os.ReadFile(f)
 		if err != nil {
@@ -120,6 +123,9 @@ func TestGitHubTemplatesTimeEachJob(t *testing.T) {
 			Jobs map[string]struct {
 				RunsOn  string `yaml:"runs-on"`
 				Timeout int    `yaml:"timeout-minutes"`
+				Steps   []struct {
+					Run string `yaml:"run"`
+				} `yaml:"steps"`
 			} `yaml:"jobs"`
 		}
 		if err := yaml.Unmarshal(data, &wf); err != nil {
@@ -133,33 +139,60 @@ func TestGitHubTemplatesTimeEachJob(t *testing.T) {
 			if job.Timeout <= 0 {
 				t.Errorf("%s, job %s: no timeout-minutes; a hang would run 6 h", filepath.Base(f), name)
 			}
-		}
-		if filepath.Base(f) == "workline-develop.yml" {
-			caps := map[string]map[string]any{}
-			for _, r := range []string{"tester", "developer"} {
-				var y struct {
-					Settings map[string]any `yaml:"settings"`
-				}
-				data, err := os.ReadFile(filepath.Join("../../roles", r, "role.yaml"))
-				if err != nil {
-					t.Fatal(err)
-				}
-				if err := yaml.Unmarshal(data, &y); err != nil {
-					t.Fatal(err)
-				}
-				caps[r] = y.Settings
+			runs := false
+			for _, st := range job.Steps {
+				runs = runs || regexp.MustCompile(`workline (develop --merge-request|route issue)[^\n]*--ai "\$ai"`).MatchString(st.Run)
 			}
-			sec := func(v any) int { n, _ := v.(int); return n }
-			need := max(sec(caps["tester"]["ai-max-seconds"])+3*sec(caps["tester"]["suite-max-seconds"]),
-				sec(caps["developer"]["ai-max-seconds"])+sec(caps["developer"]["proof-seconds"]))
-			if got := wf.Jobs["judge"].Timeout * 60; got <= need {
-				t.Errorf("workline-develop.yml, job judge: timeout-minutes %d, want above the roles' caps, %d s", got/60, need)
+			if runs {
+				capped++
+				if job.Timeout*60 <= need {
+					t.Errorf("%s, job %s: timeout-minutes %d, want above the developer's and the tester's caps, %d s", filepath.Base(f), name, job.Timeout, need)
+				}
 			}
 		}
 	}
-	if n == 0 {
-		t.Fatal("no job found in the GitHub templates")
+	if n == 0 || capped < 2 {
+		t.Fatalf("%d jobs, %d running the developer or the tester with an agent: want the issue's judge and the review round", n, capped)
 	}
+	data, err := os.ReadFile("../../ci/gitlab/workline.gitlab-ci.yml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var gl map[string]any
+	if err := yaml.Unmarshal(data, &gl); err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{"workline:develop:judge", "workline:review:judge"} {
+		job, _ := gl[name].(map[string]any)
+		d, err := time.ParseDuration(fmt.Sprint(job["timeout"]))
+		if err != nil || d.Seconds() <= float64(need) {
+			t.Errorf("gitlab %s: timeout %v, want above the developer's and the tester's caps, %d s", name, job["timeout"], need)
+		}
+	}
+}
+
+// rolesCapSeconds is the longest a developer's or a tester's run may take
+// by its caps: the developer's ai-max-seconds and proof-seconds; the
+// tester's ai-max-seconds and its proof's 3 × suite-max-seconds.
+func rolesCapSeconds(t *testing.T) int {
+	t.Helper()
+	caps := map[string]map[string]any{}
+	for _, r := range []string{"tester", "developer"} {
+		var y struct {
+			Settings map[string]any `yaml:"settings"`
+		}
+		data, err := os.ReadFile(filepath.Join("../../roles", r, "role.yaml"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := yaml.Unmarshal(data, &y); err != nil {
+			t.Fatal(err)
+		}
+		caps[r] = y.Settings
+	}
+	sec := func(v any) int { n, _ := v.(int); return n }
+	return max(sec(caps["tester"]["ai-max-seconds"])+3*sec(caps["tester"]["suite-max-seconds"]),
+		sec(caps["developer"]["ai-max-seconds"])+sec(caps["developer"]["proof-seconds"]))
 }
 
 // A person opening a workline job reads what ran, each step's verdict, the

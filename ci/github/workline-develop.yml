@@ -74,7 +74,7 @@ jobs:
       group: workline-issue-${{ github.event.issue.number || inputs.issue || 'first' }}
       cancel-in-progress: false
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 120   # above the developer's caps (75 min) and the tester's, ai-max-seconds and 3 × suite-max-seconds (50 min)
     permissions: {contents: read, pull-requests: read, issues: read}
     env: {HAS_CLAUDE: "${{ secrets.CLAUDE_CODE_OAUTH_TOKEN != '' }}"}
     outputs:
@@ -470,7 +470,7 @@ jobs:
       group: workline-develop-review-${{ github.event.issue.number || inputs['pull-request'] || github.event.workflow_run.pull_requests[0].number }}
       cancel-in-progress: false
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 120   # a review round has the developer's caps, ai-max-seconds and proof-seconds: 75 min
     # checks, actions: the project's checks red at its head, and their
     # failed steps' log, the round's input (#917).
     permissions: {contents: read, pull-requests: read, issues: read, checks: read, actions: read}
