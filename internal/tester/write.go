@@ -624,7 +624,7 @@ func proveOnBase(repo, base string, patches []intent.Intention, s Settings) (*ve
 	}
 	if v.Status == verdict.Pass {
 		rules, _ := compileBuildErrors(s.BuildErrors) // Prove said a bad one
-		if lint := lintTests(repo, tree, base, missingNamed(files, rules)); lint != nil {
+		if lint := lintTests(repo, tree, base, missingNamed(files, rules, rootsOf(tree)...)); lint != nil {
 			return lint, newTests, blobs, nil
 		}
 	}
@@ -796,14 +796,14 @@ func withinLeftOut(check string, g *gate.Gate, add *gate.Added, missing func(pat
 // rules' missing-name): the tests red by it on purpose. golangci-lint
 // gives the compiler's lines in its message, at the package's first
 // file: each line it holds must be one; else the finding itself, in a
-// test file, is read.
-func missingNamed(tests []string, rules []buildRules) func(path, message string) bool {
+// test file, is read. A file under one of roots is read from there.
+func missingNamed(tests []string, rules []buildRules, roots ...string) func(path, message string) bool {
 	in := map[string]bool{}
 	for _, t := range tests {
 		in[path.Clean(t)] = true
 	}
 	return func(p, message string) bool {
-		if errs := buildErrorsIn(message, tests, rules); len(errs) > 0 {
+		if errs := buildErrorsIn(message, tests, rules, roots...); len(errs) > 0 {
 			for _, e := range errs {
 				if !e.missing {
 					return false

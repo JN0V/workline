@@ -78,9 +78,11 @@ Cases in `tests/conformance/cases/tester/`:
 - **A missing name told from a broken build**: a build that broke on
   the base is red only when each compiler error lies in the change's
   tests and names what the base lacks; any other blocks
-  (`build-broken`). Go's errors by default (`build-errors`,
-  [the page](missing-name.md)). A missing name the issue never names
-  is a broken build too, asked again once
+  (`build-broken`). Go's, Kotlin's, javac's and Gradle's errors by
+  default (`build-errors`, [the page](missing-name.md); Kotlin's
+  tried on an Android project,
+  [#1181](https://github.com/JN0V/workline/pull/1181#tried)). A
+  missing name the issue never names is a broken build too, asked again once
   ([#1111](https://github.com/JN0V/workline/issues/1111)).
 - **Tests from the criteria** (`workline test write --issue <n>`): one
   test a scenario, named after it; a ready issue only, with named
@@ -231,8 +233,8 @@ Cases in `tests/conformance/cases/tester/`:
 - **The curator's removals**: a tester's test merged while its issue is
   still open is not told apart (only open Drafts' records are read); a
   mutation report other than Gremlins' or the schema's is not read.
-- **A missing name in Rust or Java**: their compilers' errors span
-  several lines, which `build-errors` does not read
+- **A missing name in Rust**: its errors span several lines, which
+  `build-errors` does not read
   ([the page](missing-name.md#other-languages)).
 - **Not in the line, nor in the CI templates**: a project runs the
   command in its own job.

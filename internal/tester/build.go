@@ -2,8 +2,11 @@ package tester
 
 import (
 	"fmt"
+	"net/url"
 	"path"
+	"path/filepath"
 	"regexp"
+	"runtime"
 	"strings"
 )
 
@@ -12,21 +15,28 @@ import (
 // code lacks: a test of code not written yet, red for the right reason
 // (ADR-0055, the proof).
 type BuildErrors struct {
-	// Error matches one error line; its groups `file` (from the
-	// repository's root) and `message`.
+	// Error matches one error line; its groups `file` and `message`. A
+	// file absolute, or a file:// URI, under the folder the tests ran in
+	// is read from the repository's root (#1177).
 	Error string `json:"error"`
 	// MissingName matches a message naming what the code lacks; the
 	// name itself in its group `name`, else the first quoted word of the
 	// message (#1111).
 	MissingName []string `json:"missing-name"`
-	// TestName finds the tests a test file declares, its first group the
-	// name: their ids while the file does not build.
+	// NameLine finds, on a line after a missing-name message that gives
+	// no name, the name in its group `name`: javac's `symbol:` line
+	// (#1183). Read up to the next error line.
+	NameLine string `json:"name-line"`
+	// TestName finds the tests a test file declares, the first of its
+	// groups that matched the name: their ids while the file does not
+	// build. Empty, a row naming no tests (a build file's errors).
 	TestName string `json:"test-name"`
 }
 
 type buildRules struct {
 	error    *regexp.Regexp
 	missing  []*regexp.Regexp
+	nameLine *regexp.Regexp
 	testName *regexp.Regexp
 }
 
@@ -50,6 +60,18 @@ func compileBuildErrors(list []BuildErrors) ([]buildRules, error) {
 			}
 			r.missing = append(r.missing, re)
 		}
+		if b.NameLine != "" {
+			if r.nameLine, err = regexp.Compile(b.NameLine); err != nil || r.nameLine.SubexpIndex("name") < 0 {
+				if err == nil {
+					err = fmt.Errorf("the group (?P<name>…) is needed")
+				}
+				return nil, fmt.Errorf("build-errors[%d].name-line: %v", i, err)
+			}
+		}
+		if b.TestName == "" {
+			out = append(out, r)
+			continue
+		}
 		if r.testName, err = regexp.Compile(b.TestName); err != nil || r.testName.NumSubexp() < 1 {
 			if err == nil {
 				err = fmt.Errorf("a group holding the name is needed")
@@ -71,21 +93,25 @@ type buildError struct {
 
 // buildErrorsIn reads the error lines of output by each ecosystem's
 // pattern. Each is a missing name only when it lies in one of tests (the
-// change's test files) and its message names what the code lacks.
-func buildErrorsIn(output string, tests []string, rules []buildRules) []buildError {
+// change's test files) and its message names what the code lacks. A
+// file under one of roots, the folder the command ran in, is read from
+// there.
+func buildErrorsIn(output string, tests []string, rules []buildRules, roots ...string) []buildError {
 	inTests := map[string]bool{}
 	for _, t := range tests {
 		inTests[t] = true
 	}
 	var errs []buildError
+	unnamed := -1 // the last error, a missing name whose name a later line gives
 	for _, line := range strings.Split(output, "\n") {
 		line = strings.TrimRight(line, "\r")
+		read := false
 		for i, r := range rules {
 			m := r.error.FindStringSubmatch(line)
 			if m == nil {
 				continue
 			}
-			file := path.Clean(strings.TrimPrefix(m[r.error.SubexpIndex("file")], "./"))
+			file := fromRoot(m[r.error.SubexpIndex("file")], roots)
 			msg := m[r.error.SubexpIndex("message")]
 			e := buildError{file: file, line: line, rules: i}
 			if inTests[file] {
@@ -97,17 +123,91 @@ func buildErrorsIn(output string, tests []string, rules []buildRules) []buildErr
 				}
 			}
 			errs = append(errs, e)
+			unnamed = -1
+			if e.missing && e.name == "" && r.nameLine != nil {
+				unnamed = len(errs) - 1
+			}
+			read = true
 			break
+		}
+		if !read && unnamed >= 0 {
+			re := rules[errs[unnamed].rules].nameLine
+			if m := re.FindStringSubmatch(line); m != nil {
+				errs[unnamed].name = m[re.SubexpIndex("name")]
+				unnamed = -1
+			}
 		}
 	}
 	return errs
 }
 
-// testNames is the tests content declares, by the rules' test-name.
+// fromRoot is a file an error line names, from the repository's root: a
+// file:// URI as its path, one under a root as the path below it. Any
+// other is kept, cleaned.
+func fromRoot(file string, roots []string) string {
+	return fromRootOn(file, roots, runtime.GOOS == "windows")
+}
+
+// drive is a Windows path's drive, `C:/`, after a URI's `/` or not.
+var drive = regexp.MustCompile(`^/?([A-Za-z]:/)`)
+
+// fromRootOn is fromRoot by Windows' rules or not (#1183): there, a
+// path's `\` is `/`, it starts at its drive (file:///C:/… is C:/…), and
+// case does not count.
+func fromRootOn(file string, roots []string, windows bool) string {
+	if rest, ok := strings.CutPrefix(file, "file://"); ok {
+		if p, err := url.PathUnescape(rest); err == nil {
+			rest = p
+		}
+		file = rest
+	}
+	slash := func(p string) string {
+		if windows {
+			p = drive.ReplaceAllString(strings.ReplaceAll(p, `\`, "/"), "$1")
+		}
+		return p
+	}
+	file = slash(file)
+	if path.IsAbs(file) || (windows && drive.MatchString(file)) {
+		for _, r := range roots {
+			r = strings.TrimSuffix(slash(filepath.ToSlash(r)), "/")
+			if r == "" || len(file) <= len(r) || file[len(r)] != '/' {
+				continue
+			}
+			if head := file[:len(r)]; head == r || (windows && strings.EqualFold(head, r)) {
+				return path.Clean(file[len(r)+1:])
+			}
+		}
+	}
+	return path.Clean(strings.TrimPrefix(file, "./"))
+}
+
+// rootsOf is the roots of a command run in dir: dir, and dir with its
+// links resolved, as a compiler may print it (macOS's /var is
+// /private/var).
+func rootsOf(dir string) []string {
+	roots := []string{dir}
+	if r, err := filepath.EvalSymlinks(dir); err == nil && r != dir {
+		roots = append(roots, r)
+	}
+	return roots
+}
+
+// testNames is the tests content declares, by the rules' test-name: the
+// first group of each match that matched, as a Kotlin name in
+// backquotes or not.
 func testNames(content string, r buildRules) []string {
+	if r.testName == nil {
+		return nil
+	}
 	var names []string
 	for _, m := range r.testName.FindAllStringSubmatch(content, -1) {
-		names = append(names, m[1])
+		for _, g := range m[1:] {
+			if g != "" {
+				names = append(names, g)
+				break
+			}
+		}
 	}
 	return names
 }

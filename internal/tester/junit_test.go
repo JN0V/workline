@@ -16,9 +16,14 @@ func TestReadJUnitAsRunnersWriteIt(t *testing.T) {
 		"go.xml": `<testsuites><testsuite name="example.com/m"><testcase classname="example.com/m" name="TestA"/>` +
 			`<testcase classname="example.com/m" name="TestB"><error/></testcase></testsuite></testsuites>`,
 		"bare.xml": `<testsuite><testcase name="alone"/><testcase name="twice"/><testcase name="twice"><failure/></testcase></testsuite>`,
+		// Gradle on JUnit 5 names a method `name()`, a parameter's run
+		// `name(int)[1]` (#1178).
+		"gradle.xml": `<testsuite name="io.x.FooTest$Idle"><testcase name="starts in IDLE state()" classname="io.x.FooTest$Idle"/>` +
+			`<testcase name="sums(int)[1]" classname="io.x.FooTest$Idle"/></testsuite>`,
 	}
 	want := map[string]result{"tests.test_x.test_ok": passed, "tests.test_x.test_bad": failed, "tests.test_x.test_off": skipped,
-		"example.com/m.TestA": passed, "example.com/m.TestB": failed, "alone": passed, "twice": failed}
+		"example.com/m.TestA": passed, "example.com/m.TestB": failed, "alone": passed, "twice": failed,
+		"io.x.FooTest$Idle.starts in IDLE state": passed, "io.x.FooTest$Idle.sums(int)[1]": passed}
 	dir := t.TempDir()
 	got := map[string]result{}
 	for name, body := range reports {
@@ -31,7 +36,7 @@ func TestReadJUnitAsRunnersWriteIt(t *testing.T) {
 		}
 	}
 	for id, r := range want {
-		if got[id] != r {
+		if g, ok := got[id]; !ok || g != r {
 			t.Errorf("%s: %v, want %v", id, got[id], r)
 		}
 	}

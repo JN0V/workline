@@ -136,7 +136,7 @@ func Prove(repo, base string, s Settings) (*verdict.Verdict, []string) {
 	// a missing name, red for the right reason; any other error is a
 	// build broken otherwise, never a proof (build-errors).
 	rules, _ := compileBuildErrors(s.BuildErrors) // unset said a bad one
-	errs := buildErrorsIn(redRun.output, ch.tests, rules)
+	errs := buildErrorsIn(redRun.output, ch.tests, rules, redRun.roots...)
 	var broken, unnamed []buildError
 	for _, e := range errs {
 		switch {
@@ -394,6 +394,7 @@ type ran struct {
 	results   map[string]result
 	suite     map[string]string
 	classless map[string]bool
+	roots     []string // the folder it ran in, its links resolved too: an error's absolute path below it is from the root
 }
 
 // buildRecord says whether id has the shape of a runner's record of a
@@ -435,7 +436,9 @@ func run(repo, rev string, files []string, from string, s Settings, where string
 		}
 		s.Command = strings.ReplaceAll(s.Command, "{packages}", strings.Join(here, " "))
 	}
-	return runIn(tree, s, where)
+	r, f := runIn(tree, s, where)
+	r.roots = rootsOf(tree)
+	return r, f
 }
 
 // checkout checks rev out apart; done removes the checkout.
