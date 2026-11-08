@@ -43,7 +43,8 @@ flowchart LR
   [the record](../../../docs/spec/routing.md#once-a-state-the-record)).
 - **The command's failure quoted**: the compiler's lines first, as the
   tester's `build-errors` rows read them, then the build tool's last
-  lines; none read, the reason says so
+  lines, a line quoted above left out; none read, the reason says so.
+  Each line is cut at 300 characters, the whole at 2,000
   ([#1209](https://github.com/JN0V/workline/issues/1209)).
 - **Not run whole**: no `test-command`, a patch that does not apply, no
   report or one naming no test: not green, never a pass.
