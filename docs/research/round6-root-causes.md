@@ -139,7 +139,7 @@ and every size crossing of the round:
    of the round was cut at 16,000 bytes, every spec review at 600 lines.
    They crossed nothing only because they did not block.
 
-- **#1193 follows from #1192.** One untyped failure gave both the block
+- **[#1193](https://github.com/JN0V/workline/issues/1193) follows from [#1192](https://github.com/JN0V/workline/issues/1192).** One untyped failure gave both the block
   and, through the cut rule, the split.
 - **The same on copy [#7](https://github.com/JN0V/TraceGlass-trial/issues/7)**:
   the product owner granted `size/large` on a block that was a compile
@@ -332,7 +332,7 @@ independent of RC4. Closes
    checked against what it said it would move.
 
 **Structural change.** Plain fixes, applying decisions already taken
-([principle 12](../PRINCIPLES.md), ADR-0063 §6):
+([principle 12](../PRINCIPLES.md), [ADR-0063](../adr/0063-every-open-issue-is-due-waiting-or-done.md) §6):
 
 - **One deadline per run**, the sum of its caps, passed to every child
   process (agent, test command, git), a phase line on stderr each step,
@@ -380,7 +380,7 @@ prior art) agreed on all four proposals put to them, each with changes
   fix. The code map is postponed until measured.
 - **RC4**: no lookup of who wrote what. The body and labels as they
   stand after the role's write; a person's other labels as label
-  events. It finishes ADR-0063 §3, steps 6–8.
+  events. It finishes [ADR-0063](../adr/0063-every-open-issue-is-due-waiting-or-done.md#build-plan) §3, steps 6–8.
 - **M ([#1198](https://github.com/JN0V/workline/issues/1198))**: a
   working agreement, not a design. A role's fix runs that role for real
   on the copy, in its own pull request.
