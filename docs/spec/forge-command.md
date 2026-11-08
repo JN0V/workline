@@ -2,6 +2,7 @@
 sources: [internal/forge/command.go, internal/forge/forge.go, ci/forgejo]
 checked: 68001ec6
 verified: agent:claude-code
+judged-in-parts: 87b34bc
 ---
 # A forge plugged by a command — v1 (draft)
 
