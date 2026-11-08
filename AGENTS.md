@@ -33,6 +33,11 @@ against it. Then only what the task needs:
   agent call). Tell what was tried, and what was not, under `## Tried` in the
   pull request's description; status.md links to it. tried.md is an archive:
   never append to it ([ADR-0043](docs/adr/0043-a-try-is-told-in-its-pull-request.md)).
+  - **A fix to a role runs that role for real** on the current trial copy,
+    in its own pull request, told under `## Tried`. Only the roles whose
+    packages changed run; their outputs are kept as the simulator's inputs
+    ([#1079](https://github.com/JN0V/workline/issues/1079),
+    [#1198](https://github.com/JN0V/workline/issues/1198)).
 - **Commits**: conventional, atomic, each one builds; workline's own hook checks
   the messages. Explanations go in docs, not in commit bodies.
 
