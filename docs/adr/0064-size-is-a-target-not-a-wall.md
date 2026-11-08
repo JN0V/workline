@@ -58,7 +58,9 @@ flowchart LR
 - **Counted in the log**: each step's entry in `line-log`
   ([ADR-0063 §4](0063-every-open-issue-is-due-waiting-or-done.md#4-the-step-log))
   adds its role and fresh tokens, so an issue's total holds across
-  machines. A run's `calls.jsonl` is lost with its CI job.
+  machines. A run's `calls.jsonl` is lost with its CI job. Until
+  [ADR-0063](0063-every-open-issue-is-due-waiting-or-done.md#build-plan)
+  step 7 builds `line-log`, the counter lives in `line-record`.
 - **Kept on the forge**, derived each night from the logs in one
   comment kept in place, as the auditor's count ([ADR-0046]); the local
   forge alike (principles 10, 13).

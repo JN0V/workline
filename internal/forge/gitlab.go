@@ -426,6 +426,32 @@ func (g *gitlab) Issues() ([]Issue, error) { return g.issues("opened") }
 // AllIssues: GitLab keeps no close reason; a closed issue's is left empty.
 func (g *gitlab) AllIssues() ([]Issue, error) { return g.issues("all") }
 
+// ClosedPage lists one page of the closed issues, the last updated first:
+// one call. GitLab keeps no close reason.
+func (g *gitlab) ClosedPage(n int) ([]Issue, bool, error) {
+	out, err := g.api(fmt.Sprintf("projects/:id/issues?state=closed&order_by=updated_at&sort=desc&per_page=%d&page=%d", ClosedPageSize, n))
+	if err != nil {
+		return nil, false, err
+	}
+	found, err := pages[struct {
+		IID         int      `json:"iid"`
+		Title       string   `json:"title"`
+		Description string   `json:"description"`
+		Labels      []string `json:"labels"`
+		Author      struct {
+			Username string `json:"username"`
+		} `json:"author"`
+	}](out)
+	if err != nil {
+		return nil, false, err
+	}
+	var all []Issue
+	for _, f := range found {
+		all = append(all, Issue{ID: f.IID, Title: f.Title, Body: f.Description, Labels: f.Labels, Author: f.Author.Username, Closed: true})
+	}
+	return all, len(found) == ClosedPageSize, nil
+}
+
 func (g *gitlab) issues(state string, filters ...string) ([]Issue, error) {
 	out, err := g.api("--paginate", "projects/:id/issues?state="+state+"&per_page=100"+strings.Join(filters, ""))
 	if err != nil {

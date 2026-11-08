@@ -589,6 +589,17 @@ whose result moves the issue to the next. The table is the routing's
 - **Not for an outside failure**: a step that ended
   `blocked-external`, its agent out of reach, keeps no record: the next
   event or reconciler runs it again.
+- **Each run's fresh tokens are counted**
+  ([ADR-0064, step 2](../adr/0064-size-is-a-target-not-a-wall.md#1-normal-size-is-measured-per-project)):
+  the record keeps, by role, the fresh tokens of each run its steps made
+  that called an agent (`spent`), through every state; its comment says
+  the issue's total so far. A step ended `blocked-external` keeps none.
+  A run on a merge request (the reviewer, the inspector, the tester's
+  guard and answers, the developer's review rounds) is counted on the
+  issue it closes, when applied: once a run, its id kept (`counted`); an
+  issue with no record counts none. `workline size` derives the project's normals from them
+  ([commands](../commands.md#workline-size)). Reported only: nothing
+  stops on them yet.
 - **Judged with no write token** (`--no-apply`), the records are left in
   the line's result (`states`) and written by `workline apply --line`,
   after its runs applied.

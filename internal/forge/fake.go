@@ -144,6 +144,9 @@ type FakeItem struct {
 	Parent    int           `json:"parent,omitempty"`     // the issue it is a sub-issue of
 	BlockedBy []int         `json:"blocked-by,omitempty"` // the issues it waits on, in the forge's own relation
 	ClosedBy  []Closer      `json:"closed-by,omitempty"`  // what closed it: a pull request, a commit
+	// Updated: when it last changed, RFC 3339; ClosedPage lists the last
+	// updated first, by number where none is said.
+	Updated string `json:"updated,omitempty"`
 	// Labeled says when it last got each label; Links, what names it
 	// (Trail, ADR-0031).
 	Labeled map[string]string `json:"labeled,omitempty"`
@@ -386,6 +389,37 @@ func (f *Fake) AllIssues() ([]Issue, error) {
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
 	return out, nil
+}
+
+// ClosedPage lists the closed issues, the last updated first, a page of
+// ClosedPageSize; the same date, or none, the highest number first.
+func (f *Fake) ClosedPage(n int) ([]Issue, bool, error) {
+	s, err := f.load()
+	if err != nil {
+		return nil, false, err
+	}
+	var closed []FakeItem
+	for _, it := range s.Issues {
+		if it.Closed {
+			closed = append(closed, it)
+		}
+	}
+	sort.SliceStable(closed, func(i, j int) bool {
+		if closed[i].Updated != closed[j].Updated {
+			return closed[i].Updated > closed[j].Updated
+		}
+		return closed[i].ID > closed[j].ID
+	})
+	from := (n - 1) * ClosedPageSize
+	if n < 1 || from >= len(closed) {
+		return nil, false, nil
+	}
+	to := min(from+ClosedPageSize, len(closed))
+	var out []Issue
+	for _, it := range closed[from:to] {
+		out = append(out, Issue{ID: it.ID, Title: it.Title, Body: it.Body, Labels: it.Labels, Author: it.Author, Closed: true, Reason: it.Reason})
+	}
+	return out, to < len(closed), nil
 }
 
 func (f *Fake) Comments(t Target) ([]string, error) {

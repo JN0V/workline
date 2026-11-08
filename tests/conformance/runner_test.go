@@ -114,6 +114,7 @@ type runSpec struct {
 	JobSum  bool     `yaml:"summary"`       // also write --summary, Markdown and HTML, the apply after it too
 	Forge   string   `yaml:"forge"`         // a forge spec passed as --forge (local, cmd:…), instead of the simulated one
 	Follow  []string `yaml:"follow"`        // workline follow, with these options
+	Size    []string `yaml:"size"`          // workline size, with these options: the normals kept on the forge (ADR-0064)
 	// ThenLine: after the run, the line on a branch of origin, checked
 	// out, as CI runs it on that branch's push: what the case expects of
 	// status, steps and calls is its; the findings are both runs'.
@@ -718,6 +719,8 @@ func runCase(t *testing.T, c *caseFile) []string {
 		args = []string{"route", c.Run.Route, "--repo", repo, "--roles", roles, "--json"}
 	case c.Run.Follow != nil:
 		args = append(append([]string{"follow"}, c.Run.Follow...), "--repo", repo, "--json")
+	case c.Run.Size != nil:
+		args = append(append([]string{"size"}, c.Run.Size...), "--repo", repo, "--roles", roles, "--json")
 	}
 	ai := c.Run.AI
 	if strings.HasPrefix(ai, "fake:") {
