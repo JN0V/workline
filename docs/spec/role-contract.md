@@ -483,7 +483,10 @@ token), **apply** (trusted, no AI key).
    It holds one call. The turns it reports land in the call's `turns`;
    post judges each call's, and the record keeps the run's sum
    ([ADR-0056](../adr/0056-the-developers-agent-works-in-a-sandbox-with-tools.md#caps)).
-   0 or unset, none told.
+   0 or unset, none told. Reached in a worktree, its edits are its
+   answer; out of one, a call that stopped before it wrote its answer is
+   an answer unread, its cap said, asked again once
+   ([#1194](https://github.com/JN0V/workline/issues/1194)).
 
 ### When apply stops half-way
 
