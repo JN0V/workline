@@ -15,6 +15,7 @@ import (
 	"slices"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/JN0V/workline/internal/agent"
 	"github.com/JN0V/workline/internal/forge"
@@ -551,7 +552,7 @@ func runIn(tree string, s Settings, where string) (ran, *verdict.Finding) {
 		// Its output kept: the compiler's lines may say why (#1192).
 		return ran{output: out.String(), failure: said, results: map[string]result{}, suite: map[string]string{}, classless: map[string]bool{}},
 			&verdict.Finding{Rule: "report-missing", Where: s.Report,
-				Message: fmt.Sprintf("the test command wrote no report %s (%s); %s", where, said, errorLines(out.String(), s.BuildErrors))}
+				Message: fmt.Sprintf("the test command wrote no report %s (%s); %s", where, said, errorLines(out.String(), s.BuildErrors, 10))}
 	}
 	rep := ran{output: out.String(), results: map[string]result{}, suite: map[string]string{}, classless: map[string]bool{}, reports: found}
 	if runErr != nil {
@@ -653,9 +654,12 @@ var errorLine = regexp.MustCompile(`(?i)^(?:e: |error\b|failure:|\S+:\d+(?::\d+)
 
 // errorLines is what a command's output says went wrong, as a reason
 // quotes it: the error lines the build-errors rows read, else the lines
-// saying an error, else its last lines (#1192: Gradle's last lines say
-// only BUILD FAILED, the compiler's above them say why).
-func errorLines(out string, list []BuildErrors) string {
+// saying an error, then its last n lines, a line quoted above left out
+// (#1192, #1209: Gradle's last lines say only BUILD FAILED, the
+// compiler's above them say why). With no error line, it says so, its
+// last lines kept. Each line is cut at quoteLine runes, the whole at
+// quoteMax: a forge's comment holding it has a limit.
+func errorLines(out string, list []BuildErrors, n int) string {
 	rules, _ := compileBuildErrors(list)
 	var read, said []string
 	for _, line := range strings.Split(out, "\n") {
@@ -670,19 +674,56 @@ func errorLines(out string, list []BuildErrors) string {
 			said = append(said, line)
 		}
 	}
+	quoted := map[string]bool{}
 	quote := func(l []string) string {
+		more := ""
 		if len(l) > 5 {
-			return strings.Join(l[:5], " / ") + fmt.Sprintf(" / and %d more", len(l)-5)
+			l, more = l[:5], fmt.Sprintf(" / and %d more", len(l)-5)
 		}
-		return strings.Join(l, " / ")
+		cut := make([]string, len(l))
+		for i, x := range l {
+			quoted[x], cut[i] = true, clipRunes(x, quoteLine)
+		}
+		return strings.Join(cut, " / ") + more
 	}
+	var says string
 	switch {
 	case len(read) > 0:
-		return "its errors: " + quote(read)
+		says = "its errors: " + quote(read)
 	case len(said) > 0:
-		return "its error lines: " + quote(said)
+		says = "its error lines: " + quote(said)
+	default:
+		says = "no error line in its output"
 	}
-	return "its output ends: " + tail(out, 10)
+	lines := strings.Split(strings.TrimSpace(out), "\n")
+	lines = lines[max(0, len(lines)-n):]
+	var last []string
+	for _, line := range lines {
+		if !quoted[strings.TrimSpace(line)] {
+			last = append(last, clipRunes(line, quoteLine))
+		}
+	}
+	switch {
+	case strings.TrimSpace(out) == "":
+		says += "; its output ends: (nothing)"
+	case len(last) > 0:
+		says += "; its output ends: " + strings.Join(last, " / ")
+	}
+	return clipRunes(says, quoteMax)
+}
+
+// The most runes a reason quotes of one line of output, and in all.
+const (
+	quoteLine = 300
+	quoteMax  = 2000
+)
+
+// clipRunes is s cut at max runes, an ellipsis saying so.
+func clipRunes(s string, max int) string {
+	if utf8.RuneCountInString(s) <= max {
+		return s
+	}
+	return string([]rune(s)[:max-1]) + "…"
 }
 
 // changedLines is the lines a diff adds or removes, never its headers

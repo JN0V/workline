@@ -25,7 +25,9 @@ flowchart LR
 
 - **No report**: a build that stops at compiling the tests, as Gradle
   does, writes no report. The compiler's lines are read first
-  ([#1192](https://github.com/JN0V/workline/issues/1192)).
+  ([#1192](https://github.com/JN0V/workline/issues/1192)), then quoted
+  before the build tool's last lines
+  ([#1209](https://github.com/JN0V/workline/issues/1209)).
 - **Red, for the right reason**, when each file of the change's tests
   holding an error holds one on what the change adds:
   - **a missing name** (`undefined: Mul`, `Unresolved reference 'mul'`)
