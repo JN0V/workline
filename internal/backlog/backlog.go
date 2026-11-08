@@ -719,6 +719,10 @@ type Plan struct {
 	// Silent are the issues read and left with nothing though they lack
 	// a section, each with why: said on the issue (ADR-0059, decision 1).
 	Silent map[int]string `yaml:"silent,omitempty"`
+	// Unaccepted are the parents a person's yes to close was dropped on,
+	// a part open again (checkParent), each with why: the yes taken off,
+	// said on the issue, so it never stands for a later act (#1208).
+	Unaccepted map[int]string `yaml:"unaccepted,omitempty"`
 	// Elsewhere are the open issues a run woken for one issue did not
 	// visit that bear the role's label (#804): counted among those
 	// waiting, from the listing, their records unread.
@@ -969,6 +973,11 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 		d := Decision{Index: i, Mode: Off, Act: c}
 		var extra *Decision // a refine's drafts proposed beside what it writes
 		switch {
+		case why != "" && c.Ticked != "" && mode == "parent-part-open":
+			// Their yes was to close it with all its parts closed: one is
+			// open again, so the yes is taken off, said (#1208).
+			dropped(c, mode, why)
+			p.unaccept(c, why)
 		case why != "":
 			dropped(c, mode, why)
 		case c.Ticked != "":

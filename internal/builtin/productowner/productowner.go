@@ -364,7 +364,8 @@ func Pre(runDir, repo string) int {
 			// A person accepted its drafts, with the label: the engine moves
 			// it to ready if its sections are there, with no agent — once
 			// the agent read an answer to the text proposed (#390).
-			if !unheard && !noTestStands {
+			// Never a split parent (#1208): its parts are what is built.
+			if !unheard && !noTestStands && len(backlog.SplitInto(is, st)) == 0 {
 				fallback = append(fallback, intent.Intention{Kind: "ready", Value: map[string]any{
 					"issue": is.ID, "why": "its drafts accepted (" + backlog.AcceptedLabel(b) + ")", "ticked": who, "own": true}})
 			}

@@ -704,7 +704,12 @@ func (p *Plan) Persist(f forge.Forge, role string) error {
 			st.Label, st.Proposed, st.Aside, st.Heard = "", nil, BodyDigest(is.Body), &n
 		case Accepted(*is):
 			// Their yes, on every plan: the role takes its label off itself.
-			for _, l := range []string{st.Label, LabelProposed, scopedProposed} {
+			// A yes dropped for a part open again goes too (#1208).
+			off := []string{st.Label, LabelProposed, scopedProposed}
+			if p.Unaccepted[id] != "" {
+				off = append(off, acceptedLabels...)
+			}
+			for _, l := range off {
 				if l != "" && slices.Contains(is.Labels, l) && !slices.Contains(w.remove, l) {
 					w.remove = append(w.remove, l)
 				}
