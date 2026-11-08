@@ -38,6 +38,9 @@ func crossed(st *stateStep, out verdict.Outcome, blockNow func(rule, why string)
 	switch {
 	case st.role == backlog.Keeper:
 		blockNow("size-crossed-own", size+"; no role is left to ask: a person narrows or splits it, or raises the setting named")
+	case st.tier == backlog.TierXLarge:
+		// The top tier, a person's (ADR-0064, §4): nothing above it.
+		blockNow("size-crossed-top", fmt.Sprintf("%s, at the top size tier (`%s`): a person narrows or splits it", size, backlog.LabelSizeXLarge))
 	case slices.Contains(st.write.Record.Sized, st.from.Name):
 		blockNow("size-crossed-again", fmt.Sprintf("%s; the product owner was asked on its size from %s already: a person narrows or splits it, or raises the setting named", size, st.from.Name))
 	case !ok:

@@ -871,8 +871,13 @@ func Pre(runDir, repo string) int {
 				review += backlog.ScenariosUnreadTask(d.is, own)
 			}
 			review += markedSaid(d.is)
+			if d.is.ID == issueEvent() && slices.Contains(d.is.Labels, backlog.LabelToRefine) {
+				// The line's refine step on it: its size predicted at
+				// ready (ADR-0064, §2), no call of its own.
+				review += predictSaid(b, open, d.is)
+			}
 			if slices.Contains(d.is.Labels, backlog.LabelBlocked) && d.is.ID == issueEvent() {
-				review += blockedSaid(runDir, d.comments)
+				review += blockedSaid(runDir, d.is, d.comments)
 			} else if files := backlog.ScopeAsked(d.comments); len(files) > 0 && slices.Contains(d.is.Labels, backlog.LabelToRefine) {
 				// The developer's first step sent it back to ask for files
 				// outside the Scope (ADR-0063, §9): widened, or ready as it is.
@@ -1169,7 +1174,8 @@ func fits(runDir, repo, name string) func(task string) bool {
 	if err != nil || r.Context.Budget <= 0 {
 		return nil
 	}
-	budget := r.Context.Budget
+	// its issue's size tier multiplies it (ADR-0064)
+	budget := r.Context.Budget * role.SizeFactor()
 	r.Context.Budget = 0 // measured here, refused by the engine only
 	return func(task string) bool {
 		if err := os.WriteFile(filepath.Join(runDir, "in", "task.md"), []byte(task), 0o644); err != nil {
@@ -1957,7 +1963,7 @@ var blockWhy = regexp.MustCompile(`(?m)^- \*\*Why\*\*: (.+)$`)
 // why it was blocked, what is new, and what it may decide (ADR-0059,
 // amended): back to the state it came from or to refine, or kept
 // blocked, its reason said afresh.
-func blockedSaid(runDir string, comments []string) string {
+func blockedSaid(runDir string, is forge.Issue, comments []string) string {
 	input := func(name string) string {
 		data, _ := os.ReadFile(filepath.Join(runDir, "in", "input", name))
 		return strings.TrimSpace(string(data))
@@ -1987,9 +1993,15 @@ func blockedSaid(runDir string, comments []string) string {
 	if role := input(engine.SizeInput); role != "" {
 		// A run too big for its role (ADR-0064, step 3): the same input
 		// crosses the same, so the Scope is the product owner's to narrow,
-		// or the issue a person's.
-		return fmt.Sprintf("Blocked (%s): %s. Read again because %s. The %s's run on it is too big for that role, and a run again on the same input crosses the same: sent back as it is, the issue waits for a person. Decide one, its `why` one plain line: narrow its %s — `refine` with `scope`, the %[5]s rewritten whole to the fewer files its need needs, and `sources` — then `unblock` it, %[6]s; or `blocked`, why its need cannot be narrowed, `person: true`: a person splits it or raises the setting the line names. Never `ready` on it.\n",
-			backlog.LabelBlocked, why, news, strings.ReplaceAll(role, "-", " "), work.Name(work.Scope), where)
+		// or the issue a person's; at the normal size, granted large when
+		// its need is atomic (step 4).
+		grant := fmt.Sprintf("; or, its need one that no smaller %s nor part proves apart, `size` with `tier: %s` — every size target of its runs ×%d — then `unblock` it the same way (where the modes below say `size: propose`, it is only proposed: then `blocked`, `person: true`)",
+			work.Name(work.Scope), backlog.TierLarge, backlog.TierFactor(backlog.TierLarge))
+		if tier := input(engine.SizeTierInput); tier != "" {
+			grant = fmt.Sprintf(" (its size tier is %s already, `%s`: a tier only goes up, and past %s it is a person's, so no `size`)", tier, backlog.TierLabel(tier), backlog.TierLarge)
+		}
+		return fmt.Sprintf("Blocked (%s): %s. Read again because %s. The %s's run on it is too big for that role, and a run again on the same input crosses the same: sent back as it is, the issue waits for a person. Decide one, its `why` one plain line: narrow its %s — `refine` with `scope`, the %[5]s rewritten whole to the fewer files its need needs, and `sources` — then `unblock` it, %[6]s%[7]s%[9]s; or `blocked`, why its need cannot be narrowed, `person: true`: a person splits it, grants it `%[8]s`, or raises the setting the line names. Never `ready` on it.\n",
+			backlog.LabelBlocked, why, news, strings.ReplaceAll(role, "-", " "), work.Name(work.Scope), where, grant, backlog.LabelSizeXLarge, splitSaid(is))
 	}
 	if files := backlog.ScopeAsked(comments); len(files) > 0 && slices.Contains(to, "ready") {
 		// The developer asks for files outside the Scope (#921): its

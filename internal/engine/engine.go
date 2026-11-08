@@ -100,6 +100,12 @@ const (
 	SizeInput        = "size"
 )
 
+// SizeTierInput is the input the line gives every run on an issue with
+// a size tier (ADR-0064, §3): large or x-large. Every size target of the
+// run — its token cap, its context budget, the code and change given at
+// once (role.TieredSettings) — is multiplied by the tier's factor.
+const SizeTierInput = "size-tier"
+
 // FailedInput is the input the line gives a step it runs again after a
 // machine error: what failed, said at the end of the agent's task
 // (ADR-0063, §6).
@@ -565,6 +571,14 @@ func run(o Options, res *Result) error {
 	res.RunDir = runDir
 	defer dropWorktree(o.Repo, runDir)
 	settings := personalSettings(r, r.MergedSettings(cfg), res)
+	if tier := o.Inputs[SizeTierInput]; backlog.TierFactor(tier) > 1 {
+		// Its issue's tier (ADR-0064, §3): every size target multiplied,
+		// said, never silent.
+		n := backlog.TierFactor(tier)
+		settings, r.Context.Budget = role.Tiered(settings, n), r.Context.Budget*n
+		res.Findings = append(res.Findings, verdict.Finding{Rule: "size-tier", Level: "info",
+			Message: fmt.Sprintf("its issue's size tier is %s (`%s`): every size target of this run ×%d — context.budget, %s", tier, backlog.TierLabel(tier), n, strings.Join(role.TieredSettings, ", "))})
+	}
 	if err := writeInputs(runDir, o.Inputs, settings); err != nil {
 		return err
 	}
@@ -2922,6 +2936,12 @@ func (a *applier) apply(in intent.Intention) error {
 			return nil
 		}
 		return a.kind(d.Act)
+	case "size":
+		d := a.plan.Decision(a.index)
+		if d == nil || d.Mode != backlog.Act {
+			return nil
+		}
+		return a.size(d.Act)
 	case "rename":
 		d := a.plan.Decision(a.index)
 		if d == nil || d.Mode != backlog.Act {
@@ -3279,6 +3299,9 @@ func scriptEnv(runDir, roleName string, o Options) []string {
 		"WORKLINE_BIN="+self,
 		"WORKLINE_ROLES_DIR="+o.RolesDir,
 	)
+	if n := backlog.TierFactor(o.Inputs[SizeTierInput]); n > 1 { // its issue's size tier (ADR-0064)
+		env = append(env, fmt.Sprintf("%s=%d", role.SizeFactorEnv, n))
+	}
 	if o.aiWaits != "" { // the agent set aside, a draft (DraftInput)
 		env = append(env, "WORKLINE_AI_WAITS="+o.aiWaits)
 	}

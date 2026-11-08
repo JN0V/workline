@@ -1,0 +1,37 @@
+case: routing/size-grant-proposed-at-cautious
+about: >
+  A cautious product owner proposes a grant, never does it (ADR-0064,
+  §3; #1171): asked on #3's size, it answers `size` with `tier: large`
+  and keeps #3 blocked for a person. The grant is proposed on the issue,
+  for a person to accept in one click; no tier label is put.
+given:
+  repo: tested
+  setup:
+    - "mkdir -p src && awk 'BEGIN { printf \"# \"; for (i = 1; i <= 2000; i++) printf \"%050d\", i; printf \"\\n\" }' > src/wide.sh && git add src && git commit -qm 'src' && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  env: {WORKLINE_CLOCK: "2026-11-05T08:00:00Z"}
+  config:
+    roles:
+      tester: {settings: {test-command: "sh run-tests.sh {report}"}}
+      product-owner: {settings: {autonomy: cautious}}
+    routing: {events: {issue: [product-owner, tester]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:needs-tests"]
+        author: ann
+        insider: true
+        body: "## Need\n\nI want to multiply.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n\n---\n\n## Scope\n\n- `src/wide.sh`\n"
+run: {route: reconcile, open-merge-request: true, ai: "cmd:sh $FIXTURES/agents/size-granted.sh large blocked", then: again}
+expect:
+  agent-calls: 1
+  findings:
+    - {rule: state-revisit, level: info, where: "#3", message: "blocked, read again by the product-owner: the tester's run on it crossed its size"}
+  run-files:
+    in/task.md: {contains: ["size: propose"]}
+  forge:
+    issues:
+      - id: 3
+        labels: ["workline:blocked", "workline:proposed"]
+        comment-contains: ["Label it `workline:size/large`"]
+        comment-lacks: ["Granted #3"]

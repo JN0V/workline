@@ -342,6 +342,40 @@ func (a *applier) kind(c backlog.Proposal) error {
 	return f.Sticky(t, backlog.FormatState(*st), backlog.StateMarker(a.role), false)
 }
 
+// size grants an issue a size tier and records it in its state
+// (ADR-0064, §3): read again first, a tier put since is a person's,
+// kept, said; the label created where the project has none.
+func (a *applier) size(c backlog.Proposal) error {
+	f := a.forge
+	is, err := f.Issue(c.Issue)
+	if err != nil {
+		return err
+	}
+	if tier := backlog.SizeTier(is.Labels); tier != "" {
+		a.findings = append(a.findings, verdict.Finding{Rule: "size-kept", Level: "warn", Where: fmt.Sprintf("#%d", c.Issue),
+			Message: fmt.Sprintf("its label `%s` says its tier since the run read it: a person's, kept (found when applying)", backlog.TierLabel(tier))})
+		return nil
+	}
+	b := f.(forge.Backlog)
+	if err := backlog.EnsureTierLabel(b, c.Tier); err != nil {
+		return err
+	}
+	t := forge.Target{Kind: "issue", ID: c.Issue}
+	if err := f.Label(t, []string{backlog.TierLabel(c.Tier)}, nil); err != nil {
+		return err
+	}
+	comments, err := b.Comments(t)
+	if err != nil {
+		return err
+	}
+	st, _, err := backlog.ReadState(comments, a.role)
+	if err != nil {
+		return fmt.Errorf("#%d: its state comment: %w", t.ID, err)
+	}
+	st.Size = c.Tier
+	return f.Sticky(t, backlog.FormatState(*st), backlog.StateMarker(a.role), false)
+}
+
 // rename sets an issue's title and records it in its state: a title other
 // than the one recorded is a person's (ADR-0022).
 func rename(f forge.Forge, role string, c backlog.Proposal) error {

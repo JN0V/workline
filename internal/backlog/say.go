@@ -34,6 +34,8 @@ func offer(c Proposal) string {
 		return say(fmt.Sprintf("Set its effort to %s (now: %s).", scale.EffortValue(c.Effort), c.Before))
 	case "kind":
 		return say(fmt.Sprintf("Label it `%s`: it is a %s.", c.KindLabel, c.IssueKind))
+	case "size":
+		return say(fmt.Sprintf("Label it `%s`: every size target of its runs ×%d, its need one that no smaller part proves.", TierLabel(c.Tier), TierFactor(c.Tier)))
 	case "rename":
 		return say(fmt.Sprintf("Rename it to %q.", strings.TrimSpace(c.Title)))
 	case "split":

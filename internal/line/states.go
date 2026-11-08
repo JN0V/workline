@@ -79,6 +79,8 @@ type stateStep struct {
 	from  routing.State
 	since time.Time
 	rec   Record
+	// tier: its issue's size tier, given every run on it (ADR-0064, §3).
+	tier string
 }
 
 // never is a step's since when how long it waited is not known: a re-try
@@ -345,7 +347,7 @@ func stateOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, 
 	if role != name {
 		now.Alone = role // its retry runs it alone again
 	}
-	return &stateStep{role: role, next: s.Next, write: StateWrite{Issue: is.ID, Record: now}, inputs: inputs, from: s, since: since, rec: rec}, nil, nil
+	return &stateStep{role: role, next: s.Next, write: StateWrite{Issue: is.ID, Record: now}, inputs: inputs, from: s, since: since, rec: rec, tier: backlog.SizeTier(is.Labels)}, nil, nil
 }
 
 // blocking is the record of an issue the line blocks, from state from:
@@ -486,12 +488,15 @@ func byState(res *Result, cfg *routing.Config, o engine.Options, event string, s
 func runStateStep(res *Result, cfg *routing.Config, f forge.Forge, spec string, o engine.Options, st stateStep) {
 	o.Role, o.Event = st.role, IssueEvent
 	o.Target = &forge.Target{Kind: "issue", ID: st.write.Issue}
-	if len(st.inputs) > 0 {
+	if len(st.inputs) > 0 || st.tier != "" {
 		in := maps.Clone(o.Inputs)
 		if in == nil {
 			in = map[string]string{}
 		}
 		maps.Copy(in, st.inputs)
+		if st.tier != "" {
+			in[engine.SizeTierInput] = st.tier
+		}
 		o.Inputs = in
 	}
 	before, steps := len(res.Findings), len(res.Steps)

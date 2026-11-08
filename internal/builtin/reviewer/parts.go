@@ -370,7 +370,8 @@ func taskRoom(runDir, repo string) (int, error) {
 	if err != nil || r.Context.Budget <= 0 {
 		return 0, nil
 	}
-	budget := r.Context.Budget
+	// its issue's size tier multiplies it (ADR-0064)
+	budget := r.Context.Budget * role.SizeFactor()
 	asked := *r // a part, as the engine asks it
 	asked.Intentions = r.PartAnswers()
 	asked.Context.Budget = 0

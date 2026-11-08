@@ -310,7 +310,7 @@ func (c Config) Modes(demoted []string) []KindMode {
 
 // ActKinds are the kinds of act as the settings name them, in the order the
 // task and the report list them.
-var ActKinds = []string{"sources", "close-duplicate", "close-obsolete", "milestone", "order", "effort", "kind", "refine", "ready", "ask", "split", "depend", "rename", "open"}
+var ActKinds = []string{"sources", "close-duplicate", "close-obsolete", "milestone", "order", "effort", "kind", "size", "refine", "ready", "ask", "split", "depend", "rename", "open"}
 
 // Say says one kind's mode in a few words: "act, 5 a run (level)".
 func (m KindMode) Say() string {
@@ -324,6 +324,9 @@ func (m KindMode) Say() string {
 	what += " (" + m.Origin + ")"
 	if strings.HasPrefix(m.Kind, "close-") && m.Mode == Off {
 		what += "; write one all the same when the evidence settles it: said on the issue for a person to close, never closed by the role"
+	}
+	if m.Kind == "split" && m.Mode == Off {
+		what += "; on, `too-big: true`, for an issue the task says is past its size"
 	}
 	return what
 }

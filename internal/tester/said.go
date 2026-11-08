@@ -57,7 +57,7 @@ func refusePost(runDir string, n int, v verdict.Verdict) int {
 		if out := verdict.OutcomeOf(v.Status, v.Findings); out.Crossed() {
 			// Too big for its context (#1160): no run again mends it; the
 			// product owner is asked first (ADR-0064, step 3).
-			next = "the line asks the product owner on its size at once, no run again on the same input fitting better: it narrows the issue's " + work.Name(work.Scope) + " and sends it back, or leaves it to a person, who may raise context.budget in the tester's role.yaml"
+			next = "the line asks the product owner on its size at once, no run again on the same input fitting better: it narrows the issue's " + work.Name(work.Scope) + " or grants it a larger size, and sends it back, or leaves it to a person, who may raise context.budget in the tester's role.yaml"
 		} else if out.Machine() {
 			// A machine error is no refusal of the issue (ADR-0063, I3):
 			// the line keeps its labels, and runs it again.

@@ -141,6 +141,7 @@ var statements = map[string]string{
 	"ask":     "the question the product owner asked was not already answered on the issue",
 	"assume":  "the assumption the product owner took follows from the issue, its comments and the code, and no answer on the issue contradicts it",
 	"kind":    "the kind the product owner set, bug, feature or task, is what the issue says it is",
+	"size":    "the issue the product owner granted a larger size holds one need that no smaller part proves apart",
 	"closing": "the closing holds: the code does what the issue asks, or the other issue holds the same need",
 	"split":   "each part holds one need, and together the parent's",
 }

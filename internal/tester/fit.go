@@ -73,7 +73,8 @@ func fitsBudget(runDir, repo string) func(task string) bool {
 	if err != nil || r.Context.Budget <= 0 {
 		return nil
 	}
-	budget := r.Context.Budget
+	// its issue's size tier multiplies it (ADR-0064)
+	budget := r.Context.Budget * role.SizeFactor()
 	asked := *r.Asked()
 	asked.Context.Budget = 0 // measured here, refused by the engine only
 	return func(task string) bool {

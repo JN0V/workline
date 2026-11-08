@@ -1,0 +1,28 @@
+case: routing/size-split-off-within-its-size
+about: >
+  Split stays off within an issue's size (ADR-0064, §3; #1172): the line
+  wakes the product owner on #3, in refine, and `split` is off, as by
+  default. It answers a split not said `too-big`: the issue within its
+  size, nothing turns split on. Nothing is opened; #3 stays in refine.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  env: {WORKLINE_CLOCK: "2026-11-05T08:00:00Z"}
+  config:
+    routing: {events: {issue: [product-owner, tester]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply and divide two numbers"
+        labels: ["workline:to-refine"]
+        author: ann
+        insider: true
+        body: "## Need\n\nI want to multiply and divide.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **Six by three:** Given the library, When I divide 6 by 3, Then I get 2.\n\n---\n\n## Verification\n\nA shell test a scenario.\n\n## Scope\n\n- `lib.sh`: `mul` and `div` beside `add`.\n"
+run: {route: reconcile, open-merge-request: true, ai: "cmd:sh $FIXTURES/agents/size-split.sh 3 normal"}
+expect:
+  agent-calls: 1
+  forge:
+    issues:
+      - {id: 3, labels: ["workline:to-refine"], comment-lacks: ["split: [4, 5]"]}
+      - {id: 4, absent: true}

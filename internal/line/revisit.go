@@ -147,7 +147,7 @@ func revisit(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, 
 			res.Findings = append(res.Findings, verdict.Finding{Rule: "state-revisit", Level: "info", Where: where,
 				Message: fmt.Sprintf("blocked, read again by the %s: %s", backlog.Keeper, said)})
 			seen.Revisited = seen.Since
-			return &stateStep{role: backlog.Keeper, write: StateWrite{Issue: is.ID, Record: seen},
+			return &stateStep{role: backlog.Keeper, write: StateWrite{Issue: is.ID, Record: seen}, tier: backlog.SizeTier(is.Labels),
 				inputs: map[string]string{engine.RevisitInput: said, engine.RevisitFromInput: seen.From}}, nil, nil
 		}
 		said := fmt.Sprintf("blocked: the %s reads it again when someone comments, its body changes, an issue it waits on closes, or in %d days",
@@ -165,6 +165,7 @@ func revisit(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, 
 			return nil, spent, nil
 		}
 		st := sizeAsked(res, asked, is.ID)
+		st.tier = backlog.SizeTier(is.Labels)
 		maps.Copy(st.inputs, failed)
 		return st, nil, nil
 	}
@@ -207,7 +208,7 @@ func revisit(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, 
 		Message: fmt.Sprintf("blocked, read again by the %s: %s", backlog.Keeper, said)})
 	next := rec
 	next.Body, next.Talk, next.Closed, next.Revisited = bodyHash(is.Body), talkHash(comments), closed, now.Format(time.RFC3339)
-	return &stateStep{role: backlog.Keeper, write: StateWrite{Issue: is.ID, Record: next},
+	return &stateStep{role: backlog.Keeper, write: StateWrite{Issue: is.ID, Record: next}, tier: backlog.SizeTier(is.Labels),
 		inputs: map[string]string{engine.RevisitInput: said, engine.RevisitFromInput: rec.From}}, nil, nil
 }
 
@@ -257,7 +258,7 @@ func blockedBody(cfg *routing.Config, r Record) string {
 	}
 	if r.SizeOf != "" {
 		// Asked on its size (crossed.go): read at once, not on news.
-		next = fmt.Sprintf("the line asks the %s on its size at once: it narrows the issue's %s and sends it back, or leaves it blocked for a person, who may split it or raise the setting named; a person may move it back by its label at any time",
+		next = fmt.Sprintf("the line asks the %s on its size at once: it narrows the issue's %s or grants it `workline:size/large`, and sends it back, or leaves it blocked for a person, who may split it, give it `workline:size/x-large` or raise the setting named; a person may move it back by its label at any time",
 			roleSaid(backlog.Keeper), work.Name(work.Scope))
 	}
 	if r.Revisited != "" {
