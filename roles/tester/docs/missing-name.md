@@ -1,6 +1,6 @@
 ---
 sources: [internal/tester/build.go, internal/tester/tester.go, internal/tester/write.go, internal/tester/objection.go, internal/tester/junit.go, roles/tester/role.yaml]
-checked: ea7af9ef
+checked: 90ca43c5
 verified: agent:claude-code
 ---
 # A missing name, told from a broken build
@@ -53,12 +53,15 @@ flowchart LR
 |---|---|
 | `error` | a regular expression matching one error line of the test command's output, with groups `file` and `message` |
 | `missing-name` | the messages naming what the code lacks; the name in a group `name`, else the message's first quoted word (`‘lostCount’`) |
+| `name-line` | optional: a later line giving the name a missing-name message lacks, in its group `name`; read up to the next error line |
 | `test-name` | finds the tests a test file declares; its first group that matched is the name; empty, the row names no tests |
 
 - **The file, from the repository's root**: an absolute path or a
   `file://` URI under the folder the tests ran in is read from there,
   as Gradle prints Kotlin's and javac's errors
-  ([#1177](https://github.com/JN0V/workline/issues/1177)).
+  ([#1177](https://github.com/JN0V/workline/issues/1177)). On Windows
+  too: `file:///C:/…` and `C:\…` alike, the case not counted
+  ([#1183](https://github.com/JN0V/workline/issues/1183)).
 - **A wrong pattern** blocks before any run (`setting-invalid`).
 - **Set in a project**, the list replaces the defaults whole.
 
@@ -75,8 +78,10 @@ In [role.yaml](../role.yaml), each tried on a real build:
 
 - **Kotlin's tests**: `@Test fun `two by three`()` or `@Test fun
   twoByThree()`, named without the backquotes.
-- **javac's name** is on a later line (`symbol: method mul(int,int)`):
-  not read, so the issue's text is not checked for it.
+- **javac's name** is on a later line (`symbol: method mul(int,int)`),
+  read by its `name-line`, then checked against the issue's text.
+- **A path with a space** is read, Kotlin 1's and javac's plain paths
+  too.
 - **JUnit 5 on Gradle** reports `two by three()`: the `()` is dropped,
   the name as its file writes it
   ([#1178](https://github.com/JN0V/workline/issues/1178)).

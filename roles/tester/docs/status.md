@@ -233,8 +233,8 @@ Cases in `tests/conformance/cases/tester/`:
 - **The curator's removals**: a tester's test merged while its issue is
   still open is not told apart (only open Drafts' records are read); a
   mutation report other than Gremlins' or the schema's is not read.
-- **A missing name in Rust**, and the name javac lacks: their errors
-  span several lines, which `build-errors` does not read
+- **A missing name in Rust**: its errors span several lines, which
+  `build-errors` does not read
   ([the page](missing-name.md#other-languages)).
 - **Not in the line, nor in the CI templates**: a project runs the
   command in its own job.

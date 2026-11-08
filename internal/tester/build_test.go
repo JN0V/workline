@@ -3,6 +3,7 @@ package tester
 import (
 	"os"
 	"slices"
+	"strings"
 	"testing"
 
 	"go.yaml.in/yaml/v3"
@@ -77,6 +78,7 @@ func defaultBuildErrors(t *testing.T) []buildRules {
 			BuildErrors []struct {
 				Error       string   `yaml:"error"`
 				MissingName []string `yaml:"missing-name"`
+				NameLine    string   `yaml:"name-line"`
 				TestName    string   `yaml:"test-name"`
 			} `yaml:"build-errors"`
 		} `yaml:"settings"`
@@ -135,7 +137,7 @@ func TestBuildErrorsJVM(t *testing.T) {
 		{kt, "pauseAll", true},
 		{kt, "", false},
 		{"feature/onboarding/build.gradle.kts", "", false},
-		{java, "", true},
+		{java, "Speeds", true},
 		{java, "", false},
 		{"build.gradle", "", false},
 	}
@@ -164,6 +166,76 @@ func TestBuildErrorsFileURI(t *testing.T) {
 		[]string{"a/src/test/kotlin/MulTest.kt"}, rules, "/tmp/my repo")
 	if len(errs) != 1 || errs[0].file != "a/src/test/kotlin/MulTest.kt" || !errs[0].missing {
 		t.Errorf("read %+v", errs)
+	}
+}
+
+// A file from the root on Windows, its rules a parameter (#1183): a
+// drive letter after file:///, backslashes, the drive's case.
+func TestFromRootWindows(t *testing.T) {
+	for _, c := range []struct {
+		file    string
+		roots   []string
+		windows bool
+		want    string
+	}{
+		{"file:///C:/w/t/a/MulTest.kt", []string{`C:\w\t`}, true, "a/MulTest.kt"},
+		{`C:\w\t\a\MulTest.java`, []string{`C:\w\t`}, true, "a/MulTest.java"},
+		{`c:\W\T\a\MulTest.java`, []string{`C:\w\t`}, true, "a/MulTest.java"},
+		{"file:///C:/Users/my%20shop/a/X.kt", []string{`C:\Users\my shop`}, true, "a/X.kt"},
+		{`D:\other\X.java`, []string{`C:\w\t`}, true, "D:/other/X.java"},
+		{"/w/T/a/X.kt", []string{"/w/t"}, false, "/w/T/a/X.kt"},
+		{"file:///w/t/a/X.kt", []string{"/w/t"}, false, "a/X.kt"},
+		{"./a/X.kt", nil, false, "a/X.kt"},
+	} {
+		if got := fromRootOn(c.file, c.roots, c.windows); got != c.want {
+			t.Errorf("fromRootOn(%q, %q, %v) = %q, want %q", c.file, c.roots, c.windows, got, c.want)
+		}
+	}
+}
+
+// A name-line with no group `name` is said before any run.
+func TestBuildErrorsNameLineNeedsItsGroup(t *testing.T) {
+	_, err := compileBuildErrors([]BuildErrors{{Error: `^(?P<file>\S+):(?P<message>.+)$`, NameLine: `symbol: (\w+)`}})
+	if err == nil || !strings.Contains(err.Error(), "name-line") {
+		t.Errorf("got %v", err)
+	}
+}
+
+// javac's name on its symbol line, and paths with a space (#1183).
+func TestBuildErrorsJavacNameAndSpaces(t *testing.T) {
+	rules := defaultBuildErrors(t)
+	const root = "/home/ana/my shop"
+	java := "a/src/test/java/MulTest.java"
+	kt := "a/src/test/kotlin/MulTest.kt"
+	out := root + "/" + java + ":9: error: cannot find symbol\n" +
+		"        assertEquals(6, Calc.mul(2, 3));\n" +
+		"                            ^\n" +
+		"  symbol:   method mul(int,int)\n" +
+		"  location: class Calc\n" +
+		root + "/" + java + ":10: error: cannot find symbol\n" +
+		"  symbol:   variable Speeds\n" +
+		root + "/" + java + ":11: error: cannot find symbol\n" +
+		"  symbol: static nextIndex\n" +
+		root + "/" + java + ":12: error: ';' expected\n" +
+		"  symbol:   method unrelated()\n" +
+		"e: " + root + "/" + kt + ": (3, 5): Unresolved reference: pauseAll\n"
+	type read struct {
+		file, name string
+		missing    bool
+	}
+	var got []read
+	for _, e := range buildErrorsIn(out, []string{java, kt}, rules, root) {
+		got = append(got, read{e.file, e.name, e.missing})
+	}
+	want := []read{
+		{java, "mul", true},
+		{java, "Speeds", true},
+		{java, "nextIndex", true},
+		{java, "", false},
+		{kt, "pauseAll", true},
+	}
+	if !slices.Equal(got, want) {
+		t.Errorf("read %+v\nwant %+v", got, want)
 	}
 }
 

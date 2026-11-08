@@ -119,16 +119,17 @@ settings:
         - '^\S+ undefined \(type .+ has no field or method (?P<name>\w+)'
         - '^unknown field (?P<name>\w+) in struct literal'
       test-name: '(?m)^func (Test\w*)\(\w+ \*testing\.T\)'
-    - error: '^e: (?P<file>\S+?\.kts?)(?::\d+:\d+:?|: \(\d+, \d+\):) (?P<message>.+)$'
+    - error: '^e: (?P<file>.+?\.kts?)(?::\d+:\d+:?|: \(\d+, \d+\):) (?P<message>.+)$'
       missing-name:
         - '^Unresolved reference ''(?P<name>[^'']+)'''
         - '^Unresolved reference: (?P<name>\S+)'
         - '^No parameter with name ''(?P<name>[^'']+)'' found'
         - '^Cannot find a parameter with this name: (?P<name>\S+)'
       test-name: '(?m)@Test\b(?:\([^)]*\))?\s+(?:@\w+(?:\([^)]*\))?\s+)*(?:(?:public|internal)\s+)?fun\s+(?:`([^`]+)`|(\w+))\s*\('
-    - error: '^(?P<file>\S+\.java):\d+: error: (?P<message>.+)$'
+    - error: '^(?P<file>\S.*?\.java):\d+: error: (?P<message>.+)$'
       missing-name:
         - '^cannot find symbol$'
+      name-line: '^\s*symbol:\s+\w+\s+(?P<name>\w+)'
       test-name: '(?m)@Test\b(?:\([^)]*\))?\s+(?:@\w+(?:\([^)]*\))?\s+)*(?:(?:public|protected|private|static|final)\s+)*void\s+(\w+)\s*\('
     - error: '^(?:Build|Settings) file ''(?P<file>[^'']+)'' line: \d+(?P<message>)$'
   # An objection's thread (ADR-0055): the tester answers it this many

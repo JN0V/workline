@@ -6,6 +6,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strings"
 )
 
@@ -22,6 +23,10 @@ type BuildErrors struct {
 	// name itself in its group `name`, else the first quoted word of the
 	// message (#1111).
 	MissingName []string `json:"missing-name"`
+	// NameLine finds, on a line after a missing-name message that gives
+	// no name, the name in its group `name`: javac's `symbol:` line
+	// (#1183). Read up to the next error line.
+	NameLine string `json:"name-line"`
 	// TestName finds the tests a test file declares, the first of its
 	// groups that matched the name: their ids while the file does not
 	// build. Empty, a row naming no tests (a build file's errors).
@@ -31,6 +36,7 @@ type BuildErrors struct {
 type buildRules struct {
 	error    *regexp.Regexp
 	missing  []*regexp.Regexp
+	nameLine *regexp.Regexp
 	testName *regexp.Regexp
 }
 
@@ -53,6 +59,14 @@ func compileBuildErrors(list []BuildErrors) ([]buildRules, error) {
 				return nil, fmt.Errorf("build-errors[%d].missing-name[%d]: %v", i, j, err)
 			}
 			r.missing = append(r.missing, re)
+		}
+		if b.NameLine != "" {
+			if r.nameLine, err = regexp.Compile(b.NameLine); err != nil || r.nameLine.SubexpIndex("name") < 0 {
+				if err == nil {
+					err = fmt.Errorf("the group (?P<name>…) is needed")
+				}
+				return nil, fmt.Errorf("build-errors[%d].name-line: %v", i, err)
+			}
 		}
 		if b.TestName == "" {
 			out = append(out, r)
@@ -88,8 +102,10 @@ func buildErrorsIn(output string, tests []string, rules []buildRules, roots ...s
 		inTests[t] = true
 	}
 	var errs []buildError
+	unnamed := -1 // the last error, a missing name whose name a later line gives
 	for _, line := range strings.Split(output, "\n") {
 		line = strings.TrimRight(line, "\r")
+		read := false
 		for i, r := range rules {
 			m := r.error.FindStringSubmatch(line)
 			if m == nil {
@@ -107,7 +123,19 @@ func buildErrorsIn(output string, tests []string, rules []buildRules, roots ...s
 				}
 			}
 			errs = append(errs, e)
+			unnamed = -1
+			if e.missing && e.name == "" && r.nameLine != nil {
+				unnamed = len(errs) - 1
+			}
+			read = true
 			break
+		}
+		if !read && unnamed >= 0 {
+			re := rules[errs[unnamed].rules].nameLine
+			if m := re.FindStringSubmatch(line); m != nil {
+				errs[unnamed].name = m[re.SubexpIndex("name")]
+				unnamed = -1
+			}
 		}
 	}
 	return errs
@@ -117,17 +145,37 @@ func buildErrorsIn(output string, tests []string, rules []buildRules, roots ...s
 // file:// URI as its path, one under a root as the path below it. Any
 // other is kept, cleaned.
 func fromRoot(file string, roots []string) string {
+	return fromRootOn(file, roots, runtime.GOOS == "windows")
+}
+
+// drive is a Windows path's drive, `C:/`, after a URI's `/` or not.
+var drive = regexp.MustCompile(`^/?([A-Za-z]:/)`)
+
+// fromRootOn is fromRoot by Windows' rules or not (#1183): there, a
+// path's `\` is `/`, it starts at its drive (file:///C:/… is C:/…), and
+// case does not count.
+func fromRootOn(file string, roots []string, windows bool) string {
 	if rest, ok := strings.CutPrefix(file, "file://"); ok {
 		if p, err := url.PathUnescape(rest); err == nil {
 			rest = p
 		}
 		file = rest
 	}
-	if path.IsAbs(file) {
+	slash := func(p string) string {
+		if windows {
+			p = drive.ReplaceAllString(strings.ReplaceAll(p, `\`, "/"), "$1")
+		}
+		return p
+	}
+	file = slash(file)
+	if path.IsAbs(file) || (windows && drive.MatchString(file)) {
 		for _, r := range roots {
-			r = strings.TrimSuffix(filepath.ToSlash(r), "/")
-			if rel, ok := strings.CutPrefix(file, r+"/"); r != "" && ok {
-				return path.Clean(rel)
+			r = strings.TrimSuffix(slash(filepath.ToSlash(r)), "/")
+			if r == "" || len(file) <= len(r) || file[len(r)] != '/' {
+				continue
+			}
+			if head := file[:len(r)]; head == r || (windows && strings.EqualFold(head, r)) {
+				return path.Clean(file[len(r)+1:])
 			}
 		}
 	}
