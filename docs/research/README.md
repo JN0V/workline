@@ -64,7 +64,7 @@ stars and dates were checked against the GitHub API that day.
 | [claude-session-env.md](claude-session-env.md) | Why a call started from a Claude Code session cost twice the tokens, and which variable did it |
 | [moments.md](moments.md) | How long a developer waits at each moment, the budgets others keep, where a check is skipped |
 | [catch-and-cost.md](catch-and-cost.md) | What each check of workline's own line catches and costs a product pull request, per period, and the circles that recur |
-| [round6-root-causes.md](round6-root-causes.md) | Why the tester and the line kept taking fixes: five root causes behind round 6's defects, and one change each |
+| [round6-root-causes.md](round6-root-causes.md) | Why the tester and the line kept taking fixes: six root causes behind round 6's defects, the changes each calls for, and the panel's decision |
 
 ## Method
 

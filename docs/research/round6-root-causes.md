@@ -1,7 +1,8 @@
 # Round 6 root causes — why the tester and the line keep taking fixes (2026-11-08)
 
 **Question.** Round 6 of the trial ([#757](https://github.com/JN0V/workline/issues/757#issuecomment-6719368180)),
-on a Kotlin/Android copy, opened six defects
+on [JN0V/TraceGlass-trial](https://github.com/JN0V/TraceGlass-trial), a
+Kotlin/Android copy, opened six defects
 ([#1192](https://github.com/JN0V/workline/issues/1192) to
 [#1197](https://github.com/JN0V/workline/issues/1197)) and missed five
 targets. `internal/tester` and `internal/codepick` had each taken five
@@ -9,21 +10,25 @@ fix pull requests in the 48 h before it, which trips the stop on fixes of
 [ADR-0063](../adr/0063-every-open-issue-is-due-waiting-or-done.md#working-agreements).
 What few causes lie under all of them?
 
-**Verdict.** Five causes, and one reason the fixes repeat:
+**Verdict.** Six causes, and one reason the fixes repeat. Issues
+written "copy #N" are the trial copy's, not workline's.
 
 | # | Root cause | Explains |
 |---|---|---|
 | [RC1](#rc1-the-red-first-proof-is-shaped-on-one-toolchain) | The red-first proof is shaped on one toolchain; others are taught one message at a time | [#1192](https://github.com/JN0V/workline/issues/1192); 3 of 4 tester misses |
-| [RC2](#rc2-a-cut-of-pushed-code-is-read-as-a-signal) | A cut of the code pushed into a prompt is read as a signal, the size of the issue among them | [#1193](https://github.com/JN0V/workline/issues/1193); every size crossing; tester tasks 55–120 KB |
+| [RC2](#rc2-an-untyped-block-with-a-cut-becomes-a-size-question) | `report-missing` is not typed, and a blocked run with a cut is read as a size question | [#1193](https://github.com/JN0V/workline/issues/1193), downstream of [#1192](https://github.com/JN0V/workline/issues/1192); every size crossing |
 | [RC3](#rc3-the-size-judgement-shipped-unmeasured) | The product owner's split-or-grant judgement shipped untried on a real agent, without the facts it needs | feature granted, atomic bug split |
-| [RC4](#rc4-the-line-still-decides-by-a-fingerprint) | The line still decides "due" by a fingerprint, and reads facts per caller; the step that replaces it was passed over | [#1194](https://github.com/JN0V/workline/issues/1194) (stall), [#1195](https://github.com/JN0V/workline/issues/1195), [#1196](https://github.com/JN0V/workline/issues/1196); product owner calls 3/15/7 |
-| [RC5](#rc5-a-run-has-caps-per-call-not-per-run-and-its-end-is-untyped) | A run has caps per call, not per run, and how an agent stopped is not part of its outcome | [#1197](https://github.com/JN0V/workline/issues/1197), [#1194](https://github.com/JN0V/workline/issues/1194) (turn cap) |
+| [RC4](#rc4-the-line-still-decides-by-a-fingerprint) | The line still decides "due" by a fingerprint; the step that replaces it waited | [#1196](https://github.com/JN0V/workline/issues/1196), the retry half of [#1194](https://github.com/JN0V/workline/issues/1194); product owner calls 3/15/7 |
+| [RC5](#rc5-the-apps-own-issues-read-as-an-outsiders) | The App's own issues, a split's children among them, read as an outsider's | [#1195](https://github.com/JN0V/workline/issues/1195) |
+| [RC6](#rc6-a-runs-end-is-not-checked) | A run's end is not checked: caps per call, the agent's stop untyped, a pass's intentions dropped silently | [#1197](https://github.com/JN0V/workline/issues/1197), the turn cap and the stall of [#1194](https://github.com/JN0V/workline/issues/1194) |
 | [M](#m-why-the-fixes-repeat-tried-below-the-real-path) | Fixes are tried below the role's real path; the trial is the first end-to-end run | the 24 tester and picker commits since 2026-11-04 |
 
 Read-only, on `main` at [`41983fc9`](https://github.com/JN0V/workline/tree/41983fc9),
 the engine the round pinned. Method: five whys
 ([root-cause.md](root-cause.md)), each chain ended on a mechanism seen
-in the code or the run artifacts, never on "a missing case".
+in the code or the run artifacts, never on "a missing case". An
+independent review and a panel followed:
+[Panel decision](#panel-decision).
 
 ## Evidence used
 
@@ -87,78 +92,95 @@ in the code or the run artifacts, never on "a missing case".
    path or pattern; none changes the default that an unknown shape
    blocks.
 
-**Structural change.**
+**A gap in a built step.**
+[ADR-0063](../adr/0063-every-open-issue-is-due-waiting-or-done.md#build-plan)
+step 2, typed outcomes
+([#1087](https://github.com/JN0V/workline/issues/1087), closed), has
+RC1's case as its own Given: "a tester's test that does not build …
+asked again with the compiler's output". It misses this shape, against
+[§6](../adr/0063-every-open-issue-is-due-waiting-or-done.md#6-typed-outcomes):
+"an unknown error of a run is a machine error".
 
-- **Read the compiler's lines whenever the red run fails**, with a
-  report or without one. A plain fix.
-- **Hand them back to the tester for one more try**, as
-  [ADR-0063 §6](../adr/0063-every-open-issue-is-due-waiting-or-done.md#6-typed-outcomes)
-  decided ("a machine error changes the input of its retry"). A plain
-  fix.
-- **Invert the default for errors in a test of the change**: not built
-  there unless the error is a syntax or parse error, a short deny-list
-  per language. Then a signature or a type the Scope adds needs no row.
-  **A design decision, for a panel**: the risk is a test red for a wrong
-  reason read as red for the right one.
+**Structural change**, as the panel set it:
+
+- **Read the compiler's lines before refusing a run with no report.**
+  A plain fix.
+- **Hand an unknown error back to the tester once**, with those lines.
+  A plain fix: what step 2 promised.
+- **Then, an error in a test of the change is red-first only when it
+  quotes a name the issue or its Scope names, or one missing from the
+  base tree.** Other errors in that file are knock-ons. An error on a
+  name the base has goes back to the tester. No syntax deny-list.
 - Closes [#1192](https://github.com/JN0V/workline/issues/1192). Makes
   most new `missing-name` rows unnecessary.
 
-## RC2: a cut of pushed code is read as a signal
+## RC2: an untyped block with a cut becomes a size question
 
-**Five whys** on [#1193](https://github.com/JN0V/workline/issues/1193),
-the size crossings, and the tester's 55–120 KB tasks:
+**Five whys** on [#1193](https://github.com/JN0V/workline/issues/1193)
+and every size crossing of the round:
 
-1. Why was #4 split? Its tester run "crossed its size".
-2. Why did it cross? Its prompt was cut: `TracingViewModelTest.kt`, 162
-   of 2,726 lines. The issue had spent 227,973 of its 400,000 normal
-   fresh tokens.
-3. Why is a cut a crossing?
-   [ADR-0064 §2](../adr/0064-size-is-a-target-not-a-wall.md#2-two-checkpoints)
-   lists "a cut of the code" beside a prompt over budget and a token cap.
-4. Why is a cut a poor signal? It is constant, not rare:
-   - every product owner call in the round was cut at 16,000 bytes;
-   - every spec review was cut at 600 lines;
-   - one 2,700-line file named as a source is cut at any tier, so #7
-     crossed again at ×2 (688 of 2,747 lines);
-   - the tester has read tools under `claude`
-     ([#1110](https://github.com/JN0V/workline/pull/1110)): on #5 it made
-     41 turns of Read, Grep and Glob. A cut of its seed does not stop
-     it from reading the file.
-5. Why is a cut there at all? The picker pushes whole files and
-   excerpts by line count, sized to fit the prompt, and the agent then
-   pulls the same code again with its tools: 5.4 M cache-read tokens for
-   7 tester calls. Nine of the 24 commits tuned what is pushed.
+1. Why was copy [#4](https://github.com/JN0V/TraceGlass-trial/issues/4)
+   split? Its tester run "crossed its size".
+2. Why did it cross? Its findings were `input-cut` (a warning:
+   `TracingViewModelTest.kt`, 162 of 2,726 lines) and `report-missing`
+   (a block) (run artifact `13608212211`).
+3. Why do those two make a crossing? A cut alone never crosses:
+   `input-cut` is always a warning
+   ([verdict/cut.go:15](https://github.com/JN0V/workline/blob/41983fc9/internal/verdict/cut.go#L15)).
+   `OutcomeOf` asks the product owner on size for a *blocked* run that
+   also carries a cut, "its block may be the cut's"
+   ([outcome.go:122](https://github.com/JN0V/workline/blob/41983fc9/internal/verdict/outcome.go#L122)).
+4. Why was the block not set aside as a machine error first?
+   `report-missing` is not in `machineKinds`
+   ([outcome.go:66-72](https://github.com/JN0V/workline/blob/41983fc9/internal/verdict/outcome.go#L66-L72)).
+   So RC1's compile error, untyped, reached the size rule.
+5. Why does the size rule take any block? It guesses the block's cause
+   from a cut beside it, and cuts are common: every product owner call
+   of the round was cut at 16,000 bytes, every spec review at 600 lines.
+   They crossed nothing only because they did not block.
 
-**Structural change.**
+- **#1193 follows from #1192.** One untyped failure gave both the block
+  and, through the cut rule, the split.
+- **The same on copy [#7](https://github.com/JN0V/TraceGlass-trial/issues/7)**:
+  the product owner granted `size/large` on a block that was a compile
+  error; the next run crossed again on the same file, then waited for a
+  person.
 
-- **Where the agent has read tools, the seed is a map, not the code**:
-  paths, declarations, the region of the one nearest test, capped in
-  bytes (the 30 KB target). A cut of it is told, never a crossing.
-- **A size crossing comes only from what the issue spent**: fresh
-  tokens against its normal
+**Structural change**, as the panel set it:
+
+- **`report-missing` with a failed exit is a machine error.** A plain
+  fix.
+- **A cut is no longer a size crossing**, for any agent: the fallback
+  branch in `OutcomeOf` removed, and one phrase of
+  [ADR-0064 §2](../adr/0064-size-is-a-target-not-a-wall.md#2-two-checkpoints)
+  ("a cut of the code") struck. A plain fix.
+- **A size crossing comes from what the issue spent**: fresh tokens
+  against its normal
   ([ADR-0064 §1](../adr/0064-size-is-a-target-not-a-wall.md#1-normal-size-is-measured-per-project)),
-  and a change too large to review whole.
-- **A design decision, for a panel**: it amends ADR-0064 §2 and
-  [ADR-0063 §8](../adr/0063-every-open-issue-is-due-waiting-or-done.md#8-one-code-picker-and-tools-where-the-agent-has-them).
-  Agents with no tools keep the seeded code and the cut as today.
-- Closes [#1193](https://github.com/JN0V/workline/issues/1193) (its
-  first scenario); may replace
-  [#829](https://github.com/JN0V/workline/issues/829) (a large Scope
-  folder's files given by name order).
+  a prompt over budget, a change too large to review whole.
+- **Postponed**: seeding a map of the code, not the code, where the
+  agent has read tools (the tester's tasks were 55–120 KB, with 5.4 M
+  cache-read tokens over 7 calls). It waits for a measure, under
+  [ADR-0063 §8](../adr/0063-every-open-issue-is-due-waiting-or-done.md#8-one-code-picker-and-tools-where-the-agent-has-them);
+  related to [#829](https://github.com/JN0V/workline/issues/829).
+- Closes [#1193](https://github.com/JN0V/workline/issues/1193)'s first
+  scenario, with RC1.
 
 ## RC3: the size judgement shipped unmeasured
 
-**Five whys** on the feature granted `size/large` where "Thirds" alone
-was a vertical slice, and the atomic bug split though its text said its
-parts fail apart:
+**Five whys** on the feature (copy
+[#5](https://github.com/JN0V/TraceGlass-trial/issues/5)) granted
+`size/large` where "Thirds" alone was a vertical slice, and the atomic
+bug (copy #4) split though its text said its parts fail apart:
 
 1. Why the wrong call both times? The product owner judged without the
    facts that decide it.
 2. Which facts? At a crossing its task says "the tester's run on it is
    too big for that role"
    ([productowner.go:2003](https://github.com/JN0V/workline/blob/41983fc9/internal/builtin/productowner/productowner.go#L2003)).
-   It does not say that one file was cut, nor that 228k of 400k were
-   spent. "Too big" invites a split.
+   It does not say that the run blocked on a compile error, that one
+   file was cut, nor that 228k of 400k were spent. "Too big" invites a
+   split.
 3. Why was that not seen before the round? The split and grant were
    tried with `cmd:` stubs only:
    [#1173](https://github.com/JN0V/workline/pull/1173)'s Tried says
@@ -171,12 +193,12 @@ parts fail apart:
 
 **Structural change.**
 
-- **The size task names what crossed and what was spent**: which file
-  was cut, the issue's fresh tokens against its normal, and the issue's
-  own words on its parts.
+- **The size task names what crossed and what was spent**: the issue's
+  fresh tokens against its normal, and the issue's own words on its
+  parts.
 - **Two evaluation cases from this round**, run before `split: act`
-  stays on past a size: #4 (atomic, expect a grant) and #5 (a vertical
-  slice, expect a split).
+  stays on past a size: copy #4 (atomic, expect a grant) and copy #5 (a
+  vertical slice, expect a split).
 - **A plain fix**, plus cases. Covered by
   [#1193](https://github.com/JN0V/workline/issues/1193)'s second
   scenario.
@@ -184,9 +206,8 @@ parts fail apart:
 ## RC4: the line still decides by a fingerprint
 
 **Five whys** on [#1196](https://github.com/JN0V/workline/issues/1196),
-[#1195](https://github.com/JN0V/workline/issues/1195), the stall of
-[#1194](https://github.com/JN0V/workline/issues/1194), and the product
-owner's 3/15/7 calls against a target of 2:
+the retry half of [#1194](https://github.com/JN0V/workline/issues/1194),
+and the product owner's 3/15/7 calls against a target of 2:
 
 1. Why did a person's `workline:accepted` wake nothing? The issue was
    `state-acted`
@@ -195,61 +216,79 @@ owner's 3/15/7 calls against a target of 2:
    and the date the *state label* was put on
    ([record.go:313](https://github.com/JN0V/workline/blob/41983fc9/internal/line/record.go#L313),
    [states.go:159](https://github.com/JN0V/workline/blob/41983fc9/internal/line/states.go#L159)).
-   Another label is not "labelling". The same rule:
-   - **misses a person**: an accepted proposal (#1196); a tester verdict
-     whose intentions were never applied leaves the same fingerprint, so
-     nobody runs again (#1194);
-   - **wakes a role on its own write**: on #3, call 2 of 3 was woken by
-     the product owner's own body edit and did nothing
-     ("spec-not-reviewed"); call 3, 20,227 tokens in and 217 out, only
-     moved it to ready after a clean review, an act with no judgement.
-     On #4, 7 calls in refine for 3 review rounds.
-3. Why are #6 and #7 proposals at all? `reporter-outside`: issues the
-   workline App opened read as opened "by someone without write access"
-   (run artifact of #6, `13608387399`). GitHub gives an App's issue no
-   `OWNER`, `MEMBER` or `COLLABORATOR` association
-   ([github.go:343](https://github.com/JN0V/workline/blob/41983fc9/internal/forge/github.go#L343)),
-   and a split's child does not inherit its parent's reporter. One of
-   nine separate demotions to "propose"
-   ([backlog.go:1050](https://github.com/JN0V/workline/blob/41983fc9/internal/backlog/backlog.go#L1050)).
-4. Why still a fingerprint and facts read per caller? These are root
-   causes 1 and 2 of
+   Another label is not "labelling".
+3. What else does the same rule do?
+   - **It misses a person**: an accepted proposal
+     ([#1196](https://github.com/JN0V/workline/issues/1196)); after a
+     run whose intentions were dropped
+     ([RC6](#rc6-a-runs-end-is-not-checked)), the same fingerprint, so
+     nobody runs again
+     ([#1194](https://github.com/JN0V/workline/issues/1194)).
+   - **It wakes a role on its own write**: on copy
+     [#3](https://github.com/JN0V/TraceGlass-trial/issues/3), call 2 of
+     3 was woken by the product owner's own body edit and did nothing
+     ("spec-not-reviewed"). Call 3 only moved it to ready after a clean
+     review, an act with no judgement (219 fresh tokens, 20,225 more
+     read from cache). On copy #4, 6 product owner calls in refine,
+     then the split call, for 2 reviewer runs.
+4. Why still a fingerprint? It is root cause 1 of
    [ADR-0063](../adr/0063-every-open-issue-is-due-waiting-or-done.md#four-root-causes),
    accepted on 2026-11-04. Its steps 6–8 (the view, `Next` in shadow,
    `Next` decides) are not built, and no issue tracks them.
-5. Why not built? ADR-0064's size acts were built on 2026-11-08
+5. Why not built? A sequencing choice:
+   [ADR-0064](../adr/0064-size-is-a-target-not-a-wall.md), accepted on
+   2026-11-06, was built first
    ([#1170](https://github.com/JN0V/workline/pull/1170),
-   [#1173](https://github.com/JN0V/workline/pull/1173)) on top of
-   `stateOf`: a size crossing, a split's children, a grant. Each is a new
-   path through the rule ADR-0063 replaces, each with its own stranding
-   case.
+   [#1173](https://github.com/JN0V/workline/pull/1173), 2026-11-08).
+   Its acts (a crossing, a split's children, a grant) went through
+   `stateOf`, the rule step 8 replaces, each a new stranding path.
 
-**Structural change.**
+**Structural change**, as the panel set it:
 
-- **ADR-0063 steps 6–8 next, before any new act on the line**;
-  #1194, #1195, #1196 as simulator traces in their Done. Sequencing of
-  an accepted ADR: no panel.
-- **Amend ADR-0063 §3, the input of a step**: a person's labels
-  (`accepted`, `size/*`) are input; a role's own write is not new input
-  for that role. **A design decision, for a panel**: as written, §3
-  would still wake the product owner on its own body edit, and does not
-  list labels.
-- **Plain fixes, kept small under the stop**:
-  - the App's own issues, and a split's children, are insiders: the
-    child takes its parent's reporter;
-  - ready after a clean spec review is moved by the engine, with no
-    agent call (principle 4).
-- Closes [#1195](https://github.com/JN0V/workline/issues/1195),
-  [#1196](https://github.com/JN0V/workline/issues/1196), the stall half
-  of [#1194](https://github.com/JN0V/workline/issues/1194); related to
-  [#1157](https://github.com/JN0V/workline/issues/1157) and
-  [#1091](https://github.com/JN0V/workline/issues/1091), same input
+- **Finish [ADR-0063 §3](../adr/0063-every-open-issue-is-due-waiting-or-done.md#3-the-input-of-a-step)
+  with steps 6–8, before any new act on the line**: record the body
+  and labels as they stand after the role's own write, so its own edit
+  is not new input; a person's other labels (`accepted`, `size/*`)
+  enter as label events. No lookup of who wrote what. Copy issues
+  #3, #6, #7 frozen as simulator traces in their Done.
+- **Ready after a clean spec review is moved by the engine**, with no
+  agent call ([principle 4](../PRINCIPLES.md)). A plain fix.
+- Closes [#1196](https://github.com/JN0V/workline/issues/1196) and the
+  retry half of [#1194](https://github.com/JN0V/workline/issues/1194);
+  related to [#1157](https://github.com/JN0V/workline/issues/1157) and
+  [#1091](https://github.com/JN0V/workline/issues/1091), the same input
   question.
 
-## RC5: a run has caps per call, not per run, and its end is untyped
+## RC5: the App's own issues read as an outsider's
+
+**Five whys** on [#1195](https://github.com/JN0V/workline/issues/1195):
+
+1. Why did copy [#6](https://github.com/JN0V/TraceGlass-trial/issues/6)
+   and #7 wait for a person after their drafts timed out? Their `ready`
+   was proposed, not done.
+2. Why proposed? `reporter-outside`: "opened by someone without write
+   access to the project" (run artifact of copy #6, `13608387399`;
+   [backlog.go:1050](https://github.com/JN0V/workline/blob/41983fc9/internal/backlog/backlog.go#L1050)).
+   Not `draftsDue`, as the issue's Scope guessed.
+3. Why an outsider? The workline App opened them. GitHub gives an App's
+   issue no `OWNER`, `MEMBER` or `COLLABORATOR` association
+   ([github.go:343](https://github.com/JN0V/workline/blob/41983fc9/internal/forge/github.go#L343)).
+4. Why does a child not count as its parent's? A split's child does not
+   inherit its parent's reporter.
+5. Why was it not seen? It is one of about a dozen separate demotions
+   to "propose" in `decide`
+   ([backlog.go:987-1106](https://github.com/JN0V/workline/blob/41983fc9/internal/backlog/backlog.go#L987-L1106)),
+   and no try had the App open an issue.
+
+**Structural change.** The App's own issues, and a split's children,
+count as insiders; a child takes its parent's reporter. A plain fix,
+independent of RC4. Closes
+[#1195](https://github.com/JN0V/workline/issues/1195).
+
+## RC6: a run's end is not checked
 
 **Five whys** on [#1197](https://github.com/JN0V/workline/issues/1197)
-(70 min hung, 18 runs queued behind it) and the turn cap of
+(70 min hung, 18 runs queued behind it) and
 [#1194](https://github.com/JN0V/workline/issues/1194) (75,112 tokens):
 
 1. Why did nothing end the hung run? No cap covers the whole run.
@@ -265,34 +304,48 @@ owner's 3/15/7 calls against a target of 2:
      ([workline-develop.yml](https://github.com/JN0V/workline/blob/41983fc9/ci/github/workline-develop.yml)),
      so GitHub's 6 h applies;
    - the step prints nothing per phase, so which one hung is not known.
-3. Why was #5's tester read as "no test possible"? Its run ended at 41
-   of 40 turns with an empty answer. `error_max_turns` is read as an
+3. Why was copy #5's tester read as "no test possible"? Its run ended at
+   41 of 40 turns with an empty answer. `error_max_turns` is read as an
    answer
-   ([claude.go:162](https://github.com/JN0V/workline/blob/41983fc9/internal/agent/claude.go#L162)),
-   and an answer with no test as `no-test-possible`
-   ([proof.go:101](https://github.com/JN0V/workline/blob/41983fc9/internal/tester/proof.go#L101)).
-4. Why is a turn cap an answer?
+   ([claude.go:162](https://github.com/JN0V/workline/blob/41983fc9/internal/agent/claude.go#L162)).
+   An answer with empty notes takes the "no test file … proposed"
+   message as its reason and becomes `KindNone`
+   ([write.go:421-428](https://github.com/JN0V/workline/blob/41983fc9/internal/tester/write.go#L421-L428));
+   `no-test-possible`
+   ([proof.go:101](https://github.com/JN0V/workline/blob/41983fc9/internal/tester/proof.go#L101))
+   follows. Why a cap is an answer:
    [ADR-0056](../adr/0056-the-developers-agent-works-in-a-sandbox-with-tools.md)
-   chose it for the developer, whose edits in its worktree are its work.
-   The tester answers in text: an empty text is no work.
+   chose it for the developer, whose edits are its work; the tester
+   answers in text.
+4. Why did copy #5 then stall? Its tester step ended `pass`, "the issue
+   moves to refine", with `to-apply` unset. The engine returned with no
+   intention to apply
+   ([engine.go:869](https://github.com/JN0V/workline/blob/41983fc9/internal/engine/engine.go#L869))
+   before `ToApply` is set
+   ([engine.go:937](https://github.com/JN0V/workline/blob/41983fc9/internal/engine/engine.go#L937)):
+   the label move and the comment were dropped, with no finding. Why
+   they were not in its list is for a red trace to settle.
 5. Why not a machine error?
    [ADR-0063 §6](../adr/0063-every-open-issue-is-due-waiting-or-done.md#6-typed-outcomes)
    types a run's outcome, but how the agent stopped (answered, turn cap,
-   time cap, empty) is not one of its inputs.
+   time cap, empty) is not one of its inputs, and a pass is never
+   checked against what it said it would move.
 
-**Structural change.**
+**Structural change.** Plain fixes, applying decisions already taken
+([principle 12](../PRINCIPLES.md), ADR-0063 §6):
 
 - **One deadline per run**, the sum of its caps, passed to every child
-  process (agent, test command, git), with a phase line on stderr each
-  step, and the CI job's `timeout-minutes` above it.
-- **The agent's stop reason in its result**: a role whose answer is
-  text, ending empty or at its cap, is a `machine-error`, retried with
-  the cap said, never a verdict.
-- **Plain fixes**: both apply decisions already taken (principle 12,
-  ADR-0063 §6). Whether `ai-max-turns` scales with a size tier is asked
-  in #1194.
-- Closes [#1197](https://github.com/JN0V/workline/issues/1197) and the
-  turn-cap half of [#1194](https://github.com/JN0V/workline/issues/1194).
+  process (agent, test command, git), a phase line on stderr each step,
+  and the CI job's `timeout-minutes` above it.
+- **An empty answer is `no-test-written`**, already a machine kind
+  ([outcome.go:69](https://github.com/JN0V/workline/blob/41983fc9/internal/verdict/outcome.go#L69)):
+  retried with the cap said, never `KindNone`. Whether `ai-max-turns`
+  scales with a size tier is asked in
+  [#1194](https://github.com/JN0V/workline/issues/1194).
+- **A pass that says it moves an issue, and applies nothing, is a
+  machine error**, never silent.
+- Closes [#1197](https://github.com/JN0V/workline/issues/1197) and,
+  with RC4, [#1194](https://github.com/JN0V/workline/issues/1194).
 
 ## M: why the fixes repeat: tried below the real path
 
@@ -306,26 +359,43 @@ owner's 3/15/7 calls against a target of 2:
     `cmd:` stubs, on a small Python repository.
 - **None ran `route issue` with a real tester on the Kotlin copy**,
   with the copy's own `test-command`. The round was the first end-to-end
-  run, and found each gap at trial speed: RC1's order and RC2's crossing
-  both show on the first real call.
-- **Proposal**: before a round, one real `route issue` per role on the
-  copy, on one issue, told under `## Tried`. Its outputs (the build's
-  output, the agent's answers) frozen as simulator inputs
-  ([#1079](https://github.com/JN0V/workline/issues/1079)). **A design
-  decision, for a panel**: it amends ADR-0063's working agreements and
-  costs tokens before each round. Tracked in
+  run: RC1 and RC2 both show on the first real call.
+- **Proposal**, as the panel set it: a working agreement. A fix to a
+  role runs that role for real on the round's copy, in its own pull
+  request, told under `## Tried`; only the roles whose packages changed.
+  Its outputs are frozen for the simulator
+  ([#1079](https://github.com/JN0V/workline/issues/1079)). Tracked in
   [#1198](https://github.com/JN0V/workline/issues/1198).
+
+## Panel decision
+
+Three independent readers (the engine's code, a person using workline,
+prior art) agreed on all four proposals put to them, each with changes
+([the panel's comment](https://github.com/JN0V/workline/pull/1199#issuecomment-6719455006)):
+
+- **RC1**: no syntax deny-list. The two plain fixes first; then an
+  error is red-first only on a name the issue or Scope names, or one
+  the base lacks.
+- **RC2**: a cut is no longer a size crossing, for any agent: a plain
+  fix. The code map is postponed until measured.
+- **RC4**: no lookup of who wrote what. The body and labels as they
+  stand after the role's write; a person's other labels as label
+  events. It finishes ADR-0063 §3, steps 6–8.
+- **M ([#1198](https://github.com/JN0V/workline/issues/1198))**: a
+  working agreement, not a design. A role's fix runs that role for real
+  on the copy, in its own pull request.
 
 ## Summary of proposals
 
-| Change | Cause | Closes or replaces | Panel |
+| Change | Cause | Closes or replaces | Kind |
 |---|---|---|---|
-| Read compiler lines with no report; hand them back once | RC1 | [#1192](https://github.com/JN0V/workline/issues/1192) | no |
-| An error in a new test is "not built there" unless syntax | RC1 | most new `missing-name` rows | **yes** |
-| Seed a map where the agent has tools; cross on tokens only | RC2 | [#1193](https://github.com/JN0V/workline/issues/1193), [#829](https://github.com/JN0V/workline/issues/829) | **yes** (ADR-0064 §2) |
-| Size task states what crossed; two evaluation cases | RC3 | [#1193](https://github.com/JN0V/workline/issues/1193) second scenario | no |
-| ADR-0063 steps 6–8 before any new line act | RC4 | [#1195](https://github.com/JN0V/workline/issues/1195), [#1196](https://github.com/JN0V/workline/issues/1196), [#1194](https://github.com/JN0V/workline/issues/1194) stall | no (accepted) |
-| Labels are input; a role's own write is not | RC4 | the 3/15/7 calls | **yes** (ADR-0063 §3) |
-| App's issues insiders; ready after clean review with no agent | RC4 | [#1195](https://github.com/JN0V/workline/issues/1195); calls | no |
-| One deadline per run; stop reason typed | RC5 | [#1197](https://github.com/JN0V/workline/issues/1197), [#1194](https://github.com/JN0V/workline/issues/1194) turn cap | no |
-| A real rehearsal per role before a round | M | [#1198](https://github.com/JN0V/workline/issues/1198) | **yes** |
+| Read compiler lines before refusing; hand unknown errors back once | RC1 | [#1192](https://github.com/JN0V/workline/issues/1192) | plain fix |
+| Red-first only on a name the issue names or the base lacks | RC1 | most new `missing-name` rows | panel: agreed |
+| `report-missing` a machine error; a cut never crosses | RC2 | [#1193](https://github.com/JN0V/workline/issues/1193) first scenario | plain fix ([ADR-0064 §2](../adr/0064-size-is-a-target-not-a-wall.md#2-two-checkpoints), one phrase) |
+| Seed a map where the agent has tools | RC2 | [#829](https://github.com/JN0V/workline/issues/829) | postponed: a measure first |
+| Size task states what crossed; two evaluation cases | RC3 | [#1193](https://github.com/JN0V/workline/issues/1193) second scenario | plain fix |
+| ADR-0063 steps 6–8, input recorded after the role's write | RC4 | [#1196](https://github.com/JN0V/workline/issues/1196), [#1194](https://github.com/JN0V/workline/issues/1194) retry | [ADR-0063 §3](../adr/0063-every-open-issue-is-due-waiting-or-done.md#3-the-input-of-a-step), panel: agreed |
+| Ready after clean review with no agent | RC4 | the 3/15/7 calls | plain fix |
+| App's issues and split children are insiders | RC5 | [#1195](https://github.com/JN0V/workline/issues/1195) | plain fix |
+| One deadline per run; empty answer `no-test-written`; a silent pass refused | RC6 | [#1197](https://github.com/JN0V/workline/issues/1197), [#1194](https://github.com/JN0V/workline/issues/1194) | plain fix |
+| A role's fix runs that role for real on the copy | M | [#1198](https://github.com/JN0V/workline/issues/1198) | working agreement, panel: agreed |
