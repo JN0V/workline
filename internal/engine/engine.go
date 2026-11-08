@@ -1265,6 +1265,8 @@ func callAgent(ag agent.Agent, req agent.Request, task, runDir string, res *Resu
 		return errTimeSpent
 	}
 	req.Role, req.MaxTurns = bounded, res.maxTurns
+	limit, _ := req.Role.Model.AnswerTimeout()
+	phase(req.Role.Name, "asks its agent, "+limit.String()+" at most")
 	start := time.Now()
 	call, err := ag.Propose(req)
 	if errors.Is(err, agent.ErrOverBudget) {
@@ -3316,12 +3318,21 @@ func scriptEnv(runDir, roleName string, o Options) []string {
 	return env
 }
 
+// phase says in CI's job log which step of a role's run starts: a run
+// that hangs says where it was (#1197). Outside CI, nothing.
+func phase(role, step string) {
+	if forge.InCI() != "" {
+		fmt.Fprintf(os.Stderr, "workline: %s: %s (%s UTC)\n", role, step, time.Now().UTC().Format("15:04:05"))
+	}
+}
+
 // script runs roles/<name>/<step> in the repository and returns its exit code.
 func script(r *role.Role, step, repo string, env []string) (int, error) {
 	path := filepath.Join(r.Dir, step)
 	if _, err := os.Stat(path); err != nil {
 		return 0, fmt.Errorf("role %q has no %s script", r.Name, step)
 	}
+	phase(r.Name, step)
 	cmd := exec.Command(path)
 	cmd.Dir, cmd.Env = repo, env
 	cmd.Stdout, cmd.Stderr = os.Stderr, os.Stderr
