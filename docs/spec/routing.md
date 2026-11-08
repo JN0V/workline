@@ -452,7 +452,8 @@ whose result moves the issue to the next. The table is the routing's
   `engine-error` (run: the run failed, any shape, a new one too),
   `agent-invalid-output` and `no-test-written` (answer),
   `patch-unreadable` (patch), `build-broken` (build: the tester's test
-  or the developer's code), `no-new-test` and `report-missing` (report). No label, no state, no hop: the record
+  or the developer's code), `no-new-test` and `report-missing` (report), `proof-over-time`
+  (time: a test command stopped at its deadline, [#1197](https://github.com/JN0V/workline/issues/1197)). No label, no state, no hop: the record
   keeps the count by kind (`errors`), and its comment says the error and
   when the role runs again. The step is due again on the same input
   after 10 minutes (`state-retry`; before, `state-waits` with the time),

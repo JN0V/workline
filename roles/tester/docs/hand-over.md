@@ -98,6 +98,11 @@ When no new test fits, the tester's agent names the proof that does
   ([refine](../../../docs/spec/backlog-acts/refine.md#no-test-possible-a-proof-kind-picked));
   with no agent, a person of the project names one in a comment,
   `proof: <kind> — why`.
+- **No reason, no answer**: an agent that names no kind, writes no
+  test and gives no reason, or stops at its turn cap first, did no
+  work: asked again once, then `no-test-written`, a machine error the
+  line retries, never "no test possible"
+  ([#1194](https://github.com/JN0V/workline/issues/1194)).
 - **Read tools** (`claude`): the agent finds what it lacks in a
   read-only copy, writes the test, and lists what it could not confirm
   in `assumes:` notes, shown on the Draft as **Assumed**
