@@ -97,7 +97,8 @@ Each issue comes with:
   `blocked` afresh. The developer's ask for files outside the Scope:
   the Scope widened — a new file its pull request adds counts —, or
   why not; a widening left out keeps the issue blocked. A run too big
-  for its role: the Scope narrowed, or the issue left to a person.
+  for its role, or one predicted past its normal at ready: the Scope
+  narrowed, split, granted `workline:size/large` or left to a person ([how](../../../docs/spec/backlog-acts/refine.md#its-size-at-ready)).
 - **A question unanswered** past `acts.ask.wait`: its assumption
   written (`assume`)
   ([how long a question waits](settings.md#how-long-a-question-waits)).
