@@ -66,18 +66,30 @@ func reportFiles(tree, pattern string) []string {
 	return found
 }
 
-// keptFile is a file git tracks that test-report names, as it was
-// before the run: its time and content.
+// keptFile is a file test-report names that is not the run's to remove,
+// as it was before the run: its time and content.
 type keptFile struct {
 	mod  time.Time
 	data []byte
 }
 
+// inNestedRepo says whether rel, from tree, lies in a repository nested
+// below tree's root, a submodule or a vendored clone: a folder above it
+// holds a `.git`. The root's git does not list its files.
+func inNestedRepo(tree, rel string) bool {
+	for dir := filepath.Dir(rel); dir != "." && dir != string(filepath.Separator); dir = filepath.Dir(dir) {
+		if _, err := os.Lstat(filepath.Join(tree, dir, ".git")); err == nil {
+			return true
+		}
+	}
+	return false
+}
+
 // clearReports removes the files test-report names in tree that git
 // does not track, a past run's reports (#1185). A tracked one, as
-// `pom.xml` under `**/*.xml` or a report committed, is never removed:
-// it is kept, its state returned, so that, unchanged by the run, it is
-// not read as this run's.
+// `pom.xml` under `**/*.xml` or a report committed, or one in a nested
+// repository, is never removed: it is kept, its state returned, so
+// that, unchanged by the run, it is not read as this run's.
 func clearReports(tree, pattern string) (map[string]keptFile, error) {
 	found := reportFiles(tree, pattern)
 	if len(found) == 0 {
@@ -97,7 +109,7 @@ func clearReports(tree, pattern string) (map[string]keptFile, error) {
 		if err != nil {
 			return nil, err
 		}
-		if tracked[filepath.ToSlash(rel)] {
+		if tracked[filepath.ToSlash(rel)] || inNestedRepo(tree, rel) {
 			info, err := os.Stat(f)
 			if err != nil {
 				return nil, err
@@ -117,16 +129,17 @@ func clearReports(tree, pattern string) (map[string]keptFile, error) {
 }
 
 // freshReports are the files test-report names in tree after the run,
-// but a tracked file the run left as it was.
+// but a kept file the run left as it was, or rewrote into no JUnit
+// report (a build bumping `pom.xml`'s version).
 func freshReports(tree, pattern string, kept map[string]keptFile) []string {
 	var out []string
 	for _, f := range reportFiles(tree, pattern) {
 		if k, ok := kept[f]; ok {
 			info, err := os.Stat(f)
-			if err == nil && info.ModTime().Equal(k.mod) {
-				if data, err := os.ReadFile(f); err == nil && bytes.Equal(data, k.data) {
-					continue
-				}
+			data, rerr := os.ReadFile(f)
+			if err != nil || rerr != nil || !bytes.Contains(data, []byte("<testsuite")) ||
+				(info.ModTime().Equal(k.mod) && bytes.Equal(data, k.data)) {
+				continue
 			}
 		}
 		out = append(out, f)

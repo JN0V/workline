@@ -29,7 +29,8 @@ type Settings struct {
 	// Report is where the command writes the report, from the
 	// repository's root: a path, or a pattern, `**` spanning folders
 	// (`**/build/test-results/**/*.xml`), each file it names read. The
-	// files it names are removed before a run, but those git tracks.
+	// files it names are removed before a run, but those git tracks or
+	// a nested repository holds.
 	Report string `json:"test-report"`
 	// Paths are the test files, as patterns (`**` spans folders).
 	Paths []string `json:"test-paths"`

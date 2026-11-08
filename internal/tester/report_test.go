@@ -135,24 +135,26 @@ func TestModuleFilesWithFolderRefused(t *testing.T) {
 
 // Before a run, the reports a past run left are removed; a file git
 // tracks that the pattern names (`pom.xml` under `**/*.xml`) is kept,
-// and, unchanged by the run, not read as a report. `.git` is skipped at
-// the root alone.
+// and, unchanged by the run or rewritten into no report, not read. A
+// file in a nested repository (a folder holding `.git`) is kept too:
+// the root's git does not list it.
 func TestStaleReportsRemovedTrackedKept(t *testing.T) {
 	tree := reportTree(t,
 		[]string{"pom.xml", "app/src/main/AndroidManifest.xml", "app/build/test-results/old/TEST-committed.xml"},
-		[]string{"app/build/test-results/old/TEST-stale.xml", "lib/.git/build/test-results/x/TEST-nested.xml"})
+		[]string{"app/build/test-results/old/TEST-stale.xml", "lib/.git/build/test-results/x/TEST-nested.xml", "lib/pom.xml"})
 	s := Settings{Report: "**/*.xml",
-		Command: `mkdir -p app/build/test-results/test && printf '<testsuite name="a" time="1.5"><testcase classname="a" name="TestNew" time="1.5"/></testsuite>' > app/build/test-results/test/TEST-new.xml`}
+		Command: `printf '<project v="2"/>' > pom.xml && mkdir -p app/build/test-results/test && printf '<testsuite name="a" time="1.5"><testcase classname="a" name="TestNew" time="1.5"/></testsuite>' > app/build/test-results/test/TEST-new.xml`}
 	r, f := runIn(tree, s, "here")
 	if f != nil {
 		t.Fatalf("runIn: %+v", f)
 	}
-	for _, kept := range []string{"pom.xml", "app/src/main/AndroidManifest.xml", "app/build/test-results/old/TEST-committed.xml"} {
+	for _, kept := range []string{"pom.xml", "app/src/main/AndroidManifest.xml", "app/build/test-results/old/TEST-committed.xml",
+		"lib/pom.xml", "lib/.git/build/test-results/x/TEST-nested.xml"} {
 		if _, err := os.Stat(filepath.Join(tree, filepath.FromSlash(kept))); err != nil {
-			t.Errorf("tracked %s removed: %v", kept, err)
+			t.Errorf("%s removed: %v", kept, err)
 		}
 	}
-	for _, gone := range []string{"app/build/test-results/old/TEST-stale.xml", "lib/.git/build/test-results/x/TEST-nested.xml"} {
+	for _, gone := range []string{"app/build/test-results/old/TEST-stale.xml"} {
 		if _, err := os.Stat(filepath.Join(tree, filepath.FromSlash(gone))); !os.IsNotExist(err) {
 			t.Errorf("stale report %s kept: %v", gone, err)
 		}
