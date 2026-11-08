@@ -84,6 +84,9 @@ settings:
   # path, or a pattern, `**` spanning folders, each file it names read:
   # a report per module (`**/build/test-results/**/*.xml`, Gradle;
   # `**/target/surefire-reports/*.xml`, Maven), removed before each run.
+  # A file git tracks, or one in a nested repository, is never removed,
+  # and read only if the run rewrites it into a JUnit report (`pom.xml`
+  # under `**/*.xml`); a pattern leaving the root (`../`, `/`) is refused.
   test-report: junit.xml
   # The Draft's red proof on the folders holding its tests alone
   # ({packages}), on the base and with the tests, writing test-report;
@@ -91,11 +94,12 @@ settings:
   # `gotestsum --junitfile {report} -- {packages}`, `pytest
   # --junitxml={report} {packages}`.
   draft-command: ""
-  # The file marking a build module's folder, by its name (`*` allowed):
-  # set, {packages} is the modules a change touches, the nearest folder
-  # above each file holding one; a file of the root module, the whole
-  # suite; unset, the folders holding tests. E.g. [build.gradle.kts,
-  # build.gradle], [pom.xml].
+  # The file marking a build module's folder, by its name alone (`*`
+  # allowed, no `/`): set, {packages} is the modules a change touches,
+  # the nearest folder above each file holding one; with a build file at
+  # the root, a file outside any other module (`docs/x.md`) is the root
+  # module's: the whole suite; with none there, it adds none; unset, the
+  # folders holding tests. E.g. [build.gradle.kts, build.gradle], [pom.xml].
   # The project's command turns a folder into its task:
   # `./gradlew $(echo {packages} | sed -E 's#\./##g; s#/#:#g; s#([^ ]+)#:\1:test#g')`.
   module-files: []

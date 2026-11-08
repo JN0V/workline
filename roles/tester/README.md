@@ -196,11 +196,11 @@ workline test check --base origin/main
 | `test-green-on-base` | yes | a new test passes, or is skipped, on the base |
 | `test-red-on-head` | yes | the change holds code, and a new test fails, is skipped, or did not run on the head |
 | `setting-missing` | yes | `test-command` or `test-report` is not set |
+| `setting-invalid` | yes | `test-report` leaves the repository's root, a `module-files` name holds a `/`, or `build-errors` does not compile |
 | `report-missing` | yes | a run wrote no report where `test-report` says, or not JUnit XML |
 | `tests-not-built` | no, warns | tests the base ran are not in the report of the base with the change's tests: their build broke there |
 | `no-new-test` | no, warns | the change touches test files, but no new test is in the report |
 | `build-broken` | yes | the build broke on the base with the change's tests, by more than a name the base lacks, or by a missing name the issue never names; writing an issue's tests, after the agent is asked once more with the error, then a machine error the line runs again ([the record](../../docs/spec/routing.md#once-a-state-the-record)) |
-| `setting-invalid` | yes | a `build-errors` pattern does not compile |
 
 - **A change with no new test** passes, and says so.
 - **The change's tests alone** (no code yet, the tester's own change):
@@ -220,8 +220,8 @@ Under `roles: {tester: {settings: …}}` in `.workline/config.yaml`
 |---|---|---|
 | `test-command` | none | runs the project's tests and writes a JUnit XML report; `{report}` is its path. The developer proves its code with it too |
 | `draft-command` | none: `test-command` | proves a Draft red on the folders holding its tests alone, `{packages}`, not the whole suite twice ([#979](https://github.com/JN0V/workline/issues/979)) |
-| `module-files` | none | the file marking a build module, `build.gradle.kts` or `pom.xml`: `{packages}` is then the modules a change touches; the command turns a folder into its task ([#1176](https://github.com/JN0V/workline/issues/1176)) |
-| `test-report` | `junit.xml` | where the report is written, from the root: a path, or a pattern, `**` spanning folders, each file it names read ([#1175](https://github.com/JN0V/workline/issues/1175)) |
+| `module-files` | none | the file marking a build module, by name alone: `build.gradle.kts` or `pom.xml`. `{packages}` is then the modules a change touches; with a build file at the root, a file outside any module runs the whole suite. The command turns a folder into its task ([#1176](https://github.com/JN0V/workline/issues/1176)) |
+| `test-report` | `junit.xml` | where the report is written, from the root: a path, or a pattern, `**` spanning folders, each file it names read. Removed before each run, but a file git tracks or in a nested repository: kept, read only if the run rewrites it into a JUnit report ([#1175](https://github.com/JN0V/workline/issues/1175), [#1185](https://github.com/JN0V/workline/issues/1185)) |
 | `test-paths` | each ecosystem's names | the test files, as patterns: `**/*_test.go`, `**/test_*.py`, `**/*.test.ts`, `tests/**` and others; the only files `test write` may add; a new one beside the Scope is in the developer's bounds ([its bounds](../developer/docs/bounds.md#what-it-checks)) |
 | `build-errors` | Go, Kotlin, Java, Gradle | how a build broken by a missing name reads, by ecosystem ([page](docs/missing-name.md)) |
 | `code-lines-max` | 1500 | lines of the code the issue names and of the tests given to the agent, all files together, fewer when long lines would pass the context budget; a longer file gives the pieces the issue names in it, inside its declarations; the files the test and the Scope include or import, two steps deep, as declarations ([the code picker](../../docs/spec/code-picker.md)); a fifth kept for a test beside when the code would fill it; files past it are named with their size |

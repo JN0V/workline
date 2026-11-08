@@ -136,7 +136,8 @@ func OnChange(repo, rev string, patches []intent.Intention, s Settings, deadline
 // file holding a file one of them names (`build.gradle.kts`, `pom.xml`,
 // `*.csproj`). A file of the root module (`build.gradle.kts`,
 // `gradle/libs.versions.toml`) reaches every module: none, the whole
-// suite runs. A file with no module above it adds none.
+// suite runs; with a build file at the root, so does a file outside any
+// other module (`docs/x.md`). With none there, such a file adds none.
 func Packages(tree string, files, patterns, modules []string) []string {
 	if len(modules) > 0 {
 		return buildModules(tree, files, modules)

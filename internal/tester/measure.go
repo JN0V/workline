@@ -256,13 +256,13 @@ func Measure(repo, history string, s Settings) Measured {
 // timedRun runs the command in tree and reads each test's result and time,
 // and the suites' total time.
 func timedRun(tree string, s Settings, where string) (map[string]timed, float64, *verdict.Finding) {
-	if _, f := runIn(tree, s, where); f != nil {
+	r, f := runIn(tree, s, where)
+	if f != nil {
 		return nil, 0, f
 	}
-	found := reportFiles(tree, s.Report)
 	out := map[string]timed{}
 	var total float64
-	for _, file := range found {
+	for _, file := range r.reports {
 		t, err := readTimes(file, out)
 		if err != nil {
 			return nil, 0, &verdict.Finding{Rule: "report-missing", Where: s.Report, Message: err.Error()}
