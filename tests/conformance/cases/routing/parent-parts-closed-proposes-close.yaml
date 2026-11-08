@@ -1,0 +1,48 @@
+case: routing/parent-parts-closed-proposes-close
+about: >
+  A split's parent whose block a person lifted bears no state (#1208):
+  its parts closed, the reconciler wakes the product owner on it with
+  no agent (ADR-0029, amended). Its comment lists what each part
+  delivered, the closing is proposed to a person, and the line says
+  what it waits for and how a person moves it (#1195). A spec review
+  from before its split moves it to ready no more. Run again, nothing
+  new: it waits, said, no step.
+given:
+  repo: tested
+  config:
+    routing: {events: {issue: [product-owner, reviewer]}}
+  forge:
+    sub-issues: true
+    issues:
+      - id: 4
+        title: "Time-lapse counts"
+        labels: []
+        author: ann
+        insider: true
+        body: "## Need\n\nThe time-lapse counter is right.\n\n## Validation\n\n- *Saved*: Given 3 frames saved, Then the counter says 3.\n\n## Verification\n\n- Counts only frames saved.\n\n## Scope\n\nsrc/calc.go"
+        comments:
+          - "```yaml\nsources: [src/calc.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nsplit: [6, 7]\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "No important finding open.\n\n<!-- workline:spec-review body=3cd94320cc61 round=3 open=0 in= -->\n\n<!-- workline:sticky=reviewer/spec -->"
+      - {id: 6, title: "Count only frames saved", body: "Part of #4.", labels: [], parent: 4, closed: true, reason: completed, closed-by: [{kind: pull-request, ref: "#13", text: "fix: count frames saved"}]}
+      - {id: 7, title: "Number restored frames", body: "Part of #4.", labels: [], parent: 4, closed: true, reason: completed, closed-by: [{kind: pull-request, ref: "#14", text: "fix: number restored frames"}]}
+run: {route: reconcile, open-merge-request: true, ai: "fake:blocked-three", then: again}
+expect:
+  status: pass
+  agent-calls: 0
+  findings:
+    - {rule: state-parent, level: info, where: "#4", message: "a parent, 2 of its 2 parts closed"}
+    - {rule: parent-to-accept, where: "#4"}
+    - {rule: state-parent-waits, level: info, where: "#4", message: "its 2 parts closed: it waits for a person to accept it"}
+  no-findings: [{rule: state-ready-held}]
+  forge:
+    issues:
+      - id: 4
+        closed: false
+        labels: ["workline:proposed"]
+        comment-lacks: "to ready"
+        comment-contains:
+          - "**All 2 parts are closed: for a person to accept.**"
+          - "**Proposes**: Close it as completed: its parts are closed"
+          - "**workline's line** waits for a person on this issue."
+          - "- **Next**: a person labels it `workline:accepted` to do it"
+          - "\"parts\":\"6,7\""

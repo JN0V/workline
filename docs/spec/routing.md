@@ -749,6 +749,26 @@ only then.
   issues more on an issue's own run. No agent call without news or the
   week gone by.
 
+### A parent, told as its parts close
+
+[ADR-0029, amended](../adr/0029-a-parent-is-accepted-by-a-person-from-what-its-parts-delivered.md#amendment-2026-11-08-the-line-tells-a-parent-a-person-accepts-it-with-one-label):
+a split's parent bears no state once a person lifts its block, or stays
+blocked; its parts close in their own runs.
+
+- **Read where its state wakes nobody**: no state label, or Blocked.
+  Only where the project routes the product owner on `issue`.
+- **Its parts**: the forge's relation, read from the open issues'
+  listing, and its `## Sub-issues` task list
+  ([a parent and its parts](backlog-acts/parent.md)). A part not open
+  is closed.
+- **New input**: a part closed, or `workline:accepted` put on, since the
+  line last read it (the record's `parts`). The product owner is woken
+  on it with no agent (`state-parent`): it writes what the parts
+  delivered and, all closed, proposes the closing.
+- **Nothing new**: it waits, said in the job's summary
+  (`state-parent-waits`): on its open parts, or on a person to accept
+  it. A blocked parent is then read again as any blocked issue.
+
 ### Room in the next state
 
 [ADR-0059, decision 9](../adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#9-pull-and-room-in-the-next-state):

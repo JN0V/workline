@@ -87,6 +87,9 @@ type stateStep struct {
 	// ai: the agent the step runs with, in the place of the run's: "none"
 	// when its act takes no judgement (cleanReview); "" for the run's.
 	ai string
+	// parent: a parent's step, its parts told (parent.go): no move to
+	// ready expected of it.
+	parent bool
 }
 
 // never is a step's since when how long it waited is not known: a re-try
@@ -143,6 +146,13 @@ func stepOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, o
 	s, name, why := cfg.Wakes(is.Labels, IssueEvent)
 	if w, err := stale(res, cfg, b, x, is, s); err != nil || w != nil {
 		return nil, w, err
+	}
+	if _, on := cfg.StateOf(is.Labels); !on || (s.Name == BlockedState && name == "") {
+		// A parent its state wakes nobody on: told as its parts close
+		// (parent.go, #1208).
+		if st, handled, err := parentStep(res, cfg, b, is, s, open); err != nil || handled {
+			return st, nil, err
+		}
 	}
 	if s.Name == BlockedState && name == "" {
 		return revisit(res, cfg, b, is, open)
@@ -668,7 +678,7 @@ func runStateStep(res *Result, cfg *routing.Config, f forge.Forge, spec string, 
 			return
 		}
 	}
-	if st.ai == "none" && status == verdict.Pass && !movedToReady(res.Findings[before:], st.write.Issue) {
+	if st.ai == "none" && !st.parent && status == verdict.Pass && !movedToReady(res.Findings[before:], st.write.Issue) {
 		// Its move to ready, with no agent, left undone (a check of the
 		// product owner's held it): said, the review left unread, and the
 		// agent reads it at the next run — never a silent park.
@@ -747,6 +757,9 @@ func reconcile(res *Result, cfg *routing.Config, o engine.Options) *Result {
 		s, name, _ := cfg.Wakes(is.Labels, IssueEvent)
 		if revisited && s.Name == BlockedState && name == "" {
 			name = backlog.Keeper // read again when there is news (revisit.go)
+		}
+		if name == "" && len(backlog.Parts(is)) > 0 && slices.Contains(cfg.Events[IssueEvent], backlog.Keeper) {
+			name = backlog.Keeper // a parent, told as its parts close (parent.go)
 		}
 		left := name == "" || o.Inputs[SkipInput] != "" && slices.Contains(skip, name)
 		if name == "" && claimNoPR(cfg, b, t, is) {
