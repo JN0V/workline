@@ -155,6 +155,12 @@ type Record struct {
 	// when the line blocked it for a person (backstop.go, ADR-0064 §5):
 	// no product owner reads it again. Gone once a person moves it out.
 	Backstop int `json:"backstop,omitempty"`
+	// Labels: a person's labels on the issue that are not a state's —
+	// workline:accepted, a size tier (inputLabels) —, as they stood once
+	// the step's own run wrote (ADR-0063, §3): one put on since is new
+	// input; the role's own is not. "-" for none; "" in a record from
+	// before, read against the labels' dates (labelsBefore).
+	Labels string `json:"labels,omitempty"`
 }
 
 // StateWrite is what the line writes on an issue once its step ran:
@@ -190,6 +196,10 @@ type StateWrite struct {
 	// the record: said on the issue with it, its labels and state kept
 	// (ADR-0063, I3).
 	Failed bool `json:"failed,omitempty"`
+	// After: the record is of a step's run: its body and labels are those
+	// of the issue as it stands when written, the role's own writes in
+	// (afterWrite), so its own edit is no new input for it (ADR-0063, §3).
+	After bool `json:"after,omitempty"`
 }
 
 // recordV is the version every record is written with (Record.V).
@@ -305,14 +315,81 @@ func plural(n int, one, many string) string {
 	return many
 }
 
+// inputLabels is what of labels is a step's input besides its state's
+// (ADR-0063, §3): a person's yes, workline:accepted in either spelling,
+// and a size tier; sorted, comma-joined, "-" for none.
+func inputLabels(labels []string) string {
+	var in []string
+	for _, l := range labels {
+		l = strings.ToLower(strings.TrimSpace(l))
+		if backlog.Accepted(forge.Issue{Labels: []string{l}}) || backlog.SizeTier([]string{l}) != "" {
+			in = append(in, l)
+		}
+	}
+	if len(in) == 0 {
+		return "-"
+	}
+	slices.Sort(in)
+	return strings.Join(slices.Compact(in), ",")
+}
+
+// labelsBefore is the input labels a record from before Labels saw:
+// those of is put on before the line last ran a step on it (rec.Ran), as
+// the forge dates each; a label it cannot date, or a record with no run
+// dated, counts as seen — never a wake on every issue at once.
+func labelsBefore(b forge.Backlog, is forge.Issue, rec Record) (string, error) {
+	var seen []string
+	for _, l := range is.Labels {
+		if inputLabels([]string{l}) == "-" {
+			continue
+		}
+		if rec.Ran != "" {
+			t, err := b.Trail(is.ID, l)
+			if err != nil {
+				return "", err
+			}
+			if later(t.Labeled, rec.Ran) {
+				continue // put on since its last run: new input
+			}
+		}
+		seen = append(seen, l)
+	}
+	return inputLabels(seen), nil
+}
+
+// afterWrite records in r the issue as it stands once the step's run
+// wrote (is): its body and input labels. The marks the step kept on the
+// body it was woken on follow it, so the role's own edit wakes neither
+// it nor them (ADR-0063, §3).
+func afterWrite(r *Record, is forge.Issue) {
+	r.Labels = inputLabels(is.Labels)
+	was, now := r.Body, bodyHash(is.Body)
+	if was == now {
+		return
+	}
+	for _, h := range []*string{&r.Body, &r.Asked, &r.Unread, &r.ReviewAgain} {
+		if *h == was {
+			*h = now
+		}
+	}
+	for _, k := range []*string{&r.Timeout, &r.Claim} {
+		if p, h, ok := strings.Cut(*k, "="); ok && h == was {
+			*k = p + "=" + now
+		}
+		if p, h, ok := strings.Cut(*k, ":"); ok && h == was {
+			*k = p + ":" + now
+		}
+	}
+}
+
 // due says whether the step of state s is due on is: false when the
 // record says that step ran on the same state, body and labelling; else
 // the hops it will be, the record's plus one for a state not acted on
 // before — one, a count started again, for a state further on the line
 // (cfg) than any it reached (#1068).
 func due(cfg *routing.Config, s routing.State, is forge.Issue, labeled, spec string, rec Record, had bool) (Record, bool) {
-	now := Record{State: s.Name, Body: bodyHash(is.Body), Labeled: labeled, Hops: rec.Hops, Spec: spec, Reached: rec.Reached, Spent: rec.Spent, Counted: rec.Counted, Sized: rec.Sized}
-	if had && rec.State == now.State && rec.Body == now.Body && rec.Labeled == now.Labeled && rec.Spec == now.Spec {
+	now := Record{State: s.Name, Body: bodyHash(is.Body), Labeled: labeled, Hops: rec.Hops, Spec: spec, Reached: rec.Reached, Spent: rec.Spent, Counted: rec.Counted, Sized: rec.Sized, Labels: inputLabels(is.Labels)}
+	if had && rec.State == now.State && rec.Body == now.Body && rec.Labeled == now.Labeled && rec.Spec == now.Spec && sameLabels(rec, now) {
 		return rec, false
 	}
 	if had && rec.State == now.State {
@@ -344,6 +421,12 @@ func due(cfg *routing.Config, s routing.State, is forge.Issue, labeled, spec str
 	return now, true
 }
 
+// sameLabels says whether the input labels of now are those rec ran on:
+// a record from before Labels, read by labelsBefore, holds none to tell.
+func sameLabels(rec, now Record) bool {
+	return rec.Labels == "" || rec.Labels == now.Labels
+}
+
 // specWaits says whether issue is's spec waits on the reviewer: its
 // sections written, not ready nor accepted, no review on its body as it
 // is, the review's rounds not spent (backlog.SpecHold); comments: the
@@ -369,6 +452,14 @@ func specWaits(is forge.Issue, comments []string) bool {
 func writeState(f forge.Forge, cfg *routing.Config, repo string, w StateWrite, role string) error {
 	t := forge.Target{Kind: "issue", ID: w.Issue}
 	w.Record.V = recordV
+	if w.After {
+		// The issue as the step's run left it, its own writes in.
+		is, err := f.Issue(w.Issue)
+		if err != nil {
+			return err
+		}
+		afterWrite(&w.Record, *is)
+	}
 	body := recordBody(w.Record, role)
 	switch {
 	case w.Seen != "":

@@ -19,7 +19,8 @@
   [routing.md](../spec/routing.md#once-a-state-the-record)
 - **Research:** [line-liveness.md](../research/line-liveness.md)
 - **Amended:** [2026-11-05](#amendment-2026-11-05-the-testers-read-tools-first),
-  the tester's read tools before step 9, the token ceiling measured
+  the tester's read tools before step 9, the token ceiling measured; [2026-11-08](#amendment-2026-11-08-a-persons-labels-are-input-a-roles-own-write-is-not),
+  §3's input: a person's labels in, the role's own write out
 
 ## Context
 
@@ -212,7 +213,10 @@ flowchart LR
 The input is what decides whether a role has something new to read.
 
 - **Canonical, from the view**, not the task the role builds:
-  - the body;
+  - the body, as the step's own run left it
+    ([amended](#amendment-2026-11-08-a-persons-labels-are-input-a-roles-own-write-is-not));
+  - a person's labels besides the state's: `workline:accepted`, the
+    size tiers (amended);
   - comments by others than the line and than this role (a role's own
     sticky would make each run new input; the line's own comment too);
   - for each Scope file and each file the picker gave: its path and
@@ -858,3 +862,27 @@ from the runs' `calls.jsonl`):
 [ADR-0057]: 0057-workline-finds-the-forges-board-and-moves-its-cards.md
 [ADR-0059]: 0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md
 [ADR-0060]: 0060-the-person-is-on-the-loop.md
+
+## Amendment (2026-11-08): a person's labels are input, a role's own write is not
+
+Decided by a panel of three independent readers on the round-6 root
+causes ([#1199](https://github.com/JN0V/workline/pull/1199)): §3 as
+written woke the product owner on its own body edit, and listed no
+label, so a person's `workline:accepted` woke nothing
+([#1196](https://github.com/JN0V/workline/issues/1196)).
+
+- **§3, the input of a step, adds**: a person's labels that are not a
+  state's, `workline:accepted` and the size tiers.
+- **A role's own write is not new input for it**: the body and those
+  labels are recorded as they stand after the step's run, its writes
+  in. No lookup of who wrote what.
+- **A bot's issue is the project's**: a split's children the line's App
+  opened are never an outsider's
+  ([#1195](https://github.com/JN0V/workline/issues/1195)).
+- **A move to ready after a clean spec review takes no agent**
+  (principle 4).
+
+Built on `due`, the record of today, ahead of steps 6–8: the
+record's `labels` field is what the step log's input digest will take
+in. **Steps 6–8** (the view, `Next` in shadow, `Next` decides) **stay
+unbuilt**; this amendment changes their input, not their order.

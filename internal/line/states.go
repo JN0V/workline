@@ -84,6 +84,9 @@ type stateStep struct {
 	// backstop reads its issue's backstop once, for the check after its
 	// run (backstop.go); nil when none was set up.
 	backstop func() (backstop, error)
+	// ai: the agent the step runs with, in the place of the run's: "none"
+	// when its act takes no judgement (cleanReview); "" for the run's.
+	ai string
 }
 
 // never is a step's since when how long it waited is not known: a re-try
@@ -172,6 +175,13 @@ func stepOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, o
 	}
 	if s.Name != refineState {
 		spec = "" // a review is read in refine alone: no other state woken by it
+	}
+	if had && rec.Labels == "" {
+		// A record from before Labels: a person's label put on since its
+		// last run is new input (ADR-0063, §3), the others seen.
+		if rec.Labels, err = labelsBefore(b, is, rec); err != nil {
+			return nil, nil, err
+		}
 	}
 	now, ok := due(cfg, s, is, trail.Labeled, spec, rec, had)
 	changed := ok // due on a new state, label, body or review: not a retry (typedDue)
@@ -362,6 +372,15 @@ func stepOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, o
 	if now, err = woken(cfg, b, t, s, is.ID, now, open); err != nil {
 		return nil, nil, err
 	}
+	ai := ""
+	if role == backlog.Keeper && changed && !retried && reviewed && cleanReview(is, notes, rec, now, had) {
+		// Woken by a review that found nothing important open on its
+		// text, all its sections there: its move to ready takes no
+		// judgement, the engine's with no agent (principle 4).
+		ai = "none"
+		res.Findings = append(res.Findings, verdict.Finding{Rule: "state-ready-clean", Level: "info", Where: where,
+			Message: "the reviewer read its spec and found nothing important open: the product owner moves it to ready, with no agent"})
+	}
 	res.Findings = append(res.Findings, verdict.Finding{Rule: "state-wakes", Level: "info", Where: where,
 		Message: fmt.Sprintf("its state, %s, wakes the %s", s.Name, role)})
 	since := waitedSince(s, rec, had, trail.Labeled)
@@ -370,7 +389,34 @@ func stepOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, o
 	if role != name {
 		now.Alone = role // its retry runs it alone again
 	}
-	return &stateStep{role: role, next: s.Next, write: StateWrite{Issue: is.ID, Record: now}, inputs: inputs, from: s, since: since, rec: rec, tier: backlog.SizeTier(is.Labels)}, nil, nil
+	return &stateStep{role: role, next: s.Next, write: StateWrite{Issue: is.ID, Record: now}, inputs: inputs, from: s, since: since, rec: rec, tier: backlog.SizeTier(is.Labels), ai: ai}, nil, nil
+}
+
+// cleanReview says whether refine's step on issue is is due on the
+// reviewer's review alone, one that found nothing important open on its
+// text as it is, with nothing else for the product owner to read: the
+// same state, body and labels as its last run (rec), no delay passed, no
+// person's comment it has not read, every section there, its scenarios
+// named and no test found impossible. Its act is the move to ready, which the product
+// owner's run makes with no agent (#128).
+func cleanReview(is forge.Issue, notes []forge.Note, rec, now Record, had bool) bool {
+	if !had || rec.State != now.State || rec.Body != now.Body || rec.Labeled != now.Labeled ||
+		!sameLabels(rec, now) || rec.Spec == now.Spec || now.Timeout != rec.Timeout {
+		return false
+	}
+	comments := forge.Bodies(notes)
+	if _, cleared := backlog.SpecCleared(is, comments); !cleared || backlog.Readied(is) || backlog.Accepted(is) {
+		return false
+	}
+	st, found, err := backlog.ReadState(comments, backlog.Keeper)
+	if !found || err != nil || len(backlog.NotReady(is, st, false)) > 0 || backlog.NoTestStands(is, comments, backlog.Keeper) {
+		return false
+	}
+	if unread, _ := backlog.ScenariosUnread(is, st); unread {
+		return false // its Validation for the agent to rewrite: no ready without it
+	}
+	counted := len(backlog.Counted(notes, is))
+	return counted <= backlog.Heard(st, counted)
 }
 
 // blocking is the record of an issue the line blocks, from state from:
@@ -515,6 +561,9 @@ func byState(res *Result, cfg *routing.Config, o engine.Options, event string, s
 func runStateStep(res *Result, cfg *routing.Config, f forge.Forge, spec string, o engine.Options, st stateStep) {
 	o.Role, o.Event = st.role, IssueEvent
 	o.Target = &forge.Target{Kind: "issue", ID: st.write.Issue}
+	if st.ai != "" {
+		o.AI = st.ai // a step with no judgement: no reviewer chained after it either
+	}
 	if len(st.inputs) > 0 || st.tier != "" {
 		in := maps.Clone(o.Inputs)
 		if in == nil {
@@ -555,7 +604,7 @@ func runStateStep(res *Result, cfg *routing.Config, f forge.Forge, spec string, 
 	// the product owner (crossed). Code said lacking once it was given
 	// waits for a person (needs-spent). Any other outcome starts them again.
 	w, now := st.write.Record, clock().UTC()
-	same := st.rec.State == w.State && st.rec.Body == w.Body && st.rec.Labeled == w.Labeled // the same input
+	same := st.rec.State == w.State && st.rec.Body == w.Body && st.rec.Labeled == w.Labeled && sameLabels(st.rec, w) // the same input
 	st.write.Record.Errors, st.write.Record.Lost, st.write.Record.Needs = nil, "", nil
 	// blockNow moves the issue to Blocked in this step, said at once.
 	blockNow := func(rule, why string) {
@@ -609,7 +658,7 @@ func runStateStep(res *Result, cfg *routing.Config, f forge.Forge, spec string, 
 			}
 		}
 	}
-	if st.role == backlog.Keeper && st.write.Record.State == refineState && status == verdict.Pass &&
+	if st.role == backlog.Keeper && st.write.Record.State == refineState && status == verdict.Pass && st.ai == "" &&
 		slices.Contains(cfg.Events[IssueEvent], backlog.SpecReviewer) {
 		// The spec the product owner refined, read by the reviewer at
 		// once, as the night's line does after it (#128): its review
@@ -623,6 +672,7 @@ func runStateStep(res *Result, cfg *routing.Config, f forge.Forge, spec string, 
 	}
 	st.write.Record.Spent = spend(st.write.Record.Spent, res.Steps[first:])
 	passed(res, f, cfg, &st) // its run took the issue to its backstop: a person's (ADR-0064, §5)
+	st.write.After = true    // its body and labels as its run left them (ADR-0063, §3)
 	keepState(res, cfg, f, spec, o, st.write, st.role)
 }
 

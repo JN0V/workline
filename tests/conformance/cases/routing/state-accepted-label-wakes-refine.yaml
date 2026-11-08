@@ -1,0 +1,25 @@
+case: routing/state-accepted-label-wakes-refine
+about: >
+  A person's workline:accepted is input to a step, as its body is
+  (ADR-0063, §3; #1196): put on after the line's last run on the issue,
+  as the forge dates it, it makes refine's step due again, its state,
+  body and state label the same. A record from before the line kept the
+  labels is read against the labels' dates.
+given:
+  repo: tested
+  config:
+    routing: {events: {issue: [product-owner, tester, developer]}}
+  forge:
+    issues:
+      - id: 6
+        title: "Counter kept"
+        labels: ["workline:to-refine", "workline:proposed", "workline:accepted"]
+        labeled: {"workline:to-refine": "2026-11-08T07:04:00Z", "workline:accepted": "2026-11-08T07:46:53Z"}
+        body: "## Need\n\nI want to multiply.\n"
+        comments: ["**workline's line** last woke the product owner.\n\n<!-- workline:line-record {\"state\":\"refine\",\"body\":\"8a828a06be19\",\"labeled\":\"2026-11-08T07:04:00Z\",\"hops\":1,\"unread\":\"8a828a06be19\",\"ran\":\"2026-11-08T07:09:00Z\",\"v\":1} -->\n<!-- workline:sticky=line/state -->"]
+run: {route: issue, target: {issue: 6}, ai: none, input: {reconcile: list}}
+expect:
+  status: pass
+  summary: "issue: #6 due, the product-owner: not started"
+  agent-calls: 0
+  no-findings: [{rule: state-acted}]
