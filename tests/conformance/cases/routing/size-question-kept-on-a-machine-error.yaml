@@ -1,0 +1,35 @@
+case: routing/size-question-kept-on-a-machine-error
+about: >
+  A size question outlives the product owner's failed run (ADR-0064,
+  step 3; #1171): #3 is blocked, its record saying the tester's run on
+  it crossed its size, the product owner not yet asked. The product
+  owner's run on it fails, its agent's command failing: a machine error,
+  which answers nothing. The record keeps the question, with the error,
+  so the line asks the product owner again after the back-off, within
+  the error budget; the same run again, inside the back-off, waits.
+given:
+  repo: tested
+  env: {WORKLINE_CLOCK: "2026-11-05T08:00:00Z"}
+  config:
+    routing: {events: {issue: [product-owner, tester]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:blocked"]
+        author: ann
+        insider: true
+        body: "## Need\n\nI want to multiply.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n\n---\n\n## Scope\n\n- `src/wide.sh`\n"
+        comments:
+          - "**workline's line** blocks this issue.\n\n<!-- workline:line-record {\"state\":\"blocked\",\"body\":\"0a1b2c3d4e5f\",\"hops\":1,\"from\":\"tests\",\"why\":\"the tester's run on it is too big for its context\",\"sized\":[\"tests\"],\"size-of\":\"tester\",\"since\":\"2026-11-05T07:00:00Z\"} -->\n<!-- workline:sticky=line/state -->"
+run: {route: reconcile, open-merge-request: true, ai: "cmd:cat > /dev/null; exit 3", then: again}
+expect:
+  agent-calls: 1
+  findings:
+    - {rule: state-revisit, where: "#3", message: "blocked, read again by the product-owner: the tester's run on it crossed its size"}
+    - {rule: state-waits, where: "#3", message: "the product-owner's last run on it failed (run): run again from 2026-11-05 08:10 UTC"}
+  forge:
+    issues:
+      - id: 3
+        labels: ["workline:blocked"]
+        comment-contains: ["\"size-of\":\"tester\""]

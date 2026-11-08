@@ -16,6 +16,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"maps"
 	"regexp"
 	"slices"
 	"strings"
@@ -159,7 +160,13 @@ func revisit(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, 
 		// (crossed.go): it answers now, not on news.
 		asked := rec
 		asked.Body, asked.Talk, asked.Closed = bodyHash(is.Body), talkHash(comments), closed
-		return sizeAsked(res, asked, is.ID), nil, nil
+		failed, spent, wait := sizeRetry(res, asked, is.ID)
+		if spent != nil || wait {
+			return nil, spent, nil
+		}
+		st := sizeAsked(res, asked, is.ID)
+		maps.Copy(st.inputs, failed)
+		return st, nil, nil
 	}
 	var news []string
 	if bodyHash(is.Body) != rec.Body {

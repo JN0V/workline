@@ -65,9 +65,54 @@ func sizeAsked(res *Result, rec Record, issue int) *stateStep {
 		Message: fmt.Sprintf("blocked, read again by the %s: %s", backlog.Keeper, said)})
 	next := rec
 	next.SizeOf, next.Revisited = "", clock().UTC().Format(time.RFC3339)
-	return &stateStep{role: backlog.Keeper, write: StateWrite{Issue: issue, Record: next},
+	// rec: the record read, so a machine error of its run counts against
+	// the budget (runStateStep), the question kept for the run again.
+	return &stateStep{role: backlog.Keeper, write: StateWrite{Issue: issue, Record: next}, rec: rec,
 		inputs: map[string]string{engine.RevisitInput: said, engine.RevisitFromInput: rec.From, engine.SizeInput: rec.SizeOf}}
+}
+
+// sizeRetry is what the machine errors of the product owner's runs on a
+// size question make of it (ADR-0063, I3): asked again, with what failed
+// (inputs); a wait (nil, nil); or, its tries spent, the question dropped
+// and the issue left blocked for a person (the record to write).
+func sizeRetry(res *Result, rec Record, issue int) (inputs map[string]string, spent *StateWrite, wait bool) {
+	errs := errorsOf(rec)
+	if errs == nil {
+		return nil, nil, false
+	}
+	where := fmt.Sprintf("#%d", issue)
+	again, until, why := errs.retry(clock().UTC())
+	switch {
+	case why != "":
+		said := fmt.Sprintf("the %s's runs on its size failed: %s; a person narrows or splits it, or raises the setting named", roleSaid(backlog.Keeper), why)
+		res.Findings = append(res.Findings, verdict.Finding{Rule: "machine-error-spent", Level: "warn", Where: where, Message: said})
+		now := rec
+		now.SizeOf, now.Errors, now.Why = "", nil, rec.Why+"; "+said
+		return nil, &StateWrite{Issue: issue, Record: now}, false
+	case !again:
+		res.Findings = append(res.Findings, verdict.Finding{Rule: "state-waits", Level: "info", Where: where,
+			Message: fmt.Sprintf("the %s's last run on it failed (%s): run again from %s", backlog.Keeper, errs.Kind, until.UTC().Format("2006-01-02 15:04 UTC"))})
+		return nil, nil, true
+	}
+	res.Findings = append(res.Findings, verdict.Finding{Rule: "state-retry", Level: "info", Where: where,
+		Message: fmt.Sprintf("the %s's last run on it failed (%s): run again, try %d of %d", backlog.Keeper, errs.Kind, errs.By[errs.Kind], ErrorBudget)})
+	return map[string]string{engine.FailedInput: errs.Said}, nil, false
 }
 
 // roleSaid is a role's name as a person reads it.
 func roleSaid(role string) string { return strings.ReplaceAll(role, "-", " ") }
+
+// unanswered is out, or a machine error when findings say the agent
+// failed or its answer did not read: a run that passes on them, as the
+// product owner does, decided nothing.
+func unanswered(out verdict.Outcome, findings []verdict.Finding) verdict.Outcome {
+	for _, f := range findings {
+		switch f.Rule {
+		case "agent-unavailable", "engine-error":
+			return verdict.Outcome{Kind: verdict.MachineError, Of: "run", Said: f.Message}
+		case "agent-invalid-output":
+			return verdict.Outcome{Kind: verdict.MachineError, Of: "answer", Said: f.Message}
+		}
+	}
+	return out
+}

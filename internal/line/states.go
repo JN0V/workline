@@ -535,6 +535,11 @@ func runStateStep(res *Result, cfg *routing.Config, f forge.Forge, spec string, 
 		st.write.Record = blocking(st.write.Record, st.from.Name, why, comments)
 		st.write.Blocked = why
 	}
+	if role := st.inputs[engine.SizeInput]; role != "" && !out.Machine() {
+		// Asked on a size, its agent failed or its answer did not read:
+		// the role passes on it, the question unanswered (ADR-0063, I3).
+		out = unanswered(out, res.Findings[before:])
+	}
 	switch {
 	case out.Crossed():
 		// Too big for its role (ADR-0064, step 3): never run again on the
@@ -546,6 +551,11 @@ func runStateStep(res *Result, cfg *routing.Config, f forge.Forge, spec string, 
 			prev = nil
 		}
 		st.write.Record.Errors, st.write.Failed = prev.with(out, now), true
+		if role := st.inputs[engine.SizeInput]; role != "" {
+			// Its run answered nothing: the size question stands, asked
+			// again after the back-off, within the budget (revisit).
+			st.write.Record.SizeOf = role
+		}
 	case needsCode(out) && given:
 		// Said lacking again once given it (ADR-0063, §5): Waiting on a
 		// person, Blocked on the board, in this step, said at once.
