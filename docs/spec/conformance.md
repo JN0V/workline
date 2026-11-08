@@ -215,6 +215,12 @@ step 1):
   ([#1061](https://github.com/JN0V/workline/issues/1061)). Asked by the
   developer for files outside the Scope, the product owner's progress
   widens it with them, its own files kept, and readies it.
+- **Every run past its target**: `trial-35-every-run-crosses`, each
+  call 600k fresh tokens; `TestBackstopTrace` holds it to the issue
+  blocked at its backstop, past it by one run at most, within `max-hops`
+  and no machine error
+  ([ADR-0064, §5](../adr/0064-size-is-a-target-not-a-wall.md#5-the-hard-backstop)).
+  Like a named trace, it is not among the seeded runs.
 - **The trial's answers replayed**: `traces/answers/<trace>/`, the agent
   answers its runs kept, given back role by role through the engine's
   own reader (a `cmd:` agent printing each); the trial's path, read from
@@ -244,7 +250,8 @@ step 1):
   own K ticks start there, past the run's end, so a line acting since,
   never quiet in between, is not yet held; quiet again, it is), the trace's
   expected end with an agent that always progresses (Done, or Waiting on
-  what it names), one byte of a body changed makes the issue due. Each
+  what it names), one byte of a body changed makes the issue due (but one
+  blocked at its backstop, which waits for a person). Each
   trace runs twice: the runs must match.
 - **Statuses read from today's findings**: a rule list in the test, a
   wait counted only when it names its target; a test fails if the engine
