@@ -50,6 +50,12 @@ func TestAsideByConvention(t *testing.T) {
 		"app/src/jvmTest/kotlin/a/T.kt":         true,
 		"app/src/androidUnitTest/kotlin/a/T.kt": true,
 		"app/src/integrationTest/java/a/T.java": true,
+		"app/src/watchosArm64Test/kotlin/T.kt":  true,
+		"app/src/tvosTest/kotlin/T.kt":          true,
+		"app/src/wasmTest/kotlin/T.kt":          true,
+		"app/src/testFreeDebug/java/T.java":     true,
+		"app/src/androidTestDebug/java/T.java":  true,
+		"app/src/main/java/a/Contest.java":      false,
 		"src/testing/helpers.go":                false, // a project's own test helpers are code (#1189)
 		"src/testutil/fixtures.go":              false,
 		"src/testFoo/a.go":                      false,
