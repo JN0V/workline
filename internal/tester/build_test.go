@@ -11,30 +11,11 @@ import (
 // Go's compiler errors, as `go test` and gotestsum print them: each
 // one a missing name only in a test of the change.
 func TestBuildErrorsGo(t *testing.T) {
-	data, err := os.ReadFile("../../roles/tester/role.yaml")
-	if err != nil {
-		t.Fatal(err)
+	rules := defaultBuildErrors(t)
+	if len(rules) != 4 {
+		t.Fatalf("role.yaml's build-errors: %d rows, want Go, Kotlin, Java, Gradle", len(rules))
 	}
-	var role struct {
-		Settings struct {
-			BuildErrors []struct {
-				Error       string   `yaml:"error"`
-				MissingName []string `yaml:"missing-name"`
-				TestName    string   `yaml:"test-name"`
-			} `yaml:"build-errors"`
-		} `yaml:"settings"`
-	}
-	if err := yaml.Unmarshal(data, &role); err != nil {
-		t.Fatal(err)
-	}
-	var list []BuildErrors
-	for _, b := range role.Settings.BuildErrors {
-		list = append(list, BuildErrors(b))
-	}
-	rules, err := compileBuildErrors(list)
-	if err != nil || len(rules) != 1 {
-		t.Fatalf("role.yaml's build-errors: %v, %d", err, len(rules))
-	}
+	rules = rules[:1]
 	out := "# example.com/m/a [example.com/m/a.test]\n" +
 		"a/mul_test.go:6:5: undefined: Mul\n" +
 		"./a/mul_test.go:7:9: undefined: tester.Scale\n" +
@@ -81,6 +62,108 @@ func TestBuildErrorsGo(t *testing.T) {
 		if got := missingName(c.path, c.message); got != c.want {
 			t.Errorf("missingNamed(%q, %q) = %v, want %v", c.path, c.message, got, c.want)
 		}
+	}
+}
+
+// defaultBuildErrors is the role's build-errors, as role.yaml ships them.
+func defaultBuildErrors(t *testing.T) []buildRules {
+	t.Helper()
+	data, err := os.ReadFile("../../roles/tester/role.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var role struct {
+		Settings struct {
+			BuildErrors []struct {
+				Error       string   `yaml:"error"`
+				MissingName []string `yaml:"missing-name"`
+				TestName    string   `yaml:"test-name"`
+			} `yaml:"build-errors"`
+		} `yaml:"settings"`
+	}
+	if err := yaml.Unmarshal(data, &role); err != nil {
+		t.Fatal(err)
+	}
+	var list []BuildErrors
+	for _, b := range role.Settings.BuildErrors {
+		list = append(list, BuildErrors(b))
+	}
+	rules, err := compileBuildErrors(list)
+	if err != nil {
+		t.Fatalf("role.yaml's build-errors: %v", err)
+	}
+	return rules
+}
+
+// The JVM's errors as Gradle 8.12 printed them on an Android project
+// (#1177): Kotlin 2 and a .kts build script with file:// paths, javac
+// and a Groovy build script with absolute ones, all under the checkout
+// the tests ran in. Each is read from the repository's root.
+func TestBuildErrorsJVM(t *testing.T) {
+	rules := defaultBuildErrors(t)
+	const root = "/tmp/workline-test-42"
+	kt := "feature/timelapse/src/test/kotlin/io/x/ProbeMissingTest.kt"
+	java := "feature/onboarding/src/test/java/probe/ProbeJavaTest.java"
+	out := "> Task :feature:timelapse:compileDebugUnitTestKotlin FAILED\n" +
+		"e: file://" + root + "/" + kt + ":10:25 Unresolved reference 'nextIndex'.\n" +
+		"e: file://" + root + "/" + kt + ":16:27 Unresolved reference 'lostCount'.\n" +
+		"e: file://" + root + "/" + kt + ":24:34 No parameter with name 'interval' found.\n" +
+		"e: " + root + "/" + kt + ": (17, 11): Unresolved reference: pauseAll\n" +
+		"e: file://" + root + "/" + kt + ":30:5 Syntax error: Expecting an element.\n" +
+		"w: file://" + root + "/" + kt + ":31:5 Variable 'd' is never used.\n" +
+		"e: file://" + root + "/feature/onboarding/build.gradle.kts:46:14: Unresolved reference: undefinedThing\n" +
+		root + "/" + java + ":9: error: cannot find symbol\n" +
+		"        assertEquals(0, Speeds.nextIndex());\n" +
+		"                        ^\n" +
+		"  symbol:   variable Speeds\n" +
+		"  location: class ProbeJavaTest\n" +
+		root + "/" + java + ":12: error: ';' expected\n" +
+		"  " + root + "/" + java + ":9: error: cannot find symbol\n" +
+		"Build file '" + root + "/build.gradle' line: 3\n"
+	type read struct {
+		file, name string
+		missing    bool
+	}
+	var got []read
+	for _, e := range buildErrorsIn(out, []string{kt, java}, rules, root) {
+		got = append(got, read{e.file, e.name, e.missing})
+	}
+	want := []read{
+		{kt, "nextIndex", true},
+		{kt, "lostCount", true},
+		{kt, "interval", true},
+		{kt, "pauseAll", true},
+		{kt, "", false},
+		{"feature/onboarding/build.gradle.kts", "", false},
+		{java, "", true},
+		{java, "", false},
+		{"build.gradle", "", false},
+	}
+	if !slices.Equal(got, want) {
+		t.Errorf("read %+v\nwant %+v", got, want)
+	}
+	src := "class ProbeMissingTest {\n    @Test\n    fun `next index starts at zero`() {\n    }\n\n" +
+		"    @Test fun memberMissing() = runTest {\n    }\n\n    @Test\n    @DisplayName(\"x\")\n    internal fun `a (b) c`() {}\n\n" +
+		"    fun helper() {}\n}\n"
+	if got := testNames(src, rules[1]); !slices.Equal(got, []string{"next index starts at zero", "memberMissing", "a (b) c"}) {
+		t.Errorf("Kotlin test names %q", got)
+	}
+	jsrc := "public class FooTest {\n    @Test\n    void nextIndexStartsAtZero() {}\n    @Test\n    public void sums() throws Exception {}\n    void helper() {}\n}\n"
+	if got := testNames(jsrc, rules[2]); !slices.Equal(got, []string{"nextIndexStartsAtZero", "sums"}) {
+		t.Errorf("Java test names %q", got)
+	}
+	if got := testNames(src, rules[3]); got != nil {
+		t.Errorf("a build file's row names no test, got %q", got)
+	}
+}
+
+// A file:// path is a URI: its spaces and others escaped (#1177).
+func TestBuildErrorsFileURI(t *testing.T) {
+	rules := defaultBuildErrors(t)
+	errs := buildErrorsIn("e: file:///tmp/my%20repo/a/src/test/kotlin/MulTest.kt:3:5 Unresolved reference 'mul'.",
+		[]string{"a/src/test/kotlin/MulTest.kt"}, rules, "/tmp/my repo")
+	if len(errs) != 1 || errs[0].file != "a/src/test/kotlin/MulTest.kt" || !errs[0].missing {
+		t.Errorf("read %+v", errs)
 	}
 }
 
