@@ -228,7 +228,7 @@ Under `roles: {tester: {settings: …}}` in `.workline/config.yaml`
 | `ai-max-tokens`, `ai-max-seconds` | 300000, 1200 | what one `test write` or `test answer` run may spend, and wait on its agent |
 | `ai-max-turns` | 40 | the turns of an agent that reads the project itself (`claude`), told in its task and enforced by the engine (`claude --max-turns`); reached before it answered: asked again once, then a machine error the line retries, never "no test possible" ([#1194](https://github.com/JN0V/workline/issues/1194)) |
 | `objection-exchanges` | 3 | the tester's answers in an objection's thread before the product owner settles it |
-| `curator-*`, `suite-max-seconds`, `coverage-report` | 2 runs, 600 s | the curator's measures ([page](docs/curator.md#settings)) and removals ([page](docs/removals.md#settings)) |
+| `curator-*`, `suite-max-seconds`, `coverage-report` | 2 runs, 600 s | the curator's measures ([page](docs/curator.md#settings)) and removals ([page](docs/removals.md#settings)); a Draft's proof stops at three times `suite-max-seconds`, its test command's processes killed ([#1197](https://github.com/JN0V/workline/issues/1197)) |
 
 The command, by ecosystem:
 

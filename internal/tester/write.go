@@ -18,6 +18,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 	"unicode"
 
 	"go.yaml.in/yaml/v3"
@@ -618,6 +619,12 @@ func proveOnBase(repo, base string, patches []intent.Intention, s Settings) (*ve
 		if pkgs = Packages(tree, files, s.Paths, s.ModuleFiles); len(pkgs) > 0 {
 			s.Command, s.packages = s.DraftCommand, pkgs
 		}
+	}
+	// The proof's runs, base, head and the tests on the base, stopped
+	// together past a suite's time each: a test command that hangs ends
+	// the run, said, rather than its job's own timeout (#1197).
+	if s.SuiteMaxSeconds > 0 && s.deadline.IsZero() {
+		s.deadline, s.budget = time.Now().Add(3*time.Duration(s.SuiteMaxSeconds)*time.Second), "suite-max-seconds"
 	}
 	v, newTests := Prove(tree, base, s)
 	if len(pkgs) > 0 && v.Status == verdict.Pass {

@@ -23,3 +23,7 @@ func killGroup(cmd *exec.Cmd) error {
 	}
 	return syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
 }
+
+// InGroup starts cmd in a process group of its own, killed whole when its
+// context ends: a test command's build daemon or workers with it (#1197).
+func InGroup(cmd *exec.Cmd) { inGroup(cmd) }
