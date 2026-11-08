@@ -3,6 +3,7 @@ sources: [internal/engine/routine.go, internal/engine/code.go, internal/engine/d
 checked: 6163e1c4
 verified: agent:claude-code
 reader: efab3a2a0b35
+judged-in-parts: 87b34bc
 ---
 # The merge policy at `normal`
 
