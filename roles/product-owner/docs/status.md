@@ -185,7 +185,8 @@ in [tests/evaluation/cases/product-owner](../../../tests/evaluation/cases/produc
 - **An issue past its size, split or granted**
   ([ADR-0064, step 4](../../../docs/adr/0064-size-is-a-target-not-a-wall.md#build-plan)):
   asked on a run too big for its role, or predicted at ready; a split
-  `too-big: true`, on where `split` is off, a part never split again
+  `too-big: true`, on where `split` is off by default (not where the
+  project set it off), a part never split again
   ([split on size](../../../docs/spec/backlog-acts/split.md#split-on-size));
   or `workline:size/large`, ×2 every size target of its runs
   ([granting a size](../../../docs/spec/backlog-acts/refine.md#granting-a-size)),

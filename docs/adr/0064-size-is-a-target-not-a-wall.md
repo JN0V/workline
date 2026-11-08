@@ -95,7 +95,11 @@ flowchart LR
   product owner's; it lifts the issue's backstop to 16× normal.
 - **Under its autonomy level** ([ADR-0026], [ADR-0060 §3](0060-the-person-is-on-the-loop.md#3-autonomy-is-a-level-per-role)):
   `cautious` proposes, `normal` and `enterprising` act.
-- **`split` turns on past an issue's size**, off by default otherwise.
+- **`split` turns on past an issue's size** where it is off by the
+  role's default, never where the project set it off (decided
+  2026-11-08 by a panel of three, 3 to 0): a project's `off` is a
+  person's answer, the product owner then grants or leaves the issue to
+  a person.
 
 ### 4. No loops
 

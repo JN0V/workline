@@ -97,7 +97,8 @@ goes ready, a hidden record that does not read: in
   or raise the setting the line names, then move it back by its label.
 - `size-tier` (info): every size target of the run multiplied by its
   issue's tier label; take it off to undo. `size-person`, `size-kept`,
-  `size-once`, `split-depth`: a grant or a split on size dropped
+  `size-once`, `split-depth`, `split-off`, `too-big-unasked`: a grant or
+  a split on size dropped
   ([why](spec/backlog-acts/refine.md#granting-a-size)).
 - `ai-max-seconds` (committer): the rewrite took more than the 30 s it
   may; the message is refused with its reasons, as with no agent.

@@ -36,7 +36,7 @@ acts:
   kind: {mode: act, max: 10}                # bug, feature or task (the kind)
   size: {mode: act, max: 3}                 # the tier large, ×2 an issue's size targets (ADR-0064)
   close-obsolete: {mode: off, max: 3, days: 7, exempt: [pinned, security]}
-  split: {mode: off, max: 2}               # on past an issue's size, `too-big: true` (ADR-0064)
+  split: {mode: off, max: 2}               # on past an issue's size, `too-big: true`, unless the project set it off (ADR-0064)
   rename: {mode: off, max: 5}
   depend: {mode: off, max: 5}
 ```

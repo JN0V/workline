@@ -66,8 +66,12 @@ An issue past its size
 a run on it crossed its size, or the product owner predicts it at ready
 ([its size at ready](refine.md#its-size-at-ready)).
 
-- **On even where `split` is off**, the default: `act` at `normal` and
+- **On where `split` is off by default, never where the project set it
+  off** (`split-off`, naming the grant): `act` at `normal` and
   `enterprising`, `propose` at `cautious`, within `split`'s `max`.
+- **Only where the run judged the size**: the issue the line woke the
+  role on, asked on its size or in refine; else dropped
+  (`too-big-unasked`), `split` keeping its mode.
 - **Depth 1**: a part of a split (`Part of #N.`) is never split for its
   size (`split-depth`); it may be granted `size` `large`.
 - **The rest as any split**: the checks above, the parent kept open
