@@ -1,5 +1,5 @@
 ---
-sources: [internal/tester/build.go, internal/tester/tester.go, internal/tester/write.go, internal/tester/objection.go, internal/tester/junit.go, roles/tester/role.yaml]
+sources: [internal/tester/build.go, internal/tester/redfirst.go, internal/tester/tester.go, internal/tester/write.go, internal/tester/objection.go, internal/tester/junit.go, roles/tester/role.yaml]
 checked: 90ca43c5
 verified: agent:claude-code
 ---
@@ -32,16 +32,19 @@ flowchart LR
     the issue's text names as a whole word, or its last part
     (`lostCount` for `MQTTStatistics::lostCount`)
     ([#1111](https://github.com/JN0V/workline/issues/1111));
-  - **any other error** quoting a name the base lacks
-    (`'nextIndex' overrides nothing`), or one the issue writes as a call
+  - **any other error** quoting a name the issue writes as a call
     (`restoreFromExisting(existingCount, nextIndex)` makes `Too many
-    arguments for 'fun restoreFromExisting(…)'` red). Quoting none, the
-    words the test calls count (`call to Add`, `Add(` in the test).
-- **Knock-ons**, in such a file, are not counted: an error quoting
-  nothing (`Cannot infer type`), a missing name the test reaches as a
-  member (`grid.vertical`), or a type it does not call
-  (`GridType.THIRDS`). An error quoting a value (Go's `cannot use
-  "Kitchen" … as int value`) is the test's own.
+    arguments for 'fun restoreFromExisting(…)'` red), or a name the
+    base lacks that the issue names (`'nextIndex' overrides nothing`).
+    With no issue known, a name the base lacks counts unless a test of
+    the change declares it (`class FakeCalc`). Quoting none, the words
+    the test calls count (`call to Add`, `Add(` in the test).
+- **Knock-ons**, in such a file, are not counted: a type the compiler
+  could not infer (`Cannot infer type`), a missing name the test reaches
+  as a member (`grid.vertical`), or a type it does not call
+  (`GridType.THIRDS`). Any other error quoting nothing (a parse error,
+  K1's `Type mismatch: inferred type is String`) or quoting a value
+  (Go's `cannot use "Kitchen" … as int value`) is the test's own.
 - **Anything else goes back to the tester** (`build-broken`): a syntax
   error, a wrong import, a wrong call on what the base has (`call to
   Add` where the issue only names `Add`), an error in a code file, a

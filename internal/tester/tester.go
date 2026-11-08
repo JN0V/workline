@@ -172,10 +172,10 @@ func Prove(repo, base string, s Settings) (*verdict.Verdict, []string) {
 			// The code's diff alone: a name the tests write is not one
 			// the change's code touches.
 			out, _ := git(repo, append([]string{"--literal-pathspecs", "diff", "--no-color", "-U0", ch.base, ch.head, "--"}, ch.other...)...)
-			return out
+			return changedLines(out)
 		}),
-		test: testFiles(repo, ch.head)}
-	broken, unnamed := sorter.sort(errs)
+		test: testFiles(repo, ch.head), tests: ch.tests}
+	broken, unnamed, byShape := sorter.sort(errs)
 	if len(broken) > 0 || len(unnamed) > 0 {
 		var lines, names []string
 		for _, e := range broken {
@@ -307,7 +307,11 @@ func Prove(repo, base string, s Settings) (*verdict.Verdict, []string) {
 		v.Summary += ", green on the head"
 	}
 	if missing > 0 {
-		v.Summary += fmt.Sprintf(" (%d not built there, a missing name)", missing)
+		why := "a missing name"
+		if byShape {
+			why = "a name or a signature the change adds"
+		}
+		v.Summary += fmt.Sprintf(" (%d not built there, %s)", missing, why)
 	}
 	for _, f := range v.Findings {
 		if f.Level == "" {
@@ -627,7 +631,7 @@ func sample(l []string) string {
 }
 
 // errorLine is a line a build tool or compiler says an error on.
-var errorLine = regexp.MustCompile(`(?i)^(?:e: |error[: ]|.*\berror\b)`)
+var errorLine = regexp.MustCompile(`(?i)^(?:e: |error\b|failure:|\S+:\d+(?::\d+)?:? (?:error|e)\b)`)
 
 // errorLines is what a command's output says went wrong, as a reason
 // quotes it: the error lines the build-errors rows read, else the lines
@@ -661,6 +665,21 @@ func errorLines(out string, list []BuildErrors) string {
 		return "its error lines: " + quote(said)
 	}
 	return "its output ends: " + tail(out, 10)
+}
+
+// changedLines is the lines a diff adds or removes, never its headers
+// (`diff --git a/x b/x`, `@@ … @@ context`): the words its code touches.
+func changedLines(diff string) string {
+	var out []string
+	for _, l := range strings.Split(diff, "\n") {
+		if strings.HasPrefix(l, "+++") || strings.HasPrefix(l, "---") {
+			continue
+		}
+		if strings.HasPrefix(l, "+") || strings.HasPrefix(l, "-") {
+			out = append(out, l[1:])
+		}
+	}
+	return strings.Join(out, "\n")
 }
 
 // testFiles reads a test file of the change as head holds it, each once.

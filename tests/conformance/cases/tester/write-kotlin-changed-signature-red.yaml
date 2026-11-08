@@ -22,7 +22,7 @@ given:
 run: {test: [write, --issue, "3"], ai: "fake:tester-kotlin-signature"}
 expect:
   status: pass
-  summary: "1 new test, red on the base (1 not built there, a missing name)"
+  summary: "1 new test, red on the base (1 not built there, a name or a signature the change adds)"
   agent-calls: 1
   forge:
     merge-requests:

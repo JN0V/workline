@@ -1,0 +1,33 @@
+case: tester/kotlin-declared-name-blocks
+about: >
+  The tests alone, in Kotlin, with no issue known: a fake the test
+  declares itself misses a member the base has. Kotlin quotes the fake,
+  a name the base lacks, but one the test declares is its own, never what
+  the change adds: a build broken otherwise, its line quoted (#1192).
+given:
+  repo: kotlin-tested
+  setup:
+    - git checkout -q -b workline/issue-7
+    - |
+      cat > calc/src/test/kotlin/calc/FakeTest.kt <<'KT'
+      package calc
+
+      import org.junit.jupiter.api.Test
+
+      // gradle: e: {file}:7:1 Class 'FakeCalc' is not abstract and does not implement abstract member 'add'.
+      class FakeTest {
+          class FakeCalc : Calc
+
+          @Test
+          fun `fake adds`() {
+              check(true)
+          }
+      }
+      KT
+      git add . && git commit -qm "test: a fake"
+  config:
+    roles: {tester: {settings: {test-command: "sh \"$FIXTURES/bin/gradle-says\" {report}"}}}
+run: {test: [check, --base, main]}
+expect:
+  status: block
+  findings: [{rule: build-broken, where: calc/src/test/kotlin/calc/FakeTest.kt, message: "Class 'FakeCalc' is not abstract"}]

@@ -1,0 +1,20 @@
+- patch:
+    file: calc/src/test/kotlin/calc/NextIndexTest.kt
+    content: |
+      package calc
+
+      import org.junit.jupiter.api.Test
+
+      // gradle: e: {file}:9:18 'nextIndex' overrides nothing.
+      class NextIndexTest {
+          private val store = object : Store {
+              override fun nextIndex() = 5
+          }
+
+          // Scenario: Next index
+          // Given a store holding five files, When I ask its next index, Then I get 5.
+          @Test
+          fun `next index after five`() {
+              check(store.nextIndex() == 5)
+          }
+      }

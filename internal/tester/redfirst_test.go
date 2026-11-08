@@ -37,3 +37,46 @@ func TestKnockOn(t *testing.T) {
 		}
 	}
 }
+
+// A name the test declares is its own, an override not (#1192 review).
+func TestDeclaredIn(t *testing.T) {
+	test := "class FakeStore : Store {\n    override fun nextIndex() = 5\n}\nfun helper() = 1\nfunc stubTwo() int { return 2 }\n"
+	for name, want := range map[string]bool{"FakeStore": true, "helper": true, "stubTwo": true, "nextIndex": false, "Store": false} {
+		if got := declaredIn(name, test); got != want {
+			t.Errorf("declaredIn(%q) = %v, want %v", name, got, want)
+		}
+	}
+}
+
+// In a file holding a red error, an error quoting nothing is a knock-on
+// only when it says a type could not be inferred; a parse error, or K1's
+// unquoted type mismatch, is the test's own.
+func TestSortKnockOnsNarrow(t *testing.T) {
+	r := &redFirst{issue: "Add a `grid` of thirds.", code: func() string { return "" },
+		test: func(string) string { return "val g = grid(9)\n" }}
+	errs := []buildError{
+		{file: "T.kt", line: "e: T.kt:11:20 Unresolved reference 'grid'.", msg: "Unresolved reference 'grid'.", inTest: true, missing: true, name: "grid"},
+		{file: "T.kt", line: "e: T.kt:12:38 Cannot infer type for this parameter.", msg: "Cannot infer type for this parameter.", inTest: true},
+		{file: "T.kt", line: "e: T.kt:14:9 Type mismatch: inferred type is String but Int was expected", msg: "Type mismatch: inferred type is String but Int was expected", inTest: true},
+		{file: "T.kt", line: "e: T.kt:20:1 Expecting an element", msg: "Expecting an element", inTest: true},
+	}
+	broken, unnamed, _ := r.sort(errs)
+	if len(unnamed) != 0 || len(broken) != 2 || broken[0].line != errs[2].line || broken[1].line != errs[3].line {
+		t.Errorf("broken %v, unnamed %v: want the type mismatch and the parse error", broken, unnamed)
+	}
+}
+
+// What a failed run with no report says went wrong: the rows' lines, else
+// the lines saying an error, never one saying there is none.
+func TestErrorLines(t *testing.T) {
+	rows := []BuildErrors{{Error: `^e: (?P<file>.+?\.kt):\d+:\d+ (?P<message>.+)$`}}
+	if got := errorLines("> Task :a\ne: a/T.kt:1:2 Boom\nBUILD FAILED in 8s\n", rows); got != "its errors: e: a/T.kt:1:2 Boom" {
+		t.Errorf("rows: %q", got)
+	}
+	if got := errorLines("No error found\nerror: kapt failed\nBUILD FAILED\n", rows); got != "its error lines: error: kapt failed" {
+		t.Errorf("error lines: %q", got)
+	}
+	if got := errorLines("No error found\nBUILD FAILED\n", rows); got != "its output ends: No error found / BUILD FAILED" {
+		t.Errorf("tail: %q", got)
+	}
+}

@@ -1,43 +1,33 @@
 package tester
 
 // Which compiler errors in a test of the change are red for the right
-// reason (#1192, round 6's RC1): a test of code not written yet may fail
-// to build by more than a missing name. A signature the issue changes
-// (`Too many arguments for 'fun restoreFromExisting(…)'`), a method the
-// change adds that a fake overrides (`'nextIndex' overrides nothing`),
-// and the errors that follow from those (`Cannot infer type`) are red
-// first too; a wrong call on what the base already has is not.
-//
-//   - A missing name (a missing-name row) is red first when the issue
-//     names it, as before (#1111); with no issue, always.
-//   - Any other error is red first when a name it quotes is one the base
-//     lacks, or one the issue writes as a call (`name(`), giving its new
-//     shape, or, beside code, one the change's code touches.
-//   - In a file holding an error red first, the other errors are its
-//     knock-ons: an error quoting nothing, a missing name the test
-//     reaches as a member (`grid.vertical`), or a type it does not call
-//     (`GridType.THIRDS`) of what the change adds. Not knock-ons: an
-//     error quoting only names the base has, none said above (a wrong
-//     call, back to the tester), nor a missing helper the test calls,
-//     the issue never naming it (#1111).
+// reason, beyond a missing name: a signature the issue gives anew, a name
+// it adds, and the errors that follow from those in their file (#1192).
+// The rule, its reasons and its limits: roles/tester/docs/missing-name.md.
 
 import (
 	"errors"
 	"os/exec"
 	"regexp"
 	"strings"
+	"sync"
 	"unicode"
 )
 
 // quotedPart is a stretch between quotes in a message, spaces in it or
-// not: 'fun restoreFromExisting(existingCount: Int): Unit'.
-var quotedPart = regexp.MustCompile("['‘\"`]([^'‘’\"`\n]+)['’\"`]")
+// not: 'fun restoreFromExisting(existingCount: Int): Unit'. The opening
+// quote follows no letter: the apostrophe of `Can't` opens nothing.
+var quotedPart = regexp.MustCompile("(?:^|[^\\p{L}\\p{N}])(['‘\"`])([^'‘’\"`\n]+)['’\"`]")
 
 // beforeParen is the name before a quoted signature's first parenthesis.
 var beforeParen = regexp.MustCompile(`([\p{L}_][\p{L}\p{N}_]*)\s*\(`)
 
 // word is a name-shaped word of a message.
 var word = regexp.MustCompile(`[\p{L}_][\p{L}\p{N}_]*`)
+
+// inference is a message saying a type could not be inferred: it follows
+// from a name the compiler could not resolve before it.
+var inference = regexp.MustCompile(`(?i)\b(?:cannot|can't|could not|not enough information to) infer\b`)
 
 // namesOf is the names an error's message gives: the quoted ones (a
 // signature's own name, before its parenthesis; a lone word, its last
@@ -47,10 +37,10 @@ var word = regexp.MustCompile(`[\p{L}_][\p{L}\p{N}_]*`)
 func namesOf(msg, test string) []string {
 	var out []string
 	for _, q := range quotedPart.FindAllStringSubmatch(msg, -1) {
-		part := q[1]
-		if strings.HasPrefix(q[0], `"`) {
+		if q[1] == `"` {
 			continue // a value, as Go quotes a string literal: not a name
 		}
+		part := q[2]
 		if m := beforeParen.FindStringSubmatch(part); m != nil {
 			out = append(out, m[1])
 			continue
@@ -72,11 +62,45 @@ func namesOf(msg, test string) []string {
 	return out
 }
 
+// patterns keeps each name's patterns compiled once.
+var patterns sync.Map
+
+// pattern is the regular expression a format makes of a name, compiled
+// once: %s is the name, quoted.
+func pattern(format, name string) *regexp.Regexp {
+	key := format + "\x00" + name
+	if re, ok := patterns.Load(key); ok {
+		return re.(*regexp.Regexp)
+	}
+	re := regexp.MustCompile(strings.ReplaceAll(format, "%s", regexp.QuoteMeta(name)))
+	patterns.Store(key, re)
+	return re
+}
+
 // member is a name written after a dot.
 func member(name, text string) bool {
 	last := lastPart.FindString(name)
-	return last != "" && regexp.MustCompile(`\.\s*`+regexp.QuoteMeta(last)+`(?:$|[^\p{L}\p{N}_])`).MatchString(text)
+	return last != "" && pattern(`\.\s*%s(?:$|[^\p{L}\p{N}_])`, last).MatchString(text)
 }
+
+// calledIn says whether text writes name, or its last part, as a call:
+// `name(`.
+func calledIn(name, text string) bool {
+	last := lastPart.FindString(name)
+	return last != "" && pattern(`(?:^|[^\p{L}\p{N}_.])%s\s*\(`, last).MatchString(text)
+}
+
+// declaredIn says whether text declares name: a class, an object, an
+// interface, a type, a function or a value, never an override of one.
+func declaredIn(name, text string) bool {
+	last := lastPart.FindString(name)
+	return last != "" && pattern(`(?m)(?:^|[^\p{L}\p{N}_])(?:class|object|interface|type|struct|enum|fun|func|def|val|var|let|const)\s+%s(?:$|[^\p{L}\p{N}_])`, last).
+		MatchString(overrides.ReplaceAllString(text, "override"))
+}
+
+// overrides is an override's keyword and what it overrides: not a
+// declaration of the test's own.
+var overrides = regexp.MustCompile(`\boverride\s+(?:fun|val|var)\b`)
 
 // knockOn says whether a missing name the issue never names follows from
 // another in its file: the test reaches it as a member, or it is a type
@@ -92,29 +116,20 @@ func knockOn(name, test string) bool {
 	return unicode.IsUpper([]rune(last)[0]) && !calledIn(last, test)
 }
 
-// calledIn says whether text writes name, or its last part, as a call:
-// `name(`.
-func calledIn(name, text string) bool {
-	last := lastPart.FindString(name)
-	if last == "" {
-		return false
-	}
-	return regexp.MustCompile(`(?:^|[^\p{L}\p{N}_.])` + regexp.QuoteMeta(last) + `\s*\(`).MatchString(text)
-}
-
 // redFirst sorts the build errors of the run where the change's tests
 // were laid on the base: those red for the right reason, those broken
 // otherwise, and the missing names the issue never names.
 type redFirst struct {
 	repo, base string
 	issue      string              // the issue's text, "" when not known
-	code       func() string       // the change's code diff, "" when tests alone
+	code       func() string       // the lines the change's code adds or removes, "" when tests alone
 	test       func(string) string // a test file of the change, as the head holds it
+	tests      []string            // the change's test files
 	inBase     map[string]bool
 }
 
 // lacks says whether the base holds no word name (its last part) in any
-// file: a name the change adds. A search that fails says it holds it.
+// file. A search that fails says it holds it.
 func (r *redFirst) lacks(name string) bool {
 	last := lastPart.FindString(name)
 	if last == "" {
@@ -126,23 +141,43 @@ func (r *redFirst) lacks(name string) bool {
 	if has, ok := r.inBase[last]; ok {
 		return !has
 	}
-	cmd := exec.Command("git", "-C", r.repo, "grep", "-q", "-w", "-F", "-e", last, r.base, "--")
-	err := cmd.Run()
+	err := exec.Command("git", "-C", r.repo, "grep", "-q", "-w", "-F", "-e", last, r.base, "--").Run()
 	var exit *exec.ExitError
 	has := !errors.As(err, &exit) || exit.ExitCode() != 1
 	r.inBase[last] = has
 	return !has
 }
 
-// said says whether the issue writes name as a call, or the change's code
-// touches it.
-func (r *redFirst) said(name string) bool {
-	return (r.issue != "" && calledIn(name, r.issue)) || namedIn(name, r.code())
+// declared says whether a test file of the change declares name.
+func (r *redFirst) declared(name string) bool {
+	for _, f := range r.tests {
+		if declaredIn(name, r.test(f)) {
+			return true
+		}
+	}
+	return false
+}
+
+// adds says whether the change adds or reshapes name: the issue writes it
+// as a call; the change's code touches it; or the base lacks it and the
+// issue names it, or, no issue known, no test of the change declares it.
+func (r *redFirst) adds(name string) bool {
+	if (r.issue != "" && calledIn(name, r.issue)) || namedIn(name, r.code()) {
+		return true
+	}
+	if !r.lacks(name) {
+		return false
+	}
+	if r.issue != "" {
+		return namedIn(name, r.issue)
+	}
+	return !r.declared(name)
 }
 
 // sort is errs, each in a test of the change red first or its knock-on
-// left out of broken and unnamed.
-func (r *redFirst) sort(errs []buildError) (broken, unnamed []buildError) {
+// left out of broken and unnamed; byShape says an error other than a
+// missing name made a test red.
+func (r *redFirst) sort(errs []buildError) (broken, unnamed []buildError, byShape bool) {
 	anchored := map[string]bool{}
 	red := make([]bool, len(errs))
 	names := make([][]string, len(errs))
@@ -154,8 +189,8 @@ func (r *redFirst) sort(errs []buildError) (broken, unnamed []buildError) {
 		default:
 			names[i] = namesOf(e.msg, r.test(e.file))
 			for _, n := range names[i] {
-				if r.said(n) || r.lacks(n) {
-					red[i] = true
+				if r.adds(n) {
+					red[i], byShape = true, true
 					break
 				}
 			}
@@ -169,16 +204,14 @@ func (r *redFirst) sort(errs []buildError) (broken, unnamed []buildError) {
 		case red[i]:
 		case !e.inTest:
 			broken = append(broken, e)
-		case anchored[e.file] && !e.missing && len(names[i]) == 0 && !quotedPart.MatchString(e.msg):
-			// a knock-on: a type the compiler could not infer past a
-			// name the base lacks; one quoting a value (Go's `cannot use
-			// "Kitchen" … as int value`) is the test's own
+		case anchored[e.file] && !e.missing && len(names[i]) == 0 && !quotedPart.MatchString(e.msg) && inference.MatchString(e.msg):
+			// a knock-on: a type not inferred past a name the base lacks
 		case anchored[e.file] && e.missing && knockOn(e.name, r.test(e.file)):
 		case e.missing:
 			unnamed = append(unnamed, e)
 		default:
-			broken = append(broken, e) // a wrong call on what the base has
+			broken = append(broken, e) // a wrong call, a parse error: the test's own
 		}
 	}
-	return broken, unnamed
+	return broken, unnamed, byShape
 }
